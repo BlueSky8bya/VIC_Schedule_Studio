@@ -22,7 +22,7 @@ import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
 import { scatterProps } from "../art/props";
 import { PRINT_K, SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, GROUND_SQUASH } from "../world/view";
+import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
 
 // 날씨(날짜 시드)별 눈송이 배수 — 눈 오는 날은 촘촘히, 맑은 날은 가끔 한 송이.
 const WEATHER_FLAKES: Record<Weather, number> = { snow: 1.8, cloud: 0.8, clear: 0.35, fog: 0.6, wind: 1.2, rain: 0.5 };
@@ -77,6 +77,9 @@ export function createWinter(seed: number): Scene {
   const groundArt = new ArtSet(["snow-pile", "shrub-winter", "rock", "grass-dry", "twig"]);
   let gav = -1;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(흰 언덕·나목 줄)
+  // 땅의 위 끝(지평선) — 자국·손님·토끼·눈송이 착지는 이 아래에서만(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 발자국이 찍힌다").
+  const gy = () => horizonY(h);
+  const groundY = (r: number) => gy() + r * (h - gy());
   const sprites = new Map<PrintKind, HTMLCanvasElement>();
   let rabbitSpr: Sprite | null = null;
   let shadow: HTMLCanvasElement | null = null;
@@ -237,7 +240,12 @@ export function createWinter(seed: number): Scene {
     const k = kind === "human" ? 1.25 + r() * 0.3 : kind === "cat" ? 0.85 + r() * 0.2 : kind === "bird" ? 0.8 + r() * 0.25 : 1 + r() * 0.2;
     return { kind, x, y, dir, left: r() < 0.5, k, next: t, active: true, steps: 0 };
   }
-  function advance(wk: Walker, t: number, emit: (p: Print) => void, puffAt: (x: number, y: number) => void, r: () => number = rand): "walk" | "gone" {
+  function advance(wk: Walker, t: number, emitRaw: (p: Print) => void, puffAt: (x: number, y: number) => void, r: () => number = rand): "walk" | "gone" {
+    // 자국은 땅(지평선 아래)에만 찍힌다 — 위 가장자리에서 들어오는 손님의 첫 걸음과 위로 벗어나는 걸음은 먼 곳이라 자국이 안 남는다.
+    const top = gy();
+    const emit = (p: Print) => {
+      if (p.y >= top) emitRaw(p);
+    };
     const px = Math.cos(wk.dir + Math.PI / 2);
     const py = Math.sin(wk.dir + Math.PI / 2);
     const fx = Math.cos(wk.dir);
@@ -287,8 +295,8 @@ export function createWinter(seed: number): Scene {
   function edgeStart(r: () => number = rand): [number, number, number] {
     const edge = Math.floor(r() * 4);
     const x = edge === 0 ? -14 : edge === 1 ? w + 14 : r() * w;
-    const y = edge === 2 ? -14 : edge === 3 ? h + 14 : r() * h;
-    const dir = Math.atan2(h * (0.3 + r() * 0.4) - y, w * (0.3 + r() * 0.4) - x) + (r() - 0.5) * 0.8;
+    const y = edge === 2 ? gy() - 14 : edge === 3 ? h + 14 : groundY(r());
+    const dir = Math.atan2(groundY(0.3 + r() * 0.4) - y, w * (0.3 + r() * 0.4) - x) + (r() - 0.5) * 0.8;
     return [x, y, dir];
   }
   function pickKind(): Kind {
@@ -360,7 +368,7 @@ export function createWinter(seed: number): Scene {
   const areaK = () => clamp((w * h) / 1_440_000, 0.6, 1.6);
   const flakeTarget = (f: Frame) => Math.round(lerp(8, 70, f.load) * areaK() * WEATHER_FLAKES[f.weather.now]);
   function newFlake(): Flake {
-    return { x: rand() * w, y: rand() * h, life: 0, dur: 1.8 + rand() * 1.6, wait: rand() * 3, r: 2.2 + rand() * 2, rung: false };
+    return { x: rand() * w, y: groundY(rand()), life: 0, dur: 1.8 + rand() * 1.6, wait: rand() * 3, r: 2.2 + rand() * 2, rung: false };
   }
   function puff(x: number, y: number, n: number, spread: number) {
     for (let i = 0; i < n; i++) {
@@ -377,14 +385,15 @@ export function createWinter(seed: number): Scene {
   }
   function startRabbit(t: number, hot: Frame["hot"]) {
     let x = 60 + rand() * (w - 120);
-    let y = 60 + rand() * (h - 120);
+    let y = gy() + 60 + rand() * (h - gy() - 120);
     // 핫 존(달력) 밖 빈 띠가 있으면 거기서 — 달력 위에 숨어 있다 나오면 안 보인다.
     if (hot) {
+      const top = gy(); // 지평선 위(먼 곳)에는 나오지 않는다
       const bands: [number, number, number, number][] = [
-        [0, 0, w, hot.y],
+        [0, top, w, hot.y - top],
         [0, hot.y + hot.h, w, h - hot.y - hot.h],
-        [0, 0, hot.x, h],
-        [hot.x + hot.w, 0, w - hot.x - hot.w, h]
+        [0, top, hot.x, h - top],
+        [hot.x + hot.w, top, w - hot.x - hot.w, h - top]
       ];
       const best = bands.filter((b) => b[2] >= 70 && b[3] >= 70).sort((a, b) => b[2] * b[3] - a[2] * a[3])[0];
       if (best) {
@@ -503,7 +512,7 @@ export function createWinter(seed: number): Scene {
       if (!flakes.length) while (flakes.length < n) flakes.push(newFlake());
       for (const s of flakes) {
         if (s.x > w) s.x = rand() * w;
-        if (s.y > h) s.y = rand() * h;
+        if (s.y > h || s.y < gy()) s.y = groundY(rand());
       }
     },
     step(f) {
@@ -514,7 +523,7 @@ export function createWinter(seed: number): Scene {
         const pn = walker.kind === "human" ? (load >= 0.5 ? 4 : 2) : 1;
         const r = advance(walker, t, (pr) => prints.push(pr), (x, y) => puff(x, y, pn, walker.kind === "rabbit" ? 60 : 40));
         const maxSteps = walker.kind === "human" ? 160 : walker.kind === "cat" ? 90 : walker.kind === "bird" ? 44 : 36;
-        if (r === "gone" || walker.steps > maxSteps || walker.x < -40 || walker.x > w + 40 || walker.y < -40 || walker.y > h + 40) {
+        if (r === "gone" || walker.steps > maxSteps || walker.x < -40 || walker.x > w + 40 || walker.y < gy() - 40 || walker.y > h + 40) {
           if (walker.kind === "bird" && r !== "gone") puff(walker.x, walker.y, 6, 60);
           walker.active = false;
           nextWalker = t + lerp(28, 6, load) + rand() * lerp(20, 8, load);
@@ -607,7 +616,7 @@ export function createWinter(seed: number): Scene {
             rabbitPrints(r.x, r.y, r.dir, t, 1.1);
             puff(r.x, r.y, fleeing ? 4 : 3, 50);
             if (fleeing) {
-              if (r.x < -70 || r.x > w + 70 || r.y < -70 || r.y > h + 70) {
+              if (r.x < -70 || r.x > w + 70 || r.y < gy() - 70 || r.y > h + 70) {
                 rabbit = null;
                 nextRabbit = t + 25 + rand() * 40;
               } else {
@@ -625,7 +634,7 @@ export function createWinter(seed: number): Scene {
                 } else {
                   r.phase = "rest";
                   r.t0 = t;
-                  if (r.x < 30 || r.x > w - 30 || r.y < 30 || r.y > h - 30) r.dir = Math.atan2(h / 2 - r.y, w / 2 - r.x);
+                  if (r.x < 30 || r.x > w - 30 || r.y < gy() + 30 || r.y > h - 30) r.dir = Math.atan2(groundY(0.5) - r.y, w / 2 - r.x);
                 }
               } else rabbitFlee(t); // 다 놀았으면 뛰어서 나간다
             }
@@ -642,7 +651,7 @@ export function createWinter(seed: number): Scene {
       }
       // ③ 눈보라 한 줄기 — 여력 0.6부터, 30~60초 간격, 3초. 앞머리를 따라 눈가루가 흩날린다.
       if (!gust && load >= 0.6 && t > nextGust) {
-        gust = { t0: t, dur: 3, dir: rand() < 0.5 ? -1 : 1, y: h * (0.2 + rand() * 0.6) };
+        gust = { t0: t, dur: 3, dir: rand() < 0.5 ? -1 : 1, y: groundY(0.2 + rand() * 0.6) };
         gusts++;
       }
       if (gust) {
@@ -686,7 +695,7 @@ export function createWinter(seed: number): Scene {
             continue;
           }
           s.x = rand() * w;
-          s.y = rand() * h;
+          s.y = groundY(rand());
           s.life = 0;
           s.dur = 1.8 + rand() * 1.6;
           s.wait = rand() * 2.5;
@@ -695,7 +704,7 @@ export function createWinter(seed: number): Scene {
         }
       }
       const tw = Math.round(lerp(4, 16, load));
-      while (twinkles.length < tw) twinkles.push({ x: rand() * w, y: rand() * h, ph: rand() * TAU, r: 1.6 + rand() * 1.6 });
+      while (twinkles.length < tw) twinkles.push({ x: rand() * w, y: groundY(rand()), ph: rand() * TAU, r: 1.6 + rand() * 1.6 });
       if (twinkles.length > tw) twinkles.length = tw;
       for (let i = rings.length - 1; i >= 0; i--) {
         rings[i].life -= dt / 0.7;
@@ -891,6 +900,7 @@ export function createWinter(seed: number): Scene {
         return true;
       }
       if (!onBackground) return false;
+      if (f.p.y < gy()) return false; // 지평선 띠(먼 언덕)엔 발자국이 안 찍힌다
       const a = rand() * TAU;
       const px = Math.cos(a + Math.PI / 2) * 10;
       const py = Math.sin(a + Math.PI / 2) * 10;
@@ -903,6 +913,7 @@ export function createWinter(seed: number): Scene {
       return {
         flakes: flakes.length,
         prints: prints.length,
+        printPos: prints.map((q) => [Math.round(q.x), Math.round(q.y)]),
         dust: dust.length,
         dustSpawned,
         walker: walker.active ? walker.kind : false,

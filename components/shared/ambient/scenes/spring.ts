@@ -30,7 +30,7 @@ import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, scatterProps } from "../art/props";
 import { SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, GROUND_SQUASH } from "../world/view";
+import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
@@ -123,6 +123,9 @@ export function createSpring(seed: number): Scene {
   const groundArt = new ArtSet(["clover", "daisy", "grass-tuft", "dandelion-puff", "dandelion-flower", "shrub-spring", "rock", "stump"]);
   let gav = -1;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠
+  // 땅의 위 끝(지평선) — 꽃·풀·벌레·나비·민들레는 이 아래에서만(지평선 띠는 먼 곳).
+  const gy = () => horizonY(h);
+  const groundY = (r: number) => gy() + r * (h - gy());
   let shadow: HTMLCanvasElement | null = null;
   let traceBakes: TraceBakes | null = null; // 연대기(지난 가을 저장소의 싹·나무·두더지 흙더미) 렌더
   let petalSpr: HTMLCanvasElement | null = null;
@@ -193,7 +196,7 @@ export function createSpring(seed: number): Scene {
     const clovers = Math.round((w * h) / 60000);
     for (let i = 0; i < clovers; i++) {
       const x = g0() * w;
-      const y = g0() * h;
+      const y = groundY(g0());
       drawProp(g, groundArt, "clover", x, y, { k: (0.8 + g0() * 0.5) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     daisies.length = 0;
@@ -201,7 +204,7 @@ export function createSpring(seed: number): Scene {
     const flowerK = SIZE.flower / 18;
     for (let i = 0; i < nd; i++) {
       const x = g0() * w;
-      const y = g0() * h;
+      const y = groundY(g0());
       daisies.push([x, y]);
       // 데이지의 (x,y) = 꽃 얼굴(벌·나비가 앉는 자리) — 서 있는 그림은 발을 그 아래에 둔다.
       const k = (0.9 + g0() * 0.3) * flowerK * depthScale(y, h);
@@ -211,7 +214,7 @@ export function createSpring(seed: number): Scene {
     for (let i = 0; i < nPetals; i++) {
       g.fillStyle = "rgb(244 200 216 / 0.7)";
       g.beginPath();
-      g.ellipse(g0() * w, g0() * h, 4, 2.4, g0() * TAU, 0, TAU);
+      g.ellipse(g0() * w, groundY(g0()), 4, 2.4, g0() * TAU, 0, TAU);
       g.fill();
     }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
@@ -228,7 +231,7 @@ export function createSpring(seed: number): Scene {
     const tufts = Math.round((w * h) / 1500);
     for (let i = 0; i < tufts; i++) {
       const x = g0() * w;
-      const y = g0() * h;
+      const y = groundY(g0());
       drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (0.7 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.9 });
     }
     blades = b.c;
@@ -237,7 +240,7 @@ export function createSpring(seed: number): Scene {
     dands.length = 0;
     const ndd = clamp(Math.round((w * h) / 260000), 4, 7);
     for (let i = 0; i < ndd; i++) {
-      dands.push({ x: 40 + g0() * (w - 80), y: 40 + g0() * (h - 80), k: 0.85 + g0() * 0.35, puffed: 0, regrow: 0, born: -10 });
+      dands.push({ x: 40 + g0() * (w - 80), y: gy() + 40 + g0() * (h - gy() - 80), k: 0.85 + g0() * 0.35, puffed: 0, regrow: 0, born: -10 });
     }
     gw = w;
     gh = h;
@@ -319,11 +322,11 @@ export function createSpring(seed: number): Scene {
   function newFly(t: number, fromEdge: boolean): Fly {
     const b: Fly = {
       x: rand() * w,
-      y: rand() * h,
+      y: groundY(rand()),
       hd: rand() * TAU,
       spd: 46 + rand() * 40,
       tx: rand() * w,
-      ty: rand() * h,
+      ty: groundY(rand()),
       next: 0,
       ph: rand() * TAU,
       bob: rand() * TAU,
@@ -348,9 +351,9 @@ export function createSpring(seed: number): Scene {
     if (fromEdge) {
       const e = Math.floor(rand() * 4);
       b.x = e === 0 ? -30 : e === 1 ? w + 30 : rand() * w;
-      b.y = e === 2 ? -30 : e === 3 ? h + 30 : rand() * h;
+      b.y = e === 2 ? gy() - 30 : e === 3 ? h + 30 : groundY(rand());
       b.tx = w * (0.2 + rand() * 0.6);
-      b.ty = h * (0.2 + rand() * 0.6);
+      b.ty = groundY(0.2 + rand() * 0.6);
       b.hd = Math.atan2(b.ty - b.y, b.tx - b.x);
       b.next = t + 3;
     }
@@ -420,8 +423,8 @@ export function createSpring(seed: number): Scene {
   function newBug(t: number): Bug {
     const e = Math.floor(rand() * 4);
     const x = e === 0 ? -12 : e === 1 ? w + 12 : rand() * w;
-    const y = e === 2 ? -12 : e === 3 ? h + 12 : rand() * h;
-    return { x, y, hd: Math.atan2(h / 2 - y, w / 2 - x) + (rand() - 0.5), spd: 18 + rand() * 14, state: "walk", until: t + 3 + rand() * 4, k: 0.9 + rand() * 0.25, ph: rand() * TAU, off: 0, respawn: 0, deadAt: 0 };
+    const y = e === 2 ? gy() - 12 : e === 3 ? h + 12 : groundY(rand());
+    return { x, y, hd: Math.atan2(groundY(0.5) - y, w / 2 - x) + (rand() - 0.5), spd: 18 + rand() * 14, state: "walk", until: t + 3 + rand() * 4, k: 0.9 + rand() * 0.25, ph: rand() * TAU, off: 0, respawn: 0, deadAt: 0 };
   }
   // 죽은 척(thanatosis) — 그 자리에서 멈추고 움츠린다. 1.5~3s 뒤 포인터가 멀면 다시 걷는다.
   function playDead(b: Bug, t: number) {
@@ -441,7 +444,7 @@ export function createSpring(seed: number): Scene {
     windDir = rand() < 0.5 ? 1 : -1;
     const n = Math.round(lerp(18, 40, load));
     for (let i = 0; i < n; i++) {
-      petals.push({ x: windDir > 0 ? -40 - rand() * 300 : w + 40 + rand() * 300, y: rand() * h, vx: windDir * (90 + rand() * 70), ph: rand() * TAU, a: rand() * TAU, va: (rand() - 0.5) * 4, born: t + rand() * 1.5, dur: 7 + rand() * 4, k: 0.7 + rand() * 0.6 });
+      petals.push({ x: windDir > 0 ? -40 - rand() * 300 : w + 40 + rand() * 300, y: groundY(rand()), vx: windDir * (90 + rand() * 70), ph: rand() * TAU, a: rand() * TAU, va: (rand() - 0.5) * 4, born: t + rand() * 1.5, dur: 7 + rand() * 4, k: 0.7 + rand() * 0.6 });
     }
     breezes++;
   }
@@ -488,7 +491,7 @@ export function createSpring(seed: number): Scene {
   }
   function newBee(t: number): Bee {
     const left = rand() < 0.5;
-    const b: Bee = { x: left ? -20 : w + 20, y: rand() * h, hd: left ? 0 : Math.PI, tx: 0, ty: 0, state: "fly", timer: 0, ph: rand() * TAU, ang: 0, target: -1, visits: 0, quota: 7 + Math.floor(rand() * 4), visited: new Map() };
+    const b: Bee = { x: left ? -20 : w + 20, y: groundY(rand()), hd: left ? 0 : Math.PI, tx: 0, ty: 0, state: "fly", timer: 0, ph: rand() * TAU, ang: 0, target: -1, visits: 0, quota: 7 + Math.floor(rand() * 4), visited: new Map() };
     pickFlower(b, t);
     return b;
   }
@@ -743,8 +746,8 @@ export function createSpring(seed: number): Scene {
         if (b.state !== "leave") {
           if (b.x < -30) b.x = w + 20;
           else if (b.x > w + 30) b.x = -20;
-          if (b.y < -30) b.y = h + 20;
-          else if (b.y > h + 30) b.y = -20;
+          if (b.y < gy() - 30) b.y = h + 20;
+          else if (b.y > h + 30) b.y = gy() - 20;
         }
       }
       // 나선 추격 — 나는 중인 둘이 60px 안에서 마주치면(전역 쿨다운 8s) 30%로 서로 감아 돈다. 실패해도 쿨다운은 소모(스쳐 지남).
@@ -838,7 +841,7 @@ export function createSpring(seed: number): Scene {
           b.y += Math.sin(b.hd) * sp * dt;
           b.ph += sp * 0.5 * dt;
           const m = 10;
-          if (b.x < -m || b.x > w + m || b.y < -m || b.y > h + m) b.hd = Math.atan2(h / 2 - b.y, w / 2 - b.x) + (rand() - 0.5) * 0.4;
+          if (b.x < -m || b.x > w + m || b.y < gy() - m || b.y > h + m) b.hd = Math.atan2(groundY(0.5) - b.y, w / 2 - b.x) + (rand() - 0.5) * 0.4;
         }
       }
       // 꽃잎 바람 — 여력 0.55부터, 20~45초 간격. 부는 동안 풀이 같이 흔들린다(wind → 1).
@@ -1277,6 +1280,7 @@ export function createSpring(seed: number): Scene {
         }
       }
       if (!onBackground) return false;
+      if (f.p.y < gy()) return false; // 지평선 띠(먼 언덕)의 풀은 밟히지 않는다
       press(f.p.x, f.p.y, f.load);
       return true;
     },

@@ -264,7 +264,7 @@ export function createSummer(seed: number): Scene {
     return {
       kind,
       x: rand() * w,
-      y: rand() * h,
+      y: waterY(rand()), // 물 위에만(기슭·지평선 띠 위로 떠오르지 않게)
       vx: 0,
       vy: 0,
       a: rand() * TAU,
@@ -430,7 +430,7 @@ export function createSummer(seed: number): Scene {
       if (!props.some((p) => p.kind === "duck")) {
         const d = newProp("duck", f.t);
         d.x = w * (0.3 + rand() * 0.4);
-        d.y = h * (0.3 + rand() * 0.4);
+        d.y = waterY(0.3 + rand() * 0.4);
         // 핫 존(달력)이 있으면 그 둘레의 빈 띠 중 가장 넓은 곳에서 시작한다(위·아래·왼쪽·오른쪽).
         const hot = f.hot;
         if (hot) {
@@ -685,8 +685,8 @@ export function createSummer(seed: number): Scene {
               q.x = w - m;
               q.vx = -Math.abs(q.vx) - 4;
             }
-            if (q.y < m) {
-              q.y = m;
+            if (q.y < shoreY() + m) {
+              q.y = shoreY() + m; // 물가 선 위(기슭)로는 못 올라간다
               q.vy = Math.abs(q.vy) + 4;
             } else if (q.y > h - m) {
               q.y = h - m;

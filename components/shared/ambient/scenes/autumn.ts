@@ -17,7 +17,7 @@ import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, scatterProps } from "../art/props";
 import { LEAF_K, SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, flatXform, GROUND_SQUASH } from "../world/view";
+import { bakeHorizon, depthScale, flatXform, GROUND_SQUASH, horizonY } from "../world/view";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -120,6 +120,9 @@ export function createAutumn(seed: number): Scene {
   const groundArt = new ArtSet(["mushroom", "twig", "pebble", "grass-dry", "shrub-autumn", "rock", "stump", "log"]);
   let gav = -1;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
+  // 땅의 위 끝(지평선) — 잎·소품·다람쥐·돌풍은 이 아래에서만 산다(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 떠다닌다").
+  const gy = () => horizonY(h);
+  const groundY = (r: number) => gy() + r * (h - gy());
   let grabbed = -1;
   let gox = 0;
   let goy = 0;
@@ -254,25 +257,25 @@ export function createAutumn(seed: number): Scene {
     const tufts = Math.round((w * h) / 2600);
     for (let i = 0; i < tufts; i++) {
       const x = g0() * w;
-      const y = g0() * h;
+      const y = groundY(g0());
       drawProp(g, groundArt, "grass-dry", x, y, { k: (0.7 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.85 });
     }
     const twigs = Math.round((w * h) / 40000);
     for (let i = 0; i < twigs; i++) {
       const x = g0() * w;
-      const y = g0() * h;
+      const y = groundY(g0());
       drawProp(g, groundArt, "twig", x, y, { k: (0.8 + g0() * 0.8) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     const pebbles = Math.round((w * h) / 70000);
     for (let i = 0; i < pebbles; i++) {
       const x = g0() * w;
-      const y = g0() * h;
+      const y = groundY(g0());
       drawProp(g, groundArt, "pebble", x, y, { k: (0.7 + g0() * 0.9) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     const shrooms = clamp(Math.round((w * h) / 300000), 3, 7);
     for (let i = 0; i < shrooms; i++) {
       const x = 30 + g0() * (w - 60);
-      const y = 30 + g0() * (h - 60);
+      const y = gy() + 30 + g0() * (h - gy() - 60);
       const k = (0.8 + g0() * 0.6) * depthScale(y, h);
       softBlob(g, x + 3, y - 4, 12 * k, "43 35 32", 0.22);
       drawProp(g, groundArt, "mushroom", x, y + 8 * k, { k, r: g0() });
@@ -305,7 +308,7 @@ export function createAutumn(seed: number): Scene {
     const sp = pickSpecies();
     const [lo, hi] = SPECIES[sp].size;
     // 축척(PLAN-004 §2): 낙엽은 나무의 1/12 — 옛 30~76을 LEAF_K(≈.36)로 줄인다(물리 반지름·집기 판정도 s에 비례하므로 같이 줄어든다).
-    return { x: rand() * w, y: rand() * h, vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
+    return { x: rand() * w, y: groundY(rand()), vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
   }
   /** 도토리는 최대 6 — 넘치면 가장 오래된 것이 옅어진다. */
   function capAcorns() {
@@ -317,7 +320,7 @@ export function createAutumn(seed: number): Scene {
     capAcorns();
   }
   function dropAcorn(t: number) {
-    pushAcorn(w * (0.1 + rand() * 0.8), h * (0.1 + rand() * 0.8), 1, t);
+    pushAcorn(w * (0.1 + rand() * 0.8), groundY(0.1 + rand() * 0.8), 1, t);
     acornsDropped++;
   }
   // leavesOnly = 다람쥐의 발놀림: 잎만 헤치고 도토리는 건드리지 않는다 — 제 목표 도토리를 앞으로 차 보내며 화면 끝까지
@@ -421,11 +424,11 @@ export function createAutumn(seed: number): Scene {
   function startSquirrel(t: number) {
     const e = Math.floor(rand() * 4);
     const x = e === 0 ? -40 : e === 1 ? w + 40 : rand() * w;
-    const y = e === 2 ? -40 : e === 3 ? h + 40 : rand() * h;
+    const y = e === 2 ? gy() - 40 : e === 3 ? h + 40 : groundY(rand());
     const target = nearestAcorn(x, y);
     let phase: SqPhase = "run";
     let tx = w * (0.2 + rand() * 0.6);
-    let ty = h * (0.2 + rand() * 0.6);
+    let ty = groundY(0.2 + rand() * 0.6);
     if (target >= 0) {
       tx = leaves[target].x;
       ty = leaves[target].y;
@@ -514,7 +517,7 @@ export function createAutumn(seed: number): Scene {
       if (grabbed >= leaves.length) grabbed = -1;
       for (const l of leaves) {
         if (l.x > w + l.s) l.x = rand() * w;
-        if (l.y > h + l.s) l.y = rand() * h;
+        if (l.y > h + l.s || l.y < gy() - l.s) l.y = groundY(rand());
       }
       // 화면 밖으로 밀려난 저장소는 잊는다(찾을 수 없는 흙더미를 남기지 않는다).
       for (let i = caches.length - 1; i >= 0; i--) if (caches[i].x > w || caches[i].y > h) caches.splice(i, 1);
@@ -713,9 +716,9 @@ export function createAutumn(seed: number): Scene {
       if (!whirl && load >= 0.6 && t > nextWhirl) {
         const e = Math.floor(rand() * 4);
         const x = e === 0 ? -80 : e === 1 ? w + 80 : rand() * w;
-        const y = e === 2 ? -80 : e === 3 ? h + 80 : rand() * h;
+        const y = e === 2 ? gy() - 80 : e === 3 ? h + 80 : groundY(rand());
         const tx = w * (0.3 + rand() * 0.4);
-        const ty = h * (0.3 + rand() * 0.4);
+        const ty = groundY(0.3 + rand() * 0.4);
         const d = Math.hypot(tx - x, ty - y) || 1;
         whirl = { x, y, vx: ((tx - x) / d) * 95, vy: ((ty - y) / d) * 95, t0: t, dur: 4.5 };
         whirls++;
@@ -731,7 +734,7 @@ export function createAutumn(seed: number): Scene {
         }
       }
       const gk = lerp(0.35, 1, load);
-      if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: rand() * h };
+      if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: groundY(rand()) };
       if (gust && t - gust.t0 > gust.dur) {
         gust = null;
         // 바람 부는 날(날짜 시드 날씨)엔 돌풍이 두 배 잦다.
@@ -846,8 +849,10 @@ export function createAutumn(seed: number): Scene {
         const m = l.s;
         if (l.x < -m) l.x += w + 2 * m;
         else if (l.x > w + m) l.x -= w + 2 * m;
-        if (l.y < -m) l.y += h + 2 * m;
-        else if (l.y > h + m) l.y -= h + 2 * m;
+        // 세로 랩은 땅(지평선~아래) 안에서 — 위로 날아간 잎은 아래에서 다시 들어온다(지평선 띠 = 먼 곳, 잎이 놓이지 않는다).
+        const top = gy();
+        if (l.y < top + m * 0.4) l.y += h - top + m; // 지평선 위로는 못 올라간다 — 아래에서 다시 들어온다
+        else if (l.y > h + m) l.y -= h - top + m;
       }
       for (const l of leaves) {
         if (l.lift > 0 && l.fall === 0) l.lift = Math.max(0, l.lift - dt * 1.6);
