@@ -120,8 +120,11 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   `/studio/ambient-art`(개발자 전용, `lib/ambient/art-files.ts`가 폴더를 읽음; fixture `/visual-fixture/ambient-art`): 자리 카드
   (지금 대체물 ↔ 납품 PNG, 규격, 상태 납품됨/부분/대기), 계절·분류·상태 필터, 프롬프트 복사(1차/2차/전체/자리별, 토스트+햅틱). 설정 모달
   개발자 줄 '배경 아트 보드 → 열기'(data-act dev-art-board-open). 연잎은 chronicle에서 재추첨으로 서로 떨어뜨림. 카메라 규칙 완화는
-  ADR-0017 ⑮(납작한 것만 위에서, 서 있는 것은 3/4). **다음**: 소유자가 코덱스로 1차 PNG를 만들어 `public/ambient/art/`에 넣는다 →
-  보드에서 확인 → 2차 생물. 아직 파일 0장(대체물 그대로).
+  ADR-0017 ⑮(납작한 것만 위에서, 서 있는 것은 3/4). 첫 참나무 4장(코덱스, 1024 · 400~600KB, 잎 낱개까지 그린 회화풍) 피드백 "1024는
+  오버스펙, 모양 복잡" → 가이드 **단순함 최우선**(128px에서 읽히는 덩어리 2~3개, 품질 낮음/중간) + `npm run art:normalize`
+  (`scripts/ambient-art-normalize.mjs`, sharp + esbuild로 매니페스트 번들: 알파 트리밍 → 화면 px 4배(128~512) → PNG; 보드가 무거운
+  원본을 경고, `lib/ambient/art-files.ts`가 픽셀·바이트를 IHDR로 읽음). **다음**: 소유자가 단순한 참나무 4장을 다시 뽑아 스타일 확정 →
+  나머지 1차 → 2차 생물.
   ㉜ **계절 연대기(PLAN-20260904-003) — 결정 확정 + Phase A 출고(2026-09-04 밤)**: 소유자 결정 7건(여섯 띠 · 전설 순수 확률 ·
   도감은 로그인만 · 공유 없음 · 날씨 랜덤(날짜 시드) · 우선 20종 · 채도 균형). Phase A = `components/shared/ambient/world/`:
   `seed.ts`(FNV-1a → mulberry32), `time.ts`(계절별 일출·일몰로 새벽·아침·점심·노을·저녁·밤 + 빛 톤: 낮 없음·노을 회자·밤 청회),

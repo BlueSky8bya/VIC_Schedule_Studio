@@ -44,13 +44,13 @@ const ALL: readonly SeasonKey[] = ["spring", "summer", "autumn", "winter"];
 // ── Phase 1: 나무·초목·지형·물 ──────────────────────────────────────────────────────────────────────────
 const PHASE1: readonly ArtSlot[] = [
   // 나무(데뷔 나무·도토리에서 난 나무) — 계절마다 한 장, 크기는 엔진이 키에 맞춰 조절한다.
-  { id: "tree-oak-spring", nameKo: "참나무(봄)", nameEn: "Oak, spring", category: "tree", seasons: ["spring"], view: "stand", px: [120, 150], brief: "연둣빛 새잎이 갓 돋은 참나무 한 그루. 둥글고 통통한 잎 뭉치 3~4덩이, 짧고 굵은 줄기, 뿌리목이 살짝 벌어진다. 잎 끝에 밝은 연두 하이라이트.", acnhRef: "활엽수(봄 새잎)", now: "procedural", phase: 1 },
-  { id: "tree-oak-summer", nameKo: "참나무(여름)", nameEn: "Oak, summer", category: "tree", seasons: ["summer"], view: "stand", px: [120, 150], brief: "짙은 초록 잎이 가득 찬 참나무. 잎 뭉치가 둥글고 무겁게 늘어지고, 그늘 쪽(오른쪽 아래)은 청록으로 어둡다. 줄기는 회갈색, 옹이 하나.", acnhRef: "활엽수(여름)", now: "procedural", phase: 1 },
-  { id: "tree-oak-autumn", nameKo: "참나무(가을)", nameEn: "Oak, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [120, 150], brief: "갈색·와인·황토로 물든 참나무(붉은 주황·노랑 금지 — 채도 낮은 갈색 계열만). 잎 뭉치 사이가 조금 성기고 가지가 드문드문 보인다. 발치의 떨어진 잎은 그리지 않는다(엔진이 흩뿌린다).", acnhRef: "활엽수(가을 단풍)", now: "procedural", phase: 1 },
-  { id: "tree-oak-winter", nameKo: "참나무(겨울)", nameEn: "Oak, winter", category: "tree", seasons: ["winter"], view: "stand", px: [120, 150], brief: "잎을 다 떨군 참나무. 줄기에서 굵은 가지 4~5개가 갈라지고 끝으로 갈수록 잔가지가 가늘어진다(거미 다리처럼 곧은 살 금지 — 굽고 갈라지는 가지). 가지 위쪽에 눈이 얇게 얹힌다.", acnhRef: "활엽수(겨울 나목)", now: "procedural", phase: 1 },
-  { id: "sapling-green", nameKo: "어린 나무(잎)", nameEn: "Sapling, leafy", category: "tree", seasons: ["spring", "summer"], view: "stand", px: [40, 48], brief: "무릎 높이의 어린 참나무. 가는 줄기 하나에 잎 5~7장, 아직 나무라기보다 큰 풀 같은 느낌. 밝은 초록.", acnhRef: "묘목", now: "emoji", phase: 1 },
-  { id: "sapling-autumn", nameKo: "어린 나무(가을)", nameEn: "Sapling, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [40, 48], brief: "어린 참나무, 잎이 갈색·와인으로 물들고 두어 장 남았다.", acnhRef: "묘목", now: "emoji", phase: 1 },
-  { id: "sapling-bare", nameKo: "어린 나무(겨울)", nameEn: "Sapling, bare", category: "tree", seasons: ["winter"], view: "stand", px: [40, 48], brief: "잎 없는 어린 참나무 — 가는 줄기와 잔가지 셋, 눈이 조금 얹힌다.", acnhRef: "묘목", now: "emoji", phase: 1 },
+  { id: "tree-oak-spring", nameKo: "참나무(봄)", nameEn: "Oak, spring", category: "tree", seasons: ["spring"], view: "stand", px: [120, 150], brief: "동물의 숲 나무처럼 아주 단순하게: 연둣빛 **매끈한 공 모양 잎 덩이 3개**(위에 큰 것 하나, 아래 좌우에 작은 것 둘이 겹침)를 짧고 굵은 줄기가 받친다. 잎 낱개·잔가지·질감 없음. 덩이마다 위 왼쪽에 밝은 면, 오른쪽 아래에 그늘 면 한 번씩.", acnhRef: "활엽수(봄 새잎)", now: "procedural", phase: 1 },
+  { id: "tree-oak-summer", nameKo: "참나무(여름)", nameEn: "Oak, summer", category: "tree", seasons: ["summer"], view: "stand", px: [120, 150], brief: "봄과 **같은 실루엣·같은 줄기**, 잎 덩이 3개만 짙은 초록으로(그늘 면은 청록). 잎 낱개·질감 없음.", acnhRef: "활엽수(여름)", now: "procedural", phase: 1 },
+  { id: "tree-oak-autumn", nameKo: "참나무(가을)", nameEn: "Oak, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [120, 150], brief: "봄과 **같은 실루엣·같은 줄기**, 잎 덩이 3개가 갈색·황토·와인(갈색이 주, 붉은 기는 조금만 — 선명한 빨강·주황·노랑 금지). 잎 낱개·질감 없음. 발치의 떨어진 잎은 그리지 않는다(엔진이 흩뿌린다).", acnhRef: "활엽수(가을 단풍)", now: "procedural", phase: 1 },
+  { id: "tree-oak-winter", nameKo: "참나무(겨울)", nameEn: "Oak, winter", category: "tree", seasons: ["winter"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기**에서 굵은 가지 4~5개가 둥글게 갈라져 올라간다(각 가지는 한두 번만 갈라짐 — 잔가지를 촘촘히 그리지 않는다, 128px에서 실루엣이 읽히게). 가지 위쪽에 눈이 두툼하게 한 겹.", acnhRef: "활엽수(겨울 나목)", now: "procedural", phase: 1 },
+  { id: "sapling-green", nameKo: "어린 나무(잎)", nameEn: "Sapling, leafy", category: "tree", seasons: ["spring", "summer"], view: "stand", px: [40, 48], brief: "무릎 높이의 어린 참나무 — 가는 줄기 하나에 둥근 잎 3~4장(크게, 낱잎 그대로 단순하게). 밝은 초록.", acnhRef: "묘목", now: "emoji", phase: 1 },
+  { id: "sapling-autumn", nameKo: "어린 나무(가을)", nameEn: "Sapling, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [40, 48], brief: "어린 참나무(같은 실루엣), 둥근 잎 2~3장이 갈색·와인.", acnhRef: "묘목", now: "emoji", phase: 1 },
+  { id: "sapling-bare", nameKo: "어린 나무(겨울)", nameEn: "Sapling, bare", category: "tree", seasons: ["winter"], view: "stand", px: [40, 48], brief: "잎 없는 어린 참나무 — 가는 줄기와 잔가지 둘, 눈이 조금 얹힌다.", acnhRef: "묘목", now: "emoji", phase: 1 },
   { id: "sprout", nameKo: "새싹", nameEn: "Sprout", category: "plant", seasons: ["spring", "summer", "autumn"], view: "stand", px: [24, 28], brief: "흙을 막 뚫고 나온 떡잎 두 장. 통통하고 둥근 잎, 짧은 줄기, 발치에 흙 부스러기 조금.", acnhRef: "새싹", now: "emoji", phase: 1 },
   { id: "shrub-spring", nameKo: "관목(봄)", nameEn: "Shrub, spring", category: "tree", seasons: ["spring"], view: "stand", px: [70, 56], brief: "허리 높이의 둥근 관목, 연둣빛 새잎, 작은 흰 꽃 몇 송이.", acnhRef: "울타리 관목(진달래류)", now: "none", phase: 1 },
   { id: "shrub-summer", nameKo: "관목(여름)", nameEn: "Shrub, summer", category: "tree", seasons: ["summer"], view: "stand", px: [70, 56], brief: "짙은 초록 둥근 관목, 잎이 빽빽하다.", acnhRef: "울타리 관목(수국은 파랑 대신 연보라)", now: "none", phase: 1 },
@@ -144,6 +144,13 @@ export function slotFiles(s: ArtSlot): string[] {
 
 export const ART_DIR = "/ambient/art"; // public/ambient/art
 
+/** 자리의 저장 목표 변(px) — 화면 px 최대의 4배(DPR 2 × 확대 여유), 128~512. scripts/ambient-art-normalize.mjs와 같은 식. */
+export const targetEdge = (px: readonly [number, number]) => Math.max(128, Math.min(512, Math.ceil((Math.max(px[0], px[1]) * 4) / 64) * 64));
+
+/** 폴더에 실제로 있는 파일(서버가 읽어 보드에 넘긴다) */
+export type ArtFileInfo = { file: string; bytes: number; w: number; h: number };
+export type PresentArt = Record<string, ArtFileInfo[]>;
+
 // ── 코덱스 프롬프트 ─────────────────────────────────────────────────────────────────────────────────────
 export const SEASON_KO: Record<SeasonKey, string> = { spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" };
 export const VIEW_KO: Record<ArtView, string> = {
@@ -159,13 +166,17 @@ export const CATEGORY_KO: Record<ArtCategory, string> = { tree: "나무", plant:
 export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
 - 참고: 모여봐요 동물의 숲 도감 그림의 **느낌**을 따른다 — https://animalcrossing.soopoolleaf.com/ko/acnh/Fish/ · https://animalcrossing.soopoolleaf.com/ko/acnh/Bugs/ .
   닌텐도 원본을 복제·트레이스하지 말고, 같은 어법으로 **새로 그린 원작**을 만든다(둥글고 통통한 덩어리, 단순한 면, 또렷한 실루엣, 장난감 같은 귀여움).
-- 형태: 실루엣이 먼저 읽히게. 잔가지·잎 하나하나보다 큰 덩어리 3~5개. 모서리는 둥글게, 비율은 통통하게(2등신 감각).
+- **단순하게(가장 중요).** 이 그림은 화면에서 12~170px 크기로 놓인다 — **128px로 줄여도 형태가 읽혀야 한다.** 잎·깃털·털·비늘 하나하나를
+  그리지 않는다. 물체 = **매끈한 둥근 덩어리 2~3개**(예: 나무 = 공 모양 잎 덩이 2~3개 + 짧은 줄기). 색은 물체당 3~4개, 하이라이트 1, 그늘 1.
+  붓 터치·질감·잔무늬·잔가지 잔뜩 금지. 사실적/회화적 렌더 금지 — 장난감·마스코트처럼.
+- 형태: 실루엣이 먼저 읽히게. 좌우 균형 잡힌 둥근 덩어리, 모서리는 둥글게, 비율은 통통하게(2등신 감각).
 - 선: 외곽선은 아주 얇고(크기의 1~1.5%) **그 부분 색보다 한 단계 어두운 같은 계열 색**(검정 선 금지). 안쪽 선은 최소.
 - 명암: 셀 셰이딩 2단(밝은 면·그늘 면) + 위 왼쪽에서 오는 부드러운 빛, 작은 반사광 한 점. 그라데이션은 넓고 부드럽게, 질감 노이즈 금지.
-- 색(오행 규칙): 채도 낮은 부드러운 색. **선명한 빨강·주황·노랑 금지** — 가을은 갈색·와인·황토, 꽃의 노랑은 크림 노랑, 무당벌레는 벽돌빨강.
-  초록은 연둣빛(봄)·짙은 초록(여름). 물빛은 #9cc4e0 계열. 흰색은 순백 대신 #f6f8fb.
+- 색(오행 규칙): 채도 낮은 부드러운 색. **선명한 빨강·주황·노랑 금지** — 가을은 갈색·황토·와인(갈색이 주, 붉은 기는 아주 조금), 꽃의 노랑은
+  크림 노랑, 무당벌레는 벽돌빨강. 초록은 연둣빛(봄)·짙은 초록(여름). 물빛은 #9cc4e0 계열. 흰색은 순백 대신 #f6f8fb.
 - 배경: **완전 투명(알파 0)**. 바닥·그림자·풍경·글자·워터마크·테두리 없음. 한 장에 **한 물체만**, 캔버스 가운데, 긴 변이 캔버스의 85%를 채운다.
-- 형식: PNG 1024×1024, 투명 배경. 파일 이름은 표의 id 그대로(<id>.png, 변형은 <id>-1.png, <id>-2.png…).
+- 형식: PNG 투명 배경, **정사각**. 크기는 생성기의 최소(대개 1024×1024)로, **품질은 낮음/중간**(디테일이 필요 없고 우리가 128~512로 줄여
+  저장한다 — scripts/ambient-art-normalize.mjs). 파일 이름은 표의 id 그대로(<id>.png, 변형은 <id>-1.png, <id>-2.png…).
 - 카메라(자리마다 표기): stand = 동물의 숲 카메라(높은 앵글 3/4 정면) · flat = 정확히 위에서 · shadow = 위에서 본 단색 실루엣.
 - 일관성: 같은 종의 계절 변형(예: 참나무 봄·여름·가을·겨울)은 **같은 실루엣·같은 줄기**에 잎만 바뀐다. 변형(-1, -2, -3)은 같은 크기·같은 스타일에 형태만 조금 다르다.`;
 
@@ -207,7 +218,8 @@ ${ART_STYLE_GUIDE}
 ${rows.join("\n")}
 
 ## 납품
-- 자리마다 PNG 1024×1024 투명 배경 한 장(변형은 <id>-1.png…). 한 장에 한 물체. 표의 id를 파일 이름으로.
+- 자리마다 PNG 투명 배경 정사각 한 장(변형은 <id>-1.png…). 한 장에 한 물체. 표의 id를 파일 이름으로. 크기는 생성기 최소, 품질 낮음/중간 — 저장은 우리가 줄인다.
+- **단순하게**: 128px로 줄여도 읽히는 덩어리 2~3개. 잎·털·비늘 낱개, 붓 터치, 잔가지 뭉치 금지.
 - 같은 종의 계절 변형은 같은 실루엣을 유지한다. 먼저 참나무 4장(봄·여름·가을·겨울)을 만들어 스타일을 확정한 뒤 나머지를 같은 어법으로.
 - 색은 오행 규칙(선명한 빨강·주황·노랑 금지)을 어기지 않는다.`;
 }

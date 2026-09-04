@@ -17,20 +17,25 @@ import {
   SEASON_KO,
   slotFiles,
   slotPrompt,
+  targetEdge,
   VIEW_SHORT,
   type ArtCategory,
-  type ArtSlot
+  type ArtFileInfo,
+  type ArtSlot,
+  type PresentArt
 } from "@/components/shared/ambient/art/manifest";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { previewOf } from "@/components/shared/ambient/art/preview";
 import { hapticTick } from "@/lib/ui/haptics";
 
 type Props = {
-  /** id → 폴더에 실제로 있는 파일들(서버가 읽음) */
-  present: Record<string, string[]>;
+  /** id → 폴더에 실제로 있는 파일들(서버가 읽음: 이름·바이트·픽셀) */
+  present: PresentArt;
   /** 파일 갱신 시각(캐시 무효화용) */
   stamp: number;
 };
+
+const kb = (n: number) => `${Math.max(1, Math.round(n / 1024))}KB`;
 
 const SEASONS: SeasonKey[] = ["spring", "summer", "autumn", "winter"];
 const CATS: ArtCategory[] = ["tree", "plant", "ground", "water", "prop", "fish", "bug", "animal"];
@@ -84,11 +89,14 @@ function NowPreview({ slot }: { slot: ArtSlot }) {
   return <div ref={ref} style={{ display: "contents" }} />;
 }
 
-function Card({ slot, files, stamp, onCopy }: { slot: ArtSlot; files: string[]; stamp: number; onCopy: (t: string) => void }) {
+function Card({ slot, files, stamp, onCopy }: { slot: ArtSlot; files: ArtFileInfo[]; stamp: number; onCopy: (t: string) => void }) {
   const want = slotFiles(slot);
   const done = files.length >= want.length;
   const partial = files.length > 0 && !done;
   const ground = slot.seasons.length === 1 ? `ground-${slot.seasons[0]}` : "";
+  // 저장 규격 — 화면 px의 4배(128~512). 생성기 원본(1024, 수백 KB)을 그대로 두면 낭비 → `npm run art:normalize`.
+  const edge = targetEdge(slot.px);
+  const heavy = files.some((f) => Math.max(f.w, f.h) > edge * 1.3 || f.bytes > 160 * 1024);
   return (
     <article className={`art-card${done ? " done" : ""}`} data-slot={slot.id} data-state={done ? "done" : partial ? "partial" : "todo"}>
       <div className="art-card-title">
@@ -108,7 +116,7 @@ function Card({ slot, files, stamp, onCopy }: { slot: ArtSlot; files: string[]; 
           <span>그림 · PNG</span>
           <div className={`art-cell ${ground}`}>
             {files.length ? (
-              <Image alt={slot.nameKo} src={`${ART_DIR}/${files[0]}?v=${stamp}`} width={120} height={120} unoptimized />
+              <Image alt={slot.nameKo} src={`${ART_DIR}/${files[0].file}?v=${stamp}`} width={120} height={120} unoptimized />
             ) : (
               <span className="art-empty">
                 <ImageIcon aria-hidden="true" size={16} />
@@ -116,10 +124,20 @@ function Card({ slot, files, stamp, onCopy }: { slot: ArtSlot; files: string[]; 
                 {want.join(" · ")}
               </span>
             )}
-            {files.length > 1 ? <span className="art-files">{files.length}장</span> : null}
+            {files.length ? (
+              <span className="art-files">
+                {files.length > 1 ? `${files.length}장 · ` : ""}
+                {files[0].w}×{files[0].h} · {kb(files[0].bytes)}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
+      {heavy ? (
+        <p className="art-heavy" data-art-heavy>
+          원본이 크다({files.map((f) => `${f.w}×${f.h} ${kb(f.bytes)}`).join(", ")}) — 저장 목표 {edge}px. <code>npm run art:normalize</code>로 줄인다(화면은 같다).
+        </p>
+      ) : null}
       <div>
         <div className="art-meta">
           <span>
@@ -145,7 +163,9 @@ function Card({ slot, files, stamp, onCopy }: { slot: ArtSlot; files: string[]; 
         <p className="art-brief">{slot.brief}</p>
       </div>
       <div className="art-card-foot">
-        <code style={{ fontSize: 11, color: "var(--ink-soft, #4a4466)" }}>{want.join(", ")}</code>
+        <code style={{ fontSize: 11, color: "var(--ink-soft, #4a4466)" }}>
+          {want.join(", ")} · 저장 {edge}px
+        </code>
         <button className="art-btn small" data-act="art-slot-prompt-copy" onClick={() => onCopy(slotPrompt(slot))} type="button">
           <ClipboardCopy aria-hidden="true" size={13} /> 프롬프트
         </button>
@@ -214,8 +234,9 @@ export function AmbientArtBoard({ present, stamp }: Props) {
           <h1>계절 배경 아트 보드</h1>
           <p>
             자리마다 그림 한 장. 만든 PNG를 <code>public/ambient/art/</code>에 표의 id 이름으로 넣으면 장면이 그 그림을 쓴다 — 없으면 지금의
-            대체물이 그대로 나온다. 프롬프트는 이 표에서 만들어져 어긋나지 않는다. (<code>next dev</code>는 새로고침으로 즉시, 운영은 커밋·배포 —
-            프로덕션 서버는 시작 때의 <code>public/</code> 목록만 낸다.)
+            대체물이 그대로 나온다. 프롬프트는 이 표에서 만들어져 어긋나지 않는다. 생성기 원본(1024)은 <code>npm run art:normalize</code>로
+            128~512px에 맞춰 줄여 저장한다. (<code>next dev</code>는 새로고침으로 즉시, 운영은 커밋·배포 — 프로덕션 서버는 시작 때의{" "}
+            <code>public/</code> 목록만 낸다.)
           </p>
         </div>
         <div className="art-board-stats">

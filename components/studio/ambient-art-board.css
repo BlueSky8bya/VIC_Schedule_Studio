@@ -279,6 +279,19 @@
   line-height: 1.5;
   color: #3f3f4a;
 }
+.art-heavy {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid rgb(var(--gs-sea-rgb, 56 128 190) / 0.35);
+  border-radius: 8px;
+  background: rgb(var(--gs-sea-rgb, 56 128 190) / 0.08);
+  font-size: var(--text-caption, 11px);
+  line-height: 1.45;
+  color: #244b6a;
+}
+.art-heavy code {
+  font-size: 10.5px;
+}
 .art-card-foot {
   display: flex;
   justify-content: space-between;
