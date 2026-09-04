@@ -1943,14 +1943,12 @@ html {
 }
 /* 박스 배경 = 달력 바로 바깥의 '연한' 면과 같게(옅은 흰 베일을 얹어 어느 테마든 밝게) → 아바타가
    진한 바깥이 아니라 연한 레이아웃 위에 놓인다. placeholder는 옅은 점선 테두리로만 표시. */
+/* 아바타 안내 자리 — 점선·반투명 박스 철거(2026-09-05 소유자). 자리(높이)만 남긴다. */
 .avatar-dock-inner {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
-  border: 1.5px dashed rgb(120 110 90 / 30%);
-  border-radius: 18px;
-  background: rgb(255 255 255 / 42%);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -6929,6 +6927,9 @@ html[data-pchrome="3"] .poster-chrome-title {
   --amb-tile-hover: #f7f1e4;
   --amb-tile-hover-line: #e8dcc2;
   box-shadow: var(--shadow-2);
+}
+.poster-page .viewer-ambient-ctl .amb-ctl-title {
+  color: #6b5b34;
 }
 .public-right .rail-showcase {
   align-self: stretch;

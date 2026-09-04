@@ -14,7 +14,7 @@ import { RhhSelect } from "@/components/studio/rhh-select";
 import { AmbientModeSegment } from "@/components/shared/ambient/showcase";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { DayBand } from "@/components/shared/ambient/world/time";
-import type { Weather } from "@/components/shared/ambient/world/weather";
+import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
 import { Clock3 } from "lucide-react";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
@@ -81,17 +81,12 @@ export function StudioSettingsList({
       return { value: String(d), label: dayMark[d] ? `${d}일 · ${dayMark[d]}` : `${d}일` };
     })
   ];
-  // 계절에 없는 날씨는 고를 수 없다 — 여름에 눈을 강제하면 만들지도 않은 "눈 덮인 여름 바이옴"을 보게 된다
-  // (2026-09-05 소유자). 표(world/weather.ts)와 같은 규칙: 눈은 겨울만, 안개는 여름 빼고.
-  const devSeason = devMonth === 12 || devMonth <= 2 ? "winter" : devMonth <= 5 ? "spring" : devMonth <= 8 ? "summer" : "autumn";
+  // 그 달에 **실제로 생길 수 있는** 날씨만 고를 수 있다 — 여름에 눈을 강제하면 만들지도 않은 "눈 덮인 여름
+  // 바이옴"을 보게 된다(2026-09-05 소유자). 목록은 월별 평년값 표(world/weather.ts)에서 직접 뽑으므로
+  // 표를 고치면 목록도 같이 바뀐다(둘이 어긋날 수 없다).
   const weatherOptions: { value: WeatherOpt; label: string }[] = [
     { value: "real", label: "자동" },
-    { value: "clear", label: "맑음" },
-    { value: "cloud", label: "흐림" },
-    { value: "rain", label: "비" },
-    ...(devSeason === "winter" ? ([{ value: "snow", label: "눈" }] as const) : []),
-    ...(devSeason === "summer" ? [] : ([{ value: "fog", label: "안개" }] as const)),
-    { value: "wind", label: "바람" }
+    ...weatherOptionsForMonth(devMonth).map((w) => ({ value: w as WeatherOpt, label: WEATHER_LABEL[w] }))
   ];
   return (
     <>

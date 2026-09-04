@@ -4385,13 +4385,13 @@ html[data-reduce-motion] .perf-windows button.active {
   transition: none !important;
   animation: none !important;
 }
+/* 아바타 안내 자리 — 점선·반투명 박스는 2026-09-05 철거(소유자: "흐릿한 박스 아예 없애도 될 것 같아").
+   자리(높이)는 남긴다: 아바타가 들어올 공간이고, 없애면 rail의 세로 배분(필터·도구·자리)이 흔들린다.
+   이제 그 자리에는 계절 배경이 그대로 비친다. */
 .avatar-dock-inner {
   flex: 1 1 auto;
   min-width: 0;
   box-sizing: border-box;
-  border: 1.5px dashed rgb(120 110 90 / 30%);
-  border-radius: 18px;
-  background: rgb(255 255 255 / 42%);
   display: flex;
   align-items: flex-end;
   justify-content: center;

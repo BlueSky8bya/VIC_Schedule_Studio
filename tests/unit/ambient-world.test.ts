@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bandOf, worldTime } from "@/components/shared/ambient/world/time";
-import { weatherAt } from "@/components/shared/ambient/world/weather";
+import { monthTable, weatherAt, weatherOptionsForMonth } from "@/components/shared/ambient/world/weather";
 import { CHRONICLE_EPOCH, TREE_CAP, TREE_LIFESPAN, chronicle, chronicleDay, cycleOf, debutHeightCm } from "@/components/shared/ambient/world/chronicle";
 import { SpawnDirector, type SpawnCtx } from "@/components/shared/ambient/world/rarity";
 import { hashSeed } from "@/components/shared/ambient/world/seed";
@@ -46,23 +46,38 @@ describe("world/time — 여섯 띠", () => {
 
 describe("world/weather — 날짜 시드 난수", () => {
   it("같은 달력·날·마디면 같은 날씨", () => {
-    const a = weatherAt("vic", "summer", 2026, 7, 14, 10);
-    const b = weatherAt("vic", "summer", 2026, 7, 14, 11);
+    const a = weatherAt("vic", 2026, 7, 14, 10);
+    const b = weatherAt("vic", 2026, 7, 14, 11);
     expect(a.now).toBe(b.now);
     expect(a.segment).toBe(0);
-    expect(weatherAt("vic", "summer", 2026, 7, 14, 15).segment).toBe(1);
+    expect(weatherAt("vic", 2026, 7, 14, 15).segment).toBe(1);
   });
-  it("계절 표를 따른다 — 겨울엔 비가 없고 여름엔 눈이 없다", () => {
+  it("월별 평년값 표를 따른다 — 4~10월엔 눈이 0, 겨울 강수는 대부분 눈", () => {
     for (let d = 1; d <= 28; d++) {
-      expect(weatherAt("vic", "winter", 2026, 1, d, 9).now).not.toBe("rain");
-      expect(weatherAt("vic", "summer", 2026, 7, d, 15).now).not.toBe("snow");
+      for (const m of [4, 5, 6, 7, 8, 9, 10]) expect(weatherAt("vic", 2026, m, d, 15).now).not.toBe("snow");
+    }
+    const p = (m: number) => Object.fromEntries(monthTable(m)) as Record<string, number>;
+    // 표 자체가 계절 규칙이다(기상청 평년값 1991~2020 서울).
+    expect(p(7).snow).toBe(0);
+    expect(p(8).snow).toBe(0);
+    expect(p(1).snow).toBeGreaterThan(p(1).rain * 4); // 1월 강수는 대부분 눈
+    expect(p(7).rain).toBeGreaterThan(p(1).rain * 10); // 장마철(7월)이 가장 비가 잦다
+    expect(p(10).clear).toBeGreaterThan(p(7).clear * 5); // 10월이 가장 맑고 7월이 가장 흐리다
+    for (let m = 1; m <= 12; m++) {
+      const sum = monthTable(m).reduce((a, [, v]) => a + v, 0);
+      expect(sum).toBeCloseTo(1, 5);
     }
   });
+  it("그 달에 고를 수 있는 날씨 목록 — 여름엔 눈이 빠진다", () => {
+    expect(weatherOptionsForMonth(8)).not.toContain("snow");
+    expect(weatherOptionsForMonth(1)).toContain("snow");
+    expect(weatherOptionsForMonth(3)).toContain("snow"); // 3월엔 눈일수 1.6일이 남아 있다
+  });
   it("오후의 prev는 오전, 오전의 prev는 전날 오후", () => {
-    const pm = weatherAt("vic", "spring", 2026, 4, 10, 15);
-    const am = weatherAt("vic", "spring", 2026, 4, 10, 9);
+    const pm = weatherAt("vic", 2026, 4, 10, 15);
+    const am = weatherAt("vic", 2026, 4, 10, 9);
     expect(pm.prev).toBe(am.now);
-    const prevPm = weatherAt("vic", "spring", 2026, 4, 9, 15);
+    const prevPm = weatherAt("vic", 2026, 4, 9, 15);
     expect(am.prev).toBe(prevPm.now);
   });
 });

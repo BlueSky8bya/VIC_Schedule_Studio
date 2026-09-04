@@ -646,6 +646,19 @@ html[data-showcase] {
     display: none;
   }
 }
+/* 카드 머리의 이름 — 유리 알약(레일 밖)에는 감춘다. */
+.amb-ctl-title {
+  display: none;
+}
+.viewer-ambient-ctl.slot-showcase .amb-ctl-title,
+.viewer-ambient-ctl.rail-showcase .amb-ctl-title {
+  display: block;
+  padding: 2px 4px 0;
+  color: #6f6a86;
+  font-size: var(--text-caption, 11px);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
 .viewer-ambient-ctl.slot-showcase .ambient-seg,
 .viewer-ambient-ctl.rail-showcase .ambient-seg {
   display: grid;

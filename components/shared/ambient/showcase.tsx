@@ -138,6 +138,11 @@ export function ViewerAmbientControl({
   }, []);
   return (
     <div className={`viewer-ambient-ctl ${className}`.trim()} role="group" aria-label="계절 배경">
+      {/* 카드 형태(레일·아바타 자리)에만 이름 한 줄 — 유리 알약에는 자리가 없어 CSS가 감춘다. 타일 글자를
+          "계절 켜기"로 늘리면 셋의 등분이 깨지므로 이름은 머리에 붙인다(2026-09-05 소유자). */}
+      <span className="amb-ctl-title" aria-hidden="true">
+        계절 배경
+      </span>
       {/* 순서: 상태 세그먼트 **위**, 감상하기 **아래**(2026-09-04 소유자, HCI) — 상태를 바꾼 손이
           바로 아래 감상하기로 이어지도록. 반대 순서면 토글 ↔ 감상 사이를 마우스가 왕복한다. */}
       <AmbientModeSegment

@@ -195,7 +195,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const hour = frame.time.hour;
     frame.weather = worldForce?.weather
       ? { now: worldForce.weather, prev: worldForce.weather, segment: hour < 13 ? 0 : 1 }
-      : weatherAt(world.slug, world.season, world.year, world.month, d, hour);
+      : weatherAt(world.slug, world.year, world.month, d, hour);
     const key = `${world.slug}:${world.year}-${world.month}-${d}`;
     if (key !== traceKey) {
       traceKey = key;
