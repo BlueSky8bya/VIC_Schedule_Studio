@@ -165,11 +165,15 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 - **3/4 camera + toy scale (PLAN-20260904-004 P0, 2026-09-04 night; owner: "leaves as big as trees", "I want distance").**
   `world/scale.ts` is the size table (TILE 64, biggest : smallest ≤ 12 — leaves 12–18, boot prints 18, oak crown 128, debut cap
   192, flowers deliberately 24–28); `world/view.ts` is the camera: `GROUND_SQUASH` .7 for anything lying on the ground/water
-  (prints, clover, lily pads, fish shadows, ripple rings — ellipses, applied before rotation), `depthScale(y,h)` .80→1.00 top→bottom
-  in .05 steps for everything standing or alive, `HORIZON_V` .12 = the far band (`bakeHorizon`: haze + two hills fading into the
-  ground + a sparse silhouette tree line), `toScreen(u,v)` puts normalized world coords below the horizon, y-sort in `drawTraces`.
-  New scene code reads sizes from `SIZE` and draws through these helpers — no hardcoded px, no un-squashed ground marks. The
-  remaining biome world (11 screens, camera pan, pond/sea split of summer.ts, agents, 도감) is P1–P3 of the plan.
+  (prints, clover, lily pads, fish shadows, ripple rings — ellipses, applied before rotation), `depthScale(y,h)` **.60→1.00**
+  top→bottom in .05 steps for everything standing or alive (owner: .8 was too weak), `HORIZON_V` .12 = the far band
+  (`bakeHorizon`: haze + two hills fading into the ground + a sparse silhouette tree line), **`drawDepthHaze` = the engine paints an
+  atmospheric haze from the horizon down to 58% height over every scene** (grass, water, prints, creatures all fade with distance),
+  `toScreen(u,v)` puts normalized world coords below the horizon, y-sort in `drawTraces`. **Ground-bound things live below the
+  horizon only**: every scene has `gy()/groundY(r)`, and spawns, wraps, bounds, walker print emission, hot-zone bands and clicks use
+  them (the owner saw prints and a swim ring floating on the far hills). New scene code reads sizes from `SIZE` and draws through
+  these helpers — no hardcoded px, no un-squashed ground marks, nothing ground-bound above `horizonY`. The remaining biome world
+  (11 screens, camera pan, pond/sea split of summer.ts, agents, 도감) is P1–P3 of the plan.
 - **World services (PLAN-20260904-003 Phase A, `components/shared/ambient/world/`).** The scene `Frame` carries `date` (viewed month's
   day: today / last day of a past month / 1st of a future month), `time` (six KST bands — 새벽·아침·점심·노을·저녁·밤 by seasonal
   sunrise/sunset — with a light tint the engine paints over the scene: none by day, grey-violet dusk, blue-grey evening/night, never
