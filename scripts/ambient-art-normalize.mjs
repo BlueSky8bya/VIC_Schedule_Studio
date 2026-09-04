@@ -59,6 +59,12 @@ for (const f of files) {
   }
   const edge = targetEdge(slot);
   const meta = await sharp(src).metadata();
+  // 이미 정리된 파일(팔레트 PNG = IHDR colorType 3 ∧ 목표 크기 이하)은 건너뛴다 — 다시 돌릴 때마다 재양자화되어 색이 조금씩 상한다.
+  if (src.slice(25, 26)[0] === 3 && Math.max(meta.width ?? 0, meta.height ?? 0) <= edge) {
+    console.log(`SKIP ${f}: ${meta.width}×${meta.height} ${Math.round(src.length / 1024)}KB — 이미 정리됨(팔레트 PNG · 목표 ${edge} 이하)`);
+    after += src.length;
+    continue;
+  }
   // 알파 경계 트리밍(PNG 버퍼로) → 목표 상자(contain) → 투명 여백 없이 저장.
   const trimmed = await sharp(src).ensureAlpha().trim({ threshold: 8 }).png().toBuffer({ resolveWithObject: true });
   const { width: tw, height: th } = trimmed.info;

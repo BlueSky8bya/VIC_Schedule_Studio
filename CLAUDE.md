@@ -154,10 +154,14 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   (developer-only route; settings modal dev row "배경 아트 보드 → 열기"): now-vs-delivered per slot, filters, and the Codex prompts
   (master 1차/2차/전체 + per slot) generated from the manifest so table and prompt never drift. ACNH catalog pages
   (soopoolleaf Fish/Bugs) are a **style reference only** — original art, no Nintendo asset copies; 오행 palette holds (no vivid
-  red/orange/yellow). **Simple beats detailed** (owner, first oak batch 2026-09-04: "too complex, 1024 is overkill"): the guide asks
-  for 2–3 smooth blobs readable at 128px, no individual leaves/brush texture, generator at its minimum size with low/medium quality;
-  stored files are shrunk with `npm run art:normalize` (alpha-trim + fit to 4× the slot's screen px, 128–512 — trees 512, props
-  128–256; the board flags heavy files). Fixture for probes: `/visual-fixture/ambient-art`.
+  red/orange/yellow). **The confirmed style is pixel art** (owner, second oak batch 2026-09-04: "much better"): chunky dots at a
+  64–96px logical resolution scaled up, 6–10 colors per object, no anti-aliasing, outline = a much darker shade of the same hue
+  (never pure black). `public/ambient/art/tree-oak-*.png` are the reference set — every new piece must sit beside them as one set;
+  mixing dots with the painterly look breaks the scene. **Simple beats detailed** (the first batch was rejected as "too complex,
+  1024 is overkill"): 2–3 blobs readable at 128px, generator at its minimum size with low/medium quality; stored files are shrunk
+  with `npm run art:normalize` (alpha-trim + fit to 4× the slot's screen px, 128–512 — trees 512, props 128–256; the board flags
+  heavy files). A trunk standing on a bright ground (snow, sand) is grey-brown, never red-brown — a red trunk was the loudest thing
+  on the snow field; `scripts/ambient-art-desaturate.mjs` fixes delivered art in place. Fixture for probes: `/visual-fixture/ambient-art`.
 - **World services (PLAN-20260904-003 Phase A, `components/shared/ambient/world/`).** The scene `Frame` carries `date` (viewed month's
   day: today / last day of a past month / 1st of a future month), `time` (six KST bands — 새벽·아침·점심·노을·저녁·밤 by seasonal
   sunrise/sunset — with a light tint the engine paints over the scene: none by day, grey-violet dusk, blue-grey evening/night, never

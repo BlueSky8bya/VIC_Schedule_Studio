@@ -123,8 +123,10 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   ADR-0017 ⑮(납작한 것만 위에서, 서 있는 것은 3/4). 첫 참나무 4장(코덱스, 1024 · 400~600KB, 잎 낱개까지 그린 회화풍) 피드백 "1024는
   오버스펙, 모양 복잡" → 가이드 **단순함 최우선**(128px에서 읽히는 덩어리 2~3개, 품질 낮음/중간) + `npm run art:normalize`
   (`scripts/ambient-art-normalize.mjs`, sharp + esbuild로 매니페스트 번들: 알파 트리밍 → 화면 px 4배(128~512) → PNG; 보드가 무거운
-  원본을 경고, `lib/ambient/art-files.ts`가 픽셀·바이트를 IHDR로 읽음). **다음**: 소유자가 단순한 참나무 4장을 다시 뽑아 스타일 확정 →
-  나머지 1차 → 2차 생물.
+  원본을 경고, `lib/ambient/art-files.ts`가 픽셀·바이트를 IHDR로 읽음). 2차 참나무 4장(**픽셀아트**) 소유자 승인 → **확정 스타일 = 픽셀아트**
+  (기준물 `public/ambient/art/tree-oak-*.png`, 이후 모든 자리 같은 어법). 겨울 줄기만 눈밭에서 튀어(hue 8°·채도 .62)
+  `scripts/ambient-art-desaturate.mjs`로 탈색(hue 15°·채도 .44) — "밝은 바탕에 서는 줄기는 회갈색"이 규칙이 됐다. 4장 커밋(238KB).
+  **다음**: 나머지 1차 32자리(묘목·새싹·관목부터) → 2차 생물 29.
   ㉜ **계절 연대기(PLAN-20260904-003) — 결정 확정 + Phase A 출고(2026-09-04 밤)**: 소유자 결정 7건(여섯 띠 · 전설 순수 확률 ·
   도감은 로그인만 · 공유 없음 · 날씨 랜덤(날짜 시드) · 우선 20종 · 채도 균형). Phase A = `components/shared/ambient/world/`:
   `seed.ts`(FNV-1a → mulberry32), `time.ts`(계절별 일출·일몰로 새벽·아침·점심·노을·저녁·밤 + 빛 톤: 낮 없음·노을 회자·밤 청회),
