@@ -8,6 +8,7 @@
 
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
+import { isNeutralMul, type Light } from "./light";
 
 export const GROUND_SQUASH = 0.7;
 export const HORIZON_V = 0.12;
@@ -75,26 +76,98 @@ export function depthFade(y: number, h: number): number {
 }
 
 const hazeCache = new Map<string, CanvasGradient>();
-/** 대기 원근 안개 한 겹 — 장면을 다 그린 뒤, 빛 톤 전에. 지평선에서 짙고 화면 58%에서 사라진다(계절 안개색). 그라데이션은 크기·계절별 캐시. */
-export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w: number, h: number) {
-  const key = `${season}:${w}:${h}`;
+/** 대기 원근 안개 한 겹 — 장면을 다 그린 뒤, 조명 패스 전에. 지평선에서 짙고 화면 36%에서 사라진다. 색·알파는 조명(시간대·날씨)이
+ *  정하고(라운드 2, `light.hazeRgb`/`hazeK`), 없으면 계절 안개색·기본 알파(= 옛 그림 그대로). 그라데이션은 크기·색·알파별 캐시. */
+export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w: number, h: number, light?: Light) {
+  const c = light?.hazeRgb || HZ_COLORS[season].haze;
+  const a = Math.min(0.6, HAZE_ALPHA * (light?.hazeK ?? 1));
+  const key = `${season}:${w}:${h}:${c}:${a.toFixed(4)}`;
   let grad = hazeCache.get(key);
   const hz = horizonY(h);
   const start = hz * 0.4; // 지평선 **위**에서 0으로 시작 — 지평선에서 바로 0.34로 켜지면 화면을 가로지르는 선이 생기고,
   //                        지평선을 걸친 물체는 아래(가까운)쪽만 하얘져 원근이 뒤집힌다(2026-09-04 검토 1차).
   if (!grad) {
     grad = g.createLinearGradient(0, start, 0, h * HAZE_END_V);
-    const c = HZ_COLORS[season].haze;
     grad.addColorStop(0, `rgb(${c} / 0)`);
-    grad.addColorStop(0.16, `rgb(${c} / ${HAZE_ALPHA})`);
-    grad.addColorStop(0.5, `rgb(${c} / ${HAZE_ALPHA * 0.42})`);
+    grad.addColorStop(0.16, `rgb(${c} / ${a})`);
+    grad.addColorStop(0.5, `rgb(${c} / ${a * 0.42})`);
     grad.addColorStop(1, `rgb(${c} / 0)`);
     hazeCache.set(key, grad);
-    if (hazeCache.size > 12) hazeCache.delete(hazeCache.keys().next().value as string);
+    if (hazeCache.size > 24) hazeCache.delete(hazeCache.keys().next().value as string);
   }
   g.save();
   g.fillStyle = grad;
   g.fillRect(0, start, w, h * HAZE_END_V - start + 2);
+  g.restore();
+}
+
+/** 조명 패스(라운드 2, world/light.ts) — 장면·입자·대기 안개 위에 순서대로: ① 안개 날씨의 층별 누적 안개 + 지면 안개 띠(D-3)
+ *  ② 하늘/지평선 오버레이(위 → 지평선 아래 16%) ③ 지면 노출 = multiply(ΔL + 색온도) ④ 채도 = saturation 블렌드 ⑤ 옅은 틴트.
+ *  점심·맑음은 다섯 개 전부 건너뛴다(항등) — 옛 파이프라인과 픽셀이 같다. 캔버스는 장면이 전면을 채워 불투명하다(multiply 안전). */
+export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number, L: Light) {
+  const hz = horizonY(h);
+  g.save();
+  if (L.groundFog > 0) {
+    const c = L.hazeRgb || "228 232 234";
+    const f = L.groundFog;
+    // 층별 누적 — 후경 .55 · 중경 .3 · 전경 .1(GRAMMAR §3.2 안개 행). 지평선 위에서 시작해 절단선이 없다.
+    const gr = g.createLinearGradient(0, hz * 0.5, 0, h);
+    gr.addColorStop(0, `rgb(${c} / ${(0.55 * f).toFixed(3)})`);
+    gr.addColorStop(0.32, `rgb(${c} / ${(0.3 * f).toFixed(3)})`);
+    gr.addColorStop(0.62, `rgb(${c} / ${(0.1 * f).toFixed(3)})`);
+    gr.addColorStop(1, `rgb(${c} / ${(0.08 * f).toFixed(3)})`);
+    g.fillStyle = gr;
+    g.fillRect(0, hz * 0.5, w, h - hz * 0.5);
+    // 지면 안개 띠 — 발치 높이(v ≈ .3)에 낮게 깔린 띠. 드리프트하는 뭉치는 입자층이 맡는다.
+    const by = hz + 0.3 * (h - hz);
+    const bh = 0.1 * h;
+    const gb = g.createLinearGradient(0, by - bh, 0, by + bh);
+    gb.addColorStop(0, `rgb(${c} / 0)`);
+    gb.addColorStop(0.5, `rgb(${c} / ${(0.25 * f).toFixed(3)})`);
+    gb.addColorStop(1, `rgb(${c} / 0)`);
+    g.fillStyle = gb;
+    g.fillRect(0, by - bh, w, bh * 2);
+  }
+  if (L.skyAlpha > 0) {
+    // 하늘 오버레이는 **지평선 바로 아래(hz + .06h)에서 끝난다** — 옛 hz + .16h는 산 ①·② 봉우리(y 150~300)까지 덮어
+    // 하늘↔①↔② 단차를 눌렀다(라운드 2 실측 5.6/5.9 → 2.5/2.2). 봉우리는 multiply만 받는다.
+    const end = hz + 0.06 * h;
+    const gs = g.createLinearGradient(0, 0, 0, end);
+    gs.addColorStop(0, `rgb(${L.sky} / ${L.skyAlpha.toFixed(3)})`);
+    gs.addColorStop(0.7, `rgb(${L.sky} / ${(L.skyAlpha * 0.55).toFixed(3)})`);
+    gs.addColorStop(1, `rgb(${L.sky} / 0)`);
+    g.fillStyle = gs;
+    g.fillRect(0, 0, w, end);
+  }
+  if (!isNeutralMul(L.mul)) {
+    // 지면 노출은 세로 그라데이션 — 지평선 쪽(원경)은 35% 덜 누른다. 밤의 원경은 하늘빛을 받아 상대적으로 밝고(대기 원근),
+    // 같은 비율로 누르면 산 층 단차가 비례로 줄어 밤에 ①↔②가 사라진다(MOUNTAIN §4 밤 ≥ 6L).
+    const far: [number, number, number] = [
+      Math.round(L.mul[0] + (255 - L.mul[0]) * 0.35),
+      Math.round(L.mul[1] + (255 - L.mul[1]) * 0.35),
+      Math.round(L.mul[2] + (255 - L.mul[2]) * 0.35)
+    ];
+    const gm = g.createLinearGradient(0, 0, 0, h * 0.5);
+    gm.addColorStop(0, `rgb(${far[0]} ${far[1]} ${far[2]})`);
+    gm.addColorStop(Math.min(0.99, (hz * 0.9) / (h * 0.5)), `rgb(${far[0]} ${far[1]} ${far[2]})`);
+    gm.addColorStop(1, `rgb(${L.mul[0]} ${L.mul[1]} ${L.mul[2]})`);
+    g.globalCompositeOperation = "multiply";
+    g.fillStyle = gm;
+    g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = "source-over";
+  }
+  if (L.desat > 0) {
+    g.globalCompositeOperation = "saturation";
+    g.globalAlpha = L.desat;
+    g.fillStyle = "rgb(128 128 128)";
+    g.fillRect(0, 0, w, h);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = "source-over";
+  }
+  if (L.tint.alpha > 0) {
+    g.fillStyle = `rgb(${L.tint.rgb} / ${L.tint.alpha.toFixed(3)})`;
+    g.fillRect(0, 0, w, h);
+  }
   g.restore();
 }
 

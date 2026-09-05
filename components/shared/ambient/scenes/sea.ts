@@ -269,13 +269,17 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
         // 수면 빛줄기 — 위쪽 1/3에 비스듬히 내려오는 옅은 빛기둥 넷. "위가 수면"이라는 유일한 단서다.
         // 빛기둥은 좌우 모서리가 **없어야** 한다 — 수직 직선 경계는 "반투명 사각형"으로 읽힌다(사이클5 경계 #8).
         // 폭이 다른 세 겹을 겹쳐 가장자리를 흩고, 위·아래 모두 0으로 사라진다.
-        for (let i = 0; i < 4; i++) {
+        // 빛줄기는 해가 있어야 생긴다(QA 라운드 2, BIOME_GRAMMAR 깊은 바다 "밤 빛줄기 0"): 밤 0 · 새벽/저녁 .4 · 흐림·비 .5.
+        const shaftK =
+          (f.time.band === "night" ? 0 : f.time.band === "dawn" || f.time.band === "evening" ? 0.4 : 1) *
+          (f.weather.now === "cloud" || f.weather.now === "rain" ? 0.5 : 1);
+        for (let i = 0; i < (shaftK > 0 ? 4 : 0); i++) {
           const x0 = f.w * (0.1 + 0.24 * i) + Math.sin(t * 0.16 + i) * 30;
           const wtop = 26 + 14 * Math.sin(t * 0.21 + i * 2);
           for (const [ww, aa] of [[2.2, 0.05], [1.4, 0.07], [0.7, 0.09]] as const) {
             const lg = g.createLinearGradient(0, 0, 0, f.h * 0.56);
             lg.addColorStop(0, `rgb(214 236 246 / 0)`);
-            lg.addColorStop(0.16, `rgb(214 236 246 / ${aa})`);
+            lg.addColorStop(0.16, `rgb(214 236 246 / ${aa * shaftK})`);
             lg.addColorStop(1, "rgb(214 236 246 / 0)");
             g.fillStyle = lg;
             g.beginPath();

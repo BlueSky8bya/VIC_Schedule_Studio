@@ -21,7 +21,9 @@ import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } fro
 import { weatherAt, weatherOptionsForMonth, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
 import { pendingLoads } from "@/components/shared/ambient/loading";
 import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
-import { drawDepthHaze } from "@/components/shared/ambient/world/view";
+import { drawDepthHaze, drawLightPass } from "@/components/shared/ambient/world/view";
+import { lerpLight, lightOf, NEUTRAL_LIGHT, setCurrentLight, type Light } from "@/components/shared/ambient/world/light";
+import { createParticles } from "@/components/shared/ambient/world/particles";
 import type { BiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
 
 export type Quality = 0 | 1 | 2;
@@ -84,6 +86,8 @@ export type Frame = {
   weather: DayWeather;
   /** 연대기 흔적(저장소·싹·나무·흙더미·눈사람·연잎), 정규화 좌표. */
   traces: Trace[];
+  /** 조명(라운드 2, world/light.ts) — 시간대 × 날씨의 여섯 채널. 장면은 그림자·바람·글린트를 여기서(또는 currentLight()) 읽는다. */
+  light: Light;
 };
 
 export interface Scene {
@@ -98,6 +102,8 @@ export interface Scene {
   debug?(): Record<string, unknown>;
   /** 세계 장면(world-scene.ts)만 — 바이옴 이동. React 내비(showcase.tsx)가 __vicAmbient.goTo로 부른다. */
   nav?: { go(target: BiomeKey | Dir): boolean; at(): BiomeKey; moving(): boolean; exits(): Record<Dir, BiomeKey | null> };
+  /** 이 날씨의 입자를 장면이 스스로 그린다(초원 겨울의 착지 눈송이) — 엔진 입자층이 겹치지 않게 건너뛴다. */
+  ownsWeather?(w: Weather): boolean;
 }
 
 // 검증 훅 — Playwright가 장면 상태(입자 위치·소비된 클릭 수·품질·프레임·여력)를 읽는다. forceLoad로 여력을 고정해
@@ -139,6 +145,10 @@ type AmbientDebug = {
   ready: (timeoutMs?: number) => Promise<{ ok: boolean; ms: number; pending: number; loaded: boolean }>;
   /** 보고 있는 달에 허용된 날씨(월별 확률 > 0). */
   weatherOptions: () => Weather[];
+  /** 현재 조명(여섯 채널) — 검증이 띠·날씨 반응을 수치로 읽는다. */
+  light: () => Light;
+  /** 엔진 입자층 카운터(비·눈·부스러기·안개 뭉치). */
+  particles: () => Record<string, number>;
   /** fixture가 t까지 전진을 끝냈을 때의 t(biome-fixture.tsx가 적는다) — 캡처 스크립트의 대기 신호. */
   settledT?: number;
 };
@@ -227,7 +237,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     date: { y: world.year, m: world.month, d: 1 },
     time: initialTime,
     weather: { now: "clear", prev: "clear", segment: 0 },
-    traces: []
+    traces: [],
+    light: NEUTRAL_LIGHT
   };
   // 보고 있는 달에 쓸 '날' — 날씨 시드에만 쓴다(흔적은 달만 본다). 현재 달은 오늘, 과거 달은 말일, 미래 달은 1일.
   const viewDay = (y: number, m: number, today: { y: number; m: number; d: number }) => {
@@ -235,6 +246,11 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     if (y < today.y || (y === today.y && m < today.m)) return new Date(Date.UTC(y, m, 0)).getUTCDate();
     return 1;
   };
+  // 조명 목표·보간(GRAMMAR 원칙 4 "전이는 부드럽게" — 띠·마디 경계에서 3초에 걸쳐 lerp). 첫 값과 얼린 엔진은 즉시.
+  let lightTgt: Light = NEUTRAL_LIGHT;
+  let lightFrom: Light = NEUTRAL_LIGHT;
+  let lightMix = 1;
+  let lightInit = false;
   const refreshWorld = () => {
     const today = kstToday();
     const d = viewDay(world.year, world.month, today);
@@ -244,6 +260,14 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     frame.weather = worldForce?.weather
       ? { now: worldForce.weather, prev: worldForce.weather, segment: hour < 13 ? 0 : 1 }
       : weatherAt(world.slug, world.year, world.month, d, hour);
+    const nextLight = lightOf(frame.time.band, frame.weather.now, world.season);
+    if (JSON.stringify(nextLight) !== JSON.stringify(lightTgt)) {
+      lightFrom = frame.light;
+      lightTgt = nextLight;
+      lightMix = lightInit && !frozen ? 0 : 1;
+      frame.light = lerpLight(lightFrom, lightTgt, lightMix);
+    }
+    lightInit = true;
     // 흔적은 **달만** 본다(2026-09-05 연대기 철거) — 날이 바뀌어도 다시 뽑지 않는다.
     const key = `${world.slug}:${world.year}-${world.month}`;
     if (key !== traceKey) {
@@ -261,6 +285,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   // 실제 화면은 지금처럼 로드마다 다르다(세계의 결정성은 날씨·흔적에만 해당한다 — 소품 자리는 결정 사항이 아니다).
   const seed = world.force?.seed ?? (Date.now() % 100000) + 7;
   const scene = factory(seed);
+  // 날씨 입자층(라운드 2) — 비·눈·바람 부스러기·안개 뭉치를 엔진이 한 번 그린다(장면이 스스로 그리는 날씨는 ownsWeather로 제외).
+  const particles = createParticles(seed);
   const dbg: AmbientDebug = {
     season: canvas.dataset.season ?? "",
     q,
@@ -321,7 +347,9 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     },
     pending: () => pendingLoads(),
     ready: (timeoutMs = 10000) => ready(timeoutMs),
-    weatherOptions: () => weatherOptionsForMonth(world.month)
+    weatherOptions: () => weatherOptionsForMonth(world.month),
+    light: () => frame.light,
+    particles: () => particles.debug()
   };
   window.__vicAmbient = dbg;
   let w = 0;
@@ -371,15 +399,25 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   const drawOnce = () => {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
+    setCurrentLight(frame.light);
     scene.draw(g, frame);
+    // 날씨 입자(비·눈·부스러기·안개 뭉치) — 장면 위, 안개·조명 아래(멀리 떨어지는 것도 같은 대기 속에 있다).
+    particles.draw(g, w, h, world.season, frame.weather.now, frame.light, frame.t);
     // 대기 원근(3/4 시점, PLAN-004 §2.5) — 지평선 쪽이 옅어지는 안개 한 겹: 잔디·물·발자국·생물이 멀수록 흐려진다.
-    drawDepthHaze(g, world.season, w, h);
-    // 빛 톤(하루 여섯 띠) — 장면 위에 옅은 색 한 겹(새벽 회청·노을 회자·저녁·밤 청회). 낮은 없음. 캔버스는 DOM 뒤라 글자엔 안 닿는다.
-    const tint = frame.time.tint;
-    if (tint.alpha > 0) {
-      g.fillStyle = `rgb(${tint.rgb} / ${tint.alpha})`;
-      g.fillRect(0, 0, w, h);
+    // 라운드 2: 색·배율은 조명(시간대·날씨)이 정한다. 점심·맑음은 옛 값 그대로.
+    drawDepthHaze(g, world.season, w, h, frame.light);
+    // 조명 패스(world/light.ts): 지면 안개 층 → 하늘 오버레이 → 지면 노출(multiply) → 채도 → 옅은 틴트. 점심·맑음은 전부 항등.
+    drawLightPass(g, w, h, frame.light);
+  };
+  // 매 step 앞: 조명 보간 + 입자층 전진(고정 dt — advance()의 결정성 유지). 정지 화면(dt 0)에서도 입자는 자리를 잡는다.
+  const stepScene = () => {
+    if (lightMix < 1) {
+      lightMix = frozen ? 1 : Math.min(1, lightMix + frame.dt / 3);
+      frame.light = lerpLight(lightFrom, lightTgt, lightMix);
     }
+    setCurrentLight(frame.light);
+    particles.step(frame.dt, w, h, frame.weather.now, frame.light, frame.load, q < 2, scene.ownsWeather?.(frame.weather.now) ?? false);
+    scene.step(frame);
   };
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
@@ -443,7 +481,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     frame.dt = dt;
     if (dbg.frames % 120 === 60) measureHot(); // 달력이 스크롤·리플로우로 움직여도 2초 안에 따라간다
     if (dbg.frames % 300 === 150) refreshWorld(); // 띠·마디·자정 경계를 5초 안에 따라간다
-    scene.step(frame);
+    stepScene();
     drawOnce();
     dbg.frames += 1;
     dbg.q = q;
@@ -485,7 +523,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const dt0 = frame.dt;
     frame.dt = 0;
     try {
-      scene.step(frame);
+      stepScene();
     } catch {
       /* 장면이 준비 전이면 이번 한 장은 건너뛴다 — 아래 재시도가 있다 */
     }
@@ -560,7 +598,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       frame.dt = dt;
       if (dbg.frames % 120 === 60) measureHot();
       if (dbg.frames % 300 === 150) refreshWorld();
-      scene.step(frame);
+      stepScene();
       drawOnce();
       dbg.frames += 1;
       p.moved = false;

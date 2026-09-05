@@ -31,6 +31,7 @@ import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
 import { drawProp, drawSubmerged } from "../art/props";
 import { SIZE } from "../world/scale";
+import { currentLight } from "../world/light";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import type { SeasonKey } from "../registry";
 import { bakeWater, drawGlints, drawTrail, newTrail, stepTrail, waterPalette } from "./water";
@@ -1176,7 +1177,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       }
       for (let i = bubbles.length - 1; i >= 0; i--) if (t - bubbles[i].t0 > 1.6) bubbles.splice(i, 1);
       // ⑤ 햇빛 반짝임 — 여력 0.3부터 6~14개(물 위에만).
-      const wantGl = load >= 0.3 ? Math.round(lerp(6, 14, load)) : 0;
+      // 글린트는 해의 반짝임 — 조명 글린트 배율(QA 라운드 2: 새벽·저녁·흐림·비·안개 0, 노을 1.2, 밤 .5 달빛)을 곱한다.
+      const wantGl = load >= 0.3 ? Math.round(lerp(6, 14, load) * currentLight().glint) : 0;
       while (glints.length < wantGl) glints.push({ x: rand() * w, y: waterY(rand()), ph: rand() * TAU, r: 1.6 + rand() * 1.8 });
       if (glints.length > wantGl) glints.length = wantGl;
       // 소품끼리 겹치지 않게(원 분리).

@@ -232,6 +232,9 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         if (trans) return;
         scenes.get(cur)?.scene.pointerUp?.(f);
       },
+      ownsWeather(wx) {
+        return scenes.get(cur)?.scene.ownsWeather?.(wx) ?? false;
+      },
       debug() {
         const active = scenes.get(cur);
         return {

@@ -605,6 +605,8 @@ export function createWinter(seed: number): Scene {
   }
 
   return {
+    // 초원 겨울은 눈송이를 스스로 그린다(착지·눌림·바람 반응) — 엔진 입자층(라운드 2)의 눈은 여기선 건너뛴다.
+    ownsWeather: (wx: Weather) => wx === "snow",
     resize(f) {
       w = f.w;
       h = f.h;

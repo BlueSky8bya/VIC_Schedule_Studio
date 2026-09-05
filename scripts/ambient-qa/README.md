@@ -32,6 +32,7 @@ npm run build && VISUAL_TEST_FIXTURE=1 npx next start -p 3100 -H 127.0.0.1
 | `npm run ambient:qa:capture -- --round 01 --phase before --only 3,4 --kinds long` | **긴 시간 시트**(15~30s, 1초 간격 16장) — 첫 랜덤 이벤트(다람쥐 16~24s) 창. 같은 폴더에 덧붙여진다(기존 종류 유지). `sheet`가 `long-sheet.png`, `diff`가 `long-diff-*.png`를 만든다 |
 | `… --only 3 --kinds static,long --seed 7` | 다른 시드는 `<sid>-seed7` 폴더로 따로(기본 42는 접미사 없음) |
 | `node scripts/ambient-qa/spawn-probe.mjs --only 3 --seeds 24 [--band dusk]` | **스폰 프로브**: 시드별로 다람쥐·회오리(debug `[x,y,…]` 배열)의 첫 등장 자리와 경로 최소 y를 재서 v < .18(지평선 띠) 비율을 낸다 — A-1 수용 기준 |
+| `node scripts/ambient-qa/light-probe.mjs [outDir]` | **조명 프로브**(라운드 2): s16·s10 여섯 띠의 지면 L*(y560~820)·하늘띠 L*(y0~60)·채도비·해시(아침=점심 판정) + s09/s02/s12 날씨별 해시·입자 카운터("맑음과 동일 해시" 판정) — T-1·W-1·D-3 수용 기준. 결과 `light-probe.txt` |
 
 시나리오 표: `scenarios.mjs`(프로토콜 §4.2의 16개, 스모크 = 3·10·14). 단위 테스트 `tests/unit/ambient-qa-scenarios.test.ts`가 바이옴 키·허용 날씨를 대조한다.
 

@@ -100,6 +100,9 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     grad.addColorStop(1, base[1]);
     g.fillStyle = grad;
     g.fillRect(0, 0, w, H);
+    // 물 마스크(QA 라운드 2 B#1, P0): 갯벌은 물골 폴리곤을 자리 필드에 등록하지 않아 바위·조개·게 구멍이 물 한복판에
+    // 마른 채 서 있었다. 물골 중심선 거리 ≤ hw + 6px 이면 물 — 소품·조개·구멍·해조·조약돌은 전부 이 밖에만 놓는다.
+    let inWater = (_x: number, _y: number) => false;
     if (mode === "tidal") {
       // 물막이 하늘을 비춘다 — 갯벌이 갈색이 아니라 은빛으로 보이는 이유(물가 쪽이 가장 밝다).
       {
@@ -116,30 +119,51 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 세계 폭은 바다 쪽으로 커지고, 원근 축소(landK)를 곱해도 화면에서 바다 끝이 3~4배 넓게 남는다.
       // 가지치기 비율 ≈ 3.5, 차수 3~4단이면 충분. 굽이는 작은 가지일수록 심하다(사행도 1.0 → 1.42).
       const chanPts: { x: number; y: number; hw: number }[][] = [];
-      /** 물골 하나 — (sx,sy) 육지 끝에서 (ex,ey) 바다/합류점까지. 굽이는 양 끝에서 0으로 죽어 합류가 확실하다. */
+      const chanOrder: number[] = [];
+      /** 물골 하나 — (sx,sy) 육지 끝에서 (ex,ey) 바다/합류점까지. QA 라운드 2(AMB-S5-01, 라운드 1 #4 "직선 현 + 단일 사인 + 등폭
+       *  리본, 3차 지류 갈고리, 본류 꺾임"): 굽이는 **두 옥타브 + 결정적 흔들림**이고 진폭·파수가 **길이에 비례**한다(짧은
+       *  지류가 큰 사인을 타면 갈고리가 된다) → Chaikin 한 번으로 꺾임을 없앤다. 폭은 바다 쪽으로 멱함수로 넓어지고(하구 3~4배,
+       *  Strahler) 구간마다 ±14% 숨 쉬어 등폭 리본이 아니다. 양 끝은 0으로 수렴해 합류가 확실하다. */
       const chan = (sx: number, sy: number, ex: number, ey: number, order: number, ph: number) => {
-        const pts: { x: number; y: number; hw: number }[] = [];
-        const n2 = 24;
+        const raw: { x: number; y: number; t: number }[] = [];
+        const n2 = order === 3 ? 30 : order === 2 ? 20 : 12;
         const dx = ex - sx;
         const dy = ey - sy;
         const len = Math.hypot(dx, dy) || 1;
         const nx = -dy / len;
         const ny = dx / len;
-        const amp = order === 3 ? 26 : order === 2 ? 18 : 11; // 작은 가지일수록 사행이 심하다(1.0 → 1.42)
-        const waves = order === 3 ? 1.5 : order === 2 ? 2.4 : 3.2;
+        const amp = Math.min(60, len * (order === 3 ? 0.085 : order === 2 ? 0.1 : 0.11));
+        const waves = Math.max(0.7, len / (order === 3 ? 320 : order === 2 ? 190 : 150));
+        const jit = amp * 0.2;
         for (let k2 = 0; k2 <= n2; k2++) {
           const t2 = k2 / n2; // 0 = 육지, 1 = 바다·합류점
-          const taper = Math.sin(Math.PI * t2); // 양 끝 0
-          const wob = Math.sin(t2 * Math.PI * waves + ph) * amp * taper;
-          const x = sx + dx * t2 + nx * wob;
-          const y = sy + dy * t2 + ny * wob;
-          // 세계 폭은 바다 쪽으로 3~4배(실제 배수망), 화면 폭 = 세계 폭 × 원근.
-          const world = order === 3 ? 7 + 96 * t2 * t2 : order === 2 ? 5 + 32 * t2 * t2 : 2.5 + 13 * t2 * t2;
-          // 양 끝은 폭 0으로 수렴 — 뭉툭한 사각 끝은 "죽은 리본"으로 읽힌다(사이클4 경계 #3).
-          const cap = Math.min(1, k2 / 3) * Math.min(1, (n2 - k2) / 2);
-          pts.push({ x, y, hw: Math.max(0.4, world * landK(y) * cap) });
+          const taper = Math.pow(Math.sin(Math.PI * t2), 0.8); // 양 끝 0
+          const wob =
+            (Math.sin(t2 * Math.PI * waves + ph) * 0.68 + Math.sin(t2 * Math.PI * waves * 2.3 + ph * 1.9) * 0.32) * amp * taper +
+            (r() - 0.5) * jit * taper;
+          raw.push({ x: sx + dx * t2 + nx * wob, y: sy + dy * t2 + ny * wob, t: t2 });
         }
+        // Chaikin 한 번(끝점 유지) — 각진 마디가 굽이로 풀린다.
+        const sm: { x: number; y: number; t: number }[] = [];
+        for (let i = 0; i < raw.length - 1; i++) {
+          const a = raw[i];
+          const b = raw[i + 1];
+          if (i === 0) sm.push(a);
+          sm.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25, t: a.t * 0.75 + b.t * 0.25 });
+          sm.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75, t: a.t * 0.25 + b.t * 0.75 });
+          if (i === raw.length - 2) sm.push(b);
+        }
+        const pts = sm.map((p, i) => {
+          const t2 = p.t;
+          // 세계 폭은 바다 쪽으로 3~4배(실제 배수망), 화면 폭 = 세계 폭 × 원근. 멱 1.5~1.7 = 하구 근처에서 급히 넓어진다.
+          const world = order === 3 ? 7 + 96 * Math.pow(t2, 1.7) : order === 2 ? 5 + 32 * Math.pow(t2, 1.6) : 2.5 + 13 * Math.pow(t2, 1.5);
+          // 양 끝은 폭 0으로 수렴 — 뭉툭한 사각 끝은 "죽은 리본"으로 읽힌다(사이클4 경계 #3).
+          const cap = Math.min(1, i / 4) * Math.min(1, (sm.length - 1 - i) / 3);
+          const breath = 0.86 + 0.28 * (0.5 + 0.5 * Math.sin(t2 * 17 + ph * 3));
+          return { x: p.x, y: p.y, hw: Math.max(0.4, world * landK(p.y) * cap * breath) };
+        });
         chanPts.push(pts);
+        chanOrder.push(order);
         return pts;
       };
       // 배수망은 **비대칭 한 벌**이다: 큰 본류 하나가 화면을 비스듬히 가로지르고, 작은 본류 하나가 반대쪽에서
@@ -183,52 +207,74 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           chan(node.x + (b2 ? 1 : -1) * run2, node.y + run2 * (0.5 + r() * 0.6), node.x, node.y, 1, b2 * 2.2);
         }
       }
-      const drawChan = (kw: number, col: string, stroke = false) => {
-        // 한 path에 전부 모아 **한 번만** 칠한다 — 채널마다 fill하면 겹치는 구간이 곱해져 X자 얼룩이 된다
-        // (검토 라운드2 경계 #2: "겹치는 구간은 곱셈처럼 더 진해져 X자 얼룩").
-        g.beginPath();
+      inWater = (x, y) => {
         for (const pts of chanPts) {
-          if (pts.length < 2) continue;
+          for (let j = 0; j < pts.length; j += 2) {
+            const p = pts[j];
+            const dx = x - p.x;
+            const dy = y - p.y;
+            const rr = p.hw + 6;
+            if (dx * dx + dy * dy < rr * rr) return true;
+          }
+        }
+        return false;
+      };
+      /** 물골 그리기 — kw = 폭 배, minOrder = 이 차수 이상만, (ox, oy) = 비껴 그리기(둔치 한쪽 그늘).
+       *  한 path에 전부 모아 **한 번만** 칠한다 — 채널마다 fill하면 겹치는 구간이 곱해져 X자 얼룩이 된다(검토 라운드2 경계 #2).
+       *  stroke = 젖은 가장자리 — **두 둔치를 열린 선으로** 긋고 끝 캡은 긋지 않는다(옛 닫힌 외곽선은 하구·합류점에서 물을
+       *  가로지르는 밝은 선이 됐다 — 라운드 1 #4 "stroke가 물 위 가로지름"). */
+      const drawChan = (kw: number, col: string, stroke = false, minOrder = 1, ox = 0, oy = 0) => {
+        const side = (pts: { x: number; y: number; hw: number }[], jj: number, s: number): [number, number] => {
+          const a2 = pts[Math.max(0, jj - 1)];
+          const b2 = pts[Math.min(pts.length - 1, jj + 1)];
+          const len = Math.hypot(b2.x - a2.x, b2.y - a2.y) || 1;
+          const nx = -(b2.y - a2.y) / len;
+          const ny = (b2.x - a2.x) / len;
+          const hw = pts[jj].hw * kw;
+          return [pts[jj].x + s * nx * hw + ox, pts[jj].y + s * ny * hw + oy];
+        };
+        g.beginPath();
+        chanPts.forEach((pts, ci) => {
+          if (pts.length < 8 || chanOrder[ci] < minOrder) return;
+          if (stroke) {
+            for (const s of [1, -1]) {
+              for (let jj = 3; jj < pts.length - 3; jj++) {
+                const [x, y] = side(pts, jj, s);
+                if (jj === 3) g.moveTo(x, y);
+                else g.lineTo(x, y);
+              }
+            }
+            return;
+          }
           for (let jj = 0; jj < pts.length; jj++) {
-            const a2 = pts[Math.max(0, jj - 1)];
-            const b2 = pts[Math.min(pts.length - 1, jj + 1)];
-            const len = Math.hypot(b2.x - a2.x, b2.y - a2.y) || 1;
-            const nx = -(b2.y - a2.y) / len;
-            const ny = (b2.x - a2.x) / len;
-            const hw = pts[jj].hw * kw;
-            if (jj === 0) g.moveTo(pts[jj].x + nx * hw, pts[jj].y + ny * hw);
-            else g.lineTo(pts[jj].x + nx * hw, pts[jj].y + ny * hw);
+            const [x, y] = side(pts, jj, 1);
+            if (jj === 0) g.moveTo(x, y);
+            else g.lineTo(x, y);
           }
           for (let jj = pts.length - 1; jj >= 0; jj--) {
-            const a2 = pts[Math.max(0, jj - 1)];
-            const b2 = pts[Math.min(pts.length - 1, jj + 1)];
-            const len = Math.hypot(b2.x - a2.x, b2.y - a2.y) || 1;
-            const nx = -(b2.y - a2.y) / len;
-            const ny = (b2.x - a2.x) / len;
-            const hw = pts[jj].hw * kw;
-            g.lineTo(pts[jj].x - nx * hw, pts[jj].y - ny * hw);
+            const [x, y] = side(pts, jj, -1);
+            g.lineTo(x, y);
           }
           g.closePath();
-        }
+        });
         if (stroke) {
           g.strokeStyle = col;
-          g.lineWidth = 1.4;
+          g.lineWidth = 1.2;
           g.stroke();
         } else {
           g.fillStyle = col;
           g.fill();
         }
       };
-      // 물길 표현은 셋뿐이다: **둔치(넓고 어두운 스트로크)** → **물(폴리곤 채움)** → **젖은 가장자리(가는 밝은 스트로크)**.
-      // 오프셋 폴리곤을 여러 겹 겹치면 굽이에서 자기교차해 본선과 어긋난 띠가 생긴다(검토 라운드2 반복 지적).
-      // 둔치 — 물길 폭의 1.35배 폴리곤 **한 겹**(모든 물길을 한 path에 모아 한 번만 칠한다).
-      // 구간별 스트로크는 lineCap:round + 큰 lineWidth 탓에 구간마다 큰 원이 찍혀 "겹친 검은 얼룩"이 된다
-      // (사이클5 미관 #1: "죽은 고래/기름띠로 읽힌다").
-      drawChan(1.35, "rgb(58 62 60 / 0.12)");
+      // 물길 표현은 셋뿐이다: **둔치(한쪽으로 비낀 그늘 한 겹)** → **물(폴리곤 채움)** → **젖은 가장자리(두 둔치 선)**.
+      // 오프셋 폴리곤을 여러 겹 **동심**으로 겹치면 등폭 리본이 되고 굽이에서 자기교차한다(검토 라운드2·라운드 1 #4).
+      // 둔치 그늘은 오른쪽 아래로 3·2px 비껴 한 겹 — 깎인 둔치의 그늘로 읽힌다. 구간별 스트로크는 lineCap:round 탓에
+      // 구간마다 큰 원이 찍혀 "겹친 검은 얼룩"이 된다(사이클5 미관 #1) — 폴리곤 한 겹만.
+      drawChan(1.3, "rgb(58 62 60 / 0.13)", false, 1, 3, 2);
       drawChan(1, "rgb(66 84 96 / 0.62)");
-      // 잔류수 — 골 바닥에 남은 물(둔치보다 어둡고 하늘을 비춘다).
-      drawChan(0.5, season === "winter" ? "rgb(96 124 146 / 0.5)" : "rgb(88 112 126 / 0.45)");
-      // 젖은 가장자리 — 물길 폴리곤의 외곽선 한 줄(가늘게).
+      // 잔류수 — 본류·2차 물골 바닥에만(1차 잔가지는 물이 빠져 젖은 뻘만 남는다 — 폭 절반의 동심 띠가 세 겹이면 리본이다).
+      drawChan(0.5, season === "winter" ? "rgb(96 124 146 / 0.5)" : "rgb(88 112 126 / 0.45)", false, 2);
+      // 젖은 가장자리 — 두 둔치 선(끝 캡 없음).
       drawChan(1.04, "rgb(206 220 228 / 0.3)", true);
       // 소품 군집 — 갯벌의 생물 흔적은 **밭**을 이룬다(균등 산포는 잡티로 읽힌다, 사이클4 미관 #2).
       for (let c2 = 0; c2 < 4; c2++) {
@@ -240,6 +286,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           const d = Math.pow(r(), 0.6) * (50 + r() * 70);
           const x = cx3 + Math.cos(a2) * d;
           const y = cy3 + Math.sin(a2) * d * GROUND_SQUASH;
+          if (inWater(x, y)) continue; // 조개·숨구멍은 물 안에 없다(라운드 2 P0)
           const k = landK(y);
           if (kind === 0) {
             // 조개 숨구멍 — 작은 어두운 점 + 그 둘레의 밝은 흙 테.
@@ -348,7 +395,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         }
         for (let i = 0; i < 26; i++) holeSpots.push([r() * w, VIS * (0.45 + r() * 0.5)]);
         for (const [hx, hy] of holeSpots) {
-          if (hy < VIS * 0.3 || hy > VIS - 6) continue; // 위(모래질)·화면 밖 제외
+          if (hy < VIS * 0.3 || hy > VIS - 6 || inWater(hx, hy)) continue; // 위(모래질)·화면 밖·물 안 제외
           const k = landK(hy) * (0.85 + r() * 0.4);
           g.fillStyle = "rgb(72 66 58 / 0.32)";
           g.beginPath();
@@ -362,17 +409,29 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       }
       // 갯벌 살림 — 조약돌·작은 바위·해조 무리·조개껍데기. 없으면 뻘은 통짜 갈색 판이다(검토 4차).
       for (let i = 0; i < 46; i++) {
-        drawProp(g, art, "pebble", r() * w, 70 + r() * (VIS - 100), { k: 0.9 * landK(70 + r() * (VIS - 100)), r: r(), sy: GROUND_SQUASH, rot: r() * TAU });
+        const px = r() * w;
+        const py = 70 + r() * (VIS - 100);
+        if (inWater(px, py)) continue;
+        drawProp(g, art, "pebble", px, py, { k: 0.9 * landK(py), r: r(), sy: GROUND_SQUASH, rot: r() * TAU });
       }
+      // 바위 7개 — 물 안 자리는 다시 뽑는다(최대 6회; 끝내 물이면 그 바위는 없다 — 물 위에 마른 바위보다 낫다).
       for (let i = 0; i < 7; i++) {
-        const x = 40 + r() * (w - 80);
-        const y = 90 + r() * (VIS - 130);
+        let x = 0;
+        let y = 0;
+        let ok = false;
+        for (let t2 = 0; t2 < 6 && !ok; t2++) {
+          x = 40 + r() * (w - 80);
+          y = 90 + r() * (VIS - 130);
+          ok = !inWater(x, y);
+        }
+        if (!ok) continue;
         drawProp(g, art, "rock", x, y, { k: (0.6 + r() * 0.5) * depthScale(shoreY() - 60 + y, h), r: r(), flip: r() < 0.5 });
       }
       // 해조 — 젖은 뻘에 붙은 짙은 초록 얼룩 무리(가장자리가 갈라진 느낌으로 여러 겹).
       for (let i = 0; i < 16; i++) {
         const cx3 = r() * w;
         const cy3 = 80 + r() * (VIS - 110);
+        if (inWater(cx3, cy3)) continue; // 해조 무리는 둔치·뻘에(물골 물 안 금지)
         for (let k = 0; k < 4; k++) {
           softBlob(g, cx3 + (r() - 0.5) * 46, cy3 + (r() - 0.5) * 22, 10 + r() * 18, r() < 0.5 ? "78 96 70" : "96 106 74", 0.2, 0, GROUND_SQUASH);
         }
@@ -981,8 +1040,11 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         g.save();
         shorePath(0);
         g.clip();
+        // 뭍 판은 **고정**(QA 라운드 2, AMB-M2-02): 옛 코드는 `sy − 60`에 그려 바위·웅덩이·절리가 물가 숨쉬기와 함께 ±3px
+        // 오르내렸다(라운드 1·2 C 지적). 이제 판은 제자리에 있고 물가 클립(shorePath)만 숨쉰다 — 물이 뭍을 덮었다 드러낸다.
         // 목적지 높이를 화면 아래까지 명시 — 정적 shoreY()로 잰 이미지 높이를 쓰면 물가가 올라간 순간 바닥에 물이 샜다.
-        g.drawImage(land, 0, sy - 60, f.w, Math.max(land.height / (gdpr || 1), f.h - (sy - 60) + 8));
+        const ly = shoreY() - 60 - f.h * 0.02;
+        g.drawImage(land, 0, ly, f.w, Math.max(land.height / (gdpr || 1), f.h - ly + 8));
         // 젖은 모래/뻘 띠 — 물가 곡선 아래 12~22px, 파도 주기로 넓어졌다 좁아진다(클립 안이라 뭍에만 얹힌다).
         const wet2 = 12 + 10 * (0.5 + 0.5 * Math.sin(t * 0.5));
         const wg = g.createLinearGradient(0, sy - 24, 0, sy + wet2 + 26);

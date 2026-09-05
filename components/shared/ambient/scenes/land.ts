@@ -12,6 +12,7 @@ import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet, drawArt } from "../art/load";
 import { claimSpot, drawProp, drawSubmerged, resetPropField, scatterProps, setPropShadow } from "../art/props";
+import { currentLight } from "../world/light";
 import { SIZE } from "../world/scale";
 import { bakeHorizon, depthFade, depthScale, horizonY, GROUND_SQUASH } from "../world/view";
 import { canopyTreeSprite, bareTreeSprite } from "../world/traces-draw";
@@ -72,26 +73,34 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     g.restore();
   };
 
-  function drawTree(g: CanvasRenderingContext2D, x: number, y: number, R: number, hour: number, pine = false) {
-    const dx = hour < 12 ? -8 : 8;
+  function drawTree(g: CanvasRenderingContext2D, x0: number, y: number, R: number, t: number, pine = false) {
+    // 조명(QA 라운드 2, world/light.ts): 그림자는 해 반대쪽으로 길어지고(새벽 서쪽·노을 동쪽) 농도는 띠·날씨를 따른다.
+    // 옛 `hour < 12 ? −8 : 8`은 방향 한 채널뿐이라 아침=점심이었고 점심에도 8px 비껴 있었다.
+    const L = currentLight();
+    const dx = L.shadow.dx * R * 0.5 * L.shadow.len;
+    const sw = 0.6 + 0.8 * L.shadow.len; // 점심(.5) = 1.0배, 노을(1.8) = 2.04배 길게
+    const sa = L.shadow.alpha;
+    // 바람 흔들림(M-3): 바람 .15 이상에서만(맑음은 정지 그대로 — 굽은 바탕과 회귀 해시 유지). 나무마다 위상·주기가 다르다.
+    const amp = L.wind >= 0.15 ? L.wind * 2.2 : 0;
+    const x = amp ? x0 + Math.sin(t * (0.9 + (Math.round(x0) % 7) * 0.08) + x0 * 0.013) * amp : x0;
     if (pine) {
       // 소나무 — 폭은 참나무(2R)보다 좁고(1.45R) 키는 조금 크다. 실루엣이 갈려야 "혼효림"으로 읽힌다.
-      shadow(g, x + dx * 0.34, y - 2, R * 0.95, 0.16);
+      shadow(g, x0 + dx * 0.34, y - 2, R * 0.95 * sw, 0.16 * sa);
       drawProp(g, art, season === "winter" ? "tree-pine-winter" : season === "autumn" ? "tree-pine-autumn" : "tree-pine", x, y, {
         k: (R * 1.78) / 92,
-        r: ((x * 7919) % 997) / 997,
-        flip: (Math.round(x) & 1) === 1
+        r: ((x0 * 7919) % 997) / 997,
+        flip: (Math.round(x0) & 1) === 1
       });
       return;
     }
     const a = art.get(`tree-oak-${season}`);
     if (a) {
-      shadow(g, x + dx * 0.4, y - 2, R * 1.05, 0.16);
+      shadow(g, x0 + dx * 0.4, y - 2, R * 1.05 * sw, 0.16 * sa);
       drawArt(g, a, x, y, (2 * R) / a.w);
       return;
     }
     const s = season === "winter" ? bareTreeSprite(R) : canopyTreeSprite(season, R);
-    shadow(g, x + dx * 0.4, y - 2, R * 1.0, 0.15);
+    shadow(g, x0 + dx * 0.4, y - 2, R * 1.0 * sw, 0.15 * sa);
     g.drawImage(s, x - s.width / 2, y - R * 0.9 - s.height / 2);
   }
 
@@ -1199,7 +1208,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       // 안 거쳐 뒷줄 여섯 그루가 융합했다. 이제 **모든 나무가 `claimSpot`을 지난다** — 소품 필드를 공유하니
       // 그루터기·통나무·바위 위에도 서지 않는다. 자리가 차면 다른 후보를 다시 뽑고(결정적: 시도마다 rng 소비),
       // 끝내 못 놓으면 그 그루는 없다(수가 목표 아래로 조금 내려가는 편이 겹치는 것보다 낫다).
-      const putTree = (pick: () => { x: number; y: number; R: number; pine: boolean }, clearance: number, tries = 6) => {
+      // 여유(clearance)는 `claimSpot`의 0.62 할인을 상쇄해 정한다(라운드 2 B#3): 최소 거리 = .787·c·(R1+R2)이므로
+      // 무리 안 ≥ .6(R1+R2)(겹침 ≤ 40%) → c .76, 그 밖 ≥ .85(≤ 15%) → c 1.08. 옛 .42~.72는 겹침 43~67%를 허용했다.
+      const putTree = (pick: () => { x: number; y: number; R: number; pine: boolean }, clearance: number, tries = 10) => {
         for (let t2 = 0; t2 < tries; t2++) {
           const cand = pick();
           if (!claimSpot(cand.x, cand.y, cand.R * clearance)) continue;
@@ -1214,7 +1225,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         const clumps = 4 + Math.round(w / 600);
         for (let c2 = 0; c2 < clumps; c2++) {
           const cx3 = w * ((c2 + 0.5) / clumps) + (g0() - 0.5) * w * 0.16;
-          const n2 = 2 + Math.floor(g0() * 3);
+          const n2 = 3 + Math.floor(g0() * 3); // 3~5그루 — 원경 수관이 닫혀야 "숲"(라운드 2 A#2: 뒷줄 점유율 47% → 목표 ≥ 62%)
           for (let i = 0; i < n2; i++) {
             putTree(
               () => ({
@@ -1223,20 +1234,20 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
                 R: Math.round((SIZE.treeCrownW / 2) * (0.55 + g0() * 0.62)),
                 pine: pineMix()
               }),
-              0.42
+              0.76
             );
           }
         }
       }
       for (const side of [0.06, 0.94])
         for (let i = 0; i < 2; i++)
-          putTree(() => ({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.32 + i * 0.28 + g0() * 0.1), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.3)), pine: pineMix() }), 0.66);
+          putTree(() => ({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.32 + i * 0.28 + g0() * 0.1), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.3)), pine: pineMix() }), 1.08);
       // 중간 깊이 — 앞줄과 뒷줄 사이가 텅 비어 "울타리 친 마당"으로 읽혔다. 빈터는 가운데(u 0.36~0.64)만 비운다.
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 5; i++) {
         putTree(() => {
           const u = g0() < 0.5 ? 0.03 + g0() * 0.34 : 0.63 + g0() * 0.34;
           return { x: w * u, y: groundY(0.26 + g0() * 0.62), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.4)), pine: pineMix() };
-        }, 0.72);
+        }, 1.08);
       }
       // 중앙 초점 — 큰 나무 셋이 한 무리로(도넛 구멍이 아니라 '큰 나무 아래 빈터'가 되게, 사이클4 미관 #8).
       {
@@ -1251,27 +1262,27 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
               R: Math.round((SIZE.treeCrownW / 2) * (1.0 + g0() * 0.35)),
               pine: i === 1 ? false : pineMix()
             }),
-            0.5
+            0.76
           );
         }
       }
       // 빈터 **둘레**를 두르는 중간 나무들 — 한가운데만 비고 그 밖은 채워야 "빈터"로 읽힌다.
-      for (let i = 0; i < 6; i++) {
-        const a2 = (i / 6) * TAU + g0() * 0.3;
+      for (let i = 0; i < 5; i++) {
+        const a2 = (i / 5) * TAU + g0() * 0.3;
         putTree(() => {
           const rr2 = 0.31 + g0() * 0.08;
           const u = 0.5 + Math.cos(a2) * rr2;
           const v = Math.max(0.19, 0.56 + Math.sin(a2) * rr2 * 0.72);
           return { x: w * u, y: groundY(v), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.45)), pine: pineMix() };
-        }, 0.72);
+        }, 1.08);
       }
       // 가운데도 **가까운 쪽**엔 나무가 선다 — 안 그러면 한가운데가 밝은 도넛 구멍이 된다(검토 4차).
       for (let i = 0; i < 2; i++)
-        putTree(() => ({ x: w * (0.38 + g0() * 0.24), y: groundY(0.82 + g0() * 0.18), R: Math.round((SIZE.treeCrownW / 2) * (1.05 + g0() * 0.25)), pine: pineMix() }), 0.6);
+        putTree(() => ({ x: w * (0.38 + g0() * 0.24), y: groundY(0.82 + g0() * 0.18), R: Math.round((SIZE.treeCrownW / 2) * (1.05 + g0() * 0.25)), pine: pineMix() }), 0.9);
       // 코앞 두 그루 — 화면 아래에서 잘린다(가까움의 신호, 동물의 숲 카메라). 하나는 소나무로 고정해 실루엣 대비를 준다.
       // 화면 밖으로 반쯤 나가므로 여유는 작게(0.45) — 그래도 서로·앞 나무와는 안 겹친다.
       for (const [i2, side] of [0.1, 0.88].entries())
-        putTree(() => ({ x: w * side + (g0() - 0.5) * 40, y: groundY(1.02), R: Math.round((SIZE.treeCrownW / 2) * (1.1 + g0() * 0.25)), pine: i2 === 0 }), 0.45);
+        putTree(() => ({ x: w * side + (g0() - 0.5) * 40, y: groundY(1.02), R: Math.round((SIZE.treeCrownW / 2) * (1.1 + g0() * 0.25)), pine: i2 === 0 }), 0.76);
       trees.sort((a, b) => a.y - b.y);
     } else if (kind === "valley") {
       // 계곡 사면 = 참나무 극상림(수관 틈 0~20%) — 하늘이 열리는 곳은 물길뿐이다. 물 위에 서지 않게
@@ -1331,7 +1342,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       for (const tr of trees) {
         g.save();
         g.globalAlpha *= depthFade(tr.y, f.h);
-        drawTree(g, tr.x, tr.y, Math.round((tr.R * depthScale(tr.y, f.h)) / 4) * 4, f.time.hour, tr.pine);
+        drawTree(g, tr.x, tr.y, Math.round((tr.R * depthScale(tr.y, f.h)) / 4) * 4, f.t, tr.pine);
         g.restore();
       }
       void clamp;

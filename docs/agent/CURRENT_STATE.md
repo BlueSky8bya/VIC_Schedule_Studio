@@ -39,7 +39,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   AMB-D2-03) ③ AMB-S4-01/02 잠긴 돌 `drawSubmerged`(props.ts) 민물·계곡. 회귀: 손대지 않은 9 시나리오 해시 동일. 게이트 전부 통과.
   하네스 보강: `--kinds long`(15~30s 긴 시간 시트 — 다람쥐 창), `-seed<n>` 폴더, `spawn-probe.mjs`(A-1 수용 측정), gitInfo dirty는 추적 파일만.
   **별건(소유자 요청)**: 오늘 배지 빛을 숫자만이 아니라 "n 일" 전체 뒤로(시청자), 숫자 한 단계 크게(둘 다) — 머리줄 높이 불변.
-  다음: 라운드 2(첫 후보 AMB-S5-01 갯골 + F1-01) — 라운드 1 커밋 뒤 before를 새로 찍는다.
+  **프로토콜 개정(2026-09-05, 소유자)**: 라운드 수정 예산 "상위 2~3건" → **P0 전부 + 입구 묶음 ≤ 4**(귀속 가능성이 상한 — VISUAL_QA_PROTOCOL §3.3).
+  숲은 소유자 확정으로 성글게(76~81 → 38~46, 전원 `claimSpot`).
+  **라운드 2 완료(2026-09-05, `docs/ambient/rounds/ROUND-02.md`, 대수술 — 소유자가 국소 건보다 먼저로 순서 확정)**: before(0d3fdfb) →
+  A·B·C 동시(21건 → 15, P0 1: 갯벌 물골 안 마른 바위) → 묶음 4: ① **조명 `world/light.ts`**(시간대 × 날씨 × 계절 → 하늘 오버레이·지면
+  multiply(ΔL+색온도, 지평선 쪽 35% 덜)·채도·안개 색/배율·층별 지면 안개·그림자 dx/len/α·글린트·바람; 엔진 `drawOnce` = scene → particles →
+  depthHaze(light) → `drawLightPass`; 점심·맑음 = 항등; 3초 lerp; `drawTree` 그림자·흔들림, 글린트·빛줄기 소비자) ② **입자층 `world/particles.ts`**
+  (비 저해상 사선·눈·바람 부스러기·안개 뭉치, `Scene.ownsWeather`) ③ **갯골·해안 `coast.ts`**(두 옥타브 + Chaikin, 폭 테이퍼·숨, 둔치 비낌,
+  젖은 가장자리 끝 캡 없음, **`inWater` 물 마스크(P0)**, 뭍 판 고정 y) ④ 숲 여유 .76/1.08(claimSpot 0.62 할인 상쇄) + 뒷줄 3~5그루.
+  실측: s16 지면 ΔL −7.1/−2.0/0/−4.8/−9.2/−16.0(목표 안), 아침≠점심 16/16, 날씨 65/65 맑음과 다름(눈송이 171), s02 바람 정적 0 → 3~10%,
+  물 안 바위 0, 점심·맑음 항등(s16 9/9 해시 동일). 부분: 산 층 하늘↔①이 밤·노을·눈에서 2.2~4.0(오버레이는 하늘만 어둡게 함 — 선형 연산
+  둘로는 하늘↔①과 ①↔②를 동시에 못 만족 → AMB-D1-01 "림 대비 되살림" 구조가 다음 라운드 1순위). 게이트 tsc 0 · lint 0 · vitest 574 ·
+  build 0 · 셀프테스트 23/23. 신규 도구 `scripts/ambient-qa/light-probe.mjs`, 테스트 `tests/unit/ambient-light.test.ts`(조명 계약 10).
+  다음: 라운드 3 — AMB-D1-01 + D1-02(③ 구조 = D2-03) + D2-02(언덕 띠) "밝기 단차 묶음", 조명 위에서 잰다.
 
 - **'오늘' 표식 관례화 + 링을 띠 위로(2026-09-05 소유자 결정, 둘 다)**: 관례 조사 결과 Google·Apple·
   Outlook·Notion은 모두 오늘을 **날짜 숫자**에 건다(채운 원/배지) — 칸 테두리로 말하지 않고, 일정 콘텐츠는
@@ -1887,10 +1899,10 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Next Exact Steps
 
--1. **앰비언트 비주얼 QA 라운드 1**(하네스는 2026-09-05 구축 완료): 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 01 --phase before`
-   → `sheet`·`diff` → 에이전트 3(ambient-art-mood · ambient-spatial-ecology · ambient-motion-director) **동시** 검토 → 통합 ≤3건
-   (첫 후보 `QA_PROGRESS` ① AMB-A1-01 다람쥐 스폰 P0) → 수정 → 게이트 → `--phase after` → `--compare before,after` → `docs/ambient/rounds/ROUND-01.md`.
-   P2(전수 지표 `metrics.mjs`)·P3(`round.mjs`)는 라운드와 병행.
+-1. **앰비언트 비주얼 QA 라운드 3**(라운드 1·2 완료 2026-09-05): 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 03 --phase before`
+   (+ `--only 3,4 --kinds long`) → `sheet`·`diff` → `node scripts/ambient-qa/light-probe.mjs`로 조명 수치 고정 → 에이전트 3 **동시** 검토
+   → 통합(P0 전부 + 입구 묶음 ≤ 4, 프로토콜 §3.3) — 첫 후보 **AMB-D1-01 산·원경 대비 되살림**(+ D1-02 · D2-02 밝기 단차 묶음) → 수정 →
+   게이트 → `--phase after` → `--compare before,after` → `docs/ambient/rounds/ROUND-03.md`. P2(전수 지표 `metrics.mjs`)·P3(`round.mjs`)는 병행.
 0. **마이그레이션 0051 적용** — `node scripts/apply-db.mjs db/migrations/0051_visit_known_accounts.sql`
    (새/재방문 판정용 DISTINCT RPC + `(day, account_hash)` 인덱스. 미적용이어도 코드가 옛 경로로
    폴백하므로 급하진 않지만, 적용해야 인사이트 열 때의 순차 왕복 40회+가 사라진다.)
