@@ -75,7 +75,10 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   for `effectiveRole === "developer"`, like the modal's dev rows. Esc closes the panel first, showcase second.
   계절 is the only one that remounts the canvas, so the change carries the current biome in `force.biome` and the
   season flips **where you are standing**. Anything new that must be changed *while looking at the background*
-  belongs here and in the modal, wired to one state. The avatar
+  belongs here and in the modal, wired to one state. **A force that outlives showcase must have a handle in the
+  settings modal** (2026-09-05 owner: forced 봄 while showcasing, left, and the studio was stuck in spring) — hence
+  the dev row **월드 계절** (자동/봄/여름/가을/겨울, `dev-world-season`) beside 월드 시간대·월드 날씨; 자동 = follow the
+  calendar month. Forcing a season also re-picks the weather list from that season's month, in both places. The avatar
   left/right control is a **fixed bottom-center pill** (`.bottom-float-row`) — never inside the rail,
   because the rail moves to the other side and the control would travel with it (owner feedback
   2026-09-03). Do not reintroduce a second full-width action row —

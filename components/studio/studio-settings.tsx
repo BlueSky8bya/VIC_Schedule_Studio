@@ -12,6 +12,7 @@ import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
 import { RhhSelect } from "@/components/studio/rhh-select";
 import { AmbientModeSegment } from "@/components/shared/ambient/showcase";
+import type { SeasonKey } from "@/components/shared/ambient/registry";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
@@ -21,6 +22,7 @@ import { Clock3 } from "lucide-react";
 export type DevWorldForce = NonNullable<WorldCtx["force"]>;
 type BandOpt = "real" | DayBand;
 type WeatherOpt = "real" | Weather;
+type SeasonOpt = "real" | SeasonKey;
 
 export type StudioSettingsProps = {
   hapticsSupported: boolean;
@@ -44,7 +46,9 @@ export type StudioSettingsProps = {
   onChangePosterTheme: (theme: PosterThemeKey) => void;
   posterThemeSaving: boolean;
   // 개발자 월드 강제 — **effectiveRole이 개발자**일 때만 넘긴다(미리보기 중인 역할엔 줄 자체가 없다).
-  devWorld?: { force: DevWorldForce; onChange: (force: DevWorldForce) => void } | null;
+  // season/onChangeSeason: 감상 톱니에서 계절을 강제해 두고 나오면 편집실 배경이 그 계절로 남는데, 되돌릴 손잡이가
+  // 설정에 없었다(2026-09-05 소유자: "가을에서 봄으로 바꾸고 돌아오니 가을로 못 돌아와"). 같은 상태를 여기서도 연다.
+  devWorld?: { force: DevWorldForce; onChange: (force: DevWorldForce) => void; season: SeasonKey | null; onChangeSeason: (season: SeasonKey | null) => void } | null;
   // 지금 보고 있는 달 — 그 달에 가능한 날씨 목록을 정하는 데 쓴다.
   devMonth?: number;
 };
@@ -71,9 +75,13 @@ export function StudioSettingsList({
   // 그 달에 **실제로 생길 수 있는** 날씨만 고를 수 있다 — 여름에 눈을 강제하면 만들지도 않은 "눈 덮인 여름
   // 바이옴"을 보게 된다(2026-09-05 소유자). 목록은 월별 평년값 표(world/weather.ts)에서 직접 뽑으므로
   // 표를 고치면 목록도 같이 바뀐다(둘이 어긋날 수 없다).
+  // 계절을 강제해 뒀으면 목록도 **그 계절**의 것이어야 한다(9월에 겨울을 강제해 놓고 눈을 못 고르면 소용없다)
+  // — 감상 톱니(showcase.tsx)와 같은 규칙.
+  const seasonMonth: Record<SeasonKey, number> = { spring: 4, summer: 7, autumn: 10, winter: 1 };
+  const weatherMonth = devWorld?.season ? seasonMonth[devWorld.season] : devMonth;
   const weatherOptions: { value: WeatherOpt; label: string }[] = [
     { value: "real", label: "자동" },
-    ...weatherOptionsForMonth(devMonth).map((w) => ({ value: w as WeatherOpt, label: WEATHER_LABEL[w] }))
+    ...weatherOptionsForMonth(weatherMonth).map((w) => ({ value: w as WeatherOpt, label: WEATHER_LABEL[w] }))
   ];
   return (
     <>
@@ -198,6 +206,28 @@ export function StudioSettingsList({
           (월드 날짜는 2026-09-05 제거 — 연대기를 걷어 날이 화면을 바꾸지 않는다.) */}
       {devWorld ? (
         <>
+          {/* 월드 계절 — 기본은 보고 있는 달력 달(자동). 감상 톱니와 **같은 상태**라, 감상 중에 봄으로 바꿔 놓고
+              나와도 여기서 '자동'으로 되돌릴 수 있다(2026-09-05 소유자 보고: 되돌릴 길이 없었다). 계절만은 캔버스를
+              다시 만들지만 서 있던 바이옴은 그대로 실려 간다(studio-shell changeDevSeason). */}
+          <div className="role-help-haptics rhh-ambient rhh-dev">
+            <span className="rhh-label">
+              <Leaf aria-hidden="true" size={14} />
+              월드 계절 <em className="rhh-dev-tag">개발자</em>
+            </span>
+            <RhhSelect<SeasonOpt>
+              ariaLabel="월드 계절 강제(개발자)"
+              dataAct="dev-world-season"
+              onChange={(v) => devWorld.onChangeSeason(v === "real" ? null : v)}
+              options={[
+                { value: "real", label: "자동" },
+                { value: "spring", label: "봄" },
+                { value: "summer", label: "여름" },
+                { value: "autumn", label: "가을" },
+                { value: "winter", label: "겨울" }
+              ]}
+              value={devWorld.season ?? "real"}
+            />
+          </div>
           <div className="role-help-haptics rhh-ambient rhh-dev">
             <span className="rhh-label">
               <Clock3 aria-hidden="true" size={14} />

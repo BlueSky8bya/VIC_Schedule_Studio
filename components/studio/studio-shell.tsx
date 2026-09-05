@@ -1193,7 +1193,7 @@ export function StudioShell({
         devMonth={view.month}
         // 개발자 전용 줄은 **미리보기 중인 역할**에도 안 보여야 한다 — raw isDeveloper면 개발자가 관리자로
         // 미리보기 중일 때 그대로 노출된다(2026-09-05 소유자 사진 2).
-        devWorld={effectiveRole === "developer" ? { force: devWorld, onChange: setDevWorld } : null}
+        devWorld={effectiveRole === "developer" ? { force: devWorld, onChange: setDevWorld, season: devSeason, onChangeSeason: changeDevSeason } : null}
       />
     );
   }
