@@ -1440,6 +1440,14 @@ html[data-reduce-motion] .dvm-notice {
 .vch-item + .vch-item {
   border-top: 1px solid rgb(60 60 90 / 6%);
 }
+/* 팬이 "ㄴ"로 매단 세부 항목(2026-09-06) — 원문에선 라벨 앞 글자였던 계층을 들여쓰기로 옮긴다.
+   장식 글리프를 다시 붙이지 않는다(칸 안의 표시는 얹지 않고 새긴다): 들여쓴 자리 + 옅은 시각만으로
+   '위 항목에 딸린 것'이 읽힌다. */
+.vch-item[data-depth="1"] { padding-left: 32px; }
+.vch-item[data-depth="2"],
+.vch-item[data-depth="3"] { padding-left: 50px; }
+.vch-item[data-depth] .vch-t { color: #9aa3bd; }
+.vch-item[data-depth] .vch-label { color: #4a4a58; }
 .vch-item:hover { background: #f2f5fb; }
 .vch-item:hover .vch-t { color: #1d4ed8; }
 .vch-item:active { transform: scale(0.995); background: #e9eef9; }

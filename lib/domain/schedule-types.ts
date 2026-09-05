@@ -177,7 +177,8 @@ export type PublicVodEntry = {
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.
 export type PublicVodTimeline = {
   authorNick: string;
-  entries: { sec: number; label: string; section: string | null }[];
+  // depth = 팬이 "ㄴ"로 매단 세부 항목의 계층(0/없음 = 최상위). UI는 들여쓰기로만 쓴다.
+  entries: { sec: number; label: string; section: string | null; depth?: number }[];
 };
 
 export type PublicSchedule = {

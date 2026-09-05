@@ -611,7 +611,9 @@ export async function getPublicVodTimeline(
     .map((e) => ({
       sec: Number(e.sec),
       label: typeof e.label === "string" ? e.label : "",
-      section: typeof e.section === "string" ? e.section : null
+      section: typeof e.section === "string" ? e.section : null,
+      // 계층(ㄴ)은 0~3만 통과 — 표시용 들여쓰기 값이라 범위를 넘기면 그냥 최상위로 본다.
+      depth: Number(e.depth) >= 1 && Number(e.depth) <= 3 ? Math.floor(Number(e.depth)) : 0
     }))
     .filter((e) => Number.isFinite(e.sec) && e.sec >= 0 && e.label.length > 0);
   if (entries.length === 0) return null;

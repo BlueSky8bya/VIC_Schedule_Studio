@@ -15,6 +15,8 @@
 | `sort-tags-by-usage.mjs` | 사용량 기준 태그 정렬 | 🎨 일회성 |
 | `taxonomy-probe.mjs` | 태그 분류 체계 탐색/분석 | 🔍 조사 |
 | `ambient-qa/` | **계절 배경 비주얼 QA 하네스**(2026-09-05, PLAN-20260905-005): 결정적 fixture 캡처·contact sheet·diff·셀프테스트 — [`ambient-qa/README.md`](ambient-qa/README.md). DB 무관 | 🔧 상시 도구 |
+| `backfill-vod-timelines.mjs` | 팬 타임라인 전체 재수집(0071) — 댓글을 다시 읽어 `vod_timeline` upsert. **파싱 규칙을 고친 뒤 과거 VOD를 따라잡을 때** 쓴다. `--dry`로 무엇이 달라지는지 먼저 본다(숲 댓글 API가 죽은 VOD는 건너뛰어 멀쩡한 행을 덮지 않는다) | 🔧 상시 도구 |
+| `lib/timeline-parse.mjs` | 위 스크립트가 쓰는 **파서 거울** — `lib/broadcast/vod-timeline.ts`와 규칙이 같아야 하고, 동치는 `tests/unit/vod-timeline.test.ts`가 지킨다. 규칙을 고치면 양쪽 다 고친다 | 📚 공용 모듈 |
 | `cleanup-sticker-storage.mjs` | 0065(스티커 철수) 동반 — `sticker-assets` 버킷 비우기(`--delete`). **2026-08-27 실행 완료, 버킷 삭제됨 — 재실행 불필요(404)** | 🗑 일회성(완료) |
 
 **상시 도구**(apply-db / verify-*)는 계속 쓰고, **일회성**(🎨/🔍)은 과거 데이터 정리에 쓴

@@ -4,6 +4,28 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-09-06
+
+### CHG-20260906-001 — PUBLIC DTO + 데이터 일괄 갱신 — 팬 타임라인 파서 전수조사·확장
+
+Problem: 사용자 신고 "ㄴ로 상위 항목에 매단 세부 타임라인이 표시가 안 된다". 조사해 보니 원인은 더 컸다 —
+시각을 대괄호로 감싸는 팬 표기(`[ 02:10:55 ] 라벨`, `ㄴ[ 02:13:59 ] 세부`)를 파서가 항목으로도 코너 헤더로도
+못 읽어 **그 댓글이 통째로 버려지고** 있었다(항목 0개 = 그 VOD는 "타임라인 없음").
+Change: VOD 385편 댓글 전수조사(형태 지문 집계)로 버려지던 표기를 모두 찾아 규칙을 넓혔다 — 괄호 시각,
+계층 표시(ㄴ └ >, 시각 앞·뒤 양쪽 — 라벨에서 떼어 `depth`로), 시각+라벨 붙임, 시각 뒤 구분 콜론, 분·초 한 자리
+오타(값 범위 검사 추가), 라벨이 앞·시각이 뒤(한 줄에 시각 여럿이면 항목 여럿). 의도적 제외 = 라벨 없는 시각
+나열(클립 표시 76줄), 날짜 표기(`[ 26.06.02 ]`), 라벨 32자 초과 문장. 공개 DTO `PublicVodTimeline.entries`에
+`depth?`(0~3) 추가 → 다시보기 챕터 목록이 세부 항목을 **들여쓰기로만** 표현(글리프 없음). 백필 스크립트의
+파서 사본은 `scripts/lib/timeline-parse.mjs`(+`.d.mts`) 하나로 합치고 "거울 동치" 테스트로 표류를 막았다.
+Files: lib/broadcast/vod-timeline.ts, lib/domain/schedule-types.ts, lib/schedules/public-loader.ts,
+components/poster/{vod-chapters.tsx,public-poster.css}, scripts/{backfill-vod-timelines.mjs,lib/timeline-parse.mjs,
+lib/timeline-parse.d.mts,README.md}, tests/unit/vod-timeline.test.ts
+Validation: tsc 0 · eslint 0(--max-warnings=0) · vitest 603 · next build 0. 전량 재수집(`node
+scripts/backfill-vod-timelines.mjs`, 앞서 `--dry`로 확인): 385편 확인 → 타임라인 345편, **복구 1편(0→6)·증가
+64편·항목 +938개**·계층 항목 3,462개·손실 0·댓글 조회 실패 0.
+Rollback: 코드 revert 후 `node scripts/backfill-vod-timelines.mjs` 재실행(파서가 곧 데이터라 되돌리면 옛 파싱으로
+다시 채워진다). 스키마 변경 없음.
+
 ## v0.1.0 — 2026-09-04
 
 ### CHG-20260904-002 — MIGRATION + PUBLIC DTO — 합방(게스트) 다시보기 (0075)

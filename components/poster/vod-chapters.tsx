@@ -129,11 +129,16 @@ export function VodChapters({
   // 컨테이닝 블록 = 카드이므로 카드를 안 쪼개야 헤더가 그 챕터 끝까지 따라온다.
   const groups = useMemo(() => {
     const list = timeline?.entries ?? [];
-    const out: { section: string | null; items: { sec: number; label: string; idx: number }[] }[] = [];
+    const out: {
+      section: string | null;
+      items: { sec: number; label: string; idx: number; depth: number }[];
+    }[] = [];
     list.forEach((e, idx) => {
+      // depth = 팬이 "ㄴ"로 매단 세부 항목(2026-09-06) — 들여쓰기로만 표현한다(별도 카드 아님).
+      const item = { sec: e.sec, label: e.label, idx, depth: e.depth ?? 0 };
       const last = out[out.length - 1];
-      if (last && last.section === e.section) last.items.push({ sec: e.sec, label: e.label, idx });
-      else out.push({ section: e.section, items: [{ sec: e.sec, label: e.label, idx }] });
+      if (last && last.section === e.section) last.items.push(item);
+      else out.push({ section: e.section, items: [item] });
     });
     return out;
   }, [timeline]);
@@ -203,6 +208,7 @@ export function VodChapters({
                       activeIdx !== null && e.idx < activeIdx ? " is-past" : ""
                     }`}
                     data-act="vod-chapter-jump"
+                    data-depth={e.depth > 0 ? e.depth : undefined}
                     data-idx={e.idx}
                     href={`https://vod.sooplive.co.kr/player/${titleNo}?change_second=${e.sec}`}
                     key={`${e.sec}-${e.idx}`}
