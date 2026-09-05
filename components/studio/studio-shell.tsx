@@ -958,7 +958,16 @@ export function StudioShell({
   // 개발자 세계 시간 여행(2026-09-04 소유자): 개발자 계정만 띠·날씨·날을 강제해 연대기·빛 톤·날씨 훅을 검사한다 — 세션 한정, 저장 없음,
   // 관리자·시청자는 실제 시간만. fixture 강제(ambientWorldForce)가 있으면 그것이 우선.
   const [devWorld, setDevWorld] = useState<DevWorldForce>({});
-  const worldForce = ambientWorldForce ?? (effectiveRole === "developer" && (devWorld.band || devWorld.weather) ? devWorld : undefined);
+  // 감상 중 톱니(showcase.tsx)에서 계절도 강제할 수 있다(2026-09-05 소유자) — 계절만은 캔버스를 다시 만드므로,
+  // 바꾸는 순간 지금 서 있는 바이옴을 force.biome에 적어 두어 다시 만들어도 **그 자리에서** 계절이 바뀐다.
+  const [devSeason, setDevSeason] = useState<SeasonKey | null>(null);
+  const changeDevSeason = (season: SeasonKey | null) => {
+    const at = window.__vicAmbient?.biome();
+    if (at) setDevWorld((f) => (f.biome === at ? f : { ...f, biome: at }));
+    setDevSeason(season);
+  };
+  const worldForce =
+    ambientWorldForce ?? (effectiveRole === "developer" && (devWorld.band || devWorld.weather || devWorld.biome) ? devWorld : undefined);
   const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
   useEffect(() => {
     const read = () => setAmbientModeState(ambientMode());
@@ -991,7 +1000,7 @@ export function StudioShell({
   // 진입은 아바타 자리의 큰 버튼 + 설정 줄, 나가기는 Esc/상단 알약(body 포털). 무거운 모달(태그·인사이트·이용 기록)이
   // 떠 있는 동안은 배경을 일시정지한다(blur 백드롭이 매 프레임 다시 흐려지는 비용 — lib/ui/ambient-pause.ts).
   useAmbientPause(modal !== null && modal !== "settings", "studio-modal");
-  const ambientSeason = pickAmbient(view.month, ambientForce ?? null).season;
+  const ambientSeason = pickAmbient(view.month, ambientForce ?? devSeason).season;
   // 포스터 테마(2026-09-03, 물빛 테마와 함께 입구 복원) — 소유자만, 서버(updatePosterThemeAction)도
   // owner 검사. 낙관적으로 먼저 바꿔 보이고(미리보기 즉시), 실패면 되돌린다. 성공 후 router.refresh로
   // 서버 스냅샷(시청자 미리보기)까지 동기화.
@@ -6106,7 +6115,7 @@ export function StudioShell({
           컴포넌트). 물결은 제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만
           얹고("모래 위 얕은 물결"), 오늘(KST) 계절 레이어가 그 위에. 보이는 조건은 CSS가 판단
           (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
-      <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={worldForce} year={view.year} />
+      <AmbientLayer force={ambientForce ?? devSeason} month={view.month} slug={schedule.calendar.slug} worldForce={worldForce} year={view.year} />
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">
@@ -6243,7 +6252,23 @@ export function StudioShell({
         </div>
       ) : null}
 
-      <ShowcaseExit />
+      {/* 감상 중 오른쪽 위 톱니(2026-09-05 소유자) — 감상하면서 계절·시간대·날씨·배경 효과를 바꿔 바로 확인한다.
+          값은 설정 모달과 **같은 상태**(devWorld·gfxPref)라 두 자리가 어긋나지 않는다. 시간대·날씨 강제는 개발자만
+          (관리자·시청자는 실제 시간만 본다 — 설정 모달의 개발자 줄과 같은 규칙, 미리보기 중인 역할에도 안 보인다). */}
+      <ShowcaseExit
+        settings={
+          effectiveRole === "developer"
+            ? {
+                seasonForce: devSeason,
+                onChangeSeasonForce: changeDevSeason,
+                month: view.month,
+                world: { force: devWorld, onChange: setDevWorld },
+                gfxPref: gfxPrefState,
+                onChangeGfxPref: changeGfxPref
+              }
+            : null
+        }
+      />
 
       {/* (#9 키보드 단축키 안내바는 달력 패널 안으로 이사 — 아래 .studio-calendar-panel 참고.
           셸의 형제로 두면 margin으로 폭을 흉내 내야 했고 실측에서 왼쪽 끝이 12px 어긋났다.) */}

@@ -790,3 +790,131 @@ html[data-reduce-motion] .viewer-ambient-ctl.rail-showcase {
   font-size: var(--text-ui, 13px);
   font-weight: 800;
 }
+
+/* ── 감상 중 배경 설정(2026-09-05 소유자: "감상하면서 시간대·날씨 바꿔 가며 바로 확인") ───────────────────
+   오른쪽 위 꼭짓점 톱니 + 아래로 열리는 판. 나가기 알약·지도와 같은 유리 문법(같은 선·바탕·그림자)이라
+   감상 화면에 새 재질이 하나도 늘지 않는다. 고른 칸은 세그먼트 공통 기법(--seg-on-*, 테두리 칩 금지).
+   톱니는 쉴 때 아주 옅다 — 배경을 보러 온 화면에서 유일하게 늘 떠 있는 물건이라. */
+.showcase-gear {
+  position: fixed;
+  top: 14px;
+  right: 18px;
+  z-index: 71;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgb(180 190 205 / 80%);
+  border-radius: 999px;
+  background: rgb(255 253 249 / 72%);
+  color: var(--ink-soft, #3d414c);
+  box-shadow: 0 6px 18px rgb(60 50 90 / 14%);
+  cursor: pointer;
+  opacity: 0.42;
+  transition: opacity var(--dur-2, 0.2s) var(--ease), transform 0.22s var(--ease-spring, var(--ease));
+}
+.showcase-gear:hover,
+.showcase-gear:focus-visible {
+  opacity: 1;
+}
+.showcase-gear:active {
+  transform: scale(0.94);
+}
+.showcase-gear.on {
+  opacity: 1;
+  background: rgb(255 255 255 / 92%);
+}
+.showcase-gear svg {
+  transition: transform 0.3s var(--ease-spring, var(--ease));
+}
+.showcase-gear.on svg {
+  transform: rotate(60deg);
+}
+html[data-reduce-motion] .showcase-gear svg {
+  transition: none;
+}
+.showcase-set {
+  position: fixed;
+  top: 60px;
+  right: 18px;
+  z-index: 71;
+  display: flex;
+  width: 288px;
+  max-height: calc(100vh - 96px);
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 13px 13px;
+  border: 1px solid rgb(255 255 255 / 62%);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgb(255 253 250 / 99%), rgb(242 245 251 / 98%));
+  box-shadow: 0 14px 34px rgb(38 46 68 / 18%), inset 0 1px 0 rgb(255 255 255 / 85%);
+  overflow: auto;
+  animation: showcase-set-in 0.22s var(--ease) both;
+}
+@keyframes showcase-set-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .showcase-set {
+  animation: none;
+}
+/* 지금 그려지는 값 — '자동'을 골라 뒀을 때 무엇이 나오는지(바이옴 · 시간대 · 날씨). */
+.sc-set-now {
+  margin: 0;
+  padding: 0 2px 1px;
+  color: #6b7386;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sc-set-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sc-set-name {
+  color: #8a91a1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.sc-set-chips {
+  display: grid;
+  gap: 4px;
+}
+.sc-set-chip {
+  padding: 6px 4px;
+  text-align: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #4a505a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: var(--seg-off-op, 0.72);
+  cursor: pointer;
+  transition: background 0.16s var(--ease), opacity 0.16s var(--ease), transform 0.16s var(--ease);
+}
+.sc-set-chip:hover {
+  background: rgb(120 128 140 / 10%);
+  opacity: 1;
+}
+.sc-set-chip:active {
+  transform: scale(0.95);
+}
+.sc-set-chip.on {
+  background: var(--seg-on-accent);
+  box-shadow: var(--seg-on-edge);
+  color: var(--seg-on-accent-ink);
+  opacity: 1;
+  cursor: default;
+}

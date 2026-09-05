@@ -68,7 +68,14 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   (`StudioSettingsList`) — never back into the role badge popover on web (mobile reuses the same list inside
   the role badge because it has no tools card). It opens as a **modal window** (`modal === "settings"`, same
   infra as 태그 편집/인사이트: history slot, focus trap, scroll lock, backdrop/Esc close) — owner said no
-  popovers for it. The avatar
+  popovers for it. **The one sanctioned second surface is the showcase gear** (2026-09-05, `ShowcaseSettingsPanel`
+  in `components/shared/ambient/showcase.tsx`): 배경 감상 hides every piece of chrome, so reaching a setting meant
+  leaving and re-entering. A top-right gear opens a glass panel with 계절 · 시간대 · 날씨 · 배경 효과 — the *same*
+  state as the settings modal (`devSeason`/`devWorld`/`gfxPref` in studio-shell), never a copy, and it renders only
+  for `effectiveRole === "developer"`, like the modal's dev rows. Esc closes the panel first, showcase second.
+  계절 is the only one that remounts the canvas, so the change carries the current biome in `force.biome` and the
+  season flips **where you are standing**. Anything new that must be changed *while looking at the background*
+  belongs here and in the modal, wired to one state. The avatar
   left/right control is a **fixed bottom-center pill** (`.bottom-float-row`) — never inside the rail,
   because the rail moves to the other side and the control would travel with it (owner feedback
   2026-09-03). Do not reintroduce a second full-width action row —

@@ -12,10 +12,14 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flower2, Haze, Leaf, Power, Snowflake, Sparkles, Waves } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flower2, Haze, Leaf, Power, Settings2, Snowflake, Sparkles, Waves } from "lucide-react";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { type AmbientMode, ambientMode, setAmbientMode } from "@/lib/ui/motion";
 import { BIOME_ROWS, BIOMES, type BiomeKey, type Dir } from "@/components/shared/ambient/world/biomes";
+import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
+import type { DayBand } from "@/components/shared/ambient/world/time";
+import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
+import type { GfxPref } from "@/lib/ui/gfx";
 import { hapticTick } from "@/lib/ui/haptics";
 
 let active = false;
@@ -420,15 +424,194 @@ function ShowcaseNav() {
   );
 }
 
-/** 감상 중 상단 알약(나가기) + Esc + 바이옴 내비. 한 화면에 하나만 두면 된다(body 포털). */
-export function ShowcaseExit() {
+// ── 감상 중 배경 설정(2026-09-05 소유자: "감상하면서 시간대·날씨 바꿔 가며 바로 확인") ────────────────────
+// 감상 모드에선 편집실 크롬이 전부 사라져 설정 모달로 갈 길이 없다(나가서 → 톱니 → 고르고 → 다시 감상 = 왕복 4번).
+// 그래서 오른쪽 위 꼭짓점에 톱니 하나. 여는 판은 **바꾸면 바로 보이는 것들만** 담는다: 계절 · 시간대 · 날씨 · 배경 효과.
+// 값의 진실은 여전히 편집실 상태(devWorld / gfxPref)라 설정 모달과 한 상태다 — 여기서 바꾸면 저기도 바뀐다.
+// 시간대·날씨는 장면을 다시 굽지 않고 엔진에 바로 들어가고(scene-engine forceWorld), 계절만 캔버스를 다시 만든다.
+type WorldForce = NonNullable<WorldCtx["force"]>;
+
+export type ShowcaseSettings = {
+  /** 계절 강제(null = 달력 달을 따라간다). 개발자 QA용 — 넘기지 않으면 톱니 자체가 없다. */
+  seasonForce: SeasonKey | null;
+  onChangeSeasonForce: (season: SeasonKey | null) => void;
+  /** 보고 있는 달 — 계절이 '자동'일 때 날씨 목록을 정한다. */
+  month: number;
+  world: { force: WorldForce; onChange: (force: WorldForce) => void };
+  gfxPref: GfxPref;
+  onChangeGfxPref: (pref: GfxPref) => void;
+};
+
+const AUTO = "auto";
+const BANDS: { value: DayBand; label: string }[] = [
+  { value: "dawn", label: "새벽" },
+  { value: "morning", label: "아침" },
+  { value: "noon", label: "점심" },
+  { value: "dusk", label: "노을" },
+  { value: "evening", label: "저녁" },
+  { value: "night", label: "밤" }
+];
+// 계절을 강제하면 날씨 목록도 그 계절의 것이어야 한다(9월에 겨울을 강제해 놓고 눈을 못 고르면 소용없다).
+const SEASON_MONTH: Record<SeasonKey, number> = { spring: 4, summer: 7, autumn: 10, winter: 1 };
+
+/** 한 줄 = 이름 + 칩 묶음. 고른 칸은 세그먼트 공통 기법(--seg-on-*)으로 채운다 — 테두리 칩 금지(2026-09-05 규칙). */
+function SetRow<T extends string>({
+  label,
+  value,
+  options,
+  onPick,
+  dataAct
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string; tip?: string }[];
+  onPick: (value: T) => void;
+  dataAct: string;
+}) {
+  // 칸을 고르게 나눈다 — 한 줄에 최대 5개, 줄 수가 정해지면 열 수는 그 줄들이 **같은 길이**가 되도록.
+  // (7개면 4+3, 6개면 3+3.) 왼쪽 정렬 flex는 마지막 줄에 칩 하나만 남아 들쭉날쭉해 보였다.
+  const rows = Math.ceil(options.length / 5);
+  const cols = Math.ceil(options.length / rows);
+  return (
+    <div className="sc-set-row">
+      <span className="sc-set-name">{label}</span>
+      <div aria-label={label} className="sc-set-chips" role="radiogroup" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        {options.map((o) => {
+          const on = o.value === value;
+          return (
+            <button
+              aria-checked={on}
+              className={`sc-set-chip${on ? " on" : ""}`}
+              data-act={dataAct}
+              key={o.value}
+              onClick={() => {
+                if (on) return;
+                hapticTick();
+                onPick(o.value);
+              }}
+              role="radio"
+              title={o.tip}
+              type="button"
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open: boolean; onOpen: (open: boolean) => void }) {
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const gearRef = useRef<HTMLButtonElement | null>(null);
+  // 지금 실제로 그려지는 값 — '자동'을 골라 뒀을 때 무엇이 나오는지가 QA의 절반이다(엔진에서 직접 읽는다).
+  const [now, setNow] = useState<{ biome: string; band: string; weather: string } | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const read = () => {
+      const a = window.__vicAmbient;
+      if (!a) return;
+      const w = a.world();
+      setNow({ biome: BIOMES[a.biome()]?.nameKo ?? "", band: BANDS.find((b) => b.value === w.band)?.label ?? w.band, weather: WEATHER_LABEL[w.weather as Weather] ?? w.weather });
+    };
+    read();
+    const iv = window.setInterval(read, 500);
+    return () => window.clearInterval(iv);
+  }, [open]);
+  // 바깥을 누르면 닫는다 — 배경을 만지러 간 손이 판을 치우게(감상 중엔 화면 전체가 놀잇감이다).
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node | null;
+      if (!t || boxRef.current?.contains(t) || gearRef.current?.contains(t)) return;
+      onOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [open, onOpen]);
+
+  const month = s.seasonForce ? SEASON_MONTH[s.seasonForce] : s.month;
+  const f = s.world.force;
+  return (
+    <>
+      <button
+        aria-expanded={open}
+        aria-label="배경 설정"
+        className={`showcase-gear${open ? " on" : ""}`}
+        data-act="ambient-showcase-settings"
+        onClick={() => {
+          hapticTick();
+          onOpen(!open);
+        }}
+        ref={gearRef}
+        title="배경 설정"
+        type="button"
+      >
+        <Settings2 aria-hidden="true" size={18} />
+      </button>
+      {open ? (
+        <div aria-label="배경 설정" className="showcase-set" ref={boxRef} role="dialog">
+          <p className="sc-set-now">{now ? `${now.biome} · ${now.band} · ${now.weather}` : "…"}</p>
+          <SetRow<SeasonKey | typeof AUTO>
+            dataAct="showcase-season"
+            label="계절"
+            onPick={(v) => s.onChangeSeasonForce(v === AUTO ? null : v)}
+            options={[
+              { value: AUTO, label: "자동", tip: "달력 달을 따라감" },
+              { value: "spring", label: "봄" },
+              { value: "summer", label: "여름" },
+              { value: "autumn", label: "가을" },
+              { value: "winter", label: "겨울" }
+            ]}
+            value={s.seasonForce ?? AUTO}
+          />
+          <SetRow<DayBand | typeof AUTO>
+            dataAct="showcase-band"
+            label="시간대"
+            onPick={(v) => s.world.onChange({ ...f, band: v === AUTO ? undefined : v })}
+            options={[{ value: AUTO, label: "자동", tip: "지금 시각" }, ...BANDS]}
+            value={f.band ?? AUTO}
+          />
+          <SetRow<Weather | typeof AUTO>
+            dataAct="showcase-weather"
+            label="날씨"
+            onPick={(v) => s.world.onChange({ ...f, weather: v === AUTO ? undefined : v })}
+            options={[
+              { value: AUTO, label: "자동", tip: "날짜 시드 난수" },
+              ...weatherOptionsForMonth(month).map((w) => ({ value: w as Weather | typeof AUTO, label: WEATHER_LABEL[w] }))
+            ]}
+            value={f.weather ?? AUTO}
+          />
+          <SetRow<GfxPref>
+            dataAct="showcase-gfx"
+            label="배경 효과"
+            onPick={s.onChangeGfxPref}
+            options={[
+              { value: "auto", label: "자동" },
+              { value: "max", label: "최대" },
+              { value: "lite", label: "가볍게" }
+            ]}
+            value={s.gfxPref === "off" ? "auto" : s.gfxPref}
+          />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/** 감상 중 상단 알약(나가기) + Esc + 바이옴 내비 + (개발자) 배경 설정 톱니. 한 화면에 하나만 두면 된다(body 포털). */
+export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null } = {}) {
   const on = useShowcase();
+  const [setOpen, setSetOpen] = useState(false);
   useEffect(() => {
     if (!on) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        exitShowcase();
+        // 설정 판이 열려 있으면 Esc는 판만 닫는다 — 설정을 만지다 실수로 감상까지 나가지 않게.
+        if (setOpen) setSetOpen(false);
+        else exitShowcase();
         return;
       }
       // 방향키·WASD = 바이옴 이동(PLAN-004). 페이지 스크롤은 막는다.
@@ -445,6 +628,10 @@ export function ShowcaseExit() {
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
+  }, [on, setOpen]);
+  // 감상에서 나가면 설정 판도 접는다(다음 진입은 늘 깨끗한 화면으로).
+  useEffect(() => {
+    if (!on) setSetOpen(false);
   }, [on]);
   // 언마운트(화면 전환)되면 감상 모드도 끝낸다 — 속성이 남아 다음 화면이 빈 채로 뜨지 않게.
   useEffect(() => () => set(false), []);
@@ -460,6 +647,7 @@ export function ShowcaseExit() {
         나가기
       </button>
       <ShowcaseNav />
+      {settings ? <ShowcaseSettingsPanel onOpen={setSetOpen} open={setOpen} s={settings} /> : null}
     </>,
     document.body
   );
