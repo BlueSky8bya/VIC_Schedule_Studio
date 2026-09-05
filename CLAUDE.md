@@ -390,12 +390,22 @@ private layers is retired — ADR-0014; the server model stays.)
   the reader nothing. 시청자 화면 is one place with one name: for a viewer it is what they always see, for the owner
   it is what 미리보기 opens — the same screen. A new `data-act` must land in one of these; the unit test
   "사전에 없는 data-act가 소스에 없다" fails the build otherwise.
+- **Any element that moves when the side flips needs a side-keyed animation name.** A CSS animation only
+  restarts when its `animation-name` changes, so a single name (`avatar-rise`) meant the poster's
+  `.avatar-slot` — which is where the 계절 배경 card lives on the viewer screen — just swapped `left`/`right`
+  and appeared at the far side **in one frame** while its neighbours (in `.public-right` / `.avatar-side-rail`,
+  which already had `-l`/`-r` names) glided (2026-09-05). Split it into `-l`/`-r` with identical keyframes.
 - **A `both`-filled animation with a delay must hold a direction-free value.** The rail cards' landing
   animation is keyed by side (`…-l` / `…-r`) so flipping sides restarts it — but `animation-fill-mode: both`
   pins the `from` value during the delay, and when that value was directional (`translateX(∓6px)`) a second
   press snapped the card **12px in one frame** with no interpolation (2026-09-05: "여러 번 누르면 여전히 툭툭";
   measured 5 jumps over 5 presses). The two keyframe names now hold **identical, direction-free** values
   (scale + opacity), so the held value never changes and the snap is structurally impossible — measured 0px.
+- **A support band outranks the day-cell ring.** The 업 도움 / 기간 안내 ribbon spans several days, so a
+  per-cell today/selected ring drawn over it slices the ribbon (measured in the studio and fixed there first).
+  The viewer poster disagreed until 2026-09-05 (both at `z-index: 4`, so the `::after` ring won); both screens
+  now put the band above (`z-index: 6`, labelled head `7`). The ring loses ~17px of its top edge and still
+  reads — the ribbon, cut in half, does not.
 - **State segments share one highlight technique** — tokens `--seg-on-*` / `--seg-off-op` in `globals.css`
   (2026-09-05). Selected = a soft tint fill + an inset white hairline, never a border; unselected = the same ink
   at `--seg-off-op`. A border-boxed "selected" chip inside a card fights the card's borderless-cell grammar and

@@ -1939,19 +1939,33 @@ body::-webkit-scrollbar {
   z-index: 6;
   opacity: 0;
   transform: translateY(24px) scale(0.96);
-  /* 통통 튀어 올라오는 등장(진짜 스프링 — 베지어 오버슈트 폴백). */
-  animation: avatar-rise var(--dur-spring-bouncy, 0.5s) var(--spring-bouncy, var(--ease-spring))
-    0.05s forwards;
 }
+/* 통통 튀어 올라오는 등장(진짜 스프링 — 베지어 오버슈트 폴백).
+   ⚠ 이름을 **side로 가른다**(2026-09-05 소유자: "이 배경 설정 박스는 누르자마자 순간이동되어서
+   이미 렌더되어 있다"). 예전엔 이름이 `avatar-rise` 하나라, 좌↔우를 눌러도 애니메이션이 다시 돌지
+   않고 left/right 좌표만 바뀌어 한 프레임에 반대편으로 옮겨 갔다. 옆 카드들은 다른 컨테이너
+   (.public-right · .avatar-side-rail)에 살고 그쪽은 side별 이름이라 매번 다시 돌았다 — 그래서
+   그 카드들만 살아 움직였다.
+   두 keyframes는 **완전히 같다**: 걸린 값이 방향에 안 걸려야 연타해도 순간 이동이 없다. */
 .poster-page.avatar-scene.avatar-right .avatar-slot {
   right: 0;
   left: auto;
+  animation: avatar-rise-r var(--dur-spring-bouncy, 0.5s) var(--spring-bouncy, var(--ease-spring))
+    0.05s forwards;
 }
 .poster-page.avatar-scene.avatar-left .avatar-slot {
   left: 0;
   right: auto;
+  animation: avatar-rise-l var(--dur-spring-bouncy, 0.5s) var(--spring-bouncy, var(--ease-spring))
+    0.05s forwards;
 }
-@keyframes avatar-rise {
+@keyframes avatar-rise-l {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes avatar-rise-r {
   to {
     opacity: 1;
     transform: none;
@@ -2697,10 +2711,18 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   filter: grayscale(0.5);
 }
 /* 끈은 편집실·시청자가 같은 CSS(app/globals.css)를 쓰므로, 흐림 전환은 시청자 달력 안으로 한정한다. */
+/* 띠는 '오늘' 링(::after z:4)보다 **위**(2026-09-05 — 편집실과 같은 규칙으로 통일).
+   띠는 여러 날을 잇는 **하나의 대상**이라 칸 테두리에 끊기면 끈이 잘려 보인다(편집실에서
+   같은 이유로 이미 정해 둔 순서 — studio-shell.css "업 도움 띠는 '오늘/선택' 링보다 위").
+   링은 17px 남짓 가려져도 나머지 테두리와 칸 배경이 '오늘'을 계속 말한다. */
 .public-day .support-bar {
+  z-index: 6;
   transition:
     opacity var(--dur-2) var(--ease),
     filter var(--dur-2) var(--ease);
+}
+.public-day .support-bar.sb-head {
+  z-index: 7;
 }
 .public-legend-vertical i {
   width: 18px;
