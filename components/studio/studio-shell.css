@@ -5998,8 +5998,12 @@ body.cell-range-dragging {
   box-sizing: border-box;
   height: 18px;
   /* 가장자리가 투명해진 만큼 진한 심이 작아 보인다 — 가로로만 조금 키운다(세로는 머리줄에 묶임). */
-  min-width: 24px;
-  padding: 0 7px;
+  min-width: 26px;
+  padding: 0 8px;
+  /* 숫자 글리프가 빛 안에서 작아 보였다(2026-09-05 소유자) — 시청자 화면의 '일'과 같은 눈높이로 한 단계 키운다.
+     18px 안에 14.5~20px 글자의 대문자 높이(≈.7em)가 들어간다. */
+  font-size: calc(clamp(14.5px, 1.05vw, 20px) * var(--cal-zoom, 1));
+  font-weight: 800;
   /* 시청자 화면과 같은 채움 — 가운데는 진하고 가장자리로 갈수록 옅어진다(2026-09-05 소유자). */
   background: radial-gradient(
     closest-side,

@@ -4704,15 +4704,15 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
    모으는 편이 훑을 때 훨씬 빨리 잡힌다.
    ⚠ 배지 높이는 머리줄 **안쪽 높이(25 − 위 여백 2 = 23)** 아래로 묶는다. 머리줄이 커지면 그 아래
    띠 레인과 카드가 통째로 밀린다(소유자: "다른 띠나 글자에 겹치게 하지 마"). */
-.public-day.today .day-strip .d-num {
+/* 빛은 숫자만이 아니라 **"n 일" 전체** 뒤에(2026-09-05 소유자: "숫자만 원으로 감싸니 '일'보다 작아 보여 조화가 안 된다").
+   숫자 하나를 원 안에 넣으면 한글 '일'보다 작은 숫자 글리프가 그대로 드러나고 색도 둘로 갈렸다(숫자 갈색·'일' 파랑).
+   이제 머리 라벨 하나가 한 색으로 한 빛 위에 앉는다. 높이는 여전히 머리줄 안쪽(21px)에 묶인다. */
+.public-day.today .day-strip strong {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   box-sizing: border-box;
   height: 21px;
-  /* 가장자리가 투명해진 만큼 진한 심이 작아 보인다 — 가로로만 조금 키운다(세로는 머리줄에 묶임). */
-  min-width: 26px;
-  padding: 0 7px;
+  padding: 0 8px;
   /* 단단한 알약이 칸 모서리에 "딱 달라붙어" 보였다(2026-09-05 소유자) → 가운데는 진하고
      가장자리로 갈수록 옅어져 사라지는 채움. 테두리선이 없으니 모서리·링과 부딪히는 각도 없다. */
   background: radial-gradient(
@@ -4724,6 +4724,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   );
   color: #3f2800;
   line-height: 1;
+}
+/* 숫자는 한글보다 작은 글리프 — 한 단계 키워 '일'과 눈높이를 맞춘다. */
+.public-day.today .day-strip .d-num {
+  font-size: 1.12em;
+  font-weight: 800;
 }
 
 /* 오늘 칸 금테. 칸 자신의 inset box-shadow는 자식(일정 카드)에 항상 가려져 테두리가 카드 밑으로
