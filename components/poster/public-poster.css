@@ -4607,12 +4607,9 @@ html[data-reduce-motion] .tier-halo {
   color: #c0c0c0;
 }
 
-.day-strip span {
-  border-radius: var(--r-pill);
-  background: rgb(255 255 255 / 78%);
-  padding: 0 6px;
-  font-size: var(--text-label);
-}
+/* (삭제 2026-09-05) `.day-strip span { 흰 알약 · 12.5px }` — 첫 커밋의 월드컵 칩 잔재. 칩은 사라졌고
+   머리줄의 span은 날짜 숫자 `.d-num` 하나뿐이라, 이 규칙이 모든 칸의 숫자를 12.5px 흰 알약으로 만들고
+   오늘 배지 위에 "이상한 흰 원"을 그렸다(소유자 스크린샷). 머리줄 칩이 다시 필요하면 클래스로 겨눈다. */
 
 .day-strip strong.red {
   color: #dc2626;
@@ -4727,11 +4724,12 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   color: #3f2800;
   line-height: 1;
 }
-/* 숫자는 한글보다 작은 글리프 — 잉크 높이로 맞춘다(2026-09-05 재실측, 1.12em은 "아직 너무 작다").
-   Malgun 900 17px: '일' 잉크 15px, '19' 잉크 12px(대문자 높이 ≈ .7em, 한글 ≈ .88em) → 같은 높이는
-   ×1.25, Apple SD Gothic Neo는 한글이 더 커서 ×1.3이 양쪽 다 눈높이가 맞는다. 22px 글자의 잉크 ≈ 16px는
-   21px 배지 안에 든다(머리줄 높이 불변, 실측 strip 27 유지). 굵기는 '일'과 같이 900을 상속한다. */
-.public-day.today .day-strip .d-num {
+/* 숫자는 한글보다 작은 글리프 — **모든 칸**에서 '일'의 잉크 높이로 맞춘다(2026-09-05 소유자: "오늘 제외하고는
+   숫자가 아직 작아보여"). Malgun 900 17px: '일' 잉크 15px, '19' 잉크 12px(대문자 높이 ≈ .7em, 한글 ≈ .88em) →
+   같은 높이는 ×1.25, Apple SD Gothic Neo는 한글이 더 커서 ×1.3이 양쪽 다 눈높이가 맞는다. 22px 글자의 잉크 ≈ 16px는
+   오늘 배지 21px 안에 들고, 평소 칸의 strong은 22.1px로 머리줄 min-height 25 아래(실측 strip 27 불변).
+   굵기는 '일'과 같이 900을 상속한다. 오늘 칸은 여기에 빛(위 규칙)만 더한다 — 숫자 크기는 이웃과 같다. */
+.day-strip .d-num {
   font-size: 1.3em;
 }
 
