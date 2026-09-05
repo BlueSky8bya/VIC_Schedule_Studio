@@ -6004,14 +6004,13 @@ body.cell-range-dragging {
      18px 안에 14.5~20px 글자의 대문자 높이(≈.7em)가 들어간다. */
   font-size: calc(clamp(14.5px, 1.05vw, 20px) * var(--cal-zoom, 1));
   font-weight: 800;
-  /* 시청자 화면과 같은 채움 — 가운데는 진하고 가장자리로 갈수록 옅어진다(2026-09-05 소유자). */
-  background: radial-gradient(
-    closest-side,
-    rgb(244 183 64 / 95%) 42%,
-    rgb(244 183 64 / 78%) 66%,
-    rgb(244 183 64 / 34%) 84%,
-    rgb(244 183 64 / 0%) 100%
-  );
+  /* 시청자 화면과 같은 도형 — **둥근 사각 타일**(2026-09-05 소유자 3차: 방사형 빛은 "타원처럼 찌그러져" 보였다).
+     옅은 금 채움 + 안쪽 흰 실선(`--seg-on-edge`) + 한 줄 윗광, 테두리선·그림자 없음. 반지름은 18px 높이에 맞춰 5px. */
+  border-radius: 5px;
+  background: rgb(244 183 64 / 60%);
+  box-shadow:
+    var(--seg-on-edge, inset 0 0 0 1px rgb(255 255 255 / 60%)),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
   color: #3f2800;
 }
 .studio-day.today {

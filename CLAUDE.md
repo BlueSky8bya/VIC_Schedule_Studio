@@ -403,10 +403,14 @@ private layers is retired — ADR-0014; the server model stays.)
   (scale + opacity), so the held value never changes and the snap is structurally impossible — measured 0px.
 - **오늘 is marked on the date number, and the ring outranks the band** (2026-09-05 owner decision, after
   checking convention). Google, Apple, Outlook and Notion all put "today" on the **number** (a filled circle /
-  badge), never on a hairline cell outline, and they draw event content above cell chrome. So the number gets a
-  gold glow — a `radial-gradient` that is solid at the centre and fades to transparent at its edge, not a
-  hard-edged pill, because a crisp pill read as "stuck onto" the cell corner (2026-09-05 owner);
-  (`.d-num` on the poster, `.studio-day-head strong` in the studio) — a marker no band can ever cover,
+  badge), never on a hairline cell outline, and they draw event content above cell chrome. So the whole
+  "n 일" label sits on a **gold rounded-rectangle tile** — soft tint fill + inset white hairline + one top sheen
+  line, no border/shadow (the `--seg-on-*` technique in gold). Two rejected shapes, don't bring them back
+  (2026-09-05 owner, three rounds): a hard-edged full pill read as "stuck onto" the cell corner, and a
+  `radial-gradient` glow on a wide/short box read as a "squashed ellipse". The digits are `.d-num` at 1.3em in
+  **every** cell (Hangul ink ≈ .88em vs digit cap ≈ .7em — 1.12em still looked small), and the legacy
+  `.day-strip span` chip rule is gone (it shrank digits to 12.5px and drew a white pill under the badge);
+  (`.day-strip strong` on the poster, `.studio-day-head strong` in the studio) — a marker no band can ever cover,
   since bands live in lanes below the day header. The owner also wanted the ring itself on top, so
   `--z-cal-select-ring` is **8**, above the ribbon (6) and its labelled head (7); the ribbon now shows a thin
   gold line where it crosses today, which is the accepted trade. **The badge must not grow the day header** —

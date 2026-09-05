@@ -4712,15 +4712,15 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   box-sizing: border-box;
   height: 21px;
   padding: 0 8px;
-  /* 단단한 알약이 칸 모서리에 "딱 달라붙어" 보였다(2026-09-05 소유자) → 가운데는 진하고
-     가장자리로 갈수록 옅어져 사라지는 채움. 테두리선이 없으니 모서리·링과 부딪히는 각도 없다. */
-  background: radial-gradient(
-    closest-side,
-    rgb(244 183 64 / 95%) 42%,
-    rgb(244 183 64 / 78%) 66%,
-    rgb(244 183 64 / 34%) 84%,
-    rgb(244 183 64 / 0%) 100%
-  );
+  /* 도형 = **둥근 사각 타일**(2026-09-05 소유자 3차: 방사형 빛은 넓고 낮은 상자에서 "타원처럼 찌그러져" 보였다;
+     그 전의 완전 알약은 칸 모서리에 "딱 달라붙어" 보였다). 상태 강조의 공용 기법(globals `--seg-on-*`: 옅은
+     채움 + 안쪽 흰 실선, 테두리선 없음)을 금색으로 — 금(金) 요소의 작은 반지름·한 줄 윗광 문법과도 같다.
+     그림자·흰 링 없음(칸 안 표식은 얹지 않고 박아 넣는다). */
+  border-radius: 6px;
+  background: rgb(244 183 64 / 60%);
+  box-shadow:
+    var(--seg-on-edge, inset 0 0 0 1px rgb(255 255 255 / 60%)),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
   color: #3f2800;
   line-height: 1;
 }
