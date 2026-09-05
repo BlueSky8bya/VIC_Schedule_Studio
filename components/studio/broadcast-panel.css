@@ -2375,7 +2375,7 @@ html[data-reduce-motion] .bp-send {
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-inline: contain;
-  scrollbar-width: thin;
+  /* (scrollbar-width: thin 제거 — 전역 '스크롤바 없음'을 덮고 있었다, 2026-09-05 globals.css.) */
 }
 
 .bp-tool-group,

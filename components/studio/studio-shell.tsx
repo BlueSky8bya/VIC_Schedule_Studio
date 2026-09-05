@@ -6242,25 +6242,8 @@ export function StudioShell({
 
       <ShowcaseExit />
 
-      {/* #9 키보드 단축키 안내바 — canEdit(소유자). 토글은 위 액션바의 버전 박스 안에 있고, 기본은
-          접혀 있어 이 바가 안 나온다 → 액션바 바로 아래로 달력이 온다(높이 최적화). 펼치면 여기 뜬다. */}
-      {canEdit && kbdHintsOpen ? (
-        // 한 줄 칩 흐름 유지. 설명은 라벨 수준으로 짧게 — 키가 주인공이고 문장은 잡음이다.
-        <div className="kbd-hints" aria-label="키보드 단축키 안내">
-          <span><kbd>Alt</kbd>+<kbd>N</kbd> 새 일정</span>
-          <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
-          <span><kbd>Del</kbd> 삭제</span>
-          <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
-          <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복붙</span>
-          <span><kbd>우클릭 드래그</kbd> 잇기</span>
-          <span><kbd>우클릭 긋기</kbd> 끊기</span>
-          <span><kbd>드래그</kbd> 범위 선택</span>
-          <span><kbd>Ctrl</kbd>+클릭 다중 선택</span>
-          <span><kbd>Ctrl</kbd>+<kbd>휠</kbd> 달력 확대</span>
-          <span><kbd>←</kbd><kbd>→</kbd> 이동</span>
-          <span><kbd>Esc</kbd> 닫기</span>
-        </div>
-      ) : null}
+      {/* (#9 키보드 단축키 안내바는 달력 패널 안으로 이사 — 아래 .studio-calendar-panel 참고.
+          셸의 형제로 두면 margin으로 폭을 흉내 내야 했고 실측에서 왼쪽 끝이 12px 어긋났다.) */}
 
       <section
         className={`studio-workspace ${editorVisible ? "editor-open" : ""}`}
@@ -6283,6 +6266,25 @@ export function StudioShell({
           ref={calPanelRef}
           style={{ "--cal-zoom": calZoom } as CSSProperties}
         >
+          {/* #9 키보드 단축키 안내바 — canEdit(소유자). 토글은 위 액션바의 버전 박스 안에 있고, 기본은
+          접혀 있어 이 바가 안 나온다 → 액션바 바로 아래로 달력이 온다(높이 최적화). 펼치면 여기 뜬다. */}
+          {canEdit && kbdHintsOpen ? (
+          // 한 줄 칩 흐름 유지. 설명은 라벨 수준으로 짧게 — 키가 주인공이고 문장은 잡음이다.
+          <div className="kbd-hints" aria-label="키보드 단축키 안내">
+            <span><kbd>Alt</kbd>+<kbd>N</kbd> 새 일정</span>
+            <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
+            <span><kbd>Del</kbd> 삭제</span>
+            <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
+            <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복붙</span>
+            <span><kbd>우클릭 드래그</kbd> 잇기</span>
+            <span><kbd>우클릭 긋기</kbd> 끊기</span>
+            <span><kbd>드래그</kbd> 범위 선택</span>
+            <span><kbd>Ctrl</kbd>+클릭 다중 선택</span>
+            <span><kbd>Ctrl</kbd>+<kbd>휠</kbd> 달력 확대</span>
+            <span><kbd>←</kbd><kbd>→</kbd> 이동</span>
+            <span><kbd>Esc</kbd> 닫기</span>
+          </div>
+          ) : null}
           <div className="studio-weekdays" aria-hidden="true">
             {WEEKDAYS.map((weekday, index) => (
               <span

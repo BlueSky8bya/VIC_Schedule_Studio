@@ -374,6 +374,11 @@ private layers is retired — ADR-0014; the server model stays.)
   `:not([data-reduce-motion])` unless its block actually starts an `animation`.
   Likewise 배경 효과 has no 끄기 option — the row above it already is the off switch, and two handles for one job
   is the confusion the owner keeps reporting.
+- **Scrollbars are never drawn, anywhere** (2026-09-05 owner). One rule in `app/globals.css` sets
+  `scrollbar-width: none` on `*` plus a zero-size `::-webkit-scrollbar`; scrolling itself (wheel, drag,
+  keyboard, touch) is untouched. The background fills the screen edge to edge, so a grey bar sitting on top
+  of it cuts the scene. **Never override it** with `scrollbar-width: thin/auto` on a new scroll area — that
+  brings the bar back in exactly one place, which is worse than having it everywhere.
 - **An `area` in the activity log is a place you can walk to** (2026-09-05 taxonomy, `AREA_ORDER` in
   `lib/activity/labels.ts`): 편집실 · 시청자 화면 · 그림판 · 태그 편집 · 인사이트 · 이용 기록 · 설정 · 배경 감상 ·
   계정 · 옛 화면 · 자동 검사 · 기타. Three rules — one place gets **one** name (그림판 / 일정 그림판 was the same

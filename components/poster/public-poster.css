@@ -1547,9 +1547,7 @@ html[data-reduce-motion] .vch-tip {
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--r-md, 12px);
-  /* 얇은 스크롤바(2026-09-03) — 윈도우 기본 굵은 바+화살표가 레일 오른쪽을 시끄럽게 했다. */
-  scrollbar-width: thin;
-  scrollbar-color: rgb(60 60 90 / 22%) transparent;
+  /* (얇은 스크롤바 → 2026-09-05 전면 제거. 전역 규칙 하나로 어디서도 안 그린다 — globals.css.) */
   scroll-padding-block: 56px; /* 자동 추적 스크롤이 sticky 코너 헤더 밑에 항목을 숨기지 않게 */
 }
 /* 좁은 창(2패널이 안 서는 폭) — 세로 스택으로 복귀, 챕터는 자체 캡 스크롤. */
@@ -2538,18 +2536,6 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 
 /* 콘텐츠 색상 안내(세로) — 태그 최대 20종 + 하트 + 필터해제까지 달력 높이 안에 들어오도록
    간격을 최소로 압축한다(미래 태그 2종까지 미리 감안). */
-/* 오른쪽 모서리의 스크롤바는 숨긴다(2026-09-05 소유자: "혼자 툭 튀어나와 있는 것 불편") — 휠·드래그
-   스크롤은 그대로. 편집실 필터(.studio-left-panel)와 같은 처리다. */
-.public-legend-vertical,
-.avatar-side-rail {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.public-legend-vertical::-webkit-scrollbar,
-.avatar-side-rail::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
 .public-legend-vertical {
   /* 콘텐츠 태그도 2열(2026-07-31) — 세로를 절반으로 줄여 레일에 라이브 카드 자리를 확보.
      제목·방식 블록·하트 안내는 전폭(grid-column 1/-1). */
