@@ -106,6 +106,9 @@ describe("world/light lerpLight", () => {
     const mid = lerpLight(a, b, 0.5);
     expect(mid.mul[0]).toBeGreaterThan(b.mul[0]);
     expect(mid.mul[0]).toBeLessThan(a.mul[0]);
-    expect(mid.sky).toBe(b.sky);
+    // 색도 수치 보간(라운드 3 C#5: 중앙 스위치는 하늘이 "툭" 튀었다) — 양 끝 어느 쪽도 아니고, 4단위 양자화.
+    expect(mid.sky).not.toBe(a.sky);
+    expect(mid.sky).not.toBe(b.sky);
+    expect(mid.sky.split(" ").every((v) => Number(v) % 4 === 0)).toBe(true);
   });
 });

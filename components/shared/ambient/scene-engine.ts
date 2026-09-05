@@ -427,7 +427,10 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     if (!Number.isFinite(zoomF) || zoomF <= 0) zoomF = 1;
     rectL = rect.left;
     rectT = rect.top;
-    dpr = wantDpr();
+    // 비트맵은 **표시 배율에 맞춘다**(QA 라운드 3 A#6, 소유자 "엔티티 둘레 검은 선"): 편집실은 `.studio-shell zoom .9/.8`이라
+    // 레이아웃 px로 만든 비트맵을 브라우저가 0.8×로 다시 표본해 1px 픽셀아트 윤곽이 회흑 테로 번졌다(fixture는 zoom 1이라
+    // 재현 안 됨). 비트맵 = 레이아웃 px × dpr × zoom → 기기 픽셀과 1:1. 캔버스 좌표계는 그대로(setTransform이 dpr로 흡수).
+    dpr = wantDpr() * zoomF;
     canvas.width = Math.max(1, Math.round(w * dpr));
     canvas.height = Math.max(1, Math.round(h * dpr));
     frame.w = w;

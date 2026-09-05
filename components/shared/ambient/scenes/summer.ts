@@ -26,7 +26,7 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
-import { bakeShore, bakeTraces, drawTraces, SHORE_V, type TraceBakes } from "../world/traces-draw";
+import { bakeShore, bakeTraces, drawTraces, SHORE_V, shoreEdgeOffset, type TraceBakes } from "../world/traces-draw";
 import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
 import { drawProp, drawSubmerged } from "../art/props";
@@ -278,10 +278,11 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     if (stamps.length > 1400) stamps.shift();
   }
   function newProp(kind: PropKind, t: number): Prop {
+    const px = rand() * w;
     return {
       kind,
-      x: rand() * w,
-      y: waterY(rand()), // 물 위에만(기슭·지평선 띠 위로 떠오르지 않게)
+      x: px,
+      y: waterYAt(px, rand()), // 물 위에만(기슭·지평선 띠 위로 떠오르지 않게 — 물가 선의 x별 실제 y 아래)
       vx: 0,
       vy: 0,
       a: rand() * TAU,
@@ -316,9 +317,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     const edge = Math.floor(rand() * 3);
     const m = 80;
     p.x = edge === 0 ? -m : edge === 1 ? w + m : w * (0.2 + rand() * 0.6);
-    p.y = edge === 2 ? h + m : waterY(0.1 + rand() * 0.7);
+    p.y = edge === 2 ? h + m : waterYAt(p.x, 0.1 + rand() * 0.7);
     const tx = w * (0.25 + rand() * 0.5);
-    const ty = waterY(0.2 + rand() * 0.6);
+    const ty = waterYAt(tx, 0.2 + rand() * 0.6);
     const d = Math.hypot(tx - p.x, ty - p.y) || 1;
     const sp = 22 + rand() * 14;
     p.dvx = ((tx - p.x) / d) * sp;
@@ -333,7 +334,15 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
   // 물가 선(캔버스 px) — 위 띠는 뭍(기슭)이라 물고기·오리·빗방울·글린트는 이 아래에서만.
   const shoreY = () => h * SHORE_V + 6;
-  const waterY = (r: number) => shoreY() + r * (waterBottom() - shoreY());
+  // (옛 `waterY(r)` = shoreY() 기준 균일 분포는 제거 — 아래 `waterYAt(x, r)`만 쓴다.)
+  // 물가 선의 **실제** y(x별) — 기슭 굽기(bakeShore)의 뭍 경계와 같은 식. shoreY()는 물의 위쪽 한계일 뿐이고 뭍은 그 아래
+  // 최대 ~110px까지 내려온다(만곡 44 + 만·곶 ±61). 옛 코드는 shoreY() 기준으로 생물·글린트·포인터 물결을 놓아 오리가 뭍을
+  // 헤엄치고 땅 위에 물결이 일었다(QA 라운드 3, 소유자). 물 위에 놓는 것은 전부 이 아래에만.
+  const waterTopAt = (x: number) => shoreY() + 46 + shoreEdgeOffset(x, w);
+  const waterYAt = (x: number, r: number) => {
+    const top2 = waterTopAt(x) + 6;
+    return top2 + r * Math.max(20, waterBottom() - top2);
+  };
   /** 열린 물의 아래 끝 — 이보다 아래는 가까운 기슭(화면 앞)이라 생물이 가면 가려져 사라진다. */
   const waterBottom = () => h - h * 0.3 * 0.36;
   // 물고기 수 = 여력에 비례(2026-09-04 사용자: "컴퓨터 능력에 따라 늘리거나 줄여라") × 화면 넓이. 가볍게(load .3)도 4마리쯤은
@@ -353,11 +362,12 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     const e = Math.floor(rand() * 3);
     const m = 70;
     const x = e === 0 ? -m : e === 1 ? w + m : rand() * w;
-    const y = e === 2 ? h + m : waterY(rand());
+    const y = e === 2 ? h + m : waterYAt(x, rand());
+    const tx2 = w * (0.2 + rand() * 0.6);
     return {
       x,
       y,
-      hd: Math.atan2(waterY(0.2 + rand() * 0.6) - y, w * (0.2 + rand() * 0.6) - x),
+      hd: Math.atan2(waterYAt(tx2, 0.2 + rand() * 0.6) - y, tx2 - x),
       spd: cruise,
       cruise,
       k: big ? 0.9 + rand() * 0.2 : 0.35 + rand() * 0.2, // 축척(PLAN-004 §2): 소 28~44 · 대 72~88(옛 40~64 · 92~108)
@@ -444,8 +454,13 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           const r0 = rng(91 + w + SEASON_SEED[season]); // 계절마다 다른 배치 — 넷이 같은 그림이면 계절이 안 읽힌다
           const edge = shore.height - 24;
           // 아트가 없으면 대체물로 — 옛 코드는 아트 전용이라 기슭이 늘 맨땅이었다(검토 4차).
+          // 발은 **x별 물가 선 위**(edge + shoreEdgeOffset)에 — 옛 평평한 `edge − 2`는 물가가 높은 x에서 소품 발이 물에 들어갔다(AMB-S4-04, 라운드 2 B#4·3 B).
           const stand = (id: string, n: number, k: number, rr?: number) => {
-            for (let i = 0; i < n; i++) drawProp(sg, shoreArt, id, 30 + r0() * (w - 60), edge - 2 - r0() * 10, { k: k * (0.85 + r0() * 0.3), r: rr ?? r0(), flip: r0() < 0.5 });
+            for (let i = 0; i < n; i++) {
+              const sx = 30 + r0() * (w - 60);
+              const sy = edge + shoreEdgeOffset(sx, w) - 6 - r0() * 10;
+              drawProp(sg, shoreArt, id, sx, sy, { k: k * (0.85 + r0() * 0.3), r: rr ?? r0(), flip: r0() < 0.5 });
+            }
           };
           // 갈대·억새 — 여름·봄은 초록 변형(r < .5), 가을·겨울은 마른 변형(r ≥ .5).
           stand("reed", Math.max(6, Math.round(w / 120)), 0.5, season === "autumn" || season === "winter" ? 0.7 : 0.2);
@@ -490,7 +505,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         // 반쯤 잠긴 바위 셋 — 수면선을 걸치고 앉는다(물에 박혔다는 신호).
         for (let i = 0; i < 3; i++) {
           const x = w * (0.1 + r2() * 0.8);
-          const y = MH * (0.22 + r2() * 0.6);
+          // 물 위 앵커도 x별 물가 선 아래(+24)에만 — 기슭이 깊이 내려오는 x에서 바위가 뭍에 얹혔다(AMB-S4-04, 라운드 3 B).
+          const y = Math.max(waterTopAt(x) + 24 - shoreY(), MH * (0.22 + r2() * 0.6));
           const k = 0.9 + r2() * 0.9;
           // 수면선의 뒤 반원 — 바위보다 **먼저**(뒤쪽은 몸에 가려야 한다, 2026-09-05 소유자).
           const rockRing = (a0: number, a1: number) => {
@@ -548,8 +564,12 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       //    먼 기슭(위) → 열린 물(가운데) → 가까운 기슭과 정수식물(아래, 화면 밖으로 잘린다).
       if (!nearBank || nearW !== w) {
         const NH = Math.round(h * 0.3);
-        const nb = makeCanvas(w, NH);
+        // 위 여유 PADN — 물가 선 바로 아래 선 갈대(최대 ~130px)가 캔버스 위 모서리(직선)에 잘려 "ㅡ자로 잘린 갈대"가 됐다
+        // (QA 라운드 3, 소유자 스크린샷). 캔버스를 위로 늘리고 그리기 원점을 내린다. 그리는 자리(f.h − height)는 자동으로 맞는다.
+        const PADN = 140;
+        const nb = makeCanvas(w, NH + PADN);
         const ng = nb.g;
+        ng.translate(0, PADN);
         const r1 = rng(613 + w + SEASON_SEED[season]);
         // 근경 물가 선 — 위쪽으로 굽이친다(만·곶). 캔버스 위 40%는 물, 아래는 뭍.
         const top = (x: number) => NH * 0.34 + Math.sin((x / w) * 4.2 + 1.9) * NH * 0.1 + Math.sin((x / w) * 9.7 + 0.4) * NH * 0.045;
@@ -682,7 +702,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       if (!winter && !props.some((p) => p.kind === "duck")) {
         const d = newProp("duck", f.t);
         d.x = w * (0.3 + rand() * 0.4);
-        d.y = waterY(0.3 + rand() * 0.4);
+        d.y = waterYAt(d.x, 0.3 + rand() * 0.4);
         // 핫 존(달력)이 있으면 그 둘레의 빈 띠 중 가장 넓은 곳에서 시작한다(위·아래·왼쪽·오른쪽).
         const hot = f.hot;
         if (hot) {
@@ -714,7 +734,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       // (2026-09-04 소유자: "민물의 마우스 물결도 바다처럼 연하게 똑같이"). 옛 제트스키 항적(길·거품 도장)은
       // 더 이상 방출하지 않는다 — 코드는 남겨 두되 배열이 비어 있어 그리지 않는다.
       // 얼음판(겨울)에는 물결이 생기지 않고, 물가 선 위(기슭·뭍)에도 생기지 않는다.
-      if (!f.dim && !winter) stepTrail(trail, p, t, shoreY() + 6, h);
+      // 포인터가 기슭(물가 선 위) 위에 있으면 물결을 내지 않는다 — 옛 상한 shoreY()+6은 뭍 위에서도 물결을 일으켰다.
+      if (!f.dim && !winter) stepTrail(trail, p.inside && p.y < waterTopAt(p.x) + 6 ? { ...p, inside: false } : p, t, shoreY() + 6, h);
       while (path.length && t - path[0].t0 > ttl) path.shift();
       const sttl = ttl * 0.9; // 거품 띠도 조금 짧게(2026-09-04 사용자: 항적이 너무 오래 남는다)
       while (stamps.length && t - stamps[0].t0 > sttl) stamps.shift();
@@ -725,7 +746,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       }
       // 비(날짜 시드 날씨) — 수면 곳곳에 작은 빗방울 고리. 여력에 따라 초당 4~14개. 물고기는 비 오면 수면으로 올라온다(아래).
       if (f.weather.now === "rain" && load >= 0.2 && rings.length < 160 && rand() < dt * lerp(4, 14, load)) {
-        ring(rand() * w, waterY(rand()), 8 + rand() * 12, 0.28, 0, 0.9 + rand() * 0.5, 0.9);
+        const rx = rand() * w;
+        ring(rx, waterYAt(rx, rand()), 8 + rand() * 12, 0.28, 0, 0.9 + rand() * 0.5, 0.9);
         rainRings++;
       }
       // 먹이(누른 자리) — 12초 또는 다 먹히면 사라진다.
@@ -915,8 +937,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
               q.x = w - m;
               q.vx = -Math.abs(q.vx) - 4;
             }
-            if (q.y < shoreY() + m) {
-              q.y = shoreY() + m; // 물가 선 위(기슭)로는 못 올라간다
+            const wtop = waterTopAt(q.x) + m;
+            if (q.y < wtop) {
+              q.y = wtop; // 물가 선 위(기슭)로는 못 올라간다 — x별 실제 물가 선 기준(옛 shoreY()는 뭍 110px을 물로 봤다)
               q.vy = Math.abs(q.vy) + 4;
             } else if (q.y > waterBottom() - m) {
               q.y = waterBottom() - m; // 가까운 기슭 뒤로는 못 내려간다(가려져 사라진다)
@@ -931,7 +954,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             const inside = q.x > -60 && q.x < w + 60 && q.y > -60 && q.y < h + 60;
             if (inside) q.entered = true;
             // 튜브도 물 위에만 — 물가 선 위로 밀리면(던지기·흐름) 물가에서 튕겨 내려온다.
-            const wy = shoreY() + 40;
+            const wy = waterTopAt(q.x) + 24;
             if (q.y < wy) {
               q.y = wy;
               q.vy = Math.abs(q.vy) + 6;
@@ -1172,14 +1195,18 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       }
       // ④ 물방울 — 여력 0.5부터 3~8초에 하나, 1.4초 동안 커졌다 톡 터진다.
       if (load >= 0.5 && t > nextBubble) {
-        bubbles.push({ x: 40 + rand() * (w - 80), y: waterY(0.05 + rand() * 0.9), t0: t });
+        const bx = 40 + rand() * (w - 80);
+        bubbles.push({ x: bx, y: waterYAt(bx, 0.05 + rand() * 0.9), t0: t });
         nextBubble = t + 3 + rand() * 5;
       }
       for (let i = bubbles.length - 1; i >= 0; i--) if (t - bubbles[i].t0 > 1.6) bubbles.splice(i, 1);
       // ⑤ 햇빛 반짝임 — 여력 0.3부터 6~14개(물 위에만).
       // 글린트는 해의 반짝임 — 조명 글린트 배율(QA 라운드 2: 새벽·저녁·흐림·비·안개 0, 노을 1.2, 밤 .5 달빛)을 곱한다.
       const wantGl = load >= 0.3 ? Math.round(lerp(6, 14, load) * currentLight().glint) : 0;
-      while (glints.length < wantGl) glints.push({ x: rand() * w, y: waterY(rand()), ph: rand() * TAU, r: 1.6 + rand() * 1.8 });
+      while (glints.length < wantGl) {
+        const gx = rand() * w;
+        glints.push({ x: gx, y: waterYAt(gx, rand()), ph: rand() * TAU, r: 1.6 + rand() * 1.8 });
+      }
       if (glints.length > wantGl) glints.length = wantGl;
       // 소품끼리 겹치지 않게(원 분리).
       for (let i = 0; i < props.length; i++) {
@@ -1575,7 +1602,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       }
       // 뭍(물가 선 위)이나 얼음판을 눌렀을 때는 **파동이 아예 생기지 않는다** — 땅을 눌렀는데 물가에
       // 파동이 일렁이면 안 된다(2026-09-04 소유자). 클립으로 가리는 게 아니라 만들지 않는다.
-      if (winter || y < shoreY() + 4) return onBackground;
+      if (winter || y < waterTopAt(x) + 4) return onBackground; // 뭍(기슭) 클릭은 물 반응(고리·먹이) 없음 — x별 물가 선 기준
       // 누르면 묵직한 원형 잔물결 — 바탕이 아니어도(칸 위) 물은 튄다: 장난감이라 방해가 아니다.
       if (f.load < 0.3) ring(x, y, 130, 0.5, 0, 1.8, 2.4);
       else {

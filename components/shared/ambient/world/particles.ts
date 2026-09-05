@@ -39,7 +39,6 @@ export function createParticles(seed: number): ParticleLayer {
   let rainC: HTMLCanvasElement | null = null;
   let rainG: CanvasRenderingContext2D | null = null;
   let wind = 0;
-  let tAcc = 0;
 
   const targetRain = (load: number, lite: boolean, w: number, h: number) => Math.round(lerp(70, 240, load) * (lite ? 0.5 : 1) * clamp((w * h) / 1_200_000, 0.6, 1.5));
   const targetSnow = (load: number, lite: boolean, w: number, h: number) => Math.round(lerp(50, 170, load) * (lite ? 0.5 : 1) * clamp((w * h) / 1_200_000, 0.6, 1.5));
@@ -60,7 +59,8 @@ export function createParticles(seed: number): ParticleLayer {
   };
   const newWisp = (w: number, h: number): Wisp => {
     const hz = horizonY(h);
-    return { x: r() * w, y: hz + (0.12 + r() * 0.7) * (h - hz), rx: 120 + r() * 220, a: 0.03 + r() * 0.045, sp: 5 + r() * 9, ph: r() * TAU };
+    // α .06~.12 — 옛 .03~.075는 8bit 변화 ≤ 6이라 시간 시트 임계 아래(안개 장면이 "정지"로 잡혔다, 라운드 3 C#7). 보이되 옅게.
+    return { x: r() * w, y: hz + (0.12 + r() * 0.7) * (h - hz), rx: 120 + r() * 220, a: 0.06 + r() * 0.06, sp: 5 + r() * 9, ph: r() * TAU };
   };
 
   const fit = <T>(arr: T[], n: number, make: () => T) => {
@@ -70,7 +70,6 @@ export function createParticles(seed: number): ParticleLayer {
 
   return {
     step(dt, w, h, weather, light, load, lite, own) {
-      tAcc += dt;
       // 바람 방향은 시드로 한 번 정한다(왼→오 또는 오→왼), 세기는 조명에서.
       const dir = ((seed >>> 3) & 1) === 0 ? 1 : -1;
       wind = dir * light.wind;

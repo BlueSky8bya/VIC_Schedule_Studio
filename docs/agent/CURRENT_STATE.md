@@ -51,7 +51,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   물 안 바위 0, 점심·맑음 항등(s16 9/9 해시 동일). 부분: 산 층 하늘↔①이 밤·노을·눈에서 2.2~4.0(오버레이는 하늘만 어둡게 함 — 선형 연산
   둘로는 하늘↔①과 ①↔②를 동시에 못 만족 → AMB-D1-01 "림 대비 되살림" 구조가 다음 라운드 1순위). 게이트 tsc 0 · lint 0 · vitest 574 ·
   build 0 · 셀프테스트 23/23. 신규 도구 `scripts/ambient-qa/light-probe.mjs`, 테스트 `tests/unit/ambient-light.test.ts`(조명 계약 10).
-  다음: 라운드 3 — AMB-D1-01 + D1-02(③ 구조 = D2-03) + D2-02(언덕 띠) "밝기 단차 묶음", 조명 위에서 잰다.
+  **라운드 3 완료(2026-09-05, `docs/ambient/rounds/ROUND-03.md`)**: before(ae062c8) → A·B·C 동시(23 → 14, P0 1 = 민물 뭍 위 오리·물결) + 소유자
+  실화면 3건. 묶음 4: ① 민물 `waterTopAt(x)`(= `traces-draw.ts shoreEdgeOffset` 공유식 — 스폰·클램프·클릭·포인터 물결·앵커·기슭 소품 전부 x별
+  물가 선 기준) + 근경 캔버스 위 여유 140(갈대 ㅡ자 절단) ② 육지: 산 ① 불투명(가을 팔레트 −4L, mix .1/.25) + **원경 띠 어둡힘**(하늘색 α×.6을
+  ①·②에) + 지평선 광 + 능선선 전용 판(조명 비례 ≤ 1.5) → 면 단차 B 표 통과(노을·맑음 하늘↔① 2.2 → 5.6, s11 밤 2.6 → 3.9, 역전 0), 능선선 국소
+  대비 4.5(규칙 10 잔여); 계곡 벽 능선 무릎·발치 w·.12·하류 v 1.5(16:9 캡); 억새 이삭 흰색 제거 ③ 대체물 윤곽 α .38, 암석 노두 claimSpot·위성 3~5,
+  물가 바위를 조류대 **위**에, 파도 × (1+.5·wind) ④ 엔진 비트맵 = 레이아웃 × dpr × **zoom**(편집실 .9/.8 재표본 = "검은 선" 가설), 전이 색 수치
+  보간, 안개 층 절단선, 가을 이중 안개 제거. 게이트 tsc 0 · **eslint 0**(라운드 2 잔재 경고 정리) · vitest 574 · build 0. 아트: 참나무 4장만 납품,
+  나머지(갈대·바위·통나무·소나무·관목…)는 전부 `art/props.ts` 대체물 — 소유자 질문에 답함(윤곽 "검은 선"은 대체물+zoom, 겹침·경계는 코드).
+  다음: 라운드 4 — **AMB-T1-03**(소품 그림자 ← `light.shadow`, 수면 반사 띠 — "조명은 섰지만 소비자가 없다") + T1-02 밤 생물 풀; 산 층은 B.md 다섯 rect 표를 프로브로.
 
 - **'오늘' 표식 관례화 + 링을 띠 위로(2026-09-05 소유자 결정, 둘 다)**: 관례 조사 결과 Google·Apple·
   Outlook·Notion은 모두 오늘을 **날짜 숫자**에 건다(채운 원/배지) — 칸 테두리로 말하지 않고, 일정 콘텐츠는
@@ -1899,10 +1907,11 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Next Exact Steps
 
--1. **앰비언트 비주얼 QA 라운드 3**(라운드 1·2 완료 2026-09-05): 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 03 --phase before`
-   (+ `--only 3,4 --kinds long`) → `sheet`·`diff` → `node scripts/ambient-qa/light-probe.mjs`로 조명 수치 고정 → 에이전트 3 **동시** 검토
-   → 통합(P0 전부 + 입구 묶음 ≤ 4, 프로토콜 §3.3) — 첫 후보 **AMB-D1-01 산·원경 대비 되살림**(+ D1-02 · D2-02 밝기 단차 묶음) → 수정 →
-   게이트 → `--phase after` → `--compare before,after` → `docs/ambient/rounds/ROUND-03.md`. P2(전수 지표 `metrics.mjs`)·P3(`round.mjs`)는 병행.
+-1. **앰비언트 비주얼 QA 라운드 4**(라운드 1~3 완료 2026-09-05): 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 04 --phase before`
+   (+ `--only 3,4 --kinds long`) → `sheet`·`diff` → `light-probe.mjs` → 에이전트 3 **동시** 검토 → 통합(P0 전부 + 입구 묶음 ≤ 4) — 첫 후보
+   **AMB-T1-03**(소품 그림자 ← `light.shadow` 재굽기 + 수면 노을 반사·밤 달빛 띠) + **AMB-T1-02**(밤 생물 풀) "밤·전환 묶음" → 수정 → 게이트
+   → `--phase after` → `--compare before,after` → `docs/ambient/rounds/ROUND-04.md`. 산 층은 `ROUND-03-reports/B.md`의 다섯 rect 표를 프로브
+   스크립트로 옮겨 잰다. P2(전수 지표 `metrics.mjs`)·P3(`round.mjs`)·16:9 정적 1장(B 제안)은 병행.
 0. **마이그레이션 0051 적용** — `node scripts/apply-db.mjs db/migrations/0051_visit_known_accounts.sql`
    (새/재방문 판정용 DISTINCT RPC + `(day, account_hash)` 인덱스. 미적용이어도 코드가 옛 경로로
    폴백하므로 급하진 않지만, 적용해야 인사이트 열 때의 순차 왕복 40회+가 사라진다.)

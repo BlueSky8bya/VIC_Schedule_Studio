@@ -774,7 +774,9 @@ function flatBody(g: CanvasRenderingContext2D, fill: string, line: string, path:
     g.clip();
     path();
   }
-  g.globalAlpha *= 0.55;
+  // 윤곽 알파 .55 → .38(QA 라운드 3, 소유자: "엔티티 주변에 이상한 검은 선") — 밤·흐림 조명(multiply)이 스프라이트를 통째로
+  // 어둡게 하면 같은 색조의 어두운 윤곽이 상대적으로 검게 튄다. 픽셀 어법(윤곽 = 같은 색조의 어두운 단계)은 유지, 농도만 줄인다.
+  g.globalAlpha *= 0.38;
   g.strokeStyle = line;
   g.lineWidth = 1;
   g.stroke();

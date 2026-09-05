@@ -110,14 +110,17 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
   if (L.groundFog > 0) {
     const c = L.hazeRgb || "228 232 234";
     const f = L.groundFog;
-    // 층별 누적 — 후경 .55 · 중경 .3 · 전경 .1(GRAMMAR §3.2 안개 행). 지평선 위에서 시작해 절단선이 없다.
-    const gr = g.createLinearGradient(0, hz * 0.5, 0, h);
-    gr.addColorStop(0, `rgb(${c} / ${(0.55 * f).toFixed(3)})`);
-    gr.addColorStop(0.32, `rgb(${c} / ${(0.3 * f).toFixed(3)})`);
-    gr.addColorStop(0.62, `rgb(${c} / ${(0.1 * f).toFixed(3)})`);
+    // 층별 누적 — 후경 .55 · 중경 .3 · 전경 .1(GRAMMAR §3.2 안개 행). 위는 α 0에서 시작해 hz·.5에서 .55f로 오른다 — 옛 코드는
+    // 첫 스톱이 .55f인 채 hz·.5에서 fillRect를 시작해 어두운 하늘(새벽·밤)에 전폭 가로 절단선(−2~−4 L)이 생겼다(라운드 3 C#6).
+    const y0 = hz * 0.5;
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    gr.addColorStop(0, `rgb(${c} / 0)`);
+    gr.addColorStop(y0 / h, `rgb(${c} / ${(0.55 * f).toFixed(3)})`);
+    gr.addColorStop(y0 / h + 0.32 * (1 - y0 / h), `rgb(${c} / ${(0.3 * f).toFixed(3)})`);
+    gr.addColorStop(y0 / h + 0.62 * (1 - y0 / h), `rgb(${c} / ${(0.1 * f).toFixed(3)})`);
     gr.addColorStop(1, `rgb(${c} / ${(0.08 * f).toFixed(3)})`);
     g.fillStyle = gr;
-    g.fillRect(0, hz * 0.5, w, h - hz * 0.5);
+    g.fillRect(0, 0, w, h);
     // 지면 안개 띠 — 발치 높이(v ≈ .3)에 낮게 깔린 띠. 드리프트하는 뭉치는 입자층이 맡는다.
     const by = hz + 0.3 * (h - hz);
     const bh = 0.1 * h;
@@ -131,13 +134,33 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
   if (L.skyAlpha > 0) {
     // 하늘 오버레이는 **지평선 바로 아래(hz + .06h)에서 끝난다** — 옛 hz + .16h는 산 ①·② 봉우리(y 150~300)까지 덮어
     // 하늘↔①↔② 단차를 눌렀다(라운드 2 실측 5.6/5.9 → 2.5/2.2). 봉우리는 multiply만 받는다.
+    // **지평선 광**(QA 라운드 3, AMB-D1-01): 하늘은 천정이 어둡고 지평선 쪽이 밝다(대기 산란). 오버레이 색을 아래로 갈수록
+    // 밝은 판으로 섞고 α도 줄여 지평선 바로 위의 하늘이 ① 봉우리보다 ≥ 4L 밝게 남는다 — 라운드 2에서 하늘↔①이 2.2~4.0으로
+    // 눌린 원인은 오버레이가 지평선까지 같은 어두운 색이었기 때문이다. 점심·맑음은 skyAlpha 0이라 그대로.
     const end = hz + 0.06 * h;
     const gs = g.createLinearGradient(0, 0, 0, end);
+    const glow = L.sky
+      .split(" ")
+      .map((v) => Math.round(Number(v) + (236 - Number(v)) * 0.55))
+      .join(" ");
     gs.addColorStop(0, `rgb(${L.sky} / ${L.skyAlpha.toFixed(3)})`);
-    gs.addColorStop(0.7, `rgb(${L.sky} / ${(L.skyAlpha * 0.55).toFixed(3)})`);
-    gs.addColorStop(1, `rgb(${L.sky} / 0)`);
+    gs.addColorStop(0.5, `rgb(${L.sky} / ${(L.skyAlpha * 0.6).toFixed(3)})`);
+    gs.addColorStop(0.82, `rgb(${glow} / ${(L.skyAlpha * 0.25).toFixed(3)})`);
+    gs.addColorStop(1, `rgb(${glow} / 0)`);
     g.fillStyle = gs;
     g.fillRect(0, 0, w, end);
+    // **원경 띠 어둡힘**(라운드 3 AMB-D1-01, 2차): 지평선 바로 아래의 먼 것(산 ①·②, 먼 언덕·나무 줄, 먼 수면)은 노을·밤에 **하늘보다
+    // 어두운 실루엣**이다 — 하늘만 오버레이로 어둡히고 ①은 multiply만 받으면 노을·밤에 ①이 하늘보다 밝아 층이 뒤집힌다(라운드 2
+    // 실측 2.2~4.0 → 라운드 3 1차 −3.4). ①·②를 같은 α로 하늘색 쪽으로 눌러(①↔② 비례 유지) ③ 앞에서 사라진다. 점심·맑음 0.
+    const fa = L.skyAlpha * 0.6;
+    const fEnd = hz + 0.42 * h;
+    const gf = g.createLinearGradient(0, hz, 0, fEnd);
+    gf.addColorStop(0, `rgb(${L.sky} / ${(fa * 0.7).toFixed(3)})`);
+    gf.addColorStop(0.12, `rgb(${L.sky} / ${fa.toFixed(3)})`);
+    gf.addColorStop(0.45, `rgb(${L.sky} / ${fa.toFixed(3)})`);
+    gf.addColorStop(1, `rgb(${L.sky} / 0)`);
+    g.fillStyle = gf;
+    g.fillRect(0, hz, w, fEnd - hz);
   }
   if (!isNeutralMul(L.mul)) {
     // 지면 노출은 세로 그라데이션 — 지평선 쪽(원경)은 35% 덜 누른다. 밤의 원경은 하늘빛을 받아 상대적으로 밝고(대기 원근),

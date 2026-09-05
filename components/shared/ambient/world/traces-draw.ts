@@ -160,6 +160,14 @@ export function shoreWave(x: number, w: number): number {
   // 큰 만 하나(±34) + 중간 굴곡 + 잔물결 — 물의 덩어리가 비대칭으로 잘려야 "못"으로 읽힌다.
   return Math.sin(u * 1.7 + 0.35) * 34 + Math.sin(u * 5.1 + 0.6) * 19 + Math.sin(u * 11.3 + 2.2) * 8;
 }
+/** 물가 선의 x별 낙차(px) — 만곡(좌우 끝 44px) + 만·곶 + 잔물결. `bakeShore`의 뭍 경계와 **같은 식**이어야
+ *  물 위 생물·포인터 물결·글린트가 뭍에 올라서지 않는다(QA 라운드 3, 소유자: "위쪽 땅에 물결이 생기고 오리가 땅까지 헤엄친다").
+ *  절대 y = `h*SHORE_V + 52 + shoreEdgeOffset(x, w)`(shoreY() = h*SHORE_V + 6 → +46). */
+export function shoreEdgeOffset(x: number, w: number): number {
+  const t = Math.min(1, Math.min(x, w - x) / (w * 0.3));
+  const bay = (1 - t) * (1 - t) * 44;
+  return bay + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
+}
 /** 기슭 띠 — 지평선(hz)에서 시작해 h*SHORE_V까지. 좌우 가장자리는 아래로 내려와 연못을 감싼다(만곡). */
 export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): HTMLCanvasElement {
   const hz = horizonY(h);
@@ -179,11 +187,8 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   const [s0, s1, s2] = SH[season];
   // 물가 곡선(뭍의 아래 경계) — 칠하기 전에 먼저 정의하고, **모든 뭍 칠을 이 곡선 위로 클립**한다.
   // 옛 코드는 전폭 사각형을 칠한 뒤 아래 12%만 페이드시켜, 그 페이드 끝이 화면을 가로지르는 직선으로 남았다.
-  const bay0 = (x: number) => {
-    const t = Math.min(1, Math.min(x, w - x) / (w * 0.3));
-    return (1 - t) * (1 - t) * 44;
-  };
-  const landEdge = (x: number) => edge + bay0(x) + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
+  // 식은 `shoreEdgeOffset` 하나 — 장면(summer.ts)의 물 상한과 같은 곡선이어야 한다.
+  const landEdge = (x: number) => edge + shoreEdgeOffset(x, w);
   const landPath = () => {
     g.beginPath();
     g.moveTo(-8, -8);

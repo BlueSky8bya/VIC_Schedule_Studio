@@ -11,7 +11,8 @@ import type { Frame, Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet } from "../art/load";
-import { drawProp, resetPropField } from "../art/props";
+import { claimSpot, drawProp, resetPropField } from "../art/props";
+import { currentLight } from "../world/light";
 import { horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
 import { bakeWater, drawGlints, drawTrail, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
@@ -102,7 +103,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     g.fillRect(0, 0, w, H);
     // 물 마스크(QA 라운드 2 B#1, P0): 갯벌은 물골 폴리곤을 자리 필드에 등록하지 않아 바위·조개·게 구멍이 물 한복판에
     // 마른 채 서 있었다. 물골 중심선 거리 ≤ hw + 6px 이면 물 — 소품·조개·구멍·해조·조약돌은 전부 이 밖에만 놓는다.
-    let inWater = (_x: number, _y: number) => false;
+    let inWater: (x: number, y: number) => boolean = () => false;
     if (mode === "tidal") {
       // 물막이 하늘을 비춘다 — 갯벌이 갈색이 아니라 은빛으로 보이는 이유(물가 쪽이 가장 밝다).
       {
@@ -800,6 +801,9 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       }
       // 바위는 **노두(露頭) 단위로 뭉친다** — 균등 난수 산포는 크기 위계도 방향성도 없어 "돌 스티커 뿌리기"로
       // 읽혔다(검토 라운드2 세 명). 노두 4곳에 큰 것 하나 + 붙은 작은 것들, 그리고 근경에 초점 바위 하나.
+      // 물가 바위(y < 110)는 조류대 띠 **뒤에**(위에) 그린다 — 옛 순서(바위 → 띠)는 띠가 바위를 덮어 α≈.25 유령 + 흰 호만 남겼다
+      // (QA 라운드 3 A#5 = AMB-S4-03의 원인). 여기 모아 두고 띠를 칠한 뒤 그린다.
+      const lateRocks: { x: number; y: number; k: number; r1: number; f: boolean }[] = [];
       {
         type R2 = { x: number; y: number; k: number };
         const rocks: R2[] = [];
@@ -810,7 +814,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           const dir = r() * Math.PI; // 노두마다 결의 방향이 있다
           const big = (2.1 + r() * 1.1) * landK(cy2) * 1.5;
           rocks.push({ x: cx2, y: cy2, k: big });
-          const n2 = 5 + Math.floor(r() * 4);
+          const n2 = 3 + Math.floor(r() * 3); // 위성 3~5(규칙: 큰 것 1 + 작은 것 ≤ 5 — 라운드 3 B)
           for (let i = 0; i < n2; i++) {
             const d = 20 + r() * 70;
             rocks.push({
@@ -835,19 +839,17 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         for (const rk of rocks) {
           if (rk.y < 56 || rk.y > VIS - 6) continue;
           if (pools.some(([px, py, prx, pry]) => Math.abs(rk.x - px) < prx + 14 && Math.abs(rk.y - py) < pry + 12)) continue;
-          softBlob(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, "58 64 68", 0.18, 0, GROUND_SQUASH * 0.5);
-          drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: r(), flip: r() < 0.5 });
-          // 물가에 걸친 바위는 발치가 늘 젖어 있고 흰 물살이 부딪친다.
+          // 노두 안에서도 서로 겹치지 않는다(QA 라운드 3, 소유자 "돌이 어색하게 잘려 있다") — 대체물 바위끼리 겹치면 윤곽이 서로를
+          // 뚫고 지나가 잘린 돌로 읽힌다. 자리 점유 실패면 그 돌은 없다(무리는 큰 것 하나 + 붙은 작은 것들로 충분).
+          if (!claimSpot(rk.x, rk.y, 11 * rk.k)) continue;
+          const r1 = r();
+          const f = r() < 0.5;
           if (rk.y < 110) {
-            // 물살은 바위 **앞쪽(바다 쪽)** 반원에만 부서진다 — 닫힌 타원 링은 "속 빈 도형"으로 읽힌다
-            // (사이클5 경계 #4).
-            g.strokeStyle = "rgb(252 254 255 / 0.55)";
-            g.lineWidth = 2.4;
-            g.beginPath();
-            g.ellipse(rk.x, rk.y + 2, 19 * rk.k, 6 * rk.k, 0, Math.PI * 1.05, TAU - 0.15);
-            g.stroke();
-            softBlob(g, rk.x, rk.y - 2, 15 * rk.k, "255 255 255", 0.28, 0, GROUND_SQUASH);
+            lateRocks.push({ x: rk.x, y: rk.y, k: rk.k, r1, f });
+            continue;
           }
+          softBlob(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, "58 64 68", 0.18, 0, GROUND_SQUASH * 0.5);
+          drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: r1, flip: f });
         }
       }
       // 조류대(해조 띠) — 물가 선 바로 아래 **검은 가로 띠**. 실제 암석해안에서 대비가 가장 센 요소이고,
@@ -861,10 +863,11 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         const topB = (x: number) => 58 + Math.sin(x * 0.0071 + 0.7) * 9 + Math.sin(x * 0.019 + 2.2) * 5;
         const botB = (x: number) => topB(x) + belt * (0.55 + 0.55 * (0.5 + 0.5 * Math.sin(x * 0.0104 + 1.1)));
         // 3단 계단 — 부드러운 그라데이션은 "지면 때/JPEG 뭉개짐"으로 읽힌다(사이클4 미관 #9).
+        // 최암부를 올린다(QA 라운드 3 A#5: 프레임에서 유일하게 검은 띠 — VISUAL_DIRECTION "위협적인 검은 덩어리 없음", 밤 L ≥ 14).
         const steps: [number, number, string][] = [
-          [0, 0.42, "rgb(20 22 18 / 0.42)"],
-          [0.42, 0.74, "rgb(47 50 49 / 0.3)"],
-          [0.74, 1, "rgb(64 68 66 / 0.16)"]
+          [0, 0.42, "rgb(36 40 38 / 0.36)"],
+          [0.42, 0.74, "rgb(52 56 54 / 0.28)"],
+          [0.74, 1, "rgb(66 70 68 / 0.15)"]
         ];
         for (const [a0, a1, col] of steps) {
           g.fillStyle = col;
@@ -892,6 +895,18 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         sp2.addColorStop(1, "rgb(236 240 242 / 0)");
         g.fillStyle = sp2;
         g.fillRect(0, 58 + belt, w, 26);
+      }
+      // 물가 바위 — 조류대 위에 α 1로. 발치는 늘 젖어 있고(어두운 발치 그늘) 흰 물살이 바다 쪽 반원에만 부서진다.
+      for (const rk of lateRocks) {
+        softBlob(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, "40 46 50", 0.24, 0, GROUND_SQUASH * 0.5);
+        drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: rk.r1, flip: rk.f });
+        // 물살은 바위 **앞쪽(바다 쪽)** 반원에만 부서진다 — 닫힌 타원 링은 "속 빈 도형"으로 읽힌다(사이클5 경계 #4).
+        g.strokeStyle = "rgb(252 254 255 / 0.55)";
+        g.lineWidth = 2.4;
+        g.beginPath();
+        g.ellipse(rk.x, rk.y + 2, 19 * rk.k, 6 * rk.k, 0, Math.PI * 1.05, TAU - 0.15);
+        g.stroke();
+        softBlob(g, rk.x, rk.y - 2, 15 * rk.k, "255 255 255", 0.28, 0, GROUND_SQUASH);
       }
       // 따개비·자갈 — 바위 사이 빈 회색 판을 메운다.
       for (let i = 0; i < 70; i++) {
@@ -1018,7 +1033,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 모래는 반사형(reflective) — 경사가 가팔라 **쇄파대가 없고** 물가에서 한 번에 부서진다(줄 둘, 크고 느리게).
       // 셋이 같은 4줄이면 흑백에서 같은 그림이 된다.
       const WV = mode === "tidal" ? { bands: 7, amp: 8, speed: 0.034 } : mode === "sandy" ? { bands: 2, amp: 17, speed: 0.062 } : { bands: 3, amp: 13, speed: 0.055 };
-      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: WV.bands, speed: WV.speed, amp: WV.amp, alpha: 0.15, foam: pal.foam, shore: true });
+      // 파도 진폭 × (1 + .5·바람) — GRAMMAR §3.2 바람 "파도 ×1.5"(라운드 3 C#3: 해안·바다의 바람이 점 34개뿐이었다). 맑음(.08)은 ≈ 항등.
+      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: WV.bands, speed: WV.speed, amp: WV.amp * (1 + 0.5 * currentLight().wind), alpha: 0.15, foam: pal.foam, shore: true });
       drawTrail(g, trail, t, GROUND_SQUASH, pal.foam);
       drawGlints(g, t, glints);
       // 뭍 — 물가 선 아래. 젖은 띠(어두운 반투명)가 물가 위로 살짝.

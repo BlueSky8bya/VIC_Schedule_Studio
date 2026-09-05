@@ -47,6 +47,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   let ground: HTMLCanvasElement | null = null;
   let horizon: HTMLCanvasElement | null = null;
   let peaks: HTMLCanvasElement | null = null;
+  // 능선선만 따로 구운 판(QA 라운드 3, AMB-D1-01) — 안개·밤 조명이 산 층을 누를 때 능선선을 그만큼 되살린다(draw()에서 조명 배율로 덧그림).
+  let ridgeC: HTMLCanvasElement | null = null;
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
@@ -236,7 +238,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           const x = g0() * w;
           const R = (30 + g0() * 70) * depthScale(y, h);
           // 단계진 눈 무더기 — 부드러운 방사 그라데이션은 "렌즈 먼지"로 읽힌다(사이클4 미관 #9).
-          for (const [k2, col] of [[1, "rgb(238 244 250 / 0.5)"], [0.72, "rgb(248 252 255 / 0.7)"], [0.42, "rgb(255 255 255 / 0.9)"]] as const) {
+          // 이삭은 **흰색이 아니다**(QA 라운드 3 A#8: 흰 V 스탬프 70개가 낮엔 불꽃·밤엔 반딧불) — 은빛·베이지(계절표), α ≤ .55.
+          for (const [k2, col] of [[1, "rgb(212 212 198 / 0.34)"], [0.72, "rgb(224 222 206 / 0.44)"], [0.42, "rgb(234 230 212 / 0.55)"]] as const) {
             g.fillStyle = col;
             g.beginPath();
             for (let q = 0; q <= 14; q++) {
@@ -451,7 +454,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         let prevY = groundY(0);
         for (let i2 = 0; i2 <= nS; i2++) {
           const t = i2 / nS;
-          const y = groundY(1.14 * t);
+          // 하류 끝은 화면 **훨씬 아래**(v 1.5)에서 끝난다 — 1.14는 끝 단면(리본 폭 ±1.42·hw의 직선 캡)이 화면 아래 모서리에
+          // 비스듬한 직선으로 걸려 "계곡 가장자리가 어색하게 이어진" 그림이 됐다(QA 라운드 3, 소유자 스크린샷).
+          const y = groundY(1.5 * t);
           const W2 = chW(t);
           const lam = 5.5 * W2;
           phase += ((y - prevY) / lam) * TAU;
@@ -503,10 +508,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       };
       const [wallLit, wallShade] = WALL[season];
       for (const sd of [-1, 1]) {
+        // 벽 능선(QA 라운드 3 A#4·소유자 "아래 모서리에서 비스듬한 직선"): 옛 `inset .3 − .27t`는 지평선 w·.30 → 발치 w·.03으로
+        // **곧게 수렴**하는 현이었고 흔들림(≤ 70px 저주파)이 현을 못 벗어나 무대 세트 판 두 장으로 읽혔다. 이제 발치는 w·.12에서
+        // 넓게 끝나고(모서리로 안 몰림), 저주파 "무릎" 두셋(진폭 w·.05~.07)이 능선을 굽힌다 — 200px 구간마다 현 이탈 ≥ 8px.
         const ridge = (t: number) => {
-          const inset = 0.3 - 0.27 * t; // 지평선에서 30% 안쪽 → 발치에서 3%(수렴)
-          const wob = Math.sin(t * 5.2 + (sd > 0 ? 2.1 : 0)) * w * 0.018 + Math.sin(t * 13.1 + (sd > 0 ? 0.7 : 3.3)) * w * 0.012 + Math.sin(t * 2.3) * w * 0.02;
-          return sd < 0 ? w * inset + wob : w * (1 - inset) + wob;
+          const inset = 0.3 - 0.18 * t; // 지평선에서 30% 안쪽 → 발치에서 12%
+          const knee = Math.sin(t * 3.4 + (sd > 0 ? 1.4 : 0.3)) * w * 0.055 + Math.sin(t * 7.9 + (sd > 0 ? 2.6 : 1.1)) * w * 0.028;
+          const wob = Math.sin(t * 13.1 + (sd > 0 ? 0.7 : 3.3)) * w * 0.012 + Math.sin(t * 2.3) * w * 0.02;
+          return sd < 0 ? w * inset + knee + wob : w * (1 - inset) - knee + wob;
         };
         const wc2 = sd < 0 ? wallLit : wallShade;
         // 벽은 **폴리곤 한 장**이다 — 가로 띠를 잇대어 칠하면 3px 간격 스캔라인이 지면을 덮는다(사이클4 경계 #1).
@@ -545,13 +554,18 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         for (let k2 = 1; k2 <= 28; k2++) {
           const t0 = (k2 - 1) / 28;
           const t1 = k2 / 28;
-          // 가는 흰 획은 들판 한가운데 뜬 1px 곡선으로 보인다(사이클4 경계 #1) — 넓고 아주 옅게.
-          const a = Math.min(1, t1 / 0.24) * 0.16;
-          g.strokeStyle = `rgb(255 255 255 / ${a})`;
-          g.beginPath();
-          g.moveTo(ridge(t0), groundY(t0 * 1.06));
-          g.lineTo(ridge(t1), groundY(t1 * 1.06));
-          g.stroke();
+          // 밝은 능선 획은 **끊기며 흩어진다**(라운드 3 A#4 (b): 폭 1~5px 연속 흰 선 ≥ 120px 금지) — 조각마다 밝기 ±40%, 넷 중 하나는 비운다.
+          const wobA = 0.6 + 0.4 * Math.sin(k2 * 1.9 + (sd > 0 ? 0.4 : 2.2));
+          const a = Math.min(1, t1 / 0.24) * 0.11 * wobA;
+          if (k2 % 4 === (sd > 0 ? 1 : 3)) {
+            g.lineWidth = 5;
+          } else {
+            g.strokeStyle = `rgb(255 255 255 / ${a})`;
+            g.beginPath();
+            g.moveTo(ridge(t0), groundY(t0 * 1.06));
+            g.lineTo(ridge(t1), groundY(t1 * 1.06));
+            g.stroke();
+          }
           // 능선 안쪽(계곡 쪽) 그늘 — 사면이 아래로 꺾인다.
           g.strokeStyle = `rgb(${RIDGE[season]} / ${a * 0.55})`;
           g.lineWidth = 11;
@@ -947,6 +961,12 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       const gp = pc2.getContext("2d")!;
       gp.scale(dpr, dpr);
       peaks = pc2;
+      const rc2 = document.createElement("canvas");
+      rc2.width = pc2.width;
+      rc2.height = pc2.height;
+      const rg = rc2.getContext("2d")!;
+      rg.scale(dpr, dpr);
+      ridgeC = rc2;
       // 봉우리 — 산을 산으로 만드는 유일한 신호. 지평선 띠 바로 아래에 두 겹(뒤가 밝고 옅다), 꼭대기에 만년설.
       const peak = (baseV: number, amp: number, fill: string, alpha: number, ph: number, snowLine: number, cap: boolean) => {
         const g = gp;
@@ -997,31 +1017,38 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         // 능선선(ridgeline) — 형태의 경계는 선이 있어야 읽힌다(MOUNTAIN_DEPTH_RULES §2): 위 1px 밝은 림 + 바로 아래 그늘 띠.
         // 림 밝기는 x 방향으로 흔들려 자로 그은 선이 되지 않는다.
         {
-          const ridgePath = (dy: number) => {
-            g.beginPath();
-            for (let x = -step; x <= w + step; x += step / 2) g.lineTo(x, yAt(x) + dy);
+          // 같은 능선선을 봉우리 판(g)과 **능선선 전용 판(rg)**에 함께 긋는다 — 전용 판은 draw()가 조명(안개 배율·밤 어둡기)에 비례해
+          // 한 번 더 얹어 능선 대비를 되살린다(QA 라운드 3 AMB-D1-01: 안개·밤에 하늘↔①·①↔② 단차가 규칙 아래로 눌렸다).
+          const drawRidge = (c: CanvasRenderingContext2D, alphaK: number) => {
+            const ridgePath = (dy: number) => {
+              c.beginPath();
+              for (let x = -step; x <= w + step; x += step / 2) c.lineTo(x, yAt(x) + dy);
+            };
+            c.save();
+            c.globalAlpha = alpha * alphaK;
+            // 연속 한 획(끊기지 않는다) — 조각마다 둥근 캡을 겹치면 이음이 밝아져 "바느질 선"이 된다(after 1차 실측).
+            c.lineCap = "butt";
+            c.strokeStyle = "rgb(40 52 66 / 0.12)";
+            c.lineWidth = 3;
+            ridgePath(2.5);
+            c.stroke();
+            c.strokeStyle = "rgb(255 255 255 / 0.2)";
+            c.lineWidth = 1;
+            ridgePath(0.5);
+            c.stroke();
+            // 밝기 변주 — 자로 그은 선이 되지 않게, 겹치지 않는 조각(butt 캡)으로 림만 여기저기 더 밝힌다.
+            for (let x0 = -step; x0 <= w + step; x0 += 48) {
+              const wob = Math.sin(x0 * 0.017 + ph);
+              if (wob < 0.15) continue;
+              c.strokeStyle = `rgb(255 255 255 / ${0.16 * wob})`;
+              c.beginPath();
+              for (let x = x0; x <= Math.min(w + step, x0 + 48); x += step / 2) c.lineTo(x, yAt(x) + 0.5);
+              c.stroke();
+            }
+            c.restore();
           };
-          g.save();
-          // 연속 한 획(끊기지 않는다) — 조각마다 둥근 캡을 겹치면 이음이 밝아져 "바느질 선"이 된다(after 1차 실측).
-          g.lineCap = "butt";
-          g.strokeStyle = "rgb(40 52 66 / 0.12)";
-          g.lineWidth = 3;
-          ridgePath(2.5);
-          g.stroke();
-          g.strokeStyle = "rgb(255 255 255 / 0.2)";
-          g.lineWidth = 1;
-          ridgePath(0.5);
-          g.stroke();
-          // 밝기 변주 — 자로 그은 선이 되지 않게, 겹치지 않는 조각(butt 캡)으로 림만 여기저기 더 밝힌다.
-          for (let x0 = -step; x0 <= w + step; x0 += 48) {
-            const wob = Math.sin(x0 * 0.017 + ph);
-            if (wob < 0.15) continue;
-            g.strokeStyle = `rgb(255 255 255 / ${0.16 * wob})`;
-            g.beginPath();
-            for (let x = x0; x <= Math.min(w + step, x0 + 48); x += step / 2) g.lineTo(x, yAt(x) + 0.5);
-            g.stroke();
-          }
-          g.restore();
+          drawRidge(g, 1);
+          drawRidge(rg, 1);
         }
         // 빛(북서)과 그늘 — 능선에서 오른쪽 아래로 내려가는 면만 어둡게.
         g.save();
@@ -1085,14 +1112,17 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       const PEAK: Record<SeasonKey, [string, string]> = {
         spring: ["#d5dcdd", "#adb9bd"],
         summer: ["#c8d2ca", "#a9b6ba"],
-        autumn: ["#cfc9ba", "#b8ae9e"],
+        autumn: ["#c3bcac", "#aea494"], // 라운드 3 3차: 가을 ①·②를 4~5L 내려 하늘↔①(노을·밤 ≥ 3)과 ①↔②(≥ 5)를 동시에 — 가을 안개빛이 밝아 옛 값은 하늘에 붙었다
         winter: ["#e4ebf2", "#b2c0cf"]
       };
       // 봄 산이 겨울 산보다 하얗던 것(검토 라운드2 현실성 #6) — 봄은 **꼭대기 만년설만**, 지면 눈 얼룩은 없다.
       const snowy = season === "winter";
       const capSnow = season === "winter" || season === "spring";
       // 뒤 봉우리는 반투명(멀다), 앞 봉우리는 **불투명**이라야 뒤를 가린다 — 둘 다 반투명이면 셀로판 두 장이다.
-      peak(0.2, h * 0.34, PEAK[season][0], 0.5, 1.2, 0.3, false);
+      // 뒤 봉우리 ①은 **불투명**(QA 라운드 3 B 구조 A): α .5 반투명이면 ①의 밝기가 늘 하늘과 몸체색의 중간에 갇혀 하늘↔① 단차가 몸체–하늘 차의
+      // 절반을 못 넘는다(라운드 2 실측 2.2~4.0). 같은 밝기를 색으로 만든다(몸체색과 안개빛의 반씩) — 밝기는 유지, 단차는 이제 직접 정한다.
+      // 혼합 .25 — .5는 점심 ①이 86 L로 하늘(87.5)에 붙었고 노을·맑음에선 하늘보다 3.4 밝아 뒤집혔다(라운드 3 1차 after). 목표 점심 ① ≈ 83(하늘 −4, ② +8).
+      peak(0.2, h * 0.34, mixHex(PEAK[season][0], "#e9edf0", season === "autumn" ? 0.1 : 0.25), 1, 1.2, 0.3, false);
       peak(0.32, h * 0.26, PEAK[season][1], 0.88, 3.4, season === "spring" ? 0.16 : 0.42, capSnow);
       // 발치 — 자락이 땅에 닿는 자리(너덜 띠). 알파 0으로 사라지면 "공중에 뜬 구름"이다.
       // 너덜 자락 — 옛 코드는 화면 폭 0.75짜리 **밝은 원 하나**라 "렌즈 얼룩"으로 보였다(검토 라운드2 미관 #12).
@@ -1323,6 +1353,27 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       if (peaks) g.drawImage(peaks, 0, 0, f.w, f.h);
+      if (ridgeC) {
+        // 능선선 되살림(AMB-D1-01): 안개 배율(hazeK)과 어둡기(multiply 평균)에 비례해 능선선 판을 0~1.6배 더 얹는다.
+        // 점심·맑음(hazeK 1, multiply 255)은 0 — 옛 그림 그대로. 안개는 대기 안개가 능선을 지우는 만큼, 밤은 multiply가 단차를
+        // 비례로 줄이는 만큼 미리 보강한다(엔진 조명 패스가 그 뒤에 온다).
+        const L = currentLight();
+        const dark = 1 - (L.mul[0] + L.mul[1] + L.mul[2]) / 765;
+        // 상한 1(한 번 더) — 선이 면보다 두 배 이상 말하면 와이어프레임이 된다(라운드 3 A#3 (b)). 면 단차는 하늘 지평선 광·
+        // multiply 그라데이션(view.ts)이 맡고, 능선선은 그 위에 거드는 정도만.
+        // 3차: 상한 1.5(두 번째 패스는 잔여만). 2차 실측 안개 ② 국소 대비 4.3(규칙 10, A 상한 = 면 단차 ×2 ≈ 12) — 계수를 올린다.
+        const boost = Math.min(1.5, Math.max(0, (L.hazeK - 1) * 1.2 + dark * 2.2));
+        if (boost > 0.02) {
+          g.save();
+          g.globalAlpha = Math.min(1, boost);
+          g.drawImage(ridgeC, 0, 0, f.w, f.h);
+          if (boost > 1) {
+            g.globalAlpha = boost - 1;
+            g.drawImage(ridgeC, 0, 0, f.w, f.h);
+          }
+          g.restore();
+        }
+      }
       if (kind === "valley" && stream.length) {
         // 흐르는 거품 점 — 시내를 따라 내려온다(원근: 아래로 갈수록 빠르고 크다).
         for (const q of foam) {

@@ -98,7 +98,7 @@ const BAND: Record<DayBand, BandRow> = {
   },
   dusk: {
     sky: "170 148 160",
-    skyAlpha: 0.3,
+    skyAlpha: 0.22,
     hazeK: 1.2,
     mul: [246, 233, 232],
     desat: 0.1,
@@ -226,20 +226,28 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
   return L;
 }
 
-/** 두 조명 사이 보간(전이는 부드럽게 — GRAMMAR 원칙 4). t=1이면 b 그대로. 문자열 색은 t ≥ .5에서 바뀐다(rgb는 캐시 키라 연속 보간 안 함). */
+/** rgb 문자열 보간 — 4단위로 양자화해 안개 그라데이션 캐시 키가 3초 전이에 ≤ 16개만 생기게 한다. 빈 문자열(계절 기본색)은 상대 쪽으로 스냅. */
+function lerpRgb(a: string, b: string, t: number): string {
+  if (!a || !b) return t >= 0.5 ? b : a;
+  const pa = a.split(" ").map(Number);
+  const pb = b.split(" ").map(Number);
+  return pa.map((v, i) => Math.round((v + (pb[i] - v) * t) / 4) * 4).join(" ");
+}
+
+/** 두 조명 사이 보간(전이는 부드럽게 — GRAMMAR 원칙 4). t=1이면 b 그대로. 색도 수치로 보간한다 — 옛 "t ≥ .5에서 스위치"는
+ *  전이 정중앙에서 하늘이 3~9 L "툭" 튀었다(QA 라운드 3 C#5 실측: 새벽→아침 1.76s 하늘 +9.0 L). */
 export function lerpLight(a: Light, b: Light, t: number): Light {
   if (t >= 1) return b;
   const l = (x: number, y: number) => x + (y - x) * t;
-  const far = t >= 0.5;
   return {
-    sky: far ? b.sky : a.sky,
+    sky: lerpRgb(a.sky, b.sky, t),
     skyAlpha: l(a.skyAlpha, b.skyAlpha),
-    hazeRgb: far ? b.hazeRgb : a.hazeRgb,
+    hazeRgb: lerpRgb(a.hazeRgb, b.hazeRgb, t),
     hazeK: l(a.hazeK, b.hazeK),
     groundFog: l(a.groundFog, b.groundFog),
     mul: [Math.round(l(a.mul[0], b.mul[0])), Math.round(l(a.mul[1], b.mul[1])), Math.round(l(a.mul[2], b.mul[2]))],
     desat: l(a.desat, b.desat),
-    tint: { rgb: far ? b.tint.rgb : a.tint.rgb, alpha: l(a.tint.alpha, b.tint.alpha) },
+    tint: { rgb: lerpRgb(a.tint.rgb, b.tint.rgb, t), alpha: l(a.tint.alpha, b.tint.alpha) },
     shadow: { dx: l(a.shadow.dx, b.shadow.dx), len: l(a.shadow.len, b.shadow.len), alpha: l(a.shadow.alpha, b.shadow.alpha) },
     glint: l(a.glint, b.glint),
     wind: l(a.wind, b.wind)

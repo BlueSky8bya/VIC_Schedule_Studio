@@ -10,6 +10,7 @@ import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, horizonY, moveScale, ySort } from "../world/view";
 import { ASSET, loadSprite, type Sprite } from "../assets";
 import { bakeWater, drawGlints, drawTrail, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
+import { currentLight } from "../world/light";
 
 type Shadow = { x: number; y: number; hd: number; spd: number; k: number; ph: number };
 
@@ -145,12 +146,13 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
         bottom: f.h,
         bands: deep ? 1 : 7,
         speed: deep ? 0.014 : 0.05,
-        amp: deep ? 52 : 15,
+        // 너울·잔물결 진폭 × (1 + .5·바람) — GRAMMAR §3.2 "너울 ×1.4·흰 마루 ×1.6"(라운드 3 C#3: 바다의 바람이 점 34개뿐). 맑음(.08) ≈ 항등.
+        amp: (deep ? 52 : 15) * (1 + 0.5 * currentLight().wind),
         alpha: deep ? 0.07 : 0.2,
         foam: pal.foam
       });
       // 거품 선(잔물결) — 조금 빠르고 가늘게. 깊은 바다엔 없다(수면이 아니다).
-      if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 9, speed: 0.07, amp: 5, alpha: 0.1, foam: pal.foam });
+      if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 9, speed: 0.07, amp: 5 * (1 + 0.5 * currentLight().wind), alpha: 0.1, foam: pal.foam });
       // 너울의 명암 — 파장 100~200m짜리 완만한 기복. 선이 아니라 **넓은 면**이라야 물이 덩어리로 읽힌다
       // (검토 라운드2: 바다 4장이 "빈 판").
       {
