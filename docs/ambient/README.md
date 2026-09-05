@@ -30,7 +30,7 @@ ADR-0017(⑰⑱ 화질 규칙 22개)은 여기 규칙들의 **상위 근거**이
 | B Spatial Ecology Inspector | `.claude/agents/ambient-spatial-ecology.md` | 간격·배치 논리·접촉·물길·동물 표면/레이어·산 다섯 층 |
 | C Season·Weather·Time·Motion Director | `.claude/agents/ambient-motion-director.md` | 시간대 인식·날씨 반응·안개 형태·루프·위상·동물 이동·산 유지 |
 
-라운드 = **동시 검토 → 통합 판단 → 상위 2~3건만 수정 → 전/후 비교**. 직렬 핑퐁·대량 수정 금지.
+라운드 = **동시 검토 → 통합 판단 → 입구 묶음 ≤ 4 수정(P0는 전부) → 전/후 비교**. 직렬 핑퐁 금지 · 귀속 불가능한 수정 금지(프로토콜 §3.3, 2026-09-05 개정).
 
 ## 빠른 명령(2026-09-05, PLAN-005 P0·P1 구축 — 상세 [`scripts/ambient-qa/README.md`](../../scripts/ambient-qa/README.md))
 

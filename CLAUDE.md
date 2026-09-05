@@ -516,8 +516,8 @@ Entering any folder, read its `README.md` first instead of bulk-reading the tree
   structure diagnosis `SYSTEM_MAP` · direction `VISUAL_DIRECTION` · per-biome rules `BIOME_GRAMMAR` · season/time/weather
   + allowed-combination table `SEASON_TIME_WEATHER_GRAMMAR` · mountain layers `MOUNTAIN_DEPTH_RULES` · severity/category
   `IMMERSION_BREAK_RULES` · round procedure `VISUAL_QA_PROTOCOL` (three read-only reviewer agents
-  `.claude/agents/ambient-{art-mood,spatial-ecology,motion-director}.md` run **in parallel**, main session triages, **≤ 3 fixes
-  per round**, before/after with the same seed) · status/backlog `QA_PROGRESS` · pipeline plan `PLAN-20260905-005`.
+  `.claude/agents/ambient-{art-mood,spatial-ecology,motion-director}.md` run **in parallel**, main session triages, **fixes budgeted by
+  attribution — every P0 plus at most four "entrance groups" per round, each with its expected scenario list**, before/after with the same seed) · status/backlog `QA_PROGRESS` · pipeline plan `PLAN-20260905-005`.
   Note: the chronicle (debut tree / acorn cycle) bullets above are historical — `world/traces.ts` now keeps only
   molehill · snowman · lilypad by month (2026-09-05).
 
