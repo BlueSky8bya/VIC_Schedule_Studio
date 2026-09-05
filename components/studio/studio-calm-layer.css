@@ -507,6 +507,57 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
   .studio-tools .stool span {
     display: none;
   }
+  /* 글자를 접었으면 **이름을 다른 데서라도 줘야 한다**(2026-09-05 소유자: "호버박스로 추가 설명").
+     타일 위로 살짝 떠오르는 어두운 알약 — 마우스를 안 태우고(pointer-events: none) 키보드 포커스에도 뜬다. */
+  .studio-tools .stool {
+    position: relative;
+  }
+  .studio-tools .stool[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    z-index: 30;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgb(32 28 46 / 94%);
+    color: #fff;
+    font-size: var(--text-caption, 11px);
+    font-weight: 800;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    box-shadow: 0 8px 20px rgb(20 14 40 / 26%);
+    opacity: 0;
+    transform: translate(-50%, 4px);
+    pointer-events: none;
+    transition:
+      opacity 0.16s var(--ease),
+      transform 0.16s var(--ease);
+  }
+  .studio-tools .stool[data-tip]::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 3px);
+    z-index: 30;
+    width: 8px;
+    height: 8px;
+    background: rgb(32 28 46 / 94%);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
+    opacity: 0;
+    transform: translate(-50%, 4px);
+    pointer-events: none;
+    transition:
+      opacity 0.16s var(--ease),
+      transform 0.16s var(--ease);
+  }
+  .studio-tools .stool[data-tip]:hover::after,
+  .studio-tools .stool[data-tip]:hover::before,
+  .studio-tools .stool[data-tip]:focus-visible::after,
+  .studio-tools .stool[data-tip]:focus-visible::before {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
   .avatar-rail .studio-tools {
     grid-auto-flow: column;
     grid-template-columns: none;

@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; day?: string; y?: string; m?: string; biome?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -31,15 +31,14 @@ export default async function VisualStudioFixture({
   const panel = sp?.panel === "tags" ? sp.panel : undefined;
   // ambient=spring|summer|autumn|winter → 계절 레이어 강제(ADR-0017 검증용). 없으면 오늘(KST) 절기.
   const ambient = isSeasonKey(sp?.ambient) ? sp.ambient : undefined;
-  // hour=13.5 · weather=rain|snow|fog|wind|cloud|clear · day=20 → 세계 강제(Phase A 연대기 검증: 띠·날씨·날).
+  // hour=13.5 · weather=rain|snow|fog|wind|cloud|clear → 세계 강제(띠·날씨). day는 2026-09-05 연대기 철거로 없앴다.
   const hour = sp?.hour !== undefined && Number.isFinite(Number(sp.hour)) ? Number(sp.hour) : undefined;
   const weatherKeys = ["clear", "cloud", "rain", "snow", "fog", "wind"] as const;
   const weather = weatherKeys.find((k) => k === sp?.weather);
-  const day = sp?.day !== undefined && Number.isFinite(Number(sp.day)) ? Number(sp.day) : undefined;
   // biome=pond → 시작 바이옴(PLAN-004 검증 — 감상 모드에서 방향키 없이 바로 그 화면).
   const biome = isBiomeKey(sp?.biome) ? sp.biome : undefined;
-  const worldForce = hour !== undefined || weather || day !== undefined || biome ? { hour, weather, day, biome } : undefined;
-  // y=2025&m=11 → 보는 달 강제(연대기: 계절은 달에서 나오고 흔적은 해·달·날에서 나온다). 기본 2026-06.
+  const worldForce = hour !== undefined || weather || biome ? { hour, weather, biome } : undefined;
+  // y=2025&m=11 → 보는 달 강제(계절도 흔적도 **달**에서 나온다). 기본 2026-06.
   const y = sp?.y !== undefined && /^\d{4}$/.test(sp.y) ? Number(sp.y) : 2026;
   const m = sp?.m !== undefined && /^\d{1,2}$/.test(sp.m) && Number(sp.m) >= 1 && Number(sp.m) <= 12 ? Number(sp.m) : 6;
   return (

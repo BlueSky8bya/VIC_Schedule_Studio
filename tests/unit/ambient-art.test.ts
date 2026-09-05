@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ART_SLOTS, codexMasterPrompt, slotFiles, slotPrompt } from "@/components/shared/ambient/art/manifest";
 import { SPECIES } from "@/components/shared/ambient/world/species";
-import { chronicle } from "@/components/shared/ambient/world/chronicle";
+import { monthTraces } from "@/components/shared/ambient/world/traces";
 
 describe("ambient/art — 매니페스트", () => {
   it("id는 유일하고 파일 이름으로 안전하다", () => {
@@ -45,9 +45,9 @@ describe("ambient/art — 매니페스트", () => {
   });
 });
 
-describe("chronicle — 연잎 간격", () => {
+describe("traces — 연잎 간격", () => {
   it("8월 말 연잎 12장은 서로 겹치지 않게 떨어져 있다(가로 .045·세로 .06 밖)", () => {
-    const pads = chronicle("vic", 2026, 8, 31).filter((t) => t.kind === "lilypad");
+    const pads = monthTraces("vic", 2026, 8).filter((t) => t.kind === "lilypad");
     expect(pads.length).toBe(12);
     let close = 0;
     for (let i = 0; i < pads.length; i++)

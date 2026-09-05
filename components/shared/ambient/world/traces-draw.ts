@@ -10,7 +10,7 @@
 import type { Frame } from "@/components/shared/ambient/scene-engine";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { ASSET, loadSprite, type Sprite } from "@/components/shared/ambient/assets";
-import { ArtSet, drawArt } from "@/components/shared/ambient/art/load";
+import { ArtSet } from "@/components/shared/ambient/art/load";
 import { drawProp } from "@/components/shared/ambient/art/props";
 import { makeCanvas, rng, shadowSprite, TAU } from "@/components/shared/ambient/scenes/util";
 import { SIZE } from "./scale";
@@ -68,9 +68,6 @@ export function bakeTraces(): TraceBakes {
 }
 
 // 수관 반지름 — 나이 1 = 40, 5년째부터 성목 SIZE.treeCrownW/2(64) · 데뷔 나무는 키(cm)/12, 상한 SIZE.debutCrownW/2(96).
-const MATURE_R = SIZE.treeCrownW / 2;
-const treeRadius = (age: number) => Math.round(MATURE_R - 24 + Math.min(5, age) * 4.8);
-const debutRadius = (hcm: number) => Math.round(Math.min(SIZE.debutCrownW / 2, 14 + hcm / 12) / 4) * 4;
 
 // 캐노피(대체물) — 위에서 본 나무: 둥근 잎 뭉치 여러 개(반지름 R만큼 큼), 안쪽이 어둡고 바깥이 밝다. 결정적(R·계절별 한 장).
 export function canopyTreeSprite(season: SeasonKey, R: number): HTMLCanvasElement {
@@ -148,77 +145,7 @@ export function bareTreeSprite(R: number): HTMLCanvasElement {
   return c;
 }
 
-// 나무 한 그루(수관 반지름 R — 이미 거리 축소가 곱해진 값, (x,y) = 수관 중심 자리) — 아트가 있으면 동물의 숲 카메라로 세운 그림(발은
-// y + 0.9R, 수관 폭 ≈ 2R, 발밑 타원 그림자 + 해 방향), 없으면 대체물(겨울 = 헐벗은 가지, 그 외 = 계절색 캐노피).
-function drawTree(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: TraceBakes, x: number, y: number, R: number) {
-  const h = f.time.hour;
-  const dx = h < 12 ? -10 - Math.max(0, 11 - h) * 2 : 10 + Math.max(0, h - 13) * 2;
-  const art = b.art.get(`tree-oak-${season}`);
-  if (art) {
-    const k = (2 * R) / art.w;
-    const base = y + R * 0.9;
-    g.save();
-    g.globalAlpha = 0.26;
-    g.translate(x + dx * 0.35, base - 2);
-    g.drawImage(b.shadow, -R * 0.95, -R * 0.3, R * 1.9, R * 0.6);
-    g.restore();
-    drawArt(g, art, x, base, k);
-    return;
-  }
-  if (season === "winter") {
-    let s = b.bare.get(R);
-    if (!s) {
-      s = bareTreeSprite(R);
-      b.bare.set(R, s);
-    }
-    g.save();
-    g.globalAlpha = 0.22;
-    g.translate(x + 4, y + 6);
-    g.drawImage(b.shadow, -s.width * 0.45, -s.height * 0.45, s.width * 0.9, s.height * 0.9);
-    g.restore();
-    g.drawImage(s, x - s.width / 2, y - s.height / 2);
-    return;
-  }
-  const key = `${season}:${R}`;
-  let s = b.canopy.get(key);
-  if (!s) {
-    s = canopyTreeSprite(season, R);
-    b.canopy.set(key, s);
-  }
-  g.save();
-  g.globalAlpha = 0.28;
-  g.translate(x + dx * 0.5, y + 10);
-  g.drawImage(b.shadow, -s.width * 0.55, -s.height * 0.5, s.width * 1.1, s.height);
-  g.restore();
-  g.drawImage(s, x - s.width / 2, y - s.height / 2);
-}
 
-// 싹·묘목 — 아트가 있으면 그것(바닥 접점 = y + 4), 없으면 Noto 이모지(옛 자리 그대로). k에는 거리 축소가 이미 곱해져 있다.
-function drawSprout(g: CanvasRenderingContext2D, b: TraceBakes, x: number, y: number, k: number) {
-  g.save();
-  g.globalAlpha = 0.28;
-  g.translate(x + 2, y + 4);
-  g.drawImage(b.shadow, -9 * k, -5 * k, 18 * k, 10 * k);
-  g.restore();
-  if (b.art.has("sprout")) {
-    drawProp(g, b.art, "sprout", x, y + 4, { k });
-    return;
-  }
-  if (b.sprout) g.drawImage(b.sprout.c, x - 14 * k, y - 24 * k, 28 * k, 28 * k);
-}
-function drawSapling(g: CanvasRenderingContext2D, season: SeasonKey, b: TraceBakes, x: number, y: number, k: number) {
-  g.save();
-  g.globalAlpha = 0.3;
-  g.translate(x + 3, y + 5);
-  g.drawImage(b.shadow, -13 * k, -7 * k, 26 * k, 14 * k);
-  g.restore();
-  const id = season === "winter" ? "sapling-bare" : season === "autumn" ? "sapling-autumn" : "sapling-green";
-  if (b.art.has(id)) {
-    drawProp(g, b.art, id, x, y + 5, { k });
-    return;
-  }
-  if (b.sapling) g.drawImage(b.sapling.c, x - 20 * k, y - 34 * k, 40 * k, 40 * k);
-}
 
 // 여름 물가 — 물 장면의 위 띠는 **뭍**이다(계획서 §3.2 "물가": 갈대·통나무가 서는 가장자리). 땅의 흔적(데뷔 나무·나무·싹·흙더미)이
 // 물 위에 떠 보이지 않게 모래·풀이 섞인 부드러운 기슭 띠를 한 번 굽고, 그 위에만 땅 흔적을 그린다. (PLAN-004 P1에서 연못·해안
@@ -332,7 +259,7 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   return c;
 }
 
-const LAND_KINDS = new Set(["cache", "sprout", "sapling", "tree", "molehill", "snowman", "debut"]);
+const LAND_KINDS = new Set(["molehill", "snowman"]);
 const hash01 = (a: number, b: number) => (((Math.sin(a * 12.9898 + b * 78.233) * 43758.5453) % 1) + 1) % 1;
 
 /** 흔적을 그린다 — 바탕 뒤·생물 앞. hideCaches = 장면이 저장소를 제 흙더미 시스템으로 그릴 때(가을) 중복을 피한다.
@@ -356,33 +283,10 @@ export function drawTraces(g: CanvasRenderingContext2D, f: Frame, season: Season
     if (opts.landOnShore && LAND_KINDS.has(t.kind) && t.v > SHORE_V) continue;
     const ds = depthScale(y, f.h);
     switch (t.kind) {
-      case "cache":
-        if (opts.hideCaches) break;
-        drawProp(g, b.art, "soil-mound", x, y, { alpha: t.stage === 1 ? 0.7 : 0.55, k: ds, sy: GROUND_SQUASH });
-        break;
       case "molehill":
         if (t.stage === 1) drawProp(g, b.art, "grass-patch", x, y, { k: ds, sy: GROUND_SQUASH });
         else drawProp(g, b.art, "molehill", x, y + 8 * ds, { k: ds });
         break;
-      case "sprout":
-        drawSprout(g, b, x, y, (0.6 + 0.5 * t.stage) * ds);
-        break;
-      case "sapling":
-        drawSapling(g, season, b, x, y, (0.7 + 0.5 * t.stage) * ds);
-        break;
-      case "tree":
-        drawTree(g, f, season, b, x, y, Math.round((treeRadius(t.stage) * ds) / 4) * 4);
-        break;
-      case "debut": {
-        // 데뷔 나무 — 2023-05 씨앗(흙더미) → 2025-10-01 싹 → 실제 키(cm)로 자란다: 15cm까지 싹, 80cm까지 어린 나무,
-        // 그 뒤는 키에 비례하는 수관(반지름 ≈ 키의 1/12, 상한 SIZE.debutCrownW/2). 겨울엔 헐벗은 가지.
-        const hcm = t.stage;
-        if (hcm <= 0) drawProp(g, b.art, "soil-mound", x, y, { alpha: 0.6, k: ds, sy: GROUND_SQUASH });
-        else if (hcm < 15) drawSprout(g, b, x, y, (0.6 + (hcm / 15) * 0.5) * ds);
-        else if (hcm < 80) drawSapling(g, season, b, x, y, (0.8 + ((hcm - 15) / 65) * 0.9) * ds);
-        else drawTree(g, f, season, b, x, y, Math.round((debutRadius(hcm) * ds) / 4) * 4);
-        break;
-      }
       case "snowman": {
         g.save();
         g.globalAlpha = 0.25;

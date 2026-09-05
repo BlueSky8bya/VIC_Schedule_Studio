@@ -19,8 +19,7 @@ import { gfxPref } from "@/lib/ui/gfx";
 import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
 import { weatherAt, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
-import { chronicle, chronicleDay, type Trace } from "@/components/shared/ambient/world/chronicle";
-import { visibleTraces } from "@/components/shared/ambient/world/flags";
+import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
 import { drawDepthHaze } from "@/components/shared/ambient/world/view";
 import type { BiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
 
@@ -33,7 +32,7 @@ export type WorldCtx = {
   year: number;
   month: number;
   /** 검증·개발자 시간 여행용 강제값 — band가 있으면 hour보다 우선. biome = 시작 바이옴(fixture). */
-  force?: { hour?: number; band?: DayBand; weather?: Weather; day?: number; biome?: BiomeKey };
+  force?: { hour?: number; band?: DayBand; weather?: Weather; biome?: BiomeKey };
 };
 
 export type Pointer = {
@@ -100,7 +99,7 @@ type AmbientDebug = {
   forceLoad: (v: number | null) => void;
   hot: Frame["hot"];
   /** 세계 상태(띠·날씨·날·흔적 수) */
-  world: () => { band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number>; chronicle: Record<string, number> };
+  world: () => { band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number> };
   /** 검증용 강제(시각·날씨·날) — null이면 실제로 복귀 */
   forceWorld: (f: WorldCtx["force"] | null) => void;
   /** 바이옴 이동(감상 모드에서만 초원 밖으로) — 방향 또는 키. 세계 장면이 아니면 false. */
@@ -187,24 +186,28 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     weather: { now: "clear", prev: "clear", segment: 0 },
     traces: []
   };
+  // 보고 있는 달에 쓸 '날' — 날씨 시드에만 쓴다(흔적은 달만 본다). 현재 달은 오늘, 과거 달은 말일, 미래 달은 1일.
+  const viewDay = (y: number, m: number, today: { y: number; m: number; d: number }) => {
+    if (y === today.y && m === today.m) return today.d;
+    if (y < today.y || (y === today.y && m < today.m)) return new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return 1;
+  };
   const refreshWorld = () => {
     const today = kstToday();
-    const d = worldForce?.day ?? chronicleDay(world.year, world.month, today);
+    const d = viewDay(world.year, world.month, today);
     frame.date = { y: world.year, m: world.month, d };
     frame.time = worldForce?.band ? worldTimeOfBand(world.season, worldForce.band) : worldTime(world.season, worldForce?.hour ?? kstHour());
     const hour = frame.time.hour;
     frame.weather = worldForce?.weather
       ? { now: worldForce.weather, prev: worldForce.weather, segment: hour < 13 ? 0 : 1 }
       : weatherAt(world.slug, world.year, world.month, d, hour);
-    const key = `${world.slug}:${world.year}-${world.month}-${d}`;
+    // 흔적은 **달만** 본다(2026-09-05 연대기 철거) — 날이 바뀌어도 다시 뽑지 않는다.
+    const key = `${world.slug}:${world.year}-${world.month}`;
     if (key !== traceKey) {
       traceKey = key;
-      // 연대기 전체는 chronicleAll(디버그·검증용), 화면에는 스위치(flags.ts — 나무 계열은 2026-09-04 잠시 내림)를 통과한 것만.
-      chronicleAll = chronicle(world.slug, world.year, world.month, d);
-      frame.traces = visibleTraces(chronicleAll);
+      frame.traces = monthTraces(world.slug, world.year, world.month);
     }
   };
-  let chronicleAll: Trace[] = [];
   refreshWorld();
   const scene = factory((Date.now() % 100000) + 7);
   const dbg: AmbientDebug = {
@@ -226,8 +229,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       weather: frame.weather.now,
       prev: frame.weather.prev,
       date: `${frame.date.y}-${frame.date.m}-${frame.date.d}`,
-      traces: frame.traces.reduce<Record<string, number>>((m, t) => ((m[t.kind] = (m[t.kind] ?? 0) + 1), m), {}),
-      chronicle: chronicleAll.reduce<Record<string, number>>((m, t) => ((m[t.kind] = (m[t.kind] ?? 0) + 1), m), {})
+      traces: frame.traces.reduce<Record<string, number>>((m, t) => ((m[t.kind] = (m[t.kind] ?? 0) + 1), m), {})
     }),
     forceWorld: (f) => {
       worldForce = f;

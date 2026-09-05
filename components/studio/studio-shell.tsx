@@ -956,7 +956,7 @@ export function StudioShell({
   // 개발자 세계 시간 여행(2026-09-04 소유자): 개발자 계정만 띠·날씨·날을 강제해 연대기·빛 톤·날씨 훅을 검사한다 — 세션 한정, 저장 없음,
   // 관리자·시청자는 실제 시간만. fixture 강제(ambientWorldForce)가 있으면 그것이 우선.
   const [devWorld, setDevWorld] = useState<DevWorldForce>({});
-  const worldForce = ambientWorldForce ?? (effectiveRole === "developer" && (devWorld.band || devWorld.weather || devWorld.day !== undefined) ? devWorld : undefined);
+  const worldForce = ambientWorldForce ?? (effectiveRole === "developer" && (devWorld.band || devWorld.weather) ? devWorld : undefined);
   const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
   useEffect(() => {
     const read = () => setAmbientModeState(ambientMode());
@@ -1196,7 +1196,6 @@ export function StudioShell({
         posterThemeSaving={posterThemeSaving}
         reduceMotion={reduceMotion}
         devMonth={view.month}
-        devYear={view.year}
         // 개발자 전용 줄은 **미리보기 중인 역할**에도 안 보여야 한다 — raw isDeveloper면 개발자가 관리자로
         // 미리보기 중일 때 그대로 노출된다(2026-09-05 소유자 사진 2).
         devWorld={effectiveRole === "developer" ? { force: devWorld, onChange: setDevWorld } : null}
@@ -5930,6 +5929,8 @@ export function StudioShell({
           <button
             className="stool stool-tags"
             data-act="manage-tags"
+            aria-label="태그 편집"
+            data-tip="태그 편집"
             onClick={() => (blockedByPreview() ? null : setModal("tags"))}
             type="button"
           >
@@ -5942,6 +5943,8 @@ export function StudioShell({
             <button
               className="stool stool-insights"
               data-act="manage-insights"
+              aria-label="인사이트"
+              data-tip="인사이트"
               onClick={() => setModal("developer")}
               type="button"
             >
@@ -5953,6 +5956,8 @@ export function StudioShell({
           <button
             className="stool stool-insights"
             data-act="io-insights"
+            aria-label="인사이트"
+            data-tip="인사이트"
             onClick={() => setModal("developer")}
             type="button"
           >
@@ -5965,6 +5970,8 @@ export function StudioShell({
             aria-expanded={kbdHintsOpen}
             className={`stool stool-kbd${kbdHintsOpen ? " open" : ""}`}
             data-act="kbd-hints-btn"
+            aria-label="단축키"
+            data-tip="단축키"
             onClick={() => {
               hapticTick();
               setKbdHintsOpen((v) => !v);
@@ -5980,6 +5987,8 @@ export function StudioShell({
           aria-haspopup="dialog"
           className={`stool stool-settings${modal === "settings" ? " open" : ""}`}
           data-act="studio-settings"
+          aria-label="설정"
+          data-tip="설정"
           onClick={() => {
             hapticTick();
             setModal("settings");
@@ -6186,24 +6195,26 @@ export function StudioShell({
       {avatarEditor || zoomCollapse ? (
         <div className="bottom-float-row" ref={bottomRowRef}>
           {avatarEditor ? (
-            <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
+            <div className="studio-avatar-ctl" role="group" aria-label="패널 자리" title="달력 옆 패널(태그 필터·도구·아바타 자리)을 왼쪽/오른쪽으로">
               <button
                 type="button"
                 className={avatarSide === "left" ? "on" : ""}
-                aria-label="아바타 왼쪽에 두기"
+                aria-label="패널을 왼쪽에 두기"
                 aria-pressed={avatarSide === "left"}
                 onClick={() => pickAvatarSide("left")}
                 data-act="avatar-ctl-toggle"
               >
                 <ArrowLeftToLine aria-hidden="true" size={18} strokeWidth={2.4} />
               </button>
+              {/* 2026-09-05: "아바타 자리" → "패널 자리". 점선 안내 박스를 없애 그 이름이 가리킬 대상이 화면에
+                  없어졌고, 실제로 옮겨지는 것은 달력 옆 패널 전체다(필터·도구·계절 배경·아바타가 들어올 빈 자리). */}
               <span aria-hidden="true" className="avatar-ctl-label">
-                아바타 자리
+                패널 자리
               </span>
               <button
                 type="button"
                 className={avatarSide === "right" ? "on" : ""}
-                aria-label="아바타 오른쪽에 두기"
+                aria-label="패널을 오른쪽에 두기"
                 aria-pressed={avatarSide === "right"}
                 onClick={() => pickAvatarSide("right")}
                 data-act="avatar-ctl-toggle"

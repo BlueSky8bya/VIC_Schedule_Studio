@@ -628,14 +628,17 @@ html[data-showcase] {
   justify-items: stretch;
   align-items: stretch;
   align-self: stretch;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--amb-card-line);
   border-radius: var(--amb-card-r);
   background: var(--amb-card-bg);
-  padding: 6px;
-  box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
+  /* 안쪽 여백: 위는 제목이 숨 쉬게 조금 더, 아래는 감상하기가 모서리에 닿지 않게. 6px 균일은 "구겨 넣은 상자"였다. */
+  padding: 13px 12px 12px;
+  box-shadow:
+    0 1px 2px rgb(70 50 110 / 5%),
+    0 10px 26px rgb(70 50 110 / 10%);
   /* 아바타 자리는 pointer-events:none인 빈 자리 — 카드만 되살린다. */
   pointer-events: auto;
 }
@@ -650,21 +653,26 @@ html[data-showcase] {
 .amb-ctl-title {
   display: none;
 }
+/* 제목 — 카드에서 **가장 큰 글자**이고 **가운데 정렬**이다. 카드의 주제를 말하는 유일한 줄인데 제일 작고
+   왼쪽에 붙어 있으면 위계가 뒤집힌다(2026-09-05 소유자). 아래 구획선 한 줄로 제목과 조작부를 가른다. */
 .viewer-ambient-ctl.slot-showcase .amb-ctl-title,
 .viewer-ambient-ctl.rail-showcase .amb-ctl-title {
   display: block;
-  padding: 2px 4px 0;
-  color: #6f6a86;
-  font-size: var(--text-caption, 11px);
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  padding: 0 2px 9px;
+  border-bottom: 1px solid var(--amb-card-line);
+  color: var(--amb-title-ink, #3b3550);
+  font-size: var(--text-title, 15px);
+  font-weight: 850;
+  letter-spacing: -0.012em;
+  line-height: 1;
+  text-align: center;
 }
 .viewer-ambient-ctl.slot-showcase .ambient-seg,
 .viewer-ambient-ctl.rail-showcase .ambient-seg {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
-  gap: 4px;
+  gap: 6px;
   height: auto;
   padding: 0;
   border: 0;
@@ -678,16 +686,31 @@ html[data-showcase] {
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 4px;
+  gap: 6px;
   height: auto;
-  min-height: 50px;
-  padding: 6px 4px 5px;
+  min-height: 58px;
+  padding: 9px 4px 8px;
   border: 1px solid transparent;
-  border-radius: var(--r-control, 12px);
+  border-radius: 12px;
   opacity: 1;
   color: #5b5674;
+  font-size: var(--text-ui, 13px);
   font-weight: 800;
   line-height: 1;
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease),
+    color 0.16s var(--ease),
+    transform 0.14s var(--ease);
+}
+.viewer-ambient-ctl.slot-showcase .ambient-seg-btn:active,
+.viewer-ambient-ctl.rail-showcase .ambient-seg-btn:active {
+  transform: scale(0.96);
+}
+.viewer-ambient-ctl.slot-showcase .ambient-seg-btn svg,
+.viewer-ambient-ctl.rail-showcase .ambient-seg-btn svg {
+  width: 17px;
+  height: 17px;
 }
 .viewer-ambient-ctl.slot-showcase .ambient-seg-btn:hover,
 .viewer-ambient-ctl.rail-showcase .ambient-seg-btn:hover {
@@ -719,6 +742,8 @@ html[data-showcase] {
 .viewer-ambient-ctl.rail-showcase .showcase-btn {
   width: 100%;
   justify-content: center;
-  height: 34px;
-  border-radius: var(--r-control, 12px);
+  height: 38px;
+  border-radius: 12px;
+  font-size: var(--text-ui, 13px);
+  font-weight: 800;
 }

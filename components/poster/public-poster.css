@@ -6928,8 +6928,8 @@ html[data-pchrome="3"] .poster-chrome-title {
   --amb-tile-hover-line: #e8dcc2;
   box-shadow: var(--shadow-2);
 }
-.poster-page .viewer-ambient-ctl .amb-ctl-title {
-  color: #6b5b34;
+.poster-page .viewer-ambient-ctl {
+  --amb-title-ink: #6b5b34;
 }
 .public-right .rail-showcase {
   align-self: stretch;

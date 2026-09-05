@@ -21,7 +21,6 @@ import { Clock3 } from "lucide-react";
 export type DevWorldForce = NonNullable<WorldCtx["force"]>;
 type BandOpt = "real" | DayBand;
 type WeatherOpt = "real" | Weather;
-type DayOpt = string; // "real" | "1".."31"
 
 export type StudioSettingsProps = {
   hapticsSupported: boolean;
@@ -46,9 +45,8 @@ export type StudioSettingsProps = {
   posterThemeSaving: boolean;
   // 개발자 월드 강제 — **effectiveRole이 개발자**일 때만 넘긴다(미리보기 중인 역할엔 줄 자체가 없다).
   devWorld?: { force: DevWorldForce; onChange: (force: DevWorldForce) => void } | null;
-  // 지금 보고 있는 연·달 — 월드 날짜 목록의 말일(윤년 포함)과, 그 계절에 가능한 날씨를 정하는 데 쓴다.
+  // 지금 보고 있는 달 — 그 달에 가능한 날씨 목록을 정하는 데 쓴다.
   devMonth?: number;
-  devYear?: number;
 };
 
 export function StudioSettingsList({
@@ -67,20 +65,9 @@ export function StudioSettingsList({
   onChangePosterTheme,
   posterThemeSaving,
   devWorld = null,
-  devMonth = 1,
-  devYear = 2026
+  devMonth = 1
 }: StudioSettingsProps) {
-  // 월드 날짜 — 연대기(chronicle)가 날짜로 갈리는 장면을 기다리지 않고 바로 보기 위한 것이다.
-  // 갈리는 날: 12/20·23·27(눈사람 1→2→3단), 2/15(해빙 — 눈 밑 도토리가 드러난다), 2/20·25(눈사람이 녹아 사라진다).
-  const lastDay = new Date(Date.UTC(devYear, devMonth, 0)).getUTCDate();
-  const dayMark: Record<number, string> = devMonth === 12 ? { 20: "눈사람 1단", 23: "눈사람 2단", 27: "눈사람 완성" } : devMonth === 2 ? { 15: "해빙", 20: "눈사람 2단", 25: "눈사람 사라짐" } : {};
-  const dayOptions = [
-    { value: "real", label: "자동" },
-    ...Array.from({ length: lastDay }, (_, i) => {
-      const d = i + 1;
-      return { value: String(d), label: dayMark[d] ? `${d}일 · ${dayMark[d]}` : `${d}일` };
-    })
-  ];
+  // (월드 날짜 줄은 2026-09-05 제거 — 연대기 철거로 날이 화면을 바꾸지 않는다. 흔적은 달만 본다.)
   // 그 달에 **실제로 생길 수 있는** 날씨만 고를 수 있다 — 여름에 눈을 강제하면 만들지도 않은 "눈 덮인 여름
   // 바이옴"을 보게 된다(2026-09-05 소유자). 목록은 월별 평년값 표(world/weather.ts)에서 직접 뽑으므로
   // 표를 고치면 목록도 같이 바뀐다(둘이 어긋날 수 없다).
@@ -205,7 +192,7 @@ export function StudioSettingsList({
           · 시간대: 여섯 띠(새벽~밤) — 엔진이 장면 위에 얹는 빛 톤.
           · 날씨: **실제 기상이 아니라** 날짜 시드 난수다(world/weather.ts, 소유자 결정 — 기상 API 안 씀). 그래서 "자동".
             계절에 없는 날씨(여름의 눈)는 목록에서 뺀다 — 만들지도 않은 장면을 보게 된다.
-            · 날짜: 연대기(chronicle)가 날짜로 갈리는 장면(눈사람 단계·2월 해빙)을 바로 보려는 것. 갈리는 날엔 이름을 붙였다. */}
+          (월드 날짜는 2026-09-05 제거 — 연대기를 걷어 날이 화면을 바꾸지 않는다.) */}
       {devWorld ? (
         <>
           <div className="role-help-haptics rhh-ambient rhh-dev">
@@ -240,19 +227,6 @@ export function StudioSettingsList({
               onChange={(v) => devWorld.onChange({ ...devWorld.force, weather: v === "real" ? undefined : v })}
               options={weatherOptions}
               value={devWorld.force.weather ?? "real"}
-            />
-          </div>
-          <div className="role-help-haptics rhh-ambient rhh-dev">
-            <span className="rhh-label">
-              <Clock3 aria-hidden="true" size={14} />
-              월드 날짜 <em className="rhh-dev-tag">개발자</em>
-            </span>
-            <RhhSelect<DayOpt>
-              ariaLabel="월드 날짜 강제(개발자)"
-              dataAct="dev-world-day"
-              onChange={(v) => devWorld.onChange({ ...devWorld.force, day: v === "real" ? undefined : Number(v) })}
-              options={dayOptions}
-              value={devWorld.force.day !== undefined ? (String(devWorld.force.day) as DayOpt) : "real"}
             />
           </div>
           {/* 계절 배경 아트 보드(2026-09-04) — 배경의 모든 그림 자리(나무·초목·지형·생물)와 코덱스 프롬프트를 한 라우트에서 관리한다. 개발자 전용 라우트. */}
