@@ -3266,7 +3266,9 @@ export function PublicPoster({
         })}
         <div className="day-strip">
           <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
-            {cell.dayOfMonth} 일
+            {/* 숫자만 따로 감싼다 — '오늘' 배지가 "5 일" 전체가 아니라 숫자에만 걸리게(2026-09-05).
+                평소엔 아무 스타일도 없어 보이는 것이 달라지지 않는다. */}
+            <span className="d-num">{cell.dayOfMonth}</span> 일
           </strong>
           {showHeaderMark ? (
             interactive ? (

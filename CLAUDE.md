@@ -401,11 +401,15 @@ private layers is retired — ADR-0014; the server model stays.)
   press snapped the card **12px in one frame** with no interpolation (2026-09-05: "여러 번 누르면 여전히 툭툭";
   measured 5 jumps over 5 presses). The two keyframe names now hold **identical, direction-free** values
   (scale + opacity), so the held value never changes and the snap is structurally impossible — measured 0px.
-- **A support band outranks the day-cell ring.** The 업 도움 / 기간 안내 ribbon spans several days, so a
-  per-cell today/selected ring drawn over it slices the ribbon (measured in the studio and fixed there first).
-  The viewer poster disagreed until 2026-09-05 (both at `z-index: 4`, so the `::after` ring won); both screens
-  now put the band above (`z-index: 6`, labelled head `7`). The ring loses ~17px of its top edge and still
-  reads — the ribbon, cut in half, does not.
+- **오늘 is marked on the date number, and the ring outranks the band** (2026-09-05 owner decision, after
+  checking convention). Google, Apple, Outlook and Notion all put "today" on the **number** (a filled circle /
+  badge), never on a hairline cell outline, and they draw event content above cell chrome. So the number gets a
+  gold pill (`.d-num` on the poster, `.studio-day-head strong` in the studio) — a marker no band can ever cover,
+  since bands live in lanes below the day header. The owner also wanted the ring itself on top, so
+  `--z-cal-select-ring` is **8**, above the ribbon (6) and its labelled head (7); the ribbon now shows a thin
+  gold line where it crosses today, which is the accepted trade. **The badge must not grow the day header** —
+  its height is pinned under the header's inner height (poster 21px, studio 18px), because a taller header
+  pushes the band lanes and every card below it.
 - **State segments share one highlight technique** — tokens `--seg-on-*` / `--seg-off-op` in `globals.css`
   (2026-09-05). Selected = a soft tint fill + an inset white hairline, never a border; unselected = the same ink
   at `--seg-off-op`. A border-boxed "selected" chip inside a card fights the card's borderless-cell grammar and

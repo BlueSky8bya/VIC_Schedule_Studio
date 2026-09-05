@@ -5987,7 +5987,22 @@ body.cell-range-dragging {
   pointer-events: none;
 }
 
-/* 오늘: 밝은 골드 테두리 하이라이트 + 살짝 강조 배경 */
+/* 오늘: 밝은 골드 테두리 하이라이트 + 살짝 강조 배경 + **날짜 숫자 알약 배지**
+   (2026-09-05, 관례: Google·Apple·Outlook 모두 오늘을 숫자에 건다 — 띠가 링을 지나가도 숫자는
+   절대 안 가려진다). 배지 높이는 머리줄 안쪽 높이(22 − 위 여백 4 = 18) 아래로 묶는다 — 머리줄이
+   커지면 절대배치 띠(top:26)와 카드가 통째로 밀린다. */
+.studio-day.today .studio-day-head strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-pill, 999px);
+  background: var(--accent, #f4b740);
+  color: #3f2800;
+}
 .studio-day.today {
   background: var(--accent-soft);
 }

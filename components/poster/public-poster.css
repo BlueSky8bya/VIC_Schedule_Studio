@@ -4699,22 +4699,34 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 
 /* 오늘 칸: 금테만으로는 축소된 포스터에서 거의 안 보였다. 날짜 줄 자체를 금색으로 채워 '오늘'이
    멀리서도 한 번에 잡히게 한다(달력에서 가장 자주 찾는 한 칸). */
-.public-day.today .day-strip {
-  border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, rgb(244 183 64 / 34%), rgb(244 183 64 / 14%));
-}
-.public-day.today .day-strip strong {
-  color: #7c4d05;
+/* 오늘 = **날짜 숫자에 알약 배지**(2026-09-05, 관례: Google·Apple·Outlook 모두 오늘을 숫자에 건다).
+   머리줄 전체를 금색으로 칠하던 그라데이션은 뺐다 — 배지와 금색이 두 겹이면 시끄럽고, 숫자 하나에
+   모으는 편이 훑을 때 훨씬 빨리 잡힌다.
+   ⚠ 배지 높이는 머리줄 **안쪽 높이(25 − 위 여백 2 = 23)** 아래로 묶는다. 머리줄이 커지면 그 아래
+   띠 레인과 카드가 통째로 밀린다(소유자: "다른 띠나 글자에 겹치게 하지 마"). */
+.public-day.today .day-strip .d-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 21px;
+  min-width: 21px;
+  padding: 0 5px;
+  border-radius: var(--r-pill, 999px);
+  background: #f4b740;
+  color: #3f2800;
+  line-height: 1;
 }
 
 /* 오늘 칸 금테. 칸 자신의 inset box-shadow는 자식(일정 카드)에 항상 가려져 테두리가 카드 밑으로
-   끊겨 보인다 → 카드 위에 얹는 오버레이(::after)로 그린다. z-index 4 = 카드(1)·업도움 띠(4, 같은
-   층이지만 ::after가 자식들 뒤에 칠해져 위) 위, 스티커 레이어(5) 아래. 클릭은 통과. */
+   끊겨 보인다 → 카드 위에 얹는 오버레이(::after)로 그린다.
+   z는 편집실과 같은 토큰(--z-cal-select-ring: 8) — 업 도움·기간 안내 띠(6·7)보다 위다
+   (2026-09-05 소유자 결정: 오늘 강조를 끊지 않는다). 클릭은 통과. */
 .public-day.today::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: var(--z-cal-select-ring, 8);
   border-radius: inherit;
   pointer-events: none;
   box-shadow: inset 0 0 0 3px #f4b740;
@@ -4725,7 +4737,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   content: "";
   position: absolute;
   inset: -4px;
-  z-index: 4;
+  z-index: var(--z-cal-select-ring, 8);
   border-radius: inherit;
   pointer-events: none;
   border: 4px solid rgb(244 183 64 / 28%);
