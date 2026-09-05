@@ -2,7 +2,7 @@
 
 > 현재 시제. 라운드가 끝날 때마다 갱신한다. 절차는 [VISUAL_QA_PROTOCOL](VISUAL_QA_PROTOCOL.md), 판정 기준은 [IMMERSION_BREAK_RULES](IMMERSION_BREAK_RULES.md).
 
-Last Updated: 2026-09-05 · 라운드: **0(진단·문서화)** 완료 · 다음: 파이프라인 P0 → 라운드 1
+Last Updated: 2026-09-05 · 라운드: **0(진단·문서화 + QA Harness 구축)** 완료 · 다음: **라운드 1**(프로토콜 §7)
 
 ## 1. 상태
 
@@ -10,11 +10,43 @@ Last Updated: 2026-09-05 · 라운드: **0(진단·문서화)** 완료 · 다음
 |---|---|
 | 문서 세트(방향·문법 3·판정·프로토콜·시스템 지도) | ✅ 2026-09-05 작성 |
 | 검사 에이전트 3종(`.claude/agents/ambient-*.md`) | ✅ 정의 |
-| 결정적 진입점(seed·band·t·pointer) | ⏳ 미구축 — [PLAN-005 P0](../agent/plans/PLAN-20260905-005-ambient-visual-qa.md) |
-| 캡처·시트·diff 스크립트(`scripts/ambient-qa/`) | ⏳ 미구축 — P1 |
-| 전수 자동 지표 | ⏳ 미구축 — P2 |
-| 라운드 러너·기록 | ⏳ P3(형식은 프로토콜 §6에 확정) |
-| 기존 자산 | `.scratch-pw/snap-biomes.mjs`(44장, **비결정적**) · `probe-biomes.mjs`(내비 실측) · `probe-squirrel.mjs`(다람쥐 상태 추적) · `perf-frames.mjs` |
+| 결정적 진입점(seed·band·season·weather·t·load·pointer·camera) | ✅ **구축**(P0, 2026-09-05) — `/visual-fixture/biome`, `__vicAmbient.freeze/advance/time/forcePointer/pending/ready/weatherOptions`, 셀프테스트 23/23 |
+| 캡처·시트·diff 스크립트(`scripts/ambient-qa/`) | ✅ **구축**(P1) — `capture` · `sheet` · `diff` · `selftest`, 브라우저 캔버스 합성(추가 의존성 0) |
+| 전수 자동 지표(`metrics.mjs`) | ⏳ 미구축 — P2 |
+| 라운드 러너(`round.mjs`) | ⏳ 미구축 — P3(기록 형식은 프로토콜 §6·`rounds/ROUND-TEMPLATE.md`에 확정, 캡처 → 시트 → diff 세 명령으로 수동 실행 가능) |
+| baseline | ✅ `.scratch-pw/qa/r00/baseline/`(16 시나리오 · 433 PNG · 64 시트 · 80 diff · 512MB · 192s, 빌드 `f5a3767`+하네스 변경) |
+| 기존 자산 | `.scratch-pw/snap-biomes.mjs`(44장, 비결정적 — 대체됨) · `probe-biomes.mjs`(내비 실측) · `probe-squirrel.mjs` · `perf-frames.mjs` |
+
+## 1.5 QA Harness 구축 완료 / Round 0 (2026-09-05)
+
+**구현(PLAN-005 P0·P1)**
+
+| 층 | 무엇 | 어디 |
+|---|---|---|
+| 엔진 | `WorldCtx.force.{seed, freeze, load, pointer, pin}` · `__vicAmbient.{seed, frozen, freeze, advance(ms, stepMs), time, forcePointer, pending, ready, weatherOptions, settledT}` · 얼린 상태에선 `sync()`가 루프를 절대 돌리지 않음 · 첫 `advance` 앞 dt=0 굽기 ↔ 에셋 안정 **3회 고정** 반복 | `scene-engine.ts` |
+| 로드 신호 | 진행 중 에셋 로드 수(아트 PNG·Noto·SVG) | `loading.ts`, `art/load.ts`, `assets.ts` |
+| 세계 | `createWorld(season, biome, { pin })` — 감상 속성 없이도 시작 바이옴 유지(fixture만) | `world/world-scene.ts`, `season-canvas.tsx` |
+| fixture | `/visual-fixture/biome?biome&season&band&weather&seed&t&load&pointer&camera&y`(VISUAL_TEST_FIXTURE=1) — 페이지가 `ready()` → `advance(t)` → `settledT` | `app/visual-fixture/biome/page.tsx`, `biome-fixture.tsx` |
+| 도구 | `scenarios.mjs`(16 + 스모크 3) · `lib.mjs` · `capture.mjs` · `sheet.mjs` · `diff.mjs` · `selftest.mjs` · npm `ambient:qa:*` | `scripts/ambient-qa/` |
+| 테스트 | 시나리오 표 ↔ 엔진 키·허용 날씨·fixture 달 표 대조 | `tests/unit/ambient-qa-scenarios.test.ts` |
+
+**검증**
+
+- 게이트: `tsc` 0 · `lint` 0(max-warnings 0) · `vitest` 564/564(55 파일) · `build` exit 0.
+- 셀프테스트(스모크 3: s03 초원·가을·아침 / s10 산·가을·노을·안개 / s14 깊은 바다·여름·밤·흐림) **23/23 PASS**: ① 같은 URL → 같은 해시 ② `advance(1000)` = `advance(250)`×4 = URL `t=1000` ③ 얼림(실시간 700ms 뒤 t·픽셀 불변, running false) ④ 시간대 바꾸면 `world().band`·픽셀 변화 ⑤ 시드 42→7 픽셀 변화 ⑥ 허용 날씨(가을·여름에 snow 없음) ⑦ 도착 상태(pending 0·frozen·settledT 1.5·frames 90) ⑧ 페이지 에러 0(아트 404 폴백은 제외).
+- 교차 검사(16/16): `static.png` = `band-<자기 띠>.png` = `weather-<자기 날씨>.png`(URL 경로가 달라도 같은 픽셀). 시트 3종 + 흑백 육안 확인(라벨·격자·캡션 OK), diff 히트맵 육안 확인(깊은 바다 해파리·빛줄기·바다눈만 노랑/빨강).
+- 산출물 형식: 시나리오 폴더마다 `index.md`(캡션 = 바이옴/계절/띠/날씨/t/해시 + 장면 `debug()` + 시간 diff 표) — 검사 에이전트가 Read로 바로 읽는다.
+
+**하네스가 이미 드러낸 것**(라운드 0 관찰 — 수정은 라운드 1부터, 백로그 근거로 승격)
+
+| 관찰 | 해당 백로그 | 근거 |
+|---|---|---|
+| `weather-clear` = `weather-cloud` 해시 동일 **16/16** | AMB-W1-01(흐림 반응 0) | baseline meta.json |
+| `band-morning` = `band-noon` 해시 동일 **9/16**(초원 4·산 3·민물·깊은 바다) — 다른 7은 나무 그림자 ±8px·조석만 다름 | AMB-T1-01 | 〃 |
+| 시간 시트 인접 프레임 변화 **0.00%** — 숲 2·산 3·언덕 1(7/16 완전 정적) | AMB-M3-01 | diff.json |
+| 초원 여름(s16) 4초 변화 10.5% vs 갯벌 3.4% vs 민물 0.16% — 장면별 움직임 편차 | (참고) | 〃 |
+
+## 2. 백로그(진단에서 나온 것 — 라운드 0, 코드 미수정)
 
 ## 2. 백로그(진단에서 나온 것 — 라운드 0, 코드 미수정)
 
@@ -24,7 +56,7 @@ ID = `AMB-<범주>-<번호>`. 등급은 IMMERSION_BREAK_RULES 기준, 신뢰도�
 |---|---|---|---|---|---|---|
 | AMB-A1-01 | A-1 | **P0** | 초원·가을 | 다람쥐 출발 y = `groundY(rand())` → v≈0(지평선 띠)에서 걷는다. 회오리 `gy()−80`(하늘) 출발 | §5 | 열림 |
 | AMB-A1-02 | A-1 | P1 | 초원·봄 | 나비 `gy()−30`·벌 `groundY(rand())` 출발 — 나는 종이라 P1, 그림자 위치 확인 필요 | §5 | 열림(검증 필요) |
-| AMB-E1-01 | E-1 | **P0**(평가 인프라) | 엔진 | 장면 시드 `Date.now()` — 전/후 비교 불가 | §3 | 열림(PLAN-005 P0) |
+| AMB-E1-01 | E-1 | **P0**(평가 인프라) | 엔진 | 장면 시드 `Date.now()` — 전/후 비교 불가 | §3 | **닫힘**(2026-09-05, P0: `force.seed` — fixture만; 실제 화면은 로드마다 다른 자리 유지) |
 | AMB-D2-01 | D-2 | P1 | 산 | 뒤 봉우리 α .5 반투명 + land 지평선 프로파일 → 봉우리 속 언덕 줄, 능선선 없음, 발이 투명으로 녹음 | §4 | 열림 |
 | AMB-S5-01 | S-5 | P1 | 갯벌 | 물골 = 직선 현 + 단일 사인 + 등폭 리본 4겹, 합류 접선 없음 | §7 | 열림 |
 | AMB-S4-01 | S-4 | P1 | 민물 | 잠긴 바위 = clip + 흰 링(물색·젖은 띠 없음) | §6 | 열림 |
@@ -46,17 +78,18 @@ ID = `AMB-<범주>-<번호>`. 등급은 IMMERSION_BREAK_RULES 기준, 신뢰도�
 
 ## 3. 파이프라인 TODO(PLAN-005 요약 — 상세는 계획서)
 
-- [ ] P0 결정성: `force.seed`·`band`·`season` URL, `__vicAmbient.advance(ms)`·`forcePointer`, `/visual-fixture/biome`(달력 없는 감상 전용 fixture), 시드가 소품·스폰 전부에 닿는지 실측(같은 URL 두 번 = 픽셀 동일)
-- [ ] P1 캡처: `scripts/ambient-qa/capture.mjs`(시나리오 16 × 시트 5종), `sheet.mjs`(contact sheet 합성), `diff.mjs`(절대차 히트맵, sharp)
+- [x] P0 결정성(2026-09-05): `force.seed`·`band`·`season`·`weather`·`t`·`load`·`pointer` URL, `__vicAmbient.freeze/advance/forcePointer/ready`, `/visual-fixture/biome`, 셀프테스트 23/23
+- [x] P1 캡처(2026-09-05): `capture.mjs`(16 × 정적·시간 6·시간대 6·날씨 n) · `sheet.mjs`(시간·시간대·날씨·흑백) · `diff.mjs`(인접 프레임 히트맵 + 전/후 비교) — sharp 대신 브라우저 캔버스 합성
 - [ ] P2 전수 지표: `metrics.mjs`(조합 매트릭스 · 페이지 에러 · airWalk · overlapRatio · layerDeltaL · bandDelta · weatherDelta · loopSeam · forbiddenCombo) + 장면 `debug()`에 생물 위치·propField 노출
-- [ ] P3 라운드 러너: `round.mjs --round NN --phase before|after`(폴더·시트·지표 표 생성), `docs/ambient/rounds/` 템플릿
-- [ ] 낡은 프로브 정리: `probe-world.mjs`(연대기 참조) 폐기 표시
+- [ ] P3 라운드 러너: `round.mjs --round NN --phase before|after`(캡처 → 시트 → diff → ROUND-NN.md 초안 한 번에). 지금은 세 명령 수동
+- [ ] 낡은 프로브 정리: `probe-world.mjs`(연대기 참조) 폐기 표시(`.scratch-pw`, 미추적)
 
 ## 4. 라운드 기록
 
 | 라운드 | 날짜 | 주제 | 선택 | 결과 |
 |---|---|---|---|---|
 | 0 | 2026-09-05 | 구조 진단 · 규칙 문서화 · 에이전트 설계 · 파이프라인 계획 | (수정 없음) | 백로그 18건 등재 |
+| 0-H | 2026-09-05 | **QA Harness 구축**(PLAN-005 P0·P1) · 스모크 검증 · baseline 캡처 | (비주얼 수정 없음) | 셀프테스트 23/23 · baseline `r00/baseline` 16 시나리오 433 PNG · 하네스 관찰 4건(§1.5) |
 
 ## 5. 열린 결정(소유자)
 
@@ -66,4 +99,7 @@ ID = `AMB-<범주>-<번호>`. 등급은 IMMERSION_BREAK_RULES 기준, 신뢰도�
 
 ## 6. 다음 세션 진입
 
-`docs/ambient/README.md` → 이 문서 §2·§3 → PLAN-005 P0 착수. 라운드 1은 P0·P1이 끝난 뒤(결정적 before 캡처가 가능해진 뒤) 시작한다.
+`docs/ambient/README.md` → 이 문서 §1.5·§2 → **라운드 1**(프로토콜 §7): 서버 기동 → `npm run ambient:qa:capture -- --round 01 --phase before`
+→ 시트·diff → 세 에이전트 **동시** 검토(입력 = `.scratch-pw/qa/r01/before/index.md` + 시나리오 `index.md`·시트 경로) → 통합 판단 ≤3건
+(첫 후보 ① AMB-A1-01 + AMB-E1-01은 P0로 해결됨 → 제외) → 수정 → 게이트 → `--phase after` → `--compare before,after` → `rounds/ROUND-01.md`.
+baseline(`r00/baseline`)은 라운드 1의 before와 같은 빌드가 아니면 참고용으로만 쓴다(하네스 변경 커밋 뒤 before를 새로 찍는다).

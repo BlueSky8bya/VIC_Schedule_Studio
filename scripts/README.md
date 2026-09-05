@@ -14,6 +14,7 @@
 | `recolor-tags.mjs` | 태그 색 일괄 재배정 | 🎨 일회성 마이그레이션 |
 | `sort-tags-by-usage.mjs` | 사용량 기준 태그 정렬 | 🎨 일회성 |
 | `taxonomy-probe.mjs` | 태그 분류 체계 탐색/분석 | 🔍 조사 |
+| `ambient-qa/` | **계절 배경 비주얼 QA 하네스**(2026-09-05, PLAN-20260905-005): 결정적 fixture 캡처·contact sheet·diff·셀프테스트 — [`ambient-qa/README.md`](ambient-qa/README.md). DB 무관 | 🔧 상시 도구 |
 | `cleanup-sticker-storage.mjs` | 0065(스티커 철수) 동반 — `sticker-assets` 버킷 비우기(`--delete`). **2026-08-27 실행 완료, 버킷 삭제됨 — 재실행 불필요(404)** | 🗑 일회성(완료) |
 
 **상시 도구**(apply-db / verify-*)는 계속 쓰고, **일회성**(🎨/🔍)은 과거 데이터 정리에 쓴

@@ -5,6 +5,7 @@
 
 import { ART_DIR, artSlot, slotFiles, type ArtSlot } from "./manifest";
 import { makeCanvas } from "@/components/shared/ambient/scenes/util";
+import { beginLoad, endLoad } from "@/components/shared/ambient/loading";
 
 export type ArtSprite = { c: HTMLCanvasElement; w: number; h: number; ax: number; ay: number; id: string };
 
@@ -12,11 +13,16 @@ const resolved = new Map<string, ArtSprite | null>(); // key = `${file}@${scale}
 const pending = new Map<string, Promise<ArtSprite | null>>();
 
 function fetchImage(url: string): Promise<HTMLImageElement | null> {
+  beginLoad(); // 검증 하네스의 '준비됐나' 신호(loading.ts) — 성공·실패 어느 쪽이든 endLoad
   return new Promise((resolve) => {
     const im = new Image();
     im.decoding = "async";
-    im.onload = () => resolve(im);
-    im.onerror = () => resolve(null);
+    const done = (v: HTMLImageElement | null) => {
+      endLoad();
+      resolve(v);
+    };
+    im.onload = () => done(im);
+    im.onerror = () => done(null);
     im.src = url;
   });
 }

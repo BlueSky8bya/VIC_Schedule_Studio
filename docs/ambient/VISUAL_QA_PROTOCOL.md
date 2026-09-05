@@ -90,25 +90,26 @@
 
 시트 종류: **정적**(1장) · **시간**(0/250/500/1000/2000/4000ms, 6장 가로) · **시간대**(새벽~밤 6장) · **날씨**(허용 날씨 n장) · **흑백**(정적의 그레이) · **diff**(시간 시트 인접 프레임 절대차 히트맵). 모든 시트 파일명 = `r<NN>-<before|after>-<#>-<종류>.png`, 저장 `.scratch-pw/qa/r<NN>/`(추적 안 함), 라운드 기록에 경로만.
 
-## 5. 결정적 평가 진입점(PLAN-005 P0에서 만든다 — 목표 사양)
+## 5. 결정적 평가 진입점(PLAN-005 P0 — 2026-09-05 구축, `VISUAL_TEST_FIXTURE=1` 프로덕션 서버)
 
 ```
-/visual-fixture/biome?biome=forest&season=spring&band=dawn&weather=fog&seed=42&t=1000&load=1&pointer=off
+/visual-fixture/biome?biome=forest&season=spring&band=dawn&weather=fog&seed=42&t=1500&load=1&camera=showcase
 ```
 
-| 파라미터 | 뜻 | 지금 |
+| 파라미터 | 뜻 | 기본 |
 |---|---|---|
-| biome | 시작 바이옴 | 있음(`?biome=`) |
-| season | 계절(달 대신) | `?m=`로 우회(4·8·10·1) → `season=` 추가 |
-| band | 시간대 | `?hour=`만 → `band=` 추가(`WorldCtx.force.band`는 이미 있음) |
-| weather | 날씨 | 있음 |
-| **seed** | 장면 시드(소품 자리·생물 첫 스폰) | **없음** → `force.seed` → `mountScene` |
-| **t** | 애니메이션 시각(ms) — 이 시각의 프레임을 결정적으로 | **없음** → `__vicAmbient.advance(ms)`(루프 정지 상태에서 dt 고정 step) |
-| load | 여력 고정 | `forceLoad` 있음 → URL로도 |
-| pointer | 포인터 강제(off = 화면 밖) | 없음 → `forcePointer` |
-| camera | default(감상) / calendar(달력 뒤, 핫 존 있음) | 감상 진입 버튼 클릭으로 우회 → 파라미터 |
+| biome | 시작 바이옴(감상 속성 없이도 머문다 — `pin`) | meadow |
+| season | 계절(fixture가 보는 달: 봄 4 · 여름 8 · 가을 10 · 겨울 1) | spring |
+| band | 시간대(여섯 띠) | noon |
+| weather | 날씨 — **항상 강제**(오늘 날짜의 시드 날씨가 프레임에 끼지 않게) | clear |
+| seed | 장면 시드(소품 자리·생물 첫 스폰) | 42 |
+| t | 애니메이션 시각(ms). 페이지가 `ready()` → `advance(t)` 뒤 `__vicAmbient.settledT`를 적는다 | 0 |
+| load | 여력 고정 0~1 | 1 |
+| pointer | `x,y` 포인터 고정(없으면 화면 밖 — 생물 위협 0) | — |
+| camera | showcase(내비 오버레이 포함) / plain(캔버스만). 캔버스 픽셀은 같다 | showcase |
 
-같은 URL = 같은 픽셀(폰트 무관 캔버스만 캡처). 수정 전/후 비교의 전제.
+같은 URL = 같은 픽셀(캔버스만 캡처, 폰트·OS 무관). `advance(ms)`는 고정 dt(1/60 s) step이라 `advance(1000)` = `advance(250)`×4 = URL `t=1000`.
+콘솔: `__vicAmbient.advance(250)` · `.time()` · `.forcePointer({x,y})` · `.forceWorld({…})` · `.pending()` · `.weatherOptions()`. 도구: [`scripts/ambient-qa/README.md`](../../scripts/ambient-qa/README.md).
 
 ## 6. 라운드 기록 형식 — `docs/ambient/rounds/ROUND-NN.md`
 
@@ -134,10 +135,11 @@
 ## 7. 라운드 실행 절차(메인 세션 체크리스트)
 
 1. `docs/ambient/QA_PROGRESS.md` 백로그·지난 라운드 결과 읽기. 잠긴 영역 확인.
-2. 로컬 서버(`VISUAL_TEST_FIXTURE=1`, 3100, **production build**) → `node scripts/ambient-qa/capture.mjs --round NN --phase before`(P1 이후) — 그 전엔 `.scratch-pw/snap-biomes.mjs`로 대체(비결정적임을 기록에 명시).
+2. 로컬 서버(`npm run build && VISUAL_TEST_FIXTURE=1 npx next start -p 3100 -H 127.0.0.1`) → `npm run ambient:qa:selftest`(하네스 자체 점검, 23 PASS) →
+   `npm run ambient:qa:capture -- --round NN --phase before` → `ambient:qa:sheet` → `ambient:qa:diff`(같은 인자). 산출 `.scratch-pw/qa/rNN/before/index.md`.
 3. Agent tool 세 번을 **한 메시지에** 띄운다(입력: 시트 경로·지표 표·문서 목록). 결과는 `rounds/ROUND-NN-reports/{A,B,C}.md`로 저장.
 4. 통합 판단(§3) → ROUND-NN.md "선택" 확정.
-5. 수정 → 게이트 → after 캡처(같은 시드) → diff.
+5. 수정 → 게이트 → `ambient:qa:capture -- --round NN --phase after`(같은 시드) → `ambient:qa:diff -- --round NN --compare before,after` → `compare.md`.
 6. ROUND-NN.md 완성, QA_PROGRESS 갱신, CURRENT_STATE 한 줄, 커밋(라운드 단위).
 7. 소유자 확인이 필요한 항목(방향 선택·팔레트·P1 이상 대수술)은 "Open Decisions"로 올리고 멈춘다.
 

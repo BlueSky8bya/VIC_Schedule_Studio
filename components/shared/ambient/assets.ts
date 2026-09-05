@@ -4,6 +4,7 @@
 // 실패(404·차단)해도 장면은 소품만 빠진 채 돈다(null 유지).
 
 import { makeCanvas } from "./scenes/util";
+import { beginLoad, endLoad } from "./loading";
 
 // 동물·물고기는 직접 그리지 않는다(2026-09-04 사용자: 손그림 금지) — Google Noto Emoji 아트워크(Apache-2.0, public/ambient/
 // noto/NOTICE.txt)를 그대로 쓴다. 옆모습(왼쪽을 본다)은 drawFacing으로 진행 방향에 맞춰 뒤집고 기울인다; 무당벌레·나비처럼
@@ -36,11 +37,18 @@ const images = new Map<string, Promise<HTMLImageElement>>();
 export function loadImage(url: string): Promise<HTMLImageElement> {
   let p = images.get(url);
   if (!p) {
+    beginLoad(); // 검증 하네스의 '준비됐나' 신호(loading.ts)
     p = new Promise<HTMLImageElement>((resolve, reject) => {
       const im = new Image();
       im.decoding = "async";
-      im.onload = () => resolve(im);
-      im.onerror = () => reject(new Error(`ambient asset failed: ${url}`));
+      im.onload = () => {
+        endLoad();
+        resolve(im);
+      };
+      im.onerror = () => {
+        endLoad();
+        reject(new Error(`ambient asset failed: ${url}`));
+      };
       im.src = url;
     });
     images.set(url, p);

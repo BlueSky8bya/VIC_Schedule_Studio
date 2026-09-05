@@ -23,8 +23,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   ② 시간대 = 단색 틴트 한 겹(아침=점심) ③ 날씨 반응은 초원·민물 일부뿐(흐림 0) ④ 산 뒤 봉우리 α .5 반투명 + land 지평선
   프로파일 → 능선 모호 ⑤ 갯골 = 직선 현 + 단일 사인 + 등폭 리본 ⑥ 잠긴 돌 = clip/얹힘 ⑦ 숲 나무 `claimSpot` 미경유
   ⑧ **가을 다람쥐 출발 y = `groundY(rand())`(v≈0 지평선 띠) + 회오리 `gy()−80`(하늘) = 공중 보행 P0**.
-  다음: PLAN-005 P0(결정성) → P1(시트) → 라운드 1(첫 수정 후보 AMB-A1-01 다람쥐 스폰). CLAUDE.md는 규칙을 복제하지
-  않고 `docs/ambient/README.md`로 연결만 했다.
+  CLAUDE.md는 규칙을 복제하지 않고 `docs/ambient/README.md`로 연결만 했다.
+  **같은 날 QA Harness 구축 완료(PLAN-005 P0·P1, 비주얼 코드 무수정)**: `scene-engine.ts`에 `force.seed/freeze/load/pointer/pin` +
+  `__vicAmbient.freeze/advance/time/forcePointer/pending/ready/weatherOptions`(얼린 엔진은 루프를 돌리지 않고 고정 dt `advance()`로만
+  시간이 흐른다; 첫 advance 앞 dt=0 굽기 ↔ 에셋 안정 3회 고정 워밍업), `loading.ts`(진행 중 로드 수), `world-scene.ts` `pin`,
+  결정적 fixture `/visual-fixture/biome?biome&season&band&weather&seed&t&load&pointer&camera`(페이지가 `ready()`→`advance(t)`→`settledT`),
+  `scripts/ambient-qa/{scenarios,lib,capture,sheet,diff,selftest}.mjs` + npm `ambient:qa:*`(브라우저 캔버스 합성 — 추가 의존성 0),
+  `tests/unit/ambient-qa-scenarios.test.ts`. 검증: tsc 0 · lint 0 · vitest 564 · build exit 0 · 셀프테스트 23/23(같은 URL 같은 픽셀 ·
+  advance 경로 동치 · 얼림 · 시간대 · 시드 · 허용 날씨 · 도착 상태 · 에러 0) · 교차 검사 static=band=weather 16/16 · 시트·diff 육안.
+  baseline `.scratch-pw/qa/r00/baseline`(16 시나리오 · 433 PNG · 192s). 하네스가 이미 보인 것: 흐림=맑음 16/16, 아침=점심 9/16,
+  시간 시트 0.00% 변화 7/16(숲·산·언덕 정적). **라운드 1 준비 완료** — 다음 세션은 프로토콜 §7부터(에이전트 3 동시 → ≤3건).
 
 - **'오늘' 표식 관례화 + 링을 띠 위로(2026-09-05 소유자 결정, 둘 다)**: 관례 조사 결과 Google·Apple·
   Outlook·Notion은 모두 오늘을 **날짜 숫자**에 건다(채운 원/배지) — 칸 테두리로 말하지 않고, 일정 콘텐츠는
@@ -1872,9 +1880,10 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Next Exact Steps
 
--1. **앰비언트 QA 파이프라인 P0·P1**(PLAN-20260905-005): `force.seed`·`band`·`season` fixture 파라미터, `__vicAmbient.freeze/advance/forcePointer`,
-   `/visual-fixture/biome`, 결정성 셀프테스트 → `scripts/ambient-qa/{capture,sheet,diff}.mjs` → 그다음 **라운드 1**
-   (`docs/ambient/VISUAL_QA_PROTOCOL.md` §7 절차, 첫 후보 `QA_PROGRESS` ① AMB-A1-01 다람쥐 스폰 P0).
+-1. **앰비언트 비주얼 QA 라운드 1**(하네스는 2026-09-05 구축 완료): 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 01 --phase before`
+   → `sheet`·`diff` → 에이전트 3(ambient-art-mood · ambient-spatial-ecology · ambient-motion-director) **동시** 검토 → 통합 ≤3건
+   (첫 후보 `QA_PROGRESS` ① AMB-A1-01 다람쥐 스폰 P0) → 수정 → 게이트 → `--phase after` → `--compare before,after` → `docs/ambient/rounds/ROUND-01.md`.
+   P2(전수 지표 `metrics.mjs`)·P3(`round.mjs`)는 라운드와 병행.
 0. **마이그레이션 0051 적용** — `node scripts/apply-db.mjs db/migrations/0051_visit_known_accounts.sql`
    (새/재방문 판정용 DISTINCT RPC + `(day, account_hash)` 인덱스. 미적용이어도 코드가 옛 경로로
    폴백하므로 급하진 않지만, 적용해야 인사이트 열 때의 순차 왕복 40회+가 사라진다.)

@@ -13,7 +13,11 @@
     "test:visual": "playwright test --config=playwright.visual.config.ts",
     "harness:verify": "node scripts/agent-harness/verify-harness.mjs",
     "art:normalize": "node scripts/ambient-art-normalize.mjs",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "ambient:qa:selftest": "node scripts/ambient-qa/selftest.mjs",
+    "ambient:qa:capture": "node scripts/ambient-qa/capture.mjs",
+    "ambient:qa:sheet": "node scripts/ambient-qa/sheet.mjs",
+    "ambient:qa:diff": "node scripts/ambient-qa/diff.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

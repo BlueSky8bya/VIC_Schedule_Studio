@@ -18,7 +18,8 @@
 import { gfxPref } from "@/lib/ui/gfx";
 import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
-import { weatherAt, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
+import { weatherAt, weatherOptionsForMonth, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
+import { pendingLoads } from "@/components/shared/ambient/loading";
 import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
 import { drawDepthHaze } from "@/components/shared/ambient/world/view";
 import type { BiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
@@ -31,8 +32,21 @@ export type WorldCtx = {
   season: SeasonKey;
   year: number;
   month: number;
-  /** 검증·개발자 시간 여행용 강제값 — band가 있으면 hour보다 우선. biome = 시작 바이옴(fixture). */
-  force?: { hour?: number; band?: DayBand; weather?: Weather; biome?: BiomeKey };
+  /** 검증·개발자 시간 여행용 강제값 — band가 있으면 hour보다 우선. biome = 시작 바이옴(fixture).
+   *  ── 결정적 재현(PLAN-20260905-005 P0, fixture 전용 — components/shared/ambient/biome-fixture.tsx) ──
+   *  seed = 장면 시드(소품 자리·첫 스폰. 없으면 로드마다 다르다) · freeze = rAF 루프를 돌리지 않고 `__vicAmbient.advance()`로만
+   *  시간을 흐르게 한다 · load = 여력 고정(0~1) · pointer = 포인터 고정(없으면 화면 밖) · pin = 감상 속성이 없어도 시작 바이옴에 머문다. */
+  force?: {
+    hour?: number;
+    band?: DayBand;
+    weather?: Weather;
+    biome?: BiomeKey;
+    seed?: number;
+    freeze?: boolean;
+    load?: number;
+    pointer?: { x: number; y: number } | null;
+    pin?: boolean;
+  };
 };
 
 export type Pointer = {
@@ -108,6 +122,25 @@ type AmbientDebug = {
   exits: () => Record<Dir, BiomeKey | null>;
   /** 정지 화면(생동감 OFF) 상태에서 한 장 다시 그린다 — 이동 직후 등. */
   redraw: () => void;
+  // ── 결정적 재현(PLAN-20260905-005 P0) — 검증 하네스(scripts/ambient-qa)가 쓴다 ──
+  /** 이 마운트의 장면 시드(force.seed 또는 로드 시각). */
+  seed: number;
+  /** 얼림 — rAF 루프 정지, 시간은 advance()로만 흐른다. */
+  frozen: boolean;
+  freeze: (on: boolean) => void;
+  /** 고정 dt(기본 1/60 s)로 ms만큼 step·draw. 첫 호출은 에셋 안정을 기다리며 dt=0 굽기를 3회 한다. 반환 = 도달한 t(초). */
+  advance: (ms: number, stepMs?: number) => Promise<number>;
+  time: () => number;
+  /** 포인터 고정(null = 화면 밖). 고정 중엔 실제 마우스 이벤트를 무시한다. */
+  forcePointer: (p: { x: number; y: number; inside?: boolean } | null) => void;
+  /** 진행 중 에셋 로드 수(loading.ts). */
+  pending: () => number;
+  /** 활성 바이옴 모듈 도착 + 로드 0이 120ms 유지될 때까지 기다린다. */
+  ready: (timeoutMs?: number) => Promise<{ ok: boolean; ms: number; pending: number; loaded: boolean }>;
+  /** 보고 있는 달에 허용된 날씨(월별 확률 > 0). */
+  weatherOptions: () => Weather[];
+  /** fixture가 t까지 전진을 끝냈을 때의 t(biome-fixture.tsx가 적는다) — 캡처 스크립트의 대기 신호. */
+  settledT?: number;
 };
 declare global {
   interface Window {
@@ -168,7 +201,13 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   let q = readQuality();
   let [floor, cap, fixed] = loadBand(q);
   let load = fixed ?? (q >= 2 ? 0.5 : (floor + cap) / 2);
-  let forced: number | null = null;
+  // 여력 고정 — fixture의 `load=`(검증). 없으면 조절기가 맡는다.
+  let forced: number | null = world.force?.load !== undefined ? Math.max(0, Math.min(1, world.force.load)) : null;
+  // ── 결정적 재현 상태(PLAN-20260905-005 P0) ──
+  let frozen = !!world.force?.freeze;
+  let forcedPtr: { x: number; y: number } | null = world.force?.pointer ? { x: world.force.pointer.x, y: world.force.pointer.y } : null;
+  let warmed = false;
+  const WARMUP_STEPS = 3;
   // 세계 — 날·띠·날씨·흔적. 5초마다(300프레임) 다시 잰다(자정·띠 경계·마디 경계). 흔적은 날이 바뀔 때만 다시 조립.
   let worldForce: WorldCtx["force"] | null = world.force ?? null;
   let traceKey = "";
@@ -213,7 +252,15 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     }
   };
   refreshWorld();
-  const scene = factory((Date.now() % 100000) + 7);
+  if (forcedPtr) {
+    p.x = forcedPtr.x;
+    p.y = forcedPtr.y;
+    p.inside = true;
+  }
+  // 장면 시드 — 검증(fixture)은 force.seed로 고정해 같은 URL이 같은 소품 자리·같은 첫 스폰을 낸다(PLAN-20260905-005 P0).
+  // 실제 화면은 지금처럼 로드마다 다르다(세계의 결정성은 날씨·흔적에만 해당한다 — 소품 자리는 결정 사항이 아니다).
+  const seed = world.force?.seed ?? (Date.now() % 100000) + 7;
+  const scene = factory(seed);
   const dbg: AmbientDebug = {
     season: canvas.dataset.season ?? "",
     q,
@@ -248,7 +295,33 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     },
     biome: () => scene.nav?.at() ?? "meadow",
     exits: () => scene.nav?.exits() ?? { up: null, down: null, left: null, right: null },
-    redraw: () => drawOnce()
+    redraw: () => drawOnce(),
+    // ── 결정적 재현(PLAN-20260905-005 P0) — 구현은 아래 settle/ready/advance ──
+    seed,
+    frozen,
+    freeze: (on) => {
+      frozen = on;
+      dbg.frozen = on;
+      if (on) stop();
+      else sync();
+    },
+    advance: (ms, stepMs = 1000 / 60) => advance(ms, stepMs),
+    time: () => frame.t,
+    forcePointer: (v) => {
+      forcedPtr = v ? { x: v.x, y: v.y } : null;
+      p.vx = 0;
+      p.vy = 0;
+      p.speed = 0;
+      p.moved = false;
+      if (v) {
+        p.x = v.x;
+        p.y = v.y;
+        p.inside = v.inside ?? true;
+      } else p.inside = false;
+    },
+    pending: () => pendingLoads(),
+    ready: (timeoutMs = 10000) => ready(timeoutMs),
+    weatherOptions: () => weatherOptionsForMonth(world.month)
   };
   window.__vicAmbient = dbg;
   let w = 0;
@@ -429,6 +502,77 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       }, ms));
     }
   };
+  // ── 결정적 재현(PLAN-20260905-005 P0) ─────────────────────────────────────────────────────────────
+  // frozen이면 rAF 루프가 돌지 않고 시간은 advance()로만 흐른다: 고정 dt(기본 1/60 s)로 step·draw를 n번 반복하므로 같은 시드·
+  // 같은 ms면 rand() 호출 순서가 같아 **같은 프레임**이다. 에셋(아트 PNG·Noto)은 첫 step에서 요청되므로, 첫 advance 앞에서
+  // dt=0 step ↔ 로드 안정을 **고정 횟수**(WARMUP_STEPS) 반복한다 — 횟수가 타이밍에 따라 달라지면 rand() 소비가 달라져 결정성이 깨진다.
+  /** 진행 중 로드가 0인 상태가 stableMs 동안 유지되면 true. timeoutMs 안에 안 되면 false. */
+  const settle = (stableMs: number, timeoutMs: number) =>
+    new Promise<boolean>((resolve) => {
+      const t0 = performance.now();
+      let since = -1;
+      const poll = () => {
+        const now = performance.now();
+        if (pendingLoads() === 0) {
+          if (since < 0) since = now;
+          if (now - since >= stableMs) return resolve(true);
+        } else since = -1;
+        if (now - t0 > timeoutMs) return resolve(false);
+        window.setTimeout(poll, 40);
+      };
+      poll();
+    });
+  /** 세계 장면의 활성 바이옴 모듈이 도착했나(동적 import). 세계 장면이 아니면 true. */
+  const worldLoaded = () => {
+    const d = scene.debug?.();
+    const loaded = d?.loaded;
+    const biome = d?.biome;
+    if (!Array.isArray(loaded) || typeof biome !== "string") return true;
+    return loaded.includes(biome);
+  };
+  const ready = async (timeoutMs: number) => {
+    const t0 = performance.now();
+    let loaded = worldLoaded();
+    while (!loaded && performance.now() - t0 < timeoutMs) {
+      await new Promise((r) => window.setTimeout(r, 40));
+      loaded = worldLoaded();
+    }
+    const ok = loaded && (await settle(120, Math.max(0, timeoutMs - (performance.now() - t0))));
+    return { ok, ms: Math.round(performance.now() - t0), pending: pendingLoads(), loaded };
+  };
+  const advance = async (ms: number, stepMs: number) => {
+    if (!frozen) {
+      frozen = true;
+      dbg.frozen = true;
+      stop();
+    }
+    if (!warmed) {
+      warmed = true;
+      for (let i = 0; i < WARMUP_STEPS; i++) {
+        stillFrame();
+        await settle(120, 8000);
+      }
+    }
+    const dt = Math.min(0.05, Math.max(0.001, stepMs / 1000));
+    const n = Math.max(0, Math.round(ms / stepMs));
+    for (let i = 0; i < n; i++) {
+      frame.t += dt;
+      frame.dt = dt;
+      if (dbg.frames % 120 === 60) measureHot();
+      if (dbg.frames % 300 === 150) refreshWorld();
+      scene.step(frame);
+      drawOnce();
+      dbg.frames += 1;
+      p.moved = false;
+      if (!forcedPtr) {
+        p.vx *= 0.7;
+        p.vy *= 0.7;
+        p.speed = Math.hypot(p.vx, p.vy);
+      }
+    }
+    if (n === 0) drawOnce();
+    return frame.t;
+  };
   const sync = () => {
     const nq = readQuality();
     frame.reduced = readReduced();
@@ -445,6 +589,12 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const hiddenByCss = getComputedStyle(canvas).display === "none";
     // 숨겨졌다 다시 보이면(display none → block) 크기가 0에서 돌아온다 — 다시 잰다.
     if (!hiddenByCss && (canvas.offsetWidth !== w || canvas.offsetHeight !== h)) resize();
+    // 결정적 재현: 얼린 상태에선 루프를 절대 돌리지 않는다(시간은 advance()만 흐르게 한다). 정지 화면도 여기서 굽지 않는다 —
+    // 속성 변화마다 dt=0 step이 끼면 rand() 소비가 타이밍에 따라 달라져 같은 URL이 다른 프레임을 낸다.
+    if (frozen) {
+      stop();
+      return;
+    }
     const paused = readPaused();
     if (frame.reduced || off || document.hidden || hiddenByCss || paused) {
       stop();
@@ -465,6 +615,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
 
   const toCanvas = (e: PointerEvent): [number, number] => [(e.clientX - rectL) / zoomF, (e.clientY - rectT) / zoomF];
   const onMove = (e: PointerEvent) => {
+    if (forcedPtr) return; // 포인터 고정 중(검증) — 실제 마우스는 무시
     const dts = Math.max(4, e.timeStamp - p.ts) / 1000;
     const [cx, cy] = toCanvas(e);
     if (p.inside) {
@@ -501,6 +652,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     scene.pointerUp?.(frame);
   };
   const onLeave = () => {
+    if (forcedPtr) return;
     p.inside = false;
     p.vx = 0;
     p.vy = 0;

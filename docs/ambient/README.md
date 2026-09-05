@@ -32,16 +32,22 @@ ADR-0017(⑰⑱ 화질 규칙 22개)은 여기 규칙들의 **상위 근거**이
 
 라운드 = **동시 검토 → 통합 판단 → 상위 2~3건만 수정 → 전/후 비교**. 직렬 핑퐁·대량 수정 금지.
 
-## 빠른 명령(현재)
+## 빠른 명령(2026-09-05, PLAN-005 P0·P1 구축 — 상세 [`scripts/ambient-qa/README.md`](../../scripts/ambient-qa/README.md))
 
 ```bash
-# fixture 서버(프로덕션 빌드, 3100)
+# fixture 서버(프로덕션 빌드, 3100 — dev 서버가 떠 있으면 먼저 내린다)
 npm run build && VISUAL_TEST_FIXTURE=1 npx next start -p 3100 -H 127.0.0.1
-# 44장(비결정적 — P0 전까지의 임시 하네스)
-node .scratch-pw/snap-biomes.mjs <cycle>
-# 내비·튕김·Esc 실측
-node .scratch-pw/probe-biomes.mjs
-# fixture URL(지금 되는 파라미터)
-/visual-fixture/studio?role=developer&y=2026&m=10&hour=13&weather=fog&biome=mountain
+# 하네스 자체 점검(결정성 23 검사, 스모크 3)
+npm run ambient:qa:selftest
+# 라운드 캡처 → 시트 → diff
+npm run ambient:qa:capture -- --round 01 --phase before        # [--smoke | --only 3,10] [--kinds static,temporal]
+npm run ambient:qa:sheet   -- --round 01 --phase before
+npm run ambient:qa:diff    -- --round 01 --phase before        # 시간 시트 인접 프레임
+npm run ambient:qa:diff    -- --round 01 --compare before,after
+# 결정적 fixture(같은 URL = 같은 픽셀)
+/visual-fixture/biome?biome=mountain&season=autumn&band=dusk&weather=fog&seed=42&t=1500
+# 편집실 fixture(달력 뒤 실물 — 비결정적, 내비·핫 존 실측용)
+/visual-fixture/studio?role=developer&y=2026&m=10&hour=13&weather=fog&biome=mountain · node .scratch-pw/probe-biomes.mjs
 ```
-브라우저 콘솔: `__vicAmbient.world()` · `.scene()` · `.goTo("up")` · `.forceWorld({band:"dusk",weather:"rain"})` · `.forceLoad(1)`.
+브라우저 콘솔: `__vicAmbient.world()` · `.scene()` · `.advance(250)` · `.time()` · `.forcePointer({x:700,y:600})` · `.goTo("up")` · `.forceWorld({…})` · `.forceLoad(1)` · `.pending()` · `.weatherOptions()`.
+산출물: `.scratch-pw/qa/r<NN>/<phase>/<sid>/index.md`(추적 안 함). baseline = `r00/baseline`(16 시나리오, 2026-09-05).

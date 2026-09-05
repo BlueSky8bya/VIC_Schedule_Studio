@@ -27,7 +27,7 @@ AmbientLayer(month, year, slug, force?, worldForce?)          components/shared/
 | 영역 | 파일 | 하는 일 | 진단(몰입 관점) |
 |---|---|---|---|
 | 진입·계절 | `registry.ts`, `ambient-layer.tsx`, `season-canvas.tsx` | 달 → 계절, 캔버스 1장 마운트, `force`(계절)·`worldForce`(시각·날씨·바이옴) | 계절은 달력 달이 정한다(ADR-0017). fixture 외엔 강제 없음 |
-| 엔진 | `scene-engine.ts` | rAF 루프, `Frame`(w·h·dpr·t·dt·p·q·load·reduced·hot·dim·date·time·weather·traces), 자체 여력 조절기(90프레임마다 ±), 포인터(window 리스너, `isBackgroundTarget`), 정지 화면(`stillFrame`), `window.__vicAmbient` 디버그 | **① 장면 시드가 비결정적**: `factory((Date.now() % 100000) + 7)`(L217) — 같은 URL이라도 로드마다 소품 자리가 다르다. 전/후 비교 불가의 근본 원인. **② 시간 t를 외부에서 못 세운다**(`tick`이 `performance.now` 기준) — 시간별 캡처가 재현 불가. **③ 빛 톤 = 화면 전체 단색 한 겹**(`LIGHT`, 아침·점심은 0) — 시간대가 "필터"로만 읽히는 구조적 이유 |
+| 엔진 | `scene-engine.ts` | rAF 루프, `Frame`(w·h·dpr·t·dt·p·q·load·reduced·hot·dim·date·time·weather·traces), 자체 여력 조절기(90프레임마다 ±), 포인터(window 리스너, `isBackgroundTarget`), 정지 화면(`stillFrame`), `window.__vicAmbient` 디버그, **결정적 재현(P0)**: `force.seed/freeze/load/pointer/pin`, `advance(ms)` 고정 dt step, `ready()` | ~~① 장면 시드 비결정적~~ → **2026-09-05 해결(fixture만)**: `force.seed`가 있으면 그 값, 없으면 옛 `Date.now()`. ~~② 시간 t 외부 제어 불가~~ → `freeze` + `advance()`. **③ 빛 톤 = 화면 전체 단색 한 겹**(`LIGHT`, 아침·점심은 0) — 시간대가 "필터"로만 읽히는 구조적 이유(하네스 관찰: `band-morning` = `band-noon` 9/16) |
 | 세계 | `world/time.ts` | 여섯 띠(새벽·아침·점심·노을·저녁·밤), 계절별 일출·일몰, `LIGHT` 틴트(dawn 회청 .08 · dusk 회자 .09 · evening .14 · night .24) | 띠는 정확하나 **표현 채널이 틴트 하나뿐** — 그림자 길이·하늘·수면 반사·원경 가시성이 띠를 안 탄다 |
 | 세계 | `world/weather.ts` | 월별 평년값 확률표(기상청 1991~2020 서울) → 날짜 시드 날씨(오전/오후 마디, 직전 마디) | 표 자체가 계절 규칙(여름 눈 0). **장면 반응이 거의 없다**(§3 표) |
 | 세계 | `world/traces.ts` | (연대기 철거 후) 달만 보는 흔적: 두더지 흙더미(3~8월)·눈사람(12~2월)·연잎(6~8월), 정규화 좌표 | 안정. CLAUDE.md의 "연대기·데뷔 나무" 서술은 **낡음**(2026-09-05 철거) |
@@ -42,9 +42,10 @@ AmbientLayer(month, year, slug, force?, worldForce?)          components/shared/
 | 해안 3 | `scenes/coast.ts` | 뭍 캔버스(모드별) + 공용 물(`water.ts`), 조석은 띠 함수, 파도 띠 수 모드별 | 갯골 = 직선 현 + 단일 사인 요동(§7) |
 | 바다 2 | `scenes/sea.ts`, `scenes/water.ts` | 너울·거품 선·글린트·물고기 그림자·밤 별·깊은 바다 빛줄기/해파리 | 표류물 `u=(…)%1` 랩 시 x 점프 가능(루프 이음매 후보) |
 | 감상·내비 | `showcase.tsx`, `app/ambient.css` | `html[data-showcase]`, 방향키/WASD/스와이프/쉐브론/미니맵, 도착 알약 | 안정 |
-| fixture | `app/visual-fixture/studio/page.tsx` | `?role=developer&viewer=1&ambient=&hour=&weather=&y=&m=&biome=` | **seed·band·t(애니 시각)·pointer 강제 없음** → 결정적 평가 불가 |
-| 디버그 | `window.__vicAmbient` | `season q load frames consumed running scene() forceLoad hot world() forceWorld goTo biome exits redraw` | 시간 전진(`step(dt)`)·시드·포인터 고정 없음. `scene()`가 노출하는 카운터는 장면마다 다름(다람쥐 위치 미노출) |
-| 검증 자산 | `.scratch-pw/snap-biomes.mjs`(44장), `probe-biomes.mjs`, `probe-world.mjs`(연대기 철거로 일부 낡음), `probe-squirrel.mjs`, `perf-frames.mjs` | 라운드2 5회전(ADR-0017 ⑰⑱)의 하네스 | 시드가 비결정적이라 **같은 장면 재촬영이 안 된다**. 시간별·시간대별 시트 없음 |
+| fixture(편집실) | `app/visual-fixture/studio/page.tsx` | `?role=developer&viewer=1&ambient=&hour=&weather=&y=&m=&biome=` | 달력 뒤 실물(핫 존·내비 실측용). 비결정적 |
+| **fixture(결정적)** | `app/visual-fixture/biome/page.tsx` + `biome-fixture.tsx`(2026-09-05, PLAN-005 P0) | `?biome&season&band&weather&seed&t&load&pointer&camera` — 페이지가 `ready()` → `advance(t)` → `settledT` | **같은 URL = 같은 픽셀**(셀프테스트 23/23). 캔버스만 캡처 |
+| 디버그 | `window.__vicAmbient` | `season q load frames consumed running scene() forceLoad hot world() forceWorld goTo biome exits redraw` + **`seed frozen freeze advance time forcePointer pending ready weatherOptions settledT`**(P0) | `scene()`가 노출하는 카운터는 장면마다 다름(다람쥐 위치 미노출 — P2에서 `creatures`·`propField` 추가) |
+| 검증 자산 | **`scripts/ambient-qa/`**(capture · sheet · diff · selftest, 2026-09-05) · `.scratch-pw/snap-biomes.mjs`(44장, 비결정적 — 대체됨), `probe-biomes.mjs`, `probe-squirrel.mjs`, `perf-frames.mjs` | 결정적 캡처·시트·diff · 라운드2 5회전(ADR-0017 ⑰⑱)의 옛 하네스 | baseline `.scratch-pw/qa/r00/baseline`(16 시나리오). 전수 지표(P2)·라운드 러너(P3)는 미구축 |
 
 ## 2. 상태 축이 실제로 닿는 곳(반응 인벤토리)
 
@@ -79,7 +80,8 @@ AmbientLayer(month, year, slug, force?, worldForce?)          components/shared/
 - 결정적 rng: `scenes/util.ts rng(seed)`(mulberry32), `world/seed.ts hashSeed(...parts)`(FNV-1a).
 - 장면 시드 흐름: 엔진 `Date.now()%100000+7` → `createWorld` → 바이옴별 `seed + key.length*131 + charCode*17` → 장면 `bake`의 `rng(seed*7 + 13 + SEASON_SEED[season])`.
 - 결정적인 것: 날씨(slug·날짜), 흔적(slug·연·달), 지평선 띠(`rng(311 + w*3 + season.length)` — 폭·계절만), 바탕 얼룩(장면 시드).
-- **비결정적인 것**: 장면 시드 자체 → 나무·바위·관목 자리, 생물 첫 스폰 시각, 갯골 형태. 검사 파이프라인 P0에서 `force.seed`로 잠근다([PLAN-20260905-005](../agent/plans/PLAN-20260905-005-ambient-visual-qa.md)).
+- **실제 화면에서 비결정적인 것**: 장면 시드 자체 → 나무·바위·관목 자리, 생물 첫 스폰 시각, 갯골 형태(로드마다 다르다 — 결정 사항 아님).
+  **검증은 `force.seed`로 잠근다**(2026-09-05 P0, `/visual-fixture/biome?seed=`): 얼린 엔진(`freeze`) + 고정 dt `advance()` + 에셋 안정 3회 고정 워밍업 → 같은 URL = 같은 픽셀([PLAN-20260905-005 §7](../agent/plans/PLAN-20260905-005-ambient-visual-qa.md#7-구현-기록--p0p12026-09-05)).
 
 ## 4. 산 바이옴 — 능선 모호성의 구조적 원인(`land.ts` mountain 분기, L921~1148)
 

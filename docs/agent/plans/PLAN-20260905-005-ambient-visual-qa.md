@@ -1,6 +1,6 @@
 # PLAN-20260905-005 — 앰비언트 비주얼 QA 파이프라인: 결정적 재현 · 캡처 시트 · 전수 지표 · 라운드 러너
 
-Status: **Proposed** (문서·에이전트 설계 완료 2026-09-05, 구현 미착수) · Task Risk: **L1**(제품 화면 무변경 — fixture·디버그 훅·스크립트만; 장면 시드 주입은 fixture 외 경로에서 기존 동작 유지) · Created: 2026-09-05
+Status: **P0·P1 Implemented(2026-09-05) · P2·P3 Proposed** — 구현 기록은 §7 · Task Risk: **L1**(제품 화면 무변경 — fixture·디버그 훅·스크립트만; 장면 시드 주입은 fixture 외 경로에서 기존 동작 유지) · Created: 2026-09-05
 선행: [docs/ambient/README.md](../../ambient/README.md) 문서 세트 · ADR-0017 ⑯⑰⑱ · PLAN-20260904-004(바이옴 세계)
 
 > 소유자(2026-09-05): "몰입을 깨는 요소를 체계적으로 찾아내고, 개선하는 평가 시스템과 수정 루프를 프로젝트 안에 구축하라. 같은 장면을 정확히 재현할 수 있어야 하고, 수정 전/후 비교가 되어야 하며, 최소 5라운드를 이어 돌릴 수 있는 구조여야 한다."
@@ -85,3 +85,18 @@ scripts/ambient-qa/
 ## 6. 규모·순서
 
 P0 → P1 → (라운드 1 착수 가능) → P2 → P3. P2·P3는 라운드와 병행 가능. 총 2일. 라운드 1의 첫 수정 후보는 [QA_PROGRESS §2](../../ambient/QA_PROGRESS.md#2-백로그진단에서-나온-것--라운드-0-코드-미수정) 우선순위 ①(AMB-A1-01 다람쥐 스폰 — 작고 P0)이다.
+
+## 7. 구현 기록 — P0·P1(2026-09-05)
+
+계획과 다른 점(전부 의도된 단순화):
+
+| 계획 | 실제 | 왜 |
+|---|---|---|
+| `freeze()`·`advance()`를 스크립트가 부른다 | **fixture 페이지가** `ready()` → `advance(t)` → `settledT`까지 스스로 한다. 스크립트는 `settledT`만 기다린다 | 사람이 URL을 열어도 같은 정지 프레임을 본다("같은 URL = 같은 픽셀"이 브라우저에서도 성립) |
+| 에셋 지연을 `ready()`로만 흡수 | 첫 `advance` 앞에 **dt=0 굽기 ↔ 로드 안정을 3회 고정** 반복(`WARMUP_STEPS`) | 에셋은 첫 step에서 요청되므로 ready만으론 이르다. 횟수를 타이밍에 맡기면 rand() 소비가 달라져 결정성이 깨진다 |
+| `sharp`로 시트·diff 합성 | **브라우저 캔버스**(Playwright about:blank)에서 합성·픽셀 비교 | sharp는 package.json 의존성이 아니라 next의 부수 설치물 — 사라질 수 있다. 추가 의존성 0 |
+| 시간대·날씨 시트는 한 페이지에서 `forceWorld` | **URL마다 새 페이지**(`band=`·`weather=`, t=1500) | 순수 URL 결정성. 교차 검사에서 static = band(자기 띠) = weather(자기 날씨) 해시가 16/16 같음 |
+| `camera` 파라미터로 감상 진입 | `camera=showcase`(기본, 내비 오버레이 포함) / `plain`. 세계 장면엔 `pin` 옵션 — 감상 속성 없이도 시작 바이옴 유지 | 감상 속성이 React 효과 뒤에 붙어 첫 step이 초원으로 스냅하던 순서 문제 회피 |
+| `probe-world.mjs` 폐기 표시 | 안 함 — `.scratch-pw`는 미추적 | 저장소에 없는 파일 |
+
+검증·baseline·하네스 관찰은 [QA_PROGRESS §1.5](../../ambient/QA_PROGRESS.md#15-qa-harness-구축-완료--round-0-2026-09-05). 도구 사용법은 [`scripts/ambient-qa/README.md`](../../../scripts/ambient-qa/README.md).

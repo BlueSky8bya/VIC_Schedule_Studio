@@ -23,7 +23,9 @@ export type WorldNav = {
 
 type Loaded = { scene: Scene; sizeKey: string };
 
-export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow"): SceneFactory {
+/** opts.pin = 감상 속성이 없어도 시작 바이옴에 머물고 이동도 허용한다 — 검증 fixture 전용(PLAN-20260905-005 P0). 실제 화면은 pin 없음. */
+export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opts: { pin?: boolean } = {}): SceneFactory {
+  const pinned = !!opts.pin;
   return (seed: number): Scene & { nav: WorldNav } => {
     const scenes = new Map<BiomeKey, Loaded>();
     const pending = new Map<BiomeKey, Promise<void>>();
@@ -90,7 +92,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow"): Sc
     };
     const go = (target: BiomeKey | Dir): boolean => {
       if (trans || !lastFrame) return false;
-      if (!showcase() && target !== "meadow") return false; // 달력 뒤에선 초원 고정
+      if (!pinned && !showcase() && target !== "meadow") return false; // 달력 뒤에선 초원 고정(fixture pin은 예외)
       const to = resolve(target);
       if (!to || to === cur) {
         if (!to) emit("vic:biome-bounce", { from: cur, dir: target });
@@ -128,7 +130,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow"): Sc
       step(f) {
         lastFrame = f;
         // 감상 모드가 아니면 초원 고정 — 나가는 순간 스냅(달력 뒤에 다른 바이옴이 남지 않게).
-        if (!showcase() && (cur !== "meadow" || trans)) {
+        if (!pinned && !showcase() && (cur !== "meadow" || trans)) {
           trans = null;
           queued = null;
           cur = "meadow";

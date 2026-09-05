@@ -18,7 +18,7 @@ export function SeasonCanvas({ season, slug, year, month, force }: { season: Sea
   useEffect(() => {
     if (!ref.current) return;
     const parsed = forceRef.current ? (JSON.parse(forceRef.current) as WorldCtx["force"]) : undefined;
-    const dispose = mountScene(ref.current, createWorld(season, parsed?.biome ?? "meadow"), { slug, season, year, month, force: parsed });
+    const dispose = mountScene(ref.current, createWorld(season, parsed?.biome ?? "meadow", { pin: parsed?.pin }), { slug, season, year, month, force: parsed });
     return () => dispose();
   }, [season, slug, year, month]);
   // 강제값이 바뀌면 장면을 다시 만들지 않고 엔진에 바로 넣는다(개발자 시간 여행 — 바탕을 다시 굽지 않는다).
