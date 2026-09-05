@@ -50,21 +50,12 @@
   grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
 }
 
-/* 헤더 계정 모서리 — 한 줄 유지. ≤1560px에선 미리보기 버튼(관리자 .io-preview · 개발자 .preview-dd-trigger) 라벨을
-   짧게("보여주기"/"미리보기") + 간격 8px. 1440px 실측: 긴 라벨이면 로그아웃이 둘째 줄로 떨어져 헤더가 ≈120px.
-   (CSS 기본선 — JS 실측 단계 .studio-shell[data-chrome]가 그 위에서 더 접는다, 아래 ⑤.) */
-.studio-role-tools .lbl-short {
-  display: none;
-}
+/* 헤더 계정 모서리 — 한 줄 유지. 2026-09-05: 긴/짧은 라벨 쌍(.lbl-long/.lbl-short)을 폐기했다. 미리보기 칸은
+   늘 짧은 이름("시청자 화면"/"미리보기") 하나라 폭을 미리 아껴 두고, 그만큼 칸 글자를 키운다(아래 ⑦).
+   접는 일은 JS 실측 단계(.studio-shell[data-chrome], 아래 ⑤)에만 맡긴다 — 임계 폭을 CSS에 또 적지 않는다. */
 @media (max-width: 1560px) {
   .studio-role-tools {
     gap: 8px;
-  }
-  .studio-role-tools .lbl-long {
-    display: none;
-  }
-  .studio-role-tools .lbl-short {
-    display: inline;
   }
 }
 .stool {
@@ -445,20 +436,14 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
 .studio-role-tools .preview-dd-trigger {
   white-space: nowrap; /* 한 글자씩 줄바꿈("보여/주기")되는 대신 넘침으로 드러나 JS가 단계를 올린다 */
 }
-/* 1단계 */
+/* 1단계 — 라벨 쌍이 없어진 뒤(2026-09-05)로 1단계가 접을 것은 간격뿐이다. */
 .studio-shell[data-chrome] .studio-role-tools {
   gap: 8px;
 }
-.studio-shell[data-chrome] .studio-role-tools .lbl-long {
-  display: none;
-}
-.studio-shell[data-chrome] .studio-role-tools .lbl-short {
-  display: inline;
-}
-/* 2단계 */
+/* 2단계 — 라벨은 전부 기호로(관리자 배지 "?"만 · 눈 · 나가기 아이콘 · "저장됨"만). */
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .actor-badge strong,
-.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .lbl-short,
-.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout .lbl,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .button .lbl,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger .lbl,
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-caret,
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .save-status .ss-time {
   display: none;
@@ -724,6 +709,18 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
   html[data-studio-calm] .studio-shell .studio-role-tools .save-status {
     gap: 6px;
   }
+  /* 2·3단계 칸 여백 5 — 라벨이 전부 기호라 여백이 그만큼 필요 없고, 2026-09-05에 칸 글자를 12.5 → 13.5로
+     키우며 "저장됨" 칸이 4px 넓어져 1366px에서 3단계로 한 칸 더 밀렸다. 그 4px를 여기서 되찾는다
+     (아래 `padding: 0 6px` 규칙은 특이도가 낮아 위 8px 규칙에 늘 졌다 — 실제로 듣는 자리는 여기다). */
+  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .save-status,
+  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .actor-badge,
+  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-preview,
+  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout,
+  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger,
+  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools > .button {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
   .studio-shell[data-chrome="3"] .studio-role-tools .studio-meta-capsule .save-status {
     width: 100%;
     border-radius: 12px;
@@ -756,7 +753,8 @@ html[data-studio-calm] .studio-role-tools {
   background: transparent;
   box-shadow: none;
   color: #5b5674;
-  font-size: var(--text-label); /* 2026-09-04 사용자: "?"를 빼며 글자를 조금 키운다(11 → 12.5px) */
+  /* 11 → 12.5(2026-09-04, "?"를 빼며) → 13.5(2026-09-05, 긴 라벨 "…보여주기"를 없애 생긴 폭만큼). */
+  font-size: var(--text-body);
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -794,7 +792,7 @@ html[data-studio-calm] .studio-role-tools {
   color: #4f3fbf;
 }
 .studio-role-tools .actor-badge strong {
-  font-size: var(--text-label);
+  font-size: var(--text-body);
 }
 /* 웹 배지는 라벨(quiet) — 버튼이 아니니 손 모양·호버 면 없음. "?"가 없으니 압축 2·3단계에서도 역할 글자를 지운다(⑤의
    `strong` 숨김은 "?"만 남기던 규칙 — quiet엔 남길 기호가 없어 칸이 비었다). */

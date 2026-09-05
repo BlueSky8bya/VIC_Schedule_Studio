@@ -3932,7 +3932,6 @@ export function BroadcastPanel({
               <button
                 aria-label="위 맞춤"
                 className="bp-command-button"
-                title="위 맞춤(수평 맞추기)"
                 type="button"
                 onClick={() => alignSelected("top")}
                data-act="위 맞춤">
@@ -4796,7 +4795,6 @@ export function BroadcastPanel({
         <button
           aria-label="새 그림 레이어"
           className="bp-layer-add"
-          title="새 레이어"
           type="button"
           onClick={addLayer}
          data-act="새 그림 레이어">

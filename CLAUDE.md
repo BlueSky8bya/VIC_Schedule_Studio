@@ -236,8 +236,17 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   player (2026-09-04: VOD playback stuttered). No always-on rAF loops in the poster — drive follow/measure logic by
   scroll/resize/ResizeObserver events.
 - **Viewer chrome groups and tiers**: header buttons live in uniform 36px segmented cards (login/logout, preview nav,
-  avatar toggle) and the center trio is one 44px height; `html[data-pchrome="1|2|3"]` (measured in
-  `public-poster.tsx`) folds labels → sparkles → title size when the header overflows or overlaps the overlays.
+  아바타 자리) and the center trio is one 44px height; cell type is 13.5px (`--text-body`, raised from 11px on
+  2026-09-05 — 11 read as a footnote inside a 44px card) with the gained width taken back from the horizontal
+  padding so the cards keep their measured width; `html[data-pchrome="1|2|3"]` (measured in `public-poster.tsx`)
+  folds labels → sparkles → title size when the header overflows or overlaps the overlays.
+- **아바타 자리 = one three-state radio `[끔 | 왼쪽 | 오른쪽]`** (`.avatar-ctl-preview` in `public-poster.tsx`,
+  owner/developer preview only). The 2026-09-05 rebuild replaced a card that held **two grammars at once** — a
+  next-action toggle whose label flipped ("아바타 자리 끄기") glued to a state radio (왼쪽/오른쪽) that appeared and
+  disappeared, so the card jumped width and reaching "off → right" took two clicks. Now it is the same grammar as
+  `AmbientModeSegment`: a quiet name cell + three states always visible, current one filled, any state one click
+  away, width constant. Never bring back a label that names the *next* action on a control that sits beside state
+  cells (the owner rejected that pattern twice — here and in the ambient segment).
 - **Settings dropdowns are the custom `RhhSelect`** (`components/studio/rhh-select.tsx`: trigger + body-portal
   listbox in the metal skin, keyboard-navigable) — never a native `<select>` in the settings list (its popup cannot be
   styled). Settings epoch `2026-09-04` reseeds the four switches (motion · eye-comfort · calm ·
@@ -319,10 +328,23 @@ private layers is retired — ADR-0014; the server model stays.)
   overflow width. Same DOM merely scaled = defect.
 - **Typography:** web large/legible, mobile small (never overflow). Tune base small, bump up in
   `@media (min-width: 641px)`.
-- **Mobile copy is the shortest working label** (2026-09-04 owner rule): "시청자 화면" not "시청자 화면
-  보여주기", "미리보기" not "역할 미리보기 ▾". A long/short label pair (`.lbl-long`/`.lbl-short`) must be
-  hidden by a base CSS rule so both never render at once — on mobile render a single short `.lbl` instead
-  (the "미리보기 미리보기" defect came from the pair leaking outside `.studio-role-tools`).
+- **The shortest working label, everywhere** (2026-09-04 owner rule, widened to web 2026-09-05): "시청자 화면"
+  not "시청자 화면 보여주기", "미리보기" not "역할 미리보기 ▾". The long/short label pair
+  (`.lbl-long`/`.lbl-short`) is **retired** — every control renders one short `.lbl` on web and mobile alike.
+  The owner asked for bigger type in the account card and the long label was what was eating the width; with
+  one label the cells fit at 13.5px and the measured chrome tier actually *drops* (1920: tier 1 → 0). Never
+  reintroduce the pair (it also caused the "미리보기 미리보기" defect when its hiding CSS leaked).
+- **A hover box says only what the screen does not** (2026-09-05 owner rule: "이미 다 보이는 내용 또 띄우지 마").
+  Three cases, in order: label visible and self-explanatory → **no tooltip**; label can fold (chrome tiers) →
+  the tooltip appears **only while folded** and carries the **name** — use the `data-tip` + `::after` pill
+  (`.stool[data-tip]` in studio-calm-layer.css, `html[data-pchrome] …[data-tip]` in public-poster.css), never a
+  native `title` that fires when the label is already on screen; label visible but the *effect* isn't obvious →
+  the tooltip states the **effect**, ≤ ~20 chars, no parenthetical asides ("시청자가 보는 그대로 보기",
+  "옅게 — 일정이 잘 보이게"). Keep `aria-label` as the name in every case.
+- **No decorative icons.** An icon must add what the words can't — identity when folded, a shortcut, a state.
+  A glyph that merely repeats or contradicts the label is a defect (2026-09-05: the 감상 나가기 pill carried an
+  eye — "보다" on the button that stops looking; the pencil beside it was an emoji among lucide strokes). One
+  icon vocabulary per card: lucide strokes in chrome, emoji only in the viewer's playful surfaces.
 - **Design unity:** symmetric L/R padding, reused tokens/components, shared motion vocabulary.
   One-off styles, imbalance, or ragged sibling heights = defect; new UI must look native.
 - **Fill empty space by content** (scale value/icon up, redistribute) — don't stretch an

@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Flower2, Haze, Leaf, Power, Snowflake, Sparkles, Waves } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flower2, Haze, Leaf, Power, Snowflake, Sparkles, Waves } from "lucide-react";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { type AmbientMode, ambientMode, setAmbientMode } from "@/lib/ui/motion";
 import { BIOME_ROWS, BIOMES, type BiomeKey, type Dir } from "@/components/shared/ambient/world/biomes";
@@ -53,7 +53,7 @@ export function ShowcaseButton({ season, className = "", compact = false }: { se
       className={`showcase-btn showcase-btn-${season} ${className}`.trim()}
       data-act="ambient-showcase"
       onClick={() => enterShowcase()}
-      title="달력·패널을 잠시 숨기고 계절 배경만 크게 봅니다 — 방향키로 다른 바이옴 (Esc로 돌아오기)"
+      title="방향키로 이동 · Esc로 나가기"
       type="button"
     >
       <span className="showcase-btn-glow" aria-hidden="true" />
@@ -66,10 +66,12 @@ export function ShowcaseButton({ season, className = "", compact = false }: { se
 /** 배경 세 상태 세그먼트 [켜기 | 흐리게 | 끄기] — 2026-09-04 사용자: "흐리게에서 바로 켜기, 켜기에서 바로 끄기가 되게, 버튼 셋으로
  *  말끔히". 순환 버튼(다음 동작이 라벨) 대신 **상태 셋이 늘 다 보이고 지금 상태가 채워진** 라디오 묶음. 시청자 레일·편집실
  *  아바타 자리(유리 알약)와 편집실 설정 줄(금 문법, .metal)이 같은 컴포넌트를 쓴다 — 상태의 진실은 <html data-ambient>. */
-const MODES: { value: AmbientMode; label: string; word: string; Icon: typeof Leaf }[] = [
-  { value: "on", label: "켜기", word: "켜짐", Icon: Sparkles },
-  { value: "dim", label: "흐리게", word: "흐리게", Icon: Haze },
-  { value: "off", label: "끄기", word: "끔", Icon: Power }
+// `tip` = 호버 상자. 라벨(켜기/흐리게/끄기)과 채워진 칸이 이미 "무엇이고 지금 어디인지"를 말하므로
+// 되풀이하지 않고 **결과**만 적는다(2026-09-05 소유자: "이미 다 보이는 내용 또 띄우지 마").
+const MODES: { value: AmbientMode; label: string; tip: string; Icon: typeof Leaf }[] = [
+  { value: "on", label: "켜기", tip: "배경 그대로", Icon: Sparkles },
+  { value: "dim", label: "흐리게", tip: "옅게 — 일정이 잘 보이게", Icon: Haze },
+  { value: "off", label: "끄기", tip: "배경 없음", Icon: Power }
 ];
 export function AmbientModeSegment({
   mode,
@@ -86,7 +88,7 @@ export function AmbientModeSegment({
 }) {
   return (
     <div aria-label={ariaLabel} className={`ambient-seg ${className}`.trim()} role="radiogroup">
-      {MODES.map(({ value, label, word, Icon }) => {
+      {MODES.map(({ value, label, tip, Icon }) => {
         const on = value === mode;
         return (
           <button
@@ -99,7 +101,7 @@ export function AmbientModeSegment({
               if (!on) onChange(value);
             }}
             role="radio"
-            title={on ? `지금 ${word}` : `계절 배경 ${label}`}
+            title={tip}
             type="button"
           >
             <Icon aria-hidden="true" size={13} />
@@ -417,8 +419,10 @@ export function ShowcaseExit() {
   return createPortal(
     <>
       {/* 안내는 짧게 — 긴 설명은 감상을 방해한다(2026-09-04 소유자). 이동은 쉐브론·미니맵이 스스로 말한다. */}
-      <button className="showcase-exit" data-act="ambient-showcase-exit" onClick={() => exitShowcase()} title="배경 감상 모드 나가기 (Esc)" type="button">
-        <Eye aria-hidden="true" size={14} />
+      {/* 눈 아이콘을 뺐다(2026-09-05 소유자: "굳이 눈모양을 넣은 이유가 뭐야, 쓸모 없잖아") — 나가는
+          버튼에 '보다'를 그려 두면 뜻이 반대고, 키 칩 [Esc] + "나가기"가 이미 무엇을·어떻게를 다 말한다.
+          같은 이유로 title도 없앴다(보이는 글자를 그대로 되풀이할 뿐이었다). */}
+      <button className="showcase-exit" data-act="ambient-showcase-exit" onClick={() => exitShowcase()} type="button">
         <span className="showcase-exit-key">Esc</span>
         나가기
       </button>

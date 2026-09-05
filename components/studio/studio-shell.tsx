@@ -1058,15 +1058,8 @@ export function StudioShell({
     // '비밀 차원문'). 클릭하면 드롭다운이 다시 열린다. 미리보기 아닐 땐 평소대로 "미리보기 ▾".
     const previewing = previewRole !== null;
     // '보여주기'는 관리자(owner) 미리보기일 때만 — 그 외 역할(매니저·작업자·시청자) 미리보기는 '미리보기'.
-    const triggerText = previewing
-      ? isNarrow
-        ? "시청자 화면"
-        : previewRole === "owner"
-          ? "시청자 화면 보여주기"
-          : "시청자 화면 미리보기"
-      : "미리보기";
-    // 압축 1단계(studio-calm-layer.css ⑤)에선 짧은 라벨, 2단계부턴 눈 아이콘만 — 관리자의 보여주기 버튼과 같은 문법.
-    const triggerShort = previewing ? (previewRole === "owner" ? "시청자 화면" : "미리보기") : "미리보기";
+    // 라벨은 하나 — 긴 문구("시청자 화면 보여주기")는 2026-09-05 폐기(칸 폭을 다 먹어 글자를 못 키웠다).
+    const triggerText = previewing ? (previewRole === "owner" ? "시청자 화면" : "미리보기") : "미리보기";
     return (
       <div className="preview-dd">
         <button
@@ -1079,16 +1072,9 @@ export function StudioShell({
           type="button"
          data-act="preview-dd-trigger">
           <Eye aria-hidden="true" size={16} />
-          {/* 모바일은 짧은 라벨 하나만("시청자 화면"/"미리보기") — 웹의 긴/짧은 쌍을 그대로 두면 숨기는 CSS가
-              .studio-role-tools 안에만 있어 "미리보기 미리보기"로 겹쳐 보였다(2026-09-04 사용자). */}
-          {isNarrow ? (
-            <span className="lbl">{triggerText}</span>
-          ) : (
-            <>
-              <span className="lbl-long">{triggerText}</span>
-              <span className="lbl-short">{triggerShort}</span>
-            </>
-          )}
+          {/* 웹·모바일 같은 라벨 하나 — 긴/짧은 쌍이 있던 시절 숨김 CSS가 .studio-role-tools 안에만 있어
+              "미리보기 미리보기"로 겹쳐 보인 적이 있다(2026-09-04). 쌍이 없으면 그 함정도 없다. */}
+          <span className="lbl">{triggerText}</span>
           {previewing ? null : (
             <span aria-hidden="true" className="preview-dd-caret">
               ▾
@@ -5820,7 +5806,11 @@ export function StudioShell({
           className="button"
           data-act="back-to-studio"
           onClick={() => setViewerMode(false)}
-          title="편집실로 가기"
+          /* 넓은 창에선 라벨이 이미 전문을 말한다 — 같은 말을 호버 상자로 또 띄우지 않는다
+             (2026-09-05 소유자). 모바일에서 "편집실"로 줄면 title이, 웹에서 압축 단계로 아이콘만
+             남으면 data-tip 상자가(public-poster.css) 이름을 대신 준다. */
+          data-tip="편집실로 가기"
+          title={isNarrow ? "편집실로 가기" : undefined}
           type="button"
         >
           <ChevronLeft aria-hidden="true" size={16} />
@@ -5834,10 +5824,15 @@ export function StudioShell({
             className="button"
             data-act="open-drawing-board"
             onClick={(e) => openBroadcastPanel(e.currentTarget)}
-            title="일정 그림판"
+            /* 이름만으론 무엇이 열리는지 모르는 칸 — 호버 상자는 **결과**를 말한다(이름 반복 금지).
+               압축 단계로 아이콘만 남으면 data-tip 상자가 이름을 준다. */
+            data-tip="일정 그림판"
+            title="일정표 위에 그리기 — 방송 화면용"
             type="button"
           >
-            <span aria-hidden="true">🖊️</span>
+            {/* 이모지 🖊️ → lucide Pencil: 형제 칸이 선 아이콘(ChevronLeft)이라 한 카드 안에서
+                아이콘 어휘가 둘로 갈렸다(2026-09-05 소유자의 "쓸모없는·따로 노는 아이콘" 지적). */}
+            <Pencil aria-hidden="true" size={16} />
             <span className="lbl">일정 그림판</span>
           </button>
         ) : null}
@@ -6099,7 +6094,7 @@ export function StudioShell({
           <button
             aria-label={`배포 버전 ${buildSha} 복사`}
             className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}
-            title="클릭하면 버전이 복사돼요"
+            title="클릭해 복사"
             type="button"
             onClick={copyBuildSha}
            data-act="배포 버전 복사">
@@ -6153,16 +6148,16 @@ export function StudioShell({
               aria-label={isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
               className="button io-accent io-preview"
               onClick={() => enterViewerMode()}
-              title={isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
+              /* 라벨이 이름을 말하니 호버 상자는 **결과**만(2026-09-05 소유자). */
+              title="시청자가 보는 그대로 보기"
               type="button"
               data-act="io-preview"
             >
               <Eye aria-hidden="true" size={16} />
-              {/* '보여주기'는 관리자(owner)만 — 그 외 역할 미리보기는 '미리보기'. ≤1560px·압축 1단계에선 짧은 라벨,
-                  2단계부턴 눈 아이콘만(aria-label/title이 이름을 지킨다) — studio-calm-layer.css ⑤. */}
-              <span className="lbl-long">{isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}</span>
-              {/* 짧은 라벨은 "시청자 화면"(2026-09-04 사용자의 모바일 카피 규칙과 동일 — 가장 짧게 통하는 이름). */}
-              <span className="lbl-short">{isEffectivelyOwner ? "시청자 화면" : "미리보기"}</span>
+              {/* 라벨은 하나 — "시청자 화면"(관리자) / "미리보기". 긴 쌍("…보여주기")은 2026-09-05 폐기:
+                  칸 폭을 다 먹어 글자를 못 키웠고, 짧은 이름만으로 뜻이 온전하다. 압축 2단계부턴
+                  눈 아이콘만 남는다(aria-label/title이 이름을 지킨다) — studio-calm-layer.css ⑤. */}
+              <span className="lbl">{isEffectivelyOwner ? "시청자 화면" : "미리보기"}</span>
             </button>
           )}
           {actor.isAuthenticated ? (
@@ -6195,7 +6190,7 @@ export function StudioShell({
       {avatarEditor || zoomCollapse ? (
         <div className="bottom-float-row" ref={bottomRowRef}>
           {avatarEditor ? (
-            <div className="studio-avatar-ctl" role="group" aria-label="패널 자리" title="달력 옆 패널(태그 필터·도구·아바타 자리)을 왼쪽/오른쪽으로">
+            <div className="studio-avatar-ctl" role="group" aria-label="패널 자리" title="달력 옆 패널 위치">
               <button
                 type="button"
                 className={avatarSide === "left" ? "on" : ""}

@@ -2057,37 +2057,8 @@ html[data-reduce-motion] .poster-scaler {
   align-items: center;
   gap: 8px;
 }
-/* 꺼짐 상태 토글 — 헤더(.header-left) 안에 자연스럽게 흐른다(고정 오버레이 아님). */
-.header-left .avatar-ctl-inheader {
-  margin: 0;
-}
-/* 꾸미기 토글(켜짐) — 슬롯 안 흐름 아이템(카드 스택 아래·점선 박스 위). 슬롯은
-   pointer-events:none이라 여기서 되살린다. 이모지 칸이 줄어드는(margin 0.55s) 동안 버튼이 먼저
-   튀어나와 겹치던 문제 → 줄어든 뒤에 통통 떠오르게 지연. */
-.avatar-ctl.avatar-ctl-inslot {
-  position: relative;
-  top: auto;
-  left: auto;
-  right: auto;
-  bottom: auto;
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  pointer-events: auto;
-  z-index: 2;
-  animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
-}
-@keyframes avatar-ctl-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
+/* (.avatar-ctl-inheader / .avatar-ctl-inslot 와 그 등장 애니메이션은 붙는 곳이 없어진 지 오래라
+   2026-09-05 함께 걷어냈다 — 아바타 컨트롤은 미리보기 카드(.avatar-ctl-preview) 하나뿐이다.) */
 /* 시청자 미리보기 아바타 컨트롤 — 페이지 좌상단(헤더 왼쪽 자리)에 둔다. 헤더 흐름에 두면 켜고 끌 때
    shell 폭이 전체폭↔가운데로 바뀌며 헤더가 좌우로 흔들려 버튼이 따라 움직였다.
    absolute(.poster-page 기준): 스크롤하면 페이지와 함께 올라간다 — fixed였을 땐 스크롤을 내려도
@@ -2111,63 +2082,14 @@ html[data-reduce-motion] .poster-scaler {
   bottom: auto;
   animation: none;
 }
-.avatar-ctl-toggle {
-  /* ON/OFF로 글자가 바뀌어도 버튼이 안 움직이게 폭 고정(가운데 정렬) — 마우스가 안 헤맨다. */
-  min-width: 220px;
-  text-align: center;
-  justify-content: center;
-  border: 1px solid #e3d8f1;
-  background: #fff;
-  color: #6b5b8a;
-  font-weight: 700;
-  /* 폭은 min-width 220으로 고정돼 있어 글자만 키우면 된다(2026-09-05 소유자). */
-  font-size: var(--text-ui);
-  padding: 7px 10px;
-  border-radius: var(--r-pill, 999px);
-  cursor: pointer;
-  transition:
-    background 0.18s var(--ease, ease),
-    color 0.18s var(--ease, ease),
-    box-shadow 0.18s var(--ease, ease),
-    transform 0.08s var(--ease, ease);
-}
-.avatar-ctl-toggle.on {
-  background: #efe7fb;
-  color: #5b4a86;
-  box-shadow: inset 0 0 0 1px #cdb8ee;
-}
-.avatar-ctl-toggle:active {
-  transform: scale(0.95);
-}
-/* 좌/우 위치 세그먼트 */
-.avatar-ctl-side {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  background: #f4eefb;
-  border-radius: var(--r-pill, 999px);
-}
-.avatar-ctl-side button {
-  border: 0;
-  background: transparent;
-  color: #6b5b8a;
-  font-weight: 700;
-  font-size: var(--text-body);
-  padding: 6px 14px;
-  border-radius: var(--r-pill, 999px);
-  cursor: pointer;
+/* (.avatar-ctl-toggle / .avatar-ctl-side 는 2026-09-05 대개편으로 사라졌다 — 세 상태 라디오
+   .avatar-ctl-seg 하나로 합쳤다. 위 '상단 크롬 정형화' 절에 새 규칙이 있다.) */
+.avatar-ctl-seg-btn {
   transition:
     background 0.15s var(--ease, ease),
-    box-shadow 0.12s var(--ease, ease),
+    border-color 0.15s var(--ease, ease),
+    color 0.15s var(--ease, ease),
     transform 0.08s var(--ease, ease);
-}
-.avatar-ctl-side button.on {
-  background: #fff;
-  color: #5b4a86;
-  box-shadow: 0 1px 4px rgb(91 74 134 / 18%);
-}
-.avatar-ctl-side button:active {
-  transform: scale(0.95);
 }
 
 /* 구글 시트식 날짜 칸 범위 선택 — 시각 강조만. 칸 텍스트가 긁혀 선택되는 것도 막는다. */
@@ -6844,21 +6766,24 @@ html[data-reduce-motion] .agenda-detail-close:active {
 }
 .account-form .button,
 .viewer-preview-actions .button,
-.avatar-ctl-preview .avatar-ctl-toggle {
+.avatar-ctl-preview .avatar-ctl-seg-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   box-sizing: border-box;
   height: 36px;
   min-height: 36px;
   min-width: 0;
-  padding: 0 12px;
+  /* 글자를 키운 만큼 가로 여백을 줄여 **칸 폭은 그대로**(2026-09-05 소유자: "너비까지 바뀔 정도로 하지 마").
+     웹 미리보기 카드는 애초에 rail 폭 그리드(--pv-w)라 카드 폭 자체는 고정이다. */
+  padding: 0 8px;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
   box-shadow: none;
   color: #5b5674;
-  font-size: var(--text-caption);
+  /* 11 → 13.5px: 44px 카드 안에서 혼자 각주 크기였다(2026-09-05 소유자). */
+  font-size: var(--text-body);
   font-weight: 800;
   white-space: nowrap;
   transition:
@@ -6866,34 +6791,53 @@ html[data-reduce-motion] .agenda-detail-close:active {
     border-color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.avatar-ctl-preview .avatar-ctl-toggle.on {
-  background: #efe7fb;
-  color: #5b4a86;
-  box-shadow: none;
+/* ── 아바타 자리 = 상태 셋 라디오 [끔 | 왼쪽 | 오른쪽] (2026-09-05 대개편, public-poster.tsx 참고).
+   옛 모양은 한 카드 안에 문법이 둘이었다(다음 동작이 라벨인 토글 + 현재 상태가 채워지는 라디오)
+   — 계절 배경 세그먼트(.ambient-seg)와 같은 문법으로 통일하고, 이름은 카드 머리의 조용한 칸으로 뺐다. */
+.avatar-ctl-preview .avatar-ctl-name {
+  align-self: center;
+  padding: 0 4px 0 8px;
+  color: var(--muted, #8a8077);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.avatar-ctl-preview .avatar-ctl-seg {
+  display: inline-flex;
+  align-self: stretch;
+  gap: 2px;
+}
+.avatar-ctl-preview .avatar-ctl-seg-btn {
+  justify-content: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.avatar-ctl-preview .avatar-ctl-seg-btn.on {
+  /* 고른 상태 = 옅은 보라 면 + 안쪽 테두리(계절 세그먼트와 같은 강도). */
+  background: linear-gradient(180deg, #fff, #f3efff);
+  border-color: #d9cdf3;
+  color: #4a3a7a;
+  box-shadow: inset 0 0 0 1px rgb(185 169 236 / 55%);
+}
+.avatar-ctl-preview .avatar-ctl-seg-btn:not(.on) {
+  color: rgb(107 91 138 / 62%);
 }
 .account-form .button:hover,
 .viewer-preview-actions .button:hover,
-.avatar-ctl-preview .avatar-ctl-toggle:hover {
+.avatar-ctl-preview .avatar-ctl-seg-btn:not(.on):hover {
   background: #f4f2fb;
   border-color: #e6e1f4;
+  color: #5b4a86;
 }
 .account-form .button:active,
 .viewer-preview-actions .button:active,
-.avatar-ctl-preview .avatar-ctl-toggle:active {
+.avatar-ctl-preview .avatar-ctl-seg-btn:active {
   transform: scale(0.96);
 }
 .account-form .account-email {
   align-self: center;
   padding: 0 6px 0 10px;
-}
-.avatar-ctl-preview .avatar-ctl-side {
-  align-self: center;
-  padding: 2px;
-}
-.avatar-ctl-preview .avatar-ctl-side button {
-  min-height: 30px;
-  padding: 0 10px;
-  font-size: var(--text-caption);
 }
 /* 가운데 묶음 — 두 알약을 같은 높이(44px)로. 내 관심은 하트 28 + 한 줄 강조 + 작은 설명. */
 .interest-toggle,
@@ -6928,11 +6872,52 @@ html[data-pchrome] .insights-open {
 }
 html[data-pchrome] .account-form .button,
 html[data-pchrome] .viewer-preview-actions .button,
-html[data-pchrome] .avatar-ctl-preview .avatar-ctl-toggle {
-  padding: 0 9px;
-}
-html[data-pchrome] .avatar-ctl-preview .avatar-ctl-side button {
+html[data-pchrome] .avatar-ctl-preview .avatar-ctl-seg-btn {
   padding: 0 8px;
+}
+/* 압축 1단계에선 아바타 자리도 이름 칸을 접고 아이콘 셋만 남긴다(상태는 채워진 칸이 말한다). */
+html[data-pchrome] .avatar-ctl-preview .avatar-ctl-name {
+  display: none;
+}
+/* 라벨을 접었으면 이름을 다른 데서라도 줘야 한다(2026-09-05 소유자: 호버 상자는 **모르는 것만**).
+   라벨이 보이는 동안엔 아무것도 안 뜨고(같은 말 되풀이 금지), 접힌 뒤에만 어두운 알약이 떠오른다.
+   편집실 도구 타일(.stool[data-tip], studio-calm-layer.css)과 같은 장치·같은 색. */
+html[data-pchrome] .viewer-preview-actions .button[data-tip],
+html[data-pchrome] .account-form .button[data-tip],
+html[data-pchrome] .avatar-ctl-preview .avatar-ctl-seg-btn[data-tip] {
+  position: relative;
+}
+html[data-pchrome] .viewer-preview-actions .button[data-tip]::after,
+html[data-pchrome] .account-form .button[data-tip]::after,
+html[data-pchrome] .avatar-ctl-preview .avatar-ctl-seg-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  z-index: 40;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgb(32 28 46 / 94%);
+  color: #fff;
+  font-size: var(--text-caption, 11px);
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgb(20 14 40 / 26%);
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  pointer-events: none;
+  transition:
+    opacity 0.16s var(--ease),
+    transform 0.16s var(--ease);
+}
+html[data-pchrome] .viewer-preview-actions .button[data-tip]:hover::after,
+html[data-pchrome] .viewer-preview-actions .button[data-tip]:focus-visible::after,
+html[data-pchrome] .account-form .button[data-tip]:hover::after,
+html[data-pchrome] .account-form .button[data-tip]:focus-visible::after,
+html[data-pchrome] .avatar-ctl-preview .avatar-ctl-seg-btn[data-tip]:hover::after,
+html[data-pchrome] .avatar-ctl-preview .avatar-ctl-seg-btn[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 /* 2단계 — 제목 ✨ 접기. 3단계 — 제목 축소. */
 html:is([data-pchrome="2"], [data-pchrome="3"]) .poster-chrome-title .title-spark {

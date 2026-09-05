@@ -5192,12 +5192,8 @@ html[data-reduce-motion] .editor-anchor-link line {
 
 /* 1차 — 달력 꾸미기(관리자): 가장 잦은 창작 동작 → 따뜻하고 살짝 진한 채움으로 '튀게'. */
 
-/* 긴/짧은 라벨 쌍의 기본선 — 짧은 쪽은 숨김. 어디서 쓰이든 둘이 동시에 보이지 않게(≤1560 미디어·압축 단계가
-   studio-calm-layer.css에서 뒤집는다). 2026-09-04 "미리보기 미리보기" 결함의 재발 방지. */
-.io-preview .lbl-short,
-.preview-dd-trigger .lbl-short {
-  display: none;
-}
+/* (긴/짧은 라벨 쌍은 2026-09-05 폐기 — 미리보기 버튼은 늘 짧은 이름 하나(.lbl)다. 쌍이 없으니
+   "미리보기 미리보기" 결함의 재발 여지도 없다.) */
 /* 유틸 — 미리보기: 차가운 슬레이트(후퇴, 낮은 현저성). */
 .io-preview {
   background: #f1f4fa;

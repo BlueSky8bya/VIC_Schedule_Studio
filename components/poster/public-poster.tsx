@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  ArrowLeftToLine,
+  ArrowRightToLine,
   CalendarCheck,
   ChevronLeft,
   ChevronRight,
@@ -9,6 +11,7 @@ import {
   LogIn,
   LogOut,
   Play,
+  Power,
   X
 } from "lucide-react";
 import {
@@ -4913,38 +4916,46 @@ export function PublicPoster({
           viewport 고정(fixed)은 스크롤을 따라 내려와 달력을 가려서 뺐다 — 페이지와 함께 스크롤된다.
           켜짐엔 끄기+위치(왼/오른쪽), 꺼짐엔 켜기. 데스크탑·관리자 전용. */}
       {avatarCapable && !avatarFixed && !showAgenda ? (
-        <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타 자리 설정(관리자 전용)">
-          <button
-            type="button"
-            className={`avatar-ctl-toggle ${avatarOn ? "on" : ""}`}
-            aria-label={`아바타 자리 ${avatarOn ? "끄기" : "켜기"}`}
-            aria-pressed={avatarOn}
-            onClick={toggleAvatarOn}
-            title={`아바타 자리 ${avatarOn ? "끄기" : "켜기"}`}
-           data-act="avatar-ctl-toggle">
-            <span aria-hidden="true">🎙️</span>
-            <span className="lbl">아바타 자리 {avatarOn ? "끄기" : "켜기"}</span>
-          </button>
-          {avatarOn ? (
-            <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-              <button
-                type="button"
-                className={avatarSide === "left" ? "on" : ""}
-                aria-pressed={avatarSide === "left"}
-                onClick={() => pickAvatarSide("left")}
-              >
-                왼쪽
-              </button>
-              <button
-                type="button"
-                className={avatarSide === "right" ? "on" : ""}
-                aria-pressed={avatarSide === "right"}
-                onClick={() => pickAvatarSide("right")}
-              >
-                오른쪽
-              </button>
-            </div>
-          ) : null}
+        <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타 자리">
+          <span aria-hidden="true" className="avatar-ctl-name">
+            아바타 자리
+          </span>
+          <div className="avatar-ctl-seg" role="radiogroup" aria-label="아바타 자리 위치">
+            {(
+              [
+                { v: "off", label: "끔", Icon: Power },
+                { v: "left", label: "왼쪽", Icon: ArrowLeftToLine },
+                { v: "right", label: "오른쪽", Icon: ArrowRightToLine }
+              ] as const
+            ).map(({ v, label, Icon }) => {
+              const on = v === "off" ? !avatarOn : avatarOn && avatarSide === v;
+              return (
+                <button
+                  aria-checked={on}
+                  className={`avatar-ctl-seg-btn place-${v}${on ? " on" : ""}`}
+                  data-act="avatar-ctl-toggle"
+                  data-tip={label}
+                  key={v}
+                  onClick={() => {
+                    if (on) return;
+                    // 진동은 toggleAvatarOn/pickAvatarSide 안에서 이미 울린다(중복 금지).
+                    // 꺼진 채로 좌/우를 고르면 한 번에 켜고 그쪽에 붙인다(옛 모양은 두 번 눌러야 했다).
+                    if (v === "off") {
+                      if (avatarOn) toggleAvatarOn();
+                      return;
+                    }
+                    pickAvatarSide(v);
+                    if (!avatarOn) toggleAvatarOn();
+                  }}
+                  role="radio"
+                  type="button"
+                >
+                  <Icon aria-hidden="true" size={13} />
+                  <span className="lbl">{label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       ) : null}
       {celebrate ? (
@@ -5087,7 +5098,7 @@ export function PublicPoster({
                       hapticTick();
                       withAgendaFlip(() => setBookmarkedOnly((v) => !v));
                     }}
-                    title="내가 ♥ 누른 일정만 모아서 보기"
+                    title="♥ 누른 일정만"
                     type="button"
                    data-act="관심 일정만 보기">
                     <LiquidHeart ratio={interestRatio} />
@@ -5113,7 +5124,7 @@ export function PublicPoster({
                     hapticTick();
                     setInsightsOpen(true);
                   }}
-                  title="이 달 방송·일정 기록 보기"
+                  title="방송 시간 · 태그 통계"
                   type="button"
                 >
                   <span aria-hidden="true">📊</span>
@@ -5140,7 +5151,9 @@ export function PublicPoster({
                     aria-label={anonymous ? "로그인" : "로그아웃"}
                     className="button"
                     data-act={anonymous ? "login" : "logout"}
-                    title={anonymous ? "로그인" : "로그아웃"}
+                    /* 라벨이 보일 땐 상자를 띄우지 않는다 — 압축 단계로 아이콘만 남을 때만
+                       data-tip 상자가 이름을 준다(2026-09-05 소유자). */
+                    data-tip={anonymous ? "로그인" : "로그아웃"}
                     type="submit"
                   >
                     {anonymous ? <LogIn aria-hidden="true" size={16} /> : <LogOut aria-hidden="true" size={16} />}
