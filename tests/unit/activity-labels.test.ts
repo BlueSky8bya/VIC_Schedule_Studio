@@ -25,11 +25,28 @@ describe("이름은 화면에 쓰인 말로", () => {
 });
 
 describe("위치(area)를 준다 — 이름만으로는 찾아갈 수 없다", () => {
+  // 위치 = 화면에서 갈 수 있는 한 곳(2026-09-05 정리). 묶음 이름('관리'·'공통')은 폐지하고
+  // 창이면 그 창 이름을 그대로 쓴다 — 목록만 보고도 어디인지 알 수 있어야 한다.
   it("주요 항목에 위치가 붙는다", () => {
-    expect(describeTarget("ui.click", "sticker-delete").area).toBe("꾸미기");
-    expect(describeTarget("ui.click", "manage-tags").area).toBe("관리");
+    expect(describeTarget("ui.click", "sticker-delete").area).toBe("옛 화면");
+    expect(describeTarget("ui.click", "manage-tags").area).toBe("태그 편집");
     expect(describeTarget("ui.click", "schedule-card").area).toBe("시청자 화면");
     expect(describeTarget("ui.click", "calendar-cell").area).toBe("편집실");
+    expect(describeTarget("ui.click", "logout").area).toBe("계정");
+    expect(describeTarget("ui.click", "일정 그림판 닫기").area).toBe("그림판");
+  });
+  it("같은 곳에 두 이름을 두지 않는다", () => {
+    // '그림판'과 '일정 그림판'이 따로 있었다 — 필터 목록에 같은 곳이 두 줄로 떴다.
+    const areas = new Set(
+      ["bp-color", "일정 그림판 닫기", "새 그림 레이어", "판서 전체 지우기"].map(
+        (t) => describeTarget("ui.click", t).area
+      )
+    );
+    expect([...areas]).toEqual(["그림판"]);
+  });
+  it("기기는 위치가 아니다 — '(모바일)' 꼬리표가 없다", () => {
+    expect(describeTarget("ui.click", "close-mobile-edit").area).toBe("편집실");
+    expect(describeTarget("ui.click", "close-detail-grab").area).toBe("시청자 화면");
   });
 });
 
@@ -73,7 +90,7 @@ describe("정적으로 박은 한글 id", () => {
     expect(d.area).toBe("그림판");
   });
   it("클래스에서 딴 id는 사전에서 이름·위치가 나온다", () => {
-    expect(describeTarget("ui.click", "bp-color").area).toBe("일정 그림판");
+    expect(describeTarget("ui.click", "bp-color").area).toBe("그림판");
     expect(describeTarget("ui.click", "event-heart").name).toBe("하트 누르기");
   });
 });

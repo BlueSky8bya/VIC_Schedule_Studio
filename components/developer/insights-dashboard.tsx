@@ -46,6 +46,7 @@ import {
   HEART_HOT_RATIO,
   HEART_MIN
 } from "@/lib/schedules/heart-tiers";
+import { SessionLogFilter } from "@/components/developer/session-log-filter";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
@@ -354,7 +355,8 @@ export function InsightsDashboard({
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
   const [dsessTip, setDsessTip] = useState<{ x: number; day: number; n: number } | null>(null); // 일별 세션 막대 호버
-  const logRole: string | null = null; // 세션 로그 역할 필터 — 칩 제거(2026-09-04), 늘 전체
+  // 세션 로그 역할 필터(2026-09-05 복원 — 이번엔 드롭다운). "all"이면 전 역할.
+  const [logRole, setLogRole] = useState("all");
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
@@ -1028,41 +1030,21 @@ export function InsightsDashboard({
             : null}
           <details className="vrecent" open>
             <summary>세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
-            {/* (역할 필터 칩은 2026-09-04 사용자 결정으로 제거 — 역할은 각 줄의 배지로 충분, 위 운영진/시청자 토글이 큰 갈래.) */}
-            {/* 머문/스쳐감 필터 — 스쳐감(<3초)과 실제 머문 세션 구분. */}
-            {visits.recent.length > 0
-              ? (() => {
-                  const stayN = visits.recent.filter((r) => r.meaningful).length;
-                  const glanceN = visits.recent.length - stayN;
-                  const opts: { key: "all" | "stay" | "glance"; label: string; n: number }[] = [
-                    { key: "all", label: "전체", n: visits.recent.length },
-                    { key: "stay", label: "머문", n: stayN },
-                    { key: "glance", label: "스쳐감", n: glanceN }
-                  ];
-                  return (
-                    <div className="vlog-filter stay" role="group" aria-label="머문/스쳐감 필터">
-                      {opts.map((o) => (
-                        <button
-                          className={`vlog-chip${logStay === o.key ? " on" : ""}${o.n === 0 ? " zero" : ""}`}
-                          key={o.key}
-                          onClick={() => {
-                            hapticTick();
-                            setLogStay(o.key);
-                          }}
-                          type="button"
-                         data-act="vlog-chip">
-                          {o.label} <b>{o.n}</b>
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })()
-              : null}
+            {/* 역할 · 머문/스쳐감 — 하루 이용 기록과 같은 컴포넌트(session-log-filter.tsx). */}
+            {visits.recent.length > 0 ? (
+              <SessionLogFilter
+                onRole={setLogRole}
+                onStay={setLogStay}
+                role={logRole}
+                sessions={visits.recent}
+                stay={logStay}
+              />
+            ) : null}
             <ul className="vlog">
               {(() => {
                 const shown = visits.recent.filter(
                   (r) =>
-                    (!logRole || r.role === logRole) &&
+                    (logRole === "all" || r.role === logRole) &&
                     (logStay === "all" || (logStay === "stay" ? r.meaningful : !r.meaningful))
                 );
                 if (shown.length === 0) {

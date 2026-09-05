@@ -3566,41 +3566,24 @@ html[data-reduce-motion] .dtp-pop-x:active {
    행마다 [기기색 점] + 본문(1줄: 역할 배지/이메일 + 시각 / 2줄: 기기 · 체류). 관리자 이메일처럼
    긴 라벨도 윗줄을 폭 가득 써서 안 잘리고, 모든 역할이 같은 2줄 골격이라 통일감.
    모바일: 컴팩트(탭 피드백). 웹: 인셋 패널 + zebra + 호버 좌측 액센트 바. */
-/* 세션 로그 역할 필터 칩 — 선택 시 역할색으로 채워짐. */
+/* 세션 로그 필터 — 2026-09-05부터 칩 줄이 아니라 **드롭다운 둘**(역할 · 머문/스쳐감).
+   역할이 다섯(관리자·개발자·시청자·비로그인·역할 확인 못 함)까지 늘어 칩으로는 두 줄로 접혔고,
+   0건 칩이 죽은 버튼처럼 보였다. 두 칸을 등분해 좁은 카드에서도 한 줄로 선다. */
 .vlog-filter {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px;
   margin: 8px 0 2px;
 }
-.vlog-chip {
-  padding: 3px 11px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--line, #e7e3f2);
-  background: #fff;
-  font-size: var(--text-caption);
-  font-weight: 800;
-  color: #6b6480;
-  cursor: pointer;
-  transition: background 0.12s var(--ease, ease), border-color 0.12s var(--ease, ease),
-    color 0.12s var(--ease, ease), transform 0.1s var(--ease, ease);
+.vlog-filter .rhh-select {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
 }
-.vlog-chip:active {
-  transform: scale(0.94);
-}
-.vlog-chip.on {
-  color: color-mix(in srgb, var(--rc, #6b5bd6) 72%, #2a2540);
-  background: color-mix(in srgb, var(--rc, #6b5bd6) 15%, #fff);
-  border-color: color-mix(in srgb, var(--rc, #6b5bd6) 40%, transparent);
-}
-/* 칩 끝 건수 — 살짝 작게/둥근 점 느낌. */
-.vlog-chip b {
-  font-weight: 900;
-  opacity: 0.75;
-}
-/* 세션 0인 역할 — 흐리게(있는지 한눈에). 단 선택되면 또렷이. */
-.vlog-chip.zero:not(.on) {
-  opacity: 0.42;
+.vlog-filter .rhh-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* 필터 결과 없음 안내 */
 .vlog-empty {
@@ -3721,8 +3704,17 @@ html[data-reduce-motion] .dtp-pop-x:active {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* 내부 스크롤을 두지 않는다 — 모바일에서 리스트만 스크롤되고 전체 패널 스크롤이 막히던
-     문제(중첩 스크롤 트랩) 해소. 목록은 패널(.insights-panel) 하나로 함께 스크롤된다. */
+  /* 모바일은 내부 스크롤을 두지 않는다 — 리스트만 스크롤되고 전체 패널 스크롤이 막히던
+     문제(중첩 스크롤 트랩). 목록은 패널(.insights-panel) 하나로 함께 스크롤된다. */
+}
+/* 웹: 높이를 고정하고 제 안에서 스크롤한다(2026-09-05 소유자: "세션이 1000개가 넘어가도 지금은
+   쭉 무한으로 늘어난다"). 스크롤바는 그리지 않는다 — 기능만 남긴다(이 창의 공통 규칙, 아래). */
+@media (min-width: 861px) {
+  .vrecent ul.vlog {
+    max-height: 420px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 }
 .vlog-row {
   display: flex;
@@ -9219,6 +9211,19 @@ html[data-reduce-motion] .modal-close:active {
   padding: 18px 20px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(180deg, #fbfcfe, #f5f7fb);
+}
+/* 창 안의 스크롤바는 그리지 않는다(2026-09-05 소유자: "이 이용기록 창에 있는 스크롤바도 렌더
+   안 되게 하자. 스크롤 기능만 있게") — 화면 전체·태그 필터와 같은 처리. 휠·드래그·키보드
+   스크롤은 그대로다. */
+.modal-card,
+.modal-card * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.modal-card::-webkit-scrollbar,
+.modal-card *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 /* 본문은 헤더 아래에서 스크롤(태그가 많아도 팝업이 잘리지 않음) */
 .modal-card > :not(.modal-head) {

@@ -146,7 +146,9 @@ export function StudioSettingsList({
         <AmbientModeSegment ariaLabel="계절 배경 상태 고르기" className="metal" dataAct="ambient-mode-select" mode={ambientMode} onChange={onChangeAmbientMode} />
       </div>
       {/* 배경 효과 품질(gfx v3) — 기기 판정이 '가볍게/끔'으로 떨어진 PC(토리님)에서 사용자가 직접 되돌리는 손잡이.
-          자동 옵션 라벨에 판정 결과를 괄호로 보여 준다. 계절 배경이 OFF면 '끄기'로 잠긴다(두 컨트롤이 한 상태). */}
+          계절 배경이 OFF면 '끄기'로 잠긴다(두 컨트롤이 한 상태).
+          ⚠ 목록에 '끄기'는 없다(2026-09-05 소유자) — 바로 위 '계절 배경' 줄이 이미 끄는 손잡이라,
+          같은 일을 하는 항목이 둘이면 어느 쪽이 진짜인지 헷갈린다. 끄기는 잠금 표시로만 나타난다. */}
       <div className="role-help-haptics rhh-ambient">
         <span className="rhh-label">
           <Gauge aria-hidden="true" size={14} />
@@ -162,10 +164,11 @@ export function StudioSettingsList({
             // 라벨은 짧게 "자동 조절"(2026-09-04 사용자: 주저리 설명 금지). 기기 판정 결과는 title로만.
             { value: "auto", label: "자동 조절" },
             { value: "max", label: "항상 최대" },
-            { value: "lite", label: "가볍게" },
-            { value: "off", label: "끄기" }
+            { value: "lite", label: "가볍게" }
           ]}
-          value={gfxPref}
+          // 예전에 '끄기'로 저장해 둔 값은 목록에 없다 — 자동으로 읽어 빈 칸이 되지 않게 한다
+          // (배경이 실제로 꺼져 있으면 disabled + lockedLabel이 '끄기'를 보여준다).
+          value={gfxPref === "off" ? "auto" : gfxPref}
         />
       </div>
       {/* (배경 감상 줄은 2026-09-04 사용자 결정으로 제거 — 아바타 자리·시청자 레일의 "감상하기" 버튼 하나만 둔다. 중복 금지.) */}

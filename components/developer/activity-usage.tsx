@@ -5,6 +5,7 @@ import {
   ROLE_NAME,
   USAGE_ROLE_ORDER,
   describeTarget,
+  sortAreas,
   usageRoleBreakdown,
   usageRoleCount
 } from "@/lib/activity/labels";
@@ -87,9 +88,11 @@ export function ActivityUsage({
   const retiredAll = rows ? rows.filter(isRetired) : [];
   // 위치 칩은 **데이터에 실제로 있는 것만** 만든다(죽은 칩은 "없는 게 아니라 안 쓴 것"으로 오해된다).
   // 지운 기능만 남은 위치(꾸미기·시즌 기능)도 죽은 칩이므로 살아있는 줄에서만 뽑는다.
-  const areasIn = [
+  // 순서는 가나다순이 아니라 **자주 가는 곳부터**(labels.ts AREA_ORDER) — 가나다순은 '계정' 옆에
+  // '그림판'을 세우는 식이라 목록이 지도처럼 안 읽힌다(2026-09-05 소유자).
+  const areasIn = sortAreas([
     ...new Set(activeAll.map((r) => describeTarget(r.kind, r.target).area ?? "기타"))
-  ].sort();
+  ]);
   // 역할은 **전부** 보여준다. 기록이 0인 역할을 목록에서 빼면 "이 역할은 이 기능을 한 번도
   // 안 썼다"를 확인할 방법이 사라진다 — 그게 이 화면의 질문이다. 고르면 0건이 곧 답이다.
   // 이 화면에서 '시청자'는 로그인·비로그인을 합친 하나다(목록에도 '비로그인'을 따로 두지 않는다).

@@ -186,6 +186,15 @@ function goTo(target: BiomeKey | Dir): boolean {
  *  스와이프가 goTo로 넣는다. 상태의 진실은 엔진(__vicAmbient.biome/exits) + vic:biome 이벤트. */
 // 가 본 곳 — 기기에 남긴다(localStorage). 도감이 서버로 오기 전까지의 임시 자리(P2에서 계정 기록으로 승격).
 const SEEN_KEY = "vic.biomeSeen";
+// 지도를 접어 뒀는지 — 기기에 남긴다(감상에 들어올 때마다 다시 접게 하지 않는다).
+const MAP_OPEN_KEY = "vic.biomeMapOpen";
+function readMapOpen(): boolean {
+  try {
+    return window.localStorage.getItem(MAP_OPEN_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
 function readSeen(): BiomeKey[] {
   const base: BiomeKey[] = ["meadow"];
   try {
@@ -226,6 +235,21 @@ function ShowcaseNav() {
   const [exits, setExits] = useState<Record<Dir, BiomeKey | null>>({ up: null, down: null, left: null, right: null });
   // 가 본 곳은 **기기에 남는다**(감상에서 나갔다 들어오면 다 처음으로 돌아가던 문제, 2026-09-04 소유자).
   const [visited, setVisited] = useState<BiomeKey[]>(() => readSeen());
+  // 지도 접기 — 서버 렌더와 첫 프레임을 맞추려 기본 true로 시작하고, 마운트 뒤 저장값을 읽는다.
+  const [mapOpen, setMapOpenState] = useState(true);
+  useEffect(() => setMapOpenState(readMapOpen()), []);
+  const setMapOpen = (next: boolean | ((v: boolean) => boolean)) => {
+    setMapOpenState((v) => {
+      const nv = typeof next === "function" ? next(v) : next;
+      try {
+        window.localStorage.setItem(MAP_OPEN_KEY, nv ? "1" : "0");
+      } catch {
+        /* 저장 실패는 무시 — 이번 세션만 유지된다 */
+      }
+      hapticTick();
+      return nv;
+    });
+  };
   const [pill, setPill] = useState<{ text: string; sub?: string; key: number } | null>(null);
   const [bounce, setBounce] = useState<Dir | null>(null);
   const pillTimer = useRef<number | null>(null);
@@ -332,14 +356,23 @@ function ShowcaseNav() {
       {chev("right", ChevronRight)}
       {/* 지도 — 계산기 버튼 판이 아니라 **읽히는 지도**로(2026-09-04 소유자). 머리줄에 지금 있는 곳과 진행 막대,
           칸마다 이름(안 가 본 곳은 ?), 뭍/바다 구역을 나눠 적는다. 현재 칸은 링 + 굵은 이름. */}
-      <nav aria-label="바이옴 지도" className="biome-map" data-biome={biome}>
-        <div className="biome-map-head">
+      <nav aria-label="바이옴 지도" className="biome-map" data-biome={biome} data-open={mapOpen ? "1" : "0"}>
+        {/* 머리줄이 곧 접기 손잡이 — 접으면 '지금 있는 곳 + 진행 막대'만 남는다(2026-09-05 소유자). */}
+        <button
+          aria-expanded={mapOpen}
+          aria-label={mapOpen ? "지도 접기" : "지도 펼치기"}
+          className="biome-map-head"
+          data-act="biome-map-fold"
+          onClick={() => setMapOpen((v) => !v)}
+          type="button"
+        >
           <span className="biome-map-here" data-water={BIOMES[biome].land ? undefined : "1"} />
           <span className="biome-map-title">{BIOMES[biome].nameKo}</span>
           <span className="biome-map-count">
             {visited.length}<i>/{Object.keys(BIOMES).length}</i>
           </span>
-        </div>
+          <ChevronDown aria-hidden="true" className="biome-map-chev" size={14} />
+        </button>
         <div className="biome-map-bar">
           <i style={{ width: `${(visited.length / Object.keys(BIOMES).length) * 100}%` }} />
         </div>

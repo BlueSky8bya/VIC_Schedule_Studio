@@ -1,15 +1,20 @@
 /* ══ 앰비언트 계절 레이어(2026-09-04, ADR-0017 개정 2) — components/shared/ambient/* ═══════════════════
-   여름 = 물결(.gs-tide, app/metal-water.css), 봄·가을·겨울 = 전체 화면 캔버스 장면(.gs-season, season-canvas.tsx +
-   scene-engine.ts). 게이트는 물결과 같다: 생동감 있는 동작 ON ∧ gfx≠soft ∧ **계절 배경 스위치 ON** ∧ 웹(≥641px).
-   스위치 OFF(`html[data-ambient="off"]`)면 물결까지 전부 내려간다(물결은 여름의 것). gfx=lite는 엔진이 입자를
-   줄여서 대응하고(속성을 지켜본다) 여기선 숨기지 않는다. 규칙(frame-jank 메모리): html에 background 금지, 표면
-   (data-export-surface) 밖, 어두운 얼룩 금지. */
+   봄·여름·가을·겨울 모두 전체 화면 캔버스 장면(.gs-season, season-canvas.tsx + scene-engine.ts).
+   게이트: gfx≠soft ∧ **계절 배경 스위치 ON** ∧ 웹(≥641px).
+
+   ⚠ '생동감 있는 동작'(data-reduce-motion)은 **게이트가 아니다**(2026-09-05 소유자: "생동감 있는 동작을
+   OFF 하면 계절 배경도 아예 사라지는데 이건 별개다"). 그 스위치는 말 그대로 **움직임**만 관리한다 —
+   OFF면 배경은 그대로 있고 엔진이 **정지 화면 한 장**만 그린다(scene-engine.ts sync/drawOnce).
+   배경을 없애는 손잡이는 '계절 배경' 하나뿐이다.
+
+   gfx=lite는 엔진이 입자를 줄여서 대응하고(속성을 지켜본다) 여기선 숨기지 않는다.
+   규칙(frame-jank 메모리): html에 background 금지, 표면(data-export-surface) 밖, 어두운 얼룩 금지. */
 
 .gs-season {
   display: none;
 }
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .gs-season {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .gs-season {
     display: block;
   }
 }
@@ -295,10 +300,37 @@ html[data-reduce-motion] .biome-chev { animation: none !important; }
 .biome-map:focus-within {
   transform: translateY(-2px);
 }
+/* 머리줄 = 접기 손잡이(2026-09-05). 버튼이지만 카드 안이므로 테두리·면 없이 조용하게. */
 .biome-map-head {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.biome-map-chev {
+  margin-left: 2px;
+  flex: none;
+  color: #9aa3b4;
+  transition: transform 0.2s var(--ease);
+}
+.biome-map[data-open="0"] .biome-map-chev {
+  transform: rotate(-90deg);
+}
+/* 접힘 — 머리줄과 진행 막대만 남는다(지금 어디 있고 몇 곳을 봤는지는 계속 보인다). */
+.biome-map[data-open="0"] {
+  width: auto;
+  min-width: 168px;
+  padding-bottom: 11px;
+}
+.biome-map[data-open="0"] > div:not(.biome-map-bar) {
+  display: none;
 }
 .biome-map-here {
   width: 10px;
@@ -473,12 +505,13 @@ html[data-reduce-motion] .biome-chev.bounce { animation: none; }
   .biome-chev, .biome-map, .biome-pill { display: none; }
 }
 
-/* 감상 버튼은 배경이 보일 때만(2026-09-04 사용자: "계절 배경을 끄면 감상하기 버튼도 사라져야지") — .gs-season 게이트와 동일. */
+/* 감상 버튼은 배경이 보일 때만(2026-09-04 사용자: "계절 배경을 끄면 감상하기 버튼도 사라져야지") — .gs-season 게이트와 동일
+   (2026-09-05: 생동감 있는 동작은 게이트에서 뺐다 — 정지 화면도 감상할 수 있다). */
 .showcase-btn {
   display: none;
 }
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .showcase-btn {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .showcase-btn {
     display: inline-flex;
   }
 }

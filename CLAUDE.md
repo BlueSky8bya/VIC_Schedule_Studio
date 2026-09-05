@@ -364,6 +364,19 @@ private layers is retired — ADR-0014; the server model stays.)
   no white ring** — depth is an inset hairline at most. Saturated colour is reserved for **data**: tag
   swatches and the heart's ON state. Emoji stay only where they have no stroke-icon neighbours (the
   editor's option chips). Icon slots: 13px for band marks, 14px for the heart, 11px for ▶.
+- **'생동감 있는 동작' controls motion, not existence** (2026-09-05 owner). `data-reduce-motion` is no longer a
+  visibility gate for the ambient: with it off the season scene **stays on screen as one still frame** (the engine
+  already did this — only the CSS gate was hiding it). The single handle that removes the background is 계절 배경.
+  Likewise 배경 효과 has no 끄기 option — the row above it already is the off switch, and two handles for one job
+  is the confusion the owner keeps reporting.
+- **An `area` in the activity log is a place you can walk to** (2026-09-05 taxonomy, `AREA_ORDER` in
+  `lib/activity/labels.ts`): 편집실 · 시청자 화면 · 그림판 · 태그 편집 · 인사이트 · 이용 기록 · 설정 · 배경 감상 ·
+  계정 · 옛 화면 · 자동 검사 · 기타. Three rules — one place gets **one** name (그림판 / 일정 그림판 was the same
+  room twice); a **device is not a place** (no "(모바일)" suffix — the device is already on the visit row); and a
+  window is named by **the window** (태그 편집, 이용 기록), never by a grouping word like 관리 or 공통, which tell
+  the reader nothing. 시청자 화면 is one place with one name: for a viewer it is what they always see, for the owner
+  it is what 미리보기 opens — the same screen. A new `data-act` must land in one of these; the unit test
+  "사전에 없는 data-act가 소스에 없다" fails the build otherwise.
 - **State segments share one highlight technique** — tokens `--seg-on-*` / `--seg-off-op` in `globals.css`
   (2026-09-05). Selected = a soft tint fill + an inset white hairline, never a border; unselected = the same ink
   at `--seg-off-op`. A border-boxed "selected" chip inside a card fights the card's borderless-cell grammar and

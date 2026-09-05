@@ -6949,6 +6949,31 @@ html[data-pchrome] .avatar-ctl-preview .avatar-ctl-seg-btn[data-tip]:focus-visib
   opacity: 1;
   transform: translate(-50%, 0);
 }
+/* ── 상단 크롬 글자 통일(2026-09-05 소유자: "버튼 안 텍스트의 크기·글꼴·색이 묘하게 다르다") ──
+   실측 차이: 11 / 13.5 / 15px · 700 / 800 / 900 · 네 가지 잉크. 셋을 하나로 못 박는다 —
+   **13.5px · 800 · #5b5674**. 폭은 아래 보정 패딩으로 그대로 유지한다(소유자: 너비는 바뀌면 안 됨).
+   상태 색(관심 ON = 분홍)은 그대로 둔다 — 그건 '다름'이 아니라 '상태'다. */
+.poster-page .interest-toggle .it-text strong,
+.poster-page .insights-open .lbl,
+.poster-page .viewer-preview-actions .button .lbl,
+.poster-page .account-form .button .lbl,
+.poster-page .avatar-ctl-preview .avatar-ctl-seg-btn .lbl {
+  font-size: var(--text-body);
+  font-weight: 800;
+  letter-spacing: normal;
+  color: #5b5674;
+}
+/* 폭 보정 — 글자를 줄인 만큼 가로 여백을 돌려준다(칸 폭 유지). */
+.poster-page .insights-open {
+  padding-inline: 19px;
+}
+.poster-page .interest-toggle {
+  padding-right: 19px;
+}
+/* 캡션(버튼 아님)도 같은 잉크 계열의 조용한 값으로 — 혼자 회청색이었다. */
+.poster-page .avatar-ctl-preview .avatar-ctl-name {
+  color: rgb(91 86 116 / 62%);
+}
 /* 2단계 — 제목 ✨ 접기. 3단계 — 제목 축소. */
 html:is([data-pchrome="2"], [data-pchrome="3"]) .poster-chrome-title .title-spark {
   display: none;

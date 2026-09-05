@@ -107,42 +107,42 @@ const ROUTE: Record<string, TargetLabel> = {
   "/": { name: "공개 포스터", area: "시청자 화면", hint: "시청자가 보는 첫 화면" },
   "/studio": { name: "편집실", area: "편집실", hint: "일정을 짜는 달력 화면" },
   "/studio/calendar": { name: "편집실(달 바로가기)", area: "편집실", hint: "북마크로 특정 달에 바로 들어온 경우" },
-  "/studio/decorate": { name: "꾸미기 화면", area: "꾸미기", hint: "스티커·배경을 꾸미는 화면" },
-  "/studio/private-layer": { name: "비공개 설정 화면", area: "관리" },
-  "/studio/tags": { name: "태그 관리 화면", area: "관리" },
-  "/studio/trusted-members": { name: "멤버 관리 화면", area: "관리", hint: "옛 기록(기능 철수 2026-09-04)" },
-  "/login": { name: "로그인 화면", area: "공통" },
+  "/studio/decorate": { name: "꾸미기 화면", area: "옛 화면", hint: "스티커·배경을 꾸미는 화면" },
+  "/studio/private-layer": { name: "비공개 설정 화면", area: "옛 화면" },
+  "/studio/tags": { name: "태그 관리 화면", area: "태그 편집" },
+  "/studio/trusted-members": { name: "멤버 관리 화면", area: "옛 화면", hint: "옛 기록(기능 철수 2026-09-04)" },
+  "/login": { name: "로그인 화면", area: "계정" },
   // 화면 검사용 고정 화면 — 실제 사용자 화면이 아니라 자동 검사(Playwright)가 여는 곳이다.
   // 사람 기록에 섞이면 "이 화면은 뭐지"가 되므로 그렇다고 이름에 적어 준다.
   "/visual-fixture/poster": {
     name: "화면 검사용 포스터",
-    area: "검사",
+    area: "자동 검사",
     hint: "자동 화면 검사가 여는 고정 화면(사람 방문 아님)"
   },
   "/visual-fixture/studio": {
     name: "화면 검사용 편집실",
-    area: "검사",
+    area: "자동 검사",
     hint: "자동 화면 검사가 여는 고정 화면(사람 방문 아님)"
   }
 };
 
 const SECTION: Record<string, TargetLabel> = {
   "broadcast-panel": { name: "일정 그림판", area: "편집실", hint: "전체화면 판서 도구를 켜둔 시간" },
-  "modal:tags": { name: "태그 편집 창", area: "관리", hint: "관리 ▾ → 태그 편집" },
-  "modal:members": { name: "멤버 관리 창", area: "관리", hint: "도구 카드 설정(톱니) → 멤버 관리 '열기'" },
-  "modal:developer": { name: "월별 인사이트 창", area: "관리", hint: "관리 ▾ → 월별 인사이트" },
-  "modal:dayVisit": { name: "이용 기록 창", area: "관리", hint: "지금 보고 있는 이 창" },
+  "modal:tags": { name: "태그 편집 창", area: "태그 편집", hint: "관리 ▾ → 태그 편집" },
+  "modal:members": { name: "멤버 관리 창", area: "옛 화면", hint: "도구 카드 설정(톱니) → 멤버 관리 '열기'" },
+  "modal:developer": { name: "월별 인사이트 창", area: "인사이트", hint: "관리 ▾ → 월별 인사이트" },
+  "modal:dayVisit": { name: "이용 기록 창", area: "이용 기록", hint: "지금 보고 있는 이 창" },
   // 편집 카드 여닫기(2026-09-03 계측) — leave의 dur_ms=체류, meta.typed=입력 여부, meta.how=닫은 방법
   // (save/esc/outside/cell/collapse/other). "칸 361 vs 저장 176"이 둘러보기인지 포기인지 가르기 위함.
   editor: { name: "편집 카드", area: "편집실", hint: "날짜 칸·일정 카드를 눌러 연 편집 팝오버" },
   "rest-nudge": { name: "휴식 넛지", area: "편집실", hint: "옛 기록(2026-09-03~04에만 있던 50분 휴식 카드, 철수)" },
   // 꾸미기는 라우트로 잡히므로 섹션 계측을 뺐다 — 옛 기록만 남는다.
-  decorate: { name: "꾸미기", area: "꾸미기", hint: "옛 기록(지금은 화면 진입으로 셈)" }
+  decorate: { name: "꾸미기", area: "옛 화면", hint: "옛 기록(지금은 화면 진입으로 셈)" }
 };
 
 const ACT: Record<string, TargetLabel> = {
   // 편집실 — 달력·편집 패널
-  "open-day-visit": { name: "이용 기록 열기", area: "편집실", hint: "편집 패널의 '📈 이용 기록'" },
+  "open-day-visit": { name: "이용 기록 열기", area: "이용 기록", hint: "편집 패널의 '📈 이용 기록'" },
   "open-drawing-board": { name: "일정 그림판 열기", area: "편집실", hint: "미리보기의 '🖊️ 일정 그림판'" },
   "month-prev": { name: "이전 달", area: "편집실", hint: "헤더 '‹'" },
   "month-next": { name: "다음 달", area: "편집실", hint: "헤더 '›'" },
@@ -153,49 +153,49 @@ const ACT: Record<string, TargetLabel> = {
   "enter-preview": { name: "미리보기 들어가기", area: "편집실", hint: "시청자 화면으로 보기" },
   "teaser-gate-submit": { name: "최초공개 비번 확인", area: "편집실" },
   "close-datetime-picker": { name: "날짜·시간 고르기 닫기", area: "편집실" },
-  "close-sheet-grab": { name: "편집 시트 손잡이로 닫기", area: "편집실(모바일)" },
+  "close-sheet-grab": { name: "편집 시트 손잡이로 닫기", area: "편집실" },
 
   // 관리 묶음(액션바 왼쪽, 바로 노출). manage-menu/manage-dd-trigger는 옛 드롭다운 기록용.
-  "manage-menu": { name: "관리 ▾ 메뉴 열기", area: "관리" },
-  "manage-tags": { name: "태그 편집", area: "관리" },
-  "manage-members": { name: "멤버 관리", area: "관리", hint: "2026-09-04부터 설정(톱니) 팝오버 맨 아래 '열기'" },
+  "manage-menu": { name: "관리 ▾ 메뉴 열기", area: "옛 화면" },
+  "manage-tags": { name: "태그 편집", area: "태그 편집" },
+  "manage-members": { name: "멤버 관리", area: "옛 화면", hint: "2026-09-04부터 설정(톱니) 팝오버 맨 아래 '열기'" },
   "studio-settings": { name: "설정 열기", area: "편집실", hint: "서쪽 도구 카드의 톱니(스위치·포스터 테마)" },
-  "manage-insights": { name: "월별 인사이트", area: "관리" },
-  "mda-keep": { name: "태그 변경 계속 편집", area: "관리" },
-  "mda-discard": { name: "태그 변경 버리고 닫기", area: "관리" },
-  "mobile-open-tags": { name: "태그 편집(모바일)", area: "관리" },
-  "mobile-open-members": { name: "멤버 관리(모바일)", area: "관리" },
-  "open-insights": { name: "인사이트 열기", area: "관리" },
-  "change-passcode": { name: "비공개 비밀번호 변경", area: "관리" },
-  "close-modal": { name: "창 닫기(X)", area: "공통", hint: "여러 창의 X 버튼 합계" },
+  "manage-insights": { name: "월별 인사이트", area: "인사이트" },
+  "mda-keep": { name: "태그 변경 계속 편집", area: "태그 편집" },
+  "mda-discard": { name: "태그 변경 버리고 닫기", area: "태그 편집" },
+  "mobile-open-tags": { name: "태그 편집(모바일)", area: "태그 편집" },
+  "mobile-open-members": { name: "멤버 관리(모바일)", area: "옛 화면" },
+  "open-insights": { name: "인사이트 열기", area: "인사이트" },
+  "change-passcode": { name: "비공개 비밀번호 변경", area: "설정" },
+  "close-modal": { name: "창 닫기(X)", area: "기타", hint: "여러 창의 X 버튼 합계" },
 
   // 역할 미리보기(개발자 전용, 보기만 바뀜)
-  "role-preview-dev": { name: "역할 미리보기: 원래대로", area: "관리" },
-  "role-preview-owner": { name: "역할 미리보기: 관리자", area: "관리" },
-  "role-preview-manager": { name: "역할 미리보기: 매니저", area: "관리", hint: "옛 기록(매니저 역할 철수 2026-09-04)" },
-  "role-preview-worker": { name: "역할 미리보기: 작업자", area: "관리" },
-  "role-preview-viewer": { name: "역할 미리보기: 시청자", area: "관리" },
-  "role-preview-dual": { name: "역할 미리보기: 매니저+작업자", area: "관리" },
+  "role-preview-dev": { name: "역할 미리보기: 원래대로", area: "편집실" },
+  "role-preview-owner": { name: "역할 미리보기: 관리자", area: "편집실" },
+  "role-preview-manager": { name: "역할 미리보기: 매니저", area: "편집실", hint: "옛 기록(매니저 역할 철수 2026-09-04)" },
+  "role-preview-worker": { name: "역할 미리보기: 작업자", area: "편집실" },
+  "role-preview-viewer": { name: "역할 미리보기: 시청자", area: "편집실" },
+  "role-preview-dual": { name: "역할 미리보기: 매니저+작업자", area: "편집실" },
 
   // 시청자 화면
   "schedule-card": { name: "일정 카드 열기", area: "시청자 화면", hint: "일정을 눌러 자세히 본 횟수" },
   "teaser-card": { name: "최초공개 카드 열기", area: "시청자 화면" },
-  login: { name: "로그인", area: "공통" },
-  logout: { name: "로그아웃", area: "공통" },
+  login: { name: "로그인", area: "계정" },
+  logout: { name: "로그아웃", area: "계정" },
 
   // 꾸미기 — 스티커 툴바
-  "sticker-duplicate": { name: "스티커 복제", area: "꾸미기", hint: "툴바 (Ctrl+D)" },
-  "sticker-delete": { name: "스티커 삭제", area: "꾸미기", hint: "툴바 (Delete)" },
-  "sticker-duplicate-all": { name: "스티커 모두 복제", area: "꾸미기", hint: "여러 개 선택했을 때" },
-  "sticker-delete-all": { name: "스티커 모두 삭제", area: "꾸미기", hint: "여러 개 선택했을 때" },
-  "sticker-lock": { name: "스티커 잠금/해제", area: "꾸미기", hint: "이동·크기 변경 막기" },
-  "sticker-italic": { name: "글자 기울임", area: "꾸미기" },
-  "sticker-highlight": { name: "글자 배경(형광펜)", area: "꾸미기" },
-  "sticker-flip-x": { name: "좌우 뒤집기", area: "꾸미기" },
-  "sticker-flip-y": { name: "상하 뒤집기", area: "꾸미기" },
-  "sticker-shadow": { name: "진한 그림자", area: "꾸미기" },
-  "sticker-front": { name: "맨 앞으로", area: "꾸미기" },
-  "sticker-back": { name: "맨 뒤로", area: "꾸미기" },
+  "sticker-duplicate": { name: "스티커 복제", area: "옛 화면", hint: "툴바 (Ctrl+D)" },
+  "sticker-delete": { name: "스티커 삭제", area: "옛 화면", hint: "툴바 (Delete)" },
+  "sticker-duplicate-all": { name: "스티커 모두 복제", area: "옛 화면", hint: "여러 개 선택했을 때" },
+  "sticker-delete-all": { name: "스티커 모두 삭제", area: "옛 화면", hint: "여러 개 선택했을 때" },
+  "sticker-lock": { name: "스티커 잠금/해제", area: "옛 화면", hint: "이동·크기 변경 막기" },
+  "sticker-italic": { name: "글자 기울임", area: "옛 화면" },
+  "sticker-highlight": { name: "글자 배경(형광펜)", area: "옛 화면" },
+  "sticker-flip-x": { name: "좌우 뒤집기", area: "옛 화면" },
+  "sticker-flip-y": { name: "상하 뒤집기", area: "옛 화면" },
+  "sticker-shadow": { name: "진한 그림자", area: "옛 화면" },
+  "sticker-front": { name: "맨 앞으로", area: "옛 화면" },
+  "sticker-back": { name: "맨 뒤로", area: "옛 화면" },
 
   // ── 클래스에서 딴 id들(정적 부착). 이름은 화면 문구로, 위치를 반드시 붙인다 ──
   // 시청자 화면
@@ -236,33 +236,33 @@ const ACT: Record<string, TargetLabel> = {
   "delete-snack-undo": { name: "삭제 되돌리기", area: "편집실" },
   "draft-restored-discard": { name: "임시 저장 버리기", area: "편집실" },
   "kbd-hints-btn": { name: "단축키 안내", area: "편집실" },
-  "shortcut-help-title": { name: "단축키 안내 접기", area: "꾸미기" },
-  "preview-dd-trigger": { name: "역할 미리보기 메뉴", area: "관리" },
-  "manage-dd-trigger": { name: "관리 ▾ 메뉴 열기", area: "관리" },
+  "shortcut-help-title": { name: "단축키 안내 접기", area: "옛 화면" },
+  "preview-dd-trigger": { name: "역할 미리보기 메뉴", area: "편집실" },
+  "manage-dd-trigger": { name: "관리 ▾ 메뉴 열기", area: "옛 화면" },
   "io-preview": { name: "미리보기 들어가기", area: "편집실" },
-  "io-insights": { name: "인사이트 열기", area: "관리" },
-  "io-logout": { name: "로그아웃", area: "공통" },
+  "io-insights": { name: "인사이트 열기", area: "인사이트" },
+  "io-logout": { name: "로그아웃", area: "계정" },
   "io-worldcup": { name: "월드컵 기능 켜기", area: "편집실" },
 
   // 일정 그림판(판서)
-  "bp-eyedrop": { name: "스포이드(색 집기)", area: "일정 그림판", hint: "그림에서 색을 찍어 펜 색으로" },
-  "bp-fill": { name: "색 채우기", area: "일정 그림판", hint: "선 안쪽을 현재 색으로 (G)" },
-  "bp-region-enter": { name: "영역 선택 시작", area: "일정 그림판", hint: "붙여넣은 그림에서 일부만 오려내기" },
-  "bp-region-copy": { name: "영역 복사", area: "일정 그림판", hint: "고른 영역을 복사본으로" },
-  "bp-region-move": { name: "영역 오려 옮기기", area: "일정 그림판" },
-  "bp-region-cancel": { name: "영역 선택 취소", area: "일정 그림판" },
-  "bp-tool": { name: "그림판 도구 고르기", area: "일정 그림판" },
-  "bp-width": { name: "펜 굵기", area: "일정 그림판" },
-  "bp-color": { name: "펜 색", area: "일정 그림판" },
-  "bp-col-x": { name: "칸 비우기", area: "일정 그림판" },
-  "bp-send": { name: "그림판에 날짜 보내기", area: "일정 그림판" },
-  "bp-layer-btn": { name: "레이어 버튼", area: "일정 그림판" },
-  "bp-layer-select": { name: "레이어 고르기", area: "일정 그림판" },
+  "bp-eyedrop": { name: "스포이드(색 집기)", area: "그림판", hint: "그림에서 색을 찍어 펜 색으로" },
+  "bp-fill": { name: "색 채우기", area: "그림판", hint: "선 안쪽을 현재 색으로 (G)" },
+  "bp-region-enter": { name: "영역 선택 시작", area: "그림판", hint: "붙여넣은 그림에서 일부만 오려내기" },
+  "bp-region-copy": { name: "영역 복사", area: "그림판", hint: "고른 영역을 복사본으로" },
+  "bp-region-move": { name: "영역 오려 옮기기", area: "그림판" },
+  "bp-region-cancel": { name: "영역 선택 취소", area: "그림판" },
+  "bp-tool": { name: "그림판 도구 고르기", area: "그림판" },
+  "bp-width": { name: "펜 굵기", area: "그림판" },
+  "bp-color": { name: "펜 색", area: "그림판" },
+  "bp-col-x": { name: "칸 비우기", area: "그림판" },
+  "bp-send": { name: "그림판에 날짜 보내기", area: "그림판" },
+  "bp-layer-btn": { name: "레이어 버튼", area: "그림판" },
+  "bp-layer-select": { name: "레이어 고르기", area: "그림판" },
 
   // 꾸미기
-  "stf-btn": { name: "스티커 툴바 기타 버튼", area: "꾸미기", hint: "아직 안 나눈 나머지" },
-  "stf-collapse": { name: "스티커 툴바 접기", area: "꾸미기" },
-  "emoji-chip": { name: "이모지 고르기", area: "꾸미기" },
+  "stf-btn": { name: "스티커 툴바 기타 버튼", area: "옛 화면", hint: "아직 안 나눈 나머지" },
+  "stf-collapse": { name: "스티커 툴바 접기", area: "옛 화면" },
+  "emoji-chip": { name: "이모지 고르기", area: "옛 화면" },
 
   // 날짜·시간 고르기
   "dtp-trigger": { name: "날짜·시간 고르기 열기", area: "편집실" },
@@ -283,10 +283,10 @@ const ACT: Record<string, TargetLabel> = {
   "tp-chip": { name: "태그 고르기", area: "편집실" },
 
   // 멤버·보안
-  "member-role-toggle": { name: "멤버 역할 바꾸기", area: "멤버 관리" },
-  "access-expire": { name: "잠금해제 즉시 만료", area: "관리" },
-  "insight-change-passcode": { name: "비밀번호 변경", area: "관리" },
-  "passcode-submit": { name: "비밀번호 확인", area: "관리" },
+  "member-role-toggle": { name: "멤버 역할 바꾸기", area: "옛 화면" },
+  "access-expire": { name: "잠금해제 즉시 만료", area: "옛 화면" },
+  "insight-change-passcode": { name: "비밀번호 변경", area: "인사이트" },
+  "passcode-submit": { name: "비밀번호 확인", area: "편집실" },
 
 
   // 시청자 화면 기타
@@ -294,39 +294,39 @@ const ACT: Record<string, TargetLabel> = {
   "pill-more": { name: "일정 더 보기", area: "편집실" },
 
   // 시즌 장난감(월드컵)
-  "wc-toggle": { name: "월드컵 조작", area: "시즌 기능" },
-  "wc-tac-btn": { name: "월드컵 전술 열기", area: "시즌 기능" },
-  "wc-tac-chip": { name: "월드컵 전술 고르기", area: "시즌 기능" },
+  "wc-toggle": { name: "월드컵 조작", area: "옛 화면" },
+  "wc-tac-btn": { name: "월드컵 전술 열기", area: "옛 화면" },
+  "wc-tac-chip": { name: "월드컵 전술 고르기", area: "옛 화면" },
 
   // 인사이트 화면
   "insights-tab": { name: "인사이트 탭 바꾸기", area: "인사이트" },
   "insights-refresh": { name: "인사이트 새로고침", area: "인사이트" },
 
   // 이 인사이트 화면 자체(지표를 보는 행위도 기록된다)
-  "activity-visit-toggle": { name: "방문 펼쳐보기", area: "인사이트" },
-  "activity-expand-all": { name: "모두 펼치기", area: "인사이트" },
-  "activity-copy": { name: "타임라인 복사", area: "인사이트" },
-  "activity-open": { name: "타임라인 접기/펴기", area: "인사이트" },
-  "activity-diag": { name: "진단 로그 보기", area: "인사이트" },
-  "usage-open": { name: "적게 쓰인 기능 접기/펴기", area: "인사이트" },
-  "usage-retired-open": { name: "지운 기능 묶음 접기/펴기", area: "인사이트" },
-  "usage-area": { name: "위치 필터", area: "인사이트" },
-  "usage-area-all": { name: "위치 필터: 전체", area: "인사이트" },
-  "usage-role": { name: "역할 필터", area: "인사이트" },
-  "usage-role-all": { name: "역할 필터: 전체", area: "인사이트" },
-  "usage-kind": { name: "종류 필터", area: "인사이트" },
-  "usage-filter-reset": { name: "필터 초기화", area: "인사이트" },
+  "activity-visit-toggle": { name: "방문 펼쳐보기", area: "이용 기록" },
+  "activity-expand-all": { name: "모두 펼치기", area: "이용 기록" },
+  "activity-copy": { name: "타임라인 복사", area: "이용 기록" },
+  "activity-open": { name: "타임라인 접기/펴기", area: "이용 기록" },
+  "activity-diag": { name: "진단 로그 보기", area: "이용 기록" },
+  "usage-open": { name: "적게 쓰인 기능 접기/펴기", area: "이용 기록" },
+  "usage-retired-open": { name: "지운 기능 묶음 접기/펴기", area: "이용 기록" },
+  "usage-area": { name: "위치 필터", area: "이용 기록" },
+  "usage-area-all": { name: "위치 필터: 전체", area: "이용 기록" },
+  "usage-role": { name: "역할 필터", area: "이용 기록" },
+  "usage-role-all": { name: "역할 필터: 전체", area: "이용 기록" },
+  "usage-kind": { name: "종류 필터", area: "이용 기록" },
+  "usage-filter-reset": { name: "필터 초기화", area: "이용 기록" },
   "legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
-  "usage-copy": { name: "사용량 복사", area: "인사이트" },
-  "usage-show-all": { name: "사용량 전체 보기", area: "인사이트" },
-  "usage-dev": { name: "개발자 정보 켜기", area: "인사이트" },
-  "usage-range-7": { name: "기간 7일", area: "인사이트" },
-  "usage-range-30": { name: "기간 30일", area: "인사이트" },
-  "usage-range-90": { name: "기간 90일", area: "인사이트" },
-  "usage-kind-all": { name: "종류 필터: 전체", area: "인사이트" },
-  "usage-kind-ui.click": { name: "종류 필터: 버튼", area: "인사이트" },
-  "usage-kind-route.enter": { name: "종류 필터: 화면", area: "인사이트" },
-  "usage-kind-section.enter": { name: "종류 필터: 창", area: "인사이트" },
+  "usage-copy": { name: "사용량 복사", area: "이용 기록" },
+  "usage-show-all": { name: "사용량 전체 보기", area: "이용 기록" },
+  "usage-dev": { name: "개발자 정보 켜기", area: "이용 기록" },
+  "usage-range-7": { name: "기간 7일", area: "이용 기록" },
+  "usage-range-30": { name: "기간 30일", area: "이용 기록" },
+  "usage-range-90": { name: "기간 90일", area: "이용 기록" },
+  "usage-kind-all": { name: "종류 필터: 전체", area: "이용 기록" },
+  "usage-kind-ui.click": { name: "종류 필터: 버튼", area: "이용 기록" },
+  "usage-kind-route.enter": { name: "종류 필터: 화면", area: "이용 기록" },
+  "usage-kind-section.enter": { name: "종류 필터: 창", area: "이용 기록" },
   "visit-scope-viewer": { name: "범위: 시청자", area: "인사이트" },
   "visit-scope-operator": { name: "범위: 운영진", area: "인사이트" },
   "visit-scope-all": { name: "범위: 전체", area: "인사이트" },
@@ -334,10 +334,10 @@ const ACT: Record<string, TargetLabel> = {
   // ── 2026-08-05: '이름 없는 버튼 여러 개(.button)'로 뭉쳐 있던 것들. 공통 모양(.button)만
   // 걸친 버튼이라 마크업 유추가 전부 한 항목이 됐다 — 소스에 data-act를 박아 갈라냈다.
   "back-to-studio": { name: "편집실로 가기", area: "시청자 화면", hint: "미리보기·꾸미기에서 편집실로" },
-  "back-to-decorate": { name: "꾸미기로 가기", area: "꾸미기" },
+  "back-to-decorate": { name: "꾸미기로 가기", area: "옛 화면" },
   "go-decorate": { name: "꾸미러 가기", area: "편집실", hint: "미리보기의 '꾸미러 가기'" },
-  "decorate-preview": { name: "시청자 화면 미리보기", area: "꾸미기" },
-  "sticker-add-text": { name: "글자 스티커 추가", area: "꾸미기" },
+  "decorate-preview": { name: "시청자 화면 미리보기", area: "옛 화면" },
+  "sticker-add-text": { name: "글자 스티커 추가", area: "옛 화면" },
   "support-sheet-cancel": { name: "업 도움 수정 취소", area: "편집실" },
   "support-sheet-save": { name: "업 도움 수정 저장", area: "편집실" },
   "support-edit-open": { name: "업 도움 기간/링크 수정 열기", area: "편집실" },
@@ -345,41 +345,41 @@ const ACT: Record<string, TargetLabel> = {
   "studio-calm-toggle": { name: "차분한 편집실 켜기/끄기", area: "편집실", hint: "옛 기록(토글 제거 2026-09-04 — 항상 ON)" },
   "poster-theme-select": { name: "포스터 테마 고르기", area: "편집실", hint: "설정 모달 · 관리자만" },
   "gfx-pref-select": { name: "배경 효과 품질 고르기", area: "편집실", hint: "설정 모달 — 자동/항상 최대/가볍게/끄기(lib/ui/gfx.ts v3)" },
-  "ambient-showcase": { name: "배경 감상 모드 켜기", area: "편집실", hint: "아바타 자리·시청자 레일의 '○○ 감상하기' 버튼 — 달력·필터를 숨기고 계절 배경만(Esc/알약으로 복귀). 설정 줄은 2026-09-04 제거" },
-  "ambient-showcase-exit": { name: "배경 감상 모드 나가기", area: "편집실", hint: "감상 모드 상단 알약" },
+  "ambient-showcase": { name: "배경 감상 모드 켜기", area: "배경 감상", hint: "아바타 자리·시청자 레일의 '○○ 감상하기' 버튼 — 달력·필터를 숨기고 계절 배경만(Esc/알약으로 복귀). 설정 줄은 2026-09-04 제거" },
+  "ambient-showcase-exit": { name: "배경 감상 모드 나가기", area: "배경 감상", hint: "감상 모드 상단 알약" },
   "ambient-toggle-viewer": { name: "계절 배경 상태 고르기(레일)", area: "시청자 화면", hint: "레일·아바타 자리 감상하기 옆 세그먼트 [켜기|흐리게|끄기](2026-09-04, 순환 버튼 대체) — 기기 저장값(vic.ambient, 기본 끄기), 편집실 설정과 한 상태" },
   "ambient-mode-select": { name: "계절 배경 상태 고르기", area: "편집실", hint: "설정 모달 세그먼트 [켜기|흐리게|끄기](2026-09-04, 셀렉트 → 세그먼트; 옛 스위치 '계절 배경 켜기/끄기' 대체)" },
   "dev-world-band": { name: "세계 시간대 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 새벽~밤 띠를 실제 시각과 무관하게(연대기 검증, 개발자 계정만·세션 한정)" },
   "dev-world-weather": { name: "세계 날씨 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 맑음/흐림/비/눈/안개/바람(개발자 계정만·세션 한정)" },
   "dev-world-day": { name: "세계 날 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 보고 있는 달의 날(연대기 진행 확인; 개발자 계정만·세션 한정)" },
   "dev-art-board-open": { name: "배경 아트 보드 열기(개발자)", area: "편집실", hint: "설정 모달 → /studio/ambient-art — 계절 배경 그림 자리·코덱스 프롬프트 관리(2026-09-04)" },
-  "biome-move": { name: "바이옴 이동(쉐브론)", area: "공통", hint: "감상 모드 가장자리 쉐브론(PLAN-20260904-004) — 방향키·WASD·스와이프와 같은 이동. data-dir = up/down/left/right" },
-  "biome-map-pick": { name: "바이옴 미니맵 선택", area: "공통", hint: "감상 모드 미니맵 점(열한 화면) — data-biome = 목적지" },
+  "biome-move": { name: "바이옴 이동(쉐브론)", area: "배경 감상", hint: "감상 모드 가장자리 쉐브론(PLAN-20260904-004) — 방향키·WASD·스와이프와 같은 이동. data-dir = up/down/left/right" },
+  "biome-map-pick": { name: "바이옴 미니맵 선택", area: "배경 감상", hint: "감상 모드 미니맵 점(열한 화면) — data-biome = 목적지" },
   "art-prompt-copy-1": { name: "아트 보드 — 1차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 나무·초목·지형·물 자리의 코덱스 마스터 프롬프트" },
   "art-prompt-copy-2": { name: "아트 보드 — 2차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 생물 자리" },
   "art-prompt-copy-all": { name: "아트 보드 — 전체 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자)" },
   "art-slot-prompt-copy": { name: "아트 보드 — 자리 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 자리 하나짜리 프롬프트" },
   "rest-nudge-ok": { name: "휴식 넛지 — 쉬고 올게요", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
   "rest-nudge-later": { name: "휴식 넛지 — 조금만 더", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
-  "google-login": { name: "Google로 로그인", area: "공통" },
-  "open-in-chrome": { name: "Chrome으로 열기", area: "공통", hint: "앱 내 브라우저 안내" },
-  "copy-app-link": { name: "링크 복사", area: "공통", hint: "앱 내 브라우저 안내" },
-  "member-add": { name: "멤버 추가", area: "멤버 관리" },
-  "security-retry": { name: "보안 정보 다시 시도", area: "관리" },
-  "passcode-change-open": { name: "비밀번호 변경 열기", area: "관리" },
-  "passcode-change-save": { name: "비밀번호 변경 저장", area: "관리" },
-  "passcode-change-cancel": { name: "비밀번호 변경 취소", area: "관리" },
-  "sticker-font-weight": { name: "글자 굵기", area: "꾸미기" },
+  "google-login": { name: "Google로 로그인", area: "계정" },
+  "open-in-chrome": { name: "Chrome으로 열기", area: "계정", hint: "앱 내 브라우저 안내" },
+  "copy-app-link": { name: "링크 복사", area: "계정", hint: "앱 내 브라우저 안내" },
+  "member-add": { name: "멤버 추가", area: "옛 화면" },
+  "security-retry": { name: "보안 정보 다시 시도", area: "인사이트" },
+  "passcode-change-open": { name: "비밀번호 변경 열기", area: "설정" },
+  "passcode-change-save": { name: "비밀번호 변경 저장", area: "설정" },
+  "passcode-change-cancel": { name: "비밀번호 변경 취소", area: "설정" },
+  "sticker-font-weight": { name: "글자 굵기", area: "옛 화면" },
   "support-duration": { name: "업 도움 기간 고르기", area: "편집실" },
   "tag-editor-save": { name: "태그 저장", area: "태그 편집" },
 
   // 클래스 토큰으로만 잡히던 것들(auto: 경로가 점을 떼고 여기서 찾는다).
-  "agenda-login": { name: "로그인", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
-  "agenda-logout": { name: "로그아웃", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
+  "agenda-login": { name: "로그인", area: "계정", hint: "모바일 화면 아래 계정 줄" },
+  "agenda-logout": { name: "로그아웃", area: "계정", hint: "모바일 화면 아래 계정 줄" },
   "agenda-legend-insights": { name: "이 달 기록 보기", area: "시청자 화면" },
   "insights-open": { name: "이 달 기록 보기", area: "시청자 화면" },
-  "m-io-tags": { name: "태그 편집(모바일)", area: "관리" },
-  "m-io-members": { name: "멤버 관리(모바일)", area: "관리" },
+  "m-io-tags": { name: "태그 편집(모바일)", area: "태그 편집" },
+  "m-io-members": { name: "멤버 관리(모바일)", area: "옛 화면" },
   "m-io-today": { name: "오늘로(모바일)", area: "편집실" },
   "m-io-private": { name: "비공개 일정 보기(모바일)", area: "편집실" },
   "m-del": { name: "일정 삭제(모바일)", area: "편집실" },
@@ -395,24 +395,27 @@ const ACT: Record<string, TargetLabel> = {
   "업 도움 링크 열기": { name: "업 도움 링크 열기", area: "시청자 화면" },
   "기간 안내 링크 열기": { name: "기간 안내 링크 열기", area: "시청자 화면" },
   "support-kind": { name: "띠 종류 고르기", area: "편집실", hint: "업 도움 ↔ 기간 안내" },
-  "실행 취소": { name: "실행 취소", area: "꾸미기" },
-  "다시실행 (Ctrl+Y)": { name: "다시 실행", area: "꾸미기" },
-  닫기: { name: "닫기(어느 창인지 모름)", area: "공통", hint: "옛 기록 — 2026-09-05에 창별로 갈라 놓기 전, 다섯 개의 닫기가 합쳐진 값" },
-  이전: { name: "인사이트 이전 장", area: "관리", hint: "옛 기록 — 2026-09-05에 화면별로 갈라 놓기 전" },
-  다음: { name: "인사이트 다음 장", area: "관리", hint: "옛 기록 — 2026-09-05에 화면별로 갈라 놓기 전" },
+  "실행 취소": { name: "실행 취소", area: "옛 화면" },
+  "다시실행 (Ctrl+Y)": { name: "다시 실행", area: "옛 화면" },
+  닫기: { name: "닫기(어느 창인지 모름)", area: "기타", hint: "옛 기록 — 2026-09-05에 창별로 갈라 놓기 전, 다섯 개의 닫기가 합쳐진 값" },
+  이전: { name: "인사이트 이전 장", area: "인사이트", hint: "옛 기록 — 2026-09-05에 화면별로 갈라 놓기 전" },
+  다음: { name: "인사이트 다음 장", area: "인사이트", hint: "옛 기록 — 2026-09-05에 화면별로 갈라 놓기 전" },
 
   // ── 2026-09-05 최신화: 살아 있는데 사전에 없어 전부 '기타'로 떨어지던 버튼들 ──
   //    (소유자: "실제 있는 버튼이나 로그 기록으로만 나오게 갱신"). 위치를 반드시 붙인다 —
   //    이름만으로는 화면에서 찾아갈 수 없고, '기타'가 많으면 이 화면 자체가 안 읽힌다.
   //    그림판(판서 도구)은 편집실과 분리된 전체화면 도구라 위치를 '그림판'으로 따로 둔다.
-  "close-mobile-edit": { name: "편집 시트 닫기(X)", area: "편집실(모바일)" },
+  "close-mobile-edit": { name: "편집 시트 닫기(X)", area: "편집실" },
   "close-teaser-gate": { name: "최초공개 잠금 화면 닫기", area: "편집실" },
   "close-day-vod": { name: "다시보기 창 닫기", area: "시청자 화면" },
   "close-detail": { name: "일정 상세 닫기(X)", area: "시청자 화면" },
-  "close-detail-grab": { name: "일정 상세 손잡이로 닫기", area: "시청자 화면(모바일)" },
+  "close-detail-grab": { name: "일정 상세 손잡이로 닫기", area: "시청자 화면" },
   "close-public-insights": { name: "이 달 기록 닫기", area: "시청자 화면" },
-  "insights-panel-prev": { name: "인사이트 이전 장", area: "관리", hint: "월별 인사이트 창의 ‹" },
-  "insights-panel-next": { name: "인사이트 다음 장", area: "관리", hint: "월별 인사이트 창의 ›" },
+  "biome-map-fold": { name: "지도 접기/펼치기", area: "배경 감상" },
+  "vlog-role": { name: "세션 로그 역할 고르기", area: "이용 기록" },
+  "vlog-stay": { name: "세션 로그 머문/스쳐감 고르기", area: "이용 기록" },
+  "insights-panel-prev": { name: "인사이트 이전 장", area: "인사이트", hint: "월별 인사이트 창의 ‹" },
+  "insights-panel-next": { name: "인사이트 다음 장", area: "인사이트", hint: "월별 인사이트 창의 ›" },
   "minsights-panel-prev": { name: "내 인사이트 이전 장", area: "편집실" },
   "minsights-panel-next": { name: "내 인사이트 다음 장", area: "편집실" },
 
@@ -437,8 +440,8 @@ const ACT: Record<string, TargetLabel> = {
   "진동 켜기/끄기": { name: "진동", area: "설정" },
 
   // 관리 — 태그 편집
-  "태그 색 바꾸기": { name: "태그 색 고르기 열기", area: "관리" },
-  "실행취소(직전 색으로)": { name: "태그 색 되돌리기", area: "관리", hint: "색 고르개의 되돌리기" },
+  "태그 색 바꾸기": { name: "태그 색 고르기 열기", area: "태그 편집" },
+  "실행취소(직전 색으로)": { name: "태그 색 되돌리기", area: "태그 편집", hint: "색 고르개의 되돌리기" },
 
   // 시청자 화면
   "관심 일정만 보기": { name: "내 관심만 보기", area: "시청자 화면" },
@@ -467,12 +470,12 @@ const ACT: Record<string, TargetLabel> = {
 const AUTO: Record<string, TargetLabel> = {
   ".preview-dd-item": {
     name: "메뉴 항목 여러 개",
-    area: "관리",
+    area: "옛 화면",
     hint: "관리 ▾ 메뉴 항목들이 하나로 합쳐진 옛 기록 (지금은 항목별로 따로 셉니다)"
   },
   ".stf-btn": {
     name: "스티커 툴바 버튼 여러 개",
-    area: "꾸미기",
+    area: "옛 화면",
     hint: "복제·삭제·뒤집기 등이 합쳐진 옛 기록 (지금은 버튼별로 따로 셉니다)"
   },
   ".public-event": {
@@ -486,16 +489,16 @@ const AUTO: Record<string, TargetLabel> = {
   ".me-tool": { name: "편집 패널 도구 여러 개", area: "편집실", hint: "여러 버튼이 합쳐진 값" },
   ".button": {
     name: "이름 없던 버튼 여러 개",
-    area: "공통",
+    area: "기타",
     // 2026-08-05에 이 버튼들에 전부 data-act를 박아 갈라놨다. 그 전에 쌓인 기록만 여기 남는다.
     hint: "옛 기록 — 이름 붙이기 전(2026-08-05) 합쳐져 쌓인 값"
   },
-  ".agenda-login": { name: "로그인", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
-  ".agenda-logout": { name: "로그아웃", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
+  ".agenda-login": { name: "로그인", area: "계정", hint: "모바일 화면 아래 계정 줄" },
+  ".agenda-logout": { name: "로그아웃", area: "계정", hint: "모바일 화면 아래 계정 줄" },
   ".legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
   button: { name: "클래스 없는 버튼", area: "기타", hint: "이름도 클래스도 없어 구분할 수 없는 버튼들" },
-  ".modal-close": { name: "창 닫기(X)", area: "공통", hint: "옛 기록" },
-  ".insights-open": { name: "인사이트 열기", area: "관리", hint: "옛 기록" }
+  ".modal-close": { name: "창 닫기(X)", area: "기타", hint: "옛 기록" },
+  ".insights-open": { name: "인사이트 열기", area: "인사이트", hint: "옛 기록" }
 };
 
 /** target을 사람이 읽는 이름으로. 못 풀면 이름을 지어내지 않고 '이름 미등록'으로 표시한다. */
@@ -550,6 +553,43 @@ export function describeTarget(kind: string, target: string): TargetLabel {
 // 줄이 생겼다(실측). 편집실은 시청자가 못 들어가는데 왜? — 로그아웃 직후 남아 있던 배치가
 // 세션 없이 올라가 anon으로 기록된 것이었다. 둘을 갈라두면 그 자리에서 읽힌다.
 // (매니저·작업자는 철수 — 옛 기록의 이름은 ROLE_NAME에 남기고 순서/필터에서는 뺀다.)
+/**
+ * '위치'는 **화면에서 갈 수 있는 한 곳**이다(2026-09-05 정리 — 소유자: "검사·공통·관리·그림판·
+ * 일정 그림판… 종류가 왜 이리 많고 뭐가 뭔지 헷갈린다").
+ *
+ * 규칙 세 줄:
+ *   1) 한 값 = 한 곳. 같은 곳에 두 이름을 두지 않는다(그림판 / 일정 그림판 → **그림판**).
+ *   2) 기기는 위치가 아니다 — '(모바일)' 꼬리표를 붙이지 않는다(기기는 방문 줄에 따로 있다).
+ *   3) 창이면 그 **창 이름**을 그대로 쓴다(태그 편집 · 인사이트 · 이용 기록 · 설정).
+ *      '관리'·'공통' 같은 묶음 이름은 무엇을 가리키는지 알 수 없어 폐지했다.
+ *
+ * '시청자 화면'은 시청자에게는 늘 보는 화면이고 관리자·개발자에게는 미리보기로 여는 **같은 화면**이다
+ * — 한 곳이므로 한 이름이다. 목록 순서는 자주 가는 곳부터(가나다순은 관계없는 곳을 이웃으로 만든다).
+ */
+export const AREA_ORDER = [
+  "편집실",
+  "시청자 화면",
+  "그림판",
+  "태그 편집",
+  "인사이트",
+  "이용 기록",
+  "설정",
+  "배경 감상",
+  "계정",
+  "옛 화면",
+  "자동 검사",
+  "기타"
+] as const;
+
+/** 위치 목록을 위 순서대로. 목록에 없는 이름은 뒤에 가나다순으로 붙인다(이름을 버리지 않는다). */
+export function sortAreas(areas: readonly string[]): string[] {
+  const rank = (a: string) => {
+    const i = AREA_ORDER.indexOf(a as (typeof AREA_ORDER)[number]);
+    return i < 0 ? AREA_ORDER.length : i;
+  };
+  return [...areas].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "ko"));
+}
+
 export const ROLE_ORDER = ["owner", "developer", "viewer", "anon", "unknown"] as const;
 export const ROLE_NAME: Record<string, string> = {
   owner: "관리자",

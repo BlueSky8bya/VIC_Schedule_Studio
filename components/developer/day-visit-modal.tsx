@@ -24,6 +24,7 @@ import {
 } from "@/components/developer/insights-dashboard";
 import { ActivityTimeline } from "@/components/developer/activity-timeline";
 import { ActivityUsage } from "@/components/developer/activity-usage";
+import { SessionLogFilter } from "@/components/developer/session-log-filter";
 import { getDayVisitDetailAction, type DayVisitDetail } from "@/lib/insights/actions";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -37,7 +38,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [dim, setDim] = useState<"role" | "device">("role");
   const [scope, setScope] = useState<VisitScope>(DEFAULT_VISIT_SCOPE); // 운영진/시청자/전체 — 분해·동접 즉시 전환
-  const logRole: string | null = null; // 세션 로그 역할 필터 — 칩 제거(2026-09-04), 늘 전체
+  // 세션 로그 역할 필터(2026-09-05 복원 — 이번엔 드롭다운). "all"이면 전 역할.
+  const [logRole, setLogRole] = useState("all");
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [occTip, setOccTip] = useState<OccTip | null>(null);
   const [ownTip, setOwnTip] = useState<{ x: number; top: number; text: string } | null>(null);
@@ -405,39 +407,19 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         {data.sessions.length > 0 ? (
           <details className="vrecent" open>
             <summary>세션 {data.sessions.length}건</summary>
-            {/* (역할 필터 칩은 2026-09-04 사용자 결정으로 제거 — 줄마다 역할 배지가 있다.) */}
-            {/* 머문/스쳐감 필터 — 월별과 동일. */}
-            {(() => {
-              const stayN = data.sessions.filter((r) => r.meaningful).length;
-              const glanceN = data.sessions.length - stayN;
-              const opts: { key: "all" | "stay" | "glance"; label: string; n: number }[] = [
-                { key: "all", label: "전체", n: data.sessions.length },
-                { key: "stay", label: "머문", n: stayN },
-                { key: "glance", label: "스쳐감", n: glanceN }
-              ];
-              return (
-                <div className="vlog-filter stay" role="group" aria-label="머문/스쳐감 필터">
-                  {opts.map((o) => (
-                    <button
-                      className={`vlog-chip${logStay === o.key ? " on" : ""}${o.n === 0 ? " zero" : ""}`}
-                      key={o.key}
-                      onClick={() => {
-                        hapticTick();
-                        setLogStay(o.key);
-                      }}
-                      type="button"
-                     data-act="vlog-chip">
-                      {o.label} <b>{o.n}</b>
-                    </button>
-                  ))}
-                </div>
-              );
-            })()}
+            {/* 역할 · 머문/스쳐감 — 월별 인사이트와 같은 컴포넌트(session-log-filter.tsx). */}
+            <SessionLogFilter
+              onRole={setLogRole}
+              onStay={setLogStay}
+              role={logRole}
+              sessions={data.sessions}
+              stay={logStay}
+            />
             <ul className="vlog">
               {(() => {
                 const shown = data.sessions.filter(
                   (r) =>
-                    (!logRole || r.role === logRole) &&
+                    (logRole === "all" || r.role === logRole) &&
                     (logStay === "all" || (logStay === "stay" ? r.meaningful : !r.meaningful))
                 );
                 if (shown.length === 0) {
