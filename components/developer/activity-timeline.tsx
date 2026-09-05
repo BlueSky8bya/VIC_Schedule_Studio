@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { deviceLabel, fmtDur, hhmm, roleColor } from "@/components/developer/insights-dashboard";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
 import { describeTarget } from "@/lib/activity/labels";
@@ -107,6 +107,37 @@ function groupItems(items: Item[]): Grouped[] {
     out.push({ ...it, repeat: 1, lastT: it.t });
   }
   return out;
+}
+
+/**
+ * 줄마다 '어느 창 안의 일인가'를 깊이로 매긴다 — 패널 진입/이탈이 여닫는 괄호다.
+ *
+ * 진입 줄은 여는 괄호이므로 **바깥 깊이**에 서고, 그 뒤의 줄부터 한 칸 들어간다. 이탈 줄은 닫는
+ * 괄호라 제 진입 줄과 같은 깊이로 돌아온다. 화면(route)이 바뀌면 스택을 비운다.
+ * 짝이 어긋난 기록(이탈 신호 유실)에서도 깊이가 새지 않게, 이탈은 스택에서 그 창을 찾아
+ * **그 위에 열린 것들까지 함께** 닫는다. 못 찾으면 깊이를 건드리지 않는다.
+ */
+const MAX_DEPTH = 3; // 더 들어가면 글자가 오른쪽으로 밀려 읽기가 더 나빠진다
+function withDepth(rows: Grouped[]): { it: Grouped; depth: number }[] {
+  const stack: string[] = [];
+  return rows.map((it) => {
+    const t = it.target ?? "";
+    if (it.kind === "route.enter" || it.kind === "route.leave") {
+      stack.length = 0;
+      return { it, depth: 0 };
+    }
+    if (it.kind === "section.enter") {
+      const d = stack.length;
+      stack.push(t);
+      return { it, depth: Math.min(d, MAX_DEPTH) };
+    }
+    if (it.kind === "section.leave") {
+      const i = stack.lastIndexOf(t);
+      if (i >= 0) stack.length = i;
+      return { it, depth: Math.min(stack.length, MAX_DEPTH) };
+    }
+    return { it, depth: Math.min(stack.length, MAX_DEPTH) };
+  });
 }
 
 // 접힌 방문의 한 줄 요약 — 펼치지 않고도 "무엇을 한 방문인가"가 보여야 한다.
@@ -425,14 +456,14 @@ export function ActivityTimeline({
               </div>
               {isOpen ? (
                 <ol className="act-items">
-                  {rows.map((it, i) => {
+                  {withDepth(rows).map(({ it, depth }, i) => {
                     const d = it.target ? describeTarget(it.kind, it.target) : null;
                     const name = itemName(it);
                     const area = it.targetLabel ? null : (d?.area ?? null);
                     // 위치는 **바뀔 때만** 적는다 — 같은 화면에서 연달아 한 일이 대부분이라
                     // 매 줄에 '편집실'이 붙으면 그 글자가 화면의 절반을 차지한다. 이름이 이미
                     // 그 위치를 말하는 줄("편집실 → 편집실")도 뺀다.
-                    const prev = rows[i - 1];
+                    const prev: Grouped | undefined = rows[i - 1];
                     const prevArea = prev
                       ? prev.targetLabel
                         ? null
@@ -442,7 +473,13 @@ export function ActivityTimeline({
                     // 시각도 **분이 바뀔 때만** — 같은 분에 여덟 줄이 쌓이면 시각 열이 잡음이 된다.
                     const sameMinute = prev ? hhmm(prev.t) === hhmm(it.t) : false;
                     return (
-                      <li key={i} data-source={it.source}>
+                      <li
+                        data-depth={depth || undefined}
+                        data-fold={it.kind === "section.enter" ? "open" : it.kind === "section.leave" ? "close" : undefined}
+                        data-source={it.source}
+                        key={i}
+                        style={depth ? ({ "--d": depth } as CSSProperties) : undefined}
+                      >
                         {/* 접힌 줄(×N)이 시간 폭을 가지면 끝 시각도 보여준다 — 40px 칸이라
                             옆으로 붙이지 않고 아래에 작게 쌓는다. */}
                         <span className="act-t">

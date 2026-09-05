@@ -1549,6 +1549,30 @@ html[data-reduce-motion] .act-live::before {
   border-left-color: #7c6cf0;
   background: rgb(124 108 240 / 4%);
 }
+/* 같은 창 안의 일은 한 칸 들여쓴다(2026-09-05 소유자) — 패널 진입/이탈이 여닫는 괄호다.
+   들여쓴 줄에는 왼쪽에 옅은 안내선을 세워 어디까지가 그 창인지 눈으로 묶인다. */
+.act-items > li[data-depth] {
+  padding-left: calc(12px + var(--d, 0) * 16px);
+  position: relative;
+}
+.act-items > li[data-depth]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(6px + (var(--d, 1) - 1) * 16px);
+  width: 1px;
+  background: rgb(124 108 240 / 22%);
+}
+/* 여는 줄(패널 진입)은 이름을 살짝 진하게 — 괄호가 열리는 지점이 눈에 걸린다. */
+.act-items > li[data-fold="open"] .act-name {
+  color: #4c1d95;
+}
+/* 닫는 줄은 조용히 — 여기서 끝났다는 표시면 충분하다. */
+.act-items > li[data-fold="close"] .act-name {
+  color: #8b84a3;
+  font-weight: 700;
+}
 .act-items > li:hover { background: #fbfaff; }
 .act-t {
   color: #b0a9c4;
@@ -1573,9 +1597,13 @@ html[data-reduce-motion] .act-live::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 머리글 = 한 일. 이 줄에서 가장 진하고 가장 크다 — 이 탭의 질문이 "무엇을 했나"다. */
+/* 머리글 = 한 일. 이 줄에서 가장 진하고 가장 크다 — 이 탭의 질문이 "무엇을 했나"다.
+   ⚠ 줄어드는 순서: meta → 이름. 예전엔 이름만 min-width:0이고 형제가 flex:none이라, meta가 길면
+   (`how=outside · saved=false`) 머리글이 **폭 0으로 눌려 통째로 사라졌다**(2026-09-05 소유자 사진의
+   "패널 이탈 …" 줄에 '편집 카드'가 없다). 이름에 최소 폭을 주고 meta를 먼저 줄인다. */
 .act-name {
-  min-width: 0;
+  flex: 0 1 auto;
+  min-width: 5.5em;
   color: #3a3550;
   font-weight: 800;
   overflow: hidden;
@@ -1607,7 +1635,11 @@ html[data-reduce-motion] .act-live::before {
   white-space: nowrap;
 }
 .act-meta {
-  flex: none;
+  /* 가장 먼저 줄어드는 칸 — 머리글보다 덜 중요하다(위 .act-name 주석). */
+  flex: 0 3 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #b0a9c4;
   font-size: var(--text-micro);
   font-weight: 600;
