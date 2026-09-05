@@ -1075,11 +1075,9 @@ export function StudioShell({
           {/* 웹·모바일 같은 라벨 하나 — 긴/짧은 쌍이 있던 시절 숨김 CSS가 .studio-role-tools 안에만 있어
               "미리보기 미리보기"로 겹쳐 보인 적이 있다(2026-09-04). 쌍이 없으면 그 함정도 없다. */}
           <span className="lbl">{triggerText}</span>
-          {previewing ? null : (
-            <span aria-hidden="true" className="preview-dd-caret">
-              ▾
-            </span>
-          )}
+          {/* ▾ 캐럿 제거(2026-09-05 소유자: "아이콘이 양쪽에 두 개 있는 게 싫다") — 한 버튼에 아이콘 하나.
+              남긴 쪽은 **눈**: 압축 단계에서 라벨이 접혀도 살아남아 버튼의 정체를 지킨다(캐럿은 그때 숨겨졌다).
+              '메뉴가 열린다'는 aria-haspopup="menu"와 실제로 열리는 목록이 말한다. */}
         </button>
         {previewMenuOpen ? (
           <div className="preview-dd-menu" role="menu">
@@ -5332,6 +5330,9 @@ export function StudioShell({
             renderPreviewControl()
           ) : (
             <button className="button m-io-pill m-io-preview" onClick={() => enterViewerMode()} type="button" data-act="m-io-pill">
+              {/* 아이콘 추가(2026-09-05) — 같은 레일의 '오늘'과 개발자 미리보기엔 아이콘이 있는데
+                  관리자 것만 글자뿐이라 셋이 한 묶음으로 안 읽혔다. */}
+              <Eye aria-hidden="true" size={16} />
               시청자 화면
             </button>
           )}
@@ -5999,7 +6000,10 @@ export function StudioShell({
 
   return (
     <main
-      className={`studio-shell${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}${
+      /* studio-narrow = 모바일(아젠다) 토폴로지 표식. CSS가 금(金) 스킨 같은 '웹 전용 재질'을 이 아래로
+         내려보내지 않게 하는 문(2026-09-05). 미디어쿼리로 흉내 내면 STUDIO_AGENDA_QUERY의 둘째 절
+         (가로로 누운 폰: max-height 640 and pointer coarse)과 어긋난다 — 판정은 한 곳(JS)에서만 한다. */
+      className={`studio-shell${isNarrow ? " studio-narrow" : ""}${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}${
         avatarReady ? "" : " avatar-no-anim"
       }`}
       data-chrome={chromeTier || undefined}

@@ -340,14 +340,18 @@ html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly 
 html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%);
 }
-html[data-studio-calm] .studio-shell .button:not(.primary):not(.danger) {
+/* 금(金) 스킨은 **웹 셸**의 문법이다(2026-09-05 소유자: 모바일 오늘·미리보기·태그 편집·로그아웃이
+   "혼자 딱딱하다"). 모바일(.studio-narrow)엔 이미 제 재질이 있다 — 크림 면, 12px/알약 라운드,
+   의미색 틴트 칩(태그=보라·미리보기=슬레이트·오늘=액센트). 거기에 회색 금속을 덮어씌우면 그 언어가
+   통째로 지워지고 버튼만 주변과 다른 재질로 튄다. */
+html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger) {
   border-color: var(--gs-metal-line);
   border-radius: var(--gs-metal-radius);
   background: var(--gs-metal-sheen);
   color: var(--gs-metal-ink);
   box-shadow: var(--gs-metal-edge);
 }
-html[data-studio-calm] .studio-shell .button:not(.primary):not(.danger):hover:not(:disabled) {
+html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):hover:not(:disabled) {
   border-color: var(--gs-metal-line-strong);
   background: var(--gs-metal-sheen-hover);
   color: var(--gs-metal-ink);
@@ -444,7 +448,6 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .actor-badge strong,
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .button .lbl,
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger .lbl,
-.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-caret,
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .save-status .ss-time {
   display: none;
 }

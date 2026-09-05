@@ -47,20 +47,23 @@
   }
 }
 
-/* 버튼(.button 계열)·'이 달 기록' 칩 — 아주 은은한 은 광택 + 헤어라인. 1차(.primary)·위험(.danger)은 제 색. */
-.poster-page .button:not(.primary):not(.danger),
-.poster-page .insights-open {
+/* 버튼(.button 계열)·'이 달 기록' 칩 — 아주 은은한 은 광택 + 헤어라인. 1차(.primary)·위험(.danger)은 제 색.
+   **모바일(아젠다) 제외**(2026-09-05 소유자: "이 달 기록·편집실 버튼만 혼자 딱딱하다"): 금(金) 스킨은 웹의
+   '홀로 서는 버튼' 문법이고, 모바일에는 이미 제 재질(크림 면·둥근 12px·틴트 칩)이 있다. 금속을 덮어씌우면
+   주변 카드·알약과 재질이 갈려 그 버튼만 회색 상자로 튄다. */
+.poster-page:not(.poster-agenda) .button:not(.primary):not(.danger),
+.poster-page:not(.poster-agenda) .insights-open {
   border-color: var(--gs-metal-line);
   border-radius: var(--gs-metal-radius);
   background: var(--gs-metal-sheen);
   color: var(--gs-metal-ink);
   box-shadow: var(--gs-metal-edge);
 }
-.poster-page .insights-open {
+.poster-page:not(.poster-agenda) .insights-open {
   border-radius: var(--r-pill);
 }
-.poster-page .button:not(.primary):not(.danger):hover:not(:disabled),
-.poster-page .insights-open:hover {
+.poster-page:not(.poster-agenda) .button:not(.primary):not(.danger):hover:not(:disabled),
+.poster-page:not(.poster-agenda) .insights-open:hover {
   border-color: var(--gs-metal-line-strong);
   background: var(--gs-metal-sheen-hover);
   color: var(--gs-metal-ink);

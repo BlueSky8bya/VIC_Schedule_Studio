@@ -87,10 +87,11 @@
   min-height: 44px;
   gap: 4px;
   padding: 8px 6px;
-  font-size: var(--text-label);
+  /* 아래 '편집실'과 같은 글자 크기·한 줄(2026-09-05): 라벨을 "기록"으로 줄여 92px 레일에 한 줄로
+     들어가므로 wrap이 필요 없다. 예전엔 "이 달 기록"이 두 줄로 꺾여 형제보다 키가 컸다. */
+  font-size: var(--text-body);
   font-weight: 800;
-  /* 좁은 레일에서 잘리지 않게 wrap 허용(nowrap이면 '이 달 기'로 잘렸다). */
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.2;
 }
 .agenda-legend-nav {
@@ -6812,16 +6813,21 @@ html[data-reduce-motion] .agenda-detail-close:active {
   justify-content: center;
   border: 1px solid transparent;
   cursor: pointer;
+  /* 안 고른 칸은 조용한 글자 — 계절 배경 세그먼트와 같은 방식(색을 빼지 않고 투명도로). */
+  opacity: var(--seg-off-op);
 }
 .avatar-ctl-preview .avatar-ctl-seg-btn.on {
-  /* 고른 상태 = 옅은 보라 면 + 안쪽 테두리(계절 세그먼트와 같은 강도). */
-  background: linear-gradient(180deg, #fff, #f3efff);
-  border-color: #d9cdf3;
-  color: #4a3a7a;
-  box-shadow: inset 0 0 0 1px rgb(185 169 236 / 55%);
+  /* 고른 칸 = 테두리 없는 옅은 틴트 + 안쪽 흰 헤어라인. 2026-09-05 소유자: 테두리로 강조하니
+     카드 안 '테두리 없는 칸' 문법과 어긋나 혼자 상자처럼 떠 보였다. 토큰은 globals.css. */
+  background: var(--seg-on-accent);
+  color: var(--seg-on-accent-ink);
+  box-shadow: var(--seg-on-edge);
+  opacity: 1;
+  cursor: default;
 }
-.avatar-ctl-preview .avatar-ctl-seg-btn:not(.on) {
-  color: rgb(107 91 138 / 62%);
+.avatar-ctl-preview .avatar-ctl-seg-btn.place-off.on {
+  background: var(--seg-on-quiet);
+  color: var(--seg-on-quiet-ink);
 }
 .account-form .button:hover,
 .viewer-preview-actions .button:hover,
@@ -6829,6 +6835,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
   background: #f4f2fb;
   border-color: #e6e1f4;
   color: #5b4a86;
+  opacity: 1;
 }
 .account-form .button:active,
 .viewer-preview-actions .button:active,

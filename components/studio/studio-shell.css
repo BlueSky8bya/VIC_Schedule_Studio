@@ -10096,6 +10096,18 @@ html[data-reduce-motion] .modal-close:active {
 .m-io-preview:active {
   background: #e3e9f4;
 }
+/* 개발자의 미리보기(드롭다운 트리거)도 같은 알약·같은 슬레이트 틴트 — 역할이 달라도 바닥 레일의
+   재질은 하나다(2026-09-05: 개발자만 크림 사각이라 오늘 알약 옆에서 따로 놀았다). */
+.m-actionrail .preview-dd-trigger {
+  border-radius: var(--r-pill);
+  background: #eef2f9;
+  border-color: #cdd6e6;
+  color: #4a5a78;
+  font-weight: 800;
+}
+.m-actionrail .preview-dd-trigger:active {
+  background: #e3e9f4;
+}
 /* '오늘' 복귀 — 핵심 시간 기준점이므로 전역 accent 의미를 그대로 쓴다. */
 .m-io-today {
   background: var(--accent-soft);
@@ -10343,6 +10355,16 @@ html[data-reduce-motion] .m-edit-x:active {
 }
 .me-fold-body {
   animation: fold-open var(--dur-3) var(--ease-enter) both;
+  /* 옵션 칩 사이 간격은 여기서 한 번에 정한다(2026-09-05 소유자: "아직 확정 아님과 업 도움/기간 안내
+     사이에 패딩이 아예 없다"). 예전엔 칩의 margin-top(4)만 있고 .band-kind-row는 0이라
+     [확정]↔[업 도움/기간 안내]만 붙어 있었다 — 컨테이너가 gap을 주고 자식 마진은 0으로 통일. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1); /* 4 — 기존 [업 도움]↔[일정 최초공개] 간격과 같은 값 */
+}
+.me-fold-body > *,
+.me-fold-body .opt-chip {
+  margin-top: 0;
 }
 html[data-reduce-motion] .me-fold-body {
   animation: none;

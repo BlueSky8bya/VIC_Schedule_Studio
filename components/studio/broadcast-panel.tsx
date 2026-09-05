@@ -3860,10 +3860,8 @@ export function BroadcastPanel({
     <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="일정 그림판" ref={rootRef}>
       <header className="bp-header">
         <h2>🖊️ 일정 그림판</h2>
-        <p className="bp-hint">
-          달력에서 날짜를 골라 <strong>그림판으로 보내기</strong> · 선택 도구로 카드를 끌어
-          이동/크기 조절 — 창을 닫으면 모두 사라져요
-        </p>
+        {/* 사용법 한 줄 설명 제거(2026-09-05 소유자: "주저리 설명 다 없애") — 버튼 이름
+            ('그림판으로 보내기')과 도구 모음이 이미 같은 말을 하고 있었다. */}
         <button
           aria-label="일정 그림판 닫기"
           className="bp-close"

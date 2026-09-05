@@ -4,6 +4,7 @@ import {
   ArrowLeftToLine,
   ArrowRightToLine,
   CalendarCheck,
+  ChartColumn,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -3731,15 +3732,20 @@ export function PublicPoster({
               // 레일 버튼은 바로 아래 '편집실'과 나란히 서므로 같은 표준 버튼(.button)으로 그린다 —
               // 예전엔 헤더용 글래스 알약(.insights-open)을 그대로 써서 옆 버튼과 모양·높이·라운드가
               // 다 달랐다(같은 자리, 같은 크기, 다른 옷 = 불편함).
+              aria-label="이 달 기록"
               className="button agenda-legend-insights"
               onClick={() => {
                 hapticTick();
                 setInsightsOpen(true);
               }}
-              title="이 달 방송·일정 기록 보기"
+              title="방송 시간 · 태그 통계"
               type="button"
              data-act="이 달 기록 보기">
-              📊 이 달 기록
+              {/* 92px 레일에서 "📊 이 달 기록"은 두 줄로 꺾여 바로 아래 '편집실'보다 키가 컸다
+                  (형제 높이가 어긋나면 결함). 가장 짧게 통하는 이름 "기록"으로 줄이고, 아이콘도
+                  이모지 대신 lucide로 — 형제(ChevronLeft)와 어휘를 맞춘다(2026-09-05). */}
+              <ChartColumn aria-hidden="true" size={16} />
+              기록
             </button>
           ) : null}
           {/* 미리보기 '편집실로 가기'는 색상 필터 박스 '아래'에 — 박스가 vh 고정이라 스크롤해도
@@ -4280,7 +4286,9 @@ export function PublicPoster({
 
   return (
     <main
-      className={`poster-page${accountSwitch ? " poster-readonly" : ""}${
+      /* poster-agenda = 모바일(아젠다) 표식 — 금(金) 스킨 같은 웹 전용 재질을 이 아래로 내려보내지
+         않기 위한 문(2026-09-05, poster-metal-water.css). 판정은 JS 한 곳(showAgenda)에서만. */
+      className={`poster-page${showAgenda ? " poster-agenda" : ""}${accountSwitch ? " poster-readonly" : ""}${
         avatarCapable && avatarOn ? ` avatar-scene avatar-${avatarSide}` : ""
       }${
         // 태그 필터 중엔 꾸미기 스티커도 함께 물러난다(일정 카드와 같은 흐림) — 꾸미기

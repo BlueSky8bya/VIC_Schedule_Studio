@@ -341,10 +341,24 @@ private layers is retired — ADR-0014; the server model stays.)
   native `title` that fires when the label is already on screen; label visible but the *effect* isn't obvious →
   the tooltip states the **effect**, ≤ ~20 chars, no parenthetical asides ("시청자가 보는 그대로 보기",
   "옅게 — 일정이 잘 보이게"). Keep `aria-label` as the name in every case.
-- **No decorative icons.** An icon must add what the words can't — identity when folded, a shortcut, a state.
-  A glyph that merely repeats or contradicts the label is a defect (2026-09-05: the 감상 나가기 pill carried an
-  eye — "보다" on the button that stops looking; the pencil beside it was an emoji among lucide strokes). One
-  icon vocabulary per card: lucide strokes in chrome, emoji only in the viewer's playful surfaces.
+- **No decorative icons, and one per control.** An icon must add what the words can't — identity when folded,
+  a shortcut, a state. A glyph that merely repeats or contradicts the label is a defect (2026-09-05: the 감상
+  나가기 pill carried an eye — "보다" on the button that stops looking; the pencil beside it was an emoji among
+  lucide strokes; the 미리보기 trigger wore an eye *and* a ▾). When a control would take two, keep the one that
+  survives folding — the leading icon — and let `aria-haspopup` + the menu itself say the rest. One icon
+  vocabulary per group: lucide strokes in chrome, emoji only in the viewer's playful surfaces.
+- **Web materials stop at the mobile boundary** (2026-09-05 owner: 오늘 · 미리보기 · 태그 편집 · 로그아웃 ·
+  이 달 기록 · 편집실 "혼자 딱딱하다"). The metal skin (ADR-0016) is the grammar of a **standing button on web**.
+  Mobile already has its own: cream faces, 12px/pill radii, meaning-tinted chips (태그 = violet · 미리보기 =
+  slate · 오늘 = accent). Painting grey metal over that erased the whole language and left those buttons as the
+  only foreign material on the screen. The gate is a **class, not a media query** — `.studio-shell.studio-narrow`
+  and `.poster-page.poster-agenda`, set from the same JS that chooses the topology, because `STUDIO_AGENDA_QUERY`
+  has a second clause (a phone lying down: `max-height: 640` + `pointer: coarse`) that a `min-width` query
+  silently misses. Any new web-only material must pass through the same gate.
+- **State segments share one highlight technique** — tokens `--seg-on-*` / `--seg-off-op` in `globals.css`
+  (2026-09-05). Selected = a soft tint fill + an inset white hairline, never a border; unselected = the same ink
+  at `--seg-off-op`. A border-boxed "selected" chip inside a card fights the card's borderless-cell grammar and
+  reads as a foreign object (계절 배경 and 아바타 자리 now draw from the same tokens).
 - **Design unity:** symmetric L/R padding, reused tokens/components, shared motion vocabulary.
   One-off styles, imbalance, or ragged sibling heights = defect; new UI must look native.
 - **Fill empty space by content** (scale value/icon up, redistribute) — don't stretch an
