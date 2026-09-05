@@ -20,9 +20,11 @@ import {
   Keyboard,
   LogOut,
   Pencil,
+  Pin,
   Plus,
   Save,
   Settings,
+  Sprout,
   Tags,
   Trash2,
   X
@@ -5124,7 +5126,12 @@ export function StudioShell({
                             <span className="agenda-bar" style={{ background: "#84b74f" }} />
                             <div className="agenda-content">
                               <p className="agenda-title">
-                                <span className="agenda-title-text">🌱 {event.publicTitle}</span>
+                                <span className="agenda-title-text">
+                                  <i aria-hidden="true" className="sb-sprout">
+                                    <Sprout size={13} strokeWidth={2.2} />
+                                  </i>{" "}
+                                  {event.publicTitle}
+                                </span>
                                 {event.visibilityScope !== "public" ? (
                                   <span className={`m-scope-badge ${event.visibilityScope}`}>
                                     {SCOPE_LABEL[event.visibilityScope]}
@@ -5193,9 +5200,16 @@ export function StudioShell({
                                 {!event.isSupport && event.isTentative ? (
                                   <span className="evt-tentative">미정</span>
                                 ) : null}
-                                {event.isSupport
-                                  ? `${event.supportKind === "period" ? "📌" : "🌱"} ${teaserStillHidden(event) ? "???" : event.publicTitle}`
-                                  : main}
+                                {event.isSupport ? (
+                                  <>
+                                    <i aria-hidden="true" className="sb-sprout">
+                                      {event.supportKind === "period" ? <Pin size={13} strokeWidth={2.2} /> : <Sprout size={13} strokeWidth={2.2} />}
+                                    </i>{" "}
+                                    {teaserStillHidden(event) ? "???" : event.publicTitle}
+                                  </>
+                                ) : (
+                                  main
+                                )}
                               </span>
                               {teaserStillHidden(event) ? (
                                 <span className="m-teaser-badge" title={teaserBadgeTitle(event.teaserRevealAt)}>
@@ -6507,7 +6521,7 @@ export function StudioShell({
                         {showLabel ? (
                           <span>
                             <i className="sb-sprout" aria-hidden="true">
-                              {s.supportKind === "period" ? "📌" : "🌱"}
+                              {s.supportKind === "period" ? <Pin size={13} strokeWidth={2.2} /> : <Sprout size={13} strokeWidth={2.2} />}
                             </i>
                             {solo ? <b className="sb-title">{s.publicTitle}</b> : s.publicTitle}
                           </span>

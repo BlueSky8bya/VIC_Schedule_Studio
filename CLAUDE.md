@@ -355,6 +355,15 @@ private layers is retired — ADR-0014; the server model stays.)
   and `.poster-page.poster-agenda`, set from the same JS that chooses the topology, because `STUDIO_AGENDA_QUERY`
   has a second clause (a phone lying down: `max-height: 640` + `pointer: coarse`) that a `min-width` query
   silently misses. Any new web-only material must pass through the same gate.
+- **Marks inside a day cell are inlaid, not applied** (2026-09-05 owner: "각각의 엔티티가 그냥 위에
+  얹어져 있는 느낌"). A calendar cell used to hold four rendering models at once — a saturated blue
+  gradient disc with a blue glow (다시보기 ▶), a full-colour raster emoji (🌱/📌 on the band), a thin
+  text glyph (♡), and a colour swatch lifted off the card by a white ring + drop shadow (tag dots).
+  The rule now: every **chrome** mark in a cell or agenda row is a lucide stroke at one weight, drawn
+  in the ink of whatever it sits on (the band's rose/cyan, the cell's blue), with **no drop shadow and
+  no white ring** — depth is an inset hairline at most. Saturated colour is reserved for **data**: tag
+  swatches and the heart's ON state. Emoji stay only where they have no stroke-icon neighbours (the
+  editor's option chips). Icon slots: 13px for band marks, 14px for the heart, 11px for ▶.
 - **State segments share one highlight technique** — tokens `--seg-on-*` / `--seg-off-op` in `globals.css`
   (2026-09-05). Selected = a soft tint fill + an inset white hairline, never a border; unselected = the same ink
   at `--seg-off-op`. A border-boxed "selected" chip inside a card fights the card's borderless-cell grammar and

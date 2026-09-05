@@ -948,13 +948,20 @@ html[data-reduce-motion] .mb-live-dot {
   place-items: center;
   width: 20px;
   height: 20px;
-  padding-left: 2px; /* ▶ 글리프 광학 중심 보정 */
   border-radius: 50%;
-  background: linear-gradient(135deg, #5d8bf4, #3564e0);
-  color: #fff;
-  font-size: 9px;
-  box-shadow: 0 3px 9px rgb(53 100 224 / 38%);
+  /* 2026-09-05 소유자("표식들이 그냥 위에 얹어져 있다"): 채도 높은 파란 원판 + 파란 글로우는
+     칸에서 가장 시끄러운 물체였고, 혼자만 떠 있는 재질이었다. 칸의 파랑을 아주 옅게 깐 조용한
+     원판 + 안쪽 헤어라인으로 **칸에 새겨 넣는다**(그림자 없음). '여기가 눌린다'는 칸 전체의
+     파란 링이 이미 말하고, 이 표식은 '무슨 동작인지'만 말하면 된다. */
+  background: rgb(30 90 168 / 13%);
+  color: var(--studio-action, #1e5aa8);
+  box-shadow: inset 0 0 0 1px rgb(30 90 168 / 20%);
   pointer-events: none;
+}
+.day-vod-hint svg {
+  /* 삼각형은 광학적으로 왼쪽이 무겁다 — 1px 밀어 원의 중심에 앉힌다(글리프 시절의 padding 대체). */
+  margin-left: 1px;
+  fill: currentColor;
 }
 .public-day.has-vod:hover .day-vod-hint {
   display: grid;
@@ -2447,9 +2454,17 @@ body.cell-range-dragging {
   outline: 2px solid #9f1239;
   outline-offset: 1px;
 }
-.support-bar .sb-sprout {
+/* 띠 아이콘 슬롯 — 2026-09-05부터 이모지가 아니라 lucide 선 아이콘이 들어온다(띠 글자색을 그대로
+   물려받아 '띠 위의 스티커'가 아니라 띠의 일부로 읽힌다). 아젠다 제목 줄도 같은 클래스를 쓴다. */
+.sb-sprout {
   font-style: normal;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -2px;
+  opacity: 0.8;
+}
+.sb-sprout svg {
+  display: block;
 }
 .support-bar.is-clickable.is-hover .sb-sprout {
   animation: sb-sprout-hop 0.5s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1));
@@ -4045,9 +4060,10 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   background: transparent;
   padding: 0;
   color: inherit;
-  font-size: var(--text-body);
   line-height: 1;
-  opacity: 0.45;
+  /* 글리프(♡/♥) → lucide Heart(2026-09-05): 이웃 표식과 같은 획으로 그려져야 한 가족으로 읽힌다.
+     상자는 18px 그대로 — export 표면의 줄바꿈이 1px도 안 바뀐다(ADR-0004). */
+  opacity: 0.5;
   cursor: pointer;
   transition:
     opacity var(--dur-1) var(--ease),
@@ -4907,7 +4923,10 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   border-radius: 3px;
   border: 1px solid rgb(0 0 0 / 26%);
   box-sizing: border-box;
-  box-shadow: 0 0 0 1.5px rgb(255 255 255 / 92%), 0 1px 2px rgb(17 24 39 / 22%);
+  /* 흰 링(1.5px) + 드롭섀도는 캔디 무늬 위 대비용이었는데 무늬는 2026-07에 폐지됐다. 남은 건
+     '카드에서 들려 있는 스티커' 느낌뿐이라 걷어내고(2026-09-05 소유자), 위쪽 하이라이트 한 줄만
+     남겨 카드에 박힌 색으로 읽히게 한다. */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%);
 }
 @media (min-width: 641px) {
   .pill-dots i {
@@ -6795,13 +6814,17 @@ html[data-reduce-motion] .agenda-detail-close:active {
 /* ── 아바타 자리 = 상태 셋 라디오 [끔 | 왼쪽 | 오른쪽] (2026-09-05 대개편, public-poster.tsx 참고).
    옛 모양은 한 카드 안에 문법이 둘이었다(다음 동작이 라벨인 토글 + 현재 상태가 채워지는 라디오)
    — 계절 배경 세그먼트(.ambient-seg)와 같은 문법으로 통일하고, 이름은 카드 머리의 조용한 칸으로 뺐다. */
+/* 캡션 — 버튼이 아니라 '주어'임이 한눈에 보이게: 조용한 잉크, 얇은 글자, 그리고 버튼 묶음과의
+   사이에 헤어라인 한 줄(2026-09-05 소유자: "옆에 토글이 있는데 혼자 안 눌리는 텍스트가 불편"). */
 .avatar-ctl-preview .avatar-ctl-name {
   align-self: center;
-  padding: 0 4px 0 8px;
+  margin-right: 4px;
+  padding: 3px 9px 3px 8px;
+  border-right: 1px solid rgb(120 110 150 / 16%);
   color: var(--muted, #8a8077);
   font-size: var(--text-caption);
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 .avatar-ctl-preview .avatar-ctl-seg {

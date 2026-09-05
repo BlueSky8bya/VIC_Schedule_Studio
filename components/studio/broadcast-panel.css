@@ -50,17 +50,12 @@ html[data-reduce-motion] .broadcast-panel > * {
   color: #4b4468;
   letter-spacing: 0.01em;
 }
-.bp-hint {
-  flex: 1;
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-.bp-hint strong {
-  color: var(--violet);
-}
+/* (.bp-hint — 머리말의 사용법 한 줄 설명은 2026-09-05 폐지. 닫기 버튼을 오른쪽으로 밀던 flex:1도
+   함께 사라져 .bp-close가 margin-left:auto로 제자리를 잡는다.) */
 .bp-close {
+  /* 닫기는 늘 오른쪽 끝. 예전엔 가운데 안내문(.bp-hint, flex:1)이 밀어 준 덕이었는데 그 문장을
+     걷어내자(2026-09-05) 제목 바로 옆으로 붙었다 — 이제 스스로 오른쪽으로 간다. */
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1989,11 +1984,6 @@ html[data-reduce-motion] .bp-stroke-sel {
   letter-spacing: var(--tracking-tight);
 }
 
-.bp-hint {
-  color: var(--muted);
-  font-size: var(--text-body);
-  line-height: var(--lh-body);
-}
 
 .bp-close {
   width: var(--control-hit);
@@ -2674,11 +2664,6 @@ html[data-reduce-motion] .bp-layer-add:active {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .bp-hint {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 
   /* 오버레이 구도에선 기둥 래퍼를 해제(달력만 플로팅). */
   .bp-source-col {
@@ -2731,9 +2716,6 @@ html[data-reduce-motion] .bp-layer-add:active {
     font-size: var(--text-ui);
   }
 
-  .bp-hint {
-    display: none;
-  }
 
   .bp-picker {
     top: calc(var(--control-hit) + var(--space-3));

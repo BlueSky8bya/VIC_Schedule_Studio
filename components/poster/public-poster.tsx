@@ -11,8 +11,10 @@ import {
   Heart,
   LogIn,
   LogOut,
+  Pin,
   Play,
   Power,
+  Sprout,
   X
 } from "lucide-react";
 import {
@@ -3110,7 +3112,7 @@ export function PublicPoster({
             cellVods가 없어 DOM 자체가 없다. */}
         {cellVods ? (
           <span aria-hidden="true" className="day-vod-hint">
-            ▶
+            <Play size={11} strokeWidth={2} />
           </span>
         ) : null}
         {supportHere.map((s) => {
@@ -3190,7 +3192,7 @@ export function PublicPoster({
           const bandInner = showLabel ? (
             <span>
               <i className="sb-sprout" aria-hidden="true">
-                {period ? "📌" : "🌱"}
+                {period ? <Pin size={13} strokeWidth={2.2} /> : <Sprout size={13} strokeWidth={2.2} />}
               </i>
               {solo ? <b className="sb-title">{s.publicTitle}</b> : s.publicTitle}
               {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감). 기간 안내는 링크가
@@ -3498,7 +3500,7 @@ export function PublicPoster({
                       title={bookmarked ? "관심 표시됨 · 다시 누르면 취소" : "관심 표시"}
                       type="button"
                      data-act="event-heart">
-                      {bookmarked ? "♥" : "♡"}
+                      <Heart aria-hidden="true" fill={bookmarked ? "currentColor" : "none"} size={14} strokeWidth={2.2} />
                     </button>
                   ) : null}
                 {/* 형식색 점은 편집실과 똑같이 '마지막 서브 줄 오른쪽'에 함께 둔다 — 서브와 한 줄에
@@ -3968,7 +3970,14 @@ export function PublicPoster({
                                 <span className="evt-tentative">미정</span>
                               ) : null}
                               {support
-                                ? `${event.supportKind === "period" ? "📌" : "🌱"} ${event.publicTitle}`
+                                ? (
+                                  <>
+                                    <i aria-hidden="true" className="sb-sprout">
+                                      {event.supportKind === "period" ? <Pin size={13} strokeWidth={2.2} /> : <Sprout size={13} strokeWidth={2.2} />}
+                                    </i>{" "}
+                                    {event.publicTitle}
+                                  </>
+                                )
                                 : justRevealed.has(rawEvent.id)
                                   ? <ScrambleText text={main} />
                                   : main}
@@ -3982,7 +3991,7 @@ export function PublicPoster({
                                 title={bookmarked ? "관심 표시됨 · 다시 누르면 취소" : "관심 표시"}
                                 type="button"
                                data-act="event-heart">
-                                {bookmarked ? "♥" : "♡"}
+                                <Heart aria-hidden="true" fill={bookmarked ? "currentColor" : "none"} size={14} strokeWidth={2.2} />
                               </button>
                             ) : null}
                           </p>
@@ -4709,7 +4718,12 @@ export function PublicPoster({
                           <span className="evt-tentative">미정</span>
                         ) : null}
                         {support ? (
-                          `${event.supportKind === "period" ? "📌" : "🌱"} ${event.publicTitle}`
+                          <>
+                            <i aria-hidden="true" className="sb-sprout">
+                              {event.supportKind === "period" ? <Pin size={13} strokeWidth={2.2} /> : <Sprout size={13} strokeWidth={2.2} />}
+                            </i>{" "}
+                            {event.publicTitle}
+                          </>
                         ) : detailJustRevealed ? (
                           <ScrambleText text={main} />
                         ) : (
@@ -4924,9 +4938,13 @@ export function PublicPoster({
           viewport 고정(fixed)은 스크롤을 따라 내려와 달력을 가려서 뺐다 — 페이지와 함께 스크롤된다.
           켜짐엔 끄기+위치(왼/오른쪽), 꺼짐엔 켜기. 데스크탑·관리자 전용. */}
       {avatarCapable && !avatarFixed && !showAgenda ? (
-        <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타 자리">
+        <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타">
+          {/* 2026-09-05 소유자: 점선 안내 박스를 없앤 뒤로 "아바타 자리"의 '자리'가 가리킬 대상이
+              화면에 없어 어색해졌고, 버튼 옆의 '안 눌리는 글자'는 짧을수록 덜 거슬린다.
+              주어는 "아바타" 하나면 충분하다 — 뒤의 세 칸이 그 상태(끔·왼쪽·오른쪽)를 말한다.
+              캡션임이 한눈에 보이도록 얇은 세로 구분선을 두어 버튼 묶음과 갈라 놓는다(CSS). */}
           <span aria-hidden="true" className="avatar-ctl-name">
-            아바타 자리
+            아바타
           </span>
           <div className="avatar-ctl-seg" role="radiogroup" aria-label="아바타 자리 위치">
             {(
