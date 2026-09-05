@@ -11,6 +11,7 @@ import { GROUND_SQUASH, bakeHorizon, horizonY, moveScale, ySort } from "../world
 import { ASSET, loadSprite, type Sprite } from "../assets";
 import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 import { currentLight } from "../world/light";
+import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
 
 type Shadow = { x: number; y: number; hd: number; spd: number; k: number; ph: number };
 
@@ -20,14 +21,14 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
   let w = 0;
   let h = 0;
   let water: HTMLCanvasElement | null = null;
-  let sky: HTMLCanvasElement | null = null;
+  let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
+  let skyKeyCur = "";
   let horizon: HTMLCanvasElement | null = null;
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
   const glints: { x: number; y: number; ph: number; r: number }[] = [];
   const shadows: Shadow[] = [];
-  let stars: { x: number; y: number; r: number; ph: number }[] = [];
   const trail = newTrail();
   // 물고기 = **물 밑 실루엣**(연못과 같은 PD top-view 도안). 옛 코드의 타원 두 개는 "얼룩"으로 읽혔다(검토 2차).
   const FISH_SPR = 80;
@@ -43,25 +44,8 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
     const skyLo = deep ? undefined : "#eef5fa";
     water = bakeWater(w, h, deep ? 0 : top(), dpr, pal, seed, false, skyLo);
     // 하늘 한 줄 — 수평선 위 12%: 옅은 하늘빛(밤·노을 톤은 엔진 tint가 얹는다). 깊은 바다는 더 어둑한 하늘.
-    const { c, g } = (() => {
-      const cv = document.createElement("canvas");
-      cv.width = Math.max(1, Math.ceil(w * dpr));
-      cv.height = Math.max(1, Math.ceil(top() * dpr) + 2);
-      const ctx = cv.getContext("2d")!;
-      ctx.scale(dpr, dpr);
-      return { c: cv, g: ctx };
-    })();
-    const grad = g.createLinearGradient(0, 0, 0, top());
-    grad.addColorStop(0, deep ? "#aebfcf" : "#dbe8f1");
-    grad.addColorStop(1, deep ? "#c9d6e2" : "#eef5fa");
-    g.fillStyle = grad;
-    g.fillRect(0, 0, w, top() + 2);
-    sky = c;
     // 수평선 — 뭍 장면과 같은 지평선 띠(sea 프로파일: 안개만). 1.5px 흰 자를 대신한다.
     horizon = bakeHorizon(season, w, h, 1, "sea");
-    stars = [];
-    const r0 = rng(seed * 5 + 1);
-    for (let i = 0; i < 40; i++) stars.push({ x: r0() * w, y: r0() * top() * 0.85, r: 0.6 + r0() * 1.1, ph: r0() * TAU });
     gw = w;
     gh = h;
     gdpr = dpr;
@@ -127,18 +111,18 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
     },
     draw(g, f) {
       const t = f.t;
-      if (sky && !deep) g.drawImage(sky, 0, 0, f.w, sky.height / (gdpr || 1));
-      if (f.time.night && stars.length) {
-        for (const s of stars) {
-          const a = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(t * 1.1 + s.ph));
-          g.fillStyle = `rgb(255 255 255 / ${a})`;
-          g.beginPath();
-          g.arc(s.x, s.y, s.r, 0, TAU);
-          g.fill();
+      // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판 + 별·달·해(옛 자체 별 40개는 공용으로). 깊은 바다는 수평선이 없어 없다.
+      if (!deep) {
+        const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
+        if (!skyC || sk !== skyKeyCur) {
+          skyC = bakeSky(season, f.weather.now, f.time.band, f.w, f.h, seed);
+          skyKeyCur = sk;
         }
+        g.drawImage(skyC, 0, 0, f.w, skyC.height);
       }
       if (water) g.drawImage(water, 0, 0, f.w, f.h);
       if (horizon && !deep) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      if (!deep) drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
       // 먼바다 = 파장 14~100m → 한 화면에 마루 여럿. 깊은 바다 = 225~624m → **큰 너울 한 번**.
       // (2026-09-04 조사. 옛 코드는 깊은 바다에 수면 문법을 아예 안 그려 두 화면이 '불투명도만 다른 같은 그림'이었다 —
       //  검토 라운드2 미관 #4.)

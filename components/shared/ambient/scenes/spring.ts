@@ -33,6 +33,7 @@ import { currentLight, shadowKey } from "../world/light";
 import type { DayBand } from "../world/time";
 import type { Weather } from "../world/weather";
 import { drawGlints } from "./water";
+import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
@@ -160,6 +161,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   const groundArt = new ArtSet(["clover", "daisy", "grass-tuft", "grass-tall", "dandelion-puff", "dandelion-flower", "shrub-spring", "shrub-summer", "rock", "stump"]);
   let gav = -1;
   let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
+  let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
+  let skyKeyCur = "";
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠
   // 땅의 위 끝(지평선) — 꽃·풀·벌레·나비·민들레는 이 아래에서만(지평선 띠는 먼 곳).
   const gy = () => horizonY(h);
@@ -438,7 +441,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   const hopTarget = (load: number, band: DayBand, wx: Weather) => Math.round((summer ? (load >= 0.75 ? 3 : load >= 0.35 ? 2 : 1) : 0) * BAND_K[band] * WX_WALK[wx]);
   // 봄 밤의 "작은 움직임 1종"(GRAMMAR §2.1 밤 하한 — 봄엔 반딧불이 없다): 풀잎 이슬이 달빛에 반짝인다. 자리는 결정적, 깜박임은 t.
   const dews: { x: number; y: number; ph: number; r: number }[] = [];
-  const dewTarget = (f: Frame) => (!summer && (f.time.band === "night" || f.time.band === "dawn") && f.weather.now !== "rain" && f.weather.now !== "fog" ? Math.round(lerp(6, 12, f.load)) : 0);
+  const dewTarget = (f: Frame) =>
+    !summer && (f.time.band === "night" || f.time.band === "dawn" || f.time.band === "evening") && f.weather.now !== "rain" && f.weather.now !== "fog"
+      ? Math.round(lerp(6, 12, f.load) * (f.time.band === "evening" ? 0.7 : 1)) // 저녁도(라운드 5 C#9: 봄 저녁은 움직임 0이었다)
+      : 0;
   // 여름 밤의 반딧불(GRAMMAR §2.1 밤 "작은 움직임 ≥ 1종") — 풀 위 낮게, 느리게 떠돌며 깜박인다. 저녁엔 절반, 봄엔 없다(한국 반딧불은 6~8월).
   type Firefly = { x: number; y: number; vx: number; vy: number; ph: number; k: number };
   const fireflies: Firefly[] = [];
@@ -1248,8 +1254,19 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     draw(g, f) {
       const { t, load } = f;
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
+      {
+        const sk = skyKey(variant, f.weather.now, f.time.band, f.w, f.h);
+        if (!skyC || sk !== skyKeyCur) {
+          skyC = bakeSky(variant, f.weather.now, f.time.band, f.w, f.h, seed);
+          skyKeyCur = sk;
+        }
+        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+      }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개.
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
+      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.3, { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {

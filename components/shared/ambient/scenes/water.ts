@@ -186,7 +186,8 @@ export function drawWaterLight(g: CanvasRenderingContext2D, t: number, w: number
   const H = bottom - top;
   if (k <= 0.01 || H < 20) return;
   const x = w * L.reflect.x;
-  const a = (opts.alpha ?? 0.95) * k;
+  // 물 구역이 좁은 해안·민물(높이 < 260px)은 띠가 눌려 보인다(라운드 5 C#5: 노을 2.4~2.9 vs 기준 4) — 세기 ×1.6.
+  const a = (opts.alpha ?? 0.95) * k * (H < 260 ? 1.6 : 1);
   const wk = opts.widthK ?? 1;
   const w0 = w * 0.04 * wk;
   const w1 = w * 0.17 * wk;

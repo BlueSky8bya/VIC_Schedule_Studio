@@ -32,6 +32,7 @@ import { artSlot } from "../art/manifest";
 import { drawProp, drawSubmerged } from "../art/props";
 import { SIZE } from "../world/scale";
 import { currentLight } from "../world/light";
+import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import type { SeasonKey } from "../registry";
 import { bakeWater, drawGlints, drawTrail, drawWaterLight, newTrail, stepTrail, waterPalette } from "./water";
@@ -334,6 +335,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
   // 물가 선(캔버스 px) — 위 띠는 뭍(기슭)이라 물고기·오리·빗방울·글린트는 이 아래에서만.
   const shoreY = () => h * SHORE_V + 6;
+  let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
+  let skyKeyCur = "";
   // (옛 `waterY(r)` = shoreY() 기준 균일 분포는 제거 — 아래 `waterYAt(x, r)`만 쓴다.)
   // 물가 선의 **실제** y(x별) — 기슭 굽기(bakeShore)의 뭍 경계와 같은 식. shoreY()는 물의 위쪽 한계일 뿐이고 뭍은 그 아래
   // 최대 ~110px까지 내려온다(만곡 44 + 만·곶 ±61). 옛 코드는 shoreY() 기준으로 생물·글린트·포인터 물결을 놓아 오리가 뭍을
@@ -1433,8 +1436,18 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       }
       // 3/4 시점의 지평선 띠 — 먼 것이 안개에 잠긴다. **기슭보다 먼저** 그린다(옛 순서는 안개가 기슭을 덮어
       // 물가가 이중선으로 보였다, 2026-09-04 검토 1차).
+      // 하늘(라운드 5, world/sky.ts) — 먼 기슭 위 하늘 띠. 계절 × 날씨 판, 지평선 띠 아래.
+      {
+        const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
+        if (!skyC || sk !== skyKeyCur) {
+          skyC = bakeSky(season, f.weather.now, f.time.band, f.w, f.h, seed);
+          skyKeyCur = sk;
+        }
+        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+      }
       if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon(season, f.w, f.h, 1);
       g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.3, { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
       // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
       if (shore) g.drawImage(shore, 0, horizonY(f.h));
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });

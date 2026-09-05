@@ -13,6 +13,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **앰비언트 비주얼 QA 라운드 5 완료(2026-09-06, `docs/ambient/rounds/ROUND-05.md`)** — 세 묶음. ① **산 구조**: B#1 "산 층 순서가 뒤집혀
+  있다"(봉우리 캔버스가 바탕의 ③·④ 소품 위에 그려져 먼 것이 가까운 것을 덮음) → 봉우리·애추 띠·원경 침엽수를 **바탕 캔버스에 소품보다 먼저**
+  굽고 봉우리 캔버스 폐지(발치 컷은 땅색 덧칠), ③ 애추 띠(계단 다각형) + 침엽수 α 1(안개색 mix), ① 꼭대기 반사 걸음(평탄 고원 제거), 능선선
+  2px 격자 픽셀 계단(1차가 너무 굵어 2차 톤다운), 능선 위 하늘 림 광. B rect 가을 점심 하늘↔①/①↔②/②↔③/③↔④ = 4.7/8.6/8.1/11.3(before
+  2.2/7.2/11.5/13.2, ①↔②·②↔③ 재배분), 겨울 ②cap↔③ 18.5. 잔여: 여름 새벽 하늘↔① 2.1, 밤 ①↔②/②↔③ 4.7/4.3. ② **언덕**: 능선 그늘을
+  `hillShade` 오버레이로 그림자 길이 비례(점심 0·노을 1), 띠 3 강화, 노두·나무 발을 능선 함수 위에, 억새 이삭 톤 −20. ③ **하늘(소유자
+  요청 "밤하늘·천고마비·비 구름·음력 달")**: 신규 `world/sky.ts` — 계절×날씨×**띠** 판(조명 패스 전 값, 가을 점심 134 170 208 최심 청, 밤
+  천정 어둡고 지평선 밝음), 1/3 해상 픽셀 구름(흐림 .85·비 .95·눈 .8·바람 새털), 별(밤·맑음, 깜박임, 보름에 옅게), **달 = 실제 음력 위상**
+  (`moonPhase` 삭망월 29.530588853일·기준 삭 2000-01-06 18:14 UTC, 오프스크린 터미네이터, 삭엔 없음, x = 수면 빛의 길 x), 새벽/노을 해 원반;
+  8 장면 통합(순서 ground → sky → horizon → skyLive, 산은 ① 능선 위 clip; 별·달 상한 = 육지 hz·.3 / 산 능선 / 바다 top·.9), `bakeHorizon`
+  위 안개 .55 → .18 + 먼 숲 실루엣 세 종(롤리팡 제거), coast/sea 자체 하늘·별 제거. **점심·맑음 항등은 의도적으로 깨짐**(하늘·능선·③·언덕 —
+  새 기준선 = 라운드 5 after). 절차: 에이전트 종료까지 서버 고정 ✓(B·C가 해시로 확인). 열린 결정: A "밤엔 산이 하늘보다 어둡다"(반전) 미채택,
+  구름 흐름 미구현(K1-02), fixture `m·day` 파라미터. 다음 = 라운드 6(그림자 코어 T1-03 잔여 + 물가 접촉 묶음).
 - **앰비언트 비주얼 QA 라운드 4 완료(2026-09-05~06, `docs/ambient/rounds/ROUND-04.md`)** — 주제 "밤·전환 묶음": 라운드 3 C의 진단 "조명은 섰지만
   소비자가 없다"를 해소. ① **소품 발밑 그림자**가 조명을 읽는다(`art/props.ts propShadow` — scatterProps·초원/가을/겨울/육지/해안 bake +
   `land.ts` 지역 `shadow()`·drawTree, 해 반대쪽으로 늘고 농도는 띠·날씨, 길어지면 몸통 농도 유지; 전이가 끝나면(`Frame.lightStable`)
@@ -1930,7 +1943,7 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Next Exact Steps
 
--1. **앰비언트 비주얼 QA 라운드 5**(라운드 1~4 완료 2026-09-06; 첫 후보 산 구조 묶음 AMB-D1-02 + D1-03, 산 층은 B.md rect로) — 절차는 QA_PROGRESS §6. 이전 라운드 4 메모: 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 04 --phase before`
+-1. **앰비언트 비주얼 QA 라운드 6**(라운드 1~5 완료 2026-09-06; 첫 후보 AMB-T1-03 잔여(그림자 코어 하한) + 물가 접촉 묶음 S4-03/S4-06/S4-05/F1-06) — 절차는 QA_PROGRESS §6. 이전 라운드 4 메모: 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 04 --phase before`
    (+ `--only 3,4 --kinds long`) → `sheet`·`diff` → `light-probe.mjs` → 에이전트 3 **동시** 검토 → 통합(P0 전부 + 입구 묶음 ≤ 4) — 첫 후보
    **AMB-T1-03**(소품 그림자 ← `light.shadow` 재굽기 + 수면 노을 반사·밤 달빛 띠) + **AMB-T1-02**(밤 생물 풀) "밤·전환 묶음" → 수정 → 게이트
    → `--phase after` → `--compare before,after` → `docs/ambient/rounds/ROUND-04.md`. 산 층은 `ROUND-03-reports/B.md`의 다섯 rect 표를 프로브

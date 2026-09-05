@@ -22,6 +22,7 @@ import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
 import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
+import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
 import { PRINT_K, SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 
@@ -78,6 +79,8 @@ export function createWinter(seed: number): Scene {
   const groundArt = new ArtSet(["snow-pile", "shrub-winter", "rock", "grass-dry", "twig"]);
   let gav = -1;
   let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
+  let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
+  let skyKeyCur = "";
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(흰 언덕·나목 줄)
   // 땅의 위 끝(지평선) — 자국·손님·토끼·눈송이 착지는 이 아래에서만(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 발자국이 찍힌다").
   const gy = () => horizonY(h);
@@ -890,8 +893,19 @@ export function createWinter(seed: number): Scene {
     },
     draw(g, f) {
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
+      {
+        const sk = skyKey("winter", f.weather.now, f.time.band, f.w, f.h);
+        if (!skyC || sk !== skyKeyCur) {
+          skyC = bakeSky("winter", f.weather.now, f.time.band, f.w, f.h, seed);
+          skyKeyCur = sk;
+        }
+        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+      }
       // 3/4 시점의 지평선 띠(위 12%) — 흰 언덕·나목 줄·안개.
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
+      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.3, { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
       const t = f.t;
       for (const k of twinkles) {
         const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph));

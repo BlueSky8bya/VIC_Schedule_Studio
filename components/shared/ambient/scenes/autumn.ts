@@ -17,6 +17,7 @@ import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
+import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
 import { LEAF_K, SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, horizonY, moveScale } from "../world/view";
 
@@ -123,6 +124,8 @@ export function createAutumn(seed: number): Scene {
   });
   let gav = -1;
   let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
+  let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
+  let skyKeyCur = "";
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
   // 땅의 위 끝(지평선) — 잎·소품·다람쥐·돌풍은 이 아래에서만 산다(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 떠다닌다").
   const gy = () => horizonY(h);
@@ -991,8 +994,19 @@ export function createAutumn(seed: number): Scene {
     },
     draw(g, f) {
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
+      {
+        const sk = skyKey("autumn", f.weather.now, f.time.band, f.w, f.h);
+        if (!skyC || sk !== skyKeyCur) {
+          skyC = bakeSky("autumn", f.weather.now, f.time.band, f.w, f.h, seed);
+          skyKeyCur = sk;
+        }
+        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+      }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개. 바탕 위, 모든 것 아래.
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
+      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.3, { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
       // 서리 안개 — 안개 낀 날(11월에 잦다)은 더 깊이 내려온다.
       // 안개 날씨의 짙어짐은 **엔진 안개층**(light.ts groundFog·hazeK)이 맡는다 — 옛 ×1.7/×1.6은 엔진 안개와 겹쳐 상단 300px이
       // 단일 값의 흰 벽이 되고 지평선 실루엣이 사라졌다(QA 라운드 3 C#4 이중 안개). 서리안개는 맑은 가을 아침의 얇은 베일로만.

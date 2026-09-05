@@ -13,6 +13,7 @@ import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet } from "../art/load";
 import { claimSpot, drawProp, propShadow, resetPropField } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
+import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
 import { horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
 import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
@@ -59,7 +60,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
   let h = 0;
   let water: HTMLCanvasElement | null = null;
   let land: HTMLCanvasElement | null = null;
-  let sky: HTMLCanvasElement | null = null;
+  let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
+  let skyKeyCur = "";
   let horizon: HTMLCanvasElement | null = null;
   let gw = 0;
   let gh = 0;
@@ -958,17 +960,6 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     land = lc;
     // 하늘 + 수평선 — 뭍 장면과 **같은 문법**의 지평선 띠(sea 프로파일: 먼 언덕·나무 줄 없이 안개만).
     // 옛 코드는 자체 그라데이션 + 1.5px 흰 선이라 초원 ↔ 해안 이동에서 지평선 처리가 통째로 바뀌었다.
-    const sc = document.createElement("canvas");
-    sc.width = Math.max(1, Math.ceil(w * dpr));
-    sc.height = Math.max(1, Math.ceil(top() * dpr) + 2);
-    const sg = sc.getContext("2d")!;
-    sg.scale(dpr, dpr);
-    const sgrad = sg.createLinearGradient(0, 0, 0, top());
-    sgrad.addColorStop(0, season === "winter" ? "#cfdae4" : "#dbe8f1");
-    sgrad.addColorStop(1, season === "winter" ? "#e8eef4" : "#eef5fa");
-    sg.fillStyle = sgrad;
-    sg.fillRect(0, 0, w, top() + 2);
-    sky = sc;
     horizon = bakeHorizon(season, w, h, 1, "sea");
     gw = w;
     gh = h;
@@ -1009,9 +1000,19 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     },
     draw(g, f) {
       const t = f.t;
-      if (sky) g.drawImage(sky, 0, 0, f.w, sky.height / (gdpr || 1));
+      // 하늘(라운드 5, world/sky.ts) — 옛 단색 그라데이션 대신 계절 × 날씨 판(구름 포함). 수평선(top) 위만 보인다.
+      {
+        const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
+        if (!skyC || sk !== skyKeyCur) {
+          skyC = bakeSky(season, f.weather.now, f.time.band, f.w, f.h, seed);
+          skyKeyCur = sk;
+        }
+        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+      }
       if (water) g.drawImage(water, 0, 0, f.w, f.h);
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      // 별·달·해 — 수평선 위 하늘 전부(가릴 것이 없다). 해는 수평선 가까이.
+      drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
       // 물가 선이 숨쉰다. 조석 진폭은 세 해안이 함께 움직이도록 작게(옛 0.06h는 갯벌만 바다 높이가 52px 달랐다).
       const sy = shoreY() - tide(f) * f.h * 0.02 - Math.sin(t * 0.5) * 3;
       // 파도 — 수평선에서 물가까지, 마지막 선은 물가에서 거품이 된다.

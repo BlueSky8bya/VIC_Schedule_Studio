@@ -243,7 +243,8 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
   const r = rng(311 + Math.round(w) * 3 + season.length);
   // 안개 — 위는 짙게, 지평선 아래로 옅어진다(대기 원근).
   const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, `rgb(${col.haze} / 0.55)`);
+  // 위쪽 α .55 → .28(라운드 5): 하늘 판(world/sky.ts)이 생겨 안개가 하늘을 하얗게 덮으면 가을의 높은 파랑이 죽는다. 지평선 값은 그대로(계단 없음).
+  grad.addColorStop(0, `rgb(${col.haze} / 0.18)`);
   // 지평선에서의 값은 엔진의 대기 안개(drawDepthHaze, HAZE_ALPHA 0.17)와 **같아야** 계단이 안 생긴다.
   grad.addColorStop(hz / H, `rgb(${col.haze} / ${HAZE_ALPHA})`);
   grad.addColorStop(0.62, `rgb(${col.haze} / ${HAZE_ALPHA * 0.4})`);
@@ -275,28 +276,49 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
     hill(hz * 0.72, hz * 0.14, col.hill2, 0.5, 4.1);
   }
   // 작은 나무 줄 — 지평선 바로 위에 실루엣(둥근 수관 + 짧은 줄기), 겨울은 나목 점. 드문드문·옅게(먼 숲의 윤곽).
+  // 먼 숲 실루엣 줄(라운드 5 A#8 — 옛 "같은 크기 원+막대 롤리팝 20여 개 한 줄"): 세 종(둥근 참나무·삼각 소나무·낮은 관목) × 크기 3단(±35%),
+  // 무리 3~5 + 빈 구간, 기준선 y ±4px 흩기, 줄기 폭은 수관에 비례. 픽셀 격자(2px)로 찍어 AA 없음.
   const n = profile === "land" ? Math.round(w / 34) : 0;
   g.fillStyle = col.tree;
   let skip = 0;
+  let runLeft = 0;
   for (let i = 0; i < n; i++) {
-    // 무리 짓기 — 균일 피치 + 작은 흔들림이면 "점선 자"로 읽힌다(검토 3차).
     if (skip > 0) { skip--; continue; }
-    if (r() < 0.3) { skip = 1 + Math.floor(r() * 3); continue; }
+    if (runLeft <= 0) {
+      if (r() < 0.35) { skip = 2 + Math.floor(r() * 4); continue; } // 빈 구간
+      runLeft = 3 + Math.floor(r() * 3);
+    }
+    runLeft--;
     const pitch = w / n;
-    const x = (i + 0.5) * pitch + (r() - 0.5) * pitch * 0.9;
-    const s = 3 + r() * 8;
-    const y = hz * (0.74 + r() * 0.12);
+    const x = Math.round(((i + 0.5) * pitch + (r() - 0.5) * pitch * 0.9) / 2) * 2;
+    const s = (4 + r() * 7) * (0.65 + r() * 0.7);
+    const y = Math.round((hz * 0.8 + (r() - 0.5) * 8) / 2) * 2;
     g.globalAlpha = 0.3 + r() * 0.18;
-    if (season === "winter") {
-      g.fillRect(x - 0.6, y - s * 1.4, 1.2, s * 1.4);
-      g.beginPath();
-      g.arc(x, y - s * 1.3, s * 0.55, 0, TAU);
-      g.fill();
+    const kind = r();
+    const tw = Math.max(2, Math.round((s * 0.2) / 2) * 2);
+    if (season === "winter" || kind < 0.3) {
+      // 나목/소나무 — 삼각 실루엣(계단 3~4단)
+      const hh = s * 1.6;
+      const tiers = 3 + (s > 8 ? 1 : 0);
+      for (let t = 0; t < tiers; t++) {
+        const tw2 = Math.round((s * (1 - t * 0.22)) / 2) * 2;
+        const ty = Math.round((y - (hh * t) / tiers) / 2) * 2;
+        g.fillRect(x - tw2 / 2, ty - Math.round(hh / tiers), tw2, Math.round(hh / tiers) + 1);
+      }
+      g.fillRect(x - tw / 2, y - 3, tw, 4);
+    } else if (kind < 0.55) {
+      // 낮은 관목 — 넓고 낮은 둔덕
+      const bw = Math.round((s * 1.6) / 2) * 2;
+      g.fillRect(x - bw / 2, y - Math.round(s * 0.6), bw, Math.round(s * 0.6) + 1);
+      g.fillRect(x - Math.round(bw * 0.35), y - Math.round(s * 0.9), Math.round(bw * 0.7), Math.round(s * 0.35));
     } else {
-      g.fillRect(x - 1, y - s * 0.6, 2, s * 0.9);
-      g.beginPath();
-      g.arc(x, y - s * 0.8, s, 0, TAU);
-      g.fill();
+      // 둥근 수관 — 사각 계단 셋 + 줄기
+      const cw = Math.round((s * 1.4) / 2) * 2;
+      const ch = Math.round(s * 0.9);
+      g.fillRect(x - cw / 2, y - ch, cw, ch);
+      g.fillRect(x - Math.round(cw * 0.36), y - ch - Math.round(s * 0.4), Math.round(cw * 0.72), Math.round(s * 0.4) + 1);
+      g.fillRect(x - Math.round(cw * 0.62), y - ch + Math.round(ch * 0.3), Math.round(cw * 1.24), Math.round(ch * 0.4));
+      g.fillRect(x - tw / 2, y - 2, tw, Math.round(s * 0.6));
     }
   }
   g.globalAlpha = 1;

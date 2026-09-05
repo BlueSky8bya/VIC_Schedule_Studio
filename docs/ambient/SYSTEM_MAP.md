@@ -58,6 +58,12 @@ AmbientLayer(month, year, slug, force?, worldForce?)          components/shared/
 > `scripts/ambient-qa/light-probe.mjs`. 아직 안 닿는 곳: 파도 진폭·물보라(coast/sea 상수),
 > 눈 쌓임·젖은 땅 상태 변수, 언덕 억새(바탕에 굽힘 — 부스러기만 움직임).
 >
+> **라운드 5 뒤 상태(2026-09-06, 하늘 + 산 층 순서)**: 하늘은 `world/sky.ts`가 그린다 — `skyPalette(season, weather, band)`(조명 패스 전 값) →
+> `bakeSky`(그라데이션 + 1/3 해상 픽셀 구름, hz 아래 5%h 페이드) → 장면이 ground 뒤·horizon 앞에 그리고(산은 ① 능선 위 clip) `drawSkyLive`(별·음력 달·
+> 새벽/노을 해)를 horizon 뒤에 얹는다(별·달 상한: 육지 hz·.3 · 산 ① 능선 · 바다 top·.9). coast/sea의 자체 하늘·별은 제거. `bakeHorizon` 위 안개 .55 → .18,
+> 먼 숲 실루엣 세 종. 산(`land.ts` mountain)은 봉우리 캔버스가 없어졌다 — ①②·애추 띠·원경 침엽수를 **바탕에 소품보다 먼저** 굽는다(§4 진단의 "봉우리 캔버스가
+> 바탕 위" 구조 해소), `ridgeC`(능선선 보강)만 별도.
+>
 > **라운드 4 뒤 상태(2026-09-05, AMB-T1-03 "조명은 섰지만 소비자가 없다" 해소)**: 소비자가 셋 늘었다. ① **소품 발밑 그림자**
 > `art/props.ts propShadow()` — scatterProps·초원 관목/버섯/나무/바위·해안 바위/통나무/소나무의 굽힌 그림자가 `currentLight().shadow`
 > (dx·len·alpha)를 읽는다(점심 = 옛 softBlob과 픽셀 동일). 바탕은 조명 전이가 끝나면(`Frame.lightStable`) `shadowKey(light)`가 달라졌을
