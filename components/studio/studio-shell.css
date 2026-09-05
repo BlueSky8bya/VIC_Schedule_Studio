@@ -12,7 +12,17 @@
    상수로 만들면 루프가 끊긴다. (이 CSS는 (studio) 레이아웃에서만 로드 —
    공개 포스터 성능/레이아웃엔 영향 없음.) */
 html {
+  /* 스크롤바 자리를 예약해 폭을 상수로 만든다(배율 떨림 방지). 여기에 더해 2026-09-05부터 스크롤바 자체를
+     **숨긴다**(소유자: "스크롤이 있을 자리만 배경이 확장 안 되어 불편") — 폭이 0이 되어 gutter도 0이 되고,
+     계절 배경이 오른쪽 모서리까지 자연히 덮는다. 휠·드래그·키보드 스크롤은 그대로다. (편집실) */
   scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .studio-shell {
@@ -4292,6 +4302,15 @@ html[data-reduce-motion] .perf-windows button.active {
   right: 8px;
   animation: rail-slide-r 0.52s cubic-bezier(0.25, 1, 0.5, 1) 0.02s both;
 }
+/* rail 필터도 스크롤바를 숨긴다(2026-09-05 소유자) — 스크롤은 그대로. */
+.avatar-rail-filter {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.avatar-rail-filter::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
 .avatar-rail-filter {
   /* rail 세로 예산(2026-09-04 크롬 압축): 기준 높이 132px = 제목 "태그 필터" + 칩 두 줄 — 창이 낮아도 이 아래로는
      안 줄어들고(핫 존), 부족한 높이는 아바타 자리(빈 공간, flex-shrink 4)가 먼저 내준다. 자리가 남으면 예전처럼
@@ -4455,10 +4474,20 @@ html[data-reduce-motion] .perf-windows button.active {
 .studio-avatar-ctl button:not(.on):hover {
   background: rgb(255 255 255 / 60%); /* '여기 누를 수 있다' — 비활성 쪽에도 호버 응답 */
 }
+/* 고른 쪽 — 흰 면 + 옅은 그림자만으로는 반투명 알약 위에서 구분이 안 됐다(2026-09-05 소유자 사진).
+   면·글자·테두리를 한꺼번에 올리고, 반대쪽은 확실히 내린다. */
 .studio-avatar-ctl button.on {
-  background: #fff;
-  color: #5b4a86;
-  box-shadow: 0 1px 4px rgb(91 74 134 / 18%);
+  background: linear-gradient(180deg, #fff, #f3efff);
+  color: #4a3a7a;
+  box-shadow:
+    inset 0 0 0 1.5px #b9a9ec,
+    0 2px 8px rgb(91 74 134 / 22%);
+}
+.studio-avatar-ctl button:not(.on) {
+  color: rgb(107 91 138 / 55%);
+}
+.studio-avatar-ctl button.on svg {
+  stroke-width: 2.8;
 }
 .studio-avatar-ctl button:active {
   transform: scale(0.95);

@@ -1661,7 +1661,17 @@ html[data-reduce-motion] .day-vod-pop {
 }
 /* 스크롤바가 생겼다 사라졌다 하며 폭이 출렁여 배율이 떨리는 걸 막는다(자리 항상 예약). */
 html {
+  /* 스크롤바 자리를 예약해 폭을 상수로 만든다(배율 떨림 방지). 여기에 더해 2026-09-05부터 스크롤바 자체를
+     **숨긴다**(소유자: "스크롤이 있을 자리만 배경이 확장 안 되어 불편") — 폭이 0이 되어 gutter도 0이 되고,
+     계절 배경이 오른쪽 모서리까지 자연히 덮는다. 휠·드래그·키보드 스크롤은 그대로다. (시청자 포스터) */
   scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 /* 관리자 아바타 자리(스트리머 scene) — 웹 전용. 벤치마크: Twitch Extensions(컴포넌트) +
@@ -2110,8 +2120,9 @@ html[data-reduce-motion] .poster-scaler {
   background: #fff;
   color: #6b5b8a;
   font-weight: 700;
-  font-size: var(--text-body);
-  padding: 7px 12px;
+  /* 폭은 min-width 220으로 고정돼 있어 글자만 키우면 된다(2026-09-05 소유자). */
+  font-size: var(--text-ui);
+  padding: 7px 10px;
   border-radius: var(--r-pill, 999px);
   cursor: pointer;
   transition:
@@ -2589,6 +2600,18 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 
 /* 콘텐츠 색상 안내(세로) — 태그 최대 20종 + 하트 + 필터해제까지 달력 높이 안에 들어오도록
    간격을 최소로 압축한다(미래 태그 2종까지 미리 감안). */
+/* 오른쪽 모서리의 스크롤바는 숨긴다(2026-09-05 소유자: "혼자 툭 튀어나와 있는 것 불편") — 휠·드래그
+   스크롤은 그대로. 편집실 필터(.studio-left-panel)와 같은 처리다. */
+.public-legend-vertical,
+.avatar-side-rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.public-legend-vertical::-webkit-scrollbar,
+.avatar-side-rail::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
 .public-legend-vertical {
   /* 콘텐츠 태그도 2열(2026-07-31) — 세로를 절반으로 줄여 레일에 라이브 카드 자리를 확보.
      제목·방식 블록·하트 안내는 전폭(grid-column 1/-1). */
@@ -5581,9 +5604,11 @@ html[data-reduce-motion] .slc-player img {
   background: var(--glass, rgb(255 255 255 / 72%));
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  padding: 8px 16px;
+  padding: 8px 13px;
   color: var(--ink, #23303f);
-  font-size: var(--text-body);
+  /* 13.5 → 15(--text-ui): 큰 제목 옆에서 너무 작았다(2026-09-05 소유자). 가로 패딩을 16 → 13으로 줄여
+     **버튼 폭은 그대로** 둔다(글자 +11% ≈ 패딩 -6px). */
+  font-size: var(--text-ui);
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
@@ -5972,9 +5997,10 @@ html[data-reduce-motion] .pi-skeleton {
 .poster-readonly .insights-open,
 .poster-readonly .viewer-actions .button {
   gap: var(--space-2);
-  padding-inline: var(--space-control-x);
-  font-size: var(--text-body);
-  font-weight: var(--weight-semibold);
+  /* 글자를 키운 만큼 가로 패딩을 줄여 폭을 유지한다(2026-09-05 소유자: "너비까지 바뀔 정도로 하지 마"). */
+  padding-inline: calc(var(--space-control-x) - 3px);
+  font-size: var(--text-ui);
+  font-weight: 800;
 }
 
 .poster-readonly .account-form {
