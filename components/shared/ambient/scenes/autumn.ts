@@ -12,7 +12,7 @@
 
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
-import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
+import { drawCreatureShadow, angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, propShadow, propSpots, resetPropField, scatterProps } from "../art/props";
@@ -290,7 +290,7 @@ export function createAutumn(seed: number): Scene {
     for (let i = 0; i < tufts; i++) {
       if (clumpLeft <= 0) {
         clumpX = g0() * w;
-        clumpY = groundY(g0());
+        clumpY = groundY(Math.pow(g0(), 0.6)); // 근경으로 몰린다(라운드 8, 밀도 기울기 = 깊이 단서)
         clumpLeft = 1 + Math.floor(g0() * 7);
       }
       clumpLeft--;
@@ -299,16 +299,21 @@ export function createAutumn(seed: number): Scene {
       const y = clumpY + (g0() - 0.5) * spread;
       drawProp(g, groundArt, "grass-dry", x, y, { k: (0.55 + g0() * 1.0) * depthScale(y, h) * smallK(y), r: g0(), flip: g0() < 0.5, alpha: 0.75 + g0() * 0.25 });
     }
+    // 밀도 기울기(2026-09-06 라운드 8, 검토 A #7: 가을 초원만 8밴드 디테일 최대/최소 1.7배 = 벽지) —
+    // y 분포를 `pow(u, .6)`로 눌러 **근경이 원경의 3배 이상** 촘촘해지고, 저주파 빈 구간을 남긴다.
+    const gap = (x: number) => Math.sin(x * 0.0034 + 1.9) + 0.55 * Math.sin(x * 0.0091);
     const twigs = Math.round((w * h) / 80000);
     for (let i = 0; i < twigs; i++) {
       const x = g0() * w;
-      const y = groundY(g0());
+      if (gap(x) > 1.1) continue; // 빈 구간(시선이 쉬는 자리)
+      const y = groundY(Math.pow(g0(), 0.6));
       drawProp(g, groundArt, "twig", x, y, { k: (0.8 + g0() * 0.8) * depthScale(y, h) * smallK(y), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     const pebbles = Math.round((w * h) / 130000);
     for (let i = 0; i < pebbles; i++) {
       const x = g0() * w;
-      const y = groundY(g0());
+      if (gap(x) > 1.2) continue;
+      const y = groundY(Math.pow(g0(), 0.6));
       drawProp(g, groundArt, "pebble", x, y, { k: (0.7 + g0() * 0.9) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
@@ -1108,11 +1113,8 @@ export function createAutumn(seed: number): Scene {
                   : 0;
         const sds = depthScale(s.y, f.h) * (SIZE.chipmunk / 52); // 3/4 시점 거리 축소 × 축척(52 → 36)
         if (sqShadow) {
-          g.save();
-          g.globalAlpha = 0.3;
-          g.translate(s.x + 4 + 6 * bounce, s.y + 10 * sds + 8 * bounce);
-          g.drawImage(sqShadow, -28 * sds, -22 * sds * GROUND_SQUASH, 56 * sds, 44 * sds * GROUND_SQUASH);
-          g.restore();
+          // 조명에 맞춘 발밑 그림자(라운드 8) — 점프 높이(bounce)는 그림자를 **떼어 놓는** 신호로만 남긴다.
+          drawCreatureShadow(g, sqShadow, s.x + 6 * bounce, s.y + 10 * sds + 8 * bounce, 56 * sds, 44 * sds, 0.3);
         }
         // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
         g.save();

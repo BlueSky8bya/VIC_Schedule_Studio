@@ -1,5 +1,8 @@
 // 장면 공용 유틸 — 결정적 난수(같은 seed면 같은 배치: 검증 재현), 오프스크린 스프라이트, 잎 윤곽, 수치 보조.
 
+import { currentLight } from "../world/light";
+import { GROUND_SQUASH } from "../world/view";
+
 export type Rng = () => number;
 
 /** mulberry32 — 작고 결정적. */
@@ -59,6 +62,33 @@ export function softBlob(g: CanvasRenderingContext2D, x: number, y: number, r: n
     g.translate(x, y);
     g.scale(1, sy);
     g.translate(-x, -y);
+  }
+  // **바닥에 누운 큰 얼룩은 계단으로**(2026-09-06 라운드 8, 검토 A #9: 지름 ~90px·ΔL −9의 매끈한 방사
+  // 그라데이션이 "렌즈 먼지"로 읽혔고, 하늘·땅이 정리되면서 프레임에서 가장 큰 저주파 형태가 됐다).
+  // 세 단계 알파 + 굴곡진 가장자리(2px 격자). 빛무리(달·해·해파리 — sy = 1)는 그대로 매끈하게 둔다.
+  if (sy !== 1 && r >= 36) {
+    // 흔들림은 좌표 해시로 — 여기서 rng()를 부르면 호출 쪽의 결정적 난수 흐름이 밀린다.
+    const hsh = (n: number) => {
+      const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+      return v - Math.floor(v);
+    };
+    const base = x * 0.37 + y * 0.71 + r;
+    for (const [rr, aa] of [[1, 1], [0.66, 0.62], [0.34, 0.3]] as const) {
+      g.fillStyle = `rgb(${rgb} / ${(a0 * aa).toFixed(3)})`;
+      g.beginPath();
+      for (let i = 0; i <= 22; i++) {
+        const th = (i / 22) * TAU;
+        const wob = 0.82 + 0.3 * hsh(base + i * 3.1) + 0.16 * Math.sin(th * 3 + base);
+        const px = Math.round((x + Math.cos(th) * r * rr * wob) / 2) * 2;
+        const py = Math.round((y + Math.sin(th) * r * rr * wob) / 2) * 2;
+        if (i === 0) g.moveTo(px, py);
+        else g.lineTo(px, py);
+      }
+      g.closePath();
+      g.fill();
+    }
+    if (sy !== 1) g.restore();
+    return;
   }
   const grad = g.createRadialGradient(x, y, 0, x, y, r);
   grad.addColorStop(0, `rgb(${rgb} / ${a0})`);
@@ -268,4 +298,27 @@ export function pineNeedles(g: CanvasRenderingContext2D, r: number, color: strin
   g.beginPath();
   g.arc(0, r * 0.85, width * 1.1, 0, TAU);
   g.fill();
+}
+
+/** 생물 발밑 그림자를 **조명에 맞춰** 그린다(2026-09-06 라운드 8) — 라운드 4가 소품·나무 그림자를 조명에 붙였는데
+ *  생물 그림자만 점심 고정이라 "새벽 한 화면에 해가 둘"이었다(검토 C). 소품과 같은 계약: 발치는 제자리,
+ *  끝만 `dx` 쪽으로, 길이는 `stretch`, 농도는 면적 보존. 호출 쪽은 x·y(발)와 스프라이트·그릴 크기만 준다. */
+export function drawCreatureShadow(
+  g: CanvasRenderingContext2D,
+  spr: CanvasImageSource,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  alpha: number,
+  squash = GROUND_SQUASH
+) {
+  const s = currentLight().shadow;
+  const stretch = 0.6 + 0.8 * s.len;
+  g.save();
+  g.globalAlpha *= alpha * s.alpha * (0.55 + 0.45 * stretch);
+  g.translate(x + s.dx * (w / 2) * (stretch - 1) * 0.9, y);
+  g.scale(stretch, squash);
+  g.drawImage(spr, -w / 2, -h / 2, w, h);
+  g.restore();
 }

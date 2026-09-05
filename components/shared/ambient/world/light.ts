@@ -79,7 +79,7 @@ const BAND: Record<DayBand, BandRow> = {
     mul: [216, 224, 238],
     desat: 0.14,
     tint: { rgb: "118 128 158", alpha: 0.05 },
-    shadow: { dx: -1, len: 1.6, alpha: 0.55 },
+    shadow: { dx: -1, len: 1.6, alpha: 0.8 }, // .55 → .80(2026-09-06 라운드 8, C: 새벽 그림자 코어 하강 1.98L < 기준 4L)
     glint: 0,
     reflect: { k: 0.26, rgb: "210 218 232", skyK: 0.16 }
   },
@@ -90,7 +90,7 @@ const BAND: Record<DayBand, BandRow> = {
     mul: [246, 247, 243],
     desat: 0.05,
     tint: { rgb: "255 255 250", alpha: 0 },
-    shadow: { dx: -0.6, len: 1.2, alpha: 0.9 },
+    shadow: { dx: -0.6, len: 1.3, alpha: 0.95 }, // 아침 stretch 하한(검토 C: 아침 = 점심 bandDelta 0)
     glint: 0.6,
     reflect: { k: 0, rgb: "255 250 240", skyK: 0 }
   },
@@ -123,7 +123,7 @@ const BAND: Record<DayBand, BandRow> = {
     mul: [210, 218, 234],
     desat: 0.12,
     tint: { rgb: "90 104 136", alpha: 0.07 },
-    shadow: { dx: 0.6, len: 1.2, alpha: 0.55 },
+    shadow: { dx: 0.6, len: 1.2, alpha: 0.8 }, // 저녁도 같은 이유
     glint: 0,
     reflect: { k: 0.22, rgb: "184 196 218", skyK: 0.14 }
   },
@@ -131,7 +131,10 @@ const BAND: Record<DayBand, BandRow> = {
     sky: "96 110 140",
     skyAlpha: 0.46,
     hazeK: 1.4,
-    mul: [184, 194, 215],
+    // 184 → 194(2026-09-06 라운드 8, 검토 C): 밤은 **곱셈**이라 ΔL이 바탕 L에 비례해 밝은 바이옴이 먼저
+    // 규칙을 깨졌다(민물 봄 −18.74 · 초원 여름 −16.3 · 언덕 가을 −16.06, 하한 −16). 밝은 지면이 −16 안에 들게 올린다
+    // — 어두운 바이옴은 −10.5 → −9.9로 조금 올라오지만, 그쪽은 원래 여유가 있었다.
+    mul: [194, 203, 222],
     desat: 0.38,
     tint: { rgb: "48 66 102", alpha: 0.1 },
     shadow: { dx: 0, len: 0.6, alpha: 0.33 },

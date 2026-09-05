@@ -220,14 +220,14 @@ export function createDeep(seed: number): Scene {
         asked = true;
         // 실루엣 색 — 물빛보다 조금 짙은 남색. 채도 1로 완전히 눌러 "이모지"가 아니라 그림자로 읽히게.
         const tint = "rgb(14 34 52)";
-        void loadSprite(ASSET.fishSide, SPR, SPR, 2, tint).then((s) => (fishSpr[0] = s)).catch(() => {});
-        void loadSprite(ASSET.fishTropical, SPR, SPR, 2, tint).then((s) => (fishSpr[1] = s)).catch(() => {});
-        void loadSprite(ASSET.fishPuffer, SPR, SPR, 2, tint).then((s) => (fishSpr[2] = s)).catch(() => {});
-        void loadSprite(ASSET.whale, 220, 220, 2, "rgb(6 16 28)").then((s) => (bigSpr = s)).catch(() => {});
-        void loadSprite(ASSET.squid, SPR, SPR, 2, tint).then((s) => (squidSpr = s)).catch(() => {});
+        void loadSprite(ASSET.fishSide, SPR, SPR, 2, tint, 0, true).then((s) => (fishSpr[0] = s)).catch(() => {});
+        void loadSprite(ASSET.fishTropical, SPR, SPR, 2, tint, 0, true).then((s) => (fishSpr[1] = s)).catch(() => {});
+        void loadSprite(ASSET.fishPuffer, SPR, SPR, 2, tint, 0, true).then((s) => (fishSpr[2] = s)).catch(() => {});
+        void loadSprite(ASSET.whale, 220, 220, 2, "rgb(6 16 28)", 0, true).then((s) => (bigSpr = s)).catch(() => {});
+        void loadSprite(ASSET.squid, SPR, SPR, 2, tint, 0, true).then((s) => (squidSpr = s)).catch(() => {});
         // 해파리도 **한 색 실루엣**이다 — 원본 이모지를 그대로 얹으면 광택·눈·무늬가 남아 "이모지"로 읽힌다(검토 B ③-a).
         // 발광은 색이 아니라 **빛무리 + 밝은 단색**으로 만든다.
-        void loadSprite(ASSET.jellyfish, SPR, SPR, 2, "rgb(178 232 222)").then((s) => (jellySpr = s)).catch(() => {});
+        void loadSprite(ASSET.jellyfish, SPR, SPR, 2, "rgb(178 232 222)", 0, true).then((s) => (jellySpr = s)).catch(() => {});
       }
       // ① 수면 빛줄기 — 항상 있다(시간대·날씨 무관: 여기는 계절이 닿지 않는 방이다). 좌우 모서리 없이 흩어진다.
       // 빛줄기 — **한 번 굽고 매 프레임 drawImage 한 번**(LOD 규칙). 조각을 나눠 그리면 알파가 곹쳨 가로

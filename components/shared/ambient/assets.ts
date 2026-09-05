@@ -68,7 +68,7 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
 
 /** 에셋을 (w×h CSS px) × scale 해상도의 스프라이트로 굽는다. scale은 DPR(최대 2) — 회전·확대해도 또렷하다.
  *  tint를 주면 불투명 부분을 그 색으로 물들인다(실루엣 → 물빛 그림자). */
-export async function loadSprite(url: string, w: number, h: number, scale = 2, tint?: string, desat = 0): Promise<Sprite> {
+export async function loadSprite(url: string, w: number, h: number, scale = 2, tint?: string, desat = 0, flatten = false): Promise<Sprite> {
   const im = await loadImage(url);
   const { c, g } = makeCanvas(w * scale, h * scale);
   g.drawImage(im, 0, 0, c.width, c.height);
@@ -92,6 +92,17 @@ export async function loadSprite(url: string, w: number, h: number, scale = 2, t
     g.fillStyle = tint;
     g.fillRect(0, 0, c.width, c.height);
     g.globalCompositeOperation = "source-over";
+  }
+  if (flatten) {
+    // 알파를 세 단계로 — 물들여도 원본의 알파 그라데이션이 남아 "고유색 500개"의 연속 계조가 된다
+    // (2026-09-06 라운드 8, 검토 A: 심해 해파리 60×60에 503색. 같은 화면 물고기 실루엣은 평탄+디더였다).
+    const id = g.getImageData(0, 0, c.width, c.height);
+    const d = id.data;
+    for (let i = 3; i < d.length; i += 4) {
+      const a = d[i];
+      d[i] = a < 40 ? 0 : a < 150 ? 130 : 255;
+    }
+    g.putImageData(id, 0, 0);
   }
   return { c, w, h };
 }

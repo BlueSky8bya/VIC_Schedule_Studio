@@ -1089,10 +1089,20 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       const gt = Math.round(lerp(4, 16, load) * currentLight().glint);
       while (glints.length < gt) glints.push({ x: rand() * w, y: top() + 20 + rand() * (shoreY() - top() - 40), ph: rand() * TAU, r: 1.2 + rand() * 1.4 });
       if (glints.length > gt) glints.length = gt;
-      // 물보라(암석해안) — 파도 주기마다 바위 근처에서 흰 점 몇 개.
-      if (mode === "rocky" && load >= 0.4 && rand() < dt * 2.2) {
+      // 물보라(암석해안) — 파도 주기마다 바위 근처에서 흰 점 몇 개. **바람에 비례**해 잦아지고 높이 솟는다
+      // (2026-09-06 라운드 8, GRAMMAR §3.2 바람 행 "물보라 ×2" — 검토 C: 바람이 해안에서 입자 한 열뿐이었다).
+      const wind = currentLight().wind;
+      if (mode === "rocky" && load >= 0.4 && rand() < dt * 2.2 * (1 + 2 * wind)) {
         const x = rand() * w;
-        for (let i = 0; i < 5; i++) spray.push({ x: x + (rand() - 0.5) * 20, y: shoreY() - 4, vx: (rand() - 0.5) * 60, vy: -60 - rand() * 90, life: 1 });
+        const n = 5 + Math.round(5 * wind);
+        for (let i = 0; i < n; i++)
+          spray.push({
+            x: x + (rand() - 0.5) * 20,
+            y: shoreY() - 4,
+            vx: (rand() - 0.5) * 60 + wind * 40,
+            vy: (-60 - rand() * 90) * (1 + 0.6 * wind),
+            life: 1
+          });
       }
       for (let i = spray.length - 1; i >= 0; i--) {
         const s = spray[i];

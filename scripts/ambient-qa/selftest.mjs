@@ -55,11 +55,17 @@ for (const sc of list) {
   const hF2 = await shot();
   const sF2 = await state(page);
   check("③ frozen: real time passes, t/frame unchanged", hF1 === hF2 && tF1 === sF2.t && sF2.running === false, `t=${tF1}→${sF2.t}`);
-  // ④ 시간대
+  // ④ 시간대 — **봉인된 장면(깊은 바다)은 예외**: 물속 옆모습 시점이라 계절·시간대·날씨를 아예 받지 않는 것이
+  // 설계다(소유자 2026-09-06). 그 장면에서는 "픽셀이 그대로일 것"을 반대로 검사한다.
+  const sealed = sc.biome === "deep";
   const other = sc.band === "night" ? "noon" : "night";
   const sBand = await openFixture(page, fixtureUrl(sc, { band: other, t: 1500 }, base));
   const hBand = await shot();
-  check(`④ band ${sc.band} → ${other} changes frame + world().band`, hBand !== h1 && sBand.world.band === other, `band=${sBand.world.band} ${h1}→${hBand}`);
+  check(
+    sealed ? `④ band ${sc.band} → ${other} 봉인 유지(픽셀 불변)` : `④ band ${sc.band} → ${other} changes frame + world().band`,
+    sBand.world.band === other && (sealed ? hBand === h1 : hBand !== h1),
+    `band=${sBand.world.band} ${h1}→${hBand}`
+  );
   // ⑤ 시드
   await openFixture(page, fixtureUrl({ ...sc, seed: 7 }, { t: 1500 }, base));
   const hSeed = await shot();

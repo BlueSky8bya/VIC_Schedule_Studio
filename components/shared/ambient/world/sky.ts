@@ -49,7 +49,12 @@ const MORNING: Record<SeasonKey, [string, string]> = {
 // (A는 "밤엔 산이 하늘보다 어둡다"는 역전을 정답으로 봤다 — 열린 결정, ROUND-05 Open Decisions).
 const BAND_SKY: Record<Exclude<DayBand, "noon" | "morning">, [string, string]> = {
   dawn: ["112 132 170", "236 230 230"],
-  dusk: ["116 133 171", "196 200 212"],
+  // 노을 — 천정을 **회장미**(hue 330° · 채도 .17)로(2026-09-06 라운드 8, 검토 A #10·C): 렌더된 천정 채도가
+  // .06~.09로 규칙 상한(.3)의 1/4만 써 "하늘이 가장 색을 갖는 시간"이 오히려 가장 무채색이었다.
+  // 오행 규칙은 **선명한 주황·노랑**을 금하고 회장미는 노을의 지정색이다(CLAUDE.md). A는 .18~.30을,
+  // B·C는 절제를 권했으므로 중간값 .17로 잡았다. 지평선은 밝고 옥게 두어
+  // 세로 채도 기울기를 만든다(라운드 6 결정 3).
+  dusk: ["158 118 138", "214 198 202"],
   evening: ["53 71 116", "212 220 232"],
   night: ["84 100 140", "246 248 252"]
 };
@@ -82,8 +87,12 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
         const l = (c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722);
         return [c[0] + (l - c[0]) * k, c[1] + (l - c[1]) * k, c[2] + (l - c[2]) * k];
       };
-      const t = add(grey(top, 0.8), -7);
-      const z = add(grey(hz, 0.8), -8);
+      // 어두운 띠는 더 많이 내린다(2026-09-06 라운드 8 실측: 상수 −7로는 저녁 −1.1 · 밤 **+3.5**로 부호가 남았다).
+      // L*은 바탕이 어두울수록 같은 RGB 차이가 작아 보이므로, 어두운 띠일수록 큰 오프셋이 필요하다.
+      const dk = band === "night" ? -40 : band === "evening" ? -22 : band === "dawn" ? -13 : -7;
+      const dz = band === "night" ? -20 : band === "evening" ? -16 : band === "dawn" ? -11 : -8;
+      const t = add(grey(top, 0.8), dk);
+      const z = add(grey(hz, 0.8), dz);
       return done(t, z, [add(z, 8), add(z, -22)], 0.85, false);
     }
     case "rain": {
@@ -92,8 +101,10 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
       return done(t, z, [add(z, 4), add(z, -26)], 0.95, false);
     }
     case "snow": {
-      const t = mix(top, [200, 206, 214], 0.7);
-      const z = mix(hz, [222, 226, 232], 0.7);
+      // 눈구름은 밝지만 맑은 하늘보다는 **어둡다** — 옛 혼합은 하늘을 +0.8L 밝히고 있었다
+      // (2026-09-06 라운드 8, 검토 C: 눈이 5 날씨 중 유일하게 3열 미달). GRAMMAR §3.2 눈 행 "하늘 L −6".
+      const t = add(mix(top, [200, 206, 214], 0.7), -7);
+      const z = add(mix(hz, [222, 226, 232], 0.7), -6);
       return done(t, z, [add(z, 6), add(z, -14)], 0.8, false);
     }
     case "fog": {
@@ -101,8 +112,14 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
       // 세로 결을 남긴다(검토 A: s10은 하늘 224행 전체 최대 편차가 1.3L였다).
       // 안개 — 세로 폭을 준다(2026-09-06 라운드 7 C: 하늘 224px 전체의 세로 변화가 0.3~1.9L인 "흰 벽").
       // 안개도 위가 어둡고 지평선이 밝다 — 대기는 아래가 두꺼우니까.
-      const z = mix(hz, [224, 228, 232], 0.8);
-      return done(add(z, -13), z, [add(z, 5), add(z, -7)], 0.3, false);
+      // 혼합비는 **띠에 따라**(2026-09-06 라운드 8, 검토 C: 밤 안개 하늘 L 65가 맑은 저녁 L 46보다 밝았다 —
+      // 상수 .8이 어두운 띠의 하늘을 흰 판으로 끌어올렸다). 어두운 띠일수록 안개도 어둡다.
+      const fk = band === "night" ? 0.34 : band === "evening" || band === "dawn" ? 0.56 : 0.8;
+      const z = mix(hz, [224, 228, 232], fk);
+      // **천정은 지평선이 아니라 천정에서 만든다**(2026-09-06 라운드 8 실측: 지평선에서 파생하니 밤 안개 하늘이
+      // 맑은 밤보다 +19.9L 밝았다 — 밤의 맑은 천정은 어둡고 지평선은 밝게 설계돼 있기 때문). 규칙 §3.2 "안개 = L +4".
+      const fkTop = band === "night" ? 0.04 : band === "evening" || band === "dawn" ? 0.1 : 0.36;
+      return done(mix(top, [200, 206, 212], fkTop), z, [add(z, 5), add(z, -7)], 0.3, false);
     }
     case "wind":
       return done(top, hz, [add(hz, 10), add(hz, -8)], 0.18, true);
@@ -143,26 +160,35 @@ export function bakeClouds(
     const r = rng(sd);
     // 덮개 — 아래 층(가까운 층)에만. 두 층에 다 깔면 두 겹이 돼 하늘이 회색 판이 된다.
     if (pal.cover >= 0.8 && share > 0.5) {
-      lo.g.fillStyle = `rgb(${lit} / ${(0.35 + 0.4 * (pal.cover - 0.8) * 5).toFixed(3)})`;
+      // 덮개 색은 **그 y의 하늘색 −6L**이다(2026-09-06 라운드 8, 검토 C: 여섯 띠 중 다섯에서 흐림이 하늘을
+      // **밝게** 만들었다 — 새벽 +7.5 · 저녁 +13.0 · 밤 +14.7L). 원인은 여기서 `lit`(= 지평선에서 온 밝은 회색)을
+      // 어두운 천정까지 90% 높이에 깔았기 때문이다. 팔레트는 라운드 7에 이미 고쳤는데 덮개가 그걸 되돌리고 있었다.
+      const gd = lo.g.createLinearGradient(0, 0, 0, lh * 0.9);
+      gd.addColorStop(0, `rgb(${S(add(P(pal.top), -6))} / ${(0.35 + 0.4 * (pal.cover - 0.8) * 5).toFixed(3)})`);
+      gd.addColorStop(1, `rgb(${S(add(P(pal.hz), -6))} / ${(0.35 + 0.4 * (pal.cover - 0.8) * 5).toFixed(3)})`);
+      lo.g.fillStyle = gd;
       lo.g.fillRect(0, 0, lw * 2, lh * 0.9);
     }
     const twice = (fn: (dx: number) => void) => {
       fn(0);
       fn(lw);
     };
-    if (pal.cirrus && share < 0.5) {
+    if (pal.cirrus) {
+      // 바람의 새털구름은 **두 층 모두**(2026-09-06 라운드 8, 검토 C: near 층이 빈 캔버스라 3초 이동이
+      // far −60px · near 0px — 가장 바람 센 날씨에 시차가 없었다). 가까운 층은 더 굵고 적게.
       // 새털구름은 먼 층에만 — 끝이 가늘어지는 갈고리 획(가로 막대·줄 정렬 금지).
       // 새털구름(2026-09-06 라운드 7 재설계) — 라운드 6판은 "바코드 → 비행운"이 됐을 뿐이었다(검토 A: 6~7줄,
       // 종횡비 40:1~84:1, 두께가 길이 내내 일정, 기울기가 3~10°의 좁은 띠). 줄 수를 3~4로 줄이고 길이를 화면
       // 폭의 25% 안으로, 가운데를 두껍게(끝은 절반 이하) 하고 축을 두 마디 곡선으로 꺾는다.
-      const n = 3 + Math.floor(r() * 2);
+      const near = share > 0.5;
+      const n = (near ? 2 : 3) + Math.floor(r() * 2);
       for (let i = 0; i < n; i++) {
-        const y = bandTop + r() * (bandBot - bandTop) * 0.86;
+        const y = bandTop + r() * (bandBot - bandTop) * (near ? 0.6 : 0.86);
         const x0 = r() * lw * 0.8;
-        const len = lw * (0.1 + r() * 0.15);
+        const len = lw * (near ? 0.14 + r() * 0.18 : 0.1 + r() * 0.15);
         const tilt0 = (r() < 0.5 ? -1 : 1) * (0.04 + r() * 0.16);
         const tilt1 = tilt0 * (0.25 + r() * 0.5) * (r() < 0.35 ? -1 : 1); // 두 마디: 접선각이 꺾인다
-        const th0 = 3 + Math.round(r() * 3);
+        const th0 = (near ? 5 : 3) + Math.round(r() * 3);
         lo.g.fillStyle = `rgb(${lit} / ${(0.3 + r() * 0.26).toFixed(2)})`;
         twice((dx) => {
           let yy = y;

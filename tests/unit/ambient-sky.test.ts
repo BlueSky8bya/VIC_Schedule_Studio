@@ -40,6 +40,19 @@ describe("world/sky skyPalette", () => {
     expect(skyPalette("autumn", "clear").cover).toBeLessThan(skyPalette("summer", "clear").cover);
   });
 
+  it("노을 천정은 회장미 예산 안 — 채도 .12~.26, R − G ≤ 45(선명한 주황·빨강 금지)", () => {
+    // 2026-09-06 라운드 8: 렌더된 노을 천정 채도가 .06~.09로 규칙 상한(.3)의 1/4만 써서
+    // "하늘이 가장 색을 갖는 시간"이 가장 무채색이었다(검토 A #10). A는 .18~.30, B·C는 절제를 권해 중간을 잡았다.
+    const [r, g, b] = skyPalette("summer", "clear", "dusk").top.split(" ").map(Number);
+    const mx = Math.max(r, g, b) / 255;
+    const mn = Math.min(r, g, b) / 255;
+    const L = (mx + mn) / 2;
+    const sat = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * L - 1));
+    expect(sat).toBeGreaterThan(0.12);
+    expect(sat).toBeLessThan(0.26);
+    expect(r - g).toBeLessThanOrEqual(45);
+  });
+
   it("팔레트는 오행 규칙 — 선명한 주황·노랑 없음(모든 색 R ≤ G + 12)", () => {
     for (const s of SEASON_KEYS) for (const w of ["clear", "cloud", "rain", "snow", "fog", "wind"] as const) {
       const p = skyPalette(s, w);

@@ -45,13 +45,23 @@ export function createParticles(seed: number): ParticleLayer {
   const targetMote = (load: number, lite: boolean, windK: number) => Math.round(lerp(8, 34, load) * (lite ? 0.5 : 1) * clamp(windK, 0, 1));
   const targetWisp = (fog: number, lite: boolean) => (fog <= 0 ? 0 : Math.round((lite ? 4 : 7) * clamp(fog / 0.55, 0.5, 1.4)));
 
+  // 원근은 **화면 세로 위치의 함수**다(2026-09-06 라운드 8) — 옛 코드는 `d`와 `y`를 독립으로 뽑아
+  // 지평선 띠 위에도 근경 굵기의 비가 떨어졌다(주석은 "아래가 굵고 빠르다"라고 적혀 있었는데 코드는 아니었다).
+  // 지평선이 .12 → .26으로 오르며 하늘에 떨어지는 비 비율이 배증해 더 눈에 띈다(검토 C).
+  const depthOf = (y: number, h: number) => {
+    const hz = horizonY(h);
+    if (y < hz) return 0.12 + 0.08 * Math.max(0, y / Math.max(1, hz)); // 하늘 구간은 먼 비 = 가늘고 옅은 베일
+    return 0.15 + 0.85 * clamp((y - hz) / Math.max(1, h - hz), 0, 1);
+  };
   const newDrop = (w: number, h: number, top: boolean): Drop => {
-    const d = 0.35 + r() * 0.65; // 0 = 멀다(가늘고 느림) … 1 = 가깝다
-    return { x: r() * (w + 200) - 100, y: top ? -20 - r() * 40 : r() * h, d, len: 7 + d * 12 };
+    const y = top ? -20 - r() * 40 : r() * h;
+    const d = depthOf(y, h); // 0 = 멀다(가늘고 느림) … 1 = 가깝다
+    return { x: r() * (w + 200) - 100, y, d, len: 7 + d * 12 };
   };
   const newFlake = (w: number, h: number, top: boolean): Flake => {
-    const d = 0.3 + r() * 0.7;
-    return { x: r() * (w + 120) - 60, y: top ? -10 - r() * 30 : r() * h, d, ph: r() * TAU, vy: 16 + d * 26 };
+    const y = top ? -10 - r() * 30 : r() * h;
+    const d = depthOf(y, h);
+    return { x: r() * (w + 120) - 60, y, d, ph: r() * TAU, vy: 16 + d * 26 };
   };
   const newMote = (w: number, h: number, edge: boolean): Mote => {
     const d = 0.3 + r() * 0.7;
@@ -80,6 +90,8 @@ export function createParticles(seed: number): ParticleLayer {
         const sp = (520 + q.d * 620) * dt;
         q.y += sp;
         q.x += sp * wind * 0.55;
+        q.d = depthOf(q.y, h); // 내려오며 굵어진다 — 원근이 y를 따라야 3/4 카메라와 층이 맞는다(라운드 8)
+        q.len = 7 + q.d * 12;
         if (q.y > h + 20) Object.assign(q, newDrop(w, h, true));
       }
       // 눈
@@ -87,6 +99,8 @@ export function createParticles(seed: number): ParticleLayer {
       for (const q of flakes) {
         q.ph += dt * (0.8 + q.d * 0.6);
         q.y += q.vy * dt * (1 + Math.abs(wind) * 0.4);
+        q.d = depthOf(q.y, h);
+        q.vy = 16 + q.d * 26;
         q.x += (Math.sin(q.ph) * 9 + wind * 42 * q.d) * dt;
         if (q.y > h + 10) Object.assign(q, newFlake(w, h, true));
         if (q.x < -70) q.x += w + 130;

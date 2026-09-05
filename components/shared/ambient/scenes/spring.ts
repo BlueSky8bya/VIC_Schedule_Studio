@@ -36,7 +36,7 @@ import { drawGlints } from "./water";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale, hillCrestY } from "../world/view";
-import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
+import { drawCreatureShadow, angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
   { a: "#c9b9ee", b: "#a08fd8", rim: "#6f5db3", spot: "#ffffff", eye: "#4a3f7a" },
@@ -1353,14 +1353,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           const sc = depthScale(b.y, f.h) * b.k * (b.state === "crouch" ? 0.93 : 1);
           g.save();
           g.globalAlpha *= depthFade(b.y, f.h);
-          if (shadow) {
-            g.save();
-            g.globalAlpha *= 0.26 * clamp(1 - b.hop / 70, 0.25, 1);
-            g.translate(b.x, b.y);
-            g.scale(1, GROUND_SQUASH);
-            g.drawImage(shadow, -11 * sc, -8 * sc, 22 * sc, 16 * sc);
-            g.restore();
-          }
+          if (shadow) drawCreatureShadow(g, shadow, b.x, b.y, 22 * sc, 16 * sc, 0.26 * clamp(1 - b.hop / 70, 0.25, 1));
           drawFacing(g, hopSpr, b.x, b.y - b.hop, b.hd, sc, b.state === "air" ? -0.35 * Math.cos(clamp((t - b.t0) / b.dur, 0, 1) * Math.PI) : Math.sin(b.ph) * 0.05);
           g.restore();
         }

@@ -33,7 +33,9 @@ export function propShadow(g: CanvasRenderingContext2D, x: number, y: number, r:
   // 농도를 유지하고 테두리에서만 풀리는 프로파일로, stretch·dx가 1·0에서 멀어질수록(k) 옛 radial에서 이 프로파일로 섞는다 — 전이 시작에
   // 툭 튀지 않게. 점심 쪽으로 돌아오면 다시 radial(위 항등 분기).
   const k = Math.min(1, Math.max((stretch - 1) / 0.3, Math.abs(s.dx) / 0.3));
-  const a = a0 * s.alpha;
+  // **면적 보존**(2026-09-06 라운드 8, 검토 C): 그림자를 stretch배로 늘이면 같은 알파로도 단위 면적당 농도가
+  // 떨어져 코어 하강이 1.7~2.4L에 멈췄다(기준 4L). 늘어난 만큼 알파를 되돌려 준다.
+  const a = a0 * s.alpha * (0.55 + 0.45 * stretch);
   g.save();
   g.translate(cx, y);
   g.scale(stretch, sy);

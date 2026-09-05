@@ -171,6 +171,39 @@ export function drawWaves(g: CanvasRenderingContext2D, t: number, w: number, o: 
  *  길게 늘어진 반사 띠 + 그 안에서 깜박이는 잔 글린트. `L.reflect.k`가 0이면(점심·아침·흐림·비·안개) 아무것도 안 그린다 — 점심·맑음 항등.
  *  띠는 지평선(top) 쪽이 좁고 또렷하고 아래로 갈수록 넓고 옅다(원근 + 잔물결 산란), 줄마다 가로로 조금씩 흔들린다. screen 합성이라
  *  밑의 물빛을 **밝히기만** 하고, 뒤이은 엔진 multiply(밤 ×.72)를 같이 받아 주변 물보다 상대적으로 밝게 남는다. 물 구역 clip은 호출 쪽. */
+// 빛의 길 스프라이트 — 사다리꼴(위 24% → 아래 100% 폭) × 가로 페이드 × 세로 감쇠(위가 밝다)를 픽셀로 굽는다.
+// 색마다 하나만 캐시한다(반경·크기는 그릴 때 늘린다 — LOD 규칙: 부드러운 것은 저해상으로).
+let beamC: { c: HTMLCanvasElement; key: string } | null = null;
+function bakeBeam(rgb: string): HTMLCanvasElement {
+  if (beamC && beamC.key === rgb) return beamC.c;
+  const W = 128;
+  const H2 = 256;
+  const { c, g } = makeCanvas(W, H2);
+  const im = g.createImageData(W, H2);
+  const d = im.data;
+  const [r0, g0, b0] = rgb.split(" ").map(Number);
+  for (let y = 0; y < H2; y++) {
+    const u = y / (H2 - 1);
+    const half = (W / 2) * (0.24 + 0.76 * u);
+    const vFade = (1 - u) * (1 - u) * 0.9 + 0.06;
+    for (let x2 = 0; x2 < W; x2++) {
+      const dx = Math.abs(x2 - W / 2) / Math.max(1, half);
+      if (dx >= 1) continue;
+      const hFade = Math.cos((dx * Math.PI) / 2) ** 1.4;
+      const av = Math.round(255 * hFade * vFade);
+      if (av <= 0) continue;
+      const i = (y * W + x2) * 4;
+      d[i] = r0;
+      d[i + 1] = g0;
+      d[i + 2] = b0;
+      d[i + 3] = av;
+    }
+  }
+  g.putImageData(im, 0, 0);
+  beamC = { c, key: rgb };
+  return c;
+}
+
 export function drawWaterLight(g: CanvasRenderingContext2D, t: number, w: number, top: number, bottom: number, L: Light, opts: { widthK?: number; alpha?: number } = {}) {
   const k = L.reflect.k;
   const H = bottom - top;
@@ -183,21 +216,16 @@ export function drawWaterLight(g: CanvasRenderingContext2D, t: number, w: number
   const w1 = w * 0.17 * wk;
   g.save();
   g.globalCompositeOperation = "screen";
-  const rows = 14;
-  for (let i = 0; i < rows; i++) {
-    const u = i / rows;
-    const y0 = top + u * H;
-    const y1 = top + ((i + 1) / rows) * H + 1;
-    const hw = w0 + (w1 - w0) * u;
-    const ar = a * ((1 - u) * (1 - u) * 0.9 + 0.06);
-    const jx = Math.sin(t * 0.7 + i * 1.9) * hw * 0.16;
-    const gr = g.createLinearGradient(x - hw + jx, 0, x + hw + jx, 0);
-    gr.addColorStop(0, `rgb(${L.reflect.rgb} / 0)`);
-    gr.addColorStop(0.5, `rgb(${L.reflect.rgb} / ${ar.toFixed(3)})`);
-    gr.addColorStop(1, `rgb(${L.reflect.rgb} / 0)`);
-    g.fillStyle = gr;
-    g.fillRect(x - hw + jx - 1, y0, hw * 2 + 2, y1 - y0);
-  }
+  // **한 장으로 굽고 한 번 그린다**(2026-09-06 라운드 8, 검토 A: 옛 14행 하드 에지 사각이 물 높이 ÷ 14 =
+  // 16.8px 간격(sd 0.5)의 **가로 막대 사다리**가 됐다 — 화면 1/3을 가로지르는 등간격 반복). 스프라이트 안에
+  // 사다리꼴 × 가로 페이드 × 세로 감쇠를 모두 담고, 살아 있음은 전단(shear) 한 번으로 낸다.
+  const beam = bakeBeam(L.reflect.rgb);
+  g.save();
+  g.globalAlpha = a;
+  const shear = Math.sin(t * 0.7) * 0.05;
+  g.transform(1, 0, shear, 1, x - shear * top, 0);
+  g.drawImage(beam, x - w1, top, w1 * 2, H);
+  g.restore();
   // 잔 글린트 — 띠 안의 가로 렌즈 8개, 결정적 위상(시드 무관 — 같은 t면 같은 그림).
   for (let i = 0; i < 8; i++) {
     const u = (i * 0.137 + 0.08) % 1;
