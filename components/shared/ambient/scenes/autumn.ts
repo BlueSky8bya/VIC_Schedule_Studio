@@ -420,9 +420,10 @@ export function createAutumn(seed: number): Scene {
   function nearestAcorn(x: number, y: number): number {
     let best = -1;
     let bd = Infinity;
+    const floor = groundY(0.18); // 먼 띠(지평선 언덕 위)에 멈춘 도토리는 쫓지 않는다 — 쫓다가 지평선을 걷는다(QA 라운드 1 A-1)
     for (let i = 0; i < leaves.length; i++) {
       const l = leaves[i];
-      if (l.sp !== ACORN || l.fade > 0 || l.fall > 0) continue;
+      if (l.sp !== ACORN || l.fade > 0 || l.fall > 0 || l.y < floor) continue;
       const d = Math.hypot(l.x - x, l.y - y);
       if (d < bd) {
         bd = d;
@@ -450,7 +451,8 @@ export function createAutumn(seed: number): Scene {
     if (w < 120 || h < 120) return null;
     for (let k = 0; k < 12; k++) {
       const x = 40 + rand() * (w - 80);
-      const y = 40 + rand() * (h - 80);
+      // 땅(v ≥ .18)에서만 — 옛 `40 + rand()*(h-80)`은 하늘·지평선 띠까지 뽑혀 다람쥐가 도토리를 물고 지평선 위로 올라갔다(QA 라운드 1 A-1 프로브).
+      const y = groundY(0.18 + rand() * 0.78);
       if (inHot(f, x, y)) continue;
       if (f.p.inside && Math.hypot(x - f.p.x, y - f.p.y) < 220) continue;
       if (caches.some((c) => Math.hypot(c.x - x, c.y - y) < 180)) continue;
@@ -487,7 +489,10 @@ export function createAutumn(seed: number): Scene {
     // 가장자리는 좌·우·아래 셋뿐 — 위로 드나들면 지평선을 넘어 "언덕 위 하늘로 사라진다"(2026-09-04 소유자).
     const e = Math.floor(rand() * 3);
     const x = e === 0 ? -40 : e === 1 ? w + 40 : rand() * w;
-    const y = e === 2 ? h + 40 : groundY(rand());
+    // 좌·우 진입의 출발 v는 **.18 이상**(BIOME_GRAMMAR 공통 생물 규칙, QA 라운드 1 AMB-A1-01). 옛 `groundY(rand())`는
+    // 12%가 지평선 띠(v < .18)에서 태어나 먼 언덕·실루엣 나무 줄 위를 "걷는" 그림이 됐고, 그 구간은 moveScale .22라
+    // 가장 오래 머물렀다. 24시드 실측: 출발 v < .18 3건 · 경로 최소 v .001.
+    const y = e === 2 ? h + 40 : groundY(0.18 + rand() * 0.82);
     const target = nearestAcorn(x, y);
     let phase: SqPhase = "run";
     let tx = w * (0.2 + rand() * 0.6);
@@ -495,7 +500,7 @@ export function createAutumn(seed: number): Scene {
     let ty = groundY(0.32 + rand() * 0.6);
     if (target >= 0) {
       tx = leaves[target].x;
-      ty = leaves[target].y;
+      ty = Math.max(groundY(0.18), leaves[target].y);
     } else if (caches.length && rand() < 0.5) {
       // 회수 — 땅에 도토리가 없으면 절반은 기억 속 저장소로 간다.
       const c = caches[Math.floor(rand() * caches.length)];
@@ -697,7 +702,7 @@ export function createAutumn(seed: number): Scene {
             if (n >= 0) {
               s.target = n;
               s.tx = leaves[n].x;
-              s.ty = leaves[n].y;
+              s.ty = Math.max(groundY(0.18), leaves[n].y);
               s.phase = "run";
               s.t0 = t;
             } else squirrelLeave(t);
@@ -711,7 +716,7 @@ export function createAutumn(seed: number): Scene {
           // 노리는 도토리가 굴러가면(던져지면) 따라간다.
           if (s.phase === "run" && s.target >= 0 && s.target < leaves.length && leaves[s.target].sp === ACORN) {
             s.tx = leaves[s.target].x;
-            s.ty = leaves[s.target].y;
+            s.ty = Math.max(groundY(0.18), leaves[s.target].y); // 도토리가 먼 띠로 굴러가도 다람쥐는 땅에 머문다
           }
           // 경계 — 달리는 중 2~4초마다 20%로 0.3~0.6s 멈춘다(도망 중엔 안 멈춘다).
           if (s.phase !== "leave" && t > s.nextPause) {
@@ -782,7 +787,8 @@ export function createAutumn(seed: number): Scene {
       if (!whirl && load >= 0.6 && t > nextWhirl) {
         const e = Math.floor(rand() * 4);
         const x = e === 0 ? -80 : e === 1 ? w + 80 : rand() * w;
-        const y = e === 2 ? gy() - 80 : e === 3 ? h + 80 : groundY(rand());
+        // 회오리도 하늘(지평선 위)에서 들어오지 않는다 — 위 출입은 나는 것·그림자만(QA 라운드 1). e===2(옛 위)는 아래로.
+        const y = e === 2 || e === 3 ? h + 80 : groundY(0.18 + rand() * 0.82);
         const tx = w * (0.3 + rand() * 0.4);
         const ty = groundY(0.3 + rand() * 0.4);
         const d = Math.hypot(tx - x, ty - y) || 1;

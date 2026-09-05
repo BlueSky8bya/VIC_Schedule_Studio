@@ -154,21 +154,28 @@ if (args.compare) {
     process.exit(2);
   }
   for (const { sid, dir, meta } of entries) {
-    const temporal = meta.frames.filter((f) => f.kind === "temporal").sort((a, b) => a.ms - b.ms);
     const pairs = [];
-    for (let i = 1; i < temporal.length; i++) {
-      const a = temporal[i - 1];
-      const b = temporal[i];
-      const d = await diffPair(path.join(dir, a.file), path.join(dir, b.file));
-      const file = `temporal-diff-${String(b.ms).padStart(4, "0")}.png`;
-      fs.writeFileSync(path.join(dir, file), d.png);
-      pairs.push({ a: a.file, b: b.file, msA: a.ms, msB: b.ms, file, changedRatio: d.changedRatio, meanMag: d.meanMag, blocks: d.blocks });
+    // 인접 프레임 diff — 시간 시트(0~4s)와 긴 시간 시트(15~30s, 있을 때).
+    for (const kind of ["temporal", "long"]) {
+      const frames = meta.frames.filter((f) => f.kind === kind).sort((a, b) => a.ms - b.ms);
+      for (let i = 1; i < frames.length; i++) {
+        const a = frames[i - 1];
+        const b = frames[i];
+        const d = await diffPair(path.join(dir, a.file), path.join(dir, b.file));
+        const file = `${kind}-diff-${String(b.ms).padStart(kind === "long" ? 5 : 4, "0")}.png`;
+        fs.writeFileSync(path.join(dir, file), d.png);
+        pairs.push({ kind, a: a.file, b: b.file, msA: a.ms, msB: b.ms, file, changedRatio: d.changedRatio, meanMag: d.meanMag, blocks: d.blocks });
+      }
     }
     writeJson(path.join(dir, "diff.json"), { sid, threshold: THRESHOLD, pairs });
     const idx = path.join(dir, "index.md");
-    if (fs.existsSync(idx) && !fs.readFileSync(idx, "utf8").includes("## 시간 diff")) {
-      const rows = pairs.map((p) => `| ${p.msA} → ${p.msB} ms | ${fmt(p.changedRatio)}% | ${p.meanMag.toFixed(1)} | ${p.blocks.ratio.toFixed(1)}× (${p.blocks.hot.col},${p.blocks.hot.row}) | [히트맵](${p.file}) |`).join("\n");
-      fs.appendFileSync(idx, `\n## 시간 diff(인접 프레임, 임계 ${THRESHOLD})\n\n| 구간 | 바뀐 비율 | 평균 크기 | 최대 블록/평균(위치) | 파일 |\n|---|---|---|---|---|\n${rows}\n\n블록 비가 크고(≥ 6×) 한 곳에 몰리면 국소 점프(랩·리셋) 후보 — M-2.\n`);
+    if (fs.existsSync(idx)) {
+      // 있던 diff 절은 갈아 낀다(캡처를 덧붙인 뒤 다시 돌릴 수 있게).
+      const cur = fs.readFileSync(idx, "utf8");
+      const cut = cur.indexOf("\n## 시간 diff");
+      const head = cut >= 0 ? cur.slice(0, cut) : cur;
+      const rows = pairs.map((p) => `| ${p.kind} | ${p.msA} → ${p.msB} ms | ${fmt(p.changedRatio)}% | ${p.meanMag.toFixed(1)} | ${p.blocks.ratio.toFixed(1)}× (${p.blocks.hot.col},${p.blocks.hot.row}) | [히트맵](${p.file}) |`).join("\n");
+      fs.writeFileSync(idx, `${head}\n## 시간 diff(인접 프레임, 임계 ${THRESHOLD})\n\n| 시트 | 구간 | 바뀐 비율 | 평균 크기 | 최대 블록/평균(위치) | 파일 |\n|---|---|---|---|---|---|\n${rows}\n\n블록 비가 크고(≥ 6×) 한 곳에 몰리면 국소 점프(랩·리셋) 후보 — M-2. 블록 격자 20×12(한 칸 70×72px).\n`);
     }
     console.log(`✓ ${sid} — ${pairs.length} diffs · 바뀐 비율 ${pairs.map((p) => fmt(p.changedRatio)).join(" / ")}%`);
   }

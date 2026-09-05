@@ -15,6 +15,8 @@ export const VIEWPORT = { width: 1400, height: 860 };
 export const STATIC_T = 1500;
 /** 시간 시트의 시각들(ms). */
 export const TEMPORAL_MS = [0, 250, 500, 1000, 2000, 4000];
+/** 긴 시간 시트(ms) — 첫 랜덤 이벤트(다람쥐 16~24s 등)가 들어오는 창. 1초 간격이라 출발·경로가 잡힌다. */
+export const LONG_MS = Array.from({ length: 16 }, (_, i) => 15000 + i * 1000);
 export const BANDS = ["dawn", "morning", "noon", "dusk", "evening", "night"];
 export const KO = {
   band: { dawn: "새벽", morning: "아침", noon: "점심", dusk: "노을", evening: "저녁", night: "밤" },
@@ -61,8 +63,8 @@ export function parseArgs(argv = process.argv.slice(2)) {
 
 export const pad2 = (n) => String(n).padStart(2, "0");
 export const roundDir = (round, phase) => path.join(OUT_ROOT, `r${pad2(round)}`, phase);
-/** 시나리오 폴더 이름 — 사람이 읽는다: s03-meadow-autumn-morning-clear. */
-export const sidOf = (sc) => `s${pad2(sc.id)}-${sc.biome}-${sc.season}-${sc.band}-${sc.weather}`;
+/** 시나리오 폴더 이름 — 사람이 읽는다: s03-meadow-autumn-morning-clear. 기본 시드(42)가 아니면 `-seed<n>`을 붙여 따로 둔다. */
+export const sidOf = (sc) => `s${pad2(sc.id)}-${sc.biome}-${sc.season}-${sc.band}-${sc.weather}${sc.seed !== undefined && sc.seed !== 42 ? `-seed${sc.seed}` : ""}`;
 export const titleOf = (sc) =>
   `${KO.biome[sc.biome] ?? sc.biome} · ${KO.season[sc.season] ?? sc.season} · ${KO.band[sc.band] ?? sc.band} · ${KO.weather[sc.weather] ?? sc.weather}`;
 
@@ -175,7 +177,8 @@ export const nowIso = () => new Date().toISOString();
 export function gitInfo() {
   try {
     const commit = execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-    const dirty = execSync("git status --porcelain", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim().length > 0;
+    // 추적 파일의 변경만 본다 — 미추적(.scratch-pw 산출물·preview PNG)은 빌드 소스와 무관하다.
+    const dirty = execSync("git status --porcelain --untracked-files=no", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim().length > 0;
     return { commit, dirty };
   } catch {
     return { commit: "unknown", dirty: null };

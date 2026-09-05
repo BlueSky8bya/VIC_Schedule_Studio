@@ -44,6 +44,8 @@ npm run ambient:qa:capture -- --round 01 --phase before        # [--smoke | --on
 npm run ambient:qa:sheet   -- --round 01 --phase before
 npm run ambient:qa:diff    -- --round 01 --phase before        # 시간 시트 인접 프레임
 npm run ambient:qa:diff    -- --round 01 --compare before,after
+npm run ambient:qa:capture -- --round 01 --phase before --only 3,4 --kinds long   # 다람쥐 창(15~30s) — 시간 시트 0~4s엔 없다
+node scripts/ambient-qa/spawn-probe.mjs --only 3 --seeds 24                        # A-1 스폰·경로 v 프로브
 # 결정적 fixture(같은 URL = 같은 픽셀)
 /visual-fixture/biome?biome=mountain&season=autumn&band=dusk&weather=fog&seed=42&t=1500
 # 편집실 fixture(달력 뒤 실물 — 비결정적, 내비·핫 존 실측용)

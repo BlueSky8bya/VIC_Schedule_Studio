@@ -1036,3 +1036,60 @@ export function drawProp(
   if (opts.alpha !== undefined) g.restore();
   return drew;
 }
+
+/**
+ * 물에 잠긴 소품(2026-09-05, QA 라운드 1 S-4 — BIOME_GRAMMAR 공통 물가 규칙). 수면선(yWater) 아래로 `depth`px 잠긴 채 그린다:
+ *   · 수면 위 = 원본 그대로
+ *   · 수면 아래 = 물색으로 물든 사본(source-atop), 깊을수록 투명(destination-out 그라데이션) — "물 속에 있다"
+ *   · 수면선 바로 위 3px = 어두운 젖은 띠 — "물이 닿았다"
+ * 옛 방식(수면 위만 clip)은 밑변이 직선으로 잘려 "접시 위 돌"이 됐다. 회전·눌림 없는 stand 소품 전용(바위·통나무·그루터기).
+ * 소품은 오프스크린에 한 번 그려 물들인 뒤 한 번에 찍는다 — 바탕(물)에는 손대지 않는다. 앞 반원 수면선·잔물결은 호출 쪽이 그린다.
+ */
+export function drawSubmerged(
+  g: CanvasRenderingContext2D,
+  art: ArtSet | null,
+  id: string,
+  x: number,
+  yWater: number,
+  opts: { k?: number; r?: number; flip?: boolean; depth: number; water: string; wet?: number; alphaDeep?: number }
+): boolean {
+  const slot = artSlot(id);
+  if (!slot) return false;
+  const k = opts.k ?? 1;
+  const [W, H] = slot.px;
+  const cw = Math.ceil(W * k * 1.3) + 4;
+  const ch = Math.ceil(H * k * 1.3) + 4;
+  const { c, g: t } = makeCanvas(cw, ch);
+  const ax = cw / 2;
+  const ay = ch - 2; // 바닥 접점(stand)
+  const depth = Math.max(1, opts.depth);
+  const drew = drawProp(t, art, id, ax, ay, { k, r: opts.r, flip: opts.flip });
+  if (!drew) return false;
+  const yw = ay - depth; // 오프스크린 안의 수면선
+  // 물속 부분 — 물색으로 물들이고(소품 픽셀에만) 깊을수록 옅어진다.
+  t.save();
+  t.beginPath();
+  t.rect(0, yw, cw, ch - yw);
+  t.clip();
+  t.globalCompositeOperation = "source-atop";
+  t.fillStyle = `rgb(${opts.water} / 0.62)`;
+  t.fillRect(0, yw, cw, ch - yw);
+  t.globalCompositeOperation = "destination-out";
+  const fade = t.createLinearGradient(0, yw, 0, ay);
+  fade.addColorStop(0, "rgb(0 0 0 / 0.1)");
+  fade.addColorStop(1, `rgb(0 0 0 / ${1 - (opts.alphaDeep ?? 0.42)})`);
+  t.fillStyle = fade;
+  t.fillRect(0, yw, cw, ch - yw);
+  t.restore();
+  // 젖은 띠 — 수면선 바로 위 3px, 소품 픽셀에만.
+  const wet = opts.wet ?? 0.26;
+  if (wet > 0) {
+    t.save();
+    t.globalCompositeOperation = "source-atop";
+    t.fillStyle = `rgb(24 34 44 / ${wet})`;
+    t.fillRect(0, yw - 3, cw, 3);
+    t.restore();
+  }
+  g.drawImage(c, x - ax, yWater - yw);
+  return true;
+}

@@ -29,7 +29,7 @@ import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, t
 import { bakeShore, bakeTraces, drawTraces, SHORE_V, type TraceBakes } from "../world/traces-draw";
 import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
-import { drawProp } from "../art/props";
+import { drawProp, drawSubmerged } from "../art/props";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import type { SeasonKey } from "../registry";
@@ -500,12 +500,16 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             mg2.stroke();
           };
           rockRing(Math.PI, TAU);
-          mg2.save();
-          mg2.beginPath();
-          mg2.rect(x - 60 * k, y - 90 * k, 120 * k, 90 * k);
-          mg2.clip();
-          drawProp(mg2, shoreArt, "rock", x, y + 8 * k, { k, r: r2(), flip: r2() < 0.5 });
-          mg2.restore();
+          // 잠긴 채 그린다(QA 라운드 1 S-4): 옛 clip은 밑변이 직선으로 잘려 "접시 위 돌"이었다. 수면 아래 8k는 물색으로
+          // 물들고 깊을수록 옅어지며, 수면선 위 3px는 젖어 어둡다. 겨울은 얼음이라 옅은 얼음빛·얕게.
+          drawSubmerged(mg2, shoreArt, "rock", x, y, {
+            k,
+            r: r2(),
+            flip: r2() < 0.5,
+            depth: season === "winter" ? 4 * k : 8 * k,
+            water: season === "winter" ? "206 220 234" : "104 156 176",
+            wet: season === "winter" ? 0.1 : 0.26
+          });
           rockRing(0, Math.PI); // 앞 반원 — 바위 뒤에
           if (season === "winter") {
             // 얼음판 위 — 윗면의 눈(수면선이 아니라 얼어붙은 테두리, 사이클4 현실성 #1).

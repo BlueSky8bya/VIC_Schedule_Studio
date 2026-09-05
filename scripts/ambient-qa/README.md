@@ -29,6 +29,9 @@ npm run build && VISUAL_TEST_FIXTURE=1 npx next start -p 3100 -H 127.0.0.1
 | `npm run ambient:qa:sheet -- --round 01 --phase before [--smoke]` | `temporal-sheet.png` · `band-sheet.png` · `weather-sheet.png` · `static-gray.png` |
 | `npm run ambient:qa:diff -- --round 01 --phase before [--smoke]` | 시간 시트 인접 프레임 히트맵 `temporal-diff-*.png` + `diff.json`(블록 에너지 = 이음매 힌트) |
 | `npm run ambient:qa:diff -- --round 01 --compare before,after` | 전/후 같은 파일끼리 히트맵 + `compare.md` |
+| `npm run ambient:qa:capture -- --round 01 --phase before --only 3,4 --kinds long` | **긴 시간 시트**(15~30s, 1초 간격 16장) — 첫 랜덤 이벤트(다람쥐 16~24s) 창. 같은 폴더에 덧붙여진다(기존 종류 유지). `sheet`가 `long-sheet.png`, `diff`가 `long-diff-*.png`를 만든다 |
+| `… --only 3 --kinds static,long --seed 7` | 다른 시드는 `<sid>-seed7` 폴더로 따로(기본 42는 접미사 없음) |
+| `node scripts/ambient-qa/spawn-probe.mjs --only 3 --seeds 24 [--band dusk]` | **스폰 프로브**: 시드별로 다람쥐·회오리(debug `[x,y,…]` 배열)의 첫 등장 자리와 경로 최소 y를 재서 v < .18(지평선 띠) 비율을 낸다 — A-1 수용 기준 |
 
 시나리오 표: `scenarios.mjs`(프로토콜 §4.2의 16개, 스모크 = 3·10·14). 단위 테스트 `tests/unit/ambient-qa-scenarios.test.ts`가 바이옴 키·허용 날씨를 대조한다.
 
@@ -43,6 +46,7 @@ npm run build && VISUAL_TEST_FIXTURE=1 npx next start -p 3100 -H 127.0.0.1
     meta.json              ← 프레임마다 url·t·hash·world()·scene() 요약
     static.png             ← t=1500
     temporal-0000.png … temporal-4000.png · temporal-sheet.png · temporal-diff-0250.png … diff.json
+    long-15000.png … long-30000.png · long-sheet.png · long-diff-16000.png …   (--kinds long 일 때)
     band-dawn.png … band-night.png · band-sheet.png
     weather-clear.png … · weather-sheet.png
     static-gray.png

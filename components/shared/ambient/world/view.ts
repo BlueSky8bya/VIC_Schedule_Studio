@@ -112,8 +112,10 @@ const HZ_COLORS: Record<SeasonKey, { haze: string; hill: string; hill2: string; 
 
 /** 지평선 띠를 한 번 굽는다(w×(hz+24)) — 안개 그라데이션 + 낮은 언덕 두 겹 + 작은 나무 줄(실루엣). 결정적(폭·계절 시드).
  *  장면은 바탕을 그린 뒤 이것을 위에 얹는다(캔버스 위 12%). 채도가 낮고 밝아 "멀다"로 읽힌다. */
-export type HorizonProfile = "land" | "sea";
-/** profile "sea" = 먼 언덕·나무 줄 없이 안개 띠와 수평선만(바다·해안은 뭍의 능선이 있으면 거짓말이 된다). */
+export type HorizonProfile = "land" | "sea" | "mountain";
+/** profile "sea" = 먼 언덕·나무 줄 없이 안개 띠와 수평선만(바다·해안은 뭍의 능선이 있으면 거짓말이 된다).
+ *  profile "mountain" = 같음 — 산은 봉우리 자체가 원경이라, 그 뒤에 초원의 언덕·나무 줄이 비치면 "봉우리 속 언덕"이 된다
+ *  (QA 라운드 1 D-2, MOUNTAIN_DEPTH_RULES §1). */
 export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, profile: HorizonProfile = "land"): HTMLCanvasElement {
   const hz = horizonY(h);
   // 띠는 지평선 아래로 **길게** 이어진다(옛 24px). 24px 안에서 안개를 0으로 떨어뜨리면 그 끝이 44장 전부에

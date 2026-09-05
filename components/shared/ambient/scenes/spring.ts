@@ -557,7 +557,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   function newBug(t: number): Bug {
     const e = Math.floor(rand() * 4);
     const x = e === 0 ? -12 : e === 1 ? w + 12 : rand() * w;
-    const y = e === 2 ? gy() - 12 : e === 3 ? h + 12 : groundY(rand());
+    // 무당벌레는 **걷는** 생물 — 하늘(지평선 위)에서 들어오지 않고 땅 v ≥ .18에서만(QA 라운드 1, A-1). e===2(옛 위)는 아래로.
+    const y = e === 2 || e === 3 ? h + 12 : groundY(0.18 + rand() * 0.82);
     return { x, y, hd: Math.atan2(groundY(0.5) - y, w / 2 - x) + (rand() - 0.5), spd: 18 + rand() * 14, state: "walk", until: t + 3 + rand() * 4, k: 0.9 + rand() * 0.25, ph: rand() * TAU, off: 0, respawn: 0, deadAt: 0 };
   }
   // 죽은 척(thanatosis) — 그 자리에서 멈추고 움츠린다. 1.5~3s 뒤 포인터가 멀면 다시 걷는다.

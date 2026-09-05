@@ -11,7 +11,7 @@ import type { Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet, drawArt } from "../art/load";
-import { claimSpot, drawProp, resetPropField, scatterProps, setPropShadow } from "../art/props";
+import { claimSpot, drawProp, drawSubmerged, resetPropField, scatterProps, setPropShadow } from "../art/props";
 import { SIZE } from "../world/scale";
 import { bakeHorizon, depthFade, depthScale, horizonY, GROUND_SQUASH } from "../world/view";
 import { canopyTreeSprite, bareTreeSprite } from "../world/traces-draw";
@@ -30,6 +30,14 @@ const GROUND: Record<LandKind, Record<SeasonKey, [string, string]>> = {
   valley: { spring: ["#d5e5cc", "#728e6f"], summer: ["#c2dcbb", "#5a7c56"], autumn: ["#c2c0a2", "#5d5d44"], winter: ["#f2f8ff", "#9ab3ce"] },
   mountain: { spring: ["#dce1d6", "#7d8a78"], summer: ["#d1dacc", "#6e7a69"], autumn: ["#c8c4b6", "#63604f"], winter: ["#f8fbff", "#a3b8ce"] }
 };
+
+/** 두 hex 색의 선형 보간(봉우리 발치를 그 높이의 땅색에 맞물리기 위해). */
+function mixHex(a: string, b: string, t: number): string {
+  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  const k = Math.max(0, Math.min(1, t));
+  return `#${pa.map((v, i) => Math.round(v + (pb[i] - v) * k).toString(16).padStart(2, "0")).join("")}`;
+}
 
 export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKind }): Scene {
   const { season, kind } = opts;
@@ -748,7 +756,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.moveTo(x - 12 * k, y - 8 * k);
         g.quadraticCurveTo(x, y - 14 * k, x + 12 * k, y - 8 * k);
         g.stroke();
-        drawProp(g, art, "rock", x, y, { k, r: g0(), flip: g0() < 0.5 });
+        // 물에 박힌 바위(QA 라운드 1 S-4) — 옛 코드는 통째로 그려 물 "위"에 얹혔다. 발치 10k가 물색으로 물들고 젖은 띠가 생긴다.
+        const VALLEY_WATER: Record<SeasonKey, string> = { spring: "63 125 118", summer: "58 120 112", autumn: "72 122 114", winter: "146 174 196" };
+        drawSubmerged(g, art, "rock", x, y, { k, r: g0(), flip: g0() < 0.5, depth: 10 * k, water: VALLEY_WATER[season], wet: season === "winter" ? 0.12 : 0.26 });
         // 아래쪽 후류(꼬리) — 흐름 방향이 보인다.
         g.strokeStyle = "rgb(255 255 255 / 0.3)";
         g.lineWidth = 1.2;
@@ -942,9 +952,10 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         let slope = (pr() - 0.5) * 0.6;
         const step = 14; // 26은 꺾임점이 그대로 보이는 각진 폴리라인이 됐다(사이클5 경계 #6)
         for (let x = -step; x <= w + step; x += step) {
-          if (pr() < 0.14) slope = (pr() - 0.5) * 2.2; // 봉우리·안부
+          // 꺾임 확률 .14 → .2, 되돌리는 힘 .06 → .045: 옛 값은 오른쪽 절반이 650px 직선 고원이 됐다(QA 라운드 1 A#2).
+          if (pr() < 0.2) slope = (pr() - 0.5) * 2.2; // 봉우리·안부
           yv -= slope * step * 0.5;
-          yv += (base - amp * 0.55 - yv) * 0.06; // 평균 고도로 되돌리는 힘
+          yv += (base - amp * 0.55 - yv) * 0.045; // 평균 고도로 되돌리는 힘
           ridge.push(Math.max(gy() + 4, Math.min(base - amp * 0.05, yv)));
         }
         // 이웃 평균 한 번 — 걸음의 각을 눕힌다(만년설·암반 전이가 칼같이 꺾이지 않게).
@@ -963,13 +974,46 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           g.lineTo(w + step, foot);
           g.closePath();
         };
+        // 발치는 **투명으로 녹이지 않는다**(QA 라운드 1 D-2: "산에 발이 없다") — 그 높이의 땅색으로 맞물려 ③층(애추·침엽수)이
+        // 그 위를 덮는다. 아래 들쭉 컷이 가장자리를 흩는다.
+        const [gc0, gc1] = GROUND[kind][season];
+        const footGround = mixHex(gc0, gc1, (foot - gy()) / Math.max(1, h - gy()));
         const fg = g.createLinearGradient(0, base - amp, 0, foot);
         fg.addColorStop(0, fill);
         fg.addColorStop(0.55, fill);
-        fg.addColorStop(1, `${fill}00`);
+        fg.addColorStop(1, footGround);
         g.fillStyle = fg;
         silhouette();
         g.fill();
+        // 능선선(ridgeline) — 형태의 경계는 선이 있어야 읽힌다(MOUNTAIN_DEPTH_RULES §2): 위 1px 밝은 림 + 바로 아래 그늘 띠.
+        // 림 밝기는 x 방향으로 흔들려 자로 그은 선이 되지 않는다.
+        {
+          const ridgePath = (dy: number) => {
+            g.beginPath();
+            for (let x = -step; x <= w + step; x += step / 2) g.lineTo(x, yAt(x) + dy);
+          };
+          g.save();
+          // 연속 한 획(끊기지 않는다) — 조각마다 둥근 캡을 겹치면 이음이 밝아져 "바느질 선"이 된다(after 1차 실측).
+          g.lineCap = "butt";
+          g.strokeStyle = "rgb(40 52 66 / 0.12)";
+          g.lineWidth = 3;
+          ridgePath(2.5);
+          g.stroke();
+          g.strokeStyle = "rgb(255 255 255 / 0.2)";
+          g.lineWidth = 1;
+          ridgePath(0.5);
+          g.stroke();
+          // 밝기 변주 — 자로 그은 선이 되지 않게, 겹치지 않는 조각(butt 캡)으로 림만 여기저기 더 밝힌다.
+          for (let x0 = -step; x0 <= w + step; x0 += 48) {
+            const wob = Math.sin(x0 * 0.017 + ph);
+            if (wob < 0.15) continue;
+            g.strokeStyle = `rgb(255 255 255 / ${0.16 * wob})`;
+            g.beginPath();
+            for (let x = x0; x <= Math.min(w + step, x0 + 48); x += step / 2) g.lineTo(x, yAt(x) + 0.5);
+            g.stroke();
+          }
+          g.restore();
+        }
         // 빛(북서)과 그늘 — 능선에서 오른쪽 아래로 내려가는 면만 어둡게.
         g.save();
         silhouette();
@@ -983,24 +1027,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         lg.addColorStop(1, "rgb(40 52 66 / 0)");
         g.fillStyle = lg;
         g.fillRect(-step, gy(), w + step * 2, foot - gy() + 4);
-        // 구곡(gully) 그늘 — 능선에서 발치로 내려오는 어두운 골 대여섯. 단색 쐐기를 "기복 있는 산체"로 만든다
-        // (사이클5 현실성 #9: "평평한 쐐기").
-        for (let q = 0; q < 7; q++) {
-          const gxp = -step + ((q + 0.5) / 7) * (w + step * 2) + (pr() - 0.5) * w * 0.06;
-          const gw2 = w * (0.02 + pr() * 0.03);
-          const gg = g.createLinearGradient(gxp - gw2, 0, gxp + gw2, 0);
-          gg.addColorStop(0, "rgb(52 62 72 / 0)");
-          gg.addColorStop(0.5, `rgb(52 62 72 / ${0.1 + pr() * 0.08})`);
-          gg.addColorStop(1, "rgb(52 62 72 / 0)");
-          g.fillStyle = gg;
-          g.beginPath();
-          g.moveTo(gxp - gw2, yAt(gxp) + 4);
-          g.lineTo(gxp + gw2, yAt(gxp) + 4);
-          g.lineTo(gxp + gw2 * 2.2, foot);
-          g.lineTo(gxp - gw2 * 2.2, foot);
-          g.closePath();
-          g.fill();
-        }
+        // 구곡(gully) 그늘은 **그리지 않는다**(QA 라운드 1). 옛 w/7 등간격 세로 사다리꼴 7개는 두 봉우리를 관통하는
+        // "블라인드"였고, 안부 쐐기로 줄여도 옅은 세로 띠가 남아 보였다(after 1차 실측). 산체의 기복은 대각 광원 그라데이션(위)
+        // + 능선선 + 설선 그늘이 말한다 — 세로 요소는 넣지 않는다(F-1 "전폭·세로 직선" 금지).
         // 발치 전 15%에서 덧칠·만년설을 0으로 — 실루엣 클립의 바닥이 직선이라 그대로 끝나면 전폭 가로선이 남는다.
         // 발치는 **길고 들쭉날쭉하게** 사라져야 한다 — 짧고 균일한 컷은 회색 판이 얹힌 직선 밑변이 된다
         // (검토 라운드2 경계 #6).
@@ -1019,13 +1048,20 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.restore();
         if (cap) {
           // 만년설 — 고도선 위, 능선을 따라 굽이친다.
+          const snowY = (x: number) => yAt(x) + amp * snowLine * (0.5 + 0.5 * Math.sin(x * 0.006 + ph * 2.3));
           g.fillStyle = "rgb(250 253 255 / 0.8)";
           g.beginPath();
           g.moveTo(-step, 0);
-          for (let x = -step; x <= w + step; x += step / 2) g.lineTo(x, yAt(x) + amp * snowLine * (0.5 + 0.5 * Math.sin(x * 0.006 + ph * 2.3)));
+          for (let x = -step; x <= w + step; x += step / 2) g.lineTo(x, snowY(x));
           g.lineTo(w + step, 0);
           g.closePath();
           g.fill();
+          // 설선 아래 청회 그늘 띠 — 만년설·하늘·뒤 봉우리가 92~97 L 한 값으로 뭉쳐 "백 위 백"이었다(QA 라운드 1 B#2).
+          g.strokeStyle = "rgb(150 168 190 / 0.34)";
+          g.lineWidth = 3;
+          g.beginPath();
+          for (let x = -step; x <= w + step; x += step / 2) g.lineTo(x, snowY(x) + 2);
+          g.stroke();
         }
         g.restore();
         g.restore();
@@ -1033,11 +1069,15 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       // 먼 것은 **밝고 옅다**(대기 원근). 옛 값은 앞 땅보다 어두워 "먹구름 벽"으로 읽혔다(검토 4차).
       // 먼 것은 **더 밝고 대비가 낮다** — 옛 값은 근경(눈밭·마른 풀)보다 어두워 "뒤에 세운 벽"으로 읽혔다
       // (사이클3 현실성 #2: 대기 원근 역전).
+      // 인접 층 명도 단차 ≥ 8L(MOUNTAIN_DEPTH_RULES §1) — 봄 ②·겨울 ①②는 6L 미만이라 한 판으로 읽혔다(QA 라운드 1 실측).
+      // after 1차 실측(x 880~980 열, 안개·틴트 포함): 가을 ①73.9/②60.1/③59.1, 겨울 ①92.5/②82.2/③83.9 → ②↔③이 0에 가까웠다.
+      // 가을은 ①·②를 함께 올려 하늘(81.6)↔①↔②↔③(59.1) 사이를 ≥ 8L씩 벌리고, 겨울은 ②를 눈밭(83.9)보다 8L 어둡게 —
+      // 먼 산이 가까운 눈밭보다 어두운 것은 눈의 알베도라 대기 원근의 예외로 허용(MOUNTAIN_DEPTH_RULES §4 눈 행).
       const PEAK: Record<SeasonKey, [string, string]> = {
-        spring: ["#d5dcdd", "#bfc8ca"],
+        spring: ["#d5dcdd", "#adb9bd"],
         summer: ["#c8d2ca", "#a9b6ba"],
-        autumn: ["#c9c2b2", "#a49a8a"],
-        winter: ["#eaf0f6", "#d6dee6"]
+        autumn: ["#cfc9ba", "#b8ae9e"],
+        winter: ["#e4ebf2", "#b2c0cf"]
       };
       // 봄 산이 겨울 산보다 하얗던 것(검토 라운드2 현실성 #6) — 봄은 **꼭대기 만년설만**, 지면 눈 얼룩은 없다.
       const snowy = season === "winter";
@@ -1061,7 +1101,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           const row = i % 2;
           cx2 += (w / 14) * (0.35 + g0() * 1.1); // 누적 간격 — 고정 피치면 "빗살"이 된다
           if (cx2 > w + 60) cx2 = -40 + g0() * 60;
-          const line = groundY(row ? 0.38 : 0.3) + (g0() - 0.5) * 120;
+          // 능선면(② v < .34)에는 나무가 서지 않는다(고산 나지, MOUNTAIN_DEPTH_RULES §5) — 옛 .3±60은 절반이 봉우리 면에 붙었다.
+          const line = Math.max(groundY(0.34), groundY(row ? 0.42 : 0.36) + (g0() - 0.5) * 70);
           const x = cx2 + (g0() - 0.5) * 70;
           if (g0() < 0.14) continue;
           // 아고산 침엽수는 **짧고 굵다**(9~10m에 수관 폭 1:3) — 가느다란 첨탑이 가장 흔한 오류.
@@ -1147,7 +1188,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       }
     }
     ground = c;
-    horizon = bakeHorizon(season, w, h, 1);
+    // 산은 봉우리 뒤에 초원의 언덕·나무 줄이 비치지 않게 안개 띠만(QA 라운드 1 D-2).
+    horizon = bakeHorizon(season, w, h, 1, kind === "mountain" ? "mountain" : "land");
     // 숲의 나무 자리(결정적) — 위 줄 + 좌우 기둥, 가운데는 비운다. 45%는 소나무(혼효림).
     trees.length = 0;
     const pineMix = () => g0() < 0.45;

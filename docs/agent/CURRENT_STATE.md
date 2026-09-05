@@ -32,7 +32,14 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   `tests/unit/ambient-qa-scenarios.test.ts`. 검증: tsc 0 · lint 0 · vitest 564 · build exit 0 · 셀프테스트 23/23(같은 URL 같은 픽셀 ·
   advance 경로 동치 · 얼림 · 시간대 · 시드 · 허용 날씨 · 도착 상태 · 에러 0) · 교차 검사 static=band=weather 16/16 · 시트·diff 육안.
   baseline `.scratch-pw/qa/r00/baseline`(16 시나리오 · 433 PNG · 192s). 하네스가 이미 보인 것: 흐림=맑음 16/16, 아침=점심 9/16,
-  시간 시트 0.00% 변화 7/16(숲·산·언덕 정적). **라운드 1 준비 완료** — 다음 세션은 프로토콜 §7부터(에이전트 3 동시 → ≤3건).
+  시간 시트 0.00% 변화 7/16(숲·산·언덕 정적).
+  **라운드 1 완료(2026-09-05, `docs/ambient/rounds/ROUND-01.md`)**: before(980f170) → A·B·C 동시 검토(15건 → 12) → 선택 3: ① AMB-A1-01
+  다람쥐·회오리·무당벌레·**묻을 자리(`pickCacheSpot` y가 하늘까지)** 전부 v ≥ .18 — 프로브 48회 위반 0(경로 최소 v .001 → .201) ② AMB-D2-01 산
+  다섯 층 — 지평선 profile "mountain"·능선선·구곡 기둥 삭제·발치 땅색·팔레트·설선 그늘(하늘↔①·①↔② 3/3 충족, ②↔③ 가을 4.3·겨울 5.3 개선-미달 →
+  AMB-D2-03) ③ AMB-S4-01/02 잠긴 돌 `drawSubmerged`(props.ts) 민물·계곡. 회귀: 손대지 않은 9 시나리오 해시 동일. 게이트 전부 통과.
+  하네스 보강: `--kinds long`(15~30s 긴 시간 시트 — 다람쥐 창), `-seed<n>` 폴더, `spawn-probe.mjs`(A-1 수용 측정), gitInfo dirty는 추적 파일만.
+  **별건(소유자 요청)**: 오늘 배지 빛을 숫자만이 아니라 "n 일" 전체 뒤로(시청자), 숫자 한 단계 크게(둘 다) — 머리줄 높이 불변.
+  다음: 라운드 2(첫 후보 AMB-S5-01 갯골 + F1-01) — 라운드 1 커밋 뒤 before를 새로 찍는다.
 
 - **'오늘' 표식 관례화 + 링을 띠 위로(2026-09-05 소유자 결정, 둘 다)**: 관례 조사 결과 Google·Apple·
   Outlook·Notion은 모두 오늘을 **날짜 숫자**에 건다(채운 원/배지) — 칸 테두리로 말하지 않고, 일정 콘텐츠는

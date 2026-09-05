@@ -26,7 +26,7 @@ const page = await browser.newPage();
 await page.setContent("<!doctype html><html><body style='margin:0;background:#fff'></body></html>");
 
 /** 브라우저 안에서 합성: 제목 띠 + 격자(각 칸 아래 캡션). */
-async function compose(tiles, title) {
+async function compose(tiles, title, colsOverride) {
   const dataUrl = await page.evaluate(
     async ({ tiles, title, cols, scale }) => {
       const load = (src) =>
@@ -71,7 +71,7 @@ async function compose(tiles, title) {
       });
       return cv.toDataURL("image/png");
     },
-    { tiles, title, cols, scale }
+    { tiles, title, cols: colsOverride ?? cols, scale }
   );
   return Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64");
 }
@@ -104,6 +104,11 @@ for (const { sid, dir, meta } of entries) {
     fs.writeFileSync(path.join(dir, "temporal-sheet.png"), await compose(temporal.map((f) => ({ src: pngDataUrl(path.join(dir, f.file)), label: `t = ${f.ms} ms · ${f.hash}` })), `${title} · 시간`));
     made++;
   }
+  const long = byKind("long").sort((a, b) => a.ms - b.ms);
+  if (long.length) {
+    fs.writeFileSync(path.join(dir, "long-sheet.png"), await compose(long.map((f) => ({ src: pngDataUrl(path.join(dir, f.file)), label: `t = ${f.ms / 1000}s · ${f.hash}${f.scene?.sqPhase !== undefined ? ` · sq ${f.scene.sqPhase}` : ""}` })), `${title} · 긴 시간(첫 랜덤 이벤트 창)`, 4));
+    made++;
+  }
   const band = byKind("band").sort((a, b) => BANDS.indexOf(a.band) - BANDS.indexOf(b.band));
   if (band.length) {
     fs.writeFileSync(path.join(dir, "band-sheet.png"), await compose(band.map((f) => ({ src: pngDataUrl(path.join(dir, f.file)), label: `${KO.band[f.band]} ${f.band} · ${f.hash}` })), `${title} · 시간대`));
@@ -119,7 +124,7 @@ for (const { sid, dir, meta } of entries) {
     fs.writeFileSync(path.join(dir, "static-gray.png"), await gray(pngDataUrl(path.join(dir, st.file))));
     made++;
   }
-  console.log(`✓ ${sid} — 시트 ${[temporal.length && "temporal", band.length && "band", weather.length && "weather", st && "gray"].filter(Boolean).join("/")}`);
+  console.log(`✓ ${sid} — 시트 ${[temporal.length && "temporal", long.length && "long", band.length && "band", weather.length && "weather", st && "gray"].filter(Boolean).join("/")}`);
 }
 await browser.close();
 console.log(`done · ${made} sheets → ${phaseDir}`);

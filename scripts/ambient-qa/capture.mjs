@@ -12,6 +12,7 @@ import {
   BANDS,
   BASE,
   KO,
+  LONG_MS,
   STATIC_T,
   TEMPORAL_MS,
   VIEWPORT,
@@ -22,10 +23,12 @@ import {
   fixtureUrl,
   gitInfo,
   launch,
+  listScenarioDirs,
   newPage,
   nowIso,
   openFixture,
   parseArgs,
+  readJson,
   roundDir,
   sidOf,
   state,
@@ -60,7 +63,23 @@ for (const sc of list) {
   const sid = sidOf(sc);
   const dir = path.join(outDir, sid);
   ensureDir(dir);
-  const meta = { sid, title: titleOf(sc), scenario: sc, round, phase, base, git, createdAt: nowIso(), viewport: VIEWPORT, frames: [], pageErrors: [] };
+  // 같은 폴더에 종류를 덧붙일 수 있다(예: `--only 3,4 --kinds long`) — 기존 프레임은 남기고 이번 종류만 갈아 낀다.
+  const metaPath = path.join(dir, "meta.json");
+  const prev = fs.existsSync(metaPath) ? readJson(metaPath) : null;
+  const meta = {
+    sid,
+    title: titleOf(sc),
+    scenario: sc,
+    round,
+    phase,
+    base,
+    git,
+    createdAt: nowIso(),
+    viewport: VIEWPORT,
+    frames: prev ? prev.frames.filter((f) => !kinds.includes(f.kind)) : [],
+    pageErrors: [],
+    weatherOptions: prev?.weatherOptions
+  };
   const shot = async (file, url, extra) => {
     const cap = await captureCanvas(page);
     fs.writeFileSync(path.join(dir, file), cap.png);
@@ -82,6 +101,17 @@ for (const sc of list) {
       await shot(`temporal-${String(ms).padStart(4, "0")}.png`, url, { kind: "temporal", ms });
     }
   }
+  if (kinds.includes("long")) {
+    // 긴 시간 시트 — 첫 랜덤 이벤트 창(15~30s, 1초 간격). t=15000 페이지에서 1초씩 누적(같은 걸음 수 = 같은 프레임).
+    const url = fixtureUrl(sc, { t: LONG_MS[0] }, base);
+    await openFixture(page, url);
+    let prev = LONG_MS[0];
+    for (const ms of LONG_MS) {
+      if (ms > prev) await advance(page, ms - prev);
+      prev = ms;
+      await shot(`long-${String(ms).padStart(5, "0")}.png`, url, { kind: "long", ms });
+    }
+  }
   if (kinds.includes("band")) {
     for (const b of BANDS) {
       const url = fixtureUrl(sc, { band: b, t: STATIC_T }, base);
@@ -101,13 +131,15 @@ for (const sc of list) {
     }
   }
   meta.pageErrors = errors.splice(0);
-  writeJson(path.join(dir, "meta.json"), meta);
+  writeJson(metaPath, meta);
   fs.writeFileSync(path.join(dir, "index.md"), scenarioIndex(meta));
   phaseIndex.push(meta);
   console.log(`✓ ${sid} — ${meta.frames.length} frames${meta.pageErrors.length ? ` · ⚠ page errors ${meta.pageErrors.length}` : ""}`);
 }
 
-fs.writeFileSync(path.join(outDir, "index.md"), phaseIndexMd(round, phase, phaseIndex));
+// phase 인덱스는 폴더 전체(이번에 안 찍은 시나리오 포함)로 다시 만든다.
+const all = listScenarioDirs(outDir).map((e) => e.meta);
+fs.writeFileSync(path.join(outDir, "index.md"), phaseIndexMd(round, phase, all));
 writeJson(path.join(outDir, "phase.json"), {
   round,
   phase,
@@ -117,7 +149,7 @@ writeJson(path.join(outDir, "phase.json"), {
   git,
   createdAt: nowIso(),
   elapsedSec: Math.round((Date.now() - t0) / 1000),
-  scenarios: phaseIndex.map((m) => ({ sid: m.sid, id: m.scenario.id, frames: m.frames.length, pageErrors: m.pageErrors.length }))
+  scenarios: all.map((m) => ({ sid: m.sid, id: m.scenario.id, frames: m.frames.length, pageErrors: m.pageErrors.length }))
 });
 await browser.close();
 console.log(`done · ${Math.round((Date.now() - t0) / 1000)}s → ${path.join(outDir, "index.md")}`);
@@ -137,7 +169,7 @@ function scenarioIndex(m) {
 - 라운드 r${m.round} · ${m.phase} · 빌드 \`${m.git.commit}\`${m.git.dirty ? " (dirty)" : ""} · 캡처 ${m.createdAt}
 - 조합: biome **${sc.biome}** / season **${sc.season}** / band **${sc.band}** / weather **${sc.weather}** / seed **${sc.seed}** / camera showcase · 뷰포트 ${m.viewport.width}×${m.viewport.height}
 - 왜 이 조합: ${sc.why} · 주 검사자 ${sc.agents}
-- 시트(sheet.mjs 뒤): [temporal-sheet.png](temporal-sheet.png) · [band-sheet.png](band-sheet.png) · [weather-sheet.png](weather-sheet.png) · [static-gray.png](static-gray.png) · diff(diff.mjs 뒤): temporal-diff-*.png · [diff.json](diff.json)
+- 시트(sheet.mjs 뒤): [temporal-sheet.png](temporal-sheet.png) · [band-sheet.png](band-sheet.png) · [weather-sheet.png](weather-sheet.png) · [static-gray.png](static-gray.png)${m.frames.some((f) => f.kind === "long") ? " · [long-sheet.png](long-sheet.png)(15~30s, 첫 랜덤 이벤트 창)" : ""} · diff(diff.mjs 뒤): temporal-diff-*.png${m.frames.some((f) => f.kind === "long") ? " · long-diff-*.png" : ""} · [diff.json](diff.json)
 ${m.weatherOptions ? `- 허용 날씨(이 달): ${m.weatherOptions.map((w) => KO.weather[w] ?? w).join(" · ")}\n` : ""}
 ## 프레임
 
