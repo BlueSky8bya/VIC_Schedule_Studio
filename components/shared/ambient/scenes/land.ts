@@ -1194,56 +1194,84 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     trees.length = 0;
     const pineMix = () => g0() < 0.45;
     if (kind === "forest") {
+      // 나무 수 **34~48**(소유자 결정 2026-09-05 "숲은 일단 성글게" — AMB-S1-01, 열린 결정 확정).
+      // 옛 76~81그루는 소나무-참나무 혼효림의 수관 틈(30~40%)을 메워 한 덩이 초록으로 읽혔고, 자리 점유를
+      // 안 거쳐 뒷줄 여섯 그루가 융합했다. 이제 **모든 나무가 `claimSpot`을 지난다** — 소품 필드를 공유하니
+      // 그루터기·통나무·바위 위에도 서지 않는다. 자리가 차면 다른 후보를 다시 뽑고(결정적: 시도마다 rng 소비),
+      // 끝내 못 놓으면 그 그루는 없다(수가 목표 아래로 조금 내려가는 편이 겹치는 것보다 낫다).
+      const putTree = (pick: () => { x: number; y: number; R: number; pine: boolean }, clearance: number, tries = 6) => {
+        for (let t2 = 0; t2 < tries; t2++) {
+          const cand = pick();
+          if (!claimSpot(cand.x, cand.y, cand.R * clearance)) continue;
+          trees.push(cand);
+          return true;
+        }
+        return false;
+      };
       // 뒷줄은 **무리**로 — 등간격 일렬은 자연림이 아니라 방풍림 열로 읽힌다(검토 라운드2 경계 #9 · 미관 #13).
+      // 무리 안에서는 수관이 닿아도 된다(그게 무리다) → 여유 0.42, 무리 사이는 비운다.
       {
-        const clumps = 5 + Math.round(w / 420); // 원경에서 수관이 닫혀야 "숲"이다(옛 3~5는 가로수 열)
+        const clumps = 4 + Math.round(w / 600);
         for (let c2 = 0; c2 < clumps; c2++) {
           const cx3 = w * ((c2 + 0.5) / clumps) + (g0() - 0.5) * w * 0.16;
-          const n2 = 4 + Math.floor(g0() * 4);
+          const n2 = 2 + Math.floor(g0() * 3);
           for (let i = 0; i < n2; i++) {
-            trees.push({
-              x: cx3 + (g0() - 0.5) * w * 0.16,
-              y: groundY(0.02 + g0() * 0.2),
-              R: Math.round((SIZE.treeCrownW / 2) * (0.55 + g0() * 0.62)),
-              pine: pineMix()
-            });
+            putTree(
+              () => ({
+                x: cx3 + (g0() - 0.5) * w * 0.16,
+                y: groundY(0.02 + g0() * 0.2),
+                R: Math.round((SIZE.treeCrownW / 2) * (0.55 + g0() * 0.62)),
+                pine: pineMix()
+              }),
+              0.42
+            );
           }
         }
       }
-      for (const side of [0.06, 0.94]) for (let i = 0; i < 3; i++) trees.push({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.3 + i * 0.22 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.8 + g0() * 0.3)), pine: pineMix() });
+      for (const side of [0.06, 0.94])
+        for (let i = 0; i < 2; i++)
+          putTree(() => ({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.32 + i * 0.28 + g0() * 0.1), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.3)), pine: pineMix() }), 0.66);
       // 중간 깊이 — 앞줄과 뒷줄 사이가 텅 비어 "울타리 친 마당"으로 읽혔다. 빈터는 가운데(u 0.36~0.64)만 비운다.
-      // 혼효림의 수관 틈은 30~40%라 참나무 순림보다 성기다(8 → 6).
-      for (let i = 0; i < 10; i++) {
-        const u = g0() < 0.5 ? 0.03 + g0() * 0.34 : 0.63 + g0() * 0.34;
-        trees.push({ x: w * u, y: groundY(0.26 + g0() * 0.62), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.4)), pine: pineMix() });
+      for (let i = 0; i < 7; i++) {
+        putTree(() => {
+          const u = g0() < 0.5 ? 0.03 + g0() * 0.34 : 0.63 + g0() * 0.34;
+          return { x: w * u, y: groundY(0.26 + g0() * 0.62), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.4)), pine: pineMix() };
+        }, 0.72);
       }
       // 중앙 초점 — 큰 나무 셋이 한 무리로(도넛 구멍이 아니라 '큰 나무 아래 빈터'가 되게, 사이클4 미관 #8).
       {
         const cx4 = w * (0.42 + g0() * 0.16);
         const cy4 = groundY(0.52 + g0() * 0.14);
         for (let i = 0; i < 3; i++) {
-          trees.push({
-            // 등간격 직선 사슬은 식재 열로 읽힌다(사이클4 현실성 #7) — 각도·거리를 흩는다.
-            x: cx4 + Math.cos(i * 2.1 + g0()) * (30 + g0() * 70),
-            y: cy4 + Math.sin(i * 2.1 + g0()) * (24 + g0() * 50),
-            R: Math.round((SIZE.treeCrownW / 2) * (1.0 + g0() * 0.35)),
-            pine: i === 1 ? false : pineMix()
-          });
+          putTree(
+            () => ({
+              // 등간격 직선 사슬은 식재 열로 읽힌다(사이클4 현실성 #7) — 각도·거리를 흩는다.
+              x: cx4 + Math.cos(i * 2.1 + g0()) * (30 + g0() * 70),
+              y: cy4 + Math.sin(i * 2.1 + g0()) * (24 + g0() * 50),
+              R: Math.round((SIZE.treeCrownW / 2) * (1.0 + g0() * 0.35)),
+              pine: i === 1 ? false : pineMix()
+            }),
+            0.5
+          );
         }
       }
-      // 빈터 **둘레**를 두르는 중간 나무들 — 한가운데만 비고 그 밖은 채워야 "빈터"로 읽힌다(지금은 통째로 잔디밭).
-      for (let i = 0; i < 8; i++) {
-        const a2 = (i / 8) * TAU + g0() * 0.3;
-        const rr2 = 0.31 + g0() * 0.08;
-        const u = 0.5 + Math.cos(a2) * rr2;
-        const v = 0.56 + Math.sin(a2) * rr2 * 0.72;
-        if (v < 0.18) continue;
-        trees.push({ x: w * u, y: groundY(v), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.45)), pine: pineMix() });
+      // 빈터 **둘레**를 두르는 중간 나무들 — 한가운데만 비고 그 밖은 채워야 "빈터"로 읽힌다.
+      for (let i = 0; i < 6; i++) {
+        const a2 = (i / 6) * TAU + g0() * 0.3;
+        putTree(() => {
+          const rr2 = 0.31 + g0() * 0.08;
+          const u = 0.5 + Math.cos(a2) * rr2;
+          const v = Math.max(0.19, 0.56 + Math.sin(a2) * rr2 * 0.72);
+          return { x: w * u, y: groundY(v), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.45)), pine: pineMix() };
+        }, 0.72);
       }
       // 가운데도 **가까운 쪽**엔 나무가 선다 — 안 그러면 한가운데가 밝은 도넛 구멍이 된다(검토 4차).
-      for (let i = 0; i < 3; i++) trees.push({ x: w * (0.38 + g0() * 0.24), y: groundY(0.82 + g0() * 0.18), R: Math.round((SIZE.treeCrownW / 2) * (1.05 + g0() * 0.25)), pine: pineMix() });
+      for (let i = 0; i < 2; i++)
+        putTree(() => ({ x: w * (0.38 + g0() * 0.24), y: groundY(0.82 + g0() * 0.18), R: Math.round((SIZE.treeCrownW / 2) * (1.05 + g0() * 0.25)), pine: pineMix() }), 0.6);
       // 코앞 두 그루 — 화면 아래에서 잘린다(가까움의 신호, 동물의 숲 카메라). 하나는 소나무로 고정해 실루엣 대비를 준다.
-      for (const [i2, side] of [0.1, 0.88].entries()) trees.push({ x: w * side + (g0() - 0.5) * 40, y: groundY(1.02), R: Math.round(SIZE.treeCrownW / 2 * (1.1 + g0() * 0.25)), pine: i2 === 0 });
+      // 화면 밖으로 반쯤 나가므로 여유는 작게(0.45) — 그래도 서로·앞 나무와는 안 겹친다.
+      for (const [i2, side] of [0.1, 0.88].entries())
+        putTree(() => ({ x: w * side + (g0() - 0.5) * 40, y: groundY(1.02), R: Math.round((SIZE.treeCrownW / 2) * (1.1 + g0() * 0.25)), pine: i2 === 0 }), 0.45);
       trees.sort((a, b) => a.y - b.y);
     } else if (kind === "valley") {
       // 계곡 사면 = 참나무 극상림(수관 틈 0~20%) — 하늘이 열리는 곳은 물길뿐이다. 물 위에 서지 않게
