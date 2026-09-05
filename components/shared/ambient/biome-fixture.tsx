@@ -23,6 +23,8 @@ export const SEASON_MONTH: Record<SeasonKey, number> = { spring: 4, summer: 8, a
 export type BiomeFixtureProps = {
   season: SeasonKey;
   year: number;
+  /** 달력 달(1~12) — 없으면 계절의 대표 달. 달 위상·흔적 스윕 검증용. */
+  month?: number;
   /** 엔진 강제값 — biome·band·weather·seed·load·pointer + freeze·pin은 페이지가 늘 true로 준다. */
   force: NonNullable<WorldCtx["force"]>;
   /** 도달할 애니메이션 시각(ms). 0 = 굽기만 한 첫 프레임. */
@@ -45,7 +47,7 @@ const waitFor = <T,>(get: () => T | undefined, timeoutMs: number): Promise<T | u
     poll();
   });
 
-export function BiomeFixture({ season, year, force, t, camera }: BiomeFixtureProps) {
+export function BiomeFixture({ season, year, month, force, t, camera }: BiomeFixtureProps) {
   const forceKey = JSON.stringify(force);
   // 자식(SeasonCanvas)의 마운트 효과보다 **먼저** 게이트를 연다 — 레이아웃 효과는 패시브 효과 전에 전부 돈다.
   // 페인트-전 스크립트는 vic.ambient 미설정 → data-ambient="off"(캔버스 display:none)라, 그대로 두면 엔진이 0×0을 잰다.
@@ -72,7 +74,7 @@ export function BiomeFixture({ season, year, force, t, camera }: BiomeFixturePro
   }, [t, season, forceKey]);
   return (
     <>
-      <AmbientLayer force={season} month={SEASON_MONTH[season]} slug="vic" worldForce={force} year={year} />
+      <AmbientLayer force={season} month={month ?? SEASON_MONTH[season]} slug="vic" worldForce={force} year={year} />
       {camera === "showcase" ? <ShowcaseExit /> : null}
     </>
   );

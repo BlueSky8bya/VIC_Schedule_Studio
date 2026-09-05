@@ -43,6 +43,8 @@ export type WorldCtx = {
     band?: DayBand;
     weather?: Weather;
     biome?: BiomeKey;
+    /** 달력 날(1~31) 강제 — 달 위상 스윕 검증용(fixture, 2026-09-06 라운드 6 결정 5). 없으면 viewDay. */
+    day?: number;
     seed?: number;
     freeze?: boolean;
     load?: number;
@@ -259,7 +261,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   let lightInit = false;
   const refreshWorld = () => {
     const today = kstToday();
-    const d = viewDay(world.year, world.month, today);
+    const d = worldForce?.day ?? viewDay(world.year, world.month, today);
     frame.date = { y: world.year, m: world.month, d };
     frame.time = worldForce?.band ? worldTimeOfBand(world.season, worldForce.band) : worldTime(world.season, worldForce?.hour ?? kstHour());
     const hour = frame.time.hour;

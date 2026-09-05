@@ -135,16 +135,19 @@ export function createDeep(seed: number): Scene {
       h = f.h;
       if (!bg || bw !== w || bh !== h || bdpr !== f.dpr) bake(f.dpr);
       if (jellies.length === 0) {
+        // (아래 push 뒤 r을 z로 채운다)
         for (let i = 0; i < 7; i++) {
           jellies.push({
             x: w * (0.08 + 0.13 * i + 0.04 * Math.sin(i * 2.3)),
             y: h * (0.18 + 0.1 * i + 0.06 * Math.sin(i * 1.7)),
-            r: 12 + rand() * 26,
+            // 반지름은 z의 함수 — 크기와 깊이 단서가 어긋나면 "가장 큰 것이 화면 한가운데"가 된다(라운드 7 B).
+            r: 0,
             ph: rand() * TAU,
             spd: 3 + rand() * 5,
-            z: 0.3 + rand() * 0.7
+            z: 0.25 + rand() * 0.75
           });
         }
+        for (const j of jellies) j.r = 10 + 30 * j.z;
       }
     },
     step(f) {
@@ -244,37 +247,75 @@ export function createDeep(seed: number): Scene {
           g.restore();
         }
       }
-      // ② 먼 층의 큰 실루엣 — 물고기보다 뒤. 고래는 옆모습 그대로(윗면 아님).
+      // ③ 생물 — **한 z 목록으로 모아 한 번만 정렬**한다(2026-09-06 라운드 7 B: 물고기·해파리·고래·오징어를
+      // 클래스 단위로 통째 그려 z .17 해파리가 z .9 물고기 앞에 왔다 — A-3·D-1). 옆모습이라 y는 수심이고
+      // 앞뒤는 오직 z다.
+      type Draw = { z: number; run: () => void };
+      const items: Draw[] = [];
+      for (const s2 of fish) {
+        const spr = fishSpr[s2.kind] || fishSpr[0];
+        const a = 0.22 + 0.5 * s2.z;
+        items.push({
+          z: s2.z,
+          run: () => {
+            g.save();
+            g.globalAlpha *= a;
+            if (spr) drawFacing(g, spr, s2.x, s2.y, s2.hd, s2.px / SPR, Math.sin(t * 3 + s2.ph) * 0.06);
+            else {
+              g.fillStyle = "rgb(9 24 40)";
+              g.beginPath();
+              g.ellipse(s2.x, s2.y, s2.px * 0.42, s2.px * 0.2, 0, 0, TAU);
+              g.fill();
+            }
+            g.restore();
+          }
+        });
+      }
+      for (const j of jellies) {
+        const pulse = 0.5 + 0.5 * Math.sin(t * 1.3 + j.ph);
+        const R = j.r * (0.9 + 0.14 * pulse);
+        const a = (0.16 + 0.16 * pulse) * (0.55 + 0.5 * j.z);
+        items.push({
+          z: j.z,
+          run: () => {
+            softBlob(g, j.x, j.y, R * 2.2, GLOW, a * 0.5, 0);
+            if (jellySpr) {
+              g.save();
+              g.globalAlpha *= Math.min(1, a * 2.6);
+              g.translate(j.x, j.y);
+              const k = (R * 2.4) / SPR;
+              g.scale(k, k * (0.94 + 0.1 * pulse));
+              g.drawImage(jellySpr.c, -SPR / 2, -SPR / 2, SPR, SPR);
+              g.restore();
+            }
+          }
+        });
+      }
       if (bigSpr && bigX > -1000 && bigX < f.w + 1000) {
-        g.save();
-        g.globalAlpha = 0.16;
-        drawFacing(g, bigSpr, bigX, bigY + Math.sin(t * 0.12) * 10, bigDir > 0 ? 0 : Math.PI, 2.6);
-        g.restore();
+        items.push({
+          z: 0.08, // 고래는 가장 먼 층
+          run: () => {
+            g.save();
+            g.globalAlpha = 0.16;
+            drawFacing(g, bigSpr!, bigX, bigY + Math.sin(t * 0.12) * 10, bigDir > 0 ? 0 : Math.PI, 2.6);
+            g.restore();
+          }
+        });
       }
-      // ③ 물고기 — 옆모습 실루엣. 멀수록 작고 옅고 물빛에 잠긴다(대기 원근의 물속판).
-      const sorted = fish.slice().sort((a, b) => a.z - b.z);
-      for (const s of sorted) {
-        const spr = fishSpr[s.kind] || fishSpr[0];
-        const a = 0.22 + 0.5 * s.z;
-        g.save();
-        g.globalAlpha *= a;
-        if (spr) drawFacing(g, spr, s.x, s.y, s.hd, s.px / SPR, Math.sin(t * 3 + s.ph) * 0.06);
-        else {
-          g.fillStyle = "rgb(9 24 40)";
-          g.beginPath();
-          g.ellipse(s.x, s.y, s.px * 0.42, s.px * 0.2, 0, 0, TAU);
-          g.fill();
-        }
-        g.restore();
-      }
-      // ④ 오징어 한 마리 — 화면 가장자리를 느리게 지난다(있으면).
       if (squidSpr) {
         const sx = ((t * 9) % (f.w + 400)) - 200;
-        g.save();
-        g.globalAlpha = 0.2;
-        drawFacing(g, squidSpr, sx, f.h * 0.24 + Math.sin(t * 0.4) * 12, 0, 0.5);
-        g.restore();
+        items.push({
+          z: 0.3,
+          run: () => {
+            g.save();
+            g.globalAlpha = 0.2;
+            drawFacing(g, squidSpr!, sx, f.h * 0.24 + Math.sin(t * 0.4) * 12, 0, 0.5);
+            g.restore();
+          }
+        });
       }
+      items.sort((a, b) => a.z - b.z);
+      for (const it of items) it.run();
       // ⑤ 마린 스노 — 위에서 아래로 천천히 내린다. 옆모습이라 이게 유일한 "중력"의 증거다.
       // 세 층(먼·중간·앞) — 크기·속도·알파가 층마다 달라야 "물속"의 깊이가 읽힌다(검토 A·C).
       const nSnow = Math.round(lerp(140, 380, f.load));
@@ -293,22 +334,6 @@ export function createDeep(seed: number): Scene {
           const drift = Math.sin(t * 0.18 + i * 1.7) * L.drift;
           g.fillStyle = `rgb(${MOTE} / ${(L.a * (0.7 + rs() * 0.6)).toFixed(3)})`;
           g.fillRect(sx + drift, sy, L.px, L.px);
-        }
-      }
-      // ⑥ 발광 해파리 — 빛무리 + 실루엣이 아닌 밝은 몸. 맥동은 시간이 아니라 개체의 위상이 만든다.
-      for (const j of jellies) {
-        const pulse = 0.5 + 0.5 * Math.sin(t * 1.3 + j.ph);
-        const R = j.r * (0.9 + 0.14 * pulse);
-        const a = (0.16 + 0.16 * pulse) * (0.55 + 0.5 * j.z);
-        softBlob(g, j.x, j.y, R * 2.2, GLOW, a * 0.5, 0);
-        if (jellySpr) {
-          g.save();
-          g.globalAlpha *= Math.min(1, a * 2.6);
-          g.translate(j.x, j.y);
-          const k = (R * 2.4) / SPR;
-          g.scale(k, k * (0.94 + 0.1 * pulse));
-          g.drawImage(jellySpr.c, -SPR / 2, -SPR / 2, SPR, SPR);
-          g.restore();
         }
       }
       // ⑦ 심연 — 아래로 갈수록 어둡다. 장면 맨 위에 한 겹(생물도 같이 잠긴다).

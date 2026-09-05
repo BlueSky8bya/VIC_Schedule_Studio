@@ -114,6 +114,15 @@ for (const { sid, dir, meta } of entries) {
     fs.writeFileSync(path.join(dir, "band-sheet.png"), await compose(band.map((f) => ({ src: pngDataUrl(path.join(dir, f.file)), label: `${KO.band[f.band]} ${f.band} · ${f.hash}` })), `${title} · 시간대`));
     made++;
   }
+  const moon = byKind("moon").sort((a, b) => a.day - b.day);
+  if (moon.length) {
+    // 달 위상 30일 — 6열 5행. 삭(달 없음) · 상현 · 보름 · 하현이 한눈에 보여야 한다.
+    fs.writeFileSync(
+      path.join(dir, "moon-sheet.png"),
+      await compose(moon.map((f) => ({ src: pngDataUrl(path.join(dir, f.file)), label: `${f.day}일 · ${f.hash}` })), `${title} · 달 위상(30일)`, 6)
+    );
+    made++;
+  }
   const weather = byKind("weather");
   if (weather.length) {
     fs.writeFileSync(path.join(dir, "weather-sheet.png"), await compose(weather.map((f) => ({ src: pngDataUrl(path.join(dir, f.file)), label: `${KO.weather[f.weather]} ${f.weather} · ${f.hash}` })), `${title} · 날씨`));

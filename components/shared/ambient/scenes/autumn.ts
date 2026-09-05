@@ -15,11 +15,11 @@ import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
-import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
+import { drawProp, propShadow, propSpots, resetPropField, scatterProps } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
-import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
+import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { LEAF_K, SIZE } from "../world/scale";
-import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, horizonY, moveScale } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, horizonY, moveScale, hillCrestY } from "../world/view";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -126,6 +126,8 @@ export function createAutumn(seed: number): Scene {
   let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
   let skyKeyCur = "";
+  // 흐르는 구름 두 층(라운드 6 결정 4) — 폭 2w 타일, 오프셋은 t의 순수 함수라 캡처는 여전히 결정적이다.
+  let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
   // 땅의 위 끝(지평선) — 잎·소품·다람쥐·돌풍은 이 아래에서만 산다(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 떠다닌다").
   const gy = () => horizonY(h);
@@ -309,14 +311,6 @@ export function createAutumn(seed: number): Scene {
       const y = groundY(g0());
       drawProp(g, groundArt, "pebble", x, y, { k: (0.7 + g0() * 0.9) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
-    const shrooms = clamp(Math.round((w * h) / 300000), 3, 7);
-    for (let i = 0; i < shrooms; i++) {
-      const x = 30 + g0() * (w - 60);
-      const y = gy() + 30 + g0() * (h - gy() - 60);
-      const k = (0.8 + g0() * 0.6) * depthScale(y, h);
-      propShadow(g, x + 3, y - 4, 12 * k, 0.22, 1, "43 35 32");
-      drawProp(g, groundArt, "mushroom", x, y + 8 * k, { k, r: g0() });
-    }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
     scatterProps(g, groundArt, w, h, g0, [
       { id: "shrub-autumn", n: 3 },
@@ -324,6 +318,26 @@ export function createAutumn(seed: number): Scene {
       { id: "stump", n: 1 },
       { id: "log", n: 1 }
     ]);
+    // 버섯 — **나무·그루터기·통나무 곁에, 2~3개 군집**(2026-09-06 라운드 7, 검토 B: 균일 난수라 최근접
+    // 통나무까지 185~380px 떨어져 홀로 서 있었다 — BIOME_GRAMMAR 공통 간격 "버섯: 군집 2~3 ≤ 24px, 90px 안").
+    // 그림자도 고쳤다 — 옛 propShadow(x+3, y-4, ..., sy 1)은 발(y + 8k)보다 10~19px **위**에 원형으로 찍혔다.
+    {
+      const anchors = propSpots().filter((sp) => sp.r >= 10);
+      const groups = anchors.length === 0 ? 0 : Math.min(anchors.length, 2 + Math.floor(g0() * 2));
+      for (let gi = 0; gi < groups; gi++) {
+        const a = anchors[Math.floor(g0() * anchors.length) % anchors.length];
+        const ax = a.x + (g0() - 0.5) * 90;
+        const ay = Math.max(gy() + 30, Math.min(h - 30, a.y + (g0() - 0.5) * 40));
+        const n = 2 + Math.floor(g0() * 2);
+        for (let i = 0; i < n; i++) {
+          const x = ax + (g0() - 0.5) * 24;
+          const y = ay + (g0() - 0.5) * 14;
+          const k = (0.8 + g0() * 0.5) * depthScale(y, h);
+          propShadow(g, x + 2 * k, y + 8 * k, 12 * k, 0.22, GROUND_SQUASH * 0.5, "43 35 32");
+          drawProp(g, groundArt, "mushroom", x, y + 8 * k, { k, r: g0() });
+        }
+      }
+    }
     // 낙엽·잔가지·도토리가 쌓이려면 **떨어뜨릴 나무**가 있어야 한다 — 무입목 초지에 활엽 낙엽 융단은
     // 있을 수 없다(검토 라운드2 현실성 #13). 화면 위·좌우 가장자리에 참나무 무리를 두르고, 낙엽 더미도
     // 그 발치에 모인다(균등 산포 = confetti, 미관 #11).
@@ -999,14 +1013,15 @@ export function createAutumn(seed: number): Scene {
         const sk = skyKey("autumn", f.weather.now, f.time.band, f.w, f.h);
         if (!skyC || sk !== skyKeyCur) {
           skyC = bakeSky("autumn", f.weather.now, f.time.band, f.w, f.h, seed);
+          cloudC = bakeClouds("autumn", f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개. 바탕 위, 모든 것 아래.
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.92, { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
+      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
+      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 서리 안개 — 안개 낀 날(11월에 잦다)은 더 깊이 내려온다.
       // 안개 날씨의 짙어짐은 **엔진 안개층**(light.ts groundFog·hazeK)이 맡는다 — 옛 ×1.7/×1.6은 엔진 안개와 겹쳐 상단 300px이
       // 단일 값의 흰 벽이 되고 지평선 실루엣이 사라졌다(QA 라운드 3 C#4 이중 안개). 서리안개는 맑은 가을 아침의 얇은 베일로만.

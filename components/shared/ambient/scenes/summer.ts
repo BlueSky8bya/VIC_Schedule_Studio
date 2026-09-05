@@ -26,14 +26,14 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
-import { bakeShore, bakeTraces, drawTraces, shoreBandY, shoreEdgeOffset, type TraceBakes } from "../world/traces-draw";
+import { bakeShore, bakeTraces, drawTraces, shoreBandY, shoreEdgeOffset, shoreLandEdge, type TraceBakes } from "../world/traces-draw";
 import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
 import { drawProp, drawSubmerged } from "../art/props";
 import { SIZE } from "../world/scale";
 import { currentLight } from "../world/light";
-import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
-import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, groundK, horizonY, moveScale } from "../world/view";
+import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, groundK, horizonY, moveScale, hillCrestY } from "../world/view";
 import type { SeasonKey } from "../registry";
 import { bakeWater, drawGlints, drawTrail, drawWaterLight, newTrail, stepTrail, waterPalette } from "./water";
 
@@ -337,6 +337,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   const shoreY = () => shoreBandY(h) + 6;
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
   let skyKeyCur = "";
+  // 흐르는 구름 두 층(라운드 6 결정 4) — 폭 2w 타일, 오프셋은 t의 순수 함수라 캡처는 여전히 결정적이다.
+  let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   // (옛 `waterY(r)` = shoreY() 기준 균일 분포는 제거 — 아래 `waterYAt(x, r)`만 쓴다.)
   // 물가 선의 **실제** y(x별) — 기슭 굽기(bakeShore)의 뭍 경계와 같은 식. shoreY()는 물의 위쪽 한계일 뿐이고 뭍은 그 아래
   // 최대 ~110px까지 내려온다(만곡 44 + 만·곶 ±61). 옛 코드는 shoreY() 기준으로 생물·글린트·포인터 물결을 놓아 오리가 뭍을
@@ -455,7 +457,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         const sg = shore.getContext("2d");
         if (sg) {
           const r0 = rng(91 + w + SEASON_SEED[season]); // 계절마다 다른 배치 — 넷이 같은 그림이면 계절이 안 읽힌다
-          const edge = shore.height - 24;
+          // 묍 경계는 `bakeShore`가 쓰는 값을 **그대로 빌려온다** — 여기서 다시 계산하던 `shore.height − 24`는
+          // 43px 아래(물 안)였다(2026-09-06 라운드 7 B, **P0**: 바위·통나무·관목이 물 폴리곤 안 30~33px에 서 있었다).
+          const edge = shoreLandEdge(h);
           // 아트가 없으면 대체물로 — 옛 코드는 아트 전용이라 기슭이 늘 맨땅이었다(검토 4차).
           // 발은 **x별 물가 선 위**(edge + shoreEdgeOffset)에 — 옛 평평한 `edge − 2`는 물가가 높은 x에서 소품 발이 물에 들어갔다(AMB-S4-04, 라운드 2 B#4·3 B).
           const stand = (id: string, n: number, k: number, rr?: number) => {
@@ -486,14 +490,41 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         mg2.fillStyle = rf;
         mg2.fillRect(0, 0, w, MH * 0.22);
         if (season !== "winter") {
-          // 물풀 섬 둘 — 얕은 자리에 모인 수초 덩이(연잎 군락과 다른 결).
+          // 물풀 섬 둘 — 얕은 자리에 모인 수초 덩이. **모래톱 + 수면선 + 잠긴 밑동**(2026-09-06 라운드 7,
+          // 검토 B #10: "수면선도 기슭도 없는 어두운 방사 얼룩 위에 뿌리 없는 갈대 획 22개"). 소프트 원반은
+          // 에지가 없어 "렌즈 먼지"로 읽히므로, 계단진 모래톱 다각형 + 앞 반원 수면선 + 밑동 3px 물색으로 바꾼다.
           for (let c2 = 0; c2 < 2; c2++) {
             const cx3 = w * (0.16 + r2() * 0.7);
             const cy3 = MH * (0.16 + r2() * 0.5);
-            softBlob(mg2, cx3, cy3, 50 + r2() * 60, "88 122 84", 0.3, 0, GROUND_SQUASH);
+            const R = 50 + r2() * 60;
+            // ① 모래톱 — 2px 격자에 스냅한 계단 다각형(경계 대비 ≥ 6L).
+            mg2.fillStyle = "rgb(126 132 104 / 0.5)";
+            mg2.beginPath();
+            let first = true;
+            for (let a3 = 0; a3 <= TAU + 0.01; a3 += 0.22) {
+              const rr = R * (0.62 + 0.3 * Math.sin(a3 * 2.3 + c2) + 0.12 * Math.sin(a3 * 5.1));
+              const px = Math.round((cx3 + Math.cos(a3) * rr) / 2) * 2;
+              const py = Math.round((cy3 + Math.sin(a3) * rr * GROUND_SQUASH) / 2) * 2;
+              if (first) {
+                mg2.moveTo(px, py);
+                first = false;
+              } else mg2.lineTo(px, py);
+            }
+            mg2.closePath();
+            mg2.fill();
+            // ② 수초 덩이 — 모래톱 위에 옅게(원반이 아니라 채운 다각형 위의 색).
+            mg2.fillStyle = "rgb(88 122 84 / 0.34)";
+            mg2.fill();
+            // ③ 앞 반원 수면선 — 섬이 물에 잠겨 있다는 신호.
+            mg2.strokeStyle = "rgb(228 240 236 / 0.32)";
+            mg2.lineWidth = 1.2;
+            mg2.beginPath();
+            mg2.ellipse(cx3, cy3 + R * 0.34 * GROUND_SQUASH, R * 0.72, R * 0.2 * GROUND_SQUASH, 0, 0.1, Math.PI - 0.1);
+            mg2.stroke();
+            // ④ 갈대 획 — **모래톱 안에서만** 서고, 밑동 3px는 물색으로 잠긴다.
             for (let i = 0; i < 22; i++) {
               const a2 = r2() * TAU;
-              const d = Math.pow(r2(), 0.6) * (46 + r2() * 40);
+              const d = Math.pow(r2(), 0.6) * R * 0.72;
               const x = cx3 + Math.cos(a2) * d;
               const y = cy3 + Math.sin(a2) * d * GROUND_SQUASH;
               mg2.strokeStyle = `rgb(${r2() < 0.5 ? "104 140 92" : "78 112 76"} / ${0.4 + r2() * 0.4})`;
@@ -501,6 +532,11 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
               mg2.beginPath();
               mg2.moveTo(x, y);
               mg2.lineTo(x + (r2() - 0.5) * 7, y - 8 - r2() * 12);
+              mg2.stroke();
+              mg2.strokeStyle = "rgb(96 128 120 / 0.5)"; // 잠긴 밑동
+              mg2.beginPath();
+              mg2.moveTo(x, y + 1);
+              mg2.lineTo(x, y - 3);
               mg2.stroke();
             }
           }
@@ -1441,13 +1477,16 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
         if (!skyC || sk !== skyKeyCur) {
           skyC = bakeSky(season, f.weather.now, f.time.band, f.w, f.h, seed);
+          cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
+      // 별·달·해는 **지평선 띠보다 먼저** — 먼 언덕·나무 줄이 그 아래를 가려야 한다(2026-09-06 라운드 7, 검토 C:
+      // "지는 해의 아랫부분이 언덕 사면에 얹혀 있다"). 상한도 언덕 마루 위로 잡는다.
+      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
       if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon(season, f.w, f.h, 1);
       g.drawImage(horizon, 0, 0, f.w, horizon.height);
-      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.92, { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
       // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
       if (shore) g.drawImage(shore, 0, horizonY(f.h));
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });

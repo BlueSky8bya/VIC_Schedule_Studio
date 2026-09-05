@@ -10,7 +10,7 @@ import { WEATHER_LABEL, type Weather } from "@/components/shared/ambient/world/w
 //   biome=meadow|forest|mountain|hill|pond|valley|tidal|sandy|rocky|sea|deep
 //   season=spring|summer|autumn|winter   band=dawn|morning|noon|dusk|evening|night   weather=clear|cloud|rain|snow|fog|wind
 //   seed=42   t=1500(ms, 이 시각의 프레임을 결정적으로)   load=1(여력 0~1)   pointer=x,y(포인터 고정; 없으면 화면 밖)
-//   camera=showcase|plain   y=2026
+//   camera=showcase|plain   y=2026   m=1~12(계절의 대표 달 대신)   day=1~31(달 위상 스윕 — 라운드 6 결정 5)
 // 날씨는 항상 강제된다(기본 clear) — 오늘 날짜에 따라 달라지는 시드 날씨가 프레임에 끼지 않게.
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,9 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   const t = num(sp.t, 0, 0, 600_000);
   const load = num(sp.load, 1, 0, 1);
   const year = Math.round(num(sp.y, 2026, 2000, 2100));
+  // m·day = 달 위상(그린 원반·터미네이터·starK)과 달별 흔적을 훑기 위한 축. 없으면 계절의 대표 달 + 엔진의 viewDay.
+  const month = sp.m === undefined ? undefined : Math.round(num(sp.m, 1, 1, 12));
+  const day = sp.day === undefined ? undefined : Math.round(num(sp.day, 1, 1, 31));
   let pointer: { x: number; y: number } | null = null;
   if (sp.pointer) {
     const [px, py] = sp.pointer.split(",").map(Number);
@@ -41,7 +44,8 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   return (
     <BiomeFixture
       camera={camera}
-      force={{ biome, band, weather, seed, load, pointer, freeze: true, pin: true }}
+      force={{ biome, band, weather, seed, load, pointer, day, freeze: true, pin: true }}
+      month={month}
       season={season}
       t={t}
       year={year}

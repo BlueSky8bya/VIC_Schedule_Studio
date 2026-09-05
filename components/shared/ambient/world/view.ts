@@ -31,6 +31,9 @@ export const horizonY = (h: number) => h * HORIZON_V;
 /** 지평선에서 **위로** dh·h 만큼 떨어진 y. 지평선에 붙어 있어야 하는 것(먼 언덕·나무 줄·지평선 광·안개 시작)은
  *  hz에 비례(hz·0.5 …)시키면 하늘을 키울 때 하늘 한복판으로 떠오른다 — 거리로 붙인다(2026-09-06). */
 export const aboveHz = (h: number, dh: number) => Math.max(0, horizonY(h) - dh * h);
+/** `bakeHorizon`이 그리는 **먼 언덕의 마루**(가장 높은 지점) — 별·달·해는 이 위에만 놓인다.
+ *  안 그러면 지는 해가 언덕 사면에 얹힌다(2026-09-06 라운드 7 C: 해 y 168~190 vs 언덕 마루 153~191). */
+export const hillCrestY = (h: number) => aboveHz(h, 0.06) - h * 0.022;
 /** 지평선 아래 땅에서의 비율 v → 화면 y. 화면 분수를 직접 쓰면 지평선을 옮길 때 전부 어긋난다. */
 export const groundYAt = (v: number, h: number) => {
   const hz = horizonY(h);

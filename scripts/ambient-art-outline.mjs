@@ -77,7 +77,10 @@ for (let i = 0; i < data.length; i += ch) {
   const hRaw = s < 0.08 ? domHue : h;
   const reddish = hRaw >= 340 || hRaw <= 40;
   const h2 = reddish ? 22 : hRaw;
-  const s2 = reddish ? Math.min(Math.max(s, 0.1), 0.16) : Math.max(s, 0.14);
+  // 채도 상한은 **모든 색조**에(2026-09-06 라운드 7, 검토 A: 붉은 띄에만 상한을 둔 탓에
+  // 봄·여름 오크 픽셀의 19%가 **채도 1.00 청록**이 됐다 — 순검정은 사라졌지만 화풍이 깨졌다).
+  // 오행 팔레트는 저채도가 기본이고, 윤곽은 "같은 색조의 더 어두운 단계"지 원색이 아니다.
+  const s2 = reddish ? Math.min(Math.max(s, 0.1), 0.16) : Math.min(Math.max(s, 0.14), 0.3);
   const [r2, g2, b2] = hsl2rgb(h2, s2, l2);
   data[i] = r2;
   data[i + 1] = g2;

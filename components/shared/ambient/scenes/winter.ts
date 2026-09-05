@@ -22,9 +22,9 @@ import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
 import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
-import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
+import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { PRINT_K, SIZE } from "../world/scale";
-import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale, hillCrestY } from "../world/view";
 
 // 날씨(날짜 시드)별 눈송이 배수 — 눈 오는 날은 촘촘히, 맑은 날은 가끔 한 송이.
 const WEATHER_FLAKES: Record<Weather, number> = { snow: 1.8, cloud: 0.8, clear: 0.35, fog: 0.6, wind: 1.2, rain: 0.5 };
@@ -81,6 +81,8 @@ export function createWinter(seed: number): Scene {
   let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
   let skyKeyCur = "";
+  // 흐르는 구름 두 층(라운드 6 결정 4) — 폭 2w 타일, 오프셋은 t의 순수 함수라 캡처는 여전히 결정적이다.
+  let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(흰 언덕·나목 줄)
   // 땅의 위 끝(지평선) — 자국·손님·토끼·눈송이 착지는 이 아래에서만(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 발자국이 찍힌다").
   const gy = () => horizonY(h);
@@ -898,14 +900,15 @@ export function createWinter(seed: number): Scene {
         const sk = skyKey("winter", f.weather.now, f.time.band, f.w, f.h);
         if (!skyC || sk !== skyKeyCur) {
           skyC = bakeSky("winter", f.weather.now, f.time.band, f.w, f.h, seed);
+          cloudC = bakeClouds("winter", f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
       // 3/4 시점의 지평선 띠(위 12%) — 흰 언덕·나목 줄·안개.
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.92, { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
+      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
+      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       const t = f.t;
       for (const k of twinkles) {
         const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph));

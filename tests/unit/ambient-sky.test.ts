@@ -22,7 +22,7 @@ describe("world/sky skyPalette", () => {
     for (const s of SEASON_KEYS) expect(lum(skyPalette(s, "clear").top)).toBeLessThan(lum(skyPalette(s, "clear").hz));
   });
 
-  it("흐림·비·눈은 구름 덮개 ≥ .8, 비가 가장 어둡다; 맑음(가을)은 구름 0, 바람은 새털구름", () => {
+  it("흐림·비·눈은 구름 덮개 ≥ .8, 비가 가장 어둡다; 바람은 새털구름; **하늘은 어느 날씨에도 완전히 비지 않는다**", () => {
     for (const s of SEASON_KEYS) {
       expect(skyPalette(s, "cloud").cover).toBeGreaterThanOrEqual(0.8);
       expect(skyPalette(s, "rain").cover).toBeGreaterThanOrEqual(0.9);
@@ -30,10 +30,14 @@ describe("world/sky skyPalette", () => {
       expect(lum(skyPalette(s, "rain").top)).toBeLessThan(lum(skyPalette(s, "cloud").top));
       expect(lum(skyPalette(s, "cloud").top)).toBeLessThan(lum(skyPalette(s, "clear").top) + 40);
       expect(skyPalette(s, "wind").cirrus).toBe(true);
-      expect(skyPalette(s, "fog").cover).toBe(0);
+      // 2026-09-06 라운드 7(검토 A): 하늘을 26%로 넓히자 맑음·안개 6장이 **구름 0개·고주파 0.0%의 무지 판**이 됐다.
+      // 이제 모든 날씨에 덮개 하한이 있다 — 안개는 아주 옅은 저층운, 맑음은 계절별로 성기게.
+      expect(skyPalette(s, "fog").cover).toBeGreaterThan(0);
+      expect(skyPalette(s, "clear").cover).toBeGreaterThan(0);
+      expect(skyPalette(s, "clear").cloud).not.toBeNull();
     }
-    expect(skyPalette("autumn", "clear").cover).toBe(0);
-    expect(skyPalette("autumn", "clear").cloud).toBeNull();
+    // 가을 맑음이 가장 성기다(천고마비).
+    expect(skyPalette("autumn", "clear").cover).toBeLessThan(skyPalette("summer", "clear").cover);
   });
 
   it("팔레트는 오행 규칙 — 선명한 주황·노랑 없음(모든 색 R ≤ G + 12)", () => {

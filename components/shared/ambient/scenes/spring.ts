@@ -33,9 +33,9 @@ import { currentLight, shadowKey } from "../world/light";
 import type { DayBand } from "../world/time";
 import type { Weather } from "../world/weather";
 import { drawGlints } from "./water";
-import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
+import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { SIZE } from "../world/scale";
-import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale, hillCrestY } from "../world/view";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
@@ -163,6 +163,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
   let skyKeyCur = "";
+  // 흐르는 구름 두 층(라운드 6 결정 4) — 폭 2w 타일, 오프셋은 t의 순수 함수라 캡처는 여전히 결정적이다.
+  let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠
   // 땅의 위 끝(지평선) — 꽃·풀·벌레·나비·민들레는 이 아래에서만(지평선 띠는 먼 곳).
   const gy = () => horizonY(h);
@@ -1259,14 +1261,15 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         const sk = skyKey(variant, f.weather.now, f.time.band, f.w, f.h);
         if (!skyC || sk !== skyKeyCur) {
           skyC = bakeSky(variant, f.weather.now, f.time.band, f.w, f.h, seed);
+          cloudC = bakeClouds(variant, f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개.
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.92, { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
+      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
+      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {

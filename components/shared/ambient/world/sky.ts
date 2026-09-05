@@ -75,8 +75,15 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
   });
   switch (weather) {
     case "cloud": {
-      const t = scale(mix(top, [176, 182, 192], 0.7), 0.95);
-      const z = mix(hz, [204, 210, 216], 0.7);
+      // 흐림 — 규칙은 "흰빛 → 회색(L −8)"인데, 옛 혼합은 밝은 회색 판으로 끌어올려 저녁·노을에서
+      // 하늘이 맑음보다 **+19L 밝아졌다**(2026-09-06 라운드 7 C: 15 중 12가 부호 반대).
+      // 채도만 죽이고(무채색 쪽으로) 명도는 그 자리에서 내린다 — 어둠은 띄가 어둠을 유지한다.
+      const grey = (c: Rgb, k: number): Rgb => {
+        const l = (c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722);
+        return [c[0] + (l - c[0]) * k, c[1] + (l - c[1]) * k, c[2] + (l - c[2]) * k];
+      };
+      const t = add(grey(top, 0.8), -7);
+      const z = add(grey(hz, 0.8), -8);
       return done(t, z, [add(z, 8), add(z, -22)], 0.85, false);
     }
     case "rain": {
@@ -90,14 +97,167 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
       return done(t, z, [add(z, 6), add(z, -14)], 0.8, false);
     }
     case "fog": {
+      // 안개 — 하늘이 보이지 않는 날이지만 완전한 무지 판은 아니다. 아주 옥은 저층운 한 겹으로
+      // 세로 결을 남긴다(검토 A: s10은 하늘 224행 전체 최대 편차가 1.3L였다).
+      // 안개 — 세로 폭을 준다(2026-09-06 라운드 7 C: 하늘 224px 전체의 세로 변화가 0.3~1.9L인 "흰 벽").
+      // 안개도 위가 어둡고 지평선이 밝다 — 대기는 아래가 두꺼우니까.
       const z = mix(hz, [224, 228, 232], 0.8);
-      return done(add(z, -4), z, null, 0, false);
+      return done(add(z, -13), z, [add(z, 5), add(z, -7)], 0.3, false);
     }
     case "wind":
       return done(top, hz, [add(hz, 10), add(hz, -8)], 0.18, true);
-    default:
-      // 맑음 — 여름만 낮은 뭉게구름 한둘(습한 하늘), 가을은 구름 없이 높다.
-      return done(top, hz, season === "summer" ? [add(hz, 12), add(hz, -12)] : null, season === "summer" ? 0.14 : 0, false);
+    default: {
+      // 맑음 — 여름은 낮은 뭉게구름이 많고, 다른 계절은 높고 성김다. 하지만 **0은 아니다**
+      // (2026-09-06 라운드 7, 검토 A: 하늘을 26%로 넓혔는데 맑음·안개 6장은 구름 0개·고주파 0.0%의
+      // 무지 판이 됐다). 가을은 가장 성기게(천고마비), 봄·결울은 그 중간.
+      const cover = season === "summer" ? 0.14 : season === "autumn" ? 0.05 : 0.08;
+      return done(top, hz, [add(hz, season === "summer" ? 12 : 9), add(hz, -12)], cover, false);
+    }
+  }
+}
+
+
+/** 구름 띠 굽기(2026-09-06 라운드 6 결정 4 "구름 흐름") — **폭 2w의 타일**을 층 둘로 나눠 굽는다.
+ *  같은 뭉치를 x와 x+w 두 번 그려 주기 w로 만들면 `x % w` 오프셋으로 흘려도 이음매가 없다.
+ *  먼 층은 느리고(×0.45) 작고 옅게, 가까운 층은 빠르고 크고 진하게 — 한 판이 통째로 미끄러지면 M-1(같은 위상)이다. */
+export function bakeClouds(
+  season: SeasonKey,
+  weather: Weather,
+  band: DayBand,
+  w: number,
+  h: number,
+  seed: number
+): { far: HTMLCanvasElement; near: HTMLCanvasElement } | null {
+  const pal = skyPalette(season, weather, band);
+  if (!pal.cloud || pal.cover <= 0) return null;
+  const hz = horizonY(h);
+  const H = Math.ceil(hz + (h - hz) * 0.05);
+  const SC = 3;
+  const lw = Math.ceil(w / SC);
+  const lh = Math.ceil(H / SC);
+  const bandTop = 2;
+  const bandBot = Math.max(6, Math.round((hz / SC) * (pal.cirrus ? 0.7 : 0.95)));
+  const [lit, under] = pal.cloud;
+  const mk = (tiers: { y0: number; y1: number; sz: number; a: number }[], share: number, sd: number) => {
+    const lo = makeCanvas(lw * 2, lh);
+    const r = rng(sd);
+    // 덮개 — 아래 층(가까운 층)에만. 두 층에 다 깔면 두 겹이 돼 하늘이 회색 판이 된다.
+    if (pal.cover >= 0.8 && share > 0.5) {
+      lo.g.fillStyle = `rgb(${lit} / ${(0.35 + 0.4 * (pal.cover - 0.8) * 5).toFixed(3)})`;
+      lo.g.fillRect(0, 0, lw * 2, lh * 0.9);
+    }
+    const twice = (fn: (dx: number) => void) => {
+      fn(0);
+      fn(lw);
+    };
+    if (pal.cirrus && share < 0.5) {
+      // 새털구름은 먼 층에만 — 끝이 가늘어지는 갈고리 획(가로 막대·줄 정렬 금지).
+      // 새털구름(2026-09-06 라운드 7 재설계) — 라운드 6판은 "바코드 → 비행운"이 됐을 뿐이었다(검토 A: 6~7줄,
+      // 종횡비 40:1~84:1, 두께가 길이 내내 일정, 기울기가 3~10°의 좁은 띠). 줄 수를 3~4로 줄이고 길이를 화면
+      // 폭의 25% 안으로, 가운데를 두껍게(끝은 절반 이하) 하고 축을 두 마디 곡선으로 꺾는다.
+      const n = 3 + Math.floor(r() * 2);
+      for (let i = 0; i < n; i++) {
+        const y = bandTop + r() * (bandBot - bandTop) * 0.86;
+        const x0 = r() * lw * 0.8;
+        const len = lw * (0.1 + r() * 0.15);
+        const tilt0 = (r() < 0.5 ? -1 : 1) * (0.04 + r() * 0.16);
+        const tilt1 = tilt0 * (0.25 + r() * 0.5) * (r() < 0.35 ? -1 : 1); // 두 마디: 접선각이 꺾인다
+        const th0 = 3 + Math.round(r() * 3);
+        lo.g.fillStyle = `rgb(${lit} / ${(0.3 + r() * 0.26).toFixed(2)})`;
+        twice((dx) => {
+          let yy = y;
+          for (let x = 0; x < len; x += 1) {
+            const u = x / len;
+            const taper = Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, u))), 0.7);
+            const th = Math.max(0, Math.round(th0 * taper));
+            yy += u < 0.5 ? tilt0 : tilt1;
+            if (th <= 0) continue;
+            lo.g.fillRect(Math.round(x0 + dx + x), Math.round(yy), 1, th);
+          }
+        });
+      }
+    } else if (!pal.cirrus) {
+      // 개수 하한 — 맑은 날에도 층당 2덩이는 둔다(검토 A: 60px 이상 덩이 0개인 시나리오가 6장).
+      const n = Math.max(share > 0.5 ? 3 : 2, Math.round(((lw * (bandBot - bandTop)) / 1000) * pal.cover * 1.3 * share));
+      const hzL = bandBot;
+      for (let i = 0; i < n; i++) {
+        const tier = tiers[Math.floor(r() * tiers.length)];
+        const cx = r() * lw;
+        const cy = Math.max(bandTop, hzL * (tier.y0 + r() * (tier.y1 - tier.y0)));
+        const ch = Math.max(2, hzL * tier.sz * (0.7 + r() * 0.6));
+        const cw = ch * (2.6 + r() * 1.4) * (0.7 + 0.5 * pal.cover);
+        const blobs = 3 + Math.floor(r() * 4);
+        const seedA = r();
+        const seedB = r();
+        twice((dx) => {
+          const r2 = rng(Math.round((seedA + i) * 9973) + Math.round(seedB * 131));
+          lo.g.fillStyle = `rgb(${lit} / ${((0.7 + r2() * 0.3) * tier.a).toFixed(2)})`;
+          for (let b = 0; b < blobs; b++) {
+            const bx = cx + dx + (r2() - 0.5) * cw;
+            const by = cy + (r2() - 0.5) * ch * 0.6;
+            const br = 2 + r2() * (cw * 0.28);
+            lo.g.beginPath();
+            lo.g.ellipse(bx, by, br, br * 0.55, 0, 0, TAU);
+            lo.g.fill();
+          }
+          lo.g.fillStyle = `rgb(${under} / ${((0.5 + r2() * 0.3) * tier.a).toFixed(2)})`;
+          for (let b = 0; b < Math.max(2, blobs - 1); b++) {
+            const bx = cx + dx + (r2() - 0.5) * cw * 0.9;
+            const by = cy + ch * 0.3 + r2() * ch * 0.3;
+            const br = 2 + r2() * (cw * 0.24);
+            lo.g.beginPath();
+            lo.g.ellipse(bx, by, br, br * 0.4, 0, 0, TAU);
+            lo.g.fill();
+          }
+        });
+      }
+    }
+    // 가장자리를 픽셀로(알파 3단 양자화) — 저해상 타원의 AA 테두리가 3배로 커지면 "소프트 타원"이 된다(검토 A#1).
+    const im = lo.g.getImageData(0, 0, lw * 2, lh);
+    const d = im.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const a = d[i + 3];
+      d[i + 3] = a < 42 ? 0 : a < 168 ? 140 : 255;
+      // 색도 12 단위로 스냅 — 알파만 계단으로 만들면 **덩이 안쪽**이 겹친 타원들의 연속 램프로 남는다
+      // (검토 A #4: "밝은 윗면은 톱니, 그 아래 회색은 번진 타원 — 한 덩이 안에 두 어법").
+      d[i] = Math.round(d[i] / 12) * 12;
+      d[i + 1] = Math.round(d[i + 1] / 12) * 12;
+      d[i + 2] = Math.round(d[i + 2] / 12) * 12;
+    }
+    lo.g.putImageData(im, 0, 0);
+    const { c, g } = makeCanvas(Math.ceil(w * 2), H);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(lo.c, 0, 0, lw * 2, lh, 0, 0, lw * 2 * SC, lh * SC);
+    return c;
+  };
+  const FAR = [{ y0: 0.1, y1: 0.35, sz: 0.07, a: 0.55 }];
+  const NEAR = [
+    { y0: 0.35, y1: 0.65, sz: 0.1, a: 0.78 },
+    { y0: 0.6, y1: 0.95, sz: 0.13, a: 1 }
+  ];
+  return { far: mk(FAR, 0.45, seed * 3 + 71 + weather.length), near: mk(NEAR, 0.55, seed * 3 + 401 + weather.length) };
+}
+
+/** 날씨별 구름 흐름 속도(px/s, 가까운 층 기준). 검토 A(고도별)·B(상한 40~44)·C(층별) 종합. */
+export function cloudSpeed(weather: Weather): number {
+  return weather === "wind" ? 44 : weather === "rain" ? 14 : weather === "cloud" ? 10 : weather === "snow" ? 8 : weather === "fog" ? 6 : 4;
+}
+
+/** 하늘 판 + 흐르는 구름 두 층. 장면은 `drawImage(skyC…)` 대신 이걸 부른다(오프셋은 t의 순수 함수 — 캡처 결정성 유지). */
+export function drawSky(
+  g: CanvasRenderingContext2D,
+  sky: HTMLCanvasElement,
+  clouds: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null,
+  w: number,
+  t: number,
+  weather: Weather
+) {
+  g.drawImage(sky, 0, 0, w, sky.height);
+  if (!clouds) return;
+  const v = cloudSpeed(weather);
+  for (const [layer, mul] of [[clouds.far, 0.45], [clouds.near, 1]] as const) {
+    const off = -(((t * v * mul) % w) + w) % w;
+    g.drawImage(layer, off, 0, w * 2, layer.height);
   }
 }
 
@@ -116,100 +276,6 @@ export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: n
   g.fillRect(0, 0, w, H);
   g.fillStyle = `rgb(${pal.hz})`;
   g.fillRect(0, hz, w, H - hz);
-  if (pal.cloud && pal.cover > 0) {
-    // 구름 — 저해상 판(1/3)에 타원 뭉치로 그리고 nearest로 키운다. 윗면 밝은 톤, 밑면(아래 40%) 어두운 톤.
-    const SC = 3;
-    const lw = Math.ceil(w / SC);
-    const lh = Math.ceil(H / SC);
-    const lo = makeCanvas(lw, lh);
-    const r = rng(seed * 3 + 71 + weather.length);
-    const [lit, under] = pal.cloud;
-    if (pal.cover >= 0.8) {
-      // 덮개 — 판 전체를 밝은 톤으로 반쯤 덮고(하늘 그라데이션이 비친다), 그 위에 뭉치.
-      lo.g.fillStyle = `rgb(${lit} / ${(0.35 + 0.4 * (pal.cover - 0.8) * 5).toFixed(3)})`;
-      lo.g.fillRect(0, 0, lw, lh * 0.9);
-    }
-    const bandTop = 2;
-    const bandBot = Math.max(6, Math.round((hz / SC) * (pal.cirrus ? 0.7 : 0.95)));
-    if (pal.cirrus) {
-      // 새털구름 — 길고 얇은 띠 5~7, 바람에 빗겨 눕는다.
-      // 새털구름 — 가로 막대가 아니라 **끝이 가늘어지는 갈고리 획**(검토 A#1: "바코드처럼 줄 맞춰 누운 직사각형").
-      // 개체마다 y·길이·기울기(3~8°)·휘임을 달리 하고, 두께는 가운데가 두꺼우며 양 끝에서 0으로 준다.
-      const n = Math.round((5 + Math.floor(r() * 3)) * Math.max(1, (bandBot - bandTop) / 33));
-      for (let i = 0; i < n; i++) {
-        const y = bandTop + r() * (bandBot - bandTop) * 0.86;
-        const x0 = r() * lw * 0.9;
-        const len = lw * (0.12 + r() * 0.34);
-        const tilt = (r() < 0.5 ? -1 : 1) * (0.05 + r() * 0.09); // 3~8°
-        const th0 = 1 + Math.round(r() * 2);
-        const bow = (r() - 0.5) * 6;
-        lo.g.fillStyle = `rgb(${lit} / ${(0.34 + r() * 0.3).toFixed(2)})`;
-        for (let x = 0; x < len; x += 1) {
-          const u = x / len;
-          const taper = Math.sin(Math.PI * Math.min(1, Math.max(0, u))); // 끝 0 · 가운데 1
-          const th = Math.max(0, Math.round(th0 * taper));
-          if (th <= 0) continue;
-          const yy = y + x * tilt + Math.sin(u * 3.1 + i) * bow;
-          lo.g.fillRect(Math.round(x0 + x), Math.round(yy), 1, th);
-        }
-      }
-    } else {
-      // 개수는 폭이 아니라 **하늘 띠 넓이**에 비례한다(2026-09-06 하늘 확대) — 안 그러면 위로 넓어진 만큼 구름이 성금게 보인다.
-      // 그리고 **세 고도대**로 나눈다(검토 C): 먼 층은 작고 옥게 · 가까운 층은 크고 진하게. 한 크기로 깔면
-      // 넓어진 하늘이 "단색 판 + 같은 점 여럿"이 된다 — 대기 원근을 하늘에도 넣는 유일한 방법이다.
-      const n = Math.max(1, Math.round(((lw * (bandBot - bandTop)) / 1000) * pal.cover * 1.3));
-      const hzL = bandBot; // 저해상 하늘 높이
-      const TIERS = [
-        { y0: 0.10, y1: 0.35, sz: 0.07, a: 0.55 },
-        { y0: 0.35, y1: 0.65, sz: 0.1, a: 0.78 },
-        { y0: 0.6, y1: 0.95, sz: 0.13, a: 1 }
-      ];
-      for (let i = 0; i < n; i++) {
-        const q = r();
-        const tier = TIERS[q < 0.45 ? 0 : q < 0.78 ? 1 : 2];
-        const cx = r() * lw;
-        const cy = Math.max(bandTop, hzL * (tier.y0 + r() * (tier.y1 - tier.y0)));
-        const ch = Math.max(2, hzL * tier.sz * (0.7 + r() * 0.6));
-        const cw = ch * (2.6 + r() * 1.4) * (0.7 + 0.5 * pal.cover);
-        const tierA = tier.a;
-        const blobs = 3 + Math.floor(r() * 4);
-        // 윗면
-        lo.g.fillStyle = `rgb(${lit} / ${((0.7 + r() * 0.3) * tierA).toFixed(2)})`;
-        for (let b = 0; b < blobs; b++) {
-          const bx = cx + (r() - 0.5) * cw;
-          const by = cy + (r() - 0.5) * ch * 0.6;
-          const br = 2 + r() * (cw * 0.28);
-          lo.g.beginPath();
-          lo.g.ellipse(bx, by, br, br * 0.55, 0, 0, TAU);
-          lo.g.fill();
-        }
-        // 밑면 — 어두운 톤이 아래 40%에 깔린다(빛은 위에서).
-        lo.g.fillStyle = `rgb(${under} / ${((0.5 + r() * 0.3) * tierA).toFixed(2)})`;
-        for (let b = 0; b < Math.max(2, blobs - 1); b++) {
-          const bx = cx + (r() - 0.5) * cw * 0.9;
-          const by = cy + ch * 0.3 + r() * ch * 0.3;
-          const br = 2 + r() * (cw * 0.24);
-          lo.g.beginPath();
-          lo.g.ellipse(bx, by, br, br * 0.4, 0, 0, TAU);
-          lo.g.fill();
-        }
-      }
-    }
-    // 가장자리를 픽셀로 — 저해상에 그린 타원은 여전히 안티에일리어싱된 반투명 테두리를 남기고, 그게 3배로 커져
-    // "가장자리가 뭉개진 소프트 타원"으로 보였다(검토 A#1). 알파를 세 단계(0 / .55 / 1)로 양자화해
-    // 경계를 계단으로 만든다 — 모양은 그대로고 AA만 사라진다.
-    {
-      const im = lo.g.getImageData(0, 0, lw, lh);
-      const d = im.data;
-      for (let i = 3; i < d.length; i += 4) {
-        const a = d[i];
-        d[i] = a < 42 ? 0 : a < 168 ? 140 : 255;
-      }
-      lo.g.putImageData(im, 0, 0);
-    }
-    g.imageSmoothingEnabled = false;
-    g.drawImage(lo.c, 0, 0, lw, lh, 0, 0, lw * SC, lh * SC);
-  }
   // 지평선 아래로는 사라진다 — 땅의 먼 띠(v 0~.05)를 하늘색으로 덮지 않게(A 판정 E "지평선 아래 픽셀은 하늘 입구가 건드리지 않는다").
   g.globalCompositeOperation = "destination-out";
   const fade = g.createLinearGradient(0, hz, 0, H);
@@ -369,7 +435,7 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     const lit = moonLit(moonPhase(f.date.y, f.date.m, f.date.d));
     const starK = 1 - 0.35 * lit;
     // 은하수는 달빛이 약할 때만 보인다(검토 C) — 보름 근처엔 별과 함께 씻긴다.
-    const mw = lit < 0.35 ? milkyWay(seed, w, maxY) : null;
+    const mw = lit < 0.55 ? milkyWay(seed, w, maxY) : null; // .35 → .55(라운드 7, A: 16장 중 0장이었다)
     if (mw) {
       g.save();
       g.globalAlpha *= starK;
@@ -388,7 +454,8 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
       // 지름은 하늘 높이에 비례(상한 56px, 검토 A ④-2) — 40px 하늘 시절 값(지름 14)은 넓은 하늘에서 콩알이다.
       // 지름은 하늘 높이의 4.5%만(검토 C: "커진 달은 만화가 된다" — 시간은 크기가 아니라 **고도**로 말한다).
       const R = Math.max(7, Math.min(14, Math.round(maxY * 0.045)));
-      softBlob(g, mx, my, R * 3.6, "226 232 244", 0.08 + 0.18 * lit, 0);
+      // 글로우 반경 R·3.6 → R·2.6에 α 두 배(면적당 밝기 유지) — 넓게 퍼지면 8bit에서 1L 이하가 된다(검토 C).
+      softBlob(g, mx, my, R * 2.6, "226 232 244", 0.16 + 0.3 * lit, 0);
       const spr = moonSprite(R, moonPhase(f.date.y, f.date.m, f.date.d));
       g.drawImage(spr, Math.round(mx - spr.width / 2), Math.round(my - spr.height / 2));
     }
@@ -400,7 +467,7 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     const sy = opts.sunY ?? Math.max(maxY * 0.55, maxY - 14);
     const col = band === "dusk" ? "244 226 220" : "236 238 240";
     const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
-    softBlob(g, sx, sy, R * 6, col, band === "dusk" ? 0.28 : 0.18, 0);
+    softBlob(g, sx, sy, R * 3, col, band === "dusk" ? 0.5 : 0.34, 0);
     // 원반도 픽셀 계단으로(달과 같은 이유) — 저해상 원을 굽고 nearest로 키운다.
     const disc = pixelDisc(R, col, band === "dusk" ? 0.6 : 0.45);
     g.drawImage(disc, Math.round(sx - disc.width / 2), Math.round(sy - disc.height / 2));

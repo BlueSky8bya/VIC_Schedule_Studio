@@ -1,5 +1,5 @@
 // 캡처(PLAN-20260905-005 P1) — 대표 시나리오를 결정적 fixture로 열어 정적·시간·시간대·날씨 프레임을 PNG로 받는다.
-//   node scripts/ambient-qa/capture.mjs --round 01 --phase before [--smoke | --only 3,10] [--kinds static,temporal,band,weather]
+//   node scripts/ambient-qa/capture.mjs --round 01 --phase before [--smoke | --only 3,10] [--kinds static,temporal,band,weather,long,moon]
 //                                       [--seed 42] [--base http://127.0.0.1:3100]
 // 산출: .scratch-pw/qa/r01/before/<sid>/{static.png, temporal-0000.png…, band-<b>.png, weather-<w>.png, meta.json, index.md}
 //       + r01/before/index.md · phase.json. 시트는 sheet.mjs, diff는 diff.mjs가 이 폴더를 읽는다.
@@ -117,6 +117,15 @@ for (const sc of list) {
       const url = fixtureUrl(sc, { band: b, t: STATIC_T }, base);
       await openFixture(page, url);
       await shot(`band-${b}.png`, url, { kind: "band", band: b });
+    }
+  }
+  if (kinds.includes("moon")) {
+    // 달 위상 스윗(2026-09-06 라운드 6 결정 5) — 같은 달 안에서 날만 바꿔 30일을 훑는다.
+    // 날씨는 맑음 고정(날씨가 날마다 바다면 달만 보는 비교가 안 된다), 띄는 밤, t는 정적 시각.
+    for (let d = 1; d <= 30; d += 1) {
+      const url = fixtureUrl(sc, { band: "night", weather: "clear", day: d, t: STATIC_T }, base);
+      await openFixture(page, url);
+      await shot(`moon-${String(d).padStart(2, "0")}.png`, url, { kind: "moon", day: d });
     }
   }
   if (kinds.includes("weather")) {

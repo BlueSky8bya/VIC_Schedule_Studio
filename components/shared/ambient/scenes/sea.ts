@@ -12,7 +12,7 @@ import { GROUND_SQUASH, bakeHorizon, horizonY, moveScale, ySort } from "../world
 import { ASSET, loadSprite, type Sprite } from "../assets";
 import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 import { currentLight } from "../world/light";
-import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
+import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 
 type Shadow = { x: number; y: number; hd: number; spd: number; k: number; ph: number };
 
@@ -24,6 +24,8 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
   let water: HTMLCanvasElement | null = null;
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
   let skyKeyCur = "";
+  // 흐르는 구름 두 층(라운드 6 결정 4) — 폭 2w 타일, 오프셋은 t의 순수 함수라 캡처는 여전히 결정적이다.
+  let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   let horizon: HTMLCanvasElement | null = null;
   let gw = 0;
   let gh = 0;
@@ -118,9 +120,10 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
         const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
         if (!skyC || sk !== skyKeyCur) {
           skyC = bakeSky(season, f.weather.now, f.time.band, f.w, f.h, seed);
+          cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        g.drawImage(skyC, 0, 0, f.w, skyC.height);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
       if (water) g.drawImage(water, 0, 0, f.w, f.h);
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);

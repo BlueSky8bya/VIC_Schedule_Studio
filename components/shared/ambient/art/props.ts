@@ -50,18 +50,28 @@ export function propShadow(g: CanvasRenderingContext2D, x: number, y: number, r:
 
 // 자리 점유 — 큰 소품끼리 겹쳐 놓이면 "바위가 그루터기를 뚫고 나온" 그림이 된다(2026-09-04 소유자).
 // 장면의 bake() 시작에서 resetPropField(), 놓기 전에 claimSpot()으로 자리를 잡는다. 결정적 rng 순서는 호출 쪽 책임.
-let propField: { x: number; y: number; r: number }[] = [];
+let propField: { x: number; y: number; r: number; stand?: boolean }[] = [];
 export const resetPropField = () => {
   propField = [];
 };
-/** 반경 r인 자리를 (x,y)에 잡는다. 이미 찬 자리면 false — 호출 쪽이 다른 후보로 다시 시도한다. */
-export function claimSpot(x: number, y: number, r: number): boolean {
+/** 지금까지 잡힌 자리들(읽기 전용) — 버섯처럼 **다른 소품에 기대어** 놓아야 하는 것이 앵커를 고를 때 쓴다. */
+export const propSpots = (): readonly { x: number; y: number; r: number; stand?: boolean }[] => propField;
+/** 반경 r인 자리를 (x,y)에 잡는다. 이미 찬 자리면 false — 호출 쪽이 다른 후보로 다시 시도한다.
+ *  `stand`(서 있는 것: 나무·관목·그루터기)면 **화면 실루엣 기준 세로 여유**를 따로 요구한다 —
+ *  발자국(땅 평면)의 눌림 보정 `/0.7`은 서 있는 것에는 틀린다. 실측(라운드 6 B #12): 같은 열에 선 두 오크가
+ *  발 간격 dy 45px·면적 겹침 13%로 규칙을 통과했는데 뒤 나무 줄기가 100% 가려져 "한 그루의 이층 수관"이 됐다. */
+export function claimSpot(x: number, y: number, r: number, stand = false): boolean {
   for (const o of propField) {
     const dx = x - o.x;
     const dy = (y - o.y) / 0.7; // 3/4 시점: 세로로 눌린 발자국 기준
     if (dx * dx + dy * dy < (r + o.r) * (r + o.r) * 0.62) return false;
+    // 서 있는 것끼리: 화면에서 거의 같은 열(|dx| < 0.6·R_far)이면 **눌리지 않은** 세로 간격을 본다.
+    if (stand && o.stand) {
+      const far = Math.max(r, o.r);
+      if (Math.abs(dx) < 0.6 * far && Math.abs(y - o.y) < 0.55 * (r + o.r)) return false;
+    }
   }
-  propField.push({ x, y, r });
+  propField.push({ x, y, r, stand });
   return true;
 }
 const SCALE = 2;

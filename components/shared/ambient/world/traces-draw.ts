@@ -174,6 +174,14 @@ export function shoreEdgeOffset(x: number, w: number, k = 1): number {
   // k = 땅 높이 비율(groundK) — 진폭이 절대 px라 땅이 줄면 물가가 기슭 띠를 뚫고 올라간다(검토 B).
   return (bay + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5) * k;
 }
+/** 기슭 캔버스 안에서 **묍의 아래 경계**(로컬 y) — 기슭 소품은 이 위에만 선다.
+ *  장면이 이 값을 다시 계산하면(예: `shore.height - 24`) 한쪽만 옮길 때 소품이 물 안에 선다 —
+ *  2026-09-06 라운드 7 B가 **P0**로 잡은 버그(바위·통나무·관목이 물 폴리곤 안 30~33px에 서 있었다). */
+export const shoreLandEdge = (h: number): number => {
+  const gk = groundK(h);
+  const H = Math.round(shoreBandY(h) - horizonY(h)) + Math.round((24 + 52 + 56) * gk);
+  return H - Math.round((24 + 56) * gk);
+};
 /** 기슭 띠 — 지평선(hz)에서 시작해 h*SHORE_V까지. 좌우 가장자리는 아래로 내려와 연못을 감싼다(만곡). */
 export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): HTMLCanvasElement {
   const hz = horizonY(h);
@@ -182,7 +190,7 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   // edge는 H를 따라가면 안 된다 — 여유분(+56)만큼 물가가 내려가 캔버스 **바닥에서 잘렸다**(사이클3 경계 #3).
   const { c, g } = makeCanvas(Math.max(1, w), H);
   const r = rng(77 + w);
-  const edge = H - Math.round((24 + 56) * gk);
+  const edge = shoreLandEdge(h);
   const grad = g.createLinearGradient(0, 0, 0, H);
   // 기슭도 계절을 탄다 — 얼어붙은 연못 옆에 초록 잔디가 있으면 세계가 깨진다(2026-09-04 검토 2차).
   const SH: Record<SeasonKey, [string, string, string]> = {
