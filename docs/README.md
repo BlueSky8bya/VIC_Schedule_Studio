@@ -24,6 +24,7 @@
 |---|---|---|
 | [`tags/`](tags/) | 태그 체계·색·계층·tier | — |
 | [`ux/`](ux/) | UI/UX·역할·반응형·모션 감사·계획 | `role/` `audit/` `responsive/` `motion/` |
+| [`ambient/`](ambient/) | 📖 **계절 배경(바이옴 세계) 현행 규칙 + 비주얼 QA 체계** — 시스템 지도·방향·바이옴/시간/날씨 문법·산 깊이·몰입 파괴 판정·검사 프로토콜·진행 상태. `components/shared/ambient/**` 작업은 여기부터 | `rounds/` |
 | [`insights/`](insights/) | 방문/체류 인사이트·출석 | — |
 | [`sim/`](sim/) | 축구·월드컵 미니게임 RL 시뮬 | — |
 | [`product/`](product/) | 기능 제안·현황·세션 로그·서버 감사 | — |

@@ -12,6 +12,7 @@
 | `app/api/studio-write` | 낙관적 쓰기 창구(keepalive) | `route.ts` | op + payload → 액션 | ADR-0006 | AUTH |
 | `components/poster/**` | 시청자 포스터 · 공개 인사이트 | `public-poster.tsx` | 공개 스케줄 → 화면 | `components/README.md` | SECURITY |
 | `components/studio/**` | 편집실 셸 · 관리자 인사이트 · 차트 | `studio-shell.tsx` | 스튜디오 스케줄 → 화면 | `components/AGENTS.md` | AUTH |
+| `components/shared/ambient/**` | 계절 배경 = 바이옴 세계(캔버스 엔진·세계 서비스·장면 11·아트 자리) | `scene-engine.ts` → `world/world-scene.ts` → `scenes/*` | 달·시각·날씨·시드 → 캔버스 프레임 | `docs/ambient/README.md`(규칙·QA 체계) | GENERAL |
 | `lib/schedules/public-loader.ts` | **공개 데이터 단일 출처** | `getPublicSchedule` | Supabase(anon) → 공개 DTO | `lib/AGENTS.md` | SECURITY, PRIVACY |
 | `lib/schedules/studio-loader.ts` + `*-actions.ts` | 스튜디오 읽기/쓰기 | 서버 액션 | 액터 + 입력 → DB | `lib/schedules/README.md` | AUTH |
 | `lib/private-layer/**` | 패스코드 언락 · 본문 암호화 | `secret-crypto.ts` | 평문 ↔ AES-256-GCM | ADR-0002 | PRIVACY |

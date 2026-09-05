@@ -5,13 +5,26 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-09-04
+Last Updated: 2026-09-05
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
 ---
 
 ## Current Objective
+
+- **앰비언트 비주얼 QA 체계 — 라운드 0(진단·문서화·에이전트 설계, 2026-09-05, 코드 미수정)**: 소유자가 계절 배경을
+  "더 화려하게"가 아니라 **"더 자연스럽고 덜 거슬리게"** 만들기 위한 평가 시스템 + 수정 루프를 요구. 이번 세션은
+  조사·문서·설계까지만(대규모 수정·5라운드 루프는 다음 세션). 산출: `docs/ambient/`(README · SYSTEM_MAP 구조 진단 ·
+  VISUAL_DIRECTION · BIOME_GRAMMAR 11 바이옴 · SEASON_TIME_WEATHER_GRAMMAR + 허용 조합표 · MOUNTAIN_DEPTH_RULES ·
+  IMMERSION_BREAK_RULES P0~P3/범주 코드 · VISUAL_QA_PROTOCOL · QA_PROGRESS 백로그 18건 · rounds/템플릿),
+  검사 에이전트 3종 `.claude/agents/ambient-{art-mood,spatial-ecology,motion-director}.md`(읽기 전용·고정 출력 형식),
+  파이프라인 계획 PLAN-20260905-005(Proposed). 진단의 핵심(SYSTEM_MAP): ① 장면 시드가 `Date.now()`라 전/후 비교 불가
+  ② 시간대 = 단색 틴트 한 겹(아침=점심) ③ 날씨 반응은 초원·민물 일부뿐(흐림 0) ④ 산 뒤 봉우리 α .5 반투명 + land 지평선
+  프로파일 → 능선 모호 ⑤ 갯골 = 직선 현 + 단일 사인 + 등폭 리본 ⑥ 잠긴 돌 = clip/얹힘 ⑦ 숲 나무 `claimSpot` 미경유
+  ⑧ **가을 다람쥐 출발 y = `groundY(rand())`(v≈0 지평선 띠) + 회오리 `gy()−80`(하늘) = 공중 보행 P0**.
+  다음: PLAN-005 P0(결정성) → P1(시트) → 라운드 1(첫 수정 후보 AMB-A1-01 다람쥐 스폰). CLAUDE.md는 규칙을 복제하지
+  않고 `docs/ambient/README.md`로 연결만 했다.
 
 - **'오늘' 표식 관례화 + 링을 띠 위로(2026-09-05 소유자 결정, 둘 다)**: 관례 조사 결과 Google·Apple·
   Outlook·Notion은 모두 오늘을 **날짜 숫자**에 건다(채운 원/배지) — 칸 테두리로 말하지 않고, 일정 콘텐츠는
@@ -1859,6 +1872,9 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Next Exact Steps
 
+-1. **앰비언트 QA 파이프라인 P0·P1**(PLAN-20260905-005): `force.seed`·`band`·`season` fixture 파라미터, `__vicAmbient.freeze/advance/forcePointer`,
+   `/visual-fixture/biome`, 결정성 셀프테스트 → `scripts/ambient-qa/{capture,sheet,diff}.mjs` → 그다음 **라운드 1**
+   (`docs/ambient/VISUAL_QA_PROTOCOL.md` §7 절차, 첫 후보 `QA_PROGRESS` ① AMB-A1-01 다람쥐 스폰 P0).
 0. **마이그레이션 0051 적용** — `node scripts/apply-db.mjs db/migrations/0051_visit_known_accounts.sql`
    (새/재방문 판정용 DISTINCT RPC + `(day, account_hash)` 인덱스. 미적용이어도 코드가 옛 경로로
    폴백하므로 급하진 않지만, 적용해야 인사이트 열 때의 순차 왕복 40회+가 사라진다.)

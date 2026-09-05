@@ -13,6 +13,7 @@
 
 직접 참조:
 
+- **계절 배경(바이옴 세계)의 현행 규칙·QA 체계는 [`../ambient/`](../ambient/README.md)로 옮겼다(2026-09-05)** — 아래 ambient-* 문서 셋은 그 폴더가 참조하는 보조 문서다.
 - [`broadcast-panel-inking-research.md`](broadcast-panel-inking-research.md) — 방송 판서 잉크·펜·도구 UX 근거와 저장소 적용/미적용 결정.
 - [`seasonal-ambient-plan.md`](seasonal-ambient-plan.md) — 📋 계절·특정일 앰비언트 배경 설계안(2026-09-04 제안, 미착수): 레지스트리 하나·사주 보정 표·포스터 테마 supersede.
 - [`ambient-debut-tree-archive.md`](ambient-debut-tree-archive.md) — 📦 **보관**(2026-09-04): 데뷔 나무(2023-05 씨앗 → 2025-10-01 싹 → 실제 참나무 생장)와 도토리 순환을 화면에서 잠시 내림(`world/flags.ts treeChain=false`). 서사·코드 위치·다시 켤 때 정할 것.

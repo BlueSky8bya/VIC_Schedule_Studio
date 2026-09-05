@@ -1,5 +1,9 @@
 # Active ExecPlan
 
+> **Proposed(2026-09-05, 문서·에이전트 설계 완료 — 구현 미착수)**: [PLAN-20260905-005 — 앰비언트 비주얼 QA 파이프라인](PLAN-20260905-005-ambient-visual-qa.md) —
+> 결정적 재현(`force.seed`·`band`·`advance(ms)`·`forcePointer`·`/visual-fixture/biome`) → 캡처 시트·diff(`scripts/ambient-qa/`) → 전수 자동 지표 → 라운드 러너.
+> 규칙·에이전트·백로그는 [docs/ambient/](../../ambient/README.md). 라운드(세 검사자 동시 → 통합 → ≤3건 수정)는 P0·P1 뒤에 시작.
+>
 > **Accepted(진행 중, 2026-09-04 밤)**: [PLAN-20260904-004 — 바이옴 세계(Biome World)](PLAN-20260904-004-biome-world.md) —
 > **3/4 비스듬한 시점**(바닥 눌림 .7 · 거리 축소 .8→1 · y-sort · 지평선 띠 12%) · 동물의 숲 축척(타일 64, 최대:최소 ≤ 12 — 낙엽·발자국
 > 축소) · **기본 화면 = 사철 초원**(여름 억지 기슭 폐기) · **열한 화면**(3×3: 계곡·민물·산 / 언덕·★초원·숲 / 갯벌·모래해안·암석해안 + 남쪽
