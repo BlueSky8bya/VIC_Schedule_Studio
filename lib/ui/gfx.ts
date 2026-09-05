@@ -78,7 +78,8 @@ export function gfxMode(): GfxMode {
   return readRecord()?.mode ?? "full";
 }
 
-/** 눈 편한 테마 속성값 — 루트 filter("1") 또는 토큰 팔레트("lite", 소프트웨어 렌더에서만). */
+/** 눈 편한 테마 속성값. 2026-09-06부터 "1"과 "lite"는 **같은 토큰 팔레트**를 쓴다(루트 filter 폐지 —
+ *  배경 캔버스까지 물들었다). 값은 다른 규칙들이 기기 등급을 구분하는 데 남겨 둔다. */
 export function eyeComfortAttrValue(): "1" | "lite" {
   return gfxMode() === "soft" ? "lite" : "1";
 }
@@ -197,12 +198,11 @@ export async function probeGfx(): Promise<void> {
     notify("soft");
     return;
   }
-  // 잴 대상이 있을 때만(루트 filter 또는 보이는 배경 레이어). 둘 다 없으면 이 기기에서 비용을 내는 게 없다.
-  const root = document.documentElement;
-  const filterOn = root.getAttribute("data-eye-comfort") === "1";
+  // 잴 대상이 있을 때만 = **보이는 배경 레이어**. 눈 편한 테마는 2026-09-06부터 루트 filter가 아니라
+  // 토큰 팔레트라 프레임 비용이 0이다(globals.css) — 더 이상 측정 사유가 아니다.
   const layer = document.querySelector(".gs-tide, .gs-season");
   const layerOn = !!layer && getComputedStyle(layer).display !== "none";
-  if (!filterOn && !layerOn) return;
+  if (!layerOn) return;
   await wait(3_000);
   if (document.hidden) return;
   if (!isBadSample(await sampleFrames(SAMPLE_MS))) {

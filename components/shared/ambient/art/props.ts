@@ -987,8 +987,13 @@ export function scatterProps(
   r: () => number,
   list: { id: string; n: number; band?: "edge" | "any"; k?: number; minV?: number }[]
 ) {
+  // 큰 소품 개수는 **땅 면적**에 비례한다(2026-09-06 하늘 확대) — 지평선이 올라가 땅이 20% 줄었는데 같은 수를 뿌리면
+  // 밀도가 1.26배가 돼 "벽지"가 된다(검토 A ④-4). 작은 것(풀·꽃·낙엽)은 그대로 둔다 — 땅이 좁아진 만큼 촘촘해지는 편이
+  // 옛 "빈 갈색 판" 지적을 덜어 준다.
+  const gk = (h - h * HORIZON_V) / (h * 0.88);
   for (const it of list) {
-    for (let i = 0; i < it.n; i++) {
+    const n = Math.max(1, Math.round(it.n * gk));
+    for (let i = 0; i < n; i++) {
       let x: number;
       let y: number;
       // 땅의 것은 지평선 아래에만 — 옛 범위는 y=10부터라 소품이 먼 언덕/하늘에 박혔다(2026-09-04 검토 1차).

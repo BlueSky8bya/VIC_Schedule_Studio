@@ -100,6 +100,15 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   pond (`summer.ts` with a season param: canvas water base from `scenes/water.ts`, winter ice), the three coasts (`coast.ts`) and the seas
   (`sea.ts`) draw their own water; lily pads only render where `drawTraces` gets `water: true`. Land biomes are thin plates (`land.ts`)
   until P2 agents and P3 art. Fixture: `?biome=pond`. Debug: `__vicAmbient.goTo/biome/exits`.
+  **The deep sea is the one exception to every camera rule (2026-09-06, owner).** `scenes/deep.ts` is *inside* the water, seen
+  **side-on**: no horizon, no `GROUND_SQUASH`, no `depthScale` (y is depth = light and colour; distance is a per-creature `z`), no
+  sea floor (a bottom edge reads as a horizon again). Its fish are **side-view** silhouettes — the "fish are top-down shadows" rule
+  belongs to the 3/4 camera, and here the camera is different; every creature is still a Noto emoji (🐟🐠🐡🦈🐋🦑🐙🪼), tinted to one
+  colour so it reads as a silhouette, not an emoji. **Season, weather and time of day do not reach it**: the scene declares
+  `sealed()` and the engine then skips the weather particles, the depth haze and the whole light pass (the world scene un-seals
+  during a 620 ms pan so the neighbouring biome keeps its light). The contract is measured, not asserted: all 6 bands × 5 weathers
+  must hash identically. Variation comes from depth, drifting marine snow (three layers), the shafts and the creatures — never from
+  the clock.
 - **Ambient registry (ADR-0017, 2026-09-04, revised same day).** Studio and viewer mount ONE
   `<AmbientLayer month={view.month} />` (`components/shared/ambient/`). The season follows the **calendar
   month being viewed**, not today: 12–2 winter · 3–5 spring · 6–8 summer · 9–11 autumn (flip a month, the
@@ -188,7 +197,13 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   `world/scale.ts` is the size table (TILE 64, biggest : smallest ≤ 12 — leaves 12–18, boot prints 18, oak crown 128, debut cap
   192, flowers deliberately 24–28); `world/view.ts` is the camera: `GROUND_SQUASH` .7 for anything lying on the ground/water
   (prints, clover, lily pads, fish shadows, ripple rings — ellipses, applied before rotation), `depthScale(y,h)` **.60→1.00**
-  top→bottom in .05 steps for everything standing or alive (owner: .8 was too weak), `HORIZON_V` .12 = the far band
+  top→bottom in .05 steps for everything standing or alive (owner: .8 was too weak), `HORIZON_V` **.26 = the sky** (raised from
+  .12 on 2026-09-06 — owner: "the night sky is too small; give sky more and ground less"; the three review agents proposed
+  .30/.20/.26 and .26 is their common ground. Anything that must hug the horizon — far hills, the tree line, the horizon glow,
+  where the haze starts — is placed by **distance above the horizon** (`aboveHz(h, dh)`), never as a fraction of `hz`, or it floats
+  into mid-sky; anything on the ground is placed by **ground ratio** (`groundYAt(v, h)`), and absolute-px amplitudes are scaled by
+  `groundK(h)`. Mountains stay **below** the horizon: peaks that break it would punch through `bakeHorizon`'s haze band and invert
+  the aerial perspective) = the far band
   (`bakeHorizon`: haze + two hills fading into the ground + a sparse silhouette tree line), **`drawDepthHaze` = the engine paints an
   atmospheric haze from the horizon down to 58% height over every scene** (grass, water, prints, creatures all fade with distance),
   `toScreen(u,v)` puts normalized world coords below the horizon, y-sort in `drawTraces`. **Ground-bound things live below the
@@ -443,7 +458,12 @@ private layers is retired — ADR-0014; the server model stays.)
   authority. Since 2026-09-03 it is labeled **생동감 있는 동작** and defaults to ON (ON = attribute
   absent = full motion; OFF sets the attribute — the old "동작 줄이기"). Storage key
   `vic.reduceMotion` keeps its old meaning. OS `prefers-reduced-motion` seeding was withdrawn
-  2026-08-27; eye-comfort theme defaults to ON. Never gate motion on the OS media query
+  2026-08-27; eye-comfort theme defaults to ON. **눈 편한 테마 never touches the seasonal background** (2026-09-06 owner: "the
+  background must always look as if the theme were off"): its root `filter` is gone and both `data-eye-comfort` values now carry
+  the same **token palette** instead — a root filter tints everything under `<html>`, and the ambient canvas is a body child at
+  z −1 with no way out (an inverse filter on the child clips bright sky; a per-child filter breaks `position: fixed` inside it).
+  The removal also killed a known frame-jank source (the filter recomposited the whole screen every frame). Never reintroduce a
+  root filter for a preference. Never gate motion on the OS media query
   directly in CSS — always target `html[data-reduce-motion]`. Always-on ambient decoration
   (the studio tide layer) must additionally hide under `html[data-gfx="lite"]` (weak-device
   probe, `lib/ui/gfx.ts`) and use transform/opacity only.

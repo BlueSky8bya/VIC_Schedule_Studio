@@ -26,14 +26,14 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
-import { bakeShore, bakeTraces, drawTraces, SHORE_V, shoreEdgeOffset, type TraceBakes } from "../world/traces-draw";
+import { bakeShore, bakeTraces, drawTraces, shoreBandY, shoreEdgeOffset, type TraceBakes } from "../world/traces-draw";
 import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
 import { drawProp, drawSubmerged } from "../art/props";
 import { SIZE } from "../world/scale";
 import { currentLight } from "../world/light";
 import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
-import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, groundK, horizonY, moveScale } from "../world/view";
 import type { SeasonKey } from "../registry";
 import { bakeWater, drawGlints, drawTrail, drawWaterLight, newTrail, stepTrail, waterPalette } from "./water";
 
@@ -334,14 +334,14 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   }
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
   // 물가 선(캔버스 px) — 위 띠는 뭍(기슭)이라 물고기·오리·빗방울·글린트는 이 아래에서만.
-  const shoreY = () => h * SHORE_V + 6;
+  const shoreY = () => shoreBandY(h) + 6;
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
   let skyKeyCur = "";
   // (옛 `waterY(r)` = shoreY() 기준 균일 분포는 제거 — 아래 `waterYAt(x, r)`만 쓴다.)
   // 물가 선의 **실제** y(x별) — 기슭 굽기(bakeShore)의 뭍 경계와 같은 식. shoreY()는 물의 위쪽 한계일 뿐이고 뭍은 그 아래
   // 최대 ~110px까지 내려온다(만곡 44 + 만·곶 ±61). 옛 코드는 shoreY() 기준으로 생물·글린트·포인터 물결을 놓아 오리가 뭍을
   // 헤엄치고 땅 위에 물결이 일었다(QA 라운드 3, 소유자). 물 위에 놓는 것은 전부 이 아래에만.
-  const waterTopAt = (x: number) => shoreY() + 46 + shoreEdgeOffset(x, w);
+  const waterTopAt = (x: number) => shoreY() + 46 * groundK(h) + shoreEdgeOffset(x, w, groundK(h));
   const waterYAt = (x: number, r: number) => {
     const top2 = waterTopAt(x) + 6;
     return top2 + r * Math.max(20, waterBottom() - top2);
@@ -461,7 +461,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           const stand = (id: string, n: number, k: number, rr?: number) => {
             for (let i = 0; i < n; i++) {
               const sx = 30 + r0() * (w - 60);
-              const sy = edge + shoreEdgeOffset(sx, w) - 6 - r0() * 10;
+              const sy = edge + shoreEdgeOffset(sx, w, groundK(h)) - 6 - r0() * 10;
               drawProp(sg, shoreArt, id, sx, sy, { k: k * (0.85 + r0() * 0.3), r: rr ?? r0(), flip: r0() < 0.5 });
             }
           };
@@ -1447,7 +1447,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       }
       if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon(season, f.w, f.h, 1);
       g.drawImage(horizon, 0, 0, f.w, horizon.height);
-      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.3, { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
+      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.92, { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
       // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
       if (shore) g.drawImage(shore, 0, horizonY(f.h));
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });

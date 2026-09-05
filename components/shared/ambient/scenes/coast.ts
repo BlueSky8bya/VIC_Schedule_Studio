@@ -14,7 +14,7 @@ import { ArtSet } from "../art/load";
 import { claimSpot, drawProp, propShadow, resetPropField } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
 import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
-import { horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
+import { groundYAt, horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
 import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
 export type CoastMode = "tidal" | "sandy" | "rocky";
@@ -26,7 +26,10 @@ const SEASON_SEED: Record<SeasonKey, number> = { spring: 0, summer: 977, autumn:
 // 물가 선(정규화) — 그 아래가 뭍. **실제 사진 비율**(2026-09-04 조사): 갯벌은 바다가 가느다란 띠(3~5%)이고
 // 뻘이 화면의 58~63%, 모래해안은 바다 22~26%·모래 38%, 암석해안은 바다 30~35%·바위 25~32%.
 // 옛 0.64 하나로는 셋 다 "물 반 땅 반"이라 갯벌이 갯벌로 안 읽혔다.
-const LAND_V_BY: Record<CoastMode, number> = { tidal: 0.34, sandy: 0.38, rocky: 0.46 };
+// 2026-09-06(하늘 확대): 화면 분수가 아니라 **지평선 아래 땅에서의 비율**로 적는다. 화면 분수로 두면
+// hz가 .12 → .26으로 오를 때 바다 띠(hz~물가 선)가 22% → 6%로 눈 깜짝할 사이에 사라진다. 값은 옛 비율 그대로
+// 환산한 것((0.34−0.12)/0.88 등) — 물·묍의 상대 비율은 유지되고 하늘만 넓어진다.
+const SEA_GV_BY: Record<CoastMode, number> = { tidal: 0.25, sandy: 0.295, rocky: 0.386 };
 // 뭍 캔버스 여분 — 물가 선이 조석·숨·만곡으로 최대 ±(0.06h + 34)px 움직인다. 정적 shoreY()로 높이를 잡으면
 // 화면 맨 아래에 물이 새어 나온다(2026-09-04 검토 1차: "해안마다 바닥에 파란 실선").
 const PAD = 140;
@@ -76,7 +79,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
   let gsh = ""; // 바탕에 구운 소품 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   const pal = waterPalette(season);
   const top = () => horizonY(h);
-  const shoreY = () => h * LAND_V_BY[mode];
+  const shoreY = () => groundYAt(SEA_GV_BY[mode], h);
   // 조석(갯벌) — 새벽·저녁 썰물(뻘 넓음), 점심 밀물. 물가 선이 ±6% 움직인다.
   const tide = (f: Frame) => {
     const b = f.time.band;

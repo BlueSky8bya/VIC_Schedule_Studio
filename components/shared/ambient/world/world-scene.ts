@@ -235,6 +235,12 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       ownsWeather(wx) {
         return scenes.get(cur)?.scene.ownsWeather?.(wx) ?? false;
       },
+      // 닫힌 방(깊은 바다)은 **멈췄을 때만** 봉인다 — 카메라가 두 장면을 걸치고 있는 동안에
+      // 조명 패스를 끄면 이웃 바이옴 절반이 시간대를 잃는다(잠수하는 620ms는 그대로 밝기가 죽어간다).
+      sealed() {
+        if (trans) return false;
+        return scenes.get(cur)?.scene.sealed?.() ?? false;
+      },
       debug() {
         const active = scenes.get(cur);
         return {

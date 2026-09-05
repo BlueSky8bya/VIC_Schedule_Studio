@@ -9,18 +9,8 @@ import type { Light } from "../world/light";
 export type WaterPalette = { far: string; near: string; web: string; foam: string };
 
 /** 계절·깊이별 물빛. deep = 깊은 바다(진남색, caustic 거의 없음). */
-export function waterPalette(season: SeasonKey, deep = false): WaterPalette {
-  // 깊은 바다도 계절을 탄다(상수였던 탓에 네 계절의 깊은 바다가 한 장이었다) — 겨울은 더 차고 여름은 살짝 초록빛.
-  if (deep) {
-    const DEEP: Record<SeasonKey, [string, string]> = {
-      winter: ["#809ab4", "#5a7692"],
-      spring: ["#829bab", "#5c748c"],
-      summer: ["#7b96ab", "#56728c"],
-      autumn: ["#849aa9", "#5e7386"]
-    };
-    const [far, near] = DEEP[season];
-    return { far, near, web: "120 150 180", foam: "220 232 242" };
-  }
+export function waterPalette(season: SeasonKey): WaterPalette {
+  // (깊은 바다 분기는 2026-09-06 삭제 — 심해는 scenes/deep.ts가 자기 고정 팔레트를 쓴다. 수면 장면만 여기.)
   switch (season) {
     case "winter":
       return { far: "#c9d8e4", near: "#9fb8cc", web: "230 240 248", foam: "255 255 255" };

@@ -106,7 +106,7 @@ export const skyKey = (season: SeasonKey, weather: Weather, band: DayBand, w: nu
 /** 하늘 판 굽기 — 지평선까지 불투명, 그 아래 4%h는 사라진다(땅의 먼 띠를 덮지 않게). 구름은 1/3 해상도에 그려 보간 없이 키운다(픽셀 계단, AA 없음 — ADR-0017 ⑱). */
 export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number, seed: number, topY = 0): HTMLCanvasElement {
   const hz = horizonY(h);
-  const H = Math.ceil(hz + h * 0.05);
+  const H = Math.ceil(hz + (h - hz) * 0.05); // 지평선 아래로 새는 여유도 땅 비례(검토 B)
   const { c, g } = makeCanvas(Math.max(1, Math.ceil(w)), H);
   const pal = skyPalette(season, weather, band);
   const grad = g.createLinearGradient(0, topY, 0, hz);
@@ -133,28 +133,48 @@ export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: n
     const bandBot = Math.max(6, Math.round((hz / SC) * (pal.cirrus ? 0.7 : 0.95)));
     if (pal.cirrus) {
       // 새털구름 — 길고 얇은 띠 5~7, 바람에 빗겨 눕는다.
-      const n = 5 + Math.floor(r() * 3);
+      // 새털구름 — 가로 막대가 아니라 **끝이 가늘어지는 갈고리 획**(검토 A#1: "바코드처럼 줄 맞춰 누운 직사각형").
+      // 개체마다 y·길이·기울기(3~8°)·휘임을 달리 하고, 두께는 가운데가 두꺼우며 양 끝에서 0으로 준다.
+      const n = Math.round((5 + Math.floor(r() * 3)) * Math.max(1, (bandBot - bandTop) / 33));
       for (let i = 0; i < n; i++) {
-        const y = bandTop + r() * (bandBot - bandTop) * 0.7;
-        const x0 = r() * lw;
-        const len = lw * (0.18 + r() * 0.3);
-        const th = 1 + Math.floor(r() * 2);
-        lo.g.fillStyle = `rgb(${lit} / ${(0.4 + r() * 0.3).toFixed(2)})`;
-        for (let x = 0; x < len; x += 3) {
-          const yy = y + Math.sin(x * 0.05 + i) * 1.2 - x * 0.02;
-          lo.g.fillRect(Math.round(x0 + x), Math.round(yy), 3, th);
+        const y = bandTop + r() * (bandBot - bandTop) * 0.86;
+        const x0 = r() * lw * 0.9;
+        const len = lw * (0.12 + r() * 0.34);
+        const tilt = (r() < 0.5 ? -1 : 1) * (0.05 + r() * 0.09); // 3~8°
+        const th0 = 1 + Math.round(r() * 2);
+        const bow = (r() - 0.5) * 6;
+        lo.g.fillStyle = `rgb(${lit} / ${(0.34 + r() * 0.3).toFixed(2)})`;
+        for (let x = 0; x < len; x += 1) {
+          const u = x / len;
+          const taper = Math.sin(Math.PI * Math.min(1, Math.max(0, u))); // 끝 0 · 가운데 1
+          const th = Math.max(0, Math.round(th0 * taper));
+          if (th <= 0) continue;
+          const yy = y + x * tilt + Math.sin(u * 3.1 + i) * bow;
+          lo.g.fillRect(Math.round(x0 + x), Math.round(yy), 1, th);
         }
       }
     } else {
-      const n = Math.max(1, Math.round((lw / 30) * pal.cover * 1.3));
+      // 개수는 폭이 아니라 **하늘 띠 넓이**에 비례한다(2026-09-06 하늘 확대) — 안 그러면 위로 넓어진 만큼 구름이 성금게 보인다.
+      // 그리고 **세 고도대**로 나눈다(검토 C): 먼 층은 작고 옥게 · 가까운 층은 크고 진하게. 한 크기로 깔면
+      // 넓어진 하늘이 "단색 판 + 같은 점 여럿"이 된다 — 대기 원근을 하늘에도 넣는 유일한 방법이다.
+      const n = Math.max(1, Math.round(((lw * (bandBot - bandTop)) / 1000) * pal.cover * 1.3));
+      const hzL = bandBot; // 저해상 하늘 높이
+      const TIERS = [
+        { y0: 0.10, y1: 0.35, sz: 0.07, a: 0.55 },
+        { y0: 0.35, y1: 0.65, sz: 0.1, a: 0.78 },
+        { y0: 0.6, y1: 0.95, sz: 0.13, a: 1 }
+      ];
       for (let i = 0; i < n; i++) {
+        const q = r();
+        const tier = TIERS[q < 0.45 ? 0 : q < 0.78 ? 1 : 2];
         const cx = r() * lw;
-        const cy = bandTop + r() * (bandBot - bandTop);
-        const cw = 8 + r() * 22 * (0.6 + pal.cover);
-        const ch = 3 + r() * 5;
+        const cy = Math.max(bandTop, hzL * (tier.y0 + r() * (tier.y1 - tier.y0)));
+        const ch = Math.max(2, hzL * tier.sz * (0.7 + r() * 0.6));
+        const cw = ch * (2.6 + r() * 1.4) * (0.7 + 0.5 * pal.cover);
+        const tierA = tier.a;
         const blobs = 3 + Math.floor(r() * 4);
         // 윗면
-        lo.g.fillStyle = `rgb(${lit} / ${(0.7 + r() * 0.3).toFixed(2)})`;
+        lo.g.fillStyle = `rgb(${lit} / ${((0.7 + r() * 0.3) * tierA).toFixed(2)})`;
         for (let b = 0; b < blobs; b++) {
           const bx = cx + (r() - 0.5) * cw;
           const by = cy + (r() - 0.5) * ch * 0.6;
@@ -164,7 +184,7 @@ export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: n
           lo.g.fill();
         }
         // 밑면 — 어두운 톤이 아래 40%에 깔린다(빛은 위에서).
-        lo.g.fillStyle = `rgb(${under} / ${(0.5 + r() * 0.3).toFixed(2)})`;
+        lo.g.fillStyle = `rgb(${under} / ${((0.5 + r() * 0.3) * tierA).toFixed(2)})`;
         for (let b = 0; b < Math.max(2, blobs - 1); b++) {
           const bx = cx + (r() - 0.5) * cw * 0.9;
           const by = cy + ch * 0.3 + r() * ch * 0.3;
@@ -174,6 +194,18 @@ export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: n
           lo.g.fill();
         }
       }
+    }
+    // 가장자리를 픽셀로 — 저해상에 그린 타원은 여전히 안티에일리어싱된 반투명 테두리를 남기고, 그게 3배로 커져
+    // "가장자리가 뭉개진 소프트 타원"으로 보였다(검토 A#1). 알파를 세 단계(0 / .55 / 1)로 양자화해
+    // 경계를 계단으로 만든다 — 모양은 그대로고 AA만 사라진다.
+    {
+      const im = lo.g.getImageData(0, 0, lw, lh);
+      const d = im.data;
+      for (let i = 3; i < d.length; i += 4) {
+        const a = d[i];
+        d[i] = a < 42 ? 0 : a < 168 ? 140 : 255;
+      }
+      lo.g.putImageData(im, 0, 0);
     }
     g.imageSmoothingEnabled = false;
     g.drawImage(lo.c, 0, 0, lw, lh, 0, 0, lw * SC, lh * SC);
@@ -197,11 +229,47 @@ function stars(seed: number, w: number, maxY: number): Star[] {
   if (!s) {
     const r = rng(seed * 5 + 1);
     s = [];
-    const n = Math.round(Math.max(12, (w / 1400) * 46));
-    for (let i = 0; i < n; i++) s.push({ x: r() * w, y: 2 + r() * Math.max(2, maxY - 4), r: r() < 0.25 ? 2 : 1, ph: r() * TAU });
+    // 별도 면적 비례 — 옛 식은 폭만 보고 세서, 하늘을 넓히면 같은 수가 넘게 흔어졌다(2026-09-06).
+    // 밀도 0.35개/1000px²(검토 C) — 면적에 그대로 비례시키면 380개가 돼 "가루"로 보인다. 대신 밝기 3등급.
+    const n = Math.max(40, Math.min(140, Math.round(w * maxY * 0.00035)));
+    // 밝기 3등급 — 1px 잔별 다수 · 2px · 2px + 미광(r 3, 상위 8%). 같은 크기가 흔어지면 먼지로 보인다(검토 A).
+    for (let i = 0; i < n; i++) {
+      const q = r();
+      s.push({ x: r() * w, y: 2 + r() * Math.max(2, maxY - 4), r: q < 0.08 ? 3 : q < 0.3 ? 2 : 1, ph: r() * TAU });
+    }
     starCache.set(key, s);
   }
   return s;
+}
+
+// 은하수 — 대각 띠 하나(저해상 굽기 후 확대, α ≤ .08). 하늘이 넓어지면 별만으로는 "뿌려 놓은 가루"가 된다(검토 A ③).
+let milkyC: { c: HTMLCanvasElement; key: string } | null = null;
+function milkyWay(seed: number, w: number, maxY: number): HTMLCanvasElement | null {
+  if (maxY < 90) return null; // 하늘이 좀으면 띠가 화면을 가로지르는 선으로 보인다
+  const key = `${seed}:${Math.round(w)}:${Math.round(maxY)}`;
+  if (milkyC && milkyC.key === key) return milkyC.c;
+  const SC = 4;
+  const lw = Math.max(2, Math.ceil(w / SC));
+  const lh = Math.max(2, Math.ceil(maxY / SC));
+  const { c, g } = makeCanvas(lw, lh);
+  const r = rng(seed * 11 + 97);
+  // 대각선(왼쁔 위 → 오른쁔 아래) 주변에 점을 뿌린다 — 가운데가 짙고 가장자리가 옥다.
+  const n = Math.round(lw * lh * 0.06);
+  for (let i = 0; i < n; i++) {
+    const u = r();
+    const bandY = lh * (0.12 + 0.62 * u);
+    const d = (r() + r() + r() - 1.5) * lh * 0.16; // 삼각 분포 = 가운데 집중
+    const x = u * lw;
+    const y = bandY + d;
+    if (y < 0 || y >= lh) continue;
+    g.fillStyle = `rgb(226 232 244 / ${(0.05 + r() * 0.06).toFixed(3)})`;
+    g.fillRect(Math.round(x), Math.round(y), 1, 1);
+  }
+  const up = makeCanvas(Math.ceil(w), Math.ceil(maxY));
+  up.g.imageSmoothingEnabled = false;
+  up.g.drawImage(c, 0, 0, up.c.width, up.c.height);
+  milkyC = { c: up.c, key };
+  return up.c;
 }
 
 /** 달의 위상 0~1(0 = 삭, .5 = 보름, 다시 1 = 삭) — 실제 음력(삭망월 29.530588853일, 기준 삭 2000-01-06 18:14 UTC = JD 2451550.26).
@@ -224,10 +292,18 @@ let moonC: { c: HTMLCanvasElement; g: CanvasRenderingContext2D; key: string } | 
 function moonSprite(r: number, phase: number): HTMLCanvasElement {
   const key = `${r}:${phase.toFixed(3)}`;
   if (moonC && moonC.key === key) return moonC.c;
-  const S = r * 2 + 6;
-  const { c, g } = makeCanvas(S, S);
-  const cx = S / 2;
-  const cy = S / 2;
+  // **절반 해상도에 그리고 2배로 키운다**(nearest) — 그대로 그리면 안티에일리어싱된 정원이 되어
+  // 픽셀 나무 옆에 벡터 원이 뜼다(검토 A#1). 계단진 가장자리가 픽셀 어법이다.
+  const SC = 2;
+  const rr = Math.max(2, Math.round(r / SC));
+  const S0 = rr * 2 + 3;
+  const S = S0 * SC;
+  const lo = makeCanvas(S0, S0);
+  const { c, g: gOut } = makeCanvas(S, S);
+  const g = lo.g;
+  const cx = S0 / 2;
+  const cy = S0 / 2;
+  r = rr;
   g.fillStyle = "rgb(236 240 248 / 0.94)";
   g.beginPath();
   g.arc(cx, cy, r, 0, TAU);
@@ -247,7 +323,34 @@ function moonSprite(r: number, phase: number): HTMLCanvasElement {
     g.fill();
     g.globalCompositeOperation = "source-over";
   }
-  moonC = { c, g, key };
+  gOut.imageSmoothingEnabled = false;
+  gOut.drawImage(lo.c, 0, 0, S0, S0, 0, 0, S, S);
+  moonC = { c, g: gOut, key };
+  return c;
+}
+
+// 픽셀 원반 — 절반 해상도에 그려 2배로 키운다(가장자리가 계단). 반경·색·알파별로 하나만 캐시.
+let discC: { c: HTMLCanvasElement; key: string } | null = null;
+function pixelDisc(R: number, rgbStr: string, alpha: number): HTMLCanvasElement {
+  const key = `${R}:${rgbStr}:${alpha.toFixed(2)}`;
+  if (discC && discC.key === key) return discC.c;
+  const SC = 2;
+  const rr = Math.max(2, Math.round(R / SC));
+  const S0 = rr * 2 + 2;
+  const lo = makeCanvas(S0, S0);
+  lo.g.fillStyle = `rgb(${rgbStr} / ${alpha.toFixed(3)})`;
+  lo.g.beginPath();
+  lo.g.arc(S0 / 2, S0 / 2, rr, 0, TAU);
+  lo.g.fill();
+  const im = lo.g.getImageData(0, 0, S0, S0);
+  const d = im.data;
+  const aFull = Math.round(alpha * 255);
+  for (let i = 3; i < d.length; i += 4) d[i] = d[i] < aFull * 0.45 ? 0 : aFull;
+  lo.g.putImageData(im, 0, 0);
+  const { c, g } = makeCanvas(S0 * SC, S0 * SC);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(lo.c, 0, 0, S0, S0, 0, 0, S0 * SC, S0 * SC);
+  discC = { c, key };
   return c;
 }
 
@@ -265,6 +368,14 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     // 별 — 1~2px 사각, 개체마다 위상이 다른 느린 깜박임. 밤 multiply(×.72)를 같이 받으므로 굽기 전 값은 밝게. 보름에 가까울수록 옅다(달빛).
     const lit = moonLit(moonPhase(f.date.y, f.date.m, f.date.d));
     const starK = 1 - 0.35 * lit;
+    // 은하수는 달빛이 약할 때만 보인다(검토 C) — 보름 근처엔 별과 함께 씻긴다.
+    const mw = lit < 0.35 ? milkyWay(seed, w, maxY) : null;
+    if (mw) {
+      g.save();
+      g.globalAlpha *= starK;
+      g.drawImage(mw, 0, 0);
+      g.restore();
+    }
     for (const s of stars(seed, w, maxY)) {
       const a = (0.45 + 0.5 * (0.5 + 0.5 * Math.sin(t * (0.7 + s.r * 0.3) + s.ph))) * starK;
       g.fillStyle = `rgb(240 244 250 / ${a.toFixed(2)})`;
@@ -274,8 +385,11 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     if (lit >= 0.04) {
       const mx = w * L.reflect.x;
       const my = opts.moonY ?? Math.min(maxY * 0.5, 34);
-      softBlob(g, mx, my, 26, "226 232 244", 0.08 + 0.18 * lit, 0);
-      const spr = moonSprite(7, moonPhase(f.date.y, f.date.m, f.date.d));
+      // 지름은 하늘 높이에 비례(상한 56px, 검토 A ④-2) — 40px 하늘 시절 값(지름 14)은 넓은 하늘에서 콩알이다.
+      // 지름은 하늘 높이의 4.5%만(검토 C: "커진 달은 만화가 된다" — 시간은 크기가 아니라 **고도**로 말한다).
+      const R = Math.max(7, Math.min(14, Math.round(maxY * 0.045)));
+      softBlob(g, mx, my, R * 3.6, "226 232 244", 0.08 + 0.18 * lit, 0);
+      const spr = moonSprite(R, moonPhase(f.date.y, f.date.m, f.date.d));
       g.drawImage(spr, Math.round(mx - spr.width / 2), Math.round(my - spr.height / 2));
     }
     return;
@@ -285,10 +399,10 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     const sx = w * L.reflect.x;
     const sy = opts.sunY ?? Math.max(maxY * 0.55, maxY - 14);
     const col = band === "dusk" ? "244 226 220" : "236 238 240";
-    softBlob(g, sx, sy, 54, col, band === "dusk" ? 0.28 : 0.18, 0);
-    g.fillStyle = `rgb(${col} / ${band === "dusk" ? 0.6 : 0.45})`;
-    g.beginPath();
-    g.arc(sx, sy, 9, 0, TAU);
-    g.fill();
+    const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
+    softBlob(g, sx, sy, R * 6, col, band === "dusk" ? 0.28 : 0.18, 0);
+    // 원반도 픽셀 계단으로(달과 같은 이유) — 저해상 원을 굽고 nearest로 키운다.
+    const disc = pixelDisc(R, col, band === "dusk" ? 0.6 : 0.45);
+    g.drawImage(disc, Math.round(sx - disc.width / 2), Math.round(sy - disc.height / 2));
   }
 }

@@ -27,7 +27,17 @@ export const ASSET = {
   butterfly: "/ambient/noto/emoji_u1f98b.svg",
   // 연대기(Phase A) — 도토리에서 난 싹·묘목(식물, Noto).
   sprout: "/ambient/noto/emoji_u1f331.svg",
-  herb: "/ambient/noto/emoji_u1f33f.svg"
+  herb: "/ambient/noto/emoji_u1f33f.svg",
+  // 깊은 바다(2026-09-06) — 여기만 **물속 옆모습 시점**이라 물고기도 옆면이다(다른 바이옴의 top-view 그림자와 반대).
+  // 옆모습 Noto 이모지를 실루엣으로 물들여 쓴다 — drawFacing(왼쪽을 보는 원본).
+  fishSide: "/ambient/noto/emoji_u1f41f.svg",
+  fishTropical: "/ambient/noto/emoji_u1f420.svg",
+  fishPuffer: "/ambient/noto/emoji_u1f421.svg",
+  shark: "/ambient/noto/emoji_u1f988.svg",
+  whale: "/ambient/noto/emoji_u1f40b.svg",
+  squid: "/ambient/noto/emoji_u1f991.svg",
+  octopus: "/ambient/noto/emoji_u1f419.svg",
+  jellyfish: "/ambient/noto/emoji_u1fabc.svg"
 } as const;
 
 export type Sprite = { c: HTMLCanvasElement; w: number; h: number }; // w/h = 그릴 때의 CSS px 크기

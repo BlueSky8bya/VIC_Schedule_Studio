@@ -53,7 +53,8 @@ export function setReduceMotion(on: boolean): void {
 }
 
 // #28 눈 편한 테마(eye comfort) — 방송 전후 오래 보는 작업자용. 켜면 <html data-eye-comfort>가
-// 붙어 CSS가 전체 채도·눈부심을 살짝 낮춘다(글자 대비는 유지). reduce-motion과 같은 결의 설정.
+// 붙어 CSS가 **UI 토큰 팔레트**를 크림 톤으로 바꾼다(글자 대비는 유지). reduce-motion과 같은 결의 설정.
+// 2026-09-06부터 루트 filter는 쓰지 않는다 — 계절 배경 캔버스까지 물들이기 때문(소유자 지시).
 const EYE_COMFORT_KEY = "vic.eyeComfort"; // localStorage: 미설정이면 기본 ON, "off"만 끔
 
 export function eyeComfortEnabled(): boolean {
@@ -74,7 +75,7 @@ export function setEyeComfort(on: boolean): void {
   }
   try {
     const root = document.documentElement;
-    // 값 "1" = 루트 filter, "lite" = 토큰 팔레트(약한 기기 판정, lib/ui/gfx.ts).
+    // 값 "1"·"lite" 모두 같은 토큰 팔레트 — 값은 기기 등급 구분용으로만 남았다(lib/ui/gfx.ts).
     if (on) root.setAttribute("data-eye-comfort", eyeComfortAttrValue());
     else root.removeAttribute("data-eye-comfort");
   } catch {

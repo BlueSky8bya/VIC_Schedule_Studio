@@ -1266,7 +1266,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개.
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.3, { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
+      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.92, { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {

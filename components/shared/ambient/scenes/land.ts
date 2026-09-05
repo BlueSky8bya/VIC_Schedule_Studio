@@ -14,7 +14,7 @@ import { ArtSet, drawArt } from "../art/load";
 import { claimSpot, drawProp, drawSubmerged, propShadow, resetPropField, scatterProps, setPropShadow } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
 import { SIZE } from "../world/scale";
-import { bakeHorizon, depthFade, depthScale, horizonY, GROUND_SQUASH } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY } from "../world/view";
 import { bakeSky, drawSkyLive, skyKey } from "../world/sky";
 import { canopyTreeSprite, bareTreeSprite } from "../world/traces-draw";
 
@@ -198,7 +198,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       // 능선 그늘 오버레이(라운드 5 AMB-D2-02, B: 띠 단차가 시간 불변·노을 < 점심): 세 능선의 그늘 띠만 따로 구워 draw()가
       // 그림자 길이(light.shadow.len)에 비례해 얹는다 — 점심(len .5)은 0(항등), 노을(1.8) 1, 새벽 .85, 밤 .08.
       // 능선 함수는 하나(B: 다른 함수면 능선선이 둘) — 띠 그리기·그늘 오버레이·나무·노두 자리가 같은 식을 쓴다.
-      const hillRidge = (i: number, x: number) => groundY(0.14 + i * 0.24) + Math.sin(x * 0.003 + i * 2) * 26 + Math.sin(x * 0.009 + i) * 9;
+      // 진폭도 땅 높이 비례 — 절대 26/9를 두면 땅이 줄었을 때 세 띠가 서로 교차한다(검토 B).
+      const hillRidge = (i: number, x: number) => groundY(0.14 + i * 0.24) + Math.sin(x * 0.003 + i * 2) * ((h - gy()) * 0.0344) + Math.sin(x * 0.009 + i) * ((h - gy()) * 0.0119);
       const hs = document.createElement("canvas");
       hs.width = c.width;
       hs.height = c.height;
@@ -1008,9 +1009,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.save();
         g.globalAlpha = alpha;
         const base = groundY(baseV);
-        const foot = base + h * 0.16;
+        const foot = base + (h - gy()) * 0.182; // = 옛 h·.16(hz .12 기준)
         // 능선은 사인 곡선이 아니라 **각진 걸음**이다(부드러운 혹 두 개 = 회색 벽). 결정적 rng로 걸어 올린다.
         const pr = rng(Math.round(ph * 977) + 41);
+        // 봉우리 천장 — **지평선 아래**를 지킨다(검토 A·B 합의). 지평선 위로 솟으면 `bakeHorizon`의 안개 띠가
+        // 봉우리 위에 얹혀 대기 원근이 뒤집히고(MOUNTAIN §3 겹침 단서), "지평선 띠에 땅의 것은 없다"(BIOME_GRAMMAR)도 깨진다.
+        // 절대 px(22/4)이던 여유를 **땅 높이 비례**로 — 지평선이 내려가도 다섯 층의 상대 자리가 그대로다(B ④).
+        const gh = h - gy();
+        const peakTop = gy() + gh * 0.029;
         const ridge: number[] = [];
         let yv = base - amp * 0.15;
         let slope = (pr() - 0.5) * 0.6;
@@ -1021,11 +1027,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           yv -= slope * step * 0.5;
           yv += (base - amp * 0.55 - yv) * 0.045; // 평균 고도로 되돌리는 힘
           // 꼭대기 근처에서 꺾어 내린다 — 옛 clamp(gy()+4)는 ①의 오른쪽 700px을 지평선에 붙은 평탄 고원으로 만들었다(라운드 4 A#7·B#4).
-          if (yv < gy() + 22) {
-            yv = gy() + 22 + (gy() + 22 - yv) * 0.6;
+          // 2026-09-06(하늘 확대): 천장은 지평선이 아니라 **지평선 위 .10h**다 — 산은 수평선을 넘어야 산이다.
+          // 지평선에서 멈췄 hz가 .28로 오르면 봉우리가 화면 아래쪽에 주저앉고 위로는 빈 하늘 판만 남는다.
+          // 하늘 판·별은 ① 능선 위만 clip하므로(draw) 봉우리가 하늘을 가리는 관계는 그대로다.
+          if (yv < peakTop) {
+            yv = peakTop + (peakTop - yv) * 0.6;
             slope = -Math.abs(slope) - 0.3;
           }
-          ridge.push(Math.max(gy() + 4, Math.min(base - amp * 0.05, yv)));
+          ridge.push(Math.max(gy() + gh * 0.005, Math.min(base - amp * 0.05, yv)));
         }
         // 이웃 평균 한 번 — 걸음의 각을 눕힌다(만년설·암반 전이가 칼같이 꺾이지 않게).
         for (let pass = 0; pass < 2; pass++) {
@@ -1115,8 +1124,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.save();
         // 바탕 캔버스에 굽으므로(라운드 5) 투명으로 뚫지 않고 — 뚫으면 페이지가 비친다 — 그 높이의 땅색으로 덧칠해 들쭉날쭉 맞물린다.
         for (let x = -step; x <= w + step; x += 10) {
-          const j = Math.sin(x * 0.0041 + ph) * h * 0.03 + Math.sin(x * 0.013 + ph * 2.1) * h * 0.015;
-          const c0 = foot - h * 0.14 + j;
+          const gh2 = h - gy();
+          const j = Math.sin(x * 0.0041 + ph) * gh2 * 0.034 + Math.sin(x * 0.013 + ph * 2.1) * gh2 * 0.017;
+          const c0 = foot - (h - gy()) * 0.159 + j;
           const cut = g.createLinearGradient(0, c0, 0, foot + j + 6);
           cut.addColorStop(0, `${footGround}00`);
           cut.addColorStop(0.6, `${footGround}99`);
@@ -1166,8 +1176,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       // 절반을 못 넘는다(라운드 2 실측 2.2~4.0). 같은 밝기를 색으로 만든다(몸체색과 안개빛의 반씩) — 밝기는 유지, 단차는 이제 직접 정한다.
       // 혼합 .25 — .5는 점심 ①이 86 L로 하늘(87.5)에 붙었고 노을·맑음에선 하늘보다 3.4 밝아 뒤집혔다(라운드 3 1차 after). 목표 점심 ① ≈ 83(하늘 −4, ② +8).
       // 혼합 .25/.1 → .18/.06(라운드 5 2차): 능선선을 옅게 하자 하늘↔① 국소가 3.4/2.1/1.4로 내려와 ①을 조금 더 어둡게 — ①↔②는 9.1이라 여유.
-      peak(0.2, h * 0.34, mixHex(PEAK[season][0], "#e9edf0", season === "autumn" ? 0.06 : 0.18), 1, 1.2, 0.3, false, true);
-      peak(0.32, h * 0.26, PEAK[season][1], 0.88, 3.4, season === "spring" ? 0.16 : 0.42, capSnow);
+      peak(0.2, (h - gy()) * 0.386, mixHex(PEAK[season][0], "#e9edf0", season === "autumn" ? 0.06 : 0.18), 1, 1.2, 0.3, false, true);
+      peak(0.32, (h - gy()) * 0.33, PEAK[season][1], 0.88, 3.4, season === "spring" ? 0.16 : 0.42, capSnow);
       // 발치 — 자락이 땅에 닿는 자리(너덜 띠). 알파 0으로 사라지면 "공중에 뜬 구름"이다.
       // 너덜 자락 — 옛 코드는 화면 폭 0.75짜리 **밝은 원 하나**라 "렌즈 얼룩"으로 보였다(검토 라운드2 미관 #12).
       // 봉우리 발치를 따라 낮고 넓게 깔린 어두운(밝지 않은) 애추 띠로 바꾼다.
@@ -1449,7 +1459,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       // 별·달·해 — 산은 ① 능선 위(clip), 나머지는 먼 언덕 꼭대기 위(hz·.3)까지만(언덕은 반투명이라 뒤에 두지 않는다 — B 규칙 3).
       g.save();
       if (kind === "mountain") clipAboveRidge1(g);
-      drawSkyLive(g, f.w, f, seed, kind === "mountain" ? horizonY(f.h) + f.h * 0.08 : horizonY(f.h) * 0.3, kind === "mountain" ? { moonY: horizonY(f.h) * 0.42, sunY: horizonY(f.h) + f.h * 0.02 } : { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
+      // 별·달·해의 자리(2026-09-06 하늘 확대) — 상한은 먼 언덕 위까지(aboveHz .085), 달은 하늘 중단, 해는 지평선 가까이.
+      drawSkyLive(g, f.w, f, seed, kind === "mountain" ? horizonY(f.h) + (f.h - horizonY(f.h)) * 0.09 : horizonY(f.h) * 0.92, kind === "mountain" ? { moonY: horizonY(f.h) * 0.42, sunY: horizonY(f.h) + f.h * 0.02 } : { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
       g.restore();
       if (hillShade) {
         // 언덕 능선 그늘 — 그림자 길이에 비례(점심 0 = 항등 · 노을 1). 방향은 사면 대칭(띠 자체가 접힘의 단서).

@@ -2,7 +2,11 @@
 // 비스듬히 — 거리감". 전 장면 공통 규칙 한 곳:
 //  · 바닥에 납작한 것(flat: 발자국·클로버·연잎·조약돌·낙엽·물고기 그림자·파문 고리·발밑 그림자)은 세로로 눌린다(GROUND_SQUASH).
 //  · 서 있는 것·생물은 위(멀다)에서 작고 아래(가깝다)에서 크다(depthScale, 0.80 → 1.00). 픽셀 격자가 깨지지 않게 0.05 단위로 양자화.
-//  · 화면 위 HORIZON_V(12%)는 지평선 띠 — 먼 것의 자리(낮은 언덕·작은 나무 줄·수평선). 대기 원근: 채도↓ 명도↑ 옅은 안개.
+//  · 화면 위 HORIZON_V는 **하늘**이고 그 아래가 땅이다. 2026-09-06 소유자: "밤하늘 비율이 너무 적다 — 하늘을 늘리고
+//    땅을 줄여라" → 0.12 → **0.26**. 검토 3인이 각각 .30(A — 3분할) / .20(B — 땅 손실 10% 미만) / .26(C — 달을 놓을 자리 +
+//    depthScale 8단계 유지)을 제안했고, 세 권고의 공통 구간이 .26이다. 하늘 103 → 224px, 땅 757 → 636px(−16%). 지평선 **바로 위**는 여전히 먼 것의 자리(낮은 언덕·작은 나무 줄·수평선)인데, 그
+//    띠는 하늘 비율이 아니라 **지평선에서의 거리**로 붙인다(aboveHz) — hz에 비례시키면 먼 숲이 하늘 한가운데 뜬다.
+//    대기 원근: 채도↓ 명도↑ 옅은 안개.
 //  · 세계 좌표(정규화 u,v)는 지평선 아래 땅에 놓인다: toScreen(u, v) = (u·w, horizon + v·(h − horizon)).
 //  · 그리기 순서는 발 위치 y-sort(뒤가 앞에 가려진다).
 
@@ -11,17 +15,32 @@ import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scen
 import { isNeutralMul, type Light } from "./light";
 
 export const GROUND_SQUASH = 0.7;
-export const HORIZON_V = 0.12;
+export const HORIZON_V = 0.26;
 // 지평선에서의 배율 — 0.8은 소유자 실측에서 "원근이 약하다"(2026-09-04) → 0.6(먼 나무 ≈ 가까운 나무의 6할).
 export const DEPTH_FAR = 0.6;
 // 대기 원근 안개 — 지평선에서 이 알파, 화면 HAZE_END_V까지 0으로. 잔디·물·발자국·생물 전부 멀수록 옅어진다(엔진이 장면 위에 한 겹).
 // 0.34/0.58은 화면 절반을 우윳빛으로 덮어 모든 바이옴이 "안개 낀 빈 판"으로 보였다(검토 1차) → 옅고 짧게.
 // 0.17/0.44도 여전히 전경·중경·원경을 같은 중간 톤으로 눌러 44장 중 30장이 밋밋했다(라운드2 사이클5 최종 지적)
 // → 0.11/0.36. 하단 2/3는 안개 밖이라 어두운 전경 앵커가 살아난다.
-export const HAZE_ALPHA = 0.11;
-export const HAZE_END_V = 0.36;
+export const HAZE_ALPHA = 0.13; // .11 → .13(2026-09-06): 하늘이 넓어진 만큼 대기층도 두꺼워 보여야 한다(검토 C)
+// 안개가 사라지는 곳 — **지평선 아래 땅에서의 비율**로 적는다(2026-09-06). 화면 분수(옛 0.36)로 두면 하늘 비율을
+// 키울 때(HORIZON_V) 안개 끝이 지평선을 타고 올라가 띠가 눌린다. 0.2727 × (h − hz)는 hz .12에서 정확히 옛 0.36h다.
+export const HAZE_END_GV = 0.28;
 
 export const horizonY = (h: number) => h * HORIZON_V;
+/** 지평선에서 **위로** dh·h 만큼 떨어진 y. 지평선에 붙어 있어야 하는 것(먼 언덕·나무 줄·지평선 광·안개 시작)은
+ *  hz에 비례(hz·0.5 …)시키면 하늘을 키울 때 하늘 한복판으로 떠오른다 — 거리로 붙인다(2026-09-06). */
+export const aboveHz = (h: number, dh: number) => Math.max(0, horizonY(h) - dh * h);
+/** 지평선 아래 땅에서의 비율 v → 화면 y. 화면 분수를 직접 쓰면 지평선을 옮길 때 전부 어긋난다. */
+export const groundYAt = (v: number, h: number) => {
+  const hz = horizonY(h);
+  return hz + v * (h - hz);
+};
+/** 옛 지평선(.12) 때의 땅 높이 대비 지금 땅의 비율 — 1.0이면 예전과 같다. 절대 px로 박힌 진폭·여유를
+ *  새 땅 높이에 맞추는 데 쓴다(2026-09-06 하늘 확대, 검토 B ⑤). */
+export const groundK = (h: number) => (h - horizonY(h)) / Math.max(1, h * 0.88);
+/** 대기 안개가 0이 되는 y. */
+export const hazeEndY = (h: number) => groundYAt(HAZE_END_GV, h);
 
 /** 거리 축소 — 지평선에서 0.80, 화면 아래에서 1.00. 0.05 단위. */
 export function depthScale(y: number, h: number): number {
@@ -71,7 +90,7 @@ export function moveScale(y: number, h: number): number {
  *  옛 0.55는 먼 나무 **너머로 뒤 나무가 비쳐** 앞뒤 관계가 사라졌다(검토 라운드2 경계 #5: "유령처럼 보인다"). */
 export function depthFade(y: number, h: number): number {
   const hz = horizonY(h);
-  const t = Math.max(0, Math.min(1, (y - hz) / Math.max(1, h * HAZE_END_V - hz)));
+  const t = Math.max(0, Math.min(1, (y - hz) / Math.max(1, hazeEndY(h) - hz)));
   return 0.78 + 0.22 * t;
 }
 
@@ -83,11 +102,10 @@ export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w:
   const a = Math.min(0.6, HAZE_ALPHA * (light?.hazeK ?? 1));
   const key = `${season}:${w}:${h}:${c}:${a.toFixed(4)}`;
   let grad = hazeCache.get(key);
-  const hz = horizonY(h);
-  const start = hz * 0.4; // 지평선 **위**에서 0으로 시작 — 지평선에서 바로 0.34로 켜지면 화면을 가로지르는 선이 생기고,
+  const start = horizonY(h) * 0.85; // (검토 C: 안개는 대기 하부의 현상 — 넓어진 하늘의 위쪽은 건드리지 않는다) (옛 hz·0.4 = 지평선 위 .072h) 지평선 **위**에서 0으로 시작 — 지평선에서 바로 0.34로 켜지면 화면을 가로지르는 선이 생기고,
   //                        지평선을 걸친 물체는 아래(가까운)쪽만 하얘져 원근이 뒤집힌다(2026-09-04 검토 1차).
   if (!grad) {
-    grad = g.createLinearGradient(0, start, 0, h * HAZE_END_V);
+    grad = g.createLinearGradient(0, start, 0, hazeEndY(h));
     grad.addColorStop(0, `rgb(${c} / 0)`);
     grad.addColorStop(0.16, `rgb(${c} / ${a})`);
     grad.addColorStop(0.5, `rgb(${c} / ${a * 0.42})`);
@@ -97,7 +115,7 @@ export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w:
   }
   g.save();
   g.fillStyle = grad;
-  g.fillRect(0, start, w, h * HAZE_END_V - start + 2);
+  g.fillRect(0, start, w, hazeEndY(h) - start + 2);
   g.restore();
 }
 
@@ -112,7 +130,7 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     const f = L.groundFog;
     // 층별 누적 — 후경 .55 · 중경 .3 · 전경 .1(GRAMMAR §3.2 안개 행). 위는 α 0에서 시작해 hz·.5에서 .55f로 오른다 — 옛 코드는
     // 첫 스톱이 .55f인 채 hz·.5에서 fillRect를 시작해 어두운 하늘(새벽·밤)에 전폭 가로 절단선(−2~−4 L)이 생겼다(라운드 3 C#6).
-    const y0 = hz * 0.5;
+    const y0 = aboveHz(h, 0.06);
     const gr = g.createLinearGradient(0, 0, 0, h);
     gr.addColorStop(0, `rgb(${c} / 0)`);
     gr.addColorStop(y0 / h, `rgb(${c} / ${(0.55 * f).toFixed(3)})`);
@@ -137,7 +155,7 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     // **지평선 광**(QA 라운드 3, AMB-D1-01): 하늘은 천정이 어둡고 지평선 쪽이 밝다(대기 산란). 오버레이 색을 아래로 갈수록
     // 밝은 판으로 섞고 α도 줄여 지평선 바로 위의 하늘이 ① 봉우리보다 ≥ 4L 밝게 남는다 — 라운드 2에서 하늘↔①이 2.2~4.0으로
     // 눌린 원인은 오버레이가 지평선까지 같은 어두운 색이었기 때문이다. 점심·맑음은 skyAlpha 0이라 그대로.
-    const end = hz + 0.06 * h;
+    const end = hz * 1.1; // 하늘 판 **안에서** 끝난다(검토 C: hz+.06h를 그대로 두면 원경 띠와 겹쳐 능선 위 하늘만 두 번 눌린다)
     const gs = g.createLinearGradient(0, 0, 0, end);
     const glow = L.sky
       .split(" ")
@@ -153,7 +171,7 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     // 어두운 실루엣**이다 — 하늘만 오버레이로 어둡히고 ①은 multiply만 받으면 노을·밤에 ①이 하늘보다 밝아 층이 뒤집힌다(라운드 2
     // 실측 2.2~4.0 → 라운드 3 1차 −3.4). ①·②를 같은 α로 하늘색 쪽으로 눌러(①↔② 비례 유지) ③ 앞에서 사라진다. 점심·맑음 0.
     const fa = L.skyAlpha * 0.6;
-    const fEnd = hz + 0.42 * h;
+    const fEnd = groundYAt(0.3, h); // 원경 띠는 땅의 위 30%까지(검토 C: 옛 hz+.42h는 화면 68%를 덮는다)
     const gf = g.createLinearGradient(0, hz, 0, fEnd);
     // 시작은 α 0에서 — 옛 .7fa 시작은 지평선(hz)에 밤 3.4 L 전폭 계단을 남겼다(라운드 4 A#3). .04h 안에 .7fa로 오르고
     // ① 봉우리(hz + .05h 아래)부터는 옛 값 그대로라 산 층 단차(라운드 3 B 표)는 그대로다.
@@ -189,9 +207,9 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
       Math.round(L.mul[1] + (255 - L.mul[1]) * 0.35),
       Math.round(L.mul[2] + (255 - L.mul[2]) * 0.35)
     ];
-    const gm = g.createLinearGradient(0, 0, 0, h * 0.5);
+    const gm = g.createLinearGradient(0, 0, 0, groundYAt(0.4318, h)); // = 옛 h·.5
     gm.addColorStop(0, `rgb(${far[0]} ${far[1]} ${far[2]})`);
-    gm.addColorStop(Math.min(0.99, (hz * 0.9) / (h * 0.5)), `rgb(${far[0]} ${far[1]} ${far[2]})`);
+    gm.addColorStop(Math.min(0.99, aboveHz(h, 0.012) / Math.max(1, groundYAt(0.4318, h))), `rgb(${far[0]} ${far[1]} ${far[2]})`);
     gm.addColorStop(1, `rgb(${L.mul[0]} ${L.mul[1]} ${L.mul[2]})`);
     g.globalCompositeOperation = "multiply";
     g.fillStyle = gm;
@@ -236,7 +254,7 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
   // 띠는 지평선 아래로 **길게** 이어진다(옛 24px). 24px 안에서 안개를 0으로 떨어뜨리면 그 끝이 44장 전부에
   // 전폭 가로 이음매로 보였다(검토 라운드2 #1: "흐린 원경 띠가 뚝 끝나고 지면이 시작한다"). 화면 높이의 16%에
   // 걸쳐 서서히 사라지면 띠와 땅이 경계선 없이 섞인다.
-  const H = Math.ceil(hz + Math.max(48, h * 0.16));
+  const H = Math.ceil(hz + Math.max(48, (h - hz) * 0.22)); // 지금과 같은 두께감(검토 C)
   const { c, g } = makeCanvas(Math.max(1, Math.ceil(w * dpr)), Math.ceil(H * dpr));
   g.scale(dpr, dpr);
   const col = HZ_COLORS[season];
@@ -272,8 +290,8 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
     g.restore();
   };
   if (profile === "land") {
-    hill(hz * 0.5, hz * 0.18, col.hill, 0.5, 1.3);
-    hill(hz * 0.72, hz * 0.14, col.hill2, 0.5, 4.1);
+    hill(aboveHz(h, 0.06), h * 0.022, col.hill, 0.5, 1.3); // 진폭도 hz 비례가 아니라 절대치(= 옛 hz·0.18)
+    hill(aboveHz(h, 0.034), h * 0.017, col.hill2, 0.5, 4.1);
   }
   // 작은 나무 줄 — 지평선 바로 위에 실루엣(둥근 수관 + 짧은 줄기), 겨울은 나목 점. 드문드문·옅게(먼 숲의 윤곽).
   // 먼 숲 실루엣 줄(라운드 5 A#8 — 옛 "같은 크기 원+막대 롤리팝 20여 개 한 줄"): 세 종(둥근 참나무·삼각 소나무·낮은 관목) × 크기 3단(±35%),
@@ -292,7 +310,7 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
     const pitch = w / n;
     const x = Math.round(((i + 0.5) * pitch + (r() - 0.5) * pitch * 0.9) / 2) * 2;
     const s = (4 + r() * 7) * (0.65 + r() * 0.7);
-    const y = Math.round((hz * 0.8 + (r() - 0.5) * 8) / 2) * 2;
+    const y = Math.round((aboveHz(h, 0.024) + (r() - 0.5) * 8) / 2) * 2;
     g.globalAlpha = 0.3 + r() * 0.18;
     const kind = r();
     const tw = Math.max(2, Math.round((s * 0.2) / 2) * 2);
@@ -324,7 +342,7 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
   g.globalAlpha = 1;
   // 지평선 선 — 아주 옅은 밝은 줄(하늘과 땅의 경계 느낌). 반경이 캔버스 높이보다 크면 **아래에서 뭉텅 잘려**
   // 44장 전부에 y=hz+24 가로선이 생긴다(2026-09-04 검토 4차) → 세로로 눌러 띠 안에서 끝내고, 아래 24행은 지운다.
-  softBlob(g, w / 2, hz * 0.5, w * 0.6, "255 255 255", 0.12, 0, (hz * 0.55) / (w * 0.6));
+  softBlob(g, w / 2, aboveHz(h, 0.06), w * 0.6, "255 255 255", 0.12, 0, (h * 0.066) / (w * 0.6));
   const fh = H - hz;
   const fade = g.createLinearGradient(0, hz, 0, H);
   fade.addColorStop(0, "rgb(0 0 0 / 0)");

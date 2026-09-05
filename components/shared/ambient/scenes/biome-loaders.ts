@@ -12,8 +12,9 @@ export const BIOME_LOADERS: Record<BiomeKey, (season: SeasonKey) => Promise<Scen
     return import("./spring").then((m) => (seed: number) => m.createSpring(seed, season === "summer" ? "summer" : "spring"));
   },
   pond: (season) => import("./summer").then((m) => (seed: number) => m.createSummer(seed, { season })),
-  sea: (season) => import("./sea").then((m) => (seed: number) => m.createSea(seed, { season, deep: false })),
-  deep: (season) => import("./sea").then((m) => (seed: number) => m.createSea(seed, { season, deep: true })),
+  sea: (season) => import("./sea").then((m) => (seed: number) => m.createSea(seed, { season })),
+  // 깊은 바다만 따로 산다(2026-09-06) — 물속 옆모습 시점 + 계절·날씨·시간대 무영향이라 계절을 받지 않는다.
+  deep: () => import("./deep").then((m) => m.createDeep),
   tidal: (season) => import("./coast").then((m) => (seed: number) => m.createCoast(seed, { season, mode: "tidal" })),
   sandy: (season) => import("./coast").then((m) => (seed: number) => m.createCoast(seed, { season, mode: "sandy" })),
   rocky: (season) => import("./coast").then((m) => (seed: number) => m.createCoast(seed, { season, mode: "rocky" })),

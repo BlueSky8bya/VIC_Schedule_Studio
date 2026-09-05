@@ -1178,28 +1178,21 @@ html[data-reduce-motion] .auth-brand-spark {
 
 /* ── #28 눈 편한 테마(eye comfort) ─────────────────────────────────────────
    오래 보는 작업자용 — 채도·눈부심을 낮추고 + 청색광(블루라이트)을 줄여 따뜻하게 만든다.
-   눈 피로의 핵심은 밝기보다 청색광이라, sepia로 살짝 데우고(흰 배경=크림 종이 톤) 밝기를 조금
-   더 내려 눈부심을 줄인다. 글자 대비는 유지(legibility). filter를 'html'에만 걸어 fixed/sticky의
-   컨테이닝 블록을 깨지 않는다(html=뷰포트라 위치 변동 없음). 캡쳐(포스터 PNG)는 Playwright가
-   별도 컨텍스트라 영향 없음. prefers-contrast: more면 따뜻함을 줄여 대비 우선. */
-/* 값 "1" = 루트 filter(GPU 있는 기기). 값 "lite" = 아래 토큰 팔레트(약한 기기 — lib/ui/gfx.ts가
-   기기당 한 번 rAF로 재서 정한다). 실측(소프트웨어 렌더): 필터가 idle 79→45fps를 깎았고 paint
-   애니를 다 꺼도 45였다 — 필터 자체가 매 프레임 전 화면을 다시 합성하기 때문. */
-html[data-eye-comfort="1"] {
-  /* sepia .1 → .03(2026-09-03, ADR-0016 금생수): sepia는 옅은 파랑을 중성 회백으로 눌러 물빛 컨테이너가
-     "차이를 못 느끼겠다"(실측: 칸 #e8f0f9 → 233,235,235). 눈 편함의 몫(채도·눈부심 ↓)은 saturate·brightness가
-     이미 담당하므로 따뜻함만 살짝 남긴다. lite 팔레트(약한 기기)는 옛 필터 기준 색이라 그대로. */
-  filter: saturate(0.85) brightness(0.96) sepia(0.03);
-}
-/* 고대비 선호 사용자에겐 sepia(청색광 감소)를 줄여 또렷함을 우선한다. */
-@media (prefers-contrast: more) {
-  html[data-eye-comfort="1"] {
-    filter: saturate(0.88) brightness(0.97) sepia(0.04);
-  }
-}
-/* 라이트 팔레트 — 위 필터(saturate .8 · brightness .96 · sepia .1)를 토큰에 미리 통과시킨 값.
-   비용 0. 하드코딩된 색(태그 색·소형 액센트)은 원색 그대로라 필터판보다 살짝 쨍하지만, 큰 면
+   눈 피로의 핵심은 밝기보다 청색광이라, 흰 배경을 크림 종이 톤으로 데우고 밝기를 조금 더 내려
+   눈부심을 줄인다. 글자 대비는 유지(legibility). 캡쳐(포스터 PNG)는 Playwright가 별도 컨텍스트라
+   영향 없음. */
+/* **루트 filter 폐지**(2026-09-06 소유자: "눈 편한 테마 ON/OFF는 계절 배경에 영향 없게 — 배경은 항상
+   OFF 상태를 기본으로"). filter를 <html>에 걸면 그 아래 **전부**가 물드는데 배경 캔버스는 body 안 z −1에
+   깔린 자식이라 빠져나갈 방법이 없다: 자식에 역필터를 걸면 밝은 하늘이 클리핑돼 정확히 안 돌아오고,
+   자식별 filter는 그 안의 `position: fixed`를 깨뜨린다(모달·떠 있는 줄). 그래서 눈 편함은 **토큰 팔레트
+   한 벌**로만 낸다 — UI는 같은 크림 톤을 유지하고 배경 캔버스는 손대지 않는다. 덤: 루트 filter는 매 프레임
+   전 화면을 재합성해 idle 79→45fps를 깎던 알려진 프레임 끊김 원인이었다(소프트웨어 렌더 실측).
+   값 "1"(GPU 기기)과 "lite"(약한 기기)는 이제 **같은 팔레트**를 쓴다 — 속성값 자체는 다른 규칙들이
+   구분에 쓰므로 남긴다. */
+/* 팔레트 — 옛 필터(saturate .8 · brightness .96 · sepia .1)를 토큰에 미리 통과시킨 값.
+   비용 0. 하드코딩된 색(태그 색·소형 액센트)은 원색 그대로라 옛 필터판보다 살짝 쨍하지만, 큰 면
    (종이·표면·선·잉크·편집실 바탕)이 같은 크림 톤이라 인상은 같다. */
+html[data-eye-comfort="1"],
 html[data-eye-comfort="lite"] {
   --ink: #1e232d;
   --ink-soft: #3d414c;
@@ -1232,6 +1225,7 @@ html[data-eye-comfort="lite"] {
   --studio-silver-line: #d7d8d8;
   --studio-cell-calm: #eeede9;
 }
+html[data-eye-comfort="1"] .studio-shell,
 html[data-eye-comfort="lite"] .studio-shell {
   background:
     radial-gradient(120% 55% at 12% -6%, #faebeb 0%, transparent 46%),
@@ -1239,6 +1233,7 @@ html[data-eye-comfort="lite"] .studio-shell {
     linear-gradient(180deg, #fcf5f1 0%, #f4f2f1 100%);
   color: #2b2737;
 }
+html[data-eye-comfort="1"] .public-event,
 html[data-eye-comfort="lite"] .public-event {
   background: #f2efea;
 }

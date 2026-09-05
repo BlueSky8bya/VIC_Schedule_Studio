@@ -14,7 +14,7 @@ import { ArtSet } from "@/components/shared/ambient/art/load";
 import { drawProp } from "@/components/shared/ambient/art/props";
 import { makeCanvas, rng, shadowSprite, TAU } from "@/components/shared/ambient/scenes/util";
 import { SIZE } from "./scale";
-import { depthScale, GROUND_SQUASH, horizonY, toScreen } from "./view";
+import { depthScale, groundK, GROUND_SQUASH, horizonY, toScreen } from "./view";
 
 export type TraceBakes = {
   shadow: HTMLCanvasElement;
@@ -152,7 +152,12 @@ export function bareTreeSprite(R: number): HTMLCanvasElement {
 // 바이옴으로 이사한다 — 초원 여름은 물 없음.)
 // 기슭 띠의 아래 끝(정규화 세로). 0.115는 지평선(HORIZON_V 0.12)보다 **위**라 기슭 전체가 안개 띠 밑에 깔려
 // "하늘에 뜬 풀"과 물가 이중선으로 보였다(2026-09-04 검토 1차) → 지평선 아래로 내린다.
-export const SHORE_V = 0.21;
+// **지평선 아래 땅에서의 비율**로 적는다(2026-09-06) — 하늘 비율을 늘리면(HORIZON_V) 화면 분수 .21은 지평선
+// **위**로 올라가 기슭이 하늘에 뜼다. hz 기준으로 적으면 지평선이 어디에 있든 기슭은 땅의 같은 자리에 남는다.
+// (hz .12 때 화면 분수 .12 + .102×.88 = .2098 ≈ 옛 .21 — 값은 그대로다.)
+export const SHORE_GV = 0.102;
+/** 기슭 띠의 아래 끝(화면 px). */
+export const shoreBandY = (h: number) => horizonY(h) + SHORE_GV * (h - horizonY(h));
 /** 물가 선의 만·곶(정규화 x → px 낙차). 좌우 끝의 만곡과 별개로 **가운데에도** 굴곡이 있어야 한다 —
  *  옛 물가는 화면 폭 1400 내내 두께 일정한 수평 띠라 "수직벽 수조"로 읽혔다(검토 라운드2, 세 명 모두). */
 export function shoreWave(x: number, w: number): number {
@@ -162,20 +167,22 @@ export function shoreWave(x: number, w: number): number {
 }
 /** 물가 선의 x별 낙차(px) — 만곡(좌우 끝 44px) + 만·곶 + 잔물결. `bakeShore`의 뭍 경계와 **같은 식**이어야
  *  물 위 생물·포인터 물결·글린트가 뭍에 올라서지 않는다(QA 라운드 3, 소유자: "위쪽 땅에 물결이 생기고 오리가 땅까지 헤엄친다").
- *  절대 y = `h*SHORE_V + 52 + shoreEdgeOffset(x, w)`(shoreY() = h*SHORE_V + 6 → +46). */
-export function shoreEdgeOffset(x: number, w: number): number {
+ *  절대 y = `shoreBandY(h) + 52 + shoreEdgeOffset(x, w)`(shoreY() = shoreBandY(h) + 6 → +46). */
+export function shoreEdgeOffset(x: number, w: number, k = 1): number {
   const t = Math.min(1, Math.min(x, w - x) / (w * 0.3));
   const bay = (1 - t) * (1 - t) * 44;
-  return bay + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
+  // k = 땅 높이 비율(groundK) — 진폭이 절대 px라 땅이 줄면 물가가 기슭 띠를 뚫고 올라간다(검토 B).
+  return (bay + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5) * k;
 }
 /** 기슭 띠 — 지평선(hz)에서 시작해 h*SHORE_V까지. 좌우 가장자리는 아래로 내려와 연못을 감싼다(만곡). */
 export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): HTMLCanvasElement {
   const hz = horizonY(h);
-  const H = Math.round(h * SHORE_V - hz) + 24 + 52 + 56; // 만곡(44px) + 만·곶(±43px)까지 담을 여유
+  const gk = groundK(h);
+  const H = Math.round(shoreBandY(h) - hz) + Math.round((24 + 52 + 56) * gk); // 만곡(44px) + 만·곶(±43px)까지 담을 여유
   // edge는 H를 따라가면 안 된다 — 여유분(+56)만큼 물가가 내려가 캔버스 **바닥에서 잘렸다**(사이클3 경계 #3).
   const { c, g } = makeCanvas(Math.max(1, w), H);
   const r = rng(77 + w);
-  const edge = H - 24 - 56;
+  const edge = H - Math.round((24 + 56) * gk);
   const grad = g.createLinearGradient(0, 0, 0, H);
   // 기슭도 계절을 탄다 — 얼어붙은 연못 옆에 초록 잔디가 있으면 세계가 깨진다(2026-09-04 검토 2차).
   const SH: Record<SeasonKey, [string, string, string]> = {
@@ -188,7 +195,7 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   // 물가 곡선(뭍의 아래 경계) — 칠하기 전에 먼저 정의하고, **모든 뭍 칠을 이 곡선 위로 클립**한다.
   // 옛 코드는 전폭 사각형을 칠한 뒤 아래 12%만 페이드시켜, 그 페이드 끝이 화면을 가로지르는 직선으로 남았다.
   // 식은 `shoreEdgeOffset` 하나 — 장면(summer.ts)의 물 상한과 같은 곡선이어야 한다.
-  const landEdge = (x: number) => edge + shoreEdgeOffset(x, w);
+  const landEdge = (x: number) => edge + shoreEdgeOffset(x, w, gk);
   const landPath = () => {
     g.beginPath();
     g.moveTo(-8, -8);
@@ -268,7 +275,7 @@ const LAND_KINDS = new Set(["molehill", "snowman"]);
 const hash01 = (a: number, b: number) => (((Math.sin(a * 12.9898 + b * 78.233) * 43758.5453) % 1) + 1) % 1;
 
 /** 흔적을 그린다 — 바탕 뒤·생물 앞. hideCaches = 장면이 저장소를 제 흙더미 시스템으로 그릴 때(가을) 중복을 피한다.
- *  landOnShore = 물 장면(연못): 땅의 흔적은 기슭 띠(v ≤ SHORE_V) 안에 있는 것만 그린다. water = 물 흔적(연잎)을 그리는 장면(연못만 —
+ *  landOnShore = 물 장면(연못): 땅의 흔적은 기슭 띠(땅 비율 v ≤ SHORE_GV) 안에 있는 것만 그린다. water = 물 흔적(연잎)을 그리는 장면(연못만 —
  *  초원엔 물이 없다, PLAN-004). 먼 것(위)부터 그린다(y-sort). */
 export function drawTraces(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: TraceBakes, opts: { hideCaches?: boolean; landOnShore?: boolean; water?: boolean } = {}) {
   const hot = f.hot;
@@ -278,14 +285,14 @@ export function drawTraces(g: CanvasRenderingContext2D, f: Frame, season: Season
     .map((t) => {
       const hz0 = horizonY(f.h);
       const [x, y] = opts.landOnShore && LAND_KINDS.has(t.kind)
-        ? [t.u * f.w, hz0 + Math.min(1, t.v / SHORE_V) * (SHORE_V * f.h - hz0)]
+        ? [t.u * f.w, hz0 + Math.min(1, t.v / SHORE_GV) * (shoreBandY(f.h) - hz0)]
         : toScreen(t.u, t.v, f.w, f.h);
       return { t, x, y };
     })
     .sort((a, c) => a.y - c.y);
   for (const { t, x, y } of items) {
     if (inHot(x, y)) continue;
-    if (opts.landOnShore && LAND_KINDS.has(t.kind) && t.v > SHORE_V) continue;
+    if (opts.landOnShore && LAND_KINDS.has(t.kind) && t.v > SHORE_GV) continue;
     const ds = depthScale(y, f.h);
     switch (t.kind) {
       case "molehill":

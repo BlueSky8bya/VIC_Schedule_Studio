@@ -1006,7 +1006,7 @@ export function createAutumn(seed: number): Scene {
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개. 바탕 위, 모든 것 아래.
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.3, { moonY: horizonY(f.h) * 0.16, sunY: horizonY(f.h) * 0.26 });
+      drawSkyLive(g, f.w, f, seed, horizonY(f.h) * 0.92, { moonY: horizonY(f.h) * 0.35, sunY: horizonY(f.h) * 0.8 });
       // 서리 안개 — 안개 낀 날(11월에 잦다)은 더 깊이 내려온다.
       // 안개 날씨의 짙어짐은 **엔진 안개층**(light.ts groundFog·hazeK)이 맡는다 — 옛 ×1.7/×1.6은 엔진 안개와 겹쳐 상단 300px이
       // 단일 값의 흰 벽이 되고 지평선 실루엣이 사라졌다(QA 라운드 3 C#4 이중 안개). 서리안개는 맑은 가을 아침의 얇은 베일로만.

@@ -8,4 +8,7 @@ Used in VIC Schedule Studio's seasonal ambient scenes (components/shared/ambient
   emoji_u1f407 rabbit · emoji_u1f43f chipmunk · emoji_u1f986 duck · emoji_u1f41e lady beetle · emoji_u1f41d honeybee ·
   emoji_u1f98b butterfly · emoji_u1f330 chestnut · emoji_u1f331 seedling · emoji_u1f33f herb (연대기 싹·묘목, 2026-09-04) ·
   emoji_u1f997 cricket · emoji_u1fab2 beetle (여름 초원의 메뚜기·딱정벌레, 2026-09-04).
-(The three side-view fish emoji were retired 2026-09-04 — fish are now top-down shadows, see ../NOTICE.txt.)
+Deep sea (2026-09-06, scenes/deep.ts) — the camera is **inside the water, side-on**, so its creatures are side-view again:
+  emoji_u1f41f fish · emoji_u1f420 tropical fish · emoji_u1f421 blowfish · emoji_u1f988 shark · emoji_u1f40b whale ·
+  emoji_u1f991 squid · emoji_u1f419 octopus · emoji_u1fabc jellyfish.
+(Everywhere else fish stay top-down shadows — see ../NOTICE.txt. Same rule, different camera.)

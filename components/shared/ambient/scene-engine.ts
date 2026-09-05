@@ -106,6 +106,9 @@ export interface Scene {
   nav?: { go(target: BiomeKey | Dir): boolean; at(): BiomeKey; moving(): boolean; exits(): Record<Dir, BiomeKey | null> };
   /** 이 날씨의 입자를 장면이 스스로 그린다(초원 겨울의 착지 눈송이) — 엔진 입자층이 겹치지 않게 건너뛴다. */
   ownsWeather?(w: Weather): boolean;
+  /** "닫힌 방" — 계절·날씨·시간대가 닿지 않는 장면(깊은 바다, 2026-09-06 소유자). true면 엔진이 대기 안개·조명
+   *  패스를 **통째로 건너뛴다**(입자는 ownsWeather로 따로 막는다). 물속 200m는 밤낮도 날씨도 없다. */
+  sealed?(): boolean;
 }
 
 // 검증 훅 — Playwright가 장면 상태(입자 위치·소비된 클릭 수·품질·프레임·여력)를 읽는다. forceLoad로 여력을 고정해
@@ -405,6 +408,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     g.clearRect(0, 0, w, h);
     setCurrentLight(frame.light);
     scene.draw(g, frame);
+    // 닫힌 방(깊은 바다) — 계절·날씨·시간대가 닿지 않는다. 장면이 자기 대기를 통째로 소유한다.
+    if (scene.sealed?.()) return;
     // 날씨 입자(비·눈·부스러기·안개 뭉치) — 장면 위, 안개·조명 아래(멀리 떨어지는 것도 같은 대기 속에 있다).
     particles.draw(g, w, h, world.season, frame.weather.now, frame.light, frame.t);
     // 대기 원근(3/4 시점, PLAN-004 §2.5) — 지평선 쪽이 옅어지는 안개 한 겹: 잔디·물·발자국·생물이 멀수록 흐려진다.
