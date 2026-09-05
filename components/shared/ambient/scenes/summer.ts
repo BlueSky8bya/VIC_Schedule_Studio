@@ -34,7 +34,7 @@ import { SIZE } from "../world/scale";
 import { currentLight } from "../world/light";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import type { SeasonKey } from "../registry";
-import { bakeWater, drawGlints, drawTrail, newTrail, stepTrail, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawTrail, drawWaterLight, newTrail, stepTrail, waterPalette } from "./water";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -1451,6 +1451,19 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         g.restore();
       }
       drawGlints(g, t, glints);
+      // 빛의 길(라운드 4 AMB-T1-03) — 노을 반사 띠·밤 달빛 띠·새벽 옅은 반사. 물 구역(x별 물가 선 아래)만, 얼음판엔 없다. 점심 0.
+      if (!winter && currentLight().reflect.k > 0.01) {
+        g.save();
+        g.beginPath();
+        g.moveTo(0, waterTopAt(0));
+        for (let x = 40; x <= f.w + 40; x += 40) g.lineTo(Math.min(x, f.w), waterTopAt(Math.min(x, f.w)));
+        g.lineTo(f.w, f.h);
+        g.lineTo(0, f.h);
+        g.closePath();
+        g.clip();
+        drawWaterLight(g, t, f.w, shoreY() + 20, f.h, currentLight());
+        g.restore();
+      }
       // 뱃머리 — 빠르게 움직이는 포인터 앞의 밝은 물마루(본 캔버스, 또렷하게).
       const p = f.p;
       if (load >= 0.3 && p.inside && p.speed > 160) {

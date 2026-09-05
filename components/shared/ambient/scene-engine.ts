@@ -88,6 +88,8 @@ export type Frame = {
   traces: Trace[];
   /** 조명(라운드 2, world/light.ts) — 시간대 × 날씨의 여섯 채널. 장면은 그림자·바람·글린트를 여기서(또는 currentLight()) 읽는다. */
   light: Light;
+  /** 조명 전이가 끝났나(3초 lerp 완료) — 바탕에 구운 그림자를 다시 굽는 장면은 이 값이 참일 때만 `shadowKey`를 비교한다(라운드 4). */
+  lightStable: boolean;
 };
 
 export interface Scene {
@@ -238,7 +240,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     time: initialTime,
     weather: { now: "clear", prev: "clear", segment: 0 },
     traces: [],
-    light: NEUTRAL_LIGHT
+    light: NEUTRAL_LIGHT,
+    lightStable: true
   };
   // 보고 있는 달에 쓸 '날' — 날씨 시드에만 쓴다(흔적은 달만 본다). 현재 달은 오늘, 과거 달은 말일, 미래 달은 1일.
   const viewDay = (y: number, m: number, today: { y: number; m: number; d: number }) => {
@@ -266,6 +269,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       lightTgt = nextLight;
       lightMix = lightInit && !frozen ? 0 : 1;
       frame.light = lerpLight(lightFrom, lightTgt, lightMix);
+      frame.lightStable = lightMix >= 1;
     }
     lightInit = true;
     // 흔적은 **달만** 본다(2026-09-05 연대기 철거) — 날이 바뀌어도 다시 뽑지 않는다.
@@ -414,6 +418,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     if (lightMix < 1) {
       lightMix = frozen ? 1 : Math.min(1, lightMix + frame.dt / 3);
       frame.light = lerpLight(lightFrom, lightTgt, lightMix);
+      frame.lightStable = lightMix >= 1;
     }
     setCurrentLight(frame.light);
     particles.step(frame.dt, w, h, frame.weather.now, frame.light, frame.load, q < 2, scene.ownsWeather?.(frame.weather.now) ?? false);
@@ -438,6 +443,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     frame.dpr = dpr;
     frame.q = q;
     measureHot();
+    // 바탕을 굽는 장면이 발밑 그림자를 조명에서 읽는다(라운드 4) — resize의 굽기가 이전 마운트의 조명을 보지 않게 먼저 맞춘다.
+    setCurrentLight(frame.light);
     scene.resize(frame);
     if (!running) drawOnce();
   };

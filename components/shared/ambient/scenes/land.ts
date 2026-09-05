@@ -11,8 +11,8 @@ import type { Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet, drawArt } from "../art/load";
-import { claimSpot, drawProp, drawSubmerged, resetPropField, scatterProps, setPropShadow } from "../art/props";
-import { currentLight } from "../world/light";
+import { claimSpot, drawProp, drawSubmerged, propShadow, resetPropField, scatterProps, setPropShadow } from "../art/props";
+import { currentLight, shadowKey } from "../world/light";
 import { SIZE } from "../world/scale";
 import { bakeHorizon, depthFade, depthScale, horizonY, GROUND_SQUASH } from "../world/view";
 import { canopyTreeSprite, bareTreeSprite } from "../world/traces-draw";
@@ -53,6 +53,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   let gh = 0;
   let gdpr = 0;
   let av = -1;
+  let gsh = ""; // 바탕에 구운 소품 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   const art = new ArtSet(
     ["tree-oak-spring", "tree-oak-summer", "tree-oak-autumn", "tree-oak-winter", "tree-pine", "tree-pine-autumn", "tree-pine-winter", "rock", "stump", "log", "mushroom", "grass-dry", "grass-tuft", "grass-tall", "snow-pile", "daisy", "shrub-spring", "shrub-summer", "shrub-autumn", "shrub-winter"],
     { scaleOf: { "tree-oak-spring": 3, "tree-oak-summer": 3, "tree-oak-autumn": 3, "tree-oak-winter": 3, "tree-pine": 3, "tree-pine-winter": 3 } }
@@ -67,27 +68,21 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   // 발밑 그림자 — 딱딱한 검은 타원은 밝은 땅(눈·모래)에서 "기름 웅덩이"로 읽혔다(2026-09-04 검토 1차).
   // 좁게·옅게·가장자리가 풀리게, 겨울엔 청회색(눈 그늘).
   const shColor = season === "winter" ? "92 106 124" : "60 66 58";
-  const shadow = (g: CanvasRenderingContext2D, x: number, y: number, wd: number, a: number) => {
-    g.save();
-    g.translate(x, y);
-    g.scale(1, 0.34);
-    softBlob(g, 0, 0, wd * 0.5, shColor, a, 0);
-    g.restore();
-  };
+  // 라운드 4(AMB-T1-03, B#1 "한 장면에 해가 둘"): 언덕 나무·산 침엽수 띠·숲 그루터기·계곡 바위의 구운 그림자도 나무와 같은 조명 경로 —
+  // `propShadow`가 해 반대쪽으로 늘리고 농도를 띠·날씨로 맞춘다(점심·맑음은 옛 softBlob과 픽셀 동일). 바탕은 shadowKey로 재굽기.
+  const shadow = (g: CanvasRenderingContext2D, x: number, y: number, wd: number, a: number) => propShadow(g, x, y, wd * 0.5, a, 0.34, shColor);
 
   function drawTree(g: CanvasRenderingContext2D, x0: number, y: number, R: number, t: number, pine = false) {
     // 조명(QA 라운드 2, world/light.ts): 그림자는 해 반대쪽으로 길어지고(새벽 서쪽·노을 동쪽) 농도는 띠·날씨를 따른다.
     // 옛 `hour < 12 ? −8 : 8`은 방향 한 채널뿐이라 아침=점심이었고 점심에도 8px 비껴 있었다.
     const L = currentLight();
-    const dx = L.shadow.dx * R * 0.5 * L.shadow.len;
-    const sw = 0.6 + 0.8 * L.shadow.len; // 점심(.5) = 1.0배, 노을(1.8) = 2.04배 길게
-    const sa = L.shadow.alpha;
+    // (그림자의 방향·길이·농도는 shadow() → propShadow가 조명에서 읽는다 — 라운드 4. 옛 dx·sw·sa 계산은 거기로 갔다.)
     // 바람 흔들림(M-3): 바람 .15 이상에서만(맑음은 정지 그대로 — 굽은 바탕과 회귀 해시 유지). 나무마다 위상·주기가 다르다.
     const amp = L.wind >= 0.15 ? L.wind * 2.2 : 0;
     const x = amp ? x0 + Math.sin(t * (0.9 + (Math.round(x0) % 7) * 0.08) + x0 * 0.013) * amp : x0;
     if (pine) {
       // 소나무 — 폭은 참나무(2R)보다 좁고(1.45R) 키는 조금 크다. 실루엣이 갈려야 "혼효림"으로 읽힌다.
-      shadow(g, x0 + dx * 0.34, y - 2, R * 0.95 * sw, 0.16 * sa);
+      shadow(g, x0, y - 2, R * 0.95, 0.16);
       drawProp(g, art, season === "winter" ? "tree-pine-winter" : season === "autumn" ? "tree-pine-autumn" : "tree-pine", x, y, {
         k: (R * 1.78) / 92,
         r: ((x0 * 7919) % 997) / 997,
@@ -97,12 +92,12 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     }
     const a = art.get(`tree-oak-${season}`);
     if (a) {
-      shadow(g, x0 + dx * 0.4, y - 2, R * 1.05 * sw, 0.16 * sa);
+      shadow(g, x0, y - 2, R * 1.05, 0.16);
       drawArt(g, a, x, y, (2 * R) / a.w);
       return;
     }
     const s = season === "winter" ? bareTreeSprite(R) : canopyTreeSprite(season, R);
-    shadow(g, x0 + dx * 0.4, y - 2, R * 1.0 * sw, 0.15 * sa);
+    shadow(g, x0, y - 2, R * 1.0, 0.15);
     g.drawImage(s, x - s.width / 2, y - R * 0.9 - s.height / 2);
   }
 
@@ -1337,6 +1332,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     gh = h;
     gdpr = dpr;
     av = art.version;
+    gsh = shadowKey(currentLight());
   }
 
   return {
@@ -1346,7 +1342,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || av !== art.version) bake(f.dpr);
     },
     step(f) {
-      if (av !== art.version) bake(f.dpr);
+      // 아트 도착 또는 조명 전이 끝(그림자 채널 변화) → 바탕 다시 굽기(라운드 4 AMB-T1-03: scatterProps 소품의 발밑 그림자).
+      if (av !== art.version || (f.lightStable && gsh !== shadowKey(f.light))) bake(f.dpr);
       if (kind === "valley") for (const q of foam) q.u = (q.u + q.sp * f.dt * lerp(0.6, 1.4, f.load)) % 1;
     },
     draw(g, f) {

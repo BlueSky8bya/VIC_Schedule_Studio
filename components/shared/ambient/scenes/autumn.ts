@@ -15,7 +15,8 @@ import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
-import { drawProp, resetPropField, scatterProps } from "../art/props";
+import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
+import { currentLight, shadowKey } from "../world/light";
 import { LEAF_K, SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, horizonY, moveScale } from "../world/view";
 
@@ -121,6 +122,7 @@ export function createAutumn(seed: number): Scene {
     scaleOf: { "tree-oak-autumn": 3, "tree-pine-autumn": 3 }
   });
   let gav = -1;
+  let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
   // 땅의 위 끝(지평선) — 잎·소품·다람쥐·돌풍은 이 아래에서만 산다(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 떠다닌다").
   const gy = () => horizonY(h);
@@ -309,7 +311,7 @@ export function createAutumn(seed: number): Scene {
       const x = 30 + g0() * (w - 60);
       const y = gy() + 30 + g0() * (h - gy() - 60);
       const k = (0.8 + g0() * 0.6) * depthScale(y, h);
-      softBlob(g, x + 3, y - 4, 12 * k, "43 35 32", 0.22);
+      propShadow(g, x + 3, y - 4, 12 * k, 0.22, 1, "43 35 32");
       drawProp(g, groundArt, "mushroom", x, y + 8 * k, { k, r: g0() });
     }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
@@ -339,7 +341,7 @@ export function createAutumn(seed: number): Scene {
         // 그림자는 수관보다 좁고 발밑에 붙는다 — 옛 60*k는 수관보다 넓어 지면 얼룩으로 보였다(사이클4 경계 #8).
         // 그림자도 거리만큼 옅어져야 한다 — 안개에 표백된 수관 밑에 진한 그림자만 남으면 지면 얼룩이 된다
         // (사이클4 현실성 #6).
-        softBlob(g, t2.x + 4 * t2.k, t2.y - 1, 24 * t2.k, "70 58 46", 0.2 * depthFade(t2.y, h), 0, GROUND_SQUASH * 0.45);
+        propShadow(g, t2.x + 4 * t2.k, t2.y - 1, 24 * t2.k, 0.2 * depthFade(t2.y, h), GROUND_SQUASH * 0.45, "70 58 46");
         drawProp(g, groundArt, g0() < 0.25 ? "tree-pine-autumn" : "tree-oak-autumn", t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
         // 발치의 낙엽 더미 — 여기가 낙엽의 출처다.
         for (let q = 0; q < 5; q++) {
@@ -354,6 +356,7 @@ export function createAutumn(seed: number): Scene {
     gh = h;
     gdpr = dpr;
     gav = groundArt.version;
+    gsh = shadowKey(currentLight());
   }
 
   const totalWeight = SPECIES.reduce((a, s) => a + s.weight, 0);
@@ -592,6 +595,8 @@ export function createAutumn(seed: number): Scene {
       for (let i = caches.length - 1; i >= 0; i--) if (caches[i].x > w || caches[i].y > h) caches.splice(i, 1);
     },
     step(f) {
+      // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03).
+      if (ground && f.lightStable && gsh !== shadowKey(f.light)) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       const target = targetCount(f);
       const live = liveLeaves();
@@ -617,8 +622,9 @@ export function createAutumn(seed: number): Scene {
         dropAcorn(t);
         nextAcorn = t + 15 + rand() * 25;
       }
-      // 다람쥐 — 여력 0.5부터, 30~70초 간격(첫 손님은 16~24초).
-      if (!squirrel && load >= 0.5 && t > nextSquirrel) startSquirrel(t);
+      // 다람쥐 — 여력 0.5부터, 30~70초 간격(첫 손님은 16~24초). **주행성**(Sciurus vulgaris·Tamias — 일출 뒤 활동, 해 지면 둥지):
+      // 저녁·밤엔 새로 오지 않는다(라운드 4 AMB-T1-02, GRAMMAR §2.1 생물 풀 행). 이미 와 있던 놈은 하던 일을 마치고 나간다.
+      if (!squirrel && load >= 0.5 && t > nextSquirrel && f.time.band !== "night" && f.time.band !== "evening") startSquirrel(t);
       if (squirrel) {
         const s = squirrel;
         // 위협 지각 — 도망 개시 거리는 접근 속도에 따라 늘어난다(util.threat): 가만히·천천히(rate<60) 오면 70px까지 두고, 90px

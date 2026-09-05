@@ -27,12 +27,16 @@ export type Light = {
   desat: number;
   /** 마지막 색 보정 한 겹(옛 LIGHT 틴트, 상한 .10). */
   tint: { rgb: string; alpha: number };
-  /** 그림자 — dx: 해 반대쪽(−1 = 왼쪽/서 … +1 = 오른쬭/동), len: 몸 높이 대비 길이 배(점심 .5), alpha: 농도 배(점심 1). */
+  /** 그림자 — dx: 해 반대쪽(−1 = 왼쪽/서 … +1 = 오른쪽/동), len: 몸 높이 대비 길이 배(점심 .5), alpha: 농도 배(점심 1). */
   shadow: { dx: number; len: number; alpha: number };
   /** 수면 글린트·반사 배(점심 1, 흐림·비·안개 0). */
   glint: number;
   /** 바람 0~1 — 입자층·나무 흔들림·풀 진행파가 읽는다(맑음 .08). */
   wind: number;
+  /** 수면 위 빛의 길(라운드 4, AMB-T1-03 — GRAMMAR §2.1 "노을 = 길게 늘어진 반사 띠 · 밤 = 달빛 띠 1"): k = 세기 0~1(점심·흐림·비·안개 0),
+   *  rgb = 띠 색(노을 회장미, 밤 달빛 청백, 새벽 청회), x = 화면 폭 대비 가로 자리(해·달의 방위 = 그림자 반대쪽),
+   *  skyK = 하늘의 좌우 방향성(해·달 쪽 밝고 반대쪽 어둡다, 0 = 좌우 동일 — 라운드 4 A#2 "노을 하늘이 좌우 완전 동일 = 방향 0"). */
+  reflect: { k: number; rgb: string; x: number; skyK: number };
 };
 
 export const NEUTRAL_LIGHT: Light = {
@@ -46,7 +50,8 @@ export const NEUTRAL_LIGHT: Light = {
   tint: { rgb: "255 255 250", alpha: 0 },
   shadow: { dx: 0, len: 0.5, alpha: 1 },
   glint: 1,
-  wind: 0.08
+  wind: 0.08,
+  reflect: { k: 0, rgb: "255 250 240", x: 0.5, skyK: 0 }
 };
 
 type BandRow = {
@@ -58,6 +63,7 @@ type BandRow = {
   tint: { rgb: string; alpha: number };
   shadow: { dx: number; len: number; alpha: number };
   glint: number;
+  reflect: { k: number; rgb: string; skyK: number };
 };
 
 // 하늘 오버레이 색은 GRAMMAR 색조의 **밝은 판**(L을 여기서 떨어뜨리면 하늘이 ① 봉우리보다 어두워져 산 층 순서가 뒤집힌다 — 라운드 2
@@ -74,7 +80,8 @@ const BAND: Record<DayBand, BandRow> = {
     desat: 0.14,
     tint: { rgb: "118 128 158", alpha: 0.05 },
     shadow: { dx: -1, len: 1.6, alpha: 0.55 },
-    glint: 0
+    glint: 0,
+    reflect: { k: 0.26, rgb: "210 218 232", skyK: 0.16 }
   },
   morning: {
     sky: "250 250 245",
@@ -84,7 +91,8 @@ const BAND: Record<DayBand, BandRow> = {
     desat: 0.05,
     tint: { rgb: "255 255 250", alpha: 0 },
     shadow: { dx: -0.6, len: 1.2, alpha: 0.9 },
-    glint: 0.6
+    glint: 0.6,
+    reflect: { k: 0, rgb: "255 250 240", skyK: 0 }
   },
   noon: {
     sky: "255 255 250",
@@ -94,7 +102,8 @@ const BAND: Record<DayBand, BandRow> = {
     desat: 0,
     tint: { rgb: "255 255 250", alpha: 0 },
     shadow: { dx: 0, len: 0.5, alpha: 1 },
-    glint: 1
+    glint: 1,
+    reflect: { k: 0, rgb: "255 250 240", skyK: 0 }
   },
   dusk: {
     sky: "170 148 160",
@@ -104,7 +113,8 @@ const BAND: Record<DayBand, BandRow> = {
     desat: 0.1,
     tint: { rgb: "150 122 142", alpha: 0.05 },
     shadow: { dx: 1, len: 1.8, alpha: 1.1 },
-    glint: 1.2
+    glint: 1.2,
+    reflect: { k: 0.62, rgb: "240 220 210", skyK: 0.36 }
   },
   evening: {
     sky: "120 132 160",
@@ -114,7 +124,8 @@ const BAND: Record<DayBand, BandRow> = {
     desat: 0.12,
     tint: { rgb: "90 104 136", alpha: 0.07 },
     shadow: { dx: 0.6, len: 1.2, alpha: 0.55 },
-    glint: 0
+    glint: 0,
+    reflect: { k: 0.22, rgb: "184 196 218", skyK: 0.14 }
   },
   night: {
     sky: "96 110 140",
@@ -124,7 +135,8 @@ const BAND: Record<DayBand, BandRow> = {
     desat: 0.38,
     tint: { rgb: "48 66 102", alpha: 0.1 },
     shadow: { dx: 0, len: 0.6, alpha: 0.33 },
-    glint: 0.5
+    glint: 0.5,
+    reflect: { k: 0.58, rgb: "222 232 246", skyK: 0.1 }
   }
 };
 
@@ -156,10 +168,15 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
     tint: { ...b.tint },
     shadow: { ...b.shadow },
     glint: b.glint,
-    wind: 0.08
+    wind: 0.08,
+    // 빛의 길의 가로 자리 = 해·달의 방위 — 그림자가 뻗는 쪽의 반대(새벽 해 동쪽 → 띠 오른쪽, 노을 해 서쪽 → 왼쪽). 밤 달은 살짝 오른쪽.
+    reflect: { ...b.reflect, x: 0.5 - b.shadow.dx * 0.22 + (band === "night" ? 0.08 : 0) }
   };
   // 밤 눈밭은 알베도로 덜 어둡다(GRAMMAR §3.1: 밤 ΔL −16 대신 −10).
   if (season === "winter" && (band === "night" || band === "evening")) L.mul = scaleMul(L.mul, [1.08, 1.07, 1.05]);
+  // 새벽·맑음의 원거리 습기(GRAMMAR §2.2 "원거리 습기 허용", 라운드 4 AMB-T1-03) — 안개 날씨가 아니어도 발치 띠가 옅게 깔려
+  // 새벽↔저녁이 그림자 방향 말고도 갈린다. .2 = 안개 날씨(.55×1.6)의 1/4.
+  if (band === "dawn" && weather === "clear") L.groundFog = 0.2;
   switch (weather) {
     case "cloud":
       // 흰빛 → 회색, 그림자 옅게(길이 그대로), 글린트 0, 대비 −20%(§3.2 흐림 행).
@@ -169,6 +186,8 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       L.desat += 0.12;
       L.shadow.alpha *= 0.4;
       L.glint = 0;
+      L.reflect.k = 0;
+      L.reflect.skyK = 0;
       L.hazeK *= 1.15;
       L.hazeRgb = L.hazeRgb ? mixRgb(L.hazeRgb, "200 204 210", 0.5) : "204 208 212";
       L.wind = 0.14;
@@ -181,6 +200,8 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       L.desat += 0.08;
       L.shadow.alpha *= 0.3;
       L.glint = 0;
+      L.reflect.k = 0;
+      L.reflect.skyK = 0;
       L.hazeK *= 1.3;
       L.hazeRgb = L.hazeRgb ? mixRgb(L.hazeRgb, "150 160 172", 0.5) : "160 170 180";
       L.wind = 0.4;
@@ -193,6 +214,8 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       L.desat += 0.15;
       L.shadow.alpha *= 0.5;
       L.glint *= 0.3;
+      L.reflect.k *= 0.3;
+      L.reflect.skyK *= 0.3;
       L.hazeK *= 1.2;
       L.hazeRgb = L.hazeRgb ? mixRgb(L.hazeRgb, "208 214 222", 0.5) : "214 220 226";
       L.wind = 0.3;
@@ -208,6 +231,8 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       L.desat += 0.2;
       L.shadow.alpha *= 0.5;
       L.glint = 0;
+      L.reflect.k = 0;
+      L.reflect.skyK = 0;
       L.wind = 0.04;
       break;
     }
@@ -250,9 +275,15 @@ export function lerpLight(a: Light, b: Light, t: number): Light {
     tint: { rgb: lerpRgb(a.tint.rgb, b.tint.rgb, t), alpha: l(a.tint.alpha, b.tint.alpha) },
     shadow: { dx: l(a.shadow.dx, b.shadow.dx), len: l(a.shadow.len, b.shadow.len), alpha: l(a.shadow.alpha, b.shadow.alpha) },
     glint: l(a.glint, b.glint),
-    wind: l(a.wind, b.wind)
+    wind: l(a.wind, b.wind),
+    reflect: { k: l(a.reflect.k, b.reflect.k), rgb: lerpRgb(a.reflect.rgb, b.reflect.rgb, t), x: l(a.reflect.x, b.reflect.x), skyK: l(a.reflect.skyK, b.reflect.skyK) }
   };
 }
+
+/** 그림자 채널의 양자화 키(라운드 4, AMB-T1-03) — 바탕에 구운 소품 그림자는 조명이 바뀌면 **한 번** 다시 굽는다. 3초 전이 동안
+ *  프레임마다 굽지 않도록 dx ¼·len ¼·alpha ⅛ 단위로 묶고, 장면은 `f.lightStable`(전이 끝)일 때만 키를 비교한다. */
+export const shadowKey = (L: Light): string =>
+  `${Math.round(L.shadow.dx * 4)}|${Math.round(L.shadow.len * 4)}|${Math.round(L.shadow.alpha * 8)}`;
 
 export const isNeutralMul = (m: [number, number, number]) => m[0] >= 255 && m[1] >= 255 && m[2] >= 255;
 

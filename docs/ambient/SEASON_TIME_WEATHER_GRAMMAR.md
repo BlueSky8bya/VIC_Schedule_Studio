@@ -4,6 +4,7 @@
 > 지금 구현이 어디까지 닿는지는 [SYSTEM_MAP §2](SYSTEM_MAP.md#2-상태-축이-실제로-닿는-곳반응-인벤토리) — 이 문서는 **목표 규칙**이다.
 > 코드 진실: `world/time.ts`(띠·틴트) · `world/weather.ts`(월별 확률표) · `registry.ts`(달 → 계절).
 > **구현(QA 라운드 2, 2026-09-05)**: 이 문서의 §2.1 채널 목표표와 §3.2 날씨 반응표는 `world/light.ts lightOf()`의 표로 옮겨졌다(하늘·지면 multiply·채도·안개·그림자·글린트·바람). 엔진 조명 패스 `view.ts drawLightPass`, 입자층 `world/particles.ts`. 실측은 `scripts/ambient-qa/light-probe.mjs`. 값이 바뀌면 여기와 코드 표를 같이 고친다.
+> **라운드 4(2026-09-05)**: §2.1의 "그림자 길이/방향/α" 행은 이제 **바탕에 구운 소품 그림자**도 따른다(`art/props.ts propShadow` + `shadowKey` 재굽기), "수면 반사/글린트" 행의 노을 반사 띠·밤 달빛 띠·새벽 옅은 반사는 `Light.reflect` + `scenes/water.ts drawWaterLight`, "생물 풀" 행은 `spring.ts BAND_K`(+ 여름 밤 반딧불)·`autumn.ts` 다람쥐 주행성 게이트, 새벽 "원거리 습기"는 `groundFog .2`.
 
 ## 0. 원칙
 

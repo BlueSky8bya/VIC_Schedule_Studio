@@ -5,6 +5,7 @@
 import { makeCanvas, rng, softBlob, TAU } from "./util";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 
+import type { Light } from "../world/light";
 export type WaterPalette = { far: string; near: string; web: string; foam: string };
 
 /** 계절·깊이별 물빛. deep = 깊은 바다(진남색, caustic 거의 없음). */
@@ -172,6 +173,53 @@ export function drawWaves(g: CanvasRenderingContext2D, t: number, w: number, o: 
       seg.push([x, yAt(x)]);
     }
     flush();
+  }
+  g.restore();
+}
+
+/** 수면 위 빛의 길(QA 라운드 4, AMB-T1-03 — GRAMMAR §2.1 "노을 = 길게 늘어진 반사 띠 · 밤 = 달빛 띠 1 · 새벽 = 반사 옅음"). 해·달 아래로
+ *  길게 늘어진 반사 띠 + 그 안에서 깜박이는 잔 글린트. `L.reflect.k`가 0이면(점심·아침·흐림·비·안개) 아무것도 안 그린다 — 점심·맑음 항등.
+ *  띠는 지평선(top) 쪽이 좁고 또렷하고 아래로 갈수록 넓고 옅다(원근 + 잔물결 산란), 줄마다 가로로 조금씩 흔들린다. screen 합성이라
+ *  밑의 물빛을 **밝히기만** 하고, 뒤이은 엔진 multiply(밤 ×.72)를 같이 받아 주변 물보다 상대적으로 밝게 남는다. 물 구역 clip은 호출 쪽. */
+export function drawWaterLight(g: CanvasRenderingContext2D, t: number, w: number, top: number, bottom: number, L: Light, opts: { widthK?: number; alpha?: number } = {}) {
+  const k = L.reflect.k;
+  const H = bottom - top;
+  if (k <= 0.01 || H < 20) return;
+  const x = w * L.reflect.x;
+  const a = (opts.alpha ?? 0.95) * k;
+  const wk = opts.widthK ?? 1;
+  const w0 = w * 0.04 * wk;
+  const w1 = w * 0.17 * wk;
+  g.save();
+  g.globalCompositeOperation = "screen";
+  const rows = 14;
+  for (let i = 0; i < rows; i++) {
+    const u = i / rows;
+    const y0 = top + u * H;
+    const y1 = top + ((i + 1) / rows) * H + 1;
+    const hw = w0 + (w1 - w0) * u;
+    const ar = a * ((1 - u) * (1 - u) * 0.9 + 0.06);
+    const jx = Math.sin(t * 0.7 + i * 1.9) * hw * 0.16;
+    const gr = g.createLinearGradient(x - hw + jx, 0, x + hw + jx, 0);
+    gr.addColorStop(0, `rgb(${L.reflect.rgb} / 0)`);
+    gr.addColorStop(0.5, `rgb(${L.reflect.rgb} / ${ar.toFixed(3)})`);
+    gr.addColorStop(1, `rgb(${L.reflect.rgb} / 0)`);
+    g.fillStyle = gr;
+    g.fillRect(x - hw + jx - 1, y0, hw * 2 + 2, y1 - y0);
+  }
+  // 잔 글린트 — 띠 안의 가로 렌즈 8개, 결정적 위상(시드 무관 — 같은 t면 같은 그림).
+  for (let i = 0; i < 8; i++) {
+    const u = (i * 0.137 + 0.08) % 1;
+    const ph = i * 2.3;
+    const b = Math.max(0, Math.sin(t * 1.6 + ph));
+    if (b < 0.1) continue;
+    const hw = w0 + (w1 - w0) * u;
+    const gx = x + Math.sin(ph * 3.1 + t * 0.2) * hw * 0.7;
+    const gy = top + u * H;
+    g.fillStyle = `rgb(${L.reflect.rgb} / ${(b * a * 0.9).toFixed(3)})`;
+    g.beginPath();
+    g.ellipse(gx, gy, 3 + 6 * u, 0.8 + 1.2 * u, 0, 0, TAU);
+    g.fill();
   }
   g.restore();
 }

@@ -149,6 +149,9 @@
 2. 로컬 서버(`npm run build && VISUAL_TEST_FIXTURE=1 npx next start -p 3100 -H 127.0.0.1`) → `npm run ambient:qa:selftest`(하네스 자체 점검, 23 PASS) →
    `npm run ambient:qa:capture -- --round NN --phase before` → `ambient:qa:sheet` → `ambient:qa:diff`(같은 인자). 산출 `.scratch-pw/qa/rNN/before/index.md`.
 3. Agent tool 세 번을 **한 메시지에** 띄운다(입력: 시트 경로·지표 표·문서 목록). 결과는 `rounds/ROUND-NN-reports/{A,B,C}.md`로 저장.
+   **에이전트가 끝날 때까지 3100 서버(before 빌드)를 바꾸지 않는다**(라운드 4: 메인 세션이 검토 중에 수정본을 빌드해 서버를 갈아 끼웠고,
+   B·C가 라이브 프로브에서 "밤 해시가 캡처와 다르다"를 감지해 직접 판정을 PNG로 제한해야 했다). 수정본 확인은 에이전트 완료 뒤 — 또는
+   다른 포트에 두 번째 서버를 띄운다(`.next`가 하나라 빌드는 어차피 하나 — 확인용 빌드는 에이전트 뒤로 미루는 쪽이 간단하다).
 4. 통합 판단(§3) → ROUND-NN.md "선택" 확정.
 5. 수정 → 게이트 → `ambient:qa:capture -- --round NN --phase after`(같은 시드) → `ambient:qa:diff -- --round NN --compare before,after` → `compare.md`.
 6. ROUND-NN.md 완성, QA_PROGRESS 갱신, CURRENT_STATE 한 줄, 커밋(라운드 단위).

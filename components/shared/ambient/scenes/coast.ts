@@ -11,10 +11,10 @@ import type { Frame, Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet } from "../art/load";
-import { claimSpot, drawProp, resetPropField } from "../art/props";
-import { currentLight } from "../world/light";
+import { claimSpot, drawProp, propShadow, resetPropField } from "../art/props";
+import { currentLight, shadowKey } from "../world/light";
 import { horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
-import { bakeWater, drawGlints, drawTrail, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
 export type CoastMode = "tidal" | "sandy" | "rocky";
 
@@ -71,6 +71,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     scaleOf: { "tree-pine": 3, "tree-pine-autumn": 3, "tree-pine-winter": 3 }
   });
   let av = -1;
+  let gsh = ""; // 바탕에 구운 소품 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   const pal = waterPalette(season);
   const top = () => horizonY(h);
   const shoreY = () => h * LAND_V_BY[mode];
@@ -441,7 +442,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         const x = r() * w;
         const y = 80 + r() * (VIS - 110);
         const k = (0.85 + r() * 0.35) * landK(y);
-        softBlob(g, x + 1.5 * k, y + 1.5 * k, 7 * k, "110 98 74", 0.16, 0, GROUND_SQUASH);
+        propShadow(g, x + 1.5 * k, y + 1.5 * k, 7 * k, 0.16, GROUND_SQUASH, "110 98 74");
         g.fillStyle = "rgb(238 230 212)";
         g.beginPath();
         g.ellipse(x, y, 6 * k, 3.8 * k, r(), 0, TAU);
@@ -533,7 +534,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         const y = 100 + r() * (VIS - 130);
         const k = (0.85 + r() * 0.35) * landK(y);
         if (!drawProp(g, art, "shell-clam", x, y, { k, r: r(), sy: GROUND_SQUASH, rot: r() * TAU })) {
-          softBlob(g, x + 1.5 * k, y + 1.5 * k, 7 * k, "120 106 78", 0.18, 0, GROUND_SQUASH);
+          propShadow(g, x + 1.5 * k, y + 1.5 * k, 7 * k, 0.18, GROUND_SQUASH, "120 106 78");
           g.fillStyle = "rgb(252 246 234)";
           g.beginPath();
           g.ellipse(x, y, 7 * k, 4.5 * k, r(), 0, TAU);
@@ -553,7 +554,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         const x = 80 + r() * (w - 160);
         const y = VH * (0.45 + r() * 0.4);
         const k = 0.9 * landK(y);
-        softBlob(g, x + 3 * k, y + 2 * k, 16 * k, "112 98 72", 0.13, 0, GROUND_SQUASH);
+        propShadow(g, x + 3 * k, y + 2 * k, 16 * k, 0.13, GROUND_SQUASH, "112 98 72");
         drawProp(g, art, "log", x, y, { k, r: r(), flip: r() < 0.5 });
       }
       // 중경 앵커 — 사구 능선(낮은 밝은 이랑 + 그늘)과 표류목 무리. 상단 45%가 두 개의 평평한 가로 줄무늬로
@@ -581,7 +582,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           const x = cx3 + (r() - 0.5) * 150;
           const y = dy + 20 + r() * 60;
           const k = 1.0 + r() * 0.7;
-          softBlob(g, x + 4 * k, y - 2, 18 * k, "112 98 72", 0.16, 0, GROUND_SQUASH * 0.5);
+          propShadow(g, x + 4 * k, y - 2, 18 * k, 0.16, GROUND_SQUASH * 0.5, "112 98 72");
           drawProp(g, art, i === 0 ? "log" : "driftwood", x, y, { k, r: r(), flip: r() < 0.5, rot: i === 0 ? 0 : (r() - 0.5) * 0.5 });
         }
       }
@@ -628,7 +629,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         belt.sort((a2, b2) => a2.y - b2.y); // 뒤가 앞에 가려진다
         for (const t2 of belt) {
           // 밝은 모래 위에서는 그림자가 없으면 "붙여 넣은 스티커"가 된다(사이클5 현실성 #2).
-          softBlob(g, t2.x + 10 * t2.k, t2.y - 3, 30 * t2.k, "88 82 62", 0.26, 0, GROUND_SQUASH * 0.45);
+          propShadow(g, t2.x + 10 * t2.k, t2.y - 3, 30 * t2.k, 0.26, GROUND_SQUASH * 0.45, "88 82 62");
           drawProp(g, art, pineId, t2.x, t2.y, { k: t2.k, r: r(), flip: r() < 0.5 });
         }
       }
@@ -848,7 +849,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
             lateRocks.push({ x: rk.x, y: rk.y, k: rk.k, r1, f });
             continue;
           }
-          softBlob(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, "58 64 68", 0.18, 0, GROUND_SQUASH * 0.5);
+          propShadow(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, 0.18, GROUND_SQUASH * 0.5, "58 64 68");
           drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: r1, flip: f });
         }
       }
@@ -898,7 +899,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       }
       // 물가 바위 — 조류대 위에 α 1로. 발치는 늘 젖어 있고(어두운 발치 그늘) 흰 물살이 바다 쪽 반원에만 부서진다.
       for (const rk of lateRocks) {
-        softBlob(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, "40 46 50", 0.24, 0, GROUND_SQUASH * 0.5);
+        propShadow(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, 0.24, GROUND_SQUASH * 0.5, "40 46 50");
         drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: rk.r1, flip: rk.f });
         // 물살은 바위 **앞쪽(바다 쪽)** 반원에만 부서진다 — 닫힌 타원 링은 "속 빈 도형"으로 읽힌다(사이클5 경계 #4).
         g.strokeStyle = "rgb(252 254 255 / 0.55)";
@@ -973,6 +974,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     gh = h;
     gdpr = dpr;
     av = art.version;
+    gsh = shadowKey(currentLight());
   }
 
   return {
@@ -985,8 +987,10 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       const { dt, load } = f;
       // 포인터 물결 — 물가 선 위쪽(바다)에서만.
       stepTrail(trail, f.p, f.t, top(), shoreY() - 34);
-      if (av !== art.version) bake(f.dpr);
-      const gt = Math.round(lerp(4, 16, load));
+      // 아트 도착 또는 조명 전이 끝(그림자 채널 변화) → 뭍 다시 굽기(라운드 4 AMB-T1-03: 바위·통나무·소나무의 발밑 그림자).
+      if (av !== art.version || (f.lightStable && gsh !== shadowKey(f.light))) bake(f.dpr);
+      // 글린트 수 × 조명 글린트(라운드 4 C#2 — 저녁·흐림·비·안개 0, 노을 ×1.2; 민물과 같은 식). 점심·맑음 1 = 항등.
+      const gt = Math.round(lerp(4, 16, load) * currentLight().glint);
       while (glints.length < gt) glints.push({ x: rand() * w, y: top() + 20 + rand() * (shoreY() - top() - 40), ph: rand() * TAU, r: 1.2 + rand() * 1.4 });
       if (glints.length > gt) glints.length = gt;
       // 물보라(암석해안) — 파도 주기마다 바위 근처에서 흰 점 몇 개.
@@ -1037,6 +1041,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: WV.bands, speed: WV.speed, amp: WV.amp * (1 + 0.5 * currentLight().wind), alpha: 0.15, foam: pal.foam, shore: true });
       drawTrail(g, trail, t, GROUND_SQUASH, pal.foam);
       drawGlints(g, t, glints);
+      // 빛의 길(라운드 4 AMB-T1-03) — 노을 반사 띠·밤 달빛 띠·새벽 옅은 반사. 수평선에서 물가까지(뭍이 위를 덮는다). 점심 0.
+      drawWaterLight(g, t, f.w, top() + 4, sy, currentLight());
       // 뭍 — 물가 선 아래. 젖은 띠(어두운 반투명)가 물가 위로 살짝.
       if (land) {
         // 물가 선은 자로 그은 가로선이 아니다 — 완만하게 굽이치는 곡선(만·곶). 뭍 클립·젖은 띠·거품이 같은 곡선을 쓴다.

@@ -20,7 +20,8 @@ import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, t
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
-import { drawProp, resetPropField, scatterProps } from "../art/props";
+import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
+import { currentLight, shadowKey } from "../world/light";
 import { PRINT_K, SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 
@@ -76,6 +77,7 @@ export function createWinter(seed: number): Scene {
   // 바탕 소품 아트(있으면 눈 무더기·관목·바위·마른 풀·잔가지가 눈밭에 놓인다) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
   const groundArt = new ArtSet(["snow-pile", "shrub-winter", "rock", "grass-dry", "twig"]);
   let gav = -1;
+  let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(흰 언덕·나목 줄)
   // 땅의 위 끝(지평선) — 자국·손님·토끼·눈송이 착지는 이 아래에서만(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 발자국이 찍힌다").
   const gy = () => horizonY(h);
@@ -444,7 +446,7 @@ export function createWinter(seed: number): Scene {
           const x = cx2 + (g0() - 0.5) * 150;
           const y = cy2 + (g0() - 0.5) * 70;
           const k = (0.8 + g0() * 1.1) * depthScale(y, h);
-          softBlob(g, x + 4 * k, y - 1, 16 * k, "132 152 176", 0.22, 0, GROUND_SQUASH * 0.5);
+          propShadow(g, x + 4 * k, y - 1, 16 * k, 0.22, GROUND_SQUASH * 0.5, "132 152 176");
           drawProp(g, groundArt, "rock", x, y, { k, r: g0(), flip: g0() < 0.5 });
           // 바위 윗면의 눈
           g.fillStyle = "rgb(250 253 255 / 0.85)";
@@ -473,6 +475,7 @@ export function createWinter(seed: number): Scene {
     gh = h;
     gdpr = dpr;
     gav = groundArt.version;
+    gsh = shadowKey(currentLight());
   }
 
   const areaK = () => clamp((w * h) / 1_440_000, 0.6, 1.6);
@@ -631,6 +634,8 @@ export function createWinter(seed: number): Scene {
       }
     },
     step(f) {
+      // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03: 아침≈점심의 원인 = 점심에 구운 그림자).
+      if (ground && f.lightStable && gsh !== shadowKey(f.light)) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       // ① 손님 — 여력 0.2부터. 빈도는 여력에 비례(여유로우면 6~14초, 빠듯하면 28~48초 간격).
       if (!walker.active && t > nextWalker && load >= 0.2) startWalker(t, load);

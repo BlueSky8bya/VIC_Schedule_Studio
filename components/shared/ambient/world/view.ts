@@ -155,12 +155,31 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     const fa = L.skyAlpha * 0.6;
     const fEnd = hz + 0.42 * h;
     const gf = g.createLinearGradient(0, hz, 0, fEnd);
-    gf.addColorStop(0, `rgb(${L.sky} / ${(fa * 0.7).toFixed(3)})`);
+    // 시작은 α 0에서 — 옛 .7fa 시작은 지평선(hz)에 밤 3.4 L 전폭 계단을 남겼다(라운드 4 A#3). .04h 안에 .7fa로 오르고
+    // ① 봉우리(hz + .05h 아래)부터는 옛 값 그대로라 산 층 단차(라운드 3 B 표)는 그대로다.
+    gf.addColorStop(0, `rgb(${L.sky} / 0)`);
+    gf.addColorStop(0.04 / 0.42, `rgb(${L.sky} / ${(fa * 0.7).toFixed(3)})`);
     gf.addColorStop(0.12, `rgb(${L.sky} / ${fa.toFixed(3)})`);
     gf.addColorStop(0.45, `rgb(${L.sky} / ${fa.toFixed(3)})`);
     gf.addColorStop(1, `rgb(${L.sky} / 0)`);
     g.fillStyle = gf;
     g.fillRect(0, hz, w, fEnd - hz);
+    // **하늘의 방향**(라운드 4 A#2 "노을 하늘 좌(30,10) = 우(1370,10), 방향 0 → 세피아 필터로 읽힘"): 해·달 쪽(reflect.x)은 밝은 판(glow)으로
+    // 밝히고 반대쪽은 하늘색으로 한 번 더 눌러, 지평선 위 띠가 좌우로 기울어진 빛을 갖는다. 세기 skyK(노을 .32 · 새벽 .16 · 저녁 .14 ·
+    // 밤 .1, 흐림·비·안개 0). 점심·아침은 0 — 항등. 색은 이미 오행 팔레트(회장미·청회)의 밝은/어두운 판이라 새 색을 들이지 않는다.
+    if (L.reflect.skyK > 0.005) {
+      const k = L.reflect.skyK;
+      const gh = g.createLinearGradient(0, 0, w, 0);
+      const u = Math.max(0, Math.min(1, L.reflect.x));
+      // 해 쪽 끝 = glow α k, 해 자리 = glow α .7k, 반대쪽 끝 = 하늘색 α .8k.
+      const stops: [number, string][] = u < 0.5
+        ? [[0, `rgb(${glow} / ${k.toFixed(3)})`], [u, `rgb(${glow} / ${(k * 0.7).toFixed(3)})`], [Math.min(1, u + 0.3), `rgb(${glow} / 0)`], [1, `rgb(${L.sky} / ${(k * 0.8).toFixed(3)})`]]
+        : [[0, `rgb(${L.sky} / ${(k * 0.8).toFixed(3)})`], [Math.max(0, u - 0.3), `rgb(${glow} / 0)`], [u, `rgb(${glow} / ${(k * 0.7).toFixed(3)})`], [1, `rgb(${glow} / ${k.toFixed(3)})`]];
+      for (const [p, c] of stops) gh.addColorStop(p, c);
+      // 세로 범위는 하늘 오버레이와 같다(0 ~ end) — 원경 띠는 이미 far-band가 눌렀다.
+      g.fillStyle = gh;
+      g.fillRect(0, 0, w, end);
+    }
   }
   if (!isNeutralMul(L.mul)) {
     // 지면 노출은 세로 그라데이션 — 지평선 쪽(원경)은 35% 덜 누른다. 밤의 원경은 하늘빛을 받아 상대적으로 밝고(대기 원근),

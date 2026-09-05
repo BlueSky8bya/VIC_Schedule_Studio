@@ -13,6 +13,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **앰비언트 비주얼 QA 라운드 4 완료(2026-09-05~06, `docs/ambient/rounds/ROUND-04.md`)** — 주제 "밤·전환 묶음": 라운드 3 C의 진단 "조명은 섰지만
+  소비자가 없다"를 해소. ① **소품 발밑 그림자**가 조명을 읽는다(`art/props.ts propShadow` — scatterProps·초원/가을/겨울/육지/해안 bake +
+  `land.ts` 지역 `shadow()`·drawTree, 해 반대쪽으로 늘고 농도는 띠·날씨, 길어지면 몸통 농도 유지; 전이가 끝나면(`Frame.lightStable`)
+  `shadowKey`가 바뀐 장면만 바탕을 한 번 재굽기) ② **수면 위 빛의 길** `Light.reflect {k, rgb, x, skyK}` + `scenes/water.ts drawWaterLight`
+  (노을 회장미 · 밤 달빛 청백 · 새벽 옅음, 민물·해안 3·바다 2; 흐림·비·안개 0) + 해안/바다 글린트 × glint ③ **생물 풀이 띠·날씨를 안다**
+  `spring.ts BAND_K`(저녁·밤 0) + 날씨 계수(비 0·바람 나는 것 0·안개 .7·흐림 .8) + 여름 밤 반딧불 · 봄 밤 이슬 글린트 · 메뚜기 뛰어서
+  퇴장(pop 금지) · 다람쥐 주행성 ④ `light.ts/view.ts` 새벽 맑음 습기 .2 · **하늘 좌우 방향**(skyK, 노을 ΔL 0 → 3.9) · 밤 지평선 계단(far-band
+  α 0 시작, 3.4 → 1.0). **점심·맑음 항등 16/16 유지**, 산 층 수치 라운드 3과 동일. 세 에이전트 29건 → 병합 17, P0 0, 신규 10건
+  (T2-01 노을 색상 잠금 · D1-03 능선 국소 · F1-06 물가 AA 선 · F2-05 유령 바위 · S4-06 조류대 사각 · M3-03 저바람 정지 · W1-04 · T2-02 · W1-05
+  · S1-04), F3-01 재개. 절차 교훈: **에이전트가 돌 때 서버 빌드를 바꾸지 말 것**(프로토콜 §7-3에 기록). 다음 = 라운드 5 산 구조 묶음(D1-02 + D1-03).
 - **감상 중 배경 설정 톱니(2026-09-05, 소유자 요청)** — 감상 모드는 크롬을 전부 감춰 설정으로 갈 길이 없었다(나가기 →
   톱니 → 고르기 → 다시 감상 = 왕복 4번). 오른쪽 위 꼭짓점에 톱니 하나(`ShowcaseSettingsPanel`, showcase.tsx) —
   **계절 · 시간대 · 날씨 · 배경 효과**를 보면서 바꾼다. 값은 설정 모달과 **같은 상태**(studio-shell의 `devSeason` ·
@@ -1920,7 +1930,7 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Next Exact Steps
 
--1. **앰비언트 비주얼 QA 라운드 4**(라운드 1~3 완료 2026-09-05): 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 04 --phase before`
+-1. **앰비언트 비주얼 QA 라운드 5**(라운드 1~4 완료 2026-09-06; 첫 후보 산 구조 묶음 AMB-D1-02 + D1-03, 산 층은 B.md rect로) — 절차는 QA_PROGRESS §6. 이전 라운드 4 메모: 서버 기동 → `npm run ambient:qa:selftest` → `capture --round 04 --phase before`
    (+ `--only 3,4 --kinds long`) → `sheet`·`diff` → `light-probe.mjs` → 에이전트 3 **동시** 검토 → 통합(P0 전부 + 입구 묶음 ≤ 4) — 첫 후보
    **AMB-T1-03**(소품 그림자 ← `light.shadow` 재굽기 + 수면 노을 반사·밤 달빛 띠) + **AMB-T1-02**(밤 생물 풀) "밤·전환 묶음" → 수정 → 게이트
    → `--phase after` → `--compare before,after` → `docs/ambient/rounds/ROUND-04.md`. 산 층은 `ROUND-03-reports/B.md`의 다섯 rect 표를 프로브

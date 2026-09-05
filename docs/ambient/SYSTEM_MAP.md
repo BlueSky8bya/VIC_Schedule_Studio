@@ -55,8 +55,17 @@ AmbientLayer(month, year, slug, force?, worldForce?)          components/shared/
 > → drawLightPass(light)` 순으로 칠한다(점심·맑음 = 항등). `world/particles.ts`가 비(0.5× 저해상 사선)·눈·바람 부스러기·안개 뭉치를
 > 엔진 층으로 그린다(`Scene.ownsWeather`로 초원 겨울 눈송이 제외). 장면 소비자: `land.ts drawTree`(그림자 방향·길이·농도 + 바람
 > 흔들림 ≥ .15), `summer.ts` 글린트 × `light.glint`, `sea.ts` 빛줄기 × 띠/날씨. 띠·마디 전환은 3초 lerp. 실측 도구
-> `scripts/ambient-qa/light-probe.mjs`. 아직 안 닿는 곳: 소품 굽기 그림자(bake 시점 = 점심 고정), 파도 진폭·물보라(coast/sea 상수),
-> 생물 풀(AMB-T1-02), 눈 쌓임·젖은 땅 상태 변수, 언덕 억새(바탕에 굽힘 — 부스러기만 움직임).
+> `scripts/ambient-qa/light-probe.mjs`. 아직 안 닿는 곳: 파도 진폭·물보라(coast/sea 상수),
+> 눈 쌓임·젖은 땅 상태 변수, 언덕 억새(바탕에 굽힘 — 부스러기만 움직임).
+>
+> **라운드 4 뒤 상태(2026-09-05, AMB-T1-03 "조명은 섰지만 소비자가 없다" 해소)**: 소비자가 셋 늘었다. ① **소품 발밑 그림자**
+> `art/props.ts propShadow()` — scatterProps·초원 관목/버섯/나무/바위·해안 바위/통나무/소나무의 굽힌 그림자가 `currentLight().shadow`
+> (dx·len·alpha)를 읽는다(점심 = 옛 softBlob과 픽셀 동일). 바탕은 조명 전이가 끝나면(`Frame.lightStable`) `shadowKey(light)`가 달라졌을
+> 때 **한 번** 다시 굽는다(spring·autumn·winter·land·coast의 `step`). ② **수면 위 빛의 길** `scenes/water.ts drawWaterLight()` —
+> `Light.reflect {k, rgb, x}`(노을 회장미 .62 · 밤 달빛 청백 .58 · 새벽 .26 · 저녁 .22 · 점심/아침/흐림/비/안개 0, x = 그림자 반대쪽) —
+> pond(물가 선 아래 clip)·coast(수평선~물가)·sea/deep. screen 합성 뒤 엔진 multiply를 같이 받는다. ③ **생물 풀이 띠를 안다**
+> `spring.ts BAND_K`(새벽 .34 · 아침 .75 · 점심 1 · 노을 .6 · 저녁·밤 0)로 나비·메뚜기·무당벌레 수, 꿀벌은 아침·점심·노을만, 여름
+> 저녁·밤엔 **반딧불** 5~12(저채도 연두); `autumn.ts` 다람쥐는 저녁·밤에 새로 오지 않는다. 새벽·맑음은 `groundFog .2`(원거리 습기).
 
 ### 2.1 시간대(band) — 장면이 `f.time`을 읽는 곳 전부
 

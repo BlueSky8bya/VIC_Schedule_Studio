@@ -28,7 +28,11 @@ import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
-import { drawProp, resetPropField, scatterProps } from "../art/props";
+import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
+import { currentLight, shadowKey } from "../world/light";
+import type { DayBand } from "../world/time";
+import type { Weather } from "../world/weather";
+import { drawGlints } from "./water";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
@@ -93,6 +97,8 @@ type Hopper = {
   y: number;
   hd: number;
   k: number;
+  /** 화면 밖으로 뛰어 나가는 중(수가 줄 때) — 가장자리를 넘으면 지운다. */
+  leave?: boolean;
   state: HopState;
   until: number;
   x0: number;
@@ -153,6 +159,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   // 바탕 소품 아트(클로버·데이지·풀포기·민들레 + 있으면 관목·바위·그루터기·민들레 꽃) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
   const groundArt = new ArtSet(["clover", "daisy", "grass-tuft", "grass-tall", "dandelion-puff", "dandelion-flower", "shrub-spring", "shrub-summer", "rock", "stump"]);
   let gav = -1;
+  let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠
   // 땅의 위 끝(지평선) — 꽃·풀·벌레·나비·민들레는 이 아래에서만(지평선 띠는 먼 곳).
   const gy = () => horizonY(h);
@@ -285,7 +292,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         const x = cx3 + (g0() - 0.5) * 190;
         const y = cy3 + (g0() - 0.5) * 90;
         const k = (0.9 + g0() * 0.8) * depthScale(y, h);
-        softBlob(g, x + 5 * k, y - 2, 20 * k, "70 86 58", 0.16, 0, GROUND_SQUASH * 0.5);
+        propShadow(g, x + 5 * k, y - 2, 20 * k, 0.16, GROUND_SQUASH * 0.5, "70 86 58");
         drawProp(g, groundArt, summer ? "shrub-summer" : "shrub-spring", x, y, { k, r: g0(), flip: g0() < 0.5 });
       }
     }
@@ -338,6 +345,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     gh = h;
     gdpr = dpr;
     gav = groundArt.version;
+    gsh = shadowKey(currentLight());
   }
   function bakeSprites() {
     if (petalSpr) return;
@@ -418,9 +426,26 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     void loadSprite(ASSET.bee, SIZE.bee, SIZE.bee, 2, undefined, 0.3).then((s) => (beeSpr = s)).catch(() => {});
   }
 
+  // 생물 풀은 띠를 안다(QA 라운드 4 AMB-T1-02, GRAMMAR §2.1 "생물 풀" 행): 새벽 조용(0~1) → 아침 활발 시작 → 점심 활발 → 노을 귀가 →
+  // 저녁·밤 0(나비·벌·무당벌레·메뚜기는 주행성 — 밤엔 여름 반딧불이 그 자리를 맡는다). 옛 코드는 밤에도 점심 자리 그대로였다.
+  const BAND_K: Record<DayBand, number> = { dawn: 0.34, morning: 0.75, noon: 1, dusk: 0.6, evening: 0, night: 0 };
+  const BEE_BANDS = new Set<DayBand>(["morning", "noon", "dusk"]); // 꿀벌은 해 있을 때만 난다(새벽·저녁·밤엔 벌집)
+  // 날씨 계수(GRAMMAR §3.2, 라운드 4 C#3): 비 = 곤충 0 · 바람 = 나는 것(나비·벌) 0, 걷는 것은 그대로 · 안개 ×.7 · 흐림 ×.8.
+  const WX_FLY: Record<Weather, number> = { clear: 1, cloud: 0.8, fog: 0.7, rain: 0, wind: 0, snow: 0 };
+  const WX_WALK: Record<Weather, number> = { clear: 1, cloud: 0.8, fog: 0.7, rain: 0, wind: 1, snow: 0 };
   // 나비는 봄 초원의 주인공(1~3), 여름엔 한둘로 물러나고 그 자리를 메뚜기·딱정벌레가 채운다.
-  const flyTarget = (f: Frame) => (summer ? clamp(Math.round(f.load * 2), 0, 2) : clamp(1 + Math.round(f.load * 2.4), 1, 3));
-  const hopTarget = (load: number) => (summer ? (load >= 0.75 ? 3 : load >= 0.35 ? 2 : 1) : 0);
+  const flyTarget = (f: Frame) => Math.round((summer ? clamp(Math.round(f.load * 2), 0, 2) : clamp(1 + Math.round(f.load * 2.4), 1, 3)) * BAND_K[f.time.band] * WX_FLY[f.weather.now]);
+  const hopTarget = (load: number, band: DayBand, wx: Weather) => Math.round((summer ? (load >= 0.75 ? 3 : load >= 0.35 ? 2 : 1) : 0) * BAND_K[band] * WX_WALK[wx]);
+  // 봄 밤의 "작은 움직임 1종"(GRAMMAR §2.1 밤 하한 — 봄엔 반딧불이 없다): 풀잎 이슬이 달빛에 반짝인다. 자리는 결정적, 깜박임은 t.
+  const dews: { x: number; y: number; ph: number; r: number }[] = [];
+  const dewTarget = (f: Frame) => (!summer && (f.time.band === "night" || f.time.band === "dawn") && f.weather.now !== "rain" && f.weather.now !== "fog" ? Math.round(lerp(6, 12, f.load)) : 0);
+  // 여름 밤의 반딧불(GRAMMAR §2.1 밤 "작은 움직임 ≥ 1종") — 풀 위 낮게, 느리게 떠돌며 깜박인다. 저녁엔 절반, 봄엔 없다(한국 반딧불은 6~8월).
+  type Firefly = { x: number; y: number; vx: number; vy: number; ph: number; k: number };
+  const fireflies: Firefly[] = [];
+  const fireflyTarget = (f: Frame) => (summer && (f.time.band === "night" || f.time.band === "evening") ? Math.round(lerp(5, 12, f.load) * (f.time.band === "night" ? 1 : 0.5)) : 0);
+  function newFirefly(): Firefly {
+    return { x: 20 + rand() * (w - 40), y: groundY(0.28 + rand() * 0.66), vx: (rand() - 0.5) * 20, vy: (rand() - 0.5) * 8, ph: rand() * TAU, k: 0.8 + rand() * 0.5 };
+  }
   function newFly(t: number, fromEdge: boolean): Fly {
     const b: Fly = {
       x: rand() * w,
@@ -547,13 +572,13 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     b.dur = 0.4 + dist / 900;
     b.x0 = b.x;
     b.y0 = b.y;
-    b.x1 = clamp(b.x + Math.cos(ang) * dist, 16, Math.max(17, w - 16));
+    b.x1 = b.leave ? b.x + Math.cos(ang) * dist : clamp(b.x + Math.cos(ang) * dist, 16, Math.max(17, w - 16));
     b.y1 = clamp(b.y + Math.sin(ang) * dist * GROUND_SQUASH, groundY(0.24), h - 8);
     b.peak = 14 + dist * 0.16;
     b.hd = ang;
     hops++;
   }
-  const bugTarget = (load: number) => (load >= 0.85 ? 2 : load >= 0.45 ? 1 : 0);
+  const bugTarget = (load: number, band: DayBand, wx: Weather) => Math.round((load >= 0.85 ? 2 : load >= 0.45 ? 1 : 0) * BAND_K[band] * WX_WALK[wx]);
   function newBug(t: number): Bug {
     const e = Math.floor(rand() * 4);
     const x = e === 0 ? -12 : e === 1 ? w + 12 : rand() * w;
@@ -724,6 +749,30 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     },
     step(f) {
       const { dt, t, p, load } = f;
+      // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03: 아침≈점심의 원인 = 점심에 구운 그림자).
+      if (ground && f.lightStable && gsh !== shadowKey(f.light)) bakeGround(f.dpr);
+      // 반딧불(여름 저녁·밤) — 수는 띠·여력으로, 느린 표류 + 가장자리 반사.
+      {
+        const fw = fireflyTarget(f);
+        while (fireflies.length < fw) fireflies.push(newFirefly());
+        if (fireflies.length > fw) fireflies.length = fw;
+        for (const q of fireflies) {
+          q.vx += (rand() - 0.5) * 30 * dt;
+          q.vy += (rand() - 0.5) * 12 * dt;
+          q.vx *= Math.pow(0.55, dt);
+          q.vy *= Math.pow(0.55, dt);
+          q.x += q.vx * dt;
+          q.y += q.vy * dt;
+          if (q.x < 16 || q.x > w - 16) q.vx = -q.vx;
+          if (q.y < groundY(0.26) || q.y > h - 10) q.vy = -q.vy;
+          q.x = clamp(q.x, 16, w - 16);
+          q.y = clamp(q.y, groundY(0.26), h - 10);
+        }
+        // 이슬(봄 새벽·밤) — 수만 맞춘다(자리 고정, 깜박임은 draw의 t).
+        const dw = dewTarget(f);
+        while (dews.length < dw) dews.push({ x: 20 + rand() * (w - 40), y: groundY(0.3 + rand() * 0.66), ph: rand() * TAU, r: 0.9 + rand() * 0.6 });
+        if (dews.length > dw) dews.length = dw;
+      }
       // 나비 수 점진 조절 — 늘면 가장자리에서 날아 들어오고, 줄면 한 마리가 가장자리로 날아 나간다.
       const want = flyTarget(f);
       const staying = flies.filter((b) => b.state !== "leave").length;
@@ -896,15 +945,33 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
       // 메뚜기(여름만) — 은신 → 도피개시거리 안이면 웅크림 → 탄도 도약. 도약 중엔 몸만 뜨고 그림자는 땅에 남는다.
       if (summer) {
-        const want2 = hopTarget(load);
-        while (hoppers.length < want2) hoppers.push(newHopper(t));
-        if (hoppers.length > want2) hoppers.pop();
+        const want2 = hopTarget(load, f.time.band, f.weather.now);
+        const staying2 = hoppers.filter((b) => !b.leave).length;
+        while (hoppers.filter((b) => !b.leave).length < want2) hoppers.push(newHopper(t));
+        // 줄어들 땐 **뛰어서 나간다**(옛 pop = 제자리 소멸; ADR-0017 ⑪ 페이드·순간 소멸 금지). 가까운 옆 가장자리로 연속 도약.
+        if (staying2 > want2) {
+          const b = hoppers.find((q) => !q.leave);
+          if (b) {
+            b.leave = true;
+            b.hd = b.x < w / 2 ? Math.PI : 0;
+            b.state = "crouch";
+            b.until = t + 0.1;
+          }
+        }
+        for (let i = hoppers.length - 1; i >= 0; i--) if (hoppers[i].leave && (hoppers[i].x < -30 || hoppers[i].x > w + 30)) hoppers.splice(i, 1);
         for (const b of hoppers) {
           if (b.state === "air") {
             const u = clamp((t - b.t0) / b.dur, 0, 1);
             b.x = lerp(b.x0, b.x1, u);
             b.y = lerp(b.y0, b.y1, u);
             b.hop = b.peak * 4 * u * (1 - u);
+            if (u >= 1 && b.leave) {
+              // 나가는 중 — 착지하자마자 같은 쪽으로 다시 뛴다.
+              b.hop = 0;
+              b.state = "crouch";
+              b.until = t + 0.12;
+              continue;
+            }
             if (u >= 1) {
               b.hop = 0;
               b.state = "still";
@@ -947,7 +1014,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         }
       }
       // 무당벌레(봄) / 딱정벌레(여름) — 수는 여력으로(0~2). 걷기 ↔ 멈춤. 위협엔 죽은 척(thanatosis), 닿이면 종종걸음, 들키면 날아오름.
-      const bt = bugTarget(load);
+      const bt = bugTarget(load, f.time.band, f.weather.now);
       while (bugs.length < bt) bugs.push(newBug(t));
       if (bugs.length > bt) {
         const b = bugs.find((x) => x.state !== "off");
@@ -1082,8 +1149,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
       // 꿀벌 — 여력 0.6부터 한 마리(귀소 뒤엔 nextBee까지 기다린다). 트랩라인: fly → hover(0.4s) → feed(1~2s) → 다음 꽃,
       // 7~10송이면 home. 위협은 threat(), 손찌검(클릭)은 angry.
-      if (load >= 0.6 && !bee && t > nextBee && daisies.length) bee = newBee(t);
-      if (bee && load < 0.5 && bee.state !== "home") {
+      const beeBand = BEE_BANDS.has(f.time.band) && WX_FLY[f.weather.now] > 0;
+      if (load >= 0.6 && beeBand && !bee && t > nextBee && daisies.length) bee = newBee(t);
+      if (bee && (load < 0.5 || !beeBand) && bee.state !== "home") {
         // 여력이 떨어지면 가장 가까운 가장자리로 날아 나간다(사라지지 않는다).
         goHome(bee);
         nextBee = t + 8 + rand() * 8;
@@ -1451,6 +1519,21 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         g.fill();
         g.restore();
       }
+      // 이슬 반짝임(봄 새벽·밤) — 물 위 글린트와 같은 가로 렌즈, 작게. 밤 하한 "작은 움직임 1종".
+      if (dews.length) drawGlints(g, t * 0.8, dews);
+      // 반딧불(여름 저녁·밤, 라운드 4 AMB-T1-02) — 옅은 연두 빛무리 + 심. 깜박임은 개체마다 위상이 다르고 느리다(≈0.4Hz). 오행 규칙:
+      // 선명한 노랑이 아니라 저채도 연두("214 232 160").
+      for (const q of fireflies) {
+        const b = Math.max(0, Math.sin(t * 1.3 + q.ph));
+        const glow = b * b;
+        if (glow < 0.03) continue;
+        // 밤 multiply(×.72)·채도 감소(.38)를 같이 받으므로 굽기 전 값은 조금 밝게 잡는다 — 화면에선 옅은 연둣빛 점으로 남는다.
+        softBlob(g, q.x, q.y, 9 * q.k, "214 232 160", 0.55 * glow, 0);
+        g.fillStyle = `rgb(240 250 200 / ${(0.95 * glow).toFixed(3)})`;
+        g.beginPath();
+        g.arc(q.x, q.y, 1.7 * q.k, 0, TAU);
+        g.fill();
+      }
     },
     pointerDown(f, onBackground) {
       if (f.load < 0.15) return false;
@@ -1529,7 +1612,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         basks,
         plays,
         beeVisits,
-        swats
+        swats,
+        fireflies: fireflies.length,
+        dews: dews.length
       };
     }
   };

@@ -7,6 +7,7 @@ import { artSlot } from "./manifest";
 import { drawArt, type ArtSet, type ArtSprite } from "./load";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
 import { depthScale, GROUND_SQUASH, HORIZON_V } from "@/components/shared/ambient/world/view";
+import { currentLight } from "@/components/shared/ambient/world/light";
 
 const cache = new Map<string, HTMLCanvasElement | null>();
 // 발밑 그림자 색 — 장면이 계절에 맞춰 바꾼다. 눈 위의 따뜻한 갈색 그림자는 "어두운 얼룩"으로 읽힌다.
@@ -14,6 +15,38 @@ let shadowRGB = "60 66 58";
 export const setPropShadow = (rgb: string) => {
   shadowRGB = rgb;
 };
+
+/** 발밑 그림자(QA 라운드 4, AMB-T1-03 "조명은 섰지만 소비자가 없다") — 조명(currentLight().shadow)을 읽는다: 해 반대쪽(dx)으로
+ *  길어지고(점심 1배 · 노을 2배 · 새벽 1.9배) 농도는 띠·날씨를 따른다(밤 ⅓ · 흐림 .4 · 비 .3). r = 점심 기준 반지름, a0 = 점심 농도,
+ *  sy = 바닥 눌림(기본 = 서 있는 것의 발치 타원). 점심·맑음은 옛 softBlob과 픽셀이 같다(stretch 1 · dx 0 · alpha 1 — 회귀 해시의 전제).
+ *  바탕에 구울 때 쓰므로 조명이 바뀌면 장면이 `shadowKey`를 보고 한 번 다시 굽는다(3초 전이 뒤, f.lightStable). */
+export function propShadow(g: CanvasRenderingContext2D, x: number, y: number, r: number, a0: number, sy = GROUND_SQUASH * 0.5, rgb = shadowRGB) {
+  const s = currentLight().shadow;
+  const stretch = 0.6 + 0.8 * s.len; // 점심(.5) = 1.0 · 노을(1.8) = 2.04 · 새벽(1.6) = 1.88 · 밤(.6) = 1.08
+  if (Math.abs(stretch - 1) < 0.001 && Math.abs(s.dx) < 0.001 && Math.abs(s.alpha - 1) < 0.001) {
+    softBlob(g, x, y, r, rgb, a0, 0, sy);
+    return;
+  }
+  // 발치는 제자리, 그림자의 끝만 dx 쪽으로 — 중심을 (stretch−1)·r만큼 옮기면 발 쪽 가장자리가 거의 그대로다.
+  const cx = x + s.dx * r * (stretch - 1) * 0.9;
+  // 길어진 그림자는 **몸통이 진해야** 방향이 읽힌다(라운드 4 C: 중심만 옮긴 radial 블롭은 끝이 옅어 새벽↔노을 잔차 0%). 가운데 55%까지
+  // 농도를 유지하고 테두리에서만 풀리는 프로파일로, stretch·dx가 1·0에서 멀어질수록(k) 옛 radial에서 이 프로파일로 섞는다 — 전이 시작에
+  // 툭 튀지 않게. 점심 쪽으로 돌아오면 다시 radial(위 항등 분기).
+  const k = Math.min(1, Math.max((stretch - 1) / 0.3, Math.abs(s.dx) / 0.3));
+  const a = a0 * s.alpha;
+  g.save();
+  g.translate(cx, y);
+  g.scale(stretch, sy);
+  const grad = g.createRadialGradient(0, 0, 0, 0, 0, r);
+  grad.addColorStop(0, `rgb(${rgb} / ${a})`);
+  grad.addColorStop(0.55, `rgb(${rgb} / ${a * (0.45 + 0.4 * k)})`);
+  grad.addColorStop(1, `rgb(${rgb} / 0)`);
+  g.fillStyle = grad;
+  g.beginPath();
+  g.arc(0, 0, r, 0, TAU);
+  g.fill();
+  g.restore();
+}
 
 // 자리 점유 — 큰 소품끼리 겹쳐 놓이면 "바위가 그루터기를 뚫고 나온" 그림이 된다(2026-09-04 소유자).
 // 장면의 bake() 시작에서 resetPropField(), 놓기 전에 claimSpot()으로 자리를 잡는다. 결정적 rng 순서는 호출 쪽 책임.
@@ -989,7 +1022,7 @@ export function scatterProps(
       const slot = artSlot(it.id);
       // 겹침 방지 — 찬 자리면 이 개체는 거른다(같은 rng 소비를 유지하려고 재추첨은 하지 않는다).
       if (!claimSpot(x, y, ((slot?.px[0] ?? 32) * k) / 2)) continue;
-      if (slot?.view === "stand") softBlob(g, x + 2, y - 2, slot.px[0] * 0.45 * k, shadowRGB, 0.16, 0, GROUND_SQUASH * 0.5);
+      if (slot?.view === "stand") propShadow(g, x + 2, y - 2, slot.px[0] * 0.45 * k, 0.16);
       drawProp(g, art, it.id, x, y, { k, r: v, flip });
     }
   }
