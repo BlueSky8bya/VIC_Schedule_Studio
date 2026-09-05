@@ -4710,6 +4710,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 .public-day.today .day-strip strong {
   display: inline-flex;
   align-items: center;
+  /* flex 상자는 " 일" 앞 공백을 지운다 → 평소 칸("4 일")과 같은 띄어쓰기 폭(공백 ≈ 6px @17px)을 gap으로 되돌린다. */
+  gap: 0.35em;
   box-sizing: border-box;
   height: 21px;
   padding: 0 8px;
@@ -4725,10 +4727,12 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   color: #3f2800;
   line-height: 1;
 }
-/* 숫자는 한글보다 작은 글리프 — 한 단계 키워 '일'과 눈높이를 맞춘다. */
+/* 숫자는 한글보다 작은 글리프 — 잉크 높이로 맞춘다(2026-09-05 재실측, 1.12em은 "아직 너무 작다").
+   Malgun 900 17px: '일' 잉크 15px, '19' 잉크 12px(대문자 높이 ≈ .7em, 한글 ≈ .88em) → 같은 높이는
+   ×1.25, Apple SD Gothic Neo는 한글이 더 커서 ×1.3이 양쪽 다 눈높이가 맞는다. 22px 글자의 잉크 ≈ 16px는
+   21px 배지 안에 든다(머리줄 높이 불변, 실측 strip 27 유지). 굵기는 '일'과 같이 900을 상속한다. */
 .public-day.today .day-strip .d-num {
-  font-size: 1.12em;
-  font-weight: 800;
+  font-size: 1.3em;
 }
 
 /* 오늘 칸 금테. 칸 자신의 inset box-shadow는 자식(일정 카드)에 항상 가려져 테두리가 카드 밑으로
