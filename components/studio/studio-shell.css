@@ -4458,23 +4458,23 @@ html[data-reduce-motion] .perf-windows button.active {
    왼쪽/오른쪽이 이름이 다른 애니라 side를 바꿀 때마다 다시 돈다(rail-slide와 같은 방식). */
 @keyframes rail-card-settle-l {
   from {
-    transform: translateX(-2px);
+    transform: translateX(-6px) scale(0.985);
   }
 }
 @keyframes rail-card-settle-r {
   from {
-    transform: translateX(2px);
+    transform: translateX(6px) scale(0.985);
   }
 }
 .studio-shell.avatar-scene.avatar-left .avatar-rail-filter,
 .studio-shell.avatar-scene.avatar-left .avatar-rail .studio-tools-wrap,
 .studio-shell.avatar-scene.avatar-left .avatar-rail .slot-showcase {
-  animation: rail-card-settle-l 0.34s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
+  animation: rail-card-settle-l 0.42s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
 }
 .studio-shell.avatar-scene.avatar-right .avatar-rail-filter,
 .studio-shell.avatar-scene.avatar-right .avatar-rail .studio-tools-wrap,
 .studio-shell.avatar-scene.avatar-right .avatar-rail .slot-showcase {
-  animation: rail-card-settle-r 0.34s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
+  animation: rail-card-settle-r 0.42s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
 }
 /* 시차 — 위에서 아래로 아주 살짝(한 덩어리가 앉는 느낌, 셋이 따로 튀지 않게). */
 .studio-shell.avatar-scene .avatar-rail .studio-tools-wrap {

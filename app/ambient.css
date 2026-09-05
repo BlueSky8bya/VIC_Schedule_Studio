@@ -675,11 +675,11 @@ html[data-showcase] {
     0 10px 26px rgb(70 50 110 / 10%);
   /* 아바타 자리는 pointer-events:none인 빈 자리 — 카드만 되살린다. */
   pointer-events: auto;
-  /* 이 카드만 transition이 0이라, 애니메이션을 타지 않는 변화(자리·폭·그림자)가 즉시 튀었다
-     (2026-09-05 소유자: "혼자 툭툭 순간이동"). 이웃 카드와 같은 어휘로 미끄러지게 한다. */
-  transition:
-    transform var(--dur-2, 0.22s) var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    box-shadow var(--dur-2, 0.22s) var(--ease);
+  /* ⚠ transform에는 transition을 걸지 않는다(2026-09-05). 이 카드에만 걸려 있던 탓에, 좌↔우 전환에서
+     착지 애니메이션(rail-card-settle-*)의 fill 값이 바뀌는 순간을 transition이 한 번 더 보간하며
+     혼자 툭툭 튀었다 — 이웃 카드(필터·도구)에는 transform transition이 없다. 카드의 움직임은
+     착지 애니메이션 하나가 맡는다. */
+  transition: box-shadow var(--dur-2, 0.22s) var(--ease);
 }
 html[data-reduce-motion] .viewer-ambient-ctl.slot-showcase,
 html[data-reduce-motion] .viewer-ambient-ctl.rail-showcase {

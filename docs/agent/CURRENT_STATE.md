@@ -13,6 +13,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **저장 시각을 역할 배지 자리에 · 카드 착지 통일 · 미리보기 정지 화면(2026-09-05)**:
+  ① 역할 이름(관리자·개발자)은 계정마다 하나뿐이라 늘 같은 글자였다 — 이 세션에서 저장이 끝나면 그 자리에
+  **마지막 저장 시각**을 대신 쓴다(역할은 배지 색·title로 유지). 칸 폭은 min-width 3.4em + 표 숫자로 고정
+  (실측 58px 불변, 압축 단계 불변).
+  ② 계절 배경 카드만 `transform`에 transition이 걸려 있어(이웃 카드엔 없다) 좌↔우 전환에서 착지
+  애니메이션의 fill 값 변화를 한 번 더 보간하며 혼자 툭툭 튀었다 — transition에서 transform 제거.
+  착지 동작도 2px → 6px + scale .985로 키워 세 카드가 같은 스프링으로 내려앉는다(프레임 실측 동일).
+  ③ **시청자 화면 미리보기**는 생동감 OFF인 채로 **새로 마운트**된다. reduced면 sync가 곧장 stop 후
+  drawOnce만 부르는데, 바탕은 `scene.step()` 안에서 처음 구워지므로 ground가 null이라 **빈 화면**이었다
+  (편집실은 켜진 채 돌다 껐기에 이미 구워져 있어 안 드러났다) → dt=0 step 한 번을 먼저 돌리는
+  `stillFrame()` + 늦게 오는 에셋용 재시도 3회.
+  검증: tsc 0 · lint 0 · vitest 559 · build exit 0 · probe-set 7항목(미리보기 정지 화면 포함) 통과.
+
 - **스크롤바 전면 제거 · 단축키 안내바 정렬(2026-09-05)**: ① 화면·태그 필터·rail·모달을 하나씩 막아
   오던 것(두더지잡기)을 `globals.css` 전역 규칙 하나로 못 박았다 — `*`에 `scrollbar-width: none`.
   전역을 덮고 있던 `scrollbar-width: thin` 세 곳(다시보기 챕터·이용 기록 필터 줄·그림판 도구 줄)도 제거.

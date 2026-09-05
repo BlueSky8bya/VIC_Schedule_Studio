@@ -797,6 +797,18 @@ html[data-studio-calm] .studio-role-tools {
 .studio-role-tools .actor-badge strong {
   font-size: var(--text-body);
 }
+/* 역할 이름("관리자"·"개발자") ↔ 저장 시각("10:31")이 같은 칸을 쓴다 — 글자 수가 달라 칸이 흔들리면
+   옆 미리보기 칸을 밀어 압축 단계가 요동친다. 최소 폭을 고정하고 시각은 표 숫자로(2026-09-05). */
+.studio-role-tools .actor-badge strong {
+  display: inline-block;
+  min-width: 3.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* 저장 시각을 보여 주는 동안은 역할색 대신 저장 상태와 같은 조용한 잉크 — 시각은 역할이 아니다. */
+.studio-role-tools .actor-badge.saved-at {
+  color: #6b6480;
+}
 /* 웹 배지는 라벨(quiet) — 버튼이 아니니 손 모양·호버 면 없음. "?"가 없으니 압축 2·3단계에서도 역할 글자를 지운다(⑤의
    `strong` 숨김은 "?"만 남기던 규칙 — quiet엔 남길 기호가 없어 칸이 비었다). */
 .studio-role-tools .actor-badge.quiet {

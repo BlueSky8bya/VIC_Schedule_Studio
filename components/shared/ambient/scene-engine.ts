@@ -400,6 +400,35 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     load = fixed ?? Math.min(cap, Math.max(floor, load));
     applyLoad();
   };
+  /**
+   * 정지 화면 한 장 — '생동감 있는 동작' OFF의 그림.
+   *
+   * 그냥 draw만 부르면 안 된다: 바탕·스프라이트는 `scene.step()` 안에서 처음 구워지므로,
+   * OFF인 채로 마운트된 화면(시청자 화면 미리보기)은 ground가 null이라 **빈 화면**이 된다
+   * (2026-09-05 소유자 신고). **dt를 0으로 둔 step 한 번**을 먼저 돌려 굽기만 시킨다 —
+   * 시간이 안 흐르니 아무것도 움직이지 않는다.
+   */
+  const stillFrame = () => {
+    const dt0 = frame.dt;
+    frame.dt = 0;
+    try {
+      scene.step(frame);
+    } catch {
+      /* 장면이 준비 전이면 이번 한 장은 건너뛴다 — 아래 재시도가 있다 */
+    }
+    frame.dt = dt0;
+    drawOnce();
+  };
+  // 늦게 도착하는 에셋(아트 PNG·Noto 스프라이트)을 반영할 재시도. 루프가 안 도니 몇 번만 직접 부른다.
+  const stillRetries: number[] = [];
+  const scheduleStill = () => {
+    while (stillRetries.length) window.clearTimeout(stillRetries.pop());
+    for (const ms of [250, 900, 2400]) {
+      stillRetries.push(window.setTimeout(() => {
+        if (frame.reduced && !running) stillFrame();
+      }, ms));
+    }
+  };
   const sync = () => {
     const nq = readQuality();
     frame.reduced = readReduced();
@@ -419,7 +448,10 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const paused = readPaused();
     if (frame.reduced || off || document.hidden || hiddenByCss || paused) {
       stop();
-      if (frame.reduced && !off && !hiddenByCss) drawOnce(); // 정지 화면 한 장(일시정지는 마지막 프레임 그대로)
+      if (frame.reduced && !off && !hiddenByCss) {
+        stillFrame(); // 정지 화면 한 장(일시정지는 마지막 프레임 그대로)
+        scheduleStill();
+      }
     } else start();
   };
   const onResize = () => {
@@ -494,6 +526,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
 
   return () => {
     stop();
+    while (stillRetries.length) window.clearTimeout(stillRetries.pop());
     document.documentElement.removeAttribute("data-ambient-grab");
     if (window.__vicAmbient === dbg) delete window.__vicAmbient;
     mo.disconnect();

@@ -1204,6 +1204,9 @@ export function StudioShell({
         quiet={!withSettings}
         role={actor.role}
         roleDisplay={roleDisplay}
+        // 저장이 한 번이라도 끝났으면 배지 자리에 그 시각을 쓴다(웹 조용한 배지에만 — 모바일 배지는
+        // 설정 목록을 여는 버튼이라 이름이 그대로여야 한다).
+        savedAt={withSettings ? null : lastSavedKst}
         settings={withSettings ? renderSettingsList() : undefined}
       />
     );

@@ -371,7 +371,10 @@ private layers is retired — ADR-0014; the server model stays.)
   topbar, `.viewer-fullscreen`, poster surfaces) carried the same `:not([data-reduce-motion])` prefix, so with
   motion off those surfaces took their opaque backgrounds back and buried the canvas at `z-index: -1`. The rule
   is now mechanical: a selector containing `:not([data-gfx="soft"])` must **not** also carry
-  `:not([data-reduce-motion])` unless its block actually starts an `animation`.
+  `:not([data-reduce-motion])` unless its block actually starts an `animation`. And the still frame has to be
+  **baked**, not merely drawn: scenes create their ground/sprites inside `scene.step()`, so a surface that
+  mounts *already* reduced (the viewer preview) painted nothing until the engine started running one
+  `step` with `dt = 0` first (`stillFrame()` in `scene-engine.ts`, plus a few bounded retries for late assets).
   Likewise 배경 효과 has no 끄기 option — the row above it already is the off switch, and two handles for one job
   is the confusion the owner keeps reporting.
 - **Scrollbars are never drawn, anywhere** (2026-09-05 owner). One rule in `app/globals.css` sets
