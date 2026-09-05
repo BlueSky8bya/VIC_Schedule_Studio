@@ -13,7 +13,7 @@
    앉는 카드)는 건드리지 않는다 — 물결은 표면 '주위'에만, export 캡처(data-export-surface)는 표면만
    찍으므로 물결은 애초에 캡처에 안 들어간다(결정성 문제 없음). */
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .poster-page {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .poster-page {
     background: transparent;
   }
 }
@@ -26,23 +26,23 @@
    실제로 다르게 보인다. 오늘(골드) 칸·일정 카드·띠·하트는 그대로 불투명(물 위의 물건).
    조건 밖(동작 줄이기·약한 기기·모바일·배경 끔)에선 public-poster.css의 원래 불투명 크림 그대로. */
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .poster-surface {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .poster-surface {
     background: none;
     box-shadow: none;
   }
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day:not(.today) {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day:not(.today) {
     background: rgb(255 254 251 / 48%);
   }
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day.outside {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day.outside {
     background: rgb(241 233 216 / 44%);
   }
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .weekday-row {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .weekday-row {
     background: rgb(251 247 238 / 72%);
   }
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .rail-info-card,
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-legend-vertical,
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.rail-showcase,
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.slot-showcase {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .rail-info-card,
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-legend-vertical,
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.rail-showcase,
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.slot-showcase {
     background: rgb(255 253 246 / 80%);
   }
 }

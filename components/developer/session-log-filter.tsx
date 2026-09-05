@@ -44,26 +44,39 @@ export function SessionLogFilter({
   ];
   return (
     <div aria-label="세션 로그 필터" className="vlog-filter" role="group">
-      <RhhSelect
-        ariaLabel="역할 고르기"
-        dataAct="vlog-role"
-        onChange={(v) => {
-          hapticTick();
-          onRole(v);
-        }}
-        options={roleOptions}
-        value={roleCount.has(role) || role === "all" ? role : "all"}
-      />
-      <RhhSelect<StayFilter>
-        ariaLabel="머문/스쳐감 고르기"
-        dataAct="vlog-stay"
-        onChange={(v) => {
-          hapticTick();
-          onStay(v);
-        }}
-        options={stayOptions}
-        value={stay}
-      />
+      {/* 칸 이름을 왼쪽에 캡션으로 둔다(설정 줄과 같은 문법) — 트리거가 둘 다 "전체 25"라
+          무엇을 고르는 칸인지 알 수 없었다(2026-09-05 소유자: "이게 각각 어떤 전체인데?").
+          옵션 라벨을 길게 늘이는 대신 이름을 밖에 두면 목록도 짧게 유지된다. */}
+      <div className="vlog-f">
+        <span aria-hidden="true" className="vlog-f-cap">
+          역할
+        </span>
+        <RhhSelect
+          ariaLabel="역할 고르기"
+          dataAct="vlog-role"
+          onChange={(v) => {
+            hapticTick();
+            onRole(v);
+          }}
+          options={roleOptions}
+          value={roleCount.has(role) || role === "all" ? role : "all"}
+        />
+      </div>
+      <div className="vlog-f">
+        <span aria-hidden="true" className="vlog-f-cap">
+          체류
+        </span>
+        <RhhSelect<StayFilter>
+          ariaLabel="체류 고르기"
+          dataAct="vlog-stay"
+          onChange={(v) => {
+            hapticTick();
+            onStay(v);
+          }}
+          options={stayOptions}
+          value={stay}
+        />
+      </div>
     </div>
   );
 }

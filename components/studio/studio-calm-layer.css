@@ -222,7 +222,7 @@ html[data-studio-calm] .studio-topbar {
    조건(위 .gs-tide 게이트와 동일)에서만 셸을 투명하게 비워 body의 아이보리(--paper) + 물결이 대신
    비친다. 조건이 안 맞으면(동작 줄이기·약한 기기·모바일) 셸의 원래 정적 배경이 그대로 남는다. */
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell {
     background: transparent;
   }
 }
@@ -285,31 +285,31 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
 @media (min-width: 641px) {
   /* 칸은 시청자 화면과 같은 크림이 지배(알파 74~84%) — 물결은 "햇살에 산란돼 아주 살짝" 비치는 정도.
      지난 날도 같은 크림(시청자 화면엔 지난 날 구분이 없다 — 사용자: "시청자 화면처럼"). */
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
     background: rgb(255 254 251 / 76%);
   }
   /* 다른 달 칸은 불투명 그대로 — 반투명이면 물빛이 섞여 회색 블록으로 읽혔다(시청자 화면의 따뜻한 탄색과 어긋남). */
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-weekdays {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-weekdays {
     background: rgb(251 247 238 / 86%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-left-panel > section:first-child,
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .avatar-rail-filter,
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-tools {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-left-panel > section:first-child,
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .avatar-rail-filter,
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-tools {
     background: rgb(255 253 246 / 84%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .kbd-hints {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .kbd-hints {
     background: rgb(255 253 246 / 72%);
   }
   /* 편집실 물결은 시청자 화면보다 세게(사용자: "있는지 없는지 모르겠다") — 공용 레이어의 편집실 안 인스턴스만
      필름·너울·햇살을 올린다. caustic 밝기는 숨쉼(opacity) 애니가 쥐고 있어 여기서 안 건드린다.
      시청자 화면(조화 좋다고 한 쪽)은 공용 기본값 그대로. */
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide {
     background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 7%) 0%, rgb(var(--gs-sea-rgb) / 12%) 100%);
   }
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-swell {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-swell {
     background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 18%) 0%, rgb(var(--gs-sea-rgb) / 8%) 50%, rgb(var(--gs-sea-rgb) / 0%) 100%);
   }
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-light {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-light {
     background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 56%) 0%, rgb(var(--gs-sun-rgb) / 26%) 50%, rgb(var(--gs-sun-rgb) / 0%) 100%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-caustic-a {
@@ -860,7 +860,7 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
 /* 시청자 화면 미리보기(.viewer-fullscreen) — 배경이 보이는 조건에선 투명(시청자 화면과 같은 규칙, 2026-09-04
    사용자: "미리보기에는 배경이 하나도 안 깔린다"). 조건 밖에선 원래 정적 배경. */
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-fullscreen {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-fullscreen {
     background: transparent;
   }
 }
@@ -871,7 +871,7 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
    매 프레임 재합성 — frame-jank 규칙). 글자는 옅은 흰 테(text-shadow)로 낙엽·풀 위에서도 읽힌다. 조건 밖(생동감 OFF·
    soft·계절 OFF)에선 원래 크림 유리 상단바 그대로. */
 @media (min-width: 641px) {
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
     background: transparent;
     border-bottom-color: transparent;
     box-shadow: none;
@@ -881,19 +881,19 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
        페이지와 함께 흘러간다. */
     position: relative;
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar::after {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar::after {
     display: none;
   }
   /* 투명한 상단바는 빈 곳에서 포인터를 가로채지 않는다(2026-09-04 사용자: "옛 헤더 자리의 낙엽이 안 잡힌다") — 칸(제목·달·
      계정 카드)만 포인터를 받는다. */
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
     pointer-events: none;
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar > * {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar > * {
     pointer-events: auto;
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar h1,
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-month-label strong {
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar h1,
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-month-label strong {
     text-shadow:
       0 1px 0 rgb(255 255 255 / 80%),
       0 0 14px rgb(255 253 246 / 90%);

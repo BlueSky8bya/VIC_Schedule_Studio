@@ -367,6 +367,11 @@ private layers is retired — ADR-0014; the server model stays.)
 - **'생동감 있는 동작' controls motion, not existence** (2026-09-05 owner). `data-reduce-motion` is no longer a
   visibility gate for the ambient: with it off the season scene **stays on screen as one still frame** (the engine
   already did this — only the CSS gate was hiding it). The single handle that removes the background is 계절 배경.
+  ⚠ Removing the `.gs-season` gate is only half of it: **every transparency gate** (`.studio-shell`, day cells,
+  topbar, `.viewer-fullscreen`, poster surfaces) carried the same `:not([data-reduce-motion])` prefix, so with
+  motion off those surfaces took their opaque backgrounds back and buried the canvas at `z-index: -1`. The rule
+  is now mechanical: a selector containing `:not([data-gfx="soft"])` must **not** also carry
+  `:not([data-reduce-motion])` unless its block actually starts an `animation`.
   Likewise 배경 효과 has no 끄기 option — the row above it already is the off switch, and two handles for one job
   is the confusion the owner keeps reporting.
 - **An `area` in the activity log is a place you can walk to** (2026-09-05 taxonomy, `AREA_ORDER` in

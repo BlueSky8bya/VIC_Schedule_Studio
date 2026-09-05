@@ -41,7 +41,7 @@
   display: none;
 }
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .gs-tide {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .gs-tide {
     display: block;
   }
 }
