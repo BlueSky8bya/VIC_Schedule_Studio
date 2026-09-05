@@ -1622,7 +1622,7 @@ export function InsightsDashboard({
           disabled={index === 0}
           onClick={() => go(index - 1)}
           type="button"
-         data-act="이전">
+         data-act="insights-panel-prev">
           <ChevronLeft aria-hidden="true" size={18} />
         </button>
         <div className="insights-dots" aria-hidden="true">
@@ -1636,7 +1636,7 @@ export function InsightsDashboard({
           disabled={index === PANELS.length - 1}
           onClick={() => go(index + 1)}
           type="button"
-         data-act="다음">
+         data-act="insights-panel-next">
           <ChevronRight aria-hidden="true" size={18} />
         </button>
       </div>

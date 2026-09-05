@@ -61,9 +61,16 @@ describe("뭉친 옛 값은 뭉쳤다고 말한다", () => {
 
 describe("정적으로 박은 한글 id", () => {
   it("한글 문구는 그 자체가 사람 말이라 '이름 미등록'으로 낮추지 않는다", () => {
-    const d = describeTarget("ui.click", "판서 전체 지우기");
-    expect(d.name).toBe("판서 전체 지우기");
+    // 사전에 없는 한글 id는 그대로 통과한다(이름을 지어내지도, 미등록으로 낮추지도 않는다).
+    const d = describeTarget("ui.click", "아직 사전에 없는 한글 버튼");
+    expect(d.name).toBe("아직 사전에 없는 한글 버튼");
     expect(d.unnamed).toBeUndefined();
+  });
+  it("사전에 등록하면 위치까지 나온다(2026-09-05 최신화)", () => {
+    // '판서 전체 지우기'는 살아 있는 버튼이라 이름·위치를 등록했다 — 예전엔 위치가 '기타'였다.
+    const d = describeTarget("ui.click", "판서 전체 지우기");
+    expect(d.name).toBe("전체 지우기");
+    expect(d.area).toBe("그림판");
   });
   it("클래스에서 딴 id는 사전에서 이름·위치가 나온다", () => {
     expect(describeTarget("ui.click", "bp-color").area).toBe("일정 그림판");
@@ -91,16 +98,23 @@ describe("역할별 분해 — 뭉치지 않는다", () => {
   });
 });
 
-// 역할 필터 계수 — '시청자'가 비로그인을 포함하지 않으면, 하트가 비로그인으로 열린 뒤로는
-// 역할=시청자가 항상 0건이 되어 "집계가 아예 안 된다"로 읽힌다(2026-08-04 실측).
+// 역할 필터 계수 — 2026-09-05 정책 반전.
+// 예전엔 '시청자'가 비로그인(anon)을 **합산**했다("시청자가 늘 0건으로 보인다"가 이유였다).
+// 그 합치기가 소유자 신고("시청자가 누를 수 없는 버튼인데 시청자가 눌렀다고 나온다")의 직접
+// 원인이었다 — 세션이 끊긴 뒤 도착한 관리자·개발자 배치는 anon으로 저장되는데 화면에서는
+// '시청자 N번'이 됐다. 지금은 갈라 센다(타임라인 roleBreakdown과 같은 규칙).
 describe("usageRoleCount", () => {
-  it("시청자는 비로그인을 합산한다", () => {
-    expect(usageRoleCount({ viewer: 2, anon: 38 }, "viewer")).toBe(40);
-    expect(usageRoleCount({ anon: 38 }, "viewer")).toBe(38);
+  it("시청자는 비로그인을 합산하지 않는다", () => {
+    expect(usageRoleCount({ viewer: 2, anon: 38 }, "viewer")).toBe(2);
+    expect(usageRoleCount({ anon: 38 }, "viewer")).toBe(0);
   });
 
   it("비로그인만 고르면 비로그인만 센다", () => {
     expect(usageRoleCount({ viewer: 2, anon: 38 }, "anon")).toBe(38);
+  });
+
+  it("역할 확인 못 함도 제 칸으로 센다", () => {
+    expect(usageRoleCount({ unknown: 4, viewer: 1 }, "unknown")).toBe(4);
   });
 
   it("다른 역할은 그대로", () => {
@@ -109,19 +123,20 @@ describe("usageRoleCount", () => {
   });
 });
 
-// 2026-08-05: 사용량('적게 쓰인 기능') 화면에서는 비로그인을 시청자에 합쳐 한 줄로 보여준다.
-// 하트 말고는 로그인이 필요 없어 같은 사람의 같은 행동이 두 줄로 쪼개지고, "시청자는 이걸
-// 안 쓰네"로 잘못 읽혔다. 타임라인 쪽 roleBreakdown은 그대로 갈라 본다(이상 신호 탐지용).
-describe("usageRoleBreakdown — 사용량 화면은 시청자 한 덩어리", () => {
-  it("비로그인을 시청자에 합친다", () => {
-    expect(usageRoleBreakdown({ viewer: 2, anon: 38 })).toBe("시청자 40");
-    expect(usageRoleBreakdown({ developer: 1, anon: 2 })).toBe("개발자 1 · 시청자 2");
+describe("usageRoleBreakdown — 비로그인을 시청자로 둔갑시키지 않는다", () => {
+  it("갈라서 적는다", () => {
+    expect(usageRoleBreakdown({ viewer: 2, anon: 38 })).toBe("시청자 2 · 비로그인 38");
+    expect(usageRoleBreakdown({ developer: 1, anon: 2 })).toBe("개발자 1 · 비로그인 2");
   });
-  it("'비로그인'이라는 말 자체가 안 나온다", () => {
-    expect(usageRoleBreakdown({ anon: 5 })).not.toContain("비로그인");
+  it("'비로그인'이라고 그대로 적는다", () => {
+    expect(usageRoleBreakdown({ anon: 5 })).toBe("비로그인 5");
   });
-  it("역할 목록에도 비로그인이 없다", () => {
-    expect(USAGE_ROLE_ORDER).not.toContain("anon");
+  it("역할 확인 못 함도 이름이 있다", () => {
+    expect(usageRoleBreakdown({ unknown: 3 })).toBe("역할 확인 못 함 3");
+  });
+  it("역할 목록에 비로그인·확인 못 함이 있다", () => {
+    expect(USAGE_ROLE_ORDER).toContain("anon");
+    expect(USAGE_ROLE_ORDER).toContain("unknown");
     expect(USAGE_ROLE_ORDER).toContain("viewer");
   });
   it("모르는 역할은 그대로 남기고, 빈 값도 안전하게", () => {

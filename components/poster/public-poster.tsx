@@ -3224,7 +3224,9 @@ export function PublicPoster({
                 rel="noopener noreferrer"
                 style={bandStyle}
                 target="_blank"
-                title={`${s.publicTitle} — ${period ? "자세히 보기" : "도와주러 가기"} (새 탭에서 열림)`}
+                /* 띠에 제목과 "자세히 보기 →"가 이미 쓰여 있다 — 상자는 **말줄임된 제목의 전문**만
+                   말한다(새 탭 여부는 aria-label). 2026-09-05 소유자: 호버 상자 문구 전부 압축. */
+                title={s.publicTitle}
                 {...bandHover}
                data-act={period ? "기간 안내 링크 열기" : "업 도움 링크 열기"}>
                 {bandInner}
@@ -4374,7 +4376,7 @@ export function PublicPoster({
                     <button
                       aria-label="닫기"
                       className="dvm-close"
-                      data-act="닫기"
+                      data-act="close-day-vod"
                       onClick={() => {
                         hapticTick();
                         setDayVodPop(null);
@@ -4654,7 +4656,7 @@ export function PublicPoster({
                         aria-label="닫기"
                         autoFocus
                         className="agenda-detail-grab"
-                        data-act="닫기"
+                        data-act="close-detail-grab"
                         onClick={() => {
                           hapticTick();
                           closeAgendaDetailAnimated();
@@ -4703,7 +4705,7 @@ export function PublicPoster({
                           hapticTick();
                           setAgendaDetail(null);
                         }}
-                        data-act="닫기"
+                        data-act="close-detail"
                       >
                         <X aria-hidden="true" size={16} strokeWidth={2.5} />
                       </button>

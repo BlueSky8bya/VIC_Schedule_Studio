@@ -10,6 +10,15 @@ export type CurrentActor = {
   email: string | null;
   isAuthenticated: boolean;
   role: MembershipRole;
+  /**
+   * 역할을 **확정하지 못한 채** 최소 권한으로 떨어졌는지(2026-09-05).
+   *
+   * 개발자 판정은 platform_admins 조회다. 조회가 실패하면 권한은 당연히 닫아야 하지만(fail closed),
+   * 그렇다고 "이 사람은 시청자다"라고 **기록**하면 안 된다 — 소유자가 사용량 화면에서 "시청자가
+   * 누를 수 없는 버튼을 시청자가 눌렀다"를 본 원인이 이것이다. 권한 판단은 role을 그대로 쓰고,
+   * 행동 기록만 이 표시를 보고 'unknown'으로 남긴다(lib/activity/record.ts).
+   */
+  roleUncertain?: boolean;
 };
 
 export const anonymousActor: CurrentActor = {
@@ -51,7 +60,8 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
   }
 
   // 플랫폼 개발자 — 본인이 소유하지 않은 캘린더에서도 가로지르는 유지보수 권한을 갖는다.
-  if (await isPlatformDeveloper(email)) {
+  const dev = await isPlatformDeveloper(email);
+  if (dev === true) {
     return {
       email,
       isAuthenticated: true,
@@ -62,7 +72,9 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
   return {
     email,
     isAuthenticated: true,
-    role: "viewer"
+    role: "viewer",
+    // 조회가 실패했다면 '시청자'는 판정이 아니라 **최소 권한**일 뿐이다. 기록은 그렇게 남긴다.
+    roleUncertain: dev === "unknown"
   };
 }
 
@@ -78,11 +90,17 @@ function isGoogleAuthenticatedUser(user: User | null) {
   return user.identities?.some((identity) => identity.provider === "google") ?? false;
 }
 
-async function isPlatformDeveloper(email: string) {
+/**
+ * 개발자인가 — true / false / "unknown"(조회 자체가 실패).
+ *
+ * 예전엔 `!error && Boolean(data)`로 오류를 곧장 false(=시청자)로 접었다. 권한 면에서는 맞지만
+ * (모르면 안 준다) 행동 기록에는 거짓 사실이 남는다. 세 번째 값으로 갈라 호출부가 고르게 한다.
+ */
+async function isPlatformDeveloper(email: string): Promise<boolean | "unknown"> {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
-    return false;
+    return "unknown";
   }
 
   const { data, error } = await supabase
@@ -91,5 +109,6 @@ async function isPlatformDeveloper(email: string) {
     .eq("email", email)
     .maybeSingle();
 
-  return !error && Boolean(data);
+  if (error) return "unknown";
+  return Boolean(data);
 }

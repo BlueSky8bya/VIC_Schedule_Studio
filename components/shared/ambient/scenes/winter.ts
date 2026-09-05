@@ -480,11 +480,14 @@ export function createWinter(seed: number): Scene {
   function newFlake(): Flake {
     return { x: rand() * w, y: groundY(rand()), life: 0, dur: 1.8 + rand() * 1.6, wait: rand() * 3, r: 2.2 + rand() * 2, rung: false };
   }
+  // 눈가루는 **피어오르는** 것이지 튀는 게 아니다(2026-09-05 소유자: "물방울 튀듯 흩날린다").
+  // 속도는 예전의 1/3 안쪽, 알갱이도 작게 — 흩어지는 모양은 draw의 늘임(stretch)이 아니라
+  // 느린 표류와 낮은 불투명도로 만든다.
   function puff(x: number, y: number, n: number, spread: number) {
     for (let i = 0; i < n; i++) {
       const b = rand() * TAU;
-      const sp = spread * (0.4 + rand() * 0.8);
-      dust.push({ x, y, vx: Math.cos(b) * sp, vy: Math.sin(b) * sp, life: 1, r: 1.6 + rand() * 2.2 });
+      const sp = spread * (0.12 + rand() * 0.26);
+      dust.push({ x, y, vx: Math.cos(b) * sp, vy: Math.sin(b) * sp, life: 1, r: 0.9 + rand() * 1.3 });
     }
   }
   function startWalker(t: number, load: number) {
@@ -820,19 +823,20 @@ export function createWinter(seed: number): Scene {
         rings[i].life -= dt / 0.7;
         if (rings[i].life <= 0) rings.splice(i, 1);
       }
-      // ⑤ 포인터 눈가루 — 빠를수록 많이, 손 방향으로 튀어 부채꼴로 흩어진다(모션 블러는 draw에서). 여력 0.45부터.
-      if (p.inside && p.moved && p.speed > 220 && load >= 0.45) {
-        const cap = Math.round(60 + 120 * load);
-        const n = p.speed > 900 ? 4 : 3;
+      // ⑤ 포인터 눈가루 — 손이 지나간 자리에서 아주 옅게 피어오른다. 2026-09-05 소유자 지적으로
+      //    문턱↑(220 → 430: 스치는 이동엔 안 인다) · 개수↓(3~4 → 1~2) · 속도↓(1/3) · 알갱이↓.
+      if (p.inside && p.moved && p.speed > 430 && load >= 0.45) {
+        const cap = Math.round(20 + 34 * load);
+        const n = p.speed > 1100 ? 2 : 1;
         for (let i = 0; i < n && dust.length < cap; i++) {
-          const b = Math.atan2(p.vy, p.vx) + (rand() - 0.5) * 1.6; // 진행 방향 부채꼴
-          const sp = 60 + rand() * 160 + p.speed * 0.18;
-          dust.push({ x: p.x + (rand() - 0.5) * 8, y: p.y + (rand() - 0.5) * 8, vx: Math.cos(b) * sp, vy: Math.sin(b) * sp, life: 1, r: 1.1 + rand() * 1.5 });
+          const b = Math.atan2(p.vy, p.vx) + (rand() - 0.5) * 1.9; // 진행 방향 부채꼴(조금 더 넓게 = 덜 '분사')
+          const sp = 16 + rand() * 34 + p.speed * 0.05;
+          dust.push({ x: p.x + (rand() - 0.5) * 10, y: p.y + (rand() - 0.5) * 10, vx: Math.cos(b) * sp, vy: Math.sin(b) * sp, life: 1, r: 0.7 + rand() * 1 });
           dustSpawned++;
         }
         // 빠르게 훑고 지나가면 근처 발자국이 쓸려 지워진다(2026-09-04 사용자) — 이번 프레임에 포인터가 지나간 **선분** 둘레
         // 44px 안의 자국이 한 번 훑을 때마다 절반쯤 지워진다(두세 번 왕복이면 사라짐). 지워지는 자국에선 눈이 조금 튄다.
-        if (p.speed > 320 && lastPX > -9000) {
+        if (p.speed > 620 && lastPX > -9000) {
           const ax = lastPX;
           const ay = lastPY;
           const bx = p.x;
@@ -842,11 +846,16 @@ export function createWinter(seed: number): Scene {
           const ab2 = abx * abx + aby * aby || 1;
           for (let i = prints.length - 1; i >= 0; i--) {
             const pr = prints[i];
+            // 갓 찍힌 자국은 지우지 않는다(2026-09-05 소유자: "발자국 생기자마자 지워져 눌러도 안 보인다").
+            // 누르는 순간 포인터는 바로 그 자리에 있으므로, 유예가 없으면 자기가 만든 자국을 즉시 지웠다.
+            if (t - pr.born < 2.5) continue;
             const u = clamp(((pr.x - ax) * abx + (pr.y - ay) * aby) / ab2, 0, 1);
             const d = Math.hypot(pr.x - (ax + abx * u), pr.y - (ay + aby * u));
-            if (d > 44) continue;
-            pr.erase = Math.min(1, (pr.erase ?? 0) + 0.5 * (1 - d / 44) + dt * 2);
-            if (dust.length < cap && rand() < 0.6) dust.push({ x: pr.x + (rand() - 0.5) * 8, y: pr.y + (rand() - 0.5) * 8, vx: p.vx * 0.25 + (rand() - 0.5) * 80, vy: p.vy * 0.25 + (rand() - 0.5) * 80, life: 0.8, r: 1.2 + rand() * 1.2 });
+            if (d > 30) continue;
+            // 프레임마다 무조건 더해지던 `+ dt * 2`를 뺐다 — 그 항 때문에 반경 안에 들어온 자국은
+            // 손을 멈춰도 2초면 사라졌다. 이제 **훑고 지나간 만큼만** 지워진다(예닐곱 번 왕복 = 소멸).
+            pr.erase = Math.min(1, (pr.erase ?? 0) + 0.15 * (1 - d / 30));
+            if (dust.length < cap && rand() < 0.2) dust.push({ x: pr.x + (rand() - 0.5) * 8, y: pr.y + (rand() - 0.5) * 8, vx: p.vx * 0.08 + (rand() - 0.5) * 26, vy: p.vy * 0.08 + (rand() - 0.5) * 26, life: 0.8, r: 0.8 + rand() * 0.9 });
             if (pr.erase >= 1) {
               prints.splice(i, 1);
               erased++;
@@ -863,12 +872,12 @@ export function createWinter(seed: number): Scene {
       }
       for (let i = dust.length - 1; i >= 0; i--) {
         const q = dust[i];
-        q.life -= dt / 0.85;
+        q.life -= dt / 1.1;
         const mk = moveScale(q.y, h);
         q.x += q.vx * dt * mk;
         q.y += q.vy * dt * mk;
         q.vx *= Math.pow(0.05, dt);
-        q.vy = q.vy * Math.pow(0.05, dt) + 26 * dt; // 살짝 가라앉는다
+        q.vy = q.vy * Math.pow(0.05, dt) + 11 * dt; // 아주 살짝 가라앉는다(가루는 천천히 내려앉는다)
         if (q.life <= 0) dust.splice(i, 1);
       }
     },
@@ -996,10 +1005,12 @@ export function createWinter(seed: number): Scene {
         for (const q of dust) {
           const a = Math.max(0, q.life);
           const sp = Math.hypot(q.vx, q.vy);
-          const stretch = 1 + Math.min(5, sp * 0.012);
-          const r = q.r * (0.9 + (1 - q.life) * 0.5);
+          // 최대 5배까지 늘이던 모션 블러 → 1.35배. 길게 늘어난 흰 알갱이가 "물방울 튀는 줄기"로
+          // 읽혔다(2026-09-05 소유자). 눈가루는 거의 동그란 채로 흐릿하게 떠다닌다.
+          const stretch = 1 + Math.min(0.35, sp * 0.0025);
+          const r = q.r * (0.9 + (1 - q.life) * 0.35);
           g.save();
-          g.globalAlpha = a * 0.92;
+          g.globalAlpha = a * 0.5;
           g.translate(q.x, q.y);
           g.rotate(Math.atan2(q.vy, q.vx));
           g.drawImage(speck, -r * stretch, -r, r * 2 * stretch, r * 2);
@@ -1021,7 +1032,7 @@ export function createWinter(seed: number): Scene {
       const py = Math.sin(a + Math.PI / 2) * 10;
       prints.push({ x: f.p.x - px, y: f.p.y - py, a: a + Math.PI / 2, kind: "sole", left: true, k: 1.4, born: f.t });
       prints.push({ x: f.p.x + px + Math.cos(a) * 18, y: f.p.y + py + Math.sin(a) * 18, a: a + Math.PI / 2, kind: "sole", left: false, k: 1.4, born: f.t + 0.15 });
-      puff(f.p.x, f.p.y, f.load >= 0.4 ? 12 : 6, 140);
+      puff(f.p.x, f.p.y, f.load >= 0.4 ? 5 : 3, 60);
       return true;
     },
     debug() {

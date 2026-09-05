@@ -17,6 +17,7 @@ import { hapticTick } from "@/lib/ui/haptics";
 
 const ROLE_LABEL: Record<string, string> = {
   anon: "비로그인",
+  unknown: "역할 확인 못 함", // 로그인은 했는데 역할 조회가 실패한 기록(2026-09-05, lib/auth/actor.ts)
   viewer: "시청자",
   worker: "작업자",
   manager: "매니저",
@@ -426,26 +427,36 @@ export function ActivityTimeline({
                 <ol className="act-items">
                   {rows.map((it, i) => {
                     const d = it.target ? describeTarget(it.kind, it.target) : null;
+                    const name = itemName(it);
+                    const area = it.targetLabel ? null : (d?.area ?? null);
+                    // 위치는 **바뀔 때만** 적는다 — 같은 화면에서 연달아 한 일이 대부분이라
+                    // 매 줄에 '편집실'이 붙으면 그 글자가 화면의 절반을 차지한다. 이름이 이미
+                    // 그 위치를 말하는 줄("편집실 → 편집실")도 뺀다.
+                    const prev = rows[i - 1];
+                    const prevArea = prev
+                      ? prev.targetLabel
+                        ? null
+                        : (prev.target ? describeTarget(prev.kind, prev.target).area ?? null : null)
+                      : null;
+                    const showArea = Boolean(area) && area !== prevArea && !(area && name.includes(area));
+                    // 시각도 **분이 바뀔 때만** — 같은 분에 여덟 줄이 쌓이면 시각 열이 잡음이 된다.
+                    const sameMinute = prev ? hhmm(prev.t) === hhmm(it.t) : false;
                     return (
                       <li key={i} data-source={it.source}>
                         {/* 접힌 줄(×N)이 시간 폭을 가지면 끝 시각도 보여준다 — 40px 칸이라
                             옆으로 붙이지 않고 아래에 작게 쌓는다. */}
                         <span className="act-t">
-                          {hhmm(it.t)}
+                          {sameMinute ? "" : hhmm(it.t)}
                           {it.lastT - it.t >= 60_000 ? <i>↓{hhmm(it.lastT)}</i> : null}
                         </span>
                         <span className="act-body" title={itemTitle(it)}>
-                          <span className="act-kind">
-                            {it.label}
-                            {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
-                          </span>
-                          {/* 위치는 이름 앞에 조용히 — 일정 제목이 붙은 줄에는 없다. */}
-                          {!it.targetLabel && d?.area ? (
-                            <em className="act-area">{d.area}</em>
-                          ) : null}
-                          <span className="act-target">{itemName(it)}</span>
+                          {/* 머리글 = 한 일. 종류(버튼·화면 진입…)는 그 뒤의 조용한 꼬리. */}
+                          <b className="act-name">{name || it.label}</b>
+                          {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
+                          {name ? <em className="act-kindq">{it.label}</em> : null}
                           {it.meta ? <span className="act-meta">{metaLine(it.meta)}</span> : null}
                         </span>
+                        {showArea ? <em className="act-area">{area}</em> : null}
                         {it.durMs ? (
                           <span className="act-dur">{fmtDur(Math.round(it.durMs / 1000))}</span>
                         ) : null}

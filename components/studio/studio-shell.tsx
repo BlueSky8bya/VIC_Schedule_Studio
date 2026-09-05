@@ -5637,7 +5637,7 @@ export function StudioShell({
                 className="m-edit-x"
                 onClick={closeMobileEditAnimated}
                 type="button"
-               data-act="닫기">
+               data-act="close-mobile-edit">
                 <X aria-hidden="true" size={20} />
               </button>
             </div>
@@ -7006,7 +7006,7 @@ export function StudioShell({
                       className="teaser-gate-close"
                       onClick={() => setEditorVisible(false)}
                       type="button"
-                     data-act="닫기">
+                     data-act="close-teaser-gate">
                       <X aria-hidden="true" size={16} />
                     </button>
                   </div>

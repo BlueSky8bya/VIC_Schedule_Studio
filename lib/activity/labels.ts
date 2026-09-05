@@ -81,7 +81,24 @@ const RETIRED_TARGETS = new Set([
   "rest-nudge-later",
   "studio-calm-toggle",
   "insights-refresh",
-  "vlog-chip"
+  "vlog-chip",
+  // 2026-09-05 최신화 — 더 이상 찍히지 않는 id들. 기능이 사라졌거나(월드 날짜·관리 ▾ 드롭다운)
+  // 이름이 바뀌었다(아래 renamed). 사전 항목은 지우지 않는다: 지우면 90일 치 옛 기록이
+  // '이름 미등록'으로 떨어져 더 못 읽는다. 대신 후보 목록에서 빼 '기록만 남음' 칸으로 보낸다.
+  "dev-world-day",
+  "manage-menu",
+  "manage-dd-trigger",
+  "mobile-open-tags",
+  "delete-event",
+  "enter-preview",
+  "go-today",
+  "support-edit-open",
+  "support-sheet-save",
+  "support-sheet-cancel",
+  "support-visit-link",
+  "닫기",
+  "이전",
+  "다음"
 ]);
 const RETIRED_ROUTES = new Set(["/studio/decorate", "/studio/private-layer"]);
 const RETIRED_SECTIONS = new Set(["decorate"]);
@@ -129,10 +146,10 @@ const ACT: Record<string, TargetLabel> = {
   "open-drawing-board": { name: "일정 그림판 열기", area: "편집실", hint: "미리보기의 '🖊️ 일정 그림판'" },
   "month-prev": { name: "이전 달", area: "편집실", hint: "헤더 '‹'" },
   "month-next": { name: "다음 달", area: "편집실", hint: "헤더 '›'" },
-  "go-today": { name: "오늘로", area: "편집실" },
+  "go-today": { name: "오늘로", area: "편집실" , hint: "옛 기록 — 지금은 'm-io-pill'(오늘)로 셉니다"},
   "calendar-cell": { name: "달력 날짜 칸", area: "편집실", hint: "날짜를 고른 횟수(모든 칸 합계)" },
   "save-event": { name: "일정 저장", area: "편집실" },
-  "delete-event": { name: "일정 삭제", area: "편집실" },
+  "delete-event": { name: "일정 삭제", area: "편집실" , hint: "옛 기록 — 지금은 '일정 삭제(편집 카드)'로 셉니다"},
   "enter-preview": { name: "미리보기 들어가기", area: "편집실", hint: "시청자 화면으로 보기" },
   "teaser-gate-submit": { name: "최초공개 비번 확인", area: "편집실" },
   "close-datetime-picker": { name: "날짜·시간 고르기 닫기", area: "편집실" },
@@ -380,7 +397,69 @@ const ACT: Record<string, TargetLabel> = {
   "support-kind": { name: "띠 종류 고르기", area: "편집실", hint: "업 도움 ↔ 기간 안내" },
   "실행 취소": { name: "실행 취소", area: "꾸미기" },
   "다시실행 (Ctrl+Y)": { name: "다시 실행", area: "꾸미기" },
-  닫기: { name: "닫기", area: "공통", hint: "여러 창의 닫기 합계" }
+  닫기: { name: "닫기(어느 창인지 모름)", area: "공통", hint: "옛 기록 — 2026-09-05에 창별로 갈라 놓기 전, 다섯 개의 닫기가 합쳐진 값" },
+  이전: { name: "인사이트 이전 장", area: "관리", hint: "옛 기록 — 2026-09-05에 화면별로 갈라 놓기 전" },
+  다음: { name: "인사이트 다음 장", area: "관리", hint: "옛 기록 — 2026-09-05에 화면별로 갈라 놓기 전" },
+
+  // ── 2026-09-05 최신화: 살아 있는데 사전에 없어 전부 '기타'로 떨어지던 버튼들 ──
+  //    (소유자: "실제 있는 버튼이나 로그 기록으로만 나오게 갱신"). 위치를 반드시 붙인다 —
+  //    이름만으로는 화면에서 찾아갈 수 없고, '기타'가 많으면 이 화면 자체가 안 읽힌다.
+  //    그림판(판서 도구)은 편집실과 분리된 전체화면 도구라 위치를 '그림판'으로 따로 둔다.
+  "close-mobile-edit": { name: "편집 시트 닫기(X)", area: "편집실(모바일)" },
+  "close-teaser-gate": { name: "최초공개 잠금 화면 닫기", area: "편집실" },
+  "close-day-vod": { name: "다시보기 창 닫기", area: "시청자 화면" },
+  "close-detail": { name: "일정 상세 닫기(X)", area: "시청자 화면" },
+  "close-detail-grab": { name: "일정 상세 손잡이로 닫기", area: "시청자 화면(모바일)" },
+  "close-public-insights": { name: "이 달 기록 닫기", area: "시청자 화면" },
+  "insights-panel-prev": { name: "인사이트 이전 장", area: "관리", hint: "월별 인사이트 창의 ‹" },
+  "insights-panel-next": { name: "인사이트 다음 장", area: "관리", hint: "월별 인사이트 창의 ›" },
+  "minsights-panel-prev": { name: "내 인사이트 이전 장", area: "편집실" },
+  "minsights-panel-next": { name: "내 인사이트 다음 장", area: "편집실" },
+
+  // 편집실 — 달력·편집 카드
+  "미정 표시": { name: "미정(아직 확정 아님) 켜기/끄기", area: "편집실" },
+  "배포 버전 복사": { name: "배포 버전 복사", area: "편집실", hint: "헤더 왼쪽 버전 배지" },
+  "역할 권한 보기": { name: "역할 권한 설명 열기", area: "편집실", hint: "계정 카드의 역할 배지" },
+  "상세 닫기": { name: "일정 상세 닫기", area: "편집실" },
+  "상세 카드 닫기": { name: "읽기 전용 상세 닫기", area: "편집실", hint: "편집 권한이 없을 때 뜨는 카드" },
+  "편집 카드 닫기": { name: "편집 카드 닫기", area: "편집실" },
+  "일정 삭제": { name: "일정 삭제(편집 카드)", area: "편집실" },
+  "이 일정 삭제": { name: "일정 삭제(카드 위 X)", area: "편집실" },
+  "하루 늘리기": { name: "기간 하루 늘리기", area: "편집실" },
+  "하루 줄이기": { name: "기간 하루 줄이기", area: "편집실" },
+  "달력 확대": { name: "달력 확대", area: "편집실" },
+  "달력 축소": { name: "달력 축소", area: "편집실" },
+  "달력 확대 초기화": { name: "달력 배율 100%로", area: "편집실" },
+
+  // 설정(톱니) — 스위치들
+  "생동감 있는 동작 켜기/끄기": { name: "생동감 있는 동작", area: "설정" },
+  "눈 편한 테마 켜기/끄기": { name: "눈 편한 테마", area: "설정" },
+  "진동 켜기/끄기": { name: "진동", area: "설정" },
+
+  // 관리 — 태그 편집
+  "태그 색 바꾸기": { name: "태그 색 고르기 열기", area: "관리" },
+  "실행취소(직전 색으로)": { name: "태그 색 되돌리기", area: "관리", hint: "색 고르개의 되돌리기" },
+
+  // 시청자 화면
+  "관심 일정만 보기": { name: "내 관심만 보기", area: "시청자 화면" },
+  "확대 초기화": { name: "포스터 배율 100%로", area: "시청자 화면" },
+
+  // 일정 그림판(전체화면 판서 도구) — 편집실과 분리된 위치로 센다
+  "일정 그림판 닫기": { name: "그림판 닫기", area: "그림판" },
+  "새 그림 레이어": { name: "새 레이어", area: "그림판" },
+  "레이어 선택": { name: "레이어 고르기", area: "그림판" },
+  "레이어 삭제": { name: "레이어 삭제", area: "그림판" },
+  "판서 전체 지우기": { name: "전체 지우기", area: "그림판", hint: "두 번 눌러 실행" },
+  "다시 실행": { name: "다시 실행", area: "그림판" },
+  "색 직접 고르기": { name: "색 직접 고르기", area: "그림판" },
+  "일정 카드 표시": { name: "일정 카드 보이기/숨기기", area: "그림판" },
+  "단축키 안내 (?)": { name: "단축키 안내 열기", area: "그림판" },
+  "단축키 안내 닫기": { name: "단축키 안내 닫기", area: "그림판" },
+  "위 맞춤": { name: "위 맞춤", area: "그림판", hint: "선택 정렬" },
+  "세로 중앙 맞춤": { name: "세로 중앙 맞춤", area: "그림판", hint: "선택 정렬" },
+  "왼쪽 맞춤": { name: "왼쪽 맞춤", area: "그림판", hint: "선택 정렬" },
+  "오른쪽 맞춤": { name: "오른쪽 맞춤", area: "그림판", hint: "선택 정렬" },
+  "가로 균등 간격": { name: "가로 균등 간격", area: "그림판", hint: "선택 정렬" }
 };
 
 // 이름을 안 붙여 마크업에서 유추된 값(`auto:`). 같은 클래스를 쓰는 버튼들이 한 항목으로 뭉치므로
@@ -471,49 +550,43 @@ export function describeTarget(kind: string, target: string): TargetLabel {
 // 줄이 생겼다(실측). 편집실은 시청자가 못 들어가는데 왜? — 로그아웃 직후 남아 있던 배치가
 // 세션 없이 올라가 anon으로 기록된 것이었다. 둘을 갈라두면 그 자리에서 읽힌다.
 // (매니저·작업자는 철수 — 옛 기록의 이름은 ROLE_NAME에 남기고 순서/필터에서는 뺀다.)
-export const ROLE_ORDER = ["owner", "developer", "viewer", "anon"] as const;
+export const ROLE_ORDER = ["owner", "developer", "viewer", "anon", "unknown"] as const;
 export const ROLE_NAME: Record<string, string> = {
   owner: "관리자",
   manager: "매니저",
   worker: "작업자",
   developer: "개발자",
   viewer: "시청자",
-  anon: "비로그인"
+  anon: "비로그인",
+  // 로그인은 했는데 역할 조회가 실패해 최소 권한으로 떨어진 기록(2026-09-05, lib/auth/actor.ts).
+  // 'viewer'로 적으면 "시청자가 편집실 버튼을 눌렀다"는 거짓이 되므로 따로 남긴다.
+  unknown: "역할 확인 못 함"
 };
 /**
- * 사용량 화면의 역할 필터 계수. '시청자'는 **비로그인을 포함**한다.
- * 하트가 비로그인으로 열린 뒤 실제 시청자 행동은 거의 전부 anon으로 들어와, 갈라두면
- * 역할=시청자가 늘 0건이 되어 "집계가 아예 안 된다"로 읽힌다(실측: viewer 0 / anon 38).
- * 비로그인만 보려면 'anon'을 직접 고른다.
+ * 사용량 화면의 역할 필터 계수.
+ *
+ * ⚠ 2026-09-05: 예전엔 '시청자'가 **비로그인을 포함**했다("시청자가 늘 0건으로 보인다"는 이유).
+ * 그 합치기가 소유자 신고("시청자가 누를 수 없는 버튼인데 시청자가 눌렀다고 나온다")의 직접 원인이었다 —
+ * 세션이 끊긴 뒤 도착한 관리자·개발자 배치는 anon으로 저장되는데, 화면에서 그게 '시청자 N번'이 됐다.
+ * 지금은 합치지 않는다(타임라인이 이미 같은 이유로 갈라 두고 있었다 — 두 화면의 철학이 어긋나 있었다).
  */
 export function usageRoleCount(roles: Record<string, number>, role: string): number {
-  if (role === "viewer") return (roles.viewer ?? 0) + (roles.anon ?? 0);
   return roles[role] ?? 0;
 }
 
-/** 사용량 화면의 역할 목록 — '비로그인'은 시청자에 합쳐 두 줄로 갈리지 않게 한다.
- *  '작업자'는 뺐다(역할 자체가 철수 — ADR-0015): 고를 수 없는 역할의 필터는 죽은 칩이다.
- *  옛 기록의 작업자 횟수는 내역 줄(usageRoleBreakdown)에 '작업자 N'으로 계속 나온다. */
-export const USAGE_ROLE_ORDER = ["owner", "developer", "viewer"] as const;
+/** 사용량 화면의 역할 목록. 비로그인·역할 확인 못 함까지 **갈라서** 보여준다(위 주석).
+ *  '작업자'·'매니저'는 뺐다(역할 자체가 철수): 고를 수 없는 역할의 필터는 죽은 칩이다.
+ *  옛 기록의 횟수는 내역 줄(usageRoleBreakdown)에 이름 그대로 계속 나온다. */
+export const USAGE_ROLE_ORDER = ["owner", "developer", "viewer", "anon", "unknown"] as const;
 
-/**
- * 사용량 화면 전용 역할 내역 — 비로그인을 시청자에 합쳐 "시청자 9"처럼 한 덩어리로 보여준다.
- * 이 화면의 질문은 "어떤 역할이 이 기능을 안 쓰나"이고, 시청자에게 로그인 여부는 그 답을 바꾸지
- * 않는다(하트 말고는 로그인이 필요 없다). 반대로 타임라인은 `roleBreakdown`을 그대로 써서
- * 갈라 본다 — 거긴 "왜 편집실에 비로그인이 찍혔지" 같은 이상 신호를 읽는 자리다.
- */
+/** 사용량 화면 역할 내역 — 타임라인과 같은 규칙(갈라서 센다). */
 export function usageRoleBreakdown(roles: Record<string, number>): string {
-  const merged: Record<string, number> = { ...roles };
-  if (merged.anon) {
-    merged.viewer = (merged.viewer ?? 0) + merged.anon;
-    delete merged.anon;
-  }
-  const parts = USAGE_ROLE_ORDER.filter((r) => (merged[r] ?? 0) > 0).map(
-    (r) => `${ROLE_NAME[r]} ${merged[r]}`
+  const parts = USAGE_ROLE_ORDER.filter((r) => (roles[r] ?? 0) > 0).map(
+    (r) => `${ROLE_NAME[r]} ${roles[r]}`
   );
-  for (const [k, v] of Object.entries(merged)) {
+  for (const [k, v] of Object.entries(roles)) {
     if (!USAGE_ROLE_ORDER.includes(k as (typeof USAGE_ROLE_ORDER)[number]) && v > 0) {
-      // 목록에서 뺀 옛 역할(작업자)도 이름이 있으면 사람 말로 — 기록을 버리지 않는다.
+      // 목록에서 뺀 옛 역할(매니저·작업자)도 이름이 있으면 사람 말로 — 기록을 버리지 않는다.
       parts.push(`${ROLE_NAME[k] ?? k} ${v}`);
     }
   }

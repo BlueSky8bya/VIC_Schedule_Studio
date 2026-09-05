@@ -1535,12 +1535,19 @@ html[data-reduce-motion] .act-live::before {
 }
 .act-items > li {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  /* [시각 | 한 일 | 위치 | 체류] — 위치·체류는 있을 때만 자리를 먹는다(2026-09-05 대개편). */
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: baseline;
-  padding: 4px 10px;
+  padding: 4px 10px 4px 12px;
   font-size: var(--text-label);
+  /* 실제 변경(server)은 왼쪽 세로 막대로 갈린다 — 색·굵기보다 '줄의 형태'가 훑기에 빠르다. */
+  border-left: 2px solid transparent;
   transition: background-color var(--dur-1) var(--ease);
+}
+.act-items > li[data-source="server"] {
+  border-left-color: #7c6cf0;
+  background: rgb(124 108 240 / 4%);
 }
 .act-items > li:hover { background: #fbfaff; }
 .act-t {
@@ -1566,32 +1573,38 @@ html[data-reduce-motion] .act-live::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 실제 변경은 진하게, 열람은 옅게 — 한눈에 했다/봤다가 갈린다. */
-.act-items > li[data-source="server"] .act-kind {
-  color: #5b21b6;
-  font-weight: 800;
-}
-.act-items > li[data-source="client"] .act-kind {
-  color: #8b84a3;
-  font-weight: 600;
-}
-.act-kind { flex: none; }
-.act-area {
-  flex: none;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  background: #f1eff7;
-  color: #a09ab5;
-  font-size: 9.5px;
-  font-style: normal;
-  font-weight: 700;
-}
-.act-target {
+/* 머리글 = 한 일. 이 줄에서 가장 진하고 가장 크다 — 이 탭의 질문이 "무엇을 했나"다. */
+.act-name {
   min-width: 0;
-  color: #4a4460;
-  font-weight: 600;
+  color: #3a3550;
+  font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.act-items > li[data-source="server"] .act-name {
+  color: #4c1d95;
+}
+/* 종류(버튼·화면 진입…)는 이름 뒤의 조용한 꼬리 — 예전엔 이름과 같은 굵기로 앞에 서서
+   "버튼 일정 추가"처럼 읽는 순서를 흐렸다. */
+.act-kindq {
+  flex: none;
+  color: #a8a2bd;
+  font-size: var(--text-micro);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+/* 위치는 오른쪽 끝, 바뀔 때만(마크업에서 판단). 칩 대신 조용한 글자 — 칩 셋이 나란히 서면
+   전부 같은 무게로 읽혀 훑기가 안 된다. */
+.act-area {
+  align-self: center;
+  flex: none;
+  color: #9c95b4;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 .act-meta {
   flex: none;
@@ -1967,8 +1980,8 @@ html[data-reduce-motion] .upick-menu {
 .vcard { container-type: inline-size; }
 @container (min-width: 460px) {
   .act-items > li {
-    grid-template-columns: 44px minmax(0, 1fr) auto;
-    padding: 5px 12px;
+    grid-template-columns: 42px minmax(0, 1fr) auto auto;
+    padding: 5px 12px 5px 14px;
     font-size: var(--text-body);
   }
   .act-acct { font-size: var(--text-body); }
@@ -4291,6 +4304,21 @@ html[data-reduce-motion] .perf-windows button.active {
   flex-direction: column;
   gap: 10px;
   z-index: 6;
+  /* 상단바와 같은 방식(2026-09-05): 컨테이너는 클릭을 통과시키고 카드들만 되살린다. 아바타 안내
+     박스를 철거한 뒤 남은 **빈 자리**에서 낙엽 집기·눈 발자국이 되게 하려면 rail이 히트 타깃이면
+     안 된다(계절 엔진의 isBackgroundTarget이 e.target으로 판정한다). */
+  pointer-events: none;
+}
+.studio-shell.avatar-scene .avatar-rail > *,
+.studio-shell.avatar-scene .avatar-rail .avatar-rail-filter,
+.studio-shell.avatar-scene .avatar-rail .studio-tools-wrap,
+.studio-shell.avatar-scene .avatar-rail .viewer-ambient-ctl {
+  pointer-events: auto;
+}
+/* 빈 자리(아바타가 들어올 칸)만 다시 통과 — .avatar-slot은 이미 none이고, 그 안의 카드가 auto다. */
+.studio-shell.avatar-scene .avatar-rail .avatar-slot,
+.studio-shell.avatar-scene .avatar-rail .avatar-dock-inner {
+  pointer-events: none;
 }
 .studio-shell.avatar-scene.avatar-left .avatar-rail {
   left: 8px;
@@ -4396,10 +4424,42 @@ html[data-reduce-motion] .perf-windows button.active {
     transform: none;
   }
 }
+/* rail 카드 착지 — rail(미닫이)이 멈추는 순간 카드 셋이 2px 뒤에서 따라와 앉는다. 오버슈트는
+   아주 작게(옛 '확 켜짐' 지적을 존중) 하되 앱의 스프링 곡선을 써서 도착이 느껴지게 한다.
+   왼쪽/오른쪽이 이름이 다른 애니라 side를 바꿀 때마다 다시 돈다(rail-slide와 같은 방식). */
+@keyframes rail-card-settle-l {
+  from {
+    transform: translateX(-2px);
+  }
+}
+@keyframes rail-card-settle-r {
+  from {
+    transform: translateX(2px);
+  }
+}
+.studio-shell.avatar-scene.avatar-left .avatar-rail-filter,
+.studio-shell.avatar-scene.avatar-left .avatar-rail .studio-tools-wrap,
+.studio-shell.avatar-scene.avatar-left .avatar-rail .slot-showcase {
+  animation: rail-card-settle-l 0.34s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
+}
+.studio-shell.avatar-scene.avatar-right .avatar-rail-filter,
+.studio-shell.avatar-scene.avatar-right .avatar-rail .studio-tools-wrap,
+.studio-shell.avatar-scene.avatar-right .avatar-rail .slot-showcase {
+  animation: rail-card-settle-r 0.34s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
+}
+/* 시차 — 위에서 아래로 아주 살짝(한 덩어리가 앉는 느낌, 셋이 따로 튀지 않게). */
+.studio-shell.avatar-scene .avatar-rail .studio-tools-wrap {
+  animation-delay: 0.34s;
+}
+.studio-shell.avatar-scene .avatar-rail .slot-showcase {
+  animation-delay: 0.38s;
+}
 /* 마운트 전(첫 페인트)엔 애니 끔 → 새로고침 시 안 튐. */
 .studio-shell.avatar-no-anim .studio-workspace,
 .studio-shell.avatar-no-anim .avatar-rail,
 .studio-shell.avatar-no-anim .avatar-rail-filter,
+.studio-shell.avatar-no-anim .avatar-rail .studio-tools-wrap,
+.studio-shell.avatar-no-anim .avatar-rail .slot-showcase,
 .studio-shell.avatar-no-anim .avatar-slot {
   transition: none !important;
   animation: none !important;
@@ -4495,6 +4555,8 @@ html[data-reduce-motion] .perf-windows button.active {
 html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot,
+html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail .studio-tools-wrap,
+html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail .slot-showcase,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   transition: none;
   /* ⚠ animation: none이 아니라 duration 0 — 이름을 none으로 바꾸면 '생동감 있는 동작'을 다시 켤 때

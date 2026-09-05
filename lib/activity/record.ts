@@ -49,7 +49,9 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
   if (source === "client" ? !isClientKind(input.kind) : !isServerKind(input.kind)) return null;
 
   const actor = input.actor ?? (await resolveCurrentActor("vic"));
-  const role = actor.isAuthenticated ? actor.role : "anon";
+  // 로그인은 했는데 역할 판정이 실패했다면(platform_admins 조회 오류) 'viewer'라고 **주장하지 않는다**
+  // — 사용량 화면에 "시청자가 편집실 버튼을 눌렀다"는 거짓이 남았다(2026-09-05 소유자 지적).
+  const role = actor.isAuthenticated ? (actor.roleUncertain ? "unknown" : actor.role) : "anon";
   const rawHash = actor.isAuthenticated && actor.email ? accountHashOf(actor.email) : null;
 
   let device = input.device;

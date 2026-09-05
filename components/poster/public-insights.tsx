@@ -317,7 +317,7 @@ export function PublicInsights({
               onClose();
             }}
             type="button"
-           data-act="닫기">
+           data-act="close-public-insights">
             <X size={18} />
           </button>
         </header>

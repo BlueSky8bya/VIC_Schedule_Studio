@@ -496,7 +496,7 @@ export function MemberInsights({
           disabled={index === 0}
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
           type="button"
-         data-act="이전">
+         data-act="minsights-panel-prev">
           <ChevronLeft aria-hidden="true" size={20} />
         </button>
         <div className="insights-dots" aria-hidden="true">
@@ -510,7 +510,7 @@ export function MemberInsights({
           disabled={index === panels.length - 1}
           onClick={() => setIndex((i) => Math.min(panels.length - 1, i + 1))}
           type="button"
-         data-act="다음">
+         data-act="minsights-panel-next">
           <ChevronRight aria-hidden="true" size={20} />
         </button>
       </div>

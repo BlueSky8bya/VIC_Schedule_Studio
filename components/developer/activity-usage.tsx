@@ -132,7 +132,7 @@ export function ActivityUsage({
     const out = [head, `총 ${filtered.length}개 · 지운 기능 ${retiredFiltered.length}개`, "", ...sorted.map(line)];
     // 지운 기능도 복사본엔 넣는다 — 화면에선 접어두지만, 점검용 평문에서 빠지면 "기록이 사라졌나"가 된다.
     if (retiredFiltered.length > 0) {
-      out.push("", "— 이미 지운 기능(기록만 남음) —", ...retiredFiltered.map(line));
+      out.push("", "— 이미 지웠거나 이름이 바뀐 기능(기록만 남음) —", ...retiredFiltered.map(line));
     }
     return out.join("\n");
   };
@@ -341,7 +341,7 @@ export function ActivityUsage({
                     <span className="act-caret" aria-hidden="true">
                       {showRetired ? "▾" : "▸"}
                     </span>
-                    이미 지운 기능 {retiredFiltered.length}개
+                    이미 지웠거나 이름이 바뀐 기능 {retiredFiltered.length}개
                     <em>{retiredTotal}번 · 기록만 남음</em>
                   </button>
                   {showRetired ? (

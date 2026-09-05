@@ -120,7 +120,11 @@ export type SceneFactory = (seed: number) => Scene;
 // 바탕이 아닌 것 — 여기 위에서의 누르기는 장면이 가로채지 않는다(달력 칸 선택·버튼이 우선).
 const INTERACTIVE =
   "button,a,input,textarea,select,label,[role],[tabindex],[contenteditable],[data-export-surface]," +
-  ".studio-day,.studio-calendar-panel,.event-editor-panel,.studio-topbar,.avatar-rail,.studio-left-panel," +
+  ".studio-day,.studio-calendar-panel,.event-editor-panel,.studio-topbar,.studio-left-panel," +
+  // rail은 통째로 막지 않는다(2026-09-05 소유자: "원래 아바타 안내 박스 있던 자리에 클릭 상호작용이 안 된다").
+  // 안내 박스를 철거한 뒤 그 자리는 **빈 배경**인데 `.avatar-rail`이 목록에 있어 낙엽 집기·눈 발자국이
+  // 전부 막혔다. 막을 것은 rail 안의 **카드들**뿐이다(필터·도구·계절 배경). 상단바와 같은 방식.
+  ".avatar-rail-filter,.avatar-rail .studio-tools,.avatar-rail .viewer-ambient-ctl," +
   ".bottom-float-row,.modal-backdrop,.kbd-hints,.public-day,.agenda-day,.m-head,.m-bottom";
 
 export function isBackgroundTarget(t: EventTarget | null): boolean {
