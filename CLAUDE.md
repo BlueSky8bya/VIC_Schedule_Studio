@@ -390,6 +390,12 @@ private layers is retired — ADR-0014; the server model stays.)
   the reader nothing. 시청자 화면 is one place with one name: for a viewer it is what they always see, for the owner
   it is what 미리보기 opens — the same screen. A new `data-act` must land in one of these; the unit test
   "사전에 없는 data-act가 소스에 없다" fails the build otherwise.
+- **A `both`-filled animation with a delay must hold a direction-free value.** The rail cards' landing
+  animation is keyed by side (`…-l` / `…-r`) so flipping sides restarts it — but `animation-fill-mode: both`
+  pins the `from` value during the delay, and when that value was directional (`translateX(∓6px)`) a second
+  press snapped the card **12px in one frame** with no interpolation (2026-09-05: "여러 번 누르면 여전히 툭툭";
+  measured 5 jumps over 5 presses). The two keyframe names now hold **identical, direction-free** values
+  (scale + opacity), so the held value never changes and the snap is structurally impossible — measured 0px.
 - **State segments share one highlight technique** — tokens `--seg-on-*` / `--seg-off-op` in `globals.css`
   (2026-09-05). Selected = a soft tint fill + an inset white hairline, never a border; unselected = the same ink
   at `--seg-off-op`. A border-boxed "selected" chip inside a card fights the card's borderless-cell grammar and

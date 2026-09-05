@@ -4456,25 +4456,32 @@ html[data-reduce-motion] .perf-windows button.active {
 /* rail 카드 착지 — rail(미닫이)이 멈추는 순간 카드 셋이 2px 뒤에서 따라와 앉는다. 오버슈트는
    아주 작게(옛 '확 켜짐' 지적을 존중) 하되 앱의 스프링 곡선을 써서 도착이 느껴지게 한다.
    왼쪽/오른쪽이 이름이 다른 애니라 side를 바꿀 때마다 다시 돈다(rail-slide와 같은 방식). */
+/* ⚠ 두 이름의 keyframes가 **완전히 같다**(2026-09-05 소유자: "여러 번 누르면 여전히 툭툭").
+   이름이 달라야 side를 바꿀 때 애니메이션이 다시 돌지만, `both` + delay 구간에서는 'from' 값이
+   그대로 걸려 있다 — 예전엔 그 값이 방향마다 ∓6px이라, 연달아 누르면 걸린 값이 +6 → −6으로
+   **한 프레임에 12px 순간 이동**했다(실측: 5번 누르는 동안 12px 점프 5회).
+   방향에 안 걸리는 값(축소 + 옅음)만 쓰면 걸린 값이 늘 같아 그 순간 이동이 아예 없다. */
 @keyframes rail-card-settle-l {
   from {
-    transform: translateX(-6px) scale(0.985);
+    transform: scale(0.982);
+    opacity: 0.9;
   }
 }
 @keyframes rail-card-settle-r {
   from {
-    transform: translateX(6px) scale(0.985);
+    transform: scale(0.982);
+    opacity: 0.9;
   }
 }
 .studio-shell.avatar-scene.avatar-left .avatar-rail-filter,
 .studio-shell.avatar-scene.avatar-left .avatar-rail .studio-tools-wrap,
 .studio-shell.avatar-scene.avatar-left .avatar-rail .slot-showcase {
-  animation: rail-card-settle-l 0.42s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
+  animation: rail-card-settle-l 0.4s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.28s both;
 }
 .studio-shell.avatar-scene.avatar-right .avatar-rail-filter,
 .studio-shell.avatar-scene.avatar-right .avatar-rail .studio-tools-wrap,
 .studio-shell.avatar-scene.avatar-right .avatar-rail .slot-showcase {
-  animation: rail-card-settle-r 0.42s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.3s both;
+  animation: rail-card-settle-r 0.4s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.28s both;
 }
 /* 시차 — 위에서 아래로 아주 살짝(한 덩어리가 앉는 느낌, 셋이 따로 튀지 않게). */
 .studio-shell.avatar-scene .avatar-rail .studio-tools-wrap {
