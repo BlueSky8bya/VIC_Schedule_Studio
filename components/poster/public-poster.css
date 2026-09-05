@@ -4710,10 +4710,18 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   justify-content: center;
   box-sizing: border-box;
   height: 21px;
-  min-width: 21px;
-  padding: 0 5px;
-  border-radius: var(--r-pill, 999px);
-  background: #f4b740;
+  /* 가장자리가 투명해진 만큼 진한 심이 작아 보인다 — 가로로만 조금 키운다(세로는 머리줄에 묶임). */
+  min-width: 26px;
+  padding: 0 7px;
+  /* 단단한 알약이 칸 모서리에 "딱 달라붙어" 보였다(2026-09-05 소유자) → 가운데는 진하고
+     가장자리로 갈수록 옅어져 사라지는 채움. 테두리선이 없으니 모서리·링과 부딪히는 각도 없다. */
+  background: radial-gradient(
+    closest-side,
+    rgb(244 183 64 / 95%) 42%,
+    rgb(244 183 64 / 78%) 66%,
+    rgb(244 183 64 / 34%) 84%,
+    rgb(244 183 64 / 0%) 100%
+  );
   color: #3f2800;
   line-height: 1;
 }

@@ -404,7 +404,9 @@ private layers is retired — ADR-0014; the server model stays.)
 - **오늘 is marked on the date number, and the ring outranks the band** (2026-09-05 owner decision, after
   checking convention). Google, Apple, Outlook and Notion all put "today" on the **number** (a filled circle /
   badge), never on a hairline cell outline, and they draw event content above cell chrome. So the number gets a
-  gold pill (`.d-num` on the poster, `.studio-day-head strong` in the studio) — a marker no band can ever cover,
+  gold glow — a `radial-gradient` that is solid at the centre and fades to transparent at its edge, not a
+  hard-edged pill, because a crisp pill read as "stuck onto" the cell corner (2026-09-05 owner);
+  (`.d-num` on the poster, `.studio-day-head strong` in the studio) — a marker no band can ever cover,
   since bands live in lanes below the day header. The owner also wanted the ring itself on top, so
   `--z-cal-select-ring` is **8**, above the ribbon (6) and its labelled head (7); the ribbon now shows a thin
   gold line where it crosses today, which is the accepted trade. **The badge must not grow the day header** —

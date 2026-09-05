@@ -5997,10 +5997,17 @@ body.cell-range-dragging {
   justify-content: center;
   box-sizing: border-box;
   height: 18px;
-  min-width: 18px;
-  padding: 0 5px;
-  border-radius: var(--r-pill, 999px);
-  background: var(--accent, #f4b740);
+  /* 가장자리가 투명해진 만큼 진한 심이 작아 보인다 — 가로로만 조금 키운다(세로는 머리줄에 묶임). */
+  min-width: 24px;
+  padding: 0 7px;
+  /* 시청자 화면과 같은 채움 — 가운데는 진하고 가장자리로 갈수록 옅어진다(2026-09-05 소유자). */
+  background: radial-gradient(
+    closest-side,
+    rgb(244 183 64 / 95%) 42%,
+    rgb(244 183 64 / 78%) 66%,
+    rgb(244 183 64 / 34%) 84%,
+    rgb(244 183 64 / 0%) 100%
+  );
   color: #3f2800;
 }
 .studio-day.today {
