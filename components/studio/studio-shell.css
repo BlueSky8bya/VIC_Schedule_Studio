@@ -7992,7 +7992,8 @@ html[data-reduce-motion] .modal-close:active {
   width: 28px;
   height: 36px;
   border: 0;
-  border-radius: 7px;
+  /* 7px → --r-control: 태그 편집 행의 컨트롤만 각져 보였다(2026-09-05 소유자: "혼자만 딱딱한 것"). */
+  border-radius: var(--r-control);
   background: transparent;
   color: var(--muted, #9aa0ab);
   cursor: grab;
@@ -8064,7 +8065,7 @@ html[data-reduce-motion] .modal-close:active {
   min-width: 48px;
   min-height: 32px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--r-control);
   padding: 0 10px;
   font-size: var(--text-body);
   font-weight: 800;
@@ -8077,7 +8078,7 @@ html[data-reduce-motion] .modal-close:active {
   width: 30px;
   height: 30px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--r-control);
   background: #fff;
   color: var(--muted);
   cursor: pointer;
