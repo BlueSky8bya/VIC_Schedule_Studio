@@ -13,6 +13,7 @@
 | 산·능선·깊이 | [MOUNTAIN_DEPTH_RULES](MOUNTAIN_DEPTH_RULES.md) 📖 | BIOME_GRAMMAR §3 | `scenes/land.ts` mountain |
 | 동물·소형 생물 배치·이동 | BIOME_GRAMMAR "공통 생물 규칙" + 해당 바이옴 | IMMERSION_BREAK_RULES §4 | `scenes/autumn.ts` 등, `world/rarity.ts` |
 | 몰입 파괴 판정·등급 | [IMMERSION_BREAK_RULES](IMMERSION_BREAK_RULES.md) 📖 | — | — |
+| **엔티티 이미지 에셋(착수 판단·파일럿·Style Bible)** | [ENTITY_ART_PLAN](ENTITY_ART_PLAN.md) 🎨 — CONDITIONAL GO 판단 근거·바이옴별 결손·파일럿 12장·화풍 측정치·통합 계약·QA 절차 | [art/manifest.ts](../../components/shared/ambient/art/manifest.ts)(자리 정본) | `/studio/ambient-art`(개발자), `npm run art:normalize` |
 | **지금 어디까지 왔나(총평)** | [FINAL_AUDIT](FINAL_AUDIT.md) 🏁 — 자율 6라운드(10~15) 결과·남은 문제·소유자가 볼 화면·합격 여부 | — | `.scratch-pw/qa/final/`(대조 시트 48장) |
 | QA 라운드 돌리기 | [VISUAL_QA_PROTOCOL](VISUAL_QA_PROTOCOL.md) 📖 | [QA_PROGRESS](QA_PROGRESS.md) 🧭 · `rounds/` | `.claude/agents/ambient-*.md`, `scripts/ambient-qa/`(계획) |
 | 캡처·평가 파이프라인 만들기 | [PLAN-20260905-005](../agent/plans/PLAN-20260905-005-ambient-visual-qa.md) 📋 | VISUAL_QA_PROTOCOL §5 | `app/visual-fixture/*`, `.scratch-pw/snap-biomes.mjs` |
