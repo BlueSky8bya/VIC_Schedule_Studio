@@ -177,6 +177,10 @@ ID = `AMB-<범주>-<번호>`. 등급은 IMMERSION_BREAK_RULES 기준, 신뢰도�
 
 ## 6. 다음 세션 진입
 
+**▶ 지금 진입점은 라운드 16이 아니라 [ENTITY_ART_PLAN.md](ENTITY_ART_PLAN.md)다**(2026-09-06) — 자율 QA는 15로 끝났고 다음 단계는 **엔티티 이미지 에셋 파일럿**이다.
+소유자 결정 하나(`drawArt` 보간을 끄나 — 계획서 §10 결정 1b)를 기다리는 중이고, 결정되면 소나무 3장 → 화풍 승인 → 나머지 9장 → 라운드 16-A(아트) QA 순서다.
+코드 QA 라운드 16(초원 바람 → 육지 눕기 → 비의 젖음)은 그와 **독립**이므로 병행하거나 뒤로 미룰 수 있다.
+
 `docs/ambient/README.md` → **[FINAL_AUDIT.md](FINAL_AUDIT.md)**(자율 6라운드 총평·남은 문제·소유자가 볼 화면) → 이 문서 §2 우선순위 → [rounds/ROUND-15.md](rounds/ROUND-15.md) "백로그·다음" → **라운드 16**(프로토콜 §7 + 소유자 운영 규칙; 첫 입구 = C의 합격 기준 3줄 중 가장 싼 것 = `spring/summer/winter.ts`에 바람 소비자 이식 — 달력 뒤 화면이 바람을 문자 그대로 모른다):
 서버 기동(before = 라운드 5 커밋) → `npm run ambient:qa:selftest` → `capture --round 06 --phase before` **+ `--only 3,4 --kinds long`** → 시트·diff → `light-probe.mjs`
 → 세 에이전트 **동시**(서버 빌드 고정 — 에이전트가 끝난 뒤에만 재빌드) → 통합(P0 전부 + 입구 묶음 ≤ 4; 첫 후보 **AMB-T1-03 잔여**(그림자 코어) + **물가 접촉 묶음**) → 수정 → 게이트 → `--phase after` → `--compare before,after` → `rounds/ROUND-06.md`.
