@@ -223,3 +223,15 @@ html[data-ambient-pause] .gs-tide * {
     inset 0 -1px 0 rgb(38 50 66 / 6%),
     0 1px 1px rgb(38 50 66 / 10%);
 }
+/* 눈 편한 테마의 카드(2026-09-06 소유자: "일정 카드에는 아직 적용이 안 된다"). 카드 채움은 태그색 인라인
+   `backgroundColor`라 토큰이 닿지 않고, 태그색 자체는 데이터라 팔레트가 건드리면 안 된다. 옛 루트 필터가
+   카드에 주던 효과(sepia .1 · saturate .8 · brightness .96)를 **카드 위 베일 한 겹**으로 재현한다 —
+   `background-image`는 인라인 `background-color` 위에 얹히므로 어떤 태그색이든 같은 만큼 따뜻해지고,
+   색상(hue)의 정체성은 남는다. 배경 캔버스와는 무관(카드 안에서만). */
+html[data-eye-comfort] .studio-event-pill,
+html[data-eye-comfort] .public-event {
+  background-image:
+    linear-gradient(180deg, rgb(255 250 238 / 14%) 0%, rgb(255 250 238 / 0%) 55%),
+    linear-gradient(0deg, rgb(226 196 140 / 22%), rgb(226 196 140 / 22%));
+  border-color: rgb(196 172 126 / 55%);
+}
