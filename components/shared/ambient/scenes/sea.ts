@@ -10,7 +10,7 @@ import { clamp, lerp, rng, TAU } from "./util";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, horizonY, moveScale, ySort } from "../world/view";
 import { ASSET, loadSprite, type Sprite } from "../assets";
-import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawRainRings, drawTrail, drawWaterLight, drawWaves, newTrail, stepRainRings, stepTrail, waterPalette, type RainRing } from "./water";
 import { currentLight } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 
@@ -54,6 +54,9 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
     gh = h;
     gdpr = dpr;
   }
+  // 빗방울 고리(라운드 14, 우선순위 B) — 먼바다도 비의 소비자다(전에는 빗줄기만 하늘에서 떨어졌다).
+  const rings: RainRing[] = [];
+  let rainRings = 0;
   const glintTarget = (load: number) => Math.round(lerp(6, 26, load));
   const shadowTarget = (load: number) => Math.round(lerp(6, 20, load));
   // 무리의 중심 두 곳 — 바다 물고기는 흩어져 다니지 않는다. 균등 산포는 "크기 위계 없는 스프라이트 뿌리기"로
@@ -88,6 +91,20 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
       const { dt, load, t } = f;
       // 포인터 물결 — 민물과 같은 문법(2026-09-04 소유자: "바다들도 민물에서 그러는 것처럼").
       stepTrail(trail, f.p, t, top(), f.h);
+      // 빗방울 고리(2026-09-06 라운드 14) — 수평선 아래 전면. 원근: 아래일수록 잦고 크다(고른 산포 금지).
+      rainRings += stepRainRings(
+        rings,
+        dt,
+        f.weather.now === "rain",
+        rand,
+        (r) => {
+          const t0 = top() + 10;
+          const u = Math.pow(r(), 0.55);
+          return { x: r() * w, y: t0 + u * (h - t0 - 4) };
+        },
+        lerp(6, 18, load),
+        140
+      );
       // 글린트 수 × 조명 글린트(라운드 4 C#2 — 저녁 0·노을 ×1.2·밤 ×.5). 점심·맑음 1 = 항등.
       const gt = Math.round(glintTarget(load) * currentLight().glint);
       while (glints.length < gt) glints.push({ x: rand() * w, y: top() + 20 + rand() * (h - top() - 40), ph: rand() * TAU, r: 1.4 + rand() * 1.6 });
@@ -145,6 +162,15 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
       drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 9, speed: 0.07, amp: 5 * (1 + 0.5 * currentLight().wind), alpha: 0.1, foam: pal.foam });
       // 빛의 길(라운드 4 AMB-T1-03) — 노을 반사 띠·밤 달빛 띠. 깊은 바다는 수평선이 없어 위에서부터, 조금 넓게. 점심 0.
       drawWaterLight(g, t, f.w, top() + 4, f.h, currentLight());
+      // 빗방울 고리(라운드 14) — 수평선 아래에만.
+      if (rings.length) {
+        g.save();
+        g.beginPath();
+        g.rect(0, top() + 8, f.w, f.h - top() - 8);
+        g.clip();
+        drawRainRings(g, rings, GROUND_SQUASH);
+        g.restore();
+      }
       // 너울의 명암 — 파장 100~200m짜리 완만한 기복. 선이 아니라 **넓은 면**이라야 물이 덩어리로 읽힌다
       // (검토 라운드2: 바다 4장이 "빈 판").
       {
@@ -266,7 +292,7 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
       // 촉수가 늘어져 "무엇인지" 알아볼 수 있게 한다.
     },
     debug() {
-      return { biomeKind: "sea", glints: glints.length, shadows: shadows.length, season };
+      return { biomeKind: "sea", glints: glints.length, shadows: shadows.length, season, rings: rings.length, rainRings };
     }
   };
 }

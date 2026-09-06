@@ -23,7 +23,7 @@ import { pendingLoads } from "@/components/shared/ambient/loading";
 import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
 import { drawDepthHaze, drawLightPass } from "@/components/shared/ambient/world/view";
 import { lerpLight, lightOf, NEUTRAL_LIGHT, setCurrentLight, type Light } from "@/components/shared/ambient/world/light";
-import { createParticles } from "@/components/shared/ambient/world/particles";
+import { createParticles, windDirOf } from "@/components/shared/ambient/world/particles";
 import type { BiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
 
 export type Quality = 0 | 1 | 2;
@@ -92,6 +92,8 @@ export type Frame = {
   light: Light;
   /** 조명 전이가 끝났나(3초 lerp 완료) — 바탕에 구운 그림자를 다시 굽는 장면은 이 값이 참일 때만 `shadowKey`를 비교한다(라운드 4). */
   lightStable: boolean;
+  /** 바람 **방향**(±1, 시드 고정) — 세기는 `light.wind`. 입자층과 장면이 같은 값을 쓴다(라운드 14, 검토 B #4). */
+  windDir: number;
 };
 
 export interface Scene {
@@ -252,7 +254,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     weather: { now: "clear", prev: "clear", segment: 0 },
     traces: [],
     light: NEUTRAL_LIGHT,
-    lightStable: true
+    lightStable: true,
+    windDir: 1 // 시드가 정해진 뒤 아래에서 덮어쓴다(라운드 14)
   };
   // 보고 있는 달에 쓸 '날' — 날씨 시드에만 쓴다(흔적은 달만 본다). 현재 달은 오늘, 과거 달은 말일, 미래 달은 1일.
   const viewDay = (y: number, m: number, today: { y: number; m: number; d: number }) => {
@@ -299,6 +302,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   // 장면 시드 — 검증(fixture)은 force.seed로 고정해 같은 URL이 같은 소품 자리·같은 첫 스폰을 낸다(PLAN-20260905-005 P0).
   // 실제 화면은 지금처럼 로드마다 다르다(세계의 결정성은 날씨·흔적에만 해당한다 — 소품 자리는 결정 사항이 아니다).
   const seed = world.force?.seed ?? (Date.now() % 100000) + 7;
+  // 바람 **방향**은 입자층과 장면이 공유한다(라운드 14, 검토 B #4) — 세기만 주던 `Light.wind`로는 한 화면에 바람이 둘이 됐다.
+  frame.windDir = windDirOf(seed);
   const scene = factory(seed);
   // 날씨 입자층(라운드 2) — 비·눈·바람 부스러기·안개 뭉치를 엔진이 한 번 그린다(장면이 스스로 그리는 날씨는 ownsWeather로 제외).
   const particles = createParticles(seed);

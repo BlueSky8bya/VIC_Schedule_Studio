@@ -105,6 +105,53 @@ export function bakeWater(w: number, h: number, top: number, dpr: number, pal: W
   return c;
 }
 
+/** 수면의 빗방울 고리(2026-09-06 라운드 14, 우선순위 B — 검토 C #2 "비의 소비자가 민물뿐"). 민물(`summer.ts`)이 갖고 있던 고리를
+ * 공용으로 옮긴다: 해안·먼바다·계곡이 같은 모양을 쓴다. 3/4 시점이라 타원(GROUND_SQUASH), 물 폴리곤 안에서만 그린다(호출부가 clip). */
+export type RainRing = { x: number; y: number; life: number; dur: number; maxR: number; a: number; w: number };
+
+/** 초당 `rate`개를 `spawn()`이 주는 자리에 낸다. 반환 = 새로 만든 개수(디버그 카운터용). */
+export function stepRainRings(
+  rings: RainRing[],
+  dt: number,
+  rain: boolean,
+  rnd: () => number,
+  spawn: (r: () => number) => { x: number; y: number } | null,
+  rate: number,
+  cap = 160
+): number {
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const r = rings[i];
+    r.life += dt / r.dur;
+    if (r.life >= 1) rings.splice(i, 1);
+  }
+  if (!rain || rings.length >= cap || rnd() >= dt * rate) return 0;
+  const at = spawn(rnd);
+  if (!at) return 0;
+  rings.push({ x: at.x, y: at.y, life: 0, dur: 0.9 + rnd() * 0.5, maxR: 8 + rnd() * 12, a: 0.28, w: 0.9 });
+  return 1;
+}
+
+/** 고리를 그린다(호출부가 물 폴리곤으로 clip한 상태여야 한다). `squash` = GROUND_SQUASH. */
+export function drawRainRings(g: CanvasRenderingContext2D, rings: RainRing[], squash: number) {
+  for (const r of rings) {
+    if (r.life < 0) continue;
+    const e = 1 - Math.pow(1 - r.life, 2.4);
+    const rad = 6 + r.maxR * e;
+    const a = r.a * (1 - r.life);
+    const lw = r.w * (1 - r.life * 0.6) + 0.8;
+    g.lineWidth = lw * 2.6;
+    g.strokeStyle = `rgb(120 175 215 / ${a * 0.4})`;
+    g.beginPath();
+    g.ellipse(r.x, r.y, rad, rad * squash, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.lineWidth = lw;
+    g.strokeStyle = `rgb(255 255 250 / ${a})`;
+    g.beginPath();
+    g.ellipse(r.x, r.y, rad, rad * squash, 0, 0, Math.PI * 2);
+    g.stroke();
+  }
+}
+
 export type WaveOpts = {
   top: number; // 수평선/물가 선
   bottom: number;

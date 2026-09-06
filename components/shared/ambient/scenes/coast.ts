@@ -15,7 +15,7 @@ import { claimSpot, drawProp, drawSubmerged, propShadow, propSpots, resetPropFie
 import { currentLight, shadowKey } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { groundYAt, horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
-import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawRainRings, drawTrail, drawWaterLight, drawWaves, newTrail, stepRainRings, stepTrail, waterPalette, type RainRing } from "./water";
 
 export type CoastMode = "tidal" | "sandy" | "rocky";
 
@@ -99,6 +99,11 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
   let gdpr = 0;
   const glints: { x: number; y: number; ph: number; r: number }[] = [];
   const spray: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
+  // 빗방울 고리(2026-09-06 라운드 14, 우선순위 B — A #1 · B #2 · C: 비가 물에 닿는 자국이 민물 못 말고는 하나도 없었다).
+  // 물가선 `lineY(x)` 위(= 바다 쪽)에만 나고, 크기·밀도는 원근을 따른다.
+  const rings: RainRing[] = [];
+  let rainRings = 0;
+  let windDir = 1;
   const trail = newTrail();
   const art = new ArtSet(["rock", "log", "reed", "pebble", "shell-clam", "starfish", "driftwood", "tree-pine", "tree-pine-autumn", "tree-pine-winter"], {
     scaleOf: { "tree-pine": 3, "tree-pine-autumn": 3, "tree-pine-winter": 3 }
@@ -1160,13 +1165,16 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       w = f.w;
       h = f.h;
       if (!water || gw !== w || gh !== h || gdpr !== f.dpr || av !== art.version) bake(f.dpr);
-      // 물가 띠 바위 층은 조석 상태별(라운드 13) — 띠가 바뀌어 물가선이 움직이면 그 조석 기준으로 잠김/마른 돌을 다시 나눈다(층만, 판은 그대로).
       if (rocksTide !== tide(f) || rocksArt !== art.version) bakeShoreRocks(tide(f), f.dpr);
     },
     step(f) {
       const { dt, load } = f;
       // 조석 τ 3s(라운드 13, C #4). 층(`bakeShoreRocks`)은 목표 조석으로 바로 굽고 물가선만 3초에 걸쳐 닿는다 — 전이 중 ≤ 3s의 링 어긋남은 감수.
       const tv = tide(f);
+      // 물가 띠 바위 층은 조석 상태별 — 띠가 바뀌어 물가선이 움직이면 그 조석 기준으로 잠김/마른 돌을 다시 나눈다(층만, 판은 그대로).
+      // **`step()`에 있어야 한다**(2026-09-06 라운드 14, 검토 B #3): 라운드 13은 `resize()`에만 두어 창 크기가 그대로면 층이 영영 다시 굽지 않았다
+      // — 점심에 마운트한 화면이 밤이 되어도 점심 조석의 잠김·수면선 링을 유지(바위 bbox 16.4% 차, 2/7 틀린 접촉 등급, 몸통 +12L 유령).
+      if (rocksTide !== tv || rocksArt !== art.version) bakeShoreRocks(tv, f.dpr);
       tideK = Number.isFinite(tideK) ? tideK + (tv - tideK) * (1 - Math.exp(-dt / 3)) : tv;
       // 포인터 물결 — 물가 선 위쪽(바다)에서만.
       stepTrail(trail, f.p, f.t, top(), shoreY() - 34);
@@ -1179,18 +1187,51 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 물보라(암석해안) — 파도 주기마다 바위 근처에서 흰 점 몇 개. **바람에 비례**해 잦아지고 높이 솟는다
       // (2026-09-06 라운드 8, GRAMMAR §3.2 바람 행 "물보라 ×2" — 검토 C: 바람이 해안에서 입자 한 열뿐이었다).
       const wind = currentLight().wind;
+      windDir = f.windDir;
+      // 물보라는 **파도가 무엇에 부딪혀** 생긴다(라운드 14, 검토 B #1): 옛 코드는 `x = rand()·w, y = shoreY() − 4` 고정선이라
+      // 썰물 띠엔 x의 63%가 마른 뭍 안쪽에서 솟았고(그려진 점의 26%가 물가선 아래), 점심엔 반대로 빈 바다 −52px에서 솟았다.
+      // 이제 **물속에 발을 담근 물가 바위**(`shoreRocks` 중 이 조석에서 바다 쪽인 것)에서만, 그 x의 물가선 바로 위에서 튄다.
+      // vx는 부호 있는 바람(`f.windDir`) — 입자층과 방향이 갈리면 한 화면에 바람이 둘이 된다(B #4).
+      const tideK0 = Number.isFinite(tideK) ? tideK : tv;
       if (mode === "rocky" && load >= 0.4 && rand() < dt * 2.2 * (1 + 2 * wind)) {
-        const x = rand() * w;
+        const WL = 60 + 0.02 * h * (1 - tv);
+        const wet = shoreRocks.filter((rk) => WL - rk.y > 0);
+        // 물속에 발을 담근 바위가 있으면 거기서, 없으면(썰물 = 바위가 전부 뭍 위) **물가선 자체**에서 — 파도는 바위가 없어도 물가에서 부서진다.
+        // (바위 목록만 보면 밤 썰물에 물보라가 0이 된다 — 라운드 14 자체 실측.)
+        const src = wet.length ? wet[Math.floor(rand() * wet.length)] : null;
+        const sx = src ? src.x : rand() * w;
+        const spread = src ? 24 * src.k : 26;
+        const base = src
+          ? shoreY() - 60 - h * 0.02 + src.y + shoreOffsetAt(sx, mode)
+          : shoreY() - tideK0 * h * 0.02 - Math.sin(f.t * 0.5) * 3 + shoreOffsetAt(sx, mode) + Math.sin(sx * 0.02 + f.t * 1.1) * 2.5;
         const n = 5 + Math.round(5 * wind);
         for (let i = 0; i < n; i++)
           spray.push({
-            x: x + (rand() - 0.5) * 20,
-            y: shoreY() - 4,
-            vx: (rand() - 0.5) * 60 + wind * 40,
+            x: sx + (rand() - 0.5) * spread,
+            y: base - 2 - rand() * 6,
+            vx: (rand() - 0.5) * 60 + windDir * wind * 40,
             vy: (-60 - rand() * 90) * (1 + 0.6 * wind),
             life: 1
           });
       }
+      // 빗방울 고리 — 물가선 위(바다)에서만. 원근: 아래(가까운 물)일수록 잦고 크다.
+      rainRings += stepRainRings(
+        rings,
+        dt,
+        f.weather.now === "rain",
+        rand,
+        (r) => {
+          const rx = r() * w;
+          const lw = shoreY() - tv * h * 0.02 - Math.sin(f.t * 0.5) * 3 + shoreOffsetAt(rx, mode) + Math.sin(rx * 0.02 + f.t * 1.1) * 2.5;
+          const t0 = top() + 8;
+          if (lw - t0 < 12) return null;
+          // v^1.6 = 근경 쪽으로 몰린다(고른 산포는 "하늘에서 뿌린 스티커"로 읽힌다 — A #1 조건 ③).
+          const u = Math.pow(r(), 0.55);
+          return { x: rx, y: t0 + u * (lw - t0 - 2) };
+        },
+        lerp(6, 18, load),
+        140
+      );
       for (let i = spray.length - 1; i >= 0; i--) {
         const s = spray[i];
         s.vy += 260 * dt;
@@ -1242,11 +1283,22 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 셋이 같은 4줄이면 흑백에서 같은 그림이 된다.
       const WV = mode === "tidal" ? { bands: 7, amp: 8, speed: 0.034 } : mode === "sandy" ? { bands: 2, amp: 17, speed: 0.062 } : { bands: 3, amp: 13, speed: 0.055 };
       // 파도 진폭 × (1 + .5·바람) — GRAMMAR §3.2 바람 "파도 ×1.5"(라운드 3 C#3: 해안·바다의 바람이 점 34개뿐이었다). 맑음(.08)은 ≈ 항등.
-      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: WV.bands, speed: WV.speed, amp: WV.amp * (1 + 0.5 * currentLight().wind), alpha: 0.15, foam: pal.foam, shore: true });
+      // 바람은 진폭만이 아니라 **선의 두께·밝기**로도 말한다(라운드 14, 검토 A #1 조건 ②: 같은 획을 굵게 = 형광펜이 아니라 마디가 늘어야 한다 —
+      // 여기서는 α만 소폭, 굵기는 `foamRows`가 맡는다). 맑음(.08)은 ≈ 항등.
+      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: WV.bands, speed: WV.speed, amp: WV.amp * (1 + 0.5 * currentLight().wind), alpha: 0.15 * (1 + 0.5 * currentLight().wind), foam: pal.foam, shore: true });
       drawTrail(g, trail, t, GROUND_SQUASH, pal.foam);
       drawGlints(g, t, glints);
       // 빛의 길(라운드 4 AMB-T1-03) — 노을 반사 띠·밤 달빛 띠·새벽 옅은 반사. 수평선에서 물가까지(뭍이 위를 덮는다). 점심 0.
       drawWaterLight(g, t, f.w, top() + 4, sy, currentLight());
+      // 빗방울 고리(라운드 14) — 뭍 판이 덮기 **전**에, 수평선 아래 바다에만. 뭍은 뒤에 그려지므로 물가선 위로 넘어간 고리는 판이 가린다.
+      if (rings.length) {
+        g.save();
+        g.beginPath();
+        g.rect(0, top() + 6, f.w, f.h - top() - 6);
+        g.clip();
+        drawRainRings(g, rings, GROUND_SQUASH);
+        g.restore();
+      }
       // 뭍 — 물가 선 아래. 젖은 띠(어두운 반투명)가 물가 위로 살짝.
       if (land) {
         // 물가 선은 자로 그은 가로선이 아니다 — 완만하게 굽이치는 곡선(만·곶). 뭍 클립·젖은 띠·거품이 같은 곡선을 쓴다.
@@ -1293,16 +1345,20 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           const fr = rng(seed * 131 + ri * 17 + Math.round(shoreY()));
           const segs: [number, number, number, number][] = [];
           let cursor = 0;
+          // 바람은 **마디를 길게·틈을 좁게**(파도가 더 자주 닿는다) — 흰 α를 올리면 형광펜이 된다(라운드 14, 검토 A #1 조건 ②).
+          const wk = currentLight().wind;
           while (cursor < 1100) {
-            const seg = 40 + fr() * 120;
-            const gap = 60 + fr() * 120;
+            const seg = (40 + fr() * 120) * (1 + 0.5 * wk);
+            const gap = (60 + fr() * 120) * (1 - 0.3 * wk);
             const aa = a * (0.7 + fr() * 0.6);
-            const lw2 = Math.max(2, Math.round((lw * (0.7 + fr() * 0.7)) / 2) * 2);
+            const lw2 = Math.max(2, Math.round((lw * (0.7 + fr() * 0.7) * (1 + 0.35 * wk)) / 2) * 2);
             segs.push([cursor, seg, aa, lw2]);
             cursor += seg + gap;
           }
           const P = cursor;
-          const drift = (t * 4) % P;
+          // 거품 마디는 **바람 방향**으로 흐른다(라운드 14, 검토 B #4: 옛 `t·4`는 늘 −x라 입자가 오른쪽으로 갈 때도 거품은 왼쪽이었다).
+          // 맑음(wind .08)도 방향은 있다 — 세기만 작다.
+          const drift = (t * 4 * (1 + 1.6 * currentLight().wind) * windDir + P * 1000) % P;
           for (let k0 = -1; k0 * P - drift < f.w + 20; k0++) {
             for (const [s0, seg, aa, lw2] of segs) {
               const x = k0 * P + s0 - drift;
@@ -1348,6 +1404,9 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         spray: spray.length,
         season,
         rocksTide,
+        rings: rings.length,
+        rainRings,
+        windDir,
         shoreRocks: shoreRocks.map((rk) => [Math.round(rk.x), Math.round(rk.y), Math.round(rk.k * 100) / 100]),
         spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)])
       };

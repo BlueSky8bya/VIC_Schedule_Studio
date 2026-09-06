@@ -30,6 +30,12 @@ const MOTE_RGB: Record<SeasonKey, string[]> = {
   winter: ["236 242 248", "214 224 234", "246 248 252"]
 };
 
+/** 바람 방향(±1) — 시드로 한 번 정한다(왼→오 / 오→왼). 입자층과 **장면이 같은 부호를 써야** 한 화면에 바람이 둘이 되지 않는다
+ * (2026-09-06 라운드 14, 검토 B #4: 입자는 −1인데 물보라 vx는 늘 +, 거품은 늘 −x, 풀 파는 늘 +x였다). 세기는 `Light.wind`. */
+export function windDirOf(seed: number): number {
+  return ((seed >>> 3) & 1) === 0 ? 1 : -1;
+}
+
 export function createParticles(seed: number): ParticleLayer {
   const r: Rng = rng((seed * 31 + 0x5eed) >>> 0);
   const drops: Drop[] = [];
@@ -84,8 +90,8 @@ export function createParticles(seed: number): ParticleLayer {
 
   return {
     step(dt, w, h, weather, light, load, lite, own) {
-      // 바람 방향은 시드로 한 번 정한다(왼→오 또는 오→왼), 세기는 조명에서.
-      const dir = ((seed >>> 3) & 1) === 0 ? 1 : -1;
+      // 바람 방향은 시드로 한 번 정한다(왼→오 또는 오→왼), 세기는 조명에서. 장면도 같은 값을 `f.windDir`로 받는다(라운드 14).
+      const dir = windDirOf(seed);
       wind = dir * light.wind;
       const hz = horizonY(h);
       // 비
