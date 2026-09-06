@@ -15,7 +15,7 @@ describe("stepCalZoom", () => {
   });
 
   it("경계에서 멈춘다(넘어가지 않음)", () => {
-    expect(stepCalZoom(1.5, 1)).toBe(1.5);
+    expect(stepCalZoom(2, 1)).toBe(2);
     expect(stepCalZoom(1, -1)).toBe(1);
   });
 
@@ -24,8 +24,14 @@ describe("stepCalZoom", () => {
     expect(stepCalZoom(0.7, 1)).toBe(1.25);
   });
 
-  it("단계 목록은 100/125/150", () => {
-    expect(CAL_ZOOM_STEPS).toEqual([1, 1.25, 1.5]);
+  it("단계 목록은 100/125/150/175/200(2026-09-06 확장)", () => {
+    expect(CAL_ZOOM_STEPS).toEqual([1, 1.25, 1.5, 1.75, 2]);
+  });
+
+  it("150% 위로 175·200까지 오른다", () => {
+    expect(stepCalZoom(1.5, 1)).toBe(1.75);
+    expect(stepCalZoom(1.75, 1)).toBe(2);
+    expect(stepCalZoom(2, -1)).toBe(1.75);
   });
 });
 

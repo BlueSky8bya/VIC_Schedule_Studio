@@ -157,6 +157,7 @@ import {
   createWheelStepper,
   normalizeWheelDelta,
   stepCalZoom,
+  CAL_ZOOM_STEPS,
   studioShellZoom
 } from "@/lib/ui/calendar-zoom";
 import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
@@ -1877,7 +1878,7 @@ export function StudioShell({
   // 위치만 기록하고 즉시 안착). 이렇게 반전해 두면 새 mutation을 추가해도 자동으로 안 움직인다.
   const flipArmedRef = useRef(false);
 
-  // ── A안(방송 가독성): 달력 위 Ctrl+휠 단계 확대(100/125/150%) — PLAN-20260725-001 M1 ──
+  // ── A안(방송 가독성): 달력 위 Ctrl+휠 단계 확대(100/125/150/175/200%) — PLAN-20260725-001 M1 ──
   // 브라우저 전체 줌은 CSS viewport 폭을 줄여 640px 경계 아래로 떨어지면 PC에서도 모바일
   // 레이아웃으로 바뀐다. 대신 달력 패널 위에서만 Ctrl+휠을 가로채 CSS 변수(--cal-zoom)로
   // 글자·밀도만 키운다. transform: scale 금지 — 드래그 삽입선·FLIP이 좌표 기반이라 어긋난다.
@@ -1992,7 +1993,7 @@ export function StudioShell({
           type="button"
           className="cal-zoom-btn"
           aria-label="달력 확대"
-          disabled={calZoom === 1.5}
+          disabled={calZoom === CAL_ZOOM_STEPS[CAL_ZOOM_STEPS.length - 1]}
           onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, 1))}
          data-act="달력 확대">
           ＋

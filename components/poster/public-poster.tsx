@@ -4122,7 +4122,7 @@ export function PublicPoster({
     );
   }
 
-  // 시청자 달력 글자 확대(편집실 A안과 같은 문법) — 달력 위 Ctrl+휠로 100/125/150% 단계.
+  // 시청자 달력 글자 확대(편집실 A안과 같은 문법) — 달력 위 Ctrl+휠로 100/125/150/175/200% 단계.
   // 글자(칸 내용)만 커지고 표면은 세로로 자란다(배율은 폭 기준이라 그대로 = 진짜 확대).
   //
   // ⚠ callback ref로 리스너를 단다(2026-09-02 회귀 수리): 달력 표면은 월 이동마다
@@ -4157,10 +4157,42 @@ export function PublicPoster({
   // 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.
   // 2026-08-31 사용자 결정: 한 줄로 압축(연·월 ↔ D+N) — '데뷔'·'오늘' 줄 삭제. 오늘 날짜는
   // 달력의 오늘 칸이 이미 말하고, 카드가 낮아진 만큼 생방송 미리보기가 위로 올라온다.
+  // 월 배지의 D+ 접기(2026-09-06 소유자: "D+340이 박스를 넘을 것 같으면 그 부분은 포기하고 2026년 08월만").
+  // 카드는 레일과 아바타 자리 **두 곳**에 같은 마크업으로 뜨므로 ref 하나로는 못 잡는다 — 문서에서 전부 찾아 각각 잰다.
+  // 재는 법: D+를 **보이는 상태로** 필요한 폭(`scrollWidth`)을 한 번 재어 기억해 두고, 그보다 좁아지면 접는다.
+  // 접힌 뒤에는 `scrollWidth`가 줄어 스스로 못 펴므로 기억한 값과 현재 폭을 비교해 되편다(2px 여유 = 깜빡임 방지).
+  useEffect(() => {
+    let busy = false;
+    const measure = () => {
+      if (busy) return; // 접었다 펴는 동안 관찰자가 되울리는 것을 막는다
+      busy = true;
+      document.querySelectorAll<HTMLElement>(".ric-month").forEach((el) => {
+        if (!el.isConnected || el.clientWidth <= 0) return; // 떼어진 노드·미레이아웃은 재지 않는다(ResizeObserver 0×0 함정)
+        // **잠깐 펴서 실측한다**: 접힌 폭을 기억해 두는 방식은 D+ 자릿수가 바뀌면 낡은 값이 남아 영영 다시 안 펴진다.
+        // 쓰기와 읽기가 같은 태스크 안이라 그 사이에 페인트가 없다 — 깜빡이지 않는다.
+        delete el.dataset.fit;
+        if (el.scrollWidth > el.clientWidth + 1) el.dataset.fit = "0";
+      });
+      busy = false;
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    document.querySelectorAll<HTMLElement>(".rail-info-card").forEach((el) => ro.observe(el));
+    window.addEventListener("resize", measure);
+    const t = window.setTimeout(measure, 600); // 웹폰트가 늦게 오면 글자 폭이 바뀐다
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+      window.clearTimeout(t);
+    };
+  });
+
   const railInfoCard = (() => {
     const dplus = debutDPlus(today);
     return (
       <div className="rail-info-card">
+        {/* 좁아지면 D+를 포기하고 연·월만 남긴다(2026-09-06 소유자) — `data-fit`은 아래 `ricFitRef` 계측이 붙인다.
+            두 글자 모두 nowrap이라 자리가 없으면 카드를 넘치는데, 주인공은 '보고 있는 달'이지 D+가 아니다. */}
         <span className="ric-month">
           <b>
             {view.year}년 {String(view.month).padStart(2, "0")}월

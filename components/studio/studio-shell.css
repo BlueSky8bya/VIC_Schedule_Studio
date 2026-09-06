@@ -5750,9 +5750,11 @@ html[data-reduce-motion] .editor-anchor-link line {
 }
 
 .studio-weekdays span {
-  padding: 9px 5px;
+  /* 확대(--cal-zoom)에 **함께 커진다**(2026-09-06 소유자: "달력 확대할 때 위에 월~일 요일 글자도 같이").
+     칸·날짜·띠는 이미 배율을 받는데 머리글만 고정이면 200%에서 요일이 각주처럼 보인다. 여백도 같은 배율. */
+  padding: calc(9px * var(--cal-zoom, 1)) calc(5px * var(--cal-zoom, 1));
   /* 요일 헤더 — vw 기준(화면 폭). 일정 글자와 같은 박자. cqi가 아니라 패널 여닫음에 안 흔들린다. */
-  font-size: clamp(13px, 0.8vw, 18px);
+  font-size: calc(clamp(13px, 0.8vw, 18px) * var(--cal-zoom, 1));
   font-weight: 800;
   letter-spacing: 0.06em;
   text-align: center;
