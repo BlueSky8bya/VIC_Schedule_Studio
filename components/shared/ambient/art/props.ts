@@ -52,17 +52,28 @@ export function propShadow(g: CanvasRenderingContext2D, x: number, y: number, r:
 
 // 자리 점유 — 큰 소품끼리 겹쳐 놓이면 "바위가 그루터기를 뚫고 나온" 그림이 된다(2026-09-04 소유자).
 // 장면의 bake() 시작에서 resetPropField(), 놓기 전에 claimSpot()으로 자리를 잡는다. 결정적 rng 순서는 호출 쪽 책임.
-let propField: { x: number; y: number; r: number; stand?: boolean }[] = [];
+let propField: { x: number; y: number; r: number; stand?: boolean; hy?: number }[] = [];
 export const resetPropField = () => {
   propField = [];
 };
 /** 지금까지 잡힌 자리들(읽기 전용) — 버섯처럼 **다른 소품에 기대어** 놓아야 하는 것이 앵커를 고를 때 쓴다. */
-export const propSpots = (): readonly { x: number; y: number; r: number; stand?: boolean }[] => propField;
+export const propSpots = (): readonly { x: number; y: number; r: number; stand?: boolean; hy?: number }[] => propField;
+/** (x, y)가 서 있는 소품의 **몸통 뒤**인가(라운드 12, 우선순위 C — 검토 B 부록 C `behindStand`). 풀포기·억새는 자리를 잡지 않고
+ *  이것만 물어, 참이면 그 포기를 건너뛴다 — 풀 층이 소품 위에 그려지는 순서에서 몸통을 뚫고 올라오는 포기가 사라진다.
+ *  몸통 = 발 y에서 위로 hy(실루엣 높이) · 좌우 r. 앞(y > prop.y + 4)에 서는 포기는 허용(발치를 가리는 건 맞다). */
+export function behindStand(x: number, y: number): boolean {
+  for (const o of propField) {
+    if (!o.stand) continue;
+    const hy = o.hy ?? o.r * 2;
+    if (Math.abs(x - o.x) < o.r && y < o.y + 4 && y > o.y - hy) return true;
+  }
+  return false;
+}
 /** 반경 r인 자리를 (x,y)에 잡는다. 이미 찬 자리면 false — 호출 쪽이 다른 후보로 다시 시도한다.
  *  `stand`(서 있는 것: 나무·관목·그루터기)면 **화면 실루엣 기준 세로 여유**를 따로 요구한다 —
  *  발자국(땅 평면)의 눌림 보정 `/0.7`은 서 있는 것에는 틀린다. 실측(라운드 6 B #12): 같은 열에 선 두 오크가
  *  발 간격 dy 45px·면적 겹침 13%로 규칙을 통과했는데 뒤 나무 줄기가 100% 가려져 "한 그루의 이층 수관"이 됐다. */
-export function claimSpot(x: number, y: number, r: number, stand = false): boolean {
+export function claimSpot(x: number, y: number, r: number, stand = false, hy?: number): boolean {
   for (const o of propField) {
     const dx = x - o.x;
     const dy = (y - o.y) / 0.7; // 3/4 시점: 세로로 눌린 발자국 기준
@@ -71,9 +82,14 @@ export function claimSpot(x: number, y: number, r: number, stand = false): boole
     if (stand && o.stand) {
       const far = Math.max(r, o.r);
       if (Math.abs(dx) < 0.6 * far && Math.abs(y - o.y) < 0.55 * (r + o.r)) return false;
+      // **실루엣 높이 규칙**(라운드 12, 검토 B 라운드 10 #2·부록 C): 반지름만 보면 dy 17·dx 5인 두 바위가 통과해 위 바위의 발이
+      // 아래 바위 몸통 안에 놓였다(1:2.7 수관의 침엽수도 마찬가지). 뒤(y 작은) 것의 발이 앞 것의 몸통 사각(발 위 .9·hy) 안이면 거부.
+      const near = y > o.y ? { y, hy: hy ?? r * 2, r } : { y: o.y, hy: o.hy ?? o.r * 2, r: o.r };
+      const farY = y > o.y ? o.y : y;
+      if (Math.abs(dx) < 0.8 * (r + o.r) && farY > near.y - 0.9 * near.hy && farY <= near.y + 4) return false;
     }
   }
-  propField.push({ x, y, r, stand });
+  propField.push({ x, y, r, stand, hy });
   return true;
 }
 const SCALE = 2;
@@ -1003,6 +1019,7 @@ export function scatterProps(
   // 밀도가 1.26배가 돼 "벽지"가 된다(검토 A ④-4). 작은 것(풀·꽃·낙엽)은 그대로 둔다 — 땅이 좁아진 만큼 촘촘해지는 편이
   // 옛 "빈 갈색 판" 지적을 덜어 준다.
   const gk = (h - h * HORIZON_V) / (h * 0.88);
+  const cands: { id: string; x: number; y: number; k: number; v: number; flip: boolean }[] = [];
   for (const it of list) {
     const n = Math.max(1, Math.round(it.n * gk));
     for (let i = 0; i < n; i++) {
@@ -1036,12 +1053,20 @@ export function scatterProps(
       const flip = r() < 0.5;
       // 아트가 있으면 아트, 없으면 대체물이 있는 자리만(대체물조차 없으면 건너뛴다 — rng 소비는 위에서 이미 같다).
       if (!(art && art.has(it.id)) && !fallbackSprite(it.id, 0)) continue;
-      const slot = artSlot(it.id);
-      // 겹침 방지 — 찬 자리면 이 개체는 거른다(같은 rng 소비를 유지하려고 재추첨은 하지 않는다).
-      if (!claimSpot(x, y, ((slot?.px[0] ?? 32) * k) / 2)) continue;
-      if (slot?.view === "stand") propShadow(g, x + 2, y - 2, slot.px[0] * 0.45 * k, 0.16);
-      drawProp(g, art, it.id, x, y, { k, r: v, flip });
+      cands.push({ id: it.id, x, y, k, v, flip });
     }
+  }
+  // **y로 정렬해 점유·그리기**(2026-09-06 라운드 12, 검토 B #2): 옛 코드는 리스트 순서(rock → shrub)로 그려 뒤에 놓인 관목이
+  // 앞 바위를 덮을 수 있었다(A-3). 후보 생성(rng 소비)은 위에서 끝났으므로 정렬은 결정성을 깨지 않는다. 먼 것부터 자리를 잡고 그린다.
+  cands.sort((a, b) => a.y - b.y);
+  for (const c of cands) {
+    const slot = artSlot(c.id);
+    // 겹침 방지 — 찬 자리면 이 개체는 거른다(재추첨은 하지 않는다).
+    // 서 있는 슬롯은 자동으로 stand + 실루엣 높이(라운드 12): 바위·관목·그루터기·통나무가 stand=false로 등록돼 세로 검사를 빠져나갔다.
+    const isStand = slot?.view === "stand";
+    if (!claimSpot(c.x, c.y, ((slot?.px[0] ?? 32) * c.k) / 2, isStand, isStand ? (slot?.px[1] ?? 32) * c.k : undefined)) continue;
+    if (isStand) propShadow(g, c.x + 2, c.y - 2, (slot?.px[0] ?? 32) * 0.45 * c.k, 0.16);
+    drawProp(g, art, c.id, c.x, c.y, { k: c.k, r: c.v, flip: c.flip });
   }
 }
 

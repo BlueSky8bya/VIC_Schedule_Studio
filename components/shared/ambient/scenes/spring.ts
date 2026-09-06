@@ -28,7 +28,7 @@ import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
-import { drawProp, propShadow, resetPropField, scatterProps } from "../art/props";
+import { behindStand, claimSpot, drawProp, propShadow, propSpots, resetPropField, scatterProps } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
 import type { DayBand } from "../world/time";
 import type { Weather } from "../world/weather";
@@ -297,6 +297,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         const x = cx3 + (g0() - 0.5) * 190;
         const y = cy3 + (g0() - 0.5) * 90;
         const k = (0.9 + g0() * 0.8) * depthScale(y, h);
+        if (!claimSpot(x, y, 31 * k, true, 66 * k)) continue; // 라운드 12(B 부록 C #6): 관목 무리가 입구를 안 거쳤다
         propShadow(g, x + 5 * k, y - 2, 20 * k, 0.16, GROUND_SQUASH * 0.5, "70 86 58");
         drawProp(g, groundArt, summer ? "shrub-summer" : "shrub-spring", x, y, { k, r: g0(), flip: g0() < 0.5 });
       }
@@ -328,14 +329,25 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       const x = cx + (g0() - 0.5) * spread * 2;
       // 무리의 세로 퍼짐을 늘려 원경 밴드(v 0~0.35)까지 덮는다 — 화면 위 40%가 빈 초록 벽이었다(미관 #10).
       const y = cy + (g0() - 0.5) * spread * 1.9;
-      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (summer ? 0.9 + g0() * 1.3 : 0.5 + g0() * 0.85) * depthScale(y, h) * smallK(y), r: g0(), flip: g0() < 0.5, alpha: 0.7 + g0() * 0.3 });
+      const kk = (summer ? 0.9 + g0() * 1.3 : 0.5 + g0() * 0.85) * depthScale(y, h) * smallK(y);
+      const rv = g0();
+      const fl = g0() < 0.5;
+      const al = 0.7 + g0() * 0.3;
+      if (behindStand(x, y)) continue; // 라운드 12: 풀 층이 관목·바위 위에 그려진다 — 몸통 뒤 포기는 건너뛴다(rng 소비는 위에서 이미 같다)
+      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: kk, r: rv, flip: fl, alpha: al });
     }
     if (summer) {
       // 키큰 풀(강아지풀) — 여름 초원의 표지. 흔들리는 층(blades)에 같이 심어 바람에 함께 눕는다.
       const tall = Math.round((w * h) / 9000);
       for (let i = 0; i < tall; i++) {
         const y = groundY(0.06 + g0() * 0.96);
-        drawProp(b.g, groundArt, "grass-tall", g0() * w, y, { k: (0.85 + g0() * 0.75) * depthScale(y, h) * smallK(y), r: g0(), flip: g0() < 0.5, alpha: 0.82 + g0() * 0.18 });
+        const tx = g0() * w;
+        const tk = (0.85 + g0() * 0.75) * depthScale(y, h) * smallK(y);
+        const tr = g0();
+        const tf = g0() < 0.5;
+        const ta = 0.82 + g0() * 0.18;
+        if (behindStand(tx, y)) continue; // 라운드 12 after: 키큰 풀이 관목 몸통을 뚫었다(s16 16/708 불변)
+        drawProp(b.g, groundArt, "grass-tall", tx, y, { k: tk, r: tr, flip: tf, alpha: ta });
       }
     }
     blades = b.c;
@@ -1597,6 +1609,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     },
     debug() {
       return {
+        spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)]),
         flies: flies.map((b) => [Math.round(b.x), Math.round(b.y), b.flee > 0 ? 1 : 0, b.state]),
         sparks: sparks.length,
         fled: fleeCount,

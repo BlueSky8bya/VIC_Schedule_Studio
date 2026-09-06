@@ -11,7 +11,7 @@ import type { Frame, Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet, drawArt } from "../art/load";
-import { claimSpot, drawProp, drawSubmerged, propShadow, resetPropField, scatterProps, setPropShadow, propSpots } from "../art/props";
+import { behindStand, claimSpot, drawProp, drawSubmerged, propShadow, propSpots, resetPropField, scatterProps, setPropShadow } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, aboveHz, bakeHorizon, depthFade, depthScale, hillCrestY, horizonY } from "../world/view";
@@ -192,6 +192,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     tuftAt(g, x, y, k0 * (0.55 + r() * 1.0) * depthScale(y, h) * smallK(y), r(), r() < 0.5, alpha * (0.75 + r() * 0.25));
   }
   function tuftAt(g: CanvasRenderingContext2D, x: number, y: number, k: number, v: number, flip: boolean, alpha = 1) {
+    // 소품 몸통 **뒤**에 서는 포기는 건너뛴다(라운드 12, 검토 B 라운드 10 #1: 풀 층이 구운 소품 위에 그려져 바위·관목·소나무를 뚫었다).
+    if (behindStand(x, y)) return;
     const tk = season === "winter" ? k * 0.6 : k;
     drawProp(g, art, green ? "grass-tuft" : "grass-dry", x, y, { k: tk, r: v, flip, alpha });
     if (season !== "winter") return;
@@ -397,7 +399,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
             const y = hillRidge(c2, x) + 12 + (g0() - 0.5) * 24;
             void cy2;
             const k = (0.7 + g0() * 0.9) * depthScale(y, h);
-            if (!claimSpot(x, y, 18 * k)) continue;
+            if (!claimSpot(x, y, 18 * k, true, 30 * k)) continue; // 라운드 12 after: stand·hy 없이 등록된 언덕 노두는 실루엣 규칙·behindStand를 둘 다 비켜갔다(s15 4/99 불변)
             shadow(g, x + 3 * k, y, 20 * k, 0.14);
             drawProp(g, art, "rock", x, y, { k, r: g0(), flip: g0() < 0.5 });
           }
@@ -406,10 +408,13 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         const tx = w * (0.2 + g0() * 0.6);
         const ty = hillRidge(0, tx) + 2 + g0() * 8; // 능선 위 단독 나무 — 발이 능선선에(B#4: 옛 −64px)
         const tk = (0.7 + g0() * 0.3) * depthScale(ty, h);
+        const rv = g0();
+        const fl = g0() < 0.5;
+        // 라운드 12(B #1): 능선 위 나무도 필드에 등록 — 노두·풀이 그 몸통을 뚫지 않게. 실패해도 나무는 세운다(초점이라 생략 불가) — 자리만 밀어 넣는다.
+        claimSpot(tx, ty, 30 * tk, true, 75 * tk);
         shadow(g, tx + 6 * tk, ty - 2, 46 * tk, 0.15);
-        drawProp(g, art, season === "winter" ? "tree-oak-winter" : `tree-oak-${season}`, tx, ty, { k: (tk * SIZE.treeCrownW * 1.1) / 120, r: g0(), flip: g0() < 0.5 });
+        drawProp(g, art, season === "winter" ? "tree-oak-winter" : `tree-oak-${season}`, tx, ty, { k: (tk * SIZE.treeCrownW * 1.1) / 120, r: rv, flip: fl });
       }
-      bakeGrass(Math.round((w * h) / (season === "winter" ? 6400 : 3400)), 1.1, 0.9);
       if (season === "spring") {
         // 봄 언덕 = 야생화가 흔한 새 풀밭(여름과 확실히 갈리게 밀도를 올린다).
         const nd = Math.round((w * h) / 26000);
@@ -470,6 +475,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         }
       }
             scatterProps(g, art, w, h, g0, [{ id: "rock", n: 9, band: "any" }, { id: `shrub-${season}`, n: 5, band: "any" }]);
+      // 풀은 **소품이 전부 자리를 잡은 뒤**에 굽는다(라운드 12 after: 앞에서 구우면 `behindStand`가 빈 필드를 봐 관통이 그대로였다 — s15 4/99 불변).
+      bakeGrass(Math.round((w * h) / (season === "winter" ? 6400 : 3400)), 1.1, 0.9);
     } else if (kind === "forest") {
       // 빈터 — 가운데는 그늘(이끼·솔잎), 가장자리는 어둡게. 나무 그늘이 좌우에서 안쪽으로 번진다.
       // 빈터 그늘 — 계절색(초록 고정이면 눈밭·가을 숲 한가운데 초록 얼룩이 생긴다, 검토 3차).
@@ -531,8 +538,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           g.stroke();
         }
       }
-      bakeGrass(Math.round((w * h) / 3200), 0.85, 0.6);
       scatterProps(g, art, w, h, g0, [{ id: "stump", n: 6, band: "any" }, { id: "log", n: 5, band: "any" }, { id: "rock", n: 12, band: "any" }, { id: `shrub-${season}`, n: 10, band: "any" }]);
+      bakeGrass(Math.round((w * h) / 3200), 0.85, 0.6); // 소품 뒤에(라운드 12 after — behindStand가 필드를 봐야 한다)
       if (season === "winter") {
         // 그루터기·통나무의 **수평 윗면**은 눈이 가장 잘 쌓이는 면이다 — 맨 나무색으로 남으면 계절이 깨진다
         // (검토 라운드2 현실성 #9). scatterProps와 같은 rng 흐름 밖이라 자리는 근사치로 흩뿌린다.
@@ -1001,7 +1008,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           const x = stream[ii].x + nx * off;
           const y = stream[ii].y + ny * off;
           const k = (0.9 + g0() * 0.8) * depthScale(y, h);
-          if (!claimSpot(x, y, 20 * k)) continue;
+          if (!claimSpot(x, y, 20 * k, true, 30 * k)) continue; // 라운드 12 after: 계곡/숲 바위도 stand·hy
           shadow(g, x + 2, y - 1, 30 * k, 0.16);
           drawProp(g, art, "rock", x, y, { k, r: g0(), flip: b.side < 0 });
         }
@@ -1074,8 +1081,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           const y = stream[i2].y + ny * off;
           if (y < gy() + 10 || y > h - 4 || x < 0 || x > w) continue;
           const k = (0.5 + g0() * 0.7) * depthScale(y, h) * smallK(y);
-          if (g0() < 0.24) drawProp(g, art, `shrub-${season}`, x, y, { k: k * 0.9, r: g0(), flip: g0() < 0.5 });
-          else drawProp(g, art, season === "winter" || season === "autumn" ? "grass-dry" : "grass-tuft", x, y, { k: k * 1.5, r: g0(), flip: g0() < 0.5, alpha: 0.9 });
+          if (g0() < 0.24) {
+            // 라운드 12(B 부록 C #2): 수변 관목이 둔치 바위 위에 그려졌다 — 자리 점유 경유.
+            if (!claimSpot(x, y, 14 * k, true, 60 * k)) continue;
+            drawProp(g, art, `shrub-${season}`, x, y, { k: k * 0.9, r: g0(), flip: g0() < 0.5 });
+          } else {
+            if (behindStand(x, y)) continue;
+            drawProp(g, art, season === "winter" || season === "autumn" ? "grass-dry" : "grass-tuft", x, y, { k: k * 1.5, r: g0(), flip: g0() < 0.5, alpha: 0.9 });
+          }
         }
       }
       // ⑪ 상류 끝을 안개에 녹인다 — 물길이 지평선 바로 아래에서 딱 끝나면 "잘린 리본"이 된다.
@@ -1437,13 +1450,12 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       if (snowy) for (let i = 0; i < Math.round((w * h) / 50000); i++) softBlob(g, g0() * w, groundY(0.35 + g0() * 0.6), 60 + g0() * 120, "255 255 255", season === "winter" ? 0.18 : 0.14, 0, GROUND_SQUASH);
       // 너덜지대 — 큰 바위 무리(대체물도 그림자·지면 접점이 있다). 옛 임시 그라데이션 타원은 "공중의 검은 얼룩"이라 철거.
       scatterProps(g, art, w, h, g0, [{ id: "rock", n: 10, band: "any", minV: 0.36 }, { id: "grass-dry", n: 34, band: "any", minV: 0.34 }]); // minV .3 → .36(B: ② 능선면에 바위 금지, ③은 v ≥ .34)
-      bakeGrass(Math.round((w * h) / 5000), 0.8, 0.65); // 산자락 마른 억새 — /7000·α.5는 맑은 점심 1초 2,103px로 하한(3,000) 미달이었다(라운드 9, C)
       // 고지의 노출암·너덜 — 지평선 바로 아래가 통째로 빈 안개였다(검토 라운드2 현실성 #5).
       for (let i = 0; i < 16; i++) {
         const y = groundY(0.34 + g0() * 0.16); // 능선 실루엣 아래로 — 위에 두면 하늘에 자갈이 뜬다
         const k = (0.35 + g0() * 0.3) * depthScale(y, h);
         const x = g0() * w;
-        if (!claimSpot(x, y, 16 * k)) continue;
+        if (!claimSpot(x, y, 16 * k, true, 26 * k)) continue; // 라운드 12 after: 산 너덜도 stand·hy
         shadow(g, x + 2 * k, y, 18 * k, 0.12);
         drawProp(g, art, "rock", x, y, { k, r: g0(), flip: g0() < 0.5 });
       }
@@ -1453,9 +1465,12 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         const x = 40 + g0() * (w - 80);
         const y = groundY(0.38 + g0() * 0.4);
         const k = (1.0 + g0() * 0.45) * depthScale(y, h);
+        if (!claimSpot(x, y, 20 * k, true, 30 * k)) continue; // 라운드 12: 큰 바위 6개가 입구를 안 거쳤다(B 부록 C #1)
         shadow(g, x + 2 * k, y + 1.5 * k, Math.min(36, 22 * k), 0.14);
         drawProp(g, art, "rock", x, y, { k, r: g0(), flip: g0() < 0.5 });
       }
+      // 풀은 너덜·큰 바위가 자리를 잡은 **뒤**에(라운드 12 after: 앞에서 구우면 behindStand가 빈 필드를 봐 s09 관통 10/271이 그대로였다).
+      bakeGrass(Math.round((w * h) / 5000), 0.8, 0.65); // 산자락 마른 억새 — /7000·α.5는 맑은 점심 1초 2,103px로 하한(3,000) 미달이었다(라운드 9, C)
       // 산지림 띠 — 고도가 낮을수록(= 화면 아래일수록) 숲이다. 침엽수를 근경에 무리로 세워 "평지 + 배경 그림판"을
       // 벗어난다(검토 라운드2 현실성 #5). 위(고지)는 나지·애추 그대로 둔다.
       {
@@ -1490,7 +1505,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         }
         belt.sort((a2, b2) => a2.y - b2.y);
         for (const t2 of belt) {
-          if (!claimSpot(t2.x, t2.y, 26 * t2.k, true)) continue;
+          if (!claimSpot(t2.x, t2.y, 26 * t2.k, true, 95 * t2.k)) continue; // 라운드 12(A #1): 산 벨트 소나무도 실루엣 높이(≈ 3.65 × 반폭)
           shadow(g, t2.x + 6 * t2.k, t2.y - 2, 40 * t2.k, 0.15);
           drawProp(g, art, pineId, t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
         }
@@ -1513,7 +1528,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       const putTree = (pick: () => { x: number; y: number; R: number; pine: boolean }, clearance: number, tries = 10) => {
         for (let t2 = 0; t2 < tries; t2++) {
           const cand = pick();
-          if (!claimSpot(cand.x, cand.y, cand.R * clearance, true)) continue; // stand = 서 있는 것끼리 세로 여유(라운드 7)
+          // 라운드 12(검토 A #1 · B 부록 C): 세로 여유가 수관 반지름만 봐서 높이 100~150px 소나무가 30px 간격으로 적재됐다("토템").
+          // 실루엣 높이 hy = 소나무 3.6R · 참나무 2.5R(매니페스트 pine [92,168] · oak [120,150]).
+          if (!claimSpot(cand.x, cand.y, cand.R * clearance, true, cand.R * (cand.pine ? 3.6 : 2.5))) continue; // stand = 서 있는 것끼리 세로 여유(라운드 7)
           trees.push(cand);
           return true;
         }
@@ -1611,14 +1628,21 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         const x = g0() * w;
         const y = groundY(0.02 + g0() * 0.52);
         const R = Math.round((SIZE.treeCrownW / 2) * (0.5 + g0() * 0.32) * depthScale(y, h));
-        if (!claimSpot(x, y, R * 0.7, true)) continue;
-        trees.push({ x, y, R, pine: g0() < 0.18 });
+        const pineHere = g0() < 0.18;
+        if (!claimSpot(x, y, R * 0.7, true, R * (pineHere ? 3.6 : 2.5))) continue;
+        trees.push({ x, y, R, pine: pineHere });
       }
       // 양쪽 벽 위 — 계곡을 액자처럼 두르는 두 줄(벽이 넓은 위쪽 절반에만).
       for (const side of [0.03, 0.97]) {
         for (let i = 0; i < 4; i++) {
           const y = groundY(0.08 + i * 0.11 + g0() * 0.06);
-          trees.push({ x: w * side + (g0() - 0.5) * 70, y, R: Math.round((SIZE.treeCrownW / 2) * (0.7 + g0() * 0.3) * depthScale(y, h)), pine: g0() < 0.25 });
+          {
+            // 라운드 12(A #1): 계곡 벽 위 나무가 자리 점유를 안 거쳤다 — 같은 열 적재의 한 출처.
+            const tx = w * side + (g0() - 0.5) * 70;
+            const tR = Math.round((SIZE.treeCrownW / 2) * (0.7 + g0() * 0.3) * depthScale(y, h));
+            const tPine = g0() < 0.25;
+            if (claimSpot(tx, y, tR * 0.7, true, tR * (tPine ? 3.6 : 2.5))) trees.push({ x: tx, y, R: tR, pine: tPine });
+          }
         }
       }
       trees.sort((a, b) => a.y - b.y);
@@ -1762,7 +1786,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     //  · 산: ③ 애추 띠 윗변 — 안개가 층 **사이**(② 발치)에 쌓인다(MOUNTAIN §4). 없으면 평지.
     //  · 계곡: 그 열에서 가장 가까운 유로 점의 y — 안개가 계곡 바닥에 눕는다.
     //  · 숲: 평지(엔진 기본).
-    fogFloor(x, f) {
+    fogFloor(x) {
       if (kind === "hill" && hillRidgeFn) return hillRidgeFn(1, x);
       if (kind === "mountain" && screeBand) return screeBand.top(x);
       if (kind === "valley" && stream.length) {
@@ -1777,13 +1801,17 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         }
         return best.y;
       }
-      return f.h; // 평지 — 엔진이 groundYAt(v)로 대신한다(아래를 바닥으로 보면 고도항 1)
+      // 평지(숲) — **NaN**을 돌려줘야 엔진이 groundYAt(v)로 대신한다(2026-09-06 라운드 12, 검토 C #2: `f.h`를 돌려주니 실수라 그대로
+      // 바닥으로 쓰여 lift = h − y > 0 전 행 → 숲의 밀도장이 설계의 12%로 꺼졌고 발치가 중경보다 짙은 역전이 남았다).
+      return Number.NaN;
     },
     fogFloorKey(f) {
-      return `${kind}:${f.w}:${f.h}`;
+      // 바닥 데이터 준비 여부도 키에(C #2): 첫 굽기가 "바닥 없음"으로 캐시돼 굳지 않게.
+      return `${kind}:${f.w}:${f.h}:${hillRidgeFn ? 1 : 0}${screeBand ? 1 : 0}${stream.length ? 1 : 0}`;
     },
     debug() {
-      return { biomeKind: kind, trees: trees.length, season };
+      // spots: 검사 도구가 overlapRatio(필드 쌍 dist < .7·(r1+r2))를 정확히 재도록 노출(라운드 12, 검토 B 부록 A).
+      return { biomeKind: kind, trees: trees.length, season, spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)]) };
     }
   };
 }

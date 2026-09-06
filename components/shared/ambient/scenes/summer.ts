@@ -29,7 +29,7 @@ import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, t
 import { bakeShore, bakeTraces, drawTraces, shoreBandY, shoreEdgeOffset, shoreLandEdge, type TraceBakes } from "../world/traces-draw";
 import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
-import { drawProp, drawSubmerged } from "../art/props";
+import { claimSpot, drawProp, drawSubmerged, propSpots, resetPropField } from "../art/props";
 import { SIZE } from "../world/scale";
 import { currentLight } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
@@ -235,6 +235,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   }
   function bake() {
     if (stampSpr) return;
+    resetPropField(); // 라운드 12(B 부록 C): 민물만 필드를 안 비워 **이웃 바이옴의 자리**를 그대로 봤다
     // 거품 = 옅은 물빛 무리 + 흰 거품(2026-09-04 사용자: "너무 진해서 어색한 부분이 보인다 — 흐릿하게 글러듯"). 진한 파랑은
     // 쓰지 않고, 흐림은 저해상 레이어 배율(ensureLo)로 낸다.
     const { c, g } = makeCanvas(STAMP_SPR, STAMP_SPR);
@@ -463,10 +464,16 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           // 아트가 없으면 대체물로 — 옛 코드는 아트 전용이라 기슭이 늘 맨땅이었다(검토 4차).
           // 발은 **x별 물가 선 위**(edge + shoreEdgeOffset)에 — 옛 평평한 `edge − 2`는 물가가 높은 x에서 소품 발이 물에 들어갔다(AMB-S4-04, 라운드 2 B#4·3 B).
           const stand = (id: string, n: number, k: number, rr?: number) => {
+            const slot = artSlot(id);
             for (let i = 0; i < n; i++) {
               const sx = 30 + r0() * (w - 60);
               const sy = edge + shoreEdgeOffset(sx, w, groundK(h)) - 6 - r0() * 10;
-              drawProp(sg, shoreArt, id, sx, sy, { k: k * (0.85 + r0() * 0.3), r: rr ?? r0(), flip: r0() < 0.5 });
+              const kk = k * (0.85 + r0() * 0.3);
+              const rv = rr ?? r0();
+              const fl = r0() < 0.5;
+              // 라운드 12(B 부록 C #3): 기슭 소품이 자리 점유를 안 거쳐 서로 겹쳤다. 실패하면 그 개체만 생략(rng 소비 유지).
+              if (!claimSpot(sx, sy + shoreY(), ((slot?.px[0] ?? 32) * kk) / 2, true, (slot?.px[1] ?? 32) * kk)) continue;
+              drawProp(sg, shoreArt, id, sx, sy, { k: kk, r: rv, flip: fl });
             }
           };
           // 갈대·억새 — 여름·봄은 초록 변형(r < .5), 가을·겨울은 마른 변형(r ≥ .5).
@@ -497,6 +504,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             const cx3 = w * (0.16 + r2() * 0.7);
             const cy3 = MH * (0.16 + r2() * 0.5);
             const R = 50 + r2() * 60;
+            // 라운드 12(B #1): 섬을 필드에 등록(납작한 것 — stand 아님) — 앵커 바위가 섬 윗변에 발을 걸치지 않게. 오프스크린 y → 화면 y는 + shoreY().
+            claimSpot(cx3, cy3 + shoreY(), R * 0.72);
             // 섬의 반지름을 **한 함수로** — 다각형과 갈대 자리가 같은 경계를 봐야 한다(2026-09-06 라운드 9, 검토 B:
             // 갈대 8획 중 5획이 섬 **밖** 물 위에서 시작했다. `d ≤ R·0.72`인데 경계는 0.2R까지 좁아진다).
             const rrAt = (a3: number) => R * (0.62 + 0.3 * Math.sin(a3 * 2.3 + c2) + 0.12 * Math.sin(a3 * 5.1));
@@ -566,6 +575,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           // 물 위 앵커도 x별 물가 선 아래(+24)에만 — 기슭이 깊이 내려오는 x에서 바위가 뭍에 얹혔다(AMB-S4-04, 라운드 3 B).
           const y = Math.max(waterTopAt(x) + 24 - shoreY(), MH * (0.22 + r2() * 0.6));
           const k = 0.9 + r2() * 0.9;
+          // 라운드 12(B #1): 잠긴 바위도 필드 경유 — 섬·다른 바위와 겹치면 이 바위는 생략(rng 소비는 아래 rockRing 등에서 계속 같게 흐른다).
+          if (!claimSpot(x, y + shoreY(), 17 * k, true, 30 * k)) continue;
           // 수면선의 뒤 반원 — 바위보다 **먼저**(뒤쪽은 몸에 가려야 한다, 2026-09-05 소유자).
           const rockRing = (a0: number, a1: number) => {
             mg2.strokeStyle = season === "winter" ? "rgb(226 238 248 / 0.85)" : "rgb(255 255 255 / 0.5)";
@@ -1728,6 +1739,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     debug() {
       const duck = props.find((q) => q.kind === "duck");
       return {
+        spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)]),
         path: path.length,
         stamps: stamps.length,
         stamped,

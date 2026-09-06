@@ -2,7 +2,7 @@
 
 > 현재 시제. 라운드가 끝날 때마다 갱신한다. 절차는 [VISUAL_QA_PROTOCOL](VISUAL_QA_PROTOCOL.md), 판정 기준은 [IMMERSION_BREAK_RULES](IMMERSION_BREAK_RULES.md).
 
-Last Updated: 2026-09-06 · 라운드: **11 완료**([rounds/ROUND-11.md](rounds/ROUND-11.md) — 우선순위 E: `groundFog` 박스 → **안개 밀도장** `world/fog.ts`(깊이항 × 고도항 `Scene.fogFloor(x)` × 노이즈, 1/8 해상) + `depthFade`·뭉치 연결 + fog desat .06 + 안개 하늘(원반 0 · 해/달 halo); 라운드 10 회귀 둘 닫음(가로 광 세로 램프 · 산 ①을 렌더 하늘 기준으로 — 밤 sky↔① 1.2 → 9.8); 라운드 1~10은 rounds/) · 다음: **라운드 12**(C 간격·레이어 — B 부록 C 명세)
+Last Updated: 2026-09-06 · 라운드: **12 완료**([rounds/ROUND-12.md](rounds/ROUND-12.md) — 우선순위 C: `claimSpot` **실루엣 높이 규칙** + `behindStand`(풀포기가 소품 몸통 뒤면 스킵 — 『풀 층은 옮기지 않는다』, B 판정) + 미경유 루프 7곳 경유 + `scatterProps` y 정렬 + 민물 필드 리셋 + `debug().spots`; **라운드 11 회귀 셋**(depthFade 안개항 = 투명 유령 · 평지 fogFloor `f.h` · **world-scene이 fogFloor를 위임하지 않아 고도항이 화면에 도달한 적 없음**) 닫음; 라운드 1~11은 rounds/) · 다음: **라운드 13**(D 해안 접촉 — 뭍 판 클립·lateRocks)
 
 ## 1. 상태
 
@@ -134,6 +134,7 @@ ID = `AMB-<범주>-<번호>`. 등급은 IMMERSION_BREAK_RULES 기준, 신뢰도�
 
 **라운드 11 결과(2026-09-06)**: 우선순위 E **안개 박스 → 밀도장** — 세 Inspector 모두 "안개장이 지형을 모른다"(A 16/16 안개 칸 균일 ΔC, B 행마다 7열 sd ≤ 1.5·산 ①②③④ 균등, C 단조 2/7·실루엣 언덕 16.0 → 1.6). `world/fog.ts` 신설: F(x,y) = 깊이항(단조) × 고도항(장면 `fogFloor(x)` — 언덕 능선·산 애추 윗변·계곡 유로·물가·해안선) × 노이즈 윗변, 1/8 해상; `depthFade`가 F를 읽어 개체 열 곳이 한 줄로 안개를 받고, 뭉치는 밀도 짙은 원·중경에서만(α ↑·속도 ↑·맥동); fog desat .2 → .06; 안개 하늘은 낱개 원반 0 + 해·달 halo. **라운드 10 회귀 둘 닫음**: 가로 광이 hz에서 풀 세기로 켜져 절단선(−2.5~−5.1) → 세로 램프 8단 + 날씨 계수; 밤 지평선 −17L 뒤 산 ①이 땅 앵커로만 구워져 sky↔① 1.2/1.9 → `estimateSky`(팔레트 × 오버레이 × far)로 천장, **9.8/6.0**(밤) · 8.8/10.9(새벽). 깊은 바다 후속(아침 기둥 3 · 밤 글로우 ×2). 실측: 발치 D 초원 .21 → .06 · 갯벌 .85 → .32 · 계곡 .79 → .34, 산 돌출 1.20 → .27, 산 원경 D 1.79 → 3.07, 민물 수면 .08 → .81(목표 ≥ 3 미달), 단조 4/7(지표의 바탕 명도 의존 — 라운드 12부터 잔차 밀도·실루엣 대비로 승격). 회귀 0 · 깊은 바다 고유 해시 6 ✔ · selftest ALL PASSED. 상세 [rounds/ROUND-11.md](rounds/ROUND-11.md).## 3. 파이프라인 TODO(PLAN-005 요약 — 상세는 계획서)
 
+**라운드 12 결과(2026-09-06)**: 우선순위 C **간격·레이어** — 세 Inspector 한 뿌리("소품 필드가 세로 실루엣과 풀 층을 모른다"). `claimSpot(x, y, r, stand, hy)` — 같은 열에서 뒤 것의 발이 앞 것의 몸통 사각(발 위 .9·hy) 안이면 거부(옛 규칙은 수관 반지름만 봐서 dy 17 바위 쌍·30px 간격 소나무 4그루가 통과); `behindStand(x, y)`로 풀포기·억새는 소품 몸통 뒤면 건너뜀(B 판정: 풀 층 재배치 불필요 — 관통 획은 전부 뒤 뿌리, 앞 뿌리는 정상 가림); `scatterProps`는 stand 슬롯 자동 등록 + 후보를 y로 정렬해 그리기; 미경유 7곳 경유(산 큰 바위 · 계곡 수변 관목·풀 · 계곡 벽 나무 · 민물 기슭/섬/앵커 바위 · 초원 관목 무리 · 언덕 능선 나무) + 나무 `hy`(소나무 3.6R · 참나무 2.5R); `summer.ts` 필드 리셋; `debug().spots` 노출. **라운드 11 회귀 셋**(C): `depthFade` 안개항 제거(alpha = 투명 유령, α̂ 물체/지면비 계곡 2.99) · 평지 `fogFloor` `f.h` → NaN(숲 밀도장 12%) · **`world-scene.ts` fogFloor 위임 누락**(다섯 지면선이 화면에 도달한 적 없음 — 배선 뒤 계곡 중경 2.89 → 1.29, 언덕 능선 위 5.95 < 아래 7.57). 안개 halo α .35. 실측: 깊은 바다 아침→점심 채널 0 → 3, 밤 글로우 1.90 · hz 절단선 닫힘 유지 · 회귀 0(육지 움직임은 풀 스킵으로 10~25% 감소, 하한 유지) · selftest ALL PASSED. 상세 [rounds/ROUND-12.md](rounds/ROUND-12.md).
 - [x] P0 결정성(2026-09-05): `force.seed`·`band`·`season`·`weather`·`t`·`load`·`pointer` URL, `__vicAmbient.freeze/advance/forcePointer/ready`, `/visual-fixture/biome`, 셀프테스트 23/23
 - [x] P1 캡처(2026-09-05): `capture.mjs`(16 × 정적·시간 6·시간대 6·날씨 n) · `sheet.mjs`(시간·시간대·날씨·흑백) · `diff.mjs`(인접 프레임 히트맵 + 전/후 비교) — sharp 대신 브라우저 캔버스 합성
 - [ ] P2 전수 지표: `metrics.mjs`(조합 매트릭스 · 페이지 에러 · airWalk · overlapRatio · layerDeltaL · bandDelta · weatherDelta · loopSeam · forbiddenCombo) + 장면 `debug()`에 생물 위치·propField 노출
@@ -165,7 +166,7 @@ ID = `AMB-<범주>-<번호>`. 등급은 IMMERSION_BREAK_RULES 기준, 신뢰도�
 
 ## 6. 다음 세션 진입
 
-`docs/ambient/README.md` → 이 문서 §2 우선순위 → [rounds/ROUND-11.md](rounds/ROUND-11.md) "남긴 것" → **라운드 12**(프로토콜 §7 + 소유자 운영 규칙: Inspector ≤ 5건 · 메인 ≤ 2건/같은 뿌리 ≤ 3건; 첫 입구 = C 간격·레이어, B 라운드 11 부록 C 명세):
+`docs/ambient/README.md` → 이 문서 §2 우선순위 → [rounds/ROUND-12.md](rounds/ROUND-12.md) "남긴 것" → **라운드 13**(프로토콜 §7 + 소유자 운영 규칙; 첫 입구 = D 해안 접촉 — `coast.ts` 뭍 판 클립·`lateRocks`, B 라운드 10 #3):
 서버 기동(before = 라운드 5 커밋) → `npm run ambient:qa:selftest` → `capture --round 06 --phase before` **+ `--only 3,4 --kinds long`** → 시트·diff → `light-probe.mjs`
 → 세 에이전트 **동시**(서버 빌드 고정 — 에이전트가 끝난 뒤에만 재빌드) → 통합(P0 전부 + 입구 묶음 ≤ 4; 첫 후보 **AMB-T1-03 잔여**(그림자 코어) + **물가 접촉 묶음**) → 수정 → 게이트 → `--phase after` → `--compare before,after` → `rounds/ROUND-06.md`.
 산 층은 `.scratch-pw/r08b-mrects.mjs --hz 0.26 --win 0.45`(라운드 8 B 표준판 — 옛 `hz−6` 창은 봉우리를 놓친다.

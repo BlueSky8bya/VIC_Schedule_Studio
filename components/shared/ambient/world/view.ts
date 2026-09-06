@@ -10,10 +10,10 @@
 //  · 세계 좌표(정규화 u,v)는 지평선 아래 땅에 놓인다: toScreen(u, v) = (u·w, horizon + v·(h − horizon)).
 //  · 그리기 순서는 발 위치 y-sort(뒤가 앞에 가려진다).
 
-import { drawFogField, fogAt } from "./fog";
+import { drawFogField } from "./fog";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
-import { currentLight, isNeutralMul, type Light } from "./light";
+import { isNeutralMul, type Light } from "./light";
 
 export const GROUND_SQUASH = 0.7;
 export const HORIZON_V = 0.26;
@@ -95,11 +95,10 @@ export function moveScale(y: number, h: number): number {
 export function depthFade(y: number, h: number): number {
   const hz = horizonY(h);
   const t = Math.max(0, Math.min(1, (y - hz) / Math.max(1, hazeEndY(h) - hz)));
-  const base = 0.78 + 0.22 * t;
-  // 안개 날씨(라운드 11, 우선순위 E — C 처방 ⑤): 개체도 발 y의 **밀도장**만큼 더 옅다. 전 화면 오버레이 한 장은 근경 줄기를 원경만큼
-  // 들어 올렸다(계곡 근경 물체 +3.1L). 여기서 곱하면 나무·생물·낙엽·소품 그림자 열 곳이 한 줄로 안개를 받는다. 맑음(groundFog 0)은 항등.
-  const fog = currentLight().groundFog;
-  return fog > 0.001 ? base * (1 - 0.55 * fogAt(y, h, fog)) : base;
+  // 라운드 11이 넣었던 안개항(× (1 − .55·fogAt))은 **되돌렸다**(2026-09-06 라운드 12, 검토 C #1): alpha로 옅게 하면 물체가 안개에
+  // 잠기는 게 아니라 **투명**해져 뒤 땅이 비쳤다(α̂ 물체/지면비 계곡 2.99 · 숲 1.48, 수관이 밑동보다 밝아지는 유령 38/38). 밀도장은 이미
+  // 전 화면 위에 그려지므로 개체별 감쇠 없이도 잠긴다. 개체별 "안개색 혼합"이 필요하면 drawProp의 source-atop 사본으로(라운드 14).
+  return 0.78 + 0.22 * t;
 }
 
 const hazeCache = new Map<string, CanvasGradient>();

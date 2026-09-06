@@ -80,7 +80,7 @@ export function bakeFogField(w: number, h: number, f: number, rgb: string, floor
     const depth = y < hz ? fogDepth(0) * above : fogDepth(v);
     for (let i = 0; i < cw; i++) {
       const x = (i + 0.5) * SCALE;
-      const fl = Number.isNaN(floors[i]) ? groundYAt(Math.max(0, v), h) : floors[i];
+      const fl = Number.isFinite(floors[i]) ? floors[i] : groundYAt(Math.max(0, v), h); // NaN·∞ 전부 평지로(C #2 가드)
       // 고도항: 지면선보다 위로 뜬 만큼 옅어진다(저지대 체류). 지면선 아래(땅 속·물속)는 1.
       const lift = Math.max(0, fl - y);
       // 고도항은 **가까울수록** 예민하다(v^.6) — 원경(v → 0)에서는 지면선 위로 떠도 대기 자체가 두꺼워 거의 그대로다.

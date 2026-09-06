@@ -495,14 +495,14 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
       const sx = w * L.reflect.x;
       const sy = opts.sunY ?? Math.max(maxY * 0.55, maxY - 14);
       const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
-      softBlob(g, sx, sy, R * 9, band === "dusk" ? "240 228 224" : "236 238 240", 0.16, 0);
+      softBlob(g, sx, sy, R * 9, band === "dusk" ? "240 228 224" : "236 238 240", 0.35, 0); // .16 → .35(라운드 12 A: 해 자리 L +0.8 = "빛이 없다")
     } else if (band === "night") {
       const lit = moonLit(moonPhase(f.date.y, f.date.m, f.date.d));
       if (lit >= 0.04) {
         const mx = w * L.reflect.x;
         const my = opts.moonY ?? Math.min(maxY * 0.5, 34);
         const R = Math.max(7, Math.min(14, Math.round(maxY * 0.045)));
-        softBlob(g, mx, my, R * 7.5, "226 232 244", 0.08 + 0.1 * lit, 0);
+        softBlob(g, mx, my, R * 7.5, "226 232 244", 0.18 + 0.16 * lit, 0);
       }
     }
     return;

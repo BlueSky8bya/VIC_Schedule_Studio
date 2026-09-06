@@ -237,6 +237,15 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       },
       // 닫힌 방(깊은 바다)은 **멈췄을 때만** 봉인다 — 카메라가 두 장면을 걸치고 있는 동안에
       // 조명 패스를 끄면 이웃 바이옴 절반이 시간대를 잃는다(잠수하는 620ms는 그대로 밝기가 죽어간다).
+      // 안개 밀도장의 지면선(라운드 12, 검토 C #2 — **라운드 11의 배선 결함**): 세계 장면이 이걸 위임하지 않아 언덕 능선·산 애추·
+      // 계곡 유로·물가·해안선 다섯 지면선이 화면에 도달한 적이 없었다(숲 = 초원 α̂ 소수점까지 동일). 전이 중엔 평지(NaN).
+      fogFloor(x, f) {
+        if (trans) return Number.NaN;
+        return scenes.get(cur)?.scene.fogFloor?.(x, f) ?? Number.NaN;
+      },
+      fogFloorKey(f) {
+        return `${cur}:${trans ? "t" : scenes.get(cur)?.scene.fogFloorKey?.(f) ?? ""}`;
+      },
       sealed() {
         if (trans) return false;
         return scenes.get(cur)?.scene.sealed?.() ?? false;
