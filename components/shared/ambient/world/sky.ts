@@ -135,6 +135,8 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
       // 덩이 색도 **천정에서** 만든다(라운드 9, 검토 C: 밤 안개 덩이가 그 띠 천정보다 +52.6L 밝아 하늘에
       // 또렷한 흰 뭉게구름이 떴다 — "하늘이 보이지 않는 날"이 "맑은 날 + 안개 필터"로 읽혔다). cover도 .3 → .12.
       const ft = mix(top, [200, 206, 212], fkTop);
+      // cover .12는 유지(규칙 "하늘은 어느 날씨에도 완전히 비지 않는다") — 대신 `bakeClouds`가 **안개에선 낱개 원반을 그리지 않고**
+      // 저주파 밝기 얼룩 한 장만 깐다(2026-09-06 라운드 11, 검토 A #2: 새벽·저녁·밤 안개 하늘에 하늘보다 어두운 원반 = "맑은 날 + 회색 필터").
       return done(ft, z, [add(ft, 6), add(ft, -5)], 0.12, false);
     }
     case "wind":
@@ -189,6 +191,21 @@ export function bakeClouds(
       fn(0);
       fn(lw);
     };
+    if (weather === "fog") {
+      // 안개 하늘(라운드 11, 검토 A #2): 낱개 원반 0. 저주파 밝기 얼룩 한 장(α ≤ .08)만 — "빛은 있는데 형태가 없다".
+      // 2w 타일이므로 x 방향 주기 lw로 이어지게 노이즈를 x/lw로 감는다.
+      for (let bx = 0; bx < lw * 2; bx += 4) {
+        for (let by = bandTop; by < bandBot; by += 4) {
+          const u = ((bx % lw) / lw) * Math.PI * 2;
+          const n = 0.5 + 0.25 * Math.sin(u * 2 + by * 0.05) + 0.25 * Math.sin(u * 5 + 1.3 + by * 0.11);
+          const a = 0.08 * Math.max(0, n - 0.35);
+          if (a < 0.006) continue;
+          lo.g.fillStyle = `rgb(${lit} / ${a.toFixed(3)})`;
+          lo.g.fillRect(bx, by, 4, 4);
+        }
+      }
+      return lo.c;
+    }
     if (pal.cirrus) {
       // 바람의 새털구름은 **두 층 모두**(2026-09-06 라운드 8, 검토 C: near 층이 빈 캔버스라 3초 이동이
       // far −60px · near 0px — 가장 바람 센 날씨에 시차가 없었다). 가까운 층은 더 굵고 적게.
@@ -471,6 +488,25 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
   const weather = f.weather.now;
   const L = f.light;
   const clearish = weather === "clear" || weather === "wind";
+  if (weather === "fog") {
+    // 안개(2026-09-06 라운드 11, 검토 A #2): 해·달을 지우지 않고 **큰 저채도 halo만** — "빛은 있는데 방향이 없다"가 안개의 정서.
+    // 원반·별·글로우 없음. 반지름은 맑음 글로우의 ×3, α .12~.2.
+    if (band === "dawn" || band === "dusk") {
+      const sx = w * L.reflect.x;
+      const sy = opts.sunY ?? Math.max(maxY * 0.55, maxY - 14);
+      const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
+      softBlob(g, sx, sy, R * 9, band === "dusk" ? "240 228 224" : "236 238 240", 0.16, 0);
+    } else if (band === "night") {
+      const lit = moonLit(moonPhase(f.date.y, f.date.m, f.date.d));
+      if (lit >= 0.04) {
+        const mx = w * L.reflect.x;
+        const my = opts.moonY ?? Math.min(maxY * 0.5, 34);
+        const R = Math.max(7, Math.min(14, Math.round(maxY * 0.045)));
+        softBlob(g, mx, my, R * 7.5, "226 232 244", 0.08 + 0.1 * lit, 0);
+      }
+    }
+    return;
+  }
   if (!clearish) return;
   if (band === "night") {
     // 별 — 1~2px 사각, 개체마다 위상이 다른 느린 깜박임. 밤 multiply(×.72)를 같이 받으므로 굽기 전 값은 밝게. 보름에 가까울수록 옅다(달빛).

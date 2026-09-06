@@ -257,7 +257,9 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       // 낮 안개 하늘 세로 ΔL이 6.5 → 4.0으로 떨어졌다). 어두운 띠는 판 자체의 폭이 커서 영향이 적다.
       L.skyAlpha = Math.max(L.skyAlpha, (band === "noon" || band === "morning" ? 0.1 : 0.22) + 0.1 * k);
       L.hazeRgb = L.hazeRgb ? mixRgb(L.hazeRgb, "226 230 232", 0.55) : "228 232 234";
-      L.desat += 0.2;
+      // 균일 탈채도 .2 → .06(2026-09-06 라운드 11, 검토 A·C): 전 화면 saturation 블렌드가 안개를 "필터"로 읽히게 한 주범 —
+      // 근경이 원경보다 더 탈채도됐다(s12 −5.2 vs −0.8). 탈채도는 밀도장(`world/fog.ts`)의 안개색 혼합이 깊이별로 낸다.
+      L.desat += 0.06;
       L.shadow.alpha *= 0.5;
       L.glint = 0;
       L.reflect.k = 0;

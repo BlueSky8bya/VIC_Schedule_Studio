@@ -10,9 +10,10 @@
 //  · 세계 좌표(정규화 u,v)는 지평선 아래 땅에 놓인다: toScreen(u, v) = (u·w, horizon + v·(h − horizon)).
 //  · 그리기 순서는 발 위치 y-sort(뒤가 앞에 가려진다).
 
+import { drawFogField, fogAt } from "./fog";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
-import { isNeutralMul, type Light } from "./light";
+import { currentLight, isNeutralMul, type Light } from "./light";
 
 export const GROUND_SQUASH = 0.7;
 export const HORIZON_V = 0.26;
@@ -94,7 +95,11 @@ export function moveScale(y: number, h: number): number {
 export function depthFade(y: number, h: number): number {
   const hz = horizonY(h);
   const t = Math.max(0, Math.min(1, (y - hz) / Math.max(1, hazeEndY(h) - hz)));
-  return 0.78 + 0.22 * t;
+  const base = 0.78 + 0.22 * t;
+  // 안개 날씨(라운드 11, 우선순위 E — C 처방 ⑤): 개체도 발 y의 **밀도장**만큼 더 옅다. 전 화면 오버레이 한 장은 근경 줄기를 원경만큼
+  // 들어 올렸다(계곡 근경 물체 +3.1L). 여기서 곱하면 나무·생물·낙엽·소품 그림자 열 곳이 한 줄로 안개를 받는다. 맑음(groundFog 0)은 항등.
+  const fog = currentLight().groundFog;
+  return fog > 0.001 ? base * (1 - 0.55 * fogAt(y, h, fog)) : base;
 }
 
 const hazeCache = new Map<string, CanvasGradient>();
@@ -125,32 +130,15 @@ export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w:
 /** 조명 패스(라운드 2, world/light.ts) — 장면·입자·대기 안개 위에 순서대로: ① 안개 날씨의 층별 누적 안개 + 지면 안개 띠(D-3)
  *  ② 하늘/지평선 오버레이(위 → 지평선 아래 16%) ③ 지면 노출 = multiply(ΔL + 색온도) ④ 채도 = saturation 블렌드 ⑤ 옅은 틴트.
  *  점심·맑음은 다섯 개 전부 건너뛴다(항등) — 옛 파이프라인과 픽셀이 같다. 캔버스는 장면이 전면을 채워 불투명하다(multiply 안전). */
-export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number, L: Light) {
+export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number, L: Light, fogFloor: ((x: number) => number) | null = null, fogFloorKey = "") {
   const hz = horizonY(h);
   g.save();
   if (L.groundFog > 0) {
-    const c = L.hazeRgb || "228 232 234";
-    const f = L.groundFog;
-    // 층별 누적 — 후경 .55 · 중경 .3 · 전경 .1(GRAMMAR §3.2 안개 행). 위는 α 0에서 시작해 hz·.5에서 .55f로 오른다 — 옛 코드는
-    // 첫 스톱이 .55f인 채 hz·.5에서 fillRect를 시작해 어두운 하늘(새벽·밤)에 전폭 가로 절단선(−2~−4 L)이 생겼다(라운드 3 C#6).
-    const y0 = aboveHz(h, 0.06);
-    const gr = g.createLinearGradient(0, 0, 0, h);
-    gr.addColorStop(0, `rgb(${c} / 0)`);
-    gr.addColorStop(y0 / h, `rgb(${c} / ${(0.55 * f).toFixed(3)})`);
-    gr.addColorStop(y0 / h + 0.32 * (1 - y0 / h), `rgb(${c} / ${(0.3 * f).toFixed(3)})`);
-    gr.addColorStop(y0 / h + 0.62 * (1 - y0 / h), `rgb(${c} / ${(0.1 * f).toFixed(3)})`);
-    gr.addColorStop(1, `rgb(${c} / ${(0.08 * f).toFixed(3)})`);
-    g.fillStyle = gr;
-    g.fillRect(0, 0, w, h);
-    // 지면 안개 띠 — 발치 높이(v ≈ .3)에 낮게 깔린 띠. 드리프트하는 뭉치는 입자층이 맡는다.
-    const by = hz + 0.3 * (h - hz);
-    const bh = 0.1 * h;
-    const gb = g.createLinearGradient(0, by - bh, 0, by + bh);
-    gb.addColorStop(0, `rgb(${c} / 0)`);
-    gb.addColorStop(0.5, `rgb(${c} / ${(0.25 * f).toFixed(3)})`);
-    gb.addColorStop(1, `rgb(${c} / 0)`);
-    g.fillStyle = gb;
-    g.fillRect(0, by - bh, w, bh * 2);
+    // **안개 밀도장**(2026-09-06 라운드 11, 우선순위 E — 라운드 10 C #3 처방). 옛 코드는 화면 좌표 4-stop 세로 그라데이션 +
+    // `hz + .3(h−hz)` 고정 띠 + 바닥 8%f 였다: 원경/중경/근경 D = 1.98/**2.91**/0.89로 중경이 가장 짙은 **역전**, x 방향 변화 0,
+    // 물·능선·나무를 감싸지 않고, 원경 실루엣 대비를 16.2 → 1.44로 지웠다(언덕). 이제 `world/fog.ts`가 깊이항(단조) × 고도항
+    // (장면의 `fogFloor(x)` 대비 높이 — 저지대 체류) × 결(노이즈 윗변)을 1/8 해상에 굽는다. 안개 뭉치(입자층)는 그대로 그 위.
+    drawFogField(g, w, h, L.groundFog, L.hazeRgb || "228 232 234", fogFloor, fogFloorKey);
   }
   if (L.skyAlpha > 0) {
     // 하늘 오버레이는 **지평선 바로 아래(hz + .06h)에서 끝난다** — 옛 hz + .16h는 산 ①·② 봉우리(y 150~300)까지 덮어
@@ -225,7 +213,8 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
   // 세기는 그림자 길이(태양 고도)에 비례해 점심·아침(dx 0/−.6, len ≤ 1.3)은 거의 항등, 새벽·노을·저녁에 보인다.
   // 지평선 위(하늘)는 건드리지 않는다 — 하늘의 방향은 위 skyK 판이 맡는다.
   {
-    const dir = Math.abs(L.shadow.dx) * Math.max(0, (L.shadow.len - 0.9) / 0.9);
+    // 날씨 계수(라운드 11, 검토 C #1 ②): 흐림·비·안개·눈은 방향 없는 빛인데 방향 시트가 돌았다 — 그림자 α와 같은 비(흐림 ×.4 · 비 ×.3 · 안개 ×.5 · 눈 ×.5)로 죽인다.
+    const dir = Math.abs(L.shadow.dx) * Math.max(0, (L.shadow.len - 0.9) / 0.9) * Math.min(1, L.shadow.alpha);
     if (dir > 0.05) {
       const k = Math.min(0.1, 0.1 * dir); // 반대쪽 끝 최대 −10%(L* ≈ −4)
       const u = Math.max(0, Math.min(1, L.reflect.x));
@@ -240,9 +229,23 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
         gx.addColorStop(Math.max(0, u - 0.25), "rgb(255 255 255)");
         gx.addColorStop(1, "rgb(255 255 255)");
       }
+      // **세로 램프**(2026-09-06 라운드 11, 검토 B #2 회귀): 라운드 10판은 y = hz에서 풀 세기로 켜져 그늘 쪽 화면 40~50%에
+      // 지평선 절단선(한 행 −2.5~−5.1L)이 생기고 해안 그늘 쪽 수평선 대비가 +5.9 → +0.1로 사라졌다 — 라운드 3 C#6이 잡았던
+      // "지평선에서 곧장 켜짐"의 재발. 지평선 위 .04h에서 0으로 시작해 땅 6%에서 풀 세기: multiply의 α를 띠 8장으로 올린다
+      // (각 띠 ≤ 1/8 → 행간 계단 ≤ .6L).
       g.globalCompositeOperation = "multiply";
       g.fillStyle = gx;
-      g.fillRect(0, hz, w, h - hz);
+      const y0 = aboveHz(h, 0.04);
+      const y1 = groundYAt(0.06, h);
+      const steps = 8;
+      for (let i = 0; i < steps; i++) {
+        const ya = y0 + ((y1 - y0) * i) / steps;
+        const yb = y0 + ((y1 - y0) * (i + 1)) / steps;
+        g.globalAlpha = (i + 1) / steps;
+        g.fillRect(0, ya, w, yb - ya + 0.5);
+      }
+      g.globalAlpha = 1;
+      g.fillRect(0, y1, w, h - y1);
       g.globalCompositeOperation = "source-over";
     }
   }

@@ -70,7 +70,11 @@ export function createParticles(seed: number): ParticleLayer {
   const newWisp = (w: number, h: number): Wisp => {
     const hz = horizonY(h);
     // α .06~.12 — 옛 .03~.075는 8bit 변화 ≤ 6이라 시간 시트 임계 아래(안개 장면이 "정지"로 잡혔다, 라운드 3 C#7). 보이되 옅게.
-    return { x: r() * w, y: hz + (0.12 + r() * 0.7) * (h - hz), rx: 120 + r() * 220, a: 0.06 + r() * 0.06, sp: 5 + r() * 9, ph: r() * TAU };
+    // 라운드 11(우선순위 E): 뭉치는 밀도장이 짙은 **원·중경**(v .04~.5)에만 — 옛 .12~.82는 발치까지 떠서 밀도장과 무관한 "떠다니는 덩이"였다.
+    // 크기는 멀수록 작게(원근).
+    const v = 0.04 + Math.pow(r(), 1.4) * 0.46;
+    // α .10~.18 · 속도 12~30px/s(라운드 11, 검토 C #3: 옛 α .06~.12·2~6px/s는 8비트 아래라 안개 날이 맑음보다 덜 움직였다).
+    return { x: r() * w, y: hz + v * (h - hz), rx: (120 + r() * 220) * (0.55 + 0.9 * v), a: 0.1 + r() * 0.08, sp: 12 + r() * 18, ph: r() * TAU };
   };
 
   const fit = <T>(arr: T[], n: number, make: () => T) => {
@@ -128,7 +132,7 @@ export function createParticles(seed: number): ParticleLayer {
       // 안개 뭉치 — 지면 위에 낮게, 눌린 타원(3/4 시점).
       if (wisps.length) {
         for (const q of wisps) {
-          const a = q.a * (0.8 + 0.2 * Math.sin(q.ph * 2 + t * 0.2));
+          const a = q.a * (0.7 + 0.3 * Math.sin(q.ph * 2 + t * 0.6)); // 맥동 ±30%(≈ .1Hz)
           const grad = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, q.rx);
           grad.addColorStop(0, `rgb(${light.hazeRgb || "228 232 234"} / ${a})`);
           grad.addColorStop(1, `rgb(${light.hazeRgb || "228 232 234"} / 0)`);

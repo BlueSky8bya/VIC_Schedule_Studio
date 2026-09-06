@@ -223,7 +223,7 @@ export function createDeep(seed: number): Scene {
       // 계약은 "30 해시 동일" → "**띠마다 5날씨 해시 동일(고유 해시 정확히 6)**"로 바뀐다(selftest ④).
       // 채널은 셋뿐: ① 빛줄기 세기·기울기 ② 위 1/3의 명도(수면 글로우 — 바닥 L은 밤낮 같다) ③ 밤 발광. 별·노을 색·그림자·입자는 없다.
       const band = f.time.band;
-      const dayK = band === "noon" ? 1 : band === "morning" ? 0.8 : band === "dawn" || band === "dusk" ? 0.35 : band === "evening" ? 0.12 : 0;
+      const dayK = band === "noon" ? 1 : band === "morning" ? 0.6 : band === "dawn" || band === "dusk" ? 0.35 : band === "evening" ? 0.12 : 0; // 아침 .8 → .6(라운드 11 C: 아침≈점심 채널 0)
       const nightK = band === "night" ? 1 : band === "evening" ? 0.6 : band === "dawn" ? 0.25 : 0;
       if (dayK < 1) {
         // 수면에서 내려온 빛이 줄어든다 — 위 34%만 어두워지고(점심 → 밤 TOP L ≈ −12) 아래는 그대로.
@@ -258,7 +258,7 @@ export function createDeep(seed: number): Scene {
       if (shaftSpr && dayK > 0) {
         const bot = f.h * 0.66;
         // 해가 낮으면(새벽·노을) 기둥이 눕고 수가 준다(C): 점심 4개·기울기 .09 → 새벽·노을 2개·.2.
-        const nShaft = dayK >= 0.8 ? 4 : dayK >= 0.3 ? 2 : 1;
+        const nShaft = dayK >= 0.8 ? 4 : dayK >= 0.5 ? 3 : dayK >= 0.3 ? 2 : 1; // 아침 3(라운드 11 C)
         const lowSun = 1 - Math.min(1, dayK / 0.8);
         for (let i = 0; i < nShaft; i++) {
           const x0 = f.w * SHAFT_X[i] + Math.sin(t * 0.16 + i * 1.7) * 30;
@@ -303,7 +303,7 @@ export function createDeep(seed: number): Scene {
         items.push({
           z: j.z,
           run: () => {
-            softBlob(g, j.x, j.y, R * 2.2 * (1 + 0.2 * nightK), GLOW, a * 0.5 * (1 + 0.5 * nightK), 0); // 밤 발광 ×1.5·반지름 ×1.2(GRAMMAR §11)
+            softBlob(g, j.x, j.y, R * 2.2 * (1 + 0.4 * nightK), GLOW, a * 0.5 * (1 + 1.0 * nightK), 0); // 밤 발광 ×2.0·반지름 ×1.4(라운드 11 C: ×1.5/1.2는 면적비 1.25로 목표 1.4 미달)
             if (jellySpr) {
               g.save();
               g.globalAlpha *= Math.min(1, a * 2.6);

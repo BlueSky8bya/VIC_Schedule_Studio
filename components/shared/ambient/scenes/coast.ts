@@ -1231,6 +1231,13 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       }
       void depthScale;
     },
+    // 안개 밀도장의 지면선(라운드 11) — 물가 곡선. 바다 위는 지면선 아래(고도항 1) = 해무가 물 위에 눕는다.
+    fogFloor(x) {
+      return shoreY() + shoreOffsetAt(x, mode);
+    },
+    fogFloorKey(f) {
+      return `${mode}:${f.w}:${f.h}`;
+    },
     debug() {
       return { biomeKind: mode, glints: glints.length, spray: spray.length, season };
     }

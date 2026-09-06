@@ -7,7 +7,7 @@
 //    0~20% — 하늘이 열리는 곳은 물길뿐)이라 숲보다 나무가 빽빽하고 어둡다.
 //  · mountain: 위 띠에 큰 봉우리 실루엣, 바위·눈 얼룩(겨울·초봄엔 눈이 초원보다 오래).
 
-import type { Scene } from "../scene-engine";
+import type { Frame, Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet, drawArt } from "../art/load";
@@ -15,7 +15,7 @@ import { claimSpot, drawProp, drawSubmerged, propShadow, resetPropField, scatter
 import { currentLight, shadowKey } from "../world/light";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, aboveHz, bakeHorizon, depthFade, depthScale, hillCrestY, horizonY } from "../world/view";
-import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
+import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey, skyPalette } from "../world/sky";
 import { canopyTreeSprite, bareTreeSprite } from "../world/traces-draw";
 
 export type LandKind = "forest" | "hill" | "valley" | "mountain";
@@ -103,7 +103,13 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   // ③ 애추 띠의 실제 색·경계(라운드 9) — 원경 침엽수가 "그 y에 칠해진 색 −7L"을 쓰려면 필요하다.
   let screeTone: string | null = null;
   let peakSpan = 31; // 산 다섯 층 사다리의 폭(④ → ①). 띠 조명을 보고 굽기 때 정한다(라운드 9).
+  // **렌더 하늘의 추정 L\***(2026-09-06 라운드 11, 검토 B #3 회귀): 라운드 10이 밤 지평선을 −17L 내렸는데 ①은 땅 앵커로만 구워져
+  // sky↔①이 밤 8.4 → 1.2로 무너졌다. 라운드 9의 실패는 `lt.sky`(틴트 색)를 하늘로 읽은 것 — 이번엔 `skyPalette` 지평선 스톱을
+  // 조명 오버레이(`L.sky` × skyAlpha)와 원경 multiply(far)로 근사해 **화면에 보일 하늘**을 추정한다. step()이 갱신, 재굽기 키에 포함.
+  let skyEstL: number | null = null;
   let screeBand: { top: (x: number) => number; bot: (x: number) => number } | null = null;
+  // 언덕 능선 식(라운드 11) — bake() 안의 지역 함수였는데 안개 밀도장의 지면선(`fogFloor`)이 읽어야 해서 바깥으로 노출한다.
+  let hillRidgeFn: ((i: number, x: number) => number) | null = null;
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
@@ -205,6 +211,20 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     g.restore();
   }
 
+  /** 화면에 보일 하늘(지평선 스톱)의 추정 L* — 팔레트 × 조명 오버레이 × 원경 multiply(산만). 정확할 필요는 없고 띠·날씨를 따라가면 된다. */
+  function estimateSky(f: Frame) {
+    if (kind !== "mountain") return;
+    const pal = skyPalette(season, f.weather.now, f.time.band);
+    const hex = (rgb: string) => `#${rgb.split(" ").map((v) => Number(v).toString(16).padStart(2, "0")).join("")}`;
+    const L = f.light;
+    const palL = labL(hex(pal.hz));
+    const ovL = labL(hex(L.sky));
+    const mixL = palL + (ovL - palL) * Math.min(1, L.skyAlpha);
+    const farMul = (L.mul[0] * 0.2126 + L.mul[1] * 0.7152 + L.mul[2] * 0.0722) / 255;
+    const farK = farMul + (1 - farMul) * 0.35;
+    skyEstL = mixL * farK;
+  }
+
   function bake(dpr: number) {
     setPropShadow(shColor);
     resetPropField();
@@ -269,6 +289,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         const b = HB[Math.max(0, Math.min(2, i))];
         return groundY(0.14 + i * 0.24) + Math.sin(x * b.k1 + i * 2) * ((h - gy()) * b.a1) + Math.sin(x * b.k2 + i) * ((h - gy()) * b.a2);
       };
+      hillRidgeFn = hillRidge;
       const hs = document.createElement("canvas");
       hs.width = c.width;
       hs.height = c.height;
@@ -1282,8 +1303,17 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       // ①은 안개 띠 한가운데(지평선~화면 58%)에 있고 ②는 그 아래라, 설계 12.5L이 화면에서 5.4L(×0.43)로 눌린다.
       // 폭(앵커→84)이 34L뿐이라 ①↔② ≥ 8을 만들려면 설계 29L이 필요해 **산술적으로 불가능**하다.
       // 라운드 10의 입구는 산 위쪽 띠의 헤이즈를 줄이거나 층 배치를 안개 밖으로 내리는 것.
-      const layerL = season === "winter" ? [anchorL + 6, anchorL - 6] : [Math.min(anchorL + 31, 81), Math.min(anchorL + 31, 81) - 12.5];
-      peakSpan = Math.min(anchorL + 31, 81) - anchorL;
+      // ① 천장 = min(81, 추정 하늘 − 2): 하늘↔① 규칙을 굽기 시점에 지킨다(첫 판 "−7"은 추정이 실제보다 어두워 ①이 12~16L 아래로
+      // 내려가고 ②가 ③ 밑으로 뒤집혔다 — 추정에는 지평선 광·안개 판이 안 들어간다). 천장이 걸리면 남은 폭을 세 단으로 **고르게**
+      // 나눈다(한 단만 살리고 다른 단을 죽이지 않게). 겨울은 눈 알베도 예외라 천장을 두지 않는다.
+      // 오프셋 +6: 추정(팔레트 × 오버레이 × far)에는 지평선 광·안개 판·`bakeHorizon` 헤이즈가 안 들어가 실제보다 ~8L 어둡다
+      // (라운드 11 실측: −2로 두면 sky↔① 10~16, ①↔② 1~4). 목표는 밤 ≥ 6 · 새벽 ≥ 4이지 "최대"가 아니다.
+      // 하한 +22(첫 판 +12는 밤에 폭을 12로 쪼그려 ①↔②가 1~2L로 죽었다 — 폭 22면 ①↔② ≈ 5~6L, sky↔① ≈ 8L로 둘 다 산다).
+      const cap1 = Math.max(anchorL + 22, Math.min(81, skyEstL === null ? 81 : skyEstL + 6));
+      const top1 = Math.min(anchorL + 31, cap1);
+      const span = top1 - anchorL;
+      const layerL = season === "winter" ? [anchorL + 6, anchorL - 6] : [top1, anchorL + (span * 2) / 3];
+      peakSpan = span;
       // 먼 것은 채도도 낮다(대기 원근) — ①은 안개빛과 섞어 색을 빼고 나서 L*을 맞춘다.
       const peak1 = setLabL(mixHex(PEAK[season][0], "#e9edf0", 0.3), Math.min(94, layerL[0]));
       const peak2 = setLabL(mixHex(PEAK[season][1], "#e9edf0", 0.12), Math.min(90, layerL[1]));
@@ -1306,9 +1336,10 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         // ③도 ④ 앵커에서 잰다(라운드 8): 겨울은 눈밭 −17L, 그 밖은 +11L. 옛 "그 높이 땅색 ×.94"는 계절마다 간격이 달랐다.
         const anchor3 = labL(mixHex(gc0, gc1, 0.76));
         // ③도 같은 사다리의 한 단(라운드 9): ④에서 위로 폭의 1/3. `peakSpan`은 위에서 띠를 보고 정한 값이다.
-        const tone = setLabL(groundMid, season === "winter" ? anchor3 - 17 : Math.max(anchor3 + 9, anchor3 + peakSpan - 23.5));
+        // ③ = ④에서 폭의 1/3 위(고른 세 단) — 단, 앵커 + 9는 넘지 않는다(③↔④ ≥ 8은 지키되 ②를 밀어 올리지 않게).
+        const tone = setLabL(groundMid, season === "winter" ? anchor3 - 17 : Math.min(anchor3 + 9, anchor3 + peakSpan / 3));
         screeTone = tone;
-        const tone2 = setLabL(groundMid, season === "winter" ? anchor3 - 12 : Math.max(anchor3 + 13, anchor3 + peakSpan - 19.5));
+        const tone2 = setLabL(groundMid, season === "winter" ? anchor3 - 12 : Math.min(anchor3 + 13, anchor3 + peakSpan / 3 + 4));
         gp.fillStyle = tone;
         gp.beginPath();
         // 밑변은 **곡선으로 닫는다** — 옛 `moveTo(0, yBot(0)+40) … lineTo(w, yBot(w)+40)`은 화면을 가로지르는
@@ -1596,18 +1627,21 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     gh = h;
     gdpr = dpr;
     av = art.version;
-    gsh = shadowKey(currentLight());
+    gsh = shadowKey(currentLight()) + `|${skyEstL === null ? "" : Math.round(skyEstL)}`;
   }
 
   return {
     resize(f) {
       w = f.w;
       h = f.h;
+      estimateSky(f); // 첫 굽기부터 하늘 추정을 갖고 — 없으면 캡처(t 1.5s, 전이 중)가 옛 천장 81로 굳는다
       if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || av !== art.version) bake(f.dpr);
     },
     step(f) {
       // 아트 도착 또는 조명 전이 끝(그림자 채널 변화) → 바탕 다시 굽기(라운드 4 AMB-T1-03: scatterProps 소품의 발밑 그림자).
-      if (av !== art.version || (f.lightStable && gsh !== shadowKey(f.light))) bake(f.dpr);
+      estimateSky(f);
+      const keyNow = shadowKey(f.light) + `|${skyEstL === null ? "" : Math.round(skyEstL)}`;
+      if (av !== art.version || (f.lightStable && gsh !== keyNow)) bake(f.dpr);
       if (kind === "valley") for (const q of foam) q.u = (q.u + q.sp * f.dt * lerp(0.6, 1.4, f.load)) % 1;
     },
     draw(g, f) {
@@ -1722,6 +1756,31 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.restore();
       }
       void clamp;
+    },
+    // 안개 밀도장의 지면선(라운드 11, 우선순위 E) — 안개는 이 선 위로 뜬 만큼 옅어진다(저지대 체류).
+    //  · 언덕: 가운데 띠 능선 — 앞 띠 마루는 안개 위로 솟고, 띠 사이 골에 고인다.
+    //  · 산: ③ 애추 띠 윗변 — 안개가 층 **사이**(② 발치)에 쌓인다(MOUNTAIN §4). 없으면 평지.
+    //  · 계곡: 그 열에서 가장 가까운 유로 점의 y — 안개가 계곡 바닥에 눕는다.
+    //  · 숲: 평지(엔진 기본).
+    fogFloor(x, f) {
+      if (kind === "hill" && hillRidgeFn) return hillRidgeFn(1, x);
+      if (kind === "mountain" && screeBand) return screeBand.top(x);
+      if (kind === "valley" && stream.length) {
+        let best = stream[0];
+        let bd = Infinity;
+        for (const p2 of stream) {
+          const d2 = Math.abs(p2.x - x);
+          if (d2 < bd) {
+            bd = d2;
+            best = p2;
+          }
+        }
+        return best.y;
+      }
+      return f.h; // 평지 — 엔진이 groundYAt(v)로 대신한다(아래를 바닥으로 보면 고도항 1)
+    },
+    fogFloorKey(f) {
+      return `${kind}:${f.w}:${f.h}`;
     },
     debug() {
       return { biomeKind: kind, trees: trees.length, season };

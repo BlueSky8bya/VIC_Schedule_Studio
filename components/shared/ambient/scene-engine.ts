@@ -112,6 +112,11 @@ export interface Scene {
    *  패스를 **통째로 건너뛴다**(입자는 ownsWeather로 따로 막는다). **시간대는 장면이 스스로 읽는다**(라운드 10 개정 —
    *  `deep.ts`가 `f.time.band`로 빛줄기·위 1/3 명도·밤 발광을 정한다; 계약 = 띠마다 5날씨 해시 동일, 고유 해시 6). */
   sealed?(): boolean;
+  /** 안개 밀도장의 **지면선**(라운드 11, 우선순위 E) — 그 열 x에서 안개가 "바닥"으로 삼는 화면 y(언덕 능선·산 자락·계곡 바닥·
+   *  물가). 없으면 엔진이 평지(`groundYAt`)로 간주한다. 안개는 이 선 위로 뜬 만큼 옅어진다(저지대 체류, 능선·수관 노출). */
+  fogFloor?(x: number, f: Frame): number;
+  /** fogFloor의 캐시 서명 — 바닥선이 바뀌면(바이옴 이동·리사이즈) 값이 달라져야 한다. 없으면 크기만으로 캐시. */
+  fogFloorKey?(f: Frame): string;
 }
 
 // 검증 훅 — Playwright가 장면 상태(입자 위치·소비된 클릭 수·품질·프레임·여력)를 읽는다. forceLoad로 여력을 고정해
@@ -419,7 +424,14 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     // 라운드 2: 색·배율은 조명(시간대·날씨)이 정한다. 점심·맑음은 옛 값 그대로.
     drawDepthHaze(g, world.season, w, h, frame.light);
     // 조명 패스(world/light.ts): 지면 안개 층 → 하늘 오버레이 → 지면 노출(multiply) → 채도 → 옅은 틴트. 점심·맑음은 전부 항등.
-    drawLightPass(g, w, h, frame.light);
+    drawLightPass(
+      g,
+      w,
+      h,
+      frame.light,
+      scene.fogFloor ? (x) => scene.fogFloor!(x, frame) : null,
+      scene.fogFloorKey ? scene.fogFloorKey(frame) : ""
+    );
   };
   // 매 step 앞: 조명 보간 + 입자층 전진(고정 dt — advance()의 결정성 유지). 정지 화면(dt 0)에서도 입자는 자리를 잡는다.
   const stepScene = () => {

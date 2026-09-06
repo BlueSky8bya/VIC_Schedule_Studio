@@ -1718,6 +1718,13 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         }
       }
     },
+    // 안개 밀도장의 지면선(라운드 11) — 물가 선. 물 위는 지면선 아래(= 고도항 1)라 안개가 수면에 눕고, 기슭·나무는 위로 뜬 만큼 옅다.
+    fogFloor(x) {
+      return waterTopAt(x);
+    },
+    fogFloorKey(f) {
+      return `pond:${f.w}:${f.h}`;
+    },
     debug() {
       const duck = props.find((q) => q.kind === "duck");
       return {
