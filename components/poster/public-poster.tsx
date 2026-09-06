@@ -106,6 +106,7 @@ import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
 import { VodChapters } from "@/components/poster/vod-chapters";
 import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
+import { useIdleAfter } from "@/lib/ui/use-idle";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
 import "./public-poster.css";
@@ -4130,6 +4131,10 @@ export function PublicPoster({
   // 않아 리스너가 떨어져 나간 옛 DOM에 남았다 — 월을 한 번이라도 넘기면 Ctrl+휠이 브라우저
   // 줌으로 새던 원인. callback ref는 요소가 갈릴 때마다 불려 항상 산 노드에 붙는다.
   const [posterZoom, setPosterZoom] = useState(1);
+  // 확대 배지의 '조용해짐' — 배율이 바뀌면 깨어나고, 손을 떼면 물러난다(lib/ui/use-idle).
+  // 잠든 동안엔 클릭이 달력으로 통과하고(가림 0), 포인터가 90px 안으로 다가오면 깨어나 다시 눌린다.
+  const zoomBadgeRef = useRef<HTMLButtonElement | null>(null);
+  const zoomBadge = useIdleAfter(posterZoom, { el: zoomBadgeRef });
   const posterZoomStepperRef = useRef(createWheelStepper());
   const posterCalWheelCleanupRef = useRef<(() => void) | null>(null);
   const posterCalRef = useCallback((el: HTMLElement | null) => {
@@ -5346,18 +5351,28 @@ export function PublicPoster({
       </section>
 
       {/* 확대 중 배율 표시(편집실과 같은 문법) — 하단 중앙 플로팅, 누르면 100%로 복귀.
-          '맨 위로' 버튼(하단 중앙)보다 위에 떠 안 겹친다. 100%에선 사라진다. */}
+          '맨 위로' 버튼(하단 중앙)보다 위에 떠 안 겹친다. 100%에선 사라진다.
+          **역할이 끝나면 물러난다**(2026-09-06 소유자: 달력 내용을 가리지 않게): 배율이 바뀐 직후엔 또렷하고,
+          2.4초 뒤 라벨(초기화)과 아이콘을 접고 작게·옅게 잠든다. 포인터가 오거나 포커스가 들어오면 즉시 깨어난다.
+          잠든 채로도 누를 수 있다 — `pointer-events: none`으로 만들면 깨울 방법이 사라진다. */}
       {posterZoom > 1 ? (
         <button
+          ref={zoomBadgeRef}
           className="poster-zoom-float"
+          data-idle={zoomBadge.idle ? "1" : undefined}
+          onPointerEnter={zoomBadge.wake}
+          onFocus={zoomBadge.wake}
           onClick={() => {
             hapticTick();
             setPosterZoom(1);
           }}
           title="100%로 되돌리기"
+          aria-label={`달력 확대 ${Math.round(posterZoom * 100)}% — 눌러서 100%로 되돌리기`}
           type="button"
          data-act="확대 초기화">
-          🔍 {Math.round(posterZoom * 100)}%<span>초기화</span>
+          <span className="pzf-ic" aria-hidden="true">🔍</span>
+          <span className="pzf-pct">{Math.round(posterZoom * 100)}%</span>
+          <span className="pzf-label">초기화</span>
         </button>
       ) : null}
 

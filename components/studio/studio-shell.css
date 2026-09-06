@@ -1038,6 +1038,64 @@ html[data-reduce-motion] .bottom-float-row {
   transform: none;
   pointer-events: auto;
 }
+/* ── 잠듦(2026-09-06 소유자: "달력 내용 안 방해하게") ──────────────────────────
+   시청자 배지(.poster-zoom-float)와 **같은 규칙**: 배율이 바뀐 뒤 2.4초가 지나면 물러난다
+   (상태는 lib/ui/use-idle). 편집실 것은 −/%/+ 세 버튼이라 라벨을 접는 대신 **± 버튼을 접어**
+   배율 숫자만 남긴다 — 확대는 Ctrl+휠로도 되고, 잠든 배지에 필요한 정보는 "지금 몇 %"뿐이다.
+   누르면(=숫자) 100%로 되돌아가는 것도 그대로. 부르면 세 버튼이 돌아온다.
+   ⚠ 편집 팝오버가 열렸을 때의 dodge(.14)는 이 규칙보다 **뒤에** 있어야 이긴다 — 아래 참조. */
+.cal-zoom-float {
+  transition: opacity 0.26s var(--ease);
+}
+.cal-zoom-float[data-idle="1"] {
+  opacity: 0.28;
+  /* 잠든 동안엔 클릭이 달력으로 통과한다(시청자 배지와 같은 규칙) — 깨우기는 근접 감지가 맡는다. */
+  pointer-events: none;
+}
+.cal-zoom-float[data-idle="1"] .cal-zoom-ctl {
+  /* 안쪽 컨트롤은 `.cal-zoom-ctl { pointer-events: auto }`로 되살아나 있다(부모 buildbox가 none이라서) —
+     잠든 동안엔 그것도 꺼야 클릭이 달력까지 내려간다(2026-09-06 실측: 이 줄이 없으면 %가 클릭을 가로챈다). */
+  pointer-events: none;
+  border-color: rgb(124 108 240 / 20%);
+  background: rgb(124 108 240 / 8%);
+}
+.cal-zoom-float[data-idle="1"] .cal-zoom-btn {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+.cal-zoom-float[data-idle="1"] .cal-zoom-pct {
+  border: 0;
+  min-width: 0;
+  padding: 2px 8px;
+}
+.cal-zoom-float[data-idle="1"]:hover,
+.cal-zoom-float[data-idle="1"]:focus-within {
+  opacity: 1;
+}
+.cal-zoom-float[data-idle="1"]:hover .cal-zoom-ctl,
+.cal-zoom-float[data-idle="1"]:focus-within .cal-zoom-ctl {
+  border-color: rgb(124 108 240 / 42%);
+  background: rgb(124 108 240 / 15%);
+}
+.cal-zoom-float[data-idle="1"]:hover .cal-zoom-btn,
+.cal-zoom-float[data-idle="1"]:focus-within .cal-zoom-btn {
+  width: auto;
+  padding: 2px 9px;
+  opacity: 1;
+}
+.cal-zoom-float[data-idle="1"]:hover .cal-zoom-pct,
+.cal-zoom-float[data-idle="1"]:focus-within .cal-zoom-pct {
+  min-width: 42px;
+  border-right: 1px solid rgb(124 108 240 / 22%);
+  border-left: 1px solid rgb(124 108 240 / 22%);
+  padding: 2px 9px;
+}
+html[data-reduce-motion] .cal-zoom-float {
+  transition: none;
+}
 /* 표시는 꺼졌지만 잠금해제가 살아 있는 상태 — 경고보다 낮은 톤(차분한 안내). */
 
 
@@ -6990,7 +7048,11 @@ html[data-reduce-motion] .tg-num {
   margin-inline: auto;
   width: max-content;
   z-index: 1200;
-  animation: peek-in var(--dur-2, 0.18s) var(--ease-enter, var(--ease)) both;
+  /* `both`가 아니라 **backwards**(2026-09-06): `both`는 애니메이션이 끝난 뒤에도 to 상태(opacity 1)를 붙들어
+     캐스케이드의 opacity를 영영 이긴다 — 잠듦(.28)도 dodge(.14)도 안 먹었다. CLAUDE.md에 이미 적힌 함정
+     (".gs-season의 등장 애니메이션은 backwards여야 한다 — both는 opacity 1을 고정해 모든 캐스케이드 opacity를 무력화").
+     backwards는 지연 구간의 from만 붙들고 끝난 뒤엔 요소 자신의 값으로 돌아온다. */
+  animation: peek-in var(--dur-2, 0.18s) var(--ease-enter, var(--ease)) backwards;
 }
 html[data-reduce-motion] .cal-zoom-float {
   animation: none;
@@ -12978,3 +13040,16 @@ html[data-studio-calm] .studio-poster-title span {
   transform: none;
 }
 /* (휴식 넛지 .rest-nudge — 2026-09-03 도입, 2026-09-04 철수. 코드는 git 이력.) */
+
+/* 편집 팝오버가 열렸을 때의 회피(dodge .14)는 **잠듦(.28)보다 강해야** 한다 — 두 규칙이 같은
+   요소를 노리므로 선언 순서로 정한다(2026-09-06 라운드: 잠듦 규칙을 나중에 넣으면서 dodge가 졌다). */
+.bottom-float-row[data-dodge="fade"] .cal-zoom-float,
+.bottom-float-row[data-dodge="fade"] .cal-zoom-float[data-idle="1"] {
+  opacity: 0.14;
+}
+.bottom-float-row[data-dodge="fade"] .cal-zoom-float:hover,
+.bottom-float-row[data-dodge="fade"] .cal-zoom-float:focus-within,
+.bottom-float-row[data-dodge="fade"] .cal-zoom-float[data-idle="1"]:hover,
+.bottom-float-row[data-dodge="fade"] .cal-zoom-float[data-idle="1"]:focus-within {
+  opacity: 1;
+}

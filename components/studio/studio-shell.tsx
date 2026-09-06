@@ -160,6 +160,7 @@ import {
   CAL_ZOOM_STEPS,
   studioShellZoom
 } from "@/lib/ui/calendar-zoom";
+import { useIdleAfter } from "@/lib/ui/use-idle";
 import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
 import { detectDevice } from "@/lib/presence/presence-client";
 import {
@@ -1883,6 +1884,10 @@ export function StudioShell({
   // 레이아웃으로 바뀐다. 대신 달력 패널 위에서만 Ctrl+휠을 가로채 CSS 변수(--cal-zoom)로
   // 글자·밀도만 키운다. transform: scale 금지 — 드래그 삽입선·FLIP이 좌표 기반이라 어긋난다.
   const [calZoom, setCalZoom] = useState<CalZoom>(1);
+  // 확대 배지의 '조용해짐'(시청자 배지와 같은 규칙, lib/ui/use-idle) — 잠들면 클릭이 달력으로 통과하고,
+  // 포인터가 90px 안으로 다가오면 깨어난다.
+  const zoomBadgeRef = useRef<HTMLDivElement | null>(null);
+  const zoomBadge = useIdleAfter(calZoom, { el: zoomBadgeRef });
   const calZoomRef = useRef<CalZoom>(1);
   const calPanelRef = useRef<HTMLElement | null>(null);
   // 드래그 중 배율 변경 금지(레이아웃 재배치가 드롭 좌표 판정을 순간적으로 흔든다).
@@ -6249,7 +6254,19 @@ export function StudioShell({
               </button>
             </div>
           ) : null}
-          {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
+          {/* 확대 컨트롤도 **역할이 끝나면 물러난다**(2026-09-06 소유자: 달력 내용을 가리지 않게) —
+              배율이 바뀐 뒤 2.4초면 ± 버튼을 접고 옅어졌다가, 포인터·포커스가 오면 되돌아온다. */}
+          {zoomCollapse ? (
+            <div
+              ref={zoomBadgeRef}
+              className="cal-zoom-float"
+              data-idle={zoomBadge.idle ? "1" : undefined}
+              onPointerEnter={zoomBadge.wake}
+              onFocus={zoomBadge.wake}
+            >
+              {renderCalZoomCtl()}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

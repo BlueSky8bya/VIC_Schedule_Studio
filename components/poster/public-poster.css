@@ -5477,9 +5477,11 @@ html[data-reduce-motion] .heart-toast {
   color: #5b4bd0;
   box-shadow: var(--shadow-2);
   cursor: pointer;
-  animation: avatar-card-pop 0.3s var(--ease) both;
+  /* `both`가 아니라 **backwards**(2026-09-06): `both`는 끝난 뒤에도 to의 opacity 1을 붙들어 잠듦(.26)을 무력화했다
+     — CLAUDE.md에 적힌 그 함정. backwards면 끝난 뒤 요소 자신의 opacity가 산다. */
+  animation: avatar-card-pop 0.3s var(--ease) backwards;
 }
-.poster-zoom-float span {
+.poster-zoom-float .pzf-label {
   font-size: var(--text-caption);
   font-weight: 800;
   color: #8a7fb8;
@@ -5489,6 +5491,68 @@ html[data-reduce-motion] .heart-toast {
 }
 html[data-reduce-motion] .poster-zoom-float {
   animation: none;
+}
+
+/* ── 잠듦(2026-09-06 소유자: "달력 내용 안 방해하게") ─────────────────────────────
+   배율이 바뀐 뒤 2.4초가 지나면 배지가 스스로 물러난다(상태는 lib/ui/use-idle, 여기는 모양만).
+   네 가지를 한꺼번에 줄인다 — ① 라벨(초기화)과 🔍를 접어 폭을 절반 이하로 ② 여백·글자 축소
+   ③ 불투명도 .26 ④ 그림자·backdrop-blur 제거(가리는 면적뿐 아니라 합성 비용도 준다).
+   **누를 수 있는 상태는 유지한다** — `pointer-events: none`으로 만들면 깨울 방법이 사라진다.
+   포인터가 오거나(:hover) 포커스가 들어오면(:focus-visible) 즉시 원래 모습으로 — JS도 같은 순간
+   `wake()`로 타이머를 다시 감으므로 손을 떼면 다시 잠든다. */
+.poster-zoom-float {
+  transition:
+    opacity 0.26s var(--ease),
+    padding 0.26s var(--ease),
+    gap 0.26s var(--ease),
+    background-color 0.26s var(--ease),
+    border-color 0.26s var(--ease),
+    box-shadow 0.26s var(--ease);
+}
+.poster-zoom-float[data-idle="1"] {
+  /* 잠든 동안엔 **클릭이 달력으로 통과한다** — 가리는 면적이 0이 된다. 깨우기는 hover가 아니라
+     근접 감지(use-idle의 `el`+`within`)가 맡는다: 다가가면 깨어나 다시 눌린다. */
+  pointer-events: none;
+  gap: 0;
+  padding: 3px 9px;
+  opacity: 0.26;
+  background: rgb(255 255 255 / 52%);
+  border-color: rgb(139 92 246 / 16%);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.poster-zoom-float[data-idle="1"] .pzf-ic,
+.poster-zoom-float[data-idle="1"] .pzf-label {
+  display: none;
+}
+.poster-zoom-float[data-idle="1"] .pzf-pct {
+  font-size: var(--text-caption);
+}
+/* 부르면 온다 — 잠든 상태보다 뒤에 와야 이긴다. */
+.poster-zoom-float[data-idle="1"]:hover,
+.poster-zoom-float[data-idle="1"]:focus-visible {
+  gap: 7px;
+  padding: 7px 14px;
+  opacity: 1;
+  background: rgb(255 255 255 / 80%);
+  border-color: rgb(139 92 246 / 35%);
+  box-shadow: var(--shadow-2);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.poster-zoom-float[data-idle="1"]:hover .pzf-ic,
+.poster-zoom-float[data-idle="1"]:hover .pzf-label,
+.poster-zoom-float[data-idle="1"]:focus-visible .pzf-ic,
+.poster-zoom-float[data-idle="1"]:focus-visible .pzf-label {
+  display: inline;
+}
+.poster-zoom-float[data-idle="1"]:hover .pzf-pct,
+.poster-zoom-float[data-idle="1"]:focus-visible .pzf-pct {
+  font-size: inherit;
+}
+html[data-reduce-motion] .poster-zoom-float {
+  transition: none;
 }
 
 .slc-player {
