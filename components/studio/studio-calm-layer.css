@@ -259,12 +259,12 @@ html[data-studio-calm] .studio-shell .studio-left-panel > section:first-child {
   box-shadow: 0 2px 10px rgb(120 100 60 / 8%);
 }
 html[data-studio-calm] .studio-shell .studio-topbar {
-  background: rgb(255 253 246 / 88%);
+  background: rgb(var(--glass-panel) / 88%);
   border-bottom-color: #ece2cd;
 }
 html[data-studio-calm] .studio-shell .kbd-hints {
   border-color: #ece2cd;
-  background: rgb(255 253 246 / 80%);
+  background: rgb(var(--glass-panel) / 80%);
 }
 html[data-studio-calm] .studio-shell .event-editor-panel form,
 html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly,
@@ -286,19 +286,19 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
   /* 칸은 시청자 화면과 같은 크림이 지배(알파 74~84%) — 물결은 "햇살에 산란돼 아주 살짝" 비치는 정도.
      지난 날도 같은 크림(시청자 화면엔 지난 날 구분이 없다 — 사용자: "시청자 화면처럼"). */
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
-    background: rgb(255 254 251 / 76%);
+    background: rgb(var(--glass-cell) / 76%);
   }
   /* 다른 달 칸은 불투명 그대로 — 반투명이면 물빛이 섞여 회색 블록으로 읽혔다(시청자 화면의 따뜻한 탄색과 어긋남). */
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-weekdays {
-    background: rgb(251 247 238 / 86%);
+    background: rgb(var(--glass-head) / 86%);
   }
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-left-panel > section:first-child,
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .avatar-rail-filter,
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-tools {
-    background: rgb(255 253 246 / 84%);
+    background: rgb(var(--glass-panel) / 84%);
   }
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .kbd-hints {
-    background: rgb(255 253 246 / 72%);
+    background: rgb(var(--glass-panel) / 72%);
   }
   /* 편집실 물결은 시청자 화면보다 세게(사용자: "있는지 없는지 모르겠다") — 공용 레이어의 편집실 안 인스턴스만
      필름·너울·햇살을 올린다. caustic 밝기는 숨쉼(opacity) 애니가 쥐고 있어 여기서 안 건드린다.
@@ -908,6 +908,6 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-month-label strong {
     text-shadow:
       0 1px 0 rgb(255 255 255 / 80%),
-      0 0 14px rgb(255 253 246 / 90%);
+      0 0 14px rgb(var(--glass-panel) / 90%);
   }
 }

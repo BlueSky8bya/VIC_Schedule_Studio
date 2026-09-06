@@ -463,7 +463,15 @@ private layers is retired — ADR-0014; the server model stays.)
   the same **token palette** instead — a root filter tints everything under `<html>`, and the ambient canvas is a body child at
   z −1 with no way out (an inverse filter on the child clips bright sky; a per-child filter breaks `position: fixed` inside it).
   The removal also killed a known frame-jank source (the filter recomposited the whole screen every frame). Never reintroduce a
-  root filter for a preference. Never gate motion on the OS media query
+  root filter for a preference. **But "the background is exempt" is not "the theme does nothing"** (2026-09-06 owner, same day:
+  "toggling it changes nothing I can feel"): with 계절 배경 ON the studio shell goes `background: transparent` and the calendar
+  cells, weekday header, rail cards and poster surfaces become **glass**, and those fills were hardcoded `rgb(255 254 251 / 76%)`
+  literals — so the eye-comfort palette never reached the one surface that covers most of the screen. Every translucent
+  surface now takes its base from `--glass-cell` / `--glass-head` / `--glass-panel` (rgb triples in `globals.css :root`,
+  redefined under `html[data-eye-comfort]`; the alpha stays at the use site). **A new glass surface must use these tokens** —
+  a literal there silently makes the preference dead again. Measured contract: with the background ON, toggling changes
+  ≥ 50% of calendar-area pixels (blue channel ≈ −8), while `<html>`, `.gs-season` and its canvas keep identical computed
+  filter/opacity/blend in both states. Never gate motion on the OS media query
   directly in CSS — always target `html[data-reduce-motion]`. Always-on ambient decoration
   (the studio tide layer) must additionally hide under `html[data-gfx="lite"]` (weak-device
   probe, `lib/ui/gfx.ts`) and use transform/opacity only.

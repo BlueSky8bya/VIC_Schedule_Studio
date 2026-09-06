@@ -43,6 +43,13 @@
   --line-soft: #f4ecdb;
   --paper: #f8efda;
   --surface: #fffdf6;
+  /* **유리 면**(계절 배경이 비치는 반투명 표면)의 밑색 — rgb 세 값만 담고 알파는 쓰는 쪽에서 준다.
+     2026-09-06 소유자: "눈 편한 테마를 끄고 켜도 달력이 그대로다". 배경이 켜지면 셸이 투명해지고
+     칸·요일머리·패널이 **하드코딩 rgb 리터럴**로 칠해져 있어 눈 편한 테마 팔레트가 닿지 않았다.
+     배경 캔버스는 그대로 두고(소유자 규칙) 그 위에 얹히는 **유리만** 테마를 따른다. */
+  --glass-cell: 255 254 251;
+  --glass-head: 251 247 238;
+  --glass-panel: 255 253 246;
   --surface-2: #fdf6e8;
   --studio-workbench: #eae6e0;
   /* 빅토리×빅타민 시그니처 — 선명한 비타민 팔레트(노랑=승리/주목, 초록=빅타민/참여,
@@ -1201,6 +1208,10 @@ html[data-eye-comfort="lite"] {
   --line-soft: #f0e7d5;
   --paper: #f4ead6;
   --surface: #fdf8ec;
+  /* 유리 면도 크림으로 — 청색 채널을 20 남짓 내린다. 이게 없으면 계절 배경 ON에서 토글이 아무 일도 안 한다. */
+  --glass-cell: 253 246 231;
+  --glass-head: 246 236 214;
+  --glass-panel: 253 246 228;
   --surface-2: #f9f1e1;
   --accent: #edc45f;
   --accent-strong: #997426;
