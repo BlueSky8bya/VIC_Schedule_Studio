@@ -11,7 +11,7 @@ import type { Frame, Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet } from "../art/load";
-import { claimSpot, drawProp, drawSubmerged, propShadow, resetPropField } from "../art/props";
+import { claimSpot, drawProp, drawSubmerged, propShadow, propSpots, resetPropField } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { groundYAt, horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
@@ -74,6 +74,21 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
   let h = 0;
   let water: HTMLCanvasElement | null = null;
   let land: HTMLCanvasElement | null = null;
+  // 물가 띠 바위 층(2026-09-06 라운드 13, 우선순위 D — 검토 B 라운드 10 #3 · 라운드 13 #1~#4): 뭍 판(`land`)은 물가 폴리곤으로
+  // **클립**되어 물가 띠에 선 바위의 윗부분이 물가선에서 잘리고(물이 돌 앞에), 거품 줄·흰 원반이 몸통을 덮어 "반투명 사다리꼴 판"이 됐다.
+  // 꼭대기(발 y − 30k)가 밀물선 위로 올라올 수 있는 바위는 전부 판 밖 **별도 층**에 굽는다. 물가선은 띠마다 조석으로 ±0.02h 움직이므로
+  // 층은 **조석 상태(−1/0/+1)별로** 다시 굽고(`bakeShoreRocks`), 그 조석의 물가선 기준으로 발이 물속이면 `rocksSea`(잠김 + 링, 거품 줄 **앞**에
+  // 그려 물가 거품이 돌을 지난다), 뭍 위면 `rocksLand`(마른 돌 + 그림자, 거품 줄 **뒤**). 둘 다 y 정렬, 클립 없음.
+  let rocksSea: HTMLCanvasElement | null = null;
+  let rocksLand: HTMLCanvasElement | null = null;
+  let rocksTide = Number.NaN;
+  // 조석 **연속값**(라운드 13, C #4): `tide(f)`는 띠 스텝(−1/0/+1)이라 띠 전환 첫 100ms에 물가선이 17~18px 순간이동했다(조명은 3s lerp).
+  // step()에서 τ 3s로 따라간다. 첫 프레임은 목표값으로 시작 — 캡처(띠 고정)는 상수라 결정성이 그대로다.
+  let tideK = Number.NaN;
+  let rocksArt = -1;
+  let shoreRocks: { x: number; y: number; k: number; r1: number; f: boolean }[] = [];
+  let lcW = 0;
+  let lcH = 0;
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
   let skyKeyCur = "";
   // 흐르는 구름 두 층(라운드 6 결정 4) — 폭 2w 타일, 오프셋은 t의 순수 함수라 캡처는 여전히 결정적이다.
@@ -100,12 +115,86 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     return (b === "dawn" || b === "evening" || b === "night" ? 1 : b === "noon" ? -1 : 0) * k;
   };
 
+  // 물가 띠 바위 층(라운드 13, B #1~#4 + A #1) — 조석 상태 `tv`(−1 밀물 · 0 · +1 썰물)의 물가선(로컬, 전단 전 = draw()의 `sy − ly`, 숨쉬기 ±5.5 제외)
+  // 기준으로 발이 물속이면 잠김(깊이 = 6 + .5·잠긴 폭, 4~18k) + 뒤 반원 링 + 발 앞 거품 조각 → `rocksSea`(거품 줄 앞), 뭍 위면 마른 돌 + 그림자 →
+  // `rocksLand`(거품 줄 뒤). 판과 같은 로컬 프레임, 앵커 x의 `shoreOffsetAt` 하나로만 내려 열 전단 없이 선다. y 정렬(먼 것부터).
+  function bakeShoreRocks(tv: number, dpr: number) {
+    rocksSea = null;
+    rocksLand = null;
+    rocksTide = tv;
+    rocksArt = art.version;
+    if (!shoreRocks.length || !lcW) return;
+    const WL = 60 + 0.02 * h * (1 - tv);
+    const mk = () => {
+      const c = document.createElement("canvas");
+      c.width = lcW;
+      c.height = lcH;
+      const cg = c.getContext("2d")!;
+      cg.scale(dpr, dpr);
+      return { c, cg };
+    };
+    const sea = mk();
+    const lnd = mk();
+    let nSea = 0;
+    let nLand = 0;
+    for (const rk of [...shoreRocks].sort((a2, b2) => a2.y - b2.y)) {
+      const ry = rk.y + shoreOffsetAt(rk.x, mode);
+      const d = WL - rk.y; // > 0 = 발이 이 조석의 물속(바다 쪽), ≤ 0 = 뭍 위(마른 돌)
+      if (d > 0) {
+        const cg = sea.cg;
+        nSea++;
+        // 뒤(위) 반원 물살은 바위 **앞**에 그린다 — 뒤에 그리면 몸통을 가로질러 접시 테가 된다(2026-09-06 라운드 9, 검토 B).
+        // 앞 반원은 `drawSubmerged`가 소품 폭에 맞춰 안에서 긋는다. 물 위 돌엔 지면 그림자 타원을 두지 않는다(수면에 그림자 원반 = 떠 있는 돌).
+        cg.strokeStyle = "rgb(252 254 255 / 0.38)";
+        cg.lineWidth = 1.6 + 1.2 * rk.k;
+        cg.beginPath();
+        cg.ellipse(rk.x, ry + 2, 19 * rk.k, 6 * rk.k, 0, Math.PI * 1.05, TAU - 0.15);
+        cg.stroke();
+        const sub = drawSubmerged(cg, art, "rock", rk.x, ry, {
+          k: rk.k,
+          r: rk.r1,
+          flip: rk.f,
+          depth: clamp(6 + 0.5 * d, 4, 18 * rk.k), // 잠긴 폭에 비례(B #3) — 옛 고정 min(16, 9k)은 밀물엔 "물 위에 얹힌 돌", 썰물엔 마른 판 위 링이었다
+          water: "44 52 50", // 조류대 색
+          wet: 0.3,
+          alphaDeep: 0.16
+        });
+        if (!sub) drawProp(cg, art, "rock", rk.x, ry, { k: rk.k, r: rk.r1, flip: rk.f });
+        // 흰 물살 원반(15k α .2)은 **삭제**(A #1 조건 ①: 소프트 원반은 크기와 무관하게 렌즈 먼지 — F-1; B: 반지름 45~70px가 몸통을 덮어 "판"의
+        // 절반을 만들었다). 대신 발 앞 물가에 2px 격자 거품 조각 셋(≤ 6k, α ≤ .3) — 파도가 돌에 부딪혀 남는 자국.
+        const fw = Math.max(2, Math.round(rk.k));
+        const seeds = [rk.r1, (rk.r1 * 7.31) % 1, (rk.r1 * 13.7) % 1];
+        for (let i = 0; i < 3; i++) {
+          const sx = rk.x + (seeds[i] - 0.5) * 22 * rk.k;
+          const sy2 = ry + 2 + ((seeds[(i + 1) % 3] * 3) | 0) * fw;
+          const len = fw * (2 + ((seeds[(i + 2) % 3] * 3) | 0));
+          cg.fillStyle = `rgb(250 253 255 / ${(0.22 + seeds[i] * 0.08).toFixed(3)})`;
+          cg.fillRect(Math.round(sx / fw) * fw, Math.round(sy2 / fw) * fw, len, fw);
+        }
+      } else {
+        const cg = lnd.cg;
+        nLand++;
+        propShadow(cg, rk.x + 3 * rk.k, ry - 1, 22 * rk.k, 0.18, GROUND_SQUASH * 0.5, "58 64 68");
+        drawProp(cg, art, "rock", rk.x, ry, { k: rk.k, r: rk.r1, flip: rk.f });
+      }
+    }
+    rocksSea = nSea ? sea.c : null;
+    rocksLand = nLand ? lnd.c : null;
+  }
+
   function bake(dpr: number) {
     water = bakeWater(w, h, top(), dpr, pal, seed, true, season === "winter" ? "#e8eef4" : "#eef5fa");
     // 뭍 — 모드별 바탕(아래 36%).
     const lc = document.createElement("canvas");
     lc.width = Math.max(1, Math.ceil(w * dpr));
     lc.height = Math.max(1, Math.ceil((h - shoreY() + 60 + PAD) * dpr));
+    lcW = lc.width;
+    lcH = lc.height;
+    // 물가 띠 한계(로컬 y, 전단 전): 밀물(조석 −1) 물가선 60 + 0.04h에 숨쉬기 ±5.5 — 꼭대기(발 − 30k)가 이 위면 클립이 자를 수 있다(B 라운드 13 #1:
+    // 옛 기준 `발 y < 110`은 k 2.7~3의 큰 뭍 바위 셋(꼭대기가 물가선 위 22~50px)을 놓쳤다).
+    const shoreLim = 60 + 0.04 * h + 6;
+    shoreRocks = [];
+    rocksTide = Number.NaN;
     const g = lc.getContext("2d")!;
     g.scale(dpr, dpr);
     const r = rng(seed * 7 + 3 + SEASON_SEED[season]);
@@ -511,7 +600,16 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           ok = !inWater(x, y);
         }
         if (!ok) continue;
-        drawProp(g, art, "rock", x, y, { k: (0.6 + r() * 0.5) * depthScale(shoreY() - 60 + y, h), r: r(), flip: r() < 0.5 });
+        const tk = (0.6 + r() * 0.5) * depthScale(shoreY() - 60 + y, h);
+        // 라운드 13(B #4): 갯벌 바위도 필드(실루엣 규칙)를 거치고, 물가 띠에 서면 해안 공통 조석 층으로 — 점심 밀물에 꼭대기 31%가 클립에 잘렸다.
+        if (!claimSpot(x, y, 11 * tk, true, 30 * tk)) continue;
+        const tr = r();
+        const tf = r() < 0.5;
+        if (y - 30 * tk < shoreLim) {
+          shoreRocks.push({ x, y, k: tk, r1: tr, f: tf });
+          continue;
+        }
+        drawProp(g, art, "rock", x, y, { k: tk, r: tr, flip: tf });
       }
       // 해조 — 젖은 뻘에 붙은 짙은 초록 얼룩 무리(가장자리가 갈라진 느낌으로 여러 겹).
       for (let i = 0; i < 16; i++) {
@@ -886,9 +984,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       }
       // 바위는 **노두(露頭) 단위로 뭉친다** — 균등 난수 산포는 크기 위계도 방향성도 없어 "돌 스티커 뿌리기"로
       // 읽혔다(검토 라운드2 세 명). 노두 4곳에 큰 것 하나 + 붙은 작은 것들, 그리고 근경에 초점 바위 하나.
-      // 물가 바위(y < 110)는 조류대 띠 **뒤에**(위에) 그린다 — 옛 순서(바위 → 띠)는 띠가 바위를 덮어 α≈.25 유령 + 흰 호만 남겼다
-      // (QA 라운드 3 A#5 = AMB-S4-03의 원인). 여기 모아 두고 띠를 칠한 뒤 그린다.
-      const lateRocks: { x: number; y: number; k: number; r1: number; f: boolean }[] = [];
+      // 물가 띠 바위는 판 밖 조석 층(`shoreRocks`, 라운드 13)으로 — 옛 순서(바위 → 띠)는 띠가 바위를 덮어 α≈.25 유령 + 흰 호만 남겼고
+      // (QA 라운드 3 A#5 = AMB-S4-03), 판 안에 굽는 한 물가 클립이 꼭대기를 잘랐다(라운드 10~13).
       {
         type R2 = { x: number; y: number; k: number };
         const rocks: R2[] = [];
@@ -926,11 +1023,12 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           if (pools.some(([px, py, prx, pry]) => Math.abs(rk.x - px) < prx + 14 && Math.abs(rk.y - py) < pry + 12)) continue;
           // 노두 안에서도 서로 겹치지 않는다(QA 라운드 3, 소유자 "돌이 어색하게 잘려 있다") — 대체물 바위끼리 겹치면 윤곽이 서로를
           // 뚫고 지나가 잘린 돌로 읽힌다. 자리 점유 실패면 그 돌은 없다(무리는 큰 것 하나 + 붙은 작은 것들로 충분).
-          if (!claimSpot(rk.x, rk.y, 11 * rk.k)) continue;
+          // 실루엣 규칙(라운드 12 `claimSpot` stand/hy, 라운드 13 B #2): 원판만 보던 옛 호출은 뒤 노두의 발이 앞 바위 몸통 안에 오는 쌍(dy 50)을 통과시켰다.
+          if (!claimSpot(rk.x, rk.y, 11 * rk.k, true, 30 * rk.k)) continue;
           const r1 = r();
           const f = r() < 0.5;
-          if (rk.y < 110) {
-            lateRocks.push({ x: rk.x, y: rk.y, k: rk.k, r1, f });
+          if (rk.y - 30 * rk.k < shoreLim) {
+            shoreRocks.push({ x: rk.x, y: rk.y, k: rk.k, r1, f });
             continue;
           }
           propShadow(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, 0.18, GROUND_SQUASH * 0.5, "58 64 68");
@@ -985,27 +1083,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 조류대에 묻혀 바위 없는 물살이 떠 있다"). 민물·계곡은 라운드 1에서 이미 `drawSubmerged`로 옮겼는데
       // 해안만 남아 있었다 — 발치가 조류대 색에 잠기고 젖은 띠가 생겨야 "물에 발을 담근 바위"가 된다.
       // 흰 물살 호는 α .55 → .38로 낮춘다(호가 몸통보다 20L 밝아 호만 보였다).
-      for (const rk of lateRocks) {
-        propShadow(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, 0.24, GROUND_SQUASH * 0.5, "40 46 50");
-        // 뒤(위) 반원 물살은 바위 **앞**에 그린다 — 뒤에 그리면 몸통을 가로질러 접시 테가 된다(2026-09-06 라운드 9, 검토 B).
-        // 앞 반원은 `drawSubmerged`가 소품 폭에 맞춰 안에서 긋는다.
-        g.strokeStyle = "rgb(252 254 255 / 0.38)";
-        g.lineWidth = 1.6 + 1.2 * rk.k;
-        g.beginPath();
-        g.ellipse(rk.x, rk.y + 2, 19 * rk.k, 6 * rk.k, 0, Math.PI * 1.05, TAU - 0.15);
-        g.stroke();
-        const sub = drawSubmerged(g, art, "rock", rk.x, rk.y, {
-          k: rk.k,
-          r: rk.r1,
-          flip: rk.f,
-          depth: Math.min(16, 9 * rk.k), // 발치만 잠긴다(라운드 9 검토 B: k 3~5에서 27~45px = 몸통 높이의 1/3이 물속이라 "판"으로 보였다)
-          water: "44 52 50", // 조류대 색
-          wet: 0.3,
-          alphaDeep: 0.16
-        });
-        if (!sub) drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: rk.r1, flip: rk.f });
-        softBlob(g, rk.x, rk.y - 2, 15 * rk.k, "255 255 255", 0.2, 0, GROUND_SQUASH);
-      }
+      // (물가 띠 바위는 `bakeShoreRocks`가 조석별로 굽는다 — 라운드 13.)
       // 따개비·자갈 — 바위 사이 빈 회색 판을 메운다.
       for (let i = 0; i < 70; i++) {
         drawProp(g, art, "pebble", r() * w, 60 + r() * (VIS - 90), { k: 0.8 + r() * 0.8, r: r(), sy: GROUND_SQUASH, rot: r() * TAU });
@@ -1082,9 +1160,14 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       w = f.w;
       h = f.h;
       if (!water || gw !== w || gh !== h || gdpr !== f.dpr || av !== art.version) bake(f.dpr);
+      // 물가 띠 바위 층은 조석 상태별(라운드 13) — 띠가 바뀌어 물가선이 움직이면 그 조석 기준으로 잠김/마른 돌을 다시 나눈다(층만, 판은 그대로).
+      if (rocksTide !== tide(f) || rocksArt !== art.version) bakeShoreRocks(tide(f), f.dpr);
     },
     step(f) {
       const { dt, load } = f;
+      // 조석 τ 3s(라운드 13, C #4). 층(`bakeShoreRocks`)은 목표 조석으로 바로 굽고 물가선만 3초에 걸쳐 닿는다 — 전이 중 ≤ 3s의 링 어긋남은 감수.
+      const tv = tide(f);
+      tideK = Number.isFinite(tideK) ? tideK + (tv - tideK) * (1 - Math.exp(-dt / 3)) : tv;
       // 포인터 물결 — 물가 선 위쪽(바다)에서만.
       stepTrail(trail, f.p, f.t, top(), shoreY() - 34);
       // 아트 도착 또는 조명 전이 끝(그림자 채널 변화) → 뭍 다시 굽기(라운드 4 AMB-T1-03: 바위·통나무·소나무의 발밑 그림자).
@@ -1134,7 +1217,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 별·달·해 — 수평선 위 하늘 전부(가릴 것이 없다). 해는 수평선 가까이.
       drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
       // 물가 선이 숨쉰다. 조석 진폭은 세 해안이 함께 움직이도록 작게(옛 0.06h는 갯벌만 바다 높이가 52px 달랐다).
-      const sy = shoreY() - tide(f) * f.h * 0.02 - Math.sin(t * 0.5) * 3;
+      const sy = shoreY() - (Number.isFinite(tideK) ? tideK : tide(f)) * f.h * 0.02 - Math.sin(t * 0.5) * 3;
       // 파도 — 수평선에서 물가까지, 마지막 선은 물가에서 거품이 된다.
       // 파도는 물가 곡선의 가장 높은 지점보다 위에서 끝난다(곡선이 파도 선을 덮어 잘라내지 않게).
       // 먼 섬 — 바다 판이 완전 공백이면 해안 셋이 같은 층 케이크로 읽힌다(사이클4 미관 #4).
@@ -1195,6 +1278,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         g.fillStyle = wg;
         g.fillRect(0, sy - 24, f.w, wet2 + 50);
         g.restore();
+        // 물속 발 바위 층(라운드 13) — 클립 **밖**(꼭대기가 물가선 위로 솟는다), 거품 줄 **앞**(물가 거품은 물속 돌보다 앞에 있다).
+        if (rocksSea) g.drawImage(rocksSea, 0, ly, f.w, Math.max(rocksSea.height / (gdpr || 1), f.h - ly + 8));
         // 물가 거품 — 두 줄(짙은 안쪽 선 + 옅은 바깥 여운).
         // 반사형 해빈은 쇄파대가 없는 대신 물가에서 파도가 **붕괴**한다 — 그 자리의 포말이 두껍고 밝다.
         // 물가 거품 — **끊어진 마디**로 그린다(2026-09-06 라운드 7, AMB-F1-06: 폭 1~2px 전폭 연속 흰 AA 획이
@@ -1203,25 +1288,42 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         const foamRows = mode === "sandy" ? ([[0, 0.6, 4], [-7, 0.3, 2.5], [4, 0.22, 2]] as const) : ([[0, 0.42, 3], [-5, 0.18, 2]] as const);
         for (let ri = 0; ri < foamRows.length; ri++) {
           const [off, a, lw] = foamRows[ri];
-          const fr = rng(seed * 131 + ri * 17 + Math.round(sy));
-          let x = -20;
-          while (x < f.w + 20) {
+          // 마디 배치는 **정적 시드**(라운드 13, C #4): 옛 `Math.round(sy)` 시드는 숨쉬기로 sy 정수가 바뀔 때마다(≈ 1회/초) 마디 전체를 재추첨해
+          // 40ms diff에 ×5~11 스파이크(갯벌 3,077px)를 냈다. 주기 P(≥ 1100px)로 한 번 뽑아 타일링하고 4px/s로 흘린다 — t의 순수 함수라 캡처는 결정적.
+          const fr = rng(seed * 131 + ri * 17 + Math.round(shoreY()));
+          const segs: [number, number, number, number][] = [];
+          let cursor = 0;
+          while (cursor < 1100) {
             const seg = 40 + fr() * 120;
             const gap = 60 + fr() * 120;
             const aa = a * (0.7 + fr() * 0.6);
             const lw2 = Math.max(2, Math.round((lw * (0.7 + fr() * 0.7)) / 2) * 2);
-            g.strokeStyle = `rgb(${pal.foam} / ${aa.toFixed(3)})`;
-            g.lineWidth = lw2;
-            g.beginPath();
-            for (let px = x; px <= x + seg; px += 8) {
-              const yy = Math.round((lineY(px) + off) / 2) * 2;
-              if (px === x) g.moveTo(px, yy);
-              else g.lineTo(px, yy);
+            segs.push([cursor, seg, aa, lw2]);
+            cursor += seg + gap;
+          }
+          const P = cursor;
+          const drift = (t * 4) % P;
+          for (let k0 = -1; k0 * P - drift < f.w + 20; k0++) {
+            for (const [s0, seg, aa, lw2] of segs) {
+              const x = k0 * P + s0 - drift;
+              if (x + seg < -20 || x > f.w + 20) continue;
+              g.strokeStyle = `rgb(${pal.foam} / ${aa.toFixed(3)})`;
+              g.lineWidth = lw2;
+              g.beginPath();
+              for (let px = x; px <= x + seg; px += 8) {
+                const yy = Math.round((lineY(px) + off) / 2) * 2;
+                if (px === x) g.moveTo(px, yy);
+                else g.lineTo(px, yy);
+              }
+              g.stroke();
             }
-            g.stroke();
-            x += seg + gap;
           }
         }
+      }
+      // 뭍 위 발 바위 층(라운드 13) — 클립 **밖**, 거품 줄 **뒤**: 마른 돌이 물가선 위로 솟고 거품은 몸통 뒤로 지나간다. 좌표계는 뭍 판과 같다.
+      if (rocksLand) {
+        const ly2 = shoreY() - 60 - f.h * 0.02;
+        g.drawImage(rocksLand, 0, ly2, f.w, Math.max(rocksLand.height / (gdpr || 1), f.h - ly2 + 8));
       }
       for (const s of spray) {
         g.fillStyle = `rgb(255 255 255 / ${clamp(s.life, 0, 1) * 0.9})`;
@@ -1239,7 +1341,16 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       return `${mode}:${f.w}:${f.h}`;
     },
     debug() {
-      return { biomeKind: mode, glints: glints.length, spray: spray.length, season };
+      // shoreRocks: 물가 띠 층의 바위(로컬 y, 전단 전) — 검사 도구가 꼭대기·발−물가선을 정확히 재도록(라운드 13 B 부록).
+      return {
+        biomeKind: mode,
+        glints: glints.length,
+        spray: spray.length,
+        season,
+        rocksTide,
+        shoreRocks: shoreRocks.map((rk) => [Math.round(rk.x), Math.round(rk.y), Math.round(rk.k * 100) / 100]),
+        spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)])
+      };
     }
   };
 }
