@@ -219,6 +219,33 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     g.fillRect(0, 0, w, h);
     g.globalCompositeOperation = "source-over";
   }
+  // **빛의 방향 — 지면에도**(2026-09-06 라운드 10, 검토 C #1 처방 ①). 여섯 띠의 지면 변화가 6/7 바이옴에서 전역 색보정
+  // 한 장으로 92~99.9% 설명됐다(tintRes 초원 0.17% · 갯벌 0.03%) — multiply·saturation·overlay가 전부 전 화면 상수라서다.
+  // 해 쪽(`reflect.x`)은 그대로, 반대쪽으로 갈수록 살짝 어둡게 — 가로 성분 하나가 "필터"를 "빛"으로 바꾸는 첫 공간 채널.
+  // 세기는 그림자 길이(태양 고도)에 비례해 점심·아침(dx 0/−.6, len ≤ 1.3)은 거의 항등, 새벽·노을·저녁에 보인다.
+  // 지평선 위(하늘)는 건드리지 않는다 — 하늘의 방향은 위 skyK 판이 맡는다.
+  {
+    const dir = Math.abs(L.shadow.dx) * Math.max(0, (L.shadow.len - 0.9) / 0.9);
+    if (dir > 0.05) {
+      const k = Math.min(0.1, 0.1 * dir); // 반대쪽 끝 최대 −10%(L* ≈ −4)
+      const u = Math.max(0, Math.min(1, L.reflect.x));
+      const gx = g.createLinearGradient(0, 0, w, 0);
+      const dark = Math.round(255 * (1 - k));
+      if (u < 0.5) {
+        gx.addColorStop(0, "rgb(255 255 255)");
+        gx.addColorStop(Math.min(1, u + 0.25), "rgb(255 255 255)");
+        gx.addColorStop(1, `rgb(${dark} ${dark} ${dark})`);
+      } else {
+        gx.addColorStop(0, `rgb(${dark} ${dark} ${dark})`);
+        gx.addColorStop(Math.max(0, u - 0.25), "rgb(255 255 255)");
+        gx.addColorStop(1, "rgb(255 255 255)");
+      }
+      g.globalCompositeOperation = "multiply";
+      g.fillStyle = gx;
+      g.fillRect(0, hz, w, h - hz);
+      g.globalCompositeOperation = "source-over";
+    }
+  }
   if (L.desat > 0) {
     g.globalCompositeOperation = "saturation";
     g.globalAlpha = L.desat;

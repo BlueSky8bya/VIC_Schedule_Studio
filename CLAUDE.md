@@ -104,10 +104,12 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   **side-on**: no horizon, no `GROUND_SQUASH`, no `depthScale` (y is depth = light and colour; distance is a per-creature `z`), no
   sea floor (a bottom edge reads as a horizon again). Its fish are **side-view** silhouettes — the "fish are top-down shadows" rule
   belongs to the 3/4 camera, and here the camera is different; every creature is still a Noto emoji (🐟🐠🐡🦈🐋🦑🐙🪼), tinted to one
-  colour so it reads as a silhouette, not an emoji. **Season, weather and time of day do not reach it**: the scene declares
+  colour so it reads as a silhouette, not an emoji. **Season and weather do not reach it — but time of day does (2026-09-06, round 10, owner priority A)**: the scene declares
   `sealed()` and the engine then skips the weather particles, the depth haze and the whole light pass (the world scene un-seals
-  during a 620 ms pan so the neighbouring biome keeps its light). The contract is measured, not asserted: all 6 bands × 5 weathers
-  must hash identically. Variation comes from depth, drifting marine snow (three layers), the shafts and the creatures — never from
+  during a 620 ms pan so the neighbouring biome keeps its light). The contract is measured, not asserted: **each band must hash identically across the 5 weathers (exactly 6 distinct
+  hashes)** — round 10 opened *time of day only*, inside `deep.ts` (`f.time.band`): shaft count/strength/tilt, the top third dims
+  toward night, jelly glow ×1.5 at night; the engine passes are still skipped (`sealed()`). All three reviewers agreed the old
+  "no time of day" reading contradicted the always-on sun shafts ("a sun pillar at 2 a.m."). Variation comes from depth, drifting marine snow (three layers), the shafts and the creatures — never from
   the clock.
 - **Ambient registry (ADR-0017, 2026-09-04, revised same day).** Studio and viewer mount ONE
   `<AmbientLayer month={view.month} />` (`components/shared/ambient/`). The season follows the **calendar

@@ -216,6 +216,28 @@ export function createDeep(seed: number): Scene {
     draw(g, f) {
       const t = f.t;
       if (bg) g.drawImage(bg, 0, 0, f.w, f.h);
+      // **시간대만 읽는다**(2026-09-06 라운드 10, 소유자 우선순위 A + 검토 A·B·C 동일 의견). 이 방은 계절·날씨에 여전히 봉인이다
+      // (`sealed()` 유지 — 엔진 입자·대기 안개·조명 패스를 건너뛴다). 그러나 장면이 **수면 빛줄기 4개**를 늘 그리는 이상
+      // "밤낮이 없다"와 "태양 기둥이 있다"는 동시에 참일 수 없었다 — 새벽 2시의 태양 기둥이 모순이었다(C). BIOME_GRAMMAR §11이
+      // 이미 "낮 빛줄기 최대 · 새벽/저녁 ×.4 · 밤 0 + 해파리 발광 ×1.5"로 적혀 있어 문서 쪽으로 해소한다.
+      // 계약은 "30 해시 동일" → "**띠마다 5날씨 해시 동일(고유 해시 정확히 6)**"로 바뀐다(selftest ④).
+      // 채널은 셋뿐: ① 빛줄기 세기·기울기 ② 위 1/3의 명도(수면 글로우 — 바닥 L은 밤낮 같다) ③ 밤 발광. 별·노을 색·그림자·입자는 없다.
+      const band = f.time.band;
+      const dayK = band === "noon" ? 1 : band === "morning" ? 0.8 : band === "dawn" || band === "dusk" ? 0.35 : band === "evening" ? 0.12 : 0;
+      const nightK = band === "night" ? 1 : band === "evening" ? 0.6 : band === "dawn" ? 0.25 : 0;
+      if (dayK < 1) {
+        // 수면에서 내려온 빛이 줄어든다 — 위 34%만 어두워지고(점심 → 밤 TOP L ≈ −12) 아래는 그대로.
+        const dim = g.createLinearGradient(0, 0, 0, f.h * 0.34);
+        const k = 1 - 0.34 * (1 - dayK);
+        const kk = Math.round(255 * k);
+        dim.addColorStop(0, `rgb(${kk} ${kk} ${Math.min(255, kk + 6)})`);
+        dim.addColorStop(1, "rgb(255 255 255)");
+        g.save();
+        g.globalCompositeOperation = "multiply";
+        g.fillStyle = dim;
+        g.fillRect(0, 0, f.w, f.h * 0.34);
+        g.restore();
+      }
       if (!asked) {
         asked = true;
         // 실루엣 색 — 물빛보다 조금 짙은 남색. 채도 1로 완전히 눌러 "이모지"가 아니라 그림자로 읽히게.
@@ -233,15 +255,18 @@ export function createDeep(seed: number): Scene {
       // 빛줄기 — **한 번 굽고 매 프레임 drawImage 한 번**(LOD 규칙). 조각을 나눠 그리면 알파가 곹쳨 가로
       // 사다리가 보이고(실측), 세로 직사각으로 그리면 "반투명 UI 패널"이 된다(검토 A·B·C 공통).
       // 스프라이트 안에 사다리꼴(위 34% → 아래 100% 폭) + 가로 페이드 + 세로 페이드를 모두 굽고, 기울기는 transform(전단)으로.
-      if (shaftSpr) {
+      if (shaftSpr && dayK > 0) {
         const bot = f.h * 0.66;
-        for (let i = 0; i < 4; i++) {
+        // 해가 낮으면(새벽·노을) 기둥이 눕고 수가 준다(C): 점심 4개·기울기 .09 → 새벽·노을 2개·.2.
+        const nShaft = dayK >= 0.8 ? 4 : dayK >= 0.3 ? 2 : 1;
+        const lowSun = 1 - Math.min(1, dayK / 0.8);
+        for (let i = 0; i < nShaft; i++) {
           const x0 = f.w * SHAFT_X[i] + Math.sin(t * 0.16 + i * 1.7) * 30;
           const wd = 150 + 60 * Math.sin(t * 0.23 + i) + 26 * Math.sin(t * 0.11 + i * 2.1);
-          const tilt = (i % 2 === 0 ? 1 : -1) * (0.09 + 0.05 * Math.sin(t * 0.07 + i));
-          const a = 0.85 + 0.3 * Math.sin(t * 0.19 + i * 2.3);
+          const tilt = (i % 2 === 0 ? 1 : -1) * (0.09 + 0.11 * lowSun + 0.05 * Math.sin(t * 0.07 + i));
+          const a = (0.85 + 0.3 * Math.sin(t * 0.19 + i * 2.3)) * dayK;
           g.save();
-          g.globalAlpha *= Math.max(0.25, a);
+          g.globalAlpha *= Math.max(0.12, a);
           g.transform(1, 0, tilt, 1, x0, 0);
           g.drawImage(shaftSpr, -wd / 2, 0, wd, bot);
           g.restore();
@@ -254,7 +279,7 @@ export function createDeep(seed: number): Scene {
       const items: Draw[] = [];
       for (const s2 of fish) {
         const spr = fishSpr[s2.kind] || fishSpr[0];
-        const a = 0.22 + 0.5 * s2.z;
+        const a = (0.22 + 0.5 * s2.z) * (1 - 0.4 * nightK * (1 - s2.z)); // 밤엔 먼 것(z 작음)이 먼저 사라진다
         items.push({
           z: s2.z,
           run: () => {
@@ -278,7 +303,7 @@ export function createDeep(seed: number): Scene {
         items.push({
           z: j.z,
           run: () => {
-            softBlob(g, j.x, j.y, R * 2.2, GLOW, a * 0.5, 0);
+            softBlob(g, j.x, j.y, R * 2.2 * (1 + 0.2 * nightK), GLOW, a * 0.5 * (1 + 0.5 * nightK), 0); // 밤 발광 ×1.5·반지름 ×1.2(GRAMMAR §11)
             if (jellySpr) {
               g.save();
               g.globalAlpha *= Math.min(1, a * 2.6);
@@ -343,7 +368,7 @@ export function createDeep(seed: number): Scene {
       g.fillStyle = dg;
       g.fillRect(0, f.h * 0.34, f.w, f.h * 0.66);
     },
-    // 계절·날씨·시간대가 닿지 않는 방 — 엔진의 날씨 입자·대기 안개·조명 패스를 전부 건너뛴다.
+    // 계절·날씨가 닿지 않는 방 — 엔진의 날씨 입자·대기 안개·조명 패스를 전부 건너뛴다. **시간대는 장면이 스스로 읽는다**(라운드 10, 위 draw).
     sealed: () => true,
     ownsWeather: () => true,
     debug() {

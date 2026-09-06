@@ -55,17 +55,20 @@ for (const sc of list) {
   const hF2 = await shot();
   const sF2 = await state(page);
   check("③ frozen: real time passes, t/frame unchanged", hF1 === hF2 && tF1 === sF2.t && sF2.running === false, `t=${tF1}→${sF2.t}`);
-  // ④ 시간대 — **봉인된 장면(깊은 바다)은 예외**: 물속 옆모습 시점이라 계절·시간대·날씨를 아예 받지 않는 것이
-  // 설계다(소유자 2026-09-06). 그 장면에서는 "픽셀이 그대로일 것"을 반대로 검사한다.
+  // ④ 시간대 — 깊은 바다도 이제 **띠는 읽는다**(2026-09-06 라운드 10, 소유자 우선순위 A): 계약이 "30 해시 동일"에서
+  // "띠마다 5날씨 해시 동일"로 바뀌었다. 날씨 봉인은 ⑨에서 따로 검사한다.
   const sealed = sc.biome === "deep";
   const other = sc.band === "night" ? "noon" : "night";
   const sBand = await openFixture(page, fixtureUrl(sc, { band: other, t: 1500 }, base));
   const hBand = await shot();
-  check(
-    sealed ? `④ band ${sc.band} → ${other} 봉인 유지(픽셀 불변)` : `④ band ${sc.band} → ${other} changes frame + world().band`,
-    sBand.world.band === other && (sealed ? hBand === h1 : hBand !== h1),
-    `band=${sBand.world.band} ${h1}→${hBand}`
-  );
+  check(`④ band ${sc.band} → ${other} changes frame + world().band`, sBand.world.band === other && hBand !== h1, `band=${sBand.world.band} ${h1}→${hBand}`);
+  if (sealed) {
+    // ⑨ 날씨 봉인(깊은 바다) — 같은 띠에서 날씨를 바꿔도 픽셀이 같아야 한다(계절·날씨는 여전히 닿지 않는 방).
+    const otherW = sc.weather === "clear" ? "fog" : "clear";
+    await openFixture(page, fixtureUrl(sc, { weather: otherW, t: 1500 }, base));
+    const hW = await shot();
+    check(`⑨ deep: weather ${sc.weather} → ${otherW} 봉인 유지(픽셀 불변)`, hW === h1, `${h1}→${hW}`);
+  }
   // ⑤ 시드
   await openFixture(page, fixtureUrl({ ...sc, seed: 7 }, { t: 1500 }, base));
   const hSeed = await shot();

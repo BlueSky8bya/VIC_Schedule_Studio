@@ -18,7 +18,7 @@ const from = Number(args.from ?? 15000);
 const to = Number(args.to ?? 40000);
 const step = Number(args.step ?? 500);
 const watch = String(args.watch ?? "squirrel,whirl").split(",").filter(Boolean);
-const HZ_V = 0.12;
+const HZ_V = 0.26; // = world/view.ts HORIZON_V(2026-09-06 하늘 확대). 0.12로 두면 v가 두 배로 부풀어 A-1 판정이 무효(라운드 8·9 검토 B 지적)
 const FLOOR_V = 0.18;
 await assertServer(base);
 

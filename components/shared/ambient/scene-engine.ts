@@ -108,8 +108,9 @@ export interface Scene {
   nav?: { go(target: BiomeKey | Dir): boolean; at(): BiomeKey; moving(): boolean; exits(): Record<Dir, BiomeKey | null> };
   /** 이 날씨의 입자를 장면이 스스로 그린다(초원 겨울의 착지 눈송이) — 엔진 입자층이 겹치지 않게 건너뛴다. */
   ownsWeather?(w: Weather): boolean;
-  /** "닫힌 방" — 계절·날씨·시간대가 닿지 않는 장면(깊은 바다, 2026-09-06 소유자). true면 엔진이 대기 안개·조명
-   *  패스를 **통째로 건너뛴다**(입자는 ownsWeather로 따로 막는다). 물속 200m는 밤낮도 날씨도 없다. */
+  /** "닫힌 방" — 계절·날씨가 닿지 않는 장면(깊은 바다, 2026-09-06 소유자). true면 엔진이 대기 안개·조명
+   *  패스를 **통째로 건너뛴다**(입자는 ownsWeather로 따로 막는다). **시간대는 장면이 스스로 읽는다**(라운드 10 개정 —
+   *  `deep.ts`가 `f.time.band`로 빛줄기·위 1/3 명도·밤 발광을 정한다; 계약 = 띠마다 5날씨 해시 동일, 고유 해시 6). */
   sealed?(): boolean;
 }
 
