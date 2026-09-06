@@ -29,6 +29,11 @@ export type Light = {
   tint: { rgb: string; alpha: number };
   /** 그림자 — dx: 해 반대쪽(−1 = 왼쪽/서 … +1 = 오른쪽/동), len: 몸 높이 대비 길이 배(점심 .5), alpha: 농도 배(점심 1). */
   shadow: { dx: number; len: number; alpha: number };
+  /** **지면 앵커**(2026-09-06 라운드 15, 검토 A #1): 지평선 **아래**에만 얹는 한 겹(source-over). `mul`은 순수 곱셈이라
+   *  밝은 지면이 목표만큼 안 내려간다 — 점심→밤 하늘 −30~−39L인데 지면은 −8~−13L(추종률 .27~.41), 민물은 물이 밤하늘보다
+   *  밝아졌다. source-over는 밝은 것을 더 많이 끌어내리므로(new = old·(1−a) + c·a) 밝고 어두운 지면이 함께 목표에 닿는다.
+   *  하늘은 건드리지 않는다(하늘의 밝기는 하늘 판·skyAlpha가 맡는다). alpha 0 = 항등. */
+  ground: { rgb: string; alpha: number };
   /** 수면 글린트·반사 배(점심 1, 흐림·비·안개 0). */
   glint: number;
   /** 바람 0~1 — 입자층·나무 흔들림·풀 진행파가 읽는다(맑음 .08). */
@@ -49,6 +54,7 @@ export const NEUTRAL_LIGHT: Light = {
   desat: 0,
   tint: { rgb: "255 255 250", alpha: 0 },
   shadow: { dx: 0, len: 0.5, alpha: 1 },
+  ground: { rgb: "30 38 58", alpha: 0 },
   glint: 1,
   wind: 0.08,
   reflect: { k: 0, rgb: "255 250 240", x: 0.5, skyK: 0 }
@@ -62,6 +68,8 @@ type BandRow = {
   desat: number;
   tint: { rgb: string; alpha: number };
   shadow: { dx: number; len: number; alpha: number };
+  /** 지면 앵커 한 겹(지평선 아래에만). 라운드 15 — 밝은 지면이 `mul`만으로는 목표까지 안 내려간다. */
+  ground?: { rgb: string; alpha: number };
   glint: number;
   reflect: { k: number; rgb: string; skyK: number };
 };
@@ -79,6 +87,7 @@ const BAND: Record<DayBand, BandRow> = {
     mul: [216, 224, 238],
     desat: 0.14,
     tint: { rgb: "118 128 158", alpha: 0.05 },
+    ground: { rgb: "44 54 78", alpha: 0.05 }, // 새벽: 목표 −6L 중 mul이 못 채우는 몫(라운드 15 A #1)
     shadow: { dx: -1, len: 1.6, alpha: 0.8 }, // .55 → .80(2026-09-06 라운드 8, C: 새벽 그림자 코어 하강 1.98L < 기준 4L)
     glint: 0,
     reflect: { k: 0.26, rgb: "210 218 232", skyK: 0.16 }
@@ -114,6 +123,7 @@ const BAND: Record<DayBand, BandRow> = {
     mul: [246, 233, 232],
     desat: 0.1,
     tint: { rgb: "150 122 142", alpha: 0.05 },
+    ground: { rgb: "62 52 62", alpha: 0.03 }, // 노을: 목표 −3L, 아주 얇게(회장미 쪽)
     shadow: { dx: 1, len: 1.8, alpha: 1.1 },
     glint: 1.2,
     reflect: { k: 0.62, rgb: "240 220 210", skyK: 0.36 }
@@ -130,6 +140,7 @@ const BAND: Record<DayBand, BandRow> = {
     // — 갯벌 뻘 C* 점심 2.0 → 저녁 5.6(×2.76) → 밤 5.8(×2.82), 회색 뻘이 밤에 더 파래졌다. 색온도는 mul이 이미 옮기고 있으니
     // tint는 얇은 마무리만 맡는다. 밤 하한(민물 −20.1 · 모래 −16.9, 규칙 −16)도 같은 항이 눌러 온 것.
     tint: { rgb: "90 104 136", alpha: 0.04 },
+    ground: { rgb: "38 48 72", alpha: 0.1 }, // 저녁: 목표 −9L(라운드 15 A #1 — 실측 지면 추종률 .27~.41)
     shadow: { dx: 0.6, len: 1.2, alpha: 0.8 }, // 저녁도 같은 이유
     glint: 0,
     reflect: { k: 0.22, rgb: "184 196 218", skyK: 0.14 }
@@ -145,6 +156,9 @@ const BAND: Record<DayBand, BandRow> = {
     mul: [198, 203, 214],
     desat: 0.16, // .28 → .16(가을 밤 크로마 ×.26, 규칙 ×.62)
     tint: { rgb: "48 66 102", alpha: 0.04 }, // 저녁과 같은 이유(라운드 14, A #4) — 밤 하한과 무채색 크로마 주입을 함께 푼다
+    // 밤: 목표 −16L. mul만으로는 −8~−13에 그쳐 "밤하늘 아래 낮의 땅"이었다(라운드 15 A #1).
+    // α .17 → .15(자체 실측 1회전: .17에서 가장 밝은 지면인 민물 수면이 −20.2로 **하한 −16을 넘겨** 어두워졌다 — 밝은 것을 더 끄는 성질의 뒷면).
+    ground: { rgb: "28 36 56", alpha: 0.15 },
     shadow: { dx: 0, len: 0.6, alpha: 0.33 },
     glint: 0.5,
     reflect: { k: 0.58, rgb: "222 232 246", skyK: 0.1 }
@@ -195,13 +209,17 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
     desat: b.desat,
     tint: { ...b.tint },
     shadow: { ...b.shadow },
+    ground: b.ground ? { ...b.ground } : { rgb: "30 38 58", alpha: 0 },
     glint: b.glint,
     wind: 0.08,
     // 빛의 길의 가로 자리 = 해·달의 방위 — 그림자가 뻗는 쪽의 반대(새벽 해 동쪽 → 띠 오른쪽, 노을 해 서쪽 → 왼쪽). 밤 달은 살짝 오른쪽.
     reflect: { ...b.reflect, x: 0.5 - b.shadow.dx * 0.22 + (band === "night" ? 0.08 : 0) }
   };
   // 밤 눈밭은 알베도로 덜 어둡다(GRAMMAR §3.1: 밤 ΔL −16 대신 −10).
-  if (season === "winter" && (band === "night" || band === "evening")) L.mul = scaleMul(L.mul, [1.08, 1.07, 1.05]);
+  if (season === "winter" && (band === "night" || band === "evening")) {
+    L.mul = scaleMul(L.mul, [1.08, 1.07, 1.05]);
+    L.ground.alpha *= 0.62; // 눈밭은 알베도로 덜 어둡다 — 지면 앵커도 같은 비로(라운드 15)
+  }
   // 새벽·맑음의 원거리 습기(GRAMMAR §2.2 "원거리 습기 허용", 라운드 4 AMB-T1-03) — 안개 날씨가 아니어도 발치 띠가 옅게 깔려
   // 새벽↔저녁이 그림자 방향 말고도 갈린다. .2 = 안개 날씨(.55×1.6)의 1/4.
   if (band === "dawn" && weather === "clear") L.groundFog = 0.2;
@@ -211,6 +229,8 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       L.sky = mixRgb(L.sky, tintTo(L.sky, "196 200 206", -26), 0.7);
       L.skyAlpha = Math.max(L.skyAlpha, 0.26);
       L.mul = scaleMul(L.mul, [0.9, 0.905, 0.915]);
+      // 날씨도 **지면**을 눌러야 한다(라운드 15, A #1 후반: 비에 하늘 −22.6L인데 뻘은 −7.4L). 흐림은 얇게.
+      L.ground = { rgb: L.ground.alpha ? L.ground.rgb : "58 64 74", alpha: L.ground.alpha + 0.05 };
       L.desat += 0.12;
       L.shadow.alpha *= 0.4;
       L.glint = 0;
@@ -225,6 +245,7 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       L.sky = mixRgb(L.sky, tintTo(L.sky, "132 142 154", -40), 0.75);
       L.skyAlpha = Math.max(L.skyAlpha, 0.38);
       L.mul = scaleMul(L.mul, [0.84, 0.86, 0.9]);
+      L.ground = { rgb: L.ground.alpha ? L.ground.rgb : "44 50 62", alpha: L.ground.alpha + 0.09 }; // 비: 젖은 땅은 어둡다(라운드 15 A #1·#5)
       // 비의 지면은 **젖어서 진하다** — 탈채도는 규칙의 반대 방향이다(2026-09-06 라운드 9, 검토 C:
       // Δ채도 −0.05~−0.07, 규칙 +10%). 원경 대비 −35%는 아래 `hazeK`가 이미 맡는다.
       // (젖음으로 채도를 **올리는** 것은 웅덩이 반사와 함께 별건으로 남긴다 — 백로그.)
@@ -241,6 +262,7 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       L.sky = mixRgb(L.sky, tintTo(L.sky, "198 204 212", -20), 0.7);
       L.skyAlpha = Math.max(L.skyAlpha, 0.32);
       L.mul = scaleMul(L.mul, [0.94, 0.945, 0.96]);
+      L.ground = { rgb: L.ground.alpha ? L.ground.rgb : "150 158 170", alpha: L.ground.alpha + 0.02 }; // 눈은 지면을 밝히므로 아주 얇게
       L.desat += 0.15;
       L.shadow.alpha *= 0.5;
       L.glint *= 0.3;
@@ -308,6 +330,7 @@ export function lerpLight(a: Light, b: Light, t: number): Light {
     desat: l(a.desat, b.desat),
     tint: { rgb: lerpRgb(a.tint.rgb, b.tint.rgb, t), alpha: l(a.tint.alpha, b.tint.alpha) },
     shadow: { dx: l(a.shadow.dx, b.shadow.dx), len: l(a.shadow.len, b.shadow.len), alpha: l(a.shadow.alpha, b.shadow.alpha) },
+    ground: { rgb: lerpRgb(a.ground.rgb, b.ground.rgb, t), alpha: l(a.ground.alpha, b.ground.alpha) },
     glint: l(a.glint, b.glint),
     wind: l(a.wind, b.wind),
     reflect: { k: l(a.reflect.k, b.reflect.k), rgb: lerpRgb(a.reflect.rgb, b.reflect.rgb, t), x: l(a.reflect.x, b.reflect.x), skyK: l(a.reflect.skyK, b.reflect.skyK) }

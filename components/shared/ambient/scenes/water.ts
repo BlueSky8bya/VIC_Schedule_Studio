@@ -2,7 +2,7 @@
 // 위(멀다)는 옅고 촘촘, 아래(가깝다)는 짙고 성기다. 규칙: 바탕(물빛 그라데이션 + 옅은 caustic 그물)은 한 번 굽고, 매 프레임은 파도
 // 거품 선 몇 줄만 stroke(필터·블러 없음). 오행 물빛 #9cc4e0 계열, 어두운 얼룩 금지.
 
-import { makeCanvas, rng, softBlob, TAU } from "./util";
+import { makeCanvas, rng, TAU } from "./util";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 
 import type { Light } from "../world/light";
@@ -100,8 +100,9 @@ export function bakeWater(w: number, h: number, top: number, dpr: number, pal: W
     g.drawImage(rc, 0, top, w, h - top);
     g.restore();
   }
-  // 수평선 바로 아래 — 하늘빛 반사 한 줄.
-  softBlob(g, w / 2, top + 6, w * 0.7, "255 255 255", 0.16, 0);
+  // (수평선 반사는 **굽지 않는다** — 2026-09-06 라운드 15, 검토 A #2 · C #1: 구운 흰 자(`softBlob` w·.7, α .16)는 조명을 다시 받지 못해
+  //  하늘이 어두워질수록 더 튀었다(peak−sky 맑음 6.2 → 비 17.4 = ×2.8, 안개에도 3~4 잔존, 정점 행 sd .39~1.09 = 490px가 한 행).
+  //  이제 `drawHorizonGlow`가 매 프레임 조명(`glint`·`skyAlpha`)을 소비하며 마디로 끊어 그린다.)
   return c;
 }
 
@@ -115,7 +116,7 @@ export function stepRainRings(
   dt: number,
   rain: boolean,
   rnd: () => number,
-  spawn: (r: () => number) => { x: number; y: number } | null,
+  spawn: (r: () => number) => { x: number; y: number; u?: number } | null,
   rate: number,
   cap = 160
 ): number {
@@ -127,7 +128,11 @@ export function stepRainRings(
   if (!rain || rings.length >= cap || rnd() >= dt * rate) return 0;
   const at = spawn(rnd);
   if (!at) return 0;
-  rings.push({ x: at.x, y: at.y, life: 0, dur: 0.9 + rnd() * 0.5, maxR: 8 + rnd() * 12, a: 0.28, w: 0.9 });
+  // 크기도 원근을 탄다(2026-09-06 라운드 15, 검토 B #4): 라운드 14는 **밀도**만 근경으로 몰아 반지름 상위⅓:하위⅓ = 0.98
+  // (수용 기준 ≤ 0.6 미달) — 지평선의 고리가 발밑과 같은 크기였다. `u` = 스폰 자리의 원근(0 = 먼 물, 1 = 발밑).
+  const u = at.u ?? 0.5;
+  const k = 0.45 + 0.75 * u;
+  rings.push({ x: at.x, y: at.y, life: 0, dur: 0.9 + rnd() * 0.5, maxR: (8 + rnd() * 12) * k, a: 0.28, w: 0.9 * k });
   return 1;
 }
 
@@ -149,6 +154,54 @@ export function drawRainRings(g: CanvasRenderingContext2D, rings: RainRing[], sq
     g.beginPath();
     g.ellipse(r.x, r.y, rad, rad * squash, 0, 0, Math.PI * 2);
     g.stroke();
+  }
+}
+
+/** 수평선 바로 아래의 하늘빛 반사(2026-09-06 라운드 15) — **마디로 끊긴** 띠. 세기는 `L.glint`(흐림·비·안개 0, 노을 ×1.2, 밤 ×.5)와
+ * 하늘 오버레이의 두께(`skyAlpha`)가 정한다: 하늘이 덮일수록 물도 덮인다. 안개면 하늘의 안개색으로 물 상단을 눕혀 수평선을 지운다.
+ * 전폭 1px 선 금지(ADR-0017 ⑰) — 40~160px 마디 사이를 20~35% 비우고 α를 x별로 흔든다. */
+export function drawHorizonGlow(g: CanvasRenderingContext2D, w: number, top: number, seed: number, L: Light) {
+  const k = Math.max(0, Math.min(1, L.glint)) * (1 - Math.min(0.85, L.skyAlpha));
+  // 안개: 띠를 끄고 물 상단을 하늘의 안개색으로 눕힌다(GRAMMAR §4 "안개 = 수평선 사라짐").
+  if (L.hazeRgb && L.hazeK >= 1.5) {
+    const hg = g.createLinearGradient(0, top - 2, 0, top + 26);
+    hg.addColorStop(0, `rgb(${L.hazeRgb} / 0.55)`);
+    hg.addColorStop(1, `rgb(${L.hazeRgb} / 0)`);
+    g.fillStyle = hg;
+    g.fillRect(0, top - 2, w, 28);
+    return;
+  }
+  // **물 상단을 하늘에 잇는다**(라운드 15 2차): `bakeWater`가 수평선 아래 22px에 굽는 하늘빛은 **상수**라, 조명 패스가 하늘만 어둡게
+  // 덮으면(비·흐림 `skyAlpha` .38/.26) 그 22px만 창백하게 남아 "사각형 둘을 붙인 자리"가 된다(갯벌 점심 비 peak−sky 17.9).
+  // 하늘을 덮은 만큼 물 상단도 같은 색으로 덮는다 — 굽기를 다시 하지 않고 조명만으로.
+  if (L.skyAlpha > 0.02) {
+    // 세기·깊이는 자체 실측 2회전으로 잡았다: ×0.9·25px에서 갯벌 점심 비 peak−sky 16.6이 남아(하늘만 어둡고 물은 창백) ×1.25·60px로.
+    // 물은 하늘을 비추므로 하늘을 덮은 색이 물 상단에도 같은 세기로 온다 — 아래로 갈수록 물 자신의 색이 이긴다.
+    // 색은 `L.sky`가 아니라 `hazeRgb`(구름·안개의 회색)를 쓴다 — `L.sky`는 **색조만 옮기는 밝은 판**이라(light.ts 주석) 베일로 쓰면
+    // 물이 어두워지지 않는다(자체 실측 3회전: 갯벌 점심 비에서 물 상단 79.1 vs 하늘 63.3으로 15.8L 단차가 남았다).
+    const veil = L.hazeRgb || L.sky;
+    const vg = g.createLinearGradient(0, top - 1, 0, top + 60);
+    vg.addColorStop(0, `rgb(${veil} / ${Math.min(0.62, L.skyAlpha * 1.25).toFixed(3)})`);
+    vg.addColorStop(0.35, `rgb(${veil} / ${Math.min(0.4, L.skyAlpha * 0.7).toFixed(3)})`);
+    vg.addColorStop(1, `rgb(${veil} / 0)`);
+    g.fillStyle = vg;
+    g.fillRect(0, top - 1, w, 61);
+  }
+  if (k < 0.05) return;
+  const r = rng(seed * 977 + 31);
+  let x = -20;
+  while (x < w + 20) {
+    const seg = 40 + r() * 120;
+    const gap = 24 + r() * 60;
+    const a = 0.1 * k * (0.7 + r() * 0.6);
+    if (a > 0.01) {
+      const gg = g.createLinearGradient(0, top + 1, 0, top + 11);
+      gg.addColorStop(0, `rgb(252 254 255 / ${a.toFixed(3)})`);
+      gg.addColorStop(1, "rgb(252 254 255 / 0)");
+      g.fillStyle = gg;
+      g.fillRect(Math.round(x / 2) * 2, top + 1, Math.round(seg / 2) * 2, 10);
+    }
+    x += seg + gap;
   }
 }
 

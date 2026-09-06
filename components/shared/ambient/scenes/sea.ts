@@ -10,7 +10,7 @@ import { clamp, lerp, rng, TAU } from "./util";
 import { SIZE } from "../world/scale";
 import { GROUND_SQUASH, bakeHorizon, horizonY, moveScale, ySort } from "../world/view";
 import { ASSET, loadSprite, type Sprite } from "../assets";
-import { bakeWater, drawGlints, drawRainRings, drawTrail, drawWaterLight, drawWaves, newTrail, stepRainRings, stepTrail, waterPalette, type RainRing } from "./water";
+import { bakeWater, drawGlints, drawHorizonGlow, drawRainRings, drawTrail, drawWaterLight, drawWaves, newTrail, stepRainRings, stepTrail, waterPalette, type RainRing } from "./water";
 import { currentLight } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 
@@ -100,7 +100,7 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
         (r) => {
           const t0 = top() + 10;
           const u = Math.pow(r(), 0.55);
-          return { x: r() * w, y: t0 + u * (h - t0 - 4) };
+          return { x: r() * w, y: t0 + u * (h - t0 - 4), u };
         },
         lerp(6, 18, load),
         140
@@ -144,6 +144,7 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
       }
       if (water) g.drawImage(water, 0, 0, f.w, f.h);
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      drawHorizonGlow(g, f.w, top(), seed, currentLight()); // 라운드 15 — 구운 흰 자 대신 조명을 소비하는 마디 띠
       drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
       // 먼바다 = 파장 14~100m → 한 화면에 마루 여럿. 깊은 바다 = 225~624m → **큰 너울 한 번**.
       // (2026-09-04 조사. 옛 코드는 깊은 바다에 수면 문법을 아예 안 그려 두 화면이 '불투명도만 다른 같은 그림'이었다 —

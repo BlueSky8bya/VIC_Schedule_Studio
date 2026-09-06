@@ -15,7 +15,7 @@ import { claimSpot, drawProp, drawSubmerged, propShadow, propSpots, resetPropFie
 import { currentLight, shadowKey } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { groundYAt, horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
-import { bakeWater, drawGlints, drawRainRings, drawTrail, drawWaterLight, drawWaves, newTrail, stepRainRings, stepTrail, waterPalette, type RainRing } from "./water";
+import { bakeWater, drawGlints, drawHorizonGlow, drawRainRings, drawTrail, drawWaterLight, drawWaves, newTrail, stepRainRings, stepTrail, waterPalette, type RainRing } from "./water";
 
 export type CoastMode = "tidal" | "sandy" | "rocky";
 
@@ -181,6 +181,29 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         nLand++;
         propShadow(cg, rk.x + 3 * rk.k, ry - 1, 22 * rk.k, 0.18, GROUND_SQUASH * 0.5, "58 64 68");
         drawProp(cg, art, "rock", rk.x, ry, { k: rk.k, r: rk.r1, flip: rk.f });
+        // **젖음**(2026-09-06 라운드 15, 검토 B #2): 물가에서 갓 드러난 돌이 화면에서 가장 **밝은** 돌이었다(물속 +8.5L · 물가 2px 안쪽이 화면 최고).
+        // 조류대 띠는 뭍 판에 굽고 층은 별도 캔버스라 띠가 발치를 지나지 않는다. 물가선에서 40px 안쪽까지 몸통을 어둡게 적신다
+        // (규칙: 젖은 자리 ≤ 마른 자리 − 6). `source-atop`이라 스프라이트 밖으로 새지 않는다.
+        const dw = -d; // 0 = 물가선, 클수록 뭍 안쪽
+        if (dw < 40) {
+          const wetK = 1 - dw / 40;
+          const H2 = 30 * rk.k;
+          cg.save();
+          cg.globalCompositeOperation = "source-atop";
+          const wg2 = cg.createLinearGradient(0, ry - H2, 0, ry + 2);
+          wg2.addColorStop(0, "rgb(30 40 44 / 0)");
+          wg2.addColorStop(0.55, `rgb(30 40 44 / ${(0.1 * wetK).toFixed(3)})`);
+          wg2.addColorStop(1, `rgb(30 40 44 / ${(0.34 * wetK).toFixed(3)})`);
+          cg.fillStyle = wg2;
+          cg.fillRect(rk.x - 22 * rk.k, ry - H2, 44 * rk.k, H2 + 3);
+          cg.restore();
+          // 발치 조류대 스커트 — 뭍 판의 띠가 여기까지 오지 않으므로 층에서 직접(폭은 몸통 폭, 높이 6k).
+          cg.save();
+          cg.globalCompositeOperation = "source-atop";
+          cg.fillStyle = `rgb(44 52 50 / ${(0.4 * wetK).toFixed(3)})`;
+          cg.fillRect(rk.x - 22 * rk.k, ry - 6 * rk.k, 44 * rk.k, 6 * rk.k + 3);
+          cg.restore();
+        }
       }
     }
     rocksSea = nSea ? sea.c : null;
@@ -1227,7 +1250,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           if (lw - t0 < 12) return null;
           // v^1.6 = 근경 쪽으로 몰린다(고른 산포는 "하늘에서 뿌린 스티커"로 읽힌다 — A #1 조건 ③).
           const u = Math.pow(r(), 0.55);
-          return { x: rx, y: t0 + u * (lw - t0 - 2) };
+          return { x: rx, y: t0 + u * (lw - t0 - 2), u };
         },
         lerp(6, 18, load),
         140
@@ -1255,6 +1278,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       }
       if (water) g.drawImage(water, 0, 0, f.w, f.h);
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      // 수평선 반사 — 매 프레임, 조명이 정한다(라운드 15). 구운 흰 자를 대신한다.
+      drawHorizonGlow(g, f.w, top(), seed, currentLight());
       // 별·달·해 — 수평선 위 하늘 전부(가릴 것이 없다). 해는 수평선 가까이.
       drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
       // 물가 선이 숨쉰다. 조석 진폭은 세 해안이 함께 움직이도록 작게(옛 0.06h는 갯벌만 바다 높이가 52px 달랐다).
@@ -1343,16 +1368,17 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           // 마디 배치는 **정적 시드**(라운드 13, C #4): 옛 `Math.round(sy)` 시드는 숨쉬기로 sy 정수가 바뀔 때마다(≈ 1회/초) 마디 전체를 재추첨해
           // 40ms diff에 ×5~11 스파이크(갯벌 3,077px)를 냈다. 주기 P(≥ 1100px)로 한 번 뽑아 타일링하고 4px/s로 흘린다 — t의 순수 함수라 캡처는 결정적.
           const fr = rng(seed * 131 + ri * 17 + Math.round(shoreY()));
-          const segs: [number, number, number, number][] = [];
+          const segs: [number, number, number, number, number][] = [];
           let cursor = 0;
-          // 바람은 **마디를 길게·틈을 좁게**(파도가 더 자주 닿는다) — 흰 α를 올리면 형광펜이 된다(라운드 14, 검토 A #1 조건 ②).
+          // 바람은 **더 자주·더 짧게**(파도가 더 자주 닿는다) — 흰 α도, 굵기도 올리면 안 된다(라운드 15, 검토 A #4:
+          // 라운드 14의 굵기 ×(1+.35w)가 같은 y의 이웃 마디를 이어붙여 186×16px 흰 테이프가 됐다). 길이 상한 90px·틈 하한 12px.
           const wk = currentLight().wind;
           while (cursor < 1100) {
-            const seg = (40 + fr() * 120) * (1 + 0.5 * wk);
-            const gap = (60 + fr() * 120) * (1 - 0.3 * wk);
+            const seg = Math.min(90, (40 + fr() * 120) * (1 - 0.25 * wk));
+            const gap = Math.max(12, (60 + fr() * 120) * (1 - 0.45 * wk));
             const aa = a * (0.7 + fr() * 0.6);
-            const lw2 = Math.max(2, Math.round((lw * (0.7 + fr() * 0.7) * (1 + 0.35 * wk)) / 2) * 2);
-            segs.push([cursor, seg, aa, lw2]);
+            const lw2 = Math.max(2, Math.round((lw * (0.7 + fr() * 0.7) * (1 + 0.15 * wk)) / 2) * 2);
+            segs.push([cursor, seg, aa, lw2, (fr() < 0.5 ? -2 : 2) * (fr() < 0.5 ? 0 : 1)]);
             cursor += seg + gap;
           }
           const P = cursor;
@@ -1360,14 +1386,14 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           // 맑음(wind .08)도 방향은 있다 — 세기만 작다.
           const drift = (t * 4 * (1 + 1.6 * currentLight().wind) * windDir + P * 1000) % P;
           for (let k0 = -1; k0 * P - drift < f.w + 20; k0++) {
-            for (const [s0, seg, aa, lw2] of segs) {
+            for (const [s0, seg, aa, lw2, dy] of segs) {
               const x = k0 * P + s0 - drift;
               if (x + seg < -20 || x > f.w + 20) continue;
               g.strokeStyle = `rgb(${pal.foam} / ${aa.toFixed(3)})`;
               g.lineWidth = lw2;
               g.beginPath();
               for (let px = x; px <= x + seg; px += 8) {
-                const yy = Math.round((lineY(px) + off) / 2) * 2;
+                const yy = Math.round((lineY(px) + off + dy) / 2) * 2;
                 if (px === x) g.moveTo(px, yy);
                 else g.lineTo(px, yy);
               }

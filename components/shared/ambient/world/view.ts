@@ -248,6 +248,25 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
       g.globalCompositeOperation = "source-over";
     }
   }
+  // **지면 앵커**(2026-09-06 라운드 15, 검토 A #1) — 지평선 아래에만 얹는 한 겹. `mul`은 순수 곱셈이라 밝은 지면이 목표까지 안 내려가
+  // "밤하늘 아래 낮의 땅"이 됐다(점심→밤 하늘 −30~−39L · 지면 −8~−13L, 민물은 물이 밤하늘보다 밝았다). source-over는
+  // new = old·(1−a) + c·a라 **밝은 것을 더 많이** 끌어내리므로 밝고 어두운 지면이 함께 목표에 닿는다. 하늘은 건드리지 않는다.
+  // 지평선에서 곧장 켜지면 절단선이 생긴다(라운드 3 C#6 · 라운드 11 B#2) — 가로 광과 같은 8단 세로 램프로 올린다.
+  if (L.ground.alpha > 0.002) {
+    g.fillStyle = `rgb(${L.ground.rgb})`;
+    const y0 = aboveHz(h, 0.04);
+    const y1 = groundYAt(0.06, h);
+    const steps = 8;
+    for (let i = 0; i < steps; i++) {
+      const ya = y0 + ((y1 - y0) * i) / steps;
+      const yb = y0 + ((y1 - y0) * (i + 1)) / steps;
+      g.globalAlpha = (L.ground.alpha * (i + 1)) / steps;
+      g.fillRect(0, ya, w, yb - ya + 0.5);
+    }
+    g.globalAlpha = L.ground.alpha;
+    g.fillRect(0, y1, w, h - y1);
+    g.globalAlpha = 1;
+  }
   if (L.desat > 0) {
     g.globalCompositeOperation = "saturation";
     g.globalAlpha = L.desat;
