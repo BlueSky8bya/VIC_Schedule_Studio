@@ -1127,20 +1127,37 @@ export function drawSubmerged(
   t.fillStyle = `rgb(${opts.water} / 0.62)`;
   t.fillRect(0, yw, cw, ch - yw);
   t.globalCompositeOperation = "destination-out";
+  // **밑단은 알파 0으로 끝난다**(2026-09-06 라운드 9, 검토 B): 옛 코드는 `1 − alphaDeep`까지만 지워
+  // 밑단에 alphaDeep만큼이 남은 채 스프라이트가 끊겼다 — 폭 65px가 y ±1px에 모이는 **수평 컷**(민물은
+  // `alphaDeep`을 안 넘겨 기본 .42라 가장 두꺼웠다). alphaDeep은 이제 **중간 기울기**만 정한다.
   const fade = t.createLinearGradient(0, yw, 0, ay);
-  fade.addColorStop(0, "rgb(0 0 0 / 0.1)");
-  fade.addColorStop(1, `rgb(0 0 0 / ${1 - (opts.alphaDeep ?? 0.42)})`);
+  fade.addColorStop(0, "rgb(0 0 0 / 0.08)");
+  fade.addColorStop(0.72, `rgb(0 0 0 / ${(1 - (opts.alphaDeep ?? 0.42) * 0.8).toFixed(3)})`);
+  fade.addColorStop(1, "rgb(0 0 0 / 1)");
   t.fillStyle = fade;
   t.fillRect(0, yw, cw, ch - yw);
   t.restore();
-  // 젖은 띠 — 수면선 바로 위 3px, 소품 픽셀에만.
+  // 젖은 띠 — 수면선 바로 위 3px, 소품 픽셀에만. **몸통색 −10L**이라야 한다(규칙): 절대 남색
+  // `rgb(24 34 44)`은 밝은 바위엔 푸른 얼룩이고 어두운 바위엔 무효였다. 검정을 얹어 명도만 내린다.
   const wet = opts.wet ?? 0.26;
   if (wet > 0) {
     t.save();
     t.globalCompositeOperation = "source-atop";
-    t.fillStyle = `rgb(24 34 44 / ${wet})`;
+    t.fillStyle = `rgb(0 0 0 / ${(wet * 0.52).toFixed(3)})`;
     t.fillRect(0, yw - 3, cw, 3);
     t.restore();
+  }
+  // **앞 반원 수면선을 함수 안에서** 긋는다 — 호출부마다 따로 그리면 소품 폭과 어긋나 "몸보다 큰 접시"가 된다.
+  // 뒤 반원은 몸에 가려지는 것이 맞으므로 그리지 않는다(호출부가 필요하면 `drawSubmerged` **앞**에 둔다).
+  {
+    const [wr, wg2, wb] = opts.water.split(" ").map(Number);
+    const lit = [wr, wg2, wb].map((v) => Math.round(v + (255 - v) * 0.55)).join(" ");
+    const hw2 = (W * k) / 2;
+    t.strokeStyle = `rgb(${lit} / 0.42)`;
+    t.lineWidth = Math.max(1, Math.min(1.8, 0.9 + k * 0.25));
+    t.beginPath();
+    t.ellipse(ax, yw, hw2 * 0.95, Math.max(2, hw2 * 0.3), 0, 0.12, Math.PI - 0.12);
+    t.stroke();
   }
   g.drawImage(c, x - ax, yWater - yw);
   return true;

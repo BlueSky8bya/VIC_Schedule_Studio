@@ -28,7 +28,6 @@ const P = (s: string): Rgb => s.split(" ").map(Number) as Rgb;
 const S = (c: Rgb): string => c.map((v) => Math.max(0, Math.min(255, Math.round(v)))).join(" ");
 const mix = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const add = (a: Rgb, d: number): Rgb => [a[0] + d, a[1] + d, a[2] + d];
-const scale = (a: Rgb, k: number): Rgb => [a[0] * k, a[1] * k, a[2] * k];
 
 // 값은 **조명 패스 전**(엔진이 뒤에서 띠 오버레이·multiply를 한 번 더 곱한다). 점심은 항등이라 그대로 화면색.
 // 점심(맑음) — 계절마다 하늘의 높이가 다르다: 봄 옅은 청, 여름 밝고 습한 청, **가을 = 천고마비**(가장 깊고 맑은 청, 위가 짙다), 겨울 차고 옅은 청.
@@ -89,23 +88,33 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
       };
       // 어두운 띠는 더 많이 내린다(2026-09-06 라운드 8 실측: 상수 −7로는 저녁 −1.1 · 밤 **+3.5**로 부호가 남았다).
       // L*은 바탕이 어두울수록 같은 RGB 차이가 작아 보이므로, 어두운 띠일수록 큰 오프셋이 필요하다.
-      const dk = band === "night" ? -40 : band === "evening" ? -22 : band === "dawn" ? -13 : -7;
-      const dz = band === "night" ? -20 : band === "evening" ? -16 : band === "dawn" ? -11 : -8;
+      // **노을은 '낮'이 아니다**(2026-09-06 라운드 9, 검토 C): 맑은 노을 천정 L 54.09는 새벽(54.92)과 같은 어둡기인데
+      // 낮 오프셋을 받아 안개·흐림 판 Δ가 혼자 초과했다. 어두운 버킷에 넣는다.
+      const dk = band === "night" ? -40 : band === "evening" ? -22 : band === "dawn" || band === "dusk" ? -13 : -12;
+      const dz = band === "night" ? -20 : band === "evening" ? -16 : band === "dawn" || band === "dusk" ? -11 : -8;
       const t = add(grey(top, 0.8), dk);
       const z = add(grey(hz, 0.8), dz);
       return done(t, z, [add(z, 8), add(z, -22)], 0.85, false);
     }
     case "rain": {
-      const t = scale(mix(top, [112, 120, 134], 0.75), 0.9);
-      const z = mix(hz, [150, 158, 170], 0.75);
-      return done(t, z, [add(z, 4), add(z, -26)], 0.95, false);
+      // 비도 같은 이유로 띠별(라운드 9, 검토 C: 저녁·밤 비 하늘 Δ가 −0.77 / −1.48, 목표 −14).
+      const rk = band === "night" ? 0.2 : band === "evening" || band === "dawn" || band === "dusk" ? 0.42 : 0.75;
+      const ro = band === "night" ? -26 : band === "evening" || band === "dawn" || band === "dusk" ? -18 : -8;
+      const t = add(mix(top, [112, 120, 134], rk), ro);
+      const z = add(mix(hz, [150, 158, 170], rk), ro + 2);
+      return done(t, z, [add(t, 6), add(t, -22)], 0.95, false);
     }
     case "snow": {
       // 눈구름은 밝지만 맑은 하늘보다는 **어둡다** — 옛 혼합은 하늘을 +0.8L 밝히고 있었다
       // (2026-09-06 라운드 8, 검토 C: 눈이 5 날씨 중 유일하게 3열 미달). GRAMMAR §3.2 눈 행 "하늘 L −6".
-      const t = add(mix(top, [200, 206, 214], 0.7), -7);
-      const z = add(mix(hz, [222, 226, 232], 0.7), -6);
-      return done(t, z, [add(z, 6), add(z, -14)], 0.8, false);
+      // 혼합비가 상수 .7이면 어두운 띠의 천정을 밝은 회색으로 **70%나** 끌어올린 뒤 −7을 빼는 셈이라
+      // 그 −7이 반올림 오차가 된다(2026-09-06 라운드 9, 검토 C: 눈 하늘이 5/6 띠에서 맑음보다 최대 +16.5L 밝았다).
+      // 흐림·안개와 같은 어법으로 — 어두운 띠일수록 적게 섞고 오프셋은 크게.
+      const sk = band === "night" ? 0.16 : band === "evening" || band === "dawn" || band === "dusk" ? 0.28 : 0.48;
+      const so = band === "night" ? -22 : band === "evening" ? -19 : band === "dawn" || band === "dusk" ? -14 : -13;
+      const t = add(mix(top, [200, 206, 214], sk), so);
+      const z = add(mix(hz, [222, 226, 232], sk), so + 1);
+      return done(t, z, [add(t, 7), add(t, -12)], 0.8, false);
     }
     case "fog": {
       // 안개 — 하늘이 보이지 않는 날이지만 완전한 무지 판은 아니다. 아주 옥은 저층운 한 겹으로
@@ -114,12 +123,15 @@ export function skyPalette(season: SeasonKey, weather: Weather, band: DayBand = 
       // 안개도 위가 어둡고 지평선이 밝다 — 대기는 아래가 두꺼우니까.
       // 혼합비는 **띠에 따라**(2026-09-06 라운드 8, 검토 C: 밤 안개 하늘 L 65가 맑은 저녁 L 46보다 밝았다 —
       // 상수 .8이 어두운 띠의 하늘을 흰 판으로 끌어올렸다). 어두운 띠일수록 안개도 어둡다.
-      const fk = band === "night" ? 0.34 : band === "evening" || band === "dawn" ? 0.56 : 0.8;
+      const fk = band === "night" ? 0.34 : band === "evening" || band === "dawn" || band === "dusk" ? 0.56 : 0.8;
       const z = mix(hz, [224, 228, 232], fk);
       // **천정은 지평선이 아니라 천정에서 만든다**(2026-09-06 라운드 8 실측: 지평선에서 파생하니 밤 안개 하늘이
       // 맑은 밤보다 +19.9L 밝았다 — 밤의 맑은 천정은 어둡고 지평선은 밝게 설계돼 있기 때문). 규칙 §3.2 "안개 = L +4".
-      const fkTop = band === "night" ? 0.04 : band === "evening" || band === "dawn" ? 0.1 : 0.36;
-      return done(mix(top, [200, 206, 212], fkTop), z, [add(z, 5), add(z, -7)], 0.3, false);
+      const fkTop = band === "night" ? 0.04 : band === "evening" || band === "dawn" || band === "dusk" ? 0.1 : 0.18;
+      // 덩이 색도 **천정에서** 만든다(라운드 9, 검토 C: 밤 안개 덩이가 그 띠 천정보다 +52.6L 밝아 하늘에
+      // 또렷한 흰 뭉게구름이 떴다 — "하늘이 보이지 않는 날"이 "맑은 날 + 안개 필터"로 읽혔다). cover도 .3 → .12.
+      const ft = mix(top, [200, 206, 212], fkTop);
+      return done(ft, z, [add(ft, 6), add(ft, -5)], 0.12, false);
     }
     case "wind":
       return done(top, hz, [add(hz, 10), add(hz, -8)], 0.18, true);

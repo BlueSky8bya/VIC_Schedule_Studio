@@ -86,8 +86,10 @@ const BAND: Record<DayBand, BandRow> = {
   morning: {
     sky: "250 250 245",
     skyAlpha: 0.16,
-    hazeK: 1.1,
-    mul: [246, 247, 243],
+    // 아침↔점심이 세 라운드 연속 "채널 하나"였다(검토 C: 지면 ΔL 0.63~1.41, 목표 2). mul을 −2L에 맞추고,
+    // 두 번째 채널을 **아침 안개 잔재**(hazeK 1.1 → 1.28)와 수면 글린트로 세운다 — 그림자는 점심이 짧아 줄기에 가려 신호가 안 난다.
+    hazeK: 1.28,
+    mul: [241, 242, 238],
     desat: 0.05,
     tint: { rgb: "255 255 250", alpha: 0 },
     shadow: { dx: -0.6, len: 1.3, alpha: 0.95 }, // 아침 stretch 하한(검토 C: 아침 = 점심 bandDelta 0)
@@ -151,6 +153,23 @@ const mixRgb = (a: string, b: string, t: number): string => {
   const pb = b.split(" ").map(Number);
   return pa.map((v, i) => Math.round(v + (pb[i] - v) * t)).join(" ");
 };
+/** rgb 문자열의 상대 휘도(0~255). */
+const lumaOf = (rgb: string): number => {
+  const c = rgb.split(" ").map(Number);
+  return c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722;
+};
+
+/** 색조(hue)는 그대로, **밝기만 목표에 맞춘** 회색을 만든다(2026-09-06 라운드 9, 검토 C).
+ *  날씨 오버레이가 상수 밝은 회색으로 섞이면 **띠를 모른다** — 밤 흐림 하늘 판이 −17.5L인데 화면에서 −0.1L로
+ *  되돌아왔다(어두운 밤 하늘 위에 L 170짜리 회색을 α .46으로 얹으니까). 목표를 "그 띠 하늘 ± dL"로 잡으면
+ *  같은 오버레이가 어느 띠에서나 같은 방향으로 작동한다. */
+const tintTo = (base: string, hue: string, dL: number): string => {
+  const target = Math.max(6, lumaOf(base) + dL);
+  const c = hue.split(" ").map(Number);
+  const k = target / Math.max(1, lumaOf(hue));
+  return c.map((v) => Math.round(Math.max(0, Math.min(255, v * k)))).join(" ");
+};
+
 const scaleMul = (m: [number, number, number], k: [number, number, number]): [number, number, number] => [
   Math.round(m[0] * k[0]),
   Math.round(m[1] * k[1]),
@@ -183,7 +202,7 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
   switch (weather) {
     case "cloud":
       // 흰빛 → 회색, 그림자 옅게(길이 그대로), 글린트 0, 대비 −20%(§3.2 흐림 행).
-      L.sky = mixRgb(L.sky, "196 200 206", 0.7);
+      L.sky = mixRgb(L.sky, tintTo(L.sky, "196 200 206", -26), 0.7);
       L.skyAlpha = Math.max(L.skyAlpha, 0.26);
       L.mul = scaleMul(L.mul, [0.9, 0.905, 0.915]);
       L.desat += 0.12;
@@ -197,10 +216,12 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       break;
     case "rain":
       // 회청 하늘(L −14), 젖은 지면(L −8, 어둡고 차게), 글린트 0, 원경 대비 −35%.
-      L.sky = mixRgb(L.sky, "132 142 154", 0.75);
+      L.sky = mixRgb(L.sky, tintTo(L.sky, "132 142 154", -40), 0.75);
       L.skyAlpha = Math.max(L.skyAlpha, 0.38);
       L.mul = scaleMul(L.mul, [0.84, 0.86, 0.9]);
-      L.desat += 0.08;
+      // 비의 지면은 **젖어서 진하다** — 탈채도는 규칙의 반대 방향이다(2026-09-06 라운드 9, 검토 C:
+      // Δ채도 −0.05~−0.07, 규칙 +10%). 원경 대비 −35%는 아래 `hazeK`가 이미 맡는다.
+      // (젖음으로 채도를 **올리는** 것은 웅덩이 반사와 함께 별건으로 남긴다 — 백로그.)
       L.shadow.alpha *= 0.3;
       L.glint = 0;
       L.reflect.k = 0;
@@ -211,7 +232,7 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       break;
     case "snow":
       // 회백 하늘(L −6), 지면은 눈이 밝히므로 조금만, 그림자 절반, 입자는 엔진 입자층.
-      L.sky = mixRgb(L.sky, "198 204 212", 0.7);
+      L.sky = mixRgb(L.sky, tintTo(L.sky, "198 204 212", -20), 0.7);
       L.skyAlpha = Math.max(L.skyAlpha, 0.32);
       L.mul = scaleMul(L.mul, [0.94, 0.945, 0.96]);
       L.desat += 0.15;
@@ -228,8 +249,10 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
       const k = FOG_BY_BAND[band];
       L.groundFog = Math.min(1, 0.55 * k);
       L.hazeK *= 1 + 0.9 * k;
-      L.sky = mixRgb(L.sky, "226 230 232", 0.55);
-      L.skyAlpha = Math.max(L.skyAlpha, 0.22 + 0.1 * k);
+      L.sky = mixRgb(L.sky, tintTo(L.sky, "226 230 232", 10), 0.55); // 안개는 규칙상 +4L — 그래도 **그 띠 기준**이다
+      // 밝은 띠는 오버레이를 얇게 — 한 색으로 하늘 전체를 덮으면 세로 결이 눌린다(라운드 9 실측:
+      // 낮 안개 하늘 세로 ΔL이 6.5 → 4.0으로 떨어졌다). 어두운 띠는 판 자체의 폭이 커서 영향이 적다.
+      L.skyAlpha = Math.max(L.skyAlpha, (band === "noon" || band === "morning" ? 0.1 : 0.22) + 0.1 * k);
       L.hazeRgb = L.hazeRgb ? mixRgb(L.hazeRgb, "226 230 232", 0.55) : "228 232 234";
       L.desat += 0.2;
       L.shadow.alpha *= 0.5;
@@ -286,7 +309,11 @@ export function lerpLight(a: Light, b: Light, t: number): Light {
 /** 그림자 채널의 양자화 키(라운드 4, AMB-T1-03) — 바탕에 구운 소품 그림자는 조명이 바뀌면 **한 번** 다시 굽는다. 3초 전이 동안
  *  프레임마다 굽지 않도록 dx ¼·len ¼·alpha ⅛ 단위로 묶고, 장면은 `f.lightStable`(전이 끝)일 때만 키를 비교한다. */
 export const shadowKey = (L: Light): string =>
-  `${Math.round(L.shadow.dx * 4)}|${Math.round(L.shadow.len * 4)}|${Math.round(L.shadow.alpha * 8)}`;
+  // 2026-09-06 라운드 9: 산 층 색이 **굽는 시점의 조명**(곱셈 배율·하늘 명도)에서 역산되므로 키에 함께 넣는다.
+  // 안 넣으면 그림자 채널이 같은 날씨 전환(맑음 ↔ 흐림)에서 층 색이 옛 띠 값으로 굳는다.
+  `${Math.round(L.shadow.dx * 4)}|${Math.round(L.shadow.len * 4)}|${Math.round(L.shadow.alpha * 8)}|${Math.round(
+    (L.mul[0] * 0.2126 + L.mul[1] * 0.7152 + L.mul[2] * 0.0722) / 8
+  )}|${L.sky}`;
 
 export const isNeutralMul = (m: [number, number, number]) => m[0] >= 255 && m[1] >= 255 && m[2] >= 255;
 

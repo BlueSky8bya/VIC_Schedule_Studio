@@ -29,7 +29,10 @@ const SEASON_SEED: Record<SeasonKey, number> = { spring: 0, summer: 977, autumn:
 // 2026-09-06(하늘 확대): 화면 분수가 아니라 **지평선 아래 땅에서의 비율**로 적는다. 화면 분수로 두면
 // hz가 .12 → .26으로 오를 때 바다 띠(hz~물가 선)가 22% → 6%로 눈 깜짝할 사이에 사라진다. 값은 옛 비율 그대로
 // 환산한 것((0.34−0.12)/0.88 등) — 물·묍의 상대 비율은 유지되고 하늘만 넓어진다.
-const SEA_GV_BY: Record<CoastMode, number> = { tidal: 0.25, sandy: 0.295, rocky: 0.386 };
+// 갯벌만 0.25 → **0.08**(2026-09-06 라운드 9, 검토 B 두 라운드 연속): 규격은 "뻘이 화면 58~63%, 바다는 위 띠 3~5%"인데
+// 실측 바다 띠가 화면 22.0% / 18.3%로 대여섯 배였다. 하늘 확대 때 옛 비율을 그대로 환산한 것이 화근 — 갯벌은
+// 애초에 "바다가 멀리 물러난 땅"이라 다른 두 해안과 규격 자체가 다르다. 비어난 세로 공간은 배수망·건열이 갖는다.
+const SEA_GV_BY: Record<CoastMode, number> = { tidal: 0.08, sandy: 0.295, rocky: 0.386 };
 // 뭍 캔버스 여분 — 물가 선이 조석·숨·만곡으로 최대 ±(0.06h + 34)px 움직인다. 정적 shoreY()로 높이를 잡으면
 // 화면 맨 아래에 물이 새어 나온다(2026-09-04 검토 1차: "해안마다 바닥에 파란 실선").
 const PAD = 140;
@@ -984,22 +987,23 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 흰 물살 호는 α .55 → .38로 낮춘다(호가 몸통보다 20L 밝아 호만 보였다).
       for (const rk of lateRocks) {
         propShadow(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, 0.24, GROUND_SQUASH * 0.5, "40 46 50");
-        const sub = drawSubmerged(g, art, "rock", rk.x, rk.y, {
-          k: rk.k,
-          r: rk.r1,
-          flip: rk.f,
-          depth: 9 * rk.k,
-          water: "44 52 50", // 조류대 색
-          wet: 0.3,
-          alphaDeep: 0.16
-        });
-        if (!sub) drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: rk.r1, flip: rk.f });
-        // 물살은 바위 **앞쪽(바다 쪽)** 반원에만 부서진다 — 닫힌 타원 링은 "속 빈 도형"으로 읽힌다(사이클5 경계 #4).
+        // 뒤(위) 반원 물살은 바위 **앞**에 그린다 — 뒤에 그리면 몸통을 가로질러 접시 테가 된다(2026-09-06 라운드 9, 검토 B).
+        // 앞 반원은 `drawSubmerged`가 소품 폭에 맞춰 안에서 긋는다.
         g.strokeStyle = "rgb(252 254 255 / 0.38)";
         g.lineWidth = 1.6 + 1.2 * rk.k;
         g.beginPath();
         g.ellipse(rk.x, rk.y + 2, 19 * rk.k, 6 * rk.k, 0, Math.PI * 1.05, TAU - 0.15);
         g.stroke();
+        const sub = drawSubmerged(g, art, "rock", rk.x, rk.y, {
+          k: rk.k,
+          r: rk.r1,
+          flip: rk.f,
+          depth: Math.min(16, 9 * rk.k), // 발치만 잠긴다(라운드 9 검토 B: k 3~5에서 27~45px = 몸통 높이의 1/3이 물속이라 "판"으로 보였다)
+          water: "44 52 50", // 조류대 색
+          wet: 0.3,
+          alphaDeep: 0.16
+        });
+        if (!sub) drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: rk.r1, flip: rk.f });
         softBlob(g, rk.x, rk.y - 2, 15 * rk.k, "255 255 255", 0.2, 0, GROUND_SQUASH);
       }
       // 따개비·자갈 — 바위 사이 빈 회색 판을 메운다.

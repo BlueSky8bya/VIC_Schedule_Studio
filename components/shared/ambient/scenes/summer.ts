@@ -497,34 +497,53 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             const cx3 = w * (0.16 + r2() * 0.7);
             const cy3 = MH * (0.16 + r2() * 0.5);
             const R = 50 + r2() * 60;
+            // 섬의 반지름을 **한 함수로** — 다각형과 갈대 자리가 같은 경계를 봐야 한다(2026-09-06 라운드 9, 검토 B:
+            // 갈대 8획 중 5획이 섬 **밖** 물 위에서 시작했다. `d ≤ R·0.72`인데 경계는 0.2R까지 좁아진다).
+            const rrAt = (a3: number) => R * (0.62 + 0.3 * Math.sin(a3 * 2.3 + c2) + 0.12 * Math.sin(a3 * 5.1));
+            const wl = cy3 + R * 0.34 * GROUND_SQUASH; // 수면선
             // ① 모래톱 — 2px 격자에 스냅한 계단 다각형(경계 대비 ≥ 6L).
+            const islePath = () => {
+              mg2.beginPath();
+              let first = true;
+              for (let a3 = 0; a3 <= TAU + 0.01; a3 += 0.22) {
+                const rr = rrAt(a3);
+                const px = Math.round((cx3 + Math.cos(a3) * rr) / 2) * 2;
+                const py = Math.round((cy3 + Math.sin(a3) * rr * GROUND_SQUASH) / 2) * 2;
+                if (first) {
+                  mg2.moveTo(px, py);
+                  first = false;
+                } else mg2.lineTo(px, py);
+              }
+              mg2.closePath();
+            };
             mg2.fillStyle = "rgb(126 132 104 / 0.5)";
-            mg2.beginPath();
-            let first = true;
-            for (let a3 = 0; a3 <= TAU + 0.01; a3 += 0.22) {
-              const rr = R * (0.62 + 0.3 * Math.sin(a3 * 2.3 + c2) + 0.12 * Math.sin(a3 * 5.1));
-              const px = Math.round((cx3 + Math.cos(a3) * rr) / 2) * 2;
-              const py = Math.round((cy3 + Math.sin(a3) * rr * GROUND_SQUASH) / 2) * 2;
-              if (first) {
-                mg2.moveTo(px, py);
-                first = false;
-              } else mg2.lineTo(px, py);
-            }
-            mg2.closePath();
+            islePath();
             mg2.fill();
             // ② 수초 덩이 — 모래톱 위에 옅게(원반이 아니라 채운 다각형 위의 색).
             mg2.fillStyle = "rgb(88 122 84 / 0.34)";
             mg2.fill();
+            // ②-b **잠긴다**(라운드 9, 검토 B: 수면선 위/아래 몸통 L 차가 0.0이라 "물 위에 흘린 초록"이었다).
+            // 위쪽은 빛을 받아 밝고, 수면선 아래는 물색이 덮으며 아래로 갈수록 짙어져 밑단이 물에 녹는다.
+            mg2.save();
+            islePath();
+            mg2.clip();
+            const isl = mg2.createLinearGradient(0, cy3 - R * 0.7, 0, cy3 + R * 0.9);
+            isl.addColorStop(0, "rgb(196 210 176 / 0.22)");
+            isl.addColorStop(Math.max(0.01, Math.min(0.99, (wl - (cy3 - R * 0.7)) / (R * 1.6))), "rgb(104 156 176 / 0)");
+            isl.addColorStop(1, "rgb(104 156 176 / 0.78)");
+            mg2.fillStyle = isl;
+            mg2.fillRect(cx3 - R * 1.2, cy3 - R * 1.2, R * 2.4, R * 2.4);
+            mg2.restore();
             // ③ 앞 반원 수면선 — 섬이 물에 잠겨 있다는 신호.
             mg2.strokeStyle = "rgb(228 240 236 / 0.32)";
             mg2.lineWidth = 1.2;
             mg2.beginPath();
-            mg2.ellipse(cx3, cy3 + R * 0.34 * GROUND_SQUASH, R * 0.72, R * 0.2 * GROUND_SQUASH, 0, 0.1, Math.PI - 0.1);
+            mg2.ellipse(cx3, wl, R * 0.72, R * 0.2 * GROUND_SQUASH, 0, 0.1, Math.PI - 0.1);
             mg2.stroke();
             // ④ 갈대 획 — **모래톱 안에서만** 서고, 밑동 3px는 물색으로 잠긴다.
             for (let i = 0; i < 22; i++) {
               const a2 = r2() * TAU;
-              const d = Math.pow(r2(), 0.6) * R * 0.72;
+              const d = Math.pow(r2(), 0.6) * rrAt(a2) * 0.8; // 경계를 그 각도에서 직접 읽는다(라운드 9)
               const x = cx3 + Math.cos(a2) * d;
               const y = cy3 + Math.sin(a2) * d * GROUND_SQUASH;
               mg2.strokeStyle = `rgb(${r2() < 0.5 ? "104 140 92" : "78 112 76"} / ${0.4 + r2() * 0.4})`;
@@ -564,9 +583,10 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             flip: r2() < 0.5,
             depth: season === "winter" ? 4 * k : 8 * k,
             water: season === "winter" ? "206 220 234" : "104 156 176",
-            wet: season === "winter" ? 0.1 : 0.26
+            wet: season === "winter" ? 0.1 : 0.26,
+            alphaDeep: 0.14
           });
-          rockRing(0, Math.PI); // 앞 반원 — 바위 뒤에
+          // 앞 반원은 이제 `drawSubmerged` 안에서 소품 폭에 맞춰 그린다(라운드 9) — 여기서 또 그리면 몸보다 큰 접시 테가 된다.
           if (season === "winter") {
             // 얼음판 위 — 윗면의 눈(수면선이 아니라 얼어붙은 테두리, 사이클4 현실성 #1).
             mg2.fillStyle = "rgb(250 253 255 / 0.85)";

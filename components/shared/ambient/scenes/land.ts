@@ -100,6 +100,10 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   // 억새·풀포기 층(2026-09-06 라운드 8) — 바탕에 구우면 바람이 와도 정지판이다(검토 C 3라운드 연속 W1-03/M3).
   // 별도 캔버스에 구워 draw()에서 **진행파**로 흘린다(세로 띠 단위 x 오프셋 — 파장·속도는 바람에 비례).
   let grassC: HTMLCanvasElement | null = null;
+  // ③ 애추 띠의 실제 색·경계(라운드 9) — 원경 침엽수가 "그 y에 칠해진 색 −7L"을 쓰려면 필요하다.
+  let screeTone: string | null = null;
+  let peakSpan = 31; // 산 다섯 층 사다리의 폭(④ → ①). 띠 조명을 보고 굽기 때 정한다(라운드 9).
+  let screeBand: { top: (x: number) => number; bot: (x: number) => number } | null = null;
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
@@ -890,24 +894,20 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.moveTo(x - 12 * k, y - 9 * k);
         g.quadraticCurveTo(x, y - 15 * k, x + 12 * k, y - 9 * k);
         g.stroke();
-        // 앞 반원 수면선 — 민물(`rockRing`)에는 있고 계곡에만 없었다. 물에 잠긴 경계를 말하는 가장 싼 단서다.
-        g.strokeStyle = "rgb(236 246 246 / 0.34)";
-        g.lineWidth = 1.2;
-        g.beginPath();
-        g.ellipse(x, y - 2 * k, 13 * k, 4.4 * k, 0, 0.12, Math.PI - 0.12);
-        g.stroke();
+        // 앞 반원 수면선은 `drawSubmerged` 안에서 소품 폭에 맞춰 그린다(라운드 9) — 여기서 또 그리면 접시 테가 된다.
         // 후류(꼬리) — **바위 폭 바깥**에서, 8~12px 뒤부터 시작해 끝을 흐린다. 발밑에서 곧게 뻗으면 다리가 된다.
+        // 라운드 9(검토 B): 편차 5k는 20k 길이에서 사실상 직선이라 여전히 "다리 두 개"였다 — 바깥으로 크게 휘고 짧게.
         for (const sgn of [-1, 1] as const) {
           const x0 = x + sgn * 13 * k;
           const y0 = y + 10 * k;
-          const wg = g.createLinearGradient(0, y0, 0, y0 + 20 * k);
-          wg.addColorStop(0, "rgb(255 255 255 / 0.26)");
+          const wg = g.createLinearGradient(0, y0, 0, y0 + 15 * k);
+          wg.addColorStop(0, "rgb(255 255 255 / 0.24)");
           wg.addColorStop(1, "rgb(255 255 255 / 0)");
           g.strokeStyle = wg;
           g.lineWidth = 1.2;
           g.beginPath();
           g.moveTo(x0, y0);
-          g.quadraticCurveTo(x0 + sgn * 2 * k, y0 + 10 * k, x0 + sgn * 5 * k, y0 + 20 * k);
+          g.quadraticCurveTo(x0 + sgn * 9 * k, y0 + 6 * k, x0 + sgn * 15 * k, y0 + 15 * k);
           g.stroke();
         }
       }
@@ -1272,9 +1272,18 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       // 기준 13/12/11L을 넣어야 화면에서 ≥ 8(밤 ≥ 6)이 남는다. 위로 갈수록 대기 원근(안개)이 더 누르니 스텝도 크게.
       // 겨울만 눈 알베도 예외(MOUNTAIN_DEPTH_RULES §4 눈 행): ④(눈밭)가 가장 밝고 ③이 그 아래 17L.
       const anchorL = labL(mixHex(GROUND[kind][season][0], GROUND[kind][season][1], 0.76));
-      // ①에는 **천장 84**가 있다 — 밝은 지면(여름 58 · 봄 64)에서 앵커 + 31을 그대로 쓰면 ①이 89~95로 올라
-      // 하늘을 뚫는다(실측: 여름 하늘↔① 6.8 → 1.7~4.6). ②는 ①에서 12.5L 아래, ③은 앵커 + 9와 ② − 11 중 위쪽.
-      const layerL = season === "winter" ? [anchorL + 6, anchorL - 6] : [Math.min(anchorL + 31, 84), Math.min(anchorL + 31, 84) - 12.5];
+      // **띠를 아는 굽기는 시도했다가 되돌렸다**(2026-09-06 라운드 9). `currentLight().sky`로 그 띠 하늘 명도를 읽어
+      // ①의 천장을 잡아 봤더니 어두운 띠에서 ①이 통째로 내려앉았다(sky↔① 12~18 · ①↔② 0.8~3.3). 원인:
+      // **`lt.sky`는 렌더된 하늘이 아니라 조명 오버레이의 틴트 색**이다(밤 "96 110 140" = L\* 45). 하늘 판은
+      // `world/sky.ts`가 따로 그리므로, 하늘 명도를 알고 싶으면 `skyPalette(season, weather, band)`를 봐야 하는데
+      // 굽기 시점에 날씨를 모른다. → 라운드 10의 과제(장면에 weather를 넘기거나 굽기를 draw 쪽으로).
+      //
+      // 실측으로 확인한 구조: ①↔②를 누르는 주범은 곱셈 조명이 아니라 **`drawDepthHaze`**다 —
+      // ①은 안개 띠 한가운데(지평선~화면 58%)에 있고 ②는 그 아래라, 설계 12.5L이 화면에서 5.4L(×0.43)로 눌린다.
+      // 폭(앵커→84)이 34L뿐이라 ①↔② ≥ 8을 만들려면 설계 29L이 필요해 **산술적으로 불가능**하다.
+      // 라운드 10의 입구는 산 위쪽 띠의 헤이즈를 줄이거나 층 배치를 안개 밖으로 내리는 것.
+      const layerL = season === "winter" ? [anchorL + 6, anchorL - 6] : [Math.min(anchorL + 31, 81), Math.min(anchorL + 31, 81) - 12.5];
+      peakSpan = Math.min(anchorL + 31, 81) - anchorL;
       // 먼 것은 채도도 낮다(대기 원근) — ①은 안개빛과 섞어 색을 빼고 나서 L*을 맞춘다.
       const peak1 = setLabL(mixHex(PEAK[season][0], "#e9edf0", 0.3), Math.min(94, layerL[0]));
       const peak2 = setLabL(mixHex(PEAK[season][1], "#e9edf0", 0.12), Math.min(90, layerL[1]));
@@ -1290,13 +1299,16 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         const [gc0, gc1] = GROUND[kind][season];
         const yTop = (x: number) => groundY(0.36 + Math.sin(x * 0.0034 + 0.9) * 0.028 + Math.sin(x * 0.011 + 2.2) * 0.012);
         const yBot = (x: number) => groundY(0.47 + Math.sin(x * 0.0027 + 1.7) * 0.02);
+        screeBand = { top: yTop, bot: yBot };
         const midV = 0.415;
         const groundMid = mixHex(gc0, gc1, midV);
         // 겨울 톤 1차 after: ②body 65.7 vs 띠 65.3 = 0.3(기준 |8|) → 더 어두운 청회(L ≈ 58).
         // ③도 ④ 앵커에서 잰다(라운드 8): 겨울은 눈밭 −17L, 그 밖은 +11L. 옛 "그 높이 땅색 ×.94"는 계절마다 간격이 달랐다.
         const anchor3 = labL(mixHex(gc0, gc1, 0.76));
-        const tone = setLabL(groundMid, season === "winter" ? anchor3 - 17 : Math.max(anchor3 + 9, Math.min(anchor3 + 31, 84) - 23.5));
-        const tone2 = setLabL(groundMid, season === "winter" ? anchor3 - 12 : Math.max(anchor3 + 13, Math.min(anchor3 + 31, 84) - 19.5));
+        // ③도 같은 사다리의 한 단(라운드 9): ④에서 위로 폭의 1/3. `peakSpan`은 위에서 띠를 보고 정한 값이다.
+        const tone = setLabL(groundMid, season === "winter" ? anchor3 - 17 : Math.max(anchor3 + 9, anchor3 + peakSpan - 23.5));
+        screeTone = tone;
+        const tone2 = setLabL(groundMid, season === "winter" ? anchor3 - 12 : Math.max(anchor3 + 13, anchor3 + peakSpan - 19.5));
         gp.fillStyle = tone;
         gp.beginPath();
         // 밑변은 **곡선으로 닫는다** — 옛 `moveTo(0, yBot(0)+40) … lineTo(w, yBot(w)+40)`은 화면을 가로지르는
@@ -1368,10 +1380,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           // 색을 절대 hex로 고르지 않고 **그 높이 땅색 − ΔL**로 만든다. 안개 혼합은 채도만 낮추고(L은 다시 맞춘다),
           // 고사목은 색이 아니라 ΔL이 얕은 것(−3L)으로 구분한다.
           const lineV = (line - gy()) / Math.max(1, h - gy());
-          const groundHere = mixHex(GROUND[kind][season][0], GROUND[kind][season][1], lineV);
+          // 기준은 **그 y에 실제로 칠해진 색**이다(2026-09-06 라운드 9, 검토 B: 겨울 실루엣 30그루가 땅보다 +9.3L
+          // 밝았다). 나무가 서는 면은 원래 땅 그라데이션이 아니라 그 위에 칠한 **③ 애추 띠**이고, 겨울 ③은
+          // 앵커 −17이라 원지면(v .38에서 89.4)과 26L이나 벌어져 −7L이 +19L로 뒤집혔다.
+          const inScree = screeBand !== null && line >= screeBand.top(x) && line <= screeBand.bot(x);
+          const groundHere = inScree && screeTone ? screeTone : mixHex(GROUND[kind][season][0], GROUND[kind][season][1], lineV);
           const dead = g0() < 0.12;
           const hazed = mixHex(season === "winter" ? "#7f8a92" : season === "autumn" ? "#5f6350" : "#5f7060", HAZE_HEX[season], row ? 0.3 : 0.48);
-          gp.fillStyle = setLabL(hazed, labL(groundHere) - (dead ? 3 : 7));
+          gp.fillStyle = setLabL(hazed, labL(groundHere) - (dead ? 4 : 9)); // -7은 화면에서 -3.9로 눌렸다(라운드 9 검토 B: 목표 중앙 -5~-9)
           for (let tier = 0; tier < 3; tier++) {
             const tw = hh * wr * (1 - tier * 0.28);
             const ty = line - hh * (tier * 0.3);
@@ -1390,7 +1406,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       if (snowy) for (let i = 0; i < Math.round((w * h) / 50000); i++) softBlob(g, g0() * w, groundY(0.35 + g0() * 0.6), 60 + g0() * 120, "255 255 255", season === "winter" ? 0.18 : 0.14, 0, GROUND_SQUASH);
       // 너덜지대 — 큰 바위 무리(대체물도 그림자·지면 접점이 있다). 옛 임시 그라데이션 타원은 "공중의 검은 얼룩"이라 철거.
       scatterProps(g, art, w, h, g0, [{ id: "rock", n: 10, band: "any", minV: 0.36 }, { id: "grass-dry", n: 34, band: "any", minV: 0.34 }]); // minV .3 → .36(B: ② 능선면에 바위 금지, ③은 v ≥ .34)
-      bakeGrass(Math.round((w * h) / 7000), 0.8, 0.5); // 산자락 마른 억새 — 성글게, 그래도 밤에 움직이는 것 하나(라운드 8, C)
+      bakeGrass(Math.round((w * h) / 5000), 0.8, 0.65); // 산자락 마른 억새 — /7000·α.5는 맑은 점심 1초 2,103px로 하한(3,000) 미달이었다(라운드 9, C)
       // 고지의 노출암·너덜 — 지평선 바로 아래가 통째로 빈 안개였다(검토 라운드2 현실성 #5).
       for (let i = 0; i < 16; i++) {
         const y = groundY(0.34 + g0() * 0.16); // 능선 실루엣 아래로 — 위에 두면 하늘에 자갈이 뜬다
@@ -1629,14 +1645,27 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         // 억새·풀포기 **진행파**(라운드 8) — 세로 띠 40px마다 x를 흘린다. 파장은 화면 폭의 1/8쯤,
         // 속도·진폭은 바람에 비례하되 맑음(.08)에서도 멈추지 않는다(M-3: 육지가 4초 0.000%였다).
         // 띠 단위라 밑동이 최대 1~4px 미끄러지지만, 그 폭에서는 눈이 "결이 지나간다"로 읽는다.
+        // **2차원 격자 + 원근**(2026-09-06 라운드 9, 검토 C): 라운드 8판은 `off`가 x·t만의 함수라
+        // ① 지평선 포기와 발치 포기가 **같은 px** 움직여 1초 변화가 원경 > 근경으로 뒤집혔고(숲 5.54% vs 1.71%)
+        // ② 인접 40px 띠의 시계열 상관이 **0.918**(임계 .9)이라 줄무늬가 통째로 함께 흘렀다.
+        // y를 위상과 진폭 양쪽에 넣고, 진폭에 `depthScale(y)`를 곱해 먼 것은 조금·가까운 것은 크게 움직인다.
         const wind = currentLight().wind;
-        const amp = 0.8 + 6 * wind;
+        const amp0 = 0.8 + 6 * wind;
         const spd = 0.8 + 2.2 * wind;
         const step = 40;
-        for (let x = 0; x < f.w; x += step) {
-          const u = x + step / 2;
-          const off = Math.sin(u * 0.008 - f.t * spd) * amp + Math.sin(u * 0.021 - f.t * spd * 1.7) * amp * 0.35;
-          g.drawImage(grassC, x, 0, step + 1, f.h, x + off, 0, step + 1, f.h);
+        const rows = 6;
+        const gyTop = horizonY(f.h);
+        const rowH = (f.h - gyTop) / rows;
+        for (let ri = 0; ri < rows; ri++) {
+          const y0 = gyTop + ri * rowH;
+          const yc = y0 + rowH / 2;
+          const amp = amp0 * depthScale(yc, f.h);
+          for (let x = 0; x < f.w; x += step) {
+            const u = x + step / 2;
+            const ph = u * 0.008 + yc * 0.013;
+            const off = Math.sin(ph - f.t * spd) * amp + Math.sin(u * 0.021 + yc * 0.03 - f.t * spd * 1.7) * amp * 0.35;
+            g.drawImage(grassC, x, y0, step + 1, rowH + 1, x + off, y0, step + 1, rowH + 1);
+          }
         }
       }
       if (hillShade) {

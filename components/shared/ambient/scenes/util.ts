@@ -54,6 +54,74 @@ export function makeCanvas(w: number, h: number): { c: HTMLCanvasElement; g: Can
 }
 
 /** 부드러운 원형 얼룩(그림자·빛). blur 필터 대신 radial gradient. */
+/** 누운 얼룩의 저해상 노이즈 마스크(라운드 9) — 색·변주마다 한 번만 굽고 그릴 때 확대한다.
+ *  32×32는 의도적으로 작다: 확대 보간이 폴리곤 변·알파 계단을 지우고, 남는 것은 불규칙한 저주파 형태뿐이다. */
+const BLOB_N = 32;
+const BLOB_VARIANTS = 8;
+const blobCache = new Map<string, HTMLCanvasElement>();
+
+/** 좌표 해시로 변주를 고른다 — `rng()`를 부르면 호출 쪽의 결정적 난수 흐름이 밀린다. */
+function blobVariant(x: number, y: number, r: number): number {
+  const v = Math.sin(x * 12.9898 + y * 78.233 + r * 37.719) * 43758.5453;
+  return Math.floor((v - Math.floor(v)) * BLOB_VARIANTS);
+}
+
+function blobMask(rgb: string, variant: number): HTMLCanvasElement {
+  const key = `${rgb}|${variant}`;
+  const hit = blobCache.get(key);
+  if (hit) return hit;
+  const { c, g } = makeCanvas(BLOB_N, BLOB_N);
+  const [r0, g0, b0] = rgb.split(" ").map(Number);
+  const hsh = (i: number, j: number) => {
+    const v = Math.sin(i * 127.1 + j * 311.7 + variant * 74.7) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  // 격자 4×4 값 노이즈 두 옥타브 — 하나는 윤곽을 밀고, 하나는 안쪽 얼룩을 만든다.
+  const noise = (u: number, vv: number, sc: number, off: number) => {
+    const fx = u * sc;
+    const fy = vv * sc;
+    const i = Math.floor(fx);
+    const j = Math.floor(fy);
+    const tx = fx - i;
+    const ty = fy - j;
+    const sm = (t: number) => t * t * (3 - 2 * t);
+    const a = hsh(i + off, j);
+    const b = hsh(i + 1 + off, j);
+    const cc = hsh(i + off, j + 1);
+    const d = hsh(i + 1 + off, j + 1);
+    return a + (b - a) * sm(tx) + (cc - a) * sm(ty) + (a - b - cc + d) * sm(tx) * sm(ty);
+  };
+  const im = g.createImageData(BLOB_N, BLOB_N);
+  const d = im.data;
+  for (let py = 0; py < BLOB_N; py++) {
+    for (let px = 0; px < BLOB_N; px++) {
+      const u = (px + 0.5) / BLOB_N;
+      const vv = (py + 0.5) / BLOB_N;
+      const dx = u * 2 - 1;
+      const dy = vv * 2 - 1;
+      const dist = Math.hypot(dx, dy);
+      // 윤곽을 노이즈로 민다(±22%) — 정원·정타원 금지.
+      const edge = 0.78 + 0.44 * noise(u, vv, 3.5, 0);
+      const t = dist / edge;
+      if (t >= 1) continue;
+      // 가장자리로 갈수록 부드럽게 사라지고, 안쪽은 저주파 얼룩으로 농담이 진다.
+      const fall = Math.pow(1 - t, 1.5);
+      const mottle = 0.72 + 0.5 * noise(u, vv, 5, 31);
+      const a = Math.max(0, Math.min(1, fall * mottle));
+      if (a <= 0.004) continue;
+      const i2 = (py * BLOB_N + px) * 4;
+      d[i2] = r0;
+      d[i2 + 1] = g0;
+      d[i2 + 2] = b0;
+      d[i2 + 3] = Math.round(a * 255);
+    }
+  }
+  g.putImageData(im, 0, 0);
+  if (blobCache.size > 400) blobCache.clear();
+  blobCache.set(key, c);
+  return c;
+}
+
 export function softBlob(g: CanvasRenderingContext2D, x: number, y: number, r: number, rgb: string, a0: number, a1 = 0, sy = 1) {
   // sy < 1 = 3/4 시점의 바닥 눌림. 땅·물에 **누워 있는** 얼룩(눈밭·이끼·젖은 자국)은 원이 아니라 타원이어야
   // 평면 위에 놓인 것으로 읽힌다(정원이면 공중의 안개 뭉치로 보였다 — 2026-09-04 검토 3차).
@@ -67,26 +135,16 @@ export function softBlob(g: CanvasRenderingContext2D, x: number, y: number, r: n
   // 그라데이션이 "렌즈 먼지"로 읽혔고, 하늘·땅이 정리되면서 프레임에서 가장 큰 저주파 형태가 됐다).
   // 세 단계 알파 + 굴곡진 가장자리(2px 격자). 빛무리(달·해·해파리 — sy = 1)는 그대로 매끈하게 둔다.
   if (sy !== 1 && r >= 36) {
-    // 흔들림은 좌표 해시로 — 여기서 rng()를 부르면 호출 쪽의 결정적 난수 흐름이 밀린다.
-    const hsh = (n: number) => {
-      const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
-      return v - Math.floor(v);
-    };
-    const base = x * 0.37 + y * 0.71 + r;
-    for (const [rr, aa] of [[1, 1], [0.66, 0.62], [0.34, 0.3]] as const) {
-      g.fillStyle = `rgb(${rgb} / ${(a0 * aa).toFixed(3)})`;
-      g.beginPath();
-      for (let i = 0; i <= 22; i++) {
-        const th = (i / 22) * TAU;
-        const wob = 0.82 + 0.3 * hsh(base + i * 3.1) + 0.16 * Math.sin(th * 3 + base);
-        const px = Math.round((x + Math.cos(th) * r * rr * wob) / 2) * 2;
-        const py = Math.round((y + Math.sin(th) * r * rr * wob) / 2) * 2;
-        if (i === 0) g.moveTo(px, py);
-        else g.lineTo(px, py);
-      }
-      g.closePath();
-      g.fill();
-    }
+    // **저해상 노이즈 마스크를 구워 확대한다**(2026-09-06 라운드 9, 검토 A #1). 라운드 8이 넣은
+    // "동심 폴리곤 3겹"은 정점 22개 = 현 25px의 직선 변에 링마다 알파 계단이라, 땅이 **등고선 지도**로 읽혔다
+    // (실측: 연속 6px 안 ΔL 5.9 · 직선 현 60~150px · 겹친 자리 이음선). 계단을 없애려고 매끈한 방사
+    // 그라데이션으로 되돌리면 라운드 8의 "렌즈 먼지"가 돌아온다 — 답은 **불규칙한 저주파 질감**이다.
+    // 32×32 마스크(가장자리를 노이즈로 밀고 안쪽에도 얼룩)를 만들어 확대하면 보간이 계단을 지우고 형태만 남는다.
+    const v = blobVariant(x, y, r);
+    g.save();
+    g.globalAlpha = Math.max(0, Math.min(1, a0));
+    g.drawImage(blobMask(rgb, v), x - r, y - r, r * 2, r * 2);
+    g.restore();
     if (sy !== 1) g.restore();
     return;
   }

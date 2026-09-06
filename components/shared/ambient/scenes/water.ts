@@ -222,8 +222,11 @@ export function drawWaterLight(g: CanvasRenderingContext2D, t: number, w: number
   const beam = bakeBeam(L.reflect.rgb);
   g.save();
   g.globalAlpha = a;
+  // ⚠ 전단 행렬의 e항에 `x`를 넣으면 **이중 평행이동**이다 — 다음 줄 `drawImage`가 이미 절대 x로 그린다.
+  // 라운드 8이 그렇게 넣어 띠가 `2x`에 섰고, 노을엔 해와 383px 어긋나고 새벽·밤엔 화면 밖으로 나가
+  // **달빛 길이 한 번도 보인 적이 없었다**(2026-09-06 라운드 9, 검토 B P0). e는 전단 보정만 한다.
   const shear = Math.sin(t * 0.7) * 0.05;
-  g.transform(1, 0, shear, 1, x - shear * top, 0);
+  g.transform(1, 0, shear, 1, -shear * top, 0);
   g.drawImage(beam, x - w1, top, w1 * 2, H);
   g.restore();
   // 잔 글린트 — 띠 안의 가로 렌즈 8개, 결정적 위상(시드 무관 — 같은 t면 같은 그림).
