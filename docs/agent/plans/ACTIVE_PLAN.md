@@ -1,5 +1,9 @@
 # Active ExecPlan
 
+> **Accepted(2026-09-07, 구현 완료 — 묶음 4는 되돌림)**: [PLAN-20260907-007 — 라운드 16: 초원의 레이어와 바람](PLAN-20260907-007-round16-layers-wind.md) —
+> 안개를 화면 높이에서 떼어내고(`Scene.splitHaze`/`drawAbove`/`view.hazeAt`) 초원 가을을 y-정렬 대열로, 초원 네 장면에 바람 소비자를.
+> 젖음 채널(W-1 ③)은 원시연산 3종이 실측으로 탈락해 되돌렸다 — 기록 [rounds/ROUND-16.md](../../ambient/rounds/ROUND-16.md).
+
 > **Accepted(2026-09-07, 구현 완료)**: [PLAN-20260907-006 — 실제 태양 궤도로 잇는 시간대 + 하루 세 마디 날씨](PLAN-20260907-006-solar-time-weather.md) —
 > 여섯 띠를 **거점**으로 두고 그 사이를 태양 고도로 연속 보간(`world/sun.ts` 신설 · `time.ts` 위상 · `light.ts lightAt`), 날씨는 경계가 랜덤인 **세 마디**(각 ≥ 4시간).
 

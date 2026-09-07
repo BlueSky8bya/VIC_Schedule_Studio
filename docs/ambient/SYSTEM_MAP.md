@@ -20,7 +20,13 @@ AmbientLayer(month, year, slug, force?, worldForce?)          components/shared/
                   sea · deep → sea.ts(deep)
 ```
 
-매 프레임: `scene.step(f)` → `scene.draw(g,f)` → `drawDepthHaze()`(엔진, 대기 안개 한 겹) → `LIGHT[band]` 빛 톤 한 겹(엔진).
+매 프레임(기본): `scene.step(f)` → `scene.draw(g,f)` → 입자층 → `drawDepthHaze()`(엔진, 대기 안개 한 겹) → `drawLightPass()`(엔진).
+**`Scene.splitHaze()`가 true면 순서가 바뀐다**(2026-09-07 라운드 16, AMB-D3-04): `scene.draw`(땅·하늘) → `drawDepthHaze` →
+`scene.drawAbove`(서 있는 것·지면 위 입자) → 입자층 → `drawLightPass`. 전면 안개 한 겹은 **화면 y**로 걸리는데 3/4 시점에서
+화면 y는 땅에서만 거리다 — 키 큰 것은 수관이 밑동보다 짙게 먹어 한 그루 안에서 원근이 뒤집힌다. 그래서 그런 장면은 안개 뒤에서
+`view.hazeAt(발치 y)` 값 하나를 `source-atop`으로 몸 전체에 균일하게 섞는다. 지금 켠 장면은 `autumn.ts` 하나.
+⚠ `world-scene`이 열한 바이옴을 감싸므로 **메서드 존재로 판정하지 않는다**(존재로 켜면 순서 변경이 전 바이옴에 번져 입자가
+안개를 못 먹는다). 래퍼가 `splitHaze`·`drawAbove`를 위임하고, 팬(620ms) 중에는 false로 옛 순서로 돌아간다.
 
 ## 1. 모듈별 역할과 진단
 
