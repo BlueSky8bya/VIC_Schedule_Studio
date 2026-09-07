@@ -67,6 +67,19 @@ const byFile = new Map();
 for (const s of ART_SLOTS) for (const f of slotFiles(s)) byFile.set(f, s);
 
 const bars = [];
+// **들어온 원본을 보관한다**(2026-09-08). 이 스크립트는 배달본을 제자리에서 줄여 덮어쓰므로, 한 번 돌리고 나면
+// 1024 원본이 세상에서 사라진다 — 그런데 코드 곳곳의 안내는 "도트를 되살리려면 1024 원본에서 다시 뽑아야 한다"고 말한다.
+// 있지도 않은 것을 가리키던 셈이다. (2026-09-08에 실제로 배달본을 잃었다: 정규화 뒤 `git checkout`으로 폴더를
+// 되돌리자 방금 받은 네 장이 커밋된 옛 판으로 덮여 사라졌다. 추적하지 않는 폴더에 사본이 있었으면 아무 일도 아니었다.)
+const srcDir = path.join(root, ".scratch-pw", "art-src");
+const keepSource = (file, buf) => {
+  try {
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(path.join(srcDir, file), buf);
+  } catch {
+    // 보관 실패는 정리를 막지 않는다(스크래치 폴더가 없는 환경도 있다).
+  }
+};
 const files = fs.readdirSync(dir).filter((f) => f.endsWith(".png") && f.includes(filter));
 if (!files.length) {
   console.log("정리할 PNG 없음:", dir);
@@ -106,13 +119,27 @@ for (const f of files) {
   // 트림한 크기를 그대로 줄이면 축소비가 반드시 비정수가 되어(예: 941 → 512) 도트가 들쭉날쭉 잘린다. 블록 배수로 맞춰야
   // `원본 ÷ n` 꼴이 유지된다(2026-09-07 결정 ⓐ′).
   const trimmed = await sharp(src).ensureAlpha().trim({ threshold: 8 }).png().toBuffer({ resolveWithObject: true });
-  const snap = (n) => Math.min(SOURCE_EDGE, Math.max(block, Math.ceil(n / block) * block));
-  const bw = snap(trimmed.info.width);
-  const bh = snap(trimmed.info.height);
+  const snapTo = (v, unit) => Math.min(SOURCE_EDGE, Math.max(unit, Math.ceil(v / unit) * unit));
   // 축소비 n은 **2의 거듭제곱** — 목표 변 이하로 줄이는 가장 작은 값. 3 같은 값을 쓰면 블록(16·32…)이 n으로 안 나눠떨어져
-  // 축소본의 도트가 다시 들쭉날쭉해진다. n ≤ 8 ≤ block 이므로 축소본도 블록 배수로 남는다.
+  // 축소본의 도트가 다시 들쭉날쭉해진다.
+  // ⚠ 원본 상자를 `block` 배수로만 맞추면 **저장본은 블록 배수가 아니다**(예: 696/2 = 348, 블록 8의 배수가 아니다).
+  //   그러면 "변이 블록 배수인가"라는 검사가 멀쩡한 파일을 옛 규격이라고 잘못 신고한다(2026-09-08에 참나무 봄이 그랬다).
+  //   상자를 `block × n` 배수로 맞추면 저장본도 블록 배수로 떨어진다. n이 상자 크기에 달렸으니 한 번 더 재어 수렴시킨다.
+  let bw = snapTo(trimmed.info.width, block);
+  let bh = snapTo(trimmed.info.height, block);
   let n = 1;
   while (Math.max(bw, bh) / n > edge) n *= 2;
+  for (let pass = 0; pass < 4; pass++) {
+    const unit = Math.min(SOURCE_EDGE, block * n);
+    const nw = snapTo(trimmed.info.width, unit);
+    const nh = snapTo(trimmed.info.height, unit);
+    let nn = 1;
+    while (Math.max(nw, nh) / nn > edge) nn *= 2;
+    if (nw === bw && nh === bh && nn === n) break;
+    bw = nw;
+    bh = nh;
+    n = nn;
+  }
   const w = Math.max(1, Math.round(bw / n));
   const h = Math.max(1, Math.round(bh / n));
   // 팔레트 PNG(색 수가 적어 손실이 안 보이고 크기는 1/3~1/4). **디더링 0** — 도트 그림에 디더를 넣으면 색이 흩뿌려져
@@ -140,7 +167,10 @@ for (const f of files) {
     `${dry ? "DRY " : "OK  "}${f}: ${meta.width}×${meta.height} ${Math.round(src.length / 1024)}KB → ${w}×${h} ${Math.round(outBuf.length / 1024)}KB (${pct}%) [자리 ${slot.id} ${slot.px[0]}×${slot.px[1]} · 블록 ${block}px · ÷${n} · 목표 ${edge}]`
   );
   // 정수배 축소는 **커질 수도** 있다(팔레트가 아닌 원본이 이미 작았던 경우). 크기와 무관하게 규격을 맞춘 결과를 쓴다.
-  if (!dry) fs.writeFileSync(p, outBuf);
+  if (!dry) {
+    keepSource(f, src); // 덮어쓰기 전에 들어온 원본을 .scratch-pw/art-src/ 로
+    fs.writeFileSync(p, outBuf);
+  }
 }
 console.log(`\n합계 ${Math.round(before / 1024)}KB → ${Math.round(after / 1024)}KB${dry ? " (dry — 쓰지 않음)" : ""}`);
 if (bars.length) {
