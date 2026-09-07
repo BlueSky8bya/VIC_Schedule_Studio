@@ -618,7 +618,9 @@ export function createAutumn(seed: number): Scene {
     },
     step(f) {
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03).
-      if (ground && f.lightStable && gsh !== shadowKey(f.light)) bakeGround(f.dpr);
+      // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
+      // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
+      if (ground && (gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       const target = targetCount(f);
       const live = liveLeaves();

@@ -438,7 +438,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     }
   }
 
-  return {
+  const scene: Scene = {
     resize(f) {
       w = f.w;
       h = f.h;
@@ -794,6 +794,12 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       }
     },
     step(f) {
+      // 아트가 뒤늦게 도착하면 기슭을 다시 굽는다 — 이 확인이 resize에만 있어서 리사이즈 없는 화면에서는
+      // 소품이 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무와 같은 뿌리).
+      if (shore && shoreArtV !== shoreArt.version) {
+        shoreW = -1;
+        scene.resize(f);
+      }
       const { dt, p, t, load } = f;
       lastLoad = load;
       lastTraces = f.traces.filter((tr) => tr.kind === "lilypad").length;
@@ -1774,4 +1780,5 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       };
     }
   };
+  return scene;
 }
