@@ -41,9 +41,32 @@ esbuild.buildSync({
 // 목표 변·격자는 **매니페스트가 정본**이다(보드·프롬프트·이 스크립트가 같은 수를 써야 한다).
 const { ART_SLOTS, slotFiles, targetEdge, dotBlock, SOURCE_EDGE } = require(out);
 
+
+/** **떠 있는 가로줄** 검사(2026-09-07) — 생성물에 이따금 바닥선·그림자 막대가 섞여 들어온다. 소유자가 참나무에서
+ *  "줄기 중간에 가로로 이상한 선"으로 발견했고(봄·겨울 두 장), 규격서의 "바닥·그림자·풍경 없음"을 어긴 것이다.
+ *  판정: 그 픽셀이 불투명인데 **위로 g px, 아래로 g px가 모두 투명**이면 '떠 있는' 픽셀 — 물체의 일부가 아니라 선이다.
+ *  그런 픽셀이 한 행에서 폭의 25% 이상 이어지면 선으로 본다. 소나무의 맨 아래 단처럼 정상적으로 넓은 곳은 위에 몸이
+ *  있으므로 걸리지 않는다(실측: 참나무 봄 26% · 겨울 30% 대 소나무·여름·가을 5~7%). */
+async function floatingBar(buf) {
+  const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: W, height: H, channels: C } = info;
+  const a = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 0 : data[(y * W + x) * C + 3]);
+  const g = Math.max(4, Math.round(H * 0.03));
+  let best = { y: -1, run: 0 };
+  for (let y = 0; y < H; y++) {
+    let run = 0;
+    for (let x = 0; x < W; x++) {
+      run = a(x, y) > 8 && a(x, y - g) <= 8 && a(x, y + g) <= 8 ? run + 1 : 0;
+      if (run > best.run) best = { y, run };
+    }
+  }
+  return { ...best, ratio: best.run / W };
+}
+
 const byFile = new Map();
 for (const s of ART_SLOTS) for (const f of slotFiles(s)) byFile.set(f, s);
 
+const bars = [];
 const files = fs.readdirSync(dir).filter((f) => f.endsWith(".png") && f.includes(filter));
 if (!files.length) {
   console.log("정리할 PNG 없음:", dir);
@@ -64,6 +87,10 @@ for (const f of files) {
   const edge = targetEdge(slot.px);
   const block = dotBlock(slot.px, slot.grid);
   const meta = await sharp(src).metadata();
+  const bar = await floatingBar(src);
+  if (bar.ratio >= 0.25) {
+    bars.push(`${f} — y=${bar.y}에서 ${bar.run}px(폭의 ${Math.round(bar.ratio * 100)}%)`);
+  }
   // 이미 정리된 파일(팔레트 PNG = IHDR colorType 3 ∧ 목표 크기 이하)은 건너뛴다 — 다시 돌릴 때마다 재양자화되어 색이 조금씩 상한다.
   // `--force`로 무시할 수 있지만, **lanczos3 시절에 줄여 둔 파일은 다시 돌려도 도트가 돌아오지 않는다**(정보가 이미 없다) —
   // 그런 파일은 1024 원본에서 다시 뽑아야 한다.
@@ -116,3 +143,8 @@ for (const f of files) {
   if (!dry) fs.writeFileSync(p, outBuf);
 }
 console.log(`\n합계 ${Math.round(before / 1024)}KB → ${Math.round(after / 1024)}KB${dry ? " (dry — 쓰지 않음)" : ""}`);
+if (bars.length) {
+  console.log(`\n⚠ **떠 있는 가로줄**이 있는 파일 ${bars.length}장 — 물체에 붙어 있지 않은 긴 가로선이다(바닥선·그림자 막대).`);
+  for (const b of bars) console.log(`   · ${b}`);
+  console.log("   규격서: 배경은 완전 투명, **바닥·그림자·풍경·테두리 없음**. 축소로는 안 없어진다 — 그 자리는 다시 받아야 한다.");
+}
