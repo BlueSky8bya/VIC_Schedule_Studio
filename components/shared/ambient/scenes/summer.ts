@@ -35,7 +35,7 @@ import { currentLight } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, groundK, horizonY, moveScale, hillCrestY } from "../world/view";
 import type { SeasonKey } from "../registry";
-import { bakeWater, drawGlints, drawTrail, drawWaterLight, newTrail, stepTrail, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawTrail, drawWaterLight, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -1529,6 +1529,21 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });
       // 열린 물의 앵커 — 기슭 바로 아래(생물은 이 위를 지나간다).
       if (midWater) g.drawImage(midWater, 0, shoreY(), f.w, midWater.height);
+      // **바람이 물낯을 세운다**(2026-09-07, W-1 ①). 민물은 파도 함수를 하나도 안 써서 바람 날씨에도 수면이 정지판이었다
+      // (`currentLight().wind` 소비자 0개 — 바다·해안은 이미 쓴다). 잔잔한 못이 기본이므로 **맑음(.08)·안개(.04)에는 그리지
+      // 않는다** — 흐림(.14) 이상에서만 결이 선다. 얼음판(겨울)에는 없다.
+      if (!winter && currentLight().wind > 0.12) {
+        const wk = currentLight().wind;
+        drawWaves(g, t * 0.8, f.w, {
+          top: shoreY() + 10,
+          bottom: f.h,
+          bands: 7,
+          speed: 0.05 + 0.05 * wk,
+          amp: 3 + 9 * wk,
+          alpha: 0.05 + 0.07 * wk,
+          foam: waterPalette(season).foam
+        });
+      }
       // 햇빛 반짝임 — 공용 drawGlints(가로 렌즈). 옛 4획 십자는 화면에서 × · + 글리프로 읽혔다(검토 3차).
       // 포인터 물결 — 물 구역(물가 선 아래)만. 얼음판에는 그리지 않는다.
       if (!winter) {

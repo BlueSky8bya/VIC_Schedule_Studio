@@ -1287,8 +1287,17 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {
-        const idle = load >= 0.5 ? (summer ? 1.9 : 0.8) : 0; // 여름 풀숲은 키가 커서 늘 살짝 일렁인다
-        if (wind > 0.02 || idle > 0) {
+        // 여름 풀숲은 키가 커서 늘 살짝 일렁인다. 2026-09-07: 진폭을 절반으로 내리고 그만큼을 아래 **바람 진행파**로 옮겼다 —
+        // 바람과 무관한 상시 흔들림이 크면 맑은 날과 바람 부는 날이 화면에서 구별되지 않는다(맑음 기준선 15.2% → 비 1.9배).
+        const idle = load >= 0.5 ? (summer ? 0.9 : 0.4) : 0;
+        // **세계의 바람**(2026-09-07, W-1 ①) — 여기까지 `wind`는 자기 꽃잎 바람(지역 변수)뿐이었고 `currentLight().wind`
+        // 소비자는 초원 네 장면에 **0개**였다(맑음 .08 · 흐림 .14 · 눈 .3 · 비 .4 · 바람 1). 달력 뒤 화면이 이 장면이다.
+        // `land.ts`의 진행파와 같은 식: y를 위상과 진폭 양쪽에 넣고 진폭에 `depthScale`을 곱해 **먼 것은 조금·가까운 것은 크게**
+        // 움직인다(y를 안 읽으면 원경이 근경보다 크게 흔들려 원근이 뒤집힌다 — 라운드 9 검토 C).
+        const wWind = currentLight().wind;
+        const wAmp = 0.35 + 9 * wWind; // 맑음 1.07 · 흐림 1.6 · 비 3.9 · 바람 9.4 — 맑음에서도 멎지 않되 바람이 확실히 다르게
+        const wSpd = 0.6 + 2.6 * wWind;
+        if (wind > 0.02 || idle > 0 || wWind > 0.02) {
           const tw = f.w / COLS;
           const th = f.h / ROWS;
           const bw = blades.width / COLS;
@@ -1298,7 +1307,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
             const near = wind > 0.02 ? Math.exp(-Math.pow((cx - front) / 280, 2)) * wind : 0;
             const gustDx = near * (8 * Math.sin(t * 3.4 - i * 0.7 * windDir) + windDir * 5);
             for (let j = 0; j < ROWS; j++) {
-              const dx = gustDx + idle * Math.sin(t * 0.9 + j * 0.8 + i * 0.4);
+              const cy = (j + 0.5) * th;
+              const wk = wAmp * depthScale(cy, f.h);
+              const wave = Math.sin(cx * 0.008 + cy * 0.013 - t * wSpd) * wk + Math.sin(cx * 0.021 + cy * 0.03 - t * wSpd * 1.7) * wk * 0.35;
+              const dx = gustDx + wave + idle * Math.sin(t * 0.9 + j * 0.8 + i * 0.4);
               g.drawImage(blades, i * bw, j * bh, bw, bh, i * tw + dx, j * th, tw + 0.5, th + 0.5);
             }
           }

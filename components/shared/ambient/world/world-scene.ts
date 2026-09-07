@@ -202,6 +202,9 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
           g.clip();
           g.translate(tx, ty);
           entry.scene.draw(g, f);
+          // 팬 중(620ms)에는 안개 분리를 접는다 — 두 장면이 각자 클립·평행이동 안에 있어 엔진이 그 사이에 안개를
+          // 끼워 넣을 수 없다. 대열은 여기서 바로 이어 그리고, `splitHaze()`가 false를 돌려 엔진은 옛 순서로 간다.
+          entry.scene.drawAbove?.(g, f);
           g.restore();
         };
         if (trans.dy !== 0) {
@@ -249,6 +252,16 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       sealed() {
         if (trans) return false;
         return scenes.get(cur)?.scene.sealed?.() ?? false;
+      },
+      // 안개 뒤 층(2026-09-07, AMB-D3-04) — `fogFloor`와 같은 배선 결함을 되풀이하지 않게 여기서 위임한다.
+      // 팬 중에는 false(위 draw가 클립 안에서 직접 그린다).
+      splitHaze() {
+        if (trans) return false;
+        return scenes.get(cur)?.scene.splitHaze?.() ?? false;
+      },
+      drawAbove(g, f) {
+        if (trans) return;
+        scenes.get(cur)?.scene.drawAbove?.(g, f);
       },
       debug() {
         const active = scenes.get(cur);

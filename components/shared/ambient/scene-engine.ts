@@ -119,6 +119,14 @@ export interface Scene {
   fogFloor?(x: number, f: Frame): number;
   /** fogFloor의 캐시 서명 — 바닥선이 바뀌면(바이옴 이동·리사이즈) 값이 달라져야 한다. 없으면 크기만으로 캐시. */
   fogFloorKey?(f: Frame): string;
+  /** **대기 안개 뒤에 그리는 층**(2026-09-07, AMB-D3-04). 전면 안개 한 겹은 화면 y로 걸리므로 키 큰 것은 수관이 밑동보다
+   *  멀어 보인다. 이 훅을 쓰는 장면은 `draw()`에 **땅·하늘만** 그리고, 서 있는 것·지면 위 입자는 여기서 그린다 —
+   *  엔진이 `draw → 안개 → drawAbove → 입자` 순으로 부르므로 물체는 `hazeAt(발치 y)`로 **자기 거리 하나**를 균일하게 먹는다. */
+  drawAbove?(g: CanvasRenderingContext2D, f: Frame): void;
+  /** 위 순서를 쓸 것인가(기본 false = 옛 순서 `draw → 입자 → 안개`). **메서드가 있는지로 판정하지 않는다** —
+   *  세계 장면(world-scene)이 모든 바이옴을 감싸므로, 존재만으로 판정하면 순서 변경이 열한 바이옴 전부에 번진다
+   *  (입자가 안개를 못 먹어 비·눈·안개 프레임이 통째로 바뀐다). 팬 중에는 false를 돌려 옛 순서로 돌아간다. */
+  splitHaze?(): boolean;
 }
 
 // 검증 훅 — Playwright가 장면 상태(입자 위치·소비된 클릭 수·품질·프레임·여력)를 읽는다. forceLoad로 여력을 고정해
@@ -436,11 +444,18 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     scene.draw(g, frame);
     // 닫힌 방(깊은 바다) — 계절·날씨·시간대가 닿지 않는다. 장면이 자기 대기를 통째로 소유한다.
     if (scene.sealed?.()) return;
-    // 날씨 입자(비·눈·부스러기·안개 뭉치) — 장면 위, 안개·조명 아래(멀리 떨어지는 것도 같은 대기 속에 있다).
-    particles.draw(g, w, h, world.season, frame.weather.now, frame.light, frame.t);
     // 대기 원근(3/4 시점, PLAN-004 §2.5) — 지평선 쪽이 옅어지는 안개 한 겹: 잔디·물·발자국·생물이 멀수록 흐려진다.
     // 라운드 2: 색·배율은 조명(시간대·날씨)이 정한다. 점심·맑음은 옛 값 그대로.
-    drawDepthHaze(g, world.season, w, h, frame.light);
+    // 날씨 입자(비·눈·부스러기·안개 뭉치) — 장면 위, 조명 아래(멀리 떨어지는 것도 같은 대기 속에 있다).
+    if (scene.splitHaze?.() && scene.drawAbove) {
+      // 안개를 **땅 위·서 있는 것 아래**로(2026-09-07, AMB-D3-04): 그래야 나무가 자기 발치 거리 하나로 잠긴다.
+      drawDepthHaze(g, world.season, w, h, frame.light);
+      scene.drawAbove(g, frame);
+      particles.draw(g, w, h, world.season, frame.weather.now, frame.light, frame.t);
+    } else {
+      particles.draw(g, w, h, world.season, frame.weather.now, frame.light, frame.t);
+      drawDepthHaze(g, world.season, w, h, frame.light);
+    }
     // 조명 패스(world/light.ts): 지면 안개 층 → 하늘 오버레이 → 지면 노출(multiply) → 채도 → 옅은 틴트. 점심·맑음은 전부 항등.
     drawLightPass(
       g,

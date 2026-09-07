@@ -19,7 +19,7 @@ import { drawProp, propShadow, propSpots, resetPropField, scatterProps } from ".
 import { currentLight, shadowKey } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { LEAF_K, SIZE } from "../world/scale";
-import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, horizonY, moveScale, hillCrestY } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, hazeAt, horizonY, moveScale, hillCrestY } from "../world/view";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -115,6 +115,19 @@ export function createAutumn(seed: number): Scene {
   let sqShadow: HTMLCanvasElement | null = null;
   let moundSpr: HTMLCanvasElement | null = null;
   let ground: HTMLCanvasElement | null = null;
+  // 나무는 **바탕에 굽지 않는다**(2026-09-07, AMB-A3-02 소유자: "낙엽이 모든 나무 앞으로 날린다"). 자리만 굽기 때 정하고
+  // 매 프레임 y 오름차순 대열에서 낙엽·다람쥐와 섞어 그린다(`land.ts`가 숲에서 이미 하는 방식). 덤으로 두 가지가 따라온다 —
+  // ① 바람에 흔들린다(W-1 ①: 초원 네 장면에 `currentLight().wind` 소비자가 0개였다) ② 안개를 **발치 거리 하나로** 균일하게
+  // 먹는다(AMB-D3-04: 전면 안개는 화면 y로 걸려 수관이 밑동보다 멀어 보였다).
+  type TreeSpot = { x: number; y: number; k: number; pine: boolean; r: number; flip: boolean };
+  let treeSpots: TreeSpot[] = [];
+  const order: number[] = []; // y 정렬용 인덱스 — 프레임마다 재사용(할당 없음)
+  // 안개 색을 몸 전체에 균일하게 섞기 위한 scratch — 한 장을 돌려 쓴다(소품 상자 최대 = 소나무 92×168 × k 1.5 + 여유).
+  let tintC: HTMLCanvasElement | null = null;
+  let tintG: CanvasRenderingContext2D | null = null;
+  let tintDpr = 0;
+  const TINT_W = 320;
+  const TINT_H = 380;
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
@@ -359,12 +372,11 @@ export function createAutumn(seed: number): Scene {
       // 코앞 한 그루 — 화면 아래에서 잘린다(가까움의 신호).
       spots.push({ x: w * (0.05 + g0() * 0.12), y: groundY(1.02), k: 1.15 + g0() * 0.2 });
       spots.sort((a2, b2) => a2.y - b2.y);
+      treeSpots = [];
       for (const t2 of spots) {
-        // 그림자는 수관보다 좁고 발밑에 붙는다 — 옛 60*k는 수관보다 넓어 지면 얼룩으로 보였다(사이클4 경계 #8).
-        // 그림자도 거리만큼 옅어져야 한다 — 안개에 표백된 수관 밑에 진한 그림자만 남으면 지면 얼룩이 된다
-        // (사이클4 현실성 #6).
-        propShadow(g, t2.x + 4 * t2.k, t2.y - 1, 24 * t2.k, 0.2 * depthFade(t2.y, h), GROUND_SQUASH * 0.45, "70 58 46");
-        drawProp(g, groundArt, g0() < 0.25 ? "tree-pine-autumn" : "tree-oak-autumn", t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
+        // 나무 자체는 여기서 그리지 않는다 — 종류·변형·좌우는 여기서(결정적 rng 순서 보존) 정하고 대열에 넘긴다.
+        // 발밑 그림자도 매 프레임으로 옮겼다(조명이 바뀔 때 바탕을 다시 굽지 않아도 해를 따라간다).
+        treeSpots.push({ x: t2.x, y: t2.y, k: t2.k, pine: g0() < 0.25, r: g0(), flip: g0() < 0.5 });
         // 발치의 낙엽 더미 — 여기가 낙엽의 출처다.
         for (let q = 0; q < 5; q++) {
           // 반경 110*k(폭 320px)는 수관의 2~3배짜리 검은 얼룩이었다 — 작고 옅게, 수관 아래에만.
@@ -596,6 +608,47 @@ export function createAutumn(seed: number): Scene {
     return Math.round(lerp(26, 220, f.load) * areaK);
   }
   const liveLeaves = () => leaves.reduce((n, l) => n + (l.sp !== ACORN && l.fade === 0 ? 1 : 0), 0);
+
+  /** 나무 한 그루 — 매 프레임(2026-09-07). 바람에 흔들리고(W-1 ①), 안개는 **발치 거리 하나**로 몸 전체에 균일하게(AMB-D3-04). */
+  function drawTree(g: CanvasRenderingContext2D, t2: TreeSpot, f: Frame) {
+    const L = currentLight();
+    // 바람 삼단(`land.ts drawTree`와 같은 식) — 작을수록 크게·빠르게·먼저 흔들린다(큰 나무는 관성). 맑음(.08)에서도 멎지 않는다.
+    const sz = Math.max(0.25, Math.min(1, t2.k / 1.4));
+    // 초원 나무는 열몇 그루뿐이라 숲(34~48그루)과 같은 1~3px로는 화면이 안 움직인다 — 진폭을 1.6배로.
+    // 바람에 **초선형**(^1.3): 맑음(.08 → .037)은 거의 멎은 듯 미세하게, 바람(1 → 1)은 그대로. 선형이면 맑음 기준선이
+    // 같이 올라가 "바람 부는 날"이 화면에서 구별되지 않는다(실측 비 1.92 → 초선형 뒤 재측정).
+    const amp = Math.max(0.035, Math.pow(L.wind, 1.3)) * (5.6 - 3.9 * sz);
+    const freq = 1.7 - 0.9 * sz;
+    const lag = (0.2 + 0.3 * sz) * freq;
+    const dx = Math.sin(f.t * freq - lag + t2.x * 0.013 + (Math.round(t2.x) % 7) * 0.4) * amp;
+    const id = t2.pine ? "tree-pine-autumn" : "tree-oak-autumn";
+    // 그림자는 제자리 — 발치는 흔들리지 않는다. 거리만큼 옅어진다(안개에 표백된 수관 밑 진한 그림자 = 지면 얼룩, 사이클4 현실성 #6).
+    propShadow(g, t2.x + 4 * t2.k, t2.y - 1, 24 * t2.k, 0.2 * depthFade(t2.y, f.h), GROUND_SQUASH * 0.45, "70 58 46");
+    const hz = hazeAt(t2.y, f.h, L, "autumn");
+    if (hz.alpha < 0.012) {
+      drawProp(g, groundArt, id, t2.x + dx, t2.y, { k: t2.k, r: t2.r, flip: t2.flip });
+      return;
+    }
+    if (!tintC || !tintG || tintDpr !== f.dpr) {
+      const m = makeCanvas(Math.ceil(TINT_W * f.dpr), Math.ceil(TINT_H * f.dpr));
+      tintC = m.c;
+      tintG = m.g;
+      tintDpr = f.dpr;
+    }
+    const FOOT = TINT_H - 20;
+    tintG.setTransform(tintDpr, 0, 0, tintDpr, 0, 0);
+    tintG.clearRect(0, 0, TINT_W, TINT_H);
+    drawProp(tintG, groundArt, id, TINT_W / 2, FOOT, { k: t2.k, r: t2.r, flip: t2.flip });
+    // 색 혼합(source-atop) — 알파 감쇠로 옅게 하면 수관 너머 땅이 비쳐 유령이 된다(라운드 12에서 되돌린 결함).
+    tintG.globalCompositeOperation = "source-atop";
+    tintG.fillStyle = `rgb(${hz.rgb} / ${hz.alpha.toFixed(3)})`;
+    tintG.fillRect(0, 0, TINT_W, TINT_H);
+    tintG.globalCompositeOperation = "source-over";
+    g.save();
+    g.imageSmoothingEnabled = false; // 1:1 장치 픽셀 대응 — 도트를 뭉개지 않는다
+    g.drawImage(tintC, 0, 0, tintC.width, tintC.height, t2.x + dx - TINT_W / 2, t2.y - FOOT, TINT_W, TINT_H);
+    g.restore();
+  }
 
   return {
     resize(f) {
@@ -839,8 +892,9 @@ export function createAutumn(seed: number): Scene {
       if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: groundY(rand()) };
       if (gust && t - gust.t0 > gust.dur) {
         gust = null;
-        // 바람 부는 날(날짜 시드 날씨)엔 돌풍이 두 배 잦다.
-        nextGust = t + (lerp(22, 7, load) + rand() * lerp(14, 9, load)) * (f.weather.now === "wind" ? 0.45 : 1);
+        // 돌풍 간격은 **세계의 바람에 연속**으로 반응한다(2026-09-07, W-1 ①). 옛 코드는 `weather === "wind"`인지만 보는 계단이라
+        // 흐림(.14)·비(.4)·눈(.3)이 맑음(.08)과 똑같이 잠잠했다 — 조명이 이미 연속 값을 주는데 장면이 안 읽었다.
+        nextGust = t + (lerp(22, 7, load) + rand() * lerp(14, 9, load)) * (1 - 0.62 * currentLight().wind);
       }
       const front = gust ? (gust.dir > 0 ? -240 + ((t - gust.t0) / gust.dur) * (w + 480) : w + 240 - ((t - gust.t0) / gust.dur) * (w + 480)) : 0;
       const pushy = p.inside && p.speed > 30;
@@ -1029,17 +1083,9 @@ export function createAutumn(seed: number): Scene {
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
       drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
       if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
-      // 서리 안개 — 안개 낀 날(11월에 잦다)은 더 깊이 내려온다.
-      // 안개 날씨의 짙어짐은 **엔진 안개층**(light.ts groundFog·hazeK)이 맡는다 — 옛 ×1.7/×1.6은 엔진 안개와 겹쳐 상단 300px이
-      // 단일 값의 흰 벽이 되고 지평선 실루엣이 사라졌다(QA 라운드 3 C#4 이중 안개). 서리안개는 맑은 가을 아침의 얇은 베일로만.
-      const fogK = 1;
-      const mistH = f.h * 0.34;
-      const mist = g.createLinearGradient(0, 0, 0, mistH);
-      mist.addColorStop(0, `rgb(234 238 242 / ${Math.min(0.7, 0.42 * fogK)})`);
-      mist.addColorStop(0.5, `rgb(234 238 242 / ${Math.min(0.4, 0.16 * fogK)})`);
-      mist.addColorStop(1, "rgb(234 238 242 / 0)");
-      g.fillStyle = mist;
-      g.fillRect(0, 0, f.w, mistH);
+      // (서리 안개 층은 **삭제**했다 — 2026-09-07, AMB-D3-04. 화면 위 34%에 걸린 `mist` 그라데이션이 엔진 대기 안개와 이중으로
+      //  얹혀, 화면 y = .34h에서 끊기는 **가로 계단**을 만들었다. 실측: 지평선 아래 띠①−② 평균 L 차 초원 가을 4.2L 대
+      //  숲 1.7 · 초원 겨울 1.8 — 그 계단 위가 통째로 하얘져 나무·먼 소품이 같이 사라졌다. 안개는 엔진 한 겹만 맡는다.)
       // 연대기 — 지난 해들의 나무(위 헤지로우), 이번 가을의 결정적 저장소 흙더미(살아 있는 다람쥐의 저장소와 별개).
       if (traceBakes) drawTraces(g, f, "autumn", traceBakes);
       // 흙더미 — 바탕 위, 잎 **아래**(잎이 덮을 수 있다 — 찾는 게 놀이). 묻은 직후 0.6초에 걸쳐 드러난다.
@@ -1052,6 +1098,11 @@ export function createAutumn(seed: number): Scene {
           g.restore();
         }
       }
+    },
+    splitHaze: () => true,
+    /** 대기 안개 **뒤**의 층(2026-09-07, AMB-D3-04·AMB-A3-02) — 서 있는 것(나무)과 지면 위 입자(낙엽·도토리·다람쥐)를
+     *  **y 오름차순 한 대열**로 그린다. 안개가 이미 땅 위에 얹혀 있으므로 여기 물체는 자기 거리만큼만 잠긴다. */
+    drawAbove(g, f) {
       const drawLeaf = (l: Leaf, shadow: boolean) => {
         const acorn = l.sp === ACORN;
         if (acorn && (!acornSpr || !acornShadow)) return;
@@ -1083,22 +1134,10 @@ export function createAutumn(seed: number): Scene {
         }
         g.restore();
       };
-      for (let i = 0; i < leaves.length; i++) if (i !== grabbed && leaves[i].fall === 0) drawLeaf(leaves[i], true);
-      for (let i = 0; i < leaves.length; i++) if (i !== grabbed && leaves[i].fall === 0) drawLeaf(leaves[i], false);
-      if (grabbed >= 0 && grabbed < leaves.length) {
-        drawLeaf(leaves[grabbed], true);
-        drawLeaf(leaves[grabbed], false);
-      }
-      // 흙알갱이 — 작은 갈색 점, 스러지며 옅어진다.
-      for (const k of specks) {
-        g.fillStyle = `rgb(96 74 52 / ${(clamp(k.life, 0, 1) * 0.85).toFixed(2)})`;
-        g.beginPath();
-        g.arc(k.x, k.y, 1.6, 0, TAU);
-        g.fill();
-      }
       // 다람쥐 — 달릴 땐 몸이 위아래로 통통, 물고 갈 땐 머리 앞에 도토리. 단계별 몸짓: sniff 킁킁 · dig 앞발질 · grab/pat 통통 ·
       // look 두리번(±0.3) · pause 얼어붙어 꼬리 떨기(±0.2).
-      if (squirrel && squirrelSpr) {
+      const drawSquirrel = () => {
+        if (!squirrel || !squirrelSpr) return;
         const s = squirrel;
         const running = s.phase === "run" || s.phase === "cache" || s.phase === "retrieve" || s.phase === "leave";
         const hop = s.phase === "grab" || s.phase === "pat";
@@ -1131,12 +1170,44 @@ export function createAutumn(seed: number): Scene {
           g.drawImage(acornSpr.c, -7, -9, 14, 18);
           g.restore();
         }
-      }
-      for (const l of leaves) {
-        if (l.fall > 0) {
-          drawLeaf(l, true);
-          drawLeaf(l, false);
+      };
+      // **y 오름차순 한 대열**(2026-09-07, AMB-A3-02) — 옛 코드는 "바탕에 구운 나무 → 낙엽 한 덩어리"라 잎이 **모든 나무 앞**으로
+      // 날렸다(뒤쪽 나무 위로도). 이제 먼 것부터 그린다: 잎·도토리·다람쥐·나무가 자기 y로 줄을 선다. 떨어지는 중인 잎도 착지점 y로
+      // 함께 선다(공중에 있어도 그 나무보다 뒤면 뒤다). 잡고 있는 잎(grabbed)만 예외로 맨 위 — 손에 든 것은 무엇에도 가리지 않는다.
+      order.length = 0;
+      for (let i = 0; i < leaves.length; i++) if (i !== grabbed) order.push(i);
+      order.sort((a, b) => leaves[a].y - leaves[b].y);
+      let ti = 0;
+      let sqDone = !squirrel || !squirrelSpr;
+      const flush = (yLim: number) => {
+        for (;;) {
+          if (ti >= treeSpots.length && sqDone) return; // 둘 다 소진 — yLim이 Infinity면 아래 비교가 빠져나가지 못한다
+          const ty = ti < treeSpots.length ? treeSpots[ti].y : Infinity;
+          const sy = sqDone || !squirrel ? Infinity : squirrel.y;
+          if (Math.min(ty, sy) > yLim) return;
+          if (sy <= ty) {
+            sqDone = true;
+            drawSquirrel();
+          } else drawTree(g, treeSpots[ti++], f);
         }
+      };
+      for (const i of order) {
+        const l = leaves[i];
+        flush(l.y);
+        drawLeaf(l, true);
+        drawLeaf(l, false);
+      }
+      flush(Infinity);
+      if (grabbed >= 0 && grabbed < leaves.length) {
+        drawLeaf(leaves[grabbed], true);
+        drawLeaf(leaves[grabbed], false);
+      }
+      // 흙알갱이 — 작은 갈색 점, 스러지며 옅어진다.
+      for (const k of specks) {
+        g.fillStyle = `rgb(96 74 52 / ${(clamp(k.life, 0, 1) * 0.85).toFixed(2)})`;
+        g.beginPath();
+        g.arc(k.x, k.y, 1.6, 0, TAU);
+        g.fill();
       }
     },
     pointerDown(f, onBackground) {
@@ -1194,6 +1265,9 @@ export function createAutumn(seed: number): Scene {
         acornsDropped,
         acornSprite: !!acornSpr,
         ground: !!ground,
+        trees: treeSpots.length,
+        // 대열 검증(AMB-A3-02) — 나무 발보다 **위**(먼)에 있는 잎의 수. 이 잎들이 예전엔 전부 나무 앞에 그려졌다.
+        leavesBehindTrees: treeSpots.length ? leaves.filter((l) => l.y < treeSpots[treeSpots.length - 1].y).length : 0,
         squirrel: squirrel ? [Math.round(squirrel.x), Math.round(squirrel.y), squirrel.phase, squirrel.carry ? 1 : 0] : null,
         sqPhase: squirrel ? squirrel.phase : null,
         squirrels,

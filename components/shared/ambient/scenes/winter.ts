@@ -890,7 +890,7 @@ export function createWinter(seed: number): Scene {
         const mk = moveScale(q.y, h);
         q.x += q.vx * dt * mk;
         q.y += q.vy * dt * mk;
-        q.vx *= Math.pow(0.05, dt);
+        q.vx = q.vx * Math.pow(0.05, dt) - 26 * currentLight().wind * dt; // 바람이 가루를 한쪽으로 민다(W-1 ①)
         q.vy = q.vy * Math.pow(0.05, dt) + 11 * dt; // 아주 살짝 가라앉는다(가루는 천천히 내려앉는다)
         if (q.life <= 0) dust.splice(i, 1);
       }
@@ -1012,18 +1012,25 @@ export function createWinter(seed: number): Scene {
         g.restore();
         g.restore();
       }
+      // **바람에 실려 비껴 내린다**(2026-09-07, W-1 ①) — 겨울 초원에도 `currentLight().wind` 소비자가 0개라 눈이
+      // 바람 날씨에도 제자리에서 떴다 사라졌다(맑음 .08 · 눈 .3 · 바람 1). 착지점은 그대로 두고 **떨어지는 동안만** 옆으로
+      // 밀린다(life 0 → 1에서 오프셋이 0으로 수렴 = 자기 자리에 내려앉는다). 위상에 x를 넣어 한 덩어리로 흐르지 않게.
+      const fWind = currentLight().wind;
+      const drift = 34 * fWind;
       for (const s of flakes) {
         if (s.wait > 0) continue;
         const l = s.life;
         const r = 0.8 + s.r * Math.min(1, l * 1.25);
         const a = l < 0.65 ? (l / 0.65) * 0.95 : ((1 - l) / 0.35) * 0.95;
+        // 원근: 먼 눈은 화면에서 조금만 밀린다(moveScale과 같은 뜻).
+        const sx = s.x - drift * (1 - l) * depthScale(s.y, f.h) * (0.7 + 0.3 * Math.sin(t * 0.9 + s.x * 0.01));
         g.fillStyle = `rgb(150 180 212 / ${a * 0.55})`;
         g.beginPath();
-        g.arc(s.x, s.y, r + 1, 0, TAU);
+        g.arc(sx, s.y, r + 1, 0, TAU);
         g.fill();
         g.fillStyle = `rgb(255 255 255 / ${a})`;
         g.beginPath();
-        g.arc(s.x, s.y, r, 0, TAU);
+        g.arc(sx, s.y, r, 0, TAU);
         g.fill();
       }
       // 눈가루 — 흰 알갱이가 속도 방향으로 늘어져(모션 블러) 튀고, 느려지면 제 모양으로 가라앉는다.
