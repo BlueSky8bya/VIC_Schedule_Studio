@@ -22,7 +22,7 @@ import { weatherAt, weatherOptionsForMonth, type DayWeather, type Weather } from
 import { pendingLoads } from "@/components/shared/ambient/loading";
 import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
 import { drawDepthHaze, drawLightPass } from "@/components/shared/ambient/world/view";
-import { lerpLight, lightOf, NEUTRAL_LIGHT, setCurrentLight, type Light } from "@/components/shared/ambient/world/light";
+import { lerpLight, lightAt, NEUTRAL_LIGHT, setCurrentLight, type Light } from "@/components/shared/ambient/world/light";
 import { createParticles, windDirOf } from "@/components/shared/ambient/world/particles";
 import type { BiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
 
@@ -251,7 +251,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     dim: readDim(),
     date: { y: world.year, m: world.month, d: 1 },
     time: initialTime,
-    weather: { now: "clear", prev: "clear", segment: 0 },
+    weather: { now: "clear", prev: "clear", segment: 0, until: 24 },
     traces: [],
     light: NEUTRAL_LIGHT,
     lightStable: true,
@@ -267,22 +267,32 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   let lightTgt: Light = NEUTRAL_LIGHT;
   let lightFrom: Light = NEUTRAL_LIGHT;
   let lightMix = 1;
+  let lightKey = "";
   let lightInit = false;
   const refreshWorld = () => {
     const today = kstToday();
     const d = worldForce?.day ?? viewDay(world.year, world.month, today);
     frame.date = { y: world.year, m: world.month, d };
-    frame.time = worldForce?.band ? worldTimeOfBand(world.season, worldForce.band) : worldTime(world.season, worldForce?.hour ?? kstHour());
+    frame.time = worldForce?.band
+      ? worldTimeOfBand(world.season, worldForce.band, frame.date)
+      : worldTime(world.season, worldForce?.hour ?? kstHour(), frame.date);
     const hour = frame.time.hour;
     frame.weather = worldForce?.weather
-      ? { now: worldForce.weather, prev: worldForce.weather, segment: hour < 13 ? 0 : 1 }
+      ? { now: worldForce.weather, prev: worldForce.weather, segment: 0, until: 24 }
       : weatherAt(world.slug, world.year, world.month, d, hour);
-    const nextLight = lightOf(frame.time.band, frame.weather.now, world.season);
-    if (JSON.stringify(nextLight) !== JSON.stringify(lightTgt)) {
+    // 조명은 **두 거점을 섞은 연속 값**이다(2026-09-07, PLAN-006). 위상 표류는 이미 연속이라 그대로 반영하고,
+    // 3초 전이는 **불연속 변화**(날씨가 바뀌거나 구간이 넘어갈 때)에만 건다 — 매 갱신마다 전이를 새로 걸면
+    // lightStable이 영원히 false가 되어 소품 그림자를 다시 굽지 못한다.
+    const nextLight = lightAt(frame.time, frame.weather.now, world.season);
+    const lightKeyNow = `${frame.weather.now}|${frame.time.from}|${frame.time.to}`;
+    if (lightKeyNow !== lightKey) {
       lightFrom = frame.light;
-      lightTgt = nextLight;
+      lightKey = lightKeyNow;
       lightMix = lightInit && !frozen ? 0 : 1;
-      frame.light = lerpLight(lightFrom, lightTgt, lightMix);
+    }
+    lightTgt = nextLight;
+    {
+      frame.light = lightMix >= 1 ? nextLight : lerpLight(lightFrom, nextLight, lightMix);
       frame.lightStable = lightMix >= 1;
     }
     lightInit = true;
@@ -322,6 +332,9 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     hot: null,
     world: () => ({
       band: frame.time.band,
+      // 연속 위상(PLAN-006) — 지금 섞고 있는 두 거점과 비율, 그리고 실제 해의 고도.
+      phase: `${frame.time.from}→${frame.time.to} ${Math.round(frame.time.mix * 100)}%`,
+      sunAlt: Math.round(frame.time.sun.alt * 10) / 10,
       hour: Math.round(frame.time.hour * 100) / 100,
       weather: frame.weather.now,
       prev: frame.weather.prev,

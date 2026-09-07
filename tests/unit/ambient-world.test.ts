@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bandOf, worldTime } from "@/components/shared/ambient/world/time";
-import { monthTable, weatherAt, weatherOptionsForMonth } from "@/components/shared/ambient/world/weather";
+import { monthTable, segmentBounds, SEGMENT_MIN_H, weatherAt, weatherOptionsForMonth } from "@/components/shared/ambient/world/weather";
 import { monthTraces } from "@/components/shared/ambient/world/traces";
 import { SpawnDirector, type SpawnCtx } from "@/components/shared/ambient/world/rarity";
 import { hashSeed } from "@/components/shared/ambient/world/seed";
@@ -70,12 +70,30 @@ describe("world/time — 여섯 띠", () => {
 });
 
 describe("world/weather — 날짜 시드 난수", () => {
-  it("같은 달력·날·마디면 같은 날씨", () => {
-    const a = weatherAt("vic", 2026, 7, 14, 10);
-    const b = weatherAt("vic", 2026, 7, 14, 11);
+  it("같은 달력·날·마디면 같은 날씨 — 하루는 세 마디, 경계는 날짜마다 다르다", () => {
+    const [b1, b2] = segmentBounds("vic", 2026, 7, 14);
+    const mid = (lo: number, hi: number) => (lo + hi) / 2;
+    const a = weatherAt("vic", 2026, 7, 14, mid(0, b1));
+    const b = weatherAt("vic", 2026, 7, 14, Math.max(0.1, b1 - 0.1));
     expect(a.now).toBe(b.now);
     expect(a.segment).toBe(0);
-    expect(weatherAt("vic", 2026, 7, 14, 15).segment).toBe(1);
+    expect(weatherAt("vic", 2026, 7, 14, mid(b1, b2)).segment).toBe(1);
+    expect(weatherAt("vic", 2026, 7, 14, mid(b2, 24)).segment).toBe(2);
+    // 결정적: 같은 날이면 몇 번을 물어도 같다.
+    expect(weatherAt("vic", 2026, 7, 14, 15).now).toBe(weatherAt("vic", 2026, 7, 14, 15).now);
+  });
+  it("마디는 최소 4시간 — 경계가 랜덤이어도 날씨가 연달아 툭툭 바뀌지 않는다", () => {
+    for (let m = 1; m <= 12; m++) {
+      for (let d = 1; d <= 28; d++) {
+        const [b1, b2] = segmentBounds("vic", 2026, m, d);
+        expect(b1).toBeGreaterThanOrEqual(SEGMENT_MIN_H);
+        expect(b2 - b1).toBeGreaterThanOrEqual(SEGMENT_MIN_H);
+        expect(24 - b2).toBeGreaterThanOrEqual(SEGMENT_MIN_H);
+      }
+    }
+    // 경계는 날마다 다르다(고정 13시가 아니다).
+    const first = new Set(Array.from({ length: 20 }, (_, i) => segmentBounds("vic", 2026, 5, i + 1)[0].toFixed(2)));
+    expect(first.size).toBeGreaterThan(10);
   });
   it("월별 평년값 표를 따른다 — 4~10월엔 눈이 0, 겨울 강수는 대부분 눈", () => {
     for (let d = 1; d <= 28; d++) {
@@ -98,12 +116,17 @@ describe("world/weather — 날짜 시드 난수", () => {
     expect(weatherOptionsForMonth(1)).toContain("snow");
     expect(weatherOptionsForMonth(3)).toContain("snow"); // 3월엔 눈일수 1.6일이 남아 있다
   });
-  it("오후의 prev는 오전, 오전의 prev는 전날 오후", () => {
-    const pm = weatherAt("vic", 2026, 4, 10, 15);
-    const am = weatherAt("vic", 2026, 4, 10, 9);
-    expect(pm.prev).toBe(am.now);
-    const prevPm = weatherAt("vic", 2026, 4, 9, 15);
-    expect(am.prev).toBe(prevPm.now);
+  it("마디의 prev는 앞 마디, 첫 마디의 prev는 전날 마지막 마디", () => {
+    const [b1, b2] = segmentBounds("vic", 2026, 4, 10);
+    const s0 = weatherAt("vic", 2026, 4, 10, b1 / 2);
+    const s1 = weatherAt("vic", 2026, 4, 10, (b1 + b2) / 2);
+    const s2 = weatherAt("vic", 2026, 4, 10, (b2 + 24) / 2);
+    expect(s1.prev).toBe(s0.now);
+    expect(s2.prev).toBe(s1.now);
+    const prevLast = weatherAt("vic", 2026, 4, 9, 23);
+    expect(s0.prev).toBe(prevLast.now);
+    expect(s0.until).toBeCloseTo(b1, 6);
+    expect(s2.until).toBe(24);
   });
 });
 

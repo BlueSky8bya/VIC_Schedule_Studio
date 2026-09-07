@@ -1,5 +1,8 @@
 # Active ExecPlan
 
+> **Accepted(2026-09-07, 구현 완료)**: [PLAN-20260907-006 — 실제 태양 궤도로 잇는 시간대 + 하루 세 마디 날씨](PLAN-20260907-006-solar-time-weather.md) —
+> 여섯 띠를 **거점**으로 두고 그 사이를 태양 고도로 연속 보간(`world/sun.ts` 신설 · `time.ts` 위상 · `light.ts lightAt`), 날씨는 경계가 랜덤인 **세 마디**(각 ≥ 4시간).
+
 > **Proposed(2026-09-05, 문서·에이전트 설계 완료 — 구현 미착수)**: [PLAN-20260905-005 — 앰비언트 비주얼 QA 파이프라인](PLAN-20260905-005-ambient-visual-qa.md) —
 > 결정적 재현(`force.seed`·`band`·`advance(ms)`·`forcePointer`·`/visual-fixture/biome`) → 캡처 시트·diff(`scripts/ambient-qa/`) → 전수 자동 지표 → 라운드 러너.
 > 규칙·에이전트·백로그는 [docs/ambient/](../../ambient/README.md). 라운드(세 검사자 동시 → 통합 → ≤3건 수정)는 P0·P1 뒤에 시작.

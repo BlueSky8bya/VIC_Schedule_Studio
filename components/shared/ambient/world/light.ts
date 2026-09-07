@@ -307,6 +307,22 @@ export function lightOf(band: DayBand, weather: Weather, season: SeasonKey): Lig
   return L;
 }
 
+/** 연속 시간 → 조명(2026-09-07, PLAN-20260907-006). 위상이 가리키는 **두 거점의 조명을 섞는다** —
+ *  시간대가 칸에서 칸으로 튀지 않고 하루가 곡선으로 흐른다. 거점에 정확히 서 있으면(mix 0 또는 강제) 옛 값 그대로다.
+ *  그림자 길이는 그 위에 **실제 태양 고도**를 얹는다: 그림자는 1/tan(고도)로 길어지므로 겨울 낮이 여름 낮보다 길다.
+ *  거점 값이 이미 담고 있는 "낮은 해"와 이중으로 곱해지지 않도록 배율은 [0.85, 1.7]로 묶는다. */
+export function lightAt(time: { from: DayBand; to: DayBand; mix: number; sun: { alt: number } }, weather: Weather, season: SeasonKey): Light {
+  const a = lightOf(time.from, weather, season);
+  const L = time.mix <= 0 || time.from === time.to ? a : lerpLight(a, lightOf(time.to, weather, season), time.mix);
+  const alt = time.sun.alt;
+  if (alt > 3) {
+    // 기준 = 남중 45°(서울 춘분 언저리). 낮은 해일수록 길고 옅은 그림자.
+    const k = Math.max(0.85, Math.min(1.7, Math.tan((45 * Math.PI) / 180) / Math.tan((Math.max(6, Math.min(80, alt)) * Math.PI) / 180)));
+    return { ...L, shadow: { ...L.shadow, len: L.shadow.len * k, alpha: L.shadow.alpha * (k > 1.25 ? 0.92 : 1) } };
+  }
+  return L;
+}
+
 /** rgb 문자열 보간 — 4단위로 양자화해 안개 그라데이션 캐시 키가 3초 전이에 ≤ 16개만 생기게 한다. 빈 문자열(계절 기본색)은 상대 쪽으로 스냅. */
 function lerpRgb(a: string, b: string, t: number): string {
   if (!a || !b) return t >= 0.5 ? b : a;

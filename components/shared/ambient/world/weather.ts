@@ -84,28 +84,51 @@ function pick(t: Table, r: number): Weather {
   return t[t.length - 1][0];
 }
 
-export type DayWeather = { now: Weather; prev: Weather; segment: 0 | 1 };
+export type DayWeather = {
+  now: Weather;
+  /** 직전 마디의 날씨(비 그친 뒤 달팽이·지렁이 같은 창을 만들기 위해). */
+  prev: Weather;
+  /** 0·1·2 — 하루 세 마디 중 어디인가. */
+  segment: 0 | 1 | 2;
+  /** 이 마디가 끝나는 시각(KST 소수 시간, 마지막 마디는 24). */
+  until: number;
+};
 
-/** (slug, y, m, d, 시각) → 이 마디의 날씨와 직전 마디의 날씨. 오전 마디 = 0~13시, 오후 마디 = 13~24시. */
-export function weatherAt(slug: string, y: number, m: number, d: number, hour: number): DayWeather {
+/** 마디 최소 길이(시간) — 경계가 랜덤이어도 날씨가 연달아 툭툭 바뀌지 않게 하는 하한(2026-09-07 소유자). */
+export const SEGMENT_MIN_H = 4;
+
+/** 그 날의 마디 경계(KST 소수 시간) — 날짜 시드로 랜덤이되 세 마디 모두 ≥ SEGMENT_MIN_H.
+ *  b1 ∈ [6.5, 11], b2 ∈ [max(b1+4, 13), 20]. 마지막 마디는 24 − 20 = 4시간이 하한이다. */
+export function segmentBounds(slug: string, y: number, m: number, d: number): [number, number] {
+  const rb = hashSeed(slug, "weather-bounds", y, m, d, 0);
+  const b1 = 6.5 + rb() * 4.5;
+  const lo = Math.max(b1 + SEGMENT_MIN_H, 13);
+  const b2 = lo + rb() * Math.max(0, 20 - lo);
+  return [b1, b2];
+}
+
+/** 그 날 세 마디의 날씨(앞 마디를 55% 잇는다 — 하루가 색종이처럼 튀지 않게). */
+function daySegments(slug: string, y: number, m: number, d: number): [Weather, Weather, Weather] {
   const t = monthTable(m);
-  const r0 = hashSeed(slug, "weather", y, m, d, 0)();
-  const r1 = hashSeed(slug, "weather", y, m, d, 1)();
-  const am = pick(t, r0);
-  // 오후는 60%가 오전을 잇는다(하루 안에 날씨가 너무 자주 바뀌지 않게).
-  const pm = r1 < 0.6 ? am : pick(t, (r1 - 0.6) / 0.4);
-  if (hour < 13) {
-    // 전날 오후
-    const yd = new Date(Date.UTC(y, m - 1, d - 1));
-    const py = yd.getUTCFullYear();
-    const pm_ = yd.getUTCMonth() + 1;
-    const pd = yd.getUTCDate();
-    const pr0 = hashSeed(slug, "weather", py, pm_, pd, 0)();
-    const pr1 = hashSeed(slug, "weather", py, pm_, pd, 1)();
-    const pt = monthTable(pm_);
-    const pam = pick(pt, pr0);
-    const ppm = pr1 < 0.6 ? pam : pick(pt, (pr1 - 0.6) / 0.4);
-    return { now: am, prev: ppm, segment: 0 };
-  }
-  return { now: pm, prev: am, segment: 1 };
+  const r = hashSeed(slug, "weather", y, m, d, 0);
+  const w0 = pick(t, r());
+  const c1 = r();
+  const w1 = c1 < 0.55 ? w0 : pick(t, (c1 - 0.55) / 0.45);
+  const c2 = r();
+  const w2 = c2 < 0.55 ? w1 : pick(t, (c2 - 0.55) / 0.45);
+  return [w0, w1, w2];
+}
+
+/** (slug, y, m, d, 시각) → 이 마디의 날씨와 직전 마디의 날씨. 하루는 **세 마디**(경계는 날짜 시드 랜덤, 2026-09-07). */
+export function weatherAt(slug: string, y: number, m: number, d: number, hour: number): DayWeather {
+  const [b1, b2] = segmentBounds(slug, y, m, d);
+  const segs = daySegments(slug, y, m, d);
+  const h = ((hour % 24) + 24) % 24;
+  const seg: 0 | 1 | 2 = h < b1 ? 0 : h < b2 ? 1 : 2;
+  const until = seg === 0 ? b1 : seg === 1 ? b2 : 24;
+  if (seg > 0) return { now: segs[seg], prev: segs[seg - 1], segment: seg, until };
+  // 첫 마디의 직전은 전날 마지막 마디다.
+  const yd = new Date(Date.UTC(y, m - 1, d - 1));
+  const prev = daySegments(slug, yd.getUTCFullYear(), yd.getUTCMonth() + 1, yd.getUTCDate())[2];
+  return { now: segs[0], prev, segment: 0, until };
 }

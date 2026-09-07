@@ -479,7 +479,22 @@ function pixelDisc(R: number, rgbStr: string, alpha: number): HTMLCanvasElement 
   return c;
 }
 
-export type SkyFrame = { t: number; time: { band: DayBand }; weather: { now: Weather }; light: Light; date: { y: number; m: number; d: number } };
+export type SkyFrame = {
+  t: number;
+  /** sun = 그 순간의 해(고도·방위, 도). 있으면 해의 높이를 **실제 고도**로 놓는다(2026-09-07, PLAN-006) — 겨울 노을 해가 더 낮게 걸린다. */
+  time: { band: DayBand; sun?: { alt: number; az: number } };
+  weather: { now: Weather };
+  light: Light;
+  date: { y: number; m: number; d: number };
+};
+
+/** 해의 화면 y — 고도 0°면 지평선(maxY) 바로 위, 18° 이상이면 하늘의 위쪽 40% 지점. */
+export function sunYOf(alt: number | undefined, maxY: number): number {
+  const base = Math.max(maxY * 0.55, maxY - 14);
+  if (alt === undefined) return base;
+  const k = Math.max(0, Math.min(1, alt / 18));
+  return Math.round(maxY - 14 - k * (maxY - 14) * 0.62);
+}
 
 /** 프레임마다: 별(밤·맑음/바람) · 달(밤, 음력 위상) · 해(새벽·노을, 맑음/바람) — 픽셀 사각 별, 옅은 달·해 원반 + 글로우. `maxY` = 언덕·능선에 가리지 않을 상한. */
 export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: { moonY?: number; sunY?: number } = {}) {
@@ -493,7 +508,7 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     // 원반·별·글로우 없음. 반지름은 맑음 글로우의 ×3, α .12~.2.
     if (band === "dawn" || band === "dusk") {
       const sx = w * L.reflect.x;
-      const sy = opts.sunY ?? Math.max(maxY * 0.55, maxY - 14);
+      const sy = opts.sunY ?? sunYOf(f.time.sun?.alt, maxY);
       const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
       softBlob(g, sx, sy, R * 9, band === "dusk" ? "240 228 224" : "236 238 240", 0.35, 0); // .16 → .35(라운드 12 A: 해 자리 L +0.8 = "빛이 없다")
     } else if (band === "night") {
@@ -542,7 +557,7 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
   if (band === "dawn" || band === "dusk") {
     // 해 — 지평선 가까이 낮게, 회백(새벽)·회장미(노을) 원반 + 넓고 옅은 글로우. 선명한 주황은 없다(오행).
     const sx = w * L.reflect.x;
-    const sy = opts.sunY ?? Math.max(maxY * 0.55, maxY - 14);
+    const sy = opts.sunY ?? sunYOf(f.time.sun?.alt, maxY);
     const col = band === "dusk" ? "244 226 220" : "236 238 240";
     const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
     softBlob(g, sx, sy, R * 3, col, band === "dusk" ? 0.5 : 0.34, 0);

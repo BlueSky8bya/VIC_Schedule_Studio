@@ -9,6 +9,7 @@ import { WEATHER_LABEL, type Weather } from "@/components/shared/ambient/world/w
 // 달력·크롬 없이 캔버스 하나. 파라미터(전부 선택, 기본값 = 초원·봄·점심·맑음·시드 42·t 0):
 //   biome=meadow|forest|mountain|hill|pond|valley|tidal|sandy|rocky|sea|deep
 //   season=spring|summer|autumn|winter   band=dawn|morning|noon|dusk|evening|night   weather=clear|cloud|rain|snow|fog|wind
+//   hour=18.5(KST 소수 시간 — 띠 대신 연속 시각으로 세운다)
 //   seed=42   t=1500(ms, 이 시각의 프레임을 결정적으로)   load=1(여력 0~1)   pointer=x,y(포인터 고정; 없으면 화면 밖)
 //   camera=showcase|plain   y=2026   m=1~12(계절의 대표 달 대신)   day=1~31(달 위상 스윕 — 라운드 6 결정 5)
 // 날씨는 항상 강제된다(기본 clear) — 오늘 날짜에 따라 달라지는 시드 날씨가 프레임에 끼지 않게.
@@ -26,7 +27,7 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   const sp = (await searchParams) ?? {};
   const season: SeasonKey = isSeasonKey(sp.season) ? sp.season : "spring";
   const biome: BiomeKey = isBiomeKey(sp.biome) ? sp.biome : "meadow";
-  const band: DayBand = (DAY_BANDS as readonly string[]).includes(sp.band ?? "") ? (sp.band as DayBand) : "noon";
+  const bandParam: DayBand | undefined = (DAY_BANDS as readonly string[]).includes(sp.band ?? "") ? (sp.band as DayBand) : undefined;
   const weather: Weather = sp.weather && sp.weather in WEATHER_LABEL ? (sp.weather as Weather) : "clear";
   const seed = Math.round(num(sp.seed, 42, 0, 2 ** 31));
   const t = num(sp.t, 0, 0, 600_000);
@@ -40,11 +41,15 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
     const [px, py] = sp.pointer.split(",").map(Number);
     if (Number.isFinite(px) && Number.isFinite(py)) pointer = { x: px, y: py };
   }
+  // hour = 그 날의 **연속 시각**(KST 소수 시간) — 띠(band)가 거점에 스냅하는 것과 달리 하루의 아무 지점이나 세운다(PLAN-006).
+  const hour = sp.hour === undefined ? undefined : num(sp.hour, 12, 0, 24);
+  // 띠도 시각도 없으면 점심에 세운다 — fixture는 결정적이어야 하고, 실시간 KST가 끼면 캡처가 날마다 달라진다.
+  const band: DayBand | undefined = bandParam ?? (hour === undefined ? "noon" : undefined);
   const camera = sp.camera === "plain" ? "plain" : "showcase";
   return (
     <BiomeFixture
       camera={camera}
-      force={{ biome, band, weather, seed, load, pointer, day, freeze: true, pin: true }}
+      force={{ biome, band, hour, weather, seed, load, pointer, day, freeze: true, pin: true }}
       month={month}
       season={season}
       t={t}
