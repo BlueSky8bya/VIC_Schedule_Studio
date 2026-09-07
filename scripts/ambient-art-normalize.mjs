@@ -2,10 +2,15 @@
 //   node scripts/ambient-art-normalize.mjs            → 전부
 //   node scripts/ambient-art-normalize.mjs tree-oak   → 이름에 'tree-oak'가 들어간 파일만
 //   --dry                                              → 쓰지 않고 보고만
+//   --force                                            → 이미 정리된 파일도 다시 처리
 // 생성기(gpt-image 등)는 1024 정사각 아래를 못 주지만 화면엔 12~170px로 놓이므로 1024를 저장소에 두면 낭비다(파일당 400~600KB).
-// 자리마다 목표 변 = 화면 px의 4배(DPR 2 × 확대 여유), 128~512로 잘라 알파 경계로 트리밍 → 목표 크기(contain) → PNG(팔레트 없이,
-// 압축 9). 엔진(art/load.ts)은 어떤 크기든 다시 알파 경계로 맞추므로 정리 전후 화면은 같다. 매니페스트(manifest.ts)를 esbuild로
-// 번들해 읽으니 표가 정본이다(자리 목록 중복 없음).
+//
+// **2026-09-07 개정(결정 ⓐ′)** — 도트를 죽이지 않는 축소로 바꿨다.
+//  · 목표 변은 **1024의 정수 약수**(128·256·512)만 쓴다(`manifest.targetEdge`).
+//  · 알파 트림 뒤 상자를 **도트 블록 배수**로 되붙이고(`manifest.dotBlock`), **2의 거듭제곱 배로만** 줄인다.
+//  · 커널은 `nearest`, 팔레트 디더는 0. 옛 `lanczos3`·디더 0.6은 도트를 평균 내 없앴다(실측 색 76 → 3,723 · 도트 2.75px → 1.10px).
+// 엔진(art/load.ts)은 어떤 크기든 다시 알파 경계로 맞추므로 정리 전후 화면 배치는 같다. 매니페스트(manifest.ts)를 esbuild로
+// 번들해 읽으니 표가 정본이다(자리 목록·목표 변·블록 크기 중복 없음).
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -18,6 +23,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dir = path.join(root, "public", "ambient", "art");
 const args = process.argv.slice(2);
 const dry = args.includes("--dry");
+const force = args.includes("--force");
 const filter = args.find((a) => !a.startsWith("--")) ?? "";
 
 // 매니페스트 → CJS 한 파일(tsconfig paths 해석은 esbuild가 한다).
@@ -32,10 +38,8 @@ esbuild.buildSync({
   logLevel: "silent",
   tsconfig: path.join(root, "tsconfig.json")
 });
-const { ART_SLOTS, slotFiles } = require(out);
-
-/** 자리의 저장 목표 변(px) — 화면 px 최대의 4배, 128~512. */
-export const targetEdge = (slot) => Math.max(128, Math.min(512, Math.ceil((Math.max(slot.px[0], slot.px[1]) * 4) / 64) * 64));
+// 목표 변·격자는 **매니페스트가 정본**이다(보드·프롬프트·이 스크립트가 같은 수를 써야 한다).
+const { ART_SLOTS, slotFiles, targetEdge, dotBlock, SOURCE_EDGE } = require(out);
 
 const byFile = new Map();
 for (const s of ART_SLOTS) for (const f of slotFiles(s)) byFile.set(f, s);
@@ -57,28 +61,58 @@ for (const f of files) {
     after += src.length;
     continue;
   }
-  const edge = targetEdge(slot);
+  const edge = targetEdge(slot.px);
+  const block = dotBlock(slot.px);
   const meta = await sharp(src).metadata();
   // 이미 정리된 파일(팔레트 PNG = IHDR colorType 3 ∧ 목표 크기 이하)은 건너뛴다 — 다시 돌릴 때마다 재양자화되어 색이 조금씩 상한다.
-  if (src.slice(25, 26)[0] === 3 && Math.max(meta.width ?? 0, meta.height ?? 0) <= edge) {
-    console.log(`SKIP ${f}: ${meta.width}×${meta.height} ${Math.round(src.length / 1024)}KB — 이미 정리됨(팔레트 PNG · 목표 ${edge} 이하)`);
+  // `--force`로 무시할 수 있지만, **lanczos3 시절에 줄여 둔 파일은 다시 돌려도 도트가 돌아오지 않는다**(정보가 이미 없다) —
+  // 그런 파일은 1024 원본에서 다시 뽑아야 한다.
+  if (!force && src.slice(25, 26)[0] === 3 && Math.max(meta.width ?? 0, meta.height ?? 0) <= edge) {
+    const old = Math.max(meta.width ?? 0, meta.height ?? 0) % block !== 0;
+    console.log(
+      `SKIP ${f}: ${meta.width}×${meta.height} ${Math.round(src.length / 1024)}KB — 이미 정리됨(팔레트 PNG · 목표 ${edge} 이하)${old ? ` ⚠ 변이 블록 ${block}px의 배수가 아니다 = 옛 규격(lanczos3). 도트를 되살리려면 1024 원본에서 다시 뽑아야 한다` : ""}`
+    );
     after += src.length;
     continue;
   }
-  // 알파 경계 트리밍(PNG 버퍼로) → 목표 상자(contain) → 투명 여백 없이 저장.
+  // 알파 경계 트리밍(PNG 버퍼로) → **도트 블록 배수로 되붙임** → 정수배 축소 → 투명 여백 없이 저장.
+  // 트림한 크기를 그대로 줄이면 축소비가 반드시 비정수가 되어(예: 941 → 512) 도트가 들쭉날쭉 잘린다. 블록 배수로 맞춰야
+  // `원본 ÷ n` 꼴이 유지된다(2026-09-07 결정 ⓐ′).
   const trimmed = await sharp(src).ensureAlpha().trim({ threshold: 8 }).png().toBuffer({ resolveWithObject: true });
-  const { width: tw, height: th } = trimmed.info;
-  const k = Math.min(1, edge / Math.max(tw, th));
-  const w = Math.max(1, Math.round(tw * k));
-  const h = Math.max(1, Math.round(th * k));
-  // 팔레트 PNG(256색, 디더링) — 셀 셰이딩 그림은 색이 적어 손실이 안 보이고 크기는 1/3~1/4. 회화풍 원본도 128~512px에선 충분하다.
-  const outBuf = await sharp(trimmed.data)
-    .resize(w, h, { fit: "inside", kernel: "lanczos3" })
-    .png({ compressionLevel: 9, adaptiveFiltering: true, palette: true, quality: 90, effort: 9, dither: 0.6 })
+  const snap = (n) => Math.min(SOURCE_EDGE, Math.max(block, Math.ceil(n / block) * block));
+  const bw = snap(trimmed.info.width);
+  const bh = snap(trimmed.info.height);
+  // 축소비 n은 **2의 거듭제곱** — 목표 변 이하로 줄이는 가장 작은 값. 3 같은 값을 쓰면 블록(16·32…)이 n으로 안 나눠떨어져
+  // 축소본의 도트가 다시 들쭉날쭉해진다. n ≤ 8 ≤ block 이므로 축소본도 블록 배수로 남는다.
+  let n = 1;
+  while (Math.max(bw, bh) / n > edge) n *= 2;
+  const w = Math.max(1, Math.round(bw / n));
+  const h = Math.max(1, Math.round(bh / n));
+  // 팔레트 PNG(색 수가 적어 손실이 안 보이고 크기는 1/3~1/4). **디더링 0** — 도트 그림에 디더를 넣으면 색이 흩뿌려져
+  // 우리가 지키려는 블록이 깨진다. 커널도 nearest(lanczos3은 도트를 평균 내 없앤다 — 실측 색 76 → 3,723).
+  // sharp는 파이프라인당 resize 한 번만 유효하다 — 여백 붙이기(extend)와 축소(resize)를 두 단계로 나눈다.
+  const padL = Math.floor((bw - trimmed.info.width) / 2);
+  const padT = Math.floor((bh - trimmed.info.height) / 2);
+  const padded = await sharp(trimmed.data)
+    .extend({
+      left: padL,
+      right: bw - trimmed.info.width - padL,
+      top: padT,
+      bottom: bh - trimmed.info.height - padT,
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    })
+    .png()
+    .toBuffer();
+  const outBuf = await sharp(padded)
+    .resize(w, h, { kernel: "nearest" })
+    .png({ compressionLevel: 9, adaptiveFiltering: true, palette: true, quality: 100, effort: 9, dither: 0 })
     .toBuffer();
   after += outBuf.length;
   const pct = Math.round((outBuf.length / src.length) * 100);
-  console.log(`${dry ? "DRY " : "OK  "}${f}: ${meta.width}×${meta.height} ${Math.round(src.length / 1024)}KB → ${w}×${h} ${Math.round(outBuf.length / 1024)}KB (${pct}%) [자리 ${slot.id} ${slot.px[0]}×${slot.px[1]} → 목표 ${edge}]`);
-  if (!dry && outBuf.length < src.length) fs.writeFileSync(p, outBuf);
+  console.log(
+    `${dry ? "DRY " : "OK  "}${f}: ${meta.width}×${meta.height} ${Math.round(src.length / 1024)}KB → ${w}×${h} ${Math.round(outBuf.length / 1024)}KB (${pct}%) [자리 ${slot.id} ${slot.px[0]}×${slot.px[1]} · 블록 ${block}px · ÷${n} · 목표 ${edge}]`
+  );
+  // 정수배 축소는 **커질 수도** 있다(팔레트가 아닌 원본이 이미 작았던 경우). 크기와 무관하게 규격을 맞춘 결과를 쓴다.
+  if (!dry) fs.writeFileSync(p, outBuf);
 }
 console.log(`\n합계 ${Math.round(before / 1024)}KB → ${Math.round(after / 1024)}KB${dry ? " (dry — 쓰지 않음)" : ""}`);

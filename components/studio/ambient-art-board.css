@@ -638,3 +638,49 @@ html[data-reduce-motion] .art-card:hover .art-cell img,
 html[data-reduce-motion] .art-card:hover .art-cell canvas {
   transform: none;
 }
+
+/* ── 2026-09-07 개정: 빈 자리 · 파일럿 배지 ─────────────────────────────── */
+
+/* 빈 자리 = 파일도 없고 코드 대체물도 없어 화면에 **아무것도 안 그려지는** 자리(26개).
+   대기와 같은 색으로 두면 "언젠가 그리면 되는 것"으로 읽힌다 — 지금 화면이 비어 있다는 사실이 보여야 한다. */
+.art-card[data-state="empty"] {
+  background: linear-gradient(90deg, #b4544f 0 3px, var(--ab-card) 3px);
+}
+.art-status.empty {
+  border-color: #e6bcba;
+  background: #fbeceb;
+  color: #a1443f;
+}
+
+/* 파일럿 배치(12장) — 자리 이름 옆에 진행도. 지금 판단이 걸려 있는 묶음이라 한눈에 찾혀야 한다. */
+.art-pilot {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border: 1px solid #c9c2f0;
+  border-radius: 999px;
+  background: #f0edfd;
+  color: #5b4bc4;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  vertical-align: 1px;
+}
+
+/* 빈 자리 수는 진행도가 아니라 경고다 — 보라 막대와 같은 색이면 "채워지는 중"으로 오해된다. */
+.art-bar i.warn {
+  background: linear-gradient(90deg, #d8a08c, #b4544f);
+}
+
+.art-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.art-btn:disabled:hover {
+  background: var(--ab-card);
+}
+
+/* 버튼 글자가 줄바꿈되면 "프롬프 트"처럼 잘려 읽힌다 — 카드 바닥은 폭이 좁다. */
+.art-btn {
+  white-space: nowrap;
+}

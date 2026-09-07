@@ -34,6 +34,7 @@ function alphaBox(im: HTMLImageElement): { x: number; y: number; w: number; h: n
   const w = Math.max(1, Math.round(im.naturalWidth * k));
   const h = Math.max(1, Math.round(im.naturalHeight * k));
   const { c, g } = makeCanvas(w, h);
+  g.imageSmoothingEnabled = false; // 재는 용도 — 보간을 켜면 알파가 번져 상자가 실제보다 커진다
   g.drawImage(im, 0, 0, w, h);
   const d = g.getImageData(0, 0, c.width, c.height).data;
   let x0 = w;
@@ -61,6 +62,10 @@ function bake(im: HTMLImageElement, slot: ArtSlot, scale: number, tint?: string)
   const w = Math.max(1, box.w * fit);
   const h = Math.max(1, box.h * fit);
   const { c, g } = makeCanvas(Math.ceil(w * scale), Math.ceil(h * scale));
+  // 여기가 도트가 실제로 죽던 곳 — 저장본(512·256)을 자리 상자(×DPR)로 줄이는 단 한 번의 축소다. 보간이 켜져 있으면
+  // 이 한 줄에서 색 76 → 3,723이 된다. nearest는 축소비가 정수가 아니면 줄 굵기가 ±1px 흔들리지만, 흐려지는 것보다 낫다
+  // (`dotGrid`가 자리마다 도트를 4 장치px 안팎으로 잡아 그 흔들림이 눈에 띄지 않게 한다).
+  g.imageSmoothingEnabled = false;
   g.drawImage(im, box.x, box.y, box.w, box.h, 0, 0, c.width, c.height);
   if (tint) {
     g.globalCompositeOperation = "source-atop";
@@ -126,6 +131,11 @@ export class ArtSet {
  *  sy = 세로 추가 배율(3/4 시점의 바닥 눌림 — 회전 **전에** 화면 세로로 누른다). */
 export function drawArt(g: CanvasRenderingContext2D, s: ArtSprite, x: number, y: number, k = 1, rot = 0, flipX = false, sy = 1) {
   g.save();
+  // **보간을 끈다**(2026-09-07 결정 ⓐ′) — 켜져 있으면 도트가 평균화돼 아트만 매끈한 벡터가 되고, 옆의 코드 대체물(보간 꺼짐)과
+  // 어법이 갈린다. 실측: 저장본을 자리 상자로 줄일 때 lanczos3/보간이면 색 76 → 3,723 · 도트 2.75px → 1.10px(95%가 1px).
+  // 흔들림 걱정은 없다 — `depthScale`이 .05 단위로 양자화되고 인스턴스 폭은 스폰 때 정해진 상수라 k가 프레임마다 변하지 않는다.
+  // (라운드 13에서 넣었다가 "rock 아트가 없어 무효"로 되돌렸던 줄 — 아트가 오므로 되살린다.)
+  g.imageSmoothingEnabled = false;
   g.translate(x, y);
   if (sy !== 1) g.scale(1, sy);
   if (rot) g.rotate(rot);

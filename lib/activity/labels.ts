@@ -356,6 +356,16 @@ const ACT: Record<string, TargetLabel> = {
   "dev-art-board-open": { name: "배경 아트 보드 열기(개발자)", area: "편집실", hint: "설정 모달 → /studio/ambient-art — 계절 배경 그림 자리·코덱스 프롬프트 관리(2026-09-04)" },
   "biome-move": { name: "바이옴 이동(쉐브론)", area: "배경 감상", hint: "감상 모드 가장자리 쉐브론(PLAN-20260904-004) — 방향키·WASD·스와이프와 같은 이동. data-dir = up/down/left/right" },
   "biome-map-pick": { name: "바이옴 미니맵 선택", area: "배경 감상", hint: "감상 모드 미니맵 점(열한 화면) — data-biome = 목적지" },
+  "art-prompt-copy-pilot": {
+    name: "아트 보드 — 파일럿 프롬프트 복사",
+    area: "편집실",
+    hint: "/studio/ambient-art(개발자) — 파일럿 배치 12장(소나무·바위·시스택·관목·갈대, ENTITY_ART_PLAN §4)"
+  },
+  "art-prompt-copy-visible": {
+    name: "아트 보드 — 보이는 자리 프롬프트 복사",
+    area: "편집실",
+    hint: "/studio/ambient-art(개발자) — 지금 필터에 걸린 자리만 묶어 한 장으로"
+  },
   "art-prompt-copy-1": { name: "아트 보드 — 1차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 나무·초목·지형·물 자리의 코덱스 마스터 프롬프트" },
   "art-prompt-copy-2": { name: "아트 보드 — 2차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 생물 자리" },
   "art-prompt-copy-all": { name: "아트 보드 — 전체 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자)" },
