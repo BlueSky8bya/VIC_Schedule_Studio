@@ -12,7 +12,7 @@ import {
   SOURCE_EDGE,
   targetEdge
 } from "@/components/shared/ambient/art/manifest";
-import { SPECIES } from "@/components/shared/ambient/world/species";
+import { CODEX } from "@/components/shared/ambient/world/codex";
 import { monthTraces } from "@/components/shared/ambient/world/traces";
 
 describe("ambient/art — 매니페스트", () => {
@@ -21,8 +21,8 @@ describe("ambient/art — 매니페스트", () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id).toMatch(/^[a-z0-9-]+$/);
   });
-  it("종 레지스트리의 모든 종이 2차 자리로 들어온다(목록이 둘로 갈라지지 않는다)", () => {
-    for (const sp of SPECIES) {
+  it("도감의 모든 종이 2차 자리로 들어온다(목록이 둘로 갈라지지 않는다)", () => {
+    for (const sp of CODEX) {
       const slot = ART_SLOTS.find((s) => s.id === sp.id);
       expect(slot, sp.id).toBeTruthy();
       expect(slot?.phase).toBe(2);
@@ -31,8 +31,11 @@ describe("ambient/art — 매니페스트", () => {
   it("변형 자리는 -1..-n 파일, 나머지는 <id>.png 하나", () => {
     const lily = ART_SLOTS.find((s) => s.id === "lilypad")!;
     expect(slotFiles(lily)).toEqual(["lilypad-1.png", "lilypad-2.png", "lilypad-3.png"]);
+    // 참나무는 2026-09-07에 변형 2가 됐다(소유자: "참나무라고 모양이 똑같은 것만 있으면 어색") — 파일 이름이 -1/-2로 바뀐다.
     const oak = ART_SLOTS.find((s) => s.id === "tree-oak-winter")!;
-    expect(slotFiles(oak)).toEqual(["tree-oak-winter.png"]);
+    expect(slotFiles(oak)).toEqual(["tree-oak-winter-1.png", "tree-oak-winter-2.png"]);
+    const acorn = ART_SLOTS.find((s) => s.id === "acorn")!;
+    expect(slotFiles(acorn)).toEqual(["acorn.png"]);
   });
   it("마스터 프롬프트는 모든 자리의 id·스타일 규칙·금지색을 담고, phase로 좁혀진다", () => {
     const all = codexMasterPrompt();
@@ -42,9 +45,9 @@ describe("ambient/art — 매니페스트", () => {
     expect(all).toContain("투명");
     const p1 = codexMasterPrompt(1);
     expect(p1).toContain("| tree-oak-winter |");
-    expect(p1).not.toContain("| rabbit |");
+    expect(p1).not.toContain("| animal-hare |");
     const p2 = codexMasterPrompt(2);
-    expect(p2).toContain("| rabbit |");
+    expect(p2).toContain("| animal-hare |");
     expect(p2).not.toContain("| tree-oak-winter |");
   });
   // 2026-09-07 결정 ⓐ′ — 도트를 살리는 조건은 "1024를 정수배로 줄인다" 하나로 요약된다. 목표 변이나 격자가 1024를
@@ -85,8 +88,9 @@ describe("ambient/art — 매니페스트", () => {
   it("now는 실제로 화면에 그려지는 것과 맞는다 — 코드 대체물이 있으면 none이 아니다", () => {
     // `now: "none"`은 "아직 정하지 않았다"가 아니라 **화면이 비어 있다**는 뜻이다(보드가 빨간 띠로 표시하고 따로 센다).
     // 이 값이 낡으면 계획서를 이 필드로 읽는 사람이 빈 자리 수를 잘못 센다(2026-09-07에 14개가 낡아 있었다).
+    // 2026-09-07 도감 대개편으로 131종이 2차 자리가 됐고 그중 120종은 아직 화면에 없다 — 빈 자리가 26 → 146.
     const empty = ART_SLOTS.filter((s) => s.now === "none");
-    expect(empty.length).toBe(26);
+    expect(empty.length).toBe(146);
     expect(empty.map((s) => s.id)).not.toContain("rock");
     expect(empty.map((s) => s.id)).toContain("sea-stack");
   });

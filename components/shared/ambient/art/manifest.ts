@@ -11,10 +11,10 @@
 //  · 서버(라우트)와 클라이언트(장면) 둘 다 import — DOM 금지.
 
 import type { SeasonKey } from "@/components/shared/ambient/registry";
-import { SPECIES } from "@/components/shared/ambient/world/species";
+import { CODEX, type CodexEntry } from "@/components/shared/ambient/world/codex";
 
-export type ArtCategory = "tree" | "plant" | "ground" | "water" | "prop" | "fish" | "bug" | "animal";
-export type ArtView = "stand" | "flat" | "shadow";
+export type ArtCategory = "tree" | "plant" | "ground" | "water" | "prop" | "sky" | "fish" | "bug" | "animal";
+export type ArtView = "stand" | "flat" | "shadow" | "side";
 export type ArtNow = "procedural" | "emoji" | "silhouette" | "svg" | "none";
 
 export type ArtSlot = {
@@ -49,20 +49,20 @@ const ALL: readonly SeasonKey[] = ["spring", "summer", "autumn", "winter"];
 // ── Phase 1: 나무·초목·지형·물 ──────────────────────────────────────────────────────────────────────────
 const PHASE1: readonly ArtSlot[] = [
   // 나무(데뷔 나무·도토리에서 난 나무) — 계절마다 한 장, 크기는 엔진이 키에 맞춰 조절한다.
-  { id: "tree-oak-spring", grid: 128, nameKo: "참나무(봄)", nameEn: "Oak, spring", category: "tree", seasons: ["spring"], view: "stand", px: [120, 150], brief: "**뭉게뭉게한 잎 덩이**가 모여 하나의 둥근 수관을 이룬다 — 매끈한 원이 아니라, 가장자리가 **울퉁불퉁하게 튀어나오고 패인** 클러스터 여러 개(6~10덩이)가 서로 겹쳐 자란 모양이다. 덩이들의 크기·위치를 **고르지 않게** 흩어 좌우가 대칭이 되지 않게 하고, 수관 위쪽 실루엣에 굴곡이 두세 군데 보이게 한다. 잎 낱개는 그리지 않되 **덩이 경계의 요철이 이 나무의 인상**이다. 색은 연둣빛 3톤(밝은 면 왼쪽 위, 그늘 오른쪽 아래). 줄기는 **따뜻한 갈색**(회갈색 아님 — 밝은 바탕 규칙은 겨울에만 적용한다), 짧고 굵으며 **밑동에서 뿌리목이 3~4갈래로 갈라져 땅을 붙잡는다**. 수관 사이로 굵은 가지가 한두 개 비친다. **계절 크기 = 0.85(새잎)** — 여름보다 덩이가 작고 사이가 성기다. 네 계절 중 여름이 가장 커야 하므로 이 장이 여름보다 커지면 안 된다.", acnhRef: "활엽수(봄 새잎)", now: "procedural", phase: 1 },
-  { id: "tree-oak-summer", grid: 128, nameKo: "참나무(여름)", nameEn: "Oak, summer", category: "tree", seasons: ["summer"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목·같은 가지 뼈대**, 같은 뭉게뭉게한 클러스터 어법. 잎은 짙은 초록 3톤(그늘 면은 청록). **계절 크기 = 1.0(기준 — 한 해 중 가장 크고 빽빽하다)**: 덩이가 봄보다 뚜렷이 커지고 덩이 사이 틈이 메워져 가지가 거의 안 비친다. 그래도 수관 가장자리는 매끈해지지 않는다 — 요철은 유지하고 덩이만 불어난다. 네 장 중 이 장이 가장 풍성해야 한다.", acnhRef: "활엽수(여름)", now: "procedural", phase: 1 },
-  { id: "tree-oak-autumn", grid: 128, nameKo: "참나무(가을)", nameEn: "Oak, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목·같은 가지 뼈대**, 같은 뭉게뭉게한 클러스터 어법. 잎 덩이는 갈색·황토·와인 3톤(갈색이 주, 붉은 기는 조금만 — 선명한 빨강·주황·노랑 금지). **계절 크기 = 0.95(잎이 지기 시작)**: 여름보다 살짝 작고 가장자리 덩이가 성겨 가지 끝이 두세 군데 드러난다. 발치의 떨어진 잎은 그리지 않는다(엔진이 흩뿌린다).", acnhRef: "활엽수(가을 단풍)", now: "procedural", phase: 1 },
-  { id: "tree-oak-winter", grid: 128, nameKo: "참나무(겨울)", nameEn: "Oak, winter", category: "tree", seasons: ["winter"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목**에서 굵은 가지 4~5개가 둥글게 갈라져 올라간다. 가지는 **굵고 힘 있게**(가늘고 앙상한 잔가지 다발이 아니다), 각 가지가 한두 번만 다시 갈라지며 끝이 위를 향한다 — 128px로 줄여도 나무의 골격이 읽혀야 한다. 가지 **윗면마다 눈이 두툼하게 한 겹** 얹혀 하얀 선이 가지를 따라 이어진다. 줄기는 눈밭에서 튀지 않게 **채도 낮은 회갈색**(겨울만 이 규칙).", acnhRef: "활엽수(겨울 나목)", now: "procedural", phase: 1 },
+  { id: "tree-oak-spring", variants: 2, grid: 128, nameKo: "참나무(봄)", nameEn: "Oak, spring", category: "tree", seasons: ["spring"], view: "stand", px: [120, 150], brief: "**뭉게뭉게한 잎 덩이**가 모여 하나의 둥근 수관을 이룬다 — 매끈한 원이 아니라, 가장자리가 **울퉁불퉁하게 튀어나오고 패인** 클러스터 여러 개(6~10덩이)가 서로 겹쳐 자란 모양이다. 덩이들의 크기·위치를 **고르지 않게** 흩어 좌우가 대칭이 되지 않게 하고, 수관 위쪽 실루엣에 굴곡이 두세 군데 보이게 한다. 잎 낱개는 그리지 않되 **덩이 경계의 요철이 이 나무의 인상**이다. 색은 연둣빛 3톤(밝은 면 왼쪽 위, 그늘 오른쪽 아래). 줄기는 **따뜻한 갈색**(회갈색 아님 — 밝은 바탕 규칙은 겨울에만 적용한다), 짧고 굵으며 **밑동에서 뿌리목이 3~4갈래로 갈라져 땅을 붙잡는다**. 수관 사이로 굵은 가지가 한두 개 비친다. **계절 크기 = 0.85(새잎)** — 여름보다 덩이가 작고 사이가 성기다. 네 계절 중 여름이 가장 커야 하므로 이 장이 여름보다 커지면 안 된다.", acnhRef: "활엽수(봄 새잎)", now: "procedural", phase: 1 },
+  { id: "tree-oak-summer", variants: 2, grid: 128, nameKo: "참나무(여름)", nameEn: "Oak, summer", category: "tree", seasons: ["summer"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목·같은 가지 뼈대**, 같은 뭉게뭉게한 클러스터 어법. 잎은 짙은 초록 3톤(그늘 면은 청록). **계절 크기 = 1.0(기준 — 한 해 중 가장 크고 빽빽하다)**: 덩이가 봄보다 뚜렷이 커지고 덩이 사이 틈이 메워져 가지가 거의 안 비친다. 그래도 수관 가장자리는 매끈해지지 않는다 — 요철은 유지하고 덩이만 불어난다. 네 장 중 이 장이 가장 풍성해야 한다.", acnhRef: "활엽수(여름)", now: "procedural", phase: 1 },
+  { id: "tree-oak-autumn", variants: 2, grid: 128, nameKo: "참나무(가을)", nameEn: "Oak, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목·같은 가지 뼈대**, 같은 뭉게뭉게한 클러스터 어법. 잎 덩이는 갈색·황토·와인 3톤(갈색이 주, 붉은 기는 조금만 — 선명한 빨강·주황·노랑 금지). **계절 크기 = 0.95(잎이 지기 시작)**: 여름보다 살짝 작고 가장자리 덩이가 성겨 가지 끝이 두세 군데 드러난다. 발치의 떨어진 잎은 그리지 않는다(엔진이 흩뿌린다).", acnhRef: "활엽수(가을 단풍)", now: "procedural", phase: 1 },
+  { id: "tree-oak-winter", variants: 2, grid: 128, nameKo: "참나무(겨울)", nameEn: "Oak, winter", category: "tree", seasons: ["winter"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목**에서 굵은 가지 4~5개가 둥글게 갈라져 올라간다. 가지는 **굵고 힘 있게**(가늘고 앙상한 잔가지 다발이 아니다), 각 가지가 한두 번만 다시 갈라지며 끝이 위를 향한다 — 128px로 줄여도 나무의 골격이 읽혀야 한다. 가지 **윗면마다 눈이 두툼하게 한 겹** 얹혀 하얀 선이 가지를 따라 이어진다. 줄기는 눈밭에서 튀지 않게 **채도 낮은 회갈색**(겨울만 이 규칙).", acnhRef: "활엽수(겨울 나목)", now: "procedural", phase: 1 },
   { id: "tree-pine", nameKo: "소나무", nameEn: "Pine", category: "tree", seasons: ["spring", "summer", "autumn"], view: "stand", px: [92, 168], variants: 2, brief: "동물의 숲 침엽수처럼 단순하게: **톱니 원뿔 3단**(아래가 가장 넓고 위로 갈수록 좁다)이 짧고 굵은 회갈색 줄기 위에 얹힌다. 색은 짙은 청록 초록 3톤(밝은 면은 왼쪽 위, 그늘은 오른쪽 아래), 솔잎 낱개는 그리지 않는다. 참나무보다 **좁고 키가 크다**. **변형 2개** — 색만 바꾼 복제 금지: 단 수(3단·4단)와 아래 단의 폭, 전체 키가 서로 달라야 한다(산 한 화면에 40여 그루가 선다).", acnhRef: "침엽수", now: "procedural", pilot: 2, phase: 1 },
   { id: "tree-pine-autumn", nameKo: "소나무(가을)", nameEn: "Pine, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [92, 168], variants: 2, brief: "봄·여름 소나무와 **같은 어법·같은 줄기**. 잎만 채도를 낮춘 올리브~암녹으로(가을 갈색 지면 위에서 민트빛 초록은 붙여넣은 것처럼 뜬다). **변형 2개는 `tree-pine-1`·`tree-pine-2`와 각각 짝을 이룬다** — 1은 1의 실루엣, 2는 2의 실루엣에 가을 색을 입힌 것. 같은 산에 두 그루가 나란히 서므로 형태가 갈려야 한다.", acnhRef: "침엽수(가을)", now: "procedural", pilot: 2, phase: 1 },
   { id: "tree-pine-winter", nameKo: "소나무(겨울)", nameEn: "Pine, winter", category: "tree", seasons: ["winter"], view: "stand", px: [92, 168], variants: 2, brief: "같은 어법·같은 줄기. 잎은 더 어둡고 채도가 낮으며, 각 단의 **윗면에만** 눈이 한 겹 얹힌다(아래 그늘은 옅은 청회색). 눈은 색이 아니라 **실루엣**을 바꾼다 — 단 위에 두툼하게 얹혀 윤곽이 둥글어진다. **변형 2개는 `tree-pine-1`·`tree-pine-2`와 각각 짝을 이룬다**(1은 1의 실루엣, 2는 2의 실루엣).", acnhRef: "침엽수(겨울)", now: "procedural", pilot: 2, phase: 1 },
-  { id: "sapling-green", nameKo: "어린 나무(잎)", nameEn: "Sapling, leafy", category: "tree", seasons: ["spring", "summer"], view: "stand", px: [40, 48], brief: "무릎 높이의 어린 참나무 — 가는 줄기 하나에 둥근 잎 3~4장(크게, 낱잎 그대로 단순하게). 밝은 초록.", acnhRef: "묘목", now: "emoji", phase: 1 },
-  { id: "sapling-autumn", nameKo: "어린 나무(가을)", nameEn: "Sapling, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [40, 48], brief: "어린 참나무(같은 실루엣), 둥근 잎 2~3장이 갈색·와인.", acnhRef: "묘목", now: "emoji", phase: 1 },
-  { id: "sapling-bare", nameKo: "어린 나무(겨울)", nameEn: "Sapling, bare", category: "tree", seasons: ["winter"], view: "stand", px: [40, 48], brief: "잎 없는 어린 참나무 — 가는 줄기와 잔가지 둘, 눈이 조금 얹힌다.", acnhRef: "묘목", now: "emoji", phase: 1 },
+  { id: "sapling-green", variants: 2, nameKo: "어린 나무(잎)", nameEn: "Sapling, leafy", category: "tree", seasons: ["spring", "summer"], view: "stand", px: [40, 48], brief: "무릎 높이의 어린 참나무 — 가는 줄기 하나에 둥근 잎 3~4장(크게, 낱잎 그대로 단순하게). 밝은 초록.", acnhRef: "묘목", now: "emoji", phase: 1 },
+  { id: "sapling-autumn", variants: 2, nameKo: "어린 나무(가을)", nameEn: "Sapling, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [40, 48], brief: "어린 참나무(같은 실루엣), 둥근 잎 2~3장이 갈색·와인.", acnhRef: "묘목", now: "emoji", phase: 1 },
+  { id: "sapling-bare", variants: 2, nameKo: "어린 나무(겨울)", nameEn: "Sapling, bare", category: "tree", seasons: ["winter"], view: "stand", px: [40, 48], brief: "잎 없는 어린 참나무 — 가는 줄기와 잔가지 둘, 눈이 조금 얹힌다.", acnhRef: "묘목", now: "emoji", phase: 1 },
   { id: "sprout", nameKo: "새싹", nameEn: "Sprout", category: "plant", seasons: ["spring", "summer", "autumn"], view: "stand", px: [24, 28], brief: "흙을 막 뚫고 나온 떡잎 두 장. 통통하고 둥근 잎, 짧은 줄기, 발치에 흙 부스러기 조금.", acnhRef: "새싹", now: "emoji", phase: 1 },
-  { id: "shrub-spring", nameKo: "관목(봄)", nameEn: "Shrub, spring", category: "tree", seasons: ["spring"], view: "stand", px: [62, 66], brief: "허리 높이의 둥근 관목, 연둣빛 새잎, 작은 흰 꽃 몇 송이. **계절 크기 = 0.85(새잎)** — 여름보다 작고 성기다.", acnhRef: "울타리 관목(진달래류)", now: "procedural", phase: 1 },
-  { id: "shrub-summer", nameKo: "관목(여름)", nameEn: "Shrub, summer", category: "tree", seasons: ["summer"], view: "stand", px: [62, 66], brief: "짙은 초록 둥근 관목, 잎이 빽빽하다. **계절 크기 = 1.0(기준 — 네 계절 중 가장 크고 빽빽하다)**: 봄보다 뚜렷이 크고 틈이 메워져 있다.", acnhRef: "울타리 관목(수국은 파랑 대신 연보라)", now: "procedural", phase: 1 },
-  { id: "shrub-autumn", nameKo: "관목(가을)", nameEn: "Shrub, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [62, 66], brief: "갈색·와인으로 물든 둥근 관목, 잎이 성기다. **계절 크기 = 0.95** — 여름보다 살짝 작고 가장자리가 성겨 잔가지가 조금 드러난다.", acnhRef: "울타리 관목(가을)", now: "procedural", pilot: 1, phase: 1 },
+  { id: "shrub-spring", variants: 2, nameKo: "관목(봄)", nameEn: "Shrub, spring", category: "tree", seasons: ["spring"], view: "stand", px: [62, 66], brief: "허리 높이의 둥근 관목, 연둣빛 새잎, 작은 흰 꽃 몇 송이. **계절 크기 = 0.85(새잎)** — 여름보다 작고 성기다.", acnhRef: "울타리 관목(진달래류)", now: "procedural", phase: 1 },
+  { id: "shrub-summer", variants: 2, nameKo: "관목(여름)", nameEn: "Shrub, summer", category: "tree", seasons: ["summer"], view: "stand", px: [62, 66], brief: "짙은 초록 둥근 관목, 잎이 빽빽하다. **계절 크기 = 1.0(기준 — 네 계절 중 가장 크고 빽빽하다)**: 봄보다 뚜렷이 크고 틈이 메워져 있다.", acnhRef: "울타리 관목(수국은 파랑 대신 연보라)", now: "procedural", phase: 1 },
+  { id: "shrub-autumn", variants: 2, nameKo: "관목(가을)", nameEn: "Shrub, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [62, 66], brief: "갈색·와인으로 물든 둥근 관목, 잎이 성기다. **계절 크기 = 0.95** — 여름보다 살짝 작고 가장자리가 성겨 잔가지가 조금 드러난다.", acnhRef: "울타리 관목(가을)", now: "procedural", pilot: 1, phase: 1 },
   { id: "shrub-winter", nameKo: "관목(겨울)", nameEn: "Shrub, winter", category: "tree", seasons: ["winter"], view: "stand", px: [62, 66], brief: "잔가지만 남은 둥근 관목 위에 눈이 소복이 덮였다.", acnhRef: "울타리 관목(겨울)", now: "procedural", phase: 1 },
   // 풀·꽃
   { id: "grass-tuft", nameKo: "풀포기", nameEn: "Grass tuft", category: "plant", seasons: ["spring", "summer"], view: "stand", px: [22, 18], variants: 3, brief: "잔디 위에 솟은 풀포기 — 잎 5~7가닥이 부채꼴로 벌어지고 끝이 살짝 휜다. 밝은 초록, 뿌리 쪽은 어둡다. 변형 3개는 가닥 수와 휜 방향이 다르다.", acnhRef: "잡초(풀)", now: "procedural", phase: 1 },
@@ -84,8 +84,8 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "twig", nameKo: "잔가지", nameEn: "Twig", category: "ground", seasons: ["autumn", "winter"], view: "flat", px: [36, 14], variants: 2, brief: "땅에 떨어진 마른 잔가지 — 한 번 갈라지고, 껍질 결이 보인다. 변형 2개.", acnhRef: "나뭇가지(재료)", now: "procedural", phase: 1 },
   { id: "pebble", nameKo: "조약돌", nameEn: "Pebble", category: "ground", seasons: ALL, view: "flat", px: [12, 9], variants: 3, brief: "위에서 본 둥근 조약돌 — 회색·밝은 회갈색, 위쪽에 작은 하이라이트. 변형 3개.", now: "procedural", phase: 1 },
   { id: "rock", nameKo: "바위", nameEn: "Rock", category: "ground", seasons: ALL, view: "stand", px: [40, 30], variants: 4, brief: "무릎 높이의 둥글둥글한 바위, 이끼가 조금 앉았다. **변형 4개** — 실루엣 자체가 서로 달라야 한다(넓적·길쭉·모난·둥근). 이끼 자리와 갈라진 금도 각각 다르게. 색만 바꾼 복제 금지.", acnhRef: "바위", now: "procedural", pilot: 4, phase: 1 },
-  { id: "stump", nameKo: "그루터기", nameEn: "Stump", category: "ground", seasons: ALL, view: "stand", px: [36, 28], brief: "잘린 나무 그루터기 — 위에 나이테가 보이고 옆면은 껍질.", acnhRef: "그루터기", now: "procedural", phase: 1 },
-  { id: "log", nameKo: "통나무", nameEn: "Log", category: "ground", seasons: ["summer", "autumn"], view: "stand", px: [70, 26], brief: "물가에 누운 통나무 한 토막, 한쪽 끝에 나이테.", acnhRef: "통나무", now: "procedural", phase: 1 },
+  { id: "stump", variants: 2, nameKo: "그루터기", nameEn: "Stump", category: "ground", seasons: ALL, view: "stand", px: [36, 28], brief: "잘린 나무 그루터기 — 위에 나이테가 보이고 옆면은 껍질.", acnhRef: "그루터기", now: "procedural", phase: 1 },
+  { id: "log", variants: 2, nameKo: "통나무", nameEn: "Log", category: "ground", seasons: ["summer", "autumn"], view: "stand", px: [70, 26], brief: "물가에 누운 통나무 한 토막, 한쪽 끝에 나이테.", acnhRef: "통나무", now: "procedural", phase: 1 },
   { id: "snowman-1", nameKo: "눈사람(공 하나)", nameEn: "Snowman, one ball", category: "prop", seasons: ["winter"], view: "stand", px: [44, 30], brief: "막 굴린 큰 눈덩이 하나(눈사람 1단계). 표면에 굴린 자국이 살짝.", acnhRef: "눈덩이", now: "procedural", phase: 1 },
   { id: "snowman-2", nameKo: "눈사람(공 둘)", nameEn: "Snowman, two balls", category: "prop", seasons: ["winter"], view: "stand", px: [44, 52], brief: "눈덩이 두 개를 쌓은 눈사람(2단계, 얼굴 없음).", acnhRef: "눈사람", now: "procedural", phase: 1 },
   { id: "snowman-3", nameKo: "눈사람(완성)", nameEn: "Snowman, complete", category: "prop", seasons: ["winter"], view: "stand", px: [44, 72], brief: "완성된 눈사람 — 공 셋, 나뭇가지 팔, 조약돌 눈과 단추(무채색), 작은 목도리는 채도 낮은 회청색.", acnhRef: "눈사람", now: "procedural", phase: 1 },
@@ -104,9 +104,9 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "gravel-patch", nameKo: "자갈밭", nameEn: "Gravel patch", category: "ground", seasons: ALL, view: "flat", px: [72, 46], variants: 2, brief: "위에서 본 자갈 무리 — 회색·회갈색 각진 돌 열댓 개가 모여 있다. 낱개가 아니라 **한 덩이 얼룩**으로 읽히게.", now: "none", phase: 1 },
 
   // ── 숲·초목(2026-09-05) — 수종·하층 식생을 넓힌다.
-  { id: "tree-birch-spring", nameKo: "자작나무(봄)", nameEn: "Birch, spring", category: "tree", seasons: ["spring"], view: "stand", px: [96, 160], brief: "참나무보다 **가늘고 곧은 흰 줄기**(검은 가로 눈 무늬 몇 개)가 특징. 잎 덩이는 작고 성글게 3덩이, 연둣빛.", acnhRef: "활엽수", now: "none", phase: 1 },
-  { id: "tree-birch-summer", nameKo: "자작나무(여름)", nameEn: "Birch, summer", category: "tree", seasons: ["summer"], view: "stand", px: [96, 160], brief: "봄과 같은 흰 줄기·같은 실루엣, 잎 덩이만 짙은 초록.", now: "none", phase: 1 },
-  { id: "tree-birch-autumn", nameKo: "자작나무(가을)", nameEn: "Birch, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [96, 160], brief: "봄과 같은 흰 줄기, 잎 덩이는 탁한 황갈·베이지(선명한 노랑 금지).", now: "none", phase: 1 },
+  { id: "tree-birch-spring", variants: 2, nameKo: "자작나무(봄)", nameEn: "Birch, spring", category: "tree", seasons: ["spring"], view: "stand", px: [96, 160], brief: "참나무보다 **가늘고 곧은 흰 줄기**(검은 가로 눈 무늬 몇 개)가 특징. 잎 덩이는 작고 성글게 3덩이, 연둣빛.", acnhRef: "활엽수", now: "none", phase: 1 },
+  { id: "tree-birch-summer", variants: 2, nameKo: "자작나무(여름)", nameEn: "Birch, summer", category: "tree", seasons: ["summer"], view: "stand", px: [96, 160], brief: "봄과 같은 흰 줄기·같은 실루엣, 잎 덩이만 짙은 초록.", now: "none", phase: 1 },
+  { id: "tree-birch-autumn", variants: 2, nameKo: "자작나무(가을)", nameEn: "Birch, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [96, 160], brief: "봄과 같은 흰 줄기, 잎 덩이는 탁한 황갈·베이지(선명한 노랑 금지).", now: "none", phase: 1 },
   { id: "tree-birch-winter", nameKo: "자작나무(겨울)", nameEn: "Birch, winter", category: "tree", seasons: ["winter"], view: "stand", px: [96, 160], brief: "잎 없는 흰 줄기와 가는 가지 몇 갈래. 가지 위에 눈이 얇게.", now: "none", phase: 1 },
   { id: "fern", nameKo: "고사리", nameEn: "Fern", category: "plant", seasons: ["spring", "summer", "autumn"], view: "stand", px: [44, 40], variants: 3, brief: "숲 바닥의 고사리 한 포기 — 깃 모양 잎 3~5장이 부채꼴로 눕는다. 봄은 연둣빛, 가을은 마른 갈색. 잎맥은 그리지 않는다(128px에서 안 보인다).", acnhRef: "양치식물", now: "none", phase: 1 },
   { id: "moss-patch", nameKo: "이끼", nameEn: "Moss patch", category: "ground", seasons: ["spring", "summer", "autumn"], view: "flat", px: [40, 26], variants: 2, brief: "위에서 본 이끼 얼룩 — 짙은 이끼초록, 가장자리가 들쭉날쭉하고 표면이 오톨도톨하다.", now: "none", phase: 1 },
@@ -128,55 +128,65 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "feather", nameKo: "깃털", nameEn: "Feather", category: "prop", seasons: ALL, view: "flat", px: [28, 12], variants: 2, brief: "땅에 떨어진 깃털 한 장 — 회백·회갈, 깃대와 갈라진 깃가지가 보인다.", now: "none", phase: 1 },
   { id: "berry-bush", nameKo: "열매 관목", nameEn: "Berry bush", category: "plant", seasons: ["summer", "autumn"], view: "stand", px: [58, 54], brief: "둥근 관목에 검붉은 작은 열매가 무리로 달렸다(채도 낮게, 선명한 빨강 금지). 잎은 짙은 초록·가을엔 와인.", now: "none", phase: 1 },
   { id: "puddle", nameKo: "물웅덩이", nameEn: "Puddle", category: "water", seasons: ["spring", "summer", "autumn"], view: "flat", px: [56, 30], variants: 2, brief: "비 온 뒤 땅에 고인 얕은 물 — 가장자리는 젖은 흙으로 어둡고, 안쪽에 하늘이 비쳐 밝다. 아주 얕아 바닥이 비친다.", now: "none", phase: 1 },
+  // ── 천체·구름(2026-09-07, PLAN-008) — 지금은 전부 `world/sky.ts`가 코드로 굽는다. 하늘은 화면의 26%인데
+  //    "같은 원반 하나 + 같은 얼룩"이라 계절이 바뀌어도 하늘만 늘 같다. 달은 위상 여덟 장이 곧 **날짜의 표정**이고,
+  //    혜성·유성은 도감처럼 "그날 밤에만 본 것"이 된다.
+  { id: "sun-disc", nameKo: "해", nameEn: "Sun", category: "sky", seasons: ALL, view: "flat", px: [96, 96], variants: 2, grid: 32, brief: "해 원반 — 정면. 변형 2개: ① 한낮(크림 흰빛 #f6f8fb 중심에 옅은 미색 테) ② 노을(회장미~살구, 채도 .3 이하 — 선명한 주황 금지). 광선·별빛 십자 금지, 원반과 아주 옅은 후광만.", now: "procedural", phase: 1 },
+  { id: "moon-phase", nameKo: "달(위상)", nameEn: "Moon phases", category: "sky", seasons: ALL, view: "flat", px: [80, 80], variants: 8, grid: 32, brief: "달 여덟 위상을 **한 장씩**: 1 삭(거의 안 보이는 검푸른 원반) · 2 초승 · 3 상현 · 4 차오르는 볼록 · 5 보름 · 6 기우는 볼록 · 7 하현 · 8 그믐. 밝은 쪽은 크림 흰빛(#f6f8fb), 어두운 쪽은 밤하늘보다 살짝 밝은 검푸름. **바다(어두운 얼룩) 무늬는 보름에 가장 또렷하고 초승엔 거의 안 보인다.** 경계(터미네이터)는 톱니 픽셀로 또렷하게 — 흐린 그라데이션 금지.", now: "procedural", phase: 1 },
+  { id: "comet", nameKo: "혜성", nameEn: "Comet", category: "sky", seasons: ALL, view: "flat", px: [140, 60], variants: 2, grid: 64, brief: "혜성 — 밝은 핵과 뒤로 길게 퍼지는 꼬리(왼쪽 아래로). 변형 2개는 꼬리 길이·각도가 다르다. 색은 청백~연보라, 꼬리는 끝으로 갈수록 성긴 점으로 흩어진다.", now: "none", phase: 1 },
+  { id: "shooting-star", nameKo: "별똥별", nameEn: "Shooting star", category: "sky", seasons: ALL, view: "flat", px: [64, 24], variants: 2, grid: 16, brief: "별똥별 한 줄기 — 앞은 밝은 점, 뒤로 짧게 사라지는 꼬리. 아주 단순하게(점 하나에 꼬리 서너 칸).", now: "none", phase: 1 },
+  { id: "cloud-low", nameKo: "구름(낮은)", nameEn: "Cloud, low", category: "sky", seasons: ALL, view: "flat", px: [190, 80], variants: 4, grid: 64, brief: "뭉게구름 — 아래는 평평하고 위로 덩이가 부풀어 오른다. 흰빛 #f6f8fb 3톤(윗면 밝고 밑면은 회청). 변형 4개는 덩이 수(2~5)와 너비가 확실히 다르게 — 같은 구름이 반복되면 하늘이 벽지가 된다.", now: "procedural", phase: 1 },
+  { id: "cloud-mid", nameKo: "구름(중간)", nameEn: "Cloud, mid", category: "sky", seasons: ALL, view: "flat", px: [230, 60], variants: 3, grid: 64, brief: "중간 높이의 구름 — 낮은 구름보다 옆으로 길고 납작하다, 덩이 경계가 부드럽지만 여전히 픽셀 계단. 변형 3개.", now: "procedural", phase: 1 },
+  { id: "cloud-high", nameKo: "새털구름", nameEn: "Cirrus", category: "sky", seasons: ALL, view: "flat", px: [260, 40], variants: 3, grid: 128, brief: "새털구름 — 붓으로 쓸어놓은 듯 가늘고 긴 획 서넛, 한쪽 끝이 갈고리처럼 굽는다. 아주 옅게(알파 낮게 그리지 말고 **밝은 회백 한 톤**으로).", now: "procedural", phase: 1 },
+  { id: "cloud-storm", nameKo: "비구름", nameEn: "Rain cloud", category: "sky", seasons: ALL, view: "flat", px: [250, 110], variants: 2, grid: 64, brief: "비구름 — 밑면이 어둡고 평평하며(회청) 위로 두껍게 솟는다. 아래로 늘어진 자락 두엇. 변형 2개는 두께가 다르다.", now: "procedural", phase: 1 },
   { id: "footlog", nameKo: "쓰러진 나무", nameEn: "Fallen trunk", category: "ground", seasons: ALL, view: "stand", px: [140, 40], brief: "통째로 쓰러진 큰 나무 — `log`(토막)보다 훨씬 길고 이끼가 앉았다. 부러진 가지 그루터기 두어 개, 한쪽 끝에 나이테.", now: "none", phase: 1 }
 ];
 
-// ── Phase 2: 생물(종 레지스트리에서 파생 — 목록이 둘로 갈라지지 않게) ──────────────────────────────────────
-const VIEW_OF: Record<(typeof SPECIES)[number]["view"], ArtView> = { shadow: "shadow", upright: "stand", topdown: "flat" };
-const NOW_OF: Record<(typeof SPECIES)[number]["asset"], ArtNow> = { noto: "emoji", silhouette: "silhouette", prop: "svg" };
-const CAT_OF = (id: string): ArtCategory =>
-  /^fish|shark|heron|eagle|geese/.test(id) ? "fish" : /butterfly|ladybug|bee|ant|dragonfly|waterstrider|snail|earthworm/.test(id) ? "bug" : "animal";
-const BRIEF_OF: Record<string, string> = {
-  "fish-slim": "위에서 본 잉어의 실루엣(단색 진남색) — 물속 그림자로만 쓴다. 몸통·꼬리 윤곽만, 지느러미는 얇게.",
-  "fish-fantail": "위에서 본 붕어(부채꼬리) 실루엣, 단색.",
-  duck: "청둥오리(수컷: 초록 머리·회갈색 몸, 채도 낮게) — 3/4 정면, 물에 앉은 자세(발은 보이지 않는다, 수면선은 엔진이 자른다).",
-  rabbit: "겨울 흰 토끼 — 3/4 정면, 귀를 세우고 앉은 자세.",
-  chipmunk: "다람쥐 — 3/4 정면, 도토리를 두 손에 쥔 자세, 꼬리를 세웠다.",
-  butterfly: "위에서 본 나비, 날개를 편 상태 — 흰 배추흰나비와 연보라 부전나비 두 종(채도 낮게).",
-  ladybug: "위에서 본 무당벌레 — 검은 점 일곱, 채도 낮은 벽돌빨강(선명한 빨강 금지).",
-  bee: "꿀벌 — 3/4 정면, 통통한 몸과 반투명 날개, 밀짚 노랑과 갈색 줄.",
-  sparrow: "참새 — 3/4 정면, 통통하게 부푼 겨울 참새.",
-  cat: "고양이(회색 줄무늬) — 3/4 정면, 걷는 자세.",
-  magpie: "까치 — 3/4 정면, 검정·흰색·남보라 광택.",
-  ant: "위에서 본 개미 한 마리(행렬은 엔진이 만든다), 진갈색.",
-  treefrog: "청개구리 — 3/4 정면, 앉은 자세, 연초록.",
-  snail: "달팽이 — 3/4 정면, 갈색 나선 껍데기.",
-  earthworm: "위에서 본 지렁이, 살구빛 분홍(채도 낮게), 마디가 보인다.",
-  turtle: "위에서 본 붉은귀거북 — 등딱지 무늬, 머리·발이 조금 나왔다.",
-  waterstrider: "위에서 본 소금쟁이 — 긴 다리 넷이 수면에 닿는다(파문은 엔진).",
-  dragonfly: "위에서 본 잠자리 — 투명 날개 넷, 몸은 채도 낮은 청록.",
-  ducklings: "새끼오리 한 마리(행렬은 엔진) — 3/4 정면, 크림 노랑 솜털(채도 낮게).",
-  heron: "위에서 본 왜가리의 실루엣(비행, 목을 접고 날개를 편다), 단색 — 물 위 그림자용.",
-  crow: "까마귀 — 3/4 정면, 검정에 남색 광택.",
-  "squirrel-gray": "청설모 — 3/4 정면, 회색 몸에 귀 끝 털.",
-  hedgehog: "고슴도치 — 3/4 정면, 가시는 갈색·크림 두 톤.",
-  fieldmouse: "들쥐 — 3/4 정면, 작고 둥근 귀, 갈색.",
-  "geese-v": "위에서 본 기러기 한 마리의 비행 실루엣(편대는 엔진), 단색.",
-  fox: "여우 — 3/4 정면, 채도 낮은 적갈색(주황 금지), 흰 가슴, 굵은 꼬리.",
-  pheasant: "꿩(장끼) — 3/4 정면, 초록·갈색·흰 목테(채도 낮게), 긴 꼬리.",
-  "eagle-shadow": "위에서 본 독수리 비행 실루엣, 단색 — 눈밭 위 그림자용.",
-  shark: "위에서 본 상어 실루엣(등지느러미 포함), 단색 — 물속 그림자용."
+// ── Phase 2: 생물 — **도감에서 파생**(2026-09-07, PLAN-008) ────────────────────────────────────────────
+// 목록을 여기 또 적지 않는다. `world/codex.ts`가 정본이고 자리는 거기서 만들어진다 — 두 곳에 적으면
+// "도감에는 있는데 그릴 자리가 없는 종"이 생긴다(옛 `world/species.ts`가 그 상태였다).
+const VIEW_OF: Record<CodexEntry["view"], ArtView> = { shadow: "shadow", upright: "stand", topdown: "flat", side: "side" };
+/** 도감 크기(cm) → 화면 px. 실제 비례를 그대로 쓰면 무당벌레 1cm와 고래 1600cm가 한 화면에 못 산다 —
+ *  동물의 숲 축척(가장 큰 것 : 가장 작은 것 ≤ 12, PLAN-004 §1)에 맞춰 **계단으로** 접는다. */
+const pxWidth = (cm: number): number =>
+  cm <= 2 ? 16 : cm <= 5 ? 22 : cm <= 15 ? 30 : cm <= 30 ? 42 : cm <= 60 ? 56 : cm <= 120 ? 76 : cm <= 300 ? 104 : 150;
+const pxOf = (e: CodexEntry): [number, number] => {
+  const w = pxWidth(e.sizeCm[1]);
+  // 실루엣·위에서 본 몸은 가로가 길고, 서 있는 것은 세로가 길다. 옆모습(깊은 바다)은 가장 납작하다.
+  if (e.view === "shadow" || e.view === "topdown") return [w, Math.round(w * 0.62)];
+  if (e.view === "side") return [w, Math.round(w * 0.55)];
+  return [Math.round(w * 0.85), w];
 };
-const PHASE2: readonly ArtSlot[] = SPECIES.map((s) => ({
-  id: s.id,
-  nameKo: s.nameKo,
-  nameEn: s.id,
-  category: CAT_OF(s.id),
-  seasons: s.seasons,
-  view: VIEW_OF[s.view],
-  px: s.view === "shadow" ? [64, 40] : s.view === "topdown" ? [24, 24] : [56, 56],
-  brief: BRIEF_OF[s.id] ?? `${s.nameKo} — 동물의 숲 스타일.`,
-  now: NOW_OF[s.asset],
+const SEASON_OF_MONTH: readonly SeasonKey[] = ["winter", "winter", "spring", "spring", "spring", "summer", "summer", "summer", "autumn", "autumn", "autumn", "winter"];
+const seasonsOf = (e: CodexEntry): SeasonKey[] => {
+  const set = new Set<SeasonKey>(e.months.map((mo) => SEASON_OF_MONTH[mo - 1]));
+  return (["spring", "summer", "autumn", "winter"] as const).filter((k) => set.has(k));
+};
+/** 지금 화면에 무엇으로 보이는가 — 아트가 오기 전의 대체물. 살아 있는 종만 무언가로 그려지고 있다. */
+const NOW_OF: Record<string, ArtNow> = {
+  "fish-palechub": "silhouette",
+  "fish-crucian": "silhouette",
+  "fish-carp": "silhouette",
+  "animal-mallard": "emoji",
+  "animal-hare": "emoji",
+  "animal-chipmunk": "emoji",
+  "bug-cabbagewhite": "emoji",
+  "bug-blue": "emoji",
+  "bug-ladybug": "emoji",
+  "bug-honeybee": "emoji",
+  "bug-firefly": "procedural"
+};
+const PHASE2: readonly ArtSlot[] = CODEX.map((e) => ({
+  id: e.id,
+  nameKo: e.nameKo,
+  nameEn: e.nameEn,
+  category: e.kind as ArtCategory,
+  seasons: seasonsOf(e),
+  view: VIEW_OF[e.view],
+  px: pxOf(e),
+  variants: e.variants,
+  brief: e.brief,
+  now: NOW_OF[e.id] ?? "none",
   phase: 2
 }));
 
@@ -225,11 +235,12 @@ export const SEASON_KO: Record<SeasonKey, string> = { spring: "봄", summer: "�
 export const VIEW_KO: Record<ArtView, string> = {
   stand: "서 있는 것 — 동물의 숲 카메라(높은 앵글 약 60°에서 내려다본 3/4 정면, 위·아래가 모두 보인다). 바닥 그림자는 그리지 않는다(엔진이 그린다).",
   flat: "땅·물 위에 납작 놓인 것 — 위에서 비스듬히(3/4 카메라) 내려다본 모습: 세로가 살짝 눌린 타원 느낌(엔진이 0.7배로 한 번 더 누른다). 앞 = 위. 바닥 그림자 없음.",
-  shadow: "물속·하늘 그림자 — 정확히 위에서 본 단색 실루엣(진남색 #1c3a58 한 색, 안쪽 무늬 없음). 머리 = 왼쪽."
+  shadow: "물속·하늘 그림자 — 정확히 위에서 본 단색 실루엣(진남색 #1c3a58 한 색, 안쪽 무늬 없음). 머리 = 왼쪽.",
+  side: "**옆모습** — 깊은 바다 전용(그 장면만 카메라가 다르다: 물속을 옆에서 본다, CLAUDE.md 예외 조항). 머리 = 왼쪽, 몸 전체가 한 실루엣으로 읽히게. 색은 넣되 어두운 물속에서 보이는 만큼만."
 };
-export const VIEW_SHORT: Record<ArtView, string> = { stand: "서 있음(3/4)", flat: "납작(3/4·눌림)", shadow: "실루엣" };
+export const VIEW_SHORT: Record<ArtView, string> = { stand: "서 있음(3/4)", flat: "납작(3/4·눌림)", shadow: "실루엣", side: "옆모습(깊은 바다)" };
 export const NOW_KO: Record<ArtNow, string> = { procedural: "코드 도형", emoji: "Noto 이모지", silhouette: "PD 실루엣", svg: "우리 SVG", none: "아무것도 안 그려짐" };
-export const CATEGORY_KO: Record<ArtCategory, string> = { tree: "나무", plant: "풀·꽃", ground: "지형", water: "물", prop: "소품", fish: "물고기·그림자", bug: "곤충", animal: "동물" };
+export const CATEGORY_KO: Record<ArtCategory, string> = { tree: "나무", plant: "풀·꽃", ground: "지형", water: "물", prop: "소품", sky: "하늘·천체", fish: "물고기", bug: "곤충", animal: "동물" };
 
 /** 스타일 가이드 — 모든 자리에 공통. 모여봐요 동물의 숲(참고 페이지: 물고기·곤충 도감)을 **스타일 참고**로만 쓴다. */
 export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)

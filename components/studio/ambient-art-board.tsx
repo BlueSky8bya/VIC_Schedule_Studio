@@ -40,6 +40,10 @@ import {
 } from "@/components/shared/ambient/art/manifest";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { previewOf } from "@/components/shared/ambient/art/preview";
+import { codexById, CODEX_KINDS, HABITAT_LABEL, KIND_LABEL } from "@/components/shared/ambient/world/codex";
+import { BIOMES } from "@/components/shared/ambient/world/biomes";
+import { TIER_DOTS, TIER_LABEL } from "@/components/shared/ambient/world/rarity";
+import { BAND_LABEL } from "@/components/shared/ambient/world/time";
 import { hapticTick } from "@/lib/ui/haptics";
 
 type Props = {
@@ -52,7 +56,28 @@ type Props = {
 const kb = (n: number) => `${Math.max(1, Math.round(n / 1024))}KB`;
 
 const SEASONS: SeasonKey[] = ["spring", "summer", "autumn", "winter"];
-const CATS: ArtCategory[] = ["tree", "plant", "ground", "water", "prop", "fish", "bug", "animal"];
+/** 달 목록을 사람이 읽는 줄로 — 1~12 전부면 "사철", 이어진 구간은 "4~10월", 흩어지면 쉼표. */
+function monthsLabel(months: readonly number[]): string {
+  if (months.length >= 12) return "사철";
+  const sorted = [...months].sort((a, b) => a - b);
+  const runs: [number, number][] = [];
+  for (const mo of sorted) {
+    const last = runs[runs.length - 1];
+    if (last && mo === last[1] + 1) last[1] = mo;
+    else runs.push([mo, mo]);
+  }
+  // 12월과 1월이 이어지면 겨울을 가로지르는 한 구간이다(11~3월).
+  if (runs.length > 1 && runs[0][0] === 1 && runs[runs.length - 1][1] === 12) {
+    const first = runs.shift()!;
+    runs[runs.length - 1][1] = first[1] + 12;
+  }
+  return runs.map(([a, b]) => (a === b ? `${a}월` : `${a}~${((b - 1) % 12) + 1}월`)).join(", ");
+}
+/** 시간대 목록 — 여섯이면 "종일". */
+const bandsLabel = (bands: readonly string[]): string =>
+  bands.length >= 6 ? "종일" : bands.map((b) => BAND_LABEL[b as keyof typeof BAND_LABEL]).join("·");
+const CATS: ArtCategory[] = ["tree", "plant", "ground", "water", "prop", "sky", "fish", "bug", "animal"];
+const WAVES = [1, 2, 3] as const;
 
 /** 지금 화면 필터 — "대기"를 다시 둘로 가른다: 대체물이라도 있는 자리 ↔ 아무것도 안 그려지는 자리. */
 type NowFilter = "all" | "sub" | "none";
@@ -161,6 +186,7 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
   // 옛 규격(lanczos3 시절)으로 줄여 둔 파일 — 변이 블록 배수가 아니면 도트가 이미 뭉개졌다는 신호다.
   const block = dotBlock(slot.px, slot.grid);
   const stale = files.some((f) => f.w % block !== 0 && f.h % block !== 0);
+  const entry = codexById(slot.id);
   const pf = slot.pilot ? pilotFiles(slot) : [];
   const pfDone = pf.filter((n) => files.some((f) => f.file === n)).length;
   return (
@@ -247,7 +273,35 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
             </span>
           ) : null}
         </div>
+        {entry ? (
+          // 도감 줄 — 이 종이 **언제 어디서** 나오는가. 그림을 그릴 때도 필요하고(뻘의 게와 계곡의 게는 다르게 생겼다),
+          // 도감 카드에 그대로 실릴 정보다. 정본은 `world/codex.ts`.
+          <div className="art-meta art-codex">
+            <span>
+              <b>도감</b> {KIND_LABEL[entry.kind]}
+            </span>
+            <span>
+              <b>사는 곳</b> {entry.biomes.map((b) => BIOMES[b].nameKo).join("·")} · {HABITAT_LABEL[entry.habitat]}
+            </span>
+            <span>
+              <b>달</b> {monthsLabel(entry.months)}
+            </span>
+            <span>
+              <b>때</b> {bandsLabel(entry.bands)}
+            </span>
+            <span title={`${TIER_LABEL[entry.tier]} — ${TIER_DOTS[entry.tier]}`}>
+              <b>희귀도</b> {TIER_LABEL[entry.tier]}
+            </span>
+            <span>
+              <b>크기</b> {entry.sizeCm[0]}~{entry.sizeCm[1]}cm
+            </span>
+            <span>
+              <b>차수</b> {entry.wave}차
+            </span>
+          </div>
+        ) : null}
         <p className="art-brief">{slot.brief}</p>
+        {entry ? <p className="art-brief art-blurb">“{entry.blurb}”</p> : null}
       </div>
       <div className="art-card-foot">
         <code style={{ fontSize: 11, color: "var(--ink-soft, #4a4466)" }}>
@@ -267,6 +321,8 @@ export function AmbientArtBoard({ present, stamp }: Props) {
   const [state, setState] = useState<"all" | "todo" | "done">("all");
   const [nowF, setNowF] = useState<NowFilter>("all");
   const [pilotOnly, setPilotOnly] = useState(false);
+  // 생성 차수 — 도감 종에만 있다(1 = 바이옴 정체성부터, 3 = 마지막). 장식 자리는 차수가 없어 "전부"에서만 보인다.
+  const [wave, setWave] = useState<"all" | 1 | 2 | 3>("all");
   const [sort, setSort] = useState<SortKey>("declared");
   const [q, setQ] = useState("");
   const dq = useDeferredValue(q); // 타이핑마다 100장을 다시 거르지 않는다
@@ -319,13 +375,19 @@ export function AmbientArtBoard({ present, stamp }: Props) {
         pilotDone += want.filter((n) => (present[s.id] ?? []).some((f) => f.file === n)).length;
       }
     }
-    return { total: ART_SLOTS.length, done, p1, p1done, empty, pilotWant, pilotDone };
+    // 도감 세 권 — 종 자리(2차)만 센다. 진행률의 분모가 "그릴 자리 수"라야 도감 화면의 진행률과 같은 뜻이 된다.
+    const books = CODEX_KINDS.map((k) => {
+      const list = ART_SLOTS.filter((sl) => sl.phase === 2 && sl.category === (k as string));
+      return { kind: k, total: list.length, done: list.filter((sl) => isDone(sl)).length };
+    });
+    return { total: ART_SLOTS.length, done, p1, p1done, empty, pilotWant, pilotDone, books };
   }, [present, isDone]);
 
   const visible = useMemo(() => {
     const n = dq.trim().toLowerCase();
     const list = ART_SLOTS.filter((s) => {
       if (pilotOnly && !s.pilot) return false;
+      if (wave !== "all" && (codexById(s.id)?.wave ?? 0) !== wave) return false;
       if (season !== "all" && !s.seasons.includes(season)) return false;
       if (cat !== "all" && s.category !== cat) return false;
       const ok = isDone(s);
@@ -339,7 +401,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     if (sort === "big") return [...list].sort((a, b) => Math.max(b.px[0], b.px[1]) - Math.max(a.px[0], a.px[1]));
     if (sort === "empty") return [...list].sort((a, b) => Number(b.now === "none") - Number(a.now === "none"));
     return list;
-  }, [season, cat, state, nowF, pilotOnly, sort, dq, isDone]);
+  }, [season, cat, state, nowF, pilotOnly, wave, sort, dq, isDone]);
 
   // 카드 100장을 메모이즈하려면 넘기는 함수가 렌더마다 새로 만들어지면 안 된다 — setState·hapticTick만 쓰므로 의존성이 없다.
   const copy = useCallback(async (text: string, label: string) => {
@@ -389,7 +451,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               {stats.pilotDone}
               <i>/{stats.pilotWant}</i>
             </b>
-            <span>파일럿 · 12장</span>
+            <span>파일럿 · {stats.pilotWant}장</span>
             <span className="art-bar">
               <i style={{ width: `${Math.round((stats.pilotDone / Math.max(1, stats.pilotWant)) * 100)}%` }} />
             </span>
@@ -414,6 +476,18 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               <i style={{ width: `${Math.round((stats.done / Math.max(1, stats.total)) * 100)}%` }} />
             </span>
           </div>
+          {stats.books.map((b) => (
+            <div className="art-stat" key={b.kind}>
+              <b>
+                {b.done}
+                <i>/{b.total}</i>
+              </b>
+              <span>도감 · {KIND_LABEL[b.kind]}</span>
+              <span className="art-bar">
+                <i style={{ width: `${Math.round((b.done / Math.max(1, b.total)) * 100)}%` }} />
+              </span>
+            </div>
+          ))}
           <div className="art-stat">
             <b>{stats.empty}</b>
             <span>빈 자리 · 대체물도 없음</span>
@@ -483,6 +557,16 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               {CATS.map((k) => (
                 <button aria-pressed={cat === k} className="art-chip" key={k} onClick={() => setCat(k)} type="button">
                   {CATEGORY_KO[k]}
+                </button>
+              ))}
+            </div>
+            <div className="art-seg" role="group" aria-label="생성 차수">
+              <button aria-pressed={wave === "all"} className="art-chip" onClick={() => setWave("all")} type="button">
+                차수 전부
+              </button>
+              {WAVES.map((w) => (
+                <button aria-pressed={wave === w} className="art-chip" key={w} onClick={() => setWave(w)} type="button">
+                  {w}차
                 </button>
               ))}
             </div>

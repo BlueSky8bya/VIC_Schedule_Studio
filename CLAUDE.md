@@ -137,12 +137,14 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   farthest-from-pointer to shrink; flakes finish their cycle; butterflies fly in/out at the edges). "배경 효과" 자동 = adaptive,
   항상 최대 = 1, 가볍게 = 0.3 fixed (`vic:gfx-pref` event re-bands). **LOD rule:** anything soft is drawn at low resolution —
   the summer wake is stamped/stroked on a 0.35–0.5× offscreen canvas and upscaled (foam stamps aging wider/fainter, Kelvin
-  arms, crests, rings), canvas DPR is fixed per mount, prints/props are baked sprites. **Animals are never hand-drawn
-  (owner rule 2026-09-04)**: every creature is a Google Noto Emoji SVG in `public/ambient/noto/` (Apache-2.0 artwork,
-  `NOTICE.txt`) loaded once by `components/shared/ambient/assets.ts` — 🐇 🐿️ 🐠🐟🐡 🦆 🐞 🐝; side-view sprites are drawn with
-  `drawFacing` (flip when heading right, pitch by the vertical component — a 180° rotation would show the belly), top-view
-  ones (ladybug) with `drawSprite` (forward = up). Only the swim ring and acorn are our own SVGs. Want a new creature?
-  Download an asset (Noto/Twemoji/CC0), never draw one.
+  arms, crests, rings), canvas DPR is fixed per mount, prints/props are baked sprites. **Creatures are ours now (ADR-0019, 2026-09-07)** — the
+  2026-09-04 rule "animals are never hand-drawn, download a Noto emoji instead" is **withdrawn**. It was right while the
+  style was unsettled, but the pixel-art look is now fixed and delivered (pines and oaks, 7–9 colours), so an emoji is the one
+  thing in the frame drawn in another idiom — and the three catalogues (fish · bug · animal) cannot star someone else's
+  artwork. Every species is a slot in `world/codex.ts`, drawn to the same pixel spec as the plants. The Noto loader in
+  `components/shared/ambient/assets.ts` (🐇 🐿️ 🐠🐟🐡 🦆 🐞 🐝, Apache-2.0, `NOTICE.txt`) stays as the **stand-in until each
+  slot's art lands** — never as the target. Side-view sprites still draw with `drawFacing` (flip when heading right, pitch by
+  the vertical component — a 180° rotation would show the belly), top-view ones (ladybug) with `drawSprite` (forward = up).
   **Per-season random events**: summer = rubber duck always afloat + an occasional swim ring drifting through (both grab/throw,
   leave their own wake), a school of fish shadows under the water (flee the pointer, one big one at high load), sun glints,
   bubble pops; winter = animal visitors (cat · bird · rabbit gaits) besides the human walker, a **snow rabbit** that pops out,
@@ -257,6 +259,16 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   an event is being dragged the studio sets `html[data-ambient-dim]` and only the background layers drop to opacity .28
   (never blur/filter, never text). `.gs-season`'s enter animation must keep `animation-fill-mode: backwards` — `both` pins
   opacity 1 forever and defeats every cascade opacity (showcase, dim).
+- **Three catalogues, and species carry conditions (ADR-0019, PLAN-20260907-008, 2026-09-07).** `world/codex.ts` is the
+  single source for **fish · bug · animal** (129 real Korean species) — the art slots (`manifest.ts` phase 2), the spawn pool
+  and the future codex screen all derive from it, because two lists mean species that exist in one and not the other (the
+  retired `world/species.ts` was exactly that). An entry names its **biomes · months · time bands · weather · after-rain**,
+  plus rarity, size in cm and a generation wave (1–3). Conditions are the point: without them it is a list, not a catalogue —
+  "only here, only now" is what makes someone flip the calendar and walk to another biome. Species in the deep sea are the
+  only ones drawn in **side view** (that scene's camera differs); every other fish is a top-down silhouette, mudskipper
+  excepted since it sits on the mud. Nintendo's catalogue is a reference for the *form*, never for the contents — no species
+  list, numbers or wording copied from it. `tests/unit/ambient-codex.test.ts` holds the contract, including "no weather
+  condition that its own months can never produce" (which would make a species unreachable forever).
 - **Ambient pauses behind heavy media** (`lib/ui/ambient-pause.ts`, `html[data-ambient-pause]`): the VOD window, the
   viewer insights sheet and studio modals (except settings) hold the pause; the canvas loop stops on its last frame and
   the tide's animations pause. Never leave a full-screen animated layer running under a `backdrop-filter` or an iframe

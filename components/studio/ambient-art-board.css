@@ -684,3 +684,19 @@ html[data-reduce-motion] .art-card:hover .art-cell canvas {
 .art-btn {
   white-space: nowrap;
 }
+
+/* 도감 줄(2026-09-07) — 2차(생물) 자리에만 붙는다. 규격 줄(.art-meta)과 같은 알약이되 **살짝 다른 바탕**으로
+   "이건 그리는 규격이 아니라 이 종이 사는 조건"임을 구분한다. 도감 화면에 그대로 실릴 정보다. */
+.art-codex span {
+  background: #f4f7ff;
+  border-color: #d8e0f5;
+}
+.art-codex b {
+  color: #5b6b93;
+}
+/* 처음 만났을 때 한 줄 — 정보가 아니라 애정 쪽이라 이탤릭으로 낮춘다. */
+.art-blurb {
+  margin-top: 4px;
+  font-style: italic;
+  color: var(--ab-soft);
+}
