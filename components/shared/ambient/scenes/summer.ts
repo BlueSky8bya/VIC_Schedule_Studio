@@ -246,7 +246,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     traces = bakeTraces();
     // 오리 — 아트(public/ambient/art/duck.png, 동물의 숲 카메라)가 있으면 그것, 없으면 Noto 🦆. 둘 다 56×56 상자·가운데 앵커로 그린다
     // (수면선 자르기는 몸통 중심 기준이라 그대로 맞는다).
-    const duckSlot = artSlot("duck");
+    const duckSlot = artSlot("animal-mallard"); // 도감 개편(2026-09-07)에서 id에 접두사가 붙었다
     const duckArt = duckSlot ? artFile("duck.png", duckSlot, 2) : Promise.resolve(null);
     const duckArtSub = duckSlot ? artFile("duck.png", duckSlot, 2, "rgb(150 190 222 / 0.78)") : Promise.resolve(null);
     void duckArt.then((a) => {

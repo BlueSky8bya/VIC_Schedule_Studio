@@ -29,9 +29,11 @@
 }
 
 /* ── 머리 ─────────────────────────────────────────────────────────────────── */
+/* 2026-09-07: 통계 타일이 넷 → 일곱이 되면서 설명문이 300px 기둥으로 짜부라졌다(두 칸 배치의 한계).
+   한 칸으로 눕히고 통계는 **자기 줄**을 쓴다 — 설명은 폭을 다 쓰고, 타일은 폭에 맞춰 균등 분배된다. */
 .art-board-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: end;
   gap: var(--ab-gap);
   max-width: 1560px;
@@ -90,9 +92,9 @@
 
 /* 진행 카드 — 숫자 + 가는 진행 막대. */
 .art-board-stats {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
 }
 .art-stat {
   display: grid;
@@ -317,12 +319,22 @@
   margin: 0 auto 34px;
   padding: 0 32px;
 }
+/* 갈래 머리 — **스티키**(2026-09-07). 자리가 206개라 스크롤 중에 "지금 무슨 갈래를 보고 있나"를 늘 알아야 한다.
+   도구 줄(.art-board-bar) 바로 아래에 붙는다. 반투명 + 블러로 카드가 밑으로 지나가는 게 보이게. */
 .art-section h2 {
+  position: sticky;
+  top: calc(var(--ab-bar-h, 58px) + 6px);
+  z-index: 2;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
-  margin: 0 0 14px;
-  font-size: 15px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--ab-line);
+  border-radius: 12px;
+  background: rgb(247 247 251 / 88%);
+  backdrop-filter: saturate(1.4) blur(10px);
+  font-size: 14px;
   font-weight: 820;
   letter-spacing: -0.012em;
 }
@@ -331,11 +343,36 @@
   font-weight: 600;
   color: var(--ab-soft);
 }
+/* 갈래별 진행 — 머리 안에서 남는 폭을 다 쓴다(숫자만으로는 아홉 갈래의 진도가 안 비교된다). */
+.art-sec-bar {
+  flex: 1;
+  min-width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e8e6f2;
+  overflow: hidden;
+}
+.art-sec-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ab-ok);
+  transition: width 0.5s var(--ease);
+}
+.art-section h2 em {
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ab-soft);
+  font-variant-numeric: tabular-nums;
+}
 .art-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
-  align-items: start;
+  /* 한 줄의 형제 카드는 같은 높이(집 규칙: "Sibling cards/tiles share one height").
+     start면 설명 길이에 따라 격자가 계단이 되어 훑을 때 눈이 걸린다. */
+  align-items: stretch;
 }
 
 /* ── 카드 ─────────────────────────────────────────────────────────────────── */
@@ -699,4 +736,165 @@ html[data-reduce-motion] .art-card:hover .art-cell canvas {
   margin-top: 4px;
   font-style: italic;
   color: var(--ab-soft);
+}
+
+
+/* ── 도감 줄(2026-09-07 개편) ────────────────────────────────────────────────
+   옛 판은 사실 일곱 개를 각각 알약으로 뿌렸다 — 자리 206개 × 알약 일곱이면 카드가 색종이가 되고 아무것도 안 읽힌다.
+   이제 **한 줄**이다: 희귀도 점 + 사는 곳 · 서식면 · 달 · 때 · 크기. 알약을 지우고 가운뎃점으로만 나눈다. */
+.art-codex {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ab-soft);
+}
+.art-codex span + span::before {
+  content: "·";
+  margin-right: 6px;
+  color: #c9c4dc;
+}
+.art-codex span:first-of-type {
+  font-weight: 700;
+  color: var(--ab-ink);
+}
+/* 희귀도 — 다섯 점. 색은 등급이 오를수록 진해진다(라벨을 읽지 않아도 무게가 보인다). */
+.art-tier {
+  letter-spacing: -1px;
+  font-size: 9px;
+  color: #b9b3d0;
+}
+.art-tier.tier-uncommon {
+  color: #6f9ac0;
+}
+.art-tier.tier-rare {
+  color: #5b46c8;
+}
+.art-tier.tier-epic {
+  color: #a4562f;
+}
+.art-tier.tier-legend {
+  color: #8a1f3d;
+}
+
+/* 그릴 것 — **세 줄로 접는다**. 종 129개의 설명을 다 펴 두면 카드 높이가 제각각이 되어 격자가 계단이 된다.
+   전문은 title(접혔을 때만 뜨는 이름표)과 복사한 프롬프트에 그대로 있다. */
+.art-brief {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* 도감 한 줄 — 정보가 아니라 애정 쪽. 한 줄로 접는다. */
+.art-blurb {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ab-soft);
+}
+
+/* ── 목록 밀도(2026-09-07) ───────────────────────────────────────────────────
+   129종을 훑는 일은 그림을 보는 일과 다른 일이다. DOM은 그대로 두고 CSS만 바꾼다 —
+   두 벌을 만들면 둘이 어긋나고, 이 화면은 이미 한 번 그렇게 어긋났다(도감과 종 목록).
+   한 줄 = [그림 64] [이름·상태 260] [도감 한 줄 또는 규격] [프롬프트]. 격자가 아니라 flex + order로 세운다
+   (카드의 DOM 순서는 제목 → 그림 → 본문 → 발이라, 격자 좌표로 옮기면 경고 배너 같은 선택적 요소에서 어긋난다). */
+.art-board[data-density="list"] .art-grid {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.art-board[data-density="list"] .art-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  box-shadow: none;
+  animation-duration: 0.24s;
+}
+.art-board[data-density="list"] .art-card:hover {
+  transform: none;
+  box-shadow: 0 6px 18px rgb(40 30 80 / 8%);
+}
+.art-board[data-density="list"] .art-pair {
+  order: 1;
+  flex: none;
+  width: 64px;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.art-board[data-density="list"] .art-card-title {
+  order: 2;
+  flex: none;
+  width: 270px;
+  min-width: 0;
+}
+.art-board[data-density="list"] .art-body {
+  order: 3;
+  flex: 1;
+  min-width: 0;
+}
+.art-board[data-density="list"] .art-card-foot {
+  order: 4;
+  flex: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+/* 목록에서 지우는 것: 대체물 칸(그림만 본다) · 칸 라벨 · 파일 이름 · 그릴 것 · 도감 한 줄 · 경고 배너.
+   전부 카드 모드에서 읽을 것들이고, 훑을 때는 소음이다. */
+.art-board[data-density="list"] .art-pane:first-child,
+.art-board[data-density="list"] .art-pane > span,
+.art-board[data-density="list"] .art-files,
+.art-board[data-density="list"] .art-brief,
+.art-board[data-density="list"] .art-blurb,
+.art-board[data-density="list"] .art-heavy,
+.art-board[data-density="list"] .art-card-foot code {
+  display: none;
+}
+.art-board[data-density="list"] .art-empty br,
+.art-board[data-density="list"] .art-empty {
+  font-size: 0;
+}
+.art-board[data-density="list"] .art-empty svg {
+  font-size: 16px;
+}
+.art-board[data-density="list"] .art-cell {
+  height: 44px;
+  min-height: 44px;
+  padding: 3px;
+}
+.art-board[data-density="list"] .art-cell img,
+.art-board[data-density="list"] .art-cell canvas {
+  max-height: 40px;
+}
+.art-board[data-density="list"] .art-codex {
+  margin: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
+}
+/* 종이 아닌 자리(장식)는 도감 줄이 없다 — 그 자리에 규격을 한 줄로 눕힌다. 있으면 규격은 숨긴다. */
+.art-board[data-density="list"] .art-meta {
+  margin: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.art-board[data-density="list"] .art-body:has(.art-codex) .art-meta {
+  display: none;
+}
+.art-board[data-density="list"] .art-meta span {
+  white-space: nowrap;
+}
+
+/* 필터 줄 — 세그먼트가 여섯 묶음이 됐다. 묶음 사이를 더 벌려 "무엇의 선택지인지"가 뭉치지 않게. */
+.art-board-filters {
+  gap: 8px 14px;
 }

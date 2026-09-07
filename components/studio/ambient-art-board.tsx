@@ -13,7 +13,7 @@
 import type React from "react";
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Check, ClipboardCopy, Image as ImageIcon, Search } from "lucide-react";
+import { ArrowLeft, Check, ClipboardCopy, Image as ImageIcon, LayoutGrid, List, Search } from "lucide-react";
 import "./ambient-art-board.css";
 import {
   ART_DIR,
@@ -248,7 +248,7 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
           변이 블록 {block}px의 배수가 아니다 — 옛 규격(lanczos3)으로 줄인 파일이라 도트가 이미 뭉개졌다. 1024 원본에서 다시 뽑아야 한다.
         </p>
       ) : null}
-      <div>
+      <div className="art-body">
         <div className="art-meta">
           <span>
             <b>계절</b> {slot.seasons.map((k) => SEASON_KO[k]).join("·")}
@@ -256,11 +256,8 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
           <span>
             <b>카메라</b> {VIEW_SHORT[slot.view]}
           </span>
-          <span>
-            <b>크기</b> {slot.px[0]}×{slot.px[1]}
-          </span>
-          <span title={`1024 캔버스를 ${dotGrid(slot.px, slot.grid)}칸으로 보고 그린다 — 도트 한 칸 = ${block}×${block}px 블록`}>
-            <b>격자</b> {dotGrid(slot.px, slot.grid)}칸 · {block}px
+          <span title={`화면 ${slot.px[0]}×${slot.px[1]}px · 1024 캔버스를 ${dotGrid(slot.px, slot.grid)}칸으로 보고 그린다(도트 한 칸 = ${block}×${block}px 블록)`}>
+            <b>규격</b> {slot.px[0]}×{slot.px[1]} · {dotGrid(slot.px, slot.grid)}칸 {block}px
           </span>
           {slot.variants && slot.variants > 1 ? (
             <span>
@@ -274,34 +271,21 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
           ) : null}
         </div>
         {entry ? (
-          // 도감 줄 — 이 종이 **언제 어디서** 나오는가. 그림을 그릴 때도 필요하고(뻘의 게와 계곡의 게는 다르게 생겼다),
-          // 도감 카드에 그대로 실릴 정보다. 정본은 `world/codex.ts`.
-          <div className="art-meta art-codex">
+          // 도감 줄 — 알약 일곱 개를 늘어놓으면 카드가 색종이가 된다(자리 206개 × 7 = 화면이 못 읽힌다).
+          // 사실은 많지만 **한 줄**로 읽히게: 사는 곳 → 서식면 → 달 → 때 → 크기, 희귀도만 점으로 앞에 세운다.
+          <p className="art-codex" title={`${KIND_LABEL[entry.kind]} · ${TIER_LABEL[entry.tier]}`}>
+            <b className={`art-tier tier-${entry.tier}`}>{TIER_DOTS[entry.tier]}</b>
+            <span>{entry.biomes.map((b) => BIOMES[b].nameKo).join("·")}</span>
+            <span>{HABITAT_LABEL[entry.habitat]}</span>
+            <span>{monthsLabel(entry.months)}</span>
+            <span>{bandsLabel(entry.bands)}</span>
             <span>
-              <b>도감</b> {KIND_LABEL[entry.kind]}
+              {entry.sizeCm[0]}~{entry.sizeCm[1]}cm
             </span>
-            <span>
-              <b>사는 곳</b> {entry.biomes.map((b) => BIOMES[b].nameKo).join("·")} · {HABITAT_LABEL[entry.habitat]}
-            </span>
-            <span>
-              <b>달</b> {monthsLabel(entry.months)}
-            </span>
-            <span>
-              <b>때</b> {bandsLabel(entry.bands)}
-            </span>
-            <span title={`${TIER_LABEL[entry.tier]} — ${TIER_DOTS[entry.tier]}`}>
-              <b>희귀도</b> {TIER_LABEL[entry.tier]}
-            </span>
-            <span>
-              <b>크기</b> {entry.sizeCm[0]}~{entry.sizeCm[1]}cm
-            </span>
-            <span>
-              <b>차수</b> {entry.wave}차
-            </span>
-          </div>
+          </p>
         ) : null}
-        <p className="art-brief">{slot.brief}</p>
-        {entry ? <p className="art-brief art-blurb">“{entry.blurb}”</p> : null}
+        <p className="art-brief" title={slot.brief}>{slot.brief}</p>
+        {entry ? <p className="art-blurb">“{entry.blurb}”</p> : null}
       </div>
       <div className="art-card-foot">
         <code style={{ fontSize: 11, color: "var(--ink-soft, #4a4466)" }}>
@@ -323,6 +307,9 @@ export function AmbientArtBoard({ present, stamp }: Props) {
   const [pilotOnly, setPilotOnly] = useState(false);
   // 생성 차수 — 도감 종에만 있다(1 = 바이옴 정체성부터, 3 = 마지막). 장식 자리는 차수가 없어 "전부"에서만 보인다.
   const [wave, setWave] = useState<"all" | 1 | 2 | 3>("all");
+  // 밀도 — 카드(그림을 본다) / 목록(129종을 훑는다). 자리가 206개가 되면서 "훑기"가 별개의 일이 됐다.
+  // DOM은 같고 CSS만 바뀐다(`data-density`) — 두 벌을 만들면 둘이 어긋난다.
+  const [density, setDensity] = useState<"card" | "list">("card");
   const [sort, setSort] = useState<SortKey>("declared");
   const [q, setQ] = useState("");
   const dq = useDeferredValue(q); // 타이핑마다 100장을 다시 거르지 않는다
@@ -336,8 +323,19 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     if (!el) return;
     const onScroll = () => el.setAttribute("data-stuck", el.getBoundingClientRect().top <= 0.5 ? "1" : "0");
     onScroll();
+    // 갈래 머리(.art-section h2)가 **도구 줄 바로 아래**에 붙어야 한다 — 상수로 박으면 필터가 한 줄 늘 때마다
+    // 머리가 도구 줄 뒤로 숨는다(실제로 58px로 박아 두고 숨었다). 높이를 재서 변수로 넘긴다.
+    // 변수는 **보드 뿌리**에 심는다 — 갈래 머리는 도구 줄의 자식이 아니라 형제라, 줄 자신에게 심으면 닿지 않는다.
+    const root = el.closest<HTMLElement>("[data-art-board]");
+    const setH = () => root?.style.setProperty("--ab-bar-h", `${Math.round(el.getBoundingClientRect().height)}px`);
+    setH();
+    const ro = new ResizeObserver(setH);
+    ro.observe(el);
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
   // "/"로 검색으로 뛴다 — 자리가 100개라 스크롤보다 이름을 치는 쪽이 빠르다.
   useEffect(() => {
@@ -424,13 +422,23 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     return out;
   }, [visible, present]);
 
-  const phase1 = visible.filter((s) => s.phase === 1);
-  const phase2 = visible.filter((s) => s.phase === 2);
+  // 자리가 206개가 되면서 "1차 / 2차" 두 덩어리로는 못 읽는다 — **갈래별로** 나누고 머리를 스티키로 붙인다.
+  // 순서는 화면에서의 층 순서와 같다: 땅에 선 것 → 땅 → 물 → 하늘 → 그 안에 사는 것.
+  const groups = useMemo(() => {
+    const order: ArtCategory[] = ["tree", "plant", "ground", "water", "prop", "sky", "fish", "bug", "animal"];
+    return order
+      .map((k) => {
+        const list = visible.filter((s2) => s2.category === k);
+        const all = ART_SLOTS.filter((s2) => s2.category === k);
+        return { key: k, list, done: all.filter((s2) => isDone(s2)).length, total: all.length };
+      })
+      .filter((g) => g.list.length > 0);
+  }, [visible, isDone]);
   const visibleFiles = visible.reduce((n, s) => n + slotFiles(s).length, 0);
   const pilotCount = pilotSlots().reduce((n, s) => n + pilotFiles(s).length, 0);
 
   return (
-    <main className="art-board" data-art-board>
+    <main className="art-board" data-art-board data-density={density}>
       <header className="art-board-head">
         <div>
           <a className="art-back" href="/studio">
@@ -454,16 +462,6 @@ export function AmbientArtBoard({ present, stamp }: Props) {
             <span>파일럿 · {stats.pilotWant}장</span>
             <span className="art-bar">
               <i style={{ width: `${Math.round((stats.pilotDone / Math.max(1, stats.pilotWant)) * 100)}%` }} />
-            </span>
-          </div>
-          <div className="art-stat">
-            <b>
-              {stats.p1done}
-              <i>/{stats.p1}</i>
-            </b>
-            <span>1차 · 초목·지형</span>
-            <span className="art-bar">
-              <i style={{ width: `${Math.round((stats.p1done / Math.max(1, stats.p1)) * 100)}%` }} />
             </span>
           </div>
           <div className="art-stat">
@@ -540,6 +538,14 @@ export function AmbientArtBoard({ present, stamp }: Props) {
             </button>
           </div>
           <div className="art-board-filters" role="group" aria-label="필터">
+            <div className="art-seg" role="group" aria-label="보기 밀도">
+              <button aria-pressed={density === "card"} className="art-chip" onClick={() => setDensity("card")} type="button">
+                <LayoutGrid aria-hidden="true" size={12} /> 카드
+              </button>
+              <button aria-pressed={density === "list"} className="art-chip" onClick={() => setDensity("list")} type="button">
+                <List aria-hidden="true" size={12} /> 목록
+              </button>
+            </div>
             <div className="art-seg" role="group" aria-label="계절">
               <button aria-pressed={season === "all"} className="art-chip" onClick={() => setSeason("all")} type="button">
                 사철
@@ -607,31 +613,28 @@ export function AmbientArtBoard({ present, stamp }: Props) {
           </div>
         </div>
       </div>
-      {phase1.length ? (
-        <section className="art-section">
+      {groups.map((g) => (
+        <section className="art-section" key={g.key}>
           <h2>
-            1차 — 나무·초목·지형·물 <small>{phase1.length}자리</small>
+            {CATEGORY_KO[g.key]}
+            <small>
+              {g.list.length}자리{g.list.length !== g.total ? ` / ${g.total}` : ""}
+            </small>
+            <span className="art-sec-bar" title={`${g.done} / ${g.total} 납품됨`}>
+              <i style={{ width: `${Math.round((g.done / Math.max(1, g.total)) * 100)}%` }} />
+            </span>
+            <em>
+              {g.done}/{g.total}
+            </em>
           </h2>
           <div className="art-grid">
-            {phase1.map((s, i) => (
+            {g.list.map((s, i) => (
               <Card files={present[s.id] ?? []} i={i} key={s.id} onCopy={copy} slot={s} stamp={stamp} />
             ))}
           </div>
         </section>
-      ) : null}
-      {phase2.length ? (
-        <section className="art-section">
-          <h2>
-            2차 — 생물(종 레지스트리) <small>{phase2.length}자리 · 이어서 디자인</small>
-          </h2>
-          <div className="art-grid">
-            {phase2.map((s, i) => (
-              <Card files={present[s.id] ?? []} i={i} key={s.id} onCopy={copy} slot={s} stamp={stamp} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-      {!phase1.length && !phase2.length ? <p className="art-none">조건에 맞는 자리가 없다. 필터를 풀어 보라.</p> : null}
+      ))}
+      {!groups.length ? <p className="art-none">조건에 맞는 자리가 없다. 필터를 풀어 보라.</p> : null}
       {toast ? (
         <div className="art-toast" role="status">
           <Check aria-hidden="true" size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />

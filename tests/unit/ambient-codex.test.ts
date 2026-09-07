@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ART_SLOTS } from "@/components/shared/ambient/art/manifest";
 import { BIOMES } from "@/components/shared/ambient/world/biomes";
 import { CODEX, CODEX_KINDS, codexAvailable, codexById, codexOf, MONTHS_ALL } from "@/components/shared/ambient/world/codex";
+import { previewOf } from "@/components/shared/ambient/art/preview";
 import { DAY_BANDS } from "@/components/shared/ambient/world/time";
 import { weatherOptionsForMonth } from "@/components/shared/ambient/world/weather";
 
@@ -74,6 +75,14 @@ describe("world/codex — 도감 세 권", () => {
     for (const e of CODEX.filter((x) => x.live)) {
       const slot = ART_SLOTS.find((s) => s.id === e.id)!;
       expect(slot.now, `${e.id}: live인데 아무것도 안 그려진다`).not.toBe("none");
+    }
+  });
+
+  it("살아 있는 종은 보드의 '지금' 칸에도 그려진다 — id를 바꿀 때 조용히 끊기는 자리다", () => {
+    // 2026-09-07 도감 개편에서 종 id에 접두사가 붙자(`chipmunk` → `animal-chipmunk`) 보드의 미리보기 지도가
+    // 통째로 빗나갔다. 화면은 멀쩡한데 보드만 "아무것도 안 그려짐"이라 **거짓말을 하는 상태**였다.
+    for (const e of CODEX.filter((x) => x.live && x.id !== "bug-firefly")) {
+      expect(previewOf(e.id), `${e.id}: live인데 보드에 미리보기가 없다`).toBeTruthy();
     }
   });
 

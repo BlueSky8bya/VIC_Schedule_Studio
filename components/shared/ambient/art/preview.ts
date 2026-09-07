@@ -14,14 +14,18 @@ const URL_OF: Record<string, string> = {
   "sapling-bare": ASSET.herb,
   acorn: ASSET.acorn,
   "swim-ring": ASSET.ring,
-  "fish-slim": ASSET.fishShadowSlim,
-  "fish-fantail": ASSET.fishShadowFantail,
-  duck: ASSET.duck,
-  rabbit: ASSET.rabbit,
-  chipmunk: ASSET.chipmunk,
-  butterfly: ASSET.butterfly,
-  ladybug: ASSET.ladybug,
-  bee: ASSET.bee
+  // 종 id는 2026-09-07 도감 개편에서 접두사가 붙었다(fish-/bug-/animal-). 옛 키를 그대로 두면 보드의 "지금" 칸이
+  // 살아 있는 종에게도 "아무것도 안 그려짐"이라 거짓말을 한다 — `now: "emoji"`와 화면이 어긋난다.
+  "fish-palechub": ASSET.fishShadowSlim,
+  "fish-crucian": ASSET.fishShadowFantail,
+  "fish-carp": ASSET.fishShadowSlim,
+  "animal-mallard": ASSET.duck,
+  "animal-hare": ASSET.rabbit,
+  "animal-chipmunk": ASSET.chipmunk,
+  "bug-cabbagewhite": ASSET.butterfly,
+  "bug-blue": ASSET.butterfly,
+  "bug-ladybug": ASSET.ladybug,
+  "bug-honeybee": ASSET.bee
 };
 
 export function previewOf(id: string): ArtPreview {
