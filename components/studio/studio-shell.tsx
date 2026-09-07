@@ -7273,13 +7273,17 @@ export function StudioShell({
               </button>
             ) : null}
 
-            {/* 이 일정의 관심(하트) 수 — 편집실에서 "이게 반응이 있었나"를 그 자리에서 본다.
-                공개 스냅샷(viewerModePreview)에서 읽는다: 하트는 공개 일정에만 붙고, 숫자는
-                이미 시청자 화면이 쓰는 값이라 새로 새는 것이 없다.
+            {/* 이 일정의 관심(하트) 수 — **개발자에게만**(2026-09-07 소유자: "방송에 보이기 껄끄러울 수 있으니까").
+                편집실은 방송 중에 화면이 공유되는 곳이고, 이 줄은 그 자리에서 "이 일정에 몇 명이 반응했나"를
+                숫자로 드러낸다. 시청자가 그 수를 실시간으로 보는 것 — 특히 적은 수를 — 은 소유자가 통제할 수 없는
+                노출이다. 데이터 자체는 공개(시청자 화면의 관심 단계가 같은 값을 쓴다)지만 **숫자는 시청자 화면에도
+                안 나온다**(테두리 링·👑 같은 상대 단계만) — 편집실만 원본 수를 보여주고 있었다.
+                판정은 `actor.role`이 아니라 `effectiveRole` — 개발자가 관리자로 미리보기 중이면 관리자가 보는 대로 가려야 한다.
+                값은 공개 스냅샷(viewerModePreview)에서 읽는다: 하트는 공개 일정에만 붙는다.
                 비공개 일정은 스냅샷에 없으므로 줄 자체를 띄우지 않는다(0으로 오해되지 않게). */}
             {/* 업 도움은 하트를 못 누른다(시청자 화면에 하트 버튼 자체가 없다) — 0으로 뜨면
                 "아무도 안 눌렀다"로 읽혀 없는 반응을 있는 것처럼 만든다. 줄 자체를 뺀다. */}
-            {selectedEventId && !selectedIsSupport && heartCountOfSelected !== null ? (
+            {effectiveRole === "developer" && selectedEventId && !selectedIsSupport && heartCountOfSelected !== null ? (
               <p className="editor-hearts">
                 <Heart aria-hidden="true" size={13} strokeWidth={2.6} />
                 <span>관심</span>
