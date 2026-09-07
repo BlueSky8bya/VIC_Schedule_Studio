@@ -446,7 +446,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
                 void copy(
                   batchPrompt(visible, `아직 안 온 파일 ${missingFiles.length}장`, {
                     files: missingFiles,
-                    note: `**이미 배달돼 합격한 파일은 표에 없다.** 화풍의 기준선은 \`public/ambient/art/tree-pine-1.png\` · \`tree-pine-autumn.png\` · \`tree-pine-winter.png\` 세 장이다 — 새 그림은 이 셋과 나란히 놓아 한 세트로 보여야 한다.`
+                    note: `**이미 배달돼 합격한 파일은 표에 없다.** 화풍의 기준선은 \`public/ambient/art/tree-pine-1.png\` · \`tree-pine-autumn-1.png\` · \`tree-pine-winter-1.png\` 세 장이다 — 새 그림은 이 셋과 나란히 놓아 한 세트로 보여야 한다.`
                   }),
                   "남은 파일 프롬프트"
                 )

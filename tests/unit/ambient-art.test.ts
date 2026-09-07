@@ -68,10 +68,12 @@ describe("ambient/art — 매니페스트", () => {
       expect(dot, `${s.id} 화면 도트 ${dot.toFixed(2)} 장치px`).toBeLessThanOrEqual(8);
     }
   });
-  it("파일럿 배치는 12장이고, 그 프롬프트는 파일럿 파일만 싣는다", () => {
+  // 2026-09-07: 12 → 14. 가을·겨울 소나무에 변형 2를 더했다 — 장면이 계절마다 **다른 파일**을 고르므로
+  // (`land.ts` pineId), 봄·여름에만 변형이 둘이면 가을·겨울 산은 한 장을 40번 찍는다(반복감의 주범).
+  it("파일럿 배치는 14장이고, 그 프롬프트는 파일럿 파일만 싣는다", () => {
     const slots = pilotSlots();
     const files = slots.flatMap((s) => pilotFiles(s));
-    expect(files.length).toBe(12);
+    expect(files.length).toBe(14);
     for (const s of slots) expect(pilotFiles(s).length, s.id).toBeLessThanOrEqual(slotFiles(s).length);
     const p = pilotPrompt();
     for (const f of files) expect(p).toContain(f);
