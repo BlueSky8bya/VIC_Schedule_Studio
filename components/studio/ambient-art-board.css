@@ -898,3 +898,173 @@ html[data-reduce-motion] .art-card:hover .art-cell canvas {
 .art-board-filters {
   gap: 8px 14px;
 }
+
+/* ── 도감 표(2026-09-07) ──────────────────────────────────────────────────────
+   모여봐요 동물의 숲 도감 페이지와 **같은 형식**: 한 줄에 한 종, 오른쪽에 **월별 열두 칸**.
+   열두 칸이 이 형식의 핵심이다 — "5~9월"은 읽어야 알지만 칸은 한눈에 들어오고, 종을 세로로 쌓으면
+   **달의 띠**가 보인다(여름에만 몰린 곤충, 겨울에만 오는 새). 내용은 우리 것이고 형식만 같다(ADR-0019 결정 3). */
+.cx-wrap {
+  /* overflow를 걸면 안 된다 — 스크롤 컨테이너가 생기는 순간 안의 `position: sticky`가 **화면이 아니라 이 상자**에
+     붙어서 열 머리가 영영 안 보인다(2026-09-07에 실제로 그렇게 됐다). 표는 최소 폭을 갖고 페이지가 밀린다. */
+  border: 1px solid var(--ab-line);
+  border-radius: var(--ab-r);
+  background: var(--ab-card);
+  box-shadow:
+    0 1px 2px rgb(40 30 80 / 4%),
+    0 8px 22px rgb(40 30 80 / 5%);
+}
+.cx-table {
+  width: 100%;
+  min-width: 940px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.cx-table thead th {
+  position: sticky;
+  top: calc(var(--ab-bar-h, 148px) + 48px);
+  z-index: 1;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ab-line);
+  background: #fbfaff;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ab-soft);
+  text-align: left;
+  white-space: nowrap;
+}
+.cx-table tbody tr {
+  border-bottom: 1px solid #f1eff8;
+  transition: background 0.16s var(--ease);
+}
+.cx-table tbody tr:last-child {
+  border-bottom: 0;
+}
+.cx-table tbody tr:hover {
+  background: #faf9ff;
+}
+/* 이번 달에 나오는 종 — 왼쪽에 실 한 줄. 도감을 열면 제일 먼저 찾는 것이 "지금 뭘 잡을 수 있나"다. */
+.cx-table tbody tr[data-now="1"] td:first-child {
+  box-shadow: inset 3px 0 0 var(--ab-accent);
+}
+.cx-table tbody tr[data-state="done"] td:first-child {
+  box-shadow: inset 3px 0 0 var(--ab-ok);
+}
+.cx-table td {
+  padding: 5px 10px;
+  vertical-align: middle;
+}
+.cx-pic .art-cell {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 40px;
+  min-height: 0;
+  padding: 2px;
+  border-radius: 8px;
+}
+.cx-pic .art-cell img,
+.cx-pic .art-cell canvas {
+  max-width: 100%;
+  max-height: 36px;
+}
+/* 빈 칸의 "아무것도 안 그려짐"은 44px 칸에서 석 줄로 깨진다 — 아이콘만 남긴다. */
+.cx-pic .art-empty {
+  font-size: 0;
+}
+.cx-pic .art-empty svg {
+  font-size: 14px;
+}
+.cx-name {
+  min-width: 190px;
+}
+.cx-name strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.cx-name code {
+  font-size: 10px;
+  color: var(--ab-soft);
+}
+.cx-where {
+  min-width: 140px;
+  font-weight: 700;
+}
+.cx-where i {
+  margin-left: 6px;
+  font-style: normal;
+  font-weight: 500;
+  color: var(--ab-soft);
+}
+.cx-when,
+.cx-size {
+  white-space: nowrap;
+  color: var(--ab-soft);
+}
+.cx-size {
+  font-variant-numeric: tabular-nums;
+}
+.cx-tier {
+  letter-spacing: -1px;
+  font-size: 10px;
+  color: #b9b3d0;
+}
+.cx-tier.tier-uncommon {
+  color: #6f9ac0;
+}
+.cx-tier.tier-rare {
+  color: #5b46c8;
+}
+.cx-tier.tier-epic {
+  color: #a4562f;
+}
+.cx-tier.tier-legend {
+  color: #8a1f3d;
+}
+/* 월별 열두 칸 — 머리의 숫자 줄과 **같은 격자**라 열이 세로로 맞는다. */
+.cx-mhead,
+.cx-mgrid {
+  display: grid;
+  grid-template-columns: repeat(12, 15px);
+  gap: 2px;
+}
+.cx-mhead {
+  margin-top: 3px;
+}
+.cx-mhead i {
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: center;
+  color: #a9a3c0;
+}
+.cx-mhead i[data-now="1"] {
+  color: var(--ab-accent);
+}
+.cx-mgrid i {
+  height: 14px;
+  border-radius: 3px;
+  background: #f0eef7;
+}
+.cx-mgrid i.on {
+  background: #b9aef0;
+}
+/* 이번 달 열 — 안 나오는 달이어도 기둥이 보이게 옅은 테를 남긴다(열을 눈으로 따라가기 위해). */
+.cx-mgrid i[data-now="1"] {
+  box-shadow: inset 0 0 0 1.5px rgb(91 70 200 / 45%);
+}
+.cx-mgrid i.on[data-now="1"] {
+  background: var(--ab-accent);
+}
+.cx-months em {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-style: normal;
+  color: var(--ab-soft);
+}
+.cx-do {
+  text-align: right;
+}
+/* 도감 모드에서 장식 갈래는 표가 아니라 카드 그대로 — 월별 칸이 없는 것들이라 표로 만들면 빈 칸만 는다. */

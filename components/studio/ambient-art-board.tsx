@@ -13,7 +13,7 @@
 import type React from "react";
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Check, ClipboardCopy, Image as ImageIcon, LayoutGrid, List, Search } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ClipboardCopy, Image as ImageIcon, LayoutGrid, List, Search } from "lucide-react";
 import "./ambient-art-board.css";
 import {
   ART_DIR,
@@ -38,9 +38,9 @@ import {
   type ArtSlot,
   type PresentArt
 } from "@/components/shared/ambient/art/manifest";
-import type { SeasonKey } from "@/components/shared/ambient/registry";
+import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { previewOf } from "@/components/shared/ambient/art/preview";
-import { codexById, CODEX_KINDS, HABITAT_LABEL, KIND_LABEL } from "@/components/shared/ambient/world/codex";
+import { codexById, CODEX_KINDS, HABITAT_LABEL, KIND_LABEL, type CodexEntry } from "@/components/shared/ambient/world/codex";
 import { BIOMES } from "@/components/shared/ambient/world/biomes";
 import { TIER_DOTS, TIER_LABEL } from "@/components/shared/ambient/world/rarity";
 import { BAND_LABEL } from "@/components/shared/ambient/world/time";
@@ -78,6 +78,7 @@ const bandsLabel = (bands: readonly string[]): string =>
   bands.length >= 6 ? "종일" : bands.map((b) => BAND_LABEL[b as keyof typeof BAND_LABEL]).join("·");
 const CATS: ArtCategory[] = ["tree", "plant", "ground", "water", "prop", "sky", "fish", "bug", "animal"];
 const WAVES = [1, 2, 3] as const;
+const MONTH_NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 /** 지금 화면 필터 — "대기"를 다시 둘로 가른다: 대체물이라도 있는 자리 ↔ 아무것도 안 그려지는 자리. */
 type NowFilter = "all" | "sub" | "none";
@@ -172,6 +173,71 @@ function NowPreview({ slot, seen }: { slot: ArtSlot; seen: boolean }) {
 }
 
 type CardProps = { slot: ArtSlot; files: ArtFileInfo[]; stamp: number; onCopy: (text: string, label: string) => void; i: number };
+
+/** 도감 표의 한 줄(2026-09-07) — 모여봐요 동물의 숲 도감 페이지와 **같은 형식**: 그림 · 이름 · 사는 곳 · 때 · 크기 ·
+ *  희귀도 · **월별 열두 칸**. 열두 칸이 이 형식의 핵심이다 — "몇 월에 나오나"를 글로 읽는 것과 칸으로 보는 것은
+ *  전혀 다른 일이고(“5~9월”은 읽어야 알지만 칸은 한눈에 들어온다), 종을 세로로 쌓았을 때 **달의 띠가 보인다**.
+ *  내용은 우리 것이다 — 참고한 것은 표의 생김새뿐(ADR-0019 결정 3). */
+const CodexRow = memo(function CodexRow({
+  slot,
+  entry,
+  files,
+  stamp,
+  onCopy,
+  month
+}: {
+  slot: ArtSlot;
+  entry: CodexEntry;
+  files: ArtFileInfo[];
+  stamp: number;
+  onCopy: (t: string, l: string) => void;
+  month: number;
+}) {
+  const want = slotFiles(slot);
+  const done = files.length >= want.length;
+  const here = entry.months.includes(month);
+  return (
+    <tr data-state={done ? "done" : files.length ? "partial" : "todo"} data-now={here ? "1" : "0"}>
+      <td className="cx-pic">
+        <span className="art-cell">
+          {files.length ? (
+            <Image alt={slot.nameKo} height={40} loading="lazy" src={`${ART_DIR}/${files[0].file}?v=${stamp}`} unoptimized width={40} />
+          ) : (
+            <NowPreview seen slot={slot} />
+          )}
+        </span>
+      </td>
+      <td className="cx-name">
+        <strong>{entry.nameKo}</strong>
+        <code>{entry.id}</code>
+      </td>
+      <td className="cx-where">
+        {entry.biomes.map((b) => BIOMES[b].nameKo).join("·")}
+        <i>{HABITAT_LABEL[entry.habitat]}</i>
+      </td>
+      <td className="cx-when">{bandsLabel(entry.bands)}</td>
+      <td className="cx-size">
+        {entry.sizeCm[0]}~{entry.sizeCm[1]}cm
+      </td>
+      <td className={`cx-tier tier-${entry.tier}`} title={TIER_LABEL[entry.tier]}>
+        {TIER_DOTS[entry.tier]}
+      </td>
+      <td className="cx-months">
+        <span className="cx-mgrid">
+          {MONTH_NUMS.map((mo) => (
+            <i aria-hidden="true" className={entry.months.includes(mo) ? "on" : ""} data-now={mo === month ? "1" : "0"} key={mo} />
+          ))}
+        </span>
+        <em>{monthsLabel(entry.months)}</em>
+      </td>
+      <td className="cx-do">
+        <button className="art-btn small" data-act="art-slot-prompt-copy" onClick={() => onCopy(slotPrompt(slot), `${slot.nameKo} 프롬프트`)} type="button">
+          <ClipboardCopy aria-hidden="true" size={12} />
+        </button>
+      </td>
+    </tr>
+  );
+});
 
 const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
   const { ref, seen } = useInView<HTMLElement>();
@@ -309,7 +375,9 @@ export function AmbientArtBoard({ present, stamp }: Props) {
   const [wave, setWave] = useState<"all" | 1 | 2 | 3>("all");
   // 밀도 — 카드(그림을 본다) / 목록(129종을 훑는다). 자리가 206개가 되면서 "훑기"가 별개의 일이 됐다.
   // DOM은 같고 CSS만 바뀐다(`data-density`) — 두 벌을 만들면 둘이 어긋난다.
-  const [density, setDensity] = useState<"card" | "list">("card");
+  const [density, setDensity] = useState<"card" | "list" | "table">("card");
+  // 지금 달(KST) — 도감 표에서 "이번 달" 열을 표시한다. 동숲 도감을 볼 때 제일 먼저 찾는 것이 그것이다.
+  const nowMonth = useMemo(() => kstToday().m, []);
   const [sort, setSort] = useState<SortKey>("declared");
   const [q, setQ] = useState("");
   const dq = useDeferredValue(q); // 타이핑마다 100장을 다시 거르지 않는다
@@ -545,6 +613,9 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               <button aria-pressed={density === "list"} className="art-chip" onClick={() => setDensity("list")} type="button">
                 <List aria-hidden="true" size={12} /> 목록
               </button>
+              <button aria-pressed={density === "table"} className="art-chip" onClick={() => setDensity("table")} type="button">
+                <BookOpen aria-hidden="true" size={12} /> 도감
+              </button>
             </div>
             <div className="art-seg" role="group" aria-label="계절">
               <button aria-pressed={season === "all"} className="art-chip" onClick={() => setSeason("all")} type="button">
@@ -627,11 +698,49 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               {g.done}/{g.total}
             </em>
           </h2>
-          <div className="art-grid">
-            {g.list.map((s, i) => (
-              <Card files={present[s.id] ?? []} i={i} key={s.id} onCopy={copy} slot={s} stamp={stamp} />
-            ))}
-          </div>
+          {density === "table" && (g.key === "fish" || g.key === "bug" || g.key === "animal") ? (
+            <div className="cx-wrap">
+              <table className="cx-table">
+                <thead>
+                  <tr>
+                    <th scope="col">그림</th>
+                    <th scope="col">이름</th>
+                    <th scope="col">사는 곳</th>
+                    <th scope="col">때</th>
+                    <th scope="col">크기</th>
+                    <th scope="col">희귀도</th>
+                    <th scope="col">
+                      나오는 달
+                      <span className="cx-mhead" aria-hidden="true">
+                        {MONTH_NUMS.map((mo) => (
+                          <i data-now={mo === nowMonth ? "1" : "0"} key={mo}>
+                            {mo}
+                          </i>
+                        ))}
+                      </span>
+                    </th>
+                    <th scope="col">
+                      <span className="sr-only">프롬프트</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.list.map((s2) => {
+                    const e2 = codexById(s2.id);
+                    return e2 ? (
+                      <CodexRow entry={e2} files={present[s2.id] ?? []} key={s2.id} month={nowMonth} onCopy={copy} slot={s2} stamp={stamp} />
+                    ) : null;
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="art-grid">
+              {g.list.map((s, i) => (
+                <Card files={present[s.id] ?? []} i={i} key={s.id} onCopy={copy} slot={s} stamp={stamp} />
+              ))}
+            </div>
+          )}
         </section>
       ))}
       {!groups.length ? <p className="art-none">조건에 맞는 자리가 없다. 필터를 풀어 보라.</p> : null}
