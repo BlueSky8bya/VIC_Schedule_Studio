@@ -62,7 +62,7 @@ for (const f of files) {
     continue;
   }
   const edge = targetEdge(slot.px);
-  const block = dotBlock(slot.px);
+  const block = dotBlock(slot.px, slot.grid);
   const meta = await sharp(src).metadata();
   // 이미 정리된 파일(팔레트 PNG = IHDR colorType 3 ∧ 목표 크기 이하)은 건너뛴다 — 다시 돌릴 때마다 재양자화되어 색이 조금씩 상한다.
   // `--force`로 무시할 수 있지만, **lanczos3 시절에 줄여 둔 파일은 다시 돌려도 도트가 돌아오지 않는다**(정보가 이미 없다) —

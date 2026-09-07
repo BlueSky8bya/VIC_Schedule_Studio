@@ -39,6 +39,9 @@ export type ArtSlot = {
   phase: 1 | 2;
   /** 파일럿 배치(ENTITY_ART_PLAN §4)에서 **이번에 만들 장수**. 변형이 많아도 파일럿은 일부만 받는다(갈대 4변형 중 2장). */
   pilot?: number;
+  /** 도트 격자를 자리 크기 대신 **손으로** 정한다(16·32·64·128 중). 격자는 크기만으로 정해지지 않는다 — 형태의 복잡도가 정한다.
+   *  예: 참나무는 잎 덩이 가장자리의 울퉁불퉁한 요철이 그 나무의 인상이라 64칸으로는 표현할 칸이 모자란다(2026-09-07 소유자 판정). */
+  grid?: 16 | 32 | 64 | 128;
 };
 
 const ALL: readonly SeasonKey[] = ["spring", "summer", "autumn", "winter"];
@@ -46,10 +49,10 @@ const ALL: readonly SeasonKey[] = ["spring", "summer", "autumn", "winter"];
 // ── Phase 1: 나무·초목·지형·물 ──────────────────────────────────────────────────────────────────────────
 const PHASE1: readonly ArtSlot[] = [
   // 나무(데뷔 나무·도토리에서 난 나무) — 계절마다 한 장, 크기는 엔진이 키에 맞춰 조절한다.
-  { id: "tree-oak-spring", nameKo: "참나무(봄)", nameEn: "Oak, spring", category: "tree", seasons: ["spring"], view: "stand", px: [120, 150], brief: "동물의 숲 나무처럼 아주 단순하게: 연둣빛 **매끈한 공 모양 잎 덩이 3개**(위에 큰 것 하나, 아래 좌우에 작은 것 둘이 겹침)를 짧고 굵은 줄기가 받친다. 잎 낱개·잔가지·질감 없음. 덩이마다 위 왼쪽에 밝은 면, 오른쪽 아래에 그늘 면 한 번씩.", acnhRef: "활엽수(봄 새잎)", now: "procedural", phase: 1 },
-  { id: "tree-oak-summer", nameKo: "참나무(여름)", nameEn: "Oak, summer", category: "tree", seasons: ["summer"], view: "stand", px: [120, 150], brief: "봄과 **같은 실루엣·같은 줄기**, 잎 덩이 3개만 짙은 초록으로(그늘 면은 청록). 잎 낱개·질감 없음.", acnhRef: "활엽수(여름)", now: "procedural", phase: 1 },
-  { id: "tree-oak-autumn", nameKo: "참나무(가을)", nameEn: "Oak, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [120, 150], brief: "봄과 **같은 실루엣·같은 줄기**, 잎 덩이 3개가 갈색·황토·와인(갈색이 주, 붉은 기는 조금만 — 선명한 빨강·주황·노랑 금지). 잎 낱개·질감 없음. 발치의 떨어진 잎은 그리지 않는다(엔진이 흩뿌린다).", acnhRef: "활엽수(가을 단풍)", now: "procedural", phase: 1 },
-  { id: "tree-oak-winter", nameKo: "참나무(겨울)", nameEn: "Oak, winter", category: "tree", seasons: ["winter"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기**에서 굵은 가지 4~5개가 둥글게 갈라져 올라간다(각 가지는 한두 번만 갈라짐 — 잔가지를 촘촘히 그리지 않는다, 128px에서 실루엣이 읽히게). 가지 위쪽에 눈이 두툼하게 한 겹.", acnhRef: "활엽수(겨울 나목)", now: "procedural", phase: 1 },
+  { id: "tree-oak-spring", grid: 128, nameKo: "참나무(봄)", nameEn: "Oak, spring", category: "tree", seasons: ["spring"], view: "stand", px: [120, 150], brief: "**뭉게뭉게한 잎 덩이**가 모여 하나의 둥근 수관을 이룬다 — 매끈한 원이 아니라, 가장자리가 **울퉁불퉁하게 튀어나오고 패인** 클러스터 여러 개(6~10덩이)가 서로 겹쳐 자란 모양이다. 덩이들의 크기·위치를 **고르지 않게** 흩어 좌우가 대칭이 되지 않게 하고, 수관 위쪽 실루엣에 굴곡이 두세 군데 보이게 한다. 잎 낱개는 그리지 않되 **덩이 경계의 요철이 이 나무의 인상**이다. 색은 연둣빛 3톤(밝은 면 왼쪽 위, 그늘 오른쪽 아래). 줄기는 **따뜻한 갈색**(회갈색 아님 — 밝은 바탕 규칙은 겨울에만 적용한다), 짧고 굵으며 **밑동에서 뿌리목이 3~4갈래로 갈라져 땅을 붙잡는다**. 수관 사이로 굵은 가지가 한두 개 비친다. **계절 크기 = 0.85(새잎)** — 여름보다 덩이가 작고 사이가 성기다. 네 계절 중 여름이 가장 커야 하므로 이 장이 여름보다 커지면 안 된다.", acnhRef: "활엽수(봄 새잎)", now: "procedural", phase: 1 },
+  { id: "tree-oak-summer", grid: 128, nameKo: "참나무(여름)", nameEn: "Oak, summer", category: "tree", seasons: ["summer"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목·같은 가지 뼈대**, 같은 뭉게뭉게한 클러스터 어법. 잎은 짙은 초록 3톤(그늘 면은 청록). **계절 크기 = 1.0(기준 — 한 해 중 가장 크고 빽빽하다)**: 덩이가 봄보다 뚜렷이 커지고 덩이 사이 틈이 메워져 가지가 거의 안 비친다. 그래도 수관 가장자리는 매끈해지지 않는다 — 요철은 유지하고 덩이만 불어난다. 네 장 중 이 장이 가장 풍성해야 한다.", acnhRef: "활엽수(여름)", now: "procedural", phase: 1 },
+  { id: "tree-oak-autumn", grid: 128, nameKo: "참나무(가을)", nameEn: "Oak, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목·같은 가지 뼈대**, 같은 뭉게뭉게한 클러스터 어법. 잎 덩이는 갈색·황토·와인 3톤(갈색이 주, 붉은 기는 조금만 — 선명한 빨강·주황·노랑 금지). **계절 크기 = 0.95(잎이 지기 시작)**: 여름보다 살짝 작고 가장자리 덩이가 성겨 가지 끝이 두세 군데 드러난다. 발치의 떨어진 잎은 그리지 않는다(엔진이 흩뿌린다).", acnhRef: "활엽수(가을 단풍)", now: "procedural", phase: 1 },
+  { id: "tree-oak-winter", grid: 128, nameKo: "참나무(겨울)", nameEn: "Oak, winter", category: "tree", seasons: ["winter"], view: "stand", px: [120, 150], brief: "봄과 **같은 줄기·같은 뿌리목**에서 굵은 가지 4~5개가 둥글게 갈라져 올라간다. 가지는 **굵고 힘 있게**(가늘고 앙상한 잔가지 다발이 아니다), 각 가지가 한두 번만 다시 갈라지며 끝이 위를 향한다 — 128px로 줄여도 나무의 골격이 읽혀야 한다. 가지 **윗면마다 눈이 두툼하게 한 겹** 얹혀 하얀 선이 가지를 따라 이어진다. 줄기는 눈밭에서 튀지 않게 **채도 낮은 회갈색**(겨울만 이 규칙).", acnhRef: "활엽수(겨울 나목)", now: "procedural", phase: 1 },
   { id: "tree-pine", nameKo: "소나무", nameEn: "Pine", category: "tree", seasons: ["spring", "summer", "autumn"], view: "stand", px: [92, 168], variants: 2, brief: "동물의 숲 침엽수처럼 단순하게: **톱니 원뿔 3단**(아래가 가장 넓고 위로 갈수록 좁다)이 짧고 굵은 회갈색 줄기 위에 얹힌다. 색은 짙은 청록 초록 3톤(밝은 면은 왼쪽 위, 그늘은 오른쪽 아래), 솔잎 낱개는 그리지 않는다. 참나무보다 **좁고 키가 크다**.", acnhRef: "침엽수", now: "procedural", pilot: 2, phase: 1 },
   { id: "tree-pine-autumn", nameKo: "소나무(가을)", nameEn: "Pine, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [92, 168], brief: "봄·여름 소나무와 **같은 실루엣·같은 줄기**. 잎만 채도를 낮춘 올리브~암녹으로(가을 갈색 지면 위에서 민트빛 초록은 붙여넣은 것처럼 뜬다).", acnhRef: "침엽수(가을)", now: "procedural", pilot: 1, phase: 1 },
   { id: "tree-pine-winter", nameKo: "소나무(겨울)", nameEn: "Pine, winter", category: "tree", seasons: ["winter"], view: "stand", px: [92, 168], brief: "같은 실루엣·같은 줄기. 잎은 더 어둡고 채도가 낮으며, 각 단의 **윗면에만** 눈이 한 겹 얹힌다(아래 그늘은 옅은 청회색).", acnhRef: "침엽수(겨울)", now: "procedural", pilot: 1, phase: 1 },
@@ -57,9 +60,9 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "sapling-autumn", nameKo: "어린 나무(가을)", nameEn: "Sapling, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [40, 48], brief: "어린 참나무(같은 실루엣), 둥근 잎 2~3장이 갈색·와인.", acnhRef: "묘목", now: "emoji", phase: 1 },
   { id: "sapling-bare", nameKo: "어린 나무(겨울)", nameEn: "Sapling, bare", category: "tree", seasons: ["winter"], view: "stand", px: [40, 48], brief: "잎 없는 어린 참나무 — 가는 줄기와 잔가지 둘, 눈이 조금 얹힌다.", acnhRef: "묘목", now: "emoji", phase: 1 },
   { id: "sprout", nameKo: "새싹", nameEn: "Sprout", category: "plant", seasons: ["spring", "summer", "autumn"], view: "stand", px: [24, 28], brief: "흙을 막 뚫고 나온 떡잎 두 장. 통통하고 둥근 잎, 짧은 줄기, 발치에 흙 부스러기 조금.", acnhRef: "새싹", now: "emoji", phase: 1 },
-  { id: "shrub-spring", nameKo: "관목(봄)", nameEn: "Shrub, spring", category: "tree", seasons: ["spring"], view: "stand", px: [62, 66], brief: "허리 높이의 둥근 관목, 연둣빛 새잎, 작은 흰 꽃 몇 송이.", acnhRef: "울타리 관목(진달래류)", now: "procedural", phase: 1 },
-  { id: "shrub-summer", nameKo: "관목(여름)", nameEn: "Shrub, summer", category: "tree", seasons: ["summer"], view: "stand", px: [62, 66], brief: "짙은 초록 둥근 관목, 잎이 빽빽하다.", acnhRef: "울타리 관목(수국은 파랑 대신 연보라)", now: "procedural", phase: 1 },
-  { id: "shrub-autumn", nameKo: "관목(가을)", nameEn: "Shrub, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [62, 66], brief: "갈색·와인으로 물든 둥근 관목, 잎이 성기다.", acnhRef: "울타리 관목(가을)", now: "procedural", pilot: 1, phase: 1 },
+  { id: "shrub-spring", nameKo: "관목(봄)", nameEn: "Shrub, spring", category: "tree", seasons: ["spring"], view: "stand", px: [62, 66], brief: "허리 높이의 둥근 관목, 연둣빛 새잎, 작은 흰 꽃 몇 송이. **계절 크기 = 0.85(새잎)** — 여름보다 작고 성기다.", acnhRef: "울타리 관목(진달래류)", now: "procedural", phase: 1 },
+  { id: "shrub-summer", nameKo: "관목(여름)", nameEn: "Shrub, summer", category: "tree", seasons: ["summer"], view: "stand", px: [62, 66], brief: "짙은 초록 둥근 관목, 잎이 빽빽하다. **계절 크기 = 1.0(기준 — 네 계절 중 가장 크고 빽빽하다)**: 봄보다 뚜렷이 크고 틈이 메워져 있다.", acnhRef: "울타리 관목(수국은 파랑 대신 연보라)", now: "procedural", phase: 1 },
+  { id: "shrub-autumn", nameKo: "관목(가을)", nameEn: "Shrub, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [62, 66], brief: "갈색·와인으로 물든 둥근 관목, 잎이 성기다. **계절 크기 = 0.95** — 여름보다 살짝 작고 가장자리가 성겨 잔가지가 조금 드러난다.", acnhRef: "울타리 관목(가을)", now: "procedural", pilot: 1, phase: 1 },
   { id: "shrub-winter", nameKo: "관목(겨울)", nameEn: "Shrub, winter", category: "tree", seasons: ["winter"], view: "stand", px: [62, 66], brief: "잔가지만 남은 둥근 관목 위에 눈이 소복이 덮였다.", acnhRef: "울타리 관목(겨울)", now: "procedural", phase: 1 },
   // 풀·꽃
   { id: "grass-tuft", nameKo: "풀포기", nameEn: "Grass tuft", category: "plant", seasons: ["spring", "summer"], view: "stand", px: [22, 18], variants: 3, brief: "잔디 위에 솟은 풀포기 — 잎 5~7가닥이 부채꼴로 벌어지고 끝이 살짝 휜다. 밝은 초록, 뿌리 쪽은 어둡다. 변형 3개는 가닥 수와 휜 방향이 다르다.", acnhRef: "잡초(풀)", now: "procedural", phase: 1 },
@@ -194,12 +197,13 @@ const GRIDS = [16, 32, 64, 128] as const;
 /** 자리의 도트 격자 — 원본 1024 안에서 그림이 가져야 할 **논리 해상도**.
  *  화면에서 도트 한 칸이 4 장치px(= DPR 2에서 CSS 2px) 안팎이 되게 잡는다: 격자 ≈ 자리 긴 변 ÷ 2.
  *  고정값을 쓰면 안 된다 — 128로 통일하면 조약돌(12px)의 도트가 0.4 장치px가 되어 아예 안 보이고, 16으로 통일하면 통나무가 레고가 된다. */
-export const dotGrid = (px: readonly [number, number]): number => {
+export const dotGrid = (px: readonly [number, number], override?: number): number => {
+  if (override) return override;
   const want = Math.max(px[0], px[1]) / 2;
   return GRIDS.reduce((best, g) => (Math.abs(g - want) < Math.abs(best - want) ? g : best), GRIDS[0]);
 };
 /** 도트 한 칸의 원본 px(1024 ÷ 격자) — 코덱스가 지킬 블록 크기. */
-export const dotBlock = (px: readonly [number, number]): number => SOURCE_EDGE / dotGrid(px);
+export const dotBlock = (px: readonly [number, number], override?: number): number => SOURCE_EDGE / dotGrid(px, override);
 
 /** 저장 목표 변(px) — 반드시 **1024의 정수 약수**여야 한다(2026-09-07 결정 ⓐ′).
  *  비정수 배로 줄이면 nearest가 도트를 들쭉날쭉 버리고, lanczos3로 줄이면 도트가 아예 뭉개진다(색 76 → 3,723 실측).
@@ -229,9 +233,11 @@ export const CATEGORY_KO: Record<ArtCategory, string> = { tree: "나무", plant:
 
 /** 스타일 가이드 — 모든 자리에 공통. 모여봐요 동물의 숲(참고 페이지: 물고기·곤충 도감)을 **스타일 참고**로만 쓴다. */
 export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
-- **확정 스타일 = 픽셀아트**(2026-09-04, 참나무 4장으로 확정). 굵은 픽셀 블록으로 그린 도트 그림 — 모여봐요 동물의 숲의 **소재·귀여움**에
+- **확정 스타일 = 픽셀아트**(2026-09-04 확정). 굵은 픽셀 블록으로 그린 도트 그림 — 모여봐요 동물의 숲의 **소재·귀여움**에
   16비트 도트의 **또렷함**을 더한 것. 앞으로 만드는 자리는 **전부 같은 어법**이어야 한다(한 장면에 도트와 물감이 섞이면 깨진다).
-  참고 이미지: public/ambient/art/tree-oak-*.png(이미 납품된 참나무 4장) — 새 그림은 이것들과 나란히 놓아도 한 세트로 보여야 한다.
+  **기준선 = public/ambient/art/tree-pine-1.png · tree-pine-autumn.png · tree-pine-winter.png**(2026-09-07 교체) — 새 그림은 이 셋과
+  나란히 놓아도 한 세트로 보여야 한다. ⚠ 옛 tree-oak-*.png는 기준이 아니다: 옛 파이프라인에서 축소돼 도트가 뭉개졌고(색 139개·가로
+  연속 평균 4px) 논리 격자도 약 115칸이라 지금 규격의 절반 굵기다. 그 네 장은 재작업 대상이다.
   소재·귀여움의 참고는 모여봐요 동물의 숲 도감 — https://animalcrossing.soopoolleaf.com/ko/acnh/Fish/ · https://animalcrossing.soopoolleaf.com/ko/acnh/Bugs/ .
   닌텐도 원본을 복제·트레이스하지 말고, 같은 소재를 **새로 그린 원작**으로.
 - 픽셀 규격(**가장 중요 — 2026-09-07 개정**): 1024 캔버스를 **논리 격자**로 보고 그린다. 격자 크기는 자리마다 다르고 **표의 '격자' 칸**에
@@ -253,9 +259,14 @@ export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
   **품질은 낮음/중간**(디테일이 필요 없다 — 우리가 128·256·512로 정수배 축소해 저장한다, scripts/ambient-art-normalize.mjs).
   파일 이름은 표의 id 그대로(<id>.png, 변형은 <id>-1.png, <id>-2.png…).
 - 검수 기준(우리가 기계로 잰다): 총 색 수 ≤ 48 · 가로 연속 길이 최빈값이 표의 **블록 px와 같을 것** · 알파 가장자리에 반투명 계조 없음.
-  참나무 4장이 이 기준의 회귀 기준선이다.
+  소나무 3장(tree-pine-*)이 이 기준의 회귀 기준선이다 — 실측 색 7~9개 · 가로 연속 최빈 16px · 반투명 0.
 - 카메라(자리마다 표기): stand = 동물의 숲 카메라(높은 앵글 3/4 정면) · flat = 정확히 위에서 · shadow = 위에서 본 단색 실루엣.
-- 일관성: 같은 종의 계절 변형(예: 참나무 봄·여름·가을·겨울)은 **같은 실루엣·같은 줄기**에 잎만 바뀐다. 변형(-1, -2, -3)은 같은 크기·같은 스타일에 형태만 조금 다르다.`;
+- 일관성(**2026-09-07 개정**): 같은 종의 계절 변형은 **같은 줄기·같은 가지 뼈대·같은 실루엣 윤곽**을 쓴다. 다만 —
+  · **낙엽수·관목(잎이 지는 것)**: 잎 덩이의 **크기와 빽빽함이 계절마다 다르다.** 봄 = 새잎이라 덩이가 작고 성기다(여름의 약 0.85배,
+    사이로 가지가 조금 비친다) · **여름 = 한 해 중 가장 크고 빽빽하다(1.0 = 기준)** · 가을 = 잎이 지기 시작해 여름보다 조금 작고
+    성기다(0.95배) · 겨울 = 잎이 없다(나목). **봄이 여름보다 커 보이면 안 된다** — 색만 바꾼 네 장은 계절이 지나가는 것으로 안 읽힌다.
+  · **침엽수·상록(잎이 지지 않는 것)**: 네 계절 **크기·빽빽함이 같다.** 색과 눈만 바뀐다.
+- 변형(-1, -2, -3)은 같은 크기·같은 스타일에 형태만 조금 다르다.`;
 
 /** 파일럿 배치에서 실제로 받을 파일들(자리의 변형 중 앞의 `pilot`장만). */
 export const pilotFiles = (s: ArtSlot): string[] => (s.pilot ? slotFiles(s).slice(0, s.pilot) : []);
@@ -272,7 +283,7 @@ export function slotPrompt(s: ArtSlot): string {
     s.acnhRef ? `- 동물의 숲 참고 항목: ${s.acnhRef}(스타일 참고만)` : "",
     s.variants && s.variants > 1 ? `- 변형 ${s.variants}개를 각각 별도 PNG로(${files}).` : "",
     s.pilot ? `- **파일럿 배치**: 이번에는 앞의 ${s.pilot}장만 만든다(${pilotFiles(s).join(", ")}).` : "",
-    `- 도트 격자: **${dotGrid(s.px)}칸** — 도트 한 칸 = ${dotBlock(s.px)}×${dotBlock(s.px)}px 블록(1024 안에서). 블록 경계를 넘는 색 변화 금지.`,
+    `- 도트 격자: **${dotGrid(s.px, s.grid)}칸** — 도트 한 칸 = ${dotBlock(s.px, s.grid)}×${dotBlock(s.px, s.grid)}px 블록(1024 안에서). 블록 경계를 넘는 색 변화 금지.`,
     `- 저장: 우리가 1024 → ${targetEdge(s.px)}px로 **${sourceRatio(s.px)}분의 1 정수배** 축소한다(격자를 지켜야 도트가 남는다).`,
     "",
     ART_STYLE_GUIDE
@@ -282,7 +293,7 @@ export function slotPrompt(s: ArtSlot): string {
 }
 
 const promptRow = (s: ArtSlot, pilot: boolean) =>
-  `| ${s.id} | ${(pilot ? pilotFiles(s) : slotFiles(s)).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${s.view} | ${s.px[0]}×${s.px[1]} | ${dotGrid(s.px)}칸 | ${dotBlock(s.px)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
+  `| ${s.id} | ${(pilot ? pilotFiles(s) : slotFiles(s)).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${s.view} | ${s.px[0]}×${s.px[1]} | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
 
 /** 배치 프롬프트 — 아무 자리 묶음이나(보드의 필터 결과·파일럿·단계 전체) 코덱스에 통째로 넘길 한 장으로 만든다. */
 export function batchPrompt(slots: readonly ArtSlot[], title: string, opts: { pilot?: boolean; note?: string } = {}): string {
@@ -292,7 +303,7 @@ export function batchPrompt(slots: readonly ArtSlot[], title: string, opts: { pi
 
 빅토리 일정표(스트리머 방송 일정 편집실)의 배경은 달력의 달을 따라 봄·여름·가을·겨울로 바뀌는 살아 있는 장면이다.
 자리의 대부분은 아직 코드로 그린 기본 도형(원·선)이라 풀은 껌딱지, 흙더미는 정체불명으로 보인다.
-아래 표의 **파일 이름마다 그림 한 장씩**을 만들어 달라 — 스타일은 **이미 확정된 참나무 4장**(public/ambient/art/tree-oak-*.png)과 같은 픽셀아트.
+아래 표의 **파일 이름마다 그림 한 장씩**을 만들어 달라 — 스타일은 **이미 합격한 소나무 3장**(public/ambient/art/tree-pine-*.png)과 같은 픽셀아트.
 만든 파일은 public/ambient/art/ 에 표의 이름 그대로 넣기만 하면 장면이 자동으로 그 그림을 쓴다(편집실 /studio/ambient-art 보드에서 자리별 상태를 확인한다).
 ${opts.note ? `\n${opts.note}\n` : ""}
 ${ART_STYLE_GUIDE}
@@ -305,9 +316,10 @@ ${slots.map((s) => promptRow(s, pilot)).join("\n")}
 ## 납품
 - 파일 하나에 물체 하나. 표의 이름을 그대로 파일 이름으로. **1024×1024 정사각 투명 PNG**, 품질 낮음/중간.
 - **표의 격자·블록을 지킬 것**(예: 격자 64칸이면 도트 한 칸이 16×16px 블록). 이것이 이번 배치의 합격/불합격을 가르는 첫 기준이다.
-- **픽셀아트 한 어법으로**: 참나무 4장(public/ambient/art/tree-oak-*.png)과 나란히 놓아도 한 세트로 보여야 한다.
+- **픽셀아트 한 어법으로**: 소나무 3장(public/ambient/art/tree-pine-*.png)과 나란히 놓아도 한 세트로 보여야 한다.
 - **단순하게**: 128px로 줄여도 읽히는 덩어리 2~3개. 잎·털·비늘 낱개, 붓 터치, 안티에일리어싱 금지.
-- 같은 종의 계절 변형은 같은 실루엣을 유지한다. 변형(-1, -2)은 색만 바꾼 복제 금지 — 실루엣 면적비 1.4배 이상.
+- 같은 종의 계절 변형은 줄기·가지 뼈대를 유지하되, **낙엽수·관목은 잎 덩이 크기가 계절마다 다르다**(봄 .85 · 여름 1.0 · 가을 .95 · 겨울 나목).
+  침엽수·상록은 네 계절 크기가 같다. 변형(-1, -2)은 색만 바꾼 복제 금지 — 실루엣 면적비 1.4배 이상.
 - 색은 오행 규칙(선명한 빨강·주황·노랑 금지)을 어기지 않는다. 밝은 바탕(눈·모래)에 서는 줄기는 회갈색.`;
 }
 

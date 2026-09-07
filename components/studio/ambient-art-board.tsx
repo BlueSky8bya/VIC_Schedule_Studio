@@ -159,7 +159,7 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
   const edge = targetEdge(slot.px);
   const heavy = files.some((f) => Math.max(f.w, f.h) > edge * 1.3 || f.bytes > 160 * 1024);
   // 옛 규격(lanczos3 시절)으로 줄여 둔 파일 — 변이 블록 배수가 아니면 도트가 이미 뭉개졌다는 신호다.
-  const block = dotBlock(slot.px);
+  const block = dotBlock(slot.px, slot.grid);
   const stale = files.some((f) => f.w % block !== 0 && f.h % block !== 0);
   const pf = slot.pilot ? pilotFiles(slot) : [];
   const pfDone = pf.filter((n) => files.some((f) => f.file === n)).length;
@@ -233,8 +233,8 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
           <span>
             <b>크기</b> {slot.px[0]}×{slot.px[1]}
           </span>
-          <span title={`1024 캔버스를 ${dotGrid(slot.px)}칸으로 보고 그린다 — 도트 한 칸 = ${block}×${block}px 블록`}>
-            <b>격자</b> {dotGrid(slot.px)}칸 · {block}px
+          <span title={`1024 캔버스를 ${dotGrid(slot.px, slot.grid)}칸으로 보고 그린다 — 도트 한 칸 = ${block}×${block}px 블록`}>
+            <b>격자</b> {dotGrid(slot.px, slot.grid)}칸 · {block}px
           </span>
           {slot.variants && slot.variants > 1 ? (
             <span>

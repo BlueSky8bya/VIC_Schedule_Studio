@@ -52,10 +52,10 @@ describe("ambient/art — 매니페스트", () => {
   it("저장 목표 변과 도트 격자는 1024를 정수로 나눈다", () => {
     for (const s of ART_SLOTS) {
       const edge = targetEdge(s.px);
-      const grid = dotGrid(s.px);
+      const grid = dotGrid(s.px, s.grid);
       expect(SOURCE_EDGE % edge, `${s.id} 목표 변 ${edge}`).toBe(0);
       expect(SOURCE_EDGE % grid, `${s.id} 격자 ${grid}`).toBe(0);
-      expect(dotBlock(s.px), `${s.id} 블록`).toBe(SOURCE_EDGE / grid);
+      expect(dotBlock(s.px, s.grid), `${s.id} 블록`).toBe(SOURCE_EDGE / grid);
       // 저장본은 자리 상자를 DPR 2로 그릴 만큼은 커야 한다(화면 px의 2배 이상).
       expect(edge, `${s.id} 저장 변이 화면보다 작다`).toBeGreaterThanOrEqual(Math.min(512, Math.max(s.px[0], s.px[1]) * 2));
     }
@@ -63,7 +63,7 @@ describe("ambient/art — 매니페스트", () => {
   it("도트 격자는 자리 크기를 따라간다 — 고정값이면 작은 자리의 도트가 화면에서 사라진다", () => {
     // 화면 도트 = 자리 긴 변 × DPR 2 ÷ 격자. 1.5~8 장치px 안에 들어야 "굵은 점"으로 읽힌다.
     for (const s of ART_SLOTS.filter((x) => x.phase === 1)) {
-      const dot = (Math.max(s.px[0], s.px[1]) * 2) / dotGrid(s.px);
+      const dot = (Math.max(s.px[0], s.px[1]) * 2) / dotGrid(s.px, s.grid);
       expect(dot, `${s.id} 화면 도트 ${dot.toFixed(2)} 장치px`).toBeGreaterThanOrEqual(1.5);
       expect(dot, `${s.id} 화면 도트 ${dot.toFixed(2)} 장치px`).toBeLessThanOrEqual(8);
     }

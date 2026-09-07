@@ -19,6 +19,8 @@ const eslintConfig = [
       "playwright-report/**",
       "test-results/**",
       ".scratch-pw/**",
+      "tmp/**", // 코덱스·에이전트 작업 폴더(생성 스크립트·검증 로그) — 커밋도 검사도 하지 않는다
+
       "next-env.d.ts"
     ]
   },
