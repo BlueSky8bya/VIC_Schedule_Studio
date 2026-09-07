@@ -660,7 +660,7 @@ export function StudioShell({
   function handlePillClick(eventId: string) {
     const target = eventsRef.current.find((e) => canonId(e.id) === canonId(eventId));
     if (!target) return;
-    selectEvent(target);
+    selectOrCloseEvent(target);
   }
 
   // 이음새 '칼로 긋기': 손잡이를 눌러 threshold 이상 그으면 그 연결(earlier.linkNext)만 끊는다.
@@ -3727,6 +3727,19 @@ export function StudioShell({
     }
   }
 
+  /** 카드·띠를 **다시** 누르면 편집 팝오버를 닫는다(2026-09-07 소유자 신고: 떠 있는 채로 같은 일정을 또 눌러도 안 닫혔다).
+   *  빈 날짜 칸은 `selectDate`가 이미 이 규칙을 쓰고 있었다 — 일정에도 같은 문법을 맞춘다.
+   *  `selectEvent`가 아니라 여기에 둔다: 저장·생성 뒤 프로그램이 부르는 `selectEvent`까지 토글이 되면 방금 만든 카드가 닫힌다.
+   *  id는 `canonId`로 견준다(낙관적 생성의 임시 id ↔ 서버 id를 같은 것으로 본다). */
+  function selectOrCloseEvent(event: StudioScheduleEvent) {
+    if (editorVisible && selectedEventId !== null && canonId(selectedEventId) === canonId(event.id)) {
+      editorCloseHowRef.current = "cell";
+      setEditorVisible(false);
+      return;
+    }
+    selectEvent(event);
+  }
+
   // (매니저용 태그 토글 `toggleEventTag`와 그 직렬 큐 `queueTagWrite`는 매니저 시트 2종과 함께 철수 —
   //  2026-09-04, ADR-0018. 관리자는 편집 폼 저장으로 태그를 바꾼다.)
 
@@ -6551,7 +6564,7 @@ export function StudioShell({
                         onMouseLeave={(e) => setBandHover(e.currentTarget.closest(".studio-shell"), s.id, false)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          selectEvent(s);
+                          selectOrCloseEvent(s);
                         }}
                         style={{
                           // 날짜 헤더가 --cal-zoom으로 커지므로 띠 시작 높이·레인 간격도 같이

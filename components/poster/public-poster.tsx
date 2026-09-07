@@ -1778,6 +1778,15 @@ export function PublicPoster({
     anim.oncancel = finish;
     window.setTimeout(finish, 380); // 안전망
   };
+  /** 같은 일정을 다시 누르면 닫는다(2026-09-07 소유자 신고: 팝오버가 떠 있는데 그 카드를 다시 눌러도 안 닫혔다).
+   *  다른 일정을 누르면 그쪽으로 바뀐다(지금 동작 유지). 여는 자리가 다섯 곳(PC 카드·떡밥 카드·업도움 띠·
+   *  모바일 카드·모바일 떡밥)이라 판정을 한 곳에 둔다. `true`면 닫았다는 뜻 — 부르는 쪽은 여는 일을 건너뛴다.
+   *  닫기는 `closeAgendaDetailAnimated`로 — 모바일 시트는 탭한 카드 자리로 되돌아가고 PC 팝오버는 즉시 사라진다. */
+  const closeIfSameDetail = (eventId: string, support: boolean, dateKey: string) => {
+    if (!agendaDetail || agendaDetail.event.id !== eventId || agendaDetail.support !== support || agendaDetail.dateKey !== dateKey) return false;
+    closeAgendaDetailAnimated();
+    return true;
+  };
   // 리더선은 '선 로컬 좌표계'로 그린다 — 바깥 <g>가 (앵커점 → 각도)로 옮겨 놓고, 안쪽은
   // x축 위의 수평선일 뿐이다. 그래야 점선 흐름을 stroke-dashoffset(매 프레임 SVG paint)
   // 대신 translateX(컴포지터)로 굴릴 수 있다. 드래그 중에는 x2/y2 대신 이 변환을 갱신한다.
@@ -3137,6 +3146,7 @@ export function PublicPoster({
             bandClickable && !s.supportUrl
               ? (el: HTMLElement) => {
                   hapticTick();
+                  if (closeIfSameDetail(s.id, true, start)) return;
                   const r = el.getBoundingClientRect();
                   detailAnchorElRef.current = el;
                   setDetailManual(null);
@@ -3325,8 +3335,9 @@ export function PublicPoster({
                 // 클릭 = 떡밥 상세 팝오버(공개 시각 + 기대돼요) — 카드에는 카운트다운만(중복 없음).
                 const openTeaserDetail = interactive
                   ? (el: HTMLElement) => {
-                      const r = el.getBoundingClientRect();
                       hapticTick();
+                      if (closeIfSameDetail(event.id, false, cell.isoDate)) return;
+                      const r = el.getBoundingClientRect();
                       detailAnchorElRef.current = el;
                       setDetailManual(null);
                       setAgendaDetail({
@@ -3428,8 +3439,9 @@ export function PublicPoster({
             // 하트 등 내부 컨트롤 클릭은 제외. 꾸미기/캡쳐 모드는 클릭 없음(interactive만).
             const openDesktopDetail = interactive
               ? (el: HTMLElement) => {
-                  const r = el.getBoundingClientRect();
                   hapticTick();
+                  if (closeIfSameDetail(event.id, false, cell.isoDate)) return;
+                  const r = el.getBoundingClientRect();
                   detailAnchorElRef.current = el; // rAF 추적용(스크롤·리사이즈 따라 선·배치 갱신)
                   setDetailManual(null); // 새로 열 때는 항상 카드 옆 자동 배치부터
                   setAgendaDetail({
@@ -3859,6 +3871,7 @@ export function PublicPoster({
                         const openTeaserSheet = interactive
                           ? () => {
                               hapticTick();
+                              if (closeIfSameDetail(event.id, false, cell.isoDate)) return;
                               setAgendaDetail({ event, support: false, dateKey: cell.isoDate });
                             }
                           : null;
@@ -3921,6 +3934,7 @@ export function PublicPoster({
                     // 카드 탭 = 상세 시트(하트·링크 등 내부 컨트롤 탭은 제외).
                     const openDetail = (originEl?: HTMLElement | null) => {
                       hapticTick();
+                      if (closeIfSameDetail(event.id, support, cell.isoDate)) return;
                       agendaDetailOriginRef.current = originEl?.getBoundingClientRect() ?? null;
                       setAgendaDetail({ event, support, dateKey: cell.isoDate });
                     };
