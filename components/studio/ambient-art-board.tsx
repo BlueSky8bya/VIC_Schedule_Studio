@@ -351,6 +351,17 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     if (ok) hapticTick();
   }, []);
 
+  // 아직 안 온 파일들(보이는 자리 기준) — **자리가 아니라 파일** 단위다. 변형이 둘인 자리는 한 장만 와 있을 수 있다
+  // (소나무 -1은 배달, -2는 아직). 자리 단위로 다시 부탁하면 이미 합격한 그림을 다시 만들게 된다.
+  const missingFiles = useMemo(() => {
+    const out: string[] = [];
+    for (const s of visible) {
+      const have = present[s.id] ?? [];
+      for (const f of slotFiles(s)) if (!have.some((p2) => p2.file === f)) out.push(f);
+    }
+    return out;
+  }, [visible, present]);
+
   const phase1 = visible.filter((s) => s.phase === 1);
   const phase2 = visible.filter((s) => s.phase === 2);
   const visibleFiles = visible.reduce((n, s) => n + slotFiles(s).length, 0);
@@ -426,6 +437,23 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               type="button"
             >
               <ClipboardCopy aria-hidden="true" size={14} /> 보이는 것만 — 자리 {visible.length} · 파일 {visibleFiles}
+            </button>
+            <button
+              className="art-btn"
+              data-act="art-prompt-copy-missing"
+              disabled={!missingFiles.length}
+              onClick={() =>
+                void copy(
+                  batchPrompt(visible, `아직 안 온 파일 ${missingFiles.length}장`, {
+                    files: missingFiles,
+                    note: `**이미 배달돼 합격한 파일은 표에 없다.** 화풍의 기준선은 \`public/ambient/art/tree-pine-1.png\` · \`tree-pine-autumn.png\` · \`tree-pine-winter.png\` 세 장이다 — 새 그림은 이 셋과 나란히 놓아 한 세트로 보여야 한다.`
+                  }),
+                  "남은 파일 프롬프트"
+                )
+              }
+              type="button"
+            >
+              <ClipboardCopy aria-hidden="true" size={14} /> 남은 파일만 — {missingFiles.length}장
             </button>
             <button className="art-btn" data-act="art-prompt-copy-1" onClick={() => void copy(codexMasterPrompt(1), "1차 프롬프트")} type="button">
               <ClipboardCopy aria-hidden="true" size={14} /> 1차(초목·지형)

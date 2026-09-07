@@ -73,7 +73,7 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "dandelion-flower", nameKo: "민들레(꽃)", nameEn: "Dandelion, flower", category: "plant", seasons: ["spring"], view: "stand", px: [16, 22], brief: "채도 낮은 크림 노랑 민들레 꽃 한 송이(선명한 노랑 금지), 톱니 잎 셋.", acnhRef: "민들레", now: "procedural", phase: 1 },
   { id: "dandelion-puff", nameKo: "민들레(홀씨)", nameEn: "Dandelion, seed head", category: "plant", seasons: ["spring"], view: "stand", px: [20, 26], brief: "홀씨가 가득 찬 둥근 흰 솜 머리와 가는 줄기. 클릭하면 홀씨가 날아가므로 머리는 또렷한 흰 점들이 보이게.", acnhRef: "민들레 홀씨", now: "procedural", phase: 1 },
   { id: "mushroom", nameKo: "버섯", nameEn: "Mushroom", category: "plant", seasons: ["autumn"], view: "stand", px: [20, 22], variants: 2, brief: "갈색 갓에 크림색 점이 몇 개 찍힌 통통한 버섯(빨간 독버섯 금지 — 밤색·황토). 변형 2개: 하나는 작은 두 송이가 붙었다.", acnhRef: "버섯(가을)", now: "procedural", phase: 1 },
-  { id: "reed", nameKo: "갈대·억새", nameEn: "Reed / silver grass", category: "plant", seasons: ["summer", "autumn", "winter"], view: "stand", px: [30, 70], variants: 4, brief: "물가에 선 갈대 서너 대 — 긴 잎과 갈색 이삭, 살짝 휘었다. 변형 2개.", acnhRef: "물가 풀", now: "procedural", pilot: 2, phase: 1 },
+  { id: "reed", nameKo: "갈대·억새", nameEn: "Reed / silver grass", category: "plant", seasons: ["summer", "autumn", "winter"], view: "stand", px: [30, 70], variants: 4, brief: "물가에 선 갈대 서너 대 — 긴 잎과 갈색 이삭, 살짝 휘었다. **변형 4개**(자리마다 대의 수·키·휜 방향이 달라야 한다 — 물가에 수십 대가 서므로 같은 실루엣 복제는 바로 벽지로 읽힌다). 이번 배치는 표의 파일만.", acnhRef: "물가 풀", now: "procedural", pilot: 2, phase: 1 },
   // 물
   { id: "lilypad", nameKo: "연잎", nameEn: "Lily pad", category: "water", seasons: ["summer"], view: "flat", px: [56, 56], variants: 3, brief: "위에서 본 연잎 — 둥근 잎에 V자 갈라짐 하나, 잎맥이 가운데서 퍼지고 가장자리가 살짝 말려 올라 **두께가 보인다**(가장자리에 옅은 밝은 테 + 아래쪽 어두운 띠). 변형 3개는 갈라진 방향·크기가 다르다.", acnhRef: "연못 연잎", now: "procedural", phase: 1 },
   { id: "lotus", nameKo: "연꽃", nameEn: "Lotus", category: "water", seasons: ["summer"], view: "stand", px: [26, 24], brief: "연잎 위에 핀 연분홍 연꽃 한 송이(채도 낮게).", acnhRef: "연꽃", now: "procedural", phase: 1 },
@@ -83,7 +83,7 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "grass-patch", nameKo: "풀 얼룩", nameEn: "Grass patch", category: "ground", seasons: ["summer"], view: "flat", px: [40, 28], brief: "위에서 본, 주변보다 조금 진한 초록 풀 얼룩(두더지 흙더미가 여름에 풀로 덮인 자리). 가장자리가 부드럽게 번진다.", now: "procedural", phase: 1 },
   { id: "twig", nameKo: "잔가지", nameEn: "Twig", category: "ground", seasons: ["autumn", "winter"], view: "flat", px: [36, 14], variants: 2, brief: "땅에 떨어진 마른 잔가지 — 한 번 갈라지고, 껍질 결이 보인다. 변형 2개.", acnhRef: "나뭇가지(재료)", now: "procedural", phase: 1 },
   { id: "pebble", nameKo: "조약돌", nameEn: "Pebble", category: "ground", seasons: ALL, view: "flat", px: [12, 9], variants: 3, brief: "위에서 본 둥근 조약돌 — 회색·밝은 회갈색, 위쪽에 작은 하이라이트. 변형 3개.", now: "procedural", phase: 1 },
-  { id: "rock", nameKo: "바위", nameEn: "Rock", category: "ground", seasons: ALL, view: "stand", px: [40, 30], variants: 4, brief: "무릎 높이의 둥글둥글한 바위, 이끼가 조금 앉았다. 변형 2개.", acnhRef: "바위", now: "procedural", pilot: 4, phase: 1 },
+  { id: "rock", nameKo: "바위", nameEn: "Rock", category: "ground", seasons: ALL, view: "stand", px: [40, 30], variants: 4, brief: "무릎 높이의 둥글둥글한 바위, 이끼가 조금 앉았다. **변형 4개** — 실루엣 자체가 서로 달라야 한다(넓적·길쭉·모난·둥근). 이끼 자리와 갈라진 금도 각각 다르게. 색만 바꾼 복제 금지.", acnhRef: "바위", now: "procedural", pilot: 4, phase: 1 },
   { id: "stump", nameKo: "그루터기", nameEn: "Stump", category: "ground", seasons: ALL, view: "stand", px: [36, 28], brief: "잘린 나무 그루터기 — 위에 나이테가 보이고 옆면은 껍질.", acnhRef: "그루터기", now: "procedural", phase: 1 },
   { id: "log", nameKo: "통나무", nameEn: "Log", category: "ground", seasons: ["summer", "autumn"], view: "stand", px: [70, 26], brief: "물가에 누운 통나무 한 토막, 한쪽 끝에 나이테.", acnhRef: "통나무", now: "procedural", phase: 1 },
   { id: "snowman-1", nameKo: "눈사람(공 하나)", nameEn: "Snowman, one ball", category: "prop", seasons: ["winter"], view: "stand", px: [44, 30], brief: "막 굴린 큰 눈덩이 하나(눈사람 1단계). 표면에 굴린 자국이 살짝.", acnhRef: "눈덩이", now: "procedural", phase: 1 },
@@ -97,7 +97,7 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "driftwood", nameKo: "유목", nameEn: "Driftwood", category: "ground", seasons: ALL, view: "stand", px: [86, 30], variants: 3, brief: "파도에 씻겨 은회색으로 바랜 나무토막 — 껍질은 벗겨졌고 결이 길게 갈라졌다. 한쪽 끝이 부러져 뾰족하다. 변형 3개는 굽은 방향과 길이가 다르다.", acnhRef: "해변 유목", now: "procedural", phase: 1 },
   { id: "shell-clam", nameKo: "조개껍데기", nameEn: "Clam shell", category: "ground", seasons: ALL, view: "flat", px: [22, 16], variants: 3, brief: "위에서 본 조개껍데기 한 짝 — 크림빛 흰색에 부챗살 결이 방사로 뻗는다. 가장자리에 옅은 모래 그늘. 변형 3개는 크기와 결의 수가 다르다.", acnhRef: "조개(해변 재료)", now: "procedural", phase: 1 },
   { id: "starfish", nameKo: "불가사리", nameEn: "Starfish", category: "ground", seasons: ALL, view: "flat", px: [26, 26], brief: "위에서 본 불가사리 — 팔 다섯, 채도 낮은 살구·모래빛(선명한 주황 금지), 표면에 오톨도톨한 점.", acnhRef: "불가사리", now: "procedural", phase: 1 },
-  { id: "sea-stack", nameKo: "시스택(갯바위 기둥)", nameEn: "Sea stack", category: "ground", seasons: ALL, view: "stand", px: [90, 130], variants: 2, brief: "파도가 깎다 남긴 바위 기둥 — 위로 갈수록 좁고 옆면에 가로 층리, 발치는 늘 젖어 어둡고 흰 따개비 띠가 한 줄. 변형 2개는 기울기가 다르다.", now: "none", pilot: 1, phase: 1 },
+  { id: "sea-stack", nameKo: "시스택(갯바위 기둥)", nameEn: "Sea stack", category: "ground", seasons: ALL, view: "stand", px: [90, 130], variants: 2, brief: "파도가 깎다 남긴 바위 기둥 — 위로 갈수록 좁고 옆면에 가로 층리, 발치는 늘 젖어 어둡고 흰 따개비 띠가 한 줄. 변형 2개는 기울기가 다르다(이번 배치는 1개).", now: "none", pilot: 1, phase: 1 },
   { id: "seaweed-clump", nameKo: "해조 뭉치", nameEn: "Seaweed clump", category: "plant", seasons: ALL, view: "flat", px: [40, 26], variants: 2, brief: "물가에 밀려 올라온 미역·모자반 뭉치 — 젖어서 짙은 올리브·암갈색, 납작하게 눌려 있고 가닥이 몇 갈래 삐져나왔다.", now: "none", phase: 1 },
   { id: "dune-grass", nameKo: "통보리사초", nameEn: "Dune grass", category: "plant", seasons: ALL, view: "stand", px: [34, 44], variants: 3, brief: "모래언덕의 억센 사초 — 뻣뻣하고 곧은 잎 5~7가닥이 위로 벌어지고 끝이 살짝 마른 밀짚색. 밑동에 모래가 조금 쌓였다.", now: "none", phase: 1 },
   { id: "tide-pool", nameKo: "조수 웅덩이", nameEn: "Tide pool", category: "water", seasons: ALL, view: "flat", px: [70, 40], variants: 2, brief: "위에서 본 암반의 물웅덩이 — 주변 바위보다 **어둡고**, 가장자리는 젖은 검은 테, 안쪽에 하늘이 비친 밝은 조각 하나와 짙은 해조 몇 점.", now: "none", phase: 1 },
@@ -292,13 +292,27 @@ export function slotPrompt(s: ArtSlot): string {
     .join("\n");
 }
 
-const promptRow = (s: ArtSlot, pilot: boolean) =>
-  `| ${s.id} | ${(pilot ? pilotFiles(s) : slotFiles(s)).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${s.view} | ${s.px[0]}×${s.px[1]} | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
+/** 이 배치에서 이 자리에 요청할 파일들. `only`가 있으면 그 안의 것만(= 아직 안 온 파일만 다시 부탁할 때). */
+const wantFiles = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) => {
+  const base = pilot ? pilotFiles(s) : slotFiles(s);
+  return only ? base.filter((f) => only.has(f)) : base;
+};
+
+const promptRow = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) =>
+  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${s.view} | ${s.px[0]}×${s.px[1]} | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
 
 /** 배치 프롬프트 — 아무 자리 묶음이나(보드의 필터 결과·파일럿·단계 전체) 코덱스에 통째로 넘길 한 장으로 만든다. */
-export function batchPrompt(slots: readonly ArtSlot[], title: string, opts: { pilot?: boolean; note?: string } = {}): string {
+export function batchPrompt(
+  slots: readonly ArtSlot[],
+  title: string,
+  opts: { pilot?: boolean; note?: string; files?: readonly string[] } = {}
+): string {
   const pilot = !!opts.pilot;
-  const count = slots.reduce((n, s) => n + (pilot ? pilotFiles(s) : slotFiles(s)).length, 0);
+  // `files`가 오면 **그 파일들만** 표에 싣는다 — 이미 배달된 것을 다시 부탁하지 않기 위해서다(보드의 '남은 파일만').
+  // 자리 단위가 아니라 **파일 단위**로 걸러야 한다: 변형이 둘인 자리는 한 장만 와 있을 수 있다(소나무 -1은 왔고 -2는 아직).
+  const only = opts.files ? new Set(opts.files) : undefined;
+  const rows = slots.filter((s) => wantFiles(s, pilot, only).length > 0);
+  const count = rows.reduce((n, s) => n + wantFiles(s, pilot, only).length, 0);
   return `# VIC 계절 배경 아트 — 생성 의뢰(${title})
 
 빅토리 일정표(스트리머 방송 일정 편집실)의 배경은 달력의 달을 따라 봄·여름·가을·겨울로 바뀌는 살아 있는 장면이다.
@@ -308,10 +322,10 @@ export function batchPrompt(slots: readonly ArtSlot[], title: string, opts: { pi
 ${opts.note ? `\n${opts.note}\n` : ""}
 ${ART_STYLE_GUIDE}
 
-## 자리 표(파일 ${count}장 · 자리 ${slots.length}개)
+## 자리 표(파일 ${count}장 · 자리 ${rows.length}개)
 | 자리 id | 파일 이름 | 이름 | 계절 | 카메라 | 화면 크기 | 격자 | 블록 | 그릴 것 |
 |---|---|---|---|---|---|---|---|---|
-${slots.map((s) => promptRow(s, pilot)).join("\n")}
+${rows.map((s) => promptRow(s, pilot, only)).join("\n")}
 
 ## 납품
 - 파일 하나에 물체 하나. 표의 이름을 그대로 파일 이름으로. **1024×1024 정사각 투명 PNG**, 품질 낮음/중간.

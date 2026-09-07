@@ -366,6 +366,11 @@ const ACT: Record<string, TargetLabel> = {
     area: "편집실",
     hint: "/studio/ambient-art(개발자) — 지금 필터에 걸린 자리만 묶어 한 장으로"
   },
+  "art-prompt-copy-missing": {
+    name: "아트 보드 — 남은 파일 프롬프트 복사",
+    area: "편집실",
+    hint: "/studio/ambient-art(개발자) — 보이는 자리 중 아직 안 온 파일만 모아 코덱스에 넘길 프롬프트"
+  },
   "art-prompt-copy-1": { name: "아트 보드 — 1차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 나무·초목·지형·물 자리의 코덱스 마스터 프롬프트" },
   "art-prompt-copy-2": { name: "아트 보드 — 2차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 생물 자리" },
   "art-prompt-copy-all": { name: "아트 보드 — 전체 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자)" },
