@@ -366,6 +366,12 @@ const ACT: Record<string, TargetLabel> = {
     area: "편집실",
     hint: "/studio/ambient-art(개발자) — 지금 필터에 걸린 자리만 묶어 한 장으로"
   },
+  "dev-sky-event": {
+    name: "설정 — 하늘 사건 강제",
+    area: "설정",
+    hint: "개발자 전용. 별똥별·혜성을 쉬지 않고 되풀이해 확인한다(평균 1분·9분을 기다릴 수 없다)"
+  },
+  "showcase-sky-event": { name: "배경 감상 — 하늘 사건 강제", area: "배경 감상", hint: "개발자 전용. 설정 모달의 '하늘 사건'과 같은 상태" },
   "art-prompt-copy-missing": {
     name: "아트 보드 — 남은 파일 프롬프트 복사",
     area: "편집실",

@@ -583,6 +583,19 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
             ]}
             value={f.weather ?? AUTO}
           />
+          {/* 하늘 사건(2026-09-08) — 별똥별 평균 1분, 혜성 9분이라 기다려서는 확인이 안 된다. 고르면 쉬지 않고 되풀이한다.
+              설정 모달의 같은 줄과 **같은 상태**다(world.force) — 두 자리가 어긋나면 안 된다는 규칙(CLAUDE.md 감상 톱니). */}
+          <SetRow<"auto" | "shooting-star" | "comet">
+            dataAct="showcase-sky-event"
+            label="하늘 사건"
+            onPick={(v) => s.world.onChange({ ...f, skyEvent: v === AUTO ? undefined : v })}
+            options={[
+              { value: AUTO, label: "자동", tip: "실제 확률대로" },
+              { value: "shooting-star", label: "별똥별", tip: "밤·맑음에서만" },
+              { value: "comet", label: "혜성", tip: "밤·맑음에서만" }
+            ]}
+            value={f.skyEvent ?? AUTO}
+          />
           <SetRow<GfxPref>
             dataAct="showcase-gfx"
             label="배경 효과"

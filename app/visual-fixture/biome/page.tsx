@@ -9,6 +9,7 @@ import { WEATHER_LABEL, type Weather } from "@/components/shared/ambient/world/w
 // 달력·크롬 없이 캔버스 하나. 파라미터(전부 선택, 기본값 = 초원·봄·점심·맑음·시드 42·t 0):
 //   biome=meadow|forest|mountain|hill|pond|valley|tidal|sandy|rocky|sea|deep
 //   season=spring|summer|autumn|winter   band=dawn|morning|noon|dusk|evening|night   weather=clear|cloud|rain|snow|fog|wind
+//   skyEvent=shooting-star|comet (되풀이 강제 — 드문 하늘 사건을 캡처로 잡을 때)
 //   hour=18.5(KST 소수 시간 — 띠 대신 연속 시각으로 세운다)
 //   seed=42   t=1500(ms, 이 시각의 프레임을 결정적으로)   load=1(여력 0~1)   pointer=x,y(포인터 고정; 없으면 화면 밖)
 //   camera=showcase|plain   y=2026   m=1~12(계절의 대표 달 대신)   day=1~31(달 위상 스윕 — 라운드 6 결정 5)
@@ -29,6 +30,8 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   const biome: BiomeKey = isBiomeKey(sp.biome) ? sp.biome : "meadow";
   const bandParam: DayBand | undefined = (DAY_BANDS as readonly string[]).includes(sp.band ?? "") ? (sp.band as DayBand) : undefined;
   const weather: Weather = sp.weather && sp.weather in WEATHER_LABEL ? (sp.weather as Weather) : "clear";
+  // 하늘 사건 강제(2026-09-08) — 별똥별·혜성은 평균 1분·9분에 한 번이라 캡처로 잡으려면 되풀이시켜야 한다.
+  const skyEvent = sp.skyEvent === "shooting-star" || sp.skyEvent === "comet" ? sp.skyEvent : undefined;
   const seed = Math.round(num(sp.seed, 42, 0, 2 ** 31));
   const t = num(sp.t, 0, 0, 600_000);
   const load = num(sp.load, 1, 0, 1);
@@ -49,7 +52,7 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   return (
     <BiomeFixture
       camera={camera}
-      force={{ biome, band, hour, weather, seed, load, pointer, day, freeze: true, pin: true }}
+      force={{ biome, band, hour, weather, seed, load, pointer, day, skyEvent, freeze: true, pin: true }}
       month={month}
       season={season}
       t={t}

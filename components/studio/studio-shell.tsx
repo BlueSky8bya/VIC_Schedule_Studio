@@ -969,7 +969,8 @@ export function StudioShell({
     setDevSeason(season);
   };
   const worldForce =
-    ambientWorldForce ?? (effectiveRole === "developer" && (devWorld.band || devWorld.weather || devWorld.biome) ? devWorld : undefined);
+    ambientWorldForce ??
+    (effectiveRole === "developer" && (devWorld.band || devWorld.weather || devWorld.biome || devWorld.skyEvent) ? devWorld : undefined);
   const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
   useEffect(() => {
     const read = () => setAmbientModeState(ambientMode());

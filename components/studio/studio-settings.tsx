@@ -262,6 +262,26 @@ export function StudioSettingsList({
               value={devWorld.force.weather ?? "real"}
             />
           </div>
+          {/* 하늘 사건(2026-09-08) — 별똥별은 평균 1분, 혜성은 9분에 한 번이라 **기다려서는 확인할 수 없다.**
+              고르면 그 사건이 쉬지 않고 되풀이되고, 되풀이마다 자리·방향·변형이 바뀐다.
+              둘 다 밤·맑은 하늘에서만 뜨므로 위의 월드 시간대·날씨를 함께 맞춰야 보인다. */}
+          <div className="role-help-haptics rhh-ambient rhh-dev" title="밤 · 맑음/바람에서만 보인다">
+            <span className="rhh-label">
+              <Sparkles aria-hidden="true" size={14} />
+              하늘 사건 <em className="rhh-dev-tag">개발자</em>
+            </span>
+            <RhhSelect<"real" | "shooting-star" | "comet">
+              ariaLabel="하늘 사건 강제(개발자)"
+              dataAct="dev-sky-event"
+              onChange={(v) => devWorld.onChange({ ...devWorld.force, skyEvent: v === "real" ? undefined : v })}
+              options={[
+                { value: "real", label: "자동" },
+                { value: "shooting-star", label: "별똥별 계속" },
+                { value: "comet", label: "혜성 계속" }
+              ]}
+              value={devWorld.force.skyEvent ?? "real"}
+            />
+          </div>
           {/* 계절 배경 아트 보드(2026-09-04) — 배경의 모든 그림 자리(나무·초목·지형·생물)와 코덱스 프롬프트를 한 라우트에서 관리한다. 개발자 전용 라우트. */}
           <div className="role-help-haptics rhh-ambient rhh-dev">
             <span className="rhh-label">

@@ -11,7 +11,7 @@ import type { Light } from "./light";
 import { horizonY } from "./view";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
 import { ArtSet, drawArt, type ArtSprite } from "@/components/shared/ambient/art/load";
-import { skyEventAt } from "./sky-events";
+import { skyEventAt, type SkyEventKind } from "./sky-events";
 
 // 하늘의 그림 자리(2026-09-08) — 해·달 여덟 위상·구름 네 갈래. 파일이 있으면 그림을, 없으면 아래의 코드 도형을 쓴다
 // (다른 자리와 같은 규칙, ADR-0017 ⑮). 하늘은 장면마다 굽히므로 **모듈 하나에 ArtSet 하나**를 두고 공유한다.
@@ -552,6 +552,8 @@ export type SkyFrame = {
   date: { y: number; m: number; d: number };
   /** 여력 0~1 — 드문 하늘 사건(별똥별·혜성)이 약한 기기에서 먼저 접히게. 없으면 1로 본다. */
   load?: number;
+  /** 개발자 강제 — 이 종류의 하늘 사건을 쉬지 않고 되풀이한다(설정·감상 톱니의 '하늘 사건'). */
+  skyEvent?: SkyEventKind | null;
 };
 
 /** 해의 화면 y — 고도 0°면 지평선(maxY) 바로 위, 18° 이상이면 하늘의 위쪽 40% 지점. */
@@ -569,7 +571,7 @@ function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed
   const t = f.t;
   const load = f.load ?? 1;
   // ── 혜성 — 아주 느리게 가로지른다. 오래 떠 있어 "지나가는 중"을 알아볼 시간이 있다.
-  const cm = skyEventAt(seed, "comet", t, load);
+  const cm = skyEventAt(seed, "comet", t, load, f.skyEvent);
   const cSpr = cm ? skyArt.pick("comet", cm.r[2]) : null;
   if (cm && cSpr) {
     const dir = cm.r[0] < 0.5 ? 1 : -1; // 오른쪽으로 가나 왼쪽으로 가나
@@ -585,7 +587,7 @@ function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed
     g.restore();
   }
   // ── 별똥별 — 1초 남짓, 대각으로 떨어지며 꼬리가 늦게 사라진다.
-  const st = skyEventAt(seed, "shooting-star", t, load);
+  const st = skyEventAt(seed, "shooting-star", t, load, f.skyEvent);
   const sSpr = st ? skyArt.pick("shooting-star", st.r[2]) : null;
   if (st && sSpr) {
     const dir = st.r[0] < 0.5 ? 1 : -1;

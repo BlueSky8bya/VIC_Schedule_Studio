@@ -63,9 +63,17 @@ function stream(seed: number, kind: SkyEventKind, t: number): Stream {
   return s;
 }
 
-/** 지금 t에 떠 있는 사건(없으면 null). 겹치지 않는다 — 간격이 지속 시간보다 늘 길다. */
-export function skyEventAt(seed: number, kind: SkyEventKind, t: number, load: number): SkyEvent | null {
+/** 지금 t에 떠 있는 사건(없으면 null). 겹치지 않는다 — 간격이 지속 시간보다 늘 길다.
+ *  `forced`가 이 종류면 **쉬지 않고 되풀이한다**(개발자 강제) — 평균 9분을 기다려 확인할 수는 없다.
+ *  되풀이할 때마다 자리·방향·변형이 달라져 여러 경우를 한자리에서 본다. */
+export function skyEventAt(seed: number, kind: SkyEventKind, t: number, load: number, forced?: SkyEventKind | null): SkyEvent | null {
   const spec = SKY_EVENTS[kind];
+  if (forced) {
+    if (forced !== kind || t <= 0) return null;
+    const cycle = Math.floor(t / spec.dur);
+    const r = rng((seed * 2654435761 + cycle * 40503 + kind.length * 7919) >>> 0);
+    return { u: (t % spec.dur) / spec.dur, r: [r(), r(), r(), r()] };
+  }
   if (load < spec.minLoad || t <= 0) return null;
   const s = stream(seed, kind, t);
   // 뒤에서부터 훑는다 — 활성 사건은 언제나 표의 끝 근처다.
