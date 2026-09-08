@@ -6,6 +6,7 @@
 // 앞으로 생길 설정은 여기에만 추가. data-act 키는 예전 그대로(인사이트 집계 연속).
 // (멤버 관리는 2026-09-04 기능 철수 — ADR-0018.)
 
+import Link from "next/link";
 import { Eye, Gauge, Leaf, Palette, Sparkles, Vibrate } from "lucide-react";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
@@ -288,9 +289,9 @@ export function StudioSettingsList({
               <Palette aria-hidden="true" size={14} />
               배경 아트 보드 <em className="rhh-dev-tag">개발자</em>
             </span>
-            <a className="rhh-link" data-act="dev-art-board-open" href="/studio/ambient-art">
+            <Link className="rhh-link" data-act="dev-art-board-open" href="/studio/ambient-art">
               열기
-            </a>
+            </Link>
           </div>
         </>
       ) : null}

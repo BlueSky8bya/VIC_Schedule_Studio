@@ -145,8 +145,9 @@ describe("ambient/art — 도트 예산과 표면 배분(2026-09-08 소유자 �
   });
 
   it("바위 브리프는 이끼를 변형 하나로만 제한한다(마른 해안·눈밭에도 깔린다)", () => {
+    // 2026-09-08: 변형 4 → 8(PLAN-009)이라 배분 문구도 여덟 장 기준으로 다시 썼다.
     const rock = ART_SLOTS.find((s) => s.id === "rock")!;
-    expect(rock.brief).toContain("이끼는 하나에만");
+    expect(rock.brief).toContain("이끼는 여덟 중 하나뿐이다");
     // 이끼가 기본값처럼 읽히던 옛 문구가 되살아나면 실패한다.
     expect(rock.brief).not.toContain("이끼가 조금 앉았다");
   });

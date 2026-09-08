@@ -1068,3 +1068,287 @@ html[data-reduce-motion] .art-card:hover .art-cell canvas {
   text-align: right;
 }
 /* 도감 모드에서 장식 갈래는 표가 아니라 카드 그대로 — 월별 칸이 없는 것들이라 표로 만들면 빈 칸만 는다. */
+
+/* ── 자리 상세(2026-09-08, PLAN-009 P3) ─────────────────────────────────────────────────
+   소유자: "변형들도 한 번 해당 엔티티 버튼 누르면 같이 관리할 수 있는 라우팅."
+   목록과 **같은 토큰**(--ab-*)을 쓴다 — 새 팔레트를 만들면 한 기능이 두 어법이 된다. */
+.artslot {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 22px 64px;
+  color: var(--ab-ink);
+  display: grid;
+  gap: var(--ab-gap);
+}
+.artslot-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+.artslot-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.artslot-title h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.artslot-id {
+  color: var(--ab-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+/* 진행 — 숫자 하나가 아니라 **분수**로. 8칸 중 3장은 "3/8"이 가장 빠르게 읽힌다. */
+.artslot-progress {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ab-line);
+  background: var(--ab-card);
+  font-variant-numeric: tabular-nums;
+}
+.artslot-progress strong {
+  font-size: 17px;
+}
+.artslot-progress span {
+  color: var(--ab-soft);
+  font-size: 13px;
+}
+.artslot-progress[data-state="done"] {
+  border-color: color-mix(in srgb, var(--ab-ok) 32%, var(--ab-line));
+  background: var(--ab-ok-soft);
+  color: var(--ab-ok);
+}
+.artslot-progress[data-state="partial"] {
+  border-color: color-mix(in srgb, var(--ab-warn) 32%, var(--ab-line));
+  background: var(--ab-warn-soft);
+  color: var(--ab-warn);
+}
+
+/* 변형 칸 — **빈 칸이 보여야 한다.** 온 것은 흰 카드, 안 온 것은 점선 + 대체물이 옅게. */
+.artslot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.artslot-cell {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--ab-r);
+  border: 1px solid var(--ab-line);
+  background: var(--ab-card);
+  transition:
+    transform 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+.artslot-cell[data-state="todo"] {
+  border-style: dashed;
+  border-color: var(--ab-line-strong);
+  background: transparent;
+}
+.artslot-cell[data-state="todo"] .artslot-thumb {
+  opacity: 0.45;
+}
+.artslot-thumb {
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+  border-radius: 12px;
+  background: repeating-conic-gradient(#f4f3f8 0% 25%, #fff 0% 50%) 0 0 / 14px 14px;
+}
+.artslot-thumb img,
+.artslot-thumb canvas {
+  image-rendering: pixelated;
+}
+.artslot-cellmeta {
+  display: grid;
+  gap: 2px;
+  font-size: 11.5px;
+}
+.artslot-cellmeta code {
+  font-size: 11px;
+  color: var(--ab-ink);
+  overflow-wrap: anywhere;
+}
+.artslot-cellmeta span {
+  color: var(--ab-soft);
+}
+.artslot-todo {
+  color: var(--ab-warn);
+}
+
+/* 규격 — 코덱스에 부탁할 때 필요한 수가 전부 한 자리에. */
+.artslot-spec,
+.artslot-brief {
+  padding: 16px 18px;
+  border-radius: var(--ab-r);
+  border: 1px solid var(--ab-line);
+  background: var(--ab-card);
+}
+.artslot-spec h2,
+.artslot-brief h2 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--ab-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.artslot-spec dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px 18px;
+}
+.artslot-spec dl > div {
+  display: grid;
+  gap: 2px;
+}
+.artslot-spec dt {
+  font-size: 11.5px;
+  color: var(--ab-soft);
+}
+.artslot-spec dd {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.artslot-spec dd em {
+  font-style: normal;
+  color: var(--ab-soft);
+  font-size: 12px;
+}
+.artslot-why {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--ab-line);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.artslot-why em {
+  display: block;
+  font-style: normal;
+  color: var(--ab-soft);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.artslot-warn {
+  color: var(--ab-warn);
+  font-weight: 600;
+}
+.artslot-brief p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+.artslot-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* 같은 범주 건너뛰기 — 목록으로 나갔다 들어오는 왕복을 없앤다. */
+.artslot-siblings {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.artslot-siblings a {
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--ab-line);
+  background: var(--ab-card);
+  color: var(--ab-soft);
+  font-size: 12px;
+  text-decoration: none;
+  transition:
+    color 0.18s var(--ease),
+    border-color 0.18s var(--ease);
+}
+.artslot-siblings a:hover {
+  color: var(--ab-ink);
+  border-color: var(--ab-line-strong);
+}
+.artslot-siblings a[data-here="1"] {
+  background: var(--ab-accent-soft);
+  border-color: color-mix(in srgb, var(--ab-accent) 30%, var(--ab-line));
+  color: var(--ab-accent);
+}
+
+@media (min-width: 641px) {
+  .artslot-cell:hover {
+    transform: translateY(-2px);
+    border-color: var(--ab-line-strong);
+  }
+}
+@media (max-width: 640px) {
+  .artslot {
+    padding: 14px 14px 56px;
+  }
+  .artslot-top {
+    grid-template-columns: auto 1fr;
+    row-gap: 10px;
+  }
+  .artslot-progress {
+    grid-column: 2;
+    justify-self: end;
+  }
+  .artslot-grid {
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  }
+}
+
+/* 카드 제목 = 자리 상세 진입점(PLAN-009 P3). 이름이 곧 링크라 별도 버튼을 더하지 않는다. */
+.art-open {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 8px;
+  outline-offset: 3px;
+}
+.art-open:hover strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+/* 빈 변형 칸 — 대체물을 여기 그리지 않는다(`previewOf`는 캔버스 노드 하나를 돌려줘 여러 칸이 서로 뺏는다).
+   "지금 화면"은 규격 칸에 한 번만 보여 준다. */
+.artslot-blank {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--ab-line-strong);
+  opacity: 0.7;
+}
+.artslot-nowcell dd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.artslot-nowart {
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 4px;
+  border-radius: 10px;
+  background: repeating-conic-gradient(#f4f3f8 0% 25%, #fff 0% 50%) 0 0 / 12px 12px;
+}
+.artslot-nowart img,
+.artslot-nowart canvas {
+  image-rendering: pixelated;
+  max-width: 60px;
+  max-height: 60px;
+}
+.artslot-brief strong {
+  font-weight: 650;
+}

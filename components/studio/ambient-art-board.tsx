@@ -13,6 +13,8 @@
 import type React from "react";
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import type { Route } from "next";
 import { ArrowLeft, BookOpen, Check, ClipboardCopy, Image as ImageIcon, LayoutGrid, List, Search } from "lucide-react";
 import "./ambient-art-board.css";
 import {
@@ -265,7 +267,9 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
     >
       <div className="art-card-title">
         <div>
-          <strong>{slot.nameKo}</strong> <code>{slot.id}</code>
+          <Link className="art-open" data-act="art-slot-open" href={`/studio/ambient-art/${slot.id}` as Route} prefetch={false}>
+            <strong>{slot.nameKo}</strong> <code>{slot.id}</code>
+          </Link>
           {slot.pilot ? (
             <span className="art-pilot" title={`파일럿 배치 — 이번에 만들 ${slot.pilot}장: ${pf.join(", ")}`}>
               파일럿 {pfDone}/{slot.pilot}
