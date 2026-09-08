@@ -48,7 +48,24 @@ if (!family) {
   process.exit(1);
 }
 const dir = path.resolve(root, flag("dir", "public/ambient/art"));
-const baseDir = flag("baseline") ? path.resolve(root, flag("baseline")) : null;
+let baseDir = flag("baseline") ? path.resolve(root, flag("baseline")) : null;
+
+// `--baseline git` — **커밋된 판**을 기준선으로 쓴다. 납품물은 보통 합격본과 **같은 폴더에** 떨어지므로
+// (`public/ambient/art/`에 -2~-8을 넣으면 -1이 그 옆에 있다) 폴더로는 둘을 가를 수 없다. 커밋 여부가 가른다:
+// 커밋된 것 = 이미 합격해 화면에 쓰이던 것, 커밋 안 된 것 = 이번에 들어온 것.
+if (flag("baseline") === "git") {
+  const { execFileSync } = require("node:child_process");
+  const rel = path.relative(root, dir).split(path.sep).join("/");
+  baseDir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "art-base-"));
+  const listed = execFileSync("git", ["ls-tree", "--name-only", "HEAD", `${rel}/`], { cwd: root, encoding: "utf8" })
+    .split(String.fromCharCode(10)).map((v) => v.trim()).filter((v) => v.endsWith(".png"));
+  for (const f of listed) {
+    const name = path.basename(f);
+    if (!name.startsWith(family)) continue;
+    const buf = execFileSync("git", ["show", `HEAD:${f}`], { cwd: root, maxBuffer: 1 << 28 });
+    fs.writeFileSync(path.join(baseDir, name), buf);
+  }
+}
 
 // ── 계측 ─────────────────────────────────────────────────────────────────────────────────────
 const NORM_W = 240; // 비교용 공통 폭
@@ -237,7 +254,29 @@ function structure({ g, GW, GH, block }) {
     gaps++;
   }
 
-  // ③ 갇힌 얼룩 — **한 가지 색으로만** 둘러싸인 작은 색 덩어리. 소유자가 "구멍이 뻥 뚫렸다"고 부르는 것이
+  // ③ 눈이 **몸 위에 있는가, 테두리에 둘렀는가.** 눈 칸 중 실루엣 경계에 닿은 비율.
+  //    "눈이 몸의 20% 이상"만 걸면 **윤곽을 따라 흰 테를 두르는 것으로도 충족된다** — 3차 납품이 실제로 그랬다
+  //    (합격본 21%, 납품본 38~45%). 눈은 단 윗면을 덮는 것이지 나무에 후광을 씌우는 것이 아니다.
+  let snowCells = 0, snowEdge = 0;
+  for (let i = 0; i < g.length; i++) {
+    if (!g[i] || !isSnowCell(g[i])) continue;
+    snowCells++;
+    const x = i % GW, y = (i / GW) | 0;
+    const open = [x > 0 ? i - 1 : null, x < GW - 1 ? i + 1 : null, y > 0 ? i - GW : null, y < GH - 1 ? i + GW : null]
+      .some((j) => j === null || !g[j]);
+    if (open) snowEdge++;
+  }
+
+  // ④ 밑동이 **한 덩이인가.** 아래 12% 높이의 한 줄에서 불투명 덩어리가 몇 개로 갈라지는가.
+  //    3차 납품은 줄기가 게 다리처럼 서너 갈래로 갈라져 내려왔다(합격본 1가닥, 납품본 3가닥).
+  let trunkRuns = 0;
+  for (let y = Math.floor(GH * 0.88); y < GH; y++) {
+    let runs = 0, prev = false;
+    for (let x = 0; x < GW; x++) { const on = !!g[y * GW + x]; if (on && !prev) runs++; prev = on; }
+    if (runs > trunkRuns) trunkRuns = runs;
+  }
+
+  // ⑤ 갇힌 얼룩 — **한 가지 색으로만** 둘러싸인 작은 색 덩어리. 소유자가 "구멍이 뻥 뚫렸다"고 부르는 것이
   //    대개 이것이다(알파 구멍은 실제로 0이었다 — 배경이 비치는 게 아니라 속에 남의 색이 박혀 있다).
   const seen = new Uint8Array(g.length);
   let blob = 0;
@@ -260,7 +299,7 @@ function structure({ g, GW, GH, block }) {
   let lumSum = 0;
   for (let i = 0; i < g.length; i++) if (g[i]) lumSum += lum(g[i]);
   const bright = body ? lumSum / body > 190 : false;
-  return { block, body, bright, orphanPct: body ? (orphan / body) * 100 : 0, blobPer1k: body ? (blob / body) * 1000 : 0, edgeDarkPct: edge ? (edgeDark / edge) * 100 : 0, gaps };
+  return { block, body, bright, snowEdgePct: snowCells ? (snowEdge / snowCells) * 100 : null, trunkRuns, orphanPct: body ? (orphan / body) * 100 : 0, blobPer1k: body ? (blob / body) * 1000 : 0, edgeDarkPct: edge ? (edgeDark / edge) * 100 : 0, gaps };
 }
 
 // ── 파일 모으기 ──────────────────────────────────────────────────────────────────────────────
@@ -335,7 +374,8 @@ for (const slot of slots) for (const n of Object.keys(M[slot]).sort((a, b) => a 
 
 console.log(`\n■ 구조 결함 — 생성기가 "다 됐다"고 하고 남기는 것 (합격본 대비: 고아 +5%p · 얼룩 +8 · 외곽선 −8%p · 끊긴 곳 +6 이내)`);
 console.log(`  고아 = 이웃 넷 중 같은 색이 없는 칸(잡티) · 얼룩 = 한 색에만 둘러싸인 작은 덩어리(속 "구멍") · 외곽선 = 경계 칸이 안쪽보다 어두운 비율`);
-console.log(pad("파일", 28) + pad("도트", 6) + pad("몸통칸", 8) + pad("고아", 9) + pad("얼룩/천칸", 11) + pad("외곽선", 8) + "끊긴곳");
+console.log(`  밑동 = 맨 아래 줄이 몇 갈래인가(게 다리처럼 갈라졌나) · 눈이 테두리에 = 눈 칸 중 실루엣 가장자리에 붙은 비율(높으면 후광을 두른 것)`);
+console.log(pad("파일", 28) + pad("도트", 6) + pad("몸통칸", 8) + pad("고아", 9) + pad("얼룩/천칸", 11) + pad("외곽선", 8) + pad("끊긴곳", 8) + pad("밑동", 6) + "눈이 테두리에");
 let sawSmall = false;
 for (const slot of slots) for (const n of Object.keys(M[slot]).sort((a, b) => a - b)) {
   const st = M[slot][n].st;
@@ -347,11 +387,15 @@ for (const slot of slots) for (const n of Object.keys(M[slot]).sort((a, b) => a 
   // 몸통 100칸짜리 바위, 길고 옅은 새털구름이 모두 "결함"으로 잡혔지만 셋 다 합격한 그림이다.
   const bad = bs && bs !== st
     ? st.orphanPct > bs.orphanPct + 5 || st.blobPer1k > bs.blobPer1k + 8 || (!st.bright && (st.edgeDarkPct < bs.edgeDarkPct - 8 || st.gaps > bs.gaps + 6))
+      // 밑동이 합격본보다 더 갈라졌거나, 눈이 합격본보다 훨씬 더 테두리에 몰렸으면 반려.
+      // 이 둘은 3차 납품이 **재는 항목을 다 통과하고도** 틀렸던 자리다 — 재지 않으면 다음에도 같은 곳이 뚫린다.
+      || st.trunkRuns > bs.trunkRuns || (st.snowEdgePct !== null && bs.snowEdgePct !== null && st.snowEdgePct > bs.snowEdgePct + 10)
     : !small && (st.orphanPct > 30 || st.blobPer1k > 60 || (!st.bright && st.edgeDarkPct < 65));
   console.log(
     pad(path.basename(M[slot][n].file), 28) + pad(`${st.block}px`, 6) + pad(st.body, 8) +
     pad(`${p1(st.orphanPct)}%${small ? "*" : ""}`, 9) + pad(p1(st.blobPer1k), 11) +
-    pad(st.bright ? "밝음—" : `${p1(st.edgeDarkPct)}%`, 8) + (st.bright ? "-" : st.gaps) + warn(bad) + tag(slot, n)
+    pad(st.bright ? "밝음—" : `${p1(st.edgeDarkPct)}%`, 8) + pad(st.bright ? "-" : st.gaps, 8) +
+    pad(`${st.trunkRuns}가닥`, 6) + pad(st.snowEdgePct === null ? "-" : `${p1(st.snowEdgePct)}%`, 8) + warn(bad) + tag(slot, n)
   );
 }
 if (slots.some((s2) => Object.values(M[s2]).some((r) => r.st.bright))) console.log("  밝음— = 옅은 흰 물체(새털구름 등) — 경계가 안쪽보다 어두울 수 없다. 외곽선은 재지 않는다.");
