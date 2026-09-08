@@ -13,6 +13,9 @@ const resolved = new Map<string, ArtSprite | null>(); // key = `${file}@${scale}
 const pending = new Map<string, Promise<ArtSprite | null>>();
 
 function fetchImage(url: string): Promise<HTMLImageElement | null> {
+  // 브라우저가 아니면 그림이 없다. 단위 테스트가 `sky.ts`를 부르면 모듈 최상단의 `new ArtSet(...)`이 곧바로 여기까지 오는데,
+  // node에는 `Image`가 없어 **처리되지 않은 거부**로 터진다 — vitest가 "false positive를 만들 수 있다"고 경고하는 그 소음이다.
+  if (typeof Image === "undefined") return Promise.resolve(null);
   beginLoad(); // 검증 하네스의 '준비됐나' 신호(loading.ts) — 성공·실패 어느 쪽이든 endLoad
   return new Promise((resolve) => {
     const im = new Image();

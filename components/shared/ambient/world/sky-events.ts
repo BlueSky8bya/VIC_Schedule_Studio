@@ -92,3 +92,18 @@ export function skyEventSchedule(seed: number, kind: SkyEventKind, until: number
   const s = stream(seed, kind, until);
   return s.starts.filter((t0, i) => t0 <= until && s.used[i]);
 }
+
+/** 그림 자체가 향한 쪽(머리 = 밝은 핵) — 배달본 넷을 실측한 값(2026-09-08).
+ *  넷 다 머리가 오른쪽이고 축이 16° 남짓 위로 누워 있다. 이 값을 모르면 꼬리를 진행 방향에 맞출 수 없다. */
+export const ART_HEADING: Record<SkyEventKind, number> = {
+  "shooting-star": (-16.2 * Math.PI) / 180,
+  comet: (-16.9 * Math.PI) / 180
+};
+
+/** 꼬리를 진행 방향에 맞추는 회전각. 안 맞으면 별똥별이 **가는 쪽과 다른 쪽으로 꼬리를 끌고** 간다(2026-09-08 소유자 지적: 39° 어긋나 있었다).
+ *  그림의 머리가 오른쪽이라 왼쪽으로 갈 때는 뒤집어서 위아래를 지키고, 남은 각도만 회전으로 채운다.
+ *  `drawArt`가 **rotate → scale(flip)** 순서라 뒤집힌 스프라이트의 최종 각도는 `rot + (π − art)`다 — 부호를 틀려도 화면에서는
+ *  "그럴듯하게 기울어" 보이므로 눈으로 못 잡는다. 그래서 순수 함수로 빼서 테스트로 못 박는다. */
+export function aimSprite(travel: number, art: number, flipX: boolean): number {
+  return flipX ? travel - Math.PI + art : travel - art;
+}

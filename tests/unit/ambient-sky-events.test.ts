@@ -4,7 +4,7 @@
 //  ② **드묾의 실제 값** — "가끔"은 감각어라 코드로는 평균 간격으로만 말할 수 있다. 너무 잦으면 싸구려가 되고
 //     너무 드물면 그린 그림을 아무도 못 본다(첫 판의 혜성 18분이 그랬다).
 import { describe, expect, it } from "vitest";
-import { SKY_EVENTS, skyEventAt, skyEventSchedule, type SkyEventKind } from "@/components/shared/ambient/world/sky-events";
+import { aimSprite, ART_HEADING, SKY_EVENTS, skyEventAt, skyEventSchedule, type SkyEventKind } from "@/components/shared/ambient/world/sky-events";
 
 const KINDS: SkyEventKind[] = ["shooting-star", "comet"];
 
@@ -82,5 +82,31 @@ describe("world/sky-events — 밤하늘의 드문 사건", () => {
     expect(skyEventAt(seed, "comet", t0 + dur * 0.25, 1)?.u).toBeCloseTo(0.25, 2);
     expect(skyEventAt(seed, "comet", t0 + dur * 0.75, 1)?.u).toBeCloseTo(0.75, 2);
     expect(skyEventAt(seed, "comet", t0 + dur + 0.1, 1)).toBeNull();
+  });
+});
+
+describe("world/sky-events — 꼬리는 진행 방향을 따른다", () => {
+  // `drawArt`가 실제로 하는 합성: translate → rotate(rot) → scale(flip ? -k : k, k).
+  // 뒤집기가 **회전 뒤에** 오므로 스프라이트 고유각 art는 뒤집혔을 때 (π − art)가 된다.
+  const finalAngle = (rot: number, art: number, flip: boolean) => {
+    const a = flip ? rot + Math.PI - art : rot + art;
+    return Math.atan2(Math.sin(a), Math.cos(a)); // −π~π로 정규화
+  };
+
+  it("어느 방향으로 가든 그림의 머리가 진행 방향을 향한다", () => {
+    for (const art of [ART_HEADING.comet, ART_HEADING["shooting-star"], 0, 0.7]) {
+      for (const travel of [0, Math.PI, 0.397, Math.PI - 0.397, -0.8, 2.6]) {
+        for (const flip of [false, true]) {
+          const got = finalAngle(aimSprite(travel, art, flip), art, flip);
+          const want = Math.atan2(Math.sin(travel), Math.cos(travel));
+          expect(got, `art=${art} travel=${travel} flip=${flip}`).toBeCloseTo(want, 6);
+        }
+      }
+    }
+  });
+
+  it("납품된 그림은 머리가 오른쪽이다 — 왼쪽으로 갈 때만 뒤집는다는 전제", () => {
+    // |고유각| < 90°면 머리가 오른쪽(+x)을 향한다. 이게 깨지면 `flip = dir < 0` 규칙이 통째로 뒤집혀야 한다.
+    for (const kind of KINDS) expect(Math.abs(ART_HEADING[kind]), kind).toBeLessThan(Math.PI / 2);
   });
 });

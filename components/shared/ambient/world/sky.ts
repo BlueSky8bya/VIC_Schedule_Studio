@@ -11,7 +11,7 @@ import type { Light } from "./light";
 import { horizonY } from "./view";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
 import { ArtSet, drawArt, type ArtSprite } from "@/components/shared/ambient/art/load";
-import { skyEventAt, type SkyEventKind } from "./sky-events";
+import { aimSprite, ART_HEADING, skyEventAt, type SkyEventKind } from "./sky-events";
 
 // 하늘의 그림 자리(2026-09-08) — 해·달 여덟 위상·구름 네 갈래. 파일이 있으면 그림을, 없으면 아래의 코드 도형을 쓴다
 // (다른 자리와 같은 규칙, ADR-0017 ⑮). 하늘은 장면마다 굽히므로 **모듈 하나에 ArtSet 하나**를 두고 공유한다.
@@ -578,12 +578,15 @@ function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed
     const y = maxY * (0.16 + cm.r[1] * 0.42);
     const span = w * 1.25;
     const x = dir > 0 ? -w * 0.15 + span * cm.u : w * 1.15 - span * cm.u;
-    const k = (maxY * (0.24 + cm.r[3] * 0.1)) / cSpr.h;
+    // 크기는 별똥별과 같은 급(2026-09-08 소유자: "혜성은 크기가 왜 이리 커"). 혜성이 혜성인 것은 크기가 아니라
+    // **26초 동안 천천히 건너간다**는 데 있다 — 하늘의 3분의 1을 차지하면 그림이 아니라 배너가 된다.
+    const k = (maxY * (0.085 + cm.r[3] * 0.03)) / cSpr.h;
     // 나타나고 사라지는 것도 천천히 — 양 끝 18%에서 페이드.
     const a = Math.min(1, Math.min(cm.u, 1 - cm.u) / 0.18);
+    const flip = dir < 0;
     g.save();
     g.globalAlpha *= 0.85 * a;
-    drawArt(g, cSpr, Math.round(x), Math.round(y), k, 0, dir < 0);
+    drawArt(g, cSpr, Math.round(x), Math.round(y), k, aimSprite(dir > 0 ? 0 : Math.PI, ART_HEADING.comet, flip), flip);
     g.restore();
   }
   // ── 별똥별 — 1초 남짓, 대각으로 떨어지며 꼬리가 늦게 사라진다.
@@ -594,16 +597,18 @@ function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed
     const x0 = w * (0.08 + st.r[1] * 0.84);
     const y0 = maxY * (0.06 + st.r[3] * 0.3);
     const len = w * 0.16;
+    const slope = 0.42; // 내려가는 기울기 — 꼬리 각도가 여기서 나온다
     // 감속하며 흐른다(ease-out) — 등속으로 그으면 선 하나가 미끄러지는 것으로 보인다.
     const e = 1 - Math.pow(1 - st.u, 2.2);
     const x = x0 + dir * len * e;
-    const y = y0 + len * 0.42 * e;
+    const y = y0 + len * slope * e;
     const k = (maxY * 0.09) / sSpr.h;
     // 앞머리에서 밝고 끝에서 빠르게 스러진다.
     const a = st.u < 0.18 ? st.u / 0.18 : Math.pow(1 - (st.u - 0.18) / 0.82, 1.6);
+    const flip = dir < 0;
     g.save();
     g.globalAlpha *= a;
-    drawArt(g, sSpr, Math.round(x), Math.round(y), k, 0, dir < 0);
+    drawArt(g, sSpr, Math.round(x), Math.round(y), k, aimSprite(Math.atan2(slope, dir), ART_HEADING["shooting-star"], flip), flip);
     g.restore();
   }
 }
