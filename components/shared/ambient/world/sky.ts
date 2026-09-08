@@ -15,7 +15,7 @@ import { aimSprite, ART_HEADING, skyEventAt, type SkyEventKind } from "./sky-eve
 
 // 하늘의 그림 자리(2026-09-08) — 해·달 여덟 위상·구름 네 갈래. 파일이 있으면 그림을, 없으면 아래의 코드 도형을 쓴다
 // (다른 자리와 같은 규칙, ADR-0017 ⑮). 하늘은 장면마다 굽히므로 **모듈 하나에 ArtSet 하나**를 두고 공유한다.
-const skyArt = new ArtSet(["sun-disc", "moon-phase", "cloud-low", "cloud-mid", "cloud-high", "cloud-storm", "comet", "shooting-star"]);
+const skyArt = new ArtSet(["sun-disc", "moon-phase", "cloud-low", "cloud-mid", "cloud-high", "cloud-wisp", "cloud-storm", "comet", "shooting-star"]);
 /** 굽기 키에 섞을 아트 판(늦게 도착하면 값이 올라 하늘·구름이 한 번 다시 구워진다). */
 export const skyArtVersion = () => skyArt.version;
 
@@ -247,9 +247,13 @@ export function bakeClouds(
         const y = bandTop + (0.08 + r() * 0.88) * (bandBot - bandTop) * (near ? 0.9 : 1);
         // 칸마다 하나씩, 칸 안에서도 앞쪽 절반에만 — 뒤쪽 절반이 빈칸으로 남아 줄이 이어지지 않는다.
         const x0 = i * slot + r() * slot * 0.5;
-        const cw2 = lw * (near ? 0.18 + r() * 0.1 : 0.13 + r() * 0.09);
-        const spr = skyArt.pick("cloud-high", r());
+        // 길이는 **두 자리를 섞어** 낸다(2026-09-08, 라운드 17 검토 A #3의 근본 처방). 긴 것(cloud-high, 6.5:1)만
+        // 쓰면 몇 장을 놓아도 어떤 가로 행의 49%가 구름이 된다 — 자리 종횡비가 가로 밀도의 상한이라 코드로는 못 내린다.
+        // 짧은 조각(cloud-wisp, 3.5:1)을 섞어 긴 것 사이에 빈칸과 리듬을 만든다. 짧은 것이 없으면 전부 긴 것으로 돌아간다.
+        const wispy = skyArt.has("cloud-wisp") && r() < (near ? 0.45 : 0.6);
+        const spr = skyArt.pick(wispy ? "cloud-wisp" : "cloud-high", r());
         if (!spr) continue;
+        const cw2 = lw * (wispy ? (near ? 0.1 : 0.075) + r() * 0.05 : (near ? 0.18 : 0.13) + r() * (near ? 0.1 : 0.09));
         const flip = r() < 0.5;
         const rot = (r() - 0.5) * 0.35; // ±10°
         twice((dx) => {

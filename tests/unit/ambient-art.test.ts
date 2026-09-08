@@ -73,10 +73,12 @@ describe("ambient/art — 매니페스트", () => {
   });
   // 2026-09-07: 12 → 14. 가을·겨울 소나무에 변형 2를 더했다 — 장면이 계절마다 **다른 파일**을 고르므로
   // (`land.ts` pineId), 봄·여름에만 변형이 둘이면 가을·겨울 산은 한 장을 40번 찍는다(반복감의 주범).
-  it("파일럿 배치는 14장이고, 그 프롬프트는 파일럿 파일만 싣는다", () => {
+  // 2026-09-08: 14 → 16. 짧은 새털(`cloud-wisp`) 2장. 긴 것(6.5:1)만으로는 어떤 가로 행의 49%가 구름이 되는데
+  // 그 상한은 자리 종횡비라 코드로 못 내린다(라운드 17 검토 A #3) — 섞어 놓을 짧은 조각이 필요하다.
+  it("파일럿 배치는 16장이고, 그 프롬프트는 파일럿 파일만 싣는다", () => {
     const slots = pilotSlots();
     const files = slots.flatMap((s) => pilotFiles(s));
-    expect(files.length).toBe(14);
+    expect(files.length).toBe(16);
     for (const s of slots) expect(pilotFiles(s).length, s.id).toBeLessThanOrEqual(slotFiles(s).length);
     const p = pilotPrompt();
     for (const f of files) expect(p).toContain(f);
