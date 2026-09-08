@@ -72,7 +72,9 @@ const thin = [];
 // 1024 원본이 세상에서 사라진다 — 그런데 코드 곳곳의 안내는 "도트를 되살리려면 1024 원본에서 다시 뽑아야 한다"고 말한다.
 // 있지도 않은 것을 가리키던 셈이다. (2026-09-08에 실제로 배달본을 잃었다: 정규화 뒤 `git checkout`으로 폴더를
 // 되돌리자 방금 받은 네 장이 커밋된 옛 판으로 덮여 사라졌다. 추적하지 않는 폴더에 사본이 있었으면 아무 일도 아니었다.)
-const srcDir = path.join(root, ".scratch-pw", "art-src");
+// 원본 보관은 **추적되는** 폴더다(2026-09-08). `.scratch-pw/`는 기기가 바뀌면 사라지는데, 원본이 없으면
+// 자리 상자가 바뀔 때 축소본에서 도트를 되살릴 수 없다 — 코덱스에 다시 부탁하는 수밖에 없다(참나무가 그랬다).
+const srcDir = path.join(root, "art-src");
 const keepSource = (file, buf) => {
   try {
     fs.mkdirSync(srcDir, { recursive: true });

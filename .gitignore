@@ -4,6 +4,8 @@ coverage/
 # 에이전트 작업 폴더 — 코덱스가 생성 스크립트·검증 로그를 여기 남긴다(2026-09-07)
 tmp/
 .scratch-pw/
+# 코덱스 생성 부산물(미리보기·대조 시트·배치 스펙) — 배달본은 public/ambient/art/, 원본은 art-src/ 에 남는다
+output/
 test-results/
 playwright-report/
 .env

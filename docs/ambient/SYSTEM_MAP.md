@@ -64,6 +64,13 @@ AmbientLayer(month, year, slug, force?, worldForce?)          components/shared/
 > `scripts/ambient-qa/light-probe.mjs`. 아직 안 닿는 곳: 파도 진폭·물보라(coast/sea 상수),
 > 눈 쌓임·젖은 땅 상태 변수, 언덕 억새(바탕에 굽힘 — 부스러기만 움직임).
 >
+> **하늘이 그림이 된 뒤(2026-09-08)**: `sky.ts`의 해·달·구름·혜성·별똥별은 이제 **자리 아트**를 우선 쓴다 —
+> `skyArt = new ArtSet(["sun-disc","moon-phase","cloud-low","cloud-mid","cloud-high","cloud-storm","comet","shooting-star"])`,
+> `skyKey`에 `a${skyArt.version}`(늦게 도착한 그림에 다시 굽는다), `moonArt(phase)`가 음력 위상 → 8장, 해는 띠로 고른다.
+> 그림이 없으면 아래의 절차적 경로 그대로다. 구름 스탬프 수는 아트일 때 `SC = 1`이고 개수 계수는 `(SC/3)²`로 정규화한다
+> (안 고쳐서 구름이 9배 깔린 적이 있다). **밤의 드문 사건**은 `world/sky-events.ts` — (시드, i)의 순수 함수 일정표라
+> `advance` 분할과 무관하고, 열한 바이옴이 하늘 모듈을 공유해도 두 배로 흐르지 않는다. 꼬리는 `aimSprite`가 진행 방향에 맞춘다.
+>
 > **라운드 5 뒤 상태(2026-09-06, 하늘 + 산 층 순서)**: 하늘은 `world/sky.ts`가 그린다 — `skyPalette(season, weather, band)`(조명 패스 전 값) →
 > `bakeSky`(그라데이션 + 1/3 해상 픽셀 구름, hz 아래 5%h 페이드) → 장면이 ground 뒤·horizon 앞에 그리고(산은 ① 능선 위 clip) `drawSkyLive`(별·음력 달·
 > 새벽/노을 해)를 horizon 뒤에 얹는다(별·달 상한: 육지 hz·.3 · 산 ① 능선 · 바다 top·.9). coast/sea의 자체 하늘·별은 제거. `bakeHorizon` 위 안개 .55 → .18,

@@ -197,6 +197,18 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   with `npm run art:normalize` (alpha-trim + fit to 4× the slot's screen px, 128–512 — trees 512, props 128–256; the board flags
   heavy files). A trunk standing on a bright ground (snow, sand) is grey-brown, never red-brown — a red trunk was the loudest thing
   on the snow field; `scripts/ambient-art-desaturate.mjs` fixes delivered art in place. Fixture for probes: `/visual-fixture/ambient-art`.
+- **The sky is drawn art now, and its rare events are pure functions (2026-09-08).** `world/sky.ts` reaches for
+  `skyArt` (sun · 8 moon phases · four cloud kinds · comet · shooting star) and falls back to the procedural path only
+  where a file has not arrived; `skyKey` carries `a${skyArt.version}` so a late file re-bakes. Two rules hold here.
+  ① **A sprite's own heading is data, not a guess** — the delivered sky art points **head-right, axis ≈ −16°**, recorded in
+  `ART_HEADING` and applied by `aimSprite(travel, art, flip)`. `drawArt` composes **rotate → flip**, so a flipped sprite's
+  final angle is `rot + (π − art)`; a sign error there still looks plausibly tilted on screen, so it is pinned by a unit test
+  that replays that exact composition, and the art briefs state the convention so a regenerated variant cannot invalidate the
+  constant. A comet's size is *not* what makes it a comet — it crosses in 26 s and is drawn at the same scale as a shooting star.
+  ② **Never give the sky module state.** Rare events live in `world/sky-events.ts` as a schedule that is a pure function of
+  (seed, i): the QA contract is "same URL = same frame" and `advance(1000) == advance(250)×4`, and eleven biomes share this one
+  module — a stateful director would make events run at double speed whenever two scenes step in the same frame. Rarity is
+  tuned so the art is actually seen (comet ≈ 8.8 min, not the 18 min first tried — nobody ever met it).
 - **3/4 camera + toy scale (PLAN-20260904-004 P0, 2026-09-04 night; owner: "leaves as big as trees", "I want distance").**
   `world/scale.ts` is the size table (TILE 64, biggest : smallest ≤ 12 — leaves 12–18, boot prints 18, oak crown 128, debut cap
   192, flowers deliberately 24–28); `world/view.ts` is the camera: `GROUND_SQUASH` .7 for anything lying on the ground/water
