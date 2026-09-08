@@ -1,5 +1,9 @@
 # Active ExecPlan
 
+> **Accepted(2026-09-08, 구현 완료)**: [PLAN-20260908-009 — 자연의 다양성(변형 수)과 아트 보드 대개편](PLAN-20260908-009-variety-and-art-board.md) —
+> 변형 수를 감이 아니라 **한 화면 동시 개수**에서 뽑는다(`perScreen` → `recommendedVariants`, 계약 테스트가 강제) · 프롬프트가 "이 그림은 한 화면에 N개가 동시에 놓인다"를 말한다 ·
+> 아트 보드에 **자리 상세 라우트**(`/studio/ambient-art/[slotId]`)를 더해 변형을 한 화면에서 관리한다.
+
 > **Accepted(2026-09-07, 구현 완료 — 묶음 4는 되돌림)**: [PLAN-20260907-007 — 라운드 16: 초원의 레이어와 바람](PLAN-20260907-007-round16-layers-wind.md) —
 > 안개를 화면 높이에서 떼어내고(`Scene.splitHaze`/`drawAbove`/`view.hazeAt`) 초원 가을을 y-정렬 대열로, 초원 네 장면에 바람 소비자를.
 > 젖음 채널(W-1 ③)은 원시연산 3종이 실측으로 탈락해 되돌렸다 — 기록 [rounds/ROUND-16.md](../../ambient/rounds/ROUND-16.md).
