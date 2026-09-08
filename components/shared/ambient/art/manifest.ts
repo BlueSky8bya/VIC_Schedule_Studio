@@ -83,7 +83,7 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "grass-patch", nameKo: "풀 얼룩", nameEn: "Grass patch", category: "ground", seasons: ["summer"], view: "flat", px: [40, 28], brief: "위에서 본, 주변보다 조금 진한 초록 풀 얼룩(두더지 흙더미가 여름에 풀로 덮인 자리). 가장자리가 부드럽게 번진다.", now: "procedural", phase: 1 },
   { id: "twig", nameKo: "잔가지", nameEn: "Twig", category: "ground", seasons: ["autumn", "winter"], view: "flat", px: [36, 14], variants: 2, brief: "땅에 떨어진 마른 잔가지 — 한 번 갈라지고, 껍질 결이 보인다. 변형 2개.", acnhRef: "나뭇가지(재료)", now: "procedural", phase: 1 },
   { id: "pebble", nameKo: "조약돌", nameEn: "Pebble", category: "ground", seasons: ALL, view: "flat", px: [12, 9], variants: 3, brief: "위에서 본 둥근 조약돌 — 회색·밝은 회갈색, 위쪽에 작은 하이라이트. 변형 3개.", now: "procedural", phase: 1 },
-  { id: "rock", nameKo: "바위", nameEn: "Rock", category: "ground", seasons: ALL, view: "stand", px: [40, 30], variants: 4, brief: "무릎 높이의 둥글둥글한 바위, 이끼가 조금 앉았다. **변형 4개** — 실루엣 자체가 서로 달라야 한다(넓적·길쭉·모난·둥근). 이끼 자리와 갈라진 금도 각각 다르게. 색만 바꾼 복제 금지.", acnhRef: "바위", now: "procedural", pilot: 4, phase: 1 },
+  { id: "rock", nameKo: "바위", nameEn: "Rock", category: "ground", seasons: ALL, view: "stand", px: [40, 30], variants: 4, brief: "무릎 높이의 바위. **변형 4개는 실루엣이 서로 달라야 한다** — ① 넓적(가로로 퍼진 판) ② 길쭉(세로로 선 덩이) ③ 모난(각진 면 3~4개, 깨진 단면) ④ 둥근(공에 가까움). 색만 바꾼 복제 금지.\n\n**표면은 넷이 다 달라야 한다 — 이끼는 하나에만.** 이 바위는 사철 열한 바이옴에 전부 깔린다: 마른 모래해안·암석해안·겨울 눈밭·산 능선에도 놓이므로, **네 장 다 이끼가 앉아 있으면 그 화면에서 전부 틀린 돌이 된다**(2026-09-08 소유자 지적). 배분: ① 맨돌(이끼 0, 돌색만 3단) ② 맨돌 + 갈라진 금 1~2줄(그늘로만, 검은 선 금지) ③ 지의류 얼룩 — 회백·연회록 점 서넛, 이끼 아님 ④ **여기만 이끼** — 윗면 한쪽 귀퉁이에 작게(면적의 1/5 이하), 돌을 덮지 않는다.\n\n**도트 예산 = 가로 약 16칸**(자리가 작다 — 소나무는 35칸이다). 이 안에서 **반드시 살아야 하는 것 셋**: ⓐ 실루엣(넷이 구별되는가) ⓑ 면의 명암 3단(위 왼쪽이 밝고 아래 오른쪽이 그늘 — 이게 없으면 색 얼룩이 된다) ⓒ 표면 특징 1가지(위 배분). 그 밖의 잔 디테일은 버린다. 16칸이 적어 보여도 **면을 지우지는 말 것** — 단순화는 덩어리 수를 줄이는 것이지 입체를 없애는 게 아니다.", acnhRef: "바위", now: "procedural", pilot: 4, phase: 1 },
   { id: "stump", variants: 2, nameKo: "그루터기", nameEn: "Stump", category: "ground", seasons: ALL, view: "stand", px: [36, 28], brief: "잘린 나무 그루터기 — 위에 나이테가 보이고 옆면은 껍질.", acnhRef: "그루터기", now: "procedural", phase: 1 },
   { id: "log", variants: 2, nameKo: "통나무", nameEn: "Log", category: "ground", seasons: ["summer", "autumn"], view: "stand", px: [70, 26], brief: "물가에 누운 통나무 한 토막, 한쪽 끝에 나이테.", acnhRef: "통나무", now: "procedural", phase: 1 },
   { id: "snowman-1", nameKo: "눈사람(공 하나)", nameEn: "Snowman, one ball", category: "prop", seasons: ["winter"], view: "stand", px: [44, 30], brief: "막 굴린 큰 눈덩이 하나(눈사람 1단계). 표면에 굴린 자국이 살짝.", acnhRef: "눈덩이", now: "procedural", phase: 1 },
@@ -223,6 +223,14 @@ export const dotGrid = (px: readonly [number, number], override?: number): numbe
 export const ratioOf = (px: readonly [number, number]) => `${(px[0] / px[1]).toFixed(px[0] / px[1] >= 10 ? 0 : 1)} : 1`;
 /** 도트 한 칸의 원본 px(1024 ÷ 격자) — 코덱스가 지킬 블록 크기. */
 export const dotBlock = (px: readonly [number, number], override?: number): number => SOURCE_EDGE / dotGrid(px, override);
+/** 물체가 실제로 쓸 수 있는 **가로 도트 칸 수** — 격자 칸수 × (긴 변의 85%를 채운다는 규칙) × 가로 비.
+ *  이 숫자를 프롬프트에 싣지 않으면 생성기가 예산을 모른 채 시작해, 16칸 자리에 디테일을 밀어 넣다 격자를 깨거나
+ *  반대로 덩어리 하나로 뭉갠다(2026-09-08 소유자 지적: 바위가 "면·균열이 읽히는 돌" → "색면 덩어리"). */
+export const dotsAcross = (px: readonly [number, number], override?: number): number => {
+  const g = dotGrid(px, override);
+  const long = Math.max(px[0], px[1]);
+  return Math.max(4, Math.round(g * 0.85 * (px[0] / long)));
+};
 
 /** 저장 목표 변(px) — 반드시 **1024의 정수 약수**여야 한다(2026-09-07 결정 ⓐ′).
  *  비정수 배로 줄이면 nearest가 도트를 들쭉날쭉 버리고, lanczos3로 줄이면 도트가 아예 뭉개진다(색 76 → 3,723 실측).
@@ -293,6 +301,12 @@ export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
   색**(순수 검정 금지 — 나무면 진한 밤색). 그라데이션·질감·붓 터치 없음.
 - **단순하게.** 이 그림은 화면에서 12~170px로 놓인다 — **128px로 줄여도 형태가 읽혀야 한다.** 잎·깃털·털·비늘 하나하나를 그리지 않는다.
   물체 = 큰 덩어리 2~3개(예: 나무 = 뭉게뭉게한 잎 덩이 + 굵은 줄기·뿌리목). 실루엣이 먼저 읽히게, 비율은 통통하게.
+  ⚠ **단순화 = 덩어리 수를 줄이는 것이지 입체를 없애는 게 아니다**(2026-09-08 소유자 지적: 바위가 "면·균열이 읽히는 돌"에서
+  "색면 덩어리"가 되어 왔다). 도트가 몇 칸이든 **면의 명암 3단은 끝까지 남긴다** — 밝은 면 · 중간 면 · 그늘 면.
+  3단이 사라지면 그건 단순한 게 아니라 **납작한 것**이고, 화면에서 스티커로 읽힌다.
+- **도트 예산을 먼저 세고 시작한다.** 표의 '가로 도트' 칸이 그 자리의 물체가 쓸 수 있는 **가로 칸 수**다(격자에서 계산된 값).
+  16칸짜리 자리와 54칸짜리 자리는 담을 수 있는 정보가 다르다 — 16칸에 디테일한 그림을 밀어 넣으려다 격자를 깨거나,
+  반대로 겁먹고 덩어리 하나로 뭉개는 것 **둘 다 반려 사유**다. 칸 수를 먼저 정하고 그 안에서 실루엣 → 명암 3단 → 특징 1~2개 순으로 채운다.
 - 색(오행 규칙): 채도 낮은 부드러운 색. **선명한 빨강·주황·노랑 금지** — 가을은 갈색·황토·와인(갈색이 주), 꽃의 노랑은 크림 노랑,
   무당벌레는 벽돌빨강. 초록은 연둣빛(봄)·짙은 초록(여름). 물빛은 #9cc4e0 계열. 흰색은 순백 대신 #f6f8fb.
   **눈밭·모래처럼 밝은 바탕에 놓이는 것(겨울 나무·관목의 줄기)은 붉은 갈색이 아니라 채도 낮은 회갈색**(붉은 줄기가 눈밭에서 제일 튀었다 — 실측 후 탈색).
@@ -339,6 +353,7 @@ export function slotPrompt(s: ArtSlot): string {
     s.variants && s.variants > 1 ? `- 변형 ${s.variants}개를 각각 별도 PNG로(${files}).` : "",
     s.pilot ? `- **파일럿 배치**: 이번에는 앞의 ${s.pilot}장만 만든다(${pilotFiles(s).join(", ")}).` : "",
     `- 도트 격자: **${dotGrid(s.px, s.grid)}칸** — 도트 한 칸 = ${dotBlock(s.px, s.grid)}×${dotBlock(s.px, s.grid)}px 블록(1024 안에서). 블록 경계를 넘는 색 변화 금지.`,
+    `- **도트 예산: 물체 가로 약 ${dotsAcross(s.px, s.grid)}칸.** 이 안에서 실루엣 → 면의 명암 3단 → 특징 순으로 채운다(3단은 칸이 적어도 끝까지 남긴다).`,
     `- 저장: 우리가 1024 → ${targetEdge(s.px)}px로 **${sourceRatio(s.px)}분의 1 정수배** 축소한다(격자를 지켜야 도트가 남는다).`,
     "",
     ART_STYLE_GUIDE
@@ -354,7 +369,7 @@ const wantFiles = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) => {
 };
 
 const promptRow = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) =>
-  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${viewTagOf(s)} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
+  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${viewTagOf(s)} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${dotsAcross(s.px, s.grid)}칸 | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
 
 /** 배치 프롬프트 — 아무 자리 묶음이나(보드의 필터 결과·파일럿·단계 전체) 코덱스에 통째로 넘길 한 장으로 만든다. */
 export function batchPrompt(
@@ -378,8 +393,8 @@ ${opts.note ? `\n${opts.note}\n` : ""}
 ${ART_STYLE_GUIDE}
 
 ## 자리 표(파일 ${count}장 · 자리 ${rows.length}개)
-| 자리 id | 파일 이름 | 이름 | 계절 | 카메라 | 화면 크기 | 격자 | 블록 | 그릴 것 |
-|---|---|---|---|---|---|---|---|---|
+| 자리 id | 파일 이름 | 이름 | 계절 | 카메라 | 화면 크기 | 격자 | 블록 | 가로 도트 | 그릴 것 |
+|---|---|---|---|---|---|---|---|---|---|
 ${rows.map((s) => promptRow(s, pilot, only)).join("\n")}
 
 ## 납품

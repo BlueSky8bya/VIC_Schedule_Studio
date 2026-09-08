@@ -10,6 +10,7 @@ import {
   pilotSlots,
   slotFiles,
   slotPrompt,
+  dotsAcross,
   SOURCE_EDGE,
   targetEdge,
   viewKoOf,
@@ -124,6 +125,26 @@ describe("ambient/art — 매니페스트", () => {
     const ground = ART_SLOTS.find((s) => s.id === "lilypad")!;
     expect(viewTagOf(ground)).toBe("flat");
     expect(viewKoOf(ground)).toContain("눌린");
+  });
+});
+
+describe("ambient/art — 도트 예산과 표면 배분(2026-09-08 소유자 지적)", () => {
+  it("바위처럼 칸이 적은 자리도 예산을 프롬프트에 싣는다", () => {
+    const rock = ART_SLOTS.find((s) => s.id === "rock")!;
+    const pine = ART_SLOTS.find((s) => s.id === "tree-pine")!;
+    // 바위는 소나무보다 훨씬 적은 칸으로 그려야 한다 — 그 사실을 생성기가 먼저 알아야 한다.
+    expect(dotsAcross(rock.px, rock.grid)).toBeLessThan(dotsAcross(pine.px, pine.grid));
+    const p2 = slotPrompt(rock);
+    expect(p2).toContain(`도트 예산: 물체 가로 약 ${dotsAcross(rock.px, rock.grid)}칸`);
+    expect(p2).toContain("명암 3단");
+    expect(batchPrompt([rock], "t")).toContain("가로 도트");
+  });
+
+  it("바위 브리프는 이끼를 변형 하나로만 제한한다(마른 해안·눈밭에도 깔린다)", () => {
+    const rock = ART_SLOTS.find((s) => s.id === "rock")!;
+    expect(rock.brief).toContain("이끼는 하나에만");
+    // 이끼가 기본값처럼 읽히던 옛 문구가 되살아나면 실패한다.
+    expect(rock.brief).not.toContain("이끼가 조금 앉았다");
   });
 });
 
