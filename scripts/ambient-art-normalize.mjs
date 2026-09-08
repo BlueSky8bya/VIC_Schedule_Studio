@@ -67,6 +67,7 @@ const byFile = new Map();
 for (const s of ART_SLOTS) for (const f of slotFiles(s)) byFile.set(f, s);
 
 const bars = [];
+const thin = [];
 // **들어온 원본을 보관한다**(2026-09-08). 이 스크립트는 배달본을 제자리에서 줄여 덮어쓰므로, 한 번 돌리고 나면
 // 1024 원본이 세상에서 사라진다 — 그런데 코드 곳곳의 안내는 "도트를 되살리려면 1024 원본에서 다시 뽑아야 한다"고 말한다.
 // 있지도 않은 것을 가리키던 셈이다. (2026-09-08에 실제로 배달본을 잃었다: 정규화 뒤 `git checkout`으로 폴더를
@@ -100,6 +101,20 @@ for (const f of files) {
   const edge = targetEdge(slot.px);
   const block = dotBlock(slot.px, slot.grid);
   const meta = await sharp(src).metadata();
+  // **자리를 못 채우나** 검사(2026-09-08) — 엔진은 그림을 자리 상자에 비율을 지켜 넣으므로, 납작한 자리에 정사각으로
+  // 그려 오면 세로에 걸려 폭이 안 찬다. 기계로 안 재면 못 잡는다: 파일만 보면 멀쩡하고 화면에서만 점이 된다
+  // (실측 2026-09-08: 새털구름 260×40 자리에 1.2:1로 그려 와 47×40 = 18%).
+  {
+    const t = await sharp(src).ensureAlpha().trim({ threshold: 8 }).toBuffer({ resolveWithObject: true });
+    const [bw0, bh0] = slot.px;
+    const k = Math.min(bw0 / t.info.width, bh0 / t.info.height);
+    const fill = Math.round(((t.info.width * k * (t.info.height * k)) / (bw0 * bh0)) * 100);
+    if (fill < 45) {
+      thin.push(
+        `${f} — 자리 ${bw0}×${bh0}(${(bw0 / bh0).toFixed(1)}:1)에 그림 ${(t.info.width / t.info.height).toFixed(2)}:1 → 화면 ${Math.round(t.info.width * k)}×${Math.round(t.info.height * k)} = ${fill}%`
+      );
+    }
+  }
   const bar = await floatingBar(src);
   if (bar.ratio >= 0.25) {
     bars.push(`${f} — y=${bar.y}에서 ${bar.run}px(폭의 ${Math.round(bar.ratio * 100)}%)`);
@@ -177,4 +192,10 @@ if (bars.length) {
   console.log(`\n⚠ **떠 있는 가로줄**이 있는 파일 ${bars.length}장 — 물체에 붙어 있지 않은 긴 가로선이다(바닥선·그림자 막대).`);
   for (const b of bars) console.log(`   · ${b}`);
   console.log("   규격서: 배경은 완전 투명, **바닥·그림자·풍경·테두리 없음**. 축소로는 안 없어진다 — 그 자리는 다시 받아야 한다.");
+}
+if (thin.length) {
+  console.log(`
+⚠ **자리를 못 채우는 파일** ${thin.length}장 — 그림의 가로세로 비가 자리와 달라 엔진이 비율을 지켜 넣으면 작아진다.`);
+  for (const t of thin) console.log(`   · ${t}`);
+  console.log("   납작한 자리에는 납작하게 그려야 한다(프롬프트 표의 '화면 크기' 칸에 비가 적혀 있다).");
 }

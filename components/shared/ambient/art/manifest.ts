@@ -133,12 +133,12 @@ const PHASE1: readonly ArtSlot[] = [
   //    혜성·유성은 도감처럼 "그날 밤에만 본 것"이 된다.
   { id: "sun-disc", nameKo: "해", nameEn: "Sun", category: "sky", seasons: ALL, view: "flat", px: [96, 96], variants: 2, grid: 32, brief: "해 원반 — 정면. 변형 2개: ① 한낮(크림 흰빛 #f6f8fb 중심에 옅은 미색 테) ② 노을(회장미~살구, 채도 .3 이하 — 선명한 주황 금지). 광선·별빛 십자 금지, 원반과 아주 옅은 후광만.", now: "procedural", phase: 1 },
   { id: "moon-phase", nameKo: "달(위상)", nameEn: "Moon phases", category: "sky", seasons: ALL, view: "flat", px: [80, 80], variants: 8, grid: 32, brief: "달 여덟 위상을 **한 장씩**: 1 삭(거의 안 보이는 검푸른 원반) · 2 초승 · 3 상현 · 4 차오르는 볼록 · 5 보름 · 6 기우는 볼록 · 7 하현 · 8 그믐. 밝은 쪽은 크림 흰빛(#f6f8fb), 어두운 쪽은 밤하늘보다 살짝 밝은 검푸름. **바다(어두운 얼룩) 무늬는 보름에 가장 또렷하고 초승엔 거의 안 보인다.** 경계(터미네이터)는 톱니 픽셀로 또렷하게 — 흐린 그라데이션 금지.", now: "procedural", phase: 1 },
-  { id: "comet", nameKo: "혜성", nameEn: "Comet", category: "sky", seasons: ALL, view: "flat", px: [140, 60], variants: 2, grid: 64, brief: "혜성 — 밝은 핵과 뒤로 길게 퍼지는 꼬리(왼쪽 아래로). 변형 2개는 꼬리 길이·각도가 다르다. 색은 청백~연보라, 꼬리는 끝으로 갈수록 성긴 점으로 흩어진다.", now: "none", phase: 1 },
-  { id: "shooting-star", nameKo: "별똥별", nameEn: "Shooting star", category: "sky", seasons: ALL, view: "flat", px: [64, 24], variants: 2, grid: 16, brief: "별똥별 한 줄기 — 앞은 밝은 점, 뒤로 짧게 사라지는 꼬리. 아주 단순하게(점 하나에 꼬리 서너 칸).", now: "none", phase: 1 },
-  { id: "cloud-low", nameKo: "구름(낮은)", nameEn: "Cloud, low", category: "sky", seasons: ALL, view: "flat", px: [190, 80], variants: 4, grid: 64, brief: "뭉게구름 — 아래는 평평하고 위로 덩이가 부풀어 오른다. 흰빛 #f6f8fb 3톤(윗면 밝고 밑면은 회청). 변형 4개는 덩이 수(2~5)와 너비가 확실히 다르게 — 같은 구름이 반복되면 하늘이 벽지가 된다.", now: "procedural", phase: 1 },
-  { id: "cloud-mid", nameKo: "구름(중간)", nameEn: "Cloud, mid", category: "sky", seasons: ALL, view: "flat", px: [230, 60], variants: 3, grid: 64, brief: "중간 높이의 구름 — 낮은 구름보다 옆으로 길고 납작하다, 덩이 경계가 부드럽지만 여전히 픽셀 계단. 변형 3개.", now: "procedural", phase: 1 },
-  { id: "cloud-high", nameKo: "새털구름", nameEn: "Cirrus", category: "sky", seasons: ALL, view: "flat", px: [260, 40], variants: 3, grid: 128, brief: "새털구름 — 붓으로 쓸어놓은 듯 가늘고 긴 획 서넛, 한쪽 끝이 갈고리처럼 굽는다. 아주 옅게(알파 낮게 그리지 말고 **밝은 회백 한 톤**으로).", now: "procedural", phase: 1 },
-  { id: "cloud-storm", nameKo: "비구름", nameEn: "Rain cloud", category: "sky", seasons: ALL, view: "flat", px: [250, 110], variants: 2, grid: 64, brief: "비구름 — 밑면이 어둡고 평평하며(회청) 위로 두껍게 솟는다. 아래로 늘어진 자락 두엇. 변형 2개는 두께가 다르다.", now: "procedural", phase: 1 },
+  { id: "comet", nameKo: "혜성", nameEn: "Comet", category: "sky", seasons: ALL, view: "flat", px: [140, 60], variants: 2, grid: 64, brief: "혜성 — 밝은 핵과 뒤로 길게 퍼지는 꼬리. **꼬리는 밤하늘보다 밝아야 한다**: 핵은 흰빛(#f6f8fb), 꼬리는 청백 → 연보라로 옅어지며 끝은 성긴 점으로 흩어진다. 변형 2개는 꼬리 길이·각도가 다르다. 자리가 140×60(가로:세로 2.3:1)이니 **가로로 길게 눕힌 형태**로. ⚠ 1차 납품은 꼬리가 어두운 남회색이라 밤하늘에서 빛줄기가 아니라 **긁힌 자국**으로 보였고, 실루엣도 거의 정사각이라 자리의 40%만 채웠다 — 반려.", now: "none", phase: 1 },
+  { id: "shooting-star", nameKo: "별똥별", nameEn: "Shooting star", category: "sky", seasons: ALL, view: "flat", px: [64, 24], variants: 2, grid: 64, brief: "별똥별 한 줄기 — **가로로 길게 눕힌 획**(자리가 64×24로 납작하다). 앞(오른쪽 위)에 밝은 점 하나, 뒤로 가늘어지며 사라지는 꼬리. 색은 흰빛 → 옅은 청백. 대각 45°로 그리되 **전체 실루엣의 가로:세로는 2.7:1**이어야 한다. ⚠ 1차 납품이 정사각 안의 계단 블록 서넛이 되어 반려됐다 — 획으로 읽혀야 한다.", now: "none", phase: 1 },
+  { id: "cloud-low", nameKo: "구름(낮은)", nameEn: "Cloud, low", category: "sky", seasons: ALL, view: "flat", px: [190, 80], variants: 4, grid: 64, brief: "뭉게구름 — 위로 덩이가 부풀고 **아래쪽 윤곽이 대체로 수평**이다. 흰빛 #f6f8fb 3톤(윗면 밝고 밑면은 회청). 변형 4개는 덩이 수(2~5)와 너비가 확실히 다르게 — 같은 구름이 반복되면 하늘이 벽지가 된다. ⚠ **밑면을 별도의 판으로 그리지 말 것**: 1차 납품은 덩이 아래에 좌우로 더 튀어나온 평평한 선반이 붙어 탁자처럼 보였다. 아래 윤곽은 덩이들의 밑선이 이어져 수평에 가까워지는 것이지, 따로 붙인 널빤지가 아니다.", now: "procedural", phase: 1 },
+  { id: "cloud-mid", nameKo: "구름(중간)", nameEn: "Cloud, mid", category: "sky", seasons: ALL, view: "flat", px: [230, 60], variants: 3, grid: 64, brief: "중간 높이의 구름 — 낮은 구름보다 옆으로 길고 납작하다(자리 230×60, 가로:세로 3.8:1), 덩이 경계가 부드럽지만 여전히 픽셀 계단. 변형 3개. ⚠ 뭉게구름과 같은 금지: **밑면에 따로 판을 붙이지 않는다.**", now: "procedural", phase: 1 },
+  { id: "cloud-high", nameKo: "새털구름", nameEn: "Cirrus", category: "sky", seasons: ALL, view: "flat", px: [260, 40], variants: 3, grid: 128, brief: "새털구름 — **화면을 가로지르는 아주 납작하고 긴 띠**(자리가 260×40, 가로:세로 6.5:1이다). 붓으로 쓸어놓은 듯한 가늘고 긴 획 서넛이 **같은 방향으로 나란히 눕고** 한쪽 끝이 갈고리처럼 살짝 굽는다. 획끼리 세로로 벌어지지 않게 — 전체가 하나의 납작한 띠로 읽혀야 한다. 색은 밝은 회백 **두 톤**(한 톤이면 하늘에서 안 보인다), 알파를 낮추지 말 것. ⚠ 1차 납품이 정사각 안에 획을 흩어 놓아 화면에서 260px 자리의 18%(47×40)만 채웠다 — 반려.", now: "procedural", phase: 1 },
+  { id: "cloud-storm", nameKo: "비구름", nameEn: "Rain cloud", category: "sky", seasons: ALL, view: "flat", px: [250, 110], variants: 2, grid: 64, brief: "비구름 — 아래쪽이 어둡고(회청) 위로 두껍게 솟는다. 자리 250×110(가로:세로 2.3:1)이니 옆으로 넓게. 변형 2개는 두께가 다르다. ⚠ 1차 납품의 두 가지 금지: **밑면의 평평한 판**(탁자 상판처럼 좌우로 튀어나왔다)과 **아래로 뻗은 사각 기둥 두 개**(탁자 다리처럼 보였다). 늘어진 자락이 필요하면 구름 몸통에서 **폭이 좁아지며 이어지는 덩이**로, 몸통과 떨어진 막대가 아니라.", now: "procedural", phase: 1 },
   { id: "footlog", nameKo: "쓰러진 나무", nameEn: "Fallen trunk", category: "ground", seasons: ALL, view: "stand", px: [140, 40], brief: "통째로 쓰러진 큰 나무 — `log`(토막)보다 훨씬 길고 이끼가 앉았다. 부러진 가지 그루터기 두어 개, 한쪽 끝에 나이테.", now: "none", phase: 1 }
 ];
 
@@ -212,6 +212,9 @@ export const dotGrid = (px: readonly [number, number], override?: number): numbe
   const want = Math.max(px[0], px[1]) / 2;
   return GRIDS.reduce((best, g) => (Math.abs(g - want) < Math.abs(best - want) ? g : best), GRIDS[0]);
 };
+/** 자리의 가로:세로 비 — 프롬프트에 싣는다. 엔진이 비율을 지켜 넣으므로 그림이 이 비에서 멀면 자리를 못 채운다
+ *  (2026-09-08 실측: 6.5:1 자리에 1.2:1로 그려 온 새털구름이 화면에서 18%만 찼다). */
+export const ratioOf = (px: readonly [number, number]) => `${(px[0] / px[1]).toFixed(px[0] / px[1] >= 10 ? 0 : 1)} : 1`;
 /** 도트 한 칸의 원본 px(1024 ÷ 격자) — 코덱스가 지킬 블록 크기. */
 export const dotBlock = (px: readonly [number, number], override?: number): number => SOURCE_EDGE / dotGrid(px, override);
 
@@ -265,8 +268,13 @@ export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
 - 색(오행 규칙): 채도 낮은 부드러운 색. **선명한 빨강·주황·노랑 금지** — 가을은 갈색·황토·와인(갈색이 주), 꽃의 노랑은 크림 노랑,
   무당벌레는 벽돌빨강. 초록은 연둣빛(봄)·짙은 초록(여름). 물빛은 #9cc4e0 계열. 흰색은 순백 대신 #f6f8fb.
   **눈밭·모래처럼 밝은 바탕에 놓이는 것(겨울 나무·관목의 줄기)은 붉은 갈색이 아니라 채도 낮은 회갈색**(붉은 줄기가 눈밭에서 제일 튀었다 — 실측 후 탈색).
+- **가로세로 비를 자리에 맞춘다**(2026-09-08 추가 — 이걸 어기면 나머지가 아무리 좋아도 화면에서 못 쓴다).
+  엔진은 그림을 자리 상자에 **비율을 지킨 채** 넣는다. 그래서 납작한 자리에 정사각으로 그리면 **세로에 걸려 폭이 안 찬다.**
+  실측(1차 납품): 새털구름은 260×40 자리(6.5:1)에 거의 정사각으로 그려 와 화면에서 **47×40 = 자리의 18%**가 됐다.
+  하늘을 가로지르는 획이 아니라 점이 된 것이다. 혜성 40%, 별똥별 38%도 같은 이유.
+  표의 '화면 크기'에 **비**를 함께 적어 두었다 — 물체의 실루엣이 그 비에 **±25% 안**으로 들어와야 한다.
 - 배경: **완전 투명(알파 0)**. 바닥·그림자·풍경·글자·워터마크·테두리 없음. 한 장에 **한 물체만**, 캔버스 가운데,
-  긴 변이 캔버스의 85%를 채운다.
+  **긴 변**이 캔버스의 85%를 채운다(짧은 변은 비에 따라 훨씬 작아도 된다 — 납작한 것은 납작하게).
   ⚠ **실제로 두 번 어긴 항목이다**(2026-09-07, 참나무 봄·겨울): 줄기 한가운데를 가로지르는 **납작한 가로 막대**가 들어왔다 —
   물체에 붙어 있지 않고 수관 밖으로 폭의 26~30%까지 뻗은 긴 선(바닥선인지 그림자인지 모를 것). **발밑 그림자는 엔진이 그린다 —
   그림에는 절대 넣지 않는다.** 우리는 이걸 기계로 잰다: 위아래가 투명한 채로 가로로 폭의 25% 이상 이어지는 줄이 있으면 반려한다.
@@ -292,7 +300,7 @@ export function slotPrompt(s: ArtSlot): string {
   const files = slotFiles(s).join(", ");
   return [
     `# ${s.nameKo} (${s.nameEn}) — 파일: ${files}`,
-    `- 계절: ${s.seasons.map((k) => SEASON_KO[k]).join("·")} · 화면 크기 약 ${s.px[0]}×${s.px[1]}px(작게 놓이므로 큰 덩어리 위주, 잔 디테일 금지)`,
+    `- 계절: ${s.seasons.map((k) => SEASON_KO[k]).join("·")} · 화면 크기 약 ${s.px[0]}×${s.px[1]}px — **가로:세로 ${ratioOf(s.px)}** (실루엣이 이 비를 벗어나면 자리를 못 채운다). 작게 놓이므로 큰 덩어리 위주, 잔 디테일 금지`,
     `- 카메라: ${VIEW_KO[s.view]}`,
     `- 그릴 것: ${s.brief}`,
     s.acnhRef ? `- 동물의 숲 참고 항목: ${s.acnhRef}(스타일 참고만)` : "",
@@ -314,7 +322,7 @@ const wantFiles = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) => {
 };
 
 const promptRow = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) =>
-  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${s.view} | ${s.px[0]}×${s.px[1]} | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
+  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${s.view} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
 
 /** 배치 프롬프트 — 아무 자리 묶음이나(보드의 필터 결과·파일럿·단계 전체) 코덱스에 통째로 넘길 한 장으로 만든다. */
 export function batchPrompt(
