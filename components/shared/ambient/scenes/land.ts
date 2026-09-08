@@ -77,6 +77,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   let w = 0;
   let h = 0;
   let ground: HTMLCanvasElement | null = null;
+  /** 그 세계의 바람이 부는 쪽(+1 오른쪽 · −1 왼쪽) — 프레임의 `windDir`을 담아 둔다.
+   *  `drawTree`는 f를 받지 않으므로 `currentLight()`와 같은 어법으로 여기 둔다(라운드 17). */
+  let wdir = 1;
   let horizon: HTMLCanvasElement | null = null;
   // 능선선만 따로 구운 판(QA 라운드 3, AMB-D1-01) — 안개·밤 조명이 산 층을 누를 때 능선선을 그만큼 되살린다(draw()에서 조명 배율로 덧그림).
   let ridgeC: HTMLCanvasElement | null = null;
@@ -146,7 +149,11 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     const amp = Math.max(0.05, L.wind) * (3.4 - 2.4 * sz);
     const freq = 1.7 - 0.9 * sz;
     const lag = (0.2 + 0.3 * sz) * freq; // 큰 나무가 늦게 반응한다
-    const x = x0 + Math.sin(t * freq - lag + x0 * 0.013 + (Math.round(x0) % 7) * 0.4) * amp;
+    // **흔들리기만 하고 불지는 않았다**(2026-09-07 라운드 17, 검토 C): 진동이 순수 사인이라 평균 변위가 0이었고,
+    // 그래서 정지 프레임(생동감 OFF)에서 맑음과 바람이 구별되지 않았다. 바람은 나무를 **한쪽으로 기울인다** —
+    // 평균 기울기 항을 더한다. 작은 나무일수록 많이 기울고, 부호는 그 세계의 바람(`wdir`)이다.
+    const lean = wdir * L.wind * (3.4 - 2.4 * sz) * 0.6;
+    const x = x0 + lean + Math.sin(t * freq - lag + x0 * 0.013 + (Math.round(x0) % 7) * 0.4) * amp;
     if (pine) {
       // 소나무 — 폭은 참나무(2R)보다 좁고(1.45R) 키는 조금 크다. 실루엣이 갈려야 "혼효림"으로 읽힌다.
       shadow(g, x0, y - 2, R * 0.95, 0.16);
@@ -1662,6 +1669,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || av !== art.version) bake(f.dpr);
     },
     step(f) {
+      wdir = f.windDir;
       // 아트 도착 또는 조명 전이 끝(그림자 채널 변화) → 바탕 다시 굽기(라운드 4 AMB-T1-03: scatterProps 소품의 발밑 그림자).
       estimateSky(f);
       const keyNow = shadowKey(f.light) + `|${skyEstL === null ? "" : Math.round(skyEstL)}`;
@@ -1707,9 +1715,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         // ① 지평선 포기와 발치 포기가 **같은 px** 움직여 1초 변화가 원경 > 근경으로 뒤집혔고(숲 5.54% vs 1.71%)
         // ② 인접 40px 띠의 시계열 상관이 **0.918**(임계 .9)이라 줄무늬가 통째로 함께 흘렀다.
         // y를 위상과 진폭 양쪽에 넣고, 진폭에 `depthScale(y)`를 곱해 먼 것은 조금·가까운 것은 크게 움직인다.
+        // **결이 흐르는 쪽 = 그 세계의 바람**(2026-09-07 라운드 17, 검토 C). 옛 `sin(ph − t·spd)`는 부호가 상수라
+        // 억새가 언제나 오른쪽으로 흘렀는데, 입자층(비·눈·부스러기)은 시드가 정한 방향으로 분다 — 시드 42는 −1이라
+        // 한 화면에서 빗줄기는 왼쪽, 풀결은 오른쪽으로 갔다. `f.windDir`는 라운드 14부터 프레임에 있는데 소비자가
+        // `coast.ts` 하나뿐이었다. 진행파의 시간항 부호에 그대로 곱한다.
         const wind = currentLight().wind;
+        const wdir = f.windDir;
         const amp0 = 0.8 + 6 * wind;
-        const spd = 0.8 + 2.2 * wind;
+        const spd = (0.8 + 2.2 * wind) * wdir;
         const step = 40;
         const rows = 6;
         const gyTop = horizonY(f.h);

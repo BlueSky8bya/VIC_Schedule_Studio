@@ -889,7 +889,8 @@ export function createAutumn(seed: number): Scene {
         }
       }
       const gk = lerp(0.35, 1, load);
-      if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: groundY(rand()) };
+      // **돌풍의 방향 = 그 세계의 바람**(라운드 17) — 난수로 매번 새로 뽑으면 입자층과 어긋나고, 같은 바람 안에서 방향이 번갈아 바뀐다.
+      if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: f.windDir, y: groundY(rand()) };
       if (gust && t - gust.t0 > gust.dur) {
         gust = null;
         // 돌풍 간격은 **세계의 바람에 연속**으로 반응한다(2026-09-07, W-1 ①). 옛 코드는 `weather === "wind"`인지만 보는 계단이라

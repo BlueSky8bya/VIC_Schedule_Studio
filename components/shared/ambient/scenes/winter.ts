@@ -778,7 +778,8 @@ export function createWinter(seed: number): Scene {
       }
       // ③ 눈보라 한 줄기 — 여력 0.6부터, 30~60초 간격, 3초. 앞머리를 따라 눈가루가 흩날린다.
       if (!gust && load >= 0.6 && t > nextGust) {
-        gust = { t0: t, dur: 3, dir: rand() < 0.5 ? -1 : 1, y: groundY(0.2 + rand() * 0.6) };
+        // **돌풍의 방향 = 그 세계의 바람**(라운드 17) — 난수로 매번 새로 뽑으면 입자층과 어긋나고, 같은 바람 안에서 방향이 번갈아 바뀐다.
+        gust = { t0: t, dur: 3, dir: f.windDir, y: groundY(0.2 + rand() * 0.6) };
         gusts++;
       }
       if (gust) {

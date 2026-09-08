@@ -139,7 +139,12 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   let stampSpr: HTMLCanvasElement | null = null;
   let shadow: HTMLCanvasElement | null = null;
   let traces: TraceBakes | null = null; // 연대기(연잎·기슭의 데뷔 나무) 렌더 스프라이트
-  let midWater: HTMLCanvasElement | null = null; // 열린 물의 앵커(뜬 통나무·바위·연잎 군락 — 사이클3 미관 #1)
+  let midWater: HTMLCanvasElement | null = null; // 열린 물의 **바탕**(기슭 반영·물풀 섬 — 사이클3 미관 #1)
+  /** 물 위에 서 있는 앵커(반쯤 잠긴 바위·뜬 통나무) — 한 장에 굽지 않고 **개체마다** 굽어 발 y를 들고 있는다.
+   *  옛 코드는 이것들을 `midWater` 한 장에 구워 소품(오리)보다 **먼저** 그려, 오리가 늘 바위·통나무 앞으로
+   *  헤엄쳤다(2026-09-07 라운드 17, 소유자: "돌이나 통나무 위로 헤엄치듯이 보임"). 라운드 16이 초원 가을에서
+   *  닫은 AMB-A3-02(낙엽이 모든 나무 앞)와 같은 구조 결함이다 — 굽은 큰 소품은 바탕이 아니라 정렬 목록에 있어야 한다. */
+  let anchors: { x: number; y: number; c: HTMLCanvasElement }[] = [];
   let nearBank: HTMLCanvasElement | null = null; // 화면 **아래**의 가까운 기슭(2026-09-04 검토 라운드2)
   let nearW = 0;
   let shore: HTMLCanvasElement | null = null; // 위 띠의 기슭(뭍) — 땅 흔적이 물 위에 떠 보이지 않게
@@ -345,12 +350,29 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   // 최대 ~110px까지 내려온다(만곡 44 + 만·곶 ±61). 옛 코드는 shoreY() 기준으로 생물·글린트·포인터 물결을 놓아 오리가 뭍을
   // 헤엄치고 땅 위에 물결이 일었다(QA 라운드 3, 소유자). 물 위에 놓는 것은 전부 이 아래에만.
   const waterTopAt = (x: number) => shoreY() + 46 * groundK(h) + shoreEdgeOffset(x, w, groundK(h));
+  /** 근경(화면 앞) 기슭선의 **실제** 화면 y — `nearBank` 굽기가 그리는 `top(x)`와 같은 식이다.
+   *
+   *  위쪽 경계는 라운드 3에서 이미 x 의존 곡선(`waterTopAt`)이 됐는데 **아래쪽만 평평한 상수로 남아 있었다**
+   *  (2026-09-07 라운드 17, 소유자: "오리를 아래 경계선 사이로 던지면 들어갔다가 튕겨져 나온다"). 실측 h=860에서
+   *  기슭선은 화면 y 660~719를 굽이치는데 옛 `waterBottom()`은 767 한 값이라, 오리는 **기슭 안쪽 최대 107px까지**
+   *  들어간 뒤(맨 마지막에 그리는 기슭 판에 몸이 잠긴다) 보이지 않는 선에서 되튀었다.
+   *  `nearBank`의 캔버스 안 y=0은 화면 `h − NH`에 놓이므로 화면 y = (h − NH) + top(x)다. */
+  // ⚠ **함수여야 한다** — 장면이 만들어지는 시점의 `h`는 0이고 `resize()`가 나중에 채운다. 상수로 두면 NH = 0이 되어
+  //   기슭선이 화면 바닥으로 내려가고(생물의 아래 경계가 사라진다) 근경 기슭 판이 통째로 안 그려진다
+  //   — 라운드 17에서 실제로 한 번 그렇게 만들었다가 연잎이 y 800까지 내려간 것으로 잡았다.
+  const nearNH = () => Math.round(h * 0.3);
+  const nearShoreYAt = (x: number) => {
+    const NH = nearNH();
+    return h - NH + (NH * 0.34 + Math.sin((x / w) * 4.2 + 1.9) * NH * 0.1 + Math.sin((x / w) * 9.7 + 0.4) * NH * 0.045);
+  };
+  /** 열린 물의 아래 끝(x 무관 근사) — 굽기 캔버스 높이처럼 **한 값이 필요한 곳**에만 쓴다.
+   *  생물·소품의 경계 판정은 반드시 `nearShoreYAt(x)`를 쓴다. */
+  const waterBottom = () => h - nearNH() * 0.66;
+  /** 물 위 한 점 — x별 두 기슭선 **사이**에서 뽑는다(옛 코드는 아래를 평평한 상수로 봐서 기슭에 놓았다, 라운드 17). */
   const waterYAt = (x: number, r: number) => {
     const top2 = waterTopAt(x) + 6;
-    return top2 + r * Math.max(20, waterBottom() - top2);
+    return top2 + r * Math.max(20, nearShoreYAt(x) - 16 - top2);
   };
-  /** 열린 물의 아래 끝 — 이보다 아래는 가까운 기슭(화면 앞)이라 생물이 가면 가려져 사라진다. */
-  const waterBottom = () => h - h * 0.3 * 0.36;
   // 물고기 수 = 여력에 비례(2026-09-04 사용자: "컴퓨터 능력에 따라 늘리거나 줄여라") × 화면 넓이. 가볍게(load .3)도 4마리쯤은
   // 보인다(lite는 계절이 알아보여야 한다). 큰 놈은 .6부터 하나, .9부터 둘. 늘 땐 가장자리에서 헤엄쳐 들어오고 줄 땐 가장자리로
   // 나간다(순간 등장·소멸 금지 — 소품 원칙).
@@ -569,6 +591,17 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             }
           }
         }
+        // 물 위에 **서 있는** 앵커는 바탕에서 떼어 낸다(라운드 17) — 개체마다 작은 캔버스에 굽고 발 y를 들려 보내,
+        // 그리기에서 오리·연잎과 한 대열로 정렬한다. 좌표계는 그대로(캔버스 안 y, 화면 y는 + shoreY()).
+        const nextAnchors: { x: number; y: number; c: HTMLCanvasElement }[] = [];
+        /** 개체 한 장 — (cx, cy)를 중심으로 반경 R의 캔버스를 만들고 그 안에서 원래 좌표로 그린다. */
+        const anchor = (cx: number, cy: number, R: number, paint: (ag: CanvasRenderingContext2D) => void) => {
+          const S2 = Math.ceil(R * 2);
+          const ac = makeCanvas(S2, S2);
+          ac.g.translate(S2 / 2 - cx, S2 / 2 - cy);
+          paint(ac.g);
+          nextAnchors.push({ x: cx, y: cy, c: ac.c });
+        };
         // 반쯤 잠긴 바위 셋 — 수면선을 걸치고 앉는다(물에 박혔다는 신호).
         for (let i = 0; i < 3; i++) {
           const x = w * (0.1 + r2() * 0.8);
@@ -577,63 +610,69 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           const k = 0.9 + r2() * 0.9;
           // 라운드 12(B #1): 잠긴 바위도 필드 경유 — 섬·다른 바위와 겹치면 이 바위는 생략(rng 소비는 아래 rockRing 등에서 계속 같게 흐른다).
           if (!claimSpot(x, y + shoreY(), 17 * k, true, 30 * k)) continue;
-          // 수면선의 뒤 반원 — 바위보다 **먼저**(뒤쪽은 몸에 가려야 한다, 2026-09-05 소유자).
-          const rockRing = (a0: number, a1: number) => {
-            mg2.strokeStyle = season === "winter" ? "rgb(226 238 248 / 0.85)" : "rgb(255 255 255 / 0.5)";
-            mg2.lineWidth = season === "winter" ? 3 : 1.4;
-            mg2.beginPath();
-            mg2.ellipse(x, season === "winter" ? y + 2 : y, (season === "winter" ? 19 : 17) * k, (season === "winter" ? 6 : 5) * k, 0, a0, a1);
-            mg2.stroke();
-          };
-          rockRing(Math.PI, TAU);
-          // 잠긴 채 그린다(QA 라운드 1 S-4): 옛 clip은 밑변이 직선으로 잘려 "접시 위 돌"이었다. 수면 아래 8k는 물색으로
-          // 물들고 깊을수록 옅어지며, 수면선 위 3px는 젖어 어둡다. 겨울은 얼음이라 옅은 얼음빛·얕게.
-          drawSubmerged(mg2, shoreArt, "rock", x, y, {
-            k,
-            r: r2(),
-            flip: r2() < 0.5,
-            depth: season === "winter" ? 4 * k : 8 * k,
-            water: season === "winter" ? "206 220 234" : "104 156 176",
-            wet: season === "winter" ? 0.1 : 0.26,
-            alphaDeep: 0.14
+          const rr = r2();
+          const rf = r2() < 0.5;
+          anchor(x, y, 46 * k + 24, (ag) => {
+            // 수면선의 뒤 반원 — 바위보다 **먼저**(뒤쪽은 몸에 가려야 한다, 2026-09-05 소유자).
+            ag.strokeStyle = season === "winter" ? "rgb(226 238 248 / 0.85)" : "rgb(255 255 255 / 0.5)";
+            ag.lineWidth = season === "winter" ? 3 : 1.4;
+            ag.beginPath();
+            ag.ellipse(x, season === "winter" ? y + 2 : y, (season === "winter" ? 19 : 17) * k, (season === "winter" ? 6 : 5) * k, 0, Math.PI, TAU);
+            ag.stroke();
+            // 잠긴 채 그린다(QA 라운드 1 S-4): 옛 clip은 밑변이 직선으로 잘려 "접시 위 돌"이었다. 수면 아래 8k는 물색으로
+            // 물들고 깊을수록 옅어지며, 수면선 위 3px는 젖어 어둡다. 겨울은 얼음이라 옅은 얼음빛·얕게.
+            drawSubmerged(ag, shoreArt, "rock", x, y, {
+              k,
+              r: rr,
+              flip: rf,
+              depth: season === "winter" ? 4 * k : 8 * k,
+              water: season === "winter" ? "206 220 234" : "104 156 176",
+              wet: season === "winter" ? 0.1 : 0.26,
+              alphaDeep: 0.14
+            });
+            // 앞 반원은 이제 `drawSubmerged` 안에서 소품 폭에 맞춰 그린다(라운드 9) — 여기서 또 그리면 몸보다 큰 접시 테가 된다.
+            if (season === "winter") {
+              // 얼음판 위 — 윗면의 눈(수면선이 아니라 얼어붙은 테두리, 사이클4 현실성 #1).
+              ag.fillStyle = "rgb(250 253 255 / 0.85)";
+              ag.beginPath();
+              ag.ellipse(x, y - 13 * k, 12 * k, 4 * k, 0, Math.PI, TAU);
+              ag.fill();
+            }
           });
-          // 앞 반원은 이제 `drawSubmerged` 안에서 소품 폭에 맞춰 그린다(라운드 9) — 여기서 또 그리면 몸보다 큰 접시 테가 된다.
-          if (season === "winter") {
-            // 얼음판 위 — 윗면의 눈(수면선이 아니라 얼어붙은 테두리, 사이클4 현실성 #1).
-            mg2.fillStyle = "rgb(250 253 255 / 0.85)";
-            mg2.beginPath();
-            mg2.ellipse(x, y - 13 * k, 12 * k, 4 * k, 0, Math.PI, TAU);
-            mg2.fill();
-          }
         }
         // 뜬 통나무 하나 — 화면의 초점.
         {
           const x = w * (0.28 + r2() * 0.44);
           const y = MH * (0.42 + r2() * 0.34);
-          const logRing = (a0: number, a1: number) => {
-            mg2.strokeStyle = season === "winter" ? "rgb(226 238 248 / 0.85)" : "rgb(255 255 255 / 0.45)";
-            mg2.lineWidth = season === "winter" ? 3.4 : 1.6;
-            mg2.beginPath();
-            mg2.ellipse(x, y + (season === "winter" ? 3 : 2), season === "winter" ? 48 : 44, season === "winter" ? 10 : 8, 0, a0, a1);
-            mg2.stroke();
-          };
-          logRing(Math.PI, TAU); // 뒤 반원 — 통나무보다 먼저
-          drawProp(mg2, shoreArt, "log", x, y, { k: 1.5, r: r2(), flip: r2() < 0.5 });
-          logRing(0, Math.PI); // 앞 반원 — 통나무 뒤에
-          if (season === "winter") {
-            mg2.fillStyle = "rgb(250 253 255 / 0.85)";
-            mg2.beginPath();
-            mg2.ellipse(x, y - 16, 34, 6, 0, Math.PI, TAU);
-            mg2.fill();
-          }
+          const lr = r2();
+          const lf = r2() < 0.5;
+          anchor(x, y, 88, (ag) => {
+            const logRing = (a0: number, a1: number) => {
+              ag.strokeStyle = season === "winter" ? "rgb(226 238 248 / 0.85)" : "rgb(255 255 255 / 0.45)";
+              ag.lineWidth = season === "winter" ? 3.4 : 1.6;
+              ag.beginPath();
+              ag.ellipse(x, y + (season === "winter" ? 3 : 2), season === "winter" ? 48 : 44, season === "winter" ? 10 : 8, 0, a0, a1);
+              ag.stroke();
+            };
+            logRing(Math.PI, TAU); // 뒤 반원 — 통나무보다 먼저
+            drawProp(ag, shoreArt, "log", x, y, { k: 1.5, r: lr, flip: lf });
+            logRing(0, Math.PI); // 앞 반원 — 통나무 뒤에
+            if (season === "winter") {
+              ag.fillStyle = "rgb(250 253 255 / 0.85)";
+              ag.beginPath();
+              ag.ellipse(x, y - 16, 34, 6, 0, Math.PI, TAU);
+              ag.fill();
+            }
+          });
         }
+        anchors = nextAnchors;
         midWater = mw.c;
       }
       // ── 가까운 기슭(2026-09-04 검토 라운드2: "물이 화면의 65~70%인 빈 판", "汀線이 자로 그은 직선",
       //    "수심 그라데이션 없는 수직벽 수조"). 연못을 **양쪽 기슭 사이**에 두면 근경이 생기고 깊이가 3단이 된다:
       //    먼 기슭(위) → 열린 물(가운데) → 가까운 기슭과 정수식물(아래, 화면 밖으로 잘린다).
       if (!nearBank || nearW !== w) {
-        const NH = Math.round(h * 0.3);
+        const NH = nearNH();
         // 위 여유 PADN — 물가 선 바로 아래 선 갈대(최대 ~130px)가 캔버스 위 모서리(직선)에 잘려 "ㅡ자로 잘린 갈대"가 됐다
         // (QA 라운드 3, 소유자 스크린샷). 캔버스를 위로 늘리고 그리기 원점을 내린다. 그리는 자리(f.h − height)는 자동으로 맞는다.
         const PADN = 140;
@@ -642,7 +681,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         ng.translate(0, PADN);
         const r1 = rng(613 + w + SEASON_SEED[season]);
         // 근경 물가 선 — 위쪽으로 굽이친다(만·곶). 캔버스 위 40%는 물, 아래는 뭍.
-        const top = (x: number) => NH * 0.34 + Math.sin((x / w) * 4.2 + 1.9) * NH * 0.1 + Math.sin((x / w) * 9.7 + 0.4) * NH * 0.045;
+        // **정본은 `nearShoreYAt`**(라운드 17) — 그리는 선과 판정하는 선이 같은 식이어야 한다. 여기선 캔버스 좌표로 되돌린다.
+        const top = (x: number) => nearShoreYAt(x) - (h - NH);
         const NB: Record<SeasonKey, [string, string]> = {
           spring: ["#9fb783", "#7d9668"],
           summer: ["#8fae76", "#66875a"],
@@ -871,7 +911,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
               duckSet(q, "alarm", 1.4, t);
               const away = Math.atan2(q.y - p.y, q.x - p.x);
               q.tx = clamp(q.x + Math.cos(away) * 260, 40, w - 40);
-              q.ty = clamp(q.y + Math.sin(away) * 260, 40, waterBottom() - 40);
+              // 도피 목표도 물 안 — 옛 상한 40은 아예 하늘이었다(라운드 17).
+              q.ty = clamp(q.y + Math.sin(away) * 260, waterTopAt(q.x) + 34, nearShoreYAt(q.x) - 40);
               q.curiousT = 0;
               q.crumb = null;
               q.nextCurious = t + 10;
@@ -1013,13 +1054,20 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
               q.x = w - m;
               q.vx = -Math.abs(q.vx) - 4;
             }
+            // 물가에 닿으면 **튕기지 않고 미끄러진다**(2026-09-07 라운드 17, 소유자: "던지면 들어갔다가 튕겨져 나온다").
+            // 옛 코드는 `vy = ±|vy| + 4` — 들어온 속도를 그대로 되돌리는 완전 반사라, 세게 던질수록 세게 튀어나왔다.
+            // 물리적으로도 틀렸다: 기슭은 트램펄린이 아니라 물이 얕아지는 곳이다. 법선 성분만 죽이고(흡수) 아주 약한
+            // 복귀 속도만 남기면 오리는 기슭을 따라 돌아 나간다.
             const wtop = waterTopAt(q.x) + m;
+            const wbot = nearShoreYAt(q.x) - m; // 평평한 상수가 아니라 **그 x의 실제 기슭선**
             if (q.y < wtop) {
-              q.y = wtop; // 물가 선 위(기슭)로는 못 올라간다 — x별 실제 물가 선 기준(옛 shoreY()는 뭍 110px을 물로 봤다)
-              q.vy = Math.abs(q.vy) + 4;
-            } else if (q.y > waterBottom() - m) {
-              q.y = waterBottom() - m; // 가까운 기슭 뒤로는 못 내려간다(가려져 사라진다)
-              q.vy = -Math.abs(q.vy) - 4;
+              q.y = wtop;
+              q.vy = Math.max(0, q.vy) + 6;
+              q.dvy = Math.abs(q.dvy);
+            } else if (q.y > wbot) {
+              q.y = wbot;
+              q.vy = Math.min(0, q.vy) - 6;
+              q.dvy = -Math.abs(q.dvy);
             }
             // 흐름만으로도 조금 움직이면 그쪽을 본다(히스테리시스).
             if (q.state === "drift" || q.state === "paddle") {
@@ -1029,12 +1077,17 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           } else {
             const inside = q.x > -60 && q.x < w + 60 && q.y > -60 && q.y < h + 60;
             if (inside) q.entered = true;
-            // 튜브도 물 위에만 — 물가 선 위로 밀리면(던지기·흐름) 물가에서 튕겨 내려온다.
+            // 튜브도 물 위에만 — 양쪽 기슭 다(라운드 17: 아래쪽 근경 기슭이 빠져 있었다). 오리와 같은 흡수 처리.
             const wy = waterTopAt(q.x) + 24;
+            const wyB = nearShoreYAt(q.x) - 24;
             if (q.y < wy) {
               q.y = wy;
-              q.vy = Math.abs(q.vy) + 6;
+              q.vy = Math.max(0, q.vy) + 6;
               q.dvy = Math.abs(q.dvy);
+            } else if (q.y > wyB) {
+              q.y = wyB;
+              q.vy = Math.min(0, q.vy) - 6;
+              q.dvy = -Math.abs(q.dvy);
             }
             const gone = q.x < -110 || q.x > w + 110 || q.y < -110 || q.y > h + 110;
             if ((q.entered && gone) || t - q.born > 150) {
@@ -1260,12 +1313,18 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             const m = 60;
             if (q.x < -m) q.x = w + m - 1;
             else if (q.x > w + m) q.x = -m + 1;
-            // 위쪽은 기슭(뭍) — 물가 선에서 튕겨 돌아온다(모래 위 그림자 금지). 아래로 나가면 물가 바로 아래로 돌아온다.
-            const sy = shoreY() + 8;
+            // 양쪽 기슭 다 — **x별 실제 물가 선**에서 몸을 돌린다(라운드 17). 옛 코드는 위쪽을 평평한 `shoreY()+8`로 봐서
+            // 실제 물가 선보다 36~120px 위(뭍 안쪽)에서 방향을 틀었고 — 관찰자에겐 기슭 판 뒤로 사라졌다 나오는 그림자였다 —
+            // 아래로 나가면 먼 기슭으로 **순간이동**했다(A-2 "퇴장은 몸을 돌려 화면 밖으로" 위반).
+            const sy = waterTopAt(q.x) + 24;
+            const sb = nearShoreYAt(q.x) - 16;
             if (q.y < sy) {
               q.y = sy;
               if (Math.sin(q.hd) < 0) q.hd = -q.hd;
-            } else if (q.y > h + m) q.y = sy + 1;
+            } else if (q.y > sb) {
+              q.y = sb;
+              if (Math.sin(q.hd) > 0) q.hd = -q.hd;
+            }
           }
         }
       }
@@ -1526,8 +1585,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
       if (shore) g.drawImage(shore, 0, horizonY(f.h));
-      if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });
-      // 열린 물의 앵커 — 기슭 바로 아래(생물은 이 위를 지나간다).
+      // 연잎은 **물 폴리곤 안**으로 사상한다(라운드 17 P0) — 옛 전역 지면 매핑은 60%를 근경 기슭 아래에, 나머지를 뭍에 놓았다.
+      if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true, waterYAt });
+      // 열린 물의 **바탕**(기슭 반영·물풀 섬)만 여기서. 서 있는 앵커(바위·통나무)는 아래 y 대열에서 그린다.
       if (midWater) g.drawImage(midWater, 0, shoreY(), f.w, midWater.height);
       // **바람이 물낯을 세운다**(2026-09-07, W-1 ①). 민물은 파도 함수를 하나도 안 써서 바람 날씨에도 수면이 정지판이었다
       // (`currentLight().wind` 소비자 0개 — 바다·해안은 이미 쓴다). 잔잔한 못이 기본이므로 **맑음(.08)·안개(.04)에는 그리지
@@ -1580,8 +1640,20 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         softBlob(g, 10, 0, 12 + 10 * sf, "255 255 252", 0.5 * sf + 0.12);
         g.restore();
       }
+      // ── 물 위에 서 있는 것들의 **한 대열**(라운드 17): 앵커(바위·통나무) + 소품(오리·튜브)을 발 y로 정렬해 그린다.
+      //    옛 코드는 앵커를 바탕에 구워 먼저 그려, 오리가 자기보다 앞에 있는 바위·통나무 위로 헤엄쳤다(소유자 지적).
+      const anchorY = (a: { y: number }) => a.y + shoreY();
+      let ai = 0;
+      const sortedAnchors = anchors.slice().sort((a, b) => a.y - b.y);
+      const flushAnchors = (untilY: number) => {
+        while (ai < sortedAnchors.length && anchorY(sortedAnchors[ai]) <= untilY) {
+          const a = sortedAnchors[ai++];
+          g.drawImage(a.c, Math.round(a.x - a.c.width / 2), Math.round(anchorY(a) - a.c.height / 2));
+        }
+      };
       // 소품 — 그림자(높이만큼 멀리) + 스프라이트(둥둥: 미세한 회전·크기 숨쉬기).
-      for (const q of props) {
+      for (const q of props.slice().sort((a, b) => a.y - b.y)) {
+        flushAnchors(q.y);
         const spr = q.kind === "duck" ? duckSpr : ringSpr;
         if (!spr) continue;
         // 거리 흐림 — 먼 물 위의 오리는 옅어진다(2026-09-04 소유자).
@@ -1679,6 +1751,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         } else drawSprite(g, spr, q.x, q.y, q.a + Math.sin(q.ph * 0.7) * 0.05, size);
         g.restore();
       }
+      flushAnchors(Infinity); // 남은 앵커 — 모든 소품보다 앞(가까운 것)
       // 물방울(목욕·털기·놀람) — 흰 점, 튀었다 떨어진다.
       for (const d of drops) {
         g.fillStyle = `rgb(255 255 255 / ${clamp(d.life * 1.6, 0, 0.9)})`;
@@ -1759,7 +1832,15 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     },
     debug() {
       const duck = props.find((q) => q.kind === "duck");
+      // 물 경계 계측(라운드 17) — 물 위에 있어야 하는 것들의 **위·아래 여유**(px)와 물 밖으로 나간 개수.
+      // 음수면 뭍(위) 또는 근경 기슭(아래) 안으로 들어갔다는 뜻이다. 소유자가 육안으로 잡은 것을 수치로 못 박는다.
+      const swimmers = [...props.map((q) => ({ x: q.x, y: q.y, m: q.kind === "duck" ? 34 : 24 })), ...fish.map((q) => ({ x: q.x, y: q.y, m: 16 }))];
+      const gaps = swimmers.map((s) => ({ top: s.y - (waterTopAt(s.x) + s.m), bot: nearShoreYAt(s.x) - s.m - s.y }));
       return {
+        gapTop: gaps.length ? Math.min(...gaps.map((g2) => g2.top)) : null,
+        gapBot: gaps.length ? Math.min(...gaps.map((g2) => g2.bot)) : null,
+        outOfWater: gaps.filter((g2) => g2.top < -0.5 || g2.bot < -0.5).length,
+        anchors: anchors.length,
         spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)]),
         path: path.length,
         stamps: stamps.length,

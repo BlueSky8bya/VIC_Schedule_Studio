@@ -137,7 +137,7 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
         const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
         if (!skyC || sk !== skyKeyCur) {
           skyC = bakeSky(season, f.weather.now, f.time.band, f.w, f.h, seed);
-          cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed);
+          cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed, top() * 0.96); // 바다·해안엔 언덕이 없다 — 원경 상단은 수평선이다(라운드 17)
           skyKeyCur = sk;
         }
         drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);

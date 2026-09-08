@@ -620,8 +620,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     b.hd = hd;
     b.respawn = t + 6 + rand() * 4;
   }
-  function breeze(t: number, load: number) {
-    windDir = rand() < 0.5 ? 1 : -1;
+  function breeze(t: number, load: number, dir: number) {
+    // **방향은 그 세계의 바람**이다(2026-09-07 라운드 17, 검토 C). 옛 코드는 돌풍마다 방향을 새로 뽑아, 같은 바람 안에서
+    // 꽃잎이 좌우로 번갈아 불었고 입자층(시드가 정한 방향)과도 어긋났다. `f.windDir`는 라운드 14부터 프레임에 있다.
+    windDir = dir;
     const n = Math.round(lerp(18, 40, load));
     for (let i = 0; i < n; i++) {
       petals.push({ x: windDir > 0 ? -40 - rand() * 300 : w + 40 + rand() * 300, y: groundY(rand()), vx: windDir * (90 + rand() * 70), ph: rand() * TAU, a: rand() * TAU, va: (rand() - 0.5) * 4, born: t + rand() * 1.5, dur: 7 + rand() * 4, k: 0.7 + rand() * 0.6 });
@@ -1123,7 +1125,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
       // 꽃잎 바람 — 여력 0.55부터, 20~45초 간격. 부는 동안 풀이 같이 흔들린다(wind → 1).
       if (!summer && load >= 0.55 && t > nextBreeze) {
-        breeze(t, load);
+        breeze(t, load, f.windDir);
         nextBreeze = t + (20 + rand() * 25) * (f.weather.now === "wind" ? 0.4 : 1); // 바람 부는 날은 꽃잎 바람이 잦다
       }
       const blowing = petals.length > 0;

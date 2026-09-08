@@ -285,13 +285,32 @@ const hash01 = (a: number, b: number) => (((Math.sin(a * 12.9898 + b * 78.233) *
 /** 흔적을 그린다 — 바탕 뒤·생물 앞. hideCaches = 장면이 저장소를 제 흙더미 시스템으로 그릴 때(가을) 중복을 피한다.
  *  landOnShore = 물 장면(연못): 땅의 흔적은 기슭 띠(땅 비율 v ≤ SHORE_GV) 안에 있는 것만 그린다. water = 물 흔적(연잎)을 그리는 장면(연못만 —
  *  초원엔 물이 없다, PLAN-004). 먼 것(위)부터 그린다(y-sort). */
-export function drawTraces(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: TraceBakes, opts: { hideCaches?: boolean; landOnShore?: boolean; water?: boolean } = {}) {
+export function drawTraces(
+  g: CanvasRenderingContext2D,
+  f: Frame,
+  season: SeasonKey,
+  b: TraceBakes,
+  opts: {
+    hideCaches?: boolean;
+    landOnShore?: boolean;
+    water?: boolean;
+    /** 물 흔적(연잎)을 **그 장면의 물 폴리곤 안**으로 사상한다 — x, 0~1 → 화면 y. 없으면 옛 전역 지면 매핑. */
+    waterYAt?: (x: number, r: number) => number;
+  } = {}
+) {
   const hot = f.hot;
   const inHot = (x: number, y: number) => !!hot && x >= hot.x - 10 && x <= hot.x + hot.w + 10 && y >= hot.y - 10 && y <= hot.y + hot.h + 10;
   const items = f.traces
     .filter((t) => (t.kind === "lilypad" ? !!opts.water : true))
     .map((t) => {
       const hz0 = horizonY(f.h);
+      // **연잎은 물 위에만**(2026-09-07 라운드 17, 검토 B P0). 옛 코드는 연잎을 전역 지면 매핑(`toScreen`)으로 놓아
+      // 60%가 근경 기슭선 **아래**(마지막에 그리는 기슭 판에 통째로 덮여 12장이 4~5장으로 보였다), 좌우 띠의 것은
+      // 물가 선 **위 뭍**에 얹혔다. 라운드 3이 오리·글린트·포인터에만 `waterTopAt`을 물렸고 흔적 층이 빠져 있었다.
+      if (t.kind === "lilypad" && opts.waterYAt) {
+        const x = t.u * f.w;
+        return { t, x, y: opts.waterYAt(x, t.v) };
+      }
       const [x, y] = opts.landOnShore && LAND_KINDS.has(t.kind)
         ? [t.u * f.w, hz0 + Math.min(1, t.v / SHORE_GV) * (shoreBandY(f.h) - hz0)]
         : toScreen(t.u, t.v, f.w, f.h);
