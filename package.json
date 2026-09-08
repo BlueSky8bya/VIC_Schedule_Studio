@@ -13,6 +13,7 @@
     "test:visual": "playwright test --config=playwright.visual.config.ts",
     "harness:verify": "node scripts/agent-harness/verify-harness.mjs",
     "art:normalize": "node scripts/ambient-art-normalize.mjs",
+    "art:check": "node scripts/ambient-art-check.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "ambient:qa:selftest": "node scripts/ambient-qa/selftest.mjs",
     "ambient:qa:capture": "node scripts/ambient-qa/capture.mjs",
