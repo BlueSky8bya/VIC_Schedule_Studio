@@ -21,7 +21,19 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const sharp = require("sharp");
+const esbuild = require("esbuild");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+// 매니페스트가 정본이다 — 자리마다 검사가 **뜻이 있는지**가 거기 적혀 있다(한 화면에 하나뿐인 달에 "변형끼리 달라야
+// 한다"를 물으면 여덟 위상이 전부 반려로 잡힌다). normalize와 같은 방식으로 번들해 읽는다.
+const manifestOut = path.join(root, ".next", "cache", "ambient-art-manifest-check.cjs");
+fs.mkdirSync(path.dirname(manifestOut), { recursive: true });
+esbuild.buildSync({
+  entryPoints: [path.join(root, "components/shared/ambient/art/manifest.ts")],
+  bundle: true, platform: "node", format: "cjs", outfile: manifestOut, logLevel: "silent",
+  tsconfig: path.join(root, "tsconfig.json"),
+});
+const { artSlot } = require(manifestOut);
 
 const args = process.argv.slice(2);
 const VALUED = new Set(["--dir", "--baseline"]); // 값을 하나 먹는 플래그 — 그 값을 자리 이름으로 착각하면 안 된다
@@ -49,21 +61,23 @@ async function pixels(file) {
   return { d: data, W: info.width, H: info.height, C: info.channels, box: [t.info.width, t.info.height] };
 }
 
-/** ① 도트 결 — 한 줄에서 색이 바뀌는 횟수(스티플일수록 크다)와 같은 색이 가로로 이어지는 평균 길이. */
-function texture({ d, W, H, C }) {
+/** ① 도트 결 — 한 색이 가로로 **몇 칸** 이어지는가, 한 줄에서 색이 몇 번 바뀌는가.
+ *  ⚠ **칸 단위로 잰다.** px로 재면 자리마다 도트 크기가 달라 기준이 안 선다 — 소나무에 맞춘 "평균 런 18px"이
+ *  새털구름(도트가 잘고 그림이 길다)을 결함으로 잡았다. 같은 그림을 칸으로 재면 소나무 2.5칸, 새털 5.9칸이다. */
+function texture({ g, GW, GH }) {
   const cols = new Map();
-  let runs = 0, opaque = 0, changes = 0;
-  for (let y = 0; y < H; y++) {
+  let runs = 0, cells = 0, changes = 0;
+  for (let y = 0; y < GH; y++) {
     let prev = null;
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * C;
-      const k = (C === 4 ? d[i + 3] : 255) > 128 ? `${d[i]},${d[i + 1]},${d[i + 2]}` : null;
-      if (k) { opaque++; cols.set(k, (cols.get(k) ?? 0) + 1); }
+    for (let x = 0; x < GW; x++) {
+      const k = g[y * GW + x];
+      if (k) { cells++; cols.set(k, (cols.get(k) ?? 0) + 1); }
       if (k !== prev) { if (k) runs++; if (prev && k) changes++; }
       prev = k;
     }
   }
-  return { colors: cols.size, meanRun: opaque / Math.max(1, runs), changesPerRow: changes / H, opaque };
+    // 색 변화는 **칸당 밀도**로 낸다 — 줄당 횟수는 그림이 넓을수록 커져(참나무 105칸 대 소나무 30칸) 자리끼리 비교가 안 된다.
+  return { colors: cols.size, meanRun: cells / Math.max(1, runs), changeDensity: changes / Math.max(1, GH * GW), cells };
 }
 
 /** 실루엣 — 알파 상자를 격자로 나눈 칸별 불투명 비율(soft mask). */
@@ -115,6 +129,140 @@ function leafHue({ d, W, H, C }) {
   return n ? { mean: hs / n, yellowPct: (yellow / n) * 100, n } : null;
 }
 
+// ── 구조 결함 ────────────────────────────────────────────────────────────────────────────────
+// 소유자가 눈으로 잡아 온 셋 — **한 칸씩 튀는 색 · 속에 갇힌 얼룩("구멍") · 끊긴 외곽선**. 생성기는 이것들을
+// 만들어 놓고도 "다 됐다"고 말하므로, 프롬프트로는 줄일 수는 있어도 막을 수는 없다. 여기서 기계로 잡는다.
+// 셋 다 **도트 격자 위에서** 재야 뜻이 맞는다(화소 단위로 재면 한 도트 안의 계단이 결함으로 잡힌다).
+
+const lum = (k) => { const [r, g, b] = k.split(",").map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+/** 눈·흰 하이라이트 칸 — 외곽선 판정에서 뺀다. 눈은 실루엣 위에 **얹히는** 것이라 그 자리의 경계는 밝은 게 맞고,
+ *  빼지 않으면 겨울판이 구조적으로 전부 "외곽선 끊김"으로 잡힌다(합격본 겨울 소나무가 71.7%로 걸렸다). */
+const isSnowCell = (k) => {
+  const [r, g, b] = k.split(",").map(Number);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  return (mx + mn) / 2 > 190 && mx - mn < 30;
+};
+
+/** 도트 격자 — 블록 크기를 **그림에서 추정한다**(자리마다 다르고, 저장할 때 정수배로 줄어 매니페스트 값과도 다르다).
+ *  b×b 정렬 칸이 단색인 비율이 95% 이상인 가장 큰 b가 그 그림의 도트다. */
+async function dotCells(file) {
+  const t = await sharp(file).ensureAlpha().trim({ threshold: 8 }).raw().toBuffer({ resolveWithObject: true });
+  const { width: W, height: H, channels: C } = t.info, d = t.data;
+  const at = (x, y) => { const i = (y * W + x) * C; return d[i + 3] > 128 ? `${d[i]},${d[i + 1]},${d[i + 2]}` : null; };
+  let block = 1;
+  for (const b of [2, 3, 4, 6, 8, 12, 16]) {
+    if (W % b || H % b) continue;
+    let ok = 0, all = 0;
+    for (let cy = 0; cy < H / b; cy++) for (let cx = 0; cx < W / b; cx++) {
+      all++;
+      const c0 = at(cx * b, cy * b);
+      let uni = true;
+      for (let y = 0; y < b && uni; y++) for (let x = 0; x < b; x++) if (at(cx * b + x, cy * b + y) !== c0) { uni = false; break; }
+      if (uni) ok++;
+    }
+    if (ok / all >= 0.95) block = b;
+  }
+  const GW = Math.floor(W / block), GH = Math.floor(H / block);
+  const g = new Array(GW * GH);
+  for (let cy = 0; cy < GH; cy++) for (let cx = 0; cx < GW; cx++) {
+    const cnt = new Map();
+    for (let y = 0; y < block; y++) for (let x = 0; x < block; x++) {
+      const k = at(cx * block + x, cy * block + y);
+      cnt.set(k, (cnt.get(k) ?? 0) + 1);
+    }
+    g[cy * GW + cx] = [...cnt.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }
+  return { g, GW, GH, block };
+}
+
+function structure({ g, GW, GH, block }) {
+  const n4 = (i) => {
+    const x = i % GW, y = (i / GW) | 0;
+    return [x > 0 ? i - 1 : -1, x < GW - 1 ? i + 1 : -1, y > 0 ? i - GW : -1, y < GH - 1 ? i + GW : -1].filter((v) => v >= 0);
+  };
+  let body = 0;
+  for (let i = 0; i < g.length; i++) if (g[i]) body++;
+
+  // ① 고아 칸 — 이웃 넷 중 같은 색이 하나도 없다. 붓이 한 칸 미끄러진 자리이고, 화면에서 잡티로 읽힌다.
+  let orphan = 0;
+  for (let i = 0; i < g.length; i++) {
+    if (!g[i]) continue;
+    if (!n4(i).some((j) => g[j] === g[i])) orphan++;
+  }
+
+  // ② 외곽선 — 경계 칸이 **바로 안쪽 이웃보다 어두운가**. 팔레트에서 "가장 어두운 색"을 골라 견주는 방식은
+  //    자리마다 색 구성이 달라 헛짚는다(참나무 봄이 51%로 나왔다) — 이웃과의 상대 밝기는 어떤 팔레트에서도 성립한다.
+  const isEdge = new Uint8Array(g.length);
+  const around = (i) => {
+    const x = i % GW, y = (i / GW) | 0;
+    let sum = 0, n = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if ((!dx && !dy) || nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
+      const c = g[ny * GW + nx];
+      if (c) { sum += lum(c); n++; }
+    }
+    return n ? sum / n : null;
+  };
+  let edge = 0, edgeDark = 0;
+  for (let i = 0; i < g.length; i++) {
+    if (!g[i]) continue;
+    const x = i % GW, y = (i / GW) | 0;
+    const open = [x > 0 ? i - 1 : null, x < GW - 1 ? i + 1 : null, y > 0 ? i - GW : null, y < GH - 1 ? i + GW : null]
+      .some((j) => j === null || !g[j]);
+    if (!open) continue;
+    if (isSnowCell(g[i])) continue; // 눈이 얹힌 자리 — 외곽선이 밝은 게 정상이다
+    isEdge[i] = 1;
+    edge++;
+    const a = around(i);
+    if (a !== null && lum(g[i]) <= a + 2) edgeDark++;
+  }
+  // **끊긴 곳** — 안쪽보다 밝게 남은 경계 칸의 8연결 덩어리 수. 눈 덮인 꼭대기는 한두 덩이로 끝나지만,
+  // 외곽선이 여기저기 빠졌으면 덩어리가 여럿 생긴다(비율만으로는 그 둘이 구별되지 않는다).
+  const seenGap = new Uint8Array(g.length);
+  const lighter = (i) => { const a = around(i); return a !== null && lum(g[i]) > a + 2; };
+  let gaps = 0;
+  for (let i0 = 0; i0 < g.length; i0++) {
+    if (seenGap[i0] || !isEdge[i0] || !lighter(i0)) continue;
+    const q = [i0]; seenGap[i0] = 1;
+    while (q.length) {
+      const i = q.pop(), x = i % GW, y = (i / GW) | 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
+        const j = ny * GW + nx;
+        if (!seenGap[j] && isEdge[j] && lighter(j)) { seenGap[j] = 1; q.push(j); }
+      }
+    }
+    gaps++;
+  }
+
+  // ③ 갇힌 얼룩 — **한 가지 색으로만** 둘러싸인 작은 색 덩어리. 소유자가 "구멍이 뻥 뚫렸다"고 부르는 것이
+  //    대개 이것이다(알파 구멍은 실제로 0이었다 — 배경이 비치는 게 아니라 속에 남의 색이 박혀 있다).
+  const seen = new Uint8Array(g.length);
+  let blob = 0;
+  for (let i0 = 0; i0 < g.length; i0++) {
+    if (seen[i0] || !g[i0]) continue;
+    const col = g[i0], q = [i0], cells = [];
+    seen[i0] = 1;
+    const ring = new Set();
+    while (q.length) {
+      const i = q.pop(); cells.push(i);
+      for (const j of n4(i)) {
+        if (g[j] === col) { if (!seen[j]) { seen[j] = 1; q.push(j); } }
+        else ring.add(g[j] ?? "∅");
+      }
+    }
+    if (cells.length <= 6 && ring.size === 1 && !ring.has("∅")) blob++;
+  }
+  // **밝은 물체는 외곽선 규칙 밖이다.** 새털구름·구름 조각은 투명 위에 놓인 옅은 흰 획이라 "경계가 안쪽보다 어둡다"가
+  // 성립하지 않는다(실측: cloud-high·cloud-wisp가 0.0%로 나왔다 — 결함이 아니라 그런 그림이다).
+  let lumSum = 0;
+  for (let i = 0; i < g.length; i++) if (g[i]) lumSum += lum(g[i]);
+  const bright = body ? lumSum / body > 190 : false;
+  return { block, body, bright, orphanPct: body ? (orphan / body) * 100 : 0, blobPer1k: body ? (blob / body) * 1000 : 0, edgeDarkPct: edge ? (edgeDark / edge) * 100 : 0, gaps };
+}
+
 // ── 파일 모으기 ──────────────────────────────────────────────────────────────────────────────
 /** `tree-pine` → 자리 셋(tree-pine · tree-pine-autumn · tree-pine-winter)의 변형 파일들. */
 function collect(d) {
@@ -150,7 +298,9 @@ for (const slot of slots) {
   M[slot] = {};
   for (const [n, file] of Object.entries(found[slot])) {
     const px = await pixels(file);
-    M[slot][n] = { file, px, tex: texture(px), sil: silhouette(px), snow: snowShare(px), hue: leafHue(px) };
+    // 도트 결·구조 결함은 **줄이지 않은 원본의 도트 격자**에서 잰다 — 폭 240으로 맞추면 한 칸짜리 잡티가 이웃과 섞여 사라진다.
+    const cells = await dotCells(file);
+    M[slot][n] = { file, px, tex: texture(cells), sil: silhouette(px), snow: snowShare(px), hue: leafHue(px), st: structure(cells) };
   }
 }
 
@@ -160,19 +310,62 @@ const p1 = (v) => v.toFixed(1);
 const warn = (bad) => (bad ? " ⚠" : "");
 /** 기준선(합격본)에서 온 줄은 표시한다 — 목표치를 못 맞춰도 그건 "지금의 기준"이지 반려가 아니다. */
 const tag = (slot, n) => (fromBase.has(`${slot}-${n}`) ? "  ← 기준" : "");
+/** 이 자리의 **합격본**(기준선에서 온 줄) — 있으면 판정은 절대 수치가 아니라 **그것과의 차이**로 한다.
+ *  자리마다 도트 굵기·물체 모양이 달라 절대 임계값은 반드시 헛짚는다(겨울 참나무의 앙상한 가지, 작은 바위,
+ *  긴 새털구름이 전부 그랬다). 우리가 물어야 할 것은 "합격한 그림보다 나쁜가"다. */
+const baseOf = (slot) => {
+  for (const n of Object.keys(M[slot])) if (fromBase.has(`${slot}-${n}`)) return M[slot][n];
+  return null;
+};
 
-console.log(`\n■ 도트 결 — 같은 세트로 보이는가 (목표: 줄당 변화 ≤ 5.5 · 평균 가로 런 ≥ 18px, 폭 ${NORM_W} 기준)`);
-console.log(pad("파일", 28) + pad("상자", 12) + pad("색", 6) + pad("평균가로", 10) + "줄당변화");
+console.log(`\n■ 도트 결 — 같은 세트로 보이는가 (합격본 대비: 가로 런 −15% 이내 · 색 변화 밀도 +25% 이내)`);
+console.log(pad("파일", 28) + pad("상자", 12) + pad("색", 6) + pad("평균가로", 10) + "변화밀도");
 for (const slot of slots) for (const n of Object.keys(M[slot]).sort((a, b) => a - b)) {
   const r = M[slot][n];
-  const bad = r.tex.changesPerRow > 5.5 || r.tex.meanRun < 18;
-  console.log(pad(path.basename(r.file), 28) + pad(r.px.box.join("×"), 12) + pad(r.tex.colors, 6) + pad(r.tex.meanRun.toFixed(2), 10) + p1(r.tex.changesPerRow) + warn(bad) + tag(slot, n));
+  const b = baseOf(slot);
+  // 합격본이 있으면 **그것보다 나쁜가**를 묻는다(런이 15% 넘게 짧아졌거나, 색 변화가 25% 넘게 잦아졌거나).
+  // 없으면 느슨한 절대 기준으로만 본다 — 자리마다 도트 굵기가 달라 촘촘한 절대값은 반드시 헛짚는다.
+  // 합격본이 없으면 **판정하지 않는다** — 큰 파탄만 본다. 이 지표의 정상 범위는 자리마다 다르고(바위 1.5칸,
+  // 소나무 2.5칸, 새털구름 5.9칸), 절대 임계값을 세우면 이미 합격한 그림을 되레 반려하게 된다.
+  const bad = b && b !== r
+    ? r.tex.meanRun < b.tex.meanRun * 0.85 || r.tex.changeDensity > b.tex.changeDensity * 1.25
+    : r.st.body >= 300 && r.tex.meanRun < 1.3;
+  console.log(pad(path.basename(r.file), 28) + pad(r.px.box.join("×"), 12) + pad(r.tex.colors, 6) + pad(`${r.tex.meanRun.toFixed(2)}칸`, 10) + r.tex.changeDensity.toFixed(3) + warn(bad) + tag(slot, n));
 }
+
+console.log(`\n■ 구조 결함 — 생성기가 "다 됐다"고 하고 남기는 것 (합격본 대비: 고아 +5%p · 얼룩 +8 · 외곽선 −8%p · 끊긴 곳 +6 이내)`);
+console.log(`  고아 = 이웃 넷 중 같은 색이 없는 칸(잡티) · 얼룩 = 한 색에만 둘러싸인 작은 덩어리(속 "구멍") · 외곽선 = 경계 칸이 안쪽보다 어두운 비율`);
+console.log(pad("파일", 28) + pad("도트", 6) + pad("몸통칸", 8) + pad("고아", 9) + pad("얼룩/천칸", 11) + pad("외곽선", 8) + "끊긴곳");
+let sawSmall = false;
+for (const slot of slots) for (const n of Object.keys(M[slot]).sort((a, b) => a - b)) {
+  const st = M[slot][n].st;
+  // 작은 자리(몸통 300칸 미만: 바위·자갈)는 속이 거의 없어 고아 비율이 구조적으로 높다 — 재되 경고하지 않는다.
+  const small = st.body < 300;
+  if (small) sawSmall = true;
+  const bs = baseOf(slot)?.st;
+  // 합격본이 있으면 **그것보다 나쁜가**로 본다. 절대 임계값은 자리마다 헛짚는다 — 겨울 참나무의 앙상한 가지,
+  // 몸통 100칸짜리 바위, 길고 옅은 새털구름이 모두 "결함"으로 잡혔지만 셋 다 합격한 그림이다.
+  const bad = bs && bs !== st
+    ? st.orphanPct > bs.orphanPct + 5 || st.blobPer1k > bs.blobPer1k + 8 || (!st.bright && (st.edgeDarkPct < bs.edgeDarkPct - 8 || st.gaps > bs.gaps + 6))
+    : !small && (st.orphanPct > 30 || st.blobPer1k > 60 || (!st.bright && st.edgeDarkPct < 65));
+  console.log(
+    pad(path.basename(M[slot][n].file), 28) + pad(`${st.block}px`, 6) + pad(st.body, 8) +
+    pad(`${p1(st.orphanPct)}%${small ? "*" : ""}`, 9) + pad(p1(st.blobPer1k), 11) +
+    pad(st.bright ? "밝음—" : `${p1(st.edgeDarkPct)}%`, 8) + (st.bright ? "-" : st.gaps) + warn(bad) + tag(slot, n)
+  );
+}
+if (slots.some((s2) => Object.values(M[s2]).some((r) => r.st.bright))) console.log("  밝음— = 옅은 흰 물체(새털구름 등) — 경계가 안쪽보다 어두울 수 없다. 외곽선은 재지 않는다.");
+if (sawSmall) console.log("  * 몸통 300칸 미만 — 속이 거의 없어 고아 비율이 구조적으로 높다. 재기만 하고 경고하지 않는다.");
 
 console.log(`\n■ 다양성 — 같은 자리의 변형끼리 (목표: 어느 두 장도 실루엣 일치 80% 미만)`);
 for (const slot of slots) {
   const ns = Object.keys(M[slot]).sort((a, b) => a - b);
   if (ns.length < 2) { console.log(`${slot}: 변형 ${ns.length}장 — 생략`); continue; }
+  // 한 화면에 하나만 놓이는 자리(달 위상·해)는 변형이 **같은 것의 다른 상태**다 — 여기에 "서로 달라야 한다"를
+  // 물으면 여덟 위상이 전부 반려로 잡힌다. 다양성은 `perScreen`이 적힌 자리에서만 뜻이 있다.
+  const meta = artSlot(slot);
+  if (!meta?.perScreen) { console.log(`${pad(slot, 22)} 한 화면에 하나 — 변형끼리 달라야 할 이유가 없다(검사 제외)`); continue; }
+  const smallBody = Object.values(M[slot]).some((r) => r.st.body < 300);
   let max = 0, maxp = "", sum = 0, cnt = 0, over = 0;
   for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) {
     const v = iou(M[slot][ns[i]].sil, M[slot][ns[j]].sil);
@@ -180,7 +373,9 @@ for (const slot of slots) {
     if (v >= 0.8) over++;
     if (v > max) { max = v; maxp = `-${ns[i]}↔-${ns[j]}`; }
   }
-  console.log(`${pad(slot, 22)} 평균 ${p1((sum / cnt) * 100)}%  최대 ${p1(max * 100)}% (${maxp})  80%↑ ${over}/${cnt}쌍${warn(over > 0)}`);
+  // 작은 물체(바위·자갈)는 16×16 격자에서 실루엣이 다 "덩어리"로 수렴한다 — 재되 경고하지 않는다.
+  //   그 자리의 변별은 실루엣 전체가 아니라 윗선에서 나오고, 그건 이 지표가 보는 것이 아니다.
+  console.log(`${pad(slot, 22)} 평균 ${p1((sum / cnt) * 100)}%  최대 ${p1(max * 100)}% (${maxp})  80%↑ ${over}/${cnt}쌍${smallBody ? "*" : warn(over > 0)}`);
 }
 
 const seasonal = slots.filter((s) => s !== family);
@@ -204,7 +399,11 @@ if (winter.length) {
   console.log(`\n■ 눈의 양 — 겨울판 (목표: 몸의 20% 이상. 그 아래면 화면에서 흰 줄 몇 가닥으로 읽힌다)`);
   for (const slot of winter) for (const n of Object.keys(M[slot]).sort((a, b) => a - b)) {
     const r = M[slot][n];
-    console.log(`  ${pad(path.basename(r.file), 28)}${p1(r.snow)}%${warn(r.snow < 20)}${tag(slot, n)}`);
+    // 20%는 **소나무 합격본에서 나온 수**다(22.3%). 다른 종에 그대로 들이대면 헛짚는다(눈이 가지에만 앉는
+    // 겨울 참나무가 18.8%로 걸렸다) — 그 자리의 합격본이 있을 때만 판정한다.
+    const bsnow = baseOf(slot)?.snow;
+    const bad = bsnow !== undefined && baseOf(slot) !== r ? r.snow < bsnow - 3 : false;
+    console.log(`  ${pad(path.basename(r.file), 28)}${p1(r.snow)}%${warn(bad)}${tag(slot, n)}`);
   }
 }
 
@@ -214,7 +413,8 @@ if (autumn.length) {
   for (const slot of autumn) for (const n of Object.keys(M[slot]).sort((a, b) => a - b)) {
     const r = M[slot][n];
     if (!r.hue) continue;
-    const bad = r.hue.yellowPct > 20 || r.hue.mean < 85;
+    const bh = baseOf(slot)?.hue;
+    const bad = bh && baseOf(slot) !== r ? r.hue.yellowPct > bh.yellowPct + 10 || r.hue.mean < bh.mean - 8 : r.hue.yellowPct > 20;
     console.log(`  ${pad(path.basename(r.file), 28)}평균 ${p1(r.hue.mean)}°  노랑기 ${p1(r.hue.yellowPct)}%${warn(bad)}${tag(slot, n)}`);
   }
 }
