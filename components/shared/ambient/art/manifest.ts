@@ -397,8 +397,26 @@ const wantFiles = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) => {
   return only ? base.filter((f) => only.has(f)) : base;
 };
 
+/** 표 셀에 넣을 **한 줄 요약** — 첫 문장까지. 브리프 전문은 표 아래 자리별 절에 싣는다(줄바꿈이 표를 깬다). */
+const briefLead = (s: ArtSlot): string => {
+  const first = s.brief.split("\n")[0].trim();
+  return first.length > 90 ? `${first.slice(0, 88)}…` : first;
+};
+
 const promptRow = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) =>
-  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${viewTagOf(s)} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${dotsAcross(s.px, s.grid)}칸 | ${s.perScreen ?? "-"} | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
+  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${viewTagOf(s)} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${dotsAcross(s.px, s.grid)}칸 | ${s.perScreen ?? "-"} | ${briefLead(s)} |`;
+
+/** 자리별 상세 — 표 아래. 브리프 전문 + 동숲 참고. 여기가 실제 지시이고 표는 색인이다. */
+const promptDetail = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>): string =>
+  [
+    `### ${s.nameKo} — ${wantFiles(s, pilot, only).join(", ")}`,
+    `자리 ${s.px[0]}×${s.px[1]}(${ratioOf(s.px)}) · 카메라 ${viewTagOf(s)} · 격자 ${dotGrid(s.px, s.grid)}칸(블록 ${dotBlock(s.px, s.grid)}px) · 물체 가로 약 ${dotsAcross(s.px, s.grid)}칸${s.perScreen ? ` · **한 화면에 최대 ${s.perScreen}개 동시**` : ""}`,
+    "",
+    s.brief,
+    s.acnhRef ? `\n(동물의 숲 참고 항목: ${s.acnhRef} — 스타일 참고만)` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
 
 /** 배치 프롬프트 — 아무 자리 묶음이나(보드의 필터 결과·파일럿·단계 전체) 코덱스에 통째로 넘길 한 장으로 만든다. */
 export function batchPrompt(
@@ -425,6 +443,10 @@ ${ART_STYLE_GUIDE}
 | 자리 id | 파일 이름 | 이름 | 계절 | 카메라 | 화면 크기 | 격자 | 블록 | 가로 도트 | 한 화면 | 그릴 것 |
 |---|---|---|---|---|---|---|---|---|---|---|
 ${rows.map((s) => promptRow(s, pilot, only)).join("\n")}
+
+## 자리별 상세(실제 지시 — 위 표는 색인이다)
+
+${rows.map((s) => promptDetail(s, pilot, only)).join("\n\n")}
 
 ## 납품
 - 파일 하나에 물체 하나. 표의 이름을 그대로 파일 이름으로. **1024×1024 정사각 투명 PNG**, 품질 낮음/중간.

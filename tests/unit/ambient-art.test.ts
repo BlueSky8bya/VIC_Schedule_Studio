@@ -213,6 +213,27 @@ describe("ambient/art — 목록은 남은 것만 답한다(PLAN-010)", () => {
   });
 });
 
+describe("ambient/art — 프롬프트의 마크다운 표가 깨지지 않는다(2026-09-08)", () => {
+  // 브리프가 길어지면서(바위 8장 배분 = 15줄) 표 셀 안의 줄바꿈이 표 자체를 끊었다 — 코덱스가 표로 못 읽는다.
+  // 표는 한 줄 요약(색인), 전문은 표 아래 자리별 절.
+  it("표의 모든 행이 한 줄이고 열 수가 머리와 같다", () => {
+    const long = ART_SLOTS.filter((s) => s.brief.includes(String.fromCharCode(10))).slice(0, 6);
+    expect(long.length).toBeGreaterThan(0);
+    const p = batchPrompt(long, "표 검사");
+    const lines = p.split(String.fromCharCode(10));
+    const head = lines.findIndex((l) => l.startsWith("| 자리 id |"));
+    expect(head).toBeGreaterThan(0);
+    const cols = lines[head].split("|").length;
+    for (let i = head + 2; i < head + 2 + long.length; i++) {
+      expect(lines[i].startsWith("|"), `행 ${i} 가 표 행이 아니다: ${lines[i].slice(0, 40)}`).toBe(true);
+      expect(lines[i].split("|").length, `행 ${i} 열 수`).toBe(cols);
+    }
+    // 전문은 아래 절에 살아 있어야 한다.
+    expect(p).toContain("## 자리별 상세");
+    for (const s of long) expect(p).toContain(s.brief);
+  });
+});
+
 describe("traces — 연잎 간격", () => {
   it("8월 말 연잎 12장은 서로 겹치지 않게 떨어져 있다(가로 .045·세로 .06 밖)", () => {
     const pads = monthTraces("vic", 2026, 8).filter((t) => t.kind === "lilypad");
