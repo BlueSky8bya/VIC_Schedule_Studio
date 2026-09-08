@@ -15,7 +15,7 @@ import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useSta
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowLeft, BookOpen, Check, ClipboardCopy, Image as ImageIcon, LayoutGrid, List, Search } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ClipboardCopy, Search } from "lucide-react";
 import "./ambient-art-board.css";
 import {
   ART_DIR,
@@ -24,17 +24,13 @@ import {
   CATEGORY_KO,
   codexMasterPrompt,
   dotBlock,
-  dotGrid,
-  NOW_KO,
   pilotFiles,
   pilotPrompt,
   pilotSlots,
   SEASON_KO,
   slotFiles,
   slotPrompt,
-  sourceRatio,
   targetEdge,
-  VIEW_SHORT,
   type ArtCategory,
   type ArtFileInfo,
   type ArtSlot,
@@ -42,7 +38,7 @@ import {
 } from "@/components/shared/ambient/art/manifest";
 import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { previewOf } from "@/components/shared/ambient/art/preview";
-import { codexById, CODEX_KINDS, HABITAT_LABEL, KIND_LABEL, type CodexEntry } from "@/components/shared/ambient/world/codex";
+import { codexById, CODEX_KINDS, HABITAT_LABEL, type CodexEntry } from "@/components/shared/ambient/world/codex";
 import { BIOMES } from "@/components/shared/ambient/world/biomes";
 import { TIER_DOTS, TIER_LABEL } from "@/components/shared/ambient/world/rarity";
 import { BAND_LABEL } from "@/components/shared/ambient/world/time";
@@ -55,7 +51,6 @@ type Props = {
   stamp: number;
 };
 
-const kb = (n: number) => `${Math.max(1, Math.round(n / 1024))}KB`;
 
 const SEASONS: SeasonKey[] = ["spring", "summer", "autumn", "winter"];
 /** 달 목록을 사람이 읽는 줄로 — 1~12 전부면 "사철", 이어진 구간은 "4~10월", 흩어지면 쉼표. */
@@ -241,8 +236,8 @@ const CodexRow = memo(function CodexRow({
   );
 });
 
-const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
-  const { ref, seen } = useInView<HTMLElement>();
+const Card = memo(function Card({ slot, files, stamp, i }: CardProps) {
+  const { ref, seen } = useInView<HTMLAnchorElement>();
   const want = slotFiles(slot);
   const done = files.length >= want.length;
   const partial = files.length > 0 && !done;
@@ -254,118 +249,55 @@ const Card = memo(function Card({ slot, files, stamp, onCopy, i }: CardProps) {
   // 옛 규격(lanczos3 시절)으로 줄여 둔 파일 — 변이 블록 배수가 아니면 도트가 이미 뭉개졌다는 신호다.
   const block = dotBlock(slot.px, slot.grid);
   const stale = files.some((f) => f.w % block !== 0 && f.h % block !== 0);
-  const entry = codexById(slot.id);
-  const pf = slot.pilot ? pilotFiles(slot) : [];
-  const pfDone = pf.filter((n) => files.some((f) => f.file === n)).length;
+  // 카드는 **"무엇이 남았나"만** 답한다(2026-09-08 PLAN-010, 소유자: "너무 어수선해").
+  // 규격 칩·브리프·도감 줄·동숲 참고는 전부 상세(/studio/ambient-art/<자리>)로 갔다 — 목록에 브리프를 통째로 실으니
+  // 카드 하나가 화면 절반이 됐고 프롬프트용 마크다운의 별표까지 그대로 보였다.
+  // 남긴 넷: 미리보기 한 장 · 이름 · 진행 **칸** · 규격을 어긴 파일 경고.
   return (
-    <article
+    <Link
       className={`art-card${done ? " done" : ""}`}
       data-slot={slot.id}
+      data-act="art-slot-open"
+      href={`/studio/ambient-art/${slot.id}` as Route}
+      prefetch={false}
       ref={ref}
       data-state={done ? "done" : partial ? "partial" : empty ? "empty" : "todo"}
       style={{ "--i": Math.min(i, 24) } as React.CSSProperties}
     >
-      <div className="art-card-title">
-        <div>
-          <Link className="art-open" data-act="art-slot-open" href={`/studio/ambient-art/${slot.id}` as Route} prefetch={false}>
-            <strong>{slot.nameKo}</strong> <code>{slot.id}</code>
-          </Link>
-          {slot.pilot ? (
-            <span className="art-pilot" title={`파일럿 배치 — 이번에 만들 ${slot.pilot}장: ${pf.join(", ")}`}>
-              파일럿 {pfDone}/{slot.pilot}
-            </span>
-          ) : null}
+      <div className={`art-cell ${ground}`}>
+        {files.length ? (
+          <Image alt={slot.nameKo} loading="lazy" src={`${ART_DIR}/${files[0].file}?v=${stamp}`} width={96} height={96} unoptimized />
+        ) : (
+          <NowPreview seen={seen} slot={slot} />
+        )}
+      </div>
+      <div className="art-card-main">
+        <div className="art-card-name" title={slot.id}>
+          <strong>{slot.nameKo}</strong>
         </div>
-        <span className={`art-status${done ? " done" : partial ? " partial" : empty ? " empty" : ""}`}>
-          {done ? "납품됨" : partial ? `${files.length}/${want.length}` : empty ? "빈 자리" : "대기"}
+        {/* 진행은 숫자가 아니라 칸이다 — 빈 칸 다섯 개가 "3/8"보다 빠르다(상세에서 검증된 방식). */}
+        <span className="art-pips" title={`${files.length}/${want.length}장`} aria-label={`${want.length}장 중 ${files.length}장 납품`}>
+          {want.map((f, n) => (
+            <i data-on={files.some((x) => x.file === f) ? "1" : "0"} key={f}>
+              <span className="sr-only">{n + 1}</span>
+            </i>
+          ))}
         </span>
-      </div>
-      <div className="art-pair">
-        <div className="art-pane">
-          <span>지금 · {NOW_KO[slot.now]}</span>
-          <div className={`art-cell ${ground}`}>
-            <NowPreview seen={seen} slot={slot} />
-          </div>
-        </div>
-        <div className="art-pane">
-          <span>그림 · PNG</span>
-          <div className={`art-cell ${ground}`}>
-            {files.length ? (
-              <Image alt={slot.nameKo} loading="lazy" src={`${ART_DIR}/${files[0].file}?v=${stamp}`} width={120} height={120} unoptimized />
-            ) : (
-              <span className="art-empty">
-                <ImageIcon aria-hidden="true" size={16} />
-                <br />
-                {want.join(" · ")}
-              </span>
-            )}
-            {files.length ? (
-              <span className="art-files">
-                {files.length > 1 ? `${files.length}장 · ` : ""}
-                {files[0].w}×{files[0].h} · {kb(files[0].bytes)}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </div>
-      {heavy ? (
-        <p className="art-heavy" data-art-heavy>
-          원본이 크다({files.map((f) => `${f.w}×${f.h} ${kb(f.bytes)}`).join(", ")}) — 저장 목표 {edge}px. <code>npm run art:normalize</code>로 줄인다(화면은 같다).
-        </p>
-      ) : null}
-      {stale && !heavy ? (
-        <p className="art-heavy" data-art-stale>
-          변이 블록 {block}px의 배수가 아니다 — 옛 규격(lanczos3)으로 줄인 파일이라 도트가 이미 뭉개졌다. 1024 원본에서 다시 뽑아야 한다.
-        </p>
-      ) : null}
-      <div className="art-body">
-        <div className="art-meta">
-          <span>
-            <b>계절</b> {slot.seasons.map((k) => SEASON_KO[k]).join("·")}
+        {heavy ? (
+          <span className="art-flag" data-art-heavy>
+            원본이 크다 — art:normalize
           </span>
-          <span>
-            <b>카메라</b> {VIEW_SHORT[slot.view]}
+        ) : stale ? (
+          <span className="art-flag" data-art-stale>
+            옛 규격({block}px 배수 아님)
           </span>
-          <span title={`화면 ${slot.px[0]}×${slot.px[1]}px · 1024 캔버스를 ${dotGrid(slot.px, slot.grid)}칸으로 보고 그린다(도트 한 칸 = ${block}×${block}px 블록)`}>
-            <b>규격</b> {slot.px[0]}×{slot.px[1]} · {dotGrid(slot.px, slot.grid)}칸 {block}px
+        ) : empty ? (
+          <span className="art-flag" data-art-empty>
+            대체물 없음
           </span>
-          {slot.variants && slot.variants > 1 ? (
-            <span>
-              <b>변형</b> {slot.variants}
-            </span>
-          ) : null}
-          {slot.acnhRef ? (
-            <span>
-              <b>동숲</b> {slot.acnhRef}
-            </span>
-          ) : null}
-        </div>
-        {entry ? (
-          // 도감 줄 — 알약 일곱 개를 늘어놓으면 카드가 색종이가 된다(자리 206개 × 7 = 화면이 못 읽힌다).
-          // 사실은 많지만 **한 줄**로 읽히게: 사는 곳 → 서식면 → 달 → 때 → 크기, 희귀도만 점으로 앞에 세운다.
-          <p className="art-codex" title={`${KIND_LABEL[entry.kind]} · ${TIER_LABEL[entry.tier]}`}>
-            <b className={`art-tier tier-${entry.tier}`}>{TIER_DOTS[entry.tier]}</b>
-            <span>{entry.biomes.map((b) => BIOMES[b].nameKo).join("·")}</span>
-            <span>{HABITAT_LABEL[entry.habitat]}</span>
-            <span>{monthsLabel(entry.months)}</span>
-            <span>{bandsLabel(entry.bands)}</span>
-            <span>
-              {entry.sizeCm[0]}~{entry.sizeCm[1]}cm
-            </span>
-          </p>
         ) : null}
-        <p className="art-brief" title={slot.brief}>{slot.brief}</p>
-        {entry ? <p className="art-blurb">“{entry.blurb}”</p> : null}
       </div>
-      <div className="art-card-foot">
-        <code style={{ fontSize: 11, color: "var(--ink-soft, #4a4466)" }}>
-          {want.join(", ")} · 저장 {edge}px ÷{sourceRatio(slot.px)}
-        </code>
-        <button className="art-btn small" data-act="art-slot-prompt-copy" onClick={() => onCopy(slotPrompt(slot), `${slot.nameKo} 프롬프트`)} type="button">
-          <ClipboardCopy aria-hidden="true" size={13} /> 프롬프트
-        </button>
-      </div>
-    </article>
+    </Link>
   );
 });
 
@@ -512,85 +444,54 @@ export function AmbientArtBoard({ present, stamp }: Props) {
   return (
     <main className="art-board" data-art-board data-density={density}>
       <header className="art-board-head">
-        <div>
+        <div className="art-head-left">
           <a className="art-back" href="/studio">
             <ArrowLeft aria-hidden="true" size={12} /> 편집실
           </a>
           <h1>계절 배경 아트 보드</h1>
-          <p>
-            자리마다 그림 한 장. 만든 PNG를 <code>public/ambient/art/</code>에 표의 id 이름으로 넣으면 장면이 그 그림을 쓴다 — 없으면 지금의
-            대체물이 그대로 나온다. 프롬프트는 이 표에서 만들어져 어긋나지 않는다. 생성기 원본은 <b>1024 정사각</b>(그 아래를 못 준다),
-            저장은 <code>npm run art:normalize</code>가 <b>1024의 정수 약수</b>(128·256·512)로 <b>nearest 정수배</b> 축소한다 — 카드의
-            <b> 격자</b>가 코덱스가 지킬 도트 크기다. (<code>next dev</code>는 새로고침으로 즉시, 운영은 커밋·배포 — 프로덕션 서버는 시작
-            때의 <code>public/</code> 목록만 낸다.)
+          <p className="art-lede">
+            자리마다 그림 한 장. PNG를 <code>public/ambient/art/</code>에 표의 id 이름으로 넣으면 장면이 바로 쓴다.
           </p>
+          {/* 파이프라인 설명은 한 번 알면 필요 없다 — 매번 첫 화면을 먹지 않게 접는다(2026-09-08 PLAN-010). */}
+          <details className="art-help">
+            <summary>규격이 어떻게 도는지</summary>
+            <p>
+              생성기 원본은 <b>1024 정사각</b>(그 아래를 못 준다). 저장은 <code>npm run art:normalize</code>가 <b>1024의 정수 약수</b>
+              (128·256·512)로 <b>nearest 정수배</b> 축소한다 — 자리의 <b>격자</b>가 코덱스가 지킬 도트 크기다. 자리를 누르면 그 자리의
+              변형·규격·프롬프트가 한 화면에 모인다. (<code>next dev</code>는 새로고침으로 즉시, 운영은 커밋·배포 — 프로덕션 서버는 시작
+              때의 <code>public/</code> 목록만 낸다.)
+            </p>
+          </details>
         </div>
-        <div className="art-board-stats">
-          <div className="art-stat">
-            <b>
-              {stats.pilotDone}
-              <i>/{stats.pilotWant}</i>
-            </b>
-            <span>파일럿 · {stats.pilotWant}장</span>
-            <span className="art-bar">
-              <i style={{ width: `${Math.round((stats.pilotDone / Math.max(1, stats.pilotWant)) * 100)}%` }} />
-            </span>
-          </div>
-          <div className="art-stat">
-            <b>
-              {stats.done}
-              <i>/{stats.total}</i>
-            </b>
-            <span>전체 자리</span>
-            <span className="art-bar">
-              <i style={{ width: `${Math.round((stats.done / Math.max(1, stats.total)) * 100)}%` }} />
-            </span>
-          </div>
-          {stats.books.map((b) => (
-            <div className="art-stat" key={b.kind}>
-              <b>
-                {b.done}
-                <i>/{b.total}</i>
-              </b>
-              <span>도감 · {KIND_LABEL[b.kind]}</span>
-              <span className="art-bar">
-                <i style={{ width: `${Math.round((b.done / Math.max(1, b.total)) * 100)}%` }} />
-              </span>
-            </div>
-          ))}
-          <div className="art-stat">
-            <b>{stats.empty}</b>
-            <span>빈 자리 · 대체물도 없음</span>
-            <span className="art-bar">
-              <i className="warn" style={{ width: `${Math.round((stats.empty / Math.max(1, stats.total)) * 100)}%` }} />
-            </span>
-          </div>
+        {/* 통계는 **한 줄**이다(PLAN-010). 여섯 칸으로 벌려 놓으니 "0/40 도감·물고기"처럼 시작도 안 한 것이
+            합격 진행률과 같은 무게를 가졌다. 지금 움직이는 수만 남긴다 — 1차 자리 진행 · 파일럿 · 빈 자리. */}
+        <div className="art-summary">
+          <span className="art-sum-main">
+            <b>{stats.done}</b>
+            <i>/{stats.total}</i> 자리 납품
+          </span>
+          <span className="art-bar wide">
+            <i style={{ width: `${Math.round((stats.done / Math.max(1, stats.total)) * 100)}%` }} />
+          </span>
+          <span className="art-sum-side">
+            파일럿 {stats.pilotDone}/{stats.pilotWant}
+          </span>
+          <span className="art-sum-side warn">빈 자리 {stats.empty}</span>
         </div>
       </header>
       <div className="art-board-bar" ref={barRef}>
         <div className="art-board-bar-inner">
+          {/* 자주 쓰는 것은 "남은 파일만" 하나다 — 나머지 다섯은 서랍으로(PLAN-010). */}
           <div className="art-board-actions">
-            <button className="art-btn primary" data-act="art-prompt-copy-pilot" onClick={() => void copy(pilotPrompt(), "파일럿 프롬프트")} type="button">
-              <ClipboardCopy aria-hidden="true" size={14} /> 파일럿 프롬프트 — {pilotCount}장
-            </button>
             <button
-              className="art-btn"
-              data-act="art-prompt-copy-visible"
-              disabled={!visible.length}
-              onClick={() => void copy(batchPrompt(visible, `보이는 자리 ${visible.length}개`), "보이는 자리 프롬프트")}
-              type="button"
-            >
-              <ClipboardCopy aria-hidden="true" size={14} /> 보이는 것만 — 자리 {visible.length} · 파일 {visibleFiles}
-            </button>
-            <button
-              className="art-btn"
+              className="art-btn primary"
               data-act="art-prompt-copy-missing"
               disabled={!missingFiles.length}
               onClick={() =>
                 void copy(
                   batchPrompt(visible, `아직 안 온 파일 ${missingFiles.length}장`, {
                     files: missingFiles,
-                    note: `**이미 배달돼 합격한 파일은 표에 없다.** 화풍의 기준선은 \`public/ambient/art/tree-pine-1.png\` · \`tree-pine-autumn-1.png\` · \`tree-pine-winter-1.png\` 세 장이다 — 새 그림은 이 셋과 나란히 놓아 한 세트로 보여야 한다.`
+                    note: `**이미 배달돼 합격한 파일은 표에 없다.** 화풍의 기준선은 \`public/ambient/art/\` 의 합격본이다 — 새 그림은 그것들과 나란히 놓아 한 세트로 보여야 한다.`
                   }),
                   "남은 파일 프롬프트"
                 )
@@ -599,92 +500,112 @@ export function AmbientArtBoard({ present, stamp }: Props) {
             >
               <ClipboardCopy aria-hidden="true" size={14} /> 남은 파일만 — {missingFiles.length}장
             </button>
-            <button className="art-btn" data-act="art-prompt-copy-1" onClick={() => void copy(codexMasterPrompt(1), "1차 프롬프트")} type="button">
-              <ClipboardCopy aria-hidden="true" size={14} /> 1차(초목·지형)
-            </button>
-            <button className="art-btn" data-act="art-prompt-copy-2" onClick={() => void copy(codexMasterPrompt(2), "2차 프롬프트")} type="button">
-              <ClipboardCopy aria-hidden="true" size={14} /> 2차(생물)
-            </button>
-            <button className="art-btn" data-act="art-prompt-copy-all" onClick={() => void copy(codexMasterPrompt(), "전체 프롬프트")} type="button">
-              <ClipboardCopy aria-hidden="true" size={14} /> 전체
-            </button>
+            <details className="art-more">
+              <summary>다른 프롬프트</summary>
+              <div className="art-more-body">
+                <button className="art-btn small" data-act="art-prompt-copy-pilot" onClick={() => void copy(pilotPrompt(), "파일럿 프롬프트")} type="button">
+                  파일럿 {pilotCount}장
+                </button>
+                <button
+                  className="art-btn small"
+                  data-act="art-prompt-copy-visible"
+                  disabled={!visible.length}
+                  onClick={() => void copy(batchPrompt(visible, `보이는 자리 ${visible.length}개`), "보이는 자리 프롬프트")}
+                  type="button"
+                >
+                  보이는 것 {visible.length}자리 · {visibleFiles}장
+                </button>
+                <button className="art-btn small" data-act="art-prompt-copy-1" onClick={() => void copy(codexMasterPrompt(1), "1차 프롬프트")} type="button">
+                  1차(초목·지형)
+                </button>
+                <button className="art-btn small" data-act="art-prompt-copy-2" onClick={() => void copy(codexMasterPrompt(2), "2차 프롬프트")} type="button">
+                  2차(생물)
+                </button>
+                <button className="art-btn small" data-act="art-prompt-copy-all" onClick={() => void copy(codexMasterPrompt(), "전체 프롬프트")} type="button">
+                  전체
+                </button>
+              </div>
+            </details>
           </div>
+          {/* 칩 40개가 같은 무게로 깔려 있어 **지금 무엇이 켜졌는지 스캔이 안 됐다**(PLAN-010).
+              상시 노출은 넷 — 검색 · 범주 · 상태 · 정렬. 쓰임이 드문 계절·차수·"지금"·파일럿은 서랍으로 내린다. */}
           <div className="art-board-filters" role="group" aria-label="필터">
-            <div className="art-seg" role="group" aria-label="보기 밀도">
-              <button aria-pressed={density === "card"} className="art-chip" onClick={() => setDensity("card")} type="button">
-                <LayoutGrid aria-hidden="true" size={12} /> 카드
-              </button>
-              <button aria-pressed={density === "list"} className="art-chip" onClick={() => setDensity("list")} type="button">
-                <List aria-hidden="true" size={12} /> 목록
-              </button>
-              <button aria-pressed={density === "table"} className="art-chip" onClick={() => setDensity("table")} type="button">
-                <BookOpen aria-hidden="true" size={12} /> 도감
-              </button>
-            </div>
-            <div className="art-seg" role="group" aria-label="계절">
-              <button aria-pressed={season === "all"} className="art-chip" onClick={() => setSeason("all")} type="button">
-                사철
-              </button>
-              {SEASONS.map((k) => (
-                <button aria-pressed={season === k} className="art-chip" key={k} onClick={() => setSeason(k)} type="button">
-                  {SEASON_KO[k]}
-                </button>
-              ))}
-            </div>
-            <div className="art-seg" role="group" aria-label="갈래">
-              <button aria-pressed={cat === "all"} className="art-chip" onClick={() => setCat("all")} type="button">
-                전부
-              </button>
+            <label className="art-search">
+              <Search aria-hidden="true" size={13} />
+              <input onChange={(e) => setQ(e.target.value)} placeholder="이름·id 찾기 (/)" ref={searchRef} type="search" value={q} />
+            </label>
+            <select aria-label="갈래" className="art-select" onChange={(e) => setCat(e.target.value as ArtCategory | "all")} value={cat}>
+              <option value="all">갈래 전부</option>
               {CATS.map((k) => (
-                <button aria-pressed={cat === k} className="art-chip" key={k} onClick={() => setCat(k)} type="button">
+                <option key={k} value={k}>
                   {CATEGORY_KO[k]}
-                </button>
+                </option>
               ))}
-            </div>
-            <div className="art-seg" role="group" aria-label="생성 차수">
-              <button aria-pressed={wave === "all"} className="art-chip" onClick={() => setWave("all")} type="button">
-                차수 전부
-              </button>
-              {WAVES.map((w) => (
-                <button aria-pressed={wave === w} className="art-chip" key={w} onClick={() => setWave(w)} type="button">
-                  {w}차
-                </button>
-              ))}
-            </div>
-            <div className="art-seg" role="group" aria-label="납품 상태">
+            </select>
+            <div className="art-seg strong" role="group" aria-label="납품 상태">
               <button aria-pressed={state === "all"} className="art-chip" onClick={() => setState("all")} type="button">
-                상태 전부
+                전체
               </button>
               <button aria-pressed={state === "todo"} className="art-chip" onClick={() => setState("todo")} type="button">
-                대기
+                남음
               </button>
               <button aria-pressed={state === "done"} className="art-chip" onClick={() => setState("done")} type="button">
                 납품됨
               </button>
             </div>
-            <div className="art-seg" role="group" aria-label="지금 화면">
-              {NOW_FILTERS.map(({ k, ko }) => (
-                <button aria-pressed={nowF === k} className="art-chip" key={k} onClick={() => setNowF(k)} type="button">
-                  {ko}
-                </button>
-              ))}
-            </div>
-            <div className="art-seg" role="group" aria-label="정렬">
+            <select aria-label="정렬" className="art-select" onChange={(e) => setSort(e.target.value as SortKey)} value={sort}>
               {SORTS.map(({ k, ko }) => (
-                <button aria-pressed={sort === k} className="art-chip" key={k} onClick={() => setSort(k)} type="button">
+                <option key={k} value={k}>
                   {ko}
-                </button>
+                </option>
               ))}
-            </div>
-            <div className="art-seg" role="group" aria-label="파일럿">
-              <button aria-pressed={pilotOnly} className="art-chip" onClick={() => setPilotOnly((v) => !v)} type="button">
-                파일럿만
-              </button>
-            </div>
-            <label className="art-search">
-              <Search aria-hidden="true" size={13} />
-              <input onChange={(e) => setQ(e.target.value)} placeholder="이름·id 찾기 (/)" ref={searchRef} type="search" value={q} />
-            </label>
+            </select>
+            <button
+              aria-pressed={density === "table"}
+              className="art-chip"
+              data-act="art-view-codex"
+              onClick={() => setDensity(density === "table" ? "card" : "table")}
+              type="button"
+            >
+              <BookOpen aria-hidden="true" size={12} /> 도감
+            </button>
+            <details className="art-more">
+              <summary>필터 더</summary>
+              <div className="art-more-body">
+                <div className="art-seg" role="group" aria-label="계절">
+                  <button aria-pressed={season === "all"} className="art-chip" onClick={() => setSeason("all")} type="button">
+                    사철
+                  </button>
+                  {SEASONS.map((k) => (
+                    <button aria-pressed={season === k} className="art-chip" key={k} onClick={() => setSeason(k)} type="button">
+                      {SEASON_KO[k]}
+                    </button>
+                  ))}
+                </div>
+                <div className="art-seg" role="group" aria-label="생성 차수">
+                  <button aria-pressed={wave === "all"} className="art-chip" onClick={() => setWave("all")} type="button">
+                    차수 전부
+                  </button>
+                  {WAVES.map((w) => (
+                    <button aria-pressed={wave === w} className="art-chip" key={w} onClick={() => setWave(w)} type="button">
+                      {w}차
+                    </button>
+                  ))}
+                </div>
+                <div className="art-seg" role="group" aria-label="지금 화면">
+                  {NOW_FILTERS.map(({ k, ko }) => (
+                    <button aria-pressed={nowF === k} className="art-chip" key={k} onClick={() => setNowF(k)} type="button">
+                      {ko}
+                    </button>
+                  ))}
+                </div>
+                <div className="art-seg" role="group" aria-label="파일럿">
+                  <button aria-pressed={pilotOnly} className="art-chip" onClick={() => setPilotOnly((v) => !v)} type="button">
+                    파일럿만
+                  </button>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>

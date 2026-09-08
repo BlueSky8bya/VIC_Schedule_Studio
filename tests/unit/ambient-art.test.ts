@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   ART_SLOTS,
@@ -188,6 +189,27 @@ describe("ambient/art — 변형 수는 한 화면 동시 개수에서 나온다
     const p2 = slotPrompt(rock);
     expect(p2).toContain(`한 화면에 최대 ${rock.perScreen}개가 동시에 놓인다`);
     expect(batchPrompt([rock], "t")).toContain("한 화면");
+  });
+});
+
+describe("ambient/art — 목록은 남은 것만 답한다(PLAN-010)", () => {
+  // 2026-09-08 소유자: "배경아트보드 창 아직 너무 어수선해." 목록 카드가 브리프를 통째로 싣던 것이 뿌리였다 —
+  // 카드 하나가 화면 절반이 됐고 프롬프트용 마크다운의 별표까지 그대로 보였다. 규격·브리프는 자리 상세로 갔다.
+  it("목록 카드 소스에 브리프·규격 칩이 없다", () => {
+    const src = fs.readFileSync("components/studio/ambient-art-board.tsx", "utf8");
+    const card = src.slice(src.indexOf("const Card = memo("), src.indexOf("export function AmbientArtBoard"));
+    expect(card).not.toContain("slot.brief");
+    expect(card).not.toContain("art-brief");
+    expect(card).not.toContain("VIEW_SHORT");
+    // 대신 진행을 칸으로 그린다.
+    expect(card).toContain("art-pips");
+  });
+
+  it("자리 상세는 그 셋을 전부 맡는다", () => {
+    const src = fs.readFileSync("components/studio/ambient-art-slot.tsx", "utf8");
+    expect(src).toContain("slot.brief");
+    expect(src).toContain("artslot-spec");
+    expect(src).toContain("dotsAcross");
   });
 });
 

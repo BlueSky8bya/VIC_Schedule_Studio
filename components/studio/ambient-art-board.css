@@ -1352,3 +1352,268 @@ html[data-reduce-motion] .art-card:hover .art-cell canvas {
 .artslot-brief strong {
   font-weight: 650;
 }
+
+/* ══ 목록 재작성(2026-09-08, PLAN-20260908-010) ═══════════════════════════════════════════
+   소유자: "배경아트보드 창 아직 너무 어수선해." 실측 진단 — 1400×900 첫 화면에서 자리 카드가
+   y ≈ 590에서 시작했다(화면의 65%가 크롬). 목록이 답할 질문은 하나다: **무엇이 남았나.**
+   규격·브리프·프롬프트는 자리 상세가 맡는다. */
+
+.art-lede {
+  margin: 6px 0 8px;
+  color: var(--ab-soft);
+  font-size: 13px;
+}
+.art-help {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  color: var(--ab-soft);
+}
+.art-help > summary {
+  cursor: pointer;
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ab-line);
+  background: var(--ab-card);
+  list-style: none;
+}
+.art-help > summary::-webkit-details-marker {
+  display: none;
+}
+.art-help > summary::after {
+  content: " ▾";
+  opacity: 0.6;
+}
+.art-help[open] > summary::after {
+  content: " ▴";
+}
+.art-help p {
+  margin: 10px 0 0;
+  line-height: 1.75;
+  max-width: 74ch;
+}
+
+/* 통계 한 줄 — 여섯 칸으로 벌리면 아직 0인 것이 진행 중인 것과 같은 무게를 갖는다. */
+.art-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ab-line);
+  background: var(--ab-card);
+  font-variant-numeric: tabular-nums;
+}
+.art-sum-main {
+  font-size: 13px;
+  color: var(--ab-soft);
+}
+.art-sum-main b {
+  font-size: 19px;
+  color: var(--ab-ink);
+}
+.art-sum-main i {
+  font-style: normal;
+  margin-right: 6px;
+}
+.art-bar.wide {
+  flex: 1 1 180px;
+  min-width: 120px;
+}
+.art-sum-side {
+  font-size: 12.5px;
+  color: var(--ab-soft);
+}
+.art-sum-side.warn {
+  color: var(--ab-warn);
+}
+
+/* 서랍 — 자주 안 쓰는 동작·필터를 접는다. 열려 있어도 한 줄 아래로만 자란다. */
+.art-more {
+  position: relative;
+}
+.art-more > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ab-line);
+  background: var(--ab-card);
+  color: var(--ab-soft);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.art-more > summary::-webkit-details-marker {
+  display: none;
+}
+.art-more > summary::after {
+  content: " ▾";
+  opacity: 0.6;
+}
+.art-more[open] > summary::after {
+  content: " ▴";
+}
+.art-more-body {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 0 2px;
+}
+
+/* 커스텀 셀렉트가 없는 자리에서는 네이티브를 쓰되, 칩과 같은 높이·같은 테두리로 맞춘다. */
+.art-select {
+  height: 32px;
+  padding: 0 30px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ab-line);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--ab-soft) 50%) calc(100% - 15px) 14px / 5px 5px no-repeat,
+    linear-gradient(135deg, var(--ab-soft) 50%, transparent 50%) calc(100% - 10px) 14px / 5px 5px no-repeat,
+    var(--ab-card);
+  color: var(--ab-ink);
+  font-size: 12.5px;
+  appearance: none;
+  cursor: pointer;
+}
+/* 상태는 지금 무엇이 켜졌는지가 가장 중요하다 — 다른 칩보다 한 단계 굵게. */
+.art-seg.strong .art-chip[aria-pressed="true"] {
+  background: var(--ab-accent-soft);
+  border-color: color-mix(in srgb, var(--ab-accent) 34%, var(--ab-line));
+  color: var(--ab-accent);
+  font-weight: 600;
+}
+
+/* ── 카드: 자리 한 줄. 미리보기 1장 · 이름 · 진행 칸 · 경고. */
+.art-grid {
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)) !important;
+}
+.art-card {
+  grid-template-rows: none !important;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px !important;
+  padding: 10px 12px !important;
+  text-decoration: none;
+  color: inherit;
+}
+.art-card .art-cell {
+  width: 64px;
+  height: 64px;
+  min-height: 0;
+  flex: none;
+}
+.art-card .art-cell img,
+.art-card .art-cell canvas {
+  max-width: 56px;
+  max-height: 56px;
+}
+.art-card-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.art-card-name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.art-card-name strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.art-card-name code {
+  font-size: 10.5px;
+  color: var(--ab-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 진행 칸 — 빈 칸이 "3/8"보다 빠르다. 한 칸 = 파일 하나. */
+.art-pips {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.art-pips i {
+  width: 12px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ab-line);
+}
+.art-pips i[data-on="1"] {
+  background: var(--ab-ok);
+}
+.art-flag {
+  font-size: 11px;
+  color: var(--ab-warn);
+}
+.art-flag[data-art-empty] {
+  color: var(--ab-soft);
+}
+@media (min-width: 641px) {
+  .art-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--ab-line-strong);
+  }
+}
+
+/* 크롬을 두 줄로 압축(PLAN-010 검증 — 첫 카드가 y ≤ 300에서 시작해야 한다).
+   제목 · 요약을 한 줄에 나란히 두고, 동작과 필터도 한 줄을 나눠 쓴다. */
+.art-board-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 10px !important;
+}
+.art-board-head h1 {
+  font-size: 20px !important;
+  margin: 4px 0 2px !important;
+}
+.art-head-left {
+  min-width: 0;
+}
+.art-lede {
+  margin: 2px 0 6px;
+}
+.art-summary {
+  min-width: 300px;
+}
+.art-board-bar-inner {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.art-board-actions,
+.art-board-filters {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 !important;
+}
+.art-board-filters {
+  margin-left: auto !important;
+}
+
+/* 요약 알약은 한 줄이다 — 두 줄로 접히면 제목 옆에 둔 뜻이 없다. */
+.art-summary {
+  min-width: 0;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.art-bar.wide {
+  flex: 1 1 90px;
+  min-width: 60px;
+}
+@media (max-width: 1100px) {
+  .art-board-head {
+    grid-template-columns: 1fr;
+  }
+}

@@ -383,6 +383,7 @@ const ACT: Record<string, TargetLabel> = {
   "art-slot-prompt-copy": { name: "아트 보드 — 자리 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 자리 하나짜리 프롬프트" },
   // 자리 상세(2026-09-08, PLAN-009 P3) — 변형을 한 화면에서 관리하는 라우트.
   "art-slot-open": { name: "아트 보드 — 자리 열기", area: "편집실", hint: "/studio/ambient-art/<자리>(개발자) — 변형 전부를 한 화면에서" },
+  "art-view-codex": { name: "아트 보드 — 도감 보기 전환", area: "편집실", hint: "2차 종을 동물의 숲 도감 형식 표로 본다" },
   "art-slot-back": { name: "아트 보드 — 자리 목록으로", area: "편집실", hint: "자리 상세에서 목록으로 돌아간다" },
   "art-slot-sibling": { name: "아트 보드 — 같은 범주 자리", area: "편집실", hint: "자리 상세에서 같은 범주의 다른 자리로 건너뛴다" },
   "art-slot-prompt-missing": { name: "아트 보드 — 이 자리의 남은 파일 프롬프트", area: "편집실", hint: "아직 안 온 변형만 다시 부탁한다" },
