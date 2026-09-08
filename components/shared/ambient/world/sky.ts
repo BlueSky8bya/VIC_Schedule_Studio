@@ -10,6 +10,13 @@ import type { DayBand } from "./time";
 import type { Light } from "./light";
 import { horizonY } from "./view";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
+import { ArtSet, drawArt, type ArtSprite } from "@/components/shared/ambient/art/load";
+
+// 하늘의 그림 자리(2026-09-08) — 해·달 여덟 위상·구름 네 갈래. 파일이 있으면 그림을, 없으면 아래의 코드 도형을 쓴다
+// (다른 자리와 같은 규칙, ADR-0017 ⑮). 하늘은 장면마다 굽히므로 **모듈 하나에 ArtSet 하나**를 두고 공유한다.
+const skyArt = new ArtSet(["sun-disc", "moon-phase", "cloud-low", "cloud-mid", "cloud-high", "cloud-storm"]);
+/** 굽기 키에 섞을 아트 판(늦게 도착하면 값이 올라 하늘·구름이 한 번 다시 구워진다). */
+export const skyArtVersion = () => skyArt.version;
 
 export type SkyPalette = {
   /** 꼭대기(y 0) → 지평선 색. */
@@ -167,7 +174,14 @@ export function bakeClouds(
   if (!pal.cloud || pal.cover <= 0) return null;
   const hz = horizonY(h);
   const H = Math.ceil(hz + (h - hz) * 0.05);
-  const SC = 3;
+  // 어느 그림으로 그릴까 — 새털구름(바람)은 cloud-high, 비·눈은 cloud-storm, 그 밖엔 층에 따라 낮은/중간 구름.
+  const cloudSlot = (near: boolean): string =>
+    pal.cirrus ? "cloud-high" : weather === "rain" || weather === "snow" ? "cloud-storm" : near ? "cloud-low" : "cloud-mid";
+  const hasArt = weather !== "fog" && skyArt.has(cloudSlot(true)) && skyArt.has(cloudSlot(false));
+  // 그림이 있으면 **전체 해상도**로 굽는다. 1/3 해상도(SC 3)는 절차적 타원을 싸게 그리려던 LOD인데,
+  // 픽셀 그림을 거기 넣으면 도트의 2/3가 그 자리에서 사라진다 — 어법을 지키려고 만든 그림이 어법을 잃는다.
+  // 크기 식은 전부 lw·bandBot에 상대적이라 SC만 바꾸면 최종 크기는 같다.
+  const SC = hasArt ? 1 : 3;
   const lw = Math.ceil(w / SC);
   const lh = Math.ceil(H / SC);
   const bandTop = 2;
@@ -206,7 +220,24 @@ export function bakeClouds(
       }
       return lo.c;
     }
-    if (pal.cirrus) {
+    if (pal.cirrus && hasArt) {
+      // 새털구름 그림 — 자리가 6.5:1이라 한 장이 화면 폭의 1/5쯤을 가로지른다. 층마다 서넛, 가까운 층이 굵고 적다.
+      const near = share > 0.5;
+      const n = (near ? 2 : 3) + Math.floor(r() * 2);
+      for (let i = 0; i < n; i++) {
+        const y = bandTop + r() * (bandBot - bandTop) * (near ? 0.6 : 0.86);
+        const x0 = r() * lw;
+        const cw2 = lw * (near ? 0.22 + r() * 0.14 : 0.16 + r() * 0.12);
+        const spr = skyArt.pick("cloud-high", r());
+        if (!spr) continue;
+        twice((dx) => {
+          lo.g.save();
+          lo.g.globalAlpha = near ? 0.9 : 0.7;
+          drawArt(lo.g, spr, Math.round(x0 + dx), Math.round(y), cw2 / spr.w);
+          lo.g.restore();
+        });
+      }
+    } else if (pal.cirrus) {
       // 바람의 새털구름은 **두 층 모두**(2026-09-06 라운드 8, 검토 C: near 층이 빈 캔버스라 3초 이동이
       // far −60px · near 0px — 가장 바람 센 날씨에 시차가 없었다). 가까운 층은 더 굵고 적게.
       // 새털구름은 먼 층에만 — 끝이 가늘어지는 갈고리 획(가로 막대·줄 정렬 금지).
@@ -237,7 +268,10 @@ export function bakeClouds(
       }
     } else if (!pal.cirrus) {
       // 개수 하한 — 맑은 날에도 층당 2덩이는 둔다(검토 A: 60px 이상 덩이 0개인 시나리오가 6장).
-      const n = Math.max(share > 0.5 ? 3 : 2, Math.round(((lw * (bandBot - bandTop)) / 1000) * pal.cover * 1.3 * share));
+      // 개수는 **해상도와 무관**해야 한다 — 식이 lw·bandBot(둘 다 SC에 반비례)의 곱이라 SC를 3에서 1로 바꾸면
+      // 면적이 9배가 되어 구름도 9배가 된다(2026-09-08에 하늘이 통째로 구름으로 덮였다). 기준 SC 3으로 되돌린다.
+      const areaK = (SC / 3) ** 2;
+      const n = Math.max(share > 0.5 ? 3 : 2, Math.round(((lw * (bandBot - bandTop)) / 1000) * pal.cover * 1.3 * share * areaK));
       const hzL = bandBot;
       for (let i = 0; i < n; i++) {
         const tier = tiers[Math.floor(r() * tiers.length)];
@@ -248,6 +282,20 @@ export function bakeClouds(
         const blobs = 3 + Math.floor(r() * 4);
         const seedA = r();
         const seedB = r();
+        const variant = r();
+        if (hasArt) {
+          // 그림 한 장 = 구름 하나. 층별 알파(tier.a)는 그대로 — 먼 층이 옅다는 규칙은 그림에도 걸린다.
+          const spr = skyArt.pick(cloudSlot(share > 0.5), variant);
+          if (spr) {
+            twice((dx) => {
+              lo.g.save();
+              lo.g.globalAlpha = tier.a;
+              drawArt(lo.g, spr, Math.round(cx + dx), Math.round(cy), cw / spr.w);
+              lo.g.restore();
+            });
+            continue;
+          }
+        }
         twice((dx) => {
           const r2 = rng(Math.round((seedA + i) * 9973) + Math.round(seedB * 131));
           lo.g.fillStyle = `rgb(${lit} / ${((0.7 + r2() * 0.3) * tier.a).toFixed(2)})`;
@@ -272,6 +320,13 @@ export function bakeClouds(
       }
     }
     // 가장자리를 픽셀로(알파 3단 양자화) — 저해상 타원의 AA 테두리가 3배로 커지면 "소프트 타원"이 된다(검토 A#1).
+    // 그림으로 그린 구름은 건너뛴다: 이미 계단 픽셀이고, 색을 12 단위로 스냅하면 배달본의 팔레트가 흐트러진다.
+    if (hasArt) {
+      const { c: cc, g: gg } = makeCanvas(Math.ceil(w * 2), H);
+      gg.imageSmoothingEnabled = false;
+      gg.drawImage(lo.c, 0, 0, lw * 2, lh, 0, 0, lw * 2 * SC, lh * SC);
+      return cc;
+    }
     const im = lo.g.getImageData(0, 0, lw * 2, lh);
     const d = im.data;
     for (let i = 0; i < d.length; i += 4) {
@@ -320,7 +375,8 @@ export function drawSky(
   }
 }
 
-export const skyKey = (season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number): string => `${season}|${weather}|${band}|${w}x${h}`;
+export const skyKey = (season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number): string =>
+  `${season}|${weather}|${band}|${w}x${h}|a${skyArt.version}`;
 
 /** 하늘 판 굽기 — 지평선까지 불투명, 그 아래 4%h는 사라진다(땅의 먼 띠를 덮지 않게). 구름은 1/3 해상도에 그려 보간 없이 키운다(픽셀 계단, AA 없음 — ADR-0017 ⑱). */
 export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number, seed: number, topY = 0): HTMLCanvasElement {
@@ -411,6 +467,13 @@ export function moonPhase(y: number, m: number, d: number): number {
 
 /** 조명 비친 비율 0~1(삭 0 · 보름 1). */
 export const moonLit = (phase: number) => (1 - Math.cos(phase * TAU)) / 2;
+
+/** 위상 0~1 → 그려 둔 여덟 장 중 하나. 1 삭 · 2 초승 · 3 상현 · 4 차오름 · 5 보름 · 6 기움 · 7 하현 · 8 그믐.
+ *  반올림이라 삭·보름은 앞뒤로 폭이 넓다(위상이 그 근처에 오래 머무는 것처럼 보이는 편이 자연스럽다). */
+const moonArt = (phase: number): ArtSprite | null => {
+  const i = Math.round(phase * 8) % 8; // 0 = 삭
+  return skyArt.pick("moon-phase", (i + 0.5) / 8);
+};
 
 // 달 원반(위상 포함)은 작은 오프스크린에 그린 뒤 찍는다 — 본 캔버스에 destination-out을 쓰면 뒤 하늘까지 뚫린다.
 let moonC: { c: HTMLCanvasElement; g: CanvasRenderingContext2D; key: string } | null = null;
@@ -549,8 +612,15 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
       const R = Math.max(7, Math.min(14, Math.round(maxY * 0.045)));
       // 글로우 반경 R·3.6 → R·2.6에 α 두 배(면적당 밝기 유지) — 넓게 퍼지면 8bit에서 1L 이하가 된다(검토 C).
       softBlob(g, mx, my, R * 2.6, "226 232 244", 0.16 + 0.3 * lit, 0);
-      const spr = moonSprite(R, moonPhase(f.date.y, f.date.m, f.date.d));
-      g.drawImage(spr, Math.round(mx - spr.width / 2), Math.round(my - spr.height / 2));
+      const ph = moonPhase(f.date.y, f.date.m, f.date.d);
+      const art = moonArt(ph);
+      if (art) {
+        // 그려 둔 위상 그림 — 자리 상자(80×80)의 지름 대비 R로 맞춘다. 보간은 drawArt가 끈다.
+        drawArt(g, art, Math.round(mx), Math.round(my), (R * 2) / art.w);
+      } else {
+        const spr = moonSprite(R, ph);
+        g.drawImage(spr, Math.round(mx - spr.width / 2), Math.round(my - spr.height / 2));
+      }
     }
     return;
   }
@@ -561,8 +631,16 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     const col = band === "dusk" ? "244 226 220" : "236 238 240";
     const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
     softBlob(g, sx, sy, R * 3, col, band === "dusk" ? 0.5 : 0.34, 0);
-    // 원반도 픽셀 계단으로(달과 같은 이유) — 저해상 원을 굽고 nearest로 키운다.
-    const disc = pixelDisc(R, col, band === "dusk" ? 0.6 : 0.45);
-    g.drawImage(disc, Math.round(sx - disc.width / 2), Math.round(sy - disc.height / 2));
+    // 원반 — 그려 둔 해가 있으면 그것(변형 1 = 한낮 크림, 2 = 노을 회장미), 없으면 저해상 원을 굽고 nearest로 키운다.
+    const sunA = skyArt.pick("sun-disc", band === "dusk" ? 0.9 : 0.1);
+    if (sunA) {
+      g.save();
+      g.globalAlpha *= band === "dusk" ? 0.92 : 0.8; // 원반이 하늘에서 튀지 않게 — 옛 픽셀 원반의 알파와 같은 뜻
+      drawArt(g, sunA, Math.round(sx), Math.round(sy), (R * 2) / sunA.w);
+      g.restore();
+    } else {
+      const disc = pixelDisc(R, col, band === "dusk" ? 0.6 : 0.45);
+      g.drawImage(disc, Math.round(sx - disc.width / 2), Math.round(sy - disc.height / 2));
+    }
   }
 }
