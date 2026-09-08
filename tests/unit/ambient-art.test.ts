@@ -235,6 +235,23 @@ describe("ambient/art — 프롬프트의 마크다운 표가 깨지지 않는�
   });
 });
 
+describe("ambient/art — 브리프에 변형 개수를 박지 않는다(2026-09-08)", () => {
+  // 변형 수를 올릴 때마다 브리프의 "변형 N개"가 낡는다 — 실제로 16곳이 옛 개수를 코덱스에 부탁하고 있었다.
+  // 개수는 표의 파일 이름 목록과 '한 화면' 칸이 이미 말한다. 브리프는 **무엇이 갈려야 하는지**만 적는다.
+  it("어느 브리프에도 개수가 박혀 있지 않다", () => {
+    const bad = ART_SLOTS.filter((s) => /변형 \d+개/.test(s.brief)).map((s) => s.id);
+    expect(bad, `브리프에 개수가 박혔다: ${bad.join(", ")}`).toEqual([]);
+  });
+
+  it("소나무 세 계절은 -n끼리 짝이라는 규칙을 담는다", () => {
+    for (const id of ["tree-pine", "tree-pine-autumn", "tree-pine-winter"]) {
+      const s = ART_SLOTS.find((x) => x.id === id)!;
+      expect(s.brief, id).toContain("짝");
+      expect(s.variants, id).toBe(8);
+    }
+  });
+});
+
 describe("traces — 연잎 간격", () => {
   it("8월 말 연잎 12장은 서로 겹치지 않게 떨어져 있다(가로 .045·세로 .06 밖)", () => {
     const pads = monthTraces("vic", 2026, 8).filter((t) => t.kind === "lilypad");
