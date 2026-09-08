@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ART_SLOTS,
+  batchPrompt,
   codexMasterPrompt,
   dotBlock,
   dotGrid,
@@ -10,7 +11,9 @@ import {
   slotFiles,
   slotPrompt,
   SOURCE_EDGE,
-  targetEdge
+  targetEdge,
+  viewKoOf,
+  viewTagOf
 } from "@/components/shared/ambient/art/manifest";
 import { CODEX } from "@/components/shared/ambient/world/codex";
 import { monthTraces } from "@/components/shared/ambient/world/traces";
@@ -103,6 +106,24 @@ describe("ambient/art — 매니페스트", () => {
     expect(p).toContain("동물의 숲 카메라");
     expect(p).toContain(s.brief);
     expect(p).toContain("## 스타일 가이드");
+  });
+
+  // 2026-09-08: 하늘 자리는 view가 "flat"이지만 지면이 아니다(눌리지 않는다). 자리 프롬프트만 고치고 배치 표를
+  // 안 고쳐 한 번 어긋났다 — 표에 원시 키 "flat"이 찍히면 가이드의 "flat = 세로가 눌린다"와 정면으로 부딪힌다.
+  it("하늘 자리는 자리 프롬프트와 배치 표 **양쪽에서** 눌림 없는 카메라로 나간다", () => {
+    const sky = ART_SLOTS.filter((s) => s.category === "sky");
+    expect(sky.length).toBeGreaterThan(0);
+    for (const s of sky) {
+      expect(viewKoOf(s), s.id).toContain("정면 그대로");
+      expect(viewTagOf(s), s.id).not.toBe("flat");
+      expect(slotPrompt(s), s.id).not.toContain("세로가 살짝 눌린 타원");
+    }
+    const table = batchPrompt(sky, "하늘");
+    expect(table).not.toContain("| flat |");
+    // 지면 자리는 그대로여야 한다(하늘 분기가 번지지 않았는지).
+    const ground = ART_SLOTS.find((s) => s.id === "lilypad")!;
+    expect(viewTagOf(ground)).toBe("flat");
+    expect(viewKoOf(ground)).toContain("눌린");
   });
 });
 

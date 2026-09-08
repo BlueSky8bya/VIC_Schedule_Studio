@@ -248,6 +248,16 @@ export const VIEW_KO: Record<ArtView, string> = {
   side: "**옆모습** — 깊은 바다 전용(그 장면만 카메라가 다르다: 물속을 옆에서 본다, CLAUDE.md 예외 조항). 머리 = 왼쪽, 몸 전체가 한 실루엣으로 읽히게. 색은 넣되 어두운 물속에서 보이는 만큼만."
 };
 export const VIEW_SHORT: Record<ArtView, string> = { stand: "서 있음(3/4)", flat: "납작(3/4·눌림)", shadow: "실루엣", side: "옆모습(깊은 바다)" };
+
+// 하늘 자리(해·달·구름·혜성·별똥별)는 `view: "flat"`이지만 **지면이 아니다** — `GROUND_SQUASH`도 원근 눌림도 안 받고
+// 하늘 판에 정면 그대로 얹힌다. 지면용 문구("세로가 눌린 타원", "앞 = 위")를 그대로 보내면 생성기가 눌린 그림을 그려 온다
+// (2026-09-08 짧은 새털을 부탁하다 발견 — cloud-high·해·달·혜성·별똥별이 전부 그 문구를 받아 왔다).
+// **두 함수로 두는 이유**: 자리 프롬프트와 배치 표가 각자 `s.view`를 읽으면 한쪽만 고쳐져 어긋난다(실제로 한 번 그랬다).
+const SKY_VIEW_KO = "하늘에 뜬 것 — **정면 그대로**(원근 눌림 없음). 배경 없이 물체만, 아래를 향한 그림자·바닥선 금지.";
+/** 자리 프롬프트의 '카메라' 줄 — 하늘이면 하늘 문구. */
+export const viewKoOf = (s: ArtSlot): string => (s.category === "sky" ? SKY_VIEW_KO : VIEW_KO[s.view]);
+/** 배치 표의 '카메라' 칸 — 원시 키(`flat`)를 그대로 찍지 않는다. 하늘은 `sky`로 보여 가이드의 flat 항목과 안 부딪히게. */
+export const viewTagOf = (s: ArtSlot): string => (s.category === "sky" ? "sky(정면)" : s.view);
 export const NOW_KO: Record<ArtNow, string> = { procedural: "코드 도형", emoji: "Noto 이모지", silhouette: "PD 실루엣", svg: "우리 SVG", none: "아무것도 안 그려짐" };
 export const CATEGORY_KO: Record<ArtCategory, string> = { tree: "나무", plant: "풀·꽃", ground: "지형", water: "물", prop: "소품", sky: "하늘·천체", fish: "물고기", bug: "곤충", animal: "동물" };
 
@@ -288,8 +298,12 @@ export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
   **품질은 낮음/중간**(디테일이 필요 없다 — 우리가 128·256·512로 정수배 축소해 저장한다, scripts/ambient-art-normalize.mjs).
   파일 이름은 표의 id 그대로(<id>.png, 변형은 <id>-1.png, <id>-2.png…).
 - 검수 기준(우리가 기계로 잰다): 총 색 수 ≤ 48 · 가로 연속 길이 최빈값이 표의 **블록 px와 같을 것** · 알파 가장자리에 반투명 계조 없음.
-  소나무 3장(tree-pine-*)이 이 기준의 회귀 기준선이다 — 실측 색 7~9개 · 가로 연속 최빈 16px · 반투명 0.
-- 카메라(자리마다 표기): stand = 동물의 숲 카메라(높은 앵글 3/4 정면) · flat = 정확히 위에서 · shadow = 위에서 본 단색 실루엣.
+  ⚠ **가로 연속 최빈값은 자리마다 다르다 — 위 표의 '블록' px를 본다.** 소나무 3장(tree-pine-*)이 화풍의 회귀 기준선이지만
+  그건 블록 16px 자리의 값이다(실측 색 7~9개 · 가로 연속 최빈 16px · 반투명 0). 블록 64px 자리에 16px 도트를 그리면
+  같은 검수에서 반려된다.
+- 카메라(자리마다 표기): stand = 동물의 숲 카메라(높은 앵글 3/4 정면) · flat = 땅·물 위에 납작한 것을 3/4로(세로가 눌린다) ·
+  **하늘(해·달·구름·혜성·별똥별) = 정면 그대로, 눌림 없음** · shadow = 위에서 본 단색 실루엣.
+  자리마다 위 '카메라' 줄에 적힌 것이 정본이다 — 이 줄과 어긋나면 위를 따른다.
 - 일관성(**2026-09-07 개정**): 같은 종의 계절 변형은 **같은 줄기·같은 가지 뼈대·같은 실루엣 윤곽**을 쓴다. 다만 —
   · **낙엽수·관목(잎이 지는 것)**: 잎 덩이의 **크기와 빽빽함이 계절마다 다르다.** 봄 = 새잎이라 덩이가 작고 성기다(여름의 약 0.85배,
     사이로 가지가 조금 비친다) · **여름 = 한 해 중 가장 크고 빽빽하다(1.0 = 기준)** · 가을 = 잎이 지기 시작해 여름보다 조금 작고
@@ -307,10 +321,7 @@ export function slotPrompt(s: ArtSlot): string {
   return [
     `# ${s.nameKo} (${s.nameEn}) — 파일: ${files}`,
     `- 계절: ${s.seasons.map((k) => SEASON_KO[k]).join("·")} · 화면 크기 약 ${s.px[0]}×${s.px[1]}px — **가로:세로 ${ratioOf(s.px)}** (실루엣이 이 비를 벗어나면 자리를 못 채운다). 작게 놓이므로 큰 덩어리 위주, 잔 디테일 금지`,
-    // 하늘 자리(해·달·구름·혜성·별똥별)는 `view: "flat"`이지만 **지면이 아니다** — `GROUND_SQUASH`도 원근 눌림도 안 받고
-    // 하늘 판에 정면 그대로 얹힌다. 지면용 문구("세로가 눌린 타원", "앞 = 위")를 그대로 보내면 생성기가 눌린 그림을
-    // 그려 온다(2026-09-08에 짧은 새털을 부탁하다 발견 — cloud-high·해·달도 그 문구를 받아 왔다).
-    `- 카메라: ${s.category === "sky" ? "하늘에 뜬 것 — **정면 그대로**(원근 눌림 없음). 배경 없이 물체만, 아래를 향한 그림자·바닥선 금지." : VIEW_KO[s.view]}`,
+    `- 카메라: ${viewKoOf(s)}`,
     `- 그릴 것: ${s.brief}`,
     s.acnhRef ? `- 동물의 숲 참고 항목: ${s.acnhRef}(스타일 참고만)` : "",
     s.variants && s.variants > 1 ? `- 변형 ${s.variants}개를 각각 별도 PNG로(${files}).` : "",
@@ -331,7 +342,7 @@ const wantFiles = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) => {
 };
 
 const promptRow = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) =>
-  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${s.view} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
+  `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${viewTagOf(s)} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${s.brief}${s.acnhRef ? ` (동숲 참고: ${s.acnhRef})` : ""} |`;
 
 /** 배치 프롬프트 — 아무 자리 묶음이나(보드의 필터 결과·파일럿·단계 전체) 코덱스에 통째로 넘길 한 장으로 만든다. */
 export function batchPrompt(
