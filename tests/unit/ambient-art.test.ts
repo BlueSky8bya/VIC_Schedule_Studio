@@ -11,6 +11,8 @@ import {
   slotFiles,
   slotPrompt,
   dotsAcross,
+  isFiller,
+  recommendedVariants,
   SOURCE_EDGE,
   targetEdge,
   viewKoOf,
@@ -34,10 +36,11 @@ describe("ambient/art — 매니페스트", () => {
   });
   it("변형 자리는 -1..-n 파일, 나머지는 <id>.png 하나", () => {
     const lily = ART_SLOTS.find((s) => s.id === "lilypad")!;
-    expect(slotFiles(lily)).toEqual(["lilypad-1.png", "lilypad-2.png", "lilypad-3.png"]);
+    // 2026-09-08 PLAN-009: 한 화면에 12장이 깔리는데 변형이 3개였다 → 6.
+    expect(slotFiles(lily)).toEqual(["lilypad-1.png", "lilypad-2.png", "lilypad-3.png", "lilypad-4.png", "lilypad-5.png", "lilypad-6.png"]);
     // 참나무는 2026-09-07에 변형 2가 됐다(소유자: "참나무라고 모양이 똑같은 것만 있으면 어색") — 파일 이름이 -1/-2로 바뀐다.
     const oak = ART_SLOTS.find((s) => s.id === "tree-oak-winter")!;
-    expect(slotFiles(oak)).toEqual(["tree-oak-winter-1.png", "tree-oak-winter-2.png"]);
+    expect(slotFiles(oak)).toEqual(["tree-oak-winter-1.png","tree-oak-winter-2.png","tree-oak-winter-3.png","tree-oak-winter-4.png","tree-oak-winter-5.png","tree-oak-winter-6.png"]);
     const acorn = ART_SLOTS.find((s) => s.id === "acorn")!;
     expect(slotFiles(acorn)).toEqual(["acorn.png"]);
   });
@@ -77,12 +80,13 @@ describe("ambient/art — 매니페스트", () => {
   });
   // 2026-09-07: 12 → 14. 가을·겨울 소나무에 변형 2를 더했다 — 장면이 계절마다 **다른 파일**을 고르므로
   // (`land.ts` pineId), 봄·여름에만 변형이 둘이면 가을·겨울 산은 한 장을 40번 찍는다(반복감의 주범).
+  // 2026-09-08: 16 → 20. 바위가 4 → 8변형(PLAN-009) — 재작업이라 8장을 한 번에 받는다. 4장만 봐선 "다양한가"를 판정할 수 없다.
   // 2026-09-08: 14 → 16. 짧은 새털(`cloud-wisp`) 2장. 긴 것(6.5:1)만으로는 어떤 가로 행의 49%가 구름이 되는데
   // 그 상한은 자리 종횡비라 코드로 못 내린다(라운드 17 검토 A #3) — 섞어 놓을 짧은 조각이 필요하다.
-  it("파일럿 배치는 16장이고, 그 프롬프트는 파일럿 파일만 싣는다", () => {
+  it("파일럿 배치는 20장이고, 그 프롬프트는 파일럿 파일만 싣는다", () => {
     const slots = pilotSlots();
     const files = slots.flatMap((s) => pilotFiles(s));
-    expect(files.length).toBe(16);
+    expect(files.length).toBe(20);
     for (const s of slots) expect(pilotFiles(s).length, s.id).toBeLessThanOrEqual(slotFiles(s).length);
     const p = pilotPrompt();
     for (const f of files) expect(p).toContain(f);
@@ -145,6 +149,44 @@ describe("ambient/art — 도트 예산과 표면 배분(2026-09-08 소유자 �
     expect(rock.brief).toContain("이끼는 하나에만");
     // 이끼가 기본값처럼 읽히던 옛 문구가 되살아나면 실패한다.
     expect(rock.brief).not.toContain("이끼가 조금 앉았다");
+  });
+});
+
+describe("ambient/art — 변형 수는 한 화면 동시 개수에서 나온다(PLAN-009)", () => {
+  // 2026-09-08 소유자: "돌은 최대한 모양이 다양할수록 이득 … 돌 종류가 최소 8개는 되어야지. 자연이 얼마나 다양한데."
+  // 감으로 정하면 다시 낡는다 — 장면 코드에서 센 perScreen이 변형 수를 정하고, 이 테스트가 그걸 강제한다.
+  it("perScreen이 적힌 자리는 권장 변형 수를 채운다", () => {
+    const withCount = ART_SLOTS.filter((s) => s.perScreen);
+    expect(withCount.length).toBeGreaterThanOrEqual(25);
+    for (const s of withCount) {
+      const want = recommendedVariants(s.perScreen!, isFiller(s));
+      expect(s.variants ?? 1, `${s.id} — 한 화면 ${s.perScreen}개인데 변형 ${s.variants ?? 1}개`).toBeGreaterThanOrEqual(want);
+    }
+  });
+
+  it("권장 수식은 반복 한도와 상·하한을 지킨다", () => {
+    expect(recommendedVariants(12)).toBe(6); // 한 화면 12 → 한 변형이 2회
+    expect(recommendedVariants(16)).toBe(8);
+    expect(recommendedVariants(40)).toBe(8); // 상한 8 — 그 위는 생성 비용이 이득을 넘는다
+    expect(recommendedVariants(2)).toBe(2); // 하한은 화면 개수를 넘지 않는다 — 둘뿐이면 둘이면 된다
+    expect(recommendedVariants(8)).toBe(4);
+    expect(recommendedVariants(34, true)).toBe(6); // 잔 소품 상한 6
+    expect(recommendedVariants(2, true)).toBe(2);
+  });
+
+  it("반복이 가장 심하던 세 자리가 실제로 올라갔다(소나무·참나무·낮은 구름)", () => {
+    const of = (id: string) => ART_SLOTS.find((s) => s.id === id)!;
+    expect(of("tree-pine").variants).toBeGreaterThanOrEqual(8); // 산 12~20그루에 2변형이었다
+    expect(of("tree-oak-autumn").variants).toBeGreaterThanOrEqual(6);
+    expect(of("cloud-low").variants).toBeGreaterThanOrEqual(8);
+    expect(of("rock").variants).toBeGreaterThanOrEqual(8);
+  });
+
+  it("프롬프트가 '한 화면 몇 개'를 말한다 — 왜 달라야 하는지가 지시에 있어야 한다", () => {
+    const rock = ART_SLOTS.find((s) => s.id === "rock")!;
+    const p2 = slotPrompt(rock);
+    expect(p2).toContain(`한 화면에 최대 ${rock.perScreen}개가 동시에 놓인다`);
+    expect(batchPrompt([rock], "t")).toContain("한 화면");
   });
 });
 
