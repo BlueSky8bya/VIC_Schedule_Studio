@@ -11,10 +11,11 @@ import type { Light } from "./light";
 import { horizonY } from "./view";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
 import { ArtSet, drawArt, type ArtSprite } from "@/components/shared/ambient/art/load";
+import { skyEventAt } from "./sky-events";
 
 // 하늘의 그림 자리(2026-09-08) — 해·달 여덟 위상·구름 네 갈래. 파일이 있으면 그림을, 없으면 아래의 코드 도형을 쓴다
 // (다른 자리와 같은 규칙, ADR-0017 ⑮). 하늘은 장면마다 굽히므로 **모듈 하나에 ArtSet 하나**를 두고 공유한다.
-const skyArt = new ArtSet(["sun-disc", "moon-phase", "cloud-low", "cloud-mid", "cloud-high", "cloud-storm"]);
+const skyArt = new ArtSet(["sun-disc", "moon-phase", "cloud-low", "cloud-mid", "cloud-high", "cloud-storm", "comet", "shooting-star"]);
 /** 굽기 키에 섞을 아트 판(늦게 도착하면 값이 올라 하늘·구름이 한 번 다시 구워진다). */
 export const skyArtVersion = () => skyArt.version;
 
@@ -549,6 +550,8 @@ export type SkyFrame = {
   weather: { now: Weather };
   light: Light;
   date: { y: number; m: number; d: number };
+  /** 여력 0~1 — 드문 하늘 사건(별똥별·혜성)이 약한 기기에서 먼저 접히게. 없으면 1로 본다. */
+  load?: number;
 };
 
 /** 해의 화면 y — 고도 0°면 지평선(maxY) 바로 위, 18° 이상이면 하늘의 위쪽 40% 지점. */
@@ -560,6 +563,49 @@ export function sunYOf(alt: number | undefined, maxY: number): number {
 }
 
 /** 프레임마다: 별(밤·맑음/바람) · 달(밤, 음력 위상) · 해(새벽·노을, 맑음/바람) — 픽셀 사각 별, 옅은 달·해 원반 + 글로우. `maxY` = 언덕·능선에 가리지 않을 상한. */
+/** 밤하늘의 드문 사건 — 별똥별과 혜성. 일정은 `sky-events.ts`가 (시드, t)의 순수 함수로 정한다(결정성).
+ *  둘 다 **하늘 띠 안**에서만 움직이고 지평선을 넘지 않는다 — 땅 위를 지나가면 반딧불이가 된다. */
+function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number) {
+  const t = f.t;
+  const load = f.load ?? 1;
+  // ── 혜성 — 아주 느리게 가로지른다. 오래 떠 있어 "지나가는 중"을 알아볼 시간이 있다.
+  const cm = skyEventAt(seed, "comet", t, load);
+  const cSpr = cm ? skyArt.pick("comet", cm.r[2]) : null;
+  if (cm && cSpr) {
+    const dir = cm.r[0] < 0.5 ? 1 : -1; // 오른쪽으로 가나 왼쪽으로 가나
+    const y = maxY * (0.16 + cm.r[1] * 0.42);
+    const span = w * 1.25;
+    const x = dir > 0 ? -w * 0.15 + span * cm.u : w * 1.15 - span * cm.u;
+    const k = (maxY * (0.24 + cm.r[3] * 0.1)) / cSpr.h;
+    // 나타나고 사라지는 것도 천천히 — 양 끝 18%에서 페이드.
+    const a = Math.min(1, Math.min(cm.u, 1 - cm.u) / 0.18);
+    g.save();
+    g.globalAlpha *= 0.85 * a;
+    drawArt(g, cSpr, Math.round(x), Math.round(y), k, 0, dir < 0);
+    g.restore();
+  }
+  // ── 별똥별 — 1초 남짓, 대각으로 떨어지며 꼬리가 늦게 사라진다.
+  const st = skyEventAt(seed, "shooting-star", t, load);
+  const sSpr = st ? skyArt.pick("shooting-star", st.r[2]) : null;
+  if (st && sSpr) {
+    const dir = st.r[0] < 0.5 ? 1 : -1;
+    const x0 = w * (0.08 + st.r[1] * 0.84);
+    const y0 = maxY * (0.06 + st.r[3] * 0.3);
+    const len = w * 0.16;
+    // 감속하며 흐른다(ease-out) — 등속으로 그으면 선 하나가 미끄러지는 것으로 보인다.
+    const e = 1 - Math.pow(1 - st.u, 2.2);
+    const x = x0 + dir * len * e;
+    const y = y0 + len * 0.42 * e;
+    const k = (maxY * 0.09) / sSpr.h;
+    // 앞머리에서 밝고 끝에서 빠르게 스러진다.
+    const a = st.u < 0.18 ? st.u / 0.18 : Math.pow(1 - (st.u - 0.18) / 0.82, 1.6);
+    g.save();
+    g.globalAlpha *= a;
+    drawArt(g, sSpr, Math.round(x), Math.round(y), k, 0, dir < 0);
+    g.restore();
+  }
+}
+
 export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: { moonY?: number; sunY?: number } = {}) {
   const t = f.t;
   const band = f.time.band;
@@ -622,6 +668,7 @@ export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
         g.drawImage(spr, Math.round(mx - spr.width / 2), Math.round(my - spr.height / 2));
       }
     }
+    drawSkyEvents(g, w, f, seed, maxY);
     return;
   }
   if (band === "dawn" || band === "dusk") {
