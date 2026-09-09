@@ -1,8 +1,6 @@
 // 합격본 레퍼런스 시트(2026-09-09) — **생성기에 첨부할 그림**을 만든다.
 //
-// 왜 필요한가: 브리프가 "합격본 `tree-pine-1.png`를 열어 보고 맞춰라"라고 쓰는데, 생성기는 그 파일을 **볼 수 없다.**
-// 그래서 그 문장은 지시가 아니라 빈칸이었고, 생성기가 빈칸을 제 나름대로 메웠다(3차 납품: 재는 항목 여덟은
-// 전부 통과하고, 말로만 적힌 것 둘 — 눈이 앉는 자리와 밑동 모양 — 이 틀렸다).
+// 합격본을 정수배로 확대한다. 파일을 읽는 에이전트와 이미지 생성기에 참고를 전달하는 단계는 별개다.
 //
 //   node scripts/ambient-art-reference.mjs tree-pine
 //   → docs/ambient/reference/<자리>.png  (합격본 나란히 + 요점 확대)
@@ -12,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { artManifest, familySlots } from "./lib/ambient-art-manifest.mjs";
 
 const require = createRequire(import.meta.url);
 const sharp = require("sharp");
@@ -49,23 +48,27 @@ async function crop(file, [a, b], targetW) {
   return { buf: await sharp(c).resize(w, h, { kernel: "nearest" }).png().toBuffer(), w, h };
 }
 
-// 이 자리의 합격본(-1) 전부 — 계절 자리가 있으면 함께 싣는다(같은 한 그루라는 것이 그림으로 보여야 한다).
-const slots = [family, `${family}-autumn`, `${family}-winter`].filter((id) => fs.existsSync(path.join(artDir, `${id}-1.png`)));
+// Exact manifest names support singletons; paired families are explicit metadata.
+const { slotFiles } = artManifest();
+const files = familySlots(family).map((slot) => slotFiles(slot).find((file) => fs.existsSync(path.join(artDir, file)))).filter(Boolean);
+const slots = files.map((file) => file.replace(/\.png$/, ""));
 if (!slots.length) {
-  console.error(`${artDir} 에 ${family}-1.png 가 없다.`);
+  console.error(`${family}: 합격본 없음. 시트를 위조하지 말고 art:pipeline request로 스타일 파일럿을 시작한다.`);
   process.exit(1);
 }
 
 const rows = [];
-const full = await Promise.all(slots.map((id) => tile(path.join(artDir, `${id}-1.png`), 340)));
+const full = await Promise.all(files.map((file) => tile(path.join(artDir, file), 340)));
 rows.push({ label: "합격본 — 이 화풍·이 굵기로", tiles: full });
 
-const trunk = await Promise.all(slots.map((id) => crop(path.join(artDir, `${id}-1.png`), [0.72, 1.0], 300)));
-rows.push({ label: "밑동 — 한 덩이로 내려온다(갈래로 벌어지지 않는다)", tiles: trunk });
+if (family === "tree-pine") {
+  const trunk = await Promise.all(files.map((file) => crop(path.join(artDir, file), [0.72, 1.0], 300)));
+  rows.push({ label: "밑동 — 한 덩이로 내려온다(갈래로 벌어지지 않는다)", tiles: trunk });
+}
 
-const winter = slots.find((id) => id.endsWith("-winter"));
+const winter = family === "tree-pine" ? files.find((file) => /^tree-pine-winter-\d+\.png$/.test(file)) : null;
 if (winter) {
-  const snow = [await crop(path.join(artDir, `${winter}-1.png`), [0.1, 0.62], 420)];
+  const snow = [await crop(path.join(artDir, winter), [0.1, 0.62], 420)];
   rows.push({ label: "눈 — 단 윗면을 두툼하게 덮는다(윤곽을 흰 선으로 두르지 않는다)", tiles: snow });
 }
 

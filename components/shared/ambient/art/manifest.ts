@@ -221,6 +221,11 @@ const PHASE2: readonly ArtSlot[] = CODEX.map((e) => ({
 export const ART_SLOTS: readonly ArtSlot[] = [...PHASE1, ...PHASE2];
 export const artSlot = (id: string): ArtSlot | undefined => ART_SLOTS.find((s) => s.id === id);
 
+/** Explicit paired assets. `seasons` describes availability, not extra output files. */
+export const ART_FAMILIES: Readonly<Record<string, { slotIds: readonly string[]; pairedVariants: boolean }>> = {
+  "tree-pine": { slotIds: ["tree-pine", "tree-pine-autumn", "tree-pine-winter"], pairedVariants: true }
+};
+
 /** 자리의 파일 이름들(변형 포함) — 라우트가 존재 여부를 검사하고, 로더가 무작위로 고른다. */
 export function slotFiles(s: ArtSlot): string[] {
   return s.variants && s.variants > 1 ? Array.from({ length: s.variants }, (_, i) => `${s.id}-${i + 1}.png`) : [`${s.id}.png`];
@@ -292,28 +297,28 @@ export const NOW_KO: Record<ArtNow, string> = { procedural: "코드 도형", emo
 export const CATEGORY_KO: Record<ArtCategory, string> = { tree: "나무", plant: "풀·꽃", ground: "지형", water: "물", prop: "소품", sky: "하늘·천체", fish: "물고기", bug: "곤충", animal: "동물" };
 
 /** 스타일 가이드 — 모든 자리에 공통. 모여봐요 동물의 숲(참고 페이지: 물고기·곤충 도감)을 **스타일 참고**로만 쓴다. */
-export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
+const ART_STYLE_HEADER = `## 스타일 가이드(모든 그림 공통)
 - **확정 스타일 = 픽셀아트**(2026-09-04 확정). 굵은 픽셀 블록으로 그린 도트 그림 — 모여봐요 동물의 숲의 **소재·귀여움**에
   16비트 도트의 **또렷함**을 더한 것. 앞으로 만드는 자리는 **전부 같은 어법**이어야 한다(한 장면에 도트와 물감이 섞이면 깨진다).
   (옛 문구 "참나무는 기준이 아니다 · 재작업 대상"은 **철회한다** — 재작업본이 이미 들어왔는데 안내가 낡아 있었다.)
   소재·귀여움의 참고는 모여봐요 동물의 숲 도감 — https://animalcrossing.soopoolleaf.com/ko/acnh/Fish/ · https://animalcrossing.soopoolleaf.com/ko/acnh/Bugs/ .
   닌텐도 원본을 복제·트레이스하지 말고, 같은 소재를 **새로 그린 원작**으로.
-- **⚠ 그리기 전에 아래 파일들을 실제로 열어 보고, 무엇을 보았는지 한 줄로 적어라**(2026-09-09).
+`;
+const ART_REFERENCE_GUIDE = `- **⚠ 그리기 전에 아래 파일들을 실제로 열어 보고, 무엇을 보았는지 한 줄로 적어라**(2026-09-09).
   너는 이 저장소의 워크스페이스에서 실행되므로 **이 경로들을 직접 읽을 수 있다.**
   \`\`\`
   docs/ambient/reference/<자리>.png     ← 합격본 시트(정본). 확대돼 있어 도트 한 칸이 보인다
-  public/ambient/art/<자리>-1.png       ← 합격본 원본
+   public/ambient/art/<slotFiles 이름>    ← 합격본 저장본(원본과 구별)
   art-src/reference/<범주>/             ← 취향 참고(발상만). 범주는 표의 '범주' 칸
   \`\`\`
   왜 이 문단이 생겼나: 3차 납품이 **수치로 재는 항목 여덟은 전부 통과하고**(도트 결·고아·얼룩·외곽선·다양성·계절 짝·
   눈의 양·잎 색상) **말로만 적힌 것 둘을 틀렸다** — 눈을 단 위에 얹지 않고 윤곽에 흰 테를 둘렀고, 밑동이 게 다리처럼
-  세 갈래로 갈라졌다. 당시엔 "생성기가 파일을 볼 수 없어서"라고 적었지만 그것은 **측정한 사실이 아니라 추측이었다**
-  (2026-09-09 정정: 워크스페이스 확장으로 실행되면 읽을 수 있다). 그러니 남는 설명은 하나다 — **안 봤다.**
-  그래서 이제는 본 것을 **적게** 한다. 시트를 따로 굽는 이유도 남는다: 합격본 원본은 240px라 도트가 잘 안 보이고,
+   세 갈래로 갈라졌다. 당시 파일 접근이나 실제 참고 전달 여부는 로그로 입증되지 않았다. 워크스페이스를 읽는 단계와
+   이미지 생성기에 참고를 전달하는 단계는 별개다. 연 경로와 실제 전달한 참고를 **적는다**. 합격본 저장본은 작으므로,
   시트는 정수배로 확대해 밑동과 눈이 앉은 자리를 크게 실어 놓았다.
-- **⚠ 반려본을 보지 마라**(2026-09-09 신설). 저장소를 읽을 수 있게 되면서 생긴 위험이다.
+- **반려본은 실패 예시로만 본다.**
   \`art-src/incoming-*/\` 아래는 **반려된 납품본**이다(2차·3차 소나무). 파일 이름이 목표물과 똑같아서 그대로 화풍의
-  기준으로 삼기 쉬운데, **그것들은 떨어진 그림이다.** 화풍의 정본은 \`public/ambient/art/\`의 합격본과 그 시트뿐이다.
+   기준으로 삼기 쉬운데, **그것들은 떨어진 그림이다.** 보려면 REJECTED 라벨·위반 ruleId·문제 부위 crop·기대 형태를 함께 붙인다. 화풍의 정본은 합격본이다.
 - **화풍 기준선 = 이미 합격한 우리 그림 일곱 장**(레퍼런스 시트에 실려 온다). 새 그림이 이들과 **나란히 놓여 한 세트로
   보이는지**를 스스로 판정한다(2026-09-07 실측: 참나무 색 8개·가로 연속 평균 9.4px, 소나무 색 7~9개·9.5~9.9px).
   \`\`\`
@@ -330,7 +335,7 @@ export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
   ② **취향 참고 폴더**(\`art-src/reference/<범주>/\`, 소유자가 골라 둔 CC0 픽셀아트) = **발상만.** 생김새·실루엣의
      아이디어·부위가 앉은 모양 같은 **형태의 힌트**로만 쓴다.
   ⚠ **개수로 이기려 하지 마라.** ②는 여러 장이고 ①은 한 장이지만, **많은 쪽이 이기는 것이 아니다.**
-     ②를 다섯 장 보고 ①을 한 장 봤다면 손은 ②를 따라간다 — 그것이 한 장면에 두 화풍이 섞이는 경로다.
+      ②를 여러 장 봐도 ①의 화풍 기준을 바꾸지 않는다.
      ②는 "무엇을 그릴까"에만 쓰고, "어떻게 그릴까"는 ① 하나만 본다.
   둘이 어긋나면 **①이 이긴다.** 특히 도트 굵기·팔레트·외곽선 색은 ②를 절대 따라가지 않는다 — 바깥 그림은 대개 우리보다
   촘촘하고, 그걸 따라가면 한 장면에 두 화풍이 섞여 깨진다(우리 자리는 격자 16칸이면 물체가 가로 14도트 남짓이다).
@@ -338,7 +343,8 @@ export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
      **①의 어법으로 새로 그린다.** 결과물이 ②와 겹쳐 보이면 반려다.
   ⚠ **자리의 규격이 어떤 레퍼런스보다 우선한다.** 격자·블록 px·가로세로 비·파일 이름·투명 배경은 아래 표와 이 문서가 정하며,
   레퍼런스가 그와 다르면 **표를 따른다.**
-- 픽셀 규격(**가장 중요 — 2026-09-07 개정**): 1024 캔버스를 **논리 격자**로 보고 그린다. 격자 크기는 자리마다 다르고 **표의 '격자' 칸**에
+`;
+const ART_STYLE_SPEC = `- 픽셀 규격(**가장 중요 — 2026-09-07 개정**): 1024 캔버스를 **논리 격자**로 보고 그린다. 격자 크기는 자리마다 다르고 **표의 '격자' 칸**에
   적혀 있다(작은 자리는 굵게 16~32칸, 큰 자리는 64~128칸). 도트 한 칸 = 표의 '블록' px 정사각, 격자에 딱 맞춰 정렬.
   **블록 경계를 넘는 색 변화 금지**(한 블록 안은 완전히 같은 한 색). 안티에일리어싱·흐린 가장자리·에어브러시·그림자 번짐 금지 —
   선명한 계단 픽셀만. 1픽셀짜리 잔점·노이즈·디더링 남발 금지.
@@ -417,6 +423,18 @@ export const ART_STYLE_GUIDE = `## 스타일 가이드(모든 그림 공통)
 ⚠ **"다 됐습니다"라고 쓰기 전에 1~5를 실제로 확인한 결과를 함께 적는다.** 확인하지 않은 보고는 반려와 같다.
 ⚠ **이 목록은 재는 것이지 전부가 아니다.** 3차 납품은 재는 항목을 전부 통과하고도 반려됐다 — 수치를 맞추는 것이 목적이
    아니라 **첨부된 레퍼런스와 한 세트로 보이는 것**이 목적이다. 수치는 그것을 확인하는 수단일 뿐이다.`;
+export const ART_STYLE_GUIDE = `${ART_STYLE_HEADER}${ART_REFERENCE_GUIDE}${ART_STYLE_SPEC}`;
+
+export type ArtPromptReference = { path: string; kind: "accepted" | "accepted-sheet" | "inspiration"; slotId?: string };
+const referenceLabel = (kind: ArtPromptReference["kind"]) => kind === "accepted-sheet" ? "합격본 시트" : kind === "accepted" ? "합격본 저장본" : "형태 발상만";
+const fixedReferenceGuide = (inputs: readonly ArtPromptReference[]) => [
+  "## 고정 입력 — 이번 요청의 유일한 이미지 참고",
+  "아래 inputs 사본을 실제로 열고, 연 경로·관찰한 특징·이미지 생성기에 전달한 참고를 적는다. 다른 live 파일로 바꾸지 않는다.",
+  ...inputs.map((input) => `- ${referenceLabel(input.kind)}: \`${input.path}\``),
+  inputs.some((input) => input.kind !== "inspiration") ? "화풍·부위 표현은 위 합격본 기준. 형태 발상은 이 화풍을 바꾸지 않는다." : "해당 범주의 합격본 없음. 이번 결과는 첫 화풍 승인을 위한 스타일 파일럿이다.",
+  "반려 이미지는 화풍 기준이 아니다. 실패 예시가 필요하면 REJECTED 라벨·위반 ruleId·문제 crop·기대 형태를 함께 제시한다.",
+  ""
+].join("\n");
 
 /** 파일럿 배치에서 실제로 받을 파일들(자리의 변형 중 앞의 `pilot`장만). */
 export const pilotFiles = (s: ArtSlot): string[] => (s.pilot ? slotFiles(s).slice(0, s.pilot) : []);
@@ -463,13 +481,16 @@ const promptRow = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>) =>
   `| ${s.id} | ${wantFiles(s, pilot, only).join(", ")} | ${s.nameKo} | ${s.seasons.map((k) => SEASON_KO[k]).join("·")} | ${viewTagOf(s)} | ${s.px[0]}×${s.px[1]} (${ratioOf(s.px)}) | ${dotGrid(s.px, s.grid)}칸 | ${dotBlock(s.px, s.grid)}px | ${dotsAcross(s.px, s.grid)}칸 | ${s.perScreen ?? "-"} | ${briefLead(s)} |`;
 
 /** 자리별 상세 — 표 아래. 브리프 전문 + 동숲 참고. 여기가 실제 지시이고 표는 색인이다. */
-const promptDetail = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>): string =>
+const promptDetail = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>, inputs?: readonly ArtPromptReference[]): string =>
   [
     `### ${s.nameKo} — ${wantFiles(s, pilot, only).join(", ")}`,
     `자리 ${s.px[0]}×${s.px[1]}(${ratioOf(s.px)}) · 카메라 ${viewTagOf(s)} · 격자 ${dotGrid(s.px, s.grid)}칸(블록 ${dotBlock(s.px, s.grid)}px) · 물체 가로 약 ${dotsAcross(s.px, s.grid)}칸${s.perScreen ? ` · **한 화면에 최대 ${s.perScreen}개 동시**` : ""}`,
     // 열어 볼 경로를 자리마다 **정확히** 적는다 — "<자리>를 넣어 유추하라"는 또 하나의 빈칸이고,
     // 3차가 메운 것이 바로 그런 빈칸이었다.
-    `**그리기 전에 열어 볼 것** — 화풍 정본 \`docs/ambient/reference/${s.id}.png\`(없으면 \`public/ambient/art/${s.id}-1.png\`) · 형태 발상 \`art-src/reference/${s.category}/\`(발상만, 어법은 정본이 이긴다)`,
+    inputs !== undefined
+      ? `**그리기 전에 열어 볼 고정 입력** — ${inputs.filter((input) => !input.slotId || input.slotId === s.id).map((input) => `${referenceLabel(input.kind)} \`${input.path}\``).join(" · ") || "해당 승인 참고 없음: 스타일 파일럿으로 검토받는다."}`
+      : `**그리기 전에 열어 볼 것** — 합격본 시트 \`docs/ambient/reference/${s.id}.png\`, 합격본 후보 \`public/ambient/art/${slotFiles(s)[0]}\` · 형태 발상 \`art-src/reference/${s.category}/\`(발상만). 해당 합격본이 없으면 범주·카메라에 맞는 스타일 파일럿으로 먼저 검토받는다.`,
+    only ? "**아래는 전체 자리의 디자인 계획이다. 전체 변형 수·과거 반려 수량은 추가 납품 지시가 아니다. 이번 납품 범위는 위 파일 목록과 자리 표가 우선한다.**" : "",
     "",
     s.brief,
     s.acnhRef ? `\n(동물의 숲 참고 항목: ${s.acnhRef} — 스타일 참고만)` : ""
@@ -481,7 +502,7 @@ const promptDetail = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>): s
 export function batchPrompt(
   slots: readonly ArtSlot[],
   title: string,
-  opts: { pilot?: boolean; note?: string; files?: readonly string[] } = {}
+  opts: { pilot?: boolean; note?: string; files?: readonly string[]; outputDir?: string; referenceInputs?: readonly ArtPromptReference[] } = {}
 ): string {
   const pilot = !!opts.pilot;
   // `files`가 오면 **그 파일들만** 표에 싣는다 — 이미 배달된 것을 다시 부탁하지 않기 위해서다(보드의 '남은 파일만').
@@ -493,11 +514,11 @@ export function batchPrompt(
 
 빅토리 일정표(스트리머 방송 일정 편집실)의 배경은 달력의 달을 따라 봄·여름·가을·겨울로 바뀌는 살아 있는 장면이다.
 자리의 대부분은 아직 코드로 그린 기본 도형(원·선)이라 풀은 껌딱지, 흙더미는 정체불명으로 보인다.
-아래 표의 **파일 이름마다 그림 한 장씩**을 만들어 달라 — 스타일은 **합격본 시트**(\`docs/ambient/reference/<자리>.png\`)와 같은 픽셀아트다(그 시트가 이 의뢰의 정본이다).
+아래 표의 **파일 이름마다 그림 한 장씩**을 만들어 달라 — ${opts.referenceInputs !== undefined ? "화풍 기준은 아래 「고정 입력」의 inputs 사본이다. 이번 납품 범위는 자리 표의 파일 목록으로만 정한다." : "스타일은 **합격본 시트**(`docs/ambient/reference/<자리>.png`)와 같은 픽셀아트다(그 시트가 이 의뢰의 정본이다)."}
 너는 이 저장소 안에서 실행되므로 그 경로를 **직접 열어 볼 수 있다.** 자리마다 열어 볼 파일은 「자리별 상세」의 각 항목에 적혀 있다 — **그리기 전에 실제로 열고, 본 것을 한 줄로 적어라.**
-만든 파일은 public/ambient/art/ 에 표의 이름 그대로 넣기만 하면 장면이 자동으로 그 그림을 쓴다(편집실 /studio/ambient-art 보드에서 자리별 상태를 확인한다).
+만든 파일은 \`${opts.outputDir ?? "art-src/<범주>/<family>/runs/<run>/raw"}\`에 표의 이름 그대로 납품한다. \`public/ambient/art/\`는 합격본 전용이다. 검토 전 파일을 넣거나 기존 합격본을 덮어쓰지 않는다.
 ${opts.note ? `\n${opts.note}\n` : ""}
-${ART_STYLE_GUIDE}
+${opts.referenceInputs !== undefined ? `${ART_STYLE_HEADER}${fixedReferenceGuide(opts.referenceInputs)}${ART_STYLE_SPEC}` : ART_STYLE_GUIDE}
 
 ## 자리 표(파일 ${count}장 · 자리 ${rows.length}개)
 | 자리 id | 파일 이름 | 이름 | 계절 | 카메라 | 화면 크기 | 격자 | 블록 | 가로 도트 | 한 화면 | 그릴 것 |
@@ -506,13 +527,13 @@ ${rows.map((s) => promptRow(s, pilot, only)).join("\n")}
 
 ## 자리별 상세(실제 지시 — 위 표는 색인이다)
 
-${rows.map((s) => promptDetail(s, pilot, only)).join("\n\n")}
+${rows.map((s) => promptDetail(s, pilot, only, opts.referenceInputs)).join("\n\n")}
 
 ## 납품
 - 파일 하나에 물체 하나. 표의 이름을 그대로 파일 이름으로. **1024×1024 정사각 투명 PNG**, 품질 낮음/중간.
 - **표의 격자·블록을 지킬 것**(예: 격자 64칸이면 도트 한 칸이 16×16px 블록). 이것이 이번 배치의 합격/불합격을 가르는 첫 기준이다.
 - **픽셀아트 한 어법으로**: **합격본 시트**와 나란히 놓아도 한 세트로 보여야 한다(다 그린 뒤 시트 옆에 붙여 놓고 판정할 것).
-  시트 파일이 없으면 그리지 말고 먼저 만들어 달라고 한다(\`node scripts/ambient-art-reference.mjs <자리>\`) — 못 본 것은 맞출 수 없다.
+  ${opts.referenceInputs !== undefined ? "이번 inputs 사본은 다시 굽거나 교체하지 않는다. 참고가 부족하면 새 요청에서 보완한다. 승인 참고가 없는 범주는 첫 화풍 검토 전 대량 생성하지 않는다." : "해당 합격본이 있으면 시트를 만들 수 있다(`node scripts/ambient-art-reference.mjs <자리>`). 합격본이 없는 범주는 **스타일 파일럿**부터 만든다. 참고가 없다는 사실을 밝히고 첫 승인 전 대량 생성하지 않는다."}
 - **본 것을 적는다.** 납품에 한 줄씩 붙여라 — 연 파일 경로, 거기서 읽은 도트 굵기·색 단수, 그리고 취향 참고에서
   가져온 형태의 발상. 3차는 이 줄이 없었고, 수치를 다 통과하고도 화풍이 갈렸다.
 - **단순하게**: 128px로 줄여도 읽히는 덩어리 2~3개. 잎·털·비늘 낱개, 붓 터치, 안티에일리어싱 금지.

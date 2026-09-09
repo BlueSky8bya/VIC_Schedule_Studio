@@ -23,6 +23,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dir = path.join(root, "public", "ambient", "art");
 const args = process.argv.slice(2);
 const dry = args.includes("--dry");
+if (!dry) {
+  console.error("In-place normalization retired: use node scripts/ambient-art-pipeline.mjs normalize <run>. Original and public PNGs remain unchanged. Legacy inspection: --dry.");
+  process.exit(1);
+}
 const force = args.includes("--force");
 const filter = args.find((a) => !a.startsWith("--")) ?? "";
 
