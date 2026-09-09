@@ -69,8 +69,14 @@ if (winter) {
   rows.push({ label: "눈 — 단 윗면을 두툼하게 덮는다(윤곽을 흰 선으로 두르지 않는다)", tiles: snow });
 }
 
-// 배치
-const width = Math.max(...rows.map((r) => r.tiles.reduce((n, t) => n + t.w, 0) + GAP * (r.tiles.length + 1)));
+// 배치 — 폭은 그림뿐 아니라 **라벨도** 재서 정한다. 라벨이 잘리면 참고 시트가 지시를 반쯤만 전한다
+// (2026-09-09: 겨울 시트의 "…윤곽을 흰 선으로 두르지 않는다"가 오른쪽에서 잘려 있었다).
+// 한글은 폭이 글자 크기에 가깝고 공백·괄호는 좁다 — 17px에 글자당 ≈ 15px로 잡으면 넉넉하다.
+const labelWidth = (s) => GAP * 2 + Math.round(s.length * 15);
+const width = Math.max(
+  ...rows.map((r) => r.tiles.reduce((n, t) => n + t.w, 0) + GAP * (r.tiles.length + 1)),
+  ...rows.map((r) => labelWidth(r.label)),
+);
 let y = GAP;
 const comp = [];
 const svgText = [];
