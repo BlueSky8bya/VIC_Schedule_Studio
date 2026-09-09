@@ -37,7 +37,7 @@ The product is a public broadcast schedule, owner/developer studio, teaser gate,
 | Current work | [Current state](docs/agent/CURRENT_STATE.md) |
 | UI/layout/motion | [UI rules](docs/ux/UI_RULES.md), relevant local guidance |
 | Ambient engine/world/QA | [Ambient routing](docs/ambient/README.md), only the matching row |
-| Art generation/review/delivery | [Art rules](docs/ambient/ART_RULES.md) |
+| Art generation/review/delivery | [Art workflow rules](art-src/AGENTS.md) |
 | Auth/private/public boundary | [Security rules](docs/agent/domain-rules/SECURITY.md), [auth rules](docs/agent/domain-rules/AUTH.md), relevant ADR |
 | Schema/data operations | [Destructive-data rules](docs/agent/domain-rules/DESTRUCTIVE_DATA.md), migration README |
 | Verification gaps | [Open checks](docs/agent/verification/OPEN_CHECKS.md) |

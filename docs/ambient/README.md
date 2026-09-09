@@ -11,9 +11,9 @@ Start here for `components/shared/ambient/**`, ambient artwork or QA. Read the m
 | Time/weather/season | ENGINE_RULES time section and [SEASON_TIME_WEATHER_GRAMMAR](SEASON_TIME_WEATHER_GRAMMAR.md) | `world/sun.ts`, `time.ts`, `weather.ts`, `light.ts` |
 | Mountain layers | [MOUNTAIN_DEPTH_RULES](MOUNTAIN_DEPTH_RULES.md) | `scenes/land.ts`, `world/view.ts` |
 | Creature placement/behavior | ENGINE_RULES creature section and relevant BIOME_GRAMMAR section | `world/codex.ts`, `rarity.ts`, affected scene |
-| Art entity/source/migration | Art catalogue (`../../art-src/목록.md`; destination lands with the following art commits), matching entity prompt, source rules (`../../art-src/AGENTS.md`; destination lands with the following art commits) | ART_PIPELINE (`ART_PIPELINE.md`; destination lands with the following art commits), [Manifest](../../components/shared/ambient/art/manifest.ts) |
+| Art entity/source/migration | [Art catalogue](../../art-src/목록.md), matching entity prompt, [source rules](../../art-src/AGENTS.md) | [ART_PIPELINE](ART_PIPELINE.md), [Manifest](../../components/shared/ambient/art/manifest.ts) |
 | Art generation/review | Exact run request and frozen inputs, [ART_RULES](ART_RULES.md) | Entity reference/rejection/source/review entry points; full file plan does not expand this delivery |
-| Active pine work | [Pine handoff](HANDOFF-20260908-pine.md), pine entity (`../../art-src/tree/tree-pine/프롬프트.md`; destination lands with the following art commits) | Existing frozen pilot request; do not reuse a historical prompt |
+| Active pine work | [Pine handoff](HANDOFF-20260908-pine.md), [pine entity](../../art-src/tree/tree-pine/프롬프트.md) | Existing frozen pilot request; do not reuse a historical prompt |
 | Run QA | [VISUAL_QA_PROTOCOL](VISUAL_QA_PROTOCOL.md), [QA_PROGRESS](QA_PROGRESS.md) | [Tool README](../../scripts/ambient-qa/README.md) |
 | UI around ambient | [UI_RULES](../ux/UI_RULES.md), matching controls section | Studio settings / showcase / ambient mode controls |
 

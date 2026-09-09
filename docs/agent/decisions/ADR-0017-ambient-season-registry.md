@@ -94,7 +94,7 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > `public/ambient/art/tree-oak-*.png`가 기준물이고 이후 모든 자리는 같은 어법(도트 ↔ 물감 혼합 금지). 겨울 줄기는 눈밭에서 붉은 갈색이
 > 제일 튀어(hue 8°·채도 .62) `scripts/ambient-art-desaturate.mjs`로 hue 15°·채도 .44로 탈색 — **밝은 바탕에 서는 줄기는 회갈색**이 규칙이 됐다.
 >
-> **부분 대체 — ⑮의 수량·입력 크기·정규화 명령(2026-09-09 확인).** 36/65자리·29종은 도입 당시 수량이며 현재 계획은 [manifest](../../../components/shared/ambient/art/manifest.ts)의 `ART_SLOTS`·`slotFiles`에서 계산한다. "생성기 최소 크기"·화면 px 4배·`npm run art:normalize` 직접 쓰기는 현행 납품 절차가 아니다. [ADR-0020](ADR-0020-bounded-memory-and-art-review.md)·ART_PIPELINE (`../../ambient/ART_PIPELINE.md`; destination lands with the following art commits)에 따라 요청 규격의 원본을 run `raw/`에 보존하고 manifest의 목표 변·격자에 맞춰 정수배/nearest 정규화한 뒤 소유자 검토를 거쳐 반영한다. 일반 생성 입력은 1024×1024이며 슬롯별 규격을 따른다. 단순함·픽셀 화풍·회갈색 줄기 결정은 유지한다([ART-01·03·05·06](../../ambient/ART_RULES.md)).
+> **부분 대체 — ⑮의 수량·입력 크기·정규화 명령(2026-09-09 확인).** 36/65자리·29종은 도입 당시 수량이며 현재 계획은 [manifest](../../../components/shared/ambient/art/manifest.ts)의 `ART_SLOTS`·`slotFiles`에서 계산한다. "생성기 최소 크기"·화면 px 4배·`npm run art:normalize` 직접 쓰기는 현행 납품 절차가 아니다. [ADR-0020](ADR-0020-bounded-memory-and-art-review.md)·[ART_PIPELINE](../../ambient/ART_PIPELINE.md)에 따라 요청 규격의 원본을 run `raw/`에 보존하고 manifest의 목표 변·격자에 맞춰 정수배/nearest 정규화한 뒤 소유자 검토를 거쳐 반영한다. 일반 생성 입력은 1024×1024이며 슬롯별 규격을 따른다. 단순함·픽셀 화풍·회갈색 줄기 결정은 유지한다([ART-01·03·05·06](../../ambient/ART_RULES.md)).
 >
 > **⑯ 바이옴 세계(PLAN-20260904-004 P0·P1, 2026-09-04 밤, 소유자 결정 ⓪~④).** ① **3/4 시점**(`world/view.ts`: 바닥 눌림 .7·거리 축소
 > .6→1·지평선 띠 12%·엔진 대기 안개)과 **동물의 숲 축척**(`world/scale.ts`, 최대:최소 ≤ 12). ② **사철 기본 화면 = 초원** — 결정 2의 "물결은
@@ -212,7 +212,7 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 
 > **부분 대체 — ⑱-22의 "동물은 그리지 않지만"(2026-09-09 확인).** 이 전제는 [ADR-0019](ADR-0019-codex-three-books.md)의 원작 동물 픽셀아트 결정으로 대체됐다. 임시 외부 에셋의 라이선스 유지·채도 조절과 전체 팔레트 정합성은 계속 적용한다([ART-03·11](../../ambient/ART_RULES.md)).
 
-> **과거 작업 상태(2026-09-09 확인).** 아래 "남은 것"과 `다음`은 이 검토 회전 당시 우선순위이며 현재 작업 목록이 아니다. 현재 납품 수량·요청은 [CURRENT_STATE](../CURRENT_STATE.md)의 run과 아트 목록 (`../../../art-src/목록.md`; destination lands with the following art commits)에서 확인한다([ADR-0020](ADR-0020-bounded-memory-and-art-review.md)).
+> **과거 작업 상태(2026-09-09 확인).** 아래 "남은 것"과 `다음`은 이 검토 회전 당시 우선순위이며 현재 작업 목록이 아니다. 현재 납품 수량·요청은 [CURRENT_STATE](../CURRENT_STATE.md)의 run과 [아트 목록](../../../art-src/목록.md)에서 확인한다([ADR-0020](ADR-0020-bounded-memory-and-art-review.md)).
 
 남은 것(우선순위): `rock` 아트 4종(9개 바이옴에 나온다) → 관목 4계절 → 갈대·통나무·그루터기 → 눈 무더기.
 연못·먼바다·모래해안은 아직 화면의 절반이 빈 물/모래 판이다(P2 생물이 채운다).

@@ -4,6 +4,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { markdownFiles, markdownLinks, read, renderBrief, validateMemory, withoutFences } from "./memory.mjs";
+import { syncCatalog } from "../ambient-art-catalog.mjs";
 import { validateRuleMigration } from "./rule-migration.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -51,6 +52,10 @@ for (const file of readdirSync(resolve(root, directory)).filter((name) => /^ADR-
   else if (indexedStatus !== status) errors.push("ADR/index status mismatch: " + file + " (" + status + " / " + indexedStatus + ")");
 }
 
+try {
+  const catalog = syncCatalog({ workspaceRoot: root, check: true });
+  if (catalog.status !== "pass") errors.push(`Art catalog drift: ${catalog.changes.length} stale, ${catalog.conflicts.length} edited generated documents; run npm run art:catalog`);
+} catch (error) { errors.push(`Art catalog check: ${error.message}`); }
 
 if (!errors.length) {
   errors.push(...validateMemory(root));

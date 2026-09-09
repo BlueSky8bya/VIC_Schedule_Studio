@@ -13,8 +13,8 @@ Execute the approved work order in order A → D → B → C: rule preservation,
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| RULE-ART-COMPLETION | In Progress | Complete the 589-line rule/measurement mapping and ADR audit before the commit split | [Work order](handoffs/20260909-work-order.md) |
-| ART-PINE-PILOT | Prepared | Generate variants 2 and 3 across base/autumn/winter using the frozen inputs, then inspect the six-file pack | Pine request (`../../art-src/tree/tree-pine/runs/20260909-pilot-01/request.md`; destination lands with the following art commits) |
+| RULE-ART-COMPLETION | In Progress | Materialize all 194 entity entries, then implement the owner's C choices | [Work-order evidence](handoffs/20260909-work-order-results.md) |
+| ART-PINE-PILOT | Prepared | Generate variants 2 and 3 across base/autumn/winter using the frozen inputs, then inspect the six-file pack | [Pine request](../../art-src/tree/tree-pine/runs/20260909-pilot-01/request.md) |
 | AMB-QA-18 | Planned | Reproduce prioritized candidates on one fixed build before selecting fixes | [Ambient QA](../ambient/QA_PROGRESS.md) |
 | OPS-ANALYTICS-CLEANUP | Blocked | Verify current data/backup and establish authorization before production deletion | [Open checks](verification/OPEN_CHECKS.md) |
 | VERIFY-PUBLIC-002-003 | Planned | Reconcile historical mobile insights and teaser preview issue labels with current evidence | [Open checks](verification/OPEN_CHECKS.md) |
@@ -30,7 +30,7 @@ Execute the approved work order in order A → D → B → C: rule preservation,
 
 ## Next Exact Steps
 
-1. RULE-ART-COMPLETION: finish A and its checks, then D, B and the approved C choices. Full pre-change backup is recorded in the plan.
+1. RULE-ART-COMPLETION: after D's five checked local commits, execute B with --all; implement C after the outstanding choices are answered. Full backup and A's complete audit are linked in the work-order evidence.
 2. ART-PINE-PILOT: generation is outside this work order. Keep the prepared request and input images intact.
 3. AMB-QA-18: choose the next reproduction from the current QA state. Do not replay commands from completed rounds.
 4. VERIFY-PUBLIC-002-003 and VERIFY-REAL-SESSION: close only with current scoped evidence.
@@ -38,4 +38,6 @@ Execute the approved work order in order A → D → B → C: rule preservation,
 
 ## Last Verified
 
-A: source-to-rule coverage and memory contract checks passed before this split. This candidate commits rule preservation and memory only. Art implementation, migrated entry points and integrated verification follow in D2–D5. Historical product/browser/DB checks do not validate this candidate.
+2026-09-09: A covers 589 original lines, 97 rule IDs and 42 restored measurement contracts; 20 ADRs audited. D5 candidate passed all 731 unit tests, lint/typecheck and integrated harness; D2 build passed. Migration preserved 105 moved and 244 protected files, with 14 entity entries and 103 reference pairs verified. Exact commit scope: [work-order evidence](handoffs/20260909-work-order-results.md).
+
+Automatic host hook activation, new generated-art quality, browser/device and production DB checks remain NOT VERIFIED. Local commit split is authorized; no push/deploy performed.

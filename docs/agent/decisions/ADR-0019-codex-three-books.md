@@ -25,7 +25,7 @@ ENTITY_ART_PLAN §10-2도 "바꾸지 않는 쪽을 권고한다"고 적었다.
 
 ## 결정
 
-> **부분 대체 — 결정 1의 납품 명령(2026-09-09 확인).** 원작 픽셀아트·Noto 임시 대체물 결정은 유지한다. 다만 아래 `public → art:normalize` 직접 납품 경로는 [ADR-0020](ADR-0020-bounded-memory-and-art-review.md)과 ART_PIPELINE (`../../ambient/ART_PIPELINE.md`; destination lands with the following art commits)의 `request → raw → normalize/check → owner review → promote`로 대체됐다. [옛 normalizer](../../../scripts/ambient-art-normalize.mjs)는 제자리 쓰기를 거절한다. public 합격본을 새 생성물이나 원본 복원 대상으로 덮어쓰지 않는다.
+> **부분 대체 — 결정 1의 납품 명령(2026-09-09 확인).** 원작 픽셀아트·Noto 임시 대체물 결정은 유지한다. 다만 아래 `public → art:normalize` 직접 납품 경로는 [ADR-0020](ADR-0020-bounded-memory-and-art-review.md)과 [ART_PIPELINE](../../ambient/ART_PIPELINE.md)의 `request → raw → normalize/check → owner review → promote`로 대체됐다. [옛 normalizer](../../../scripts/ambient-art-normalize.mjs)는 제자리 쓰기를 거절한다. public 합격본을 새 생성물이나 원본 복원 대상으로 덮어쓰지 않는다.
 
 1. **동물·물고기·곤충의 그림은 우리가 만든다.** 다른 자리와 같은 픽셀아트 규격(격자·블록·색 수·투명 배경)으로,
    같은 파이프라인(`art/manifest.ts` → 코덱스 → `public/ambient/art/<id>.png` → `art:normalize`)을 탄다.
@@ -44,7 +44,7 @@ ENTITY_ART_PLAN §10-2도 "바꾸지 않는 쪽을 권고한다"고 적었다.
 
 ## 결과
 
-> **당시 수량의 적용 범위(2026-09-09 확인).** 아래 206자리·319장은 2026-09-07 스냅샷이다. 현재 파일 계획으로 복사하지 않는다. 현재 [manifest](../../../components/shared/ambient/art/manifest.ts)의 `ART_SLOTS`·`slotFiles`와 그로부터 생성하는 아트 목록 (`../../../art-src/목록.md`; destination lands with the following art commits)이 수량을 정한다. 도감 종 정본을 하나로 둔 결정은 유지한다.
+> **당시 수량의 적용 범위(2026-09-09 확인).** 아래 206자리·319장은 2026-09-07 스냅샷이다. 현재 파일 계획으로 복사하지 않는다. 현재 [manifest](../../../components/shared/ambient/art/manifest.ts)의 `ART_SLOTS`·`slotFiles`와 그로부터 생성하는 [아트 목록](../../../art-src/목록.md)이 수량을 정한다. 도감 종 정본을 하나로 둔 결정은 유지한다.
 
 - 아트 자리 **69 → 206**(1차 77 = 옛 69 + 천체·구름 8 · 2차 종 129), 파일 **319장**. 변형까지 세면 이 수다 — 그래서 종마다
   **생성 차수**(1~3)를 두고, 1차는 "그 바이옴을 그 바이옴으로 보이게 하는 것"만 고른다.

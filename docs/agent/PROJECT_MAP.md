@@ -18,10 +18,10 @@
 | `lib/private-layer/**` | 패스코드 언락 · 본문 암호화 | `secret-crypto.ts` | 평문 ↔ AES-256-GCM | ADR-0002 | PRIVACY |
 | `lib/auth/**`, `lib/permissions/**` | 액터 해석 · 역할 판정 | `actor.ts`, `roles.ts` | 세션 → 역할·권한 | ADR-0003 | AUTH |
 | `lib/insights/**` | 관리자 인사이트 집계 | `actions.ts` | DB → 수치 없는 패널 데이터 | ADR-0008 | PRIVACY |
-| `lib/ui/**`, `app/globals.css` | 디자인 토큰 · 브레이크포인트 · 햅틱 | `breakpoints.ts` | — | `CLAUDE.md` Design rules | GENERAL |
+| `lib/ui/**`, `app/globals.css` | 디자인 토큰 · 브레이크포인트 · 햅틱 | `breakpoints.ts` | — | `docs/ux/UI_RULES.md` | GENERAL |
 | `db/migrations/**` | 스키마(수동 적용, 멱등) | 최신 번호 파일 | SQL → Supabase | `db/migrations/README.md` | DESTRUCTIVE_DATA |
 | `scripts/**` | 운영 스크립트(적용·검증·백필) | `apply-db.mjs` | CLI | `scripts/README.md` | DESTRUCTIVE_DATA |
-| `scripts/agent-harness/**` | 하네스 자동화(세션 브리핑·드리프트·검증) | `verify-harness.mjs` | CLI/훅 | 이 문서 | GENERAL |
+| `scripts/agent-harness/**` | 하네스 자동화(세션 브리핑·드리프트·검증) | `verify-harness.mjs` | CLI/훅 | `docs/harness.md` | GENERAL |
 | `tests/**` | 단위(vitest) · e2e/visual(playwright) | `tests/e2e`, `tests/visual` | 코드 → PASS/FAIL | `tests/AGENTS.md` | GENERAL |
 | `docs/**` | 토픽 문서 트리 | `docs/README.md` | — | `docs/README.md` | GENERAL |
 

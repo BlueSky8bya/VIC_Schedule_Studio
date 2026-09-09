@@ -26,8 +26,8 @@ Current memory is smaller and mechanically constrained. History remains retrieva
 ## Evidence
 
 - [Consultation](../handoffs/20260909-consult-art-pipeline-and-docs.md)
-- Implementation plan (`../plans/PLAN-20260909-012-harness-memory-and-art-pipeline.md`; destination lands with the following art commits)
-- Entity archive correction (`../plans/PLAN-20260909-013-entity-art-archive.md`; destination lands with the following art commits)
+- [Implementation plan](../plans/PLAN-20260909-012-harness-memory-and-art-pipeline.md)
+- [Entity archive correction](../plans/PLAN-20260909-013-entity-art-archive.md)
 
 ## Revisit Trigger
 

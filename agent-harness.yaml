@@ -4,6 +4,10 @@ protocol_date: "2026-07-10"
 adoption: "full" # 전면 도입 — docs/agent/ 트리 + 자동화 훅(SessionStart 브리핑, Stop 드리프트 검사)
 initialized_at: "2026-07-12"
 last_harness_review: "2026-09-09"
+review_protocol_source: "project-initializing_260909.md" # preserve original adoption provenance
+review_protocol_revision: "2026-09-09"
+review_protocol_source_sha256: "9006d9fa196843c2fe9e286336e05fde3a412569873a482e2c8672cbe33f51ef"
+review_protocol_scope: "Dated source release and selected memory/art routing review; not a full schema 2.1 migration"
 
 project:
   name: "VIC Schedule Studio"

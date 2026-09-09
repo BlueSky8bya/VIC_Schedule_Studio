@@ -14,4 +14,4 @@ npm run art:migrate -- check
 
 실패 중단 시 receipt의 status/recovery를 먼저 읽는다. 자동 복구는 이번 호출이 생성했고 해시가 일치하는 파일만 되돌린다. 부분 파일이나 바뀐 바이트는 보존하며 `recovery-required`로 표시한다. 수동 복구도 source/target/sha256의 정확한 파일만 다룬다.
 
-현행 구조: [아트 보관소](../README.md). 사유·검증: 정리 결과 (../../docs/agent/handoffs/20260909-entity-art-archive.md; final handoff lands in D5).
+현행 구조: [아트 보관소](../README.md). 사유·검증: [정리 결과](../../docs/agent/handoffs/20260909-entity-art-archive.md).

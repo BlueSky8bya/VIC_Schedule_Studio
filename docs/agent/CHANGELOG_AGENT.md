@@ -11,8 +11,8 @@
 Problem: the approved memory split lacked a complete source-to-rule audit; legacy art navigation and approval storage remained incomplete.
 Rule repair: [RULE_MIGRATION](RULE_MIGRATION.md) accounts for all 589 source lines, restores 42 measurement/procedure contracts, distinguishes the owner's within-entity ≤12 size-ratio clarification, and records every retirement plus all 20 ADR audit results. Original bytes and historical ADR text are retained. The harness rejects coverage gaps, missing destinations and changed rule inventories.
 Recovery: all pre-work tracked/untracked changes and non-regenerable ignored local files were hash-backed up outside the repository; base revision and exact location are in [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md). Five independent local commits split memory, pipeline, catalog/reference code, physical migration and final integration. No push is authorized.
-Validation: migration-table checks and 23 memory/migration contract tests passed during A; each subsequent commit records its own actual checks and limitations. Browser/device, production DB and new-art visual acceptance are not established by these checks.
-Art archive completion and final commit/check evidence will be recorded in the work-order handoff after the remaining steps. Historical receipts remain immutable; any follow-up relocation gets a new receipt.
+Validation: migration-table checks and 43 memory/migration contract tests passed in D1; D3 passed all 731 unit tests. Each commit records its own actual checks and limitations in [work-order evidence](handoffs/20260909-work-order-results.md). Browser/device, production DB and new-art visual acceptance are not established by these checks.
+Art archive completion continues after the five-commit split. Historical receipts remain immutable; any follow-up relocation gets a new receipt.
 
 ## v0.1.0 — 2026-09-06
 
