@@ -23,7 +23,9 @@
     "ambient:qa:sheet": "node scripts/ambient-qa/sheet.mjs",
     "ambient:qa:diff": "node scripts/ambient-qa/diff.mjs",
     "harness:brief": "node scripts/agent-harness/session-brief.mjs",
-    "art:pipeline": "node scripts/ambient-art-pipeline.mjs"
+    "art:pipeline": "node scripts/ambient-art-pipeline.mjs",
+    "art:catalog": "node scripts/ambient-art-catalog.mjs",
+    "art:migrate": "node scripts/ambient-art-migrate.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

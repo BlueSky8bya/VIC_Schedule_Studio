@@ -1,9 +1,10 @@
 // 취향 레퍼런스 수집(2026-09-09, PLAN-011) — 엔티티 범주별로 **CC0 픽셀아트만** 받아 둔다.
 //
-// 소유자가 여기서 마음에 드는 것만 남기고 나머지를 지운다. 남은 것이 생성 의뢰의 첨부 시트 ② 구역이 된다.
+// 소유자가 고른 참고를 보관한다. 생성 의뢰에 자동 첨부되지는 않는다.
 //
 //   node scripts/ambient-ref-fetch.mjs fish --limit 30
 //   node scripts/ambient-ref-fetch.mjs fish --query "fish sprite" --limit 20
+//   node scripts/ambient-ref-fetch.mjs tree --entity tree-pine --query "pine tree"
 //   node scripts/ambient-ref-fetch.mjs --all
 //
 // 규칙 셋(어기면 저장소에 남의 저작물이 남는다):
@@ -17,11 +18,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { artManifest } from "./lib/ambient-art-manifest.mjs";
+import { parseReferenceFetchArgs, writeReferencePair } from "./lib/ambient-ref-library.mjs";
 
 const require = createRequire(import.meta.url);
 const sharp = require("sharp");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = path.join(root, "art-src/reference");
 
 /** `manifest.ts`의 `ArtCategory`와 **같은 아홉**이다. 새 분류를 만들지 않는다 —
  *  갈라진 두 목록은 이 저장소에서 이미 사고를 냈다(species.ts ↔ codex.ts). */
@@ -39,13 +41,6 @@ const CATEGORIES = {
 
 const IMG = /\.(png|gif)$/i;
 const UA = "VIC-Schedule-Studio reference collector (CC0 only)";
-
-const args = process.argv.slice(2);
-const flag = (name, dflt) => {
-  const i = args.indexOf(`--${name}`);
-  return i >= 0 && args[i + 1] ? args[i + 1] : dflt;
-};
-const has = (name) => args.includes(`--${name}`);
 
 async function get(url) {
   const r = await fetch(url, { headers: { "user-agent": UA } });
@@ -175,10 +170,9 @@ function verdict(m) {
   return null;
 }
 
-async function collect(cat, limit, query) {
+async function collect(cat, dir, limit, query, entity) {
   const meta = CATEGORIES[cat];
   if (!meta) throw new Error(`모르는 범주: ${cat} (${Object.keys(CATEGORIES).join(", ")})`);
-  const dir = path.join(OUT, cat);
   fs.mkdirSync(dir, { recursive: true });
 
   const queries = query ? [query] : meta.queries;
@@ -205,7 +199,7 @@ async function collect(cat, limit, query) {
       const base = safe(`${slug}--${path.basename(new URL(url).pathname)}`);
       if (BANNER.test(base)) { rejected.push(`${base}: 홍보 배너`); continue; }
       const dest = path.join(dir, base);
-      if (fs.existsSync(dest)) continue;
+      if ([dest, `${dest}.json`].some((file) => fs.lstatSync(file, { throwIfNoEntry: false }))) continue;
       try {
         const r = await fetch(url, { headers: { "user-agent": UA } });
         if (!r.ok) continue;
@@ -218,33 +212,28 @@ async function collect(cat, limit, query) {
           why = "읽을 수 없는 그림";
         }
         if (why) { rejected.push(`${base}: ${why}`); continue; }
-        fs.writeFileSync(dest, buf);
         // ② 사이드카 — 출처를 잃은 그림은 쓸 수 없다.
-        fs.writeFileSync(
-          `${dest}.json`,
-          `${JSON.stringify(
-            {
-              file: base,
-              source: `https://opengameart.org/content/${slug}`,
-              downloadedFrom: url,
-              license: info.licenses.join(" / "),
-              author: info.author,
-              title: info.title,
-              fetched: new Date().toISOString().slice(0, 10),
-            },
-            null,
-            2,
-          )}\n`,
-          "utf8",
-        );
+        const result = writeReferencePair({
+          workspaceRoot: root, category: cat, entity, manifest: artManifest(), filename: base, image: buf,
+          card: {
+            file: base,
+            source: `https://opengameart.org/content/${slug}`,
+            downloadedFrom: url,
+            license: info.licenses.join(" / "),
+            author: info.author,
+            title: info.title,
+            fetched: new Date().toISOString().slice(0, 10),
+          },
+        });
+        if (!result.saved) continue;
         saved += 1;
         console.log(`  ✓ ${base}  (${info.licenses.join("/")}, ${info.author})`);
-      } catch {
-        /* 한 장 실패는 수집 전체를 멈추지 않는다 */
+      } catch (error) {
+        console.error(`  참고 수집 실패: ${base} — ${error.message}`);
       }
     }
   }
-  console.log(`${cat}(${meta.ko}): ${saved}장 받음 → art-src/reference/${cat}/`);
+  console.log(`${cat}(${meta.ko}): ${saved}장 받음 → ${path.relative(root, dir).split(path.sep).join("/")}/`);
   // 떨어진 것을 조용히 버리지 않는다 — 수확이 적을 때 원인이 게이트인지 소스인지 알아야 한다.
   if (rejected.length) {
     console.log(`  게이트에서 떨어진 것 ${rejected.length}장:`);
@@ -254,12 +243,14 @@ async function collect(cat, limit, query) {
   return saved;
 }
 
-const limit = Number(flag("limit", "24"));
-const targets = has("all") ? Object.keys(CATEGORIES) : args.filter((a) => CATEGORIES[a]);
-if (!targets.length) {
-  console.error(`범주를 달라 — ${Object.keys(CATEGORIES).join(" · ")} 또는 --all`);
-  process.exit(1);
+export async function fetchMain(args = process.argv.slice(2)) {
+  const { targets, limit, query, entity } = parseReferenceFetchArgs(args, { workspaceRoot: root, manifest: artManifest() });
+  let total = 0;
+  for (const { category, dir } of targets) total += await collect(category, dir, limit, query, entity);
+  console.log(`\n합계 ${total}장. 소유자가 솎아낸 뒤 \`node scripts/ambient-ref-notice.mjs\`로 NOTICE를 다시 굽는다.`);
 }
-let total = 0;
-for (const cat of targets) total += await collect(cat, limit, flag("query", ""));
-console.log(`\n합계 ${total}장. 소유자가 솎아낸 뒤 \`node scripts/ambient-ref-notice.mjs\`로 NOTICE를 다시 굽는다.`);
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try { await fetchMain(); }
+  catch (error) { console.error(error.message); process.exitCode = 1; }
+}
