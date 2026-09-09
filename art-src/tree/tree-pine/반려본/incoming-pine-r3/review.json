@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "kind": "legacy-rejection",
+  "decision": "rejected",
+  "recordedBy": "historical-import",
+  "importedAt": "2026-09-09T03:38:54.031Z",
+  "batch": "incoming-pine-r3",
+  "historicalDate": "2026-09-09",
+  "issues": [
+    {
+      "ruleId": "pine.snow.location",
+      "expected": "눈은 수관 각 단의 윗면 안쪽에 덩어리로 얹는다.",
+      "observed": "눈이 단 윗면이 아니라 외곽 윤곽을 따라 흰 테처럼 둘렀다.",
+      "status": "open",
+      "measurement": null,
+      "historicalMeasurement": {
+        "baselineSnowEdgePct": 20.8,
+        "deliveredSnowEdgePct": [
+          38,
+          48
+        ]
+      },
+      "evidence": {
+        "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+        "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+      }
+    },
+    {
+      "ruleId": "pine.trunk",
+      "expected": "짧고 굵은 한 줄기 밑동을 유지한다.",
+      "observed": "밑동이 게 다리처럼 세 갈래로 갈라졌다.",
+      "status": "open",
+      "measurement": null,
+      "historicalMeasurement": {
+        "baselineTrunkRuns": 1,
+        "deliveredTrunkRuns": 3,
+        "reportedAffected": 21,
+        "reportedTotal": 21
+      },
+      "evidence": {
+        "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+        "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+      }
+    }
+  ],
+  "evidence": {
+    "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+    "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+    "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+  },
+  "files": [
+    {
+      "file": "tree-pine-2.png",
+      "sha256": "c16b6ea76b544d9cdf8890eccd293bf65966873151ec10af96221d7c36b63bbc",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-3.png",
+      "sha256": "96ef9a5399e1fafeef96c2ec42605a79e3f846da45487c59bc32d834ec698704",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-4.png",
+      "sha256": "ecdbb4db6b7afe4d35fdf555cbf1761b6a55489f737b47d9edac82c8bbc9ad10",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-5.png",
+      "sha256": "05deedef424a0424534a988ddf4c3755dd50d3302f8bcbfc2e6d1646bf43c2a0",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-6.png",
+      "sha256": "ccdf476c9b651ba85361b75ab86d736999f98a604321fb973d88aa65931f53ee",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-7.png",
+      "sha256": "bffac3b161015e080031fb39145c75e18b755cc0eced5dab0e207bec9eb66d94",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-8.png",
+      "sha256": "e490a048f5152a257176a270535820758597572f6fedb32112bcbc2d023f808e",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-2.png",
+      "sha256": "ca412450b9363ede30ba40fb78b679d798047b4b9e72a3e6f1d8819265b6115d",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-3.png",
+      "sha256": "3e40fd8bca9d529670e7710aa8c3ddc39edae085398135bf9cc872fea2074c19",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-4.png",
+      "sha256": "5452d8a1a662c1d7dfb747d60901b4587a1fe0c9b8f93112220653ea5e80cba9",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-5.png",
+      "sha256": "96a0ff43db5098a8125824343f5806326905e13db246e5c2f4348646fffbeb2b",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-6.png",
+      "sha256": "13db51be1a109aa265b8784f5a7b7a6c6da60b8f632fe8f75ba41bbfe9ca36ed",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-7.png",
+      "sha256": "59edfbed508f42d7e36e4c5f39acdb6c25db6897bbcfa0205faa0f082477f4d3",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-8.png",
+      "sha256": "b0f562c0ccedf3a9e5f9aec398ff79358a843eb001457d2833184e5fa828f628",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-2.png",
+      "sha256": "e9777f90e8e2d8f4d3dd09be08f400e92dbb510645e2dab780b1f6938b7b02d0",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-3.png",
+      "sha256": "dc420f9c7a05cb325e1d44217453fe739c656ddff7036a0f8dfed3e9b6a5d693",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-4.png",
+      "sha256": "f383ed7ec07547668bbd0b29f14ee4b84fa48322c8ba280b24a48eba7b48c132",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-5.png",
+      "sha256": "6e4b46c3c1988cf6168acc16524885b837e246c87db566151dc9c7581115a225",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-6.png",
+      "sha256": "3396b13404af055352adaaa1aa918d04c5674b2aa40920b0b7fb7b0a8e74eeac",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-7.png",
+      "sha256": "1cb12fb82c08d626e4d9455f4e4c298e341778bb7613bc169d27559793055ac0",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-8.png",
+      "sha256": "2793071f07bb8297ee90e636817f6e1c8cff6d971fec98bb971d9926f48042fb",
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  ],
+  "note": "과거 반려 판정과 묶음 단위 사유의 이관 기록. 현행 도구로 재측정하지 않았으며 개별 파일별 수치를 새로 추정하지 않았다. incoming-pine의 -1 세 장은 덮어쓰기 사고로 보존한 반려 이미지다."
+}

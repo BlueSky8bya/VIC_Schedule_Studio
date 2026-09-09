@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "kind": "legacy-rejection",
+  "decision": "rejected",
+  "recordedBy": "historical-import",
+  "importedAt": "2026-09-09T03:38:54.030Z",
+  "batch": "incoming-pine",
+  "historicalDate": "2026-09-08",
+  "issues": [
+    {
+      "ruleId": "texture.baseline",
+      "expected": "합격본처럼 넓고 이어진 색 덩어리. 잎을 점무늬로 부수지 않는다.",
+      "observed": "스티플로 잎이 부서지고 색 전환이 잦았다.",
+      "status": "open",
+      "measurement": null,
+      "historicalMeasurement": {
+        "unit": "historical pixels at width 240; not current dot-cell metrics",
+        "baselineMeanRun": 19.8,
+        "deliveredMeanRun": [
+          13.4,
+          16.9
+        ],
+        "baselineChangeDensity": 4.8,
+        "deliveredChangeDensity": [
+          5.9,
+          7.7
+        ]
+      },
+      "evidence": {
+        "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+        "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+      }
+    },
+    {
+      "ruleId": "variants.diversity",
+      "expected": "같은 계절의 변형을 실루엣으로 구별할 수 있어야 한다.",
+      "observed": "변형들이 충분히 갈리지 않았다.",
+      "status": "open",
+      "measurement": null,
+      "historicalMeasurement": {
+        "meanIoUPct": 83.6,
+        "maxIoUPct": 90.6,
+        "pairsAtLeast80Pct": 24,
+        "totalPairs": 28
+      },
+      "evidence": {
+        "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+        "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+      }
+    },
+    {
+      "ruleId": "pine.snow.coverage",
+      "expected": "겨울 눈의 양과 덩어리를 합격본 수준으로 유지한다.",
+      "observed": "겨울 눈이 합격본보다 부족했다.",
+      "status": "open",
+      "measurement": null,
+      "historicalMeasurement": {
+        "baselinePct": 22.3,
+        "deliveredPct": [
+          12.2,
+          16.3
+        ]
+      },
+      "evidence": {
+        "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+        "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+      }
+    },
+    {
+      "ruleId": "pine.autumn.hue",
+      "expected": "차분한 올리브 계열을 유지하고 선명한 노랑을 피한다.",
+      "observed": "일부 가을 변형의 잎이 노란빛으로 떴다.",
+      "status": "open",
+      "measurement": null,
+      "historicalMeasurement": {
+        "baselineYellowPct": 13.6,
+        "deliveredYellowPctByVariant": {
+          "3": 72,
+          "5": 75,
+          "6": 45,
+          "8": 66
+        }
+      },
+      "evidence": {
+        "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+        "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+      }
+    }
+  ],
+  "evidence": {
+    "file": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+    "sha256": "fea48d6b19e755113008a72fa9fa5d5c90e18950a9102e9f0481d0585a7bf7d4",
+    "scope": "Historical report imported on 2026-09-09; no current measurements or new owner decision inferred."
+  },
+  "files": [
+    {
+      "file": "tree-pine-1.png",
+      "sha256": "cf7ae4113bd1ee7d3d46fabf915a5824776c19ac9f81a223af00d242eea841cf",
+      "size": [
+        240,
+        432
+      ],
+      "lineage": "Rejected overwritten variant-1 copy; not the missing original accepted pine source."
+    },
+    {
+      "file": "tree-pine-2.png",
+      "sha256": "547069b071b1bf079a82875a3c1a1b5d31b7303975f15b8ae173294e483da73c",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-3.png",
+      "sha256": "df974cb1e5275f2c796e89306319ec0114425eb5619a173ed5d5850691c94206",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-4.png",
+      "sha256": "d9fb2d79543b435b5b6dd0ddc4f944d4a1b5642976638efec6a9d369e0713907",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-5.png",
+      "sha256": "133f16dba8bb01a6b66a09dea4e5e93c06b53ead11a4479c08360f255532a7cf",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-6.png",
+      "sha256": "0bd602d18f3bf1f75e5628bf7aeabeab187def3b1c7210b6a9291ce2de0f4064",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-7.png",
+      "sha256": "ccc87dee914874e69f398c5c8627867bce29e3dfd51e7f8951fbc01b21582241",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-8.png",
+      "sha256": "b6c5e030287019b019dcb25b4d97c7edb7676f3176858cee61090638e721db21",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-1.png",
+      "sha256": "1ced1156930a62a80cdadbe3fa443235f3358e329f2c28b8426dbd8de943c70f",
+      "size": [
+        240,
+        432
+      ],
+      "lineage": "Rejected overwritten variant-1 copy; not the missing original accepted pine source."
+    },
+    {
+      "file": "tree-pine-autumn-2.png",
+      "sha256": "8d2976ae13cb44de54cda84cea485289062bf1c4d64c63ea9bb616abf39cf55a",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-3.png",
+      "sha256": "ec38c86e8d61adc3cb8e36969d1d65803da7003c9cfebcc0b6bf8a1efbb10475",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-4.png",
+      "sha256": "e1b753f37370317efd13976403d0972e114df6df59b71f37efc572a741d2e93b",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-5.png",
+      "sha256": "48d1a34464e4410a5eaa8b9639ea3cec0513f032fb0e78cb6eb9a022cafbb7e1",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-6.png",
+      "sha256": "9c45fb13edff67573fa6d2fbacf8e3b2ca7cdbcdf548fb288686f3a2ac4c759d",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-7.png",
+      "sha256": "a9b3fb1fcceb272b0736cb8a5ec2f44dfc7f22ca9d52995cf4a049e9f7be6f6a",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-autumn-8.png",
+      "sha256": "6ba2d4133258d37f47a8a49b3bbf388cdbf83be73296ad597908927386d4e28d",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-1.png",
+      "sha256": "e101251500a202b14db6d7ccab7e14d64ee67674f6eb06af004ff17608319bcf",
+      "size": [
+        240,
+        432
+      ],
+      "lineage": "Rejected overwritten variant-1 copy; not the missing original accepted pine source."
+    },
+    {
+      "file": "tree-pine-winter-2.png",
+      "sha256": "83f48d71af73a9e49e761c9cbdd28c0e3b412f3efb3f447d9411ea19426ed36a",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-3.png",
+      "sha256": "b185d49f8f33782c9a877e8da11d98f2edfd99abff81538357140612c2ed18d6",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-4.png",
+      "sha256": "0031f8ded21e9668f5a0c0054336b0c48e5995d2da33ef134796b14fcb33e635",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-5.png",
+      "sha256": "b78e8a94466b5f6831b827a5e952a2237b930236590da39f695f7cbb546d3089",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-6.png",
+      "sha256": "98d75b0ad0ffa868c5b257c11efab42bdad44b59be9e2f2085475ba0a8b75540",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-7.png",
+      "sha256": "3132e252860759e6cced20d54c48424e71d1a2346c1f4625986fd70c27337963",
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "file": "tree-pine-winter-8.png",
+      "sha256": "9df9b619ae54763f9313e8a3ddf50c7ae447e5067f0ed2003f93da0c05be5520",
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  ],
+  "note": "과거 반려 판정과 묶음 단위 사유의 이관 기록. 현행 도구로 재측정하지 않았으며 개별 파일별 수치를 새로 추정하지 않았다. incoming-pine의 -1 세 장은 덮어쓰기 사고로 보존한 반려 이미지다."
+}

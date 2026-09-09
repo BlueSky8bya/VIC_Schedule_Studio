@@ -1,0 +1,2317 @@
+{
+  "plan": {
+    "schemaVersion": 1,
+    "createdAt": "2026-09-09T03:37:51.327Z",
+    "moves": [
+      {
+        "source": "art-src/cloud-high-1.png",
+        "target": "art-src/sky/cloud-high/생성본/1/공통/cloud-high-1.png",
+        "sha256": "bc33fd3366bbadb356d32ffa1d4ca62528f7f6c6d3027f18b80af6897c91641e",
+        "bytes": 5028,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-high-2.png",
+        "target": "art-src/sky/cloud-high/생성본/2/공통/cloud-high-2.png",
+        "sha256": "c35274dfa236509be5ebba100a31d06e73779b33da131a92669881da545a132d",
+        "bytes": 5117,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-high-3.png",
+        "target": "art-src/sky/cloud-high/생성본/3/공통/cloud-high-3.png",
+        "sha256": "e502efb1dc7455af53fdb45c32cf5de8392bba05ab3456b72475097078109cb3",
+        "bytes": 5005,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-low-1.png",
+        "target": "art-src/sky/cloud-low/생성본/1/공통/cloud-low-1.png",
+        "sha256": "7c6ef0cec599b17e73706400967a9903d03215ae9bf74f1b07cd915915a0a669",
+        "bytes": 5872,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-low-2.png",
+        "target": "art-src/sky/cloud-low/생성본/2/공통/cloud-low-2.png",
+        "sha256": "ee6d1ece092ae425ec0ac28deb592c98cfcd27bdabe9e126d159ee80c13e055e",
+        "bytes": 6269,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-low-3.png",
+        "target": "art-src/sky/cloud-low/생성본/3/공통/cloud-low-3.png",
+        "sha256": "fb4b6ddf602c097a3c144c0cfd113cbad2c9ecadb886a8eb15885841f284eb59",
+        "bytes": 6347,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-low-4.png",
+        "target": "art-src/sky/cloud-low/생성본/4/공통/cloud-low-4.png",
+        "sha256": "9bc5d48bd89f5db4e0b246a97d1cc1a5ee1d9fc55db36975fc6d8afa3b6af6cb",
+        "bytes": 6240,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-mid-1.png",
+        "target": "art-src/sky/cloud-mid/생성본/1/공통/cloud-mid-1.png",
+        "sha256": "83742e390e9b19636f96986977d2fa8d5290b989c3882a7425c64f43e97a0016",
+        "bytes": 5505,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-mid-2.png",
+        "target": "art-src/sky/cloud-mid/생성본/2/공통/cloud-mid-2.png",
+        "sha256": "11da41aa86e19c35ec5dfcba8fe5e9e6049e0a3af09d28d58dfa064792d56396",
+        "bytes": 5496,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-mid-3.png",
+        "target": "art-src/sky/cloud-mid/생성본/3/공통/cloud-mid-3.png",
+        "sha256": "c74516cd364e7b9bbbdbe69bc798e84ab858e26c015ba8e37fb86b8fbdd264e2",
+        "bytes": 5392,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-storm-1.png",
+        "target": "art-src/sky/cloud-storm/생성본/1/공통/cloud-storm-1.png",
+        "sha256": "870f64766e99fd0b0b9303b2081b6c11c6e101fa98b10aad1c9acd8fbf4c1ed0",
+        "bytes": 5964,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-storm-2.png",
+        "target": "art-src/sky/cloud-storm/생성본/2/공통/cloud-storm-2.png",
+        "sha256": "d591adb5821663ab8225b6e19379354e5f0d13069feb4de382df6df759487a0c",
+        "bytes": 6429,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-wisp-1.png",
+        "target": "art-src/sky/cloud-wisp/생성본/1/공통/cloud-wisp-1.png",
+        "sha256": "5968463d19fa80926a32902108b47e0f2700032f696a6b79d4b6a34f0103b280",
+        "bytes": 748,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/cloud-wisp-2.png",
+        "target": "art-src/sky/cloud-wisp/생성본/2/공통/cloud-wisp-2.png",
+        "sha256": "44985fcad3a8deccd5f3b6a182c3e00817238f75df3f44c7dfe08e548af1ea56",
+        "bytes": 777,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/comet-1.png",
+        "target": "art-src/sky/comet/생성본/1/공통/comet-1.png",
+        "sha256": "23fa0af39c29d43a05029a7323f060f71bc171d0a61e504fd8cba492f0e049b1",
+        "bytes": 6199,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/comet-2.png",
+        "target": "art-src/sky/comet/생성본/2/공통/comet-2.png",
+        "sha256": "3c985183ec3db918fdd3d0b0e875d8afa4e4589c6be443bfb7c54001db29648a",
+        "bytes": 6152,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-1.png",
+        "target": "art-src/sky/moon-phase/생성본/1/공통/moon-phase-1.png",
+        "sha256": "62e4c67026bd524c08d55620b12b33fd9131f2b7d20e82177dc2d71f55ce61c5",
+        "bytes": 6773,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-2.png",
+        "target": "art-src/sky/moon-phase/생성본/2/공통/moon-phase-2.png",
+        "sha256": "d8287b1331cda1165d90a9f81646b928f99dabe648990b04d770dfb95e78ace1",
+        "bytes": 7281,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-3.png",
+        "target": "art-src/sky/moon-phase/생성본/3/공통/moon-phase-3.png",
+        "sha256": "674eeb3954b661dd2526280299293377890c0831d584a350540918bcebd41702",
+        "bytes": 7554,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-4.png",
+        "target": "art-src/sky/moon-phase/생성본/4/공통/moon-phase-4.png",
+        "sha256": "59a5e4ff47c6e44f156daedf77a529c5df16ac20b597833e1234a6b126a15172",
+        "bytes": 7671,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-5.png",
+        "target": "art-src/sky/moon-phase/생성본/5/공통/moon-phase-5.png",
+        "sha256": "8631057106ff2fe016cfe7828460f2cc2d6f31fe4e35663334ef8c160383fa87",
+        "bytes": 7644,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-6.png",
+        "target": "art-src/sky/moon-phase/생성본/6/공통/moon-phase-6.png",
+        "sha256": "b7a021c5dca70beb59ac944c96522370c7ba63a1a6328178fd72ca15045bdbff",
+        "bytes": 7689,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-7.png",
+        "target": "art-src/sky/moon-phase/생성본/7/공통/moon-phase-7.png",
+        "sha256": "34b93003414cb2245bfa1c280abe413cd4a58d275051e6fa009e762864804708",
+        "bytes": 7465,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/moon-phase-8.png",
+        "target": "art-src/sky/moon-phase/생성본/8/공통/moon-phase-8.png",
+        "sha256": "e7b403ed404e0583b8600231512397d59614fd52998e7b557ab85b6b548976ef",
+        "bytes": 7257,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-1.png",
+        "target": "art-src/ground/rock/생성본/1/공통/rock-1.png",
+        "sha256": "e4879bbe64fcba4648b471ebd515cb027b7b760cb04f6ff0ca9a8dfaed31167f",
+        "bytes": 11173,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-2.png",
+        "target": "art-src/ground/rock/생성본/2/공통/rock-2.png",
+        "sha256": "5304e9c75d9f5e19d8445e8071cd5c49358d1389a1fa966097161e339a42c989",
+        "bytes": 14221,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-3.png",
+        "target": "art-src/ground/rock/생성본/3/공통/rock-3.png",
+        "sha256": "b2a0fc7af2eb3c96e11716bdacbb0ff7d78633dd16e2d9b98a606d39a5b49544",
+        "bytes": 12875,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-4.png",
+        "target": "art-src/ground/rock/생성본/4/공통/rock-4.png",
+        "sha256": "d471dfaeb86d25ac997d4ac85b94669220304d63d10889f8b679df6f5f583fa3",
+        "bytes": 12836,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-5.png",
+        "target": "art-src/ground/rock/생성본/5/공통/rock-5.png",
+        "sha256": "33e6a699fcf9d33f015801308fc3c1756469865584ee9848435006411938a929",
+        "bytes": 11303,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-6.png",
+        "target": "art-src/ground/rock/생성본/6/공통/rock-6.png",
+        "sha256": "441ebad917698892ceaabd2be9e59b37b78b48df1146af2037f712cd338fa584",
+        "bytes": 12456,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-7.png",
+        "target": "art-src/ground/rock/생성본/7/공통/rock-7.png",
+        "sha256": "3c497873f10181d86e54a06cb5c0e81762c18cdad92f2ff68b70a2aac02c6d6c",
+        "bytes": 12586,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/rock-8.png",
+        "target": "art-src/ground/rock/생성본/8/공통/rock-8.png",
+        "sha256": "d28b1ad421ea797c63cfe2c1bef280890a743c9fd15530db4c6485ddbe35511b",
+        "bytes": 11019,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/shooting-star-1.png",
+        "target": "art-src/sky/shooting-star/생성본/1/공통/shooting-star-1.png",
+        "sha256": "bf0dd99b490be4502e170280b52b851d66de2bbfd347501731104da8e00e7930",
+        "bytes": 5026,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/shooting-star-2.png",
+        "target": "art-src/sky/shooting-star/생성본/2/공통/shooting-star-2.png",
+        "sha256": "be90c0e01d2eaf77224f912cdb5b1ec7cf7b6634becd6a9b82a5fa1f3699adc4",
+        "bytes": 5620,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/sun-disc-1.png",
+        "target": "art-src/sky/sun-disc/생성본/1/공통/sun-disc-1.png",
+        "sha256": "084821da95c5121c59ebbdeb6832d01e8794acf7d78431f7452ed1d92c111733",
+        "bytes": 5998,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/sun-disc-2.png",
+        "target": "art-src/sky/sun-disc/생성본/2/공통/sun-disc-2.png",
+        "sha256": "1b880ffd8d8712137555a4df0158722999f20fdb9ab907a30a5a50dd32aa9f38",
+        "bytes": 2562,
+        "size": [
+          448,
+          448
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/tree-oak-autumn-1.png",
+        "target": "art-src/tree/tree-oak/생성본/1/가을/tree-oak-autumn-1.png",
+        "sha256": "09f6e78942cf143849e9ed1e08a18869c1e5c393c73a21af31c7111f50bba40d",
+        "bytes": 7078,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/tree-oak-spring-1.png",
+        "target": "art-src/tree/tree-oak/생성본/1/봄/tree-oak-spring-1.png",
+        "sha256": "9ef526f0532dac331bb329b13a71226f2428bec085c99638a530706568f9024f",
+        "bytes": 6106,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/tree-oak-summer-1.png",
+        "target": "art-src/tree/tree-oak/생성본/1/여름/tree-oak-summer-1.png",
+        "sha256": "973520c3500c42183802005c68286e471b19966b8385aa45750b6d009da17963",
+        "bytes": 6963,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/tree-oak-winter-1.png",
+        "target": "art-src/tree/tree-oak/생성본/1/겨울/tree-oak-winter-1.png",
+        "sha256": "abbafec4dcb221a6993fd1bd93ad1c4401670a97156d892fd709e1100bb989d0",
+        "bytes": 6408,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-preserved-source",
+        "lineage": "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-1.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-1.png",
+        "sha256": "cf7ae4113bd1ee7d3d46fabf915a5824776c19ac9f81a223af00d242eea841cf",
+        "bytes": 4377,
+        "size": [
+          240,
+          432
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "lineage": "Rejected overwritten variant-1 copy; not the missing original accepted pine source."
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-2.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-2.png",
+        "sha256": "547069b071b1bf079a82875a3c1a1b5d31b7303975f15b8ae173294e483da73c",
+        "bytes": 10803,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-3.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-3.png",
+        "sha256": "df974cb1e5275f2c796e89306319ec0114425eb5619a173ed5d5850691c94206",
+        "bytes": 10049,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-4.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-4.png",
+        "sha256": "d9fb2d79543b435b5b6dd0ddc4f944d4a1b5642976638efec6a9d369e0713907",
+        "bytes": 9709,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-5.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-5.png",
+        "sha256": "133f16dba8bb01a6b66a09dea4e5e93c06b53ead11a4479c08360f255532a7cf",
+        "bytes": 10460,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-6.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-6.png",
+        "sha256": "0bd602d18f3bf1f75e5628bf7aeabeab187def3b1c7210b6a9291ce2de0f4064",
+        "bytes": 10755,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-7.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-7.png",
+        "sha256": "ccc87dee914874e69f398c5c8627867bce29e3dfd51e7f8951fbc01b21582241",
+        "bytes": 9855,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-8.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-8.png",
+        "sha256": "b6c5e030287019b019dcb25b4d97c7edb7676f3176858cee61090638e721db21",
+        "bytes": 10474,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-1.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-1.png",
+        "sha256": "1ced1156930a62a80cdadbe3fa443235f3358e329f2c28b8426dbd8de943c70f",
+        "bytes": 4379,
+        "size": [
+          240,
+          432
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "lineage": "Rejected overwritten variant-1 copy; not the missing original accepted pine source."
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-2.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-2.png",
+        "sha256": "8d2976ae13cb44de54cda84cea485289062bf1c4d64c63ea9bb616abf39cf55a",
+        "bytes": 10796,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-3.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-3.png",
+        "sha256": "ec38c86e8d61adc3cb8e36969d1d65803da7003c9cfebcc0b6bf8a1efbb10475",
+        "bytes": 10044,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-4.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-4.png",
+        "sha256": "e1b753f37370317efd13976403d0972e114df6df59b71f37efc572a741d2e93b",
+        "bytes": 9702,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-5.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-5.png",
+        "sha256": "48d1a34464e4410a5eaa8b9639ea3cec0513f032fb0e78cb6eb9a022cafbb7e1",
+        "bytes": 10460,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-6.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-6.png",
+        "sha256": "9c45fb13edff67573fa6d2fbacf8e3b2ca7cdbcdf548fb288686f3a2ac4c759d",
+        "bytes": 10757,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-7.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-7.png",
+        "sha256": "a9b3fb1fcceb272b0736cb8a5ec2f44dfc7f22ca9d52995cf4a049e9f7be6f6a",
+        "bytes": 9854,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-autumn-8.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-autumn-8.png",
+        "sha256": "6ba2d4133258d37f47a8a49b3bbf388cdbf83be73296ad597908927386d4e28d",
+        "bytes": 10472,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-1.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-1.png",
+        "sha256": "e101251500a202b14db6d7ccab7e14d64ee67674f6eb06af004ff17608319bcf",
+        "bytes": 4532,
+        "size": [
+          240,
+          432
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md",
+        "lineage": "Rejected overwritten variant-1 copy; not the missing original accepted pine source."
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-2.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-2.png",
+        "sha256": "83f48d71af73a9e49e761c9cbdd28c0e3b412f3efb3f447d9411ea19426ed36a",
+        "bytes": 10881,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-3.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-3.png",
+        "sha256": "b185d49f8f33782c9a877e8da11d98f2edfd99abff81538357140612c2ed18d6",
+        "bytes": 10086,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-4.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-4.png",
+        "sha256": "0031f8ded21e9668f5a0c0054336b0c48e5995d2da33ef134796b14fcb33e635",
+        "bytes": 9795,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-5.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-5.png",
+        "sha256": "b78e8a94466b5f6831b827a5e952a2237b930236590da39f695f7cbb546d3089",
+        "bytes": 10611,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-6.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-6.png",
+        "sha256": "98d75b0ad0ffa868c5b257c11efab42bdad44b59be9e2f2085475ba0a8b75540",
+        "bytes": 10822,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-7.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-7.png",
+        "sha256": "3132e252860759e6cced20d54c48424e71d1a2346c1f4625986fd70c27337963",
+        "bytes": 9993,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine/tree-pine-winter-8.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-winter-8.png",
+        "sha256": "9df9b619ae54763f9313e8a3ddf50c7ae447e5067f0ed2003f93da0c05be5520",
+        "bytes": 10516,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-2.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-2.png",
+        "sha256": "c16b6ea76b544d9cdf8890eccd293bf65966873151ec10af96221d7c36b63bbc",
+        "bytes": 6936,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-3.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-3.png",
+        "sha256": "96ef9a5399e1fafeef96c2ec42605a79e3f846da45487c59bc32d834ec698704",
+        "bytes": 6911,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-4.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-4.png",
+        "sha256": "ecdbb4db6b7afe4d35fdf555cbf1761b6a55489f737b47d9edac82c8bbc9ad10",
+        "bytes": 6880,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-5.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-5.png",
+        "sha256": "05deedef424a0424534a988ddf4c3755dd50d3302f8bcbfc2e6d1646bf43c2a0",
+        "bytes": 6883,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-6.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-6.png",
+        "sha256": "ccdf476c9b651ba85361b75ab86d736999f98a604321fb973d88aa65931f53ee",
+        "bytes": 6937,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-7.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-7.png",
+        "sha256": "bffac3b161015e080031fb39145c75e18b755cc0eced5dab0e207bec9eb66d94",
+        "bytes": 6883,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-8.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-8.png",
+        "sha256": "e490a048f5152a257176a270535820758597572f6fedb32112bcbc2d023f808e",
+        "bytes": 6958,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-autumn-2.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-autumn-2.png",
+        "sha256": "ca412450b9363ede30ba40fb78b679d798047b4b9e72a3e6f1d8819265b6115d",
+        "bytes": 6944,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-autumn-3.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-autumn-3.png",
+        "sha256": "3e40fd8bca9d529670e7710aa8c3ddc39edae085398135bf9cc872fea2074c19",
+        "bytes": 6883,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-autumn-4.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-autumn-4.png",
+        "sha256": "5452d8a1a662c1d7dfb747d60901b4587a1fe0c9b8f93112220653ea5e80cba9",
+        "bytes": 6821,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-autumn-5.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-autumn-5.png",
+        "sha256": "96a0ff43db5098a8125824343f5806326905e13db246e5c2f4348646fffbeb2b",
+        "bytes": 6868,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-autumn-6.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-autumn-6.png",
+        "sha256": "13db51be1a109aa265b8784f5a7b7a6c6da60b8f632fe8f75ba41bbfe9ca36ed",
+        "bytes": 6932,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-autumn-7.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-autumn-7.png",
+        "sha256": "59edfbed508f42d7e36e4c5f39acdb6c25db6897bbcfa0205faa0f082477f4d3",
+        "bytes": 6874,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-autumn-8.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-autumn-8.png",
+        "sha256": "b0f562c0ccedf3a9e5f9aec398ff79358a843eb001457d2833184e5fa828f628",
+        "bytes": 6947,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-winter-2.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-winter-2.png",
+        "sha256": "e9777f90e8e2d8f4d3dd09be08f400e92dbb510645e2dab780b1f6938b7b02d0",
+        "bytes": 7203,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-winter-3.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-winter-3.png",
+        "sha256": "dc420f9c7a05cb325e1d44217453fe739c656ddff7036a0f8dfed3e9b6a5d693",
+        "bytes": 7300,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-winter-4.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-winter-4.png",
+        "sha256": "f383ed7ec07547668bbd0b29f14ee4b84fa48322c8ba280b24a48eba7b48c132",
+        "bytes": 7309,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-winter-5.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-winter-5.png",
+        "sha256": "6e4b46c3c1988cf6168acc16524885b837e246c87db566151dc9c7581115a225",
+        "bytes": 7341,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-winter-6.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-winter-6.png",
+        "sha256": "3396b13404af055352adaaa1aa918d04c5674b2aa40920b0b7fb7b0a8e74eeac",
+        "bytes": 7353,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-winter-7.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-winter-7.png",
+        "sha256": "1cb12fb82c08d626e4d9455f4e4c298e341778bb7613bc169d27559793055ac0",
+        "bytes": 7155,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/incoming-pine-r3/tree-pine-winter-8.png",
+        "target": "art-src/tree/tree-pine/반려본/incoming-pine-r3/tree-pine-winter-8.png",
+        "sha256": "2793071f07bb8297ee90e636817f6e1c8cff6d971fec98bb971d9926f48042fb",
+        "bytes": 7228,
+        "size": [
+          1024,
+          1024
+        ],
+        "kind": "legacy-rejected",
+        "batch": "incoming-pine-r3",
+        "evidence": "docs/ambient/history/20260909-pine-handoff-before-routing.md"
+      },
+      {
+        "source": "art-src/reference/animal/cute-rabbit-rabbit_4.png",
+        "target": "art-src/animal/animal-hare/레퍼런스/cute-rabbit-rabbit_4.png",
+        "sha256": "0122461f2e76e21882343e2f3fb163cffa5fd4bf383456c96c9a5d2967340fe8",
+        "bytes": 829,
+        "size": [
+          150,
+          164
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Clearly a rabbit head with long ears. Useful rabbit-form reference; head-only cartoon, not proof of Korean hare species identity or approved style.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/animal/cute-rabbit-rabbit_4.png.json",
+        "target": "art-src/animal/animal-hare/레퍼런스/cute-rabbit-rabbit_4.png.json",
+        "sha256": "e3456517bf73ac0a4ce0d62c7da81b1bdae46d36e5a5144117bd96ce24190389",
+        "bytes": 273,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Clearly a rabbit head with long ears. Useful rabbit-form reference; head-only cartoon, not proof of Korean hare species identity or approved style.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/animal/cute-rabbit-rabbit_5.png",
+        "target": "art-src/animal/animal-hare/레퍼런스/cute-rabbit-rabbit_5.png",
+        "sha256": "e4a05491cd51ba7584acccce8d4cb591f72b391946ddf1cef47dedd464b0b52b",
+        "bytes": 1779,
+        "size": [
+          96,
+          96
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Sheet of the same long-eared rabbit head in poses. Subject clear; not a complete body reference, species match or style approval.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/animal/cute-rabbit-rabbit_5.png.json",
+        "target": "art-src/animal/animal-hare/레퍼런스/cute-rabbit-rabbit_5.png.json",
+        "sha256": "383895df8996bfee6b6f14a861448a77ccdd4c0727146281b3fc8aa4c0dae84c",
+        "bytes": 273,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Sheet of the same long-eared rabbit head in poses. Subject clear; not a complete body reference, species match or style approval.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/bandaged-rock-BandagedRock.png",
+        "target": "art-src/ground/rock/레퍼런스/bandaged-rock-BandagedRock.png",
+        "sha256": "d43865003dee830d81fdb114cad33f79271700b3b717cdda2a4be130409ed3c5",
+        "bytes": 2405,
+        "size": [
+          156,
+          156
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Rounded cracked rock body is visible under crossed bandages. Rock subject clear; bandages and outline are not accepted natural-world artwork.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/bandaged-rock-BandagedRock.png.json",
+        "target": "art-src/ground/rock/레퍼런스/bandaged-rock-BandagedRock.png.json",
+        "sha256": "4c337ff3fb5d44da6fb646191f97d24ebaebb8ffc5eb3aaf7fe51105ed816fe5",
+        "bytes": 290,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Rounded cracked rock body is visible under crossed bandages. Rock subject clear; bandages and outline are not accepted natural-world artwork.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/bandaged-rock-BandagedRock_0.png",
+        "target": "art-src/ground/rock/레퍼런스/bandaged-rock-BandagedRock_0.png",
+        "sha256": "d43865003dee830d81fdb114cad33f79271700b3b717cdda2a4be130409ed3c5",
+        "bytes": 2405,
+        "size": [
+          156,
+          156
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Same rounded bandaged-rock subject is visible. Retain as independently tracked inspiration, not approval or permission to remove a duplicate.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/bandaged-rock-BandagedRock_0.png.json",
+        "target": "art-src/ground/rock/레퍼런스/bandaged-rock-BandagedRock_0.png.json",
+        "sha256": "1a7b3a2557f46bb6d744ad197dfa0482b74b37cf26bf202c044c1873253a3b91",
+        "bytes": 294,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Same rounded bandaged-rock subject is visible. Retain as independently tracked inspiration, not approval or permission to remove a duplicate.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/neo-rock-neorock.png",
+        "target": "art-src/ground/rock/레퍼런스/neo-rock-neorock.png",
+        "sha256": "aa16cd59ec5d09b14f2a1dac0bb0220baa541c1cb9d3d61a3e1cb99cc4d68b8d",
+        "bytes": 883,
+        "size": [
+          64,
+          64
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Upright faceted rock with crevices and a ground base is visible. Rock-form inspiration only; do not infer approved scale, camera, background or palette.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/neo-rock-neorock.png.json",
+        "target": "art-src/ground/rock/레퍼런스/neo-rock-neorock.png.json",
+        "sha256": "84c91c3eb23e198f9678492229170b28ff891da9feb9f2e1bbf1138f7599f76b",
+        "bytes": 268,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Upright faceted rock with crevices and a ground base is visible. Rock-form inspiration only; do not infer approved scale, camera, background or palette.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/neo-rock-neorock_0.png",
+        "target": "art-src/ground/rock/레퍼런스/neo-rock-neorock_0.png",
+        "sha256": "aa16cd59ec5d09b14f2a1dac0bb0220baa541c1cb9d3d61a3e1cb99cc4d68b8d",
+        "bytes": 883,
+        "size": [
+          64,
+          64
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Same upright faceted-rock subject is visible. Rock-form inspiration only; preserve original image and sidecar bytes.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/ground/neo-rock-neorock_0.png.json",
+        "target": "art-src/ground/rock/레퍼런스/neo-rock-neorock_0.png.json",
+        "sha256": "046d11803f703821b979e0a03c3d68c377962d1de0d3184dc959866b793a1ab5",
+        "bytes": 272,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Same upright faceted-rock subject is visible. Rock-form inspiration only; preserve original image and sidecar bytes.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/sky/lighting-cloud-pixel-64x64_0.png",
+        "target": "art-src/sky/cloud-storm/레퍼런스/lighting-cloud-pixel-64x64_0.png",
+        "sha256": "b06ead687ec365771290102625892f5123a45e112fe952270b5e19b948b82b2b",
+        "bytes": 592,
+        "size": [
+          64,
+          64
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Dark cloud with a descending lightning bolt clearly depicts storm weather. Entity association only; bolt, palette and rendering are not approved art.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/sky/lighting-cloud-pixel-64x64_0.png.json",
+        "target": "art-src/sky/cloud-storm/레퍼런스/lighting-cloud-pixel-64x64_0.png.json",
+        "sha256": "1e3a038557c957d7a64d4cd9d0a03bfadbde25708b52775b03ee2bf75260ff85",
+        "bytes": 298,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Dark cloud with a descending lightning bolt clearly depicts storm weather. Entity association only; bolt, palette and rendering are not approved art.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/sky/lighting-cloud-pixel-64x64_1.png",
+        "target": "art-src/sky/cloud-storm/레퍼런스/lighting-cloud-pixel-64x64_1.png",
+        "sha256": "b06ead687ec365771290102625892f5123a45e112fe952270b5e19b948b82b2b",
+        "bytes": 592,
+        "size": [
+          64,
+          64
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Dark cloud and lightning subject is visually clear. Entity association only, not style approval.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/sky/lighting-cloud-pixel-64x64_1.png.json",
+        "target": "art-src/sky/cloud-storm/레퍼런스/lighting-cloud-pixel-64x64_1.png.json",
+        "sha256": "3b9cfb1c619ec6c5d0b574b81963a997ca33ed3777a6fd880b4486bd80d6e500",
+        "bytes": 298,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Dark cloud and lightning subject is visually clear. Entity association only, not style approval.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/tree/cutted-tree-cutted-20tree.png",
+        "target": "art-src/ground/stump/레퍼런스/cutted-tree-cutted-20tree.png",
+        "sha256": "53b1d1e9c326c4333fe33492b3708f906eb4160ae706e45929e71dbefa59a055",
+        "bytes": 1463,
+        "size": [
+          64,
+          96
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Cut trunk top with circular wood rings, bark sides and roots clearly depicts a stump. Cross-category relocation from tree to ground/stump is supported by visible form.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/tree/cutted-tree-cutted-20tree.png.json",
+        "target": "art-src/ground/stump/레퍼런스/cutted-tree-cutted-20tree.png.json",
+        "sha256": "fea57a580c8ef0c6690bb0d0955ecc1fb51ceac98a1b7dbbe0095fa6c7eb8f07",
+        "bytes": 295,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Cut trunk top with circular wood rings, bark sides and roots clearly depicts a stump. Cross-category relocation from tree to ground/stump is supported by visible form.",
+        "confidence": "high-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/tree/pixel-pine-tree-assets-10-pack-iso_pine_prev.png",
+        "target": "art-src/tree/tree-pine/레퍼런스/pixel-pine-tree-assets-10-pack-iso_pine_prev.png",
+        "sha256": "e6f4b16a5cdd094df35a95cbd6e5c052da7c6b3b27dbb39263e4b936c7e34719",
+        "bytes": 3484,
+        "size": [
+          100,
+          100
+        ],
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Tall evergreen/conifer silhouette is visible. Suitable pine-family inspiration candidate; exact botanical species and style are not established. Image includes a black frame and x10 promotional badge that must not become art instructions.",
+        "confidence": "conifer-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      },
+      {
+        "source": "art-src/reference/tree/pixel-pine-tree-assets-10-pack-iso_pine_prev.png.json",
+        "target": "art-src/tree/tree-pine/레퍼런스/pixel-pine-tree-assets-10-pack-iso_pine_prev.png.json",
+        "sha256": "15e0d518966e304cc92fd24430318b92ac202abd7073f51883ff4c0c8fd4a0f0",
+        "bytes": 347,
+        "kind": "inspiration-candidate",
+        "ownerApproved": false,
+        "reason": "Tall evergreen/conifer silhouette is visible. Suitable pine-family inspiration candidate; exact botanical species and style are not established. Image includes a black frame and x10 promotional badge that must not become art instructions.",
+        "confidence": "conifer-subject-only",
+        "visualMethod": "Reviewed all 16 candidates on a labelled nearest-sampled contact sheet; GIFs inspected at their first frame. No external fetch or image generation."
+      }
+    ],
+    "protectedFiles": [
+      {
+        "file": "art-src/reference/animal/animated-birds-32x32-birds.32x32.png",
+        "sha256": "39221f19addd7f316a9821fd9b7729b7f0bb3840ebdb0c16f829411c79f0847b"
+      },
+      {
+        "file": "art-src/reference/animal/animated-birds-32x32-birds.32x32.png.json",
+        "sha256": "78e60649c98f0a553de8ef48dd457bef228777bfff3010e940935a0261a118a4"
+      },
+      {
+        "file": "art-src/reference/animal/bird-asset-bird_asset_1_7.png",
+        "sha256": "ba09cbea757d70b0dbcfa94becf4d9b4de4a54e52a700e2109875335df98e00c"
+      },
+      {
+        "file": "art-src/reference/animal/bird-asset-bird_asset_1_7.png.json",
+        "sha256": "f59f5860e3a3d15023423e679f809a85cc60c9bad738e0ab792b021772cf303c"
+      },
+      {
+        "file": "art-src/reference/animal/bird-asset-bird_asset_2_7.png",
+        "sha256": "22def5ff98844034c64355743c2df6b1498cec4771dc47b5ab350af8919463a9"
+      },
+      {
+        "file": "art-src/reference/animal/bird-asset-bird_asset_2_7.png.json",
+        "sha256": "42ae05a05394603c523f9221900be301613d3b514f85d9c12ac1ab3938de9a32"
+      },
+      {
+        "file": "art-src/reference/animal/chicken-sprites-chickenx4.gif",
+        "sha256": "3b03ae4e400abbb5e7a85dd62e426e2e27532954981f40459fd3ba9730733327"
+      },
+      {
+        "file": "art-src/reference/animal/chicken-sprites-chickenx4.gif.json",
+        "sha256": "1754541feb9f8d1a2e87c7ee679f4f809fb306ead9489b8b1f1440b5d3ee7332"
+      },
+      {
+        "file": "art-src/reference/animal/dog-sprites-dog_sprite_sheetx4.gif",
+        "sha256": "c17effc9fd7a16144d9aa8f4d3fdce229d27d2fd5a012cc1499d377d270766fa"
+      },
+      {
+        "file": "art-src/reference/animal/dog-sprites-dog_sprite_sheetx4.gif.json",
+        "sha256": "f61eeb7215238e9f1c9a2e785f663ffd7e0c1ea224206eb1c965a2839861d2ba"
+      },
+      {
+        "file": "art-src/reference/animal/dog-walk-sprite-and-bone-dogy.gif",
+        "sha256": "554e85b55f33653ae6aa3e8d8bdd719efeafc575a7cdf714faaa1f09196cc2e7"
+      },
+      {
+        "file": "art-src/reference/animal/dog-walk-sprite-and-bone-dogy.gif.json",
+        "sha256": "c6a61c771a6bbaead3c7b4c24d97b6b4ad7f31a9641b6b8715b75003a744b6b4"
+      },
+      {
+        "file": "art-src/reference/animal/piglook-sprite-sheet-32x32-piggy_look_anim-sheet.png",
+        "sha256": "db1a2bc454dc094edab46e21342e291b9809f348da90f85fd32e7f6606b14bb2"
+      },
+      {
+        "file": "art-src/reference/animal/piglook-sprite-sheet-32x32-piggy_look_anim-sheet.png.json",
+        "sha256": "bbecb327c4df4b8f29a82df9907e5ee333dff55d0f6d7f5bedcf22b97ee1d436"
+      },
+      {
+        "file": "art-src/reference/animal/piglook-sprite-sheet-32x32-piggy_look_anim.gif",
+        "sha256": "23d4950a1956a6041d062eb4c76e6b213a1f85b2753ca171281bb6c092242bc7"
+      },
+      {
+        "file": "art-src/reference/animal/piglook-sprite-sheet-32x32-piggy_look_anim.gif.json",
+        "sha256": "59a9a1bbcf3ca60c7cadffbe213319cc140d83a4d08a448e7c8f90ec20ba3b35"
+      },
+      {
+        "file": "art-src/reference/animal/pixel-squirrel-sqrl_5frames_2.gif",
+        "sha256": "da1257b26f9813fb24261aa5d8b92f33d3c7959ba78755d751a777857cb74951"
+      },
+      {
+        "file": "art-src/reference/animal/pixel-squirrel-sqrl_5frames_2.gif.json",
+        "sha256": "c44844047e751a9a6781ab320fd3096b0b2b9cfe02b094610c68d66a2b08a25b"
+      },
+      {
+        "file": "art-src/reference/bug/2d-car-sprite-3-spr_bubblecar_0.png",
+        "sha256": "1dce4e7b8ec141f68e2da38e2a33ce2e9dad88d427089c3c26776b51fbca7c41"
+      },
+      {
+        "file": "art-src/reference/bug/2d-car-sprite-3-spr_bubblecar_0.png.json",
+        "sha256": "c5a46c920710d612a48652695bc916a1d51ee418882ca01485c3a71cf9001719"
+      },
+      {
+        "file": "art-src/reference/bug/2d-car-sprite-3-spr_bubblecar_0_0.png",
+        "sha256": "1dce4e7b8ec141f68e2da38e2a33ce2e9dad88d427089c3c26776b51fbca7c41"
+      },
+      {
+        "file": "art-src/reference/bug/2d-car-sprite-3-spr_bubblecar_0_0.png.json",
+        "sha256": "9d62b3fadaeb092c94f68b3731c6fec0bc9c7ecafe505afe996443981eb528cc"
+      },
+      {
+        "file": "art-src/reference/bug/old-bugs-BugBlasterGFXPRE1.png",
+        "sha256": "d0801dd9e5e49104223d673c95df16d71f8a72d9e75ec3790d952d2375414d31"
+      },
+      {
+        "file": "art-src/reference/bug/old-bugs-BugBlasterGFXPRE1.png.json",
+        "sha256": "280778ead41a54dac2a7dab3bb0aa0f169c024fedc646e366785f861c94919c7"
+      },
+      {
+        "file": "art-src/reference/bug/shadow-for-lpc-sprite-lpc_shadow_cast.gif",
+        "sha256": "7723d1505b69366f583aaef3ff0c50750400e87cd2d8e12030607f5430274a27"
+      },
+      {
+        "file": "art-src/reference/bug/shadow-for-lpc-sprite-lpc_shadow_cast.gif.json",
+        "sha256": "d9b59739d2309f7b7bcb16752c71827bea729befcf80656f012a39662a0f040c"
+      },
+      {
+        "file": "art-src/reference/bug/shadow-for-lpc-sprite-lpc_shadow_walk.gif",
+        "sha256": "bb0a26e2bbaaff2ecc412d614a993816e1f936923b913a8f9e5ed7e5d10966c6"
+      },
+      {
+        "file": "art-src/reference/bug/shadow-for-lpc-sprite-lpc_shadow_walk.gif.json",
+        "sha256": "d5c77d7087a69384e4ac321bdf21bec3df6c86a7f692cf85705c1a760ad1f773"
+      },
+      {
+        "file": "art-src/reference/bug/space-soldier-sprite-sheet-32x32-trooper_walk.gif",
+        "sha256": "362341171569b083e024c284856d15f76b7a7daa656448495e494a91f82a9ee8"
+      },
+      {
+        "file": "art-src/reference/bug/space-soldier-sprite-sheet-32x32-trooper_walk.gif.json",
+        "sha256": "5460d8b0f94c1bf39a652740a7dc47b2907531b69b31a58f732d85e3bf376921"
+      },
+      {
+        "file": "art-src/reference/bug/space-soldier-sprite-sheet-32x32-trooper_walk_rifle.gif",
+        "sha256": "73742974618a59df4faa0177425dfc772cb2558318f86df93a60f8b3c8d943ba"
+      },
+      {
+        "file": "art-src/reference/bug/space-soldier-sprite-sheet-32x32-trooper_walk_rifle.gif.json",
+        "sha256": "912ef9ff1ae521c187403aa950879d4ddbee8029c748244b30735c18e07eefe7"
+      },
+      {
+        "file": "art-src/reference/fish/8x8-sushi-sprites-makisu-sprites_0.png",
+        "sha256": "7767b9b23cf2b9d3f79ccf4a1454d297d7b680ba8ba200ec8507ec0bb45df3e0"
+      },
+      {
+        "file": "art-src/reference/fish/8x8-sushi-sprites-makisu-sprites_0.png.json",
+        "sha256": "eb5a972135dade5b1bd639db7e72f21a58dfcb520385dcb0f7f62b11e3c17bef"
+      },
+      {
+        "file": "art-src/reference/fish/fish-0-Sprite-00h03.gif",
+        "sha256": "55ce3bac88c964c97912d4ff577d6bf087b756cc895ac15decc234d9311e447d"
+      },
+      {
+        "file": "art-src/reference/fish/fish-0-Sprite-00h03.gif.json",
+        "sha256": "e34eb879bf4ddf6a063f25658230561252e8dc5ff4653b3bf83305eb0da752a6"
+      },
+      {
+        "file": "art-src/reference/fish/fish-0-Sprite-00h03_0.gif",
+        "sha256": "55ce3bac88c964c97912d4ff577d6bf087b756cc895ac15decc234d9311e447d"
+      },
+      {
+        "file": "art-src/reference/fish/fish-0-Sprite-00h03_0.gif.json",
+        "sha256": "7e7a3702ee0e7589f149b214acff3de1615b77ebe6853c849c8fca9f2e88141b"
+      },
+      {
+        "file": "art-src/reference/fish/fish-food-sprite-fishfood.png",
+        "sha256": "47ef49b4b6b6e51e4a3a2924656e112c5daa9c3456384bc2c0c073d39d48d0c5"
+      },
+      {
+        "file": "art-src/reference/fish/fish-food-sprite-fishfood.png.json",
+        "sha256": "5d1384e07ceb42f8d171708e31bc749abd60f90e1ff457d0678c6503732f0743"
+      },
+      {
+        "file": "art-src/reference/fish/fish-food-sprite-fishfood_0.png",
+        "sha256": "47ef49b4b6b6e51e4a3a2924656e112c5daa9c3456384bc2c0c073d39d48d0c5"
+      },
+      {
+        "file": "art-src/reference/fish/fish-food-sprite-fishfood_0.png.json",
+        "sha256": "bb6802015418589d0baa55734fc143567f3d9f340a8a4ae120dc9691eee3eb70"
+      },
+      {
+        "file": "art-src/reference/fish/goldfish-spr_goldfish.png",
+        "sha256": "dc4c1126cdb3687cd2773f2bf057d05dee92fee5a61f59aff3a6252b2f5da05a"
+      },
+      {
+        "file": "art-src/reference/fish/goldfish-spr_goldfish.png.json",
+        "sha256": "dc3b7c86cd3a218a8222093d69501f49393f104551a1163ac055ea1075b12fdd"
+      },
+      {
+        "file": "art-src/reference/fish/goldfish-spr_goldfish_0.png",
+        "sha256": "dc4c1126cdb3687cd2773f2bf057d05dee92fee5a61f59aff3a6252b2f5da05a"
+      },
+      {
+        "file": "art-src/reference/fish/goldfish-spr_goldfish_0.png.json",
+        "sha256": "1fdd91056e1b17bc1dbfa8c6266fa6d1c8df7f9bbdf93169bfd4e44a3d9c88e1"
+      },
+      {
+        "file": "art-src/reference/fish/pike-fish-pike-20fish.png",
+        "sha256": "4ead8a6eed2af933ddefdfa12892e47b99b525ba0b1c6b9081702cb26bd716fc"
+      },
+      {
+        "file": "art-src/reference/fish/pike-fish-pike-20fish.png.json",
+        "sha256": "666c253042ce268c29dc8823e83d24a288275b9a20e0e9c743a6c3044f7bcef2"
+      },
+      {
+        "file": "art-src/reference/ground/grass-on-dirt-stone-tileset-myGroundpr.png",
+        "sha256": "c8f2e9f668866cd55b0c96e214c1105b259fd0099c6246c08a5ba29c2220e167"
+      },
+      {
+        "file": "art-src/reference/ground/grass-on-dirt-stone-tileset-myGroundpr.png.json",
+        "sha256": "90c90b60ddd63a3cea3d5e755ff4b7723ddaec6e017a9533633c963318afa7a9"
+      },
+      {
+        "file": "art-src/reference/ground/grey-roguelike-tileset-grey-20tileset0000.png",
+        "sha256": "fced8797412603179d6cd11bc88da0cffafa623df1dab6ea8c8802e28d333991"
+      },
+      {
+        "file": "art-src/reference/ground/grey-roguelike-tileset-grey-20tileset0000.png.json",
+        "sha256": "0513f50153ff9817e3b83d2a68811ab49e717cca1199ad798a33a1f12ecd3300"
+      },
+      {
+        "file": "art-src/reference/ground/isometric-pixel-terrain-isometric_0.png",
+        "sha256": "fa300cebeef149f25fcd89dafb2131f1e155810311ac4418787ca5b4d4c78117"
+      },
+      {
+        "file": "art-src/reference/ground/isometric-pixel-terrain-isometric_0.png.json",
+        "sha256": "c7c329f148ca73fcfa01d927400ea73c5aefd91546655e1311c609a5f856f3d5"
+      },
+      {
+        "file": "art-src/reference/ground/stone-age-sprite-set-stone-20age-20sprites.png",
+        "sha256": "7b0a68da6d4392ff3e8da726a09ed820bb50b54c8c2cbb98588edaee1f2e6f8a"
+      },
+      {
+        "file": "art-src/reference/ground/stone-age-sprite-set-stone-20age-20sprites.png.json",
+        "sha256": "a7680dc3ff8b0e232c0261930e12f4d17eec6bd98aaec00e8ab9dacbc1ce9864"
+      },
+      {
+        "file": "art-src/reference/ground/stone-age-sprite-set-stone-20age-20sprites_0.png",
+        "sha256": "7b0a68da6d4392ff3e8da726a09ed820bb50b54c8c2cbb98588edaee1f2e6f8a"
+      },
+      {
+        "file": "art-src/reference/ground/stone-age-sprite-set-stone-20age-20sprites_0.png.json",
+        "sha256": "cb6c84a3b6e4a6e25704930dbfd8b9cb8b101e3784f45865403c1cea66cb1e88"
+      },
+      {
+        "file": "art-src/reference/ground/stone-axe-with-degradation-progress-Stone-Axe-Gif.gif",
+        "sha256": "ccc31dcf2d31619da01bf05f1a391162dc371818cb38a13e0c07718fd1c7eb49"
+      },
+      {
+        "file": "art-src/reference/ground/stone-axe-with-degradation-progress-Stone-Axe-Gif.gif.json",
+        "sha256": "f171366662685b36f55fc5561920761ed3b63cbee6adc9feeee1caebba3fb12f"
+      },
+      {
+        "file": "art-src/reference/ground/stone-floor-tiles-floor-tiles.png",
+        "sha256": "f879ca51bbcfcea488cfe0c6365b9d5f3532eb02fcd1380d2e9b02a22e5b2f3c"
+      },
+      {
+        "file": "art-src/reference/ground/stone-floor-tiles-floor-tiles.png.json",
+        "sha256": "041c940d34402d0940f51866e745190ca9d14ab347cbc324dfd817c43505fab6"
+      },
+      {
+        "file": "art-src/reference/ground/stone-floor-tiles-floor-tiles_0.png",
+        "sha256": "f879ca51bbcfcea488cfe0c6365b9d5f3532eb02fcd1380d2e9b02a22e5b2f3c"
+      },
+      {
+        "file": "art-src/reference/ground/stone-floor-tiles-floor-tiles_0.png.json",
+        "sha256": "a4be1333fd64ab52314b60e3bd55b55da91fe6354ff1d885e1aa62267befc88b"
+      },
+      {
+        "file": "art-src/reference/ground/top-down-tileset-tileset_3.png",
+        "sha256": "08c857df0e2f998c5ac4d0c1483d4a45d24c7af99c7bc6ac7f9997d6474ca78b"
+      },
+      {
+        "file": "art-src/reference/ground/top-down-tileset-tileset_3.png.json",
+        "sha256": "74813efe5b1b1579313e4c2b9178124cf0dde42004e14117de9912a604729155"
+      },
+      {
+        "file": "art-src/reference/ground/top-down-tileset-tileset_4.png",
+        "sha256": "08c857df0e2f998c5ac4d0c1483d4a45d24c7af99c7bc6ac7f9997d6474ca78b"
+      },
+      {
+        "file": "art-src/reference/ground/top-down-tileset-tileset_4.png.json",
+        "sha256": "ad9e49bd9cedbbadb162357b813bc609b68a5677a51c8669e04550146beedfe5"
+      },
+      {
+        "file": "art-src/reference/plant/12-32x32-grass-tiles-with-large-things-grass-203.png",
+        "sha256": "bb4d923488ee3eea85f34637c7597134411e5ff6b53af0e0690e53a5776d775c"
+      },
+      {
+        "file": "art-src/reference/plant/12-32x32-grass-tiles-with-large-things-grass-203.png.json",
+        "sha256": "3caa25e754ca01e93eec3d669cda98df6a68565f137b06b436ea65c6e7e49f25"
+      },
+      {
+        "file": "art-src/reference/plant/12-32x32-grass-tiles-with-large-things-grass-203_0.png",
+        "sha256": "bb4d923488ee3eea85f34637c7597134411e5ff6b53af0e0690e53a5776d775c"
+      },
+      {
+        "file": "art-src/reference/plant/12-32x32-grass-tiles-with-large-things-grass-203_0.png.json",
+        "sha256": "5641bb4cf4be3de503a4d843ca63257f368548cd888a6fee47438b7d9a5b4a61"
+      },
+      {
+        "file": "art-src/reference/plant/16x16-grass-and-dirt-tileset-16x16NewTileSet.png",
+        "sha256": "e5ac27b27171af37aad6d582c3370a9246bb77519dedcd7a5b2cf36af65db70d"
+      },
+      {
+        "file": "art-src/reference/plant/16x16-grass-and-dirt-tileset-16x16NewTileSet.png.json",
+        "sha256": "7413a3885e425f40d185c035b5fca659eba8ebe9f7f5d3d02575e8f57ab96513"
+      },
+      {
+        "file": "art-src/reference/plant/basic-flower-kvetekata_0.png",
+        "sha256": "128e8bc03a95b75a9178d663c9a74316b6eb366c3ea3609879a2139d58350593"
+      },
+      {
+        "file": "art-src/reference/plant/basic-flower-kvetekata_0.png.json",
+        "sha256": "99fc033613da7b2e00eb7013ba9ef17c4ed61113adcba48842875a1eba85bb81"
+      },
+      {
+        "file": "art-src/reference/plant/dirt-and-grass-forager-inspired-tileset_dirt.png",
+        "sha256": "746fc7f649a3bf151f14c5e290f250b3ee73f10eeb9631619a6b060f1c369dc6"
+      },
+      {
+        "file": "art-src/reference/plant/dirt-and-grass-forager-inspired-tileset_dirt.png.json",
+        "sha256": "7f2882ba52b4868953af31f4e36568abafdd609745dddda1dbd8d754f2b2c795"
+      },
+      {
+        "file": "art-src/reference/plant/flower-sprite-flower_complete.png",
+        "sha256": "4a3288ca8e5ae1aebd2306760034749a83180b548e9ddc2a23d4476ca1cc7945"
+      },
+      {
+        "file": "art-src/reference/plant/flower-sprite-flower_complete.png.json",
+        "sha256": "5a40d6f44b088f0021d3db2724ce97caf40044b5e128988aab1786098509a4e2"
+      },
+      {
+        "file": "art-src/reference/plant/flower-sprite-flower_complete_0.png",
+        "sha256": "4a3288ca8e5ae1aebd2306760034749a83180b548e9ddc2a23d4476ca1cc7945"
+      },
+      {
+        "file": "art-src/reference/plant/flower-sprite-flower_complete_0.png.json",
+        "sha256": "8588ba9b5c158118368f1dfd59982c5e73074a87d3a7bb7d80f24abc12c4fc68"
+      },
+      {
+        "file": "art-src/reference/plant/grass-on-dirt-stone-tileset-myGroundpr.png",
+        "sha256": "c8f2e9f668866cd55b0c96e214c1105b259fd0099c6246c08a5ba29c2220e167"
+      },
+      {
+        "file": "art-src/reference/plant/grass-on-dirt-stone-tileset-myGroundpr.png.json",
+        "sha256": "90c90b60ddd63a3cea3d5e755ff4b7723ddaec6e017a9533633c963318afa7a9"
+      },
+      {
+        "file": "art-src/reference/plant/grass-tile-set-0-spr_grass_tileset.png",
+        "sha256": "fa0de9b42fcc2daef195b9280b01a3189f59a40324cc8abc1634d1112f6f9e69"
+      },
+      {
+        "file": "art-src/reference/plant/grass-tile-set-0-spr_grass_tileset.png.json",
+        "sha256": "969739a6bc94be7c1a38394937d4588298c78bc6bee1e2927115ce95d73a41c2"
+      },
+      {
+        "file": "art-src/reference/plant/grass-tiles-32x32-coin_0.gif",
+        "sha256": "e1dccdfb0249adf8799c7b2d75fa51c13afc20a11cfeb65b96ebde7509a21597"
+      },
+      {
+        "file": "art-src/reference/plant/grass-tiles-32x32-coin_0.gif.json",
+        "sha256": "9f120f311a5ab4859853722582da6a5c0ca751e423c3f3b9117cfe0a68c47d21"
+      },
+      {
+        "file": "art-src/reference/plant/grassmud-16x16-tiles-Grass-26Mud_Compact.png",
+        "sha256": "c33f94573734b87564e0cc1747e3bead8f32a0eeccd24facfa4f305b05dbb80a"
+      },
+      {
+        "file": "art-src/reference/plant/grassmud-16x16-tiles-Grass-26Mud_Compact.png.json",
+        "sha256": "349d8719a81eaff25e6930a08e0403028eca82ae8e0de5d4225ac5ea145bf94b"
+      },
+      {
+        "file": "art-src/reference/plant/grassmud-16x16-tiles-Mud-26Grass-26Water_Example.gif",
+        "sha256": "df528e04f7cd8d9deee21a1a9b0088960dfd834f49855a35f1dcaa765063c839"
+      },
+      {
+        "file": "art-src/reference/plant/grassmud-16x16-tiles-Mud-26Grass-26Water_Example.gif.json",
+        "sha256": "9d0303524e0e4a4a30486fb1e93a19034017b2f0cb6c20723fdac32e65b5595e"
+      },
+      {
+        "file": "art-src/reference/plant/rose-flower-pyxeledit-document-and-image-rose.png",
+        "sha256": "60b2ca31a16f920fc3c3d81bc8cab3a1642e43e9722ad95ece2e0270710114b9"
+      },
+      {
+        "file": "art-src/reference/plant/rose-flower-pyxeledit-document-and-image-rose.png.json",
+        "sha256": "49d65c3da6778b32de0809527805e3ab3d490092815bc957f57b68b9aa866233"
+      },
+      {
+        "file": "art-src/reference/plant/simple-grass-tileset-Simple-20Grass-20Tileset.png",
+        "sha256": "d31cad61c6a9621b8e34f3343becd577a4175feecb337a79207531df6bf48217"
+      },
+      {
+        "file": "art-src/reference/plant/simple-grass-tileset-Simple-20Grass-20Tileset.png.json",
+        "sha256": "fad3816c77b348ed9b70a6d61556ce8631cfb666869e4d152fa3ce6c8dcb96d7"
+      },
+      {
+        "file": "art-src/reference/prop/electric-fence-Electric-20Fence.png",
+        "sha256": "5dc4be6f37925d1f39b6566c8d84b2964fb4717a1bb4feacfc18b9a1272471b7"
+      },
+      {
+        "file": "art-src/reference/prop/electric-fence-Electric-20Fence.png.json",
+        "sha256": "df5dac0965bf3f822dbf5fb5ea46fe6de571e14299e97a7f26dc5dc9f61d5c9a"
+      },
+      {
+        "file": "art-src/reference/prop/electric-fence-Electric-20Fence_0.png",
+        "sha256": "5dc4be6f37925d1f39b6566c8d84b2964fb4717a1bb4feacfc18b9a1272471b7"
+      },
+      {
+        "file": "art-src/reference/prop/electric-fence-Electric-20Fence_0.png.json",
+        "sha256": "c38a098720297a3e3e2f8d66216721eb88d466c12f468837d9a48b60d3703978"
+      },
+      {
+        "file": "art-src/reference/prop/mushroom-dude-Mushroom_6.png",
+        "sha256": "2452cc8e27e640b96cd1ba59abe49c3613ea7671f8083a76bd242874c44de36d"
+      },
+      {
+        "file": "art-src/reference/prop/mushroom-dude-Mushroom_6.png.json",
+        "sha256": "738f3ccf2e5e5666e38972746989783dc0faaee3d5048d918217575a8ab8da8b"
+      },
+      {
+        "file": "art-src/reference/prop/sci-fi-electric-fence-new_piskel_5.gif",
+        "sha256": "53c0b8c8bc6b9f32ec9538f3c354a7429d4218b1f9e2e52f9158f025f9429ea0"
+      },
+      {
+        "file": "art-src/reference/prop/sci-fi-electric-fence-new_piskel_5.gif.json",
+        "sha256": "d661e15353a3bc8706dfdca897e4c2049c2c1182097cea3a27c8348e2e25361b"
+      },
+      {
+        "file": "art-src/reference/prop/signpost-32px-signpost32px.png",
+        "sha256": "11da600763ce45a595b22b3e2d2241a78cf018fcd5055e4522176b7905ea7c8d"
+      },
+      {
+        "file": "art-src/reference/prop/signpost-32px-signpost32px.png.json",
+        "sha256": "6b79ebc34a2d0a94b1781b7464126d6ab35aabe7d23667dc21b233fce2784ebd"
+      },
+      {
+        "file": "art-src/reference/prop/signpost-32px-signpost32px_0.png",
+        "sha256": "11da600763ce45a595b22b3e2d2241a78cf018fcd5055e4522176b7905ea7c8d"
+      },
+      {
+        "file": "art-src/reference/prop/signpost-32px-signpost32px_0.png.json",
+        "sha256": "6728ae0b4946a97ef274385b89d5ecc2a1a0f7553a60524c90a9c1fb9f0f14bb"
+      },
+      {
+        "file": "art-src/reference/sky/cloud-2-nuvem.png",
+        "sha256": "863bc8844ac61a4c43430f7a6662de3549f2d83e481668ab9a43ed027c8a509e"
+      },
+      {
+        "file": "art-src/reference/sky/cloud-2-nuvem.png.json",
+        "sha256": "e450d09a829baf98960d169a52f00ea0965fca320ec8b921e9234930d89f012f"
+      },
+      {
+        "file": "art-src/reference/sky/cloud-2-nuvem_0.png",
+        "sha256": "863bc8844ac61a4c43430f7a6662de3549f2d83e481668ab9a43ed027c8a509e"
+      },
+      {
+        "file": "art-src/reference/sky/cloud-2-nuvem_0.png.json",
+        "sha256": "89123c7b6499775083cfb8dcc64e5335908121f07a900405ce497096155e304f"
+      },
+      {
+        "file": "art-src/reference/sky/cloud-platform-0-cloud_4.png",
+        "sha256": "b1eb1be8f1f5d57237f3f1be8eab6bd9f709a91f657bf86bd23b75b185e5f26d"
+      },
+      {
+        "file": "art-src/reference/sky/cloud-platform-0-cloud_4.png.json",
+        "sha256": "22a9a5f58e44c0d998736b0413d9afa1ac85ef67a9a1ad9d4a00354dbf141638"
+      },
+      {
+        "file": "art-src/reference/sky/clouds-0-clouds_0.png",
+        "sha256": "f717f0616be0a99d663780769a2ecacb5fd21f6aa6d00a53937f93dfc01b0df7"
+      },
+      {
+        "file": "art-src/reference/sky/clouds-0-clouds_0.png.json",
+        "sha256": "c82a1de7091518ae21b86d7a1e17cdc05a30391f02402830a7c7a6fdb556997b"
+      },
+      {
+        "file": "art-src/reference/sky/clouds-and-gust-gust.gif",
+        "sha256": "5a386f8a25ff48cf98aea6d9f828cb3d097d2b8395b48e7981524ba01be2ea23"
+      },
+      {
+        "file": "art-src/reference/sky/clouds-and-gust-gust.gif.json",
+        "sha256": "42d19bfb052193b98389b0687acad3506514a8fa8dbe528d6b9991bc6887a4e7"
+      },
+      {
+        "file": "art-src/reference/sky/pixel-art-cartoon-sun-sun_12.png",
+        "sha256": "16558912e717eff688fcd90cf214cb7894e91fff9d8d88c4e0e972e35ce6568f"
+      },
+      {
+        "file": "art-src/reference/sky/pixel-art-cartoon-sun-sun_12.png.json",
+        "sha256": "17a6c64d7904d9f8fe8afbc779bcb7a023deb14ea5c3973c0d6111c14ecf9062"
+      },
+      {
+        "file": "art-src/reference/sky/pixel-art-cartoon-sun-sun_9.png",
+        "sha256": "16558912e717eff688fcd90cf214cb7894e91fff9d8d88c4e0e972e35ce6568f"
+      },
+      {
+        "file": "art-src/reference/sky/pixel-art-cartoon-sun-sun_9.png.json",
+        "sha256": "868528eecf5479bbf94c5eeeb2d4b7601e1b0e7bbf4874663fe2fbbf3673b6cf"
+      },
+      {
+        "file": "art-src/reference/sky/sun-earth-and-moon-space_10.png",
+        "sha256": "125f30945b112c96f2780925b2affdcef05cdd06ab9044780c3ce91a28c85bb4"
+      },
+      {
+        "file": "art-src/reference/sky/sun-earth-and-moon-space_10.png.json",
+        "sha256": "3f751b5349f2534773475e2f7dcebe07431230080c466950e135c4266ef38d4c"
+      },
+      {
+        "file": "art-src/reference/sky/sun-earth-and-moon-sun_earth_moon.png",
+        "sha256": "0975c8b483e13771e7804f0c7a945d09e776d0260d10e04ce25edf28c90288bf"
+      },
+      {
+        "file": "art-src/reference/sky/sun-earth-and-moon-sun_earth_moon.png.json",
+        "sha256": "5f2bbfebc43302c410b13e82d0698668d75f44c355e3710f0994dc1c8cedea41"
+      },
+      {
+        "file": "art-src/reference/sky/the-mocking-moon-moon.gif",
+        "sha256": "f887a207bb67567df1864534ca3633d810e8d5fa2e0e36dc741d1d406537d841"
+      },
+      {
+        "file": "art-src/reference/sky/the-mocking-moon-moon.gif.json",
+        "sha256": "3a4a5ad114fee7ed853958dfd2b28bd644e973067e4202d7f0aced60d44372f4"
+      },
+      {
+        "file": "art-src/reference/sky/the-mocking-moon-moon_0.gif",
+        "sha256": "f887a207bb67567df1864534ca3633d810e8d5fa2e0e36dc741d1d406537d841"
+      },
+      {
+        "file": "art-src/reference/sky/the-mocking-moon-moon_0.gif.json",
+        "sha256": "ecf4dd7b29a29e5d23f96f9bfe37ebf9fd649d150c093a1d3cc0a62abbd3ee24"
+      },
+      {
+        "file": "art-src/reference/tree/a-platformer-in-the-forest-pre-small.png",
+        "sha256": "c8b4e1f1e14b1ea564f90e12dde7178b7b89d4c8a22672810525a0b95d863315"
+      },
+      {
+        "file": "art-src/reference/tree/a-platformer-in-the-forest-pre-small.png.json",
+        "sha256": "592cb81b1a4b23a891163355c59b700e4f7d4bb1cc9bb5502b6e11ac40a9b48f"
+      },
+      {
+        "file": "art-src/reference/tree/a-tree-treetest.png",
+        "sha256": "be52af9faf21afce48f6abea5427d7235b0c47fa24aa9fb77c836438dad10cd3"
+      },
+      {
+        "file": "art-src/reference/tree/a-tree-treetest.png.json",
+        "sha256": "d677ec7a96f84d8efa8f3e6e7fef8abc614366d0e7dd355a7d4e558dfbaa9e7e"
+      },
+      {
+        "file": "art-src/reference/tree/a-tree-treetest_0.png",
+        "sha256": "be52af9faf21afce48f6abea5427d7235b0c47fa24aa9fb77c836438dad10cd3"
+      },
+      {
+        "file": "art-src/reference/tree/a-tree-treetest_0.png.json",
+        "sha256": "53db947e2ee7f3f9f4d2a324d601334e30337dc6d33ffe1719b27d4b0312d9f3"
+      },
+      {
+        "file": "art-src/reference/tree/another-tree-damn-20another-20tree-2099ish-20x-20110-20i.png",
+        "sha256": "41656647e1b31611a5f85ad5300ce25c57cea214f04057c23c96d4b96d3f5c24"
+      },
+      {
+        "file": "art-src/reference/tree/another-tree-damn-20another-20tree-2099ish-20x-20110-20i.png.json",
+        "sha256": "0041098d7a84edb54906fdf71c85ced4793c213418bd4102c685210d93367f98"
+      },
+      {
+        "file": "art-src/reference/tree/pixel-tree-0-Tree_6.png",
+        "sha256": "38651ac3c767664a67397900b1916a395375f1d20abc560fbcb715b3a8a9235d"
+      },
+      {
+        "file": "art-src/reference/tree/pixel-tree-0-Tree_6.png.json",
+        "sha256": "24e9d50237e49f917512812579882fa8b823e9207a49ade11723c17a73199af4"
+      },
+      {
+        "file": "art-src/reference/tree/pixel-tree-0-Tree_7.png",
+        "sha256": "38651ac3c767664a67397900b1916a395375f1d20abc560fbcb715b3a8a9235d"
+      },
+      {
+        "file": "art-src/reference/tree/pixel-tree-0-Tree_7.png.json",
+        "sha256": "d5a2632d24503cebcac0eebf7d334863a14d5073ee2ad991575b6e155d823710"
+      },
+      {
+        "file": "art-src/reference/tree/scifi-tree-tree_21.png",
+        "sha256": "da1c0c2a55571388699373222bcfa257fe9c4679c32a4509016665d2bd248a3c"
+      },
+      {
+        "file": "art-src/reference/tree/scifi-tree-tree_21.png.json",
+        "sha256": "78cf3f63950f7fb92904dff28cb600e8d742160a950d29ad2fbc8a83fd2ca00e"
+      },
+      {
+        "file": "art-src/reference/tree/scifi-tree-tree_22.png",
+        "sha256": "da1c0c2a55571388699373222bcfa257fe9c4679c32a4509016665d2bd248a3c"
+      },
+      {
+        "file": "art-src/reference/tree/scifi-tree-tree_22.png.json",
+        "sha256": "bc9d7f0d8a84aef62fc2e67662b4c6b5d7a47ea963c252a47a34333627ccb36d"
+      },
+      {
+        "file": "art-src/reference/tree/tree-25-tree_46.png",
+        "sha256": "6ff4591c5cf7c6511f62daa4b8d6cb33b862d96134989d6d3990c24d500ff858"
+      },
+      {
+        "file": "art-src/reference/tree/tree-25-tree_46.png.json",
+        "sha256": "7dd588dfe856fc527017f603f61af05d8b5194a1f7c1ac4b8bc57dc54ec1cccf"
+      },
+      {
+        "file": "art-src/reference/tree/tree-25-tree_47.png",
+        "sha256": "6ff4591c5cf7c6511f62daa4b8d6cb33b862d96134989d6d3990c24d500ff858"
+      },
+      {
+        "file": "art-src/reference/tree/tree-25-tree_47.png.json",
+        "sha256": "e8abccaa953a53e43644fad31d299ae9ccc015a42dbe61e0ddb2b0446bb7f5ce"
+      },
+      {
+        "file": "art-src/reference/tree/tree-6-11_1.png",
+        "sha256": "c3cfa2e6bff02454457f23e1367f861a19bdf877c18551428b39f4e4be2eecd0"
+      },
+      {
+        "file": "art-src/reference/tree/tree-6-11_1.png.json",
+        "sha256": "bc350bb76cdbacb0f80a8ea4cb3535d8436fcf64cf2655df3f639ed9401ee48d"
+      },
+      {
+        "file": "art-src/reference/tree/tree-6-11_2.png",
+        "sha256": "c3cfa2e6bff02454457f23e1367f861a19bdf877c18551428b39f4e4be2eecd0"
+      },
+      {
+        "file": "art-src/reference/tree/tree-6-11_2.png.json",
+        "sha256": "062c6979a2110c10f47e7301423e3d6e60f3640f684ce9183b8d9948d438a276"
+      },
+      {
+        "file": "art-src/reference/tree/tree-9-tree_12.png",
+        "sha256": "a5b018e87f556d774c9f422ded80e8ecfcf1fda8dd4e92766ba906e38ab12823"
+      },
+      {
+        "file": "art-src/reference/tree/tree-9-tree_12.png.json",
+        "sha256": "b279bf648a4d8afbaf70bd3999a1cdb5b409d4edb3ca525fcd0a5986fe206601"
+      },
+      {
+        "file": "art-src/reference/tree/tree-9-tree_13.png",
+        "sha256": "a5b018e87f556d774c9f422ded80e8ecfcf1fda8dd4e92766ba906e38ab12823"
+      },
+      {
+        "file": "art-src/reference/tree/tree-9-tree_13.png.json",
+        "sha256": "72c9d930483890ee8a0075db9ee167169a0f8f82c5a9dba17b2a679b933ffe55"
+      },
+      {
+        "file": "art-src/reference/tree/tree-leaves-tree-20bushes.png",
+        "sha256": "e48074b364bf0fd2608cf08ee0de3dfa4fae8c1c44d2d3cbb43b9463e3dbcef6"
+      },
+      {
+        "file": "art-src/reference/tree/tree-leaves-tree-20bushes.png.json",
+        "sha256": "9c74b5e6f04d7026e562391254f67e3c03825107adf039dfd0f41a1a2c12ca6e"
+      },
+      {
+        "file": "art-src/reference/tree/tree-leaves-tree-20bushes_0.png",
+        "sha256": "e48074b364bf0fd2608cf08ee0de3dfa4fae8c1c44d2d3cbb43b9463e3dbcef6"
+      },
+      {
+        "file": "art-src/reference/tree/tree-leaves-tree-20bushes_0.png.json",
+        "sha256": "08437d5805cb749f75a5d8df6a8ed38cc083678de8cf66ec8f310d49e0e6a084"
+      },
+      {
+        "file": "art-src/reference/water/16x16-shoreline-wave-animation-tiles-cc0waveanimtiles16x.png",
+        "sha256": "2f5343decdd0a58827566f5a707f7064445b72e55b9c666768238f79786d8795"
+      },
+      {
+        "file": "art-src/reference/water/16x16-shoreline-wave-animation-tiles-cc0waveanimtiles16x.png.json",
+        "sha256": "29cfd084dd285709ef501a3d9834c5b7acdc5beec3ad7204cc1a0f8672ea78f6"
+      },
+      {
+        "file": "art-src/reference/water/animated-flowing-water-2d-16x16-water_6.gif",
+        "sha256": "174dae4e4d4ccf24342da2ac63b2909aaf17b9e2533364b92de3ad3ce89cbf4d"
+      },
+      {
+        "file": "art-src/reference/water/animated-flowing-water-2d-16x16-water_6.gif.json",
+        "sha256": "56e2fd623e267e21133669a3952bdbf8a97942f85d804a25b0d7f8fde863ab8e"
+      },
+      {
+        "file": "art-src/reference/water/animated-ocean-water-tile-WaterTileOcean.gif",
+        "sha256": "1e3480de4851e4552b0cdb2b154273753df814af574f2924296753181468d18c"
+      },
+      {
+        "file": "art-src/reference/water/animated-ocean-water-tile-WaterTileOcean.gif.json",
+        "sha256": "c132072ddfd3a913b972adb092fd62409b79890d5c231dde689089b1fe769a11"
+      },
+      {
+        "file": "art-src/reference/water/bottle-of-water-Water-20Bottle.png",
+        "sha256": "b81eed25a611311a1e42d0f3e2b0c44cf0ee7ca399bec166ed69f1829347ff46"
+      },
+      {
+        "file": "art-src/reference/water/bottle-of-water-Water-20Bottle.png.json",
+        "sha256": "6dfe2d35b43ecb9c2ecaee4da13582b6b7ade53917ea745285234c6af126b828"
+      },
+      {
+        "file": "art-src/reference/water/bottle-of-water-Water-20Bottle_0.png",
+        "sha256": "b81eed25a611311a1e42d0f3e2b0c44cf0ee7ca399bec166ed69f1829347ff46"
+      },
+      {
+        "file": "art-src/reference/water/bottle-of-water-Water-20Bottle_0.png.json",
+        "sha256": "dc7eba935f9c5ae2295aa144207c0e63ff698850861a323926533a68f7c5aef1"
+      },
+      {
+        "file": "art-src/reference/water/pixel-art-water-cup-cup_3.png",
+        "sha256": "738195352adccc0099db3e62414ef92b758da23fe24a62ce4049ea38ceb1dbf9"
+      },
+      {
+        "file": "art-src/reference/water/pixel-art-water-cup-cup_3.png.json",
+        "sha256": "ff9b5491254a8a6b010a9025e8231ccd35915618820044541eeef5abd0328e71"
+      },
+      {
+        "file": "art-src/reference/water/pixel-art-water-cup-cup_4.png",
+        "sha256": "738195352adccc0099db3e62414ef92b758da23fe24a62ce4049ea38ceb1dbf9"
+      },
+      {
+        "file": "art-src/reference/water/pixel-art-water-cup-cup_4.png.json",
+        "sha256": "4cd9795c885e74a4fe4ca29703fe0533e4744f5b0b5f65a6e304bb92e9dfcbc7"
+      },
+      {
+        "file": "art-src/reference/water/pond-4x3-32px-tiles-pond.png",
+        "sha256": "22c60470d987f8b6245a1ebd309c0268debe9320caf68a1cc4d24dd09accacbf"
+      },
+      {
+        "file": "art-src/reference/water/pond-4x3-32px-tiles-pond.png.json",
+        "sha256": "7ef4db79e17e9a26efc8b029b593227a30386b20a3dd8eeb484bd3c65a935710"
+      },
+      {
+        "file": "art-src/reference/water/pond-4x3-32px-tiles-pond_0.png",
+        "sha256": "22c60470d987f8b6245a1ebd309c0268debe9320caf68a1cc4d24dd09accacbf"
+      },
+      {
+        "file": "art-src/reference/water/pond-4x3-32px-tiles-pond_0.png.json",
+        "sha256": "19605771eece98937e223a68f6d8b3c06db051e4d8174898e16213b098eb5dfb"
+      },
+      {
+        "file": "art-src/reference/water/simple-water-flow-source_flow_down._animationgif.gif",
+        "sha256": "f454d07213584c886f04939218e279d52a6f283e3438a5040458762364139a37"
+      },
+      {
+        "file": "art-src/reference/water/simple-water-flow-source_flow_down._animationgif.gif.json",
+        "sha256": "e88aadec9691a1871eda4557656382b7654ebdb1a73e8296332a27adc330c374"
+      },
+      {
+        "file": "art-src/reference/water/simple-water-flow-source_flow_down_tiled.gif",
+        "sha256": "c2073a043ad123655702aa84d61a52985806f3b2bcfda021a4d7c07e4b15bf53"
+      },
+      {
+        "file": "art-src/reference/water/simple-water-flow-source_flow_down_tiled.gif.json",
+        "sha256": "568a30d61a8a4b9b2177284ef47507c4546a7288a24f9610fe04ebcd67b4f631"
+      },
+      {
+        "file": "art-src/reference/water/simples-pimples-water-animation-simples-20pimples-20wate.png",
+        "sha256": "b68b2897924ae884e637e34a4d91c6b908fffe11940cf3cbeb50a968bcf24fdc"
+      },
+      {
+        "file": "art-src/reference/water/simples-pimples-water-animation-simples-20pimples-20wate.png.json",
+        "sha256": "cbf037f7e428ddf29291e363d50b0dd37e34cf23057869f7025e44f7472e8c65"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/inputs/baseline/tree-pine-1.png",
+        "sha256": "e2a9379cf9df92424be6b04d682b7594f0934a6798480b78aefe3862bb0001f5"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/inputs/baseline/tree-pine-autumn-1.png",
+        "sha256": "cfd59245f6f9d69e1ef271c066e60aac8739fb6663a553a4443c5b3d236c44e9"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/inputs/baseline/tree-pine-winter-1.png",
+        "sha256": "71b669e18d9fd9044ae3099a58d95da01a5c1f38e2d7481e8c684e82d72dab28"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/inputs/reference/tree-pine.png",
+        "sha256": "ec87504d98348c14436d2899a66edb2f6513172a26e3b4ec0a2daf50f99c6e89"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/normalized/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/raw/.gitkeep",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/request.json",
+        "sha256": "7fde7c375a174d92a97dac28c4049c170b3fb1270bf13ee6e527dabc2c8c879e"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/request.md",
+        "sha256": "bbcef106e6504f3d5edf34263aae8ae0e62fa71693217655b1690a9fb6422798"
+      },
+      {
+        "file": "art-src/tree/tree-pine/runs/20260909-pilot-01/review.json",
+        "sha256": "54f52343f74bb171617f3d17d525a249a797360c8b8cc4bc52d83aab9f9f21b5"
+      },
+      {
+        "file": "components/shared/ambient/art/manifest.ts",
+        "sha256": "249fbaa7c7e9c361d889546c406c705a0f420562e35cb2cac852f3cef7f34c23"
+      },
+      {
+        "file": "components/shared/ambient/world/codex.ts",
+        "sha256": "3d7c2f13df33601d97ab61170c92fdf222a97e2f627975ecc3e6fcfde7a5f937"
+      },
+      {
+        "file": "docs/ambient/reference/tree-pine-autumn.png",
+        "sha256": "e09b8a61185957c5c2b29aa9cad6c90900cc90c2dc43c2d2cd0d5ebb33ec7b67"
+      },
+      {
+        "file": "docs/ambient/reference/tree-pine-winter.png",
+        "sha256": "21e4409fcf92fea4d1e55812797f87107cb7b85410253e10ddf651b1ac66571e"
+      },
+      {
+        "file": "docs/ambient/reference/tree-pine.png",
+        "sha256": "ec87504d98348c14436d2899a66edb2f6513172a26e3b4ec0a2daf50f99c6e89"
+      },
+      {
+        "file": "public/ambient/art/README.md",
+        "sha256": "4f66c3e44010f293915e7c13a97887ac1065f441e7467e17c9ff2b52f5a5bab5"
+      },
+      {
+        "file": "public/ambient/art/cloud-high-1.png",
+        "sha256": "5c80d3cf6299c7343853d7ab210da87c9aa00b6c73d7533855701894af752716"
+      },
+      {
+        "file": "public/ambient/art/cloud-high-2.png",
+        "sha256": "875722f8150834a3eb7e6fc7a0d0f9b62d289e7e3e3bfabd18010efc4dca3a49"
+      },
+      {
+        "file": "public/ambient/art/cloud-high-3.png",
+        "sha256": "8d8779df5eeeda26b57b09e492666a5514a26368343bb3106dc549aa6fddad94"
+      },
+      {
+        "file": "public/ambient/art/cloud-low-1.png",
+        "sha256": "d7537a32a5a8ddfefa55ea9ef7d7ed474c5a21f5733cdfe9c59ac7dd43d9631d"
+      },
+      {
+        "file": "public/ambient/art/cloud-low-2.png",
+        "sha256": "049c5b59708f2789d8ef670b73dd895090e7bf9e79febe4a60aa4d79a1b53392"
+      },
+      {
+        "file": "public/ambient/art/cloud-low-3.png",
+        "sha256": "16706cea004eeb4feaefed37cec7570900fe5fe75f5f201bf58346ee1f467824"
+      },
+      {
+        "file": "public/ambient/art/cloud-low-4.png",
+        "sha256": "0a78b647f3dbff0d03c5e556e195685dce86f72c42f6f2ed9071d7926622ad8a"
+      },
+      {
+        "file": "public/ambient/art/cloud-mid-1.png",
+        "sha256": "3819f7168d4e9942f3829d043f250a720fb46a9e8185fb803d66c6289f2690eb"
+      },
+      {
+        "file": "public/ambient/art/cloud-mid-2.png",
+        "sha256": "1a1df1fa4a9779c2490ee01e804f7b8136099f80b7963b21d4cbcae90fac7b10"
+      },
+      {
+        "file": "public/ambient/art/cloud-mid-3.png",
+        "sha256": "d606739bd9410ba34a7f1ab834d198efb8b658a17de0752217afb46875509a70"
+      },
+      {
+        "file": "public/ambient/art/cloud-storm-1.png",
+        "sha256": "35776d76083193573745b7a482f3d07fc77b1e15b3e0793c3da8a695e22438bf"
+      },
+      {
+        "file": "public/ambient/art/cloud-storm-2.png",
+        "sha256": "d224b4de58f31e9719181925a23d6fc13ea0dc0bca4e346aea920782668350d7"
+      },
+      {
+        "file": "public/ambient/art/cloud-wisp-1.png",
+        "sha256": "7d8b2c4eb226a3df8c5118ead923896dfbcf530d47aaed635ae2a1b4c9f876d1"
+      },
+      {
+        "file": "public/ambient/art/cloud-wisp-2.png",
+        "sha256": "07528d47aa475312eaec2a5ed0c656781cf42443dc298ce8fa31f1440f9d5dd5"
+      },
+      {
+        "file": "public/ambient/art/comet-1.png",
+        "sha256": "ef88c67a4ef5bb2e2cfd20ea49cc7874cf180122194993b72a6b88136d78b2f7"
+      },
+      {
+        "file": "public/ambient/art/comet-2.png",
+        "sha256": "2ef5f69730fd81896bd8d901b3b232f92e9f893d04e1284e2d03f3adb1be1ee1"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-1.png",
+        "sha256": "8a2b1db0ebb5047eafa45f6e161efceb85030969af7c4d38dd7c955f3cc4fa79"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-2.png",
+        "sha256": "af1b1723335fbac606249d51fb35239f8410d46f4fc7d4fdd9172e8e50bfb054"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-3.png",
+        "sha256": "e57cc051c39639765a77bf8fb534017b531db6293c12db2c94baeafcd54e5883"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-4.png",
+        "sha256": "469a5d130dcc2c859a1960f17938756818081c4bce757d6872f570ea4599d5d9"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-5.png",
+        "sha256": "c66927512e897f7dec9236793a7e0790bcdbf6e49309b8bc373f97419f00fb62"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-6.png",
+        "sha256": "e2f224f16b21046313992bfeee2296c6d1eccdab734c7dacb16836d43ec10346"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-7.png",
+        "sha256": "1deea7fe57f763826a55520e5dfc8c67d46bed06f1919b7658f6e1d3648af108"
+      },
+      {
+        "file": "public/ambient/art/moon-phase-8.png",
+        "sha256": "636b79a36c52abd42a658b10d470bd95931f922634c6085882efe54208d60f3a"
+      },
+      {
+        "file": "public/ambient/art/rock-1.png",
+        "sha256": "bdd323910f825316fa544f54dde970a2ae9bae7c79c23440c816e829dff0666c"
+      },
+      {
+        "file": "public/ambient/art/rock-2.png",
+        "sha256": "ebefbb308997bd22e0180831183e58c27964eb571ab6fb44dd97f25ba45f0926"
+      },
+      {
+        "file": "public/ambient/art/rock-3.png",
+        "sha256": "f3e69f4bc40b79834a4d519adb06913faf0ed4eb0df283e5f30c5e6d4b4e9191"
+      },
+      {
+        "file": "public/ambient/art/rock-4.png",
+        "sha256": "aaff3aa2ba70437796694e027947284d6aa18465fe06e9985d6f4fb3a3398890"
+      },
+      {
+        "file": "public/ambient/art/rock-5.png",
+        "sha256": "d9c43511301e0f421241da291b394ee514ca104aae83c42b0dbed392a0fadc47"
+      },
+      {
+        "file": "public/ambient/art/rock-6.png",
+        "sha256": "cf7d226629546d25f36b1243465fe42272b53c4e12960444a2776d274845651a"
+      },
+      {
+        "file": "public/ambient/art/rock-7.png",
+        "sha256": "d121873744aac0bfa535201dd3494d764c0a3d02a6d483aa6ecdce986b203333"
+      },
+      {
+        "file": "public/ambient/art/rock-8.png",
+        "sha256": "e705a6211589f228d1dca8ed1cb9c666c320a1125511daa9aaa09ff4ba418ae3"
+      },
+      {
+        "file": "public/ambient/art/shooting-star-1.png",
+        "sha256": "5b8c94c6692404411925b6b256a4ce0093ee176f8d63cc06f7251050f0ebc80e"
+      },
+      {
+        "file": "public/ambient/art/shooting-star-2.png",
+        "sha256": "6f552bb480f80ee84bdd7c56538d1d6469c06b769492edeffbcc5bcb12014c8e"
+      },
+      {
+        "file": "public/ambient/art/sun-disc-1.png",
+        "sha256": "88393e34d167783196f06ad5db9a2961bec7d6eeaefe123d591e97af74bb9d54"
+      },
+      {
+        "file": "public/ambient/art/sun-disc-2.png",
+        "sha256": "445a088c747ec425e7fc1af9e7fdf940d42ef09a08ca80e4ee03cd0a47b294d7"
+      },
+      {
+        "file": "public/ambient/art/tree-oak-autumn-1.png",
+        "sha256": "feacfb69e7e8a5b1ef01af2594c2d00db41c8ec61c8f717687131e8d84780d57"
+      },
+      {
+        "file": "public/ambient/art/tree-oak-spring-1.png",
+        "sha256": "02f079781989bc503de3973dc4bdeef52c872bf1ba859b01e8a7aa134f8d9ff4"
+      },
+      {
+        "file": "public/ambient/art/tree-oak-summer-1.png",
+        "sha256": "5b0f71607a1deb9df0d90e3c8481694c31c556c2e4209d13c78670750092f800"
+      },
+      {
+        "file": "public/ambient/art/tree-oak-winter-1.png",
+        "sha256": "d6bb035333851ea0eac553ff7883d6715c49489c146f06850958c5c18b9154cf"
+      },
+      {
+        "file": "public/ambient/art/tree-pine-1.png",
+        "sha256": "e2a9379cf9df92424be6b04d682b7594f0934a6798480b78aefe3862bb0001f5"
+      },
+      {
+        "file": "public/ambient/art/tree-pine-autumn-1.png",
+        "sha256": "cfd59245f6f9d69e1ef271c066e60aac8739fb6663a553a4443c5b3d236c44e9"
+      },
+      {
+        "file": "public/ambient/art/tree-pine-winter-1.png",
+        "sha256": "71b669e18d9fd9044ae3099a58d95da01a5c1f38e2d7481e8c684e82d72dab28"
+      }
+    ]
+  },
+  "planSha256": "294d6182c1256f9e203d675f73afb9a461c715bd66a3676c84c80de1a1dac027",
+  "status": "completed",
+  "completedAt": "2026-09-09T03:39:09.251Z"
+}
