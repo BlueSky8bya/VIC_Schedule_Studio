@@ -2342,22 +2342,38 @@ export function PublicPoster({
     let cur = 0;
     // 2026-09-04: 매 프레임 rAF 루프(초당 60번 레이아웃 읽기)를 스크롤·리사이즈·레일 크기 변화 때만 도는 이벤트로
     // — VOD 창이 뜬 채로 오래 두면 이런 상시 루프가 영상 디코딩과 경쟁해 재생이 끊겼다(구조적 절약).
+    // 따라오는 것은 필터 **한 장이 아니라 필터부터 레일 끝까지**다(2026-09-09 버그 수정).
+    // 2026-07-31에 이 기능을 만들 때는 필터가 레일의 마지막 카드였고, 그래서 클램프 기준이 '레일 바닥'이었다.
+    // 2026-09-04에 그 밑으로 계절 배경 카드가 들어왔는데 클램프는 그대로여서, 필터가 레일 바닥까지
+    // 내려가며 **배경 카드 위에 겹쳐 앉았다**(소유자 스크린샷: 켜기/흐리게/끄기 위로 태그 필터가 덮였다).
+    // 두 카드는 "세로로 두 장이 한 벌"이 설계이므로 갈라 놓지 않고 **같이** 내린다.
+    const followGroup = () => {
+      const out: HTMLElement[] = [el];
+      for (let n = el.nextElementSibling; n; n = n.nextElementSibling) {
+        if (n instanceof HTMLElement && n.offsetParent !== null) out.push(n);
+      }
+      return out;
+    };
     const update = () => {
       raf = 0;
       const parent = el.parentElement; // .public-right
       if (!parent || !el.offsetWidth) return;
+      const group = followGroup();
+      const last = group[group.length - 1];
       const rect = el.getBoundingClientRect();
       const parentRect = parent.getBoundingClientRect();
       const scale = rect.width / el.offsetWidth || 1; // 포스터 배율(transform 포함 실측)
       const baseTopV = rect.top - cur * scale; // 변환 전(원래 자리) 뷰포트 top
-      const baseBottomV = rect.bottom - cur * scale;
+      // 바닥은 **무리의 마지막 카드** 기준이다 — 필터 자신의 bottom으로 재면 그 아래 카드만큼 더 내려간다.
+      const baseBottomV = last.getBoundingClientRect().bottom - cur * scale;
       const wantV = Math.max(0, 14 - baseTopV); // 화면 위로 사라진 만큼 따라 내려온다
       // 레일(.public-right) 바닥을 넘지 않게 — 남은 아래 공간(뷰포트 px)을 로컬로 환산해 클램프.
       const maxLocal = Math.max(0, (parentRect.bottom - baseBottomV) / scale - 4);
       const next = Math.min(wantV / scale, maxLocal);
       if (Math.abs(next - cur) > 0.5) {
         cur = next;
-        el.style.transform = next > 0 ? `translateY(${next}px)` : "";
+        const t = next > 0 ? `translateY(${next}px)` : "";
+        for (const node of group) node.style.transform = t;
       }
     };
     const schedule = () => {
@@ -2368,13 +2384,14 @@ export function PublicPoster({
     window.addEventListener("resize", schedule);
     const ro = new ResizeObserver(schedule);
     if (el.parentElement) ro.observe(el.parentElement);
-    ro.observe(el);
+    // 무리 전체를 관찰한다 — 배경 카드가 접히거나(모바일·배경 끄기) 높이가 바뀌면 바닥 기준이 달라진다.
+    for (const node of followGroup()) ro.observe(node);
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       ro.disconnect();
       if (raf) cancelAnimationFrame(raf);
-      el.style.transform = "";
+      for (const node of followGroup()) node.style.transform = "";
     };
   }, [showAgenda]);
 
