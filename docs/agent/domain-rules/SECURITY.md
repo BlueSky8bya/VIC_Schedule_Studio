@@ -13,8 +13,9 @@
 2. **공개 DTO는 명시적으로 조립한다.** 객체 스프레드로 DB 행을 흘리지 않는다.
 3. 다음 성격의 필드는 공개 응답에 **절대** 넣지 않는다: private, internal, embargo, codename,
    editor/작성자, work(작업자용), 요청 페이로드, 운영 지표(방문·체류·동시접속), 세션 원본.
-4. 가시성 스코프 읽기 권한: public → 모두 / work → owner·developer·worker / owner_private → **owner만**.
-   매니저는 비공개 접근 0.
+4. 가시성 스코프 읽기 권한: public → 모두 / work → 유효한 언락 grant가 있는 owner·developer /
+   owner_private → **owner만**(유효한 언락도 필요). worker·manager 역할은 철수했다.
+   이유: 현역 역할과 소유자 전용 경계를 혼동하지 않는다. 근거: `lib/permissions/roles.ts`, ADR-0018.
 5. RLS는 1차 방어선일 뿐이다. 쿼리에서도 `visibility_scope = 'public'`처럼 **명시적으로** 좁힌다.
 6. 캘린더 스코프(`calendar_id`)를 항상 건다 — RLS는 공개 행을 허용할 뿐 캘린더를 가르지 않는다.
 

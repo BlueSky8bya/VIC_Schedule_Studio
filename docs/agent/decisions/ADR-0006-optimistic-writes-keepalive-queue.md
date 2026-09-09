@@ -14,6 +14,8 @@ Related: `app/api/studio-write/route.ts`, `app/api/sticker-write/route.ts`
 
 ## Decision
 
+> **부분 대체 — 쓰기 경로(2026-09-09 확인).** `/api/sticker-write`와 꾸미기 쓰기는 [ADR-0015](ADR-0015-retire-decorate-stickers-worker.md)로 제거됐다. 새 스티커 dispatch를 추가하라는 지시로 읽지 않는다. 현역 일정 쓰기의 `/api/studio-write`·직렬 큐·keepalive·좁은 게이팅은 유지한다. 현행 근거: [studio-write](../../../app/api/studio-write/route.ts), [studioWrite](../../../lib/studio/editor-model.ts), [use-write-queue](../../../lib/studio/use-write-queue.ts).
+
 - 모든 편집 쓰기는 서버 액션 직접 호출이 아니라 **`/api/studio-write` · `/api/sticker-write`** 라우트로 보내고,
   `fetch(..., { keepalive: true })`를 쓴다 → 페이지를 떠나도 브라우저가 전송을 끝까지 보장한다.
 - 같은 자원을 건드리는 낙관적 쓰기는 **직렬 큐**(promise chain)에 태운다 → 마지막 조작이 저장의 진실.

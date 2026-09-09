@@ -6,23 +6,24 @@
 근거: [ADR-0002](../decisions/ADR-0002-private-content-encryption.md) ·
 [ADR-0003](../decisions/ADR-0003-owner-dual-binding.md) · `docs/security-boundary.md`
 
-## 역할 (3 — worker 철수 2026-08-27 ADR-0015, manager 철수 2026-09-04 ADR-0018; 아래 두 행은 역사 기록)
+## 현역 역할 (정본: `lib/permissions/roles.ts`)
 
 | 역할 | 할 수 있는 것 | 절대 못 하는 것 |
 |---|---|---|
 | viewer | 공개 포스터(필터·하트·업도움·월 이동) | 비공개 토글·편집·관리 |
-| worker | **work** 스코프 열람(언락 후), 스티커/꾸미기 | 엠바고 열람, 일정·태그·멤버·패스코드 편집 |
-| manager | 공개만. 업 도움 기간/링크 편집, 이벤트 태그 지정(≤2), 꾸미기·export | **비공개 접근 전면 금지**(언락 버튼도 없음), 일정 본문 편집, 태그 생성/삭제/색변경, 멤버·패스코드 |
-| owner(UI "관리자") | 전부 | — |
-| developer | 진단(프레즌스 패널), 역할 미리보기(읽기 전용) | 오너 전용(owner_private) 열람·생성, 공개 API로 비공개 열람 |
+| owner(UI "관리자") | 일반 일정 편집·관리, 유효한 언락 이후 비공개/owner_private 접근 | 공개 API로 비공개 노출 |
+| developer | 일반 일정 편집·관리, 진단, 읽기 전용 역할 미리보기, 유효한 언락 이후 work 접근 | owner_private 열람·생성, 공개 API로 비공개 노출 |
 
-(겸직·trusted_members 판정은 철수 — actor는 OWNER_EMAIL → platform_admins → viewer 순으로만 푼다.)
+worker(ADR-0015)·manager(ADR-0018)·trusted_members 판정은 철수했다. actor는
+OWNER_EMAIL → platform_admins → viewer 순으로 푼다. 옛 역할 표는 역사 자료에만 남긴다.
 
 ## 절대 규칙
 
-1. **일정 생성/수정/삭제는 owner만.** 보조 역할(매니저·작업자)은 철수했다 — 새 역할을 만들지 않는다.
+1. **일반 일정 생성/수정/삭제는 owner·developer. `owner_private` 열람·생성은 owner만.**
+   이유: 일반 유지보수 권한은 소유자 전용 내용의 권한이 아니다. `canEditSchedule`과
+   `canReadOwnerPrivate`를 구별한다(ADR-0011/0012/0018). 보조 역할을 다시 만들지 않는다.
 2. 클라이언트 게이트는 **유일한 방어선이 아니다** — 모든 서버 액션/라우트에서 권한을 다시 검사한다.
-   새 API 라우트(`studio-write`/`sticker-write` op 포함)는 **새 권한면을 만들지 않는다**(액션 내부 검사 유지).
+   새 API 라우트(`studio-write` op 포함)는 **새 권한면을 만들지 않는다**(액션 내부 검사 유지).
 3. 비공개 레이어 접근 = Google 로그인 + 유효한 패스코드 언락 세션. 언락은 만료된다.
 4. 오너 전환은 **양쪽**을 바꾼다: `OWNER_EMAIL`(앱) **AND** `calendars.owner_id`(RLS). 한쪽만 바꾸면 저장이 조용히 실패한다.
 5. 비공개 본문은 AES-256-GCM으로 저장된다. `PRIVATE_DATA_ENC_KEY` **분실 = 복구 불가**.
@@ -31,6 +32,7 @@
 
 ## 검증
 
-- 역할별로 한 번씩 화면을 돌려본다(불가하면 `NOT VERIFIED`로 남긴다 — 현재 편집실은 로그인 필요).
+- 역할별 권한·화면을 검증한다. fixture UI 테스트와 실제 로그인/RLS 검증은 구별한다.
+  실제 세션 검증이 없으면 그 범위만 `NOT VERIFIED`로 남긴다([열린 검증](../verification/OPEN_CHECKS.md)).
 - `tests/unit/owner-email.test.ts`
 - 권한 변경 시: "누가 무엇에 접근할 수 있는가"를 문장으로 적고, 그게 위 표와 일치하는지 확인한다.

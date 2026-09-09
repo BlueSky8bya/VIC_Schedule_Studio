@@ -1,54 +1,37 @@
 #!/usr/bin/env node
-/**
- * Stop 훅 — 세션이 끝날 때 "코드는 바뀌었는데 현재 상태 문서는 그대로"인 드리프트를 잡는다.
- *
- * 판정(둘 다 참일 때만 경고):
- *   1) 최근 커밋 또는 작업 트리에 '제품 소스'(app/ components/ lib/ db/migrations/) 변경이 있다.
- *   2) 그 범위에 docs/agent/CURRENT_STATE.md 변경이 없다.
- *
- * 문서 손질·설정 변경만 한 세션은 조용히 통과한다(잔소리 금지 — 잔소리는 무시당한다).
- * 차단하지 않고 경고만 한다. 판단이 필요한 규칙(무엇을 적을지)은 사람·에이전트의 몫이다.
- */
-import { execSync } from "node:child_process";
+// Advisory semantic check, not proof that documentation is correct or that a hook ran.
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assessDrift, hookInput, hookSession, saveSession, sessionFile, snapshot } from "./memory.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const git = (cmd) => {
-  try {
-    return execSync(cmd, { cwd: root, encoding: "utf8" });
-  } catch {
-    return "";
+const args = process.argv.slice(2);
+try {
+  const input = await hookInput();
+  const id = hookSession(args, input);
+  if (!id || !existsSync(sessionFile(root, id))) {
+    console.log("Documentation drift NOT CHECKED: no session baseline. SessionStart must receive session_id (or --session ID). Today's commits are not a substitute.");
+  } else {
+    const file = sessionFile(root, id);
+    const saved = JSON.parse(readFileSync(file, "utf8"));
+    const current = snapshot(root);
+    const result = assessDrift(saved.baseline, current, saved.acknowledgement);
+    const ackAt = args.indexOf("--ack-none");
+    if (ackAt >= 0) {
+      const reason = args[ackAt + 1]?.trim();
+      if (!reason || reason.startsWith("--")) throw new Error("--ack-none requires a documentation-impact explanation.");
+      saveSession(file, { ...saved, acknowledgement: { digest: result.digest, reason, recordedAt: new Date().toISOString() } });
+      console.log("Documentation impact recorded for the exact current changes: " + reason);
+    } else if (result.missing.length) {
+      console.log("Documentation impact review needed: " + result.missing.join(", ") + ".");
+      console.log("Source changes: " + result.source.join(", "));
+      console.log("Update the relevant domain record when behavior/decisions changed. Routine edits need no CURRENT_STATE paragraph; record --session ID --ack-none \"reason\" when documentation has no impact.");
+    } else {
+      saveSession(file, { baseline: current });
+    }
   }
-};
-
-// 이번 세션에서 만진 파일 ≈ 최근 커밋들(오늘) + 작업 트리 변경.
-const today = git("git log --since=midnight --name-only --pretty=format:");
-const dirty = git("git status --porcelain");
-const touched = new Set(
-  [
-    ...today.split("\n").map((l) => l.trim()),
-    ...dirty
-      .split("\n")
-      .map((l) => l.slice(3).trim())
-      .filter(Boolean)
-  ].filter(Boolean)
-);
-
-const SOURCE = /^(app|components|lib|db\/migrations)\//;
-const sourceChanged = [...touched].some((f) => SOURCE.test(f));
-const stateChanged = [...touched].some((f) => f === "docs/agent/CURRENT_STATE.md");
-
-if (sourceChanged && !stateChanged) {
-  process.stdout.write(
-    [
-      "⚠ 저장소 기억 드리프트: 오늘 제품 소스(app/ components/ lib/ db/migrations/)를 바꿨는데",
-      "`docs/agent/CURRENT_STATE.md`는 그대로다.",
-      "",
-      "이 작업이 '의미 있는 변경'(기능·구조·마이그레이션·알려진 이슈 해결)이라면 CURRENT_STATE의",
-      "Current Status / Known Issues / Next Exact Steps / Last Verified를 지금 갱신해라.",
-      "되돌리기 비싼 결정을 내렸다면 docs/agent/decisions/에 ADR을 추가하고 DECISION_INDEX에 한 줄 넣어라.",
-      "단순 오타·스타일 수정이면 무시해도 된다."
-    ].join("\n")
-  );
+} catch (error) {
+  console.error("Documentation drift NOT CHECKED: " + error.message);
+  process.exitCode = 1;
 }

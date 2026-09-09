@@ -4,6 +4,16 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-09-09
+
+### CHG-20260909-001 — Rule preservation and recoverable art archive
+
+Problem: the approved memory split lacked a complete source-to-rule audit; legacy art navigation and approval storage remained incomplete.
+Rule repair: [RULE_MIGRATION](RULE_MIGRATION.md) accounts for all 589 source lines, restores 42 measurement/procedure contracts, distinguishes the owner's within-entity ≤12 size-ratio clarification, and records every retirement plus all 20 ADR audit results. Original bytes and historical ADR text are retained. The harness rejects coverage gaps, missing destinations and changed rule inventories.
+Recovery: all pre-work tracked/untracked changes and non-regenerable ignored local files were hash-backed up outside the repository; base revision and exact location are in [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md). Five independent local commits split memory, pipeline, catalog/reference code, physical migration and final integration. No push is authorized.
+Validation: migration-table checks and 23 memory/migration contract tests passed during A; each subsequent commit records its own actual checks and limitations. Browser/device, production DB and new-art visual acceptance are not established by these checks.
+Art archive completion and final commit/check evidence will be recorded in the work-order handoff after the remaining steps. Historical receipts remain immutable; any follow-up relocation gets a new receipt.
+
 ## v0.1.0 — 2026-09-06
 
 ### CHG-20260906-001 — PUBLIC DTO + 데이터 일괄 갱신 — 팬 타임라인 파서 전수조사·확장

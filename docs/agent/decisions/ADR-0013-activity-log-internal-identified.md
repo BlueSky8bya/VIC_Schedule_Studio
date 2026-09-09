@@ -19,6 +19,8 @@ Status: Accepted
 
 ## 결정
 
+> **부분 대체 — 내부자 명칭과 기능 예시(2026-09-09 확인).** 아래 owner/manager/worker/developer 중 manager·worker는 [ADR-0015](ADR-0015-retire-decorate-stickers-worker.md)·[ADR-0018](ADR-0018-retire-trusted-members.md)로 철수했다. 현역 actor는 owner/developer/viewer이며 옛 역할·꾸미기 이름은 과거 기록 해석용으로만 남는다. [record.ts](../../../lib/activity/record.ts)는 역할 조회 실패를 `unknown`으로 기록해 viewer라고 단정하지 않는다. 내부자 식별·시청자 집계·메타데이터 본문 금지 결정은 유지한다. 근거: [actor.ts](../../../lib/auth/actor.ts), [kinds.ts](../../../lib/activity/kinds.ts).
+
 `activity_event`(0062)를 만들고 **범위를 좁혀서** 방침을 뒤집는다.
 
 1. **식별은 내부자만.** owner/manager/worker/developer만 `account_hash`를 남긴다.
@@ -44,6 +46,8 @@ Status: Accepted
 6. **보존 90일.** 조회할 때 지나가며 청소한다(크론 불필요).
 
 ## 불가침 — 이게 무너지면 전부 무의미
+
+> **범위 명확화 — target·meta 형태(2026-09-09 확인).** 아래 "target에는 uuid만"은 일정 대상을 제목 대신 식별자로 기록한다는 경계다. 이 문서 결정 5-1의 버튼 id와 라우트 id까지 UUID로 바꾸라는 뜻은 아니다. `meta`의 현행 형태 검사는 제한된 원시값 배열도 허용하며 중첩 객체·차단 키는 제거한다. 일정 제목·본문 금지는 그대로다. 구체적 허용 형태와 길이는 [sanitizeTarget/sanitizeMeta](../../../lib/activity/kinds.ts) 및 [activity-kinds 계약](../../../tests/unit/activity-kinds.test.ts)을 따른다.
 
 **`meta`에 일정 제목·본문을 저장하지 않는다.** `target`에는 uuid만 두고 제목은 읽는 시점에
 권한을 확인한 뒤 조인한다(공개 일정만 제목, 비공개는 범위 라벨). 어기면 `activity_event`가

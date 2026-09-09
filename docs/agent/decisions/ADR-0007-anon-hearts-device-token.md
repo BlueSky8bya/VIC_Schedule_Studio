@@ -16,6 +16,8 @@ Related: `db/migrations/0040_*`, `lib/schedules/heart-actions.ts`
 
 ## Consequences
 
+> **부분 대체 — 배지 단계의 단조성(2026-09-09 확인).** 2026-08-27 사용자 결정으로 단계는 월 최다 대비 비율과 절대 하한을 함께 쓴다. 다른 일정의 최다치가 오르면 해당 일정의 상대 단계는 내려갈 수 있으므로, 아래 단조화를 "배지 등급은 절대 내려가지 않음"으로 해석하지 않는다. 역순 응답·쓰기 순서 보호는 유지한다. 현행 근거: [heartTier](../../../lib/schedules/heart-tiers.ts), [계약 테스트](../../../tests/unit/heart-tiers.test.ts).
+
 - 완벽한 중복 방지는 아니다(브라우저/기기 바꾸면 새 토큰). 의도적으로 감수 — 참여율 > 정밀 집계.
 - 하트 수는 인기 배지(tier)에 쓰이므로, 배지 계산은 항상 **단조화 + 직렬 큐**로 처리한다(과거 회귀 2건).
 
@@ -24,5 +26,7 @@ Related: `db/migrations/0040_*`, `lib/schedules/heart-actions.ts`
 실제 어뷰징(봇/새로고침 조작)이 관측되면 레이트 리밋 또는 로그인 요구로 좁힌다.
 
 ## Open Follow-up
+
+> **완료로 대체(2026-09-09 확인).** 아래 "미구현"은 당시 상태다. [heart-tiers.ts](../../../lib/schedules/heart-tiers.ts)에 2026-08-27 사용자 결정과 `heartTier(count, isTop, maxHeart)` 구현이 있다. 현재 작업으로 다시 올리지 않는다.
 
 인기 배지를 절대 임계값 → **상대 순위**로 전환하기로 합의됨(미구현).

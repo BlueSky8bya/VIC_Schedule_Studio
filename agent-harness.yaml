@@ -3,7 +3,7 @@ protocol_source: "project-initializing_260710.md"
 protocol_date: "2026-07-10"
 adoption: "full" # 전면 도입 — docs/agent/ 트리 + 자동화 훅(SessionStart 브리핑, Stop 드리프트 검사)
 initialized_at: "2026-07-12"
-last_harness_review: "2026-07-12"
+last_harness_review: "2026-09-09"
 
 project:
   name: "VIC Schedule Studio"
@@ -19,7 +19,7 @@ risk_profiles:
   - GENERAL
   - SECURITY # 공개 API·공개 로더가 비공개 데이터를 절대 흘리면 안 됨
   - PRIVACY # 엠바고(owner_private)·work 범위 일정(서버 모델만 잔존), 본문 AES-256-GCM 암호화
-  - AUTH # Google 로그인 + 패스코드(최초공개 게이트), 역할(owner/manager/developer/viewer)
+  - AUTH # Google 로그인 + 패스코드(최초공개 게이트), 역할(owner/developer/viewer)
   - DESTRUCTIVE_DATA # db/migrations 수동 적용, 키 분실 시 복호 불가
 
 entrypoints:
@@ -31,7 +31,7 @@ entrypoints:
   changelog: "docs/agent/CHANGELOG_AGENT.md"
   decision_index: "docs/agent/decisions/DECISION_INDEX.md"
   active_plan: "docs/agent/plans/ACTIVE_PLAN.md"
-  rules_entry: "CLAUDE.md"
+  rules_entry: "AGENTS.md"
   roles: "AGENTS.md"
   sop: "docs/sop.md"
   security_boundary: "docs/security-boundary.md"
@@ -60,4 +60,26 @@ agent_policy:
   ask_before_public_api_break: true
   auto_commit: false # 사용자가 요청하거나 명백히 기대될 때만
   auto_push: false # push = main = Vercel 프로덕션 자동배포
-  update_current_state_after: "의미 있는 작업(기능/구조/마이그레이션) 종료 시"
+  update_current_state_after: "현재 목표·활성 작업·차단·다음 행동이 달라질 때 교체; 완료 이력은 관련 기록으로"
+  documentation_impact: "관련 도메인 문서/결정 기록 또는 정확한 변경 해시에 묶인 영향 없음 사유"
+
+# Project-specific UTF-8 byte budgets, not token counts. Overflow fails; no silent truncation.
+memory:
+  agents_max_bytes: 6144
+  claude_max_bytes: 1024
+  current_state_max_bytes: 8192
+  active_plan_max_bytes: 4096
+  brief_max_bytes: 8192
+  always_loaded_max_bytes: 16384
+  historical_snapshots: "docs/agent/archive/"
+  validation: "npm run harness:verify"
+
+hook_adapters:
+  claude:
+    configuration: ".claude/settings.json"
+    session_start: "scripts/agent-harness/session-brief.mjs"
+    session_stop: "scripts/agent-harness/state-drift-check.mjs"
+    baseline: "session_id from hook stdin; explicit --session ID supported for manual use"
+    runtime_activation: "NOT VERIFIED in host; configuration and isolated CLI behavior tested separately"
+    drift_enforcement: "advisory; cannot establish semantic correctness or infer absent session evidence"
+  other_agents: "Read AGENTS.md; run harness:verify explicitly. Claude hook activation is not assumed."

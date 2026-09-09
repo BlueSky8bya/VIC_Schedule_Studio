@@ -16,6 +16,8 @@ Status: Accepted
 
 ## 결정 (사용자: "깔끔하게 drop")
 
+> **부분 대체 — 결정 2·3의 매니저 존속 가정(2026-09-09 확인).** "신뢰 멤버 = 매니저 한 종류"와 `trusted_members`/`trusted_role` 잔존 설명은 후속 [ADR-0018](ADR-0018-retire-trusted-members.md)·[0074 마이그레이션](../../../db/migrations/0074_retire_trusted_members.sql)으로 대체됐다. 현재는 신뢰 멤버 테이블·enum·매니저 역할이 없다. 스티커·worker 철수와 항상-false `is_active_worker()` 스텁은 유지한다. 아래 배포·복원 절은 당시 이력이며 이번 작업의 DB 실행 지시가 아니다.
+
 1. **코드 제거**: 꾸미기 라우트(`studio/decorate`), 팔레트·스티커 레이어/도형·테마 스위치 컴포넌트,
    `api/sticker-write`, 스티커/테마 서버 액션, `public-poster.tsx`의 스티커 상태·좌표 매핑·probe·툴바
    (약 2,800줄), CSS ~30KB, 공개 로더의 스티커 조회(공개 API DTO에서 `stickers`/`stickerAssets` 제거 —

@@ -8,6 +8,8 @@ Status: Accepted
 
 ## Capability Matrix
 
+> **부분 대체 — 표의 퇴역 기능·역할(2026-09-09 확인).** [ADR-0015](ADR-0015-retire-decorate-stickers-worker.md)는 worker 및 꾸미기/스티커를, [ADR-0018](ADR-0018-retire-trusted-members.md)은 manager·멤버 관리를 제거했다. 아래 manager/worker 열, 스티커·커스텀 이모지·멤버 관리 행은 현행 자격을 부여하지 않는다. 현역 역할·일반 일정/태그/업 도움 권한은 [AUTH](../domain-rules/AUTH.md)와 [roles.ts](../../../lib/permissions/roles.ts)를 따른다. 비공개 서버 경계는 남지만 UI 토글·범위 피커는 [ADR-0014](ADR-0014-private-layer-ui-retired.md)로 철수했고 새 UI 일정은 public이다. 제목의 "한 장의 권한표"는 이 후속 결정들을 무시하라는 뜻이 아니다.
+
 | capability | owner | developer | manager | worker | viewer |
 |---|---|---|---|---|---|
 | 일정 본문 생성/수정/삭제 | ✅ | ✅(현행 유지, L6) | ❌ | ❌ | ❌ |
@@ -34,5 +36,7 @@ Status: Accepted
 5. 삭제 복구(L5): 스낵바 8초 + 최근 삭제 24시간(P0-DATA-1에서 tombstone으로 구현 예정).
 
 ## 구현 이력
+
+> **후속 구현 확인(2026-09-09).** 불변식 5와 아래 이력의 "미구현"은 2026-07-29 당시 상태다. 현재 [event-actions.ts](../../../lib/schedules/event-actions.ts)의 `TOMBSTONE_RETENTION_MS`·복구 액션이 24시간 same-ID 복구와 만료 purge를 구현한다. 결정 자체를 철회하지 않으며 현재 미구현 작업으로 다시 열지 않는다.
 
 - 2026-07-29: 불변식 1~3 구현(P0-SEC-1/2/3). 4는 기존 준수 상태 문서화, 5는 미구현(P0-DATA-1).

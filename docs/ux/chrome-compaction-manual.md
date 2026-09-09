@@ -1,5 +1,7 @@
 # 편집실 크롬 압축 매뉴얼 — 창 비율이 망가졌을 때 (2026-09-04)
 
+> **현재 적용 안내(2026-09-09).** 원문은 2026-09-04 설계·실측 기록으로 보존한다. 아래 절별 대체 표시가 있는 라벨·역할 버튼·제목·저장 시각 표현은 현재 지시가 아니다. 현행 의미와 표시는 [UI_RULES의 UI-09·10·15](UI_RULES.md), 재사용하는 폭/높이·회피·재마운트 검수 계약은 같은 문서 UI-11·12를 따른다.
+
 관리자 요청: "사용자가 억지로 창 비율을 망가뜨릴 때도(거의 없지만) 대응할 수 있게 규칙을 마련해 달라 —
 관리자? 버튼은 ?만, 보여주기·로그아웃은 아이콘만, 저장됨 hh:mm은 저장됨만, 더 부족하면 동그라미만,
 태그 필터는 '태그 필터' 글자까진 보이고 부족한 높이는 (빈) 아바타 자리에서 긁어온다."
@@ -7,7 +9,11 @@
 
 적용 범위: 편집실 **웹 크롬(≥1000px 폭)**. 모바일(≤999px)은 제 크롬이 따로 있다(`STUDIO_AGENDA_QUERY`).
 
+> **범위 보완(2026-09-09).** 위 폭만으로 웹 여부를 판정하지 않는다. [STUDIO_AGENDA_QUERY](../../lib/ui/breakpoints.ts)는 낮은 높이의 coarse-pointer 가로 화면도 아젠다로 보낸다. 아래 웹 검수 수치와 rail 예산은 실제 `.studio-narrow`가 아닌 웹 토폴로지에 적용한다([UI-06·07](UI_RULES.md)).
+
 ## 원칙
+
+> **부분 대체 — 원칙 1·2의 제목·툴팁(2026-09-09).** 편집실의 장식 제목·✨는 철수했고 시청자 화면에만 남는다([UI-09](UI_RULES.md), [studio-shell.tsx](../../components/studio/studio-shell.tsx)의 `.studio-left`). 접힌 컨트롤의 접근 가능한 이름은 유지하되 모든 요소에 native `title`을 의무적으로 붙이지 않는다. [UI-15](UI_RULES.md): 짧은 이름 하나·`aria-label`, 접혔을 때만 `data-tip`으로 이름, 보이는 모호한 동작은 짧은 결과 설명, 자명한 보이는 이름의 중복 툴팁은 없음. 차가운 크롬부터 접는 우선순위는 유지한다.
 
 1. **뜨거운 것은 마지막까지, 차가운 것부터 접는다.** 달력·저장 상태·달 이동은 끝까지 남고, 라벨 → 버전 배지 →
    별(✨) → 아바타 자리 순으로 접힌다(30일 사용 데이터: 칸 361·저장 176 vs 관리 도구 0~2).
@@ -19,6 +25,8 @@
    아래로 내려가 거의 투명해진다(클릭이 팝오버에 닿아야 한다).
 
 ## 가로 — 헤더 한 줄 (`.studio-shell[data-chrome]`, studio-shell.tsx `chromeTier`)
+
+> **부분 대체 — 아래 단계표의 표현(2026-09-09).** 긴→짧은 라벨 쌍, 웹 역할의 `?` 버튼, 편집실 제목·별 및 제목 글자 크기는 당시 UI다. 현행은 한 `.lbl`, 웹 `RoleBadge quiet` 라벨(저장 후 KST 시각 표시 가능), 좌측 배포 버전이며 제목을 복원하지 않는다. [studio-shell.tsx](../../components/studio/studio-shell.tsx)의 `chromeTier/overflows`와 [role-badge.tsx](../../components/studio/role-badge.tsx)가 근거다. 0~3단계의 실측 압축은 유지하되 1140→1120 전이는 과거 관찰값으로만 읽는다([UI-09·10·12·15](UI_RULES.md)).
 
 측정: `topbar.scrollWidth > clientWidth` 또는 제목·달·계정 세 칸이 서로 겹치면 "넘침". 단계를 0부터 올려
 넘치지 않는 첫 단계에서 멈춘다(리사이즈·역할 변경·웹폰트 로드 때만, 동기 레이아웃 ≤4회). 계정 모서리의
@@ -60,6 +68,8 @@ rail = [태그 필터 | 도구 카드 | 아바타 자리] flex-column, 높이 = 
 
 ## 새 요소를 헤더·rail에 넣을 때
 
+> **부분 대체 — 첫 항목의 라벨/`title` 지시(2026-09-09).** `.lbl-long`/`.lbl-short` 쌍과 모든 버튼의 필수 `title`은 [UI-15](UI_RULES.md)로 대체됐다. 새 컨트롤은 짧은 `.lbl` 하나와 접근 가능한 이름을 갖고, 접힘/모호성에 따른 필요한 정보만 툴팁으로 제공한다. nowrap·실측 overflow 등록·rail 예산·하단 회피 재사용은 계속 적용한다. 근거: [studio-shell.tsx](../../components/studio/studio-shell.tsx)의 미리보기/도구 컨트롤, [calm CSS의 data-tip](../../components/studio/studio-calm-layer.css).
+
 - 헤더 계정 모서리에 넣는 버튼은 아이콘 + `<span class="lbl">라벨</span>` + `aria-label` + `title`, `nowrap`.
   ⑤에 2단계 숨김 한 줄을 추가한다. 긴/짧은 라벨이 있으면 `.lbl-long`/`.lbl-short`.
 - rail에 카드를 더하면 예산부터: 필터 132 최소 + 도구 + 새 카드 + 아바타. 새 카드는 `flex: 0 0 auto`가 아니라
@@ -69,11 +79,15 @@ rail = [태그 필터 | 도구 카드 | 아바타 자리] flex-column, 높이 = 
 
 ## 검증
 
+> **재사용 범위와 실행 상태(2026-09-09).** 아래 폭 1600→1000·높이 900→380·필터 ≥132·겹침/넘침 0·500px 회피 fixture 조건은 [UI-11·12 측정 계약](UI_RULES.md)으로 유지한다. 제목/별·`?`·긴 라벨·tooltip-only 시각은 기대값에서 제외한다. 미리보기 진입/복귀 후 재마운트·리사이즈도 확인하고, `isConnected && clientWidth > 0`인 렌더된 노드만 잰다([studio-shell.tsx](../../components/studio/studio-shell.tsx)의 `measurable/shellEl`). 아래 `.scratch-pw/verify-compaction.mjs`는 현재 존재하지 않는 과거 실행 경로다. UI 검증은 [tests/AGENTS](../../tests/AGENTS.md)의 프로덕션 fixture 원칙을 따른다. 이 문서 정정에서 스윕·브라우저·테스트를 재실행한 것은 아니다.
+
 `.scratch-pw/verify-compaction.mjs`(dev/prod 서버 + `VISUAL_TEST_FIXTURE=1`): ① 폭 스윕 1600→1000(owner·developer)
 넘침·겹침·두 줄 0 + 단계 전이 ② 높이 스윕 900→380(1147 폭) 필터 제목 보임·≥132·rail 넘침 0 ③ 팝오버 열기 →
 알약 side 이동·교차 0, workspace 강제 500px → fade + `elementFromPoint`가 팝오버, 닫기 → 원위치.
 
 ## 계정 카드·미리보기 카드는 rail 폭(2026-09-04 사용자: "정해진 너비와 따로 논다")
+
+> **부분 대체 — 저장 시각·짧은 라벨·기호 전용 단계(2026-09-09).** "저장 시각은 툴팁(title)로만", 긴/짧은 라벨 단계, 역할이 전부 기호로 바뀐다는 표현은 후속 사용자 결정으로 대체됐다. 웹은 `RoleBadge quiet`에 마지막 저장 시각 `savedAt`을 보이고 역할 정보는 접근 가능한 이름 등으로 남긴다. 짧은 라벨은 항상 하나이며 quiet 배지의 글자는 2·3단계에도 유지한다. 근거: [RoleBadge](../../components/studio/role-badge.tsx), [studio-shell.tsx](../../components/studio/studio-shell.tsx)의 `renderRoleBadge`, [calm CSS](../../components/studio/studio-calm-layer.css)의 `.actor-badge.quiet/.saved-at`, [UI-10·15](UI_RULES.md). 아래 rail 폭·고정/가변 grid·칸 overflow 측정·미리보기 레일 정렬·투명 상단바는 재사용한다. 마지막 항목의 편집실 제목은 UI-09에 따라 복원하지 않는다.
 
 - 편집실 계정 카드(`.studio-role-tools`)는 **rail 폭(`--rail-w` = 20vw−16)으로 고정**. 칸은 `auto auto minmax(0,1fr) auto`
   — 저장·역할·로그아웃은 내용 폭(저장 라벨 `min-width` 고정, 관리자/개발자 같은 글자 수라 상태·역할이 바뀌어도 같은 폭),

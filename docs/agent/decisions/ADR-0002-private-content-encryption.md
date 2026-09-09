@@ -19,6 +19,8 @@ Related: `db/migrations/0045_event_secret_cipher.sql`, `lib/private-layer/secret
 
 ## Rationale
 
+> **부분 대체 — 협업 역할 가정(2026-09-09 확인).** 아래 작업자의 work 공유를 든 근거는 당시 역할 구조의 기록이다. worker·manager는 [ADR-0015](ADR-0015-retire-decorate-stickers-worker.md)·[ADR-0018](ADR-0018-retire-trusted-members.md)로 철수했고, 편집실 비공개 UI는 [ADR-0014](ADR-0014-private-layer-ui-retired.md)로 철수했다. AES-256-GCM·운영자 에스크로우·키 보존 결정은 유지한다. 현행 근거: [AUTH](../domain-rules/AUTH.md), [secret-crypto.ts](../../../lib/private-layer/secret-crypto.ts).
+
 E2EE(클라이언트 키)로 가면 다중 기기·역할 공유(작업자가 work 일정을 봐야 함)·검색·서버 렌더가 전부 깨진다.
 1인 스트리머 운영 + 신뢰하는 소수 협업자라는 실제 구조에서는 운영자 에스크로우가 비용 대비 옳다.
 

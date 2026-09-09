@@ -21,7 +21,8 @@
     "ambient:qa:selftest": "node scripts/ambient-qa/selftest.mjs",
     "ambient:qa:capture": "node scripts/ambient-qa/capture.mjs",
     "ambient:qa:sheet": "node scripts/ambient-qa/sheet.mjs",
-    "ambient:qa:diff": "node scripts/ambient-qa/diff.mjs"
+    "ambient:qa:diff": "node scripts/ambient-qa/diff.mjs",
+    "harness:brief": "node scripts/agent-harness/session-brief.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

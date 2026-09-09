@@ -19,6 +19,8 @@ Decision Owners: User (Victory 운영) / Agent-assisted
 
 ## Decision
 
+> **부분 대체 — 역할·스티커 범위(2026-09-09 확인).** 아래 `work=owner·developer·worker`와 manager 서술은 [ADR-0015](ADR-0015-retire-decorate-stickers-worker.md)·[ADR-0018](ADR-0018-retire-trusted-members.md)로 대체됐다. 현역은 owner/developer/viewer이며, work는 유효한 unlock grant가 있는 owner/developer, owner_private는 유효한 grant가 있는 owner만 읽는다. `Consequences`의 스티커 예시도 철수한 기능의 기록이다. 서버 공개 분리 결정은 유지한다. 현행 근거: [SECURITY](../domain-rules/SECURITY.md), [권한 함수](../../../lib/permissions/roles.ts).
+
 B. 서버에서 분리한다. 규칙은 `.claude/rules/public-private-boundary.md`와 `docs/security-boundary.md`에 강제한다.
 읽기 권한: public=모두 / work=owner·developer·worker / owner_private=owner만(개발자도 못 읽음). 매니저는 비공개 접근 0.
 클라이언트 게이트는 절대 유일한 보호막이 아니다 — 서버 권한 검사를 항상 유지한다.

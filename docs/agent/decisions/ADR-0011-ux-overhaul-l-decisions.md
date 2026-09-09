@@ -7,6 +7,8 @@ Status: Accepted
 
 ## 결정 내용
 
+> **부분 대체 — L6·L7·L8의 적용 범위(2026-09-09 확인).** L6의 "developer 일정 본문 편집 금지"는 후속 [ADR-0012 권한표](ADR-0012-phase0-capability-matrix.md)의 owner/developer 일반 일정 편집과 현행 [canEditSchedule](../../../lib/permissions/roles.ts)로 대체된다. owner_private의 owner 전용 경계는 유지한다. L7의 manager 권한은 [ADR-0018](ADR-0018-retire-trusted-members.md)로 철수했으며 전체 6/대표 2 계약은 [event-validation.ts](../../../lib/schedules/event-validation.ts)에 남는다. L8의 auth-session grant 서버 모델은 유지하되 편집실 비공개 UI 진입점은 [ADR-0014](ADR-0014-private-layer-ui-retired.md)로 철수했다. 아래 당시 표와 L6 함의는 이 범위에서 현행 권한표가 아니다.
+
 | # | 항목 | 결정 |
 |---|---|---|
 | L1 | 하루 일정 개수 | **무제한 유지.** hard cap 없음. 달력 칸 표시만 대표 2 + `+n`으로 정리 |

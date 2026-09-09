@@ -2,7 +2,7 @@
 
 > 되돌리기 비싼 결정, 또는 "왜 이렇게 했지?"를 다음 에이전트가 다시 물을 결정만 여기 적는다.
 > **Accepted ADR은 조용히 뒤집지 않는다.** 충돌하면 먼저 근거를 제시하고, 바꾸기로 하면
-> 기존 ADR을 `Superseded`로 바꾸고 대체 ADR을 쓴다. 지우지 않는다.
+> 대체 ADR을 쓰고 대체된 조항을 연결한다. 전체 폐기만 `Superseded`로 표시하며 부분 개정은 범위를 명시한다. 지우지 않는다.
 >
 > 소소한 구현 선택은 ADR 대상이 아니다(코드 주석 + git log로 충분).
 
@@ -13,17 +13,18 @@
 | [0003](ADR-0003-owner-dual-binding.md) | Accepted | 인증/권한 | 오너 = `OWNER_EMAIL`(앱) **AND** `calendars.owner_id`(RLS) 이중 바인딩 | 멀티 캘린더(스트리머 2인 이상) 지원 시 |
 | [0004](ADR-0004-poster-surface-geometry.md) | Accepted | 포스터 | 표면 폭 1840 고정 + 내용에 따라 높이 성장, JS로 뷰포트에 맞춰 스케일 | 포스터를 고정 비율(16:9/4:5) 캔버스로 전환할 때 |
 | [0005](ADR-0005-month-routes-cold-entry-only.md) | Accepted | 라우팅 | 스튜디오 월 라우트는 북마크·콜드 진입 전용. 런타임 월 이동은 클라이언트 상태로 | 월별 SSR 데이터가 너무 커져 라우트 분할이 필요해지면 |
-| [0006](ADR-0006-optimistic-writes-keepalive-queue.md) | Accepted | 쓰기 경로 | 에디터/꾸미기 낙관적 쓰기는 **직렬 큐** + `keepalive` fetch(`/api/studio-write`, `/api/sticker-write`) | 실시간 협업(다중 편집자 동시 쓰기)을 도입할 때 |
+| [0006](ADR-0006-optimistic-writes-keepalive-queue.md) | Accepted | 쓰기 경로 | 낙관적 쓰기는 직렬 큐 + keepalive fetch로 순서를 보존한다. 현역 경로는 /api/studio-write; 꾸미기·sticker-write 부분은 ADR-0015로 철수 | 동시 편집 협업을 도입할 때 |
 | [0007](ADR-0007-anon-hearts-device-token.md) | Accepted | 참여 | 하트는 비로그인 허용(기기 토큰). 로그인 장벽이 참여 병목이었음 | 어뷰징이 실제로 관측되면 |
 | [0008](ADR-0008-public-insights-aggregate-rpc.md) | Accepted | 공개 경계 | 시청자 인사이트는 **집계 전용 SECURITY DEFINER RPC**로만. 방문/체류(운영 지표)는 공개 금지, 하트 개수는 비노출(비율만) | 방문자 지표를 공개하기로 하거나 캘린더가 2개 이상이 되면 |
-| [0009](ADR-0009-seasonal-toys-are-opt-in.md) | Superseded | 시즌 연출 | 미니게임·시즌 테마는 **기본 꺼짐 + 클릭 통과 + 오너 테마 우선**. 장난감은 포스터의 뚜껑이 아니다 | 특정 기간 자동 노출을 원하면(좁은 조건으로만) | ← 2026-08-27 월드컵 기능 전부 삭제(CHG-20260827-002)
+| [0009](ADR-0009-seasonal-toys-are-opt-in.md) | Superseded | 시즌 연출 | 월드컵·시즌 장난감 opt-in 결정의 역사. 2026-08-27 기능 삭제(CHG-20260827-002)로 현역 작업 지시가 아니다 | 다시 도입하기로 결정할 때 새 ADR |
 | [0010](ADR-0010-broadcast-panel-public-dto-only.md) | Accepted | 보안 경계 | 방송 판서는 **서버 공개 스냅샷→명시 DTO만**(spread 금지) + teaser fail-closed 마스킹 + 클라이언트 무저장 | 판서에 낙관적 실시간 반영이 필요해지면(공유 redaction 추출 방향) |
 | [0011](ADR-0011-ux-overhaul-l-decisions.md) | Accepted | UX 전면 개선 | 개선 계획 L1~L8 확정: 하루 개수 무제한, 제목 줄바꿈 유지, 메모리 draft, iPad 개요+아젠다, 삭제 8초+24h, developer 권한 현행 유지, 태그 6/2, 잠금해제 auth-session 단위 | 신뢰 멤버 증가·부제목 혼란 반복 시 |
 | [0012](ADR-0012-phase0-capability-matrix.md) | Accepted | 권한/보안 | Phase 0 capability matrix + 불변식(범위 fail-closed·미리보기 서버 스냅샷만·오류 원문 비노출) | 역할 추가·캘린더 2개 이상 시 |
 | [0013](ADR-0013-activity-log-internal-identified.md) | Accepted | 프라이버시/지표 | 행동 기록(`activity_event`): **내부자만 계정 식별**, 시청자·비로그인은 쓰기 시점에 `account_hash` null 강제. meta에 일정 제목·본문 저장 금지(ADR-0002 우회 차단). 보존 90일 | 신뢰 멤버가 다수가 되거나 시청자 개인 단위 분석이 필요해질 때(고지 선행) |
 | [0014](ADR-0014-private-layer-ui-retired.md) | Accepted | 역할 UX/보안 | 편집실 **비공개 레이어 UI 철수**(비공개 보기 토글·공개 범위 피커·배너·필터). 서버 모델·RLS·fail-closed 저장 검사는 그대로, 새 일정은 항상 public. 비밀번호는 **최초공개 게이트·변경 전용**(관리 묶음) | 관리자가 엠바고/작업자 일정을 다시 쓰고 싶을 때(UI만 복원) |
-| [0015](ADR-0015-retire-decorate-stickers-worker.md) | Accepted | 기능/역할 철수 | **달력 꾸미기(스티커)·작업자 역할 철수** — 코드 삭제 + 0065 테이블/컬럼 drop(백업 JSON·이미지 커밋). 신뢰 멤버 = 매니저만. 공개 API DTO에서 stickers 필드 제거 | 관리자가 꾸미기를 다시 원할 때(코드는 git, 데이터는 백업, 스키마는 새 마이그레이션) |
-| [0016](ADR-0016-metal-water-design-language.md) | Accepted | 디자인 언어 | **금생수(金生水)**: 일(편집 팝오버·띠·버튼·칩·카드 테두리) = 금(헤어라인·광택·작은 라운드), 품는 것(바탕·표면·칸·패널) = 수(물빛 유리·큰 라운드). 편집실은 차분 모드 아래, 시청자 화면은 기본 모습. 의미색 8종·태그색·기하 불변. CLAUDE.md "따뜻한 콘텐츠 안쪽" 조항 대체 | 소유자가 크림 톤을 다시 원할 때 · 모달/VOD/모바일 아젠다까지 넓힐 때 |
-| [0017](ADR-0017-ambient-season-registry.md) | Accepted (개정 2, 2026-09-04) | 디자인 언어/구조 | **앰비언트 배경 레지스트리**: 계절은 **보고 있는 달력의 달**(12~2 겨울·3~5 봄·6~8 여름·9~11 가을)이 정하고 **물결은 여름의 전유물**. 봄/가을/겨울은 위에서 내려다보는 **상호작용 캔버스 장면**(`scene-engine.ts`·`scenes/*`: 낙엽 물리·집기, 눈밭 발자국·클릭, 풀밭 나비·클릭 폭발). 편집실·시청자 공용 `<AmbientLayer month />`, 스위치 "계절 배경"(`vic.ambient`, 기본 ON) — **OFF면 물결까지 전부 없음**. gfx v3 full/lite/soft(lite는 보이게 유지, soft만 OFF, 설정 "배경 효과"로 덮음). 특정일은 `SPECIAL_DAYS`(3단계, 실제 날짜 KST). 포스터 테마 7종은 공존 → 4단계 supersede 예정. **⑮(2026-09-04 밤) 아트 자리**: `art/manifest.ts` 한 목록 = `public/ambient/art/<id>.png`(있으면 그 그림, 없으면 대체물), 서 있는 것은 동물의 숲 카메라(stand) · 납작한 것만 위에서(flat/shadow), 관리 라우트 `/studio/ambient-art`(개발자) + 코덱스 프롬프트. **⑯ 개정(2026-09-06 라운드 10)**: 깊은 바다는 계절·날씨만 봉인, **시간대는 장면이 읽는다**(빛줄기·위 1/3 명도·밤 발광; 계약 = 띠마다 5날씨 해시 동일, 고유 해시 6) | 소유자가 계절 장면을 원치 않을 때(스위치) · 포스터 테마 철거 시(ADR 개정) |
-| [0018](ADR-0018-retire-trusted-members.md) | Accepted | 역할/구조 철수 | **신뢰 멤버(매니저) 기능 철수** — 역할은 developer·owner·viewer 셋. `/studio/trusted-members`·패널·액션·매니저 전용 시트·역할 미리보기 '매니저'·인사이트 members 삭제, 0074로 `trusted_members`·`trusted_role`·`is_active_trusted_member()` drop(행 0 실측). 옛 기록 판독용 라벨 문자열만 유지 | 관리자가 보조 역할을 다시 원할 때(코드 git, 스키마 재생성) |
-| [0019](ADR-0019-codex-three-books.md) | Accepted | 기능/디자인 언어 | **도감 세 권(물고기·곤충·동물) + 동물도 우리가 그린다** — ADR-0017 ⑧ "동물은 Noto 에셋만" 부분 폐기. 정본 `world/codex.ts`(131종, 실재하는 한국 생물)에서 아트 자리 2차·스폰 풀·도감 화면이 파생한다. 종은 **바이옴·달·시간대·날씨·비 온 뒤** 조건을 갖고(조건이 없으면 도감이 아니라 목록), 깊은 바다 종만 옆모습. `world/species.ts` 삭제. 자리 69 → 200, 종마다 생성 차수 1~3 | 소유자가 도감을 접을 때(PLAN-004 §5 결정 ④도 함께 철회) |
+| [0015](ADR-0015-retire-decorate-stickers-worker.md) | Accepted | 기능/역할 철수 | 꾸미기·스티커·worker 철수, 공개 DTO stickers 제거. 당시 남긴 manager도 ADR-0018로 철수했다 | 꾸미기를 다시 요청할 때 새 스키마·결정 |
+| [0016](ADR-0016-metal-water-design-language.md) | Accepted | 디자인 언어 | 금생수: 편집 도구는 금(헤어라인·광택·작은 라운드), 표면은 수(물빛 유리·큰 라운드). 의미색 8종·태그색·기하 보존. 현행 상세는 UI_RULES | 소유자가 디자인 언어 변경을 요청할 때 |
+| [0017](ADR-0017-ambient-season-registry.md) | Accepted (부분 개정 누적) | 앰비언트 구조 | 공유 AmbientLayer·바이옴 레지스트리, 계절은 보고 있는 달력의 달, 기본 진입 초원. 배경 on/dim/off 기본 OFF. 심해는 계절·날씨만 봉인하고 시간대는 읽는다. 동물 Noto-only 조항은 ADR-0019로 대체; 현행 상세는 ENGINE_RULES | 바이옴·시간·배경 제어 계약을 변경할 때 |
+| [0018](ADR-0018-retire-trusted-members.md) | Accepted | 역할/구조 철수 | 신뢰 멤버·manager 철수. 현역 역할은 owner·developer·viewer만; 일반 편집은 owner·developer, owner_private은 owner만 | 보조 역할을 다시 요청할 때 새 결정 |
+| [0019](ADR-0019-codex-three-books.md) | Accepted | 도감/아트 | 물고기·곤충·동물 세 도감, world/codex.ts에서 종·조건·아트 자리 파생. 동물도 원화 제작하고 Noto는 임시 대체물. 종/자리 수는 현행 코드에서 계산 | 도감 또는 종 출현 계약을 변경할 때 |
+| [0020](ADR-0020-bounded-memory-and-art-review.md) | Accepted | Agent memory·art review | Bounded current memory, immutable historical requests and isolated approval pipeline; 현재 규칙·상태·역사 분리, art 후보와 승인 출력 분리 | 현재 작업 모델·예산·새 art family 계약을 바꿀 때 |

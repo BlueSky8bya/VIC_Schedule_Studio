@@ -11,6 +11,8 @@ Related: `components/poster/public-poster.tsx`, `public-poster.css`(`.poster-sur
 
 ## Decision
 
+> **부분 대체 — 꾸미기·스티커 절(2026-09-09 확인).** [ADR-0015](ADR-0015-retire-decorate-stickers-worker.md)가 꾸미기와 스티커를 철수했다. 아래 꾸미기/시청자 스티커 좌표 일치, 구조 변경 시 꾸미기 확인, 스티커 마이그레이션·검증 문장은 역사적 적용 대상이며 기능 복원 지시가 아니다. 표면 폭 1840·내용에 따른 높이·JS 스케일은 계속 유효하다. 현행 근거: [public-poster.css](../../../components/poster/public-poster.css)의 `.poster-surface`, [public-poster.tsx](../../../components/poster/public-poster.tsx)의 `POSTER_DESIGN_W`.
+
 - 표면 **폭 1840px 고정**, 높이는 콘텐츠에 따라 자란다(고정 1035·clamp·clip 금지).
 - 화면에 맞추는 축소는 **JS 스케일**(자연 크기 → 뷰포트 fit)로만 한다.
 - **꾸미기 == 시청자 기하가 동일해야 한다.** 시청자 전용 크롬(필터·하트 UI 등)은 표면 **바깥**에 둔다.

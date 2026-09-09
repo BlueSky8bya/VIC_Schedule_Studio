@@ -14,6 +14,8 @@ Related: `components/seasonal/worldcup-ball-goal.tsx`(기본값), `worldcup-ball
 
 ## Decision
 
+> **이미 철회된 결정의 적용 범위(2026-09-09 확인).** 이 문서의 기존 `Status: Superseded`를 유지한다. 아래 미니게임·중력공·월드컵 자동 테마·토글 및 재도입 조건은 [CHANGELOG의 CHG-20260827-002](../CHANGELOG_AGENT.md)의 삭제 전 설계 기록이다. 복원 권한이나 현재 게임 작업 지시가 아니다. 현행 선택적 배경 제어는 별개인 [ENGINE_RULES의 AMB-12](../../ambient/ENGINE_RULES.md)와 [ambientMode](../../../lib/ui/motion.ts)를 따른다.
+
 시즌 연출은 **포스터 위의 곁들임이지 뚜껑이 아니다.**
 
 1. 미니게임 기본값 = **꺼짐**(모든 플랫폼). '⚽ 미니게임 켜기' 칩으로만 연다. 예전에 직접 켠

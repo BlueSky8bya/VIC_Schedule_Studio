@@ -42,6 +42,8 @@ PLAN-20260725-001 (G0×3·G2×2 게이트 합의)
 - 부수 발견: 기존 미리보기 낙관 경로의 teaser 미가림은 **별도 잠재 이슈**로 남아 있다
   (CURRENT_STATE 알려진 이슈 — 이 ADR 범위 밖).
 
+> **후속 조치로 대체 — 위 잠재 이슈(2026-09-09 확인).** [ADR-0012 불변식 2](ADR-0012-phase0-capability-matrix.md)와 [studio-shell.tsx](../../../components/studio/studio-shell.tsx)의 `previewSnapshot ?? schedule.viewerModePreview`가 미리보기 데이터도 서버 공개 스냅샷으로 제한한다. 낙관적 재가공 경로를 현행 미해결 항목으로 다시 올리지 않는다. 본 ADR의 판서 DTO·fail-closed·무저장 결정은 유지하며, 이 확인은 실세션 보안 테스트를 새로 실행했다는 뜻이 아니다.
+
 ## Revisit Conditions
 
 판서에 실시간성(낙관 반영)이 꼭 필요해지면 — 그때는 studio events를 쓰는 게 아니라

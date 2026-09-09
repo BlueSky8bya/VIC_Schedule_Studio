@@ -3,6 +3,8 @@
 Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 - Date: 2026-09-04
 
+> **절별 개정 안내(2026-09-09).** Accepted 지위와 아래 원문·검토 이력은 보존한다. 같은 문서 안에서도 초기 결정과 후속 개정이 겹치므로, 표시한 대체 범위는 현재 실행 지시가 아니다. 현행 규칙은 [ENGINE_RULES](../../ambient/ENGINE_RULES.md)·[ART_RULES](../../ambient/ART_RULES.md), 진행 작업은 [CURRENT_STATE](../CURRENT_STATE.md)가 연결한다.
+
 > **개정 2026-09-04(사용자 재정의, 결정 2·3 대체)**: ① 계절은 오늘 날짜가 아니라 **보고 있는 달력의 달**이 정한다
 > — 12~2월 겨울 · 3~5월 봄 · 6~8월 여름 · 9~11월 가을(달을 넘기면 즉시 바뀐다). ② **물결은 여름의 전유물** — 봄·
 > 가을·겨울은 물 없이 그 계절의 소품만(가을 = 낙엽, 겨울 = 눈, 봄 = 초목). ③ ~~계절 배경 스위치 OFF = 계절 소품
@@ -60,6 +62,11 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > `ambient/world/*` — 하루 여섯 띠(빛 톤 한 겹), 날짜 시드 날씨(실제 API 없음), 결정적 연대기 `chronicle(slug,y,m,d)`(도토리 →
 > 싹 → 묘목 → 나무·눈사람·흙더미·연잎, 좌표는 달력 밖 띠), 희귀도 감독(5등급·자비 타이머·전설 순수 확률·세션 1회), 종 레지스트리.
 > 세계는 DB 없이 누구에게나 같고, 개인 흔적만 로컬. 도감은 로그인 사용자만(Phase B, 서버 테이블).
+
+> **부분 대체 — 개정 2의 ②·④ 및 ⑫·⑬(2026-09-09 확인).** "전부 위에서 내려다봄"은 아래 ⑮의 standing=높은 3/4·flat/shadow=top-view 구분과 [ART-02](../../ambient/ART_RULES.md)로 좁혀졌다. "스위치 4종 기본 ON 재시딩"은 당시 일회성 설정 이력이며, 현행 계절 배경은 기본 OFF·차분한 편집실은 항상 ON이다([ambientMode/studioCalmEnabled](../../../lib/ui/motion.ts), [UI-04](../../ux/UI_RULES.md)). ⑫·⑬의 Noto 전용·동물 손그림 절대 금지는 [ADR-0019](ADR-0019-codex-three-books.md)로 대체됐다. 원작 픽셀아트가 목표이고 Noto/실루엣은 납품 전 임시 대체물이다. 기존 라이선스 보존과 생물 행동 계약은 유지한다.
+
+> **부분 대체 — ⑭ 연대기·종 레지스트리(2026-09-09 확인).** 소유자의 "연대기 없애고 월별로만" 결정으로 `chronicle(slug,y,m,d)`·도토리 순환·데뷔 나무·날별 성장 지시는 [monthTraces](../../../components/shared/ambient/world/traces.ts)로 대체됐다. 현재 흔적은 흙더미·눈사람·연잎을 slug/연/달로 결정한다. 옛 `world/species.ts` 목록은 [ADR-0019](ADR-0019-codex-three-books.md)의 [codex.ts](../../../components/shared/ambient/world/codex.ts) 단일 종 정본으로 대체됐다. 날짜 시드·기기 간 결정성 자체는 유지한다([AMB-08·18](../../ambient/ENGINE_RULES.md)).
+
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/
@@ -87,6 +94,8 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > `public/ambient/art/tree-oak-*.png`가 기준물이고 이후 모든 자리는 같은 어법(도트 ↔ 물감 혼합 금지). 겨울 줄기는 눈밭에서 붉은 갈색이
 > 제일 튀어(hue 8°·채도 .62) `scripts/ambient-art-desaturate.mjs`로 hue 15°·채도 .44로 탈색 — **밝은 바탕에 서는 줄기는 회갈색**이 규칙이 됐다.
 >
+> **부분 대체 — ⑮의 수량·입력 크기·정규화 명령(2026-09-09 확인).** 36/65자리·29종은 도입 당시 수량이며 현재 계획은 [manifest](../../../components/shared/ambient/art/manifest.ts)의 `ART_SLOTS`·`slotFiles`에서 계산한다. "생성기 최소 크기"·화면 px 4배·`npm run art:normalize` 직접 쓰기는 현행 납품 절차가 아니다. [ADR-0020](ADR-0020-bounded-memory-and-art-review.md)·ART_PIPELINE (`../../ambient/ART_PIPELINE.md`; destination lands with the following art commits)에 따라 요청 규격의 원본을 run `raw/`에 보존하고 manifest의 목표 변·격자에 맞춰 정수배/nearest 정규화한 뒤 소유자 검토를 거쳐 반영한다. 일반 생성 입력은 1024×1024이며 슬롯별 규격을 따른다. 단순함·픽셀 화풍·회갈색 줄기 결정은 유지한다([ART-01·03·05·06](../../ambient/ART_RULES.md)).
+>
 > **⑯ 바이옴 세계(PLAN-20260904-004 P0·P1, 2026-09-04 밤, 소유자 결정 ⓪~④).** ① **3/4 시점**(`world/view.ts`: 바닥 눌림 .7·거리 축소
 > .6→1·지평선 띠 12%·엔진 대기 안개)과 **동물의 숲 축척**(`world/scale.ts`, 최대:최소 ≤ 12). ② **사철 기본 화면 = 초원** — 결정 2의 "물결은
 > 여름의 것"은 **"물은 연못·바다 바이옴의 것"**으로 바뀐다: `AmbientLayer`는 CSS 물결 층(`.gs-tide`, `water-tide.tsx`)을 더 마운트하지 않고
@@ -94,6 +103,8 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > 방향키·WASD·스와이프·쉐브론·미니맵으로 오간다 — 세계 장면(`world/world-scene.ts`)이 엔진에 Scene으로 끼워지고 카메라 620ms로 미끄러진다;
 > 달력 뒤에선 늘 초원. ④ 나무 계열(도토리 순환·데뷔 나무)은 `world/flags.ts`로 화면에서 잠시 내림(아카이브 문서). 이 항목은 결정 2·5의
 > "여름 = 물결" 문장을 대체한다.
+
+> **부분 대체 — ⑯의 지평선 12%·나무 flags(2026-09-09 확인).** 하늘을 늘리라는 2026-09-06 소유자 결정에 따라 `HORIZON_V`는 0.26이다. 바닥 눌림·거리 축소는 [view.ts](../../../components/shared/ambient/world/view.ts)의 현행 상수와 좌표 함수를 따른다. `world/flags.ts`로 연대기 나무를 잠시 숨긴다는 설명은 이후 [traces.ts](../../../components/shared/ambient/world/traces.ts)의 연대기 철거로 대체됐다. 이를 복원 스위치로 다시 만들지 않는다.
 
 ## 맥락
 
@@ -108,6 +119,8 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 
 ## 결정
 
+> **부분 대체 — 아래 1·2·3(2026-09-09 확인).** 절기/오늘이 아니라 보고 있는 달력의 달이 계절을 정한다([seasonOfMonth/pickAmbient](../../../components/shared/ambient/registry.ts)). 특정일만 실제 KST 날짜를 사용한다. 사철 물결·여름 전용 물결은 모두 뒤이은 ⑯에서 사철 초원·바이옴별 물로 대체됐다. [AmbientLayer](../../../components/shared/ambient/ambient-layer.tsx)는 WaterTide를 마운트하지 않는다. 단일 레지스트리·공용 진입점 결정은 유지한다([AMB-01·02](../../ambient/ENGINE_RULES.md)).
+
 1. **레지스트리 하나**(`components/shared/ambient/registry.ts`)가 "오늘(KST) → 배경"을 정한다. 편집실·시청자 화면
    모두 `<AmbientLayer />` 하나만 마운트한다(옛 `<WaterTide />` 직접 마운트 대체).
 2. **물결은 상수, 계절은 강세.** 소유자 용신이 수(水)라 얕은 물결은 사철 깔린다. 계절 레이어는 그 위의 소품:
@@ -115,6 +128,8 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
    붉·주황·노랑 금지) + 은빛 서리 안개(金), 겨울 = 물가에 내리는 눈(水의 결정 = 흰 金) + 서리 광택.
 3. **계절 구분은 절기**(사주의 월 구분과 동일): 입춘 2/4 · 입하 5/5 · 입추 8/7 · 입동 11/7(고정, ±1일 무시).
    시간은 KST(Intl Asia/Seoul) — 서버(UTC)·클라이언트 동일.
+> **부분 대체 — 아래 4·5의 표시 게이트(2026-09-09 확인).** OFF에서 물결만 남거나 시청자 화면이 늘 ON인 동작은 폐기됐다. 공용 on/dim/off 제어는 기본 OFF이고, lite는 배경을 유지하며 soft/off는 숨긴다. 생동감 있는 동작 OFF는 배경을 숨기는 조건이 아니라 정지 프레임 조건이다. 아래 "동작 줄이기 ON이라 전부 숨김"을 검증 전제로 삼지 않는다. 근거: [ambient.css](../../../app/ambient.css), [motion.ts](../../../lib/ui/motion.ts), [AMB-10·12·13](../../ambient/ENGINE_RULES.md). 무한 애니메이션 비용·정보 경계 규칙은 유지한다.
+
 4. **스위치 "계절 배경"**(`vic.ambient`, **기본 OFF**(2026-09-04 소유자) — 첫 방문은 조용히 시작하고 고른 값(켜기/흐리게/끄기)이
    기기에 남아 페인트 전에 복원된다. 설정 톱니 목록) — OFF면 `html[data-ambient="off"]`로 계절 레이어만
    숨고 물결은 남는다. 물결 자체는 계속 '생동감 있는 동작'이 단독으로 쥔다. 시청자 화면엔 설정 UI가 없어 늘 ON.
@@ -124,9 +139,13 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
    회귀 게이트 = 헤드리스 드래그 스펙(studio-drag-indicator) + perf-frames 실측.
 6. **특정일**은 `SPECIAL_DAYS`(레지스트리)에 추가, 계절보다 우선. 이 ADR 시점엔 비어 있다(3단계). 숨은 요소(트리·
    산타 등)는 표면 바깥 여백·`aria-hidden`·포인터 무시. 공개/비공개 경계·관리 UI와 무관.
+> **부분 대체 — 아래 7의 fixture 전용 제한(2026-09-09 확인).** 2026-09-05 소유자 결정 후 실제 편집실에도 개발자용 계절·날씨·시간대 QA 제어가 있다. 일반 사용자에게 강제값을 적용하라는 뜻은 아니다. 계절을 바꿀 때 현재 바이옴을 유지하고 감상 종료 뒤에도 해제 경로를 제공한다. 근거: [studio-shell.tsx](../../../components/studio/studio-shell.tsx)의 `devSeason`·`worldForce`, [UI-22](../../ux/UI_RULES.md).
+
 7. fixture(`/visual-fixture/*?ambient=`)만 계절 강제 — 실제 화면은 강제 prop을 넘기지 않는다.
 
 ## 결과
+
+> **부분 대체 — 아래 물결 유지·되돌리기 절(2026-09-09 확인).** 현재 공용 진입점은 바이옴 WorldScene을 사용하는 AmbientLayer다([AMB-01](../../ambient/ENGINE_RULES.md)). WaterTide 파일이 남아 있어도 이를 마운트하거나 ambient.css를 제거하라는 작업 지시가 아니다. 계절별 CSS 컴포넌트를 캔버스로 바꾼 기록과 현재 기능 복원 권한을 구분한다.
 
 - 새 파일: `components/shared/ambient/{registry.ts,ambient-layer.tsx,season-autumn.tsx,season-winter.tsx,
   season-spring.tsx}`, `app/ambient.css`. 물결(`water-tide.tsx`, `metal-water.css`)은 그대로.
@@ -152,6 +171,9 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
    **짧아야** 한다(0.013~0.016 대역) — 길면 끊기지 않아 "등고선/철선"이 된다.
 6. **안개는 지평선 **위**에서 0으로 시작한다.** 지평선에서 곧장 켜면 44장 전부에 가로 절단선이 생기고,
    지평선을 걸친 물체는 아래쪽만 하얘져 원근이 뒤집힌다. 알파는 0.17/끝 0.44.
+
+> **부분 대체 — ⑰-6의 안개 수치(2026-09-09 확인).** 0.17/화면 끝 0.44는 후속 화질 검토로 대체됐다. 현행 [view.ts](../../../components/shared/ambient/world/view.ts)는 `HAZE_ALPHA=0.13`, `HAZE_END_GV=0.28`이며 끝 위치는 화면 분수가 아니라 지평선 아래 땅 기준 `hazeEndY/groundYAt`로 계산한다. 지평선 절단선 금지·물체 전체에 깊이 안개를 적용하는 의도는 유지한다([AMB-04·16](../../ambient/ENGINE_RULES.md)).
+
 7. **땅의 명암 폭은 45~60 L.** 좁으면 원근을 안개가 혼자 지고 열 바이옴이 같은 뿌연 판이 된다.
 8. **먼 것은 밝고 옅다.** 산 봉우리를 앞 땅보다 어둡게 칠하면 "먹구름 벽"이다. 봉우리는 별도 캔버스에 구워
    지평선 띠 **위에** 그린다(안 그러면 봉우리 비탈에 먼 나무가 선다).
@@ -187,6 +209,10 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 21. **선은 방향을 말한다.** 유로를 **가로지르는** 흰 파선은 도로 중앙선으로 읽힌다. 여울·거품은 흐름 방향으로 눕는다.
 22. **에셋의 채도는 눌러도 된다.** 동물은 그리지 않지만(⑬), `loadSprite(..., desat)`로 채도만 낮춰 오행 팔레트에
     맞춘다(오리 부리·무당벌레의 빨강·주황이 화면에서 가장 튀는 물체였다).
+
+> **부분 대체 — ⑱-22의 "동물은 그리지 않지만"(2026-09-09 확인).** 이 전제는 [ADR-0019](ADR-0019-codex-three-books.md)의 원작 동물 픽셀아트 결정으로 대체됐다. 임시 외부 에셋의 라이선스 유지·채도 조절과 전체 팔레트 정합성은 계속 적용한다([ART-03·11](../../ambient/ART_RULES.md)).
+
+> **과거 작업 상태(2026-09-09 확인).** 아래 "남은 것"과 `다음`은 이 검토 회전 당시 우선순위이며 현재 작업 목록이 아니다. 현재 납품 수량·요청은 [CURRENT_STATE](../CURRENT_STATE.md)의 run과 아트 목록 (`../../../art-src/목록.md`; destination lands with the following art commits)에서 확인한다([ADR-0020](ADR-0020-bounded-memory-and-art-review.md)).
 
 남은 것(우선순위): `rock` 아트 4종(9개 바이옴에 나온다) → 관목 4계절 → 갈대·통나무·그루터기 → 눈 무더기.
 연못·먼바다·모래해안은 아직 화면의 절반이 빈 물/모래 판이다(P2 생물이 채운다).
