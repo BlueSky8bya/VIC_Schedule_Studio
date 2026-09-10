@@ -1,0 +1,31 @@
+{
+  "method": "built-in image_gen",
+  "source": {
+    "path": "art-src/배경층/초원/작업회차/20260911-봄초원적용-시안05/원본/backdrop-meadow-spring-v1.png",
+    "sha256": "08e5ad94614ed5e6686dce328ebcc7906fa2c6e9973b77e298d2175eba76b53d",
+    "bytes": 1773389
+  },
+  "public": {
+    "path": "public/ambient/art/backdrop-meadow-spring-v1.png",
+    "sha256": "08e5ad94614ed5e6686dce328ebcc7906fa2c6e9973b77e298d2175eba76b53d"
+  },
+  "prompt": {
+    "path": "art-src/배경층/초원/작업회차/20260911-봄초원적용-시안05/request.md",
+    "sha256": "d86247b32f173b392d3061221491a942f301c89aafc5a868ea37539ca8f6c080"
+  },
+  "inspectedAndAttached": [
+    {
+      "path": "art-src/배경층/초원/작업회차/20260911-봄초원적용-시안05/고정입력/사용자선호초원.png",
+      "sha256": "36a9fae9d10001c3d183bef86095844be12f146b859f81821b754689e9f2104a"
+    }
+  ],
+  "authorization": "Owner requests refinement conditional on modest performance impact, spring desktop application and push. Agent selects this refinement under that instruction; no separate exact-file owner approval claimed.",
+  "sourcePixels": [
+    1536,
+    1024
+  ],
+  "normalization": "none; original bytes preserved",
+  "runtime": "F canopy metadata clip + uniformly cropped M ground; engine sky/weather/light; procedural N retained",
+  "decision": "ADR-0023",
+  "verification": "docs/ambient/rounds/ROUND-20-spring-release.md"
+}

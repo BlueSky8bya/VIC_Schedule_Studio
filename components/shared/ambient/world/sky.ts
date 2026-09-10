@@ -12,6 +12,7 @@ import { hillCrestY, horizonY } from "./view";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
 import { ArtSet, drawArt, type ArtSprite } from "@/components/shared/ambient/art/load";
 import { aimSprite, ART_HEADING, skyEventAt, type SkyEventKind } from "./sky-events";
+import { withDepthLayer } from "./depth-render";
 
 // 하늘의 그림 자리(2026-09-08) — 해·달 여덟 위상·구름 네 갈래. 파일이 있으면 그림을, 없으면 아래의 코드 도형을 쓴다
 // (다른 자리와 같은 규칙, ADR-0017 ⑮). 하늘은 장면마다 굽히므로 **모듈 하나에 ArtSet 하나**를 두고 공유한다.
@@ -406,6 +407,18 @@ export function drawSky(
   t: number,
   weather: Weather
 ) {
+  // Sky stays fixed in panel coordinates; cancel the ground translation before filling its full width.
+  withDepthLayer(g, "sky", () => drawSkyContent(g, sky, clouds, w, t, weather));
+}
+
+function drawSkyContent(
+  g: CanvasRenderingContext2D,
+  sky: HTMLCanvasElement,
+  clouds: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null,
+  w: number,
+  t: number,
+  weather: Weather
+) {
   g.drawImage(sky, 0, 0, w, sky.height);
   if (!clouds) return;
   const v = cloudSpeed(weather);
@@ -419,11 +432,12 @@ export const skyKey = (season: SeasonKey, weather: Weather, band: DayBand, w: nu
   `${season}|${weather}|${band}|${w}x${h}|a${skyArt.version}`;
 
 /** 하늘 판 굽기 — 지평선까지 불투명, 그 아래 4%h는 사라진다(땅의 먼 띠를 덮지 않게). 구름은 1/3 해상도에 그려 보간 없이 키운다(픽셀 계단, AA 없음 — ADR-0017 ⑱). */
-export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number, seed: number, topY = 0): HTMLCanvasElement {
+export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number, seed: number, topY = 0, daylight?: readonly [string, string]): HTMLCanvasElement {
   const hz = horizonY(h);
   const H = Math.ceil(hz + (h - hz) * 0.05); // 지평선 아래로 새는 여유도 땅 비례(검토 B)
   const { c, g } = makeCanvas(Math.max(1, Math.ceil(w)), H);
   const pal = skyPalette(season, weather, band);
+  if (daylight) { pal.top = daylight[0]; pal.hz = daylight[1]; }
   const grad = g.createLinearGradient(0, topY, 0, hz);
   grad.addColorStop(0, `rgb(${pal.top})`);
   grad.addColorStop(1, `rgb(${pal.hz})`);
@@ -660,6 +674,10 @@ function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed
 }
 
 export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: { moonY?: number; sunY?: number } = {}) {
+  withDepthLayer(g, "sky", () => drawSkyLiveContent(g, w, f, seed, maxY, opts));
+}
+
+function drawSkyLiveContent(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: { moonY?: number; sunY?: number }) {
   const t = f.t;
   const band = f.time.band;
   const weather = f.weather.now;

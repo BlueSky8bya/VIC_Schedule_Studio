@@ -8,6 +8,8 @@ import { useEffect, useRef } from "react";
 import { mountScene, type WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { createWorld } from "@/components/shared/ambient/world/world-scene";
+import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { exitShowcase } from "@/components/shared/ambient/showcase";
 
 export function SeasonCanvas({ season, slug, year, month, force }: { season: SeasonKey; slug: string; year: number; month: number; force?: WorldCtx["force"] }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
@@ -16,10 +18,33 @@ export function SeasonCanvas({ season, slug, year, month, force }: { season: Sea
   const forceRef = useRef(forceKey);
   forceRef.current = forceKey;
   useEffect(() => {
-    if (!ref.current) return;
-    const parsed = forceRef.current ? (JSON.parse(forceRef.current) as WorldCtx["force"]) : undefined;
-    const dispose = mountScene(ref.current, createWorld(season, parsed?.biome ?? "meadow", { pin: parsed?.pin }), { slug, season, year, month, force: parsed });
-    return () => dispose();
+    const canvas = ref.current;
+    if (!canvas) return;
+    const mobile = window.matchMedia(MOBILE_QUERY);
+    const html = document.documentElement;
+    let dispose: (() => void) | undefined;
+    const syncMount = () => {
+      if (mobile.matches) {
+        // CSS로 숨기는 것만으로는 장면 import/아트 decode/첫 bake를 막지 못한다.
+        dispose?.();
+        dispose = undefined;
+        exitShowcase();
+        return;
+      }
+      // 한 번 켠 PC 장면은 설정 OFF에도 보존한다. 정지/재개는 엔진이 맡는다.
+      if (dispose || html.dataset.ambient === "off" || html.dataset.gfx === "off" || html.dataset.gfx === "soft") return;
+      const parsed = forceRef.current ? (JSON.parse(forceRef.current) as WorldCtx["force"]) : undefined;
+      dispose = mountScene(canvas, createWorld(season, parsed?.biome ?? "meadow", { pin: parsed?.pin }), { slug, season, year, month, force: parsed });
+    };
+    const observer = new MutationObserver(syncMount);
+    observer.observe(html, { attributes: true, attributeFilter: ["data-ambient", "data-gfx", "data-showcase"] });
+    mobile.addEventListener("change", syncMount);
+    syncMount();
+    return () => {
+      observer.disconnect();
+      mobile.removeEventListener("change", syncMount);
+      dispose?.();
+    };
   }, [season, slug, year, month]);
   // 강제값이 바뀌면 장면을 다시 만들지 않고 엔진에 바로 넣는다(개발자 시간 여행 — 바탕을 다시 굽지 않는다).
   useEffect(() => {

@@ -1,0 +1,3 @@
+# Frozen requests are provenance bytes; do not normalize their line endings.
+**/request.md -text -diff
+**/request.json -text -diff

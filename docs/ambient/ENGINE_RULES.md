@@ -1,6 +1,18 @@
 # Current ambient engine rules
 
-Updated: 2026-09-09. Scope: scene engine, world services, camera, creatures and ambient control wiring. [AGENTS](../../AGENTS.md) supplies global boundaries; [README](README.md) routes to the specific visual grammar.
+Updated: 2026-09-10. Scope: scene engine, world services, camera, creatures and ambient control wiring. [AGENTS](../../AGENTS.md) supplies global boundaries; [README](README.md) routes to the specific visual grammar.
+
+## P0 depth amendment — ADR-0022
+
+Spring-meadow artwork and its scoped source/sky/crop/late-arrival contract follow [ADR-0023](../agent/decisions/ADR-0023-spring-meadow-source-composition.md). The existing N frame remains procedural in this spring release.
+
+The owner authorized [depth P0](../agent/decisions/ADR-0022-world-depth-and-showcase-motion.md). These clauses replace the corresponding motion/composition implications of AMB-09/10/13/27 below, preserving their other requirements:
+
+- WorldScene composes each panel's sky, F/M/N, weather, haze, above-ground objects and light once. `Scene.composed` prevents an outer duplicate pass. Deep remains sealed even during a pan. Mountain ① is F; nearer terrain and objects share M. Open sea now shares horizon 0.26h.
+- All decorative simulation is stationary outside showcase or under reduced motion. Late-art dt=0 retries and minute-level KST refresh are allowed. Mobile `MOBILE_QUERY` prevents engine creation and scene/art requests; CSS hiding alone is insufficient.
+- `world/depth.ts` owns bounded pointer offsets and analytic tau. Missing pointer means centered; touch does not drive parallax. Inverse M coordinates govern interaction. Pan remains 620ms with parallax fading to zero.
+- Existing auto load and manual preferences remain authoritative. Temporary full/lite/still tiers observe raw RAF before intentional frame skipping, exclude loading/resize warmup, and recover after sustained good samples. Still recovery uses at most 90 raw RAF callbacks, six stationary paint samples and a 30s cooldown; no probes while hidden/mobile/reduced/outside showcase.
+- Padded cached source layers use allocation caps before baking and bounded LRU. No runtime blur. `depth-check.mjs` and `depth-perf.mjs` record actual checks and timings; reported bytes are canvas estimates, not total GPU memory.
 
 ## World, camera and time
 

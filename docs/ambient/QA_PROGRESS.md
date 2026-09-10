@@ -1,8 +1,8 @@
 # Ambient QA — current state
 
-Last Updated: 2026-09-09
+Last Updated: 2026-09-11
 Active Work ID: AMB-QA-18
-Latest completed review: [ROUND-17](rounds/ROUND-17.md), 2026-09-08.
+Latest completed local scoped review: [ROUND-20 spring release](rounds/ROUND-20-spring-release.md), 2026-09-11; underlying depth checks: [ROUND-18](rounds/ROUND-18-depth-P0.md). Earlier general backlog: [ROUND-17](rounds/ROUND-17.md). Spring deployment verification is tracked in ROUND-20; this does not close real-device/OBS or the older general backlog.
 
 This file owns current QA priorities, not completed-round narrative. Art generation/review is tracked separately by the [pine handoff](HANDOFF-20260908-pine.md) and current art board. Slot/variant counts come from the manifest and files.
 
@@ -12,6 +12,8 @@ Deterministic biome fixtures and capture/sheet/diff/selftest tooling exist in `s
 Historical capture paths under `.scratch-pw/` may be absent on another machine. Recreate a baseline from an identified build/seed when required; old test counts and local paths do not establish current verification.
 
 ## AMB-QA-18 — first candidates
+
+The owner authorized depth P0 on 2026-09-10. Its completed local implementation/review is [ROUND-18-depth-P0](rounds/ROUND-18-depth-P0.md): fixed baseline, scoped F/M/N composition, mode/load gates and before/after checks. The record retains unmet absolute performance targets and real-device/OBS/GPU limits. This does not close the older candidates below or authorize new artwork.
 
 These findings were left by ROUND-17. Reproduce against current code and artifacts before choosing fixes; proposed numerical changes are hypotheses, not preapproved acceptance criteria.
 

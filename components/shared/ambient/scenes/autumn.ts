@@ -1,3 +1,4 @@
+import { drawDepthGround } from "../world/depth-render";
 // 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". **바탕**(2026-09-04 사용자: "가을만 일반 화면") — 마른 흙 얼룩(올리브·
 // 엄버, 채도 낮춤)·시든 풀포기(황갈)·잔가지·조약돌·버섯(갈색 갓에 크림 점) 몇을 크기별 결정적으로 한 번 굽는다. 그 위에
 // 여러 수종의 잎(둥근 잎·느릅·버들·단풍·은행·참나무·솔잎)이 흩어져 있고, 이따금 바람이 한 줄기 지나가며(gust) 잎들이
@@ -1069,7 +1070,7 @@ export function createAutumn(seed: number): Scene {
       }
     },
     draw(g, f) {
-      if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      if (ground) drawDepthGround(g, ground, f.w, f.h);
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
         const sk = skyKey("autumn", f.weather.now, f.time.band, f.w, f.h);
@@ -1083,7 +1084,7 @@ export function createAutumn(seed: number): Scene {
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개. 바탕 위, 모든 것 아래.
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
       drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       // (서리 안개 층은 **삭제**했다 — 2026-09-07, AMB-D3-04. 화면 위 34%에 걸린 `mist` 그라데이션이 엔진 대기 안개와 이중으로
       //  얹혀, 화면 y = .34h에서 끊기는 **가로 계단**을 만들었다. 실측: 지평선 아래 띠①−② 평균 L 차 초원 가을 4.2L 대
       //  숲 1.7 · 초원 겨울 1.8 — 그 계단 위가 통째로 하얘져 나무·먼 소품이 같이 사라졌다. 안개는 엔진 한 겹만 맡는다.)

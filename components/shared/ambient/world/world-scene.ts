@@ -6,6 +6,10 @@
 
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import type { Frame, Scene, SceneFactory } from "@/components/shared/ambient/scene-engine";
+import { createDepthPointer, depthOffsets, type DepthPoint } from "./depth";
+import { withDepthScene, withDepthLayer, bakeDepthFrame, depthCacheStats, clearDepthCache, retainDepthOwners } from "./depth-render";
+import { createParticles } from "./particles";
+import { drawDepthHaze, drawLightPass } from "./view";
 import { BIOMES, biomeAt, isBiomeKey, neighbor, screenDelta, type BiomeKey, type Dir } from "./biomes";
 import { BIOME_LOADERS } from "@/components/shared/ambient/scenes/biome-loaders";
 
@@ -21,7 +25,7 @@ export type WorldNav = {
   exits(): Record<Dir, BiomeKey | null>;
 };
 
-type Loaded = { scene: Scene; sizeKey: string };
+type Loaded = { key: BiomeKey; scene: Scene; sizeKey: string; particles: ReturnType<typeof createParticles>; front?: ReturnType<typeof bakeDepthFrame> };
 
 /** opts.pin = 감상 속성이 없어도 시작 바이옴에 머물고 이동도 허용한다 — 검증 fixture 전용(PLAN-20260905-005 P0). 실제 화면은 pin 없음. */
 export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opts: { pin?: boolean } = {}): SceneFactory {
@@ -35,6 +39,20 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     let trans: { from: BiomeKey; to: BiomeKey; dx: number; dy: number; t0: number; dur: number } | null = null;
     let queued: BiomeKey | null = null;
     const visited = new Set<BiomeKey>([initial]);
+    const pointer = createDepthPointer();
+    let panPointer: DepthPoint = { x: 0, y: 0 };
+    let disposed = false;
+    let panCanvas: HTMLCanvasElement | undefined;
+    const releasePanel = () => { if (panCanvas) panCanvas.width = panCanvas.height = 1; panCanvas = undefined; };
+    const offsetsOf = (f: Frame) => {
+      const active = !f.reduced && showcase() && f.depthTier !== "still";
+      const gain = trans ? Math.pow(1 - Math.min(1, Math.max(0, (f.t - trans.t0) / trans.dur)), 5) : 1;
+      return depthOffsets(trans ? panPointer : pointer.value(f.t), f.w, f.dpr, active ? f.depthTier ?? (f.q < 2 ? "lite" : "full") : "still", Number.isFinite(gain) ? gain : 0);
+    };
+    const localFrame = (f: Frame): Frame => {
+      const off = offsetsOf(f).ground;
+      return { ...f, p: { ...f.p, x: f.p.x - off.x, y: f.p.y - off.y }, hot: f.hot ? { ...f.hot, x: f.hot.x - off.x, y: f.hot.y - off.y } : null };
+    };
 
     const sizeKeyOf = (f: Frame) => `${f.w}x${f.h}@${f.dpr}/${f.q}`;
     const emit = (name: string, detail: Record<string, unknown>) => {
@@ -46,12 +64,12 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       if (!p) {
         p = BIOME_LOADERS[key](season)
           .then((factory) => {
+            if (disposed) return;
             const scene = factory(seed + key.length * 131 + key.charCodeAt(0) * 17);
-            const entry: Loaded = { scene, sizeKey: "" };
+            const entry: Loaded = { key, scene, sizeKey: "", particles: createParticles(seed) };
             scenes.set(key, entry);
             if (lastFrame) {
-              scene.resize(lastFrame);
-              entry.sizeKey = sizeKeyOf(lastFrame);
+              fit(entry, lastFrame);
             }
           })
           .finally(() => pending.delete(key));
@@ -61,9 +79,10 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     };
     const fit = (entry: Loaded, f: Frame) => {
       const k = sizeKeyOf(f);
-      if (entry.sizeKey !== k) {
-        entry.scene.resize(f);
+      if (entry.sizeKey !== k || !entry.front) {
+        if (entry.sizeKey !== k) entry.scene.resize(f);
         entry.sizeKey = k;
+        entry.front = bakeDepthFrame(f.w, f.h, entry.key, season, seed);
       }
     };
     const showcase = () => typeof document !== "undefined" && document.documentElement.hasAttribute("data-showcase");
@@ -77,6 +96,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       if (BIOMES[cur].gy === 1) lastCoastX = BIOMES[cur].gx; // 해안에서 바다로 내려가면 돌아올 해안을 기억
       if (BIOMES[to].gy === 1) lastCoastX = BIOMES[to].gx;
       const dur = f.reduced ? 0 : PAN_DUR;
+      panPointer = pointer.value(f.t);
       trans = { from: cur, to, dx, dy, t0: f.t, dur };
       emit("vic:biome-depart", { from: cur, to, dx, dy, dur });
       if (dur === 0) finish(f);
@@ -86,6 +106,14 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       const from = trans.from;
       cur = trans.to;
       trans = null;
+      releasePanel();
+      retainDepthOwners([scenes.get(cur)!]);
+      for (const entry of scenes.values()) if (entry.key !== cur && entry.front) {
+        entry.front.c.width = entry.front.c.height = 1;
+        entry.front = undefined;
+      }
+      pointer.reset(f.t);
+      pointer.aim(f.t, f.p, f.w, f.h);
       const first = !visited.has(cur);
       visited.add(cur);
       emit("vic:biome", { biome: cur, from, first, season, band: f.time.band });
@@ -110,7 +138,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     const nav: WorldNav = {
       go,
       at: () => cur,
-      moving: () => !!trans,
+      moving: () => !!trans || !!queued,
       exits: () => ({
         up: neighbor(cur, "up", lastCoastX),
         down: neighbor(cur, "down", lastCoastX),
@@ -119,19 +147,51 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       })
     };
 
+    const stepEntry = (entry: Loaded, f: Frame) => {
+      const lf = localFrame(f);
+      entry.particles.step(f.dt, f.w, f.h, f.weather.now, f.light, f.load, f.q < 2 || f.depthTier === "lite", entry.scene.ownsWeather?.(f.weather.now) ?? false);
+      entry.scene.step(lf);
+    };
+    const renderEntry = (entry: Loaded | undefined, g: CanvasRenderingContext2D, f: Frame) => {
+      if (!entry) return;
+      const lf = localFrame(f);
+      withDepthScene(g, offsetsOf(f), () => {
+        entry.scene.draw(g, lf);
+        if (entry.scene.sealed?.()) {
+          if (entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
+          return;
+        }
+        if (entry.scene.splitHaze?.()) {
+          drawDepthHaze(g, season, f.w, f.h, f.light);
+          entry.scene.drawAbove?.(g, lf);
+          entry.particles.draw(g, f.w, f.h, season, f.weather.now, f.light, f.t);
+        } else {
+          entry.particles.draw(g, f.w, f.h, season, f.weather.now, f.light, f.t);
+          drawDepthHaze(g, season, f.w, f.h, f.light);
+        }
+        if (entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
+        drawLightPass(g, f.w, f.h, f.light, entry.scene.fogFloor ? x => entry.scene.fogFloor!(x, lf) : null, entry.scene.fogFloorKey?.(lf) ?? "");
+      }, f.depthTier ?? "full", entry);
+    };
     void ensure(initial);
 
     return {
       nav,
+      composed: true,
+      dispose() { disposed = true; releasePanel(); clearDepthCache(); for (const e of scenes.values()) e.scene.dispose?.(); scenes.clear(); },
       resize(f) {
         lastFrame = f;
-        for (const entry of scenes.values()) fit(entry, f);
+        for (const entry of scenes.values()) if (entry.key === cur || entry.key === trans?.to) fit(entry, f);
       },
       step(f) {
         lastFrame = f;
+        if (f.reduced || !showcase() || f.depthTier === "still") pointer.reset(f.t);
+        else if (!trans) pointer.aim(f.t - f.dt, f.p, f.w, f.h);
         // 감상 모드가 아니면 초원 고정 — 나가는 순간 스냅(달력 뒤에 다른 바이옴이 남지 않게).
         if (!pinned && !showcase() && (cur !== "meadow" || trans)) {
           trans = null;
+          releasePanel();
+          retainDepthOwners(scenes.has("meadow") ? [scenes.get("meadow")!] : []);
           queued = null;
           cur = "meadow";
           void ensure("meadow");
@@ -148,23 +208,23 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         const active = scenes.get(cur);
         if (active) {
           fit(active, f);
-          active.scene.step(f);
+          stepEntry(active, f);
         }
         if (trans) {
           const to = scenes.get(trans.to);
-          if (to) to.scene.step(f);
+          if (to) stepEntry(to, f);
           if (f.t - trans.t0 >= trans.dur) finish(f);
         }
       },
       draw(g, f) {
         const active = scenes.get(cur);
         if (!trans) {
-          active?.scene.draw(g, f);
+          renderEntry(active, g, f);
           return;
         }
         const p = trans.dur > 0 ? easeOutQuint(Math.min(1, (f.t - trans.t0) / trans.dur)) : 1;
-        const ox = -trans.dx * p * f.w;
-        const oy = -trans.dy * p * f.h;
+        const ox = Math.round(-trans.dx * p * f.w * f.dpr) / f.dpr;
+        const oy = Math.round(-trans.dy * p * f.h * f.dpr) / f.dpr;
         const from = scenes.get(trans.from);
         const to = scenes.get(trans.to);
         // 이동 방향 앞머리의 옅은 빛 띠 + 뒤쪽의 옅은 그늘 — "지금 그쪽으로 가고 있다"를 몸으로 알려 준다.
@@ -194,17 +254,32 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
           gg.fillRect(0, 0, ff.w, ff.h);
           gg.restore();
         };
-        const draw = (entry: Loaded | undefined, tx: number, ty: number) => {
+        const draw = (entry: Loaded | undefined, tx: number, ty: number, backing = false) => {
           if (!entry) return;
+          if (trans?.dy) {
+            // A complete panel is faded exactly once. Inner scenes may set absolute
+            // alpha or multiply blends, which must not escape the camera crossfade.
+            const scale = Math.min(f.dpr, Math.sqrt(12 * 1024 * 1024 / (4 * f.w * f.h)) * .99);
+            const pw = Math.max(1, Math.floor(f.w * scale)), ph = Math.max(1, Math.floor(f.h * scale));
+            panCanvas ??= document.createElement("canvas");
+            if (panCanvas.width !== pw || panCanvas.height !== ph) { panCanvas.width = pw; panCanvas.height = ph; }
+            const pg = panCanvas.getContext("2d")!;
+            pg.setTransform(pw / f.w, 0, 0, ph / f.h, 0, 0);
+            pg.globalAlpha = 1; pg.globalCompositeOperation = "source-over";
+            pg.clearRect(0, 0, f.w, f.h);
+            renderEntry(entry, pg, f);
+            if (backing) {
+              // Keep the departing world behind both moving panels; two source-over
+              // alpha weights alone would expose the page through their crossfade.
+              g.save(); g.globalAlpha = 1;
+              g.drawImage(panCanvas, 0, 0, f.w, f.h);
+              g.restore();
+            }
+          }
           g.save();
-          g.beginPath();
-          g.rect(tx, ty, f.w, f.h);
-          g.clip();
-          g.translate(tx, ty);
-          entry.scene.draw(g, f);
-          // 팬 중(620ms)에는 안개 분리를 접는다 — 두 장면이 각자 클립·평행이동 안에 있어 엔진이 그 사이에 안개를
-          // 끼워 넣을 수 없다. 대열은 여기서 바로 이어 그리고, `splitHaze()`가 false를 돌려 엔진은 옛 순서로 간다.
-          entry.scene.drawAbove?.(g, f);
+          g.beginPath(); g.rect(tx, ty, f.w, f.h); g.clip(); g.translate(tx, ty);
+          if (trans?.dy && panCanvas) g.drawImage(panCanvas, 0, 0, f.w, f.h);
+          else renderEntry(entry, g, f);
           g.restore();
         };
         if (trans.dy !== 0) {
@@ -214,7 +289,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
           const slide = f.h * 0.22;
           g.save();
           g.globalAlpha *= 1 - p;
-          draw(from, 0, -trans.dy * p * slide);
+          draw(from, 0, -trans.dy * p * slide, true);
           g.restore();
           g.save();
           g.globalAlpha *= p;
@@ -229,11 +304,11 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       },
       pointerDown(f, onBackground) {
         if (trans) return false;
-        return scenes.get(cur)?.scene.pointerDown?.(f, onBackground) ?? false;
+        return scenes.get(cur)?.scene.pointerDown?.(localFrame(f), onBackground) ?? false;
       },
       pointerUp(f) {
         if (trans) return;
-        scenes.get(cur)?.scene.pointerUp?.(f);
+        scenes.get(cur)?.scene.pointerUp?.(localFrame(f));
       },
       ownsWeather(wx) {
         return scenes.get(cur)?.scene.ownsWeather?.(wx) ?? false;
@@ -267,6 +342,9 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         const active = scenes.get(cur);
         return {
           ...(active?.scene.debug?.() ?? {}),
+          depth: lastFrame ? offsetsOf(lastFrame) : null,
+          depthCache: { ...depthCacheStats(), panelBytes: panCanvas ? panCanvas.width * panCanvas.height * 4 : 0, foregroundBytes: [...scenes.values()].reduce((n, e) => n + (e.front ? e.front.c.width * e.front.c.height * 4 : 0), 0) },
+          weatherParticles: active?.particles.debug() ?? {},
           biome: cur,
           moving: !!trans,
           loaded: [...scenes.keys()],

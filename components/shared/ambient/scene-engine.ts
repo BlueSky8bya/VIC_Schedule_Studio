@@ -15,6 +15,7 @@
 // 포인터: window에서 듣는다(캔버스는 z:-1·pointer-events:none). 이동 = 바람/회피(어디서든), 누르기 = 배경
 // (버튼·칸·팝오버가 아닌 곳)에서만 '집기/도장', 단 나비처럼 장면이 직접 맞힌 건 어디서든 반응한다.
 
+import { createDepthBudget, type DepthTier } from "@/components/shared/ambient/world/depth";
 import { gfxPref } from "@/lib/ui/gfx";
 import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
@@ -99,9 +100,13 @@ export type Frame = {
   windDir: number;
   /** 하늘 사건 강제(개발자) — `world.force.skyEvent`를 그대로 넘긴다. 없으면 실제 확률대로. */
   skyEvent?: SkyEventKind | null;
+  depthTier?: DepthTier;
 };
 
 export interface Scene {
+  /** Explicit ownership of complete per-panel weather/light composition. */
+  composed?: boolean;
+  dispose?(): void;
   /** 크기·품질이 바뀌면(첫 마운트 포함) — 바탕을 다시 굽고 입자 수를 맞춘다. */
   resize(f: Frame): void;
   step(f: Frame): void;
@@ -331,6 +336,27 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   const scene = factory(seed);
   // 날씨 입자층(라운드 2) — 비·눈·바람 부스러기·안개 뭉치를 엔진이 한 번 그린다(장면이 스스로 그리는 날씨는 ownsWeather로 제외).
   const particles = createParticles(seed);
+  const budget = createDepthBudget();
+  let navigationWake = false;
+  let recoveryTimer: ReturnType<typeof setTimeout> | undefined;
+  let probeRaf = 0;
+  let probeCount = 0;
+  let samplingWarmup = 12;
+  let disposed = false;
+  const timings = { raw: [] as number[], draw: [] as number[], step: [] as number[] };
+  const sampleTime = (values: number[], ms: number) => { values.push(ms); if (values.length > 180) values.shift(); };
+  const timingStats = (values: number[]) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return { samples: sorted.length, mean: sorted.reduce((a, b) => a + b, 0) / Math.max(1, sorted.length), p95: sorted[Math.max(0, Math.ceil(sorted.length * .95) - 1)] ?? 0, max: sorted.at(-1) ?? 0 };
+  };
+  const showcaseOn = () => document.documentElement.hasAttribute("data-showcase");
+  const canAnimate = () => showcaseOn() && !frame.reduced;
+  const tierNow = (): DepthTier => {
+    if (!canAnimate()) return "still";
+    if (forced !== null) return forced < 0.2 ? "still" : forced < 0.45 || q < 2 ? "lite" : "full";
+    if (gfxPref() === "max") return "full";
+    return q < 2 && budget.tier === "full" ? "lite" : budget.tier;
+  };
   const dbg: AmbientDebug = {
     season: canvas.dataset.season ?? "",
     q,
@@ -338,10 +364,11 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     frames: 0,
     consumed: 0,
     running: false,
-    scene: () => scene.debug?.() ?? {},
+    scene: () => ({ ...(scene.debug?.() ?? {}), depthTier: frame.depthTier, showcase: showcaseOn(), perf: { raw: timingStats(timings.raw), draw: timingStats(timings.draw), step: timingStats(timings.step), probeCount, probing: !!probeRaf } }),
     forceLoad: (v) => {
       forced = v === null ? null : Math.max(0, Math.min(1, v));
       applyLoad();
+      sync();
     },
     hot: null,
     world: () => ({
@@ -363,7 +390,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     },
     goTo: (target) => {
       const ok = scene.nav?.go(target) ?? false;
-      if (ok && !running) drawOnce();
+      if (ok && !frozen) { navigationWake = true; sync(); }
+      else if (ok && !running) drawOnce();
       return ok;
     },
     biome: () => scene.nav?.at() ?? "meadow",
@@ -396,7 +424,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     ready: (timeoutMs = 10000) => ready(timeoutMs),
     weatherOptions: () => weatherOptionsForMonth(world.month),
     light: () => frame.light,
-    particles: () => particles.debug()
+    particles: () => scene.composed ? (scene.debug?.().weatherParticles ?? {}) as Record<string, number> : particles.debug()
   };
   window.__vicAmbient = dbg;
   let w = 0;
@@ -443,11 +471,13 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     frame.hot = Number.isFinite(l) ? { x: (l - rectL) / zoomF, y: (tp - rectT) / zoomF, w: (rgt - l) / zoomF, h: (btm - tp) / zoomF } : null;
     dbg.hot = frame.hot;
   };
-  const drawOnce = () => {
+  const paintFrame = () => {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
     setCurrentLight(frame.light);
+    frame.depthTier = tierNow();
     scene.draw(g, frame);
+    if (scene.composed) return;
     // 닫힌 방(깊은 바다) — 계절·날씨·시간대가 닿지 않는다. 장면이 자기 대기를 통째로 소유한다.
     if (scene.sealed?.()) return;
     // 대기 원근(3/4 시점, PLAN-004 §2.5) — 지평선 쪽이 옅어지는 안개 한 겹: 잔디·물·발자국·생물이 멀수록 흐려진다.
@@ -472,18 +502,27 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       scene.fogFloorKey ? scene.fogFloorKey(frame) : ""
     );
   };
+  const drawOnce = () => {
+    const before = performance.now();
+    paintFrame();
+    sampleTime(timings.draw, performance.now() - before);
+  };
   // 매 step 앞: 조명 보간 + 입자층 전진(고정 dt — advance()의 결정성 유지). 정지 화면(dt 0)에서도 입자는 자리를 잡는다.
   const stepScene = () => {
+    const before = performance.now();
     if (lightMix < 1) {
       lightMix = frozen ? 1 : Math.min(1, lightMix + frame.dt / 3);
       frame.light = lerpLight(lightFrom, lightTgt, lightMix);
       frame.lightStable = lightMix >= 1;
     }
     setCurrentLight(frame.light);
-    particles.step(frame.dt, w, h, frame.weather.now, frame.light, frame.load, q < 2, scene.ownsWeather?.(frame.weather.now) ?? false);
+    frame.depthTier = tierNow();
+    if (!scene.composed) particles.step(frame.dt, w, h, frame.weather.now, frame.light, frame.load, q < 2, scene.ownsWeather?.(frame.weather.now) ?? false);
     scene.step(frame);
+    sampleTime(timings.step, performance.now() - before);
   };
   const resize = () => {
+    samplingWarmup = 12;
     const rect = canvas.getBoundingClientRect();
     w = canvas.offsetWidth || window.innerWidth;
     h = canvas.offsetHeight || window.innerHeight;
@@ -516,11 +555,14 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   const tick = (now: number) => {
     raf = 0;
     if (!running) return;
+    if (!canAnimate()) { sync(); return; }
     let dt = (now - last) / 1000;
     last = now;
     if (dt < 0) dt = 0;
     // 자체 조절기 — 90프레임마다: 나쁘면(늦은 프레임 12%↑ 또는 평균 21ms↑) 여력 −0.15, 좋으면(3%↓·18.5ms↓) +0.06.
-    gaps.push(dt);
+    sampleTime(timings.raw, dt * 1000);
+    if (samplingWarmup > 0 || pendingLoads() > 0) { samplingWarmup = Math.max(0, samplingWarmup - 1); gaps.length = 0; }
+    else gaps.push(dt);
     if (gaps.length >= EVAL_FRAMES) {
       let bad = 0;
       let sum = 0;
@@ -536,15 +578,18 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
         else if (badRatio < 0.03 && mean < 18.5) load = Math.min(cap, load + LOAD_UP);
         applyLoad();
       }
+      budget.sample(mean, badRatio, load, gfxPref());
+      frame.depthTier = tierNow();
+      if (frame.depthTier === "still" && !navigationWake) { sync(); return; }
     }
     if (dt > 0.05) dt = 0.05;
-    if (q === 0 || dim) {
+    if (q === 0 || dim || frame.depthTier === "lite") {
       skip = !skip;
       if (skip) {
         raf = requestAnimationFrame(tick);
         return;
       }
-      dt *= 2;
+      dt = Math.min(.05, dt * 2);
     }
     frame.t += dt;
     frame.dt = dt;
@@ -555,6 +600,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     dbg.frames += 1;
     dbg.q = q;
     p.moved = false;
+    if (navigationWake && !scene.nav?.moving() && pendingLoads() === 0) navigationWake = false;
+    if (frame.depthTier === "still" && !navigationWake) { sync(); return; }
     // 포인터가 멈추면 속도는 빠르게 잦아든다(바람이 끊긴다).
     p.vx *= 0.7;
     p.vy *= 0.7;
@@ -566,6 +613,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     running = true;
     dbg.running = true;
     last = performance.now();
+    samplingWarmup = 12;
     gaps.length = 0;
     raf = requestAnimationFrame(tick);
   };
@@ -605,7 +653,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     while (stillRetries.length) window.clearTimeout(stillRetries.pop());
     for (const ms of [250, 900, 2400]) {
       stillRetries.push(window.setTimeout(() => {
-        if (frame.reduced && !running) stillFrame();
+        if (!frozen && !running && !readOff() && !readPaused() && !document.hidden && getComputedStyle(canvas).display !== "none") stillFrame();
       }, ms));
     }
   };
@@ -661,7 +709,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       }
     }
     const dt = Math.min(0.05, Math.max(0.001, stepMs / 1000));
-    const n = Math.max(0, Math.round(ms / stepMs));
+    const n = canAnimate() && (tierNow() !== "still" || scene.nav?.moving()) ? Math.max(0, Math.round(ms / stepMs)) : 0;
     for (let i = 0; i < n; i++) {
       frame.t += dt;
       frame.dt = dt;
@@ -677,10 +725,11 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
         p.speed = Math.hypot(p.vx, p.vy);
       }
     }
-    if (n === 0) drawOnce();
+    if (n === 0) stillFrame();
     return frame.t;
   };
   const sync = () => {
+    if (probeRaf) { cancelAnimationFrame(probeRaf); probeRaf = 0; }
     const nq = readQuality();
     frame.reduced = readReduced();
     const off = readOff();
@@ -703,26 +752,60 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       return;
     }
     const paused = readPaused();
-    if (frame.reduced || off || document.hidden || hiddenByCss || paused) {
+    frame.depthTier = tierNow();
+    if (frame.reduced || !showcaseOn() || (frame.depthTier === "still" && !navigationWake) || off || document.hidden || hiddenByCss || paused) {
       stop();
-      if (frame.reduced && !off && !hiddenByCss) {
+      if (!off && !hiddenByCss && !document.hidden && !paused) {
         stillFrame(); // 정지 화면 한 장(일시정지는 마지막 프레임 그대로)
         scheduleStill();
       }
+      if (showcaseOn() && !frame.reduced && !off && !hiddenByCss && !document.hidden && !paused && !recoveryTimer && forced === null) {
+        recoveryTimer = setTimeout(() => {
+          recoveryTimer = undefined;
+          if (disposed || frozen || !canAnimate() || document.hidden || readPaused() || readOff()) return;
+          probeRecovery();
+        }, 30000);
+      }
     } else start();
+  };
+  // At most 90 raw RAF callbacks, with six stationary low-cost paint samples.
+  // The probe owns no simulation time and is cancelled by visibility/settings changes.
+  const probeRecovery = () => {
+    if (disposed || frozen || running || probeRaf || forced !== null || !canAnimate() || document.hidden || readPaused() || readOff() || getComputedStyle(canvas).display === "none") return;
+    if (recoveryTimer) { clearTimeout(recoveryTimer); recoveryTimer = undefined; }
+    let count = 0, previous = performance.now(), sum = 0, late = 0, paintCost = 0;
+    const probe = (now: number) => {
+      probeRaf = 0;
+      if (disposed || frozen || !canAnimate() || document.hidden || readPaused() || readOff()) return;
+      const gap = now - previous; previous = now; sum += gap; if (gap > 34) late++;
+      count++; probeCount++;
+      if (count % 15 === 0) { const before = performance.now(); drawOnce(); paintCost += performance.now() - before; }
+      if (count < 90) { probeRaf = requestAnimationFrame(probe); return; }
+      if (sum / count < 18.5 && late / count < .03 && paintCost / 6 < 12) {
+        budget.recover(); load = Math.min(cap, Math.max(load, .25)); applyLoad();
+      }
+      sync();
+    };
+    probeRaf = requestAnimationFrame(probe);
   };
   const onResize = () => {
     resize();
     sync();
   };
   const onPref = () => {
+    budget.reset(gfxPref() === "lite" ? "lite" : "full");
     reband();
     sync();
   };
 
-  const toCanvas = (e: PointerEvent): [number, number] => [(e.clientX - rectL) / zoomF, (e.clientY - rectT) / zoomF];
+  const toCanvas = (e: PointerEvent): [number, number] => {
+    const rect = canvas.getBoundingClientRect();
+    rectL = rect.left; rectT = rect.top;
+    zoomF = rect.width > 0 && w > 0 ? rect.width / w : 1;
+    return [(e.clientX - rectL) / zoomF, (e.clientY - rectT) / zoomF];
+  };
   const onMove = (e: PointerEvent) => {
-    if (forcedPtr) return; // 포인터 고정 중(검증) — 실제 마우스는 무시
+    if (forcedPtr || (e.pointerType && e.pointerType !== "mouse")) return; // Touch does not drive parallax.
     const dts = Math.max(4, e.timeStamp - p.ts) / 1000;
     const [cx, cy] = toCanvas(e);
     if (p.inside) {
@@ -737,9 +820,11 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     p.inside = true;
     p.moved = true;
     p.speed = Math.hypot(p.vx, p.vy);
+    if (!running && !probeRaf && !recoveryTimer) probeRecovery();
   };
   const onDown = (e: PointerEvent) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || (e.pointerType && e.pointerType !== "mouse")) return;
+    if (!running) probeRecovery();
     [p.x, p.y] = toCanvas(e);
     p.down = true;
     p.inside = true;
@@ -777,14 +862,36 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   window.addEventListener("pointercancel", onUp, { passive: true });
   document.addEventListener("pointerleave", onLeave);
   document.addEventListener("visibilitychange", sync);
+  window.addEventListener("focus", probeRecovery);
   const mo = new MutationObserver(sync);
   mo.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ["data-reduce-motion", "data-gfx", "data-ambient", "data-ambient-pause", "data-showcase", "data-ambient-dim"]
   });
+  // A stationary calendar still follows KST/date/weather without an animation loop.
+  const worldTimer = window.setInterval(() => {
+    if (disposed || frozen || running || document.hidden || readOff() || readPaused() || getComputedStyle(canvas).display === "none") return;
+    refreshWorld();
+    // No three-second light animation outside showcase: settle the new state once.
+    lightMix = 1; frame.light = lightTgt; frame.lightStable = true;
+    stillFrame();
+  }, 60000);
+
+  // A decoded background may arrive after bounded still retries. Refresh once
+  // with dt=0; frozen QA advances remain the sole owner of fixture rendering.
+  const onArtReady = () => {
+    if (!disposed && !frozen && !running && !document.hidden && !readOff() && !readPaused() && getComputedStyle(canvas).display !== "none") stillFrame();
+  };
+  window.addEventListener("vic:ambient-art-ready", onArtReady);
 
   return () => {
+    disposed = true;
     stop();
+    if (recoveryTimer) clearTimeout(recoveryTimer);
+    if (probeRaf) cancelAnimationFrame(probeRaf);
+    window.clearInterval(worldTimer);
+    window.removeEventListener("vic:ambient-art-ready", onArtReady);
+    scene.dispose?.();
     while (stillRetries.length) window.clearTimeout(stillRetries.pop());
     document.documentElement.removeAttribute("data-ambient-grab");
     if (window.__vicAmbient === dbg) delete window.__vicAmbient;
@@ -797,5 +904,6 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     window.removeEventListener("pointercancel", onUp);
     document.removeEventListener("pointerleave", onLeave);
     document.removeEventListener("visibilitychange", sync);
+    window.removeEventListener("focus", probeRecovery);
   };
 }

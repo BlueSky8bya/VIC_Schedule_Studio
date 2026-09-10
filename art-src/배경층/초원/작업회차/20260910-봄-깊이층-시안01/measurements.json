@@ -1,0 +1,60 @@
+{
+  "requestSha256": "819d5cafb040ca0da18aefb3c01e6f496a94afdfeac0977c7cd14cfd504f0e48",
+  "status": "fail",
+  "files": [
+    {
+      "file": "backdrop-meadow-spring-far.png",
+      "sha256": "84d76f63ba3207365081d7c4293036924ab1d61f788fbbdfb678fe4e972214b6",
+      "width": 1536,
+      "height": 1024,
+      "hasAlpha": false,
+      "colors": 14995,
+      "transparent": 0,
+      "semitransparent": 0,
+      "mismatchedBlockPixels": 1338686,
+      "checks": {
+        "size": true,
+        "transparency": false,
+        "palette": false,
+        "grid": false
+      }
+    },
+    {
+      "file": "backdrop-meadow-spring-ground.png",
+      "sha256": "423cd635daad3d190cc225f1356246c6aa5b86ab20eada79fa90d714d531a3fd",
+      "width": 1536,
+      "height": 1024,
+      "hasAlpha": false,
+      "colors": 15766,
+      "transparent": 0,
+      "semitransparent": 0,
+      "mismatchedBlockPixels": 1265747,
+      "checks": {
+        "size": true,
+        "transparency": false,
+        "palette": false,
+        "grid": false
+      }
+    },
+    {
+      "file": "backdrop-meadow-spring-frame.png",
+      "sha256": "2c6b928f063d9322cba58308044cc33b35d230065a766ce2ad1b8340741bf7b5",
+      "width": 1536,
+      "height": 1024,
+      "hasAlpha": false,
+      "colors": 22662,
+      "transparent": 0,
+      "semitransparent": 0,
+      "mismatchedBlockPixels": 1347894,
+      "checks": {
+        "size": true,
+        "transparency": false,
+        "palette": false,
+        "grid": false
+      }
+    }
+  ],
+  "ownerDecision": "pending",
+  "normalization": "not performed",
+  "publication": "not allowed"
+}

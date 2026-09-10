@@ -1,3 +1,5 @@
+import { drawDepthGround, withDepthLayer } from "../world/depth-render";
+import { DEPTH_PAD } from "../world/depth";
 // 육지 바이옴 얇은 판(2026-09-04, PLAN-004 §3.3~3.5) — 숲(forest)·들판·언덕(hill)·계곡(valley)·산(mountain). P1에서는 바탕·지평선·소품만
 // (생물은 P2 에이전트, 소나무·억새·고사리·절벽 아트는 P3 자리). 3/4 시점·축척·안개는 엔진과 view.ts가 준다.
 //  · forest: **소나무-참나무 혼효림**(2026-09-04 웹 레퍼런스 — 한국 산림의 대표 임상). 참나무(둥근 잎 덩이)와
@@ -9,7 +11,7 @@
 
 import type { Frame, Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
-import { clamp, lerp, rng, softBlob, TAU } from "./util";
+import { clamp, lerp, makeCanvas, rng, softBlob, TAU } from "./util";
 import { ArtSet, drawArt } from "../art/load";
 import { behindStand, claimSpot, drawProp, drawSubmerged, propShadow, propSpots, resetPropField, scatterProps, setPropShadow } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
@@ -83,14 +85,19 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   let horizon: HTMLCanvasElement | null = null;
   // 능선선만 따로 구운 판(QA 라운드 3, AMB-D1-01) — 안개·밤 조명이 산 층을 누를 때 능선선을 그만큼 되살린다(draw()에서 조명 배율로 덧그림).
   let ridgeC: HTMLCanvasElement | null = null;
+  let farMountain: HTMLCanvasElement | null = null;
+  let farRidgeC: HTMLCanvasElement | null = null;
   let ridge1: { pts: number[]; step: number } | null = null; // 산 ① 능선(하늘 clip용, 라운드 5)
-  const clipAboveRidge1 = (c: CanvasRenderingContext2D) => {
-    if (!ridge1) return;
-    const { pts, step } = ridge1;
+  let ridge2: { pts: number[]; step: number } | null = null;
+  const clipAboveRidge = (c: CanvasRenderingContext2D, ridge: typeof ridge1, inset = 1) => {
+    if (!ridge) return;
+    const { pts, step } = ridge;
     c.beginPath();
-    c.moveTo(-step, -10);
-    for (let i = 0; i < pts.length; i++) c.lineTo(-step + i * step, pts[i] - 1);
-    c.lineTo(w + step, -10);
+    c.moveTo(-DEPTH_PAD, -DEPTH_PAD);
+    c.lineTo(-DEPTH_PAD, pts[0] - inset);
+    for (let i = 0; i < pts.length; i++) c.lineTo(-step + i * step, pts[i] - inset);
+    c.lineTo(w + DEPTH_PAD, pts[pts.length - 1] - inset);
+    c.lineTo(w + DEPTH_PAD, -DEPTH_PAD);
     c.closePath();
     c.clip();
   };
@@ -1165,6 +1172,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           for (let i = 1; i < ridge.length - 1; i++) ridge[i] = (ridge[i - 1] + ridge[i] * 2 + ridge[i + 1]) / 4;
         }
         if (rimGlow) ridge1 = { pts: ridge.slice(), step }; // ① 능선 — draw()가 하늘·별을 이 위에만 그린다(라운드 5)
+        else ridge2 = { pts: ridge.slice(), step };
         const yAt = (x: number) => {
           const i = Math.max(0, Math.min(ridge.length - 2, Math.floor((x + step) / step)));
           const t2 = ((x + step) / step) - i;
@@ -1338,6 +1346,17 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       const peak1 = setLabL(mixHex(PEAK[season][0], "#e9edf0", 0.3), Math.min(94, layerL[0]));
       const peak2 = setLabL(mixHex(PEAK[season][1], "#e9edf0", 0.12), Math.min(90, layerL[1]));
       peak(0.2, (h - gy()) * 0.386, peak1, 1, 1.2, 0.3, false, true);
+      // Snapshot only ① before ②/③/④ and all standing props are baked. RNG order is unchanged.
+      const farScale = Math.min(.5, Math.sqrt(3 * 1024 * 1024 / (4 * c.width * c.height)));
+      const far = makeCanvas(Math.max(1, Math.floor(c.width * farScale)), Math.max(1, Math.floor(c.height * farScale)));
+      far.g.imageSmoothingEnabled = false;
+      far.g.drawImage(c, 0, 0, far.c.width, far.c.height);
+      farMountain = far.c;
+      const farRim = makeCanvas(far.c.width, far.c.height);
+      farRim.g.imageSmoothingEnabled = false;
+      farRim.g.drawImage(rc2, 0, 0, farRim.c.width, farRim.c.height);
+      farRidgeC = farRim.c;
+      rg.clearRect(0, 0, w, h);
       peak(0.32, (h - gy()) * 0.33, peak2, 0.88, 3.4, season === "spring" ? 0.16 : 0.42, capSnow);
       // 발치 — 자락이 땅에 닿는 자리(너덜 띠). 알파 0으로 사라지면 "공중에 뜬 구름"이다.
       // 너덜 자락 — 옛 코드는 화면 폭 0.75짜리 **밝은 원 하나**라 "렌즈 얼룩"으로 보였다(검토 라운드2 미관 #12).
@@ -1677,7 +1696,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       if (kind === "valley") for (const q of foam) q.u = (q.u + q.sp * f.dt * lerp(0.6, 1.4, f.load)) % 1;
     },
     draw(g, f) {
-      if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      if (ground) drawDepthGround(g, ground, f.w, f.h);
+      if (farMountain) {
+        g.save();
+        // The nearer ② contour stays on M; only the visible region behind it receives F.
+        clipAboveRidge(g, ridge2, 2);
+        drawDepthGround(g, farMountain, f.w, f.h, true);
+        g.restore();
+      }
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 × 띠 판, 지평선 띠(안개·언덕) 아래. 산은 바탕에 구운 ① 능선 **위만** clip(봉우리가 하늘을 가린다).
       {
         const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
@@ -1686,18 +1712,22 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        g.save();
-        if (kind === "mountain") clipAboveRidge1(g);
-        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
-        g.restore();
+        if (kind === "mountain") {
+          g.save();
+          clipAboveRidge(g, ridge2);
+          withDepthLayer(g, "far", () => {
+            clipAboveRidge(g, ridge1);
+            drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now);
+          });
+          g.restore();
+        }
+        else drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
       // 별·달·해 → **그 다음에** 지평선 띠(2026-09-06 라운드 8, 검토 C: 라운드 7의 이 수정이 초원 계열 네 장면에만
       // 들어가 숲·언덕·계곡에서는 지는 해가 먼 언덕 사면 위에 얹혀 있었다). 상한도 `summer.ts`와 같은 식으로 —
       // 언덕 마루(`hillCrestY`)보다 위. 산만 예외: ① 능선 위 clip이 그 역할을 하고, 봉우리가 지평선 위로 솟는다.
-      g.save();
-      if (kind === "mountain") clipAboveRidge1(g);
       const crest = hillCrestY(f.h);
-      drawSkyLive(
+      const skyLive = () => drawSkyLive(
         g,
         f.w,
         f,
@@ -1705,8 +1735,17 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         kind === "mountain" ? horizonY(f.h) + (f.h - horizonY(f.h)) * 0.09 : Math.min(horizonY(f.h) * 0.92, crest - 4),
         kind === "mountain" ? { moonY: horizonY(f.h) * 0.42, sunY: horizonY(f.h) + f.h * 0.02 } : { moonY: horizonY(f.h) * 0.35, sunY: crest - 14 }
       );
-      g.restore();
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      if (kind === "mountain") {
+        g.save();
+        clipAboveRidge(g, ridge2);
+        withDepthLayer(g, "far", () => {
+          clipAboveRidge(g, ridge1);
+          skyLive();
+        });
+        g.restore();
+      }
+      else skyLive();
+      if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       if (grassC) {
         // 억새·풀포기 **진행파**(라운드 8) — 세로 띠 40px마다 x를 흘린다. 파장은 화면 폭의 1/8쯤,
         // 속도·진폭은 바람에 비례하되 맑음(.08)에서도 멈추지 않는다(M-3: 육지가 4초 0.000%였다).
@@ -1760,6 +1799,17 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         // 3차: 상한 1.5(두 번째 패스는 잔여만). 2차 실측 안개 ② 국소 대비 4.3(규칙 10, A 상한 = 면 단차 ×2 ≈ 12) — 계수를 올린다.
         const boost = Math.min(1.5, Math.max(0, (L.hazeK - 1) * 1.2 + dark * 2.2));
         if (boost > 0.02) {
+          if (farRidgeC) {
+            g.save();
+            clipAboveRidge(g, ridge2, 2);
+            g.globalAlpha = Math.min(1, boost);
+            drawDepthGround(g, farRidgeC, f.w, f.h, true);
+            if (boost > 1) {
+              g.globalAlpha = boost - 1;
+              drawDepthGround(g, farRidgeC, f.w, f.h, true);
+            }
+            g.restore();
+          }
           g.save();
           g.globalAlpha = Math.min(1, boost);
           g.drawImage(ridgeC, 0, 0, f.w, f.h);

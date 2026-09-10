@@ -1,3 +1,4 @@
+import { drawDepthGround } from "../world/depth-render";
 // 겨울 — "소복이 쌓인 눈밭을 위에서 내려다본다". 바탕(눈밭 + 둔덕 그늘 + 반짝이 + 이미 지나간 발자국 몇 줄)은
 // 리사이즈 때 한 번 굽는다(크기별 결정적 — 다시 구워도 같은 그림). 그 위에서: ① 보이지 않는 누군가가 **걸어간다** —
 // 사람(신발 자국)·**고양이·새·토끼**(제 걸음걸이)가 화면을 가로지르고, 다 지나가면 잠시 뒤 다른 가장자리에서 다음 손님.
@@ -897,7 +898,7 @@ export function createWinter(seed: number): Scene {
       }
     },
     draw(g, f) {
-      if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      if (ground) drawDepthGround(g, ground, f.w, f.h);
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
         const sk = skyKey("winter", f.weather.now, f.time.band, f.w, f.h);
@@ -911,7 +912,7 @@ export function createWinter(seed: number): Scene {
       // 3/4 시점의 지평선 띠(위 12%) — 흰 언덕·나목 줄·안개.
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
       drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       const t = f.t;
       for (const k of twinkles) {
         const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph));

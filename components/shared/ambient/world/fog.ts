@@ -13,11 +13,11 @@
 // (밀도 f · 색 · 크기 · floor 서명)으로 캐시한다.
 
 import { groundYAt, horizonY } from "./view";
+import { depthPadding } from "./depth-render";
 
 const SCALE = 8;
 
-type FogCache = { key: string; c: HTMLCanvasElement };
-let cache: FogCache | null = null;
+const cache = new Map<string, HTMLCanvasElement>();
 
 /** 값 노이즈(2옥타브, 격자 해시) — `rng()`를 쓰지 않는다(호출 쪽 난수 흐름을 밀지 않게). */
 function vnoise(u: number, v: number, sc: number, seed: number): number {
@@ -52,7 +52,8 @@ export function fogDepth(v: number): number {
  */
 export function bakeFogField(w: number, h: number, f: number, rgb: string, floor: ((x: number) => number) | null, floorKey: string): HTMLCanvasElement {
   const key = `${w}:${h}:${f.toFixed(3)}:${rgb}:${floorKey}`;
-  if (cache && cache.key === key) return cache.c;
+  const cached = cache.get(key);
+  if (cached) { cache.delete(key); cache.set(key, cached); return cached; }
   const cw = Math.max(1, Math.ceil(w / SCALE));
   const ch = Math.max(1, Math.ceil(h / SCALE));
   const c = document.createElement("canvas");
@@ -102,7 +103,9 @@ export function bakeFogField(w: number, h: number, f: number, rgb: string, floor
     }
   }
   g.putImageData(im, 0, 0);
-  cache = { key, c };
+  cache.set(key, c);
+  // Both camera panels retain their own floor mask; no alternating per-frame bake.
+  while (cache.size > 4) cache.delete(cache.keys().next().value!);
   return c;
 }
 
@@ -113,6 +116,11 @@ export function drawFogField(g: CanvasRenderingContext2D, w: number, h: number, 
   g.save();
   g.imageSmoothingEnabled = true;
   g.drawImage(c, 0, 0, w, h);
+  const pad = depthPadding(g);
+  if (pad) {
+    g.drawImage(c, 0, 0, 1, c.height, -pad, 0, pad, h);
+    g.drawImage(c, c.width - 1, 0, 1, c.height, w, 0, pad, h);
+  }
   g.restore();
 }
 

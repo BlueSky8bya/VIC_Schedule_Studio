@@ -1,0 +1,42 @@
+{
+  "method": "built-in image_gen",
+  "status": "candidate-failed-technical-checks",
+  "ownerDecision": "pending",
+  "requestSha256": "819d5cafb040ca0da18aefb3c01e6f496a94afdfeac0977c7cd14cfd504f0e48",
+  "inspectedAndAttachedInputs": [
+    {
+      "source": "art-src/공통화풍참고/데이브 더 다이버/207597_218580_5945.png",
+      "path": "고정입력/화풍참고/dave-d60bb1f3.png",
+      "kind": "style-mood",
+      "sha256": "d60bb1f337098f3df81c6b50e294c381ac91beb263ade5515e9f8b296200f6fb",
+      "reason": "밝고 차분한 장면 분위기만. 바다·인물·UI·고유 구도 복제 금지."
+    },
+    {
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/,jx.jpg",
+      "path": "고정입력/화풍참고/acnh-160a43b6.jpg",
+      "kind": "style-mood",
+      "sha256": "160a43b62c8ab57d6021f14d5da23aa17ff99439ddfd42fc5391362c95ca2bbe",
+      "reason": "높은 3/4 시점과 열린 봄 잔디 공간감만. 3D 재질·물체·UI·고유 구도 복제 금지."
+    }
+  ],
+  "outputs": [
+    {
+      "layer": "far",
+      "path": "art-src/배경층/초원/작업회차/20260910-봄-깊이층-시안01/원본/backdrop-meadow-spring-far.png",
+      "sha256": "84d76f63ba3207365081d7c4293036924ab1d61f788fbbdfb678fe4e972214b6"
+    },
+    {
+      "layer": "ground",
+      "path": "art-src/배경층/초원/작업회차/20260910-봄-깊이층-시안01/원본/backdrop-meadow-spring-ground.png",
+      "sha256": "423cd635daad3d190cc225f1356246c6aa5b86ab20eada79fa90d714d531a3fd"
+    },
+    {
+      "layer": "frame",
+      "path": "art-src/배경층/초원/작업회차/20260910-봄-깊이층-시안01/원본/backdrop-meadow-spring-frame.png",
+      "sha256": "2c6b928f063d9322cba58308044cc33b35d230065a766ce2ad1b8340741bf7b5"
+    }
+  ],
+  "normalization": "not performed: invalid RGB checkerboard backgrounds, palette and grid",
+  "runtime": "not connected",
+  "published": false
+}

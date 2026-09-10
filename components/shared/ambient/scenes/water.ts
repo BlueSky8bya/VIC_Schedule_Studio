@@ -6,6 +6,8 @@ import { makeCanvas, rng, TAU } from "./util";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 
 import type { Light } from "../world/light";
+import { withDepthLayer } from "../world/depth-render";
+import { DEPTH_PAD } from "../world/depth";
 export type WaterPalette = { far: string; near: string; web: string; foam: string };
 
 /** 계절·깊이별 물빛. deep = 깊은 바다(진남색, caustic 거의 없음). */
@@ -161,6 +163,10 @@ export function drawRainRings(g: CanvasRenderingContext2D, rings: RainRing[], sq
  * 하늘 오버레이의 두께(`skyAlpha`)가 정한다: 하늘이 덮일수록 물도 덮인다. 안개면 하늘의 안개색으로 물 상단을 눕혀 수평선을 지운다.
  * 전폭 1px 선 금지(ADR-0017 ⑰) — 40~160px 마디 사이를 20~35% 비우고 α를 x별로 흔든다. */
 export function drawHorizonGlow(g: CanvasRenderingContext2D, w: number, top: number, seed: number, L: Light) {
+  withDepthLayer(g, "far", () => drawHorizonGlowContent(g, w, top, seed, L));
+}
+
+function drawHorizonGlowContent(g: CanvasRenderingContext2D, w: number, top: number, seed: number, L: Light) {
   const k = Math.max(0, Math.min(1, L.glint)) * (1 - Math.min(0.85, L.skyAlpha));
   // 안개: 띠를 끄고 물 상단을 하늘의 안개색으로 눕힌다(GRAMMAR §4 "안개 = 수평선 사라짐").
   if (L.hazeRgb && L.hazeK >= 1.5) {
@@ -168,7 +174,7 @@ export function drawHorizonGlow(g: CanvasRenderingContext2D, w: number, top: num
     hg.addColorStop(0, `rgb(${L.hazeRgb} / 0.55)`);
     hg.addColorStop(1, `rgb(${L.hazeRgb} / 0)`);
     g.fillStyle = hg;
-    g.fillRect(0, top - 2, w, 28);
+    g.fillRect(-DEPTH_PAD, top - 2, w + DEPTH_PAD * 2, 28);
     return;
   }
   // **물 상단을 하늘에 잇는다**(라운드 15 2차): `bakeWater`가 수평선 아래 22px에 굽는 하늘빛은 **상수**라, 조명 패스가 하늘만 어둡게
@@ -185,7 +191,7 @@ export function drawHorizonGlow(g: CanvasRenderingContext2D, w: number, top: num
     vg.addColorStop(0.35, `rgb(${veil} / ${Math.min(0.4, L.skyAlpha * 0.7).toFixed(3)})`);
     vg.addColorStop(1, `rgb(${veil} / 0)`);
     g.fillStyle = vg;
-    g.fillRect(0, top - 1, w, 61);
+    g.fillRect(-DEPTH_PAD, top - 1, w + DEPTH_PAD * 2, 61);
   }
   if (k < 0.05) return;
   const r = rng(seed * 977 + 31);

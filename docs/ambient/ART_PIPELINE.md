@@ -62,6 +62,12 @@ plan은 정확한 source→destination·해시·이유를 담은 새 receipt를 
 
 ## 새 요청·납품
 
+### 배경층 1단계 한정 시안
+
+봄 초원 실제 적용은 이후 소유자 지시로 [ADR-0023](../agent/decisions/ADR-0023-spring-meadow-source-composition.md)의 원본 한 장·공개 좌표 마스크 경로를 사용한다. 기존 후보를 투명 검사 통과로 바꾼 것이 아니다. 배경 runtime 계약은 `art/backdrop-manifest.ts`이며 객체 manifest/normalize/promote 경로와 분리된다.
+
+봄 초원 후보만 준비하는 로컬 명령은 `node scripts/ambient-backdrop-pilot.mjs request <한글·숫자 회차>`다. `scripts/lib/ambient-backdrop-spec.mjs`의 직사각 후보 계약과 두 게임의 색인 기반 분위기 참고를 고정한다. `node scripts/ambient-backdrop-inspect.mjs <run>`은 alpha·색 수·4px 블록을 읽기 전용으로 검사한다. 후보는 기존 객체 manifest/catalogue/promote 경로에 등록되지 않는다. 일반 배경 manifest·사계절 묶음·정규화·loader 구현 완료와 혼동하지 않는다. [첫 시안 결과와 한계](rounds/ROUND-19-meadow-pilot.md).
+
 ```powershell
 # 예시: 소나무 변형 2·3의 계절팩. dry는 쓰지 않는다.
 npm run art:pipeline -- request tree-pine --run 20260909-파일럿-02 --variants 2,3 --dry

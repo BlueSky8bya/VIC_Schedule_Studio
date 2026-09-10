@@ -1,3 +1,4 @@
+import { drawDepthGround } from "../world/depth-render";
 // 깊은 바다(2026-09-06 소유자 지시) — **물속에 들어가 있는 옆모습 시점**. 다른 열 화면은 3/4 부감이지만 여기만은
 // 카메라가 물 안에 있다: 위는 수면 쪽(밝다), 아래는 심연(어둡다), 가로는 그냥 옆이다. 그래서
 //  · 바닥 눌림(GROUND_SQUASH)·지평선·거리 축소(depthScale)를 쓰지 않는다 — 아래로 갈수록 "가까운" 게 아니라 **깊은** 것이다.
@@ -215,7 +216,7 @@ export function createDeep(seed: number): Scene {
     },
     draw(g, f) {
       const t = f.t;
-      if (bg) g.drawImage(bg, 0, 0, f.w, f.h);
+      if (bg) drawDepthGround(g, bg, f.w, f.h, true, "both");
       // **시간대만 읽는다**(2026-09-06 라운드 10, 소유자 우선순위 A + 검토 A·B·C 동일 의견). 이 방은 계절·날씨에 여전히 봉인이다
       // (`sealed()` 유지 — 엔진 입자·대기 안개·조명 패스를 건너뛴다). 그러나 장면이 **수면 빛줄기 4개**를 늘 그리는 이상
       // "밤낮이 없다"와 "태양 기둥이 있다"는 동시에 참일 수 없었다 — 새벽 2시의 태양 기둥이 모순이었다(C). BIOME_GRAMMAR §11이
@@ -235,7 +236,7 @@ export function createDeep(seed: number): Scene {
         g.save();
         g.globalCompositeOperation = "multiply";
         g.fillStyle = dim;
-        g.fillRect(0, 0, f.w, f.h * 0.34);
+        g.fillRect(-32, -32, f.w + 64, f.h * 0.34 + 32);
         g.restore();
       }
       if (!asked) {
@@ -366,7 +367,7 @@ export function createDeep(seed: number): Scene {
       dg.addColorStop(0, "rgb(4 10 20 / 0)");
       dg.addColorStop(1, "rgb(3 8 16 / 0.5)");
       g.fillStyle = dg;
-      g.fillRect(0, f.h * 0.34, f.w, f.h * 0.66);
+      g.fillRect(-32, f.h * 0.34, f.w + 64, f.h * 0.66 + 32);
     },
     // 계절·날씨가 닿지 않는 방 — 엔진의 날씨 입자·대기 안개·조명 패스를 전부 건너뛴다. **시간대는 장면이 스스로 읽는다**(라운드 10, 위 draw).
     sealed: () => true,

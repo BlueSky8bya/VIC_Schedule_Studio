@@ -1,3 +1,5 @@
+import { drawDepthGround } from "../world/depth-render";
+import { DEPTH_PAD } from "../world/depth";
 // 여름 — 물결(.gs-tide, CSS/SVG caustic) 위의 캔버스: ① 포인터 **항적**(제트스키) ② 물 위에 둥둥 뜬 **오리**(늘) ③ 가끔
 // 가장자리에서 **밀려오는 튜브**(랜덤 이벤트) — 둘 다 집어 끌고 던질 수 있고, 빨리 끌면 제 항적을 남긴다. ④ 물 밑 **물고기 그림자**.
 //
@@ -1517,7 +1519,11 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         L.stroke();
       }
       L.restore();
-      if (waterBase) g.drawImage(waterBase, 0, 0, f.w, f.h);
+      // Shore is translucent between sky and water: give it a real opaque water
+      // backing instead of revealing page paper or a side strip during parallax.
+      g.fillStyle = waterPalette(season).far;
+      g.fillRect(-DEPTH_PAD, -DEPTH_PAD, f.w + 2 * DEPTH_PAD, f.h + 2 * DEPTH_PAD);
+      if (waterBase) drawDepthGround(g, waterBase, f.w, f.h);
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
       g.drawImage(lo.c, 0, 0, f.w, f.h);
@@ -1528,7 +1534,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         ig.addColorStop(0, "rgb(240 246 252 / 0.72)");
         ig.addColorStop(1, "rgb(226 236 246 / 0.6)");
         g.fillStyle = ig;
-        g.fillRect(0, iy, f.w, f.h - iy);
+        g.fillRect(-DEPTH_PAD, iy, f.w + DEPTH_PAD * 2, f.h - iy + DEPTH_PAD);
         // 균열 — 같은 각도의 평행선은 "그어 놓은 빗금"이다. 결정적 rng로 방향을 흩고 가지를 친다.
         // 굵기 일정한 선이 허공에서 뚝 끝나면 "남은 스트로크"로 읽힌다(검토 라운드2 경계 #12) →
         // 진행할수록 가늘어지고 옅어져 **0으로 사라진다**. 가지도 더 가늘게.
@@ -1582,13 +1588,22 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       // "지는 해의 아랫부분이 언덕 사면에 얹혀 있다"). 상한도 언덕 마루 위로 잡는다.
       drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
       if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon(season, f.w, f.h, 1);
-      g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      drawDepthGround(g, horizon, f.w, horizon.height, true);
       // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
-      if (shore) g.drawImage(shore, 0, horizonY(f.h));
+      if (shore) {
+        g.save();
+        g.translate(0, horizonY(f.h));
+        drawDepthGround(g, shore, f.w, shore.height, false, "none");
+        g.restore();
+      }
       // 연잎은 **물 폴리곤 안**으로 사상한다(라운드 17 P0) — 옛 전역 지면 매핑은 60%를 근경 기슭 아래에, 나머지를 뭍에 놓았다.
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true, waterYAt });
       // 열린 물의 **바탕**(기슭 반영·물풀 섬)만 여기서. 서 있는 앵커(바위·통나무)는 아래 y 대열에서 그린다.
-      if (midWater) g.drawImage(midWater, 0, shoreY(), f.w, midWater.height);
+      if (midWater) {
+        g.save(); g.translate(0, shoreY());
+        drawDepthGround(g, midWater, f.w, midWater.height, false, "none");
+        g.restore();
+      }
       // **바람이 물낯을 세운다**(2026-09-07, W-1 ①). 민물은 파도 함수를 하나도 안 써서 바람 날씨에도 수면이 정지판이었다
       // (`currentLight().wind` 소비자 0개 — 바다·해안은 이미 쓴다). 잔잔한 못이 기본이므로 **맑음(.08)·안개(.04)에는 그리지
       // 않는다** — 흐림(.14) 이상에서만 결이 선다. 얼음판(겨울)에는 없다.
@@ -1760,7 +1775,12 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         g.fill();
       }
       // 가까운 기슭 — 모든 생물보다 **앞**(연못이 양쪽 기슭 사이에 놓인다). 화면 아래에서 잘린다.
-      if (nearBank) g.drawImage(nearBank, 0, f.h - nearBank.height, f.w, nearBank.height);
+      if (nearBank) {
+        g.save();
+        g.translate(0, f.h - nearBank.height);
+        drawDepthGround(g, nearBank, f.w, nearBank.height, false, "bottom");
+        g.restore();
+      }
     },
     pointerDown(f, onBackground) {
       const { x, y } = f.p;

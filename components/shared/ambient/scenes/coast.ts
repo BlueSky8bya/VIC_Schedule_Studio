@@ -1,3 +1,4 @@
+import { drawDepthGround } from "../world/depth-render";
 // 해안 셋(2026-09-04, PLAN-004 §3.6) — 갯벌(tidal)·모래해안(sandy)·암석해안(rocky). 공통 골격: 3/4 시점의 수평선(위 12%) 아래 바다가 화면
 // 36%까지 내려오고, 그 아래 2/3가 뭍… 이 아니라 **위 1/3 뭍 + 아래 2/3 바다**? — 소유자 ⓪ "바닷가는 바다만 보여도 된다"를 따르되, 해안은
 // 뭍이 있어야 해안이다: 3/4 시점에선 관찰자가 뭍에 서서 바다를 보는 구도가 자연스러워 **뭍이 아래(가까움), 바다가 위(멀리, 수평선까지)**.
@@ -1276,8 +1277,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         }
         drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
-      if (water) g.drawImage(water, 0, 0, f.w, f.h);
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      if (water) drawDepthGround(g, water, f.w, f.h);
+      if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       // 수평선 반사 — 매 프레임, 조명이 정한다(라운드 15). 구운 흰 자를 대신한다.
       drawHorizonGlow(g, f.w, top(), seed, currentLight());
       // 별·달·해 — 수평선 위 하늘 전부(가릴 것이 없다). 해는 수평선 가까이.

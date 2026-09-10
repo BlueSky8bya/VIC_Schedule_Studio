@@ -1,3 +1,4 @@
+import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 먼바다(2026-09-04, PLAN-004 §3.6). 뭍이 없다(소유자 ⓪). 3/4 시점: 지평선 띠는 수평선 + 하늘, 그 아래로
 // 너울과 거품 선이 관찰자 쪽으로 내려온다. 큰 너울 2겹·햇빛 반짝임·물고기 떼 그림자(얇은 판).
 // **깊은 바다는 여기 없다** — 2026-09-06부터 `scenes/deep.ts`로 갈라졌다(소유자: 물속에 들어간 옆모습 시점 +
@@ -40,7 +41,7 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
 
   // 먼바다만 수평선을 지평선보다 .06h 내린다(검토 A: "가릴 것이 없는 진짜 수평선 — 하늘이 넓을수록 산다",
   // 권고 hz .36). 세계 좌표(toScreen)는 전역 값을 그대로 쓰고 **이 장면의 물 윗선**만 내린다.
-  const top = () => horizonY(h) + h * 0.06;
+  const top = () => horizonY(h);
   const pal = waterPalette(season);
 
   function bake(dpr: number) {
@@ -132,6 +133,8 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
     },
     draw(g, f) {
       const t = f.t;
+      g.fillStyle = waterPalette(season).far;
+      g.fillRect(-32, -32, f.w + 64, f.h + 64);
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판 + 별·달·해(옛 자체 별 40개는 공용으로). 깊은 바다는 수평선이 없어 없다.
       {
         const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
@@ -142,8 +145,8 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
         }
         drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
-      if (water) g.drawImage(water, 0, 0, f.w, f.h);
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      if (water) withDepthLayer(g, "water", () => drawDepthGround(g, water!, f.w, f.h));
+      if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       drawHorizonGlow(g, f.w, top(), seed, currentLight()); // 라운드 15 — 구운 흰 자 대신 조명을 소비하는 마디 띠
       drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
       // 먼바다 = 파장 14~100m → 한 화면에 마루 여럿. 깊은 바다 = 225~624m → **큰 너울 한 번**.

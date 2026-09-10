@@ -1,0 +1,20 @@
+{
+  "method": "built-in image_gen",
+  "recordedAfterGeneration": true,
+  "request": "art-src/배경층/초원/작업회차/20260911-투명수정-시안02/request.md",
+  "promptSha256": "682245fc6c364df1c6f406a919770e615c57b6830a00b6e29d602fd40b1df6f8",
+  "inputsActuallyInspectedAndAttached": [
+    {
+      "layer": "far",
+      "path": "art-src/배경층/초원/작업회차/20260910-봄-깊이층-시안01/원본/backdrop-meadow-spring-far.png",
+      "sha256": "84d76f63ba3207365081d7c4293036924ab1d61f788fbbdfb678fe4e972214b6"
+    }
+  ],
+  "output": {
+    "path": "art-src/배경층/초원/작업회차/20260911-투명수정-시안02/원본/backdrop-meadow-spring-far.png",
+    "sha256": "7a9028feae5651d383a5b48fa4c73c65b21a61e9595e0d92b69bc6c37e8735a7"
+  },
+  "status": "rejected-alpha-retry",
+  "ownerDecision": "pending",
+  "published": false
+}

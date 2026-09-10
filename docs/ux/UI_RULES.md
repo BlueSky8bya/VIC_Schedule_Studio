@@ -28,6 +28,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Editor, settings and overlays
 
+Depth P0 amendment ([ADR-0022](../agent/decisions/ADR-0022-world-depth-and-showcase-motion.md)): seasonal scenery moves only in showcase; calendar/studio background stays still. Mobile and short coarse-pointer landscape do not mount the ambient engine. Keep the current shared settings; graphics preference defaults to auto and explicit max/lite/off remain respected. A desktop without mouse/trackpad input shows centered scenery without simulated pointer drift.
+
 - UI-19: (편집 팝오버) Editor popover prefers left of the selected date; flip only when space is insufficient. Reason: right-side popovers obscure the next day in chronological editing. Keep anchoring, viewport clamp, manual drag and leader line consistent through zoom. Evidence: `placeEditorPopover`.
 - UI-20: (확대·드래그 좌표) Convert measured screen coordinates into local coordinates before CSS absolute/SVG positioning under studio zoom. Direct DOM gesture writes require direct DOM synchronization on release even when React state compares equal. Reason: state equality does not erase a manually changed style.
 - UI-21: (설정) Settings have one shared `StudioSettingsList`: web settings modal, mobile role-badge slot. All new preferences enter this list. Web settings use modal history/focus/scroll-lock/Esc behavior and custom `RhhSelect`, not native selects.

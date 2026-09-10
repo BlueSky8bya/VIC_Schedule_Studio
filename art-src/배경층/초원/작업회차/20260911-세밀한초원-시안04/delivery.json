@@ -1,0 +1,30 @@
+{
+  "method": "built-in image_gen",
+  "previewOnly": true,
+  "ownerDecision": "pending for this new image",
+  "inputRoles": [
+    "previous concept: keep palette/view/open center",
+    "user attachment: atmosphere only"
+  ],
+  "inspectedAndAttached": [
+    {
+      "path": "고정입력/이전초원.png",
+      "sha256": "6de9d31a3249fb5db1050b55383b0abadaf652df84e66eb0e5a8f04398e0b4bf"
+    },
+    {
+      "path": "고정입력/사용자분위기참고.png",
+      "sha256": "d60bb1f337098f3df81c6b50e294c381ac91beb263ade5515e9f8b296200f6fb"
+    }
+  ],
+  "prompt": {
+    "path": "request.md",
+    "sha256": "c5a8dcf4a67b667aba9892e3e5bb150e9935d2011090854eb281f3ceedc1fd4c"
+  },
+  "output": {
+    "path": "원본/봄초원-세밀한시안.png",
+    "sha256": "36a9fae9d10001c3d183bef86095844be12f146b859f81821b754689e9f2104a"
+  },
+  "pixelDensity": "approximately 2x linear detail requested; visual direction, not exact grid conformity measured",
+  "runtimeIntegration": false,
+  "published": false
+}

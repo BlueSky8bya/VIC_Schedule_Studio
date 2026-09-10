@@ -11,6 +11,7 @@
 //  · 그리기 순서는 발 위치 y-sort(뒤가 앞에 가려진다).
 
 import { drawFogField } from "./fog";
+import { depthPadding, withDepthLayer } from "./depth-render";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
 import { isNeutralMul, type Light } from "./light";
@@ -122,7 +123,8 @@ export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w:
   }
   g.save();
   g.fillStyle = grad;
-  g.fillRect(0, start, w, hazeEndY(h) - start + 2);
+  const pad = depthPadding(g);
+  g.fillRect(-pad, start, w + 2 * pad, hazeEndY(h) - start + 2);
   g.restore();
 }
 
@@ -146,6 +148,7 @@ export function hazeAt(y: number, h: number, light?: Light, season: SeasonKey = 
  *  점심·맑음은 다섯 개 전부 건너뛴다(항등) — 옛 파이프라인과 픽셀이 같다. 캔버스는 장면이 전면을 채워 불투명하다(multiply 안전). */
 export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number, L: Light, fogFloor: ((x: number) => number) | null = null, fogFloorKey = "") {
   const hz = horizonY(h);
+  const pad = depthPadding(g);
   g.save();
   if (L.groundFog > 0) {
     // **안개 밀도장**(2026-09-06 라운드 11, 우선순위 E — 라운드 10 C #3 처방). 옛 코드는 화면 좌표 4-stop 세로 그라데이션 +
@@ -154,7 +157,7 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     // (장면의 `fogFloor(x)` 대비 높이 — 저지대 체류) × 결(노이즈 윗변)을 1/8 해상에 굽는다. 안개 뭉치(입자층)는 그대로 그 위.
     drawFogField(g, w, h, L.groundFog, L.hazeRgb || "228 232 234", fogFloor, fogFloorKey);
   }
-  if (L.skyAlpha > 0) {
+  if (L.skyAlpha > 0) withDepthLayer(g, "sky", () => {
     // 하늘 오버레이는 **지평선 바로 아래(hz + .06h)에서 끝난다** — 옛 hz + .16h는 산 ①·② 봉우리(y 150~300)까지 덮어
     // 하늘↔①↔② 단차를 눌렀다(라운드 2 실측 5.6/5.9 → 2.5/2.2). 봉우리는 multiply만 받는다.
     // **지평선 광**(QA 라운드 3, AMB-D1-01): 하늘은 천정이 어둡고 지평선 쪽이 밝다(대기 산란). 오버레이 색을 아래로 갈수록
@@ -171,7 +174,7 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     gs.addColorStop(0.82, `rgb(${glow} / ${(L.skyAlpha * 0.25).toFixed(3)})`);
     gs.addColorStop(1, `rgb(${glow} / 0)`);
     g.fillStyle = gs;
-    g.fillRect(0, 0, w, end);
+    g.fillRect(-pad, -pad, w + 2 * pad, end + pad);
     // **원경 띠 어둡힘**(라운드 3 AMB-D1-01, 2차): 지평선 바로 아래의 먼 것(산 ①·②, 먼 언덕·나무 줄, 먼 수면)은 노을·밤에 **하늘보다
     // 어두운 실루엣**이다 — 하늘만 오버레이로 어둡히고 ①은 multiply만 받으면 노을·밤에 ①이 하늘보다 밝아 층이 뒤집힌다(라운드 2
     // 실측 2.2~4.0 → 라운드 3 1차 −3.4). ①·②를 같은 α로 하늘색 쪽으로 눌러(①↔② 비례 유지) ③ 앞에서 사라진다. 점심·맑음 0.
@@ -186,7 +189,7 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     gf.addColorStop(0.45, `rgb(${L.sky} / ${fa.toFixed(3)})`);
     gf.addColorStop(1, `rgb(${L.sky} / 0)`);
     g.fillStyle = gf;
-    g.fillRect(0, hz, w, fEnd - hz);
+    g.fillRect(-pad, hz, w + 2 * pad, fEnd - hz);
     // **하늘의 방향**(라운드 4 A#2 "노을 하늘 좌(30,10) = 우(1370,10), 방향 0 → 세피아 필터로 읽힘"): 해·달 쪽(reflect.x)은 밝은 판(glow)으로
     // 밝히고 반대쪽은 하늘색으로 한 번 더 눌러, 지평선 위 띠가 좌우로 기울어진 빛을 갖는다. 세기 skyK(노을 .32 · 새벽 .16 · 저녁 .14 ·
     // 밤 .1, 흐림·비·안개 0). 점심·아침은 0 — 항등. 색은 이미 오행 팔레트(회장미·청회)의 밝은/어두운 판이라 새 색을 들이지 않는다.
@@ -201,9 +204,9 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
       for (const [p, c] of stops) gh.addColorStop(p, c);
       // 세로 범위는 하늘 오버레이와 같다(0 ~ end) — 원경 띠는 이미 far-band가 눌렀다.
       g.fillStyle = gh;
-      g.fillRect(0, 0, w, end);
+      g.fillRect(-pad, -pad, w + 2 * pad, end + pad);
     }
-  }
+  });
   if (!isNeutralMul(L.mul)) {
     // 지면 노출은 세로 그라데이션 — 지평선 쪽(원경)은 35% 덜 누른다. 밤의 원경은 하늘빛을 받아 상대적으로 밝고(대기 원근),
     // 같은 비율로 누르면 산 층 단차가 비례로 줄어 밤에 ①↔②가 사라진다(MOUNTAIN §4 밤 ≥ 6L).
@@ -218,7 +221,7 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     gm.addColorStop(1, `rgb(${L.mul[0]} ${L.mul[1]} ${L.mul[2]})`);
     g.globalCompositeOperation = "multiply";
     g.fillStyle = gm;
-    g.fillRect(0, 0, w, h);
+    g.fillRect(-pad, -pad, w + 2 * pad, h + 2 * pad);
     g.globalCompositeOperation = "source-over";
   }
   // **빛의 방향 — 지면에도**(2026-09-06 라운드 10, 검토 C #1 처방 ①). 여섯 띠의 지면 변화가 6/7 바이옴에서 전역 색보정
@@ -256,10 +259,10 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
         const ya = y0 + ((y1 - y0) * i) / steps;
         const yb = y0 + ((y1 - y0) * (i + 1)) / steps;
         g.globalAlpha = (i + 1) / steps;
-        g.fillRect(0, ya, w, yb - ya + 0.5);
+        g.fillRect(-pad, ya, w + 2 * pad, yb - ya + 0.5);
       }
       g.globalAlpha = 1;
-      g.fillRect(0, y1, w, h - y1);
+      g.fillRect(-pad, y1, w + 2 * pad, h - y1 + pad);
       g.globalCompositeOperation = "source-over";
     }
   }
@@ -276,23 +279,23 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
       const ya = y0 + ((y1 - y0) * i) / steps;
       const yb = y0 + ((y1 - y0) * (i + 1)) / steps;
       g.globalAlpha = (L.ground.alpha * (i + 1)) / steps;
-      g.fillRect(0, ya, w, yb - ya + 0.5);
+      g.fillRect(-pad, ya, w + 2 * pad, yb - ya + 0.5);
     }
     g.globalAlpha = L.ground.alpha;
-    g.fillRect(0, y1, w, h - y1);
+    g.fillRect(-pad, y1, w + 2 * pad, h - y1 + pad);
     g.globalAlpha = 1;
   }
   if (L.desat > 0) {
     g.globalCompositeOperation = "saturation";
     g.globalAlpha = L.desat;
     g.fillStyle = "rgb(128 128 128)";
-    g.fillRect(0, 0, w, h);
+    g.fillRect(-pad, -pad, w + 2 * pad, h + 2 * pad);
     g.globalAlpha = 1;
     g.globalCompositeOperation = "source-over";
   }
   if (L.tint.alpha > 0) {
     g.fillStyle = `rgb(${L.tint.rgb} / ${L.tint.alpha.toFixed(3)})`;
-    g.fillRect(0, 0, w, h);
+    g.fillRect(-pad, -pad, w + 2 * pad, h + 2 * pad);
   }
   g.restore();
 }

@@ -1,6 +1,7 @@
 /* ══ 앰비언트 계절 레이어(2026-09-04, ADR-0017 개정 2) — components/shared/ambient/* ═══════════════════
    봄·여름·가을·겨울 모두 전체 화면 캔버스 장면(.gs-season, season-canvas.tsx + scene-engine.ts).
-   게이트: gfx≠soft ∧ **계절 배경 스위치 ON** ∧ 웹(≥641px).
+   게이트: gfx≠soft ∧ **계절 배경 스위치 ON** ∧ 웹(≥641px, 가로 휴대폰 제외).
+   Responsive policy: lib/ui/breakpoints.ts MOBILE_QUERY와 동일한 모바일 기준.
 
    ⚠ '생동감 있는 동작'(data-reduce-motion)은 **게이트가 아니다**(2026-09-05 소유자: "생동감 있는 동작을
    OFF 하면 계절 배경도 아예 사라지는데 이건 별개다"). 그 스위치는 말 그대로 **움직임**만 관리한다 —
@@ -501,7 +502,7 @@ html[data-reduce-motion] .biome-dot.on { animation: none; }
 }
 html[data-reduce-motion] .biome-pill,
 html[data-reduce-motion] .biome-chev.bounce { animation: none; }
-@media (max-width: 640px) {
+@media (max-width: 640px), (max-height: 640px) and (pointer: coarse) {
   .biome-chev, .biome-map, .biome-pill { display: none; }
 }
 
@@ -686,7 +687,7 @@ html[data-reduce-motion] .viewer-ambient-ctl.rail-showcase {
   transition: none;
 }
 /* 모바일엔 배경 자체가 없다 — 기본 규칙의 display:none을 카드가 덮지 않게 한 번 더 못 박는다. */
-@media (max-width: 640px) {
+@media (max-width: 640px), (max-height: 640px) and (pointer: coarse) {
   .viewer-ambient-ctl.slot-showcase,
   .viewer-ambient-ctl.rail-showcase {
     display: none;
@@ -917,4 +918,16 @@ html[data-reduce-motion] .showcase-set {
   color: var(--seg-on-accent-ink);
   opacity: 1;
   cursor: default;
+}
+
+/* 가로 휴대폰도 모바일: 앞쪽 데스크톱/카드 규칙보다 뒤에서 동일 게이트 적용. */
+@media (max-width: 640px), (max-height: 640px) and (pointer: coarse) {
+  html .gs-season,
+  html .showcase-btn,
+  html .showcase-exit,
+  html .showcase-gear,
+  html .showcase-set,
+  html .viewer-ambient-ctl {
+    display: none !important;
+  }
 }

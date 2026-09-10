@@ -1,11 +1,13 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-09-10 (KST)
+Last Updated: 2026-09-11 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed results live in topic records. Historical snapshots are evidence, not startup instructions.
 
 ## Current Objective
+
+Spring PC integration and push are authorized. The finer 1536×1024 source supplies ground/distant trees; engine sky/weather and low foreground remain (ADR-0023 replaces failed transparent delivery). Local checks passed; push and deployed inspection are next. [Release evidence](../ambient/rounds/ROUND-20-spring-release.md). Other seasons await expansion; deep stays sealed. [P0 evidence/limits](../ambient/rounds/ROUND-18-depth-P0.md).
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -13,6 +15,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
+| AMB-DEPTH-P1 | Spring PC local checks complete | Push, inspect deployment, then owner reviews the spring appearance before expansion | [Release evidence](../ambient/rounds/ROUND-20-spring-release.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |
@@ -45,4 +48,4 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 2026-09-10 (earlier): reference attachment shipped and pushed through `a6a20777`. The kickoff note `20260910-next-session-kickoff.md` is wrong where it calls work-order A-1 unfinished: `RULE_MIGRATION.md` exists from `27abd6dd`/`628123d5`.
 
-Automatic host hook activation, new generated-art quality, browser/device and production DB checks remain NOT VERIFIED. No image has been generated, normalized or promoted.
+Automatic host hook activation, real-device and production DB checks remain NOT VERIFIED. Spring source/runtime provenance, local browser checks and independent art reviews are recorded in ROUND-20; deployed acceptance remains separate.

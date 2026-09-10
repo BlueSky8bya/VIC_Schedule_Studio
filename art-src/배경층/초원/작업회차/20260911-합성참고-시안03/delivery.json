@@ -1,0 +1,30 @@
+{
+  "method": "built-in image_gen",
+  "recordedAfterGeneration": true,
+  "request": "art-src/배경층/초원/작업회차/20260911-합성참고-시안03/request.md",
+  "promptSha256": "9900afd0d7eceabb9423fcb84bf9cef55e828a5a394a52cd905aa876b2fcff86",
+  "inputsActuallyInspectedAndAttached": [
+    {
+      "layer": "far",
+      "path": "art-src/배경층/초원/작업회차/20260910-봄-깊이층-시안01/원본/backdrop-meadow-spring-far.png",
+      "sha256": "84d76f63ba3207365081d7c4293036924ab1d61f788fbbdfb678fe4e972214b6"
+    },
+    {
+      "layer": "ground",
+      "path": "art-src/배경층/초원/작업회차/20260910-봄-깊이층-시안01/원본/backdrop-meadow-spring-ground.png",
+      "sha256": "423cd635daad3d190cc225f1356246c6aa5b86ab20eada79fa90d714d531a3fd"
+    },
+    {
+      "layer": "frame",
+      "path": "art-src/배경층/초원/작업회차/20260910-봄-깊이층-시안01/원본/backdrop-meadow-spring-frame.png",
+      "sha256": "2c6b928f063d9322cba58308044cc33b35d230065a766ce2ad1b8340741bf7b5"
+    }
+  ],
+  "output": {
+    "path": "art-src/배경층/초원/작업회차/20260911-합성참고-시안03/원본/봄초원-합성참고.png",
+    "sha256": "6de9d31a3249fb5db1050b55383b0abadaf652df84e66eb0e5a8f04398e0b4bf"
+  },
+  "status": "visual-concept-only-not-exact-layer-composite",
+  "ownerDecision": "pending",
+  "published": false
+}

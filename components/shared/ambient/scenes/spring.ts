@@ -1,3 +1,4 @@
+import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 봄 — "풀밭을 위에서 내려다본다". 바탕(연둣빛 필름 + 클로버·작은 데이지·꽃잎 몇)은 한 번 굽고, **풀포기 층은 따로 구워**
 // 바람에 흔들린다(2026-09-04 사용자: "꽃잎이 휘날릴 때 잔디도 같이") — 가로 띠 12개로 잘라 띠마다 진행파(sin)만큼 옆으로
 // 밀어 그린다(drawImage 12번, 필터 없음). 꽃잎 바람이 불면 크게, 평소엔 여력이 있을 때 미세하게 숨쉰다.
@@ -28,6 +29,7 @@ import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
+import { MeadowBackdrop } from "../art/meadow-backdrop";
 import { behindStand, claimSpot, drawProp, propShadow, propSpots, resetPropField, scatterProps } from "../art/props";
 import { currentLight, shadowKey } from "../world/light";
 import type { DayBand } from "../world/time";
@@ -152,6 +154,8 @@ function sunAt(t: number, w: number, h: number): [number, number][] {
 export function createSpring(seed: number, variant: "spring" | "summer" = "spring"): Scene {
   const rand = rng(seed);
   const summer = variant === "summer";
+  const backdrop = summer ? null : new MeadowBackdrop();
+  let backdropVersion = -1;
   let ground: HTMLCanvasElement | null = null;
   let blades: HTMLCanvasElement | null = null;
   let gw = 0;
@@ -251,6 +255,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       const pick = g0();
       softBlob(g, g0() * w, py, (120 + g0() * 260) * pk, pick < 0.45 ? (summer ? "70 122 66" : "162 208 126") : pick < 0.75 ? (summer ? "150 194 128" : "240 250 220") : (summer ? "126 168 138" : "202 220 204"), summer ? 0.19 : 0.15, 0, GROUND_SQUASH);
     }
+    backdrop?.drawGround(g, w, h);
+    backdropVersion = backdrop?.version ?? 0;
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적(같은 g0 순서).
     // 3/4 시점: 클로버(납작)는 세로로 눌리고, 데이지·풀포기(서 있음)는 위(멀다)에서 작다. 꽃은 축척표대로 과장(SIZE.flower 26).
     const clovers = Math.round((w * h) / (summer ? 110000 : 42000)); // 봄 잔디엔 클로버가 흔하고, 여름 풀숲에선 키큰 풀에 묻힌다
@@ -774,7 +780,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03: 아침≈점심의 원인 = 점심에 구운 그림자).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
-      if (ground && (gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (ground && (backdropVersion !== (backdrop?.version ?? 0) || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       // 반딧불(여름 저녁·밤) — 수는 띠·여력으로, 느린 표류 + 가장자리 반사.
       {
         const fw = fireflyTarget(f);
@@ -1271,21 +1277,30 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     },
     draw(g, f) {
       const { t, load } = f;
-      if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      if (ground) drawDepthGround(g, ground, f.w, f.h);
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
         const sk = skyKey(variant, f.weather.now, f.time.band, f.w, f.h);
         if (!skyC || sk !== skyKeyCur) {
-          skyC = bakeSky(variant, f.weather.now, f.time.band, f.w, f.h, seed);
+          const freshDay = !summer && (f.weather.now === "clear" || f.weather.now === "wind") && (f.time.band === "morning" || f.time.band === "noon");
+          skyC = bakeSky(variant, f.weather.now, f.time.band, f.w, f.h, seed, 0,
+            freshDay ? f.time.band === "morning" ? ["150 211 239", "224 244 234"] : ["126 200 237", "202 234 236"] : undefined);
           cloudC = bakeClouds(variant, f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        if (backdrop?.ready) {
+          // The image already has its own distant grass colors. Let the engine
+          // own the sky without its old under-horizon fade whitening the field.
+          withDepthLayer(g, "sky", () => {
+            g.save(); g.beginPath(); g.rect(-32, 0, f.w + 64, horizonY(f.h)); g.clip();
+            drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now); g.restore();
+          });
+        } else drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
       }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개.
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
       drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
-      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      if (!backdrop?.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {
@@ -1623,8 +1638,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       press(f.p.x, f.p.y, f.load);
       return true;
     },
+    dispose() { backdrop?.dispose(); },
     debug() {
       return {
+        backdrop: backdrop?.debug() ?? null,
         spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)]),
         flies: flies.map((b) => [Math.round(b.x), Math.round(b.y), b.flee > 0 ? 1 : 0, b.state]),
         sparks: sparks.length,

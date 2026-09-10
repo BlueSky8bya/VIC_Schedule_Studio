@@ -56,7 +56,19 @@ r01/compare-before-after/<sid>/<file>.png + compare.md
 
 프레임은 **캔버스만**(1400×860, DPR 1, 페이지 배경색 위 합성) — 크롬·폰트가 없어 OS와 무관하다.
 
-## 하지 않는 것
+## Depth P0 checks
+
+Use an identified production build with `VISUAL_TEST_FIXTURE=1`. These scripts never start or rebuild a server:
+
+- `node scripts/ambient-qa/depth-check.mjs --build <label>`: 44 combinations × 3 pointer positions, deterministic advances, deep season/weather seal, still gates, cache stability, pan timing and mobile mount exclusion. `--only` selects suites; `--width 1024 --height 768` changes viewport and pointer positions. `--baseline` records original matrix screenshots without pretending the old build exposes depth fields.
+- `node scripts/ambient-qa/depth-perf.mjs --phase after --build <label> --modes max --seconds 30`: raw RAF, drawImage calls and estimated canvas allocations. Run alone, separately from captures/builds/tests; use identical browser/viewport/CPU/headful settings for before/after. `--cpu 4` and `--headful` describe separate environments.
+- `node scripts/ambient-qa/depth-load-check.mjs --phase after --build <label>`: synthetic 35ms contention, automatic stop and actual-click bounded recovery; max/lite and stationary gates. Run alone.
+- `node scripts/ambient-qa/depth-edges.mjs --build <label>`: 4K/DPR1.5 allocation/opacity, pan edges, mouse/touch/leave, zoom/scroll actual hit and mobile breakpoints. `--only large,pan,input,mobile` selects suites. Mobile evidence is emulation.
+- Fixture controls: `gfx=auto|max|lite|off`, `reduced=0|1`, `load=auto` (no forced load), `camera=plain` (stationary). Mobile reports `data-biome-fixture-disabled=mobile`; it must not wait for an engine that should never mount.
+
+PNG/JSON evidence is local under `.scratch-pw/qa/r18-depth`. Canvas byte estimates exclude decoded images and GPU duplication. No database or genuine-device claims follow from these fixtures.
+
+## Existing tooling limits
 
 - 실제 화면(`/`, `/studio`)의 시드는 그대로 로드마다 다르다(결정성은 fixture 전용).
 - 전 조합 캡처(≈1,000)는 하지 않는다 — 전수는 P2 지표(`metrics.mjs`, 미구현), 심화는 16 시나리오.

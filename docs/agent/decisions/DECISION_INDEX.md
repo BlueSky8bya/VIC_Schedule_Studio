@@ -8,6 +8,8 @@
 
 | ADR | Status | Area | Decision | Revisit Trigger |
 |---|---|---|---|---|
+| [0023](ADR-0023-spring-meadow-source-composition.md) | Accepted | 봄 초원 적용 | 선호 원본 한 장을 F/M으로 합성, N은 기존 프레임. PC 비율·고정 면적·정지 화면 갱신. 봄만 먼저 배포 | 사계절 아트 또는 새 원본/비율 계약 |
+| [0022](ADR-0022-world-depth-and-showcase-motion.md) | Accepted | 배경 깊이·움직임 | S/F/M/N 합성, 감상에서만 움직임, 모바일 엔진 미생성, 기존 auto 여력 기반 축소·정지·복구. 심해 계절/날씨 봉인 유지 | P1 이미지 도입 또는 측정된 성능 예산 초과 |
 | [0001](ADR-0001-public-private-server-boundary.md) | Accepted | 보안 경계 | 공개/비공개는 **서버에서** 분리(전용 public-loader + 명시적 DTO). CSS로 숨기지 않음 | 공개 API에 새 소비자가 생기거나 캐시 계층을 바꿀 때 |
 | [0002](ADR-0002-private-content-encryption.md) | Accepted | 프라이버시 | 비공개 일정 본문 AES-256-GCM 저장 암호화, 키=운영자 에스크로우(E2EE 아님) | 위협모델에 "서버 운영자 불신"이 추가되면 |
 | [0003](ADR-0003-owner-dual-binding.md) | Accepted | 인증/권한 | 오너 = `OWNER_EMAIL`(앱) **AND** `calendars.owner_id`(RLS) 이중 바인딩 | 멀티 캘린더(스트리머 2인 이상) 지원 시 |
