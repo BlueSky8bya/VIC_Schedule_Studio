@@ -13,12 +13,12 @@
 
 | 범주 | 파일 경로 | 라이선스 | 작성자 | 출처 |
 |---|---|---|---|---|
-| 나무 | `art-src/나무/소나무/레퍼런스/itch-karsiori-spruce-pack-10-types.png` | CC0 1.0 Universal | karsiori | https://karsiori.itch.io/spruce-tree-pack-pixel-art-animated |
-| 나무 | `art-src/나무/소나무/레퍼런스/itch-karsiori-spruce-pack-6-color-variants.png` | CC0 1.0 Universal | karsiori | https://karsiori.itch.io/spruce-tree-pack-pixel-art-animated |
-| 나무 | `art-src/나무/소나무/레퍼런스/itch-karsiori-spruce-pack-snow-edition.png` | CC0 1.0 Universal | karsiori | https://karsiori.itch.io/pixel-art-spruce-tree-pack-animated |
-| 나무 | `art-src/나무/소나무/레퍼런스/oga-arlantr-pine.png` | CC0 | ArlanTR | https://opengameart.org/content/pine-pixel-art |
-| 나무 | `art-src/나무/소나무/레퍼런스/oga-isaiah658-pine-tree-16x16.png` | CC0 | isaiah658 | https://opengameart.org/content/pine-tree-16x16 |
-| 나무 | `art-src/나무/소나무/레퍼런스/oga-pistachio-iso_pines.png` | CC0 | pistachio | https://opengameart.org/content/pixel-pine-tree-assets-10-pack |
-| 나무 | `art-src/나무/소나무/레퍼런스/oga-ramsay-pixelled-trees.png` | CC0 | Robert Ramsay | https://opengameart.org/content/pixelled-trees |
-| 나무 | `art-src/나무/소나무/레퍼런스/oga-rubberduck-isometric-plants.png` | CC0 | rubberduck | https://opengameart.org/content/free-isometric-plants-pack |
-| 나무 | `art-src/나무/소나무/레퍼런스/oga-theness-forest-objects.png` | CC0 | TheNess | https://opengameart.org/content/sprites-from-old-project-forest-objects-and-character |
+| 나무 | `art-src/나무/소나무/레퍼런스/나무모음-여러수종-ramsay.png` | CC0 | Robert Ramsay | https://opengameart.org/content/pixelled-trees |
+| 나무 | `art-src/나무/소나무/레퍼런스/소나무모음-10종-karsiori.png` | CC0 1.0 Universal | karsiori | https://karsiori.itch.io/spruce-tree-pack-pixel-art-animated |
+| 나무 | `art-src/나무/소나무/레퍼런스/소나무모음-6색변형-karsiori.png` | CC0 1.0 Universal | karsiori | https://karsiori.itch.io/spruce-tree-pack-pixel-art-animated |
+| 나무 | `art-src/나무/소나무/레퍼런스/소나무모음-눈덮임-karsiori.png` | CC0 1.0 Universal | karsiori | https://karsiori.itch.io/pixel-art-spruce-tree-pack-animated |
+| 나무 | `art-src/나무/소나무/레퍼런스/소나무모음-세밀한솔잎-pistachio.png` | CC0 | pistachio | https://opengameart.org/content/pixel-pine-tree-assets-10-pack |
+| 나무 | `art-src/나무/소나무/레퍼런스/소나무한그루-잔점잎-isaiah658.png` | CC0 | isaiah658 | https://opengameart.org/content/pine-tree-16x16 |
+| 나무 | `art-src/나무/소나무/레퍼런스/소나무한그루-큰도트-arlantr.png` | CC0 | ArlanTR | https://opengameart.org/content/pine-pixel-art |
+| 나무 | `art-src/나무/소나무/레퍼런스/숲소품-침엽수포함-theness.png` | CC0 | TheNess | https://opengameart.org/content/sprites-from-old-project-forest-objects-and-character |
+| 나무 | `art-src/나무/소나무/레퍼런스/식물모음-그림자포함-rubberduck.png` | CC0 | rubberduck | https://opengameart.org/content/free-isometric-plants-pack |

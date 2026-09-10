@@ -1,5 +1,5 @@
 {
-  "file": "oga-rubberduck-isometric-plants.png",
+  "file": "식물모음-그림자포함-rubberduck.png",
   "source": "https://opengameart.org/content/free-isometric-plants-pack",
   "downloadedFrom": "https://opengameart.org/sites/default/files/plants_0.png",
   "license": "CC0",
@@ -7,5 +7,6 @@
   "title": "Free isometric plants pack",
   "fetched": "2026-09-09",
   "verifiedVia": "opengameart.org 작품 페이지 license-name=CC0 직접 확인",
-  "note": "813×852 아이소메트릭 식물 시트. 침엽수가 여러 톤(초록·회색·눈 덮인 흰색)으로 다수 — 같은 실루엣의 계절 변형 발상. 3/4 시점 그림자 포함."
+  "note": "813×852 아이소메트릭 식물 시트. 침엽수가 여러 톤(초록·회색·눈 덮인 흰색)으로 다수 — 같은 실루엣의 계절 변형 발상. 3/4 시점 그림자 포함.",
+  "fetchedAs": "oga-rubberduck-isometric-plants.png"
 }

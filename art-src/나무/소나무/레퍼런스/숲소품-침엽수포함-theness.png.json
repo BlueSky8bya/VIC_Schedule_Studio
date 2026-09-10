@@ -1,5 +1,5 @@
 {
-  "file": "oga-theness-forest-objects.png",
+  "file": "숲소품-침엽수포함-theness.png",
   "source": "https://opengameart.org/content/sprites-from-old-project-forest-objects-and-character",
   "downloadedFrom": "https://opengameart.org/sites/default/files/forest_14.png",
   "license": "CC0",
@@ -7,5 +7,6 @@
   "title": "Sprites from old project: forest objects",
   "fetched": "2026-09-09",
   "verifiedVia": "opengameart.org 작품 페이지 license-name=CC0 직접 확인",
-  "note": "512×256 숲 소품 시트. 오른쪽에 단독 소나무 한 그루(넓은 밑단, 굵은 줄기) + 그루터기·바위. 소나무 실루엣만 참고."
+  "note": "512×256 숲 소품 시트. 오른쪽에 단독 소나무 한 그루(넓은 밑단, 굵은 줄기) + 그루터기·바위. 소나무 실루엣만 참고.",
+  "fetchedAs": "oga-theness-forest-objects.png"
 }
