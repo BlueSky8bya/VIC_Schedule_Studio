@@ -6,7 +6,7 @@ Status: **Proposed** · Task Risk: **L2** (렌더 순서·좌표·아트 규격�
 
 ## 1. 범위와 결론
 
-엔진 하늘 S + 이미지 원경 F / 지면 M / 근경 프레임 N. 이미지 기본 목표는 **11바이옴 × 4계절 × 3장 = 132장**, 시간대·날씨 이미지 0장. 초원 파일럿 12장, 나머지 120장. 심해의 계절 봉인과 충돌하므로 132장은 결정 Q10 승인 조건부다. 봉인 유지 대안은 10 × 4 × 3 + 심해 공통 3 = **123장**이며 원래 44조합 모두 서로 다른 계절 배경이라는 목표는 충족하지 않는다.
+엔진 하늘 S + 이미지 원경 F / 지면 M / 근경 프레임 N. **소유자 결정 Q10 확정(2026-09-10): 심해 계절 봉인 유지.** 목표는 **10바이옴 × 4계절 × 3장 + 심해 공통3장 = 123장**. 초원 파일럿12장, 나머지111장. 시간대·날씨 이미지0장. 심해는 사계절 같은 배경이며 기존 날씨 봉인·자체 시간 반응을 유지한다. 최초132장 제안은 이 결정으로 대체됐고, 나머지 제안은 미승인이다.
 
 생물·서 있는 나무·큰 소품·충돌 지형·수면 경계는 엔진 소유. 배경에 굽지 않는다. 이미지가 없거나 검사를 통과하지 못한 슬롯은 해당 절차적 레이어로 대체한다. 원경만 합격해도 지면·근경은 유지 가능하되, 공개 승격은 계절 짝 검사를 통과한 묶음만 허용한다.
 
@@ -202,7 +202,7 @@ npm run art:pipeline -- request backdrop-meadow
 
 `style:pick`의 **새 backdrop profile에서 검증할 기대 mood**: D`207597_218580_5945.png` + A`,jx.jpg`. 현행 picker가 이미 이렇게 출력한다는 뜻은 아니다. request에는 선택 이유·상대경로·sha256·고정입력 사본·참고 시트를 남긴다.
 
-순서: request 동결 → 생성 원본3 → normalize → 자동 검사·3층 합성 → **소유자 화풍 검토**. 이 부분 시안은 promote 금지. 합격 방향을 반영한 **새 12자리 전체 계절 request/run**에서 최종 원본/정리본을 마련하고 계절 짝 전체 검토 후 promote한다. 봄 후보를 재사용한다면 원본 run/file/hash를 새 요청의 고정입력에 명시하고 동일 바이트임을 검사한다. 기존 run에 9장을 덧붙이지 않는다. 132는 최종 슬롯 수이며 재시도/시안 산출물 수가 아니다.
+순서: request 동결 → 생성 원본3 → normalize → 자동 검사·3층 합성 → **소유자 화풍 검토**. 이 부분 시안은 promote 금지. 합격 방향을 반영한 **새 12자리 전체 계절 request/run**에서 최종 원본/정리본을 마련하고 계절 짝 전체 검토 후 promote한다. 봄 후보를 재사용한다면 원본 run/file/hash를 새 요청의 고정입력에 명시하고 동일 바이트임을 검사한다. 기존 run에 9장을 덧붙이지 않는다. 123은 최종 슬롯 수이며 재시도/시안 산출물 수가 아니다.
 
 누락 로드는 슬롯별 procedural fallback, 실패 상태도 버전 키에 기록하여 무한 재요청하지 않는다. artVersion 증가 때 해당 레이어만 한 번 재굽고 reduced의 dt=0 정지 프레임도 갱신한다. 시차/팬 프레임마다 파일을 디코드하지 않는다.
 
@@ -223,7 +223,7 @@ npm run art:pipeline -- request backdrop-meadow
 | 1 | F+합본 약3.63 /7.26 MiB | ≤20 MiB | 같은60fps 목표; 실패하면 기존 auto 강등, 시차 때문에 설정 판정 우회 금지 |
 | 0 | 숨김0, 정지 미리보기≤.73 MiB | ≤4 MiB | 연속 RAF0·포인터 bake0 |
 
-정리본 한 장 decode는 768×512×4=1.5MiB. 활성/다음 장면 6장=9MiB, 132장 모두 decode하면198MiB이므로 **전량 preload 금지**. 늦게 온 fetch/디코드가 퇴출 장면을 되살리지 않도록 세대 키를 둔다. 계절 교체·팬 종료 시 이전 참조와 canvas를 해제한다. 기존 sky/생물 canvas 메모리는 위 “신규” 예산 밖이므로 전체 peak도 before와 함께 측정한다. 광원 보간용 별도 full-size 사본을 무제한 더 만들지 않는다.
+정리본 한 장 decode는 768×512×4=1.5MiB. 활성/다음 장면 6장=9MiB, 123장 모두 decode하면184.5MiB이므로 **전량 preload 금지**. 늦게 온 fetch/디코드가 퇴출 장면을 되살리지 않도록 세대 키를 둔다. 계절 교체·팬 종료 시 이전 참조와 canvas를 해제한다. 기존 sky/생물 canvas 메모리는 위 “신규” 예산 밖이므로 전체 peak도 before와 함께 측정한다. 광원 보간용 별도 full-size 사본을 무제한 더 만들지 않는다.
 
 효과 합성/마스크 포함 신규 전체 평균≤2ms·p95≤3ms를 시작 수용 기준으로 둔다. 대형 화면은 픽셀 수에 비례하는 사전 상한과 등급 강등을 적용해 총예산을 넘지 않는다. 수치는 하드웨어 독립 보장이 아니며 P0 실측 후 초과하면 층 해상도/캐시를 줄여 다시 검증한다.
 
@@ -246,7 +246,7 @@ npm run art:pipeline -- request backdrop-meadow
 - 동일 빌드·입력·준비 상태에서 `advance(1000)`, `advance(250)` 네 번, URL `t=1000`의 픽셀·offset·spawn 상태 동일.
 - 처음 로드부터 ready/asset settled 후 같은 3회 dt0 warmup과 엔진 step 계약 사용. 포인터 입력 이력도 동일, τ 보간 시작 시점 동일. late-art 타이밍을 캡처시점 차이로 숨기지 않음.
 - camera=plain/showcase의 기존 항등은 **pointer 없음/시차0에서 유지**. pointer가 있는 감상만 시차를 켜면 기존 전체 항등과 충돌하므로 Q8 승인 후 그 조건만 개정.
-- 심해 6시간띠×5날씨 30장의 현행 검사는 각 시간띠 안 날씨별 동일 hash, 총6개 시간 상태를 유지. Q10에서 계절 배경만 허용해도 날씨 봉인은 유지한다.
+- 심해 6시간띠×5날씨 30장의 현행 검사는 각 시간띠 안 날씨별 동일 hash, 총6개 시간 상태를 유지. 확정 Q10에 따라 계절만 바꿔도 같은 심해 배경이어야 한다.
 - 11×4×6×허용날씨 전수는 자동 지표. 기존 `metrics.mjs`는 미구현이므로 P0에 필요한 지표를 실제 만들고 결과 없으면 PASS로 표기하지 않는다.
 
 ### 8.2 A/B/C와 전후 시트
@@ -298,7 +298,7 @@ npm run art:pipeline -- request backdrop-meadow
 |---|---|---|---|
 | P0 | (a) fixture·좌표/τ·품질·합성 계약과 의미 있는 결정성 검사, (b) 기존 절차적 draw/bake를 F/M/N 어댑터로 장면군별 분리, (c) 캐시/성능·QA·관련 문서. **이미지0** | 공통 게이트,3점44조합,대표16+A/B/C, 원래그림/생태 유지. 바뀐 포인터/팬/수평선만 범위 명시 | 장면별 어댑터 opt-in을 빼면 기존 procedural draw 경로 복귀. 사용자 변경 보존하며 해당 커밋만 revert |
 | P1 | (a) backdrop manifest/직사각 normalize/check/한국어 폴더/style routing 계약, (b) 초원 봄3 시안 새 run, (c) 소유자 화풍 반영 후4계절12장 묶음 검토·승격·loader 연결 | Q6/Q8 등 결정 반영, 소유자 실제 후보 검토. 봄3 시안 단독 promote 금지. 공통 게이트+계절짝/alpha/합성/포인터 | 승격 연결/slot 선택만 revert→초원 procedural. 후보/합격 파일 덮기·삭제 없이 증거 보존 |
-| P2 | 남은10바이옴: 숲·언덕 / 산·계곡 / 연못·해안3 / 먼바다·심해 순 묶음. 바이옴별 계약/새 run·검토/승격/QA를 구분 커밋. 기본120장(Q10 봉인 유지면111장) | 공통 게이트와 각 생태/가림 검증. 산 L기준·심해 봉인/시간 검사. 각 아트 묶음 소유자 검토 후 promote | 바이옴 단위 asset 연결만 해제. 이미 승인된 다른 바이옴 유지 |
+| P2 | 남은10바이옴: 숲·언덕 / 산·계곡 / 연못·해안3 / 먼바다·심해 순 묶음. 바이옴별 계약/새 run·검토/승격/QA를 구분 커밋. 확정111장 | 공통 게이트와 각 생태/가림 검증. 산 L기준·심해 봉인/시간 검사. 각 아트 묶음 소유자 검토 후 promote | 바이옴 단위 asset 연결만 해제. 이미 승인된 다른 바이옴 유지 |
 | P3 | 겹침/명도/해상도/캐시 조정·문서 최종화. 이 단계에서 무관한 생물/설정 개편 금지 | 전수 지표+44×3×2크기+대표16+성능/모드·공개경계 최종. 공통 게이트 | 조정 커밋별 revert, 필요하면 P0 procedural 어댑터 또는 원래 렌더까지 복귀 |
 
 실제 배포는 별도 push 지시 후만. main push가 배포라는 사실을 “계획 커밋”과 혼동하지 않는다.
@@ -310,18 +310,18 @@ npm run art:pipeline -- request backdrop-meadow
 3. **모바일/포인터 없음:** 중앙 정지 기본. 자율 드리프트는 제안하지 않으며 원하면 OFF/reduced·결정성 예외 설계를 추가할지?
 4. **카메라:** 육지·해안3/4, 깊은 바다만 측면 유지. 시점 변경 없는 기본안 확인?
 5. **흐림:** 1/4·1/2·1의 사전 저해상3단계/nearest 기본. 매끈한 blur가 아닌 픽셀 형태 단순화로 확정할지?
-6. **규격/장수:** 1536×1024 원본→768×512 정리본, 기본132 최종 슬롯. ART-02/06/13의 backdrop 한정 직사각·무trim·필요시 전면 불투명 예외를 승인할지? 색6–10/AA금지는 유지.
+6. **규격/장수:** 1536×1024 원본→768×512 정리본, Q10 반영123 최종 슬롯. ART-02/06/13의 backdrop 한정 직사각·무trim·필요시 전면 불투명 예외를 승인할지? 색6–10/AA금지는 유지.
 7. **파일럿:** 초원 봄3 시안 검토→4계절12장 전체 검토·승격 기본. 초원을 유지할지?
 8. **viewer/감상 OFF:** viewer도 감상 안에서만 시차 ON, 감상 밖은 배경 정지·기존 생물/날씨 설정 유지가 기본. “정지 프레임”이 장면 전체 정지라는 뜻인지? pointer가 있을 때 plain/showcase 항등 예외도 이 결정과 함께 확정.
 9. **gfx 연동:** 기존2/1/0에서3/2/0층, 시차 강/약/0, 새 설정 없이 연결하는 기본안 채택?
-10. **심해 충돌:** 목표132장을 위해 **배경 계절 재질만** 좁게 허용(날씨 봉인·자체 시간·z생태 유지)할지, 현행 계절 봉인을 유지하고123장으로 줄일지? 승인 전은 봉인 유지, 심해 계절 생성/연결 보류.
+10. **확정 — 심해 계절 봉인 유지(2026-09-10).** 소유자: “10번 심해 계절 배경은 봉인 유지해.” 심해 공통3장·전체123장. 계절별 심해 배경은 생성/연결하지 않는다. 기존 시간별 빛줄기·밝기·발광과 날씨 봉인은 유지한다.
 11. **공통 지평선 충돌:** 먼바다 .32h 수면 시작을 .26h로 맞추는 기본안을 승인할지? 유지한다면 “전 바이옴 동일” 요구에 먼바다 예외를 명시해야 함. 심해는 원래 지평선 없음.
 
 질문 답변은 계획의 결정 칸에 반영하고, 미결 항목에 의존하지 않는 P0 범위도 별도 구현 지시 전에는 착수하지 않는다.
 
 ## 부록 A. 전체 슬롯 목록
 
-각 셀은 **정확한 slot id**이며 공개 파일명은 그 문자열에 `.png`를 붙인 것. 파일경로는 `public/ambient/art/` 아래다. 각 행의 세 셀은 순서대로 far/ground/frame이며 바이옴·계절을 모두 명시한다. 44행×3=132. 이것이 새 슬롯 전부이며 sky/time/weather 슬롯은 없다.
+각 셀은 **정확한 slot id**이며 공개 파일명은 그 문자열에 `.png`를 붙인 것. 파일경로는 `public/ambient/art/` 아래다. 각 행의 세 셀은 순서대로 far/ground/frame이며 바이옴·계절을 모두 명시한다. 계절40행+심해공통1행=41행×3=123. 이것이 새 슬롯 전부이며 sky/time/weather 슬롯은 없다.
 
 | 바이옴 | 계절 | far id → 파일명 | ground id → 파일명 | frame id → 파일명 |
 |---|---|---|---|---|
@@ -365,12 +365,9 @@ npm run art:pipeline -- request backdrop-meadow
 | sea | summer | `backdrop-sea-summer-far` → `backdrop-sea-summer-far.png` | `backdrop-sea-summer-ground` → `backdrop-sea-summer-ground.png` | `backdrop-sea-summer-frame` → `backdrop-sea-summer-frame.png` |
 | sea | autumn | `backdrop-sea-autumn-far` → `backdrop-sea-autumn-far.png` | `backdrop-sea-autumn-ground` → `backdrop-sea-autumn-ground.png` | `backdrop-sea-autumn-frame` → `backdrop-sea-autumn-frame.png` |
 | sea | winter | `backdrop-sea-winter-far` → `backdrop-sea-winter-far.png` | `backdrop-sea-winter-ground` → `backdrop-sea-winter-ground.png` | `backdrop-sea-winter-frame` → `backdrop-sea-winter-frame.png` |
-| deep | spring | `backdrop-deep-spring-far` → `backdrop-deep-spring-far.png` | `backdrop-deep-spring-ground` → `backdrop-deep-spring-ground.png` | `backdrop-deep-spring-frame` → `backdrop-deep-spring-frame.png` |
-| deep | summer | `backdrop-deep-summer-far` → `backdrop-deep-summer-far.png` | `backdrop-deep-summer-ground` → `backdrop-deep-summer-ground.png` | `backdrop-deep-summer-frame` → `backdrop-deep-summer-frame.png` |
-| deep | autumn | `backdrop-deep-autumn-far` → `backdrop-deep-autumn-far.png` | `backdrop-deep-autumn-ground` → `backdrop-deep-autumn-ground.png` | `backdrop-deep-autumn-frame` → `backdrop-deep-autumn-frame.png` |
-| deep | winter | `backdrop-deep-winter-far` → `backdrop-deep-winter-far.png` | `backdrop-deep-winter-ground` → `backdrop-deep-winter-ground.png` | `backdrop-deep-winter-frame` → `backdrop-deep-winter-frame.png` |
+| deep | common | `backdrop-deep-common-far` → `backdrop-deep-common-far.png` | `backdrop-deep-common-ground` → `backdrop-deep-common-ground.png` | `backdrop-deep-common-frame` → `backdrop-deep-common-frame.png` |
 
-심해 12셀은 Q10 승인 조건부. 봉인 유지 대안에서는 이12셀을 빼고 `backdrop-deep-common-far.png`, `backdrop-deep-common-ground.png`, `backdrop-deep-common-frame.png` 세 셀로 대체한다(id는 확장자 제외, season=common). 123장 대안과132장을 동시에 생성하지 않는다.
+확정 Q10에 따라 심해는 season=common 세 슬롯만 둔다. 계절별12슬롯은 만들지 않는다. 테스트는 사계절 입력에서 심해 배경이 동일함을 확인하도록 기존44조합을 유지한다.
 
 ## 부록 B. 구현 때 개정할 조항과 ADR 초안
 
@@ -379,7 +376,7 @@ npm run art:pipeline -- request backdrop-meadow
 - BIOME_GRAMMAR 공통 층 표·공통 지평선의 .12/.30 혼재를 §3의 현행 .26 및 이미지/의미층 대응으로 대체. 바이옴별 생태·발점 하한은 보존. 먼바다 Q11·심해 무지평선 명시.
 - VISUAL_DIRECTION 지평선 .30 관련 문장을 실제 helper와 통일; 3/4·픽셀·팔레트는 대체하지 않음.
 - ADR-0017 ⑮의 아트1024 정사각·단일 객체 부분은 backdrop 예외만 추가; ⑯ 카메라 지평선 값은 현행 .26으로 명확화; ⑰6의 과거 haze 수치는 현행 HAZE_ALPHA=.13/끝점ground-v=.28과 새 층별 소유 관계로 정리. ⑰8의 불투명 원경·⑰11의 수직 이동·⑱17의 객체 가독성 취지는 유지.
-- 심해 후속 봉인 조항은 Q10 채택 시 **계절 배경만 예외**를 명시하고 지상 날씨/광원 봉인·자체 시간은 유지. BIOME_LOADERS의 “시간 무영향” 주석은 실제 deep:draw 시간 반응과 맞춰 정정. 승인 전 봉인 우선.
+- 심해 후속 봉인 조항은 Q10 확정으로 계절 예외 없이 유지한다. BIOME_LOADERS의 “시간 무영향” 주석만 실제 deep:draw 시간 반응에 맞춰 구현 때 정정한다.
 - ENGINE_RULES AMB-09/10/13/25/29에는 레이어 캐시·정지·분할advance·감상별 pointer 항등 범위를 추가. AMB-03/04/05/06/16/17의 생태·시간·시점 계약을 이미지로 우회하지 않음.
 - ART_RULES ART-02/06/13, ART_PIPELINE, manifest와 검사기에는 직사각/무trim/계절짝/preview-only 계약을 함께 넣는다. ART-11/14 및 ADR-0020/0021의 불변원본·실제 owner review는 유지.
 - SYSTEM_MAP에는 현행 scene-engine의 splitHaze/최종Light 순서와 새 어댑터/팬 로컬 합성을 새 현재 구조로 기록. 과거 진단의 생물 파일 경로/개수·미구현 지표를 현행 사실로 재사용하지 않음.
@@ -477,6 +474,6 @@ ADR 초안: “배경 깊이는 S 엔진+F/M/N 데이터 자산으로 표현한�
 - 코드 변경 **0**, 이미지 생성 **0**, 아트/공통화풍참고 원본 변경 **0**.
 - `npm run harness:verify` 통과: 문서78개, 링크·ADR 상태·활성 계획 수명주기·메모리 예산 확인.
 - `npm run style:check` 통과: 출처2개·그림449장 색인 일치. `node scripts/ambient-art-catalog.mjs --all --check` 통과: slots207/files419, changes/conflicts 없음(npm 전달 인자와 별개로 직접 명령도 확인).
-- 슬롯 목록 확인: 44행·고유 계절 파일명132개. 부록C에 기록한 저장소 파일 경로 모두 존재. `git diff --check` 통과.
+- 최초132개 목록 검증 후, Q10 확정으로 계절40행+심해공통1행·123파일로 수정했다. 부록C의 저장소 파일 경로는 모두 존재한다.
 - 제품 typecheck/lint/test/build/렌더 검증은 이번 문서 변경에서는 미실행; 향후 구현 게이트로만 기재했다. 성능 수치는 실측이 아닌 제안 예산이다.
 - 작업 시작부터 있던 untracked `.vscode/`, `preview-360.png`는 사용자 작업으로 보존한다. 이번 계획 작업의 산출물/커밋에 포함하지 않는다.
