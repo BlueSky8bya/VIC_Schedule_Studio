@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 40bbfca5b64a880e62168426481c9377d07b357c1adec94082558e25bfc10886 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 60b10338aa68a7437bc4190f4d4943ac96f81f00b1360c44d4cd80878b60111a -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b9b31e1e0becc2e1b996ec86993ed5347f7514f0c03e93f3c693972228bace81 -->
 
 # fish-halfbeak 생성본
 

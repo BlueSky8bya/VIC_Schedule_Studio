@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: f99afce79cb76060594b89c1b5badbb764747545a360e918f85122e742b03bb3 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2681ffccce59b2545c5a7360997c6b177b3bae9d46079995b82dc032d46d3b98 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b97b133fed053a1d31516c1dbd3824d7d1fc3df35f5b0f14231e1f0e1e5c5528 -->
 
 # animal-egret 반려본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 83983a5ee2df90017c6864c8823b4d02f6cf8ab274c3e4a8a5ef6a5dc8c32c44 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 1dcda27a384e9bdc00d17504494434fae2202dd76d76f23659cc5b362e3ed5eb -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 2bbb50bb1367d984884e51a9089108badb9e30cf3ff586824b7a005d5d6ee122 -->
 
 # bug-blackswallow 반려본
 

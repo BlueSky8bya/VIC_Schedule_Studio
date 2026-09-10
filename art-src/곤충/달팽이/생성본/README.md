@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 71ec6b12668f646ec96b10e7e78163f76bfc67aa740317c28d20ec739d81c91a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: ac84a6a0163d7835895047c0703de25c9d7393e7ed0ca7eada07ac09aecbbb8e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 2d1d904598680ce1fb145339d05c8cb00133a43db877a0d572daa0a326d6c0ac -->
 
 # bug-snail 생성본
 

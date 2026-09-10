@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 9819f4ff62cc26e4c69e4e9f789153b49efcd0c62f6a30d1a98fd99ba0e3b1a8 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 4617753dfa0fd69b46c7dfbbf9b265b4654a4db6cdb4949240321d127092a111 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e62a4e91c985baea23802d922ea9d91f71aba9ff4dd324153d739de1ad0212bc -->
 
 # animal-hedgehog 반려본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1baecbf39a533dc6904f067383d624e22044b1ccce2f05993a1542fb4d3190d8 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 46293e552fccd250370f3fccffc5363da6d1d3513e15d3a8b90d0e04b22df74c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d85ca49d19b673488164ba80479ffefcaf8ae0c781bce9ac3769913bcf95e8af -->
 
 # animal-sandpiper 검토
 

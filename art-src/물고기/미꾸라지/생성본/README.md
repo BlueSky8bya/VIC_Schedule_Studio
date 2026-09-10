@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 195f4457cea8d2bcb5f6fcf1631e953fa1d13ac1d5af8517565cfff6de114f89 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 1c02ec16fd5f4c2cc96b7461fd730a787c4b6b3b7c70db1a27d7d3bedd276bca -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: cd646445d6c98d821f8a763f44660565c2652c180e29782956dc61b759b75f74 -->
 
 # fish-loach 생성본
 

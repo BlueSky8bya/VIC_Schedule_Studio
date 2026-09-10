@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 519907bebb2806ae5c6cac4fb458bc896b09b0cce326bbe9e6e7a5384854d836 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9eb8385e407d06dc11159a7edfaf1ea40897da829c637da0238089c0b43cc337 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4ca23b7b5d2269a01c21db56f697236732d966f1ffa9b013c50ac30f6a422b9d -->
 
 # bug-dungbeetle 반려본
 

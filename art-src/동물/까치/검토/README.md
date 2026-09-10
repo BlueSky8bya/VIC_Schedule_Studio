@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c9f80c72e0a5da6cc5f596d50bae41dc8499796e921c501ddd1217b3d8cd5842 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2ac394afd61bec412f3bb2e8bb01aad9500a7a033c1dd2a0266466cf575e95c5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3796e7cd76ad0d11a2f2a0fdd8feebfa6ad30f785e6bc8e7c949ab452afa2f6b -->
 
 # animal-magpie 검토
 

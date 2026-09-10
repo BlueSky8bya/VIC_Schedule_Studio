@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: fc8e8c3cad0a3cda18fe6366d1b38b654936c1253deff98ab9b54961974ca234 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9d07dad93e48386b042400d015670563968c97ed099574beaaca0a3a38e6ced6 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: fba3cd8e7cb3a56301cc4e9f10d696edb2033f154e6065116d914a256352c90b -->
 
 # bug-rhinobeetle 검토
 

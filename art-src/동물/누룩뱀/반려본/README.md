@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a2da9dc8b13fccd59bc8ede5f2e9a813412cc34fcbacaf2c2a65a38768ee1193 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: aac92db590a4ecf9d514e748f08d1b281976b0a999085c6c58f75d84671f8645 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d4cec92eab30a9a5a1c42b8312b1f85d75a3d153dcb84b8116f8b8f9d98cd366 -->
 
 # animal-ratsnake 반려본
 

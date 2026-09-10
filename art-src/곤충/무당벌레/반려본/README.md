@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8f5887775baef9f89113c034b79a4cb7d0751558f19d9017914e2542a5340578 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 56479966bf717875cec89a2d658f7661fbabd814e59fdef2ccbf303f651acf40 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 318754cb0316e46205f96c3d742e42a8fc41a24d552c6f71116b8bf62a775ccb -->
 
 # bug-ladybug 반려본
 

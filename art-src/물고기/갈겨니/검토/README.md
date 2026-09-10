@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 31ed59383821987ca8cf8289aea835f4d4e3b487c450c54a23047f022de77138 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 734377587ed7a25eb4daf928bbca1d0ca91e89984ee034ae7bce989f619a5673 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f6d5947de64737ac8d5811a2562d9c35aa92fcf0eda4025df2878e10ffa35c6c -->
 
 # fish-darkchub 검토
 

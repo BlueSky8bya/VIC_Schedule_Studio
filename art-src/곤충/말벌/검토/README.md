@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 7f396f4be46d71a88c0c2bf995af876cb018174a5d475892be597ec1bd81fc73 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9ff8f28d1dba9401908029b74cdf150d8ac4e8c94b9255025c50f870f371fa6c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 2d62997ea3d9ac6622f7338c2a62508f741772f104dc7530300b1e27e613f76d -->
 
 # bug-hornet 검토
 

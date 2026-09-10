@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: f53fc500c1afbdefaed5cd7fe35be20b332731650178d475884862da66642773 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: efaa5c8de6ccdeeb8d460cb7630fa4be5f9081b06074e9c2f80db13f3ea06269 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b97b133fed053a1d31516c1dbd3824d7d1fc3df35f5b0f14231e1f0e1e5c5528 -->
 
 # animal-egret 검토
 

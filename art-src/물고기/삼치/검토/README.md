@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2474b668cd6757767bf480723aca9d0ad1b534a91f0959d892a2e28e2fb69f2a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 86ca5f0712e8d4b2adbb380b9d443fa86e3e86b8aedc5ba574dd4c40ce8be2e5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9a69bf04a60ab1bd9a5e40ebe29561dc253123e3be3d178c71d21dcb3a2a9d87 -->
 
 # fish-spanishmack 검토
 

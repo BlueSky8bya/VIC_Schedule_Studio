@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 48cc58c9a3ce9dbc56393401cc4e2203917112c5cec739b0be965ab4e3a8d6f1 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f5bfb34a4b4e9e25ad149f4fbfc7cd85daaae187b886e2571cc31289e4c98d63 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 82b60121c36118186c5268c2e5411557de8a2888e8c4e4b207a67de78046df17 -->
 
 # animal-weasel 검토
 

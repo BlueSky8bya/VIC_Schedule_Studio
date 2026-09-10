@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 50d18f739883281c354b6af6370a288d47657e469f829dc4f6de6e07bb1e469e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 3eafe477b09ecd78991c4c7ccba9eacf099f09d2687b394eb94498e903d6104b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 0e29b3eb5600c6423fe944347e0f04726ca541564f2cfad3c11df58923ffbc34 -->
 
 # swim-ring 반려본
 

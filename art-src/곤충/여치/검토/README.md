@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 813292a173e3e1a35cab5be1836e842e8aa2eb90980a125825206c0f26a90962 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 94ee1a9883d80f9f52c0601aeba3b6399791c4b54cd008d3f6f3c878932f2f6f -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4763bec695d02e920bc359773e9b8c69a7f7e556c0144d69eb5500dab1958b09 -->
 
 # bug-katydid 검토
 

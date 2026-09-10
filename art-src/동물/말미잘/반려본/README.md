@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e4f0c030bc0eaae19532f13fd671750a4ef08105e93e186af3cc7053fc1dce99 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 469c4eaa4caed3c85a74ee9b015647c4f932bc1e3f42df9d14c66f3588e1a9b5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9096cbd86b4e94670e0cff57eb6e9536ee1dffc5be76f597f210fa607e53de27 -->
 
 # animal-anemone 반려본
 

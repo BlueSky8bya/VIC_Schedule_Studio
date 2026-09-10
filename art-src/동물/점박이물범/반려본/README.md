@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 7f509113a8b3a3e912664c2e27a9585641438f54d99992272dcbd3eba4f7f561 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9c16d5b758b8bce856cecd1244f7119818b655feb1161cbf62549db6edb76f8f -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e7bccddb0b8bce63c04887e32b7e8e0c756dadcfb88a4ebae01a034ae557ac8b -->
 
 # animal-seal 반려본
 

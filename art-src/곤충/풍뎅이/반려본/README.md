@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: fb3c216bd7e31cb9806174657191dcddc11511127349e878e694e2dbd2efbef7 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 4acf128ed9d1105020e4e970a5b213ba878a4bc5456d77d71992275fd4121fdc -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 88db0c1e77828fd9916c443c32ab61197c581a1352e70241e9cd99881df907cf -->
 
 # bug-scarab 반려본
 

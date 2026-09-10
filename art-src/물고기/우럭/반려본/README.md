@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c91f53dff754d594dbe6535136f5d77253363c8b9fad8ac4987c2d1e4b9a46f8 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a53605f317ab82dfc0fe2abd26457737ac90b444058494afd259cbb8e9ff8230 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3cf03309aac23833f8b04e60bdc0d73a800f5622a198f73902bfe63a10476a25 -->
 
 # fish-seabass 반려본
 

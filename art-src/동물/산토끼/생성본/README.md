@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 217c3c4ca344456d1b4927114b7466dec7b46739bb3259fc58182fdb1d263cf8 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 35fad10b008e6a2a8bf7d888f8774a737550a5bb90ff479fbfc3c0286c205e37 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9005cdafda9fd229dbe9466cad63c085f6c853d87b0248012007610b3041b7f8 -->
 
 # animal-hare 생성본
 

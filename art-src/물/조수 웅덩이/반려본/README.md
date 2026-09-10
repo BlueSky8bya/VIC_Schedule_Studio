@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: d8bbec32ea07b1d2da4ba711c367a5334500097b86a4a5a4d1bb241fa61935cc -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 6c042fa9fe72f333aaad2f82b7686c6350ecddfd07ea2ccf0e178c64ccd4a9b0 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b475e6b1f2f069654720f349af68d85f5115a35eaa180ddb90575e66919b69b4 -->
 
 # tide-pool 반려본
 

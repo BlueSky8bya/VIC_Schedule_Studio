@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4c321780c29c2d256f05582bcd75077a161b34b11af3b7f78c15edb7cc6307cc -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 519330bde486a46e90a3a047a4b45e8cc6623bfbb856be3292db2db931bc7e5a -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 06e01b146a2eb1cc7142f72e27befbe876af1f76e881af498b43383a745d9d89 -->
 
 # bug-waterstrider 생성본
 

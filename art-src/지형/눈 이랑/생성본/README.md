@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4acdfa12eb4518b82d06c3d4d0217018c680a84a60b31a91d4a583fc9e5a7a2d -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 10393302364320f92683bdf2f847233c454d6d87752ac2e0ec9f56f6bde319c8 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c83a08ccf611d745f02d4e1a34fc9e829d28d9fe4f27e9a3381b7f85997c4607 -->
 
 # snow-drift 생성본
 

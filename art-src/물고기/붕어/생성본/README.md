@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 6b6d9d490268a8cd0902d52b326c7b609c189d8ea5f36bb34f3a86bdb4a80055 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f3b13a25072011242c2f9c26d1bcd11c37d5d589005fac19414c75cda51d2f74 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: ee43830e81324a68a1c152e55a2d739059b46b7f5aec035e6229d4d4a9f07ae4 -->
 
 # fish-crucian 생성본
 

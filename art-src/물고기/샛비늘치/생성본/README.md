@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 32283b38cbad5855ac2206a1991645b8c6b707d1a1708ea42790630d9c79b7db -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 39fc0a39baffd279f79ec39bcf58a8f1811d325e338f8d8df5d2c61fd8fa901d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 577f17b6ac8f841744ef021e2aad25e4371d48958aecb009878367c210fa3995 -->
 
 # fish-lanternfish 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 7c494d19ff19d9b7215adab61b26af0b42ed9f139cb7fb27387aeb60a22f8fbb -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a467a82121c9ffe403bae4d86691841d3a3b46af604173ce46d2e9910db1eaf4 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 20c85c15091f9314d9cf15cbe8d7c2380a270b42428c157569ea4d4b0127ac46 -->
 
 # animal-kingfisher 검토
 

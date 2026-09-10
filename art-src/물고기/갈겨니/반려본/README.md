@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1938426b1d8e0096123ea44243e5abc92ea9bd96b25e2f8390c44a4af3a669ba -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: fb49ecc3ef82706a63a3ebdc85c408946328cbb769757f7dc8c515065e3fa121 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f6d5947de64737ac8d5811a2562d9c35aa92fcf0eda4025df2878e10ffa35c6c -->
 
 # fish-darkchub 반려본
 

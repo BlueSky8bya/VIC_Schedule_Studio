@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 434b74cb537886cf17a0ba2f27ddd0a02553132b704e1b0a920a0aaf9293eabb -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 61aea016a4f957f6a90d642d8b0b89e2af54adc35b92fa9d67af12e2e20d2b2f -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a42dd4627d79be39cf029bdc2a7a57f65204ed8645d1b28794001af90280bc87 -->
 
 # bug-comma 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 026dafed30c04793e196032d11b6de2077993f66a418bfea1ee73d8acec685c7 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2a28fefed0bcd1fc59e24005841de0c8883b8b6b628ca935487e95aa19e0afd5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4a3bf86f6fc82798865dcdf75874c8ed747e2a46034cb0ba9ea7f8f3d2feec2a -->
 
 # bug-damselfly 검토
 

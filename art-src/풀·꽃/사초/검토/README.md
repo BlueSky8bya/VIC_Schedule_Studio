@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3c557df46d9bc9b7d251cf6c5b721f1a994592c08062051085a18abd8e60529b -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 7cf08550ee631def472ff82a5e902c697d3b4429f5ca582d18d281bb423c6b53 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c9916e4e7f9940b69675ca9bcb04cb8a3335d2d40fe946af45d35035b9c2f56a -->
 
 # sedge 검토
 

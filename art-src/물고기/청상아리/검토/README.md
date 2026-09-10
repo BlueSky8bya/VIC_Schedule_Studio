@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 60d5c179bdaadb67c201ed81bb5ee7d6b8309cf27c166b2b2ccfc6fbf3c7ae74 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 0192e5e6b033cc0cd57b5c6e1ffb15652009c301e230c9c59164cdd2061312f7 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d1604f886504debffcf4eca9b66484058b4c99338b7835358ec13844d87c25fd -->
 
 # fish-shark 검토
 

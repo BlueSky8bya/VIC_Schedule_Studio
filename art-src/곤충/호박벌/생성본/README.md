@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 0101c303581dace042383920002ed9bd213a9d76afcac29338405b2bc5efe10d -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 564cc7981221ab0a48ee3a52e5988fbb8c1cc6d5360d3a1bce6ad7ca7a23c11e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: ae27f8fedb35e2d2c0896c3d2378246a6477ada10c3135190515e4a6ffa727f7 -->
 
 # bug-bumblebee 생성본
 

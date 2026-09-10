@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 64b277eec940ed4ca853d5de54033e6dae3ec3b27e64f51f75f5d009f81e8f2a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 6a74b482c178e1a34805cf6579100b2da9e8183560e324abfa6f86c770d6b5f6 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d922e96e51f0664ffe75ba438a33623e488b18013344bff90d156ea6e5fbf840 -->
 
 # animal-woodpecker 검토
 

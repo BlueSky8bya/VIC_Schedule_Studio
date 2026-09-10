@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1eceebbb36f4a7e1ba34a7b20104677a62faba1e7c8f697b7b09f34a772f1c2e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 0752c2862e39c7854e509e9a409bcf4029cbef2ddbf5398bd6fd88c93e1dcaef -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e82a83346f6e2043ca5166e315195ba8cb5d3884fbce2f320e15ab616d903cd4 -->
 
 # fish-anglerfish 검토
 

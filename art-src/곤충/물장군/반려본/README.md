@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: dbd614a3816b10cf8dab569353cd890bb8b889ca4c38bc1576ef3d9f78b5c035 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 06f7de8f021b3734266b68ea8f805346b1fef510bf7cbb0fd2d4ec541554c90f -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 351b9e12af0dc8ec555792666206019e7235ba153ad26d062e216f3d56689f19 -->
 
 # bug-giantwaterbug 반려본
 

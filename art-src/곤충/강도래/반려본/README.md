@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1719e185a65a7116537f4fae1a37d9aafa394fa69e0a591c48c3ac8f2c3448ad -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2f285f9e8f6003b549dff33ca7c3f89973c0285acd1d3edd4b105df666db4974 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f8912572f357faa1d9d5293e37b5cd5c6f2b935beae054d98777beac894b84a3 -->
 
 # bug-stonefly 반려본
 

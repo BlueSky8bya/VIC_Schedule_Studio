@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2dd6aebf0f80149132b3f7657f8b704e2c468121d56a9572070d795315bf5b29 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 04e8832a2d027d51d38cd1b1f0b15fbf5cf71f8b6b5e4329758a847ea0d63101 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 22601ef001a4dbf6ba680f7402150a9e5bd8b40b47af13872c5b3fb7f339c48b -->
 
 # animal-terrapin 생성본
 

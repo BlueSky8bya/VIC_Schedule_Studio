@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 70c762926242b5d56fa082bb4799e3133f117b8e51ba11e2615318ea3ebcb639 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 89eba2cba5ebbaf645975a80025da2db7797b4019d4c98515a316c6f69e6e914 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 17208a0021c92349ddd8c3f9592495958aac28020e679b0c266758f05a78e95d -->
 
 # animal-leopardcat 검토
 

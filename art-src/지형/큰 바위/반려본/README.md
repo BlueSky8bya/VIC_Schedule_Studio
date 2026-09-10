@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 85fe4373303829bb39e83c2d7a944194d6c0f5e76bcc55dd354125e1da8cd474 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 7a51513d8f8579931daae4d43ec8c7bc840ad18b71bc714704bb5c932b73411e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9baae5272f43ad96f4b71c7b55d73b3a516ebfb5e8be0f9199159b80c2ab8795 -->
 
 # boulder 반려본
 

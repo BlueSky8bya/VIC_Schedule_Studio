@@ -1,0 +1,3902 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-10",
+  "license": "free",
+  "sources": [
+    "oga",
+    "commons"
+  ],
+  "limits": {
+    "pixel": 4,
+    "photo": 3
+  },
+  "entities": [
+    {
+      "id": "tree-oak",
+      "category": "tree",
+      "queries": {
+        "specific": "oak",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "oak tree",
+        "nameEn": "Oak, spring"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "sapling",
+      "category": "tree",
+      "queries": {
+        "specific": "sapling",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "tree sapling",
+        "nameEn": "Sapling, leafy"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 2
+    },
+    {
+      "id": "sprout",
+      "category": "plant",
+      "queries": {
+        "specific": "sprout",
+        "groups": [],
+        "photo": "seedling sprout",
+        "nameEn": "Sprout"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "shrub",
+      "category": "tree",
+      "queries": {
+        "specific": "shrub",
+        "groups": [
+          "bush"
+        ],
+        "photo": "shrub",
+        "nameEn": "Shrub, spring"
+      },
+      "pixel": [
+        "bush-5-drawing_1.png",
+        "bush-5-drawing_1_0.png"
+      ],
+      "photo": [
+        "commons-Erythroxylum-moonii.jpg",
+        "commons-D-lmen-Hausd-lmen-eisbedeckter-Strauch-2021-5033.jpg"
+      ],
+      "rejected": 17
+    },
+    {
+      "id": "grass-tuft",
+      "category": "plant",
+      "queries": {
+        "specific": "grass tuft",
+        "groups": [
+          "grass"
+        ],
+        "photo": "grass tuft",
+        "nameEn": "Grass tuft"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png"
+      ],
+      "photo": [
+        "commons-Northern-part-of-Lake-Wanaka-with-surrounding-mo.jpg",
+        "commons-Antarctic-Fur-Seal-pup-amid-Tussock-Grass-572390.jpg"
+      ],
+      "rejected": 66
+    },
+    {
+      "id": "grass-tall",
+      "category": "plant",
+      "queries": {
+        "specific": "tall grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "foxtail grass Setaria",
+        "nameEn": "Tall grass / foxtail"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Setaria-faberi-001.jpg",
+        "commons-Groene-naaldaar-aarpluim-Setaria-viridis-.jpg",
+        "commons-Foxtail-millet-Setaria-italica-.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "grass-dry",
+      "category": "plant",
+      "queries": {
+        "specific": "dry grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "dry grass",
+        "nameEn": "Dry grass"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png"
+      ],
+      "photo": [],
+      "rejected": 68
+    },
+    {
+      "id": "clover",
+      "category": "plant",
+      "queries": {
+        "specific": "clover",
+        "groups": [
+          "grass"
+        ],
+        "photo": "clover Trifolium",
+        "nameEn": "Clover"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png",
+        "simple-grass-tileset-Simple-20Grass-20Tileset.png"
+      ],
+      "photo": [
+        "commons-Trifolium-repens-inflorescense-Edit.jpg",
+        "commons-Trifolium-repens-inflorescence-Niitv-lja.jpg",
+        "commons-Red-Clover-2011-G1.jpg"
+      ],
+      "rejected": 54
+    },
+    {
+      "id": "daisy",
+      "category": "plant",
+      "queries": {
+        "specific": "daisy",
+        "groups": [
+          "flower"
+        ],
+        "photo": "daisy Bellis",
+        "nameEn": "Daisy"
+      },
+      "pixel": [
+        "demon-flower-monster-sprite-sheet-mon4_idle.gif",
+        "demon-flower-monster-sprite-sheet-mon4_jump.gif"
+      ],
+      "photo": [
+        "commons-Bellis-perennis-full-plant.jpg",
+        "commons-Pink-twinged-daisy-on-table-edit.jpg",
+        "commons-Five-daisies-Bellis-perennis-.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "dandelion-flower",
+      "category": "plant",
+      "queries": {
+        "specific": "dandelion",
+        "groups": [
+          "flower"
+        ],
+        "photo": "dandelion flower",
+        "nameEn": "Dandelion, flower"
+      },
+      "pixel": [
+        "demon-flower-monster-sprite-sheet-mon4_idle.gif",
+        "demon-flower-monster-sprite-sheet-mon4_jump.gif"
+      ],
+      "photo": [
+        "commons-Dandelion-Flower-close-up.jpg",
+        "commons-Dandelion-clock.jpg",
+        "commons-Dandelion-clock-detail.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "dandelion-puff",
+      "category": "plant",
+      "queries": {
+        "specific": "dandelion",
+        "groups": [
+          "flower"
+        ],
+        "photo": "dandelion seed head",
+        "nameEn": "Dandelion, seed head"
+      },
+      "pixel": [
+        "demon-flower-monster-sprite-sheet-mon4_idle.gif",
+        "demon-flower-monster-sprite-sheet-mon4_jump.gif"
+      ],
+      "photo": [
+        "commons-Dandelion-seed-head-Taraxacum-officinale-.jpg",
+        "commons-Dandelion-seed-head-Ballaghneed-geograph.org.uk-.jpg",
+        "commons-Seed-head-of-a-dandelion-specifically-Taraxacum-.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "mushroom",
+      "category": "plant",
+      "queries": {
+        "specific": "mushroom",
+        "groups": [
+          "mushroom"
+        ],
+        "photo": "mushroom forest floor",
+        "nameEn": "Mushroom"
+      },
+      "pixel": [
+        "mushroom-mushroom96x32px.png",
+        "mushroom-dude-Mushroom_6.png",
+        "32x32-mushroom-mushroom_1000_percent.png",
+        "32x32-mushroom-mushroomGreen_1000_percent.png"
+      ],
+      "photo": [
+        "commons-Forest-floor-still-life-with-flowers-mushrooms-b.jpg",
+        "commons-Otto-Marseus-van-Schrieck-Forest-floor-still-lif.jpg",
+        "commons-Mushroom-on-Swedish-forest-floor-8.jpg"
+      ],
+      "rejected": 40
+    },
+    {
+      "id": "reed",
+      "category": "plant",
+      "queries": {
+        "specific": "reed",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Phragmites reed",
+        "nameEn": "Reed / silver grass"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Weerribben-Wieden.-Opslag-gesneden-riet.-Phragmi.jpg",
+        "commons-Weerribben-Wieden.-Opslag-gesneden-riet-Phragmit.jpg",
+        "commons-Phragmites-australis-Vikmanshyttesj-n.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "lilypad",
+      "category": "water",
+      "queries": {
+        "specific": "lily pad",
+        "groups": [
+          "water plant"
+        ],
+        "photo": "water lily pad",
+        "nameEn": "Lily pad"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Dusky-Moorhen-Water-Lilies.jpg",
+        "commons-A-macro-shot-of-a-pink-water-lily-amongst-lily-p.jpg",
+        "commons-Platter-in-shape-of-water-lily-pad-Hawaiian-Pott.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "lotus",
+      "category": "water",
+      "queries": {
+        "specific": "lotus",
+        "groups": [
+          "water plant",
+          "flower"
+        ],
+        "photo": "lotus flower Nelumbo",
+        "nameEn": "Lotus"
+      },
+      "pixel": [
+        "demon-flower-monster-sprite-sheet-mon4_idle.gif",
+        "demon-flower-monster-sprite-sheet-mon4_jump.gif"
+      ],
+      "photo": [
+        "commons-Lotus-flower-978659-.jpg",
+        "commons-Nelumbo-nucifera-also-known-as-Indian-lotus-in-b.jpg",
+        "commons-Nelumno-nucifera-open-flower-botanic-garden-adel.jpg"
+      ],
+      "rejected": 4
+    },
+    {
+      "id": "soil-mound",
+      "category": "ground",
+      "queries": {
+        "specific": "dirt mound",
+        "groups": [],
+        "photo": "soil mound",
+        "nameEn": "Soil mound"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-A-mound-of-soil-geograph.org.uk-4337366.jpg",
+        "commons-Soil-Mound-on-Helpet-Edge-geograph.org.uk-143292.jpg",
+        "commons-Molehill-colonized-by-plants.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "molehill",
+      "category": "ground",
+      "queries": {
+        "specific": "mole hill",
+        "groups": [],
+        "photo": "molehill",
+        "nameEn": "Molehill"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Molehill-colonized-by-plants.jpg",
+        "commons-Maulwurf-Talpa-.jpg",
+        "commons-Skylark-dustbathing-in-a-molehill.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "grass-patch",
+      "category": "ground",
+      "queries": {
+        "specific": "grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "grass patch",
+        "nameEn": "Grass patch"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png",
+        "simple-grass-tileset-Simple-20Grass-20Tileset.png"
+      ],
+      "photo": [
+        "commons-Van-Gogh-Patch-of-Grass.jpg",
+        "commons-Patch-of-Grass-My-Dream.jpg",
+        "commons-Grass-Patch-by-Stonebridge-Farm-geograph.org.uk-.jpg"
+      ],
+      "rejected": 132
+    },
+    {
+      "id": "twig",
+      "category": "ground",
+      "queries": {
+        "specific": "twig",
+        "groups": [
+          "log"
+        ],
+        "photo": "twig",
+        "nameEn": "Twig"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Black-alder-twig-and-water-ripples-at-Wolfsberge.jpg",
+        "commons-Cuban-tree-frog-Osteopilus-septentrionalis-5.jpg",
+        "commons-Village-weaver-Ploceus-cucullatus-cucullatus-mal.jpg"
+      ],
+      "rejected": 7
+    },
+    {
+      "id": "pebble",
+      "category": "ground",
+      "queries": {
+        "specific": "pebble",
+        "groups": [
+          "rock"
+        ],
+        "photo": "pebble",
+        "nameEn": "Pebble"
+      },
+      "pixel": [
+        "rock-pile-Rock-20Pile_1.png",
+        "rock-pile-Rock-20Pile.png"
+      ],
+      "photo": [
+        "commons-Quadrat-on-pebble-beach.jpg",
+        "commons-Pebble-in-water-Sainte-Marie-de-R-R-island-Chare.jpg",
+        "commons-Dorfkirche-Sanitz-main-door-2025-04-20.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "rock",
+      "category": "ground",
+      "queries": {
+        "specific": "rock",
+        "groups": [
+          "rock"
+        ],
+        "photo": "rock outcrop",
+        "nameEn": "Rock"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "stump",
+      "category": "ground",
+      "queries": {
+        "specific": "stump",
+        "groups": [
+          "log"
+        ],
+        "photo": "tree stump",
+        "nameEn": "Stump"
+      },
+      "pixel": [
+        "treearvore-stump-1d229bdd-6f87-47b2-8bea-1e579551ba79.png",
+        "treearvore-stump-5e733dc0-e793-40a9-bab3-1202160ca8d1.png"
+      ],
+      "photo": [
+        "commons-Wild-goat-lying-on-a-tree-stump-under-colorful-c.jpg",
+        "commons-D-lmen-Hausd-lmen-Baumwurzel-2021-7057.jpg",
+        "commons-Spruce-tree-stump-in-Gullmarsskogen-ravine.jpg"
+      ],
+      "rejected": 10
+    },
+    {
+      "id": "log",
+      "category": "ground",
+      "queries": {
+        "specific": "log",
+        "groups": [
+          "log"
+        ],
+        "photo": "log wood",
+        "nameEn": "Log"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Pine-log-cross-sections-Teutendorf-2016-09-17.jpg",
+        "commons-Log-stack-in-Ryehill-Wood-geograph.org.uk-563680.jpg",
+        "commons-Logs-Wood-.jpg"
+      ],
+      "rejected": 13
+    },
+    {
+      "id": "snowman-1",
+      "category": "prop",
+      "queries": {
+        "specific": "snowman",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowman",
+        "nameEn": "Snowman, one ball"
+      },
+      "pixel": [
+        "32x32-snowman-for-isometric-tile-set-SnowMan.png",
+        "snowman-2-snowman_2.png",
+        "snowman-2-snowman_1.png",
+        "snow-lion-Bitmap_4429_0.png"
+      ],
+      "photo": [
+        "commons-Bonhomme-de-neige-2.jpg",
+        "commons-Huanglong-China-Children-with-almond-eye-snowman.jpg",
+        "commons-Snowman-on-Kennesaw-Mountain.jpg"
+      ],
+      "rejected": 20
+    },
+    {
+      "id": "snowman-2",
+      "category": "prop",
+      "queries": {
+        "specific": "snowman",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowman",
+        "nameEn": "Snowman, two balls"
+      },
+      "pixel": [
+        "32x32-snowman-for-isometric-tile-set-SnowMan.png",
+        "snowman-2-snowman_2.png",
+        "snowman-2-snowman_1.png",
+        "snow-lion-Bitmap_4429_0.png"
+      ],
+      "photo": [
+        "commons-Bonhomme-de-neige-2.jpg",
+        "commons-Huanglong-China-Children-with-almond-eye-snowman.jpg",
+        "commons-Snowman-on-Kennesaw-Mountain.jpg"
+      ],
+      "rejected": 20
+    },
+    {
+      "id": "snowman-3",
+      "category": "prop",
+      "queries": {
+        "specific": "snowman",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowman",
+        "nameEn": "Snowman, complete"
+      },
+      "pixel": [
+        "32x32-snowman-for-isometric-tile-set-SnowMan.png",
+        "snowman-2-snowman_2.png",
+        "snowman-2-snowman_1.png",
+        "snow-lion-Bitmap_4429_0.png"
+      ],
+      "photo": [
+        "commons-Bonhomme-de-neige-2.jpg",
+        "commons-Huanglong-China-Children-with-almond-eye-snowman.jpg",
+        "commons-Snowman-on-Kennesaw-Mountain.jpg"
+      ],
+      "rejected": 20
+    },
+    {
+      "id": "snow-pile",
+      "category": "ground",
+      "queries": {
+        "specific": "snow",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snow pile",
+        "nameEn": "Snow pile"
+      },
+      "pixel": [
+        "snow-lion-Bitmap_4429_0.png",
+        "snow-lion-Bitmap_4429.png",
+        "basic-platformer-snow-ground-32x32-Basic_SnowGround_Corn.png"
+      ],
+      "photo": [
+        "commons-Snow-Pile-geograph.org.uk-1153294.jpg",
+        "commons-Pile-of-snow-geograph.org.uk-1161790.jpg",
+        "commons-Snow-pile-at-Merthyr-Cynog-geograph.org.uk-57059.jpg"
+      ],
+      "rejected": 49
+    },
+    {
+      "id": "acorn",
+      "category": "prop",
+      "queries": {
+        "specific": "acorn",
+        "groups": [
+          "acorn"
+        ],
+        "photo": "acorn",
+        "nameEn": "Acorn"
+      },
+      "pixel": [
+        "acorn-0-acorn_0.png",
+        "acorn-0-acorn_no_outline.png"
+      ],
+      "photo": [
+        "commons-Quercus-robur-acorn-Keila.jpg",
+        "commons-Acorns-on-the-granite-bench-October-2015-Stackin.jpg",
+        "commons-Jard-n-Bot-nico-Olarizu-Bellota-de-encina-01.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "swim-ring",
+      "category": "prop",
+      "queries": {
+        "specific": "swim ring float",
+        "groups": [],
+        "photo": "swim ring",
+        "nameEn": "Swim ring"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-At-Puri-beach-04.jpg",
+        "commons-Translucent-green-and-pink-swim-rings-on-water-2.jpg",
+        "commons-Blue-swim-ring-Swimming-Blythefield-Community-Po.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "driftwood",
+      "category": "ground",
+      "queries": {
+        "specific": "driftwood",
+        "groups": [
+          "log"
+        ],
+        "photo": "driftwood",
+        "nameEn": "Driftwood"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-La-Roque-Salagou-Lake-01.jpg",
+        "commons-Tronc-d-arbre-aux-Aresquiers.jpg",
+        "commons-Driftwood-in-Israel.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "shell-clam",
+      "category": "ground",
+      "queries": {
+        "specific": "seashell",
+        "groups": [
+          "shellfish"
+        ],
+        "photo": "clam shell",
+        "nameEn": "Clam shell"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Hippopus-hippopus-giant-clam-exposed-in-2800-yea.jpg",
+        "commons-Clam-shell-pile.jpg",
+        "commons-Neolithic-Longshan-Clam-Shell-Knives.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-starfish",
+      "category": "animal",
+      "queries": {
+        "specific": "starfish",
+        "groups": [
+          "starfish"
+        ],
+        "photo": "starfish",
+        "nameEn": "Starfish"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Crown-of-Thorns-Starfish-at-Malapascuas-Island-v.jpg",
+        "commons-Asterias-rubens.jpg",
+        "commons-Common-starfish-torbay.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "sea-stack",
+      "category": "ground",
+      "queries": {
+        "specific": "sea rock",
+        "groups": [
+          "rock"
+        ],
+        "photo": "sea stack",
+        "nameEn": "Sea stack"
+      },
+      "pixel": [
+        "rock-pile-Rock-20Pile_1.png",
+        "rock-pile-Rock-20Pile.png"
+      ],
+      "photo": [
+        "commons-Haltern-am-See-Sythen-Werkzeughalle-der-Quarzwer.jpg",
+        "commons-Second-Beach-Olympic-June-2018-008.jpg",
+        "commons-Flowerpot-sea-stack-01.jpg"
+      ],
+      "rejected": 4
+    },
+    {
+      "id": "seaweed-clump",
+      "category": "plant",
+      "queries": {
+        "specific": "seaweed",
+        "groups": [
+          "water plant"
+        ],
+        "photo": "seaweed on beach",
+        "nameEn": "Seaweed clump"
+      },
+      "pixel": [
+        "dancing-seaweed-0-dancing_seaweed.gif",
+        "dancing-seaweed-0-dancing_seaweed_0.gif"
+      ],
+      "photo": [
+        "commons-Shetland-sheep-feeding-on-seaweed-on-Westing-bea.jpg",
+        "commons-Seaweed-on-dune-at-Grotto-Beach-South-Africa.jpg",
+        "commons-Seaweed-on-Dunnet-beach-geograph.org.uk-7442418.jpg"
+      ],
+      "rejected": 13
+    },
+    {
+      "id": "dune-grass",
+      "category": "plant",
+      "queries": {
+        "specific": "grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "marram grass dune",
+        "nameEn": "Dune grass"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png",
+        "simple-grass-tileset-Simple-20Grass-20Tileset.png"
+      ],
+      "photo": [
+        "commons-Marram-grass-on-dune-at-N-rre-Vorup-r-Strand.jpg",
+        "commons-Marram-Grass-on-the-dunes-geograph.org.uk-172964.jpg",
+        "commons-Marram-Grass-and-Sand-Dune-geograph.org.uk-52118.jpg"
+      ],
+      "rejected": 133
+    },
+    {
+      "id": "tide-pool",
+      "category": "water",
+      "queries": {
+        "specific": "tide pool",
+        "groups": [
+          "puddle"
+        ],
+        "photo": "tide pool",
+        "nameEn": "Tide pool"
+      },
+      "pixel": [
+        "puddle-corpses-puddle_green.png",
+        "puddle-corpses-puddle_black.png"
+      ],
+      "photo": [
+        "commons-Calliarthron-tuberculosum-in-Monterey-12229-.jpg",
+        "commons-Vicinity-of-Pigeon-Point-Lighthouse.jpg",
+        "commons-Tide-pool-Cape-Enrage.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "gravel-patch",
+      "category": "ground",
+      "queries": {
+        "specific": "gravel",
+        "groups": [
+          "rock"
+        ],
+        "photo": "gravel",
+        "nameEn": "Gravel patch"
+      },
+      "pixel": [
+        "rock-pile-Rock-20Pile_1.png",
+        "rock-pile-Rock-20Pile.png"
+      ],
+      "photo": [
+        "commons-Kongensbro-gravel-pit-2014-09-17.jpg",
+        "commons-Owl-moth-Automeris-belti-belti-.jpg",
+        "commons-Pachygrapsus-marmoratus-2008-G1.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "tree-birch",
+      "category": "tree",
+      "queries": {
+        "specific": "birch",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "birch tree",
+        "nameEn": "Birch, spring"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Solitaire-berk-Betula-in-een-prachtig-landschap..jpg",
+        "commons-Part-of-birch-trunk-in-Norrkila.jpg",
+        "commons-Birch-walk-Weilerbach-Luxembg-01.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fern",
+      "category": "plant",
+      "queries": {
+        "specific": "fern",
+        "groups": [
+          "grass"
+        ],
+        "photo": "fern frond",
+        "nameEn": "Fern"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png",
+        "simple-grass-tileset-Simple-20Grass-20Tileset.png"
+      ],
+      "photo": [
+        "commons-Struthiopteris-spicant-Craig-Rhosyfelin-Frond.jpg",
+        "commons-Davalia-frond-parts.jpg",
+        "commons-Dry-fern-fronds-Burnside-Escarpment.jpg"
+      ],
+      "rejected": 54
+    },
+    {
+      "id": "moss-patch",
+      "category": "ground",
+      "queries": {
+        "specific": "moss",
+        "groups": [
+          "grass"
+        ],
+        "photo": "moss",
+        "nameEn": "Moss patch"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png",
+        "simple-grass-tileset-Simple-20Grass-20Tileset.png"
+      ],
+      "photo": [
+        "commons-Haeckel-Muscinae.jpg",
+        "commons-Cataract-Creek-Mount-Tamalpais-State-Park-Februa.jpg",
+        "commons-Pachygrapsus-marmoratus-2009-G3.jpg"
+      ],
+      "rejected": 56
+    },
+    {
+      "id": "silver-grass",
+      "category": "plant",
+      "queries": {
+        "specific": "grass",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Miscanthus sinensis",
+        "nameEn": "Silver grass tussock"
+      },
+      "pixel": [
+        "work-in-progress-grass-tileset-and-items-pixel-art-Game-.png",
+        "simple-grass-tileset-Simple-20Grass-20Tileset.png"
+      ],
+      "photo": [
+        "commons-2025.-Dicksonia-antarctica.-Osmunda-regalis.-Mis.jpg",
+        "commons-Japanese-pampas-grass-PB080105.jpg",
+        "commons-Miscanthus-sinensis-winter.jpg"
+      ],
+      "rejected": 66
+    },
+    {
+      "id": "sedge",
+      "category": "plant",
+      "queries": {
+        "specific": "sedge",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Carex sedge",
+        "nameEn": "Sedge"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Carex-flava-Niitv-lja.jpg",
+        "commons-MHNT-Carex-pendula-mature-infrutescences.jpg",
+        "commons-Carex-diversity-in-south-west-France.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "cattail",
+      "category": "plant",
+      "queries": {
+        "specific": "cattail",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Typha cattail",
+        "nameEn": "Cattail"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Typha-latifolia-Seehof-Winter-20160122-RM-092833.jpg",
+        "commons-Zaadpluizen-grote-lisdodde-Typha-latifolia-.-d.j.jpg",
+        "commons-Zaadpluizen-grote-lisdodde-Typha-latifolia-.-Loc.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bramble",
+      "category": "plant",
+      "queries": {
+        "specific": "bramble",
+        "groups": [
+          "bush"
+        ],
+        "photo": "bramble Rubus",
+        "nameEn": "Bramble"
+      },
+      "pixel": [
+        "bush-5-drawing_1.png",
+        "bush-5-drawing_1_0.png"
+      ],
+      "photo": [
+        "commons-Blackberry-Rubus-fruticosus-.jpg",
+        "commons-Rubus-saxatilis-RF.jpg",
+        "commons-Blackberry-fruits-2008-G1.jpg"
+      ],
+      "rejected": 15
+    },
+    {
+      "id": "flower-white",
+      "category": "plant",
+      "queries": {
+        "specific": "flower",
+        "groups": [
+          "flower"
+        ],
+        "photo": "white wildflower",
+        "nameEn": "Wildflower, white"
+      },
+      "pixel": [
+        "demon-flower-monster-sprite-sheet-mon4_idle.gif",
+        "demon-flower-monster-sprite-sheet-mon4_jump.gif",
+        "rose-flower-pyxeledit-document-and-image-rose.png",
+        "low-pixel-grass-flower-duck-hat-carrot-preitems.png"
+      ],
+      "photo": [
+        "commons-Small-white-Oldenlandia-wildflower-macro-image.jpg",
+        "commons-White-peony-with-wildflowers-Ehrenbach.jpg",
+        "commons-White-Wildflower-in-the-Garden-Hedge-at-United-U.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "flower-violet",
+      "category": "plant",
+      "queries": {
+        "specific": "flower",
+        "groups": [
+          "flower"
+        ],
+        "photo": "violet wildflower",
+        "nameEn": "Wildflower, violet"
+      },
+      "pixel": [
+        "demon-flower-monster-sprite-sheet-mon4_idle.gif",
+        "demon-flower-monster-sprite-sheet-mon4_jump.gif",
+        "rose-flower-pyxeledit-document-and-image-rose.png",
+        "low-pixel-grass-flower-duck-hat-carrot-preitems.png"
+      ],
+      "photo": [
+        "commons-Evergreen-Violet-an-early-season-wildflower-Olym.jpg",
+        "commons-Birdfoot-Violet-6819002786-.jpg",
+        "commons-9-09Perth-Wildflower-1-purple-hibiscus-401088520.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "flower-cream",
+      "category": "plant",
+      "queries": {
+        "specific": "flower",
+        "groups": [
+          "flower"
+        ],
+        "photo": "cream wildflower",
+        "nameEn": "Wildflower, cream"
+      },
+      "pixel": [
+        "demon-flower-monster-sprite-sheet-mon4_idle.gif",
+        "demon-flower-monster-sprite-sheet-mon4_jump.gif",
+        "rose-flower-pyxeledit-document-and-image-rose.png",
+        "low-pixel-grass-flower-duck-hat-carrot-preitems.png"
+      ],
+      "photo": [
+        "commons-Wildflower-Wander-Flickr-RuggyBearLA.jpg",
+        "commons-Cream-Cups-Closeup-29754317381-.jpg",
+        "commons-Cream-Cups-And-Friends-101860697-.jpg"
+      ],
+      "rejected": 9
+    },
+    {
+      "id": "boulder",
+      "category": "ground",
+      "queries": {
+        "specific": "boulder",
+        "groups": [
+          "rock"
+        ],
+        "photo": "boulder",
+        "nameEn": "Boulder"
+      },
+      "pixel": [
+        "boulder-boulder_1.png",
+        "basic-boulder-spr_boulder_0.png",
+        "basic-boulder-spr_boulder_0_0.png",
+        "rock-pile-Rock-20Pile_1.png"
+      ],
+      "photo": [
+        "commons-Hampi-India-Rocky-landscape-of-Hampi-Granite-roc.jpg",
+        "commons-BoulderBearPeak.jpg",
+        "commons-Boulder-Colorado-ca.-1900.jpg"
+      ],
+      "rejected": 4
+    },
+    {
+      "id": "snow-drift",
+      "category": "ground",
+      "queries": {
+        "specific": "snow",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowdrift",
+        "nameEn": "Snow drift"
+      },
+      "pixel": [
+        "snow-lion-Bitmap_4429_0.png",
+        "snow-lion-Bitmap_4429.png",
+        "basic-platformer-snow-ground-32x32-Basic_SnowGround_Corn.png"
+      ],
+      "photo": [
+        "commons-Edward-Onslow-Ford-1852-1901-The-Snowdrift-1901-.jpg",
+        "commons-Snowdrifts-and-footprints-at-night-Somerville-MA.jpg"
+      ],
+      "rejected": 47
+    },
+    {
+      "id": "icicle",
+      "category": "prop",
+      "queries": {
+        "specific": "icicle",
+        "groups": [
+          "snow"
+        ],
+        "photo": "icicle",
+        "nameEn": "Icicle"
+      },
+      "pixel": [
+        "snow-lion-Bitmap_4429_0.png",
+        "snow-lion-Bitmap_4429.png"
+      ],
+      "photo": [
+        "commons-Ice-formations-2.jpg",
+        "commons-Ice-cave-on-Olkhon-island.jpg",
+        "commons-EbniterStr04.jpg"
+      ],
+      "rejected": 15
+    },
+    {
+      "id": "pinecone",
+      "category": "prop",
+      "queries": {
+        "specific": "pinecone",
+        "groups": [
+          "acorn"
+        ],
+        "photo": "pine cone",
+        "nameEn": "Pine cone"
+      },
+      "pixel": [
+        "acorn-0-acorn_0.png",
+        "acorn-0-acorn_no_outline.png"
+      ],
+      "photo": [
+        "commons-Pollen-cone-on-a-Ponderosa-pine-in-Tuntorp-Brast.jpg",
+        "commons-Pinus-coulteri-MHNT-Cone.jpg",
+        "commons-Pine-cones-male-and-female.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "feather",
+      "category": "prop",
+      "queries": {
+        "specific": "feather",
+        "groups": [],
+        "photo": "bird feather",
+        "nameEn": "Feather"
+      },
+      "pixel": [
+        "feather-feather_3.png",
+        "feather-feather_4.png"
+      ],
+      "photo": [
+        "commons-Feather-of-male-Pavo-cristatus-Indian-peafowl-.jpg",
+        "commons-Peacock-feather-close-up.jpg",
+        "commons-Ganzenveer-bedekt-met-dauw.-d.j.b.-02.jpg"
+      ],
+      "rejected": 12
+    },
+    {
+      "id": "berry-bush",
+      "category": "plant",
+      "queries": {
+        "specific": "berry bush",
+        "groups": [
+          "bush"
+        ],
+        "photo": "berry bush",
+        "nameEn": "Berry bush"
+      },
+      "pixel": [
+        "bush-5-drawing_1.png",
+        "bush-5-drawing_1_0.png"
+      ],
+      "photo": [
+        "commons-Flueggea-virosa-berries-6689345895-.jpg",
+        "commons-Starr-030711-0051-Flueggea-virosa.jpg",
+        "commons-Starr-020108-0011-Flueggea-virosa.jpg"
+      ],
+      "rejected": 14
+    },
+    {
+      "id": "puddle",
+      "category": "water",
+      "queries": {
+        "specific": "puddle",
+        "groups": [
+          "puddle"
+        ],
+        "photo": "puddle",
+        "nameEn": "Puddle"
+      },
+      "pixel": [
+        "puddle-corpses-puddle_green.png",
+        "puddle-corpses-puddle_black.png"
+      ],
+      "photo": [
+        "commons-Reflet-tour-Eiffel-Paris-Luc-Viatour.jpg",
+        "commons-Muddy-road-in-Akamas-Peninsula-Cyprus-02.jpg",
+        "commons-VKG-Ojamaa-kaevandus.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "sun-disc",
+      "category": "sky",
+      "queries": {
+        "specific": "sun",
+        "groups": [
+          "sun"
+        ],
+        "photo": "sun in sky",
+        "nameEn": "Sun"
+      },
+      "pixel": [
+        "sun-earth-and-moon-sun_earth_moon.png",
+        "sun-earth-and-moon-space_10.png",
+        "pixel-art-cartoon-sun-sun_12.png",
+        "pixel-art-cartoon-sun-sun_9.png"
+      ],
+      "photo": [
+        "commons-Sky-Sun-Down.jpg",
+        "commons-Beinn-an-Dothaidh-in-morning-sun-Scotland.jpg",
+        "commons-Mrg-sun-sky-blue.jpg"
+      ],
+      "rejected": 28
+    },
+    {
+      "id": "moon-phase",
+      "category": "sky",
+      "queries": {
+        "specific": "moon",
+        "groups": [
+          "moon"
+        ],
+        "photo": "moon phases",
+        "nameEn": "Moon phases"
+      },
+      "pixel": [
+        "sun-earth-and-moon-sun_earth_moon.png",
+        "sun-earth-and-moon-space_10.png",
+        "the-mocking-moon-moon.gif",
+        "the-mocking-moon-moon_0.gif"
+      ],
+      "photo": [
+        "commons-Lunar-phases-al-Biruni.jpg",
+        "commons-Moon-phases-bel.jpg",
+        "commons-Moon-Phase-PSF-.jpg"
+      ],
+      "rejected": 63
+    },
+    {
+      "id": "comet",
+      "category": "sky",
+      "queries": {
+        "specific": "comet",
+        "groups": [
+          "moon"
+        ],
+        "photo": "comet",
+        "nameEn": "Comet"
+      },
+      "pixel": [
+        "sun-earth-and-moon-sun_earth_moon.png",
+        "sun-earth-and-moon-space_10.png"
+      ],
+      "photo": [
+        "commons-Comet-Hale-Bopp-29-03-1997-hires-adj.jpg",
+        "commons-Comet-C-2025-A6-Lemmon-and-Northen-lights-in-Maa.jpg",
+        "commons-Comet-67P-on-19-September-2014-NavCam-mosaic.jpg"
+      ],
+      "rejected": 26
+    },
+    {
+      "id": "shooting-star",
+      "category": "sky",
+      "queries": {
+        "specific": "shooting star",
+        "groups": [
+          "moon"
+        ],
+        "photo": "meteor night sky",
+        "nameEn": "Shooting star"
+      },
+      "pixel": [
+        "sun-earth-and-moon-sun_earth_moon.png",
+        "sun-earth-and-moon-space_10.png"
+      ],
+      "photo": [
+        "commons-Night-sky-near-Flagstaff-with-meteor.jpg",
+        "commons-Night-sky-over-Barringer-Meteor-Crater-near-Wins.jpg",
+        "commons-Meteor-8.5.2016.jpg"
+      ],
+      "rejected": 23
+    },
+    {
+      "id": "cloud-low",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cumulus cloud",
+        "nameEn": "Cloud, low"
+      },
+      "pixel": [
+        "lightning-cloud-lightning.gif",
+        "cloud-2-nuvem.png",
+        "cloud-2-nuvem_0.png",
+        "mad-cloud-Cloud-20head.png"
+      ],
+      "photo": [
+        "commons-Cumulus-cloud-above-Lechtaler-Alps-at-tannheim-A.jpg",
+        "commons-Cumulus-humilis-39.jpg",
+        "commons-Img20050526-0007-en-tannheim-cumulus.jpg"
+      ],
+      "rejected": 33
+    },
+    {
+      "id": "cloud-mid",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "altocumulus cloud",
+        "nameEn": "Cloud, mid"
+      },
+      "pixel": [
+        "lightning-cloud-lightning.gif",
+        "cloud-2-nuvem.png",
+        "cloud-2-nuvem_0.png",
+        "mad-cloud-Cloud-20head.png"
+      ],
+      "photo": [
+        "commons-Oratunturi-central-summit-from-the-west-in-midni.jpg",
+        "commons-Midnight-clouds-from-Oratunturi-in-Sodankyl-Lapl.jpg",
+        "commons-Altocumulus-cloud.jpg"
+      ],
+      "rejected": 32
+    },
+    {
+      "id": "cloud-high",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cirrus cloud",
+        "nameEn": "Cirrus, long"
+      },
+      "pixel": [
+        "lightning-cloud-lightning.gif",
+        "cloud-2-nuvem.png",
+        "cloud-2-nuvem_0.png",
+        "mad-cloud-Cloud-20head.png"
+      ],
+      "photo": [
+        "commons-Cirrus-uncinus-clouds-in-the-morning-sky.jpg",
+        "commons-Quill-shaped-cirrus-cloud.jpg",
+        "commons-Cirrus-front-over-Austnesfjorden-Austv-g-ya-Lofo.jpg"
+      ],
+      "rejected": 32
+    },
+    {
+      "id": "cloud-wisp",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cirrus cloud",
+        "nameEn": "Cirrus, short"
+      },
+      "pixel": [
+        "lightning-cloud-lightning.gif",
+        "cloud-2-nuvem.png",
+        "cloud-2-nuvem_0.png",
+        "mad-cloud-Cloud-20head.png"
+      ],
+      "photo": [
+        "commons-Cirrus-uncinus-clouds-in-the-morning-sky.jpg",
+        "commons-Quill-shaped-cirrus-cloud.jpg",
+        "commons-Cirrus-front-over-Austnesfjorden-Austv-g-ya-Lofo.jpg"
+      ],
+      "rejected": 32
+    },
+    {
+      "id": "cloud-storm",
+      "category": "sky",
+      "queries": {
+        "specific": "storm cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cumulonimbus cloud",
+        "nameEn": "Rain cloud"
+      },
+      "pixel": [
+        "lightning-cloud-lightning.gif",
+        "lighting-cloud-pixel-64x64_0.png",
+        "lighting-cloud-pixel-64x64_1.png",
+        "cloud-2-nuvem.png"
+      ],
+      "photo": [
+        "commons-Cloud-cumulonimbus-at-baltic-sea-1-.jpg",
+        "commons-Cumulonimbus-sunset-panorama-Albury-NSW-Australi.jpg",
+        "commons-Large-cloud-over-Mexican-landscape.jpg"
+      ],
+      "rejected": 17
+    },
+    {
+      "id": "footlog",
+      "category": "ground",
+      "queries": {
+        "specific": "fallen log",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "fallen tree trunk",
+        "nameEn": "Fallen trunk"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Fallen-tree-trunk-geograph.org.uk-7348166.jpg",
+        "commons-Fallen-tree-trunk-geograph.org.uk-7066614.jpg",
+        "commons-Expectations-monkeys-on-a-fallen-tree-trunk-of-S.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "fish-palechub",
+      "category": "fish",
+      "queries": {
+        "specific": "pale chub",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Pale chub",
+        "nameEn": "Pale chub"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Cyprinidae-Zacco-platypus-1.jpg",
+        "commons-Zacco-platypus-Marinepia.jpg",
+        "commons-Zacco-platypus-by-OpenCage.jpg"
+      ],
+      "rejected": 5
+    },
+    {
+      "id": "fish-chinesemin",
+      "category": "fish",
+      "queries": {
+        "specific": "chinese minnow",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Chinese minnow",
+        "nameEn": "Chinese minnow"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Phoxinus-oxycephalus-jouyi3.jpg",
+        "commons-Phoxinus-oxycephalus-jouyi-Gobius.jpg",
+        "commons-Phoxinus-oxycephalus-jouyi2.jpg"
+      ],
+      "rejected": 5
+    },
+    {
+      "id": "fish-darkchub",
+      "category": "fish",
+      "queries": {
+        "specific": "dark chub",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Dark chub",
+        "nameEn": "Dark chub"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Nipponocypris-temminckii.jpg",
+        "commons-Nipponocypris-temminckii-Isahaya.jpg",
+        "commons-Nipponocypris-temminckii-Shizuoka-3.jpg"
+      ],
+      "rejected": 4
+    },
+    {
+      "id": "fish-crucian",
+      "category": "fish",
+      "queries": {
+        "specific": "crucian carp",
+        "groups": [
+          "pond fish"
+        ],
+        "photo": "Crucian carp",
+        "nameEn": "Crucian carp"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Cyprinidae-Carassius-carassius-1.jpg",
+        "commons-CarassiusCarassius8.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-carp",
+      "category": "fish",
+      "queries": {
+        "specific": "common carp",
+        "groups": [
+          "pond fish"
+        ],
+        "photo": "Common carp",
+        "nameEn": "Common carp"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Cyprinus-carpio-Carpe-commune-426.jpg",
+        "commons-Cyprinus-carpio-2021-G2.jpg",
+        "commons-Sakata-Kaidomaru-struggling-with-a-huge-carp-und.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-loach",
+      "category": "fish",
+      "queries": {
+        "specific": "loach",
+        "groups": [
+          "pond fish",
+          "river fish"
+        ],
+        "photo": "Loach",
+        "nameEn": "Loach"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Ken-Loach-al-Pierrot.jpg",
+        "commons-Ken-Loach.jpg",
+        "commons-OH-6-Right-side.jpg"
+      ],
+      "rejected": 7
+    },
+    {
+      "id": "fish-catfish",
+      "category": "fish",
+      "queries": {
+        "specific": "far eastern catfish",
+        "groups": [
+          "catfish",
+          "pond fish",
+          "river fish"
+        ],
+        "photo": "Far Eastern catfish",
+        "nameEn": "Far Eastern catfish"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Mississippi-swampland-ESA347251.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "fish-mandarin",
+      "category": "fish",
+      "queries": {
+        "specific": "mandarin fish",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Mandarin fish",
+        "nameEn": "Mandarin fish"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Fermented-mandarin-fish.jpg",
+        "commons-.jpg",
+        "commons-Freshippo-mandarin-fish.jpg"
+      ],
+      "rejected": 4
+    },
+    {
+      "id": "fish-bitterling",
+      "category": "fish",
+      "queries": {
+        "specific": "korean rosy bitterling",
+        "groups": [
+          "pond fish"
+        ],
+        "photo": "Korean rosy bitterling",
+        "nameEn": "Korean rosy bitterling"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-bullhead",
+      "category": "fish",
+      "queries": {
+        "specific": "korean bullhead",
+        "groups": [
+          "catfish",
+          "river fish"
+        ],
+        "photo": "Korean bullhead",
+        "nameEn": "Korean bullhead"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-4.jpg",
+        "commons-Tachysurus-fulvidraco-from-the-Lake-Khanka.jpg",
+        "commons-Yellow-catfish-Pelteobagrus-fulvidraco-1.jpg"
+      ],
+      "rejected": 4
+    },
+    {
+      "id": "fish-sweetfish",
+      "category": "fish",
+      "queries": {
+        "specific": "ayu",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Plecoglossus altivelis",
+        "nameEn": "Ayu"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 5
+    },
+    {
+      "id": "fish-lenok",
+      "category": "fish",
+      "queries": {
+        "specific": "lenok",
+        "groups": [
+          "salmon",
+          "river fish"
+        ],
+        "photo": "Brachymystax lenok",
+        "nameEn": "Lenok"
+      },
+      "pixel": [
+        "singin-salmon-Singin-27-20Salmon.gif",
+        "singin-salmon-Singin-27-20Salmon_0.gif"
+      ],
+      "photo": [],
+      "rejected": 5
+    },
+    {
+      "id": "fish-cherrytrout",
+      "category": "fish",
+      "queries": {
+        "specific": "cherry trout",
+        "groups": [
+          "salmon",
+          "river fish"
+        ],
+        "photo": "Cherry trout",
+        "nameEn": "Cherry trout"
+      },
+      "pixel": [
+        "singin-salmon-Singin-27-20Salmon.gif",
+        "singin-salmon-Singin-27-20Salmon_0.gif"
+      ],
+      "photo": [],
+      "rejected": 5
+    },
+    {
+      "id": "fish-eel",
+      "category": "fish",
+      "queries": {
+        "specific": "japanese eel",
+        "groups": [
+          "eel",
+          "river fish"
+        ],
+        "photo": "Japanese eel",
+        "nameEn": "Japanese eel"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 5
+    },
+    {
+      "id": "fish-snakehead",
+      "category": "fish",
+      "queries": {
+        "specific": "snakehead",
+        "groups": [
+          "pond fish",
+          "river fish"
+        ],
+        "photo": "Snakehead",
+        "nameEn": "Snakehead"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 5
+    },
+    {
+      "id": "fish-mudskipper",
+      "category": "fish",
+      "queries": {
+        "specific": "mudskipper",
+        "groups": [
+          "goby",
+          "sea fish"
+        ],
+        "photo": "Mudskipper",
+        "nameEn": "Mudskipper"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 11
+    },
+    {
+      "id": "fish-goby",
+      "category": "fish",
+      "queries": {
+        "specific": "goby",
+        "groups": [
+          "goby",
+          "sea fish"
+        ],
+        "photo": "Goby",
+        "nameEn": "Goby"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-mullet",
+      "category": "fish",
+      "queries": {
+        "specific": "flathead mullet",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Flathead mullet",
+        "nameEn": "Flathead mullet"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-rockfish",
+      "category": "fish",
+      "queries": {
+        "specific": "korean rockfish",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Korean rockfish",
+        "nameEn": "Korean rockfish"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-seabass",
+      "category": "fish",
+      "queries": {
+        "specific": "jacopever",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Sebastes schlegelii",
+        "nameEn": "Jacopever"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-wrasse",
+      "category": "fish",
+      "queries": {
+        "specific": "wrasse",
+        "groups": [
+          "reef fish",
+          "sea fish"
+        ],
+        "photo": "Wrasse",
+        "nameEn": "Wrasse"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-flounder",
+      "category": "fish",
+      "queries": {
+        "specific": "olive flounder",
+        "groups": [
+          "flatfish",
+          "sea fish"
+        ],
+        "photo": "Olive flounder",
+        "nameEn": "Olive flounder"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-halibut",
+      "category": "fish",
+      "queries": {
+        "specific": "righteye flounder",
+        "groups": [
+          "flatfish",
+          "sea fish"
+        ],
+        "photo": "righteye flounder",
+        "nameEn": "Righteye flounder"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-halfbeak",
+      "category": "fish",
+      "queries": {
+        "specific": "halfbeak",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Halfbeak",
+        "nameEn": "Halfbeak"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-shad",
+      "category": "fish",
+      "queries": {
+        "specific": "gizzard shad",
+        "groups": [
+          "mackerel",
+          "sea fish"
+        ],
+        "photo": "Gizzard shad",
+        "nameEn": "Gizzard shad"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-mackerel",
+      "category": "fish",
+      "queries": {
+        "specific": "chub mackerel",
+        "groups": [
+          "mackerel",
+          "sea fish"
+        ],
+        "photo": "Chub mackerel",
+        "nameEn": "Chub mackerel"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-yellowtail",
+      "category": "fish",
+      "queries": {
+        "specific": "yellowtail",
+        "groups": [
+          "tuna",
+          "sea fish"
+        ],
+        "photo": "Yellowtail",
+        "nameEn": "Yellowtail"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-spanishmack",
+      "category": "fish",
+      "queries": {
+        "specific": "spanish mackerel",
+        "groups": [
+          "tuna",
+          "sea fish"
+        ],
+        "photo": "Spanish mackerel",
+        "nameEn": "Spanish mackerel"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-dolphinfish",
+      "category": "fish",
+      "queries": {
+        "specific": "mahi",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Mahi-mahi",
+        "nameEn": "Mahi-mahi"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-tuna",
+      "category": "fish",
+      "queries": {
+        "specific": "bluefin tuna",
+        "groups": [
+          "tuna",
+          "sea fish"
+        ],
+        "photo": "Bluefin tuna",
+        "nameEn": "Bluefin tuna"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [],
+      "rejected": 10
+    },
+    {
+      "id": "fish-sunfish",
+      "category": "fish",
+      "queries": {
+        "specific": "ocean sunfish",
+        "groups": [
+          "sunfish",
+          "sea fish"
+        ],
+        "photo": "Ocean sunfish",
+        "nameEn": "Ocean sunfish"
+      },
+      "pixel": [
+        "heroic-sunfish-sunfish-big-fat.png",
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [
+        "commons-Sunfish2.jpg",
+        "commons-Mola-mola-stuffed-museum-La-Rochelle.jpg",
+        "commons-Redear-sunfish-FWS-1.jpg"
+      ],
+      "rejected": 9
+    },
+    {
+      "id": "fish-ray",
+      "category": "fish",
+      "queries": {
+        "specific": "stingray",
+        "groups": [
+          "ray",
+          "sea fish"
+        ],
+        "photo": "stingray",
+        "nameEn": "Ray"
+      },
+      "pixel": [
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [
+        "commons-MQ-25-refuels-F-35C-cropped-.jpg",
+        "commons-MQ-25-T1-Stingray-test-aircraft-takes-off.jpg",
+        "commons-Stingray-Myliobatoidei-in-Cozumel-Mexico.jpg"
+      ],
+      "rejected": 11
+    },
+    {
+      "id": "fish-shark",
+      "category": "fish",
+      "queries": {
+        "specific": "mako shark",
+        "groups": [
+          "shark",
+          "sea fish"
+        ],
+        "photo": "Mako shark",
+        "nameEn": "Mako shark"
+      },
+      "pixel": [
+        "2d-shark-not-animated-Shark1.png",
+        "shark-001-shark_001_64px.gif",
+        "monstruous-fish-boss-monstruous_fish.png"
+      ],
+      "photo": [
+        "commons-Isurus-oxyrinchus-Machoire.jpg",
+        "commons-1965-Mako-Shark-3000px.jpg",
+        "commons-GM-Heritage-Center-088-Corvette-Mako-Shark-I-and.jpg"
+      ],
+      "rejected": 11
+    },
+    {
+      "id": "fish-anglerfish",
+      "category": "fish",
+      "queries": {
+        "specific": "anglerfish",
+        "groups": [
+          "anglerfish",
+          "deep sea"
+        ],
+        "photo": "Anglerfish",
+        "nameEn": "Anglerfish"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Lophius-piscatorius-MHNT.jpg",
+        "commons-Lophius-piscatorius-Seeteufel.jpg",
+        "commons-Lophius-piscatorius-375858255.jpg"
+      ],
+      "rejected": 7
+    },
+    {
+      "id": "fish-lanternfish",
+      "category": "fish",
+      "queries": {
+        "specific": "lanternfish",
+        "groups": [
+          "deep sea"
+        ],
+        "photo": "Lanternfish",
+        "nameEn": "Lanternfish"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Diaphus-effulgens.jpg",
+        "commons-Fresh-Benthosema-glaciale.jpg",
+        "commons-Population-of-the-deep-sea-Myctophidae-and-other.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-viperfish",
+      "category": "fish",
+      "queries": {
+        "specific": "viperfish",
+        "groups": [
+          "deep sea"
+        ],
+        "photo": "Viperfish",
+        "nameEn": "Viperfish"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Chauliodus-eximus-LACM.jpg",
+        "commons-NOAA-Ocean-Exploration-Viperfish-Chauliodus-dana.jpg",
+        "commons-Messina-Straits-Chauliodus-sloani.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "fish-gulpereel",
+      "category": "fish",
+      "queries": {
+        "specific": "gulper eel",
+        "groups": [
+          "eel",
+          "deep sea"
+        ],
+        "photo": "Gulper eel",
+        "nameEn": "Gulper eel"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Eurypharynx-pelecanoides.jpg",
+        "commons-Eurypharynx-head.jpg",
+        "commons-Eurypharynx-leptocephalus.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-squid",
+      "category": "fish",
+      "queries": {
+        "specific": "giant squid",
+        "groups": [
+          "squid",
+          "deep sea"
+        ],
+        "photo": "Giant squid",
+        "nameEn": "Giant squid"
+      },
+      "pixel": [
+        "cugzilia-ii-prototype-squid-kraken_anim.gif",
+        "cugzilia-ii-prototype-squid-kraken_anim_0.gif"
+      ],
+      "photo": [
+        "commons-Giant-squid-Architeuthis-dux-Steenstrup-1857-hol.jpg",
+        "commons-Architeuthis-dux-holotype-sucker-.jpg",
+        "commons-Architeuthis-dux-68146399.jpg"
+      ],
+      "rejected": 4
+    },
+    {
+      "id": "fish-jelly",
+      "category": "fish",
+      "queries": {
+        "specific": "jellyfish",
+        "groups": [
+          "jellyfish",
+          "deep sea"
+        ],
+        "photo": "siphonophore",
+        "nameEn": "Siphonophore"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Photographs-of-living-siphonophores.jpg",
+        "commons-Portuguese-Man-O-War-Physalia-physalis-.jpg",
+        "commons-Sifon-foro-planct-nico-2002-.jpg"
+      ],
+      "rejected": 17
+    },
+    {
+      "id": "fish-whale-shadow",
+      "category": "fish",
+      "queries": {
+        "specific": "whale",
+        "groups": [
+          "whale",
+          "deep sea"
+        ],
+        "photo": "sperm whale",
+        "nameEn": "Sperm whale"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Mother-and-baby-sperm-whale.jpg",
+        "commons-Sperm-whale-pod-recolored.jpg",
+        "commons-Zoomed-image-of-a-Sperm-Whale-Physeter-macroceph.jpg"
+      ],
+      "rejected": 9
+    },
+    {
+      "id": "bug-cabbagewhite",
+      "category": "bug",
+      "queries": {
+        "specific": "white butterfly",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Cabbage white",
+        "nameEn": "Cabbage white"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Pieris-brassicae-auf-Centaurea-jacea-01.jpg",
+        "commons-Pieris-brassicae-6-.jpg",
+        "commons-Large-white-Pieris-brassicae-underside.jpg"
+      ],
+      "rejected": 9
+    },
+    {
+      "id": "bug-swallowtail",
+      "category": "bug",
+      "queries": {
+        "specific": "swallowtail",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Swallowtail",
+        "nameEn": "Swallowtail"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Papilio-machaon-Mitterbach-01.jpg",
+        "commons-Papilio-machaon-Swallowtail-1.jpg",
+        "commons-Old-World-swallowtail-Papilio-machaon-gorganus-u.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "bug-blackswallow",
+      "category": "bug",
+      "queries": {
+        "specific": "black swallowtail",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Black swallowtail",
+        "nameEn": "Black swallowtail"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Papilio-polyxenes-MD2.jpg",
+        "commons-Papilio-polyxenes-MD1.jpg",
+        "commons-Papilio-polyxenes-stabilis.jpg"
+      ],
+      "rejected": 7
+    },
+    {
+      "id": "bug-blue",
+      "category": "bug",
+      "queries": {
+        "specific": "blue butterfly",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Lycaenidae butterfly",
+        "nameEn": "Blue butterfly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-2018-06-01-138-Lycaenidae-gossamer-winged-butter.jpg",
+        "commons-2018-06-01-139-Lycaenidae-gossamer-winged-butter.jpg",
+        "commons-Butterfly-Luc-Viatour.jpg"
+      ],
+      "rejected": 7
+    },
+    {
+      "id": "bug-comma",
+      "category": "bug",
+      "queries": {
+        "specific": "butterfly",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Polygonia c-album",
+        "nameEn": "Comma butterfly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Polygonia-c-album-qtl2.jpg",
+        "commons-Polygonia-c-album-DePanne.jpg",
+        "commons-Comma-butterfly-Polygonia-c-album-ab-hutchinsoni.jpg"
+      ],
+      "rejected": 12
+    },
+    {
+      "id": "bug-ladybug",
+      "category": "bug",
+      "queries": {
+        "specific": "ladybug",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Ladybug",
+        "nameEn": "Ladybug"
+      },
+      "pixel": [
+        "34-view-beetle-manaworldbeetle2.png",
+        "red-beetle-pixelart-sprites-sprite-0002.gif"
+      ],
+      "photo": [],
+      "rejected": 3
+    },
+    {
+      "id": "bug-honeybee",
+      "category": "bug",
+      "queries": {
+        "specific": "honeybee",
+        "groups": [
+          "bee"
+        ],
+        "photo": "Honeybee",
+        "nameEn": "Honeybee"
+      },
+      "pixel": [
+        "miss-bee-image_53.png",
+        "miss-bee-image_52.png"
+      ],
+      "photo": [
+        "commons-European-honey-bee-extracts-nectar.jpg",
+        "commons-Apis-mellifera-Melilotus-albus-Keila.jpg",
+        "commons-Thomisus-onustus-with-Apis-mellifera.jpg"
+      ],
+      "rejected": 9
+    },
+    {
+      "id": "bug-bumblebee",
+      "category": "bug",
+      "queries": {
+        "specific": "bumblebee",
+        "groups": [
+          "bee"
+        ],
+        "photo": "Bumblebee",
+        "nameEn": "Bumblebee"
+      },
+      "pixel": [
+        "miss-bee-image_53.png",
+        "miss-bee-image_52.png"
+      ],
+      "photo": [
+        "commons-Bombus-terrestris-queen-Tilia-cordata-Keila.jpg",
+        "commons-Bumblebee-October-2007-3a.jpg",
+        "commons-Bombus-Bumblebee-Bestoevning-.jpg"
+      ],
+      "rejected": 8
+    },
+    {
+      "id": "bug-hornet",
+      "category": "bug",
+      "queries": {
+        "specific": "hornet",
+        "groups": [
+          "bee"
+        ],
+        "photo": "Hornet",
+        "nameEn": "Hornet"
+      },
+      "pixel": [
+        "miss-bee-image_53.png",
+        "miss-bee-image_52.png"
+      ],
+      "photo": [
+        "commons-F-A-18-Hornet-with-condensation-clouds-from-shoc.jpg",
+        "commons-F-18.jpg",
+        "commons-Vespa-crabro-head-01.jpg"
+      ],
+      "rejected": 12
+    },
+    {
+      "id": "bug-reddragonfly",
+      "category": "bug",
+      "queries": {
+        "specific": "red dragonfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Red dragonfly",
+        "nameEn": "Red dragonfly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Common-darter-dragonflies-Sympetrum-striolatum-m.jpg",
+        "commons-Orthetrum-cancellatum.jpg",
+        "commons-Indonesian-Red-winged-Dragonfly-Neurothemis-term.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-emperordragon",
+      "category": "bug",
+      "queries": {
+        "specific": "emperor dragonfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Emperor dragonfly",
+        "nameEn": "Emperor dragonfly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Anax-imperator-qtl2.jpg",
+        "commons-021a-European-bee-eater-eating-an-Emperor-dragon.jpg",
+        "commons-007c-European-bee-eater-eating-an-Emperor-dragon.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-damselfly",
+      "category": "bug",
+      "queries": {
+        "specific": "damselfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Damselfly",
+        "nameEn": "Damselfly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Common-blue-damselfly-Enallagma-cyathigerum-imma.jpg",
+        "commons-Common-blue-damselfly02.jpg",
+        "commons-Platycnemis-pennipes-qtl1.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "bug-goldendragon",
+      "category": "bug",
+      "queries": {
+        "specific": "golden-ringed dragonfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Golden-ringed dragonfly",
+        "nameEn": "Golden-ringed dragonfly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Golden-ringed-dragonfly-Cordulegaster-boltonii-m.jpg",
+        "commons-Cordulegaster-boltonii-Harriehausen-crop43.jpg",
+        "commons-Cordulegaster-boltonii-Le-Collet-de-D-ze-Loz-re-.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-stagbeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "stag beetle",
+        "groups": [
+          "stag beetle",
+          "beetle"
+        ],
+        "photo": "Stag beetle",
+        "nameEn": "Stag beetle"
+      },
+      "pixel": [
+        "34-view-beetle-manaworldbeetle2.png",
+        "red-beetle-pixelart-sprites-sprite-0002.gif"
+      ],
+      "photo": [
+        "commons-Lucanus-cervus-Femelle-MHNT.jpg",
+        "commons-Cerf-volant-MHNT-male-et-femelle.jpg",
+        "commons-20200529-Lucanus-cervus-02.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "bug-rhinobeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "rhinoceros beetle",
+        "groups": [
+          "rhino beetle",
+          "beetle"
+        ],
+        "photo": "Rhinoceros beetle",
+        "nameEn": "Rhinoceros beetle"
+      },
+      "pixel": [
+        "34-view-beetle-manaworldbeetle2.png",
+        "red-beetle-pixelart-sprites-sprite-0002.gif"
+      ],
+      "photo": [
+        "commons-Three-horned-rhinoceros-beetle-Chalcosoma-moelle.jpg",
+        "commons-Rhinoceros-bettle-ariel-view-7-.jpg",
+        "commons-Xylotrupes-socrates-Siamese-rhinoceros-beetle-.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-scarab",
+      "category": "bug",
+      "queries": {
+        "specific": "scarab beetle",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Scarab beetle",
+        "nameEn": "Scarab beetle"
+      },
+      "pixel": [
+        "34-view-beetle-manaworldbeetle2.png",
+        "red-beetle-pixelart-sprites-sprite-0002.gif"
+      ],
+      "photo": [
+        "commons-Cetonia-aurata.jpg",
+        "commons-Karnak-temple-scarab-beetle-A.jpg",
+        "commons-Scarab-with-inscribed-beetle-Brighton-Museum-and.jpg"
+      ],
+      "rejected": 3
+    },
+    {
+      "id": "bug-longhorn",
+      "category": "bug",
+      "queries": {
+        "specific": "longhorn beetle",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Longhorn beetle",
+        "nameEn": "Longhorn beetle"
+      },
+      "pixel": [
+        "34-view-beetle-manaworldbeetle2.png",
+        "red-beetle-pixelart-sprites-sprite-0002.gif"
+      ],
+      "photo": [
+        "commons-Batus-barbicornis-MHNT-femelle.jpg",
+        "commons-The-longhorn-beetle-Morimus-funereus-.jpg",
+        "commons-Longhorn-Beetle-Whitespotted-Sawyer-USA.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-cicada",
+      "category": "bug",
+      "queries": {
+        "specific": "cicada",
+        "groups": [
+          "cicada"
+        ],
+        "photo": "Cicada",
+        "nameEn": "Cicada"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Cicada-exuvia.jpg",
+        "commons-Cicada-Sitia-Lasithi-Crete-Greece.jpg",
+        "commons-Northern-dog-day-cicada-shell-on-a-flower-53121-.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-largecicada",
+      "category": "bug",
+      "queries": {
+        "specific": "large black cicada",
+        "groups": [
+          "cicada"
+        ],
+        "photo": "Large black cicada",
+        "nameEn": "Large black cicada"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Cicada-in-the-Woods-7998702e-02f6-4a58-a609-738d.jpg",
+        "commons-Cigale-cicada-III-2746278180-.jpg",
+        "commons-Cigale-cicada-II-2745440457-.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-katydid",
+      "category": "bug",
+      "queries": {
+        "specific": "katydid",
+        "groups": [
+          "cricket"
+        ],
+        "photo": "Katydid",
+        "nameEn": "Katydid"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Bush-cricket-02-MK-.jpg",
+        "commons-Wandering-spider-Cupiennius-getazi-with-female-k.jpg",
+        "commons-Katydid-tx.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-cricket",
+      "category": "bug",
+      "queries": {
+        "specific": "cricket",
+        "groups": [
+          "cricket"
+        ],
+        "photo": "Cricket",
+        "nameEn": "Cricket"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 1
+    },
+    {
+      "id": "bug-grasshopper",
+      "category": "bug",
+      "queries": {
+        "specific": "grasshopper",
+        "groups": [
+          "grasshopper"
+        ],
+        "photo": "Grasshopper",
+        "nameEn": "Grasshopper"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 1
+    },
+    {
+      "id": "bug-locust",
+      "category": "bug",
+      "queries": {
+        "specific": "locust",
+        "groups": [
+          "grasshopper"
+        ],
+        "photo": "Locust",
+        "nameEn": "Locust"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 1
+    },
+    {
+      "id": "bug-mantis",
+      "category": "bug",
+      "queries": {
+        "specific": "praying mantis",
+        "groups": [
+          "mantis"
+        ],
+        "photo": "Praying mantis",
+        "nameEn": "Praying mantis"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 3
+    },
+    {
+      "id": "bug-firefly",
+      "category": "bug",
+      "queries": {
+        "specific": "firefly",
+        "groups": [
+          "firefly"
+        ],
+        "photo": "Firefly",
+        "nameEn": "Firefly"
+      },
+      "pixel": [
+        "2d-firefly-pixleart-floppyfirefly-standing-still_0.png",
+        "2d-firefly-pixleart-floppyfirefly-standing-still.png"
+      ],
+      "photo": [],
+      "rejected": 1
+    },
+    {
+      "id": "bug-waterstrider",
+      "category": "bug",
+      "queries": {
+        "specific": "water strider",
+        "groups": [
+          "water bug"
+        ],
+        "photo": "Water strider",
+        "nameEn": "Water strider"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Water-strider-Gerridae-sp.-Makiling.jpg",
+        "commons-Water-strider-on-Natisone-river.jpg",
+        "commons-Gerridae-sp.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-divingbeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "diving beetle",
+        "groups": [
+          "water bug",
+          "beetle"
+        ],
+        "photo": "Diving beetle",
+        "nameEn": "Diving beetle"
+      },
+      "pixel": [
+        "34-view-beetle-manaworldbeetle2.png",
+        "red-beetle-pixelart-sprites-sprite-0002.gif"
+      ],
+      "photo": [
+        "commons-Dytiscidae-.jpg",
+        "commons-Giant-Predaceous-Diving-Beetle-2.jpg",
+        "commons-Predaceous-diving-beetle.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-giantwaterbug",
+      "category": "bug",
+      "queries": {
+        "specific": "giant water bug",
+        "groups": [
+          "water bug"
+        ],
+        "photo": "Giant water bug",
+        "nameEn": "Giant water bug"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Lethocerus-insulanus-two-.jpg",
+        "commons-American-Giant-Water-Bug-Lethocerus-americanus-.jpg",
+        "commons-Giant-Water-Bug-Belostomatidae-9642998933-.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-ant",
+      "category": "bug",
+      "queries": {
+        "specific": "ant",
+        "groups": [
+          "ant"
+        ],
+        "photo": "Ant",
+        "nameEn": "Ant"
+      },
+      "pixel": [
+        "16x16-ant-enemies-antenemygrey.gif",
+        "cute-ant-16x16-cute_ant.gif"
+      ],
+      "photo": [
+        "commons-An-Ant-in-Colombian-amber.jpg",
+        "commons-Portrait-of-an-ant-profile-view.jpg",
+        "commons-Formicidae-sp-2-.jpg"
+      ],
+      "rejected": 18
+    },
+    {
+      "id": "bug-spider",
+      "category": "bug",
+      "queries": {
+        "specific": "golden orb spider",
+        "groups": [
+          "spider"
+        ],
+        "photo": "Nephila clavata",
+        "nameEn": "Golden orb spider"
+      },
+      "pixel": [
+        "spider-bot-sbot.gif",
+        "spider-with-cut-leg-spider_5.png"
+      ],
+      "photo": [
+        "commons-Spider-Nephila-clavata-0911.jpg",
+        "commons-Nephila-clavata-Institute-for-Nature-Study-Tokyo.jpg",
+        "commons-Trichonephila-clavata-Kyoto.jpg"
+      ],
+      "rejected": 20
+    },
+    {
+      "id": "bug-hawkmoth",
+      "category": "bug",
+      "queries": {
+        "specific": "hawk moth",
+        "groups": [
+          "moth"
+        ],
+        "photo": "Hawk moth",
+        "nameEn": "Hawk moth"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Convolvulus-hawk-moth-Agrius-convolvuli-2.jpg",
+        "commons-Hummingbird-hawk-moth-Macroglossum-stellatarum-i.jpg",
+        "commons-Poplar-hawk-moth-Laothoe-populi-populi-male.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "bug-snail",
+      "category": "bug",
+      "queries": {
+        "specific": "snail",
+        "groups": [
+          "snail"
+        ],
+        "photo": "Snail",
+        "nameEn": "Snail"
+      },
+      "pixel": [
+        "snail-snail.png",
+        "snail-snail_0.png",
+        "snail-0-snail_2.png",
+        "snail-0-snail_4.png"
+      ],
+      "photo": [
+        "commons-Common-snail.jpg",
+        "commons-Snail-macro.jpg",
+        "commons-Snail-11.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-earthworm",
+      "category": "bug",
+      "queries": {
+        "specific": "earthworm",
+        "groups": [
+          "earthworm"
+        ],
+        "photo": "Earthworm",
+        "nameEn": "Earthworm"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Lumbricus-terrestris-26559560801-.jpg",
+        "commons-Earthworm-6.jpg",
+        "commons-Earthworm-4.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "bug-pillbug",
+      "category": "bug",
+      "queries": {
+        "specific": "pill bug",
+        "groups": [
+          "pillbug"
+        ],
+        "photo": "Pill bug",
+        "nameEn": "Pill bug"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Pill-bug-or-Pill-millipede-01.jpg",
+        "commons-Pill-bug-or-Pill-millipede-02.jpg",
+        "commons-Wood-louse-Isopoda-suborder-pill-bug-Armadillidi.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-shieldbug",
+      "category": "bug",
+      "queries": {
+        "specific": "shield bug",
+        "groups": [
+          "shieldbug"
+        ],
+        "photo": "Shield bug",
+        "nameEn": "Shield bug"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Green-shield-bug-Palomena-prasina-3.jpg",
+        "commons-Green-shield-bug-Palomena-prasina-2.jpg",
+        "commons-Fruchtwanze-Carpocoris-fuscispinus-20190718-RM-0.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-mayfly",
+      "category": "bug",
+      "queries": {
+        "specific": "mayfly",
+        "groups": [
+          "fly"
+        ],
+        "photo": "Mayfly",
+        "nameEn": "Mayfly"
+      },
+      "pixel": [
+        "bird-fly-birdfly1_0.png"
+      ],
+      "photo": [
+        "commons-Tipulidae-April-2008-2.jpg",
+        "commons-Ephemeroptera-landscape-orientation.jpg",
+        "commons-Ephemeroptera-in-Semey-Ormany.jpg"
+      ],
+      "rejected": 10
+    },
+    {
+      "id": "bug-stonefly",
+      "category": "bug",
+      "queries": {
+        "specific": "stonefly",
+        "groups": [
+          "stonefly"
+        ],
+        "photo": "Stonefly",
+        "nameEn": "Stonefly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Eusthenia-sp.jpg",
+        "commons-NHMUK014417849-Plecoptera-additional-3-Poland-Au.jpg",
+        "commons-Central-Plateau-Tasmania-Plecoptera-arching.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-dungbeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "dung beetle",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Dung beetle",
+        "nameEn": "Dung beetle"
+      },
+      "pixel": [
+        "34-view-beetle-manaworldbeetle2.png",
+        "red-beetle-pixelart-sprites-sprite-0002.gif"
+      ],
+      "photo": [
+        "commons-Dung-beetle-Deltochilum-mexicanum-3.jpg",
+        "commons-Flightless-Dung-Beetle-Circellium-Bachuss-Addo-E.jpg",
+        "commons-Plum-dung-beetle-Anachalcos-convexus-.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-longmantis",
+      "category": "bug",
+      "queries": {
+        "specific": "giant mantis",
+        "groups": [
+          "mantis"
+        ],
+        "photo": "Giant mantis",
+        "nameEn": "Giant mantis"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Giant-Asian-Mantis-Hierodula-patellifera-1533574.jpg",
+        "commons-Titanodula-formosana.jpg",
+        "commons-Praying-Mantis-in-Korea.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "animal-chipmunk",
+      "category": "animal",
+      "queries": {
+        "specific": "chipmunk",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Chipmunk",
+        "nameEn": "Chipmunk"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Chipmunk-with-stuffed-cheeks-in-Prospect-Park-05.jpg",
+        "commons-Sonoma-chipmunk-at-Samuel-P.-Taylor-State-Park.jpg",
+        "commons-Chipmunk-71669-.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-squirrel",
+      "category": "animal",
+      "queries": {
+        "specific": "korean squirrel",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Sciurus vulgaris",
+        "nameEn": "Korean squirrel"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Squirrel-posing.jpg",
+        "commons-Red-squirrel-21808-.jpg",
+        "commons-Sciurus-vulgaris-186868985.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-hare",
+      "category": "animal",
+      "queries": {
+        "specific": "rabbit",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Lepus coreanus",
+        "nameEn": "Korean hare"
+      },
+      "pixel": [
+        "rabbit-2-rabbit_normal.png",
+        "rabbit-2-rabbit_normal_0.png",
+        "rabbit-surge-animated-demo_1.gif"
+      ],
+      "photo": [
+        "commons-Lepus-coreanus.jpg",
+        "commons-Korean-hare-1.jpg"
+      ],
+      "rejected": 18
+    },
+    {
+      "id": "animal-waterdeer",
+      "category": "animal",
+      "queries": {
+        "specific": "deer",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Water deer",
+        "nameEn": "Water deer"
+      },
+      "pixel": [
+        "deer-deer-20male-20calciumtrice.png"
+      ],
+      "photo": [
+        "commons-Deer-Island-Waste-Water-Treatment-Plant.jpg",
+        "commons-Hydropotes-inermis-168257189.jpg",
+        "commons-Hydropotes-inermis-5964464.jpg"
+      ],
+      "rejected": 11
+    },
+    {
+      "id": "animal-roedeer",
+      "category": "animal",
+      "queries": {
+        "specific": "deer",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Roe deer",
+        "nameEn": "Roe deer"
+      },
+      "pixel": [
+        "deer-deer-20male-20calciumtrice.png"
+      ],
+      "photo": [
+        "commons-Metskits-Roe-deer-Capreolus-capreolus.jpg",
+        "commons-Capreolus-capreolus-Wien-Zentralfriedhof-2022102.jpg",
+        "commons-Capreolus-capreolus-Wien-Zentralfriedhof-2016123.jpg"
+      ],
+      "rejected": 10
+    },
+    {
+      "id": "animal-boar",
+      "category": "animal",
+      "queries": {
+        "specific": "wild boar",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Wild boar",
+        "nameEn": "Wild boar"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Wild-Boar-Habbitat-2.jpg",
+        "commons-A-young-wild-boar-in-his-environment.jpg",
+        "commons-Wild-Boar-Habbitat-3.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-raccoondog",
+      "category": "animal",
+      "queries": {
+        "specific": "raccoon",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Raccoon dog",
+        "nameEn": "Raccoon dog"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Nyctereutes-procyonoides-.jpg",
+        "commons-Tanuki01-960.jpg",
+        "commons-Nyctereutes-procyonoides-379771229.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "animal-badger",
+      "category": "animal",
+      "queries": {
+        "specific": "badger",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Badger",
+        "nameEn": "Badger"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-European-badger-Meles-meles-taxus-Drenthe-2.jpg",
+        "commons-European-badger-Meles-meles-taxus-Drenthe.jpg",
+        "commons-European-badger-Meles-meles-taxus-head-Drenthe.jpg"
+      ],
+      "rejected": 5
+    },
+    {
+      "id": "animal-weasel",
+      "category": "animal",
+      "queries": {
+        "specific": "weasel",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Weasel",
+        "nameEn": "Weasel"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Mustela-nivalis-British-Wildlife-Centre-4.jpg",
+        "commons-Mustela-1.jpg",
+        "commons-Least-Weasel-imported-from-iNaturalist-photo-104.jpg"
+      ],
+      "rejected": 3
+    },
+    {
+      "id": "animal-otter",
+      "category": "animal",
+      "queries": {
+        "specific": "eurasian otter",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Eurasian otter",
+        "nameEn": "Eurasian otter"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-European-otter-02.jpg",
+        "commons-.jpg",
+        "commons-Otter-Eurasian-otter-Lutra-lutra.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-mole",
+      "category": "animal",
+      "queries": {
+        "specific": "mole",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Mole",
+        "nameEn": "Mole"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Talpa-europaea-MHNT.jpg",
+        "commons-Talpa-europaea-MHNT-Tete.jpg",
+        "commons-Mol-Talpa-europaea-03.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-fieldmouse",
+      "category": "animal",
+      "queries": {
+        "specific": "mouse",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Apodemus agrarius",
+        "nameEn": "Striped field mouse"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Apodemus-agrarius-10.3897-BDJ.9.e69159-Figure-1.jpg",
+        "commons-Myszarka-polna.jpg",
+        "commons-ApodemusAgrariusIUCN2019-3.jpg"
+      ],
+      "rejected": 19
+    },
+    {
+      "id": "animal-hedgehog",
+      "category": "animal",
+      "queries": {
+        "specific": "hedgehog",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Hedgehog",
+        "nameEn": "Hedgehog"
+      },
+      "pixel": [
+        "pixel-art-hedgehog-sleep_3.gif"
+      ],
+      "photo": [
+        "commons-West-European-Hedgehog-Erinaceus-europaeus-1.jpg",
+        "commons-Erinaceus-roumanicus-2020-G2.jpg",
+        "commons-Hedgehog-among-leaves.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "animal-fox",
+      "category": "animal",
+      "queries": {
+        "specific": "red fox",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Red fox",
+        "nameEn": "Red fox"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Alaska-Red-Fox-Vulpes-vulpes-.jpg",
+        "commons-Vulpes-vulpes-Mallnitz-01.jpg",
+        "commons-Red-Fox-drinking-from-a-lake-in-Gennevilliers-Fr.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "animal-leopardcat",
+      "category": "animal",
+      "queries": {
+        "specific": "wild cat",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Prionailurus bengalensis",
+        "nameEn": "Leopard cat"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Prionailurus-bengalensis-bengalensis-2-D-coupe.jpg",
+        "commons-Felidae-Prionailurus-bengalensis-1.jpg",
+        "commons-Close-up-of-a-Leopard-Cat-in-Sundarban.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-bat",
+      "category": "animal",
+      "queries": {
+        "specific": "horseshoe bat",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "horseshoe bat",
+        "nameEn": "Horseshoe bat"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Greater-horseshoe-bat-Rhinolophus-ferrumequinum-.jpg",
+        "commons-Rhinolophus-ferrumequinum-MHNT.ZOO.2010.11.236.1.jpg",
+        "commons-Rhinolophus-ferrumequinum-Kawachi.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-mallard",
+      "category": "animal",
+      "queries": {
+        "specific": "duck",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Mallard",
+        "nameEn": "Mallard"
+      },
+      "pixel": [
+        "duck-and-cat-duck2.png",
+        "cute-duck-animated-set-kaczuha1_1.gif",
+        "cute-duck-animated-set-kaczuha_1.gif",
+        "bird-blue-flying-flyingbird3.gif"
+      ],
+      "photo": [
+        "commons-Anas-platyrhynchos-male-female.jpg",
+        "commons-Anas-platyrhynchos-Weiherwald-Karlsruhe-05.jpg",
+        "commons-Male-mallard-duck-2.jpg"
+      ],
+      "rejected": 28
+    },
+    {
+      "id": "animal-duckling",
+      "category": "animal",
+      "queries": {
+        "specific": "duckling",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Duckling",
+        "nameEn": "Duckling"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Male-mallard-duck-2.jpg",
+        "commons-Female-Mallard-Duck-Rest-3.jpg",
+        "commons-West-Indian-whistling-duck-Dendrocygna-arborea-h.jpg"
+      ],
+      "rejected": 22
+    },
+    {
+      "id": "animal-mandarinduck",
+      "category": "animal",
+      "queries": {
+        "specific": "duck",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Mandarin duck",
+        "nameEn": "Mandarin duck"
+      },
+      "pixel": [
+        "duck-and-cat-duck2.png",
+        "cute-duck-animated-set-kaczuha1_1.gif",
+        "cute-duck-animated-set-kaczuha_1.gif",
+        "bird-blue-flying-flyingbird3.gif"
+      ],
+      "photo": [
+        "commons-Aix-galericulata-Linnaeus-1758-.jpg",
+        "commons-Mandarin.duck.arp.jpg",
+        "commons-Jungle-Palace-Hanover-with-Aix-galericulata.jpg"
+      ],
+      "rejected": 28
+    },
+    {
+      "id": "animal-heron",
+      "category": "animal",
+      "queries": {
+        "specific": "grey heron",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Grey heron",
+        "nameEn": "Grey heron"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Ardea-cinerea-2013-09-16.jpg",
+        "commons-Ardea-cinerea-Pak-Thale.jpg",
+        "commons-Ardea-cinerea-Grey-heron-eating-fish.jpg"
+      ],
+      "rejected": 18
+    },
+    {
+      "id": "animal-egret",
+      "category": "animal",
+      "queries": {
+        "specific": "great egret",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Great egret",
+        "nameEn": "Great egret"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Ardea-alba4.jpg",
+        "commons-Great-egret-in-GWC-43539-.jpg",
+        "commons-Ardea-alba-3-chicks-Morro-Bay-Heron-Rookery-2-by.jpg"
+      ],
+      "rejected": 18
+    },
+    {
+      "id": "animal-kingfisher",
+      "category": "animal",
+      "queries": {
+        "specific": "kingfisher",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Kingfisher",
+        "nameEn": "Kingfisher"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Common-Kingfisher-Alcedo-atthis.jpg",
+        "commons-Common-kingfisher-on-a-branch-opening-its-wings.jpg",
+        "commons-Giant-Kingfisher-002.jpg"
+      ],
+      "rejected": 20
+    },
+    {
+      "id": "animal-goose",
+      "category": "animal",
+      "queries": {
+        "specific": "wild goose",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Wild goose",
+        "nameEn": "Wild goose"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Giant-Wild-Goose-Pagoda-Xi-an-May-2018-1.jpg",
+        "commons-Wild-Goose.jpg",
+        "commons-Wild-Goose-John-Wayne-s-Yacht.jpg"
+      ],
+      "rejected": 20
+    },
+    {
+      "id": "animal-sparrow",
+      "category": "animal",
+      "queries": {
+        "specific": "tree sparrow",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Tree sparrow",
+        "nameEn": "Tree sparrow"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Passer-montanus-malaccensis-Kuala-Lumpur-Malaysi.jpg",
+        "commons-Eurasian-tree-sparrow-at-Tenn-ji-Park-in-Osaka-D.jpg",
+        "commons-Tree-Sparrow-August-2007-Osaka-Japan.jpg"
+      ],
+      "rejected": 18
+    },
+    {
+      "id": "animal-magpie",
+      "category": "animal",
+      "queries": {
+        "specific": "magpie",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Magpie",
+        "nameEn": "Magpie"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Eurasian-magpie-2024-03-03-02.jpg",
+        "commons-Eurasian-magpie-Pica-pica-.jpg",
+        "commons-Common-magpie-Pica-pica-.jpg"
+      ],
+      "rejected": 18
+    },
+    {
+      "id": "animal-crow",
+      "category": "animal",
+      "queries": {
+        "specific": "jungle crow",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Jungle crow",
+        "nameEn": "Jungle crow"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Indian-Jungle-Crow-Perching-Back-Mudumalai-Mar21.jpg",
+        "commons-Birds-Bangladesh-2-2-.jpg",
+        "commons-Eastern-Jungle-Crow-Corvus-levaillantii-Lesson-1.jpg"
+      ],
+      "rejected": 19
+    },
+    {
+      "id": "animal-woodpecker",
+      "category": "animal",
+      "queries": {
+        "specific": "woodpecker",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Great spotted woodpecker",
+        "nameEn": "Great spotted woodpecker"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Dendrocopos-major-hondoensis-male-Gumma-ken-Japa.jpg",
+        "commons-Dendrocopos-major-juv-Vrhnika.jpg",
+        "commons-Dendrocopos-major-MHNT-232.jpg"
+      ],
+      "rejected": 19
+    },
+    {
+      "id": "animal-owl",
+      "category": "animal",
+      "queries": {
+        "specific": "eagle owl",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Eagle owl",
+        "nameEn": "Eagle owl"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Eagle-Owl-IMG-9203.jpg",
+        "commons-Eurasian-eagle-owl-44088-.jpg",
+        "commons-Eurasian-eagle-owl-Almaty-01.jpg"
+      ],
+      "rejected": 18
+    },
+    {
+      "id": "animal-pheasant",
+      "category": "animal",
+      "queries": {
+        "specific": "ring-necked pheasant",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Ring-necked pheasant",
+        "nameEn": "Ring-necked pheasant"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [
+        "commons-Phasianus-colchicus-MHNT.jpg",
+        "commons-Phasianus-colchicus-MHNT-skull.jpg",
+        "commons-Phasianus-colchicus-female-Vanhankaupunginlahti-.jpg"
+      ],
+      "rejected": 19
+    },
+    {
+      "id": "animal-skylark",
+      "category": "animal",
+      "queries": {
+        "specific": "lark",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Skylark",
+        "nameEn": "Skylark"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [],
+      "rejected": 19
+    },
+    {
+      "id": "animal-swallow",
+      "category": "animal",
+      "queries": {
+        "specific": "barn swallow",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Barn swallow",
+        "nameEn": "Barn swallow"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [],
+      "rejected": 19
+    },
+    {
+      "id": "animal-gull",
+      "category": "animal",
+      "queries": {
+        "specific": "seagull",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Black-tailed gull",
+        "nameEn": "Black-tailed gull"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [],
+      "rejected": 19
+    },
+    {
+      "id": "animal-cormorant",
+      "category": "animal",
+      "queries": {
+        "specific": "cormorant",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Cormorant",
+        "nameEn": "Cormorant"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [],
+      "rejected": 19
+    },
+    {
+      "id": "animal-sandpiper",
+      "category": "animal",
+      "queries": {
+        "specific": "sandpiper",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Sandpiper",
+        "nameEn": "Sandpiper"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [],
+      "rejected": 19
+    },
+    {
+      "id": "animal-spoonbill",
+      "category": "animal",
+      "queries": {
+        "specific": "spoonbill",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Black-faced spoonbill",
+        "nameEn": "Black-faced spoonbill"
+      },
+      "pixel": [
+        "bird-blue-flying-flyingbird3.gif",
+        "bird-blue-flying-flyingbird4.gif"
+      ],
+      "photo": [],
+      "rejected": 19
+    },
+    {
+      "id": "animal-seal",
+      "category": "animal",
+      "queries": {
+        "specific": "spotted seal",
+        "groups": [
+          "sea mammal"
+        ],
+        "photo": "Spotted seal",
+        "nameEn": "Spotted seal"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 1
+    },
+    {
+      "id": "animal-porpoise",
+      "category": "animal",
+      "queries": {
+        "specific": "dolphin",
+        "groups": [
+          "dolphin"
+        ],
+        "photo": "finless porpoise",
+        "nameEn": "Finless porpoise"
+      },
+      "pixel": [
+        "dolphin-baby-and-ocean-tiles-16bit-dolphin-baby-lrg.gif"
+      ],
+      "photo": [
+        "commons-Finless-porpoise-size-pictogram-copy.jpg",
+        "commons-Neophocaena-phocaenoides-31299614.jpg",
+        "commons-Neophocaena-phocaenoides-31299547.jpg"
+      ],
+      "rejected": 3
+    },
+    {
+      "id": "animal-minkewhale",
+      "category": "animal",
+      "queries": {
+        "specific": "whale",
+        "groups": [
+          "whale"
+        ],
+        "photo": "Minke whale",
+        "nameEn": "Minke whale"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Heart-of-a-Minke-whale-Balaenoptera-acutorostrat.jpg",
+        "commons-Balaenoptera-acutorostrata-Saint-Laurent-02.jpg",
+        "commons-Minke-whale-near-Tadoussac.jpg"
+      ],
+      "rejected": 6
+    },
+    {
+      "id": "animal-turtle-sea",
+      "category": "animal",
+      "queries": {
+        "specific": "sea turtle",
+        "groups": [
+          "turtle"
+        ],
+        "photo": "loggerhead sea turtle",
+        "nameEn": "Loggerhead turtle"
+      },
+      "pixel": [
+        "animated-turtle-turtle2.png",
+        "pixelart-dread-turtle-Deadturtle_0.png"
+      ],
+      "photo": [
+        "commons-Parque-Nacional-Marinho-de-Fernando-de-Noronha-J.jpg",
+        "commons-Loggerhead-sea-turtle.jpg",
+        "commons-Guarder-a-de-tortugas-Sodade-de-Morro-Jable-02.jpg"
+      ],
+      "rejected": 11
+    },
+    {
+      "id": "animal-fiddlercrab",
+      "category": "animal",
+      "queries": {
+        "specific": "crab",
+        "groups": [
+          "crab"
+        ],
+        "photo": "fiddler crab",
+        "nameEn": "Fiddler crab"
+      },
+      "pixel": [
+        "shuaagotchi-crab-virtual-pet-jueycrab6.png",
+        "big-red-crab-crab-red.gif"
+      ],
+      "photo": [
+        "commons-Atlantic-sand-fiddler-crab-30996-.jpg",
+        "commons-Compressed-fiddler-crab-Uca-coarctata-male.jpg",
+        "commons-YCNH-with-Fiddler-Crab.jpg"
+      ],
+      "rejected": 8
+    },
+    {
+      "id": "animal-mudcrab",
+      "category": "animal",
+      "queries": {
+        "specific": "crab",
+        "groups": [
+          "crab"
+        ],
+        "photo": "Helice tridens",
+        "nameEn": "Mud crab"
+      },
+      "pixel": [
+        "shuaagotchi-crab-virtual-pet-jueycrab6.png",
+        "big-red-crab-crab-red.gif"
+      ],
+      "photo": [
+        "commons-Helice-tridens-Kohnoura-.jpg",
+        "commons-Helice-tridens-MNHN-IU-2013-14768-002.jpg",
+        "commons-Helice-tridens-MNHN-IU-2013-14768-001.jpg"
+      ],
+      "rejected": 9
+    },
+    {
+      "id": "animal-hermitcrab",
+      "category": "animal",
+      "queries": {
+        "specific": "hermit crab",
+        "groups": [
+          "hermit crab"
+        ],
+        "photo": "Hermit crab",
+        "nameEn": "Hermit crab"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Calliactis-and-Dardanus-001.jpg",
+        "commons-Hermit-crab-in-Bakkhali-September-2024-by-Tisha-.jpg",
+        "commons-Hermit-crab-in-Bakkhali-September-2025-by-Tisha-.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-anemone",
+      "category": "animal",
+      "queries": {
+        "specific": "sea anemone",
+        "groups": [
+          "anemone"
+        ],
+        "photo": "sea anemone",
+        "nameEn": "Sea anemone"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Actiniaria.jpg",
+        "commons-Entacmaea-quadricolor-Bubble-tip-anemone-.jpg",
+        "commons-Amphiprion-ocellaris-Clown-anemonefish-in-Hetera.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-treefrog",
+      "category": "animal",
+      "queries": {
+        "specific": "frog",
+        "groups": [
+          "frog"
+        ],
+        "photo": "Tree frog",
+        "nameEn": "Tree frog"
+      },
+      "pixel": [
+        "frog-smilies-farvardin-grenouille_frog-source.png",
+        "frog-animation-sprite-sheet-frog.gif",
+        "frog-animation-sprite-sheet-frog_1.png",
+        "jester-frog-jester-20frog.png"
+      ],
+      "photo": [
+        "commons-Agalychnis-callidryas.jpg",
+        "commons-Golden-eyed-tree-frog-Agalychnis-annae-1.jpg",
+        "commons-Brown-Tree-Frog-2.jpg"
+      ],
+      "rejected": 12
+    },
+    {
+      "id": "animal-toad",
+      "category": "animal",
+      "queries": {
+        "specific": "toad",
+        "groups": [
+          "frog"
+        ],
+        "photo": "Toad",
+        "nameEn": "Toad"
+      },
+      "pixel": [
+        "frog-smilies-farvardin-grenouille_frog-source.png",
+        "frog-animation-sprite-sheet-frog.gif"
+      ],
+      "photo": [
+        "commons-Bufo-bufo-couple-during-migration-2005-.jpg",
+        "commons-Bufo-bufo-2015-G3.jpg",
+        "commons-Bufo-bufo-2009-G1.jpg"
+      ],
+      "rejected": 7
+    },
+    {
+      "id": "animal-salamander",
+      "category": "animal",
+      "queries": {
+        "specific": "salamander",
+        "groups": [
+          "salamander"
+        ],
+        "photo": "Salamander",
+        "nameEn": "Salamander"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Salamandra-salamandra-MHNT-1.jpg",
+        "commons-Salamander-Wiener-Dioskurides-.jpg",
+        "commons-Salamander-Paracelsus-.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-softshell",
+      "category": "animal",
+      "queries": {
+        "specific": "turtle",
+        "groups": [
+          "turtle"
+        ],
+        "photo": "Softshell turtle",
+        "nameEn": "Softshell turtle"
+      },
+      "pixel": [
+        "animated-turtle-turtle2.png",
+        "pixelart-dread-turtle-Deadturtle_0.png",
+        "pixelart-dread-turtle-Deadturtle.png"
+      ],
+      "photo": [
+        "commons-Pelochelys-cantorii.jpg",
+        "commons-071-Mugger-crocodiles-and-Indian-softshell-turtl.jpg",
+        "commons-Drazinda-Formation-Softshell-Turtle.jpg"
+      ],
+      "rejected": 23
+    },
+    {
+      "id": "animal-terrapin",
+      "category": "animal",
+      "queries": {
+        "specific": "turtle",
+        "groups": [
+          "turtle"
+        ],
+        "photo": "Mauremys reevesii",
+        "nameEn": "Korean pond turtle"
+      },
+      "pixel": [
+        "animated-turtle-turtle2.png",
+        "pixelart-dread-turtle-Deadturtle_0.png",
+        "pixelart-dread-turtle-Deadturtle.png"
+      ],
+      "photo": [
+        "commons-Chinese-Pond-Turtle-Mauremys-reevesii-.jpg",
+        "commons-Chinemys-reevesii-02.jpg",
+        "commons-Mauremys-reevesii-4271553.jpg"
+      ],
+      "rejected": 23
+    },
+    {
+      "id": "animal-ratsnake",
+      "category": "animal",
+      "queries": {
+        "specific": "snake",
+        "groups": [
+          "snake"
+        ],
+        "photo": "Rat snake",
+        "nameEn": "Rat snake"
+      },
+      "pixel": [
+        "animated-snake-snake-20idle.gif",
+        "animated-snake-snake-20gesture.gif",
+        "snake-rpg-character-snakex3.gif",
+        "pink-snake-32x32-pink_snake_tongue_pixel.png"
+      ],
+      "photo": [
+        "commons-Zamenis-longissimus.jpg",
+        "commons-Indian-Rat-Snake-Grey-and-Yellow-.jpg",
+        "commons-Oriental-rat-snake-in-Rabindra-Sarobar-April-202.jpg"
+      ],
+      "rejected": 26
+    }
+  ],
+  "totals": {
+    "entities": 192,
+    "pixel": 249,
+    "photo": 452
+  },
+  "empty": [
+    "tree-oak",
+    "sapling",
+    "sprout",
+    "rock",
+    "fish-bitterling",
+    "fish-sweetfish",
+    "fish-eel",
+    "fish-snakehead",
+    "bug-cricket",
+    "bug-grasshopper",
+    "bug-locust",
+    "bug-mantis",
+    "animal-seal"
+  ]
+}

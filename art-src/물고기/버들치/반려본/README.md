@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 86cd21cd25f0e2ba1d13761a21bc5660e513e31175e4ebcf1c6414694b93c8ee -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 25c2b6cd996af09e9323c6869acabee774cab07afd17d165a46e4785abf8e308 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e7a1cf31cc0e65329fc75367c1d3781d68234e87479ebdd7d1aaaca1d6ad3934 -->
 
 # fish-chinesemin 반려본
 

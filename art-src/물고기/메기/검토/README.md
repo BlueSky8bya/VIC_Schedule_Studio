@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: bfd56ddc7c59868bf77c9205c539a9a7fa88d5d0d1f350f6c622dd67ca83fc85 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: c5ab41205f44a8eeb02e91519e7021b7f6d931b849b400c173aa0669a13edf79 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 022a5378961af72436e9440bfc6cef7ef90bb11c760db0c706b6da9ff1bd86bf -->
 
 # fish-catfish 검토
 

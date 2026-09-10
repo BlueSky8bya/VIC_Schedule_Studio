@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: bcafd3785b998aad06e40c03fcddfd0687f862f9d68db745749c409d6981bce4 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 59a138046f5d091ef5afcc25b569497f1dd38a1d13223bb81bf06448110c6cc8 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e7a1cf31cc0e65329fc75367c1d3781d68234e87479ebdd7d1aaaca1d6ad3934 -->
 
 # fish-chinesemin 생성본
 

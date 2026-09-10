@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c874723a660a5d030bcd5ef1def280f38edf1ab739468d14da52c25aa6138791 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 4d449cbd26a8526b7e231745c087ef495d8b5ff97d50521cb0fc804f6e965a23 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 42cf634cd26dfc29da3334db1dd26104f092bb369a265742d98455b4eb5ce968 -->
 
 # animal-goose 생성본
 

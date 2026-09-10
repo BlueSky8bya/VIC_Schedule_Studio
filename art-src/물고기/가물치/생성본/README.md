@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 10dfa5428954efc57ef5b073ff9e27f300b9a4c2e07fa412ec1b05a729f1f7f6 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2e81b2530806963dd69201f0bfca945f6c5e182271613fc92d10fd78bfb328a7 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4a5ae72355037533384165e976066cb34d0f4ceab9f4ca9f50358beb9bcda3ac -->
 
 # fish-snakehead 생성본
 

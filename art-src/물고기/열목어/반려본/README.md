@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c8938229696a51c9991a79d85abec14f628305e7ce012c66e3a055415da7f7bb -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 341c103acdcad4b83bbc9d2c00c0741b041ead7e7b632e6b61dc0e6836dec79a -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a943b095cde375c13778ff851b0ce3bc56ce4888d859759bc34b725889fbf2ae -->
 
 # fish-lenok 반려본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: b75b7f889ca54e02ac9720fe5dc6208a6dae5dc84a7baf211782453e9c846e9a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 6ab526f142b12e59b54fdb484ecb1d8311081b2652ddbc155f9d7950f0b9dd78 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f6f1172263dea8f1d81d481d29afa34c0f24abc9a978ba378695a24841549e6e -->
 
 # animal-owl 검토
 

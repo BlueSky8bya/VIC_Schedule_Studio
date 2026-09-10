@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: b2602db7aefee33b6d88f1494e46d06c2a0356589f365d5c41cc191e1ff05ed4 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: bf2c4ae6a3c04e230cc307148e4322f9ade76ce488af95d604c72fa25d7f95df -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9d2be5532d548207bfc6a1888ad043d651094052aa431698fff4ce9f6ad3e344 -->
 
 # animal-mudcrab 검토
 

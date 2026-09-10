@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4309d576b70d0bb0bad57092e1ea9b96e2249e395cdc9e0a58b74ee421448698 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 679005b2cd206227deb6ce8819c057601e04f281bb72599954040ffc78161634 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 2e68d533879aa0ce2389afa32ab7ba6ba7c9e803499b16aba9ed83e85936bd69 -->
 
 # sea-stack 검토
 

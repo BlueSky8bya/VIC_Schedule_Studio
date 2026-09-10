@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 318d2001d58fb9c58441e03df655b0864fd53c744d76ff5a6affe8c5395770e5 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 13ddc990af840e6e1d03329600add87f5d93760d9c9cba76ae66078fabfb6adf -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d922e96e51f0664ffe75ba438a33623e488b18013344bff90d156ea6e5fbf840 -->
 
 # animal-woodpecker 생성본
 

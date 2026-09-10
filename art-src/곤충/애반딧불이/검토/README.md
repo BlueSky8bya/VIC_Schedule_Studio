@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: dd8975cb9530ec5e0b4c37c231e51559c5fc6855cf47de91496a08fc97e3e5f2 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 4a3f03047d8f4b43d0992261a3143477f1f23ad244f29d4e66c63eb48f8a80fd -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9b4376660154b8c5253151c6f8f5ae7cae493655ca4f58c4defeb84b5544b898 -->
 
 # bug-firefly 검토
 

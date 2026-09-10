@@ -1,0 +1,3212 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-10",
+  "license": "free",
+  "sources": [
+    "commons"
+  ],
+  "limits": {
+    "pixel": 4,
+    "photo": 3
+  },
+  "entities": [
+    {
+      "id": "tree-oak",
+      "category": "tree",
+      "queries": {
+        "specific": "oak",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "oak tree",
+        "nameEn": "Oak, spring"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "sapling",
+      "category": "tree",
+      "queries": {
+        "specific": "sapling",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "tree sapling",
+        "nameEn": "Sapling, leafy"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "sprout",
+      "category": "plant",
+      "queries": {
+        "specific": "sprout",
+        "groups": [],
+        "photo": "seedling sprout",
+        "nameEn": "Sprout"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "shrub",
+      "category": "tree",
+      "queries": {
+        "specific": "shrub",
+        "groups": [
+          "bush"
+        ],
+        "photo": "shrub",
+        "nameEn": "Shrub, spring"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "grass-tuft",
+      "category": "plant",
+      "queries": {
+        "specific": "grass tuft",
+        "groups": [
+          "grass"
+        ],
+        "photo": "grass tuft",
+        "nameEn": "Grass tuft"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "grass-tall",
+      "category": "plant",
+      "queries": {
+        "specific": "tall grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "foxtail grass Setaria",
+        "nameEn": "Tall grass / foxtail"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "grass-dry",
+      "category": "plant",
+      "queries": {
+        "specific": "dry grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "dry grass",
+        "nameEn": "Dry grass"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "clover",
+      "category": "plant",
+      "queries": {
+        "specific": "clover",
+        "groups": [
+          "grass"
+        ],
+        "photo": "clover Trifolium",
+        "nameEn": "Clover"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "daisy",
+      "category": "plant",
+      "queries": {
+        "specific": "daisy",
+        "groups": [
+          "flower"
+        ],
+        "photo": "daisy Bellis",
+        "nameEn": "Daisy"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "dandelion-flower",
+      "category": "plant",
+      "queries": {
+        "specific": "dandelion",
+        "groups": [
+          "flower"
+        ],
+        "photo": "dandelion flower",
+        "nameEn": "Dandelion, flower"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "dandelion-puff",
+      "category": "plant",
+      "queries": {
+        "specific": "dandelion",
+        "groups": [
+          "flower"
+        ],
+        "photo": "dandelion seed head",
+        "nameEn": "Dandelion, seed head"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "mushroom",
+      "category": "plant",
+      "queries": {
+        "specific": "mushroom",
+        "groups": [
+          "mushroom"
+        ],
+        "photo": "mushroom forest floor",
+        "nameEn": "Mushroom"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "reed",
+      "category": "plant",
+      "queries": {
+        "specific": "reed",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Phragmites reed",
+        "nameEn": "Reed / silver grass"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "lilypad",
+      "category": "water",
+      "queries": {
+        "specific": "lily pad",
+        "groups": [
+          "water plant"
+        ],
+        "photo": "water lily pad",
+        "nameEn": "Lily pad"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "lotus",
+      "category": "water",
+      "queries": {
+        "specific": "lotus",
+        "groups": [
+          "water plant",
+          "flower"
+        ],
+        "photo": "lotus flower Nelumbo",
+        "nameEn": "Lotus"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "soil-mound",
+      "category": "ground",
+      "queries": {
+        "specific": "dirt mound",
+        "groups": [],
+        "photo": "soil mound",
+        "nameEn": "Soil mound"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "molehill",
+      "category": "ground",
+      "queries": {
+        "specific": "mole hill",
+        "groups": [],
+        "photo": "molehill",
+        "nameEn": "Molehill"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "grass-patch",
+      "category": "ground",
+      "queries": {
+        "specific": "grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "grass patch",
+        "nameEn": "Grass patch"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "twig",
+      "category": "ground",
+      "queries": {
+        "specific": "twig",
+        "groups": [
+          "log"
+        ],
+        "photo": "twig",
+        "nameEn": "Twig"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "pebble",
+      "category": "ground",
+      "queries": {
+        "specific": "pebble",
+        "groups": [
+          "rock"
+        ],
+        "photo": "pebble",
+        "nameEn": "Pebble"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "rock",
+      "category": "ground",
+      "queries": {
+        "specific": "rock",
+        "groups": [
+          "rock"
+        ],
+        "photo": "rock outcrop",
+        "nameEn": "Rock"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "stump",
+      "category": "ground",
+      "queries": {
+        "specific": "stump",
+        "groups": [
+          "log"
+        ],
+        "photo": "tree stump",
+        "nameEn": "Stump"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "log",
+      "category": "ground",
+      "queries": {
+        "specific": "log",
+        "groups": [
+          "log"
+        ],
+        "photo": "log wood",
+        "nameEn": "Log"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "snowman-1",
+      "category": "prop",
+      "queries": {
+        "specific": "snowman",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowman",
+        "nameEn": "Snowman, one ball"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "snowman-2",
+      "category": "prop",
+      "queries": {
+        "specific": "snowman",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowman",
+        "nameEn": "Snowman, two balls"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "snowman-3",
+      "category": "prop",
+      "queries": {
+        "specific": "snowman",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowman",
+        "nameEn": "Snowman, complete"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "snow-pile",
+      "category": "ground",
+      "queries": {
+        "specific": "snow",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snow pile",
+        "nameEn": "Snow pile"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "acorn",
+      "category": "prop",
+      "queries": {
+        "specific": "acorn",
+        "groups": [
+          "acorn"
+        ],
+        "photo": "acorn",
+        "nameEn": "Acorn"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "swim-ring",
+      "category": "prop",
+      "queries": {
+        "specific": "swim ring float",
+        "groups": [],
+        "photo": "swim ring",
+        "nameEn": "Swim ring"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "driftwood",
+      "category": "ground",
+      "queries": {
+        "specific": "driftwood",
+        "groups": [
+          "log"
+        ],
+        "photo": "driftwood",
+        "nameEn": "Driftwood"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "shell-clam",
+      "category": "ground",
+      "queries": {
+        "specific": "seashell",
+        "groups": [
+          "shellfish"
+        ],
+        "photo": "clam shell",
+        "nameEn": "Clam shell"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-starfish",
+      "category": "animal",
+      "queries": {
+        "specific": "starfish",
+        "groups": [
+          "starfish"
+        ],
+        "photo": "starfish",
+        "nameEn": "Starfish"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "sea-stack",
+      "category": "ground",
+      "queries": {
+        "specific": "sea rock",
+        "groups": [
+          "rock"
+        ],
+        "photo": "sea stack",
+        "nameEn": "Sea stack"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "seaweed-clump",
+      "category": "plant",
+      "queries": {
+        "specific": "seaweed",
+        "groups": [
+          "water plant"
+        ],
+        "photo": "seaweed on beach",
+        "nameEn": "Seaweed clump"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "dune-grass",
+      "category": "plant",
+      "queries": {
+        "specific": "grass",
+        "groups": [
+          "grass"
+        ],
+        "photo": "marram grass dune",
+        "nameEn": "Dune grass"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "tide-pool",
+      "category": "water",
+      "queries": {
+        "specific": "tide pool",
+        "groups": [
+          "puddle"
+        ],
+        "photo": "tide pool",
+        "nameEn": "Tide pool"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "gravel-patch",
+      "category": "ground",
+      "queries": {
+        "specific": "gravel",
+        "groups": [
+          "rock"
+        ],
+        "photo": "gravel",
+        "nameEn": "Gravel patch"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "tree-birch",
+      "category": "tree",
+      "queries": {
+        "specific": "birch",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "birch tree",
+        "nameEn": "Birch, spring"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fern",
+      "category": "plant",
+      "queries": {
+        "specific": "fern",
+        "groups": [
+          "grass"
+        ],
+        "photo": "fern frond",
+        "nameEn": "Fern"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "moss-patch",
+      "category": "ground",
+      "queries": {
+        "specific": "moss",
+        "groups": [
+          "grass"
+        ],
+        "photo": "moss",
+        "nameEn": "Moss patch"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "silver-grass",
+      "category": "plant",
+      "queries": {
+        "specific": "grass",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Miscanthus sinensis",
+        "nameEn": "Silver grass tussock"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "sedge",
+      "category": "plant",
+      "queries": {
+        "specific": "sedge",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Carex sedge",
+        "nameEn": "Sedge"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "cattail",
+      "category": "plant",
+      "queries": {
+        "specific": "cattail",
+        "groups": [
+          "reed"
+        ],
+        "photo": "Typha cattail",
+        "nameEn": "Cattail"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bramble",
+      "category": "plant",
+      "queries": {
+        "specific": "bramble",
+        "groups": [
+          "bush"
+        ],
+        "photo": "bramble Rubus",
+        "nameEn": "Bramble"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "flower-white",
+      "category": "plant",
+      "queries": {
+        "specific": "flower",
+        "groups": [
+          "flower"
+        ],
+        "photo": "white wildflower",
+        "nameEn": "Wildflower, white"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "flower-violet",
+      "category": "plant",
+      "queries": {
+        "specific": "flower",
+        "groups": [
+          "flower"
+        ],
+        "photo": "violet wildflower",
+        "nameEn": "Wildflower, violet"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "flower-cream",
+      "category": "plant",
+      "queries": {
+        "specific": "flower",
+        "groups": [
+          "flower"
+        ],
+        "photo": "cream wildflower",
+        "nameEn": "Wildflower, cream"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "boulder",
+      "category": "ground",
+      "queries": {
+        "specific": "boulder",
+        "groups": [
+          "rock"
+        ],
+        "photo": "boulder",
+        "nameEn": "Boulder"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "snow-drift",
+      "category": "ground",
+      "queries": {
+        "specific": "snow",
+        "groups": [
+          "snow"
+        ],
+        "photo": "snowdrift",
+        "nameEn": "Snow drift"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 1
+    },
+    {
+      "id": "icicle",
+      "category": "prop",
+      "queries": {
+        "specific": "icicle",
+        "groups": [
+          "snow"
+        ],
+        "photo": "icicle",
+        "nameEn": "Icicle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "pinecone",
+      "category": "prop",
+      "queries": {
+        "specific": "pinecone",
+        "groups": [
+          "acorn"
+        ],
+        "photo": "pine cone",
+        "nameEn": "Pine cone"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "feather",
+      "category": "prop",
+      "queries": {
+        "specific": "feather",
+        "groups": [],
+        "photo": "bird feather",
+        "nameEn": "Feather"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "berry-bush",
+      "category": "plant",
+      "queries": {
+        "specific": "berry bush",
+        "groups": [
+          "bush"
+        ],
+        "photo": "berry bush",
+        "nameEn": "Berry bush"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "puddle",
+      "category": "water",
+      "queries": {
+        "specific": "puddle",
+        "groups": [
+          "puddle"
+        ],
+        "photo": "puddle",
+        "nameEn": "Puddle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "sun-disc",
+      "category": "sky",
+      "queries": {
+        "specific": "sun",
+        "groups": [
+          "sun"
+        ],
+        "photo": "sun in sky",
+        "nameEn": "Sun"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "moon-phase",
+      "category": "sky",
+      "queries": {
+        "specific": "moon",
+        "groups": [
+          "moon"
+        ],
+        "photo": "moon phases",
+        "nameEn": "Moon phases"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "comet",
+      "category": "sky",
+      "queries": {
+        "specific": "comet",
+        "groups": [
+          "moon"
+        ],
+        "photo": "comet",
+        "nameEn": "Comet"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "shooting-star",
+      "category": "sky",
+      "queries": {
+        "specific": "shooting star",
+        "groups": [
+          "moon"
+        ],
+        "photo": "meteor night sky",
+        "nameEn": "Shooting star"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "cloud-low",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cumulus cloud",
+        "nameEn": "Cloud, low"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "cloud-mid",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "altocumulus cloud",
+        "nameEn": "Cloud, mid"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "cloud-high",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cirrus cloud",
+        "nameEn": "Cirrus, long"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "cloud-wisp",
+      "category": "sky",
+      "queries": {
+        "specific": "cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cirrus cloud",
+        "nameEn": "Cirrus, short"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "cloud-storm",
+      "category": "sky",
+      "queries": {
+        "specific": "storm cloud",
+        "groups": [
+          "cloud"
+        ],
+        "photo": "cumulonimbus cloud",
+        "nameEn": "Rain cloud"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "footlog",
+      "category": "ground",
+      "queries": {
+        "specific": "fallen log",
+        "groups": [
+          "broadleaf"
+        ],
+        "photo": "fallen tree trunk",
+        "nameEn": "Fallen trunk"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-palechub",
+      "category": "fish",
+      "queries": {
+        "specific": "pale chub",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Pale chub",
+        "nameEn": "Pale chub"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-chinesemin",
+      "category": "fish",
+      "queries": {
+        "specific": "chinese minnow",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Chinese minnow",
+        "nameEn": "Chinese minnow"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-darkchub",
+      "category": "fish",
+      "queries": {
+        "specific": "dark chub",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Dark chub",
+        "nameEn": "Dark chub"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-crucian",
+      "category": "fish",
+      "queries": {
+        "specific": "crucian carp",
+        "groups": [
+          "pond fish"
+        ],
+        "photo": "Crucian carp",
+        "nameEn": "Crucian carp"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-carp",
+      "category": "fish",
+      "queries": {
+        "specific": "common carp",
+        "groups": [
+          "pond fish"
+        ],
+        "photo": "Common carp",
+        "nameEn": "Common carp"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-loach",
+      "category": "fish",
+      "queries": {
+        "specific": "loach",
+        "groups": [
+          "pond fish",
+          "river fish"
+        ],
+        "photo": "Loach",
+        "nameEn": "Loach"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-catfish",
+      "category": "fish",
+      "queries": {
+        "specific": "far eastern catfish",
+        "groups": [
+          "catfish",
+          "pond fish",
+          "river fish"
+        ],
+        "photo": "Far Eastern catfish",
+        "nameEn": "Far Eastern catfish"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 2
+    },
+    {
+      "id": "fish-mandarin",
+      "category": "fish",
+      "queries": {
+        "specific": "mandarin fish",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Mandarin fish",
+        "nameEn": "Mandarin fish"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-bitterling",
+      "category": "fish",
+      "queries": {
+        "specific": "korean rosy bitterling",
+        "groups": [
+          "pond fish"
+        ],
+        "photo": "Rhodeus uyekii",
+        "nameEn": "Korean rosy bitterling"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-.jpg",
+        "commons-Rhodeus-uyekii-COEX1.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-bullhead",
+      "category": "fish",
+      "queries": {
+        "specific": "korean bullhead",
+        "groups": [
+          "catfish",
+          "river fish"
+        ],
+        "photo": "Korean bullhead",
+        "nameEn": "Korean bullhead"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-sweetfish",
+      "category": "fish",
+      "queries": {
+        "specific": "ayu",
+        "groups": [
+          "river fish"
+        ],
+        "photo": "Plecoglossus altivelis",
+        "nameEn": "Ayu"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Plecoglossus-altivelis-altivelis-hami-ato2.jpg",
+        "commons-Plecoglossus-altivelis-Totto.jpg",
+        "commons-Plecoglossus-altivelis-altivelis-ayu.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-lenok",
+      "category": "fish",
+      "queries": {
+        "specific": "lenok",
+        "groups": [
+          "salmon",
+          "river fish"
+        ],
+        "photo": "Brachymystax lenok",
+        "nameEn": "Lenok"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Brachymystax-lenokBMNHM.jpg",
+        "commons-Brachymystax-lenok-Danyang2.jpg",
+        "commons-Brachymystax-lenok-Danyang1.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "fish-cherrytrout",
+      "category": "fish",
+      "queries": {
+        "specific": "cherry trout",
+        "groups": [
+          "salmon",
+          "river fish"
+        ],
+        "photo": "Cherry trout",
+        "nameEn": "Cherry trout"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Oncorhynchus-masou-ishikawae1.jpg",
+        "commons-Oncorhynchus-masou-01.jpg",
+        "commons-Oncorhynchus-masou-par.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-eel",
+      "category": "fish",
+      "queries": {
+        "specific": "japanese eel",
+        "groups": [
+          "eel",
+          "river fish"
+        ],
+        "photo": "Anguilla japonica",
+        "nameEn": "Japanese eel"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Anguilla-japonica-1856.jpg",
+        "commons-Anguilla-japonica.jpg",
+        "commons-.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-snakehead",
+      "category": "fish",
+      "queries": {
+        "specific": "snakehead",
+        "groups": [
+          "pond fish",
+          "river fish"
+        ],
+        "photo": "Channa argus",
+        "nameEn": "Snakehead"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Snakehead-Channa-argus.jpg",
+        "commons-Snakehead-Channa-argus-2.jpg",
+        "commons-Channa-argus-illustration.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-mudskipper",
+      "category": "fish",
+      "queries": {
+        "specific": "mudskipper",
+        "groups": [
+          "goby",
+          "sea fish"
+        ],
+        "photo": "Mudskipper",
+        "nameEn": "Mudskipper"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Schlammspringer-Periophthalmus-sp.jpg",
+        "commons-Mudskipper-in-Sundarbans-National-Park-March-202.jpg",
+        "commons-Boleophthalmus-dussumieri-Ford-64.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-goby",
+      "category": "fish",
+      "queries": {
+        "specific": "goby",
+        "groups": [
+          "goby",
+          "sea fish"
+        ],
+        "photo": "Gobiidae goby fish",
+        "nameEn": "Goby"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Rhinogobius-flumineus-Hamamatsu-Shizuoka-Japan-.jpg",
+        "commons-Montastraea-cavernosa-Great-Star-Coral-with-Elac.jpg",
+        "commons-ufs-de-gobie-Ifremer-00553-66488-49079-.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-mullet",
+      "category": "fish",
+      "queries": {
+        "specific": "flathead mullet",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Mugil cephalus",
+        "nameEn": "Flathead mullet"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Muble-Chelon-labrosus-Parque-natural-de-la-Arr-b.jpg",
+        "commons-M-jol-Mugil-cephalus-Parque-natural-de-la-Arr-bi.jpg",
+        "commons-Mugil-cephalus-Minorca.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-rockfish",
+      "category": "fish",
+      "queries": {
+        "specific": "korean rockfish",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Korean rockfish",
+        "nameEn": "Korean rockfish"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Sebastes-schlegelii-by-OpenCage.jpg",
+        "commons-Sebastes-schlegelii-Hilgendorf-1880.jpg",
+        "commons-Sebastes-schlegelii-Muroran.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-seabass",
+      "category": "fish",
+      "queries": {
+        "specific": "jacopever",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Sebastes schlegelii",
+        "nameEn": "Jacopever"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Sebastes-schlegelii-by-OpenCage.jpg",
+        "commons-Sebastes-schlegelii-Hilgendorf-1880.jpg",
+        "commons-Sebastes-schlegelii-Muroran.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-wrasse",
+      "category": "fish",
+      "queries": {
+        "specific": "wrasse",
+        "groups": [
+          "reef fish",
+          "sea fish"
+        ],
+        "photo": "Labridae wrasse",
+        "nameEn": "Wrasse"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Labridae-by-Frank-Edward-Clarke.jpg",
+        "commons-Cleaner-wrasse-yellow-pufferfish-Ofu-2023.jpg",
+        "commons-Two-Saddle-Wrasse-are-feeding-on-sea-urchin.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-flounder",
+      "category": "fish",
+      "queries": {
+        "specific": "olive flounder",
+        "groups": [
+          "flatfish",
+          "sea fish"
+        ],
+        "photo": "Olive flounder",
+        "nameEn": "Olive flounder"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Paralichthys-olivaceus-Federal-Way-3583.jpg",
+        "commons-Paralichthys-olivaceus-Umigatari.jpg",
+        "commons-Parasite160015-fig1-olive-flounder-Paralichthys-.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "fish-halibut",
+      "category": "fish",
+      "queries": {
+        "specific": "righteye flounder",
+        "groups": [
+          "flatfish",
+          "sea fish"
+        ],
+        "photo": "righteye flounder",
+        "nameEn": "Righteye flounder"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Pleuronectes-platessa.jpg",
+        "commons-Pleuronectidae-Mivart.jpg",
+        "commons-Gajamisikhae-fermented-righteye-flounders-.jpg"
+      ],
+      "rejected": 3
+    },
+    {
+      "id": "fish-halfbeak",
+      "category": "fish",
+      "queries": {
+        "specific": "halfbeak",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Halfbeak",
+        "nameEn": "Halfbeak"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-USS-Halfbeak-0835209.jpg",
+        "commons-Halfbeak-Cuba.jpg",
+        "commons-USS-Halfbeak-SS-352-underway-at-sea-in-1956.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-shad",
+      "category": "fish",
+      "queries": {
+        "specific": "gizzard shad",
+        "groups": [
+          "mackerel",
+          "sea fish"
+        ],
+        "photo": "Konosirus punctatus",
+        "nameEn": "Gizzard shad"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Konosirus-punctatus2.jpg",
+        "commons-Konosirus-punctatus-in-store.jpg",
+        "commons-Konosirus-punctatus3.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-mackerel",
+      "category": "fish",
+      "queries": {
+        "specific": "chub mackerel",
+        "groups": [
+          "mackerel",
+          "sea fish"
+        ],
+        "photo": "Chub mackerel",
+        "nameEn": "Chub mackerel"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Otolithes-de-maquereau-espagnol-ou-blanc-Scomber.jpg",
+        "commons-Scomber-japonicus-Matsuwasaba-.jpg",
+        "commons-Scomber-japonicus-haul.jpg"
+      ],
+      "rejected": 2
+    },
+    {
+      "id": "fish-yellowtail",
+      "category": "fish",
+      "queries": {
+        "specific": "yellowtail",
+        "groups": [
+          "tuna",
+          "sea fish"
+        ],
+        "photo": "Yellowtail",
+        "nameEn": "Yellowtail"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Seriola-quinqueradiata-200810-.jpg",
+        "commons-Seriola-quinqueradiata.jpg",
+        "commons-Seriola-quinqueradiata-by-Vincent-C-Chen.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "fish-spanishmack",
+      "category": "fish",
+      "queries": {
+        "specific": "spanish mackerel",
+        "groups": [
+          "tuna",
+          "sea fish"
+        ],
+        "photo": "Spanish mackerel",
+        "nameEn": "Spanish mackerel"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Scomberomorus-commerson-Australia.jpg",
+        "commons-Narrow-barred-spanish-mackerel-Scomberomorus-com.jpg",
+        "commons-Scomberomorus-commerson-Philippines.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-dolphinfish",
+      "category": "fish",
+      "queries": {
+        "specific": "mahi",
+        "groups": [
+          "sea fish"
+        ],
+        "photo": "Mahi-mahi",
+        "nameEn": "Mahi-mahi"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Mahiya-Mahi-01-.jpg",
+        "commons-Coryph-ne-commune-Coryphaena-hippurus-Ifremer-00.jpg",
+        "commons-Dolphinfish-Coryphaena-hippurus-.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-tuna",
+      "category": "fish",
+      "queries": {
+        "specific": "bluefin tuna",
+        "groups": [
+          "tuna",
+          "sea fish"
+        ],
+        "photo": "Bluefin tuna",
+        "nameEn": "Bluefin tuna"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Bluefin-big.jpg",
+        "commons-White-shark-hunting-a-school-of-bluefin-tuna-V5.jpg",
+        "commons-I-see-you-Bluefin-tuna-Thunnus-thynnus-and-littl.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "fish-sunfish",
+      "category": "fish",
+      "queries": {
+        "specific": "ocean sunfish",
+        "groups": [
+          "sunfish",
+          "sea fish"
+        ],
+        "photo": "Ocean sunfish",
+        "nameEn": "Ocean sunfish"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-ray",
+      "category": "fish",
+      "queries": {
+        "specific": "stingray",
+        "groups": [
+          "ray",
+          "sea fish"
+        ],
+        "photo": "stingray",
+        "nameEn": "Ray"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-shark",
+      "category": "fish",
+      "queries": {
+        "specific": "mako shark",
+        "groups": [
+          "shark",
+          "sea fish"
+        ],
+        "photo": "Mako shark",
+        "nameEn": "Mako shark"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-anglerfish",
+      "category": "fish",
+      "queries": {
+        "specific": "anglerfish",
+        "groups": [
+          "anglerfish",
+          "deep sea"
+        ],
+        "photo": "Anglerfish",
+        "nameEn": "Anglerfish"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-lanternfish",
+      "category": "fish",
+      "queries": {
+        "specific": "lanternfish",
+        "groups": [
+          "deep sea"
+        ],
+        "photo": "Lanternfish",
+        "nameEn": "Lanternfish"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-viperfish",
+      "category": "fish",
+      "queries": {
+        "specific": "viperfish",
+        "groups": [
+          "deep sea"
+        ],
+        "photo": "Viperfish",
+        "nameEn": "Viperfish"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-gulpereel",
+      "category": "fish",
+      "queries": {
+        "specific": "gulper eel",
+        "groups": [
+          "eel",
+          "deep sea"
+        ],
+        "photo": "Gulper eel",
+        "nameEn": "Gulper eel"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-squid",
+      "category": "fish",
+      "queries": {
+        "specific": "giant squid",
+        "groups": [
+          "squid",
+          "deep sea"
+        ],
+        "photo": "Giant squid",
+        "nameEn": "Giant squid"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-jelly",
+      "category": "fish",
+      "queries": {
+        "specific": "jellyfish",
+        "groups": [
+          "jellyfish",
+          "deep sea"
+        ],
+        "photo": "siphonophore",
+        "nameEn": "Siphonophore"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "fish-whale-shadow",
+      "category": "fish",
+      "queries": {
+        "specific": "whale",
+        "groups": [
+          "whale",
+          "deep sea"
+        ],
+        "photo": "sperm whale",
+        "nameEn": "Sperm whale"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-cabbagewhite",
+      "category": "bug",
+      "queries": {
+        "specific": "white butterfly",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Cabbage white",
+        "nameEn": "Cabbage white"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-swallowtail",
+      "category": "bug",
+      "queries": {
+        "specific": "swallowtail",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Swallowtail",
+        "nameEn": "Swallowtail"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-blackswallow",
+      "category": "bug",
+      "queries": {
+        "specific": "black swallowtail",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Black swallowtail",
+        "nameEn": "Black swallowtail"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-blue",
+      "category": "bug",
+      "queries": {
+        "specific": "blue butterfly",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Lycaenidae butterfly",
+        "nameEn": "Blue butterfly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-comma",
+      "category": "bug",
+      "queries": {
+        "specific": "butterfly",
+        "groups": [
+          "butterfly"
+        ],
+        "photo": "Polygonia c-album",
+        "nameEn": "Comma butterfly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-ladybug",
+      "category": "bug",
+      "queries": {
+        "specific": "ladybug",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Ladybug",
+        "nameEn": "Ladybug"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-honeybee",
+      "category": "bug",
+      "queries": {
+        "specific": "honeybee",
+        "groups": [
+          "bee"
+        ],
+        "photo": "Honeybee",
+        "nameEn": "Honeybee"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-bumblebee",
+      "category": "bug",
+      "queries": {
+        "specific": "bumblebee",
+        "groups": [
+          "bee"
+        ],
+        "photo": "Bumblebee",
+        "nameEn": "Bumblebee"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-hornet",
+      "category": "bug",
+      "queries": {
+        "specific": "hornet",
+        "groups": [
+          "bee"
+        ],
+        "photo": "Hornet",
+        "nameEn": "Hornet"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-reddragonfly",
+      "category": "bug",
+      "queries": {
+        "specific": "red dragonfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Red dragonfly",
+        "nameEn": "Red dragonfly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-emperordragon",
+      "category": "bug",
+      "queries": {
+        "specific": "emperor dragonfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Emperor dragonfly",
+        "nameEn": "Emperor dragonfly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-damselfly",
+      "category": "bug",
+      "queries": {
+        "specific": "damselfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Damselfly",
+        "nameEn": "Damselfly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-goldendragon",
+      "category": "bug",
+      "queries": {
+        "specific": "golden-ringed dragonfly",
+        "groups": [
+          "dragonfly"
+        ],
+        "photo": "Golden-ringed dragonfly",
+        "nameEn": "Golden-ringed dragonfly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-stagbeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "stag beetle",
+        "groups": [
+          "stag beetle",
+          "beetle"
+        ],
+        "photo": "Stag beetle",
+        "nameEn": "Stag beetle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-rhinobeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "rhinoceros beetle",
+        "groups": [
+          "rhino beetle",
+          "beetle"
+        ],
+        "photo": "Rhinoceros beetle",
+        "nameEn": "Rhinoceros beetle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-scarab",
+      "category": "bug",
+      "queries": {
+        "specific": "scarab beetle",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Scarab beetle",
+        "nameEn": "Scarab beetle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-longhorn",
+      "category": "bug",
+      "queries": {
+        "specific": "longhorn beetle",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Longhorn beetle",
+        "nameEn": "Longhorn beetle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-cicada",
+      "category": "bug",
+      "queries": {
+        "specific": "cicada",
+        "groups": [
+          "cicada"
+        ],
+        "photo": "Cicada",
+        "nameEn": "Cicada"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-largecicada",
+      "category": "bug",
+      "queries": {
+        "specific": "large black cicada",
+        "groups": [
+          "cicada"
+        ],
+        "photo": "Large black cicada",
+        "nameEn": "Large black cicada"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-katydid",
+      "category": "bug",
+      "queries": {
+        "specific": "katydid",
+        "groups": [
+          "cricket"
+        ],
+        "photo": "Tettigoniidae katydid",
+        "nameEn": "Katydid"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-cricket",
+      "category": "bug",
+      "queries": {
+        "specific": "cricket",
+        "groups": [
+          "cricket"
+        ],
+        "photo": "Gryllidae cricket insect",
+        "nameEn": "Cricket"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Camouflaged-cricket-grasshopper-insect.jpg",
+        "commons-Cricket-insect-near-Lantana-flower-Karnataka-Ind.jpg",
+        "commons-True-crickets-Home-crickets.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-grasshopper",
+      "category": "bug",
+      "queries": {
+        "specific": "grasshopper",
+        "groups": [
+          "grasshopper"
+        ],
+        "photo": "Acrididae grasshopper",
+        "nameEn": "Grasshopper"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Acrididae-grasshopper-2.jpg",
+        "commons-Short-horned-grasshoppers-Rhytidochrota-risarald.jpg",
+        "commons-Garden-locust-Acanthacris-ruficornis-.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-locust",
+      "category": "bug",
+      "queries": {
+        "specific": "locust",
+        "groups": [
+          "grasshopper"
+        ],
+        "photo": "Locusta migratoria",
+        "nameEn": "Locust"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Locusta-migratoria-wanderheuschrecke.jpg",
+        "commons-Locusta-migratoria-qtl1.jpg",
+        "commons-Wanderheuschrecke-03.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-mantis",
+      "category": "bug",
+      "queries": {
+        "specific": "praying mantis",
+        "groups": [
+          "mantis"
+        ],
+        "photo": "Mantis religiosa",
+        "nameEn": "Praying mantis"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-European-praying-mantis-Mantis-religiosa-green-f.jpg",
+        "commons-Mantis-religiosa-immature-female-S-te-01.jpg",
+        "commons-Mantis-religiosa-MHNT-enti-re.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "bug-firefly",
+      "category": "bug",
+      "queries": {
+        "specific": "firefly",
+        "groups": [
+          "firefly"
+        ],
+        "photo": "Firefly",
+        "nameEn": "Firefly"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Firefly-vehicle-IAA-2025-DSC-1910.jpg",
+        "commons-Fireflies-Nativeplants-Botanical-Garden-2.jpg",
+        "commons-Fireflies-Nativeplants-Botanical-Garden.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "bug-waterstrider",
+      "category": "bug",
+      "queries": {
+        "specific": "water strider",
+        "groups": [
+          "water bug"
+        ],
+        "photo": "Water strider",
+        "nameEn": "Water strider"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-divingbeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "diving beetle",
+        "groups": [
+          "water bug",
+          "beetle"
+        ],
+        "photo": "Diving beetle",
+        "nameEn": "Diving beetle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-giantwaterbug",
+      "category": "bug",
+      "queries": {
+        "specific": "giant water bug",
+        "groups": [
+          "water bug"
+        ],
+        "photo": "Giant water bug",
+        "nameEn": "Giant water bug"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-ant",
+      "category": "bug",
+      "queries": {
+        "specific": "ant",
+        "groups": [
+          "ant"
+        ],
+        "photo": "Ant",
+        "nameEn": "Ant"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-spider",
+      "category": "bug",
+      "queries": {
+        "specific": "golden orb spider",
+        "groups": [
+          "spider"
+        ],
+        "photo": "Nephila clavata",
+        "nameEn": "Golden orb spider"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-hawkmoth",
+      "category": "bug",
+      "queries": {
+        "specific": "hawk moth",
+        "groups": [
+          "moth"
+        ],
+        "photo": "Hawk moth",
+        "nameEn": "Hawk moth"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-snail",
+      "category": "bug",
+      "queries": {
+        "specific": "snail",
+        "groups": [
+          "snail"
+        ],
+        "photo": "Snail",
+        "nameEn": "Snail"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-earthworm",
+      "category": "bug",
+      "queries": {
+        "specific": "earthworm",
+        "groups": [
+          "earthworm"
+        ],
+        "photo": "Earthworm",
+        "nameEn": "Earthworm"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-pillbug",
+      "category": "bug",
+      "queries": {
+        "specific": "pill bug",
+        "groups": [
+          "pillbug"
+        ],
+        "photo": "Pill bug",
+        "nameEn": "Pill bug"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-shieldbug",
+      "category": "bug",
+      "queries": {
+        "specific": "shield bug",
+        "groups": [
+          "shieldbug"
+        ],
+        "photo": "Shield bug",
+        "nameEn": "Shield bug"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-mayfly",
+      "category": "bug",
+      "queries": {
+        "specific": "mayfly",
+        "groups": [
+          "fly"
+        ],
+        "photo": "Mayfly",
+        "nameEn": "Mayfly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-stonefly",
+      "category": "bug",
+      "queries": {
+        "specific": "stonefly",
+        "groups": [
+          "stonefly"
+        ],
+        "photo": "Stonefly",
+        "nameEn": "Stonefly"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-dungbeetle",
+      "category": "bug",
+      "queries": {
+        "specific": "dung beetle",
+        "groups": [
+          "beetle"
+        ],
+        "photo": "Dung beetle",
+        "nameEn": "Dung beetle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "bug-longmantis",
+      "category": "bug",
+      "queries": {
+        "specific": "giant mantis",
+        "groups": [
+          "mantis"
+        ],
+        "photo": "Giant mantis",
+        "nameEn": "Giant mantis"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-chipmunk",
+      "category": "animal",
+      "queries": {
+        "specific": "chipmunk",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Chipmunk",
+        "nameEn": "Chipmunk"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-squirrel",
+      "category": "animal",
+      "queries": {
+        "specific": "korean squirrel",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Sciurus vulgaris",
+        "nameEn": "Korean squirrel"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-hare",
+      "category": "animal",
+      "queries": {
+        "specific": "rabbit",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Lepus coreanus",
+        "nameEn": "Korean hare"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Lepus-coreanus-2715164.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-waterdeer",
+      "category": "animal",
+      "queries": {
+        "specific": "deer",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Water deer",
+        "nameEn": "Water deer"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-roedeer",
+      "category": "animal",
+      "queries": {
+        "specific": "deer",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Roe deer",
+        "nameEn": "Roe deer"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-boar",
+      "category": "animal",
+      "queries": {
+        "specific": "wild boar",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Wild boar",
+        "nameEn": "Wild boar"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-raccoondog",
+      "category": "animal",
+      "queries": {
+        "specific": "raccoon",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Raccoon dog",
+        "nameEn": "Raccoon dog"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-badger",
+      "category": "animal",
+      "queries": {
+        "specific": "badger",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Badger",
+        "nameEn": "Badger"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-weasel",
+      "category": "animal",
+      "queries": {
+        "specific": "weasel",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Weasel",
+        "nameEn": "Weasel"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-otter",
+      "category": "animal",
+      "queries": {
+        "specific": "eurasian otter",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Eurasian otter",
+        "nameEn": "Eurasian otter"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-mole",
+      "category": "animal",
+      "queries": {
+        "specific": "mole",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Talpidae mole animal",
+        "nameEn": "Mole"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-fieldmouse",
+      "category": "animal",
+      "queries": {
+        "specific": "mouse",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Apodemus agrarius",
+        "nameEn": "Striped field mouse"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-hedgehog",
+      "category": "animal",
+      "queries": {
+        "specific": "hedgehog",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Hedgehog",
+        "nameEn": "Hedgehog"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-fox",
+      "category": "animal",
+      "queries": {
+        "specific": "red fox",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Red fox",
+        "nameEn": "Red fox"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-leopardcat",
+      "category": "animal",
+      "queries": {
+        "specific": "wild cat",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Prionailurus bengalensis",
+        "nameEn": "Leopard cat"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-bat",
+      "category": "animal",
+      "queries": {
+        "specific": "horseshoe bat",
+        "groups": [
+          "mammal"
+        ],
+        "photo": "Rhinolophus horseshoe bat",
+        "nameEn": "Horseshoe bat"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-mallard",
+      "category": "animal",
+      "queries": {
+        "specific": "duck",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Mallard",
+        "nameEn": "Mallard"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-duckling",
+      "category": "animal",
+      "queries": {
+        "specific": "duckling",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Duckling",
+        "nameEn": "Duckling"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-mandarinduck",
+      "category": "animal",
+      "queries": {
+        "specific": "duck",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Mandarin duck",
+        "nameEn": "Mandarin duck"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-heron",
+      "category": "animal",
+      "queries": {
+        "specific": "grey heron",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Grey heron",
+        "nameEn": "Grey heron"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-egret",
+      "category": "animal",
+      "queries": {
+        "specific": "great egret",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Great egret",
+        "nameEn": "Great egret"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-kingfisher",
+      "category": "animal",
+      "queries": {
+        "specific": "kingfisher",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Kingfisher",
+        "nameEn": "Kingfisher"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-goose",
+      "category": "animal",
+      "queries": {
+        "specific": "wild goose",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Wild goose",
+        "nameEn": "Wild goose"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-sparrow",
+      "category": "animal",
+      "queries": {
+        "specific": "tree sparrow",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Tree sparrow",
+        "nameEn": "Tree sparrow"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-magpie",
+      "category": "animal",
+      "queries": {
+        "specific": "magpie",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Magpie",
+        "nameEn": "Magpie"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-crow",
+      "category": "animal",
+      "queries": {
+        "specific": "jungle crow",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Corvus macrorhynchos",
+        "nameEn": "Jungle crow"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-woodpecker",
+      "category": "animal",
+      "queries": {
+        "specific": "woodpecker",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Great spotted woodpecker",
+        "nameEn": "Great spotted woodpecker"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-owl",
+      "category": "animal",
+      "queries": {
+        "specific": "eagle owl",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Eagle owl",
+        "nameEn": "Eagle owl"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-pheasant",
+      "category": "animal",
+      "queries": {
+        "specific": "ring-necked pheasant",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Ring-necked pheasant",
+        "nameEn": "Ring-necked pheasant"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-skylark",
+      "category": "animal",
+      "queries": {
+        "specific": "lark",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Skylark",
+        "nameEn": "Skylark"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Skylark-2-Lake-District-England-June-2009.jpg",
+        "commons-Alouette-des-champs-Zaghouan001.jpg",
+        "commons-Alauda-arvensis-Skylark-Tarlaku-u-02.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-swallow",
+      "category": "animal",
+      "queries": {
+        "specific": "barn swallow",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Hirundo rustica",
+        "nameEn": "Barn swallow"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Hirundo-rustica-Ormoz.jpg",
+        "commons-Landsvale.jpg",
+        "commons-Swallow-August-2013-2.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-gull",
+      "category": "animal",
+      "queries": {
+        "specific": "seagull",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Black-tailed gull",
+        "nameEn": "Black-tailed gull"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Black-tailed-gull.jpg",
+        "commons-Gull-in-water3.jpg",
+        "commons-Larus-crassirostris-411338457.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-cormorant",
+      "category": "animal",
+      "queries": {
+        "specific": "cormorant",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Cormorant",
+        "nameEn": "Cormorant"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Phalacrocorax-carbo-Vic.jpg",
+        "commons-Great-cormorant-landing.jpg",
+        "commons-Great-cormorant-flying.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-sandpiper",
+      "category": "animal",
+      "queries": {
+        "specific": "sandpiper",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Sandpiper",
+        "nameEn": "Sandpiper"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Calidris-alpina-001-edit.jpg",
+        "commons-Common-Sandpiper-Actitis-hypoleucos-Sfax-Tunisia.jpg",
+        "commons-Catoptrophorus-semipalmatus-edit.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-spoonbill",
+      "category": "animal",
+      "queries": {
+        "specific": "spoonbill",
+        "groups": [
+          "bird"
+        ],
+        "photo": "Black-faced spoonbill",
+        "nameEn": "Black-faced spoonbill"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Platalea-minor-okinawa.jpg",
+        "commons-Platalea-minor.jpg",
+        "commons-Black-faced-Spoonbill-Platalea-minor-1.jpg"
+      ],
+      "rejected": 1
+    },
+    {
+      "id": "animal-seal",
+      "category": "animal",
+      "queries": {
+        "specific": "spotted seal",
+        "groups": [
+          "sea mammal"
+        ],
+        "photo": "Phoca largha spotted seal",
+        "nameEn": "Spotted seal"
+      },
+      "pixel": [],
+      "photo": [
+        "commons-Phoca-largha-300352981.jpg",
+        "commons-Phoca-largha-NOAA-1.jpg",
+        "commons-Spotted-seal-mother-and-pup-in-the-Bering-Sea.jpg"
+      ],
+      "rejected": 0
+    },
+    {
+      "id": "animal-porpoise",
+      "category": "animal",
+      "queries": {
+        "specific": "dolphin",
+        "groups": [
+          "dolphin"
+        ],
+        "photo": "finless porpoise",
+        "nameEn": "Finless porpoise"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-minkewhale",
+      "category": "animal",
+      "queries": {
+        "specific": "whale",
+        "groups": [
+          "whale"
+        ],
+        "photo": "Minke whale",
+        "nameEn": "Minke whale"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-turtle-sea",
+      "category": "animal",
+      "queries": {
+        "specific": "sea turtle",
+        "groups": [
+          "turtle"
+        ],
+        "photo": "loggerhead sea turtle",
+        "nameEn": "Loggerhead turtle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-fiddlercrab",
+      "category": "animal",
+      "queries": {
+        "specific": "crab",
+        "groups": [
+          "crab"
+        ],
+        "photo": "fiddler crab",
+        "nameEn": "Fiddler crab"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-mudcrab",
+      "category": "animal",
+      "queries": {
+        "specific": "crab",
+        "groups": [
+          "crab"
+        ],
+        "photo": "Helice tridens",
+        "nameEn": "Mud crab"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-hermitcrab",
+      "category": "animal",
+      "queries": {
+        "specific": "hermit crab",
+        "groups": [
+          "hermit crab"
+        ],
+        "photo": "Hermit crab",
+        "nameEn": "Hermit crab"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-anemone",
+      "category": "animal",
+      "queries": {
+        "specific": "sea anemone",
+        "groups": [
+          "anemone"
+        ],
+        "photo": "sea anemone",
+        "nameEn": "Sea anemone"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-treefrog",
+      "category": "animal",
+      "queries": {
+        "specific": "frog",
+        "groups": [
+          "frog"
+        ],
+        "photo": "Tree frog",
+        "nameEn": "Tree frog"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-toad",
+      "category": "animal",
+      "queries": {
+        "specific": "toad",
+        "groups": [
+          "frog"
+        ],
+        "photo": "Toad",
+        "nameEn": "Toad"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-salamander",
+      "category": "animal",
+      "queries": {
+        "specific": "salamander",
+        "groups": [
+          "salamander"
+        ],
+        "photo": "Salamander",
+        "nameEn": "Salamander"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-softshell",
+      "category": "animal",
+      "queries": {
+        "specific": "turtle",
+        "groups": [
+          "turtle"
+        ],
+        "photo": "Softshell turtle",
+        "nameEn": "Softshell turtle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-terrapin",
+      "category": "animal",
+      "queries": {
+        "specific": "turtle",
+        "groups": [
+          "turtle"
+        ],
+        "photo": "Mauremys reevesii",
+        "nameEn": "Korean pond turtle"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    },
+    {
+      "id": "animal-ratsnake",
+      "category": "animal",
+      "queries": {
+        "specific": "snake",
+        "groups": [
+          "snake"
+        ],
+        "photo": "Rat snake",
+        "nameEn": "Rat snake"
+      },
+      "pixel": [],
+      "photo": [],
+      "rejected": 0
+    }
+  ],
+  "totals": {
+    "entities": 192,
+    "pixel": 0,
+    "photo": 99
+  },
+  "empty": [
+    "tree-oak",
+    "sapling",
+    "sprout",
+    "shrub",
+    "grass-tuft",
+    "grass-tall",
+    "grass-dry",
+    "clover",
+    "daisy",
+    "dandelion-flower",
+    "dandelion-puff",
+    "mushroom",
+    "reed",
+    "lilypad",
+    "lotus",
+    "soil-mound",
+    "molehill",
+    "grass-patch",
+    "twig",
+    "pebble",
+    "rock",
+    "stump",
+    "log",
+    "snowman-1",
+    "snowman-2",
+    "snowman-3",
+    "snow-pile",
+    "acorn",
+    "swim-ring",
+    "driftwood",
+    "shell-clam",
+    "animal-starfish",
+    "sea-stack",
+    "seaweed-clump",
+    "dune-grass",
+    "tide-pool",
+    "gravel-patch",
+    "tree-birch",
+    "fern",
+    "moss-patch",
+    "silver-grass",
+    "sedge",
+    "cattail",
+    "bramble",
+    "flower-white",
+    "flower-violet",
+    "flower-cream",
+    "boulder",
+    "snow-drift",
+    "icicle",
+    "pinecone",
+    "feather",
+    "berry-bush",
+    "puddle",
+    "sun-disc",
+    "moon-phase",
+    "comet",
+    "shooting-star",
+    "cloud-low",
+    "cloud-mid",
+    "cloud-high",
+    "cloud-wisp",
+    "cloud-storm",
+    "footlog",
+    "fish-palechub",
+    "fish-chinesemin",
+    "fish-darkchub",
+    "fish-crucian",
+    "fish-carp",
+    "fish-loach",
+    "fish-catfish",
+    "fish-mandarin",
+    "fish-bullhead",
+    "fish-sunfish",
+    "fish-ray",
+    "fish-shark",
+    "fish-anglerfish",
+    "fish-lanternfish",
+    "fish-viperfish",
+    "fish-gulpereel",
+    "fish-squid",
+    "fish-jelly",
+    "fish-whale-shadow",
+    "bug-cabbagewhite",
+    "bug-swallowtail",
+    "bug-blackswallow",
+    "bug-blue",
+    "bug-comma",
+    "bug-ladybug",
+    "bug-honeybee",
+    "bug-bumblebee",
+    "bug-hornet",
+    "bug-reddragonfly",
+    "bug-emperordragon",
+    "bug-damselfly",
+    "bug-goldendragon",
+    "bug-stagbeetle",
+    "bug-rhinobeetle",
+    "bug-scarab",
+    "bug-longhorn",
+    "bug-cicada",
+    "bug-largecicada",
+    "bug-katydid",
+    "bug-waterstrider",
+    "bug-divingbeetle",
+    "bug-giantwaterbug",
+    "bug-ant",
+    "bug-spider",
+    "bug-hawkmoth",
+    "bug-snail",
+    "bug-earthworm",
+    "bug-pillbug",
+    "bug-shieldbug",
+    "bug-mayfly",
+    "bug-stonefly",
+    "bug-dungbeetle",
+    "bug-longmantis",
+    "animal-chipmunk",
+    "animal-squirrel",
+    "animal-waterdeer",
+    "animal-roedeer",
+    "animal-boar",
+    "animal-raccoondog",
+    "animal-badger",
+    "animal-weasel",
+    "animal-otter",
+    "animal-mole",
+    "animal-fieldmouse",
+    "animal-hedgehog",
+    "animal-fox",
+    "animal-leopardcat",
+    "animal-bat",
+    "animal-mallard",
+    "animal-duckling",
+    "animal-mandarinduck",
+    "animal-heron",
+    "animal-egret",
+    "animal-kingfisher",
+    "animal-goose",
+    "animal-sparrow",
+    "animal-magpie",
+    "animal-crow",
+    "animal-woodpecker",
+    "animal-owl",
+    "animal-pheasant",
+    "animal-porpoise",
+    "animal-minkewhale",
+    "animal-turtle-sea",
+    "animal-fiddlercrab",
+    "animal-mudcrab",
+    "animal-hermitcrab",
+    "animal-anemone",
+    "animal-treefrog",
+    "animal-toad",
+    "animal-salamander",
+    "animal-softshell",
+    "animal-terrapin",
+    "animal-ratsnake"
+  ]
+}

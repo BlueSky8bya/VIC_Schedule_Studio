@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1913004b538418da887920e8ef3440ff5cd00297e26003010d82a1999a5598b5 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a5e0ce5d9c0a5c6ce0031e911273e49c8eb3cf248dfd41fcc1981b886db311e6 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8c780e8ec32cef70780bbb4f954ec60d4a947d67057ee686bed7526c47383b13 -->
 
 # animal-squirrel 검토
 

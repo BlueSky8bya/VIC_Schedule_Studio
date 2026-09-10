@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2a9093319ad5986a1967cd048b8996a7a1bf2f754f58477f2caf94135ef9056c -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 26459eb267cc2f87568cd53328e8f7d34e0235e8f105ef97e23c003ef751d447 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9a69bf04a60ab1bd9a5e40ebe29561dc253123e3be3d178c71d21dcb3a2a9d87 -->
 
 # fish-spanishmack 생성본
 

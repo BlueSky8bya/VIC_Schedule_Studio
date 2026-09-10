@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: bc30d3eebdaaf54cc8716483b1e5f5ea4f77bffcf1fdc2d21c0a92ed0cfe03e9 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 691b632e8ffa4290e798749c1d784d39d33f57da63d66469fd4a181a54f0bdf9 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 2c29c1f1b3c6fa808fb0edce9d52daf253da04e59069bbc9cb2242026544e0c3 -->
 
 # shell-clam 반려본
 

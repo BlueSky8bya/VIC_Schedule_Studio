@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 26b10ead936bb4f32ef673e729bbe7768cb4890b3275d6d142cb047b8c3b71f4 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 7a3a41f33e24b61f093d31f3f04f959d3a5458dc909fb44014a1b6d85696b35d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e62a4e91c985baea23802d922ea9d91f71aba9ff4dd324153d739de1ad0212bc -->
 
 # animal-hedgehog 검토
 

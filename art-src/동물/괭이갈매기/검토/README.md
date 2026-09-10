@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 42b5b5ebbc3b7890770c3cf36d018f93e53dbcd523d8653d6bfc1fef1e8fa7d0 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 40f83a199b17c8f36890c03726df560b9f0fe2c93726fa5fe5292cecd78830c1 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8cb6d4f4a1543ad073ffa7084076037bbc9d788037dc0de9166c9b94d66a5b56 -->
 
 # animal-gull 검토
 

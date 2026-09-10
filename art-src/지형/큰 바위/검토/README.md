@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: ae4df9d19cb17fd72d65f536f4e698ac7fcf077ee203839c2e8d479c9c5e1be6 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 8c6a2b4d1eb1b104878f81c9268647ffa3d556ef2c46ba1241a410266fb86b61 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9baae5272f43ad96f4b71c7b55d73b3a516ebfb5e8be0f9199159b80c2ab8795 -->
 
 # boulder 검토
 

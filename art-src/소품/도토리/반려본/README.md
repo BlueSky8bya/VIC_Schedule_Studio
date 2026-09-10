@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8e8353d5f3b455e5ea1d505b6885ec91eeb480f595572a62cbb7d2f1e72d7731 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 42e09a97c282180683942bfc6374dc3c8430ccdd708ff888b96bd9faff147966 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 74d1ecef89368f15340fff184a94ff3630aa4f79a906ae16a031457549747fde -->
 
 # acorn 반려본
 

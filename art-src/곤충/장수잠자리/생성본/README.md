@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1008d358d7d16914f23fc330320e8733f61fed545efe0dca81498baf1773d2bb -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 085501b585fe77b1185be80055746df1cc674dc4530a140a488c0c65463aca6c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a3a324a1fd7b0986bb6e4b982c96678242eedd90c9950ad5c4c0518e9d7a1de6 -->
 
 # bug-goldendragon 생성본
 

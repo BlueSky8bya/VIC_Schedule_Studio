@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e5ec79ec1f495370df629c92f73c1cef74f8b7eddf9e6612e374eed049c36e78 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9d1a13e3158c748c9142a8844e1f3740c4b8b17ab7205e25a60796cc78e6f16e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 1b96ef7a080224d57bfac63848edb4b168da7d3e2cf358df1dc4438149c8afed -->
 
 # animal-mandarinduck 생성본
 

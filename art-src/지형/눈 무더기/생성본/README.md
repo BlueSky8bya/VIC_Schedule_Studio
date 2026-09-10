@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 96f2c9b7945e6b27c198a00ce7348c68defa4415580be20cf270c106cb7b64d0 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 3e3ef0f7c1182682eee5f127a64fc40aacbe44c975aac7a3db74959a75a14922 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3ba1bfa33191e83c7c278b1b83572efe9ed54caa6d1784c52813ec0c9687908d -->
 
 # snow-pile 생성본
 

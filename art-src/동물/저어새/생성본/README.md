@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3dbdca75a9861165452753fa2e422f619673bbc444dc1f08bd5076ba9a053cfc -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a5b1b56300f64f77054d9b6dd997abaf2f0c6fcd95c6d0d050adbe3683514c59 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: fd4f7dfa9957f387e70fccb77f9e2c48ae7717e15ba03abcf53d95c3633c6cc4 -->
 
 # animal-spoonbill 생성본
 

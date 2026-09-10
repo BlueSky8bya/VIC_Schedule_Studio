@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 27bc738f19d8b6f234d6b6e8deb5ac35c46e6cce3f6b47ab493e45a0c7dc8ae5 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 006db8e609b559765346da6f3b3eb2578932f83c467a3bacb921e2420d5f8227 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 38e90e3ee6aa92d0451f673de9f9d07e7355629968a0e386b0ad2014149d04eb -->
 
 # bug-stagbeetle 검토
 

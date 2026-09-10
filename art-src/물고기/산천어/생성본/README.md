@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c420ceb579075fabb2b1c370513cad50f4c368df3162f6bfacb8957950fbce6e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 1b69a0f2ef84319afde2f2803713b22252dfda330a0ec08da7f9b6b203f7364d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c67aa9a1bed2170415864392f2f4efc6bc62253b925d21fdbc56a392c47a3677 -->
 
 # fish-cherrytrout 생성본
 

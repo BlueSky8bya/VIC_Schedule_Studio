@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4ae45eff732aaf2dc5885a27b3a753518eb391adbe05b9054fcc4db26f907de7 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 14932535607cccaefaf89dd343c1d595705ee842088963e6cc861726b1f26ffd -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9096cbd86b4e94670e0cff57eb6e9536ee1dffc5be76f597f210fa607e53de27 -->
 
 # animal-anemone 검토
 

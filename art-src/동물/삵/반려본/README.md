@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: f4491a3a9a8eae72273375f3827d9e4a0efb5c946902bfab730810bb229d7838 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 4d34bfb703a4a4965e16e5692aab8b6c1da21ec6a98fa6a1d8abd6875b4074b9 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 17208a0021c92349ddd8c3f9592495958aac28020e679b0c266758f05a78e95d -->
 
 # animal-leopardcat 반려본
 

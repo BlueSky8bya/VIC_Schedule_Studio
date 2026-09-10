@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: ecb8923eedbdad6d806023c527e4c550b1f25d5f8b3f7adf1d140c955c26cf16 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 1364cff12fd948d8091dd423e96b498268e8681ac23fb44342b9bc818e97ad81 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f9c944f6e1ff41871e0abaf62b404908590562820f84a8a4a34e73273d38d961 -->
 
 # bug-swallowtail 검토
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a6295e017f07927990e6ec4b2bf0d1293e4db5477a697e2942f4acefa5ff0dd5 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2a45c07240ca28b40eb1364b95a782af1ff2434689957dcc60786a014305aad2 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3a05c6cdb75a1726a6cfa9810f4db77a820ac53a2ce4c80a56b7260cf61f087f -->
 
 # fish-bitterling 반려본
 

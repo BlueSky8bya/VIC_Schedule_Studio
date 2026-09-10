@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 907de081a0d80ebed9127e5afb26e752090894220ca7c6997455d19f5e73e8bf -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: b962dfe2a9913d974fa9db3e75db51420dd0f152ad8d83f3f38351eb19b21e5e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c61b634f7e84552a82f48d717f508a77c279e30479133083a8e832bf4e2a78a5 -->
 
 # mushroom 반려본
 

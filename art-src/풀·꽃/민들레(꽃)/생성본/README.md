@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 226d422b01daa05f0bd30270449ca28b89ef71e387d620505313f8540b0dc91b -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: dc50c23314f178edb0ed6063b845b7f6e7c3421a877aa321e783d6f93f544eec -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 723c34f9e483e156f9ce166e26f254e39501ba5ad36499bbffa6df00bd61a8ac -->
 
 # dandelion-flower 생성본
 

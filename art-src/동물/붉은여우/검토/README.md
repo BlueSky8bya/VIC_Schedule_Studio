@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a450d1ccb405dc97df399787d61d367d7f6d7d46b2e815533efcd2a71e1a267a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 950d43addbbce83891e15ece5556a3d9ad5ca68423f659f51ce10ee9247bc1a8 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 0388061789187eabd25b6871f38f005a357fc4999e52e2923d0e5a956e988be1 -->
 
 # animal-fox 검토
 

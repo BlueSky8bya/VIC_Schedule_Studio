@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: ffdb17bbd18c800da9e27dc27ff56834f828f141dad2d9e1708a8304237d9811 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: b57429276b589212975bc0894f072c6e998dd97591e6cf7f9387c3ff63824f3f -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 479f42e52676c5bf977877cc1fc43258f331851687831f9ed80c9d322397eb90 -->
 
 # animal-treefrog 생성본
 

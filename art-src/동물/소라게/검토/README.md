@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 865b7377ae0bb7a0aaddd13d62156504a042fab8e688ff2fcfaa4d8fb6f6094e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: b118b2fbb0ff0d3b17f78e2e790bd8a98f763ea11d15dc85488273e6e006e67b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e168e8d038d67f76cc0eb48f54ad191f6091f07f39000a5d216b1ba46ff2841e -->
 
 # animal-hermitcrab 검토
 

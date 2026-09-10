@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: b7db1a01457bf02e3272bdd6f7e485975132dc7ac5e61ba0d69bc192b99cf494 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 6d7d432b061a87f7bcc8a3a755cbef00b94b0423019c003fd85eec4c6f20c2e5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a3a324a1fd7b0986bb6e4b982c96678242eedd90c9950ad5c4c0518e9d7a1de6 -->
 
 # bug-goldendragon 반려본
 

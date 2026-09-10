@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 5f9e35e670ad522dbe9b27a2c4adbbf74caa556658a750a9dab73475f99b32c8 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 423683c629f161d4f90186c59c58e726cf93fd5b4e6cd81f9baa7b275aaa415c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a943b095cde375c13778ff851b0ce3bc56ce4888d859759bc34b725889fbf2ae -->
 
 # fish-lenok 생성본
 

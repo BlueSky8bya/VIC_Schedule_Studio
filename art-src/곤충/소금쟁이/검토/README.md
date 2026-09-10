@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 126b2ef686e0e00560f8779cf0b496797065b3a6a6388bcc1223fee03f1b7867 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 46b655256c662758dff2f75ad5e37f9601bd549bf6e822ddfbfc77baa14b19cb -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 06e01b146a2eb1cc7142f72e27befbe876af1f76e881af498b43383a745d9d89 -->
 
 # bug-waterstrider 검토
 

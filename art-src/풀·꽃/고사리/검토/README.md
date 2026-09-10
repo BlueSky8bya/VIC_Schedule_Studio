@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: f2612f981f46ce0e68bb81ed96d8f974fc5183530bf7adf3c0ea867745af4a38 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f91968b76949d68752430b8029349a210d8ddb2bef400aa4a9a6ae414c73a172 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 7faec1431b8d589ec8ae6bd58aaa99f8642a427329a66743fedab931248f2d0d -->
 
 # fern 검토
 

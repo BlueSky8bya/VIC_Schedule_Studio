@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: d5c1c9775584b17d77dcc75feb0cb5f22dafa4562802943ee03637d4b7868c27 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 52c3b90e18eac4208811535eef3a2462936d0adda69575add2a6a09a44138cfd -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e7bccddb0b8bce63c04887e32b7e8e0c756dadcfb88a4ebae01a034ae557ac8b -->
 
 # animal-seal 검토
 

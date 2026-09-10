@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: aebaf9138ea05778da0815228dd92c362de40420707288afa6ccf41bd9781f99 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: aaa28770aba2642782fccaaeebf17a5beda5e2a77d4646612d3c980563af3085 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 65fdab2d55b03af3ec00c2687adc041e1f7cc5be53ce3a5dee81a13f043650c7 -->
 
 # animal-badger 반려본
 

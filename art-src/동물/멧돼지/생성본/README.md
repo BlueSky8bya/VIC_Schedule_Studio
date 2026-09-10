@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: fe609b0ce989141fbb681dac67084b8bde71f4376b8f041facd601b1a3c6e036 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2b18ac6e12fbe5bda726209025083b267cac9a619187eb258188cdd21ab9dbca -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 451f2332f3568e84a7cb7f3f66bfc184b2950c11d64b765449b48e1fd7c530b2 -->
 
 # animal-boar 생성본
 

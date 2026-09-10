@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 13cf46a6d650f313311bac050b810b58fb6f0c6d53a3d2f797e51ab6b445c712 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 51e53551706175c296855df50d4cc0cc76964cd4b0f85029bb95f29623f2f90a -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a033eed9555ed3ffff8f33df72e440db9c8c32d2150b845c2c2660a3a200009d -->
 
 # animal-otter 생성본
 

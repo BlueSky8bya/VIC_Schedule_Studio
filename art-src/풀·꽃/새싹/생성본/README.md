@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3f6ceab1ef0b8fd26f5286a68125b1a562cc7e95744e40385f8d667f59a05e58 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9eb396fefd23eb386a143e41e51d82e61bf2df9e100280f448de04e8149fe619 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b70645cf17a93c17634241f6db4cde07f0650c5dcb81a7393d652239a2905cec -->
 
 # sprout 생성본
 

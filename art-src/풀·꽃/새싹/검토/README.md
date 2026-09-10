@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 9e0ab398b3edaaffb9a4cc77ef63deb19c7c53a353c41a91d9867741195f3076 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 78d9aa7176837b2fa7b152bce74d30491fd78a3631cd54eacdb200209cf31790 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b70645cf17a93c17634241f6db4cde07f0650c5dcb81a7393d652239a2905cec -->
 
 # sprout 검토
 

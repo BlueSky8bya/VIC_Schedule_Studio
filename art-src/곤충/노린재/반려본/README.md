@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 64fd3cf79c17993e32922ae21b0ae75ccf4e7a48fec85e752addfffa42475d1d -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 72ffd86a8122deecb681a87c2dbcd90f8601806a08d1f478308b4b48354869e3 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 85c6841c0f5d53d08ece0d7e6eca6921f73c5a4ffe760f0b8ca64cd5c1a61d8e -->
 
 # bug-shieldbug 반려본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 30fed85f402e351cc8083d06b06cf05f026490b44bdbe923004efbd3f735642a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 74584ea22223db558d2157f2e9f01708661f3009f48ad2634014c2ab9d69bc67 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f6d5947de64737ac8d5811a2562d9c35aa92fcf0eda4025df2878e10ffa35c6c -->
 
 # fish-darkchub 생성본
 

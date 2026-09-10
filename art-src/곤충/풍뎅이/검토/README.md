@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 975f184a6226b559ccc6345a66225db6aa35420d7a56adaff018518cb1a00584 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f79f11c40faa66f494573a2c96593d892a6b6f4c28eac4ab28ec615b5f31b2d2 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 88db0c1e77828fd9916c443c32ab61197c581a1352e70241e9cd99881df907cf -->
 
 # bug-scarab 검토
 

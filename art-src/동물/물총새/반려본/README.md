@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a3b46a2b8a674dc83d410a5c7b5d561deaf491c0cd93a25f6ead0e7d09093fa4 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: c1476be42d63d5a48c22269b35828a47d58a3ceb82cdd6f1ed7bc0c9215e6dfd -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 20c85c15091f9314d9cf15cbe8d7c2380a270b42428c157569ea4d4b0127ac46 -->
 
 # animal-kingfisher 반려본
 

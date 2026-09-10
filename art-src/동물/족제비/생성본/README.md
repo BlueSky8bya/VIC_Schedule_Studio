@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 58077cae5da5f793844f458416cf80f6f6d53b0464466c5d7c71429f71ed5ff2 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: e4e0d0995a19dae9be71fa94d88cd5d5e758df87f9eef2f3b48753e7951cf3d9 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 82b60121c36118186c5268c2e5411557de8a2888e8c4e4b207a67de78046df17 -->
 
 # animal-weasel 생성본
 

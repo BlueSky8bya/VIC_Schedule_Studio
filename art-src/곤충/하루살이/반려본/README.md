@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 6b6fe58495c85ca6e68b57b5b24fa165b98d9fef4336fd1db416a54dc48fd1bf -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 8cffb4f36cc0705723cb591349fa3d06412b6ea64c969a654bb1aadd47de78a5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3d0fc5588572e3bbddafb462b4ed40e2c9e3f8550e4619aff8bfdc4f982e96cd -->
 
 # bug-mayfly 반려본
 

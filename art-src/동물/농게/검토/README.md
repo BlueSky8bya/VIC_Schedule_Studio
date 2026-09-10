@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 885109df268ddddec17061d2f2f014a8c7c9a1ec51d69ad543c684d8ff0fc6b5 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 80362a6f902d4fd48600952e35be9dcca7b60ed10aa463a38fec4b640dd40620 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 7580c5dec0842ea73332e121eedcd9fd4b7aba37750290e3bf1399a05a6ea3df -->
 
 # animal-fiddlercrab 검토
 

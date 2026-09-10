@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8aef049fc5fc22b84dc1ee9fb9005d38ad631adb728467c33a9b459862f10cf3 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 0b914d3a7a0af4dbd66b5f843e3a18d02110cdb0f675932c96481bddea61d704 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: bf8a9e9112cfc6140f30da645218d5bdb4132d9efbf8a4d110df9a2139d86436 -->
 
 # fish-mandarin 반려본
 

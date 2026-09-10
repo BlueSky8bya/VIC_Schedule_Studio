@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 0e1c65829d69ee46b6eaeba05cbd1bdc7c61644c574229f4150195ca2829855d -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 779b70c2bfe492a7aa9dd6336717e434cc3be56fa4cc181ee2350d56a69fed26 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: ed65f4609fa07a5e5f02527a329bda0d249a44f87e32043a01f9fb44b25f7d34 -->
 
 # snowman-1 반려본
 

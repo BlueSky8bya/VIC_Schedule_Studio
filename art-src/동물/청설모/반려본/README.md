@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 39f02dfd5f4867a4b346240a1c912f2f3ce496da55953a87949034a4fded3419 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 5b3a1f374305d23dcbc712615add99ee4abe2aff3a58d2e4e34bc3ee74226d1d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8c780e8ec32cef70780bbb4f954ec60d4a947d67057ee686bed7526c47383b13 -->
 
 # animal-squirrel 반려본
 

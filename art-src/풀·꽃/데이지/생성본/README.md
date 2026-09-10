@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 6ad12cb24d7a3c0781401053def7e08312d8db1bf7dceb44a0c9a217d91f625f -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 5f5d0981fcfba56161e5dd2c24ceaeabf7f362bb4bc629db56ad11277f45551e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: fdfae5a980edb8a1e793f3aa92c3e245e89bca01c2fa0819f96c8e941b324eb5 -->
 
 # daisy 생성본
 

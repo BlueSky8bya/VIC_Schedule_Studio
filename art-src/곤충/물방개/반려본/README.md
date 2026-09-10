@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 39b8070e1308a356d1a99e6ef29d8428e11ffeee865bbd90312ec5777ca0ce12 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 21cb7390411e1a44eb897ffe7b71ee88af8df69a168b508ea1c454ecd190534d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 25afba57a793e7852264dfec5f5c04070f5757b0ccca949a3126c444b2c54a38 -->
 
 # bug-divingbeetle 반려본
 

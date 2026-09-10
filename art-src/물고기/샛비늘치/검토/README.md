@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 0178b066f1820a6c2b3ee1594bea5bfe54fc48a59a510c4a54bd71310bd42b37 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 198f72b537fd527bb80187c2cf6036014c4a58efcf361e00fa244c1bf056e3da -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 577f17b6ac8f841744ef021e2aad25e4371d48958aecb009878367c210fa3995 -->
 
 # fish-lanternfish 검토
 

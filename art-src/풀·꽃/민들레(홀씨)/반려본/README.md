@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2ab1d05bfbd2023d5b3bc5ac93356e10adfe634a8603f6b3f18fe468a009d462 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 86fd5a573adcc8d3a8473016e5a9163ee38e282a8abce5a3abbba556b7ab47f7 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b456f4b91a96b6953fe2d9719bac4465463b40d49f82934bec77f50efb6e86a9 -->
 
 # dandelion-puff 반려본
 

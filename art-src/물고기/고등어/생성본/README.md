@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1b725721ad567351bfadffc81486bce060e415a190a70934a24a95a3bcdf34fa -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 19b3a8469b562134c02fe7d1b733e9e528a90e6fd11e7700c8ce35fb1dcca04c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 453bf231ca31b85e651a61d0cd36d9368271d284246518b232fd1a20a8397f38 -->
 
 # fish-mackerel 생성본
 

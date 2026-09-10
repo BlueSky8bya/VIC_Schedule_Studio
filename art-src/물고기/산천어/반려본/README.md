@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1b6fddfc8d5960b0bd3efec4cb84df93d4048d2ea1ab97cd27126076e87f763b -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 47f528ae124ce9c4c43af52b7393ba756063a7f4dbf8935020f06964850e03f4 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c67aa9a1bed2170415864392f2f4efc6bc62253b925d21fdbc56a392c47a3677 -->
 
 # fish-cherrytrout 반려본
 

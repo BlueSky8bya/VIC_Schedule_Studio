@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: b8629acf4ffb59bb61455ec869100df6e3e6efd98a847a1a4c79e49074bb3b49 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: c88cebfa8f007d65169893f86bd7a86b308fd2a0506d5f4f946231388f628539 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a57f862c56e2775746e085be1913358cdab3124e1c7376f92f638a6e7b4944cc -->
 
 # fish-palechub 검토
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a53e81dc7793f1ad35490d72edb2677ef751b0ba8af4178b349e0336106c18b5 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: d8b51abf526b87479e9ce6fc1d1880275b7a63b7de628b44a29036e8169e8ea0 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9f31a8455d6a1589db9468d03604c412c3535289aafccbd962cc43cc4a0ca565 -->
 
 # animal-softshell 생성본
 

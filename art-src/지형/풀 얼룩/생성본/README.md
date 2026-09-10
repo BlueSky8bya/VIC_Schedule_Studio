@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: cd1bb95796d0a1bd6af84e956122581635d2e08d0135582a6d8036c7c7df76f1 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 33b801c04d3de56abf7feed23db5550ac168bd9dc05f9d57e4dea8d6a3898f70 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3b53d5a57f67b60cda5e9def00be4a589dd6e595ea612836b1ffec1ee91f4be7 -->
 
 # grass-patch 생성본
 

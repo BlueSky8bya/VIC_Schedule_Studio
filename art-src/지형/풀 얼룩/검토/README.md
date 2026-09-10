@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 179f4829b5d5b685fba3dea7c29a753b5c0eb9ef3db800be4a3076ced6ad6365 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 3590aacb75ed00f5e12ef9cd2807036711b8cdb5837e57f0ebd0c7972c6d70c7 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3b53d5a57f67b60cda5e9def00be4a589dd6e595ea612836b1ffec1ee91f4be7 -->
 
 # grass-patch 검토
 

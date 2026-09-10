@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 6979e470c6097546b60cf96d5089f3797fd4d11bae2f93bc1a47f165bf22ed2e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 1a222129ffdaa58ade5d12fc21df9e060b41ee92241e4b5f7ae5d7c23901d17c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 55cf8e7272f91568e25cfda3b596a5021bbe897b270874c4185200b0221da64a -->
 
 # animal-mallard 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 541281138dff3cd3b0beee90c702f66841ee168ad6f13a662059e7e6cc822f06 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 5259a2365714a7545ef7177c80471dfadbb0d58128c3c122c0ad2afec5e2875d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8c808c0ec440a4abd802d3f5d754b0d88fe5ca5a17580f8a3db42eb520583484 -->
 
 # animal-duckling 생성본
 

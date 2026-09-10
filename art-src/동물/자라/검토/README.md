@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2f7d49adb39ba8e3210dd283794a1fe1830af4ad33ecaa11d3eff49bcc2f1ec7 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: ff1b92371e71e5dae794388ef94da59c8420a7275a850fcd74e2e557e486fdd1 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9f31a8455d6a1589db9468d03604c412c3535289aafccbd962cc43cc4a0ca565 -->
 
 # animal-softshell 검토
 

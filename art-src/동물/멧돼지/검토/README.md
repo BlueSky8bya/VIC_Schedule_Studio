@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3939024d30da2b20b1fd62f906ddc1c74a0453268a0537f29c262887155de8f0 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 58b80c65064992b7beff7b1482738beac7b3899ddc2ab20afbaebf52841951c0 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 451f2332f3568e84a7cb7f3f66bfc184b2950c11d64b765449b48e1fd7c530b2 -->
 
 # animal-boar 검토
 

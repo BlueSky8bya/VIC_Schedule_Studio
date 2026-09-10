@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 9fee8abf40be29fc1219d9078da438d33b3e2484ca27712be91b582526d9d31e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9ad78df428c8da222f58a6eecaf6c1958ef5dbc9ca5630682179c8da75754831 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 48ba58b4ffb8978dea8936c8ec747bed66c4e93c544047db03e04951619c081b -->
 
 # fish-bullhead 검토
 

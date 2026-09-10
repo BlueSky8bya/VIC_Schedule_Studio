@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4c55a72a52310422383bf7126932fffe4e8ea05ea109830955e1c35045f4bce2 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 71e0d033531bfa64aa4e3ece9e0c0c438ce4efb3ef7e848b1b7fe571c2f8480e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9d3f7013060766751ba4d20b5cc8c18021133fce5fe32c8262aff35fb5b4b5d7 -->
 
 # fish-rockfish 반려본
 

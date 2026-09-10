@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 774b08b854998818e41ed775edf834aabd707659d99ed8b2da8f2b032651567b -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f1a876227d052f32a5f7ace86deb5f2bcf35481bb82235d9c6bc9c1281c9cd7e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 022a5378961af72436e9440bfc6cef7ef90bb11c760db0c706b6da9ff1bd86bf -->
 
 # fish-catfish 생성본
 

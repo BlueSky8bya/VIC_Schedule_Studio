@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 73d2c48800a7df855870c4301f383511416d1ca3f5459fe950a99cb7ee0fe254 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f5545a144695e5fa6b216c36da771e263ef0177e3dd0dd1b32c6b56eb23588f0 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d1043a2ce01757d642bada5bfcfed80f14c488f472d9ad27b63315f104f01ec3 -->
 
 # animal-roedeer 반려본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 739083d7fc7ff8a882d45c32ce8e370e99c037f22eb7547e4c2f45b597910455 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a1e205773897e176de2f10bb78887a441abea2aef21c63acf6c9f25aaacb4eca -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4f817db0efa367bf576954423572b44d73750b4939fdb38651004a7ca735d22e -->
 
 # moss-patch 검토
 

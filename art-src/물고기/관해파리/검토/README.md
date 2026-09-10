@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: fe63acd8af69f2114e2a3ffa09217ca8b9a7b4c34bcfb1e5e7149dccc6b369c6 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a51796409411ccffaef69c82412c27bc4a551e2701706abb4a49ba28f3e4277b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f2dc297a2de7d78f3f65a905460ff812179ef8c7e7c89546c6c5b7ec3ccd498f -->
 
 # fish-jelly 검토
 

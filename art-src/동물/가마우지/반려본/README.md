@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 136a49a413fcdb0adb61d9da7463d50d24c771fec1448f58e2a9680104db3e80 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: abc34dea4dba353010e381bd0a81531939ec5318187292a85c153066d0e5c0f6 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: cbc74f5b1000030ace39e22c485f2d30631e1670097a232f58834ec791326226 -->
 
 # animal-cormorant 반려본
 

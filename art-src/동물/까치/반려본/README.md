@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 75d5eb0e4ea0bbc4cd0b62261b1f5ea09b8f51659d8415b747f28ddb73ba9e53 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 8febd687c70044b88471b074fea2a78ea340033f275061e2f2eddcc62c6b08ef -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3796e7cd76ad0d11a2f2a0fdd8feebfa6ad30f785e6bc8e7c949ab452afa2f6b -->
 
 # animal-magpie 반려본
 

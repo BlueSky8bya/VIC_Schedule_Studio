@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1fa475dc3b9590cc67b90e0ca0b2b6808319ea5d368e826bf9885614f2d1c77b -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 8347ab5d3f6ffa975500b25130733418bb0d4e0a1fda0f41a273c2d854824417 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 0d6e0f2f99bf1f4495e49cd961902d7d911c39dd3f6bca2d54e2d9a2c3fb6aca -->
 
 # fish-sunfish 생성본
 

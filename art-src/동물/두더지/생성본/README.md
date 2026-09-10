@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 60135cb23d7eb5df54cd6a00c3233054eabda305f6507d74b8b296c86fd40f6a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 8240d00022334468fdd285f32d99b0179640edf5886ab62d0d66c74bc63b4766 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 7845ac94ec83272a855349cfcff2f63537d6f57d2fcddd496586d3f2a945a281 -->
 
 # animal-mole 생성본
 

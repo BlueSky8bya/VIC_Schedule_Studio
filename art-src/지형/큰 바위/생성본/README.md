@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 42678b189e8c9ed17e21b29810f2c54dd25df2bc1512828f4765e796b0cc87fc -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 7582abaab32078ad32cbf91bb4b67b07513cca6027825493217ee39b4c098c70 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9baae5272f43ad96f4b71c7b55d73b3a516ebfb5e8be0f9199159b80c2ab8795 -->
 
 # boulder 생성본
 

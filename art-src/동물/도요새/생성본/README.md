@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 430a25aacb2ab015ec7d3d78f084c0ffecf18534a25695ddb2bb2f98d44fa36c -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 7a274add34ca339194e17fbdb77ce6bb96e0deb8e8dbeeda6203c842c89566be -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d85ca49d19b673488164ba80479ffefcaf8ae0c781bce9ac3769913bcf95e8af -->
 
 # animal-sandpiper 생성본
 

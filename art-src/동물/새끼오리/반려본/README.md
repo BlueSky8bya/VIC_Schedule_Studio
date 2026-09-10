@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: d91ee383f90d70b589f477fa1f08dba50fa34f417496e928b64ae9b81abe2013 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 47caecfac0d787f6c17e8b4bd2c3cb238468df0a64cff31ffb5cdd7cdf746259 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8c808c0ec440a4abd802d3f5d754b0d88fe5ca5a17580f8a3db42eb520583484 -->
 
 # animal-duckling 반려본
 

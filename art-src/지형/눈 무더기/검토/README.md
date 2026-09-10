@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1a4b50fc4ed82b497cf5f04e2ecab4c4affea0c8c9bd4e4e33ef66b5489ec545 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 3d132e3c0f7c4e1a856ab6a20313c313755213fc82aa7f89ef992ecc86b5933b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3ba1bfa33191e83c7c278b1b83572efe9ed54caa6d1784c52813ec0c9687908d -->
 
 # snow-pile 검토
 

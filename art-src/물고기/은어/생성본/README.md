@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 00bbe935fdfe0bed5f8a1bbc9ca75938ab198c15083b450e9569d9b0c206e28a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 8b7482ac31ae8083c7a27daca374dd2f26d2d650877cc0506093855c28310d46 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 654158be5bce50b1f4080c57b8c1d1be7caa979666a338b62a1cbe3984712b38 -->
 
 # fish-sweetfish 생성본
 

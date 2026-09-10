@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 07e237c6fb2b7d97b4fc38537a919a4bcc31153cbd129e08771f359605d7532d -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a8324fdf8f391c0036eb854153296ab3f74a4b5703f96a9ef523ffea86e113af -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c67aa9a1bed2170415864392f2f4efc6bc62253b925d21fdbc56a392c47a3677 -->
 
 # fish-cherrytrout 검토
 

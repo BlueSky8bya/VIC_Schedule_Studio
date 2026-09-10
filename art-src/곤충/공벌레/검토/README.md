@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 17f74771e9934c6a16e85e906109f630de831808b9dafa05e6e650459a8d74cc -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: eb6d04e6ac6244db28b923ed4cc3add31d03a54b2e45800a8377e360ada09d10 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 5aaed4cd865b372ba9206544157465bfd2defab016069c0a2467d0a124991508 -->
 
 # bug-pillbug 검토
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2685f2583f05d7ef6a49140e6cac175b3ecb9e931b02b4ee75a5e739f60fe2d0 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 5a9d8be7b76690b4bacf06edacfa940c7238e6dabedc12d67615c9acab7f306c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4c59d5f9de8877fa663142ad741e79a11501daccb2e13fdc12d3ff6620fb1d28 -->
 
 # fish-yellowtail 검토
 

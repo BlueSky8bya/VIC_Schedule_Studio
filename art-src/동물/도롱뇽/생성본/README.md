@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: efc6f70058b8629e9019f83716927ceeea45b64122a88338100ac160f962c987 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a07510dcfee6dc73b633d6c12a305790da3f246fddb244b5e116f9ad1807e32c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: db990d09dd49695fe2862c45f1a11f175cde8b4e29de0cc2b7a5d92f6c438f35 -->
 
 # animal-salamander 생성본
 

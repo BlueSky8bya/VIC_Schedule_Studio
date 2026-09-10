@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: b6c8df02bab230a6354b82290e85451228efbe73fe23c4d835fe3c507e01b759 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 19f7c3d9040a1fa9a68aadbd4e3331cd8d1745f24cfb763eb689e6154600b964 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 74d1ecef89368f15340fff184a94ff3630aa4f79a906ae16a031457549747fde -->
 
 # acorn 생성본
 

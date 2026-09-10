@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 36fadaf72969490d2c13b34e25d791b28406af0f2dc5c038498f132a66f35664 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: dd71dc06f9e88c9e2a74394d1896529ebd72557020014da1bd02005b931ec449 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8d318d2d69253d50d08e0419944eedb21f4b1739b347bfc7bb9e2b5eb6d16995 -->
 
 # seaweed-clump 검토
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: af8e36fbb97fb5f27b7de6c45e8930c26d77d1e26598bc35d0317a4e34d2f33d -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 3c2cae492840a37d5f0394b714a7ad9d079bce26f948dd679ed1eb601317a819 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3d0fc5588572e3bbddafb462b4ed40e2c9e3f8550e4619aff8bfdc4f982e96cd -->
 
 # bug-mayfly 생성본
 

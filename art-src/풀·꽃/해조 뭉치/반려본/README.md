@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 73f58e98c40f123bd824d9ee535e1c851155106e3cbfbba734f4c3b3edb4f681 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: c376811ed0c39d0d86b8b6bea6ebdba9128ba23c310aa98c95c934bc10697028 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8d318d2d69253d50d08e0419944eedb21f4b1739b347bfc7bb9e2b5eb6d16995 -->
 
 # seaweed-clump 반려본
 

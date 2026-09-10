@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c33abee63701f702d26c03a3507302b4519fc1cd75024f38b0203e88b332df92 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: fb3d79a338a1a7bbaa83bfe0f6b7e4178cd288fd10d56856137efd9a401b5739 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9d2be5532d548207bfc6a1888ad043d651094052aa431698fff4ce9f6ad3e344 -->
 
 # animal-mudcrab 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8871731351e0e30a29d7021d9702b38a1ed07f7f6aab6d23b9bb9ccdbc04020e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 80e82c2a975777cdef19397e3604f8585e6025194276d74a0d709545ccddfc9e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 7845ac94ec83272a855349cfcff2f63537d6f57d2fcddd496586d3f2a945a281 -->
 
 # animal-mole 반려본
 

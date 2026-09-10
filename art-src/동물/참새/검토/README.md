@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1f0f5f73aee885145e1466e2d79e2ac72a84aa63a43cd3cabf29214bac8707df -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 49bc1a413b207fe4656c480a21102b2bf995d64ee79d11fe6acd14c0ef0dd194 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4ea381a13a190402db7b676fda536c3abb3fa0a4e78f2f85b91ce32949b1cc98 -->
 
 # animal-sparrow 검토
 

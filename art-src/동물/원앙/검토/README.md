@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 22cf22e9bdece748e58ef4dcccf65109e960bb9a29342cc15ac0848d35095f28 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: b8000c746b7556562e9fd56c99e351f9e1533423d54c72d9fdad54b0a92559c8 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 1b96ef7a080224d57bfac63848edb4b168da7d3e2cf358df1dc4438149c8afed -->
 
 # animal-mandarinduck 검토
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: cfabf5c8d495162ac7d9017ff45f716fc80f890c48851729467e362990dc197e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f96d42ce7807c8271abb293299296f13644f460c5011f7877b107d9c355290f3 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 7022bb0ab4ec900a4d79578f32bfe24882d25df47b186109e95ee958daa1331d -->
 
 # animal-pheasant 생성본
 

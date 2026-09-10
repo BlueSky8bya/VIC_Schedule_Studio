@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: d46e1f29f5fe114cfee13f76d404da32aa4b1a9d9a2faa3c3c279b6fd6664ff6 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: af5a5bbafe21569c10f6f663e994ed15af3ad46c4308bceb37a4a77ec5b575b1 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 88db0c1e77828fd9916c443c32ab61197c581a1352e70241e9cd99881df907cf -->
 
 # bug-scarab 생성본
 

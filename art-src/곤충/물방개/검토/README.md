@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4233cb8c6413ac4c1f937f2396c8a4e19bf4473ab50646d9e7d37dee5896474f -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: ad01a3a248d0abab2242e4a207e20b9af54e9f1ea81619639a98c6df39f41d48 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 25afba57a793e7852264dfec5f5c04070f5757b0ccca949a3126c444b2c54a38 -->
 
 # bug-divingbeetle 검토
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 9dc54c738e9b7a655a106eb24d2db7411c4d222b63b294ba60f2879a89cb7703 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: d70278e345b3bfa0f0af93495a666be236062ff3eedc802a0f2c5d716686eafd -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 1b96ef7a080224d57bfac63848edb4b168da7d3e2cf358df1dc4438149c8afed -->
 
 # animal-mandarinduck 반려본
 

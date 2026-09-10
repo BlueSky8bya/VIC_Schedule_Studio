@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: fa7a98aef8ec9865e619e0d6ef024ae1c28a64ed85df451000d9ec3935ae90bb -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 406075c7611fd0aa0e0067b8bd165a7ab65557957be9cc5c926d628e48f3e206 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 22601ef001a4dbf6ba680f7402150a9e5bd8b40b47af13872c5b3fb7f339c48b -->
 
 # animal-terrapin 검토
 

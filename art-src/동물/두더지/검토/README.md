@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2654499ee4f8593dd56718dcb14d4f15ba01257ceaee7b02be81acf4cf17d578 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: da036ff68a3023073c33754338c5fbb942c38a6a6e72c2d8bf94b73229838caa -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 7845ac94ec83272a855349cfcff2f63537d6f57d2fcddd496586d3f2a945a281 -->
 
 # animal-mole 검토
 

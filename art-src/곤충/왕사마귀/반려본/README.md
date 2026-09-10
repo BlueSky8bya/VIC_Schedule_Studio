@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 09dcd37b75a9dd0f9b0974250a6f7cf6be88e4c6841cc8f69e10f341840c9d9f -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f40b3d3539f0dd0fbbfe9b66003675f617d40f4820e541acaa6747f3ec40242b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9dd6aeb2e47295ed21ee88e49365accd6c780bca7d0a922fee60a40246a9bf95 -->
 
 # bug-longmantis 반려본
 

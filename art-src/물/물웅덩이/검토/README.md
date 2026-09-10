@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 9ac361993ad7f5b55ddea85e10d3c8e9b6c2db6cface6224ca45ef179ddeaf88 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: ae6f0d68568f83a4c893b62b47f30ff9ee65440f4bffced897a6dadecf28695f -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8126d053b171ae9780690674707591003c0be7aa85635bb80bfcdb7487021948 -->
 
 # puddle 검토
 

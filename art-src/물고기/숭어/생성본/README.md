@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 43c5bcd5fd26851ec020d48b3a23a7267c0b6ede518c291b94a40ef27d64b6a9 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a3171f1cd00d13c8bf12ee968aade3503941da3b614de93389b36474e995350a -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 5f3ca50aff3bf30f756a7a962a05200f72cb60ba8df65b2953a1ba11b5be73ba -->
 
 # fish-mullet 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: b01e2acba6d84eef000666153ea85d328f635a7d35d1427842ca5e8456719cc2 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 37aad6f036a4658ed24f88629ce2a57280b48ff5279db0a599b944f53bd92236 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: db990d09dd49695fe2862c45f1a11f175cde8b4e29de0cc2b7a5d92f6c438f35 -->
 
 # animal-salamander 검토
 

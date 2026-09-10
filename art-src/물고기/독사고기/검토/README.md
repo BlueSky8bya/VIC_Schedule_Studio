@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 6bea0453f7897e11be98b165eb8b851bcde922e5bea3282325fd8ac1103a2243 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a7f0cedb9bb2620b6f7e4826e584378564882859e47c4f51524dc41c75489325 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 94b9ea2177a4bc2cfd82018dae59161e5970f1aeafb9805cc962e987476ce57f -->
 
 # fish-viperfish 검토
 

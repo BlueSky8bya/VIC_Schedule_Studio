@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: d57018b7c3e6a6ba7d14c51ba4de8e4e3b4e7cb4600bfa2b8a88aafa342f74b4 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 63ab67d340b8b81590e9bbd21c9985f5ffb6a9a7e190a3e13c439bb4a1f1da32 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a42dd4627d79be39cf029bdc2a7a57f65204ed8645d1b28794001af90280bc87 -->
 
 # bug-comma 검토
 

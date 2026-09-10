@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4372c5df7e4db90d446bb0598170da767c83cc8da605ce8143dfa47ce90c129a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 8671fd3d30a2026e9b684599dde469c7039798bc5a32b7b4e0f37c7ef039d939 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 65e272e1f726a0a87dfde9b0304db88be65948578be3d9fadb49431adfd78a5a -->
 
 # animal-raccoondog 생성본
 

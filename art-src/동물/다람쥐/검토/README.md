@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8b018c1db924b847d663e54cc3802a8f909f30a527075599062282dbb031960f -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a0921e9467d79093230996891b80e71c871c54bf12549d5bc35fc6efe3f4c1b0 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: abc840778480b38e3dcc82405ef9aad05167c8efe006568332661ea3eaead24a -->
 
 # animal-chipmunk 검토
 

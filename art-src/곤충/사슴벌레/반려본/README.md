@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1515050af2440352fb5f5c50082daa10814cd0d834cb1cd196605a0ea8c61659 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 792bf01fe416ed4c2e73832a6071be75374854311a9ac31cc2f9e9a306634085 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 38e90e3ee6aa92d0451f673de9f9d07e7355629968a0e386b0ad2014149d04eb -->
 
 # bug-stagbeetle 반려본
 

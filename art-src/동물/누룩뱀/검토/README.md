@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3ac83b0e886fe7b93ff34d100388f6475da17bfadbe3482670dfc7a769252666 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: cd585e47974a921cf9d3d58668abba85a2feca1419623c78c55c8019914bdc6b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d4cec92eab30a9a5a1c42b8312b1f85d75a3d153dcb84b8116f8b8f9d98cd366 -->
 
 # animal-ratsnake 검토
 

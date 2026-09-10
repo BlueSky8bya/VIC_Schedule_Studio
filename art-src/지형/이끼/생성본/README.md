@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 38f97c7746cae8d77d187cedcf1e165babe43f79456588a7dd4697d81da5c38d -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 0760e2afde226e428e4cce74165fa435c22aa61628d577484010884565b5c02a -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4f817db0efa367bf576954423572b44d73750b4939fdb38651004a7ca735d22e -->
 
 # moss-patch 생성본
 

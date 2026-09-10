@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 01ac50706a8efe316cf50396f93cae82dfa130d61271f4e3c4d5ca5456cf7344 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: d09dd89927cb4a89006dd98c3e2da63f6b2dc9d125cb4d9c444c0e086773967e -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4f817db0efa367bf576954423572b44d73750b4939fdb38651004a7ca735d22e -->
 
 # moss-patch 반려본
 

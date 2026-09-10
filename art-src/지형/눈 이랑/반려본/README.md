@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8ab22b47e4f7e2ddb2c75bdd1d5232f9ef311617dc00120c13301a92c376f16b -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9090b23d4ce823d7c57832ea9a96498aa121972c595cbc0722fd8bbdf792a6c4 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c83a08ccf611d745f02d4e1a34fc9e829d28d9fe4f27e9a3381b7f85997c4607 -->
 
 # snow-drift 반려본
 

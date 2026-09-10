@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 597a998c9822e7911169884355e5e2ffcaa7374f97efb1515684d90ed0d160cd -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 622b9b6257ae23db89252ad0b5863336dfdfc5b5aa0505cd0075928b2a462de1 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 1ac0f07e176b777e6bc8efb2a9d260106252c43dc063461fe58df651944fb73c -->
 
 # fish-halibut 생성본
 

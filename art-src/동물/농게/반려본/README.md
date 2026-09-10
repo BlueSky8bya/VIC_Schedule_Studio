@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 45271b4c6a41d36d6ed32688bc42e907f0055b38afbd94819dd4ffe7d551081b -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 56e8fbc0d2842124023fe454a7cf8863f9d333284ba355bdf3c36093cf08f40f -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 7580c5dec0842ea73332e121eedcd9fd4b7aba37750290e3bf1399a05a6ea3df -->
 
 # animal-fiddlercrab 반려본
 

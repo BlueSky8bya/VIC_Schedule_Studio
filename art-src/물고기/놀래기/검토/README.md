@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3981a43f92aa1a87407ab0b926874c5224f06d9bc2c6e596071346972c9f0c20 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 350e37152dab671a8bebd61b5bf9fc3a7417e472db3f4aa2f9991b9cf156deb0 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 617c38e655533ea5d39021faab1845d832fb1f957a14c950355a3b860d63a262 -->
 
 # fish-wrasse 검토
 

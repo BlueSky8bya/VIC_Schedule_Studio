@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 12e58a980f2935255c5dcd66e74bfc4d0a252d5cd8dd070839da1e0274b3e2d8 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 156f2ad84a712d6ba4216316c83a5010f30ec0e18089a8ebac191a1699a58e66 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c338fc1da2d24015cc284d373d0b4338511fbe00240bfa67e192a4ffca2588d4 -->
 
 # stump 검토
 

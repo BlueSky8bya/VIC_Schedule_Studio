@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4be2ac912d82b7da0165f353a24c9cd0ecc7ed0f0234afcfead1ea56f61de8fc -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: a96b15dc8e9d59d2dba895c0b7932bbcc2c42a6696b43336dd48c144ce5fba11 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4763bec695d02e920bc359773e9b8c69a7f7e556c0144d69eb5500dab1958b09 -->
 
 # bug-katydid 반려본
 

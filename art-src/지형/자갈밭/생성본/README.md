@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 96edd1d306d81490e70ccd7493b34a990fb47eb221b9d0d6d590a86ae86a5073 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 3effc7568673ee74826a2e56cf729fb5db1dc7745bbcc9a73ea55809f070ea41 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 48d602183b1e30c36146779179639de85c8faebdb0fdfec71f07c6c3bb28a25f -->
 
 # gravel-patch 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: ef2b2c54b1a623c810cea05b0301e6e5991e705dacea0b5fde9d2d88bcd2b37a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 351416790e9c1a6c2a56841c459454ffdd17a3fcbe990567632e896e5ce9be1d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 82b60121c36118186c5268c2e5411557de8a2888e8c4e4b207a67de78046df17 -->
 
 # animal-weasel 반려본
 

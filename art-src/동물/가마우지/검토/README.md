@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a1db8a405e52fa3e7ffc2575ac59b87dd86392ffb62016018d92127ce78b4919 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 6db190823b9d6f34aa5aa115b94c1a51f53dc365e4eee9c9218e15b7b215a5db -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: cbc74f5b1000030ace39e22c485f2d30631e1670097a232f58834ec791326226 -->
 
 # animal-cormorant 검토
 

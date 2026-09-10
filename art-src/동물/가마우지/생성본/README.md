@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 5694bcad977084d50de2b28381082d93cc713dd4445591437b9cdd8bd85b8dd6 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: db6480452e43c95e0d1055dbc460cdcf7c5100493bb63bd5f5577a82a519d531 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: cbc74f5b1000030ace39e22c485f2d30631e1670097a232f58834ec791326226 -->
 
 # animal-cormorant 생성본
 

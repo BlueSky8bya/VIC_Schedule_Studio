@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 78f02e1c504c8855d1b0db0ab306b9acb89aec8fa9c43376cc07f4bc3606405c -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: da5c669931a9d8094cf220258453ead1f521eb2804e2792945e0b047f20f38c5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c61b634f7e84552a82f48d717f508a77c279e30479133083a8e832bf4e2a78a5 -->
 
 # mushroom 검토
 

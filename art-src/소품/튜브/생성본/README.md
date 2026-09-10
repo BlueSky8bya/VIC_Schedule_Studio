@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 7f9f1d108588f96df0595a75b921af3a9942edfa5c8d75ee4c60a1bde2c1494a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: dc3a978b88a98b86dbcf2ef3d2ccc13648d9d8eae7052172e911a841d6d95e71 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 0e29b3eb5600c6423fe944347e0f04726ca541564f2cfad3c11df58923ffbc34 -->
 
 # swim-ring 생성본
 

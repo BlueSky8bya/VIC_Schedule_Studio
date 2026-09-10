@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 0b2dda02189cdd67077fd02382548af601775a26f7cb83e10fc10ca438eb5264 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 292690f7dfdd5fe72ed44def8514ac2b0db6f85ab719f05b44839c9b92af0b1c -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: b9b31e1e0becc2e1b996ec86993ed5347f7514f0c03e93f3c693972228bace81 -->
 
 # fish-halfbeak 검토
 

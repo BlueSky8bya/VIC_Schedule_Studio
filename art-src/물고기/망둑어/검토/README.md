@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 63443b999da4fc8eecbe252367262b20d4c35ace7581b406be11ac79eef3d7c8 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: de041f9d5c9c1fb27f223c7034205a60f0186fa3921267fb62c4e701fd72ba7b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 71fdc1aab0084418daf8e52221629130a8654d5953c341aac7bcf761594c3b20 -->
 
 # fish-goby 검토
 

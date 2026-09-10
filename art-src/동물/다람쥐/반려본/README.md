@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8b9a902e5c929665695059914b46d22ee705f336a9f9d118cdd6c3bbc20c6bee -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 939f04ed6c422410093f34bd05b0b7e158adaf1a4fc9c9388d07ffb6e3b257bd -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: abc840778480b38e3dcc82405ef9aad05167c8efe006568332661ea3eaead24a -->
 
 # animal-chipmunk 반려본
 

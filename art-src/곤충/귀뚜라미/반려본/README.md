@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 918ae27dd5c9530be3a5e1c7dc821ab48fd4638aceda78f86c506561b0000957 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 5ebbd908b996b15f916c8ee0e08f09035af8bbde996602e443194126ed180310 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 21d18f598f278f5ca137a0729d32456c3b34ac79bcc00c5b6b203ad256688a08 -->
 
 # bug-cricket 반려본
 

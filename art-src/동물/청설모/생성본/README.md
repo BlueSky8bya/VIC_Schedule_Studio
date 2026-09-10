@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 4e1624dbc498149f3a13a1dd616cbf9e367453c3b991460d6c3addef620fd5e3 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: f298d4d72fb8639505c3efa6f0921a0082a9a02746b767b3eba164093af3a112 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 8c780e8ec32cef70780bbb4f954ec60d4a947d67057ee686bed7526c47383b13 -->
 
 # animal-squirrel 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e783d8c01a4a300872ea08587839ee579ada6f28cf728ba530b7f3aa9e8389cb -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 9c05f845e2e41e86f90532d2e9137b43850972be9f1917c99ae11d6fd4c5ca3d -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: ee43830e81324a68a1c152e55a2d739059b46b7f5aec035e6229d4d4a9f07ae4 -->
 
 # fish-crucian 검토
 

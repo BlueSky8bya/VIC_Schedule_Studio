@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a1e88412cee0ce95136fc53b9ad086567e5d5dc8dec769ca4e1e0dd6fd9a0b12 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: d9cfb0fff06e03a328a913a38d05b245c4c774d26d69217446fdc46828532502 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 71fdc1aab0084418daf8e52221629130a8654d5953c341aac7bcf761594c3b20 -->
 
 # fish-goby 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 371eedcfdf63cb8ec3dd87d655b993d99d47a6b04de7af57be09331dd95286b0 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 10f3bb45ba7341ed32328b7e82d8a443c0ea410ac2c898a2d4f2ed992ee12f86 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4ca23b7b5d2269a01c21db56f697236732d966f1ffa9b013c50ac30f6a422b9d -->
 
 # bug-dungbeetle 검토
 

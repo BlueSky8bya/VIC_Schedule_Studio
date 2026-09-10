@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8fcf5306029b544e496e807b5eb7fe9c4cb05c763fbfc0bdd9cebe6391ff42c0 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 95c17c0d96634234635dfb069994d302862e71201eafdbbaeca9a1553fae6b3b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a57f862c56e2775746e085be1913358cdab3124e1c7376f92f638a6e7b4944cc -->
 
 # fish-palechub 생성본
 

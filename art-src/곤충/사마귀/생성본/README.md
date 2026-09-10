@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 85e2a29a1bf134ef301286642824d669607c8b75ffd9a6253f95183a0080c89a -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 65f7f9e9997541d038afe4dcf64bb77a25db25921c4a333b0ecec75f062851ea -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9c9279930a6d9c1ea660cf06dc0525c4ca98b33ed56d558520a7ce80f06157e5 -->
 
 # bug-mantis 생성본
 

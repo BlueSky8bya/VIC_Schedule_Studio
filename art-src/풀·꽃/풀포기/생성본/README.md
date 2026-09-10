@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: aada9213b0fa67787f26af0adfeec706c5b871dbdee9f23c5dcc855ebe060f0e -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: b3ea719a5b68329ef0f35679b5bf2d9e8b8301d796bd6e261b2d593bc9020fbd -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: f2062dfdbe86f6b170f00d0f8f9e22391086cd86ed9734def873da26c3d6582c -->
 
 # grass-tuft 생성본
 

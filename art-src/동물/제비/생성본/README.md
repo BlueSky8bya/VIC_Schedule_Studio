@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 5e48a0a6f011b5ea58b6d04f97ee53bafa4c971272ca6b42ff29cc18fb9ceb24 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: c0781373991f59761ad89910f49b1979410d51f1d8a8b0efed6f77a12b85b1a5 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 4c87a945bf9f22e774c7c317f8b00b95110f1abbedcca2ceb7e0dd6faf5e154a -->
 
 # animal-swallow 생성본
 

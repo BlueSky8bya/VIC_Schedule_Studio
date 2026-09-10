@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 00f73382d64b60f3051a7e0cf2553c23a4cdcc56b710d57e3d68f5df3de3d683 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 70b4ca2ceeec0910c20018f004f33febce250ab1ed595d67765f3b0a853c8266 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: bf8a9e9112cfc6140f30da645218d5bdb4132d9efbf8a4d110df9a2139d86436 -->
 
 # fish-mandarin 검토
 

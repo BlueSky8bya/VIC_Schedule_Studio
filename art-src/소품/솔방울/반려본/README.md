@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 429dda595226c4b6125d0c3c2b18015add80604553055c098534e0e22be2ca64 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 06b91a1977d2bc48dd2797e34a42f2eabd3f589cbdc175773aa73940dc9aa667 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d2b212d3356e03c489cae1fc017c074248610b2b2fc07b9beacdd16e1e138dd4 -->
 
 # pinecone 반려본
 

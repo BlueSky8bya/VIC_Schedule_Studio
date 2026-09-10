@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c5d1c9411d3e659401aacdd732d7f352414f5fb88e06dd8f5fb2b7a3c3c83504 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 113912f35c278fcf36c5d7fad1a83c6483815a529539c88ccb80b2909aa64cf4 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: ed65f4609fa07a5e5f02527a329bda0d249a44f87e32043a01f9fb44b25f7d34 -->
 
 # snowman-1 생성본
 

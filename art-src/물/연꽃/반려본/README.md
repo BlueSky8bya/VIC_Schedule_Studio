@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: f3e831ba4196dbf302b4fe80ee73f573f58647329f4a2e408997a36ee261cc4f -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 0e00189a43cf2d0a684998e56d0e3a798faa27569386c72fc4139f44fb12ddfe -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 2752baf989f67eefd0b2de171d1beca2a7579bde7ebe5248f25547195b090639 -->
 
 # lotus 반려본
 

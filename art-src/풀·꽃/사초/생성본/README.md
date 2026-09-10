@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 77c0abe7527f87cd8a667b58afcc90f48a466263369249539517c3d6b396c7bd -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: cb3e756ac55e8bf1dbc2e695db6d3c4edafe7430c30b73e334a86d9b848b3377 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c9916e4e7f9940b69675ca9bcb04cb8a3335d2d40fe946af45d35035b9c2f56a -->
 
 # sedge 생성본
 

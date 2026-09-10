@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1740c8545e1cb43f028e7a6023f4d7f7bda08ddd7132ecb151d2b2d43f383b0c -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: e230b52dcc0378deb5e8ec33ab2487af173141a61b593f49dd3fda4912ac7007 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 1ac0f07e176b777e6bc8efb2a9d260106252c43dc063461fe58df651944fb73c -->
 
 # fish-halibut 검토
 

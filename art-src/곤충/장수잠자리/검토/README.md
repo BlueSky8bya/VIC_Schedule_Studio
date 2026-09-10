@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: afd50e460bc79c29c76d8dcb69acc3e600585c9b1a31dc2a60c0c7d57830e771 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 98b4b5b4a8df299dc4eace6e4f3cd4874f220f32b20a70b6e4c47e43d33d5531 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: a3a324a1fd7b0986bb6e4b982c96678242eedd90c9950ad5c4c0518e9d7a1de6 -->
 
 # bug-goldendragon 검토
 

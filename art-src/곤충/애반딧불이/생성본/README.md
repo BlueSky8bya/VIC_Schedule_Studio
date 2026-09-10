@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 58744a33a07b61381c7c97d921fa99b79a0bc8fdf7f418ccc5ffce0294907655 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 6f17ed43590890fa6f4094c8c17cf9419d3e689b4f6e096d9a2290b46773e9e0 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 9b4376660154b8c5253151c6f8f5ae7cae493655ca4f58c4defeb84b5544b898 -->
 
 # bug-firefly 생성본
 

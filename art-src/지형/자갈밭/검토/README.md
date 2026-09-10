@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: eaf7abe929eec59e894be89e8c3f83c5af9d2cf741a680bb85214275fea63c02 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 11bf3f77627ece7a3c5b7066ae93a8c3b6e4a4790dc4e0dd84b99729ffb855fb -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 48d602183b1e30c36146779179639de85c8faebdb0fdfec71f07c6c3bb28a25f -->
 
 # gravel-patch 검토
 

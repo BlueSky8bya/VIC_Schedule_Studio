@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e4ebcc6e80b56378ae6f2fa4ccb00b95a3dfbd70ec4681a3d522d421f5b950de -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 579192a4da7fe95ac1b3c4478ae3eab1b82e2de9ef1b246deaf7cb20ce989d88 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: d1043a2ce01757d642bada5bfcfed80f14c488f472d9ad27b63315f104f01ec3 -->
 
 # animal-roedeer 검토
 

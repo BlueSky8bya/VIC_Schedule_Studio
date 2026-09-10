@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: edb60dcee31f60f00138c05632e6bffd98accc24c5049f0f8c258e6d35f96afe -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2359faf18a855259d9cd2f9793ff4fe9f99daf3c945df1c486d961642770bbb1 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: c7d793b07e2ceb0a22aa95520dc11bfec0383e7845fffbf8b97aef3299e97570 -->
 
 # fish-mudskipper 검토
 

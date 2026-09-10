@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3a00ca67f6244a6862e1ae9973616a7f9034c4574c4ad621540eb464bae64685 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: ad3b054c848185e8f926bf68c238443f1bd63ad79c23ee0d9700c1b0fc127b01 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 55cf8e7272f91568e25cfda3b596a5021bbe897b270874c4185200b0221da64a -->
 
 # animal-mallard 검토
 

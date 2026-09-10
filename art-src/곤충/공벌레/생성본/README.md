@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 9767d1ce5581156691516bbc3f81e2678d035b6b1fd3c6cde65bf5a1e65e85f9 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 762d1980aba5d96ca78c5776ef0b91194b6386ec929fd7c2d7d3c79d86edda64 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 5aaed4cd865b372ba9206544157465bfd2defab016069c0a2467d0a124991508 -->
 
 # bug-pillbug 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: f9654226c27b7787df6aea5c6342e1bca38a1b409b296dd3e94f06e8539a05c3 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 76629beeb42537b2443861c97ee11acc0be3f02cf6a4e78deaabc690b534ae20 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: e82a83346f6e2043ca5166e315195ba8cb5d3884fbce2f320e15ab616d903cd4 -->
 
 # fish-anglerfish 반려본
 

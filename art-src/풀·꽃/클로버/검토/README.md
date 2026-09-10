@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3fcca5e31ee01f615566f38e6fe7f61ec26b73a040f168e4d81bb46b284ad3cf -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 941a954db0487c3a57d3fa42c9db56548ca80d9c8618c339007dbd118dd56cc8 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3c7ce2d750cabdc333fdc3e39ee83b5bde76e04a7befab15e32a1caa84cf05c0 -->
 
 # clover 검토
 

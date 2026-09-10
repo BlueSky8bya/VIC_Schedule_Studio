@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c63394ac2fa60ba291d6a945e6be9e464ce377674f20152f2cd8553e655ba6c3 -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 3849bb2293f365d8fb16aec25321e576c2fdf52255bb8ecfb4035732af88f511 -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 3c7ce2d750cabdc333fdc3e39ee83b5bde76e04a7befab15e32a1caa84cf05c0 -->
 
 # clover 생성본
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 3025ef589a5d591aac3bc4cabca38863c5c59d5aefb9e339a2ff8d56aa5a6cae -->
-<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 13119c8479fb7857da6fd7cb2c5d5160421637194fd7f6ae309c801c7564588b -->
+<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 172c795102164481248a1834ac15c2e1b4ae683ceb1ac946b4c4599a051b083b -->
 
 # fish-carp 검토
 
