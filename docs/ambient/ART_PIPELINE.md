@@ -82,6 +82,7 @@ npm run art:check -- tree-pine --dir art-src/나무/소나무/작업회차/20260
 
 ```powershell
 npm run style:pick -- tree-pine                 # 이 엔티티에 붙을 게임 캡처와 사유를 미리 본다
+npm run art:pipeline -- request fish-crucian    # --run 생략 시 <KST 날짜>-자동-NN 회차가 만들어진다
 npm run art:pipeline -- request tree-pine --run <회차명> --variants 2,3            # 기본 ≤6장 자동 첨부
 npm run art:pipeline -- request tree-pine --run <회차명> --variants 2,3 --style-limit 3
 npm run art:pipeline -- request tree-pine --run <회차명> --variants 2,3 --no-style

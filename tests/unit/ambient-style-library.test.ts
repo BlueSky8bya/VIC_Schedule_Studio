@@ -199,4 +199,15 @@ describe("style reference library", () => {
     expect(disabled.request.inputs.some((input: { kind: string }) => input.kind.startsWith("style-"))).toBe(false);
     expect(disabled.prompt).not.toContain("공통화풍참고 사본은");
   });
+
+  it("names a run automatically by KST date when the owner gives only the entity", () => {
+    const workspaceRoot = workspace();
+    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date()).replaceAll("-", "");
+    const first = pipeline.createRequest({ workspaceRoot, family: "twig", variants: [2] });
+    expect(path.basename(first.runDir)).toBe(`${today}-자동-01`);
+    expect(first.request.runId).toBe(`${today}-자동-01`);
+    const second = pipeline.createRequest({ workspaceRoot, family: "twig", variants: [2] });
+    expect(path.basename(second.runDir)).toBe(`${today}-자동-02`);
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "twig", variants: [2], refreshPrepared: true })).toThrow(/needs the existing --run/);
+  });
 });

@@ -114,13 +114,29 @@ function styleReferences(workspaceRoot, entity, limit) {
   return selectStyleReferences({ workspaceRoot, manifest: artManifest(), entity, codex: codexEntries(), limit });
 }
 
-export function createRequest({ family = "tree-pine", runId, variants = [2, 3], files: requestedFiles, workspaceRoot = root, dry = false, refreshPrepared = false, styleLimit = 6 }) {
-  folderName(runId);
+/** `<KST date>-자동-NN`: the next unused number under the entity, so "generate X" needs no run name. */
+export function defaultRunId(workspaceRoot, entityDir, now = new Date()) {
+  const date = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(now).replaceAll("-", "");
+  const runs = within(workspaceRoot, path.join(workspaceRoot, entityDir, ART_DIR.runs));
+  const taken = fs.existsSync(runs) ? new Set(fs.readdirSync(runs)) : new Set();
+  for (let n = 1; n < 100; n++) {
+    const candidate = `${date}-자동-${String(n).padStart(2, "0")}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  throw new Error(`Too many automatic runs today under ${entityDir}`);
+}
+
+export function createRequest({ family = "tree-pine", runId = null, variants = [2, 3], files: requestedFiles, workspaceRoot = root, dry = false, refreshPrepared = false, styleLimit = 6 }) {
   const { slotFiles, batchPrompt } = artManifest();
   const slots = familySlots(family);
   const files = requestedFiles ?? slots.flatMap((s) => slotFiles(s).filter((_, i) => variants.includes(i + 1)));
   validatePacks(family, files);
   const entity = buildEntities(artManifest()).find((item) => item.slotIds.includes(slots[0].id));
+  if (runId === null || runId === undefined) {
+    if (refreshPrepared) throw new Error("--refresh-prepared needs the existing --run name");
+    runId = defaultRunId(workspaceRoot, entityPath(entity));
+  }
+  folderName(runId);
   const runDir = runPath(workspaceRoot, path.join(entityPath(entity), ART_DIR.runs, runId));
   const publicDir = within(workspaceRoot, path.join(workspaceRoot, "public/ambient/art"));
   for (const file of files) if (fs.existsSync(path.join(publicDir, file))) throw new Error(`Accepted asset protected: ${file}`);
@@ -387,7 +403,7 @@ async function main() {
   else if (command === "normalize") { result = await normalizeRun({ runDir: target }); if (result.status === "fail") process.exitCode = 1; }
   else if (command === "review") result = reviewRun({ runDir: target, decision: flag("--decision", null), note: flag("--note", null), reviewer: flag("--reviewer", null), ruleId: flag("--rule", "owner.visual-review"), expected: flag("--expected", "Follow the request and approved reference"), evidence: flag("--evidence", null) });
   else if (command === "promote") result = promoteRun({ runDir: target, apply: args.includes("--apply") });
-  else throw new Error("Usage: art:pipeline request <family> --run <id> [--variants 2,3] [--style-limit 6 | --no-style] [--dry] | normalize <run> | review <run> --decision approved|rejected --reviewer owner --note <owner decision> | promote <run> [--apply]");
+  else throw new Error("Usage: art:pipeline request <family> [--run <id>] [--variants 2,3] [--style-limit 6 | --no-style] [--dry] | normalize <run> | review <run> --decision approved|rejected --reviewer owner --note <owner decision> | promote <run> [--apply]");
   console.log(json(command === "request"
     ? { runDir: result.runDir, files: result.request.files, mode: result.request.mode, requestSha256: result.request.requestSha256, inputs: result.request.inputs.map((input) => `${input.kind}: ${input.path}${input.reason ? ` — ${input.reason}` : ""}`), styleSheet: result.styleSheet ? relative(root, result.styleSheet) : null }
     : result));
