@@ -4,7 +4,7 @@
 |---|---|---|
 
 | PLAN-20260909-014 | In Progress | [Rule preservation, Korean art folders and remaining C choices](PLAN-20260909-014-rule-preservation-and-art-completion.md) |
-| PLAN-20260910-015 | Proposed | [World depth layers and pointer parallax](PLAN-20260910-015-world-depth-layers.md) |
+| PLAN-20260910-015 | Accepted | [World depth layers and pointer parallax](PLAN-20260910-015-world-depth-layers.md) |
 
 Completed plans remain in their own files. Remove their row here when work finishes; record verification in the plan/handoff and link next active work from CURRENT_STATE.
 
