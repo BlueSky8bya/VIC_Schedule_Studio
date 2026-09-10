@@ -463,7 +463,7 @@ UI·AMB·ART의 모든 규칙 줄에 한국어 검색어를 병기했다. 금생
 
 ID 추가·삭제·중복 또는 소유 파일 변경 시 이 표와 해시를 갱신하고 영향을 받는 원문 대응을 다시 판단한다. 존재하지 않는 코드 목적지·원문 누락/중복도 실패한다. 검사: `node scripts/agent-harness/rule-migration.mjs`, `npm run harness:verify`, `npm run test -- tests/unit/rule-migration.test.ts`.
 
-Rule inventory SHA-256: ba56b9c6de3af4a5e546ce649bf099550c1e2bd0efcbb479fb9cbd4e81bf67cc
+Rule inventory SHA-256: 218e54801ac871bcd8308de0d36cb85fe0b7eef4f4f3d48010e63b016686b9db
 
 <!-- rule-migration:inventory:start -->
 | 규칙 ID | 현행 문서 |
@@ -510,6 +510,7 @@ Rule inventory SHA-256: ba56b9c6de3af4a5e546ce649bf099550c1e2bd0efcbb479fb9cbd4e
 | ART-11 | docs/ambient/ART_RULES.md |
 | ART-12 | docs/ambient/ART_RULES.md |
 | ART-13 | docs/ambient/ART_RULES.md |
+| ART-14 | docs/ambient/ART_RULES.md |
 | G-01 | AGENTS.md |
 | G-02 | AGENTS.md |
 | G-03 | AGENTS.md |

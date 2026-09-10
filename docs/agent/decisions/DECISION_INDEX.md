@@ -28,3 +28,4 @@
 | [0018](ADR-0018-retire-trusted-members.md) | Accepted | 역할/구조 철수 | 신뢰 멤버·manager 철수. 현역 역할은 owner·developer·viewer만; 일반 편집은 owner·developer, owner_private은 owner만 | 보조 역할을 다시 요청할 때 새 결정 |
 | [0019](ADR-0019-codex-three-books.md) | Accepted | 도감/아트 | 물고기·곤충·동물 세 도감, world/codex.ts에서 종·조건·아트 자리 파생. 동물도 원화 제작하고 Noto는 임시 대체물. 종/자리 수는 현행 코드에서 계산 | 도감 또는 종 출현 계약을 변경할 때 |
 | [0020](ADR-0020-bounded-memory-and-art-review.md) | Accepted | Agent memory·art review | Bounded current memory, immutable historical requests and isolated approval pipeline; 현재 규칙·상태·역사 분리, art 후보와 승인 출력 분리 | 현재 작업 모델·예산·새 art family 계약을 바꿀 때 |
+| [0021](ADR-0021-style-reference-auto-attach.md) | Accepted | 아트 참고 | 공통화풍참고는 게임별 폴더 + `색인.json`(역할 mood/depiction/form/none). `request`가 색인에서 ≤6장을 결정적으로 골라 `고정입력/화풍참고/`에 사본·사유를 남긴다. 출처 게임 캡처만 후보, 스톡·워터마크·다른 게임은 none. 합격본 우선·복제 금지·엔티티 레퍼런스 CC0 요건 유지 | 생성기가 경로를 직접 읽게 되거나, 소유자가 게임을 빼거나, 결과물에 게임 자산이 옮겨 온 사례가 나올 때 |

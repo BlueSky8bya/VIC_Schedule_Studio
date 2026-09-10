@@ -16,12 +16,13 @@ art-src/<한글 범주>/<한글 엔티티>/
     고정입력/합격참고/               # 합격 참고 고정 사본
     고정입력/레퍼런스/              # 요청에 기록된 참고 고정 사본
     고정입력/수집참고/              # 엔티티 레퍼런스/의 선별본 고정 사본
+    고정입력/화풍참고/              # 공통화풍참고 색인이 고른 게임 캡처 사본 + 화풍시트.png
     원본/                          # 새 생성기 원본, 최종 파일명 그대로
     정리본/                   # 별도 정규화 결과, 평평한 폴더
     checks.json
     review.png / review-detail.png
     artifacts.json / review.json
-art-src/공통화풍참고/              # 프로젝트 전체 분위기·색감·구도·카메라 참고
+art-src/공통화풍참고/<게임>/       # 소유자의 게임 캡처 + 색인.json — 분위기·그림체 참고, 요청에 자동 첨부
 ```
 
 파일 이름은 manifest `slotFiles()`, 묶음·변형·계절 경로는 `scripts/lib/ambient-art-entities.mjs`, 실제 한글 폴더는 `scripts/lib/ambient-art-paths.mjs`와 [폴더명.json](../../art-src/폴더명.json)에서 계산한다. 한 계절에 쓰는 파일은 해당 계절, 여러 계절에 쓰는 파일은 공통에 한 번 보관한다. `seasons`를 파일 수에 곱하지 않는다. 내부 ID와 파일명은 영어 정본을 유지하며, 새 회차명은 한글·숫자를 쓴다.
@@ -77,6 +78,22 @@ npm run art:check -- tree-pine --dir art-src/나무/소나무/작업회차/20260
 
 `request`는 엔티티 `레퍼런스/`의 현재 이미지를 `고정입력/수집참고/`로 복사하고 request.inputs에 `inspiration`으로 해시와 함께 기록한다. 생성기는 저장소 경로를 열 수 없으므로 **고정입력 사본을 전부 그림으로 첨부해야** 그 참고가 실제로 전달된다. 사이드카가 없거나 CC0가 아닌 이미지가 폴더에 있으면 request가 실패한다 — 선별에서 뺄 이미지는 요청 전에 지운다. 화풍 정본은 여전히 합격본이며 수집참고는 형태 발상용이다.
 
+## 화풍 참고 자동 첨부(공통화풍참고 색인)
+
+```powershell
+npm run style:pick -- tree-pine                 # 이 엔티티에 붙을 게임 캡처와 사유를 미리 본다
+npm run art:pipeline -- request tree-pine --run <회차명> --variants 2,3            # 기본 ≤6장 자동 첨부
+npm run art:pipeline -- request tree-pine --run <회차명> --variants 2,3 --style-limit 3
+npm run art:pipeline -- request tree-pine --run <회차명> --variants 2,3 --no-style
+
+npm run style:scan -- --sheets <시트 폴더>      # 새로 넣은 캡처 → <게임>/분류대기.json + 대조 시트
+npm run style:apply -- "모여봐요 동물의 숲"      # 채운 작업지를 색인에 합치고 목록.md를 굽는다
+npm run style:check                             # 전부 색인·해시 일치·목록 최신인지(읽기 전용)
+npm run style:catalog                           # 목록.md만 다시 굽는다
+```
+
+`request`는 `art-src/공통화풍참고/<게임>/색인.json`에서 엔티티와 맞는 그림을 결정적으로 고른다 — 정확한 자리 ID > 부류(`분류어휘.json`의 groups) > 범주 순, 환경·계절·카메라 일치에 가점. 역할별 상한은 분위기 2·그림체 3·형태 1(같은 부류 그림체가 없을 때만), 합계는 `--style-limit`(기본 6). 고른 그림은 `고정입력/화풍참고/<slug>-<sha8>.<ext>`로 복사되고 request.inputs에 `style-mood`·`style-depiction`·`style-form`으로 원본 경로·해시·사유가 남는다. `화풍시트.png`는 그 사본을 라벨과 함께 한 장에 모은 첨부용 보조 그림이며 해시 입력이 아니다. 색인에 없는 그림, 바이트가 바뀐 그림, `role: none`은 절대 붙지 않는다. 화풍 참고는 합격본이 아니므로 `mode`를 바꾸지 않는다. 분류 절차와 역할 정의는 [공통화풍참고 README](../../art-src/공통화풍참고/README.md), 결정은 ADR-0021.
+
 소나무 같은 paired family는 같은 변형의 계절팩을 요청·검토·반영 단위로 완결한다. 생성기를 한 번 호출할 때 모든 계절을 만들 필요는 없다. 합격본 없는 엔티티는 `style-pilot`으로 시작한다. 없는 합격본을 있다고 표시하거나 합격 시트가 없다는 이유만으로 무조건 멈추지 않는다.
 
 기존 run은 덮지 않는다. 원본·정리본이 비었고 review가 pending이며 artifacts가 없는 준비 단계에서만 도구의 `--refresh-prepared`가 허용된다. 영어 경로에서 이관한 옛 요청은 이 예외로 갱신하지 않는다. 요청서의 옛 경로는 엔티티 프롬프트의 현재 원본·고정입력 링크로 읽는다. 입력 이미지나 요청 파일 목록을 바꾸지 않으며, 지시·그림·manifest/codex 계약을 바꾸면 새 run을 만든다.
@@ -103,4 +120,4 @@ promote는 승인, 기계 실패 없음, 동일한 요청·파일·해시, 완�
 
 반려는 rule ID·관찰·기대 결과·파일 해시·시각·판단 메모를 보존한다. 다음 요청은 run review와 엔티티의 legacy 반려 기록에 있는 최근 미해결 사유를 함께 참고한다. 반려 그림은 REJECTED 라벨·문제 crop·기대 모양을 갖춘 실패 예시이며 합격 스타일 기준이 아니다.
 
-문서/자료 이관 뒤 `npm run art:catalog -- --check`, `npm run ref:check`, `npm run harness:verify`를 실행한다. 코드 변경은 관련 단위검사를 더한다. 실제 이미지 생성·수치 측정·소유자 승인은 별개 상태로 보고한다. 옛 `art:normalize`의 public 제자리 쓰기는 차단됐고 `--dry`만 기존 파일 진단용으로 남았다.
+문서/자료 이관 뒤 `npm run art:catalog -- --check`, `npm run ref:check`, `npm run style:check`, `npm run harness:verify`를 실행한다. 코드 변경은 관련 단위검사를 더한다. 실제 이미지 생성·수치 측정·소유자 승인은 별개 상태로 보고한다. 옛 `art:normalize`의 public 제자리 쓰기는 차단됐고 `--dry`만 기존 파일 진단용으로 남았다.
