@@ -4,11 +4,12 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { artManifest, familySlots, root } from "./lib/ambient-art-manifest.mjs";
+import { artManifest, codexEntries, familySlots, root } from "./lib/ambient-art-manifest.mjs";
 import { buildEntities } from "./lib/ambient-art-entities.mjs";
 import { ART_DIR, entityPath, folderName, inputPath, relocateArtPath } from "./lib/ambient-art-paths.mjs";
 import { normalizeSource } from "./lib/ambient-art-normalize.mjs";
 import { referenceDirectory } from "./lib/ambient-ref-library.mjs";
+import { selectStyleReferences, styleRoot } from "./lib/ambient-style-library.mjs";
 import { checkArt } from "./ambient-art-check.mjs";
 const sharp = createRequire(import.meta.url)("sharp");
 export const sha256 = (data) => crypto.createHash("sha256").update(data).digest("hex");
@@ -107,7 +108,13 @@ function collectedReferences(workspaceRoot, entity) {
   });
 }
 
-export function createRequest({ family = "tree-pine", runId, variants = [2, 3], files: requestedFiles, workspaceRoot = root, dry = false, refreshPrepared = false }) {
+/** Indexed game captures chosen for this entity. A missing folder or index attaches nothing; unindexed images never attach. */
+function styleReferences(workspaceRoot, entity, limit) {
+  if (limit <= 0 || !fs.existsSync(styleRoot(workspaceRoot))) return [];
+  return selectStyleReferences({ workspaceRoot, manifest: artManifest(), entity, codex: codexEntries(), limit });
+}
+
+export function createRequest({ family = "tree-pine", runId, variants = [2, 3], files: requestedFiles, workspaceRoot = root, dry = false, refreshPrepared = false, styleLimit = 6 }) {
   folderName(runId);
   const { slotFiles, batchPrompt } = artManifest();
   const slots = familySlots(family);
@@ -137,25 +144,29 @@ export function createRequest({ family = "tree-pine", runId, variants = [2, 3], 
   for (const file of collectedReferences(workspaceRoot, entity)) {
     snapshots.push({ source: file, path: inputPath(`inputs/collected/${path.basename(file)}`), kind: "inspiration" });
   }
+  // Style captures get short frozen names: the originals carry 100-character cache hashes that would overflow Windows paths.
+  for (const pick of styleReferences(workspaceRoot, entity, styleLimit)) {
+    snapshots.push({ source: pick.absolute, path: inputPath(`inputs/style/${pick.frozenName}`), kind: pick.kind, note: pick.reason, style: { source: pick.source, file: pick.file, role: pick.role, subjects: pick.subjects, score: pick.score } });
+  }
   const mode = snapshots.some((s) => s.kind === "accepted") ? "extend-approved-style" : "style-pilot";
   const priorRejections = rejectionHistory(workspaceRoot, path.dirname(path.dirname(runDir)));
   const relativeRun = relative(workspaceRoot, runDir);
   const prompt = batchPrompt(slots, `${family} · ${files.length}장 · ${runId}`, {
     files, outputDir: `${relativeRun}/${ART_DIR.raw}`,
-    referenceInputs: snapshots.map((input) => ({ path: `${relativeRun}/${input.path}`, kind: input.kind, slotId: input.kind === "accepted" ? slots.find((s) => slotFiles(s).includes(path.basename(input.path)))?.id : undefined })),
+    referenceInputs: snapshots.map((input) => ({ path: `${relativeRun}/${input.path}`, kind: input.kind, note: input.note, slotId: input.kind === "accepted" ? slots.find((s) => slotFiles(s).includes(path.basename(input.path)))?.id : undefined })),
     note: `**이번 요청: ${files.length}장만.** 입력 스냅샷은 \`${relativeRun}/${ART_DIR.inputs}/\`, 정확한 목록은 request.json. 기존 합격본은 참고 전용이며 납품 목록에 없다.\n검토 모드: ${mode}. ${mode === "style-pilot" ? "해당 분야 합격본 없음: 첫 화풍 승인용이다." : "동일 변형의 계절 묶음을 함께 검토한다."}\n원본을 ${ART_DIR.raw}/에 보존한다. 정규화·수치 검사 후 소유자가 대조 시트를 승인해야 public 반영 가능하다.${priorRejections.length ? `\n\n최근 미해결 반려(기록 전체는 연결된 review.json):\n${priorRejections.map((issue) => `- ${issue.ruleId}: ${issue.observed} — ${issue.reviewPath}`).join("\n")}` : ""}`
   }).replaceAll("inputs 사본", `${ART_DIR.inputs} 사본`);
   const payload = {
     schemaVersion: 1, family, runId, mode, files, slots, priorRejections,
     createdAt: new Date().toISOString(), promptSha256: sha256(prompt),
     sources: ["components/shared/ambient/art/manifest.ts", "components/shared/ambient/world/codex.ts"].map((file) => ({ file, sha256: hashFile(path.join(root, file)) })),
-    inputs: snapshots.map((s) => ({ path: s.path, source: relative(workspaceRoot, s.source), kind: s.kind, sha256: hashFile(s.source) }))
+    inputs: snapshots.map((s) => ({ path: s.path, source: relative(workspaceRoot, s.source), kind: s.kind, sha256: hashFile(s.source), ...(s.style ? { reason: s.note, style: s.style } : {}) }))
   };
   const request = { ...payload, requestSha256: sha256(json(payload)) };
   if (previousRequest && json(previousRequest.inputs) !== json(request.inputs)) throw new Error("Prepared refresh cannot replace frozen images; use a new run");
   if (!dry) {
     if (!exists) {
-      for (const dir of [ART_DIR.raw, ART_DIR.normalized, inputPath("inputs/baseline"), inputPath("inputs/reference"), inputPath("inputs/collected")]) fs.mkdirSync(path.join(runDir, dir), { recursive: true });
+      for (const dir of [ART_DIR.raw, ART_DIR.normalized, inputPath("inputs/baseline"), inputPath("inputs/reference"), inputPath("inputs/collected"), inputPath("inputs/style")]) fs.mkdirSync(path.join(runDir, dir), { recursive: true });
       for (const dir of [ART_DIR.raw, ART_DIR.normalized]) fs.writeFileSync(path.join(runDir, dir, ".gitkeep"), "", { flag: "wx" });
       for (const snapshot of snapshots) fs.copyFileSync(snapshot.source, path.join(runDir, snapshot.path), fs.constants.COPYFILE_EXCL);
     }
@@ -196,6 +207,32 @@ async function contactSheet(runDir, request, buffers, detail = false) {
     composites.push({ input: Buffer.from(label), left: x, top: y });
   }
   return sharp({ create: { width, height, channels: 4, background: "#dfe6de" } }).composite(composites).png().toBuffer();
+}
+
+/** One labelled board of the frozen style copies so the owner can attach one picture instead of six. Derived aid, not a hashed input. */
+export async function writeStyleSheet(runDir, request) {
+  const inputs = request.inputs.filter((input) => input.kind.startsWith("style-"));
+  if (!inputs.length) return null;
+  const target = path.join(runDir, inputPath("inputs/style"), "화풍시트.png");
+  if (fs.existsSync(target)) return target;
+  const cellW = 520, cellH = 440, columns = Math.min(3, inputs.length);
+  const cells = [];
+  for (const input of inputs) {
+    const source = within(runDir, path.join(runDir, inputPath(input.path)));
+    const image = await sharp(source).resize(cellW - 24, cellH - 70, { fit: "inside", kernel: "lanczos3" }).png().toBuffer({ resolveWithObject: true });
+    cells.push({ input, image });
+  }
+  const rows = Math.ceil(cells.length / columns), width = cellW * columns, height = cellH * rows;
+  const escape = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const LABEL = { "style-mood": "분위기만", "style-depiction": "그림체만", "style-form": "형태 비율만" };
+  const composites = cells.flatMap(({ input, image }, i) => {
+    const x = (i % columns) * cellW, y = Math.floor(i / columns) * cellH;
+    const svg = `<svg width="${cellW}" height="${cellH}" xmlns="http://www.w3.org/2000/svg"><text x="12" y="22" font-size="17" font-family="sans-serif" fill="#253e32">${escape(LABEL[input.kind] ?? input.kind)} · 복제 금지</text><text x="12" y="${cellH - 14}" font-size="12" font-family="sans-serif" fill="#253e32">${escape(input.reason ?? "")}</text></svg>`;
+    return [{ input: image.data, left: x + 12 + Math.floor((cellW - 24 - image.info.width) / 2), top: y + 34 }, { input: Buffer.from(svg), left: x, top: y }];
+  });
+  const sheet = await sharp({ create: { width, height, channels: 4, background: "#dfe6de" } }).composite(composites).png().toBuffer();
+  fs.writeFileSync(target, sheet, { flag: "wx" });
+  return target;
 }
 
 export async function normalizeRun({ runDir, workspaceRoot = root }) {
@@ -341,12 +378,19 @@ async function main() {
   const [command, target, ...args] = process.argv.slice(2);
   const flag = (name, fallback) => { const i = args.indexOf(name); return i < 0 ? fallback : args[i + 1]; };
   let result;
-  if (command === "request") result = createRequest({ family: target, runId: flag("--run", null), variants: flag("--variants", "2,3").split(",").map(Number), dry: args.includes("--dry"), refreshPrepared: args.includes("--refresh-prepared") });
+  if (command === "request") {
+    const styleLimit = args.includes("--no-style") ? 0 : Number(flag("--style-limit", 6));
+    if (!Number.isSafeInteger(styleLimit) || styleLimit < 0) throw new Error("--style-limit must be a non-negative integer");
+    result = createRequest({ family: target, runId: flag("--run", null), variants: flag("--variants", "2,3").split(",").map(Number), dry: args.includes("--dry"), refreshPrepared: args.includes("--refresh-prepared"), styleLimit });
+    result.styleSheet = args.includes("--dry") ? null : await writeStyleSheet(result.runDir, result.request);
+  }
   else if (command === "normalize") { result = await normalizeRun({ runDir: target }); if (result.status === "fail") process.exitCode = 1; }
   else if (command === "review") result = reviewRun({ runDir: target, decision: flag("--decision", null), note: flag("--note", null), reviewer: flag("--reviewer", null), ruleId: flag("--rule", "owner.visual-review"), expected: flag("--expected", "Follow the request and approved reference"), evidence: flag("--evidence", null) });
   else if (command === "promote") result = promoteRun({ runDir: target, apply: args.includes("--apply") });
-  else throw new Error("Usage: art:pipeline request <family> --run <id> [--variants 2,3] [--dry] | normalize <run> | review <run> --decision approved|rejected --reviewer owner --note <owner decision> | promote <run> [--apply]");
-  console.log(json(command === "request" ? { runDir: result.runDir, files: result.request.files, mode: result.request.mode, requestSha256: result.request.requestSha256 } : result));
+  else throw new Error("Usage: art:pipeline request <family> --run <id> [--variants 2,3] [--style-limit 6 | --no-style] [--dry] | normalize <run> | review <run> --decision approved|rejected --reviewer owner --note <owner decision> | promote <run> [--apply]");
+  console.log(json(command === "request"
+    ? { runDir: result.runDir, files: result.request.files, mode: result.request.mode, requestSha256: result.request.requestSha256, inputs: result.request.inputs.map((input) => `${input.kind}: ${input.path}${input.reason ? ` — ${input.reason}` : ""}`), styleSheet: result.styleSheet ? relative(root, result.styleSheet) : null }
+    : result));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch((error) => {
   console.error(error.message);

@@ -1,0 +1,7013 @@
+{
+  "schemaVersion": 1,
+  "source": "모여봐요 동물의 숲",
+  "slug": "acnh",
+  "origin": "소유자가 2026-09-09~10 직접 넣은 상업 게임 캡처(모여봐요 동물의 숲)와 함께 모은 스톡·렌더. 도감 아이콘은 생물 이름이 파일명",
+  "usage": "장면의 분위기·색·구도·카메라, 도감 아이콘의 덩어리·외곽선 단순화 관찰. 자산 복제·트레이스·public 반출 금지",
+  "updatedAt": "2026-09-10",
+  "entries": [
+    {
+      "file": "1-핵심-환경분위기/,jx.jpg",
+      "sha256": "160a43b62c8ab57d6021f14d5da23aa17ff99439ddfd42fc5391362c95ca2bbe",
+      "bytes": 33116,
+      "width": 576,
+      "height": 324,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "three-quarter",
+      "subjects": [
+        "broadleaf",
+        "cherry-blossom",
+        "tree"
+      ],
+      "env": [
+        "river",
+        "forest",
+        "meadow"
+      ],
+      "time": "day",
+      "season": "spring",
+      "role": "mood",
+      "flags": [
+        "has-ui"
+      ],
+      "note": "봄 강가 — 벚나무·사과나무 군집과 굽은 강, 봄색이 환경 전체에",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1-핵심-환경분위기/1.jpg",
+      "sha256": "a3641558788007c15db91355c5293c7e5fe8099614a8b1fda1743e232e7b3b7a",
+      "bytes": 32673,
+      "width": 800,
+      "height": 450,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "wide",
+      "subjects": [
+        "cloud",
+        "sky",
+        "shell-clam"
+      ],
+      "env": [
+        "beach",
+        "sea-surface",
+        "sky"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "mood",
+      "flags": [],
+      "note": "낮 해변 — 넓은 여백, 청록 수면과 흰 뭉게구름",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1-핵심-환경분위기/hf.jpg",
+      "sha256": "c115a17226e9763ad91d3a02a7d2d302f0673056cac2e81906c2c411eff7b82a",
+      "bytes": 16808,
+      "width": 576,
+      "height": 324,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "three-quarter",
+      "subjects": [
+        "rock",
+        "sea-stack",
+        "ground"
+      ],
+      "env": [
+        "beach",
+        "sea-surface"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "mood",
+      "flags": [
+        "has-character"
+      ],
+      "note": "얕은 물·바위·모래의 접촉 — 잔물결 피드백",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1-핵심-환경분위기/mj.jpg",
+      "sha256": "7a929566722ed7cbf91fa8c84e9b1a7b0bb548ca9ca62b94335ce2e2c03706b0",
+      "bytes": 19650,
+      "width": 738,
+      "height": 414,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "three-quarter",
+      "subjects": [
+        "palm",
+        "moon",
+        "tree"
+      ],
+      "env": [
+        "beach",
+        "night-sky"
+      ],
+      "time": "night",
+      "season": "summer",
+      "role": "mood",
+      "flags": [],
+      "note": "밤 해변 — 야자수·달, 남색 속에서도 형태가 남는 명도",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1-핵심-환경분위기/sfg.jpg",
+      "sha256": "fae4a09261caf676500bb74d33de4731c5bcc54b1099325bca615fed5f08e6c3",
+      "bytes": 18755,
+      "width": 334,
+      "height": 598,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "wide",
+      "subjects": [
+        "palm"
+      ],
+      "env": [
+        "beach",
+        "sea-surface"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "mood",
+      "flags": [],
+      "note": "완만한 해안 곡선과 포말 리듬(세로 화면)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1-핵심-환경분위기/ss.jpg",
+      "sha256": "b4e8ae2efe2e16afff98b9d80fd34e5c906b12d255daa26718776e741a4bfab8",
+      "bytes": 27989,
+      "width": 597,
+      "height": 335,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "three-quarter",
+      "subjects": [
+        "cherry-blossom",
+        "broadleaf",
+        "tree"
+      ],
+      "env": [
+        "village",
+        "night-sky"
+      ],
+      "time": "night",
+      "season": "spring",
+      "role": "mood",
+      "flags": [
+        "has-character"
+      ],
+      "note": "청보라 밤과 제한된 따뜻한 등불 초점, 벚꽃",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1-핵심-환경분위기/vb.jpg",
+      "sha256": "c9c45da7f35c8d4dc8e8d002c7b163116b01532affea820abb3e0b02a3b1c3f2",
+      "bytes": 48562,
+      "width": 738,
+      "height": 414,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "three-quarter",
+      "subjects": [
+        "broadleaf",
+        "tree",
+        "mushroom",
+        "grass",
+        "plant"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": "day",
+      "season": "autumn",
+      "role": "mood",
+      "flags": [
+        "has-ui"
+      ],
+      "note": "가을 초원 — 누른 바탕·탁한 주황 나무, 풀·버섯 군집",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1-핵심-환경분위기/wer.jpg",
+      "sha256": "4211392b59beba94cf007a6b47a64a0a03da6e382dc673aef2b25a0fe86b7854",
+      "bytes": 15181,
+      "width": 738,
+      "height": 414,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "wide",
+      "subjects": [
+        "water",
+        "rock"
+      ],
+      "env": [
+        "sea-surface"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "mood",
+      "flags": [
+        "has-character"
+      ],
+      "note": "넓은 수면과 작은 초점(수영하는 인물)·잔물결",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "2-보조-도감화면/images (10).jpg",
+      "sha256": "6b53179d7b3b18925357b198c1eb4cd9dc14b219c7190e3148bda4b3cd17190f",
+      "bytes": 25966,
+      "width": 515,
+      "height": 388,
+      "format": "jpeg",
+      "kind": "ui",
+      "style": "render",
+      "view": null,
+      "subjects": [],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "has-ui"
+      ],
+      "note": "물고기 도감 화면 — 친근한 정리 방식만 관찰, UI 복제 금지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "2-보조-도감화면/images (11).jpg",
+      "sha256": "d88eb4becff49f9340d5269ac4c3526e35c5d2e6ea7bd7f45f4e479670f596cd",
+      "bytes": 17370,
+      "width": 316,
+      "height": 632,
+      "format": "jpeg",
+      "kind": "ui",
+      "style": "render",
+      "view": null,
+      "subjects": [],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "has-ui"
+      ],
+      "note": "도감 목록 UI — 아이콘 나열, 복제 금지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "2-보조-도감화면/images (18).jpg",
+      "sha256": "5f81c21613cdda694bda9040979f5df3b70658efcb80643c0d333afd7ee63873",
+      "bytes": 28518,
+      "width": 597,
+      "height": 335,
+      "format": "jpeg",
+      "kind": "ui",
+      "style": "render",
+      "view": null,
+      "subjects": [],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "has-ui"
+      ],
+      "note": "곤충 도감 화면 — 아이콘 격자, 복제 금지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "2-보조-도감화면/images (9).jpg",
+      "sha256": "031acf0dec481027b87a7f651287b7ab3b63b5fe454932dba18dd8558df7ea28",
+      "bytes": 38259,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "ui",
+      "style": "render",
+      "view": null,
+      "subjects": [],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "has-ui"
+      ],
+      "note": "7월 물고기·곤충 홍보 이미지 — 문구 포함, 복제 금지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/bv.jpg",
+      "sha256": "4cf3df4bab9dec3a53d14893a9dfc1a862b80803d064da82b20b5788b745af70",
+      "bytes": 17580,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "분재형 픽셀 나무 — 다른 픽셀 팩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/cs.jpg",
+      "sha256": "e9650be5557b86cc991c82b8f6aec9815e0ce873ce12bf3561ef32ad9148b120",
+      "bytes": 34623,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "픽셀 참나무 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/dr.jpg",
+      "sha256": "b0489eea8b497ee090920160de89651428737c288e1036db1af36a61c0cd825b",
+      "bytes": 42416,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "체커보드 위 픽셀 나무 — 다른 픽셀 팩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/im-making-a-game-about-collecting-fish-and-the-vibes-are-v0-w0cjl4mvlcjb1.webp",
+      "sha256": "c973dc0b80ab68b1f384fcc04d959f2120e4ca455b2334e0134ca9b08f4c0179",
+      "bytes": 103592,
+      "width": 1080,
+      "height": 605,
+      "format": "webp",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "other-game",
+        "license-unknown"
+      ],
+      "note": "다른 인디 게임의 물고기 아이콘 판",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (1).jpg",
+      "sha256": "0717873cf7eaac8f7649f8ba6bf0616c6ed266a0088b9d9509d70395a3a37292",
+      "bytes": 3412,
+      "width": 632,
+      "height": 316,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 박물관 렌더 — 작은 관상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (12).jpg",
+      "sha256": "4ba9d639d833df626795f14f34150588414c20aae8c31f74da81b44b22389f33",
+      "bytes": 3951,
+      "width": 128,
+      "height": 128,
+      "format": "jpeg",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "나폴레옹피시 도감 아이콘 큰 판 — 둥근 덩어리·진한 외곽선",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (13).jpg",
+      "sha256": "aa3a66e12b996f66fa870d4de58f67e19c7a3b8d417a50b31d2be0754d84b1f3",
+      "bytes": 9679,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "cicada",
+        "bug-cicada",
+        "bug"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 매미 렌더 — 날개 겹침 비율",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (14).jpg",
+      "sha256": "d63acd51927c1b4e6b3b9244875dad3a33b6237d68f49ee47d120caa49de73ca",
+      "bytes": 5373,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "butterfly",
+        "bug-cabbagewhite",
+        "bug"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 배추흰나비 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (15).jpg",
+      "sha256": "aac12801507e75cad1cca1f265bf0cfd11dcd0a72ec8ee5df4ac33188b5d3f04",
+      "bytes": 11940,
+      "width": 306,
+      "height": 450,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "mantis",
+        "bug-mantis",
+        "bug"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 사마귀 렌더 — 앞다리 접힘",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (16).jpg",
+      "sha256": "fe5f5fb776fb8869242935067160379aaccd32161c225673905594a51bc4ec8a",
+      "bytes": 15008,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "dragonfly",
+        "bug-emperordragon",
+        "bug"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 왕잠자리 렌더 — 날개 넷 펼침",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (17).jpg",
+      "sha256": "4e89ace7d845bf7ba233df843bfbf7e3c0b746c34d36227ca32bfa7695e9ab2c",
+      "bytes": 12985,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "rhino-beetle",
+        "bug-rhinobeetle",
+        "bug"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 헤라클레스장수풍뎅이 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (19).jpg",
+      "sha256": "3e0752a46e70e876e46567a055460f4b9e7ca1c49fb89c0911aad0d2464a196a",
+      "bytes": 38436,
+      "width": 576,
+      "height": 324,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "픽셀 참나무 10종 판 — 다른 픽셀 팩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (2).jpg",
+      "sha256": "63b2bc619604df3e1d047b24d392495076edf79e4649c7dce2c9deaa56bf39c4",
+      "bytes": 10516,
+      "width": 632,
+      "height": 316,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 도라도 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (20).jpg",
+      "sha256": "c3c969b99d6165d3b8359261172dde39a3cd6663e2498a4f18ed5038f6f163e1",
+      "bytes": 30648,
+      "width": 562,
+      "height": 544,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "rock",
+        "ground"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "갈색 픽셀 바위 4종 — 다른 픽셀 팩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (21).jpg",
+      "sha256": "5ce299c6db9da7b2bf1a8e200f063fe0b37bd7eb23f0463f1390ce1ee4075fed",
+      "bytes": 14938,
+      "width": 472,
+      "height": 423,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "rock",
+        "ground"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "회색 픽셀 바위 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (22).jpg",
+      "sha256": "bbbbfa9d99e360d0541e52d8333af844c6c7bcfe7e6329165b0ef4dd95bf85cf",
+      "bytes": 17230,
+      "width": 432,
+      "height": 462,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "rock",
+        "moss-patch",
+        "ground"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "이끼 낀 픽셀 바위 9종 — shutterstock 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (23).jpg",
+      "sha256": "f02ceaccc41b4a6700ef35e3720a8222b10f2e090f4068594498818f88973ac3",
+      "bytes": 32045,
+      "width": 335,
+      "height": 597,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "mountain"
+      ],
+      "env": [
+        "mountain"
+      ],
+      "time": "day",
+      "season": "winter",
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "설산·탑 픽셀 풍경 — 다른 작품",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (24).jpg",
+      "sha256": "aea5f093dbb5967bde78b35da869da8b6ff47bf366027dee4ae9d994549383ff",
+      "bytes": 14334,
+      "width": 480,
+      "height": 269,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "mountain",
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "mountain",
+        "sky"
+      ],
+      "time": "day",
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "낮 설산 픽셀 풍경 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (25).jpg",
+      "sha256": "12210fc9b24f55fde45c71a48328b891d31f94fb89f02607fad222b5927226aa",
+      "bytes": 35013,
+      "width": 335,
+      "height": 597,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": null,
+      "subjects": [
+        "mountain"
+      ],
+      "env": [
+        "mountain"
+      ],
+      "time": "day",
+      "season": "winter",
+      "role": "none",
+      "flags": [
+        "ai-suspect",
+        "license-unknown"
+      ],
+      "note": "눈 덮인 협곡 — 3D/AI 풍, 픽셀 아님",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (26).jpg",
+      "sha256": "d9632d481169fe8ca557400581ec1ed332778892b0f0ac1e15d848eccee9a4d9",
+      "bytes": 20228,
+      "width": 462,
+      "height": 280,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "mountain",
+        "sky"
+      ],
+      "env": [
+        "mountain",
+        "sky"
+      ],
+      "time": "day",
+      "season": "winter",
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "설산 픽셀 — shutterstock 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (27).jpg",
+      "sha256": "2389ab1878dbbdc5d1c55a100e988995498f1eb1da1c82d1cd66f985af4221c3",
+      "bytes": 19080,
+      "width": 462,
+      "height": 280,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "mountain",
+        "conifer",
+        "sky"
+      ],
+      "env": [
+        "mountain",
+        "night-sky"
+      ],
+      "time": "night",
+      "season": "winter",
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "밤 설산·침엽수 픽셀 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (28).jpg",
+      "sha256": "332e92896a5baf8476445c915606c968681e22a16b726fd19ccad1af152c6fb7",
+      "bytes": 14116,
+      "width": 420,
+      "height": 420,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky"
+      ],
+      "time": "dusk",
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "분홍 노을 구름 픽셀 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (29).jpg",
+      "sha256": "a63456f9cded1d4d86d8db30fbbd221b3d9cf23729fceb5957d2cdb9d9821d18",
+      "bytes": 24906,
+      "width": 432,
+      "height": 462,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky"
+      ],
+      "time": "day",
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "픽셀 구름 세트 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (3).jpg",
+      "sha256": "cef8762e6316b45739000376dbf3290eb37cb192843fde3825386936fd9fd225",
+      "bytes": 2599,
+      "width": 318,
+      "height": 159,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "pond-fish",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 큰입배스 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (30).jpg",
+      "sha256": "d801ae7eef11e02b28866dab995a9a976b37d7ad54bf662b8f5e8777ccd1d867",
+      "bytes": 19693,
+      "width": 462,
+      "height": 280,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky",
+        "sea-surface"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "뭉게구름과 바다 픽셀 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (31).jpg",
+      "sha256": "b2e8a61a0b09ce5d196f93e4eb606633a8b9665f02941299ca8c98cdb224cd93",
+      "bytes": 20946,
+      "width": 537,
+      "height": 302,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky"
+      ],
+      "time": "day",
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "파란 픽셀 구름 세트 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (32).jpg",
+      "sha256": "e6faf98b716ef276d9219d85939da587349572ebc61baf8f51d9aa4f360bf114",
+      "bytes": 26882,
+      "width": 461,
+      "height": 279,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky"
+      ],
+      "time": "day",
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "구름 방사 픽셀 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (33).jpg",
+      "sha256": "bae9b7ea20eb679f6548c192b8c4b570a9b93b96315c85d37a37428a3fcb08c3",
+      "bytes": 18024,
+      "width": 462,
+      "height": 280,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky",
+        "meadow"
+      ],
+      "time": "day",
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "하늘과 땅 픽셀 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (34).jpg",
+      "sha256": "163311d7ca848e4addc2f85be6b90d7379685de855185bbf927debe0ba83e529",
+      "bytes": 37044,
+      "width": 654,
+      "height": 468,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky",
+        "sea-surface"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "바다·구름 픽셀 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (35).jpg",
+      "sha256": "7e568c2dc2ae1c50efb19486769f528b1bac37b0de24f5b3b947bd0360cf5db0",
+      "bytes": 26182,
+      "width": 412,
+      "height": 485,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky",
+        "village"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "none",
+      "flags": [
+        "other-game",
+        "license-unknown"
+      ],
+      "note": "시골길 뭉게구름 세로 픽셀 — 다른 작품",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (36).jpg",
+      "sha256": "88920964d6e0373a4d54bfe1f8a4d585ee6a0eeb513a53dc55095528c8c8d115",
+      "bytes": 4036,
+      "width": 260,
+      "height": 260,
+      "format": "jpeg",
+      "kind": "photo",
+      "style": "photo",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky"
+      ],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "회색 구름 PNG(사진)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (37).jpg",
+      "sha256": "b005d88659c6681dba520a0f807bdccedbbab734f2a2045656ca80181e2bce12",
+      "bytes": 11319,
+      "width": 500,
+      "height": 333,
+      "format": "jpeg",
+      "kind": "photo",
+      "style": "photo",
+      "view": null,
+      "subjects": [
+        "cloud",
+        "sky"
+      ],
+      "env": [
+        "sky"
+      ],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "흐린 하늘 사진 — getty 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (38).jpg",
+      "sha256": "91758e86b3d73abc157ddf11315821da2111202c9e0092924c484ffcf26dfe16",
+      "bytes": 13489,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "moon",
+        "sky"
+      ],
+      "env": [
+        "night-sky"
+      ],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "픽셀 달 — 크라우드픽 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (39).jpg",
+      "sha256": "4bbc3b7f8fb1bcc2555d304e8fe442faa0fed5a1b483f14ff684655ae2176a10",
+      "bytes": 9588,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "reed",
+        "cattail",
+        "plant"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "픽셀 부들 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (4).jpg",
+      "sha256": "72252b8b8fc6620e8b993ddc1a895aefa66e31c48f5d68f6571d6b296e41d9af",
+      "bytes": 5740,
+      "width": 632,
+      "height": 316,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "pond-fish",
+        "fish-crucian",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 붕어 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (40).jpg",
+      "sha256": "5b1f078c6a5713d0a924e47e2a9192bdc445fedc423fede70c5800e566bf4c96",
+      "bytes": 14427,
+      "width": 360,
+      "height": 360,
+      "format": "jpeg",
+      "kind": "illustration",
+      "style": "vector",
+      "view": null,
+      "subjects": [
+        "grass",
+        "plant"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "풀 PNG — pngtree 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (41).jpg",
+      "sha256": "9715acdd46704650653c4a8542e14c785cbdc4ea0891196aa4036c091f6b05c4",
+      "bytes": 19175,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "illustration",
+      "style": "vector",
+      "view": null,
+      "subjects": [
+        "reed",
+        "rock",
+        "plant"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "갈대와 돌 벡터 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (42).jpg",
+      "sha256": "3d1d11fd8a0a2579a365a8bfd922658a454cf878e4e76a96e40aefdcb94e24d0",
+      "bytes": 30526,
+      "width": 600,
+      "height": 390,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "bird",
+        "animal"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "픽셀 새 8종 — shutterstock 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (43).jpg",
+      "sha256": "ea4c07fea1e4ff2a6557ade837ccabd7d550231b9c4b709ef5d1cc3660568d62",
+      "bytes": 17654,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "armadillo",
+        "mammal",
+        "animal"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "픽셀 아르마딜로 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (5).jpg",
+      "sha256": "1f76c532d7044ca5eb717acaeeb3365a04905a1c9ae91244427e08bc87dc94fb",
+      "bytes": 8656,
+      "width": 632,
+      "height": 316,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish-seabass",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 농어 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (6).jpg",
+      "sha256": "c5de455de33820967fccde26a254034a51c1afb034a245150c93dfdeadff5777",
+      "bytes": 12088,
+      "width": 632,
+      "height": 316,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "salmon",
+        "river-fish",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 연어 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (7).jpg",
+      "sha256": "d651d9c6308da9e2abe3f943ab6450d1dee3b6d9e424438a11aa622c7808e2e1",
+      "bytes": 12240,
+      "width": 632,
+      "height": 316,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 아로와나 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images (8).jpg",
+      "sha256": "f259e02f1bb15cd3583a12ab960d25b5828e8e44b54b5e4f79f3214d6fc9db37",
+      "bytes": 8468,
+      "width": 632,
+      "height": 316,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": "side",
+      "subjects": [
+        "salmon",
+        "river-fish",
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "form",
+      "flags": [],
+      "note": "동물의 숲 송어·곤들매기 렌더",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images.jpg",
+      "sha256": "211a6fe98dd9a214cf328cc6129992f9f510d3800c68a2ee35c33e6f15c931d5",
+      "bytes": 18839,
+      "width": 496,
+      "height": 403,
+      "format": "jpeg",
+      "kind": "ui",
+      "style": "render",
+      "view": null,
+      "subjects": [],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "has-ui"
+      ],
+      "note": "박물관 안내판 UI(청새치 서식 시기) — 문구·UI 복제 금지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/images.png",
+      "sha256": "103d052aff0e58ba19ce8ffd54b21922b8e8b799612a42f8bdcb984c0b19aad9",
+      "bytes": 21111,
+      "width": 554,
+      "height": 554,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "파란 바탕 픽셀 참나무 — 다른 픽셀 팩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/imagfges.jpg",
+      "sha256": "c9b86d3272cf371a28d62d64fa66f314ab9b0d27dfd079c74126ffb351a82ce7",
+      "bytes": 43006,
+      "width": 516,
+      "height": 387,
+      "format": "jpeg",
+      "kind": "illustration",
+      "style": "paint",
+      "view": null,
+      "subjects": [
+        "fish"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "other-game",
+        "license-unknown"
+      ],
+      "note": "다른 작품의 물고기 일러스트 모음",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/njg.jpg",
+      "sha256": "9691f4fe8f8aec85c7b3ffc1cebee021ab4aedd48ee0e719f76a16d11714fe8f",
+      "bytes": 21478,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "render",
+      "style": "render",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "올리브빛 3D 나무 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/ntb.jpg",
+      "sha256": "012176a828618a44ea93c647312bf56f79b9042b2378670dc5178d9dfaf2b8a8",
+      "bytes": 38845,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "render",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "사계절 나무 렌더 4장 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/ny.jpg",
+      "sha256": "eaa23e7768116d5311c7470ddbadfcbbd1853b942695ec027b9db56a1982ff4f",
+      "bytes": 12473,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "acorn",
+        "prop"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "픽셀 도토리 — 검은 외곽선, 다른 픽셀 팩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/pixel-forest-jungle-trees-shrub-260nw-2692546673.webp",
+      "sha256": "17df97da9aa16f94b5021913fb59002febe959e40d6bf706c646679e75a25f69",
+      "bytes": 30492,
+      "width": 675,
+      "height": 280,
+      "format": "webp",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "conifer",
+        "bush",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "픽셀 숲 나무·덤불 세트 — shutterstock",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/png-transparent-brown-rock-illustration-pixel-art-sprite-rocks-brown-painting-8bit-color-thumbnail.png",
+      "sha256": "a34afaf4295ad96f8564a3affbcde2282f9338614cb4e8aad7b83b5abea65328",
+      "bytes": 2830,
+      "width": 360,
+      "height": 250,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "rock",
+        "boulder",
+        "ground"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "갈색 픽셀 바위 무더기 썸네일",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/s.jpg",
+      "sha256": "ba22de363eb01acc0f83bf68d39bc818aaac4285505ffc9bfffd3e504da2f398",
+      "bytes": 44099,
+      "width": 447,
+      "height": 447,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "픽셀 나무 8종 — 워터마크",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/xc.jpg",
+      "sha256": "e7ece2656dc6dc85d0e6a21b1fe4cbec90f0e015381e855045b40d9da1ffb52a",
+      "bytes": 24824,
+      "width": 518,
+      "height": 386,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "cherry-blossom",
+        "broadleaf",
+        "tree",
+        "cloud"
+      ],
+      "env": [
+        "meadow",
+        "sky"
+      ],
+      "time": "day",
+      "season": "spring",
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "픽셀 벚나무 장면 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/xs.jpg",
+      "sha256": "b7b6abfbdd93fb56a1d1b3e13c1ec8a680d26a3fcbb4d389740df76df0b6f9e2",
+      "bytes": 15061,
+      "width": 554,
+      "height": 554,
+      "format": "jpeg",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "conifer",
+        "tree-pine",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "픽셀 소나무 한 그루 — 출처 불명. 소유자가 라이선스를 확인하면 소나무 레퍼런스/로 옮길 수 있다",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/XZC.jpg",
+      "sha256": "847cfe630121ba8810fd3f2882f8307a53bb36fb81e82bbf1e8f3a1dbf9a692e",
+      "bytes": 19122,
+      "width": 360,
+      "height": 360,
+      "format": "jpeg",
+      "kind": "illustration",
+      "style": "vector",
+      "view": null,
+      "subjects": [
+        "bush",
+        "plant"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "license-unknown"
+      ],
+      "note": "관목 벡터 일러스트 — 출처 불명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/zxcv.jpg",
+      "sha256": "78ea30a2e65d78fb3f201b505dc12c45ab84d74f92a0b42a6b9a826f1d4689e2",
+      "bytes": 48512,
+      "width": 491,
+      "height": 407,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "conifer",
+        "bush",
+        "tree"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "PIX 워터마크 나무 세트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3-분류대기-대상자료/zz.jpg",
+      "sha256": "4511d162a477453b07cab393551fcdfb3a74dc300fd7792828ec017d0161277d",
+      "bytes": 25234,
+      "width": 576,
+      "height": 258,
+      "format": "jpeg",
+      "kind": "sheet",
+      "style": "pixel",
+      "view": null,
+      "subjects": [
+        "broadleaf",
+        "conifer",
+        "flower",
+        "tree",
+        "plant"
+      ],
+      "env": [],
+      "time": null,
+      "season": null,
+      "role": "none",
+      "flags": [
+        "stock",
+        "watermark",
+        "license-unknown"
+      ],
+      "note": "검은 바탕 픽셀 나무·꽃 세트 — shutterstock",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "가든일.webp",
+      "sha256": "d1d4b123b14c2648d021d6839d139e53b4492d6cc9dacd6df46312fd00a4f1a4",
+      "bytes": 928,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "eel",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 가든일",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "가리비.webp",
+      "sha256": "e66446e7aefaff2a200fa96485d515ed9aaa8281ef0b053f65c87fb182ded6de",
+      "bytes": 1084,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "shellfish",
+        "shell-clam",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 가리비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "가물치.webp",
+      "sha256": "28e719ddfd1b8875872b11b0af6ce1d192e260dd9d52aaf8edf156f3e664e6a9",
+      "bytes": 1854,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-snakehead",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 가물치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "가시복.webp",
+      "sha256": "57774bb9290c1ff401c24b54a8452b850b0fd551bcc74d38fe4af4a626c72503",
+      "bytes": 3022,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "puffer",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 가시복",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "가아.webp",
+      "sha256": "25b1562dd73b47fdcf11e6abce2b5c243eb666a8e9e375d79d28752e6f1caa3f",
+      "bytes": 2226,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 가아",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "가자미.webp",
+      "sha256": "4271db3580376a764caf4df8927c931b74caab973f3c888830f7e72744879893",
+      "bytes": 2060,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "flatfish",
+        "fish-halibut",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 가자미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "가재.webp",
+      "sha256": "274f2d7f4c7b3e6442973548744d35e85e94819402bfc52e21ab363519b17327",
+      "bytes": 2534,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "강꼬치고기.webp",
+      "sha256": "23f66917155a3cf6a1c97cdf1b75517c276918e391e1a5094e7638bd561d88f2",
+      "bytes": 2496,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 강꼬치고기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "강뢰.webp",
+      "sha256": "21f387618256d1b2ec7a5790925145ab2473e5349da288f1f58ba8d2d2742a0f",
+      "bytes": 2832,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "ray",
+        "fish-ray",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 강뢰",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "개구리.webp",
+      "sha256": "4bc39a99a3252a049ace40a8529dbb6c4f2e573123d4c5aaa4068997dc2a1675",
+      "bytes": 1854,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "frog",
+        "animal-treefrog",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 개구리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "개미.webp",
+      "sha256": "9347bcb0ead845d37bf1e181b79457c2ca8a58b7557f304be86caabe03cb42d1",
+      "bytes": 1414,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "ant",
+        "bug-ant",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 개미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "개복치.webp",
+      "sha256": "c00c0758f3ad445b2ec36521074068920433a8a9953647be67ea66b16df12449",
+      "bytes": 2670,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sunfish",
+        "fish-sunfish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 개복치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "갯가재.webp",
+      "sha256": "5260506e00c00b3ea34be33325072bf1f304457754065c27f3fe1d89c9b05650",
+      "bytes": 1476,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "mantis-shrimp",
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 갯가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "갯강구.webp",
+      "sha256": "fec45e8c99f2db178bf4a4bb5fab109a36c20ed433de7bbe6901879abf80612a",
+      "bytes": 1670,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "isopod",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 갯강구",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "갯민숭달팽이.webp",
+      "sha256": "a007b0679afe3b988044b85328defdd69720ac8494983abc1074d2ae7aba895b",
+      "bytes": 1384,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sea-slug",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 갯민숭달팽이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "거미.webp",
+      "sha256": "f24254f52fa4719147a1eb968905eebac619a2c22de62ccf21645ff26a0d9d7c",
+      "bytes": 3472,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "spider",
+        "bug-spider",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 거미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "고래상어.webp",
+      "sha256": "eb63f123af7a73a8bcaddeba5aea1d61c19ef405b5b2ae3bb5c3fab9cad2b552",
+      "bytes": 2214,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "whale",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 고래상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "고추잠자리.webp",
+      "sha256": "8f73bef5dc46e5b1648b1df62ceeda987725d626f48a2cd642f9824a0780058f",
+      "bytes": 2262,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "dragonfly",
+        "bug-reddragonfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 고추잠자리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "골리앗왕꽃무지.webp",
+      "sha256": "96faaf5511d376a91ee0bdd78dc894ff24bd7f53aa50622c749434645aa8704c",
+      "bytes": 3066,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug-scarab",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 골리앗왕꽃무지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "곰매미.webp",
+      "sha256": "242fc4091931d2b32034c2086b84485e46798d90b807b996bdcc83aa74209461",
+      "bytes": 2562,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "cicada",
+        "bug-largecicada",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 곰매미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "곰치.webp",
+      "sha256": "4688020fada9ee8085ae1954001722afb2df12733998f61b7b4502c58bd2eeb6",
+      "bytes": 2918,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "eel",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 곰치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "공벌레.webp",
+      "sha256": "58ad6df2fe08b98feb858d34a4d1872d427f18d04430e10f029550541914db8b",
+      "bytes": 904,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "pillbug",
+        "bug-pillbug",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 공벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "구피.webp",
+      "sha256": "fe5386cd77f47792099853cc5eb555f99d7860660c2e36b7e5bd774f35c31d66",
+      "bytes": 1834,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 구피",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "굴.webp",
+      "sha256": "07c7f9cfc4dd0eb1a1e8a20d6c31b2c77e434d57468c2475f262cc6b4be96b72",
+      "bytes": 1126,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "shellfish",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 굴",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "귀상어.webp",
+      "sha256": "7a7fdfe7804c722a0fbc95a2eb6a4447997a444ae1e520da9a670b020c68b759",
+      "bytes": 1946,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 귀상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "금붕어.webp",
+      "sha256": "36fdf057782eca4105d9a60e654dbb02e8dd98b1ee6dc67086a12adb6837d987",
+      "bytes": 1802,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "goldfish",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 금붕어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "금송어.webp",
+      "sha256": "cea6a1104d8ecd51178970dfaf4aab0e2aab17d5e0845505944c50b23003fec1",
+      "bytes": 2458,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "salmon",
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 금송어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "기라파톱사슴벌레.webp",
+      "sha256": "ed9c0a9ccd9eb8b0c4d5dea7464be0f4de8e2e12c3ca46755e53443ff5c28deb",
+      "bytes": 2248,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stag-beetle",
+        "bug-stagbeetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 기라파톱사슴벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "긴수염대벌레.webp",
+      "sha256": "fd91f575be4cabb290b250abf5d419a62ea0a346805e272261cecff4f240b947",
+      "bytes": 2666,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stick-insect",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 긴수염대벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "길앞잡이.webp",
+      "sha256": "263de886b1d99e030d6b8fbe7cb9c1fc0d9339fc9aef74f9063cd82343d51c59",
+      "bytes": 2022,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 길앞잡이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "꽃게.webp",
+      "sha256": "b3718013a8b4b213846e18a2f088ec3c2f8f582a38bfe8036167694c19da4562",
+      "bytes": 1576,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal-mudcrab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 꽃게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "꿀벌.webp",
+      "sha256": "527eccfe97d43109409edccf2a795c6d3139bf136c02b56408b100291c9ed8d8",
+      "bytes": 1492,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bee",
+        "bug-honeybee",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 꿀벌",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "뀌뚜라미.webp",
+      "sha256": "77c3a15f51f02f14da4077da8d30ade22b695392219eda7849a6a82758457509",
+      "bytes": 2238,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "cricket",
+        "bug-cricket",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 뀌뚜라미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "나방.webp",
+      "sha256": "02fa5a663704c898604e9a39c713919ed335eefee14c265be52104217cfa6f26",
+      "bytes": 2298,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "moth",
+        "bug-hawkmoth",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 나방",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "나비고기.webp",
+      "sha256": "dc97a53e1116af3247006d32f9489c7094b949f81455262ff5a9993b2dfa7a28",
+      "bytes": 2018,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 나비고기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "나플레옹피시.webp",
+      "sha256": "f3e7981049acb93cbdf97bbc310c79dd9ab04561aeb795adde9e466061f89de8",
+      "bytes": 3106,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 나플레옹피시",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "난주.webp",
+      "sha256": "71e23eb010207ad5900886e8d02367f4ea53dd1752716000f55c261bf7d8ab7c",
+      "bytes": 2410,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "goldfish",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 난주",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "납작벌레.webp",
+      "sha256": "a87f51c265090dfbdfcf93128e10d536b7d26db951a61ac0d8cb29392fbd5678",
+      "bytes": 938,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sea-slug",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 납작벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "납줄개.webp",
+      "sha256": "ab422c3258e2a0469b934a6492fcf1781b1b3b72607d090e6b56a334f966df9d",
+      "bytes": 2068,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-bitterling",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 납줄개",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "넙치.webp",
+      "sha256": "3e758dd5351fb6e6de4679f3cdeb28622dca07a9af7ad5ec9201a52dc4df51ff",
+      "bytes": 2388,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "flatfish",
+        "fish-flounder",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 넙치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "네온테트라.webp",
+      "sha256": "44e75bc3c22f650fb31610960c8c2c5c4af0eafd2f3b413f94037d6521b601d1",
+      "bytes": 1464,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 네온테트라",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "노랑나비.webp",
+      "sha256": "2b9d911a193d19b5be4b3390f0a047d167ad6231af9c593aaf67c1a3aa6a042f",
+      "bytes": 1964,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 노랑나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "노린재.webp",
+      "sha256": "bf763a50a64b7f062e4bd93ddbff8c306b6d3421d316e1934ee41c79ef75f8e9",
+      "bytes": 2142,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "shieldbug",
+        "bug-shieldbug",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 노린재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "농어.webp",
+      "sha256": "a6cbee33eba146eb91fadd53b1781ca0caf0ce3d516f8528deed682ff1facbbd",
+      "bytes": 2678,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-seabass",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 농어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "늑대거북.webp",
+      "sha256": "0a8702ac4cf49099c1179f5e84a63cfa918330c9f5772df6528a8391238512af",
+      "bytes": 2408,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "turtle",
+        "animal-terrapin",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 늑대거북",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "다랑어.webp",
+      "sha256": "d17e266ff42c97a05c88b44104bb212dcce36c46a52947354215dcc5b096c52a",
+      "bytes": 3016,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "tuna",
+        "fish-tuna",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 다랑어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "닥터피시.webp",
+      "sha256": "d9d08e5ac8f21869fc56201799eee32217db932223270888187d714e0da2db22",
+      "bytes": 1680,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 닥터피시",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "달팽이.webp",
+      "sha256": "bfad8b7e34949addedf0c33d0e81380f3529e592fff140e2b4381cd99d854bb1",
+      "bytes": 1982,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "snail",
+        "bug-snail",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 달팽이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "닭새우.webp",
+      "sha256": "43a2ba6fc8a8e18ddefefc11fa7d033648728d9442d95fda9803fac322a087b9",
+      "bytes": 2094,
+      "width": 63,
+      "height": 63,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 닭새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "대게.webp",
+      "sha256": "56a4ab8cd9abbdac00487e17462accb94a560f165d6b86805b677897f24b3b11",
+      "bytes": 1330,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 대게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "대왕거거.webp",
+      "sha256": "8aab96ae371080daff908339dfc430bb81875209eb6e3cebee5ca0f219b3f42b",
+      "bytes": 1400,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "shellfish",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 대왕거거",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "던지니스크랩.webp",
+      "sha256": "729a2d9ee321c3fa9d8f19eeb9134d6223e3d49b22a3d5b68e4ed1850aef5dd4",
+      "bytes": 1288,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 던지니스크랩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "데메니기스.webp",
+      "sha256": "660ccc57c0776c3de97e9b167bb9dde1be4826beb14180183c54df4f171ed92b",
+      "bytes": 2146,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 데메니기스",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "도라도.webp",
+      "sha256": "ab81c0743dafbdd455148877f4e71104f30fc1ee84ebfe5aade64440ee45961c",
+      "bytes": 3386,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 도라도",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "도롱이벌레.webp",
+      "sha256": "e6495a5be18b52ea80c5b5e854f6f021eff65d55e65eb11618c10710d3f13872",
+      "bytes": 1280,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "moth",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 도롱이벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "도미.webp",
+      "sha256": "64f656f61f62aede41da26eb8c5db2d590acb9f47c3e54cbd43bec3d2e8dc268",
+      "bytes": 3088,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 도미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "돌돔.webp",
+      "sha256": "e0be9d6594353c1fe61864ea30be980d6051e2e00f6b14c60bd268575e0b59d6",
+      "bytes": 2498,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 돌돔",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "동사리.webp",
+      "sha256": "0b28e36a5346ae64749785a81bfbac7351dfea606172593b0de4c69d58514685",
+      "bytes": 2028,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "goby",
+        "fish-goby",
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 동사리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "따개비.webp",
+      "sha256": "987ad00b40f6e82ba766a659f5647ec5e4e271cd40a00a057eb5aa39944b2643",
+      "bytes": 1124,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 따개비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "땅강아지.webp",
+      "sha256": "0763e0f813440a534a82ce72bca8c5bf03cca7bcb0fb2f867fbeaa2a510a62ce",
+      "bytes": 2042,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "mole-cricket",
+        "cricket",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 땅강아지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "레인보우피시.webp",
+      "sha256": "08957cd9b7cfa0eb02e82821e5ad9a5935c50ab5372bc80c39e638bba241fb33",
+      "bytes": 1670,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 레인보우피시",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "루리하늘소.webp",
+      "sha256": "bbccb6a162fce7258a7d0dcfe71609834fb3df519ba507b15a7c53e22037ab8e",
+      "bytes": 2814,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug-longhorn",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 루리하늘소",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "리본장어.webp",
+      "sha256": "c819a1d7a1e0ceb423bb9675a743c853db59acbef5541196e1d2ec997fd4432e",
+      "bytes": 4388,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "ribbon-eel",
+        "eel",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 리본장어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "마다가스카르비단제비나방.webp",
+      "sha256": "4e679b0f2dc39eaafa5853a0b8a7b0d7d72128e916a40e13cb870f1603ec8c33",
+      "bytes": 2410,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "moth",
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 마다가스카르비단제비나방",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "만새기.webp",
+      "sha256": "706852731c3a249d01109a5d4508aa922237520e1becaf6ce36ef03851914b66",
+      "bytes": 3672,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-dolphinfish",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 만새기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "말미잘.webp",
+      "sha256": "86dd2d5fb31861f5732772921f509b2d60507cb0f2e0d14f8c14a8729034bb80",
+      "bytes": 1428,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "anemone",
+        "animal-anemone",
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 말미잘",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "매미 허물.webp",
+      "sha256": "f976f0e3f64ff004a75b74e82f9931b195b3626f434c3c127e1a44d1d52804fa",
+      "bytes": 1768,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "cicada",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 매미 허물",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "멍게.webp",
+      "sha256": "bb5e2e2cfbe98df19afbd271a1ff3e1175015d340796953f8b6fed909a27f05a",
+      "bytes": 1088,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 멍게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "메기.webp",
+      "sha256": "81f649383b8a9ad1ccc75ee1e9c2d2dd0b7c82f3335afa63054fd4d3aa385257",
+      "bytes": 2202,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "catfish",
+        "fish-catfish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 메기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "메뚜기.webp",
+      "sha256": "65ce49663224eee245375278ebef39054c73767b7ea2d8910ceaa00ed36e9d76",
+      "bytes": 1742,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "grasshopper",
+        "bug-locust",
+        "bug-grasshopper",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 메뚜기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "모기.webp",
+      "sha256": "89e5722175a2de41e78203cfd9ce4d4dd284fb033004a859b4c05fd59701b133",
+      "bytes": 1344,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "fly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 모기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "몰포나비.webp",
+      "sha256": "e671a06cb95092856618ef176c001c7096e8149bf8fbedbdd8bf0977f0a7f6e5",
+      "bytes": 2556,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug-blue",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 몰포나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "무당벌레.webp",
+      "sha256": "56714780eaf21e22c43ca86517861b4097c272bb859946deea93e23bd18d2e25",
+      "bytes": 1210,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-ladybug",
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 무당벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "무명갈전갱이.webp",
+      "sha256": "dbb73c9f42b1b5e5ede02f7dd46adf522d90265eb3288e581d7f16c7c7d49284",
+      "bytes": 2740,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 무명갈전갱이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "문어.webp",
+      "sha256": "39409290492a357bfc5b4a6a78afbebdf718221bb88d36d6385c5c2c93b43652",
+      "bytes": 1146,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "octopus",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 문어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "물방개.webp",
+      "sha256": "6eb57a4257cdb8163ac3e1bb32dcfffdec2fce99b32ed93d2d74679096d7f48f",
+      "bytes": 1960,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-divingbeetle",
+        "water-bug",
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 물방개",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "물장군.webp",
+      "sha256": "f37872a18a67f024db2b98caf2d3fc9c040ca5802d0c55a084d9160d583c95b3",
+      "bytes": 2236,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-giantwaterbug",
+        "water-bug",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 물장군",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "뮤엘러리사슴벌레.webp",
+      "sha256": "465d14c4141a8739d987d45d9e6e262b9bed417de0a5820f72195c4bd4e9568f",
+      "bytes": 2250,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stag-beetle",
+        "bug-stagbeetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 뮤엘러리사슴벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "미꾸라지.webp",
+      "sha256": "b187606b1b54f86ad659fa740bd711f064734beff7f1aff7f9e9923d69665e37",
+      "bytes": 1984,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-loach",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 미꾸라지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "바닷가재.webp",
+      "sha256": "4e8ec1e594ec2dab51872dd85c9ccf8a47bb4d6f43ffa6d0dbfe264cd9c78164",
+      "bytes": 2018,
+      "width": 63,
+      "height": 63,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 바닷가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "바이올린벌레.webp",
+      "sha256": "44b56493ff353512dcbe53bd9a3cddd65c8884f18e545f1b921887d8a3effe3c",
+      "bytes": 2024,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 바이올린벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "반디.webp",
+      "sha256": "5c84fa63f838f17846c5ebac32531d8ae46d588fcb1c5f70538143ea6f683585",
+      "bytes": 1538,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "firefly",
+        "bug-firefly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 반디",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "반딧불오징어.webp",
+      "sha256": "d0aba813122f24a19b48f0e827e3c551cef11bb5d32f0ae8b37a1c26e320ed91",
+      "bytes": 1018,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "squid",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 반딧불오징어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "방아깨비.webp",
+      "sha256": "eec00b56eaf177c07aeb4d719826e832b4c3bdbb9a72eae1230e53d063622b39",
+      "bytes": 2326,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "bug-grasshopper",
+        "grasshopper",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 방아깨비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "방울벌레.webp",
+      "sha256": "026f25c2bde8dc44bd9806a5c3d5c5e1175a5d0ff43c8b5297d42dabffa87868",
+      "bytes": 2228,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "cricket",
+        "bug-cricket",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 방울벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "배추흰나비.webp",
+      "sha256": "be8510b082a8cec8e0b569a5edb2b8726e662591491f36e8b9d74a7d7c42f30e",
+      "bytes": 1948,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-cabbagewhite",
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 배추흰나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "벌.webp",
+      "sha256": "9e06657175e5fe926881025e87e0741040b11cb339c95c95af8ca0e29595e39d",
+      "bytes": 2668,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bee",
+        "bug-hornet",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 벌",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "베타.webp",
+      "sha256": "f1ecb49c25203df1968d8ff7c0df661e064ece72b9483ac673694ee105ae9bc2",
+      "bytes": 2394,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 베타",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "벼룩.webp",
+      "sha256": "876ced455f7d2e44c9b8270352e780f2896d00b5ad88884232505bc5c0462935",
+      "bytes": 984,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 벼룩",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "보라금풍뎅이.webp",
+      "sha256": "e215bf5c27917d62ad55d94edd599ba8d056dc570d0661ace0ec1b0b6022aeb8",
+      "bytes": 1322,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug-scarab",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 보라금풍뎅이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "보름달물해파리.webp",
+      "sha256": "9c6100f0ba0dff6962898af257749399f97826778d57f09bba9b43b14f64dcf1",
+      "bytes": 1046,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "jellyfish",
+        "fish-jelly",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 보름달물해파리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "보리새우.webp",
+      "sha256": "afa04da448fe10b49e3c570db189d8d63a8f2519a66f832193baa452b9711f67",
+      "bytes": 1426,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 보리새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "보석풍뎅이.webp",
+      "sha256": "a4f42ae563a5eea801c5070721a1f6abd6c840850ead9f21220b8b969f179143",
+      "bytes": 1484,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug-scarab",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 보석풍뎅이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "복어.webp",
+      "sha256": "6c57f0598a14ec1c15828d19c6172aec23b3160b14a82b153b7ce36c771265ff",
+      "bytes": 2134,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "puffer",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 복어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "북쪽분홍새우.webp",
+      "sha256": "b678f74d3b5ecc5917d6b9fa5b4bf0bb8c6cd45c3e432d767cf45d5412dd865a",
+      "bytes": 1400,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 북쪽분홍새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "불가사리.webp",
+      "sha256": "6bb3688208bccdda90f3d1db35a2b59c61734102862163d982942e3d82e9552e",
+      "bytes": 1060,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "starfish",
+        "animal-starfish",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 불가사리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "붉은목도리비단나비.webp",
+      "sha256": "425623f55e5d009cf481babc92bb0de54dab851e6831c327abaa23dbdfd1ab33",
+      "bytes": 2178,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 붉은목도리비단나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "붕어.webp",
+      "sha256": "d76929b3c74e90168c4f86cdd9f168341c9e2c99f6db096f168e104ec2fcdf3b",
+      "bytes": 2158,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-crucian",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 붕어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "블루길.webp",
+      "sha256": "61f09a3955cada39075343b1738c217455c0d50d3a743648172365c8addcc968",
+      "bytes": 2290,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 블루길",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "블루탱.webp",
+      "sha256": "239248f07f4d4e704bf25c391f33c0dad2a0fcbb78d35c0a6022df92cf98434f",
+      "bytes": 2026,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 블루탱",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "비단벌레.webp",
+      "sha256": "debb75743afcbf9f2bcc512d786a47b505fc1d85d0c9eb161c383df478593f9d",
+      "bytes": 1924,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 비단벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "비단잉어.webp",
+      "sha256": "08bbccb00f29fa920f70ce3dbf7afc8f5634851c6ced5b43461cb1a540d6d80a",
+      "bytes": 2650,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-carp",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 비단잉어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "빙어.webp",
+      "sha256": "674be6e8092f9dca2e33ae4e2128864ef8ec475e0f495c8f446c71c228682939",
+      "bytes": 1892,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 빙어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "빨판상어.webp",
+      "sha256": "50a862c7a713511531f2ec7def070bc576380aed85c06de09341bc4cfca14795",
+      "bytes": 1782,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 빨판상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "사마귀.webp",
+      "sha256": "658db67ef761143a48ff96fc00b1124e39e5f8b0f80c3b66dcff739371ce8977",
+      "bytes": 2972,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-mantis",
+        "mantis",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 사마귀",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "사슴벌레.webp",
+      "sha256": "ff5ef64b4eb58f97e0bd64a9f2073b7d272241851a7c8d9fe0e47167a8a6326c",
+      "bytes": 2244,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-stagbeetle",
+        "stag-beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 사슴벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "산갈치.webp",
+      "sha256": "7c6e73025c51ce9a96822ac4bf250151e2823f81c90995ff0d49b8272697d209",
+      "bytes": 3958,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "oarfish",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 산갈치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "산천어.webp",
+      "sha256": "9fe1e8fe2ba5f83f1551d736ed889227ea01ee89737a06e4d5d40cf5f064747c",
+      "bytes": 2270,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-cherrytrout",
+        "salmon",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 산천어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "상어.webp",
+      "sha256": "6547b855a348fd2108abafede19e39605339cecd55696e1260fa8f0351601da2",
+      "bytes": 2320,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "섬풀무치.webp",
+      "sha256": "ed623458f58b7553758a61166059d9551eb33ffad7eb6dd0fd760882120ba20e",
+      "bytes": 2162,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "bug-locust",
+        "grasshopper",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 섬풀무치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "성게.webp",
+      "sha256": "860faac0c671b209cf4485ab3c2b0f03ef7a1cd59690836d382e540e92cfe943",
+      "bytes": 1290,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "urchin",
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 성게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "소금쟁이.webp",
+      "sha256": "17d281ab7e09550fac5bbab3953b176df01ec130cd69973c61c63442ea2831d1",
+      "bytes": 1490,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-waterstrider",
+        "water-bug",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 소금쟁이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "소라.webp",
+      "sha256": "3a862c85fed1fe8a5b56400da975ad23e26cb8b5586a1842e3758951665ff6a7",
+      "bytes": 1162,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "shellfish",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 소라",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "소라게.webp",
+      "sha256": "a714b79404e2aaca49a71f3006a43ce32e349190db6686793ae8af00a5b98b24",
+      "bytes": 2338,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "hermit-crab",
+        "animal-hermitcrab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 소라게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "송사리.webp",
+      "sha256": "c3b5715ab9ed531baad77f419e15de4cbbdb243e4cfe3d2cb63b43876a4ac55d",
+      "bytes": 1326,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 송사리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "쇠똥구리.webp",
+      "sha256": "00d26817dd2133a3a912aff0430862f3d052cd740d37eef9f450d9bd08ff4810",
+      "bytes": 1958,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-dungbeetle",
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 쇠똥구리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "수랑.webp",
+      "sha256": "2bea8057a4005a22b41d1146a1b76ea592b798bcb039a58088676ac2dd70fd86",
+      "bytes": 1190,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "shellfish",
+        "snail",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 수랑",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "실러캔스.webp",
+      "sha256": "007504543315ad035d80db7a722d51b30f2f1650f39c96f61a19224d6ab9be0d",
+      "bytes": 2952,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "coelacanth",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 실러캔스",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "실잠자리.webp",
+      "sha256": "700923a3c32dddcccfa46557bcd1b6f23aba5b8d8149338b1fed524a1660c58b",
+      "bytes": 2640,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-damselfly",
+        "dragonfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 실잠자리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "쏠배감펭.webp",
+      "sha256": "0184d2df8ed8b3b1becd0953c5b4c4c91557cace20004f11550d594ac0381443",
+      "bytes": 2688,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "lionfish",
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 쏠배감펭",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "쓰르라미.webp",
+      "sha256": "e0b9b585f31711e325d51ca087794da5832d19bd37093a05cf3925b2cf61bcbb",
+      "bytes": 2020,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "cicada",
+        "bug-cicada",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 쓰르라미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "아그리아스나비.webp",
+      "sha256": "e1c92c7b20cd77c0649de6186d6cb96bc005a79bdf5239ec475b251e1d23ab40",
+      "bytes": 2112,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 아그리아스나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "아로와나.webp",
+      "sha256": "b1c1c109c6365cce7bff28e9bf532340f9dbc318a34d4f834d2acd51872aff58",
+      "bytes": 2618,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 아로와나",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "아틀라스나방.webp",
+      "sha256": "b9eedfbb026a7f45a25ec1bb9f9d8218297533a37dec450d64272f0fca30b3a3",
+      "bytes": 3880,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "moth",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 아틀라스나방",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "알락하늘소.webp",
+      "sha256": "4a8966a5dd67f5e8fc1b01058f85ee798a5654e70a5426487cb1ec3872d0940b",
+      "bytes": 2622,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-longhorn",
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 알락하늘소",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "알렉산드라비단제비나비.webp",
+      "sha256": "cc577d7c543ba8be89812177ba159d397e03ccae65625df0c3e98bd3230a16ae",
+      "bytes": 3868,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 알렉산드라비단제비나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "애미미.webp",
+      "sha256": "4bfe6c69e7f656228180b8186ddd4d22074607066e2d9234f2801999601b869f",
+      "bytes": 1880,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "cicada",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 애미미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "앵무조개.webp",
+      "sha256": "d6203940a24e78e52ac28eba3a3aec6788c314ba3bb223cb9814b1b2388d738b",
+      "bytes": 1368,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "nautilus",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 앵무조개",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "엔드리케리.webp",
+      "sha256": "14b6f3e82c0006584e6ea92e7a59fd4fad6d49668521cdaa206a131b45210954",
+      "bytes": 2172,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 엔드리케리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "엘라푸스가위사슴벌레.webp",
+      "sha256": "20cf6a53791ddf3b87e5123e85086d214b682aa506a67710886daf44b737515d",
+      "bytes": 2836,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stag-beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 엘라푸스가위사슴벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "여치.webp",
+      "sha256": "f0d87e2968c810c0ca54f83c52151404c0144168d9566012a49215e0a6efdb33",
+      "bytes": 2384,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "bug-katydid",
+        "cricket",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 여치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "연꽃사마귀.webp",
+      "sha256": "aed189bcfe2b48f5f75e2a30d6cfef3e1cf7ccdbaee1875af4cae3df14083841",
+      "bytes": 3434,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "mantis",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 연꽃사마귀",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "연어.webp",
+      "sha256": "e273c7cab9582853768b7122005b1f3f308f72a1e8fd825a9ffc30c97d42e6e4",
+      "bytes": 2356,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "salmon",
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 연어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "연필성게.webp",
+      "sha256": "0bca2001de720158af0f25b4b1b216a8c79df3e879f74960351114c2c128b752",
+      "bytes": 1670,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "urchin",
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 연필성게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "열목어.webp",
+      "sha256": "68c0d1eca5b95567653fd587d20f9f6cc128a258fde39bf4dd3a04b232f16145",
+      "bytes": 2104,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-lenok",
+        "salmon",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 열목어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "옐로우퍼치.webp",
+      "sha256": "474df6eae37e501772c9fcb579f03bc26114228128e7bc254fdce5d2ce2ae1b4",
+      "bytes": 2262,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 옐로우퍼치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "오징어.webp",
+      "sha256": "62a7f378377bf772b41c3fcba87582d50753bb9758bf86af36cfe5f3849b8231",
+      "bytes": 1656,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "squid",
+        "fish-squid",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 오징어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "올챙이.webp",
+      "sha256": "c6e2273b62283beb94a32f505f66969d6ce01fa3c1258598f8b305ca7ebe7d24",
+      "bytes": 1060,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "tadpole",
+        "frog",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 올챙이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "왕게.webp",
+      "sha256": "bef2ee50120010587c60167fbb7771bca1fc2f2a7e0f4aa8e8dc2d442143d69e",
+      "bytes": 1516,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 왕게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "왕나비.webp",
+      "sha256": "f844937e84b20c531155f2cb77b595e6e8eff65a1c7d309977bda75ca4e1fd95",
+      "bytes": 2416,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 왕나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "왕사슴벌레.webp",
+      "sha256": "41fb7d3aaf39e35a8ec84e0dd3b13bcaced5eff81002ac55afdf682c37dbbfc4",
+      "bytes": 2198,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stag-beetle",
+        "bug-stagbeetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 왕사슴벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "왕얼룩나비.webp",
+      "sha256": "ed2616deddccc8f70d9c434e9e41acf9a6d0248d61002472951c4496230eef27",
+      "bytes": 3168,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 왕얼룩나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "왕연어.webp",
+      "sha256": "72fb3a94c9f266140ad89e143955db8f216d2dc0fc11e20f5d33f0137bc4c617",
+      "bytes": 2714,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "salmon",
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 왕연어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "왕오색나비.webp",
+      "sha256": "cfe046f31b29bcfe56ce1eac0e4c25f4edffc4e5d131af1d44cc306db3fa255e",
+      "bytes": 2864,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug-comma",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 왕오색나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "우무문어.webp",
+      "sha256": "5058593a0282f47f9c316232a468985e3c5539ab9776ea0d1a0229e24c4d7b2c",
+      "bytes": 1164,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "octopus",
+        "deep-sea",
+        "animal"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 우무문어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "유지매미.webp",
+      "sha256": "15db4e3f8dfb0915d92d3cc74dc86ad3fea379e950cffd50322a649649c6eccd",
+      "bytes": 2160,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "cicada",
+        "bug-largecicada",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 유지매미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "유포루스바구미.webp",
+      "sha256": "e8c75d0019b883ee88e9b68ccbc74f8838825f8cccbcaf4aa9153a71ba4b6656",
+      "bytes": 2110,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 유포루스바구미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "은어.webp",
+      "sha256": "f3de088cbd7657fd300ef9c53196b645cea44af3a46eaf5e753c9acaeb1b17fa",
+      "bytes": 2396,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-sweetfish",
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 은어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "인면노린재.webp",
+      "sha256": "414a87883f9941e9b43023c79da638609f3ff145148819afd11cba4dbf06eaef",
+      "bytes": 2604,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "shieldbug",
+        "bug-shieldbug",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 인면노린재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "일본연어.webp",
+      "sha256": "12fbb46938b0893e3a6ae98d3260fc8f41084c1bc5575b97cae8c3cb84834c0e",
+      "bytes": 2752,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "salmon",
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 일본연어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "잉어.webp",
+      "sha256": "0509006c69565e37d66d84787ab6186e5f56ae8932fb3e188e43e7ed3bcee99f",
+      "bytes": 2316,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-carp",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 잉어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "잎사귀벌레.webp",
+      "sha256": "2a5978e9ab093871289975f4876046dfbe92ae3c64c55c8e4e51c111ee300215",
+      "bytes": 2286,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stick-insect",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 잎사귀벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "자라.webp",
+      "sha256": "fadc45fa103ceb108aa4850e4954f209ffedabaa2ce3095c6ce55b45c72f7145",
+      "bytes": 2188,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "turtle",
+        "animal-softshell",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 자라",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "자이언트 이소포드.webp",
+      "sha256": "20c1becee92f06e8d5989b039a97f0687ce48740d92618d54edd318efd590cfc",
+      "bytes": 1364,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "isopod",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 자이언트 이소포드",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "장수잠자리.webp",
+      "sha256": "584144cd87516b76b8ab47e25f6e8b631598bae487498a0055525df9f695e5dc",
+      "bytes": 2894,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-goldendragon",
+        "dragonfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 장수잠자리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "장수풍뎅이.webp",
+      "sha256": "01102dec95df1a60c67efbbf098e71d5a33e3ed59a5940ed89322a1edbe35f76",
+      "bytes": 1896,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-rhinobeetle",
+        "rhino-beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 장수풍뎅이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "전갈.webp",
+      "sha256": "361240fc2ad0380aee7cd992f64d5fe6e382ca1d76af450ede10e7e7347a6dad",
+      "bytes": 2296,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "scorpion",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 전갈",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "전갱이.webp",
+      "sha256": "e760d6ecefdf762089614fe1328bd6e7093a6f528baafe74ab74191be1a50d66",
+      "bytes": 2178,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "mackerel",
+        "fish-mackerel",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 전갱이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "전복.webp",
+      "sha256": "d273ab1405bb385a09557db53f1dc6a86583419f29b152d9c0b25bfd7898ee8f",
+      "bytes": 864,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "shellfish",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 전복",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "제비나비.webp",
+      "sha256": "704a2dc34f2007c37fbe6b09bb405c96899723fb312a9dc46c90131745d0f91b",
+      "bytes": 1876,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-blackswallow",
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 제비나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "지네.webp",
+      "sha256": "dc1edc689a8883098a943ea197246fd5f78022f8d830b7a0f68f6ee3ee8e0546",
+      "bytes": 2416,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "centipede",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 지네",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "지중해담치.webp",
+      "sha256": "99a6df0a98bf3514ed7c716eb2b06cdc534d86e04036f30d650fbc7a10c94b57",
+      "bytes": 778,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "shellfish",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 지중해담치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "진주조개.webp",
+      "sha256": "39abced5364e1e0adc4cf5f3771c6664d07a2ea8df1d71f13bf6b688fd177b28",
+      "bytes": 858,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "shellfish",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 진주조개",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "참게.webp",
+      "sha256": "495c052dbfa785543f40ea23946cfa8e2d87ecb4a36808ac832485be7ffb6aea",
+      "bytes": 2282,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal-mudcrab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 참게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "참매미.webp",
+      "sha256": "51ba0fe3c27e32f6fd3e828d65038128a597be81e1723d72186b21f9d8b32e8c",
+      "bytes": 2004,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-cicada",
+        "cicada",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 참매미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "천사어.webp",
+      "sha256": "4e4ee00f62f4d0b24816658ae98383644fa713e2fe681dbf4bb68d6b6eff3ab3",
+      "bytes": 1734,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 천사어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "철갑상어.webp",
+      "sha256": "54743e2e3d3e3ac0a599f53ec18718bb382227ab60127fc0f5f3663453e96f93",
+      "bytes": 2008,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 철갑상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "청띠제비나비.webp",
+      "sha256": "3c6c703e1eeddff18ad06940a8388990256ce3a33a10ea343ff2321dc4821809",
+      "bytes": 2034,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "butterfly",
+        "bug-blackswallow",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 청띠제비나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "청새치.webp",
+      "sha256": "c7cd8e79f635c50b350c66eade527b3a35bd8f745ba62977ef9480d2b1256aa7",
+      "bytes": 2974,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "marlin",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 청새치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "초롱아귀.webp",
+      "sha256": "15f4ec77997255a7824d8dd73762647374221d467ab697330256313521af170a",
+      "bytes": 2086,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "fish-anglerfish",
+        "anglerfish",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 초롱아귀",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "코끼리장수풍뎅이.webp",
+      "sha256": "3777eeb3b06b5e5677362d037cb62bd20361d14080eb4c453c26d56939641a6f",
+      "bytes": 2644,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "rhino-beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 코끼리장수풍뎅이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "코카서스장수풍뎅이.webp",
+      "sha256": "a1f6a79cfe0af80492529fc50cba9728556790866665fc8896dc074da3819e4f",
+      "bytes": 2416,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "rhino-beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 코카서스장수풍뎅이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "큰입배스.webp",
+      "sha256": "90a4a2cec6c09796c9c257cdaa6851b620cf4b9bf6e3a7e80649d6270a5c957c",
+      "bytes": 2338,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 큰입배스",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "클리오네.webp",
+      "sha256": "e0d273eef964ca94ea73692c7bd9d9835aa47242ea6529919439ef99b12927c9",
+      "bytes": 1508,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "sea-angel",
+        "deep-sea",
+        "animal"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 클리오네",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "키다리게.webp",
+      "sha256": "fd6b9c9088635b078963086a08f42c57e87f199846a12a8ce48a9bad86bab75c",
+      "bytes": 2120,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 키다리게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "타란툴라.webp",
+      "sha256": "53ec6b03cb2cafb52d2da02df390b0ecf5377243a6e44366e80bd17f57c68862",
+      "bytes": 3626,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "spider",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 타란툴라",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "톱사슴벌레.webp",
+      "sha256": "93c09cdedfba9136ef411b158334b1b5739e94b1b0a8bcc8cdb875b0e944cbdf",
+      "bytes": 2260,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stag-beetle",
+        "bug-stagbeetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 톱사슴벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "톱상어.webp",
+      "sha256": "4c2d485853be655238b1a02f37f9fbf1500fc022d83e55540cf290e6cf51ebe0",
+      "bytes": 3252,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 톱상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "투구게.webp",
+      "sha256": "38d1045cfcf79901313bacde722ddd6aa1870218a35f34fb9fc58a833c941790",
+      "bytes": 1040,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 투구게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "툭눈금붕어.webp",
+      "sha256": "ce07a5de0b642eb9fc55e6b94ea78c88ef3d985025b854cfc97d97bbb0db094d",
+      "bytes": 1406,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "goldfish",
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 툭눈금붕어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "틸라피아.webp",
+      "sha256": "a88ce67757d1a587bcab422e16456c0666ce199ac3744c00155dc72090cf4ae3",
+      "bytes": 2530,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "pond-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 틸라피아",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "파리.webp",
+      "sha256": "5883ba8985be0da45f4726b3939b64a31f930a62335bfa258af0113dcfa1b875",
+      "bytes": 1156,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "fly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 파리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "풍이.webp",
+      "sha256": "13f38db73c3deb729dacdc7ee099cd52091d219f575ba2566f622cf8402e3e95",
+      "bytes": 1816,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-scarab",
+        "beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 풍이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "피라니아.webp",
+      "sha256": "0cdd79855a5e43fb05d61d589270c917f486196731b74383680f51129d14e30d",
+      "bytes": 2050,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 피라니아",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "피라루쿠.webp",
+      "sha256": "3f3d189aa14856f7c725143449646fa130b928dbaf2a284de9e1fe3612409506",
+      "bytes": 2630,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 피라루쿠",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "피람.webp",
+      "sha256": "3506bd82b376dd2da8ea10519233a4b2704b1adf21c3a74186dd183754435b6b",
+      "bytes": 2288,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "aquarium-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 피람",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "해로동혈.webp",
+      "sha256": "b6c351f41697f60f62c40bbddee20cd5796c960b195ff36be44c0e1873f2b5ee",
+      "bytes": 1092,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 해로동혈",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "해마.webp",
+      "sha256": "642c0d65be4a256b7119b699937a794e7fbb783b11404f6539df3e27c34c7429",
+      "bytes": 1788,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "해삼.webp",
+      "sha256": "2111cc573508438356c1518404ab55b78cc161a35a4cd84a2d46ac7989384755",
+      "bytes": 1104,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "sea-slug",
+        "animal"
+      ],
+      "env": [
+        "beach",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 해삼",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "헤라클레스장수풍뎅이.webp",
+      "sha256": "d1613a6687b3b34c74bf156e4dbec474e9c98a67529635932766f9b35af08e11",
+      "bytes": 2436,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "rhino-beetle",
+        "bug-rhinobeetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 헤라클레스장수풍뎅이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "호랑나비.webp",
+      "sha256": "e349ae3cb315e113e6f2075a775cb67bb99841ac8a47b9e13c87aec811444ccb",
+      "bytes": 3594,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "bug-swallowtail",
+        "butterfly",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 호랑나비",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "황금사슴벌레.webp",
+      "sha256": "9308bafa6d68ae230a9d19c6e996416f15f6d5bb23a67cbf8b0e73401edb5526",
+      "bytes": 2560,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "top",
+      "subjects": [
+        "stag-beetle",
+        "bug"
+      ],
+      "env": [
+        "meadow",
+        "forest"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 황금사슴벌레",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "황어.webp",
+      "sha256": "469585ce91538f0fb814b57fa0187b22f17a3176827dc0b705f9e8e5a8121b73",
+      "bytes": 2240,
+      "width": 128,
+      "height": 128,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "동물의 숲 도감 아이콘 — 황어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "흡혈오징어.webp",
+      "sha256": "dfb6e15090ba11fcb6e585ec1e3e625a50d945bb0c262a3cc30e8df73511f616",
+      "bytes": 1592,
+      "width": 64,
+      "height": 64,
+      "format": "webp",
+      "kind": "icon",
+      "style": "toon",
+      "view": "front",
+      "subjects": [
+        "squid",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "low-res"
+      ],
+      "note": "동물의 숲 도감 아이콘 — 흡혈오징어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    }
+  ]
+}

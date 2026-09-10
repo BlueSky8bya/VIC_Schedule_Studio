@@ -1,0 +1,4810 @@
+{
+  "schemaVersion": 1,
+  "source": "데이브 더 다이버",
+  "slug": "dave",
+  "origin": "소유자가 2026-09-10 직접 넣은 상업 게임 캡처(데이브 더 다이버). 파일명은 원본 캐시 해시 그대로",
+  "usage": "옆에서 본 픽셀 바다 생물의 단순화·색 온도·심해 분위기 관찰. 자산 복제·트레이스·public 반출 금지",
+  "updatedAt": "2026-09-10",
+  "entries": [
+    {
+      "file": "__stjdNciQ77Musk1K18bDiz5Mjyj-UCjQTo1KFb6paOj0VNQzBUxRVvdp7xMS9sELSBIcOEgtI_qLKRRoRCnA.webp",
+      "sha256": "f47f1b38c8f67e71179688d1277d88f1db4af309969e5a2a5af204b60d76d414",
+      "bytes": 1580,
+      "width": 158,
+      "height": 38,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "squid",
+        "fish-squid",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "연한 갑오징어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "_-jBf5KiiPnJy-QnO5rlUfcFB3E4G6l27crHLXd9yTnvLL-14AiO2Z8ZTJ9dkqm-MYzTX73R8StuO_drhYbX7g.png",
+      "sha256": "76f823c2b6b4a84480585f2b6d43c9b8fb66c59f9985d25e3d3e7dc57d1fc141",
+      "bytes": 1329,
+      "width": 132,
+      "height": 60,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "mackerel",
+        "fish-mackerel",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "고등어 — 등 무늬 파랑",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "_EJ6FCeKRGCcumTgiH9HNdv6LC7PB6LRrfR1eQgx5cDIzGK87D_2ONyoWWGqDY66bMxHWGrnYlCzy8b8EFQpHfMrh0O55DXtn1xCmAUe2l9a5QBSR6839ewL7rfgK7iqyLNUHuBoIivDfHvQQY0jGg.webp",
+      "sha256": "dfb91c2b73558b76136b8ce66edce8307849577e3e4c75845cc8ce8478b1a44e",
+      "bytes": 8288,
+      "width": 192,
+      "height": 132,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 왕게 정면",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "_xe-t4XOwcEh8p8cHmKlGtgX3XRAMDWB-OaVCHsZS43cf3HZh9-3pYn851g2mUuXxmuRFfbhZrizfqLnU2Wtmw.webp",
+      "sha256": "13920dc93600d5b93ea146133414f6eb4b154b8356277717794d5b76e97fa491",
+      "bytes": 1098,
+      "width": 136,
+      "height": 72,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 해룡",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "_ZhMFjBs4_UjjVlbyGZyHZtami-M0KzHhY8lK4KW_Jfw-L3zr5yLOD3bOyUyVsw6etgNNGiNI1KBkvgmDKbR_w.webp",
+      "sha256": "cc9a1c74c26704bc2bc9c8f4b5533193bcea05af533e2e40374d056e2df7810c",
+      "bytes": 1078,
+      "width": 152,
+      "height": 62,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 얼룩상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "-12NrUXy5588dHwNINhyH5KBOF61yyTZcFBiCFFCjUQ-782vg0YdceLVt_knRooG3JRnVwRfxRkdN_KfRSpWCbHWMtSFbrJ3EvPlcJly-dj9H5KEH3n6Gr3S6o2kiXOa25QeckhFWw2thPbr3SqCPA (1).webp",
+      "sha256": "2451648be87dd10d636a85dffb7399ca8d9a5e46dc381a495ceeea9e877a6984",
+      "bytes": 1250,
+      "width": 210,
+      "height": 126,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "duplicate"
+      ],
+      "note": "귀상어(같은 파일 두 벌 중 하나)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "-12NrUXy5588dHwNINhyH5KBOF61yyTZcFBiCFFCjUQ-782vg0YdceLVt_knRooG3JRnVwRfxRkdN_KfRSpWCbHWMtSFbrJ3EvPlcJly-dj9H5KEH3n6Gr3S6o2kiXOa25QeckhFWw2thPbr3SqCPA.webp",
+      "sha256": "2451648be87dd10d636a85dffb7399ca8d9a5e46dc381a495ceeea9e877a6984",
+      "bytes": 1250,
+      "width": 210,
+      "height": 126,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "귀상어 — 큰 덩어리 둘(몸통·머리판), 배는 밝게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "-qWAegh4y-d8v6CAZyMaq0G7c3fEn8GAGlQdZjj01xAUDS_pQ90TiQQ3BZ_kXet8MWtG1y84Zh5rNslhqnTOg6qJ0ugt3cUXec4REAR16s-SlUdQfsrayCGwC90hBXATifMOVf6HCqfDliNYweShcw.webp",
+      "sha256": "5c962e659534a9c8b87328a6f55949e71c4d753ef655b4017bf765cbc5e1dd81",
+      "bytes": 6728,
+      "width": 240,
+      "height": 144,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "게 정면 — 집게·다리 좌우 대칭 실루엣",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "-wjDq4jyL9BOXHUciyiohWFbsBiG7NTBE80jPPXkygog_fCqbEorwtWpfljKSGeUXAVjHqQGfsH0E8YMeUsrgA.png",
+      "sha256": "4e92a213c732ea3c0225e02269aec989150b13fa755bd9e49d00bde5c9fcee78",
+      "bytes": 2667,
+      "width": 192,
+      "height": 116,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "tuna",
+        "fish-tuna",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "황다랑어 — 방추형, 노란 지느러미 초점",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "0-5uhgGi6i83F0LEGoxCgeqww0t7G_GzDrYkVJhqmlMN4SzhPFBQzDaD9g5X7llgrQClfOIvAKp2PO_Xi3Q7YVxbTksPdljPpG0yswbAhAjcyUCfzEQKVXaU3Gq5GLIpFZZ3ihVRHvAK6BPmGWks6w.webp",
+      "sha256": "ce0e828cf1e57e137fbe472d751f852a31e73f320a55436f1e92e388c89f14e9",
+      "bytes": 2298,
+      "width": 220,
+      "height": 98,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "marlin",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "청새치 — 긴 부리와 등지느러미 실루엣",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "0dCKf5dRQpoTOrirrJOuyF7qF83ZRoY1BBDy1d-sH4WRDJ05BVyrFMfQ2ZrvbfRcglNpCT-MWp4tOU97kyFXoKzwucbySQsrEwpxwvkqI7EIcNKy9oywg46GJttBDTbtcSfqPUowhOQU34WUOI3dZA.webp",
+      "sha256": "dc65146e672849ce22aabd4de764ab7a8853d5f5eedca110c41e4105a45913c6",
+      "bytes": 2472,
+      "width": 214,
+      "height": 94,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "tuna",
+        "fish-tuna",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "참다랑어 — 은빛 배, 진남 등",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "19L89_K3fbauCxA-ZFb1T5vLi0Ro0Dyr1NyZlSkEaKoVXuXqhpAdrT_cKrYh2ayX8ii9Pan4eCgSzvIDczywCw.webp",
+      "sha256": "1e9d9418d8c544e930533811f1d4c817d4a3f77415d1d4049e0b3dcf2103f2e0",
+      "bytes": 1370,
+      "width": 166,
+      "height": 68,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "대구류 — 연한 갈색, 지느러미 세 개",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "1ZBuNb-KOBRR7i8UmN-xfzklLMlqG0bdRk4etVe5HpR92vU2GyQy68rBUtJl3uGcNv0DG9nDTUlTqv6T5uDQnw.png",
+      "sha256": "4e5311687870e3cc762cc60c070d22698d413d598b1bb1cf05b0ced8666ae644",
+      "bytes": 2235,
+      "width": 196,
+      "height": 114,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "oarfish",
+        "sea-fish",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "산갈치 — 붉은 볏, 긴 리본 몸",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "207597_218580_5945.png",
+      "sha256": "d60bb1f337098f3df81c6b50e294c381ac91beb263ade5515e9f8b296200f6fb",
+      "bytes": 1902343,
+      "width": 1280,
+      "height": 720,
+      "format": "png",
+      "kind": "scene",
+      "style": "render",
+      "view": "wide",
+      "subjects": [],
+      "env": [
+        "sea-surface",
+        "sky"
+      ],
+      "time": "day",
+      "season": "summer",
+      "role": "mood",
+      "flags": [
+        "has-character",
+        "has-ui"
+      ],
+      "note": "낮의 열대 바다 — 배 위에서 본 청록 수면과 흰 구름",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "29yX0vpBMUkZh2tq0Xhiyqj9HaONN5L-yZAzTunhJhaCwrPLdKjKKEqXwp-sSgi1oTZ9QWYPbkh8kmu4M72K5A.webp",
+      "sha256": "f47dd3215218ed47a543accfbe9e7917bba1d35901db12b6045ddef599dd2715",
+      "bytes": 1450,
+      "width": 170,
+      "height": 82,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "연한 대구류 — 저채도 분홍빛 회색",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "2GYkbO-p6birLyANMIkU-ruPhlvSZku3wDOLQ7XRhzYk_g_1y-b8dSlQ7pCZ1oWNBqtzrbCmx61ti7ASoMrL1w.webp",
+      "sha256": "ff2f5300db8231df1074e44eaac2175a07340d9046122bd4167a0acd92824316",
+      "bytes": 686,
+      "width": 96,
+      "height": 30,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "어두운 갈색 능성어류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "2tKTRXD8MnZ3kFFqhGeWmnACeitilEUgXZG7qzvcvzBJQxcuemRcmjlkaL4CKzaPyAHa_6ZcF0QFEtHFq4A7jQ.webp",
+      "sha256": "623da645760d48a50423edb5de6800ffa091e7d017b3cfeef8e3d38a4fa1dda3",
+      "bytes": 1866,
+      "width": 200,
+      "height": 54,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "꼬치고기류 — 은빛 몸에 점무늬",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "36shC4RHqw5kcrnv5HxaH5ei-MVW3PM67Vv0iCfiPq_cgR5H3xZ8doqFiRQ4sekq7-cKVUOxhYf8oi2_GTNsjCVQ1t8OR3JlzjkHfwR8a0Pm82n-7aVM-9-iGKmyEkC0MGmCJf-PUNh4hXzhm1zBOg.webp",
+      "sha256": "4f4733853899bee4b2f89a93f1fe4d77f0d7a0f8f358faf674f219b3c2944219",
+      "bytes": 4800,
+      "width": 186,
+      "height": 72,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 새우 — 다리·수염 가는 선",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3MB4JD2aEkEu80RbQ7Ij1Ug_rAxhgb7ZENd01KLfvrpMiIz4I-qoTqaPy1FKBbINIF8BB2Zgi-tF_SytnkHEqg.webp",
+      "sha256": "ddfc197d5a4d252547b0529724ae1fbe5d5068a203b54881b1f181b2014db438",
+      "bytes": 1176,
+      "width": 148,
+      "height": 58,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "초록빛 대구류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "3oJ5463iISh_3xNoU8IADSIzbpjh53ATjagmYmyrIWNqOVY76U-4-Lv008hf2QK_CoEK8BtUiq9rYMQroYXtXQ.webp",
+      "sha256": "7b38839e326b6405635d42504b1d53272a3381a23d246085ac322069cf416d80",
+      "bytes": 1496,
+      "width": 194,
+      "height": 42,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "eel",
+        "fish-eel",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "검은 점박이 곰치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "40e_xavcdCDpGV9S9t2YbcTipRK43Ikw8CIGFVXtcEK1vaZohAnMQGhf-SVYwTi-i8j5jZ_q1FiTVXkfCSyeCA.webp",
+      "sha256": "db4668dccce9b4ea3deb8c0a93c3ceb7d83a41fd5132e651cf4fcebac0abc13c",
+      "bytes": 948,
+      "width": 96,
+      "height": 118,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "octopus",
+        "deep-sea",
+        "animal"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "덤보문어 — 연분홍 반투명 덩어리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "44zzj-sJMNlmcBwlUSLmyALxtCekyo5LabrLczFipuSMpDL4F8Py8gVmZtURVJTqDTlde2RG4qRvvGPLhsvnrrBHYpqkRsGXxE4w1oH6iiXFPVNqUZ6bE5Qkzln3GvI3gBfk_3NcfEYiLAGDv08S7w.webp",
+      "sha256": "e75ae83f84dd524cc4e1f87ec9939e8677640ca7ea54389e6c0db20cca92c976",
+      "bytes": 5334,
+      "width": 270,
+      "height": 90,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰 가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "4auU4a5gKPx3oE_7LMX0SFkYOUi7C7VRRjeT0JjCbp8r29nUWE3oj4lAXhYDSnCC2lY1IdBiCpJhqx0Zgy2dNg.webp",
+      "sha256": "9ac150c89ac1da787e7214d62a1d361f7171826c292bc4d97864441b9fe27803",
+      "bytes": 2358,
+      "width": 140,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "turtle",
+        "animal-turtle-sea",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "푸른바다거북 — 위에서 본 등딱지 격자",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "4k-EgqDpXkq9KbPIHjL9WPg8riqf2iZYAmHdfBEcpdq5zGUVzqRK1HsDTanwDdGuNxWaqfyZMPQRWFm78I2DffFXebeJluda5yWGzeSuACnkMEjODIJR1UQ0U5YE8IFOoWCB6VAOdzE2N8bGoPMRaw.webp",
+      "sha256": "4cdcdd4d7ad8e8bbeb910786ff49c4709954549bfbb63f95290a28df1392ff81",
+      "bytes": 1076,
+      "width": 212,
+      "height": 128,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 귀상어(앞쪽 사선)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "4nO9K7REpkCQFWulNN2wO5paACgNVPefJxC_lvKTqwqNHlLsJ-vv6YdXJUKuYswk_p8i1GsgdLZYkqcBydBIJw.webp",
+      "sha256": "1d5eb9349a18479647d2ed2a2cf55ad6b601465fb3d2f37974da1a7098171892",
+      "bytes": 1210,
+      "width": 152,
+      "height": 86,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "전갱이류 — 검은 꼬리, 은빛 몸",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "4rLvK2C4i3Rfoy2HYjbzIsO-7ws3g6ZRNlzYejJsQNT8vrIUe6N__PwcyZMlykBea71XUces2Qlg2OM56LwRZA.png",
+      "sha256": "6c6c713dee3a4eebf8c602b7a847f39b914068f5308db7442bbf2e7489244b45",
+      "bytes": 1370,
+      "width": 132,
+      "height": 42,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "초록·파랑 앵무고기, 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "5VqjwWYqoXRX6oAGufv2MndKgpyUfCwv9DLKIZ-Kdk06DQY70hsPQh4sGOtNMO1u_z4TO5R5Y4njO6-AVLWJLo6TO5mbY-xK19otevMNe-aTLFm1MUczcQek_Ar5VsBbd_NfX-d4lhwFCn7zNai0uA.webp",
+      "sha256": "ce34f8650290e3041e61f41cd5cb6f1557ea378ffd3f2b089652284387a81d4b",
+      "bytes": 3434,
+      "width": 168,
+      "height": 64,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "puffer",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 거북복",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "5WvJag0jZskcPvOoLMO16mxnJW4t5M3ycZ9jRHsDoK8vaGUIB8LKkAq9wnsWBiHPryO_auXixJpFEVPTzTIfC6a2z4cUlYV2Yu5XROJsVeMVoXWSmCe0OrpWKyhqQi3EGEYhfHrY_l3vaGJDoU3nXA.webp",
+      "sha256": "b7fac3ee3c943fa32a7a5ebed96ad1ea1908d67c32509f97ebe91c04c101ea98",
+      "bytes": 1552,
+      "width": 210,
+      "height": 86,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "fish-halfbeak",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "파란 지느러미의 학공치류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "5ZKzbFN4hNxSw0md3naRaQnGKAG_fJ8AoWXTb5HaPWxF5PAPrkeUiDrw4R9JMM0K7N-mjoQDcDnGnHEJuVbcp5BLIhycGh3NounSSbR02kU_ZkCIUsqxGgL4SDQCVYhuag65SEIpf884SUPGxbGK7w.webp",
+      "sha256": "002b6dc67616f60b2c7a562eee5796604ca158e00772fb382aa2971dfe400819",
+      "bytes": 1232,
+      "width": 202,
+      "height": 72,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "dolphin",
+        "animal-porpoise",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "분홍 돌고래 — 두 덩어리(몸·등지느러미)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "6-SQhJE4hYkEUjP9nf1hx0ftnLu8kcc790qnrbiL4X_qoy_2oebGxdKDcUbfum3RcJvDD8OVh_ODMTmxSe6m0R3qCbO_5PV73b1YwQjKYl-nKUWLBoxJ1XLTqft8bjYcFvIBi-piHwiC_G-e_mOVAg.webp",
+      "sha256": "b967d14dcb0fd884f729812dde590448d9d2aa113109952e466ca398a17a2152",
+      "bytes": 6244,
+      "width": 270,
+      "height": 90,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 바닷가재 — 집게 크게",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "664ot_yftShVcmP7n-CvPTv2udm8T_mXuAw-an4YOoGDyla42_ePvGo_zhKPSD5Q4aMaxdu5OStGq6ffaeGPA4pKBo5o2fhzCKFgjQ6zSis2J_ZnB_UsS1N6MCMS7_wNy7VsoZoi_SToAkNrp3gBFA.webp",
+      "sha256": "35ee6e1cc534250703c74767a3db042c359e7343028bd99e18c83b793483784a",
+      "bytes": 5236,
+      "width": 216,
+      "height": 108,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "닭새우 — 초록 몸·붉은 다리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "6SFf-GaAoDHbcNU5IUK34ZrcD6EXYd4No3B8MP96zSunCPIxWtBD-XGLU64DJWU_ha1Z0_aAo_dW3qSMj8xq1A.webp",
+      "sha256": "2f325c0c216f697d9c79c7fcd4975bae7950534515e58309e478f4185c6947b5",
+      "bytes": 598,
+      "width": 128,
+      "height": 42,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "블롭피시류 — 회색 젤리 덩어리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "6SqOqjSTLe-a51hBEjKbdsqNUUVrztNtbDBplIBelgLPWqaqJ21h5hEuO1aLzUAFkR9a4xRIm-YDbvXHo5b2Mw.png",
+      "sha256": "6dee06632f70c6d838a326d9ca8e3a466908fbd4cd721e39fe54bd88088a5178",
+      "bytes": 1007,
+      "width": 110,
+      "height": 40,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 줄무늬 전갱이류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "6upNzY1pFmFPdPTfugCRDM_qG2Ks2xuKqst3-KjrN__GyGjSPt_KRJ7E3CPPQfBHoTEjw1_kvxhvMw4XUcoc9DOaWtR21crAQXtMl-TyagKN66i7LKZg9hILCpzoyR3G-HQ_YhYf9MxjWJWodXj-Ng.webp",
+      "sha256": "b71d6fb6339cf3c10b780b739a76d362faf879d7d948b93c7009fb9f1fd15c4a",
+      "bytes": 1192,
+      "width": 208,
+      "height": 54,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주름상어 — 붉은 아가미 줄",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "6WEK_hlQc1kR12rUlgDUStiATb9jy6UTmj90ShPHnX3oNKuFOMbdNPaXC0rnuxDGXZxVgdSi8pmaR1krYZQojqtIUVh4w-ASSCr8HcNB4WoBAVwWCqOEvFo521TjdZaJvEGUncS115S1PaidcpgW3g.webp",
+      "sha256": "70ef28e811d5425888f386bf757e8b2ce1ff1d83bc35fdf49a320d5d1f447a28",
+      "bytes": 1242,
+      "width": 208,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "백상아리 — 흰 배·회색 등 두 단",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "7jyPluVJGI4it222MPPaZ9ux_OkRMVM9432Qs2atGNoGP1GdRw21cJkwqqB7McBmo9F-tB4LEbqLSzMRwGDPnA.webp",
+      "sha256": "370a3a6b35812350d7f09673d38572e26dad8f9fa90d1f6bfd21e3309390dce2",
+      "bytes": 538,
+      "width": 48,
+      "height": 40,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "urchin",
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "보라 성게 — 가시 실루엣만",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "8CelmOpjg260sz-DB6zoshJ1oNTHFek1hp3W83AgtzD3ihKUULl6_XVxdTOv7MX2LHwxZVBPGnARhj5lWQVMSxrohumG2ZxVRGQWSOgA4XwttZzwbdC_Hq1WeaxENmTp9LDG3mP2XmEajfZhJrvkzg.webp",
+      "sha256": "145f9c1cc546ec50e601249fc0ccf67995f4458d5ee47d9073ba04c7670ebd6c",
+      "bytes": 1484,
+      "width": 212,
+      "height": 116,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "청상아리 — 파란 등",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "8p7RKEj0kVYe-NxWf7wFCuKbecQCM37xBJG8On7O7jcGUFvNsRMoPRDOSkWX_XR_TzoLM4BI94Leer1QzskTBQ.png",
+      "sha256": "78e3688d89a685a52193c2ece9ea538870d36110a7989aa2c434ae98db663b5e",
+      "bytes": 1911,
+      "width": 108,
+      "height": 102,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "sea-slug",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 갯민숭이류 정면",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "8RtNUhfHGnXk8b-kevHar3uvGEyOA9l1pYrDL-xsJzUafaN7jiSkHkm1rTONhFtGBznB29tKvzced9Aa17V2IDmWX48yb9xvRLGLo1yAlPlurMtS4nlxyDA8dkUbZMmeFEfC197p0MGqKWjswF3pjQ.webp",
+      "sha256": "2260c7865d3c030ca9164ed296dbff91e638cdf113013cb0eb7f0762934bd24f",
+      "bytes": 6388,
+      "width": 270,
+      "height": 90,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "파란 바닷가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "8uTzbztA_C4eok08doSpILniLyXSNxiRJW8emD7n48aMzbruCy5xpy5M7FyyONOwjuhIMJ6qpF-5DnovqTwH3A.png",
+      "sha256": "265ada02866f32f81a8e97a751d828a88d06292e85ca3a52ca067e0b2a4c7767",
+      "bytes": 1055,
+      "width": 72,
+      "height": 86,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "sea-angel",
+        "deep-sea",
+        "animal"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "클리오네 — 날개 둘, 반투명",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "8WVcC0KeMHfkRRx3P-TVWuW6QCkr3cnRN5Q5UZNjKVl6ox5NB2gtVc9DztVTHEioP61tiWgSy2V-x_-xUO1c_w.webp",
+      "sha256": "c02e7b7020bac104e40c63830d8e3444e45e220b68ef70fb0a33c787f551233d",
+      "bytes": 1792,
+      "width": 150,
+      "height": 88,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 해룡(위디 시드래곤)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "9J8QkJ2kY0IcOH6bPBn2RmHQnEhIluVh6na0m9c6qtojNXD9kDlXC3PULa7pazEyCc9BSXgtZWN_Nsr9X-jmUw.png",
+      "sha256": "fb5d792c62db63a5340f8d1a2ca00cac2f3386382c3b4d178cad04ff2c90320a",
+      "bytes": 823,
+      "width": 90,
+      "height": 32,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "파랑·초록 놀래기, 아주 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "a2gLr35VvbqL-xV1HOkqeXfoiVsbEhtMqidmy2VTN8zG5Tmtdg13KF1Fp2y3dK2VWi8HIycVYIWa8t_vpD9L7hwTVzZ3-rD3jRWS1anRsnGK98N5nQA_6Z89fP_LSayhRMf2Z_i4qIc9UWeRvRXvxA.webp",
+      "sha256": "c05f69a19b466054b0301fea2d3de4bdef96e9e85bb6f92776b1d94ff01896c9",
+      "bytes": 1058,
+      "width": 210,
+      "height": 88,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "whale",
+        "dolphin",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰돌고래(벨루가) — 흰 덩어리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Aasj8eupDhmjZDso4J9tYUFmn3v0FhYraD0Wrrnqki8HsSTpJUOCCwTAkVlUEd2CU5ulEyavw43y4XVKJjGLcUYWkoD8hOIGGdD3nRgLl3vKZ1bZzC6s9ii0Hjrr_6HFA8B9wO1IlgJw9RGwVbyotg.webp",
+      "sha256": "64b3dfd045c98e3a0877672e280741abd77837d2ba02148bda5a832471560514",
+      "bytes": 1194,
+      "width": 212,
+      "height": 128,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "백상아리 큰 그림",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "aaXE_Id8W8BFJeJzKZ_fHub4n-03JAQK--IweTLwsi2S-aj-mGvI8_t2boPb-kIo_sqUfs6-moLxEtS61onldA.webp",
+      "sha256": "21ae5b91c79603deb5beff9706b2abf88ab738ddc7379b505caade2b1e6479d4",
+      "bytes": 1540,
+      "width": 140,
+      "height": 68,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 얼룩 능성어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "AggsA_GB7ncBMgcxzgGzFjvz0Cs59_TcMv-nKS7HfTJGFmQ_Kol6bPX8WUn3AANQj0skLjc8IZFJ676XRdZ4Vw.webp",
+      "sha256": "974e205f8a615bf9af6224c788a7d126677f1e610819ed44c922f45604efd773",
+      "bytes": 1082,
+      "width": 156,
+      "height": 80,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "squid",
+        "fish-squid",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 오징어 — 지느러미 삼각",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "AGWM25tlSL2E3w6LFDY-bHLLgzLhu5gOJ8kofnBObYJOMCf_9RqSXTxx6_SaNQmG0m7ciZN6VFaQyXJ_l94ePA.png",
+      "sha256": "c0c6dcb676cc32877d002877a1fb0fa9ecb14746ca9d4444dac3216e839a07dc",
+      "bytes": 862,
+      "width": 84,
+      "height": 54,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "빨간 눈큰 물고기, 아주 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "AiizbqmD4qX3i0T5nST7yymNaq4bTF-14jyrVdskSB2e0FTnh75GmscTNs75N4pcajf_1vos9392J4L24c6Q0w.webp",
+      "sha256": "941c0f03444cb2a823389dabed605a21201bb48846da6d32be6d4e66cd938aba",
+      "bytes": 3712,
+      "width": 200,
+      "height": 128,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 거미게 정면 — 긴 다리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ajGURb1KjZRe1uo3x2dPwpUfXVZFCjX86VePEcfAp_RoLybERd3K2ZqAGk_aBsdDn39sBuU-t0zPl9Ol69YPRw.png",
+      "sha256": "b946793a0f5d204fac71ebc0ad3d31960e8df37a48a5c30ce8d022fffb66471a",
+      "bytes": 1212,
+      "width": 124,
+      "height": 60,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "청록 작은 물고기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "AKtvBfm0oFrSpfl4Ikl-0UcCbENM9ysD7fQ6VEZFmJ5-aJNuGJKWRmeKvufZP9nOsfEXNzzQIa9SML8dTLgC3w.webp",
+      "sha256": "648823c10db02598d5a22167c22eea337cbbe9ee9beea1a04f04a8699bb0afc7",
+      "bytes": 1184,
+      "width": 52,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "얼룩말 해마 흑백 줄",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "aWLtkLWuRs05877DMXnFP1laOFiWk1E6YFMCYwixg6F6xYQmBpL3__bUz1odUgGIhnCO0jKlL9F7Hu_GB_R90A.png",
+      "sha256": "bb3dccdab4479dac7af3256215a3ccee6be2f5d4f0f92c6df8347e1bfa90c59b",
+      "bytes": 908,
+      "width": 76,
+      "height": 52,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "흰·주황 흰동가리 만화체, 아주 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "B8ntN0pIOa_bfLXyw4Bc90m7PPc7ZQJgnYOZlwu6PiRFNO-fDdJu5SLsNl5g9AQ-FP6KH3sYKHiWkAivJYYGuQ.webp",
+      "sha256": "5bac21e030f3470e2e80f5928c9bc521a300e865910bdc1b6ce1f67caa036ea3",
+      "bytes": 2556,
+      "width": 184,
+      "height": 128,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "turtle",
+        "animal-turtle-sea",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "장수거북 — 등 능선 줄",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "BAGo31mGg9BtFK_th3GaNn_rxx0FhonISxic4B6dX8ZMmHP0ByBQLGO2EGqizJjFAvsFhprf1eK45QKOEA1_Gg.png",
+      "sha256": "be0f87c84d94f973a82586bb379465592d489de129a5075ecdc6846e295d2e25",
+      "bytes": 875,
+      "width": 120,
+      "height": 26,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "goby",
+        "fish-goby",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "모래빛 망둑어류 — 납작 머리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "baxTBJUZdZVTAUHGsKumHW4wkhf7wmC2bFVJEoyBdvaWE_qvhqFfTgCY9DVRlnVxgh8VVtUVKJhGyplR1nhUlg.webp",
+      "sha256": "4ed020da5551841e802b9abb229ec8d9a6ccc6a9c3577a1397ce4fbbd2519e12",
+      "bytes": 832,
+      "width": 196,
+      "height": 88,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 심해 물고기(꼬리 말림)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "bciXMIe5KY4M6B7ox1gY5szTYSBFNBpS1gSKJs4VeDYMsC52TT5AtMdE1OjQ6faz5NzEpu3RBXoSz8LYpW9H3Q.webp",
+      "sha256": "8f85b234136816c2a44e6e82b0d3004edea29dfa9e9324064e6469565e69094c",
+      "bytes": 756,
+      "width": 118,
+      "height": 74,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "검은 몸 물고기 — 실루엣 위주",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "BD3Ttu-95wB6_j9AIr1UIIFympLhXsT0T_jXmQHNihaJtEKFAH3JctQ2VuZq_tZ3MK_pyVclY-qP0ld4eygMbL1kKngqn9PdcGznHEPkXgq6x4RXXjG6yzaAUNfFXRDoEFjkxM4SJfZfcDHFSncibg.webp",
+      "sha256": "b60da6cf04e57336dde0b530673ef0c68085baafafe1e3c29d92c1db53b26c2c",
+      "bytes": 2294,
+      "width": 210,
+      "height": 126,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "뱀상어 — 줄무늬",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "BKvLPvCfteeUxWNWbf0MwsLmCesJlZJE9fUlMB7hwH4l_hZGTmJTpPcfN6ueCTuRksAKRIBAJpMt9DEAVL_pjQ.webp",
+      "sha256": "ff9eff64e949d17f759dc3bcb86d2fff18b0101da0633b4769f7602020350d70",
+      "bytes": 2816,
+      "width": 124,
+      "height": 102,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "jellyfish",
+        "fish-jelly",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "계란프라이해파리 — 우산과 촉수 두 단",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "BNC9QKIyOAAHWAIWduckGreDl8GiqokJ2gl0YQMD3nO-lH2471QF7kOvOA4nMy7Am0wJ6E2YUfsvRxIOAwk-dw.webp",
+      "sha256": "534d15a45ef7d002ed1f3ca50d20fe03022c59dcd3fc70342ac15f9c60b55f1e",
+      "bytes": 766,
+      "width": 124,
+      "height": 38,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "연한 새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "BQMp0vhJoTDUdCxEtYJ1BvJ0-m8bymftUkmLWPANdqXna-LXXbmz-hFEKt-Lsaujaze3_wZ0S7RoIyMjWLU67A.webp",
+      "sha256": "befbe5b0862c1e5ea00fb3139e5b9b13b973e78c631481cca2564c1543531532",
+      "bytes": 1752,
+      "width": 176,
+      "height": 52,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "fish-rockfish",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "쏨뱅이류 — 얼룩 위장색",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "BV-X_0LNPJdvNIuS0nfN9U5p57LIEaWg_hV33lShuqQOWJ3jvcgNcYHU-ASbknvhRQTrqPRBkz2AkmCcmNeMGQ.png",
+      "sha256": "e4d8536855f28d9e96fde1d885f22fb5dfa637ed02fd7ee9c7a62174eccd4b95",
+      "bytes": 850,
+      "width": 70,
+      "height": 36,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "자홍색 물고기, 아주 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Ch7YkJPTlgh9q7Ii2Ilxb0dT3GcbYLL5d8nZphMdxgkToSevA4NlVwMedLgd9_CYeKkyikbJ2_SZhOdXXPHSgQ.webp",
+      "sha256": "e0ab8ede01f6e6be511e377677d28384d60c49d32fa29766bbd43e86369d8341",
+      "bytes": 1096,
+      "width": 48,
+      "height": 94,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "세로로 긴 배트피시(노란 지느러미)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "CPCc4N8aXzMGmOA9WKPvNRiLDlvIYO8SD2uhO9NxfLBlCZWBqRpjJihnD1FkuozAO_HsamB-scmk8xuXgaNoll-Om4RAF7byXZGNKxrXdS1TAtAsWbkDyalD4Zr1wmHBL9Eh87XyVcrjS9jHIEc10w.webp",
+      "sha256": "5587c85b2ce1c0abe7fc861b830d593cf33ae3b75ea254acc005d483ee8f5108",
+      "bytes": 6646,
+      "width": 216,
+      "height": 132,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "무늬 닭새우 — 파랑·주황 점",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "dD9Ntnk5CuybgfuR6_4o3HF5MNh_n8pCbFzYjdzUYs8qkmqCnxOfe7EVq0vCUUmSVLSlZZj_P2c5ggmwcJnajQ.webp",
+      "sha256": "b4dfecd45713dfcfa21147d8f2e561d2b7327d3364d6148cf28b014543e4885a",
+      "bytes": 1052,
+      "width": 114,
+      "height": 48,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "mantis-shrimp",
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 갯가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "dGmGXFd7sdqY_h9b8VuIF8ehBx3Eusbziq4Z5FR0DpBYhOeHu5HZCpKvnVrh9iexq0LI1njlZPkUgb9GdOSwcA.webp",
+      "sha256": "2cf291ea0e0fd45d6078181700ae1835152c1f5a6539f7b70bcf5fdd8e80c39e",
+      "bytes": 2636,
+      "width": 140,
+      "height": 112,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "나뭇잎 해룡 — 잎 모양 돌기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "DpobKCVNRiXpjOT4MgEsEayOeT_MCD6Hv11lcz0e00dn6RKrG31_qLC-ZIDaodqlfTJVrxY-cpNnuWk4QS3tVw.webp",
+      "sha256": "c1c532c8b500172a6567d974576fe9e4d5456e900330c528288483caef095f87",
+      "bytes": 1420,
+      "width": 150,
+      "height": 72,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "혹돔·앵무고기류 청록",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "DzL1TynFWPan0wdSIitsw_U0NxOyJOFXLI1r-OKMxu1-ve_NY5rZcECK9bTuGShpFGrXW6Qw0mOBMPmh6fawNg.png",
+      "sha256": "36314612e74e37997708a1b6eb4df6feed97d28c281e306d0514c7590fe97c19",
+      "bytes": 1805,
+      "width": 160,
+      "height": 160,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "anemone",
+        "animal-anemone",
+        "sessile",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "분홍 말미잘 위에서 — 촉수 방사",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "e4V-4K9Sz_nZ5dFXAxxu85lOpvC9p4yVrO_RsVTuOwEYOoY1H1xbBDSOISfD7UGR78BXS9nvvOyRpsu1uBQszw.webp",
+      "sha256": "a5dcefc156513aa38005c8f8b46056c6ad2ed7fbf3d4998ff5b13f9265f97b5c",
+      "bytes": 1420,
+      "width": 50,
+      "height": 118,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "jellyfish",
+        "fish-jelly",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "파란 상자해파리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ehlHt5xxJrbID9TU6S5gJ3bicz8v1ccEnr-U2R_JgLqbweCj-Ah_HHnW8QS4BZ-Ehb3PUgGTMYJ8T3wlMewBEGR2O4ctI_pd_vHXuUtyvdDzFbVgrKzsGj1t8xN49BvihklfHta8s1J8mA-Yj1XCHA.webp",
+      "sha256": "2b220631b7da1dcd5e58e36af775876ad0b39ae2ea3fd3f84885b5219d2cae4c",
+      "bytes": 1050,
+      "width": 208,
+      "height": 44,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "올리브 폴립테루스류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "EHvic0Tf2Dt5nHqa2gw7KOZvy02Te_1Us4fWmy7w7XziLmMnMkuvYTmte8CtIiiUy0c5i7R9zrObr6xoca6xiQ.webp",
+      "sha256": "e199b7b723edbf78be3d5d4bda61fddbec3aa829e881c2394f7616d1d4324f13",
+      "bytes": 1570,
+      "width": 136,
+      "height": 104,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "puffer",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "부푼 복어 — 큰 둥근 배",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "eip4NuwcCQ4ACRqFURyItDdbkHWhH4Abxly5nPwG-7H_YLiEsVmknJlNVhCEVvp9MUvvdcomWY_JLSEQOJw26g.png",
+      "sha256": "c0f513bcd5e2b34fe4afbd82d3893e14c1178c3815edb360ee202d21ae9d3522",
+      "bytes": 1836,
+      "width": 156,
+      "height": 68,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 점박이 능성어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Eo_pTiF0opqr5RZvlyrxzwzDTXFa59oEp2s3UmJsigfA2Sfp3_dVsCbqDPyc5VuVqP1RdXH4urTl3PoLKuT48A.png",
+      "sha256": "b6e4a7e73bb59678d068eef9b1afbf3bde90828904d2035830495c74f5c37df6",
+      "bytes": 1294,
+      "width": 146,
+      "height": 48,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노랑 꼬리 흑백 줄무늬",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "EOqyb1XTDDvglGSgqdOBK1qtGRZ2x-2jyWtmXQ5apmXwHf-cilqBLPWWcE7E_43cVbbww-Mi5llVVdhGg54SKLLzKkm18Z7hnrio1e8ZOgNudTGiu1arQJZqLsGtPXjUZWYYoQE4gVmNkOloDLgejQ.webp",
+      "sha256": "a7a9ee6e3713adda528f303bc5f54f82c644711f792af78071e44b9ba1b9152c",
+      "bytes": 4714,
+      "width": 168,
+      "height": 72,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 줄 새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Et8bgUeLspbDnPahExW3DPOYDgTxw_2_V5uPEDjNo1oPcJWRmSXC9hdE0qNmKVRamu8r9W8t7UgjSKhy9IEZSnJE0Xi2S4wQ6De2Qfpem697pfuVw88yMP96moGpUIA-i-Ht2UI2Z5UCEIzSRHnJMA.webp",
+      "sha256": "0b0b1eb66b11b60eda27590ebd888bda2ab28d8a0126a5a7fa8f71862f1cc9d6",
+      "bytes": 3608,
+      "width": 232,
+      "height": 70,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "꼬치고기 — 은빛에 검은 점",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "eU9NmUmSSWO89b02zE0Qea4Qf3EeiFlN3ZLAlBUjnrv8Jin1_t2xtkGcTCJ_2mpTxXlM4SKaAMrHQJ1YNpU-lg.webp",
+      "sha256": "325f24da79c2f5ded67abd0d4db8c397bedbc90b49a96ac67cbc9f315b9be376",
+      "bytes": 1064,
+      "width": 96,
+      "height": 62,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "반투명 분홍 물고기 — 큰 눈",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "F_7sbMHB5I4d0rIoZ_k3q_hYHnXpfgnhAm2yQR1fcRmUt81t7a3RqYF81Xx_8dJVqJ9rCRdu6QELX8C4qoiQsg.webp",
+      "sha256": "27a1f3afdccceea2e522777c70889a5ddcece36362488efbdbe28f3f7c21dfa9",
+      "bytes": 1448,
+      "width": 166,
+      "height": 90,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "squid",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "긴 촉수 대왕오징어류 연분홍",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "F5UvCC0QbcZCdKpEuZj4uxoT5UnkMjp22-fOeTJ3gPMK_jivjKDDpdveMY7p1zVCQdh77BGjAgqIqXOOE2Rgrw.png",
+      "sha256": "4c5b5f21570f43ba16dcd58d3b0bba8ea6e7a4afd72a00aecd40407873850db3",
+      "bytes": 1091,
+      "width": 136,
+      "height": 52,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "squid",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "유리오징어 — 반투명, 초록 발광점",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "FGEhLWkuj_d7CluOy5VYxGGB2tjP6XQIACPV61E1wyteuBR0VLpbaqyS1-fPYTFpDz4l3tsEPbiDCZCzVMjRaadV5SRwNpt4VzG2UStOIW1TEyjMvUP0LJ6-txPdf8j3-I7LGvmwjJv0tbTG1OXOjQ.webp",
+      "sha256": "c06408cca308f4dcc31edc7e324337b175693cc5019b1643e635cff93d75c0ca",
+      "bytes": 1348,
+      "width": 210,
+      "height": 58,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "whale",
+        "fish-whale-shadow",
+        "animal-minkewhale",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "대왕고래 — 길고 낮은 등",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "FhwljLsSqqShUn-jto_uW3QvSrVVNKYgPyiwx1JZvzHpT27knqn3V-pxQTm857FUBO_qMoECrwl_-3pcJ57VeQ.png",
+      "sha256": "f66b57b670c57de31169a1b58ef149ccb05b28236fa074dd51c8f6f05cab9aba",
+      "bytes": 829,
+      "width": 100,
+      "height": 44,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노랑촉수 — 주황 줄, 수염",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "fIlBxYcNvaXAFMCbDLS2kmMVGQYH7Qpwdekd2np4GOtGNmnHqNNgqReE8tg5aaf5wsw7MNVjKzsHFp3aoJzPTg.png",
+      "sha256": "802ffe401243925760cfbd66b4241cd6d2bf63bd54f375054e63c841b4e25310",
+      "bytes": 1485,
+      "width": 186,
+      "height": 60,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "은빛 물고기에 파란 점",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "FoT2j62VaJbE9NofRW9uqcfj0CuFGxKCeC6ZkCTplxI95ftR4MSmCGABQ78odnDgy3cBjJdERQDF3bszHOtkpA.webp",
+      "sha256": "a7daa35310979ce86e4c729d76a233195196255c50556b3be09640f623ed2051",
+      "bytes": 974,
+      "width": 144,
+      "height": 56,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "회색 큰눈 물고기(늑대고기류)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "fv-0dxGQl1YuLLGV78T5y7UD3w30ZAfHdkZ6-Sp9alB7GjEnL05OFNqY3rEPIVK5OsPVKfhEj670VnkMNJubaA.webp",
+      "sha256": "31f76b94a362888ff7138b5fcfeeac157e3c40eccd746801e47e15a5edca8152",
+      "bytes": 974,
+      "width": 94,
+      "height": 36,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 작은 물고기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ggYPzQJReCYXrmgun05RV-nzA1YU3TxNNgtn6Wk78j3XYm28D2rRDieTXX4QvBuMyY9Brd9LphMX5EzkR5a_mA.png",
+      "sha256": "afad65545f41b65e9cfedada61f0b4ef59bef99dd5902b4c7e7882ed4316a961",
+      "bytes": 1639,
+      "width": 136,
+      "height": 86,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "ray",
+        "puffer",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "회색 점박이 둥근 물고기 위에서",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "GGYUH3Oqi14SYk3DPekvjfXwKz-3Gsr3BWMzviNN7r-G5NdIwqXiiJ8a5Fbeq1jgwU5738gdC0XZXLrqTOkGWfhZpN_P0Q9ZJ3CJ6KdoInoclhb0sq_O42EA0WOHvZL_PT33FEBlGvl594h9S_U6Rw.webp",
+      "sha256": "b5138579353de91a3ec4f5b02b0a9ea4ddf4d9516f518de2c8501edeb31f81b4",
+      "bytes": 2318,
+      "width": 150,
+      "height": 60,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "카키색 아귀류(털아귀) — 덩어리와 발",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "gPEpT5PGy6IAAbymU28nTtgIoJuCI2d4QDH8PX3kkecdynNQ91nTwsfvs1OoQrrJD0-JnqjJaE-9bW1LGiTrDg.png",
+      "sha256": "5d7318ce5a34ef2727431882da05063ece74a3e44f48deb5dce085191f312ce4",
+      "bytes": 1056,
+      "width": 122,
+      "height": 44,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노랑·파랑 줄 푸실리어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "gquY_771HmRzQYF_vB5Uh9GgqIOuCtCMSYzB_hK6TXbmH2aW3b8Z0B8NIj5-TNEql8g1rJA50xpJKW-1oy0msA.png",
+      "sha256": "a1705c040f8efa2eac49e9e565ef06681237d20f90e1999688c08a4490aad497",
+      "bytes": 1072,
+      "width": 90,
+      "height": 58,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰동가리 — 주황 바탕 흰 띠",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "GsVVZ1XW-tMZq4DT6TTn4KW1XuIianZ_8daIoT0v9SrW7K6AzZd-Pfo4Pt6EEFrUnOxS39ue4tnSBapySECqIYLAaTWGPamHmR5nEJzPWAqQeOMx36UBk61OjalhPknW1XNGiCMla9wv_0kIC4L0jQ.webp",
+      "sha256": "0ab5b5f15bdfa44d10473e8d120d648c45cddc5347b69598254f8bbef5541e6c",
+      "bytes": 1322,
+      "width": 210,
+      "height": 110,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-mammal",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "듀공 — 크고 둥근 회색 덩어리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "guWjQaRw9rckK8Rw37pOcYoQFvawH9cX-N9QDRuUbQZTiXFfqti7C2cGY6-pjo_4SC1NatuARbdUNUdaMSreLQ.webp",
+      "sha256": "5a3f976ff01af978f9a2c6fe3241f3024b12ec5aa97a14e4bf82f66f1af93f2c",
+      "bytes": 1356,
+      "width": 44,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 점박이 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "gwSFxrr-OeAeBbqUNGnjYc5oyYN2vrm6ZSJXGgL4bXtks1OQfqXNxIP2TZDZAoY9m5Ah4-Wp-xAfKbsPN-HX6w.webp",
+      "sha256": "8db791d05a9eda2d1feb54e516ebb43455b27be06e73ba7a317ed65f011c2f71",
+      "bytes": 2768,
+      "width": 76,
+      "height": 122,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "jellyfish",
+        "fish-jelly",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰 점박이 해파리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "H_86CP82DJlXsxmsbXnke8R4gs9ZlOMFK24mfzYdGRKJHSzP1CmF6VMtqVkMbDegBu9ZvQsanc0mYkLfk6F0iw.png",
+      "sha256": "c44b9f526e5baec2950153fa4d9fbbfeafee940c575bd0899f37142fff9af6b6",
+      "bytes": 2637,
+      "width": 70,
+      "height": 126,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "jellyfish",
+        "fish-jelly",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "파란 해파리 — 둥근 우산·긴 촉수",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "h-MjaRcylvFf_x32VHX22uOOEFATRpg8eYTLcnsKKjAQID52UqPtAhMjZraUHdaBtisC_62RA2LA-8MjYKztZkcyj4KyWhZskVD2kcj5UEau-gNVtnBhQrgw6a8iOiKnjNrta7uLiPmGfFk6OZoIwg.webp",
+      "sha256": "910cfb0043262e4ef3b7cd110c17de5bb1f1305b91f2ae22a25a76f459ff0b11",
+      "bytes": 5756,
+      "width": 270,
+      "height": 90,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "파란 가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "H-ymazsB_u5AdwShSsOUEoq29NHcODkNOG4nX_wOoM62H5vj3YYBxYmr4Pt67pcJljnqoWHHmBnv14wKMMOIjA.png",
+      "sha256": "633aa2d0a1482a7219897a599b08a3507312916c190d0fd9649b3456681edc66",
+      "bytes": 1458,
+      "width": 134,
+      "height": 78,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "파란 쥐치류(트리거피시)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "H4y9_5tvQihGe-49QJiaOg6s170yAJPg93FS_eamjQjTe-UeXhVxf9O1HongKjUdP39PbFX5ibx6qilvNaND9Q.webp",
+      "sha256": "5363b57ad8693fca6d9af1fa08e4365b4e7a3330913aeaee91f6e3ba942800ab",
+      "bytes": 832,
+      "width": 78,
+      "height": 40,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 병정고기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "HAvG1gzPxGcEbQhOJW8Cl59vSKvp_KzKIIZpI-avvouJWEttUqQvhGnvSWydQgPzpAkc1HFVTusmSe6lSSk5Vw.webp",
+      "sha256": "5bd1c45b46c06edfa734f1d485c6e2e02557152bb8af279d23acbd65003c069b",
+      "bytes": 986,
+      "width": 90,
+      "height": 58,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "flatfish",
+        "fish-flounder",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "옆에서 본 넙치·서대류 연한 색",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Hn6WRcXjWPKwONfK8RAum7ICcnN8ZPrXBO12k-wI6HJ9PsPQ6iCn-hfqgjLZNA2l_0KkL7SVX7rKbSNnnR8z3w.png",
+      "sha256": "5876470b18bddcf29c3c622627c730215e60f7e0c9207b4303e35d4f4f23ea9b",
+      "bytes": 1686,
+      "width": 190,
+      "height": 55,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "청록 폴립테루스류(비늘 갑옷)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "iDHiQZIgXLivRI6dGxLiCVUNMtEWFPkebeyQzQmCyIaTTae1SGRPPOGmPDFkpYIErqTDIUJEOcrkWndzrHXTUDo1pDQbqmuXsqqOL9NfVeAgbeQvfrsmWt2VoMR6JiDife561mgmCnZlx3Ot_DwqGg.webp",
+      "sha256": "edfbd2ab7e915f63afe82b36af14a35cf12eff5c0024e56e14f1def1252a6eac",
+      "bytes": 1576,
+      "width": 214,
+      "height": 123,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "모래뱀상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "images.jpg",
+      "sha256": "b5f7a95bc8d9a9a68d851a75520c48ca646ab339704bdc5831eccad75623de36",
+      "bytes": 25924,
+      "width": 738,
+      "height": 414,
+      "format": "jpeg",
+      "kind": "scene",
+      "style": "render",
+      "view": "wide",
+      "subjects": [],
+      "env": [
+        "sea-surface",
+        "sky"
+      ],
+      "time": "dusk",
+      "season": "summer",
+      "role": "mood",
+      "flags": [
+        "has-character",
+        "has-ui"
+      ],
+      "note": "해질녘 석호 — 주황 하늘과 남색 물, 배 실루엣",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "iMMdQQajEgUJt8ErWc2cBL09515lDME2AcnGf5_NH_ygEebkwtJTjI2-9ILYCoRwHD2D640tbuPbDbD8KCEi0A.png",
+      "sha256": "afc99e84c6e621fcb7f89b89db469cf579477163354ebc0ebe7fdf852578dc2c",
+      "bytes": 1397,
+      "width": 82,
+      "height": 112,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "jellyfish",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "빗해파리 — 무지개 줄",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ionvOkoag0bIexOA0HGUblcz3KypqMvxFSlaf9BBqE_jiIQPFsxK8bxfyYL5WVCsaMMnbiNE5daxbhjV7tZrZg.webp",
+      "sha256": "f78b1925829dca2addad140cf120d2b974fa6b82cfb28c373ef3a2d398b754d3",
+      "bytes": 1346,
+      "width": 52,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "iVDLaLSeEzLx04Xw1M8SMfPLSM58fY2jzDmfwwuMVakLCVoZGeT-HJ0oNQwiO21L9OEZNUnpJwsaND8_qe9PCA.webp",
+      "sha256": "347bbbd8924104a34db560fa2d04ccbc65b3bab848b11d5266e1959e6afcc96c",
+      "bytes": 1438,
+      "width": 126,
+      "height": 70,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "anglerfish",
+        "fish-anglerfish",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "초롱아귀 — 발광 미끼, 큰 입",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "IvZJ9fGWKuTg44whOIj17ai3a0qo3C_YZI08yYo2aUKevNe5CACRJueTGvSKGCyyDKLJUC1jgdm5tCqWed7vwA.webp",
+      "sha256": "bbb8d98650ea74845d7b9ae14826e284d827f8a551e065e226dbb016b1c14e99",
+      "bytes": 1144,
+      "width": 52,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "올리브 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "JaJSt7EmUiuLTHXlSZHqqEq4QTPiPVz5MvCnJsRynJUsS_YCzUARbP0E8fSm201dCE5nrBPWJiWQA0hlZ7BGyLcf0leBoOQTy7t_UetBrYA7NfdtSIN_6DR1kHLqwUngfZUhjSRXLcqTADFMYDJPhA.webp",
+      "sha256": "3af4f5d92c42788bbfa3cdfb2f9cf80371477a85a4ef21e0b7ccb5b24b4b698a",
+      "bytes": 2218,
+      "width": 212,
+      "height": 124,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "whale",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "고래상어 — 점무늬, 넓은 등",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "jbH3Pe7thzUIwzZv9MWzntksanY1T_AY9VZw-V5pJA-prB-RtjDxERhp6r95dQj70uv164bq01BhNoZQrJ9DXg.webp",
+      "sha256": "ad7bd5b8525561d517478d0c97dec2fcda9c854b0096346e9dbfe388557a0676",
+      "bytes": 704,
+      "width": 52,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "검은 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "jzY7xPBLx08uiDNKP_x_BJ7yBPnfOz3hxuyAebb1InEvws6o_6PAYDWkDE1iusyrJxaSBCLV_f07NY4bS7vpBw.png",
+      "sha256": "ee66901cd3851f7421c7ec2234e4f879d411eae66fc1b2612033b66bb5438044",
+      "bytes": 1416,
+      "width": 186,
+      "height": 62,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "octopus",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 문어 위에서 — 머리와 다리 방사",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "KfRB6mN613CUUyW5o6KAwJMjspinX09l-fry0dk8pazoPc8ir_VEalKwRAm-sgWWrhK4LiYWXO4o1H1AN-T8nw (1).png",
+      "sha256": "ff40da9d90c71f0bf327394c4a7336b85f338c2f255ec1792ee28e105b02d476",
+      "bytes": 2478,
+      "width": 178,
+      "height": 80,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "duplicate"
+      ],
+      "note": "앵무고기 총천연색(같은 파일 두 벌 중 하나)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "KfRB6mN613CUUyW5o6KAwJMjspinX09l-fry0dk8pazoPc8ir_VEalKwRAm-sgWWrhK4LiYWXO4o1H1AN-T8nw.png",
+      "sha256": "ff40da9d90c71f0bf327394c4a7336b85f338c2f255ec1792ee28e105b02d476",
+      "bytes": 2478,
+      "width": 178,
+      "height": 80,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "앵무고기 총천연색 — 큰 비늘 덩이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "kUgFFQrXAX_clY1jrCCMlfJl2Mmm8J8QUNQ8-N-PT-HAdLdvptMpoamD7ropNrJZ9lnzzjzhbGhwbr8l-UkY67mCvolB3Ho8HI0TK0-Bx6jQEhIjroaWreLNoRZAp13UYz4i6a7rLfzpw8H2DhC3Dw.webp",
+      "sha256": "4e01868ab31e789d53cd1d4fd0be515b0635b80053157f0801ffc7ccce2c49c9",
+      "bytes": 1884,
+      "width": 208,
+      "height": 114,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "회색 그린란드상어 — 뭉툭한 머리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "kWK0DFBMv2AtUsAfXd-dQyEZ2LxJQNVnJLjA2dWVkuU4Wn-CMt4uOw-WxvX7ufJc-Gyfq_Eh1Ext-NNnE5xfng.png",
+      "sha256": "c5c6eee85a9621dfe2081d8da3057986ad40e4b82d719565b2c489af86820d91",
+      "bytes": 1636,
+      "width": 152,
+      "height": 70,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "초록·파랑 줄 놀래기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Kykc4XIe_sutaKGhDwl1WlMbFay2_GJ-ULM0C429F0Vl5sATd5ROY6mCHnsul8xk9DrDrkkoYbk5mZ27_kMV1A.webp",
+      "sha256": "948ef8347357442ed7152703991cf2f8617cd5b6e9c405abd312a1faacf1e921",
+      "bytes": 1782,
+      "width": 194,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "river-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "피라루쿠류 — 진초록, 굵은 몸",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "L1e_nnqs7rpzzgJuHJ8_IH_x2M8_ZeqMzUPNJEVuo8pQ8m2SET8BOf3BB1QCWOSbw6dOBpWxggV8V8cfk1FqbQ.png",
+      "sha256": "7f8622419075822de682b1c0f5bb8e188ad61d8024fa6c20c9ef50851dd6bbe4",
+      "bytes": 2077,
+      "width": 136,
+      "height": 76,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "황제엔젤피시 — 파랑·노랑 줄",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "LB2MjxDuBhIYT-WMYN-Q2wJY-5plmjMhLQU3knXLc-kP3h8UdwKHbGb9_gDnNw13YBsnk8VeWPYXrUO43I7xvA.webp",
+      "sha256": "87388fb412738f5bb4cd6d4522a505482a29ce0a48b94b439cf96ecb90f182e3",
+      "bytes": 2238,
+      "width": 166,
+      "height": 82,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "fish-yellowtail",
+        "tuna",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "방어·부시리 — 노란 줄",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "LNA6D3DUZRE-IcPYC2CptI1Fy2ngl4rNJEBJY2ESJcRMgxveMSWDNGRI6iElqjNPbP8iJ88B1JIqMH42WhGRug.png",
+      "sha256": "d02d5ac6b9d681c5f4c57014f59d85e0c1d851d31ca55a0a2c69cfe5bde11bbd",
+      "bytes": 928,
+      "width": 68,
+      "height": 65,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lionfish",
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "보라 쏠배감펭 — 가시 지느러미 방사",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "lNF5VuwzfOMEw2legOAKlu5oHvmE7I_3Z06cfCVwO8mx-qX2kaBqJmJID5lOiRRbEZGSHkGoql-Rr0IqK7-y8A.webp",
+      "sha256": "f9bfd8362570709ade802aa50df5386bba2d271e34ff90ae45d2cf68a48b7101",
+      "bytes": 1486,
+      "width": 52,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 띠 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "lVHEr0O2mk-RJ_-pVfOFnNZMJcS1S9yL6umfn5JkbtVAUS-pVzaxAeuvpl-sQfUpRD_4y2aNdfYUsEfJud_Pmw.png",
+      "sha256": "ab646e0c10dff7330dd42e0bd41e1ca4ececd8f5ba42ff40918d58b7092064ac",
+      "bytes": 670,
+      "width": 69,
+      "height": 33,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "주황 병정고기, 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "m1GQUNqBxIhYcPzfMHe3J9zSldZjiz8Ei5V2wXRcqxom9amFwEB23TT1CiVabOYHJKrGzEtnGHmITAQ58MuoWg.webp",
+      "sha256": "64c60db4e72f57327e065c9ec8ba817dfdf18ea37fa3e2645c1ddaad4583786c",
+      "bytes": 1436,
+      "width": 44,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰·노랑 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "m1Tg34qMmwScz5oyqeAQFcZjVHZmdzO3Imk-fz9dTHEmxCb3xCoXbbu7k-c_x74oQN24fOzRlZLa_vuNPEsAuw.webp",
+      "sha256": "368842426e90299de701aa990164d341443a29eb3dba232128be4478ddf6e4aa",
+      "bytes": 1320,
+      "width": 98,
+      "height": 112,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "날치·성대류 — 큰 가슴지느러미 펼침",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "m2ggEjaqBE39JayqopUEiS5MhLArtUeS_2x14AQt8ES4ogXXy6QAGM-LvW2RgDx2i2QM6TqMlfhVD05b12vgmw.png",
+      "sha256": "01d32d4fab09515e996d117adebc5dd63a7033f2a65f8f3b9bbe867882aa7ef4",
+      "bytes": 2355,
+      "width": 174,
+      "height": 78,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 앵무고기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "mFnw2zH90FU9kCiF8olYEvJIYEPzzfNL0x4HUZiVGHBcNw9WS3-7uWsXbrOdbi8na0FdV7kn1zYWFLPUkTLEptAGz09CKyzleQCQBIzWALppfvwM2LaE-J0r5AP3XHn_AQB2WOj0bTHFXlEB2N3KHg.webp",
+      "sha256": "3ae140fb41470f2d43817645a1e00d734c5d4f05f4e33383104f6e2146a9b255",
+      "bytes": 1096,
+      "width": 210,
+      "height": 78,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "dolphin",
+        "animal-porpoise",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "회색 돌고래",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "mRYV8SlEjNAXK-XqcCSFNaxk4RSfFDtqShFM3cfz2XIMWxhVMoMxnfUNfYFHnlIu071UJEa9XoxtLMsWywAkHg.webp",
+      "sha256": "877182e6c2985298d509a72fa7167635829766b5663caeb8bbc8a91ae482c104",
+      "bytes": 816,
+      "width": 158,
+      "height": 40,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 가재",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "mv6vJLJGdKafiJb1s2mTT6bI-qAHWz2dYUmpjGbb2xgB6pQpPxI1f4gAE2tbiffb9bm_AOX3OsIOy2wB6UpChA.webp",
+      "sha256": "9395b3a7f4a2d878e60cdf7d456c5a5e3ae5ff139f226e1a5c06816e5fd5fa83",
+      "bytes": 1232,
+      "width": 128,
+      "height": 62,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "mackerel",
+        "fish-mackerel",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "초록·노랑 줄 고등어류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "mVlUAPhEXePwvav8GPwn_yLKq9TnOVoljeRDNTr3xQyTANP67x6QK8I47U7L6OP4dT5PoS23drnOGq83q8or9Q.png",
+      "sha256": "dc065ac7633fa16a100209958086eef763ff571084a3edec726cc02740f45081",
+      "bytes": 734,
+      "width": 84,
+      "height": 40,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "블루탱 — 파랑·노랑 두 색",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "MWO-HeWbdpAAFQP2ukT2e-7gMtw42FkBCszJg6Lt5uyfpFoAect09REv3UAZcxwRn1D9c1Pco-SgQ2jdWUfG1Q.png",
+      "sha256": "a6152a82846a0992032b633d24b488493d1178a4f8f02b7572c0ab8cb2d03e89",
+      "bytes": 2596,
+      "width": 138,
+      "height": 100,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "turtle",
+        "animal-turtle-sea",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "대모거북 위에서 — 주황 등딱지",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "mX9_BvLQNt4HTzimOs0IvVJYrtEuORqD9_0tVpmxygOVCnvx3PrXmrvu7Iq9oz66nfp8H2L7KjRUAoOI7v3iZQ.webp",
+      "sha256": "a7d550b274a20dc51c351b2c288736b223709ee9ccaf0582c02208dff35daea8",
+      "bytes": 2182,
+      "width": 146,
+      "height": 120,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은개복치(오파) — 은빛 둥근 몸",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "my_XmDucSIYY3CPIqXhAp_4vocZmmfVaMalXXaAxlaHFlx-ibSFmBzNBo0XZqpA4B2NUcYHf3pNKMk6nsiN1cQ.png",
+      "sha256": "ab0a72b65c52db967af446011a553aed97ee2dabae4ec46a6c36adb6b230be1c",
+      "bytes": 2374,
+      "width": 110,
+      "height": 102,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lionfish",
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 쏠배감펭",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "N3zLc3tmBlkXG8H9npcaVyYvUr463mOn7HKgZAwVzRUgRTpRsm7aMnrFAI8D5GIsNRppdA-zquFy-OP1Q1Yglw.png",
+      "sha256": "eda3d4bb44302c5472031bacc8adcdf7e771c3ab4e78fd5692dd3df1bd5aeabd",
+      "bytes": 1638,
+      "width": 146,
+      "height": 76,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "줄무늬 돔(세르전트)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "nauObumPyWBbj3i5F7ROSwrARrvRLsM6Xt9aZgCbLMEJFaqxJ7gVt0jjNZurRY8uKhqv6HXAfP8H7up__WgaIQ.png",
+      "sha256": "a5b8875dac3d40cfe766aad6986782464bf46a8294da99af297c0724a862f244",
+      "bytes": 2688,
+      "width": 166,
+      "height": 110,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 쥐치(타이탄)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "NGS31vU4bgz3To0N3sLaopiA-UwZICI4p0yWrxqDbtXSLwZWwr0Q7hdVA3b0KdwSnumsKK6ytOq_1-Oia8lvG-My1rjTFMQF4uj7cpQGwGCRseIdA4adChlGqRu6fYwYBAlGD48u9y3lAR4rtgM86w.webp",
+      "sha256": "3349d0c71bcc7ce270e3901e241c01b8b35d7bd5ea987cd5dcb36981bf59c1cb",
+      "bytes": 6624,
+      "width": 216,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 게 정면·위",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Nk5aAQ7JNoLaBfbXlfw4NPl4g69sR6UwavYwxnoA3oyBtUCxakDnopu039m22tfNN0Sqk4IJpUlEB5i4ZVFMag.webp",
+      "sha256": "a48bc83e7895eb38f232663b983449a0d4c6eb8c47a0bb06b80dcfcbcb132f19",
+      "bytes": 1524,
+      "width": 122,
+      "height": 54,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "isopod",
+        "pillbug",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "대왕 이소포드 — 마디 갑옷",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "NkQaQIVukUBHVTNB5KZ5SpJ5YI4WwpSix__mOzTSaT2GKv3VFw4jV75zSPcOtoorzMULIMxYiizuOohYLCpn_A.webp",
+      "sha256": "ce8382873bac09427cf5841c90ce14a9cc28aecb324077746d71fe7157be51ac",
+      "bytes": 1122,
+      "width": 134,
+      "height": 84,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "회색 쥐치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "nMDt5nr4fMkkzjTgeSt4fyO4TKD8BYl2I8kObDHU8G_4ExxaYze0XJxXgXj4gWYSy9ROrPP8PdgofM2Gct_qIg.webp",
+      "sha256": "04585cf6cb6a7a80fc7b359bfb26416026dc424e2f740edc21907521b20b72cb",
+      "bytes": 2708,
+      "width": 156,
+      "height": 116,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "jellyfish",
+        "fish-jelly",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 큰 해파리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Ns7XKW8bVib6YFT1JY6LBX7kXjIq-385NwhQe99M8yqg9d_Uhf-blZzITEHowiuduHwnWRJ-53FbAvM8NcQphg.png",
+      "sha256": "44e681a2c4edf087e15b2e587ef5b02b97424862bfab2861b80c3365bcc47cb2",
+      "bytes": 1256,
+      "width": 88,
+      "height": 64,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황·검정 엔젤피시",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "NUlaxOcarWB1YhMr8t3LgLLaIBjtHgVFmWV7_fGi1iGBLaujr4neTEPIX5QEd4muP7OjoAnV32B3cZJubPLIOA.webp",
+      "sha256": "5a9d7472d1602345bf19cd315d05963e2deeb2d84c8cde5c8e3eaaa2e18bba1d",
+      "bytes": 1104,
+      "width": 156,
+      "height": 58,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "catfish",
+        "fish-catfish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "줄무늬 메기 — 수염 강조",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "NwYO1N1EgPrgTgcGJm1HY07HdvkeGJ9GNR0DDdyUQoeCEylhPsVNZNppt2pwAZcHkmWtaCppDERjB9NgEsS6jg.png",
+      "sha256": "f8be059e4c0767a4df9262a37bb5b50612f6d5e1d69f412ad0644e934e283d24",
+      "bytes": 1188,
+      "width": 110,
+      "height": 40,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "초록·파랑 앵무고기, 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "oDisAo1G6s-Xt0p5-Zo4OvRs5M8WV9Yr_qrn_bcEZYBf9UpMKnhSR_tCEc3fyXo2LzfZnzQl5Arz8zel-vzdjQ.webp",
+      "sha256": "b0ea74f9e707765b6032ef3e0c7ced2e0ddaa604ca7ce8a3af43e799d3212546",
+      "bytes": 776,
+      "width": 156,
+      "height": 38,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shrimp",
+        "deep-sea",
+        "animal"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "반투명 분홍 새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "oNT3ubgnE7WGA2wf7pGIlYdqGKQ_GigSFLH47p1ZoooLARYCKq5HTeSAmmgOeqv3dH56P6y9hGhi-9u1qstcEA.webp",
+      "sha256": "05050afd28b37af4d53be39f427bbc9f3deaa9c4c236112b7ddb2c5ff603b611",
+      "bytes": 1126,
+      "width": 134,
+      "height": 42,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "fish-rockfish",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "얼룩 볼락류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "oQRJDwC4i7RBgcrC1YLK25GSRpgmqj57OmTA6ffhCv4hxM_alS7danMKxq-WCrYDpXPap2y__I72o1G2WNtSNQ.webp",
+      "sha256": "d9ab495456674472137a46c821630e2c2efb8a27576cdeb81c8ac7d6b9415704",
+      "bytes": 658,
+      "width": 96,
+      "height": 40,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "블롭피시 — 분홍 젤리 덩어리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "oX_WlW9Ost2rZogay--lDWawKpUjKcpbwr_F4w6ksgUHKFGLfFuA3t7RF7RpkTQLks0TAjTkGR7-Yuj2V-R36Q.png",
+      "sha256": "24d23c2f421013909006187509032ea0baa9b4fad9de6d1e00c0a031f15aa198",
+      "bytes": 1049,
+      "width": 120,
+      "height": 42,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 심해어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "p2ZgksZAr7OBka-114WPQfhpFLDFGM7N5UhbOiKCDQaAk8hNS7yvqj9lOt4SoxIt4LVRTvskMJhF2HiWTFz1Pw.png",
+      "sha256": "70385168ae0b1e3f3d2ee7e42b0b68c1f2aa912ed5a07f358f8dbb905dc06198",
+      "bytes": 1985,
+      "width": 190,
+      "height": 92,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "ray",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "가래상어·톱가오리 위에서 — 갈색",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "pLBRuVNcVYNPiuyK2UPRAPEKcFPHxXHnfAumjwhfxfQ-kvq5oPZFfWaFcd3QOj21L4P-vhWMN2VePAkFY_J_nA.webp",
+      "sha256": "2c586e723a9b2a34635d27804dbe8e15d649b92030164d474474049056b700d8",
+      "bytes": 830,
+      "width": 44,
+      "height": 94,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "PMRURHL2wZEal3VvM59JlIXjsISUlF706pXKPg5bKmn09E6VPcbQW5LVvDycnlK5KnyEvwIaWT-TNS5KvRar4g.png",
+      "sha256": "a84dd3361769be16e3266e4e9f6bb20d87478b6298972bfe2faf94dfbadf3a06",
+      "bytes": 1869,
+      "width": 146,
+      "height": 76,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "피카소 쥐치 — 노랑·검정·파랑",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "pPXTSt03NVmANRdr-Cz1cwl9oopSKTTQmcd8S3rGGOL_XhGUBhwgAJR06hByfWOpMXYSsP-omZl86IfJckxAQg.webp",
+      "sha256": "06c2470d3a2d5149d8fa7dc844ef78908b7547e49a8f923fa66e99f2befb0241",
+      "bytes": 1482,
+      "width": 142,
+      "height": 68,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "연한 얼룩 두꺼비고기",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "pzAG3dK3JnHC7uGP0J7LOqJBBWB7EH9NqahGuRM8N3g00uowfw0SwYlumPqZ_dGLa-p-9MFs3QsJTaQIuhM8uw.webp",
+      "sha256": "6d84d9e3be24c62c2b6d978e61329e657bff881869abd0485f63fe9b014b54db",
+      "bytes": 1384,
+      "width": 50,
+      "height": 104,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "q61qcRcuhVdE5dKwEnXpZEe0ugmdijeIo0ZnFQ1U8BSftxMaENYdJjhDcJteNTqKZQeQYpCo8m9LnMd5FTSYNw.png",
+      "sha256": "a9ba6a7f7e34b8976233d6e1cedeb73af9e03c5ab006d52b841117aba29f9dd1",
+      "bytes": 647,
+      "width": 56,
+      "height": 44,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "노랑·흰 둥근 물고기, 아주 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "q9V5LIeWeLfaH0xCm86F0TYI6X6_TgdI0dy6sHLvPhgwbOdeasErqEOLy9Ze2Te9EHv3UckY7beNmrLg1NmMLA.webp",
+      "sha256": "7ca25e0015bdf7ea39b9fb1568e25a9cc8a7d62d059520a4d006d14053f69c76",
+      "bytes": 1612,
+      "width": 188,
+      "height": 64,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "mackerel",
+        "fish-mackerel",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "은빛 삼치류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Qbg7OIajkKYDbcE3Jcu1ppMa1T84QlFmT-HAD3iKOe9TJV0PEGkGy0oJI2xjhPoPNDbxwn2z9MCAriBNMH1hKLR4toNJ7fFbPhlDmDBwpw4fkH39z6aL6_fXYO2fxWfxJaAWlBLEJxFldXK2fCRw-A.webp",
+      "sha256": "a39be7c9f9ed383a169e527651289ab7ac39d52ece86a85f31d532a56a5736cb",
+      "bytes": 2236,
+      "width": 204,
+      "height": 88,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "coelacanth",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "실러캔스 — 청회색, 잎 모양 지느러미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "qekfBx-mdKC1NeEcNYE7eMs77fxVIjqmBn8FeJmnm4dGCJtVYi1R0TdaKlSQeCkH0pr-djNubFnI-_Urjv__9Q.webp",
+      "sha256": "93eb2cd8e799692c6139ddf38e3ecf907834e929123d803c7ae1153a210060cd",
+      "bytes": 1062,
+      "width": 134,
+      "height": 66,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "tuna",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "가다랑어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "QFFrt93DDqAthTOdVwVqyQTPpGhthnb0H3XIDO-GcSCsqtC0GYRc8Q1q5EDtNiV_zCky9It982uiFb-lmgBqPw.webp",
+      "sha256": "b5b1d209731db612214cd76bde496593c5b9cc429b1a1ea6022f014d5a279505",
+      "bytes": 954,
+      "width": 138,
+      "height": 34,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "squid",
+        "fish-squid",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 갑오징어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "QXvkiQ_qddOSyGRPXjZigLxka9tPmK2slmJ2U-Aajva_BYXcyYpBPWRSccYHIZ_hrP3D3gytnsPriZwuFK7AltzutdDDrKXdnlIoWP9vSJs41vpfSKM1i2JxWb5O2HeVNF_13nQ1RbiKElC5aJMykg.png",
+      "sha256": "90e103701f1150e90c10ff1d3b2bd6ca44f3545ee50e83081ea0a20ed8642187",
+      "bytes": 7706,
+      "width": 720,
+      "height": 90,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "eel",
+        "fish-eel",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰 바탕 검은 점 곰치",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Riy8vW0tIPKs64C0W2EITHKUHgu_w7105PLvAelD8-Vy-4eF0sv0bMysxgfSPji3OVULSsGQOqvEoWkcga4Jqg.webp",
+      "sha256": "5691c61a53b02c112e8b18505b492197a00a66af866ed1882cd8c8507e7677fc",
+      "bytes": 1112,
+      "width": 58,
+      "height": 116,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "분홍 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "rM5nBEP3-zWVgJt7ACe150zCkhsK37cPyJlpUmF-L46yUheIe0C8pNWr2TH6c7g3-uJ_mnO06DimEDd9OnRcrJdMkPpvIF4mLWWXRO7BL2061geCWYNp8_bsSPepCQ4_4sQzG_CVzllucylQoBvnag.webp",
+      "sha256": "85a9945f947f1394bd9c9cabebeb2866cb21d3041906e40458249245fb4865e2",
+      "bytes": 1198,
+      "width": 212,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "청상아리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Rns6WhXnotWwzpkJsDIjhVHNwFf3rVaW4FsvntsXFJwutkhHJxDjSk3fmCEQhNkDZJZLR8es-7_ZZmDEl9BpLQ.webp",
+      "sha256": "aa2fb25f2c4631b45c49c3318a0a20bf15f3870bfca0c2224b33ac283ffcd977",
+      "bytes": 1026,
+      "width": 124,
+      "height": 58,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "데메니기스 — 투명 머리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "RPDmI9fq2EodBIpb11YEB8CPHKrsumDytjYdoLHgBj_8qZ-ZB5bHtNHnNw-XEII5WkoV1SZy0f4lauy_p9aI1w.png",
+      "sha256": "8b343dd4b33433ed1ee5515830cd2afcca308ed7ed1f9bd2fce7678dfcb40e27",
+      "bytes": 888,
+      "width": 192,
+      "height": 38,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 대치(트럼펫피시) — 가늘고 길다",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "RW9-UsP6n4N54sQp7j87FG78s-HyMUxuWCUU5QGqE2I0DpULqhjrnGg51teV78-LYx3wNm8o1jPNdqgkC4x-Rw.webp",
+      "sha256": "37e7456ceeed73c2e0e7289fde98e5b3a6b29495a58017501c4a81d812e2aa74",
+      "bytes": 668,
+      "width": 102,
+      "height": 30,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "은빛 정어리류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "sNN_QEfibN57zW-O43Lyy91PW7bQOOBPaoq-Bk5XJQPFOqCeGh92DGJ29dd5j2ddcOyCleIH22f0tAdKeekKYg.png",
+      "sha256": "445d74d5d3ed4359990f1d35dc45cd189f4e3b865ee2b4a6b223cc49884b64f3",
+      "bytes": 1387,
+      "width": 136,
+      "height": 84,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "파란 심해어 — 주황 볏",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "tBCvQCHIWIdFPLyvtM9XSxZLKxUPadELBvIWWKmmU6tzD6h4w_-N2LbX7djBk7D0csMShUu26Inm-3U098F5usZucAdnYYlW352LX-i8xbYKE7f1SmKt8eoK2pohsUgl-dt9ddTM-4nnmTNUujFToQ.webp",
+      "sha256": "3e15788f102b83356105f23dd806f3bca7132a914ff516469ee7cf1c748ec352",
+      "bytes": 1328,
+      "width": 210,
+      "height": 98,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "어두운 황소상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "TDumQF48Ns_AD2zWQjASyaNtkFCWglqau3ZCOB_TeHTRx7c9XyAs-6vF3_QRXDl8Pld9wRPdP0rz6ZItNs616FXlKV4Jz82zJj_VrA_DhMUrPxq4oI8uTjyDJa-gktFRvgfpo84XiOxYjr9xFmGZEQ.webp",
+      "sha256": "a4f358597c61469a9ea6cf016733f4a8c47351a479b4a6e1b4ad415970e0209a",
+      "bytes": 3260,
+      "width": 141,
+      "height": 72,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "분홍 부채새우(슬리퍼 랍스터)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "tdvykLBOb9RRhga_ghbJ7ud-43KMTGC5YwqvURLviVrYJTzmIYT_EhwE2iv8-GN_kCzotLfoZ0Xa9jYWtabFTg.webp",
+      "sha256": "f2c0e44361f303c79455062c16d75ae6364d475e9fea562b6e8d58e094337098",
+      "bytes": 1136,
+      "width": 48,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 배트피시",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "tHFdvJb8EZvG7mKX8QduX9B2-9oy6AFWibrqN4sXBMUhpr8BNdGK8dn4zvW8NtTyKI_-dcc0GXxXgVY9Op2I8A.png",
+      "sha256": "a75007ff80816feb64ef4ee052c4b55245e2ff4560f9ad14a7096ad2863adae4",
+      "bytes": 657,
+      "width": 60,
+      "height": 42,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "노란 탱, 아주 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "tVXB_FnRL3SWcuT8S7XJAACFaAhkMJMTXaEnnxqEfs8yL61_ER1u0YFm6XF3y1q3_0-JtK1wTCVFqbHgXgfogw.webp",
+      "sha256": "88b65e80cb7c84d3cc813f5bba4dddca225b599062ad70b7387c773b30354e5a",
+      "bytes": 1852,
+      "width": 190,
+      "height": 72,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "reef-fish",
+        "fish-wrasse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "혹돔 — 분홍 이마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "tWFwwLpeLYLifhvvsG0StX5NoDAFpo_ITmqruFz5JWyK9qF7PwzqvRCohuI6RAigENuNOMEIJSa7yzq7UAVCNg.webp",
+      "sha256": "3ba78c7a80f681c96a354b85ae9d5fc3265565008a88f67ca2678225e2f02c91",
+      "bytes": 1302,
+      "width": 50,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "얼룩 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "u4hPoXiCZZXvZ_u_ExDAy0p9z2oPdHZ0WhbRwbdnBam9SarkgrwUJIkf9cquSmI8zmqZV8aqr9PTS7aK2-khdTFz_62VSMQnh7h-ll23Mz2ebO0pU2YCYO5X8ksECb3TtlN8u80BYt4uaASTxR2BKQ.png",
+      "sha256": "44d4597fced575c3fd5bb508c2c93e16a8b759c4885462c26de3e8cbdd081a08",
+      "bytes": 2888,
+      "width": 220,
+      "height": 119,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "marlin",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "돛새치 — 큰 돛 지느러미",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "uSXcV-toEAXQNkniE_VXx_CZe7HlQwRdXU3cw_-1-YJsYrIIxNNYaNZNaNEUht4_RRwcurb_P8w5TSCVODlatRHwxPffNMGE3AS1VtsUyPe7ZT7XlFB4Cok8fsWI4mivAs2gRsPtr8alXhEPr0apAg.webp",
+      "sha256": "67e111ed5073c209953db6c5900c0e66dbfc90abf1d7001f657e7d94bdfa225a",
+      "bytes": 5108,
+      "width": 240,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "lobster",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 닭새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "v26ADf01Ja8MzCK-Pej8X6vJ9ejNOthYX7M8i5V_Fy8Ecaqd3HrtxzU2exNR9kcz8VQ7y6Tp7C_BBtqiXPlZsQ.webp",
+      "sha256": "7b5683cb341afd13628b3fa3414d415470d659140352debb585c983362dc50db",
+      "bytes": 1544,
+      "width": 166,
+      "height": 52,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "tuna",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "줄무늬 가다랑어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "vLkERFLx7QszgCIoxusEj2Mij0eD1uewuRE6NB_orxyKHRHeLj1eRx44tNZEIXJiGZ3_t5WsN04MNtIYdla0LlSK0soj9quxFnb7x25CsldYWTjcfhjftbf6Q704RtDZFdknmLxnvdsejDnjGjYxHw.webp",
+      "sha256": "b69dd0795be25730150c66e1ff2705f9c6abd6614eb41672ee08bc7a6244d930",
+      "bytes": 1050,
+      "width": 216,
+      "height": 68,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "whale",
+        "animal-minkewhale",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "밍크고래 — 검은 등·흰 배",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "wgdQUyC4fu4J8GekWCG-gfecxJYZVsTEGSQgC_63MLnXz2_ASpUZ4DN2pE2mOZvvAer8l4bcoI6IkNDyTI0lPCgAi9MOYNiUWmCGBVtJYAbyBj4PkhvXwSpkaqIA1AgR9UE14-OTzCLjnE2C7yJedw.webp",
+      "sha256": "45e0d9fa2f4bfc6fac367a378c8cc87842fd2b9ac1c683867e42a9aed1923f8c",
+      "bytes": 1332,
+      "width": 210,
+      "height": 128,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "fish-shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "회색 암초상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "wNILN2DedT0JADKYivRQysgIMbKjI3a5rPvnHhaXpomcA14NG87MniwkGfm4dxytW_iQunURsY1VQVNzMMT4Ww.webp",
+      "sha256": "c68e47eb60ce8049b4b9df39feb00b12f46afe43e889d2073882976b8abb4beb",
+      "bytes": 1006,
+      "width": 58,
+      "height": 108,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "squid",
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흡혈오징어 — 붉은 우산",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "X5eFQ4JPVIhArm-jA1pJzswuqJwE5-_5ik6N23qjp_RI44GHgGOueCq9ovSkI560bR3c969P3kVFCvcgsdcgbw.webp",
+      "sha256": "096781c83aa533ca9664a089729a74431e43847d2495cff94b17d309448cb989",
+      "bytes": 1104,
+      "width": 134,
+      "height": 36,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "줄무늬 새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "XPnz3KM6M996RRJpud4mOIPZOKWp3An2aqqJPNQFST14cevA5s-dW4-ijbFZMnJoF8FeRwx9igO-p0EWwaQHFw.webp",
+      "sha256": "0db2baba90b935680c077d0cf4c2e93cec85573cd2632ffb7c9ae23bee391cd4",
+      "bytes": 668,
+      "width": 138,
+      "height": 26,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "금빛 가늘고 긴 물고기(꼬치·학꽁치류)",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "XTbHG_lHpLsryk53nUNTksjTuh0busRQzaF0CmJBFruSmRN9ftMu0wBDw4CEKdichy5GWAM-wkrm5s_W5gMVCcK-DMm25qGBH8LOc8joJsmPGS6OGgQUeMqw5Cq8mfs7Tb-pWFAOB8E1W4rDkYkMDQ.webp",
+      "sha256": "20b96abd5acab24a3521cb627462a1dc8654dd8657bc6f76bb85b64c066245d6",
+      "bytes": 1992,
+      "width": 220,
+      "height": 84,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "whale",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "일각고래 — 뿔이 초점",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "xtzwDhINcq_uxYbi3U6F2_8fkJNc9aUxVgEUXV7VgeFmq95weYyBuj3MkSLKAorRjcGMEK1SKvw9SL1Fk48yyQ3ToSMgtLD0b8MajnjkQl0C0z5eU7Y8hTskBMny2ppRvT-TnpUu5vBilcROGfECkA.webp",
+      "sha256": "7c1e2c8d7c1098bd2cfaa3464a931212c6f31243148ac952452a2060d7a532c4",
+      "bytes": 2658,
+      "width": 192,
+      "height": 48,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "squid",
+        "fish-squid",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "연한 무늬오징어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "y_P-2PH9hCCDxYpMSqMVsOWzlOqgQhbB2It5lFiUBe24e2pNA_7j7FmGB5Z9kPR7Bg2bPgyN4hfaVvpA1fy1RBQrqCo_6COSeFdTHTZJEGfhooExh3sUPEO9W50jkVedYJ1BAFX0v-YGQUiep19hCA.png",
+      "sha256": "35e7d7223287b1e4999af3b8da1ff1e001991030de5653fea981b87e98418e7b",
+      "bytes": 2350,
+      "width": 214,
+      "height": 98,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 점박이 얼룩상어",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "y2b6IQLEMyxAN-uanaALYa7iDk4hokUDxXWjVeRmBDo7YHfZ4nHZIaHC3a-oiaVMwmHLhTJ9hjXhlynxtyNegg.webp",
+      "sha256": "894c827713f0f34c607c99e87fb52b329cb3c0190fd029d8db83ffff5ab23ed0",
+      "bytes": 632,
+      "width": 136,
+      "height": 40,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shrimp",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰 새우",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "y41ycsCeUZDTvTfERZwSAC0y2nUPPirXlvWzMFyxj4zWnY0pc_aizSKtVREUD7rRFAnUutMls-ctoe4h4cAUnw.webp",
+      "sha256": "c6c89633e610e9756c49207b99ed1a98d58cede801f69902bf7a0b13bd63ff39",
+      "bytes": 1084,
+      "width": 140,
+      "height": 98,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "ray",
+        "fish-ray",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "갈색 홍어 위에서 — 마름모 실루엣",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ym2AfC9kAUqyEAsZ_GqOtXhdFkI4zSmLhbMheWO60EAs-C4zM8d3CBmseL9bIaZ56xII77_yBr3cYewInyrpnQ.png",
+      "sha256": "d52f4c8a5c628491110fff734a33da44ef00bbae0264fba2f2ce9140a3fe9301",
+      "bytes": 757,
+      "width": 98,
+      "height": 34,
+      "format": "png",
+      "kind": "icon",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [
+        "icon-chunky"
+      ],
+      "note": "파란 정어리, 굵은 도트",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "yo5TvoSOYTivKXj_2ICry9rgPXLAuBSTRcLLxCSwPhRDzQ3hzIlhJEKV1ZxuuIvYGPCi6g96PzTvbqHdpcb7ShUcFbgallgghxYOjRyPGveStRmFrZR-A1Q0h9EkreBRD62AXblD7gfqrJp6o0lcdA.webp",
+      "sha256": "8ba47096bb7cb11d71c03f630dcda13c4add7c53546c2bb88659458e64852ec4",
+      "bytes": 1796,
+      "width": 220,
+      "height": 98,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "shark",
+        "sea-fish",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "톱상어 — 줄무늬, 톱 주둥이",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ySdcMG9crxXcWu3fy-Q0-kagtU8l1PFTevhya66GNhip6rQL6ytsTwf6x9tjs1HVOd9BnCIEZtxn73RzARo-6w.webp",
+      "sha256": "8d904e9a24c198800ea3e9c23bef858adac220cf198bb7c7d29299be4d6c814e",
+      "bytes": 1244,
+      "width": 52,
+      "height": 96,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "주황 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "yWOeJoPL2FYaImDBZUgkW9yKu6wHc4AvTuCwWb3xw0Dd0zIj5H-57C4GW6PQBi2am8bBxzy6MdM5_fwBNof4VpWVTzvmAhvptpjfjVs-LBuCe_1pVqm0V570XK82r4Ntr9Wyi9WNHZ3PXMmRuKlsbg.webp",
+      "sha256": "4da9272557c074a18454de4ac0f2ab09dcf75d0a433edfbdfaae12c1bc5f890c",
+      "bytes": 2572,
+      "width": 214,
+      "height": 123,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "ray",
+        "fish-ray",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "쥐가오리 위에서 — 검은 마름모, 흰 배 무늬",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "yZ-sG5G2ypXa1lNq6knRfCbnbYa3DmIuNTsxHGB2uJ995Ww9q6SMR5i5czIISjxEfEwubXTpDpvHoW6VOpXbKw.png",
+      "sha256": "387111dd1892b556141fa88ec08cb9096f5d9ded136987533b518f3a280a7183",
+      "bytes": 1025,
+      "width": 118,
+      "height": 44,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "puffer",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "흰 점박이 복어류",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "z7jVceMXt5T2KuptSTav0wfP8AZpbUDQmYDSgqLiNsCOPbyWzg1r1e3emrgWlps3ro4AbZzabRSyo-IDuKovVQ.webp",
+      "sha256": "4904554f414fb05ab92a2afdde138bdba8d0bfbe1388c7771e3462c9e8308c42",
+      "bytes": 994,
+      "width": 162,
+      "height": 86,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "top",
+      "subjects": [
+        "ray",
+        "fish-ray",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 가오리 위에서 — 긴 꼬리",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ZFsmNSjIqEc45cEvtAteN3JjyrQYOYzhMTZZsi6c8ubSMsJ2T4WOfk8zqa_SxdRygxZLha7fEa2YI2v_2gXLPw.webp",
+      "sha256": "b474c1d643690850f1f6e804567f3de648520b00f505ba55f8b6639cfe371b3b",
+      "bytes": 1908,
+      "width": 144,
+      "height": 70,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "front",
+      "subjects": [
+        "crab",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "붉은 게 정면",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "Zhto4_CRpgCYMiDz35iLadLkRnUf1ZXtCxBOVDz4m3gzqqEucZSTEvpRl2TZidycQCAScfP0_w7loKVRSPGQoQ.png",
+      "sha256": "352ae286046f7b1c3b6cf545abdc0d0b8558288b491a52d4610c66c92ee73443",
+      "bytes": 1043,
+      "width": 50,
+      "height": 82,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "노란 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ZPxctHNnMFFag_2tzGaIU4f2a3yvBQljb_ap-ngeyVLs1bYTcO-25TsCTjq3wU8isdqL5fI0FfclVwnH2dIGBw.webp",
+      "sha256": "70765e62daa83de0a0fee734f5cf751a55f7d703e16297aee11336f2d55d215e",
+      "bytes": 2072,
+      "width": 132,
+      "height": 68,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "심해 검은 물고기 — 큰 입",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ZUYV-bSzvrv3UKjBJz-6QGzMp_wJCKaHktnvE2zubdegvuuWVMlRFgRxdfhtoHADgSOq7qDF-YfxqYbBQ8FClg.webp",
+      "sha256": "2ee85edf8b6e21b39a554b4a0898d9fd25cf64ef51d4467f13ff4882631ff724",
+      "bytes": 1008,
+      "width": 44,
+      "height": 100,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "seahorse",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "연보라 해마",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ZvnbEx6mufjQMp62QQkj7rOBzLH_rp5xtkC_h_98qodddewxBxW-Q_EhLeZwrz8RdtL8j0B5BvBPU55qQF3jbA.png",
+      "sha256": "459f681dea0faea48ff82138718ece16f00641f6dd04b91513fb775f6b45b451",
+      "bytes": 1767,
+      "width": 178,
+      "height": 70,
+      "format": "png",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "ribbon-eel",
+        "eel",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "리본장어 — 파랑·노랑 물결",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "zxB_fYgvHWi5gNWqrIr4LE2UWPwAMUVQjrecc-vuWKMhKK7rO9_Jrl0FSwkZtp1HrH21FHRz6nJK5Ehk5iGwxQ.webp",
+      "sha256": "cdb8043e121995b802e1f66ac4d2dec6eb0f3203c1819851b698845228d24d13",
+      "bytes": 1092,
+      "width": 164,
+      "height": 28,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "goby",
+        "fish-goby",
+        "fish"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "점박이 망둑어류 — 길고 납작",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "ZXTIIcJk_jvmq4_LdaZFnNlUUEz-TRdG5NnAfZXMkl0fRpl2B2hWaeW2YPF7x3q3MuFs31y5UC9G_ad7pmkuJQ.webp",
+      "sha256": "463d1c0c89e62e2f2b389cc389e6dc9e7734fdd399f76094cc9a914b3cc47f32",
+      "bytes": 1156,
+      "width": 96,
+      "height": 54,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "nautilus",
+        "animal"
+      ],
+      "env": [
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "앵무조개 — 나선 껍데기·촉수",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    },
+    {
+      "file": "zYKmyoDeCLGJGw1S7ymX2dznREECMclnXCGQt2LPoU_lYPtSa4VR5dDe_2VsaFN3Eec2WxBsHrESoCIG8qRhTlIx0evQAMYz4vRFM5RhkGITmzuE54EDvw8Cx7Y9YEjnfjROA01Y6XCGBohJQh83Hg.webp",
+      "sha256": "48d429203e5db483f2258b21e41e1a1cd0a175a442d835b0ae87202ac894361a",
+      "bytes": 1896,
+      "width": 212,
+      "height": 110,
+      "format": "webp",
+      "kind": "sprite",
+      "style": "pixel",
+      "view": "side",
+      "subjects": [
+        "deep-sea",
+        "fish"
+      ],
+      "env": [
+        "deep-sea",
+        "underwater"
+      ],
+      "time": null,
+      "season": null,
+      "role": "depiction",
+      "flags": [],
+      "note": "둔클레오스테우스 — 갑옷 머리, 큰 입",
+      "classifiedAt": "2026-09-10",
+      "classifiedBy": "claude-fable-5.1 · 대조 시트 38장 육안 검토"
+    }
+  ]
+}

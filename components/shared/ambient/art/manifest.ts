@@ -425,13 +425,24 @@ const ART_STYLE_SPEC = `- 픽셀 규격(**가장 중요 — 2026-09-07 개정**)
    아니라 **첨부된 레퍼런스와 한 세트로 보이는 것**이 목적이다. 수치는 그것을 확인하는 수단일 뿐이다.`;
 export const ART_STYLE_GUIDE = `${ART_STYLE_HEADER}${ART_REFERENCE_GUIDE}${ART_STYLE_SPEC}`;
 
-export type ArtPromptReference = { path: string; kind: "accepted" | "accepted-sheet" | "inspiration"; slotId?: string };
-const referenceLabel = (kind: ArtPromptReference["kind"]) => kind === "accepted-sheet" ? "합격본 시트" : kind === "accepted" ? "합격본 저장본" : "형태 발상만";
+/** 고정 입력의 역할. style-*는 공통화풍참고 색인이 고른 게임 캡처 사본이다(분위기·그림체·형태 비율만, 복제 금지). */
+export type ArtPromptReferenceKind = "accepted" | "accepted-sheet" | "inspiration" | "style-mood" | "style-depiction" | "style-form";
+export type ArtPromptReference = { path: string; kind: ArtPromptReferenceKind; slotId?: string; note?: string };
+const REFERENCE_LABEL: Record<ArtPromptReferenceKind, string> = {
+  accepted: "합격본 저장본", "accepted-sheet": "합격본 시트", inspiration: "형태 발상만",
+  "style-mood": "화풍·분위기(공통화풍참고)", "style-depiction": "화풍·그림체(같은 부류)", "style-form": "형태 비율만(3D 렌더)"
+};
+const referenceLabel = (kind: ArtPromptReferenceKind) => REFERENCE_LABEL[kind];
+const isApprovedKind = (kind: ArtPromptReferenceKind) => kind === "accepted" || kind === "accepted-sheet";
+const isStyleKind = (kind: ArtPromptReferenceKind) => kind.startsWith("style-");
 const fixedReferenceGuide = (inputs: readonly ArtPromptReference[]) => [
   "## 고정 입력 — 이번 요청의 유일한 이미지 참고",
   "아래 고정입력 사본을 **한 장도 빠짐없이 그림으로 첨부**해 보낸다 — 생성기는 저장소 경로를 열 수 없고, 못 본 것은 맞출 수 없다. 첨부한 파일과 관찰한 특징을 적는다. 다른 live 파일로 바꾸지 않는다.",
-  ...inputs.map((input) => `- ${referenceLabel(input.kind)}: \`${input.path}\``),
-  inputs.some((input) => input.kind !== "inspiration") ? "화풍·부위 표현은 위 합격본 기준. 형태 발상은 이 화풍을 바꾸지 않는다." : "해당 범주의 합격본 없음. 이번 결과는 첫 화풍 승인을 위한 스타일 파일럿이다.",
+  ...inputs.map((input) => `- ${referenceLabel(input.kind)}: \`${input.path}\`${input.note ? ` — ${input.note}` : ""}`),
+  inputs.some((input) => isApprovedKind(input.kind)) ? "화풍·부위 표현은 위 합격본 기준. 형태 발상은 이 화풍을 바꾸지 않는다." : "해당 범주의 합격본 없음. 이번 결과는 첫 화풍 승인을 위한 스타일 파일럿이다.",
+  ...(inputs.some((input) => isStyleKind(input.kind))
+    ? ["공통화풍참고 사본은 소유자가 모은 상업 게임 캡처다. **분위기**는 색 온도·화면 밀도·카메라만, **그림체**는 같은 부류를 그 게임이 어떻게 덩어리·외곽선·색 단수로 단순화했는지만, **형태 비율**은 부위 배치만 본다. 물체·캐릭터·UI·고유 디자인을 복제하거나 트레이스하지 않고, 렌더 질감·부드러운 명암을 흉내 내지 않는다. 도트 굵기·색 단수·외곽선 어법은 합격본과 아래 규격이 정한다."]
+    : []),
   "반려 이미지는 화풍 기준이 아니다. 실패 예시가 필요하면 REJECTED 라벨·위반 ruleId·문제 crop·기대 형태를 함께 제시한다.",
   ""
 ].join("\n");
