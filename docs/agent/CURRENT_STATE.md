@@ -15,6 +15,7 @@ Pine is the entry point and it is waiting on the owner alone. The nine collected
 |---|---|---|---|
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
+| STYLE-REF-GAMES | Owner Supplied | Ask the owner what these are for before classifying, naming or deleting any of them | [Style reference rules](../ambient/ART_RULES.md) |
 | AMB-QA-18 | Planned | Reproduce prioritized candidates on one fixed build before selecting fixes | [Ambient QA](../ambient/QA_PROGRESS.md) |
 | OPS-ANALYTICS-CLEANUP | Blocked | Verify current data/backup and establish authorization before production deletion | [Open checks](verification/OPEN_CHECKS.md) |
 | VERIFY-PUBLIC-002-003 | Planned | Reconcile historical mobile insights and teaser preview issue labels with current evidence | [Open checks](verification/OPEN_CHECKS.md) |
@@ -26,6 +27,8 @@ Pine is the entry point and it is waiting on the owner alone. The nine collected
 
 - No new pine images have been generated. The old request remains frozen, 원본/정리본 contain no delivery, and review is pending. Numeric checks do not replace owner visual approval.
 - Pine references are curated by the owner, not by an agent. All nine are still present and renamed subject-first (소나무모음 / 소나무한그루 / 나무모음 / 숲소품 / 식물모음, source last); an earlier agent-chosen deletion of six was reverted at the owner's word in `33d0178d`. Ask which to drop and delete only those pairs. `request` freezes whatever remains in 레퍼런스/ into 고정입력/수집참고 as `inspiration` inputs, so the folder's contents at request time are exactly what the generator is attached, and a reference without a CC0 sidecar fails the request instead of being skipped.
+- `art-src/공통화풍참고/데이브 더 다이버/` (186 files) and `모여봐요 동물의 숲/` (27) are commercial game captures the owner placed there deliberately on 2026-09-10 and intends to work on next; they are not entity references, carry no provenance sidecars, and their filenames are cache hashes. They are committed and pushed in `27a39748`, whose message names only two documents because an agent staged everything without reading it. Leave them alone and ask the owner what they are for. The mood/composition rules they feed are style reference only: no asset is ever copied into our art.
+
 - Production cleanup has no current execution or approval evidence. Old backup paths and row counts are historical; recheck before acting.
 - ISSUE-002/003 have conflicting old labels and resolution claims. These are verification tasks, not confirmed current leaks. Fixture/service-role tests do not establish genuine-login/RLS/device coverage.
 
