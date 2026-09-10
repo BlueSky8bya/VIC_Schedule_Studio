@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: f8b89707678061c2b5f3d6461a86b8e94aa3b971b537efc44c6b68bc0daca295 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: fba07bf925b08514761556decc93a192de18605740adb9fd8e09b5e168812fe9 -->
+<!-- content-sha256: ad4bacdfcac8ecb148ba2f8ed506fae0931b3913b0c247b5f32bef26a6c733ff -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: fba07bf925b08514761556decc93a192de18605740adb9fd8e09b5e168812fe9 -->
 
 # cloud-wisp 레퍼런스
 

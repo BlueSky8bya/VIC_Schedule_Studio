@@ -14,7 +14,7 @@ Finish the remaining C choices in the approved [work plan](plans/PLAN-20260909-0
 | ID | Status | Next | Record |
 |---|---|---|---|
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |
-| ART-PINE-PILOT | Reference Collection Planned | Web-discover pine pixel-art candidates only; remove photo/render/vector mismatches, store validator-accepted images with provenance and keep other pixel-art candidates as source links, then wait for owner curation | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
+| ART-PINE-PILOT | Awaiting Owner Curation | Owner drops the reference PNGs to discard; then regenerate the notice, create a new run and generate variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | AMB-QA-18 | Planned | Reproduce prioritized candidates on one fixed build before selecting fixes | [Ambient QA](../ambient/QA_PROGRESS.md) |
 | OPS-ANALYTICS-CLEANUP | Blocked | Verify current data/backup and establish authorization before production deletion | [Open checks](verification/OPEN_CHECKS.md) |
 | VERIFY-PUBLIC-002-003 | Planned | Reconcile historical mobile insights and teaser preview issue labels with current evidence | [Open checks](verification/OPEN_CHECKS.md) |
@@ -24,7 +24,7 @@ Finish the remaining C choices in the approved [work plan](plans/PLAN-20260909-0
 
 - Owner choices pending: latest run's two sheets directly in 검토; approved-only 생성본 with the existing 40 legacy sources moved to 보존본 versus a provenance-labelled source archive; and B/C follow-up commits versus uncommitted review. The ≤12 size ratio applies within one entity's variants, per the owner's answer. Raw-archive implementation is tested; do not silently choose the remaining policy.
 
-- No new pine images have been generated. The old request remains frozen, 원본/정리본 contain no delivery, and review is pending. Newly collected references require owner curation and a new run before generation. Numeric checks do not replace owner visual approval.
+- No new pine images have been generated. The old request remains frozen, 원본/정리본 contain no delivery, and review is pending. Newly collected references require owner curation and a new run before generation. Numeric checks do not replace owner visual approval. `request` now freezes the entity's curated references into 고정입력/수집참고 and records them as `inspiration` inputs, so whatever remains in 레퍼런스/ at request time is what the generator is attached; a reference without a CC0 sidecar fails the request instead of being skipped.
 - Production cleanup has no current execution or approval evidence. Old backup paths and row counts are historical; recheck before acting.
 - ISSUE-002/003 have conflicting old labels and resolution claims. These are verification tasks, not confirmed current leaks. Fixture/service-role tests do not establish genuine-login/RLS/device coverage.
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 254315d4494c9dd2a3c9eb2a12932891dfeeb93e7e4078aeecc0e1f8b5aaa789 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: d17b44c82de1bd9e59a0af8455e4e17977e25f38fcd48a887104aba2e158f023 -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
 
 # animal-starfish 생성본
 

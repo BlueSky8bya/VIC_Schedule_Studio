@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 48997cb3277bfdd1ccb460b2f6bc81cbaaf641a6e0df813ca2c5171dd5990b18 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 1312cf1c8e44900c23f35cb0cd4d3440b148d470012991115f9a82352a4de45e -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
 
 # fish-yellowtail 반려본
 

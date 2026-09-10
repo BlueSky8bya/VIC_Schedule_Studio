@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 1ca1be172fdd240e79f0d46f98c3016b254b7204356f8089492d086e3b77ce4a -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: 2244b6c68fcd1d9f697067eddd49ace1d991c749c1b2d6f2f15865a48cc347fb -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
 
 # bug-stagbeetle 레퍼런스
 

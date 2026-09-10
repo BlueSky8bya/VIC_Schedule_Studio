@@ -429,7 +429,7 @@ export type ArtPromptReference = { path: string; kind: "accepted" | "accepted-sh
 const referenceLabel = (kind: ArtPromptReference["kind"]) => kind === "accepted-sheet" ? "합격본 시트" : kind === "accepted" ? "합격본 저장본" : "형태 발상만";
 const fixedReferenceGuide = (inputs: readonly ArtPromptReference[]) => [
   "## 고정 입력 — 이번 요청의 유일한 이미지 참고",
-  "아래 inputs 사본을 실제로 열고, 연 경로·관찰한 특징·이미지 생성기에 전달한 참고를 적는다. 다른 live 파일로 바꾸지 않는다.",
+  "아래 고정입력 사본을 **한 장도 빠짐없이 그림으로 첨부**해 보낸다 — 생성기는 저장소 경로를 열 수 없고, 못 본 것은 맞출 수 없다. 첨부한 파일과 관찰한 특징을 적는다. 다른 live 파일로 바꾸지 않는다.",
   ...inputs.map((input) => `- ${referenceLabel(input.kind)}: \`${input.path}\``),
   inputs.some((input) => input.kind !== "inspiration") ? "화풍·부위 표현은 위 합격본 기준. 형태 발상은 이 화풍을 바꾸지 않는다." : "해당 범주의 합격본 없음. 이번 결과는 첫 화풍 승인을 위한 스타일 파일럿이다.",
   "반려 이미지는 화풍 기준이 아니다. 실패 예시가 필요하면 REJECTED 라벨·위반 ruleId·문제 crop·기대 형태를 함께 제시한다.",
@@ -485,10 +485,10 @@ const promptDetail = (s: ArtSlot, pilot: boolean, only?: ReadonlySet<string>, in
   [
     `### ${s.nameKo} — ${wantFiles(s, pilot, only).join(", ")}`,
     `자리 ${s.px[0]}×${s.px[1]}(${ratioOf(s.px)}) · 카메라 ${viewTagOf(s)} · 격자 ${dotGrid(s.px, s.grid)}칸(블록 ${dotBlock(s.px, s.grid)}px) · 물체 가로 약 ${dotsAcross(s.px, s.grid)}칸${s.perScreen ? ` · **한 화면에 최대 ${s.perScreen}개 동시**` : ""}`,
-    // 열어 볼 경로를 자리마다 **정확히** 적는다 — "<자리>를 넣어 유추하라"는 또 하나의 빈칸이고,
-    // 3차가 메운 것이 바로 그런 빈칸이었다.
+    // 첨부되는 그림을 자리마다 **정확히** 적는다 — "<자리>를 넣어 유추하라"는 또 하나의 빈칸이고,
+    // 3차가 메운 것이 바로 그런 빈칸이었다. 경로는 어느 첨부인지 가리키는 이름이지, 열라는 뜻이 아니다.
     inputs !== undefined
-      ? `**그리기 전에 열어 볼 고정 입력** — ${inputs.filter((input) => !input.slotId || input.slotId === s.id).map((input) => `${referenceLabel(input.kind)} \`${input.path}\``).join(" · ") || "해당 승인 참고 없음: 스타일 파일럿으로 검토받는다."}`
+      ? `**이 자리에 첨부되는 고정 입력**(그림으로 온다) — ${inputs.filter((input) => !input.slotId || input.slotId === s.id).map((input) => `${referenceLabel(input.kind)} \`${input.path}\``).join(" · ") || "해당 승인 참고 없음: 스타일 파일럿으로 검토받는다."}`
       : `**그리기 전에 열어 볼 것** — 합격본 시트 \`docs/ambient/reference/${s.id}.png\`, 합격본 후보 \`public/ambient/art/${slotFiles(s)[0]}\` · 형태 발상 \`art-src/reference/${s.category}/\`(발상만). 해당 합격본이 없으면 범주·카메라에 맞는 스타일 파일럿으로 먼저 검토받는다.`,
     only ? "**아래는 전체 자리의 디자인 계획이다. 전체 변형 수·과거 반려 수량은 추가 납품 지시가 아니다. 이번 납품 범위는 위 파일 목록과 자리 표가 우선한다.**" : "",
     "",

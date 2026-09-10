@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: cdf05ab138f6ca4bd61c5461feb42462b0cadeca36d6a3ba8a60739738fc3fec -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
+<!-- content-sha256: 387b033bb70c0001b608424b4b84d29d470e1a7fc2c0102b7d0792903b82364a -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
 
 # comet 검토
 

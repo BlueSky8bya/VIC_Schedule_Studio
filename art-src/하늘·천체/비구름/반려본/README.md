@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: bbdb6ead84df858fe323e0199fa20ecc0312ed0e4525c3aae10451e22d133680 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 98de7426b76441ff6dd7b63d3a80b3a630b405a4bf52af1672fd18ea40ae08b6 -->
+<!-- content-sha256: 56e8e6488f4c250629fc0e01f2208910cbadc19c99bb33bd221473e6a3c4e798 -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 98de7426b76441ff6dd7b63d3a80b3a630b405a4bf52af1672fd18ea40ae08b6 -->
 
 # cloud-storm 반려본
 

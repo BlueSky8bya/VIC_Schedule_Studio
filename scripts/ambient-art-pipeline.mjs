@@ -8,6 +8,7 @@ import { artManifest, familySlots, root } from "./lib/ambient-art-manifest.mjs";
 import { buildEntities } from "./lib/ambient-art-entities.mjs";
 import { ART_DIR, entityPath, folderName, inputPath, relocateArtPath } from "./lib/ambient-art-paths.mjs";
 import { normalizeSource } from "./lib/ambient-art-normalize.mjs";
+import { referenceDirectory } from "./lib/ambient-ref-library.mjs";
 import { checkArt } from "./ambient-art-check.mjs";
 const sharp = createRequire(import.meta.url)("sharp");
 export const sha256 = (data) => crypto.createHash("sha256").update(data).digest("hex");
@@ -93,6 +94,19 @@ function rejectionHistory(workspaceRoot, entityDir) {
   );
 }
 
+/** Owner-curated entity references, refused unless each one still carries CC0 provenance. */
+function collectedReferences(workspaceRoot, entity) {
+  const dir = referenceDirectory({ workspaceRoot, category: entity.category, entity: entity.id, manifest: artManifest() });
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter((file) => /\.(png|gif)$/i.test(file)).sort().map((file) => {
+    const source = within(workspaceRoot, path.join(dir, file)), card = `${source}.json`;
+    if (!fs.existsSync(card)) throw new Error(`Reference has no provenance sidecar: ${relative(workspaceRoot, source)}`);
+    const license = read(card)?.license;
+    if (!/^CC0/.test(license ?? "")) throw new Error(`Reference is not CC0: ${relative(workspaceRoot, source)} — ${license ?? "license missing"}`);
+    return source;
+  });
+}
+
 export function createRequest({ family = "tree-pine", runId, variants = [2, 3], files: requestedFiles, workspaceRoot = root, dry = false, refreshPrepared = false }) {
   folderName(runId);
   const { slotFiles, batchPrompt } = artManifest();
@@ -119,6 +133,10 @@ export function createRequest({ family = "tree-pine", runId, variants = [2, 3], 
   }
   const sheet = path.join(workspaceRoot, "docs/ambient/reference", `${family}.png`);
   if (fs.existsSync(sheet)) snapshots.push({ source: sheet, path: inputPath(`inputs/reference/${family}.png`), kind: "accepted-sheet" });
+  // The generator cannot open repository paths, so a curated reference only reaches it as a frozen attached copy.
+  for (const file of collectedReferences(workspaceRoot, entity)) {
+    snapshots.push({ source: file, path: inputPath(`inputs/collected/${path.basename(file)}`), kind: "inspiration" });
+  }
   const mode = snapshots.some((s) => s.kind === "accepted") ? "extend-approved-style" : "style-pilot";
   const priorRejections = rejectionHistory(workspaceRoot, path.dirname(path.dirname(runDir)));
   const relativeRun = relative(workspaceRoot, runDir);
@@ -137,7 +155,7 @@ export function createRequest({ family = "tree-pine", runId, variants = [2, 3], 
   if (previousRequest && json(previousRequest.inputs) !== json(request.inputs)) throw new Error("Prepared refresh cannot replace frozen images; use a new run");
   if (!dry) {
     if (!exists) {
-      for (const dir of [ART_DIR.raw, ART_DIR.normalized, inputPath("inputs/baseline"), inputPath("inputs/reference")]) fs.mkdirSync(path.join(runDir, dir), { recursive: true });
+      for (const dir of [ART_DIR.raw, ART_DIR.normalized, inputPath("inputs/baseline"), inputPath("inputs/reference"), inputPath("inputs/collected")]) fs.mkdirSync(path.join(runDir, dir), { recursive: true });
       for (const dir of [ART_DIR.raw, ART_DIR.normalized]) fs.writeFileSync(path.join(runDir, dir, ".gitkeep"), "", { flag: "wx" });
       for (const snapshot of snapshots) fs.copyFileSync(snapshot.source, path.join(runDir, snapshot.path), fs.constants.COPYFILE_EXCL);
     }

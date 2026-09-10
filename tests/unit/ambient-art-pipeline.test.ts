@@ -72,6 +72,33 @@ describe("art pipeline boundaries", () => {
     expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "부분", files: ["tree-pine-2.png"] })).toThrow(/Incomplete seasonal pack/);
   });
 
+  it("freezes curated entity references as attachments and refuses ones without CC0 provenance", async () => {
+    const workspaceRoot = workspace();
+    const referenceDir = path.join(workspaceRoot, path.posix.join(entityDirectory("tree-pine"), "레퍼런스"));
+    fs.mkdirSync(referenceDir, { recursive: true });
+    const image = await fixture(64);
+    fs.writeFileSync(path.join(referenceDir, "oga-example-pine.png"), image);
+    fs.writeFileSync(path.join(referenceDir, "웹후보.md"), "링크만 있는 후보는 첨부 대상이 아니다.");
+
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "출처없음", dry: true })).toThrow(/no provenance sidecar/);
+    const card = path.join(referenceDir, "oga-example-pine.png.json");
+    fs.writeFileSync(card, JSON.stringify({ license: "CC BY 3.0", author: "someone" }));
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "라이선스검사", dry: true })).toThrow(/not CC0/);
+
+    fs.writeFileSync(card, JSON.stringify({ license: "CC0", author: "someone", source: "https://example.test/pine" }));
+    const result = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "레퍼런스첨부" });
+    const collected = result.request.inputs.filter((input: { kind: string }) => input.kind === "inspiration");
+    expect(collected).toHaveLength(1);
+    expect(collected[0].path).toBe(paths.inputPath("inputs/collected/oga-example-pine.png"));
+    expect(collected[0].source).toContain("레퍼런스/oga-example-pine.png");
+    // The frozen copy is what actually reaches the generator, so its bytes must match the curated file.
+    expect(fs.readFileSync(path.join(result.runDir, collected[0].path)).equals(image)).toBe(true);
+    expect(result.prompt).toContain(`형태 발상만: \`${path.posix.join(entityDirectory("tree-pine"), "작업회차/레퍼런스첨부", collected[0].path)}\``);
+    expect(result.prompt).toContain("그림으로 첨부");
+    expect(result.prompt).not.toContain("그리기 전에 열어 볼 고정 입력");
+    expect(result.prompt).not.toContain("웹후보");
+  });
+
   it("allows Korean run names with spaces while refusing new English or traversal folders", () => {
     const workspaceRoot = workspace();
     const runId = "20260909 · 1차 (검토)";

@@ -6,7 +6,7 @@ import { buildEntities } from "./ambient-art-entities.mjs";
 
 export const ART_DIR = Object.freeze({
   runs: "작업회차", raw: "원본", normalized: "정리본", inputs: "고정입력",
-  baseline: "합격참고", reference: "공통화풍참고", migrations: "이관기록"
+  baseline: "합격참고", reference: "공통화풍참고", collected: "수집참고", migrations: "이관기록"
 });
 const names = JSON.parse(fs.readFileSync(path.join(root, "art-src/폴더명.json"), "utf8"));
 if (names.schemaVersion !== 1) throw new Error("Unknown art folder mapping version");
@@ -32,6 +32,7 @@ export function inputPath(relative) {
   if (parts[0] === ART_DIR.inputs) {
     if (parts[1] === "baseline") parts[1] = ART_DIR.baseline;
     if (parts[1] === "reference") parts[1] = "레퍼런스";
+    if (parts[1] === "collected") parts[1] = ART_DIR.collected;
   }
   return parts.join("/");
 }

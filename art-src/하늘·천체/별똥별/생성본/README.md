@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: d814af3a6ae651135e1d421995c7fd1b9342ebcd3103d8f23db196859f2b4cc6 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 624ef67585772e11614fd252b331d3e11a4956d4fcbef2caf97507da3937d8ac -->
+<!-- content-sha256: 30d75cc286ae396e4aff165f6edcfd21ab4a34053a12744086a566c2ee9b8865 -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 624ef67585772e11614fd252b331d3e11a4956d4fcbef2caf97507da3937d8ac -->
 
 # shooting-star 생성본
 

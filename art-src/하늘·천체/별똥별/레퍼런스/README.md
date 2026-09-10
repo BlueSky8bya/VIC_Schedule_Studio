@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 18b8f17334900afdd02f03a8206fa7317ed8217cf21512dfb0f33cf73f752715 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 624ef67585772e11614fd252b331d3e11a4956d4fcbef2caf97507da3937d8ac -->
+<!-- content-sha256: 91420301bcb10889a9ec22f495594af1ea5a3417d16e0a815311b3fc3b265d90 -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 624ef67585772e11614fd252b331d3e11a4956d4fcbef2caf97507da3937d8ac -->
 
 # shooting-star 레퍼런스
 

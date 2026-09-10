@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e47aeacfc41801e478389e0a791b5166b21a81ac55cebe3b300eb639af873bd8 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: fba07bf925b08514761556decc93a192de18605740adb9fd8e09b5e168812fe9 -->
+<!-- content-sha256: af062968aa201345d9d3ee550c3a150e27f518019b668cfccaac914a87cd1fa6 -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: fba07bf925b08514761556decc93a192de18605740adb9fd8e09b5e168812fe9 -->
 
 # cloud-wisp 생성본
 

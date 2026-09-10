@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 310e10efd2da2b22e50252f7f2063cd4099bd0dc55c37cc6cd2eab3d26d4ad55 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
+<!-- content-sha256: b52020d2394ab1445a3beb5e09d649ad68f45f03e150cee2afd39ac8d056aada -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
 
 # comet 레퍼런스
 

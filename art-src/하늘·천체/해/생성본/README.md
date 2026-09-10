@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e36786b02e2439d48edf880b061d60957934d8e512fd549836d8925f860dd9e2 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: f59d19cb1f0593c72c7438b9a4fb1ea85378fd98d03cadf374acaeee7230b55e -->
+<!-- content-sha256: bac1f2448850deded32fb9f656e613e7bc2b338a7eeead2b209772aa9e89458c -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: f59d19cb1f0593c72c7438b9a4fb1ea85378fd98d03cadf374acaeee7230b55e -->
 
 # sun-disc 생성본
 

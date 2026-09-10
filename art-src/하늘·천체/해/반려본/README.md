@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e6a7895232631179f5b545ca7d2294916d11f6a7a043c1a8ab7ad326915379bb -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: f59d19cb1f0593c72c7438b9a4fb1ea85378fd98d03cadf374acaeee7230b55e -->
+<!-- content-sha256: f910cb4adb8bf98b9279101277090c50f11c368fed0033f999d1d66d76d14a15 -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: f59d19cb1f0593c72c7438b9a4fb1ea85378fd98d03cadf374acaeee7230b55e -->
 
 # sun-disc 반려본
 

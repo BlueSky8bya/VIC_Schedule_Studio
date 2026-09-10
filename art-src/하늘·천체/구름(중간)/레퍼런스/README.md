@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 6e26fb94ecadb6f9ef5050781042f0021eef9ec25a021ac155bcf1934aac2c96 -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 6445836bd8067b3f2a668b5513aff4e8da960e8a49513e01f26ec12b2d19de44 -->
+<!-- content-sha256: 879e5c2d7c0b89406680950bd99674cc7579b64232e989ffcc1b18550a8f293b -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 6445836bd8067b3f2a668b5513aff4e8da960e8a49513e01f26ec12b2d19de44 -->
 
 # cloud-mid 레퍼런스
 

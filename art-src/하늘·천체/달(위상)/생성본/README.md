@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: a915ec16e2627d288fdd4856c8dc443b202fb2d98401207a899cec47bc3ad01c -->
-<!-- source-sha256: 2737ddd02dff35f68210dc330723bb34bfa4347d02361c76ff363688b9fbc747; state-sha256: 01c34227a8cdaa8597ba579359ee84a29b7d9bf86183bbd94a0cc3187fd85018 -->
+<!-- content-sha256: 651b299a53d7fb1ec3d68ad5d27863dfc2b4861434345036ca9bf022e0b9d793 -->
+<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 01c34227a8cdaa8597ba579359ee84a29b7d9bf86183bbd94a0cc3187fd85018 -->
 
 # moon-phase 생성본
 
