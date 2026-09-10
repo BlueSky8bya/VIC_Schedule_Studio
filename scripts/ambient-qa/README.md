@@ -74,5 +74,14 @@ PNG/JSON evidence is local under `.scratch-pw/qa/r18-depth`. Canvas byte estimat
 
 ## Existing tooling limits
 
+- `node scripts/ambient-qa/sky-cohesion-check.mjs before|after|verified`: R27 role matte seams, four-season plain/showcase ridges, five weather banks, three moon dates and two forced sky events. Outputs 30 scene captures + 12 UI captures under `.scratch-pw/qa/r27/`. Role preview's viewed June may override season query, so only the eight biome ridge captures establish all-season coverage. Requires an identified running fixture build.
+
+- `node scripts/ambient-qa/sky-map-check.mjs verified`: R25 four-season north/south skies, six cloud weather views, five non-meadow occlusion views and actual preview controls. Requires a running identified fixture build; outputs `.scratch-pw/qa/r25/verified/`. `before` captures the baseline; `final` omits the five additional scenes.
+- `node scripts/ambient-qa/cloud-atlas-check.mjs`: reads the immutable source and checks all 30 measured regions have nonempty bodies and blank separation gutters; never edits pixels. Celestial/time and analytical cloud-cycle tests are in `tests/unit/ambient-celestial.test.ts`.
+
+R26 uses `sky-map-check.mjs r26-before` / `r26-after` under the existing r25 output root for paired 14-scene captures. The cloud source check follows `cloud-atlas-layout.json`, verifies 30 unique selected cells and their exact measured bounds, and writes `.scratch-pw/qa/r26/atlas-layout.json`.
+
+- `node scripts/ambient-qa/sky-art-check.mjs before|after`: ROUND-24 fixed-date moon, six weather states, summer sun and forced meteor/comet screenshots. Records build ID, canvas hashes, world state, magenta-matte leaks, page errors and new atlas loading under `.scratch-pw/qa/r24/`. Requires an already running fixture build. Date/illumination accuracy is separately checked by `tests/unit/ambient-moon.test.ts` against NASA hourly data; screenshots use the fixture band's representative hour.
+
 - 실제 화면(`/`, `/studio`)의 시드는 그대로 로드마다 다르다(결정성은 fixture 전용).
 - 전 조합 캡처(≈1,000)는 하지 않는다 — 전수는 P2 지표(`metrics.mjs`, 미구현), 심화는 16 시나리오.

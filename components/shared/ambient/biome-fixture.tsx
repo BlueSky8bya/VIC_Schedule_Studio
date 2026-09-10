@@ -54,6 +54,13 @@ const waitFor = <T,>(get: () => T | undefined, timeoutMs: number): Promise<T | u
 
 export function BiomeFixture({ season, year, month, force, t, camera, gfx = "max", reduced = false, live = false }: BiomeFixtureProps) {
   const [playing, setPlaying] = useState(live);
+  const [previewForce, setPreviewForce] = useState(force);
+  const changePreview = (patch: Partial<typeof force>) => {
+    const next = { ...previewForce, ...patch };
+    window.__vicAmbient?.forceWorld(next);
+    const observed=window.__vicAmbient?.world();
+    setPreviewForce({...next,hour:typeof observed?.hour==='number'?observed.hour:next.hour});
+  };
   const forceKey = JSON.stringify(force);
   // 자식(SeasonCanvas)의 마운트 효과보다 **먼저** 게이트를 연다 — 레이아웃 효과는 패시브 효과 전에 전부 돈다.
   // 페인트-전 스크립트는 vic.ambient 미설정 → data-ambient="off"(캔버스 display:none)라, 그대로 두면 엔진이 0×0을 잰다.
@@ -81,6 +88,8 @@ export function BiomeFixture({ season, year, month, force, t, camera, gfx = "max
       const reached = await dbg.advance(t);
       if (!cancelled) {
         dbg.settledT = reached;
+        const observed=dbg.world();
+        setPreviewForce(prev=>({...prev,day:Number(String(observed.date).split('-')[2])||prev.day,hour:typeof observed.hour==='number'?observed.hour:prev.hour}));
         if (live) { dbg.freeze(false); setPlaying(true); }
       }
     })();
@@ -93,12 +102,20 @@ export function BiomeFixture({ season, year, month, force, t, camera, gfx = "max
     <>
       <AmbientLayer force={season} month={month ?? SEASON_MONTH[season]} slug="vic" worldForce={force} year={year} />
       {camera === "showcase" ? <ShowcaseExit /> : null}
-      {live ? <div style={{ position: "fixed", top: 16, left: 16, zIndex: 2147483647, display: "flex", gap: 12, padding: "10px 14px", borderRadius: 12, background: "#fffef0ed", color: "#284535", fontSize: 14 }}>
+      {live ? <div style={{ position: "fixed", top: 16, left: 16, right:16, zIndex: 2147483647, display: "flex", flexWrap:'wrap', alignItems:'center', gap: 12, padding: "10px 14px", borderRadius: 12, background: "#fffef0ed", color: "#284535", fontSize: 14 }}>
         <span>{{ spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" }[season]} 초원 테스트 · 마우스를 움직여 보세요</span>
         {(["spring", "summer", "autumn", "winter"] as const).map(s => <a key={s} href={`?biome=meadow&season=${s}&band=noon&weather=clear&seed=42&t=1500&camera=showcase&gfx=auto&load=auto&live=1`}>{{spring:"봄",summer:"여름",autumn:"가을",winter:"겨울"}[s]}</a>)}
         <button onClick={() => { window.__vicAmbient?.freeze(playing); setPlaying(!playing); }}>{playing ? "일시정지" : "재생"}</button>
-        <button onClick={() => window.__vicAmbient?.forceWorld({ ...force, band: "noon", skyEvent: undefined })}>낮</button>
-        <button onClick={() => window.__vicAmbient?.forceWorld({ ...force, band: "night", skyEvent: "shooting-star" })}>밤·별똥별</button>
+        <button onClick={() => changePreview({ band: "noon", skyEvent: undefined })}>낮</button>
+        <button onClick={() => changePreview({ band: "night", skyEvent: "shooting-star" })}>밤·별똥별</button>
+        <label>서울 하늘 <select aria-label="하늘 방향" value={previewForce.skyBearing ?? 'south'} onChange={e => changePreview({ skyBearing:e.target.value as NonNullable<typeof force.skyBearing> })}>
+          <option value="south">남쪽</option><option value="north">북쪽</option><option value="east">동쪽</option><option value="west">서쪽</option>
+        </select></label>
+        <label>날씨 <select aria-label="날씨" value={previewForce.weather ?? 'clear'} onChange={e => changePreview({ weather:e.target.value as NonNullable<typeof force.weather> })}>
+          <option value="clear">맑음</option><option value="cloud">흐림</option><option value="wind">바람</option><option value="rain">비</option><option value="snow">눈</option><option value="fog">안개</option>
+        </select></label>
+        <label>날짜 <input aria-label="날짜" type="number" min={1} max={new Date(Date.UTC(year,month??SEASON_MONTH[season],0)).getUTCDate()} value={previewForce.day??15} style={{width:40}} onChange={e=>changePreview({day:Math.max(1,Math.min(new Date(Date.UTC(year,month??SEASON_MONTH[season],0)).getUTCDate(),Number(e.target.value)||1))})}/></label>
+        <label>시각 <input aria-label="시각" type="number" min={0} max={23.75} step={.25} value={previewForce.hour??(previewForce.band==='night'?21:12)} style={{width:48}} onChange={e=>changePreview({band:undefined,hour:Math.max(0,Math.min(23.75,Number(e.target.value)||0))})}/></label>
       </div> : null}
     </>
   );

@@ -1,0 +1,58 @@
+{
+  "tool": "image_gen.imagegen",
+  "date": "2026-09-11",
+  "dimensions": [
+    1536,
+    1024
+  ],
+  "entries": [
+    {
+      "season": "spring",
+      "source": "C:/Users/im917/.codex/generated_images/01a08b85-9859-73e2-bac5-05ce6f2f5a1d/exec-f7a974b5-bba7-4fb0-8dde-91da6f64f653.png",
+      "raw": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/원본/spring-near-detail.png",
+      "runtime": "public/ambient/art/backdrop-meadow-spring-near-detail-v1.png",
+      "prompt": "spring-request.md",
+      "sha256": "2af45c2b351d6ae7e2e85bcd16bac31e69f5035d392096f54f77c73e332bacfe",
+      "review": "agent visually inspected; owner review pending",
+      "frozenInput": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/고정입력/spring.png",
+      "inputSha256": "67f488a55ae6fb834fed65599aa1a343ef8076498966b30b0dccc2cd0b9487c5",
+      "integration": "original upper half preserved; lower half smoothstep .5 to .85"
+    },
+    {
+      "season": "summer",
+      "source": "C:/Users/im917/.codex/generated_images/01a08b85-9859-73e2-bac5-05ce6f2f5a1d/exec-140bb0b2-b489-4a4f-837d-2470cff78143.png",
+      "raw": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/원본/summer-near-detail.png",
+      "runtime": "public/ambient/art/backdrop-meadow-summer-near-detail-v1.png",
+      "prompt": "summer-request.md",
+      "sha256": "cf52b6c227f1f359424de2164a533b38bf1463183470e818ffb25c3d8cda5b73",
+      "review": "agent visually inspected; owner review pending",
+      "frozenInput": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/고정입력/summer.png",
+      "inputSha256": "96b734b670ee6f5362b6ddfdd2e5d2859fa12bdab814e767bd942938f56abe88",
+      "integration": "original upper half preserved; lower half smoothstep .5 to .85"
+    },
+    {
+      "season": "autumn",
+      "source": "C:/Users/im917/.codex/generated_images/01a08b85-9859-73e2-bac5-05ce6f2f5a1d/exec-7da86ca5-35e4-407a-8409-55033f31f450.png",
+      "raw": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/원본/autumn-near-detail.png",
+      "runtime": "public/ambient/art/backdrop-meadow-autumn-near-detail-v1.png",
+      "prompt": "autumn-request.md",
+      "sha256": "3891e9fc39a6d213bf8fa2b7f2e3b8973fb42468c8d2e9211d51a2b93fa7b6f7",
+      "review": "agent visually inspected; owner review pending",
+      "frozenInput": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/고정입력/autumn.png",
+      "inputSha256": "844eb82faa3ae5dd4d4523f3425b2763b7aec3a175876d795a7191a3b56f535c",
+      "integration": "original upper half preserved; lower half smoothstep .5 to .85"
+    },
+    {
+      "season": "winter",
+      "source": "C:/Users/im917/.codex/generated_images/01a08b85-9859-73e2-bac5-05ce6f2f5a1d/exec-ae9d386f-7bf6-4612-97e6-e0599dc0ff30.png",
+      "raw": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/원본/winter-near-detail.png",
+      "runtime": "public/ambient/art/backdrop-meadow-winter-near-detail-v1.png",
+      "prompt": "winter-request.md",
+      "sha256": "bb0f8f8bf49315d8c363f5b1550c2a7d9943ac379fd56c059c7f3efe4d0bbf34",
+      "review": "agent visually inspected; owner review pending",
+      "frozenInput": "art-src/배경층/초원/작업회차/20260911-근경세부보강-01/고정입력/winter.png",
+      "inputSha256": "77f1464559163539705a5a3876ff4f7b6f7d5457a11855de3a63a380a522bf5b",
+      "integration": "original upper half preserved; lower half smoothstep .5 to .85"
+    }
+  ]
+}

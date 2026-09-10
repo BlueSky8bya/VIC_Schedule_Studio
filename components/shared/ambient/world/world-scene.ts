@@ -7,7 +7,7 @@
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import type { Frame, Scene, SceneFactory } from "@/components/shared/ambient/scene-engine";
 import { createDepthPointer, depthOffsets, type DepthPoint } from "./depth";
-import { withDepthScene, withDepthLayer, bakeDepthFrame, depthCacheStats, clearDepthCache, retainDepthOwners } from "./depth-render";
+import { surfaceLocalPoint, withDepthScene, withDepthLayer, bakeDepthFrame, depthCacheStats, clearDepthCache, retainDepthOwners } from "./depth-render";
 import { createParticles } from "./particles";
 import { drawDepthHaze, drawLightPass, HORIZON_V, SPRING_MEADOW_HORIZON_V, withViewHorizon } from "./view";
 import { BIOMES, biomeAt, isBiomeKey, neighbor, screenDelta, type BiomeKey, type Dir } from "./biomes";
@@ -50,8 +50,13 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       const gain = trans ? Math.pow(1 - Math.min(1, Math.max(0, (f.t - trans.t0) / trans.dur)), 5) : 1;
       return depthOffsets(trans ? panPointer : pointer.value(f.t), f.w, f.dpr, active ? f.depthTier ?? (f.q < 2 ? "lite" : "full") : "still", Number.isFinite(gain) ? gain : 0);
     };
-    const localFrame = (f: Frame): Frame => {
+    const localFrame = (f: Frame, key:BiomeKey=cur): Frame => {
       const off = offsetsOf(f).ground;
+      if(key==='meadow'){
+        const local=(x:number,y:number)=>surfaceLocalPoint(x,y,off,f.h*SPRING_MEADOW_HORIZON_V,f.h);
+        const p=local(f.p.x,f.p.y),a=f.hot?local(f.hot.x,f.hot.y):null,b=f.hot?local(f.hot.x+f.hot.w,f.hot.y+f.hot.h):null;
+        return {...f,p:{...f.p,...p},hot:f.hot&&a&&b?{...f.hot,x:a.x,y:a.y,w:b.x-a.x,h:b.y-a.y}:null};
+      }
       return { ...f, p: { ...f.p, x: f.p.x - off.x, y: f.p.y - off.y }, hot: f.hot ? { ...f.hot, x: f.hot.x - off.x, y: f.hot.y - off.y } : null };
     };
 
@@ -149,13 +154,13 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     };
 
     const stepEntry = (entry: Loaded, f: Frame) => inView(entry.key, () => {
-      const lf = localFrame(f);
+      const lf = localFrame(f,entry.key);
       entry.particles.step(f.dt, f.w, f.h, f.weather.now, f.light, f.load, f.q < 2 || f.depthTier === "lite", entry.scene.ownsWeather?.(f.weather.now) ?? false);
       entry.scene.step(lf);
     });
     const renderEntry = (entry: Loaded | undefined, g: CanvasRenderingContext2D, f: Frame) => {
       if (!entry) return;
-      const lf = localFrame(f);
+      const lf = localFrame(f,entry.key);
       inView(entry.key, () => withDepthScene(g, offsetsOf(f), () => {
         entry.scene.draw(g, lf);
         if (entry.scene.sealed?.()) {

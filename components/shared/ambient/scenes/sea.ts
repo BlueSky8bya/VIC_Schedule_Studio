@@ -143,12 +143,12 @@ export function createSea(seed: number, opts: { season: SeasonKey }): Scene {
           cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed, top() * 0.96); // 바다·해안엔 언덕이 없다 — 원경 상단은 수평선이다(라운드 17)
           skyKeyCur = sk;
         }
-        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 }));
       }
       if (water) withDepthLayer(g, "water", () => drawDepthGround(g, water!, f.w, f.h));
       if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       drawHorizonGlow(g, f.w, top(), seed, currentLight()); // 라운드 15 — 구운 흰 자 대신 조명을 소비하는 마디 띠
-      drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
+      // Celestial light is composed behind the moving clouds above.
       // 먼바다 = 파장 14~100m → 한 화면에 마루 여럿. 깊은 바다 = 225~624m → **큰 너울 한 번**.
       // (2026-09-04 조사. 옛 코드는 깊은 바다에 수면 문법을 아예 안 그려 두 화면이 '불투명도만 다른 같은 그림'이었다 —
       //  검토 라운드2 미관 #4.)

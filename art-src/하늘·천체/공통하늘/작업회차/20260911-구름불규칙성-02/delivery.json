@@ -1,0 +1,597 @@
+{
+  "method": "built-in imagegen",
+  "status": "selected for local preview; owner review pending",
+  "reason": "Distinct large silhouettes and irregular gaps; five-column seven-row output measured and 30 unique forms selected",
+  "inspectedAndAttached": [
+    "고정입력/하늘색감-픽셀어법.png"
+  ],
+  "width": 1254,
+  "height": 1254,
+  "actualRows": 7,
+  "actualColumns": 5,
+  "background": "opaque RGB magenta; runtime exclusion, not transparent source",
+  "files": [
+    {
+      "file": "고정입력/하늘색감-픽셀어법.png",
+      "sha256": "be2516522187d3ff32780219c82dbe6425564e3451fd2ea47f57bddb2dcdaa65"
+    },
+    {
+      "file": "원본/cloud-atlas-v2.png",
+      "sha256": "23f10b7d30106fb4da781901153d82d8de0301d2dda5846507fb0837a20c78ac"
+    },
+    {
+      "file": "request.md",
+      "sha256": "a4deb13b06f4b0a257672f941eebb6df5b58a2a4019899ed38134e86b693b001"
+    }
+  ],
+  "public": "public/ambient/art/cloud-atlas-v2.png",
+  "publicSha256": "23f10b7d30106fb4da781901153d82d8de0301d2dda5846507fb0837a20c78ac",
+  "extraction": {
+    "src": "/ambient/art/cloud-atlas-v2.png",
+    "width": 1254,
+    "height": 1254,
+    "sprites": {
+      "cirrus": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "region": [
+            0,
+            0,
+            256,
+            200
+          ],
+          "bounds": [
+            25,
+            41,
+            217,
+            131
+          ]
+        },
+        {
+          "cell": [
+            0,
+            1
+          ],
+          "region": [
+            256,
+            0,
+            245,
+            200
+          ],
+          "bounds": [
+            279,
+            72,
+            202,
+            79
+          ]
+        },
+        {
+          "cell": [
+            0,
+            2
+          ],
+          "region": [
+            501,
+            0,
+            246,
+            200
+          ],
+          "bounds": [
+            523,
+            50,
+            207,
+            119
+          ]
+        }
+      ],
+      "cirrocumulus": [
+        {
+          "cell": [
+            1,
+            0
+          ],
+          "region": [
+            0,
+            200,
+            256,
+            174
+          ],
+          "bounds": [
+            32,
+            222,
+            192,
+            123
+          ]
+        },
+        {
+          "cell": [
+            1,
+            2
+          ],
+          "region": [
+            501,
+            200,
+            246,
+            174
+          ],
+          "bounds": [
+            525,
+            230,
+            198,
+            110
+          ]
+        },
+        {
+          "cell": [
+            1,
+            4
+          ],
+          "region": [
+            992,
+            200,
+            262,
+            174
+          ],
+          "bounds": [
+            1020,
+            231,
+            199,
+            123
+          ]
+        }
+      ],
+      "cirrostratus": [
+        {
+          "cell": [
+            2,
+            0
+          ],
+          "region": [
+            0,
+            374,
+            256,
+            174
+          ],
+          "bounds": [
+            29,
+            395,
+            213,
+            123
+          ]
+        },
+        {
+          "cell": [
+            2,
+            1
+          ],
+          "region": [
+            256,
+            374,
+            245,
+            174
+          ],
+          "bounds": [
+            269,
+            420,
+            221,
+            85
+          ]
+        },
+        {
+          "cell": [
+            2,
+            4
+          ],
+          "region": [
+            992,
+            374,
+            262,
+            174
+          ],
+          "bounds": [
+            1006,
+            408,
+            223,
+            119
+          ]
+        }
+      ],
+      "altocumulus": [
+        {
+          "cell": [
+            3,
+            0
+          ],
+          "region": [
+            0,
+            548,
+            256,
+            182
+          ],
+          "bounds": [
+            31,
+            579,
+            191,
+            117
+          ]
+        },
+        {
+          "cell": [
+            3,
+            1
+          ],
+          "region": [
+            256,
+            548,
+            245,
+            182
+          ],
+          "bounds": [
+            277,
+            571,
+            199,
+            118
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "region": [
+            256,
+            200,
+            245,
+            174
+          ],
+          "bounds": [
+            279,
+            241,
+            195,
+            103
+          ]
+        }
+      ],
+      "altostratus": [
+        {
+          "cell": [
+            4,
+            0
+          ],
+          "region": [
+            0,
+            730,
+            256,
+            157
+          ],
+          "bounds": [
+            24,
+            770,
+            220,
+            81
+          ]
+        },
+        {
+          "cell": [
+            4,
+            1
+          ],
+          "region": [
+            256,
+            730,
+            245,
+            157
+          ],
+          "bounds": [
+            271,
+            758,
+            215,
+            102
+          ]
+        },
+        {
+          "cell": [
+            4,
+            2
+          ],
+          "region": [
+            501,
+            730,
+            246,
+            157
+          ],
+          "bounds": [
+            513,
+            775,
+            215,
+            85
+          ]
+        }
+      ],
+      "stratus": [
+        {
+          "cell": [
+            4,
+            3
+          ],
+          "region": [
+            747,
+            730,
+            245,
+            157
+          ],
+          "bounds": [
+            759,
+            774,
+            220,
+            79
+          ]
+        },
+        {
+          "cell": [
+            4,
+            4
+          ],
+          "region": [
+            992,
+            730,
+            262,
+            157
+          ],
+          "bounds": [
+            1005,
+            764,
+            223,
+            94
+          ]
+        },
+        {
+          "cell": [
+            5,
+            2
+          ],
+          "region": [
+            501,
+            887,
+            246,
+            168
+          ],
+          "bounds": [
+            518,
+            970,
+            212,
+            61
+          ]
+        }
+      ],
+      "stratocumulus": [
+        {
+          "cell": [
+            5,
+            0
+          ],
+          "region": [
+            0,
+            887,
+            256,
+            168
+          ],
+          "bounds": [
+            24,
+            960,
+            217,
+            63
+          ]
+        },
+        {
+          "cell": [
+            5,
+            1
+          ],
+          "region": [
+            256,
+            887,
+            245,
+            168
+          ],
+          "bounds": [
+            277,
+            954,
+            207,
+            76
+          ]
+        },
+        {
+          "cell": [
+            3,
+            4
+          ],
+          "region": [
+            992,
+            548,
+            262,
+            182
+          ],
+          "bounds": [
+            1014,
+            569,
+            210,
+            128
+          ]
+        }
+      ],
+      "nimbostratus": [
+        {
+          "cell": [
+            6,
+            0
+          ],
+          "region": [
+            0,
+            1055,
+            256,
+            199
+          ],
+          "bounds": [
+            24,
+            1089,
+            219,
+            103
+          ]
+        },
+        {
+          "cell": [
+            6,
+            1
+          ],
+          "region": [
+            256,
+            1055,
+            245,
+            199
+          ],
+          "bounds": [
+            271,
+            1097,
+            212,
+            99
+          ]
+        },
+        {
+          "cell": [
+            6,
+            2
+          ],
+          "region": [
+            501,
+            1055,
+            246,
+            199
+          ],
+          "bounds": [
+            513,
+            1101,
+            223,
+            100
+          ]
+        }
+      ],
+      "cumulus": [
+        {
+          "cell": [
+            3,
+            2
+          ],
+          "region": [
+            501,
+            548,
+            246,
+            182
+          ],
+          "bounds": [
+            526,
+            595,
+            198,
+            92
+          ]
+        },
+        {
+          "cell": [
+            3,
+            3
+          ],
+          "region": [
+            747,
+            548,
+            245,
+            182
+          ],
+          "bounds": [
+            772,
+            580,
+            201,
+            124
+          ]
+        },
+        {
+          "cell": [
+            5,
+            3
+          ],
+          "region": [
+            747,
+            887,
+            245,
+            168
+          ],
+          "bounds": [
+            759,
+            932,
+            220,
+            95
+          ]
+        }
+      ],
+      "cumulonimbus": [
+        {
+          "cell": [
+            5,
+            4
+          ],
+          "region": [
+            992,
+            887,
+            262,
+            168
+          ],
+          "bounds": [
+            1005,
+            914,
+            223,
+            127
+          ]
+        },
+        {
+          "cell": [
+            6,
+            3
+          ],
+          "region": [
+            747,
+            1055,
+            245,
+            199
+          ],
+          "bounds": [
+            764,
+            1069,
+            215,
+            140
+          ]
+        },
+        {
+          "cell": [
+            6,
+            4
+          ],
+          "region": [
+            992,
+            1055,
+            262,
+            199
+          ],
+          "bounds": [
+            1005,
+            1073,
+            225,
+            140
+          ]
+        }
+      ]
+    }
+  },
+  "selectionNote": "30 distinct patches chosen by visible morphology; five extra generated patches unused. Cloud genera are stylized visual interpretations, not labeled observational specimens."
+}

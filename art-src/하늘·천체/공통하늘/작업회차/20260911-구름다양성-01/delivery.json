@@ -1,0 +1,49 @@
+{
+  "method": "built-in imagegen",
+  "status": "generated, local review pending; not owner approved",
+  "width": 1254,
+  "height": 1254,
+  "grid": [
+    5,
+    6
+  ],
+  "genera": 10,
+  "variants": 3,
+  "background": "opaque RGB magenta; runtime chroma exclusion",
+  "files": [
+    {
+      "file": "고정입력/기존구름화풍.png",
+      "sha256": "be2516522187d3ff32780219c82dbe6425564e3451fd2ea47f57bddb2dcdaa65"
+    },
+    {
+      "file": "원본/cloud-atlas-v1.png",
+      "sha256": "84c366b618078f488594046f38fc4c54040fa3f42190027c86b567b1166b42a9"
+    },
+    {
+      "file": "request.md",
+      "sha256": "09f1819c7904ef491ce177b249194c7e5e39bc40ca362611a813a77e6b4b462b"
+    }
+  ],
+  "public": "public/ambient/art/cloud-atlas-v1.png",
+  "publicSha256": "84c366b618078f488594046f38fc4c54040fa3f42190027c86b567b1166b42a9",
+  "measuredGutters": {
+    "x": [
+      0,
+      260,
+      507,
+      750,
+      995,
+      1254
+    ],
+    "y": [
+      0,
+      225,
+      418,
+      585,
+      795,
+      985,
+      1254
+    ],
+    "reason": "Generator placement is not an exact uniform grid; all 30 regions have at least 7px blank gutters"
+  }
+}

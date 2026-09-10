@@ -1,3 +1,4 @@
+import { anchorToSurface } from "../world/depth-render";
 import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 봄 — "풀밭을 위에서 내려다본다". 바탕(연둣빛 필름 + 클로버·작은 데이지·꽃잎 몇)은 한 번 굽고, **풀포기 층은 따로 구워**
 // 바람에 흔들린다(2026-09-04 사용자: "꽃잎이 휘날릴 때 잔디도 같이") — 가로 띠 12개로 잘라 띠마다 진행파(sin)만큼 옆으로
@@ -1277,7 +1278,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     },
     draw(g, f) {
       const { t, load } = f;
-      if (ground) drawDepthGround(g, ground, f.w, f.h);
+      if (ground) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
         const sk = skyKey(variant, f.weather.now, f.time.band, f.w, f.h);
@@ -1346,10 +1347,11 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           const age = t - d.born;
           const pop = age < 0.6 ? 1 + 0.35 * Math.sin((age / 0.6) * Math.PI) : 1;
           const k = d.k * Math.min(1, age / 0.25) * pop * depthScale(d.y, f.h) * (SIZE.flower / 20);
+          g.save();anchorToSurface(g,d.y+16*k);
           if (groundArt.has("dandelion-puff")) {
             // 아트 — 홀씨 머리 중심이 (d.x, d.y)에 오게(홀씨는 거기서 날아간다), 발은 그 아래.
             drawProp(g, groundArt, "dandelion-puff", d.x, d.y + 16 * k, { k: k * 1.25 });
-            continue;
+            g.restore();continue;
           }
           g.save();
           g.translate(d.x, d.y);
@@ -1361,10 +1363,11 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           g.stroke();
           g.scale(k, k);
           g.drawImage(dandSpr, -20, -20);
-          g.restore();
+          g.restore();g.restore();
         }
       }
       for (const pr of presses) {
+        g.save();anchorToSurface(g,pr.y);
         const p = 1 - pr.life;
         const bend = Math.sin(Math.PI * Math.min(1, p * 1.15));
         g.fillStyle = `rgb(60 96 60 / ${0.14 * pr.life})`;
@@ -1388,6 +1391,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           g.quadraticCurveTo(cx, cy, tipx, tipy);
           g.stroke();
         }
+        g.restore();
       }
       // 메뚜기 — 옆모습 에셋이라 drawFacing(진행 방향으로 뒤집기). 도약 중엔 몸만 hop만큼 뜨고 그림자는 땅에 남아
       // 얼마나 떴는지가 보인다(그림자가 같이 뜨면 "미끄러지는 스티커"가 된다).

@@ -33,6 +33,7 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   const weather: Weather = sp.weather && sp.weather in WEATHER_LABEL ? (sp.weather as Weather) : "clear";
   // 하늘 사건 강제(2026-09-08) — 별똥별·혜성은 평균 1분·9분에 한 번이라 캡처로 잡으려면 되풀이시켜야 한다.
   const skyEvent = sp.skyEvent === "shooting-star" || sp.skyEvent === "comet" ? sp.skyEvent : undefined;
+  const skyBearing = sp.skyBearing === 'north' || sp.skyBearing === 'east' || sp.skyBearing === 'west' ? sp.skyBearing : 'south';
   const seed = Math.round(num(sp.seed, 42, 0, 2 ** 31));
   const t = num(sp.t, 0, 0, 600_000);
   const load = sp.load === "auto" ? undefined : num(sp.load, 1, 0, 1);
@@ -56,7 +57,7 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
     <BiomeFixture
       live={sp.live === "1"}
       camera={camera}
-      force={{ biome, band, hour, weather, seed, load, pointer, day, skyEvent, freeze: true, pin: true }}
+      force={{ biome, band, hour, weather, seed, load, pointer, day, skyEvent, skyBearing, freeze: true, pin: true }}
       gfx={gfx}
       month={month}
       reduced={reduced}

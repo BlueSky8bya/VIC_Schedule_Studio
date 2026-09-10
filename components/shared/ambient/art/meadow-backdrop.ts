@@ -2,7 +2,8 @@ import type { Frame } from "../scene-engine";
 import { loadImage } from "../assets";
 import { beginLoad, endLoad } from "../loading";
 import { horizonY } from "../world/view";
-import { withDepthLayer } from "../world/depth-render";
+import { withSurfaceDepth } from "../world/depth-render";
+import { composeNearGround } from "../world/ground-detail";
 import geometry from "./meadow-layer-geometry.json";
 import summerGeometry from "./meadow-summer-layer-geometry.json";
 import autumnGeometry from "./meadow-autumn-layer-geometry.json";
@@ -21,8 +22,10 @@ const GEOMETRIES = { spring: geometry, summer: summerGeometry, autumn: autumnGeo
  * generator mattes; sources are not mislabelled alpha PNGs. No per-frame masks. */
 export class MeadowBackdrop {
   private images: Partial<Record<Layer, HTMLImageElement>> = {};
-  private paths: Partial<Record<Layer, Path2D>> = {};
+  private masked: Partial<Record<Layer, { c: HTMLCanvasElement; x: number; y: number }>> = {};
   private caches: Partial<Record<Layer, Cache>> = {};
+  private nearGround?: HTMLCanvasElement;
+  private detailImage?: HTMLImageElement;
   private disposed = false;
   version = 0;
   bakes = 0;
@@ -30,20 +33,50 @@ export class MeadowBackdrop {
   constructor(private season: SeasonKey = "spring") {
     this.geometry = GEOMETRIES[season];
     beginLoad();
+    // Uncached optional detail image: release its decoded bitmap after composition.
+    const detail = this.detailImage = new Image();
+    detail.src = `/ambient/art/backdrop-meadow-${season}-near-detail-v1.png`;
+    const detailReady = detail.decode().then(() => detail).catch(() => null);
     void Promise.all(meadowLayerUrls(season).map(url => loadImage(url).then(async image => { await image.decode(); return image; })))
       .then(images => {
-        if (this.disposed || images.some(i => i.naturalWidth !== 1536 || i.naturalHeight !== 1024)) return;
+        if (this.disposed || images.some(i => i.naturalWidth !== 1536 || i.naturalHeight !== 1024)) {
+          detail.removeAttribute("src"); this.detailImage = undefined; return;
+        }
         LAYERS.forEach((layer, index) => {
-          this.images[layer] = images[index];
-          if (layer !== "ground") {
-            const p = new Path2D();
-            for (const [x, y, width] of this.geometry[layer].spans) p.rect(x, y, width, 1);
-            this.paths[layer] = p;
+          if (layer === "ground") { this.images[layer] = images[index]; return; }
+          // Select integer source pixels BEFORE any fractional cache scaling.
+          // A scaled clip has antialiased coverage and can sample RGB matte
+          // outside a valid span even with imageSmoothingEnabled=false.
+          const spans=this.geometry[layer].spans;
+          const x=Math.min(...spans.map(s=>s[0])),y=Math.min(...spans.map(s=>s[1]));
+          const right=Math.max(...spans.map(s=>s[0]+s[2])),bottom=Math.max(...spans.map(s=>s[1]+1));
+          const c=document.createElement("canvas");c.width=right-x;c.height=bottom-y;
+          const cg=c.getContext("2d")!;cg.imageSmoothingEnabled=false;
+          for(const [sx,sy,width] of spans)cg.drawImage(images[index],sx,sy,width,1,sx-x,sy-y,width,1);
+          // Feather only already-clean pixels; the excluded magenta matte never returns.
+          if(layer==='far'){
+            const soft=document.createElement('canvas');soft.width=c.width;soft.height=c.height;
+            const sg=soft.getContext('2d')!;sg.filter='blur(1.6px)';sg.drawImage(c,0,0);
+            cg.clearRect(0,0,c.width,c.height);cg.drawImage(soft,0,0);soft.width=soft.height=1;
           }
+          this.masked[layer]={c,x,y};
         });
         this.version++;
         window.dispatchEvent(new Event("vic:ambient-art-ready"));
-      }).catch(() => { /* Keep fallback if any layer fails. */ }).finally(endLoad);
+        // Optional artwork must never hold the original three layers hostage.
+        void detailReady.then(near => {
+          if (this.disposed) return;
+          if (near?.naturalWidth === 1536 && near.naturalHeight === 1024) {
+            this.nearGround = composeNearGround(images[1], near);
+            this.version++;
+            window.dispatchEvent(new Event("vic:ambient-art-ready"));
+          }
+          detail.removeAttribute("src"); this.detailImage = undefined;
+        });
+      }).catch(() => {
+        detail.removeAttribute("src"); this.detailImage = undefined;
+        // Keep fallback if any original layer fails.
+      }).finally(endLoad);
   }
   get ready() { return this.version > 0; }
   drawGround(g: CanvasRenderingContext2D, w: number, h: number) {
@@ -62,11 +95,11 @@ export class MeadowBackdrop {
         const x1 = Math.round(blend * (j + 1) / 32);
         const t = (j + .5) / 32;
         g.globalAlpha = alpha * t * t * (3 - 2 * t);
-        g.drawImage(this.images.ground!, x0 / scale, 0, (x1 - x0) / scale, 1024, tile.x + x0, c.y, x1 - x0, c.height);
+        g.drawImage(this.nearGround ?? this.images.ground!, x0 / scale, 0, (x1 - x0) / scale, 1024, tile.x + x0, c.y, x1 - x0, c.height);
       }
       g.globalAlpha = alpha;
       const start = Math.round(blend);
-      g.drawImage(this.images.ground!, start / scale, 0, 1536 - start / scale, 1024, tile.x + start, c.y, c.tileWidth - start, c.height);
+      g.drawImage(this.nearGround ?? this.images.ground!, start / scale, 0, 1536 - start / scale, 1024, tile.x + start, c.y, c.tileWidth - start, c.height);
     }
     g.restore();
   }
@@ -82,12 +115,13 @@ export class MeadowBackdrop {
     const c = previous?.c ?? document.createElement("canvas");
     c.width = Math.ceil(width * scale); c.height = Math.ceil(height * scale);
     const g = c.getContext("2d")!;
-    g.scale(scale, scale); g.imageSmoothingEnabled = false;
+    g.scale(scale, scale); g.imageSmoothingEnabled = layer === "far";
     const paint = (x: number, yy: number, k: number, clip?: [number, number, number, number], kx = k) => {
       g.save();
       if (clip) { g.beginPath(); g.rect(...clip); g.clip(); }
-      g.translate(x, yy); g.scale(kx, k); g.clip(this.paths[layer]!);
-      g.drawImage(this.images[layer]!, 0, 0); g.restore();
+      g.translate(x, yy); g.scale(kx, k);
+      const source=this.masked[layer]!;
+      g.drawImage(source.c,source.x,source.y); g.restore();
     };
     const k = Math.min(.65, Math.max(.3, f.h / 2048));
     if (layer === "far") {
@@ -136,14 +170,14 @@ export class MeadowBackdrop {
   private draw(layer: "far" | "frame", g: CanvasRenderingContext2D, f: Frame) {
     if (!this.ready) return false;
     const c = this.cache(layer, f);
-    withDepthLayer(g, layer, () => {
-      g.save(); g.imageSmoothingEnabled = false;
+    withSurfaceDepth(g, layer === "far" ? 0 : 1, () => {
+      g.save(); g.imageSmoothingEnabled = layer === "far";
       g.drawImage(c.c, -32, c.y, c.width, c.height); g.restore();
     });
     return true;
   }
   drawFar(g: CanvasRenderingContext2D, f: Frame) { return this.draw("far", g, f); }
   drawForeground(g: CanvasRenderingContext2D, f: Frame) { return this.draw("frame", g, f); }
-  debug() { return { season: this.season, ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), sourcePixels: 3 * 1536 * 1024 }; }
-  dispose() { this.disposed = true; this.images = {}; this.paths = {}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
+  debug() { return { season: this.season, ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), nearDetailBytes: this.nearGround ? this.nearGround.width * this.nearGround.height * 4 : 0, maskedBytes:Object.values(this.masked).reduce((n,v)=>n+v.c.width*v.c.height*4,0), sourcePixels: 3 * 1536 * 1024 }; }
+  dispose() { this.disposed = true; this.detailImage?.removeAttribute("src");this.detailImage=undefined; if(this.nearGround)this.nearGround.width=this.nearGround.height=1;this.nearGround=undefined; this.images = {}; for(const v of Object.values(this.masked))v.c.width=v.c.height=1;this.masked={}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
 }

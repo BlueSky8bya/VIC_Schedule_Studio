@@ -1704,6 +1704,15 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         drawDepthGround(g, farMountain, f.w, f.h, true);
         g.restore();
       }
+      const crest = hillCrestY(f.h);
+      const skyLive = () => drawSkyLive(
+        g,
+        f.w,
+        f,
+        seed,
+        kind === "mountain" ? horizonY(f.h) + (f.h - horizonY(f.h)) * 0.09 : Math.min(horizonY(f.h) * 0.92, crest - 4),
+        kind === "mountain" ? { moonY: horizonY(f.h) * 0.42, sunY: horizonY(f.h) + f.h * 0.02 } : { moonY: horizonY(f.h) * 0.35, sunY: crest - 14 }
+      );
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 × 띠 판, 지평선 띠(안개·언덕) 아래. 산은 바탕에 구운 ① 능선 **위만** clip(봉우리가 하늘을 가린다).
       {
         const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
@@ -1717,34 +1726,15 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           clipAboveRidge(g, ridge2);
           withDepthLayer(g, "far", () => {
             clipAboveRidge(g, ridge1);
-            drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now);
+            drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now, skyLive);
           });
           g.restore();
         }
-        else drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        else drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now, skyLive);
       }
       // 별·달·해 → **그 다음에** 지평선 띠(2026-09-06 라운드 8, 검토 C: 라운드 7의 이 수정이 초원 계열 네 장면에만
       // 들어가 숲·언덕·계곡에서는 지는 해가 먼 언덕 사면 위에 얹혀 있었다). 상한도 `summer.ts`와 같은 식으로 —
       // 언덕 마루(`hillCrestY`)보다 위. 산만 예외: ① 능선 위 clip이 그 역할을 하고, 봉우리가 지평선 위로 솟는다.
-      const crest = hillCrestY(f.h);
-      const skyLive = () => drawSkyLive(
-        g,
-        f.w,
-        f,
-        seed,
-        kind === "mountain" ? horizonY(f.h) + (f.h - horizonY(f.h)) * 0.09 : Math.min(horizonY(f.h) * 0.92, crest - 4),
-        kind === "mountain" ? { moonY: horizonY(f.h) * 0.42, sunY: horizonY(f.h) + f.h * 0.02 } : { moonY: horizonY(f.h) * 0.35, sunY: crest - 14 }
-      );
-      if (kind === "mountain") {
-        g.save();
-        clipAboveRidge(g, ridge2);
-        withDepthLayer(g, "far", () => {
-          clipAboveRidge(g, ridge1);
-          skyLive();
-        });
-        g.restore();
-      }
-      else skyLive();
       if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       if (grassC) {
         // 억새·풀포기 **진행파**(라운드 8) — 세로 띠 40px마다 x를 흘린다. 파장은 화면 폭의 1/8쯤,

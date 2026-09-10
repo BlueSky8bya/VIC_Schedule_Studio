@@ -1,3 +1,4 @@
+import { anchorToSurface } from "../world/depth-render";
 import { MeadowBackdrop } from "../art/meadow-backdrop";
 import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 겨울 — "소복이 쌓인 눈밭을 위에서 내려다본다". 바탕(눈밭 + 둔덕 그늘 + 반짝이 + 이미 지나간 발자국 몇 줄)은
@@ -240,6 +241,7 @@ export function createWinter(seed: number): Scene {
     const s = SPR[p.kind];
     const k = p.k * depthScale(p.y, gh || 1); // 3/4 시점: 먼 자국은 작고, 바닥에 찍힌 것이라 세로로 눌린다
     g.save();
+    anchorToSurface(g,p.y);
     g.translate(p.x, p.y);
     g.scale(1, GROUND_SQUASH);
     g.rotate(p.a + (p.kind === "sole" ? (p.left ? -0.08 : 0.08) : 0));
@@ -909,7 +911,7 @@ export function createWinter(seed: number): Scene {
       }
     },
     draw(g, f) {
-      if (ground) drawDepthGround(g, ground, f.w, f.h);
+      if (ground) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
         const sk = skyKey("winter", f.weather.now, f.time.band, f.w, f.h);
@@ -1006,6 +1008,7 @@ export function createWinter(seed: number): Scene {
         const dig = digging ? Math.sin((t - r.digT) * 36) * 0.06 : 0; // 파헤치는 동안 몸이 잘게 까딱
         if (digging) k *= 1 + Math.abs(dig) * 0.5;
         k *= depthScale(r.y, f.h); // 3/4 시점: 먼 토끼는 작다
+        g.save();anchorToSurface(g,r.y);
         if (shadow && alpha > 0) {
           g.save();
           g.globalAlpha = 0.35 * alpha * (1 - 0.5 * up);
@@ -1027,6 +1030,7 @@ export function createWinter(seed: number): Scene {
         g.save();
         g.globalAlpha *= depthFade(r.y, f.h);
         drawFacing(g, rabbitSpr, r.x + Math.cos(r.dir) * dig * 30, r.y - 10 * up + Math.sin(r.dir) * dig * 30, r.dir, k * (1 + 0.22 * up), ear + look * 0.4 + twist);
+        g.restore();
         g.restore();
         g.restore();
       }

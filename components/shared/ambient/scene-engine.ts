@@ -50,6 +50,7 @@ export type WorldCtx = {
     seed?: number;
     /** 하늘 사건 강제(개발자) — 별똥별·혜성을 쉬지 않고 되풀이해 확인한다. 평균 1분·9분을 기다릴 수는 없다. */
     skyEvent?: SkyEventKind;
+    skyBearing?: 'north' | 'east' | 'south' | 'west';
     freeze?: boolean;
     load?: number;
     pointer?: { x: number; y: number } | null;
@@ -100,6 +101,7 @@ export type Frame = {
   windDir: number;
   /** 하늘 사건 강제(개발자) — `world.force.skyEvent`를 그대로 넘긴다. 없으면 실제 확률대로. */
   skyEvent?: SkyEventKind | null;
+  skyBearing?: 'north' | 'east' | 'south' | 'west';
   depthTier?: DepthTier;
 };
 
@@ -294,6 +296,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const d = worldForce?.day ?? viewDay(world.year, world.month, today);
     frame.date = { y: world.year, m: world.month, d };
     frame.skyEvent = worldForce?.skyEvent ?? null;
+    frame.skyBearing = worldForce?.skyBearing ?? 'south';
     frame.time = worldForce?.band
       ? worldTimeOfBand(world.season, worldForce.band, frame.date)
       : worldTime(world.season, worldForce?.hour ?? kstHour(), frame.date);

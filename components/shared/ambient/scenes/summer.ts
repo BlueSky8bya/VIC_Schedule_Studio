@@ -1582,11 +1582,11 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 }));
       }
       // 별·달·해는 **지평선 띠보다 먼저** — 먼 언덕·나무 줄이 그 아래를 가려야 한다(2026-09-06 라운드 7, 검토 C:
       // "지는 해의 아랫부분이 언덕 사면에 얹혀 있다"). 상한도 언덕 마루 위로 잡는다.
-      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
+      // Celestial light is composed behind the moving clouds above.
       if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon(season, f.w, f.h, 1);
       drawDepthGround(g, horizon, f.w, horizon.height, true);
       // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.

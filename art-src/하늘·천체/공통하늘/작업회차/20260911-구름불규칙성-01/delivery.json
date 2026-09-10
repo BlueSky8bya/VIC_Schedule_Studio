@@ -1,0 +1,27 @@
+{
+  "method": "built-in imagegen",
+  "status": "rejected by self-review; not integrated",
+  "reason": "Feather-comb, triangular cumulus and repeated anvil geometry still apparent",
+  "inspectedAndAttached": [
+    "고정입력/기존구름-색감참고-형태반려.png"
+  ],
+  "width": 1254,
+  "height": 1254,
+  "actualRows": 6,
+  "actualColumns": 5,
+  "background": "opaque RGB magenta; runtime exclusion, not transparent source",
+  "files": [
+    {
+      "file": "고정입력/기존구름-색감참고-형태반려.png",
+      "sha256": "84c366b618078f488594046f38fc4c54040fa3f42190027c86b567b1166b42a9"
+    },
+    {
+      "file": "원본/cloud-atlas-v2.png",
+      "sha256": "bbbfbeef1f7e3f209f7af61e965587e99cfa37828e3842bb6003743c78e7ac15"
+    },
+    {
+      "file": "request.md",
+      "sha256": "0c239d9acb722ddac3187adbd12f3590d2696cd23fd1d100a4c5716edd788c36"
+    }
+  ]
+}

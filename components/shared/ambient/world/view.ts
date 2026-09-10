@@ -110,6 +110,7 @@ export function depthFade(y: number, h: number): number {
   return 0.78 + 0.22 * t;
 }
 
+const directionCache = new Map<string, HTMLCanvasElement>();
 const hazeCache = new Map<string, CanvasGradient>();
 /** 대기 원근 안개 한 겹 — 장면을 다 그린 뒤, 조명 패스 전에. 지평선에서 짙고 화면 36%에서 사라진다. 색·알파는 조명(시간대·날씨)이
  *  정하고(라운드 2, `light.hazeRgb`/`hazeK`), 없으면 계절 안개색·기본 알파(= 옛 그림 그대로). 그라데이션은 크기·색·알파별 캐시. */
@@ -243,55 +244,36 @@ export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number,
     if (dir > 0.05) {
       const k = Math.min(0.1, 0.1 * dir); // 반대쪽 끝 최대 −10%(L* ≈ −4)
       const u = Math.max(0, Math.min(1, L.reflect.x));
-      const gx = g.createLinearGradient(0, 0, w, 0);
       const dark = Math.round(255 * (1 - k));
-      if (u < 0.5) {
-        gx.addColorStop(0, "rgb(255 255 255)");
-        gx.addColorStop(Math.min(1, u + 0.25), "rgb(255 255 255)");
-        gx.addColorStop(1, `rgb(${dark} ${dark} ${dark})`);
-      } else {
-        gx.addColorStop(0, `rgb(${dark} ${dark} ${dark})`);
-        gx.addColorStop(Math.max(0, u - 0.25), "rgb(255 255 255)");
-        gx.addColorStop(1, "rgb(255 255 255)");
+      // A single masked light surface avoids overlapping eight-band seams.
+      const y0 = aboveHz(h, 0.04), y1 = groundYAt(0.06, h);
+      const key = [Math.round(u*128),dark,Math.round(y0/h*1024),Math.round(y1/h*1024)].join(':');
+      let light = directionCache.get(key);
+      if (!light) {
+        light = document.createElement('canvas'); light.width=256; light.height=256;
+        const lg=light.getContext('2d')!;
+        const horizontal=lg.createLinearGradient(0,0,256,0);
+        if(u<.5){horizontal.addColorStop(0,'white');horizontal.addColorStop(Math.min(1,u+.25),'white');horizontal.addColorStop(1,`rgb(${dark} ${dark} ${dark})`);}
+        else{horizontal.addColorStop(0,`rgb(${dark} ${dark} ${dark})`);horizontal.addColorStop(Math.max(0,u-.25),'white');horizontal.addColorStop(1,'white');}
+        lg.fillStyle=horizontal;lg.fillRect(0,0,256,256);
+        const ramp=lg.createLinearGradient(0,y0/h*256,0,y1/h*256);
+        ramp.addColorStop(0,'transparent');ramp.addColorStop(1,'white');
+        lg.globalCompositeOperation='destination-in';lg.fillStyle=ramp;lg.fillRect(0,0,256,256);
+        directionCache.set(key,light);
+        if(directionCache.size>4){const key=directionCache.keys().next().value!;const old=directionCache.get(key)!;directionCache.delete(key);old.width=old.height=1;}
       }
-      // **세로 램프**(2026-09-06 라운드 11, 검토 B #2 회귀): 라운드 10판은 y = hz에서 풀 세기로 켜져 그늘 쪽 화면 40~50%에
-      // 지평선 절단선(한 행 −2.5~−5.1L)이 생기고 해안 그늘 쪽 수평선 대비가 +5.9 → +0.1로 사라졌다 — 라운드 3 C#6이 잡았던
-      // "지평선에서 곧장 켜짐"의 재발. 지평선 위 .04h에서 0으로 시작해 땅 6%에서 풀 세기: multiply의 α를 띠 8장으로 올린다
-      // (각 띠 ≤ 1/8 → 행간 계단 ≤ .6L).
-      g.globalCompositeOperation = "multiply";
-      g.fillStyle = gx;
-      const y0 = aboveHz(h, 0.04);
-      const y1 = groundYAt(0.06, h);
-      const steps = 8;
-      for (let i = 0; i < steps; i++) {
-        const ya = y0 + ((y1 - y0) * i) / steps;
-        const yb = y0 + ((y1 - y0) * (i + 1)) / steps;
-        g.globalAlpha = (i + 1) / steps;
-        g.fillRect(-pad, ya, w + 2 * pad, yb - ya + 0.5);
-      }
-      g.globalAlpha = 1;
-      g.fillRect(-pad, y1, w + 2 * pad, h - y1 + pad);
-      g.globalCompositeOperation = "source-over";
+      g.globalCompositeOperation='multiply';g.save();g.imageSmoothingEnabled=true;
+      g.drawImage(light,-pad,0,w+2*pad,h+pad);g.restore();
+      g.globalCompositeOperation='source-over';
     }
   }
-  // **지면 앵커**(2026-09-06 라운드 15, 검토 A #1) — 지평선 아래에만 얹는 한 겹. `mul`은 순수 곱셈이라 밝은 지면이 목표까지 안 내려가
-  // "밤하늘 아래 낮의 땅"이 됐다(점심→밤 하늘 −30~−39L · 지면 −8~−13L, 민물은 물이 밤하늘보다 밝았다). source-over는
-  // new = old·(1−a) + c·a라 **밝은 것을 더 많이** 끌어내리므로 밝고 어두운 지면이 함께 목표에 닿는다. 하늘은 건드리지 않는다.
-  // 지평선에서 곧장 켜지면 절단선이 생긴다(라운드 3 C#6 · 라운드 11 B#2) — 가로 광과 같은 8단 세로 램프로 올린다.
-  if (L.ground.alpha > 0.002) {
-    g.fillStyle = `rgb(${L.ground.rgb})`;
-    const y0 = aboveHz(h, 0.04);
-    const y1 = groundYAt(0.06, h);
-    const steps = 8;
-    for (let i = 0; i < steps; i++) {
-      const ya = y0 + ((y1 - y0) * i) / steps;
-      const yb = y0 + ((y1 - y0) * (i + 1)) / steps;
-      g.globalAlpha = (L.ground.alpha * (i + 1)) / steps;
-      g.fillRect(-pad, ya, w + 2 * pad, yb - ya + 0.5);
-    }
-    g.globalAlpha = L.ground.alpha;
-    g.fillRect(-pad, y1, w + 2 * pad, h - y1 + pad);
-    g.globalAlpha = 1;
+  // One continuous night ground overlay; no overlapping translucent strips.
+  if (L.ground.alpha > .002) {
+    const y0=aboveHz(h,.04), y1=groundYAt(.06,h);
+    const ramp=g.createLinearGradient(0,y0,0,y1);
+    ramp.addColorStop(0,`rgb(${L.ground.rgb} / 0)`);
+    ramp.addColorStop(1,`rgb(${L.ground.rgb} / ${L.ground.alpha})`);
+    g.fillStyle=ramp;g.fillRect(-pad,y0,w+2*pad,h-y0+pad);
   }
   if (L.desat > 0) {
     g.globalCompositeOperation = "saturation";

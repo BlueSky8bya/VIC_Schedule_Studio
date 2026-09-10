@@ -1,3 +1,4 @@
+import { anchorToSurface } from "../world/depth-render";
 import { MeadowBackdrop } from "../art/meadow-backdrop";
 import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". **바탕**(2026-09-04 사용자: "가을만 일반 화면") — 마른 흙 얼룩(올리브·
@@ -1082,7 +1083,7 @@ export function createAutumn(seed: number): Scene {
       }
     },
     draw(g, f) {
-      if (ground) drawDepthGround(g, ground, f.w, f.h);
+      if (ground) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
         const sk = skyKey("autumn", f.weather.now, f.time.band, f.w, f.h);
@@ -1112,6 +1113,7 @@ export function createAutumn(seed: number): Scene {
         for (const c of caches) {
           g.save();
           g.globalAlpha = clamp((f.t - c.t) / 0.6, 0, 1) * depthFade(c.y, f.h);
+          anchorToSurface(g,c.y);
           flatXform(g, c.x, c.y, depthScale(c.y, f.h));
           g.drawImage(moundSpr, -11, -7);
           g.restore();
@@ -1133,7 +1135,7 @@ export function createAutumn(seed: number): Scene {
         const sx = l.flipV > 0 ? Math.cos(l.flip) : 1;
         // 거리 흐림 — 다람쥐만 옅어지고 도토리·낙엽은 그대로면 괴리가 생긴다(2026-09-04 소유자).
         const alpha = (1 - l.fade) * depthFade(l.y, f.h);
-        g.save();
+        g.save();anchorToSurface(g,l.y);
         if (shadow) {
           g.globalAlpha = (l.fall > 0 ? 0.08 + 0.1 * (1 - l.fall) : 0.16 + up * 0.12) * alpha;
           g.translate(l.x + 2.5 + up * (l.fall > 0 ? 34 : 8), l.y + 3.5 + up * (l.fall > 0 ? 40 : 10));
@@ -1172,6 +1174,7 @@ export function createAutumn(seed: number): Scene {
                   ? Math.sin(f.t * 20) * 0.2
                   : 0;
         const sds = depthScale(s.y, f.h) * (SIZE.chipmunk / 52); // 3/4 시점 거리 축소 × 축척(52 → 36)
+        g.save();anchorToSurface(g,s.y);
         if (sqShadow) {
           // 조명에 맞춘 발밑 그림자(라운드 8) — 점프 높이(bounce)는 그림자를 **떼어 놓는** 신호로만 남긴다.
           drawCreatureShadow(g, sqShadow, s.x + 6 * bounce, s.y + 10 * sds + 8 * bounce, 56 * sds, 44 * sds, 0.3);
@@ -1189,6 +1192,7 @@ export function createAutumn(seed: number): Scene {
           g.drawImage(acornSpr.c, -7, -9, 14, 18);
           g.restore();
         }
+        g.restore();
       };
       // **y 오름차순 한 대열**(2026-09-07, AMB-A3-02) — 옛 코드는 "바탕에 구운 나무 → 낙엽 한 덩어리"라 잎이 **모든 나무 앞**으로
       // 날렸다(뒤쪽 나무 위로도). 이제 먼 것부터 그린다: 잎·도토리·다람쥐·나무가 자기 y로 줄을 선다. 떨어지는 중인 잎도 착지점 y로

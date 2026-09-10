@@ -2,8 +2,8 @@
 
 Last Updated: 2026-09-11
 Active Work ID: AMB-QA-18
-Current scoped work: [ROUND-23 meadow sun, foreground and seams](rounds/ROUND-23-meadow-sun-foreground.md); older general backlog remains open.
-Latest scoped review: [ROUND-21 local spring three-layer camera](rounds/ROUND-21-meadow-camera.md), 2026-09-11. Production remains [ROUND-20](rounds/ROUND-20-spring-release.md); underlying depth checks: [ROUND-18](rounds/ROUND-18-depth-P0.md). Earlier general backlog: [ROUND-17](rounds/ROUND-17.md). This does not close real-device/OBS or the older general backlog.
+Current scoped work: [ROUND-34 cloud outline strain](rounds/ROUND-34-cloud-outline-strain.md); restored distant ground and new near-half artwork; owner accepted the current result and authorized push on 2026-09-11. Deployment verification pending. Older general backlog remains open.
+Production: [ROUND-23 meadow sun, foreground and seams](rounds/ROUND-23-meadow-sun-foreground.md), shipped in `f1a3e959` on 2026-09-11 with deployment and seasonal source hashes verified. Underlying depth checks: [ROUND-18](rounds/ROUND-18-depth-P0.md). Earlier general backlog: [ROUND-17](rounds/ROUND-17.md). This does not close real-device/OBS or the older general backlog.
 
 This file owns current QA priorities, not completed-round narrative. Art generation/review is tracked separately by the [pine handoff](HANDOFF-20260908-pine.md) and current art board. Slot/variant counts come from the manifest and files.
 

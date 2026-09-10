@@ -1,3 +1,4 @@
+import { anchorToSurface } from "./depth-render";
 // 연대기 흔적 렌더(2026-09-04, Phase A) — chronicle()이 준 흔적을 계절 장면 위에 그린다. 장면은 바탕을 그린 뒤 생물 전에 한 번
 // `drawTraces(g, f, season, bakes)`를 부른다. 스프라이트는 한 번 굽는다(식물·무생물은 우리 그림 — 동물은 여기 없다).
 //  · 저장소(cache) = 흙더미 · 싹(sprout) · 묘목(sapling) · 나무(tree) · 두더지 흙더미(molehill, 여름엔 풀 얼룩) · 눈사람(snowman) · 연잎(lilypad).
@@ -321,6 +322,7 @@ export function drawTraces(
     if (inHot(x, y)) continue;
     if (opts.landOnShore && LAND_KINDS.has(t.kind) && t.v > SHORE_GV) continue;
     const ds = depthScale(y, f.h);
+    g.save();anchorToSurface(g,y);
     switch (t.kind) {
       case "molehill":
         if (t.stage === 1) drawProp(g, b.art, "grass-patch", x, y, { k: ds, sy: GROUND_SQUASH });
@@ -349,5 +351,6 @@ export function drawTraces(
         break;
       }
     }
+    g.restore();
   }
 }

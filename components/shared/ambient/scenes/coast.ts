@@ -1275,14 +1275,14 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           cloudC = bakeClouds(season, f.weather.now, f.time.band, f.w, f.h, seed, top() * 0.96); // 바다·해안엔 언덕이 없다 — 원경 상단은 수평선이다(라운드 17)
           skyKeyCur = sk;
         }
-        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 }));
       }
       if (water) drawDepthGround(g, water, f.w, f.h);
       if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       // 수평선 반사 — 매 프레임, 조명이 정한다(라운드 15). 구운 흰 자를 대신한다.
       drawHorizonGlow(g, f.w, top(), seed, currentLight());
       // 별·달·해 — 수평선 위 하늘 전부(가릴 것이 없다). 해는 수평선 가까이.
-      drawSkyLive(g, f.w, f, seed, top() * 0.9, { moonY: top() * 0.38, sunY: top() * 0.8 });
+      // Celestial light is composed behind the moving clouds above.
       // 물가 선이 숨쉰다. 조석 진폭은 세 해안이 함께 움직이도록 작게(옛 0.06h는 갯벌만 바다 높이가 52px 달랐다).
       const sy = shoreY() - (Number.isFinite(tideK) ? tideK : tide(f)) * f.h * 0.02 - Math.sin(t * 0.5) * 3;
       // 파도 — 수평선에서 물가까지, 마지막 선은 물가에서 거품이 된다.

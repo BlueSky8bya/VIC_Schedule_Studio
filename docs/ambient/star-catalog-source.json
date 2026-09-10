@@ -1,0 +1,19 @@
+{
+  "url": "https://raw.githubusercontent.com/astronexus/HYG-Database/main/hyg/CURRENT/hygdata_v40.csv.gz",
+  "sha256": "8e3ff9e67445e558a759b117910850cff1b1d4d492f45f715c2ee2db3d869bac",
+  "count": 5070,
+  "limit": 6,
+  "license": "CC BY-SA 4.0",
+  "fields": [
+    "hip",
+    "raHours",
+    "decDegrees",
+    "magnitude",
+    "bv",
+    "name",
+    "pmRaMasYear",
+    "pmDecMasYear"
+  ],
+  "output": "components/shared/ambient/world/star-catalog.json",
+  "outputSha256": "7a09cf2d48999903c5402aec885a132945fa4760f451c6dde9bf4206f49525f6"
+}

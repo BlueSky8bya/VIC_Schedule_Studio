@@ -1,0 +1,55 @@
+{
+  "method": "built-in image_gen",
+  "status": "generated and locally integrated; owner visual acceptance pending",
+  "matte": "RGB pure magenta, not a transparent PNG; excluded by the runtime loader",
+  "raw": {
+    "path": "art-src/하늘·천체/공통하늘/작업회차/20260911-부드러운하늘-02/원본/sky-atlas-v2.png",
+    "bytes": 1166550,
+    "sha256": "be2516522187d3ff32780219c82dbe6425564e3451fd2ea47f57bddb2dcdaa65"
+  },
+  "public": {
+    "path": "public/ambient/art/sky-atlas-v2.png",
+    "bytes": 1166550,
+    "sha256": "be2516522187d3ff32780219c82dbe6425564e3451fd2ea47f57bddb2dcdaa65"
+  },
+  "prompt": {
+    "path": "art-src/하늘·천체/공통하늘/작업회차/20260911-부드러운하늘-02/request.md",
+    "bytes": 1198,
+    "sha256": "1f73d3456096fc1fee081471a47d1e0cd3e6d627e78c6c8608bffb47ec433f13"
+  },
+  "input": {
+    "path": "art-src/하늘·천체/공통하늘/작업회차/20260911-부드러운하늘-02/고정입력/체커보드반려.png",
+    "bytes": 1892897,
+    "sha256": "45cf96b4e94dfcb5c073015715aaa8ceea8f49f6f82683d862affcaa8108fcb4"
+  },
+  "metadata": {
+    "format": "png",
+    "width": 1254,
+    "height": 1254,
+    "space": "srgb",
+    "channels": 3,
+    "depth": "uchar",
+    "density": 72,
+    "isProgressive": false,
+    "isPalette": false,
+    "bitsPerSample": 8,
+    "hasProfile": false,
+    "hasAlpha": false,
+    "autoOrient": {
+      "width": 1254,
+      "height": 1254
+    }
+  },
+  "previousRun": "../20260911-부드러운하늘-01",
+  "sprites": [
+    "sun-disc",
+    "moon-phase full disc",
+    "cloud-low",
+    "cloud-mid",
+    "cloud-high",
+    "cloud-wisp",
+    "cloud-storm",
+    "shooting-star",
+    "comet"
+  ]
+}
