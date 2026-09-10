@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: e22ef9e3e5ec82c7b7fb9c1024d93b619cc598e72e05ba530e2f9ea50b34a61e -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: f97c82a6e30d74d8ca35b084a88f743e24d247482061d4a9b00d2a97e324b57f -->
+<!-- content-sha256: f49591bd943a37b3f1ba450d3959073f7a2f9be1754f1013aaed7787c97cfcc8 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: f97c82a6e30d74d8ca35b084a88f743e24d247482061d4a9b00d2a97e324b57f -->
 
 # rock 검토
 

@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: dde1362e1fc3d4dc546099677092921963874c29bc9b164a1797b27faa7985b1 -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 624ef67585772e11614fd252b331d3e11a4956d4fcbef2caf97507da3937d8ac -->
+<!-- content-sha256: fe7be3a2bfa0c039e4ab8f86bbcfa97ce48a3c75f0935879949c17408c2af195 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 624ef67585772e11614fd252b331d3e11a4956d4fcbef2caf97507da3937d8ac -->
 
 # shooting-star 검토
 

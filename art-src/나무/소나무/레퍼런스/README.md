@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 8efc3fa69416f172fbc122311bc9b31d75f7c6cf34c69626040cf786647b40be -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 9f29fd9793878c13b9612d5255c757d451254291da0e75c4b98a7a1b58ba2f76 -->
+<!-- content-sha256: 4a8700b152c4b92cf5dd94ed0ca7ce1001176ffd0efd39d99e53422f686db027 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 9f29fd9793878c13b9612d5255c757d451254291da0e75c4b98a7a1b58ba2f76 -->
 
 # tree-pine 레퍼런스
 
@@ -25,4 +25,4 @@
 - [레퍼런스/식물모음-그림자포함-rubberduck.png](<식물모음-그림자포함-rubberduck.png>) · SHA-256 `b9a88affac290d066b71550736e4d84100b4e9135136730cc4fa85ea4132ae88`
 - [레퍼런스/식물모음-그림자포함-rubberduck.png.json](<식물모음-그림자포함-rubberduck.png.json>) · SHA-256 `a23bbbbdd5b5bf15e0c27e408b67cfa49cabf89731080cf3d1aced4472dee076`
 
-공통 분위기 참고: [공통화풍참고](<../../../공통화풍참고>)는 색감·구도·카메라·전체 분위기만 살피는 별도 자료다. 대상 형태의 근거나 합격 화풍이 아니며 이번 생성에 자동 전달되지 않는다. 현재 request.inputs 목록 밖 참고는 고정 입력으로 간주하지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.
+공통 화풍 참고: [공통화풍참고](<../../../공통화풍참고>)는 소유자의 게임 캡처를 색인한 별도 자료다. 대상 형태의 근거나 합격 화풍이 아니며, 색인에서 고른 사본만 request가 고정입력/화풍참고/에 넣는다(ART-14). 현재 request.inputs 목록 밖 참고는 고정 입력으로 간주하지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.

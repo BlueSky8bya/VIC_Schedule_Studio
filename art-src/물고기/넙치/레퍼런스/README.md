@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: c966941e48a8e94d05330f89a2623a4506819c59fe94fd972556aa53620aa7ee -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
+<!-- content-sha256: b8be409f4fc170094dbbaa2a4b2e84b8ae9db8290e5e06fec2838903573f44f1 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 2181c99ab0f4d70f898e1e491b7d80daab45f7413b3b9ce817eda38b2a2a7c4f -->
 
 # fish-flounder 레퍼런스
 
@@ -8,4 +8,4 @@
 
 엔티티 영감 후보 이미지·sidecar 없음.
 
-공통 분위기 참고: [공통화풍참고](<../../../공통화풍참고>)는 색감·구도·카메라·전체 분위기만 살피는 별도 자료다. 대상 형태의 근거나 합격 화풍이 아니며 이번 생성에 자동 전달되지 않는다. 현재 request.inputs 목록 밖 참고는 고정 입력으로 간주하지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.
+공통 화풍 참고: [공통화풍참고](<../../../공통화풍참고>)는 소유자의 게임 캡처를 색인한 별도 자료다. 대상 형태의 근거나 합격 화풍이 아니며, 색인에서 고른 사본만 request가 고정입력/화풍참고/에 넣는다(ART-14). 현재 request.inputs 목록 밖 참고는 고정 입력으로 간주하지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.

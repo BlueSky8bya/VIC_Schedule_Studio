@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 5e4046d61ea6883bd5a4bf103a92c9cf5f937c3b872e0f92d1eae900f1b8c7ea -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
+<!-- content-sha256: 2cc63b43893c79de21a1e1a34c407b59b9c295b10e6492295fa3a6a001a36944 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
 
 # comet 반려본
 

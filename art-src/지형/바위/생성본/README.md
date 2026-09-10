@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 2d94e03031713ed50c3cf0b7a7f7647f3a4c24ed8769f2ff5eae55bd89da9247 -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: f97c82a6e30d74d8ca35b084a88f743e24d247482061d4a9b00d2a97e324b57f -->
+<!-- content-sha256: a79e76cece3df17be3433a6cb9fcad29364f5f70ff5b377aad7d3b06f67f8429 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: f97c82a6e30d74d8ca35b084a88f743e24d247482061d4a9b00d2a97e324b57f -->
 
 # rock 생성본
 

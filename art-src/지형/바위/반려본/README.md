@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: aa32f3bbadcfa69c00082b1d2b50f80bd4de28c10ae1a8f39240a4b74478257b -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: f97c82a6e30d74d8ca35b084a88f743e24d247482061d4a9b00d2a97e324b57f -->
+<!-- content-sha256: a6ecef8b8744d80ef78cd630303065a01d5c6c56a6ed2c4b6fa0ee45456a5f40 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: f97c82a6e30d74d8ca35b084a88f743e24d247482061d4a9b00d2a97e324b57f -->
 
 # rock 반려본
 

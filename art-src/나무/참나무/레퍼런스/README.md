@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 5f21ae8251bfc90679448f7f479510ff81e3d34d77e042e848ca2dc1442955c3 -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 4ae60d60d216d0d29e4adff311980846aa6e69f08f7564de0890bf4c667ce3a9 -->
+<!-- content-sha256: 5e0de52b3554c1e66ef5dfff41df5ec074c9ccc06f232d3e178ce7eb491db640 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 4ae60d60d216d0d29e4adff311980846aa6e69f08f7564de0890bf4c667ce3a9 -->
 
 # tree-oak 레퍼런스
 
@@ -8,4 +8,4 @@
 
 엔티티 영감 후보 이미지·sidecar 없음.
 
-공통 분위기 참고: [공통화풍참고](<../../../공통화풍참고>)는 색감·구도·카메라·전체 분위기만 살피는 별도 자료다. 대상 형태의 근거나 합격 화풍이 아니며 이번 생성에 자동 전달되지 않는다. 현재 request.inputs 목록 밖 참고는 고정 입력으로 간주하지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.
+공통 화풍 참고: [공통화풍참고](<../../../공통화풍참고>)는 소유자의 게임 캡처를 색인한 별도 자료다. 대상 형태의 근거나 합격 화풍이 아니며, 색인에서 고른 사본만 request가 고정입력/화풍참고/에 넣는다(ART-14). 현재 request.inputs 목록 밖 참고는 고정 입력으로 간주하지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.

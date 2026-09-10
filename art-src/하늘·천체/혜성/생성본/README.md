@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: ec52297ebfc16dc192902daac88e683ece1c7e4b4c1bb2481b60e98d9b13eefa -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
+<!-- content-sha256: 0e09d1a7e45a6b736f8f5540a68b69fe67254560be2c675fe2010bd0aab53386 -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 1c3c11c8861e9c57ea7b5c3cd3d562896057d21ef909e15af64b9f315ef743fb -->
 
 # comet 생성본
 

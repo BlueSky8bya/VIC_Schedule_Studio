@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: d2f4e420546b4959b1e8986fa5b7e4ac1f845b23ba241d2ed21f1d7b005b6370 -->
-<!-- source-sha256: d9abb0c0b5feca6aad696a905e48356eb488bb53c259a67c12439bac512a345e; state-sha256: 6445836bd8067b3f2a668b5513aff4e8da960e8a49513e01f26ec12b2d19de44 -->
+<!-- content-sha256: 0b69745ffb50e662f87c701b02b42bf77f79a4f3c9d189ab1ea2f31ed5ee886f -->
+<!-- source-sha256: 789937231cb6b94445c2cfe1ddc518230107d4d8aedeb4899c6333eddf9ac307; state-sha256: 6445836bd8067b3f2a668b5513aff4e8da960e8a49513e01f26ec12b2d19de44 -->
 
 # cloud-mid 반려본
 
