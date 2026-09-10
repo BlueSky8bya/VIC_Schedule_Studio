@@ -111,6 +111,8 @@ export interface Scene {
   resize(f: Frame): void;
   step(f: Frame): void;
   draw(g: CanvasRenderingContext2D, f: Frame): void;
+  /** True when a scene supplied its own near layer; false retains the fallback. */
+  drawForeground?(g: CanvasRenderingContext2D, f: Frame): boolean;
   /** 눌림. onBackground = UI가 아닌 바탕 위. 소비했으면 true. */
   pointerDown?(f: Frame, onBackground: boolean): boolean;
   pointerUp?(f: Frame): void;

@@ -1,0 +1,22 @@
+{
+  "method": "built-in image_gen",
+  "status": "concept-only",
+  "prompt": {
+    "path": "art-src/배경층/초원/작업회차/20260911-넓은하늘-시안08/request.md",
+    "sha256": "a3872708c85045a817aee7cd3c6214411d0151994aeb5ac4dba15320815ef120"
+  },
+  "inspectedAndAttachedInputs": [
+    {
+      "path": "art-src/배경층/초원/작업회차/20260911-넓은하늘-시안08/고정입력/넓은땅시안.png",
+      "sha256": "a6dc6862760b56da31c5fffbe9ea511bcd911d9de99a95e37ec352b6c1dcfa99"
+    }
+  ],
+  "output": {
+    "path": "art-src/배경층/초원/작업회차/20260911-넓은하늘-시안08/원본/봄초원-넓은하늘.png",
+    "sha256": "f3af50af0d749c7dbc0ef10bd14fa77e63df3d9cfda79bf6f1b0b7bddd8eb943"
+  },
+  "ownerDecision": "Owner requested regeneration with wider sky; exact output not yet reviewed by owner",
+  "normalization": "none",
+  "runtime": "not connected",
+  "published": false
+}

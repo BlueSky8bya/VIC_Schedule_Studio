@@ -51,7 +51,7 @@ export function fogDepth(v: number): number {
  * 반환 캔버스는 화면 크기의 1/8 — 그릴 때 `drawImage(c, 0, 0, w, h)`로 늘린다.
  */
 export function bakeFogField(w: number, h: number, f: number, rgb: string, floor: ((x: number) => number) | null, floorKey: string): HTMLCanvasElement {
-  const key = `${w}:${h}:${f.toFixed(3)}:${rgb}:${floorKey}`;
+  const key = `${w}:${h}:${horizonY(h)}:${f.toFixed(3)}:${rgb}:${floorKey}`;
   const cached = cache.get(key);
   if (cached) { cache.delete(key); cache.set(key, cached); return cached; }
   const cw = Math.max(1, Math.ceil(w / SCALE));

@@ -2,7 +2,7 @@
 
 Last Updated: 2026-09-11
 Active Work ID: AMB-QA-18
-Latest completed scoped review: [ROUND-20 spring release and deployed public checks](rounds/ROUND-20-spring-release.md), 2026-09-11; underlying depth checks: [ROUND-18](rounds/ROUND-18-depth-P0.md). Earlier general backlog: [ROUND-17](rounds/ROUND-17.md). This does not close real-device/OBS or the older general backlog.
+Latest scoped review: [ROUND-21 local spring three-layer camera](rounds/ROUND-21-meadow-camera.md), 2026-09-11. Production remains [ROUND-20](rounds/ROUND-20-spring-release.md); underlying depth checks: [ROUND-18](rounds/ROUND-18-depth-P0.md). Earlier general backlog: [ROUND-17](rounds/ROUND-17.md). This does not close real-device/OBS or the older general backlog.
 
 This file owns current QA priorities, not completed-round narrative. Art generation/review is tracked separately by the [pine handoff](HANDOFF-20260908-pine.md) and current art board. Slot/variant counts come from the manifest and files.
 

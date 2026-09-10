@@ -9,7 +9,7 @@ import type { Frame, Scene, SceneFactory } from "@/components/shared/ambient/sce
 import { createDepthPointer, depthOffsets, type DepthPoint } from "./depth";
 import { withDepthScene, withDepthLayer, bakeDepthFrame, depthCacheStats, clearDepthCache, retainDepthOwners } from "./depth-render";
 import { createParticles } from "./particles";
-import { drawDepthHaze, drawLightPass } from "./view";
+import { drawDepthHaze, drawLightPass, HORIZON_V, SPRING_MEADOW_HORIZON_V, withViewHorizon } from "./view";
 import { BIOMES, biomeAt, isBiomeKey, neighbor, screenDelta, type BiomeKey, type Dir } from "./biomes";
 import { BIOME_LOADERS } from "@/components/shared/ambient/scenes/biome-loaders";
 
@@ -32,6 +32,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
   const pinned = !!opts.pin;
   return (seed: number): Scene & { nav: WorldNav } => {
     const scenes = new Map<BiomeKey, Loaded>();
+    const inView = <T,>(key: BiomeKey, run: () => T): T => withViewHorizon(key === "meadow" && season === "spring" ? SPRING_MEADOW_HORIZON_V : HORIZON_V, run);
     const pending = new Map<BiomeKey, Promise<void>>();
     let cur: BiomeKey = initial;
     let lastCoastX = 0;
@@ -65,7 +66,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         p = BIOME_LOADERS[key](season)
           .then((factory) => {
             if (disposed) return;
-            const scene = factory(seed + key.length * 131 + key.charCodeAt(0) * 17);
+            const scene = inView(key, () => factory(seed + key.length * 131 + key.charCodeAt(0) * 17));
             const entry: Loaded = { key, scene, sizeKey: "", particles: createParticles(seed) };
             scenes.set(key, entry);
             if (lastFrame) {
@@ -80,7 +81,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     const fit = (entry: Loaded, f: Frame) => {
       const k = sizeKeyOf(f);
       if (entry.sizeKey !== k || !entry.front) {
-        if (entry.sizeKey !== k) entry.scene.resize(f);
+        if (entry.sizeKey !== k) inView(entry.key, () => entry.scene.resize(f));
         entry.sizeKey = k;
         entry.front = bakeDepthFrame(f.w, f.h, entry.key, season, seed);
       }
@@ -147,15 +148,15 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       })
     };
 
-    const stepEntry = (entry: Loaded, f: Frame) => {
+    const stepEntry = (entry: Loaded, f: Frame) => inView(entry.key, () => {
       const lf = localFrame(f);
       entry.particles.step(f.dt, f.w, f.h, f.weather.now, f.light, f.load, f.q < 2 || f.depthTier === "lite", entry.scene.ownsWeather?.(f.weather.now) ?? false);
       entry.scene.step(lf);
-    };
+    });
     const renderEntry = (entry: Loaded | undefined, g: CanvasRenderingContext2D, f: Frame) => {
       if (!entry) return;
       const lf = localFrame(f);
-      withDepthScene(g, offsetsOf(f), () => {
+      inView(entry.key, () => withDepthScene(g, offsetsOf(f), () => {
         entry.scene.draw(g, lf);
         if (entry.scene.sealed?.()) {
           if (entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
@@ -169,9 +170,9 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
           entry.particles.draw(g, f.w, f.h, season, f.weather.now, f.light, f.t);
           drawDepthHaze(g, season, f.w, f.h, f.light);
         }
-        if (entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
+        if (!entry.scene.drawForeground?.(g, lf) && entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
         drawLightPass(g, f.w, f.h, f.light, entry.scene.fogFloor ? x => entry.scene.fogFloor!(x, lf) : null, entry.scene.fogFloorKey?.(lf) ?? "");
-      }, f.depthTier ?? "full", entry);
+      }, f.depthTier ?? "full", entry));
     };
     void ensure(initial);
 
@@ -304,11 +305,11 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       },
       pointerDown(f, onBackground) {
         if (trans) return false;
-        return scenes.get(cur)?.scene.pointerDown?.(localFrame(f), onBackground) ?? false;
+        return inView(cur, () => scenes.get(cur)?.scene.pointerDown?.(localFrame(f), onBackground) ?? false);
       },
       pointerUp(f) {
         if (trans) return;
-        scenes.get(cur)?.scene.pointerUp?.(localFrame(f));
+        inView(cur, () => scenes.get(cur)?.scene.pointerUp?.(localFrame(f)));
       },
       ownsWeather(wx) {
         return scenes.get(cur)?.scene.ownsWeather?.(wx) ?? false;
@@ -341,7 +342,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       debug() {
         const active = scenes.get(cur);
         return {
-          ...(active?.scene.debug?.() ?? {}),
+            ...inView(cur, () => active?.scene.debug?.() ?? {}),
           depth: lastFrame ? offsetsOf(lastFrame) : null,
           depthCache: { ...depthCacheStats(), panelBytes: panCanvas ? panCanvas.width * panCanvas.height * 4 : 0, foregroundBytes: [...scenes.values()].reduce((n, e) => n + (e.front ? e.front.c.width * e.front.c.height * 4 : 0), 0) },
           weatherParticles: active?.particles.debug() ?? {},

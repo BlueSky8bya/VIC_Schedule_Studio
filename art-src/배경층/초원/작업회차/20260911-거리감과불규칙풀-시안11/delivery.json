@@ -1,0 +1,21 @@
+{
+  "method": "built-in image_gen",
+  "status": "rejected: large standing tufts",
+  "inputActuallyInspectedAndAttached": {
+    "path": "art-src/배경층/초원/작업회차/20260911-거리감과불규칙풀-시안11/고정입력/수정대상.png",
+    "bytes": 2522765,
+    "sha256": "7f805eac530271bfb94af5388b3092328e1b13532e706245ef765cb31391adde"
+  },
+  "prompt": {
+    "path": "art-src/배경층/초원/작업회차/20260911-거리감과불규칙풀-시안11/request.md",
+    "bytes": 1744,
+    "sha256": "e16e697334aa0e3490e49686e6f78483d381138eae0eaf64f3e1183833f9e39c"
+  },
+  "raw": {
+    "path": "art-src/배경층/초원/작업회차/20260911-거리감과불규칙풀-시안11/원본/backdrop-meadow-spring-ground-v4.png",
+    "bytes": 2337159,
+    "sha256": "3b7841f1e7c82d1889c8ca7ae6bba573791f7ac7d60a9b5c5716cecf41d9e305"
+  },
+  "public": null,
+  "scope": "Only spring ground changed. No actual alpha claim, no normalization or original pixel edits, no push."
+}

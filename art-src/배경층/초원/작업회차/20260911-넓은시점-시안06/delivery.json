@@ -1,0 +1,25 @@
+{
+  "method": "built-in image_gen",
+  "status": "concept-only",
+  "prompt": {
+    "path": "art-src/배경층/초원/작업회차/20260911-넓은시점-시안06/request.md",
+    "sha256": "a9e4109e425aa906cb19a3f57dbbd3df6748c043148b0725aa80935beb3719a7"
+  },
+  "inspectedAndAttachedInputs": [
+    {
+      "path": "art-src/배경층/초원/작업회차/20260911-넓은시점-시안06/고정입력/이전초원.png",
+      "sha256": "08e5ad94614ed5e6686dce328ebcc7906fa2c6e9973b77e298d2175eba76b53d"
+    }
+  ],
+  "output": {
+    "path": "art-src/배경층/초원/작업회차/20260911-넓은시점-시안06/원본/봄초원-높은시점.png",
+    "sha256": "5dcbd6b91effad8e0aa743e1321872ec4acfb3232bd8a9d9d27a92b214410ff5",
+    "bytes": 2319061
+  },
+  "ownerDecision": "No exact artifact approval claimed",
+  "note": "Initial higher/wider interpretation, superseded by owner clarification of 2x2 visible land.",
+  "normalization": "none",
+  "runtime": "not connected",
+  "published": false,
+  "review": "docs/ambient/rounds/ROUND-21-meadow-camera.md"
+}

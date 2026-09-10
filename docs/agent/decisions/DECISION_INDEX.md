@@ -8,6 +8,7 @@
 
 | ADR | Status | Area | Decision | Revisit Trigger |
 |---|---|---|---|---|
+| [0024](ADR-0024-spring-meadow-three-layers.md) | Accepted | 봄 초원 세 레이어 | 새 F/M/N·나무 없는 초원·봄만 .35 지평선·캐시된 원본 마스크 | 계절 확대 또는 공간 기준 변경 |
 | [0023](ADR-0023-spring-meadow-source-composition.md) | Accepted | 봄 초원 적용 | 선호 원본 한 장을 F/M으로 합성, N은 기존 프레임. PC 비율·고정 면적·정지 화면 갱신. 봄만 먼저 배포 | 사계절 아트 또는 새 원본/비율 계약 |
 | [0022](ADR-0022-world-depth-and-showcase-motion.md) | Accepted | 배경 깊이·움직임 | S/F/M/N 합성, 감상에서만 움직임, 모바일 엔진 미생성, 기존 auto 여력 기반 축소·정지·복구. 심해 계절/날씨 봉인 유지 | P1 이미지 도입 또는 측정된 성능 예산 초과 |
 | [0001](ADR-0001-public-private-server-boundary.md) | Accepted | 보안 경계 | 공개/비공개는 **서버에서** 분리(전용 public-loader + 명시적 DTO). CSS로 숨기지 않음 | 공개 API에 새 소비자가 생기거나 캐시 계층을 바꿀 때 |

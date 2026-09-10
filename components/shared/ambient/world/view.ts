@@ -18,6 +18,14 @@ import { isNeutralMul, type Light } from "./light";
 
 export const GROUND_SQUASH = 0.7;
 export const HORIZON_V = 0.26;
+export const SPRING_MEADOW_HORIZON_V = 0.35;
+let currentHorizon = HORIZON_V;
+/** Synchronous per-panel camera scope. Never retain this across an await. */
+export function withViewHorizon<T>(ratio: number, draw: () => T): T {
+  const previous = currentHorizon;
+  currentHorizon = ratio;
+  try { return draw(); } finally { currentHorizon = previous; }
+}
 // 지평선에서의 배율 — 0.8은 소유자 실측에서 "원근이 약하다"(2026-09-04) → 0.6(먼 나무 ≈ 가까운 나무의 6할).
 export const DEPTH_FAR = 0.6;
 // 대기 원근 안개 — 지평선에서 이 알파, 화면 HAZE_END_V까지 0으로. 잔디·물·발자국·생물 전부 멀수록 옅어진다(엔진이 장면 위에 한 겹).
@@ -29,7 +37,7 @@ export const HAZE_ALPHA = 0.13; // .11 → .13(2026-09-06): 하늘이 넓어진 
 // 키울 때(HORIZON_V) 안개 끝이 지평선을 타고 올라가 띠가 눌린다. 0.2727 × (h − hz)는 hz .12에서 정확히 옛 0.36h다.
 export const HAZE_END_GV = 0.28;
 
-export const horizonY = (h: number) => h * HORIZON_V;
+export const horizonY = (h: number) => h * currentHorizon;
 /** 지평선에서 **위로** dh·h 만큼 떨어진 y. 지평선에 붙어 있어야 하는 것(먼 언덕·나무 줄·지평선 광·안개 시작)은
  *  hz에 비례(hz·0.5 …)시키면 하늘을 키울 때 하늘 한복판으로 떠오른다 — 거리로 붙인다(2026-09-06). */
 export const aboveHz = (h: number, dh: number) => Math.max(0, horizonY(h) - dh * h);

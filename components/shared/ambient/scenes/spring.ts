@@ -175,7 +175,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   const groundY = (r: number) => gy() + r * (h - gy());
   /** 작은 식물의 추가 원근 테이퍼 — 0.3(지평선) → 1.0(발치). depthScale(0.6~1.0)만으로는 지평선 근처 풀포기가
    *  근경의 0.75배로 남아 "키 3~5m 짜리 풀"이 됐다(검토 라운드2 현실성 #9b). */
-  const smallK = (y: number) => 0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy())));
+  const smallK = (y: number) => (summer ? 1 : .6) * (0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy()))));
   let shadow: HTMLCanvasElement | null = null;
   let traceBakes: TraceBakes | null = null; // 연대기(지난 가을 저장소의 싹·나무·두더지 흙더미) 렌더
   let petalSpr: HTMLCanvasElement | null = null;
@@ -296,7 +296,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
     // 중경 앵커 — 관목이 하나씩 흩어져 있으면 배치가 아니라 좌표 난수로 보인다(사이클3 미관 #5). 한 무리로 묶는다.
-    {
+    if (summer) {
       const cx3 = w * (0.18 + g0() * 0.64);
       const cy3 = groundY(0.4 + g0() * 0.34);
       for (let i = 0; i < 4; i++) {
@@ -308,7 +308,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         drawProp(g, groundArt, summer ? "shrub-summer" : "shrub-spring", x, y, { k, r: g0(), flip: g0() < 0.5 });
       }
     }
-    scatterProps(g, groundArt, w, h, g0, [
+    if (summer) scatterProps(g, groundArt, w, h, g0, [
       { id: summer ? "shrub-summer" : "shrub-spring", n: 3 },
       { id: "rock", n: 2 },
       { id: "stump", n: 1 },
@@ -316,11 +316,11 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     ]);
     ground = c;
     // 풀포기 층 — 바람에 흔들리는 것만 따로.
-    const b = makeCanvas(w * dpr, h * dpr);
+    const b = backdrop?.ready ? makeCanvas(1, 1) : makeCanvas(w * dpr, h * dpr);
     b.g.scale(dpr, dpr);
     // 풀포기 — 완전 무작위로 뿌리면 "균일한 벽지"가 된다(검토 2·3차). 절반은 무리(clump)로 모아 심고
     // 크기를 크게 흩는다: 뭉친 곳과 트인 곳이 생겨야 들판으로 읽힌다.
-    const tufts = Math.round((w * h) / (summer ? 780 : 1050)); // 봄도 밀도가 있어야 "빈 초록 판"을 벗어난다 // 여름 = 맨땅이 안 보이는 풀숲, 봄 = 성긴 새 잔디
+    const tufts = backdrop?.ready ? 0 : Math.round((w * h) / (summer ? 780 : 1050));
     let cx = 0;
     let cy = 0;
     let left = 0;
@@ -357,12 +357,12 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
     }
     blades = b.c;
-    horizon = bakeHorizon(variant, w, h, 1);
+    horizon = backdrop?.ready ? null : bakeHorizon(variant, w, h, 1);
     // 민들레 자리(4~7) — 데이지에서 떨어진 곳.
     dands.length = 0;
     const ndd = clamp(Math.round((w * h) / 260000), 4, 7);
     for (let i = 0; i < ndd; i++) {
-      dands.push({ x: 40 + g0() * (w - 80), y: gy() + 40 + g0() * (h - gy() - 80), k: 0.85 + g0() * 0.35, puffed: 0, regrow: 0, born: -10 });
+      dands.push({ x: 40 + g0() * (w - 80), y: gy() + 40 + g0() * (h - gy() - 80), k: (summer ? 1 : .6) * (0.85 + g0() * 0.35), puffed: 0, regrow: 0, born: -10 });
     }
     gw = w;
     gh = h;
@@ -1303,7 +1303,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       if (!backdrop?.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
-      if (blades) {
+      if (blades && !backdrop?.ready) {
         // 여름 풀숲은 키가 커서 늘 살짝 일렁인다. 2026-09-07: 진폭을 절반으로 내리고 그만큼을 아래 **바람 진행파**로 옮겼다 —
         // 바람과 무관한 상시 흔들림이 크면 맑은 날과 바람 부는 날이 화면에서 구별되지 않는다(맑음 기준선 15.2% → 비 1.9배).
         const idle = load >= 0.5 ? (summer ? 0.9 : 0.4) : 0;
@@ -1638,6 +1638,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       press(f.p.x, f.p.y, f.load);
       return true;
     },
+    drawForeground(g, f) { return backdrop?.drawForeground(g, f) ?? false; },
     dispose() { backdrop?.dispose(); },
     debug() {
       return {

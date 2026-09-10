@@ -1,0 +1,30 @@
+{
+  "method": "built-in image_gen",
+  "inputsActuallyInspectedAndAttached": [
+    {
+      "path": "art-src/배경층/초원/작업회차/20260911-지면결정리-시안10/고정입력/구도참고.png",
+      "sha256": "f3af50af0d749c7dbc0ef10bd14fa77e63df3d9cfda79bf6f1b0b7bddd8eb943",
+      "bytes": 2033743
+    }
+  ],
+  "prompt": {
+    "path": "art-src/배경층/초원/작업회차/20260911-지면결정리-시안10/request.md",
+    "sha256": "1feba0811ced149b1a42ae1de5940e7b3a8a8d7f62fa11fb370e005e6a1cf26b",
+    "bytes": 1594
+  },
+  "original": {
+    "path": "art-src/배경층/초원/작업회차/20260911-지면결정리-시안10/원본/backdrop-meadow-spring-ground-v3.png",
+    "sha256": "c40f218f8b65f90ac7fb1896575734f45f130735512166c7ca84650d13b33f01",
+    "bytes": 2056575
+  },
+  "public": {
+    "path": "public/ambient/art/backdrop-meadow-spring-ground-v3.png",
+    "sha256": "c40f218f8b65f90ac7fb1896575734f45f130735512166c7ca84650d13b33f01",
+    "bytes": 2056575
+  },
+  "status": "new M source integrated locally; owner visual feedback pending",
+  "normalization": "none",
+  "reason": "Replace large repetitive V-shaped tufts after A review and root actual render inspection",
+  "decision": "ADR-0024",
+  "pushed": false
+}

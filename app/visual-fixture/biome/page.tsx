@@ -54,6 +54,7 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   const camera = sp.camera === "plain" ? "plain" : "showcase";
   return (
     <BiomeFixture
+      live={sp.live === "1"}
       camera={camera}
       force={{ biome, band, hour, weather, seed, load, pointer, day, skyEvent, freeze: true, pin: true }}
       gfx={gfx}

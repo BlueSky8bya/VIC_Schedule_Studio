@@ -1,0 +1,101 @@
+{
+  "method": "built-in image_gen",
+  "inputsActuallyInspectedAndAttached": [
+    {
+      "path": "art-src/배경층/초원/작업회차/20260911-세레이어-시안09/고정입력/구도참고.png",
+      "sha256": "f3af50af0d749c7dbc0ef10bd14fa77e63df3d9cfda79bf6f1b0b7bddd8eb943",
+      "bytes": 2033743
+    }
+  ],
+  "outputs": [
+    {
+      "layer": "far",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-세레이어-시안09/far-request.md",
+        "sha256": "a525c8e12b7e981ec1d971b61cb683c1ffbf7f1bbc9557ced4b475d95cfeae3a",
+        "bytes": 1581
+      },
+      "original": {
+        "path": "art-src/배경층/초원/작업회차/20260911-세레이어-시안09/원본/backdrop-meadow-spring-far-v2.png",
+        "sha256": "39a9e1928622102cf576e2cc731436b7bf7b740706d9f8f7cbbc6c270705b1cd",
+        "bytes": 1599826
+      },
+      "status": "rendered-mask integration candidate",
+      "hasAlpha": false,
+      "measurement": {
+        "bounds": [
+          0,
+          436,
+          1536,
+          514
+        ],
+        "clipSpans": 290
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-spring-far-v2.png",
+        "sha256": "39a9e1928622102cf576e2cc731436b7bf7b740706d9f8f7cbbc6c270705b1cd",
+        "bytes": 1599826
+      }
+    },
+    {
+      "layer": "ground",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-세레이어-시안09/ground-request.md",
+        "sha256": "5c761fcc9564d4ecd80cfb52cc08e4667c01a4fb19575d3e85fe9f8d6eb13c5b",
+        "bytes": 1462
+      },
+      "original": {
+        "path": "art-src/배경층/초원/작업회차/20260911-세레이어-시안09/원본/backdrop-meadow-spring-ground-v2.png",
+        "sha256": "e39ba898b021a3cca89d00e2a0195353185f25ae32ec375354f2783833192d1a",
+        "bytes": 1860891
+      },
+      "status": "rejected: large repeating V tufts; replaced by run10",
+      "hasAlpha": false,
+      "measurement": {
+        "bounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "clipSpans": 0
+      },
+      "public": null
+    },
+    {
+      "layer": "frame",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-세레이어-시안09/frame-request.md",
+        "sha256": "7934b565d47a540e2234f2f562bc74abd5ff69c4f0a0114bbe04fa8542efa6e3",
+        "bytes": 1473
+      },
+      "original": {
+        "path": "art-src/배경층/초원/작업회차/20260911-세레이어-시안09/원본/backdrop-meadow-spring-frame-v2.png",
+        "sha256": "bcccbb595d04895671dda2646f1c252fa1edd47cf20daa0118a8ff5c7d1fdacd",
+        "bytes": 1848161
+      },
+      "status": "rendered-mask integration candidate",
+      "hasAlpha": false,
+      "measurement": {
+        "bounds": [
+          14,
+          869,
+          1526,
+          1014
+        ],
+        "clipSpans": 1186
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-spring-frame-v2.png",
+        "sha256": "bcccbb595d04895671dda2646f1c252fa1edd47cf20daa0118a8ff5c7d1fdacd",
+        "bytes": 1848161
+      }
+    }
+  ],
+  "normalization": "none; generated RGB bytes preserved",
+  "transparency": "F/N generated a matte, not alpha. Runtime applies measured clip spans during bounded cache baking. No alpha-qualified claim.",
+  "authority": "Owner requests new tree-free three-layer runtime integration; exact artifact acceptance not claimed",
+  "decision": "ADR-0024",
+  "verification": "docs/ambient/rounds/ROUND-21-meadow-camera.md",
+  "pushed": false
+}

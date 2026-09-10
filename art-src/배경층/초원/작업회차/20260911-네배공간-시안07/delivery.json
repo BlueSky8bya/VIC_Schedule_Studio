@@ -1,0 +1,25 @@
+{
+  "method": "built-in image_gen",
+  "status": "concept-only",
+  "prompt": {
+    "path": "art-src/배경층/초원/작업회차/20260911-네배공간-시안07/request.md",
+    "sha256": "5d8a775ab47381b85fa71d7362193f5a8762badadfd3917b7191a435d91b47e4"
+  },
+  "inspectedAndAttachedInputs": [
+    {
+      "path": "art-src/배경층/초원/작업회차/20260911-네배공간-시안07/고정입력/배포초원.png",
+      "sha256": "08e5ad94614ed5e6686dce328ebcc7906fa2c6e9973b77e298d2175eba76b53d"
+    }
+  ],
+  "output": {
+    "path": "art-src/배경층/초원/작업회차/20260911-네배공간-시안07/원본/봄초원-네배공간.png",
+    "sha256": "a6dc6862760b56da31c5fffbe9ea511bcd911d9de99a95e37ec352b6c1dcfa99",
+    "bytes": 2232050
+  },
+  "ownerDecision": "No exact artifact approval claimed",
+  "note": "Owner requests approximately four current viewports of land in one elevated view. Five trees are scale references only; not final runtime terrain.",
+  "normalization": "none",
+  "runtime": "not connected",
+  "published": false,
+  "review": "docs/ambient/rounds/ROUND-21-meadow-camera.md"
+}

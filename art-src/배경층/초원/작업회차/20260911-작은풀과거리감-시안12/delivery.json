@@ -1,0 +1,25 @@
+{
+  "method": "built-in image_gen",
+  "status": "selected for authorized local integration; awaiting owner visual feedback",
+  "inputActuallyInspectedAndAttached": {
+    "path": "art-src/배경층/초원/작업회차/20260911-작은풀과거리감-시안12/고정입력/수정대상.png",
+    "bytes": 2337159,
+    "sha256": "3b7841f1e7c82d1889c8ca7ae6bba573791f7ac7d60a9b5c5716cecf41d9e305"
+  },
+  "prompt": {
+    "path": "art-src/배경층/초원/작업회차/20260911-작은풀과거리감-시안12/request.md",
+    "bytes": 1297,
+    "sha256": "67be723462c6ba3f89287529f4c993a30957a1f7584734667950b0f9216127c2"
+  },
+  "raw": {
+    "path": "art-src/배경층/초원/작업회차/20260911-작은풀과거리감-시안12/원본/backdrop-meadow-spring-ground-v5.png",
+    "bytes": 2360821,
+    "sha256": "67f488a55ae6fb834fed65599aa1a343ef8076498966b30b0dccc2cd0b9487c5"
+  },
+  "public": {
+    "path": "public/ambient/art/backdrop-meadow-spring-ground-v5.png",
+    "bytes": 2360821,
+    "sha256": "67f488a55ae6fb834fed65599aa1a343ef8076498966b30b0dccc2cd0b9487c5"
+  },
+  "scope": "Only spring ground changed. No actual alpha claim, no normalization or original pixel edits, no push."
+}

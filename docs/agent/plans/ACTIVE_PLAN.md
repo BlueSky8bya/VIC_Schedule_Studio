@@ -4,7 +4,7 @@
 |---|---|---|
 
 | PLAN-20260909-014 | In Progress | [Rule preservation, Korean art folders and remaining C choices](PLAN-20260909-014-rule-preservation-and-art-completion.md) |
-| PLAN-20260910-015 | Spring PC released; awaiting visual feedback before expansion | [World depth layers and pointer parallax](PLAN-20260910-015-world-depth-layers.md), [release evidence](../../ambient/rounds/ROUND-20-spring-release.md) |
+| PLAN-20260910-015 | Deploying accepted spring meadow | [World depth layers and pointer parallax](PLAN-20260910-015-world-depth-layers.md), [camera work](../../ambient/rounds/ROUND-21-meadow-camera.md) |
 
 Completed plans remain in their own files. Remove their row here when work finishes; record verification in the plan/handoff and link next active work from CURRENT_STATE.
 

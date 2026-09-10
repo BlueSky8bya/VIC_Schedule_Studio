@@ -1,10 +1,10 @@
 # Current ambient engine rules
 
-Updated: 2026-09-10. Scope: scene engine, world services, camera, creatures and ambient control wiring. [AGENTS](../../AGENTS.md) supplies global boundaries; [README](README.md) routes to the specific visual grammar.
+Updated: 2026-09-11. Scope: scene engine, world services, camera, creatures and ambient control wiring. [AGENTS](../../AGENTS.md) supplies global boundaries; [README](README.md) routes to the specific visual grammar.
 
 ## P0 depth amendment — ADR-0022
 
-Spring-meadow artwork and its scoped source/sky/crop/late-arrival contract follow [ADR-0023](../agent/decisions/ADR-0023-spring-meadow-source-composition.md). The existing N frame remains procedural in this spring release.
+Spring meadow now follows [ADR-0024](../agent/decisions/ADR-0024-spring-meadow-three-layers.md): three generated F/M/N sources, cached matte exclusion, and scoped .35h horizon. This replaces ADR-0023's single source and procedural N. Other scenes keep the .26h default; all other motion/load/KST contracts remain.
 
 The owner authorized [depth P0](../agent/decisions/ADR-0022-world-depth-and-showcase-motion.md). These clauses replace the corresponding motion/composition implications of AMB-09/10/13/27 below, preserving their other requirements:
 

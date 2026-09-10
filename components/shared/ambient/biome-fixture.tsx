@@ -9,7 +9,7 @@
 // fixture 전용 부작용: 배경 게이트와 요청한 그래픽·동작 설정을 이 기기 localStorage에 쓴다 —
 // 실제 화면(/, /studio)은 이 컴포넌트를 쓰지 않는다.
 
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
@@ -35,6 +35,7 @@ export type BiomeFixtureProps = {
   /** 기본 max. auto는 실제 기기 판정/여력을 관측하므로 환경도 함께 기록한다. */
   gfx?: GfxPref;
   reduced?: boolean;
+  live?: boolean;
 };
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -51,7 +52,8 @@ const waitFor = <T,>(get: () => T | undefined, timeoutMs: number): Promise<T | u
     poll();
   });
 
-export function BiomeFixture({ season, year, month, force, t, camera, gfx = "max", reduced = false }: BiomeFixtureProps) {
+export function BiomeFixture({ season, year, month, force, t, camera, gfx = "max", reduced = false, live = false }: BiomeFixtureProps) {
+  const [playing, setPlaying] = useState(live);
   const forceKey = JSON.stringify(force);
   // 자식(SeasonCanvas)의 마운트 효과보다 **먼저** 게이트를 연다 — 레이아웃 효과는 패시브 효과 전에 전부 돈다.
   // 페인트-전 스크립트는 vic.ambient 미설정 → data-ambient="off"(캔버스 display:none)라, 그대로 두면 엔진이 0×0을 잰다.
@@ -77,17 +79,26 @@ export function BiomeFixture({ season, year, month, force, t, camera, gfx = "max
       await dbg.ready(12000);
       if (cancelled) return;
       const reached = await dbg.advance(t);
-      if (!cancelled) dbg.settledT = reached;
+      if (!cancelled) {
+        dbg.settledT = reached;
+        if (live) { dbg.freeze(false); setPlaying(true); }
+      }
     })();
     return () => {
       cancelled = true;
     };
     // forceKey = 값 비교(객체 정체성이 아니라) — 서버가 준 force는 매 렌더 새 객체일 수 있다.
-  }, [t, season, forceKey, camera, gfx, reduced]);
+  }, [t, season, forceKey, camera, gfx, reduced, live]);
   return (
     <>
       <AmbientLayer force={season} month={month ?? SEASON_MONTH[season]} slug="vic" worldForce={force} year={year} />
       {camera === "showcase" ? <ShowcaseExit /> : null}
+      {live ? <div style={{ position: "fixed", top: 16, left: 16, zIndex: 2147483647, display: "flex", gap: 12, padding: "10px 14px", borderRadius: 12, background: "#fffef0ed", color: "#284535", fontSize: 14 }}>
+        <span>봄 초원 테스트 · 마우스를 움직여 보세요</span>
+        <button onClick={() => { window.__vicAmbient?.freeze(playing); setPlaying(!playing); }}>{playing ? "일시정지" : "재생"}</button>
+        <button onClick={() => window.__vicAmbient?.forceWorld({ ...force, band: "noon", skyEvent: undefined })}>낮</button>
+        <button onClick={() => window.__vicAmbient?.forceWorld({ ...force, band: "night", skyEvent: "shooting-star" })}>밤·별똥별</button>
+      </div> : null}
     </>
   );
 }

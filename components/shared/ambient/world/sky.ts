@@ -429,7 +429,7 @@ function drawSkyContent(
 }
 
 export const skyKey = (season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number): string =>
-  `${season}|${weather}|${band}|${w}x${h}|a${skyArt.version}`;
+  `${season}|${weather}|${band}|${w}x${h}|hz${horizonY(h)}|a${skyArt.version}`;
 
 /** 하늘 판 굽기 — 지평선까지 불투명, 그 아래 4%h는 사라진다(땅의 먼 띠를 덮지 않게). 구름은 1/3 해상도에 그려 보간 없이 키운다(픽셀 계단, AA 없음 — ADR-0017 ⑱). */
 export function bakeSky(season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number, seed: number, topY = 0, daylight?: readonly [string, string]): HTMLCanvasElement {

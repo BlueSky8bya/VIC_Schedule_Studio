@@ -1,5 +1,7 @@
 # scripts/ambient-qa/ — 계절 배경 비주얼 QA 하네스
 
+봄 초원 3레이어: `node scripts/ambient-qa/meadow-layer-check.mjs`는 새 소스·깊이 이동·입력·밤 천체를 실제 fixture에서 검사한다. `node scripts/ambient-meadow-layers.mjs`는 원본 크기와 RGB 마스크 측정값을 읽기 전용으로 검증한다. 근거와 한계는 [ROUND-21](../../docs/ambient/rounds/ROUND-21-meadow-camera.md).
+
 > 📖 PLAN-20260905-005 P0·P1(2026-09-05). 규칙·절차는 [`docs/ambient/`](../../docs/ambient/README.md)(프로토콜 §4~§7), 이 폴더는 **도구**만.
 > 산출물은 `.scratch-pw/qa/`(추적 안 함). 라운드 기록(`docs/ambient/rounds/`)에는 경로와 해시만 적는다.
 
