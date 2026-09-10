@@ -4,10 +4,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { launch, newPage, openFixture, fixtureUrl, captureCanvas, advance } from "./lib.mjs";
 const out = process.argv[2] ?? ".scratch-pw/qa/r20-spring/responsive";
+const season = process.argv[3] ?? "spring";
+if (!["spring", "summer", "autumn", "winter"].includes(season)) throw Error("Invalid season");
 fs.mkdirSync(out, { recursive: true });
 const report = { build: fs.readFileSync(".next/BUILD_ID", "utf8").trim(), checks: [], frames: [], errors: [] };
 const check = (name, ok, evidence) => { report.checks.push({ name, ok: !!ok, evidence }); console.log(`${ok ? "PASS" : "FAIL"} ${name}`); };
-const url = (band = "noon", weather = "clear", extra = {}) => fixtureUrl({ biome: "meadow", season: "spring", band, weather, seed: 42 }, { gfx: "max", reduced: 0, y: 2026, day: 15, ...extra });
+const url = (band = "noon", weather = "clear", extra = {}) => fixtureUrl({ biome: "meadow", season, band, weather, seed: 42 }, { gfx: "max", reduced: 0, y: 2026, day: 15, ...extra });
 const detail = page => page.evaluate(() => {
   const c = document.querySelector("canvas.gs-season"), g = c.getContext("2d");
   const edges = [g.getImageData(0, 0, c.width, 1), g.getImageData(0, c.height - 1, c.width, 1), g.getImageData(0, 0, 1, c.height), g.getImageData(c.width - 1, 0, 1, c.height)];

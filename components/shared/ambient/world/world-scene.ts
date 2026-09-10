@@ -32,7 +32,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
   const pinned = !!opts.pin;
   return (seed: number): Scene & { nav: WorldNav } => {
     const scenes = new Map<BiomeKey, Loaded>();
-    const inView = <T,>(key: BiomeKey, run: () => T): T => withViewHorizon(key === "meadow" && season === "spring" ? SPRING_MEADOW_HORIZON_V : HORIZON_V, run);
+    const inView = <T,>(key: BiomeKey, run: () => T): T => withViewHorizon(key === "meadow" ? SPRING_MEADOW_HORIZON_V : HORIZON_V, run);
     const pending = new Map<BiomeKey, Promise<void>>();
     let cur: BiomeKey = initial;
     let lastCoastX = 0;

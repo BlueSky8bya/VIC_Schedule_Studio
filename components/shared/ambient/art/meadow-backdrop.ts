@@ -4,12 +4,18 @@ import { beginLoad, endLoad } from "../loading";
 import { horizonY } from "../world/view";
 import { withDepthLayer } from "../world/depth-render";
 import geometry from "./meadow-layer-geometry.json";
+import summerGeometry from "./meadow-summer-layer-geometry.json";
+import autumnGeometry from "./meadow-autumn-layer-geometry.json";
+import winterGeometry from "./meadow-winter-layer-geometry.json";
+import type { SeasonKey } from "../registry";
 import { meadowLayerGroundCrop } from "./backdrop-manifest";
 
 type Layer = keyof typeof geometry;
 type Cache = { c: HTMLCanvasElement; key: string; width: number; height: number; y: number };
 const LAYERS: Layer[] = ["far", "ground", "frame"];
-export const MEADOW_LAYER_URLS = LAYERS.map(layer => `/ambient/art/backdrop-meadow-spring-${layer}-v${layer === "ground" ? 5 : 2}.png`);
+export const meadowLayerUrls = (season: SeasonKey) => LAYERS.map(layer => `/ambient/art/backdrop-meadow-${season}-${layer}-v${season === "spring" ? (layer === "ground" ? 5 : 2) : 1}.png`);
+export const MEADOW_LAYER_URLS = meadowLayerUrls("spring");
+const GEOMETRIES = { spring: geometry, summer: summerGeometry, autumn: autumnGeometry, winter: winterGeometry };
 
 /** Three originals, independently composed. Measured clip spans exclude RGB
  * generator mattes; sources are not mislabelled alpha PNGs. No per-frame masks. */
@@ -20,16 +26,18 @@ export class MeadowBackdrop {
   private disposed = false;
   version = 0;
   bakes = 0;
-  constructor() {
+  private geometry: typeof geometry;
+  constructor(private season: SeasonKey = "spring") {
+    this.geometry = GEOMETRIES[season];
     beginLoad();
-    void Promise.all(MEADOW_LAYER_URLS.map(url => loadImage(url).then(async image => { await image.decode(); return image; })))
+    void Promise.all(meadowLayerUrls(season).map(url => loadImage(url).then(async image => { await image.decode(); return image; })))
       .then(images => {
         if (this.disposed || images.some(i => i.naturalWidth !== 1536 || i.naturalHeight !== 1024)) return;
         LAYERS.forEach((layer, index) => {
           this.images[layer] = images[index];
           if (layer !== "ground") {
             const p = new Path2D();
-            for (const [x, y, width] of geometry[layer].spans) p.rect(x, y, width, 1);
+            for (const [x, y, width] of this.geometry[layer].spans) p.rect(x, y, width, 1);
             this.paths[layer] = p;
           }
         });
@@ -42,15 +50,32 @@ export class MeadowBackdrop {
     if (!this.ready) return;
     const c = meadowLayerGroundCrop(w, h, horizonY(h));
     g.save(); g.imageSmoothingEnabled = false;
-    g.drawImage(this.images.ground!, c.sx, c.sy, c.sw, c.sh, 0, c.y, w, c.height);
+    const scale = c.height / 1024;
+    // Same-direction tiles avoid a mirror fold. Blend only their overlapping
+    // margins in this one-time ground bake; no image editing or extra canvas.
+    const alpha = g.globalAlpha;
+    for (let i = 0; i < c.tiles.length; i++) {
+      const tile = c.tiles[i];
+      const blend = i === 0 ? 0 : c.overlap;
+      if (blend) for (let j = 0; j < 32; j++) {
+        const x0 = Math.round(blend * j / 32);
+        const x1 = Math.round(blend * (j + 1) / 32);
+        const t = (j + .5) / 32;
+        g.globalAlpha = alpha * t * t * (3 - 2 * t);
+        g.drawImage(this.images.ground!, x0 / scale, 0, (x1 - x0) / scale, 1024, tile.x + x0, c.y, x1 - x0, c.height);
+      }
+      g.globalAlpha = alpha;
+      const start = Math.round(blend);
+      g.drawImage(this.images.ground!, start / scale, 0, 1536 - start / scale, 1024, tile.x + start, c.y, c.tileWidth - start, c.height);
+    }
     g.restore();
   }
   private cache(layer: "far" | "frame", f: Frame): Cache {
-    const width = f.w + 64, height = layer === "far" ? 96 : 128;
+    const width = f.w + 64, height = layer === "far" ? 96 : 192;
     const tier = f.depthTier ?? "full";
     const desired = Math.min(f.dpr, 1.5) * (tier === "full" ? 1 : tier === "lite" ? .5 : .25);
     const scale = Math.min(desired, Math.sqrt(1024 * 1024 / (4 * width * height)) * .99);
-    const y = layer === "far" ? horizonY(f.h) - 72 : f.h - 112;
+    const y = layer === "far" ? horizonY(f.h) - 72 : f.h - 176;
     const key = `${width}/${f.h}/${scale}/${y}`;
     const previous = this.caches[layer];
     if (previous?.key === key) return previous;
@@ -66,7 +91,7 @@ export class MeadowBackdrop {
     };
     const k = Math.min(.65, Math.max(.3, f.h / 2048));
     if (layer === "far") {
-      const tw = 1536 * k, base = geometry.far.bounds[3], left = (width - tw) / 2;
+      const tw = 1536 * k, base = this.geometry.far.bounds[3], left = (width - tw) / 2;
       for (let i = Math.floor(-left / tw); i < Math.ceil((width - left) / tw); i++) {
         const x = Math.round((left + i * tw) * scale) / scale;
         const right = Math.round((left + (i + 1) * tw) * scale) / scale;
@@ -81,9 +106,29 @@ export class MeadowBackdrop {
       g.fillStyle = fade; g.fillRect(0, 0, width, height);
       g.globalCompositeOperation = "source-over";
     } else {
-      const edgeWidth = Math.min(f.w * .22, 768 * k + 32);
-      paint(32, 112 - 1024 * k, k, [0, 0, edgeWidth, height]);
-      paint(width - 32 - 1536 * k, 112 - 1024 * k, k, [width - edgeWidth, 0, edgeWidth, height]);
+      const nearK = Math.min(.95, Math.max(.55, f.h / 1200));
+      const edgeWidth = Math.min(f.w * .24, 440 * nearK + 32);
+      // Several staggered groups instead of a thin row of isolated blades.
+      // Their roots extend below the viewport; the middle half stays open.
+      for (const [offset, base, size] of [[-24, 189, 1], [74, 172, .76], [145, 196, .62]]) {
+        const kk = nearK * size;
+        paint(32 + offset, base - 1024 * kk, kk, [0, 0, edgeWidth, height]);
+      }
+      for (const [offset, base, size] of [[-16, 194, .92], [90, 176, .81], [166, 199, .57]]) {
+        const kk = nearK * size;
+        paint(width - 32 - offset - 1536 * kk, base - 1024 * kk, kk, [width - edgeWidth, 0, edgeWidth, height]);
+      }
+      // Taper inward instead of leaving a ruler-straight clipped edge in grass.
+      const fade = g.createLinearGradient(0, 0, width, 0);
+      fade.addColorStop(0, "#fff");
+      fade.addColorStop(Math.max(0, edgeWidth - 48) / width, "#fff");
+      fade.addColorStop(edgeWidth / width, "transparent");
+      fade.addColorStop((width - edgeWidth) / width, "transparent");
+      fade.addColorStop((width - Math.max(0, edgeWidth - 48)) / width, "#fff");
+      fade.addColorStop(1, "#fff");
+      g.globalCompositeOperation = "destination-in";
+      g.fillStyle = fade; g.fillRect(0, 0, width, height);
+      g.globalCompositeOperation = "source-over";
     }
     this.bakes++;
     return this.caches[layer] = { c, key, width, height, y };
@@ -99,6 +144,6 @@ export class MeadowBackdrop {
   }
   drawFar(g: CanvasRenderingContext2D, f: Frame) { return this.draw("far", g, f); }
   drawForeground(g: CanvasRenderingContext2D, f: Frame) { return this.draw("frame", g, f); }
-  debug() { return { ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), sourcePixels: 3 * 1536 * 1024 }; }
+  debug() { return { season: this.season, ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), sourcePixels: 3 * 1536 * 1024 }; }
   dispose() { this.disposed = true; this.images = {}; this.paths = {}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
 }

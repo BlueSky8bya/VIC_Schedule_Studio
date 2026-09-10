@@ -1,6 +1,7 @@
 // 하늘(world/sky.ts, QA 라운드 5) — 계절 × 날씨 팔레트의 계약과 달 위상(실제 음력)의 정확성.
 import { describe, expect, it } from "vitest";
-import { moonLit, moonPhase, skyPalette } from "@/components/shared/ambient/world/sky";
+import { moonLit, moonPhase, skyPalette, solarSunYOf } from "@/components/shared/ambient/world/sky";
+import { sunPos } from "@/components/shared/ambient/world/sun";
 import { SEASON_KEYS } from "@/components/shared/ambient/registry";
 
 const lum = (rgb: string) => {
@@ -11,6 +12,20 @@ const blue = (rgb: string) => {
   const [r, , b] = rgb.split(" ").map(Number);
   return b - r;
 };
+
+describe("meadow solar screen height", () => {
+  it("keeps summer noon higher than winter at the same clock time", () => {
+    const summer = sunPos(2026, 7, 15, 12).alt;
+    const winter = sunPos(2026, 1, 15, 12).alt;
+    expect(solarSunYOf(summer, 301)).toBeLessThan(solarSunYOf(winter, 301) - 90);
+  });
+  it("keeps rising altitude monotonic with room for the disc", () => {
+    const ys = [0, 18, 30, 60, 90].map(a => solarSunYOf(a, 301));
+    expect(ys[0]).toBe(287);
+    expect(ys.at(-1)).toBe(20);
+    for (let i = 1; i < ys.length; i++) expect(ys[i]).toBeLessThan(ys[i - 1]);
+  });
+});
 
 describe("world/sky skyPalette", () => {
   it("맑음은 계절마다 다르고 가을이 가장 깊은 파랑(천고마비) — 꼭대기 청색 편차 가을 > 여름 > 봄 ≥ 겨울", () => {

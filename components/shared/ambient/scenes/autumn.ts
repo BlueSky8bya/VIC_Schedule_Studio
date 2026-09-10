@@ -1,4 +1,5 @@
-import { drawDepthGround } from "../world/depth-render";
+import { MeadowBackdrop } from "../art/meadow-backdrop";
+import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". **바탕**(2026-09-04 사용자: "가을만 일반 화면") — 마른 흙 얼룩(올리브·
 // 엄버, 채도 낮춤)·시든 풀포기(황갈)·잔가지·조약돌·버섯(갈색 갓에 크림 점) 몇을 크기별 결정적으로 한 번 굽는다. 그 위에
 // 여러 수종의 잎(둥근 잎·느릅·버들·단풍·은행·참나무·솔잎)이 흩어져 있고, 이따금 바람이 한 줄기 지나가며(gust) 잎들이
@@ -103,6 +104,8 @@ type Speck = { x: number; y: number; vx: number; vy: number; life: number };
 type Whirl = { x: number; y: number; vx: number; vy: number; t0: number; dur: number } | null;
 
 export function createAutumn(seed: number): Scene {
+  const backdrop = new MeadowBackdrop("autumn");
+  let backdropVersion = -1;
   const rand = rng(seed);
   const leaves: Leaf[] = [];
   const caches: Cache[] = [];
@@ -270,10 +273,19 @@ export function createAutumn(seed: number): Scene {
   }
   // 가을 바탕 — 크기별 결정적. 마른 흙 얼룩 + 시든 풀 + 잔가지 + 조약돌 + 버섯.
   function bakeGround(dpr: number) {
+    backdropVersion = backdrop.version;
     const g0 = rng((seed * 7 + 13) >>> 0);
     resetPropField();
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
+    if (backdrop.ready) {
+      backdrop.drawGround(g, w, h);
+      backdropVersion = backdrop.version;
+      ground = c; horizon = null;
+      gw = w; gh = h; gdpr = dpr; gav = groundArt.version; gsh = shadowKey(currentLight());
+      treeSpots = [];
+      return;
+    }
     // 흙 바탕 — 이게 없어 지금까지 "가을 땅"이 페이지의 흰색이었고, 낙엽·잔가지가 흰 종이 위의 점으로 보였다.
     const bg = g.createLinearGradient(0, gy(), 0, h);
     // 근경을 확실히 낮춘다(옛 #85795a는 원경 #d3c7a8과 명도 폭이 좁아 화면 전체가 단일 카키였다).
@@ -674,7 +686,7 @@ export function createAutumn(seed: number): Scene {
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
-      if (ground && (gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (ground && (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       const target = targetCount(f);
       const live = liveLeaves();
@@ -1079,12 +1091,17 @@ export function createAutumn(seed: number): Scene {
           cloudC = bakeClouds("autumn", f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        withDepthLayer(g, "sky", () => {
+          g.save();
+          if (backdrop.ready) { g.beginPath(); g.rect(0, 0, f.w, horizonY(f.h)); g.clip(); }
+          drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, solarPath: true, solarHorizon: horizonY(f.h) }));
+          g.restore();
+        });
       }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개. 바탕 위, 모든 것 아래.
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
-      if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
+
+      if (!backdrop.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       // (서리 안개 층은 **삭제**했다 — 2026-09-07, AMB-D3-04. 화면 위 34%에 걸린 `mist` 그라데이션이 엔진 대기 안개와 이중으로
       //  얹혀, 화면 y = .34h에서 끊기는 **가로 계단**을 만들었다. 실측: 지평선 아래 띠①−② 평균 L 차 초원 가을 4.2L 대
       //  숲 1.7 · 초원 겨울 1.8 — 그 계단 위가 통째로 하얘져 나무·먼 소품이 같이 사라졌다. 안개는 엔진 한 겹만 맡는다.)
@@ -1257,8 +1274,11 @@ export function createAutumn(seed: number): Scene {
       }
       grabbed = -1;
     },
+    drawForeground(g, f) { return backdrop.drawForeground(g, f); },
+    dispose() { backdrop.dispose(); },
     debug() {
       return {
+        backdrop: backdrop.debug(),
         leaves: leaves.length,
         live: liveLeaves(),
         falling: leaves.filter((l) => l.fall > 0).length,

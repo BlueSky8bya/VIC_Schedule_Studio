@@ -154,7 +154,7 @@ function sunAt(t: number, w: number, h: number): [number, number][] {
 export function createSpring(seed: number, variant: "spring" | "summer" = "spring"): Scene {
   const rand = rng(seed);
   const summer = variant === "summer";
-  const backdrop = summer ? null : new MeadowBackdrop();
+  const backdrop = new MeadowBackdrop(summer ? "summer" : "spring");
   let backdropVersion = -1;
   let ground: HTMLCanvasElement | null = null;
   let blades: HTMLCanvasElement | null = null;
@@ -175,7 +175,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   const groundY = (r: number) => gy() + r * (h - gy());
   /** 작은 식물의 추가 원근 테이퍼 — 0.3(지평선) → 1.0(발치). depthScale(0.6~1.0)만으로는 지평선 근처 풀포기가
    *  근경의 0.75배로 남아 "키 3~5m 짜리 풀"이 됐다(검토 라운드2 현실성 #9b). */
-  const smallK = (y: number) => (summer ? 1 : .6) * (0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy()))));
+  const smallK = (y: number) => .6 * (0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy()))));
   let shadow: HTMLCanvasElement | null = null;
   let traceBakes: TraceBakes | null = null; // 연대기(지난 가을 저장소의 싹·나무·두더지 흙더미) 렌더
   let petalSpr: HTMLCanvasElement | null = null;
@@ -296,7 +296,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
     // 중경 앵커 — 관목이 하나씩 흩어져 있으면 배치가 아니라 좌표 난수로 보인다(사이클3 미관 #5). 한 무리로 묶는다.
-    if (summer) {
+    if (summer && !backdrop.ready) {
       const cx3 = w * (0.18 + g0() * 0.64);
       const cy3 = groundY(0.4 + g0() * 0.34);
       for (let i = 0; i < 4; i++) {
@@ -308,7 +308,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         drawProp(g, groundArt, summer ? "shrub-summer" : "shrub-spring", x, y, { k, r: g0(), flip: g0() < 0.5 });
       }
     }
-    if (summer) scatterProps(g, groundArt, w, h, g0, [
+    if (summer && !backdrop.ready) scatterProps(g, groundArt, w, h, g0, [
       { id: summer ? "shrub-summer" : "shrub-spring", n: 3 },
       { id: "rock", n: 2 },
       { id: "stump", n: 1 },
@@ -1293,13 +1293,13 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           // own the sky without its old under-horizon fade whitening the field.
           withDepthLayer(g, "sky", () => {
             g.save(); g.beginPath(); g.rect(-32, 0, f.w + 64, horizonY(f.h)); g.clip();
-            drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now); g.restore();
+            drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, solarPath: true, solarHorizon: horizonY(f.h) })); g.restore();
           });
-        } else drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        } else drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, solarPath: true, solarHorizon: horizonY(f.h) }));
       }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개.
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
+
       if (!backdrop?.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.

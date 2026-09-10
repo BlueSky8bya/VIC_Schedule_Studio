@@ -7,6 +7,8 @@
 
 ## 서버
 
+사계절 초원: `node scripts/ambient-qa/spring-backdrop-check.mjs <output-dir> <spring|summer|autumn|winter>`로 계절별 화면비·날씨·모바일 검사를 실행한다. `node scripts/ambient-qa/meadow-seasons-check.mjs [output-dir]`는 계절별 3장만 로드하는지, 마젠타 잔여와 가을/겨울 실패 로딩 중 반복 굽기를 검사한다. `node scripts/ambient-qa/meadow-sun-check.mjs [output-dir]`는 사계절 같은 12 KST의 실제 해 픽셀과 여름/겨울 높이 차이를 검사하고 겨울 시간대도 캡처한다. `ambient-meadow-layers.mjs --season=summer`(autumn/winter 동일)는 원본과 저장된 마스크 측정값을 읽기 전용 검증한다.
+
 프로덕션 빌드 + fixture 플래그(없으면 404). dev 서버(3100)가 떠 있으면 먼저 내린다(`.next` 충돌).
 
 ```bash

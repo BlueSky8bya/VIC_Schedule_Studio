@@ -94,7 +94,8 @@ export function BiomeFixture({ season, year, month, force, t, camera, gfx = "max
       <AmbientLayer force={season} month={month ?? SEASON_MONTH[season]} slug="vic" worldForce={force} year={year} />
       {camera === "showcase" ? <ShowcaseExit /> : null}
       {live ? <div style={{ position: "fixed", top: 16, left: 16, zIndex: 2147483647, display: "flex", gap: 12, padding: "10px 14px", borderRadius: 12, background: "#fffef0ed", color: "#284535", fontSize: 14 }}>
-        <span>봄 초원 테스트 · 마우스를 움직여 보세요</span>
+        <span>{{ spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" }[season]} 초원 테스트 · 마우스를 움직여 보세요</span>
+        {(["spring", "summer", "autumn", "winter"] as const).map(s => <a key={s} href={`?biome=meadow&season=${s}&band=noon&weather=clear&seed=42&t=1500&camera=showcase&gfx=auto&load=auto&live=1`}>{{spring:"봄",summer:"여름",autumn:"가을",winter:"겨울"}[s]}</a>)}
         <button onClick={() => { window.__vicAmbient?.freeze(playing); setPlaying(!playing); }}>{playing ? "일시정지" : "재생"}</button>
         <button onClick={() => window.__vicAmbient?.forceWorld({ ...force, band: "noon", skyEvent: undefined })}>낮</button>
         <button onClick={() => window.__vicAmbient?.forceWorld({ ...force, band: "night", skyEvent: "shooting-star" })}>밤·별똥별</button>

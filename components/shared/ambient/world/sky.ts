@@ -405,10 +405,11 @@ export function drawSky(
   clouds: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null,
   w: number,
   t: number,
-  weather: Weather
+  weather: Weather,
+  beforeClouds?: () => void
 ) {
   // Sky stays fixed in panel coordinates; cancel the ground translation before filling its full width.
-  withDepthLayer(g, "sky", () => drawSkyContent(g, sky, clouds, w, t, weather));
+  withDepthLayer(g, "sky", () => drawSkyContent(g, sky, clouds, w, t, weather, beforeClouds));
 }
 
 function drawSkyContent(
@@ -417,9 +418,11 @@ function drawSkyContent(
   clouds: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null,
   w: number,
   t: number,
-  weather: Weather
+  weather: Weather,
+  beforeClouds?: () => void
 ) {
   g.drawImage(sky, 0, 0, w, sky.height);
+  beforeClouds?.();
   if (!clouds) return;
   const v = cloudSpeed(weather);
   for (const [layer, mul] of [[clouds.far, 0.45], [clouds.near, 1]] as const) {
@@ -617,6 +620,15 @@ export function sunYOf(alt: number | undefined, maxY: number): number {
   return Math.round(maxY - 14 - k * (maxY - 14) * 0.62);
 }
 
+/** A common 0–90° scale, rather than normalizing each season to its own noon.
+ * This keeps winter's noon visibly lower than summer's on the same canvas. */
+export function solarSunYOf(alt: number, maxY: number): number {
+  const bottom = Math.max(14, maxY - 14);
+  return Math.round(bottom - Math.max(0, Math.min(1, alt / 90)) * (bottom - Math.min(20, bottom)));
+}
+
+type SkyOptions = { moonY?: number; sunY?: number; solarPath?: boolean; solarHorizon?: number };
+
 /** 프레임마다: 별(밤·맑음/바람) · 달(밤, 음력 위상) · 해(새벽·노을, 맑음/바람) — 픽셀 사각 별, 옅은 달·해 원반 + 글로우. `maxY` = 언덕·능선에 가리지 않을 상한. */
 /** 밤하늘의 드문 사건 — 별똥별과 혜성. 일정은 `sky-events.ts`가 (시드, t)의 순수 함수로 정한다(결정성).
  *  둘 다 **하늘 띠 안**에서만 움직이고 지평선을 넘지 않는다 — 땅 위를 지나가면 반딧불이가 된다. */
@@ -673,24 +685,34 @@ function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed
   }
 }
 
-export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: { moonY?: number; sunY?: number } = {}) {
-  withDepthLayer(g, "sky", () => drawSkyLiveContent(g, w, f, seed, maxY, opts));
+export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: SkyOptions = {}) {
+  withDepthLayer(g, "sky", () => {
+    g.save();
+    if (opts.solarPath) { g.beginPath(); g.rect(0, 0, w, opts.solarHorizon ?? maxY); g.clip(); }
+    drawSkyLiveContent(g, w, f, seed, maxY, opts);
+    g.restore();
+  });
 }
 
-function drawSkyLiveContent(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: { moonY?: number; sunY?: number }) {
+function drawSkyLiveContent(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: SkyOptions) {
   const t = f.t;
   const band = f.time.band;
   const weather = f.weather.now;
   const L = f.light;
   const clearish = weather === "clear" || weather === "wind";
+  const sunAlt = f.time.sun?.alt ?? -90;
+  const showSun = opts.solarPath ? sunAlt >= -0.833 : band === "dawn" || band === "dusk";
+  const riseFade = Math.max(0, Math.min(1, (sunAlt + .833) / 2.833));
+  const sunOpacity = opts.solarPath ? riseFade * riseFade * (3 - 2 * riseFade) : 1;
+  const sunY = opts.solarPath ? solarSunYOf(sunAlt, opts.solarHorizon ?? maxY) : opts.sunY ?? sunYOf(f.time.sun?.alt, maxY);
   if (weather === "fog") {
     // 안개(2026-09-06 라운드 11, 검토 A #2): 해·달을 지우지 않고 **큰 저채도 halo만** — "빛은 있는데 방향이 없다"가 안개의 정서.
     // 원반·별·글로우 없음. 반지름은 맑음 글로우의 ×3, α .12~.2.
-    if (band === "dawn" || band === "dusk") {
+    if (showSun) {
       const sx = w * L.reflect.x;
-      const sy = opts.sunY ?? sunYOf(f.time.sun?.alt, maxY);
+      const sy = sunY;
       const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
-      softBlob(g, sx, sy, R * 9, band === "dusk" ? "240 228 224" : "236 238 240", 0.35, 0); // .16 → .35(라운드 12 A: 해 자리 L +0.8 = "빛이 없다")
+      softBlob(g, sx, sy, R * 9, band === "dusk" ? "240 228 224" : "236 238 240", 0.35 * sunOpacity, 0); // .16 → .35(라운드 12 A: 해 자리 L +0.8 = "빛이 없다")
     } else if (band === "night") {
       const lit = moonLit(moonPhase(f.date.y, f.date.m, f.date.d));
       if (lit >= 0.04) {
@@ -742,10 +764,11 @@ function drawSkyLiveContent(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
     drawSkyEvents(g, w, f, seed, maxY);
     return;
   }
-  if (band === "dawn" || band === "dusk") {
+  if (showSun) {
+    g.save(); g.globalAlpha *= sunOpacity;
     // 해 — 지평선 가까이 낮게, 회백(새벽)·회장미(노을) 원반 + 넓고 옅은 글로우. 선명한 주황은 없다(오행).
     const sx = w * L.reflect.x;
-    const sy = opts.sunY ?? sunYOf(f.time.sun?.alt, maxY);
+    const sy = sunY;
     const col = band === "dusk" ? "244 226 220" : "236 238 240";
     const R = Math.max(9, Math.min(16, Math.round(maxY * 0.05)));
     softBlob(g, sx, sy, R * 3, col, band === "dusk" ? 0.5 : 0.34, 0);
@@ -760,5 +783,6 @@ function drawSkyLiveContent(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
       const disc = pixelDisc(R, col, band === "dusk" ? 0.6 : 0.45);
       g.drawImage(disc, Math.round(sx - disc.width / 2), Math.round(sy - disc.height / 2));
     }
+    g.restore();
   }
 }

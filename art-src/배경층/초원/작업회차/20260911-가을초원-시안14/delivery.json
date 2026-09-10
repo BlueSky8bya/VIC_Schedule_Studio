@@ -1,0 +1,77 @@
+{
+  "method": "built-in image_gen",
+  "season": "autumn",
+  "status": "generated and selected for local integration; owner final visual acceptance pending",
+  "matte": "F/N are opaque magenta RGB source mattes excluded by measured runtime clipping; not alpha-qualified PNGs. Raw bytes preserved.",
+  "layers": [
+    {
+      "layer": "far",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/far-request.md",
+        "bytes": 942,
+        "sha256": "8b90210dd552bbb741a1e2823c1ae0cc81f5a84a99a043bf8c449606ef584a06"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/고정입력/봄원경.png",
+        "bytes": 1599826,
+        "sha256": "39a9e1928622102cf576e2cc731436b7bf7b740706d9f8f7cbbc6c270705b1cd"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/원본/backdrop-meadow-autumn-far-v1.png",
+        "bytes": 1262981,
+        "sha256": "45526e4c8ee2f0d66c12eab1f82205789e5a0d8e798fbc2d517b547cdaf008fc"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-autumn-far-v1.png",
+        "bytes": 1262981,
+        "sha256": "45526e4c8ee2f0d66c12eab1f82205789e5a0d8e798fbc2d517b547cdaf008fc"
+      }
+    },
+    {
+      "layer": "ground",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/ground-request.md",
+        "bytes": 968,
+        "sha256": "9ea1f00fb2534f6c7f4292b1ee8bbf6a010f4d258d2ad46fc1d6998ceef7b9af"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/고정입력/봄지면.png",
+        "bytes": 2360821,
+        "sha256": "67f488a55ae6fb834fed65599aa1a343ef8076498966b30b0dccc2cd0b9487c5"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/원본/backdrop-meadow-autumn-ground-v1.png",
+        "bytes": 2861935,
+        "sha256": "844eb82faa3ae5dd4d4523f3425b2763b7aec3a175876d795a7191a3b56f535c"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-autumn-ground-v1.png",
+        "bytes": 2861935,
+        "sha256": "844eb82faa3ae5dd4d4523f3425b2763b7aec3a175876d795a7191a3b56f535c"
+      }
+    },
+    {
+      "layer": "frame",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/frame-request.md",
+        "bytes": 973,
+        "sha256": "fdc9f8a6841c47d31b83e9983a57b2d87f084bae79862b87389c99dcc0bb8dca"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/고정입력/봄근경.png",
+        "bytes": 1848161,
+        "sha256": "bcccbb595d04895671dda2646f1c252fa1edd47cf20daa0118a8ff5c7d1fdacd"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-가을초원-시안14/원본/backdrop-meadow-autumn-frame-v1.png",
+        "bytes": 1246838,
+        "sha256": "4a4138ddb6e084db67b4ff3973766c19c48be96aa649fcc92c3a893d865a0e00"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-autumn-frame-v1.png",
+        "bytes": 1246838,
+        "sha256": "4a4138ddb6e084db67b4ff3973766c19c48be96aa649fcc92c3a893d865a0e00"
+      }
+    }
+  ]
+}

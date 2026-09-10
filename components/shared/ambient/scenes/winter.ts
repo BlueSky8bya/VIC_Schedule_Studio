@@ -1,4 +1,5 @@
-import { drawDepthGround } from "../world/depth-render";
+import { MeadowBackdrop } from "../art/meadow-backdrop";
+import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 겨울 — "소복이 쌓인 눈밭을 위에서 내려다본다". 바탕(눈밭 + 둔덕 그늘 + 반짝이 + 이미 지나간 발자국 몇 줄)은
 // 리사이즈 때 한 번 굽는다(크기별 결정적 — 다시 구워도 같은 그림). 그 위에서: ① 보이지 않는 누군가가 **걸어간다** —
 // 사람(신발 자국)·**고양이·새·토끼**(제 걸음걸이)가 화면을 가로지르고, 다 지나가면 잠시 뒤 다른 가장자리에서 다음 손님.
@@ -71,6 +72,8 @@ const SPR: Record<PrintKind, number> = { sole: 36 * PRINT_K, paw: 20 * PRINT_K, 
 const STRIDE_K = 0.6;
 
 export function createWinter(seed: number): Scene {
+  const backdrop = new MeadowBackdrop("winter");
+  let backdropVersion = -1;
   const rand = rng(seed);
   let ground: HTMLCanvasElement | null = null;
   let gw = 0;
@@ -329,11 +332,19 @@ export function createWinter(seed: number): Scene {
   }
 
   function bakeGround(dpr: number) {
+    backdropVersion = backdrop.version;
     bakeSprites();
     const g0 = rng((seed * 7 + 13) >>> 0);
     resetPropField();
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
+    if (backdrop.ready) {
+      backdrop.drawGround(g, w, h);
+      backdropVersion = backdrop.version;
+      ground = c; horizon = null;
+      gw = w; gh = h; gdpr = dpr; gav = groundArt.version; gsh = shadowKey(currentLight());
+      return;
+    }
     const base = g.createLinearGradient(0, 0, 0, h);
     base.addColorStop(0, "#f4f9ff");
     base.addColorStop(1, "#a8c0d8");
@@ -643,7 +654,7 @@ export function createWinter(seed: number): Scene {
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03: 아침≈점심의 원인 = 점심에 구운 그림자).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
-      if (ground && (gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (ground && (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       // ① 손님 — 여력 0.2부터. 빈도는 여력에 비례(여유로우면 6~14초, 빠듯하면 28~48초 간격).
       if (!walker.active && t > nextWalker && load >= 0.2) startWalker(t, load);
@@ -907,12 +918,17 @@ export function createWinter(seed: number): Scene {
           cloudC = bakeClouds("winter", f.weather.now, f.time.band, f.w, f.h, seed);
           skyKeyCur = sk;
         }
-        drawSky(g, skyC, cloudC, f.w, f.t, f.weather.now);
+        withDepthLayer(g, "sky", () => {
+          g.save();
+          if (backdrop.ready) { g.beginPath(); g.rect(0, 0, f.w, horizonY(f.h)); g.clip(); }
+          drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, solarPath: true, solarHorizon: horizonY(f.h) }));
+          g.restore();
+        });
       }
       // 3/4 시점의 지평선 띠(위 12%) — 흰 언덕·나목 줄·안개.
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
-      drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: horizonY(f.h) * 0.35, sunY: hillCrestY(f.h) - 14 });
-      if (horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
+
+      if (!backdrop.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       const t = f.t;
       for (const k of twinkles) {
         const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph));
@@ -1070,8 +1086,11 @@ export function createWinter(seed: number): Scene {
       puff(f.p.x, f.p.y, f.load >= 0.4 ? 5 : 3, 60);
       return true;
     },
+    drawForeground(g, f) { return backdrop.drawForeground(g, f); },
+    dispose() { backdrop.dispose(); },
     debug() {
       return {
+        backdrop: backdrop.debug(),
         flakes: flakes.length,
         prints: prints.length,
         printPos: prints.map((q) => [Math.round(q.x), Math.round(q.y)]),

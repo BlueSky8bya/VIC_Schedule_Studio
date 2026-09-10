@@ -23,7 +23,20 @@ describe("spring meadow layered camera", () => {
       expect(c.sh).toBe(1024);
       expect(c.y+c.height).toBe(h);
       expect(c.y).toBeLessThan(h*.35-4);
+      expect(c.tileWidth / 1536).toBeCloseTo(c.height / 1024);
+      expect(c.tiles[0].x).toBeLessThanOrEqual(0);
+      expect(c.tiles.at(-1)!.x + c.tileWidth).toBeGreaterThanOrEqual(w - 1e-8);
+      for (let i = 1; i < c.tiles.length; i++) {
+        expect(c.tiles[i].x).toBeCloseTo(c.tiles[i-1].x + c.tileWidth - c.overlap);
+        expect(c.tiles[i].x).toBeLessThan(c.tiles[i-1].x + c.tileWidth);
+      }
     }
+  });
+  it("reveals more ground at equal height without enlarging grass", () => {
+    const standard = meadowLayerGroundCrop(1400, 860, 301);
+    const wide = meadowLayerGroundCrop(3440, 860, 301);
+    expect(wide.tileWidth).toBe(standard.tileWidth);
+    expect(wide.tiles.length).toBeGreaterThan(standard.tiles.length);
   });
   it("keeps the distant ridge shallow and the foreground center clear", () => {
     expect(geometry.far.bounds[0]).toBe(0);

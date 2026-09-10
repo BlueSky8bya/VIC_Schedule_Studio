@@ -1,12 +1,20 @@
 // Public render contract only. Source/review provenance stays in art-src.
 import geometry from "./meadow-spring-geometry.json";
 
-/** Keep the complete far-to-near progression on every aspect ratio. Wide views
- * compress ground vertically; portrait views crop only the sides. */
+/** Height defines the grass scale. Wide views reveal more terrain, never
+ * stretch the source horizontally; portrait views crop the centered tile. */
 export function meadowLayerGroundCrop(w: number, h: number, horizon: number) {
   const height = h - horizon + 8;
   const sw = Math.min(1536, w * 1024 / height);
-  return { sx: (1536 - sw) / 2, sy: 0, sw, sh: 1024, y: horizon - 8, height };
+  const tileWidth = 1536 * height / 1024;
+  const overlap = tileWidth * .12;
+  const stride = tileWidth - overlap;
+  const left = (w - tileWidth) / 2;
+  const tiles = [];
+  for (let i = Math.floor(-left / stride); i < Math.ceil((w - left) / stride); i++) {
+    tiles.push({ x: left + i * stride });
+  }
+  return { sx: (1536 - sw) / 2, sy: 0, sw, sh: 1024, y: horizon - 8, height, tileWidth, overlap, tiles };
 }
 
 export const SPRING_MEADOW_BACKDROP = {

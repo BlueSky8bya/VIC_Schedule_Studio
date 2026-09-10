@@ -1,0 +1,77 @@
+{
+  "method": "built-in image_gen",
+  "season": "winter",
+  "status": "generated and selected for local integration; owner final visual acceptance pending",
+  "matte": "F/N are opaque magenta RGB source mattes excluded by measured runtime clipping; not alpha-qualified PNGs. Raw bytes preserved.",
+  "layers": [
+    {
+      "layer": "far",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/far-request.md",
+        "bytes": 995,
+        "sha256": "bdf3385328d318e0515e3c7aa38458cdea00b67e739ce384a74ab35e4d2abd0e"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/고정입력/봄원경.png",
+        "bytes": 1599826,
+        "sha256": "39a9e1928622102cf576e2cc731436b7bf7b740706d9f8f7cbbc6c270705b1cd"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/원본/backdrop-meadow-winter-far-v1.png",
+        "bytes": 1210419,
+        "sha256": "11cc33a24e7ca79a089f0473c883aca19aecc29cd89a1043cfdba27952fe3081"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-winter-far-v1.png",
+        "bytes": 1210419,
+        "sha256": "11cc33a24e7ca79a089f0473c883aca19aecc29cd89a1043cfdba27952fe3081"
+      }
+    },
+    {
+      "layer": "ground",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/ground-request.md",
+        "bytes": 1021,
+        "sha256": "2e86572c9992a48d13b5b1af9f78238021259168666ef7bbd265e18ba32d0e64"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/고정입력/봄지면.png",
+        "bytes": 2360821,
+        "sha256": "67f488a55ae6fb834fed65599aa1a343ef8076498966b30b0dccc2cd0b9487c5"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/원본/backdrop-meadow-winter-ground-v1.png",
+        "bytes": 1944542,
+        "sha256": "77f1464559163539705a5a3876ff4f7b6f7d5457a11855de3a63a380a522bf5b"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-winter-ground-v1.png",
+        "bytes": 1944542,
+        "sha256": "77f1464559163539705a5a3876ff4f7b6f7d5457a11855de3a63a380a522bf5b"
+      }
+    },
+    {
+      "layer": "frame",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/frame-request.md",
+        "bytes": 1026,
+        "sha256": "c4a6c5ba9474041ecfc5a7b2f6a76a4f2a603e5f52c1c6b345e4efd84f1ab824"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/고정입력/봄근경.png",
+        "bytes": 1848161,
+        "sha256": "bcccbb595d04895671dda2646f1c252fa1edd47cf20daa0118a8ff5c7d1fdacd"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-겨울초원-시안15/원본/backdrop-meadow-winter-frame-v1.png",
+        "bytes": 1234149,
+        "sha256": "d8c0ff46df3eb9f9782e0debae780d30727cbb456d519458ca82baead8747b8c"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-winter-frame-v1.png",
+        "bytes": 1234149,
+        "sha256": "d8c0ff46df3eb9f9782e0debae780d30727cbb456d519458ca82baead8747b8c"
+      }
+    }
+  ]
+}

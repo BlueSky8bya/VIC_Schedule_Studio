@@ -1,0 +1,77 @@
+{
+  "method": "built-in image_gen",
+  "season": "summer",
+  "status": "generated and selected for local integration; owner final visual acceptance pending",
+  "matte": "F/N are opaque magenta RGB source mattes excluded by measured runtime clipping; not alpha-qualified PNGs. Raw bytes preserved.",
+  "layers": [
+    {
+      "layer": "far",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/far-request.md",
+        "bytes": 939,
+        "sha256": "44244e8af1ce0b8c1f90066240005e9671930b2b532715580e694c0396994532"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/고정입력/봄원경.png",
+        "bytes": 1599826,
+        "sha256": "39a9e1928622102cf576e2cc731436b7bf7b740706d9f8f7cbbc6c270705b1cd"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/원본/backdrop-meadow-summer-far-v1.png",
+        "bytes": 1268383,
+        "sha256": "4d4ca7d8fb387253085657b8a1d51019ae8ae3a81d2079dea1233dcd842ec88d"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-summer-far-v1.png",
+        "bytes": 1268383,
+        "sha256": "4d4ca7d8fb387253085657b8a1d51019ae8ae3a81d2079dea1233dcd842ec88d"
+      }
+    },
+    {
+      "layer": "ground",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/ground-request.md",
+        "bytes": 965,
+        "sha256": "3761660fd93560a951fad7d3543400cfb1217fe2a0dfe241a212c8aa021cfa0f"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/고정입력/봄지면.png",
+        "bytes": 2360821,
+        "sha256": "67f488a55ae6fb834fed65599aa1a343ef8076498966b30b0dccc2cd0b9487c5"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/원본/backdrop-meadow-summer-ground-v1.png",
+        "bytes": 2734249,
+        "sha256": "96b734b670ee6f5362b6ddfdd2e5d2859fa12bdab814e767bd942938f56abe88"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-summer-ground-v1.png",
+        "bytes": 2734249,
+        "sha256": "96b734b670ee6f5362b6ddfdd2e5d2859fa12bdab814e767bd942938f56abe88"
+      }
+    },
+    {
+      "layer": "frame",
+      "prompt": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/frame-request.md",
+        "bytes": 970,
+        "sha256": "9c8b13495833336b5acbd608763dc51b53a6ded7438fcab7eaa9512243d97352"
+      },
+      "inputActuallyViewedAndAttached": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/고정입력/봄근경.png",
+        "bytes": 1848161,
+        "sha256": "bcccbb595d04895671dda2646f1c252fa1edd47cf20daa0118a8ff5c7d1fdacd"
+      },
+      "raw": {
+        "path": "art-src/배경층/초원/작업회차/20260911-여름초원-시안13/원본/backdrop-meadow-summer-frame-v1.png",
+        "bytes": 1238034,
+        "sha256": "2a563c0cbcf76eeb5634679b0b03082a7cbe3dfd921883637c835f457c3f1019"
+      },
+      "public": {
+        "path": "public/ambient/art/backdrop-meadow-summer-frame-v1.png",
+        "bytes": 1238034,
+        "sha256": "2a563c0cbcf76eeb5634679b0b03082a7cbe3dfd921883637c835f457c3f1019"
+      }
+    }
+  ]
+}

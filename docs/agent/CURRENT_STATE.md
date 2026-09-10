@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: accepted three-layer spring meadow is deployed; owner reviews the live result before expansion. [Implementation/deployment checks](../ambient/rounds/ROUND-21-meadow-camera.md), [ADR-0024](decisions/ADR-0024-spring-meadow-three-layers.md). Other seasons await expansion; deep stays sealed.
+Current: seasonal meadow sun height, stronger foreground and ground seam fixes are locally verified; awaiting owner visual feedback. [Current fixes](../ambient/rounds/ROUND-23-meadow-sun-foreground.md). Preserve accepted spring scale and sky, meadow-only role exposure and deep seal. No new push requested.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -15,7 +15,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| AMB-DEPTH-P1 | Awaiting live visual feedback | Owner reviews spring meadow before expansion | [Camera work](../ambient/rounds/ROUND-21-meadow-camera.md) |
+| AMB-DEPTH-P1 | Awaiting local visual feedback | Owner compares seasonal sun, foreground and ground seams | [Current fixes](../ambient/rounds/ROUND-23-meadow-sun-foreground.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |
