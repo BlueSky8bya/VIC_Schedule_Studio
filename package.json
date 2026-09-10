@@ -18,6 +18,7 @@
     "art:migrate": "node scripts/ambient-art-migrate.mjs",
     "art:normalize": "node scripts/ambient-art-normalize.mjs",
     "ref:fetch": "node scripts/ambient-ref-fetch.mjs",
+    "ref:fetch-all": "node scripts/ambient-ref-fetch-all.mjs",
     "ref:notice": "node scripts/ambient-ref-notice.mjs",
     "ref:check": "node scripts/ambient-ref-notice.mjs --check",
     "style:scan": "node scripts/ambient-style-refs.mjs scan",

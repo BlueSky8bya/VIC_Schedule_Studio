@@ -8,9 +8,24 @@ export const REFERENCE_CATEGORIES = {
   tree: "나무", plant: "풀·꽃", ground: "지형", water: "물", prop: "소품",
   sky: "하늘·천체", fish: "물고기", bug: "곤충", animal: "동물",
 };
-const imageName = /\.(png|gif)$/i;
-const sidecarName = /\.(png|gif)\.json$/i;
+const imageName = /\.(png|gif|jpe?g|webp)$/i;
+const sidecarName = /\.(png|gif|jpe?g|webp)\.json$/i;
 const safeId = /^[a-z0-9][a-z0-9-]*$/;
+
+/** 레퍼런스 라이선스 정책. `cc0` = CC0·퍼블릭 도메인만, `free` = 저작자 표시만 요구하는 자유 라이선스까지(NC·ND·GPL 제외), `any` = 소유자 지시로만.
+ *  소유자 결정(2026-09-11): 엔티티 레퍼런스는 `free`까지 받고 출처·라이선스를 사이드카에 기록한다. 판정은 페이지가 말한 라이선스 문자열로 한다. */
+export const LICENSE_POLICIES = ["cc0", "free", "any"];
+export const REFERENCE_LICENSE_POLICY = "free";
+const NONFREE_LICENSE = /\b(NC|ND|GPL|LGPL|all rights reserved)\b/i;
+const FREE_LICENSE = /^(CC0|CC-?0|Public domain|PD\b|CC[ -]?BY(?:[ -]SA)?\b|OGA-BY)/i;
+export function licenseAccepted(licenses, policy = REFERENCE_LICENSE_POLICY) {
+  const list = (Array.isArray(licenses) ? licenses : [licenses]).map((l) => String(l ?? "").trim()).filter(Boolean);
+  if (!list.length) return false;
+  if (policy === "any") return true;
+  if (policy === "cc0") return list.every((l) => /^(CC0|CC-?0|Public domain|PD\b)/i.test(l));
+  if (policy === "free") return list.every((l) => FREE_LICENSE.test(l) && !NONFREE_LICENSE.test(l));
+  throw new Error(`Unknown license policy: ${policy}`);
+}
 const relative = (root, file) => path.relative(root, file).split(path.sep).join("/");
 
 /** Reference operations never traverse symlinks or leave the requested workspace. */
@@ -43,7 +58,7 @@ export function referenceDirectory({ workspaceRoot, category, entity, manifest }
 
 /** Preserve both existing halves of a pair, including dangling links and manual sidecars. */
 export function writeReferencePair({ workspaceRoot, category, entity, manifest, filename, image, card }) {
-  if (!/^[a-zA-Z0-9._-]+\.(png|gif)$/i.test(filename)) throw new Error(`Invalid reference filename: ${filename}`);
+  if (!/^[a-zA-Z0-9._-]+\.(png|gif|jpe?g|webp)$/i.test(filename)) throw new Error(`Invalid reference filename: ${filename}`);
   const dir = referenceDirectory({ workspaceRoot, category, entity, manifest });
   const imagePath = path.join(dir, filename), cardPath = `${imagePath}.json`;
   if ([imagePath, cardPath].some((file) => fs.lstatSync(file, { throwIfNoEntry: false }))) return { saved: false };
@@ -118,8 +133,8 @@ export function scanReferenceLibrary({ workspaceRoot, manifest }) {
       let card;
       try { card = JSON.parse(fs.readFileSync(path.join(dir, cardName), "utf8")); }
       catch { problems.push(`읽을 수 없는 사이드카: ${sourcePath}.json`); continue; }
-      if (!card || typeof card !== "object" || !/^CC0/.test(card.license ?? "")) {
-        problems.push(`CC0가 아닌 항목: ${sourcePath} — ${card?.license ?? "라이선스 없음"}`);
+      if (!card || typeof card !== "object" || !licenseAccepted(card.license)) {
+        problems.push(`자유 라이선스가 아닌 항목: ${sourcePath} — ${card?.license ?? "라이선스 없음"}`);
         continue;
       }
       rows.push({ category, sourcePath, card });
@@ -137,9 +152,10 @@ export function renderReferenceNotice({ rows, total }) {
 
 엔티티 \`art-src/<한글 범주>/<한글 엔티티>/레퍼런스/\`의 직접 자식 그림만 집계한다.
 \`공통화풍참고\`, run의 고정 입력·생성본·반려본은 검색하지 않는다.
-참고 그림에서는 형태의 발상만 얻고, 그리는 어법은 우리 합격본을 따른다.
-요청에 자동 첨부되지 않으며, **베끼거나 트레이스한 결과물은 쓸 수 없다**(ADR-0019).
-자동 수집은 엔티티와 연결한 **CC0** 자료만 받는다. 다른 라이선스는 \`ambient-ref-fetch.mjs\`가 거른다.
+참고 그림에서는 형태·구조·생태의 발상만 얻고, 그리는 어법은 우리 합격본을 따른다.
+\`request\`가 이 폴더의 그림을 고정 사본으로 첨부하며, **베끼거나 트레이스한 결과물은 쓸 수 없다**(ADR-0019).
+자동 수집은 **자유 라이선스**(CC0·퍼블릭 도메인·CC-BY·CC-BY-SA·OGA-BY)만 받고 출처·작성자·라이선스를 사이드카에 기록한다(소유자 결정 2026-09-11).
+NC·ND·GPL·출처 불명은 \`ambient-ref-fetch.mjs\`·\`ambient-ref-fetch-all.mjs\`가 거른다. 사진은 640px JPEG로 줄여 보관한다.
 
 현재 ${total}장. 파일 경로는 저장소 루트 기준이다.
 

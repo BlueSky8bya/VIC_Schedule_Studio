@@ -72,7 +72,7 @@ describe("art pipeline boundaries", () => {
     expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "부분", files: ["tree-pine-2.png"] })).toThrow(/Incomplete seasonal pack/);
   });
 
-  it("freezes curated entity references as attachments and refuses ones without CC0 provenance", async () => {
+  it("freezes curated entity references as attachments and refuses ones without free-license provenance", async () => {
     const workspaceRoot = workspace();
     const referenceDir = path.join(workspaceRoot, path.posix.join(entityDirectory("tree-pine"), "레퍼런스"));
     fs.mkdirSync(referenceDir, { recursive: true });
@@ -82,8 +82,11 @@ describe("art pipeline boundaries", () => {
 
     expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "출처없음", dry: true })).toThrow(/no provenance sidecar/);
     const card = path.join(referenceDir, "oga-example-pine.png.json");
-    fs.writeFileSync(card, JSON.stringify({ license: "CC BY 3.0", author: "someone" }));
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "라이선스검사", dry: true })).toThrow(/not CC0/);
+    fs.writeFileSync(card, JSON.stringify({ license: "CC BY-NC 3.0", author: "someone" }));
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "라이선스검사", dry: true })).toThrow(/not a free license/);
+    // Attribution-only licenses are accepted since the owner widened the policy on 2026-09-11.
+    fs.writeFileSync(card, JSON.stringify({ license: "CC BY-SA 4.0", author: "someone", source: "https://example.test/pine" }));
+    expect(pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "표시라이선스", dry: true }).request.inputs.some((input: { kind: string }) => input.kind === "inspiration")).toBe(true);
 
     fs.writeFileSync(card, JSON.stringify({ license: "CC0", author: "someone", source: "https://example.test/pine" }));
     const result = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "레퍼런스첨부" });

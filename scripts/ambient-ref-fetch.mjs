@@ -1,15 +1,16 @@
-// 취향 레퍼런스 수집(2026-09-09, PLAN-011) — 엔티티 범주별로 **CC0 픽셀아트만** 받아 둔다.
+// 취향 레퍼런스 수집(2026-09-09, PLAN-011) — 엔티티 범주별로 **출처가 기록되는 픽셀아트만** 받아 둔다.
 //
-// 소유자가 고른 참고를 보관한다. 생성 의뢰에 자동 첨부되지는 않는다.
+// 소유자가 고른 참고를 보관한다. 생성 의뢰에는 `request`가 엔티티 레퍼런스/를 고정 사본으로 붙인다.
 //
-//   node scripts/ambient-ref-fetch.mjs fish --limit 30
-//   node scripts/ambient-ref-fetch.mjs fish --query "fish sprite" --limit 20
+//   node scripts/ambient-ref-fetch.mjs fish --entity fish-crucian --limit 30
+//   node scripts/ambient-ref-fetch.mjs fish --entity fish-crucian --query "carp" --limit 20
 //   node scripts/ambient-ref-fetch.mjs tree --entity tree-pine --query "pine tree"
-//   node scripts/ambient-ref-fetch.mjs --all
+//   node scripts/ambient-ref-fetch.mjs tree --entity tree-pine --license free     # CC0·PD·CC-BY·CC-BY-SA·OGA-BY
+//   전 엔티티 일괄: node scripts/ambient-ref-fetch-all.mjs (OpenGameArt + 위키미디어 커먼즈)
 //
 // 규칙 셋(어기면 저장소에 남의 저작물이 남는다):
-//  ① **CC0만.** 검색의 라이선스 필터를 믿지 않고 개별 페이지에서 다시 읽어 확인한다.
-//     필터는 속도를 위한 것이고, 판정은 페이지가 한다.
+//  ① **라이선스 정책을 페이지에서 다시 읽는다.** 검색의 라이선스 필터를 믿지 않고 개별 페이지에서 확인한다.
+//     기본 정책 `cc0`; `free`는 저작자 표시만 요구하는 자유 라이선스까지(NC·ND·GPL 제외); `any`는 소유자 지시로만.
 //  ② 그림마다 **사이드카 JSON**(출처·라이선스·작성자·원제·받은 날)을 함께 쓴다.
 //     사이드카 없는 그림은 출처를 잃은 그림이고, 출처를 잃으면 쓸 수 없다.
 //  ③ NOTICE는 여기서 쓰지 않는다 — `ambient-ref-notice.mjs`가 **살아남은 사이드카에서** 다시 굽는다.
@@ -19,7 +20,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { artManifest } from "./lib/ambient-art-manifest.mjs";
-import { parseReferenceFetchArgs, writeReferencePair } from "./lib/ambient-ref-library.mjs";
+import { LICENSE_POLICIES, licenseAccepted, parseReferenceFetchArgs, writeReferencePair } from "./lib/ambient-ref-library.mjs";
 
 const require = createRequire(import.meta.url);
 const sharp = require("sharp");
@@ -27,7 +28,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** `manifest.ts`의 `ArtCategory`와 **같은 아홉**이다. 새 분류를 만들지 않는다 —
  *  갈라진 두 목록은 이 저장소에서 이미 사고를 냈다(species.ts ↔ codex.ts). */
-const CATEGORIES = {
+export const CATEGORIES = {
   tree: { ko: "나무", queries: ["tree", "pine tree", "oak tree", "forest tree"] },
   plant: { ko: "풀·꽃", queries: ["grass", "flower", "plant", "bush"] },
   ground: { ko: "지형", queries: ["rock", "stone", "terrain tile", "ground tile"] },
@@ -39,25 +40,60 @@ const CATEGORIES = {
   animal: { ko: "동물", queries: ["animal sprite", "rabbit", "bird sprite", "squirrel"] },
 };
 
-const IMG = /\.(png|gif)$/i;
-const UA = "VIC-Schedule-Studio reference collector (CC0 only)";
+export const IMG = /\.(png|gif)$/i;
+export const UA = "VIC-Schedule-Studio reference collector/1.0 (https://github.com/BlueSky8bya/VIC_Schedule_Studio; attribution kept, no copying)";
 
-async function get(url) {
-  const r = await fetch(url, { headers: { "user-agent": UA } });
+/** 라이선스 정책은 공용 lib(`ambient-ref-library.mjs`)가 정한다 — 페이지가 말한 라이선스 문자열로 판정하며, 필터 파라미터가 아니다. */
+export { LICENSE_POLICIES, licenseAccepted };
+
+// 같은 검색·같은 작품 페이지·같은 파일을 엔티티마다 다시 받지 않는다(부류 질의는 수십 엔티티가 공유한다).
+// 요청 사이에 최소 간격을 둔다 — 남의 서버다.
+const htmlCache = new Map(), bytesCache = new Map();
+let lastRequest = 0, requestDelayMs = 250;
+export function setRequestDelay(ms) { requestDelayMs = Math.max(0, Number(ms) || 0); }
+async function polite() {
+  const wait = lastRequest + requestDelayMs - Date.now();
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  lastRequest = Date.now();
+}
+/** 429·5xx는 서버가 "천천히"라고 말하는 것이다 — 세 번까지 점점 길게 쉬고 다시 묻는다(2026-09-11 실측: 커먼즈가 250ms 간격에 429를 32번 냈다). */
+async function fetchWithBackoff(url) {
+  const waits = [3000, 10000, 30000];
+  for (let attempt = 0; ; attempt += 1) {
+    await polite();
+    const r = await fetch(url, { headers: { "user-agent": UA } });
+    if (r.ok || attempt >= waits.length || ![429, 500, 502, 503, 504].includes(r.status)) return r;
+    const retryAfter = Number(r.headers.get("retry-after"));
+    await new Promise((resolve) => setTimeout(resolve, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : waits[attempt]));
+  }
+}
+export async function get(url) {
+  if (htmlCache.has(url)) return htmlCache.get(url);
+  const r = await fetchWithBackoff(url);
   if (!r.ok) throw new Error(`${r.status} ${url}`);
-  return r.text();
+  const text = await r.text();
+  htmlCache.set(url, text);
+  return text;
+}
+export async function download(url) {
+  if (bytesCache.has(url)) return bytesCache.get(url);
+  const r = await fetchWithBackoff(url);
+  const buf = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+  bytesCache.set(url, buf);
+  return buf;
 }
 
 /** 검색 결과에서 작품 페이지 주소만 뽑는다. `/content/faq` 같은 붙박이 페이지는 뺀다.
  *  ⚠ **정렬을 건드리지 않는다.** `sort_by=count`(내려받은 횟수)로 뽑으면 유명한 대형 팩이 위로 올라와
- *  질의와 상관없는 것이 온다(실측: "fish"에 monkey-lad·pixel-land가 왔다). 기본값이 관련성 정렬이다. */
-async function search(query, pages) {
+ *  질의와 상관없는 것이 온다(실측: "fish"에 monkey-lad·pixel-land가 왔다). 기본값이 관련성 정렬이다.
+ *  라이선스 필터는 cc0 정책일 때만 건다(속도용). 판정은 언제나 페이지가 한다. */
+export async function search(query, pages, policy = "cc0") {
   const found = new Set();
   for (let p = 0; p < pages; p += 1) {
     const url =
       `https://opengameart.org/art-search-advanced?keys=${encodeURIComponent(query)}` +
       `&field_art_type_tid%5B%5D=9` + // 2D Art
-      `&field_art_licenses_tid%5B%5D=4` + // CC0 (속도용 — 판정은 페이지가 한다)
+      (policy === "cc0" ? `&field_art_licenses_tid%5B%5D=4` : "") +
       `&page=${p}`;
     let html;
     try {
@@ -76,18 +112,18 @@ async function search(query, pages) {
 
 /** 질의어가 슬러그나 파일 이름에 실제로 들어 있는가. 검색이 관련성 정렬이어도 팩 안의 곁다리 파일이
  *  같이 딸려 오므로(미리보기·타일셋), 이름이 말해 주는 것만 남긴다. */
-function relevant(text, queries) {
+export function relevant(text, queries) {
   const t = text.toLowerCase();
   return queries.some((q) => q.toLowerCase().split(/\s+/).some((w) => w.length > 2 && t.includes(w)));
 }
 
 /** 작품 페이지 하나 — 라이선스를 **다시** 확인하고, 그림 주소와 출처를 돌려준다. */
-async function inspect(slug) {
+export async function inspect(slug, policy = "cc0") {
   const html = await get(`https://opengameart.org/content/${slug}`);
   const licenses = [...html.matchAll(/license-name'>([^<]+)</g)].map((m) => m[1].trim());
-  // ① CC0만. 여러 라이선스가 붙은 작품은 **전부** CC0일 때만 받는다 —
+  // ① 여러 라이선스가 붙은 작품은 **전부** 정책에 맞을 때만 받는다 —
   //    하나라도 조건부가 섞이면 어느 파일이 어느 라이선스인지 페이지가 말해 주지 않는다.
-  if (!licenses.length || !licenses.every((l) => /^CC0/.test(l))) return null;
+  if (!licenseAccepted(licenses, policy)) return null;
   const files = [...html.matchAll(/href="(https:\/\/opengameart\.org\/sites\/default\/files\/[^"]+)"/g)]
     .map((m) => m[1])
     .filter((u) => IMG.test(u) && !/\/(css|js)\//.test(u) && !/styles\/thumbnail/.test(u));
@@ -99,8 +135,8 @@ async function inspect(slug) {
 
 /** 이름을 줄이되 **확장자는 자르지 않는다.** 그냥 `slice(0,60)`을 쓰면 `…water_0.` 처럼 점으로 끝나는 이름이 나오고,
  *  Windows는 그런 파일을 만들지도 git에 넣지도 못한다(2026-09-09에 `git add`가 여기서 실패했다). */
-const safe = (s) => {
-  const ext = (s.match(/\.(png|gif)$/i)?.[0] ?? ".png").toLowerCase();
+export const safe = (s) => {
+  const ext = (s.match(/\.(png|gif|jpe?g|webp)$/i)?.[0] ?? ".png").toLowerCase();
   const stem = s.slice(0, s.length - ext.length).replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-").replace(/\.+$/, "");
   return `${stem.slice(0, 56) || "ref"}${ext}`;
 };
@@ -109,7 +145,7 @@ const safe = (s) => {
  *  실측(2026-09-09) — 우리 합격본: 색 6~8 · 반투명 0.0% · 가로 런 13~29.
  *  내려받은 벡터: 색 254~13,447 · 런 1.4~10. 색 수가 두 어법을 갈라놓는다.
  *  참고 그림이 우리만큼 적을 필요는 없지만(여러 스프라이트가 한 장에 있다), 수천 색은 도트를 안 가르친다. */
-async function pixelness(buf) {
+export async function pixelness(buf) {
   const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width: w, height: h } = info;
   const colors = new Set();
@@ -158,10 +194,10 @@ async function logicalRes(buf) {
 
 /** 홍보 배너는 그림이 아니다 — 로고와 라이선스 문구가 박혀 있어서 참고로 쓰면 그것까지 배운다
  *  (실측: 케니 fish-pack "preview"에 CC0 배지·문장·브랜드 로고가 들어 있었다). */
-const BANNER = /(preview|banner|logo|promo|title|cover|screenshot|watermark)/i;
+export const BANNER = /(preview|banner|logo|promo|title|cover|screenshot|watermark)/i;
 
 /** 픽셀아트인가. 게이트를 통과 못 하면 왜 떨어졌는지 한 줄로 말한다 — 조용히 버리면 수확이 왜 적은지 알 수 없다. */
-function verdict(m) {
+export function verdict(m) {
   if (!m) return "빈 그림";
   if (m.colors > 128) return `색 ${m.colors}개(벡터·사진 계열)`;
   if (m.semi > 6) return `반투명 ${m.semi.toFixed(1)}%(안티에일리어싱)`;
@@ -170,25 +206,22 @@ function verdict(m) {
   return null;
 }
 
-async function collect(cat, dir, limit, query, entity) {
-  const meta = CATEGORIES[cat];
-  if (!meta) throw new Error(`모르는 범주: ${cat} (${Object.keys(CATEGORIES).join(", ")})`);
+/** OpenGameArt에서 한 엔티티 폴더로 픽셀아트를 모은다. `isRelevant(slug)`가 팩 단위 관련성을 정한다. */
+export async function collectInto({ category, entity, dir, queries, limit, policy = "cc0", isRelevant = (slug) => relevant(slug, queries), log = console }) {
+  if (!CATEGORIES[category]) throw new Error(`모르는 범주: ${category} (${Object.keys(CATEGORIES).join(", ")})`);
   fs.mkdirSync(dir, { recursive: true });
-
-  const queries = query ? [query] : meta.queries;
   const slugs = [];
   for (const q of queries) {
-    for (const s of await search(q, 2)) if (!slugs.includes(s)) slugs.push(s);
+    for (const s of await search(q, 2, policy)) if (!slugs.includes(s)) slugs.push(s);
   }
-
   let saved = 0;
-  const rejected = [];
+  const rejected = [], files = [];
   for (const slug of slugs) {
     if (saved >= limit) break;
-    if (!relevant(slug, queries)) continue; // 이름이 질의와 무관하면 팩 통째로 건너뛴다
+    if (!isRelevant(slug)) continue; // 이름이 질의와 무관하면 팩 통째로 건너뛴다
     let info;
     try {
-      info = await inspect(slug);
+      info = await inspect(slug, policy);
     } catch {
       continue;
     }
@@ -201,10 +234,8 @@ async function collect(cat, dir, limit, query, entity) {
       const dest = path.join(dir, base);
       if ([dest, `${dest}.json`].some((file) => fs.lstatSync(file, { throwIfNoEntry: false }))) continue;
       try {
-        const r = await fetch(url, { headers: { "user-agent": UA } });
-        if (!r.ok) continue;
-        const buf = Buffer.from(await r.arrayBuffer());
-        if (buf.length < 300 || buf.length > 3_000_000) continue; // 빈 파일·거대한 시트 제외
+        const buf = await download(url);
+        if (!buf || buf.length < 300 || buf.length > 3_000_000) continue; // 빈 파일·거대한 시트 제외
         let why = null;
         try {
           why = verdict(await pixelness(buf));
@@ -214,9 +245,10 @@ async function collect(cat, dir, limit, query, entity) {
         if (why) { rejected.push(`${base}: ${why}`); continue; }
         // ② 사이드카 — 출처를 잃은 그림은 쓸 수 없다.
         const result = writeReferencePair({
-          workspaceRoot: root, category: cat, entity, manifest: artManifest(), filename: base, image: buf,
+          workspaceRoot: root, category, entity, manifest: artManifest(), filename: base, image: buf,
           card: {
             file: base,
+            kind: "pixel-art",
             source: `https://opengameart.org/content/${slug}`,
             downloadedFrom: url,
             license: info.licenses.join(" / "),
@@ -227,12 +259,21 @@ async function collect(cat, dir, limit, query, entity) {
         });
         if (!result.saved) continue;
         saved += 1;
-        console.log(`  ✓ ${base}  (${info.licenses.join("/")}, ${info.author})`);
+        files.push(base);
+        log.log(`  ✓ ${base}  (${info.licenses.join("/")}, ${info.author})`);
       } catch (error) {
-        console.error(`  참고 수집 실패: ${base} — ${error.message}`);
+        log.error(`  참고 수집 실패: ${base} — ${error.message}`);
       }
     }
   }
+  return { saved, rejected, files };
+}
+
+async function collect(cat, dir, limit, query, entity, policy) {
+  const meta = CATEGORIES[cat];
+  if (!meta) throw new Error(`모르는 범주: ${cat} (${Object.keys(CATEGORIES).join(", ")})`);
+  const queries = query ? [query] : meta.queries;
+  const { saved, rejected } = await collectInto({ category: cat, entity, dir, queries, limit, policy });
   console.log(`${cat}(${meta.ko}): ${saved}장 받음 → ${path.relative(root, dir).split(path.sep).join("/")}/`);
   // 떨어진 것을 조용히 버리지 않는다 — 수확이 적을 때 원인이 게이트인지 소스인지 알아야 한다.
   if (rejected.length) {
@@ -244,9 +285,13 @@ async function collect(cat, dir, limit, query, entity) {
 }
 
 export async function fetchMain(args = process.argv.slice(2)) {
-  const { targets, limit, query, entity } = parseReferenceFetchArgs(args, { workspaceRoot: root, manifest: artManifest() });
+  const policyIndex = args.indexOf("--license");
+  const policy = policyIndex < 0 ? "cc0" : args[policyIndex + 1];
+  if (!LICENSE_POLICIES.includes(policy)) throw new Error(`--license는 ${LICENSE_POLICIES.join("|")} 중 하나`);
+  const rest = policyIndex < 0 ? args : [...args.slice(0, policyIndex), ...args.slice(policyIndex + 2)];
+  const { targets, limit, query, entity } = parseReferenceFetchArgs(rest, { workspaceRoot: root, manifest: artManifest() });
   let total = 0;
-  for (const { category, dir } of targets) total += await collect(category, dir, limit, query, entity);
+  for (const { category, dir } of targets) total += await collect(category, dir, limit, query, entity, policy);
   console.log(`\n합계 ${total}장. 소유자가 솎아낸 뒤 \`node scripts/ambient-ref-notice.mjs\`로 NOTICE를 다시 굽는다.`);
 }
 

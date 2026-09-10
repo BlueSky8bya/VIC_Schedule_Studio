@@ -8,7 +8,7 @@ Scope: this tree. [Root AGENTS](../AGENTS.md) supplies shared permissions. This 
 |---|---|
 | Find an entity | [Entity catalogue](목록.md), then `<한글 범주>/<한글 엔티티>/프롬프트.md` |
 | Find the authorized delivery | [CURRENT_STATE](../docs/agent/CURRENT_STATE.md), then the exact run request |
-| The owner names an entity to generate ("소나무 그려줘") | Run `npm run art:pipeline -- request <entity-id>` (run name optional; `--variants` as needed). It freezes accepted baselines, CC0 entity references and indexed style captures under the new run's `고정입력/`. Then generate from that run's `request.md` only, attach every `고정입력/` file (or its `화풍참고/화풍시트.png`) to the image model, and write in the delivery which files you actually viewed |
+| The owner names an entity to generate ("소나무 그려줘") | Run `npm run art:pipeline -- request <entity-id>` (run name optional; `--variants` as needed). It freezes accepted baselines, free-license entity references (pixel art and photos) and indexed style captures under the new run's `고정입력/`. Then generate from that run's `request.md` only, attach every `고정입력/` file (or its `화풍참고/화풍시트.png`) to the image model, and write in the delivery which files you actually viewed |
 | Generate/review | Frozen request inputs and [ART_RULES](../docs/ambient/ART_RULES.md) |
 | Catalogue, migrate or process a run | [ART_PIPELINE](../docs/ambient/ART_PIPELINE.md) |
 | Source lineage / references | [README](README.md), relevant [reference guide](공통화풍참고/README.md) |

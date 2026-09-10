@@ -17,7 +17,9 @@ Area: 아트 참고 / 생성 요청
 - 분류는 에이전트가 대조 시트를 보고 작업지를 채우는 방식으로 반복 가능하다(`style:scan --sheets` → 작업지 → `style:apply`). 2026-09-10 최초 분류 449장은 Claude가 시트 38장을 육안 검토해 채웠고 `classifiedBy`에 남아 있다.
 - 합격본 시트는 여전히 화풍 정본이다. 화풍 참고는 승인 근거가 아니며 `mode`를 바꾸지 않는다(합격본이 없으면 여전히 style-pilot).
 
-대체되는 조항: 공통화풍참고 README·ART-11·카탈로그 레퍼런스 README의 "생성 요청에 자동 첨부되지 않는다". 유지되는 조항: 자산 복제·트레이스·public 반출 금지, 합격본 우선, 엔티티 레퍼런스의 CC0 요건.
+대체되는 조항: 공통화풍참고 README·ART-11·카탈로그 레퍼런스 README의 "생성 요청에 자동 첨부되지 않는다". 유지되는 조항: 자산 복제·트레이스·public 반출 금지, 합격본 우선.
+
+개정 2026-09-11(소유자 결정): 엔티티 `레퍼런스/`의 **CC0 전용 요건은 자유 라이선스 요건으로 넓혔다** — CC0·퍼블릭 도메인·CC-BY·CC-BY-SA·OGA-BY를 받고 사이드카에 출처·작성자·라이선스를 기록한다. NC·ND·GPL·출처 불명은 여전히 받지 않는다. `ref:fetch-all`이 OpenGameArt 픽셀아트와 위키미디어 커먼즈 사진(640px JPEG)을 전 엔티티에 모은다. 판정 코드: `scripts/lib/ambient-ref-library.mjs:licenseAccepted`, ART-11.
 
 ## Consequences
 

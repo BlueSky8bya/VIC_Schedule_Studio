@@ -84,7 +84,9 @@ npm run art:check -- tree-pine --dir art-src/나무/소나무/작업회차/20260
 
 정확한 납품 이름은 request의 표를 따른다. 일반 입력은 manifest가 정한 1024×1024 투명 PNG이며, 새 raw는 현재 요청의 전체 목록과 맞아야 한다. 원본은 그대로 두고 정수배·nearest 정규화를 별도 normalized에 쓴다. 과거의 작은 보존 이미지를 새 generator 원본으로 위장해 넣지 않는다.
 
-`request`는 엔티티 `레퍼런스/`의 현재 이미지를 `고정입력/수집참고/`로 복사하고 request.inputs에 `inspiration`으로 해시와 함께 기록한다. 생성기는 저장소 경로를 열 수 없으므로 **고정입력 사본을 전부 그림으로 첨부해야** 그 참고가 실제로 전달된다. 사이드카가 없거나 CC0가 아닌 이미지가 폴더에 있으면 request가 실패한다 — 선별에서 뺄 이미지는 요청 전에 지운다. 화풍 정본은 여전히 합격본이며 수집참고는 형태 발상용이다.
+`request`는 엔티티 `레퍼런스/`의 현재 이미지(png·gif·jpg·webp)를 `고정입력/수집참고/`로 복사하고 request.inputs에 `inspiration`으로 해시와 함께 기록한다. 생성기는 저장소 경로를 열 수 없으므로 **고정입력 사본을 전부 그림으로 첨부해야** 그 참고가 실제로 전달된다. 사이드카가 없거나 자유 라이선스(CC0·PD·CC-BY·CC-BY-SA·OGA-BY)가 아닌 이미지가 폴더에 있으면 request가 실패한다 — 선별에서 뺄 이미지는 요청 전에 지운다. 화풍 정본은 여전히 합격본이며 수집참고는 형태 발상용이다.
+
+전 엔티티 일괄 수집: `npm run ref:fetch-all` (`--dry`로 질의만, `--only id,id`, `--refill`, `--pixel 4 --photo 3`, `--license free`). 자리 이름과 `분류어휘.json` 부류에서 질의를 만들어 OpenGameArt 픽셀아트(도트 게이트 통과분)와 위키미디어 커먼즈 사진(640px JPEG 축소)을 사이드카와 함께 받는다. 이미 그림이 있는 엔티티는 건너뛴다. 수집 뒤 `node scripts/ambient-ref-notice.mjs`와 `npm run art:catalog -- --all`을 돌리고, 소유자가 솎아낸다. 수집 기록은 `art-src/이관기록/<날짜>-reference-fetch-all.json`.
 
 ## 화풍 참고 자동 첨부(공통화풍참고 색인)
 

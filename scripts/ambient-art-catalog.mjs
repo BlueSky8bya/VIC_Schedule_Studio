@@ -10,7 +10,7 @@ import { ART_DIR, entityPath, inputPath } from "./lib/ambient-art-paths.mjs";
 const MARKER = "<!-- ambient-art-catalog:generated v1 -->";
 const GENERATED = new Set(["프롬프트.md", "레퍼런스/README.md", "반려본/README.md", "생성본/README.md", "검토/README.md"]);
 const imageFile = (file) => /\.(png|gif|jpe?g|webp)$/i.test(file);
-const referenceImage = (file) => /\.(png|gif)$/i.test(file);
+const referenceImage = (file) => /\.(png|gif|jpe?g|webp)$/i.test(file);
 const hash = (value) => crypto.createHash("sha256").update(value).digest("hex");
 const posix = (value) => value.split(path.sep).join("/");
 const cell = (value) => String(value).replaceAll("|", "\\|").replaceAll("\n", " ");

@@ -8,7 +8,7 @@ import { artManifest, codexEntries, familySlots, root } from "./lib/ambient-art-
 import { buildEntities } from "./lib/ambient-art-entities.mjs";
 import { ART_DIR, entityPath, folderName, inputPath, relocateArtPath } from "./lib/ambient-art-paths.mjs";
 import { normalizeSource } from "./lib/ambient-art-normalize.mjs";
-import { referenceDirectory } from "./lib/ambient-ref-library.mjs";
+import { licenseAccepted, referenceDirectory } from "./lib/ambient-ref-library.mjs";
 import { selectStyleReferences, styleRoot } from "./lib/ambient-style-library.mjs";
 import { checkArt } from "./ambient-art-check.mjs";
 const sharp = createRequire(import.meta.url)("sharp");
@@ -95,15 +95,15 @@ function rejectionHistory(workspaceRoot, entityDir) {
   );
 }
 
-/** Owner-curated entity references, refused unless each one still carries CC0 provenance. */
+/** Owner-curated entity references, refused unless each one still carries free-license provenance (CC0/PD/CC-BY/CC-BY-SA/OGA-BY; owner decision 2026-09-11). */
 function collectedReferences(workspaceRoot, entity) {
   const dir = referenceDirectory({ workspaceRoot, category: entity.category, entity: entity.id, manifest: artManifest() });
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter((file) => /\.(png|gif)$/i.test(file)).sort().map((file) => {
+  return fs.readdirSync(dir).filter((file) => /\.(png|gif|jpe?g|webp)$/i.test(file)).sort().map((file) => {
     const source = within(workspaceRoot, path.join(dir, file)), card = `${source}.json`;
     if (!fs.existsSync(card)) throw new Error(`Reference has no provenance sidecar: ${relative(workspaceRoot, source)}`);
     const license = read(card)?.license;
-    if (!/^CC0/.test(license ?? "")) throw new Error(`Reference is not CC0: ${relative(workspaceRoot, source)} — ${license ?? "license missing"}`);
+    if (!licenseAccepted(license)) throw new Error(`Reference is not a free license: ${relative(workspaceRoot, source)} — ${license ?? "license missing"}`);
     return source;
   });
 }

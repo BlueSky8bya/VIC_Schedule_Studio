@@ -188,7 +188,7 @@ describe("entity catalog boundaries", () => {
     expect(originals.map((file) => fs.readFileSync(file))).toEqual(beforeBulk);
   });
 
-  it("lists only direct PNG/GIF reference pairs and preserves unrelated or incomplete reference material", () => {
+  it("lists only direct image/sidecar reference pairs (png, gif, jpg, webp) and preserves unrelated or incomplete reference material", () => {
     const workspaceRoot = workspace(), entity = "art-src/소품/도토리";
     const local = `${entity}/레퍼런스`, shared = "art-src/공통화풍참고/모여봐요 동물의 숲";
     const originals = [];
@@ -204,11 +204,12 @@ describe("entity catalog boundaries", () => {
     const before = originals.map((file) => fs.readFileSync(file));
     syncCatalog({ workspaceRoot });
     const readme = fs.readFileSync(path.join(workspaceRoot, local, "README.md"), "utf8");
-    for (const filename of ["nut.png", "nut.png.json", "nut.gif", "nut.gif.json"]) expect(readme).toContain(filename);
-    for (const filename of ["photo.jpg", "preview.webp", "hidden.png", "orphan.png.json", "missing-card.png", "review.json", "nut.source.json"]) expect(readme).not.toContain(filename);
+    // Photos arrive as jpg since the 2026-09-11 crawl, so jpg/webp pairs are references too; nested files and half-pairs still are not.
+    for (const filename of ["nut.png", "nut.png.json", "nut.gif", "nut.gif.json", "photo.jpg", "photo.jpg.json", "preview.webp", "preview.webp.json"]) expect(readme).toContain(filename);
+    for (const filename of ["hidden.png", "orphan.png.json", "missing-card.png", "review.json", "nut.source.json"]) expect(readme).not.toContain(filename);
     expect(readme).toContain("공통화풍참고");
     expect(readme).not.toContain("nut.source.json");
-    expect(fs.readFileSync(path.join(workspaceRoot, entity, "프롬프트.md"), "utf8")).toContain("영감 후보 이미지 2장");
+    expect(fs.readFileSync(path.join(workspaceRoot, entity, "프롬프트.md"), "utf8")).toContain("영감 후보 이미지 4장");
     expect(originals.map((file) => fs.readFileSync(file))).toEqual(before);
     expect(syncCatalog({ workspaceRoot, check: true }).status).toBe("pass");
   });
