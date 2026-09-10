@@ -24,8 +24,8 @@ async function fixture() {
   put(workspaceRoot, "art-src/incoming-pine/tree-pine-winter-1.png", png);
   const protectedPaths = [
     "public/ambient/art/tree-pine-1.png",
-    "art-src/tree/tree-pine/runs/pilot/inputs/baseline/tree-pine-1.png",
-    "art-src/tree/tree-pine/runs/pilot/request.md",
+    "art-src/나무/소나무/작업회차/시험회차/고정입력/합격참고/tree-pine-1.png",
+    "art-src/나무/소나무/작업회차/시험회차/request.md",
     "docs/ambient/reference/tree-pine.png"
   ];
   for (const file of protectedPaths) put(workspaceRoot, file, file.endsWith(".png") ? png : "frozen request");
@@ -45,14 +45,62 @@ afterEach(() => {
 });
 
 describe("recorded art migration", () => {
+  it("verifies an immutable English-path receipt against relocated Korean files without rewriting history", () => {
+    const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vic-art-migrate-test-"));
+    temporary.push(workspaceRoot);
+    const movedBytes = Buffer.from("preserved original"), protectedBytes = Buffer.from("frozen source evidence");
+    const plan = {
+      schemaVersion: 1, createdAt: "2026-09-09T00:00:00.000Z",
+      moves: [
+        { source: "art-src/acorn.png", target: "art-src/prop/acorn/생성본/1/가을/acorn.png", sha256: hash(movedBytes), bytes: movedBytes.length },
+        { source: "art-src/incoming-pine/tree-pine-1.png", target: "art-src/tree/tree-pine/반려본/incoming-pine/tree-pine-1.png", sha256: hash(movedBytes), bytes: movedBytes.length }
+      ],
+      protectedFiles: [
+        { file: "art-src/tree/tree-pine/runs/20260909-pilot-01/inputs/baseline/tree-pine-1.png", sha256: hash(protectedBytes) },
+        { file: "art-src/tree/tree-pine/runs/20260909-pilot-01/request.md", sha256: hash(protectedBytes) },
+        { file: "art-src/reference/tree/pine.png.json", sha256: hash(protectedBytes) }
+      ]
+    };
+    const receipt = { plan, planSha256: hash(json(plan)), status: "completed" };
+    const receiptFile = put(workspaceRoot, "art-src/이관기록/20260909-entity-layout.json", json(receipt));
+    const moved = [
+      put(workspaceRoot, "art-src/소품/도토리/생성본/1/가을/acorn.png", movedBytes),
+      put(workspaceRoot, "art-src/나무/소나무/반려본/접수-소나무/tree-pine-1.png", movedBytes)
+    ];
+    const protectedFiles = [
+      put(workspaceRoot, "art-src/나무/소나무/작업회차/20260909-파일럿-01/고정입력/합격참고/tree-pine-1.png", protectedBytes),
+      put(workspaceRoot, "art-src/나무/소나무/작업회차/20260909-파일럿-01/request.md", protectedBytes),
+      put(workspaceRoot, "art-src/공통화풍참고/나무/pine.png.json", protectedBytes)
+    ];
+    const tracked = [receiptFile, ...moved, ...protectedFiles];
+    const snapshot = () => tracked.map((file) => ({ file, mtime: fs.statSync(file).mtimeMs, sha256: hash(fs.readFileSync(file)) }));
+    const before = snapshot(), receiptBefore = json(receipt);
+    const write = vi.spyOn(fs, "writeFileSync"), copy = vi.spyOn(fs, "copyFileSync"), unlink = vi.spyOn(fs, "unlinkSync"), save = vi.fn();
+    expect(migration.checkMigration({ workspaceRoot, receipt })).toEqual({ moved: 2, protected: 3, status: "verified" });
+    expect(migration.applyMigration({ workspaceRoot, receipt, save }).status).toBe("verified");
+    expect(snapshot()).toEqual(before);
+    expect(json(receipt)).toBe(receiptBefore);
+    for (const spy of [write, copy, unlink, save]) expect(spy).not.toHaveBeenCalled();
+    const changedPlan = structuredClone(receipt);
+    changedPlan.plan.moves[0].target = "art-src/소품/도토리/생성본/1/가을/acorn.png";
+    expect(() => migration.checkMigration({ workspaceRoot, receipt: changedPlan })).toThrow(/Migration plan changed/);
+    fs.writeFileSync(moved[0], "changed original");
+    expect(() => migration.checkMigration({ workspaceRoot, receipt })).toThrow(/Moved file changed/);
+    fs.writeFileSync(moved[0], movedBytes);
+    fs.writeFileSync(protectedFiles[0], "changed baseline");
+    expect(() => migration.checkMigration({ workspaceRoot, receipt })).toThrow(/Protected file changed/);
+  });
+
   it("preserves canonical names and bytes, protects public/run snapshots and repeats completed calls without writes", async () => {
     const { workspaceRoot, png, protectedPaths } = await fixture();
-    const image = "art-src/reference/prop/nut.png", sidecar = `${image}.json`;
+    const image = "art-src/공통화풍참고/소품/nut.png", sidecar = `${image}.json`;
     const provenance = json({ source: "example", category: "prop", image: "nut.png" });
     put(workspaceRoot, image, png);
     put(workspaceRoot, sidecar, provenance);
     const receipt = await migration.planMigration({ workspaceRoot, references: { visualMethod: "inspected", moves: [{ selected: "candidate", entity: "acorn", category: "prop", sourceImage: image, sourceSidecar: sidecar, imageSha256: hash(png), sidecarSha256: hash(provenance), reason: "shape", confidence: "high" }] } });
     const before = sourceBytes(workspaceRoot, receipt);
+    expect(receipt.plan.moves.map((item: { target: string }) => item.target)).toContain("art-src/소품/도토리/생성본/1/가을/acorn.png");
+    expect(receipt.plan.moves.map((item: { target: string }) => item.target)).toContain("art-src/나무/소나무/반려본/접수-소나무/tree-pine-winter-1.png");
     const protectedBefore = protectedPaths.map((file) => fs.readFileSync(path.join(workspaceRoot, file)));
     const save = vi.fn();
     expect(migration.applyMigration({ workspaceRoot, receipt, save })).toMatchObject({ status: "verified", moved: 5 });
@@ -101,7 +149,7 @@ describe("recorded art migration", () => {
     const { workspaceRoot } = await fixture();
     const receipt = await migration.planMigration({ workspaceRoot });
     const original = sourceBytes(workspaceRoot, receipt);
-    for (const destination of ["art-src/../../outside.png", "public/ambient/art/acorn.png", "art-src/tree/tree-pine/runs/pilot/acorn.png"]) {
+    for (const destination of ["art-src/../../outside.png", "public/ambient/art/acorn.png", "art-src/tree/tree-pine/runs/pilot/acorn.png", "art-src/나무/소나무/작업회차/시험회차/acorn.png", "art-src/이관기록/acorn.png"]) {
       const changed = structuredClone(receipt);
       changed.plan.moves[0].target = destination;
       changed.planSha256 = hash(json(changed.plan));
@@ -109,9 +157,9 @@ describe("recorded art migration", () => {
     }
     const redirected = path.join(workspaceRoot, "redirected");
     fs.mkdirSync(redirected);
-    const entityParent = path.join(workspaceRoot, "art-src/prop");
+    const entityParent = path.join(workspaceRoot, "art-src/소품");
     fs.mkdirSync(entityParent, { recursive: true });
-    fs.symlinkSync(redirected, path.join(entityParent, "acorn"), "junction");
+    fs.symlinkSync(redirected, path.join(entityParent, "도토리"), "junction");
     expect(() => migration.applyMigration({ workspaceRoot, receipt })).toThrow(/Linked path forbidden/);
     expect(sourceBytes(workspaceRoot, receipt)).toEqual(original);
     expect(fs.readdirSync(redirected)).toEqual([]);

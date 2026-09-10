@@ -54,7 +54,7 @@ Base revision: 94b0a71d9732f21e557cca507e77eecd419b84fe + uncommitted working-tr
 
 ## 후속 작업과 한계
 
-- [소나무 의뢰](../../../art-src/tree/tree-pine/runs/20260909-pilot-01/request.md)는 준비 상태. raw/normalized에는 생성 PNG가 없고 review는 pending이다. 이미지 생성기의 참고 전달과 소유자 시각 승인은 이후 실제 실행 때 기록한다.
+- [소나무 의뢰](<../../../art-src/나무/소나무/작업회차/20260909-파일럿-01/request.md>)는 준비 상태. raw/normalized에는 생성 PNG가 없고 review는 pending이다. 이미지 생성기의 참고 전달과 소유자 시각 승인은 이후 실제 실행 때 기록한다.
 - 저장소의 잘못된 24장 의뢰와 IDE의 이전 21장 scratch 의뢰는 서로 다른 복사본이었다. 둘 다 현재 요청 경로로 돌렸고 scratch 원문은 같은 폴더의 `prompt-pine21.md.bak`에 보존했다.
 - [아트 명령 안내](../../ambient/ART_PIPELINE.md). CLI의 owner 값은 실제 소유자 판단을 기록하는 로컬 절차이며 인증 서버가 아니다. 에이전트가 승인을 만들어 넣지 않는다.
 - 기존 public 및 기존 art-src PNG를 변경하지 않았다. 복사 예외 복구는 검사했지만 프로세스 강제 종료까지 파일시스템 트랜잭션을 보장하지 않는다.

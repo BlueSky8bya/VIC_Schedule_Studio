@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { artManifest, root } from "./lib/ambient-art-manifest.mjs";
 import { buildEntities } from "./lib/ambient-art-entities.mjs";
+import { ART_DIR, entityPath, inputPath } from "./lib/ambient-art-paths.mjs";
 
 const MARKER = "<!-- ambient-art-catalog:generated v1 -->";
 const GENERATED = new Set(["프롬프트.md", "레퍼런스/README.md", "반려본/README.md", "생성본/README.md", "검토/README.md"]);
@@ -21,7 +22,10 @@ function assertUnlinked(workspaceRoot, target) {
   let current = workspaceRoot;
   for (const part of relative.split(path.sep).filter(Boolean)) {
     current = path.join(current, part);
-    if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) throw new Error(`Linked paths are not supported: ${current}`);
+    const stat = fs.lstatSync(current, { throwIfNoEntry: false });
+    if (!stat) break;
+    if (stat.isSymbolicLink()) throw new Error(`Linked paths are not supported: ${current}`);
+    if (!stat.isDirectory()) break;
   }
 }
 
@@ -56,21 +60,24 @@ function referencePairs(records, directory) {
 }
 
 /** Regenerate owned Markdown only. check=true returns drift without writing anything. */
-export function syncCatalog({ workspaceRoot = root, entityIds = [], check = false } = {}) {
+export function syncCatalog({ workspaceRoot = root, entityIds = [], categories = [], all = false, check = false } = {}) {
   workspaceRoot = path.resolve(workspaceRoot);
   const manifest = artManifest();
   const entities = buildEntities(manifest), requested = new Set(entityIds);
+  const requestedCategories = new Set(categories), knownCategories = new Set(Object.keys(manifest.CATEGORY_KO));
   for (const id of requested) if (!entities.some((entity) => entity.id === id)) throw new Error(`Unknown art entity: ${id}`);
+  for (const category of requestedCategories) if (!knownCategories.has(category)) throw new Error(`Unknown art category: ${category}`);
+  for (const entity of entities) if (all || requestedCategories.has(entity.category)) requested.add(entity.id);
   const sourceHash = hash(JSON.stringify([
     "components/shared/ambient/art/manifest.ts", "components/shared/ambient/world/codex.ts",
-    "scripts/lib/ambient-art-entities.mjs", "scripts/ambient-art-catalog.mjs"
+    "scripts/lib/ambient-art-entities.mjs", "scripts/lib/ambient-art-paths.mjs", "art-src/폴더명.json", "scripts/ambient-art-catalog.mjs"
   ].map((file) => ({ file, sha256: hash(fs.readFileSync(path.join(root, file))) }))));
   const publicRecords = new Map();
   for (const entity of entities) for (const asset of entity.files) {
     const file = path.join(workspaceRoot, "public/ambient/art", asset.filename);
     if (fs.existsSync(file)) publicRecords.set(asset.filename, record(workspaceRoot, file));
   }
-  const active = entities.filter((entity) => requested.has(entity.id) || fs.existsSync(path.join(workspaceRoot, "art-src", entity.category, entity.id)) || entity.files.some((asset) => publicRecords.has(asset.filename)));
+  const active = entities.filter((entity) => requested.has(entity.id) || fs.existsSync(path.join(workspaceRoot, entityPath(entity, manifest))) || entity.files.some((asset) => publicRecords.has(asset.filename)));
   const expected = new Map(), snapshots = [];
   const link = (doc, target, label = path.basename(target)) => `[${cell(label)}](<${posix(path.relative(path.dirname(doc), target))}>)`;
   const existingLink = (doc, target, label) => fs.existsSync(target) ? link(doc, target, label) : `${label} (아직 없음)`;
@@ -82,58 +89,81 @@ export function syncCatalog({ workspaceRoot = root, entityIds = [], check = fals
   };
 
   for (const entity of active) {
-    const directory = path.join(workspaceRoot, "art-src", entity.category, entity.id);
+    const directory = path.join(workspaceRoot, entityPath(entity, manifest));
     const records = inventory(workspaceRoot, directory, (relative) => GENERATED.has(relative));
-    const sharedDir = path.join(workspaceRoot, "art-src/reference", entity.category);
-    const sharedRecords = inventory(workspaceRoot, sharedDir);
-    const shared = referencePairs(sharedRecords, posix(path.relative(workspaceRoot, sharedDir)));
+    const sharedDir = path.join(workspaceRoot, "art-src", ART_DIR.reference);
     const accepted = entity.files.flatMap((asset) => publicRecords.has(asset.filename) ? [publicRecords.get(asset.filename)] : []);
-    const stateHash = hash(JSON.stringify({ records, shared: sharedRecords, accepted }));
+    const stateHash = hash(JSON.stringify({ records, accepted }));
     snapshots.push({ id: entity.id, stateHash });
     const prefix = posix(path.relative(workspaceRoot, directory));
     const local = (subdir) => records.filter((file) => file.path.startsWith(`${prefix}/${subdir}/`));
     const sources = local("생성본").filter((file) => imageFile(file.path));
     const references = referencePairs(records, `${prefix}/레퍼런스`);
     const rejected = local("반려본");
-    const runs = local("runs").filter((file) => /^runs\/[^/]+\/request\.json$/.test(file.path.slice(prefix.length + 1))).map((file) => {
+    const runs = local(ART_DIR.runs).filter((file) => {
+      const parts = file.path.slice(prefix.length + 1).split("/");
+      return parts.length === 3 && parts[0] === ART_DIR.runs && parts[2] === "request.json";
+    }).map((file) => {
       const runDir = path.dirname(path.join(workspaceRoot, file.path));
       const request = json(path.join(runDir, "request.json"));
       const reviewFile = path.join(runDir, "review.json");
       const review = fs.existsSync(reviewFile) ? json(reviewFile) : null;
       const relativeRun = posix(path.relative(workspaceRoot, runDir));
-      const raw = records.filter((entry) => entry.path.startsWith(`${relativeRun}/raw/`) && imageFile(entry.path));
-      const normalized = records.filter((entry) => entry.path.startsWith(`${relativeRun}/normalized/`) && imageFile(entry.path));
+      const raw = records.filter((entry) => entry.path.startsWith(`${relativeRun}/${ART_DIR.raw}/`) && imageFile(entry.path));
+      const normalized = records.filter((entry) => entry.path.startsWith(`${relativeRun}/${ART_DIR.normalized}/`) && imageFile(entry.path));
       return { id: path.basename(runDir), runDir, request, review, raw, normalized };
     }).sort((a, b) => a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
     const pending = runs.filter((run) => run.review?.decision === "pending");
     const prompt = path.join(directory, "프롬프트.md");
     const slots = entity.slotIds.map(manifest.artSlot);
     const links = ["레퍼런스", "반려본", "생성본", "검토"].map((name) => link(prompt, path.join(directory, name, "README.md"), name)).join(" · ");
-    const pendingText = pending.length ? pending.map((run) => `- ${existingLink(prompt, path.join(run.runDir, "request.md"), run.id)} · 요청 ${run.request.files?.length ?? "미기록"}장 / 원본 ${run.raw.length}장 / 정리본 ${run.normalized.length}장 · ${run.raw.length ? "납품 후 검토 대기" : "준비본, 현재 납품 없음"}`).join("\n") : "현재 pending 요청 없음. 새 요청을 만들면 이 페이지를 다시 생성한다.";
-    add(prompt, `# ${slots.map((slot) => slot.nameKo).join(" / ")} · ${entity.id}\n\n엔티티 작업 진입점. ${links}\n\n## 현재 요청\n\n${pendingText}\n\n실제 생성 지시는 해당 run의 request.md와 고정 inputs 사본이다. 아래 전체 파일 계획이 현재 납품 범위를 늘리지 않는다. 기존 run의 경로·요청·입력·검토 기록은 바꾸지 않는다.\n\n새 요청 예: \`npm run art:pipeline -- request ${entity.id} --run <새-run-id> --variants 1\`. 기존 public 파일은 보호되므로 아직 없는 변형을 선택한다. 카탈로그 묶음은 자동으로 소나무 전용 검사 규칙을 부여하지 않는다.\n\n## 정확한 파일 계획\n\n${entity.slotIds.length} slots · ${entity.files.length}파일. seasons는 출현 시기이며 파일 수에 곱하지 않는다. 단일 시즌은 해당 계절 폴더, 여러 시즌은 공통 폴더를 쓴다. 파일 이름은 런타임 정본 그대로다.\n\n| 파일 | 자리 | 변형 | 계절 폴더 | 표시 크기 | 원본 보관 경로 |\n|---|---|---:|---|---|---|\n${entity.files.map((asset) => {
+    const pendingText = pending.length ? pending.map((run) => {
+      const currentInputs = (run.request.inputs ?? []).map((input) => {
+        const current = inputPath(input.path);
+        return `  - 고정 입력: ${existingLink(prompt, path.join(run.runDir, current), current)}`;
+      });
+      return [
+        `- ${existingLink(prompt, path.join(run.runDir, "request.md"), run.id)} · 요청 ${run.request.files?.length ?? "미기록"}장 / 원본 ${run.raw.length}장 / 정리본 ${run.normalized.length}장 · ${run.raw.length ? "납품 후 검토 대기" : "준비본, 현재 납품 없음"}`,
+        `  - 현재 납품 폴더: ${existingLink(prompt, path.join(run.runDir, ART_DIR.raw), ART_DIR.raw)}`,
+        `  - 고정입력 폴더: ${existingLink(prompt, path.join(run.runDir, ART_DIR.inputs), ART_DIR.inputs)}`,
+        ...currentInputs
+      ].join("\n");
+    }).join("\n\n") + "\n\n요청서 안의 옛 경로는 위의 현재 경로로 읽으며 파일명·입력 해시는 유지한다." : "현재 pending 요청 없음. 새 요청을 만들면 이 페이지를 다시 생성한다.";
+    add(prompt, `# ${[...new Set(slots.map((slot) => slot.nameKo))].join(" / ")} · ${entity.id}\n\n엔티티 작업 진입점. ${links}\n\n## 현재 요청\n\n${pendingText}\n\n실제 생성 지시는 해당 run의 request.md와 고정입력 사본이다. 아래 전체 파일 계획이 현재 납품 범위를 늘리지 않는다. 기존 작업회차의 고정 요청·입력·검토 원문은 바꾸지 않는다.\n\n새 요청 예: \`npm run art:pipeline -- request ${entity.id} --run <한글-회차명> --variants 1\`. 기존 public 파일은 보호되므로 아직 없는 변형을 선택한다. 카탈로그 묶음은 자동으로 소나무 전용 검사 규칙을 부여하지 않는다.\n\n## 정확한 파일 계획\n\n${entity.slotIds.length} slots · ${entity.files.length}파일. seasons는 출현 시기이며 파일 수에 곱하지 않는다. 단일 시즌은 해당 계절 폴더, 여러 시즌은 공통 폴더를 쓴다. 파일 이름은 런타임 정본 그대로다.\n\n| 파일 | 자리 | 변형 | 계절 폴더 | 표시 크기 | 원본 보관 경로 |\n|---|---|---:|---|---|---|\n${entity.files.map((asset) => {
       const slot = manifest.artSlot(asset.slotId);
       return `| ${asset.filename} | ${asset.slotId} | ${asset.variant} | ${asset.seasonKo} | ${slot.px.join("×")} px | ${asset.relativePath} |`;
     }).join("\n")}\n\n생성 입력은 각 request의 규격을 따른다. 일반 원본은 1024×1024 투명 PNG이며 표시 크기와 구별한다. 그림 설명 정본: ${link(prompt, path.join(workspaceRoot, "components/shared/ambient/art/manifest.ts"), "manifest.ts")} 및 ${link(prompt, path.join(workspaceRoot, "docs/ambient/ART_RULES.md"), "ART_RULES")}에서 이 자리의 brief를 확인한다.\n\n## 자료 현황\n\n엔티티 생성본 ${sources.length}장 · 영감 후보 이미지 ${references.filter((file) => imageFile(file.path)).length}장 · 반려 이미지 ${rejected.filter((file) => imageFile(file.path)).length}장 · public 합격 런타임 파일 ${accepted.length}장 · run ${runs.length}개. public과 run baseline은 정규화된 합격 참고이며 최초 생성 원본으로 취급하지 않는다.`, stateHash);
 
     const refDoc = path.join(directory, "레퍼런스/README.md");
-    add(refDoc, `# ${entity.id} 레퍼런스\n\n이 폴더의 이미지와 출처 sidecar는 대상 형태를 보고 분류한 외부 영감 후보다. 소유자 선별·화풍 승인이나 종 일치 보장을 뜻하지 않는다. 직접 자식 PNG/GIF와 짝 sidecar만 후보 목록에 표시한다. 출처 누락·라이선스 검사는 \`ref:notice --check\`로 확인한다. 실제 전달 여부는 run의 inputs와 request로 확인한다.\n\n${listFiles(refDoc, references, "엔티티 영감 후보 이미지·sidecar 없음.")}\n\n공용 후보: ${existingLink(refDoc, sharedDir, `${entity.category} 참고 라이브러리`)} · 이미지 ${shared.filter((file) => imageFile(file.path)).length}장. 후보 폴더 전체를 이번 생성의 고정 입력으로 간주하지 않는다. 현재 request.inputs 목록 밖 참고는 자동 전달되지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.`, stateHash);
+    add(refDoc, `# ${entity.id} 레퍼런스\n\n이 폴더의 이미지와 출처 sidecar는 대상의 생김새·구조·생태를 보고 분류한 외부 영감 후보다. 소유자 선별·화풍 승인이나 종 일치 보장을 뜻하지 않는다. 직접 자식 PNG/GIF와 짝 sidecar만 후보 목록에 표시한다. 출처 누락·라이선스 검사는 \`ref:notice --check\`로 확인한다. 실제 전달 여부는 run의 inputs와 request로 확인한다.\n\n${listFiles(refDoc, references, "엔티티 영감 후보 이미지·sidecar 없음.")}\n\n공통 분위기 참고: ${existingLink(refDoc, sharedDir, "공통화풍참고")}는 색감·구도·카메라·전체 분위기만 살피는 별도 자료다. 대상 형태의 근거나 합격 화풍이 아니며 이번 생성에 자동 전달되지 않는다. 현재 request.inputs 목록 밖 참고는 고정 입력으로 간주하지 않는다. 고정 입력이나 요청 해시를 수작업으로 바꾸지 않는다.`, stateHash);
     const rejectDoc = path.join(directory, "반려본/README.md");
     const rejectionReviews = rejected.filter((file) => file.path.endsWith("/review.json"));
     add(rejectDoc, `# ${entity.id} 반려본\n\n반려 기록은 피해야 할 결과와 근거다. 합격 화풍 참고나 최초 합격 원본으로 사용하지 않는다. 과거 batch와 원래 파일 이름을 유지한다.\n\n${listFiles(rejectDoc, rejectionReviews, "엔티티 안의 과거 review.json 없음.")}\n\n반려 이미지 ${rejected.filter((file) => imageFile(file.path)).length}장.\n\n## Run 반려 기록\n\n${runs.filter((run) => run.review?.decision === "rejected").map((run) => `- ${link(rejectDoc, path.join(run.runDir, "review.json"), run.id)} · ${cell(run.review.note ?? "사유는 review.json 확인")}`).join("\n") || "반려된 run 없음."}`, stateHash);
     const sourceDoc = path.join(directory, "생성본/README.md");
-    add(sourceDoc, `# ${entity.id} 생성본\n\n변형/실제 계절 또는 공통/정본 파일 이름으로 보관한다. 출처·바이트 이관 기록: ${existingLink(sourceDoc, path.join(workspaceRoot, "art-src/migrations/20260909-entity-layout.json"), "이관 기록")}. 이 폴더의 파일 존재만으로 합격 여부를 추정하지 않는다.\n\n${listFiles(sourceDoc, sources, "이 엔티티 폴더에 보관된 생성 원본 없음.")}\n\n## Run 원본\n\n${listFiles(sourceDoc, runs.flatMap((run) => run.raw), "run에 납품된 원본 없음.")}\n\n## 합격 런타임 파일\n\n아래 파일은 정규화된 public 합격본이다. 생성 원본 유실을 이 파일로 메웠다고 표시하지 않는다.\n\n${listFiles(sourceDoc, accepted, "public 합격본 없음.")}`, stateHash);
+    add(sourceDoc, `# ${entity.id} 생성본\n\n변형/실제 계절 또는 공통/정본 파일 이름으로 보관한다. 출처·바이트 이관 기록: ${existingLink(sourceDoc, path.join(workspaceRoot, `art-src/${ART_DIR.migrations}/20260909-entity-layout.json`), "이관 기록")}. 이 폴더의 파일 존재만으로 합격 여부를 추정하지 않는다.\n\n${listFiles(sourceDoc, sources, "이 엔티티 폴더에 보관된 생성 원본 없음.")}\n\n## Run 원본\n\n${listFiles(sourceDoc, runs.flatMap((run) => run.raw), "run에 납품된 원본 없음.")}\n\n## 합격 런타임 파일\n\n아래 파일은 정규화된 public 합격본이다. 생성 원본 유실을 이 파일로 메웠다고 표시하지 않는다.\n\n${listFiles(sourceDoc, accepted, "public 합격본 없음.")}`, stateHash);
     const reviewDoc = path.join(directory, "검토/README.md");
-    add(reviewDoc, `# ${entity.id} 검토\n\n각 run의 normalized는 정본 파일 이름을 유지한 flat 납품 뷰다. review.png는 실제 표시 크기, review-detail.png는 정수배 확대 보기다. 소유자의 실제 판정은 review.json에 기록한다. 카탈로그는 이미지나 승인 기록을 만들지 않는다.\n\n${runs.map((run) => {
-      const files = ["request.md", "normalized", "checks.json", "review.png", "review-detail.png", "review.json"].map((name) => existingLink(reviewDoc, path.join(run.runDir, name), name)).join(" · ");
+    add(reviewDoc, `# ${entity.id} 검토\n\n각 작업회차의 정리본은 정본 파일 이름을 유지한 flat 납품 뷰다. review.png는 실제 표시 크기, review-detail.png는 정수배 확대 보기다. 소유자의 실제 판정은 review.json에 기록한다. 카탈로그는 이미지나 승인 기록을 만들지 않는다.\n\n${runs.map((run) => {
+      const files = ["request.md", ART_DIR.normalized, "checks.json", "review.png", "review-detail.png", "review.json"].map((name) => existingLink(reviewDoc, path.join(run.runDir, name), name)).join(" · ");
       return `- ${run.id} · 판정 ${run.review?.decision ?? "미기록"} · 원본 ${run.raw.length}장 / 정리본 ${run.normalized.length}장${!run.raw.length ? " · 현재 납품 없음" : ""}\n  ${files}`;
     }).join("\n") || "현재 run과 납품 없음."}`, stateHash);
   }
 
   const index = path.join(workspaceRoot, "art-src/목록.md");
   const activeIds = new Set(active.map((entity) => entity.id));
-  add(index, `# 아트 엔티티 목록\n\n현재 manifest의 ${manifest.ART_SLOTS.length} slots를 ${entities.length}엔티티로 묶었다. 정확한 정본 파일 ${entities.reduce((sum, entity) => sum + entity.files.length, 0)}장. 출현 시즌을 곱하지 않는다. 현재 진입점 ${active.length}개. 생성되지 않은 엔티티는 링크를 만들지 않는다.\n\n새 진입점: \`npm run art:catalog -- --entity <entity-id>\`. 현재 상태 검사: \`npm run art:catalog -- --check\`. 이 문서들은 카탈로그가 생성한다. 직접 쓸 참고·메모·판정은 별도 파일에 보관한다.\n\n| 범주 | 엔티티 | slots | 파일 | 작업 진입점 |\n|---|---|---:|---:|---|\n${entities.map((entity) => `| ${entity.category} | ${entity.id} | ${entity.slotIds.length} | ${entity.files.length} | ${activeIds.has(entity.id) ? link(index, path.join(workspaceRoot, "art-src", entity.category, entity.id, "프롬프트.md"), "프롬프트") : "필요할 때 생성"} |`).join("\n")}`, hash(JSON.stringify(snapshots)));
+  add(index, `# 아트 엔티티 목록 · 한글 폴더 ↔ 내부 ID\n\n한글 이름이나 내부 영어 ID를 검색해 찾고, 프롬프트 링크로 작업을 시작한다. 폴더 경로는 art-src/ 기준이며, 폴더명.json이 실제 폴더 이름을 고정한다. 범주 이름은 manifest의 CATEGORY_KO, 대상 이름은 각 자리의 nameKo를 사용한다. 여러 계절·상태를 묶은 엔티티는 해당 이름을 모두 표시한다. 이름과 대상 추가는 manifest.ts 또는 해당 nameKo의 원본인 codex.ts에서 관리하고 아래 명령으로 갱신한다. 이 표를 직접 편집하지 않는다. 기존 run의 고정 요청·입력은 갱신 대상이 아니다.\n\n현재 manifest의 ${manifest.ART_SLOTS.length} slots를 ${entities.length}엔티티로 묶었다. 정확한 정본 파일 ${entities.reduce((sum, entity) => sum + entity.files.length, 0)}장. 출현 시즌을 곱하지 않는다. 현재 진입점 ${active.length}개. 전체 엔티티의 기본 진입점과 자료 폴더는 먼저 준비하고, 변형·계절 하위 폴더는 자료가 필요할 때 만든다.\n\n전체 준비·표 갱신: \`npm run art:catalog -- --all\`. 범주 준비: \`npm run art:catalog -- --category bug\`. 개별 추가: \`npm run art:catalog -- --entity <entity-id>\`. 전체 진입점 검사: \`npm run art:catalog -- --all --check\`. 이 문서들은 카탈로그가 생성한다. 직접 쓸 참고·메모·판정은 별도 파일에 보관한다.\n\n| 한글 범주 | 한글 이름 | 실제 폴더 (art-src/ 기준) | 내부 ID | slots | 파일 | 작업 진입점 |\n|---|---|---|---|---:|---:|---|\n${entities.map((entity) => {
+    const names = [...new Set(entity.slotIds.map((id) => manifest.artSlot(id).nameKo))].join(" / ");
+    return `| ${cell(manifest.CATEGORY_KO[entity.category])} | ${cell(names)} | ${cell(entityPath(entity, manifest).slice("art-src/".length))} | ${entity.category}/${entity.id} | ${entity.slotIds.length} | ${entity.files.length} | ${activeIds.has(entity.id) ? link(index, path.join(workspaceRoot, entityPath(entity, manifest), "프롬프트.md"), "프롬프트") : "진입점 미생성 — --all로 준비"} |`;
+  }).join("\n")}`, hash(JSON.stringify(snapshots)));
   const changes = [], conflicts = [];
   for (const [file, contents] of expected) {
+    let destination = workspaceRoot, collision;
+    for (const part of path.relative(workspaceRoot, file).split(path.sep)) {
+      destination = path.join(destination, part);
+      const stat = fs.lstatSync(destination, { throwIfNoEntry: false });
+      if (!stat) break;
+      if (destination === file ? !stat.isFile() : !stat.isDirectory()) { collision = destination; break; }
+    }
+    if (collision) { conflicts.push(posix(path.relative(workspaceRoot, collision))); continue; }
     if (fs.existsSync(file)) {
       const previous = fs.readFileSync(file, "utf8");
       const owned = previous.match(/^<!-- ambient-art-catalog:generated v1 -->\n<!-- content-sha256: ([a-f0-9]{64}) -->\n([\s\S]*)$/);
@@ -151,16 +181,24 @@ export function syncCatalog({ workspaceRoot = root, entityIds = [], check = fals
   return { status: conflicts.length || (check && changes.length) ? "fail" : "pass", entities: active.map((entity) => entity.id), slots: manifest.ART_SLOTS.length, files: entities.reduce((sum, entity) => sum + entity.files.length, 0), changes, conflicts };
 }
 
+export function parseCatalogArgs(args) {
+  const options = { entityIds: [], categories: [], all: false, check: false };
+  for (let index = 0; index < args.length; index++) {
+    const argument = args[index];
+    if (argument === "--check") options.check = true;
+    else if (argument === "--all") options.all = true;
+    else if (argument === "--entity" || argument === "--category") {
+      const value = args[++index];
+      if (!value || value.startsWith("--") || value.split(",").some((entry) => !entry)) throw new Error(`Missing catalog value: ${argument}`);
+      options[argument === "--entity" ? "entityIds" : "categories"].push(...value.split(","));
+    } else throw new Error(`Unknown catalog argument: ${argument}`);
+  }
+  return options;
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const args = process.argv.slice(2), entityIds = [];
-    let check = false;
-    for (let index = 0; index < args.length; index++) {
-      if (args[index] === "--check") check = true;
-      else if (args[index] === "--entity" && args[index + 1]) entityIds.push(...args[++index].split(","));
-      else throw new Error(`Unknown catalog argument: ${args[index]}`);
-    }
-    const result = syncCatalog({ entityIds, check });
+    const result = syncCatalog(parseCatalogArgs(process.argv.slice(2)));
     console.log(JSON.stringify(result, null, 2));
     if (result.status === "fail") process.exitCode = 1;
   } catch (error) { console.error(error.message); process.exitCode = 1; }

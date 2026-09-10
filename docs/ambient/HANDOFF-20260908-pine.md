@@ -3,7 +3,7 @@
 Updated: 2026-09-09
 Status: Prepared
 
-작업 진입점은 [소나무 프롬프트](../../art-src/tree/tree-pine/프롬프트.md). 현재 납품 범위는 기존 [6장 파일럿 요청](../../art-src/tree/tree-pine/runs/20260909-pilot-01/request.md)의 변형 2·3 × 세 자리다. 생성은 아직 시작하지 않았으며 review는 pending이다. 전체 파일 계획이 이 요청을 늘리지 않는다.
+작업 진입점은 [소나무 프롬프트](../../art-src/나무/소나무/프롬프트.md). 현재 납품 범위는 기존 [6장 파일럿 요청](../../art-src/나무/소나무/작업회차/20260909-파일럿-01/request.md)의 변형 2·3 × 세 자리다. 생성은 아직 시작하지 않았으며 review는 pending이다. 전체 파일 계획이 이 요청을 늘리지 않는다.
 
 [저장 규칙](../../art-src/AGENTS.md), [실행 절차](ART_PIPELINE.md), [현재 작업](../agent/CURRENT_STATE.md)을 따른다. 엔티티 이관 결과는 [최신 결과](../agent/handoffs/20260909-entity-art-archive.md)에 있다.
 
@@ -24,6 +24,6 @@ Status: Prepared
 
 ## 이력 위치
 
-합격 runtime 파일은 public의 -1 세 장이다. 과거 반려 이미지는 `art-src/tree/tree-pine/반려본/incoming-pine/`와 `incoming-pine-r3/`에 원래 이름으로 보존한다. 반려 이유는 해당 review 기록을 읽는다. 새 요청은 과거 반려 기록과 run의 미해결 반려를 함께 참고한다.
+합격 runtime 파일은 public의 -1 세 장이다. 과거 반려 이미지는 `art-src/나무/소나무/반려본/접수-소나무/`와 `접수-소나무-3차/`에 원래 이름으로 보존한다. 반려 이유는 해당 review 기록을 읽는다. 새 요청은 과거 반려 기록과 run의 미해결 반려를 함께 참고한다.
 
 최초 합격 원본의 유실과 반려 -1 사본의 차이는 [원본 안내](../../art-src/README.md)에 기록했다. [이전 인계 원문](history/20260909-pine-handoff-before-routing.md)은 역사 증거다. 옛 경로·public 직접 납품·제자리 정규화·과거 21/24장 요청·반려본 삭제 명령은 현재 절차가 아니다.

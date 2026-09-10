@@ -6,12 +6,13 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { artManifest, root } from "./lib/ambient-art-manifest.mjs";
 import { buildEntities } from "./lib/ambient-art-entities.mjs";
+import { ART_DIR, categoryFolder, entityPath, relocateArtPath } from "./lib/ambient-art-paths.mjs";
 
 const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 const hash = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const fileHash = (file) => hash(fs.readFileSync(file));
 const relative = (base, file) => path.relative(base, file).split(path.sep).join("/");
-const defaultReceipt = "art-src/migrations/20260909-entity-layout.json";
+const defaultReceipt = `art-src/${ART_DIR.migrations}/20260909-entity-layout.json`;
 
 function inside(workspaceRoot, name, archiveOnly = false) {
   const base = path.resolve(workspaceRoot), target = path.resolve(base, name);
@@ -20,7 +21,10 @@ function inside(workspaceRoot, name, archiveOnly = false) {
   let current = base;
   for (const part of rel.split("/")) {
     current = path.join(current, part);
-    if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) throw new Error(`Linked path forbidden: ${name}`);
+    const stat = fs.lstatSync(current, { throwIfNoEntry: false });
+    if (!stat) break;
+    if (stat.isSymbolicLink()) throw new Error(`Linked path forbidden: ${name}`);
+    if (!stat.isDirectory()) break;
   }
   return target;
 }
@@ -36,7 +40,7 @@ function walk(workspaceRoot, directory) {
 }
 
 export async function planMigration({ workspaceRoot = root, references = { moves: [] } } = {}) {
-  const entities = buildEntities(artManifest());
+  const manifest = artManifest(), entities = buildEntities(manifest);
   const byFile = new Map(entities.flatMap((entity) => entity.files.map((file) => [file.filename, { entity, file }])));
   const moves = [];
   async function add(source, target, metadata = {}) {
@@ -51,7 +55,7 @@ export async function planMigration({ workspaceRoot = root, references = { moves
     const match = byFile.get(name);
     if (!match) throw new Error(`Unmapped root source: ${name}`);
     const { entity, file } = match;
-    await add(`art-src/${name}`, `art-src/${entity.category}/${entity.id}/${file.relativePath}`, {
+    await add(`art-src/${name}`, `${entityPath(entity, manifest)}/${file.relativePath}`, {
       kind: "legacy-preserved-source", lineage: "Original approval lineage unverified; a public counterpart does not establish identical approved source bytes."
     });
   }
@@ -60,7 +64,7 @@ export async function planMigration({ workspaceRoot = root, references = { moves
     if (!fs.existsSync(inside(workspaceRoot, directory))) continue;
     for (const name of fs.readdirSync(inside(workspaceRoot, directory)).filter((file) => file.endsWith(".png")).sort()) {
       if (byFile.get(name)?.entity.id !== "tree-pine") throw new Error(`Unexpected rejected pine file: ${name}`);
-      await add(`${directory}/${name}`, `art-src/tree/tree-pine/반려본/${batch}/${name}`, {
+      await add(`${directory}/${name}`, relocateArtPath(`art-src/tree/tree-pine/반려본/${batch}/${name}`), {
         kind: "legacy-rejected", batch,
         evidence: "docs/ambient/history/20260909-pine-handoff-before-routing.md",
         ...(batch === "incoming-pine" && /-1\.png$/.test(name) ? { lineage: "Rejected overwritten variant-1 copy; not the missing original accepted pine source." } : {})
@@ -69,10 +73,12 @@ export async function planMigration({ workspaceRoot = root, references = { moves
   }
   for (const candidate of references.moves.filter((item) => item.selected === "candidate")) {
     const entity = entities.find((item) => item.id === candidate.entity && item.category === candidate.category);
-    if (!entity || !/^art-src\/reference\/[^/]+\/[^/]+\.(png|gif)$/.test(candidate.sourceImage) || candidate.sourceSidecar !== `${candidate.sourceImage}.json`) throw new Error("Invalid reference candidate");
+    const referenceRoot = entity && `art-src/${ART_DIR.reference}/${categoryFolder(entity.category)}`;
+    const oldReferenceRoot = entity && `art-src/reference/${entity.category}`;
+    if (!entity || ![referenceRoot, oldReferenceRoot].includes(path.posix.dirname(candidate.sourceImage)) || !/\.(png|gif)$/i.test(candidate.sourceImage) || candidate.sourceSidecar !== `${candidate.sourceImage}.json`) throw new Error("Invalid reference candidate");
     for (const [source, expected] of [[candidate.sourceImage, candidate.imageSha256], [candidate.sourceSidecar, candidate.sidecarSha256]]) {
       if (fileHash(inside(workspaceRoot, source, true)) !== expected) throw new Error(`Reference changed since visual review: ${source}`);
-      await add(source, `art-src/${entity.category}/${entity.id}/레퍼런스/${path.basename(source)}`, {
+      await add(source, `${entityPath(entity, manifest)}/레퍼런스/${path.basename(source)}`, {
         kind: "inspiration-candidate", ownerApproved: false, reason: candidate.reason,
         confidence: candidate.confidence, visualMethod: references.visualMethod
       });
@@ -80,7 +86,7 @@ export async function planMigration({ workspaceRoot = root, references = { moves
   }
   const moving = new Set(moves.map((entry) => entry.source));
   const preserved = new Set([
-    ...walk(workspaceRoot, "art-src").filter((name) => /\.(png|gif|png\.json|gif\.json)$/.test(name) || name.includes("/runs/")),
+    ...walk(workspaceRoot, "art-src").filter((name) => /\.(png|gif|png\.json|gif\.json)$/.test(name) || name.includes("/runs/") || name.includes(`/${ART_DIR.runs}/`)),
     ...walk(workspaceRoot, "public/ambient/art"),
     ...walk(workspaceRoot, "docs/ambient/reference").filter((name) => /\.(png|gif)$/.test(name)),
     ...["components/shared/ambient/art/manifest.ts", "components/shared/ambient/world/codex.ts"].filter((name) => fs.existsSync(inside(workspaceRoot, name)))
@@ -92,28 +98,52 @@ export async function planMigration({ workspaceRoot = root, references = { moves
 
 function validateReceipt(workspaceRoot, receipt) {
   if (receipt.plan?.schemaVersion !== 1 || hash(json(receipt.plan)) !== receipt.planSha256) throw new Error("Migration plan changed");
+  const currentPath = (name) => receipt.status === "completed" ? relocateArtPath(name) : name;
+  const cleaned = new Map();
+  let cleanupLink = receipt.referenceCleanup;
+  if (!cleanupLink) {
+    const folderReceiptPath = inside(workspaceRoot, `art-src/${ART_DIR.migrations}/20260909-korean-folders.json`, true);
+    if (fs.existsSync(folderReceiptPath)) cleanupLink = JSON.parse(fs.readFileSync(folderReceiptPath, "utf8")).referenceCleanup;
+  }
+  if (cleanupLink) {
+    const cleanupPath = inside(workspaceRoot, cleanupLink.record, true);
+    if (!/^[a-f0-9]{64}$/.test(cleanupLink.recordSha256) || fileHash(cleanupPath) !== cleanupLink.recordSha256) throw new Error("Reference cleanup record changed");
+    const cleanup = JSON.parse(fs.readFileSync(cleanupPath, "utf8"));
+    if (cleanup.schemaVersion !== 1 || cleanup.operation !== "reference-library-cleanup") throw new Error("Invalid reference cleanup record");
+    for (const item of cleanup.removedFiles ?? []) {
+      const current = relocateArtPath(item.path);
+      if (cleaned.has(current) || !/^[a-f0-9]{64}$/.test(item.sha256) || fs.existsSync(inside(workspaceRoot, current, true))) throw new Error(`Invalid cleaned reference: ${item.path}`);
+      cleaned.set(current, item.sha256);
+    }
+  }
   const sources = new Set(), targets = new Set();
   for (const entry of receipt.plan.moves) {
     for (const name of [entry.source, entry.target]) {
       inside(workspaceRoot, name, true);
-      if (name.includes("/runs/") || name.startsWith("art-src/migrations/")) throw new Error(`Protected migration path: ${name}`);
+      if (name.includes("/runs/") || name.includes(`/${ART_DIR.runs}/`) || name.startsWith("art-src/migrations/") || name.startsWith(`art-src/${ART_DIR.migrations}/`)) throw new Error(`Protected migration path: ${name}`);
     }
+    inside(workspaceRoot, currentPath(entry.target), true);
     if (sources.has(entry.source) || targets.has(entry.target) || entry.source === entry.target) throw new Error("Duplicate migration path");
     sources.add(entry.source); targets.add(entry.target);
   }
   if ([...targets].some((target) => sources.has(target))) throw new Error("Overlapping migration paths");
   for (const item of receipt.plan.protectedFiles) {
     if (sources.has(item.file) || targets.has(item.file)) throw new Error("Protected file included in movement");
-    if (fileHash(inside(workspaceRoot, item.file)) !== item.sha256) throw new Error(`Protected file changed: ${item.file}`);
+    const current = currentPath(item.file);
+    if (cleaned.get(current) === item.sha256) continue;
+    if (fileHash(inside(workspaceRoot, current)) !== item.sha256) throw new Error(`Protected file changed: ${item.file}`);
   }
+  return cleaned;
 }
 
 export function checkMigration({ workspaceRoot = root, receipt }) {
-  validateReceipt(workspaceRoot, receipt);
+  const cleaned = validateReceipt(workspaceRoot, receipt);
   if (receipt.status !== "completed") throw new Error(`Migration is ${receipt.status}`);
   for (const item of receipt.plan.moves) {
     if (fs.existsSync(inside(workspaceRoot, item.source, true))) throw new Error(`Old source still exists: ${item.source}`);
-    if (fileHash(inside(workspaceRoot, item.target, true)) !== item.sha256) throw new Error(`Moved file changed: ${item.target}`);
+    const current = relocateArtPath(item.target);
+    if (cleaned.get(current) === item.sha256) continue;
+    if (fileHash(inside(workspaceRoot, current, true)) !== item.sha256) throw new Error(`Moved file changed: ${item.target}`);
   }
   return { moved: receipt.plan.moves.length, protected: receipt.plan.protectedFiles.length, status: "verified" };
 }

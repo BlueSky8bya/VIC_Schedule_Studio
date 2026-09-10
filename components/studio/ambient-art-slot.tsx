@@ -17,6 +17,7 @@ import type { Route } from "next";
 import Image from "next/image";
 import { ArrowLeft, Check, ClipboardCopy, Ruler } from "lucide-react";
 import "./ambient-art-board.css";
+import { localizeArtPromptPaths } from "@/components/shared/ambient/art/prompt-paths";
 import {
   ART_DIR,
   ART_SLOTS,
@@ -90,7 +91,7 @@ export function AmbientArtSlotView({ slotId, files, stamp }: { slotId: string; f
   const copy = useCallback(async (text: string, label: string) => {
     hapticTick();
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(localizeArtPromptPaths(text));
       setToast(`${label} 복사됨`);
     } catch {
       setToast("복사 실패 — 브라우저가 막았다");

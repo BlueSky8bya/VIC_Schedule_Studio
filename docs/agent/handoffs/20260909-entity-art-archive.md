@@ -14,7 +14,7 @@ Status: Completed
 - `프롬프트.md`와 네 자료 README는 매니페스트 및 현재 자료에서 생성한다. 전체 파일 계획과 현재 run의 한정 납품 목록을 구별한다. `검토/`는 flat normalized와 두 대조 시트를 연결한다.
 - 고정 run의 경로·파일은 그대로이며, 미래 요청은 엔티티 경로를 사용하고 run/과거 반려의 미해결 사유를 읽는다. reference NOTICE는 공용·엔티티 참고 직하만 집계해 run JSON을 건드리지 않는다.
 
-이관 명세와 예외: [receipt](../../../art-src/migrations/20260909-entity-layout.json), [설명](../../../art-src/migrations/README.md). 구조와 명령: [art-src](../../../art-src/README.md), [ART_PIPELINE](../../ambient/ART_PIPELINE.md).
+이관 명세와 예외: [receipt](<../../../art-src/이관기록/20260909-entity-layout.json>), [설명](<../../../art-src/이관기록/README.md>). 구조와 명령: [art-src](../../../art-src/README.md), [ART_PIPELINE](../../ambient/ART_PIPELINE.md).
 
 ## 검증
 

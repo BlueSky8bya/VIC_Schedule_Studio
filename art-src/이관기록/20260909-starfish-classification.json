@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "completed",
+  "source": "art-src/지형/불가사리",
+  "target": "art-src/동물/불가사리",
+  "reason": "Owner classified starfish only as animal. Merge decorative starfish slot and codex creature into one animal workspace; preserve runtime IDs and filenames.",
+  "files": [
+    {
+      "path": "art-src/지형/불가사리/검토/README.md",
+      "sha256": "60cc344ee5428ab6eee54d777ddc373a381ca408d6266d3df2dbe06614f058ce"
+    },
+    {
+      "path": "art-src/지형/불가사리/레퍼런스/README.md",
+      "sha256": "9b9d7a7e44463c483d52a09d00f05fae2211bafa5b4d4ca5f96071865f901eda"
+    },
+    {
+      "path": "art-src/지형/불가사리/반려본/README.md",
+      "sha256": "d70e20a7feb89dc46098dbe3d2ddc4f600e9aa925e9a0d7bb4a7c97461f8c140"
+    },
+    {
+      "path": "art-src/지형/불가사리/생성본/README.md",
+      "sha256": "9570f6591d2834a4518c76072eb888a75f54bdf3e884e7f071d83e9f699b71ed"
+    },
+    {
+      "path": "art-src/지형/불가사리/프롬프트.md",
+      "sha256": "ebe368631f5c329c81f2e53df993a93ed7b546e847198f73d4ddfd7f345f3181"
+    }
+  ],
+  "retiredGeneratedFiles": [
+    {
+      "path": "art-src/지형/불가사리/검토/README.md",
+      "bytes": 649,
+      "sha256": "abb91022dd52be54f4335a9f43d963b26e5b34aac3057070bbdd5efa137edb91"
+    },
+    {
+      "path": "art-src/지형/불가사리/레퍼런스/README.md",
+      "bytes": 1109,
+      "sha256": "39074b89a20a680a56a9d328e6fad2531edcdbe63ed1ecc0e7665342eead1fff"
+    },
+    {
+      "path": "art-src/지형/불가사리/반려본/README.md",
+      "bytes": 619,
+      "sha256": "b40181ee37636af8be2093cf79e9e9b57df3daf625a6cd5c45501871bbb36409"
+    },
+    {
+      "path": "art-src/지형/불가사리/생성본/README.md",
+      "bytes": 870,
+      "sha256": "44bf07d226acd615d1216268c208caafa1060ef3c0c8606bd09f2cdb2208e412"
+    },
+    {
+      "path": "art-src/지형/불가사리/프롬프트.md",
+      "bytes": 2152,
+      "sha256": "0b364f38408fb6f93ec3e908b231c79eccb3b145de452dad075a6c216ed539fa"
+    }
+  ],
+  "backup": "C:/projects/VIC-art-korean-backup-20260909T055336967Z",
+  "completedAt": "2026-09-09T06:21:50.924Z"
+}

@@ -6,13 +6,17 @@ export function buildEntities({ ART_SLOTS, ART_FAMILIES = {}, slotFiles }) {
   const slotsById = new Map(ART_SLOTS.map((slot) => [slot.id, slot]));
   if (slotsById.size !== ART_SLOTS.length) throw new Error("Duplicate art slot id");
   const owner = new Map(), groups = new Map();
-  function group(id, ids) {
+  function group(id, ids, category = null) {
     const slots = ids.map((slotId) => slotsById.get(slotId));
     if (!ids.length || slots.some((slot) => !slot)) throw new Error(`Unknown entity member: ${id}`);
-    if (new Set(slots.map((slot) => slot.category)).size !== 1) throw new Error(`Mixed entity categories: ${id}`);
+    if (!category && new Set(slots.map((slot) => slot.category)).size !== 1) throw new Error(`Mixed entity categories: ${id}`);
     if (groups.has(id) || ids.some((slotId) => owner.has(slotId))) throw new Error(`Overlapping art entity: ${id}`);
-    groups.set(id, ids);
+    groups.set(id, { ids, category: category ?? slots[0].category });
     for (const slotId of ids) owner.set(slotId, id);
+  }
+  // Beach decoration and codex creature share one animal workspace. Runtime slot/file IDs stay distinct.
+  if (["starfish", "animal-starfish"].every((id) => slotsById.has(id))) {
+    group("animal-starfish", ["starfish", "animal-starfish"], "animal");
   }
   for (const [id, family] of Object.entries(ART_FAMILIES)) group(id, [...family.slotIds]);
   for (const slot of ART_SLOTS) {
@@ -30,7 +34,7 @@ export function buildEntities({ ART_SLOTS, ART_FAMILIES = {}, slotFiles }) {
     const id = owner.get(slot.id);
     if (emitted.has(id)) return [];
     emitted.add(id);
-    const slotIds = groups.get(id);
+    const grouped = groups.get(id), slotIds = grouped.ids;
     const files = slotIds.flatMap((slotId) => {
       const member = slotsById.get(slotId);
       const season = member.seasons.length === 1 ? member.seasons[0] : null;
@@ -43,6 +47,6 @@ export function buildEntities({ ART_SLOTS, ART_FAMILIES = {}, slotFiles }) {
         return { filename, slotId, variant, season, seasonKo, relativePath: `생성본/${variant}/${seasonKo}/${filename}` };
       });
     });
-    return [{ id, category: slot.category, slotIds, files }];
+    return [{ id, category: grouped.category, slotIds, files }];
   });
 }

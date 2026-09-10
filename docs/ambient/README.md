@@ -13,7 +13,7 @@ Start here for `components/shared/ambient/**`, ambient artwork or QA. Read the m
 | Creature placement/behavior | ENGINE_RULES creature section and relevant BIOME_GRAMMAR section | `world/codex.ts`, `rarity.ts`, affected scene |
 | Art entity/source/migration | [Art catalogue](../../art-src/목록.md), matching entity prompt, [source rules](../../art-src/AGENTS.md) | [ART_PIPELINE](ART_PIPELINE.md), [Manifest](../../components/shared/ambient/art/manifest.ts) |
 | Art generation/review | Exact run request and frozen inputs, [ART_RULES](ART_RULES.md) | Entity reference/rejection/source/review entry points; full file plan does not expand this delivery |
-| Active pine work | [Pine handoff](HANDOFF-20260908-pine.md), [pine entity](../../art-src/tree/tree-pine/프롬프트.md) | Existing frozen pilot request; do not reuse a historical prompt |
+| Active pine work | [Pine handoff](HANDOFF-20260908-pine.md), [pine entity](../../art-src/나무/소나무/프롬프트.md) | Existing frozen pilot request; do not reuse a historical prompt |
 | Run QA | [VISUAL_QA_PROTOCOL](VISUAL_QA_PROTOCOL.md), [QA_PROGRESS](QA_PROGRESS.md) | [Tool README](../../scripts/ambient-qa/README.md) |
 | UI around ambient | [UI_RULES](../ux/UI_RULES.md), matching controls section | Studio settings / showcase / ambient mode controls |
 

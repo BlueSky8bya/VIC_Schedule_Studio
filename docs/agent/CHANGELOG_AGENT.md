@@ -6,6 +6,22 @@
 
 ## v0.1.0 — 2026-09-09
 
+### CHG-20260909-003 — 참고 자료 역할 분리와 저품질 후보 정리
+
+사용자 결정에 따라 공용 저품질 후보 93장과 엔티티 후보 10장을 출처 sidecar와 함께 제거했다. `공용참고`는 `공통화풍참고`로 바꾸고 전체 분위기·색감·구도·카메라만 맡긴다. 대상 형태·구조·생태는 엔티티 `레퍼런스/`, 합격 화풍은 `docs/ambient/reference/`가 맡는다. 자동 수집은 엔티티 지정이 필수다.
+
+복구: 제거 전 원본 208개와 SHA-256 목록은 `C:/projects/VIC-art-reference-cleanup-backup-20260909T065000KST`, 저장소 기록은 [참고 정리 handoff](handoffs/20260909-reference-library-cleanup.md)에 있다. 검증: 786 tests, typecheck, lint, build, harness, 카탈로그·NOTICE·두 이관 receipt 검사 통과. 생성·public 반영·커밋·배포 없음.
+
+Follow-up: 소유자가 추가한 이미지 69장을 실제 확인해 핵심 환경 8장, 도감 화면 보조 5장, 공통 화풍에 쓰지 않는 분류 대기 56장으로 무손실 이동했다. 공통화풍원칙은 합격 시트·manifest 아래에서 분위기·색감·구도·카메라만 보완한다. 파일별 전후 경로와 해시는 별도 분류 receipt에 보존했다.
+
+### CHG-20260909-002 — 한글 아트 폴더와 경로 이관
+
+사용자가 영어 폴더 대신 한글 이름을 요청했다. art-src 내부 영어 폴더 223개를 한글로 바꾸고 194개 엔티티의 실제 폴더명을 폴더명.json에 고정했다. 카탈로그·참고 도구·고정 요청 조회·승격 경로 및 새 클립보드 프롬프트를 연결했다. 파일명·내부 ID·공개 URL과 고정 요청·입력·원문 계약 해시는 유지한다.
+
+복구: 이관 전 파일 1,281개와 manifest/codex의 별도 백업, 이관 파일 1,282개의 전후 경로·해시 및 매 rename 진행표는 [한글화 기록](handoffs/20260909-korean-art-folders.md)에 있다. 기존 이관 receipt는 재작성하지 않았다. 검증: 전체 785 tests, typecheck, lint, harness, 제품 파일이 일치하는 무자격증명 작업실의 build 통과. 새 그림 생성·실제 아트 반영·커밋·배포는 수행하지 않았다.
+
+Follow-up: 중복된 `지형/불가사리`와 `동물/불가사리` 작업실을 동물 쪽 하나로 합쳤다. 내부 runtime/codex ID와 세 파일 이름은 유지한다. 제거한 지형 작업실에는 카탈로그 생성 문서 5개만 있었고, 별도 분류 receipt에 해시를 기록했다. 전체 786 tests, typecheck, lint, harness와 현재 art 링크가 통과했다.
+
 ### CHG-20260909-001 — Rule preservation and recoverable art archive
 
 Problem: the approved memory split lacked a complete source-to-rule audit; legacy art navigation and approval storage remained incomplete.

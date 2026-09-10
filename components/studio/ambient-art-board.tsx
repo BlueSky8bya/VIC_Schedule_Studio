@@ -38,6 +38,7 @@ import {
 } from "@/components/shared/ambient/art/manifest";
 import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { previewOf } from "@/components/shared/ambient/art/preview";
+import { localizeArtPromptPaths } from "@/components/shared/ambient/art/prompt-paths";
 import { codexById, CODEX_KINDS, HABITAT_LABEL, type CodexEntry } from "@/components/shared/ambient/world/codex";
 import { BIOMES } from "@/components/shared/ambient/world/biomes";
 import { TIER_DOTS, TIER_LABEL } from "@/components/shared/ambient/world/rarity";
@@ -408,8 +409,9 @@ export function AmbientArtBoard({ present, stamp }: Props) {
   // 카드 100장을 메모이즈하려면 넘기는 함수가 렌더마다 새로 만들어지면 안 된다 — setState·hapticTick만 쓰므로 의존성이 없다.
   const copy = useCallback(async (text: string, label: string) => {
     hapticTick();
-    const ok = await copyText(text);
-    setToast(ok ? `${label} 복사됨 (${text.length.toLocaleString()}자)` : "복사 실패 — 브라우저가 막았습니다");
+    const currentPrompt = localizeArtPromptPaths(text);
+    const ok = await copyText(currentPrompt);
+    setToast(ok ? `${label} 복사됨 (${currentPrompt.length.toLocaleString()}자)` : "복사 실패 — 브라우저가 막았습니다");
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 1800);
     if (ok) hapticTick();

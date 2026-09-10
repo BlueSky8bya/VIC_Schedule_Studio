@@ -27,7 +27,7 @@ if (existsSync(resolve(root, "agent-harness.yaml"))) {
   if (!/^protocol_source:/m.test(config)) errors.push("Missing protocol provenance.");
 }
 
-const extra = ["AGENTS.md", "CLAUDE.md", "art-src/AGENTS.md", "art-src/README.md", "art-src/reference/README.md",
+const extra = ["AGENTS.md", "CLAUDE.md", "art-src/AGENTS.md", "art-src/README.md", "art-src/공통화풍참고/README.md",
   "docs/README.md", "docs/harness.md", "docs/ux/README.md", "docs/ux/UI_RULES.md",
   "docs/ambient/README.md", "docs/ambient/ART_RULES.md", "docs/ambient/ENGINE_RULES.md", "docs/ambient/ART_PIPELINE.md",
   "docs/ambient/reference/README.md", "docs/ambient/HANDOFF-20260908-pine.md", "docs/ambient/prompts/20260909-pine21-r4.md"];

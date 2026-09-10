@@ -1,0 +1,505 @@
+{
+  "schemaVersion": 1,
+  "operation": "common-style-reference-classification",
+  "completedAt": "2026-09-09T08:08:00.699Z",
+  "basis": "Visual inspection of all 69 owner-added images; preserve every byte while separating common atmosphere evidence from UI examples and entity/reference candidates.",
+  "groups": {
+    "core": {
+      "folder": "1-핵심-환경분위기",
+      "count": 8
+    },
+    "ui": {
+      "folder": "2-보조-도감화면",
+      "count": 5
+    },
+    "pending": {
+      "folder": "3-분류대기-대상자료",
+      "count": 56
+    }
+  },
+  "moves": [
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/,jx.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/,jx.jpg",
+      "bytes": 33116,
+      "sha256": "160a43b62c8ab57d6021f14d5da23aa17ff99439ddfd42fc5391362c95ca2bbe"
+    },
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/1.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/1.jpg",
+      "bytes": 32673,
+      "sha256": "a3641558788007c15db91355c5293c7e5fe8099614a8b1fda1743e232e7b3b7a"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/bv.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/bv.jpg",
+      "bytes": 17580,
+      "sha256": "4cf3df4bab9dec3a53d14893a9dfc1a862b80803d064da82b20b5788b745af70"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/cs.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/cs.jpg",
+      "bytes": 34623,
+      "sha256": "e9650be5557b86cc991c82b8f6aec9815e0ce873ce12bf3561ef32ad9148b120"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/dr.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/dr.jpg",
+      "bytes": 42416,
+      "sha256": "b0489eea8b497ee090920160de89651428737c288e1036db1af36a61c0cd825b"
+    },
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/hf.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/hf.jpg",
+      "bytes": 16808,
+      "sha256": "c115a17226e9763ad91d3a02a7d2d302f0673056cac2e81906c2c411eff7b82a"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/im-making-a-game-about-collecting-fish-and-the-vibes-are-v0-w0cjl4mvlcjb1.webp",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/im-making-a-game-about-collecting-fish-and-the-vibes-are-v0-w0cjl4mvlcjb1.webp",
+      "bytes": 103592,
+      "sha256": "c973dc0b80ab68b1f384fcc04d959f2120e4ca455b2334e0134ca9b08f4c0179"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (1).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (1).jpg",
+      "bytes": 3412,
+      "sha256": "0717873cf7eaac8f7649f8ba6bf0616c6ed266a0088b9d9509d70395a3a37292"
+    },
+    {
+      "group": "ui",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (10).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/2-보조-도감화면/images (10).jpg",
+      "bytes": 25966,
+      "sha256": "6b53179d7b3b18925357b198c1eb4cd9dc14b219c7190e3148bda4b3cd17190f"
+    },
+    {
+      "group": "ui",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (11).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/2-보조-도감화면/images (11).jpg",
+      "bytes": 17370,
+      "sha256": "d88eb4becff49f9340d5269ac4c3526e35c5d2e6ea7bd7f45f4e479670f596cd"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (12).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (12).jpg",
+      "bytes": 3951,
+      "sha256": "4ba9d639d833df626795f14f34150588414c20aae8c31f74da81b44b22389f33"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (13).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (13).jpg",
+      "bytes": 9679,
+      "sha256": "aa3a66e12b996f66fa870d4de58f67e19c7a3b8d417a50b31d2be0754d84b1f3"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (14).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (14).jpg",
+      "bytes": 5373,
+      "sha256": "d63acd51927c1b4e6b3b9244875dad3a33b6237d68f49ee47d120caa49de73ca"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (15).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (15).jpg",
+      "bytes": 11940,
+      "sha256": "aac12801507e75cad1cca1f265bf0cfd11dcd0a72ec8ee5df4ac33188b5d3f04"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (16).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (16).jpg",
+      "bytes": 15008,
+      "sha256": "fe5f5fb776fb8869242935067160379aaccd32161c225673905594a51bc4ec8a"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (17).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (17).jpg",
+      "bytes": 12985,
+      "sha256": "4e89ace7d845bf7ba233df843bfbf7e3c0b746c34d36227ca32bfa7695e9ab2c"
+    },
+    {
+      "group": "ui",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (18).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/2-보조-도감화면/images (18).jpg",
+      "bytes": 28518,
+      "sha256": "5f81c21613cdda694bda9040979f5df3b70658efcb80643c0d333afd7ee63873"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (19).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (19).jpg",
+      "bytes": 38436,
+      "sha256": "3e0752a46e70e876e46567a055460f4b9e7ca1c49fb89c0911aad0d2464a196a"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (2).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (2).jpg",
+      "bytes": 10516,
+      "sha256": "63b2bc619604df3e1d047b24d392495076edf79e4649c7dce2c9deaa56bf39c4"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (20).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (20).jpg",
+      "bytes": 30648,
+      "sha256": "c3c969b99d6165d3b8359261172dde39a3cd6663e2498a4f18ed5038f6f163e1"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (21).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (21).jpg",
+      "bytes": 14938,
+      "sha256": "5ce299c6db9da7b2bf1a8e200f063fe0b37bd7eb23f0463f1390ce1ee4075fed"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (22).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (22).jpg",
+      "bytes": 17230,
+      "sha256": "bbbbfa9d99e360d0541e52d8333af844c6c7bcfe7e6329165b0ef4dd95bf85cf"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (23).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (23).jpg",
+      "bytes": 32045,
+      "sha256": "f02ceaccc41b4a6700ef35e3720a8222b10f2e090f4068594498818f88973ac3"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (24).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (24).jpg",
+      "bytes": 14334,
+      "sha256": "aea5f093dbb5967bde78b35da869da8b6ff47bf366027dee4ae9d994549383ff"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (25).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (25).jpg",
+      "bytes": 35013,
+      "sha256": "12210fc9b24f55fde45c71a48328b891d31f94fb89f02607fad222b5927226aa"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (26).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (26).jpg",
+      "bytes": 20228,
+      "sha256": "d9632d481169fe8ca557400581ec1ed332778892b0f0ac1e15d848eccee9a4d9"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (27).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (27).jpg",
+      "bytes": 19080,
+      "sha256": "2389ab1878dbbdc5d1c55a100e988995498f1eb1da1c82d1cd66f985af4221c3"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (28).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (28).jpg",
+      "bytes": 14116,
+      "sha256": "332e92896a5baf8476445c915606c968681e22a16b726fd19ccad1af152c6fb7"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (29).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (29).jpg",
+      "bytes": 24906,
+      "sha256": "a63456f9cded1d4d86d8db30fbbd221b3d9cf23729fceb5957d2cdb9d9821d18"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (3).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (3).jpg",
+      "bytes": 2599,
+      "sha256": "cef8762e6316b45739000376dbf3290eb37cb192843fde3825386936fd9fd225"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (30).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (30).jpg",
+      "bytes": 19693,
+      "sha256": "d801ae7eef11e02b28866dab995a9a976b37d7ad54bf662b8f5e8777ccd1d867"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (31).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (31).jpg",
+      "bytes": 20946,
+      "sha256": "b2e8a61a0b09ce5d196f93e4eb606633a8b9665f02941299ca8c98cdb224cd93"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (32).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (32).jpg",
+      "bytes": 26882,
+      "sha256": "e6faf98b716ef276d9219d85939da587349572ebc61baf8f51d9aa4f360bf114"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (33).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (33).jpg",
+      "bytes": 18024,
+      "sha256": "bae9b7ea20eb679f6548c192b8c4b570a9b93b96315c85d37a37428a3fcb08c3"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (34).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (34).jpg",
+      "bytes": 37044,
+      "sha256": "163311d7ca848e4addc2f85be6b90d7379685de855185bbf927debe0ba83e529"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (35).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (35).jpg",
+      "bytes": 26182,
+      "sha256": "7e568c2dc2ae1c50efb19486769f528b1bac37b0de24f5b3b947bd0360cf5db0"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (36).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (36).jpg",
+      "bytes": 4036,
+      "sha256": "88920964d6e0373a4d54bfe1f8a4d585ee6a0eeb513a53dc55095528c8c8d115"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (37).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (37).jpg",
+      "bytes": 11319,
+      "sha256": "b005d88659c6681dba520a0f807bdccedbbab734f2a2045656ca80181e2bce12"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (38).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (38).jpg",
+      "bytes": 13489,
+      "sha256": "91758e86b3d73abc157ddf11315821da2111202c9e0092924c484ffcf26dfe16"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (39).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (39).jpg",
+      "bytes": 9588,
+      "sha256": "4bbc3b7f8fb1bcc2555d304e8fe442faa0fed5a1b483f14ff684655ae2176a10"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (4).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (4).jpg",
+      "bytes": 5740,
+      "sha256": "72252b8b8fc6620e8b993ddc1a895aefa66e31c48f5d68f6571d6b296e41d9af"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (40).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (40).jpg",
+      "bytes": 14427,
+      "sha256": "5b1f078c6a5713d0a924e47e2a9192bdc445fedc423fede70c5800e566bf4c96"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (41).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (41).jpg",
+      "bytes": 19175,
+      "sha256": "9715acdd46704650653c4a8542e14c785cbdc4ea0891196aa4036c091f6b05c4"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (42).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (42).jpg",
+      "bytes": 30526,
+      "sha256": "3d1d11fd8a0a2579a365a8bfd922658a454cf878e4e76a96e40aefdcb94e24d0"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (43).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (43).jpg",
+      "bytes": 17654,
+      "sha256": "ea4c07fea1e4ff2a6557ade837ccabd7d550231b9c4b709ef5d1cc3660568d62"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (5).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (5).jpg",
+      "bytes": 8656,
+      "sha256": "1f76c532d7044ca5eb717acaeeb3365a04905a1c9ae91244427e08bc87dc94fb"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (6).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (6).jpg",
+      "bytes": 12088,
+      "sha256": "c5de455de33820967fccde26a254034a51c1afb034a245150c93dfdeadff5777"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (7).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (7).jpg",
+      "bytes": 12240,
+      "sha256": "d651d9c6308da9e2abe3f943ab6450d1dee3b6d9e424438a11aa622c7808e2e1"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (8).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images (8).jpg",
+      "bytes": 8468,
+      "sha256": "f259e02f1bb15cd3583a12ab960d25b5828e8e44b54b5e4f79f3214d6fc9db37"
+    },
+    {
+      "group": "ui",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images (9).jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/2-보조-도감화면/images (9).jpg",
+      "bytes": 38259,
+      "sha256": "031acf0dec481027b87a7f651287b7ab3b63b5fe454932dba18dd8558df7ea28"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/images.jpg",
+      "bytes": 18839,
+      "sha256": "211a6fe98dd9a214cf328cc6129992f9f510d3800c68a2ee35c33e6f15c931d5"
+    },
+    {
+      "group": "ui",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/images.png",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/2-보조-도감화면/images.png",
+      "bytes": 21111,
+      "sha256": "103d052aff0e58ba19ce8ffd54b21922b8e8b799612a42f8bdcb984c0b19aad9"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/imagfges.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/imagfges.jpg",
+      "bytes": 43006,
+      "sha256": "c9b86d3272cf371a28d62d64fa66f314ab9b0d27dfd079c74126ffb351a82ce7"
+    },
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/mj.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/mj.jpg",
+      "bytes": 19650,
+      "sha256": "7a929566722ed7cbf91fa8c84e9b1a7b0bb548ca9ca62b94335ce2e2c03706b0"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/njg.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/njg.jpg",
+      "bytes": 21478,
+      "sha256": "9691f4fe8f8aec85c7b3ffc1cebee021ab4aedd48ee0e719f76a16d11714fe8f"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/ntb.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/ntb.jpg",
+      "bytes": 38845,
+      "sha256": "012176a828618a44ea93c647312bf56f79b9042b2378670dc5178d9dfaf2b8a8"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/ny.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/ny.jpg",
+      "bytes": 12473,
+      "sha256": "eaa23e7768116d5311c7470ddbadfcbbd1853b942695ec027b9db56a1982ff4f"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/pixel-forest-jungle-trees-shrub-260nw-2692546673.webp",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/pixel-forest-jungle-trees-shrub-260nw-2692546673.webp",
+      "bytes": 30492,
+      "sha256": "17df97da9aa16f94b5021913fb59002febe959e40d6bf706c646679e75a25f69"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/png-transparent-brown-rock-illustration-pixel-art-sprite-rocks-brown-painting-8bit-color-thumbnail.png",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/png-transparent-brown-rock-illustration-pixel-art-sprite-rocks-brown-painting-8bit-color-thumbnail.png",
+      "bytes": 2830,
+      "sha256": "a34afaf4295ad96f8564a3affbcde2282f9338614cb4e8aad7b83b5abea65328"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/s.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/s.jpg",
+      "bytes": 44099,
+      "sha256": "ba22de363eb01acc0f83bf68d39bc818aaac4285505ffc9bfffd3e504da2f398"
+    },
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/sfg.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/sfg.jpg",
+      "bytes": 18755,
+      "sha256": "fae4a09261caf676500bb74d33de4731c5bcc54b1099325bca615fed5f08e6c3"
+    },
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/ss.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/ss.jpg",
+      "bytes": 27989,
+      "sha256": "b4e8ae2efe2e16afff98b9d80fd34e5c906b12d255daa26718776e741a4bfab8"
+    },
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/vb.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/vb.jpg",
+      "bytes": 48562,
+      "sha256": "c9c45da7f35c8d4dc8e8d002c7b163116b01532affea820abb3e0b02a3b1c3f2"
+    },
+    {
+      "group": "core",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/wer.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/1-핵심-환경분위기/wer.jpg",
+      "bytes": 15181,
+      "sha256": "4211392b59beba94cf007a6b47a64a0a03da6e382dc673aef2b25a0fe86b7854"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/xc.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/xc.jpg",
+      "bytes": 24824,
+      "sha256": "e7ece2656dc6dc85d0e6a21b1fe4cbec90f0e015381e855045b40d9da1ffb52a"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/xs.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/xs.jpg",
+      "bytes": 15061,
+      "sha256": "b7b6abfbdd93fb56a1d1b3e13c1ec8a680d26a3fcbb4d389740df76df0b6f9e2"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/XZC.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/XZC.jpg",
+      "bytes": 19122,
+      "sha256": "847cfe630121ba8810fd3f2882f8307a53bb36fb81e82bbf1e8f3a1dbf9a692e"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/zxcv.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/zxcv.jpg",
+      "bytes": 48512,
+      "sha256": "78ea30a2e65d78fb3f201b505dc12c45ab84d74f92a0b42a6b9a826f1d4689e2"
+    },
+    {
+      "group": "pending",
+      "source": "art-src/공통화풍참고/모여봐요 동물의 숲/zz.jpg",
+      "target": "art-src/공통화풍참고/모여봐요 동물의 숲/3-분류대기-대상자료/zz.jpg",
+      "bytes": 25234,
+      "sha256": "4511d162a477453b07cab393551fcdfb3a74dc300fd7792828ec017d0161277d"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-// 공용·엔티티 레퍼런스 출처 목록 재굽기. --check는 읽기 전용이다.
+// 엔티티 레퍼런스 출처 목록 재굽기. 공통화풍참고는 별도 자료다. --check는 읽기 전용이다.
 // node scripts/ambient-ref-notice.mjs [--check]
 import path from "node:path";
 import { fileURLToPath } from "node:url";

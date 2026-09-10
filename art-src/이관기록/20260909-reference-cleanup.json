@@ -1,0 +1,1059 @@
+{
+  "schemaVersion": 1,
+  "operation": "reference-library-cleanup",
+  "completedAt": "2026-09-09T06:42:22.470Z",
+  "reason": "Owner removed low-quality generic and entity inspiration candidates; shared folder now holds only overall mood/style references.",
+  "oldRoot": "art-src/공용참고",
+  "newRoot": "art-src/공통화풍참고",
+  "backupRoot": "C:/projects/VIC-art-reference-cleanup-backup-20260909T065000KST",
+  "counts": {
+    "commonImagesRemoved": 93,
+    "entityImagesRemoved": 10,
+    "removedFiles": 206,
+    "backedUpFiles": 208
+  },
+  "removedFiles": [
+    {
+      "path": "art-src/공용참고/곤충/2d-car-sprite-3-spr_bubblecar_0.png",
+      "bytes": 1728,
+      "sha256": "1dce4e7b8ec141f68e2da38e2a33ce2e9dad88d427089c3c26776b51fbca7c41"
+    },
+    {
+      "path": "art-src/공용참고/곤충/2d-car-sprite-3-spr_bubblecar_0.png.json",
+      "bytes": 306,
+      "sha256": "c5a46c920710d612a48652695bc916a1d51ee418882ca01485c3a71cf9001719"
+    },
+    {
+      "path": "art-src/공용참고/곤충/2d-car-sprite-3-spr_bubblecar_0_0.png",
+      "bytes": 1728,
+      "sha256": "1dce4e7b8ec141f68e2da38e2a33ce2e9dad88d427089c3c26776b51fbca7c41"
+    },
+    {
+      "path": "art-src/공용참고/곤충/2d-car-sprite-3-spr_bubblecar_0_0.png.json",
+      "bytes": 310,
+      "sha256": "9d62b3fadaeb092c94f68b3731c6fec0bc9c7ecafe505afe996443981eb528cc"
+    },
+    {
+      "path": "art-src/공용참고/곤충/old-bugs-BugBlasterGFXPRE1.png",
+      "bytes": 1935,
+      "sha256": "d0801dd9e5e49104223d673c95df16d71f8a72d9e75ec3790d952d2375414d31"
+    },
+    {
+      "path": "art-src/공용참고/곤충/old-bugs-BugBlasterGFXPRE1.png.json",
+      "bytes": 287,
+      "sha256": "280778ead41a54dac2a7dab3bb0aa0f169c024fedc646e366785f861c94919c7"
+    },
+    {
+      "path": "art-src/공용참고/곤충/shadow-for-lpc-sprite-lpc_shadow_cast.gif",
+      "bytes": 49261,
+      "sha256": "7723d1505b69366f583aaef3ff0c50750400e87cd2d8e12030607f5430274a27"
+    },
+    {
+      "path": "art-src/공용참고/곤충/shadow-for-lpc-sprite-lpc_shadow_cast.gif.json",
+      "bytes": 322,
+      "sha256": "d9b59739d2309f7b7bcb16752c71827bea729befcf80656f012a39662a0f040c"
+    },
+    {
+      "path": "art-src/공용참고/곤충/shadow-for-lpc-sprite-lpc_shadow_walk.gif",
+      "bytes": 61407,
+      "sha256": "bb0a26e2bbaaff2ecc412d614a993816e1f936923b913a8f9e5ed7e5d10966c6"
+    },
+    {
+      "path": "art-src/공용참고/곤충/shadow-for-lpc-sprite-lpc_shadow_walk.gif.json",
+      "bytes": 322,
+      "sha256": "d5c77d7087a69384e4ac321bdf21bec3df6c86a7f692cf85705c1a760ad1f773"
+    },
+    {
+      "path": "art-src/공용참고/곤충/space-soldier-sprite-sheet-32x32-trooper_walk.gif",
+      "bytes": 965,
+      "sha256": "362341171569b083e024c284856d15f76b7a7daa656448495e494a91f82a9ee8"
+    },
+    {
+      "path": "art-src/공용참고/곤충/space-soldier-sprite-sheet-32x32-trooper_walk.gif.json",
+      "bytes": 350,
+      "sha256": "5460d8b0f94c1bf39a652740a7dc47b2907531b69b31a58f732d85e3bf376921"
+    },
+    {
+      "path": "art-src/공용참고/곤충/space-soldier-sprite-sheet-32x32-trooper_walk_rifle.gif",
+      "bytes": 1004,
+      "sha256": "73742974618a59df4faa0177425dfc772cb2558318f86df93a60f8b3c8d943ba"
+    },
+    {
+      "path": "art-src/공용참고/곤충/space-soldier-sprite-sheet-32x32-trooper_walk_rifle.gif.json",
+      "bytes": 362,
+      "sha256": "912ef9ff1ae521c187403aa950879d4ddbee8029c748244b30735c18e07eefe7"
+    },
+    {
+      "path": "art-src/공용참고/나무/a-platformer-in-the-forest-pre-small.png",
+      "bytes": 4507,
+      "sha256": "c8b4e1f1e14b1ea564f90e12dde7178b7b89d4c8a22672810525a0b95d863315"
+    },
+    {
+      "path": "art-src/공용참고/나무/a-platformer-in-the-forest-pre-small.png.json",
+      "bytes": 320,
+      "sha256": "592cb81b1a4b23a891163355c59b700e4f7d4bb1cc9bb5502b6e11ac40a9b48f"
+    },
+    {
+      "path": "art-src/공용참고/나무/a-tree-treetest.png",
+      "bytes": 6117,
+      "sha256": "be52af9faf21afce48f6abea5427d7235b0c47fa24aa9fb77c836438dad10cd3"
+    },
+    {
+      "path": "art-src/공용참고/나무/a-tree-treetest.png.json",
+      "bytes": 264,
+      "sha256": "d677ec7a96f84d8efa8f3e6e7fef8abc614366d0e7dd355a7d4e558dfbaa9e7e"
+    },
+    {
+      "path": "art-src/공용참고/나무/a-tree-treetest_0.png",
+      "bytes": 6117,
+      "sha256": "be52af9faf21afce48f6abea5427d7235b0c47fa24aa9fb77c836438dad10cd3"
+    },
+    {
+      "path": "art-src/공용참고/나무/a-tree-treetest_0.png.json",
+      "bytes": 268,
+      "sha256": "53db947e2ee7f3f9f4d2a324d601334e30337dc6d33ffe1719b27d4b0312d9f3"
+    },
+    {
+      "path": "art-src/공용참고/나무/another-tree-damn-20another-20tree-2099ish-20x-20110-20i.png",
+      "bytes": 1953,
+      "sha256": "41656647e1b31611a5f85ad5300ce25c57cea214f04057c23c96d4b96d3f5c24"
+    },
+    {
+      "path": "art-src/공용참고/나무/another-tree-damn-20another-20tree-2099ish-20x-20110-20i.png.json",
+      "bytes": 357,
+      "sha256": "0041098d7a84edb54906fdf71c85ced4793c213418bd4102c685210d93367f98"
+    },
+    {
+      "path": "art-src/공용참고/나무/pixel-tree-0-Tree_6.png",
+      "bytes": 3868,
+      "sha256": "38651ac3c767664a67397900b1916a395375f1d20abc560fbcb715b3a8a9235d"
+    },
+    {
+      "path": "art-src/공용참고/나무/pixel-tree-0-Tree_6.png.json",
+      "bytes": 271,
+      "sha256": "24e9d50237e49f917512812579882fa8b823e9207a49ade11723c17a73199af4"
+    },
+    {
+      "path": "art-src/공용참고/나무/pixel-tree-0-Tree_7.png",
+      "bytes": 3868,
+      "sha256": "38651ac3c767664a67397900b1916a395375f1d20abc560fbcb715b3a8a9235d"
+    },
+    {
+      "path": "art-src/공용참고/나무/pixel-tree-0-Tree_7.png.json",
+      "bytes": 271,
+      "sha256": "d5a2632d24503cebcac0eebf7d334863a14d5073ee2ad991575b6e155d823710"
+    },
+    {
+      "path": "art-src/공용참고/나무/scifi-tree-tree_21.png",
+      "bytes": 1296,
+      "sha256": "da1c0c2a55571388699373222bcfa257fe9c4679c32a4509016665d2bd248a3c"
+    },
+    {
+      "path": "art-src/공용참고/나무/scifi-tree-tree_21.png.json",
+      "bytes": 274,
+      "sha256": "78cf3f63950f7fb92904dff28cb600e8d742160a950d29ad2fbc8a83fd2ca00e"
+    },
+    {
+      "path": "art-src/공용참고/나무/scifi-tree-tree_22.png",
+      "bytes": 1296,
+      "sha256": "da1c0c2a55571388699373222bcfa257fe9c4679c32a4509016665d2bd248a3c"
+    },
+    {
+      "path": "art-src/공용참고/나무/scifi-tree-tree_22.png.json",
+      "bytes": 274,
+      "sha256": "bc9d7f0d8a84aef62fc2e67662b4c6b5d7a47ea963c252a47a34333627ccb36d"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-25-tree_46.png",
+      "bytes": 498,
+      "sha256": "6ff4591c5cf7c6511f62daa4b8d6cb33b862d96134989d6d3990c24d500ff858"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-25-tree_46.png.json",
+      "bytes": 262,
+      "sha256": "7dd588dfe856fc527017f603f61af05d8b5194a1f7c1ac4b8bc57dc54ec1cccf"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-25-tree_47.png",
+      "bytes": 498,
+      "sha256": "6ff4591c5cf7c6511f62daa4b8d6cb33b862d96134989d6d3990c24d500ff858"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-25-tree_47.png.json",
+      "bytes": 262,
+      "sha256": "e8abccaa953a53e43644fad31d299ae9ccc015a42dbe61e0ddb2b0446bb7f5ce"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-6-11_1.png",
+      "bytes": 739,
+      "sha256": "c3cfa2e6bff02454457f23e1367f861a19bdf877c18551428b39f4e4be2eecd0"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-6-11_1.png.json",
+      "bytes": 251,
+      "sha256": "bc350bb76cdbacb0f80a8ea4cb3535d8436fcf64cf2655df3f639ed9401ee48d"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-6-11_2.png",
+      "bytes": 739,
+      "sha256": "c3cfa2e6bff02454457f23e1367f861a19bdf877c18551428b39f4e4be2eecd0"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-6-11_2.png.json",
+      "bytes": 251,
+      "sha256": "062c6979a2110c10f47e7301423e3d6e60f3640f684ce9183b8d9948d438a276"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-9-tree_12.png",
+      "bytes": 1668,
+      "sha256": "a5b018e87f556d774c9f422ded80e8ecfcf1fda8dd4e92766ba906e38ab12823"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-9-tree_12.png.json",
+      "bytes": 256,
+      "sha256": "b279bf648a4d8afbaf70bd3999a1cdb5b409d4edb3ca525fcd0a5986fe206601"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-9-tree_13.png",
+      "bytes": 1668,
+      "sha256": "a5b018e87f556d774c9f422ded80e8ecfcf1fda8dd4e92766ba906e38ab12823"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-9-tree_13.png.json",
+      "bytes": 256,
+      "sha256": "72c9d930483890ee8a0075db9ee167169a0f8f82c5a9dba17b2a679b933ffe55"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-leaves-tree-20bushes.png",
+      "bytes": 1427,
+      "sha256": "e48074b364bf0fd2608cf08ee0de3dfa4fae8c1c44d2d3cbb43b9463e3dbcef6"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-leaves-tree-20bushes.png.json",
+      "bytes": 290,
+      "sha256": "9c74b5e6f04d7026e562391254f67e3c03825107adf039dfd0f41a1a2c12ca6e"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-leaves-tree-20bushes_0.png",
+      "bytes": 1427,
+      "sha256": "e48074b364bf0fd2608cf08ee0de3dfa4fae8c1c44d2d3cbb43b9463e3dbcef6"
+    },
+    {
+      "path": "art-src/공용참고/나무/tree-leaves-tree-20bushes_0.png.json",
+      "bytes": 294,
+      "sha256": "08437d5805cb749f75a5d8df6a8ed38cc083678de8cf66ec8f310d49e0e6a084"
+    },
+    {
+      "path": "art-src/공용참고/동물/animated-birds-32x32-birds.32x32.png",
+      "bytes": 2016,
+      "sha256": "39221f19addd7f316a9821fd9b7729b7f0bb3840ebdb0c16f829411c79f0847b"
+    },
+    {
+      "path": "art-src/공용참고/동물/animated-birds-32x32-birds.32x32.png.json",
+      "bytes": 314,
+      "sha256": "78e60649c98f0a553de8ef48dd457bef228777bfff3010e940935a0261a118a4"
+    },
+    {
+      "path": "art-src/공용참고/동물/bird-asset-bird_asset_1_7.png",
+      "bytes": 1724,
+      "sha256": "ba09cbea757d70b0dbcfa94becf4d9b4de4a54e52a700e2109875335df98e00c"
+    },
+    {
+      "path": "art-src/공용참고/동물/bird-asset-bird_asset_1_7.png.json",
+      "bytes": 290,
+      "sha256": "f59f5860e3a3d15023423e679f809a85cc60c9bad738e0ab792b021772cf303c"
+    },
+    {
+      "path": "art-src/공용참고/동물/bird-asset-bird_asset_2_7.png",
+      "bytes": 1718,
+      "sha256": "22def5ff98844034c64355743c2df6b1498cec4771dc47b5ab350af8919463a9"
+    },
+    {
+      "path": "art-src/공용참고/동물/bird-asset-bird_asset_2_7.png.json",
+      "bytes": 290,
+      "sha256": "42ae05a05394603c523f9221900be301613d3b514f85d9c12ac1ab3938de9a32"
+    },
+    {
+      "path": "art-src/공용참고/동물/chicken-sprites-chickenx4.gif",
+      "bytes": 4253,
+      "sha256": "3b03ae4e400abbb5e7a85dd62e426e2e27532954981f40459fd3ba9730733327"
+    },
+    {
+      "path": "art-src/공용참고/동물/chicken-sprites-chickenx4.gif.json",
+      "bytes": 294,
+      "sha256": "1754541feb9f8d1a2e87c7ee679f4f809fb306ead9489b8b1f1440b5d3ee7332"
+    },
+    {
+      "path": "art-src/공용참고/동물/dog-sprites-dog_sprite_sheetx4.gif",
+      "bytes": 4503,
+      "sha256": "c17effc9fd7a16144d9aa8f4d3fdce229d27d2fd5a012cc1499d377d270766fa"
+    },
+    {
+      "path": "art-src/공용참고/동물/dog-sprites-dog_sprite_sheetx4.gif.json",
+      "bytes": 300,
+      "sha256": "f61eeb7215238e9f1c9a2e785f663ffd7e0c1ea224206eb1c965a2839861d2ba"
+    },
+    {
+      "path": "art-src/공용참고/동물/dog-walk-sprite-and-bone-dogy.gif",
+      "bytes": 22559,
+      "sha256": "554e85b55f33653ae6aa3e8d8bdd719efeafc575a7cdf714faaa1f09196cc2e7"
+    },
+    {
+      "path": "art-src/공용참고/동물/dog-walk-sprite-and-bone-dogy.gif.json",
+      "bytes": 306,
+      "sha256": "c6a61c771a6bbaead3c7b4c24d97b6b4ad7f31a9641b6b8715b75003a744b6b4"
+    },
+    {
+      "path": "art-src/공용참고/동물/piglook-sprite-sheet-32x32-piggy_look_anim-sheet.png",
+      "bytes": 1625,
+      "sha256": "db1a2bc454dc094edab46e21342e291b9809f348da90f85fd32e7f6606b14bb2"
+    },
+    {
+      "path": "art-src/공용참고/동물/piglook-sprite-sheet-32x32-piggy_look_anim-sheet.png.json",
+      "bytes": 358,
+      "sha256": "bbecb327c4df4b8f29a82df9907e5ee333dff55d0f6d7f5bedcf22b97ee1d436"
+    },
+    {
+      "path": "art-src/공용참고/동물/piglook-sprite-sheet-32x32-piggy_look_anim.gif",
+      "bytes": 28773,
+      "sha256": "23d4950a1956a6041d062eb4c76e6b213a1f85b2753ca171281bb6c092242bc7"
+    },
+    {
+      "path": "art-src/공용참고/동물/piglook-sprite-sheet-32x32-piggy_look_anim.gif.json",
+      "bytes": 346,
+      "sha256": "59a9a1bbcf3ca60c7cadffbe213319cc140d83a4d08a448e7c8f90ec20ba3b35"
+    },
+    {
+      "path": "art-src/공용참고/동물/pixel-squirrel-sqrl_5frames_2.gif",
+      "bytes": 11109,
+      "sha256": "da1257b26f9813fb24261aa5d8b92f33d3c7959ba78755d751a777857cb74951"
+    },
+    {
+      "path": "art-src/공용참고/동물/pixel-squirrel-sqrl_5frames_2.gif.json",
+      "bytes": 297,
+      "sha256": "c44844047e751a9a6781ab320fd3096b0b2b9cfe02b094610c68d66a2b08a25b"
+    },
+    {
+      "path": "art-src/공용참고/물/16x16-shoreline-wave-animation-tiles-cc0waveanimtiles16x.png",
+      "bytes": 5023,
+      "sha256": "2f5343decdd0a58827566f5a707f7064445b72e55b9c666768238f79786d8795"
+    },
+    {
+      "path": "art-src/공용참고/물/16x16-shoreline-wave-animation-tiles-cc0waveanimtiles16x.png.json",
+      "bytes": 382,
+      "sha256": "29cfd084dd285709ef501a3d9834c5b7acdc5beec3ad7204cc1a0f8672ea78f6"
+    },
+    {
+      "path": "art-src/공용참고/물/animated-flowing-water-2d-16x16-water_6.gif",
+      "bytes": 5744,
+      "sha256": "174dae4e4d4ccf24342da2ac63b2909aaf17b9e2533364b92de3ad3ce89cbf4d"
+    },
+    {
+      "path": "art-src/공용참고/물/animated-flowing-water-2d-16x16-water_6.gif.json",
+      "bytes": 337,
+      "sha256": "56e2fd623e267e21133669a3952bdbf8a97942f85d804a25b0d7f8fde863ab8e"
+    },
+    {
+      "path": "art-src/공용참고/물/animated-ocean-water-tile-WaterTileOcean.gif",
+      "bytes": 26167,
+      "sha256": "1e3480de4851e4552b0cdb2b154273753df814af574f2924296753181468d18c"
+    },
+    {
+      "path": "art-src/공용참고/물/animated-ocean-water-tile-WaterTileOcean.gif.json",
+      "bytes": 331,
+      "sha256": "c132072ddfd3a913b972adb092fd62409b79890d5c231dde689089b1fe769a11"
+    },
+    {
+      "path": "art-src/공용참고/물/bottle-of-water-Water-20Bottle.png",
+      "bytes": 2531,
+      "sha256": "b81eed25a611311a1e42d0f3e2b0c44cf0ee7ca399bec166ed69f1829347ff46"
+    },
+    {
+      "path": "art-src/공용참고/물/bottle-of-water-Water-20Bottle.png.json",
+      "bytes": 304,
+      "sha256": "6dfe2d35b43ecb9c2ecaee4da13582b6b7ade53917ea745285234c6af126b828"
+    },
+    {
+      "path": "art-src/공용참고/물/bottle-of-water-Water-20Bottle_0.png",
+      "bytes": 2531,
+      "sha256": "b81eed25a611311a1e42d0f3e2b0c44cf0ee7ca399bec166ed69f1829347ff46"
+    },
+    {
+      "path": "art-src/공용참고/물/bottle-of-water-Water-20Bottle_0.png.json",
+      "bytes": 308,
+      "sha256": "dc7eba935f9c5ae2295aa144207c0e63ff698850861a323926533a68f7c5aef1"
+    },
+    {
+      "path": "art-src/공용참고/물/pixel-art-water-cup-cup_3.png",
+      "bytes": 379,
+      "sha256": "738195352adccc0099db3e62414ef92b758da23fe24a62ce4049ea38ceb1dbf9"
+    },
+    {
+      "path": "art-src/공용참고/물/pixel-art-water-cup-cup_3.png.json",
+      "bytes": 298,
+      "sha256": "ff9b5491254a8a6b010a9025e8231ccd35915618820044541eeef5abd0328e71"
+    },
+    {
+      "path": "art-src/공용참고/물/pixel-art-water-cup-cup_4.png",
+      "bytes": 379,
+      "sha256": "738195352adccc0099db3e62414ef92b758da23fe24a62ce4049ea38ceb1dbf9"
+    },
+    {
+      "path": "art-src/공용참고/물/pixel-art-water-cup-cup_4.png.json",
+      "bytes": 298,
+      "sha256": "4cd9795c885e74a4fe4ca29703fe0533e4744f5b0b5f65a6e304bb92e9dfcbc7"
+    },
+    {
+      "path": "art-src/공용참고/물/pond-4x3-32px-tiles-pond.png",
+      "bytes": 2962,
+      "sha256": "22c60470d987f8b6245a1ebd309c0268debe9320caf68a1cc4d24dd09accacbf"
+    },
+    {
+      "path": "art-src/공용참고/물/pond-4x3-32px-tiles-pond.png.json",
+      "bytes": 300,
+      "sha256": "7ef4db79e17e9a26efc8b029b593227a30386b20a3dd8eeb484bd3c65a935710"
+    },
+    {
+      "path": "art-src/공용참고/물/pond-4x3-32px-tiles-pond_0.png",
+      "bytes": 2962,
+      "sha256": "22c60470d987f8b6245a1ebd309c0268debe9320caf68a1cc4d24dd09accacbf"
+    },
+    {
+      "path": "art-src/공용참고/물/pond-4x3-32px-tiles-pond_0.png.json",
+      "bytes": 304,
+      "sha256": "19605771eece98937e223a68f6d8b3c06db051e4d8174898e16213b098eb5dfb"
+    },
+    {
+      "path": "art-src/공용참고/물/simple-water-flow-source_flow_down._animationgif.gif",
+      "bytes": 12225,
+      "sha256": "f454d07213584c886f04939218e279d52a6f283e3438a5040458762364139a37"
+    },
+    {
+      "path": "art-src/공용참고/물/simple-water-flow-source_flow_down._animationgif.gif.json",
+      "bytes": 343,
+      "sha256": "e88aadec9691a1871eda4557656382b7654ebdb1a73e8296332a27adc330c374"
+    },
+    {
+      "path": "art-src/공용참고/물/simple-water-flow-source_flow_down_tiled.gif",
+      "bytes": 15906,
+      "sha256": "c2073a043ad123655702aa84d61a52985806f3b2bcfda021a4d7c07e4b15bf53"
+    },
+    {
+      "path": "art-src/공용참고/물/simple-water-flow-source_flow_down_tiled.gif.json",
+      "bytes": 327,
+      "sha256": "568a30d61a8a4b9b2177284ef47507c4546a7288a24f9610fe04ebcd67b4f631"
+    },
+    {
+      "path": "art-src/공용참고/물/simples-pimples-water-animation-simples-20pimples-20wate.png",
+      "bytes": 345,
+      "sha256": "b68b2897924ae884e637e34a4d91c6b908fffe11940cf3cbeb50a968bcf24fdc"
+    },
+    {
+      "path": "art-src/공용참고/물/simples-pimples-water-animation-simples-20pimples-20wate.png.json",
+      "bytes": 375,
+      "sha256": "cbf037f7e428ddf29291e363d50b0dd37e34cf23057869f7025e44f7472e8c65"
+    },
+    {
+      "path": "art-src/공용참고/물고기/8x8-sushi-sprites-makisu-sprites_0.png",
+      "bytes": 4978,
+      "sha256": "7767b9b23cf2b9d3f79ccf4a1454d297d7b680ba8ba200ec8507ec0bb45df3e0"
+    },
+    {
+      "path": "art-src/공용참고/물고기/8x8-sushi-sprites-makisu-sprites_0.png.json",
+      "bytes": 307,
+      "sha256": "eb5a972135dade5b1bd639db7e72f21a58dfcb520385dcb0f7f62b11e3c17bef"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-0-Sprite-00h03.gif",
+      "bytes": 8272,
+      "sha256": "55ce3bac88c964c97912d4ff577d6bf087b756cc895ac15decc234d9311e447d"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-0-Sprite-00h03.gif.json",
+      "bytes": 271,
+      "sha256": "e34eb879bf4ddf6a063f25658230561252e8dc5ff4653b3bf83305eb0da752a6"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-0-Sprite-00h03_0.gif",
+      "bytes": 8272,
+      "sha256": "55ce3bac88c964c97912d4ff577d6bf087b756cc895ac15decc234d9311e447d"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-0-Sprite-00h03_0.gif.json",
+      "bytes": 275,
+      "sha256": "7e7a3702ee0e7589f149b214acff3de1615b77ebe6853c849c8fca9f2e88141b"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-food-sprite-fishfood.png",
+      "bytes": 806,
+      "sha256": "47ef49b4b6b6e51e4a3a2924656e112c5daa9c3456384bc2c0c073d39d48d0c5"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-food-sprite-fishfood.png.json",
+      "bytes": 295,
+      "sha256": "5d1384e07ceb42f8d171708e31bc749abd60f90e1ff457d0678c6503732f0743"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-food-sprite-fishfood_0.png",
+      "bytes": 806,
+      "sha256": "47ef49b4b6b6e51e4a3a2924656e112c5daa9c3456384bc2c0c073d39d48d0c5"
+    },
+    {
+      "path": "art-src/공용참고/물고기/fish-food-sprite-fishfood_0.png.json",
+      "bytes": 299,
+      "sha256": "bb6802015418589d0baa55734fc143567f3d9f340a8a4ae120dc9691eee3eb70"
+    },
+    {
+      "path": "art-src/공용참고/물고기/goldfish-spr_goldfish.png",
+      "bytes": 1266,
+      "sha256": "dc4c1126cdb3687cd2773f2bf057d05dee92fee5a61f59aff3a6252b2f5da05a"
+    },
+    {
+      "path": "art-src/공용참고/물고기/goldfish-spr_goldfish.png.json",
+      "bytes": 279,
+      "sha256": "dc3b7c86cd3a218a8222093d69501f49393f104551a1163ac055ea1075b12fdd"
+    },
+    {
+      "path": "art-src/공용참고/물고기/goldfish-spr_goldfish_0.png",
+      "bytes": 1266,
+      "sha256": "dc4c1126cdb3687cd2773f2bf057d05dee92fee5a61f59aff3a6252b2f5da05a"
+    },
+    {
+      "path": "art-src/공용참고/물고기/goldfish-spr_goldfish_0.png.json",
+      "bytes": 283,
+      "sha256": "1fdd91056e1b17bc1dbfa8c6266fa6d1c8df7f9bbdf93169bfd4e44a3d9c88e1"
+    },
+    {
+      "path": "art-src/공용참고/물고기/pike-fish-pike-20fish.png",
+      "bytes": 1358,
+      "sha256": "4ead8a6eed2af933ddefdfa12892e47b99b525ba0b1c6b9081702cb26bd716fc"
+    },
+    {
+      "path": "art-src/공용참고/물고기/pike-fish-pike-20fish.png.json",
+      "bytes": 280,
+      "sha256": "666c253042ce268c29dc8823e83d24a288275b9a20e0e9c743a6c3044f7bcef2"
+    },
+    {
+      "path": "art-src/공용참고/소품/electric-fence-Electric-20Fence.png",
+      "bytes": 2991,
+      "sha256": "5dc4be6f37925d1f39b6566c8d84b2964fb4717a1bb4feacfc18b9a1272471b7"
+    },
+    {
+      "path": "art-src/공용참고/소품/electric-fence-Electric-20Fence.png.json",
+      "bytes": 307,
+      "sha256": "df5dac0965bf3f822dbf5fb5ea46fe6de571e14299e97a7f26dc5dc9f61d5c9a"
+    },
+    {
+      "path": "art-src/공용참고/소품/electric-fence-Electric-20Fence_0.png",
+      "bytes": 2991,
+      "sha256": "5dc4be6f37925d1f39b6566c8d84b2964fb4717a1bb4feacfc18b9a1272471b7"
+    },
+    {
+      "path": "art-src/공용참고/소품/electric-fence-Electric-20Fence_0.png.json",
+      "bytes": 311,
+      "sha256": "c38a098720297a3e3e2f8d66216721eb88d466c12f468837d9a48b60d3703978"
+    },
+    {
+      "path": "art-src/공용참고/소품/mushroom-dude-Mushroom_6.png",
+      "bytes": 2760,
+      "sha256": "2452cc8e27e640b96cd1ba59abe49c3613ea7671f8083a76bd242874c44de36d"
+    },
+    {
+      "path": "art-src/공용참고/소품/mushroom-dude-Mushroom_6.png.json",
+      "bytes": 290,
+      "sha256": "738f3ccf2e5e5666e38972746989783dc0faaee3d5048d918217575a8ab8da8b"
+    },
+    {
+      "path": "art-src/공용참고/소품/sci-fi-electric-fence-new_piskel_5.gif",
+      "bytes": 17226,
+      "sha256": "53c0b8c8bc6b9f32ec9538f3c354a7429d4218b1f9e2e52f9158f025f9429ea0"
+    },
+    {
+      "path": "art-src/공용참고/소품/sci-fi-electric-fence-new_piskel_5.gif.json",
+      "bytes": 321,
+      "sha256": "d661e15353a3bc8706dfdca897e4c2049c2c1182097cea3a27c8348e2e25361b"
+    },
+    {
+      "path": "art-src/공용참고/소품/signpost-32px-signpost32px.png",
+      "bytes": 4235,
+      "sha256": "11da600763ce45a595b22b3e2d2241a78cf018fcd5055e4522176b7905ea7c8d"
+    },
+    {
+      "path": "art-src/공용참고/소품/signpost-32px-signpost32px.png.json",
+      "bytes": 292,
+      "sha256": "6b79ebc34a2d0a94b1781b7464126d6ab35aabe7d23667dc21b233fce2784ebd"
+    },
+    {
+      "path": "art-src/공용참고/소품/signpost-32px-signpost32px_0.png",
+      "bytes": 4235,
+      "sha256": "11da600763ce45a595b22b3e2d2241a78cf018fcd5055e4522176b7905ea7c8d"
+    },
+    {
+      "path": "art-src/공용참고/소품/signpost-32px-signpost32px_0.png.json",
+      "bytes": 296,
+      "sha256": "6728ae0b4946a97ef274385b89d5ecc2a1a0f7553a60524c90a9c1fb9f0f14bb"
+    },
+    {
+      "path": "art-src/공용참고/지형/grass-on-dirt-stone-tileset-myGroundpr.png",
+      "bytes": 14355,
+      "sha256": "c8f2e9f668866cd55b0c96e214c1105b259fd0099c6246c08a5ba29c2220e167"
+    },
+    {
+      "path": "art-src/공용참고/지형/grass-on-dirt-stone-tileset-myGroundpr.png.json",
+      "bytes": 332,
+      "sha256": "90c90b60ddd63a3cea3d5e755ff4b7723ddaec6e017a9533633c963318afa7a9"
+    },
+    {
+      "path": "art-src/공용참고/지형/grey-roguelike-tileset-grey-20tileset0000.png",
+      "bytes": 2919,
+      "sha256": "fced8797412603179d6cd11bc88da0cffafa623df1dab6ea8c8802e28d333991"
+    },
+    {
+      "path": "art-src/공용참고/지형/grey-roguelike-tileset-grey-20tileset0000.png.json",
+      "bytes": 330,
+      "sha256": "0513f50153ff9817e3b83d2a68811ab49e717cca1199ad798a33a1f12ecd3300"
+    },
+    {
+      "path": "art-src/공용참고/지형/isometric-pixel-terrain-isometric_0.png",
+      "bytes": 2213,
+      "sha256": "fa300cebeef149f25fcd89dafb2131f1e155810311ac4418787ca5b4d4c78117"
+    },
+    {
+      "path": "art-src/공용참고/지형/isometric-pixel-terrain-isometric_0.png.json",
+      "bytes": 319,
+      "sha256": "c7c329f148ca73fcfa01d927400ea73c5aefd91546655e1311c609a5f856f3d5"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-age-sprite-set-stone-20age-20sprites.png",
+      "bytes": 2102,
+      "sha256": "7b0a68da6d4392ff3e8da726a09ed820bb50b54c8c2cbb98588edaee1f2e6f8a"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-age-sprite-set-stone-20age-20sprites.png.json",
+      "bytes": 330,
+      "sha256": "a7680dc3ff8b0e232c0261930e12f4d17eec6bd98aaec00e8ab9dacbc1ce9864"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-age-sprite-set-stone-20age-20sprites_0.png",
+      "bytes": 2102,
+      "sha256": "7b0a68da6d4392ff3e8da726a09ed820bb50b54c8c2cbb98588edaee1f2e6f8a"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-age-sprite-set-stone-20age-20sprites_0.png.json",
+      "bytes": 334,
+      "sha256": "cb6c84a3b6e4a6e25704930dbfd8b9cb8b101e3784f45865403c1cea66cb1e88"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-axe-with-degradation-progress-Stone-Axe-Gif.gif",
+      "bytes": 2784,
+      "sha256": "ccc31dcf2d31619da01bf05f1a391162dc371818cb38a13e0c07718fd1c7eb49"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-axe-with-degradation-progress-Stone-Axe-Gif.gif.json",
+      "bytes": 362,
+      "sha256": "f171366662685b36f55fc5561920761ed3b63cbee6adc9feeee1caebba3fb12f"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-floor-tiles-floor-tiles.png",
+      "bytes": 3744,
+      "sha256": "f879ca51bbcfcea488cfe0c6365b9d5f3532eb02fcd1380d2e9b02a22e5b2f3c"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-floor-tiles-floor-tiles.png.json",
+      "bytes": 304,
+      "sha256": "041c940d34402d0940f51866e745190ca9d14ab347cbc324dfd817c43505fab6"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-floor-tiles-floor-tiles_0.png",
+      "bytes": 3744,
+      "sha256": "f879ca51bbcfcea488cfe0c6365b9d5f3532eb02fcd1380d2e9b02a22e5b2f3c"
+    },
+    {
+      "path": "art-src/공용참고/지형/stone-floor-tiles-floor-tiles_0.png.json",
+      "bytes": 308,
+      "sha256": "a4be1333fd64ab52314b60e3bd55b55da91fe6354ff1d885e1aa62267befc88b"
+    },
+    {
+      "path": "art-src/공용참고/지형/top-down-tileset-tileset_3.png",
+      "bytes": 2019,
+      "sha256": "08c857df0e2f998c5ac4d0c1483d4a45d24c7af99c7bc6ac7f9997d6474ca78b"
+    },
+    {
+      "path": "art-src/공용참고/지형/top-down-tileset-tileset_3.png.json",
+      "bytes": 293,
+      "sha256": "74813efe5b1b1579313e4c2b9178124cf0dde42004e14117de9912a604729155"
+    },
+    {
+      "path": "art-src/공용참고/지형/top-down-tileset-tileset_4.png",
+      "bytes": 2019,
+      "sha256": "08c857df0e2f998c5ac4d0c1483d4a45d24c7af99c7bc6ac7f9997d6474ca78b"
+    },
+    {
+      "path": "art-src/공용참고/지형/top-down-tileset-tileset_4.png.json",
+      "bytes": 293,
+      "sha256": "ad9e49bd9cedbbadb162357b813bc609b68a5677a51c8669e04550146beedfe5"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/12-32x32-grass-tiles-with-large-things-grass-203.png",
+      "bytes": 2358,
+      "sha256": "bb4d923488ee3eea85f34637c7597134411e5ff6b53af0e0690e53a5776d775c"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/12-32x32-grass-tiles-with-large-things-grass-203.png.json",
+      "bytes": 367,
+      "sha256": "3caa25e754ca01e93eec3d669cda98df6a68565f137b06b436ea65c6e7e49f25"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/12-32x32-grass-tiles-with-large-things-grass-203_0.png",
+      "bytes": 2358,
+      "sha256": "bb4d923488ee3eea85f34637c7597134411e5ff6b53af0e0690e53a5776d775c"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/12-32x32-grass-tiles-with-large-things-grass-203_0.png.json",
+      "bytes": 371,
+      "sha256": "5641bb4cf4be3de503a4d843ca63257f368548cd888a6fee47438b7d9a5b4a61"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/16x16-grass-and-dirt-tileset-16x16NewTileSet.png",
+      "bytes": 1559,
+      "sha256": "e5ac27b27171af37aad6d582c3370a9246bb77519dedcd7a5b2cf36af65db70d"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/16x16-grass-and-dirt-tileset-16x16NewTileSet.png.json",
+      "bytes": 347,
+      "sha256": "7413a3885e425f40d185c035b5fca659eba8ebe9f7f5d3d02575e8f57ab96513"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/basic-flower-kvetekata_0.png",
+      "bytes": 951,
+      "sha256": "128e8bc03a95b75a9178d663c9a74316b6eb366c3ea3609879a2139d58350593"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/basic-flower-kvetekata_0.png.json",
+      "bytes": 284,
+      "sha256": "99fc033613da7b2e00eb7013ba9ef17c4ed61113adcba48842875a1eba85bb81"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/dirt-and-grass-forager-inspired-tileset_dirt.png",
+      "bytes": 561,
+      "sha256": "746fc7f649a3bf151f14c5e290f250b3ee73f10eeb9631619a6b060f1c369dc6"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/dirt-and-grass-forager-inspired-tileset_dirt.png.json",
+      "bytes": 348,
+      "sha256": "7f2882ba52b4868953af31f4e36568abafdd609745dddda1dbd8d754f2b2c795"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/flower-sprite-flower_complete.png",
+      "bytes": 1919,
+      "sha256": "4a3288ca8e5ae1aebd2306760034749a83180b548e9ddc2a23d4476ca1cc7945"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/flower-sprite-flower_complete.png.json",
+      "bytes": 297,
+      "sha256": "5a40d6f44b088f0021d3db2724ce97caf40044b5e128988aab1786098509a4e2"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/flower-sprite-flower_complete_0.png",
+      "bytes": 1919,
+      "sha256": "4a3288ca8e5ae1aebd2306760034749a83180b548e9ddc2a23d4476ca1cc7945"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/flower-sprite-flower_complete_0.png.json",
+      "bytes": 301,
+      "sha256": "8588ba9b5c158118368f1dfd59982c5e73074a87d3a7bb7d80f24abc12c4fc68"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grass-on-dirt-stone-tileset-myGroundpr.png",
+      "bytes": 14355,
+      "sha256": "c8f2e9f668866cd55b0c96e214c1105b259fd0099c6246c08a5ba29c2220e167"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grass-on-dirt-stone-tileset-myGroundpr.png.json",
+      "bytes": 332,
+      "sha256": "90c90b60ddd63a3cea3d5e755ff4b7723ddaec6e017a9533633c963318afa7a9"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grass-tile-set-0-spr_grass_tileset.png",
+      "bytes": 2267,
+      "sha256": "fa0de9b42fcc2daef195b9280b01a3189f59a40324cc8abc1634d1112f6f9e69"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grass-tile-set-0-spr_grass_tileset.png.json",
+      "bytes": 319,
+      "sha256": "969739a6bc94be7c1a38394937d4588298c78bc6bee1e2927115ce95d73a41c2"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grass-tiles-32x32-coin_0.gif",
+      "bytes": 10468,
+      "sha256": "e1dccdfb0249adf8799c7b2d75fa51c13afc20a11cfeb65b96ebde7509a21597"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grass-tiles-32x32-coin_0.gif.json",
+      "bytes": 291,
+      "sha256": "9f120f311a5ab4859853722582da6a5c0ca751e423c3f3b9117cfe0a68c47d21"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grassmud-16x16-tiles-Grass-26Mud_Compact.png",
+      "bytes": 4357,
+      "sha256": "c33f94573734b87564e0cc1747e3bead8f32a0eeccd24facfa4f305b05dbb80a"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grassmud-16x16-tiles-Grass-26Mud_Compact.png.json",
+      "bytes": 326,
+      "sha256": "349d8719a81eaff25e6930a08e0403028eca82ae8e0de5d4225ac5ea145bf94b"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grassmud-16x16-tiles-Mud-26Grass-26Water_Example.gif",
+      "bytes": 17349,
+      "sha256": "df528e04f7cd8d9deee21a1a9b0088960dfd834f49855a35f1dcaa765063c839"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/grassmud-16x16-tiles-Mud-26Grass-26Water_Example.gif.json",
+      "bytes": 342,
+      "sha256": "9d0303524e0e4a4a30486fb1e93a19034017b2f0cb6c20723fdac32e65b5595e"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/rose-flower-pyxeledit-document-and-image-rose.png",
+      "bytes": 23849,
+      "sha256": "60b2ca31a16f920fc3c3d81bc8cab3a1642e43e9722ad95ece2e0270710114b9"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/rose-flower-pyxeledit-document-and-image-rose.png.json",
+      "bytes": 359,
+      "sha256": "49d65c3da6778b32de0809527805e3ab3d490092815bc957f57b68b9aa866233"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/simple-grass-tileset-Simple-20Grass-20Tileset.png",
+      "bytes": 19172,
+      "sha256": "d31cad61c6a9621b8e34f3343becd577a4175feecb337a79207531df6bf48217"
+    },
+    {
+      "path": "art-src/공용참고/풀·꽃/simple-grass-tileset-Simple-20Grass-20Tileset.png.json",
+      "bytes": 336,
+      "sha256": "fad3816c77b348ed9b70a6d61556ce8631cfb666869e4d152fa3ce6c8dcb96d7"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/cloud-2-nuvem.png",
+      "bytes": 366,
+      "sha256": "863bc8844ac61a4c43430f7a6662de3549f2d83e481668ab9a43ed027c8a509e"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/cloud-2-nuvem.png.json",
+      "bytes": 258,
+      "sha256": "e450d09a829baf98960d169a52f00ea0965fca320ec8b921e9234930d89f012f"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/cloud-2-nuvem_0.png",
+      "bytes": 366,
+      "sha256": "863bc8844ac61a4c43430f7a6662de3549f2d83e481668ab9a43ed027c8a509e"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/cloud-2-nuvem_0.png.json",
+      "bytes": 262,
+      "sha256": "89123c7b6499775083cfb8dcc64e5335908121f07a900405ce497096155e304f"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/cloud-platform-0-cloud_4.png",
+      "bytes": 429,
+      "sha256": "b1eb1be8f1f5d57237f3f1be8eab6bd9f709a91f657bf86bd23b75b185e5f26d"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/cloud-platform-0-cloud_4.png.json",
+      "bytes": 302,
+      "sha256": "22a9a5f58e44c0d998736b0413d9afa1ac85ef67a9a1ad9d4a00354dbf141638"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/clouds-0-clouds_0.png",
+      "bytes": 563,
+      "sha256": "f717f0616be0a99d663780769a2ecacb5fd21f6aa6d00a53937f93dfc01b0df7"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/clouds-0-clouds_0.png.json",
+      "bytes": 263,
+      "sha256": "c82a1de7091518ae21b86d7a1e17cdc05a30391f02402830a7c7a6fdb556997b"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/clouds-and-gust-gust.gif",
+      "bytes": 3487,
+      "sha256": "5a386f8a25ff48cf98aea6d9f828cb3d097d2b8395b48e7981524ba01be2ea23"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/clouds-and-gust-gust.gif.json",
+      "bytes": 278,
+      "sha256": "42d19bfb052193b98389b0687acad3506514a8fa8dbe528d6b9991bc6887a4e7"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/pixel-art-cartoon-sun-sun_12.png",
+      "bytes": 213134,
+      "sha256": "16558912e717eff688fcd90cf214cb7894e91fff9d8d88c4e0e972e35ce6568f"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/pixel-art-cartoon-sun-sun_12.png.json",
+      "bytes": 303,
+      "sha256": "17a6c64d7904d9f8fe8afbc779bcb7a023deb14ea5c3973c0d6111c14ecf9062"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/pixel-art-cartoon-sun-sun_9.png",
+      "bytes": 213134,
+      "sha256": "16558912e717eff688fcd90cf214cb7894e91fff9d8d88c4e0e972e35ce6568f"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/pixel-art-cartoon-sun-sun_9.png.json",
+      "bytes": 301,
+      "sha256": "868528eecf5479bbf94c5eeeb2d4b7601e1b0e7bbf4874663fe2fbbf3673b6cf"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/sun-earth-and-moon-space_10.png",
+      "bytes": 2535,
+      "sha256": "125f30945b112c96f2780925b2affdcef05cdd06ab9044780c3ce91a28c85bb4"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/sun-earth-and-moon-space_10.png.json",
+      "bytes": 297,
+      "sha256": "3f751b5349f2534773475e2f7dcebe07431230080c466950e135c4266ef38d4c"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/sun-earth-and-moon-sun_earth_moon.png",
+      "bytes": 3876,
+      "sha256": "0975c8b483e13771e7804f0c7a945d09e776d0260d10e04ce25edf28c90288bf"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/sun-earth-and-moon-sun_earth_moon.png.json",
+      "bytes": 309,
+      "sha256": "5f2bbfebc43302c410b13e82d0698668d75f44c355e3710f0994dc1c8cedea41"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/the-mocking-moon-moon.gif",
+      "bytes": 424,
+      "sha256": "f887a207bb67567df1864534ca3633d810e8d5fa2e0e36dc741d1d406537d841"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/the-mocking-moon-moon.gif.json",
+      "bytes": 289,
+      "sha256": "3a4a5ad114fee7ed853958dfd2b28bd644e973067e4202d7f0aced60d44372f4"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/the-mocking-moon-moon_0.gif",
+      "bytes": 424,
+      "sha256": "f887a207bb67567df1864534ca3633d810e8d5fa2e0e36dc741d1d406537d841"
+    },
+    {
+      "path": "art-src/공용참고/하늘·천체/the-mocking-moon-moon_0.gif.json",
+      "bytes": 293,
+      "sha256": "ecf4dd7b29a29e5d23f96f9bfe37ebf9fd649d150c093a1d3cc0a62abbd3ee24"
+    },
+    {
+      "path": "art-src/나무/소나무/레퍼런스/pixel-pine-tree-assets-10-pack-iso_pine_prev.png",
+      "bytes": 3484,
+      "sha256": "e6f4b16a5cdd094df35a95cbd6e5c052da7c6b3b27dbb39263e4b936c7e34719"
+    },
+    {
+      "path": "art-src/나무/소나무/레퍼런스/pixel-pine-tree-assets-10-pack-iso_pine_prev.png.json",
+      "bytes": 347,
+      "sha256": "15e0d518966e304cc92fd24430318b92ac202abd7073f51883ff4c0c8fd4a0f0"
+    },
+    {
+      "path": "art-src/동물/산토끼/레퍼런스/cute-rabbit-rabbit_4.png",
+      "bytes": 829,
+      "sha256": "0122461f2e76e21882343e2f3fb163cffa5fd4bf383456c96c9a5d2967340fe8"
+    },
+    {
+      "path": "art-src/동물/산토끼/레퍼런스/cute-rabbit-rabbit_4.png.json",
+      "bytes": 273,
+      "sha256": "e3456517bf73ac0a4ce0d62c7da81b1bdae46d36e5a5144117bd96ce24190389"
+    },
+    {
+      "path": "art-src/동물/산토끼/레퍼런스/cute-rabbit-rabbit_5.png",
+      "bytes": 1779,
+      "sha256": "e4a05491cd51ba7584acccce8d4cb591f72b391946ddf1cef47dedd464b0b52b"
+    },
+    {
+      "path": "art-src/동물/산토끼/레퍼런스/cute-rabbit-rabbit_5.png.json",
+      "bytes": 273,
+      "sha256": "383895df8996bfee6b6f14a861448a77ccdd4c0727146281b3fc8aa4c0dae84c"
+    },
+    {
+      "path": "art-src/지형/그루터기/레퍼런스/cutted-tree-cutted-20tree.png",
+      "bytes": 1463,
+      "sha256": "53b1d1e9c326c4333fe33492b3708f906eb4160ae706e45929e71dbefa59a055"
+    },
+    {
+      "path": "art-src/지형/그루터기/레퍼런스/cutted-tree-cutted-20tree.png.json",
+      "bytes": 295,
+      "sha256": "fea57a580c8ef0c6690bb0d0955ecc1fb51ceac98a1b7dbbe0095fa6c7eb8f07"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/bandaged-rock-BandagedRock.png",
+      "bytes": 2405,
+      "sha256": "d43865003dee830d81fdb114cad33f79271700b3b717cdda2a4be130409ed3c5"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/bandaged-rock-BandagedRock.png.json",
+      "bytes": 290,
+      "sha256": "4c337ff3fb5d44da6fb646191f97d24ebaebb8ffc5eb3aaf7fe51105ed816fe5"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/bandaged-rock-BandagedRock_0.png",
+      "bytes": 2405,
+      "sha256": "d43865003dee830d81fdb114cad33f79271700b3b717cdda2a4be130409ed3c5"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/bandaged-rock-BandagedRock_0.png.json",
+      "bytes": 294,
+      "sha256": "1a7b3a2557f46bb6d744ad197dfa0482b74b37cf26bf202c044c1873253a3b91"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/neo-rock-neorock.png",
+      "bytes": 883,
+      "sha256": "aa16cd59ec5d09b14f2a1dac0bb0220baa541c1cb9d3d61a3e1cb99cc4d68b8d"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/neo-rock-neorock.png.json",
+      "bytes": 268,
+      "sha256": "84c91c3eb23e198f9678492229170b28ff891da9feb9f2e1bbf1138f7599f76b"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/neo-rock-neorock_0.png",
+      "bytes": 883,
+      "sha256": "aa16cd59ec5d09b14f2a1dac0bb0220baa541c1cb9d3d61a3e1cb99cc4d68b8d"
+    },
+    {
+      "path": "art-src/지형/바위/레퍼런스/neo-rock-neorock_0.png.json",
+      "bytes": 272,
+      "sha256": "046d11803f703821b979e0a03c3d68c377962d1de0d3184dc959866b793a1ab5"
+    },
+    {
+      "path": "art-src/하늘·천체/비구름/레퍼런스/lighting-cloud-pixel-64x64_0.png",
+      "bytes": 592,
+      "sha256": "b06ead687ec365771290102625892f5123a45e112fe952270b5e19b948b82b2b"
+    },
+    {
+      "path": "art-src/하늘·천체/비구름/레퍼런스/lighting-cloud-pixel-64x64_0.png.json",
+      "bytes": 298,
+      "sha256": "1e3a038557c957d7a64d4cd9d0a03bfadbde25708b52775b03ee2bf75260ff85"
+    },
+    {
+      "path": "art-src/하늘·천체/비구름/레퍼런스/lighting-cloud-pixel-64x64_1.png",
+      "bytes": 592,
+      "sha256": "b06ead687ec365771290102625892f5123a45e112fe952270b5e19b948b82b2b"
+    },
+    {
+      "path": "art-src/하늘·천체/비구름/레퍼런스/lighting-cloud-pixel-64x64_1.png.json",
+      "bytes": 298,
+      "sha256": "3b9cfb1c619ec6c5d0b574b81963a997ca33ed3777a6fd880b4486bd80d6e500"
+    }
+  ],
+  "retainedAndMovedDocs": [
+    {
+      "from": "art-src/공용참고/NOTICE.md",
+      "to": "art-src/공통화풍참고/NOTICE.md",
+      "originalSha256": "f54a9e6ed71f01c2f8645aa4f535c88d2475d86692d9d301559420ecc3910314"
+    },
+    {
+      "from": "art-src/공용참고/README.md",
+      "to": "art-src/공통화풍참고/README.md",
+      "originalSha256": "be9c6206d5c23031f79fd884687f3191534cfe551527083a5899173ee83219bc"
+    }
+  ]
+}
