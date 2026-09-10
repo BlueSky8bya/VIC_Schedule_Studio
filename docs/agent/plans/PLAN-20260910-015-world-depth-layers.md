@@ -1,6 +1,6 @@
 # PLAN-20260910-015 — 세계 배경 깊이 레이어와 포인터 시차
 
-Status: **P0 및 봄 초원 PC 적용·푸시 승인 — 검증 중** · Task Risk: **L2** (렌더 순서·좌표·아트 규격의 구조 변경) · Created: 2026-09-10 (KST)
+Status: **P0·봄 초원 PC 배포 확인 — 확대 전 화면 피드백 대기** · Task Risk: **L2** (렌더 순서·좌표·아트 규격의 구조 변경) · Created: 2026-09-10 (KST)
 
 선행: PLAN-20260904-004, ADR-0016/0017/0019/0020/0021. **2026-09-11 소유자가 봄 초원 PC 적용과 푸시를 승인했다.** 봄 단독 배포·선호 원본 합성 경로의 대체 결정은 [ADR-0023](../decisions/ADR-0023-spring-meadow-source-composition.md), 실행은 [ROUND-20](../../ambient/rounds/ROUND-20-spring-release.md). 사계절 확장은 이후 단계다. 아래 최초 설계와 ROUND-19 실패는 당시 기록으로 보존한다.
 

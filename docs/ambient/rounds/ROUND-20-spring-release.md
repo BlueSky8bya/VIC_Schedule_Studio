@@ -1,6 +1,6 @@
 # ROUND-20 — spring meadow desktop release
 
-Status: Local checks complete; push/deployed inspection pending · 2026-09-11 KST
+Status: Spring PC release pushed and deployed public checks complete; owner visual feedback next · 2026-09-11 KST
 
 Owner authorizes another 2× finer visual detail if performance impact is modest, spring-meadow application across desktop aspect ratios excluding mobile, and push followed by deployed inspection. This supersedes the prior spring-only promotion prohibition and four-season-before-release order for this scoped spring release. Other seasons retain their existing scenes; deep remains sealed. The liked color/soft pixel appearance is preserved rather than forcing the rejected early 6–10-color candidate appearance onto it.
 
@@ -27,3 +27,11 @@ Same-machine, uncontended 30-second pointer comparison against the pre-art P0 bu
 Final-build follow-up (`perf-final/summary.json`, max/pointer 30s): RAF mean **20.102ms** versus baseline 20.226ms, p95 33.4ms unchanged; paint CPU mean **.472ms**, p95 .700ms unchanged; 49.78 actual fps, no gaps over 34ms, no extra canvas allocation or browser error. Far cache 333,792 bytes / one bake. This supersedes the candidate2 max timing as the final observation; single-run scheduling variation remains, and no real low-end device/OBS/GPU guarantee is inferred. Final three-scenario smoke selftest also passed, including deep weather seal and deterministic frozen behavior.
 
 Public data loaders, roles, authentication, unlock and production data are unchanged. Viewed-month season and existing KST time remain authoritative. User-owned `.vscode/` and `preview-360.png` are outside this release.
+
+## Push and deployed result
+
+Product commit `eea02ca1` pushed to main; Vercel reported Production success (deployment `6375568391`, `A3YkxcEDQ8a6wRvANirk6U3Qvp7k`). At 2026-09-11 00:50 KST, [public site](https://vic-schedule-studio.vercel.app/) returned 200 and the served new PNG matched source SHA-256 `08e5ad94614ed5e6686dce328ebcc7906fa2c6e9973b77e298d2175eba76b53d`.
+
+Actual anonymous April calendar: clicked the visible 계절 배경 → 켜기 control; spring source decoded, one far bake, 1400×860 full-canvas bounds, no page errors. Mouse movement left the non-showcase frame unchanged. Actual 390×844 mobile entry loaded no backdrop or engine; desktop/mobile screenshots inspected. Evidence: `.scratch-pw/qa/r20-spring/deployed/{result.json,calendar.png,mobile.png}`. Headless automation guards remained active; no schedule mutations or authentication bypass.
+
+The first deployed script incorrectly expected a public showcase button and timed out; code inspection confirmed the pre-existing developer-only showcase gate. The corrected public check validates its absence, rather than opening that gate. Live authenticated developer-button entry/exit is not verified by this anonymous session; local fixture motion/mode checks above cover the engine. First-visit preference migration was handled through the real visible 켜기 control rather than relying on seeded storage. Owner can review March–May from their developer studio and enter 봄 감상하기. Other seasons remain their existing scenes.
