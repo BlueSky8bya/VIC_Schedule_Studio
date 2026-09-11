@@ -4198,8 +4198,10 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .weekday-row span {
   /* 편집실과 같은 규칙(2026-09-06 소유자) — 요일 머리글이 --cal-zoom에 함께 커진다.
      시청자 화면과 그 미리보기는 이 한 규칙을 공유한다(둘 다 .public-calendar-area 안). */
-  padding: calc(5px * var(--cal-zoom, 1)) 0;
-  font-size: calc(var(--text-body) * var(--cal-zoom, 1));
+  padding: calc(6px * var(--cal-zoom, 1)) 0;
+  /* 날짜 숫자(.day-strip strong 17px)와 같은 크기 — 요일은 달력을 읽는 첫 단서인데 본문 크기
+     (13.5px)로는 표면이 화면에 맞춰 축소된 뒤 거의 안 보였다(2026-09-11 소유자). */
+  font-size: calc(17px * var(--cal-zoom, 1));
   font-weight: 800;
   letter-spacing: 0.05em;
   text-align: center;
