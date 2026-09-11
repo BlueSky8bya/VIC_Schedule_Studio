@@ -24,6 +24,29 @@ describe("이름은 화면에 쓰인 말로", () => {
   });
 });
 
+describe("값을 고르는 컨트롤은 고른 값까지 센다", () => {
+  // 켜기·흐리게·끄기를 한 항목으로 세면 셋 중 무엇이 안 쓰이는지 알 수 없다(2026-09-11 소유자).
+  it("고른 값이 이름에 붙는다", () => {
+    expect(describeTarget("ui.click", "ambient-mode-select#dim").name).toBe("계절 배경 · 흐리게");
+    expect(describeTarget("ui.click", "ambient-mode-select#off").name).toBe("계절 배경 · 끄기");
+    expect(describeTarget("ui.click", "gfx-pref-select#lite").name).toBe("배경 효과 · 가볍게");
+    expect(describeTarget("ui.click", "showcase-weather#snow").name).toBe("감상 중 날씨 · 눈");
+  });
+  it("값이 붙어도 위치는 고르개의 위치 그대로다", () => {
+    expect(describeTarget("ui.click", "ambient-mode-select#on").area).toBe("편집실");
+    expect(describeTarget("ui.click", "ambient-toggle-viewer#on").area).toBe("시청자 화면");
+  });
+  it("값별로 갈린 뒤의 옛 줄(값 없음)은 후보가 아니라 기록만 남음이다", () => {
+    expect(describeTarget("ui.click", "ambient-mode-select").retired).toBe(true);
+    expect(describeTarget("ui.click", "ambient-mode-select#on").retired).toBeUndefined();
+  });
+  it("사전에 없는 고르개도 이름을 지어내지 않는다", () => {
+    const d = describeTarget("ui.click", "무슨-고르개#on");
+    expect(d.unnamed).toBe(true);
+    expect(d.name).toContain("켜기");
+  });
+});
+
 describe("위치(area)를 준다 — 이름만으로는 찾아갈 수 없다", () => {
   // 위치 = 화면에서 갈 수 있는 한 곳(2026-09-05 정리). 묶음 이름('관리'·'공통')은 폐지하고
   // 창이면 그 창 이름을 그대로 쓴다 — 목록만 보고도 어디인지 알 수 있어야 한다.

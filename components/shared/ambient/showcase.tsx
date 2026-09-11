@@ -99,6 +99,7 @@ export function AmbientModeSegment({
             aria-checked={on}
             className={`ambient-seg-btn mode-${value}${on ? " on" : ""}`}
             data-act={dataAct}
+            data-act-opt={value}
             data-mode={value}
             key={value}
             onClick={() => {
@@ -484,6 +485,7 @@ function SetRow<T extends string>({
               className={`sc-set-chip${on ? " on" : ""}`}
               data-act={dataAct}
               key={o.value}
+              data-act-opt={o.value}
               onClick={() => {
                 if (on) return;
                 hapticTick();

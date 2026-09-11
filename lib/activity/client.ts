@@ -144,7 +144,13 @@ function wireClicks(): void {
       // 비활성 컨트롤은 '눌렀다'가 아니다.
       if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") return;
       const explicit = el.getAttribute("data-act");
-      logActivity("ui.click", { target: explicit || autoId(el) });
+      // 값을 고르는 컨트롤(세그먼트·칩·드롭다운 항목)은 **고른 값까지** id에 담는다 —
+      // 하나로 뭉치면 "계절 배경 상태 고르기 54번"만 남아 켜기·흐리게·끄기 중 무엇이 안 쓰이는지
+      // 알 수 없다(2026-09-11 소유자: "버튼 하나당으로 세야 하는 거 아냐?").
+      // 값은 코드의 고정 값(on/dim/off…)만 쓴다 — 사용자 글이 id가 되면 안 된다(위 ⚠).
+      const opt = el.getAttribute("data-act-opt");
+      const id = explicit ? (opt ? `${explicit}#${foldDigits(opt).slice(0, 24)}` : explicit) : autoId(el);
+      logActivity("ui.click", { target: id });
       // 로그아웃은 **누르는 즉시** 내보낸다. 안 그러면 버퍼에 남아 있던 이벤트가 세션이 끊긴
       // 뒤에 올라가고, 서버는 그때의 신원(=비로그인)으로 역할을 매긴다 → "편집실을 비로그인이
       // 눌렀다"는 거짓 기록이 남는다(실측). 쿠키가 아직 살아 있는 이 시점에 보내야 맞게 붙는다.

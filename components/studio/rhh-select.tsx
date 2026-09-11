@@ -123,6 +123,8 @@ export function RhhSelect<V extends string>({ value, options, onChange, ariaLabe
                 <button
                   aria-selected={o.value === value}
                   className={`rhh-opt${o.value === value ? " selected" : ""}`}
+                  data-act={dataAct}
+                  data-act-opt={o.value}
                   key={o.value}
                   onClick={() => pick(o.value)}
                   onMouseEnter={() => setFocusIdx(i)}

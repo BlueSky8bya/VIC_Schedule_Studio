@@ -68,6 +68,8 @@ export function UsagePick({
             <button
               aria-selected={o.value === value}
               className={o.value === value ? "is-on" : ""}
+              data-act={act}
+              data-act-opt={o.value}
               key={o.value}
               onClick={() => {
                 hapticTick();

@@ -30,6 +30,16 @@ const KIND_CHIP: Record<string, { short: string; tone: string }> = {
   "section.enter": { short: "창", tone: "panel" },
   "route.enter": { short: "화면", tone: "route" }
 };
+// 줄이 무엇인지 한 눈에 — 버튼 줄은 이름이 곧 한 일이지만, 화면·창 줄은 이름만 보면
+// "공개 포스터가 무슨 기능이지?"가 된다(2026-09-11 소유자). 그래서 화면·창은 '열기'를 붙여
+// **들어간 횟수**임을 말한다. 위치(area)는 화면 줄에선 그 화면 자신이라 빼고(같은 말 두 번),
+// 창·버튼 줄에만 남긴다.
+function rowName(kind: string, name: string): string {
+  if (kind === "route.enter") return `${name} 열기`;
+  if (kind === "section.enter") return name.endsWith("창") ? `${name} 열기` : `${name} 창 열기`;
+  return name;
+}
+
 const FILTERS: { key: string; label: string }[] = [
   { key: "all", label: "전체" },
   { key: "ui.click", label: "버튼" },
@@ -339,8 +349,10 @@ export function ActivityUsage({
                           시작하지 못했다. 점은 폭을 거의 안 먹고 색만으로 구분된다. */}
                       <span className="usage-dot" data-tone={chip.tone} title={chip.short} />
                       <span className="usage-name">
-                        {d.area ? <em className="usage-area">{d.area}</em> : null}
-                        {d.name}
+                        {d.area && r.kind !== "route.enter" ? (
+                          <em className="usage-area">{d.area}</em>
+                        ) : null}
+                        {rowName(r.kind, d.name)}
                         {needHint && d.hint ? <small>{d.hint}</small> : null}
                         {dev ? <code>{r.target}</code> : null}
                       </span>
@@ -398,8 +410,10 @@ export function ActivityUsage({
                           <li key={`${r.kind}|${r.target}`} title={tip}>
                             <span className="usage-dot" data-tone={chip.tone} title={chip.short} />
                             <span className="usage-name">
-                              {d.area ? <em className="usage-area">{d.area}</em> : null}
-                              {d.name}
+                              {d.area && r.kind !== "route.enter" ? (
+                                <em className="usage-area">{d.area}</em>
+                              ) : null}
+                              {rowName(r.kind, d.name)}
                               <small className="usage-gone">지움</small>
                               {dev ? <code>{r.target}</code> : null}
                             </span>

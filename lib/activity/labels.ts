@@ -17,6 +17,8 @@ export type TargetLabel = {
   hint?: string;
   /** true면 아직 이름을 안 붙인 것 — 화면에서 그렇게 안내한다. */
   unnamed?: boolean;
+  /** 값 고르개(세그먼트·칩·드롭다운)의 값 이름. 전역 이름(OPTION_NAME)과 다르게 부를 때만 쓴다. */
+  opts?: Record<string, string>;
   /** true면 이미 철수한 기능 — 기록만 남는다. '적게 쓰인 기능'은 없앨 후보를 찾는 화면이라
    *  이미 없앤 것이 후보 사이에 끼면 목록이 거짓말을 한다(따로 갈라 보여준다). */
   retired?: boolean;
@@ -101,6 +103,20 @@ const RETIRED_TARGETS = new Set([
   "다음"
 ]);
 const RETIRED_ROUTES = new Set(["/studio/decorate", "/studio/private-layer"]);
+/**
+ * 2026-09-11 값별로 갈라진 고르개들(세그먼트·칩). 지금은 "<id>#<고른 값>"으로만 찍히므로
+ * **값 없는 옛 줄**은 더 늘지 않는다 — 후보 목록에서 빼고 '기록만 남음' 칸으로 보낸다.
+ * (드롭다운은 여기 없다: 트리거를 누른 것 자체가 '고르개를 열었다'로 계속 찍힌다.)
+ */
+const SPLIT_BASES = new Set([
+  "ambient-mode-select",
+  "ambient-toggle-viewer",
+  "showcase-season",
+  "showcase-band",
+  "showcase-weather",
+  "showcase-sky-event",
+  "showcase-gfx"
+]);
 const RETIRED_SECTIONS = new Set(["decorate"]);
 
 const ROUTE: Record<string, TargetLabel> = {
@@ -315,11 +331,11 @@ const ACT: Record<string, TargetLabel> = {
   },
   "usage-open": { name: "적게 쓰인 기능 접기/펴기", area: "이용 기록" },
   "usage-retired-open": { name: "지운 기능 묶음 접기/펴기", area: "이용 기록" },
-  "usage-area": { name: "위치 필터", area: "이용 기록" },
+  "usage-area": { name: "위치 고르기", area: "이용 기록" },
   "usage-area-all": { name: "위치 필터: 전체", area: "이용 기록" },
-  "usage-role": { name: "역할 필터", area: "이용 기록" },
+  "usage-role": { name: "역할 고르기", area: "이용 기록" },
   "usage-role-all": { name: "역할 필터: 전체", area: "이용 기록" },
-  "usage-kind": { name: "종류 필터", area: "이용 기록" },
+  "usage-kind": { name: "종류 고르기", area: "이용 기록" },
   "usage-filter-reset": { name: "필터 초기화", area: "이용 기록" },
   "legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
   "usage-copy": { name: "사용량 복사", area: "이용 기록" },
@@ -348,52 +364,52 @@ const ACT: Record<string, TargetLabel> = {
   "support-edit-open": { name: "업 도움 기간/링크 수정 열기", area: "편집실" },
   "delete-support": { name: "업 도움 삭제", area: "편집실", hint: "기간 안내 삭제 포함" },
   "studio-calm-toggle": { name: "차분한 편집실 켜기/끄기", area: "편집실", hint: "옛 기록(토글 제거 2026-09-04 — 항상 ON)" },
-  "poster-theme-select": { name: "포스터 테마 고르기", area: "편집실", hint: "설정 모달 · 관리자만" },
-  "gfx-pref-select": { name: "배경 효과 품질 고르기", area: "편집실", hint: "설정 모달 — 자동/항상 최대/가볍게/끄기(lib/ui/gfx.ts v3)" },
-  "ambient-showcase": { name: "배경 감상 모드 켜기", area: "배경 감상", hint: "아바타 자리·시청자 레일의 '○○ 감상하기' 버튼 — 달력·필터를 숨기고 계절 배경만(Esc/알약으로 복귀). 설정 줄은 2026-09-04 제거" },
-  "ambient-showcase-exit": { name: "배경 감상 모드 나가기", area: "배경 감상", hint: "감상 모드 상단 알약" },
-  "ambient-toggle-viewer": { name: "계절 배경 상태 고르기(레일)", area: "시청자 화면", hint: "레일·아바타 자리 감상하기 옆 세그먼트 [켜기|흐리게|끄기](2026-09-04, 순환 버튼 대체) — 기기 저장값(vic.ambient, 기본 끄기), 편집실 설정과 한 상태" },
-  "ambient-mode-select": { name: "계절 배경 상태 고르기", area: "편집실", hint: "설정 모달 세그먼트 [켜기|흐리게|끄기](2026-09-04, 셀렉트 → 세그먼트; 옛 스위치 '계절 배경 켜기/끄기' 대체)" },
-  "dev-world-season": { name: "세계 계절 강제(개발자)", area: "편집실", hint: "설정 모달 '월드 계절(개발자)' — 자동(달력 달)/봄/여름/가을/겨울. 감상 톱니와 같은 상태(2026-09-05: 감상에서 바꾸고 나오면 되돌릴 길이 없었다)" },
-  "dev-world-band": { name: "세계 시간대 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 새벽~밤 띠를 실제 시각과 무관하게(연대기 검증, 개발자 계정만·세션 한정)" },
-  "dev-world-weather": { name: "세계 날씨 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 맑음/흐림/비/눈/안개/바람(개발자 계정만·세션 한정)" },
-  "dev-world-day": { name: "세계 날 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 보고 있는 달의 날(연대기 진행 확인; 개발자 계정만·세션 한정)" },
-  "dev-art-board-open": { name: "배경 아트 보드 열기(개발자)", area: "편집실", hint: "설정 모달 → /studio/ambient-art — 계절 배경 그림 자리·코덱스 프롬프트 관리(2026-09-04)" },
+  "poster-theme-select": { name: "포스터 테마", area: "편집실", hint: "설정 → 포스터 테마(관리자만)" },
+  "gfx-pref-select": { name: "배경 효과", area: "편집실", hint: "설정 → 배경 효과(자동·최대·가볍게)", opts: { max: "항상 최대" } },
+  "ambient-showcase": { name: "배경 감상 시작", area: "배경 감상", hint: "아바타 자리·시청자 레일의 '○○ 감상하기' 버튼 — 달력·필터를 숨기고 계절 배경만(Esc/알약으로 복귀). 설정 줄은 2026-09-04 제거" },
+  "ambient-showcase-exit": { name: "배경 감상 나가기", area: "배경 감상", hint: "감상 모드 상단 알약" },
+  "ambient-toggle-viewer": { name: "계절 배경", area: "시청자 화면", hint: "옆 레일의 켜기·흐리게·끄기. 편집실 설정과 같은 상태(기기에 저장)" },
+  "ambient-mode-select": { name: "계절 배경", area: "편집실", hint: "설정 → 계절 배경(켜기·흐리게·끄기)" },
+  "dev-world-season": { name: "월드 계절", area: "편집실", hint: "설정 → 월드 계절(개발자만). 감상 톱니와 같은 상태" },
+  "dev-world-band": { name: "월드 시간대", area: "편집실", hint: "설정 → 월드 시간대(개발자만). 실제 시각과 무관하게 새벽~밤" },
+  "dev-world-weather": { name: "월드 날씨", area: "편집실", hint: "설정 → 월드 날씨(개발자만)" },
+  "dev-world-day": { name: "월드 날", area: "편집실", hint: "옛 기록(2026-09-05 제거)" },
+  "dev-art-board-open": { name: "아트 보드 열기", area: "편집실", hint: "설정 모달 → /studio/ambient-art — 계절 배경 그림 자리·코덱스 프롬프트 관리(2026-09-04)" },
   "biome-move": { name: "바이옴 이동(쉐브론)", area: "배경 감상", hint: "감상 모드 가장자리 쉐브론(PLAN-20260904-004) — 방향키·WASD·스와이프와 같은 이동. data-dir = up/down/left/right" },
   "biome-map-pick": { name: "바이옴 미니맵 선택", area: "배경 감상", hint: "감상 모드 미니맵 점(열한 화면) — data-biome = 목적지" },
   "art-prompt-copy-pilot": {
-    name: "아트 보드 — 파일럿 프롬프트 복사",
+    name: "아트 보드 파일럿 프롬프트 복사",
     area: "편집실",
     hint: "/studio/ambient-art(개발자) — 파일럿 배치 12장(소나무·바위·시스택·관목·갈대, ENTITY_ART_PLAN §4)"
   },
   "art-prompt-copy-visible": {
-    name: "아트 보드 — 보이는 자리 프롬프트 복사",
+    name: "아트 보드 보이는 자리 프롬프트 복사",
     area: "편집실",
     hint: "/studio/ambient-art(개발자) — 지금 필터에 걸린 자리만 묶어 한 장으로"
   },
   "dev-sky-event": {
-    name: "설정 — 하늘 사건 강제",
+    name: "하늘 사건",
     area: "설정",
     hint: "개발자 전용. 별똥별·혜성을 쉬지 않고 되풀이해 확인한다(평균 1분·9분을 기다릴 수 없다)"
   },
-  "showcase-sky-event": { name: "배경 감상 — 하늘 사건 강제", area: "배경 감상", hint: "개발자 전용. 설정 모달의 '하늘 사건'과 같은 상태" },
+  "showcase-sky-event": { name: "감상 중 하늘 사건", area: "배경 감상", hint: "개발자만. 설정의 하늘 사건과 같은 상태" },
   "art-prompt-copy-missing": {
-    name: "아트 보드 — 남은 파일 프롬프트 복사",
+    name: "아트 보드 남은 파일 프롬프트 복사",
     area: "편집실",
     hint: "/studio/ambient-art(개발자) — 보이는 자리 중 아직 안 온 파일만 모아 코덱스에 넘길 프롬프트"
   },
-  "art-prompt-copy-1": { name: "아트 보드 — 1차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 나무·초목·지형·물 자리의 코덱스 마스터 프롬프트" },
-  "art-prompt-copy-2": { name: "아트 보드 — 2차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 생물 자리" },
-  "art-prompt-copy-all": { name: "아트 보드 — 전체 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자)" },
-  "art-slot-prompt-copy": { name: "아트 보드 — 자리 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 자리 하나짜리 프롬프트" },
+  "art-prompt-copy-1": { name: "아트 보드 1차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 나무·초목·지형·물 자리의 코덱스 마스터 프롬프트" },
+  "art-prompt-copy-2": { name: "아트 보드 2차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 생물 자리" },
+  "art-prompt-copy-all": { name: "아트 보드 전체 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자)" },
+  "art-slot-prompt-copy": { name: "아트 보드 자리 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 자리 하나짜리 프롬프트" },
   // 자리 상세(2026-09-08, PLAN-009 P3) — 변형을 한 화면에서 관리하는 라우트.
-  "art-slot-open": { name: "아트 보드 — 자리 열기", area: "편집실", hint: "/studio/ambient-art/<자리>(개발자) — 변형 전부를 한 화면에서" },
-  "art-view-codex": { name: "아트 보드 — 도감 보기 전환", area: "편집실", hint: "2차 종을 동물의 숲 도감 형식 표로 본다" },
-  "art-slot-back": { name: "아트 보드 — 자리 목록으로", area: "편집실", hint: "자리 상세에서 목록으로 돌아간다" },
-  "art-slot-sibling": { name: "아트 보드 — 같은 범주 자리", area: "편집실", hint: "자리 상세에서 같은 범주의 다른 자리로 건너뛴다" },
-  "art-slot-prompt-missing": { name: "아트 보드 — 이 자리의 남은 파일 프롬프트", area: "편집실", hint: "아직 안 온 변형만 다시 부탁한다" },
-  "rest-nudge-ok": { name: "휴식 넛지 — 쉬고 올게요", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
-  "rest-nudge-later": { name: "휴식 넛지 — 조금만 더", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
+  "art-slot-open": { name: "아트 보드 자리 열기", area: "편집실", hint: "/studio/ambient-art/<자리>(개발자) — 변형 전부를 한 화면에서" },
+  "art-view-codex": { name: "아트 보드 도감 보기 전환", area: "편집실", hint: "2차 종을 동물의 숲 도감 형식 표로 본다" },
+  "art-slot-back": { name: "아트 보드 자리 목록으로", area: "편집실", hint: "자리 상세에서 목록으로 돌아간다" },
+  "art-slot-sibling": { name: "아트 보드 같은 범주 자리", area: "편집실", hint: "자리 상세에서 같은 범주의 다른 자리로 건너뛴다" },
+  "art-slot-prompt-missing": { name: "아트 보드 이 자리의 남은 파일 프롬프트", area: "편집실", hint: "아직 안 온 변형만 다시 부탁한다" },
+  "rest-nudge-ok": { name: "휴식 넛지 쉬고 올게요", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
+  "rest-nudge-later": { name: "휴식 넛지 조금만 더", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
   "google-login": { name: "Google로 로그인", area: "계정" },
   "open-in-chrome": { name: "Chrome으로 열기", area: "계정", hint: "앱 내 브라우저 안내" },
   "copy-app-link": { name: "링크 복사", area: "계정", hint: "앱 내 브라우저 안내" },
@@ -445,13 +461,13 @@ const ACT: Record<string, TargetLabel> = {
   "close-detail-grab": { name: "일정 상세 손잡이로 닫기", area: "시청자 화면" },
   "close-public-insights": { name: "이 달 기록 닫기", area: "시청자 화면" },
   "biome-map-fold": { name: "지도 접기/펼치기", area: "배경 감상" },
-  "ambient-showcase-settings": { name: "감상 중 배경 설정 열기/닫기", area: "배경 감상", hint: "감상 모드 오른쪽 위 톱니(2026-09-05) — 나가지 않고 계절·시간대·날씨·배경 효과를 바꾼다(개발자만)" },
-  "showcase-season": { name: "감상 중 계절 고르기(개발자)", area: "배경 감상", hint: "자동(달력 달)/봄/여름/가을/겨울 — 바꾸면 서 있던 바이옴 그대로 계절만 갈린다" },
-  "showcase-band": { name: "감상 중 시간대 고르기(개발자)", area: "배경 감상", hint: "자동(지금 시각)/새벽~밤 — 설정 모달의 '월드 시간대'와 같은 상태" },
-  "showcase-weather": { name: "감상 중 날씨 고르기(개발자)", area: "배경 감상", hint: "자동(날짜 시드)/그 계절에 가능한 날씨 — 설정 모달의 '월드 날씨'와 같은 상태" },
-  "showcase-gfx": { name: "감상 중 배경 효과 고르기", area: "배경 감상", hint: "자동/최대/가볍게 — 설정 모달의 '배경 효과'와 같은 상태" },
-  "vlog-role": { name: "세션 로그 역할 고르기", area: "이용 기록" },
-  "vlog-stay": { name: "세션 로그 머문/스쳐감 고르기", area: "이용 기록" },
+  "ambient-showcase-settings": { name: "감상 중 설정 열기", area: "배경 감상", hint: "감상 화면 오른쪽 위 톱니(개발자만)" },
+  "showcase-season": { name: "감상 중 계절", area: "배경 감상", hint: "개발자만. 자동은 달력 달을 따른다" },
+  "showcase-band": { name: "감상 중 시간대", area: "배경 감상", hint: "개발자만. 설정의 월드 시간대와 같은 상태" },
+  "showcase-weather": { name: "감상 중 날씨", area: "배경 감상", hint: "개발자만. 설정의 월드 날씨와 같은 상태" },
+  "showcase-gfx": { name: "감상 중 배경 효과", area: "배경 감상", hint: "설정의 배경 효과와 같은 상태" },
+  "vlog-role": { name: "세션 로그 역할", area: "이용 기록" },
+  "vlog-stay": { name: "세션 로그 체류", area: "이용 기록" },
   "insights-panel-prev": { name: "인사이트 이전 장", area: "인사이트", hint: "월별 인사이트 창의 ‹" },
   "insights-panel-next": { name: "인사이트 다음 장", area: "인사이트", hint: "월별 인사이트 창의 ›" },
   "minsights-panel-prev": { name: "내 인사이트 이전 장", area: "편집실" },
@@ -539,6 +555,56 @@ const AUTO: Record<string, TargetLabel> = {
   ".insights-open": { name: "인사이트 열기", area: "인사이트", hint: "옛 기록" }
 };
 
+/**
+ * 값 고르개의 값 이름(2026-09-11). target이 "<id>#<값>"이면 이 표로 값을 푼다.
+ *
+ * 켜기·흐리게·끄기를 한 항목으로 세면 "계절 배경 54번"만 남아 **셋 중 무엇이 안 쓰이는지**
+ * 알 수 없다 — 이 화면의 질문이 그것이라 값까지 갈라 센다(소유자 지적).
+ * 이름은 화면 버튼에 쓰인 말 그대로 쓴다.
+ */
+const OPTION_NAME: Record<string, string> = {
+  on: "켜기",
+  dim: "흐리게",
+  off: "끄기",
+  auto: "자동",
+  real: "자동",
+  max: "최대",
+  lite: "가볍게",
+  all: "전체",
+  stay: "머문",
+  glance: "스쳐감",
+  spring: "봄",
+  summer: "여름",
+  autumn: "가을",
+  winter: "겨울",
+  dawn: "새벽",
+  morning: "아침",
+  noon: "점심",
+  dusk: "노을",
+  evening: "저녁",
+  night: "밤",
+  clear: "맑음",
+  cloud: "흐림",
+  rain: "비",
+  snow: "눈",
+  fog: "안개",
+  wind: "바람",
+  "shooting-star": "별똥별",
+  comet: "혜성",
+  none: "기본",
+  sakura: "봄",
+  sunset: "노을",
+  mint: "민트",
+  owner: "관리자",
+  developer: "개발자",
+  viewer: "시청자",
+  anon: "비로그인",
+  unknown: "역할 확인 못 함",
+  "ui.click": "버튼",
+  "route.enter": "화면",
+  "section.enter": "창"
+};
+
 /** target을 사람이 읽는 이름으로. 못 풀면 이름을 지어내지 않고 '이름 미등록'으로 표시한다. */
 export function describeTarget(kind: string, target: string): TargetLabel {
   if (!target) return { name: "(대상 없음)" };
@@ -576,8 +642,23 @@ export function describeTarget(kind: string, target: string): TargetLabel {
       unnamed: true
     };
   }
+  // 값 고르개 — "<id>#<고른 값>". 이름은 "고르개 · 고른 값"으로 읽힌다(계절 배경 · 흐리게).
+  const hash = target.indexOf("#");
+  if (hash > 0) {
+    const base = target.slice(0, hash);
+    const opt = target.slice(hash + 1);
+    const known = ACT[base];
+    const optName = known?.opts?.[opt] ?? OPTION_NAME[opt] ?? opt;
+    if (known) return mark({ ...known, name: `${known.name} · ${optName}` }, RETIRED_TARGETS.has(base));
+    return {
+      name: `${base} · ${optName}`,
+      area: "기타",
+      hint: "이름이 등록되지 않은 고르개",
+      unnamed: true
+    };
+  }
   const hit = ACT[target];
-  if (hit) return mark(hit, RETIRED_TARGETS.has(target));
+  if (hit) return mark(hit, RETIRED_TARGETS.has(target) || SPLIT_BASES.has(target));
   // data-act에 한글 문구를 그대로 박은 것들(버튼의 aria-label/title에서 정적으로 딴 값).
   // 이미 사람이 읽을 수 있는 말이므로 '이름 미등록'으로 낮추지 않는다 — 위치만 모를 뿐이다.
   if (/[가-힣]/.test(target)) return { name: target, area: "기타" };
