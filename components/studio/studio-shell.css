@@ -1735,6 +1735,18 @@ html[data-reduce-motion] .act-live::before {
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+/* 며칠 것인가 — 일정·편집 카드 줄에만. 이름과 달리 **안 줄어든다**: 제목이 길어도 날짜는
+   끝까지 남아야 한다(그게 이 줄에서 확인하려는 값이다, 2026-09-11 소유자). */
+.act-day {
+  flex: none;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 10%);
+  color: #5b4fc4;
+  font-size: var(--text-micro);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
 /* 위치는 오른쪽 끝, 바뀔 때만(마크업에서 판단). 칩 대신 조용한 글자 — 칩 셋이 나란히 서면
    전부 같은 무게로 읽혀 훑기가 안 된다. */
 .act-area {

@@ -30,6 +30,12 @@ describe("새로고침이 자식 카드까지 닿는다", () => {
     expect(TIMELINE).toContain("data-hold-refresh");
     expect(USAGE).toContain("data-hold-refresh");
   });
+  // 날짜는 제목 안이 아니라 **따로** 있어야 한다. 제목 뒤에 붙이면 긴 제목이 …로 잘리면서
+  // 정작 확인하려던 날짜가 먼저 사라졌다(2026-09-11: 진단 리포트를 복사해야만 알 수 있었다).
+  it("일정·편집 카드 줄의 날짜는 이름과 따로, 안 줄어드는 칸에 있다", () => {
+    expect(TIMELINE).toContain('<b className="act-day">');
+    expect(TIMELINE).not.toMatch(/`\$\{base\} · \$\{day\}`/);
+  });
   it("자동 갱신이 목록을 스켈레톤으로 갈아치우지 않는다", () => {
     // 스켈레톤(setLoading(true))은 '하드 키'(날짜·진단 층 / 기간·기준일)가 바뀔 때만.
     expect(TIMELINE).toMatch(/lastHardRef\.current !== hardKey/);

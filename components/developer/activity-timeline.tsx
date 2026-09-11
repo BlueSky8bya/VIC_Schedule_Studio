@@ -58,13 +58,6 @@ type Grouped = Item & { repeat: number; lastT: number };
 // uuid를 그대로 보여주지 않는다 — 코드를 모르는 사람에게 uuid는 아무 뜻도 없다.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function itemName(it: Item): string {
-  const base = itemBaseName(it);
-  // 편집 카드는 '며칠 칸을 열었나'가 그 줄의 핵심이다 — 이름만 있으면 같은 줄이 수십 개 쌓여
-  // 무엇을 편집했는지 구분되지 않는다(2026-09-11 소유자).
-  const day = metaDateLabel(it.meta);
-  return day ? `${base} · ${day}` : base;
-}
-function itemBaseName(it: Item): string {
   if (it.targetLabel) return it.targetLabel;
   if (!it.target) return "";
   if (UUID_RE.test(it.target)) {
@@ -261,12 +254,13 @@ export function ActivityTimeline({
   const visitLines = (items: Item[]): string[] =>
     groupItems(items).map((it) => {
       const name = itemName(it);
+      const day = metaDateLabel(it.meta);
       const parts = [
         // 접힌 줄은 '첫–끝'. 첫 시각만 쓰면 리포트를 붙여넣은 사람이 "그 뒤로 아무 일도 없었다"로
         // 읽는다(실측: 21:32의 재진입이 17:55 한 줄에 먹혔다).
         it.lastT - it.t >= 60_000 ? `${hhmm(it.t)}–${hhmm(it.lastT)}` : hhmm(it.t),
         it.label + (it.repeat > 1 ? ` ×${it.repeat}` : ""),
-        name,
+        day ? `${name} · ${day}` : name,
         it.durMs ? fmtDur(Math.round(it.durMs / 1000)) : "",
         metaLine(it.meta),
         // 화면에선 숨기는 원본 id를 복사본에는 반드시 남긴다 — 붙여넣어 오류를 찾으려면
@@ -527,6 +521,12 @@ export function ActivityTimeline({
                         <span className="act-body" title={itemTitle(it)}>
                           {/* 머리글 = 한 일. 종류(버튼·화면 진입…)는 그 뒤의 조용한 꼬리. */}
                           <b className="act-name">{name || it.label}</b>
+                          {/* 며칠 것인가 — 이름(제목)은 길면 …로 잘리므로 날짜를 그 안에 붙이면
+                              정작 알고 싶은 값이 먼저 사라진다(2026-09-11 소유자: 진단 복사를
+                              해야만 11월 9일인 걸 알 수 있었다). 안 줄어드는 칸으로 뺀다. */}
+                          {metaDateLabel(it.meta) ? (
+                            <b className="act-day">{metaDateLabel(it.meta)}</b>
+                          ) : null}
                           {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
                           {name ? <em className="act-kindq">{it.label}</em> : null}
                           {metaLine(it.meta, NAMED_META) ? (
