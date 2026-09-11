@@ -931,3 +931,80 @@ html[data-reduce-motion] .showcase-set {
     display: none !important;
   }
 }
+
+/* R36: compact, nonmodal scenery controls; shared by developer studio and fixture. */
+.showcase-exit {left:20px;top:20px;transform:none;animation:none;background:rgba(249,248,235,.9);color:#34493d;box-shadow:0 3px 18px #152d2520;}
+.showcase-gear {right:20px;top:20px;width:auto;min-width:112px;padding:0 14px;gap:8px;border-radius:24px;background:rgba(249,248,235,.92);color:#34493d;font-size:13px;font-weight:600;}
+.showcase-set {top:72px;right:20px;width:300px;max-height:calc(100dvh - 96px);overflow:auto;padding:18px;border-radius:20px;background:rgba(249,248,238,.96);color:#35483e;box-shadow:0 8px 36px #152d252b;backdrop-filter:blur(12px);}
+.sc-set-heading {display:flex;justify-content:space-between;align-items:center;font-size:16px;}
+.sc-set-heading button,.sc-set-reset {border:0;background:transparent;color:#536b5d;font:inherit;cursor:pointer;min-height:32px;}
+.sc-set-heading button {font-size:12px;padding:4px 8px;}
+.sc-set-location {margin:4px 0 0;font-size:11px;color:#68776c;}
+.sc-set-now {margin:8px 0 16px;color:#536b5d;}
+.sc-set-name {color:#637267;}
+.sc-set-chip {min-height:32px;color:#536257;}
+.sc-set-chip.on {background:#d8e5ce;color:#294330;box-shadow:none;}
+.sc-set-datetime {display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:16px;}
+.sc-set-datetime label {display:flex;flex-direction:column;gap:6px;font-size:12px;color:#637267;min-width:0;}
+.sc-set-datetime input {width:100%;min-width:0;box-sizing:border-box;padding:8px 6px;border:1px solid #cad4c3;border-radius:8px;background:#fffdf5;color:#304735;font:inherit;font-size:13px;min-height:38px;}
+.sc-set-time-range {width:100%;accent-color:#64865d;margin:16px 0 0;height:26px;cursor:ew-resize;}
+.sc-set-hours {display:flex;justify-content:space-between;font-size:10px;color:#6f7c6e;}
+.sc-set-reset {font-size:11px;text-decoration:underline;text-underline-offset:3px;display:block;margin:8px 0 4px;}
+.sc-set-more {margin-top:10px;border-top:1px solid #dce0d0;padding-top:12px;}
+.sc-set-more summary {cursor:pointer;font-size:12px;padding:6px 0;color:#4f654f;}
+.sc-set-more[open] summary {margin-bottom:12px;}
+.showcase-set :focus-visible,.showcase-gear:focus-visible,.showcase-exit:focus-visible {outline:2px solid #50754b;outline-offset:3px;}
+.biome-map {left:20px;right:auto;bottom:20px;border-radius:18px;background:rgba(249,248,235,.93);color:#34493d;box-shadow:0 4px 24px #152d2522;}
+.biome-map[data-open="0"] {width:160px;}
+@media(max-height:600px){.showcase-set{top:62px;max-height:calc(100dvh - 74px);padding:14px;}.showcase-exit,.showcase-gear{top:12px;}}
+
+.showcase-gear {opacity:.9;}
+.sc-set-more[open]>.sc-set-row {margin-top:14px;}
+
+.showcase-set {gap:5px;}
+.sc-set-datetime {grid-template-columns:1fr 1fr;}
+.sc-set-datetime input {padding:8px 4px;font-size:12px;}
+
+/* Compact movable showcase palette: text stays opaque over soft glass. */
+.showcase-set {width:280px;padding:12px;gap:6px;border-radius:16px;background:rgb(var(--glass-panel,255 253 246) / .84);backdrop-filter:blur(16px);animation:none;}
+.sc-set-heading {gap:4px;font-size:13px;}
+.sc-set-heading .sc-set-handle {display:flex;align-items:center;gap:6px;flex:1;text-align:left;font-size:13px;font-weight:700;padding:0;cursor:grab;touch-action:none;user-select:none;}
+.sc-set-handle:active {cursor:grabbing;}
+.sc-set-handle span {color:#7a8d7d;font-size:19px;}
+.sc-set-head-actions {display:flex;gap:2px;}
+.sc-set-head-actions button {font-size:11px;padding:0 5px;}
+.showcase-set .sc-set-now {margin:0 0 2px;font-size:10px;font-weight:500;}
+.showcase-set > .sc-set-row {flex-direction:row;align-items:center;gap:8px;}
+.showcase-set > .sc-set-row .sc-set-name {font-size:11px;}
+.showcase-set > .sc-set-row .sc-set-chips {flex:1;}
+.showcase-set .sc-set-chip {min-height:28px;}
+.sc-set-date-row {display:flex;align-items:center;gap:3px;margin-top:3px;}
+.sc-set-date-row button {border:0;border-radius:7px;background:rgb(var(--glass-panel,255 253 246) / .65);color:#354c3d;min-height:30px;min-width:27px;cursor:pointer;font:inherit;}
+.sc-set-date-row .sc-set-date-trigger {display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;flex:1;}
+.sc-set-clock {font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;min-width:42px;text-align:right;}
+.showcase-set .sc-set-time-range {margin:0;height:22px;flex-shrink:0;}
+.showcase-set .sc-set-hours {font-size:9px;}
+.showcase-set .sc-set-more {margin-top:3px;padding-top:5px;}
+.showcase-set .sc-set-more summary {font-size:11px;padding:4px 0;}
+.sc-date-calendar {padding:8px;background:rgb(var(--glass-panel,255 253 246) / .94);border:1px solid #ccd8c9;border-radius:10px;}
+.sc-date-month {display:flex;align-items:center;gap:4px;margin-bottom:6px;}
+.sc-date-month select {min-width:0;flex:1;border:0;background:transparent;color:#354c3d;font:inherit;font-size:12px;height:30px;}
+.sc-date-month button,.sc-date-days button {border:0;border-radius:6px;min-height:28px;background:transparent;color:#354c3d;cursor:pointer;font:inherit;font-size:11px;}
+.sc-date-month button {width:26px;font-size:18px;}
+.sc-date-days {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;}
+.sc-date-weekday {font-size:10px;color:#778574;padding:3px 0;}
+.sc-date-days button[aria-pressed="true"] {background:#cddfc6;font-weight:700;color:#263f2b;}
+.sc-date-days button:hover,.sc-set-date-row button:hover {background:#dce7d4;}
+.sc-set-date-row button:disabled,.sc-date-month button:disabled {opacity:.35;cursor:default;}
+
+.sc-date-calendar [data-day-tone="red"], .sc-date-calendar button[data-day-tone="red"] {color:#b13d4c;}
+.sc-date-calendar [data-day-tone="blue"], .sc-date-calendar button[data-day-tone="blue"] {color:#3268aa;}
+.sc-date-coverage {margin:6px 0 0;font-size:10px;color:#697768;}
+
+.sc-date-month .sc-date-select {display:flex;align-items:center;justify-content:space-between;gap:6px;flex:1;width:auto;padding:0 7px;font-size:12px;background:rgb(var(--glass-panel,255 253 246) / .7);}
+.sc-date-select[aria-expanded="true"] {background:#dce8d3;}
+.sc-date-picker {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;max-height:190px;overflow:auto;overscroll-behavior:contain;padding:4px;border-radius:9px;background:rgb(var(--glass-panel,255 253 246) / .96);}
+.sc-date-picker button {border:0;border-radius:7px;background:transparent;color:#354c3d;font:inherit;font-size:12px;min-height:30px;cursor:pointer;}
+.sc-date-picker button:hover {background:#e3ebda;}
+.sc-date-picker button[aria-selected="true"] {background:#cddfc6;color:#263f2b;font-weight:700;}
+.sc-date-picker button:focus-visible {outline:2px solid #668963;outline-offset:-2px;background:#dce8d3;}

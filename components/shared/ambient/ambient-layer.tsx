@@ -26,7 +26,8 @@ export function AmbientLayer({
   force?: SeasonKey | null;
   worldForce?: WorldCtx["force"];
 }) {
-  const pick = useMemo(() => pickAmbient(month, force ?? null), [month, force]);
+  const effectiveMonth = worldForce?.month ?? month;
+  const pick = useMemo(() => pickAmbient(effectiveMonth, force ?? null), [effectiveMonth, force]);
   // 스크롤바 자리 폭을 CSS 변수로 — `html { scrollbar-gutter: stable }`이 예약한 띠(보통 15px)만큼
   // 캔버스가 좁아 오른쪽 모서리에 배경이 안 깔린 줄이 남았다(2026-09-04 소유자). 100%도 100vw도
   // 그 띠를 뺀 값이라, 실제로 재서 넓혀 준다.

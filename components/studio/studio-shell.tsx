@@ -986,7 +986,7 @@ export function StudioShell({
   };
   const worldForce =
     ambientWorldForce ??
-    (effectiveRole === "developer" && (devWorld.band || devWorld.weather || devWorld.biome || devWorld.skyEvent) ? devWorld : undefined);
+    (effectiveRole === "developer" && Object.values(devWorld).some(v => v !== undefined) ? devWorld : undefined);
   const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
   useEffect(() => {
     const read = () => setAmbientModeState(ambientMode());
@@ -6310,6 +6310,7 @@ export function StudioShell({
                 seasonForce: devSeason,
                 onChangeSeasonForce: changeDevSeason,
                 month: view.month,
+                year: view.year,
                 world: { force: devWorld, onChange: setDevWorld },
                 gfxPref: gfxPrefState,
                 onChangeGfxPref: changeGfxPref

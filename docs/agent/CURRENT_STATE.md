@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: seasonal meadow fixes shipped in `f1a3e959`. Original distant ground restored; new artwork improves only the near half of four meadow seasons; night seams fixed; small cloud islands dissipate independently. [Current detail/motion work](../ambient/rounds/ROUND-34-cloud-outline-strain.md) records verification and limitations. Owner accepted the current result and authorized publication. Preserve spring scale and sky, meadow-only role exposure and deep seal. Release publication is in progress.
+Current: R35/R36 meadow depth, loading and showcase controls accepted for publication on 2026-09-11. [Release record](../ambient/rounds/ROUND-36-depth-and-showcase-controls.md) covers verification and follow-ups. Preserve meadow-only role exposure and deep seal; next check is the deployed result.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -15,7 +15,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| AMB-DEPTH-P1 | Publishing approved result | Verify deployment; keep later biome surfaces separate | [Current detail/motion work](../ambient/rounds/ROUND-34-cloud-outline-strain.md) |
+| AMB-DEPTH-P1 | Release verification | Verify deployed R36 | [R36](../ambient/rounds/ROUND-36-depth-and-showcase-controls.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |

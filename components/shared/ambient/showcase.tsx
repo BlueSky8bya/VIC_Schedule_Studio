@@ -12,8 +12,9 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { ShowcaseDate, shiftShowcaseDay } from "./showcase-date";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flower2, Haze, Leaf, Power, Settings2, Snowflake, Sparkles, Waves } from "lucide-react";
-import type { SeasonKey } from "@/components/shared/ambient/registry";
+import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { type AmbientMode, ambientMode, setAmbientMode } from "@/lib/ui/motion";
 import { BIOME_ROWS, BIOMES, type BiomeKey, type Dir } from "@/components/shared/ambient/world/biomes";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
@@ -195,7 +196,7 @@ const SEEN_KEY = "vic.biomeSeen";
 const MAP_OPEN_KEY = "vic.biomeMapOpen";
 function readMapOpen(): boolean {
   try {
-    return window.localStorage.getItem(MAP_OPEN_KEY) !== "0";
+    return window.localStorage.getItem(MAP_OPEN_KEY) === "1";
   } catch {
     return true;
   }
@@ -241,7 +242,7 @@ function ShowcaseNav() {
   // 가 본 곳은 **기기에 남는다**(감상에서 나갔다 들어오면 다 처음으로 돌아가던 문제, 2026-09-04 소유자).
   const [visited, setVisited] = useState<BiomeKey[]>(() => readSeen());
   // 지도 접기 — 서버 렌더와 첫 프레임을 맞추려 기본 true로 시작하고, 마운트 뒤 저장값을 읽는다.
-  const [mapOpen, setMapOpenState] = useState(true);
+  const [mapOpen, setMapOpenState] = useState(false);
   useEffect(() => setMapOpenState(readMapOpen()), []);
   const setMapOpen = (next: boolean | ((v: boolean) => boolean)) => {
     setMapOpenState((v) => {
@@ -438,6 +439,7 @@ export type ShowcaseSettings = {
   onChangeSeasonForce: (season: SeasonKey | null) => void;
   /** 보고 있는 달 — 계절이 '자동'일 때 날씨 목록을 정한다. */
   month: number;
+  year: number;
   world: { force: WorldForce; onChange: (force: WorldForce) => void };
   gfxPref: GfxPref;
   onChangeGfxPref: (pref: GfxPref) => void;
@@ -484,14 +486,23 @@ function SetRow<T extends string>({
               aria-checked={on}
               className={`sc-set-chip${on ? " on" : ""}`}
               data-act={dataAct}
-              key={o.value}
               data-act-opt={o.value}
+              key={o.value}
               onClick={() => {
                 if (on) return;
                 hapticTick();
                 onPick(o.value);
               }}
               role="radio"
+              tabIndex={on ? 0 : -1}
+              onKeyDown={e=>{
+                const delta=e.key==='ArrowRight'||e.key==='ArrowDown'?1:e.key==='ArrowLeft'||e.key==='ArrowUp'?-1:0;
+                if(!delta)return;
+                e.preventDefault();e.stopPropagation();
+                const index=(options.indexOf(o)+delta+options.length)%options.length;
+                onPick(options[index].value);
+                const buttons=e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]');buttons?.[index]?.focus();
+              }}
               title={o.tip}
               type="button"
             >
@@ -507,15 +518,37 @@ function SetRow<T extends string>({
 function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open: boolean; onOpen: (open: boolean) => void }) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const gearRef = useRef<HTMLButtonElement | null>(null);
+  const dateRef = useRef<HTMLButtonElement | null>(null);
+  const [calendarOpen,setCalendarOpen]=useState(false);
+  const [position,setPosition]=useState<{x:number;y:number}|null>(null);
+  const drag=useRef<{x:number;y:number;left:number;top:number}|null>(null);
+  const constrain=(x:number,y:number)=>{
+    const rect=boxRef.current?.getBoundingClientRect();
+    return {x:Math.max(12,Math.min(window.innerWidth-(rect?.width ?? 280)-12,x)),y:Math.max(12,Math.min(window.innerHeight-(rect?.height ?? 280)-12,y))};
+  };
+  useEffect(()=>{
+    if(!open){drag.current=null;setCalendarOpen(false);return;}
+    const keepVisible=()=>setPosition(p=>{
+      if(!p)return p;
+      const next=constrain(p.x,p.y);
+      return next.x===p.x&&next.y===p.y?p:next;
+    });
+    const observer=new ResizeObserver(keepVisible);
+    if(boxRef.current)observer.observe(boxRef.current);
+    window.addEventListener('resize',keepVisible);
+    return ()=>{observer.disconnect();window.removeEventListener('resize',keepVisible);};
+  },[open]);
+  const closeCalendar=()=>{setCalendarOpen(false);dateRef.current?.focus();};
+
   // 지금 실제로 그려지는 값 — '자동'을 골라 뒀을 때 무엇이 나오는지가 QA의 절반이다(엔진에서 직접 읽는다).
-  const [now, setNow] = useState<{ biome: string; band: string; weather: string } | null>(null);
+  const [now, setNow] = useState<{ biome: string; band: string; weather: string; date:string; hour:number } | null>(null);
   useEffect(() => {
     if (!open) return;
     const read = () => {
       const a = window.__vicAmbient;
       if (!a) return;
       const w = a.world();
-      setNow({ biome: BIOMES[a.biome()]?.nameKo ?? "", band: BANDS.find((b) => b.value === w.band)?.label ?? w.band, weather: WEATHER_LABEL[w.weather as Weather] ?? w.weather });
+      setNow({ date:w.date, hour:w.hour, biome: BIOMES[a.biome()]?.nameKo ?? "", band: BANDS.find((b) => b.value === w.band)?.label ?? w.band, weather: WEATHER_LABEL[w.weather as Weather] ?? w.weather });
     };
     read();
     const iv = window.setInterval(read, 500);
@@ -533,8 +566,36 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
     return () => window.removeEventListener("pointerdown", onDown, true);
   }, [open, onOpen]);
 
-  const month = s.seasonForce ? SEASON_MONTH[s.seasonForce] : s.month;
   const f = s.world.force;
+  const month = s.seasonForce ? SEASON_MONTH[s.seasonForce] : f.month ?? s.month;
+  const observedDate=now?.date.split('-').map(Number);
+  const yy=f.year ?? observedDate?.[0] ?? s.year, mm=f.month ?? observedDate?.[1] ?? s.month;
+  const dd=f.day ?? observedDate?.[2] ?? 1;
+  const pad=(v:number)=>String(v).padStart(2,'0');
+  const dateValue=`${yy}-${pad(mm)}-${pad(dd)}`;
+  const minute=Math.max(0,Math.min(1439,Math.round((f.band ? now?.hour ?? 12 : f.hour ?? now?.hour ?? 12)*60)));
+  const clock=`${pad(Math.floor(minute/60))}:${pad(minute%60)}`;
+  const changeTime=(value:number)=>s.world.onChange({...f,band:undefined,hour:value/60});
+  const changeDate=(value:string)=>{
+    const [year,month,day]=value.split('-').map(Number);
+    if(!year||year<1900||year>2100||!month||!day)return;
+    s.onChangeSeasonForce(null);
+    s.world.onChange({...f,year,month,day,biome:window.__vicAmbient?.biome() ?? f.biome});
+  };
+  const shiftDay=(delta:number)=>{
+    const next=shiftShowcaseDay(dateValue,delta);
+    if(next<'1900-01-01'||next>'2100-12-31')return;
+    const [year,month,day]=next.split('-').map(Number);
+    const hour=delta>0&&minute===1439?0:delta<0&&minute===0?1439/60:minute/60;
+    s.onChangeSeasonForce(null);
+    s.world.onChange({...f,year,month,day,band:undefined,hour,biome:window.__vicAmbient?.biome() ?? f.biome});
+  };
+  const reset=()=>{
+    const today=kstToday();
+    setCalendarOpen(false);
+    s.onChangeSeasonForce(null);
+    s.world.onChange({...f,year:today.y,month:today.m,day:today.d,hour:undefined,band:undefined,biome:window.__vicAmbient?.biome() ?? f.biome});
+  };
   return (
     <>
       <button
@@ -550,11 +611,43 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
         title="배경 설정"
         type="button"
       >
-        <Settings2 aria-hidden="true" size={18} />
+        <Settings2 aria-hidden="true" size={18} /><span>환경 조절</span>
       </button>
       {open ? (
-        <div aria-label="배경 설정" className="showcase-set" ref={boxRef} role="dialog">
-          <p className="sc-set-now">{now ? `${now.biome} · ${now.band} · ${now.weather}` : "…"}</p>
+        <div aria-label="배경 설정" aria-modal="false" onKeyDown={e=>e.stopPropagation()} className="showcase-set" ref={boxRef} role="dialog"
+          style={position?{left:position.x,top:position.y,right:'auto',maxHeight:'calc(100dvh - 24px)'}:undefined}>
+          <div className="sc-set-heading">
+            <button className="sc-set-handle" type="button" aria-label="설정창 이동: 드래그 또는 방향키" onPointerDown={e=>{
+              if(e.button!==0)return;
+              const rect=boxRef.current!.getBoundingClientRect();drag.current={x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};e.currentTarget.setPointerCapture(e.pointerId);
+            }} onPointerMove={e=>{const d=drag.current;if(d)setPosition(constrain(d.left+e.clientX-d.x,d.top+e.clientY-d.y));}}
+            onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onLostPointerCapture={()=>{drag.current=null;}}
+            onKeyDown={e=>{const delta=({ArrowLeft:[-20,0],ArrowRight:[20,0],ArrowUp:[0,-20],ArrowDown:[0,20]} as Record<string,number[]>)[e.key];if(!delta)return;e.preventDefault();e.stopPropagation();const rect=boxRef.current!.getBoundingClientRect();setPosition(constrain(rect.left+delta[0],rect.top+delta[1]));}}>
+              <span aria-hidden="true">⠿</span> 환경 조절
+            </button>
+            <div className="sc-set-head-actions"><button type="button" aria-label="오늘 날짜와 현재 시각으로 복귀" onClick={reset}>현재</button><button type="button" aria-label="배경 설정 닫기" onClick={()=>{onOpen(false);gearRef.current?.focus();}}>닫기</button></div>
+          </div>
+          <p className="sc-set-now">서울 · {now ? `${now.biome} · ${now.weather}` : '한국 시간'}</p>
+          <SetRow<NonNullable<WorldForce['skyBearing']>> dataAct="showcase-bearing" label="방향" value={f.skyBearing ?? 'south'}
+            options={[{value:'east',label:'동'},{value:'west',label:'서'},{value:'south',label:'남'},{value:'north',label:'북'}]}
+            onPick={v=>s.world.onChange({...f,skyBearing:v})}/>
+          <div className="sc-set-date-row">
+            <button type="button" aria-label="전날" disabled={dateValue<='1900-01-01'} onClick={()=>shiftDay(-1)}>‹</button>
+            <button className="sc-set-date-trigger" data-act="showcase-date" ref={dateRef} type="button" aria-label="날짜 선택" aria-expanded={calendarOpen} onClick={()=>{setCalendarOpen(v=>!v);dateRef.current?.focus();}}>{dateValue} <ChevronDown size={13} aria-hidden="true"/></button>
+            <button type="button" aria-label="다음 날" disabled={dateValue>='2100-12-31'} onClick={()=>shiftDay(1)}>›</button>
+            <output className="sc-set-clock" aria-label="선택 시각">{clock}</output>
+          </div>
+          {calendarOpen?<ShowcaseDate value={dateValue} onChange={value=>{changeDate(value);closeCalendar();}} onClose={closeCalendar}/>:null}
+          <input className="sc-set-time-range" aria-label="하루 시각" aria-valuetext={`${Math.floor(minute/60)}시 ${minute%60}분`} type="range" min="0" max="1439" step="1" value={minute} onChange={e=>changeTime(Number(e.target.value))}
+            onKeyDown={e=>{
+              const next=e.key==='ArrowRight'&&minute===1439,prev=e.key==='ArrowLeft'&&minute===0;
+              if(!next&&!prev)return;
+              e.preventDefault();
+              const date=shiftShowcaseDay(dateValue,next?1:-1);if(date<'1900-01-01'||date>'2100-12-31')return;
+              const [year,month,day]=date.split('-').map(Number);s.onChangeSeasonForce(null);s.world.onChange({...f,year,month,day,band:undefined,hour:next?0:1439/60,biome:window.__vicAmbient?.biome() ?? f.biome});
+            }}/>
+          <div className="sc-set-hours" aria-hidden="true"><span>00시</span><span>06시</span><span>12시</span><span>18시</span><span>24시</span></div>
+          <details className="sc-set-more"><summary>계절 · 날씨 · 효과</summary>
           <SetRow<SeasonKey | typeof AUTO>
             dataAct="showcase-season"
             label="계절"
@@ -571,7 +664,7 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
           <SetRow<DayBand | typeof AUTO>
             dataAct="showcase-band"
             label="시간대"
-            onPick={(v) => s.world.onChange({ ...f, band: v === AUTO ? undefined : v })}
+            onPick={(v) => s.world.onChange({ ...f, band: v === AUTO ? undefined : v, hour: undefined })}
             options={[{ value: AUTO, label: "자동", tip: "지금 시각" }, ...BANDS]}
             value={f.band ?? AUTO}
           />
@@ -609,6 +702,7 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
             ]}
             value={s.gfxPref === "off" ? "auto" : s.gfxPref}
           />
+          </details>
         </div>
       ) : null}
     </>
@@ -623,11 +717,18 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
     if (!on) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if(document.querySelector('.sc-date-picker'))return;
+        if(document.querySelector('.sc-date-calendar')){e.stopPropagation();document.querySelector<HTMLButtonElement>('[data-act="showcase-date"]')?.click();return;}
         e.stopPropagation();
         // 설정 판이 열려 있으면 Esc는 판만 닫는다 — 설정을 만지다 실수로 감상까지 나가지 않게.
-        if (setOpen) setSetOpen(false);
+        if (setOpen) {setSetOpen(false);document.querySelector<HTMLButtonElement>('.showcase-gear')?.focus();}
         else exitShowcase();
         return;
+      }
+      const target=e.target as HTMLElement;
+      if(target?.closest?.('.showcase-set'))return;
+      if(target?.closest?.('input,select,textarea,button,[contenteditable="true"]')){
+        e.stopPropagation();return;
       }
       // 방향키·WASD = 바이옴 이동(PLAN-004). 페이지 스크롤은 막는다.
       const dir = KEY_DIR[e.key];

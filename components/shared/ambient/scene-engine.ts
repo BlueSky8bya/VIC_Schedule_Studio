@@ -41,6 +41,8 @@ export type WorldCtx = {
    *  seed = 장면 시드(소품 자리·첫 스폰. 없으면 로드마다 다르다) · freeze = rAF 루프를 돌리지 않고 `__vicAmbient.advance()`로만
    *  시간을 흐르게 한다 · load = 여력 고정(0~1) · pointer = 포인터 고정(없으면 화면 밖) · pin = 감상 속성이 없어도 시작 바이옴에 머문다. */
   force?: {
+    year?: number;
+    month?: number;
     hour?: number;
     band?: DayBand;
     weather?: Weather;
@@ -156,7 +158,7 @@ type AmbientDebug = {
   forceLoad: (v: number | null) => void;
   hot: Frame["hot"];
   /** 세계 상태(띠·날씨·날·흔적 수) */
-  world: () => { band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number> };
+  world: () => { skyBearing: string; band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number> };
   /** 검증용 강제(시각·날씨·날) — null이면 실제로 복귀 */
   forceWorld: (f: WorldCtx["force"] | null) => void;
   /** 바이옴 이동(감상 모드에서만 초원 밖으로) — 방향 또는 키. 세계 장면이 아니면 false. */
@@ -293,8 +295,10 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   let lightInit = false;
   const refreshWorld = () => {
     const today = kstToday();
-    const d = worldForce?.day ?? viewDay(world.year, world.month, today);
-    frame.date = { y: world.year, m: world.month, d };
+    const y = Math.max(1900,Math.min(2100,Math.trunc(worldForce?.year ?? world.year)));
+    const m = Math.max(1,Math.min(12,Math.trunc(worldForce?.month ?? world.month)));
+    const d = Math.max(1,Math.min(new Date(Date.UTC(y,m,0)).getUTCDate(),Math.trunc(worldForce?.day ?? viewDay(y,m,today))));
+    frame.date = { y, m, d };
     frame.skyEvent = worldForce?.skyEvent ?? null;
     frame.skyBearing = worldForce?.skyBearing ?? 'south';
     frame.time = worldForce?.band
@@ -303,7 +307,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const hour = frame.time.hour;
     frame.weather = worldForce?.weather
       ? { now: worldForce.weather, prev: worldForce.weather, segment: 0, until: 24 }
-      : weatherAt(world.slug, world.year, world.month, d, hour);
+      : weatherAt(world.slug, y, m, d, hour);
     // 조명은 **두 거점을 섞은 연속 값**이다(2026-09-07, PLAN-006). 위상 표류는 이미 연속이라 그대로 반영하고,
     // 3초 전이는 **불연속 변화**(날씨가 바뀌거나 구간이 넘어갈 때)에만 건다 — 매 갱신마다 전이를 새로 걸면
     // lightStable이 영원히 false가 되어 소품 그림자를 다시 굽지 못한다.
@@ -321,10 +325,10 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     }
     lightInit = true;
     // 흔적은 **달만** 본다(2026-09-05 연대기 철거) — 날이 바뀌어도 다시 뽑지 않는다.
-    const key = `${world.slug}:${world.year}-${world.month}`;
+    const key = `${world.slug}:${y}-${m}`;
     if (key !== traceKey) {
       traceKey = key;
-      frame.traces = monthTraces(world.slug, world.year, world.month);
+      frame.traces = monthTraces(world.slug, y, m);
     }
   };
   refreshWorld();
@@ -377,6 +381,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     },
     hot: null,
     world: () => ({
+      skyBearing: frame.skyBearing ?? "south",
       band: frame.time.band,
       // 연속 위상(PLAN-006) — 지금 섞고 있는 두 거점과 비율, 그리고 실제 해의 고도.
       phase: `${frame.time.from}→${frame.time.to} ${Math.round(frame.time.mix * 100)}%`,
@@ -427,7 +432,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     },
     pending: () => pendingLoads(),
     ready: (timeoutMs = 10000) => ready(timeoutMs),
-    weatherOptions: () => weatherOptionsForMonth(world.month),
+    weatherOptions: () => weatherOptionsForMonth(frame.date.m),
     light: () => frame.light,
     particles: () => scene.composed ? (scene.debug?.().weatherParticles ?? {}) as Record<string, number> : particles.debug()
   };

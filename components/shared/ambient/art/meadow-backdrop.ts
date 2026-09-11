@@ -27,6 +27,7 @@ export class MeadowBackdrop {
   private nearGround?: HTMLCanvasElement;
   private detailImage?: HTMLImageElement;
   private disposed = false;
+  private loading = true;
   version = 0;
   bakes = 0;
   private geometry: typeof geometry;
@@ -61,24 +62,33 @@ export class MeadowBackdrop {
           }
           this.masked[layer]={c,x,y};
         });
-        this.version++;
-        window.dispatchEvent(new Event("vic:ambient-art-ready"));
-        // Optional artwork must never hold the original three layers hostage.
-        void detailReady.then(near => {
+        // Commit original and near-detail together: no old texture flashes first.
+        return detailReady.then(near => {
           if (this.disposed) return;
           if (near?.naturalWidth === 1536 && near.naturalHeight === 1024) {
             this.nearGround = composeNearGround(images[1], near);
-            this.version++;
-            window.dispatchEvent(new Event("vic:ambient-art-ready"));
           }
           detail.removeAttribute("src"); this.detailImage = undefined;
         });
       }).catch(() => {
         detail.removeAttribute("src"); this.detailImage = undefined;
         // Keep fallback if any original layer fails.
-      }).finally(endLoad);
+      }).finally(() => {
+        if (!this.disposed) {
+          this.loading = false; this.version++;
+          window.dispatchEvent(new Event("vic:ambient-art-ready"));
+        }
+        endLoad();
+      });
   }
-  get ready() { return this.version > 0; }
+  get pending() { return this.loading; }
+  get ready() { return !this.loading && !!this.images.ground && !!this.masked.far && !!this.masked.frame; }
+  drawPending(g: CanvasRenderingContext2D, f: Frame) {
+    if (!this.pending) return false;
+    g.fillStyle = f.time.band === 'night' ? '#26333d' : '#b3c7ba';
+    g.fillRect(0, 0, f.w, f.h);
+    return true;
+  }
   drawGround(g: CanvasRenderingContext2D, w: number, h: number) {
     if (!this.ready) return;
     const c = meadowLayerGroundCrop(w, h, horizonY(h));
@@ -131,10 +141,14 @@ export class MeadowBackdrop {
         const right = Math.round((left + (i + 1) * tw) * scale) / scale;
         // Quantize both boundaries and overlap one backing pixel; fractional
         // widths otherwise expose a vertical seam on portrait displays.
-        paint(x, 80 - base * k, k, undefined, (right - x + 1 / scale) / 1536);
+        const tileWidth = right - x + 1 / scale;
+        // Use the whole textured ridge for overlap; stretching a single bottom
+        // row produces vertical streaks. Lowest winter crest must remain above H.
+        const ridgeHeightScale = Math.max(.8, k + .35);
+        paint(x, 94 - base * ridgeHeightScale, ridgeHeightScale, undefined, tileWidth / 1536);
       }
       // Blend the ridge's bottom into M instead of exposing the source cut line.
-      const fade = g.createLinearGradient(0, 64, 0, 80);
+      const fade = g.createLinearGradient(0, 78, 0, 94);
       fade.addColorStop(0, "#fff"); fade.addColorStop(1, "rgba(255,255,255,0)");
       g.globalCompositeOperation = "destination-in";
       g.fillStyle = fade; g.fillRect(0, 0, width, height);
@@ -177,7 +191,7 @@ export class MeadowBackdrop {
     return true;
   }
   drawFar(g: CanvasRenderingContext2D, f: Frame) { return this.draw("far", g, f); }
-  drawForeground(g: CanvasRenderingContext2D, f: Frame) { return this.draw("frame", g, f); }
+  drawForeground(g: CanvasRenderingContext2D, f: Frame) { return this.pending || this.draw("frame", g, f); }
   debug() { return { season: this.season, ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), nearDetailBytes: this.nearGround ? this.nearGround.width * this.nearGround.height * 4 : 0, maskedBytes:Object.values(this.masked).reduce((n,v)=>n+v.c.width*v.c.height*4,0), sourcePixels: 3 * 1536 * 1024 }; }
   dispose() { this.disposed = true; this.detailImage?.removeAttribute("src");this.detailImage=undefined; if(this.nearGround)this.nearGround.width=this.nearGround.height=1;this.nearGround=undefined; this.images = {}; for(const v of Object.values(this.masked))v.c.width=v.c.height=1;this.masked={}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
 }

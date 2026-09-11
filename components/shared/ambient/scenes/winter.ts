@@ -1,3 +1,6 @@
+import { drawMeadowFacing } from "../world/meadow-softness";
+import { MeadowDrift } from "../world/meadow-drift";
+import { meadowActivityTop, meadowActivityAlpha, meadowSize, meadowSpeed } from "../world/meadow-activity";
 import { anchorToSurface } from "../world/depth-render";
 import { MeadowBackdrop } from "../art/meadow-backdrop";
 import { drawDepthGround, withDepthLayer } from "../world/depth-render";
@@ -18,7 +21,7 @@ import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 빈도·눈가루·고리·이벤트를 점진 조절(툭 사라지지 않게 — 눈송이는 제 수명을 마치고 빠진다).
 
 import type { Frame, Scene } from "../scene-engine";
-import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
+import { ASSET, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import type { Weather } from "../world/weather";
@@ -74,6 +77,7 @@ const STRIDE_K = 0.6;
 
 export function createWinter(seed: number): Scene {
   const backdrop = new MeadowBackdrop("winter");
+  const drift = new MeadowDrift("winter", seed);
   let backdropVersion = -1;
   const rand = rng(seed);
   let ground: HTMLCanvasElement | null = null;
@@ -90,7 +94,7 @@ export function createWinter(seed: number): Scene {
   let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(흰 언덕·나목 줄)
   // 땅의 위 끝(지평선) — 자국·손님·토끼·눈송이 착지는 이 아래에서만(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 발자국이 찍힌다").
-  const gy = () => horizonY(h);
+  const gy = () => meadowActivityTop(h);
   const groundY = (r: number) => gy() + r * (h - gy());
   const sprites = new Map<PrintKind, HTMLCanvasElement>();
   let rabbitSpr: Sprite | null = null;
@@ -239,7 +243,7 @@ export function createWinter(seed: number): Scene {
     const spr = sprites.get(p.kind);
     if (!spr) return;
     const s = SPR[p.kind];
-    const k = p.k * depthScale(p.y, gh || 1); // 3/4 시점: 먼 자국은 작고, 바닥에 찍힌 것이라 세로로 눌린다
+    const k = p.k * meadowSize(p.y, gh || 1); // 3/4 시점: 먼 자국은 작고, 바닥에 찍힌 것이라 세로로 눌린다
     g.save();
     anchorToSurface(g,p.y);
     g.translate(p.x, p.y);
@@ -334,6 +338,7 @@ export function createWinter(seed: number): Scene {
   }
 
   function bakeGround(dpr: number) {
+    if (backdrop.pending) return;
     backdropVersion = backdrop.version;
     bakeSprites();
     const g0 = rng((seed * 7 + 13) >>> 0);
@@ -498,7 +503,7 @@ export function createWinter(seed: number): Scene {
   }
 
   const areaK = () => clamp((w * h) / 1_440_000, 0.6, 1.6);
-  const flakeTarget = (f: Frame) => Math.round(lerp(8, 70, f.load) * areaK() * WEATHER_FLAKES[f.weather.now]);
+  const flakeTarget = (f: Frame) => backdrop.ready ? 0 : Math.round(lerp(8, 70, f.load) * areaK() * WEATHER_FLAKES[f.weather.now]);
   function newFlake(): Flake {
     return { x: rand() * w, y: groundY(rand()), life: 0, dur: 1.8 + rand() * 1.6, wait: rand() * 3, r: 2.2 + rand() * 2, rung: false };
   }
@@ -612,7 +617,7 @@ export function createWinter(seed: number): Scene {
     const exits: [number, number][] = [
       [-90, r.y],
       [w + 90, r.y],
-      [r.x, -90],
+
       [r.x, h + 90]
     ];
     exits.sort((a, b) => Math.hypot(a[0] - r.x, a[1] - r.y) - Math.hypot(b[0] - r.x, b[1] - r.y));
@@ -653,10 +658,11 @@ export function createWinter(seed: number): Scene {
       }
     },
     step(f) {
+      if (!backdrop.pending) drift.step(f);
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03: 아침≈점심의 원인 = 점심에 구운 그림자).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
-      if (ground && (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (!ground || (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       // ① 손님 — 여력 0.2부터. 빈도는 여력에 비례(여유로우면 6~14초, 빠듯하면 28~48초 간격).
       if (!walker.active && t > nextWalker && load >= 0.2) startWalker(t, load);
@@ -751,8 +757,10 @@ export function createWinter(seed: number): Scene {
           const dur = fleeing ? 0.22 : 0.38;
           const dist = fleeing ? r.dist : 46;
           const pgs = Math.min(1, age / dur);
-          r.x = r.sx + Math.cos(r.dir) * dist * pgs;
-          r.y = r.sy + Math.sin(r.dir) * dist * pgs;
+          const travel = dist * Math.min(dt, Math.max(0, dur - (age - dt))) / dur * meadowSpeed(r.y,h);
+          r.x += Math.cos(r.dir) * travel;
+          r.y = Math.max(gy() + 28, r.y + Math.sin(r.dir) * travel);
+          if (r.y <= gy() + 28 && Math.sin(r.dir) < 0) r.dir = Math.abs(r.dir);
           if (pgs >= 1) {
             rabbitPrints(r.x, r.y, r.dir, t, 1.1);
             puff(r.x, r.y, fleeing ? 4 : 3, 50);
@@ -911,6 +919,7 @@ export function createWinter(seed: number): Scene {
       }
     },
     draw(g, f) {
+      if (backdrop.drawPending(g, f)) return;
       if (ground) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
@@ -933,7 +942,7 @@ export function createWinter(seed: number): Scene {
       if (!backdrop.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       const t = f.t;
       for (const k of twinkles) {
-        const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph));
+        const a = (0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph))) * meadowActivityAlpha(k.y - k.r, f.h);
         g.fillStyle = `rgb(255 255 255 / ${a})`;
         g.beginPath();
         g.arc(k.x, k.y, k.r, 0, TAU);
@@ -944,7 +953,7 @@ export function createWinter(seed: number): Scene {
       }
       for (const p of prints) {
         const age = t - p.born;
-        const a = (age > 70 ? Math.max(0, 1 - (age - 70) / 10) : 1) * (1 - (p.erase ?? 0));
+        const a = (age > 70 ? Math.max(0, 1 - (age - 70) / 10) : 1) * (1 - (p.erase ?? 0)) * meadowActivityAlpha(p.y - 16, f.h);
         if (a <= 0.01) continue;
         drawPrint(g, p, 0.62 * a);
       }
@@ -1007,7 +1016,10 @@ export function createWinter(seed: number): Scene {
         const digging = r.phase === "sit" && t - r.digT < 0.35;
         const dig = digging ? Math.sin((t - r.digT) * 36) * 0.06 : 0; // 파헤치는 동안 몸이 잘게 까딱
         if (digging) k *= 1 + Math.abs(dig) * 0.5;
-        k *= depthScale(r.y, f.h); // 3/4 시점: 먼 토끼는 작다
+        const distanceSize=meadowSize(r.y,f.h);
+        k *= distanceSize;
+        up *= distanceSize;
+        alpha *= meadowActivityAlpha(r.y,f.h); // 3/4 시점: 먼 토끼는 작다
         g.save();anchorToSurface(g,r.y);
         if (shadow && alpha > 0) {
           g.save();
@@ -1029,7 +1041,7 @@ export function createWinter(seed: number): Scene {
         // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
         g.save();
         g.globalAlpha *= depthFade(r.y, f.h);
-        drawFacing(g, rabbitSpr, r.x + Math.cos(r.dir) * dig * 30, r.y - 10 * up + Math.sin(r.dir) * dig * 30, r.dir, k * (1 + 0.22 * up), ear + look * 0.4 + twist);
+        drawMeadowFacing(g, rabbitSpr, r.x + Math.cos(r.dir) * dig * 30, r.y - 10 * up + Math.sin(r.dir) * dig * 30, r.dir, k * (1 + 0.22 * up), ear + look * 0.4 + twist,r.y,f.h);
         g.restore();
         g.restore();
         g.restore();
@@ -1058,7 +1070,7 @@ export function createWinter(seed: number): Scene {
       // 눈가루 — 흰 알갱이가 속도 방향으로 늘어져(모션 블러) 튀고, 느려지면 제 모양으로 가라앉는다.
       if (speck) {
         for (const q of dust) {
-          const a = Math.max(0, q.life);
+          const a = Math.max(0, q.life) * meadowActivityAlpha(q.y - q.r, f.h);
           const sp = Math.hypot(q.vx, q.vy);
           // 최대 5배까지 늘이던 모션 블러 → 1.35배. 길게 늘어난 흰 알갱이가 "물방울 튀는 줄기"로
           // 읽혔다(2026-09-05 소유자). 눈가루는 거의 동그란 채로 흐릿하게 떠다닌다.
@@ -1073,7 +1085,10 @@ export function createWinter(seed: number): Scene {
         }
       }
     },
+    splitHaze: () => true,
+    drawAbove(g, f) { if (!backdrop.pending) drift.draw(g, f); },
     pointerDown(f, onBackground) {
+      if (drift.pointerDown(f, onBackground)) return true;
       if (f.load < 0.15) return false;
       // 토끼를 누르면 놀라 뛰어나간다(어디서든).
       if (rabbit && rabbit.phase !== "flee" && Math.hypot(rabbit.x - f.p.x, rabbit.y - f.p.y) < 34) {
@@ -1082,18 +1097,14 @@ export function createWinter(seed: number): Scene {
       }
       if (!onBackground) return false;
       if (f.p.y < gy()) return false; // 지평선 띠(먼 언덕)엔 발자국이 안 찍힌다
-      const a = rand() * TAU;
-      const px = Math.cos(a + Math.PI / 2) * 10;
-      const py = Math.sin(a + Math.PI / 2) * 10;
-      prints.push({ x: f.p.x - px, y: f.p.y - py, a: a + Math.PI / 2, kind: "sole", left: true, k: 1.4, born: f.t });
-      prints.push({ x: f.p.x + px + Math.cos(a) * 18, y: f.p.y + py + Math.sin(a) * 18, a: a + Math.PI / 2, kind: "sole", left: false, k: 1.4, born: f.t + 0.15 });
-      puff(f.p.x, f.p.y, f.load >= 0.4 ? 5 : 3, 60);
-      return true;
+      return false;
     },
+    pointerUp() { drift.pointerUp(); },
     drawForeground(g, f) { return backdrop.drawForeground(g, f); },
-    dispose() { backdrop.dispose(); },
+    dispose() { drift.dispose(); backdrop.dispose(); },
     debug() {
       return {
+        drift: drift.debug(),
         backdrop: backdrop.debug(),
         flakes: flakes.length,
         prints: prints.length,

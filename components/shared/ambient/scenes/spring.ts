@@ -1,3 +1,6 @@
+import { drawMeadowImage } from "../world/meadow-softness";
+import { MeadowDrift } from "../world/meadow-drift";
+import { meadowActivityTop, meadowActivityAlpha, meadowSize, meadowSpeed } from "../world/meadow-activity";
 import { anchorToSurface } from "../world/depth-render";
 import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 봄 — "풀밭을 위에서 내려다본다". 바탕(연둣빛 필름 + 클로버·작은 데이지·꽃잎 몇)은 한 번 굽고, **풀포기 층은 따로 구워**
@@ -156,6 +159,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   const rand = rng(seed);
   const summer = variant === "summer";
   const backdrop = new MeadowBackdrop(summer ? "summer" : "spring");
+  const drift = new MeadowDrift(summer ? "summer" : "spring", seed);
   let backdropVersion = -1;
   let ground: HTMLCanvasElement | null = null;
   let blades: HTMLCanvasElement | null = null;
@@ -172,7 +176,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠
   // 땅의 위 끝(지평선) — 꽃·풀·벌레·나비·민들레는 이 아래에서만(지평선 띠는 먼 곳).
-  const gy = () => horizonY(h);
+  const gy = () => meadowActivityTop(h);
   const groundY = (r: number) => gy() + r * (h - gy());
   /** 작은 식물의 추가 원근 테이퍼 — 0.3(지평선) → 1.0(발치). depthScale(0.6~1.0)만으로는 지평선 근처 풀포기가
    *  근경의 0.75배로 남아 "키 3~5m 짜리 풀"이 됐다(검토 라운드2 현실성 #9b). */
@@ -208,7 +212,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   let w = 0;
   let h = 0;
   let fleeCount = 0;
-  let pressCount = 0;
+  const pressCount = 0;
   // 행동 카운터(검증용) — 나선 추격·일광욕·죽은 척·꿀벌 방문·손찌검.
   let chases = 0;
   let basks = 0;
@@ -217,25 +221,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   let swats = 0;
   let nextChase = 0;
 
-  function press(x: number, y: number, load: number) {
-    const n = load >= 0.5 ? 18 : 9;
-    const bl: Press["blades"] = [];
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * TAU + (rand() - 0.5) * 0.4;
-      bl.push({ a, r0: 8 + rand() * 20, len: 9 + rand() * 9, w: 1.2 + rand() * 1, col: rand() < 0.5 ? "112 168 104" : "140 190 118" });
-    }
-    presses.push({ x, y, life: 1, r: (18 + rand() * 8) * depthScale(y, h), blades: bl });
-    pressCount++;
-    const pollen = load >= 0.5 ? 7 : 3;
-    for (let i = 0; i < pollen; i++) {
-      const b = rand() * TAU;
-      const sp = 40 + rand() * 90;
-      sparks.push({ x, y, vx: Math.cos(b) * sp, vy: Math.sin(b) * sp - 30, life: 1, r: 1.4 + rand() * 1.6, col: "#fff3b0", a: 0, va: 0, star: false });
-    }
-  }
-
   // 바탕은 크기별로 같은 그림(리사이즈 때 다시 구워도 배치가 안 바뀐다 — 별도 결정적 난수).
   function bakeGround(dpr: number) {
+    if (backdrop.pending) return;
     const g0 = rng((seed * 7 + 13 + (summer ? 977 : 0)) >>> 0);
     resetPropField();
     const { c, g } = makeCanvas(w * dpr, h * dpr);
@@ -712,7 +700,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   }
 
   // 날개 한 쪽(오른쪽 기준; 왼쪽은 scale(-1,1)). 몸 축 = -y(앞). 단위는 k=1일 때 px.
-  function wing(g: CanvasRenderingContext2D, c: (typeof WINGS)[number]) {
+  function paintWing(g: CanvasRenderingContext2D, c: (typeof WINGS)[number]) {
+    const alpha = g.globalAlpha;
     g.beginPath();
     g.moveTo(2, -3);
     g.bezierCurveTo(8, -20, 22, -30, 31, -25);
@@ -737,7 +726,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     g.fill();
     g.stroke();
     g.strokeStyle = c.rim;
-    g.globalAlpha = 0.35;
+    g.globalAlpha = alpha * 0.35;
     g.lineWidth = 0.8;
     g.beginPath();
     for (const [x, y] of [[30, -23], [33, -12], [26, -1], [21, 14], [11, 22]]) {
@@ -745,7 +734,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       g.lineTo(x, y);
     }
     g.stroke();
-    g.globalAlpha = 1;
+    g.globalAlpha = alpha;
     g.fillStyle = c.eye;
     g.beginPath();
     g.arc(20, -13, 4.2, 0, TAU);
@@ -754,7 +743,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     g.beginPath();
     g.arc(20, -13, 2, 0, TAU);
     g.fill();
-    g.globalAlpha = 0.85;
+    g.globalAlpha = alpha * 0.85;
     g.beginPath();
     g.arc(29, -20, 1.7, 0, TAU);
     g.arc(31, -13, 1.3, 0, TAU);
@@ -762,7 +751,14 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     g.beginPath();
     g.arc(15, 14, 1.8, 0, TAU);
     g.fill();
-    g.globalAlpha = 1;
+    g.globalAlpha = alpha;
+  }
+
+  const wingCache = new Map<(typeof WINGS)[number], HTMLCanvasElement>();
+  function wing(g: CanvasRenderingContext2D, c: (typeof WINGS)[number], y:number, h:number) {
+    let canvas=wingCache.get(c);
+    if(!canvas){canvas=document.createElement('canvas');canvas.width=canvas.height=84;const ctx=canvas.getContext('2d')!;ctx.translate(42,42);paintWing(ctx,c);wingCache.set(c,canvas);}
+    drawMeadowImage(g,canvas,-42,-42,84,84,y,h);
   }
 
   return {
@@ -777,11 +773,12 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
     },
     step(f) {
+      if (!backdrop.pending) drift.step(f);
       const { dt, t, p, load } = f;
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03: 아침≈점심의 원인 = 점심에 구운 그림자).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
-      if (ground && (backdropVersion !== (backdrop?.version ?? 0) || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (!ground || (backdropVersion !== (backdrop?.version ?? 0) || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       // 반딧불(여름 저녁·밤) — 수는 띠·여력으로, 느린 표류 + 가장자리 반사.
       {
         const fw = fireflyTarget(f);
@@ -939,7 +936,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         const dist = Math.hypot(b.tx - b.x, b.ty - b.y);
         let sp = b.spd * (fleeing ? 2.6 : 1) * (b.loop > 0 ? 0.6 : 1) * (1 + 0.18 * Math.sin(t * 1.7 + b.w1));
         if (b.state === "land") sp = Math.max(18, Math.min(sp, dist * 1.6));
-        const mk = moveScale(b.y, h);
+        const mk = meadowSpeed(b.y, h);
         b.x += Math.cos(b.hd) * sp * dt * mk;
         b.y += Math.sin(b.hd) * sp * dt * mk;
         b.ph += (fleeing ? 44 : b.state === "land" ? 26 : 20) * dt;
@@ -1025,7 +1022,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
             continue;
           }
           if (b.state === "crawl") {
-            const ms = moveScale(b.y, h);
+            const ms = meadowSpeed(b.y, h);
             b.x += Math.cos(b.hd) * 15 * dt * ms;
             b.y += Math.sin(b.hd) * 15 * dt * ms * GROUND_SQUASH;
             b.ph += dt * 9;
@@ -1060,8 +1057,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         if (b.state === "off") {
           // 날아오름 — 사라지지 않고 날개를 편 채 화면 밖까지 날아간다(2026-09-04 사용자: "순간이동 금지").
           b.off = Math.min(1, b.off + dt / 0.5);
-          b.x += Math.cos(b.hd) * 260 * dt * moveScale(b.y, h);
-          b.y += Math.sin(b.hd) * 260 * dt * moveScale(b.y, h);
+          b.x += Math.cos(b.hd) * 260 * dt * meadowSpeed(b.y, h);
+          b.y += Math.sin(b.hd) * 260 * dt * meadowSpeed(b.y, h);
           b.ph += 40 * dt;
           if (b.x < -30 || b.x > w + 30 || b.y < -30 || b.y > h + 30) {
             bugsLeftScreen++;
@@ -1123,15 +1120,15 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         if (b.state !== "pause") {
           const sp = b.spd * (b.state === "flee" ? 2.6 : 1);
           b.hd += (rand() - 0.5) * 1.4 * dt;
-          b.x += Math.cos(b.hd) * sp * dt * moveScale(b.y, h);
-          b.y += Math.sin(b.hd) * sp * dt * moveScale(b.y, h);
+          b.x += Math.cos(b.hd) * sp * dt * meadowSpeed(b.y, h);
+          b.y += Math.sin(b.hd) * sp * dt * meadowSpeed(b.y, h);
           b.ph += sp * 0.5 * dt;
           const m = 10;
           if (b.x < -m || b.x > w + m || b.y < gy() - m || b.y > h + m) b.hd = Math.atan2(groundY(0.5) - b.y, w / 2 - b.x) + (rand() - 0.5) * 0.4;
         }
       }
       // 꽃잎 바람 — 여력 0.55부터, 20~45초 간격. 부는 동안 풀이 같이 흔들린다(wind → 1).
-      if (!summer && load >= 0.55 && t > nextBreeze) {
+      if (!summer && !backdrop.ready && load >= 0.55 && t > nextBreeze) {
         breeze(t, load, f.windDir);
         nextBreeze = t + (20 + rand() * 25) * (f.weather.now === "wind" ? 0.4 : 1); // 바람 부는 날은 꽃잎 바람이 잦다
       }
@@ -1256,8 +1253,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           } else {
             b.hd += clamp(angleDiff(Math.atan2(dy, dx), b.hd), -6 * dt, 6 * dt) + Math.sin(t * 13 + b.ph) * 1.6 * dt;
             const sp = b.state === "flee" ? 260 : b.state === "home" ? 150 : 110;
-            b.x += Math.cos(b.hd) * sp * dt * moveScale(b.y, h);
-            b.y += Math.sin(b.hd) * sp * dt * moveScale(b.y, h);
+            b.x += Math.cos(b.hd) * sp * dt * meadowSpeed(b.y, h);
+            b.y += Math.sin(b.hd) * sp * dt * meadowSpeed(b.y, h);
           }
         }
       }
@@ -1277,6 +1274,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
     },
     draw(g, f) {
+      if (backdrop.drawPending(g, f)) return;
       const { t, load } = f;
       if (ground) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
@@ -1397,9 +1395,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       // 얼마나 떴는지가 보인다(그림자가 같이 뜨면 "미끄러지는 스티커"가 된다).
       if (hopSpr) {
         for (const b of hoppers) {
-          const sc = depthScale(b.y, f.h) * b.k * (b.state === "crouch" ? 0.93 : 1);
+          const sc = meadowSize(b.y, f.h) * b.k * (b.state === "crouch" ? 0.93 : 1);
           g.save();
-          g.globalAlpha *= depthFade(b.y, f.h);
+          g.globalAlpha *= depthFade(b.y, f.h) * meadowActivityAlpha(b.y - 20, f.h);
           if (shadow) drawCreatureShadow(g, shadow, b.x, b.y, 22 * sc, 16 * sc, 0.26 * clamp(1 - b.hop / 70, 0.25, 1));
           drawFacing(g, hopSpr, b.x, b.y - b.hop, b.hd, sc, b.state === "air" ? -0.35 * Math.cos(clamp((t - b.t0) / b.dur, 0, 1) * Math.PI) : Math.sin(b.ph) * 0.05);
           g.restore();
@@ -1412,7 +1410,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           if (b.x < -100) continue;
           // 죽은 척은 0.25s에 걸쳐 움츠린다(×0.88) — 걷는 흔들림 없음.
           const tuck = dead ? 0.88 + 0.12 * Math.max(0, 1 - (t - b.deadAt) / 0.25) : 1;
-          const k = b.k * (flying ? 1 + b.off * 0.35 : tuck) * depthScale(b.y, f.h);
+          const k = b.k * (flying ? 1 + b.off * 0.35 : tuck) * meadowSize(b.y, f.h);
           g.save();
           g.globalAlpha = 1;
           if (shadow && !flying) {
@@ -1439,7 +1437,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           const wob = b.state === "pause" || dead || flying ? 0 : Math.sin(b.ph) * 0.12;
           // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
           g.save();
-          g.globalAlpha *= depthFade(b.y, f.h);
+          g.globalAlpha *= depthFade(b.y, f.h) * meadowActivityAlpha(b.y - 20, f.h);
           drawSprite(g, bugSpr, b.x, b.y, b.hd + Math.PI / 2 + wob, k);
           g.restore();
           g.restore();
@@ -1510,8 +1508,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         const bob = feeding ? Math.sin(t * 6 + b.ph) * 0.5 : Math.sin(t * 40 + b.ph) * 0.8 * buzz;
         // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
         g.save();
-        g.globalAlpha *= depthFade(b.y, f.h);
-        drawFacing(g, beeSpr, b.x, b.y + bob, b.hd, depthScale(b.y, f.h), Math.sin(t * 13 + b.ph) * 0.08 * buzz);
+        g.globalAlpha *= depthFade(b.y, f.h) * meadowActivityAlpha(b.y - 20, f.h);
+        drawFacing(g, beeSpr, b.x, b.y + bob, b.hd, meadowSize(b.y, f.h), Math.sin(t * 13 + b.ph) * 0.08 * buzz);
         g.restore();
       }
       for (const b of flies) {
@@ -1520,14 +1518,14 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         const raw = Math.abs(Math.cos(b.ph));
         // 일광욕은 활짝 편 채 0.9~1.0 숨쉬기, 데이지 위는 천천히 여닫기, 날 때는 팔랑.
         const flap = b.state === "bask" ? 0.95 + 0.05 * Math.sin(b.ph) : b.state === "sit" ? 0.35 + 0.65 * raw : 0.14 + 0.86 * Math.pow(raw, 0.8);
-        const size = b.k * (1 + 0.08 * hgt) * depthScale(b.y, f.h);
+        const size = b.k * (1 + 0.08 * hgt) * meadowSize(b.y, f.h);
         if (shadow) {
           g.save();
           g.translate(b.x + 5 + 10 * hgt, b.y + 7 + 13 * hgt);
           g.scale(1, GROUND_SQUASH);
           g.rotate(b.hd + Math.PI / 2);
           g.scale(flap * size * 1.35 * (1 + 0.25 * hgt), size * 1.2 * (1 + 0.25 * hgt));
-          g.globalAlpha = 0.32 * (1 - 0.5 * hgt);
+          g.globalAlpha = 0.32 * (1 - 0.5 * hgt) * meadowActivityAlpha(b.y - 20, f.h);
           g.drawImage(shadow, -32, -22);
           g.restore();
         }
@@ -1535,16 +1533,17 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         g.translate(b.x, b.y);
         g.rotate(b.hd + Math.PI / 2);
         g.scale(size, size);
+        g.globalAlpha *= meadowActivityAlpha(b.y - 20, f.h);
         const c = WINGS[b.col];
         const left = flap * (1 - b.bank * 0.45);
         const right = flap * (1 + b.bank * 0.45);
         g.save();
         g.scale(-Math.max(0.1, left), 1);
-        wing(g, c);
+        wing(g, c, b.y, f.h);
         g.restore();
         g.save();
         g.scale(Math.max(0.1, right), 1);
-        wing(g, c);
+        wing(g, c, b.y, f.h);
         g.restore();
         g.strokeStyle = "#3b3346";
         g.lineCap = "round";
@@ -1595,7 +1594,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         g.fill();
       }
     },
+    splitHaze: () => true,
+    drawAbove(g, f) { if (!backdrop.pending) drift.draw(g, f); },
     pointerDown(f, onBackground) {
+      if (drift.pointerDown(f, onBackground)) return true;
       if (f.load < 0.15) return false;
       for (const b of flies) {
         if (Math.hypot(b.x - f.p.x, b.y - f.p.y) < 30 * b.k + 8) {
@@ -1608,7 +1610,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           b.sun = false;
           b.nextLand = f.t + 12;
           b.tx = clamp(b.x + (rand() - 0.5) * 600, 30, w - 30);
-          b.ty = clamp(b.y + (rand() - 0.5) * 600, 30, h - 30);
+          b.ty = clamp(b.y + (rand() - 0.5) * 600, gy() + 30, h - 30);
           b.next = f.t + 2;
           return true;
         }
@@ -1639,13 +1641,14 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
       if (!onBackground) return false;
       if (f.p.y < gy()) return false; // 지평선 띠(먼 언덕)의 풀은 밟히지 않는다
-      press(f.p.x, f.p.y, f.load);
-      return true;
+      return false;
     },
+    pointerUp() { drift.pointerUp(); },
     drawForeground(g, f) { return backdrop?.drawForeground(g, f) ?? false; },
-    dispose() { backdrop?.dispose(); },
+    dispose() { wingCache.clear(); drift.dispose(); backdrop?.dispose(); },
     debug() {
       return {
+        drift: drift.debug(),
         backdrop: backdrop?.debug() ?? null,
         spots: propSpots().map((p2) => [Math.round(p2.x), Math.round(p2.y), Math.round(p2.r), p2.stand ? 1 : 0, Math.round(p2.hy ?? 0)]),
         flies: flies.map((b) => [Math.round(b.x), Math.round(b.y), b.flee > 0 ? 1 : 0, b.state]),

@@ -115,15 +115,19 @@ export class ArtSet {
     }
     this.ready = Promise.all(jobs).then(() => {
       this.version++;
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('vic:ambient-art-ready'));
     });
   }
   has(id: string): boolean {
+    if (!this.version) return false;
     return !!this.map.get(id)?.some(Boolean);
   }
   get(id: string): ArtSprite | null {
+    if (!this.version) return null;
     return this.map.get(id)?.find(Boolean) ?? null;
   }
   pick(id: string, r: number): ArtSprite | null {
+    if (!this.version) return null;
     const arr = this.map.get(id)?.filter(Boolean) as ArtSprite[] | undefined;
     if (!arr || !arr.length) return null;
     return arr[Math.min(arr.length - 1, Math.floor(Math.max(0, Math.min(0.999, r)) * arr.length))];

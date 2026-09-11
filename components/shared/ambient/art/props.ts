@@ -1079,6 +1079,8 @@ export function drawProp(
   y: number,
   opts: { k?: number; rot?: number; r?: number; alpha?: number; flip?: boolean; sy?: number } = {}
 ): boolean {
+  // Loading is not a missing asset: never flash the legacy stand-in first.
+  if (art && art.version === 0) return false;
   const k = opts.k ?? 1;
   const r = opts.r ?? 0;
   const sy = opts.sy ?? 1; // 3/4 시점 바닥 눌림(납작한 것) — 회전 전에 화면 세로로

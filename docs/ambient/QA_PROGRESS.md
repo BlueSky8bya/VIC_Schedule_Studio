@@ -2,7 +2,7 @@
 
 Last Updated: 2026-09-11
 Active Work ID: AMB-QA-18
-Current scoped work: [ROUND-34 cloud outline strain](rounds/ROUND-34-cloud-outline-strain.md); restored distant ground and new near-half artwork; owner accepted the current result and authorized push on 2026-09-11. Deployment verification pending. Older general backlog remains open.
+Current scoped work: [R36](rounds/ROUND-36-depth-and-showcase-controls.md): horizon-reaching distance cues, butterfly alpha and shared developer controls. Local unit/build/rendered checks complete; owner approved R35/R36 publication on 2026-09-11. Verify deployed release.
 Production: [ROUND-23 meadow sun, foreground and seams](rounds/ROUND-23-meadow-sun-foreground.md), shipped in `f1a3e959` on 2026-09-11 with deployment and seasonal source hashes verified. Underlying depth checks: [ROUND-18](rounds/ROUND-18-depth-P0.md). Earlier general backlog: [ROUND-17](rounds/ROUND-17.md). This does not close real-device/OBS or the older general backlog.
 
 This file owns current QA priorities, not completed-round narrative. Art generation/review is tracked separately by the [pine handoff](HANDOFF-20260908-pine.md) and current art board. Slot/variant counts come from the manifest and files.

@@ -1,3 +1,5 @@
+import { drawMeadowImage, drawMeadowFacing } from "../world/meadow-softness";
+import { meadowActivityTop, meadowActivityAlpha, meadowSize, meadowSpeed } from "../world/meadow-activity";
 import { anchorToSurface } from "../world/depth-render";
 import { MeadowBackdrop } from "../art/meadow-backdrop";
 import { drawDepthGround, withDepthLayer } from "../world/depth-render";
@@ -14,7 +16,7 @@ import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 회오리(≥.6)도 여력을 따른다. 색은 채도를 낮춘 가을색(붉·주황·노랑을 쨍하게 올리지 않는다 — CLAUDE.md Owner-fit palette).
 
 import type { Frame, Scene } from "../scene-engine";
-import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
+import { ASSET, loadSprite, type Sprite } from "../assets";
 import { drawCreatureShadow, angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
@@ -22,7 +24,7 @@ import { drawProp, propShadow, propSpots, resetPropField, scatterProps } from ".
 import { currentLight, shadowKey } from "../world/light";
 import { bakeClouds, bakeSky, drawSky, drawSkyLive, skyKey } from "../world/sky";
 import { LEAF_K, SIZE } from "../world/scale";
-import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, hazeAt, horizonY, moveScale, hillCrestY } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, hazeAt, horizonY, hillCrestY } from "../world/view";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -148,7 +150,7 @@ export function createAutumn(seed: number): Scene {
   let cloudC: { far: HTMLCanvasElement; near: HTMLCanvasElement } | null = null;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
   // 땅의 위 끝(지평선) — 잎·소품·다람쥐·돌풍은 이 아래에서만 산다(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 떠다닌다").
-  const gy = () => horizonY(h);
+  const gy = () => meadowActivityTop(h);
   /** 작은 식물의 추가 원근 테이퍼 — 0.3(지평선) → 1.0(발치). depthScale(0.6~1.0)만으로는 지평선의 풀이 근경의 0.75배로 남는다. */
   const smallK = (y: number) => 0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy())));
   const groundY = (r: number) => gy() + r * (h - gy());
@@ -274,6 +276,7 @@ export function createAutumn(seed: number): Scene {
   }
   // 가을 바탕 — 크기별 결정적. 마른 흙 얼룩 + 시든 풀 + 잔가지 + 조약돌 + 버섯.
   function bakeGround(dpr: number) {
+    if (backdrop.pending) return;
     backdropVersion = backdrop.version;
     const g0 = rng((seed * 7 + 13) >>> 0);
     resetPropField();
@@ -543,15 +546,15 @@ export function createAutumn(seed: number): Scene {
     // 좌·우 진입의 출발 v는 **.18 이상**(BIOME_GRAMMAR 공통 생물 규칙, QA 라운드 1 AMB-A1-01). 옛 `groundY(rand())`는
     // 12%가 지평선 띠(v < .18)에서 태어나 먼 언덕·실루엣 나무 줄 위를 "걷는" 그림이 됐고, 그 구간은 moveScale .22라
     // 가장 오래 머물렀다. 24시드 실측: 출발 v < .18 3건 · 경로 최소 v .001.
-    const y = e === 2 ? h + 40 : groundY(0.18 + rand() * 0.82);
+    const y = e === 2 ? h + 40 : groundY(0.045 + rand() * 0.955);
     const target = nearestAcorn(x, y);
     let phase: SqPhase = "run";
     let tx = w * (0.2 + rand() * 0.6);
     // 먼 띠(v < 0.28)는 화면에서 거의 안 움직이는 곳이라 목표로 잡지 않는다 — 지평선 쪽으로 몰리지 않게.
-    let ty = groundY(0.32 + rand() * 0.6);
+    let ty = groundY(0.06 + rand() * 0.88);
     if (target >= 0) {
       tx = leaves[target].x;
-      ty = Math.max(groundY(0.18), leaves[target].y);
+      ty = Math.max(gy()+28, leaves[target].y);
     } else if (caches.length && rand() < 0.5) {
       // 회수 — 땅에 도토리가 없으면 절반은 기억 속 저장소로 간다.
       const c = caches[Math.floor(rand() * caches.length)];
@@ -606,6 +609,7 @@ export function createAutumn(seed: number): Scene {
       s.wps.push([s.x + (dx * 2) / 3 - nx * 60 * side, s.y + (dy * 2) / 3 - ny * 60 * side]);
     }
     s.wps.push([ex, ey]);
+    s.wps = s.wps.map(([x, y]) => [x, Math.max(gy() + 28, y)]);
     [s.tx, s.ty] = s.wps.shift()!;
     s.phase = "leave";
     s.t0 = t;
@@ -687,7 +691,7 @@ export function createAutumn(seed: number): Scene {
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
-      if (ground && (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (!ground || (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       const target = targetCount(f);
       const live = liveLeaves();
@@ -857,9 +861,9 @@ export function createAutumn(seed: number): Scene {
               // 몸이 목표 쪽을 향할 때까지는 제자리에서 돈다(휙 순간 회전 대신 돌아서는 동작).
               if (Math.abs(diff) < 0.7) {
                 // 원근 — 멀리 있을수록 화면에서 느리게(같은 걸음도 지평선 쪽에선 픽셀이 덜 움직인다).
-                const step = Math.min(d, sp * dt * moveScale(s.y, h));
+                const step = Math.min(d, sp * dt * meadowSpeed(s.y, h));
                 s.x += Math.cos(s.dir) * step;
-                s.y += Math.sin(s.dir) * step;
+                s.y = Math.max(gy() + 28, s.y + Math.sin(s.dir) * step);
                 s.ph += dt * 22;
                 shove(s.x, s.y, 44, 60 * dt * 60, true);
               } else s.ph += dt * 8;
@@ -885,7 +889,7 @@ export function createAutumn(seed: number): Scene {
         const e = Math.floor(rand() * 4);
         const x = e === 0 ? -80 : e === 1 ? w + 80 : rand() * w;
         // 회오리도 하늘(지평선 위)에서 들어오지 않는다 — 위 출입은 나는 것·그림자만(QA 라운드 1). e===2(옛 위)는 아래로.
-        const y = e === 2 || e === 3 ? h + 80 : groundY(0.18 + rand() * 0.82);
+        const y = e === 2 || e === 3 ? h + 80 : groundY(0.045 + rand() * 0.955);
         const tx = w * (0.3 + rand() * 0.4);
         const ty = groundY(0.3 + rand() * 0.4);
         const d = Math.hypot(tx - x, ty - y) || 1;
@@ -919,6 +923,7 @@ export function createAutumn(seed: number): Scene {
       const wEnv = whirl ? Math.sin(Math.PI * clamp((t - whirl.t0) / whirl.dur, 0, 1)) : 0;
       for (let i = leaves.length - 1; i >= 0; i--) {
         const l = leaves[i];
+        if (l.y < gy() && l.fade === 0) l.fade = .001;
         if (l.fade > 0) {
           l.fade += dt / 0.7;
           if (l.fade >= 1) {
@@ -1014,15 +1019,15 @@ export function createAutumn(seed: number): Scene {
         l.vx *= fr;
         l.vy *= fr;
         l.va *= spinFr;
-        l.x += l.vx * dt;
-        l.y += l.vy * dt;
+        l.x += l.vx * dt * meadowSpeed(l.y,h);
+        l.y += l.vy * dt * meadowSpeed(l.y,h);
         l.a += l.va * dt + (acorn ? Math.hypot(l.vx, l.vy) * 0.02 * dt : 0);
         const m = l.s;
         if (l.x < -m) l.x += w + 2 * m;
         else if (l.x > w + m) l.x -= w + 2 * m;
         // 세로 랩은 땅(지평선~아래) 안에서 — 위로 날아간 잎은 아래에서 다시 들어온다(지평선 띠 = 먼 곳, 잎이 놓이지 않는다).
         const top = gy();
-        if (l.y < top + m * 0.4) l.y += h - top + m; // 지평선 위로는 못 올라간다 — 아래에서 다시 들어온다
+        if (l.y < top) l.fade = Math.max(.001, l.fade);
         else if (l.y > h + m) l.y -= h - top + m;
       }
       for (const l of leaves) {
@@ -1083,6 +1088,7 @@ export function createAutumn(seed: number): Scene {
       }
     },
     draw(g, f) {
+      if (backdrop.drawPending(g, f)) return;
       if (ground) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
@@ -1124,17 +1130,18 @@ export function createAutumn(seed: number): Scene {
     /** 대기 안개 **뒤**의 층(2026-09-07, AMB-D3-04·AMB-A3-02) — 서 있는 것(나무)과 지면 위 입자(낙엽·도토리·다람쥐)를
      *  **y 오름차순 한 대열**로 그린다. 안개가 이미 땅 위에 얹혀 있으므로 여기 물체는 자기 거리만큼만 잠긴다. */
     drawAbove(g, f) {
+      if (backdrop.pending) return;
       const drawLeaf = (l: Leaf, shadow: boolean) => {
         const acorn = l.sp === ACORN;
         if (acorn && (!acornSpr || !acornShadow)) return;
         const up = l.fall > 0 ? Math.pow(l.fall, 0.8) : l.lift;
         // 3/4 시점: 위(멀다)는 작게, 바닥에 누운 잎은 세로로 눌린다(떨어지는 중·들린 잎은 안 눌림).
-        const ds = depthScale(l.y, f.h);
+        const ds = meadowSize(l.y, f.h);
         const k = (acorn ? l.s / 40 : (l.s / SPR) * 1.4) * (1 + up * (l.fall > 0 ? 1.4 : 0.12)) * ds;
         const sq = l.fall > 0 || l.lift > 0.5 ? 1 : GROUND_SQUASH;
         const sx = l.flipV > 0 ? Math.cos(l.flip) : 1;
         // 거리 흐림 — 다람쥐만 옅어지고 도토리·낙엽은 그대로면 괴리가 생긴다(2026-09-04 소유자).
-        const alpha = (1 - l.fade) * depthFade(l.y, f.h);
+        const alpha = (1 - l.fade) * depthFade(l.y, f.h) * meadowActivityAlpha(l.y - l.s * .6, f.h);
         g.save();anchorToSurface(g,l.y);
         if (shadow) {
           g.globalAlpha = (l.fall > 0 ? 0.08 + 0.1 * (1 - l.fall) : 0.16 + up * 0.12) * alpha;
@@ -1151,7 +1158,7 @@ export function createAutumn(seed: number): Scene {
           else g.drawImage(acornSpr!.c, -20, -26, 40, 52);
         } else {
           g.scale(k * sx, k);
-          g.drawImage(shadow ? shadows[l.sp] : sprites[l.sp][l.col], -SPR / 2, -SPR / 2);
+          drawMeadowImage(g,shadow ? shadows[l.sp] : sprites[l.sp][l.col], -SPR / 2, -SPR / 2,SPR,SPR,l.y,f.h);
         }
         g.restore();
       };
@@ -1173,23 +1180,25 @@ export function createAutumn(seed: number): Scene {
                 : s.phase === "pause"
                   ? Math.sin(f.t * 20) * 0.2
                   : 0;
-        const sds = depthScale(s.y, f.h) * (SIZE.chipmunk / 52); // 3/4 시점 거리 축소 × 축척(52 → 36)
+        const sds = meadowSize(s.y, f.h) * (SIZE.chipmunk / 52); // 3/4 시점 거리 축소 × 축척(52 → 36)
         g.save();anchorToSurface(g,s.y);
         if (sqShadow) {
           // 조명에 맞춘 발밑 그림자(라운드 8) — 점프 높이(bounce)는 그림자를 **떼어 놓는** 신호로만 남긴다.
-          drawCreatureShadow(g, sqShadow, s.x + 6 * bounce, s.y + 10 * sds + 8 * bounce, 56 * sds, 44 * sds, 0.3);
+          drawCreatureShadow(g, sqShadow, s.x + 6 * bounce, s.y + 10 * sds + 8 * bounce, 56 * sds, 44 * sds, 0.3 * meadowActivityAlpha(s.y,f.h));
         }
         // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
         g.save();
-        g.globalAlpha *= depthFade(s.y, f.h);
-        drawFacing(g, squirrelSpr, s.x, s.y - 6 * bounce, s.dir, (1 + 0.1 * bounce) * sds, wig);
+        g.globalAlpha *= depthFade(s.y, f.h) * meadowActivityAlpha(s.y,f.h);
+        drawMeadowFacing(g, squirrelSpr, s.x, s.y - 6 * bounce * sds, s.dir, (1 + 0.1 * bounce) * sds, wig,s.y,f.h);
         g.restore();
         if (s.carry && acornSpr) {
           // 입에 문 도토리 — 코 끝(앞 22px)에, 몸과 같은 각도로.
           g.save();
-          g.translate(s.x + Math.cos(s.dir) * 22, s.y + Math.sin(s.dir) * 22 - 6 * bounce);
+          g.globalAlpha *= meadowActivityAlpha(s.y,f.h);
+          g.translate(s.x + Math.cos(s.dir) * 22 * sds, s.y + Math.sin(s.dir) * 22 * sds - 6 * bounce * sds);
+          g.scale(sds,sds);
           g.rotate(s.dir + Math.PI / 2);
-          g.drawImage(acornSpr.c, -7, -9, 14, 18);
+          drawMeadowImage(g,acornSpr.c, -7, -9, 14, 18,s.y,f.h);
           g.restore();
         }
         g.restore();
@@ -1244,9 +1253,9 @@ export function createAutumn(seed: number): Scene {
       let bd = Infinity;
       for (let i = 0; i < leaves.length; i++) {
         const l = leaves[i];
-        if (l.fall > 0 || l.fade > 0) continue;
+        if (l.fall > 0 || l.fade > 0 || meadowActivityAlpha(l.y - l.s * .6, f.h) < .2) continue;
         const d = Math.hypot(l.x - f.p.x, l.y - f.p.y);
-        if (d < Math.max(14, l.s * 0.55) && d < bd) {
+        if (d < Math.max(7, l.s * 0.55 * meadowSize(l.y,f.h)) && d < bd) {
           bd = d;
           best = i;
         }

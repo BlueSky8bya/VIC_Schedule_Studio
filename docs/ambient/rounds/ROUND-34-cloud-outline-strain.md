@@ -15,3 +15,4 @@ Verification: final fixture build `JVaUNB6kNxGmF028eUjZh`; typecheck, lint, buil
 
 ## Publication authorization
 2026-09-11: owner accepted the current preview and explicitly requested push. Publish the accumulated R24–R34 sky/meadow implementation and its existing runtime artwork/provenance. Earlier no-push statements describe the pre-authorization state; they are superseded for this release. This approval is for the integrated result, not a claim of individual seasonal image review. Deployment verification follows push.
+`b38cda2e` pushed successfully to origin/main. GitHub commit status reports Vercel pending (deployment 67ZrTPj562qD87Z7z4wQuXbrE93o).

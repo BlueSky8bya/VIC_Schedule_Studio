@@ -462,6 +462,7 @@ const ACT: Record<string, TargetLabel> = {
   "close-public-insights": { name: "이 달 기록 닫기", area: "시청자 화면" },
   "biome-map-fold": { name: "지도 접기/펼치기", area: "배경 감상" },
   "ambient-showcase-settings": { name: "감상 중 설정 열기", area: "배경 감상", hint: "감상 화면 오른쪽 위 톱니(개발자만)" },
+  "showcase-date": { name: "감상 중 날짜 선택", area: "배경 감상", hint: "개발자만. 날짜 선택 달력 열기" },
   "showcase-season": { name: "감상 중 계절", area: "배경 감상", hint: "개발자만. 자동은 달력 달을 따른다" },
   "showcase-band": { name: "감상 중 시간대", area: "배경 감상", hint: "개발자만. 설정의 월드 시간대와 같은 상태" },
   "showcase-weather": { name: "감상 중 날씨", area: "배경 감상", hint: "개발자만. 설정의 월드 날씨와 같은 상태" },
