@@ -941,13 +941,15 @@ html[data-reduce-motion] .mb-live-dot {
   position: absolute;
   /* 헤더 줄(--day-head-h 25px 예약 영역)의 오른쪽 끝 — 우하단에 두면 카드가 꽉 찬 칸에서
      마지막 카드를 덮었다(실측 지적). 헤더엔 카드가 절대 올라오지 않아 구조적으로 안 겹친다. */
-  top: 3px;
-  right: 5px;
   z-index: 8; /* 헤더(1)·베일(4)·인기 링(7)보다 위 — 배지가 가려지면 힌트가 아니다 */
   display: none;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  /* 달력 확대(Ctrl+휠)를 따라 함께 커진다 — 칸·날짜·요일만 커지고 이 표식만 그대로면
+     확대할수록 작아 보인다(2026-09-11 소유자). 위치(top/right)도 같은 배율로 민다. */
+  top: calc(3px * var(--cal-zoom, 1));
+  right: calc(5px * var(--cal-zoom, 1));
+  width: calc(20px * var(--cal-zoom, 1));
+  height: calc(20px * var(--cal-zoom, 1));
   border-radius: 50%;
   /* 2026-09-05 소유자("표식들이 그냥 위에 얹어져 있다"): 채도 높은 파란 원판 + 파란 글로우는
      칸에서 가장 시끄러운 물체였고, 혼자만 떠 있는 재질이었다. 칸의 파랑을 아주 옅게 깐 조용한
@@ -960,7 +962,10 @@ html[data-reduce-motion] .mb-live-dot {
 }
 .day-vod-hint svg {
   /* 삼각형은 광학적으로 왼쪽이 무겁다 — 1px 밀어 원의 중심에 앉힌다(글리프 시절의 padding 대체). */
-  margin-left: 1px;
+  margin-left: calc(1px * var(--cal-zoom, 1));
+  /* 아이콘 크기는 JSX가 11px로 박아 준다(lucide size) — 확대 때는 CSS가 이긴다. */
+  width: calc(11px * var(--cal-zoom, 1));
+  height: calc(11px * var(--cal-zoom, 1));
   fill: currentColor;
 }
 .public-day.has-vod:hover .day-vod-hint {
@@ -4209,6 +4214,38 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 
 .weekday-row span:last-child {
   border-right: 0;
+}
+
+/* 요일 고정 띠 — 스크롤로 원래 요일 줄이 위로 사라진 동안만 뜬다(JS가 켜고 끈다).
+   자리·폭·글자 크기는 인라인으로 온다(실측값). 여기서는 재질만 정한다. */
+.weekday-stick {
+  position: fixed;
+  top: 0;
+  z-index: 46; /* 상단 크롬 위 — 가려지면 있으나 마나 */
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: center;
+  border: 1px solid #efe9dd;
+  border-top: 0;
+  border-radius: 0 0 var(--r-card) var(--r-card);
+  background: #fbf7ee;
+  box-shadow: 0 6px 14px rgb(120 90 60 / 12%);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-align: center;
+  pointer-events: none;
+}
+.weekday-stick .sunday {
+  color: #dc2626;
+}
+.weekday-stick .saturday {
+  color: #2563eb;
+}
+@media (max-width: 720px) {
+  /* 모바일은 목록(아젠다)이라 요일 줄 자체가 없다. */
+  .weekday-stick {
+    display: none;
+  }
 }
 
 .weekday-row .sunday {

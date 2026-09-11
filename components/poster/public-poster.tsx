@@ -2500,6 +2500,11 @@ export function PublicPoster({
   const posterFitRef = useRef<HTMLDivElement | null>(null);
   const posterScalerRef = useRef<HTMLDivElement | null>(null);
   const [posterScale, setPosterScale] = useState(1);
+  // 스크롤을 내리면 요일 줄이 화면 위로 사라져, 아래쪽 주의 일정이 무슨 요일인지 알 수 없었다
+  // (2026-09-11 소유자). 표면 안의 줄을 sticky로 만들 수는 없다 — .poster-stage가 overflow:hidden
+  // 이라 그 자체가 스크롤 컨테이너가 되고, 표면은 transform으로 축소된 고정 캔버스다.
+  // 그래서 **표면 밖에** 같은 폭·같은 자리의 고정 띠를 띄운다(캡쳐 비침범 — 표면 규약).
+  const [wdStick, setWdStick] = useState<{ left: number; width: number; height: number } | null>(null);
   // 표면(달력)이 일정 양에 따라 세로로 자라므로, 축소 전 '자연 높이'를 재서 stage 높이/배율 계산에 쓴다.
   const [posterNaturalH, setPosterNaturalH] = useState(POSTER_DESIGN_H);
   // 아래 채움(2026-09-02 사용자 요청): 일정이 적어 포스터가 화면 세로보다 짧을 때 남는 높이를
@@ -2581,8 +2586,51 @@ export function PublicPoster({
     };
   }, [showAgenda, avatarSlot]);
 
-
-
+  // 요일 고정 띠 — 원래 요일 줄이 화면 위로 밀려 나가는 동안만, 같은 폭·같은 칸으로 위에 띄운다.
+  // 기하는 **실제 요소를 재서** 쓴다(표면이 transform으로 축소돼 있어 계산으로 맞추면 어긋난다).
+  // 달력이 화면에서 다 지나가면 띠도 사라진다 — 달력이 없는데 요일만 떠 있으면 소음이다.
+  useEffect(() => {
+    if (showAgenda) {
+      setWdStick(null);
+      return;
+    }
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const row = document.querySelector<HTMLElement>(".public-calendar-area > .weekday-row");
+      const grid = document.querySelector<HTMLElement>(".public-calendar-area > .public-month-grid");
+      if (!row || !grid) {
+        setWdStick(null);
+        return;
+      }
+      const r = row.getBoundingClientRect();
+      const g = grid.getBoundingClientRect();
+      const need = r.top < 0 && g.bottom > r.height && g.width > 0;
+      setWdStick((prev) => {
+        if (!need) return prev === null ? prev : null;
+        const next = { left: g.left, width: g.width, height: r.height };
+        return prev && Math.abs(prev.left - next.left) < 0.5 && Math.abs(prev.width - next.width) < 0.5 && Math.abs(prev.height - next.height) < 0.5
+          ? prev
+          : next;
+      });
+    };
+    const onScroll = () => {
+      if (!raf) raf = window.requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    // 달력 확대(Ctrl+휠)는 스크롤도 창 크기 변화도 아니다 — 달력이 커지는 것을 보고 다시 잰다.
+    const area = document.querySelector<HTMLElement>(".public-calendar-area");
+    const ro = new ResizeObserver(onScroll);
+    if (area) ro.observe(area);
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      ro.disconnect();
+    };
+  }, [showAgenda, view.year, view.month]);
 
   // 하트 상태 = 서버 myHeartIds(진실) + 이번 세션 델타. 시청자 미리보기를 닫았다 열면 컴포넌트가
   // 리마운트되며 bookmarks가 schedule.myHeartIds(페이지 로드 스냅샷)로 초기화되는데, 그러면 이 세션에
@@ -5380,6 +5428,27 @@ export function PublicPoster({
         </div>
         )}
       </section>
+
+      {/* 요일 고정 띠(2026-09-11) — 표면 밖이라 캡쳐·스티커 좌표에 안 닿는다. 폭·칸은 실제
+          달력 그리드를 잰 값이라 확대·축소 배율과 무관하게 칸이 정확히 맞는다. */}
+      {wdStick ? (
+        <div
+          aria-hidden="true"
+          className="weekday-stick"
+          style={{
+            left: wdStick.left,
+            width: wdStick.width,
+            height: wdStick.height,
+            fontSize: 17 * posterZoom * posterScale
+          }}
+        >
+          {WEEKDAYS.map((weekday, index) => (
+            <span className={index === 0 ? "sunday" : index === 6 ? "saturday" : ""} key={weekday}>
+              {weekday}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {/* 확대 중 배율 표시(편집실과 같은 문법) — 하단 중앙 플로팅, 누르면 100%로 복귀.
           '맨 위로' 버튼(하단 중앙)보다 위에 떠 안 겹친다. 100%에선 사라진다.
