@@ -19,8 +19,21 @@ describe("새로고침이 자식 카드까지 닿는다", () => {
     expect(MODAL).toContain("<ActivityUsage anchor={dateKey} reloadKey={reloadKey} />");
   });
   it("두 카드의 조회 effect가 reloadKey에 반응한다", () => {
-    expect(TIMELINE).toMatch(/\}, \[dateKey, diag, reloadKey\]\);/);
-    expect(USAGE).toMatch(/\}, \[days, anchor, reloadKey\]\);/);
+    expect(TIMELINE).toMatch(/\}, \[dateKey, diag, hardKey, reloadKey\]\);/);
+    expect(USAGE).toMatch(/\}, \[days, anchor, hardKey, reloadKey\]\);/);
+  });
+  // 자동 갱신은 **읽고 있는 동안 멈춘다**(2026-09-11). 갱신이 닿는 것과, 읽는 사람을 밀어내지
+  // 않는 것은 둘 다 지켜야 한다 — 둘 중 하나만 남으면 예전 버그(굳음)나 이번 불편(튐)이 돌아온다.
+  it("살펴보는 동안에는 자동 갱신을 멈춘다", () => {
+    expect(MODAL).toContain("data-hold-refresh");
+    expect(MODAL).toMatch(/holdAtRef\.current < HOLD_MS/);
+    expect(TIMELINE).toContain("data-hold-refresh");
+    expect(USAGE).toContain("data-hold-refresh");
+  });
+  it("자동 갱신이 목록을 스켈레톤으로 갈아치우지 않는다", () => {
+    // 스켈레톤(setLoading(true))은 '하드 키'(날짜·진단 층 / 기간·기준일)가 바뀔 때만.
+    expect(TIMELINE).toMatch(/lastHardRef\.current !== hardKey/);
+    expect(USAGE).toMatch(/lastHardRef\.current !== hardKey/);
   });
   it("타임라인이 '언제 받은 값인지'를 표시한다 — 굳었는지 눈으로 알 수 있어야 한다", () => {
     expect(TIMELINE).toContain("기준");

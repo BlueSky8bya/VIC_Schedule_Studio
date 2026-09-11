@@ -308,6 +308,11 @@ const ACT: Record<string, TargetLabel> = {
   "activity-copy": { name: "타임라인 복사", area: "이용 기록" },
   "activity-open": { name: "타임라인 접기/펴기", area: "이용 기록" },
   "activity-diag": { name: "진단 로그 보기", area: "이용 기록" },
+  "dayvisit-refresh-now": {
+    name: "지금 갱신",
+    area: "이용 기록",
+    hint: "살펴보는 중이라 멈춰 있던 자동 갱신을 그 자리에서 한 번 돌린다"
+  },
   "usage-open": { name: "적게 쓰인 기능 접기/펴기", area: "이용 기록" },
   "usage-retired-open": { name: "지운 기능 묶음 접기/펴기", area: "이용 기록" },
   "usage-area": { name: "위치 필터", area: "이용 기록" },

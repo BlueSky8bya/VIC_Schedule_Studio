@@ -3,7 +3,10 @@
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type SyntheticEvent,
+  useCallback,
   useEffect,
+  useRef,
   useState
 } from "react";
 import {
@@ -25,12 +28,17 @@ import {
 import { ActivityTimeline } from "@/components/developer/activity-timeline";
 import { ActivityUsage } from "@/components/developer/activity-usage";
 import { SessionLogFilter } from "@/components/developer/session-log-filter";
+import { ScrollPosition } from "@/components/developer/scroll-position";
 import { getDayVisitDetailAction, type DayVisitDetail } from "@/lib/insights/actions";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 개발자가 달력에서 날짜를 클릭하면 뜨는 "그날 방문 상세" — 월별 인사이트 방문 패널의 하루판(드릴다운).
 // 방문 수(역할/기기) + 24h 동시 접속(체류) + 관리자 접속 세션. 모달 골격은 부모(studio-shell)가 제공.
 type OccTip = { x: number; avg: number; peak: number; rows: { color: string; label: string; val: number }[] };
+
+// 마지막 조작에서 이만큼 지나야 자동 갱신을 재개한다. 30초 주기보다 넉넉해야 '읽는 중'이
+// 한 번의 스크롤로 끊기지 않는다.
+const HOLD_MS = 120_000;
 
 export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const [data, setData] = useState<DayVisitDetail | null>(null);
@@ -46,6 +54,19 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   // 갱신 신호 — 창을 열어둔 채 시간이 지나면 방문 통계·행동 타임라인·사용량이 굳어 그 뒤 방문이 안 보였다
   // (실측: 15:29에 연 창에 15:40 관리자 방문이 안 뜸). 수동 버튼 대신 30초마다 조용히 다시 받는다(내용은 제자리에서 바뀐다).
   const [reloadKey, setReloadKey] = useState(0);
+  // 살펴보는 중에는 갱신하지 않는다(2026-09-11 소유자: "탭을 눌러서 보는데 갑자기 새로고침 돼서
+  // 불편하다"). 30초 갱신은 '방금 생긴 방문이 보이게' 하려는 것이지, 읽고 있는 목록을 갈아치우는
+  // 뜻이 아니었다. 행동 타임라인·적게 쓰인 기능·세션 로그(data-hold-refresh) 안을 만지면
+  // 그 시각을 찍어두고, 손을 뗀 뒤 HOLD_MS가 지나야 다시 받는다. 멈춰 있는 동안은 그렇다고
+  // 말하고(굳은 값을 모른 채 보면 안 된다), 누르면 그 자리에서 갱신한다.
+  const holdAtRef = useRef(0);
+  const [held, setHeld] = useState(false);
+  const touchHold = useCallback((e: SyntheticEvent) => {
+    if (!(e.target as HTMLElement | null)?.closest?.("[data-hold-refresh]")) return;
+    holdAtRef.current = Date.now();
+    setHeld(true);
+  }, []);
+  const sessionListRef = useRef<HTMLUListElement | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -68,6 +89,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   useEffect(() => {
     const id = window.setInterval(() => {
       if (document.hidden) return;
+      if (Date.now() - holdAtRef.current < HOLD_MS) return; // 살펴보는 중 — 건드리지 않는다
+      setHeld(false);
       setReloadKey((k) => k + 1);
       getDayVisitDetailAction(dateKey).then((r) => {
         if (r.ok) setData(r.data);
@@ -75,6 +98,18 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     }, 30000);
     return () => window.clearInterval(id);
   }, [dateKey]);
+
+  // 멈춤을 풀고 그 자리에서 다시 받는다(멈춤 안내 줄의 버튼).
+  const refreshNow = () => {
+    hapticTick();
+    holdAtRef.current = 0;
+    setHeld(false);
+    setReloadKey((k) => k + 1);
+    getDayVisitDetailAction(dateKey).then((r) => {
+      hapticTick(); // 누름 → 도착 두 번(사이 간격이 실제 왕복)
+      if (r.ok) setData(r.data);
+    });
+  };
 
   if (loading) {
     return (
@@ -143,8 +178,24 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     // 웹: 2×2 카드 그리드(.dayvisit→grid) — 요약 풀폭, 아래 4카드 좌우 배치로 가로폭을 채운다.
     // 모바일: 같은 마크업이 한 줄 세로 스택(컴팩트, 테두리 없음).
     <div className="dayvisit-wrap">
-      {/* (수동 새로고침 버튼·베일은 2026-09-04 사용자 결정으로 제거 — 대신 30초마다 조용히 다시 받는다.) */}
-      <div className="dayvisit">
+      {/* (수동 새로고침 버튼·베일은 2026-09-04 사용자 결정으로 제거 — 대신 30초마다 조용히 다시 받는다.)
+          한 줄은 늘 둔다: 멈춤/재개로 높이가 바뀌면 그 아래 내용이 통째로 밀린다. */}
+      <div className="dayvisit-head">
+        {held ? (
+          <button className="act-tool is-on" data-act="dayvisit-refresh-now" onClick={refreshNow} type="button">
+            보는 중 — 자동 갱신 멈춤 · 지금 갱신
+          </button>
+        ) : (
+          <span className="dayvisit-auto">30초마다 자동 갱신</span>
+        )}
+      </div>
+      <div
+        className="dayvisit"
+        onKeyDownCapture={touchHold}
+        onPointerDownCapture={touchHold}
+        onScrollCapture={touchHold}
+        onWheelCapture={touchHold}
+      >
         {/* 방문 품질 요약(의미 방문 컷·시청자/운영진 토글·KPI·최고동접) — 그날 기준. 풀폭 */}
       <VisitSummaryBlock
         viewer={data.summaryViewer}
@@ -402,7 +453,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       </section>
 
       {/* 그날 전체 세션 로그(전 역할 · 개발자 디버깅) — 월별 '세션 로그'의 하루판. 풀폭. */}
-      <section className="vcard full">
+      <section className="vcard full" data-hold-refresh="">
         <h4 className="insight-subhead">세션 로그</h4>
         {data.sessions.length > 0 ? (
           <details className="vrecent" open>
@@ -415,7 +466,12 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
               sessions={data.sessions}
               stay={logStay}
             />
-            <ul className="vlog">
+            <ScrollPosition
+              listRef={sessionListRef}
+              unit="건"
+              watch={`${data.sessions.length}|${logRole}|${logStay}`}
+            />
+            <ul className="vlog" ref={sessionListRef}>
               {(() => {
                 const shown = data.sessions.filter(
                   (r) =>
@@ -426,7 +482,11 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                   return <li className="vlog-empty">조건에 맞는 세션이 없어요.</li>;
                 }
                 return shown.map((r, i) => (
-                  <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
+                  <li
+                    className={`vlog-row${r.meaningful ? "" : " glance"}`}
+                    data-pos={hhmm(r.t)}
+                    key={i}
+                  >
                     <span
                       aria-hidden="true"
                       className="vlog-dot"

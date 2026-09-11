@@ -739,20 +739,36 @@ export function StudioShell({
   const editorTypedRef = useRef(false);
   const editorSavedRef = useRef(false);
   const editorCloseHowRef = useRef<"esc" | "outside" | "cell" | "collapse" | "other">("other");
+  // 어느 날짜 칸을 편집했는지(2026-09-11 소유자: 타임라인에 "며칠 일정인지" 가 없다).
+  // 날짜만 남긴다 — 제목·본문은 이 테이블에 절대 들어가지 않는다(lib/activity/kinds.ts).
+  // ref로 읽는다: effect 의존성에 selectedDate를 넣으면 카드를 연 채 다른 칸을 고를 때마다
+  // '편집 카드 열기'가 새로 찍힌다.
+  const editorDateRef = useRef(selectedDate);
+  editorDateRef.current = selectedDate;
+  const editorEventRef = useRef(selectedEventId);
+  editorEventRef.current = selectedEventId;
   useEffect(() => {
     if (editorVisible) {
       editorOpenedAtRef.current = Date.now();
       editorTypedRef.current = false;
       editorSavedRef.current = false;
       editorCloseHowRef.current = "other";
-      logActivity("section.enter", { target: "editor" });
+      logActivity("section.enter", {
+        target: "editor",
+        meta: { date: editorDateRef.current, mode: editorEventRef.current ? "edit" : "new" }
+      });
       return;
     }
     if (!editorOpenedAtRef.current) return;
     logActivity("section.leave", {
       target: "editor",
       durMs: Date.now() - editorOpenedAtRef.current,
-      meta: { typed: editorTypedRef.current, saved: editorSavedRef.current, how: editorCloseHowRef.current }
+      meta: {
+        date: editorDateRef.current,
+        typed: editorTypedRef.current,
+        saved: editorSavedRef.current,
+        how: editorCloseHowRef.current
+      }
     });
     editorOpenedAtRef.current = 0;
   }, [editorVisible]);

@@ -1,8 +1,9 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { deviceLabel, fmtDur, hhmm, roleColor } from "@/components/developer/insights-dashboard";
+import { ScrollPosition } from "@/components/developer/scroll-position";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
 import { describeTarget } from "@/lib/activity/labels";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -26,11 +27,25 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 // meta를 한 줄로 — 값이 몇 개 안 되고 전부 원시값이라(sanitizeMeta) 단순 나열이면 충분하다.
-function metaLine(meta: Record<string, unknown> | null): string {
+// skip에 든 키는 뺀다: 화면에서는 이름 뒤에 이미 사람 말로 나온 값(날짜)을 두 번 쓰지 않는다.
+// 복사본은 skip 없이 부른다 — 붙여넣어 원인을 찾을 때는 원본이 다 있어야 한다.
+function metaLine(meta: Record<string, unknown> | null, skip?: ReadonlySet<string>): string {
   if (!meta) return "";
   return Object.entries(meta)
+    .filter(([k]) => !skip?.has(k))
     .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(",") : String(v)}`)
     .join(" · ");
+}
+// 이름 뒤에 붙여 보여주는 meta — 여기 든 키는 meta 줄에서 뺀다.
+const NAMED_META = new Set(["date"]);
+
+// 어느 날짜의 것인가 — 편집 카드처럼 '무엇을 편집했나'가 날짜인 기록에만 있다(meta.date).
+// 없으면 옛 기록이다(2026-09-11 이전에는 안 남겼다).
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function metaDateLabel(meta: Record<string, unknown> | null): string {
+  const d = meta && typeof meta.date === "string" ? meta.date : null;
+  if (!d || !DATE_RE.test(d)) return "";
+  return `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`;
 }
 
 // 복사 텍스트의 줄바꿈. 소스에 개행 리터럴을 직접 쓰면 편집 중 깨지기 쉬워 상수로 둔다.
@@ -43,6 +58,13 @@ type Grouped = Item & { repeat: number; lastT: number };
 // uuid를 그대로 보여주지 않는다 — 코드를 모르는 사람에게 uuid는 아무 뜻도 없다.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function itemName(it: Item): string {
+  const base = itemBaseName(it);
+  // 편집 카드는 '며칠 칸을 열었나'가 그 줄의 핵심이다 — 이름만 있으면 같은 줄이 수십 개 쌓여
+  // 무엇을 편집했는지 구분되지 않는다(2026-09-11 소유자).
+  const day = metaDateLabel(it.meta);
+  return day ? `${base} · ${day}` : base;
+}
+function itemBaseName(it: Item): string {
   if (it.targetLabel) return it.targetLabel;
   if (!it.target) return "";
   if (UUID_RE.test(it.target)) {
@@ -173,10 +195,19 @@ export function ActivityTimeline({
   const [open, setOpen] = useState(true); // 옆 카드와 같은 기본 상태
   const [diag, setDiag] = useState(false); // 진단 층(보존 3일) 포함 — 버그 쫓을 때만
   const [loadedAt, setLoadedAt] = useState<number | null>(null); // 언제 받은 값인지(굳음 감지)
+  const listRef = useRef<HTMLUListElement | null>(null);
+  // 30초 자동 갱신(reloadKey)에서는 스켈레톤을 띄우지 않는다 — 읽는 중에 목록이 통째로
+  // 사라졌다 다시 그려지면 보던 자리가 맨 위로 튄다(2026-09-11 소유자: "갑자기 새로고침").
+  // 날짜·진단 층이 바뀔 때만 '다시 불러오는 중'을 보여준다.
+  const hardKey = `${dateKey}|${diag}`;
+  const lastHardRef = useRef<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    if (lastHardRef.current !== hardKey) {
+      lastHardRef.current = hardKey;
+      setLoading(true);
+    }
     setErr(null);
     getActivityDayAction(dateKey, diag)
       .then((r) => {
@@ -193,7 +224,7 @@ export function ActivityTimeline({
     return () => {
       alive = false;
     };
-  }, [dateKey, diag, reloadKey]);
+  }, [dateKey, diag, hardKey, reloadKey]);
 
   if (loading) {
     // 스켈레톤은 실제 내용이 앉을 자리에 둔다(HCI — 위치 보존).
@@ -325,7 +356,8 @@ export function ActivityTimeline({
   }
 
   return (
-    <section className="vcard">
+    // data-hold-refresh: 이 카드 안을 만지는 동안은 부모의 30초 자동 갱신을 멈춘다.
+    <section className="vcard" data-hold-refresh="">
       <header className="act-head">
         {/* 옆 카드(적게 쓰인 기능)와 같은 머리 형식 — 한쪽만 접기가 없으면 어색하다. */}
         <button
@@ -390,7 +422,8 @@ export function ActivityTimeline({
       </header>
       {!open ? null : (
         <>
-      <ul className="act-visits">
+      <ScrollPosition listRef={listRef} unit="방문" watch={`${visits.length}|${expanded.size}`} />
+      <ul className="act-visits" ref={listRef}>
         {visits.map((v) => {
           const isOpen = expanded.has(v.key); // 바깥 open(카드 접기)과 헷갈리지 않게 다른 이름
           const rows = groupItems(v.items);
@@ -398,7 +431,12 @@ export function ActivityTimeline({
           // 아직 열려 있는 탭 — 클라 배치가 최대 15초에 한 번 올라오므로 3분을 넉넉한 경계로 본다.
           const live = Date.now() - v.endMs < 3 * 60_000;
           return (
-            <li className="act-visit" key={v.key} data-open={isOpen ? "" : undefined}>
+            <li
+              className="act-visit"
+              key={v.key}
+              data-open={isOpen ? "" : undefined}
+              data-pos={hhmm(v.startMs)}
+            >
               {/* 헤더 한 줄: 토글(넓은 과녁) + 복사. 복사를 별도 줄에 두면 그 줄 왼쪽이
                   통째로 빈다 — 헤더 오른쪽 끝에 붙여 빈 공간을 없앤다. */}
               <div className="act-visit-head">
@@ -491,7 +529,9 @@ export function ActivityTimeline({
                           <b className="act-name">{name || it.label}</b>
                           {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
                           {name ? <em className="act-kindq">{it.label}</em> : null}
-                          {it.meta ? <span className="act-meta">{metaLine(it.meta)}</span> : null}
+                          {metaLine(it.meta, NAMED_META) ? (
+                            <span className="act-meta">{metaLine(it.meta, NAMED_META)}</span>
+                          ) : null}
                         </span>
                         {showArea ? <em className="act-area">{area}</em> : null}
                         {it.durMs ? (

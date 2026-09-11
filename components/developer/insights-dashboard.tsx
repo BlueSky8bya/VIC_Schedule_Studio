@@ -47,6 +47,7 @@ import {
   HEART_MIN
 } from "@/lib/schedules/heart-tiers";
 import { SessionLogFilter } from "@/components/developer/session-log-filter";
+import { ScrollPosition } from "@/components/developer/scroll-position";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
@@ -358,6 +359,8 @@ export function InsightsDashboard({
   // 세션 로그 역할 필터(2026-09-05 복원 — 이번엔 드롭다운). "all"이면 전 역할.
   const [logRole, setLogRole] = useState("all");
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
+  // 세션 로그 목록은 제 안에서 스크롤하되 스크롤바를 안 그린다 — 위치는 ScrollPosition이 말한다.
+  const sessionListRef = useRef<HTMLUListElement | null>(null);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
   // 서버 성능(시스템 패널) — 라벨별 응답시간 통계. 시간창(시간 단위) 전환 가능.
@@ -1040,7 +1043,12 @@ export function InsightsDashboard({
                 stay={logStay}
               />
             ) : null}
-            <ul className="vlog">
+            <ScrollPosition
+              listRef={sessionListRef}
+              unit="건"
+              watch={`${visits.recent.length}|${logRole}|${logStay}`}
+            />
+            <ul className="vlog" ref={sessionListRef}>
               {(() => {
                 const shown = visits.recent.filter(
                   (r) =>
@@ -1051,7 +1059,11 @@ export function InsightsDashboard({
                   return <li className="vlog-empty">조건에 맞는 세션이 없어요.</li>;
                 }
                 return shown.map((r, i) => (
-                <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
+                <li
+                  className={`vlog-row${r.meaningful ? "" : " glance"}`}
+                  data-pos={mdhm(r.t)}
+                  key={i}
+                >
                   <span
                     aria-hidden="true"
                     className="vlog-dot"

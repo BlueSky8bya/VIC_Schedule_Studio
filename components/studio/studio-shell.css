@@ -1404,6 +1404,57 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
   border-color: #ddd6fe;
 }
 
+/* 목록 안 읽는 위치(2026-09-11) — 스크롤바를 그리지 않는 목록들의 이정표.
+   눈금은 성기게 8칸: 끌 수 있는 막대처럼 보이면 스크롤바로 오해된다. */
+.scrollpos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 2px 0;
+  color: #9a93b0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.scrollpos-ticks {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  align-items: center;
+}
+.scrollpos-ticks > i {
+  width: 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: #e7e3f2;
+}
+.scrollpos-ticks > i[data-on] {
+  background: #b9aef2;
+}
+.scrollpos-n {
+  flex: none;
+  color: #7c7391;
+  font-weight: 600;
+}
+.scrollpos-pct {
+  flex: none;
+}
+.scrollpos-label {
+  overflow: hidden;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scrollpos-label::before {
+  content: "· ";
+}
+/* 일일 상세 머리줄의 자동 갱신 안내(멈춤이면 버튼으로 바뀐다) */
+.dayvisit-auto {
+  color: #a49dba;
+  font-size: 11px;
+}
+
 .act-visits,
 .act-items {
   list-style: none;
