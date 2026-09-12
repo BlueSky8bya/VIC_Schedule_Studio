@@ -8,6 +8,30 @@ type StarMap = { stars:VisibleStar[]; milky:HTMLCanvasElement|null };
 const cache = new Map<string,StarMap>();
 const rows = catalog as CatalogRow[];
 
+/** Decorative unresolved stars, not catalog objects. Fixed galactic coordinates
+ * keep this texture attached to the sky when the date or bearing changes. */
+export function galacticStarClouds() {
+  const rand=rng(31991), points:{l:number;b:number;grain:number;cluster:boolean;ra:number;dec:number}[]=[];
+  // Construct one uniform object per point. Mapping/spreading a second 40k
+  // object array caused avoidable allocation and slow first-night startup.
+  const add=(l:number,b:number,grain:number,cluster:boolean)=>{
+    const eq=galacticEquatorial(l,b);
+    points.push({l,b,grain,cluster,ra:eq.ra,dec:eq.dec});
+  };
+  for(let i=0;i<34000;i++)add(rand()*360,(rand()+rand()+rand()-1.5)*17,rand(),false);
+  for(let k=0;k<42;k++){
+    const l=rand()*360,b=(rand()-.5)*15,spread=.35+rand()*1.5;
+    for(let i=0;i<150;i++){
+      const a=rand()*Math.PI*2,r=Math.sqrt(-2*Math.log(Math.max(.0001,rand())))*spread;
+      add((l+Math.cos(a)*r*1.5+360)%360,b+Math.sin(a)*r,rand(),true);
+    }
+  }
+  return points;
+}
+// Low-load/daytime viewers never allocate this decorative catalog. Galactic
+// conversion is static and done once, not on each minute/viewport cache miss.
+let starClouds:ReturnType<typeof galacticStarClouds>|null=null;
+
 /** Scattered moonlight depends on altitude, not whether the camera sees it. */
 export function moonSkyWash(lit:number,altitude:number){
   const u=Math.max(0,Math.min(1,altitude/12));
@@ -29,29 +53,31 @@ function bakeMilky(date:SkyDate,w:number,h:number,bearing:SkyBearing) {
   if(h<70)return null;
   const scale=Math.max(1,Math.sqrt(w*h/(500*1024)));
   const c=document.createElement('canvas');c.width=Math.ceil(w/scale);c.height=Math.ceil(h/scale);
-  const g=c.getContext('2d')!,rand=rng(31991),jd=julianDate(date),lst=siderealDegrees(jd);
-  const pinpoints:{x:number;y:number;alpha:number}[]=[];
+  const g=c.getContext('2d')!,jd=julianDate(date),lst=siderealDegrees(jd);
+  const pinpoints:{x:number;y:number;alpha:number;color:string;size:number}[]=[];
   // Fixed faint background stars in galactic coordinates, not enlarged glow dots.
-  for(let i=0;i<24000;i++){
-    const l=rand()*360,b=(rand()+rand()+rand()-1.5)*14,grain=rand();
-    const eq0=galacticEquatorial(l,b),eq=precess(eq0.ra,eq0.dec,jd),hor=horizon(eq.ra,eq.dec,lst);
+  for(const {l,b,grain,cluster,ra,dec} of starClouds??=galacticStarClouds()){
+    const eq=precess(ra,dec,jd),hor=horizon(eq.ra,eq.dec,lst);
     const xy=projectSky(hor.az,hor.alt,w,h,bearing);if(!xy||hor.alt<3)continue;
     const core=Math.exp(-Math.pow(Math.min(l,360-l)/32,2));
     // Broad star clouds broken by an uneven dark dust lane, not a flat stripe.
-    const dust=.22+.78*(1-Math.exp(-Math.pow((b-1.8*Math.sin(l*.055))/1.6,2)));
-    const knots=.55+.45*Math.pow(Math.sin(l*.091)+.35*Math.sin(l*.27),2);
-    const alpha=(.07+.08*grain)*(1+core*.8)*dust*knots*Math.min(1,hor.alt/12);
-    g.fillStyle=`rgb(${core>.3?'225 217 227':'190 209 239'} / ${Math.min(.3,alpha).toFixed(3)})`;
-    const x=Math.floor(xy.x/scale),y=Math.floor(xy.y/scale);
-    g.fillRect(x,y,1,1);
-    if(grain>.42)pinpoints.push({x,y,alpha:Math.min(.85,(.24+grain*.52)*dust*Math.min(1,hor.alt/12))});
+    const dust=.06+.94*(1-Math.exp(-Math.pow((b-1.8*Math.sin(l*.055)-.6*Math.sin(l*.23))/(1.1+.5*Math.sin(l*.13)**2),2)));
+    const knots=.4+.6*Math.pow(Math.sin(l*.091)+.35*Math.sin(l*.27),2);
+    const alpha=(.08+.12*grain)*(1+core*.8)*dust*knots*Math.min(1,hor.alt/12);
+    const color=grain>.88?'244 225 212':core>.3?'223 205 239':grain<.3?'176 208 250':'213 229 255';
+    g.fillStyle=`rgb(${color} / ${Math.min(.36,alpha).toFixed(3)})`;
+    const x=xy.x/scale,y=xy.y/scale;
+    // Only the low-frequency luminous cloud uses a broad footprint. The sharp
+    // stellar layer below stays subpixel, avoiding the former blurry-dot look.
+    g.fillRect(x-3,y-3,6,6);
+    if(grain>(cluster?.18:.5))pinpoints.push({x,y,color,size:(cluster?.65:.5)+grain*.3,alpha:Math.min(.8,(.22+grain*.53)*dust*Math.min(1,hor.alt/12))});
   }
   // A subdued broad glow sits behind sharp one-pixel stars. Blur never touches
   // the stars themselves; both are baked once into the bounded minute cache.
   const soft=document.createElement('canvas');soft.width=c.width;soft.height=c.height;
-  const sg=soft.getContext('2d')!;sg.filter='blur(5px)';sg.globalAlpha=.6;sg.drawImage(c,0,0);
+  const sg=soft.getContext('2d')!;sg.filter='blur(4px)';sg.globalAlpha=.9;sg.drawImage(c,0,0);
   sg.filter='none';sg.globalAlpha=1;
-  for(const p of pinpoints){sg.fillStyle=`rgb(215 225 245 / ${p.alpha.toFixed(3)})`;sg.fillRect(p.x,p.y,1,1);}
+  for(const p of pinpoints){sg.fillStyle=`rgb(${p.color} / ${p.alpha.toFixed(3)})`;sg.fillRect(p.x,p.y,p.size,p.size);}
   c.width=c.height=1;
   return soft;
 }

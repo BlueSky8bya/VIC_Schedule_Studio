@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: R37 winter ridge holes and showcase environment restoration locally verified; user authorized publication on 2026-09-12. [R37 record](../ambient/rounds/ROUND-37-winter-and-showcase-reset.md) covers current evidence. Preserve meadow-only role exposure and deep seal. Deployed result remains unverified.
+Current: [R38 night sky](../ambient/rounds/ROUND-38-rich-night-sky.md) and initial-loading optimization locally verified; push authorized. Catalog stars, meadow-only exposure and deep seal preserved. Deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -15,7 +15,8 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| AMB-R37 | Release verification | Publish authorized revision and verify deployed result | [R37](../ambient/rounds/ROUND-37-winter-and-showcase-reset.md) |
+| AMB-R38 | Release verification | Publish authorized sky/loading fix; verify deployment | [R38](../ambient/rounds/ROUND-38-rich-night-sky.md) |
+| AMB-R37 | Release verification | Verify deployed f496f651 | [R37](../ambient/rounds/ROUND-37-winter-and-showcase-reset.md) |
 | AMB-DEPTH-P1 | Release verification | Verify deployed R36 | [R36](../ambient/rounds/ROUND-36-depth-and-showcase-controls.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
