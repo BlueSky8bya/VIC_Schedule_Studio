@@ -2,6 +2,16 @@ import { describe, it, expect } from "vitest";
 import { horizonY, groundYAt, toGroundV, withViewHorizon, SPRING_MEADOW_HORIZON_V } from "../../components/shared/ambient/world/view";
 import { meadowLayerGroundCrop } from "../../components/shared/ambient/art/backdrop-manifest";
 import geometry from "../../components/shared/ambient/art/meadow-layer-geometry.json";
+import winter from "../../components/shared/ambient/art/meadow-winter-layer-geometry.json";
+
+it("winter snow ridge has no sky holes inside any column", () => {
+  const columns: number[][] = Array.from({length: winter.far.width}, () => []);
+  for (const [x,y,w] of winter.far.spans) for(let i=x;i<x+w;i++) columns[i].push(y);
+  for (const ys of columns) {
+    expect(ys.length).toBeGreaterThan(0);
+    expect(ys.length).toBe(ys.at(-1)!-ys[0]+1);
+  }
+});
 
 describe("spring meadow layered camera", () => {
   it("restores the default camera across nesting and errors and keeps ground inversion", () => {

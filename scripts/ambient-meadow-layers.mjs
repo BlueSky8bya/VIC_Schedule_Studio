@@ -11,6 +11,18 @@ for(const layer of ['far','ground','frame']) {
   const {data,info}=await sharp(`${root}/backdrop-meadow-${season}-${layer}-v${version}.png`).removeAlpha().raw().toBuffer({resolveWithObject:true});
   if(info.width!==1536||info.height!==1024)throw Error('Unexpected layer size');
   const terrain=(x,y)=>{const i=(Math.max(0,Math.min(info.height-1,y))*info.width+Math.max(0,Math.min(info.width-1,x)))*3;return data[i+1]>=Math.min(data[i],data[i+2])-6;};
+  // This delivered ridge is solid in every column. Blue/pink snow shadows can
+  // fail the matte colour test inside it; use the silhouette, not interior hue.
+  const ridge=season==='winter'&&layer==='far'?Array.from({length:info.width},(_,x)=>{
+    let top=info.height,bottom=-1;
+    for(let y=0;y<info.height;y++)if(terrain(x,y)){top=Math.min(top,y);bottom=y;}
+    return {top,bottom};
+  }):null;
+  const solid=(x,y)=>{
+    if(!ridge)return terrain(x,y);
+    const column=ridge[Math.max(0,Math.min(info.width-1,x))];
+    return y>=column.top&&y<=column.bottom;
+  };
   const spans=[]; let minX=1536,minY=1024,maxX=0,maxY=0,pixels=0;
   if(layer!=='ground') for(let y=0;y<info.height;y++){
     let start=-1;
@@ -20,7 +32,7 @@ for(const layer of ['far','ground','frame']) {
       const neighbors=season==='winter'?[-2,-1,0,1,2]:[-1,0,1];
       // Exclude magenta mixtures too, then inset source pixels so scaled
       // clipping cannot sample a neighboring matte pixel at the silhouette.
-      const green=x<info.width&&(season==='spring' ? data[i+1]>data[i]+8&&data[i+1]>data[i+2]+16 : neighbors.every(dy=>neighbors.every(dx=>terrain(x+dx,y+dy))));
+      const green=x<info.width&&(season==='spring' ? data[i+1]>data[i]+8&&data[i+1]>data[i+2]+16 : neighbors.every(dy=>neighbors.every(dx=>solid(x+dx,y+dy))));
       if(green&&start<0)start=x;
       if(!green&&start>=0){spans.push([start,y,x-start]);pixels+=x-start;minX=Math.min(minX,start);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y+1);start=-1;}
     }

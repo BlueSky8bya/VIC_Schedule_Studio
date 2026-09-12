@@ -713,6 +713,20 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
 export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null } = {}) {
   const on = useShowcase();
   const [setOpen, setSetOpen] = useState(false);
+  const before = useRef<{ season: SeasonKey | null; force: WorldForce } | null>(null);
+  // Environment experiments belong to this viewing session. Restore the
+  // outside settings (normally automatic), including date/time/direction.
+  // Graphics preference is intentionally persistent and is not part of this snapshot.
+  useEffect(() => {
+    if (on && settings && !before.current) {
+      before.current = { season: settings.seasonForce, force: { ...settings.world.force } };
+    } else if (!on && before.current) {
+      const saved = before.current;
+      before.current = null;
+      settings?.onChangeSeasonForce(saved.season);
+      settings?.world.onChange(saved.force);
+    }
+  }, [on, settings]);
   useEffect(() => {
     if (!on) return;
     const onKey = (e: KeyboardEvent) => {
