@@ -1,0 +1,9 @@
+# R73 — Seasonal material colors follow biome surroundings
+
+2026-09-16 KST. Owner accepts R72 summer mountain and asks for biome-sensitive colors for all seasonal materials. No push requested.
+
+Shared material bake grades the complete sprite RGB, including bright veins and detail, once before caching. Hill stays gently sunlit, pond gets a restrained vegetation tone, valley blends toward neutral stone/earth, forest is shaded, mountain is subdued gray-green. Season-specific ambient anchors preserve pink spring petals, green summer leaves, warm autumn leaves and straw against winter snow. Existing meadow appearance bypasses pixel processing entirely. Alpha, silhouettes, shadows, simulation, dragging, depth and shared time/weather light remain unchanged.
+
+Coverage: all four seasons of current shared-material biomes meadow/hill/pond/valley/forest, plus the approved summer mountain. Mountain palette rules accept all seasons, but other mountain scenes remain legacy until their art pack is implemented; this is not a claim that those scenes already use the new material engine. Sealed deep biome unchanged.
+
+Verification: 4 palette/cliff tests passed; typecheck, lint, production build passed. Seven production fixture captures: summer mountain noon/night, spring/winter forest noon, autumn valley noon, summer pond noon, autumn hill night; no browser errors. Evidence .scratch-pw/qa/r73/. Main inspection and B/C review: no blocker; preserved alpha and no per-frame work; C sees no glowing night leaves, winter straw remains warm and distinct. A review also found no blocker: mountain saturation blends better while leaves remain visible, spring pink and autumn brown remain identifiable. Last guard skips meadow readback entirely, preserving even translucent RGB rounding. No server/permissions/KST/data boundary changes.

@@ -1,0 +1,13 @@
+# R72 — Mountain cliff activity
+
+Authorized: integrate the accepted summer mountain concept and constrain seasonal material interaction to its foreground cliff. Steps: preserve generator original; reuse terrain depth and material engine; enforce a source-space cliff boundary for spawn, wind, drag and collision; verify captures and boundary tests. Summer first; other seasonal art remains pending. No push requested. No data, role or KST changes.
+
+Implemented: summer mountain uses the shared meadow material simulation and terrain relief renderer. Source-space foreground cliff samples define a conservative inner edge; full sprite radius is contained after simulation and collision, including held/falling material. Outward velocity damps near the edge. Initial placement waits for decoded terrain then distributes on visible safe ground; population is 30% of the meadow population. Other seasons retain their existing mountain scene until dedicated artwork is delivered. No production release requested.
+
+Art: built-in image_gen edited the approved concept (exec-672e933c-55d8-4648-995a-41bf1d9a2f11.png, inspected and supplied as sole reference). Prompt: preserve exact summer mountain terrain/composition and replace only sky/clouds above its silhouette with flat RGB255,0,255 for runtime matte removal; no text, no new composition. Output exec-27247de0-2349-498b-9de1-3800f49445fd.png copied without pixel changes to public/ambient/art/backdrop-mountain-summer-v1.png. Original remains in the generator directory. Runtime existing skyline key removes matte before interpolation. This is the owner's single summer background preview delivery, not an entity catalogue promotion or a completed seasonal pack.
+
+Verification: 9 mountain cliff / terrain perspective / haze cache unit tests passed; typecheck, lint and production build passed. Real production fixtures at 1400x860, 2560x1080 and 900x1200, all source ready and zero browser errors. Wide initial population 99/99 visible; tall 50/50 visible. Real drag grabbed leaf 0 and moved mouse into sky (y40): held leaf remained y743 on foreground. Captures and interaction script output under .scratch-pw/qa/r72. Initial pre-decode crowding at boundary found in capture and fixed by one-time placement after source ready; broad-screen offscreen spawn fixed by resampling safe positions. Main review: no magenta fringe or distant leaves. Independent A/B/C no blockers; A confirmed no matte fringe, line of leaves or crop seam in 1400 and 2560 captures. No real device or continuous frame-rate benchmark claimed.
+
+Runtime source SHA256: d3bf06aa21355e0bddb0a2409c8d17d44c27cca82b43997d17c0dcf94b417d30
+
+Owner accepted summer mountain preview in the following turn; material palette refinement continues in R73.

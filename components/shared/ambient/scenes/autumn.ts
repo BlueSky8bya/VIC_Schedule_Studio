@@ -1,3 +1,5 @@
+import {harmonizeMaterial} from '../world/material-palette';
+import {containCliff} from '../world/mountain-geometry';
 import type { SeasonKey } from "../registry";
 import { paintSeasonalMaterial, seasonalMaterialPath } from "../art/seasonal-material";
 import { pointerBreeze } from "../world/pointer-breeze";
@@ -117,7 +119,7 @@ type Cache = { x: number; y: number; t: number };
 type Speck = { x: number; y: number; vx: number; vy: number; life: number };
 type Whirl = { x: number; y: number; vx: number; vy: number; t0: number; dur: number } | null;
 
-export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "meadow" | "hill" | "pond" | "valley" | "forest" = "meadow"): Scene {
+export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "meadow" | "hill" | "pond" | "valley" | "forest" | "mountain" = "meadow"): Scene {
   const SPECIES:Species[]=AUTUMN_SPECIES.map((sp,i)=>{
     if(season==='autumn')return sp;
     if(season==='summer')return {...sp,needle:false,colors:['#78b95e','#91c96a','#64aa56'],size:sp.size};
@@ -137,6 +139,12 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
     const top=meadowActivityTop(h);
     return d===undefined?y:top+d*(h-top);
   };
+  const containMountain = (l:Leaf,dt=0) => {
+    if(biome!=='mountain'||!(backdrop instanceof HillBackdrop)||!backdrop.ready)return;
+    const edge=(x:number)=>backdrop.activityEdge(x,w,h)??h;
+    containCliff(l,edge,l.s*2+24,dt);
+  };
+  let mountainPlaced=false;
   let backdropVersion = -1;
   const rand = rng(seed);
   const leaves: Leaf[] = [];
@@ -271,6 +279,11 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
           g.moveTo(0, R0 * 0.88);
           g.lineTo(sp.shape === 4 ? 0 : R0 * 0.06, R0 * 1.22);
           g.stroke();
+        }
+        if(biome!=='meadow'){
+          const pixels=g.getImageData(0,0,SPR,SPR);
+          harmonizeMaterial(pixels.data,biome,season);
+          g.putImageData(pixels,0,0);
         }
         row.push(c);
       }
@@ -464,7 +477,16 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
     const sp = pickSpecies();
     const [lo, hi] = SPECIES[sp].size;
     // 축척(PLAN-004 §2): 낙엽은 나무의 1/12 — 옛 30~76을 LEAF_K(≈.36)로 줄인다(물리 반지름·집기 판정도 s에 비례하므로 같이 줄어든다).
-    return { x: rand() * w, y: groundY(0.12 + rand() * 0.86), vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
+    const leaf:Leaf = { x: rand() * w, y: groundY(0.12 + rand() * 0.86), vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
+    if(biome==='mountain'&&backdrop instanceof HillBackdrop&&backdrop.ready){
+      let edge=backdrop.activityEdge(leaf.x,w,h)??h*.8;
+      for(let i=0;i<16&&edge+leaf.s*2+48>h;i++){
+        leaf.x=rand()*w;edge=backdrop.activityEdge(leaf.x,w,h)??h*.8;
+      }
+      const start=Math.min(h-8,edge+leaf.s*2+32);
+      leaf.y=start+rand()*Math.max(0,h-8-start);
+    }
+    containMountain(leaf);return leaf;
   }
   /** 도토리는 최대 6 — 넘치면 가장 오래된 것이 옅어진다. */
   function capAcorns() {
@@ -664,7 +686,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
 
   function targetCount(f: Frame) {
     const areaK = clamp((f.w * f.h) / 1_440_000, 0.55, 1.5);
-    return Math.round(lerp(26, 220, f.load) * areaK);
+    return Math.round(lerp(26, 220, f.load) * areaK * (biome==='mountain'?.3:1));
   }
   const liveLeaves = () => leaves.reduce((n, l) => n + (l.sp !== ACORN && l.fade === 0 ? 1 : 0), 0);
 
@@ -729,6 +751,10 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       for (let i = caches.length - 1; i >= 0; i--) if (caches[i].x > w || caches[i].y > h) caches.splice(i, 1);
     },
     step(f) {
+      if(biome==='mountain'&&backdrop.ready&&!mountainPlaced){
+        mountainPlaced=true;leaves.length=0;
+        for(let i=0;i<targetCount(f);i++)leaves.push(spawn(f.t));
+      }
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
@@ -968,7 +994,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       const surfaceHeight=surfaceOrigin&&surfaceExtent?surfaceExtent.y-surfaceOrigin.y:0;
       for (let i = leaves.length - 1; i >= 0; i--) {
         const l = leaves[i];
-        if (l.y < gy() && l.fade === 0) l.fade = .001;
+        if (biome!=='mountain' && l.y < gy() && l.fade === 0) l.fade = .001;
         if (l.fade > 0) {
           l.fade += dt / 0.7;
           if (l.fade >= 1) {
@@ -1066,10 +1092,11 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         else if (l.x > w + m) l.x -= w + 2 * m;
         // 세로 랩은 땅(지평선~아래) 안에서 — 위로 날아간 잎은 아래에서 다시 들어온다(지평선 띠 = 먼 곳, 잎이 놓이지 않는다).
         const top = gy();
-        if (l.y < top) l.fade = Math.max(.001, l.fade);
+        if (biome!=='mountain' && l.y < top) l.fade = Math.max(.001, l.fade);
         else if (l.y > h + m) l.y -= h - top + m;
       }
       for (const l of leaves) {
+        containMountain(l,dt);
         if (l.lift > 0 && l.fall === 0) l.lift = Math.max(0, l.lift - dt * 1.6);
         if (l.flipV > 0) {
           l.flip += l.flipV * dt;
@@ -1125,6 +1152,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
           }
         }
       }
+      for(const l of leaves)containMountain(l,dt);
     },
     draw(g, f) {
       if (backdrop.drawPending(g, f)) return;

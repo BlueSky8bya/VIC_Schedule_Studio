@@ -1,3 +1,4 @@
+import {MOUNTAIN_DEPTH_CONTOURS,mountainCliff} from '../world/mountain-geometry';
 import type { Frame } from '../scene-engine';
 import type { SeasonKey } from '../registry';
 import { beginLoad, endLoad } from '../loading';
@@ -23,7 +24,7 @@ export class HillBackdrop {
   private skyLine=0;
   version=0;
   bakes=0;
-  constructor(private season:SeasonKey,private biome:'hill'|'pond'|'valley'|'forest'='hill'){
+  constructor(private season:SeasonKey,private biome:'hill'|'pond'|'valley'|'forest'|'mountain'='hill'){
     beginLoad();
     const image=this.image=new Image();image.decoding='async';
     image.src=`/ambient/art/backdrop-${biome}-${season}-${biome==='hill'||biome==='forest'?'v2':'v1'}.png`;
@@ -41,7 +42,7 @@ export class HillBackdrop {
       // Change only alpha above the exterior contour. Snow/grass interiors stay opaque.
       for(let x=0;x<c.width;x++)for(let y=0;y<=rows[x]+1;y++)pixels.data[(y*c.width+x)*4+3]=y<rows[x]?0:y===rows[x]?85:170;
       if(biome==='forest')keyForestMatte(pixels.data);
-      seasonRidge(pixels.data,c.width,c.height,rows,season,biome);
+      if(biome!=='mountain')seasonRidge(pixels.data,c.width,c.height,rows,season,biome);
       g.putImageData(pixels,0,0);
       if(hasDetail&&detail&&detail.naturalWidth<=4096&&detail.naturalHeight<=1200){
         const near=document.createElement('canvas');near.width=c.width;near.height=c.height;
@@ -54,7 +55,7 @@ export class HillBackdrop {
         g.drawImage(near,0,0);near.width=near.height=1;
       }
       this.source=c;this.skyline=rows;
-      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='forest'?FOREST_DEPTH_CONTOURS:biome==='valley'?VALLEY_DEPTH_CONTOURS:biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
+      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='mountain'?MOUNTAIN_DEPTH_CONTOURS:biome==='forest'?FOREST_DEPTH_CONTOURS:biome==='valley'?VALLEY_DEPTH_CONTOURS:biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
     }).catch(()=>{
       // Autumn's plain seasonal fallback is usable if a source cannot be decoded.
     }).finally(()=>{
@@ -105,6 +106,10 @@ export class HillBackdrop {
   screenPoint(u:number,v:number,w:number,h:number){
     if(!this.source)return null;
     const p=this.viewport(w,h);return {x:p.x+u*p.width,y:p.y+v*p.height};
+  }
+  activityEdge(x:number,w:number,h:number){
+    if(this.biome!=='mountain'||!this.source)return undefined;
+    const p=this.viewport(w,h);return p.y+mountainCliff((x-p.x)/p.width)*p.height;
   }
   skyHorizon(w:number,h:number){if(!this.source||!this.skyline)return undefined;this.viewport(w,h);return this.skyLine;}
   drawForeground(){return true;}

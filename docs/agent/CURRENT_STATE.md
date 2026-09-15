@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R71 meadow ridge tone](../ambient/rounds/ROUND-71-meadow-ridge-tone.md) locally corrected and verified; owner authorized push to main. R70 pushed as e0ed6604; deployment unverified.
+Current: [R74 mountain seasons](../ambient/rounds/ROUND-74-mountain-seasons.md) completes spring/summer/autumn/winter locally with cliff interaction and [R73 biome colors](../ambient/rounds/ROUND-73-biome-material-palette.md); verified, preview feedback next. Owner authorized R72–74 release to main; deployment unverified. R71 pushed as e013837a; deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
