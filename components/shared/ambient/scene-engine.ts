@@ -22,6 +22,7 @@ import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } fro
 import { weatherAt, weatherOptionsForMonth, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
 import { pendingLoads } from "@/components/shared/ambient/loading";
 import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
+import {drawFogField} from "@/components/shared/ambient/world/fog";
 import { drawDepthHaze, drawLightPass } from "@/components/shared/ambient/world/view";
 import { lerpLight, lightAt, NEUTRAL_LIGHT, setCurrentLight, type Light } from "@/components/shared/ambient/world/light";
 import { createParticles, windDirOf } from "@/components/shared/ambient/world/particles";
@@ -155,6 +156,8 @@ export interface Scene {
    *  세계 장면(world-scene)이 모든 바이옴을 감싸므로, 존재만으로 판정하면 순서 변경이 열한 바이옴 전부에 번진다
    *  (입자가 안개를 못 먹어 비·눈·안개 프레임이 통째로 바뀐다). 팬 중에는 false를 돌려 옛 순서로 돌아간다. */
   splitHaze?(): boolean;
+  /** Rooted objects apply their own distance fog after the ground field. */
+  fogBeforeAirborne?(): boolean;
 }
 
 // 검증 훅 — Playwright가 장면 상태(입자 위치·소비된 클릭 수·품질·프레임·여력)를 읽는다. forceLoad로 여력을 고정해
@@ -515,6 +518,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       drawDepthHaze(g, world.season, w, h, frame.light);
     }
     // 조명 패스(world/light.ts): 지면 안개 층 → 하늘 오버레이 → 지면 노출(multiply) → 채도 → 옅은 틴트. 점심·맑음은 전부 항등.
+    if(scene.fogBeforeAirborne?.())drawFogField(g,w,h,frame.light.groundFog,frame.light.hazeRgb||"228 232 234",null,"forest");
     scene.drawAirborne?.(g, frame);
     drawLightPass(
       g,
@@ -522,7 +526,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       h,
       frame.light,
       scene.fogFloor ? (x) => scene.fogFloor!(x, frame) : null,
-      scene.fogFloorKey ? scene.fogFloorKey(frame) : ""
+      scene.fogFloorKey ? scene.fogFloorKey(frame) : "",
+      scene.fogBeforeAirborne?.()??false
     );
   };
   const drawOnce = () => {

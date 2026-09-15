@@ -4,10 +4,12 @@ import {beginLoad,endLoad} from '../loading';
 import {FOREST_TREES,keyForestMatte} from '../world/forest-geometry';
 import {anchorToSurface} from '../world/depth-render';
 import type {DepthTier} from '../world/depth';
-import {forestDetailPitch,forestDetailBudget} from '../world/forest-detail';
+import {currentLight} from '../world/light';
+import {forestFogStrength} from '../world/forest-detail';
+import {forestDetailPitch,forestDetailBudget,forestNativeDetail} from '../world/forest-detail';
 
 type Sprite={c:HTMLCanvasElement;alpha:Uint8Array;rootX:number;rootY:number};
-export type RootedTree={x:number;y:number;left:number;top:number;width:number;height:number;variant:number};
+export type RootedTree={x:number;y:number;left:number;top:number;width:number;height:number;variant:number;distance:number};
 /** Standing objects are independent of terrain masks. All pixels share their
  * root's transform. Cached alpha supports gaps and hidden-object interaction. */
 export class ForestTrees {
@@ -18,9 +20,11 @@ export class ForestTrees {
   private layout:RootedTree[]=[];
   private key='';
   private contacts=new Map<RootedTree,{c:HTMLCanvasElement;x:number;y:number}>();
-  private details=new Map<RootedTree,{c:HTMLCanvasElement;alpha:Uint8Array}>();
+  private details=new Map<RootedTree,{c:HTMLCanvasElement;alpha:Uint8Array;shared?:boolean}>();
   private detailBakes=0;
-  constructor(season:SeasonKey){
+  private fogMasks=new Map<HTMLCanvasElement,HTMLCanvasElement>();
+  private fogColor='';
+  constructor(private readonly season:SeasonKey){
     beginLoad();const image=this.image=new Image();image.decoding='async';image.src=`/ambient/art/forest-trees-${season}-v1.png`;
     void image.decode().then(()=>{
       if(this.disposed)return;
@@ -30,7 +34,7 @@ export class ForestTrees {
       for(const [x,y,w,h]of cells){
         const c=document.createElement('canvas');c.width=Math.ceil(w*image.width);c.height=Math.ceil(h*image.height);
         const g=c.getContext('2d',{willReadFrequently:true})!;g.drawImage(image,x*image.width,y*image.height,w*image.width,h*image.height,0,0,c.width,c.height);
-        const pixels=g.getImageData(0,0,c.width,c.height);keyForestMatte(pixels.data);g.putImageData(pixels,0,0);
+        const pixels=g.getImageData(0,0,c.width,c.height);keyForestMatte(pixels.data,c.width);g.putImageData(pixels,0,0);
         const alpha=new Uint8Array(c.width*c.height);let bottom=0;
         for(let i=0;i<alpha.length;i++){alpha[i]=pixels.data[i*4+3];if(alpha[i]>128)bottom=Math.max(bottom,Math.floor(i/c.width));}
         // Find trunk center just above the root flare/snow skirt.
@@ -50,19 +54,23 @@ export class ForestTrees {
     this.clearContacts();this.key=key;const a=backdrop.screenPoint(0,0,w,h)!,b=backdrop.screenPoint(1,1,w,h)!;
     this.layout=FOREST_TREES.map(t=>{
       const root=backdrop.screenPoint(t.u,t.v,w,h)!,s=this.sprites[t.variant];
-      if('edge'in t)root.x=t.edge<0?Math.max(w*.08,root.x):Math.min(w*.92,root.x);
       const height=t.height*(b.y-a.y),scale=height/Math.max(1,s.rootY),width=s.c.width*scale;
-      return {x:root.x,y:root.y,left:root.x-s.rootX*scale,top:root.y-s.rootY*scale,width,height:s.c.height*scale,variant:t.variant};
+      return {x:root.x,y:root.y,left:root.x-s.rootX*scale,top:root.y-s.rootY*scale,width,height:s.c.height*scale,variant:t.variant,distance:backdrop.distance(root.x,root.y,w,h)??1};
     }).sort((a,b)=>a.y-b.y);
+    const native=new Set(this.layout.filter(t=>forestNativeDetail(t.distance,tier)).map(t=>this.sprites[t.variant]));
+    const nativeFogBytes=[...native].reduce((n,s)=>n+Math.floor(s.c.width/2)*Math.floor(s.c.height/2)*4,0);
     const sizes=this.layout.map(t=>{
+      if(forestNativeDetail(t.distance,tier))return {w:0,h:0};
       const s=this.sprites[t.variant],pitch=forestDetailPitch(backdrop.distance(t.x,t.y,w,h)??1,tier);
-      const scale=Math.min(1,t.width/(pitch*s.c.width));
+      const scale=Math.min(1,t.width/(pitch*s.c.width))*(.4+.6*t.distance);
       return {w:s.c.width*scale,h:s.c.height*scale};
     });
-    const total=sizes.reduce((n,s)=>n+Math.ceil(s.w)*Math.ceil(s.h)*5,0);
-    const cap=Math.min(1,Math.sqrt(forestDetailBudget(tier)/Math.max(1,total))*.99);
+    const total=sizes.reduce((n,s)=>n+Math.ceil(s.w)*Math.ceil(s.h)*6,0);
+    const cap=Math.min(1,Math.sqrt(Math.max(0,forestDetailBudget(tier)-nativeFogBytes)/Math.max(1,total))*.99);
     for(let i=0;i<this.layout.length;i++){
-      const t=this.layout[i],size=sizes[i],c=document.createElement('canvas');
+      const t=this.layout[i],size=sizes[i];
+      if(!size.w){this.details.set(t,{...this.sprites[t.variant],shared:true});continue;}
+      const c=document.createElement('canvas');
       c.width=Math.max(1,Math.floor(size.w*cap));c.height=Math.max(1,Math.floor(size.h*cap));
       const cg=c.getContext('2d',{willReadFrequently:true})!;cg.imageSmoothingEnabled=true;cg.imageSmoothingQuality='high';
       cg.drawImage(this.sprites[t.variant].c,0,0,c.width,c.height);
@@ -72,13 +80,15 @@ export class ForestTrees {
     }
     this.detailBakes++;
     for(const t of this.layout){
-      const c=document.createElement('canvas');c.width=Math.min(256,Math.ceil(t.width*.32));c.height=Math.min(64,Math.max(8,Math.ceil(t.height*.045)));
+      const c=document.createElement('canvas');c.width=Math.min(384,Math.ceil(t.width*(this.season==='winter'?.65:.32)));c.height=Math.min(96,Math.max(8,Math.ceil(t.height*(this.season==='winter'?.07:.045))));
       const x=t.x-c.width/2,y=t.y-c.height*.65,cg=c.getContext('2d')!;
       backdrop.drawGroundPatch(cg,x,y,c.width,c.height,w,h);
       const mask=document.createElement('canvas');mask.width=c.width;mask.height=c.height;const mg=mask.getContext('2d')!;
       // Uneven, feathered grass/snow lip from the actual ground artwork.
       // Cached with layout; it follows the same root transform as the trunk.
       for(let px=0;px<c.width;px++){
+        const edge=Math.min(1,Math.min(px,c.width-1-px)/Math.max(1,c.width*.18));
+        mg.globalAlpha=edge*edge*(3-2*edge);
         const top=c.height*(.16+.1*Math.sin(px*.41+t.x)+.07*Math.sin(px*.93));
         const fade=mg.createLinearGradient(0,top,0,c.height*.88);
         fade.addColorStop(0,'transparent');fade.addColorStop(1,'#000');mg.fillStyle=fade;mg.fillRect(px,0,1,c.height);
@@ -91,6 +101,25 @@ export class ForestTrees {
     }
     return this.layout;
   }
+  private prepareFog(){
+    // Neutral mist receives the shared final daylight/night color pass.
+    // Fixed color avoids rebuilding every mask during lighting transitions.
+    const rgb='228 232 234';
+    if(this.fogColor===rgb)return;
+    this.fogColor=rgb;
+    for(const detail of this.details.values()){
+      if(this.fogMasks.has(detail.c))continue;
+      const c=document.createElement('canvas');this.fogMasks.set(detail.c,c);
+      c.width=Math.max(1,Math.floor(detail.c.width/2));c.height=Math.max(1,Math.floor(detail.c.height/2));
+      const g=c.getContext('2d')!;g.drawImage(detail.c,0,0,c.width,c.height);
+      g.globalCompositeOperation='source-in';
+      const fade=g.createLinearGradient(0,0,0,c.height);
+      fade.addColorStop(0,`rgb(${rgb} / .58)`);
+      fade.addColorStop(.6,`rgb(${rgb} / .8)`);
+      fade.addColorStop(1,`rgb(${rgb})`);
+      g.fillStyle=fade;g.fillRect(0,0,c.width,c.height);
+    }
+  }
   draw(g:CanvasRenderingContext2D,t:RootedTree){
     const s=this.sprites[t.variant];if(!s)return;
     g.save();anchorToSurface(g,t.y,t.x);
@@ -101,6 +130,9 @@ export class ForestTrees {
     g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
     g.drawImage(this.details.get(t)?.c??s.c,t.left,t.top,t.width,t.height);
     const contact=this.contacts.get(t);if(contact)g.drawImage(contact.c,contact.x,contact.y);
+    // Opaque color mixing, never transparent trees with scenery showing through.
+    this.prepareFog();const mask=this.fogMasks.get(this.details.get(t)?.c??s.c);
+    if(mask){g.globalAlpha*=forestFogStrength(t.distance,currentLight().groundFog);g.drawImage(mask,t.left,t.top,t.width,t.height);}
     g.restore();
   }
   occludes(t:RootedTree,x:number,y:number,footY:number){
@@ -108,8 +140,8 @@ export class ForestTrees {
     const s=this.details.get(t)??this.sprites[t.variant],u=(x-t.left)/t.width,v=(y-t.top)/t.height;
     return u>=0&&u<1&&v>=0&&v<1&&s.alpha[Math.floor(v*s.c.height)*s.c.width+Math.floor(u*s.c.width)]>128;
   }
-  debug(){const detailBytes=[...this.details.values()].reduce((n,s)=>n+s.c.width*s.c.height*5,0);return {ready:!this.loading&&this.sprites.length===4,trees:this.layout,detailBytes,detailBakes:this.detailBakes,bytes:detailBytes+this.sprites.reduce((n,s)=>n+s.c.width*s.c.height*5,0)+[...this.contacts.values()].reduce((n,p)=>n+p.c.width*p.c.height*4,0)};}
-  private clearContacts(){for(const p of this.contacts.values())p.c.width=p.c.height=1;this.contacts.clear();for(const p of this.details.values())p.c.width=p.c.height=1;this.details.clear();}
+  debug(){const detailBytes=[...this.details.values()].reduce((n,s)=>n+(s.shared?0:s.c.width*s.c.height*5),0)+[...this.fogMasks.values()].reduce((n,c)=>n+c.width*c.height*4,0);return {ready:!this.loading&&this.sprites.length===4,trees:this.layout,detailBytes,detailBakes:this.detailBakes,nativeTrees:[...this.details.values()].filter(s=>s.shared).length,bytes:detailBytes+this.sprites.reduce((n,s)=>n+s.c.width*s.c.height*5,0)+[...this.contacts.values()].reduce((n,p)=>n+p.c.width*p.c.height*4,0)};}
+  private clearContacts(){this.fogColor="";for(const c of this.fogMasks.values())c.width=c.height=1;this.fogMasks.clear();for(const p of this.contacts.values())p.c.width=p.c.height=1;this.contacts.clear();for(const p of this.details.values())if(!p.shared)p.c.width=p.c.height=1;this.details.clear();}
   private release(){this.clearContacts();for(const s of this.sprites)s.c.width=s.c.height=1;this.sprites=[];this.layout=[];this.key='';}
   dispose(){this.disposed=true;this.image?.removeAttribute('src');this.release();}
 }

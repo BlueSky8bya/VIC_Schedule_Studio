@@ -156,11 +156,11 @@ export function hazeAt(y: number, h: number, light?: Light, season: SeasonKey = 
 /** 조명 패스(라운드 2, world/light.ts) — 장면·입자·대기 안개 위에 순서대로: ① 안개 날씨의 층별 누적 안개 + 지면 안개 띠(D-3)
  *  ② 하늘/지평선 오버레이(위 → 지평선 아래 16%) ③ 지면 노출 = multiply(ΔL + 색온도) ④ 채도 = saturation 블렌드 ⑤ 옅은 틴트.
  *  점심·맑음은 다섯 개 전부 건너뛴다(항등) — 옛 파이프라인과 픽셀이 같다. 캔버스는 장면이 전면을 채워 불투명하다(multiply 안전). */
-export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number, L: Light, fogFloor: ((x: number) => number) | null = null, fogFloorKey = "") {
+export function drawLightPass(g: CanvasRenderingContext2D, w: number, h: number, L: Light, fogFloor: ((x: number) => number) | null = null, fogFloorKey = "", skipFog = false) {
   const hz = horizonY(h);
   const pad = depthPadding(g);
   g.save();
-  if (L.groundFog > 0) {
+  if (L.groundFog > 0 && !skipFog) {
     // **안개 밀도장**(2026-09-06 라운드 11, 우선순위 E — 라운드 10 C #3 처방). 옛 코드는 화면 좌표 4-stop 세로 그라데이션 +
     // `hz + .3(h−hz)` 고정 띠 + 바닥 8%f 였다: 원경/중경/근경 D = 1.98/**2.91**/0.89로 중경이 가장 짙은 **역전**, x 방향 변화 0,
     // 물·능선·나무를 감싸지 않고, 원경 실루엣 대비를 16.2 → 1.44로 지웠다(언덕). 이제 `world/fog.ts`가 깊이항(단조) × 고도항

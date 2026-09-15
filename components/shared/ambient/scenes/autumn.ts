@@ -9,6 +9,7 @@ import { anchorToSurface, withReliefSurface, scopedDepthTier, surfaceMotionFacto
 import { ReliefLayers } from "../world/relief-render";
 import { reliefLayerCount, reliefMotion } from "../world/terrain-perspective";
 import { MeadowBackdrop } from "../art/meadow-backdrop";
+import {forestFogStrength} from '../world/forest-detail';
 import {ForestTrees} from '../art/forest-trees';
 import {rootedPass} from '../world/rooted-order';
 import { HillBackdrop } from "../art/hill-backdrop";
@@ -142,6 +143,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
   const caches: Cache[] = [];
   const specks: Speck[] = [];
   let sprites: HTMLCanvasElement[][] = [];
+  let materialMist=new WeakMap<HTMLCanvasElement,HTMLCanvasElement>();
   let shadows: HTMLCanvasElement[] = [];
   let acornSpr: Sprite | null = null;
   let acornShadow: HTMLCanvasElement | null = null;
@@ -211,6 +213,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
   function bake() {
     if (sprites.length) return;
     sprites = [];
+    materialMist=new WeakMap();
     shadows = [];
     for (const sp of SPECIES) {
       const row: HTMLCanvasElement[] = [];
@@ -1171,6 +1174,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       }
     },
     splitHaze: () => true,
+    fogBeforeAirborne: () => !!forest,
     /** 대기 안개 **뒤**의 층(2026-09-07, AMB-D3-04·AMB-A3-02) — 서 있는 것(나무)과 지면 위 입자(낙엽·도토리·다람쥐)를
      *  **y 오름차순 한 대열**로 그린다. 안개가 이미 땅 위에 얹혀 있으므로 여기 물체는 자기 거리만큼만 잠긴다. */
     drawAirborne(g, f) {
@@ -1206,6 +1210,14 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         } else {
           g.scale(k * sx, k);
           drawMeadowImage(g,shadow ? shadows[l.sp] : sprites[l.sp][l.col], -SPR / 2, -SPR / 2,SPR,SPR,visualY,f.h);
+          if(forest&&!shadow&&backdrop instanceof HillBackdrop){
+            const source=sprites[l.sp][l.col];let mask=materialMist.get(source);
+            if(!mask){mask=document.createElement('canvas');mask.width=source.width;mask.height=source.height;
+              const mg=mask.getContext('2d')!;mg.drawImage(source,0,0);mg.globalCompositeOperation='source-in';
+              mg.fillStyle='rgb(228 232 234)';mg.fillRect(0,0,mask.width,mask.height);materialMist.set(source,mask);}
+            g.globalAlpha*=forestFogStrength(backdrop.distance(l.x,l.y,f.w,f.h)??1,f.light.groundFog);
+            drawMeadowImage(g,mask,-SPR/2,-SPR/2,SPR,SPR,visualY,f.h);
+          }
         }
         g.restore();
       };

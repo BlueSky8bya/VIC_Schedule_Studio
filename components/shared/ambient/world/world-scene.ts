@@ -1,3 +1,4 @@
+import {drawFogField} from "./fog";
 // 세계 장면(2026-09-04, PLAN-20260904-004 §5·§6) — 엔진에는 여느 Scene처럼 끼워지고, 안에서 바이옴 장면 열한 개를 **필요할 때만** 만들어 캐시한다.
 // 카메라는 화면 단위로 미끄러진다(620ms ease-out-quint, 오버슈트 없음): 이동 중엔 출발·도착 두 장면을 translate로 한 캔버스에 함께 그리고,
 // 평소엔 활성 장면 하나만 step·draw 한다(비용 = 지금과 같음). 감상 모드가 아니면(달력 뒤) 카메라는 늘 초원 — 감상을 나가면 초원으로 스냅.
@@ -201,8 +202,10 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
           drawDepthHaze(g, season, f.w, f.h, f.light);
         }
         if (!entry.scene.drawForeground?.(g, lf) && entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
+        const rootFog=entry.scene.fogBeforeAirborne?.()??false;
+        if(rootFog)drawFogField(g,f.w,f.h,f.light.groundFog,f.light.hazeRgb||"228 232 234",null,"forest");
         entry.scene.drawAirborne?.(g, lf);
-        drawLightPass(g, f.w, f.h, f.light, entry.scene.fogFloor ? x => entry.scene.fogFloor!(x, lf) : null, entry.scene.fogFloorKey?.(lf) ?? "");
+        drawLightPass(g, f.w, f.h, f.light, entry.scene.fogFloor ? x => entry.scene.fogFloor!(x, lf) : null, entry.scene.fogFloorKey?.(lf) ?? "", rootFog);
       }, f.depthTier ?? "full", entry));
     };
     void ensure(initial);
