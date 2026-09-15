@@ -2,7 +2,7 @@
 
 Built-in imagegen, 2026-09-16 KST. Follow-up owner request: one dark side-on underwater concept. No reference images supplied. Stored unchanged as [deep-sea-v1.png](deep-sea-v1.png); source `C:/Users/im917/.codex/generated_images/01a08b85-9859-73e2-bac5-05ce6f2f5a1d/exec-bdc92257-b7fc-496b-b8b2-3227b8a975cf.png`.
 
-Concept only; owner accepted archiving and authorized push, but runtime implementation has not started. Existing deep isolation unchanged. No seasonal variants needed at this stage. Keep future creatures separate from the background.
+Owner subsequently requested runtime activation in R80: this image now displays as a static concept. Seasonal/layered animation is not implemented. Existing deep isolation unchanged. No seasonal variants needed at this stage. Keep future creatures separate from the background.
 
 ## Exact prompt
 

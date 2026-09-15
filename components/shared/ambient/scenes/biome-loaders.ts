@@ -9,9 +9,9 @@ export const BIOME_LOADERS: Record<BiomeKey, (season: SeasonKey) => Promise<Scen
   meadow: (season) => import("./autumn").then((m) => (seed:number) => m.createAutumn(seed,season)),
   pond: (season) => import("./autumn").then((m) => (seed: number) => m.createAutumn(seed, season, "pond")),
   shallow: () => import("./shallow").then((m) => m.createShallow),
-  sea: (season) => import("./sea").then((m) => (seed: number) => m.createSea(seed, { season })),
+  sea: () => import("./shallow").then((m) => () => m.createMarineConcept('sea')),
   // 깊은 바다만 따로 산다(2026-09-06) — 물속 옆모습 시점 + 계절·날씨·시간대 무영향이라 계절을 받지 않는다.
-  deep: () => import("./deep").then((m) => m.createDeep),
+  deep: () => import("./shallow").then((m) => () => m.createMarineConcept('deep')),
   tidal: (season) => import("./tidal").then((m) => (seed: number) => m.createTidal(seed, season)),
   sandy: (season) => import("./sandy").then((m) => (seed: number) => m.createSandy(seed, season)),
   rocky: (season) => import("./sandy").then((m) => (seed: number) => m.createSandy(seed, season, "rocky")),

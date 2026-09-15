@@ -190,7 +190,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       inView(entry.key, () => withDepthScene(g, offsetsOf(f), () => {
         entry.scene.draw(g, lf);
         if (entry.scene.sealed?.()) {
-          if (entry.key !== "shallow" && entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
+          if (!entry.scene.drawForeground?.(g, lf) && entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
           return;
         }
         if (entry.scene.splitHaze?.()) {
