@@ -1,6 +1,6 @@
 # Marine biomes — resume here
 
-Updated 2026-09-16 KST. Owner requested an open-sea concept only, then archive and push current work. Stop after this delivery; resume implementation in a later session.
+Updated 2026-09-16 KST. Owner requested open-sea and then deep-sea concepts, followed by archiving and pushing all current work. Stop after this delivery; resume implementation in a later session.
 
 ## Current delivered state
 
@@ -10,19 +10,21 @@ Updated 2026-09-16 KST. Owner requested an open-sea concept only, then archive a
 - [R78 shallow placement](../../ambient/rounds/ROUND-78-shallow-concept.md): twelve map cells. All three coasts → shallow (`gy=2`) → open sea (`gy=3`) → deep (`gy=4`). Return path remembers the originating coast; marine left/right blocked. Existing saved biome string keys preserved.
 - `public/ambient/art/concept-shallow-v1.png` is connected as a **static concept preview** via `scenes/shallow.ts`. Painted sky is part of the image. It deliberately bypasses weather/light and inherited foreground overlays; this is temporary preview behavior, not the final shallow-sea specification. No creature or decorative particles.
 - Open sea concept is archived separately under `docs/ambient/concepts/open-sea-v1.png`. It is **not connected to the renderer and not owner-approved**. Existing `scenes/sea.ts` still renders open sea.
-- Deep scene implementation remains unchanged. Keep existing isolation behavior and do not infer permission to rebuild it from this concept request.
+- Follow-up: owner requested a deep-sea concept as well. Saved [deep-sea-v1](../../ambient/concepts/deep-sea-v1.md), a side-on dark underwater background with creatures omitted; owner accepted archiving and authorized pushing this follow-up. This authorizes concept work only; deep scene implementation and existing isolation remain unchanged. Seasonal packs are not needed for this concept.
 
 ## Next session order
 
-1. Read this handoff and R78. Show the saved shallow/open-sea concepts; continue from the owner's visual feedback rather than regenerating by default.
+1. Read this handoff and R78. Show the saved shallow/open-sea/deep-sea concepts; continue from the owner's visual feedback rather than regenerating by default.
 2. Implement shallow seasonal runtime layers from the accepted composition. Separate sky from terrain/water. Replace temporary sealed preview behavior with the common sky, KST lighting, weather and solar direction mechanisms.
 3. For shallow water, keep submerged sand/rocks visually anchored while moving painted reflections/surface detail gently. Do not add independent horizontal wave strokes. Use the established coast renderer where its assumptions fit; sandy's shoreline envelope is not automatically correct for full-screen water.
 4. Implement open sea only after its concept direction is settled: no visible seabed, wide open swells; shared season/time/weather and full water-surface motion. Retain the absence of drifting objects/creatures for these remaining biome backgrounds.
-5. Keep deep isolation untouched. Test coast → shallow → sea → deep and return, including direct minimap selection, keyboard navigation and older saved biome keys.
+5. Deep: use the saved side-on concept when owner resumes its implementation; separate near/far rock silhouettes and open water, keep creatures separate and preserve existing isolation. No seasonal pack is required. Test coast → shallow → sea → deep and return, including direct minimap selection, keyboard navigation and older saved biome keys.
 6. Validate four seasons, noon/night/fog, wide/tall aspect ratios, continuous depth, no sky or layer seams, no initial-load flashes, no stretching, reduced-motion/still/lite and automatic performance modes. Keep source/mask uploads cached; no per-frame image readback.
 7. Run applicable typecheck/lint/unit/build and rendered interaction checks, plus independent A/B/C review per ambient README. Do not rebuild during fixed-build QA. Push only when authorized in that session.
 
 ## Evidence and limits
+
+R78 was pushed as `27215d88`. This follow-up changes archive documents and saves the deep concept only; no runtime code changes. Document harness, whitespace and source-image hash checks apply; earlier runtime tests were not rerun for this archive-only change.
 
 R78 typecheck, lint, production build, five biome navigation unit tests, twelve rendered minimap buttons, shallow selection, marine traversal and coast return passed. Final captures `.scratch-pw/r78-preview.png` and `.scratch-pw/r78-map.png` are local evidence, not durable release assets. R78 A/B review found no blockers; C found inherited water bars in the sealed foreground, fixed specifically for shallow and checked in final capture. Harness/diff checks passed. No production DB tests; public DTO/permissions/KST unchanged. Deployment remains unverified.
 
