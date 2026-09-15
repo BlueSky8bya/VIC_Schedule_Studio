@@ -8,7 +8,7 @@ import type { SeasonKey } from "@/components/shared/ambient/registry";
 import type { Weather } from "./weather";
 import type { DayBand } from "./time";
 import type { Light } from "./light";
-import { hillCrestY, horizonY } from "./view";
+import { hillCrestY, horizonY, HORIZON_V } from "./view";
 import { makeCanvas, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
 import { drawArt } from "@/components/shared/ambient/art/load";
 import { SkyAtlas } from "../art/sky-atlas";
@@ -308,6 +308,8 @@ function pixelDisc(R: number, rgbStr: string, alpha: number): HTMLCanvasElement 
 }
 
 export type SkyFrame = {
+  /** Stable viewport height, distinct from the animated astronomical horizon. */
+  h?: number;
   t: number;
   /** sun = 그 순간의 해(고도·방위, 도). 있으면 해의 높이를 **실제 고도**로 놓는다(2026-09-07, PLAN-006) — 겨울 노을 해가 더 낮게 걸린다. */
   time: { band: DayBand; hour?: number; sun?: { alt: number; az: number } };
@@ -336,7 +338,12 @@ export function solarSunYOf(alt: number, maxY: number): number {
   return Math.round(bottom - Math.max(0, Math.min(1, alt / 90)) * (bottom - Math.min(20, bottom)));
 }
 
-type SkyOptions = { moonY?: number; sunY?: number; solarPath?: boolean; solarHorizon?: number };
+type SkyOptions = {
+  moonY?: number; sunY?: number; solarPath?: boolean; solarHorizon?: number;
+  /** Terrain rendered after sky owns its irregular silhouette; projection is
+   * astronomical geometry, not a rectangular terrain occlusion boundary. */
+  terrainOccludes?: boolean;
+};
 
 /** 프레임마다: 별(밤·맑음/바람) · 달(밤, 음력 위상) · 해(새벽·노을, 맑음/바람) — 픽셀 사각 별, 옅은 달·해 원반 + 글로우. `maxY` = 언덕·능선에 가리지 않을 상한. */
 /** 밤하늘의 드문 사건 — 별똥별과 혜성. 일정은 `sky-events.ts`가 (시드, t)의 순수 함수로 정한다(결정성).
@@ -399,7 +406,7 @@ function drawSkyEvents(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed
 export function drawSkyLive(g: CanvasRenderingContext2D, w: number, f: SkyFrame, seed: number, maxY: number, opts: SkyOptions = {}) {
   withDepthLayer(g, "sky", () => {
     g.save();
-    if (opts.solarPath) { g.beginPath(); g.rect(0, 0, w, opts.solarHorizon ?? maxY); g.clip(); }
+    if (opts.solarPath && !opts.terrainOccludes) { g.beginPath(); g.rect(0, 0, w, opts.solarHorizon ?? maxY); g.clip(); }
     drawSkyLiveContent(g, w, f, seed, maxY, opts);
     g.restore();
   });
@@ -448,7 +455,8 @@ function drawSkyLiveContent(g: CanvasRenderingContext2D, w: number, f: SkyFrame,
   if (band === "night") {
     // 별 — 1~2px 사각, 개체마다 위상이 다른 느린 깜박임. 밤 multiply(×.72)를 같이 받으므로 굽기 전 값은 밝게. 보름에 가까울수록 옅다(달빛).
     const lit = moonLit(moonPhase(f.date.y, f.date.m, f.date.d, f.time.hour));
-    drawStarfield(g, {...f.date, hour:f.time.hour??21}, w, projectionHeight, bearing, t, moonSkyWash(lit,moonHor.alt), f.load??1);
+    drawStarfield(g, {...f.date, hour:f.time.hour??21}, w, projectionHeight, bearing, t, moonSkyWash(lit,moonHor.alt), f.load??1,
+      opts.solarPath && f.h ? f.h * HORIZON_V : projectionHeight);
     // Round moon and matching halo fade smoothly near the new moon.
     const visibility = moonVisibility(lit);
     if (visibility > 0 && moonPoint) {

@@ -15,7 +15,7 @@ export const BIOME_LOADERS: Record<BiomeKey, (season: SeasonKey) => Promise<Scen
   sandy: (season) => import("./coast").then((m) => (seed: number) => m.createCoast(seed, { season, mode: "sandy" })),
   rocky: (season) => import("./coast").then((m) => (seed: number) => m.createCoast(seed, { season, mode: "rocky" })),
   forest: (season) => import("./land").then((m) => (seed: number) => m.createLand(seed, { season, kind: "forest" })),
-  hill: (season) => import("./land").then((m) => (seed: number) => m.createLand(seed, { season, kind: "hill" })),
+  hill: (season) => import("./autumn").then((m) => (seed: number) => m.createAutumn(seed, season, "hill")),
   valley: (season) => import("./land").then((m) => (seed: number) => m.createLand(seed, { season, kind: "valley" })),
   mountain: (season) => import("./land").then((m) => (seed: number) => m.createLand(seed, { season, kind: "mountain" }))
 };

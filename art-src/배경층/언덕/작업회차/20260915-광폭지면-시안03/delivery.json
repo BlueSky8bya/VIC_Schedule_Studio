@@ -1,0 +1,38 @@
+[
+  {
+    "file": "backdrop-hill-autumn-v2.png",
+    "sha256": "A55689191A4F2A2A9F1C6C358A28E938393BBE55BF9B60A314135977D2F34A19",
+    "width": 2172,
+    "height": 724,
+    "bytes": 2172125,
+    "generator": "built-in image_gen",
+    "runtimeCopy": "public/ambient/art/backdrop-hill-autumn-v2.png"
+  },
+  {
+    "file": "backdrop-hill-spring-v2.png",
+    "sha256": "C7A91FD91E9234D8F9DAEFAA7F3B99E403803C13D43B009DEF9B6A65619AAE43",
+    "width": 2172,
+    "height": 724,
+    "bytes": 2163075,
+    "generator": "built-in image_gen",
+    "runtimeCopy": "public/ambient/art/backdrop-hill-spring-v2.png"
+  },
+  {
+    "file": "backdrop-hill-summer-v2.png",
+    "sha256": "8A4FE5CE2A91A319693ADE3CCD56BB8E1E88214BC94FB14F184B84ABEAA4DEB8",
+    "width": 2172,
+    "height": 724,
+    "bytes": 2064547,
+    "generator": "built-in image_gen",
+    "runtimeCopy": "public/ambient/art/backdrop-hill-summer-v2.png"
+  },
+  {
+    "file": "backdrop-hill-winter-v2.png",
+    "sha256": "36D287869A87D31DCFF6BC371125D1E5636404BCB29D5F4DF294E2568A0FE9F3",
+    "width": 2172,
+    "height": 724,
+    "bytes": 2002019,
+    "generator": "built-in image_gen",
+    "runtimeCopy": "public/ambient/art/backdrop-hill-winter-v2.png"
+  }
+]

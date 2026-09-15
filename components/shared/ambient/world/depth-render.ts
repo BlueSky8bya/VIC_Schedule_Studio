@@ -1,7 +1,7 @@
 import { DEPTH_PAD, type DepthOffsets, type DepthTier } from "./depth";
 
 // A scope belongs to one canvas/context, so two camera panels cannot share offsets.
-const scopes = new WeakMap<CanvasRenderingContext2D, { offsets: DepthOffsets; tier: DepthTier; current: { x: number; y: number }; owner?: object; surface?: { horizon:number; height:number } }>();
+const scopes = new WeakMap<CanvasRenderingContext2D, { offsets: DepthOffsets; tier: DepthTier; current: { x: number; y: number }; owner?: object; surface?: { horizon:number; height:number; motion?:(x:number,y:number)=>number } }>();
 export const scopedDepthTier=(g:CanvasRenderingContext2D)=>scopes.get(g)?.tier??'full';
 export const depthPadding = (g: CanvasRenderingContext2D) => scopes.has(g) ? DEPTH_PAD : 0;
 export function withDepthScene(g: CanvasRenderingContext2D, offsets: DepthOffsets, draw: () => void, tier: DepthTier = "full", owner?: object) {
@@ -21,17 +21,27 @@ export function withDepthLayer(g: CanvasRenderingContext2D, layer: "sky" | "far"
   try { draw(); } finally { scope.current = previous; g.restore(); }
 }
 
-export function surfaceLocalPoint(x:number,y:number,off:{x:number;y:number},horizon:number,height:number){
-  let yy=y;
-  for(let i=0;i<6;i++)yy=y-off.y*surfaceMotionFactor((yy-horizon)/Math.max(1,height-horizon));
-  const k=surfaceMotionFactor((yy-horizon)/Math.max(1,height-horizon));
-  return {x:x-off.x*k,y:yy};
+export function surfaceLocalPoint(x:number,y:number,off:{x:number;y:number},horizon:number,height:number,motion?:(x:number,y:number)=>number){
+  let xx=x,yy=y;
+  for(let i=0;i<6;i++){
+    const k=motion?.(xx,yy)??surfaceMotionFactor((yy-horizon)/Math.max(1,height-horizon));
+    xx=x-off.x*k;yy=y-off.y*k;
+  }
+  return {x:xx,y:yy};
 }
 /** Apply to a ground-bound object before its own local transform. No-op elsewhere. */
-export function anchorToSurface(g:CanvasRenderingContext2D,y:number){
+export function anchorToSurface(g:CanvasRenderingContext2D,y:number,x=0){
   const scope=scopes.get(g);if(!scope?.surface)return;
-  const k=surfaceMotionFactor((y-scope.surface.horizon)/Math.max(1,scope.surface.height-scope.surface.horizon));
+  const k=scope.surface.motion?.(x,y)??surfaceMotionFactor((y-scope.surface.horizon)/Math.max(1,scope.surface.height-scope.surface.horizon));
   g.translate(scope.offsets.ground.x*k-scope.current.x,scope.offsets.ground.y*k-scope.current.y);
+}
+/** Cached relief renderer owns pixels; this scope keeps objects/input aligned. */
+export function withReliefSurface(g:CanvasRenderingContext2D,motion:(x:number,y:number)=>number,draw:(off:{x:number;y:number},tier:DepthTier)=>void){
+  const scope=scopes.get(g);
+  if(!scope){draw({x:0,y:0},'still');return;}
+  scope.surface={horizon:0,height:1,motion};
+  g.save();g.translate(-scope.current.x,-scope.current.y);
+  try{draw(scope.offsets.ground,scope.tier);}finally{g.restore();}
 }
 /** Surface distance: almost fixed horizon, progressively stronger near motion. */
 export function surfaceMotionFactor(v:number){const u=Math.max(0,Math.min(1,v));return .04+.66*u*u*(3-2*u);}

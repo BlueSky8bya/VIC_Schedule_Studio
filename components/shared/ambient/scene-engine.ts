@@ -104,10 +104,18 @@ export type Frame = {
   /** 하늘 사건 강제(개발자) — `world.force.skyEvent`를 그대로 넘긴다. 없으면 실제 확률대로. */
   skyEvent?: SkyEventKind | null;
   skyBearing?: 'north' | 'east' | 'south' | 'west';
+  /** Shared celestial projection during biome travel, in CSS pixels. */
+  solarHorizon?: number;
   depthTier?: DepthTier;
 };
 
 export interface Scene {
+  /** Destination terrain is settled, including a usable failure fallback. */
+  ready?(): boolean;
+  /** Authored relief projection shared by rendering and pointer inversion. */
+  surfaceMotion?(x:number,y:number,tier:DepthTier):number|undefined;
+  /** Astronomical horizon behind elevated terrain, distinct from ground depth. */
+  skyHorizon?(w:number,h:number):number|undefined;
   /** Explicit ownership of complete per-panel weather/light composition. */
   composed?: boolean;
   dispose?(): void;

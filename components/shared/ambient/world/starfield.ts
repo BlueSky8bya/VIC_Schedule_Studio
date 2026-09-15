@@ -1,5 +1,5 @@
 import catalog from './star-catalog.json';
-import { galacticEquatorial, horizon, julianDate, precess, projectSky, siderealDegrees, starColor, type SkyBearing, type SkyDate } from './celestial';
+import { galacticEquatorial, horizon, julianDate, precess, projectSky, siderealDegrees, starColor, SKY_BEARINGS, type SkyBearing, type SkyDate } from './celestial';
 import { rng } from '../scenes/util';
 
 type CatalogRow = [number, number, number, number, number|null, string, number, number];
@@ -7,6 +7,16 @@ export type VisibleStar = { id:number; name:string; x:number; y:number; alt:numb
 type StarMap = { stars:VisibleStar[]; milky:HTMLCanvasElement|null };
 const cache = new Map<string,StarMap>();
 const rows = catalog as CatalogRow[];
+
+/** Exact affine transform between projectSky's two horizon heights. Its FOV
+ * also depends on height, so remapping only Y would move real star azimuths. */
+export function starProjectionTransform(w:number,fromH:number,toH:number,bearing:SkyBearing){
+  const az=SKY_BEARINGS[bearing]+1;
+  const source=projectSky(az,45,w,fromH,bearing)!;
+  const target=projectSky(az,45,w,toH,bearing)!;
+  const sx=(target.x-w/2)/(source.x-w/2),sy=(toH-8)/(fromH-8);
+  return {sx,sy,tx:w/2*(1-sx),ty:4*(1-sy)};
+}
 
 /** Decorative unresolved stars, not catalog objects. Fixed galactic coordinates
  * keep this texture attached to the sky when the date or bearing changes. */
@@ -38,6 +48,20 @@ export function moonSkyWash(lit:number,altitude:number){
   return lit*u*u*(3-2*u);
 }
 
+/** Artistic atmospheric extinction, continuous down to the true horizon.
+ * Coordinates and catalogue magnitudes are untouched; no below-horizon points. */
+export function stellarExtinction(altitude:number, span=12){
+  const u=Math.max(0,Math.min(1,altitude/span));
+  return u*u*(3-2*u);
+}
+
+/** A single broad atmospheric veil for unresolved galactic light. Keeping a
+ * faint low-altitude tail avoids multiplying two almost-black horizon fades. */
+export function milkyExtinction(altitude:number){
+  const alt=Math.max(0,Math.min(30,altitude));
+  return (1-Math.exp(-alt*alt/(6*(alt+1))))/(1-Math.exp(-900/186));
+}
+
 export function visibleStars(date:SkyDate,w:number,h:number,bearing:SkyBearing) {
   const jd=julianDate(date), lst=siderealDegrees(jd), years=(jd-2451545)/365.25;
   const out:VisibleStar[]=[];
@@ -58,19 +82,20 @@ function bakeMilky(date:SkyDate,w:number,h:number,bearing:SkyBearing) {
   // Fixed faint background stars in galactic coordinates, not enlarged glow dots.
   for(const {l,b,grain,cluster,ra,dec} of starClouds??=galacticStarClouds()){
     const eq=precess(ra,dec,jd),hor=horizon(eq.ra,eq.dec,lst);
-    const xy=projectSky(hor.az,hor.alt,w,h,bearing);if(!xy||hor.alt<3)continue;
+    const xy=projectSky(hor.az,hor.alt,w,h,bearing);if(!xy)continue;
     const core=Math.exp(-Math.pow(Math.min(l,360-l)/32,2));
     // Broad star clouds broken by an uneven dark dust lane, not a flat stripe.
     const dust=.06+.94*(1-Math.exp(-Math.pow((b-1.8*Math.sin(l*.055)-.6*Math.sin(l*.23))/(1.1+.5*Math.sin(l*.13)**2),2)));
     const knots=.4+.6*Math.pow(Math.sin(l*.091)+.35*Math.sin(l*.27),2);
-    const alpha=(.08+.12*grain)*(1+core*.8)*dust*knots*Math.min(1,hor.alt/12);
+    // Apply atmospheric extinction once, after blur, to the entire baked field.
+    const alpha=(.08+.12*grain)*(1+core*.8)*dust*knots;
     const color=grain>.88?'244 225 212':core>.3?'223 205 239':grain<.3?'176 208 250':'213 229 255';
     g.fillStyle=`rgb(${color} / ${Math.min(.36,alpha).toFixed(3)})`;
     const x=xy.x/scale,y=xy.y/scale;
     // Only the low-frequency luminous cloud uses a broad footprint. The sharp
     // stellar layer below stays subpixel, avoiding the former blurry-dot look.
     g.fillRect(x-3,y-3,6,6);
-    if(grain>(cluster?.18:.5))pinpoints.push({x,y,color,size:(cluster?.65:.5)+grain*.3,alpha:Math.min(.8,(.22+grain*.53)*dust*Math.min(1,hor.alt/12))});
+    if(grain>(cluster?.18:.5))pinpoints.push({x,y,color,size:(cluster?.65:.5)+grain*.3,alpha:Math.min(.8,(.22+grain*.53)*dust)});
   }
   // A subdued broad glow sits behind sharp one-pixel stars. Blur never touches
   // the stars themselves; both are baked once into the bounded minute cache.
@@ -78,31 +103,44 @@ function bakeMilky(date:SkyDate,w:number,h:number,bearing:SkyBearing) {
   const sg=soft.getContext('2d')!;sg.filter='blur(4px)';sg.globalAlpha=.9;sg.drawImage(c,0,0);
   sg.filter='none';sg.globalAlpha=1;
   for(const p of pinpoints){sg.fillStyle=`rgb(${p.color} / ${p.alpha.toFixed(3)})`;sg.fillRect(p.x,p.y,p.size,p.size);}
+  // Blur has finite pixels beyond each star. Extinguish those gently before
+  // the actual horizon, rather than exposing a straight clipped canvas edge.
+  // projectSky maps altitude 0 to h-4 and altitude 90 to 4.
+  const horizonRow=(h-4)/scale, fadeTop=((h-8)*(1-30/90)+4)/scale;
+  const extinctionMask=sg.createLinearGradient(0,fadeTop,0,horizonRow);
+  for(let i=0;i<=120;i++)extinctionMask.addColorStop(i/120,`rgba(255,255,255,${milkyExtinction(30*(1-i/120))})`);
+  sg.globalCompositeOperation='destination-in';sg.fillStyle=extinctionMask;sg.fillRect(0,0,soft.width,soft.height);
+  sg.globalCompositeOperation='source-over';
   c.width=c.height=1;
   return soft;
 }
 
-export function drawStarfield(g:CanvasRenderingContext2D,date:SkyDate,w:number,h:number,bearing:SkyBearing,t:number,lit:number,load:number) {
+export function drawStarfield(g:CanvasRenderingContext2D,date:SkyDate,w:number,h:number,bearing:SkyBearing,t:number,lit:number,load:number,cacheHeight=h) {
   // One minute of world time, no dependence on random scene seed or animation t.
   const minute=Math.floor(date.hour*60), fixed={...date,hour:minute/60};
-  const key=`${date.y}:${date.m}:${date.d}:${minute}:${w}:${h}:${bearing}`;
+  // A stable, wider field survives animated horizon interpolation. Catalogue
+  // projection and 40k decorative points bake once, not every travel frame.
+  const sourceH=Math.min(h,cacheHeight),projection=starProjectionTransform(w,sourceH,h,bearing);
+  const key=`${date.y}:${date.m}:${date.d}:${minute}:${w}:${sourceH}:${bearing}`;
   let map=cache.get(key);
   if(!map){
-    map={stars:visibleStars(fixed,w,h,bearing),milky:null};cache.set(key,map);
+    map={stars:visibleStars(fixed,w,sourceH,bearing),milky:null};cache.set(key,map);
     while(cache.size>4){const first=cache.keys().next().value!;const old=cache.get(first)!;if(old.milky)old.milky.width=old.milky.height=1;cache.delete(first);}
   }
-  if(!map.milky&&load>=.35)map.milky=bakeMilky(fixed,w,h,bearing);
+  if(!map.milky&&load>=.35)map.milky=bakeMilky(fixed,w,sourceH,bearing);
   const moonK=1-.28*lit;
-  g.save();g.imageSmoothingEnabled=false;
-  if(map.milky&&load>=.35){g.globalAlpha*=1-.65*lit;g.drawImage(map.milky,0,0,w,h);}
+  // The cached atmospheric veil needs continuous resampling when its stable
+  // projection stretches; catalogue pinpoints below are still drawn sharply.
+  g.save();g.imageSmoothingEnabled=true;
+  if(map.milky&&load>=.35){g.globalAlpha*=1-.65*lit;g.drawImage(map.milky,projection.tx,projection.ty,w*projection.sx,sourceH*projection.sy);}
   g.restore();
   const limit=load<.35?4.8:6;
   for(const s of map.stars){
     if(s.mag>limit)continue;
     const brightness=Math.max(.38,Math.min(1,1.12-(s.mag+1.5)*.09));
     const twinkle=s.mag<2.5&&load>=.35?.9+.1*Math.sin(t*(.5+Math.max(0,25-s.alt)*.01)+s.phase):1;
-    const a=brightness*twinkle*moonK*Math.min(1,s.alt/8);
-    const size=s.mag<.6?3:s.mag<2.5?2:1, x=Math.round(s.x),y=Math.round(s.y);
+    const a=brightness*twinkle*moonK*stellarExtinction(s.alt,8);
+    const size=s.mag<.6?3:s.mag<2.5?2:1, x=Math.round(s.x*projection.sx+projection.tx),y=Math.round(s.y*projection.sy+projection.ty);
     g.fillStyle=`rgb(${s.color} / ${a.toFixed(3)})`;g.fillRect(x,y,size,size);
     if(s.mag<1.5){g.fillStyle=`rgb(${s.color} / ${(a*.18).toFixed(3)})`;g.fillRect(x-1,y,size+2,1);g.fillRect(x,y-1,1,size+2);}
   }

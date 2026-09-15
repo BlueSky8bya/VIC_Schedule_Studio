@@ -19,6 +19,7 @@ import { isNeutralMul, type Light } from "./light";
 export const GROUND_SQUASH = 0.7;
 export const HORIZON_V = 0.26;
 export const SPRING_MEADOW_HORIZON_V = 0.35;
+export const HILL_HORIZON_V = 0.42;
 let currentHorizon = HORIZON_V;
 /** Synchronous per-panel camera scope. Never retain this across an await. */
 export function withViewHorizon<T>(ratio: number, draw: () => T): T {

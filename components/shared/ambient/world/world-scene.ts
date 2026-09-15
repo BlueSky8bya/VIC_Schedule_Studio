@@ -9,13 +9,25 @@ import type { Frame, Scene, SceneFactory } from "@/components/shared/ambient/sce
 import { createDepthPointer, depthOffsets, type DepthPoint } from "./depth";
 import { surfaceLocalPoint, withDepthScene, withDepthLayer, bakeDepthFrame, depthCacheStats, clearDepthCache, retainDepthOwners } from "./depth-render";
 import { createParticles } from "./particles";
-import { drawDepthHaze, drawLightPass, HORIZON_V, SPRING_MEADOW_HORIZON_V, withViewHorizon } from "./view";
+import { drawDepthHaze, drawLightPass, HORIZON_V, HILL_HORIZON_V, SPRING_MEADOW_HORIZON_V, withViewHorizon } from "./view";
 import { BIOMES, biomeAt, isBiomeKey, neighbor, screenDelta, type BiomeKey, type Dir } from "./biomes";
 import { BIOME_LOADERS } from "@/components/shared/ambient/scenes/biome-loaders";
 
 export const PAN_DUR = 0.62;
 const easeOutQuint = (p: number) => 1 - Math.pow(1 - p, 5);
 const DIRS: readonly Dir[] = ["up", "down", "left", "right"];
+
+/** Continuous travel projection: sky stays fixed, near terrain passes faster.
+ * The overscan is geometric, so no repeated edge pixels or transparent wedges. */
+export function travelStrip(v: number, phase: number, dx: number, dy: number, horizon: number) {
+  const depth = Math.max(0, Math.min(1, (v - horizon) / (1 - horizon)));
+  const near = depth * depth * (3 - 2 * depth);
+  const shiftX = Math.sign(dx) * phase * .14 * near;
+  const shiftY = Math.sign(dy) * phase * .075 * near;
+  // Scale only during travel; source and destination are exact at their endpoints.
+  const scale = 1 + Math.abs(phase) * .34 * near;
+  return { x: (1 - scale) / 2 + shiftX, y: v + Math.abs(phase) * .08 * near + shiftY, scale };
+}
 
 export type WorldNav = {
   go(target: BiomeKey | Dir): boolean;
@@ -32,7 +44,9 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
   const pinned = !!opts.pin;
   return (seed: number): Scene & { nav: WorldNav } => {
     const scenes = new Map<BiomeKey, Loaded>();
-    const inView = <T,>(key: BiomeKey, run: () => T): T => withViewHorizon(key === "meadow" ? SPRING_MEADOW_HORIZON_V : HORIZON_V, run);
+    const horizonOf = (key: BiomeKey) => key === "meadow" ? SPRING_MEADOW_HORIZON_V : key === "hill" ? HILL_HORIZON_V : HORIZON_V;
+    const inView = <T,>(key: BiomeKey, run: () => T): T => withViewHorizon(horizonOf(key), run);
+    const skyHorizonOf=(key:BiomeKey,f:Frame)=>scenes.get(key)?.scene.skyHorizon?.(f.w,f.h)??f.h*horizonOf(key);
     const pending = new Map<BiomeKey, Promise<void>>();
     let cur: BiomeKey = initial;
     let lastCoastX = 0;
@@ -52,8 +66,10 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     };
     const localFrame = (f: Frame, key:BiomeKey=cur): Frame => {
       const off = offsetsOf(f).ground;
-      if(key==='meadow'){
-        const local=(x:number,y:number)=>surfaceLocalPoint(x,y,off,f.h*SPRING_MEADOW_HORIZON_V,f.h);
+      if(key==='meadow'||key==='hill'){
+        const scene=scenes.get(key)?.scene,tier=f.depthTier??'full';
+        const motion=scene?.surfaceMotion?(x:number,y:number)=>scene.surfaceMotion!(x,y,tier)??0:undefined;
+        const local=(x:number,y:number)=>surfaceLocalPoint(x,y,off,f.h*horizonOf(key),f.h,motion);
         const p=local(f.p.x,f.p.y),a=f.hot?local(f.hot.x,f.hot.y):null,b=f.hot?local(f.hot.x+f.hot.w,f.hot.y+f.hot.h):null;
         return {...f,p:{...f.p,...p},hot:f.hot&&a&&b?{...f.hot,x:a.x,y:a.y,w:b.x-a.x,h:b.y-a.y}:null};
       }
@@ -125,7 +141,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       emit("vic:biome", { biome: cur, from, first, season, band: f.time.band });
     };
     const go = (target: BiomeKey | Dir): boolean => {
-      if (trans || !lastFrame) return false;
+      if (trans || queued || !lastFrame) return false;
       if (!pinned && !showcase() && target !== "meadow") return false; // 달력 뒤에선 초원 고정(fixture pin은 예외)
       const to = resolve(target);
       if (!to || to === cur) {
@@ -133,8 +149,10 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         return false;
       }
       if (scenes.has(to)) {
-        fit(scenes.get(to)!, lastFrame);
-        begin(to, lastFrame);
+        const target = scenes.get(to)!;
+        fit(target, lastFrame);
+        if (target.scene.ready?.() ?? true) begin(to, lastFrame);
+        else queued = to;
       } else {
         queued = to;
         void ensure(to);
@@ -160,7 +178,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     });
     const renderEntry = (entry: Loaded | undefined, g: CanvasRenderingContext2D, f: Frame) => {
       if (!entry) return;
-      const lf = localFrame(f,entry.key);
+      const lf = localFrame({...f,solarHorizon:f.solarHorizon??skyHorizonOf(entry.key,f)},entry.key);
       inView(entry.key, () => withDepthScene(g, offsetsOf(f), () => {
         entry.scene.draw(g, lf);
         if (entry.scene.sealed?.()) {
@@ -195,7 +213,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         if (f.reduced || !showcase() || f.depthTier === "still") pointer.reset(f.t);
         else if (!trans) pointer.aim(f.t - f.dt, f.p, f.w, f.h);
         // 감상 모드가 아니면 초원 고정 — 나가는 순간 스냅(달력 뒤에 다른 바이옴이 남지 않게).
-        if (!pinned && !showcase() && (cur !== "meadow" || trans)) {
+        if (!pinned && !showcase() && (cur !== "meadow" || trans || queued)) {
           trans = null;
           releasePanel();
           retainDepthOwners(scenes.has("meadow") ? [scenes.get("meadow")!] : []);
@@ -207,9 +225,14 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         if (queued && !trans) {
           const q = queued;
           if (scenes.has(q)) {
-            queued = null;
-            fit(scenes.get(q)!, f);
-            begin(q, f);
+            const target = scenes.get(q)!;
+            fit(target, f);
+            // Warm late-arriving art without advancing its simulation offscreen.
+            inView(q, () => target.scene.step({ ...localFrame(f, q), dt: 0 }));
+            if (target.scene.ready?.() ?? true) {
+              queued = null;
+              begin(q, f);
+            }
           } else if (!pending.has(q)) queued = null; // 로드 실패
         }
         const active = scenes.get(cur);
@@ -234,6 +257,55 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         const oy = Math.round(-trans.dy * p * f.h * f.dpr) / f.dpr;
         const from = scenes.get(trans.from);
         const to = scenes.get(trans.to);
+        // Continuous travel joins the two delivered terrain/sky contracts.
+        // Other biome pairs retain their existing directional panel transition
+        // until their new background and celestial contracts are delivered.
+        if ([trans.from,trans.to].every(key=>key==='meadow'||key==='hill')) {
+          // Render complete worlds (including light) once each. Reproject their
+          // rows with one continuous depth curve instead of sliding two cards.
+          // The departing world is opaque underneath; only the arrival fades.
+          const scale = Math.min(f.dpr, Math.sqrt(12 * 1024 * 1024 / (4 * f.w * f.h)) * .99);
+          const pw = Math.max(1, Math.floor(f.w * scale)), ph = Math.max(1, Math.floor(f.h * scale));
+          panCanvas ??= document.createElement("canvas");
+          if (panCanvas.width !== pw || panCanvas.height !== ph) { panCanvas.width = pw; panCanvas.height = ph; }
+          const pg = panCanvas.getContext("2d")!;
+          const solarHorizon = skyHorizonOf(trans.from,f)*(1-p)+skyHorizonOf(trans.to,f)*p;
+          const drawTravel = (entry: Loaded | undefined, phase: number, opacity: number) => {
+            if (!entry || !trans || !panCanvas) return;
+            pg.setTransform(pw / f.w, 0, 0, ph / f.h, 0, 0);
+            pg.globalAlpha = 1; pg.globalCompositeOperation = "source-over";
+            pg.clearRect(0, 0, f.w, f.h);
+            renderEntry(entry, pg, { ...f, solarHorizon });
+            g.save();
+            g.beginPath(); g.rect(0, 0, f.w, f.h); g.clip();
+            g.globalAlpha *= opacity;
+            g.imageSmoothingEnabled = true;
+            const bands = f.depthTier === "lite" || f.q < 2 ? 32 : 72;
+            // Both panels share a sky projection; keep that entire region
+            // stationary, including sky visible through the hill saddles.
+            const hz = Math.max(skyHorizonOf(trans.from,f),skyHorizonOf(trans.to,f))/f.h;
+            // One untouched sky span keeps sun/moon/stars at the shared position.
+            const split = Math.round(hz * f.h * f.dpr) / (f.h * f.dpr);
+            g.drawImage(panCanvas, 0, 0, pw, split * ph, 0, 0, f.w, split * f.h);
+            for (let i = 0; i < bands; i++) {
+              const v0 = split + (1 - split) * i / bands;
+              const v1 = split + (1 - split) * (i + 1) / bands;
+              const a = travelStrip(v0, phase, trans.dx, trans.dy, split);
+              const b = travelStrip(v1, phase, trans.dx, trans.dy, split);
+              const middle = travelStrip((v0 + v1) / 2, phase, trans.dx, trans.dy, split);
+              // Adjacent rows share rounded device boundaries: no dark overlap
+              // and no transparent hairline in night scenes.
+              const y0 = Math.round(a.y * f.h * f.dpr) / f.dpr;
+              const y1 = Math.round(b.y * f.h * f.dpr) / f.dpr;
+              g.drawImage(panCanvas, 0, v0 * ph, pw, (v1 - v0) * ph,
+                middle.x * f.w, y0, middle.scale * f.w, y1 - y0);
+            }
+            g.restore();
+          };
+          drawTravel(from, -p, 1);
+          drawTravel(to, 1 - p, p);
+          return;
+        }
         // 이동 방향 앞머리의 옅은 빛 띠 + 뒤쪽의 옅은 그늘 — "지금 그쪽으로 가고 있다"를 몸으로 알려 준다.
         const sweep = (gg: CanvasRenderingContext2D, ff: Frame, prog: number) => {
           if (!trans) return;

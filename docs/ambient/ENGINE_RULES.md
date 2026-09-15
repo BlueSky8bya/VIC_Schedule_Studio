@@ -20,6 +20,8 @@ The owner authorized [depth P0](../agent/decisions/ADR-0022-world-depth-and-show
 
 ## World, camera and time
 
+R51: delivered hill uses .42 horizon and the shared meadow seasonal material engine. A generated panoramic terrain is sampled with the same continuous near/far surface depth, avoiding rigid layer gaps; actual skyline also gates material alpha/picking. Meadow↔hill gets destination-ready 620ms depth travel with shared celestial projection; other pairs retain directional slides. [R51](rounds/ROUND-51-hill-runtime.md) records scope and verification.
+
 Ground detail policy (owner correction, 2026-09-11): preserve existing distant ground without additional downsampling. R29 replaces R28 mip degradation with new seasonal near-detail artwork, blended only below the source halfway point (smoothstep .5→.85). Original far pixels, geometry, aspect ratio, adaptive cache budgets and stationary/mobile/deep gates remain intact. One 1536×1024 composite adds 6 MiB per active meadow backdrop; no per-frame composition. See [ROUND-29](rounds/ROUND-29-near-ground-detail.md).
 
 R30 supersedes R28 rigid-bank deformation/moisture: each cloud has its own size-dependent life and bounded local drift, with three curved soft fragments that deform and separate individually. Small clouds dissolve faster; overcast retains broad cores. Full enables fragment deformation, lite omits it; all motion still follows engine stationary gates. Cache: at most 20 cloud forms / 16 MiB. This remains artistic behavior, not a forecast. Night lighting ramps use continuous masks rather than overlapping eight-band strips. See [ROUND-30](rounds/ROUND-30-cloud-parts-night-seams.md).

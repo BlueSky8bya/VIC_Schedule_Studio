@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {galacticEquatorial,horizon,julianDate,precess,projectSky,siderealDegrees,starColor} from '../../components/shared/ambient/world/celestial';
-import {visibleStars,moonSkyWash} from '../../components/shared/ambient/world/starfield';
+import {visibleStars,moonSkyWash,stellarExtinction,milkyExtinction,starProjectionTransform} from '../../components/shared/ambient/world/starfield';
 import {CLOUD_GENERA,cloudItems,cloudPool,cloudGroups,cloudAir,cloudDeformation,cloudVapor,cloudPartEvolution} from '../../components/shared/ambient/world/cloud-field';
 
 describe('Seoul star map',()=>{
@@ -45,6 +45,44 @@ describe('Seoul star map',()=>{
     expect(moonSkyWash(1,6)).toBeCloseTo(.5);
     expect(moonSkyWash(1,40)).toBe(1);
     expect(moonSkyWash(0,40)).toBe(0);
+  });
+  it('fades low stars continuously without the former three-degree cutoff',()=>{
+    expect(stellarExtinction(-1)).toBe(0);expect(stellarExtinction(0)).toBe(0);
+    expect(stellarExtinction(.01)).toBeGreaterThan(0);
+    expect(stellarExtinction(2.99)).toBeGreaterThan(0);
+    expect(stellarExtinction(3.01)-stellarExtinction(2.99)).toBeLessThan(.002);
+    expect(stellarExtinction(12)).toBe(1);expect(stellarExtinction(90)).toBe(1);
+    for(let alt=.1;alt<=12;alt+=.1)expect(stellarExtinction(alt)).toBeGreaterThan(stellarExtinction(alt-.1));
+    expect(projectSky(180,-.01,1400,361,'south')).toBeNull();
+  });
+  it('keeps a faint gradual galactic tail without multiplying horizon extinction',()=>{
+    expect(milkyExtinction(-1)).toBe(0);expect(milkyExtinction(0)).toBe(0);
+    expect(milkyExtinction(30)).toBe(1);expect(milkyExtinction(90)).toBe(1);
+    for(const alt of [.5,1,2,3,6]){
+      const former=stellarExtinction(alt)*stellarExtinction(alt,3);
+      expect(milkyExtinction(alt)).toBeGreaterThan(former);
+    }
+    expect(milkyExtinction(3)).toBeGreaterThan(.3);
+    expect(milkyExtinction(12)).toBeLessThan(.95);
+    for(let alt=.1;alt<=30;alt+=.1){
+      const change=milkyExtinction(alt)-milkyExtinction(alt-.1);
+      expect(change).toBeGreaterThan(0);expect(change).toBeLessThan(.025);
+    }
+  });
+  it('reprojects a stable sky cache without shifting catalogue altitude or azimuth',()=>{
+    const width=1400,baseH=860*.26;
+    for(const bearing of ['north','east','south','west'] as const){
+      const source=visibleStars({y:2026,m:1,d:13,hour:23},width,baseH,bearing);
+      for(const h of [860*.35,860*.367,860*.4,860*.42]){
+        const tr=starProjectionTransform(width,baseH,h,bearing);
+        for(const star of source){
+          const direct=projectSky(star.az,star.alt,width,h,bearing);
+          if(!direct)continue;
+          expect(star.x*tr.sx+tr.tx).toBeCloseTo(direct.x,8);
+          expect(star.y*tr.sy+tr.ty).toBeCloseTo(direct.y,8);
+        }
+      }
+    }
   });
 });
 
