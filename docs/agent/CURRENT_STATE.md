@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: R39–R49 accepted for release (2026-09-15). Responsive loading, natural meadow ridge and shared seasonal material simulation locally verified. [R49](../ambient/rounds/ROUND-49-dry-grass-material.md) records final winter art. Production verification pending.
+Current: [R50](../ambient/rounds/ROUND-50-fresh-summer-leaves.md) summer leaves brightened to fresh greens; locally verified and push authorized. R39–R49 shipped as65fd1570. Production verification pending.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -15,7 +15,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| AMB-RELEASE | Release verification | Verify deployed R39–R49 after authorized push | [R49](../ambient/rounds/ROUND-49-dry-grass-material.md) |
+| AMB-RELEASE | Release verification | Verify R50 after authorized push | [R50](../ambient/rounds/ROUND-50-fresh-summer-leaves.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |

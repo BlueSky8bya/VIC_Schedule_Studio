@@ -113,7 +113,7 @@ type Whirl = { x: number; y: number; vx: number; vy: number; t0: number; dur: nu
 export function createAutumn(seed: number, season:SeasonKey = "autumn"): Scene {
   const SPECIES:Species[]=AUTUMN_SPECIES.map((sp,i)=>{
     if(season==='autumn')return sp;
-    if(season==='summer')return {...sp,needle:false,colors:['#789057','#829b5f','#658451'],size:sp.size};
+    if(season==='summer')return {...sp,needle:false,colors:['#78b95e','#91c96a','#64aa56'],size:sp.size};
     if(season==='spring')return {shape:i,colors:[['#e4a6b5','#f1c8ce','#dba0b6'],['#e8d4b2','#f2debf','#ead1b6'],['#cdb5d5','#e5cddd','#d7bfd8']][i%3],size:[25,42],weight:sp.weight};
     return {shape:i,colors:['#bba67b','#c5b18a','#ac9871'],size:[34,60],weight:sp.weight};
   });
