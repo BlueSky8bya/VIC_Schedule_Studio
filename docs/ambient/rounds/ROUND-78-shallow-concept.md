@@ -1,0 +1,12 @@
+# R78 — Shallow sea placement and concept
+
+Owner requested minimap/navigation placement and a shallow sea concept. Twelve biomes now: three coast cells feed shallow (y=2), open sea (y=3), deep (y=4). Returning north preserves the coast column; marine left/right remain blocked. Existing saved string keys remain valid.
+
+Shallow is explicitly a static composition preview, with no creatures, drifting props, live weather or seasonal animation. It owns its painted sky temporarily. Full seasonal separation and wave motion follow concept feedback. Existing deep isolation is untouched. Owner authorized archive and push on 2026-09-16; resume from the [marine handoff](../../agent/handoffs/20260916-marine-biomes-resume.md).
+
+Built-in imagegen output copied unchanged to `public/ambient/art/concept-shallow-v1.png`; source `C:/Users/im917/.codex/generated_images/01a08b85-9859-73e2-bac5-05ce6f2f5a1d/exec-d5c1c493-ff05-4f67-9c03-9af74028e66d.png`. No reference image supplied.
+
+Prompt:
+> Create one 16:9 concept image for a shallow sea biome in a fine pixel-painted tranquil game landscape. Elevated shore-facing-out camera, broad open sky upper 38 percent with soft airy clouds, straight distant ocean horizon, entire lower 62 percent is WATER, no dry beach foreground. Closest clear turquoise shallows reveal subtle pale submerged sand ripples and a few irregular underwater stone patches, gradual depth transition into deeper blue distance. Delicate painted ripples and broken soft sunlight reflections integrated into water, no mechanically repeated wave lines. Natural asymmetric organic detail, restrained cyan jade and blue, high detail foreground softer distant sea. Match sophisticated cozy pixel-painted meadow/coast background art, not cartoon outlines or photorealism. No fish, animals, boats, people, plants, floating leaves, decorations, UI, text or border. This is an above-water scene with sky, not an underwater cross section. Broad inviting scale, continuous water surface.
+
+Verification: typecheck, lint and five navigation unit tests passed. Production build, rendered navigation through all three marine rows, return to the originating coast, twelve minimap buttons and clicking shallow passed without page errors. Captures: `.scratch-pw/r78-preview.png`, `.scratch-pw/r78-map.png`. A/B reviews found no blockers; C identified an inherited foreground overlay, removed for shallow only and verified in the final rendered capture. Harness and diff checks passed. Public DTO and KST behavior unchanged.

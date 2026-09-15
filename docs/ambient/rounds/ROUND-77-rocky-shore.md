@@ -2,7 +2,7 @@
 
 Owner accepted rocky concept and requested the same painted-wave motion as sandy coast. Implement four matched seasons, shared sky/weather/light and continuous depth. Protect rock surfaces with a cached water mask; sheltered pools receive smaller distortion. No flying decorations or creatures. Reuse sandy renderer and preserve sandy behavior. Verify pixels on rocks remain static while sea/pools move; four seasons, aspect ratios, night/fog, motion gates and fallback. No push requested.
 
-## Delivered locally
+## Delivered — pushed as 3e5b6c14
 
 - Four seasonal rocky assets use the shared coastal renderer, sky, weather, time and continuous depth parallax. Existing painted water deforms; no synthetic wave lines added.
 - A cached mask from neutral summer geometry protects rocks in every season, including blue winter shadows. Sea receives full motion; sheltered pools about one quarter. Eroded edges fade motion before rock boundaries. Mask failure leaves water still.

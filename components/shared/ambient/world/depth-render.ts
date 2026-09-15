@@ -138,7 +138,7 @@ export function bakeDepthFrame(w: number, h: number, biome: string, season: stri
   const c = document.createElement("canvas"); c.width = Math.ceil(w + 64); c.height = 96;
   const g = c.getContext("2d")!;
   const deep = biome === "deep";
-  const water = biome === "sea";
+  const water = biome === "sea" || biome === "shallow";
   const gravel = ["tidal", "sandy", "rocky", "pond", "valley", "mountain"].includes(biome);
   const pale = season === "winter" && !water;
   g.fillStyle = deep ? "rgba(110,153,172,.12)" : water ? "rgba(120,175,183,.12)" : pale ? "rgba(180,198,214,.24)" : "rgba(86,112,97,.22)";

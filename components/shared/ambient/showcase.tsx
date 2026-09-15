@@ -232,6 +232,7 @@ const SHORT: Record<BiomeKey, string> = {
   tidal: "갯벌",
   sandy: "모래",
   rocky: "암석",
+  shallow: "얕은바다",
   sea: "먼바다",
   deep: "깊은바다"
 };

@@ -89,7 +89,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
           .then((factory) => {
             if (disposed) return;
             const scene = inView(key, () => factory(seed + key.length * 131 + key.charCodeAt(0) * 17));
-            const entry: Loaded = { key, scene, sizeKey: "", particles: createParticles(seed, !['tidal','sandy','rocky','sea'].includes(key)) };
+            const entry: Loaded = { key, scene, sizeKey: "", particles: createParticles(seed, !['tidal','sandy','rocky','shallow','sea'].includes(key)) };
             scenes.set(key, entry);
             if (lastFrame) {
               fit(entry, lastFrame);
@@ -190,7 +190,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
       inView(entry.key, () => withDepthScene(g, offsetsOf(f), () => {
         entry.scene.draw(g, lf);
         if (entry.scene.sealed?.()) {
-          if (entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
+          if (entry.key !== "shallow" && entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
           return;
         }
         if (entry.scene.splitHaze?.()) {

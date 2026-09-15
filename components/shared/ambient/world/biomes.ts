@@ -1,8 +1,8 @@
-// 바이옴 지도(2026-09-04, PLAN-20260904-004 §3) — 초원을 가운데 둔 3×3 + 남쪽 바다 두 줄 = 열한 화면. 방향은 오행 방위(북 = 물, 서 = 금/돌,
+// 바이옴 지도(2026-09-04, PLAN-20260904-004 §3) — 초원을 가운데 둔 3×3 + 남쪽 바다 세 줄 = 열두 화면. 방향은 오행 방위(북 = 물, 서 = 금/돌,
 // 동 = 목/숲), 바다는 남쪽에서 시작해 남으로 갈수록 깊어진다. 먼바다·깊은 바다는 뭍이 없고 세 해안 어디서 내려가도 같은 화면(x를 0으로 접는다).
 // 마을길·텃밭은 없다(소유자 ⓪). 좌표 (gx, gy): 초원 (0,0), 위가 −y.
 
-export type BiomeKey = "valley" | "pond" | "mountain" | "hill" | "meadow" | "forest" | "tidal" | "sandy" | "rocky" | "sea" | "deep";
+export type BiomeKey = "valley" | "pond" | "mountain" | "hill" | "meadow" | "forest" | "tidal" | "sandy" | "rocky" | "shallow" | "sea" | "deep";
 export type Dir = "up" | "down" | "left" | "right";
 
 export type BiomeDef = {
@@ -27,8 +27,9 @@ export const BIOMES: Record<BiomeKey, BiomeDef> = {
   tidal: { key: "tidal", nameKo: "갯벌", nameEn: "Tidal flat", gx: -1, gy: 1, blurb: "뻘과 물골, 밀물·썰물 — 칠게 떼·짱뚱어", land: true },
   sandy: { key: "sandy", nameKo: "모래해안", nameEn: "Sandy shore", gx: 0, gy: 1, blurb: "모래·조개·유목, 파도가 발자국을 지운다", land: true },
   rocky: { key: "rocky", nameKo: "암석해안", nameEn: "Rocky shore", gx: 1, gy: 1, blurb: "검은 바위와 물웅덩이, 물보라 — 가마우지·물범", land: true },
-  sea: { key: "sea", nameKo: "먼바다", nameEn: "Open sea", gx: 0, gy: 2, blurb: "바다만 — 너울·물고기 떼·상어", land: false },
-  deep: { key: "deep", nameKo: "깊은 바다", nameEn: "Deep sea", gx: 0, gy: 3, blurb: "어둡고 느린 물 — 발광 해파리·고래 그림자", land: false }
+  shallow: { key: "shallow", nameKo: "얕은 바다", nameEn: "Shallow sea", gx: 0, gy: 2, blurb: "맑은 청록빛 수면과 비치는 모래 바닥 — 시안 준비", land: false },
+  sea: { key: "sea", nameKo: "먼바다", nameEn: "Open sea", gx: 0, gy: 3, blurb: "바다만 — 너울·물고기 떼·상어", land: false },
+  deep: { key: "deep", nameKo: "깊은 바다", nameEn: "Deep sea", gx: 0, gy: 4, blurb: "어둡고 느린 물 — 발광 해파리·고래 그림자", land: false }
 };
 
 /** 미니맵 순서(위 줄부터). */
@@ -36,6 +37,7 @@ export const BIOME_ROWS: BiomeKey[][] = [
   ["valley", "pond", "mountain"],
   ["hill", "meadow", "forest"],
   ["tidal", "sandy", "rocky"],
+  ["shallow"],
   ["sea"],
   ["deep"]
 ];
@@ -44,8 +46,9 @@ export const isBiomeKey = (v: unknown): v is BiomeKey => typeof v === "string" &
 
 /** 좌표 → 바이옴(없으면 null). gy ≥ 2는 x를 접는다(세 해안 어디서 내려가도 같은 바다). */
 export function biomeAt(gx: number, gy: number): BiomeKey | null {
-  if (gy === 2) return "sea";
-  if (gy === 3) return "deep";
+  if (gy === 2) return "shallow";
+  if (gy === 3) return "sea";
+  if (gy === 4) return "deep";
   for (const b of Object.values(BIOMES)) if (b.gx === gx && b.gy === gy) return b.key;
   return null;
 }
@@ -58,8 +61,8 @@ export function neighbor(from: BiomeKey, dir: Dir, lastCoastX = 0): BiomeKey | n
   const [dx, dy] = DELTA[dir];
   if (b.gy >= 2) {
     if (dx !== 0) return null;
-    if (dir === "up") return b.gy === 2 ? biomeAt(lastCoastX, 1) : "sea";
-    return b.gy === 2 ? "deep" : null;
+    if (dir === "up") return b.gy === 2 ? biomeAt(lastCoastX, 1) : biomeAt(0, b.gy - 1);
+    return biomeAt(0, b.gy + 1);
   }
   return biomeAt(b.gx + dx, b.gy + dy);
 }
