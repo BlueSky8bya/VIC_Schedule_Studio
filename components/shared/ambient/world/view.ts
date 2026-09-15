@@ -118,12 +118,15 @@ const hazeCache = new Map<string, CanvasGradient>();
 export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w: number, h: number, light?: Light) {
   const c = light?.hazeRgb || HZ_COLORS[season].haze;
   const a = Math.min(0.6, HAZE_ALPHA * (light?.hazeK ?? 1));
-  const key = `${season}:${w}:${h}:${c}:${a.toFixed(4)}`;
-  let grad = hazeCache.get(key);
   const start = horizonY(h) * 0.85; // (검토 C: 안개는 대기 하부의 현상 — 넓어진 하늘의 위쪽은 건드리지 않는다) (옛 hz·0.4 = 지평선 위 .072h) 지평선 **위**에서 0으로 시작 — 지평선에서 바로 0.34로 켜지면 화면을 가로지르는 선이 생기고,
   //                        지평선을 걸친 물체는 아래(가까운)쪽만 하얘져 원근이 뒤집힌다(2026-09-04 검토 1차).
+  const end = hazeEndY(h);
+  // Gradients use absolute scene coordinates. Different biome horizons must not
+  // reuse a ramp whose nonzero middle would be clipped at this scene's start.
+  const key = `${season}:${w}:${h}:${start}:${end}:${c}:${a.toFixed(4)}`;
+  let grad = hazeCache.get(key);
   if (!grad) {
-    grad = g.createLinearGradient(0, start, 0, hazeEndY(h));
+    grad = g.createLinearGradient(0, start, 0, end);
     grad.addColorStop(0, `rgb(${c} / 0)`);
     grad.addColorStop(0.16, `rgb(${c} / ${a})`);
     grad.addColorStop(0.5, `rgb(${c} / ${a * 0.42})`);
@@ -134,7 +137,7 @@ export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w:
   g.save();
   g.fillStyle = grad;
   const pad = depthPadding(g);
-  g.fillRect(-pad, start, w + 2 * pad, hazeEndY(h) - start + 2);
+  g.fillRect(-pad, start, w + 2 * pad, end - start + 2);
   g.restore();
 }
 

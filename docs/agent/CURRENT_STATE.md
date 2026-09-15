@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R69 fog boundary](../ambient/rounds/ROUND-69-fog-sky-boundary.md) locally verified: remove sky/ground opacity jump. [R68 entry focus](../ambient/rounds/ROUND-68-showcase-entry-focus.md) retained. R68–69 release to main authorized; deployment unverified. R66–67 pushed as f9521032; deployment unverified.
+Current: [R70 cross-biome haze cache](../ambient/rounds/ROUND-70-haze-cache-horizon.md) fixes the remaining first-visit sky stripe; local verification complete, owner authorized push to main. R68–69 pushed as a20d3c59. Deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
