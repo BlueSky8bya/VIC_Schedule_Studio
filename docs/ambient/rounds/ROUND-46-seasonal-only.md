@@ -1,0 +1,7 @@
+# R46 — Seasonal interactive material only
+
+User extends R45 removal to all four seasons: retain petals, green leaves, autumn leaves and winter interactive material; remove every separate creature/decorative prop. Shared autumn-style pointer breeze required across seasons.
+
+Implementation: shared meadow dressing policy disables creature simulation/spawn/interaction and decorative rendering in spring/summer/winter, autumn acorn/squirrel spawning, trace/tree dressing. Background image layers, sky/weather and seasonal material remain. Autumn leaf material draws after foreground before lighting like the other seasons. Shared allocation-free pointerBreeze now owns radial push/tangential wake, radius, load/distance attenuation and velocity cap for all four seasons; material-specific folding/spin/lift remain. Public/KST/mobile/showcase contracts unchanged. Winter material itself unchanged until replacement choice.
+
+Verification: final build, lint/typecheck, affected13 tests and full85 files/878 tests passed. Four seasons noon/night, lower-corner grab/drag/release, 90s simulated state and failed-source captures completed (`.scratch-pw/qa/r46`). No acorns/squirrel after90s; winter prints/walker/rabbit absent. B/C found failed-source props still baked; fixed by early base-only cache finalization before props, then rebuilt and captured failure paths. C confirms finding closed. A reviewed16 captures: no unwanted creatures/props in normal or failed-art scenes, seasonal material remains above foreground; no blocker. No push requested.

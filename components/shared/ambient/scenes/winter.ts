@@ -1,3 +1,4 @@
+import { meadowDressingEnabled } from "../world/meadow-policy";
 import { drawMeadowFacing } from "../world/meadow-softness";
 import { MeadowDrift } from "../world/meadow-drift";
 import { meadowActivityTop, meadowActivityAlpha, meadowSize, meadowSpeed } from "../world/meadow-activity";
@@ -340,7 +341,7 @@ export function createWinter(seed: number): Scene {
   function bakeGround(dpr: number) {
     if (backdrop.pending) return;
     backdropVersion = backdrop.version;
-    bakeSprites();
+    if (meadowDressingEnabled()) bakeSprites();
     const g0 = rng((seed * 7 + 13) >>> 0);
     resetPropField();
     const { c, g } = makeCanvas(w * dpr, h * dpr);
@@ -352,6 +353,13 @@ export function createWinter(seed: number): Scene {
       gw = w; gh = h; gdpr = dpr; gav = groundArt.version; gsh = shadowKey(currentLight());
       return;
     }
+    if (!meadowDressingEnabled()) {
+      const colors=['#f4f9ff','#a8c0d8'],base=g.createLinearGradient(0,0,0,h);
+      base.addColorStop(0,colors[0]);base.addColorStop(1,colors[1]);g.fillStyle=base;g.fillRect(0,0,w,h);
+      ground=c;horizon=null;gw=w;gh=h;gdpr=dpr;gav=groundArt.version;gsh=shadowKey(currentLight());
+      return;
+    }
+
     const base = g.createLinearGradient(0, 0, 0, h);
     base.addColorStop(0, "#f4f9ff");
     base.addColorStop(1, "#a8c0d8");
@@ -638,6 +646,7 @@ export function createWinter(seed: number): Scene {
       w = f.w;
       h = f.h;
       if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || gav !== groundArt.version) bakeGround(f.dpr);
+      if (!meadowDressingEnabled()) return;
       // 이미 지나간 자국 두 줄 — 산 자국으로(포인터로 지울 수 있게). 한 번만.
       if (!seeded) {
         seeded = true;
@@ -663,6 +672,7 @@ export function createWinter(seed: number): Scene {
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
       if (!ground || (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (!meadowDressingEnabled()) return;
       const { dt, t, p, load } = f;
       // ① 손님 — 여력 0.2부터. 빈도는 여력에 비례(여유로우면 6~14초, 빠듯하면 28~48초 간격).
       if (!walker.active && t > nextWalker && load >= 0.2) startWalker(t, load);
@@ -940,6 +950,7 @@ export function createWinter(seed: number): Scene {
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
 
       if (!backdrop.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
+      if (!meadowDressingEnabled()) return;
       const t = f.t;
       for (const k of twinkles) {
         const a = (0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph))) * meadowActivityAlpha(k.y - k.r, f.h);
@@ -1086,9 +1097,10 @@ export function createWinter(seed: number): Scene {
       }
     },
     splitHaze: () => true,
-    drawAbove(g, f) { if (!backdrop.pending) drift.draw(g, f); },
+    drawAirborne(g, f) { if (!backdrop.pending) drift.draw(g, f); },
     pointerDown(f, onBackground) {
       if (drift.pointerDown(f, onBackground)) return true;
+      if (!meadowDressingEnabled()) return false;
       if (f.load < 0.15) return false;
       // 토끼를 누르면 놀라 뛰어나간다(어디서든).
       if (rabbit && rabbit.phase !== "flee" && Math.hypot(rabbit.x - f.p.x, rabbit.y - f.p.y) < 34) {

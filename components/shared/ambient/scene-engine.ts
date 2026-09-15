@@ -117,6 +117,8 @@ export interface Scene {
   draw(g: CanvasRenderingContext2D, f: Frame): void;
   /** True when a scene supplied its own near layer; false retains the fallback. */
   drawForeground?(g: CanvasRenderingContext2D, f: Frame): boolean;
+  /** Airborne material clears near grass, but still receives scene lighting. */
+  drawAirborne?(g: CanvasRenderingContext2D, f: Frame): void;
   /** 눌림. onBackground = UI가 아닌 바탕 위. 소비했으면 true. */
   pointerDown?(f: Frame, onBackground: boolean): boolean;
   pointerUp?(f: Frame): void;
@@ -503,6 +505,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       drawDepthHaze(g, world.season, w, h, frame.light);
     }
     // 조명 패스(world/light.ts): 지면 안개 층 → 하늘 오버레이 → 지면 노출(multiply) → 채도 → 옅은 틴트. 점심·맑음은 전부 항등.
+    scene.drawAirborne?.(g, frame);
     drawLightPass(
       g,
       w,

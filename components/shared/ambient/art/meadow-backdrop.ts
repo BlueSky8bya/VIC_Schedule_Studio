@@ -10,6 +10,7 @@ import autumnGeometry from "./meadow-autumn-layer-geometry.json";
 import winterGeometry from "./meadow-winter-layer-geometry.json";
 import type { SeasonKey } from "../registry";
 import { meadowLayerGroundCrop } from "./backdrop-manifest";
+import { ridgeTexture, paintMeadowRidge } from "./meadow-ridge";
 
 type Layer = keyof typeof geometry;
 type Cache = { c: HTMLCanvasElement; key: string; width: number; height: number; y: number };
@@ -39,12 +40,16 @@ export class MeadowBackdrop {
     detail.src = `/ambient/art/backdrop-meadow-${season}-near-detail-v1.png`;
     const detailReady = detail.decode().then(() => detail).catch(() => null);
     void Promise.all(meadowLayerUrls(season).map(url => loadImage(url).then(async image => { await image.decode(); return image; })))
-      .then(images => {
+      .then(async images => {
         if (this.disposed || images.some(i => i.naturalWidth !== 1536 || i.naturalHeight !== 1024)) {
           detail.removeAttribute("src"); this.detailImage = undefined; return;
         }
-        LAYERS.forEach((layer, index) => {
-          if (layer === "ground") { this.images[layer] = images[index]; return; }
+        for (const [index, layer] of LAYERS.entries()) {
+          // Decoded assets can all settle in one microtask batch. Yield between
+          // composition stages so calendar clicks/scrolls are not queued behind it.
+          await new Promise<void>(resolve => setTimeout(resolve, 0));
+          if(this.disposed)return;
+          if (layer === "ground") { this.images[layer] = images[index]; continue; }
           // Select integer source pixels BEFORE any fractional cache scaling.
           // A scaled clip has antialiased coverage and can sample RGB matte
           // outside a valid span even with imageSmoothingEnabled=false.
@@ -56,14 +61,14 @@ export class MeadowBackdrop {
           for(const [sx,sy,width] of spans)cg.drawImage(images[index],sx,sy,width,1,sx-x,sy-y,width,1);
           // Feather only already-clean pixels; the excluded magenta matte never returns.
           if(layer==='far'){
-            const soft=document.createElement('canvas');soft.width=c.width;soft.height=c.height;
-            const sg=soft.getContext('2d')!;sg.filter='blur(1.6px)';sg.drawImage(c,0,0);
-            cg.clearRect(0,0,c.width,c.height);cg.drawImage(soft,0,0);soft.width=soft.height=1;
+            const texture=ridgeTexture(c);c.width=c.height=1;
+            this.masked[layer]={c:texture,x:0,y:0};continue;
           }
           this.masked[layer]={c,x,y};
-        });
+        }
         // Commit original and near-detail together: no old texture flashes first.
-        return detailReady.then(near => {
+        return detailReady.then(async near => {
+          await new Promise<void>(resolve => setTimeout(resolve, 0));
           if (this.disposed) return;
           if (near?.naturalWidth === 1536 && near.naturalHeight === 1024) {
             this.nearGround = composeNearGround(images[1], near);
@@ -126,6 +131,7 @@ export class MeadowBackdrop {
     c.width = Math.ceil(width * scale); c.height = Math.ceil(height * scale);
     const g = c.getContext("2d")!;
     g.scale(scale, scale); g.imageSmoothingEnabled = layer === "far";
+    if(layer === "far")g.imageSmoothingQuality = "high";
     const paint = (x: number, yy: number, k: number, clip?: [number, number, number, number], kx = k) => {
       g.save();
       if (clip) { g.beginPath(); g.rect(...clip); g.clip(); }
@@ -135,18 +141,10 @@ export class MeadowBackdrop {
     };
     const k = Math.min(.65, Math.max(.3, f.h / 2048));
     if (layer === "far") {
-      const tw = 1536 * k, base = this.geometry.far.bounds[3], left = (width - tw) / 2;
-      for (let i = Math.floor(-left / tw); i < Math.ceil((width - left) / tw); i++) {
-        const x = Math.round((left + i * tw) * scale) / scale;
-        const right = Math.round((left + (i + 1) * tw) * scale) / scale;
-        // Quantize both boundaries and overlap one backing pixel; fractional
-        // widths otherwise expose a vertical seam on portrait displays.
-        const tileWidth = right - x + 1 / scale;
-        // Use the whole textured ridge for overlap; stretching a single bottom
-        // row produces vertical streaks. Lowest winter crest must remain above H.
-        const ridgeHeightScale = Math.max(.8, k + .35);
-        paint(x, 94 - base * ridgeHeightScale, ridgeHeightScale, undefined, tileWidth / 1536);
-      }
+      paintMeadowRidge(g,this.masked.far!.c,width,scale,f.w,k);
+      const soft=document.createElement('canvas');soft.width=c.width;soft.height=c.height;
+      soft.getContext('2d')!.drawImage(c,0,0);
+      g.clearRect(0,0,width,height);g.filter='blur(1.4px)';g.drawImage(soft,0,0,width,height);g.filter='none';soft.width=soft.height=1;
       // Blend the ridge's bottom into M instead of exposing the source cut line.
       const fade = g.createLinearGradient(0, 78, 0, 94);
       fade.addColorStop(0, "#fff"); fade.addColorStop(1, "rgba(255,255,255,0)");

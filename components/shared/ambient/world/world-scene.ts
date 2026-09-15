@@ -176,6 +176,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
           drawDepthHaze(g, season, f.w, f.h, f.light);
         }
         if (!entry.scene.drawForeground?.(g, lf) && entry.front) withDepthLayer(g, "frame", () => g.drawImage(entry.front!.c, -32, entry.front!.y));
+        entry.scene.drawAirborne?.(g, lf);
         drawLightPass(g, f.w, f.h, f.light, entry.scene.fogFloor ? x => entry.scene.fogFloor!(x, lf) : null, entry.scene.fogFloorKey?.(lf) ?? "");
       }, f.depthTier ?? "full", entry));
     };

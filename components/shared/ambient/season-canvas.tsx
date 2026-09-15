@@ -5,9 +5,8 @@
 // 안 들어간다. 보이는 조건은 CSS(app/ambient.css `.gs-season`)가 쥐고, 엔진은 html 속성(생동감·gfx·계절 스위치)을 지켜보며 루프를 멈춘다.
 
 import { useEffect, useRef } from "react";
-import { mountScene, type WorldCtx } from "@/components/shared/ambient/scene-engine";
+import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
-import { createWorld } from "@/components/shared/ambient/world/world-scene";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { exitShowcase } from "@/components/shared/ambient/showcase";
 
@@ -23,6 +22,9 @@ export function SeasonCanvas({ season, slug, year, month, force }: { season: Sea
     const mobile = window.matchMedia(MOBILE_QUERY);
     const html = document.documentElement;
     let dispose: (() => void) | undefined;
+    let cancelled = false;
+    let starting = false;
+    let startTimer: ReturnType<typeof setTimeout> | undefined;
     const syncMount = () => {
       if (mobile.matches) {
         // CSS로 숨기는 것만으로는 장면 import/아트 decode/첫 bake를 막지 못한다.
@@ -32,15 +34,26 @@ export function SeasonCanvas({ season, slug, year, month, force }: { season: Sea
         return;
       }
       // 한 번 켠 PC 장면은 설정 OFF에도 보존한다. 정지/재개는 엔진이 맡는다.
-      if (dispose || html.dataset.ambient === "off" || html.dataset.gfx === "off" || html.dataset.gfx === "soft") return;
-      const parsed = forceRef.current ? (JSON.parse(forceRef.current) as WorldCtx["force"]) : undefined;
-      dispose = mountScene(canvas, createWorld(season, parsed?.biome ?? "meadow", { pin: parsed?.pin }), { slug, season, year, month, force: parsed });
+      if (dispose || starting || cancelled || html.dataset.ambient === "off" || html.dataset.gfx === "off" || html.dataset.gfx === "soft") return;
+      starting = true;
+      // Let hydration/input handlers finish before importing and mounting the
+      // decorative engine. It must never be a prerequisite for using the calendar.
+      startTimer = setTimeout(() => {
+        if(cancelled || mobile.matches || html.dataset.ambient === "off" || html.dataset.gfx === "off" || html.dataset.gfx === "soft") { starting = false; return; }
+        void Promise.all([import("./scene-engine"), import("./world/world-scene")]).then(([{mountScene},{createWorld}]) => {
+          if(cancelled || mobile.matches || html.dataset.ambient === "off" || html.dataset.gfx === "off" || html.dataset.gfx === "soft")return;
+          const parsed = forceRef.current ? (JSON.parse(forceRef.current) as WorldCtx["force"]) : undefined;
+          dispose = mountScene(canvas, createWorld(season, parsed?.biome ?? "meadow", { pin: parsed?.pin }), { slug, season, year, month, force: parsed });
+        }).catch(error => console.error("Ambient background could not start", error)).finally(() => { starting = false; });
+      }, 0);
     };
     const observer = new MutationObserver(syncMount);
     observer.observe(html, { attributes: true, attributeFilter: ["data-ambient", "data-gfx", "data-showcase"] });
     mobile.addEventListener("change", syncMount);
     syncMount();
     return () => {
+      cancelled = true;
+      clearTimeout(startTimer);
       observer.disconnect();
       mobile.removeEventListener("change", syncMount);
       dispose?.();

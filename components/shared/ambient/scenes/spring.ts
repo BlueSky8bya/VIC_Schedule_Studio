@@ -1,3 +1,4 @@
+import { meadowDressingEnabled } from "../world/meadow-policy";
 import { drawMeadowImage } from "../world/meadow-softness";
 import { MeadowDrift } from "../world/meadow-drift";
 import { meadowActivityTop, meadowActivityAlpha, meadowSize, meadowSpeed } from "../world/meadow-activity";
@@ -246,16 +247,22 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     }
     backdrop?.drawGround(g, w, h);
     backdropVersion = backdrop?.version ?? 0;
+    if (!meadowDressingEnabled()) {
+      ground=c;blades=null;horizon=null;
+      gw=w;gh=h;gdpr=dpr;gav=groundArt.version;gsh=shadowKey(currentLight());
+      return;
+    }
+
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적(같은 g0 순서).
     // 3/4 시점: 클로버(납작)는 세로로 눌리고, 데이지·풀포기(서 있음)는 위(멀다)에서 작다. 꽃은 축척표대로 과장(SIZE.flower 26).
-    const clovers = Math.round((w * h) / (summer ? 110000 : 42000)); // 봄 잔디엔 클로버가 흔하고, 여름 풀숲에선 키큰 풀에 묻힌다
+    const clovers = meadowDressingEnabled() ? Math.round((w * h) / 110000) : 0; // Separate dressing is deferred in every season.
     for (let i = 0; i < clovers; i++) {
       const x = g0() * w;
       const y = groundY(g0());
       drawProp(g, groundArt, "clover", x, y, { k: (0.8 + g0() * 0.5) * depthScale(y, h) * smallK(y), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     daisies.length = 0;
-    const nd = Math.round((w * h) / (summer ? 200000 : 46000)); // 여름 초원은 꽃이 드물다
+    const nd = meadowDressingEnabled() ? Math.round((w * h) / 200000) : 0; // 여름 초원은 꽃이 드물다
     // 꽃은 **군락**으로 핀다 — 화면 전체에 균일 간격으로 흩뿌리면 종이 조각(콘페티)으로 읽힌다(사이클3 미관 #5).
     let fcx = 0;
     let fcy = 0;
@@ -276,7 +283,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       const k = (0.9 + g0() * 0.3) * flowerK * depthScale(y, h) * smallK(y);
       drawProp(g, groundArt, "daisy", x, y + 8 * k, { k, r: g0(), flip: g0() < 0.5 });
     }
-    const nPetals = Math.round((w * h) / 120000);
+    const nPetals = meadowDressingEnabled() ? Math.round((w * h) / 120000) : 0;
     for (let i = 0; i < nPetals; i++) {
       g.fillStyle = "rgb(244 200 216 / 0.7)";
       g.beginPath();
@@ -349,7 +356,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     horizon = backdrop?.ready ? null : bakeHorizon(variant, w, h, 1);
     // 민들레 자리(4~7) — 데이지에서 떨어진 곳.
     dands.length = 0;
-    const ndd = clamp(Math.round((w * h) / 260000), 4, 7);
+    const ndd = meadowDressingEnabled() ? clamp(Math.round((w * h) / 260000), 4, 7) : 0;
     for (let i = 0; i < ndd; i++) {
       dands.push({ x: 40 + g0() * (w - 80), y: gy() + 40 + g0() * (h - gy() - 80), k: (summer ? 1 : .6) * (0.85 + g0() * 0.35), puffed: 0, regrow: 0, born: -10 });
     }
@@ -765,9 +772,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     resize(f) {
       w = f.w;
       h = f.h;
-      bakeSprites();
+      if (meadowDressingEnabled()) bakeSprites();
       if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || gav !== groundArt.version) bakeGround(f.dpr);
-      if (!flies.length) {
+      if (meadowDressingEnabled() && !flies.length) {
         const n = flyTarget(f);
         while (flies.length < n) flies.push(newFly(f.t, false));
       }
@@ -779,6 +786,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
       if (!ground || (backdropVersion !== (backdrop?.version ?? 0) || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
+      if (!meadowDressingEnabled()) return; // Meadow base design: seasonal material only.
       // 반딧불(여름 저녁·밤) — 수는 띠·여력으로, 느린 표류 + 가장자리 반사.
       {
         const fw = fireflyTarget(f);
@@ -1300,6 +1308,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
 
       if (!backdrop?.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
+      if (!meadowDressingEnabled()) return; // Sky + base terrain only; airborne petals have their own pass.
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades && !backdrop?.ready) {
@@ -1595,9 +1604,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       }
     },
     splitHaze: () => true,
-    drawAbove(g, f) { if (!backdrop.pending) drift.draw(g, f); },
+    drawAirborne(g, f) { if (!backdrop.pending) drift.draw(g, f); },
     pointerDown(f, onBackground) {
       if (drift.pointerDown(f, onBackground)) return true;
+      if (!meadowDressingEnabled()) return false;
       if (f.load < 0.15) return false;
       for (const b of flies) {
         if (Math.hypot(b.x - f.p.x, b.y - f.p.y) < 30 * b.k + 8) {
