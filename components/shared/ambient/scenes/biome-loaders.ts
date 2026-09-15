@@ -7,7 +7,7 @@ import type { BiomeKey } from "@/components/shared/ambient/world/biomes";
 
 export const BIOME_LOADERS: Record<BiomeKey, (season: SeasonKey) => Promise<SceneFactory>> = {
   meadow: (season) => import("./autumn").then((m) => (seed:number) => m.createAutumn(seed,season)),
-  pond: (season) => import("./summer").then((m) => (seed: number) => m.createSummer(seed, { season })),
+  pond: (season) => import("./autumn").then((m) => (seed: number) => m.createAutumn(seed, season, "pond")),
   sea: (season) => import("./sea").then((m) => (seed: number) => m.createSea(seed, { season })),
   // 깊은 바다만 따로 산다(2026-09-06) — 물속 옆모습 시점 + 계절·날씨·시간대 무영향이라 계절을 받지 않는다.
   deep: () => import("./deep").then((m) => m.createDeep),

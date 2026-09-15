@@ -6,7 +6,7 @@ export function hillCutRows(data: Uint8ClampedArray, width: number, height: numb
     return checker ? Math.max(r,g,b)-Math.min(r,g,b)<38 : r-g>32 && b-g>32;
   };
   for(let x=0;x<width;x++){
-    let y=Math.floor(height*.28);
+    let y=0;
     for(;y<height*.56;y++)if(!matte(x,y)&&!matte(x,y+1)&&!matte(x,y+2)&&!matte(x,y+3))break;
     if(y>=height*.56)throw new Error('Invalid hill skyline');
     rows[x]=y+2; // exclude mixed matte edge, not the interior snow/blue ridge

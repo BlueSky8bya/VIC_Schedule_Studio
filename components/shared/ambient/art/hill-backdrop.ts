@@ -3,6 +3,7 @@ import type { SeasonKey } from '../registry';
 import { beginLoad, endLoad } from '../loading';
 import { hillCutRows, hillViewport } from './hill-geometry';
 import { HILL_DEPTH_CONTOURS, compileTerrainField } from '../world/terrain-perspective';
+import { POND_DEPTH_CONTOURS } from '../world/pond-geometry';
 
 /** One continuous terrain source sampled into depth bands by drawDepthGround.
  * Its skyline, slopes and foreground therefore cannot open cracks between layers.
@@ -18,10 +19,10 @@ export class HillBackdrop {
   private skyLine=0;
   version=0;
   bakes=0;
-  constructor(private season:SeasonKey){
+  constructor(private season:SeasonKey,private biome:'hill'|'pond'='hill'){
     beginLoad();
     const image=this.image=new Image();image.decoding='async';
-    image.src=`/ambient/art/backdrop-hill-${season}-v2.png`;
+    image.src=`/ambient/art/backdrop-${biome}-${season}-${biome==='hill'?'v2':'v1'}.png`;
     void image.decode().then(async()=>{
       await new Promise<void>(resolve=>setTimeout(resolve,0));
       if(this.disposed)return;
@@ -32,7 +33,7 @@ export class HillBackdrop {
       // Change only alpha above the exterior contour. Snow/grass interiors stay opaque.
       for(let x=0;x<c.width;x++)for(let y=0;y<=rows[x]+1;y++)pixels.data[(y*c.width+x)*4+3]=y<rows[x]?0:y===rows[x]?85:170;
       g.putImageData(pixels,0,0);this.source=c;this.skyline=rows;
-      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,HILL_DEPTH_CONTOURS);
+      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
     }).catch(()=>{
       // Autumn's plain seasonal fallback is usable if a source cannot be decoded.
     }).finally(()=>{
@@ -69,6 +70,14 @@ export class HillBackdrop {
     g.restore();this.bakes++;
   }
   drawFar(){return true;}
+  sourcePoint(x:number,y:number,w:number,h:number){
+    if(!this.source)return null;
+    const p=this.viewport(w,h);return {u:(x-p.x)/p.width,v:(y-p.y)/p.height};
+  }
+  screenPoint(u:number,v:number,w:number,h:number){
+    if(!this.source)return null;
+    const p=this.viewport(w,h);return {x:p.x+u*p.width,y:p.y+v*p.height};
+  }
   skyHorizon(w:number,h:number){if(!this.source||!this.skyline)return undefined;this.viewport(w,h);return this.skyLine;}
   drawForeground(){return true;}
   activityAlpha(x:number,y:number,w:number,h:number){
@@ -84,6 +93,6 @@ export class HillBackdrop {
     const p=this.viewport(w,h),sx=Math.max(0,Math.min(this.source.width-1,(x-p.x)/p.scale));
     return this.field.sample(sx/this.source.width,(y-p.y)/p.scale/this.source.height);
   }
-  debug(){return {biome:'hill',season:this.season,ready:this.ready,version:this.version,bakes:this.bakes,continuousDepth:true,fieldBytes:this.field?.bytes??0,sourceBytes:this.source?this.source.width*this.source.height*4:0};}
+  debug(){return {biome:this.biome,season:this.season,ready:this.ready,version:this.version,bakes:this.bakes,continuousDepth:true,fieldBytes:this.field?.bytes??0,sourceBytes:this.source?this.source.width*this.source.height*4:0};}
   dispose(){this.disposed=true;this.image?.removeAttribute('src');this.image=undefined;if(this.source)this.source.width=this.source.height=1;this.source=undefined;this.skyline=undefined;this.field=undefined;this.layout=undefined;}
 }

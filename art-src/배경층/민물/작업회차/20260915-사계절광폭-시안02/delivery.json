@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-15",
+  "outputs": [
+    {
+      "season": "spring",
+      "file": "backdrop-pond-spring-v1.png",
+      "bytes": 1687069,
+      "runtimeSha256": "5ECA89DE4694FE5C69B0C8E0774C05C09CC7B838C4184042575E9BA760C5FF19",
+      "runtime": "public/ambient/art/backdrop-pond-spring-v1.png",
+      "sha256": "5ECA89DE4694FE5C69B0C8E0774C05C09CC7B838C4184042575E9BA760C5FF19",
+      "width": 2171,
+      "height": 724
+    },
+    {
+      "season": "summer",
+      "file": "backdrop-pond-summer-v1.png",
+      "bytes": 1678345,
+      "runtimeSha256": "E475BB94A568D8A79DD32FF878DAE0E873ED0787255884DB87351AE363C9F582",
+      "runtime": "public/ambient/art/backdrop-pond-summer-v1.png",
+      "sha256": "E475BB94A568D8A79DD32FF878DAE0E873ED0787255884DB87351AE363C9F582",
+      "width": 2172,
+      "height": 724
+    },
+    {
+      "season": "autumn",
+      "file": "backdrop-pond-autumn-v1.png",
+      "bytes": 1720329,
+      "runtimeSha256": "34A938656FD77218F2AD716762FBD6C8EE26E7C49FE770BC8C6492383E7B9996",
+      "runtime": "public/ambient/art/backdrop-pond-autumn-v1.png",
+      "sha256": "34A938656FD77218F2AD716762FBD6C8EE26E7C49FE770BC8C6492383E7B9996",
+      "width": 2172,
+      "height": 724
+    },
+    {
+      "season": "winter",
+      "file": "backdrop-pond-winter-v1.png",
+      "bytes": 1839509,
+      "runtimeSha256": "88F575B92EF2D6ACCFD1E493C255B93F1D2FCCEA5295C84FD5EE6BE8629D5DD6",
+      "runtime": "public/ambient/art/backdrop-pond-winter-v1.png",
+      "sha256": "88F575B92EF2D6ACCFD1E493C255B93F1D2FCCEA5295C84FD5EE6BE8629D5DD6",
+      "width": 2172,
+      "height": 724
+    }
+  ],
+  "tool": "built-in image_gen",
+  "inputs": [
+    "고정입력/승인구도.png",
+    "고정입력/여름광폭.png"
+  ],
+  "approval": "Owner approved concept and authorized seasonal runtime; final runtime feedback pending"
+}
