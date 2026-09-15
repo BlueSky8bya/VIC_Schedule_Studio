@@ -10,7 +10,7 @@
 // (초원 ↔ 연못·숲·언덕·계곡·산·해안 셋·먼바다·깊은 바다). 카메라는 엔진 안의 세계 장면이 620ms로 미끄러지고, 여기(ShowcaseNav)는 입력을
 // `window.__vicAmbient.goTo()`로 넣고 `vic:biome` 이벤트로 도착 알약·미니맵을 갱신한다. 시청자 화면도 같은 컴포넌트(ShowcaseExit 안).
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { ShowcaseDate, shiftShowcaseDay } from "./showcase-date";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flower2, Haze, Leaf, Power, Settings2, Snowflake, Sparkles, Waves } from "lucide-react";
@@ -431,8 +431,7 @@ function ShowcaseNav() {
       </nav>
       {preparing ? (
         <div className="biome-pill" role="status" aria-live="polite" data-biome-loading={preparing}>
-          <span className="biome-pill-main">{BIOMES[preparing].nameKo} 배경 준비 중…</span>
-          <span className="biome-pill-sub">준비되면 자동으로 이동해요</span>
+          <span className="biome-pill-main">{BIOMES[preparing].nameKo}{[0, 8].includes((BIOMES[preparing].nameKo.charCodeAt(BIOMES[preparing].nameKo.length - 1) - 0xac00) % 28) ? "로" : "으로"} 이동중..</span>
         </div>
       ) : pill ? (
         <div className="biome-pill" key={pill.key} role="status">
@@ -731,11 +730,27 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
 export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null } = {}) {
   const on = useShowcase();
   const surfaceRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!on) return;
     const trigger = document.activeElement;
+    // Opacity/pointer-events on parents do not disable descendants that opt
+    // back into pointer-events:auto. Keep the underlying app out of hit testing
+    // and keyboard navigation; the body portal and global ambient input stay live.
+    const previous = new Map<HTMLElement, boolean>();
+    const isolate = () => {
+      for (const node of document.body.children) {
+        if (!(node instanceof HTMLElement) || node === surfaceRef.current) continue;
+        if (!previous.has(node)) previous.set(node, node.inert);
+        node.inert = true;
+      }
+    };
+    isolate();
+    const observer = new MutationObserver(isolate);
+    observer.observe(document.body, {childList:true});
     surfaceRef.current?.focus({ preventScroll: true });
     return () => {
+      observer.disconnect();
+      for (const [node, inert] of previous) node.inert = inert;
       if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus({ preventScroll: true });
     };
   }, [on]);

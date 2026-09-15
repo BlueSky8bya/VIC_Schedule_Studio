@@ -24,6 +24,8 @@ Updated 2026-09-16 KST. Owner requested open-sea and then deep-sea concepts, fol
 
 ## Evidence and limits
 
+Follow-up: concise loading copy and hidden-studio click isolation are recorded in [R79](../../ambient/rounds/ROUND-79-showcase-input-isolation.md); owner authorized their push. Loading shows only destination + `으로/로 이동중..`. The prior copy-only typecheck/lint/build and rendered 초원/먼바다/갯벌 checks passed; R79 owns current input regression evidence.
+
 R78 was pushed as `27215d88`. This follow-up changes archive documents and saves the deep concept only; no runtime code changes. Document harness, whitespace and source-image hash checks apply; earlier runtime tests were not rerun for this archive-only change.
 
 R78 typecheck, lint, production build, five biome navigation unit tests, twelve rendered minimap buttons, shallow selection, marine traversal and coast return passed. Final captures `.scratch-pw/r78-preview.png` and `.scratch-pw/r78-map.png` are local evidence, not durable release assets. R78 A/B review found no blockers; C found inherited water bars in the sealed foreground, fixed specifically for shallow and checked in final capture. Harness/diff checks passed. No production DB tests; public DTO/permissions/KST unchanged. Deployment remains unverified.

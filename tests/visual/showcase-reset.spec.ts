@@ -1,5 +1,41 @@
 import { test, expect } from "@playwright/test";
 
+test("showcase background clicks cannot activate hidden studio controls", async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem("vic.ambient", "on"));
+  await page.route("**/api/studio-write", route => route.fulfill({json:{ok:true}}));
+  await page.goto("/visual-fixture/studio?role=developer&y=2026&m=3");
+  const hiddenButton=page.locator('.tag-legend-filter').first();
+  await expect(hiddenButton).toBeVisible();
+  await hiddenButton.evaluate(el=>{
+    el.setAttribute('data-test-clicks','0');
+    el.addEventListener('click',()=>el.setAttribute('data-test-clicks',String(Number(el.getAttribute('data-test-clicks'))+1)));
+  });
+  await page.evaluate(()=>{
+    const preserved=document.createElement('div');preserved.id='already-inert';preserved.inert=true;document.body.append(preserved);
+  });
+  const trigger=page.locator('[data-act="ambient-showcase"]').first();
+  await trigger.click();
+  await page.evaluate(()=>{
+    const portal=document.createElement('button');portal.id='late-background-portal';portal.textContent='background portal';document.body.append(portal);
+  });
+  await expect(page.locator('#late-background-portal')).toHaveAttribute('inert','');
+  const box=await hiddenButton.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x+box!.width/2,box!.y+box!.height/2);
+  await expect(hiddenButton).toHaveAttribute('data-test-clicks','0');
+  // Releasing after Escape must not activate the button revealed underneath.
+  await page.mouse.move(box!.x+box!.width/2,box!.y+box!.height/2);
+  await page.mouse.down();
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(hiddenButton).toHaveAttribute('data-test-clicks','0');
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('#late-background-portal')).not.toHaveAttribute('inert','');
+  await expect(page.locator('#already-inert')).toHaveAttribute('inert','');
+  await hiddenButton.click();
+  await expect(hiddenButton).toHaveAttribute('data-test-clicks','1');
+});
+
 test("showcase experiments end on exit; calendar months control seasons again", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("vic.ambient", "on"));
   await page.route("**/api/studio-write", route => route.fulfill({ json: { ok: true } }));
