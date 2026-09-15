@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R56 pond ripples](../ambient/rounds/ROUND-56-pond-ripples.md) owner rejected artificial water motion; ripple and line overlays removed and locally verified. Owner authorized push; next biome proposal is valley (not started). R55 pushed as 943828d8; production verification pending.
+Current: [R58 terrain material](../ambient/rounds/ROUND-58-terrain-material.md) shared terrain/contact physics locally verified on meadow/hill/pond/valley. Owner authorized pushing R57 valley seasons and R58 together; production check pending. R56 pushed as 7da883d0; deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -15,7 +15,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| AMB-POND | Visual review | Owner tests seasonal lake, water and interaction locally | [R55](../ambient/rounds/ROUND-55-pond-runtime.md) |
+| AMB-VALLEY | Visual review | Owner tests seasonal valley locally | [R57](../ambient/rounds/ROUND-57-valley-runtime.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |

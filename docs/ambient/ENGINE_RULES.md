@@ -20,6 +20,10 @@ The owner authorized [depth P0](../agent/decisions/ADR-0022-world-depth-and-show
 
 ## World, camera and time
 
+R58: shared seasonal material consumes source-space surface profiles (flat, slope, channel/water contact) independently from visual distance. Held/lifted material avoids surface constraints; winter ice excludes current. New delivered biomes require their own reviewed profile, with shared solver/crop/motion gates. No animated water overlay. [R58](rounds/ROUND-58-terrain-material.md).
+
+R57: valley shares the meadow/hill/pond scene and ready-gated travel contracts, with its own source-space shelf/channel distance contours. Sky and KST remain shared; no animated water overlay or legacy valley props/animals. Existing relief/cache/mobile/still budgets apply. [R57](rounds/ROUND-57-valley-runtime.md).
+
 R51: delivered hill uses .42 horizon and the shared meadow seasonal material engine. A generated panoramic terrain is sampled with the same continuous near/far surface depth, avoiding rigid layer gaps; actual skyline also gates material alpha/picking. Meadow↔hill gets destination-ready 620ms depth travel with shared celestial projection; other pairs retain directional slides. [R51](rounds/ROUND-51-hill-runtime.md) records scope and verification.
 
 R55: pond joins the shared meadow/hill seasonal material and destination-ready travel paths. Its source-space depth contours follow the far bank, lake and near shore, with the existing 12/3MiB relief budgets. R56 owner correction removes live water glints, line reflections and texture ripples; use the authored water artwork only. Mobile, reduced-motion and showcase gates remain authoritative. See [R55](rounds/ROUND-55-pond-runtime.md).

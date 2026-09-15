@@ -4,6 +4,7 @@ import { beginLoad, endLoad } from '../loading';
 import { hillCutRows, hillViewport } from './hill-geometry';
 import { HILL_DEPTH_CONTOURS, compileTerrainField } from '../world/terrain-perspective';
 import { POND_DEPTH_CONTOURS } from '../world/pond-geometry';
+import { VALLEY_DEPTH_CONTOURS } from '../world/valley-geometry';
 
 /** One continuous terrain source sampled into depth bands by drawDepthGround.
  * Its skyline, slopes and foreground therefore cannot open cracks between layers.
@@ -19,7 +20,7 @@ export class HillBackdrop {
   private skyLine=0;
   version=0;
   bakes=0;
-  constructor(private season:SeasonKey,private biome:'hill'|'pond'='hill'){
+  constructor(private season:SeasonKey,private biome:'hill'|'pond'|'valley'='hill'){
     beginLoad();
     const image=this.image=new Image();image.decoding='async';
     image.src=`/ambient/art/backdrop-${biome}-${season}-${biome==='hill'?'v2':'v1'}.png`;
@@ -33,7 +34,7 @@ export class HillBackdrop {
       // Change only alpha above the exterior contour. Snow/grass interiors stay opaque.
       for(let x=0;x<c.width;x++)for(let y=0;y<=rows[x]+1;y++)pixels.data[(y*c.width+x)*4+3]=y<rows[x]?0:y===rows[x]?85:170;
       g.putImageData(pixels,0,0);this.source=c;this.skyline=rows;
-      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
+      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='valley'?VALLEY_DEPTH_CONTOURS:biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
     }).catch(()=>{
       // Autumn's plain seasonal fallback is usable if a source cannot be decoded.
     }).finally(()=>{

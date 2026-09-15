@@ -1,6 +1,7 @@
 import type { SeasonKey } from "../registry";
 import { paintSeasonalMaterial, seasonalMaterialPath } from "../art/seasonal-material";
 import { pointerBreeze } from "../world/pointer-breeze";
+import {applyMaterialSurface,sampleMaterialSurface,type MaterialSurface} from '../world/terrain-material';
 import { meadowDressingEnabled } from "../world/meadow-policy";
 import { drawMeadowImage, drawMeadowFacing } from "../world/meadow-softness";
 import { meadowActivityTop, meadowActivityAlpha, meadowDistance, meadowSize, meadowSpeed } from "../world/meadow-activity";
@@ -113,7 +114,7 @@ type Cache = { x: number; y: number; t: number };
 type Speck = { x: number; y: number; vx: number; vy: number; life: number };
 type Whirl = { x: number; y: number; vx: number; vy: number; t0: number; dur: number } | null;
 
-export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "meadow" | "hill" | "pond" = "meadow"): Scene {
+export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "meadow" | "hill" | "pond" | "valley" = "meadow"): Scene {
   const SPECIES:Species[]=AUTUMN_SPECIES.map((sp,i)=>{
     if(season==='autumn')return sp;
     if(season==='summer')return {...sp,needle:false,colors:['#78b95e','#91c96a','#64aa56'],size:sp.size};
@@ -123,6 +124,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
   const backdrop = biome !== "meadow" ? new HillBackdrop(season,biome) : new MeadowBackdrop(season);
   const terrainAlpha = (x:number,y:number,w:number,h:number) => backdrop instanceof HillBackdrop ? backdrop.activityAlpha(x,y,w,h) : 1;
   const relief = biome!=='meadow'?new ReliefLayers():null;
+  const materialSurface:MaterialSurface={slopeX:0,slopeY:0,flowX:0,flowY:0,water:0};
   const terrainDistanceAt = (x:number,y:number) => backdrop instanceof HillBackdrop ? backdrop.distance(x,y,w,h)??0 : 0;
   // Reuse the accepted meadow appearance curves with a terrain-derived distance.
   // This virtual row is never used for position, rendering or pointer coordinates.
@@ -954,6 +956,10 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       const acornFr = Math.pow(0.1, dt);
       const spinFr = Math.pow(0.04, dt);
       const wEnv = whirl ? Math.sin(Math.PI * clamp((t - whirl.t0) / whirl.dur, 0, 1)) : 0;
+      const surfaceOrigin=backdrop instanceof HillBackdrop?backdrop.screenPoint(0,0,w,h):null;
+      const surfaceExtent=backdrop instanceof HillBackdrop?backdrop.screenPoint(1,1,w,h):null;
+      const surfaceWidth=surfaceOrigin&&surfaceExtent?surfaceExtent.x-surfaceOrigin.x:0;
+      const surfaceHeight=surfaceOrigin&&surfaceExtent?surfaceExtent.y-surfaceOrigin.y:0;
       for (let i = leaves.length - 1; i >= 0; i--) {
         const l = leaves[i];
         if (l.y < gy() && l.fade === 0) l.fade = .001;
@@ -1026,7 +1032,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
           }
         }
         const speed=meadowSpeed(perspectiveY(l.x,l.y),h);
-        const breeze=pointerBreeze(l,f,l.s,speed);
+        const breeze=pointerBreeze(l,f,l.s*meadowSize(perspectiveY(l.x,l.y),h),speed);
         if(breeze>0){
           l.va+=breeze*(rand()-.5)*18;
           if(!acorn){
@@ -1037,7 +1043,12 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         }
         l.vx += fx * dt;
         l.vy += fy * dt;
-        const fr = acorn ? acornFr : groundFr;
+        let wet=0;
+        if(surfaceOrigin&&surfaceWidth>0&&surfaceHeight>0&&!acorn){
+          sampleMaterialSurface(biome,(l.x-surfaceOrigin.x)/surfaceWidth,(l.y-surfaceOrigin.y)/surfaceHeight,season,materialSurface);
+          wet=applyMaterialSurface(l,materialSurface,dt,surfaceWidth/2580,surfaceHeight/860)??0;
+        }
+        const fr = acorn ? acornFr : wet>0?Math.pow(.02+.55*wet,dt):groundFr;
         l.vx *= fr;
         l.vy *= fr;
         l.va *= spinFr;

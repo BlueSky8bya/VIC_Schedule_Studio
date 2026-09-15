@@ -1,0 +1,43 @@
+{
+  "tool": "built-in image_gen",
+  "conceptApproved": true,
+  "runtimeOwnerReview": "pending",
+  "images": [
+    {
+      "season": "spring",
+      "raw": "art-src\\배경층\\계곡\\작업회차\\20260915-사계절광폭-시안02\\원본\\backdrop-valley-spring-v1.png",
+      "runtime": "public\\ambient\\art\\backdrop-valley-spring-v1.png",
+      "sha256": "a0c443b5fa8c1ba5640148e62e328b85abe70b2957dae422dee6b1df3b0e1915",
+      "bytes": 2410694,
+      "width": 2172,
+      "height": 724
+    },
+    {
+      "season": "summer",
+      "raw": "art-src\\배경층\\계곡\\작업회차\\20260915-사계절광폭-시안02\\원본\\backdrop-valley-summer-v1.png",
+      "runtime": "public\\ambient\\art\\backdrop-valley-summer-v1.png",
+      "sha256": "53dfe9442ee63420c8d526e8dd6f1876c2cc96f4a3d9b389da558fb5662525d1",
+      "bytes": 2321689,
+      "width": 2172,
+      "height": 724
+    },
+    {
+      "season": "autumn",
+      "raw": "art-src\\배경층\\계곡\\작업회차\\20260915-사계절광폭-시안02\\원본\\backdrop-valley-autumn-v1.png",
+      "runtime": "public\\ambient\\art\\backdrop-valley-autumn-v1.png",
+      "sha256": "cce4dfec4335644f050d25ed2c3a818daaa5117d61b989deeddc1989fe87a9e0",
+      "bytes": 2396848,
+      "width": 2172,
+      "height": 724
+    },
+    {
+      "season": "winter",
+      "raw": "art-src\\배경층\\계곡\\작업회차\\20260915-사계절광폭-시안02\\원본\\backdrop-valley-winter-v1.png",
+      "runtime": "public\\ambient\\art\\backdrop-valley-winter-v1.png",
+      "sha256": "330754d0b8720be6176948ac064877fc69e595d2119dc7e464f90da4b2aedda9",
+      "bytes": 2210237,
+      "width": 2172,
+      "height": 724
+    }
+  ]
+}
