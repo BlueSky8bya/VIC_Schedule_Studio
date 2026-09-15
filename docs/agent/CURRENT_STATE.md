@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R55 freshwater runtime](../ambient/rounds/ROUND-55-pond-runtime.md) four seasons, shared terrain/material/sky/travel and live water locally verified; owner authorized push on 2026-09-15; production verification pending. Hill R51–R54 pushed as c4758157; deployment unverified.
+Current: [R56 pond ripples](../ambient/rounds/ROUND-56-pond-ripples.md) owner rejected artificial water motion; ripple and line overlays removed and locally verified. Owner authorized push; next biome proposal is valley (not started). R55 pushed as 943828d8; production verification pending.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 

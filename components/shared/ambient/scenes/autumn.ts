@@ -6,7 +6,6 @@ import { drawMeadowImage, drawMeadowFacing } from "../world/meadow-softness";
 import { meadowActivityTop, meadowActivityAlpha, meadowDistance, meadowSize, meadowSpeed } from "../world/meadow-activity";
 import { anchorToSurface, withReliefSurface, scopedDepthTier, surfaceMotionFactor } from "../world/depth-render";
 import { ReliefLayers } from "../world/relief-render";
-import { PondWater } from "../world/pond-water";
 import { reliefLayerCount, reliefMotion } from "../world/terrain-perspective";
 import { MeadowBackdrop } from "../art/meadow-backdrop";
 import { HillBackdrop } from "../art/hill-backdrop";
@@ -124,7 +123,6 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
   const backdrop = biome !== "meadow" ? new HillBackdrop(season,biome) : new MeadowBackdrop(season);
   const terrainAlpha = (x:number,y:number,w:number,h:number) => backdrop instanceof HillBackdrop ? backdrop.activityAlpha(x,y,w,h) : 1;
   const relief = biome!=='meadow'?new ReliefLayers():null;
-  const water = biome==='pond'?new PondWater(seed,season):null;
   const terrainDistanceAt = (x:number,y:number) => backdrop instanceof HillBackdrop ? backdrop.distance(x,y,w,h)??0 : 0;
   // Reuse the accepted meadow appearance curves with a terrain-derived distance.
   // This virtual row is never used for position, rendering or pointer coordinates.
@@ -729,7 +727,6 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       if (!ground || (backdropVersion !== backdrop.version || gav !== groundArt.version || (f.lightStable && gsh !== shadowKey(f.light)))) bakeGround(f.dpr);
       const { dt, t, p, load } = f;
       if (backdrop.pending || dt === 0) return;
-      water?.step(f);
       const target = targetCount(f);
       const live = liveLeaves();
       if (live < target && t > nextSpawn) {
@@ -1139,7 +1136,6 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       if (ground && biome !== "meadow" && backdrop.ready && relief) {
         const count=reliefLayerCount(scopedDepthTier(g));
         withReliefSurface(g,(x,y)=>reliefMotion(terrainDistanceAt(x,y),count),(off,tier)=>relief.draw(g,ground!,f.w,f.h,off,tier,terrainDistanceAt));
-        if(water&&backdrop instanceof HillBackdrop)water.draw(g,f,backdrop);
       }
       if (!backdrop.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       if (!meadowDressingEnabled()) return;
@@ -1328,13 +1324,12 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
     drawForeground(g, f) { return backdrop.drawForeground(g, f); },
     skyHorizon:backdrop instanceof HillBackdrop?(w,h)=>backdrop.skyHorizon(w,h):undefined,
     surfaceMotion:biome!=='meadow'?(x,y,tier)=>backdrop.ready?reliefMotion(terrainDistanceAt(x,y),reliefLayerCount(tier)):surfaceMotionFactor((y-horizonY(h))/Math.max(1,h-horizonY(h))):undefined,
-    dispose() { backdrop.dispose(); relief?.dispose(); water?.dispose(); },
+    dispose() { backdrop.dispose(); relief?.dispose(); },
     debug() {
       return {
         materialSeason: season,
         backdrop: backdrop.debug(),
         relief: relief?.debug(),
-        water: water?.debug(),
         biome,
         terrainPerspective: biome!=='meadow',
         perspectiveSamples: [.25,.5,.75].flatMap(x=>[.52,.65,.8].map(y=>{
