@@ -1,0 +1,34 @@
+[
+  {
+    "name": "backdrop-forest-summer-v2.png",
+    "width": 2172,
+    "height": 724,
+    "bytes": 2258302,
+    "sha256": "6d9d0b7c2003551667979fa22ce0c0e1aa9853281963a6e3668b86341b2c9174",
+    "runtimeIdentical": true
+  },
+  {
+    "name": "backdrop-forest-spring-v2.png",
+    "width": 2172,
+    "height": 724,
+    "bytes": 2361377,
+    "sha256": "50d8428abaafed43c27278caabcdb55482b34416bfcb67ee38a22cf6d71083af",
+    "runtimeIdentical": true
+  },
+  {
+    "name": "backdrop-forest-autumn-v2.png",
+    "width": 2171,
+    "height": 724,
+    "bytes": 2330975,
+    "sha256": "e9fb92c155ac5e08d2a3edec1cd5ebe009cba2f21870a2ca57a22ee2fc3f74fa",
+    "runtimeIdentical": true
+  },
+  {
+    "name": "backdrop-forest-winter-v2.png",
+    "width": 2172,
+    "height": 724,
+    "bytes": 2481166,
+    "sha256": "bcbc6f40a1301b4ccc53a714052092127d0be1517ceb4fba9b50f9c03a673b5f",
+    "runtimeIdentical": true
+  }
+]

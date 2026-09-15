@@ -1,0 +1,39 @@
+{
+  "generator": "built-in imagegen",
+  "status": "generated; locally reviewed; owner approval pending",
+  "processing": "raw byte-identical copy; runtime near-ground smooth composite only",
+  "assets": [
+    {
+      "season": "spring",
+      "file": "forest-ground-detail-spring-v2.png",
+      "width": 2170,
+      "height": 725,
+      "bytes": 3655552,
+      "sha256": "4f77adbc9c687861acc959537eeca6e51668d2cc1201f0f2111e72f49fde7432"
+    },
+    {
+      "season": "summer",
+      "file": "forest-ground-detail-summer-v2.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 3677561,
+      "sha256": "3b3ce8547d26a786bf62b8a176f45ea646e73a27157d35c59288044af4b49a18"
+    },
+    {
+      "season": "autumn",
+      "file": "forest-ground-detail-autumn-v2.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 3557681,
+      "sha256": "fb94a1d6cbc728d874ad3a6f8bcab9e21dc5abc8012d5408b1e8cd0a02715881"
+    },
+    {
+      "season": "winter",
+      "file": "forest-ground-detail-winter-v2.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 3868366,
+      "sha256": "ce26429985e13e3a5ac6379764f4a0f4bd68cee4ae7accf426da5a815dc5e9cb"
+    }
+  ]
+}

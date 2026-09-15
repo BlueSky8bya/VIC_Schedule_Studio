@@ -4,6 +4,8 @@ Updated: 2026-09-11. Scope: scene engine, world services, camera, creatures and 
 
 ## P0 depth amendment — ADR-0022
 
+R63 shared terrain quality: preserve distant source/sampling; increase sampling toward the viewer along the authored terrain contours. ReliefLayers applies this to hill, pond, valley and forest; meadow retains its near-art composition. Every future biome must use this priority and provide actual near artwork detail where the source is insufficient. Sampling alone does not create new detail. Near/far transitions must remain continuous without straight quality boundaries. See [R63](rounds/ROUND-63-sky-edge-terrain-detail.md) for current scope, cache cost and verification limits; deep remains sealed.
+
 Meadow now follows [ADR-0024](../agent/decisions/ADR-0024-spring-meadow-three-layers.md) and the authorized [ROUND-22 seasonal expansion](rounds/ROUND-22-meadow-seasons.md): three generated F/M/N sources per season, cached matte exclusion, and scoped .35h horizon in all four meadow seasons. This replaces ADR-0023's single source and procedural N. Other biomes keep the .26h default; all other motion/load/KST contracts remain.
 
 [ROUND-23](rounds/ROUND-23-meadow-sun-foreground.md): meadow ground scale follows height, with same-direction blended tile margins instead of horizontal stretching/mirror folds. Meadow N groups are staggered at the lower corners. Meadow opts into visible daytime sun on an absolute 0–90° altitude scale, clipped to its actual horizon and behind clouds; existing date calculation is authoritative. This replaces meadow's fixed sun placement, not other biome sky contracts.

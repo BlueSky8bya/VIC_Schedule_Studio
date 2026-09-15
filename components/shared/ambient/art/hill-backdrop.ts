@@ -5,6 +5,7 @@ import { hillCutRows, hillViewport } from './hill-geometry';
 import { HILL_DEPTH_CONTOURS, compileTerrainField } from '../world/terrain-perspective';
 import { POND_DEPTH_CONTOURS } from '../world/pond-geometry';
 import { VALLEY_DEPTH_CONTOURS } from '../world/valley-geometry';
+import {FOREST_DEPTH_CONTOURS,keyForestMatte} from '../world/forest-geometry';
 
 /** One continuous terrain source sampled into depth bands by drawDepthGround.
  * Its skyline, slopes and foreground therefore cannot open cracks between layers.
@@ -14,17 +15,22 @@ export class HillBackdrop {
   private skyline?: Uint16Array;
   private field?: ReturnType<typeof compileTerrainField>;
   private image?: HTMLImageElement;
+  private detailImage?:HTMLImageElement;
   private disposed=false;
   private loading=true;
   private layout?: ReturnType<typeof hillViewport> & {w:number;h:number};
   private skyLine=0;
   version=0;
   bakes=0;
-  constructor(private season:SeasonKey,private biome:'hill'|'pond'|'valley'='hill'){
+  constructor(private season:SeasonKey,private biome:'hill'|'pond'|'valley'|'forest'='hill'){
     beginLoad();
     const image=this.image=new Image();image.decoding='async';
-    image.src=`/ambient/art/backdrop-${biome}-${season}-${biome==='hill'?'v2':'v1'}.png`;
+    image.src=`/ambient/art/backdrop-${biome}-${season}-${biome==='hill'||biome==='forest'?'v2':'v1'}.png`;
+    const detail=biome==='forest'?(this.detailImage=new Image()):undefined;
+    if(detail){detail.decoding='async';detail.src=`/ambient/art/forest-ground-detail-${season}-v2.png`;}
+    const detailReady=detail?detail.decode().then(()=>true,()=>false):Promise.resolve(false);
     void image.decode().then(async()=>{
+      const hasDetail=await detailReady;
       await new Promise<void>(resolve=>setTimeout(resolve,0));
       if(this.disposed)return;
       if(image.naturalWidth>4096||image.naturalHeight>1200)throw new Error('Hill source too large');
@@ -33,12 +39,25 @@ export class HillBackdrop {
       const pixels=g.getImageData(0,0,c.width,c.height),rows=hillCutRows(pixels.data,c.width,c.height,false);
       // Change only alpha above the exterior contour. Snow/grass interiors stay opaque.
       for(let x=0;x<c.width;x++)for(let y=0;y<=rows[x]+1;y++)pixels.data[(y*c.width+x)*4+3]=y<rows[x]?0:y===rows[x]?85:170;
-      g.putImageData(pixels,0,0);this.source=c;this.skyline=rows;
-      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='valley'?VALLEY_DEPTH_CONTOURS:biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
+      if(biome==='forest')keyForestMatte(pixels.data);
+      g.putImageData(pixels,0,0);
+      if(hasDetail&&detail&&detail.naturalWidth<=4096&&detail.naturalHeight<=1200){
+        const near=document.createElement('canvas');near.width=c.width;near.height=c.height;
+        const ng=near.getContext('2d')!;ng.drawImage(detail,0,0,c.width,c.height);
+        // Far pixels stay untouched. One cached smooth ramp avoids both a
+        // horizontal seam and extra moving geometry between quality levels.
+        const fade=ng.createLinearGradient(0,c.height*.55,0,c.height*.82);
+        for(let i=0;i<=8;i++){const t=i/8;fade.addColorStop(t,`rgba(0,0,0,${t*t*(3-2*t)})`);}
+        ng.globalCompositeOperation='destination-in';ng.fillStyle=fade;ng.fillRect(0,0,c.width,c.height);
+        g.drawImage(near,0,0);near.width=near.height=1;
+      }
+      this.source=c;this.skyline=rows;
+      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='forest'?FOREST_DEPTH_CONTOURS:biome==='valley'?VALLEY_DEPTH_CONTOURS:biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
     }).catch(()=>{
       // Autumn's plain seasonal fallback is usable if a source cannot be decoded.
     }).finally(()=>{
       image.removeAttribute('src');this.image=undefined;
+      detail?.removeAttribute('src');this.detailImage=undefined;
       if(!this.disposed){this.loading=false;this.version++;window.dispatchEvent(new Event('vic:ambient-art-ready'));}
       endLoad();
     });
@@ -71,6 +90,12 @@ export class HillBackdrop {
     g.restore();this.bakes++;
   }
   drawFar(){return true;}
+  /** Sample unchanged local terrain for cached root/ground joins. */
+  drawGroundPatch(g:CanvasRenderingContext2D,x:number,y:number,width:number,height:number,w:number,h:number){
+    if(!this.source)return;
+    const p=this.viewport(w,h);
+    g.drawImage(this.source,(x-p.x)/p.scale,(y-p.y)/p.scale,width/p.scale,height/p.scale,0,0,width,height);
+  }
   sourcePoint(x:number,y:number,w:number,h:number){
     if(!this.source)return null;
     const p=this.viewport(w,h);return {u:(x-p.x)/p.width,v:(y-p.y)/p.height};
@@ -95,5 +120,5 @@ export class HillBackdrop {
     return this.field.sample(sx/this.source.width,(y-p.y)/p.scale/this.source.height);
   }
   debug(){return {biome:this.biome,season:this.season,ready:this.ready,version:this.version,bakes:this.bakes,continuousDepth:true,fieldBytes:this.field?.bytes??0,sourceBytes:this.source?this.source.width*this.source.height*4:0};}
-  dispose(){this.disposed=true;this.image?.removeAttribute('src');this.image=undefined;if(this.source)this.source.width=this.source.height=1;this.source=undefined;this.skyline=undefined;this.field=undefined;this.layout=undefined;}
+  dispose(){this.disposed=true;this.image?.removeAttribute('src');this.image=undefined;this.detailImage?.removeAttribute('src');this.detailImage=undefined;if(this.source)this.source.width=this.source.height=1;this.source=undefined;this.skyline=undefined;this.field=undefined;this.layout=undefined;}
 }

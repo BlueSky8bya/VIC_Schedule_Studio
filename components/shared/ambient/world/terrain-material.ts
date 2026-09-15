@@ -29,6 +29,7 @@ function valley(u:number,v:number,season:SeasonKey,out:MaterialSurface){
  * solver never infers slopes/water from colors or repeats another biome's map. */
 const profiles:Readonly<Record<string,MaterialProfile>>={
   valley,
+  forest:(u,v,_season,out)=>{const near=smooth((v-.50)/.5);out.slopeX=(.5-u)*near*.35;out.slopeY=.10*near;},
   hill:(u,v,_season,out)=>{const near=smooth((v-.45)/.5);out.slopeX=(.7-u)*near*.55;out.slopeY=.22*near;},
   pond:(u,v,season,out)=>{out.water=season==='winter'?0:pondWaterAlpha(u,v);out.flowX=.12;out.flowY=.03;},
 };

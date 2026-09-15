@@ -36,7 +36,10 @@ export class ReliefLayers {
       const mg=mask.getContext('2d')!,pixels=mg.createImageData(mask.width,mask.height);
       for(let i=0;i<count;i++){
         const top=tops[i],height=h+pad-top,c=document.createElement('canvas');
-        c.width=Math.ceil(ww*scale);c.height=Math.ceil(height*scale);
+        // Preserve the former far sampling. Spend extra pixels only toward
+        // the viewer; contour masks crossfade the quality along actual relief.
+        const near=i/(count-1),detailScale=Math.min(tier==='lite'?.75:1,scale*(1+.35*near*near));
+        c.width=Math.ceil(ww*detailScale);c.height=Math.ceil(height*detailScale);
         const cg=c.getContext('2d')!;
         cg.scale(c.width/ww,c.height/height);cg.translate(pad,-top);
         cg.drawImage(source,0,0,w,h);

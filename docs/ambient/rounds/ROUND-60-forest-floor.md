@@ -1,0 +1,15 @@
+# R60 — Natural forest floor
+
+2026-09-15 KST. Owner requests web-referenced forest soil/trail and diverse lower vegetation rather than lawn plus trees. Supersedes previous no-ground-vegetation/no-path clauses for this forest floor. Central forest remains filled with 25 independently rooted trees; no animals added.
+
+Research: NPS [forests](https://www.nps.gov/kaww/learn/nature/forests.htm) explains understory, moisture-associated ferns and leaf-litter floor; [understory](https://home.nps.gov/kimo/learn/nature/understory-plants.htm) explains shade-tolerant growth. Image search observations include [Catskill trail](https://www.catskillmountaineer.com/WWF-hardenburgh-loop.html): narrow soil trail with leaf litter and clustered ferns. External photos were not downloaded, traced or passed to generator. These are temperate-forest ecological references, not exact Korean species reconstruction.
+
+Four generated v2 floor panoramas: varied earth/old leaf litter, low leafy understory, mossy greens, irregular tiny seedlings/fern-like curled forms. Off-center narrow trail breaks behind the independently drawn trees. Understory here is ankle-height ground artwork, not new tall collision objects. Existing root contact patches automatically sample the new floor. Same geometry/continuous terrain depth, parallax, shared seasonal physics, KST, sky and lighting. Mobile/lite gates unchanged. No new runtime scene/entity loops.
+
+[Exact prompts, frozen inputs and provenance](../../../art-src/배경층/숲/작업회차/20260915-숲바닥식생-시안03/request.md), [four source/runtime receipts](../../../art-src/배경층/숲/작업회차/20260915-숲바닥식생-시안03/delivery.json). Original bytes preserved; v1 retained. Summer/spring/winter2172×724; autumn2171×724, a0.046% aspect difference handled by uniformcover/normalizedroots, not stretched. PNG2.26–2.48MB each, same decoded pixel budget. Only forest source version selection changes in code.
+
+Current-session natural seasonal forest direction continues the accepted autumn leaf/maple presentation. For this delivered forest, naturally warm brown/ochre/gold litter supersedes the older §1 unconditional orange/yellow leaf prohibition in SEASON_TIME_WEATHER_GRAMMAR; no global orange screen tint. Final artwork visual approval remains the owner's, not inferred from test results.
+
+Verification: typecheck/lint/build and3forest unit tests passed. Raw/rendered images inspected. Four-season noon/night grab/drag/release passed with no browser errors. 900/2560 crops checked; 90full/lite frames remain1terrain bake, groundmemory~6.29MB/field198404B, same12/3MiB relief caps. B cleared geometry/rootmapping and1pxwidthvariation. C cleared seasons/runtime and raised the historical palette clause reconciled above. A final rendered review recorded below. Local evidence `.scratch-pw/qa/r60/`; production andphysicaldevice FPS unverified. No push requested.
+
+Final A review of8renders: floor reads as woodland rather than lawn; left trail occluded bytrees and no centralcorridor restored. No rootpatch seams/floating orseason/night composite defect. Foreground leaf/plant texture is coarser than tree texture and remains an owner style preference item.

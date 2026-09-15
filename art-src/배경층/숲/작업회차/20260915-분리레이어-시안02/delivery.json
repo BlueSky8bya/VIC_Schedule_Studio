@@ -1,0 +1,66 @@
+[
+  {
+    "name": "backdrop-forest-autumn-v1.png",
+    "sha256": "f501db970d071a73bbf570781dd23d29c7518df111b11127a83f510b8ed0fa10",
+    "bytes": 2044220,
+    "width": 2172,
+    "height": 724,
+    "runtimeIdentical": true
+  },
+  {
+    "name": "backdrop-forest-spring-v1.png",
+    "sha256": "07b43df61e24230e4c054715526a59a34a48a7243dedf020c7e9421154c1e940",
+    "bytes": 2068982,
+    "width": 2172,
+    "height": 724,
+    "runtimeIdentical": true
+  },
+  {
+    "name": "backdrop-forest-summer-v1.png",
+    "sha256": "6e48d762e030b312c46de417571b2c08173dc309a0ad7b237fa0a23b23cd301d",
+    "bytes": 2071198,
+    "width": 2172,
+    "height": 724,
+    "runtimeIdentical": true
+  },
+  {
+    "name": "backdrop-forest-winter-v1.png",
+    "sha256": "bde0a02d5fe1035b60c621635e077986ba53a3ad07ef9642e638e0d68565c906",
+    "bytes": 2234313,
+    "width": 2172,
+    "height": 724,
+    "runtimeIdentical": true
+  },
+  {
+    "name": "forest-trees-autumn-v1.png",
+    "sha256": "a4edf2fe062d5ce0ae97d6272521b6c3175ea42f0cf7f0e39817d7775b028453",
+    "bytes": 2157001,
+    "width": 1254,
+    "height": 1254,
+    "runtimeIdentical": true
+  },
+  {
+    "name": "forest-trees-spring-v1.png",
+    "sha256": "009439fd5aa10e22fcf42b0435503a4cda4905302c964ad6bb2e7c32bda54f78",
+    "bytes": 2201095,
+    "width": 1254,
+    "height": 1254,
+    "runtimeIdentical": true
+  },
+  {
+    "name": "forest-trees-summer-v1.png",
+    "sha256": "da5594f1f170f3345f8ba12ce84dd19bb732cfbb8b65297620baa689de9e2f63",
+    "bytes": 2165796,
+    "width": 1254,
+    "height": 1254,
+    "runtimeIdentical": true
+  },
+  {
+    "name": "forest-trees-winter-v1.png",
+    "sha256": "4e0b2a1f55f41f159ac89a81a9936981fbadffdd496ae2d23ea9f2e65a6bd199",
+    "bytes": 2349639,
+    "width": 1254,
+    "height": 1254,
+    "runtimeIdentical": true
+  }
+]

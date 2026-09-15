@@ -107,6 +107,8 @@ export type Frame = {
   /** Shared celestial projection during biome travel, in CSS pixels. */
   solarHorizon?: number;
   depthTier?: DepthTier;
+  /** Ground parallax used to compare independently rooted occluders. */
+  surfaceOffset?: {x:number;y:number};
 };
 
 export interface Scene {
