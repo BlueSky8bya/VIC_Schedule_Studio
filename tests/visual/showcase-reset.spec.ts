@@ -55,3 +55,28 @@ test("calendar stays interactive while backdrop images are pending", async ({pag
   await page.waitForFunction(() => window.__vicAmbient?.pending() === 0);
   expect(await page.evaluate(() => window.__vicAmbient?.season)).toBe("summer");
 });
+
+for (const entry of ["mouse", "keyboard"] as const) {
+  test(`showcase accepts immediate arrows after ${entry} entry and restores focus`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("vic.ambient", "on"));
+    await page.goto("/visual-fixture/studio?role=developer&y=2026&m=3");
+    await page.waitForFunction(() => window.__vicAmbient?.biome() === "meadow");
+    const trigger = page.locator('[data-act="ambient-showcase"]').first();
+    if (entry === "mouse") await trigger.click();
+    else { await trigger.focus(); await page.keyboard.press("Enter"); }
+    await expect(page.getByRole("region", { name: "배경 감상", exact: true })).toBeFocused();
+    // No background click: the first key must reach navigation even on cold assets.
+    await page.keyboard.press("ArrowRight");
+    await page.waitForFunction(() => window.__vicAmbient?.biome() === "forest", undefined, { timeout: 30000 });
+    await page.getByRole("button", { name: "배경 설정", exact: true }).click();
+    const slider = page.getByRole("slider", { name: "하루 시각" });
+    await slider.focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(slider).toBeFocused();
+    expect(await page.evaluate(() => window.__vicAmbient!.biome())).toBe("forest");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await expect(page.locator("html[data-showcase]")).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+}

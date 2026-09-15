@@ -729,6 +729,15 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
 /** 감상 중 상단 알약(나가기) + Esc + 바이옴 내비 + (개발자) 배경 설정 톱니. 한 화면에 하나만 두면 된다(body 포털). */
 export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null } = {}) {
   const on = useShowcase();
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!on) return;
+    const trigger = document.activeElement;
+    surfaceRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus({ preventScroll: true });
+    };
+  }, [on]);
   const [setOpen, setSetOpen] = useState(false);
   const before = useRef<{ season: SeasonKey | null; force: WorldForce } | null>(null);
   // Environment experiments belong to this viewing session. Restore the
@@ -784,7 +793,7 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
   useEffect(() => () => set(false), []);
   if (!on || typeof document === "undefined") return null;
   return createPortal(
-    <>
+    <div ref={surfaceRef} role="region" aria-label="배경 감상" tabIndex={-1} style={{ outline: "none" }}>
       {/* 안내는 짧게 — 긴 설명은 감상을 방해한다(2026-09-04 소유자). 이동은 쉐브론·미니맵이 스스로 말한다. */}
       {/* 눈 아이콘을 뺐다(2026-09-05 소유자: "굳이 눈모양을 넣은 이유가 뭐야, 쓸모 없잖아") — 나가는
           버튼에 '보다'를 그려 두면 뜻이 반대고, 키 칩 [Esc] + "나가기"가 이미 무엇을·어떻게를 다 말한다.
@@ -795,7 +804,7 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
       </button>
       <ShowcaseNav />
       {settings ? <ShowcaseSettingsPanel onOpen={setSetOpen} open={setOpen} s={settings} /> : null}
-    </>,
+    </div>,
     document.body
   );
 }

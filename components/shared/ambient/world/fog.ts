@@ -46,6 +46,13 @@ export function fogDepth(v: number): number {
   return 0.05 + 0.5 * Math.pow(1 - t, 1.6);
 }
 
+/** Continuous sky-side envelope: reaches the same density as ground at the
+ * horizon, with no .35 -> 1 altitude switch or hard top edge. */
+export function fogSkyEnvelope(y:number,h:number,hz:number):number {
+  const t=Math.max(0,Math.min(1,(y-hz+h*.12)/(h*.12)));
+  return t*t*(3-2*t);
+}
+
 /**
  * 밀도장을 굽는다. `f`는 조명의 `groundFog`(0~1), `rgb`는 안개색, `floor(x)`는 그 열의 지면선(화면 y).
  * 반환 캔버스는 화면 크기의 1/8 — 그릴 때 `drawImage(c, 0, 0, w, h)`로 늘린다.
@@ -76,8 +83,8 @@ export function bakeFogField(w: number, h: number, f: number, rgb: string, floor
   for (let j = 0; j < ch; j++) {
     const y = (j + 0.5) * SCALE;
     const v = (y - hz) / gh;
-    // 지평선 위: 얇은 꼬리만(지평선 광 아래 6%까지) — 하늘은 하늘 판이 맡는다.
-    const above = y < hz ? Math.max(0, 1 - (hz - y) / (h * 0.06)) : 1;
+    // Sky-side fog reaches ground density continuously over a broad smooth tail.
+    const above = fogSkyEnvelope(y,h,hz);
     const depth = y < hz ? fogDepth(0) * above : fogDepth(v);
     for (let i = 0; i < cw; i++) {
       const x = (i + 0.5) * SCALE;
@@ -86,7 +93,7 @@ export function bakeFogField(w: number, h: number, f: number, rgb: string, floor
       const lift = Math.max(0, fl - y);
       // 고도항은 **가까울수록** 예민하다(v^.6) — 원경(v → 0)에서는 지면선 위로 떠도 대기 자체가 두꺼워 거의 그대로다.
       // 첫 판(전 깊이 동일)은 계곡 상류·언덕 뒤 띠의 원경 안개를 지면선 위라는 이유로 지워 far < mid 역전이 남았다.
-      const alt = y < hz ? 0.35 : Math.max(0.12, 1 - (lift / Math.max(1, H_FOG)) * Math.pow(Math.max(0, v), 0.6));
+      const alt = y < hz ? 1 : Math.max(0.12, 1 - (lift / Math.max(1, H_FOG)) * Math.pow(Math.max(0, v), 0.6));
       // 결 — 윗변을 흔들고 안쪽에 저주파 얼룩.
       const n1 = vnoise(x / w, y / h, 6, 3);
       const n2 = vnoise(x / w, y / h, 14, 11);

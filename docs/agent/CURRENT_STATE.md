@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R67 tree detail](../ambient/rounds/ROUND-67-forest-native-detail.md) — foreground uses shared original sprites to match ground detail; locally verified; owner visual feedback next. R66 fog/root changes retained. R64–65 pushed as 338d4488; deployment unverified. R66–67 release to main authorized; deployment unverified.
+Current: [R69 fog boundary](../ambient/rounds/ROUND-69-fog-sky-boundary.md) locally verified: remove sky/ground opacity jump. [R68 entry focus](../ambient/rounds/ROUND-68-showcase-entry-focus.md) retained. R68–69 release to main authorized; deployment unverified. R66–67 pushed as f9521032; deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -15,7 +15,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| AMB-FOREST | Release authorized | Compare tree and ground detail | [R67](../ambient/rounds/ROUND-67-forest-native-detail.md) |
+| AMB-FOREST | Release authorized | Review fog sky boundary and entry keys | [R69](../ambient/rounds/ROUND-69-fog-sky-boundary.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |
