@@ -6,6 +6,7 @@ import { HILL_DEPTH_CONTOURS, compileTerrainField } from '../world/terrain-persp
 import { POND_DEPTH_CONTOURS } from '../world/pond-geometry';
 import { VALLEY_DEPTH_CONTOURS } from '../world/valley-geometry';
 import {FOREST_DEPTH_CONTOURS,keyForestMatte} from '../world/forest-geometry';
+import {seasonRidge} from '../world/ridge-season';
 
 /** One continuous terrain source sampled into depth bands by drawDepthGround.
  * Its skyline, slopes and foreground therefore cannot open cracks between layers.
@@ -40,6 +41,7 @@ export class HillBackdrop {
       // Change only alpha above the exterior contour. Snow/grass interiors stay opaque.
       for(let x=0;x<c.width;x++)for(let y=0;y<=rows[x]+1;y++)pixels.data[(y*c.width+x)*4+3]=y<rows[x]?0:y===rows[x]?85:170;
       if(biome==='forest')keyForestMatte(pixels.data);
+      seasonRidge(pixels.data,c.width,c.height,rows,season,biome);
       g.putImageData(pixels,0,0);
       if(hasDetail&&detail&&detail.naturalWidth<=4096&&detail.naturalHeight<=1200){
         const near=document.createElement('canvas');near.width=c.width;near.height=c.height;

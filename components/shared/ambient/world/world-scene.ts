@@ -94,6 +94,12 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
               fit(entry, lastFrame);
             }
           })
+          .catch(() => {
+            if (!disposed && queued === key) {
+              queued = null;
+              emit("vic:biome-loading", { to:key, state:"error" });
+            }
+          })
           .finally(() => pending.delete(key));
         pending.set(key, p);
       }
@@ -152,9 +158,10 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         const target = scenes.get(to)!;
         fit(target, lastFrame);
         if (target.scene.ready?.() ?? true) begin(to, lastFrame);
-        else queued = to;
+        else { queued = to; emit("vic:biome-loading", {to,state:"loading"}); }
       } else {
         queued = to;
+        emit("vic:biome-loading", {to,state:"loading"});
         void ensure(to);
       }
       return true;
@@ -203,7 +210,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     return {
       nav,
       composed: true,
-      dispose() { disposed = true; releasePanel(); clearDepthCache(); for (const e of scenes.values()) e.scene.dispose?.(); scenes.clear(); },
+      dispose() { disposed = true; if(queued)emit("vic:biome-loading",{state:"idle"}); releasePanel(); clearDepthCache(); for (const e of scenes.values()) e.scene.dispose?.(); scenes.clear(); },
       resize(f) {
         lastFrame = f;
         for (const entry of scenes.values()) if (entry.key === cur || entry.key === trans?.to) fit(entry, f);

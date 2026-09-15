@@ -257,6 +257,7 @@ function ShowcaseNav() {
     });
   };
   const [pill, setPill] = useState<{ text: string; sub?: string; key: number } | null>(null);
+  const [preparing, setPreparing] = useState<BiomeKey | null>(null);
   const [bounce, setBounce] = useState<Dir | null>(null);
   const pillTimer = useRef<number | null>(null);
   const bounceTimer = useRef<number | null>(null);
@@ -273,6 +274,7 @@ function ShowcaseNav() {
     sync();
     const iv = window.setInterval(sync, 500);
     const onArrive = (e: Event) => {
+      setPreparing(null);
       const d = (e as CustomEvent<{ biome: BiomeKey; first: boolean; season: SeasonKey; band: string; snap?: boolean }>).detail;
       setBiome(d.biome);
       setVisited((v) => (v.includes(d.biome) ? v : saveSeen([...v, d.biome])));
@@ -297,6 +299,7 @@ function ShowcaseNav() {
     };
     // 떠나는 순간 방향을 문서에 적는다 — 그 쪽 쉐브론이 밀려나며 빛나고, 화면 가장자리에 진행 방향 빛이 스친다.
     const onDepart = (e: Event) => {
+      setPreparing(null);
       const d = (e as CustomEvent<{ dx: number; dy: number; dur: number }>).detail;
       const dir: Dir = d.dx !== 0 ? (d.dx > 0 ? "right" : "left") : d.dy > 0 ? "down" : "up";
       const root = document.documentElement;
@@ -304,6 +307,14 @@ function ShowcaseNav() {
       if (moveTimer.current) window.clearTimeout(moveTimer.current);
       moveTimer.current = window.setTimeout(() => root.removeAttribute("data-biome-move"), Math.max(240, d.dur * 1000));
     };
+    const onLoading = (e: Event) => {
+      const d=(e as CustomEvent<{to?:BiomeKey;state:string}>).detail;
+      if(pillTimer.current)window.clearTimeout(pillTimer.current);
+      setPill(null);
+      setPreparing(d.state==='loading'&&d.to?d.to:null);
+      if(d.state==='error')setPill({text:"배경을 불러오지 못했어요",sub:"방향키를 다시 눌러 시도해 주세요",key:Date.now()});
+    };
+    window.addEventListener("vic:biome-loading", onLoading);
     window.addEventListener("vic:biome-depart", onDepart);
     window.addEventListener("vic:biome", onArrive);
     window.addEventListener("vic:biome-bounce", onBounce);
@@ -327,6 +338,7 @@ function ShowcaseNav() {
     window.addEventListener("pointerup", onUp, { passive: true });
     return () => {
       window.clearInterval(iv);
+      window.removeEventListener("vic:biome-loading", onLoading);
       window.removeEventListener("vic:biome-depart", onDepart);
       document.documentElement.removeAttribute("data-biome-move");
       if (moveTimer.current) window.clearTimeout(moveTimer.current);
@@ -416,7 +428,12 @@ function ShowcaseNav() {
           );
         })}
       </nav>
-      {pill ? (
+      {preparing ? (
+        <div className="biome-pill" role="status" aria-live="polite" data-biome-loading={preparing}>
+          <span className="biome-pill-main">{BIOMES[preparing].nameKo} 배경 준비 중…</span>
+          <span className="biome-pill-sub">준비되면 자동으로 이동해요</span>
+        </div>
+      ) : pill ? (
         <div className="biome-pill" key={pill.key} role="status">
           <span className="biome-pill-main">{pill.text}</span>
           {pill.sub ? <span className="biome-pill-sub">{pill.sub}</span> : null}

@@ -1,13 +1,13 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-09-15 (KST)
+Last Updated: 2026-09-16 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed results live in topic records. Historical snapshots are evidence, not startup instructions.
 
 ## Current Objective
 
-Current: [R63 sky/terrain](../ambient/rounds/ROUND-63-sky-edge-terrain-detail.md) implemented and locally verified; owner runtime visual feedback next. Four seasons, independent rooted trees and canopy-hole occlusion. R59–R63 release authorized for main by owner; deployment unverified.
+Current: [R65 navigation feedback](../ambient/rounds/ROUND-65-navigation-loading.md) implemented and locally verified; owner runtime visual feedback next. Four seasons, independent rooted trees and canopy-hole occlusion. R64–65 release authorized for main; deployment unverified. R59–R63 pushed as 6373e055; deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
@@ -15,7 +15,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| AMB-FOREST | Release authorized | Verify deployment and owner appearance | [R63](../ambient/rounds/ROUND-63-sky-edge-terrain-detail.md) |
+| AMB-FOREST | Release authorized | Verify deployment and appearance | [R65](../ambient/rounds/ROUND-65-navigation-loading.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Apply the chosen review presentation and legacy-storage policy; commit B/C only if selected | [Work-order evidence](handoffs/20260909-work-order-results.md) |

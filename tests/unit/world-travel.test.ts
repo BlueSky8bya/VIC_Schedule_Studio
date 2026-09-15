@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Frame, Scene } from "../../components/shared/ambient/scene-engine";
 
-const state = vi.hoisted(() => ({ ready: false, steps: [] as number[] }));
+const state = vi.hoisted(() => ({ ready: false, fail: false, steps: [] as number[] }));
 vi.mock("../../components/shared/ambient/scenes/biome-loaders", () => {
   const loader = async () => () => ({
     resize() {}, draw() {}, step(f: Frame) { state.steps.push(f.dt); },
     ready: () => state.ready
   });
-  return { BIOME_LOADERS: { meadow: loader, hill: loader } };
+  return { BIOME_LOADERS: { meadow: loader, hill: () => state.fail ? Promise.reject(new Error('fixture load failure')) : loader() } };
 });
 vi.mock("../../components/shared/ambient/world/depth-render", async (original) => ({
   ...await original<object>(),
@@ -16,6 +16,12 @@ vi.mock("../../components/shared/ambient/world/depth-render", async (original) =
 import { createWorld, PAN_DUR, travelStrip } from "../../components/shared/ambient/world/world-scene";
 
 describe("depth-aware biome travel", () => {
+  it('reports failed loading and unlocks a new navigation attempt',async()=>{
+    const events:CustomEvent[]=[];vi.stubGlobal('window',{dispatchEvent:(e:CustomEvent)=>events.push(e)});
+    const f={w:1200,h:800,dpr:1,q:2,dt:0,t:0,reduced:false,p:{x:600,y:400,inside:false},time:{band:'noon'},weather:{now:'clear'},light:{},load:1} as Frame;
+    const world=createWorld('summer','meadow',{pin:true})(42) as Scene & {nav:{go(t:'hill'):boolean;moving():boolean}};
+    try{world.resize(f);await new Promise(r=>setTimeout(r,0));state.fail=true;expect(world.nav.go('hill')).toBe(true);await new Promise(r=>setTimeout(r,0));expect(world.nav.moving()).toBe(false);expect(events.some(e=>e.type==='vic:biome-loading'&&e.detail.state==='error')).toBe(true);state.fail=false;expect(world.nav.go('hill')).toBe(true);await new Promise(r=>setTimeout(r,0));}finally{state.fail=false;world.dispose?.();vi.unstubAllGlobals();}
+  });
   it("covers the viewport with ordered adjoining strips in every direction", () => {
     for (const hz of [.26, .35, .42]) for (const dx of [-2, 0, 2]) for (const dy of [-2, 0, 2]) {
       for (let n = -20; n <= 20; n++) {
@@ -54,11 +60,14 @@ describe("depth-aware biome travel", () => {
       p: { x: 600, y: 400, inside: false }, time: { band: "noon" },
       weather: { now: "clear" }, light: {}, load: 1 } as Frame;
     for (const reduced of [false, true]) {
+      const events: Array<{type:string;detail:unknown}> = [];
+      vi.stubGlobal('window',{dispatchEvent:(e:CustomEvent)=>events.push({type:e.type,detail:e.detail})});
       state.ready = false; state.steps = [];
       const world = createWorld("summer", "meadow", { pin: true })(42) as Scene & { nav: { go(t: "hill"): boolean; moving(): boolean; at(): string } };
       world.resize(f);
       await new Promise(resolve => setTimeout(resolve, 0));
       expect(world.nav.go("hill")).toBe(true);
+      expect(events).toContainEqual({type:'vic:biome-loading',detail:{to:'hill',state:'loading'}});
       await new Promise(resolve => setTimeout(resolve, 0));
       world.step({ ...f, reduced, t: 5 });
       expect(world.nav.at()).toBe("meadow");
@@ -74,7 +83,9 @@ describe("depth-aware biome travel", () => {
       }
       expect(world.nav.at()).toBe("hill");
       expect(world.nav.moving()).toBe(false);
+      expect(events.some(e=>e.type==='vic:biome-depart')).toBe(true);
       world.dispose?.();
+      vi.unstubAllGlobals();
     }
   });
 });

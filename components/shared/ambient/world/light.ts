@@ -149,16 +149,13 @@ const BAND: Record<DayBand, BandRow> = {
     sky: "96 110 140",
     skyAlpha: 0.46,
     hazeK: 1.4,
-    // 184 → 194(2026-09-06 라운드 8, 검토 C): 밤은 **곱셈**이라 ΔL이 바탕 L에 비례해 밝은 바이옴이 먼저
-    // 규칙을 깨졌다(민물 봄 −18.74 · 초원 여름 −16.3 · 언덕 가을 −16.06, 하한 −16). 밝은 지면이 −16 안에 들게 올린다
-    // — 어두운 바이옴은 −10.5 → −9.9로 조금 올라오지만, 그쪽은 원래 여유가 있었다.
-    // 라운드 10: 같은 이유로 mul을 중성 쪽으로(휘도 202 유지), desat .38 → .28(규칙 ×.62 = 크로마 잔존 .5~.7).
-    mul: [198, 203, 214],
-    desat: 0.16, // .28 → .16(가을 밤 크로마 ×.26, 규칙 ×.62)
-    tint: { rgb: "48 66 102", alpha: 0.04 }, // 저녁과 같은 이유(라운드 14, A #4) — 밤 하한과 무채색 크로마 주입을 함께 푼다
-    // 밤: 목표 −16L. mul만으로는 −8~−13에 그쳐 "밤하늘 아래 낮의 땅"이었다(라운드 15 A #1).
-    // α .17 → .15(자체 실측 1회전: .17에서 가장 밝은 지면인 민물 수면이 −20.2로 **하한 −16을 넘겨** 어두워졌다 — 밝은 것을 더 끄는 성질의 뒷면).
-    ground: { rgb: "28 36 56", alpha: 0.15 },
+    // R64 owner direction: moonlit color response, not merely dim daytime art.
+    // Cooler exposure and lower chroma supersede the old fixed -16L ceiling.
+    mul: [165, 182, 208],
+    desat: 0.42,
+    tint: { rgb: "42 57 88", alpha: 0.07 },
+    // Retain readable silhouettes; winter snow still receives the albedo relief.
+    ground: { rgb: "24 34 55", alpha: 0.20 },
     shadow: { dx: 0, len: 0.6, alpha: 0.33 },
     glint: 0.5,
     reflect: { k: 0.58, rgb: "222 232 246", skyK: 0.1 }
