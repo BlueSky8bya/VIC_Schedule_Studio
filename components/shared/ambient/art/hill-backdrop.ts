@@ -1,3 +1,4 @@
+import {SANDY_DEPTH_CONTOURS} from '../world/sandy-geometry';
 import {TIDAL_DEPTH_CONTOURS} from '../world/tidal-geometry';
 import {MOUNTAIN_DEPTH_CONTOURS,mountainCliff} from '../world/mountain-geometry';
 import type { Frame } from '../scene-engine';
@@ -25,7 +26,7 @@ export class HillBackdrop {
   private skyLine=0;
   version=0;
   bakes=0;
-  constructor(private season:SeasonKey,private biome:'hill'|'pond'|'valley'|'forest'|'mountain'|'tidal'='hill'){
+  constructor(private season:SeasonKey,private biome:'hill'|'pond'|'valley'|'forest'|'mountain'|'tidal'|'sandy'='hill'){
     beginLoad();
     const image=this.image=new Image();image.decoding='async';
     image.src=`/ambient/art/backdrop-${biome}-${season}-${biome==='hill'||biome==='forest'?'v2':'v1'}.png`;
@@ -43,7 +44,7 @@ export class HillBackdrop {
       // Change only alpha above the exterior contour. Snow/grass interiors stay opaque.
       for(let x=0;x<c.width;x++)for(let y=0;y<=rows[x]+1;y++)pixels.data[(y*c.width+x)*4+3]=y<rows[x]?0:y===rows[x]?85:170;
       if(biome==='forest')keyForestMatte(pixels.data);
-      if(biome!=='mountain'&&biome!=='tidal')seasonRidge(pixels.data,c.width,c.height,rows,season,biome);
+      if(biome!=='mountain'&&biome!=='tidal'&&biome!=='sandy')seasonRidge(pixels.data,c.width,c.height,rows,season,biome);
       g.putImageData(pixels,0,0);
       if(hasDetail&&detail&&detail.naturalWidth<=4096&&detail.naturalHeight<=1200){
         const near=document.createElement('canvas');near.width=c.width;near.height=c.height;
@@ -56,7 +57,7 @@ export class HillBackdrop {
         g.drawImage(near,0,0);near.width=near.height=1;
       }
       this.source=c;this.skyline=rows;
-      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='tidal'?TIDAL_DEPTH_CONTOURS:biome==='mountain'?MOUNTAIN_DEPTH_CONTOURS:biome==='forest'?FOREST_DEPTH_CONTOURS:biome==='valley'?VALLEY_DEPTH_CONTOURS:biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
+      this.field=compileTerrainField(u=>rows[Math.min(rows.length-1,Math.round(u*(rows.length-1)))]/c.height,biome==='sandy'?SANDY_DEPTH_CONTOURS:biome==='tidal'?TIDAL_DEPTH_CONTOURS:biome==='mountain'?MOUNTAIN_DEPTH_CONTOURS:biome==='forest'?FOREST_DEPTH_CONTOURS:biome==='valley'?VALLEY_DEPTH_CONTOURS:biome==='pond'?POND_DEPTH_CONTOURS:HILL_DEPTH_CONTOURS);
     }).catch(()=>{
       // Autumn's plain seasonal fallback is usable if a source cannot be decoded.
     }).finally(()=>{

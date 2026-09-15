@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R75 tidal seasons](../ambient/rounds/ROUND-75-tidal-seasons.md) implements the accepted tidal concept across four seasons, with shared depth/weather/light and no drifting decorative objects. Local checks and independent A/B/C review passed; owner accepted the preview and authorized release to main. Deployment unverified. R72–74 pushed as d8ae2068; deployment unverified.
+Current: [R76 sandy shore](../ambient/rounds/ROUND-76-sandy-shore.md) implements the accepted front-facing beach across four seasons, continuous parallax and painted-wave motion. Local checks and independent A/B/C reviews complete; owner authorized release. Next: rocky coast concept, without drifting decorative objects. Deployment unverified. R75 tidal shipped as ba86e52e; deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 

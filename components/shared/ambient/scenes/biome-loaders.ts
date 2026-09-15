@@ -12,7 +12,7 @@ export const BIOME_LOADERS: Record<BiomeKey, (season: SeasonKey) => Promise<Scen
   // 깊은 바다만 따로 산다(2026-09-06) — 물속 옆모습 시점 + 계절·날씨·시간대 무영향이라 계절을 받지 않는다.
   deep: () => import("./deep").then((m) => m.createDeep),
   tidal: (season) => import("./tidal").then((m) => (seed: number) => m.createTidal(seed, season)),
-  sandy: (season) => import("./coast").then((m) => (seed: number) => m.createCoast(seed, { season, mode: "sandy" })),
+  sandy: (season) => import("./sandy").then((m) => (seed: number) => m.createSandy(seed, season)),
   rocky: (season) => import("./coast").then((m) => (seed: number) => m.createCoast(seed, { season, mode: "rocky" })),
   forest: (season) => import("./autumn").then((m) => (seed: number) => m.createAutumn(seed, season, "forest")),
   hill: (season) => import("./autumn").then((m) => (seed: number) => m.createAutumn(seed, season, "hill")),

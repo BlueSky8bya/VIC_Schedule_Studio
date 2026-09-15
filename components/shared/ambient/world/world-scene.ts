@@ -45,7 +45,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
   const pinned = !!opts.pin;
   return (seed: number): Scene & { nav: WorldNav } => {
     const scenes = new Map<BiomeKey, Loaded>();
-    const horizonOf = (key: BiomeKey) => key === "meadow" ? SPRING_MEADOW_HORIZON_V : key === "hill" || key==='pond'||key==='valley'||key==='forest'||key==='mountain'||key==='tidal' ? HILL_HORIZON_V : HORIZON_V;
+    const horizonOf = (key: BiomeKey) => key === "meadow" ? SPRING_MEADOW_HORIZON_V : key === "hill" || key==='pond'||key==='valley'||key==='forest'||key==='mountain'||key==='tidal'||key==='sandy' ? HILL_HORIZON_V : HORIZON_V;
     const inView = <T,>(key: BiomeKey, run: () => T): T => withViewHorizon(horizonOf(key), run);
     const skyHorizonOf=(key:BiomeKey,f:Frame)=>scenes.get(key)?.scene.skyHorizon?.(f.w,f.h)??f.h*horizonOf(key);
     const pending = new Map<BiomeKey, Promise<void>>();
@@ -67,7 +67,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
     };
     const localFrame = (f: Frame, key:BiomeKey=cur): Frame => {
       const off = offsetsOf(f).ground;
-      if(key==='meadow'||key==='hill'||key==='pond'||key==='valley'||key==='forest'||key==='mountain'||key==='tidal'){
+      if(key==='meadow'||key==='hill'||key==='pond'||key==='valley'||key==='forest'||key==='mountain'||key==='tidal'||key==='sandy'){
         const scene=scenes.get(key)?.scene,tier=f.depthTier??'full';
         const motion=scene?.surfaceMotion?(x:number,y:number)=>scene.surfaceMotion!(x,y,tier)??0:undefined;
         const local=(x:number,y:number)=>surfaceLocalPoint(x,y,off,f.h*horizonOf(key),f.h,motion);
@@ -270,7 +270,7 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow", opt
         // Continuous travel joins the two delivered terrain/sky contracts.
         // Other biome pairs retain their existing directional panel transition
         // until their new background and celestial contracts are delivered.
-        if ([trans.from,trans.to].every(key=>key==='meadow'||key==='hill'||key==='pond'||key==='valley'||key==='forest'||key==='mountain'||key==='tidal')) {
+        if ([trans.from,trans.to].every(key=>key==='meadow'||key==='hill'||key==='pond'||key==='valley'||key==='forest'||key==='mountain'||key==='tidal'||key==='sandy')) {
           // Render complete worlds (including light) once each. Reproject their
           // rows with one continuous depth curve instead of sliding two cards.
           // The departing world is opaque underneath; only the arrival fades.
