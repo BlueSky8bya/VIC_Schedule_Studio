@@ -1,0 +1,9 @@
+# R71 — Meadow ridge shares distant ground night tone
+
+2026-09-16 KST. Owner requests reducing the bright distant meadow ridge against the hazy ground. Owner subsequently authorized commit and push to main.
+
+The meadow ridge extends above the logical horizon. Shared ground tint begins below most of those peaks, leaving their bright source texture much closer to daytime while the adjacent plain receives the night tint. Apply the missing portion of this tint inside the cached ridge alpha mask. Compensate for the existing ground ramp toward the bottom to avoid double opacity. Preserve silhouettes and the existing lower-edge fade; sky is untouched by the local mask. Mild cached blur/saturation/contrast/brightness adjustment softens ridge texture relative to the distant plain across seasons.
+
+Cache includes ground tint color and alpha quantized to 1/64. One cache per layer remains; filter and 33-stop tint are baked, not applied to each frame. No new image assets, geometry or foreground detail changes. Existing shared time/weather colors remain authoritative. No server/public/private/role/KST changes.
+
+Verification: typecheck/lint/production build; 26 existing meadow-ridge/backdrop/layers/light unit tests passed. Same-seed summer clear noon/night before/after captures plus spring/autumn/winter fog noon/night in .scratch-pw/qa/r71; seasonal capture run had no browser errors. Main review: bright green night ridge reduced, no new straight cut, winter fog remains continuous. Independent A/B/C reviews found no blocking visual, mask, geometry or weather issue. Complement opacity is approximate because the cached alpha is quantized while the shared pass uses continuous alpha; color transitions can still rebake the small ridge cache. Production fixture server refreshed; release to main authorized; production deployment unverified.

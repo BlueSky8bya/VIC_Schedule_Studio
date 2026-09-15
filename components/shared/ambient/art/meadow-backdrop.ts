@@ -124,7 +124,8 @@ export class MeadowBackdrop {
     const desired = Math.min(f.dpr, 1.5) * (tier === "full" ? 1 : tier === "lite" ? .5 : .25);
     const scale = Math.min(desired, Math.sqrt(1024 * 1024 / (4 * width * height)) * .99);
     const y = layer === "far" ? horizonY(f.h) - 72 : f.h - 176;
-    const key = `${width}/${f.h}/${scale}/${y}`;
+    const ridgeNight = Math.round(f.light.ground.alpha * 64) / 64;
+    const key = `${width}/${f.h}/${scale}/${y}/${layer === "far" ? `${ridgeNight}/${f.light.ground.rgb}` : ''}`;
     const previous = this.caches[layer];
     if (previous?.key === key) return previous;
     const c = previous?.c ?? document.createElement("canvas");
@@ -144,7 +145,24 @@ export class MeadowBackdrop {
       paintMeadowRidge(g,this.masked.far!.c,width,scale,f.w,k);
       const soft=document.createElement('canvas');soft.width=c.width;soft.height=c.height;
       soft.getContext('2d')!.drawImage(c,0,0);
-      g.clearRect(0,0,width,height);g.filter='blur(1.4px)';g.drawImage(soft,0,0,width,height);g.filter='none';soft.width=soft.height=1;
+      g.clearRect(0,0,width,height);g.filter='blur(1.8px) saturate(0.78) contrast(0.88) brightness(0.94)';g.drawImage(soft,0,0,width,height);g.filter='none';soft.width=soft.height=1;
+      // The shared ground tint fades in below the skyline, missing these peaks.
+      // Supply only its missing portion, masked to the ridge's existing pixels.
+      // Combined opacity stays constant instead of doubling at the foothills.
+      if (ridgeNight > 0) {
+        const top = horizonY(f.h) - f.h * .04;
+        const bottom = horizonY(f.h) + (f.h - horizonY(f.h)) * .06;
+        const tint = g.createLinearGradient(0, 0, 0, height);
+        for (let i = 0; i <= 32; i++) {
+          const yy = y + height * i / 32;
+          const existing = ridgeNight * Math.max(0, Math.min(1, (yy - top) / (bottom - top)));
+          const missing = (ridgeNight - existing) / (1 - existing);
+          tint.addColorStop(i / 32, `rgb(${f.light.ground.rgb} / ${missing})`);
+        }
+        g.globalCompositeOperation = 'source-atop';
+        g.fillStyle = tint; g.fillRect(0, 0, width, height);
+        g.globalCompositeOperation = 'source-over';
+      }
       // Blend the ridge's bottom into M instead of exposing the source cut line.
       const fade = g.createLinearGradient(0, 78, 0, 94);
       fade.addColorStop(0, "#fff"); fade.addColorStop(1, "rgba(255,255,255,0)");
