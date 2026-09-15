@@ -216,6 +216,9 @@ R57 현재 구현: 승인 구도의 사계절 광폭 배경과 공용 계절 재
 
 ## 7. 갯벌 tidal(南西 · 金)
 
+2026-09-16 owner decision: remaining biome work (tidal, sandy, rocky, sea) does not need drifting interactive seasonal objects. Do not copy the meadow leaf/petal engine into those new backgrounds. Existing completed land biomes retain their accepted seasonal materials; deep remains sealed. This replaces any earlier implication that every biome needs the same floating-material interaction. Weather and celestial effects are separate from these decorative objects.
+
+
 **정체성**: 은회색~회녹색 뻘(초콜릿 갈색 금지)이 화면 58~63%, 바다는 위 띠 3~5%, **물골 배수망**(바다로 갈수록 넓어짐), 건열 다각형, 게 구멍 밭, 조석. 코드: `coast.ts mode="tidal"`.
 
 | 항목 | 규칙 |

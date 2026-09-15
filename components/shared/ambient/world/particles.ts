@@ -36,7 +36,7 @@ export function windDirOf(seed: number): number {
   return ((seed >>> 3) & 1) === 0 ? 1 : -1;
 }
 
-export function createParticles(seed: number): ParticleLayer {
+export function createParticles(seed: number, allowMotes = true): ParticleLayer {
   const r: Rng = rng((seed * 31 + 0x5eed) >>> 0);
   const drops: Drop[] = [];
   const flakes: Flake[] = [];
@@ -48,7 +48,7 @@ export function createParticles(seed: number): ParticleLayer {
 
   const targetRain = (load: number, lite: boolean, w: number, h: number) => Math.round(lerp(70, 240, load) * (lite ? 0.5 : 1) * clamp((w * h) / 1_200_000, 0.6, 1.5));
   const targetSnow = (load: number, lite: boolean, w: number, h: number) => Math.round(lerp(50, 170, load) * (lite ? 0.5 : 1) * clamp((w * h) / 1_200_000, 0.6, 1.5));
-  const targetMote = (load: number, lite: boolean, windK: number) => Math.round(lerp(8, 34, load) * (lite ? 0.5 : 1) * clamp(windK, 0, 1));
+  const targetMote = (load: number, lite: boolean, windK: number) => (allowMotes ? 1 : 0) * Math.round(lerp(8, 34, load) * (lite ? 0.5 : 1) * clamp(windK, 0, 1));
   const targetWisp = (fog: number, lite: boolean) => (fog <= 0 ? 0 : Math.round((lite ? 4 : 7) * clamp(fog / 0.55, 0.5, 1.4)));
 
   // 원근은 **화면 세로 위치의 함수**다(2026-09-06 라운드 8) — 옛 코드는 `d`와 `y`를 독립으로 뽑아

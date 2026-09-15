@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R74 mountain seasons](../ambient/rounds/ROUND-74-mountain-seasons.md) completes spring/summer/autumn/winter locally with cliff interaction and [R73 biome colors](../ambient/rounds/ROUND-73-biome-material-palette.md); verified, preview feedback next. Owner authorized R72–74 release to main; deployment unverified. R71 pushed as e013837a; deployment unverified.
+Current: [R75 tidal seasons](../ambient/rounds/ROUND-75-tidal-seasons.md) implements the accepted tidal concept across four seasons, with shared depth/weather/light and no drifting decorative objects. Local checks and independent A/B/C review passed; owner accepted the preview and authorized release to main. Deployment unverified. R72–74 pushed as d8ae2068; deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
