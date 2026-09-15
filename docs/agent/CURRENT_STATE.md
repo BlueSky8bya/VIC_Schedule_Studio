@@ -7,7 +7,7 @@ Current work only. Completed results live in topic records. Historical snapshots
 
 ## Current Objective
 
-Current: [R76 sandy shore](../ambient/rounds/ROUND-76-sandy-shore.md) implements the accepted front-facing beach across four seasons, continuous parallax and painted-wave motion. Local checks and independent A/B/C reviews complete; owner authorized release. Next: rocky coast concept, without drifting decorative objects. Deployment unverified. R75 tidal shipped as ba86e52e; deployment unverified.
+Current: [R77 rocky shore](../ambient/rounds/ROUND-77-rocky-shore.md) accepted; owner authorized release. Local checks and independent A/B/C reviews complete. Next: expand marine biomes to shallow sea → open sea → deep sea, inserting shallow sea after coasts. Deep sea isolation remains; no drifting decorations. Shallow sea design/implementation pending. R76 sandy shipped as ed8369c5; deployment unverified.
 
 Style captures are now a working pipeline (ADR-0021): every one of the owner's 449 game captures under `art-src/공통화풍참고/` is indexed with a role, and `art:pipeline request <entity>` attaches the matching ones automatically. Pine is the next delivery and waits on the owner alone: name the reference PNGs to drop, then a new run requests variants 2·3 across the three seasons with accepted baselines + CC0 references + style captures frozen together. No new art generation without the owner's word. The remaining C choices in the approved [work plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) still await the owner.
 
