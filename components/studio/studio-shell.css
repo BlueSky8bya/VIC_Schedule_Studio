@@ -7563,46 +7563,100 @@ html[data-reduce-motion] .delete-snack {
 .editor-close {
   margin-left: auto;
 }
-/* 옵션 칩 줄 — 접기 대신 늘 보이는 한 줄. 라벨은 위 작은 eyebrow, 칩은 감싸며 흐른다. 켜진 칩의 세부 필드는 같은 컨테이너
-   안에서 아래로 이어진다(기존 band-kind-row·teaser-field 마크업 그대로). */
-.editor-options {
-  display: grid;
-  gap: 6px;
+/* (옵션 칩 상시 노출 스타일은 같은 날 소유자 요청으로 철회 — 접기(.fold-field)로 복귀.) */
+
+/* 내용칸(contenteditable) — 옛 textarea와 같은 상자. **첫 줄만 굵게**: 맨 텍스트(첫 줄)는 900을 상속하고, Enter로 생기는
+   <div> 줄은 400. 편집 중 첫 줄이 <div>가 되는 경우(줄 삭제·붙여넣기)도 :first-child로 900. 글자 무게가 "첫 줄 = 제목,
+   아래 = 세부"를 말해 주므로 예시 문구는 없다(2026-09-17 소유자). */
+.editor-title-ce {
+  display: block;
+  min-height: 64px;
+  box-sizing: border-box;
+  border: 1px solid #e6e2f0;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: var(--text-ui);
+  font-weight: 900;
+  line-height: 1.45;
+  color: var(--ink, #23303f);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+  transition: border-color 0.15s var(--ease, ease), box-shadow 0.15s var(--ease, ease);
 }
-.editor-options-label {
-  font-size: var(--text-label);
-  font-weight: 800;
-  color: #8e93a8;
-  letter-spacing: 0.02em;
+.editor-title-ce div {
+  font-weight: 400;
 }
-.editor-options-body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+/* (첫 요소 자식 div를 굵게 하는 규칙은 두지 않는다 — 첫 줄이 맨 텍스트일 때 둘째 줄 div가 '첫 요소'라 굵어졌다(실측).
+   writeEditableText·Chrome 모두 첫 줄을 맨 텍스트로 두므로 그 줄만 900을 상속한다.) */
+.editor-title-ce:focus {
+  border-color: #b9a9ec;
+  box-shadow: 0 0 0 3px rgb(139 92 246 / 16%);
 }
-.editor-options-body .band-kind-row {
-  display: contents; /* 두 띠 칩이 다른 칩들과 같은 줄에 흐른다 */
+.editor-title-ce[contenteditable="false"] {
+  background: #f6f5fa;
+  color: #7a7690;
 }
-/* 칩은 내용 폭(옵션 칩 기본은 전폭 행) — 넷이 한두 줄에 흐르게 작고 촘촘하게. */
-.editor-options-body .opt-chip {
-  width: auto;
-  flex: 0 0 auto;
-  justify-content: flex-start;
-  min-height: 34px;
-  padding: 5px 12px 5px 9px;
-  gap: 6px;
+
+/* 저장 탭(2026-09-17 소유자) — 팝오버 세로선 밖으로 튀어나온 세로 글자 버튼. 좌/우는 data-side(마우스가 있는 쪽),
+   top은 JS가 rAF로 보간해 마우스 높이를 천천히 따라간다. 카드 밑으로 10px 겹쳐 '붙은 탭'으로 읽히고(폼이 위 z),
+   바깥쪽 모서리만 둥글다. 폼 밖(aside 자식)이라 폼 스크롤에 잘리지 않는다. */
+.event-editor-panel form {
+  z-index: 1; /* 폼은 이미 sticky(위 규칙) = positioned — 탭보다 위에 서서 겹친 10px를 덮는다 */
 }
-.editor-options-body .opt-chip .opt-chip-label {
-  font-size: var(--text-label);
+.editor-save-tab {
+  position: absolute;
+  top: 40px;
+  z-index: 0;
+  width: 44px;
+  min-height: 108px;
+  padding: 14px 0;
+  box-sizing: border-box;
+  border: 0;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(180deg, #c99a2e, #9a6d12);
+  box-shadow: 0 6px 16px rgb(120 90 20 / 28%), inset 0 1px 0 rgb(255 255 255 / 35%);
+  transition: transform 0.18s var(--spring-smooth, ease), box-shadow 0.18s ease, opacity 0.15s ease;
 }
-.editor-options-body .teaser-field {
-  display: contents;
+.editor-save-tab[data-side="left"] {
+  left: -34px;
+  border-radius: 12px 0 0 12px;
 }
-/* 세부 필드(띠 종류의 기간·공개 시각)는 줄을 통째로 차지. */
-.editor-options-body .support-fields,
-.editor-options-body .teaser-when {
-  flex: 1 0 100%;
+.editor-save-tab[data-side="right"] {
+  right: -34px;
+  border-radius: 0 12px 12px 0;
+}
+.editor-save-tab:hover:not(:disabled) {
+  box-shadow: 0 10px 24px rgb(120 90 20 / 34%), inset 0 1px 0 rgb(255 255 255 / 45%);
+}
+.editor-save-tab[data-side="left"]:hover:not(:disabled) {
+  transform: translateX(-3px);
+}
+.editor-save-tab[data-side="right"]:hover:not(:disabled) {
+  transform: translateX(3px);
+}
+.editor-save-tab:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.editor-save-tab:disabled {
+  cursor: default;
+  opacity: 0.45;
+  background: linear-gradient(180deg, #cdbfa0, #a99a7c);
+  box-shadow: none;
+}
+.editor-save-tab-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: var(--text-ui);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+html[data-reduce-motion] .editor-save-tab {
+  transition: none;
 }
 /* 날짜를 접기 버튼(28px) + 간격(8px)만큼 들여, 위 줄의 라벨 시작선과 정확히 맞춘다. */
 .editor-heading-date {

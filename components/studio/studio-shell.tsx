@@ -7,6 +7,7 @@ import "@/components/studio/studio-calm-layer.css";
 import { PanelPlaceControl } from "@/components/shared/panel-place-control";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { flipSpring } from "@/lib/ui/flip-motion";
+import { readEditableText, writeEditableText } from "@/lib/ui/editable-text";
 
 import dynamic from "next/dynamic";
 import {
@@ -487,7 +488,7 @@ export function StudioShell({
   // 사용자가 손잡이로 더 늘리는 것(resize:vertical)도 그대로 가능.
   const mTitleRef = useRef<HTMLTextAreaElement>(null);
   // 데스크톱 편집 패널의 제목칸 — 일정 선택 후 글자 키를 누르면 바로 여기로 포커스를 옮긴다.
-  const editorTitleRef = useRef<HTMLTextAreaElement>(null);
+  const editorTitleRef = useRef<HTMLDivElement>(null);
   function fitTitleHeight() {
     const el = mTitleRef.current;
     if (!el) return;
@@ -1363,13 +1364,49 @@ export function StudioShell({
   const selectedIsPeriod = selectedIsSupport && form.supportKind === "period";
   // 데스크톱 제목칸을 내용량에 맞춰 자동으로 키운다 — 긴 제목의 일정을 열면 두 줄 남짓 높이에
   // 갇혀 스크롤로만 보이던 문제 제거. 값이 바뀔 때마다(타이핑·다른 일정 선택 모두) 맞춘다.
-  // ⚠ 값뿐 아니라 팝오버가 다시 열릴 때(editorVisible·editorKey)도 맞춘다 — 같은 일정을 닫았다 다시 열면 폼 값은
-  // 그대로라 이 효과가 안 돌았고, textarea는 remount되어 기본 높이로 돌아와 긴 일정이 잘려 보였다(2026-09-17 소유자).
+  // 저장 탭의 자리 — 좌/우는 상태(재렌더 드묾), 높이는 rAF 보간으로 DOM에 직접(프레임마다 렌더하지 않는다).
+  const saveTabRef = useRef<HTMLButtonElement | null>(null);
+  const [saveTabSide, setSaveTabSide] = useState<"left" | "right">("right");
+  useEffect(() => {
+    if (!editorVisible || isNarrow) return;
+    let raf = 0;
+    let targetY: number | null = null;
+    let curY: number | null = null;
+    const step = () => {
+      raf = 0;
+      const tab = saveTabRef.current;
+      const panel = editorPanelRef.current;
+      if (!tab || !panel || targetY === null) return;
+      if (curY === null) curY = targetY;
+      curY += (targetY - curY) * 0.16; // 천천히 스무스하게 — 손보다 살짝 늦게 따라온다
+      tab.style.top = `${curY}px`;
+      if (Math.abs(targetY - curY) > 0.3) raf = requestAnimationFrame(step);
+    };
+    const onMove = (e: PointerEvent) => {
+      const panel = editorPanelRef.current;
+      const tab = saveTabRef.current;
+      if (!panel || !tab) return;
+      const r = panel.getBoundingClientRect();
+      const zoom = panel.offsetWidth > 0 ? r.width / panel.offsetWidth : 1;
+      setSaveTabSide(e.clientX < r.left + r.width / 2 ? "left" : "right");
+      const tabH = tab.offsetHeight;
+      const y = (e.clientY - r.top) / zoom - tabH / 2;
+      targetY = Math.max(8, Math.min(panel.offsetHeight - tabH - 8, y));
+      if (!raf) raf = requestAnimationFrame(step);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [editorVisible, isNarrow, editorKey]);
+  // 내용칸(contenteditable)은 비제어 — 폼 값이 밖에서 바뀌면(열기·remount·임시본 복원·'새로 쓰기') DOM을 맞추고, 타이핑
+  // 중(포커스·같은 값)엔 건드리지 않는다(커서가 튄다). 높이는 내용에 따라 스스로 자란다(옛 textarea 자동 높이 대체).
   useLayoutEffect(() => {
     const el = editorTitleRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight + 2, 480)}px`;
+    if (document.activeElement === el && readEditableText(el) === form.publicTitle) return;
+    if (readEditableText(el) !== form.publicTitle) writeEditableText(el, form.publicTitle);
   }, [form.publicTitle, editorVisible, editorKey]);
   // 키보드 달력에서 화살표로 달 경계를 넘을 때, 달 전환 후 이어서 포커스할 날짜(P0-A11Y-1).
   const pendingFocusDateRef = useRef<string | null>(null);
@@ -2026,13 +2063,15 @@ export function StudioShell({
     (id: string, el: HTMLElement, pinned: boolean) => {
       // 드래그(이동·우클릭 잇기 모두) 중엔 팝오버 금지(좌표 소음·대상 판정 방해)
       if (dragActiveRef.current || rightGestureRef.current?.moved) return;
+      // 지금 편집 팝오버가 열린 바로 그 일정엔 미리보기를 띄우지 않는다(2026-09-17 소유자) — 같은 내용이 두 창에.
+      if (editorVisible && selectedEventId && canonId(selectedEventId) === canonId(id)) return;
       const prev = zoomPeekRef.current;
       if (!pinned && prev?.pinned) return; // 핀 고정 중엔 hover가 덮어쓰지 못함
       cancelPeekClose();
       peekAnchorRef.current = el;
       setZoomPeek({ id, pinned });
     },
-    [cancelPeekClose]
+    [cancelPeekClose, editorVisible, selectedEventId]
   );
   const closeZoomPeek = useCallback((opts?: { returnFocus?: boolean }) => {
     const prev = zoomPeekRef.current;
@@ -4680,16 +4719,21 @@ export function StudioShell({
   }
 
   // 편집 패널 제목칸을 찾아 포커스한다(ref 우선, 없으면 DOM 조회 — ref가 아직 안 잡힌 경우 대비).
-  function focusEditorTitle(): HTMLTextAreaElement | null {
+  function focusEditorTitle(): HTMLDivElement | null {
     const input =
       editorTitleRef.current ??
-      document.querySelector<HTMLTextAreaElement>(".event-editor-panel textarea");
-    if (!input || input.disabled) return null;
+      document.querySelector<HTMLDivElement>(".event-editor-panel .editor-title-ce");
+    if (!input || input.contentEditable !== "true") return null;
     if (document.activeElement !== input) {
       input.focus();
-      const len = input.value.length;
       try {
-        input.setSelectionRange(len, len);
+        // 캐럿을 끝으로(contenteditable엔 setSelectionRange가 없다).
+        const range = document.createRange();
+        range.selectNodeContents(input);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
       } catch {
         /* 무시 */
       }
@@ -4763,17 +4807,8 @@ export function StudioShell({
         // IME(한글 조합)는 포커스만 하고 조합은 input이 그대로 받게 둔다(직접 넣으면 겹치거나 깨짐).
         if (input && !e.isComposing && e.key !== "Process" && e.key.length === 1) {
           e.preventDefault();
-          const start = input.selectionStart ?? input.value.length;
-          const end = input.selectionEnd ?? input.value.length;
-          const next = input.value.slice(0, start) + e.key + input.value.slice(end);
-          setForm((f) => ({ ...f, publicTitle: next }));
-          requestAnimationFrame(() => {
-            try {
-              input.setSelectionRange(start + 1, start + 1);
-            } catch {
-              /* 무시 */
-            }
-          });
+          // contenteditable: 캐럿 자리에 글자를 넣는다 — input 이벤트가 따라와 onInput이 폼 값을 갱신한다.
+          document.execCommand("insertText", false, e.key);
         }
         return;
       }
@@ -7088,8 +7123,9 @@ export function StudioShell({
           /* key는 editorKey(명시적 선택 시에만 증가) — 저장·삭제 같은 내부 상태 변화로는 재마운트
              되지 않아 깜빡이지 않는다. 날짜/일정을 새로 고를 때만 쑥 내려오는 전환. */
           <form
+            id={`event-editor-form-${editorKey}`}
             key={editorKey}
-            /* Ctrl/⌘+Enter = 저장(2026-09-17 소유자) — 제목칸(textarea)은 Enter가 줄바꿈이라 버튼까지 손이 갔다.
+            /* Ctrl/⌘+Enter = 저장(2026-09-17 소유자) — 제목칸은 Enter가 줄바꿈이라 버튼까지 손이 갔다.
                폼 어느 칸에 커서가 있든 requestSubmit → 같은 onSubmit(검증·저장 경로 동일). */
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.nativeEvent.isComposing) {
@@ -7166,16 +7202,28 @@ export function StudioShell({
             ) : null}
 
             <label>
-              {/* '제목' → '내용'(2026-09-17 소유자): 첫 줄=제목, 아래 줄=세부인 한 칸이라 '제목'은 옛 단일 제목 시절 이름. */}
+              {/* '제목' → '내용'(2026-09-17 소유자): 첫 줄=제목, 아래 줄=세부인 한 칸이라 '제목'은 옛 단일 제목 시절 이름.
+                  textarea가 아니라 contenteditable — 첫 줄만 굵게(CSS: 첫 줄 900 · 아래 줄 400) 그려 "첫 줄 = 제목, 아래 = 세부"를
+                  글자 무게로 은연중에 말한다(소유자: 예시 문구 대신). 값은 innerText로 읽고(줄 = \n), 붙여넣기는 순수 텍스트만. */}
               내용
-              <textarea
-                disabled={!canEdit}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, publicTitle: event.target.value }))
-                }
-                placeholder="첫 줄은 제목, 아래 줄은 세부 — 예: 풀트뱅"
+              <div
+                aria-label="내용"
+                aria-multiline="true"
+                className="editor-title-ce"
+                contentEditable={canEdit}
+                data-act="title-input"
+                onInput={(event) => {
+                  const text = readEditableText(event.currentTarget); // updater 콜백 안에선 currentTarget이 이미 null
+                  setForm((current) => ({ ...current, publicTitle: text }));
+                }}
+                onPaste={(event) => {
+                  event.preventDefault();
+                  document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
+                }}
                 ref={editorTitleRef}
-                value={form.publicTitle}
+                role="textbox"
+                suppressContentEditableWarning
+                tabIndex={0}
               />
             </label>
             {renderTitleHelper()}
@@ -7184,12 +7232,26 @@ export function StudioShell({
                 필요가 없다. 제목·태그(자주 쓰는 것)를 먼저 보이게 하고, 이 묶음은 헤더에 현재 상태를
                 요약해 보여준 뒤 필요할 때만 펼친다. 기본 접힘. (공개 범위 피커는 2026-08-27 철수 —
                 모든 일정이 '모두'. 비공개 모델은 서버에 그대로.) */}
-            {/* 2026-09-17 대개편: 옵션 접기(fold) 폐지 — 접힌 '옵션 · 없음 ▾' 줄은 입력칸처럼 읽히고, 켜려면 펼치고 또 누르는
-                두 번 동작이었다. 칩 넷(미정·업 도움·기간 안내·최초공개)을 제목 바로 아래 한 줄에 늘 보이게 — 한 번에 켠다.
-                켜진 칩의 세부(띠 종류·기간·공개 시각)만 그 아래에 펼쳐진다. 모바일 시트의 접기는 그대로(화면이 좁다). */}
-            <div className="editor-options" role="group" aria-label="옵션">
-              <span className="editor-options-label">옵션</span>
-              <div className="editor-options-body">
+            {/* 옵션(미정·업도움·떡밥)은 접어 둔다 — 대부분의 일정은 '옵션 없음'이라 매번 펼쳐 볼
+                필요가 없다. 제목·태그(자주 쓰는 것)를 먼저 보이게 하고, 이 묶음은 헤더에 현재 상태를
+                요약해 보여준 뒤 필요할 때만 펼친다. 기본 접힘. (2026-09-17 칩 상시 노출로 바꿨다가 같은 날 소유자
+                요청으로 이 접기 형태로 되돌림.) */}
+            <div className={`fold-field${scopeFoldOpen ? " open" : ""}`}>
+              <button
+                aria-expanded={scopeFoldOpen}
+                className="fold-head"
+                onClick={() => {
+                  hapticTick();
+                  setScopeFoldOpen((v) => !v);
+                }}
+                type="button"
+               data-act="fold-head">
+                <span className="fold-title">옵션</span>
+                <span className="fold-summary">{scopeFoldSummary}</span>
+                <ChevronDown aria-hidden="true" className="fold-chev" size={16} />
+              </button>
+              {scopeFoldOpen ? (
+                <div className="fold-body">
             {/* 옵션 칩 순서(웹·모바일 통일): 미정 → 업도움 → 떡밥 */}
             {renderSupportEditor()}
 
@@ -7227,7 +7289,8 @@ export function StudioShell({
                 ) : null}
               </div>
             ) : null}
-              </div>
+                </div>
+              ) : null}
             </div>
 
             <section className="tag-picker" aria-label="태그 선택">
@@ -7247,8 +7310,10 @@ export function StudioShell({
               />
             </section>
 
-            {/* 하단 고정 액션 바(2026-09-17 대개편) — 폼(스크롤 컨테이너) 바닥에 sticky. 오른쪽 = 저장(주 동작, 넓게),
-                왼쪽 = 드문·위험 동작(띠 삭제, 이용 기록)을 조용히 떼어 둔다(실수 클릭 거리). 저장은 Ctrl+Enter도 된다. */}
+            {/* 하단 액션 바(2026-09-17) — 드문·위험 동작(띠 삭제, 이용 기록)만. 저장은 팝오버 옆에서 마우스를 따라다니는
+                세로 탭(.editor-save-tab, aside 자식)이 맡는다 — 그게 있어야 할 때만 바를 그린다. */}
+            {(selectedEventId && canEdit && events.find((e) => e.id === selectedEventId)?.isSupport) ||
+            (!selectedEventId && isDevInsights) ? (
             <div className="editor-actions">
               {selectedEventId &&
               canEdit &&
@@ -7273,17 +7338,8 @@ export function StudioShell({
                   📈 이용 기록
                 </button>
               ) : null}
-              <button
-                className="button primary editor-save"
-                data-act="save-event"
-                disabled={!canEdit || !form.publicTitle.trim()}
-                title="저장 (Ctrl+Enter)"
-                type="submit"
-              >
-                {selectedEventId ? "저장" : "일정 추가"}
-                <kbd aria-hidden="true" className="editor-save-kbd">Ctrl+↵</kbd>
-              </button>
             </div>
+            ) : null}
 
             {/* 이 일정의 관심(하트) 수 — **개발자에게만**(2026-09-07 소유자: "방송에 보이기 껄끄러울 수 있으니까").
                 편집실은 방송 중에 화면이 공유되는 곳이고, 이 줄은 그 자리에서 "이 일정에 몇 명이 반응했나"를
@@ -7304,6 +7360,23 @@ export function StudioShell({
             ) : null}
           </form>
           )}
+          {/* 저장 탭(2026-09-17 소유자): 팝오버 테두리 밖으로 툭 튀어나온 세로 글자 버튼. 마우스가 팝오버 왼쪽에 있으면
+              왼쪽 세로선, 오른쪽이면 오른쪽 세로선에 붙고, 높이는 마우스 높이를 천천히 따라간다(rAF 보간, 아래 effect).
+              폼 밖(aside 자식)이라 폼의 overflow에 안 잘리고, form= 속성으로 같은 onSubmit을 탄다. */}
+          {!teaserGateActive && canEdit ? (
+            <button
+              className="editor-save-tab"
+              data-act="save-event"
+              data-side={saveTabSide}
+              disabled={!form.publicTitle.trim()}
+              form={`event-editor-form-${editorKey}`}
+              ref={saveTabRef}
+              title="저장 (Ctrl+Enter)"
+              type="submit"
+            >
+              <span className="editor-save-tab-text">{selectedEventId ? "저장" : "일정 추가"}</span>
+            </button>
+          ) : null}
         </aside>
       </section>
 
