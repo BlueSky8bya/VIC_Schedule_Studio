@@ -34,6 +34,8 @@ export function PanelPlaceControl({
   const [hover, setHover] = useState(false);
   const ToggleIcon = side === "right" ? PanelRight : PanelLeft;
   const showZoom = zoomPct !== null && zoomPct !== 100 && zoomAwake && !hover;
+  // 접혀 있으면 자리 선택은 의미가 없다 — '패널' 하나만(2026-09-17 소유자). 펼치면 ⇤ ⇥가 돌아온다.
+  const sides = showSide && open;
   return (
     <div
       className="panel-place-ctl"
@@ -43,7 +45,7 @@ export function PanelPlaceControl({
       aria-label="패널 자리"
       title="달력 옆 패널"
     >
-      {showSide ? (
+      {sides ? (
         <button
           type="button"
           className={`ppc-side${side === "left" ? " on" : ""}`}
@@ -75,7 +77,7 @@ export function PanelPlaceControl({
           </>
         )}
       </button>
-      {showSide ? (
+      {sides ? (
         <button
           type="button"
           className={`ppc-side${side === "right" ? " on" : ""}`}
