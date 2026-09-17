@@ -1017,6 +1017,35 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   backdrop-filter: none;
   background: rgb(15 23 42 / 52%);
 }
+/* ── 페이지 껍데기(2026-09-17 승격) — 같은 창 부품을 백드롭 없이 페이지에 앉힌다. 무대 캡은 뷰포트 기준. ── */
+.replay-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+  background: var(--page-bg, #eef0f5);
+}
+.day-vod-backdrop[data-variant="page"] {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  display: block;
+  padding: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: none;
+}
+.day-vod-backdrop[data-variant="page"] .day-vod-modal {
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+}
+.day-vod-backdrop[data-variant="page"] .dvm-vod {
+  --dvm-stage-h: calc(100vh - 32px - 230px);
+  --dvm-chrome: 100px; /* 페이지 16×2 + 본문 24×2 + 간격 20 */
+  --dvm-max-w: 100vw;
+}
 .day-vod-modal {
   /* 더 넓은 창(2026-09-01 사용자 피드백 2차) — 미리보기가 주인공. 낮은 화면에선 미리보기가
      max-height(아래 .dvm-thumb)로 잡히고 플레이어가 알아서 레터박스를 그린다. */
@@ -1024,7 +1053,8 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
      3차(2026-09-03 "화면 비율 더 크게"): 1280→1720, 레일은 420 고정이라 늘어난 폭은 전부
      영상 몫(1080p 실측 1230×692, 창 높이 ≈830 = 94vh 안). 세로는 94vh — 낮은 화면은
      .dvm-thumb max-height가 영상을 캡(768 높이: 영상 814×458, 캡 안 걸림). */
-  width: min(1720px, 100%);
+  width: fit-content; /* 무대+레일 폭만큼(2026-09-17) — 영상이 높이 캡으로 좁아지면 창도 함께 좁아진다 */
+  max-width: min(1720px, 100%);
   max-height: min(94vh, 1100px);
   display: flex;
   flex-direction: column;
@@ -1046,6 +1076,8 @@ html[data-reduce-motion] .day-vod-modal {
 }
 .dvm-head {
   position: relative; /* 단축키 안내 팝오버의 기준 */
+  width: 0;
+  min-width: 100%; /* 창 폭(fit-content)에 머리줄의 긴 제목이 끼어들지 않게 — 폭은 본문이 정하고 제목은 말줄임 */
   flex: none;
   display: flex;
   align-items: center;
@@ -1152,6 +1184,7 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
 .dvm-tabs {
   flex: none;
   align-self: flex-start;
+  max-width: calc(100% - 48px);
   display: inline-flex;
   gap: 2px;
   margin: 0 0 10px 24px;
@@ -1231,7 +1264,7 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
    (vic_avatar_side, data-rail) — 패널이 왼쪽이면 챕터도 왼쪽. 제목은 머리줄로 올라가 좌열은 영상 + 가로 띠. */
 .dvm-vod:has(.vod-chapters) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--side-panel-w, 380px);
+  grid-template-columns: auto var(--side-panel-w, 380px);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "thumb rail"
@@ -1240,7 +1273,7 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
   align-items: start;
 }
 .dvm-vod[data-rail="left"]:has(.vod-chapters) {
-  grid-template-columns: var(--side-panel-w, 380px) minmax(0, 1fr);
+  grid-template-columns: var(--side-panel-w, 380px) auto;
   grid-template-areas:
     "rail thumb"
     "rail strip";
@@ -1249,12 +1282,23 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
 .dvm-vod:has(.vod-chapters) .dvm-strip { grid-area: strip; align-self: start; }
 /* 무대 폭 = 영상 폭(2026-09-17 소유자: 띠와 영상 폭이 안 맞았다). 높이 캡에 걸리면 16:9 상자가 옆으로 넓어져
    플레이어가 좌우 레터박스를 그렸고 띠는 상자 폭을 따랐다. 이제 상자 폭 자체를 "캡 높이 × 16/9"로 묶고 띠도 같은 폭. */
+/* 무대 폭(2026-09-17 소유자 2차: "영상과 오른쪽 타임라인 상자 사이 빈 공간") — 높이 캡으로 영상이 열 폭보다 좁아지면
+   그 차이가 레일 앞에 빈 띠로 남았다. 이제 영상 열은 auto(=무대 폭)이고 창은 내용 폭(fit-content)이라 레일이 영상에
+   붙는다. 무대 폭은 %가 아니라 **뷰포트에서 역산**(열이 auto라 %는 순환): 뷰포트 − 창 밖 여백 − 레일 − 간격, 창 최대폭,
+   높이 캡×16/9 중 최소. --dvm-chrome = 창 밖·안 가로 여백 합(창 24×2 + 본문 24×2 + 열 간격 20). */
 .dvm-vod {
   --dvm-stage-h: calc(min(94vh, 1100px) - 230px);
+  --dvm-chrome: 116px;
+  --dvm-max-w: 1720px;
+  --dvm-stage-w: min(
+    calc(100vw - var(--dvm-chrome) - var(--side-panel-w, 380px)),
+    calc(var(--dvm-max-w) - var(--dvm-chrome) + 48px - var(--side-panel-w, 380px)),
+    calc(var(--dvm-stage-h) * 16 / 9)
+  );
 }
 .dvm-vod .dvm-thumb,
 .dvm-vod .dvm-strip {
-  width: min(100%, calc(var(--dvm-stage-h) * 16 / 9));
+  width: var(--dvm-stage-w);
   justify-self: start;
 }
 /* C로 타임라인을 접으면(7번) 레일 열이 사라지고 영상이 그만큼 커진다. 접힌 머리줄만 띠 아래에 남고 띠는 그대로. */
@@ -1270,10 +1314,17 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
   min-height: 0;
 }
 /* 접힌 동안 무대가 창 폭보다 좁으면(높이 캡) 가운데 — 한쪽만 비지 않게. 머리줄도 무대 폭에 맞춘다. */
+.dvm-vod:has(.vod-chapters:not([data-open])) {
+  --dvm-stage-w: min(
+    calc(100vw - var(--dvm-chrome) + 20px),
+    calc(var(--dvm-max-w) - 48px),
+    calc(var(--dvm-stage-h) * 16 / 9)
+  );
+}
 .dvm-vod:has(.vod-chapters:not([data-open])) .dvm-thumb,
 .dvm-vod:has(.vod-chapters:not([data-open])) .dvm-strip,
 .dvm-vod:has(.vod-chapters:not([data-open])) .vod-chapters {
-  width: min(100%, calc(var(--dvm-stage-h) * 16 / 9));
+  width: var(--dvm-stage-w);
   justify-self: center;
 }
 .dvm-vod:has(.vod-chapters) .vod-chapters {

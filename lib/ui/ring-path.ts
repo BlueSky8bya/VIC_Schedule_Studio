@@ -21,9 +21,11 @@ export function ringPath(s: RingSpec): string {
   const R = s.card.x + s.card.w + s.pad;
   const B = s.card.y + s.card.h + s.pad;
   const cr = Math.min(s.cr, (R - L) / 2, (B - T) / 2);
-  const f = s.fillet ?? 6;
-  const r = s.bumpR ?? 10;
   const bump = Math.max(0, s.bump);
+  // 볼록이 부풀고 접히는 동안 모서리 반지름은 볼록 폭을 넘지 못한다 — 넘으면 제어점이 볼록 밖으로 나가 점선이
+  // 카드 위/아래로 삐져나왔다(2026-09-17 소유자: "숨을 때 점선이 팝오버 위쪽으로 침투"). 폭과 같이 줄어 함께 사라진다.
+  const f = Math.min(s.fillet ?? 6, bump);
+  const r = Math.min(s.bumpR ?? 10, bump);
   // 볼록 구간(링 좌표): 탭 위아래로 pad만큼 넓힌다. 카드 모서리 호와 겹치지 않게 안쪽으로 밀어 넣는다.
   let y1 = s.card.y + s.tabTop - s.pad;
   let y2 = y1 + s.tabH + s.pad * 2;
@@ -38,6 +40,7 @@ export function ringPath(s: RingSpec): string {
     y2 = maxY;
   }
   const hasBump = bump > 0.5 && y2 - y1 > 2 * r + 2;
+  // 볼록 구간 세로 범위는 링 안쪽(모서리 호 밖)에 있어야 한다 — 위/아래 모서리를 침범하면 선이 겹친다.
   const p: string[] = [];
   // 시계 방향: 윗변 → 오른변 → 아랫변 → 왼변.
   p.push(`M ${L + cr} ${T}`);
