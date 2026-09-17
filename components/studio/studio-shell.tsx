@@ -5938,10 +5938,10 @@ export function StudioShell({
           >
             {draftRestored ? (
               <div className="draft-restored" role="status">
-                <span>저장 안 한 임시 내용을 불러왔어요.</span>
+                <span>임시 저장본을 불러왔어요</span>
                 <button className="draft-restored-discard" onClick={discardDraft} type="button" data-act="draft-restored-discard">
                   {/* 문구(2026-09-17 소유자): 임시본을 버리면 기존 일정은 원본으로, 새 카드는 빈 카드로 — '새로 쓰기'는 오해. */}
-                  {selectedEventId ? "원본으로 되돌리기" : "비우고 새로 쓰기"}
+                  {selectedEventId ? "원본으로" : "비우기"}
                 </button>
               </div>
             ) : null}
@@ -7386,10 +7386,10 @@ export function StudioShell({
 
             {draftRestored ? (
               <div className="draft-restored" role="status">
-                <span>저장 안 한 임시 내용을 불러왔어요.</span>
+                <span>임시 저장본을 불러왔어요</span>
                 <button className="draft-restored-discard" onClick={discardDraft} type="button" data-act="draft-restored-discard">
                   {/* 문구(2026-09-17 소유자): 임시본을 버리면 기존 일정은 원본으로, 새 카드는 빈 카드로 — '새로 쓰기'는 오해. */}
-                  {selectedEventId ? "원본으로 되돌리기" : "비우고 새로 쓰기"}
+                  {selectedEventId ? "원본으로" : "비우기"}
                 </button>
               </div>
             ) : null}

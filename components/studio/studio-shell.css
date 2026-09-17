@@ -595,10 +595,11 @@ body::-webkit-scrollbar {
   border: 1px solid var(--accent, #6b5bd6);
   border-color: color-mix(in srgb, var(--accent, #6b5bd6) 42%, transparent);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--accent, #6b5bd6) 11%, #fff);
-  color: color-mix(in srgb, var(--accent, #6b5bd6) 72%, #2a2336);
+  background: color-mix(in srgb, var(--accent, #6b5bd6) 9%, #fff);
+  color: #33333f; /* 글자는 늘 진한 잉크 — 액센트가 노랑 계열인 모드에서 액센트 글자가 안 읽혔다(2026-09-17 소유자) */
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 700;
+  white-space: nowrap;
   animation: draft-restored-in 0.24s var(--ease, cubic-bezier(0.34, 1.4, 0.64, 1)) both;
 }
 .draft-restored-discard {
@@ -607,7 +608,7 @@ body::-webkit-scrollbar {
   border: 1px solid color-mix(in srgb, var(--accent, #6b5bd6) 48%, transparent);
   border-radius: var(--r-pill);
   background: #fff;
-  color: var(--accent, #6b5bd6);
+  color: #1d1d29;
   font-size: var(--text-label);
   font-weight: 800;
   cursor: pointer;
