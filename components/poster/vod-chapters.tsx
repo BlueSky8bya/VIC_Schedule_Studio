@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import type { PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -12,6 +13,12 @@ import { hapticTick } from "@/lib/ui/haptics";
 //  · 항목 탭 = 그 시각으로 숲 플레이어 점프(?change_second= — 실측 확정). 확인 비용을 낮추는 게
 //    본질: 후보를 몇 개 찍어 3초씩 확인하는 흐름이 자연스럽게.
 // 본문은 무거워서(최대 100+줄) 펼칠 때만 받아온다. 개수·작성자는 공개 번들이 이미 안다.
+export type VodChaptersApi = {
+  chapter: (dir: 1 | -1) => void; // 이전/다음 항목으로 점프
+  group: (dir: 1 | -1) => void; // 이전/다음 코너 첫 항목으로 점프
+  toggle: () => void; // 레일 접기/펼치기
+};
+
 export function VodChapters({
   slug,
   titleNo,
@@ -20,7 +27,9 @@ export function VodChapters({
   timelineBy,
   onJump,
   defaultOpen,
-  subscribeTime
+  subscribeTime,
+  stripHost,
+  register
 }: {
   slug: string;
   titleNo: number;
@@ -35,6 +44,12 @@ export function VodChapters({
   // 재생 위치 구독(2026-09-03) — 부모 인라인 플레이어의 currentTime(초)을 흘려준다. 있으면
   // 현재 챕터가 재생을 **따라 이동**하고(지나온 챕터는 흐림), 레일이 그 항목을 따라 스크롤한다.
   subscribeTime?: (cb: (sec: number) => void) => () => void;
+  // 가로 타임라인 띠(2026-09-17 대개편)를 그릴 자리 — 플레이어 아래 상자. 레일(이 컴포넌트의 뿌리)과 다른 그리드 칸이라
+  // 포털로 꽂는다. 없으면(모바일 아젠다) 띠 없음. 띠는 전체 길이 대비 코너 구간·항목 눈금·재생 머리·호버 이름을 보이고,
+  // 클릭 = 그 시각으로 점프(플레이어 자체 탐색줄 대용 — iframe이라 우리 탐색줄이 없었다).
+  stripHost?: HTMLElement | null;
+  // 키보드 조종 API 등록(부모 창의 ↑/↓·[/]·C가 여기로 온다). 언마운트 때 null.
+  register?: (api: VodChaptersApi | null) => void;
 }) {
   const [open, setOpen] = useState(Boolean(defaultOpen) && chapters > 0);
   const [timeline, setTimeline] = useState<PublicVodTimeline | null>(null);
@@ -66,6 +81,14 @@ export function VodChapters({
     setTip(null);
   };
   useEffect(() => () => window.clearTimeout(tipTimerRef.current), []);
+  // 코너 접기(2026-09-17) — 헤더 이름을 누르면 그 코너의 항목이 접힌다(긴 방송의 34개 항목 탐색 비용 ↓).
+  // 재생·키보드가 접힌 코너의 항목에 닿으면 자동으로 펼친다.
+  const [folded, setFolded] = useState<ReadonlySet<number>>(new Set());
+  // 가로 띠의 재생 머리·호버선은 프레임마다 React 렌더 없이 style만 쓴다(초당 4회 timeUpdate + 마우스 이동).
+  const headRef = useRef<HTMLSpanElement | null>(null);
+  const hoverLineRef = useRef<HTMLSpanElement | null>(null);
+  const hoverTipRef = useRef<HTMLSpanElement | null>(null);
+  const stripRef = useRef<HTMLDivElement | null>(null);
 
   // 재생 위치 → 현재 챕터. 시각이 현재보다 작거나 같은 항목 중 가장 늦은 것(정렬 가정 없이
   // 선형 — 항목 ≤100개, 초당 4회라 무시할 비용). idx가 바뀔 때만 setState → 레일만 다시 그림.
@@ -73,6 +96,8 @@ export function VodChapters({
   useEffect(() => {
     if (!subscribeTime || !open || secs.length === 0) return;
     return subscribeTime((sec) => {
+      const head = headRef.current;
+      if (head && durationMs > 0) head.style.left = `${Math.min(100, Math.max(0, (sec / (durationMs / 1000)) * 100))}%`;
       let found = -1;
       for (let i = 0; i < secs.length; i++) {
         if (secs[i] <= sec && (found < 0 || secs[i] >= secs[found])) found = i;
@@ -84,11 +109,22 @@ export function VodChapters({
         return idx;
       });
     });
-  }, [subscribeTime, open, secs]);
+  }, [subscribeTime, open, secs, durationMs]);
   // 재생 추적으로 현재 챕터가 바뀌면 레일이 따라간다 — 마우스가 레일 위면 멈춤(사용자 스크롤과
   // 싸우지 않게). nearest + 스크롤러의 scroll-padding으로 sticky 코너 헤더 밑에 숨지 않는다.
   useEffect(() => {
-    if (activeIdx === null || !followRef.current) return;
+    if (activeIdx === null) return;
+    // 현재 항목이 접힌 코너 안이면 펼친다(어디쯤인지는 항상 보여야 한다).
+    const gi = groupsRef.current.findIndex((g) => g.items.some((it) => it.idx === activeIdx));
+    if (gi >= 0) {
+      setFolded((prev) => {
+        if (!prev.has(gi)) return prev;
+        const next = new Set(prev);
+        next.delete(gi);
+        return next;
+      });
+    }
+    if (!followRef.current) return;
     followRef.current = false;
     if (hoverRef.current) return;
     const el = scrollRef.current?.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`);
@@ -145,6 +181,46 @@ export function VodChapters({
   // 챕터 수 = 코너 헤더가 있는 카드 수(본문을 받은 뒤에만 안다). 번들의 `chapters`는 **타임라인 항목 수**다 —
   // 머리에 "챕터 139개"로 적혀 있어 챕터(코너)와 타임라인(항목)이 뒤바뀌어 읽혔다(2026-09-04 사용자).
   const sectionCount = useMemo(() => groups.filter((g) => g.section).length, [groups]);
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
+  // 키보드 조종(2026-09-17): ↑/↓ 항목, [ ] 코너. 최신 상태는 ref로 읽어 한 번만 등록한다.
+  const navRef = useRef({ activeIdx, onJump });
+  navRef.current = { activeIdx, onJump };
+  const jumpTo = (idx: number) => {
+    const jump = navRef.current.onJump;
+    const item = groupsRef.current.flatMap((g) => g.items).find((it) => it.idx === idx);
+    if (!item || !jump) return;
+    followRef.current = true; // 키보드는 손이 레일 위에 없다 — 자동 스크롤로 보여 준다
+    setActiveIdx(idx);
+    jump(item.sec);
+  };
+  const jumpToRef = useRef(jumpTo);
+  jumpToRef.current = jumpTo;
+  useEffect(() => {
+    if (!register) return;
+    register({
+      chapter: (dir) => {
+        const all = groupsRef.current.flatMap((g) => g.items);
+        if (all.length === 0) return;
+        const cur = navRef.current.activeIdx;
+        const pos = cur === null ? -1 : all.findIndex((it) => it.idx === cur);
+        const next = Math.max(0, Math.min(all.length - 1, pos + dir));
+        if (next === pos) return;
+        jumpToRef.current(all[next].idx);
+      },
+      group: (dir) => {
+        const gs = groupsRef.current;
+        if (gs.length === 0) return;
+        const cur = navRef.current.activeIdx;
+        const gi = cur === null ? -1 : gs.findIndex((g) => g.items.some((it) => it.idx === cur));
+        const next = Math.max(0, Math.min(gs.length - 1, gi + dir));
+        if (next === gi) return;
+        jumpToRef.current(gs[next].items[0].idx);
+      },
+      toggle: () => setOpen((v) => !v)
+    });
+    return () => register(null);
+  }, [register]);
 
   if (chapters <= 0) return null;
 
@@ -161,7 +237,7 @@ export function VodChapters({
       ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
       : `${m}:${String(s).padStart(2, "0")}`;
   };
-  void durationMs; // (구간 길이 표기는 2026-09-01 사용자 결정으로 제거 — 시각·라벨만 남긴다)
+  // (항목별 구간 길이 표기는 2026-09-01 사용자 결정으로 없음 — 길이는 가로 띠의 구간 폭이 대신 말한다.)
 
   return (
     <div className="vod-chapters">
@@ -199,9 +275,46 @@ export function VodChapters({
         >
           <div className="vch-list">
             {groups.map((g, gi) => (
-              <section className="vch-group" key={gi}>
-                {g.section ? <div className="vch-sec">{g.section}</div> : null}
-                {g.items.map((e) => (
+              <section className="vch-group" data-folded={folded.has(gi) ? "" : undefined} key={gi}>
+                {g.section ? (
+                  <div className="vch-sec">
+                    {/* 이름 = 접기, ▶ = 이 코너 처음으로 점프(2026-09-17). 항목 수는 접혔을 때 무게를 알린다. */}
+                    <button
+                      aria-expanded={!folded.has(gi)}
+                      className="vch-sec-name"
+                      onClick={() => {
+                        hapticTick();
+                        setFolded((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(gi)) next.delete(gi);
+                          else next.add(gi);
+                          return next;
+                        });
+                      }}
+                      type="button"
+                    >
+                      <span aria-hidden="true" className="vch-caret">{folded.has(gi) ? "▸" : "▾"}</span>
+                      {g.section}
+                      <em className="vch-sec-n">{g.items.length}</em>
+                    </button>
+                    {onJump ? (
+                      <button
+                        aria-label={`${g.section} 처음부터`}
+                        className="vch-sec-go"
+                        data-act="vod-chapter-jump"
+                        onClick={() => {
+                          hapticTick();
+                          jumpTo(g.items[0].idx);
+                        }}
+                        title="이 코너 처음부터"
+                        type="button"
+                      >
+                        ▶
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+                {folded.has(gi) ? null : g.items.map((e) => (
                   <a
                     aria-current={activeIdx === e.idx ? "true" : undefined}
                     className={`vch-item${activeIdx === e.idx ? " is-active" : ""}${
@@ -242,6 +355,116 @@ export function VodChapters({
           </div>
         </div>
       )}
+      {stripHost && open && timeline && onJump && durationMs > 0
+        ? createPortal(
+            <VodStrip
+              activeIdx={activeIdx}
+              durationSec={durationMs / 1000}
+              groups={groups}
+              headRef={headRef}
+              hhmmss={hhmmss}
+              hoverLineRef={hoverLineRef}
+              hoverTipRef={hoverTipRef}
+              onPick={(idx, sec) => {
+                hapticTick();
+                followRef.current = true;
+                setActiveIdx(idx < 0 ? null : idx);
+                onJump(sec);
+              }}
+              stripRef={stripRef}
+            />,
+            stripHost
+          )
+        : null}
+    </div>
+  );
+}
+
+// 가로 타임라인 띠(2026-09-17 대개편 4번) — 전체 길이 위에 코너 구간(번갈아 옅은 톤, 현재 코너는 진하게)·항목 눈금·
+// 재생 머리(금색). 호버 = 그 시각이 속한 항목 이름 + 시각, 클릭 = 정확히 그 시각으로 점프(유튜브 탐색줄 문법).
+// 호버선·툴팁은 React 밖에서 style만 바꾼다(마우스 이동마다 레일 100항목을 다시 그리지 않게).
+function VodStrip({
+  groups,
+  durationSec,
+  activeIdx,
+  headRef,
+  hoverLineRef,
+  hoverTipRef,
+  stripRef,
+  hhmmss,
+  onPick
+}: {
+  groups: { section: string | null; items: { sec: number; label: string; idx: number; depth: number }[] }[];
+  durationSec: number;
+  activeIdx: number | null;
+  headRef: RefObject<HTMLSpanElement | null>;
+  hoverLineRef: RefObject<HTMLSpanElement | null>;
+  hoverTipRef: RefObject<HTMLSpanElement | null>;
+  stripRef: RefObject<HTMLDivElement | null>;
+  hhmmss: (sec: number) => string;
+  onPick: (idx: number, sec: number) => void;
+}) {
+  const all = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const pct = (sec: number) => `${Math.min(100, Math.max(0, (sec / durationSec) * 100))}%`;
+  // 마우스 x → 초 → 그 시각 이하 마지막 항목.
+  const locate = (clientX: number) => {
+    const el = stripRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (clientX - r.left) / Math.max(1, r.width)));
+    const sec = Math.round(ratio * durationSec);
+    let found = -1;
+    for (let i = 0; i < all.length; i++) if (all[i].sec <= sec && (found < 0 || all[i].sec >= all[found].sec)) found = i;
+    return { ratio, sec, item: found < 0 ? null : all[found], width: r.width };
+  };
+  const activeGi = activeIdx === null ? -1 : groups.findIndex((g) => g.items.some((it) => it.idx === activeIdx));
+  return (
+    <div
+      aria-label="타임라인 탐색"
+      className="vch-strip"
+      onClick={(e) => {
+        const at = locate(e.clientX);
+        if (!at) return;
+        onPick(at.item ? at.item.idx : -1, at.sec);
+      }}
+      onPointerLeave={() => {
+        if (hoverLineRef.current) hoverLineRef.current.style.opacity = "0";
+        if (hoverTipRef.current) hoverTipRef.current.style.opacity = "0";
+      }}
+      onPointerMove={(e) => {
+        const at = locate(e.clientX);
+        const line = hoverLineRef.current;
+        const tip = hoverTipRef.current;
+        if (!at || !line || !tip) return;
+        line.style.left = `${at.ratio * 100}%`;
+        line.style.opacity = "1";
+        tip.textContent = at.item ? `${hhmmss(at.sec)} · ${at.item.label}` : hhmmss(at.sec);
+        // 툴팁은 띠 밖으로 잘리지 않게 — 양 끝에서 안쪽으로 민다.
+        const x = at.ratio * at.width;
+        const half = Math.min(150, at.width / 2);
+        tip.style.left = `${Math.max(half, Math.min(at.width - half, x))}px`;
+        tip.style.opacity = "1";
+      }}
+      ref={stripRef}
+      role="presentation"
+    >
+      {groups.map((g, gi) => {
+        const start = g.items[0].sec;
+        const end = gi + 1 < groups.length ? groups[gi + 1].items[0].sec : durationSec;
+        return (
+          <span
+            className={`vch-seg${gi === activeGi ? " is-active" : ""}`}
+            data-i={gi % 3}
+            key={gi}
+            style={{ left: pct(start), width: pct(Math.max(0, end - start)) }}
+            title={g.section ?? undefined}
+          />
+        );
+      })}
+      {all.map((it) => (it.depth > 0 ? null : <i className="vch-tick" key={it.idx} style={{ left: pct(it.sec) }} />))}
+      <span className="vch-head" ref={headRef} />
+      <span className="vch-hover" ref={hoverLineRef} />
+      <span className="vch-strip-tip" ref={hoverTipRef} />
     </div>
   );
 }

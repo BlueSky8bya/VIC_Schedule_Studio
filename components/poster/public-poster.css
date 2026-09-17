@@ -1045,25 +1045,63 @@ html[data-reduce-motion] .day-vod-modal {
   outline: none;
 }
 .dvm-head {
+  position: relative; /* 단축키 안내 팝오버의 기준 */
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   padding: 16px 16px 10px 24px; /* 창 1280 확대에 맞춘 여백(본문 24와 정렬) */
 }
-/* 키보드 안내(2026-09-03) — 창이 떠 있는 동안 ←/→가 영상 탐색이 된 것을 알린다. 닫기 버튼
-   왼쪽에 아주 옅게: 발견 가능하되 문패(날짜)와 경쟁하지 않는다. */
+/* 머리줄 안의 제목(2026-09-17 대개편 2번) — 날짜 오른쪽에서 남은 폭을 다 쓰고 한 줄 말줄임. */
+.dvm-head .dvm-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dvm-head .dvm-host {
+  flex: none;
+  margin-bottom: 0;
+}
+/* ? 버튼 — 닫기와 같은 원(같은 부품), 회전 대신 살짝 눌림. */
+.dvm-help {
+  font-size: 15px;
+  font-weight: 800;
+  font-family: inherit;
+}
+.dvm-help:hover { transform: none; }
+.dvm-help[aria-expanded="true"] {
+  background: #1d1d29;
+  color: #fff;
+}
+/* 키보드 안내(2026-09-03 → 2026-09-17 팝오버로) — ? 아래 작은 카드, 두 열(키 / 뜻). 처음 세 번은 자동으로 열린다. */
 .dvm-keys {
-  margin-left: auto;
-  margin-right: 6px;
-  display: inline-flex;
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 56px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: auto auto;
   align-items: center;
-  gap: 5px;
+  column-gap: 12px;
+  row-gap: 7px;
+  padding: 12px 14px;
+  border: 1px solid rgb(60 60 90 / 10%);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgb(20 25 60 / 16%);
   font-size: var(--text-caption);
   font-weight: 600;
-  color: #9a9aa8;
+  color: #6f6a78;
   white-space: nowrap;
+  animation: vch-tip-in 0.16s var(--ease) both;
+}
+html[data-reduce-motion] .dvm-keys { animation: none; }
+.dvm-keys > span:nth-child(odd) {
+  display: inline-flex;
+  gap: 3px;
+  justify-content: flex-end;
 }
 .dvm-keys kbd {
   display: inline-grid;
@@ -1104,6 +1142,62 @@ html[data-reduce-motion] .day-vod-modal {
   transform: rotate(90deg);
 }
 .dvm-close:active { transform: scale(0.9); }
+/* 영상 탭(2026-09-17 대개편 1번) — 하루 여러 방송을 한 무대에서. 텍스트 칩 "N부 · 길이", 보는 영상은 금색 글자
+   (오늘 날짜·D+와 같은 재질). 편집실 태그 필터 칩과 같은 급(12.5~13px 700). */
+.dvm-tabs {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 24px 10px;
+}
+.dvm-tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgb(60 60 90 / 12%);
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  color: #4b4b58;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.dvm-tab em {
+  font-style: normal;
+  font-weight: 700;
+  color: #9a9aa8;
+}
+.dvm-tab i {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--gs-metal-ink, #3d4a5c);
+}
+.dvm-tab:hover { background: #f4f2f8; }
+.dvm-tab:active { transform: scale(0.96); }
+.dvm-tab.is-on {
+  border-color: #d9a21b;
+  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
+}
+.dvm-tab.is-on,
+.dvm-tab.is-on em {
+  background-image: linear-gradient(180deg, #d9a21b, #8a5a06);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dvm-tab.is-on {
+  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
+  color: #8a5a06;
+}
 .dvm-body {
   min-height: 0;
   overflow-y: auto;
@@ -1118,39 +1212,32 @@ html[data-reduce-motion] .day-vod-modal {
   flex-direction: column;
   gap: 8px;
 }
-/* 다중 방송 날(2026-09-03) — 방송마다 흰 카드로 묶어 '이 영상의 타임라인'이 한 덩어리로
-   읽히게 한다(접힌 토글이 허공에 떠 소속이 안 보이던 문제의 짝 처방 — 기본 펼침은 TSX).
-   단일 방송 날은 창 전체가 이미 그 방송의 카드라 표면 장식을 더하지 않는다. */
-.dvm-body:not([data-single]) .dvm-vod {
-  padding: 16px;
-  border: 1px solid rgb(60 60 90 / 7%);
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(20 25 60 / 5%);
-}
-/* 카드(흰 바탕) 안에서는 레일 목록의 연회색 바탕이 그대로 카드와 구분돼 좋다 — 단,
-   코너 카드는 흰-on-흰이 되므로 얇은 테두리로 경계를 살린다. */
-.dvm-body:not([data-single]) .vch-group {
-  border: 1px solid rgb(60 60 90 / 7%);
-  box-shadow: none;
-}
+/* (다중 방송 날의 방송별 흰 카드(2026-09-03)는 2026-09-17 무대 단일화로 제거 — 창엔 항상 방송 하나, 탭으로 바꾼다.) */
 /* ── 대개편 2차(2026-09-02, 유튜브/애플TV 벤치마킹): 좌 영상+제목 · 우 챕터 세로 레일 ──
    16:9 미리보기가 창 전폭을 먹고 챕터가 바닥 띠로 밀리던 비율을 뒤집는다 — 챕터는 오른쪽
    레일에서 세로 한 열로 흐르고(한눈에 스캔), 영상은 좌측에서 폭 기준 16:9라 잘리지 않는다.
    마크업 무변경: 기존 세 자식(thumb/title/chapters)을 grid-area로만 재배치.
    챕터가 없는 방송(:has 불일치)은 위 flex 세로 배치가 그대로 남는다. */
+/* 2026-09-17 대개편 6번: 레일 폭 = 사이드 패널 토큰(--side-panel-w, 화면마다 같은 폭 규칙), 자리 = 사이드 패널 쪽
+   (vic_avatar_side, data-rail) — 패널이 왼쪽이면 챕터도 왼쪽. 제목은 머리줄로 올라가 좌열은 영상 + 가로 띠. */
 .dvm-vod:has(.vod-chapters) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-columns: minmax(0, 1fr) var(--side-panel-w, 380px);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "thumb rail"
-    "title rail";
-  gap: 12px 20px;
+    "strip rail";
+  gap: 10px 20px;
   align-items: start;
 }
+.dvm-vod[data-rail="left"]:has(.vod-chapters) {
+  grid-template-columns: var(--side-panel-w, 380px) minmax(0, 1fr);
+  grid-template-areas:
+    "rail thumb"
+    "rail strip";
+}
 .dvm-vod:has(.vod-chapters) .dvm-thumb { grid-area: thumb; }
-.dvm-vod:has(.vod-chapters) .dvm-title { grid-area: title; align-self: start; }
+.dvm-vod:has(.vod-chapters) .dvm-strip { grid-area: strip; align-self: start; }
 .dvm-vod:has(.vod-chapters) .vod-chapters {
   grid-area: rail;
   align-self: stretch;
@@ -1172,7 +1259,7 @@ html[data-reduce-motion] .day-vod-modal {
      캡 없이도 창을 넘지 않는다. 아주 낮은 창은 아래 46vh 안전 캡 + contain이 지킨다.) */
   /* 창 94vh(2026-09-03 확대) 안에서 머리(≈58)+제목(≈44)+여백(≈100)을 뺀 만큼까지 —
      1080p에선 캡에 안 걸리고(1110×624), 768 높이 노트북만 캡(플레이어가 레터박스). */
-  max-height: calc(94vh - 205px);
+  max-height: calc(94vh - 230px); /* 머리(≈58)+탭(≈40)+띠(≈34)+여백 */
   border-radius: 14px;
   overflow: hidden;
   background: #10151f; /* 캡·비율 차로 생기는 여백이 플레이어 검정과 이어진다 */
@@ -1323,9 +1410,8 @@ html[data-reduce-motion] .dvm-notice {
 }
 .dvm-title {
   color: #1d1d29;
-  /* 창에서 유일한 최상급 — 스케일 계단(20>15>14>13>11)의 꼭대기. 창이 1280으로 커진 만큼
-     title 토큰(18)보다 한 뼘 더(2026-09-03). */
-  font-size: 20px;
+  /* 창에서 유일한 최상급 — 스케일 계단(18>15>14>13>11)의 꼭대기. 머리줄로 올라가며 20→18(2026-09-17). */
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.015em; /* 애플식 타이틀 조임 — 큰 굵은 글자는 살짝 좁혀야 단정하다 */
   line-height: 1.3;
@@ -1442,7 +1528,10 @@ a.dvm-host-link:active {
 }
 .vch-sec {
   margin: 0;
-  padding: 10px 14px 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 3px 14px;
   font-size: 15px; /* 스케일 계단(2026-09-03 한 단계 ↑): 헤더 15 = 항목 15, 굵기·색으로 서열 위 */
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -1457,6 +1546,54 @@ a.dvm-host-link:active {
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }
+/* 코너 헤더 부품(2026-09-17 대개편 5번): 이름 = 접기 버튼(전폭), ▶ = 이 코너 처음으로. 접힌 코너는 항목 수만 남긴다. */
+.vch-sec-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.vch-sec-name:hover { color: #3564e0; }
+.vch-sec-n {
+  font-style: normal;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: #b9bdcc;
+}
+.vch-group[data-folded] .vch-sec {
+  border-bottom: 0;
+  border-radius: 12px;
+}
+.vch-sec-go {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 10px;
+  color: #93a8dd;
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.vch-sec-go:hover {
+  background: #e8efff;
+  color: #1d4ed8;
+}
+.vch-sec-go:active { transform: scale(0.9); }
 /* (2026-09-04) 카드는 챕터 하나 = 카드 하나 — 8개 분절(옛 2열 배치 잔재)은 제거. sticky 헤더의 컨테이닝
    블록이 카드라 분절하면 8개 뒤에서 헤더가 멈춰 보였다(사용자 신고). */
 /* 날짜 창(2026-09-02 대개편 2차) — 신문식 다열을 버리고 **오른쪽 레일 세로 한 열**:
@@ -1506,8 +1643,9 @@ a.dvm-host-link:active {
    문법 완성형): 파란 바탕 + 왼쪽 액센트 바 + ▶. 지나온 챕터(.is-past)는 시각·라벨을 흐려
    '어디까지 봤는지'가 목록 위에 지형처럼 남는다. 재생 중이면 레일이 현재 챕터를 따라 스크롤
    (마우스가 레일 위에 있을 땐 멈춤 — 읽는 중인 사용자와 싸우지 않는다). */
+/* 2026-09-17 대개편 3번: 현재 챕터는 **금색 글자**(오늘 날짜·D+·영상 탭과 같은 '지금·기록' 재질) + 따뜻한 바탕 + 금 바. */
 .vch-item.is-active {
-  background: #e8efff;
+  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
 }
 .vch-item.is-active::before {
   content: "";
@@ -1517,10 +1655,17 @@ a.dvm-host-link:active {
   bottom: 7px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: #3564e0;
+  background: #d9a21b;
 }
-.vch-item.is-active .vch-t { color: #1d4ed8; }
-.vch-item.is-active .vch-label { font-weight: 800; color: #1d1d29; }
+.vch-item.is-active .vch-t,
+.vch-item.is-active .vch-label {
+  background: linear-gradient(180deg, #d9a21b, #8a5a06);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.vch-item.is-active .vch-label { font-weight: 800; }
+.vch-item.is-active:hover .vch-t { color: transparent; }
 /* 잘린 라벨 전문 툴팁 — 항목 안 absolute(항목 바로 아래, 레일 바닥 근처면 위), 항목 폭 안에서
    줄바꿈. z-index 5 = sticky 코너 헤더(1)·다음 항목들 위. 레일 overflow는 위/아래 끝에서만 자르는데
    그 경우는 .is-above로 뒤집는다. */
@@ -1594,10 +1739,10 @@ html[data-reduce-motion] .vch-tip {
 /* 단일 방송: 창 높이를 **좌열(영상+제목)이 정하고** 레일은 그 높이 안에서 스크롤 —
    유튜브 챕터 패널 = 플레이어 높이 문법. 예전 flex:1 스트레치는 좌열 아래를 텅 비웠다
    (2026-09-02 실측). grid 3행의 fr 필러가 0으로 접혀 레일 셀 = 좌열 높이가 된다. */
-.dvm-body[data-single] {
+.dvm-body {
   overflow: hidden;
 }
-.dvm-body[data-single] .dvm-vod {
+.dvm-body .dvm-vod {
   min-height: 0;
 }
 .dvm-vod .vch-scroll {
@@ -1609,13 +1754,90 @@ html[data-reduce-motion] .vch-tip {
   /* (얇은 스크롤바 → 2026-09-05 전면 제거. 전역 규칙 하나로 어디서도 안 그린다 — globals.css.) */
   scroll-padding-block: 56px; /* 자동 추적 스크롤이 sticky 코너 헤더 밑에 항목을 숨기지 않게 */
 }
+/* ── 가로 타임라인 띠(2026-09-17 대개편 4번) — 플레이어 아래, 전체 길이 위의 지도 ──
+   코너 구간은 세 톤이 번갈아(경계가 글자 없이 보인다), 현재 코너는 진한 파랑, 항목 눈금은 헤어라인, 재생 머리는 금색
+   (현재 챕터·오늘과 같은 재질). 호버선 + 툴팁(시각 · 항목)은 JS가 style만 쓴다. 클릭 = 그 시각으로 점프. */
+.dvm-strip:empty { display: none; }
+.vch-strip {
+  position: relative;
+  height: 22px;
+  margin: 2px 0 0;
+  border-radius: 6px;
+  background: #e9ebf2;
+  overflow: visible;
+  cursor: pointer;
+}
+.vch-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #d6dbe8;
+  transition: background-color var(--dur-2) var(--ease);
+}
+.vch-seg[data-i="1"] { background: #cfd6e6; }
+.vch-seg[data-i="2"] { background: #dde2ee; }
+.vch-seg:first-child { border-radius: 6px 0 0 6px; }
+.vch-seg.is-active { background: #b9c9ee; }
+.vch-strip:hover .vch-seg { filter: brightness(0.97); }
+.vch-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(255 255 255 / 70%);
+  pointer-events: none;
+}
+.vch-head {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d9a21b, #8a5a06);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 80%);
+  pointer-events: none;
+  transition: left 0.25s linear; /* timeUpdate(초당 4회) 사이를 잇는다 */
+}
+html[data-reduce-motion] .vch-head { transition: none; }
+.vch-hover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: #1d1d29;
+  opacity: 0;
+  pointer-events: none;
+}
+.vch-strip-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  transform: translateX(-50%);
+  max-width: 300px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(29 29 41 / 94%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-1) var(--ease);
+}
 /* 좁은 창(2패널이 안 서는 폭) — 세로 스택으로 복귀, 챕터는 자체 캡 스크롤. */
 @media (max-width: 899px) {
   .dvm-vod:has(.vod-chapters) {
     display: flex;
     flex-direction: column;
   }
-  .dvm-body[data-single] {
+  .dvm-body {
     overflow-y: auto;
   }
   .dvm-vod .vch-scroll {

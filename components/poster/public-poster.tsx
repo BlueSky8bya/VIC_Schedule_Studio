@@ -104,7 +104,7 @@ import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
-import { VodChapters } from "@/components/poster/vod-chapters";
+import { VodChapters, type VodChaptersApi } from "@/components/poster/vod-chapters";
 import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
 import { useIdleAfter } from "@/lib/ui/use-idle";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
@@ -1139,6 +1139,24 @@ export function PublicPoster({
   // 팝오버가 아니라 화면 중앙의 작은 창: 썸네일 미리보기 + 제목 + 챕터를 한 자리에서.
   // 모바일 아젠다는 일정 없는 날 줄에 칩·챕터를 인라인으로 그려 창이 필요 없다.
   const [dayVodPop, setDayVodPop] = useState<{ dateKey: string } | null>(null);
+  // 무대 단일화(2026-09-17 대개편 1번): 하루에 방송이 여럿이어도 플레이어는 **하나**, 위 탭(1부·2부…)으로 바꾼다.
+  // 예전엔 방송마다 블록(플레이어 2 iframe + 챕터)을 세로로 쌓아 어느 걸 보는지 헷갈리고 iframe이 2N개였다.
+  // null = 그 날 첫 방송. 바꿀 때 떠나는 방송의 플레이어 상태는 비우고(clearDayVodTitle), 재생 중이었으면 지점을
+  // 기억해(dayVodResumeRef) 돌아오면 거기서 이어 튼다.
+  const [dayVodSel, setDayVodSel] = useState<number | null>(null);
+  const dayVodSelRef = useRef<number | null>(null);
+  dayVodSelRef.current = dayVodSel;
+  const dayVodResumeRef = useRef(new Map<number, number>());
+  const dayVodEndedRef = useRef(new Set<number>()); // 끝남 → 다음 영상 자동 전환은 방송당 한 번
+  // 단축키 안내(2번): 상시 노출 대신 ? 버튼 뒤로. 처음 세 번 열 때만 자동으로 펼친다(localStorage 카운트).
+  const [dayVodKeysOpen, setDayVodKeysOpen] = useState(false);
+  // 가로 타임라인 띠(4번)의 자리(플레이어 아래) — VodChapters가 포털로 그린다.
+  const [dayVodStripHost, setDayVodStripHost] = useState<HTMLDivElement | null>(null);
+  // 키보드 → 챕터(7번): ↑/↓·[/]·C는 레일 컴포넌트가 등록한 API로 간다.
+  const dayVodChapterApiRef = useRef<VodChaptersApi | null>(null);
+  const registerDayVodChapterApi = useCallback((api: VodChaptersApi | null) => {
+    dayVodChapterApiRef.current = api;
+  }, []);
   // 창 안 인라인 플레이어 — 숲 임베드 iframe API(?fromApi=1, 2026-09-01 번들 분석+실측 확정):
   //  · 창이 열리면 모든 VOD의 iframe을 바로 깔고, PonReady가 오면 Pload{autoPlay:false}로
   //    초기화만 해둔다(무음·무재생, 지정 포스터+▶ 상태). 시청자의 첫 클릭이 곧 플레이어 안
@@ -1239,6 +1257,19 @@ export function PublicPoster({
   useEffect(() => {
     // 창이 닫히거나 다른 날짜로 바뀌면 플레이어 상태를 전부 비운다(iframe 맵은 ref 콜백이 관리).
     setDayVodJump(null);
+    setDayVodSel(null);
+    dayVodResumeRef.current.clear();
+    dayVodEndedRef.current.clear();
+    dayVodChapterApiRef.current = null;
+    if (dayVodPop) {
+      try {
+        const n = Number(window.localStorage.getItem("vic_vod_keys_seen") ?? 0) || 0;
+        setDayVodKeysOpen(n < 3);
+        window.localStorage.setItem("vic_vod_keys_seen", String(n + 1));
+      } catch {
+        setDayVodKeysOpen(false);
+      }
+    } else setDayVodKeysOpen(false);
     setDayVodLive(new Set());
     setDayVodSlots({});
     dayVodActiveRef.current.clear();
@@ -1342,6 +1373,85 @@ export function PublicPoster({
   // 감시 타이머(위)가 승격 함수를 부르는데 선언 순서상 아래에 있어 ref로 잇는다.
   const promoteDayVodStandbyRef = useRef(promoteDayVodStandby);
   promoteDayVodStandbyRef.current = promoteDayVodStandby;
+  // 한 방송의 플레이어 상태를 전부 비운다 — 탭으로 떠날 때(iframe은 언마운트돼 어차피 죽는다; 남은 alive/api 기록이
+  // 돌아왔을 때 죽은 창에 PseekTo를 보내게 하므로 반드시 지운다).
+  const clearDayVodTitle = useCallback((titleNo: number) => {
+    for (const slot of ["a", "b"] as const) {
+      const k = dayVodSlotKey(titleNo, slot);
+      dayVodApisRef.current.delete(k);
+      dayVodPendingRef.current.delete(k);
+      dayVodMutedRef.current.delete(k);
+      dayVodSoundTryRef.current.delete(k);
+    }
+    dayVodAliveRef.current.delete(titleNo);
+    dayVodPausedRef.current.delete(titleNo);
+    dayVodActiveRef.current.delete(titleNo);
+    dayVodStartingAtRef.current.delete(titleNo);
+    dayVodSettledAtRef.current.delete(titleNo);
+    dayVodSeekAtRef.current.delete(titleNo);
+    const t = dayVodRetryTimersRef.current.get(titleNo);
+    if (t) {
+      window.clearTimeout(t);
+      dayVodRetryTimersRef.current.delete(titleNo);
+    }
+    setDayVodLive((prev) => {
+      if (!prev.has(titleNo)) return prev;
+      const next = new Set(prev);
+      next.delete(titleNo);
+      return next;
+    });
+    setDayVodSlots((prev) => {
+      if (!(titleNo in prev)) return prev;
+      const next = { ...prev };
+      delete next[titleNo];
+      return next;
+    });
+  }, []);
+  // 무대의 방송을 바꾼다. startSec: 그 초부터 자동 재생(다음 영상 자동 전환·이어보기), null이면 기억된 지점이
+  // 있을 때만 이어 튼다(없으면 커버+▶ 대기). 자동 재생은 새 iframe의 PonReady가 pending을 집어 첫 Pload{autoPlay}로
+  // 쏘는 기존 경로(챕터 점프와 같은 길) — 차단이 기억된 브라우저는 음소거 시동.
+  const switchDayVod = useCallback(
+    (from: number | null, to: number, startSec: number | null) => {
+      if (from === to) return;
+      if (from !== null) {
+        const wasPlaying = dayVodAliveRef.current.has(from) && !dayVodPausedRef.current.has(from);
+        const at = dayVodTimeRef.current.get(from) ?? 0;
+        if (wasPlaying && at >= 3) dayVodResumeRef.current.set(from, at);
+        else dayVodResumeRef.current.delete(from);
+        clearDayVodTitle(from);
+      }
+      const sec = startSec ?? dayVodResumeRef.current.get(to) ?? null;
+      if (sec !== null) {
+        const k = dayVodSlotKey(to, "a");
+        dayVodPendingRef.current.set(k, sec);
+        if (isVodSoundAutoplayBlocked()) dayVodMutedRef.current.add(k);
+        else dayVodMutedRef.current.delete(k);
+        dayVodStartingAtRef.current.set(to, performance.now());
+        dayVodTimeRef.current.set(to, sec);
+      }
+      dayVodFocusRef.current = to;
+      dayVodEndedRef.current.delete(to);
+      setDayVodSel(to);
+      setDayVodJump(null);
+      dayVodModalRef.current?.focus({ preventScroll: true });
+    },
+    [clearDayVodTitle]
+  );
+  // 끝나면 다음 영상(8번) — 플레이어가 끝 이벤트를 주거나 currentTime이 길이에 닿으면 다음 방송을 0초부터 자동 시동.
+  const dayVodOnEndRef = useRef<(titleNo: number) => void>(() => {});
+  dayVodOnEndRef.current = (titleNo) => {
+    if (!dayVodPop) return;
+    const list = vodsByDate.get(dayVodPop.dateKey) ?? [];
+    const i = list.findIndex((v) => v.titleNo === titleNo);
+    const next = i >= 0 ? list[i + 1] : undefined;
+    if (!next) return;
+    showDayVodNotice("▶ 다음 영상");
+    switchDayVod(titleNo, next.titleNo, 0);
+  };
+  const durations = useMemo(
+    () => new Map((dayVodPop ? vodsByDate.get(dayVodPop.dateKey) ?? [] : []).map((v) => [v.titleNo, v.durationMs / 1000])),
+    [dayVodPop, vodsByDate]
+  );
   useEffect(() => {
     if (!dayVodPop) return;
     // 임베드는 vod.sooplive.co.kr → vod.sooplive.com으로 넘어갈 수 있다 — 정확 일치 허용 목록.
@@ -1432,16 +1542,27 @@ export function PublicPoster({
           const subs = dayVodTimeSubsRef.current.get(titleNo);
           if (subs) for (const cb of subs) cb(cur);
         }
+        // 끝 감지 — 플레이어의 끝 이벤트 이름은 문서가 없어 흔한 셋을 다 받고, 없어도 currentTime이 길이 1.5초 안에
+        // 들면 끝으로 본다(한 방송당 한 번).
+        const dur = durations.get(titleNo) ?? 0;
+        const ended =
+          evType === "ended" || evType === "complete" || evType === "end" ||
+          (dur > 0 && typeof cur === "number" && cur >= dur - 1.5 && dayVodSettled(titleNo));
+        if (ended && !dayVodEndedRef.current.has(titleNo)) {
+          dayVodEndedRef.current.add(titleNo);
+          dayVodOnEndRef.current(titleNo);
+        }
       }
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [dayVodPop, startDayVodAutoPlay]);
+  }, [dayVodPop, startDayVodAutoPlay, durations]);
   // 챕터 클릭의 단일 진입점 — 재생 중이면 postMessage로만 움직인다(리로드 없음 = 광고 재시작
   // 없음, 소리 상태 유지). 재생 전이면 대기 슬롯 승격(위 주석).
   const jumpDayVod = (titleNo: number, sec: number) => {
     setDayVodJump({ titleNo, sec }); // ↗ 새 탭 링크의 초 표기 동기화
     dayVodFocusRef.current = titleNo;
+    dayVodEndedRef.current.delete(titleNo);
     // 챕터 링크(<a>)에 남은 포커스를 창으로 되돌린다 — 안 그러면 다음 Space/M이 링크에 먹혀 죽는다
     // (실측: 챕터 클릭 직후 Space 무반응).
     dayVodModalRef.current?.focus({ preventScroll: true });
@@ -1462,6 +1583,7 @@ export function PublicPoster({
     }
     // 재생 전(또는 시동 직후 아직 자리 못 잡음): 재시동 — 차단이 기억돼 있으면 곧장 음소거 시동,
     // 아니면 소리 켠 1차 시도. 연타는 마지막 승격으로 수렴한다.
+    notifyDayVodTime(titleNo, sec); // 가로 띠의 재생 머리가 첫 timeUpdate 전에도 그 지점에 선다
     promoteDayVodStandby(titleNo, sec, isVodSoundAutoplayBlocked());
   };
   // 창 = 키 입력의 집(2026-09-03 사용자: "재생 중엔 Esc가 안 먹는다"). 플레이어를 마우스로
@@ -1498,9 +1620,6 @@ export function PublicPoster({
   }, [dayVodPop]);
   useEffect(() => {
     if (!dayVodPop) return;
-    const durations = new Map(
-      (vodsByDate.get(dayVodPop.dateKey) ?? []).map((v) => [v.titleNo, v.durationMs / 1000])
-    );
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setDayVodPop(null);
@@ -1510,13 +1629,49 @@ export function PublicPoster({
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      const list = vodsByDate.get(dayVodPop.dateKey) ?? [];
+      const selNo = dayVodSelRef.current ?? list[0]?.titleNo ?? null;
+      // ? = 단축키 안내 토글(2번). 다른 키를 쓰면 안내는 접힌다(배웠으니).
+      if (e.key === "?") {
+        e.preventDefault();
+        setDayVodKeysOpen((v) => !v);
+        return;
+      }
+      setDayVodKeysOpen(false);
+      // Shift+←/→ = 이전/다음 영상(1번·7번). 하루 한 방송이면 무시.
+      if (e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        if (selNo === null || list.length < 2) return;
+        const i = list.findIndex((v) => v.titleNo === selNo);
+        const next = list[i + (e.key === "ArrowLeft" ? -1 : 1)];
+        if (!next) return;
+        hapticTick();
+        switchDayVod(selNo, next.titleNo, null);
+        return;
+      }
+      // ↑/↓ 챕터, [ ] 코너, C 레일 접기 — 레일 컴포넌트가 등록한 API(7번).
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+        dayVodChapterApiRef.current?.chapter(e.key === "ArrowUp" ? -1 : 1);
+        return;
+      }
+      if (e.key === "[" || e.key === "]") {
+        e.preventDefault();
+        dayVodChapterApiRef.current?.group(e.key === "[" ? -1 : 1);
+        return;
+      }
+      if (e.key === "c" || e.key === "C" || e.key === "ㅊ") {
+        e.preventDefault();
+        hapticTick();
+        dayVodChapterApiRef.current?.toggle();
+        return;
+      }
       // Space = 재생/일시정지(버튼 위면 그 버튼의 몫 — 링크(<a>)는 Space로 활성되지 않으므로 가로챈다).
       // 아직 아무것도 재생 전이면(창에 막 들어옴) Space = ▶ — 마지막 점프/재생 방송, 없으면
       // 그 날 첫 방송을 처음부터(재생 전 경로 = 챕터 점프와 같은 대기 슬롯 승격).
       if (e.key === " " && tag !== "BUTTON") {
         e.preventDefault();
-        const titleNo =
-          dayVodFocusRef.current ?? (vodsByDate.get(dayVodPop.dateKey) ?? [])[0]?.titleNo ?? null;
+        const titleNo = dayVodFocusRef.current ?? selNo;
         if (titleNo === null) return;
         const now = performance.now();
         if (now - dayVodSpaceAtRef.current < VOD_SPACE_MIN_GAP_MS) return; // 연타 억제
@@ -1575,11 +1730,12 @@ export function PublicPoster({
       notifyDayVodTime(titleNo, next); // 연타 시 timeUpdate가 오기 전에도 누적 + 레일 즉시 추적
       post({ cmd: "PseekTo", seconds: { time: next, seekType: "timelink" } });
       dayVodSeekAtRef.current.set(titleNo, now);
+      if (next < max - 5) dayVodEndedRef.current.delete(titleNo); // 끝에서 되감으면 다음 자동 전환을 다시 허용
       // (↗ 링크의 초 표기(dayVodJump)는 갱신하지 않는다 — 키 반복마다 포스터 전체가 다시 그려진다.)
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dayVodPop, vodsByDate, promoteDayVodStandby]);
+  }, [dayVodPop, vodsByDate, promoteDayVodStandby, switchDayVod, durations]);
   // 창이 열려 있는 동안 바깥 달력 스크롤 잠금 — 창 안 목록을 굴리다 끝에 닿으면 달력이
   // 따라 흐르던 문제(사용자 지적). CSS overscroll-behavior와 이중 방어.
   useEffect(() => {
@@ -4440,6 +4596,10 @@ export function PublicPoster({
       {dayVodPop
         ? (() => {
             const list = vodsByDate.get(dayVodPop.dateKey) ?? [];
+            const sel = list.find((v) => v.titleNo === dayVodSel) ?? list[0];
+            const selIdx = sel ? list.indexOf(sel) : -1;
+            const selLabel = sel ? sel.title || `다시보기${list.length > 1 ? ` ${selIdx + 1}` : ""}` : "";
+            const selPlayerUrl = sel ? `https://vod.sooplive.co.kr/player/${sel.titleNo}` : "";
             const wd = new Date(`${dayVodPop.dateKey}T00:00:00Z`).getUTCDay();
             const mark = getDayMark(dayVodPop.dateKey);
             const tone = wd === 0 || Boolean(mark?.isHoliday) ? " red" : wd === 6 ? " saturday" : "";
@@ -4482,13 +4642,79 @@ export function PublicPoster({
                       {Number(dayVodPop.dateKey.slice(0, 4))}.{formatShortDate(dayVodPop.dateKey)} (
                       {WEEKDAYS[wd]})
                     </b>
-                    {/* 키보드 안내 — 창이 떠 있는 동안 ←/→는 영상 10초 탐색(월 이동 아님). */}
-                    <span aria-hidden="true" className="dvm-keys">
-                      <kbd>←</kbd>
-                      <kbd>→</kbd> 10초<i>·</i>
-                      <kbd>Space</kbd> 재생/정지<i>·</i>
-                      <kbd>Esc</kbd> 닫기
-                    </span>
+                    {/* 제목은 머리줄로(2026-09-17 대개편 2번: 영상 아래 있어 '뭘 보는지'가 가장 늦게 읽혔다).
+                        링크는 **지금 보고 있는 지점**부터 이어 본다 — 누르는 순간 currentTime을 change_second로
+                        (pointerdown/enter에도 갱신해 가운데 클릭·새 탭도 같은 지점). */}
+                    {sel ? (
+                      <a
+                        className="dvm-title"
+                        data-act="vod-replay"
+                        href={selPlayerUrl}
+                        onClick={(e) => {
+                          hapticTick();
+                          e.currentTarget.href = vodWatchUrl(sel.titleNo);
+                        }}
+                        onPointerDown={(e) => {
+                          e.currentTarget.href = vodWatchUrl(sel.titleNo);
+                        }}
+                        onPointerEnter={(e) => {
+                          e.currentTarget.href = vodWatchUrl(sel.titleNo);
+                        }}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        title={selLabel}
+                      >
+                        {selLabel}
+                      </a>
+                    ) : null}
+                    {/* 합방 게스트 출연분(0075) — 다른 스트리머 방송국의 다시보기임을 밝히는 칩. 누르면 그 방송국 메인(2026-09-17). */}
+                    {sel?.host && sel.hostId ? (
+                      <a
+                        className="dvm-host dvm-host-link"
+                        data-act="vod-host-station"
+                        href={`https://ch.sooplive.co.kr/${sel.hostId}`}
+                        onClick={() => hapticTick()}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        title={`${sel.host} 방송국으로 가기`}
+                      >
+                        합방 · {sel.host} 방송국
+                        <ExternalLink aria-hidden="true" size={11} strokeWidth={2.6} />
+                      </a>
+                    ) : sel?.host ? (
+                      <span className="dvm-host" title={`${sel.host} 방송국의 다시보기 — 토리님 출연분`}>
+                        합방 · {sel.host} 방송국
+                      </span>
+                    ) : null}
+                    {/* 단축키 안내(2026-09-17): ? 뒤로 접는다. 처음 세 번은 자동으로 펼쳐 배우게 한다. */}
+                    <button
+                      aria-expanded={dayVodKeysOpen}
+                      aria-label="단축키 안내"
+                      className="dvm-close dvm-help"
+                      onClick={() => {
+                        hapticTick();
+                        setDayVodKeysOpen((v) => !v);
+                      }}
+                      title="단축키 (?)"
+                      type="button"
+                    >
+                      ?
+                    </button>
+                    {dayVodKeysOpen ? (
+                      <div className="dvm-keys" role="note">
+                        <span><kbd>Space</kbd></span><span>재생 / 일시정지</span>
+                        <span><kbd>←</kbd><kbd>→</kbd></span><span>10초 이동</span>
+                        <span><kbd>↑</kbd><kbd>↓</kbd></span><span>이전 / 다음 챕터</span>
+                        <span><kbd>[</kbd><kbd>]</kbd></span><span>이전 / 다음 코너</span>
+                        {list.length > 1 ? (
+                          <>
+                            <span><kbd>Shift</kbd><kbd>←</kbd><kbd>→</kbd></span><span>이전 / 다음 영상</span>
+                          </>
+                        ) : null}
+                        <span><kbd>C</kbd></span><span>챕터 접기 / 펼치기</span>
+                        <span><kbd>Esc</kbd></span><span>닫기</span>
+                      </div>
+                    ) : null}
                     <button
                       aria-label="닫기"
                       className="dvm-close"
@@ -4502,12 +4728,38 @@ export function PublicPoster({
                       <X aria-hidden="true" size={16} strokeWidth={2.5} />
                     </button>
                   </div>
-                  <div className="dvm-body" data-single={list.length === 1 ? "" : undefined}>
-                    {list.map((vod, vi, arr) => {
-                      const playerUrl = `https://vod.sooplive.co.kr/player/${vod.titleNo}`;
-                      const label = vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`;
+                  {list.length > 1 && sel ? (
+                    /* 영상 탭(1번) — 하루 여러 방송을 한 무대에서 바꿔 본다. 썸네일 대신 "N부 · 길이" 텍스트 칩,
+                       보고 있는 영상은 금색(오늘·기록 언어). 클릭 = 무대 교체(이어보기 지점이 있으면 거기부터). */
+                    <div aria-label="이 날의 다시보기" className="dvm-tabs" role="tablist">
+                      {list.map((v, i) => (
+                        <button
+                          aria-selected={v.titleNo === sel.titleNo}
+                          className={`dvm-tab${v.titleNo === sel.titleNo ? " is-on" : ""}`}
+                          data-act="vod-tab"
+                          key={v.titleNo}
+                          onClick={() => {
+                            if (v.titleNo === sel.titleNo) return;
+                            hapticTick();
+                            switchDayVod(sel.titleNo, v.titleNo, null);
+                          }}
+                          role="tab"
+                          title={v.title || undefined}
+                          type="button"
+                        >
+                          {i + 1}부
+                          {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
+                          {v.host ? <i>합방</i> : null}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="dvm-body">
+                    {(sel ? [sel] : []).map((vod) => {
+                      const playerUrl = selPlayerUrl;
+                      const label = selLabel;
                       return (
-                        <div className="dvm-vod" key={vod.titleNo}>
+                        <div className="dvm-vod" data-rail={panel.side} key={vod.titleNo}>
                           {/* 플레이어는 창이 열릴 때부터 깔린다(fromApi=1, autoPlay:false 초기화).
                               첫 클릭 = 플레이어 안 ▶ = 어떤 브라우저에서도 1클릭 소리 켠 재생.
                               지정 썸네일 커버는 실제 재생이 시작될 때까지 덮는다(클릭 통과).
@@ -4578,48 +4830,8 @@ export function PublicPoster({
                               <ExternalLink aria-hidden="true" size={13} strokeWidth={2.6} />
                             </a>
                           </div>
-                          {/* 합방 게스트 출연분(0075) — 다른 스트리머 방송국의 다시보기임을 밝히는 칩(챕터 그리드에선 제목 아래 자동 칸). */}
-                          {vod.host && vod.hostId ? (
-                            // 2026-09-17 소유자: 칩을 누르면 그 스트리머의 숲 방송국 메인으로.
-                            <a
-                              className="dvm-host dvm-host-link"
-                              data-act="vod-host-station"
-                              href={`https://ch.sooplive.co.kr/${vod.hostId}`}
-                              onClick={() => hapticTick()}
-                              rel="noopener noreferrer"
-                              target="_blank"
-                              title={`${vod.host} 방송국으로 가기`}
-                            >
-                              합방 · {vod.host} 방송국
-                              <ExternalLink aria-hidden="true" size={11} strokeWidth={2.6} />
-                            </a>
-                          ) : vod.host ? (
-                            <span className="dvm-host" title={`${vod.host} 방송국의 다시보기 — 토리님 출연분`}>
-                              합방 · {vod.host} 방송국
-                            </span>
-                          ) : null}
-                          {/* 제목 링크는 **지금 보고 있는 지점**부터 이어 본다(2026-09-17 소유자) — 누르는 순간 currentTime을
-                              change_second로 붙인다(pointerdown/enter에도 갱신해 가운데 클릭·새 탭도 같은 지점). */}
-                          <a
-                            className="dvm-title"
-                            data-act="vod-replay"
-                            href={playerUrl}
-                            onClick={(e) => {
-                              hapticTick();
-                              e.currentTarget.href = vodWatchUrl(vod.titleNo);
-                            }}
-                            onPointerDown={(e) => {
-                              e.currentTarget.href = vodWatchUrl(vod.titleNo);
-                            }}
-                            onPointerEnter={(e) => {
-                              e.currentTarget.href = vodWatchUrl(vod.titleNo);
-                            }}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                            title={label}
-                          >
-                            {label}
-                          </a>
+                          {/* 가로 타임라인 띠 자리(4번) — 레일(VodChapters)이 포털로 채운다. 챕터 없는 방송은 비어 0 높이. */}
+                          <div className="dvm-strip" ref={setDayVodStripHost} />
                           <VodChapters
                             chapters={vod.chapters ?? 0}
                             /* 다중 방송 날도 기본 펼침(2026-09-03) — 접힌 토글만 레일 자리에
@@ -4628,7 +4840,9 @@ export function PublicPoster({
                             defaultOpen
                             durationMs={vod.durationMs}
                             onJump={(sec) => jumpDayVod(vod.titleNo, sec)}
+                            register={registerDayVodChapterApi}
                             slug={schedule.calendar.slug}
+                            stripHost={dayVodStripHost}
                             subscribeTime={(cb) => subscribeDayVodTime(vod.titleNo, cb)}
                             timelineBy={vod.timelineBy ?? ""}
                             titleNo={vod.titleNo}
