@@ -1363,12 +1363,14 @@ export function StudioShell({
   const selectedIsPeriod = selectedIsSupport && form.supportKind === "period";
   // 데스크톱 제목칸을 내용량에 맞춰 자동으로 키운다 — 긴 제목의 일정을 열면 두 줄 남짓 높이에
   // 갇혀 스크롤로만 보이던 문제 제거. 값이 바뀔 때마다(타이핑·다른 일정 선택 모두) 맞춘다.
+  // ⚠ 값뿐 아니라 팝오버가 다시 열릴 때(editorVisible·editorKey)도 맞춘다 — 같은 일정을 닫았다 다시 열면 폼 값은
+  // 그대로라 이 효과가 안 돌았고, textarea는 remount되어 기본 높이로 돌아와 긴 일정이 잘려 보였다(2026-09-17 소유자).
   useLayoutEffect(() => {
     const el = editorTitleRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight + 2, 480)}px`;
-  }, [form.publicTitle]);
+  }, [form.publicTitle, editorVisible, editorKey]);
   // 키보드 달력에서 화살표로 달 경계를 넘을 때, 달 전환 후 이어서 포커스할 날짜(P0-A11Y-1).
   const pendingFocusDateRef = useRef<string | null>(null);
   useEffect(() => {
