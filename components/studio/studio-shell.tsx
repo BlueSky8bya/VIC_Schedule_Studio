@@ -2071,7 +2071,7 @@ export function StudioShell({
       peekAnchorRef.current = el;
       setZoomPeek({ id, pinned });
     },
-    [cancelPeekClose, editorVisible, selectedEventId]
+    [cancelPeekClose, editorVisible, selectedEventId, canonId]
   );
   const closeZoomPeek = useCallback((opts?: { returnFocus?: boolean }) => {
     const prev = zoomPeekRef.current;

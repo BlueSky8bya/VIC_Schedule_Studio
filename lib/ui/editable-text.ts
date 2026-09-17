@@ -4,7 +4,9 @@
 //  · 읽기: innerText(브라우저가 <div>/<br> 줄을 \n으로 펴 준다)에서 NBSP·끝 개행만 정리.
 //  · 쓰기: 첫 줄은 맨 텍스트, 다음 줄부터 <div> — Chrome이 Enter로 만드는 구조와 같아 CSS(첫 줄 굵게)가 한 규칙으로 맞는다.
 export function readEditableText(el: HTMLElement): string {
-  return el.innerText.replace(/ /g, " ").replace(/\r/g, "").replace(/\n+$/, "");
+  // NBSP(U+00A0)는 코드포인트로 만든다 — 리터럴로 두면 no-irregular-whitespace 린트에 걸린다(2026-09-17 Vercel 빌드 실패).
+  const nbsp = new RegExp(String.fromCharCode(160), "g");
+  return el.innerText.replace(nbsp, " ").replace(/\r/g, "").replace(/\n+$/, "");
 }
 
 export function writeEditableText(el: HTMLElement, text: string): void {
