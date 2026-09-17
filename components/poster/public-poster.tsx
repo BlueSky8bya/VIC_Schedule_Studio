@@ -4241,51 +4241,19 @@ export function PublicPoster({
   // 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.
   // 2026-08-31 사용자 결정: 한 줄로 압축(연·월 ↔ D+N) — '데뷔'·'오늘' 줄 삭제. 오늘 날짜는
   // 달력의 오늘 칸이 이미 말하고, 카드가 낮아진 만큼 생방송 미리보기가 위로 올라온다.
-  // 월 배지의 D+ 접기(2026-09-06 소유자: "D+340이 박스를 넘을 것 같으면 그 부분은 포기하고 2026년 08월만").
-  // 카드는 레일과 아바타 자리 **두 곳**에 같은 마크업으로 뜨므로 ref 하나로는 못 잡는다 — 문서에서 전부 찾아 각각 잰다.
-  // 재는 법: D+를 **보이는 상태로** 필요한 폭(`scrollWidth`)을 한 번 재어 기억해 두고, 그보다 좁아지면 접는다.
-  // 접힌 뒤에는 `scrollWidth`가 줄어 스스로 못 펴므로 기억한 값과 현재 폭을 비교해 되편다(2px 여유 = 깜빡임 방지).
-  useEffect(() => {
-    let busy = false;
-    const measure = () => {
-      if (busy) return; // 접었다 펴는 동안 관찰자가 되울리는 것을 막는다
-      busy = true;
-      document.querySelectorAll<HTMLElement>(".ric-month").forEach((el) => {
-        if (!el.isConnected || el.clientWidth <= 0) return; // 떼어진 노드·미레이아웃은 재지 않는다(ResizeObserver 0×0 함정)
-        // **잠깐 펴서 실측한다**: 접힌 폭을 기억해 두는 방식은 D+ 자릿수가 바뀌면 낡은 값이 남아 영영 다시 안 펴진다.
-        // 쓰기와 읽기가 같은 태스크 안이라 그 사이에 페인트가 없다 — 깜빡이지 않는다.
-        delete el.dataset.fit;
-        if (el.scrollWidth > el.clientWidth + 1) el.dataset.fit = "0";
-      });
-      busy = false;
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    document.querySelectorAll<HTMLElement>(".rail-info-card").forEach((el) => ro.observe(el));
-    window.addEventListener("resize", measure);
-    const t = window.setTimeout(measure, 600); // 웹폰트가 늦게 오면 글자 폭이 바뀐다
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-      window.clearTimeout(t);
-    };
-  });
-
+  // 2026-09-17 소유자: 연·월이 상단 크롬 제목(.poster-chrome-title)으로 올라가면서 카드는 데뷔
+  // 기록 전용이 됐다. 한 줄에 연·월 ↔ D+를 나눠 담던 접기 계측(.ric-month[data-fit])은 함께 제거 —
+  // 카드 안에 경쟁하는 글자가 없어 넘칠 일이 없다.
   const railInfoCard = (() => {
     const dplus = debutDPlus(today);
+    if (dplus === null) return null; // 데뷔 전이면 카드 자체를 내린다(빈 상자 금지)
+    const days = dplus.toLocaleString("ko-KR");
     return (
       <div className="rail-info-card">
-        {/* 좁아지면 D+를 포기하고 연·월만 남긴다(2026-09-06 소유자) — `data-fit`은 아래 `ricFitRef` 계측이 붙인다.
-            두 글자 모두 nowrap이라 자리가 없으면 카드를 넘치는데, 주인공은 '보고 있는 달'이지 D+가 아니다. */}
-        <span className="ric-month">
-          <b>
-            {view.year}년 {String(view.month).padStart(2, "0")}월
-          </b>
-          {dplus !== null ? (
-            <b className="ric-dplus" title="데뷔 D+">
-              D+{dplus}
-            </b>
-          ) : null}
+        {/* 팬 페이지에서 가장 흔한 데뷔 기록 표기 — 큰 D+숫자(주인공) + 조용한 '데뷔 N일째' 해설. */}
+        <span className="ric-debut" title={`데뷔 ${days}일째`}>
+          <b className="ric-dplus">D+{days}</b>
+          <span className="ric-debut-sub">데뷔 {days}일째</span>
         </span>
       </div>
     );
@@ -5175,9 +5143,10 @@ export function PublicPoster({
           <header className="agenda-header">
             {/* 시청자 미리보기 진입 시 — 제목 왼쪽 여백 칸에 안내(작게). */}
             {previewNote ? <span className="agenda-preview-left">{previewNote}</span> : null}
+            {/* 웹과 같은 문법(2026-09-17 소유자): 제목 = 보고 있는 달, 아랫줄 = 데뷔 D+. */}
             <h1 className="agenda-title">
               <span className="title-spark" aria-hidden="true">✨️</span>
-              빅토리 일정표
+              {view.year}년 {String(view.month).padStart(2, "0")}월
               <span className="title-spark" aria-hidden="true">✨️</span>
             </h1>
             {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
@@ -5213,9 +5182,16 @@ export function PublicPoster({
                 </button>
               </form>
             ) : null}
-            <span className="agenda-month">
-              {view.year}년 {view.month}월
-            </span>
+            {(() => {
+              const dplus = debutDPlus(today);
+              if (dplus === null) return null;
+              const days = dplus.toLocaleString("ko-KR");
+              return (
+                <span className="agenda-month agenda-debut" title={`데뷔 ${days}일째`}>
+                  D+{days} <span className="ad-sub">데뷔 {days}일째</span>
+                </span>
+              );
+            })()}
             {accountSwitch && accountEmail ? (
               <PlainEmail className="account-email agenda-email" title={accountEmail} value={accountEmail} />
             ) : null}
@@ -5256,9 +5232,11 @@ export function PublicPoster({
                 ) : null}
                 {/* 서비스 제목 — 포스터 표면에서 크롬 중앙(내 관심 ↔ 이 달 기록 사이)으로 이동
                     (2026-07-31). 표면 밖이라 캡쳐에 안 찍히고(PNG는 연·월만), 스티커 좌표 불침범. */}
+                {/* 2026-09-17 소유자: 서비스 이름 대신 **보고 있는 달**을 제목 자리에.
+                    달 이동의 결과가 화면에서 가장 큰 글자로 확인된다(데뷔 D+는 레일 카드로). */}
                 <h1 className="poster-chrome-title">
                   <span aria-hidden="true" className="title-spark">✨️</span>
-                  {schedule.calendar.title}
+                  {view.year}년 {String(view.month).padStart(2, "0")}월
                   <span aria-hidden="true" className="title-spark">✨️</span>
                 </h1>
                 {/* '이 달 기록' — 비로그인 시청자도 볼 수 있다. 좌상단(미니게임·아바타)·우상단(로그인)·

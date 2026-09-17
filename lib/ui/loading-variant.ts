@@ -3,7 +3,7 @@ import { LOADING_TONE_COOKIE, parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view
 
 // 로딩 화면(loading.tsx)이 "어디로 가는지"에 맞춰 배경/문구를 고르게 한다.
 // - 개발자·소유자·작업자/매니저 → 편집실 톤("편집실")
-// - 일반 시청자 → 포스터 톤("빅토리 일정표")
+// - 일반 시청자 → 포스터 톤("일정표") — 2026-09-17: 본문 제목이 달 표기로 바뀌어 서비스 이름을 뺀다.
 // - 단, 스태프라도 시청자 화면 미리보기(v=1) 중이면 그 화면은 포스터라 포스터 톤으로.
 //
 // ⚠ 여기서 resolveCurrentActor를 부르지 않는다. actor는 GoTrue 네트워크 왕복이라, 로딩
@@ -21,5 +21,5 @@ export async function resolveLoadingTarget(): Promise<{
   const studio = staffHint && mem.v !== 1;
   return studio
     ? { variant: "studio", label: "편집실" }
-    : { variant: "poster", label: "빅토리 일정표" };
+    : { variant: "poster", label: "일정표" };
 }

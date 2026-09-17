@@ -397,6 +397,18 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* 2026-09-17: 2행 가운데 칸은 연·월 대신 데뷔 기록(연·월은 제목으로 올라갔다).
+   D+숫자는 레일 카드와 같은 골드, 해설은 같은 줄 뒤에 작게 — 모바일에선 줄을 더 안 쓴다. */
+.agenda-debut {
+  color: #7c4d05;
+  letter-spacing: -0.01em;
+}
+.agenda-debut .ad-sub {
+  margin-left: 5px;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  color: #9a7b45;
+}
 /* 현재 로그인 이메일 — 2행 오른쪽(계정변경 버튼 바로 아래, 월 라인에 맞춤) */
 .agenda-email {
   grid-column: 3;
@@ -1893,15 +1905,12 @@ body::-webkit-scrollbar {
   padding: 14px 18px;
   animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s both;
 }
-/* 열이 넓어진 만큼(1920에서 332px) 글자를 한 단계 키운다 — 방송 화면에서 달·D+가 또렷하게. */
-.avatar-top-cards .ric-month > b:first-child {
-  font-size: 27px;
-}
-.avatar-top-cards .ric-month > b:first-child::after {
-  font-size: 16px;
-}
+/* 열이 넓어진 만큼(1920에서 332px) 글자를 한 단계 키운다 — 방송 화면에서 D+가 또렷하게. */
 .avatar-top-cards .ric-dplus {
-  font-size: 22px;
+  font-size: 32px;
+}
+.avatar-top-cards .ric-debut-sub {
+  font-size: var(--text-label);
 }
 .avatar-top-cards .soop-live-card.in-rail {
   display: flex;
@@ -2383,38 +2392,25 @@ body.cell-range-dragging {
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
-/* 보는 달(왼쪽, 주인공) ↔ 데뷔 D+(오른쪽, 골드) — 한 줄. */
-.ric-month {
+/* 데뷔 기록 카드(2026-09-17: 연·월은 상단 제목으로) — 큰 D+숫자 위, 조용한 해설 아래. */
+.ric-debut {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
 }
-.ric-month > b:first-child {
-  font-size: 23px;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-  /* ✨(::after)가 글자에서 떨어져 다음 줄로 내려가지 않게 — 한 줄 카드의 생명. */
+.ric-debut-sub {
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #9a7b45;
   white-space: nowrap;
-}
-/* 월 옆 반짝 장식 — 상단 크롬 제목의 ✨ 문법을 카드 안으로(포스터 정체성 통일). */
-.ric-month > b:first-child::after {
-  content: "✨";
-  font-size: var(--text-body);
-  font-weight: 400;
-  opacity: 0.75;
-  margin-left: 7px;
-}
-/* 좁아지면 접힌다(2026-09-06 소유자) — 계측은 public-poster.tsx의 `.ric-month` 관찰자.
-   `display: none`이라 자리도 반납한다(visibility면 빈 칸이 남아 '보고 있는 달'이 가운데로 안 온다). */
-.ric-month[data-fit="0"] .ric-dplus {
-  display: none;
-}
-.ric-month[data-fit="0"] {
-  justify-content: center;
+  font-variant-numeric: tabular-nums;
 }
 .ric-dplus {
-  font-size: var(--text-title);
+  font-size: 27px;
+  letter-spacing: -0.015em;
   line-height: 1.1;
   white-space: nowrap;
   /* D+ 숫자만 골드 그라데이션 텍스트 — 카드 안에서 기념일 숫자가 은은하게 주인공. */

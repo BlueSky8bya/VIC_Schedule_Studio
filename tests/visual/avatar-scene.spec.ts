@@ -19,7 +19,8 @@ async function readScene(page: import("@playwright/test").Page) {
       return { x: r.x, y: r.y, w: r.width, h: r.height, b: r.bottom, r: r.right };
     };
     const scaler = q(".poster-scaler")!;
-    const monthB = q(".avatar-top-cards .ric-month b");
+    // 2026-09-17: 카드는 데뷔 D+ 전용(연·월은 상단 제목) — 줄바꿈 검사 대상도 D+ 숫자.
+    const monthB = q(".avatar-top-cards .ric-dplus");
     const monthLine = monthB ? parseFloat(getComputedStyle(monthB).fontSize) * 1.15 : 0;
     return {
       stage: rect(q(".poster-stage")),
