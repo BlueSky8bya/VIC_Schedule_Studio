@@ -67,7 +67,7 @@ import {
   quantizeStaticIntensity
 } from "@/lib/ui/hype-curve";
 import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
-import { debutDPlus, getDayMark } from "@/lib/calendar/holidays";
+import { debutDateLabel, debutDPlus, getDayMark } from "@/lib/calendar/holidays";
 import { PanelPlaceControl } from "@/components/shared/panel-place-control";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
@@ -2420,19 +2420,38 @@ export function PublicPoster({
       raf = 0;
       const header = document.querySelector<HTMLElement>(".public-calendar-header");
       const form = header?.querySelector<HTMLElement>(".viewer-actions .account-form");
-      const rail = document.querySelector<HTMLElement>(".poster-surface .public-right");
       if (!header || !form) return;
-      const rr = rail?.getBoundingClientRect();
-      if (!rail || !rr || rr.width < 60) {
-        form.style.removeProperty("--acct-w");
-        form.style.removeProperty("--acct-mr");
-        return;
-      }
       const hr = header.getBoundingClientRect();
       const zoom = header.offsetWidth > 0 ? hr.width / header.offsetWidth : 1;
       const padR = parseFloat(getComputedStyle(header).paddingRight) || 0;
+      const setMr = (rightEdge: number) =>
+        form.style.setProperty("--acct-mr", `${Math.max(0, Math.round((hr.right - rightEdge) / zoom - padR))}px`);
+      // 2026-09-17(소유자 사진 2): 패널이 **오른쪽에 서서 밀어낼 때**는 패널 카드와 폭·오른쪽 끝을 맞추고, 그 외(패널이
+      // 왼쪽·접힘·떠 있음)엔 달력 그리드의 오른쪽 끝에 맞춘다 — 로그인 버튼만 혼자 화면 끝에 붙어 있지 않게.
+      const card = document.querySelector<HTMLElement>(".avatar-slot .rail-info-card");
+      const cr = card?.getBoundingClientRect();
+      const panelRight = sceneOn && panel.open && panel.mode === "push" && panel.side === "right";
+      if (panelRight && cr && cr.width >= 60 && cr.right <= hr.right + 1) {
+        form.style.setProperty("--acct-w", `${Math.round(cr.width / zoom)}px`);
+        setMr(cr.right);
+        return;
+      }
+      form.style.removeProperty("--acct-w");
+      const grid = document.querySelector<HTMLElement>(".poster-surface .public-month-grid");
+      const gr = grid?.getBoundingClientRect();
+      if (sceneOn && gr && gr.width > 0) {
+        setMr(gr.right);
+        return;
+      }
+      // 옛 경로(패널이 아직 준비 전): 표면 안 레일 폭·끝.
+      const rail = document.querySelector<HTMLElement>(".poster-surface .public-right");
+      const rr = rail?.getBoundingClientRect();
+      if (!rail || !rr || rr.width < 60) {
+        form.style.removeProperty("--acct-mr");
+        return;
+      }
       form.style.setProperty("--acct-w", `${Math.round(rr.width / zoom)}px`);
-      form.style.setProperty("--acct-mr", `${Math.max(0, Math.round((hr.right - rr.right) / zoom - padR))}px`);
+      setMr(rr.right);
     };
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(fit);
@@ -2451,7 +2470,7 @@ export function PublicPoster({
       ro.disconnect();
       window.removeEventListener("resize", schedule);
     };
-  }, [showAgenda, sceneOn, interactive, accountSwitch, anonymous]);
+  }, [showAgenda, sceneOn, interactive, accountSwitch, anonymous, panel.open, panel.mode, panel.side]);
 
   const posterStageRef = useRef<HTMLDivElement | null>(null);
   const posterFitRef = useRef<HTMLDivElement | null>(null);
@@ -4169,7 +4188,7 @@ export function PublicPoster({
   const [posterZoom, setPosterZoom] = useState(1);
   // 확대 배지의 '조용해짐' — 배율이 바뀌면 깨어나고, 손을 떼면 물러난다(lib/ui/use-idle).
   // 잠든 동안엔 클릭이 달력으로 통과하고(가림 0), 포인터가 90px 안으로 다가오면 깨어나 다시 눌린다.
-  const zoomBadgeRef = useRef<HTMLButtonElement | null>(null);
+  const zoomBadgeRef = useRef<HTMLDivElement | null>(null);
   const zoomBadge = useIdleAfter(posterZoom, { el: zoomBadgeRef });
   const posterZoomStepperRef = useRef(createWheelStepper());
   const posterCalWheelCleanupRef = useRef<(() => void) | null>(null);
@@ -4207,10 +4226,11 @@ export function PublicPoster({
     const days = dplus.toLocaleString("ko-KR");
     return (
       <div className="rail-info-card">
-        {/* 팬 페이지에서 가장 흔한 데뷔 기록 표기 — 큰 D+숫자(주인공) + 조용한 '데뷔 N일째' 해설. */}
+        {/* 팬 페이지에서 가장 흔한 데뷔 기록 표기 — 큰 D+숫자(주인공) + 조용한 해설. 해설은 날짜(2026-09-17 소유자:
+            'D+352'와 '352일째'로 같은 숫자를 두 번 말하지 않는다) — "데뷔 2025.10.01". */}
         <span className="ric-debut" title={`데뷔 ${days}일째`}>
           <b className="ric-dplus">D+{days}</b>
-          <span className="ric-debut-sub">데뷔 {days}일째</span>
+          <span className="ric-debut-sub">데뷔 {debutDateLabel()}</span>
         </span>
       </div>
     );
@@ -5098,8 +5118,9 @@ export function PublicPoster({
               if (dplus === null) return null;
               const days = dplus.toLocaleString("ko-KR");
               return (
-                <span className="agenda-month agenda-debut" title={`데뷔 ${days}일째`}>
-                  D+{days} <span className="ad-sub">데뷔 {days}일째</span>
+                // 모바일은 한 줄만(2026-09-17 소유자: D+ 없이 "데뷔 N일째"로 압축).
+                <span className="agenda-month agenda-debut" title={`D+${days}`}>
+                  데뷔 {days}일째
                 </span>
               );
             })()}
@@ -5330,13 +5351,24 @@ export function PublicPoster({
       {/* 하단 중앙 [⇤ | 패널 | ⇥] — 편집실과 같은 부품·같은 자리(2026-09-17 소유자). 자리 선택(⇤ ⇥)은 관리자·개발자
           (avatarSlot)만, 일반 시청자·비로그인은 접기/펼치기 하나. /onair 고정 scene엔 없다(사람이 안 만진다). */}
       {sceneOn && !avatarFixed ? (
-        <div className="poster-panel-ctl">
+        <div
+          className="poster-panel-ctl"
+          onFocus={zoomBadge.wake}
+          onPointerEnter={zoomBadge.wake}
+          ref={zoomBadgeRef}
+        >
+          {/* 자리 선택(⇤ ⇥)은 비로그인 시청자에게도(2026-09-17 소유자). 확대 직후엔 가운데가 잠시 배율. */}
           <PanelPlaceControl
             onSide={panel.pickSide}
             onToggle={panel.toggle}
+            onZoomReset={() => {
+              hapticTick();
+              setPosterZoom(1);
+            }}
             open={panel.open}
-            showSide={avatarCapable}
             side={panel.side}
+            zoomAwake={!zoomBadge.idle}
+            zoomPct={Math.round(posterZoom * 100)}
           />
         </div>
       ) : null}
@@ -5367,26 +5399,7 @@ export function PublicPoster({
           **역할이 끝나면 물러난다**(2026-09-06 소유자: 달력 내용을 가리지 않게): 배율이 바뀐 직후엔 또렷하고,
           2.4초 뒤 라벨(초기화)과 아이콘을 접고 작게·옅게 잠든다. 포인터가 오거나 포커스가 들어오면 즉시 깨어난다.
           잠든 채로도 누를 수 있다 — `pointer-events: none`으로 만들면 깨울 방법이 사라진다. */}
-      {posterZoom > 1 ? (
-        <button
-          ref={zoomBadgeRef}
-          className="poster-zoom-float"
-          data-idle={zoomBadge.idle ? "1" : undefined}
-          onPointerEnter={zoomBadge.wake}
-          onFocus={zoomBadge.wake}
-          onClick={() => {
-            hapticTick();
-            setPosterZoom(1);
-          }}
-          title="100%로 되돌리기"
-          aria-label={`달력 확대 ${Math.round(posterZoom * 100)}% — 눌러서 100%로 되돌리기`}
-          type="button"
-         data-act="확대 초기화">
-          <span className="pzf-ic" aria-hidden="true">🔍</span>
-          <span className="pzf-pct">{Math.round(posterZoom * 100)}%</span>
-          <span className="pzf-label">초기화</span>
-        </button>
-      ) : null}
+      {/* (별도 배율 배지 .poster-zoom-float는 2026-09-17 하단 알약 [⇤ | 패널 | ⇥]의 가운데 칸으로 합쳤다 — 아래 .poster-panel-ctl.) */}
 
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
           시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}

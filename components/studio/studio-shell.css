@@ -4429,10 +4429,10 @@ html[data-reduce-motion] .perf-windows button.active {
 /* 아바타 ON 시 편집실 콘텐츠(workspace)를 반대쪽으로 margin 슬라이드(패널 포함 통째로 → 겹침 0). */
 /* 2026-09-17: 밀어내기는 **펼침 + 넓은 화면**에서만. 접히거나(panel-closed) 떠 있을 땐(panel-overlay) 달력이 화면 폭 전부. */
 .studio-shell.avatar-scene.panel-open:not(.panel-overlay).avatar-right .studio-workspace {
-  margin-right: 20vw;
+  margin-right: var(--side-panel-w); /* 시청자 슬롯과 같은 토큰(globals.css), 2026-09-17 */
 }
 .studio-shell.avatar-scene.panel-open:not(.panel-overlay).avatar-left .studio-workspace {
-  margin-left: 20vw;
+  margin-left: var(--side-panel-w);
 }
 /* 아바타 scene: 좌측 색상필터 칸 비움(0) — 필터는 우측 rail로. 편집 카드는 팝오버라 칸 불필요. */
 .studio-shell.avatar-scene .studio-workspace {
@@ -4459,7 +4459,7 @@ html[data-reduce-motion] .perf-windows button.active {
   position: fixed;
   top: var(--dock-top, 148px); /* 액션바 하단 실측 추적(위 편집창과 동일) */
   bottom: 8px;
-  width: calc(20vw - 16px);
+  width: calc(var(--side-panel-w) - 16px);
   display: flex;
   flex-direction: column;
   gap: 10px;

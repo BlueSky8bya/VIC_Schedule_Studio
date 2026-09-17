@@ -41,12 +41,22 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
   const [wide, setWide] = useState(true);
   const [side, setSide] = useState<PanelSide>(fixedSide ?? "left");
   const [open, setOpen] = useState(true);
+  // 밀어낼 때 달력이 잃는 폭의 비율(창 폭 대비) — 편집실이 달력을 이 비율로 통째로 줄여(--cal-zoom에 곱함) 시청자
+  // 포스터의 '폭 기준 축소'와 같은 결과를 낸다: 패널을 펴도 달력이 한눈에(2026-09-17 소유자·관리자 취향). 패널 폭 식은
+  // CSS 토큰 --side-panel-w(globals.css)와 같다.
+  const [fitRatio, setFitRatio] = useState(1);
 
   useLayoutEffect(() => {
     if (!enabled || typeof window === "undefined") return;
     const mq = window.matchMedia(PANEL_WIDE_QUERY);
+    const ratio = () => {
+      const w = window.innerWidth;
+      const panelPx = Math.min(380, Math.max(300, w * 0.1875));
+      return w > 0 ? (w - panelPx) / w : 1;
+    };
     setSide(fixedSide ?? readSide());
     setWide(mq.matches);
+    setFitRatio(ratio());
     // 고정 scene(/onair)은 창 폭과 무관하게 항상 펼침 — OBS 브라우저 소스는 사람이 접을 일이 없다.
     setOpen(fixedSide ? true : mq.matches ? !readCollapsed() : false);
     setReady(true);
@@ -56,8 +66,16 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
       // 폭 기준을 넘나들면 자동값으로 되돌린다 — 좁아지면 접히고, 다시 넓어지면 기억한 대로 펼친다.
       setOpen(fixedSide ? true : w ? !readCollapsed() : false);
     };
+    const onResize = () => {
+      const r = ratio();
+      setFitRatio((prev) => (Math.abs(prev - r) < 0.002 ? prev : r));
+    };
     mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
+    window.addEventListener("resize", onResize);
+    return () => {
+      mq.removeEventListener("change", sync);
+      window.removeEventListener("resize", onResize);
+    };
   }, [enabled, fixedSide]);
 
   const pickSide = useCallback(
@@ -106,7 +124,9 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
     return () => window.removeEventListener("keydown", onKey);
   }, [enabled, mode, open]);
 
-  return { ready: enabled && ready, wide, side, open, mode, pickSide, toggle, close };
+  // fit: 밀어내는 동안(넓은 창 + 펼침)만 <1, 그 외 1. 떠 있을 땐 달력 폭이 그대로라 1.
+  const fit = enabled && ready && open && mode === "push" && !fixedSide ? fitRatio : 1;
+  return { ready: enabled && ready, wide, side, open, mode, fit, pickSide, toggle, close };
 }
 
 // 셸(main)에 붙는 클래스 — 편집실·시청자가 같은 이름을 써서 CSS 문법이 하나다.

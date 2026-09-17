@@ -186,6 +186,9 @@
   --r-xl: 20px;
   --r-pill: 999px;
   --r-control: var(--r-md);
+  /* 달력 옆 패널 폭(2026-09-17 소유자: 편집실·시청자·미리보기 같은 폭) — OBS 1920에서 딱 360px(18.75vw), 작은 창 300 하한.
+     편집실 rail·시청자 슬롯·밀어내기 margin이 전부 이 값 하나를 본다(lib/ui/use-side-panel의 fit 계산도 같은 식). */
+  --side-panel-w: clamp(300px, 18.75vw, 380px);
 
   /* 그림자 (부드럽게 단계화) */
   --shadow-1: 0 1px 2px rgb(17 24 39 / 5%), 0 1px 3px rgb(17 24 39 / 4%);

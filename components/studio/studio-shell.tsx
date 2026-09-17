@@ -157,7 +157,6 @@ import {
   createWheelStepper,
   normalizeWheelDelta,
   stepCalZoom,
-  CAL_ZOOM_STEPS,
   studioShellZoom
 } from "@/lib/ui/calendar-zoom";
 import { useIdleAfter } from "@/lib/ui/use-idle";
@@ -826,6 +825,9 @@ export function StudioShell({
   const panel = useSidePanel({ enabled: !isNarrow });
   const avatarEditor = panel.ready;
   const avatarSide = panel.side;
+  // 드래그 유령(body 포털)이 달력의 현재 축소 비율을 물려받게 — 핸들러는 ref로 읽는다.
+  const panelFitRef = useRef(1);
+  panelFitRef.current = panel.fit;
   const pickAvatarSide = panel.pickSide;
   const avatarSceneOn = panel.ready;
   // 새로고침 직후 슬라이드/등장 애니가 한 번 튀는 것 방지 — 마운트 전엔 애니 끄고, 마운트 후 켠다
@@ -1877,8 +1879,10 @@ export function StudioShell({
   const [calZoom, setCalZoom] = useState<CalZoom>(1);
   // 확대 배지의 '조용해짐'(시청자 배지와 같은 규칙, lib/ui/use-idle) — 잠들면 클릭이 달력으로 통과하고,
   // 포인터가 90px 안으로 다가오면 깨어난다.
-  const zoomBadgeRef = useRef<HTMLDivElement | null>(null);
-  const zoomBadge = useIdleAfter(calZoom, { el: zoomBadgeRef });
+  // 하단 플로팅 행(알약) ref — 팝오버 dodge 계측과 배율 배지의 근접 깨우기가 같이 쓴다.
+  const bottomRowRef = useRef<HTMLDivElement | null>(null);
+  // 배율 배지의 근접 깨우기 기준 = 하단 알약 행 — 배지가 알약 가운데 칸에 산다(2026-09-17).
+  const zoomBadge = useIdleAfter(calZoom, { el: bottomRowRef });
   const calZoomRef = useRef<CalZoom>(1);
   const calPanelRef = useRef<HTMLElement | null>(null);
   // 드래그 중 배율 변경 금지(레이아웃 재배치가 드롭 좌표 판정을 순간적으로 흔든다).
@@ -1963,40 +1967,7 @@ export function StudioShell({
     ro.observe(el);
     return () => ro.disconnect();
   }, [isNarrow, viewerMode]);
-  // 확대 컨트롤 — buildbox(액션바)와, 확대 중 스크롤해도 보이는 하단 플로팅 두 곳에서 재사용.
-  function renderCalZoomCtl() {
-    return (
-      <div className="cal-zoom-ctl" role="group" aria-label="달력 확대(방송용)">
-        <button
-          type="button"
-          className="cal-zoom-btn"
-          aria-label="달력 축소"
-          disabled={calZoom === 1}
-          onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, -1))}
-         data-act="달력 축소">
-          −
-        </button>
-        <button
-          type="button"
-          className="cal-zoom-pct"
-          aria-label="달력 확대 초기화(100%)"
-          title="100%로 초기화"
-          onClick={() => applyCalZoom(1)}
-         data-act="달력 확대 초기화">
-          {Math.round(calZoom * 100)}%
-        </button>
-        <button
-          type="button"
-          className="cal-zoom-btn"
-          aria-label="달력 확대"
-          disabled={calZoom === CAL_ZOOM_STEPS[CAL_ZOOM_STEPS.length - 1]}
-          onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, 1))}
-         data-act="달력 확대">
-          ＋
-        </button>
-      </div>
-    );
-  }
+  // (−/%/+ 확대 컨트롤(renderCalZoomCtl)은 2026-09-17 하단 알약 가운데 칸으로 합쳐 철거 — 확대는 Ctrl+휠, 초기화는 알약.)
 
   // ── A안 M2: 확대(125%+) 시 부제목은 +N로 접고, 상세는 팝오버로 ──
   // hover/focus로 열리고, +N·📌으로 고정(핀)하면 포인터가 떠나도 유지된다. ✕·Esc로 닫으며
@@ -2139,7 +2110,7 @@ export function StudioShell({
     shellRef.current = el;
     setShellEl(el);
   }, []);
-  const bottomRowRef = useRef<HTMLDivElement | null>(null);
+  // (bottomRowRef는 위 확대 배지 옆에서 선언 — useIdleAfter가 먼저 쓴다.)
   // 크롬 압축 단계(2026-09-04 사용자: "창 비율을 억지로 망가뜨려도 대응") — 0 정상 · 1 미리보기 라벨 짧게 ·
   // 2 라벨→기호("?"·눈·나가기·"저장됨"만) · 3 저장 점만·버전 숨김·제목/달 축소. 단계별 CSS는 studio-calm-layer.css ⑤,
   // 규칙 문서는 docs/ux/chrome-compaction-manual.md. 임계 폭을 외우지 않고 **실측**한다: 단계를 0부터 올려 보며
@@ -2252,17 +2223,36 @@ export function StudioShell({
         ro.observe(stage);
         observedStage = stage;
       }
-      const rr = rail?.getBoundingClientRect();
-      if (!rail || !rr || rr.width < 60) {
-        card.style.removeProperty("--pv-w");
-        card.style.removeProperty("--pv-mr");
-        return;
-      }
       const or = overlay.getBoundingClientRect();
       const zoom = overlay.offsetWidth > 0 ? or.width / overlay.offsetWidth : 1;
       const padR = parseFloat(getComputedStyle(overlay).paddingRight) || 0;
+      const setMr = (rightEdge: number) =>
+        card.style.setProperty("--pv-mr", `${Math.round((or.right - rightEdge) / zoom - padR)}px`);
+      // 2026-09-17: 패널이 오른쪽에 서서 밀어낼 때는 패널 카드(.avatar-slot .rail-info-card)와 폭·끝을 맞추고,
+      // 그 외엔 달력 그리드의 오른쪽 끝에 맞춘다(시청자 화면의 계정 카드와 같은 규칙).
+      const scene = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-page.avatar-scene");
+      const panelRight = !!scene && scene.classList.contains("avatar-right") && scene.classList.contains("panel-open") && !scene.classList.contains("panel-overlay");
+      const pc = document.querySelector<HTMLElement>(".viewer-fullscreen .avatar-slot .rail-info-card");
+      const pr = pc?.getBoundingClientRect();
+      if (panelRight && pr && pr.width >= 60 && pr.right <= or.right + 1) {
+        card.style.setProperty("--pv-w", `${Math.round(pr.width / zoom)}px`);
+        setMr(pr.right);
+        return;
+      }
+      card.style.removeProperty("--pv-w");
+      const grid = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-surface .public-month-grid");
+      const gr = grid?.getBoundingClientRect();
+      if (scene && gr && gr.width > 0) {
+        setMr(gr.right);
+        return;
+      }
+      const rr = rail?.getBoundingClientRect();
+      if (!rail || !rr || rr.width < 60) {
+        card.style.removeProperty("--pv-mr");
+        return;
+      }
       card.style.setProperty("--pv-w", `${Math.round(rr.width / zoom)}px`);
-      card.style.setProperty("--pv-mr", `${Math.round((or.right - rr.right) / zoom - padR)}px`);
+      setMr(rr.right);
     };
     const timers: number[] = [];
     const schedule = () => {
@@ -2963,7 +2953,10 @@ export function StudioShell({
     // 던지기 판정 — 회전을 없앴으므로 **뿌린 속도**만 본다(px/ms).
     const v = edVelRef.current;
     const speed = Math.hypot(v.x, v.y);
-    const flung = Boolean(info?.started && ghost && !edReducedRef.current && speed > FLING_SPEED);
+    // 손을 **멈춘 채** 놓으면 던지기가 아니다(2026-09-17): 속도는 마지막 move에서 잰 값이라 넓은 달력에서 빠르게
+    // 옮긴 뒤 잠깐 멈춰 놓아도 '던짐'으로 읽혀 카드가 날아가 버렸다. 마지막 움직임에서 80ms 넘게 지났으면 정지 상태.
+    const held = !edPtrRef.current || performance.now() - edPtrRef.current.t > 80;
+    const flung = Boolean(info?.started && ghost && !edReducedRef.current && !held && speed > FLING_SPEED);
     setDropDate(null);
     setDropSlot(null);
     dropDateRef.current = null;
@@ -3088,7 +3081,7 @@ export function StudioShell({
       ghost.style.transformOrigin = `${info.offX}px ${info.offY}px`;
       // 유령은 body에 붙어 달력 패널의 --cal-zoom을 상속받지 못한다(portal) — 현재 배율을
       // 직접 복사해 확대 상태에서도 유령 크기가 원본 카드와 일치하게 한다.
-      ghost.style.setProperty("--cal-zoom", String(calZoomRef.current));
+      ghost.style.setProperty("--cal-zoom", String(calZoomRef.current * panelFitRef.current));
       ghost.appendChild(inner);
       document.body.appendChild(ghost);
       dragGhostRef.current = ghost;
@@ -6239,26 +6232,22 @@ export function StudioShell({
           아바타 세그먼트가 여기 사는 이유(2026-09-03 사용자): rail 안에 두면 rail이 반대편으로 옮겨갈 때
           버튼도 같이 가서 되돌리려면 화면 폭만큼 마우스를 왕복해야 했다. 화면 중앙 고정 = 어느 쪽에서든
           같은 거리(Fitts). 남쪽이라 색은 은백 고스트(뜨거운 강조 없음). (비공개 경고 알약은 2026-08-27 철수.) */}
-      {avatarEditor || zoomCollapse ? (
-        <div className="bottom-float-row" ref={bottomRowRef}>
+      {avatarEditor ? (
+        <div className="bottom-float-row" onFocus={zoomBadge.wake} onPointerEnter={zoomBadge.wake} ref={bottomRowRef}>
           {/* [⇤ | 패널 | ⇥] — 시청자 화면과 같은 부품(components/shared/panel-place-control). 2026-09-05의
-              "아바타 자리 → 패널 자리" 이름 결정을 이어받고, 가운데는 2026-09-17부터 접기/펼치기 **버튼**이다. */}
-          {avatarEditor ? (
-            <PanelPlaceControl onSide={pickAvatarSide} onToggle={panel.toggle} open={panel.open} side={avatarSide} />
-          ) : null}
-          {/* 확대 컨트롤도 **역할이 끝나면 물러난다**(2026-09-06 소유자: 달력 내용을 가리지 않게) —
-              배율이 바뀐 뒤 2.4초면 ± 버튼을 접고 옅어졌다가, 포인터·포커스가 오면 되돌아온다. */}
-          {zoomCollapse ? (
-            <div
-              ref={zoomBadgeRef}
-              className="cal-zoom-float"
-              data-idle={zoomBadge.idle ? "1" : undefined}
-              onPointerEnter={zoomBadge.wake}
-              onFocus={zoomBadge.wake}
-            >
-              {renderCalZoomCtl()}
-            </div>
-          ) : null}
+              "아바타 자리 → 패널 자리" 이름 결정을 이어받고, 가운데는 2026-09-17부터 접기/펼치기 **버튼**이다.
+              확대(Ctrl+휠) 직후엔 가운데 칸이 잠시 배율(🔍 125%)로 바뀌고 누르면 100% — 옛 −/%/+ 플로팅
+              (.cal-zoom-float)을 여기에 합쳤다(2026-09-17 소유자). 배지는 2.4초 뒤 잠들어 '패널'로 돌아오고,
+              포인터가 다가오면(useIdleAfter el=이 행) 다시 배율을 보인다. */}
+          <PanelPlaceControl
+            onSide={pickAvatarSide}
+            onToggle={panel.toggle}
+            onZoomReset={() => applyCalZoom(1)}
+            open={panel.open}
+            side={avatarSide}
+            zoomAwake={!zoomBadge.idle}
+            zoomPct={Math.round(calZoom * 100)}
+          />
         </div>
       ) : null}
 
@@ -6303,7 +6292,9 @@ export function StudioShell({
           data-compact={titleCompact ? "" : undefined}
           data-zoomed={calZoom > 1 ? "" : undefined}
           ref={calPanelRef}
-          style={{ "--cal-zoom": calZoom } as CSSProperties}
+          /* 패널이 달력을 밀어내는 동안(panel.fit < 1) 달력을 그 비율로 통째로 줄인다 — 시청자 포스터의 폭 기준 축소와
+             같은 결과: 패널을 펴도 한 달이 한눈에(2026-09-17 소유자·관리자 취향). 사용자 확대(calZoom)와 곱. */
+          style={{ "--cal-zoom": calZoom * panel.fit } as CSSProperties}
         >
           {/* #9 키보드 단축키 안내바 — canEdit(소유자). 토글은 위 액션바의 버전 박스 안에 있고, 기본은
           접혀 있어 이 바가 안 나온다 → 액션바 바로 아래로 달력이 온다(높이 최적화). 펼치면 여기 뜬다. */}

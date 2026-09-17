@@ -62,8 +62,9 @@ export const POSTER_AGENDA_QUERY = `(max-width: ${POSTER_AGENDA_MAX}px), (max-he
  *
  * 이 폭 미만이면 편집실·시청자·시청자 미리보기 모두 패널을 접고 달력이 화면 폭을 다 쓴다. 접힌 패널은
  * 하단 알약의 '패널' 버튼으로 **달력 위에 떠서** 열린다(달력 폭은 안 줄어든다). 이 폭 이상이면 패널이
- * 달력을 밀어내며 옆에 선다. 1280 = 20vw 패널(≈256) + 달력 ~1000px — 그 아래론 일곱 칸이 읽기 힘들다.
+ * 달력을 밀어내며 옆에 선다. 1540 = 소유자 실측(2026-09-17: ~1510px 창에서도 접히길 원함) — 패널(300~380)
+ * 옆에 달력이 ≥1160px은 있어야 일곱 칸이 편하다. (처음 1280으로 출고했다가 같은 날 올렸다.)
  * 판정은 JS(lib/ui/use-side-panel)에서만 한다 — CSS 미디어쿼리로 흉내 내면 훅과 어긋난다.
  */
-export const PANEL_WIDE_MIN = 1280;
+export const PANEL_WIDE_MIN = 1540;
 export const PANEL_WIDE_QUERY = `(min-width: ${PANEL_WIDE_MIN}px)`;

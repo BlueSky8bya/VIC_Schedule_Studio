@@ -1,6 +1,9 @@
 /* 패널 자리 알약 [⇤ | 패널 | ⇥] — 편집실·시청자 공용(2026-09-17). 옛 .studio-avatar-ctl(studio-shell.css)의
    모양을 그대로 옮겨 왔다: 하단 중앙 유리 알약, 쉼 상태는 반투명·블러 없음(밑 일정이 읽힌다), 포인터가
-   오면 불투명·블러로 또렷. 가운데 '패널'은 이제 **버튼**(접기/펼치기)이라 양옆과 같은 문법으로 눌린다. */
+   오면 불투명·블러로 또렷.
+   두 가지 '켜짐'을 다르게 말한다(2026-09-17 소유자: 가운데도 상자로 켜지니 이상함):
+   · 양옆(자리) = 라디오 — 고른 쪽만 흰 상자(.on).
+   · 가운데(패널 접기/펼치기) = 토글 — 상자 없이 **잉크만** 진해진다(펼침) / 옅어진다(접힘). 아이콘이 상태를 말한다. */
 .panel-place-ctl {
   pointer-events: auto;
   display: inline-flex;
@@ -45,26 +48,27 @@
   transition:
     background 0.15s ease,
     box-shadow 0.12s ease,
+    color 0.15s ease,
     transform 0.08s ease;
 }
 .panel-place-ctl button:not(.on):hover {
   background: rgb(255 255 255 / 60%); /* '여기 누를 수 있다' — 비활성 쪽에도 호버 응답 */
 }
-/* 고른 쪽·펼침 상태 — 면·글자·테두리를 한꺼번에 올린다(반투명 알약 위에서 흰 면만으로는 구분이 안 됐다). */
-.panel-place-ctl button.on {
+/* 자리 라디오의 고른 쪽 — 면·글자·테두리를 한꺼번에 올린다(반투명 알약 위에서 흰 면만으로는 구분이 안 됐다). */
+.panel-place-ctl .ppc-side.on {
   background: linear-gradient(180deg, #fff, #f3efff);
   color: #4a3a7a;
   box-shadow:
     inset 0 0 0 1.5px #b9a9ec,
     0 2px 8px rgb(91 74 134 / 22%);
 }
-.panel-place-ctl button.on svg {
+.panel-place-ctl .ppc-side.on svg {
   stroke-width: 2.8;
 }
 .panel-place-ctl button:active {
   transform: scale(0.95);
 }
-/* 가운데 토글 — 아이콘 + 짧은 글자 한 줄. 양옆(방향)과 구분되게 헤어라인으로 갈라 둔다. */
+/* 가운데 토글 — 아이콘 + 짧은 글자 한 줄. 상자 없이 잉크로만 상태를 말한다. */
 .panel-place-ctl .ppc-toggle {
   grid-auto-flow: column;
   gap: 6px;
@@ -72,10 +76,26 @@
   padding-inline: 12px;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  min-width: 78px; /* '패널' ↔ '🔍 125%'가 바뀌어도 알약 폭이 흔들리지 않게 */
 }
-/* 방향 버튼이 있을 때만 헤어라인 구분선(비로그인 = 토글 하나뿐이라 선이 없다). */
-.panel-place-ctl button + .ppc-toggle,
-.panel-place-ctl .ppc-toggle + button {
+.panel-place-ctl .ppc-toggle[aria-pressed="true"] {
+  color: #4a3a7a;
+}
+.panel-place-ctl .ppc-toggle[aria-pressed="true"] svg {
+  stroke-width: 2.8;
+}
+/* 배율 칸(확대 직후 잠깐) — 같은 자리·같은 크기, 글자만 배율. */
+.panel-place-ctl .ppc-zoom {
+  color: #4a3a7a;
+  font-variant-numeric: tabular-nums;
+}
+.panel-place-ctl .ppc-zoom-ic {
+  font-size: 13px;
+  line-height: 1;
+}
+/* 방향 버튼이 있을 때만 헤어라인 구분선. */
+.panel-place-ctl .ppc-side + .ppc-toggle,
+.panel-place-ctl .ppc-toggle + .ppc-side {
   border-left: 1px solid rgb(107 91 138 / 18%);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
@@ -88,4 +108,4 @@ html[data-reduce-motion] .panel-place-ctl,
 html[data-reduce-motion] .panel-place-ctl button {
   transition: none;
 }
-/* 차분한 편집실(은백 재질) — 편집실 calm 레이어와 같은 변수를 받는다(studio-calm-layer.css가 덮어쓴다). */
+/* 차분한 편집실(은백 재질) 덮어쓰기는 studio-calm-layer.css. */

@@ -154,7 +154,7 @@ test.describe("달력 옆 패널 — 방송 화면(1920×1080)", () => {
     expect(Math.abs(again.stage!.w - open.stage!.w)).toBeLessThan(1);
   });
 
-  test("일반 시청자(아바타 자리 없음): 패널은 카드까지만, 알약은 토글 하나", async ({ page }) => {
+  test("일반 시청자(아바타 자리 없음): 패널은 카드까지만, 알약은 셋(자리 선택도 시청자에게)", async ({ page }) => {
     await page.goto("/visual-fixture/poster");
     await page.locator(".poster-page.avatar-scene.panel-open").waitFor();
     await page.waitForTimeout(500);
@@ -162,7 +162,7 @@ test.describe("달력 옆 패널 — 방송 화면(1920×1080)", () => {
     expect(m.slot).not.toBeNull();
     expect(m.legend).not.toBeNull();
     expect(m.dock).toBeNull();
-    expect(m.ctlButtons).toBe(1);
+    expect(m.ctlButtons).toBe(3);
   });
 });
 

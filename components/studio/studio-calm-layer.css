@@ -599,7 +599,7 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
    단계를 올린다(studio-shell.tsx overflows). rail이 오른쪽이면 카드의 오른쪽 끝을 rail 오른쪽 끝(8px)에 맞춘다. */
 @media (min-width: 861px) {
   .studio-shell {
-    --rail-w: calc(20vw - 16px);
+    --rail-w: calc(var(--side-panel-w) - 16px); /* = .avatar-rail 폭(시청자와 같은 토큰, 2026-09-17) */
   }
   .studio-topbar {
     --topbar-px: var(--space-5);
@@ -620,7 +620,9 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
     min-width: 0;
     justify-self: end;
   }
-  .studio-shell.avatar-scene.avatar-right .studio-role-tools {
+  /* 계정 카드의 오른쪽 끝을 rail 끝에 맞추는 보정은 rail이 **실제로 오른쪽에 서 있을 때만**(펼침 + 밀어내기).
+     접힌 채 ⇤/⇥를 누르면 맞출 rail이 없는데 카드만 좌우로 움찔거렸다(2026-09-17 소유자). */
+  .studio-shell.avatar-scene.panel-open:not(.panel-overlay).avatar-right .studio-role-tools {
     margin-right: calc(8px - var(--topbar-px));
   }
   /* 압축 단계의 gap 8(⑤)은 고정 폭 카드에선 칸을 잡아먹는다(1920·zoom .9 실측: 1fr 칸 89→77로 "시청자 화면"이 못 들어가

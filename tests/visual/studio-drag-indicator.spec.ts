@@ -26,6 +26,7 @@ async function stackTwoInOneCell(page: Page) {
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 10, a.y + a.height / 2 + 10, { steps: 6 });
   await page.mouse.move(b.x + b.width / 2, b.y + b.height - 4, { steps: 20 });
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
   await expect
     .poll(async () =>
@@ -103,6 +104,7 @@ test("같은 칸: 보라 '원래 위치'는 고정, 민트 '놓을 자리'가 �
     .toBeNull();
   const up = await dragState(page);
   expect(up.srcTop, "출발 표시가 움직였다").toBe(first.srcTop);
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 });
 
@@ -119,6 +121,7 @@ test("다른 칸으로 끌면 그 칸에 도착 표시가 열리고 출발 표�
   await page.mouse.move(a.x + a.width / 2 + 10, a.y + a.height / 2 + 10, { steps: 6 });
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 20 });
   const s = await dragState(page);
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 
   expect(s.gapTop, "대상 칸에 자리가 안 열렸다").not.toBeNull();
@@ -152,6 +155,7 @@ test("큰 화면(셸 zoom 0.9)에서도 '놓을 자리' 높이 = '원래 위치'
       gap: gap?.getBoundingClientRect().height ?? -1
     };
   });
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
   expect(hs.src).toBeGreaterThan(0);
   expect(Math.abs(hs.gap - hs.src), `놓을 자리 ${hs.gap} vs 원래 위치 ${hs.src}`).toBeLessThan(0.5);
@@ -209,6 +213,7 @@ test("순서 저장이 실패하면 서버 순서로 되돌아온다(다른 저�
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 12, a.y + a.height / 2 + 8, { steps: 4 });
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 18 });
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 
   const cellOf = () =>
@@ -238,6 +243,7 @@ test("유령 카드는 카드처럼 불투명하다 — 가림은 안내 이동�
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 8, a.y + a.height / 2 + 40, { steps: 10 });
   const s = await dragState(page);
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
   expect(s.ghostOpacity ?? 0).toBeGreaterThanOrEqual(0.85);
 });
@@ -273,6 +279,7 @@ test("자리가 열릴 때 툭 끊기지 않고 이어진다(중간 높이가 �
     );
     await page.waitForTimeout(20);
   }
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 
   const max = Math.max(...samples);
@@ -381,6 +388,7 @@ test("끌 때 회전이 아예 없고, 손을 부드럽게 뒤따른다", async 
   );
   expect(sway.span, "들고 있는데 흔들림이 전혀 없다").toBeGreaterThan(0.4);
   expect(sway.max, "흔들림이 과하다(읽기 방해)").toBeLessThan(4);
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 });
 
@@ -427,6 +435,7 @@ test("놓으면 새 자리로 빨려 들어가 '뿅' 하고 정착한다", async
       true
     );
   });
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 
   // 유령이 즉시 사라지지 않고, 착지 애니메이션이 끝나면 정리된다.

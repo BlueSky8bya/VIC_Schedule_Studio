@@ -133,6 +133,7 @@ test("카드를 다른 날로 끌면 reorder가 movedId와 함께 나간다", as
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 8, a.y + a.height / 2 + 8, { steps: 5 });
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + 20, { steps: 25 });
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 
   await expect.poll(() => reqs.filter((r) => r.op === "reorder").length, { timeout: 5000 }).toBe(1);
@@ -210,6 +211,7 @@ test("만들자마자 끈 카드: 끄는 도중 저장이 끝나 id가 바뀌어
   // 끄는 도중 저장 완료(1.5초) → id가 temp에서 srv-1로 바뀐다.
   await page.waitForTimeout(1900);
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 12 });
+  await page.waitForTimeout(120); // 멈춘 채 놓기 — 넓은 달력에선 합성 마우스 속도가 던지기 판정을 넘는다
   await page.mouse.up();
 
   // ① 화면: 카드(이제 실제 id)가 대상 칸에 있어야 한다. 예전엔 원래 칸에 남았다.
