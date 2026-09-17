@@ -158,10 +158,7 @@ html[data-studio-calm] .stool-settings.open {
 html[data-studio-calm] .panel-place-ctl button.on {
   color: var(--studio-action-text);
 }
-html[data-studio-calm] .panel-place-ctl .ppc-toggle,
-html[data-studio-calm] .panel-place-ctl .ppc-toggle + button {
-  border-left-color: var(--studio-silver-line);
-}
+/* (알약 안 헤어라인 구분선은 2026-09-17 제거 — 덮어쓸 선이 없다.) */
 
 /* ── ③ 차분 모드 상단바(북=수) — 은선 헤어라인 + 18초에 한 번 지나가는 글린트(1px 띠라 비용 0에 가깝다). */
 html[data-studio-calm] .studio-topbar {

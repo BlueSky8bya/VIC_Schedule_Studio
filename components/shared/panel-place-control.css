@@ -93,12 +93,14 @@
   font-size: 13px;
   line-height: 1;
 }
-/* 방향 버튼이 있을 때만 헤어라인 구분선. */
-.panel-place-ctl .ppc-side + .ppc-toggle,
-.panel-place-ctl .ppc-toggle + .ppc-side {
-  border-left: 1px solid rgb(107 91 138 / 18%);
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+/* 자리 버튼 둘은 **같은 원**(2026-09-17 소유자: 왼쪽은 알약, 오른쪽은 안쪽 모서리가 각져 모양이 달랐다 — 헤어라인 구분선을
+   위해 모서리를 깎던 규칙이 원인). 구분선도 없앤다: 원 두 개 + 가운데 글자 칸이면 이미 갈라 보인다. */
+.panel-place-ctl .ppc-side {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
 }
 .panel-place-ctl .ppc-label {
   font-size: var(--text-caption, 12px);
