@@ -5693,6 +5693,13 @@ export function StudioShell({
             onInput={() => {
               editorTypedRef.current = true; // 여닫기 계측: 이 카드에서 뭔가 입력했다
             }}
+            onKeyDown={(e) => {
+              // Ctrl/⌘+Enter = 저장 — 데스크톱 팝오버와 같은 규칙(외장 키보드 붙인 태블릿용).
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.requestSubmit();
+              }
+            }}
             onSubmit={(e) => {
               saveEvent(e);
               setMobileEditId(null);
@@ -6326,6 +6333,7 @@ export function StudioShell({
           <div className="kbd-hints" aria-label="키보드 단축키 안내">
             <span><kbd>Alt</kbd>+<kbd>N</kbd> 새 일정</span>
             <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
+            <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 입력 중 저장</span>
             <span><kbd>Del</kbd> 삭제</span>
             <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
             <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복붙</span>
@@ -7074,7 +7082,18 @@ export function StudioShell({
           ) : (
           /* key는 editorKey(명시적 선택 시에만 증가) — 저장·삭제 같은 내부 상태 변화로는 재마운트
              되지 않아 깜빡이지 않는다. 날짜/일정을 새로 고를 때만 쑥 내려오는 전환. */
-          <form onSubmit={saveEvent} key={editorKey}>
+          <form
+            key={editorKey}
+            /* Ctrl/⌘+Enter = 저장(2026-09-17 소유자) — 제목칸(textarea)은 Enter가 줄바꿈이라 버튼까지 손이 갔다.
+               폼 어느 칸에 커서가 있든 requestSubmit → 같은 onSubmit(검증·저장 경로 동일). */
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.requestSubmit();
+              }
+            }}
+            onSubmit={saveEvent}
+          >
             {/* 이동 손잡이 — 카드 맨 위 전폭 스트립(모드 색 틴트 + 중앙 필). 헤더 바도 같이
                 끌 수 있지만, '여길 잡으면 된다'가 보이는 전용 그립을 따로 둔다. */}
             <div
