@@ -27,6 +27,7 @@ The product is a public broadcast schedule, owner/developer studio, teaser gate,
 - G-13: Production dependency changes, destructive data operations and public API breaks must fit the user's authorization. Do preparatory work and present a concrete result before asking for anything still missing.
 - G-14: Commit/push only when requested or clearly authorized. Push to main deploys production. Report deployment only after checking the deployed result.
 - G-15: Preserve accepted decisions. Explain conflicts, identify any superseded clause and record replacement decisions. Current session instructions may authorize changes; old approval language is not a new approval gate.
+- G-18: One feature, one implementation across studio, viewer, viewer preview and anonymous viewer. Inherit the existing shared pieces (panel hook/control/width token, `flipSpring`, calendar type scale converted from the poster canvas, panel text tokens) before adding anything; a new size, weight, rule or mechanism that exists on one surface only is a defect unless structure forces it, and then the reason is written next to it. Owner decision 2026-09-17; details in [UI_RULES](docs/ux/UI_RULES.md) UI-18.
 - G-16: Update current state when goals, blockers, next actions or verification status change. Update the affected topic record when only that topic changes. Do not append completed histories to CURRENT_STATE or ACTIVE_PLAN. A code change with no document impact may say so with a reason.
 
 ## Routing

@@ -4512,6 +4512,17 @@ html[data-reduce-motion] .perf-windows button.active {
 }
 .avatar-rail-filter h2 {
   margin: 0 0 8px;
+  /* 2026-09-17: 시청자 패널 '태그 필터' 제목(.legend-title = --text-title 18px/900)과 같은 화면 px(셸 zoom 상쇄). */
+  font-size: calc(var(--text-title) / var(--shell-zoom, 1));
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+/* 칩 글자도 시청자 패널 항목(.legend-item = --text-body 13.5px/800)과 같게. */
+.avatar-rail-filter .tag-legend-filter,
+.avatar-rail-filter .tlg-mod .tag-legend-filter {
+  font-size: calc(var(--text-body) / var(--shell-zoom, 1));
+  font-weight: 800;
 }
 /* 콘텐츠 색상필터 = 2열(공간 낭비 없이). */
 .avatar-rail-filter .tlg-group {
@@ -5016,11 +5027,26 @@ html[data-reduce-motion] .editor-anchor-link line {
   box-shadow:
     0 18px 44px rgb(80 70 120 / 16%),
     0 2px 10px rgb(120 110 160 / 10%);
-  outline: 2px dashed rgb(139 92 246 / 40%);
-  outline-offset: 4px;
 }
-.studio-workspace .event-editor-panel.is-new form {
-  outline-color: rgb(34 150 94 / 40%);
+/* 점선 링은 폼 outline이 아니라 aside의 ::after(2026-09-17) — 저장 탭(z 0)이 링 **밑으로** 지나가고 폼(z 1)이 그 위,
+   링(z 2)이 맨 위라 탭이 링을 덮어 산만해지지 않는다. 자리(4px 밖·2px)는 옛 outline과 같다. */
+.studio-workspace .event-editor-panel::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: 2;
+  border: 2px dashed rgb(139 92 246 / 40%);
+  border-radius: calc(var(--r-lg) + 4px);
+  pointer-events: none;
+}
+.studio-workspace .event-editor-panel.is-new::after {
+  border-color: rgb(34 150 94 / 40%);
+}
+.studio-workspace .event-editor-panel.is-support::after {
+  border-color: rgb(225 29 72 / 40%);
+}
+.studio-workspace .event-editor-panel.is-period::after {
+  border-color: rgb(14 147 180 / 40%);
 }
 /* 업 도움 편집 카드 — 점선 아웃라인·그립도 띠와 같은 장미색 언어. */
 .studio-workspace .event-editor-panel.is-support form {
@@ -5871,9 +5897,10 @@ html[data-reduce-motion] .editor-anchor-link line {
      칸·날짜·띠는 이미 배율을 받는데 머리글만 고정이면 200%에서 요일이 각주처럼 보인다. 여백도 같은 배율. */
   padding: calc(9px * var(--cal-zoom, 1)) calc(5px * var(--cal-zoom, 1));
   /* 요일 헤더 — vw 기준(화면 폭). 일정 글자와 같은 박자. cqi가 아니라 패널 여닫음에 안 흔들린다. */
-  font-size: calc(clamp(13px, 0.8vw, 18px) * var(--cal-zoom, 1));
+  /* 2026-09-17: 시청자 포스터 요일(17px/800, letter-spacing .05em)을 화면 px로 환산(100vw/1840, 셸 zoom 상쇄). 하한 12px. */
+  font-size: max(12px, calc(100vw * 17 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1)));
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-align: center;
   color: #8e93a8;
 }
@@ -7519,50 +7546,7 @@ html[data-reduce-motion] .delete-snack {
    헤더 = [날짜 · 모드 배지 ……… ✕]. 저장은 **하단 고정 액션 바**(.editor-actions): 폼이 스크롤 컨테이너라 sticky bottom이
    폼 바닥에 붙어, 태그를 고른 손 바로 아래에 저장이 있다(Fitts: 마지막 조작 지점과의 거리 최소). 위험·드문 동작(띠 삭제,
    이용 기록)은 왼쪽 끝에 조용히 — 저장과 한 손가락 폭 이상 떨어진다. */
-.editor-actions {
-  position: sticky;
-  bottom: -18px; /* 폼 padding(18) 밑까지 내려 붙는다 */
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin: 4px -18px -18px;
-  padding: 10px 18px 14px;
-  /* 위로 흐려지는 흰 바탕 — 스크롤되는 태그 칩이 바 밑으로 잦아들며 사라진다(잘린 듯 보이지 않게). */
-  background: linear-gradient(180deg, rgb(255 255 255 / 0%), #fff 26%);
-  border-bottom-left-radius: var(--r-lg);
-  border-bottom-right-radius: var(--r-lg);
-}
-.editor-actions .support-delete,
-.editor-actions .aux-open {
-  margin: 0 auto 0 0; /* 왼쪽 끝으로 */
-  flex: none;
-}
-.editor-save {
-  flex: 1 1 auto;
-  max-width: 220px;
-  min-height: 40px;
-  border-radius: 12px;
-  padding: 6px 16px;
-  font-size: var(--text-ui);
-  font-weight: var(--weight-bold);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-/* 단축키 힌트 — 버튼 안 오른쪽에 아주 조용히(아는 사람은 보고, 모르는 사람 눈엔 장식). */
-.editor-save-kbd {
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  opacity: 0.55;
-  letter-spacing: 0.04em;
-}
-.editor-save:disabled .editor-save-kbd {
-  opacity: 0.35;
-}
+/* (.editor-actions 하단 바·.editor-save 버튼은 같은 날 철회 — 띠 삭제·이용 기록은 폼 그리드 전폭 그대로, 저장은 세로 탭.) */
 /* 닫기 ✕ — 옛 '>' 접기의 고스트 원형 문법 그대로(.editor-collapse), 자리만 헤더 오른쪽 끝. */
 .editor-close {
   margin-left: auto;
@@ -7610,7 +7594,11 @@ html[data-reduce-motion] .delete-snack {
 .event-editor-panel form {
   z-index: 1; /* 폼은 이미 sticky(위 규칙) = positioned — 탭보다 위에 서서 겹친 10px를 덮는다 */
 }
+/* 색은 팝오버 모드와 한 몸(2026-09-17 소유자): 수정 = 보라(.editor-mode-badge.is-edit), 신규 = 초록, 업 도움 = 장미,
+   기간 안내 = 하늘 — 상단 액센트 라인·점선 링과 같은 값. 기본은 보라. */
 .editor-save-tab {
+  --tab-a: #8b5cf6;
+  --tab-b: #6d4fc4;
   position: absolute;
   top: 40px;
   z-index: 0;
@@ -7621,26 +7609,47 @@ html[data-reduce-motion] .delete-snack {
   border: 0;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(180deg, #c99a2e, #9a6d12);
-  box-shadow: 0 6px 16px rgb(120 90 20 / 28%), inset 0 1px 0 rgb(255 255 255 / 35%);
-  transition: transform 0.18s var(--spring-smooth, ease), box-shadow 0.18s ease, opacity 0.15s ease;
+  background: linear-gradient(180deg, var(--tab-a), var(--tab-b));
+  box-shadow: 0 6px 16px rgb(60 40 120 / 26%), inset 0 1px 0 rgb(255 255 255 / 35%);
+  /* 평소엔 점선 링 밑으로 살짝(10px)만 내밀고, 마우스가 다가오면([data-near]) 링 밖으로 완전히 펼쳐진다 — 링과 겹쳐
+     산만하던 것을 없앤다. 이동은 스프링. */
+  transition:
+    left 0.24s var(--spring-smooth, cubic-bezier(0.25, 1, 0.5, 1)),
+    right 0.24s var(--spring-smooth, cubic-bezier(0.25, 1, 0.5, 1)),
+    transform 0.18s var(--spring-smooth, ease),
+    box-shadow 0.18s ease,
+    opacity 0.15s ease;
 }
+.event-editor-panel.is-new .editor-save-tab {
+  --tab-a: #2fb474;
+  --tab-b: #1d7a4e;
+}
+.event-editor-panel.is-support .editor-save-tab {
+  --tab-a: #f43f6e;
+  --tab-b: #be123c;
+}
+.event-editor-panel.is-period .editor-save-tab {
+  --tab-a: #22b0d6;
+  --tab-b: #0e7fa0;
+}
+/* 링 밖 10px = 링 안쪽 6px + 선 2px + 10px → 탭 너비 44 중 18px만 링 바깥에 보인다. */
 .editor-save-tab[data-side="left"] {
-  left: -34px;
+  left: -18px;
   border-radius: 12px 0 0 12px;
 }
 .editor-save-tab[data-side="right"] {
-  right: -34px;
+  right: -18px;
   border-radius: 0 12px 12px 0;
 }
+/* 근접·호버·포커스 = 링 밖으로 완전히(44 + 링 8 + 틈 4 = 56). */
+.editor-save-tab[data-side="left"]:is([data-near], :hover, :focus-visible) {
+  left: -56px;
+}
+.editor-save-tab[data-side="right"]:is([data-near], :hover, :focus-visible) {
+  right: -56px;
+}
 .editor-save-tab:hover:not(:disabled) {
-  box-shadow: 0 10px 24px rgb(120 90 20 / 34%), inset 0 1px 0 rgb(255 255 255 / 45%);
-}
-.editor-save-tab[data-side="left"]:hover:not(:disabled) {
-  transform: translateX(-3px);
-}
-.editor-save-tab[data-side="right"]:hover:not(:disabled) {
-  transform: translateX(3px);
+  box-shadow: 0 10px 24px rgb(60 40 120 / 32%), inset 0 1px 0 rgb(255 255 255 / 45%);
 }
 .editor-save-tab:active:not(:disabled) {
   transform: scale(0.96);
@@ -7648,7 +7657,7 @@ html[data-reduce-motion] .delete-snack {
 .editor-save-tab:disabled {
   cursor: default;
   opacity: 0.45;
-  background: linear-gradient(180deg, #cdbfa0, #a99a7c);
+  background: linear-gradient(180deg, #c6c2d6, #a39fb4);
   box-shadow: none;
 }
 .editor-save-tab-text {

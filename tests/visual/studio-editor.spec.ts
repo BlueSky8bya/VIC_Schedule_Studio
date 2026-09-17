@@ -43,7 +43,7 @@ test("새 일정: 저장하면 save 명령 하나가 나가고 '저장됨'이 �
 
   await page.locator("[data-act='calendar-cell']").nth(10).click();
   await page.locator("[role='textbox'], textarea, input[type='text']").first().fill("검증용 일정");
-  await page.locator("[data-act='save-event']").click();
+  await page.keyboard.press("Control+Enter"); // 저장 탭은 평소 링 밑에 숨어 중심이 안 눌린다 — 같은 onSubmit인 Ctrl+Enter로
 
   await expect.poll(() => reqs.length, { timeout: 5000 }).toBeGreaterThan(0);
   const save = reqs.find((r) => r.op === "save");
@@ -61,7 +61,7 @@ test("저장이 실패하면 '저장 실패'로 정직하게 말하고 앱은 �
 
   await page.locator("[data-act='calendar-cell']").nth(12).click();
   await page.locator("[role='textbox'], textarea, input[type='text']").first().fill("실패할 일정");
-  await page.locator("[data-act='save-event']").click();
+  await page.keyboard.press("Control+Enter"); // 저장 탭은 평소 링 밑에 숨어 중심이 안 눌린다 — 같은 onSubmit인 Ctrl+Enter로
 
   await expect.poll(() => reqs.length, { timeout: 5000 }).toBeGreaterThan(0);
   await expect(page.getByText("저장 실패").first()).toBeVisible();
@@ -90,11 +90,11 @@ test("쓰기는 직렬로 나간다 — 앞 요청이 끝나기 전에 다음이
   await page.locator("[data-act='calendar-cell']").nth(10).click();
   const title = page.locator("[role='textbox'], textarea, input[type='text']").first();
   await title.fill("첫 번째");
-  await page.locator("[data-act='save-event']").click();
+  await page.keyboard.press("Control+Enter"); // 저장 탭은 평소 링 밑에 숨어 중심이 안 눌린다 — 같은 onSubmit인 Ctrl+Enter로
   // 저장하면 팝오버가 닫힌다(2026-09-17) — 방금 생긴 temp 카드를 눌러 다시 연 뒤 두 번째 저장.
   await page.locator("[data-act='calendar-cell']").nth(10).locator(".studio-event-pill").first().click();
   await page.locator("[role='textbox'], textarea, input[type='text']").first().fill("두 번째");
-  await page.locator("[data-act='save-event']").click();
+  await page.keyboard.press("Control+Enter"); // 저장 탭은 평소 링 밑에 숨어 중심이 안 눌린다 — 같은 onSubmit인 Ctrl+Enter로
 
   await expect.poll(() => reqs.length, { timeout: 8000 }).toBeGreaterThanOrEqual(2);
   // 겹침 없음: 각 start 바로 뒤에 자기 end가 온다.
@@ -162,7 +162,7 @@ test("중대한 쓰기는 keepalive로 나간다 — 저장 도중 떠나도 전
 
   await page.locator("[data-act='calendar-cell']").nth(10).click();
   await page.locator("[role='textbox'], textarea, input[type='text']").first().fill("keepalive 확인");
-  await page.locator("[data-act='save-event']").click();
+  await page.keyboard.press("Control+Enter"); // 저장 탭은 평소 링 밑에 숨어 중심이 안 눌린다 — 같은 onSubmit인 Ctrl+Enter로
 
   await expect
     .poll(async () => page.evaluate(() => (window as unknown as { __ka: boolean[] }).__ka.length), {
@@ -198,7 +198,7 @@ test("만들자마자 끈 카드: 끄는 도중 저장이 끝나 id가 바뀌어
 
   await fromCell.click();
   await page.locator("[role='textbox'], textarea, input[type='text']").first().fill("바로 끌 일정");
-  await page.locator("[data-act='save-event']").click();
+  await page.keyboard.press("Control+Enter"); // 저장 탭은 평소 링 밑에 숨어 중심이 안 눌린다 — 같은 onSubmit인 Ctrl+Enter로
   // 낙관적 temp 카드가 뜬다(아직 저장 응답 전).
   const temp = fromCell.locator(".studio-event-pill[data-eventid^='temp-']");
   await temp.waitFor({ timeout: 3000 });

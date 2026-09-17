@@ -1388,10 +1388,25 @@ export function StudioShell({
       if (!panel || !tab) return;
       const r = panel.getBoundingClientRect();
       const zoom = panel.offsetWidth > 0 ? r.width / panel.offsetWidth : 1;
-      setSaveTabSide(e.clientX < r.left + r.width / 2 ? "left" : "right");
+      // 자리: 마우스가 있는 쪽 — 단, 그쪽에 탭이 설 자리(펼친 폭 ≈ 64px)가 화면 밖이면 반대쪽(2026-09-17 소유자:
+      // 팝오버를 화면 끝에 붙이면 탭이 숨었다). 양쪽 다 없으면 더 넓은 쪽.
+      const need = 64 * zoom;
+      const roomL = r.left >= need;
+      const roomR = window.innerWidth - r.right >= need;
+      const want: "left" | "right" = e.clientX < r.left + r.width / 2 ? "left" : "right";
+      const side = want === "left" ? (roomL ? "left" : roomR ? "right" : r.left >= window.innerWidth - r.right ? "left" : "right")
+        : roomR ? "right" : roomL ? "left" : window.innerWidth - r.right >= r.left ? "right" : "left";
+      setSaveTabSide(side);
       const tabH = tab.offsetHeight;
       const y = (e.clientY - r.top) / zoom - tabH / 2;
       targetY = Math.max(8, Math.min(panel.offsetHeight - tabH - 8, y));
+      // 근접(탭 사각형에서 ~56px 안) = 점선 밖으로 완전히 펼침, 아니면 점선 밑에 살짝만(CSS [data-near]).
+      const tr = tab.getBoundingClientRect();
+      const dx = Math.max(tr.left - e.clientX, 0, e.clientX - tr.right);
+      const dy = Math.max(tr.top - e.clientY, 0, e.clientY - tr.bottom);
+      const near = Math.hypot(dx, dy) <= 56;
+      if (near) tab.dataset.near = "1";
+      else delete tab.dataset.near;
       if (!raf) raf = requestAnimationFrame(step);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
@@ -7310,35 +7325,35 @@ export function StudioShell({
               />
             </section>
 
-            {/* 하단 액션 바(2026-09-17) — 드문·위험 동작(띠 삭제, 이용 기록)만. 저장은 팝오버 옆에서 마우스를 따라다니는
-                세로 탭(.editor-save-tab, aside 자식)이 맡는다 — 그게 있어야 할 때만 바를 그린다. */}
-            {(selectedEventId && canEdit && events.find((e) => e.id === selectedEventId)?.isSupport) ||
-            (!selectedEventId && isDevInsights) ? (
-            <div className="editor-actions">
-              {selectedEventId &&
-              canEdit &&
-              events.find((e) => e.id === selectedEventId)?.isSupport ? (
-                // 라벨·색은 현재 폼의 종류를 따른다 — 기간 안내를 고르고 있으면 '이 기간 안내 삭제'
-                // + 하늘색(폼 테마와 한 몸). 삭제 대상은 어느 쪽이든 같은 일정 한 건.
-                <button
-                  className="button danger support-delete"
-                  data-act="delete-support"
-                  data-kind={form.supportKind}
-                  onClick={() => deleteEvent(selectedEventId)}
-                  type="button"
-                >
-                  <Trash2 aria-hidden="true" size={15} />
-                  {form.supportKind === "period" ? "기간 안내" : "업 도움"} 삭제
-                </button>
-              ) : null}
-              {/* 이용 기록(개발자 전용)은 '날짜(새 일정) 선택'일 때만 — 기존 일정 수정 카드에선 숨겨
-                  폼을 일정 편집에만 집중시킨다(사용자 결정 2026-07-31). */}
-              {selectedEventId ? null : isDevInsights ? (
-                <button className="button aux-open" onClick={() => setModal("dayVisit")} data-act="open-day-visit" type="button">
-                  📈 이용 기록
-                </button>
-              ) : null}
-            </div>
+            {/* (2026-09-17 하단 액션 바는 같은 날 철회 — 띠 삭제·이용 기록은 원래대로 폼 그리드의 한 줄(전폭). 저장은 팝오버 옆
+                세로 탭(.editor-save-tab, aside 자식)이 맡는다.) */}
+            {selectedEventId &&
+            canEdit &&
+            events.find((e) => e.id === selectedEventId)?.isSupport ? (
+              // 라벨·색은 현재 폼의 종류를 따른다 — 기간 안내를 고르고 있으면 '이 기간 안내 삭제'
+              // + 하늘색(폼 테마와 한 몸). 삭제 대상은 어느 쪽이든 같은 일정 한 건.
+              <button
+                className="button danger support-delete"
+                data-act="delete-support"
+                data-kind={form.supportKind}
+                onClick={() => deleteEvent(selectedEventId)}
+                type="button"
+              >
+                <Trash2 aria-hidden="true" size={15} />이{" "}
+                {form.supportKind === "period" ? "기간 안내" : "업 도움"} 삭제
+              </button>
+            ) : null}
+
+            {/* 이용 기록(개발자 전용)은 '날짜(새 일정) 선택'일 때만 — 기존 일정 수정 카드에선 숨겨
+                폼을 일정 편집에만 집중시킨다(사용자 결정 2026-07-31). */}
+            {selectedEventId ? null : isDevInsights ? (
+              <button
+                className="button aux-open"
+                onClick={() => setModal("dayVisit")} data-act="open-day-visit"
+                type="button"
+              >
+                📈 이용 기록
+              </button>
             ) : null}
 
             {/* 이 일정의 관심(하트) 수 — **개발자에게만**(2026-09-07 소유자: "방송에 보이기 껄끄러울 수 있으니까").
