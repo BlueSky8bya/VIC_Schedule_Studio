@@ -1367,6 +1367,21 @@ export function StudioShell({
   // 저장 탭의 자리 — 좌/우는 상태(재렌더 드묾), 높이는 rAF 보간으로 DOM에 직접(프레임마다 렌더하지 않는다).
   const saveTabRef = useRef<HTMLButtonElement | null>(null);
   const [saveTabSide, setSaveTabSide] = useState<"left" | "right">("right");
+  const saveTabSideRef = useRef<"left" | "right">("right");
+  const saveTabPrevRectRef = useRef<DOMRect | null>(null);
+  // 자리가 바뀐 렌더 직후: 옛 rect → 새 rect 거리만큼 되돌려 놓고 스프링으로 제자리(달력·패널과 같은 곡선, 2026-09-17 소유자:
+  // "좌우 바뀔 때 탁탁 끊긴다"). 셸 zoom 안이라 화면 px 차이를 zoom으로 나눠 CSS px로.
+  useLayoutEffect(() => {
+    const tab = saveTabRef.current;
+    const prev = saveTabPrevRectRef.current;
+    saveTabPrevRectRef.current = null;
+    if (!tab || !prev) return;
+    const now = tab.getBoundingClientRect();
+    const zoom = tab.offsetWidth > 0 ? now.width / tab.offsetWidth : 1;
+    const dx = (prev.left - now.left) / zoom;
+    if (Math.abs(dx) < 2) return;
+    flipSpring(tab, `translateX(${dx}px)`, { ms: 420 });
+  }, [saveTabSide]);
   useEffect(() => {
     if (!editorVisible || isNarrow) return;
     let raf = 0;
@@ -1388,15 +1403,38 @@ export function StudioShell({
       if (!panel || !tab) return;
       const r = panel.getBoundingClientRect();
       const zoom = panel.offsetWidth > 0 ? r.width / panel.offsetWidth : 1;
-      // 자리: 마우스가 있는 쪽 — 단, 그쪽에 탭이 설 자리(펼친 폭 ≈ 64px)가 화면 밖이면 반대쪽(2026-09-17 소유자:
-      // 팝오버를 화면 끝에 붙이면 탭이 숨었다). 양쪽 다 없으면 더 넓은 쪽.
-      const need = 64 * zoom;
-      const roomL = r.left >= need;
-      const roomR = window.innerWidth - r.right >= need;
+      // 자리: 마우스가 있는 쪽 — 단, 그쪽에 펼친 탭(폭 ≈ 56px)이 **무엇과든 겹치면** 반대쪽(2026-09-17 소유자: 화면 끝뿐
+      // 아니라 패널(rail)·하단 알약 등 겹칠 만한 건 전부). 장애물 = 화면 밖, 달력 옆 패널(보이는 동안), 하단 플로팅 행.
+      // 양쪽 다 겹치면 덜 겹치는 쪽.
+      const need = 56 * zoom;
+      const tabH0 = tab.offsetHeight * zoom;
+      const tabTop = e.clientY - tabH0 / 2;
+      const obstacles: DOMRect[] = [];
+      const rail = document.querySelector<HTMLElement>(".studio-shell.panel-open .avatar-rail");
+      if (rail && getComputedStyle(rail).visibility !== "hidden") obstacles.push(rail.getBoundingClientRect());
+      const row = bottomRowRef.current;
+      if (row) obstacles.push(row.getBoundingClientRect());
+      const overlapArea = (a: { l: number; r: number; t: number; b: number }, o: DOMRect) =>
+        Math.max(0, Math.min(a.r, o.right) - Math.max(a.l, o.left)) * Math.max(0, Math.min(a.b, o.bottom) - Math.max(a.t, o.top));
+      const cost = (s: "left" | "right") => {
+        const box = s === "left"
+          ? { l: r.left - need, r: r.left, t: tabTop, b: tabTop + tabH0 }
+          : { l: r.right, r: r.right + need, t: tabTop, b: tabTop + tabH0 };
+        let c = 0;
+        if (box.l < 0) c += (0 - box.l) * tabH0; // 화면 왼쪽 밖
+        if (box.r > window.innerWidth) c += (box.r - window.innerWidth) * tabH0; // 화면 오른쪽 밖
+        for (const o of obstacles) c += overlapArea(box, o);
+        return c;
+      };
       const want: "left" | "right" = e.clientX < r.left + r.width / 2 ? "left" : "right";
-      const side = want === "left" ? (roomL ? "left" : roomR ? "right" : r.left >= window.innerWidth - r.right ? "left" : "right")
-        : roomR ? "right" : roomL ? "left" : window.innerWidth - r.right >= r.left ? "right" : "left";
-      setSaveTabSide(side);
+      const other: "left" | "right" = want === "left" ? "right" : "left";
+      const side = cost(want) === 0 ? want : cost(other) < cost(want) ? other : want;
+      if (side !== saveTabSideRef.current) {
+        // 좌↔우 전환은 FLIP(공용 flipSpring): 옛 자리 rect를 남겨 두고 렌더 뒤 새 자리에서 되돌려 스프링으로 건너간다.
+        saveTabPrevRectRef.current = tab.getBoundingClientRect();
+        saveTabSideRef.current = side;
+        setSaveTabSide(side);
+      }
       const tabH = tab.offsetHeight;
       const y = (e.clientY - r.top) / zoom - tabH / 2;
       targetY = Math.max(8, Math.min(panel.offsetHeight - tabH - 8, y));

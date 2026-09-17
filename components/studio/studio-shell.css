@@ -7597,67 +7597,78 @@ html[data-reduce-motion] .delete-snack {
 /* 색은 팝오버 모드와 한 몸(2026-09-17 소유자): 수정 = 보라(.editor-mode-badge.is-edit), 신규 = 초록, 업 도움 = 장미,
    기간 안내 = 하늘 — 상단 액센트 라인·점선 링과 같은 값. 기본은 보라. */
 .editor-save-tab {
-  --tab-a: #8b5cf6;
-  --tab-b: #6d4fc4;
+  /* 재질(2026-09-17 소유자 4차: "색이 너무 짙다") — 모드 배지(.editor-mode-badge)와 같은 문법: 옅은 틴트 면 + 그 색 잉크 +
+     같은 톤 헤어라인. 꽉 찬 원색 덩어리가 아니라 카드에서 살짝 밀려 나온 '탭'으로 읽힌다. */
+  --tab-ink: #6d4fc4;
+  --tab-bg: #f1ecff;
+  --tab-line: rgb(139 92 246 / 32%);
   position: absolute;
   top: 40px;
   z-index: 0;
   width: 44px;
-  min-height: 108px;
+  min-height: 104px;
   padding: 14px 0;
   box-sizing: border-box;
-  border: 0;
+  border: 1px solid var(--tab-line);
   cursor: pointer;
-  color: #fff;
-  background: linear-gradient(180deg, var(--tab-a), var(--tab-b));
-  box-shadow: 0 6px 16px rgb(60 40 120 / 26%), inset 0 1px 0 rgb(255 255 255 / 35%);
-  /* 평소엔 점선 링 밑으로 살짝(10px)만 내밀고, 마우스가 다가오면([data-near]) 링 밖으로 완전히 펼쳐진다 — 링과 겹쳐
-     산만하던 것을 없앤다. 이동은 스프링. */
+  color: var(--tab-ink);
+  background: linear-gradient(180deg, #fff 0%, var(--tab-bg) 100%);
+  box-shadow: 0 4px 12px rgb(60 40 120 / 12%);
+  /* 평소엔 점선 링 밑으로 10px만 내밀고, 마우스가 다가오면([data-near]) 링 바깥에 **붙어** 선다(안쪽 모서리가 링의 바깥선에
+     맞닿음) — 링이 탭으로 흘러드는 모양. 움직임은 부드러운 감속(오버슈트 없음, 0.28s) — 두더지처럼 튀지 않는다
+     (Apple 사이드바 reveal 계열: 짧은 ease-out, 오버슈트 없음). 좌↔우 전환은 JS FLIP(flipSpring)이 잇는다. */
   transition:
-    left 0.24s var(--spring-smooth, cubic-bezier(0.25, 1, 0.5, 1)),
-    right 0.24s var(--spring-smooth, cubic-bezier(0.25, 1, 0.5, 1)),
-    transform 0.18s var(--spring-smooth, ease),
-    box-shadow 0.18s ease,
+    left 0.28s cubic-bezier(0.25, 1, 0.5, 1),
+    right 0.28s cubic-bezier(0.25, 1, 0.5, 1),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
     opacity 0.15s ease;
 }
 .event-editor-panel.is-new .editor-save-tab {
-  --tab-a: #2fb474;
-  --tab-b: #1d7a4e;
+  --tab-ink: #1d7a4e;
+  --tab-bg: #e6f6ed;
+  --tab-line: rgb(34 150 94 / 34%);
 }
 .event-editor-panel.is-support .editor-save-tab {
-  --tab-a: #f43f6e;
-  --tab-b: #be123c;
+  --tab-ink: #be123c;
+  --tab-bg: #ffe9ee;
+  --tab-line: rgb(225 29 72 / 32%);
 }
 .event-editor-panel.is-period .editor-save-tab {
-  --tab-a: #22b0d6;
-  --tab-b: #0e7fa0;
+  --tab-ink: #0e7fa0;
+  --tab-bg: #e4f5fa;
+  --tab-line: rgb(14 147 180 / 34%);
 }
-/* 링 밖 10px = 링 안쪽 6px + 선 2px + 10px → 탭 너비 44 중 18px만 링 바깥에 보인다. */
+/* 평소: 링 바깥 10px만(링 안쪽 6 + 선 2 + 10 = 18). */
 .editor-save-tab[data-side="left"] {
   left: -18px;
+  border-right: 0;
   border-radius: 12px 0 0 12px;
 }
 .editor-save-tab[data-side="right"] {
   right: -18px;
+  border-left: 0;
   border-radius: 0 12px 12px 0;
 }
-/* 근접·호버·포커스 = 링 밖으로 완전히(44 + 링 8 + 틈 4 = 56). */
+/* 근접·호버·포커스: 안쪽 모서리가 링 바깥선(−8px)에 닿도록 — 44 + 8 = 52. */
 .editor-save-tab[data-side="left"]:is([data-near], :hover, :focus-visible) {
-  left: -56px;
+  left: -52px;
 }
 .editor-save-tab[data-side="right"]:is([data-near], :hover, :focus-visible) {
-  right: -56px;
+  right: -52px;
 }
 .editor-save-tab:hover:not(:disabled) {
-  box-shadow: 0 10px 24px rgb(60 40 120 / 32%), inset 0 1px 0 rgb(255 255 255 / 45%);
+  box-shadow: 0 8px 20px rgb(60 40 120 / 18%);
 }
 .editor-save-tab:active:not(:disabled) {
-  transform: scale(0.96);
+  filter: brightness(0.97);
 }
 .editor-save-tab:disabled {
   cursor: default;
-  opacity: 0.45;
-  background: linear-gradient(180deg, #c6c2d6, #a39fb4);
+  opacity: 0.5;
+  --tab-ink: #8d889c;
+  --tab-bg: #f3f2f7;
+  --tab-line: rgb(120 110 150 / 22%);
   box-shadow: none;
 }
 .editor-save-tab-text {
