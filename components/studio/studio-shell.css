@@ -6113,7 +6113,7 @@ body.cell-range-dragging {
 /* 2026-09-17 소유자: 빛 타일 대신 **글자 자체를 금색으로** — 시청자 화면과 같은 규칙(public-poster.css의 오늘 라벨),
    D+ 카드 금 그라데이션과 같은 재질. 크기는 이웃 칸과 같고(숫자 확대 규칙 유지), 칸 금테·배경은 그대로. */
 .studio-day.today .studio-day-head strong {
-  font-size: calc(clamp(14.5px, 1.05vw, 20px) * var(--cal-zoom, 1));
+  /* 크기는 이웃 칸과 같다(기본 규칙 상속) — 2026-09-17 '일' 제거·포스터 환산과 함께 오늘 전용 크기 폐지. */
   font-weight: 900;
   background: linear-gradient(180deg, #d9a21b, #8a5a06);
   -webkit-background-clip: text;
@@ -6226,9 +6226,11 @@ body.cell-range-dragging {
 }
 
 .studio-day-head strong {
-  /* 큰 모니터일수록 화면 폭에 비례해 커진다(작은 화면·모바일은 13px 그대로 = floor).
-     편집실만 적용 — 포스터/꾸미기 캔버스는 손대지 않는다. */
-  font-size: calc(clamp(13px, 0.95vw, 20px) * var(--cal-zoom, 1));
+  /* 2026-09-17 소유자: 시청자 포스터와 같은 글자. 포스터는 1840 캔버스 px(날짜 20/900)를 화면 폭에 맞춰 축소하므로
+     편집실은 같은 px에 100vw/1840을 곱해 화면 px를 맞춘다(셸 zoom ≥1700 .9는 나눠서 상쇄, 패널 밀어내기 축소는
+     --cal-zoom에 이미 곱해져 있다). 하한 12px = 좁은 창 가독성. 원본 수치는 public-poster.css '달력 글자 기준'. */
+  font-size: max(12px, calc(100vw * 20 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1)));
+  font-weight: 900;
   /* line-height를 1로 고정해 헤더 높이가 글자 크기에 끌려 커지지 않게 한다(웹에서
      숫자가 20px까지 커지면 상속 line-height 1.5 탓에 헤더가 ~34px로 부풀어
      절대배치 support-bar(top:26)와 월드컵 칩이 겹쳤다). */
@@ -6937,11 +6939,12 @@ html[data-reduce-motion] .tg-num {
   white-space: pre-line;
   /* 일정 글자 — vw(화면 폭) 기준. cqi(달력 칸 폭)는 편집패널 여닫을 때 매 프레임 재계산되며 끊김 +
      글자 크기/카드 높이 점프를 만들어 vw로 되돌렸다. clamp 경계(13~19)로 어떤 화면에서도 과하지 않게. */
-  font-size: calc(clamp(13px, 0.9vw, 19px) * var(--cal-zoom, 1));
+  /* 2026-09-17: 시청자 포스터 제목(14px/800, lh 1.2)을 화면 px로 환산(100vw/1840, 셸 zoom 상쇄). 하한 12px. */
+  font-size: max(12px, calc(100vw * 14 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1)));
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다 — 시청자 포스터와 동일.
      태그 선택·저장하면 그 태그 색에 맞춰 즉시(렌더 시점) 반영된다. */
-  font-weight: var(--evt-weight, 900);
-  line-height: 1.22;
+  font-weight: var(--evt-weight, 800);
+  line-height: 1.2;
 }
 /* 무늬 칸 글자를 바탕 무늬에서 떼어내는 헤일로. 이어지는 칸 투명 제목(.span-cont)엔 미적용. */
 .pill-main strong:not(.span-cont),
@@ -6974,7 +6977,8 @@ html[data-reduce-motion] .tg-num {
      ~0.8배)대로 서브도 vw에 비례해 함께 커진다 → 제목:서브 비율이 유지돼 카드가 균형 있게 찬다.
      (제목과 같이 커지므로 '서브만 키워 뚱뚱해지는' 악순환이 아니라 비례 확대. 편집실은 스티커
      좌표 제약이 없어 안전.) 최소 12px로 가독성 확보. */
-  font-size: calc(clamp(12px, 0.72vw, 15px) * var(--cal-zoom, 1));
+  /* 2026-09-17: 시청자 포스터 세부(12.5px/800, lh 1.25)를 화면 px로 환산(100vw/1840, 셸 zoom 상쇄). 하한 11px. */
+  font-size: max(11px, calc(100vw * 12.5 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1)));
   font-weight: 800;
   line-height: 1.25;
 }
@@ -7237,7 +7241,7 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
     gap: calc(5px * var(--cal-zoom, 1)); /* 웹은 가로 여백이 넉넉 — 내부 박자도 한 단계(4→5). */
   }
   .pill-main strong {
-    font-size: calc(clamp(14px, 0.95vw, 20px) * var(--cal-zoom, 1));
+    /* (웹 전용 확대 clamp(14~20)는 2026-09-17 제거 — 크기는 위 기본 규칙(포스터 14px 환산) 하나로.) */
     letter-spacing: -0.01em;
   }
   /* 웹 카드 사이 간격을 키워 일정끼리 또렷이 구분(밀도↔숨 균형). 좌우는 날짜 숫자(6px)와

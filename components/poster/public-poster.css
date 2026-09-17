@@ -4435,9 +4435,13 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 /* 상속 line-height(1.5)로 줄 상자가 커지지 않게 못박는다 — 칩 유무와 무관하게 높이 동일. */
 /* 날짜 숫자 = 달력의 뼈대. 훑는 화면(spotted scanning)에서 가장 먼저 잡혀야 하는데 예전엔 셀 안에서
    가장 흐린 요소였다(작은 회색). 칸에서 가장 진하고 큰 글자로 올린다. */
+/* ── 달력 글자 기준(2026-09-17 소유자: 편집실을 시청자 화면에 맞춘다) ──
+   이 캔버스(1840 고정, transform 축소)의 px가 원본이다: 날짜 20/900 · 일정 제목 14/800(lh 1.2) · 세부 12.5/800(lh 1.25).
+   편집실(studio-shell.css)은 같은 수치를 100vw/1840(= 포스터 배율)로 환산해 쓴다. 바꿀 땐 두 곳을 같이. */
 .day-strip strong {
-  /* --cal-zoom = 시청자 달력 글자 확대(Ctrl+휠 100/125/150/175/200) — 편집실 A안과 같은 문법 */
-  font-size: calc(17px * var(--cal-zoom, 1));
+  /* --cal-zoom = 시청자 달력 글자 확대(Ctrl+휠 100/125/150/175/200) — 편집실 A안과 같은 문법.
+     '일' 접미사를 뺀 뒤(2026-09-17) 숫자 하나가 옛 "17 일"의 잉크 높이(≈22px)를 이어받도록 20px. */
+  font-size: calc(20px * var(--cal-zoom, 1));
   line-height: 1;
   color: var(--ink, #23303f);
 }
@@ -4768,9 +4772,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
    같은 높이는 ×1.25, Apple SD Gothic Neo는 한글이 더 커서 ×1.3이 양쪽 다 눈높이가 맞는다. 22px 글자의 잉크 ≈ 16px는
    오늘 배지 21px 안에 들고, 평소 칸의 strong은 22.1px로 머리줄 min-height 25 아래(실측 strip 27 불변).
    굵기는 '일'과 같이 900을 상속한다. 오늘 칸은 여기에 빛(위 규칙)만 더한다 — 숫자 크기는 이웃과 같다. */
-.day-strip .d-num {
-  font-size: 1.3em;
-}
+/* (.d-num 1.3em 보정은 '일'과 함께 사라졌다 — 2026-09-17.) */
 
 /* 오늘 칸 금테. 칸 자신의 inset box-shadow는 자식(일정 카드)에 항상 가려져 테두리가 카드 밑으로
    끊겨 보인다 → 카드 위에 얹는 오버레이(::after)로 그린다.
