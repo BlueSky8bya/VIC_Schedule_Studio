@@ -19,6 +19,7 @@ export type PanelMode = "push" | "overlay";
 
 const SIDE_KEY = "vic_avatar_side";
 const COLLAPSED_KEY = "vic_panel_collapsed";
+const SYNC_EVENT = "vic:side-panel"; // 같은 창의 다른 훅 인스턴스에게 "저장값 바뀜"
 
 function readSide(): PanelSide {
   try {
@@ -70,11 +71,20 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
       const r = ratio();
       setFitRatio((prev) => (Math.abs(prev - r) < 0.002 ? prev : r));
     };
+    // 다른 인스턴스(편집실 셸 ↔ 미리보기 포스터는 훅이 따로다)가 저장값을 바꾸면 따라간다 — 저장값은 마운트 때만 읽으므로
+    // 이 이벤트가 없으면 미리보기에서 옮긴 패널이 편집실로 돌아왔을 때 옛 자리에 있었다(2026-09-17 소유자).
+    // 같은 창 안이라 `storage` 이벤트는 안 울린다 → 쓴 쪽이 직접 쏘는 커스텀 이벤트.
+    const onPeer = () => {
+      setSide(fixedSide ?? readSide());
+      if (!fixedSide && mq.matches) setOpen(!readCollapsed());
+    };
     mq.addEventListener("change", sync);
     window.addEventListener("resize", onResize);
+    window.addEventListener(SYNC_EVENT, onPeer);
     return () => {
       mq.removeEventListener("change", sync);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener(SYNC_EVENT, onPeer);
     };
   }, [enabled, fixedSide]);
 
@@ -88,6 +98,7 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
       } catch {
         /* 저장 불가 환경 무시 */
       }
+      window.dispatchEvent(new Event(SYNC_EVENT));
     },
     [fixedSide]
   );
@@ -104,6 +115,8 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
         } catch {
           /* 무시 */
         }
+        // setState 콜백 안에서 동기 dispatch하면 다른 인스턴스의 setState가 렌더 중에 겹친다 — 다음 틱에.
+        window.setTimeout(() => window.dispatchEvent(new Event(SYNC_EVENT)), 0);
       }
       return next;
     });
