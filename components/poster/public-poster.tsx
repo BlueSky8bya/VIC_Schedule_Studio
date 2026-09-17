@@ -1624,7 +1624,9 @@ export function PublicPoster({
       const list = vodsByDate.get(dayVodPop.dateKey) ?? [];
       const selNo = dayVodSelRef.current ?? list[0]?.titleNo ?? null;
       // ? = 단축키 안내 토글(2번). 다른 키를 쓰면 안내는 접힌다(배웠으니).
-      if (e.key === "?") {
+      // ⚠ 한글 IME가 켜져 있으면 e.key가 "Process"로 온다 — 글자·기호 키는 e.code로 본다(2026-09-17 소유자 "C 안 눌림").
+      const code = e.code;
+      if (e.key === "?" || (code === "Slash" && e.shiftKey)) {
         e.preventDefault();
         setDayVodKeysOpen((v) => !v);
         return;
@@ -1647,12 +1649,12 @@ export function PublicPoster({
         dayVodChapterApiRef.current?.chapter(e.key === "ArrowUp" ? -1 : 1);
         return;
       }
-      if (e.key === "[" || e.key === "]") {
+      if (code === "BracketLeft" || code === "BracketRight") {
         e.preventDefault();
-        dayVodChapterApiRef.current?.group(e.key === "[" ? -1 : 1);
+        dayVodChapterApiRef.current?.group(code === "BracketLeft" ? -1 : 1);
         return;
       }
-      if (e.key === "c" || e.key === "C" || e.key === "ㅊ") {
+      if (code === "KeyC") {
         e.preventDefault();
         hapticTick();
         dayVodChapterApiRef.current?.toggle();
@@ -4742,7 +4744,7 @@ export function PublicPoster({
                           title={v.title || undefined}
                           type="button"
                         >
-                          {i + 1}부
+                          <b>{i + 1}부</b>
                           {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
                           {v.host ? <i>합방</i> : null}
                         </button>
