@@ -738,7 +738,7 @@ export function StudioShell({
   const editorOpenedAtRef = useRef(0);
   const editorTypedRef = useRef(false);
   const editorSavedRef = useRef(false);
-  const editorCloseHowRef = useRef<"esc" | "outside" | "cell" | "collapse" | "other">("other");
+  const editorCloseHowRef = useRef<"esc" | "outside" | "cell" | "collapse" | "saved" | "other">("other");
   // 어느 날짜 칸을 편집했는지(2026-09-11 소유자: 타임라인에 "며칠 일정인지" 가 없다).
   // 날짜만 남긴다 — 제목·본문은 이 테이블에 절대 들어가지 않는다(lib/activity/kinds.ts).
   // ref로 읽는다: effect 의존성에 selectedDate를 넣으면 카드를 연 채 다른 칸을 고를 때마다
@@ -3972,6 +3972,11 @@ export function StudioShell({
     setActionError(null);
     markJustSaved(tempId); // 카드가 통통 착지하며 반짝
     flashEditorPanel(); // 편집 패널도 살짝 반짝 → 저장 완료를 더 확실히 인지
+    // 2026-09-17 소유자 결정: 저장하면 팝오버를 닫는다(버튼·Ctrl+Enter 동일). 확인 신호는 달력 카드의 착지 반짝
+    // (markJustSaved)과 상단 '저장됨'이 맡고, 닫힌 자리에 달력이 드러나 결과가 바로 보인다. 같은 날에 하나 더 넣을 땐
+    // 그 칸을 다시 누른다(한 번). 검증 실패(위 return)·미리보기 차단 땐 여기까지 오지 않으므로 열린 채다.
+    editorCloseHowRef.current = "saved";
+    setEditorVisible(false);
     // 저장됨 = 더 이상 미저장 변경 없음 → 기준을 방금 저장한 내용으로 올리고 임시 보관을 비운다.
     editBaselineRef.current = draftFingerprint(form);
     setDraftRestored(false);
@@ -7113,18 +7118,6 @@ export function StudioShell({
                 title="끌어서 이동"
               >
                 <div className="editor-heading-left">
-                  <button
-                    aria-label="편집 카드 닫기"
-                    className="editor-collapse"
-                    onClick={() => {
-                      editorCloseHowRef.current = "collapse";
-                      setEditorVisible(false);
-                    }}
-                    title="닫기"
-                    type="button"
-                   data-act="편집 카드 닫기">
-                    <ChevronRight aria-hidden="true" size={16} strokeWidth={2.5} />
-                  </button>
                   {/* key로 날짜가 바뀔 때마다 재마운트 → 쓱 바뀌는 애니메이션으로 '옮겼다'를 인지.
                       사람이 읽는 형식(7월 4일 (토)) — '어느 칸' 인지를 헤더에서도 바로 읽게. */}
                   <span className="editor-date-inline" key={selectedDate}>
@@ -7142,13 +7135,21 @@ export function StudioShell({
                 </div>
                 {/* (이동/복제 버튼 제거 — 사용자 결정: 드래그와 Ctrl+C/V 단축키가 충분해
                     버튼은 헤더 소음이었다. 비드래그 대안이 다시 필요하면 git 이력에 구현이 있다.) */}
+                {/* 2026-09-17 대개편(소유자: "연계해서 누르기 스트레스"): 왼쪽 '>'(다음처럼 읽히는 닫기)는 폐지, 닫기는
+                    오른쪽 ✕ 하나(Esc·바깥 클릭·드래그 손잡이도 그대로). 저장은 헤더에서 내려가 **하단 고정 액션 바**로 —
+                    입력 순서(제목 → 옵션 → 태그)의 끝, 마지막으로 만진 태그 바로 아래에 있어 이동 거리가 가장 짧다. */}
                 <button
-                  className="button primary editor-save"
-                  data-act="save-event"
-                  disabled={!canEdit || !form.publicTitle.trim()}
-                  type="submit"
+                  aria-label="편집 카드 닫기"
+                  className="editor-collapse editor-close"
+                  onClick={() => {
+                    editorCloseHowRef.current = "collapse";
+                    setEditorVisible(false);
+                  }}
+                  title="닫기 (Esc)"
+                  type="button"
+                  data-act="편집 카드 닫기"
                 >
-                  저장
+                  <X aria-hidden="true" size={15} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -7165,13 +7166,14 @@ export function StudioShell({
             ) : null}
 
             <label>
-              제목
+              {/* '제목' → '내용'(2026-09-17 소유자): 첫 줄=제목, 아래 줄=세부인 한 칸이라 '제목'은 옛 단일 제목 시절 이름. */}
+              내용
               <textarea
                 disabled={!canEdit}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, publicTitle: event.target.value }))
                 }
-                placeholder="예: 풀트뱅"
+                placeholder="첫 줄은 제목, 아래 줄은 세부 — 예: 풀트뱅"
                 ref={editorTitleRef}
                 value={form.publicTitle}
               />
@@ -7182,22 +7184,12 @@ export function StudioShell({
                 필요가 없다. 제목·태그(자주 쓰는 것)를 먼저 보이게 하고, 이 묶음은 헤더에 현재 상태를
                 요약해 보여준 뒤 필요할 때만 펼친다. 기본 접힘. (공개 범위 피커는 2026-08-27 철수 —
                 모든 일정이 '모두'. 비공개 모델은 서버에 그대로.) */}
-            <div className={`fold-field${scopeFoldOpen ? " open" : ""}`}>
-              <button
-                aria-expanded={scopeFoldOpen}
-                className="fold-head"
-                onClick={() => {
-                  hapticTick();
-                  setScopeFoldOpen((v) => !v);
-                }}
-                type="button"
-               data-act="fold-head">
-                <span className="fold-title">옵션</span>
-                <span className="fold-summary">{scopeFoldSummary}</span>
-                <ChevronDown aria-hidden="true" className="fold-chev" size={16} />
-              </button>
-              {scopeFoldOpen ? (
-                <div className="fold-body">
+            {/* 2026-09-17 대개편: 옵션 접기(fold) 폐지 — 접힌 '옵션 · 없음 ▾' 줄은 입력칸처럼 읽히고, 켜려면 펼치고 또 누르는
+                두 번 동작이었다. 칩 넷(미정·업 도움·기간 안내·최초공개)을 제목 바로 아래 한 줄에 늘 보이게 — 한 번에 켠다.
+                켜진 칩의 세부(띠 종류·기간·공개 시각)만 그 아래에 펼쳐진다. 모바일 시트의 접기는 그대로(화면이 좁다). */}
+            <div className="editor-options" role="group" aria-label="옵션">
+              <span className="editor-options-label">옵션</span>
+              <div className="editor-options-body">
             {/* 옵션 칩 순서(웹·모바일 통일): 미정 → 업도움 → 떡밥 */}
             {renderSupportEditor()}
 
@@ -7235,8 +7227,7 @@ export function StudioShell({
                 ) : null}
               </div>
             ) : null}
-                </div>
-              ) : null}
+              </div>
             </div>
 
             <section className="tag-picker" aria-label="태그 선택">
@@ -7256,35 +7247,43 @@ export function StudioShell({
               />
             </section>
 
-            {selectedEventId &&
-            canEdit &&
-            events.find((e) => e.id === selectedEventId)?.isSupport ? (
-              // 라벨·색은 현재 폼의 종류를 따른다 — 기간 안내를 고르고 있으면 '이 기간 안내 삭제'
-              // + 하늘색(폼 테마와 한 몸). 삭제 대상은 어느 쪽이든 같은 일정 한 건.
+            {/* 하단 고정 액션 바(2026-09-17 대개편) — 폼(스크롤 컨테이너) 바닥에 sticky. 오른쪽 = 저장(주 동작, 넓게),
+                왼쪽 = 드문·위험 동작(띠 삭제, 이용 기록)을 조용히 떼어 둔다(실수 클릭 거리). 저장은 Ctrl+Enter도 된다. */}
+            <div className="editor-actions">
+              {selectedEventId &&
+              canEdit &&
+              events.find((e) => e.id === selectedEventId)?.isSupport ? (
+                // 라벨·색은 현재 폼의 종류를 따른다 — 기간 안내를 고르고 있으면 '이 기간 안내 삭제'
+                // + 하늘색(폼 테마와 한 몸). 삭제 대상은 어느 쪽이든 같은 일정 한 건.
+                <button
+                  className="button danger support-delete"
+                  data-act="delete-support"
+                  data-kind={form.supportKind}
+                  onClick={() => deleteEvent(selectedEventId)}
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" size={15} />
+                  {form.supportKind === "period" ? "기간 안내" : "업 도움"} 삭제
+                </button>
+              ) : null}
+              {/* 이용 기록(개발자 전용)은 '날짜(새 일정) 선택'일 때만 — 기존 일정 수정 카드에선 숨겨
+                  폼을 일정 편집에만 집중시킨다(사용자 결정 2026-07-31). */}
+              {selectedEventId ? null : isDevInsights ? (
+                <button className="button aux-open" onClick={() => setModal("dayVisit")} data-act="open-day-visit" type="button">
+                  📈 이용 기록
+                </button>
+              ) : null}
               <button
-                className="button danger support-delete"
-                data-act="delete-support"
-                data-kind={form.supportKind}
-                onClick={() => deleteEvent(selectedEventId)}
-                type="button"
+                className="button primary editor-save"
+                data-act="save-event"
+                disabled={!canEdit || !form.publicTitle.trim()}
+                title="저장 (Ctrl+Enter)"
+                type="submit"
               >
-                <Trash2 aria-hidden="true" size={15} />이{" "}
-                {form.supportKind === "period" ? "기간 안내" : "업 도움"} 삭제
+                {selectedEventId ? "저장" : "일정 추가"}
+                <kbd aria-hidden="true" className="editor-save-kbd">Ctrl+↵</kbd>
               </button>
-            ) : null}
-
-            {/* 이용 기록(개발자 전용)은 '날짜(새 일정) 선택'일 때만 — 기존 일정 수정 카드에선 숨겨
-                폼을 일정 편집에만 집중시킨다(사용자 결정 2026-07-31). (숲 '공지 쓰기' 버튼·모달은
-                2026-08-27 제거 — 관리자가 안 쓰는 기능.) */}
-            {selectedEventId ? null : isDevInsights ? (
-              <button
-                className="button aux-open"
-                onClick={() => setModal("dayVisit")} data-act="open-day-visit"
-                type="button"
-              >
-                📈 이용 기록
-              </button>
-            ) : null}
+            </div>
 
             {/* 이 일정의 관심(하트) 수 — **개발자에게만**(2026-09-07 소유자: "방송에 보이기 껄끄러울 수 있으니까").
                 편집실은 방송 중에 화면이 공유되는 곳이고, 이 줄은 그 자리에서 "이 일정에 몇 명이 반응했나"를

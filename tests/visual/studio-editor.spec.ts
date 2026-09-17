@@ -91,7 +91,9 @@ test("쓰기는 직렬로 나간다 — 앞 요청이 끝나기 전에 다음이
   const title = page.locator("textarea, input[type='text']").first();
   await title.fill("첫 번째");
   await page.locator("[data-act='save-event']").click();
-  await title.fill("두 번째");
+  // 저장하면 팝오버가 닫힌다(2026-09-17) — 방금 생긴 temp 카드를 눌러 다시 연 뒤 두 번째 저장.
+  await page.locator("[data-act='calendar-cell']").nth(10).locator(".studio-event-pill").first().click();
+  await page.locator("textarea, input[type='text']").first().fill("두 번째");
   await page.locator("[data-act='save-event']").click();
 
   await expect.poll(() => reqs.length, { timeout: 8000 }).toBeGreaterThanOrEqual(2);

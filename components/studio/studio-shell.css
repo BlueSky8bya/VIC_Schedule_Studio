@@ -7535,13 +7535,98 @@ html[data-reduce-motion] .delete-snack {
 /* 저장 버튼 — 아이콘 없이 텍스트만, 패딩 줄여 한 줄 폭 확보. */
 /* 저장 — 헤더의 다른 요소(28px 접기·배지 칩)와 같은 스케일의 알약. 골드 톤은 유지하되
    큼직한 사각 덩어리로 헤더에서 튀지 않게(주변 융화, 사용자 지적). */
-.editor-save {
+/* ── 2026-09-17 팝오버 대개편(소유자: "연계해서 누르기 스트레스") ──
+   헤더 = [날짜 · 모드 배지 ……… ✕]. 저장은 **하단 고정 액션 바**(.editor-actions): 폼이 스크롤 컨테이너라 sticky bottom이
+   폼 바닥에 붙어, 태그를 고른 손 바로 아래에 저장이 있다(Fitts: 마지막 조작 지점과의 거리 최소). 위험·드문 동작(띠 삭제,
+   이용 기록)은 왼쪽 끝에 조용히 — 저장과 한 손가락 폭 이상 떨어진다. */
+.editor-actions {
+  position: sticky;
+  bottom: -18px; /* 폼 padding(18) 밑까지 내려 붙는다 */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 4px -18px -18px;
+  padding: 10px 18px 14px;
+  /* 위로 흐려지는 흰 바탕 — 스크롤되는 태그 칩이 바 밑으로 잦아들며 사라진다(잘린 듯 보이지 않게). */
+  background: linear-gradient(180deg, rgb(255 255 255 / 0%), #fff 26%);
+  border-bottom-left-radius: var(--r-lg);
+  border-bottom-right-radius: var(--r-lg);
+}
+.editor-actions .support-delete,
+.editor-actions .aux-open {
+  margin: 0 auto 0 0; /* 왼쪽 끝으로 */
   flex: none;
-  min-height: 30px;
-  border-radius: var(--r-pill);
-  padding: 4px 14px;
+}
+.editor-save {
+  flex: 1 1 auto;
+  max-width: 220px;
+  min-height: 40px;
+  border-radius: 12px;
+  padding: 6px 16px;
   font-size: var(--text-ui);
   font-weight: var(--weight-bold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+/* 단축키 힌트 — 버튼 안 오른쪽에 아주 조용히(아는 사람은 보고, 모르는 사람 눈엔 장식). */
+.editor-save-kbd {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.55;
+  letter-spacing: 0.04em;
+}
+.editor-save:disabled .editor-save-kbd {
+  opacity: 0.35;
+}
+/* 닫기 ✕ — 옛 '>' 접기의 고스트 원형 문법 그대로(.editor-collapse), 자리만 헤더 오른쪽 끝. */
+.editor-close {
+  margin-left: auto;
+}
+/* 옵션 칩 줄 — 접기 대신 늘 보이는 한 줄. 라벨은 위 작은 eyebrow, 칩은 감싸며 흐른다. 켜진 칩의 세부 필드는 같은 컨테이너
+   안에서 아래로 이어진다(기존 band-kind-row·teaser-field 마크업 그대로). */
+.editor-options {
+  display: grid;
+  gap: 6px;
+}
+.editor-options-label {
+  font-size: var(--text-label);
+  font-weight: 800;
+  color: #8e93a8;
+  letter-spacing: 0.02em;
+}
+.editor-options-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.editor-options-body .band-kind-row {
+  display: contents; /* 두 띠 칩이 다른 칩들과 같은 줄에 흐른다 */
+}
+/* 칩은 내용 폭(옵션 칩 기본은 전폭 행) — 넷이 한두 줄에 흐르게 작고 촘촘하게. */
+.editor-options-body .opt-chip {
+  width: auto;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  min-height: 34px;
+  padding: 5px 12px 5px 9px;
+  gap: 6px;
+}
+.editor-options-body .opt-chip .opt-chip-label {
+  font-size: var(--text-label);
+}
+.editor-options-body .teaser-field {
+  display: contents;
+}
+/* 세부 필드(띠 종류의 기간·공개 시각)는 줄을 통째로 차지. */
+.editor-options-body .support-fields,
+.editor-options-body .teaser-when {
+  flex: 1 0 100%;
 }
 /* 날짜를 접기 버튼(28px) + 간격(8px)만큼 들여, 위 줄의 라벨 시작선과 정확히 맞춘다. */
 .editor-heading-date {
