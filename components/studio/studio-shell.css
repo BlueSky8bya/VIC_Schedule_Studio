@@ -7627,22 +7627,16 @@ html[data-reduce-motion] .delete-snack {
   /* 자리·폭은 JS 스프링이 프레임마다 쓴다(top / left|right = −bump: 평소 10px, 근접 44px) — 탭은 카드 옆면에 **붙어**
      있고 카드 밑(z 0)에 깔려 튀어나온 폭만 보인다. 점선 링(.editor-ring)이 카드와 탭을 한 덩어리로 두른다.
      좌↔우 전환은 JS FLIP(flipSpring). CSS 트랜지션은 색·그림자만. */
-  /* 저장할 게 있을 때만 보인다(data-show) — 볼록(폭)은 JS 스프링이 0에서 부풀고, 여기선 옅게 떠오르기만. */
+  /* 저장할 게 있을 때(data-show) + 마우스가 옆 구역에 천천히 머물 때만 — 폭·투명도 둘 다 JS 스프링이 프레임마다 쓴다
+     (CSS 트랜지션은 색·그림자만: 인라인 opacity에 트랜지션이 걸리면 프레임 값이 번진다). */
   opacity: 0;
   visibility: hidden;
   transition:
     background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    opacity 0.45s ease,
-    visibility 0s linear 0.45s;
+    box-shadow 0.2s ease;
 }
 .editor-save-tab[data-show] {
-  opacity: 1;
   visibility: visible;
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    opacity 0.45s ease;
 }
 .event-editor-panel.is-new .editor-save-tab {
   --tab-ink: #1d7a4e;
@@ -7659,15 +7653,17 @@ html[data-reduce-motion] .delete-snack {
   --tab-bg: #e4f5fa;
   --tab-line: rgb(14 147 180 / 34%);
 }
+/* 모양(2026-09-17 소유자 6차: 반원 말고) — 바깥 두 모서리만 **타원 라운드(14×24)**: 직사각형보다 부드럽고 반원보다 절제된
+   스쿼클 계열. 안쪽은 카드에 붙는 직선. */
 .editor-save-tab[data-side="left"] {
-  left: -6px;
+  left: 0;
   border-right: 0;
-  border-radius: 999px 0 0 999px;
+  border-radius: 14px 0 0 14px / 24px 0 0 24px;
 }
 .editor-save-tab[data-side="right"] {
-  right: -6px;
+  right: 0;
   border-left: 0;
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 14px 14px 0 / 0 24px 24px 0;
 }
 .editor-save-tab:hover:not(:disabled) {
   box-shadow: 0 8px 20px rgb(60 40 120 / 18%);

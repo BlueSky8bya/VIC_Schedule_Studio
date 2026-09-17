@@ -1386,48 +1386,50 @@ export function StudioShell({
   }, [saveTabSide]);
   useEffect(() => {
     if (!editorVisible || isNarrow) return;
-    // 저장 탭 + 점선 링(2026-09-17 소유자): 탭은 카드 옆면에 **붙어** 있고(틈 0), 링은 "카드 ∪ 탭"의 바깥 윤곽 한 줄이다.
-    // 탭의 높이(y)와 튀어나온 폭(bump: 평소 10 · 근접 44)은 둘 다 작은 스프링으로 움직여(살짝 넘쳤다 자리 잡음) 링의 볼록
-    // 구간이 탭을 따라 파도처럼 흐른다. 프레임마다 탭 style과 path d만 쓴다(React 렌더 없음).
-    // 덜 튀어나오게(2026-09-17 소유자 5차): 평소 6 · 근접 30. 탭은 바깥이 완전히 둥근 D(반캡슐) — 링의 볼록도 같은 반지름.
-    const PEEK = 6;
+    // 저장 탭 + 점선 링(2026-09-17 소유자 6차): 탭은 카드 옆면에 붙어 있고, 링은 "카드 ∪ 탭"의 바깥 윤곽 한 줄이다.
+    // **의도가 확실할 때만** 나온다: 마우스가 카드 옆 구역(옆면 밖 ~90px, 카드 세로 범위)에서 **천천히 머물면**(속도 <0.3px/ms,
+    // 220ms) 스르륵 부풀고, 휙휙 지나가거나 구역을 벗어나면 아예 없다. 나와 있는 동안 높이는 무거운 스프링으로 따라온다.
+    // 프레임마다 탭 style과 path d만 쓴다(React 렌더 없음).
     const FULL = 30;
     const RING_PAD = 4; // 카드 → 링 거리(옛 outline-offset)
     const RING_INSET = 8; // SVG가 카드 밖으로 나가 있는 양(pad + 선 굵기 여유)
+    const ZONE_OUT = 90; // 카드 옆면 밖 몇 px까지를 '옆 구역'으로 보나
+    const ZONE_IN = 24; // 카드 안쪽으로 몇 px까지(모서리 근처에서 머물러도 인정)
+    const DWELL_MS = 220;
+    const SLOW = 0.3; // px/ms — 이보다 느려야 '머문다'
+    const FAST = 1.4; // px/ms — 이보다 빠르면 나와 있어도 접는다
     let raf = 0;
     let targetY: number | null = null;
     let y: number | null = null;
     let vy = 0;
-    let near = false;
-    let b = 0; // 처음엔 0에서 자라나며 등장
+    let b = 0;
     let vb = 0;
-    let lastFlipAt = 0;
+    let shown = false;
+    let dwellSince: number | null = null;
+    let lastPt: { x: number; y: number; t: number } | null = null;
+    let speed = 0; // px/ms(지수 평균)
     let lastPath = "";
-    // 탭이 보여야 할 때만 부푼다(data-show: 신규는 내용을 적은 뒤, 기존은 변경이 있을 때) — 숨으면 볼록이 스르륵 꺼진다.
     const wantBump = () => {
       const tab = saveTabRef.current;
-      if (!tab || tab.dataset.show === undefined) return 0;
-      return near ? FULL : PEEK;
+      if (!tab || tab.dataset.show === undefined || !shown) return 0;
+      return FULL;
     };
     const draw = () => {
       const panel = editorPanelRef.current;
       const tab = saveTabRef.current;
       const path = ringPathRef.current;
       if (!panel || !path) return;
-      const w = panel.offsetWidth;
-      const h = panel.offsetHeight;
-      const side = saveTabSideRef.current;
       const th = tab ? tab.offsetHeight : 0;
       const d = ringPath({
-        card: { x: RING_INSET, y: RING_INSET, w, h },
+        card: { x: RING_INSET, y: RING_INSET, w: panel.offsetWidth, h: panel.offsetHeight },
         pad: RING_PAD,
         cr: 16 + RING_PAD,
-        side,
+        side: saveTabSideRef.current,
         bump: tab && y !== null ? b : 0,
         tabTop: y ?? 0,
         tabH: th,
-        // 볼록 바깥 모서리 = 튀어나온 폭 + 링 거리 → 탭의 D 곡선을 링이 그대로 따라 돈다.
-        bumpR: Math.max(4, b + RING_PAD)
+        bumpR: 14 + RING_PAD, // 탭 바깥 모서리(타원 14×24)와 어울리는 둥근 볼록
+        fillet: 8
       });
       if (d !== lastPath) {
         path.setAttribute("d", d);
@@ -1441,40 +1443,59 @@ export function StudioShell({
       if (!tab || !panel) return;
       if (targetY === null) targetY = Math.round(panel.offsetHeight * 0.4);
       if (y === null) y = targetY;
-      // 중후하게(2026-09-17 소유자: "경박하다, 정신을 못 차린다") — 느린 스프링·강한 감쇠: 손보다 한 박자 늦게, 거의 안 넘친다.
       const targetB = wantBump();
-      // 시뮬레이션(0→300): y = 넘침 3.6%·~0.5s 안착, 폭 = 넘침 5%. 한 박자 늦고 한 번만 살짝 넘친다.
+      // 무겁게: 높이는 손보다 한 박자 늦게(넘침 ~3%), 폭은 천천히 부푼다(넘침 없음).
       [y, vy] = ringSpring(y, vy, targetY, 0.06, 0.72);
-      [b, vb] = ringSpring(b, vb, targetB, 0.08, 0.7);
+      [b, vb] = ringSpring(b, vb, targetB, 0.045, 0.7);
       tab.style.top = `${y}px`;
-      // 탭은 카드 밑에 깔려(z 0) 튀어나온 폭만 보인다 — 붙어 있는 쪽 옆면 밖으로 b만큼.
       tab.style[saveTabSideRef.current === "left" ? "left" : "right"] = `${-b}px`;
       tab.style[saveTabSideRef.current === "left" ? "right" : "left"] = "auto";
+      tab.style.opacity = String(Math.min(1, b / 12)); // 부푸는 첫 12px 동안 옅게 떠오른다
       draw();
       if (Math.abs(targetY - y) > 0.2 || Math.abs(vy) > 0.2 || Math.abs(targetB - b) > 0.2 || Math.abs(vb) > 0.2) {
         raf = requestAnimationFrame(step);
       } else {
-        // 정지 상태로 스냅(누적 오차 제거).
         y = targetY;
         b = targetB;
         vy = 0;
         vb = 0;
         tab.style.top = `${y}px`;
         tab.style[saveTabSideRef.current === "left" ? "left" : "right"] = `${-b}px`;
+        tab.style.opacity = b > 0 ? "1" : "0";
         draw();
       }
     };
     const kick = () => {
       if (!raf) raf = requestAnimationFrame(step);
     };
+    const hide = () => {
+      shown = false;
+      dwellSince = null;
+      kick();
+    };
     const onMove = (e: PointerEvent) => {
       const panel = editorPanelRef.current;
       const tab = saveTabRef.current;
       if (!panel || !tab) return;
+      const now = performance.now();
+      if (lastPt) {
+        const dt = Math.max(1, now - lastPt.t);
+        const v = Math.hypot(e.clientX - lastPt.x, e.clientY - lastPt.y) / dt;
+        speed = speed * 0.5 + v * 0.5;
+      }
+      lastPt = { x: e.clientX, y: e.clientY, t: now };
       const r = panel.getBoundingClientRect();
       const zoom = panel.offsetWidth > 0 ? r.width / panel.offsetWidth : 1;
-      // 자리: 마우스가 있는 쪽 — 단, 그쪽에 펼친 탭(폭 ≈ 56px)이 **무엇과든 겹치면** 반대쪽(화면 끝뿐 아니라 달력 옆
-      // 패널(rail)·하단 플로팅 알약도 장애물). 양쪽 다 겹치면 덜 겹치는 쪽.
+      // 옆 구역 판정(왼쪽/오른쪽/없음) — 카드 세로 범위(±40) 안에서 옆면 밖 ZONE_OUT·안 ZONE_IN.
+      const inY = e.clientY >= r.top - 40 && e.clientY <= r.bottom + 40;
+      let zone: "left" | "right" | null = null;
+      if (inY && e.clientX >= r.left - ZONE_OUT && e.clientX <= r.left + ZONE_IN) zone = "left";
+      else if (inY && e.clientX >= r.right - ZONE_IN && e.clientX <= r.right + ZONE_OUT) zone = "right";
+      const overTab = shown && (() => {
+        const tr = tab.getBoundingClientRect();
+        return e.clientX >= tr.left - 8 && e.clientX <= tr.right + 8 && e.clientY >= tr.top - 8 && e.clientY <= tr.bottom + 8;
+      })();
+      // 장애물(달력 옆 패널·하단 알약·화면 밖)과 겹치는 쪽엔 세우지 않는다.
       const need = (FULL + RING_PAD * 2 + 4) * zoom;
       const tabH0 = tab.offsetHeight * zoom;
       const tabTop = e.clientY - tabH0 / 2;
@@ -1483,50 +1504,56 @@ export function StudioShell({
       if (rail && getComputedStyle(rail).visibility !== "hidden") obstacles.push(rail.getBoundingClientRect());
       const row = bottomRowRef.current;
       if (row) obstacles.push(row.getBoundingClientRect());
-      const overlapArea = (a: { l: number; r: number; t: number; b: number }, o: DOMRect) =>
-        Math.max(0, Math.min(a.r, o.right) - Math.max(a.l, o.left)) * Math.max(0, Math.min(a.b, o.bottom) - Math.max(a.t, o.top));
-      const cost = (s: "left" | "right") => {
+      const blocked = (s: "left" | "right") => {
         const box = s === "left"
           ? { l: r.left - need, r: r.left, t: tabTop, b: tabTop + tabH0 }
           : { l: r.right, r: r.right + need, t: tabTop, b: tabTop + tabH0 };
-        let c = 0;
-        if (box.l < 0) c += (0 - box.l) * tabH0;
-        if (box.r > window.innerWidth) c += (box.r - window.innerWidth) * tabH0;
-        for (const o of obstacles) c += overlapArea(box, o);
-        return c;
+        if (box.l < 0 || box.r > window.innerWidth) return true;
+        return obstacles.some((o) => Math.min(box.r, o.right) > Math.max(box.l, o.left) && Math.min(box.b, o.bottom) > Math.max(box.t, o.top));
       };
-      // 쪽 바꾸기엔 여유(hysteresis): 가운데를 지나 폭의 10%는 더 가야 하고, 한 번 바꾸면 450ms는 그대로 —
-      // 마우스를 빠르게 왔다 갔다 해도 탭이 양쪽으로 튀지 않는다.
-      const cur = saveTabSideRef.current;
-      const dead = r.width * 0.1;
-      const want: "left" | "right" =
-        e.clientX < r.left + r.width / 2 - dead ? "left" : e.clientX > r.left + r.width / 2 + dead ? "right" : cur;
-      const other: "left" | "right" = want === "left" ? "right" : "left";
-      let side = cost(want) === 0 ? want : cost(other) < cost(want) ? other : want;
-      if (side !== cur && performance.now() - lastFlipAt < 450) side = cur;
-      if (side !== saveTabSideRef.current) {
-        lastFlipAt = performance.now();
-        // 좌↔우: 탭은 FLIP(flipSpring)으로 건너가고, 볼록은 0에서 다시 자라난다(링이 반대편에서 새로 부푼다).
-        saveTabPrevRectRef.current = tab.getBoundingClientRect();
-        saveTabSideRef.current = side;
-        b = 0;
-        vb = 0;
-        setSaveTabSide(side);
+      if (zone && blocked(zone)) zone = null;
+      if (!zone && !overTab) {
+        if (shown) hide();
+        dwellSince = null;
+        return;
       }
-      // 높이: 마우스를 따라가되 링 모서리 호(16 + 4 + 오목 6)와 겹치지 않는 범위.
+      if (shown) {
+        // 나와 있는 동안: 휙 움직이면 접고(탭 위에 있을 땐 예외), 아니면 높이만 따라간다.
+        if (speed > FAST && !overTab) {
+          hide();
+          return;
+        }
+      } else {
+        // 숨은 동안: 구역 안에서 천천히 머물러야 나온다. 쪽은 이때 정한다.
+        if (speed > SLOW) {
+          dwellSince = null;
+          return;
+        }
+        if (dwellSince === null) dwellSince = now;
+        if (now - dwellSince < DWELL_MS) {
+          window.setTimeout(() => {
+            if (!shown && dwellSince !== null && lastPt && performance.now() - dwellSince >= DWELL_MS) onMove(new PointerEvent("pointermove", { clientX: lastPt.x, clientY: lastPt.y }));
+          }, DWELL_MS + 10);
+          return;
+        }
+        const side = zone!;
+        if (side !== saveTabSideRef.current) {
+          saveTabSideRef.current = side;
+          saveTabPrevRectRef.current = null; // 숨은 채 옮기므로 FLIP 없음
+          setSaveTabSide(side);
+        }
+        // 나올 땐 마우스 높이에서 바로 부푼다(옛 자리에서 미끄러져 오지 않게).
+        const th = tab.offsetHeight;
+        const margin = 16 + RING_PAD + 8 + 2;
+        y = Math.max(margin, Math.min(panel.offsetHeight - th - margin, (e.clientY - r.top) / zoom - th / 2));
+        vy = 0;
+        shown = true;
+      }
       const th = tab.offsetHeight;
-      const margin = 16 + RING_PAD + 6 + 2;
-      const yy = (e.clientY - r.top) / zoom - th / 2;
-      targetY = Math.max(margin, Math.min(panel.offsetHeight - th - margin, yy));
-      // 근접 = 펼침(들어올 땐 56px 안, 나갈 땐 96px 밖 — 경계에서 떨지 않게).
-      const tr = tab.getBoundingClientRect();
-      const dx = Math.max(tr.left - e.clientX, 0, e.clientX - tr.right);
-      const dy = Math.max(tr.top - e.clientY, 0, e.clientY - tr.bottom);
-      const dist = Math.hypot(dx, dy);
-      near = near ? dist <= 96 : dist <= 56;
+      const margin = 16 + RING_PAD + 8 + 2;
+      targetY = Math.max(margin, Math.min(panel.offsetHeight - th - margin, (e.clientY - r.top) / zoom - th / 2));
       kick();
     };
-    // 카드 높이가 바뀌면(태그 펼침·옵션 열림) 링을 다시 그린다.
     const ro = new ResizeObserver(() => {
       draw();
       kick();
