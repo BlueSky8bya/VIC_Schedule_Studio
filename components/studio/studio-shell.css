@@ -5048,6 +5048,23 @@ html[data-reduce-motion] .editor-anchor-link line {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* 힌트 선(2026-09-17): 저장할 게 있는데 탭이 숨어 있으면 탭이 설 자리의 점선을 굵은 실선으로 — "변경 감지됨". 숨 쉬듯 옅게. */
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint {
+  stroke-width: 4;
+  stroke-dasharray: none;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+}
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint[data-on] {
+  opacity: 1;
+  animation: editor-ring-hint-breathe 2.2s ease-in-out infinite;
+}
+@keyframes editor-ring-hint-breathe {
+  50% { opacity: 0.45; }
+}
+html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint[data-on] {
+  animation: none;
+}
 .studio-workspace .event-editor-panel.is-new .editor-ring {
   color: rgb(34 150 94 / 40%);
 }

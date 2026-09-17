@@ -1021,10 +1021,10 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
 .replay-page {
   min-height: 100vh;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: center;
-  padding: 16px;
-  background: var(--page-bg, #eef0f5);
+  padding: 0; /* 전체 화면(2026-09-17 소유자: 페이지가 됐으니 작은 창 말고 꽉 차게) */
+  background: #fbfbfd;
 }
 .day-vod-backdrop[data-variant="page"] {
   position: static;
@@ -1037,14 +1037,26 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   backdrop-filter: none;
   animation: none;
 }
+.day-vod-backdrop[data-variant="page"] {
+  width: 100%;
+}
 .day-vod-backdrop[data-variant="page"] .day-vod-modal {
+  width: 100%;
   max-width: 100%;
-  max-height: calc(100vh - 32px);
+  min-height: 100vh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 .day-vod-backdrop[data-variant="page"] .dvm-vod {
-  --dvm-stage-h: calc(100vh - 32px - 230px);
-  --dvm-chrome: 100px; /* 페이지 16×2 + 본문 24×2 + 간격 20 */
+  --dvm-stage-h: calc(100vh - 230px);
+  --dvm-chrome: 68px; /* 본문 24×2 + 간격 20 */
   --dvm-max-w: 100vw;
+}
+/* 전체 화면에선 무대가 남는 폭 가운데(영상 열은 auto라 fit-content 창처럼 붙지 않는다 → 좌우 여백을 반씩). */
+.day-vod-backdrop[data-variant="page"] .dvm-vod:has(.vod-chapters) {
+  justify-content: center;
 }
 .day-vod-modal {
   /* 더 넓은 창(2026-09-01 사용자 피드백 2차) — 미리보기가 주인공. 낮은 화면에선 미리보기가
@@ -4882,10 +4894,11 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 }
 .tier-crown {
   position: absolute;
-  top: -11px;
-  right: -6px;
+  /* 달력 확대(--cal-zoom, 편집실)에 같이 커진다(2026-09-17 소유자). 시청자 포스터는 캔버스 배율이라 1. */
+  top: calc(-11px * var(--cal-zoom, 1));
+  right: calc(-6px * var(--cal-zoom, 1));
   z-index: 3;
-  font-size: var(--text-ui);
+  font-size: calc(var(--text-ui) * var(--cal-zoom, 1));
   line-height: 1;
   pointer-events: none;
   filter: drop-shadow(0 1px 1.5px rgb(120 80 0 / 30%));

@@ -1368,6 +1368,8 @@ export function StudioShell({
   // 저장 탭의 자리 — 좌/우는 상태(재렌더 드묾), 높이는 rAF 보간으로 DOM에 직접(프레임마다 렌더하지 않는다).
   const saveTabRef = useRef<HTMLButtonElement | null>(null);
   const ringPathRef = useRef<SVGPathElement | null>(null);
+  // 저장할 게 있는데 탭이 아직 숨어 있을 때 — 탭이 나올 자리의 점선만 굵게(변경 감지됐다는 신호, 2026-09-17 소유자).
+  const ringHintRef = useRef<SVGPathElement | null>(null);
   const [saveTabSide, setSaveTabSide] = useState<"left" | "right">("right");
   const saveTabSideRef = useRef<"left" | "right">("right");
   const saveTabPrevRectRef = useRef<DOMRect | null>(null);
@@ -1434,6 +1436,17 @@ export function StudioShell({
       if (d !== lastPath) {
         path.setAttribute("d", d);
         lastPath = d;
+      }
+      // 힌트 선: 탭이 숨어 있는 동안(b≈0) 탭이 설 자리(옆면, 탭 높이만큼)를 굵은 실선으로. 탭이 부풀면 꺼진다.
+      const hint = ringHintRef.current;
+      if (hint) {
+        const want = Boolean(tab) && tab!.dataset.show !== undefined && b < 2;
+        if (want) {
+          const X = saveTabSideRef.current === "right" ? RING_INSET + panel.offsetWidth + RING_PAD : RING_INSET - RING_PAD;
+          const y0 = RING_INSET + (y ?? Math.round(panel.offsetHeight * 0.4));
+          hint.setAttribute("d", `M ${X} ${y0} V ${y0 + th}`);
+          hint.setAttribute("data-on", "");
+        } else hint.removeAttribute("data-on");
       }
     };
     const step = () => {
@@ -1631,7 +1644,8 @@ export function StudioShell({
   // 저장 탭은 **저장할 게 있을 때만**(2026-09-17 소유자): 신규는 내용을 적으면 떠오르고, 기존 일정은 내용·태그·옵션이
   // 기준(열 때 값)과 달라졌을 때만. 지문(draftFingerprint)은 임시 보관과 같은 것 — 같은 판정 한 벌.
   const saveTabShown =
-    canEdit && !teaserGateActive && (selectedEventId ? draftFingerprint(form) !== editBaselineRef.current : form.publicTitle.trim().length > 0);
+    // 신규도 '빈 카드 기준선과 다르면'(태그만 눌러도) — 2026-09-17 소유자: 내용 없이 태그만 바꿔도 저장 탭이 나와야 한다.
+    canEdit && !teaserGateActive && draftFingerprint(form) !== editBaselineRef.current;
   const saveTabKickRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     saveTabKickRef.current?.(); // 보임/숨김이 바뀌면 볼록이 부풀거나 꺼지도록 루프를 깨운다
@@ -5926,7 +5940,8 @@ export function StudioShell({
               <div className="draft-restored" role="status">
                 <span>저장 안 한 임시 내용을 불러왔어요.</span>
                 <button className="draft-restored-discard" onClick={discardDraft} type="button" data-act="draft-restored-discard">
-                  새로 쓰기
+                  {/* 문구(2026-09-17 소유자): 임시본을 버리면 기존 일정은 원본으로, 새 카드는 빈 카드로 — '새로 쓰기'는 오해. */}
+                  {selectedEventId ? "원본으로 되돌리기" : "비우고 새로 쓰기"}
                 </button>
               </div>
             ) : null}
@@ -7373,7 +7388,8 @@ export function StudioShell({
               <div className="draft-restored" role="status">
                 <span>저장 안 한 임시 내용을 불러왔어요.</span>
                 <button className="draft-restored-discard" onClick={discardDraft} type="button" data-act="draft-restored-discard">
-                  새로 쓰기
+                  {/* 문구(2026-09-17 소유자): 임시본을 버리면 기존 일정은 원본으로, 새 카드는 빈 카드로 — '새로 쓰기'는 오해. */}
+                  {selectedEventId ? "원본으로 되돌리기" : "비우고 새로 쓰기"}
                 </button>
               </div>
             ) : null}
@@ -7544,6 +7560,7 @@ export function StudioShell({
           {!isNarrow ? (
             <svg aria-hidden="true" className="editor-ring">
               <path ref={ringPathRef} />
+              <path className="editor-ring-hint" ref={ringHintRef} />
             </svg>
           ) : null}
           {!teaserGateActive && canEdit ? (
