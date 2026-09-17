@@ -1148,7 +1148,7 @@ export function PublicPoster({
   dayVodSelRef.current = dayVodSel;
   const dayVodResumeRef = useRef(new Map<number, number>());
   const dayVodEndedRef = useRef(new Set<number>()); // 끝남 → 다음 영상 자동 전환은 방송당 한 번
-  // 단축키 안내(2번): 상시 노출 대신 ? 버튼 뒤로. 처음 세 번 열 때만 자동으로 펼친다(localStorage 카운트).
+  // 단축키 안내(2번): 상시 노출 대신 ? 버튼 뒤로(자동 펼침 없음).
   const [dayVodKeysOpen, setDayVodKeysOpen] = useState(false);
   // 가로 타임라인 띠(4번)의 자리(플레이어 아래) — VodChapters가 포털로 그린다.
   const [dayVodStripHost, setDayVodStripHost] = useState<HTMLDivElement | null>(null);
@@ -1261,15 +1261,7 @@ export function PublicPoster({
     dayVodResumeRef.current.clear();
     dayVodEndedRef.current.clear();
     dayVodChapterApiRef.current = null;
-    if (dayVodPop) {
-      try {
-        const n = Number(window.localStorage.getItem("vic_vod_keys_seen") ?? 0) || 0;
-        setDayVodKeysOpen(n < 3);
-        window.localStorage.setItem("vic_vod_keys_seen", String(n + 1));
-      } catch {
-        setDayVodKeysOpen(false);
-      }
-    } else setDayVodKeysOpen(false);
+    setDayVodKeysOpen(false); // 자동 펼침 없음(2026-09-17 소유자: 들어갈 때마다 펼쳐져 끄기 귀찮다) — ? 눌렀을 때만
     setDayVodLive(new Set());
     setDayVodSlots({});
     dayVodActiveRef.current.clear();
@@ -4645,7 +4637,9 @@ export function PublicPoster({
                     {/* 제목은 머리줄로(2026-09-17 대개편 2번: 영상 아래 있어 '뭘 보는지'가 가장 늦게 읽혔다).
                         링크는 **지금 보고 있는 지점**부터 이어 본다 — 누르는 순간 currentTime을 change_second로
                         (pointerdown/enter에도 갱신해 가운데 클릭·새 탭도 같은 지점). */}
+                    {/* 링크는 글자 폭만(2026-09-17 소유자: 빈 공간을 눌러도 이동됐다) — 남는 폭은 감싸는 상자가 갖는다. */}
                     {sel ? (
+                      <span className="dvm-title-wrap">
                       <a
                         className="dvm-title"
                         data-act="vod-replay"
@@ -4666,6 +4660,7 @@ export function PublicPoster({
                       >
                         {selLabel}
                       </a>
+                      </span>
                     ) : null}
                     {/* 합방 게스트 출연분(0075) — 다른 스트리머 방송국의 다시보기임을 밝히는 칩. 누르면 그 방송국 메인(2026-09-17). */}
                     {sel?.host && sel.hostId ? (
@@ -4686,7 +4681,7 @@ export function PublicPoster({
                         합방 · {sel.host} 방송국
                       </span>
                     ) : null}
-                    {/* 단축키 안내(2026-09-17): ? 뒤로 접는다. 처음 세 번은 자동으로 펼쳐 배우게 한다. */}
+                    {/* 단축키 안내(2026-09-17): ? 뒤로 접는다. */}
                     <button
                       aria-expanded={dayVodKeysOpen}
                       aria-label="단축키 안내"
@@ -4704,14 +4699,14 @@ export function PublicPoster({
                       <div className="dvm-keys" role="note">
                         <span><kbd>Space</kbd></span><span>재생 / 일시정지</span>
                         <span><kbd>←</kbd><kbd>→</kbd></span><span>10초 이동</span>
-                        <span><kbd>↑</kbd><kbd>↓</kbd></span><span>이전 / 다음 챕터</span>
-                        <span><kbd>[</kbd><kbd>]</kbd></span><span>이전 / 다음 코너</span>
+                        <span><kbd>↑</kbd><kbd>↓</kbd></span><span>이전 / 다음 타임라인</span>
+                        <span><kbd>[</kbd><kbd>]</kbd></span><span>이전 / 다음 챕터</span>
                         {list.length > 1 ? (
                           <>
                             <span><kbd>Shift</kbd><kbd>←</kbd><kbd>→</kbd></span><span>이전 / 다음 영상</span>
                           </>
                         ) : null}
-                        <span><kbd>C</kbd></span><span>챕터 접기 / 펼치기</span>
+                        <span><kbd>C</kbd></span><span>타임라인 접기 / 펼치기</span>
                         <span><kbd>Esc</kbd></span><span>닫기</span>
                       </div>
                     ) : null}

@@ -1053,8 +1053,13 @@ html[data-reduce-motion] .day-vod-modal {
   padding: 16px 16px 10px 24px; /* 창 1280 확대에 맞춘 여백(본문 24와 정렬) */
 }
 /* 머리줄 안의 제목(2026-09-17 대개편 2번) — 날짜 오른쪽에서 남은 폭을 다 쓰고 한 줄 말줄임. */
-.dvm-head .dvm-title {
+.dvm-title-wrap {
   flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+.dvm-head .dvm-title {
+  flex: 0 1 auto; /* 글자 폭만 링크 — 빈 자리는 링크가 아니다 */
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1146,34 +1151,42 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
    (오늘 날짜·D+와 같은 재질). 편집실 태그 필터 칩과 같은 급(12.5~13px 700). */
 .dvm-tabs {
   flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 24px 10px;
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 2px;
+  margin: 0 0 10px 24px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #ececf2;
+  box-shadow: inset 0 1px 2px rgb(20 25 60 / 6%);
 }
 .dvm-tab {
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 6px;
   height: 30px;
-  padding: 0 12px;
-  border: 1px solid rgb(60 60 90 / 12%);
+  padding: 0 14px;
+  border: 0;
   border-radius: 999px;
-  background: #fff;
+  background: transparent;
   font-family: inherit;
-  font-size: var(--text-caption);
+  font-size: 13px;
   font-weight: 800;
-  color: #4b4b58;
+  letter-spacing: -0.005em;
+  color: #6f6a78;
   cursor: pointer;
   transition:
-    background-color var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease),
+    background-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
     transform var(--dur-1) var(--ease);
 }
 .dvm-tab em {
   font-style: normal;
+  font-size: var(--text-caption);
   font-weight: 700;
-  color: #9a9aa8;
+  color: #a3a3b0;
+  font-variant-numeric: tabular-nums;
 }
 .dvm-tab i {
   font-style: normal;
@@ -1181,11 +1194,12 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
   font-weight: 800;
   color: var(--gs-metal-ink, #3d4a5c);
 }
-.dvm-tab:hover { background: #f4f2f8; }
+.dvm-tab:hover { color: #1d1d29; }
 .dvm-tab:active { transform: scale(0.96); }
+/* 선택 = 흰 알약이 떠오르고(애플 세그먼트) 글자는 금색(보는 중·오늘·현재 챕터 한 재질). */
 .dvm-tab.is-on {
-  border-color: #d9a21b;
-  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(20 25 60 / 14%), 0 0 0 1px rgb(217 162 27 / 35%);
 }
 .dvm-tab.is-on,
 .dvm-tab.is-on em {
@@ -1194,10 +1208,7 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
   background-clip: text;
   color: transparent;
 }
-.dvm-tab.is-on {
-  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
-  color: #8a5a06;
-}
+.dvm-tab.is-on { background-color: #fff; }
 .dvm-body {
   min-height: 0;
   overflow-y: auto;
@@ -1238,6 +1249,35 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
 }
 .dvm-vod:has(.vod-chapters) .dvm-thumb { grid-area: thumb; }
 .dvm-vod:has(.vod-chapters) .dvm-strip { grid-area: strip; align-self: start; }
+/* 무대 폭 = 영상 폭(2026-09-17 소유자: 띠와 영상 폭이 안 맞았다). 높이 캡에 걸리면 16:9 상자가 옆으로 넓어져
+   플레이어가 좌우 레터박스를 그렸고 띠는 상자 폭을 따랐다. 이제 상자 폭 자체를 "캡 높이 × 16/9"로 묶고 띠도 같은 폭. */
+.dvm-vod {
+  --dvm-stage-h: calc(min(94vh, 1100px) - 230px);
+}
+.dvm-vod .dvm-thumb,
+.dvm-vod .dvm-strip {
+  width: min(100%, calc(var(--dvm-stage-h) * 16 / 9));
+  justify-self: start;
+}
+/* C로 타임라인을 접으면(7번) 레일 열이 사라지고 영상이 그만큼 커진다. 접힌 머리줄만 띠 아래에 남고 띠는 그대로. */
+.dvm-vod:has(.vod-chapters:not([data-open])) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "thumb"
+    "strip"
+    "rail";
+}
+.dvm-vod:has(.vod-chapters:not([data-open])) .vod-chapters {
+  height: auto;
+  min-height: 0;
+}
+/* 접힌 동안 무대가 창 폭보다 좁으면(높이 캡) 가운데 — 한쪽만 비지 않게. 머리줄도 무대 폭에 맞춘다. */
+.dvm-vod:has(.vod-chapters:not([data-open])) .dvm-thumb,
+.dvm-vod:has(.vod-chapters:not([data-open])) .dvm-strip,
+.dvm-vod:has(.vod-chapters:not([data-open])) .vod-chapters {
+  width: min(100%, calc(var(--dvm-stage-h) * 16 / 9));
+  justify-self: center;
+}
 .dvm-vod:has(.vod-chapters) .vod-chapters {
   grid-area: rail;
   align-self: stretch;
@@ -1259,7 +1299,7 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
      캡 없이도 창을 넘지 않는다. 아주 낮은 창은 아래 46vh 안전 캡 + contain이 지킨다.) */
   /* 창 94vh(2026-09-03 확대) 안에서 머리(≈58)+제목(≈44)+여백(≈100)을 뺀 만큼까지 —
      1080p에선 캡에 안 걸리고(1110×624), 768 높이 노트북만 캡(플레이어가 레터박스). */
-  max-height: calc(94vh - 230px); /* 머리(≈58)+탭(≈40)+띠(≈34)+여백 */
+  max-height: var(--dvm-stage-h, calc(94vh - 230px)); /* 머리(≈58)+탭(≈40)+띠(≈34)+여백 */
   border-radius: 14px;
   overflow: hidden;
   background: #10151f; /* 캡·비율 차로 생기는 여백이 플레이어 검정과 이어진다 */
@@ -1816,7 +1856,8 @@ html[data-reduce-motion] .vch-head { transition: none; }
   bottom: calc(100% + 8px);
   left: 0;
   transform: translateX(-50%);
-  max-width: 300px;
+  width: max-content;
+  max-width: 420px; /* 말줄임 없음(2026-09-17 소유자: 무슨 내용인지 정확히 알아야 한다) — 길면 줄바꿈 */
   padding: 6px 10px;
   border-radius: 8px;
   background: rgb(29 29 41 / 94%);
@@ -1824,9 +1865,9 @@ html[data-reduce-motion] .vch-head { transition: none; }
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-1) var(--ease);

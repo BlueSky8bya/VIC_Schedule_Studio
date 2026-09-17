@@ -94,7 +94,7 @@ export function VodChapters({
   // 선형 — 항목 ≤100개, 초당 4회라 무시할 비용). idx가 바뀔 때만 setState → 레일만 다시 그림.
   const secs = useMemo(() => (timeline?.entries ?? []).map((e) => e.sec), [timeline]);
   useEffect(() => {
-    if (!subscribeTime || !open || secs.length === 0) return;
+    if (!subscribeTime || secs.length === 0) return;
     return subscribeTime((sec) => {
       const head = headRef.current;
       if (head && durationMs > 0) head.style.left = `${Math.min(100, Math.max(0, (sec / (durationMs / 1000)) * 100))}%`;
@@ -240,7 +240,7 @@ export function VodChapters({
   // (항목별 구간 길이 표기는 2026-09-01 사용자 결정으로 없음 — 길이는 가로 띠의 구간 폭이 대신 말한다.)
 
   return (
-    <div className="vod-chapters">
+    <div className="vod-chapters" data-open={open ? "" : undefined}>
       <button
         aria-expanded={open}
         className="vch-toggle"
@@ -355,7 +355,7 @@ export function VodChapters({
           </div>
         </div>
       )}
-      {stripHost && open && timeline && onJump && durationMs > 0
+      {stripHost && timeline && onJump && durationMs > 0
         ? createPortal(
             <VodStrip
               activeIdx={activeIdx}
