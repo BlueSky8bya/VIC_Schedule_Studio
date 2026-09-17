@@ -1123,6 +1123,7 @@ export function PublicPoster({
         timelineBy?: string;
         thumbQuery?: string;
         host?: string; // 합방 게스트 출연분(0075) — 호스트 닉. 칩·창에 "합방 · ○○" 배지
+        hostId?: string; // 호스트 숲 아이디 — 칩이 방송국 링크가 된다(2026-09-17)
       }[]
     >();
     for (const v of schedule.vods ?? []) {
@@ -4570,7 +4571,21 @@ export function PublicPoster({
                             </a>
                           </div>
                           {/* 합방 게스트 출연분(0075) — 다른 스트리머 방송국의 다시보기임을 밝히는 칩(챕터 그리드에선 제목 아래 자동 칸). */}
-                          {vod.host ? (
+                          {vod.host && vod.hostId ? (
+                            // 2026-09-17 소유자: 칩을 누르면 그 스트리머의 숲 방송국 메인으로.
+                            <a
+                              className="dvm-host dvm-host-link"
+                              data-act="vod-host-station"
+                              href={`https://ch.sooplive.co.kr/${vod.hostId}`}
+                              onClick={() => hapticTick()}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                              title={`${vod.host} 방송국으로 가기`}
+                            >
+                              합방 · {vod.host} 방송국
+                              <ExternalLink aria-hidden="true" size={11} strokeWidth={2.6} />
+                            </a>
+                          ) : vod.host ? (
                             <span className="dvm-host" title={`${vod.host} 방송국의 다시보기 — 토리님 출연분`}>
                               합방 · {vod.host} 방송국
                             </span>

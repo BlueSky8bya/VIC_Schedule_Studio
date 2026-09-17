@@ -233,6 +233,7 @@ const ACT: Record<string, TargetLabel> = {
   "panel-toggle": { name: "패널 접기/펼치기", area: "시청자 화면", hint: "하단 알약 가운데 '패널' — 편집실·미리보기 공용" },
   "vlog-chip": { name: "브이로그 칩", area: "시청자 화면" },
   "vod-replay": { name: "다시보기 열기", area: "시청자 화면", hint: "날짜 상세의 '다시보기' — 숲 VOD로 이동" },
+  "vod-host-station": { name: "합방 호스트 방송국 가기", area: "시청자 화면", hint: "합방 다시보기 칩 → 그 스트리머 숲 방송국" },
   "day-vod-open": { name: "날짜 칸 다시보기 열기", area: "시청자 화면", hint: "날짜 칸 배경 클릭 → 다시보기 팝오버" },
   "vod-chapters-open": { name: "다시보기 챕터 펼치기", area: "시청자 화면", hint: "팬 타임라인 챕터 목록" },
   "vod-chapter-jump": { name: "챕터로 점프", area: "시청자 화면", hint: "그 시각부터 숲 VOD 재생" },

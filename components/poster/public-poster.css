@@ -1318,6 +1318,24 @@ html[data-reduce-motion] .dvm-notice {
 }
 .dvm-title:hover { color: #3564e0; }
 /* 합방 게스트 출연분(0075) — 제목 위 한 줄 배지 "합방 · ○○ 방송국": 다른 채널의 플레이어가 뜬다는 안내. 금 문법의 작은 칩. */
+/* 호스트 아이디가 있으면 칩이 방송국 링크 — 같은 모양에 눌림·호버만 더한다(2026-09-17). */
+a.dvm-host-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease, ease),
+    border-color 0.15s var(--ease, ease),
+    transform 0.08s var(--ease, ease);
+}
+a.dvm-host-link:hover {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 85%), rgb(255 255 255 / 10%) 55%),
+    rgb(236 242 250 / 95%);
+  border-color: var(--gs-metal-line-strong, rgb(120 140 170 / 80%));
+}
+a.dvm-host-link:active {
+  transform: scale(0.96);
+}
 .dvm-host {
   align-self: start;
   justify-self: start; /* 챕터 그리드의 자동 칸에 놓여도 칩 폭만(가로로 늘어나지 않게) */
