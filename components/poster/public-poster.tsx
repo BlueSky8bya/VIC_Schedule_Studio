@@ -70,6 +70,7 @@ import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
 import { debutDateLabel, debutDPlus, getDayMark } from "@/lib/calendar/holidays";
 import { PanelPlaceControl } from "@/components/shared/panel-place-control";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
+import { flipSpring } from "@/lib/ui/flip-motion";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
@@ -2321,17 +2322,7 @@ export function PublicPoster({
     if (prev === null || reduceMotionEnabled()) return;
     const dx = prev - left;
     if (Math.abs(dx) < 2) return;
-    stage.style.transition = "none";
-    stage.style.transform = `translateX(${dx}px)`;
-    void stage.offsetWidth; // 되돌린 자리를 한 프레임 확정
-    // 스프링은 조금 순하게 — 표준 bouncy(1.56)는 실측 72px를 넘쳐 달력이 화면 밖으로 잠깐 나갔다. 1.25면 ~25px.
-    stage.style.transition = "transform 0.52s cubic-bezier(0.3, 1.25, 0.5, 1)";
-    stage.style.transform = "";
-    const done = () => {
-      stage.style.transition = "";
-      stage.removeEventListener("transitionend", done);
-    };
-    stage.addEventListener("transitionend", done);
+    flipSpring(stage, `translateX(${dx}px)`); // 편집실 달력 접기/펼치기와 같은 함수·곡선·길이(lib/ui/flip-motion)
   }, [sceneOn, panel.mode, panel.side]);
 
   // 포스터(시청자/꾸미기/export 표면)는 화면마다 reflow되면 안 된다 — 소유자가 찍은
