@@ -4441,6 +4441,9 @@ export function PublicPoster({
             return (
               <div
                 className="day-vod-backdrop"
+                /* 재생이 시작되면 유리 딤(backdrop-filter)을 끈다(2026-09-17 소유자: "소리는 되는데 영상이 툭툭") —
+                   전체 화면 블러가 재생 중 매 프레임 다시 합성돼 약한 GPU에선 영상 프레임을 잡아먹는다. CSS 참조. */
+                data-playing={dayVodLive.size > 0 ? "" : undefined}
                 onClick={(e) => {
                   if (e.target === e.currentTarget) setDayVodPop(null);
                 }}

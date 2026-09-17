@@ -1008,6 +1008,15 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   backdrop-filter: blur(7px) saturate(1.15);
   animation: agenda-detail-fade var(--dur-2) var(--ease-enter, ease-out) both;
 }
+/* 재생 중엔 유리를 걷는다(2026-09-17 소유자: 소리는 정상인데 영상이 느리게 흐르거나 툭툭 끊김).
+   원인: 전체 화면 backdrop-filter는 뒤 내용을 매 합성 프레임마다 다시 흐리는데, 위에서 영상이 초당 30~60번 합성을
+   일으키므로 그때마다 1920×1080 블러가 같이 돈다 — 통합 GPU에선 영상 프레임이 밀린다(오디오는 별도 경로라 멀쩡).
+   커버가 걷힌 뒤엔 어차피 영상을 보는 중이라 유리 재질감은 필요 없다 — 딤만 조금 진하게. */
+.day-vod-backdrop[data-playing] {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(15 23 42 / 52%);
+}
 .day-vod-modal {
   /* 더 넓은 창(2026-09-01 사용자 피드백 2차) — 미리보기가 주인공. 낮은 화면에선 미리보기가
      max-height(아래 .dvm-thumb)로 잡히고 플레이어가 알아서 레터박스를 그린다. */
@@ -1212,9 +1221,16 @@ html[data-reduce-motion] .day-vod-modal {
   display: block;
   pointer-events: none;
   background: #10151f; /* 밝은 그라데이션 → 어두운 단색: contain 레터박스가 플레이어처럼 보이게 */
-  transition: opacity 0.5s var(--ease);
+  /* visibility는 페이드가 끝난 뒤 — 걷힌 커버(SVG 컨볼루션 필터가 걸린 이미지)가 영상 위 투명 레이어로 남아
+     합성마다 끼지 않게 완전히 뺀다(2026-09-17 재생 끊김 최적화의 둘째 항목). */
+  transition:
+    opacity 0.5s var(--ease),
+    visibility 0s linear 0.5s;
 }
-.dvm-cover.is-gone { opacity: 0; }
+.dvm-cover.is-gone {
+  opacity: 0;
+  visibility: hidden;
+}
 /* 커버 썸네일 선명화 — 640×360 스냅샷의 1.9배 확대 흐림을 완만한 언샤프(TSX의 SVG 필터)로
    보정. 필터 정의 svg는 크기 0·흐름 밖. */
 .dvm-filter-defs {
