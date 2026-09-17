@@ -1389,18 +1389,26 @@ export function StudioShell({
     // 저장 탭 + 점선 링(2026-09-17 소유자): 탭은 카드 옆면에 **붙어** 있고(틈 0), 링은 "카드 ∪ 탭"의 바깥 윤곽 한 줄이다.
     // 탭의 높이(y)와 튀어나온 폭(bump: 평소 10 · 근접 44)은 둘 다 작은 스프링으로 움직여(살짝 넘쳤다 자리 잡음) 링의 볼록
     // 구간이 탭을 따라 파도처럼 흐른다. 프레임마다 탭 style과 path d만 쓴다(React 렌더 없음).
-    const PEEK = 10;
-    const FULL = 44;
+    // 덜 튀어나오게(2026-09-17 소유자 5차): 평소 6 · 근접 30. 탭은 바깥이 완전히 둥근 D(반캡슐) — 링의 볼록도 같은 반지름.
+    const PEEK = 6;
+    const FULL = 30;
     const RING_PAD = 4; // 카드 → 링 거리(옛 outline-offset)
     const RING_INSET = 8; // SVG가 카드 밖으로 나가 있는 양(pad + 선 굵기 여유)
     let raf = 0;
     let targetY: number | null = null;
     let y: number | null = null;
     let vy = 0;
-    let targetB = PEEK;
+    let near = false;
     let b = 0; // 처음엔 0에서 자라나며 등장
     let vb = 0;
+    let lastFlipAt = 0;
     let lastPath = "";
+    // 탭이 보여야 할 때만 부푼다(data-show: 신규는 내용을 적은 뒤, 기존은 변경이 있을 때) — 숨으면 볼록이 스르륵 꺼진다.
+    const wantBump = () => {
+      const tab = saveTabRef.current;
+      if (!tab || tab.dataset.show === undefined) return 0;
+      return near ? FULL : PEEK;
+    };
     const draw = () => {
       const panel = editorPanelRef.current;
       const tab = saveTabRef.current;
@@ -1417,7 +1425,9 @@ export function StudioShell({
         side,
         bump: tab && y !== null ? b : 0,
         tabTop: y ?? 0,
-        tabH: th
+        tabH: th,
+        // 볼록 바깥 모서리 = 튀어나온 폭 + 링 거리 → 탭의 D 곡선을 링이 그대로 따라 돈다.
+        bumpR: Math.max(4, b + RING_PAD)
       });
       if (d !== lastPath) {
         path.setAttribute("d", d);
@@ -1431,8 +1441,11 @@ export function StudioShell({
       if (!tab || !panel) return;
       if (targetY === null) targetY = Math.round(panel.offsetHeight * 0.4);
       if (y === null) y = targetY;
-      [y, vy] = ringSpring(y, vy, targetY, 0.14, 0.7);
-      [b, vb] = ringSpring(b, vb, targetB, 0.18, 0.68);
+      // 중후하게(2026-09-17 소유자: "경박하다, 정신을 못 차린다") — 느린 스프링·강한 감쇠: 손보다 한 박자 늦게, 거의 안 넘친다.
+      const targetB = wantBump();
+      // 시뮬레이션(0→300): y = 넘침 3.6%·~0.5s 안착, 폭 = 넘침 5%. 한 박자 늦고 한 번만 살짝 넘친다.
+      [y, vy] = ringSpring(y, vy, targetY, 0.06, 0.72);
+      [b, vb] = ringSpring(b, vb, targetB, 0.08, 0.7);
       tab.style.top = `${y}px`;
       // 탭은 카드 밑에 깔려(z 0) 튀어나온 폭만 보인다 — 붙어 있는 쪽 옆면 밖으로 b만큼.
       tab.style[saveTabSideRef.current === "left" ? "left" : "right"] = `${-b}px`;
@@ -1482,10 +1495,17 @@ export function StudioShell({
         for (const o of obstacles) c += overlapArea(box, o);
         return c;
       };
-      const want: "left" | "right" = e.clientX < r.left + r.width / 2 ? "left" : "right";
+      // 쪽 바꾸기엔 여유(hysteresis): 가운데를 지나 폭의 10%는 더 가야 하고, 한 번 바꾸면 450ms는 그대로 —
+      // 마우스를 빠르게 왔다 갔다 해도 탭이 양쪽으로 튀지 않는다.
+      const cur = saveTabSideRef.current;
+      const dead = r.width * 0.1;
+      const want: "left" | "right" =
+        e.clientX < r.left + r.width / 2 - dead ? "left" : e.clientX > r.left + r.width / 2 + dead ? "right" : cur;
       const other: "left" | "right" = want === "left" ? "right" : "left";
-      const side = cost(want) === 0 ? want : cost(other) < cost(want) ? other : want;
+      let side = cost(want) === 0 ? want : cost(other) < cost(want) ? other : want;
+      if (side !== cur && performance.now() - lastFlipAt < 450) side = cur;
       if (side !== saveTabSideRef.current) {
+        lastFlipAt = performance.now();
         // 좌↔우: 탭은 FLIP(flipSpring)으로 건너가고, 볼록은 0에서 다시 자라난다(링이 반대편에서 새로 부푼다).
         saveTabPrevRectRef.current = tab.getBoundingClientRect();
         saveTabSideRef.current = side;
@@ -1498,11 +1518,12 @@ export function StudioShell({
       const margin = 16 + RING_PAD + 6 + 2;
       const yy = (e.clientY - r.top) / zoom - th / 2;
       targetY = Math.max(margin, Math.min(panel.offsetHeight - th - margin, yy));
-      // 근접(탭 사각형에서 ~56px 안) = 펼침, 아니면 살짝.
+      // 근접 = 펼침(들어올 땐 56px 안, 나갈 땐 96px 밖 — 경계에서 떨지 않게).
       const tr = tab.getBoundingClientRect();
       const dx = Math.max(tr.left - e.clientX, 0, e.clientX - tr.right);
       const dy = Math.max(tr.top - e.clientY, 0, e.clientY - tr.bottom);
-      targetB = Math.hypot(dx, dy) <= 56 ? FULL : PEEK;
+      const dist = Math.hypot(dx, dy);
+      near = near ? dist <= 96 : dist <= 56;
       kick();
     };
     // 카드 높이가 바뀌면(태그 펼침·옵션 열림) 링을 다시 그린다.
@@ -1511,11 +1532,13 @@ export function StudioShell({
       kick();
     });
     if (editorPanelRef.current) ro.observe(editorPanelRef.current);
+    saveTabKickRef.current = kick;
     kick();
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
       window.removeEventListener("pointermove", onMove);
       ro.disconnect();
+      saveTabKickRef.current = null;
       if (raf) cancelAnimationFrame(raf);
     };
   }, [editorVisible, isNarrow, editorKey]);
@@ -1578,6 +1601,14 @@ export function StudioShell({
   // baseline = '깨끗한' 기준 지문(원본 일정 또는 빈 새 카드). form이 이와 다르면 미저장 변경 → 보관.
   const editDraftsRef = useRef<Map<string, EditDraft>>(new Map());
   const editBaselineRef = useRef<string>(draftFingerprint(createEmptyForm()));
+  // 저장 탭은 **저장할 게 있을 때만**(2026-09-17 소유자): 신규는 내용을 적으면 떠오르고, 기존 일정은 내용·태그·옵션이
+  // 기준(열 때 값)과 달라졌을 때만. 지문(draftFingerprint)은 임시 보관과 같은 것 — 같은 판정 한 벌.
+  const saveTabShown =
+    canEdit && !teaserGateActive && (selectedEventId ? draftFingerprint(form) !== editBaselineRef.current : form.publicTitle.trim().length > 0);
+  const saveTabKickRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    saveTabKickRef.current?.(); // 보임/숨김이 바뀌면 볼록이 부풀거나 꺼지도록 루프를 깨운다
+  }, [saveTabShown]);
   const draftHydratedRef = useRef(false);
   const [draftRestored, setDraftRestored] = useState(false);
   useEffect(() => {
@@ -7490,16 +7521,20 @@ export function StudioShell({
           ) : null}
           {!teaserGateActive && canEdit ? (
             <button
+              aria-hidden={saveTabShown ? undefined : true}
               className="editor-save-tab"
               data-act="save-event"
+              data-show={saveTabShown ? "" : undefined}
               data-side={saveTabSide}
-              disabled={!form.publicTitle.trim()}
+              disabled={!saveTabShown || !form.publicTitle.trim()}
               form={`event-editor-form-${editorKey}`}
               ref={saveTabRef}
+              tabIndex={saveTabShown ? undefined : -1}
               title="저장 (Ctrl+Enter)"
               type="submit"
             >
-              <span className="editor-save-tab-text">{selectedEventId ? "저장" : "일정 추가"}</span>
+              {/* 글자는 늘 '저장'(2026-09-17 소유자: '일정 추가'는 불필요). */}
+              <span className="editor-save-tab-text">저장</span>
             </button>
           ) : null}
         </aside>

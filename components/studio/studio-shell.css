@@ -7614,9 +7614,10 @@ html[data-reduce-motion] .delete-snack {
   position: absolute;
   top: 40px;
   z-index: 0;
-  width: 44px;
-  min-height: 104px;
-  padding: 14px 0;
+  /* 모양 = 바깥이 완전히 둥근 D(반캡슐), 폭 30(2026-09-17 소유자 5차: 덜 튀어나오고 더 단순한 도형). */
+  width: 30px;
+  min-height: 96px;
+  padding: 12px 0;
   box-sizing: border-box;
   border: 1px solid var(--tab-line);
   cursor: pointer;
@@ -7626,10 +7627,22 @@ html[data-reduce-motion] .delete-snack {
   /* 자리·폭은 JS 스프링이 프레임마다 쓴다(top / left|right = −bump: 평소 10px, 근접 44px) — 탭은 카드 옆면에 **붙어**
      있고 카드 밑(z 0)에 깔려 튀어나온 폭만 보인다. 점선 링(.editor-ring)이 카드와 탭을 한 덩어리로 두른다.
      좌↔우 전환은 JS FLIP(flipSpring). CSS 트랜지션은 색·그림자만. */
+  /* 저장할 게 있을 때만 보인다(data-show) — 볼록(폭)은 JS 스프링이 0에서 부풀고, 여기선 옅게 떠오르기만. */
+  opacity: 0;
+  visibility: hidden;
   transition:
     background-color 0.2s ease,
     box-shadow 0.2s ease,
-    opacity 0.15s ease;
+    opacity 0.45s ease,
+    visibility 0s linear 0.45s;
+}
+.editor-save-tab[data-show] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.45s ease;
 }
 .event-editor-panel.is-new .editor-save-tab {
   --tab-ink: #1d7a4e;
@@ -7647,14 +7660,14 @@ html[data-reduce-motion] .delete-snack {
   --tab-line: rgb(14 147 180 / 34%);
 }
 .editor-save-tab[data-side="left"] {
-  left: -10px;
+  left: -6px;
   border-right: 0;
-  border-radius: 12px 0 0 12px;
+  border-radius: 999px 0 0 999px;
 }
 .editor-save-tab[data-side="right"] {
-  right: -10px;
+  right: -6px;
   border-left: 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 999px 999px 0;
 }
 .editor-save-tab:hover:not(:disabled) {
   box-shadow: 0 8px 20px rgb(60 40 120 / 18%);
@@ -7673,9 +7686,9 @@ html[data-reduce-motion] .delete-snack {
 .editor-save-tab-text {
   writing-mode: vertical-rl;
   text-orientation: upright;
-  font-size: var(--text-ui);
+  font-size: var(--text-body); /* 폭 30 안에서 두 글자('저장')가 편하게 */
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   white-space: nowrap;
 }
 html[data-reduce-motion] .editor-save-tab {
