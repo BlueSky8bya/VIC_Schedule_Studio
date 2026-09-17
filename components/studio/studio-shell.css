@@ -5028,25 +5028,34 @@ html[data-reduce-motion] .editor-anchor-link line {
     0 18px 44px rgb(80 70 120 / 16%),
     0 2px 10px rgb(120 110 160 / 10%);
 }
-/* 점선 링은 폼 outline이 아니라 aside의 ::after(2026-09-17) — 저장 탭(z 0)이 링 **밑으로** 지나가고 폼(z 1)이 그 위,
-   링(z 2)이 맨 위라 탭이 링을 덮어 산만해지지 않는다. 자리(4px 밖·2px)는 옛 outline과 같다. */
-.studio-workspace .event-editor-panel::after {
-  content: "";
+/* 점선 링(2026-09-17 3차) = SVG 한 장(.editor-ring) — "카드 ∪ 저장 탭"의 **바깥 윤곽 한 줄**(lib/ui/ring-path). 카드 밖 8px까지
+   나가 있고 path는 JS가 탭을 따라 프레임마다 다시 쓴다. 자리(카드에서 4px·2px 점선)와 색(모드)은 옛 outline 그대로. */
+.studio-workspace .event-editor-panel .editor-ring {
   position: absolute;
-  inset: -6px;
+  inset: -8px;
+  width: calc(100% + 16px);
+  height: calc(100% + 16px);
   z-index: 2;
-  border: 2px dashed rgb(139 92 246 / 40%);
-  border-radius: calc(var(--r-lg) + 4px);
+  overflow: visible;
   pointer-events: none;
+  color: rgb(139 92 246 / 40%);
 }
-.studio-workspace .event-editor-panel.is-new::after {
-  border-color: rgb(34 150 94 / 40%);
+.studio-workspace .event-editor-panel .editor-ring path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.studio-workspace .event-editor-panel.is-support::after {
-  border-color: rgb(225 29 72 / 40%);
+.studio-workspace .event-editor-panel.is-new .editor-ring {
+  color: rgb(34 150 94 / 40%);
 }
-.studio-workspace .event-editor-panel.is-period::after {
-  border-color: rgb(14 147 180 / 40%);
+.studio-workspace .event-editor-panel.is-support .editor-ring {
+  color: rgb(225 29 72 / 40%);
+}
+.studio-workspace .event-editor-panel.is-period .editor-ring {
+  color: rgb(14 147 180 / 40%);
 }
 /* 업 도움 편집 카드 — 점선 아웃라인·그립도 띠와 같은 장미색 언어. */
 .studio-workspace .event-editor-panel.is-support form {
@@ -7614,12 +7623,10 @@ html[data-reduce-motion] .delete-snack {
   color: var(--tab-ink);
   background: linear-gradient(180deg, #fff 0%, var(--tab-bg) 100%);
   box-shadow: 0 4px 12px rgb(60 40 120 / 12%);
-  /* 평소엔 점선 링 밑으로 10px만 내밀고, 마우스가 다가오면([data-near]) 링 바깥에 **붙어** 선다(안쪽 모서리가 링의 바깥선에
-     맞닿음) — 링이 탭으로 흘러드는 모양. 움직임은 부드러운 감속(오버슈트 없음, 0.28s) — 두더지처럼 튀지 않는다
-     (Apple 사이드바 reveal 계열: 짧은 ease-out, 오버슈트 없음). 좌↔우 전환은 JS FLIP(flipSpring)이 잇는다. */
+  /* 자리·폭은 JS 스프링이 프레임마다 쓴다(top / left|right = −bump: 평소 10px, 근접 44px) — 탭은 카드 옆면에 **붙어**
+     있고 카드 밑(z 0)에 깔려 튀어나온 폭만 보인다. 점선 링(.editor-ring)이 카드와 탭을 한 덩어리로 두른다.
+     좌↔우 전환은 JS FLIP(flipSpring). CSS 트랜지션은 색·그림자만. */
   transition:
-    left 0.28s cubic-bezier(0.25, 1, 0.5, 1),
-    right 0.28s cubic-bezier(0.25, 1, 0.5, 1),
     background-color 0.2s ease,
     box-shadow 0.2s ease,
     opacity 0.15s ease;
@@ -7639,23 +7646,15 @@ html[data-reduce-motion] .delete-snack {
   --tab-bg: #e4f5fa;
   --tab-line: rgb(14 147 180 / 34%);
 }
-/* 평소: 링 바깥 10px만(링 안쪽 6 + 선 2 + 10 = 18). */
 .editor-save-tab[data-side="left"] {
-  left: -18px;
+  left: -10px;
   border-right: 0;
   border-radius: 12px 0 0 12px;
 }
 .editor-save-tab[data-side="right"] {
-  right: -18px;
+  right: -10px;
   border-left: 0;
   border-radius: 0 12px 12px 0;
-}
-/* 근접·호버·포커스: 안쪽 모서리가 링 바깥선(−8px)에 닿도록 — 44 + 8 = 52. */
-.editor-save-tab[data-side="left"]:is([data-near], :hover, :focus-visible) {
-  left: -52px;
-}
-.editor-save-tab[data-side="right"]:is([data-near], :hover, :focus-visible) {
-  right: -52px;
 }
 .editor-save-tab:hover:not(:disabled) {
   box-shadow: 0 8px 20px rgb(60 40 120 / 18%);
