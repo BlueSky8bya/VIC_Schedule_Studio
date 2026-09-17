@@ -42,12 +42,14 @@ body::-webkit-scrollbar {
    min-height는 zoom이 100vh도 축소시켜 하단에 body(베이지) 바탕이 드러나는 걸 배율만큼 보정. */
 @media (min-width: 1700px) {
   .studio-shell {
+    --shell-zoom: 0.9; /* rail 폭·자리를 화면 px로 맞출 때 나눈다(시청자 패널과 같은 폭, 2026-09-17) */
     zoom: 0.9;
     min-height: calc(100vh / 0.9);
   }
 }
 @media (min-width: 2400px) {
   .studio-shell {
+    --shell-zoom: 0.8;
     zoom: 0.8;
     min-height: calc(100vh / 0.8);
   }
@@ -4428,11 +4430,13 @@ html[data-reduce-motion] .perf-windows button.active {
    편집 중 달력 폭을 더 챙기려고 살짝 좁은 20vw로 둔다(태그는 2열이라 좁아도 충분). ── */
 /* 아바타 ON 시 편집실 콘텐츠(workspace)를 반대쪽으로 margin 슬라이드(패널 포함 통째로 → 겹침 0). */
 /* 2026-09-17: 밀어내기는 **펼침 + 넓은 화면**에서만. 접히거나(panel-closed) 떠 있을 땐(panel-overlay) 달력이 화면 폭 전부. */
+/* 셸 zoom(≥1700 .9, ≥2400 .8) 안에서는 px가 곱해져 화면에서 작아진다 — --shell-zoom으로 나눠 **화면 px**가 시청자
+   패널과 같게(1920 실측 전: rail 310 vs 시청자 카드 340). */
 .studio-shell.avatar-scene.panel-open:not(.panel-overlay).avatar-right .studio-workspace {
-  margin-right: var(--side-panel-w); /* 시청자 슬롯과 같은 토큰(globals.css), 2026-09-17 */
+  margin-right: calc(var(--side-panel-w) / var(--shell-zoom, 1)); /* 시청자 슬롯과 같은 토큰(globals.css), 2026-09-17 */
 }
 .studio-shell.avatar-scene.panel-open:not(.panel-overlay).avatar-left .studio-workspace {
-  margin-left: var(--side-panel-w);
+  margin-left: calc(var(--side-panel-w) / var(--shell-zoom, 1));
 }
 /* 아바타 scene: 좌측 색상필터 칸 비움(0) — 필터는 우측 rail로. 편집 카드는 팝오버라 칸 불필요. */
 .studio-shell.avatar-scene .studio-workspace {
@@ -4459,7 +4463,8 @@ html[data-reduce-motion] .perf-windows button.active {
   position: fixed;
   top: var(--dock-top, 148px); /* 액션바 하단 실측 추적(위 편집창과 동일) */
   bottom: 8px;
-  width: calc(var(--side-panel-w) - 16px);
+  /* 카드 폭 = 토큰 − 20(시청자 패널 카드와 동일), 셸 zoom 보정. */
+  width: calc((var(--side-panel-w) - 20px) / var(--shell-zoom, 1));
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -4481,13 +4486,13 @@ html[data-reduce-motion] .perf-windows button.active {
   pointer-events: none;
 }
 .studio-shell.avatar-scene.avatar-left .avatar-rail {
-  left: 8px;
+  left: calc(10px / var(--shell-zoom, 1)); /* 시청자 패널 카드와 같은 가장자리 여백(10) */
   /* 미닫이문: 도크(필터+아바타) 전체가 왼쪽 벽에서 천천히 부드럽게 슬라이드 인(편집패널과 동일
      ease-out·길이). 자식별 오버슈트 대신 rail 통째로 한 번 → 일체감 + '확 켜짐' 제거. */
   animation: rail-slide-l 0.52s cubic-bezier(0.25, 1, 0.5, 1) 0.02s both;
 }
 .studio-shell.avatar-scene.avatar-right .avatar-rail {
-  right: 8px;
+  right: calc(10px / var(--shell-zoom, 1));
   animation: rail-slide-r 0.52s cubic-bezier(0.25, 1, 0.5, 1) 0.02s both;
 }
 .avatar-rail-filter {

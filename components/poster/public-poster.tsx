@@ -2284,6 +2284,27 @@ export function PublicPoster({
   const panel = useSidePanel({ enabled: !showAgenda, fixedSide: avatarFixed });
   const sceneOn = panel.ready; // 패널이 표면 밖에 선 레이아웃(접혀 있어도 표면 안 레일은 접힌 채)
   const avatarSide = panel.side;
+  // 흐름 안 sticky 패널이 창보다 길면(라이브 카드 + 긴 태그 목록) top을 음수로 낮춰 **아래쪽이 붙게** — 페이지를 내리면
+  // 끝까지 보이고, 창보다 짧으면 평소처럼 76px에 붙는다. 독립 스크롤러였을 때 D+ 카드가 잘린 채 굳던 문제의 대체.
+  useEffect(() => {
+    if (!sceneOn || panel.mode !== "push" || !panel.open) return;
+    const slot = document.querySelector<HTMLElement>(".poster-page .avatar-slot");
+    if (!slot) return;
+    const fit = () => {
+      const h = slot.offsetHeight;
+      const avail = window.innerHeight - 76 - 14;
+      slot.style.setProperty("--slot-top", h > avail ? `${window.innerHeight - 14 - h}px` : "76px");
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(slot);
+    window.addEventListener("resize", fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+      slot.style.removeProperty("--slot-top");
+    };
+  }, [sceneOn, panel.mode, panel.open, panel.side]);
 
   // 포스터(시청자/꾸미기/export 표면)는 화면마다 reflow되면 안 된다 — 소유자가 찍은
   // 스티커·텍스트 위치가 틀어지고 글자가 가려질 수 있다. 그래서 내부는 고정 16:9 캔버스
@@ -2428,12 +2449,16 @@ export function PublicPoster({
         form.style.setProperty("--acct-mr", `${Math.max(0, Math.round((hr.right - rightEdge) / zoom - padR))}px`);
       // 2026-09-17(소유자 사진 2): 패널이 **오른쪽에 서서 밀어낼 때**는 패널 카드와 폭·오른쪽 끝을 맞추고, 그 외(패널이
       // 왼쪽·접힘·떠 있음)엔 달력 그리드의 오른쪽 끝에 맞춘다 — 로그인 버튼만 혼자 화면 끝에 붙어 있지 않게.
-      const card = document.querySelector<HTMLElement>(".avatar-slot .rail-info-card");
-      const cr = card?.getBoundingClientRect();
+      // 패널 자리는 **레이아웃 값**으로 잰다(offsetWidth + .poster-fit rect): 슬롯은 좌우 전환 때 remount되어 화면 밖에서
+      // 미끄러져 들어오는데, 그 순간의 rect를 쓰면 카드가 가운데로 튀었다 돌아온다(2026-09-17 소유자 신고). transform은
+      // offset*와 부모 rect에 안 실린다.
+      const fitEl = document.querySelector<HTMLElement>(".poster-page .poster-fit");
+      const slot = document.querySelector<HTMLElement>(".poster-page .avatar-slot");
       const panelRight = sceneOn && panel.open && panel.mode === "push" && panel.side === "right";
-      if (panelRight && cr && cr.width >= 60 && cr.right <= hr.right + 1) {
-        form.style.setProperty("--acct-w", `${Math.round(cr.width / zoom)}px`);
-        setMr(cr.right);
+      if (panelRight && fitEl && slot && slot.offsetWidth >= 80) {
+        const fr = fitEl.getBoundingClientRect();
+        form.style.setProperty("--acct-w", `${Math.round((slot.offsetWidth - 20) / zoom)}px`);
+        setMr(fr.right - 10 * zoom); // 슬롯 안쪽 여백 10 = 카드 오른쪽 끝
         return;
       }
       form.style.removeProperty("--acct-w");
@@ -4188,8 +4213,8 @@ export function PublicPoster({
   const [posterZoom, setPosterZoom] = useState(1);
   // 확대 배지의 '조용해짐' — 배율이 바뀌면 깨어나고, 손을 떼면 물러난다(lib/ui/use-idle).
   // 잠든 동안엔 클릭이 달력으로 통과하고(가림 0), 포인터가 90px 안으로 다가오면 깨어나 다시 눌린다.
-  const zoomBadgeRef = useRef<HTMLDivElement | null>(null);
-  const zoomBadge = useIdleAfter(posterZoom, { el: zoomBadgeRef });
+  // 배율 표시 창 1.2초(2026-09-17 3차 소유자) — 근접 깨우기 없음: 알약에 마우스가 오면 '패널' 버튼이어야 한다.
+  const zoomBadge = useIdleAfter(posterZoom, { ms: 1200 });
   const posterZoomStepperRef = useRef(createWheelStepper());
   const posterCalWheelCleanupRef = useRef<(() => void) | null>(null);
   const posterCalRef = useCallback((el: HTMLElement | null) => {
@@ -5351,20 +5376,11 @@ export function PublicPoster({
       {/* 하단 중앙 [⇤ | 패널 | ⇥] — 편집실과 같은 부품·같은 자리(2026-09-17 소유자). 자리 선택(⇤ ⇥)은 관리자·개발자
           (avatarSlot)만, 일반 시청자·비로그인은 접기/펼치기 하나. /onair 고정 scene엔 없다(사람이 안 만진다). */}
       {sceneOn && !avatarFixed ? (
-        <div
-          className="poster-panel-ctl"
-          onFocus={zoomBadge.wake}
-          onPointerEnter={zoomBadge.wake}
-          ref={zoomBadgeRef}
-        >
-          {/* 자리 선택(⇤ ⇥)은 비로그인 시청자에게도(2026-09-17 소유자). 확대 직후엔 가운데가 잠시 배율. */}
+        <div className="poster-panel-ctl">
+          {/* 자리 선택(⇤ ⇥)은 비로그인 시청자에게도(2026-09-17 소유자). 확대 직후 1.2초는 가운데 글자만 배율. */}
           <PanelPlaceControl
             onSide={panel.pickSide}
             onToggle={panel.toggle}
-            onZoomReset={() => {
-              hapticTick();
-              setPosterZoom(1);
-            }}
             open={panel.open}
             side={panel.side}
             zoomAwake={!zoomBadge.idle}

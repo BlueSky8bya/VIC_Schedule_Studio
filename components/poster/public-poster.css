@@ -1725,9 +1725,21 @@ body::-webkit-scrollbar {
 }
 /* 달력(stage)을 왼쪽에 붙이고 오른쪽에 공간을 비운다 → 그 공간 + 짧아진 legend 아래가 아바타 자리.
    stage는 uniform scale만 하므로(폭 margin으로 줄임) 스티커 좌표 안전. */
+/* 2026-09-17(3차): 패널은 fixed 독립 스크롤러가 아니라 **흐름 안의 sticky 열** — .poster-fit이 [패널 | 달력] 가로 플렉스.
+   · 패널 안에서 휠을 굴려도 따로 스크롤되지 않는다(D+ 카드가 잘린 채 굳던 원인 = 독립 스크롤 오프셋).
+   · 패널이 창보다 길면 JS(--slot-top, 음수)가 아래쪽이 붙도록 top을 낮춰 페이지 스크롤로 끝까지 본다.
+   · 좌우 이동은 order 교체(즉시) — stage margin 트랜지션 중 실측이 흔들려 로그인 버튼이 튀던 것도 사라진다.
+   · 접힘은 폭(flex-basis)이 0으로 줄며 달력이 부드럽게 넓어지고, 내용은 절대 px로 화면 밖으로 미끄러진다. */
 .poster-page.avatar-scene .poster-fit {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  overflow-x: clip; /* 오른쪽 패널이 화면 밖으로 나갈 때 가로 스크롤 금지(clip은 sticky를 깨지 않는다) */
+}
+.poster-page.avatar-scene .poster-stage {
+  order: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 /* 정렬(justify)·축소기준(transform-origin)은 base 그대로(center) — margin만 바꿔 슬라이드하므로
    ON/OFF·좌우 전환에서 정렬이 '스냅'하지 않고 margin 트랜지션만 부드럽게 흐른다. */
@@ -1745,15 +1757,7 @@ body::-webkit-scrollbar {
 /* 패널 자리(2026-09-17): 패널이 **밀어낼 때만**(펼침 + 넓은 화면) 그쪽 margin을 연다. 접히거나 떠 있을 땐
    달력이 화면 폭 전부. 반대편 '얇은 필터 레일' 여백(옛 --rail-gutter)은 패널이 한 줄로 합쳐지며 없어졌다.
    margin은 미닫이 트랜지션 — 패널의 슬라이드(같은 곡선·길이)와 한 몸으로 움직인다. */
-.poster-page.avatar-scene .poster-stage {
-  transition: margin 0.52s cubic-bezier(0.25, 1, 0.5, 1);
-}
-.poster-page.avatar-scene.panel-open:not(.panel-overlay).avatar-right .poster-stage {
-  margin-right: calc(var(--avatar-col) - var(--avatar-gap)); /* 패널 우측 → 달력이 나머지 전부 */
-}
-.poster-page.avatar-scene.panel-open:not(.panel-overlay).avatar-left .poster-stage {
-  margin-left: calc(var(--avatar-col) - var(--avatar-gap)); /* 패널 좌측 → 달력이 나머지 전부 */
-}
+/* (stage margin 밀어내기 규칙은 3차에서 제거 — 패널이 흐름 안 플렉스 아이템이라 자리는 자동.) */
 /* scene에선 셸 좌우 padding(22)을 0으로 — 레일·아바타와의 이중 여백을 걷어 달력을 키운다. */
 .poster-page.avatar-scene .public-calendar-shell {
   padding-left: 0;
@@ -1889,11 +1893,15 @@ body::-webkit-scrollbar {
    [카드 스택][꾸미기 토글][점선 박스]. 박스가 flex:1로 '남는 높이'를 결정적으로 차지 —
    예전 75vh 고정 + 카드를 위로 translate하던 매직 넘버(꾸미기 -72px)를 없앴다. */
 .poster-page.avatar-scene .avatar-slot {
-  position: fixed;
-  top: 76px;
-  bottom: 14px;
+  /* 흐름 안 sticky 열(밀어내기 모드). 폭 = 공용 토큰, 안쪽 여백 10 → 카드 폭 = 토큰 − 20(편집실 rail과 동일). */
+  position: sticky;
+  top: var(--slot-top, 76px);
+  order: 0;
+  flex: 0 0 var(--avatar-col);
   width: var(--avatar-col);
-  height: auto;
+  /* 창 높이만큼은 서서 빈 자리(아바타)가 바닥까지 — 내용이 더 길면 그만큼 자라고 --slot-top이 아래를 붙인다. */
+  min-height: calc(100vh - 90px);
+  margin-bottom: 14px;
   padding: 0 10px;
   display: flex;
   flex-direction: column;
@@ -1901,31 +1909,31 @@ body::-webkit-scrollbar {
   box-sizing: border-box;
   pointer-events: none;
   z-index: 6;
-  /* 카드가 열보다 길면(라이브 + 긴 태그 목록) 안에서 조용히 스크롤 — 막대는 숨긴다. */
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
-  /* 접힘/펼침의 미닫이 트랜지션(편집실 rail과 같은 곡선·길이). 등장 keyframes가 도는 동안엔 animation이 이기고,
-     접힐 땐 animation을 떼고(아래) 이 transition으로 화면 밖까지 미끄러진다. visibility는 다 나간 뒤에 끈다. */
+  /* 접힘/펼침의 미닫이 트랜지션(편집실 rail과 같은 곡선·길이). 폭이 줄며 달력이 넓어지고 내용은 밖으로 미끄러진다.
+     등장 keyframes가 도는 동안엔 animation이 이기고, 접힐 땐 animation을 떼고(아래) transition만 남는다. */
   transition:
+    flex-basis 0.42s cubic-bezier(0.25, 1, 0.5, 1),
+    width 0.42s cubic-bezier(0.25, 1, 0.5, 1),
+    padding 0.42s cubic-bezier(0.25, 1, 0.5, 1),
     transform 0.42s cubic-bezier(0.25, 1, 0.5, 1),
     opacity 0.42s cubic-bezier(0.25, 1, 0.5, 1),
     visibility 0s linear 0.42s;
 }
-.poster-page.avatar-scene .avatar-slot::-webkit-scrollbar {
-  display: none;
+/* 카드들은 열 폭이 줄어드는 동안에도 제 폭을 지킨다(접힐 때 안에서 재배치되지 않게). */
+.poster-page.avatar-scene .avatar-slot > * {
+  width: calc(var(--avatar-col) - 20px);
+  box-sizing: border-box;
+}
+.poster-page.avatar-scene.avatar-right .avatar-slot {
+  order: 2;
 }
 /* 등장 = 화면 가장자리에서 미닫이문처럼 슬라이드 인(편집실 rail-slide와 같은 문법).
    ⚠ 이름을 **side로 가른다**(2026-09-05 소유자): 이름이 하나면 좌↔우를 눌러도 애니메이션이 다시 돌지 않고
    좌표만 바뀌어 한 프레임에 반대편으로 옮겨 간다. 두 keyframes의 `from`은 방향만 다르고 나머지는 같다. */
 .poster-page.avatar-scene.avatar-right .avatar-slot {
-  right: 0;
-  left: auto;
   animation: slot-slide-r 0.52s cubic-bezier(0.25, 1, 0.5, 1) 0.02s both;
 }
 .poster-page.avatar-scene.avatar-left .avatar-slot {
-  left: 0;
-  right: auto;
   animation: slot-slide-l 0.52s cubic-bezier(0.25, 1, 0.5, 1) 0.02s both;
 }
 @keyframes slot-slide-l {
@@ -1955,18 +1963,49 @@ body::-webkit-scrollbar {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  /* 흐름 안에서 폭을 0으로 — 달력이 그만큼 부드럽게 넓어진다. 내용은 아래 절대 px transform으로 화면 밖. */
+  flex-basis: 0;
+  width: 0;
+  padding-inline: 0;
 }
 .poster-page.avatar-scene.panel-closed.avatar-left .avatar-slot {
-  transform: translateX(calc(-100% - var(--slot-edge, 8px)));
+  transform: translateX(calc(-1 * var(--avatar-col) - var(--slot-edge, 8px)));
 }
 .poster-page.avatar-scene.panel-closed.avatar-right .avatar-slot {
-  transform: translateX(calc(100% + var(--slot-edge, 8px)));
+  transform: translateX(calc(var(--avatar-col) + var(--slot-edge, 8px)));
 }
-/* 떠서 덮기(좁은 화면, panel-overlay) — 달력을 밀지 않고 위에 뜬다. 그림자를 한 단계 올려 '떠 있음'을 말하고,
-   뒤엔 옅은 scrim(.panel-scrim)이 깔려 밖을 누르면 닫힌다. 팝오버(--z-cal-pop 12)보다 위, 상단 크롬(30)보다 아래. */
+/* 떠서 덮기(좁은 화면, panel-overlay) — 흐름에서 빠져 fixed로 달력 위에 뜬다(달력 폭 그대로). 이때만 안에서 스크롤.
+   그림자를 한 단계 올려 '떠 있음'을 말하고, 뒤엔 옅은 scrim(.panel-scrim)이 깔려 밖을 누르면 닫힌다.
+   팝오버(--z-cal-pop 12)보다 위, 상단 크롬(30)보다 아래. */
 .poster-page.avatar-scene.panel-overlay .avatar-slot {
+  position: fixed;
+  top: 76px;
+  bottom: 14px;
+  min-height: 0;
+  margin-bottom: 0;
+  flex: none;
+  width: var(--avatar-col);
+  padding: 0 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
   z-index: 26;
   filter: drop-shadow(0 18px 40px rgb(60 40 90 / 22%));
+  transition:
+    transform 0.42s cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 0.42s cubic-bezier(0.25, 1, 0.5, 1),
+    visibility 0s linear 0.42s;
+}
+.poster-page.avatar-scene.panel-overlay .avatar-slot::-webkit-scrollbar {
+  display: none;
+}
+.poster-page.avatar-scene.panel-overlay.avatar-left .avatar-slot {
+  left: 0;
+  right: auto;
+}
+.poster-page.avatar-scene.panel-overlay.avatar-right .avatar-slot {
+  right: 0;
+  left: auto;
 }
 .panel-scrim {
   position: fixed;

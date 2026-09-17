@@ -1881,8 +1881,8 @@ export function StudioShell({
   // 포인터가 90px 안으로 다가오면 깨어난다.
   // 하단 플로팅 행(알약) ref — 팝오버 dodge 계측과 배율 배지의 근접 깨우기가 같이 쓴다.
   const bottomRowRef = useRef<HTMLDivElement | null>(null);
-  // 배율 배지의 근접 깨우기 기준 = 하단 알약 행 — 배지가 알약 가운데 칸에 산다(2026-09-17).
-  const zoomBadge = useIdleAfter(calZoom, { el: bottomRowRef });
+  // 배율 표시 창 1.2초(2026-09-17 3차 소유자) — 근접 깨우기 없음: 알약에 마우스가 오면 '패널' 버튼이어야 한다.
+  const zoomBadge = useIdleAfter(calZoom, { ms: 1200 });
   const calZoomRef = useRef<CalZoom>(1);
   const calPanelRef = useRef<HTMLElement | null>(null);
   // 드래그 중 배율 변경 금지(레이아웃 재배치가 드롭 좌표 판정을 순간적으로 흔든다).
@@ -2232,11 +2232,13 @@ export function StudioShell({
       // 그 외엔 달력 그리드의 오른쪽 끝에 맞춘다(시청자 화면의 계정 카드와 같은 규칙).
       const scene = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-page.avatar-scene");
       const panelRight = !!scene && scene.classList.contains("avatar-right") && scene.classList.contains("panel-open") && !scene.classList.contains("panel-overlay");
-      const pc = document.querySelector<HTMLElement>(".viewer-fullscreen .avatar-slot .rail-info-card");
-      const pr = pc?.getBoundingClientRect();
-      if (panelRight && pr && pr.width >= 60 && pr.right <= or.right + 1) {
-        card.style.setProperty("--pv-w", `${Math.round(pr.width / zoom)}px`);
-        setMr(pr.right);
+      // 레이아웃 값(offsetWidth + .poster-fit rect)으로 — 슬롯 remount 슬라이드 중 rect를 쓰면 카드가 튄다(시청자 화면과 같은 규칙).
+      const fitEl = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-fit");
+      const slot = document.querySelector<HTMLElement>(".viewer-fullscreen .avatar-slot");
+      if (panelRight && fitEl && slot && slot.offsetWidth >= 80) {
+        const fr = fitEl.getBoundingClientRect();
+        card.style.setProperty("--pv-w", `${Math.round((slot.offsetWidth - 20) / zoom)}px`);
+        setMr(fr.right - 10 * zoom);
         return;
       }
       card.style.removeProperty("--pv-w");
@@ -6233,7 +6235,7 @@ export function StudioShell({
           버튼도 같이 가서 되돌리려면 화면 폭만큼 마우스를 왕복해야 했다. 화면 중앙 고정 = 어느 쪽에서든
           같은 거리(Fitts). 남쪽이라 색은 은백 고스트(뜨거운 강조 없음). (비공개 경고 알약은 2026-08-27 철수.) */}
       {avatarEditor ? (
-        <div className="bottom-float-row" onFocus={zoomBadge.wake} onPointerEnter={zoomBadge.wake} ref={bottomRowRef}>
+        <div className="bottom-float-row" ref={bottomRowRef}>
           {/* [⇤ | 패널 | ⇥] — 시청자 화면과 같은 부품(components/shared/panel-place-control). 2026-09-05의
               "아바타 자리 → 패널 자리" 이름 결정을 이어받고, 가운데는 2026-09-17부터 접기/펼치기 **버튼**이다.
               확대(Ctrl+휠) 직후엔 가운데 칸이 잠시 배율(🔍 125%)로 바뀌고 누르면 100% — 옛 −/%/+ 플로팅
@@ -6242,7 +6244,6 @@ export function StudioShell({
           <PanelPlaceControl
             onSide={pickAvatarSide}
             onToggle={panel.toggle}
-            onZoomReset={() => applyCalZoom(1)}
             open={panel.open}
             side={avatarSide}
             zoomAwake={!zoomBadge.idle}

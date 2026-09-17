@@ -66,5 +66,5 @@ export const POSTER_AGENDA_QUERY = `(max-width: ${POSTER_AGENDA_MAX}px), (max-he
  * 옆에 달력이 ≥1160px은 있어야 일곱 칸이 편하다. (처음 1280으로 출고했다가 같은 날 올렸다.)
  * 판정은 JS(lib/ui/use-side-panel)에서만 한다 — CSS 미디어쿼리로 흉내 내면 훅과 어긋난다.
  */
-export const PANEL_WIDE_MIN = 1540;
+export const PANEL_WIDE_MIN = 1680; // 2026-09-17 3차: 소유자 "1540보다 한 단계 더" — 편집실 셸 zoom 단계(1700) 바로 아래
 export const PANEL_WIDE_QUERY = `(min-width: ${PANEL_WIDE_MIN}px)`;
