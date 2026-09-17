@@ -828,6 +828,29 @@ export function StudioShell({
   // 드래그 유령(body 포털)이 달력의 현재 축소 비율을 물려받게 — 핸들러는 ref로 읽는다.
   const panelFitRef = useRef(1);
   panelFitRef.current = panel.fit;
+  // 패널을 접고 펼 때 달력이 시청자 포스터처럼 **통통 튀며 커지고 작아지게**(2026-09-17 소유자: 폭·글자만 조용히 바뀌면
+  // 모른다). 편집실 달력은 유동 그리드라 실제 크기는 --cal-zoom(× panel.fit)으로 즉시 다시 잡히고, 눈에 보이는 변화만
+  // FLIP으로 잇는다: 새 크기로 배치된 달력을 옛 크기 비율(prev/next)로 되돌려 놓고 스프링으로 1에 오게 한다. 기준점은
+  // 패널 반대편 위 모서리 — 밀려나는 margin 트랜지션(0.52s)과 같은 시간·곡선이라 한 덩어리로 움직인다.
+  const prevFitRef = useRef(panel.fit);
+  useLayoutEffect(() => {
+    const el = calPanelRef.current;
+    const prev = prevFitRef.current;
+    prevFitRef.current = panel.fit;
+    if (!el || prev === panel.fit || reduceMotionEnabled()) return;
+    el.style.transition = "none";
+    el.style.transformOrigin = avatarSide === "left" ? "top right" : "top left";
+    el.style.transform = `scale(${prev / panel.fit})`;
+    void el.offsetWidth;
+    el.style.transition = "transform 0.52s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1))";
+    el.style.transform = "";
+    const done = () => {
+      el.style.transition = "";
+      el.style.transformOrigin = "";
+      el.removeEventListener("transitionend", done);
+    };
+    el.addEventListener("transitionend", done);
+  }, [panel.fit, avatarSide]);
   const pickAvatarSide = panel.pickSide;
   const avatarSceneOn = panel.ready;
   // 새로고침 직후 슬라이드/등장 애니가 한 번 튀는 것 방지 — 마운트 전엔 애니 끄고, 마운트 후 켠다

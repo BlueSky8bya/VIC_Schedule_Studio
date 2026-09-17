@@ -2305,6 +2305,34 @@ export function PublicPoster({
       slot.style.removeProperty("--slot-top");
     };
   }, [sceneOn, panel.mode, panel.open, panel.side]);
+  // 좌우 전환 때 달력이 '순간이동'하지 않게(2026-09-17 소유자): 패널은 통통 미끄러지는데 달력은 order 교체로 탁 옮겨갔다.
+  // FLIP — 새 자리로 배치된 stage를 옛 자리만큼 되돌려 놓고(transform) 스프링으로 제자리에 오게 한다. 레이아웃은 즉시,
+  // 눈에 보이는 이동만 애니메이션이라 실측·스티커 좌표엔 영향 없다.
+  const stageFlipRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const stage = posterStageRef.current;
+    if (!stage || !sceneOn || panel.mode !== "push") {
+      stageFlipRef.current = null;
+      return;
+    }
+    const left = stage.getBoundingClientRect().left;
+    const prev = stageFlipRef.current;
+    stageFlipRef.current = left;
+    if (prev === null || reduceMotionEnabled()) return;
+    const dx = prev - left;
+    if (Math.abs(dx) < 2) return;
+    stage.style.transition = "none";
+    stage.style.transform = `translateX(${dx}px)`;
+    void stage.offsetWidth; // 되돌린 자리를 한 프레임 확정
+    // 스프링은 조금 순하게 — 표준 bouncy(1.56)는 실측 72px를 넘쳐 달력이 화면 밖으로 잠깐 나갔다. 1.25면 ~25px.
+    stage.style.transition = "transform 0.52s cubic-bezier(0.3, 1.25, 0.5, 1)";
+    stage.style.transform = "";
+    const done = () => {
+      stage.style.transition = "";
+      stage.removeEventListener("transitionend", done);
+    };
+    stage.addEventListener("transitionend", done);
+  }, [sceneOn, panel.mode, panel.side]);
 
   // 포스터(시청자/꾸미기/export 표면)는 화면마다 reflow되면 안 된다 — 소유자가 찍은
   // 스티커·텍스트 위치가 틀어지고 글자가 가려질 수 있다. 그래서 내부는 고정 16:9 캔버스
