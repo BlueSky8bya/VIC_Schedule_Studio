@@ -153,41 +153,14 @@ html[data-studio-calm] .stool-settings.open {
 /* 세그먼트 [왼쪽 · 아바타 자리 · 오른쪽] — 하단 중앙 플로팅 행(.bottom-float-row)에 산다. rail 안에
    두면 rail과 함께 반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼이었다(사용자 지적). 화면
    중앙 고정 = 어느 쪽 rail에서든 같은 거리. 확대 배율 플로팅(.cal-zoom-ctl)과 같은 유리 알약 문법. */
-.bottom-float-row .studio-avatar-ctl {
-  pointer-events: auto;
-  border: 1.5px solid rgb(124 108 240 / 30%);
-  /* 쉼 상태 = 반투명·블러 없음(달력 마지막 줄 일정과 겹치면 불편하다는 지적) — 블러는 밑 글자를
-     뭉개니 빼고, 면을 옅게 해 밑 일정이 그대로 읽힌다. 포인터가 오면 불투명·블러로 또렷해진다.
-     + .studio-workspace 아래 여백(72px)이 스크롤 끝에서 마지막 줄을 알약 위로 올려 준다. */
-  background: rgb(255 253 250 / 55%);
-  opacity: 0.62;
-  box-shadow:
-    0 6px 18px rgb(80 70 130 / 12%),
-    inset 0 0 0 1px rgb(255 255 255 / 55%);
-  transition:
-    opacity var(--dur-2) var(--ease),
-    background var(--dur-2) var(--ease),
-    box-shadow var(--dur-1) var(--ease);
-}
-.bottom-float-row .studio-avatar-ctl:hover,
-.bottom-float-row .studio-avatar-ctl:focus-within {
-  opacity: 1;
-  background: rgb(255 253 250 / 92%);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  box-shadow:
-    0 14px 36px rgb(80 70 130 / 24%),
-    inset 0 0 0 1px rgb(255 255 255 / 55%);
-}
-html[data-reduce-motion] .bottom-float-row .studio-avatar-ctl {
-  transition: none;
-}
-html[data-studio-calm] .studio-avatar-ctl button.on {
+/* (유리 알약의 쉼/호버 모양은 2026-09-17 components/shared/panel-place-control.css로 — 시청자와 같은 부품.
+   여기엔 차분한 편집실(은백) 덮어쓰기만 남는다.) */
+html[data-studio-calm] .panel-place-ctl button.on {
   color: var(--studio-action-text);
 }
-html[data-studio-calm] .studio-avatar-ctl .avatar-ctl-label {
-  color: var(--ink-soft);
-  border-inline-color: var(--studio-silver-line);
+html[data-studio-calm] .panel-place-ctl .ppc-toggle,
+html[data-studio-calm] .panel-place-ctl .ppc-toggle + button {
+  border-left-color: var(--studio-silver-line);
 }
 
 /* ── ③ 차분 모드 상단바(북=수) — 은선 헤어라인 + 18초에 한 번 지나가는 글린트(1px 띠라 비용 0에 가깝다). */
@@ -406,12 +379,12 @@ html[data-studio-calm] .studio-shell .studio-event-pill {
     inset 0 1px 0 rgb(255 255 255 / 35%),
     0 0 0 1px rgb(38 50 66 / 4%);
 }
-html[data-studio-calm] .bottom-float-row .studio-avatar-ctl {
+html[data-studio-calm] .bottom-float-row .panel-place-ctl {
   border-color: var(--gs-metal-line-strong);
 }
 /* 고른 쪽 — 은빛 헤어라인 한 줄로는 반투명 알약 위에서 어느 쪽인지 안 보였다(2026-09-05 소유자 사진).
    안쪽 테두리 + 바깥 그림자로 확실히 세운다. */
-html[data-studio-calm] .studio-shell .studio-avatar-ctl button.on {
+html[data-studio-calm] .studio-shell .panel-place-ctl button.on {
   box-shadow:
     inset 0 0 0 1.5px var(--gs-metal-line-strong, #b9a9ec),
     inset 0 1px 0 rgb(255 255 255 / 65%),

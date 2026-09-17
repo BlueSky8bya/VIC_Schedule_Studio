@@ -4,11 +4,11 @@
 import "@/components/studio/insights-charts.css";
 // 2026-09-03 배치 대개편 레이어(서쪽 도구 카드 · 물결 배경 · 차분 상단바) — studio-shell.css에서 분리.
 import "@/components/studio/studio-calm-layer.css";
+import { PanelPlaceControl } from "@/components/shared/panel-place-control";
+import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 
 import dynamic from "next/dynamic";
 import {
-  ArrowLeftToLine,
-  ArrowRightToLine,
   CalendarCheck,
   ChartColumn,
   ChevronDown,
@@ -814,46 +814,20 @@ export function StudioShell({
   // 아바타 자리를 둔다(관리자·개발자, 데스크탑). 시청자 미리보기 토글과 같은 localStorage 키 공유.
   // 편집실 아바타 자리는 ≥1100px에서만(좁으면 달력 가독성 우선). 필터가 rail로 가므로 viewport
   // 폭을 React가 알아야 깔끔히 끌 수 있다(CSS만으론 rail의 필터를 그리드로 못 되돌림).
-  const [avatarWideEnough, setAvatarWideEnough] = useState(true);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(min-width: 1100px)");
-    const sync = () => setAvatarWideEnough(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  // 아바타 자리는 관리자(owner)·개발자만. 개발자가 매니저/작업자/시청자로 '미리보기' 중이면
-  // 그 역할엔 안 보여야 하므로 raw isDeveloper가 아니라 effectiveRole로 판정.
+  // 아바타 **빈 자리**는 관리자(owner)·개발자만. 개발자가 시청자로 '미리보기' 중이면 그 역할엔 안 보여야 하므로
+  // raw isDeveloper가 아니라 effectiveRole로 판정. 패널 자체(필터·도구·계절 배경)는 역할과 무관하게 선다.
   const avatarRoleOk = effectiveRole === "owner" || effectiveRole === "developer";
-  const avatarEditor = avatarRoleOk && !isNarrow && avatarWideEnough;
-  // 편집실 아바타 자리는 항상 켜짐(끄기 없음 — 사용자 결정 2026-07-31). 좌/우 위치만 고른다.
-  // (시청자 포스터의 켜기/끄기 토글은 그대로 — vic_avatar_on 키는 포스터 전용으로 남는다.)
-  // 최초(메모리 없음) 디폴트는 '왼쪽', 이후엔 마지막 값(편집실·미리보기 공유) 복원.
-  const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
-  // localStorage(좌/우)를 읽기 전엔 scene을 렌더하지 않는다 — 기본값(왼쪽)으로 한 번 그렸다가
-  // 저장값(오른쪽)으로 점프하는 깜빡임 방지. useLayoutEffect라 '페인트 전'에 확정돼(SSR HTML은
-  // scene OFF 기준 → 하이드레이션 일치) 어느 쪽도 한 프레임도 안 깜빡인다.
-  const [avatarStorageRead, setAvatarStorageRead] = useState(false);
-  useLayoutEffect(() => {
-    if (!avatarEditor || typeof window === "undefined") return;
-    try {
-      if (window.localStorage.getItem("vic_avatar_side") === "right") setAvatarSide("right");
-    } catch {
-      /* 저장소 불가 무시 */
-    }
-    setAvatarStorageRead(true);
-  }, [avatarEditor]);
-  function pickAvatarSide(side: "left" | "right") {
-    hapticTick();
-    setAvatarSide(side);
-    try {
-      window.localStorage.setItem("vic_avatar_side", side);
-    } catch {
-      /* 무시 */
-    }
-  }
-  const avatarSceneOn = avatarEditor && avatarStorageRead;
+  // 달력 옆 패널(2026-09-17 소유자: 시청자와 같은 모델) — 상태는 공용 훅(lib/ui/use-side-panel):
+  //  · 좌/우는 localStorage(vic_avatar_side)로 편집실↔미리보기가 이어진다.
+  //  · 창 폭 < PANEL_WIDE_MIN이면 자동으로 접히고, '패널' 버튼으로 열면 달력 위에 뜬다(overlay).
+  //  · 저장값·창 폭을 읽기 전(ready=false)엔 rail을 그리지 않는다 — SSR HTML(패널 없음)과 하이드레이션 일치,
+  //    기본값으로 그렸다가 저장값으로 점프하는 깜빡임 없음(훅 안이 useLayoutEffect).
+  // 옛 1100px 게이트(패널을 왼쪽 188px 칸으로 되돌리던 것)는 이 자동 접힘으로 대체됐다.
+  const panel = useSidePanel({ enabled: !isNarrow });
+  const avatarEditor = panel.ready;
+  const avatarSide = panel.side;
+  const pickAvatarSide = panel.pickSide;
+  const avatarSceneOn = panel.ready;
   // 새로고침 직후 슬라이드/등장 애니가 한 번 튀는 것 방지 — 마운트 전엔 애니 끄고, 마운트 후 켠다
   // (이후 사용자 토글에서만 통통 애니).
   const [avatarReady, setAvatarReady] = useState(false);
@@ -6065,7 +6039,7 @@ export function StudioShell({
       /* studio-narrow = 모바일(아젠다) 토폴로지 표식. CSS가 금(金) 스킨 같은 '웹 전용 재질'을 이 아래로
          내려보내지 않게 하는 문(2026-09-05). 미디어쿼리로 흉내 내면 STUDIO_AGENDA_QUERY의 둘째 절
          (가로로 누운 폰: max-height 640 and pointer coarse)과 어긋난다 — 판정은 한 곳(JS)에서만 한다. */
-      className={`studio-shell${isNarrow ? " studio-narrow" : ""}${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}${
+      className={`studio-shell${isNarrow ? " studio-narrow" : ""}${sidePanelClasses(panel)}${
         avatarReady ? "" : " avatar-no-anim"
       }`}
       data-chrome={chromeTier || undefined}
@@ -6073,22 +6047,34 @@ export function StudioShell({
     >
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
           flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
+      {/* 떠서 덮기(좁은 화면, panel-overlay) — 패널 뒤 옅은 scrim. 밖을 누르면 닫힌다(Esc도, 훅 안). */}
+      {avatarEditor && panel.mode === "overlay" && panel.open ? (
+        <div aria-hidden="true" className="panel-scrim" onClick={panel.close} />
+      ) : null}
       {avatarEditor ? (
-        <aside className="avatar-rail" aria-label="아바타 자리 영역(관리자 전용)">
-          {avatarSceneOn ? <div className="avatar-rail-filter">{studioFilterPanel}</div> : null}
+        <aside
+          className="avatar-rail"
+          aria-label="달력 옆 패널"
+          /* 접히면 inert — 화면 밖으로 미끄러져 나간 뒤 포커스·클릭이 닿지 않는다(visibility는 CSS가 뒤따라 끈다). */
+          inert={panel.open ? undefined : true}
+        >
+          <div className="avatar-rail-filter">{studioFilterPanel}</div>
           {/* 서쪽 도구 카드 — 필터와 아바타 자리 사이(2026-09-03 배치 대개편). */}
-          {avatarSceneOn ? studioToolsPanel : null}
+          {studioToolsPanel}
           <div className="avatar-slot">
             {/* [켜기 | 흐리게 | 끄기] + 감상하기 — 시청자 레일과 같은 묶음(2026-09-04 사용자: 설정 열지 않고 바꾸기). onChange가
                 설정의 셀렉트·배경 효과 잠금과 같은 경로(changeAmbientMode)를 타서 설정 안 상태와 한 몸.
                 점선 박스 **밖·위**에 둔다 — 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자 사진).
                 감상 진입은 개발자만 — 세계가 다 만들어지기 전엔 관리자에게 배경으로만 보인다. */}
             <ViewerAmbientControl className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} showcase={effectiveRole === "developer"} />
-            <div className="avatar-dock-inner">
-              {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
-                  반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
-              {/* ("아바타 자리" 안내 글자는 2026-09-04 사용자 결정으로 제거 — 빈 자리 자체가 안내. aria-label은 aside에.) */}
-            </div>
+            {/* 아바타 빈 자리 — 관리자·개발자만(시청자 역할 미리보기엔 없다). */}
+            {avatarRoleOk ? (
+              <div className="avatar-dock-inner">
+                {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
+                    반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
+                {/* ("아바타 자리" 안내 글자는 2026-09-04 사용자 결정으로 제거 — 빈 자리 자체가 안내. aria-label은 aside에.) */}
+              </div>
+            ) : null}
           </div>
         </aside>
       ) : null}
@@ -6255,34 +6241,10 @@ export function StudioShell({
           같은 거리(Fitts). 남쪽이라 색은 은백 고스트(뜨거운 강조 없음). (비공개 경고 알약은 2026-08-27 철수.) */}
       {avatarEditor || zoomCollapse ? (
         <div className="bottom-float-row" ref={bottomRowRef}>
+          {/* [⇤ | 패널 | ⇥] — 시청자 화면과 같은 부품(components/shared/panel-place-control). 2026-09-05의
+              "아바타 자리 → 패널 자리" 이름 결정을 이어받고, 가운데는 2026-09-17부터 접기/펼치기 **버튼**이다. */}
           {avatarEditor ? (
-            <div className="studio-avatar-ctl" role="group" aria-label="패널 자리" title="달력 옆 패널 위치">
-              <button
-                type="button"
-                className={avatarSide === "left" ? "on" : ""}
-                aria-label="패널을 왼쪽에 두기"
-                aria-pressed={avatarSide === "left"}
-                onClick={() => pickAvatarSide("left")}
-                data-act="avatar-ctl-toggle"
-              >
-                <ArrowLeftToLine aria-hidden="true" size={18} strokeWidth={2.4} />
-              </button>
-              {/* 2026-09-05: "아바타 자리" → "패널 자리". 점선 안내 박스를 없애 그 이름이 가리킬 대상이 화면에
-                  없어졌고, 실제로 옮겨지는 것은 달력 옆 패널 전체다(필터·도구·계절 배경·아바타가 들어올 빈 자리). */}
-              <span aria-hidden="true" className="avatar-ctl-label">
-                패널 자리
-              </span>
-              <button
-                type="button"
-                className={avatarSide === "right" ? "on" : ""}
-                aria-label="패널을 오른쪽에 두기"
-                aria-pressed={avatarSide === "right"}
-                onClick={() => pickAvatarSide("right")}
-                data-act="avatar-ctl-toggle"
-              >
-                <ArrowRightToLine aria-hidden="true" size={18} strokeWidth={2.4} />
-              </button>
-            </div>
+            <PanelPlaceControl onSide={pickAvatarSide} onToggle={panel.toggle} open={panel.open} side={avatarSide} />
           ) : null}
           {/* 확대 컨트롤도 **역할이 끝나면 물러난다**(2026-09-06 소유자: 달력 내용을 가리지 않게) —
               배율이 바뀐 뒤 2.4초면 ± 버튼을 접고 옅어졌다가, 포인터·포커스가 오면 되돌아온다. */}

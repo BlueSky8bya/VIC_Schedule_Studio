@@ -56,3 +56,14 @@ export const STUDIO_AGENDA_QUERY = `(max-width: ${STUDIO_AGENDA_MAX}px), (max-he
 
 export const POSTER_AGENDA_MAX = 1040;
 export const POSTER_AGENDA_QUERY = `(max-width: ${POSTER_AGENDA_MAX}px), (max-height: ${BREAKPOINTS.mobile}px) and (pointer: coarse)`;
+
+/**
+ * 달력 옆 패널(태그 필터·도구·계절 배경·아바타 자리)이 **자동으로 접히는** 기준(2026-09-17 소유자).
+ *
+ * 이 폭 미만이면 편집실·시청자·시청자 미리보기 모두 패널을 접고 달력이 화면 폭을 다 쓴다. 접힌 패널은
+ * 하단 알약의 '패널' 버튼으로 **달력 위에 떠서** 열린다(달력 폭은 안 줄어든다). 이 폭 이상이면 패널이
+ * 달력을 밀어내며 옆에 선다. 1280 = 20vw 패널(≈256) + 달력 ~1000px — 그 아래론 일곱 칸이 읽기 힘들다.
+ * 판정은 JS(lib/ui/use-side-panel)에서만 한다 — CSS 미디어쿼리로 흉내 내면 훅과 어긋난다.
+ */
+export const PANEL_WIDE_MIN = 1280;
+export const PANEL_WIDE_QUERY = `(min-width: ${PANEL_WIDE_MIN}px)`;

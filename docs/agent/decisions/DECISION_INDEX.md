@@ -8,6 +8,7 @@
 
 | ADR | Status | Area | Decision | Revisit Trigger |
 |---|---|---|---|---|
+| [0025](ADR-0025-side-panel-unification.md) | Accepted | 달력 옆 패널 통일 | 편집실·시청자·미리보기가 같은 훅(`use-side-panel`)·같은 알약 `[⇤ 패널 ⇥]`. 패널은 표면 밖 한 줄('끔' 폐지), 1280px 밑 자동 접힘, 열면 떠서 덮기. /onair는 항상 펼침 | 패널 폭·기준·자리 규칙을 바꾸거나 표면 안 레일을 되살릴 때 |
 | [0024](ADR-0024-spring-meadow-three-layers.md) | Accepted | 봄 초원 세 레이어 | 새 F/M/N·나무 없는 초원·봄만 .35 지평선·캐시된 원본 마스크 | 계절 확대 또는 공간 기준 변경 |
 | [0023](ADR-0023-spring-meadow-source-composition.md) | Accepted | 봄 초원 적용 | 선호 원본 한 장을 F/M으로 합성, N은 기존 프레임. PC 비율·고정 면적·정지 화면 갱신. 봄만 먼저 배포 | 사계절 아트 또는 새 원본/비율 계약 |
 | [0022](ADR-0022-world-depth-and-showcase-motion.md) | Accepted | 배경 깊이·움직임 | S/F/M/N 합성, 감상에서만 움직임, 모바일 엔진 미생성, 기존 auto 여력 기반 축소·정지·복구. 심해 계절/날씨 봉인 유지 | P1 이미지 도입 또는 측정된 성능 예산 초과 |

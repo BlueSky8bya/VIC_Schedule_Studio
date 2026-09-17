@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  ArrowLeftToLine,
-  ArrowRightToLine,
   CalendarCheck,
   ChartColumn,
   ChevronLeft,
@@ -13,7 +11,6 @@ import {
   LogOut,
   Pin,
   Play,
-  Power,
   Sprout,
   X
 } from "lucide-react";
@@ -71,6 +68,8 @@ import {
 } from "@/lib/ui/hype-curve";
 import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
 import { debutDPlus, getDayMark } from "@/lib/calendar/holidays";
+import { PanelPlaceControl } from "@/components/shared/panel-place-control";
+import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
@@ -145,11 +144,9 @@ type PublicPosterProps = {
   // export 표면(data-export-surface) 바깥이라 PNG 캡처엔 안 들어가고, 화면 송출 시 그 자리에
   // 아바타를 올리는 용도. 시청자/익명에겐 절대 안 보인다(owner일 때만 true로 넘긴다).
   avatarSlot?: boolean;
-  // 편집실에서 아바타 상태를 controlled로 공유(편집실↔미리보기 동기화). 주어지면 내부 상태 대신 사용.
-  avatarOn?: boolean;
-  avatarSide?: "left" | "right";
-  onAvatarToggle?: () => void;
-  onAvatarSide?: (side: "left" | "right") => void;
+  // (avatarOn/avatarSide/onAvatarToggle/onAvatarSide controlled props는 2026-09-17 제거 — 패널 상태는
+  //  lib/ui/use-side-panel 훅이 localStorage로 편집실↔미리보기를 잇는다. 켜기/끄기 개념도 사라졌다:
+  //  패널은 늘 표면 밖에 서고, 접기/펼치기만 있다.)
   // 뱅송 미리보기(/onair) 전용: 아바타 scene을 지정한 쪽으로 '항상 켜짐'에 고정하고 관리자 토글은
   // 그리지 않는다(OBS 브라우저 소스는 로그인이 없으므로 URL만으로 scene이 나와야 한다). 공개 데이터만
   // 그리는 레이아웃 옵션 — 권한과 무관, 비공개 데이터는 애초에 이 컴포넌트에 없다.
@@ -836,13 +833,9 @@ export function PublicPoster({
   previewNote,
   previewNav,
   avatarSlot = false,
-  avatarOn: avatarOnProp,
-  avatarSide: avatarSideProp,
   avatarFixed,
   ambientForce,
-  ambientWorldForce,
-  onAvatarToggle,
-  onAvatarSide
+  ambientWorldForce
 }: PublicPosterProps) {
   // 다음 콜드 엔트리의 로딩 스켈레톤 톤 힌트 — 독립 포스터 화면(`/`)일 때만 "포스터"로.
   // accountSwitch=false인 편집실/꾸미기 미리보기는 편집 맥락이라 힌트를 건드리지 않는다.
@@ -1031,48 +1024,9 @@ export function PublicPoster({
   // 관리자 아바타 자리(스트리머 scene). 꾸미기(decorate)에서도 허용 — 현재 방식은 surface를 통째로
   // uniform scale(축소)만 하므로 스티커 좌표(1840 design 기준)가 안 틀어진다(시청자=avatar OFF와도
   // 동일 좌표). 캡처(PNG)는 export 표면 밖이라 아바타가 안 들어간다. localStorage는 owner 로컬.
+  // avatarCapable = 패널 안에 **아바타 빈 자리**(관리자·개발자, 또는 /onair 고정 scene)를 그리는가. 패널 자체는
+  // 2026-09-17부터 모든 데스크톱 시청자에게 표면 밖 한 줄로 선다(상태는 아래 `panel`, showAgenda 뒤에 정의).
   const avatarCapable = avatarSlot || !!avatarFixed;
-  // 편집실(studio-shell)에서 controlled로 내려주면(onAvatarToggle 존재) 그 상태/세터를 그대로 쓴다 →
-  // 편집실↔미리보기가 같은 상태를 공유(켠 채 넘어가도 켜져 있음). 그 외(미설정)엔 내부 상태+localStorage.
-  const avatarControlled = typeof onAvatarToggle === "function";
-  const [avatarOnState, setAvatarOnState] = useState(true);
-  const [avatarSideState, setAvatarSideState] = useState<"left" | "right">("left"); // 최초 디폴트 왼쪽
-  useEffect(() => {
-    if (avatarControlled || !avatarCapable || typeof window === "undefined") {
-      return;
-    }
-    try {
-      if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOnState(false);
-      if (window.localStorage.getItem("vic_avatar_side") === "right") setAvatarSideState("right");
-    } catch {
-      /* 저장소 불가 환경 무시 */
-    }
-  }, [avatarControlled, avatarCapable]);
-  function toggleAvatarOnInternal() {
-    hapticTick();
-    setAvatarOnState((v) => {
-      const next = !v;
-      try {
-        window.localStorage.setItem("vic_avatar_on", next ? "1" : "0");
-      } catch {
-        /* 무시 */
-      }
-      return next;
-    });
-  }
-  function pickAvatarSideInternal(side: "left" | "right") {
-    hapticTick();
-    setAvatarSideState(side);
-    try {
-      window.localStorage.setItem("vic_avatar_side", side);
-    } catch {
-      /* 무시 */
-    }
-  }
-  const avatarOn = avatarFixed ? true : avatarControlled ? avatarOnProp ?? true : avatarOnState;
-  const avatarSide = avatarFixed ?? (avatarControlled ? avatarSideProp ?? "left" : avatarSideState);
-  const toggleAvatarOn = avatarControlled ? onAvatarToggle! : toggleAvatarOnInternal;
-  const pickAvatarSide = avatarControlled ? onAvatarSide! : pickAvatarSideInternal;
 
   // 모바일 아젠다에서 사용자가 펼친 '빈 날 구간'(접기는 숨김이 아니라 접힘 — 탭하면 그대로 보인다).
   const [expandedGaps, setExpandedGaps] = useState<Set<string>>(() => new Set());
@@ -2325,6 +2279,11 @@ export function PublicPoster({
     return () => mq.removeEventListener("change", update);
   }, []);
   const showAgenda = isNarrow;
+  // 달력 옆 패널(2026-09-17 소유자: 편집실과 같은 모델) — 데스크톱 표면 레이아웃에서만. 모바일 아젠다는
+  // 제 레일(agenda-legend-rail)이 있고, /onair 고정 scene은 fixedSide로 항상 펼침.
+  const panel = useSidePanel({ enabled: !showAgenda, fixedSide: avatarFixed });
+  const sceneOn = panel.ready; // 패널이 표면 밖에 선 레이아웃(접혀 있어도 표면 안 레일은 접힌 채)
+  const avatarSide = panel.side;
 
   // 포스터(시청자/꾸미기/export 표면)는 화면마다 reflow되면 안 된다 — 소유자가 찍은
   // 스티커·텍스트 위치가 틀어지고 글자가 가려질 수 있다. 그래서 내부는 고정 16:9 캔버스
@@ -2422,8 +2381,6 @@ export function PublicPoster({
         const r = document.querySelector(sel)?.getBoundingClientRect();
         if (r && r.width > 0 && r.left < mid.right + gap && r.right > mid.left) return true;
       }
-      const left = document.querySelector(".avatar-ctl-preview")?.getBoundingClientRect();
-      if (left && left.width > 0 && left.right > mid.left - gap && left.left < mid.right) return true;
       return false;
     };
     const measure = () => {
@@ -2450,7 +2407,7 @@ export function PublicPoster({
       root.removeAttribute("data-pchrome");
       root.style.removeProperty("--mid-pill-w");
     };
-  }, [showAgenda, avatarOn, interactive, canHeart, accountSwitch, anonymous]);
+  }, [showAgenda, sceneOn, interactive, canHeart, accountSwitch, anonymous]);
 
   // 계정 카드(로그인/로그아웃+이메일) = 레일(.public-right) 폭·오른쪽 끝(2026-09-04 사용자 사진 1). 헤더와 레일을 같은
   // 좌표계(화면 rect)에서 재고 헤더의 zoom(편집실 미리보기)으로 나눠 레이아웃 px로 — 카드에 --acct-w/--acct-mr.
@@ -2494,7 +2451,7 @@ export function PublicPoster({
       ro.disconnect();
       window.removeEventListener("resize", schedule);
     };
-  }, [showAgenda, avatarOn, interactive, accountSwitch, anonymous]);
+  }, [showAgenda, sceneOn, interactive, accountSwitch, anonymous]);
 
   const posterStageRef = useRef<HTMLDivElement | null>(null);
   const posterFitRef = useRef<HTMLDivElement | null>(null);
@@ -4385,9 +4342,9 @@ export function PublicPoster({
     <main
       /* poster-agenda = 모바일(아젠다) 표식 — 금(金) 스킨 같은 웹 전용 재질을 이 아래로 내려보내지
          않기 위한 문(2026-09-05, poster-metal-water.css). 판정은 JS 한 곳(showAgenda)에서만. */
-      className={`poster-page${showAgenda ? " poster-agenda" : ""}${accountSwitch ? " poster-readonly" : ""}${
-        avatarCapable && avatarOn ? ` avatar-scene avatar-${avatarSide}` : ""
-      }${
+      className={`poster-page${showAgenda ? " poster-agenda" : ""}${accountSwitch ? " poster-readonly" : ""}${sidePanelClasses(
+        panel
+      )}${
         // 태그 필터 중엔 꾸미기 스티커도 함께 물러난다(일정 카드와 같은 흐림) — 꾸미기
         // 편집(decorate) 중엔 제외. 캡쳐 PNG는 필터 없는 서버 렌더라 영향 없음.
         tagFilters.length > 0 || bookmarkedOnly ? " tag-filtering" : ""
@@ -5025,53 +4982,7 @@ export function PublicPoster({
           두면 켜고 끌 때 shell 폭이 전체폭↔가운데로 바뀌며 좌우로 흔들려 버튼이 따라 움직였다.
           viewport 고정(fixed)은 스크롤을 따라 내려와 달력을 가려서 뺐다 — 페이지와 함께 스크롤된다.
           켜짐엔 끄기+위치(왼/오른쪽), 꺼짐엔 켜기. 데스크탑·관리자 전용. */}
-      {avatarCapable && !avatarFixed && !showAgenda ? (
-        <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타">
-          {/* 2026-09-05 소유자: 점선 안내 박스를 없앤 뒤로 "아바타 자리"의 '자리'가 가리킬 대상이
-              화면에 없어 어색해졌고, 버튼 옆의 '안 눌리는 글자'는 짧을수록 덜 거슬린다.
-              주어는 "아바타" 하나면 충분하다 — 뒤의 세 칸이 그 상태(끔·왼쪽·오른쪽)를 말한다.
-              캡션임이 한눈에 보이도록 얇은 세로 구분선을 두어 버튼 묶음과 갈라 놓는다(CSS). */}
-          <span aria-hidden="true" className="avatar-ctl-name">
-            아바타
-          </span>
-          <div className="avatar-ctl-seg" role="radiogroup" aria-label="아바타 자리 위치">
-            {(
-              [
-                { v: "off", label: "끔", Icon: Power },
-                { v: "left", label: "왼쪽", Icon: ArrowLeftToLine },
-                { v: "right", label: "오른쪽", Icon: ArrowRightToLine }
-              ] as const
-            ).map(({ v, label, Icon }) => {
-              const on = v === "off" ? !avatarOn : avatarOn && avatarSide === v;
-              return (
-                <button
-                  aria-checked={on}
-                  className={`avatar-ctl-seg-btn place-${v}${on ? " on" : ""}`}
-                  data-act="avatar-ctl-toggle"
-                  data-tip={label}
-                  key={v}
-                  onClick={() => {
-                    if (on) return;
-                    // 진동은 toggleAvatarOn/pickAvatarSide 안에서 이미 울린다(중복 금지).
-                    // 꺼진 채로 좌/우를 고르면 한 번에 켜고 그쪽에 붙인다(옛 모양은 두 번 눌러야 했다).
-                    if (v === "off") {
-                      if (avatarOn) toggleAvatarOn();
-                      return;
-                    }
-                    pickAvatarSide(v);
-                    if (!avatarOn) toggleAvatarOn();
-                  }}
-                  role="radio"
-                  type="button"
-                >
-                  <Icon aria-hidden="true" size={13} />
-                  <span className="lbl">{label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      {/* (좌상단 "아바타 | 끔 | 왼쪽 | 오른쪽" 카드는 2026-09-17 철거 — 하단 중앙 [⇤ | 패널 | ⇥] 알약(편집실과 동일 부품)으로.) */}
       {celebrate ? (
         <div className="celebrate-overlay" aria-hidden="true">
           {confetti.map((c, i) => (
@@ -5351,23 +5262,27 @@ export function PublicPoster({
 
           {/* 표면 안 오른쪽 레일 — 아바타 scene에선 접힌다(컬럼 폭 0, CSS). 내용은 아바타
               자리(정보·라이브 카드)와 반대편 얇은 레일(태그 필터)로 이사. */}
+          {/* 표면 안 오른쪽 레일 — 2026-09-17부터 데스크톱에선 늘 접혀 있다(패널이 표면 밖 한 줄로 이사).
+              마크업은 남긴다: 표면 기하(1840 고정 캔버스·컬럼 문법)의 원천이고, 패널 준비 전 한 프레임의
+              SSR 기준 렌더도 이 레일이 담당한다. */}
           <aside
             className="public-right"
             aria-label="방송 정보와 색상 안내"
-            aria-hidden={avatarCapable && avatarOn ? true : undefined}
+            aria-hidden={sceneOn ? true : undefined}
           >
-            {/* 레일 정보 카드 — 데뷔 D+N · 오늘 날짜(마크업은 railInfoCard 공용). */}
-            {railInfoCard}
-
-            {/* 라이브 카드 — 라이브 중에만 렌더. 아바타 scene에선 아바타 자리 우상단으로
-                이사하므로 여기선 내리고(중복 iframe 방지), 평소엔 정보 카드 아래·필터 위. */}
-            {!(avatarCapable && avatarOn) ? (
-              <SoopLiveBeacon inRail live={soopLive} />
-            ) : null}
-
-            {renderLegendFilter(true)}
-            {/* 배경 감상 진입(2026-09-04) — 레일 맨 아래, 태그 필터 밑의 조용한 계절 버튼(시청자·비로그인 모두). */}
-            {interactive ? <ViewerAmbientControl className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+            {/* 패널이 서면(sceneOn) 내용물은 전부 패널로 이사 — 여기 남기면 같은 필터·카드가 DOM에 둘 있어
+                (접힌 컬럼이라 안 보여도) 셀렉터·스크린리더·iframe이 중복된다. 컬럼 자체는 남는다. */}
+            {sceneOn ? null : (
+              <>
+                {/* 레일 정보 카드 — 데뷔 D+N(마크업은 railInfoCard 공용). */}
+                {railInfoCard}
+                {/* 라이브 카드 — 라이브 중에만 렌더. */}
+                <SoopLiveBeacon inRail live={soopLive} />
+                {renderLegendFilter(true)}
+                {/* 배경 감상 진입(2026-09-04) — 레일 맨 아래, 태그 필터 밑의 조용한 계절 버튼(시청자·비로그인 모두). */}
+                {interactive ? <ViewerAmbientControl className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+              </>
+            )}
           </aside>
         </section>
         </div>
@@ -5375,37 +5290,56 @@ export function PublicPoster({
         {/* 스트리머 scene: avatar 박스는 화면 옆 1/4 고정. 표면 안 레일은 접히고(컬럼 0)
             정보 카드는 아바타 자리 좌상단, 라이브 카드는 우상단으로 이사(2026-07-31 사용자
             결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제, 달력이 표면 전체를 쓴다). */}
-        {avatarCapable ? (
-          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
-            {avatarOn ? (
-              // key=side — 좌우 전환 때 remount로 팝인 모션이 다시 재생된다.
-              <div className="avatar-top-cards" key={`atc-${avatarSide}`}>
-                {railInfoCard}
-                <SoopLiveBeacon inRail live={soopLive} />
-              </div>
-            ) : null}
+        {/* 패널(2026-09-17 소유자: 편집실과 같은 한 줄) — 표면 밖 fixed 열 하나에 [정보·라이브 카드 | 태그 필터 |
+            계절 배경 | 아바타 빈 자리(관리자만)]. 옛 '반대편 얇은 필터 레일'은 없어졌다 — 패널이 한쪽에만 서므로
+            달력이 그만큼 더 넓다. 접히면(panel-closed) 화면 밖으로 미끄러져 나가고 inert(포커스·클릭 불가).
+            좁은 화면(panel-overlay)에선 달력을 밀지 않고 위에 뜬다 — 밖(scrim)을 누르면 닫힌다. */}
+        {sceneOn && panel.mode === "overlay" && panel.open ? (
+          <div aria-hidden="true" className="panel-scrim" onClick={panel.close} />
+        ) : null}
+        {sceneOn ? (
+          <aside
+            className="avatar-slot"
+            aria-label="달력 옆 패널"
+            inert={panel.open ? undefined : true}
+            key={`slot-${avatarSide}`}
+          >
+            {/* key=side — 좌우 전환 때 remount로 등장 모션이 다시 재생된다. */}
+            <div className="avatar-top-cards">
+              {railInfoCard}
+              <SoopLiveBeacon inRail live={soopLive} />
+            </div>
+            <div className="slot-legend">{renderLegendFilter(false)}</div>
             {/* 아바타 scene에선 계절 배경 카드가 아바타 자리 위쪽으로(레일이 접히므로). 점선 박스 **밖·위** —
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
-            {avatarOn && interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
-            <div className="avatar-dock-inner">
-              {/* ("아바타 자리" 안내 글자 제거 — 2026-09-04 사용자 결정, 편집실과 동일.) */}
-            </div>
+            {interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+            {/* 아바타 빈 자리 — 관리자·개발자(avatarSlot)·/onair 고정 scene에만. 일반 시청자 패널은 카드까지만. */}
+            {avatarCapable ? (
+              <div className="avatar-dock-inner">
+                {/* ("아바타 자리" 안내 글자 제거 — 2026-09-04 사용자 결정, 편집실과 동일.) */}
+              </div>
+            ) : null}
           </aside>
         ) : null}
         {/* scene 전용 얇은 태그 필터 레일 — 아바타 반대편 끝에 1열로(인기도 안내까지).
             표면 밖 fixed 크롬이라 달력(표면)은 그만큼 더 커진다. */}
-        {avatarCapable && avatarOn ? (
-          <aside
-            aria-label="태그 필터(아바타 배치)"
-            className="avatar-side-rail"
-            key={`asr-${avatarSide}`}
-          >
-            {renderLegendFilter(false, true)}
-          </aside>
-        ) : null}
         </div>
         )}
       </section>
+
+      {/* 하단 중앙 [⇤ | 패널 | ⇥] — 편집실과 같은 부품·같은 자리(2026-09-17 소유자). 자리 선택(⇤ ⇥)은 관리자·개발자
+          (avatarSlot)만, 일반 시청자·비로그인은 접기/펼치기 하나. /onair 고정 scene엔 없다(사람이 안 만진다). */}
+      {sceneOn && !avatarFixed ? (
+        <div className="poster-panel-ctl">
+          <PanelPlaceControl
+            onSide={panel.pickSide}
+            onToggle={panel.toggle}
+            open={panel.open}
+            showSide={avatarCapable}
+            side={panel.side}
+          />
+        </div>
+      ) : null}
 
       {/* 요일 고정 띠(2026-09-11) — 표면 밖이라 캡쳐·스티커 좌표에 안 닿는다. 폭·칸은 실제
           달력 그리드를 잰 값이라 확대·축소 배율과 무관하게 칸이 정확히 맞는다. */}

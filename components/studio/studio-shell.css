@@ -1021,12 +1021,12 @@ html[data-reduce-motion] .bottom-float-row {
 .bottom-float-row[data-dodge="fade"] {
   z-index: calc(var(--z-cal-pop, 12) - 1);
 }
-.bottom-float-row[data-dodge="fade"] .studio-avatar-ctl,
+.bottom-float-row[data-dodge="fade"] .panel-place-ctl,
 .bottom-float-row[data-dodge="fade"] .cal-zoom-float {
   opacity: 0.14;
 }
-.bottom-float-row[data-dodge="fade"] .studio-avatar-ctl:hover,
-.bottom-float-row[data-dodge="fade"] .studio-avatar-ctl:focus-within,
+.bottom-float-row[data-dodge="fade"] .panel-place-ctl:hover,
+.bottom-float-row[data-dodge="fade"] .panel-place-ctl:focus-within,
 .bottom-float-row[data-dodge="fade"] .cal-zoom-float:hover,
 .bottom-float-row[data-dodge="fade"] .cal-zoom-float:focus-within {
   opacity: 1;
@@ -4427,10 +4427,11 @@ html[data-reduce-motion] .perf-windows button.active {
 /* ── 편집실 아바타 자리(시청자와 같이 보기용) — fixed 도크. 시청자 포스터는 1/4(25vw)지만 편집실은
    편집 중 달력 폭을 더 챙기려고 살짝 좁은 20vw로 둔다(태그는 2열이라 좁아도 충분). ── */
 /* 아바타 ON 시 편집실 콘텐츠(workspace)를 반대쪽으로 margin 슬라이드(패널 포함 통째로 → 겹침 0). */
-.studio-shell.avatar-scene.avatar-right .studio-workspace {
+/* 2026-09-17: 밀어내기는 **펼침 + 넓은 화면**에서만. 접히거나(panel-closed) 떠 있을 땐(panel-overlay) 달력이 화면 폭 전부. */
+.studio-shell.avatar-scene.panel-open:not(.panel-overlay).avatar-right .studio-workspace {
   margin-right: 20vw;
 }
-.studio-shell.avatar-scene.avatar-left .studio-workspace {
+.studio-shell.avatar-scene.panel-open:not(.panel-overlay).avatar-left .studio-workspace {
   margin-left: 20vw;
 }
 /* 아바타 scene: 좌측 색상필터 칸 비움(0) — 필터는 우측 rail로. 편집 카드는 팝오버라 칸 불필요. */
@@ -4645,69 +4646,52 @@ html[data-reduce-motion] .perf-windows button.active {
    철회 — rail과 함께 반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(사용자 지적). 화면 중앙 고정 =
    어느 쪽 rail에서든 같은 거리. 라벨이 가운데, 방향 버튼이 양옆이라 '어느 쪽'인지가 라벨 기준으로 읽힌다.
    항상 켜짐(끄기 없음). */
-.studio-avatar-ctl {
-  pointer-events: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  background: #f4eefb;
-  border-radius: var(--r-pill);
-}
-/* 가운데 라벨 — 버튼과 확실히 구분: 흐린 작은 글자 + 양옆 hairline 구분선, 커서 기본. 버튼 텍스트(13px
-   진한 보라)와 같은 톤이면 세 번째 버튼처럼 읽혔다(사용자 지적). */
-.studio-avatar-ctl .avatar-ctl-label {
-  margin: 0 2px;
-  padding: 0 10px;
-  border-inline: 1px solid rgb(107 91 138 / 18%);
-  color: rgb(107 91 138 / 62%);
-  font-weight: 600;
-  font-size: var(--text-caption);
-  letter-spacing: 0.04em;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: default;
-  user-select: none;
-}
-.studio-avatar-ctl button {
-  display: inline-grid; /* 아이콘 라벨(ArrowLeft/RightToLine) 수직·수평 중앙 */
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: #6b5b8a;
-  font-weight: 700;
-  font-size: var(--text-body);
-  /* 히트 영역 확대(2026-09-01 사용자: 누르기 힘듦) — 상위 90% 줌을 감안해 아이콘 18px +
-     패딩·최소높이 크게(렌더 실측 ~46×32 타깃). 세그먼트 존재감도 같이 또렷해진다. */
-  padding: 9px 16px;
-  min-height: 36px;
-  border-radius: var(--r-pill);
-  cursor: pointer;
+/* (.studio-avatar-ctl 알약의 모양은 2026-09-17 components/shared/panel-place-control.css로 이사 — 시청자 화면과
+   같은 부품 [⇤ | 패널 | ⇥]. 편집실 전용 덮어쓰기(차분한 은백 재질)는 studio-calm-layer.css.) */
+
+/* ── 패널 접기/펼치기(2026-09-17 소유자) ──
+   펼침(panel-open) + 넓은 화면: rail이 workspace를 20vw 밀어낸다(위 margin 규칙은 .panel-open:not(.panel-overlay)에만).
+   접힘(panel-closed): 등장 keyframes를 떼고(fill both가 transform을 붙들면 트랜지션이 안 보인다) 온 길로 미끄러져 나간다.
+   inert(마크업)가 포커스·클릭을 막고, visibility는 다 나간 뒤에 끈다.
+   떠서 덮기(panel-overlay): 달력을 밀지 않고 위에 뜬다 — 팝오버(--z-cal-pop 12)보다 위, 상단바보다 아래. 뒤엔 scrim. */
+.studio-shell.avatar-scene .avatar-rail {
   transition:
-    background 0.15s ease,
-    box-shadow 0.12s ease,
-    transform 0.08s ease;
+    transform 0.42s cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 0.42s cubic-bezier(0.25, 1, 0.5, 1),
+    visibility 0s linear 0.42s;
 }
-.studio-avatar-ctl button:not(.on):hover {
-  background: rgb(255 255 255 / 60%); /* '여기 누를 수 있다' — 비활성 쪽에도 호버 응답 */
+.studio-shell.avatar-scene.panel-closed .avatar-rail {
+  animation: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
-/* 고른 쪽 — 흰 면 + 옅은 그림자만으로는 반투명 알약 위에서 구분이 안 됐다(2026-09-05 소유자 사진).
-   면·글자·테두리를 한꺼번에 올리고, 반대쪽은 확실히 내린다. */
-.studio-avatar-ctl button.on {
-  background: linear-gradient(180deg, #fff, #f3efff);
-  color: #4a3a7a;
-  box-shadow:
-    inset 0 0 0 1.5px #b9a9ec,
-    0 2px 8px rgb(91 74 134 / 22%);
+.studio-shell.avatar-scene.panel-closed.avatar-left .avatar-rail {
+  transform: translateX(calc(-100% - 8px));
 }
-.studio-avatar-ctl button:not(.on) {
-  color: rgb(107 91 138 / 55%);
+.studio-shell.avatar-scene.panel-closed.avatar-right .avatar-rail {
+  transform: translateX(calc(100% + 8px));
 }
-.studio-avatar-ctl button.on svg {
-  stroke-width: 2.8;
+.studio-shell.avatar-scene.panel-overlay .avatar-rail {
+  z-index: 26;
+  filter: drop-shadow(0 18px 40px rgb(60 40 90 / 22%));
 }
-.studio-avatar-ctl button:active {
-  transform: scale(0.95);
+.studio-shell .panel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgb(30 25 50 / 8%);
+  animation: panel-scrim-in 0.3s ease-out both;
+}
+@keyframes panel-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail,
+html[data-reduce-motion] .studio-shell .panel-scrim {
+  transition: none;
+  animation-duration: 0s;
 }
 html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail,
