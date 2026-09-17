@@ -5851,6 +5851,12 @@ html[data-reduce-motion] .editor-anchor-link line {
 }
 
 .studio-weekdays {
+  /* 스크롤을 내려도 요일 줄이 따라온다(2026-09-17 소유자: 시청자 화면과 같게). 시청자는 표면이 transform 캔버스라
+     따로 띄운 고정 띠(.weekday-stick)를 쓰지만, 편집실 그리드는 흐름 그대로라 sticky 한 줄이면 된다 — 조상 overflow는
+     clip뿐(스크롤 컨테이너 아님)이라 깨지지 않는다. 상단바는 non-sticky(UI-13)라 top 0. 칸 z(띠 머리 7·포커스 8) 위, 팝오버(12) 아래. */
+  position: sticky;
+  top: 0;
+  z-index: 9;
   margin-bottom: 8px;
   border: 1px solid #ece9f5;
   border-radius: var(--r-card);
