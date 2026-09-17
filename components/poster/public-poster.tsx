@@ -1177,6 +1177,12 @@ export function PublicPoster({
   const dayVodAliveRef = useRef(new Set<number>());
   const dayVodPausedRef = useRef(new Set<number>());
   const dayVodTimeRef = useRef(new Map<number, number>()); // 최근 timeUpdate currentTime(←/→ 상대 탐색)
+  // 숲 플레이어로 나가는 링크 — 인라인 재생 중이면 그 지점(change_second)부터. 3초 미만이면 처음부터(붙이지 않는다).
+  const vodWatchUrl = (titleNo: number) => {
+    const base = `https://vod.sooplive.co.kr/player/${titleNo}`;
+    const sec = Math.floor(dayVodTimeRef.current.get(titleNo) ?? 0);
+    return sec >= 3 ? `${base}?change_second=${sec}` : base;
+  };
   // 재생 위치 구독(2026-09-03) — 챕터 레일이 현재 챕터를 따라가게 currentTime을 흘려준다.
   // setState로 포스터 전체를 초당 4번 다시 그리지 않고, 레일만 자기 상태(현재 챕터 idx가
   // 바뀔 때만)로 갱신하도록 콜백 구독 방식.
@@ -4592,11 +4598,22 @@ export function PublicPoster({
                               합방 · {vod.host} 방송국
                             </span>
                           ) : null}
+                          {/* 제목 링크는 **지금 보고 있는 지점**부터 이어 본다(2026-09-17 소유자) — 누르는 순간 currentTime을
+                              change_second로 붙인다(pointerdown/enter에도 갱신해 가운데 클릭·새 탭도 같은 지점). */}
                           <a
                             className="dvm-title"
                             data-act="vod-replay"
                             href={playerUrl}
-                            onClick={() => hapticTick()}
+                            onClick={(e) => {
+                              hapticTick();
+                              e.currentTarget.href = vodWatchUrl(vod.titleNo);
+                            }}
+                            onPointerDown={(e) => {
+                              e.currentTarget.href = vodWatchUrl(vod.titleNo);
+                            }}
+                            onPointerEnter={(e) => {
+                              e.currentTarget.href = vodWatchUrl(vod.titleNo);
+                            }}
                             rel="noopener noreferrer"
                             target="_blank"
                             title={label}
