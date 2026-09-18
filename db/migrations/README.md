@@ -64,3 +64,4 @@
 | 0090 | 채팅 구간 프로필·방문 인물·은어 초안 — `vod_chat_bins`(30초: 메시지·고유 발화자 **수**·웃음·상위 단어), `vod_chat_people`(아는 스트리머만), `search_dictionary_notes`, `search_known_people`(이름+인사 줄임 샬하/쵸하), `vod_chat_profile`(anon; **비율만**, 웃음 등급), `search_person_mentions`/`search_graph_rebuild`에 채팅 방문 합류 + `search_entities.visits`, `search_related`에 visits, `search_dictionary_draft`(개발자) |
 | 0091 | 검색 품질 — 두 글자 한글 질의(사전 확장 없음)는 제목·설명·태그·챕터 **원문** 경계로만 적중("이게"≠"이 게임"), 두 글자엔 퍼지 끔; `search_trending` 채팅 단어는 말뭉치·사전에 있는 것만(누르면 결과 보장) + 불용어(아니야·사실…) |
 | 0092 | 검색 결과에 `thumb`(SnapshotLoad 주소) 동봉(편집실 썸네일) + 소유자 은어 시드 `seed-owner`(프클=프로클럽=fc프로클럽, 잔디=fc/피파, rel 프클↔잔디) |
+| 0093 | 채팅 단어 → 검색 적중: `vod_chat_terms.peak_bin/peak_cnt/bins`(그 말이 몰린 30초 구간), `search_public`에 `chat_scored`(단어 전체 일치·5회↑·팬 챕터가 못 잡은 방송만, section 채팅·matched_on chat) |

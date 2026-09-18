@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, AudioLines, CalendarCheck, ChevronDown, ChevronRight, Footprints, Headphones, MessageCircle, Music, Play, Search, X } from "lucide-react";
+import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, ChevronRight, Footprints, Headphones, MessageCircle, Music, Play, Search, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
@@ -65,7 +65,8 @@ const KIND_ICON: Record<string, { Icon: typeof Music; label: string; cls: string
   song: { Icon: Music, label: "부른 곡", cls: "" },
   listen: { Icon: Headphones, label: "틀어준 곡", cls: " is-listen" },
   dance: { Icon: Footprints, label: "춤·챌린지", cls: " is-dance" },
-  hum: { Icon: AudioLines, label: "허밍", cls: " is-hum" }
+  hum: { Icon: AudioLines, label: "허밍", cls: " is-hum" },
+  chat: { Icon: MessageCircle, label: "채팅 반응", cls: " is-chat" } // 0093 — 시청자 채팅에서 그 말이 몰린 구간
 };
 
 // 적중 글자 강조 — 공백·기호를 건너뛰는 정규화 매칭(서버와 같은 규칙). 초성 질의는 강조 없음.
@@ -415,7 +416,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                 </span>
                 <span className="ps-side">
                   <span className="ps-side-text">{formatVodDuration(v.durationMs)}</span>
-                  <Play className="ps-act" size={14} aria-hidden="true" />
+                  {studio ? <CalendarDays className="ps-act" size={15} aria-hidden="true" /> : <Play className="ps-act" size={14} aria-hidden="true" />}
                 </span>
               </>,
               onReplay ? "달력에서 이 날로" : "이 다시보기 처음부터"
@@ -458,7 +459,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                             </span>
                           </span>
                           <span className="ps-side">
-                            <Play className="ps-act" size={12} aria-hidden="true" />
+                            {studio ? <CalendarDays className="ps-act" size={13} aria-hidden="true" /> : <Play className="ps-act" size={12} aria-hidden="true" />}
                           </span>
                         </>,
                         `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}${onReplay ? "" : "부터 재생"}`

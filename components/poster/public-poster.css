@@ -7799,7 +7799,9 @@ html[data-pchrome="3"] .poster-chrome-title {
 .ps-sheet .ps-chiplbl { font-size: 12.5px; }
 .ps-sheet .ps-hint { font-size: 14px; }
 .ps-sheet .ps-ext { width: 36px; }
-.ps-sheet .ps-thumb { width: 64px; height: 40px; }
+.ps-sheet .ps-thumb { width: 192px; height: 108px; border-radius: 12px; } /* 소유자 2026-09-18: 3배 */
+.ps-sheet .ps-vod-row { align-items: center; }
+.ps-note.is-chat { color: #1d5fb0; }
 .ps-ext {
   flex: none;
   display: grid;

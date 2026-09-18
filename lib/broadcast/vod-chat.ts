@@ -113,6 +113,30 @@ const BIN_STOP = new Set([
 
 export type Bin = { msgs: number; speakers: Set<string>; laugh: number; terms: Map<string, number> };
 
+// 별명 변형(소유자 2026-09-18): 시청자는 "빅토리"를 비틀어 부른다 — 탐토리·탐정토리·바보토리(○○토리), 빅드럭·빅명한(빅○○),
+// 야키토리. 어간을 풀어 같이 센다: "탐정토리" → 탐정, "탐토리" → 탐 → 그 방송 제목·챕터 낱말 중 '탐'으로 시작하는 말(탐정)로.
+// 음절을 바꿔치기한 말장난(빅명한 = 빅+유명한)은 규칙으로 못 푼다 — 어간 "명한"만 남는다(한계).
+const OWNER_SUFFIX = /^([가-힣]{1,4})토리$/;
+const OWNER_PREFIX = /^빅([가-힣]{1,4})$/;
+export function nicknameStems(token: string, docWords: ReadonlySet<string>): string[] {
+  const m = OWNER_SUFFIX.exec(token) ?? OWNER_PREFIX.exec(token);
+  if (!m) return [];
+  const stem = m[1];
+  if (stem === "토" || stem === "토리") return [];
+  const out: string[] = [];
+  if (stem.length >= 2) out.push(stem);
+  // 한 글자 어간(탐)은 그 방송의 제목·챕터 낱말로 푼다(탐→탐정). 후보가 셋을 넘으면 뜻이 없다.
+  const cands = [...docWords].filter((w) => w.length >= 2 && w !== stem && w.startsWith(stem));
+  if (cands.length >= 1 && cands.length <= 3) for (const w of cands) if (!out.includes(w)) out.push(w);
+  return out;
+}
+
+export function docWordSet(texts: string[]): Set<string> {
+  const out = new Set<string>();
+  for (const t of texts) for (const w of t.split(/[^가-힣]+/)) if (/^[가-힣]{2,6}$/.test(w)) out.add(w);
+  return out;
+}
+
 // 토리님 호칭의 굴절형("토리는", "토리면", "빅토리가")도 특징이 못 된다.
 const OWNER_RE = /^(빅)?토리/;
 // 소유자 이름은 '방문 인물'이 아니다(vod_chat_people 제외).
@@ -174,7 +198,17 @@ export async function syncVodChat(
       offset += f.durationSec;
     }
     const counts = new Map<string, number>();
+    const termBins = new Map<string, Map<number, number>>(); // 단어 → 구간별 횟수(봉우리 구간용)
     const bins = new Map<number, Bin>();
+    // 별명 어간을 풀 낱말 — 이 방송 제목·팬 챕터
+    const docRows = await Promise.all([
+      supabase.from("vod_archive").select("title").eq("title_no", titleNo).maybeSingle(),
+      supabase.from("vod_chapter_index").select("label").eq("title_no", titleNo).limit(400)
+    ]);
+    const docWords = docWordSet([
+      String(docRows[0].data?.title ?? ""),
+      ...((docRows[1].data ?? []) as { label: string }[]).map((r) => r.label)
+    ]);
     const people = new Map<string, { greetings: number; mentions: number }>();
     let i = doneChunks;
     for (; i < plan.length && budget > 0; i += 1, budget -= 1) {
@@ -194,9 +228,17 @@ export async function syncVodChat(
           b.msgs += 1;
           if (msg.u) b.speakers.add(msg.u);
           b.laugh += laughScore(msg.m);
-          for (const t of tokenize(msg.m, known.names)) {
+          const toks = tokenize(msg.m, known.names);
+          for (const t of [...toks]) for (const stem of nicknameStems(t, docWords)) toks.push(stem);
+          for (const t of toks) {
             counts.set(t, (counts.get(t) ?? 0) + 1);
             b.terms.set(t, (b.terms.get(t) ?? 0) + 1);
+            let tb = termBins.get(t);
+            if (!tb) {
+              tb = new Map();
+              termBins.set(t, tb);
+            }
+            tb.set(binNo, (tb.get(binNo) ?? 0) + 1);
             const viaGreeting = known.greetings.get(t);
             if (OWNER_NAMES.has(t)) {
               /* 토리님 본인 — 방문 아님 */
@@ -221,9 +263,22 @@ export async function syncVodChat(
     if (counts.size > 0) {
       // 기존 빈도에 더한다(이어받기). 한 번에 upsert하되 충돌 시 합산은 RPC 없이 두 단계로.
       const terms = [...counts.entries()];
-      const existing = await supabase.from("vod_chat_terms").select("term, cnt").eq("title_no", titleNo).in("term", terms.map(([t]) => t));
-      const have = new Map<string, number>(((existing.data ?? []) as { term: string; cnt: number }[]).map((r) => [r.term, Number(r.cnt)]));
-      const rows = terms.map(([term, cnt]) => ({ title_no: titleNo, term, cnt: cnt + (have.get(term) ?? 0) }));
+      const existing = await supabase
+        .from("vod_chat_terms")
+        .select("term, cnt, peak_bin, peak_cnt, bins")
+        .eq("title_no", titleNo)
+        .in("term", terms.map(([t]) => t));
+      const have = new Map(
+        ((existing.data ?? []) as { term: string; cnt: number; peak_bin: number | null; peak_cnt: number; bins: number }[]).map((r) => [r.term, r])
+      );
+      const rows = terms.map(([term, cnt]) => {
+        const h = have.get(term);
+        const tb = termBins.get(term) ?? new Map<number, number>();
+        let peakBin: number | null = h?.peak_bin ?? null;
+        let peakCnt = Number(h?.peak_cnt ?? 0);
+        for (const [bin, n] of tb) if (n > peakCnt) { peakCnt = n; peakBin = bin; }
+        return { title_no: titleNo, term, cnt: cnt + Number(h?.cnt ?? 0), peak_bin: peakBin, peak_cnt: peakCnt, bins: tb.size + Number(h?.bins ?? 0) };
+      });
       for (let k = 0; k < rows.length; k += 500) {
         const { error } = await supabase.from("vod_chat_terms").upsert(rows.slice(k, k + 500), { onConflict: "title_no,term" });
         if (error) console.warn("[vod-chat] upsert failed:", error.message);
