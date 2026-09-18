@@ -176,4 +176,13 @@ describe.skipIf(!configured)("시청자 검색 — 공개 경계·순위(실제 
     const hits = await find(`메 ${TOKEN}`);
     expect(hits.some((h) => h.eventId === id), "'메' → 메이플 확장 실패").toBe(true);
   });
+
+  it("영타 두 후보 동시 검색: 'anfmv'는 한글 후보 '무릎'(아이유 - 무릎)이 앞서고 corrected가 무릎이다", async () => {
+    const r = await searchPublic(SLUG, "anfmv", 30);
+    expect(r.corrected).toBe("무릎");
+    expect(r.hits.length).toBeGreaterThan(0);
+    expect(r.hits[0].title).toContain("무릎");
+    // 라틴 퍼지('akmu' 같은 비정확 결과)는 한글 후보가 있을 땐 섞이지 않는다
+    expect(r.hits.every((h) => h.exact || h.title.includes("무릎"))).toBe(true);
+  });
 });

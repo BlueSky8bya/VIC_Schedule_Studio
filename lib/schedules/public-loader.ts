@@ -608,21 +608,37 @@ export async function searchPublic(
   const supabase = createPublicReadClient();
   if (!calendarId || !supabase) return empty;
   const p_limit = Math.max(1, Math.min(400, Math.floor(limit)));
-  let { data, error } = await supabase.rpc("search_public", { p_calendar_id: calendarId, p_q: q, p_limit });
-  // 영타 오타("shfo") — 결과가 없고 라틴 글자뿐이면 두벌식으로 되돌려 다시 찾는다(소유자 2026-09-18).
+  // 영타 오타("shfo"→노래, "anfmv"→무릎) — 라틴 글자뿐이고 두벌식으로 되돌리면 한글이 되는 검색어는 **두 후보를 동시에**
+  // 찾는다(소유자 2026-09-18: "anfmv"가 라틴 퍼지로 'akmu'에 걸려 악뮤가 나왔다 — 대부분은 무릎을 찾는 사람).
+  // 한글 후보에 결과가 있으면 그걸 앞에, 라틴 결과는 뒤에(중복 제거). 없으면 라틴 결과 그대로.
   // 진짜 영어 검색어(zelda·pubg)는 변환에서 걸러진다(lib/search/hangul.ts).
+  const { fixLatinTypo } = await import("@/lib/search/hangul");
+  const fixed = fixLatinTypo(q);
   let effective = q;
-  if (!error && Array.isArray(data) && data.length === 0) {
-    const { fixLatinTypo } = await import("@/lib/search/hangul");
-    const fixed = fixLatinTypo(q);
-    if (fixed && fixed !== q) {
-      const retry = await supabase.rpc("search_public", { p_calendar_id: calendarId, p_q: fixed, p_limit });
-      if (!retry.error && Array.isArray(retry.data) && retry.data.length > 0) {
-        data = retry.data;
-        error = retry.error;
-        effective = fixed;
-      }
+  let data: unknown[] | null;
+  let error: { message: string } | null;
+  if (fixed && fixed !== q) {
+    const [latin, hangul] = await Promise.all([
+      supabase.rpc("search_public", { p_calendar_id: calendarId, p_q: q, p_limit }),
+      supabase.rpc("search_public", { p_calendar_id: calendarId, p_q: fixed, p_limit })
+    ]);
+    const hRows = !hangul.error && Array.isArray(hangul.data) ? (hangul.data as Record<string, unknown>[]) : [];
+    const lRows = !latin.error && Array.isArray(latin.data) ? (latin.data as Record<string, unknown>[]) : [];
+    if (hRows.length > 0) {
+      const seen = new Set(hRows.map((r) => `${r.kind}:${r.event_id ?? r.title_no}:${r.sec ?? ""}`));
+      // 라틴 쪽은 정확 적중만 뒤에 붙인다(퍼지 'akmu' 같은 건 한글 후보가 있을 땐 소음).
+      const extra = lRows.filter((r) => r.exact === true && !seen.has(`${r.kind}:${r.event_id ?? r.title_no}:${r.sec ?? ""}`));
+      data = [...hRows, ...extra];
+      error = null;
+      effective = fixed;
+    } else {
+      data = latin.data as unknown[] | null;
+      error = latin.error;
     }
+  } else {
+    const res = await supabase.rpc("search_public", { p_calendar_id: calendarId, p_q: q, p_limit });
+    data = res.data as unknown[] | null;
+    error = res.error;
   }
   // RPC 오류는 '결과 없음'과 다르다 — failed로 올려 라우트가 캐시하지 않게(빈 200이 CDN에 15분 굳었던 사고).
   if (error || !Array.isArray(data)) return { ...empty, failed: true };
