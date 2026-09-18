@@ -358,11 +358,21 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                 {visible.map((c, ci, arr) => {
                   const prev = ci > 0 ? arr[ci - 1] : null;
                   const showSection = c.section && (!prev || prev.section !== c.section);
+                  // 같은 상위 항목("✨토리님 굿즈 소개 PPT 시작✨")을 공유하는 세부 항목들은 상위를 한 번만
+                  // 소제목으로 쓰고 아래에 묶는다 — 줄마다 되풀이하지 않는다(소유자 2026-09-18).
+                  // 상위 항목 줄 자체가 바로 위에 있으면(2:10:55 "PPT 시작" → 세부들) 그 줄이 곧 소제목이라 생략.
+                  const showParent =
+                    Boolean(c.parent) && (!prev || prev.parent !== c.parent || showSection) && prev?.label !== c.parent;
                   return (
-                    <div className="ps-chapter-wrap" key={`${c.sec}:${c.label}`}>
+                    <div className={`ps-chapter-wrap${c.parent ? " is-child" : ""}`} key={`${c.sec}:${c.label}`}>
                       {showSection ? (
                         <span className={`ps-section${c.matchedOn === "section" ? " is-hit" : ""}`}>
                           <Highlight text={c.section} q={q} />
+                        </span>
+                      ) : null}
+                      {showParent ? (
+                        <span className="ps-parent-head">
+                          <Highlight text={c.parent} q={q} />
                         </span>
                       ) : null}
                       {rowBtn(
@@ -379,11 +389,6 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                                   className={`ps-note${c.matchedOn === "listen" ? " is-listen" : ""}`}
                                   size={12}
                                 />
-                              ) : null}
-                              {c.parent ? (
-                                <span className="ps-parent">
-                                  <Highlight text={c.parent} q={q} /> ›{" "}
-                                </span>
                               ) : null}
                               <Highlight text={c.label} q={q} />
                             </span>
@@ -564,7 +569,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
           </div>
         ) : null}
 
-        <div className="ps-scroll">
+        <div className={`ps-scroll${railDays.length >= 4 ? " has-rail" : ""}`}>
           <div className="pi-body ps-body" onScroll={onScroll} ref={listRef}>
             {normalizedLen < MIN_CHARS ? (
               <div className="ps-start">

@@ -7926,9 +7926,34 @@ html[data-pchrome="3"] .poster-chrome-title {
   font-size: 13px;
   font-weight: 700;
 }
-.ps-parent {
-  font-weight: 600;
-  color: rgb(35 48 63 / 50%);
+.ps-parent-head {
+  display: block;
+  margin: 4px 0 0 6px;
+  padding-left: 8px;
+  border-left: 2px solid rgb(124 108 240 / 30%);
+  font-size: 12px;
+  font-weight: 800;
+  color: rgb(35 48 63 / 62%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 상위 아래 세부 항목 — 한 단 더 들여쓰고 얇은 보라 선으로 소속을 잇는다. */
+.ps-chapter-wrap.is-child .ps-chapter {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 2px solid rgb(124 108 240 / 30%);
+  border-radius: 0 9px 9px 0;
+}
+.ps-chapter-wrap.is-child .ps-tc {
+  min-width: 48px;
+}
+/* 레일이 있으면 스크롤바는 숨긴다 — 위치는 레일·진행선이 말한다(둘이 나란히 서면 중복). */
+.ps-scroll.has-rail .ps-body {
+  scrollbar-width: none;
+}
+.ps-scroll.has-rail .ps-body::-webkit-scrollbar {
+  display: none;
 }
 .ps-note {
   display: inline-block;
