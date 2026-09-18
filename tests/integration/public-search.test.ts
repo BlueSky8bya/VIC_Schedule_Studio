@@ -160,6 +160,15 @@ describe.skipIf(!configured)("시청자 검색 — 공개 경계·순위(실제 
     for (const h of narrowed.slice(0, 10)) expect(`${h.title} ${h.section ?? ""}`).toMatch(/한로로/);
   });
 
+  it("종겜 의도(0083): '종겜'은 메이저가 아닌 게임 플레이 방송·구간이 최상위, 메이저(롤·마크·배그)는 아니다", async () => {
+    const hits = await find("종겜");
+    const top = hits.slice(0, 12);
+    expect(top.filter((h) => h.matchedOn === "game").length, JSON.stringify(top.map((h) => [h.kind, h.title, h.matchedOn]))).toBeGreaterThanOrEqual(10);
+    for (const h of top) {
+      expect(`${h.title} ${h.section ?? ""} ${h.snippet}`).not.toMatch(/리그오브레전드|배틀그라운드|마인크래프트|오버워치/);
+    }
+  });
+
   it("한 글자는 사전에 있을 때만: '메'는 메이플 결과, 'ㅋ'·'가'는 빈 결과", async () => {
     expect((await searchPublic(SLUG, " ㅋ ")).hits).toHaveLength(0);
     expect((await searchPublic(SLUG, "가")).hits).toHaveLength(0);

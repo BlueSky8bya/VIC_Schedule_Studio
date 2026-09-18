@@ -54,3 +54,4 @@
 | 0080 | public_search_related_terms — 관련어 kind(syn/rel)·큐레이션 관련어(할나~실크송)·단어 공출현 PPMI 그래프(`search_terms`/`search_term_relations`, `search_term_graph_rebuild`)·`search_related_terms` RPC·RPC 관련어 보너스 0.5 |
 | 0081 | public_search_chapter_context — 챕터 색인에 코너(section)·상위 항목(parent)·depth, 코너/상위로도 검색(보너스 0.9), RPC section·parent·matched_on 반환, '노래·춤·빅이봤·소통' 관련어, 전수조사 줄임말(메·주보·구플뱅…)·사전에 있는 한 글자 질의 허용 |
 | 0082 | public_search_song_intent — 곡 분류(song_kind sung/listen, 가수 사전 `search_artists`, `search_song_refresh`), 의도 사전 `search_intents`(노래→song), RPC: 노래 의도면 부른 곡 최상위(1.3)·들은 곡 0.8, limit 400 |
+| 0083 | public_search_game_intent — 학습 게임 목록 `search_games`(코너 '게임 - X'+큐레이션 종겜) + 메이저 사전 `search_game_is_major`, 챕터 `game_norm`·`is_section_start`, 의도 종겜→minor_game(RPC 2.8/2.6) |
