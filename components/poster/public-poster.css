@@ -8369,12 +8369,14 @@ html[data-reduce-motion] .ps-rail-dot::before {
   }
 }
 .public-day.cell-flash,
-.agenda-day.cell-flash {
+.agenda-day.cell-flash,
+.studio-day.cell-flash {
   animation: cell-flash 1.8s var(--ease) both;
   border-radius: var(--r-card, 12px);
 }
 html[data-reduce-motion] .public-day.cell-flash,
-html[data-reduce-motion] .agenda-day.cell-flash {
+html[data-reduce-motion] .agenda-day.cell-flash,
+html[data-reduce-motion] .studio-day.cell-flash {
   animation: none;
   box-shadow: 0 0 0 4px rgb(124 108 240 / 45%);
 }

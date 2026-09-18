@@ -78,6 +78,16 @@ function dayVodSlotKey(titleNo: number, slot: "a" | "b"): string {
 }
 let vodSoundBlockedCache: boolean | null = null;
 function isVodSoundAutoplayBlocked(): boolean {
+  // 2026-09-18 소유자: "디폴트가 음소거". 차단 기억(3일)이 한 번 걸리면 그 뒤 모든 점프가 음소거로 시동됐다.
+  // 그런데 검색 결과·챕터 클릭은 우리 문서 위의 사용자 제스처라(allow="autoplay" 위임) 소리 켠 시동이 허용되는
+  // 경우가 대부분 — 문서에 제스처가 한 번이라도 있었으면(userActivation.hasBeenActive) 기억을 무시하고 소리부터
+  // 시도한다. 정말 막히면 감시창(1.5초)이 음소거로 굴려 주니 손해는 1.5초뿐.
+  try {
+    const ua = (navigator as Navigator & { userActivation?: { hasBeenActive?: boolean } }).userActivation;
+    if (ua?.hasBeenActive) return false;
+  } catch {
+    /* 지원 안 하는 브라우저 — 기억으로 판단 */
+  }
   if (vodSoundBlockedCache !== null) return vodSoundBlockedCache;
   let blocked = false;
   try {

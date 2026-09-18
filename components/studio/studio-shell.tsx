@@ -418,6 +418,8 @@ export function StudioShell({
   }, [hasUnlockSession]);
   // (members 모달은 멤버 관리 철수(2026-09-04)로 제거, settings 모달은 같은 날 도구 카드 톱니에서 열린다.)
   const [searchOpen, setSearchOpen] = useState(false);
+  const [flashDate, setFlashDate] = useState<string | null>(null);
+  const flashTimerRef = useRef<number | null>(null);
   const [modal, setModal] = useState<null | "tags" | "settings" | "developer" | "dayVisit">(
     null
   );
@@ -1974,6 +1976,17 @@ export function StudioShell({
     if (offset !== 0) moveMonth(offset);
     return offset !== 0 ? 380 : 0;
   };
+  // 그 날 칸을 잠시 밝힌다(시청자 화면의 .cell-flash와 같은 애니메이션) — 달 이동 슬라이드가 끝난 뒤.
+  // 클래스는 state(flashDate)로 칸 className에 들어간다 — DOM에 직접 넣으면 selectEvent 리렌더가 지운다(실측).
+  const flashStudioDay = (dateKey: string) => {
+    document
+      .querySelector<HTMLElement>(`.studio-day[data-isodate="${dateKey}"], [data-flip-key="${dateKey}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashDate(null);
+    window.setTimeout(() => setFlashDate(dateKey), 0);
+    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = window.setTimeout(() => setFlashDate(null), 1900);
+  };
   const onStudioSearchPickEvent = (dateKey: string, eventId: string) => {
     setSearchOpen(false);
     const delay = goToMonthOf(dateKey);
@@ -1981,6 +1994,7 @@ export function StudioShell({
       const ev = events.find((e) => e.id === eventId);
       if (ev) selectEvent(ev);
       else selectDate(dateKey);
+      flashStudioDay(dateKey);
     }, delay);
   };
   const onStudioSearchPickVod = (dateKey: string) => {
@@ -1989,7 +2003,7 @@ export function StudioShell({
     window.setTimeout(() => {
       setSelectedDate(dateKey);
       setSelectedEventId(null);
-      document.querySelector<HTMLElement>(`[data-date="${dateKey}"], [data-flip-key="${dateKey}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      flashStudioDay(dateKey);
     }, delay);
   };
   // ▶ = 다시보기 창(시청자 DayVodWindow 그대로, 한 구현). 그 날 VOD 목록은 공개 일정 응답(vods)에서 — 처음 한 번 받아 둔다.
@@ -6775,7 +6789,9 @@ export function StudioShell({
                 // 휴방 메뉴가 이 칸에 떠 있으면 어느 날인지 분명히 강조.
                 restMenu?.isoDate === cell.isoDate ? "rest-target" : "",
                 // 시트식 범위 선택(시각 강조). React state라 카드 드래그 리렌더에도 유지.
-                rangeSelected.has(cellIndex) ? "cell-range-selected" : ""
+                rangeSelected.has(cellIndex) ? "cell-range-selected" : "",
+                // 검색 결과에서 온 날(2026-09-18) — 잠시 밝힘. DOM 클래스는 리렌더에 지워져 state로.
+                flashDate === cell.isoDate ? "cell-flash" : ""
               ]
                 .filter(Boolean)
                 .join(" ");

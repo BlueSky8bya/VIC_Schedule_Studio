@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, ChevronRight, Footprints, Headphones, MessageCircle, Music, Play, Search, X } from "lucide-react";
+import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, Footprints, Headphones, MessageCircle, Music, Play, Search, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
@@ -236,6 +236,8 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     hapticTick();
     if (row.kind === "event") onPickEvent(row.dateKey, row.hit.eventId ?? "");
     else if (row.kind === "vod") onPickVod(row.dateKey, row.titleNo);
+    // 편집실(2026-09-18 소유자): 챕터 행은 곧장 다시보기 창의 그 시각 — 방송 행 위에 '그 날로'가 이미 있어 챕터마다 중복은 없앰.
+    else if (onReplay) onReplay(row.dateKey, row.titleNo, row.sec);
     else onPickVod(row.dateKey, row.titleNo, row.sec);
   };
 
@@ -366,9 +368,16 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
           "ps-event",
           "search-hit-event",
           <>
-            <span className="ps-lead ps-lead-event" aria-hidden="true">
-              <CalendarCheck size={16} strokeWidth={2.2} />
-            </span>
+            {e.thumb ? (
+              <span className="ps-lead ps-thumb" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element -- 외부 스냅샷(숲 CDN), 크기 고정 */}
+                <img alt="" loading="lazy" src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?${e.thumb}`} />
+              </span>
+            ) : (
+              <span className="ps-lead ps-lead-event" aria-hidden="true">
+                <CalendarCheck size={16} strokeWidth={2.2} />
+              </span>
+            )}
             <span className="ps-main">
               <span className="ps-title">
                 <Highlight text={e.title} q={q} />
@@ -381,10 +390,10 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
             </span>
             <span className="ps-side">
               <span className="ps-side-text">{e.startTime ? e.startTime : "일정"}</span>
-              <ChevronRight className="ps-act" size={15} aria-hidden="true" />
+              <CalendarDays className="ps-act" size={15} aria-hidden="true" />
             </span>
           </>,
-          "달력에서 이 일정으로"
+          "달력에서 이 날로"
         )
       )}
       {g.vods.map((v) => {
@@ -443,7 +452,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                           <Highlight text={c.parent} q={q} />
                         </span>
                       ) : null}
-                      {withExt(g.dateKey, v.titleNo, c.sec, rowBtn(
+                      {rowBtn(
                         { kind: "chapter", dateKey: g.dateKey, titleNo: v.titleNo, sec: c.sec },
                         "ps-chapter",
                         "search-hit-chapter",
@@ -459,11 +468,11 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                             </span>
                           </span>
                           <span className="ps-side">
-                            {studio ? <CalendarDays className="ps-act" size={13} aria-hidden="true" /> : <Play className="ps-act" size={12} aria-hidden="true" />}
+                            <Play className="ps-act" size={12} aria-hidden="true" />
                           </span>
                         </>,
-                        `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}${onReplay ? "" : "부터 재생"}`
-                      ))}
+                        `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}부터 재생`
+                      )}
                     </div>
                   );
                 })}
