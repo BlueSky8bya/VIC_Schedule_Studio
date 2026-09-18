@@ -6016,9 +6016,9 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
      가로는 clip(월 이동 translateX 슬라이드용 + 둥근 모서리). */
   overflow-x: clip;
   overflow-y: auto;
-  border: 1px solid #ece9f5;
+  border: 1px solid var(--cal-grid-line, #ece9f5);
   border-radius: 18px;
-  background: #ffffff;
+  background: var(--cal-grid, #ffffff);
   box-shadow: 0 8px 26px rgb(120 110 160 / 12%);
   /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남).
      flex:1 1 auto + min-height:0 = 뷰포트 높이에 맞춰(넘치면 위 overflow-y로 스크롤). */
@@ -6172,7 +6172,7 @@ body.cell-range-dragging {
 }
 
 .studio-day.outside {
-  background: #f2f0f8;
+  background: var(--cal-cell-outside, #f2f0f8);
 }
 /* 흐림은 셀 전체 opacity(그룹 합성) 대신 반투명 흰 베일을 한 겹 덮어서 낸다.
    셀마다 베일이 정확히 맞물려 깔리므로(겹침 없음) 스패닝 일정 막대는 불투명하게
@@ -6184,7 +6184,7 @@ body.cell-range-dragging {
   inset: 0 -1px -1px 0;
   /* 스티커 레이어보다 아래(셀 콘텐츠보다는 위)로 둬, 스티커는 흐려지지 않게 한다. */
   z-index: var(--z-cal-dim, 4);
-  background: rgb(242 240 248 / 60%);
+  background: var(--cal-veil, rgb(242 240 248 / 60%));
   pointer-events: none;
 }
 

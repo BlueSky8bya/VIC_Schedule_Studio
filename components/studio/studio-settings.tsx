@@ -9,7 +9,7 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, Eye, Gauge, Leaf, Palette, Sparkles, Vibrate } from "lucide-react";
+import { BookA, Eye, Gauge, Leaf, Moon, Palette, Sparkles, Vibrate } from "lucide-react";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
@@ -35,6 +35,9 @@ export type StudioSettingsProps = {
   onToggleReduceMotion: () => void;
   eyeComfort: boolean;
   onToggleEyeComfort: () => void;
+  // 다크 모드(2026-09-19 소유자) — 토큰 팔레트 한 벌을 어둡게. 눈 편한 테마와 독립이다.
+  dark: boolean;
+  onToggleDark: () => void;
   // (차분한 편집실 스위치는 2026-09-04 제거 — 항상 ON. 사용자: "끄면 살짝 어두워질 뿐 뭐가 차분한지 모르겠다".)
   // 계절 배경(2026-09-04, ADR-0017 개정 2) — 달력 달의 계절(여름 물결·가을 낙엽·겨울 눈밭·봄 풀밭). 기본 ON. OFF면 전부 없음.
   ambientMode: AmbientMode; // 켜짐 · 흐리게 · 끔(2026-09-04 세 상태)
@@ -64,6 +67,8 @@ export function StudioSettingsList({
   onToggleReduceMotion,
   eyeComfort,
   onToggleEyeComfort,
+  dark,
+  onToggleDark,
   ambientMode,
   onChangeAmbientMode,
   gfxPref,
@@ -141,6 +146,24 @@ export function StudioSettingsList({
           role="switch"
           type="button"
           data-act="눈 편한 테마 켜기/끄기"
+        >
+          <span className="rhh-knob" aria-hidden="true" />
+        </button>
+      </div>
+      {/* 다크 모드 — 어두운 팔레트 한 벌. 계절 배경 캔버스는 건드리지 않는다(루트 filter 금지 규칙). */}
+      <div className="role-help-haptics">
+        <span className="rhh-label">
+          <Moon aria-hidden="true" size={14} />
+          다크 모드
+        </span>
+        <button
+          aria-checked={dark}
+          aria-label="다크 모드 켜기/끄기"
+          className={`rhh-switch ${dark ? "on" : ""}`}
+          onClick={onToggleDark}
+          role="switch"
+          type="button"
+          data-act="다크 모드 켜기/끄기"
         >
           <span className="rhh-knob" aria-hidden="true" />
         </button>

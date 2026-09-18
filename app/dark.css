@@ -1,0 +1,247 @@
+/* ══ 다크 모드 보정(2026-09-19 소유자) ═══════════════════════════════════════════════════
+   팔레트 자체는 app/globals.css의 `html[data-theme="dark"]` 토큰 한 벌이 쥔다. 이 파일은 그 토큰이
+   **닿지 못하는 자리**만 고친다 — 오래된 규칙에 색이 리터럴로 박혀 있어(#6b5b34, rgb(17 24 39) …)
+   테마를 갈아입어도 그대로 어두운 글자로 남는 곳들.
+   다크 규칙은 **여기 한 파일에만** 둔다(파일마다 흩어 두면 관리 지점이 또 늘어난다). 선택자는 전부
+   `html[data-theme="dark"]`로 시작하므로 두 클래스 이상 특이도 → 원 규칙보다 항상 세고, 로드 순서와
+   무관하다. 라이트 화면에는 한 줄도 닿지 않는다.
+   고르는 법: 다크로 켜고 대비(WCAG) 3 미만인 글자·큰 밝은 면을 스크립트로 훑어(scripts 임시 probe)
+   나온 자리만 고친다 — 눈대중으로 하나씩 찾지 않는다. */
+
+/* ── 시청자 포스터 ─────────────────────────────────────────────────────────── */
+/* 요일 머리글·날짜 숫자 — 주말 색은 색상은 유지하고 밝기만 올린다(빨강·파랑의 뜻이 사라지면 안 된다). */
+html[data-theme="dark"] .weekday-row span,
+html[data-theme="dark"] .public-day .day-strip strong {
+  color: var(--ink);
+}
+html[data-theme="dark"] .weekday-row .sunday,
+html[data-theme="dark"] .public-day strong.red,
+html[data-theme="dark"] .day-mark {
+  color: #ff8a80;
+}
+html[data-theme="dark"] .weekday-row .saturday,
+html[data-theme="dark"] .public-day strong.saturday {
+  color: #7fb0ff;
+}
+/* 태그 필터 패널 — 제목·항목 글자가 크림 위 짙은 갈색이었다. */
+html[data-theme="dark"] .legend-title {
+  color: var(--accent-strong);
+}
+html[data-theme="dark"] .legend-item,
+html[data-theme="dark"] .legend-item.mod,
+html[data-theme="dark"] .public-legend-vertical li,
+html[data-theme="dark"] .legend-hint {
+  color: var(--ink-soft);
+}
+html[data-theme="dark"] .legend-item:hover {
+  background: rgb(255 255 255 / 7%);
+}
+/* D+ 카드의 금빛 숫자 — 어두운 바닥에선 진한 금이 안 읽힌다. 그라데이션을 한 단 밝게. */
+html[data-theme="dark"] .ric-dplus {
+  background: linear-gradient(180deg, #ffd873, #e0a933);
+}
+/* 기간 안내 띠(support bar) — 하늘색 글자가 어두워 바닥에 묻혔다. */
+html[data-theme="dark"] .sb-title,
+html[data-theme="dark"] .sb-cta,
+html[data-theme="dark"] .sb-go,
+html[data-theme="dark"] .support-bar .sb-when {
+  color: #7fd3ea;
+}
+/* 머리줄 알약(검색·기록·로그인·설정) — 글자색이 리터럴이라 어두운 유리 위에서 묻혔다. */
+html[data-theme="dark"] .insights-open,
+html[data-theme="dark"] .search-open,
+html[data-theme="dark"] .viewer-settings-open,
+html[data-theme="dark"] .account-form .button,
+html[data-theme="dark"] .poster-readonly .viewer-actions .button {
+  color: var(--ink);
+}
+html[data-theme="dark"] .insights-open:hover,
+html[data-theme="dark"] .search-open:hover,
+html[data-theme="dark"] .viewer-settings-open:hover,
+html[data-theme="dark"] .account-form .button:hover {
+  background: rgb(255 255 255 / 10%);
+}
+html[data-theme="dark"] .poster-chrome-title {
+  color: var(--ink);
+}
+
+/* 다른 달 칸의 날짜 줄 — 흰 띠가 그대로 남아 어두운 칸 위에 흰 막대가 됐다. */
+html[data-theme="dark"] .public-day.outside .day-strip {
+  background: transparent;
+  color: var(--muted);
+}
+/* 기간 안내 띠의 하늘색 글자 — 원 규칙이 .support-bar.sb-period 같은 3클래스라 더 세게 겨눈다. */
+html[data-theme="dark"] .support-bar .sb-title,
+html[data-theme="dark"] .support-bar .sb-cta,
+html[data-theme="dark"] .support-bar .sb-go,
+html[data-theme="dark"] .support-bar.is-clickable.is-hover .sb-cta {
+  color: #7fd3ea;
+}
+html[data-theme="dark"] .support-bar.sb-solo .sb-title,
+html[data-theme="dark"] .support-bar.sb-solo .sb-cta {
+  color: #ffa8b8;
+}
+html[data-theme="dark"] .sb-go,
+html[data-theme="dark"] .sb-cta {
+  color: #7fd3ea;
+}
+/* 절기·공휴일 이름 — 흙빛 글자가 어두운 칸에 묻힌다. */
+html[data-theme="dark"] .day-mark,
+html[data-theme="dark"] .day-mark.celebratable {
+  color: #e0a97a;
+}
+html[data-theme="dark"] .ric-dplus {
+  color: #ffd873; /* 그라데이션 미지원 대비 fallback도 밝게 */
+}
+
+/* ── 떠 있는 창들(검색·기록·설정·다시보기) ───────────────────────────────────
+   시트마다 자기 토큰(--ps-*)이나 리터럴 크림을 쓴다. 토큰이 있는 곳은 토큰만 갈아입히고,
+   리터럴인 곳은 면·선·잉크 셋만 덮는다. */
+html[data-theme="dark"] .ps-sheet {
+  --ps-surface: #221f1b;
+  --ps-line: rgb(255 255 255 / 10%);
+  --ps-accent: #7fa8ff;
+  --ps-accent-soft: rgb(127 168 255 / 14%);
+  --ps-gold: #ffd873;
+  border-color: rgb(255 255 255 / 8%);
+  background: linear-gradient(180deg, #221f1b, #1d1b17);
+  color: var(--ink);
+}
+html[data-theme="dark"] .ps-field {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 6%);
+}
+html[data-theme="dark"] .ps-field input { color: var(--ink); }
+html[data-theme="dark"] .ps-chip,
+html[data-theme="dark"] .ps-suggest,
+html[data-theme="dark"] .ps-row:hover,
+html[data-theme="dark"] .ps-row.is-cursor {
+  border-color: rgb(255 255 255 / 10%);
+  background: #2b2823;
+  color: var(--ink);
+}
+html[data-theme="dark"] .ps-chip:hover { background: #343029; color: #bcd2ff; }
+html[data-theme="dark"] .ps-day-head { background: linear-gradient(180deg, #221f1b 72%, rgb(34 31 27 / 0%)); }
+html[data-theme="dark"] .ps-title,
+html[data-theme="dark"] .ps-sug { color: var(--ink); }
+html[data-theme="dark"] .ps-meta,
+html[data-theme="dark"] .ps-side-text,
+html[data-theme="dark"] .ps-divider,
+html[data-theme="dark"] .ps-hint { color: var(--muted); }
+
+html[data-theme="dark"] .pi-sheet {
+  border-color: rgb(255 255 255 / 8%);
+  background: linear-gradient(180deg, #221f1b, #1d1b17);
+  color: var(--ink);
+}
+html[data-theme="dark"] .pi-head { border-color: rgb(255 255 255 / 10%); }
+html[data-theme="dark"] .pi-card {
+  border-color: rgb(255 255 255 / 9%);
+  background: rgb(255 255 255 / 4%);
+}
+
+/* 설정 창 — 공용 스타일시트(components/shared/settings-modal.css)가 흰 카드를 쥔다. */
+html[data-theme="dark"] .vic-settings .modal-card {
+  border-color: rgb(255 255 255 / 9%);
+  background: #232019;
+}
+html[data-theme="dark"] .vic-settings .modal-head {
+  border-bottom-color: rgb(255 255 255 / 10%);
+  background: linear-gradient(180deg, #2a2620, #232019);
+}
+html[data-theme="dark"] .vic-settings .modal-head h2,
+html[data-theme="dark"] .vic-settings .rhh-label { color: var(--ink); }
+html[data-theme="dark"] .vic-settings .modal-close { color: var(--muted); }
+html[data-theme="dark"] .vic-settings .modal-close:hover { background: rgb(255 255 255 / 8%); }
+html[data-theme="dark"] .vic-settings .role-help-haptics { border-top-color: rgb(255 255 255 / 8%); }
+html[data-theme="dark"] .vic-settings .rhh-switch { background: rgb(255 255 255 / 16%); }
+html[data-theme="dark"] .vic-settings .rhh-select {
+  border-color: rgb(255 255 255 / 14%);
+  background: linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(255 255 255 / 0%) 55%), #2c2820;
+  color: var(--ink);
+}
+html[data-theme="dark"] .vic-settings .rhh-menu {
+  border-color: rgb(255 255 255 / 10%);
+  background: #2b2720;
+}
+html[data-theme="dark"] .vic-settings .rhh-opt { color: var(--ink); }
+html[data-theme="dark"] .vic-settings .rhh-opt:hover,
+html[data-theme="dark"] .vic-settings .rhh-opt:focus-visible { background: rgb(255 255 255 / 8%); }
+
+/* 다시보기 창 — 창 바탕·레일·띠. 영상 자체는 손대지 않는다. */
+html[data-theme="dark"] .day-vod-modal,
+html[data-theme="dark"] .replay-page {
+  background: #1b1a17;
+  color: var(--ink);
+}
+html[data-theme="dark"] .dvm-head .dvm-title,
+html[data-theme="dark"] .vch-toggle,
+html[data-theme="dark"] .vch-label { color: var(--ink); }
+html[data-theme="dark"] .vch-t { color: #9fb6e8; }
+html[data-theme="dark"] .vch-item:hover { background: rgb(127 168 255 / 8%); }
+html[data-theme="dark"] .vch-item + .vch-item { border-top-color: rgb(255 255 255 / 7%); }
+html[data-theme="dark"] .dvm-vod .vch-list,
+html[data-theme="dark"] .vch-group,
+html[data-theme="dark"] .vch-sec {
+  border-color: rgb(255 255 255 / 8%);
+  background: #232019;
+}
+html[data-theme="dark"] .vch-strip {
+  background: linear-gradient(180deg, #262320, #1f1d1a);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 6%),
+    inset 0 0 0 1px rgb(255 255 255 / 7%);
+}
+html[data-theme="dark"] .ui-pill {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 7%);
+  color: var(--ink-soft);
+}
+html[data-theme="dark"] .vch-nowbar .vch-now-label { color: var(--ink); }
+
+/* 계절 배경 조작 카드(app/ambient.css의 크림 카드). */
+html[data-theme="dark"] .viewer-ambient-ctl.slot-showcase,
+html[data-theme="dark"] .viewer-ambient-ctl.rail-showcase {
+  border-color: rgb(255 255 255 / 9%);
+  background: #232019;
+  color: var(--ink);
+}
+
+/* 상태 세그먼트(계절 배경 켜기|흐리게|끄기) — 흰 유리 알약이 다크에서 혼자 밝게 떴다. */
+html[data-theme="dark"] .ambient-seg {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 6%);
+  box-shadow: none;
+}
+html[data-theme="dark"] .ambient-seg-btn { color: var(--ink-soft); }
+html[data-theme="dark"] .ambient-seg-btn:hover { background: rgb(255 255 255 / 8%); }
+html[data-theme="dark"] .ambient-seg-btn.on.mode-on {
+  background: rgb(78 203 128 / 22%);
+  color: #9fe3b6;
+}
+html[data-theme="dark"] .ambient-seg-btn.on.mode-dim { color: #c3b4ff; }
+html[data-theme="dark"] .ambient-seg-btn.on.mode-off {
+  background: rgb(255 255 255 / 14%);
+  color: var(--ink);
+}
+html[data-theme="dark"] .ps-seg { background: rgb(255 255 255 / 6%); }
+html[data-theme="dark"] .ps-seg-btn { color: var(--muted); }
+html[data-theme="dark"] .ps-seg-btn.on { color: var(--ink); }
+html[data-theme="dark"] .ps-seg-thumb { background: rgb(255 255 255 / 12%); }
+html[data-theme="dark"] .ps-day-head,
+html[data-theme="dark"] .ps-count,
+html[data-theme="dark"] .ps-chiplbl,
+html[data-theme="dark"] .ps-section,
+html[data-theme="dark"] .ps-parent-head,
+html[data-theme="dark"] .ps-note { color: var(--ink-soft); }
+html[data-theme="dark"] .ps-tc { color: #9fb6e8; }
+html[data-theme="dark"] .ps-rail-tip {
+  background: #3a352c;
+  color: var(--ink);
+}
+html[data-theme="dark"] .dvm-head .dvm-date,
+html[data-theme="dark"] .dvm-date,
+html[data-theme="dark"] .vch-sec-name,
+html[data-theme="dark"] .vch-sec-n,
+html[data-theme="dark"] .vch-now-sec { color: var(--ink-soft); }
+html[data-theme="dark"] .vch-item.is-past .vch-label { color: var(--muted); }

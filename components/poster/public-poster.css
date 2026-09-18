@@ -3361,9 +3361,9 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   grid-template-columns: 1fr 1fr;
   align-content: start;
   gap: 4px 2px;
-  border: 1px solid #ece2cd;
+  border: 1px solid var(--line, #ece2cd);
   border-radius: var(--r-lg);
-  background: #fffdf6;
+  background: var(--surface, #fffdf6);
   /* 사이드바 패널 공통 안쪽 여백 12px 대칭 — support-card와 같은 세로선 공유(정렬 조화).
      표면 안이라 PNG·스티커 좌표가 살짝 바뀜(소유자가 스티커 재배치). */
   padding: var(--space-3); /* 12 — 10/14 비대칭 정리 */
@@ -4984,9 +4984,9 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 
 .weekday-row {
   margin-bottom: 8px;
-  border: 1px solid #efe9dd;
+  border: 1px solid var(--cal-grid-line, #efe9dd);
   border-radius: var(--r-card);
-  background: #fbf7ee;
+  background: var(--cal-head, #fbf7ee);
   overflow: hidden;
 }
 
@@ -5048,9 +5048,9 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 
 .public-month-grid {
   overflow: hidden;
-  border: 1px solid #efe9dd;
+  border: 1px solid var(--cal-grid-line, #efe9dd);
   border-radius: 18px;
-  background: #ffffff;
+  background: var(--cal-grid, #ffffff);
   box-shadow: 0 4px 16px rgb(120 90 60 / 8%);
 }
 /* 월 바뀔 때 포스터 표면 전체가 함께 좌/우 슬라이드 — 제목·메모·달력·색상안내·텍스트·스티커가
@@ -5137,9 +5137,9 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   --day-head-h: calc(25px * var(--cal-zoom, 1));
   /* 칸 높이는 행(grid-auto-rows: minmax(150px,auto))이 정하고, 칸은 그 행에 stretch로 꽉 찬다.
      일정이 많으면 행이 자라 칸도 커지므로 일정이 잘리지 않는다(클립 없음). */
-  border-right: 1px solid #efe6d3;
-  border-bottom: 1px solid #efe6d3;
-  background: #fffefb;
+  border-right: 1px solid var(--cal-cell-line, #efe6d3);
+  border-bottom: 1px solid var(--cal-cell-line, #efe6d3);
+  background: var(--cal-cell, #fffefb);
 }
 
 .public-day .day-strip,
@@ -5173,7 +5173,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 }
 
 .public-day.outside {
-  background: #f1e9d8;
+  background: var(--cal-cell-outside, #f1e9d8);
 }
 /* 흐림은 셀 opacity(그룹 합성) 대신 반투명 흰 베일로. 셀마다 베일이 맞물려 깔려
    스패닝 일정 막대는 불투명하게 이어지고 그 위 베일만 균일하게 흐려진다 → 경계 세로선 제거.
@@ -5185,7 +5185,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   /* 스티커 레이어(z-index:5)보다 아래, 셀 콘텐츠(day-head 1·support-bar 2)보다 위.
      → 다른 달 셀은 흐려지되, 그 위에 올린 스티커는 흐려지지 않는다. */
   z-index: 4;
-  background: rgb(248 249 251 / 62%);
+  background: var(--cal-veil, rgb(248 249 251 / 62%));
   pointer-events: none;
 }
 

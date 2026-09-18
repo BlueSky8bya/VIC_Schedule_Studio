@@ -14,6 +14,7 @@ import {
   Nanum_Pen_Script
 } from "next/font/google";
 import "./globals.css";
+import "./dark.css"; // 다크 모드 보정 한 파일(토큰이 닿지 않는 리터럴 색만)
 // 금생수 스킨 토큰 + 띠 공용 질감(ADR-0016) — globals 뒤에 와야 :root 토큰이 덮인다.
 import "./metal-water.css";
 // 계절 레이어(ADR-0017) — 물결 위 가을 낙엽·겨울 눈·봄 초목. 게이트·규칙은 파일 머리.
@@ -116,6 +117,9 @@ export default function RootLayout({
               JSON.stringify(SETTINGS_EPOCH_KEY) +
               ";if(s.getItem(K)!==E){s.removeItem('vic.reduceMotion');s.removeItem('vic.eyeComfort');s.removeItem('vic.studioCalm');s.removeItem('vic.ambient');s.setItem(K,E)}" +
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
+              // 다크 모드(vic.dark, 2026-09-19 소유자) — 기본 OFF, 'on'만 켠다. 페인트 전에 붙여야
+              // 어두운 화면을 기대한 사용자가 흰 화면을 한 번 맞지 않는다.
+              "if(s.getItem('vic.dark')==='on')d.setAttribute('data-theme','dark');" +
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.
               "var gm='full',pf=s.getItem('vic.gfxPref');if(pf==='max'){gm='full'}else if(pf==='lite'||pf==='off'){gm=pf}else{try{var r=JSON.parse(s.getItem('vic.gfx')||'null');if(r&&r.v===3&&(r.mode==='lite'||r.mode==='soft')&&Date.now()-r.at<2592000000)gm=r.mode}catch(e){}}" +

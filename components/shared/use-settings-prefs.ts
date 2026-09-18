@@ -18,6 +18,7 @@ import {
   setReduceMotion
 } from "@/lib/ui/motion";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
+import { darkEnabled, setDarkMode } from "@/lib/ui/theme";
 
 export type SettingsPrefs = {
   hapticsSupported: boolean;
@@ -27,6 +28,8 @@ export type SettingsPrefs = {
   toggleReduceMotion: () => void;
   eyeComfort: boolean;
   toggleEyeComfort: () => void;
+  dark: boolean;
+  toggleDark: () => void;
   ambientMode: AmbientMode;
   changeAmbientMode: (mode: AmbientMode) => void;
   gfxPref: GfxPref;
@@ -80,6 +83,20 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     setEyeComfortState((prev) => {
       const next = !prev;
       setEyeComfort(next);
+      return next;
+    });
+    hapticTick();
+  }, []);
+
+  // 다크 모드 — 토큰 팔레트 한 벌을 어둡게(lib/ui/theme.ts). 눈 편한 테마와 독립이다.
+  const [dark, setDarkState] = useState(false);
+  useEffect(() => {
+    setDarkState(darkEnabled());
+  }, []);
+  const toggleDark = useCallback(() => {
+    setDarkState((prev) => {
+      const next = !prev;
+      setDarkMode(next); // localStorage + <html data-theme> 즉시
       return next;
     });
     hapticTick();
@@ -140,6 +157,8 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     toggleReduceMotion,
     eyeComfort,
     toggleEyeComfort,
+    dark,
+    toggleDark,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,

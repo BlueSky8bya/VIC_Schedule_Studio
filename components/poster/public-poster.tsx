@@ -4511,6 +4511,7 @@ export function PublicPoster({
             <div className="settings-modal-body">
               <StudioSettingsList
                 ambientMode={settingsPrefs.ambientMode}
+                dark={settingsPrefs.dark}
                 eyeComfort={settingsPrefs.eyeComfort}
                 gfxAuto={settingsPrefs.gfxAuto}
                 gfxPref={settingsPrefs.gfxPref}
@@ -4519,6 +4520,7 @@ export function PublicPoster({
                 onChangeAmbientMode={settingsPrefs.changeAmbientMode}
                 onChangeGfxPref={settingsPrefs.changeGfxPref}
                 onChangePosterTheme={() => {}}
+                onToggleDark={settingsPrefs.toggleDark}
                 onToggleEyeComfort={settingsPrefs.toggleEyeComfort}
                 onToggleHaptics={settingsPrefs.toggleHaptics}
                 onToggleReduceMotion={settingsPrefs.toggleReduceMotion}

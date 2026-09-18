@@ -47,6 +47,15 @@
      2026-09-06 소유자: "눈 편한 테마를 끄고 켜도 달력이 그대로다". 배경이 켜지면 셸이 투명해지고
      칸·요일머리·패널이 **하드코딩 rgb 리터럴**로 칠해져 있어 눈 편한 테마 팔레트가 닿지 않았다.
      배경 캔버스는 그대로 두고(소유자 규칙) 그 위에 얹히는 **유리만** 테마를 따른다. */
+  /* 달력 표면(2026-09-19 다크 모드) — 여태 시청자·편집실 달력 규칙에 리터럴로 박혀 있어
+     테마 팔레트가 닿지 않던 큰 면들. 라이트 값은 박혀 있던 값 그대로라 라이트 화면은 안 변한다. */
+  --cal-grid: #ffffff;
+  --cal-grid-line: #efe9dd;
+  --cal-cell: #fffefb;
+  --cal-cell-line: #efe6d3;
+  --cal-cell-outside: #f1e9d8;
+  --cal-head: #fbf7ee;
+  --cal-veil: rgb(248 249 251 / 62%);
   --glass-cell: 255 254 251;
   --glass-head: 251 247 238;
   --glass-panel: 255 253 246;
@@ -1241,6 +1250,86 @@ html[data-eye-comfort="lite"] {
   --studio-silver-line: #d7d8d8;
   --studio-cell-calm: #eeede9;
 }
+
+/* ── 다크 모드(2026-09-19 소유자) ─────────────────────────────────────────────
+   토큰 팔레트 **한 벌**만 갈아입는다 — 눈 편한 테마와 같은 방식이고, 같은 이유로 루트 filter는 쓰지
+   않는다(계절 배경 캔버스까지 물들고 매 프레임 전 화면 재합성 = 프레임 끊김. lib/ui/theme.ts 참조).
+   색 방향: 차가운 회흑이 아니라 **따뜻한 숯** — 이 앱의 크림·금 정체성이 어둠 속에서도 이어지게.
+   잉크는 순백(#fff) 대신 살짝 따뜻한 밝은 회색(순백은 어두운 면 위에서 눈이 부시다).
+   액센트는 색상(hue)을 유지하되 어두운 바닥에서 읽히도록 밝기만 올린다 — 금은 그대로 두면 오히려
+   가장 잘 읽히고, 보라·초록은 한 단계 밝혀야 한다. 다크에서 '옅은 wash'(*-soft)는 흰빛이 아니라
+   **짙은 틴트**여야 한다(흰 wash는 다크에서 구멍처럼 뚫려 보인다). */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ink: #ece9e2;
+  --ink-soft: #c9c5bc;
+  --muted: #98948c;
+  --line: #3b3833;
+  --line-soft: #2f2c28;
+  --paper: #1a1916;
+  --surface: #26241f;
+  --surface-2: #211f1b;
+  --studio-workbench: #171614;
+  /* 유리 면 밑색(rgb 세 값만 — 알파는 쓰는 쪽에서). 달력 칸·요일머리·패널이 이걸 쓴다. */
+  --cal-grid: #201e1a;
+  --cal-grid-line: #34312b;
+  --cal-cell: #262420;
+  --cal-cell-line: #34312b;
+  --cal-cell-outside: #1c1b18;
+  --cal-head: #23211d;
+  --cal-veil: rgb(16 15 13 / 46%); /* 다른 달 흐림 — 다크에선 흰 베일이 아니라 어두운 베일 */
+  --glass-cell: 42 40 35;
+  --glass-head: 34 32 28;
+  --glass-panel: 38 36 31;
+
+  --accent: #ffc83d;
+  --accent-strong: #ffd873; /* 어두운 면 위 '금빛 글자' — 라이트의 진한 금은 다크에서 안 읽힌다 */
+  --accent-soft: #3a2f12;
+  --on-accent: #3a2a00;
+  --green: #4ecb80;
+  --green-soft: #17331f;
+  --coral: #ff8674;
+  --amber: #ffc65a;
+  --violet: #9b81ff;
+  --violet-rgb: 155 129 255;
+  --violet-soft: #2a2244;
+  --pink: #ff7ba4;
+  --pink-soft: #3a2029;
+  --status-success-fill: var(--surface);
+  --status-warning-fill: var(--surface);
+  --status-danger-fill: var(--surface);
+
+  --studio-action: #6aa6f0;
+  --studio-action-strong: #8cbcf7;
+  --studio-action-ink: #10202f;
+  --studio-action-rgb: 106 166 240;
+  --studio-action-tint: #1e2c3d;
+  --studio-action-tint-hi: #23344a;
+  --studio-action-tint-hover: #26384f;
+  --studio-action-text: #9cc6f7;
+  --studio-action-text-hover: #b6d6fb;
+  --studio-action-line: #35506f;
+  --studio-silver: #2b2926;
+  --studio-silver-line: #423f39;
+  --studio-cell-calm: #232220;
+  --selection-fill: #2a2244;
+  --selection-border: #9b81ff;
+
+  /* 떠 있는 표면 — 다크에선 '흰 유리'가 아니라 **밝은 숯 유리**. 흰 알파를 그대로 두면 알약·칩이
+     전부 허옇게 떠서 화면이 얼룩진다. */
+  --glass: rgb(58 55 49 / 72%);
+  --glass-strong: rgb(62 59 52 / 88%);
+  --glass-border: rgb(255 255 255 / 10%);
+  --material-bg: rgb(38 36 31 / 82%);
+  --material-bg-strong: rgb(42 40 34 / 92%);
+
+  --seg-on-quiet: rgb(200 196 188 / 18%);
+  --seg-on-quiet-ink: #cdc9c1;
+  --seg-on-accent: rgb(155 129 255 / 26%);
+  --seg-on-accent-ink: #c3b4ff;
+}
+
 html[data-eye-comfort="1"] .studio-shell,
 html[data-eye-comfort="lite"] .studio-shell {
   background:

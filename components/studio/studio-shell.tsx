@@ -926,6 +926,8 @@ export function StudioShell({
     toggleReduceMotion,
     eyeComfort,
     toggleEyeComfort,
+    dark,
+    toggleDark,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,
@@ -1127,10 +1129,12 @@ export function StudioShell({
   function renderSettingsList() {
     return (
       <StudioSettingsList
+        dark={dark}
         eyeComfort={eyeComfort}
         hapticsOn={hapticsOn}
         hapticsSupported={hapticsSupported}
         onChangePosterTheme={(theme) => void changePosterTheme(theme)}
+        onToggleDark={toggleDark}
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
