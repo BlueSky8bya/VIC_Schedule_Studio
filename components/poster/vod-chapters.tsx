@@ -30,6 +30,25 @@ export type VodChaptersApi = {
   toggle: () => void; // 레일 접기/펼치기
 };
 
+// 점들을 지나는 부드러운 곡선(Catmull-Rom → 3차 베지에). 막대 그래프의 각진 느낌을 없애려고 쓴다(2026-09-18 소유자).
+function smoothLine(pts: { x: number; y: number }[]): string {
+  if (pts.length === 0) return "";
+  if (pts.length < 3) return pts.map((p, i) => `${i ? "L" : "M"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
 // 방송 시작 시각 + 경과 초 → 벽시계 시각(KST). **오전/오후 12시간제**로 낸다 — 24시간제 "17:40"은 경과 "10:34"(분:초)와
 // 생김새가 같아 헷갈린다(2026-09-18 소유자 지적). "오후 5:40"이면 형태만으로 시각임이 읽힌다. 자정을 넘기면 "오전 1:07".
 export function wallClock(startedAt: string | undefined, sec: number): string | null {
@@ -589,22 +608,32 @@ function VodStrip({
     const x = (i: number) => ((i + 0.5) / n) * 1000;
     const area = `M 0 100 ${hs.map((v, i) => `L ${x(i).toFixed(1)} ${(100 - v * 92).toFixed(1)}`).join(" ")} L 1000 100 Z`;
     const line = ds.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${(100 - v * 80).toFixed(1)}`).join(" ");
-    // 파형 막대(2026-09-18): 화면 폭에 맞춘 240개 안팎으로 묶어 가운데선 기준 대칭 막대로 그린다(사운드 편집기 문법).
-    // 높이 = 반응(메시지), 색 짙기 = 웃음. 구간이 적은 방송은 원래 해상도 그대로.
-    const BARS = Math.max(24, Math.min(150, n));
-    const per = n / BARS;
-    const bars: { x: number; h: number; l: number }[] = [];
-    for (let bi = 0; bi < BARS; bi += 1) {
+    // 반응 리본(2026-09-18 2차, 소유자 "부드럽게"): 막대를 버리고 가운데선 기준 **대칭 곡선**으로 그린다
+    // (애플 미디어 스크러버·유튜브 '많이 본 구간'의 결). 90개 안팎으로 묶고 한 번 더 평활화해 각을 없앤다.
+    const SAMP = Math.max(16, Math.min(90, n));
+    const per = n / SAMP;
+    const samp: number[] = [];
+    for (let bi = 0; bi < SAMP; bi += 1) {
       const from = Math.floor(bi * per);
       const to = Math.max(from + 1, Math.floor((bi + 1) * per));
       let mh = 0;
-      let ml = 0;
-      for (let i = from; i < to && i < n; i += 1) {
-        mh = Math.max(mh, hs[i]);
-        ml = Math.max(ml, l[i]);
-      }
-      bars.push({ x: (bi + 0.5) / BARS, h: mh, l: ml });
+      for (let i = from; i < to && i < n; i += 1) mh = Math.max(mh, hs[i]);
+      samp.push(mh);
     }
+    const smooth2 = samp.map((_, i) => {
+      const a = samp[Math.max(0, i - 1)];
+      const b2 = samp[i];
+      const c = samp[Math.min(samp.length - 1, i + 1)];
+      return (a + b2 * 2 + c) / 4;
+    });
+    const xAt = (i: number) => (i / Math.max(1, SAMP - 1)) * 1000;
+    // 감마(1.6)로 대비를 준다 — 평평한 관처럼 보이지 않고 봉우리가 도드라진다.
+    const peakV = Math.max(0.15, ...smooth2); // 그 방송 안에서의 상대 대비(조용한 방송도 봉우리가 보이게)
+    const thick = (v: number) => 0.04 + Math.pow(Math.max(0, Math.min(1, v / peakV)), 1.9) * 0.96;
+    const top = smooth2.map((v, i) => ({ x: xAt(i), y: 50 - thick(v) * 46 }));
+    const bottom = [...smooth2].map((v, i) => ({ x: xAt(i), y: 50 + thick(v) * 46 })).reverse();
+    const ribbon = `${smoothLine(top)} L ${bottom[0].x.toFixed(1)} ${bottom[0].y.toFixed(1)} ${smoothLine(bottom).slice(1)} Z`;
+    const crest = smoothLine(top);
     // 봉우리: 원본 값 기준 국소 최대(±3구간)이면서 0.55 이상, 봉우리끼리 최소 8% 간격, 최대 5개. 단어 있는 구간 우선.
     const cand = h
       .map((v, i) => ({ i, v }))
@@ -616,7 +645,7 @@ function VodStrip({
       if (peaks.some((p) => Math.abs(p.i - c.i) / n < 0.08)) continue;
       peaks.push({ i: c.i, v: c.v, terms: t[c.i], sec: c.i * binSec });
     }
-    return { n, binSec, h, d, l, t, area, line, peaks, bars };
+    return { n, binSec, h, d, l, t, area, line, peaks, ribbon, crest };
   }, [profile, durationSec]);
   // 마우스 x → 초 → 그 시각 이하 마지막 항목.
   const locate = (clientX: number) => {
@@ -698,25 +727,23 @@ function VodStrip({
         })}
       </span>
 
-      {/* ③ 반응 파형 — 가운데선 기준 대칭 막대(높이=반응, 짙기=웃음). 채팅을 아직 못 받은 방송은 잔잔한 바닥선만. */}
+      {/* ③ 반응 리본 — 가운데선 기준 대칭 곡선(두께 = 채팅 반응). 채팅이 없는 방송은 잔잔한 실선만. */}
       <span className="vch-wave">
         {heat ? (
           <svg aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1000 100">
-            {heat.bars.map((b, i) => {
-              const h = Math.max(3, b.h * 96);
-              return (
-                <rect
-                  className="vch-bar"
-                  height={h}
-                  key={i}
-                  opacity={0.4 + b.l * 0.45}
-                  rx={1.6}
-                  width={Math.max(2.4, 1000 / heat.bars.length - 1.8)}
-                  x={b.x * 1000 - Math.max(1.2, (1000 / heat.bars.length - 1.8) / 2)}
-                  y={50 - h / 2}
-                />
-              );
-            })}
+            <defs>
+              <linearGradient id="vchRibbon" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stopColor="#7aa2ff" />
+                <stop offset="55%" stopColor="#8f8cf5" />
+                <stop offset="100%" stopColor="#c59bf0" />
+              </linearGradient>
+              <filter height="200%" id="vchGlow" width="130%" x="-15%" y="-50%">
+                <feGaussianBlur stdDeviation="3" />
+              </filter>
+            </defs>
+            <path className="vch-ribbon-glow" d={heat.ribbon} filter="url(#vchGlow)" />
+            <path className="vch-ribbon" d={heat.ribbon} />
+            <path className="vch-crest" d={heat.crest} />
           </svg>
         ) : null}
         <i aria-hidden="true" className="vch-base" />
@@ -725,8 +752,7 @@ function VodStrip({
       {/* ④ 지나온 구간 — 재생 머리 왼쪽이 따뜻하게 채워진다. */}
       <span aria-hidden="true" className="vch-played" ref={playedRef} />
 
-      {/* ⑤ 항목 눈금 · 반응 봉우리 표식 */}
-      {all.map((it) => (it.depth > 0 ? null : <i className="vch-tick" key={it.idx} style={{ left: pct(it.sec) }} />))}
+      {/* ⑤ 반응 봉우리 표식 (항목 눈금은 2026-09-18에 뺐다 — 98개면 울타리처럼 보여 리본을 가렸다) */}
       {heat && heat.peaks.length > 0
         ? heat.peaks.map((p) => (
             <button

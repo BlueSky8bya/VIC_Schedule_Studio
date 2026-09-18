@@ -2039,55 +2039,63 @@ html[data-reduce-motion] .vch-nowbar { animation: none; }
   inset: 0;
   pointer-events: none;
 }
+/* 눈금 선은 평소 숨기고 손이 닿을 때만 — 선이 많으면 촌스럽다. 라벨은 띠 아래 옅은 글자. */
 .vch-ruler-tick {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 1px;
-  background: rgb(29 29 41 / 7%);
+  background: rgb(29 29 41 / 5%);
+  opacity: 0;
+  transition: opacity 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
+.vch-strip:hover .vch-ruler-tick { opacity: 1; }
 .vch-ruler-tick em {
   position: absolute;
-  top: 3px;
-  left: 4px;
+  top: calc(100% + 5px);
+  left: 0;
+  transform: translateX(-50%);
   font-style: normal;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: rgb(29 29 41 / 36%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: rgb(29 29 41 / 25%);
   white-space: nowrap;
 }
-/* ② 코너 캡슐 — 위쪽 6px 띠, 사이를 2px 띄운다 */
+/* ② 코너 — 띠 아래쪽 얇은 알약들(위는 리본이 주인공) */
 .vch-caps {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 7px;
+  left: 8px;
+  right: 8px;
+  bottom: 5px;
+  height: 4px;
   pointer-events: none;
 }
 .vch-cap {
   position: absolute;
   top: 0;
-  height: 7px;
-  border-radius: 0 0 4px 4px;
-  background: #b9c4de;
-  transform-origin: center bottom;
-  transition: background 0.28s var(--ease), transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(107 114 152 / 22%);
+  transform-origin: center;
+  transition:
+    background 0.36s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.46s cubic-bezier(0.22, 1.12, 0.36, 1);
 }
-.vch-cap[data-i="1"] { background: #c9d2e8; }
-.vch-cap[data-i="2"] { background: #aebbda; }
+.vch-cap[data-i="1"] { background: rgb(107 114 152 / 15%); }
+.vch-cap[data-i="2"] { background: rgb(107 114 152 / 28%); }
 .vch-cap.is-active {
-  background: linear-gradient(180deg, #f0c25c, #d9a21b);
+  background: linear-gradient(90deg, #f0c25c, #d9a21b);
+  box-shadow: 0 0 10px rgb(217 162 27 / 45%);
 }
-.vch-strip:hover .vch-cap { transform: scaleY(1.25); }
+.vch-strip:hover .vch-cap { transform: scaleY(1.7); }
 /* ③ 반응 파형 */
 .vch-wave {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 9px;
-  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  top: 6px;
+  bottom: 11px;
   pointer-events: none;
 }
 .vch-wave svg {
@@ -2095,11 +2103,26 @@ html[data-reduce-motion] .vch-nowbar { animation: none; }
   height: 100%;
   display: block;
 }
-.vch-bar {
-  fill: #6f86c9;
-  transition: fill 0.28s var(--ease);
+.vch-ribbon {
+  fill: url(#vchRibbon);
+  opacity: 0.5;
+  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.vch-strip:hover .vch-bar { fill: #4f6cbb; }
+.vch-ribbon-glow {
+  fill: url(#vchRibbon);
+  opacity: 0.22;
+  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.vch-crest {
+  fill: none;
+  stroke: url(#vchRibbon);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.7;
+}
+.vch-strip:hover .vch-ribbon { opacity: 0.68; }
+.vch-strip:hover .vch-ribbon-glow { opacity: 0.34; }
 /* 채팅이 아직 없는 방송 — 잔잔한 바닥선만 */
 .vch-base {
   position: absolute;
@@ -2107,7 +2130,8 @@ html[data-reduce-motion] .vch-nowbar { animation: none; }
   right: 0;
   top: 50%;
   height: 1px;
-  background: rgb(29 29 41 / 8%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(29 29 41 / 0%), rgb(29 29 41 / 9%) 12%, rgb(29 29 41 / 9%) 88%, rgb(29 29 41 / 0%));
 }
 /* ④ 지나온 구간 */
 .vch-played {
@@ -2116,8 +2140,9 @@ html[data-reduce-motion] .vch-nowbar { animation: none; }
   top: 0;
   bottom: 0;
   width: 0;
-  border-radius: 12px 0 0 12px;
-  background: linear-gradient(180deg, rgb(217 162 27 / 12%), rgb(217 162 27 / 6%));
+  border-radius: 18px 10px 10px 18px;
+  background: linear-gradient(90deg, rgb(217 162 27 / 7%), rgb(217 162 27 / 16%));
+  box-shadow: inset -12px 0 18px -12px rgb(217 162 27 / 55%);
   pointer-events: none;
   transition: width 0.25s linear;
 }
@@ -2125,71 +2150,89 @@ html[data-reduce-motion] .vch-played { transition: none; }
 /* ⑤ 항목 눈금 · 봉우리 */
 .vch-tick {
   position: absolute;
-  top: 8px;
-  bottom: 8px;
+  top: 14px;
+  bottom: 14px;
   width: 1px;
-  background: rgb(255 255 255 / 70%);
+  border-radius: 999px;
+  background: rgb(29 29 41 / 13%);
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
+.vch-strip:hover .vch-tick { opacity: 1; }
+/* 반응 봉우리 — 리본 위 작은 빛. 아주 천천히 숨 쉰다. */
 .vch-spark {
   position: absolute;
-  top: 13px;
-  width: 9px;
-  height: 9px;
-  margin-left: -4.5px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: radial-gradient(circle at 35% 35%, #ffd977, #e08c12);
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 85%), 0 1px 4px rgb(224 140 18 / 45%);
+  background: radial-gradient(circle at 34% 34%, #ffe9ae, #e8a828);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 72%), 0 0 12px rgb(232 168 40 / 55%);
   cursor: pointer;
-  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.24s var(--ease);
+  animation: vch-spark-breathe 3.6s ease-in-out infinite;
+  transition: transform 0.42s cubic-bezier(0.22, 1.12, 0.36, 1), box-shadow 0.3s var(--ease);
+}
+@keyframes vch-spark-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.16); }
 }
 .vch-spark:hover {
-  transform: scale(1.35);
-  box-shadow: 0 0 0 3px rgb(255 255 255 / 92%), 0 2px 8px rgb(224 140 18 / 55%);
+  transform: scale(1.6);
+  box-shadow: 0 0 0 4px rgb(255 255 255 / 82%), 0 0 18px rgb(232 168 40 / 70%);
+  animation-play-state: paused;
 }
-.vch-spark:active { transform: scale(1.1); }
+.vch-spark:active { transform: scale(1.25); }
+html[data-reduce-motion] .vch-spark { animation: none; transition: none; }
 /* 재생 머리 */
 .vch-head {
   position: absolute;
-  top: -4px;
-  bottom: -4px;
+  top: 6px;
+  bottom: 6px;
   left: 0;
   width: 2px;
   margin-left: -1px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #e8b53a, #9a6708);
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 85%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(232 181 58 / 95%), rgb(184 122 16 / 95%));
+  box-shadow: 0 0 10px rgb(217 162 27 / 55%);
   pointer-events: none;
   transition: left 0.25s linear;
 }
 .vch-head::after {
   content: "";
   position: absolute;
-  top: -4px;
+  top: 50%;
   left: 50%;
-  width: 12px;
-  height: 12px;
-  transform: translateX(-50%);
+  width: 13px;
+  height: 13px;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #f3c75a, #b47a10);
-  box-shadow: 0 1px 4px rgb(29 29 41 / 32%), 0 0 0 1.5px #fff;
+  background: radial-gradient(circle at 34% 32%, #fff3d2, #d9a21b 62%, #b47a10);
+  box-shadow: 0 2px 6px rgb(29 29 41 / 22%), 0 0 0 2px rgb(255 255 255 / 92%);
+  transition: transform 0.5s cubic-bezier(0.22, 1.12, 0.36, 1);
 }
+.vch-strip:hover .vch-head::after { transform: translate(-50%, -50%) scale(1.22); }
+html[data-reduce-motion] .vch-head::after { transition: none; }
 html[data-reduce-motion] .vch-head { transition: none; }
 .vch-hover {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: 4px;
+  bottom: 4px;
   left: 0;
-  width: 1px;
-  background: rgb(29 29 41 / 55%);
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(29 29 41 / 0%), rgb(29 29 41 / 32%) 20%, rgb(29 29 41 / 32%) 80%, rgb(29 29 41 / 0%));
   opacity: 0;
   pointer-events: none;
+  transition: opacity 0.2s var(--ease);
 }
 .vch-strip-tip {
   position: absolute;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 14px);
   left: 0;
   transform: translateX(-50%);
   width: max-content;
