@@ -31,6 +31,21 @@ export type TargetLabel = {
 // 기록 보존이 90일이라 당분간 집계에 계속 나타난다. 사전 항목 자체는 지우지 않는다 —
 // 지우면 옛 기록이 '이름 미등록'으로 떨어져 더 못 읽게 된다.
 const RETIRED_TARGETS = new Set([
+  // 2026-09-19 점검 — 코드 어디서도 더는 기록되지 않는 값들(스캐너로 대조). 남겨 두면 '한 번도 안 쓴
+  // 기능'처럼 후보 목록에 끼어 목록이 거짓말을 한다. 이름은 옛 기록을 읽기 위해 그대로 둔다.
+  "agenda-legend-insights",
+  // 기능은 살아 있고 **id만 바뀐** 것(지금은 'insight-change-passcode') — 위 renamed 무리와 같은 처리.
+  "change-passcode",
+  "decorate",
+  "editor",
+  "editor-save",
+  "m-del",
+  "m-io-today",
+  "관심 일정만 보기",
+  "달력 확대",
+  "달력 축소",
+  "달력 확대 초기화",
+  "확대 초기화",
   // 꾸미기(스티커) — ADR-0015
   "sticker-duplicate",
   "sticker-delete",
@@ -156,9 +171,12 @@ const SECTION: Record<string, TargetLabel> = {
   decorate: { name: "꾸미기", area: "옛 화면", hint: "옛 기록(지금은 화면 진입으로 셈)" }
 };
 
-const ACT: Record<string, TargetLabel> = {
+/** 버튼·컨트롤 사전. 테스트가 "코드에 없는 이름"을 잡으려고 함께 읽는다(2026-09-19). */
+export const ACT: Record<string, TargetLabel> = {
   // 편집실 — 달력·편집 패널
   "open-day-visit": { name: "이용 기록 열기", area: "이용 기록", hint: "편집 패널의 '📈 이용 기록'" },
+  "tag-help-toggle": { name: "태그 편집 도움말", area: "편집실", hint: "태그 이름·색상 창의 '?'" },
+  "다크 모드 켜기/끄기": { name: "다크 모드", area: "편집실", hint: "설정 창 — 개발자에게만 보이는 줄" },
   "open-drawing-board": { name: "일정 그림판 열기", area: "편집실", hint: "미리보기의 '🖊️ 일정 그림판'" },
   "month-prev": { name: "이전 달", area: "편집실", hint: "헤더 '‹'" },
   "month-next": { name: "다음 달", area: "편집실", hint: "헤더 '›'" },
@@ -188,7 +206,7 @@ const ACT: Record<string, TargetLabel> = {
   "mobile-open-tags": { name: "태그 편집(모바일)", area: "태그 편집" },
   "mobile-open-members": { name: "멤버 관리(모바일)", area: "옛 화면" },
   "open-insights": { name: "인사이트 열기", area: "인사이트" },
-  "change-passcode": { name: "비공개 비밀번호 변경", area: "설정" },
+  "change-passcode": { name: "비공개 비밀번호 변경", area: "설정", hint: "옛 기록 — 지금은 'insight-change-passcode'로 셉니다" },
   "close-modal": { name: "창 닫기(X)", area: "기타", hint: "여러 창의 X 버튼 합계" },
 
   // 역할 미리보기(개발자 전용, 보기만 바뀜)
@@ -261,6 +279,15 @@ const ACT: Record<string, TargetLabel> = {
   "vod-chapters-open": { name: "다시보기 챕터 펼치기", area: "시청자 화면", hint: "팬 타임라인 챕터 목록" },
   "vod-chapter-jump": { name: "챕터로 점프", area: "시청자 화면", hint: "그 시각부터 숲 VOD 재생" },
   "pi-retry": { name: "이 달 기록 다시 불러오기", area: "시청자 화면" },
+  // 2026-09-19 추가분 — 그동안 이름이 없어 '이름 미등록'으로 떨어지던 새 기능들.
+  "open-settings": { name: "설정 열기", area: "시청자 화면", hint: "머리줄 왼쪽 톱니" },
+  "close-settings": { name: "설정 닫기", area: "시청자 화면" },
+  "search-suggest-pick": { name: "검색 제안 고르기", area: "시청자 화면", hint: "입력 중 뜨는 추천어 목록" },
+  "search-chips-more": { name: "검색 칩 더보기", area: "시청자 화면", hint: "관련·태그 칩 줄 펼치기/접기" },
+  "vod-clock-toggle": { name: "다시보기 시각 표기", area: "시청자 화면", hint: "경과 ↔ 실제 시각(KST)" },
+  "vod-rail-left": { name: "타임라인 왼쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },
+  "vod-rail-right": { name: "타임라인 오른쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },
+  "showcase-bearing": { name: "감상 중 방위 이동", area: "시청자 화면", hint: "배경 감상 모드에서 둘러보기" },
 
   // 편집실
   "m-add-event": { name: "일정 추가(모바일)", area: "편집실" },

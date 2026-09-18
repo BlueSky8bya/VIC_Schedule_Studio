@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACT,
   USAGE_ROLE_ORDER,
   describeTarget,
   roleBreakdown,
@@ -205,7 +206,8 @@ describe("철수한 기능은 retired로 표시된다", () => {
   });
   it("살아있는 기능엔 붙지 않는다 — 비밀번호 변경은 최초공개 게이트용으로 살아 있다", () => {
     expect(describeTarget("ui.click", "save-event").retired).toBeUndefined();
-    expect(describeTarget("ui.click", "change-passcode").retired).toBeUndefined();
+    // (옛 id "change-passcode"는 이름만 바뀐 것이라 '기록만 남음' 칸 — 지금 찍히는 id로 본다.)
+    expect(describeTarget("ui.click", "insight-change-passcode").retired).toBeUndefined();
     expect(describeTarget("section.enter", "broadcast-panel").retired).toBeUndefined();
   });
   it("역할 필터에서 작업자는 빠지고, 옛 기록 내역엔 '작업자 N'으로 남는다", () => {
@@ -233,11 +235,45 @@ describe("모든 data-act에 이름이 있다", () => {
     const missing = new Set<string>();
     for (const f of files) {
       const src = fs.readFileSync(f, "utf8");
-      for (const m of src.matchAll(/data-act="([^"{}]+)"/g)) {
+      // data-act 속성 + dataAct 프롭(세그먼트·셀렉트 같은 공용 부품은 프롭으로 받는다) 둘 다 본다.
+      for (const m of src.matchAll(/(?:data-act|dataAct)="([^"{}]+)"/g)) {
         const id = m[1];
         if (describeTarget("ui.click", id).unnamed) missing.add(`${path.basename(f)}:${id}`);
       }
     }
     expect([...missing]).toEqual([]);
+  });
+});
+
+// 반대 방향 — 사전에만 남은 이름은 '적게 쓰인 기능' 목록에 0회로 끼어 목록을 거짓말하게 만든다
+// (2026-09-19 소유자: "구버전 기능들이 혼합되어 있다"). 코드 어디서도 안 찍히는 값은 철수 표시를 달아
+// 후보에서 빼고 기록 해석용으로만 남긴다.
+describe("사전에만 남은 이름은 철수로 표시한다", () => {
+  it("코드에 흔적이 없는 살아있는(비-철수) 이름이 없다", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const roots = ["components", "app", "lib"];
+    let all = "";
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) {
+          if (e.name === "node_modules" || e.name === "activity") continue; // 사전 자신은 제외
+          walk(p);
+        } else if (e.name.endsWith(".ts") || e.name.endsWith(".tsx")) {
+          all += fs.readFileSync(p, "utf8");
+        }
+      }
+    };
+    for (const r of roots) walk(path.join(process.cwd(), r));
+    // 값이 코드에서 조합되는 무리(경로·선택자·필터 키 등)는 문자열로 안 나타나므로 건너뛴다.
+    const dynamic = /^(\/|\.)|^(usage-|modal:|visit-scope|role-preview|search-hit-|dev-world-|ambient-|showcase-|gfx-)/;
+    const orphans: string[] = [];
+    for (const key of Object.keys(ACT)) {
+      if (dynamic.test(key)) continue;
+      if (describeTarget("ui.click", key).retired) continue;
+      if (!all.includes(`"${key}"`) && !all.includes(`'${key}'`) && !all.includes(`\`${key}\``)) orphans.push(key);
+    }
+    expect(orphans).toEqual([]);
   });
 });
