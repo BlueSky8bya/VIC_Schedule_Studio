@@ -158,6 +158,17 @@ export function VodChapters({
   const hoverTipRef = useRef<HTMLSpanElement | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
   const playedRef = useRef<HTMLSpanElement | null>(null); // 지나온 구간 채움(재생 머리와 같은 신호로 갱신)
+  // '지금 장면' 줄의 시각(2026-09-18 소유자: "오후 8:47 배지도 재생하면서 같이 변해야") — 챕터 시작 시각이
+  // 아니라 **재생 머리의 시각**이다. 초당 4회 오는 신호라 React 렌더 없이 textContent만 쓴다(머리·채움과 같은 길).
+  const nowTimeRef = useRef<HTMLSpanElement | null>(null);
+  const lastSecRef = useRef(0);
+  const fmtNowRef = useRef<(sec: number) => string>(formatTimecode);
+  fmtNowRef.current = (sec: number) =>
+    (clockMode && startedAt ? wallClock(startedAt, sec) : null) ?? formatTimecode(sec);
+  // 경과 ↔ 실제 시각을 토글하면 다음 신호를 기다리지 않고 바로 고쳐 쓴다(정지 중에도).
+  useEffect(() => {
+    if (nowTimeRef.current) nowTimeRef.current.textContent = fmtNowRef.current(lastSecRef.current);
+  }, [clockMode, startedAt]);
   // 채팅 구간 프로필(0090) — 가로 띠가 있는 창에서만 받는다(모바일 아젠다는 띠 없음). 비율만 온다(숫자 없음).
   const [profile, setProfile] = useState<PublicVodChatProfile | null>(null);
   useEffect(() => {
@@ -181,12 +192,16 @@ export function VodChapters({
   // 선형 — 항목 ≤100개, 초당 4회라 무시할 비용). idx가 바뀔 때만 setState → 레일만 다시 그림.
   const secs = useMemo(() => (timeline?.entries ?? []).map((e) => e.sec), [timeline]);
   useEffect(() => {
-    if (!subscribeTime || secs.length === 0) return;
+    // 챕터가 없는 방송도 구독한다 — 머리·채움·시각 배지는 타임라인 항목과 무관하다(옛 코드는 여기서 빠졌다).
+    if (!subscribeTime) return;
     return subscribeTime((sec) => {
       const head = headRef.current;
       const pctPlayed = durationMs > 0 ? Math.min(100, Math.max(0, (sec / (durationMs / 1000)) * 100)) : 0;
       if (head && durationMs > 0) head.style.left = `${pctPlayed}%`;
       if (playedRef.current && durationMs > 0) playedRef.current.style.width = `${pctPlayed}%`;
+      lastSecRef.current = sec;
+      if (nowTimeRef.current) nowTimeRef.current.textContent = fmtNowRef.current(sec);
+      if (secs.length === 0) return;
       let found = -1;
       for (let i = 0; i < secs.length; i++) {
         if (secs[i] <= sec && (found < 0 || secs[i] >= secs[found])) found = i;
@@ -335,8 +350,8 @@ export function VodChapters({
                 {nowSection ? <em className="vch-now-sec">{nowSection}</em> : null}
                 <b className="vch-now-label">{nowItem.label}</b>
               </span>
-              <span className="vch-now-time">
-                {clockMode && startedAt ? wallClock(startedAt, nowItem.sec) : formatTimecode(nowItem.sec)}
+              <span className="vch-now-time" ref={nowTimeRef}>
+                {fmtNowRef.current(lastSecRef.current || nowItem.sec)}
               </span>
             </div>
           ) : null}

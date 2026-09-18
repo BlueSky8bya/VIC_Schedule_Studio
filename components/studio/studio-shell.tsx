@@ -2008,6 +2008,12 @@ export function StudioShell({
   };
   // ▶ = 다시보기 창(시청자 DayVodWindow 그대로, 한 구현). 그 날 VOD 목록은 공개 일정 응답(vods)에서 — 처음 한 번 받아 둔다.
   const [dayVodPop, setDayVodPop] = useState<{ dateKey: string; part?: number; sec?: number; vods: DayVod[] } | null>(null);
+  // 다시보기 창·검색 시트가 떠 있는 동안 편집실 전역 키를 전부 막는다(2026-09-18 소유자: 다시보기 창에서
+  // ←/→를 누르면 10초 탐색이 아니라 바깥 달력의 달이 넘어갔다). 창이 ←/→·Space·C·[ ]·↑/↓를 쓰므로
+  // 편집실은 창이 열린 동안 키를 건드리지 않는다 — 시청자 화면은 이미 같은 가드가 있다(dayVodOpenRef).
+  // 이 두 오버레이는 히스토리 스택(overlayDepth)에 안 들어가서 overlayLocked로는 안 걸린다.
+  const overlayKeysBlockedRef = useRef(false);
+  overlayKeysBlockedRef.current = dayVodPop !== null || searchOpen;
   const publicVodsRef = useRef<Map<string, DayVod[]> | null>(null);
   const loadPublicVods = async (): Promise<Map<string, DayVod[]>> => {
     if (publicVodsRef.current) return publicVodsRef.current;
@@ -2091,6 +2097,9 @@ export function StudioShell({
       }
       if (overlayLocked) {
         return; // 모달·시트 열림 중엔 월 이동 막기
+      }
+      if (overlayKeysBlockedRef.current) {
+        return; // 다시보기 창·검색 시트가 키의 주인이다(←/→ = 영상 탐색)
       }
       if (event.key === "/" && !searchOpen) {
         // `/` = 검색(시청자 화면과 같은 키, 2026-09-18).
@@ -5030,6 +5039,9 @@ export function StudioShell({
       // 방송 판서가 열려 있는 동안 편집실 전역 단축키 전면 차단(Ctrl+S/Z/C/V·Alt+N·Esc 전부) —
       // 판서의 Esc/Tab은 판서 자신이 처리한다. 닫히면 이 가드가 자동 해제되어 원상복구.
       if (broadcastOpenRef.current) return;
+      // 다시보기 창·검색 시트도 같은 이유로 전면 차단(2026-09-18) — 창 안에서 Space·C·[ ]·Delete를
+      // 누르면 편집실 단축키가 같이 돌았다(창은 자기 키를 쓰고, 편집실은 손을 뗀다).
+      if (overlayKeysBlockedRef.current) return;
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
       // Ctrl/⌘+S: 어디에 포커스가 있든(제목 입력칸 포함) 브라우저 '페이지 저장'을 가로채고 이 카드
