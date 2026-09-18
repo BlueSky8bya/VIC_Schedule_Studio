@@ -8,6 +8,7 @@ import type {
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
 import { getDayMark } from "@/lib/calendar/holidays";
 import type { CSSProperties } from "react";
+import { deriveDarkTagColors, readDarkTagColors, themeColor } from "@/lib/tags/dark-palette";
 
 export type MonthCell = {
   isoDate: string;
@@ -399,12 +400,12 @@ function inkStyleFor(bgs: string[], haloBg: string): CSSProperties {
   const shadow =
     cr < 3
       ? (() => {
-          const o = ink === "#ffffff" ? "#0a0a0a" : "#ffffff";
+            const o = themeColor(ink === "#ffffff" ? "#0a0a0a" : "#ffffff", deriveDarkTagColors(haloBg).bgColor);
           return `0 0 1px ${o}, 1px 0 1px ${o}, -1px 0 1px ${o}, 0 1px 1px ${o}, 0 -1px 1px ${o}`;
         })()
-      : `0 0 1px ${haloBg}`;
+      : `0 0 1px ${themeColor(haloBg, deriveDarkTagColors(haloBg).bgColor)}`;
   return {
-    color: ink,
+    color: themeColor(ink, "#f1ede6"),
     ["--evt-weight" as string]: String(weight),
     ["--evt-shadow" as string]: shadow
   } as CSSProperties;
@@ -422,8 +423,8 @@ export function eventColorStyle(colors: ColorPaletteEntry[]): CSSProperties {
     return {};
   }
   return {
-    backgroundColor: a.bgColor,
-    borderColor: a.borderColor,
+    backgroundColor: themeColor(a.bgColor, readDarkTagColors(a.darkColors, a.bgColor).bgColor),
+    borderColor: themeColor(a.borderColor, readDarkTagColors(a.darkColors, a.bgColor).borderColor),
     ...eventInkStyle(a.bgColor, a.textColor)
   };
 }
@@ -554,8 +555,12 @@ export function mixedEventStyle(
   const positionX = length > 1 ? `${(run.index / (length - 1)) * 100}%` : "center";
   // 배경은 padding-box(안쪽), 테두리는 border-box(테두리 영역)에 각각 좌→우 그라데이션을 깔아
   // 2색일 때 테두리도 반반으로 각 태그색이 되게 한다. background-clip 기법이라 둥근 모서리 유지.
-  const bgGrad = `linear-gradient(to right, ${a.bgColor} 0%, ${a.bgColor} 38%, ${b.bgColor} 62%, ${b.bgColor} 100%)`;
-  const borderGrad = `linear-gradient(to right, ${a.borderColor} 0%, ${a.borderColor} 38%, ${b.borderColor} 62%, ${b.borderColor} 100%)`;
+  const darkA = readDarkTagColors(a.darkColors, a.bgColor);
+  const darkB = readDarkTagColors(b.darkColors, b.bgColor);
+  const aBg = themeColor(a.bgColor, darkA.bgColor), bBg = themeColor(b.bgColor, darkB.bgColor);
+  const aBorder = themeColor(a.borderColor, darkA.borderColor), bBorder = themeColor(b.borderColor, darkB.borderColor);
+  const bgGrad = `linear-gradient(to right, ${aBg} 0%, ${aBg} 38%, ${bBg} 62%, ${bBg} 100%)`;
+  const borderGrad = `linear-gradient(to right, ${aBorder} 0%, ${aBorder} 38%, ${bBorder} 62%, ${bBorder} 100%)`;
   // 크기·위치는 단일값으로 둔다(모든 배경 레이어에 동일 적용) → 무늬 마스크(mixedPatternMaskStyle)도
   // 같은 윈도잉을 그대로 읽어 쓸 수 있다. clip·origin·image만 레이어별(콤마)로 지정.
   return {

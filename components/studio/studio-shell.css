@@ -8897,6 +8897,9 @@ html[data-reduce-motion] .tge-help-panel {
   align-items: center;
   gap: 8px;
 }
+.cpop-theme-pair { display: flex; gap: 3px; flex: none; }
+.cpop-theme-pair .cpop-preview { width: 27px; min-width: 27px; }
+.cpop-theme-note { margin: 5px 0 0; font-size: var(--text-caption); color: var(--muted); }
 /* 실행취소 — 잘못 눌러 색이 바뀌어도 직전으로. 미리보기·삭제 버튼과 같은 사각 아이콘 톤(통일). */
 .cpop-undo {
   flex: 0 0 auto;

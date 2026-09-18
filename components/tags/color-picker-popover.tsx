@@ -15,6 +15,7 @@ import {
 } from "@/lib/tags/color-tone";
 import { hapticTick } from "@/lib/ui/haptics";
 import type { TagKind } from "@/lib/domain/schedule-types";
+import { deriveDarkTagColors } from "@/lib/tags/dark-palette";
 
 // 커스텀 색 피커 — 색 스와치를 누르면 뜨는 팝오버. 연구/벤치마킹(팝오버 패턴 + 색 영역+색조 슬라이더)
 // 기준: 네이티브 OS 피커 대신 앱 디자인에 맞는 인라인 피커. 좌표로 채도·명도, 슬라이더로 색조,
@@ -32,7 +33,7 @@ function clamp01(n: number) {
 }
 
 const POP_W = 268;
-const POP_H = 486; // kind 전환 줄 + 실행취소로 살짝 커졌다(화면 밖이면 위로 뒤집는 계산용).
+const POP_H = 508; // Includes the paired theme previews and automatic-save note.
 
 export function ColorPickerPopover({
   value,
@@ -256,8 +257,9 @@ export function ColorPickerPopover({
       {/* 미리보기(글자 읽힘을 눈으로 바로 확인) + hex 입력 + 실행취소. 대비 배지는 안 둔다 —
           자동 글자색이라 거의 항상 읽히므로 '통과' 표시는 잡음. 드물게 흐릴 때만 아래 한 줄 경고. */}
       <div className="cpop-row">
-        <span className="cpop-preview" style={{ background: hex, color: con.ink }}>
-          가나
+        <span className="cpop-theme-pair" aria-label="라이트·다크 색상 미리보기">
+          <span className="cpop-preview" title="라이트" style={{ background: hex, color: con.ink }}>가</span>
+          <span className="cpop-preview" title="다크" style={{ background: deriveDarkTagColors(hex).bgColor, color: deriveDarkTagColors(hex).textColor }}>가</span>
         </span>
         <input
           aria-label="hex 코드"
@@ -282,6 +284,7 @@ export function ColorPickerPopover({
           <Undo2 aria-hidden="true" size={16} />
         </button>
       </div>
+      <p className="cpop-theme-note">라이트 · 다크 색상 함께 자동 맞춤</p>
       {!con.passesAA ? <p className="cpop-warn">글자가 흐릴 수 있어요</p> : null}
 
       {/* 톤 프리셋 — 색조는 그대로 두고 톤(파스텔~깊게)만. '필터'처럼: 각 버튼을 '현재 색조에 그

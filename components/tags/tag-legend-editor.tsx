@@ -1,5 +1,7 @@
 "use client";
 
+import { tagColor } from "@/lib/tags/dark-palette";
+
 import { AlertTriangle, GripVertical, HelpCircle, Lock, Palette, Plus, Save, Trash2 } from "lucide-react";
 import {
   type CSSProperties,
@@ -496,7 +498,7 @@ export function TagLegendEditor({
           <span key={tag.id}>
             <i
               data-color={v.colorKey ?? undefined}
-              style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
+              style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
             />
             {tag.displayName}
           </span>
@@ -513,7 +515,7 @@ export function TagLegendEditor({
          data-act="tag-legend-filter">
           <i
             data-color={v.colorKey ?? undefined}
-            style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
+            style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
           />
           {tag.displayName}
         </button>
@@ -908,7 +910,7 @@ export function TagLegendEditor({
           // 세부는 부모 대분류 색을 상속 — 색 선택 없이 상속 색만 표시.
           <span
             className="tag-sub-color"
-            style={{ background: parentColor?.bgColor, borderColor: parentColor?.borderColor }}
+            style={{ background: parentColor ? tagColor(parentColor.bgColor) : undefined, borderColor: parentColor ? tagColor(parentColor.bgColor, "borderColor", parentColor.darkColors, parentColor.borderColor) : undefined }}
             title="부모 대분류 색을 따라가요"
           />
         ) : (
@@ -934,7 +936,7 @@ export function TagLegendEditor({
                         return opening ? tag.id : null;
                       });
                     }}
-                    style={{ background: curColor }}
+                    style={{ background: tagColor(curColor) }}
                     title="색 바꾸기"
                     type="button"
                    data-act="태그 색 바꾸기" />

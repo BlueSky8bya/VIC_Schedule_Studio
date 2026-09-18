@@ -60,6 +60,57 @@ async function darkSurface(page: Page, selector: string) {
 }
 test.beforeEach(async ({ page }) => { await prepare(page); });
 
+test("insights loading shimmer stays dark during a delayed request", async ({ page }, info) => {
+  let release!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/visual-fixture/studio?role=developer", async route => {
+    if (route.request().method() !== "POST") return route.fallback();
+    await held;
+    return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":"","b":"fixture"}\n1:{"ok":false,"error":"Fixture only"}\n' });
+  });
+  try {
+    await page.setViewportSize({ width: 1840, height: 1000 });
+    await page.goto("/visual-fixture/studio?role=developer");
+    if (!await page.locator("[data-act=manage-insights]").isVisible()) await page.locator("[data-act=panel-toggle]").click();
+    await page.locator("[data-act=manage-insights]").click();
+    await page.locator(".insight-skel span").first().waitFor();
+    const gradient = await page.locator(".insight-skel span").first().evaluate(el => getComputedStyle(el).backgroundImage);
+    expect(gradient).toContain("rgb(44, 41, 37)");
+    expect(gradient).not.toContain("255, 255, 255");
+    await capture(page, info, "insights-loading");
+  } finally { release(); }
+});
+
+test("dark popularity has four static levels and ambient entry has readable ink", async ({ page }, info) => {
+  await page.setViewportSize({ width: 1840, height: 1000 });
+  await page.goto("/visual-fixture/poster?hearts=1");
+  for (const [tier, count] of Object.entries({ warm: 1, hot: 2, blaze: 3, top: 4 })) {
+    const card = page.locator(`.public-event[data-tier=${tier}]`).first();
+    await expect(card.locator(".tier-signal i")).toHaveCount(count);
+    await expect(card.locator(".tier-signal")).toBeVisible();
+  }
+  await capture(page, info, "popularity-four-levels");
+  await page.evaluate(() => localStorage.setItem("vic.ambient", "on"));
+  // Viewing mode is intentionally developer-only until the ambient world ships.
+  await page.goto("/visual-fixture/studio?role=developer");
+  const button = page.locator(".showcase-btn").first();
+  await expect(button).toBeVisible();
+  await darkSurface(page, ".showcase-btn");
+  const ink = await button.evaluate(el => getComputedStyle(el).color.match(/\d+/g)!.map(Number));
+  expect(Math.min(...ink)).toBeGreaterThan(160);
+  await capture(page, info, "ambient-entry");
+  await button.click();
+  await expect(page.locator(".showcase-exit")).toBeVisible();
+  await capture(page, info, "ambient-viewing");
+  await page.locator(".showcase-gear").click();
+  await page.locator(".sc-set-date-trigger").click();
+  await capture(page, info, "ambient-date-picker");
+  await page.locator(".sc-date-select").first().click();
+  await capture(page, info, "ambient-year-picker");
+  await page.locator("[data-act=biome-map-fold]").click();
+  await capture(page, info, "ambient-map-expanded");
+});
+
 test("developer setting toggles real theme, persists and restores light", async ({ page }, info) => {
   await page.setViewportSize({ width: 1840, height: 1000 });
   await page.goto("/visual-fixture/studio?role=developer");

@@ -1,5 +1,7 @@
 "use client";
 
+import { tagColor } from "@/lib/tags/dark-palette";
+
 // 차트 스타일은 편집실·시청자 양쪽에서 공유한다(어느 화면에서 열든 같은 차트).
 import "@/components/studio/insights-charts.css";
 
@@ -135,7 +137,7 @@ export function StackTrendChart({
                             <span
                               className="vt-seg"
                               key={c.key}
-                              style={{ flexGrow: n, background: c.color }}
+                              style={{ flexGrow: n, background: tagColor(c.color) }}
                             />
                           ) : null;
                         })}
@@ -153,7 +155,7 @@ export function StackTrendChart({
             <ul className="vt-legend">
               {data.cats.map((c) => (
                 <li key={c.key}>
-                  <span style={{ background: c.color }} />
+                  <span style={{ background: tagColor(c.color) }} />
                   {c.label}
                 </li>
               ))}
@@ -194,7 +196,7 @@ export function StackTrendChart({
                   <div className="vt-tip-rows" style={colStyle}>
                     {rows.map((c, idx) => (
                       <span className="vt-tip-row" key={c.key}>
-                        <i style={{ background: c.color }} />
+                        <i style={{ background: tagColor(c.color) }} />
                         {/* 태그 차트는 큰 값 순 등수를 앞에 — "1. 서버", "2. 종겜"처럼 한눈에. */}
                         {!showLegend ? `${idx + 1}. ${c.label}` : c.label}
                         {showNumbers ? <b>{hover.counts[c.key] ?? 0}</b> : null}

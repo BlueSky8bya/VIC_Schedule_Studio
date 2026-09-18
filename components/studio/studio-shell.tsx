@@ -113,6 +113,7 @@ import {
   canReadPrivateLayer
 } from "@/lib/permissions/roles";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
+import { tagColor } from "@/lib/tags/dark-palette";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
@@ -5385,7 +5386,7 @@ export function StudioShell({
                      data-act="agenda-legend-tag">
                       <i
                         data-color={v.colorKey ?? undefined}
-                        style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
+                        style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
                       />
                       {tag.displayName}
                     </button>
@@ -5474,10 +5475,10 @@ export function StudioShell({
                       const barStyle =
                         colors.length >= 2
                           ? {
-                              background: `linear-gradient(180deg, ${colors[0].bgColor}, ${colors[1].bgColor})`
+                              background: `linear-gradient(180deg, ${tagColor(colors[0].bgColor, "accentColor", colors[0].darkColors)}, ${tagColor(colors[1].bgColor, "accentColor", colors[1].darkColors)})`
                             }
                           : colors[0]
-                            ? { background: colors[0].bgColor }
+                            ? { background: tagColor(colors[0].bgColor, "accentColor", colors[0].darkColors) }
                             : undefined;
                       const dimCls = isDimmedByFilter(event) ? " filter-dim" : "";
                       const tentCls = event.isTentative ? " tentative" : ""; // 미정: 점선 테두리
@@ -5547,12 +5548,12 @@ export function StudioShell({
                               <i
                                 className="agenda-bar-half top"
                                 data-color={colors[0].key}
-                                style={{ background: colors[0].bgColor }}
+                                style={{ background: tagColor(colors[0].bgColor, "accentColor", colors[0].darkColors) }}
                               />
                               <i
                                 className="agenda-bar-half bottom"
                                 data-color={colors[1].key}
-                                style={{ background: colors[1].bgColor }}
+                                style={{ background: tagColor(colors[1].bgColor, "accentColor", colors[1].darkColors) }}
                               />
                             </span>
                           ) : (
@@ -5598,7 +5599,7 @@ export function StudioShell({
                               const dots = !event.isSupport && extraColors.length > 0 ? (
                                 <span className="pill-dots" aria-hidden="true">
                                   {extraColors.map((c, i) => (
-                                    <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                                    <i key={i} style={{ background: tagColor(c.bgColor, "accentColor", c.darkColors), borderColor: tagColor(c.bgColor, "borderColor", c.darkColors, c.borderColor) }} />
                                   ))}
                                 </span>
                               ) : null;
@@ -7239,7 +7240,7 @@ export function StudioShell({
                                   {extraColors.map((c, i) => (
                                     <i
                                       key={i}
-                                      style={{ background: c.bgColor, borderColor: c.borderColor }}
+                                      style={{ background: tagColor(c.bgColor, "accentColor", c.darkColors), borderColor: tagColor(c.bgColor, "borderColor", c.darkColors, c.borderColor) }}
                                     />
                                   ))}
                                 </span>

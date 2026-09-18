@@ -163,7 +163,7 @@ function oklabToLinRgb(L: number, a: number, bb: number): [number, number, numbe
     -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s
   ];
 }
-function hexToOklch(hex: string): { L: number; C: number; h: number } {
+export function hexToOklch(hex: string): { L: number; C: number; h: number } {
   const rgb = hexToRgb(hex) ?? [0, 0, 0];
   const [r, g, b] = rgb.map((v) => srgbChToLinear(v / 255));
   const { L, a, b: bb } = linRgbToOklab(r, g, b);
@@ -176,7 +176,7 @@ function oklchInGamut(L: number, C: number, hDeg: number): boolean {
   return lin.every((c) => c >= -0.0001 && c <= 1.0001);
 }
 // L,C,h → hex. 가무트 밖이면 색조·밝기는 유지하고 채도(C)만 이진탐색으로 줄여 안으로 넣는다.
-function oklchToHex(L: number, C: number, hDeg: number): string {
+export function oklchToHex(L: number, C: number, hDeg: number): string {
   let lo = 0;
   let hi = C;
   if (!oklchInGamut(L, C, hDeg)) {

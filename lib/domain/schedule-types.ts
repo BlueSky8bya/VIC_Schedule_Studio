@@ -1,3 +1,5 @@
+import type { DarkTagColors } from "@/lib/tags/dark-palette";
+
 export const PRODUCT_TIMEZONE = "Asia/Seoul" as const;
 
 // "developer"는 플랫폼 레벨 슈퍼관리자(시스템 유지보수자)로, "owner"(스트리머)와 구분된다.
@@ -26,6 +28,7 @@ export type ColorPaletteEntry = {
   bgColor: string;
   textColor: string;
   borderColor: string;
+  darkColors?: DarkTagColors;
   sortOrder: number;
 };
 
@@ -41,6 +44,7 @@ export type BroadcastTag = {
   // 커스텀 색: 대분류가 직접 고른 hex(#RRGGBB). null/미지정이면 colorKey→color_palette 폴백.
   // 세부(자식)는 항상 null(부모 색 상속). 렌더 색 해석은 resolver(lib/tags/tag-visual)가 담당.
   bgHex?: string | null;
+  darkColors?: DarkTagColors;
   sortOrder: number;
   isDefault: boolean;
   isActive: boolean;

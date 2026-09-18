@@ -105,6 +105,7 @@ import {
   type MonthCell
 } from "@/lib/calendar/month";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
+import { tagColor } from "@/lib/tags/dark-palette";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
@@ -185,6 +186,9 @@ const POSTER_BOTTOM_GAP = 14;
 function TierMark({ tier }: { tier: HeartTier }) {
   return (
     <>
+      <span className={`tier-signal tier-${tier.key}`} aria-hidden="true">
+        {Array.from({ length: { warm: 1, hot: 2, blaze: 3, top: 4 }[tier.key] }, (_, i) => <i key={i} />)}
+      </span>
       {/* halo는 링과 형제(링의 마스크가 자기 그림자를 잘라서). 관심(warm)은 halo 없음 — 조용한 단계. */}
       {tier.key !== "warm" ? <span aria-hidden="true" className={`tier-halo tier-${tier.key}`} /> : null}
       <span
@@ -3219,7 +3223,7 @@ export function PublicPoster({
                   const dots = showDots ? (
                     <span className="pill-dots" aria-hidden="true">
                       {extraColors.map((c, i) => (
-                        <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                        <i key={i} style={{ background: tagColor(c.bgColor, "accentColor", c.darkColors), borderColor: tagColor(c.bgColor, "borderColor", c.darkColors, c.borderColor) }} />
                       ))}
                     </span>
                   ) : null;
@@ -3369,7 +3373,7 @@ export function PublicPoster({
                    data-act="agenda-legend-tag">
                     <i
                       data-color={v.colorKey ?? undefined}
-                      style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
+                      style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
                     />
                     {tag.displayName}
                   </button>
@@ -3618,7 +3622,7 @@ export function PublicPoster({
                     const single = support
                       ? { background: "#84b74f" }
                       : colors[0]
-                        ? { background: colors[0].bgColor }
+                        ? { background: tagColor(colors[0].bgColor, "accentColor", colors[0].darkColors) }
                         : undefined;
                     const twoColor = !support && colors.length >= 2;
                     const end = event.endDateKey;
@@ -3658,12 +3662,12 @@ export function PublicPoster({
                             <i
                               className="agenda-bar-half top"
                               data-color={colors[0].key}
-                              style={{ background: colors[0].bgColor }}
+                              style={{ background: tagColor(colors[0].bgColor, "accentColor", colors[0].darkColors) }}
                             />
                             <i
                               className="agenda-bar-half bottom"
                               data-color={colors[1].key}
-                              style={{ background: colors[1].bgColor }}
+                              style={{ background: tagColor(colors[1].bgColor, "accentColor", colors[1].darkColors) }}
                             />
                           </span>
                         ) : (
@@ -3726,7 +3730,7 @@ export function PublicPoster({
                             const dots = !support && extraColors.length > 0 ? (
                               <span className="pill-dots" aria-hidden="true">
                                 {extraColors.map((c, i) => (
-                                  <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                                  <i key={i} style={{ background: tagColor(c.bgColor, "accentColor", c.darkColors), borderColor: tagColor(c.bgColor, "borderColor", c.darkColors, c.borderColor) }} />
                                 ))}
                               </span>
                             ) : null;
@@ -3905,7 +3909,7 @@ export function PublicPoster({
           const swatch = (
             <i
               data-color={v.colorKey ?? undefined}
-              style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
+              style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
             />
           );
           // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
@@ -4062,8 +4066,8 @@ export function PublicPoster({
               return [
                 {
                   tag,
-                  bg: v.bg,
-                  border: v.border ?? undefined,
+                  bg: v.cssAccent ?? v.bg,
+                  border: v.cssBorder ?? undefined,
                   primary: event.primaryTagIds.includes(tag.id)
                 }
               ];

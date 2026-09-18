@@ -60,9 +60,9 @@ export function TagPicker({
           {
             // 색은 CSS 변수로 전달 — 기본 렌더는 이전과 동일하고, 편집 팝오버처럼
             // 스코프별로 '색 점 + 선택 시 채움' 등으로 재해석할 수 있게 한다.
-            "--tp-bg": v.bg,
-            "--tp-border": v.border ?? undefined,
-            "--tp-ink": v.legacyTextColor ?? undefined
+            "--tp-bg": v.cssBg,
+            "--tp-border": v.cssBorder ?? undefined,
+            "--tp-ink": v.cssInk ?? undefined
           } as CSSProperties
         }
         title={blocked ? `태그는 최대 ${max}개까지 고를 수 있어요` : tag.displayName}

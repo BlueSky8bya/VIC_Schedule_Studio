@@ -71,9 +71,9 @@ export function ReadonlyEventDetail({ selectedDate, selectedEvent, legendTags, t
                       className="detail-tag"
                       key={id}
                       style={{
-                        backgroundColor: v.bg,
-                        borderColor: v.border ?? undefined,
-                        color: v.legacyTextColor ?? undefined
+                        backgroundColor: v.cssBg ?? v.bg,
+                        borderColor: v.cssBorder ?? undefined,
+                        color: v.cssInk ?? v.legacyTextColor ?? undefined
                       }}
                     >
                       {tag.displayName}

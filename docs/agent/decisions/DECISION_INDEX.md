@@ -8,6 +8,7 @@
 
 | ADR | Status | Area | Decision | Revisit Trigger |
 |---|---|---|---|---|
+| [0026](ADR-0026-automatic-dark-tag-palette.md) | Accepted | 다크 태그 팔레트 | 원본 색 보존, OKLCH 역할별 팔레트 자동 계산·DB 저장, 공개 hex DTO와 공유 렌더 | 색 계약 버전·대비 목표 변경 |
 | [0025](ADR-0025-side-panel-unification.md) | Accepted | 달력 옆 패널 통일 | 편집실·시청자·미리보기가 같은 훅(`use-side-panel`)·같은 알약 `[⇤ 패널 ⇥]`. 패널은 표면 밖 한 줄('끔' 폐지), 1280px 밑 자동 접힘, 열면 떠서 덮기. /onair는 항상 펼침 | 패널 폭·기준·자리 규칙을 바꾸거나 표면 안 레일을 되살릴 때 |
 | [0024](ADR-0024-spring-meadow-three-layers.md) | Accepted | 봄 초원 세 레이어 | 새 F/M/N·나무 없는 초원·봄만 .35 지평선·캐시된 원본 마스크 | 계절 확대 또는 공간 기준 변경 |
 | [0023](ADR-0023-spring-meadow-source-composition.md) | Accepted | 봄 초원 적용 | 선호 원본 한 장을 F/M으로 합성, N은 기존 프레임. PC 비율·고정 면적·정지 화면 갱신. 봄만 먼저 배포 | 사계절 아트 또는 새 원본/비율 계약 |

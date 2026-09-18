@@ -1,5 +1,7 @@
 "use client";
 
+import { tagColor } from "@/lib/tags/dark-palette";
+
 import {
   CalendarDays,
   ChevronLeft,
@@ -1358,8 +1360,8 @@ export function InsightsDashboard({
                               className="insight-bar-fill"
                               style={{
                                 width: `${Math.round((t.count / tagMax) * 100)}%`,
-                                background: t.bgColor,
-                                borderColor: t.borderColor
+                                background: tagColor(t.bgColor),
+                                borderColor: tagColor(t.bgColor, "borderColor", undefined, t.borderColor)
                               }}
                             />
                           </span>

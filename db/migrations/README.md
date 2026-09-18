@@ -84,3 +84,4 @@
 | 0110 | 제안 관련어 불용어 — 용언 어미·흔한 일반명사·님께 꼬리 |
 | 0111 | 제안 관련어 용언 어미 보강(왤케·걸린·드신·나온) |
 | 0112 | 요즘 뜨는 말 캐시 `search_trends` + `search_trending_rebuild()` — 채팅 75만 행 집계가 조회마다 타임아웃하던 것을 미리 계산으로(조회 60ms) |
+| 0121 | `dark_palette` STORED generated column — 기본 팔레트·커스텀 태그의 다크 채움/테두리/글자/강조색을 자동 저장. 원본 색 보존, 하위 NULL 상속, 앱 reader보다 먼저 적용. [ADR-0026](../../docs/agent/decisions/ADR-0026-automatic-dark-tag-palette.md) |

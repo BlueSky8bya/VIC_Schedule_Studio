@@ -1,3 +1,4 @@
+import { readDarkTagColors } from "@/lib/tags/dark-palette";
 import type {
   BroadcastTag,
   ColorPaletteEntry,
@@ -102,12 +103,12 @@ export async function getStudioSchedule(
   const [tagsRes, paletteRes, eventsRes] = await Promise.all([
     supabase
       .from("broadcast_tags")
-      .select("id, tag_key, display_name, color_key, bg_hex, sort_order, is_default, is_active, parent_id, kind, v3_only")
+      .select("id, tag_key, display_name, color_key, bg_hex, dark_palette, sort_order, is_default, is_active, parent_id, kind, v3_only")
       .eq("calendar_id", calendar.id)
       .order("sort_order"),
     supabase
       .from("color_palette")
-      .select("key, name, bg_color, text_color, border_color, sort_order")
+      .select("key, name, bg_color, text_color, border_color, dark_palette, sort_order")
       .eq("calendar_id", calendar.id)
       .order("sort_order"),
     supabase
@@ -252,6 +253,7 @@ function mapTag(row: {
   display_name: string;
   color_key: string;
   bg_hex?: string | null;
+  dark_palette?: unknown;
   sort_order: number;
   is_default: boolean;
   is_active: boolean;
@@ -265,6 +267,7 @@ function mapTag(row: {
     displayName: row.display_name,
     colorKey: row.color_key as BroadcastTag["colorKey"],
     bgHex: row.bg_hex ?? null,
+    darkColors: row.bg_hex ? readDarkTagColors(row.dark_palette, row.bg_hex) : undefined,
     sortOrder: row.sort_order,
     isDefault: row.is_default,
     isActive: row.is_active,
@@ -280,6 +283,7 @@ function mapPalette(row: {
   bg_color: string;
   text_color: string;
   border_color: string;
+  dark_palette?: unknown;
   sort_order: number;
 }): ColorPaletteEntry {
   return {
@@ -288,6 +292,7 @@ function mapPalette(row: {
     bgColor: row.bg_color,
     textColor: row.text_color,
     borderColor: row.border_color,
+    darkColors: readDarkTagColors(row.dark_palette, row.bg_color),
     sortOrder: row.sort_order
   };
 }

@@ -15,6 +15,7 @@ import type {
   TagKind
 } from "@/lib/domain/schedule-types";
 import { patternOf } from "@/lib/tags/color-gen";
+import { readDarkTagColors, themeColor } from "@/lib/tags/dark-palette";
 import { getEventTagColors, getExtraCategoryColors } from "@/lib/calendar/month";
 
 export type TagVisual = {
@@ -23,6 +24,10 @@ export type TagVisual = {
   kind: TagKind; // 최상위 대분류의 kind(content=칸 색, modifier=점)
   colorKey: string | null; // 최상위 대분류 색 key(레거시 팔레트 참조 + 무늬 CSS data-color)
   bg: string | null;
+  cssBg: string | null;
+  cssBorder: string | null;
+  cssInk: string | null;
+  cssAccent: string | null;
   border: string | null;
   legacyTextColor: string | null; // 팔레트가 정의한 기본 글자색(eventInkStyle의 1순위 후보)
   patternKey: string; // 무늬 종류(plain/diag/dots/grid/cross/dash) — colorKey에서 파생
@@ -84,6 +89,7 @@ function isolateCustomColors(
       bgColor: hex,
       textColor: deriveInk(rgb),
       borderColor: deriveBorder(rgb),
+      darkColors: readDarkTagColors(t.darkColors, hex),
       sortOrder: base?.sortOrder ?? t.sortOrder
     });
     return { ...t, colorKey: synthKey };
@@ -146,6 +152,7 @@ export function createTagVisualResolver(
         kind: "content",
         colorKey: null,
         bg: null,
+        cssBg: null, cssBorder: null, cssInk: null, cssAccent: null,
         border: null,
         legacyTextColor: null,
         patternKey: "plain",
@@ -153,11 +160,16 @@ export function createTagVisualResolver(
       };
     }
     const entry = palByKey.get(root.colorKey);
+    const dark = entry ? readDarkTagColors(entry.darkColors, entry.bgColor) : null;
     return {
       rootTagId: root.rootTagId,
       kind: root.kind,
       colorKey: root.colorKey,
       bg: entry?.bgColor ?? null,
+      cssBg: entry && dark ? themeColor(entry.bgColor, dark.bgColor) : null,
+      cssBorder: entry && dark ? themeColor(entry.borderColor, dark.borderColor) : null,
+      cssInk: entry && dark ? themeColor(entry.textColor, dark.textColor) : null,
+      cssAccent: entry && dark ? themeColor(entry.bgColor, dark.accentColor) : null,
       border: entry?.borderColor ?? null,
       legacyTextColor: entry?.textColor ?? null,
       patternKey: patternOf(root.colorKey),

@@ -119,19 +119,19 @@ describe("ink contract — eventInkStyle", () => {
   it("조화: 밝은 배경엔 색별 틴트 대신 '통일된 먹색'을 쓴다", () => {
     // 팔레트 textColor(#6b4e00)를 넘겨도 무시하고 통일 먹색을 쓴다(카드마다 짙기가 달라지지 않게).
     const ink = eventInkStyle("#ffec99", "#6b4e00");
-    expect(ink.color).toBe("#22242c");
+    expect(ink.color).toBe("light-dark(#22242c, #f1ede6)");
   });
 
   it("어두운 배경엔 흰색으로 뒤집는다(먹/흰 중 대비 높은 쪽)", () => {
     const ink = eventInkStyle("#1b2a5e", "#ffffff"); // 진한 남색
-    expect(ink.color).toBe("#ffffff");
+    expect(ink.color).toBe("light-dark(#ffffff, #f1ede6)");
   });
 
   it("무늬 제거 후: 모든 카드에 바탕색 얇은 헤일로만(색별 특수화 없음)", () => {
     const a = eventInkStyle("#2f63d6", "#ffffff");
     const b = eventInkStyle("#5a44c2", "#ffffff"); // 예전 무늬색(indigo) — 이제 특수 취급 없음
-    expect(String(a["--evt-shadow" as keyof typeof a])).toBe("0 0 1px #2f63d6");
-    expect(String(b["--evt-shadow" as keyof typeof b])).toBe("0 0 1px #5a44c2");
+    expect(String(a["--evt-shadow" as keyof typeof a])).toBe("0 0 1px light-dark(#2f63d6, #334569)");
+    expect(String(b["--evt-shadow" as keyof typeof b])).toBe("0 0 1px light-dark(#5a44c2, #413f66)");
   });
 
   it("굵기는 700/800/900 중 하나(대비 구간)", () => {
@@ -143,8 +143,8 @@ describe("ink contract — eventInkStyle", () => {
 describe("style contract — single & mixed", () => {
   it("단색 칸 스타일 = 배경/테두리 + 잉크", () => {
     const style = eventColorStyle(getEventTagColors(ev(["game"]), tags, palette));
-    expect(style.backgroundColor).toBe("#d11a2a");
-    expect(style.borderColor).toBe("#a8121f");
+    expect(style.backgroundColor).toBe("light-dark(#d11a2a, #653835)");
+    expect(style.borderColor).toMatch(/^light-dark\(#a8121f, #[a-f0-9]{6}\)$/);
   });
 
   it("2색 윈도잉: run.index/length → 배경 위치가 이어진 칸 가운데로 경계", () => {

@@ -614,3 +614,77 @@ html[data-theme="dark"] .cx-tier.tier-epic { color: var(--amber); }
 html[data-theme="dark"] .cx-tier.tier-legend { color: var(--pink); }
 html[data-theme="dark"] .art-codex span { background: var(--studio-action-tint); color: var(--studio-action-text); border-color: var(--studio-action-line); }
 html[data-theme="dark"] .art-codex b { color: var(--studio-action-text); }
+
+/* Follow-up: loading and actual plot marks, not just their containers. */
+html[data-theme="dark"] :is(.insight-skel span, .act-skeleton span) {
+  background: linear-gradient(100deg, #2c2925 30%, #3b3630 50%, #2c2925 70%);
+  background-size: 220% 100%;
+}
+html[data-theme="dark"] :is(.trend-bar, .vt-bar, .bcast-dbar) { background: #665985; }
+html[data-theme="dark"] :is(.trend-bar.cur, .bcast-dbar[data-on]) { background: linear-gradient(0deg, #7460ae, #c3b4ff); }
+html[data-theme="dark"] :is(.trend-partial, .vt-day.partial) { background: var(--violet-soft); color: var(--seg-on-accent-ink); }
+html[data-theme="dark"] .insight-trend.up { color: #ffac98; }
+html[data-theme="dark"] .insight-trend.down { color: #9cc6f7; }
+html[data-theme="dark"] .agenda-subs { color: var(--ink-soft); }
+html[data-theme="dark"] .agenda-detail-day.saturday { color: #98bdff; }
+html[data-theme="dark"] .public-event .event-heart { color: #e4d9d2; }
+html[data-theme="dark"] .public-event .event-heart.on { color: #ff9cb7; }
+
+/* Viewing controls stay readable over every season/biome without tinting art. */
+html[data-theme="dark"] :is(.showcase-btn, .showcase-exit, .biome-map, .biome-chev, .biome-pill) {
+  background: rgb(var(--glass-panel) / 94%); color: var(--ink); border-color: var(--night-line);
+  box-shadow: var(--shadow-2), var(--gs-metal-edge);
+}
+html[data-theme="dark"] .showcase-btn { --showcase-ink: var(--accent-strong); }
+html[data-theme="dark"] .showcase-btn:hover { background: var(--night-raised); box-shadow: var(--shadow-3); }
+html[data-theme="dark"] :is(.sc-set-heading button, .sc-set-reset, .sc-set-location,
+  .sc-set-now, .sc-set-name, .sc-set-chip, .sc-set-hours, .sc-set-more summary,
+  .biome-map-title, .biome-map-count, .biome-map-here) { color: var(--ink-soft); }
+html[data-theme="dark"] :is(.sc-set-chip, .sc-set-datetime input, .sc-set-location) {
+  background: var(--surface-2); border-color: var(--night-line); color: var(--ink-soft);
+}
+html[data-theme="dark"] .sc-set-chip.on { background: var(--green-soft); color: #a9dfb7; }
+
+/* Popularity in darkness: stepped light rail + inset rim, no extra layout row.
+   Hue/threshold meaning is unchanged; static marks remain when motion is off. */
+.tier-signal { display: none; }
+html[data-theme="dark"] [data-tier="warm"] { --pop-color: #dfb782; --pop-glow: #dfb78224; }
+html[data-theme="dark"] [data-tier="hot"] { --pop-color: #ffa284; --pop-glow: #ffa28432; }
+html[data-theme="dark"] [data-tier="blaze"] { --pop-color: #ff8db1; --pop-glow: #ff8db143; }
+html[data-theme="dark"] [data-tier="top"] { --pop-color: #ffe095; --pop-glow: #ffe09552; }
+html[data-theme="dark"] :is(.public-event, .agenda-event)[data-tier] {
+  box-shadow: inset 0 -2px var(--pop-color), 0 0 8px var(--pop-glow);
+}
+html[data-theme="dark"] .tier-warm { --tier-c: #dfb782; }
+html[data-theme="dark"] .tier-hot { --tier-c: #ffa284; }
+html[data-theme="dark"] .tier-blaze { --tier-c: #ff8db1; --tier-stops: #ff8db1, #ffc5d7, #ff8db1, #ffa284, #ff8db1; }
+html[data-theme="dark"] .tier-top { --tier-c: #ffe095; --tier-stops: #ffe095, #fff2ce, #e4b76a, #ffe095; }
+html[data-theme="dark"] .tier-ring { --tier-w: 1.5px; }
+html[data-theme="dark"] .tier-signal {
+  display: flex; flex-direction: column; gap: 2px; position: absolute;
+  left: 0; top: 20%; bottom: 20%; width: 3px; z-index: 2; pointer-events: none;
+}
+html[data-theme="dark"] .tier-signal i { flex: 1; min-height: 1px; border-radius: 1px; background: var(--tier-c); }
+html[data-theme="dark"] .public-event[data-mixed] > .tier-signal { position: absolute; z-index: 2; }
+html[data-theme="dark"] .tier-swatch.tier-swatch { background: var(--surface-2); border-color: var(--tier-c); box-shadow: inset 3px 0 var(--tier-c); }
+html[data-theme="dark"] .adt-badge[class*="tier-"] { background: var(--surface-2); color: var(--tier-c); border-color: var(--tier-c); }
+
+html[data-theme="dark"] :is(.sc-set-date-row button, .sc-set-datetime label,
+  .sc-date-month select, .sc-date-month button, .sc-date-days button, .sc-date-picker button) { color: var(--ink-soft); }
+html[data-theme="dark"] :is(.sc-date-weekday, .sc-date-coverage, .sc-set-handle span) { color: var(--muted); }
+html[data-theme="dark"] :is(.sc-date-calendar, .sc-set-more) { border-color: var(--night-line); }
+html[data-theme="dark"] :is(.sc-date-days button:hover, .sc-set-date-row button:hover,
+  .sc-date-picker button:hover, .sc-date-select[aria-expanded="true"]) { background: var(--night-hover); }
+html[data-theme="dark"] :is(.sc-date-days button[aria-pressed="true"], .sc-date-picker button[aria-selected="true"]) {
+  background: var(--green-soft); color: #a9dfb7;
+}
+html[data-theme="dark"] .sc-date-calendar [data-day-tone="red"] { color: #ff9b94; }
+html[data-theme="dark"] .sc-date-calendar [data-day-tone="blue"] { color: #98bdff; }
+html[data-theme="dark"] .sc-date-picker button:focus-visible { outline-color: #a9dfb7; background: var(--green-soft); }
+html[data-theme="dark"] .sc-set-time-range { color-scheme: dark; accent-color: #a1bf94; }
+html[data-theme="dark"] :is(.biome-map-cap, .biome-pill small) { color: var(--muted); }
+html[data-theme="dark"] .biome-dot { background: #344435; border-color: var(--night-line); }
+html[data-theme="dark"] :is(.biome-dot-pond, .biome-dot-sea, .biome-dot-deep) { background: #304450; }
+html[data-theme="dark"] .biome-dot .biome-dot-name { color: var(--ink-soft); }
+html[data-theme="dark"] .biome-dot.on { border-color: #b5d3bd; }
+html[data-theme="dark"] .biome-dot.on .biome-dot-name { color: var(--ink); }

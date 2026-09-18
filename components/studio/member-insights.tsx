@@ -1,5 +1,7 @@
 "use client";
 
+import { tagColor } from "@/lib/tags/dark-palette";
+
 import "@/components/studio/insights-charts.css";
 
 import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart, Lock, Trophy } from "lucide-react";
@@ -270,8 +272,8 @@ export function MemberInsights({
                     className="insight-bar-fill"
                     style={{
                       width: `${Math.round(t.ratio * 100)}%`,
-                      background: t.bgColor,
-                      borderColor: t.borderColor
+                      background: tagColor(t.bgColor),
+                      borderColor: tagColor(t.bgColor, "borderColor", undefined, t.borderColor)
                     }}
                   />
                 </span>
