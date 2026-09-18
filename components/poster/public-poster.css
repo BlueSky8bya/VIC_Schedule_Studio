@@ -7772,19 +7772,21 @@ html[data-pchrome="3"] .poster-chrome-title {
   top: 100%;
   left: 12px;
   right: 12px;
-  z-index: 5;
+  z-index: 40; /* 정렬 세그먼트·칩 줄(스티키) 위 — 반투명이면 글자가 비쳐 겹쳐 보였다(소유자 2026-09-18) */
   list-style: none;
   margin: 2px 0 0;
   padding: 6px 8px;
   border: 1px solid rgb(35 48 63 / 8%);
   border-radius: 14px;
-  background: rgb(255 253 248 / 97%);
+  background: #fffdf8;
   box-shadow: 0 14px 34px rgb(29 29 41 / 14%);
-  backdrop-filter: blur(8px);
   animation: ps-sug-in var(--dur-2) var(--ease-enter) both;
 }
 /* 목록이 떠 있는 동안 시트 바깥으로 넘칠 수 있게(시트는 overflow:hidden) — 본문은 .ps-body가 따로 스크롤·클립한다 */
 .ps-sheet:has(.ps-suggest) { overflow: visible; }
+/* overflow:visible이면 시트의 둥근 모서리가 머리 배경을 못 깎는다 → 머리에 같은 반지름을 직접 준다 */
+.ps-head { border-radius: 22px 22px 0 0; z-index: 60; } /* 드롭다운(머리의 자식)이 sticky 도구줄·칩 위에 오게 — 겹쳐 보이던 사고 */
+@media (max-width: 640px) { .ps-head { border-radius: 18px 18px 0 0; } }
 @keyframes ps-sug-in {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }

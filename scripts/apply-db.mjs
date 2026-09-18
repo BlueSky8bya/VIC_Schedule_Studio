@@ -47,7 +47,7 @@ async function tryConnect(cfg) {
     database: "postgres",
     ssl: { rejectUnauthorized: false },
     connectionTimeoutMillis: 8000,
-    statement_timeout: 60000
+    statement_timeout: 300000
   });
   await client.connect();
   await client.query("select 1");

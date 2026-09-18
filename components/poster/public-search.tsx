@@ -143,6 +143,15 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+  // 시트가 떠 있는 동안 바깥 달력이 스크롤되지 않게(소유자 2026-09-18) — 문서 스크롤 잠금, 닫히면 복구.
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prev;
+    };
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
