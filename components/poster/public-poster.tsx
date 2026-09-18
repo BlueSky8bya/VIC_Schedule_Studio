@@ -11,6 +11,7 @@ import {
   LogOut,
   Pin,
   Play,
+  Search,
   Sprout,
   X
 } from "lucide-react";
@@ -44,6 +45,11 @@ import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
   () => import("@/components/poster/public-insights").then((m) => m.PublicInsights),
+  { ssr: false }
+);
+// 검색 시트(PLAN-20260918-023) — 같은 이유로 열 때만 로드. '이 달 기록'과 같은 pi-* 껍데기.
+const PublicSearch = dynamic(
+  () => import("@/components/poster/public-search").then((m) => m.PublicSearch),
   { ssr: false }
 );
 import {
@@ -960,8 +966,12 @@ export function PublicPoster({
   // 하트 등급 승급 토스트(시청자) — 내 하트가 등급을 올렸을 때만 잠깐 뜬다.
   const [heartToast, setHeartToast] = useState<string | null>(null);
   const heartToastTimerRef = useRef<number | null>(null);
-  // 시청자 '이 달 기록' 시트 열림.
-  const [insightsOpen, setInsightsOpen] = useState(false);
+  // 시청자 시트 — '이 달 기록' 또는 '검색' 중 하나(동시에 못 뜬다). 히스토리 한 칸·배경 일시정지·
+  // 뒤로가기 닫기 규약은 시트 종류와 무관하게 하나라, 아래 insightsOpen/setInsightsOpen 이름의
+  // 기존 배관(1690~)을 그대로 태운다: 열림 = 어느 시트든 열림, 닫기 = 어느 시트든 닫기.
+  const [sheet, setSheet] = useState<null | "insights" | "search">(null);
+  const insightsOpen = sheet !== null;
+  const setInsightsOpen = (open: boolean) => setSheet(open ? "insights" : null);
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
@@ -1062,12 +1072,71 @@ export function PublicPoster({
   }, [schedule.vods]);
   // 날짜 칸 다시보기(PC) — 2026-09-17 페이지 승격: 실제 시청자 화면(accountSwitch)에선 /replay/<날짜> 페이지로,
   // 편집실 미리보기·fixture·/onair에선 같은 DayVodWindow를 창(모달)으로 띄운다(한 구현, 껍데기만 다름).
-  const [dayVodPop, setDayVodPop] = useState<{ dateKey: string } | null>(null);
+  // part/sec = 검색 결과에서 왔을 때 처음 보여줄 방송(1부터)·시각 — 페이지의 ?part=&t= 와 같은 뜻.
+  const [dayVodPop, setDayVodPop] = useState<{ dateKey: string; part?: number; sec?: number } | null>(null);
   const router = useRouter();
-  const openDayVod = (dateKey: string) => {
-    if (accountSwitch) router.push(`/replay/${dateKey}` as Route);
-    else setDayVodPop({ dateKey });
+  const openDayVod = (dateKey: string, part?: number, sec?: number) => {
+    if (accountSwitch) {
+      const qs = new URLSearchParams();
+      if (part && part > 1) qs.set("part", String(part));
+      if (sec && sec > 0) qs.set("t", String(Math.floor(sec)));
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+      router.push(`/replay/${dateKey}${suffix}` as Route);
+    } else setDayVodPop({ dateKey, part, sec });
   };
+  // 검색 결과 고르기(PLAN-20260918-023) — 일정이면 그 달로 옮기고 그 칸(그리드)/그 줄(아젠다)을
+  // 잠깐 밝힌다. 다시보기·챕터면 위 openDayVod로(시청자 = 페이지, 미리보기 = 창; 한 구현).
+  const [flashDate, setFlashDate] = useState<string | null>(null);
+  const flashTimerRef = useRef<number | null>(null);
+  const onSearchPickEvent = (dateKey: string) => {
+    setSheet(null);
+    const [y, m] = dateKey.split("-").map(Number);
+    const offset = (y - view.year) * 12 + (m - view.month);
+    if (offset !== 0) moveMonth(offset);
+    // 월 이동 슬라이드(≈360ms)가 끝난 뒤 그 칸으로 스크롤 + 점등. 같은 달이면 바로.
+    const delay = offset !== 0 ? 380 : 40;
+    window.setTimeout(() => {
+      const el =
+        document.querySelector<HTMLElement>(`.public-day[data-date="${dateKey}"]`) ??
+        document.querySelector<HTMLElement>(`.agenda-day[data-flip-key="${dateKey}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setFlashDate(dateKey);
+      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = window.setTimeout(() => setFlashDate(null), 1800);
+    }, delay);
+  };
+  const onSearchPickVod = (dateKey: string, titleNo: number, sec?: number) => {
+    const list = vodsByDate.get(dateKey) ?? [];
+    const idx = list.findIndex((v) => v.titleNo === titleNo);
+    // 시트를 닫으면 히스토리 배관이 history.back()을 부른다 — 그 뒤로가기가 **진행 중인 router.push를
+    // 취소**하고(실측: /replay로 안 감), 창(모달)이 쌓는 pushState와도 순서가 꼬인다. 그래서 닫기의
+    // popstate가 정리된 뒤(한 번 듣고) 다음 틱에 연다. 시트가 안 떠 있으면 바로.
+    const go = () => openDayVod(dateKey, idx >= 0 ? idx + 1 : undefined, sec);
+    if (!insightsOpenRef.current) {
+      go();
+      return;
+    }
+    const once = () => {
+      window.removeEventListener("popstate", once);
+      window.setTimeout(go, 0);
+    };
+    window.addEventListener("popstate", once);
+    setSheet(null);
+  };
+  // `/` 로 검색 열기 — 입력 중이거나 다른 창(다시보기·시트)이 떠 있으면 무시. 감상 중 키 삼킴은
+  // 시트가 없을 때만 오는 키라 충돌 없음.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (dayVodOpenRef.current || insightsOpenRef.current) return;
+      e.preventDefault();
+      setSheet("search");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   // 창이 열려 있는 동안 바깥 달력 스크롤 잠금 — 창 안 목록을 굴리다 끝에 닿으면 달력이
   // 따라 흐르던 문제(사용자 지적). CSS overscroll-behavior와 이중 방어.
   useEffect(() => {
@@ -1682,6 +1751,8 @@ export function PublicPoster({
   // 토글 시점에 즉석 확보한다 — 토큰 준비 여부로 UI를 가르면 비로그인 첫 페인트에서 하트/관심
   // UI가 통째로 빠져 로그인 화면과 레이아웃이 달라진다(사생활 모드 실패는 토글 때 토스트로 안내).
   const canHeart = interactive && serverHearts;
+  // 검색 개인화(내 ♥ 일정 +0.3)용 — 클라이언트에서만 더한다(서버 응답은 익명 동일).
+  const bookmarkSet = useMemo(() => new Set(bookmarks), [bookmarks]);
 
   // '이 달 기록' 시트도 같은 방식으로 히스토리 한 칸을 쌓는다 — 폰에서 뒤로가기를 누르면 시트만
   // 닫혀야 하는데, 안 쌓아두면 페이지를 통째로 떠나(이전 화면으로) 버린다.
@@ -1929,7 +2000,7 @@ export function PublicPoster({
         if (!overflows() || tier >= 3) break;
         tier += 1;
       }
-      const it = document.querySelector<HTMLElement>(".public-calendar-header .interest-toggle");
+      const it = document.querySelector<HTMLElement>(".public-calendar-header .search-open");
       const io = document.querySelector<HTMLElement>(".public-calendar-header .insights-open");
       if (it && io) root.style.setProperty("--mid-pill-w", `${Math.max(it.offsetWidth, io.offsetWidth)}px`);
     };
@@ -2681,9 +2752,10 @@ export function PublicPoster({
           day.isToday ? "today" : ""
         }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
           cellVods ? " has-vod" : ""
-        }`}
+        }${flashDate === cell.isoDate ? " cell-flash" : ""}`}
         data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
+        data-date={cell.isoDate}
         data-act={cellVods ? "day-vod-open" : undefined}
         key={cell.isoDate}
         onClick={
@@ -3287,6 +3359,19 @@ export function PublicPoster({
                 내 관심
               </button>
             ) : null}
+            {/* 모바일 검색 진입점 — 머리줄 알약(PC)과 같은 시트를 연다. 비로그인도. */}
+            <button
+              className="agenda-legend-tag search"
+              onClick={() => {
+                hapticTick();
+                setSheet("search");
+              }}
+              type="button"
+              data-act="agenda-legend-search"
+            >
+              <Search aria-hidden="true" size={13} strokeWidth={2.4} />
+              검색
+            </button>
             {/* 톡은 clearFilters 함수가 아니라 버튼에서 — jumpToday도 clearFilters를 부르는데
                 거긴 이미 톡을 울려서, 함수 안에 넣으면 두 번 울린다. */}
             {filterActive ? (
@@ -3393,7 +3478,7 @@ export function PublicPoster({
               const days = row.kind === "gap" ? row.days : [row.group];
               return days.map(({ cell, day, mark, list }) => (
               <div
-                className={`agenda-day ${day.isToday ? "today" : ""}`}
+                className={`agenda-day ${day.isToday ? "today" : ""}${flashDate === cell.isoDate ? " cell-flash" : ""}`}
                 data-flip-key={cell.isoDate}
                 key={cell.isoDate}
                 ref={day.isToday ? todayRowRef : undefined}
@@ -3926,6 +4011,8 @@ export function PublicPoster({
       {dayVodPop ? (
         <DayVodWindow
           dateKey={dayVodPop.dateKey}
+          initialPart={dayVodPop.part}
+          initialSec={dayVodPop.sec}
           onClose={() => setDayVodPop(null)}
           side={panel.side}
           slug={schedule.calendar.slug}
@@ -4356,7 +4443,7 @@ export function PublicPoster({
         : null}
       {/* 시청자 '이 달 기록' — 공개 데이터만(공개 일정·태그·하트 집계·방송시간 집계 RPC).
           방문자/동시접속 같은 운영 지표는 안 들어간다. fixed 오버레이라 캡쳐 PNG 밖. */}
-      {insightsOpen ? (
+      {sheet === "insights" ? (
         <PublicInsights
           events={liveEvents}
           heartCounts={heartCounts}
@@ -4365,6 +4452,16 @@ export function PublicPoster({
           palette={schedule.palette}
           tags={schedule.tags}
           year={view.year}
+        />
+      ) : null}
+      {/* 검색 시트 — 공개 검색 API(일정·다시보기·챕터)만. 같은 pi-* 껍데기, 같은 히스토리 칸. */}
+      {sheet === "search" ? (
+        <PublicSearch
+          myHeartIds={bookmarkSet}
+          onClose={() => setSheet(null)}
+          onPickEvent={onSearchPickEvent}
+          onPickVod={onSearchPickVod}
+          slug={schedule.calendar.slug}
         />
       ) : null}
       {/* 시청자 화면 미리보기(꾸미기 아님) — 아바타 컨트롤을 페이지 좌상단(absolute)에 둔다. 헤더에
@@ -4513,24 +4610,21 @@ export function PublicPoster({
                 좌표도 안전하다. 상호작용(시청자/미리보기) 모드에서만(꾸미기·캡쳐 제외). */}
             {interactive ? (
               <div className="poster-interest">
-                {canHeart ? (
-                  <button
-                    aria-pressed={bookmarkedOnly}
-                    className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
-                    onClick={() => {
-                      hapticTick();
-                      withAgendaFlip(() => setBookmarkedOnly((v) => !v));
-                    }}
-                    title="♥ 누른 일정만"
-                    type="button"
-                   data-act="관심 일정만 보기">
-                    <LiquidHeart ratio={interestRatio} />
-                    <span className="it-text">
-                      <strong>내 관심</strong>
-                      {/* ("♥ 누른 일정만 모아보기" 부제는 2026-09-04 사용자 결정으로 제거 — 폭을 '이 달 기록'과 맞춘다. 설명은 title.) */}
-                    </span>
-                  </button>
-                ) : null}
+                {/* 검색(2026-09-18 소유자 결정: '내 관심' 알약을 검색으로 교체 — ♥ 필터는 범례 줄에 남는다).
+                    비로그인도 쓴다(공개 데이터만). '이 달 기록'과 같은 알약 부품·같은 폭(--mid-pill-w). */}
+                <button
+                  className="insights-open search-open"
+                  data-act="open-search"
+                  onClick={() => {
+                    hapticTick();
+                    setSheet("search");
+                  }}
+                  title="일정 · 다시보기 · 챕터 찾기 ( / )"
+                  type="button"
+                >
+                  <Search aria-hidden="true" size={17} strokeWidth={2.4} />
+                  <span className="lbl">검색</span>
+                </button>
                 {/* 서비스 제목 — 포스터 표면에서 크롬 중앙(내 관심 ↔ 이 달 기록 사이)으로 이동
                     (2026-07-31). 표면 밖이라 캡쳐에 안 찍히고(PNG는 연·월만), 스티커 좌표 불침범. */}
                 {/* 2026-09-17 소유자: 서비스 이름 대신 **보고 있는 달**을 제목 자리에.

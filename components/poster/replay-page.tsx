@@ -11,12 +11,14 @@ export function ReplayPage({
   dateKey,
   vods,
   slug,
-  initialPart
+  initialPart,
+  initialSec
 }: {
   dateKey: string;
   vods: DayVod[];
   slug: string;
   initialPart?: number;
+  initialSec?: number;
 }) {
   const router = useRouter();
   const panel = useSidePanel({ enabled: true });
@@ -35,6 +37,7 @@ export function ReplayPage({
       <DayVodWindow
         dateKey={dateKey}
         initialPart={initialPart}
+        initialSec={initialSec}
         onClose={close}
         side={panel.side}
         slug={slug}

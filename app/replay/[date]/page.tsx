@@ -9,7 +9,8 @@ import { timed } from "@/lib/perf/perf";
 // ?part=N 으로 N번째 방송을 처음부터 고른다.
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-type Props = { params: Promise<{ date: string }>; searchParams: Promise<{ part?: string }> };
+// ?t=초 로 그 시각부터(검색 챕터 결과 — 챕터 클릭과 같은 경로).
+type Props = { params: Promise<{ date: string }>; searchParams: Promise<{ part?: string; t?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { date } = await params;
@@ -19,17 +20,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ReplayDatePage({ params, searchParams }: Props) {
   const { date } = await params;
   if (!DATE_RE.test(date)) notFound();
-  const { part } = await searchParams;
+  const { part, t } = await searchParams;
   const schedule = await timed("page:/replay publicSchedule", () => getPublicSchedule("vic"));
   const vods = (schedule.vods ?? [])
     .filter((v) => v.dateKey === date)
     .sort((a, b) => a.titleNo - b.titleNo);
   if (vods.length === 0) notFound();
   const partNo = Number(part);
+  const sec = Number(t);
   return (
     <ReplayPage
       dateKey={date}
       initialPart={Number.isInteger(partNo) && partNo >= 1 ? partNo : undefined}
+      initialSec={Number.isFinite(sec) && sec > 0 ? Math.floor(sec) : undefined}
       slug={schedule.calendar.slug}
       vods={vods}
     />

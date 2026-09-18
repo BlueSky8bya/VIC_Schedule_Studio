@@ -13,6 +13,16 @@ import { hapticTick } from "@/lib/ui/haptics";
 //  · 항목 탭 = 그 시각으로 숲 플레이어 점프(?change_second= — 실측 확정). 확인 비용을 낮추는 게
 //    본질: 후보를 몇 개 찍어 3초씩 확인하는 흐름이 자연스럽게.
 // 본문은 무거워서(최대 100+줄) 펼칠 때만 받아온다. 개수·작성자는 공개 번들이 이미 안다.
+// 방송 내 초 → "h:mm:ss" / "m:ss". 챕터 레일·가로 띠·검색 결과가 같은 표기를 쓴다.
+export function formatTimecode(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  return h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export type VodChaptersApi = {
   chapter: (dir: 1 | -1) => void; // 이전/다음 항목으로 점프
   group: (dir: 1 | -1) => void; // 이전/다음 코너 첫 항목으로 점프
@@ -66,8 +76,9 @@ export function VodChapters({
   // 창 박스가 돼 좌표가 어긋났다(실측). 항목 안이면 레일 스크롤과 함께 움직이고 z-index만 챙기면 된다.
   const [tip, setTip] = useState<{ idx: number; text: string; above: boolean } | null>(null);
   const tipTimerRef = useRef(0);
+  // idx ≥ 0 = 챕터 항목(.vch-label 측정), 음수 = 코너 헤더(-(gi+1), 버튼 자체 측정) — 둘 다 잘렸을 때만.
   const showTip = (el: HTMLElement, text: string, idx: number) => {
-    const label = el.querySelector<HTMLElement>(".vch-label");
+    const label = idx >= 0 ? el.querySelector<HTMLElement>(".vch-label") : el;
     if (!label || label.scrollWidth <= label.clientWidth + 1) return; // 안 잘렸으면 툴팁 없음
     window.clearTimeout(tipTimerRef.current);
     tipTimerRef.current = window.setTimeout(() => {
@@ -229,14 +240,7 @@ export function VodChapters({
     setOpen((v) => !v);
   };
 
-  const hhmmss = (sec: number) => {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    return h > 0
-      ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-      : `${m}:${String(s).padStart(2, "0")}`;
-  };
+  const hhmmss = formatTimecode;
   // (항목별 구간 길이 표기는 2026-09-01 사용자 결정으로 없음 — 길이는 가로 띠의 구간 폭이 대신 말한다.)
 
   return (
@@ -282,6 +286,10 @@ export function VodChapters({
                     <button
                       aria-expanded={!folded.has(gi)}
                       className="vch-sec-name"
+                      onBlur={hideTip}
+                      onFocus={(ev) => showTip(ev.currentTarget, g.section ?? "", -(gi + 1))}
+                      onMouseEnter={(ev) => showTip(ev.currentTarget, g.section ?? "", -(gi + 1))}
+                      onMouseLeave={hideTip}
                       onClick={() => {
                         hapticTick();
                         setFolded((prev) => {
@@ -311,6 +319,11 @@ export function VodChapters({
                       >
                         ▶
                       </button>
+                    ) : null}
+                    {tip?.idx === -(gi + 1) ? (
+                      <span className={`vch-tip${tip.above ? " is-above" : ""}`} role="tooltip">
+                        {tip.text}
+                      </span>
                     ) : null}
                   </div>
                 ) : null}

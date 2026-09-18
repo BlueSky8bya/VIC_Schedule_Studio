@@ -124,6 +124,7 @@ export function DayVodWindow({
   side,
   variant,
   initialPart,
+  initialSec,
   onClose
 }: {
   dateKey: string;
@@ -132,6 +133,7 @@ export function DayVodWindow({
   side: "left" | "right"; // 챕터 레일 자리 = 사이드 패널 쪽(vic_avatar_side)
   variant: "modal" | "page";
   initialPart?: number; // 페이지 ?part=N — 처음 보여줄 방송(1부터)
+  initialSec?: number; // 페이지 ?t=초 / 검색 챕터 — 열리자마자 그 시각부터(챕터 점프와 같은 경로)
   onClose: () => void;
 }) {
   // 날짜 칸 다시보기 '창'(PC) — 일정 카드가 없는 날(특히 2024~25, 일정 시스템 이전)도
@@ -586,6 +588,20 @@ export function DayVodWindow({
   // 있었나(교차 출처 iframe엔 :hover가 안 붙어 hover 판별은 불가 — 실측). 재생·마우스 조작은
   // 포커스와 무관해 되찾아도 영향 없음.
   const dayVodModalRef = useRef<HTMLDivElement | null>(null);
+  // 검색 챕터/페이지 ?t= — 열리자마자 그 시각부터. 챕터 클릭과 같은 단일 진입점(jumpDayVod)이라
+  // 플레이어가 아직 준비 전이면 pending으로 이어진다. 한 번만(리렌더·부 전환에 다시 안 뛴다).
+  const initialSeekDoneRef = useRef(false);
+  useEffect(() => {
+    if (initialSeekDoneRef.current) return;
+    initialSeekDoneRef.current = true;
+    const target = initialSel ?? vods[0]?.titleNo;
+    if (!target || !initialSec || !(initialSec > 0)) return;
+    // 한 틱 뒤 — 챕터 레일·가로 띠가 시각 구독을 등록한 다음이라야 재생 머리가 그 지점에 선다
+    // (동기로 부르면 알림이 허공에 가서 머리가 0에 남는다 — 실측).
+    const t = window.setTimeout(() => jumpDayVod(target, Math.floor(initialSec)), 50);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 1회 의도
+  }, []);
   useEffect(() => {
     dayVodModalRef.current?.focus({ preventScroll: true });
     let lastTabAt = 0;

@@ -46,3 +46,5 @@
 | 0066 | drop_legacy_presence_and_calendar_hearts — visit_log·presence_ping(+hourly/peak/active_days)·owner_sessions·calendar_hearts(+add_calendar_heart) drop (코드 소비자 0; 백업 `docs/agent/backups/2026-08-27_legacy-presence.json`; 코드 배포 후 적용) |
 | 0067 | drop_unlock_sessions — `has_private_unlock()`를 private_unlock_grants(0057) 모델로 이식 후 legacy `unlock_sessions` drop (코드 배포 후 적용) |
 | 0074 | retire_trusted_members — `trusted_members`·`trusted_role`·`is_active_trusted_member()` drop (ADR-0018; 행 0·참조 정책 0 실측; 코드 push 뒤 적용) |
+| 0075 | vod_archive_guest — 합방 게스트 출연분(host_id·host_nick·guest) |
+| 0076 | public_search — 시청자 검색: pg_trgm·`search_norm`·`vod_chapter_index`(타임라인 트리거 평탄화)·`search_public` RPC(공개 일정·다시보기·챕터 한 순위) |

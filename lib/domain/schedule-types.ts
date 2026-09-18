@@ -177,6 +177,27 @@ export type PublicVodEntry = {
   hostId?: string;
 };
 
+// 시청자 검색(0076, PLAN-20260918-023) — 공개 일정·다시보기·팬 타임라인 챕터를 한 순위로.
+// 서버 RPC 한 행 = 한 적중. 클라이언트는 날짜별로 묶어 보여준다(lib/search/group.ts).
+export type PublicSearchHitKind = "event" | "vod" | "chapter";
+export type PublicSearchHit = {
+  kind: PublicSearchHitKind;
+  eventId?: string; // kind=event
+  titleNo?: number; // kind=vod|chapter — /replay/<날짜>?part 와 시킹의 키
+  sec?: number; // kind=chapter — 방송 내 초
+  dateKey: string; // YYYY-MM-DD(KST)
+  startTime?: string; // kind=event, HH:MM
+  title: string; // 일정 제목 | 다시보기 제목 | 챕터 라벨
+  snippet: string; // 일정: 설명 발췌 · 챕터: 소속 다시보기 제목 · 그 외 ""
+  durationMs?: number; // kind=vod|chapter
+  hostNick?: string; // 합방 게스트 출연분(0075)이면 호스트 닉
+  score: number;
+};
+export type PublicSearchResult = {
+  query: string;
+  hits: PublicSearchHit[];
+};
+
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.
 export type PublicVodTimeline = {
   authorNick: string;

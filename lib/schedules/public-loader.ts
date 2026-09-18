@@ -592,6 +592,70 @@ const loadPublicBroadcastDaily = async (
     }));
 };
 
+// 시청자 검색(0076, PLAN-20260918-023) — 공개 일정·다시보기·팬 타임라인 챕터를 RPC 한 번으로.
+// 순위는 RPC가 낸다(유튜브 벤치마킹 점수식은 0076 주석). 여기서는 명시적 DTO로만 옮긴다(스프레드
+// 금지). 응답은 익명 동일 → 공개 API CDN 캐시 안전. 검색어는 어디에도 저장하지 않는다(소유자 결정).
+export async function searchPublic(
+  calendarSlug: string,
+  query: string,
+  limit = 50
+): Promise<import("@/lib/domain/schedule-types").PublicSearchResult> {
+  const q = query.trim();
+  const empty = { query: q, hits: [] };
+  // 서버 search_norm과 같은 최소 길이(정규화 후 2글자). 짧은 검색어는 왕복 자체를 안 한다.
+  if (!isSupabaseConfigured() || q.replace(/[\s\p{P}\p{S}]+/gu, "").length < 2) return empty;
+  const calendarId = await loadPublicCalendarId(calendarSlug);
+  const supabase = createPublicReadClient();
+  if (!calendarId || !supabase) return empty;
+  const { data, error } = await supabase.rpc("search_public", {
+    p_calendar_id: calendarId,
+    p_q: q,
+    p_limit: Math.max(1, Math.min(200, Math.floor(limit)))
+  });
+  if (error || !Array.isArray(data)) return empty;
+  type Row = {
+    kind: string;
+    event_id: string | null;
+    title_no: number | string | null;
+    sec: number | null;
+    date_key: string;
+    start_time: string | null;
+    title: string;
+    snippet: string | null;
+    duration_ms: number | string | null;
+    host_nick: string | null;
+    score: number | string;
+  };
+  const hits: import("@/lib/domain/schedule-types").PublicSearchHit[] = [];
+  for (const row of data as Row[]) {
+    if (row.kind !== "event" && row.kind !== "vod" && row.kind !== "chapter") continue;
+    const hit: import("@/lib/domain/schedule-types").PublicSearchHit = {
+      kind: row.kind,
+      dateKey: String(row.date_key).slice(0, 10),
+      title: typeof row.title === "string" ? row.title : "",
+      snippet: typeof row.snippet === "string" ? row.snippet : "",
+      score: Number(row.score) || 0
+    };
+    if (row.kind === "event") {
+      if (!row.event_id) continue;
+      hit.eventId = row.event_id;
+      if (row.start_time) hit.startTime = String(row.start_time).slice(0, 5);
+    } else {
+      const titleNo = Number(row.title_no);
+      if (!Number.isFinite(titleNo) || titleNo <= 0) continue;
+      hit.titleNo = titleNo;
+      hit.durationMs = Number(row.duration_ms) || 0;
+      if (row.host_nick) hit.hostNick = row.host_nick;
+      if (row.kind === "chapter") {
+        if (typeof row.sec !== "number" || row.sec < 0) continue;
+        hit.sec = row.sec;
+      }
+    }
+    hits.push(hit);
+  }
+  return { query: q, hits };
+}
+
 // 팬 타임라인 본문(0071) — 챕터를 펼칠 때만 부른다(개별 VOD 단위, CDN 캐시 안전: 익명 동일).
 // 원문이 숲 공개 댓글이라 anon SELECT 정책으로 직접 읽는다. 명시적 DTO(스프레드 금지).
 export async function getPublicVodTimeline(
