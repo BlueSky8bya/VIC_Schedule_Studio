@@ -8173,24 +8173,36 @@ html[data-pchrome="3"] .poster-chrome-title {
   font-size: 13px;
   font-weight: 700;
 }
+/* 상위 소제목 + 그 아래 세부 항목 = **하나의 연속 레일**(2026-09-18 소유자: 2px 어긋나 오류처럼 보였다).
+   레일 x 좌표와 글자 들여쓰기를 토큰 하나로 묶어 상위·하위가 정확히 같은 선 위에 선다. 위아래 여백은
+   margin이 아니라 padding으로 줘 선이 끊기지 않는다. 들여쓰기는 14px — '일부러 들여썼다'가 읽히는 폭. */
+.ps-chapters {
+  --ps-sub-rail: 10px; /* 레일이 서는 x */
+  --ps-sub-pad: 14px;  /* 레일 → 글자 */
+}
 .ps-parent-head {
   display: block;
-  margin: 4px 0 0 6px;
-  padding-left: 8px;
-  border-left: 2px solid rgb(124 108 240 / 30%);
+  margin: 0 0 0 var(--ps-sub-rail);
+  padding: 6px 0 2px var(--ps-sub-pad);
+  border-left: 2px solid rgb(124 108 240 / 45%);
   font-size: 12px;
   font-weight: 800;
+  letter-spacing: 0.01em;
   color: rgb(35 48 63 / 62%);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* 상위 아래 세부 항목 — 한 단 더 들여쓰고 얇은 보라 선으로 소속을 잇는다. */
 .ps-chapter-wrap.is-child .ps-chapter {
-  margin-left: 8px;
-  padding-left: 8px;
-  border-left: 2px solid rgb(124 108 240 / 30%);
+  margin-left: var(--ps-sub-rail);
+  padding-left: var(--ps-sub-pad);
+  border-left: 2px solid rgb(124 108 240 / 45%);
   border-radius: 0 9px 9px 0;
+}
+/* 묶음의 마지막 세부 항목에서 레일을 끝맺는다(아래로 새지 않게) — 다음 형제가 세부가 아니면 끝. */
+.ps-chapter-wrap.is-child:has(+ .ps-chapter-wrap:not(.is-child)) .ps-chapter,
+.ps-chapter-wrap.is-child:last-child .ps-chapter {
+  border-bottom-left-radius: 0;
 }
 .ps-chapter-wrap.is-child .ps-tc {
   min-width: 48px;
