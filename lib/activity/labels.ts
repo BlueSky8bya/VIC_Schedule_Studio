@@ -174,6 +174,12 @@ const ACT: Record<string, TargetLabel> = {
   // 관리 묶음(액션바 왼쪽, 바로 노출). manage-menu/manage-dd-trigger는 옛 드롭다운 기록용.
   "manage-menu": { name: "관리 ▾ 메뉴 열기", area: "옛 화면" },
   "manage-tags": { name: "태그 편집", area: "태그 편집" },
+  "stool-search": { name: "편집실 검색 열기", area: "편집실", hint: "도구 카드 '검색' 타일 또는 / 키(2026-09-18) — 시청자 검색 시트와 한 구현" },
+  "search-replay-ext": { name: "검색 결과 다시보기 열기", area: "편집실", hint: "편집실 검색 결과의 ▶ — /replay 페이지 새 탭(편집실엔 다시보기 창이 없다)" },
+  "dev-dictionary-open": { name: "은어 사전 초안 열기", area: "편집실", hint: "설정 모달 → /studio/search-dictionary(개발자) — 채팅에서 새로 배운 말에 뜻 달기(0090)" },
+  "dict-note-save": { name: "은어 뜻 저장", area: "은어 사전" },
+  "dict-ignore": { name: "은어 무시", area: "은어 사전" },
+  "vod-strip-peak": { name: "반응 봉우리 단어 누르기", area: "다시보기 창", hint: "가로 띠 아래 봉우리 단어 알약 — 그 구간으로 점프(0090)" },
   "manage-members": { name: "멤버 관리", area: "옛 화면", hint: "2026-09-04부터 설정(톱니) 팝오버 맨 아래 '열기'" },
   "studio-settings": { name: "설정 열기", area: "편집실", hint: "서쪽 도구 카드의 톱니(스위치·포스터 테마)" },
   "manage-insights": { name: "월별 인사이트", area: "인사이트" },

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import type { PublicVodTimeline } from "@/lib/domain/schedule-types";
+import type { PublicVodChatProfile, PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 다시보기 챕터(팬 타임라인, 0071) — PC 날짜 팝오버·모바일 아젠다 칩 아래 공용.
@@ -100,6 +100,24 @@ export function VodChapters({
   const hoverLineRef = useRef<HTMLSpanElement | null>(null);
   const hoverTipRef = useRef<HTMLSpanElement | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
+  // 채팅 구간 프로필(0090) — 가로 띠가 있는 창에서만 받는다(모바일 아젠다는 띠 없음). 비율만 온다(숫자 없음).
+  const [profile, setProfile] = useState<PublicVodChatProfile | null>(null);
+  useEffect(() => {
+    if (!stripHost || durationMs <= 0) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/public/${slug}/vod-chat?titleNo=${titleNo}`);
+        const json = (await res.json()) as PublicVodChatProfile;
+        if (alive && Array.isArray(json.bins) && json.bins.length >= 4) setProfile(json);
+      } catch {
+        /* 프로필 없이도 띠는 그린다 */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [stripHost, durationMs, slug, titleNo]);
 
   // 재생 위치 → 현재 챕터. 시각이 현재보다 작거나 같은 항목 중 가장 늦은 것(정렬 가정 없이
   // 선형 — 항목 ≤100개, 초당 4회라 무시할 비용). idx가 바뀔 때만 setState → 레일만 다시 그림.
@@ -233,7 +251,8 @@ export function VodChapters({
     return () => register(null);
   }, [register]);
 
-  if (chapters <= 0) return null;
+  const hasStrip = Boolean(stripHost && onJump && durationMs > 0 && (timeline || profile));
+  if (chapters <= 0 && !hasStrip) return null;
 
   const toggle = () => {
     hapticTick();
@@ -242,6 +261,31 @@ export function VodChapters({
 
   const hhmmss = formatTimecode;
   // (항목별 구간 길이 표기는 2026-09-01 사용자 결정으로 없음 — 길이는 가로 띠의 구간 폭이 대신 말한다.)
+
+  const strip = hasStrip
+    ? createPortal(
+        <VodStrip
+          activeIdx={activeIdx}
+          durationSec={durationMs / 1000}
+          groups={groups}
+          headRef={headRef}
+          hhmmss={hhmmss}
+          hoverLineRef={hoverLineRef}
+          hoverTipRef={hoverTipRef}
+          onPick={(idx, sec) => {
+            hapticTick();
+            followRef.current = true;
+            setActiveIdx(idx < 0 ? null : idx);
+            onJump!(sec);
+          }}
+          profile={profile}
+          stripRef={stripRef}
+        />,
+        stripHost!
+      )
+    : null;
+  // 챕터 없는 방송 — 레일은 없고 띠(채팅 반응)만.
+  if (chapters <= 0) return <div className="vod-chapters vch-strip-only">{strip}</div>;
 
   return (
     <div className="vod-chapters" data-open={open ? "" : undefined}>
@@ -258,6 +302,15 @@ export function VodChapters({
         타임라인 {chapters}개
         {timelineBy ? <em className="vch-by">({timelineBy}님 감사합니다)</em> : null}
       </button>
+      {/* 웃음 등급(0090) — 숫자 없이 '많이 웃은 방송'만. 채팅 웃음(ㅋ)이 전체 상위 25%일 때. 토글 줄에 넣으면 머리줄이 세 줄로
+          꺾여(실측) 따로 한 줄. */}
+      {profile?.laughTier === "high" ? (
+        <p className="vch-laugh-row">
+          <em className="vch-laugh" title="채팅에 웃음(ㅋㅋ)이 유난히 많았던 방송">
+            😂 많이 웃은 방송
+          </em>
+        </p>
+      ) : null}
       {!open ? null : loading ? (
         <p className="vch-note">불러오는 중…</p>
       ) : failed || !timeline ? (
@@ -368,27 +421,7 @@ export function VodChapters({
           </div>
         </div>
       )}
-      {stripHost && timeline && onJump && durationMs > 0
-        ? createPortal(
-            <VodStrip
-              activeIdx={activeIdx}
-              durationSec={durationMs / 1000}
-              groups={groups}
-              headRef={headRef}
-              hhmmss={hhmmss}
-              hoverLineRef={hoverLineRef}
-              hoverTipRef={hoverTipRef}
-              onPick={(idx, sec) => {
-                hapticTick();
-                followRef.current = true;
-                setActiveIdx(idx < 0 ? null : idx);
-                onJump(sec);
-              }}
-              stripRef={stripRef}
-            />,
-            stripHost
-          )
-        : null}
+      {strip}
     </div>
   );
 }
@@ -405,9 +438,11 @@ function VodStrip({
   hoverTipRef,
   stripRef,
   hhmmss,
-  onPick
+  onPick,
+  profile
 }: {
   groups: { section: string | null; items: { sec: number; label: string; idx: number; depth: number }[] }[];
+  profile: PublicVodChatProfile | null;
   durationSec: number;
   activeIdx: number | null;
   headRef: RefObject<HTMLSpanElement | null>;
@@ -419,6 +454,44 @@ function VodStrip({
 }) {
   const all = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const pct = (sec: number) => `${Math.min(100, Math.max(0, (sec / durationSec) * 100))}%`;
+  // 채팅 반응(0090) — 구간 비율을 부드러운 산 모양(면)으로, 발화 밀도는 가는 선으로. 봉우리엔 상위 단어 알약.
+  // 좌표는 0~1000 × 0~100 viewBox(preserveAspectRatio none) — 폭이 바뀌어도 다시 계산 없음. 숫자는 어디에도 안 찍는다.
+  const heat = useMemo(() => {
+    if (!profile || durationSec <= 0) return null;
+    const binSec = profile.binSec;
+    const n = Math.max(1, Math.ceil(durationSec / binSec));
+    const h = new Array<number>(n).fill(0);
+    const d = new Array<number>(n).fill(0);
+    const l = new Array<number>(n).fill(0);
+    const t = new Array<string[]>(n).fill([]);
+    for (const b of profile.bins) {
+      if (b.i < n) {
+        h[b.i] = b.h;
+        d[b.i] = b.d;
+        l[b.i] = b.l;
+        t[b.i] = b.t;
+      }
+    }
+    // 3점 이동평균으로 들쭉날쭉을 죽인다(면은 눈으로 '흐름'을 읽는 용도).
+    const sm = (a: number[]) => a.map((_, i) => (a[Math.max(0, i - 1)] + a[i] + a[Math.min(n - 1, i + 1)]) / 3);
+    const hs = sm(h);
+    const ds = sm(d);
+    const x = (i: number) => ((i + 0.5) / n) * 1000;
+    const area = `M 0 100 ${hs.map((v, i) => `L ${x(i).toFixed(1)} ${(100 - v * 92).toFixed(1)}`).join(" ")} L 1000 100 Z`;
+    const line = ds.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${(100 - v * 80).toFixed(1)}`).join(" ");
+    // 봉우리: 원본 값 기준 국소 최대(±3구간)이면서 0.55 이상, 봉우리끼리 최소 8% 간격, 최대 5개. 단어 있는 구간 우선.
+    const cand = h
+      .map((v, i) => ({ i, v }))
+      .filter(({ i, v }) => v >= 0.55 && h.slice(Math.max(0, i - 3), i + 4).every((o) => o <= v))
+      .sort((a, b) => b.v - a.v || (t[b.i].length ? 1 : 0) - (t[a.i].length ? 1 : 0));
+    const peaks: { i: number; v: number; terms: string[]; sec: number }[] = [];
+    for (const c of cand) {
+      if (peaks.length >= 5) break;
+      if (peaks.some((p) => Math.abs(p.i - c.i) / n < 0.08)) continue;
+      peaks.push({ i: c.i, v: c.v, terms: t[c.i], sec: c.i * binSec });
+    }
+    return { n, binSec, h, d, l, t, area, line, peaks };
+  }, [profile, durationSec]);
   // 마우스 x → 초 → 그 시각 이하 마지막 항목.
   const locate = (clientX: number) => {
     const el = stripRef.current;
@@ -428,13 +501,23 @@ function VodStrip({
     const sec = Math.round(ratio * durationSec);
     let found = -1;
     for (let i = 0; i < all.length; i++) if (all[i].sec <= sec && (found < 0 || all[i].sec >= all[found].sec)) found = i;
-    return { ratio, sec, item: found < 0 ? null : all[found], width: r.width };
+    // 채팅 구간 정보(숫자 없이): 반응이 높으면 "반응 ↑", 웃음이 높으면 "웃음", 상위 단어.
+    let chat = "";
+    if (heat) {
+      const bi = Math.min(heat.n - 1, Math.floor(sec / heat.binSec));
+      const parts: string[] = [];
+      if (heat.h[bi] >= 0.6) parts.push("반응 ↑");
+      if (heat.l[bi] >= 0.6) parts.push("웃음 ㅋㅋ");
+      if (heat.t[bi].length) parts.push(heat.t[bi].join(" · "));
+      chat = parts.join(" · ");
+    }
+    return { ratio, sec, item: found < 0 ? null : all[found], width: r.width, chat };
   };
   const activeGi = activeIdx === null ? -1 : groups.findIndex((g) => g.items.some((it) => it.idx === activeIdx));
   return (
     <div
       aria-label="타임라인 탐색"
-      className="vch-strip"
+      className={`vch-strip${heat ? " has-chat" : ""}`}
       onClick={(e) => {
         const at = locate(e.clientX);
         if (!at) return;
@@ -451,7 +534,7 @@ function VodStrip({
         if (!at || !line || !tip) return;
         line.style.left = `${at.ratio * 100}%`;
         line.style.opacity = "1";
-        tip.textContent = at.item ? `${hhmmss(at.sec)} · ${at.item.label}` : hhmmss(at.sec);
+        tip.textContent = `${at.item ? `${hhmmss(at.sec)} · ${at.item.label}` : hhmmss(at.sec)}${at.chat ? `\n${at.chat}` : ""}`;
         // 툴팁은 띠 밖으로 잘리지 않게 — 양 끝에서 안쪽으로 민다.
         const x = at.ratio * at.width;
         const half = Math.min(150, at.width / 2);
@@ -461,6 +544,12 @@ function VodStrip({
       ref={stripRef}
       role="presentation"
     >
+      {heat ? (
+        <svg aria-hidden="true" className="vch-heat" preserveAspectRatio="none" viewBox="0 0 1000 100">
+          <path className="vch-heat-area" d={heat.area} />
+          <path className="vch-heat-line" d={heat.line} />
+        </svg>
+      ) : null}
       {groups.map((g, gi) => {
         const start = g.items[0].sec;
         const end = gi + 1 < groups.length ? groups[gi + 1].items[0].sec : durationSec;
@@ -478,6 +567,27 @@ function VodStrip({
       <span className="vch-head" ref={headRef} />
       <span className="vch-hover" ref={hoverLineRef} />
       <span className="vch-strip-tip" ref={hoverTipRef} />
+      {heat && heat.peaks.length > 0 ? (
+        <span className="vch-peaks">
+          {heat.peaks.map((p) => (
+            <button
+              className="vch-peak"
+              data-act="vod-strip-peak"
+              key={p.i}
+              onClick={(e) => {
+                e.stopPropagation();
+                hapticTick();
+                onPick(-1, p.sec);
+              }}
+              style={{ left: pct(p.sec + heat.binSec / 2) }}
+              title={`${hhmmss(p.sec)} · 반응이 몰린 구간${p.terms.length ? ` · ${p.terms.join(" · ")}` : ""}`}
+              type="button"
+            >
+              {p.terms.length ? p.terms.slice(0, 2).join(" · ") : "반응 ↑"}
+            </button>
+          ))}
+        </span>
+      ) : null}
     </div>
   );
 }

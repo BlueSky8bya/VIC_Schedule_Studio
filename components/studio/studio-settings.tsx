@@ -7,7 +7,8 @@
 // (멤버 관리는 2026-09-04 기능 철수 — ADR-0018.)
 
 import Link from "next/link";
-import { Eye, Gauge, Leaf, Palette, Sparkles, Vibrate } from "lucide-react";
+import type { Route } from "next";
+import { BookA, Eye, Gauge, Leaf, Palette, Sparkles, Vibrate } from "lucide-react";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
@@ -290,6 +291,16 @@ export function StudioSettingsList({
               배경 아트 보드 <em className="rhh-dev-tag">개발자</em>
             </span>
             <Link className="rhh-link" data-act="dev-art-board-open" href="/studio/ambient-art">
+              열기
+            </Link>
+          </div>
+          {/* 은어 사전 초안(0090, 2026-09-18) — 다시보기 채팅에서 새로 배운 말에 개발자가 뜻을 달거나 무시한다. 개발자 전용 라우트. */}
+          <div className="role-help-haptics rhh-ambient rhh-dev">
+            <span className="rhh-label">
+              <BookA aria-hidden="true" size={14} />
+              은어 사전 초안 <em className="rhh-dev-tag">개발자</em>
+            </span>
+            <Link className="rhh-link" data-act="dev-dictionary-open" href={"/studio/search-dictionary" as Route}>
               열기
             </Link>
           </div>

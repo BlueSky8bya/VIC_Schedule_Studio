@@ -694,11 +694,12 @@ export async function getPublicSearchRelated(
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("search_related", { p_q: q, p_limit: limit });
   if (error || !Array.isArray(data)) return [];
-  return (data as { name: string; display: string; co_docs: number; hapbang: number }[]).map((r) => ({
+  return (data as { name: string; display: string; co_docs: number; hapbang: number; visits?: number }[]).map((r) => ({
     name: String(r.name),
     display: String(r.display),
     coDocs: Number(r.co_docs) || 0,
-    hapbang: Number(r.hapbang) || 0
+    hapbang: Number(r.hapbang) || 0,
+    visits: Number(r.visits) || 0
   }));
 }
 
@@ -739,6 +740,30 @@ export async function getPublicSearchTrending(
 
 // 팬 타임라인 본문(0071) — 챕터를 펼칠 때만 부른다(개별 VOD 단위, CDN 캐시 안전: 익명 동일).
 // 원문이 숲 공개 댓글이라 anon SELECT 정책으로 직접 읽는다. 명시적 DTO(스프레드 금지).
+// 다시보기 채팅 구간 프로필(0090) — RPC가 비율만 준다(숫자 없음). 없으면 null(구간 0개).
+export async function getPublicVodChatProfile(
+  titleNo: number
+): Promise<import("@/lib/domain/schedule-types").PublicVodChatProfile | null> {
+  if (!isSupabaseConfigured() || !Number.isFinite(titleNo) || titleNo <= 0) return null;
+  const supabase = createPublicReadClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("vod_chat_profile", { p_title_no: titleNo });
+  if (error || !data || typeof data !== "object") return null;
+  const raw = data as { binSec?: number; laughTier?: string | null; bins?: unknown[] };
+  const bins = (Array.isArray(raw.bins) ? raw.bins : [])
+    .filter((b): b is Record<string, unknown> => Boolean(b) && typeof b === "object")
+    .map((b) => ({
+      i: Number(b.i),
+      h: Math.min(1, Math.max(0, Number(b.h) || 0)),
+      d: Math.min(1, Math.max(0, Number(b.d) || 0)),
+      l: Math.min(1, Math.max(0, Number(b.l) || 0)),
+      t: Array.isArray(b.t) ? (b.t as unknown[]).filter((x): x is string => typeof x === "string").slice(0, 3) : []
+    }))
+    .filter((b) => Number.isFinite(b.i) && b.i >= 0);
+  if (bins.length === 0) return null;
+  return { binSec: Number(raw.binSec) || 30, laughTier: raw.laughTier === "high" ? "high" : null, bins };
+}
+
 export async function getPublicVodTimeline(
   titleNo: number
 ): Promise<import("@/lib/domain/schedule-types").PublicVodTimeline | null> {

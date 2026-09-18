@@ -109,6 +109,13 @@
 .stool-tags {
   color: #4f3fbf;
 }
+.stool-search {
+  color: #1d5fb0;
+}
+.stool-search.open {
+  background: rgb(53 100 224 / 12%);
+  border-color: rgb(53 100 224 / 32%);
+}
 .stool-members {
   color: #0b7a68;
 }

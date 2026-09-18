@@ -204,6 +204,7 @@ export type PublicSearchRelated = {
   display: string; // 원문 표기(님 없음)
   coDocs: number; // 같은 방송/일정에 함께 나온 수
   hapbang: number; // 그중 합방 표식
+  visits: number; // 채팅에만 나온(놀러온) 방송 수(0090) — 합방은 아니어도 친분 근거
 };
 export type PublicSearchTrend = { term: string; recent: number; ratio: number };
 // 관련 검색어(0080) — 큐레이션(rel: 같은 시리즈, 할나~실크송) 또는 말뭉치 공출현(auto).
@@ -220,6 +221,13 @@ export type PublicVodTimeline = {
   authorNick: string;
   // depth = 팬이 "ㄴ"로 매단 세부 항목의 계층(0/없음 = 최상위). UI는 들여쓰기로만 쓴다.
   entries: { sec: number; label: string; section: string | null; depth?: number }[];
+};
+
+// 다시보기 채팅 구간 프로필(0090) — **비율만**(방송 안 최대 대비 0~1). 숫자(메시지·발화자 수)는 절대 내보내지 않는다(소유자).
+export type PublicVodChatProfile = {
+  binSec: number; // 구간 길이(초)
+  laughTier: "high" | null; // 메시지당 웃음이 전체 상위 25%면 high
+  bins: { i: number; h: number; d: number; l: number; t: string[] }[]; // h=반응, d=발화 밀도, l=웃음, t=상위 단어
 };
 
 export type PublicSchedule = {

@@ -26,6 +26,7 @@ import {
   Pin,
   Plus,
   Save,
+  Search,
   Settings,
   Sprout,
   Tags,
@@ -210,6 +211,10 @@ const BroadcastPanel = dynamic(
   () => import("@/components/studio/broadcast-panel").then((m) => m.BroadcastPanel),
   { ssr: false }
 );
+// 편집실 검색(2026-09-18 소유자) — 시청자 검색 시트와 **한 구현**(AGENTS G-18). 결과 클릭은 편집실답게 달력 이동·일정 열기,
+// 다시보기는 옆의 ▶로 /replay 새 탭(편집실엔 다시보기 창이 없다).
+const PublicSearch = dynamic(() => import("@/components/poster/public-search").then((m) => m.PublicSearch), { ssr: false });
+const EMPTY_HEARTS: ReadonlySet<string> = new Set();
 const DayVisitModal = dynamic(
   () => import("@/components/developer/day-visit-modal").then((m) => m.DayVisitModal),
   { ssr: false }
@@ -409,6 +414,7 @@ export function StudioShell({
     }
   }, [hasUnlockSession]);
   // (members 모달은 멤버 관리 철수(2026-09-04)로 제거, settings 모달은 같은 날 도구 카드 톱니에서 열린다.)
+  const [searchOpen, setSearchOpen] = useState(false);
   const [modal, setModal] = useState<null | "tags" | "settings" | "developer" | "dayVisit">(
     null
   );
@@ -1395,10 +1401,12 @@ export function StudioShell({
     const FULL = 30;
     const RING_PAD = 4; // 카드 → 링 거리(옛 outline-offset)
     const RING_INSET = 8; // SVG가 카드 밖으로 나가 있는 양(pad + 선 굵기 여유)
-    const ZONE_OUT = 90; // 카드 옆면 밖 몇 px까지를 '옆 구역'으로 보나
+    // 2026-09-18 소유자: "덜 다가가도 빠릿하게, 그러나 점선에 닿자마자 튀어나오진 않게" — 구역을 넓히고(90→150)
+    // 머무름을 짧게(220→120ms). 즉시(0ms)는 가벼워 보여 일부러 남긴다. 속도 문턱도 살짝 완화(천천히 다가가는 손도 인정).
+    const ZONE_OUT = 150; // 카드 옆면 밖 몇 px까지를 '옆 구역'으로 보나
     const ZONE_IN = 24; // 카드 안쪽으로 몇 px까지(모서리 근처에서 머물러도 인정)
-    const DWELL_MS = 220;
-    const SLOW = 0.3; // px/ms — 이보다 느려야 '머문다'
+    const DWELL_MS = 120;
+    const SLOW = 0.55; // px/ms — 이보다 느려야 '머문다'
     const FAST = 1.4; // px/ms — 이보다 빠르면 나와 있어도 접는다
     let raf = 0;
     let targetY: number | null = null;
@@ -1955,6 +1963,35 @@ export function StudioShell({
     bumpEditor(); // 달이 바뀌어 새 날짜로 → 폼 새로 마운트
   }
 
+  // 검색 결과 고르기(편집실, 2026-09-18) — 일정: 그 달로 옮기고 그 일정 카드를 연다(편집 문맥). 다시보기·챕터: 그 달·그 날짜를
+  // 고른다(그 날 일정을 손보기 좋게). 실제 재생은 결과 행 옆 ▶(/replay 새 탭)이 맡는다.
+  const goToMonthOf = (dateKey: string) => {
+    const [y, m] = dateKey.split("-").map(Number);
+    const offset = (y - view.year) * 12 + (m - view.month);
+    if (offset !== 0) moveMonth(offset);
+    return offset !== 0 ? 380 : 0;
+  };
+  const onStudioSearchPickEvent = (dateKey: string, eventId: string) => {
+    setSearchOpen(false);
+    const delay = goToMonthOf(dateKey);
+    window.setTimeout(() => {
+      const ev = events.find((e) => e.id === eventId);
+      if (ev) selectEvent(ev);
+      else selectDate(dateKey);
+    }, delay);
+  };
+  const onStudioSearchPickVod = (dateKey: string) => {
+    setSearchOpen(false);
+    const delay = goToMonthOf(dateKey);
+    window.setTimeout(() => {
+      setSelectedDate(dateKey);
+      setSelectedEventId(null);
+      document.querySelector<HTMLElement>(`[data-date="${dateKey}"], [data-flip-key="${dateKey}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, delay);
+  };
+  const studioReplayHref = (dateKey: string, _titleNo: number, sec?: number) =>
+    `/replay/${dateKey}${sec !== undefined && sec > 0 ? `?t=${Math.floor(sec)}` : ""}`;
+
   // 어느 달을 보러 왔는지(0062). **실제로 바뀐 view**를 보고 남긴다 — 클릭 핸들러에서
   // 계산하면 렌더 전 클로저라 도착지가 틀린다(위 moveMonth 주석의 실측 사례).
   // 연타는 정착(700ms) 후 마지막 달 1건으로 압축되고, 누른 횟수는 meta.hops로 남는다.
@@ -2007,6 +2044,13 @@ export function StudioShell({
       }
       if (overlayLocked) {
         return; // 모달·시트 열림 중엔 월 이동 막기
+      }
+      if (event.key === "/" && !searchOpen) {
+        // `/` = 검색(시청자 화면과 같은 키, 2026-09-18).
+        event.preventDefault();
+        hapticTick();
+        setSearchOpen(true);
+        return;
       }
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
@@ -6213,6 +6257,22 @@ export function StudioShell({
   const studioToolsPanel = (
     <div className="studio-tools-wrap">
       <div className="studio-tools" role="group" aria-label="도구">
+        {/* 검색(2026-09-18) — 편집실의 모두에게. 라벨은 한 단어(다섯 타일이 한 줄에 들어가야 한다 — '태그 편집'도 '태그'로). */}
+        <button
+          aria-haspopup="dialog"
+          className={`stool stool-search${searchOpen ? " open" : ""}`}
+          data-act="stool-search"
+          aria-label="검색"
+          data-tip="검색 (/)"
+          onClick={() => {
+            hapticTick();
+            setSearchOpen(true);
+          }}
+          type="button"
+        >
+          <Search aria-hidden="true" size={18} />
+          <span>검색</span>
+        </button>
         {showManageTools && canEdit && taxonomyV3 ? (
           <button
             className="stool stool-tags"
@@ -6223,7 +6283,7 @@ export function StudioShell({
             type="button"
           >
             <Tags aria-hidden="true" size={18} />
-            <span>태그 편집</span>
+            <span>태그</span>
           </button>
         ) : null}
         {showManageTools ? (
@@ -7603,6 +7663,18 @@ export function StudioShell({
             {restMenu.hasRest ? "휴방 해제" : "휴방으로 표시"}
           </button>
         </div>
+      ) : null}
+      {searchOpen ? (
+        <PublicSearch
+          myHeartIds={EMPTY_HEARTS}
+          onClose={() => setSearchOpen(false)}
+          onPickEvent={onStudioSearchPickEvent}
+          onPickVod={onStudioSearchPickVod}
+          replayHref={studioReplayHref}
+          slug={schedule.calendar.slug}
+          tags={viewTags}
+          thumbOf={() => undefined}
+        />
       ) : null}
       {modal ? (
         <div

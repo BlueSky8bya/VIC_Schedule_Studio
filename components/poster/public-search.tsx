@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, AudioLines, CalendarCheck, ChevronDown, ChevronRight, Footprints, Headphones, Music, Play, Search, X } from "lucide-react";
+import { ArrowUp, AudioLines, CalendarCheck, ChevronDown, ChevronRight, Footprints, Headphones, MessageCircle, Music, Play, Search, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
@@ -42,6 +42,8 @@ type Props = {
   onClose: () => void;
   onPickEvent: (dateKey: string, eventId: string) => void;
   onPickVod: (dateKey: string, titleNo: number, sec?: number) => void;
+  // 편집실(2026-09-18): 다시보기 창이 없으니 행 클릭은 달력 이동(onPickVod)이고, 옆의 ▶ 가 이 주소를 새 탭으로 연다.
+  replayHref?: (dateKey: string, titleNo: number, sec?: number) => string;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -84,7 +86,7 @@ type Row =
   | { kind: "vod"; dateKey: string; titleNo: number }
   | { kind: "chapter"; dateKey: string; titleNo: number; sec: number };
 
-export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod }: Props) {
+export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, replayHref }: Props) {
   const [q, setQ] = useState("");
   const [result, setResult] = useState<PublicSearchResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -137,10 +139,16 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   }, [onClose]);
 
   // 입력 → 디바운스 → 요청. 새 입력이 오면 이전 요청은 끊는다(늦게 온 옛 결과가 새 결과를 덮지 않게).
+  // 결과가 어느 검색어의 것인지(resultForRef)와 대기 중 요청(flushRef)을 기억한다 — Enter가 옛 결과 행을 고르지 않게(아래 onInputKey).
   const normalizedLen = normalize(q).length;
+  const resultForRef = useRef<string | null>(null);
+  const flushRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     abortRef.current?.abort();
+    setCursor(-1); // 검색어가 바뀌면 옛 결과 위의 커서(호버·↑↓)는 무효
+    flushRef.current = null;
     if (normalizedLen < MIN_CHARS) {
+      resultForRef.current = null;
       setResult(null);
       setBusy(false);
       setFailed(false);
@@ -150,7 +158,8 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     abortRef.current = ctl;
     setBusy(true);
     setFailed(false);
-    const timer = window.setTimeout(async () => {
+    const run = async () => {
+      flushRef.current = null;
       try {
         const res = await fetch(`/api/public/${slug}/search?q=${encodeURIComponent(q.trim())}&limit=200`, {
           signal: ctl.signal
@@ -158,6 +167,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         if (!res.ok) throw new Error(String(res.status));
         const json = (await res.json()) as PublicSearchResult;
         if (ctl.signal.aborted) return;
+        resultForRef.current = q;
         setResult(json);
         setCursor(-1);
         setExpanded(new Set());
@@ -168,7 +178,12 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
       } finally {
         if (!ctl.signal.aborted) setBusy(false);
       }
-    }, DEBOUNCE_MS);
+    };
+    const timer = window.setTimeout(run, DEBOUNCE_MS);
+    flushRef.current = () => {
+      window.clearTimeout(timer);
+      void run();
+    };
     return () => {
       window.clearTimeout(timer);
       ctl.abort();
@@ -210,7 +225,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   };
 
   const onInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (rows.length === 0) return;
+    if (rows.length === 0 && e.key !== "Enter") return;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       setCursor((c) => {
@@ -218,9 +233,12 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         listRef.current?.querySelector<HTMLElement>(`[data-row="${next}"]`)?.scrollIntoView({ block: "nearest" });
         return next;
       });
-    } else if (e.key === "Enter" && cursor >= 0 && rows[cursor]) {
+    } else if (e.key === "Enter") {
+      // 2026-09-18 소유자 신고: 결과가 떠 있는 채 다른 말을 치고 Enter → 옛 결과의 행(호버로 잡힌 커서)이 열려 다시보기 창으로
+      // 튀었다. 커서는 **지금 결과가 이 검색어의 것일 때만** 유효하고, 아니면 Enter = 디바운스 건너뛰고 바로 검색.
       e.preventDefault();
-      pick(rows[cursor]);
+      if (cursor >= 0 && rows[cursor] && resultForRef.current === q) pick(rows[cursor]);
+      else flushRef.current?.();
     }
   };
 
@@ -287,7 +305,9 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         data-row={i}
         key={`${row.kind}:${row.dateKey}:${row.kind === "event" ? row.hit.eventId : row.titleNo}:${row.kind === "chapter" ? row.sec : ""}`}
         onClick={() => pick(row)}
-        onMouseEnter={() => setCursor(i)}
+        onMouseMove={() => {
+          if (cursor !== i) setCursor(i);
+        }}
         style={{ "--i": Math.min(i, 12) } as React.CSSProperties}
         title={title}
         type="button"
@@ -296,6 +316,28 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
       </button>
     );
   };
+
+  // 편집실: 행 옆에 ▶(새 탭 다시보기). 시청자 화면(replayHref 없음)은 행 자체가 재생이라 그대로.
+  const withExt = (dateKey: string, titleNo: number, sec: number | undefined, node: ReactNode) =>
+    replayHref ? (
+      <div className="ps-line" key={`${titleNo}:${sec ?? "v"}`}>
+        {node}
+        <a
+          aria-label="다시보기 새 탭"
+          className="ps-ext"
+          data-act="search-replay-ext"
+          href={replayHref(dateKey, titleNo, sec)}
+          onClick={() => hapticTick()}
+          rel="noopener noreferrer"
+          target="_blank"
+          title={sec !== undefined ? `${formatTimecode(sec)}부터 다시보기(새 탭)` : "다시보기(새 탭)"}
+        >
+          <Play size={12} strokeWidth={2.6} />
+        </a>
+      </div>
+    ) : (
+      node
+    );
 
   const renderGroup = (g: SearchDayGroup) => (
     <section className="ps-day" data-day={g.dateKey} key={g.dateKey}>
@@ -334,7 +376,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         const visible = expanded.has(v.titleNo) ? v.allChapters : v.chapters;
         return (
           <div className="ps-vod" key={v.titleNo}>
-            {rowBtn(
+            {withExt(g.dateKey, v.titleNo, undefined, rowBtn(
               { kind: "vod", dateKey: g.dateKey, titleNo: v.titleNo },
               `ps-vod-row${v.matched ? "" : " via-chapter"}`,
               "search-hit-vod",
@@ -361,8 +403,8 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                   <Play className="ps-act" size={14} aria-hidden="true" />
                 </span>
               </>,
-              "이 다시보기 처음부터"
-            )}
+              replayHref ? "달력에서 이 날로" : "이 다시보기 처음부터"
+            ))}
             {visible.length > 0 ? (
               <div className="ps-chapters">
                 {visible.map((c, ci, arr) => {
@@ -385,7 +427,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                           <Highlight text={c.parent} q={q} />
                         </span>
                       ) : null}
-                      {rowBtn(
+                      {withExt(g.dateKey, v.titleNo, c.sec, rowBtn(
                         { kind: "chapter", dateKey: g.dateKey, titleNo: v.titleNo, sec: c.sec },
                         "ps-chapter",
                         "search-hit-chapter",
@@ -404,8 +446,8 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                             <Play className="ps-act" size={12} aria-hidden="true" />
                           </span>
                         </>,
-                        `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}부터 재생`
-                      )}
+                        `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}${replayHref ? "" : "부터 재생"}`
+                      ))}
                     </div>
                   );
                 })}
@@ -568,11 +610,16 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                         setQ(p.display);
                         inputRef.current?.focus();
                       }}
-                      title={`같은 방송 ${p.coDocs}번${p.hapbang ? ` · 합방 ${p.hapbang}번` : ""}`}
+                      title={`같은 방송 ${p.coDocs}번${p.hapbang ? ` · 합방 ${p.hapbang}번` : ""}${
+                        p.visits > 0 ? " · 채팅에 놀러온 적 있음" : ""
+                      }`}
                       type="button"
                     >
                       {p.display}
                       {p.hapbang > 0 ? <em>{p.hapbang}</em> : null}
+                      {p.hapbang === 0 && p.visits > 0 ? (
+                        <MessageCircle aria-label="채팅에 놀러옴" className="ps-chip-visit" size={10} strokeWidth={2.4} />
+                      ) : null}
                     </button>
                   ))}
                 </div>
