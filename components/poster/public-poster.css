@@ -1813,6 +1813,7 @@ html[data-reduce-motion] .vch-tip {
 .vch-t {
   flex: none;
   min-width: 58px;
+  white-space: nowrap;
   font-size: 14px; /* 13→14(2026-09-03 가독성 ↑) */
   font-weight: 700;
   color: #3564e0;
@@ -1990,6 +1991,11 @@ html[data-reduce-motion] .vch-tip {
   transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
 }
 .vch-clock:hover { color: var(--ink, #23303f); background: #f6f4ff; }
+/* 실제 시각 모드: "오후 5:40"이 들어갈 폭 + 경과(파랑)와 구분되는 잉크 */
+.vod-chapters[data-clock] .vch-t {
+  min-width: 74px;
+  color: #6b5b34;
+}
 .vch-clock.is-on {
   color: #1d4ed8;
   border-color: rgb(53 100 224 / 35%);

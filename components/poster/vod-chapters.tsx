@@ -30,16 +30,17 @@ export type VodChaptersApi = {
   toggle: () => void; // 레일 접기/펼치기
 };
 
-// 방송 시작 시각 + 경과 초 → 벽시계 시각(KST). "19:32" / 자정을 넘기면 "01:07".
+// 방송 시작 시각 + 경과 초 → 벽시계 시각(KST). **오전/오후 12시간제**로 낸다 — 24시간제 "17:40"은 경과 "10:34"(분:초)와
+// 생김새가 같아 헷갈린다(2026-09-18 소유자 지적). "오후 5:40"이면 형태만으로 시각임이 읽힌다. 자정을 넘기면 "오전 1:07".
 export function wallClock(startedAt: string | undefined, sec: number): string | null {
   if (!startedAt) return null;
   const base = Date.parse(startedAt);
   if (!Number.isFinite(base)) return null;
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
-    hour12: false
+    hour12: true
   }).format(new Date(base + sec * 1000));
 }
 
@@ -326,7 +327,7 @@ export function VodChapters({
   if (chapters <= 0) return <div className="vod-chapters vch-strip-only">{strip}</div>;
 
   return (
-    <div className="vod-chapters" data-open={open ? "" : undefined}>
+    <div className="vod-chapters" data-clock={clockMode && startedAt ? "" : undefined} data-open={open ? "" : undefined}>
       <button
         aria-expanded={open}
         className="vch-toggle"
