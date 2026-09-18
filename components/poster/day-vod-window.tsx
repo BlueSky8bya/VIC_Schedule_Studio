@@ -3,7 +3,7 @@
 // 날짜 다시보기 창/페이지(2026-09-17 페이지 승격) — **한 구현**: 시청자 화면은 /replay/<날짜> 페이지(variant="page"),
 // 편집실 미리보기·fixture·/onair는 같은 컴포넌트를 창(variant="modal")으로 띄운다(G-18). 플레이어(숲 임베드 iframe
 // API)·부 탭·머리줄·가로 띠·챕터 레일·키보드가 전부 여기 있다. 히스토리 스택·본문 스크롤 잠금은 껍데기(포스터/페이지) 몫.
-import { ExternalLink, Play, X } from "lucide-react";
+import { ExternalLink, PanelLeft, PanelRight, Play, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -166,6 +166,27 @@ export function DayVodWindow({
   // 예전엔 방송마다 블록(플레이어 2 iframe + 챕터)을 세로로 쌓아 어느 걸 보는지 헷갈리고 iframe이 2N개였다.
   // null = 그 날 첫 방송. 바꿀 때 떠나는 방송의 플레이어 상태는 비우고(clearDayVodTitle), 재생 중이었으면 지점을
   // 기억해(dayVodResumeRef) 돌아오면 거기서 이어 튼다.
+  // 타임라인 레일 자리(2026-09-19 소유자: "타임라인, 영상 좌/우로 위치 선택") — 기본은 창을 띄운 화면의
+  // 사이드 패널 쪽(side)이고, 창 안에서 고르면 그 선택을 기기에 기억한다(다음에 열 때도 그 자리).
+  const [railSide, setRailSide] = useState<"left" | "right">(side);
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("vic.vod.rail");
+      if (saved === "left" || saved === "right") setRailSide(saved);
+    } catch {
+      /* 저장소 불가 — 호스트 기본값 */
+    }
+  }, []);
+  const pickRailSide = (next: "left" | "right") => {
+    if (next === railSide) return;
+    hapticTick();
+    setRailSide(next);
+    try {
+      window.localStorage.setItem("vic.vod.rail", next);
+    } catch {
+      /* 무시 */
+    }
+  };
   const initialSel = initialPart && vods[initialPart - 1] ? vods[initialPart - 1].titleNo : null;
   const [dayVodSel, setDayVodSel] = useState<number | null>(initialSel);
   const dayVodSelRef = useRef<number | null>(null);
@@ -1022,6 +1043,33 @@ export function DayVodWindow({
                         합방 · {sel.host} 방송국
                       </span>
                     ) : null}
+                    {/* 타임라인 자리 좌/우(2026-09-19 소유자) — 설정의 계절 세그먼트와 같은 알약 문법. */}
+                    <div aria-label="타임라인 자리" className="dvm-railside" role="radiogroup">
+                      <button
+                        aria-checked={railSide === "left"}
+                        aria-label="타임라인을 왼쪽에"
+                        className={`dvm-railside-btn${railSide === "left" ? " on" : ""}`}
+                        data-act="vod-rail-left"
+                        onClick={() => pickRailSide("left")}
+                        role="radio"
+                        title="타임라인을 영상 왼쪽에"
+                        type="button"
+                      >
+                        <PanelLeft aria-hidden="true" size={14} strokeWidth={2.4} />
+                      </button>
+                      <button
+                        aria-checked={railSide === "right"}
+                        aria-label="타임라인을 오른쪽에"
+                        className={`dvm-railside-btn${railSide === "right" ? " on" : ""}`}
+                        data-act="vod-rail-right"
+                        onClick={() => pickRailSide("right")}
+                        role="radio"
+                        title="타임라인을 영상 오른쪽에"
+                        type="button"
+                      >
+                        <PanelRight aria-hidden="true" size={14} strokeWidth={2.4} />
+                      </button>
+                    </div>
                     {/* 단축키 안내(2026-09-17): ? 뒤로 접는다. */}
                     <button
                       aria-expanded={dayVodKeysOpen}
@@ -1095,7 +1143,7 @@ export function DayVodWindow({
                       const playerUrl = selPlayerUrl;
                       const label = selLabel;
                       return (
-                        <div className="dvm-vod" data-rail={side} key={vod.titleNo}>
+                        <div className="dvm-vod" data-rail={railSide} key={vod.titleNo}>
                           {/* 플레이어는 창이 열릴 때부터 깔린다(fromApi=1, autoPlay:false 초기화).
                               첫 클릭 = 플레이어 안 ▶ = 어떤 브라우저에서도 1클릭 소리 켠 재생.
                               지정 썸네일 커버는 실제 재생이 시작될 때까지 덮는다(클릭 통과).

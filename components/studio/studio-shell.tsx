@@ -1135,6 +1135,7 @@ export function StudioShell({
         hapticsSupported={hapticsSupported}
         onChangePosterTheme={(theme) => void changePosterTheme(theme)}
         onToggleDark={toggleDark}
+        showDark={isDeveloper}
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
