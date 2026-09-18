@@ -42,6 +42,7 @@ import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
+import { trackSettle } from "@/lib/ui/settle-track";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { setBandHover } from "@/lib/ui/band-hover";
@@ -2054,12 +2055,11 @@ export function PublicPoster({
   useEffect(() => {
     if (showAgenda) return;
     let raf = 0;
-    const timers: number[] = [];
-    const fit = () => {
+    const fit = (): number | null => {
       raf = 0;
       const header = document.querySelector<HTMLElement>(".public-calendar-header");
       const form = header?.querySelector<HTMLElement>(".viewer-actions .account-form");
-      if (!header || !form) return;
+      if (!header || !form) return null;
       // 로그인 버튼 하나뿐(비로그인)이면 **아무 데도 맞추지 않는다**(2026-09-19 소유자: "패널을 왼쪽·오른쪽으로
       // 옮길 때마다 로그인 버튼이 왔다갔다 한다"). 이 정렬은 [이메일 + 로그아웃] 카드를 오른쪽 레일 폭·끝에
       // 맞추려고 만든 것인데(2026-09-04), 버튼 하나짜리는 맞출 상대가 없고 패널이 움직일 때마다 --acct-mr이
@@ -2067,13 +2067,16 @@ export function PublicPoster({
       if (!form.querySelector(".account-email")) {
         form.style.removeProperty("--acct-w");
         form.style.removeProperty("--acct-mr");
-        return;
+        return null;
       }
       const hr = header.getBoundingClientRect();
       const zoom = header.offsetWidth > 0 ? hr.width / header.offsetWidth : 1;
       const padR = parseFloat(getComputedStyle(header).paddingRight) || 0;
-      const setMr = (rightEdge: number) =>
-        form.style.setProperty("--acct-mr", `${Math.max(0, Math.round((hr.right - rightEdge) / zoom - padR))}px`);
+      const setMr = (rightEdge: number) => {
+        const mr = Math.max(0, Math.round((hr.right - rightEdge) / zoom - padR));
+        form.style.setProperty("--acct-mr", `${mr}px`);
+        return mr;
+      };
       // 2026-09-17(소유자 사진 2): 패널이 **오른쪽에 서서 밀어낼 때**는 패널 카드와 폭·오른쪽 끝을 맞추고, 그 외(패널이
       // 왼쪽·접힘·떠 있음)엔 달력 그리드의 오른쪽 끝에 맞춘다 — 로그인 버튼만 혼자 화면 끝에 붙어 있지 않게.
       // 패널 자리는 **레이아웃 값**으로 잰다(offsetWidth + .poster-fit rect): 슬롯은 좌우 전환 때 remount되어 화면 밖에서
@@ -2085,31 +2088,27 @@ export function PublicPoster({
       if (panelRight && fitEl && slot && slot.offsetWidth >= 80) {
         const fr = fitEl.getBoundingClientRect();
         form.style.setProperty("--acct-w", `${Math.round((slot.offsetWidth - 20) / zoom)}px`);
-        setMr(fr.right - 10 * zoom); // 슬롯 안쪽 여백 10 = 카드 오른쪽 끝
-        return;
+        return setMr(fr.right - 10 * zoom); // 슬롯 안쪽 여백 10 = 카드 오른쪽 끝
       }
       form.style.removeProperty("--acct-w");
       const grid = document.querySelector<HTMLElement>(".poster-surface .public-month-grid");
       const gr = grid?.getBoundingClientRect();
-      if (sceneOn && gr && gr.width > 0) {
-        setMr(gr.right);
-        return;
-      }
+      if (sceneOn && gr && gr.width > 0) return setMr(gr.right);
       // 옛 경로(패널이 아직 준비 전): 표면 안 레일 폭·끝.
       const rail = document.querySelector<HTMLElement>(".poster-surface .public-right");
       const rr = rail?.getBoundingClientRect();
       if (!rail || !rr || rr.width < 60) {
         form.style.removeProperty("--acct-mr");
-        return;
+        return null;
       }
       form.style.setProperty("--acct-w", `${Math.round(rr.width / zoom)}px`);
-      setMr(rr.right);
+      return setMr(rr.right);
     };
+    // 미리보기 카드와 같은 규칙(2026-09-19) — 전환이 멎을 때까지 프레임마다 재 카드가 함께 미끄러진다.
+    let stop: (() => void) | null = null;
     const schedule = () => {
-      if (!raf) raf = requestAnimationFrame(fit);
-      for (const id of timers) window.clearTimeout(id);
-      timers.length = 0;
-      timers.push(window.setTimeout(fit, 400), window.setTimeout(fit, 900));
+      stop?.();
+      stop = trackSettle(fit);
     };
     const ro = new ResizeObserver(schedule);
     const stage = document.querySelector<HTMLElement>(".poster-stage");
@@ -2118,7 +2117,7 @@ export function PublicPoster({
     schedule();
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      for (const id of timers) window.clearTimeout(id);
+      stop?.();
       ro.disconnect();
       window.removeEventListener("resize", schedule);
     };

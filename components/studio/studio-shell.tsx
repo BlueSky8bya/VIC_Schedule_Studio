@@ -166,6 +166,7 @@ import {
   studioShellZoom
 } from "@/lib/ui/calendar-zoom";
 import { useIdleAfter } from "@/lib/ui/use-idle";
+import { trackSettle } from "@/lib/ui/settle-track";
 import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
 import {
   hapticDelete,
@@ -2534,12 +2535,13 @@ export function StudioShell({
     let mo: MutationObserver | null = null;
     let observedRail: Element | null = null;
     let observedStage: Element | null = null;
-    const fit = () => {
+    // 잰 값을 돌려준다 — trackSettle이 "값이 더 안 바뀐다 = 전환이 끝났다"로 멈춤을 판단한다.
+    const fit = (): number | null => {
       raf = 0;
       const overlay = document.querySelector<HTMLElement>(".viewer-preview-overlay");
       const card = overlay?.querySelector<HTMLElement>(".viewer-preview-actions");
       const rail = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-surface .public-right");
-      if (!overlay || !card) return;
+      if (!overlay || !card) return null;
       if (ro && rail && rail !== observedRail) {
         if (observedRail) ro.unobserve(observedRail);
         ro.observe(rail);
@@ -2555,8 +2557,11 @@ export function StudioShell({
       const or = overlay.getBoundingClientRect();
       const zoom = overlay.offsetWidth > 0 ? or.width / overlay.offsetWidth : 1;
       const padR = parseFloat(getComputedStyle(overlay).paddingRight) || 0;
-      const setMr = (rightEdge: number) =>
-        card.style.setProperty("--pv-mr", `${Math.round((or.right - rightEdge) / zoom - padR)}px`);
+      const setMr = (rightEdge: number) => {
+        const mr = Math.round((or.right - rightEdge) / zoom - padR);
+        card.style.setProperty("--pv-mr", `${mr}px`);
+        return mr;
+      };
       // 2026-09-17: 패널이 오른쪽에 서서 밀어낼 때는 패널 카드(.avatar-slot .rail-info-card)와 폭·끝을 맞추고,
       // 그 외엔 달력 그리드의 오른쪽 끝에 맞춘다(시청자 화면의 계정 카드와 같은 규칙).
       const scene = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-page.avatar-scene");
@@ -2567,31 +2572,27 @@ export function StudioShell({
       if (panelRight && fitEl && slot && slot.offsetWidth >= 80) {
         const fr = fitEl.getBoundingClientRect();
         card.style.setProperty("--pv-w", `${Math.round((slot.offsetWidth - 20) / zoom)}px`);
-        setMr(fr.right - 10 * zoom);
-        return;
+        return setMr(fr.right - 10 * zoom);
       }
       card.style.removeProperty("--pv-w");
       const grid = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-surface .public-month-grid");
       const gr = grid?.getBoundingClientRect();
-      if (scene && gr && gr.width > 0) {
-        setMr(gr.right);
-        return;
-      }
+      if (scene && gr && gr.width > 0) return setMr(gr.right);
       const rr = rail?.getBoundingClientRect();
       if (!rail || !rr || rr.width < 60) {
         card.style.removeProperty("--pv-mr");
-        return;
+        return null;
       }
       card.style.setProperty("--pv-w", `${Math.round(rr.width / zoom)}px`);
-      setMr(rr.right);
+      return setMr(rr.right);
     };
-    const timers: number[] = [];
+    // 배율·패널 좌우 전환은 0.55초 transition이라 한 번 재면 중간값이다. 예전엔 0·400·900ms 세 번을
+    // 재서 보정했는데 카드가 세 번 튀었다(2026-09-19 소유자: "좌우로 타다닥 튀면서 움직인다").
+    // 이제 전환이 멎을 때까지 프레임마다 재 카드가 화면과 **함께** 미끄러진다.
+    let stop: (() => void) | null = null;
     const schedule = () => {
-      if (!raf) raf = requestAnimationFrame(fit);
-      // 배율·아바타 전환은 transition(포스터 scaler transform·stage margin 0.55s) 중이라 첫 실측이 중간값이다 — 끝난 뒤 두 번 더.
-      for (const id of timers) window.clearTimeout(id);
-      timers.length = 0;
-      timers.push(window.setTimeout(fit, 400), window.setTimeout(fit, 900));
+      stop?.();
+      stop = trackSettle(fit);
     };
     ro = new ResizeObserver(schedule);
     const overlay = document.querySelector<HTMLElement>(".viewer-preview-overlay");
@@ -2606,7 +2607,7 @@ export function StudioShell({
     schedule();
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      for (const id of timers) window.clearTimeout(id);
+      stop?.();
       ro?.disconnect();
       mo?.disconnect();
       wrap?.removeEventListener("transitionend", schedule);

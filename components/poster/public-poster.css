@@ -2930,6 +2930,13 @@ body.cell-range-dragging {
   background: rgb(99 102 241 / 14%);
 }
 
+/* 페이지 좌우 여백(2026-09-19 소유자: "로그인 버튼도 달력도 오른쪽에 딱 달라붙어 있다").
+   머리줄과 포스터가 **같은 선** 안에 서도록 한 값으로 준다 — 버튼마다 margin을 따로 주면
+   또 제각각이 된다. 포스터 배율은 .poster-stage clientWidth로 재므로 여백만큼 알아서 줄어든다. */
+.public-calendar-header,
+.poster-fit {
+  padding-inline: var(--poster-gutter, 16px);
+}
 .public-calendar-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -6409,8 +6416,6 @@ html[data-reduce-motion] .slc-player img {
    421KB라 시청자 화면에 끌고 올 수 없다(공개 페이지 첫 로딩). 값은 편집실 규격 그대로.
    계절 세그먼트(.ambient-seg)는 app/ambient.css가 전역이라 그대로 따라온다. */
 .viewer-settings-open {
-  /* 헤더 왼쪽 끝에 딱 붙지 않게(2026-09-19 소유자) — 검색·기록 알약이 가운데에서 갖는 숨과 같은 폭. */
-  margin-left: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7857,6 +7862,11 @@ html[data-pchrome="3"] .poster-chrome-title {
 .public-calendar-header .viewer-actions .account-form {
   box-sizing: border-box;
   margin-right: var(--acct-mr, 0px);
+  /* 자리를 옮길 땐 미끄러진다 — 포스터 배율 전환(0.55s)과 같은 결(2026-09-19). */
+  transition: margin-right 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+}
+html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
+  transition: none;
 }
 /* 이메일이 있을 때만 레일 폭 — 로그인 버튼 하나뿐이면 글자 폭 그대로, 오른쪽 끝만 레일에 맞춘다(2026-09-04 사용자: 길게 늘려
    배경을 가리지 말 것). */

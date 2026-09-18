@@ -9244,6 +9244,7 @@ html[data-reduce-motion] .tge-help-panel {
   display: inline-flex;
   gap: 10px;
 }
+html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { transition: none; }
 /* 미리보기 이동 카드 = 포스터 레일 폭(2026-09-04 사용자: 편집실 계정 카드와 같은 지적 — 레일의 정해진 너비와 따로 논다).
    studio-shell.tsx가 오버레이·레일(.public-right)을 같은 좌표계에서 재서 카드에 --pv-w / --pv-mr(레이아웃 px, zoom 보정)을
    두면 카드가 그 폭·오른쪽 끝에 맞춰 앉고, 안은 등분(.studio-role-tools와 같은 grid). 레일이 접힌 아바타 scene에선 변수가
@@ -9256,6 +9257,9 @@ html[data-reduce-motion] .tge-help-panel {
     box-sizing: border-box;
     width: var(--pv-w, 252px);
     margin-right: var(--pv-mr, 0px);
+    /* 자리를 옮길 땐 미끄러진다 — 포스터 배율·패널 전환과 같은 결(2026-09-19 소유자: "좌우로 타다닥 튄다").
+       프레임마다 재는 추적기(lib/ui/settle-track)와 함께 쓰여 마지막 한 걸음까지 매끄럽게 붙는다. */
+    transition: margin-right 0.42s cubic-bezier(0.32, 0.72, 0, 1), width 0.42s cubic-bezier(0.32, 0.72, 0, 1);
   }
   .viewer-preview-overlay .viewer-preview-actions .button {
     width: 100%;
