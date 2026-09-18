@@ -1,6 +1,6 @@
 # Dark palette follow-up — 2026-09-19
 
-Status: implemented; final release verification and push in progress. Owner requested dark-specific tag colors (automatically saved for future colors), stronger popularity highlighting, and fixes for trend/loading/showcase controls, plus coherent nearby dark UI improvements.
+Status: complete, pushed and production-verified. Owner requested dark-specific tag colors (automatically saved for future colors), stronger popularity highlighting, and fixes for trend/loading/showcase controls, plus coherent nearby dark UI improvements.
 
 Plan: shared deterministic palette derivation; additive generated database columns (original colors untouched); explicit public/studio color DTO mapping; one rendering path across viewer/studio/preview/mobile; dark loading/chart/ambient/popularity states; production-build captures and interaction checks, unit/data-parity/type/lint/build validation.
 
@@ -20,11 +20,11 @@ Verification:
 - SQL/TS exact palette parity for 1,240 source colors. 216-color grid confirms text contrast >6:1, hue family and bounded dark fill lightness/chroma. Stale/corrupt metadata and explicit public visual DTO tests.
 - Unit suite: 953/955 passed. The same two pre-existing `ambient-codex` shallow species/wave failures remain; no dark-color test failed.
 - Typecheck, lint and isolated production build passed. Final build excludes another task's uncommitted legend alignment edits.
-- Production-build visual/interaction suite: 17/17 passed; 123 final captures and 40 baseline captures. Covers desktop/mobile, actual theme persistence, original light colors and geometry, public/viewer preview/studio, detail/editor/pickers/search/replay/records/settings, drawing tools, art, loading and ambient controls. Developer 8 tabs + owner 5 tabs also captured with synthetic server-action responses; current KST-month progress tested. All external media/writes intercepted.
+- Production-build visual/interaction suite: 17/17 passed, then dedicated links test and light-color/geometry regression passed after the deployed-data follow-up (18 distinct checks); 125 final captures and 40 baseline captures. Covers desktop/mobile, actual theme persistence, original light colors and geometry, public/viewer preview/studio, detail/editor/pickers/search/replay/records/settings, drawing tools, art, loading and ambient controls. Developer 8 tabs + owner 5 tabs also captured with synthetic server-action responses; current KST-month progress tested. All external media/writes intercepted.
 - Live local public API: HTTP 200, 21 palettes, 22 tags, 27 explicit dark palettes; forbidden private-field scan clean. This is not a new RLS audit or authenticated production owner test.
 - Harness remains blocked by pre-existing duplicate G-18 in AGENTS.md.
 - Independent reviewer found and verified scope for generated palette/public boundary; final findings (broadcast-day selector, light borders, readonly chip ink) were corrected.
 
 Evidence: `output/dark-mode-palette/index.html` and `tmp/dark-audit/*palette*` (local artifacts, not committed). [ADR-0026](../agent/decisions/ADR-0026-automatic-dark-tag-palette.md) records schema, boundary, supersession and rollback.
 
-Release: `a2a72f02` pushed to main; Vercel success at 2026-09-19 04:30 KST. Production API HTTP 200 returned 27 dark palettes; forbidden-field scan clean. Actual desktop/mobile screenshots: dark theme, no overflow or browser errors. Deployed-data CSS follow-up additionally passed a dedicated links test and light-color/geometry regression, plus typecheck/lint/build; final follow-up push verification pending.
+Release: `a2a72f02` pushed to main; Vercel success at 2026-09-19 04:30 KST. Production API HTTP 200 returned 27 dark palettes; forbidden-field scan clean. Deployed-data follow-up `e64d023b` pushed and Vercel success at 04:36 KST. Actual final desktop/mobile screenshots: dark theme, no overflow or browser errors; mobile VOD background rgb(41,54,80), heart ink rgb(213,201,194). Follow-up also passed typecheck/lint/build. Production screenshots are `output/dark-mode-palette/production-desktop.png` and `production-mobile.png`.
