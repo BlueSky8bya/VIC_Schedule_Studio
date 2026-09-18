@@ -6379,6 +6379,184 @@ html[data-reduce-motion] .slc-player img {
   transform: scale(0.96);
 }
 
+/* ── 시청자 설정(2026-09-19 소유자: 시청자·미리보기·비로그인에도 설정) ────────────────────
+   목록 자체는 편집실과 **같은 컴포넌트**(StudioSettingsList)라 마크업·동작·스위치가 한 벌이다.
+   껍데기는 이 화면의 창 언어(pi-*)를 쓰고, 줄의 피부만 여기서 입힌다 — 편집실 스타일시트는
+   421KB라 시청자 화면에 끌고 올 수 없다(공개 페이지 첫 로딩). 값은 편집실 규격 그대로.
+   계절 세그먼트(.ambient-seg)는 app/ambient.css가 전역이라 그대로 따라온다. */
+.viewer-settings-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px; /* 검색·기록 알약과 같은 터치 타깃 */
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-pill);
+  background: var(--glass, rgb(255 255 255 / 72%));
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 0;
+  color: var(--ink, #23303f);
+  cursor: pointer;
+  box-shadow: var(--shadow-2);
+  transition:
+    transform var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    color var(--dur-1) var(--ease);
+}
+.viewer-settings-open svg {
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.viewer-settings-open:hover {
+  color: #3564e0;
+  box-shadow: var(--shadow-3);
+}
+.viewer-settings-open:hover svg { transform: rotate(45deg); }
+.viewer-settings-open:active { transform: scale(0.94); }
+html[data-reduce-motion] .viewer-settings-open svg { transition: none; }
+
+.pi-sheet-settings { width: min(440px, 100%); }
+.pi-sheet-settings .pi-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 22px 18px;
+}
+.pi-sheet-settings .role-help-haptics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid rgb(35 48 63 / 8%);
+  padding: 12px 0;
+}
+.pi-sheet-settings .role-help-haptics:first-child { border-top: 0; }
+.pi-sheet-settings .rhh-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-ui);
+  font-weight: 800;
+  color: var(--ink, #23303f);
+}
+.pi-sheet-settings .rhh-label svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+}
+/* iOS풍 스위치 — 편집실과 같은 치수(40×22, 손잡이 18). 켜짐 색은 이 화면의 파랑. */
+.pi-sheet-settings .rhh-switch {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: #d7dbe6;
+  cursor: pointer;
+  transition: background 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.pi-sheet-settings .rhh-switch.on { background: #3564e0; }
+.pi-sheet-settings .rhh-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(40 30 60 / 35%);
+  transition: transform 0.28s cubic-bezier(0.22, 1.12, 0.36, 1);
+}
+.pi-sheet-settings .rhh-switch.on .rhh-knob { transform: translateX(18px); }
+html[data-reduce-motion] .pi-sheet-settings .rhh-switch,
+html[data-reduce-motion] .pi-sheet-settings .rhh-knob { transition: none; }
+/* 셀렉트(배경 효과) — 알약 언어와 같은 결. 목록은 트리거 아래 카드. */
+.pi-sheet-settings .rhh-select {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  max-width: 160px;
+  border: 1px solid rgb(35 48 63 / 12%);
+  border-radius: var(--r-pill);
+  background: #fff;
+  padding: 0 10px 0 13px;
+  color: var(--ink, #23303f);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    transform 0.14s var(--ease);
+}
+.pi-sheet-settings .rhh-select:hover:not(:disabled),
+.pi-sheet-settings .rhh-select.open {
+  border-color: rgb(53 100 224 / 35%);
+  box-shadow: 0 4px 12px -8px rgb(24 30 60 / 55%);
+}
+.pi-sheet-settings .rhh-select:active:not(:disabled) { transform: scale(0.97); }
+.pi-sheet-settings .rhh-select:disabled { opacity: 0.5; cursor: default; }
+.pi-sheet-settings .rhh-select-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pi-sheet-settings .rhh-select-chev {
+  flex: none;
+  opacity: 0.45;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.pi-sheet-settings .rhh-select.open .rhh-select-chev { transform: rotate(180deg); }
+.pi-sheet-settings .rhh-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  min-width: 100%;
+  border: 1px solid rgb(35 48 63 / 10%);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 34px -18px rgb(24 20 32 / 55%);
+  padding: 5px;
+  list-style: none;
+  margin: 0;
+  animation: pi-set-menu 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes pi-set-menu {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+html[data-reduce-motion] .pi-sheet-settings .rhh-menu { animation: none; }
+.pi-sheet-settings .rhh-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 7px 10px;
+  color: var(--ink, #23303f);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pi-sheet-settings .rhh-opt:hover,
+.pi-sheet-settings .rhh-opt:focus-visible { background: rgb(53 100 224 / 8%); }
+.pi-sheet-settings .rhh-opt.selected { color: #1d4ed8; font-weight: 900; }
+.pi-sheet-settings .rhh-opt-check { margin-left: auto; color: #3564e0; }
+
 .pi-backdrop {
   position: fixed;
   inset: 0;

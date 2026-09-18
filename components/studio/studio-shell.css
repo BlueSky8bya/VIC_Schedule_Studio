@@ -5049,22 +5049,75 @@ html[data-reduce-motion] .editor-anchor-link line {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-/* 힌트 선(2026-09-17): 저장할 게 있는데 탭이 숨어 있으면 탭이 설 자리의 점선을 굵은 실선으로 — "변경 감지됨". 숨 쉬듯 옅게. */
-.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint {
-  stroke-width: 4;
-  stroke-dasharray: none;
-  opacity: 0;
-  transition: opacity 0.35s var(--ease);
+/* 변경 감지 하이라이팅(2026-09-17 → 2026-09-19 소유자: "굵은 점선만으론 하이라이팅인지 모르겠다").
+   저장할 게 있는데 저장 탭이 숨어 있는 동안, 탭이 설 자리를 **세 겹**으로 밝힌다:
+     ① 빛무리(glow) — 14px, 아주 옅게. 멀리서도 "저기 뭔가 있다"가 읽히는 덩어리.
+     ② 심지(hint)   — 5px, 모드 색 그대로 또렷하게. 링 점선(40%)과 달리 불투명이라 확실히 다른 상태로 보인다.
+     ③ 스침(spark)  — 심지 위를 천천히 흐르는 흰 빛 한 조각. 색을 더하지 않고 '살아 있음'만 보탠다.
+   색은 카드 모드 색(--hint) 하나뿐 — 새 색을 들이지 않아 주변과 겉돌지 않는다.
+   자리는 마우스 세로 위치를 따라가고 쪽도 가까운 옆면으로 건너간다(studio-shell.tsx). */
+.studio-workspace .event-editor-panel .editor-ring {
+  --hint: #8b5cf6;
+  --ring-strong: rgb(139 92 246 / 68%);
 }
-.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint[data-on] {
-  opacity: 1;
-  animation: editor-ring-hint-breathe 2.2s ease-in-out infinite;
+.studio-workspace .event-editor-panel.is-new .editor-ring { --hint: #22965e; --ring-strong: rgb(34 150 94 / 68%); }
+.studio-workspace .event-editor-panel.is-support .editor-ring { --hint: #e11d48; --ring-strong: rgb(225 29 72 / 68%); }
+.studio-workspace .event-editor-panel.is-period .editor-ring { --hint: #0e93b4; --ring-strong: rgb(14 147 180 / 68%); }
+/* 변경이 있는 동안엔 링 자체도 또렷하게 — 색은 그대로, 농도·굵기만 한 단계.
+   (svg 전체 opacity는 쓰지 않는다 — 안의 밝은 자리까지 같이 흐려진다.) */
+.studio-workspace .event-editor-panel .editor-ring {
+  transition: color 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.studio-workspace .event-editor-panel .editor-ring[data-dirty] { color: var(--ring-strong); }
+.studio-workspace .event-editor-panel .editor-ring[data-dirty] > path:first-child {
+  stroke-width: 2.4;
+}
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint,
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-glow,
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-spark {
+  stroke-dasharray: none;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint {
+  stroke: var(--hint);
+  stroke-width: 5;
+}
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-glow {
+  stroke: var(--hint);
+  stroke-width: 14;
+}
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-spark {
+  stroke: #fff;
+  stroke-width: 5;
+  stroke-dasharray: 16 200;
+}
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint[data-on] { opacity: 1; }
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-glow[data-on] {
+  opacity: 0.2;
+  animation: editor-ring-hint-breathe 2.6s ease-in-out infinite;
+}
+.studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-spark[data-on] {
+  opacity: 0.6;
+  animation: editor-ring-hint-slide 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 @keyframes editor-ring-hint-breathe {
-  50% { opacity: 0.45; }
+  50% { opacity: 0.38; }
 }
-html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint[data-on] {
+/* 위에서 아래로 한 조각이 미끄러진다 — 길이(dasharray 16+200)만큼 한 바퀴. 끝에서 잠깐 쉰다(방정맞지 않게). */
+@keyframes editor-ring-hint-slide {
+  0% { stroke-dashoffset: 216; opacity: 0; }
+  12% { opacity: 0.6; }
+  62% { opacity: 0.6; }
+  74%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-glow[data-on],
+html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-spark[data-on] {
   animation: none;
+}
+html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-spark[data-on] {
+  opacity: 0;
 }
 .studio-workspace .event-editor-panel.is-new .editor-ring {
   color: rgb(34 150 94 / 40%);

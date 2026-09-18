@@ -12,6 +12,7 @@ import {
   Pin,
   Play,
   Search,
+  Settings,
   Sprout,
   X
 } from "lucide-react";
@@ -41,6 +42,8 @@ import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
+import { StudioSettingsList } from "@/components/studio/studio-settings";
+import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
@@ -985,7 +988,11 @@ export function PublicPoster({
   // 시청자 시트 — '이 달 기록' 또는 '검색' 중 하나(동시에 못 뜬다). 히스토리 한 칸·배경 일시정지·
   // 뒤로가기 닫기 규약은 시트 종류와 무관하게 하나라, 아래 insightsOpen/setInsightsOpen 이름의
   // 기존 배관(1690~)을 그대로 태운다: 열림 = 어느 시트든 열림, 닫기 = 어느 시트든 닫기.
-  const [sheet, setSheet] = useState<null | "insights" | "search">(null);
+  const [sheet, setSheet] = useState<null | "insights" | "search" | "settings">(null);
+  // 설정(2026-09-19 소유자) — 시청자 화면 계열(미리보기·시청자·비로그인)도 편집실과 **같은 설정 목록**을
+  // 연다. 상태는 공용 훅 한 벌(components/shared/use-settings-prefs.ts), 목록도 편집실과 같은 컴포넌트.
+  // 포스터 테마·개발자 시간여행 줄은 편집실(소유자·개발자) 몫이라 여기선 넘기지 않는다.
+  const settingsPrefs = useSettingsPrefs();
   const insightsOpen = sheet !== null;
   const setInsightsOpen = (open: boolean) => setSheet(open ? "insights" : null);
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
@@ -4479,6 +4486,38 @@ export function PublicPoster({
           thumbOf={(titleNo) => thumbByTitle.get(titleNo) || undefined}
         />
       ) : null}
+      {/* 설정 시트 — '이 달 기록'과 같은 pi-* 껍데기(이 화면의 창 언어), 목록은 편집실과 같은 컴포넌트. */}
+      {sheet === "settings" ? (
+        <div className="pi-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setSheet(null); }}>
+          <section aria-label="설정" aria-modal="true" className="pi-sheet pi-sheet-settings" role="dialog">
+            <header className="pi-head">
+              <h2>설정</h2>
+              <button aria-label="닫기" className="pi-close" data-act="close-settings" onClick={() => setSheet(null)} type="button">
+                <X aria-hidden="true" size={18} />
+              </button>
+            </header>
+            <div className="pi-body settings-modal-body">
+              <StudioSettingsList
+                ambientMode={settingsPrefs.ambientMode}
+                eyeComfort={settingsPrefs.eyeComfort}
+                gfxAuto={settingsPrefs.gfxAuto}
+                gfxPref={settingsPrefs.gfxPref}
+                hapticsOn={settingsPrefs.hapticsOn}
+                hapticsSupported={settingsPrefs.hapticsSupported}
+                onChangeAmbientMode={settingsPrefs.changeAmbientMode}
+                onChangeGfxPref={settingsPrefs.changeGfxPref}
+                onChangePosterTheme={() => {}}
+                onToggleEyeComfort={settingsPrefs.toggleEyeComfort}
+                onToggleHaptics={settingsPrefs.toggleHaptics}
+                onToggleReduceMotion={settingsPrefs.toggleReduceMotion}
+                posterTheme={null}
+                posterThemeSaving={false}
+                reduceMotion={settingsPrefs.reduceMotion}
+              />
+            </div>
+          </section>
+        </div>
+      ) : null}
       {/* 시청자 화면 미리보기(꾸미기 아님) — 아바타 컨트롤을 페이지 좌상단(absolute)에 둔다. 헤더에
           두면 켜고 끌 때 shell 폭이 전체폭↔가운데로 바뀌며 좌우로 흔들려 버튼이 따라 움직였다.
           viewport 고정(fixed)은 스크롤을 따라 내려와 달력을 가려서 뺐다 — 페이지와 함께 스크롤된다.
@@ -4616,6 +4655,22 @@ export function PublicPoster({
               {/* 달력 꾸미기 꺼짐 상태 켜기 토글만 헤더에 둔다. 시청자 미리보기는 켜짐/꺼짐 모두 좌상단
                   고정 오버레이(.avatar-ctl-preview)로 뺀다 — 헤더는 shell 폭이 토글마다 바뀌며 좌우로
                   흔들려 버튼이 따라 움직였다(fixed면 안 흔들림). */}
+              {/* 설정(2026-09-19 소유자) — 검색·기록·로그인과 같은 줄의 왼쪽 끝. 내용은 편집실 설정 창과 같다. */}
+              {interactive ? (
+                <button
+                  aria-label="설정"
+                  className="viewer-settings-open"
+                  data-act="open-settings"
+                  onClick={() => {
+                    hapticTick();
+                    setSheet("settings");
+                  }}
+                  title="설정 — 동작 · 화면 · 배경"
+                  type="button"
+                >
+                  <Settings aria-hidden="true" size={17} strokeWidth={2.2} />
+                </button>
+              ) : null}
             </div>
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).

@@ -41,7 +41,8 @@ import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registr
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
-import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
+import type { GfxMode } from "@/lib/ui/gfx";
+import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -166,27 +167,16 @@ import {
 } from "@/lib/ui/calendar-zoom";
 import { useIdleAfter } from "@/lib/ui/use-idle";
 import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
-import { detectDevice } from "@/lib/presence/presence-client";
 import {
   hapticDelete,
   hapticError,
-  hapticsEnabled,
   hapticSuccess,
-  hapticTick,
-  setHapticsEnabled
+  hapticTick
 } from "@/lib/ui/haptics";
 import { logActivity, logSettled } from "@/lib/activity/client";
 import { setBandHover } from "@/lib/ui/band-hover";
 import { useSectionActivity } from "@/lib/activity/use-section";
-import {
-  type AmbientMode,
-  ambientMode,
-  eyeComfortEnabled,
-  reduceMotionEnabled,
-  setAmbientMode,
-  setEyeComfort,
-  setReduceMotion
-} from "@/lib/ui/motion";
+import { reduceMotionEnabled } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
@@ -918,68 +908,29 @@ export function StudioShell({
   };
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
-  // 진동(햅틱) 설정 토글 — navigator.vibrate 지원 기기(안드로이드)에서만 노출. SSR 불일치 방지로
-  // 마운트 후 지원 여부/현재값을 읽는다(기본 ON). 끄면 앱 전체 진동이 조용해진다(스위치보드 기준).
-  const [hapticsSupported, setHapticsSupported] = useState(false);
-  const [hapticsOn, setHapticsOn] = useState(true);
-  useEffect(() => {
-    // 진동은 Android(Chrome/삼성)에서만 실제로 울린다. iOS는 'vibrate' 자체가 없어 이미 제외되지만,
-    // 데스크톱 Chrome은 'vibrate'가 있으되 무동작 → 웹에선 토글이 무의미하므로 Android에서만 노출.
-    const supported =
-      typeof navigator !== "undefined" && "vibrate" in navigator && detectDevice() === "android";
-    setHapticsSupported(supported);
-    if (supported) setHapticsOn(hapticsEnabled());
+  // 설정 스위치 상태(2026-09-19) — 시청자 화면도 같은 설정 창을 열므로 상태 로직은 공용 훅 한 벌
+  // (components/shared/use-settings-prefs.ts, G-18). 편집실만의 몫은 자동 판정 알림(토스트)뿐.
+  const onGfxAuto = useCallback((mode: GfxMode) => {
+    flashToast(
+      mode === "soft"
+        ? "이 기기는 그래픽 가속이 없어 배경 효과를 껐어요 · 설정 › 배경 효과에서 바꿀 수 있어요"
+        : "화면이 버벅여 배경 효과를 가볍게 했어요 · 설정 › 배경 효과에서 바꿀 수 있어요"
+    );
   }, []);
-  const toggleHaptics = () => {
-    const next = !hapticsOn;
-    setHapticsEnabled(next); // localStorage(vic.haptics)에 먼저 반영
-    setHapticsOn(next);
-    if (next) hapticTick(); // 켜는 순간 한 번 울려 "이렇게 울려요"를 바로 체감
-  };
-  // #5/#6 동작 줄이기 — 장식용 반복 모션을 끈다(눈 피로↓). 기기 무관(모든 역할 노출).
-  const [reduceMotion, setReduceMotionState] = useState(false);
-  useEffect(() => {
-    setReduceMotionState(reduceMotionEnabled());
-  }, []);
-  const toggleReduceMotion = () => {
-    const next = !reduceMotion;
-    setReduceMotion(next); // localStorage(vic.reduceMotion) + <html data-reduce-motion> 즉시 반영
-    setReduceMotionState(next);
-    hapticTick();
-  };
-  // #28 눈 편한 테마 — 채도·눈부심을 낮춘다(오래 보는 작업자용).
-  const [eyeComfort, setEyeComfortState] = useState(false);
-  useEffect(() => {
-    setEyeComfortState(eyeComfortEnabled());
-  }, []);
-  const toggleEyeComfort = () => {
-    const next = !eyeComfort;
-    setEyeComfort(next);
-    setEyeComfortState(next);
-    hapticTick();
-  };
-  // (차분한 편집실 스위치는 2026-09-04 제거 — 항상 ON, html[data-studio-calm]은 페인트-전 스크립트가 늘 붙인다.)
-  // 계절 배경(2026-09-04, ADR-0017) — 기본 ON. 서버 렌더 true = 페인트-전 스크립트(속성 없음)와 일치.
-  // 배경 효과 품질(2026-09-04, lib/ui/gfx.ts v3) — 자동/항상 최대/가볍게 + 자동 판정 결과. 판정이 스스로 내려가면
-  // (vic:gfx-auto) 토스트로 알려 설정에서 되돌릴 수 있게 한다(토리님 PC: 물결이 몇 초 뒤 사라졌는데 이유를 몰랐다).
-  const [gfxPrefState, setGfxPrefState] = useState<GfxPref>("auto");
-  const [gfxAuto, setGfxAuto] = useState<GfxMode>("full");
-  useEffect(() => {
-    setGfxPrefState(gfxPref());
-    setGfxAuto(gfxAutoMode());
-    const onAuto = (e: Event) => {
-      const mode = (e as CustomEvent<{ mode?: GfxMode }>).detail?.mode;
-      if (!mode) return;
-      setGfxAuto(mode);
-      flashToast(
-        mode === "soft"
-          ? "이 기기는 그래픽 가속이 없어 배경 효과를 껐어요 · 설정 › 배경 효과에서 바꿀 수 있어요"
-          : "화면이 버벅여 배경 효과를 가볍게 했어요 · 설정 › 배경 효과에서 바꿀 수 있어요"
-      );
-    };
-    window.addEventListener("vic:gfx-auto", onAuto);
-    return () => window.removeEventListener("vic:gfx-auto", onAuto);
-  }, []);
+  const {
+    hapticsSupported,
+    hapticsOn,
+    toggleHaptics,
+    reduceMotion,
+    toggleReduceMotion,
+    eyeComfort,
+    toggleEyeComfort,
+    ambientMode: ambientModeState,
+    changeAmbientMode,
+    gfxPref: gfxPrefState,
+    gfxAuto,
+    changeGfxPref
+  } = useSettingsPrefs(onGfxAuto);
   // 계절 배경 세 상태(켜짐·흐리게·끔, 2026-09-04). 상태의 진실은 <html data-ambient>(lib/ui/motion.ts) — 설정 셀렉트, 아바타
   // 자리·시청자 미리보기 레일의 순환 버튼, 페인트-전 스크립트가 전부 그 속성을 쓰므로 여기선 속성 변화를 지켜보며 따라간다.
   // 개발자 세계 시간 여행(2026-09-04 소유자): 개발자 계정만 띠·날씨·날을 강제해 연대기·빛 톤·날씨 훅을 검사한다 — 세션 한정, 저장 없음,
@@ -996,34 +947,6 @@ export function StudioShell({
   const worldForce =
     ambientWorldForce ??
     (effectiveRole === "developer" && Object.values(devWorld).some(v => v !== undefined) ? devWorld : undefined);
-  const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
-  useEffect(() => {
-    const read = () => setAmbientModeState(ambientMode());
-    read();
-    const mo = new MutationObserver(read);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ambient"] });
-    return () => mo.disconnect();
-  }, []);
-  // 잠금(2026-09-04 사용자): 계절 배경 끔 ⇔ 배경 효과 '끄기'. 끄면 셀렉트는 '끄기'로 잠기고, 켜짐/흐리게로 돌아오면 '끄기'였던
-  // 우선순위는 '자동'으로 풀린다. 셀렉트에서 '끄기'를 고르면 배경도 함께 꺼진다 — 두 컨트롤이 한 상태.
-  const changeAmbientMode = (mode: AmbientMode) => {
-    if (ambientMode() !== mode) setAmbientMode(mode);
-    setAmbientModeState(mode);
-    if (mode !== "off" && gfxPrefState === "off") {
-      setGfxPref("auto");
-      setGfxPrefState("auto");
-    }
-    hapticTick();
-  };
-  const changeGfxPref = (pref: GfxPref) => {
-    setGfxPref(pref); // localStorage + <html data-gfx> 즉시(배경 레이어는 속성을 지켜본다)
-    setGfxPrefState(pref);
-    if (pref === "off" && ambientModeState !== "off") {
-      setAmbientMode("off");
-      setAmbientModeState("off");
-    }
-    hapticTick();
-  };
   // 배경 감상 모드는 공용(components/shared/ambient/showcase.tsx: enterShowcase/<ShowcaseExit/>/<ShowcaseButton/>) —
   // 진입은 아바타 자리의 큰 버튼 + 설정 줄, 나가기는 Esc/상단 알약(body 포털). 무거운 모달(태그·인사이트·이용 기록)이
   // 떠 있는 동안은 배경을 일시정지한다(blur 백드롭이 매 프레임 다시 흐려지는 비용 — lib/ui/ambient-pause.ts).
@@ -1379,8 +1302,12 @@ export function StudioShell({
   // 저장 탭의 자리 — 좌/우는 상태(재렌더 드묾), 높이는 rAF 보간으로 DOM에 직접(프레임마다 렌더하지 않는다).
   const saveTabRef = useRef<HTMLButtonElement | null>(null);
   const ringPathRef = useRef<SVGPathElement | null>(null);
-  // 저장할 게 있는데 탭이 아직 숨어 있을 때 — 탭이 나올 자리의 점선만 굵게(변경 감지됐다는 신호, 2026-09-17 소유자).
+  // 저장할 게 있는데 탭이 아직 숨어 있을 때 — 탭이 나올 자리를 밝힌다(변경 감지됐다는 신호, 2026-09-17 소유자).
+  // 2026-09-19 소유자: 굵은 실선 하나로는 하이라이팅인지 몰라 세 겹으로 — 빛무리 + 심지 + 위를 흐르는 빛.
+  // 색은 카드 모드 색 그대로(--hint) 쓴다: 혼자 튀는 색을 새로 만들지 않는다.
   const ringHintRef = useRef<SVGPathElement | null>(null);
+  const ringHintGlowRef = useRef<SVGPathElement | null>(null);
+  const ringHintSparkRef = useRef<SVGPathElement | null>(null);
   const [saveTabSide, setSaveTabSide] = useState<"left" | "right">("right");
   const saveTabSideRef = useRef<"left" | "right">("right");
   const saveTabPrevRectRef = useRef<DOMRect | null>(null);
@@ -1424,6 +1351,13 @@ export function StudioShell({
     let lastPt: { x: number; y: number; t: number } | null = null;
     let speed = 0; // px/ms(지수 평균)
     let lastPath = "";
+    // 힌트(탭이 숨어 있을 때 밝히는 자리) — 마우스 세로 위치를 따라다닌다(2026-09-19 소유자).
+    // 탭과 달리 머무름·속도 문턱이 없다: 카드 근처에 있기만 하면 곧장 따라간다(의도를 거스르지 않게 부드럽게).
+    let hintSide: "left" | "right" = saveTabSideRef.current;
+    let hintTargetY: number | null = null;
+    let hintY: number | null = null;
+    let hintVY = 0;
+    let lastHintPath = "";
     const wantBump = () => {
       const tab = saveTabRef.current;
       if (!tab || tab.dataset.show === undefined || !shown) return 0;
@@ -1450,16 +1384,33 @@ export function StudioShell({
         path.setAttribute("d", d);
         lastPath = d;
       }
-      // 힌트 선: 탭이 숨어 있는 동안(b≈0) 탭이 설 자리(옆면, 탭 높이만큼)를 굵은 실선으로. 탭이 부풀면 꺼진다.
+      // 힌트: 탭이 숨어 있는 동안(b≈0) "저장할 게 있다"를 옆면 점선 위에 밝힌다. 자리는 **마우스 높이**를
+      // 따라가고 쪽(왼/오른)도 마우스가 가까운 쪽이다(2026-09-19 소유자). 탭이 부풀면 꺼진다.
       const hint = ringHintRef.current;
-      if (hint) {
-        const want = Boolean(tab) && tab!.dataset.show !== undefined && b < 2;
-        if (want) {
-          const X = saveTabSideRef.current === "right" ? RING_INSET + panel.offsetWidth + RING_PAD : RING_INSET - RING_PAD;
-          const y0 = RING_INSET + (y ?? Math.round(panel.offsetHeight * 0.4));
-          hint.setAttribute("d", `M ${X} ${y0} V ${y0 + th}`);
-          hint.setAttribute("data-on", "");
-        } else hint.removeAttribute("data-on");
+      const glow = ringHintGlowRef.current;
+      const spark = ringHintSparkRef.current;
+      const want = Boolean(tab) && tab!.dataset.show !== undefined && b < 2;
+      if (want) {
+        const len = th || 96;
+        const margin = 16 + RING_PAD;
+        const X = hintSide === "right" ? RING_INSET + panel.offsetWidth + RING_PAD : RING_INSET - RING_PAD;
+        const base = hintY ?? y ?? Math.round(panel.offsetHeight * 0.4);
+        const y0 = RING_INSET + Math.max(margin, Math.min(panel.offsetHeight - len - margin, base));
+        const d = `M ${X} ${y0.toFixed(1)} V ${(y0 + len).toFixed(1)}`;
+        if (d !== lastHintPath) {
+          lastHintPath = d;
+          for (const el of [glow, hint, spark]) el?.setAttribute("d", d);
+        }
+        for (const el of [glow, hint, spark]) el?.setAttribute("data-on", "");
+      } else {
+        for (const el of [glow, hint, spark]) el?.removeAttribute("data-on");
+      }
+      // 링 전체도 한 단계 또렷해진다(2026-09-19 소유자: "하이라이팅이 된 건지 모르겠다") — 색은 그대로 두고
+      // 농도·굵기만. 밝은 자리는 '어디를 누르나'를, 또렷해진 테두리는 '이 카드가 바뀌었다'를 말한다.
+      const svg = path.parentElement as SVGSVGElement | null;
+      if (svg) {
+        if (want) svg.setAttribute("data-dirty", "");
+        else svg.removeAttribute("data-dirty");
       }
     };
     const step = () => {
@@ -1473,18 +1424,29 @@ export function StudioShell({
       // 무겁게: 높이는 손보다 한 박자 늦게(넘침 ~3%), 폭은 천천히 부푼다(넘침 없음).
       [y, vy] = ringSpring(y, vy, targetY, 0.06, 0.72);
       [b, vb] = ringSpring(b, vb, targetB, 0.045, 0.7);
+      // 힌트는 탭보다 가볍게 따라온다 — 손을 따라다니는 물건이라 늦으면 답답하다(넘침 없음).
+      if (hintTargetY !== null) {
+        if (hintY === null) hintY = hintTargetY;
+        [hintY, hintVY] = ringSpring(hintY, hintVY, hintTargetY, 0.14, 0.78);
+      }
       tab.style.top = `${y}px`;
       tab.style[saveTabSideRef.current === "left" ? "left" : "right"] = `${-b}px`;
       tab.style[saveTabSideRef.current === "left" ? "right" : "left"] = "auto";
       tab.style.opacity = String(Math.min(1, b / 12)); // 부푸는 첫 12px 동안 옅게 떠오른다
       draw();
-      if (Math.abs(targetY - y) > 0.2 || Math.abs(vy) > 0.2 || Math.abs(targetB - b) > 0.2 || Math.abs(vb) > 0.2) {
+      const hintMoving =
+        hintTargetY !== null && hintY !== null && (Math.abs(hintTargetY - hintY) > 0.2 || Math.abs(hintVY) > 0.2);
+      if (hintMoving || Math.abs(targetY - y) > 0.2 || Math.abs(vy) > 0.2 || Math.abs(targetB - b) > 0.2 || Math.abs(vb) > 0.2) {
         raf = requestAnimationFrame(step);
       } else {
         y = targetY;
         b = targetB;
         vy = 0;
         vb = 0;
+        if (hintTargetY !== null) {
+          hintY = hintTargetY;
+          hintVY = 0;
+        }
         tab.style.top = `${y}px`;
         tab.style[saveTabSideRef.current === "left" ? "left" : "right"] = `${-b}px`;
         tab.style.opacity = b > 0 ? "1" : "0";
@@ -1512,6 +1474,21 @@ export function StudioShell({
       lastPt = { x: e.clientX, y: e.clientY, t: now };
       const r = panel.getBoundingClientRect();
       const zoom = panel.offsetWidth > 0 ? r.width / panel.offsetWidth : 1;
+      // 힌트 따라다니기(2026-09-19 소유자) — 탭이 숨어 있는 동안 점선 위의 밝은 자리가 마우스 높이를 따라가고,
+      // 카드 중심보다 왼쪽이면 왼쪽 점선, 오른쪽이면 오른쪽 점선으로 건너간다. 탭과 달리 머무름을 요구하지 않는다
+      // (신호일 뿐 버튼이 아니라서). 카드에서 멀면(HINT_NEAR 밖) 마지막 자리에 그대로 둔다.
+      const HINT_NEAR = 320;
+      if (
+        e.clientY >= r.top - 80 &&
+        e.clientY <= r.bottom + 80 &&
+        e.clientX >= r.left - HINT_NEAR &&
+        e.clientX <= r.right + HINT_NEAR
+      ) {
+        const tabH = tab.offsetHeight || 96;
+        hintSide = e.clientX < r.left + r.width / 2 ? "left" : "right";
+        hintTargetY = (e.clientY - r.top) / zoom - tabH / 2;
+        kick();
+      }
       // 옆 구역 판정(왼쪽/오른쪽/없음) — 카드 세로 범위(±40) 안에서 옆면 밖 ZONE_OUT·안 ZONE_IN.
       const inY = e.clientY >= r.top - 40 && e.clientY <= r.bottom + 40;
       let zone: "left" | "right" | null = null;
@@ -7681,7 +7658,10 @@ export function StudioShell({
           {!isNarrow ? (
             <svg aria-hidden="true" className="editor-ring">
               <path ref={ringPathRef} />
+              {/* 변경 감지 하이라이팅 — 빛무리(넓고 옅게) · 심지(또렷하게) · 스침(위를 천천히 흐르는 빛). 셋 다 카드 모드 색. */}
+              <path className="editor-ring-hint-glow" ref={ringHintGlowRef} />
               <path className="editor-ring-hint" ref={ringHintRef} />
+              <path className="editor-ring-hint-spark" ref={ringHintSparkRef} />
             </svg>
           ) : null}
           {!teaserGateActive && canEdit ? (
