@@ -16,6 +16,7 @@ const ev = (over: Partial<PublicSearchHit>): PublicSearchHit => ({
   title: "젤다 야숲 엔딩 도전",
   snippet: "",
   score: 3,
+  exact: true,
   ...over
 });
 const vod = (over: Partial<PublicSearchHit>): PublicSearchHit => ({
@@ -26,6 +27,7 @@ const vod = (over: Partial<PublicSearchHit>): PublicSearchHit => ({
   snippet: "",
   durationMs: 3600_000,
   score: 2.2,
+  exact: true,
   ...over
 });
 const ch = (sec: number, over: Partial<PublicSearchHit> = {}): PublicSearchHit => ({
@@ -37,6 +39,7 @@ const ch = (sec: number, over: Partial<PublicSearchHit> = {}): PublicSearchHit =
   snippet: "젤다 엔딩 봤다",
   durationMs: 3600_000,
   score: 1.5,
+  exact: true,
   ...over
 });
 
@@ -65,6 +68,20 @@ describe("검색 결과 묶기 — 날짜 → 일정·다시보기 → 챕터", 
       ev({ dateKey: "2024-01-01", score: 5 })
     ]);
     expect(g.map((d) => d.dateKey)).toEqual(["2024-01-01", "2026-01-01", "2025-01-01"]);
+  });
+
+  it("유사도만 맞은(exact=false) 묶음은 점수가 높아도 정확 적중 뒤로 간다", () => {
+    const g = groupSearchHits([
+      ev({ dateKey: "2026-02-02", score: 9, exact: false }),
+      ev({ dateKey: "2025-02-02", score: 1, exact: true }),
+      ch(5, { dateKey: "2026-02-02", exact: true })
+    ]);
+    expect(g.map((d) => [d.dateKey, d.exact])).toEqual([
+      ["2026-02-02", true], // 챕터 하나가 정확 적중이라 묶음은 exact
+      ["2025-02-02", true]
+    ]);
+    const g2 = groupSearchHits([ev({ dateKey: "2026-02-02", score: 9, exact: false }), ev({ dateKey: "2025-02-02", score: 1 })]);
+    expect(g2.map((d) => d.dateKey)).toEqual(["2025-02-02", "2026-02-02"]);
   });
 
   it("한 다시보기의 챕터는 상위 N개만 남기고 나머지는 개수로 접는다", () => {

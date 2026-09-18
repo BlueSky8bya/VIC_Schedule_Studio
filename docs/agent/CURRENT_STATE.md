@@ -17,7 +17,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| VIEWER-SEARCH | P0+P1+P2 done (local, uncommitted) | Owner visual review; P3 (IDF weighting, 초성, did-you-mean) on request | [PLAN-023](plans/PLAN-20260918-023-viewer-search.md) |
+| VIEWER-SEARCH | P0–P3 shipped (`c5620f6a` + follow-up) | Owner visual review on prod; nothing queued | [PLAN-023](plans/PLAN-20260918-023-viewer-search.md) |
 | AMB-FOREST | Release authorized | Review fog sky boundary and entry keys | [R69](../ambient/rounds/ROUND-69-fog-sky-boundary.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |
 | ART-PINE-PILOT | Awaiting Owner Curation | Owner names the reference PNGs to drop; delete those pairs, rebake the notice, create a new run and request variants 2·3 across the three seasons | [Pine entry point](../../art-src/나무/소나무/프롬프트.md) |
@@ -46,6 +46,8 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 6. OPS-ANALYTICS-CLEANUP: keep the production operation separate; current authorization and recoverable backup must precede deletion.
 
 ## Last Verified
+
+2026-09-18 (viewer search P3 + owner feedback): migration 0077 applied (IDF-weighted token ratio, `search_choseong` + `label_cho` column, `exact` flag, RPC return type changed → dropped/recreated). Probe: "마크 왁피스" now ranks the 왁피스 VOD first; "ㅁㅋ" → 마크 chapters (128 rows). Results list redesigned (YouTube results/key moments + Spotlight): no per-row text CTAs, kind = left icon/thumbnail/timecode, one action glyph at the right, chapters under a guide line, "비슷한 결과" divider for fuzzy-only groups, tag chips before typing. Header pill "이 달 기록" → "기록". VOD/chapter picks also move the calendar month (cookie), and on mount the viewer re-reads the cookie month because Next's router cache restored the stale month after back from /replay (probe: back → 2025년 12월). Unit 8/8, data-act 35/35, integration 5/5, tsc/eslint clean.
 
 2026-09-18 (viewer search P1/P2): header `poster-interest` now holds a `search-open` pill (same `insights-open` part, `--mid-pill-w` measured against it); ♥ filter stays in the agenda legend, which also gained a mobile search chip. Sheet = `components/poster/public-search.tsx` on the `pi-*` shell, sharing the one sheet state/history slot with '이 달 기록' (`sheet: null|insights|search`). Event hit → `moveMonth` + `.cell-flash` (grid `data-date` / agenda `data-flip-key`); vod/chapter hit → `openDayVod(date, part, sec)` → viewer `/replay/<date>?part=&t=`, preview modal `initialPart/initialSec`; `DayVodWindow.initialSec` seeks via `jumpDayVod` one tick after mount. Closing the sheet before navigating had to wait for its `history.back()` popstate (it cancelled `router.push`, see memory overlay-history-back-cancels-nav). Playwright probe on a temp :3111 dev server (anon): pill present, 77 rows/30 days for "엔딩", event pick moved to 2026-07 and flashed, chapter pick landed on `/replay/2025-10-19?t=16721` with the chapter gold and strip head in place, mobile chip → sheet → agenda flash. `tsc`/eslint clean; data-act dictionary test passes again (added vod-tab, title-input, search entries). e2e spec `tests/e2e/public-search.spec.ts` added.
 

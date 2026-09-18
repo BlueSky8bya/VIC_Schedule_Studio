@@ -625,6 +625,7 @@ export async function searchPublic(
     duration_ms: number | string | null;
     host_nick: string | null;
     score: number | string;
+    exact: boolean | null;
   };
   const hits: import("@/lib/domain/schedule-types").PublicSearchHit[] = [];
   for (const row of data as Row[]) {
@@ -634,7 +635,8 @@ export async function searchPublic(
       dateKey: String(row.date_key).slice(0, 10),
       title: typeof row.title === "string" ? row.title : "",
       snippet: typeof row.snippet === "string" ? row.snippet : "",
-      score: Number(row.score) || 0
+      score: Number(row.score) || 0,
+      exact: row.exact === true
     };
     if (row.kind === "event") {
       if (!row.event_id) continue;

@@ -24,6 +24,7 @@ export type SearchVodGroup = {
 export type SearchDayGroup = {
   dateKey: string;
   score: number;
+  exact: boolean; // 안에 정확 적중이 하나라도 있는가(없으면 '비슷한 결과' 구역으로)
   events: PublicSearchHit[]; // kind=event만
   vods: SearchVodGroup[];
 };
@@ -33,7 +34,7 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
   const dayOf = (dateKey: string): SearchDayGroup => {
     let d = days.get(dateKey);
     if (!d) {
-      d = { dateKey, score: 0, events: [], vods: [] };
+      d = { dateKey, score: 0, exact: false, events: [], vods: [] };
       days.set(dateKey, d);
     }
     return d;
@@ -62,6 +63,7 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
     if (!hit.dateKey) continue;
     const day = dayOf(hit.dateKey);
     day.score = Math.max(day.score, hit.score);
+    if (hit.exact) day.exact = true;
     if (hit.kind === "event") {
       day.events.push(hit);
       continue;
@@ -93,7 +95,10 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
     }
     day.vods.sort((a, b) => b.score - a.score);
   }
-  out.sort((a, b) => b.score - a.score || b.dateKey.localeCompare(a.dateKey));
+  // 정확 적중 묶음이 먼저, 그 다음 '비슷한 결과'(유사도만) — 서버 정렬(exact desc)과 같은 원칙.
+  out.sort(
+    (a, b) => Number(b.exact) - Number(a.exact) || b.score - a.score || b.dateKey.localeCompare(a.dateKey)
+  );
   return out;
 }
 

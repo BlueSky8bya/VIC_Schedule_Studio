@@ -109,7 +109,7 @@ import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
-import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
+import { VIEW_COOKIE, parseViewCookie, writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
 import { DayVodWindow, formatVodDuration } from "@/components/poster/day-vod-window";
@@ -857,6 +857,22 @@ export function PublicPoster({
     year: initialYear ?? schedule.calendar.defaultYear,
     month: initialMonth ?? schedule.calendar.defaultMonth
   });
+  // /replay 등에서 뒤로 돌아오면 Next 라우터 캐시가 **떠날 때의 RSC**(옛 initialYear/Month)로 다시
+  // 마운트한다 — 그 사이 moveMonth가 쿠키에 적어 둔 달(검색 → 다시보기 때 옮긴 달)이 무시됐다(실측).
+  // 시청자 화면(accountSwitch)만: 마운트 직후 쿠키 달이 다르면 그 달로. 서버가 준 초기값이 곧 쿠키라
+  // 보통은 같아서 아무 일도 없다.
+  useEffect(() => {
+    if (!accountSwitch || typeof document === "undefined") return;
+    const raw = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith(`${VIEW_COOKIE}=`))
+      ?.slice(VIEW_COOKIE.length + 1);
+    const mem = parseViewCookie(raw); // parseViewCookie가 decodeURIComponent까지 한다
+    if (typeof mem.sy === "number" && typeof mem.sm === "number") {
+      setView((v) => (v.year === mem.sy && v.month === mem.sm ? v : { year: mem.sy!, month: mem.sm! }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 1회
+  }, []);
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
   const today = getTodayKst();
   // 업 도움은 기간(종료일, KST)이 지나면 전부 자동으로 내린다 — 달력 띠·줄 칸·우측 안내 카드
@@ -1108,6 +1124,11 @@ export function PublicPoster({
   const onSearchPickVod = (dateKey: string, titleNo: number, sec?: number) => {
     const list = vodsByDate.get(dateKey) ?? [];
     const idx = list.findIndex((v) => v.titleNo === titleNo);
+    // 달력도 그 달로(2026-09-18 소유자): 페이지(/replay)에서 돌아오면 그 달이 보이고(쿠키), 미리보기
+    // 모달은 뒤에 그 달이 깔린다. 같은 달이면 이동 없음.
+    const [y, m] = dateKey.split("-").map(Number);
+    const offset = (y - view.year) * 12 + (m - view.month);
+    if (offset !== 0) moveMonth(offset);
     // 시트를 닫으면 히스토리 배관이 history.back()을 부른다 — 그 뒤로가기가 **진행 중인 router.push를
     // 취소**하고(실측: /replay로 안 감), 창(모달)이 쌓는 pushState와도 순서가 꼬인다. 그래서 닫기의
     // popstate가 정리된 뒤(한 번 듣고) 다음 틱에 연다. 시트가 안 떠 있으면 바로.
@@ -1753,6 +1774,11 @@ export function PublicPoster({
   const canHeart = interactive && serverHearts;
   // 검색 개인화(내 ♥ 일정 +0.3)용 — 클라이언트에서만 더한다(서버 응답은 익명 동일).
   const bookmarkSet = useMemo(() => new Set(bookmarks), [bookmarks]);
+  // 검색 결과의 다시보기 썸네일(0072 thumbQuery) — 공개 번들이 이미 들고 있어 검색 응답에 안 싣는다.
+  const thumbByTitle = useMemo(
+    () => new Map((schedule.vods ?? []).map((v) => [v.titleNo, v.thumbQuery ?? ""] as const)),
+    [schedule.vods]
+  );
 
   // '이 달 기록' 시트도 같은 방식으로 히스토리 한 칸을 쌓는다 — 폰에서 뒤로가기를 누르면 시트만
   // 닫혀야 하는데, 안 쌓아두면 페이지를 통째로 떠나(이전 화면으로) 버린다.
@@ -4462,6 +4488,8 @@ export function PublicPoster({
           onPickEvent={onSearchPickEvent}
           onPickVod={onSearchPickVod}
           slug={schedule.calendar.slug}
+          tags={schedule.tags}
+          thumbOf={(titleNo) => thumbByTitle.get(titleNo) || undefined}
         />
       ) : null}
       {/* 시청자 화면 미리보기(꾸미기 아님) — 아바타 컨트롤을 페이지 좌상단(absolute)에 둔다. 헤더에
@@ -4643,11 +4671,12 @@ export function PublicPoster({
                     hapticTick();
                     setInsightsOpen(true);
                   }}
-                  title="방송 시간 · 태그 통계"
+                  title="이 달 기록 — 방송 시간 · 태그 통계"
                   type="button"
                 >
                   <span aria-hidden="true">📊</span>
-                  <span className="lbl">이 달 기록</span>
+                  {/* '이 달 기록' → '기록'(2026-09-18 소유자: 글자가 알약 끝에 붙어 답답). 뜻은 title이 보탠다. */}
+                  <span className="lbl">기록</span>
                 </button>
               </div>
             ) : null}

@@ -48,3 +48,4 @@
 | 0074 | retire_trusted_members — `trusted_members`·`trusted_role`·`is_active_trusted_member()` drop (ADR-0018; 행 0·참조 정책 0 실측; 코드 push 뒤 적용) |
 | 0075 | vod_archive_guest — 합방 게스트 출연분(host_id·host_nick·guest) |
 | 0076 | public_search — 시청자 검색: pg_trgm·`search_norm`·`vod_chapter_index`(타임라인 트리거 평탄화)·`search_public` RPC(공개 일정·다시보기·챕터 한 순위) |
+| 0077 | public_search_p3 — 검색 P3: IDF 가중 토큰 비율·초성열(`search_choseong`, `label_cho`)·`exact` 플래그(RPC 반환형 변경) |

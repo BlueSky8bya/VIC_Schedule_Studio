@@ -7441,43 +7441,75 @@ html[data-pchrome="3"] .poster-chrome-title {
   background: rgb(0 0 0 / 11%);
 }
 
+/* 본문 — 2차(2026-09-18): 줄 전체가 버튼, 글자 CTA 없음, 종류는 왼쪽 아이콘/썸네일/타임코드, 행동은
+   오른쪽 끝 글리프 하나(›/▶). 유튜브 검색·주요 순간 + Spotlight 묶음 머리. */
 .ps-body {
-  gap: 14px;
+  gap: 4px;
+  padding-top: 8px;
   transition: opacity var(--dur-1) var(--ease);
 }
 .ps-body.is-busy {
   opacity: 0.72;
 }
+.ps-start {
+  display: grid;
+  gap: 10px;
+  padding: 4px 2px 8px;
+}
 .ps-hint {
-  margin: 6px 2px;
+  margin: 4px 2px;
   font-size: var(--text-body, 15px);
   font-weight: 600;
   line-height: 1.5;
   color: var(--muted);
 }
-.ps-hint em {
-  font-style: normal;
-  font-weight: 800;
-  color: var(--ink, #23303f);
-  padding: 0 5px;
-  border-radius: 6px;
-  background: rgb(124 108 240 / 10%);
-}
 .ps-hint.ps-fail {
   color: #b42318;
+}
+.ps-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ps-chip {
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  padding: 5px 11px;
+  font: inherit;
+  font-size: var(--text-caption, 12.5px);
+  font-weight: 800;
+  color: var(--ink, #23303f);
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.ps-chip:hover {
+  background: rgb(124 108 240 / 10%);
+  border-color: rgb(124 108 240 / 45%);
 }
 
 .ps-day {
   display: grid;
-  gap: 6px;
+  gap: 2px;
   min-width: 0;
+  padding-bottom: 8px;
 }
+/* 묶음 머리 = 날짜 한 줄 + 오른쪽으로 흐르는 실선(Spotlight 섹션 머리). */
 .ps-day-head {
-  margin: 2px 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 4px;
   font-size: var(--text-caption, 12.5px);
   font-weight: 900;
   letter-spacing: 0.02em;
   color: var(--muted);
+}
+.ps-day-head::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: #efe6d3;
 }
 .ps-row {
   display: flex;
@@ -7485,10 +7517,11 @@ html[data-pchrome="3"] .poster-chrome-title {
   gap: 10px;
   width: 100%;
   min-width: 0;
-  border: 1px solid #efe6d3;
-  border-radius: var(--r-card, 14px);
-  background: #fffdf6;
-  padding: 10px 12px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--r-card, 12px);
+  background: transparent;
+  padding: 6px 8px;
   text-align: left;
   font: inherit;
   color: var(--ink, #23303f);
@@ -7501,32 +7534,42 @@ html[data-pchrome="3"] .poster-chrome-title {
 .ps-row:hover,
 .ps-row.is-cursor {
   background: #fff8e8;
-  border-color: #e7d3a0;
+  border-color: #eadcb8;
 }
 .ps-row:active {
   transform: scale(0.99);
 }
-.ps-kind {
+/* 왼쪽 자리(아이콘/썸네일) — 폭을 맞춰 제목 시작선이 줄마다 같다. */
+.ps-lead {
+  display: grid;
   flex: none;
-  min-width: 52px;
-  border-radius: 999px;
-  padding: 3px 8px;
-  text-align: center;
-  font-size: var(--text-caption, 12.5px);
-  font-weight: 900;
+  place-items: center;
+  width: 56px;
+  height: 32px;
+  border-radius: 8px;
   color: #6b5b34;
-  background: rgb(244 183 64 / 22%);
+  background: rgb(244 183 64 / 18%);
 }
-.ps-vod-row .ps-kind {
+.ps-lead-event {
+  width: 32px;
+}
+.ps-thumb {
+  overflow: hidden;
   color: #1d4ed8;
-  background: rgb(59 130 246 / 14%);
+  background: rgb(59 130 246 / 12%);
+}
+.ps-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .ps-main {
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 .ps-title {
   display: block;
@@ -7538,12 +7581,7 @@ html[data-pchrome="3"] .poster-chrome-title {
   font-weight: 800;
   line-height: 1.3;
 }
-.ps-time {
-  margin-right: 6px;
-  font-weight: 900;
-  color: #6b5b34;
-}
-.ps-snippet {
+.ps-meta {
   display: block;
   min-width: 0;
   overflow: hidden;
@@ -7559,51 +7597,91 @@ html[data-pchrome="3"] .poster-chrome-title {
   border-radius: 4px;
   padding: 0 1px;
 }
-.ps-go {
+/* 행동 글리프 — 쉬고 있을 땐 흐리게, 호버/커서에 진해진다(줄마다 글자 버튼을 두지 않는 이유). */
+.ps-act {
   flex: none;
-  font-size: var(--text-caption, 12.5px);
-  font-weight: 800;
-  color: rgb(124 108 240);
-  white-space: nowrap;
+  color: var(--muted);
+  opacity: 0.45;
+  transition: opacity var(--dur-1) var(--ease), color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
 }
-/* 다시보기 묶음 — 챕터는 안쪽으로 들여쓴다(유튜브 '주요 순간'처럼 영상 아래 시각 목록). */
+.ps-row:hover .ps-act,
+.ps-row.is-cursor .ps-act {
+  opacity: 1;
+  color: rgb(124 108 240);
+  transform: translateX(2px);
+}
+/* 다시보기 묶음 — 챕터는 가이드선 안쪽에 낮은 줄로(유튜브 '주요 순간'). */
 .ps-vod {
   display: grid;
-  gap: 4px;
+  gap: 0;
 }
-.ps-vod.via-chapter .ps-vod-row {
-  background: #fffdf6;
-  border-style: dashed;
+.ps-vod-row.via-chapter .ps-title {
+  font-weight: 700;
+}
+.ps-chapters {
+  display: grid;
+  gap: 0;
+  margin: 0 0 4px 24px;
+  padding-left: 12px;
+  border-left: 2px solid #ecdfc0;
 }
 .ps-chapter {
-  margin-left: 22px;
-  padding: 7px 12px;
-  border-color: #f2ecdf;
-  background: #fff;
+  min-height: 34px;
+  padding: 4px 8px;
 }
 .ps-tc {
   flex: none;
-  min-width: 58px;
+  min-width: 56px;
   font-variant-numeric: tabular-nums;
   font-size: var(--text-caption, 12.5px);
   font-weight: 900;
   color: #1d4ed8;
 }
+.ps-chapter .ps-title {
+  font-size: var(--text-caption, 13px);
+  font-weight: 700;
+}
 .ps-more {
-  margin-left: 24px;
+  padding: 2px 8px 4px;
   font-size: var(--text-caption, 12.5px);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--muted);
 }
+.ps-similar {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+}
+.ps-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+  font-size: var(--text-caption, 12.5px);
+  font-weight: 800;
+  color: var(--muted);
+}
+.ps-divider::before,
+.ps-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: #e6dcc6;
+}
 @media (max-width: 640px) {
-  .ps-kind {
-    display: none;
+  .ps-lead {
+    width: 44px;
+    height: 28px;
   }
-  .ps-go {
-    display: none;
+  .ps-lead-event {
+    width: 28px;
   }
-  .ps-chapter {
-    margin-left: 12px;
+  .ps-chapters {
+    margin-left: 14px;
+    padding-left: 8px;
+  }
+  .ps-tc {
+    min-width: 50px;
   }
 }
 

@@ -192,6 +192,7 @@ export type PublicSearchHit = {
   durationMs?: number; // kind=vod|chapter
   hostNick?: string; // 합방 게스트 출연분(0075)이면 호스트 닉
   score: number;
+  exact: boolean; // 정규화 구/토큰이 실제로 포함된 적중(false = 트라이그램 유사도만 — 화면은 '비슷한 결과')
 };
 export type PublicSearchResult = {
   query: string;
