@@ -1972,6 +1972,29 @@ html[data-reduce-motion] .vch-tip {
   box-shadow: 0 4px 10px rgb(29 29 41 / 14%);
 }
 .vch-peak:active { transform: translateX(-50%) scale(0.96); }
+/* 경과 ↔ 실제 시각 토글(2026-09-18) — 타임라인 머리 아래 조용한 칩. */
+.vch-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 6px 4px;
+  padding: 2px 9px;
+  border: 1px solid var(--line, #e6e2f0);
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: rgb(35 48 63 / 62%);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.vch-clock:hover { color: var(--ink, #23303f); background: #f6f4ff; }
+.vch-clock.is-on {
+  color: #1d4ed8;
+  border-color: rgb(53 100 224 / 35%);
+  background: rgb(53 100 224 / 10%);
+}
 .vch-laugh-row { margin: 0 0 6px; padding: 0 4px; }
 .vch-laugh {
   display: inline-block;
@@ -8276,17 +8299,19 @@ html[data-pchrome="3"] .poster-chrome-title {
 
 /* 날짜 레일 — 오른쪽 세로 점열. 지나온 점 = 채움, 현재 = 큰 점 + 말풍선(스크롤 중), 남은 점 = 흐림.
    채워진 길이가 곧 진행이다(숫자 없이). */
+/* 날짜 레일 — 2026-09-18 소유자: 점이 작아 누르기 어렵다. 점(4px)은 그대로 두되 **누르는 면적**을 24px로 넓히고
+   간격도 벌린다(피츠의 법칙: 표적 크기가 커지면 조준 시간이 짧아진다). 호버하면 그 묶음의 날짜가 뜬다. */
 .ps-rail {
   position: absolute;
   top: 8px;
-  right: 3px;
+  right: 0;
   bottom: 8px;
   z-index: 3;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
-  width: 14px;
+  gap: 1px;
+  width: 24px;
   padding: 6px 0;
 }
 .ps-rail-dot {
@@ -8294,9 +8319,9 @@ html[data-pchrome="3"] .poster-chrome-title {
   display: grid;
   flex: 0 1 auto;
   place-items: center;
-  width: 14px;
-  min-height: 6px;
-  max-height: 14px;
+  width: 24px;
+  min-height: 12px;
+  max-height: 22px;
   height: 100%;
   border: 0;
   background: transparent;
@@ -8327,7 +8352,7 @@ html[data-pchrome="3"] .poster-chrome-title {
 }
 .ps-rail-tip {
   position: absolute;
-  right: 18px;
+  right: 24px;
   top: 50%;
   transform: translate(6px, -50%) scale(0.92);
   border-radius: 8px;
@@ -8343,7 +8368,8 @@ html[data-pchrome="3"] .poster-chrome-title {
   pointer-events: none;
   transition: opacity var(--dur-2) var(--ease), transform var(--dur-3) var(--spring-bouncy, var(--ease-spring));
 }
-.ps-rail.is-scrolling .ps-rail-tip,
+/* 스크롤 중엔 '현재' 말풍선만(모든 점에 말풍선이 생겼으므로), 호버는 그 점만 */
+.ps-rail.is-scrolling .ps-rail-dot.is-now .ps-rail-tip,
 .ps-rail-dot:hover .ps-rail-tip {
   opacity: 1;
   transform: translate(0, -50%);

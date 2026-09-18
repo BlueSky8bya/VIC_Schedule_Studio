@@ -278,7 +278,7 @@ const loadPublicScheduleData = unstable_cache(
         // 안 되므로 칩을 내보내지 않는다(0069, 2026-08-31 사용자 결정). 미상(0)도 제외.
         supabase
           .from("vod_archive")
-          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id")
+          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date")
           .eq("auth_no", 101)
           .order("broadcast_day", { ascending: false })
           .limit(1000),
@@ -328,7 +328,7 @@ const loadPublicScheduleData = unstable_cache(
             (t) => [Number(t.title_no), t]
           )
         );
-        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string }[] | null) ?? [])
+        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string; reg_date?: string }[] | null) ?? [])
           .map((row) => {
             // 합방 게스트 출연분(0075)만 호스트 닉·아이디를 싣는다(둘 다 숲 공개 채널 정보). 아이디는 방송국 링크용.
             const host = row.guest === true && typeof row.host_nick === "string" && row.host_nick.trim() ? row.host_nick.trim() : undefined;
@@ -348,6 +348,12 @@ const loadPublicScheduleData = unstable_cache(
               title: typeof row.title === "string" ? row.title : "",
               durationMs: Number(row.duration_ms) || 0,
               chapters: tl ? Number(tl.entry_count) || 0 : 0,
+              // 방송 시작 시각 = VOD 등록 시각 − 길이(숲은 방송이 끝나면 VOD를 등록한다). 방송 세션 기록과 분 단위 일치(실측).
+              ...(() => {
+                const reg = row.reg_date ? Date.parse(row.reg_date) : Number.NaN;
+                const dur = Number(row.duration_ms) || 0;
+                return Number.isFinite(reg) && dur > 0 ? { startedAt: new Date(reg - dur).toISOString() } : {};
+              })(),
               timelineBy: tl && typeof tl.author_nick === "string" ? tl.author_nick : "",
               thumbQuery
             };

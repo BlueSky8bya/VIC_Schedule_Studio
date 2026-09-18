@@ -889,7 +889,8 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                     onClick={() => jumpToDay(d)}
                     type="button"
                   >
-                    {state === "now" ? <span className="ps-rail-tip">{formatMonthLabel(d)}</span> : null}
+                    {/* 말풍선은 모든 점에 두고 CSS가 현재·호버일 때만 보인다(2026-09-18 소유자: 호버하면 날짜도) */}
+                    <span className="ps-rail-tip">{formatMonthLabel(d)}</span>
                   </button>
                 );
               })}

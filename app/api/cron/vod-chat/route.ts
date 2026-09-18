@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   if (result.chunks > 0) {
     const supabase = createSupabaseAdminClient();
     if (supabase) {
-      for (const fn of ["search_term_graph_rebuild", "search_synonyms_rebuild"] as const) {
+      for (const fn of ["search_term_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
         const { error } = await supabase.rpc(fn);
         if (error) console.warn(`[vod-chat] ${fn} failed:`, error.message);
       }

@@ -22,6 +22,7 @@ export type DayVod = {
   thumbQuery?: string;
   host?: string; // 합방 게스트 출연분(0075) — 호스트 닉. 칩·창에 "합방 · ○○" 배지
   hostId?: string; // 호스트 숲 아이디 — 칩이 방송국 링크가 된다(2026-09-17)
+  startedAt?: string; // 방송 시작 시각(ISO) — 타임라인의 '실제 시각' 표기(2026-09-18 소유자)
 };
 
 // 숲 임베드 iframe API의 Pload 명령 — PonReady를 받은 플레이어에게 재생 설정을 통째로 넘긴다.
@@ -1004,6 +1005,7 @@ export function DayVodWindow({
                             defaultOpen
                             durationMs={vod.durationMs}
                             onJump={(sec) => jumpDayVod(vod.titleNo, sec)}
+                            startedAt={vod.startedAt}
                             register={registerDayVodChapterApi}
                             slug={slug}
                             stripHost={dayVodStripHost}

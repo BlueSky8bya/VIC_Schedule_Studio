@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Clock3 } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { PublicVodChatProfile, PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -29,6 +30,19 @@ export type VodChaptersApi = {
   toggle: () => void; // 레일 접기/펼치기
 };
 
+// 방송 시작 시각 + 경과 초 → 벽시계 시각(KST). "19:32" / 자정을 넘기면 "01:07".
+export function wallClock(startedAt: string | undefined, sec: number): string | null {
+  if (!startedAt) return null;
+  const base = Date.parse(startedAt);
+  if (!Number.isFinite(base)) return null;
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(new Date(base + sec * 1000));
+}
+
 export function VodChapters({
   slug,
   titleNo,
@@ -39,6 +53,7 @@ export function VodChapters({
   defaultOpen,
   subscribeTime,
   stripHost,
+  startedAt,
   register
 }: {
   slug: string;
@@ -58,10 +73,32 @@ export function VodChapters({
   // 포털로 꽂는다. 없으면(모바일 아젠다) 띠 없음. 띠는 전체 길이 대비 코너 구간·항목 눈금·재생 머리·호버 이름을 보이고,
   // 클릭 = 그 시각으로 점프(플레이어 자체 탐색줄 대용 — iframe이라 우리 탐색줄이 없었다).
   stripHost?: HTMLElement | null;
+  // 방송 시작 시각(ISO) — 있으면 타임라인 시각을 '경과 ↔ 실제 시각'으로 토글할 수 있다(2026-09-18 소유자).
+  startedAt?: string;
   // 키보드 조종 API 등록(부모 창의 ↑/↓·[/]·C가 여기로 온다). 언마운트 때 null.
   register?: (api: VodChaptersApi | null) => void;
 }) {
   const [open, setOpen] = useState(Boolean(defaultOpen) && chapters > 0);
+  // 시각 표기: 경과(0:12:34) ↔ 실제 시각(19:32). 방송 시작 시각을 알 때만 토글이 뜬다. 선택은 기기에 기억.
+  const [clockMode, setClockMode] = useState(false);
+  useEffect(() => {
+    try {
+      setClockMode(window.localStorage.getItem("vic.vod.clock") === "1");
+    } catch {
+      /* 저장소 불가 — 기본 경과 */
+    }
+  }, []);
+  const toggleClock = () => {
+    hapticTick();
+    setClockMode((v) => {
+      try {
+        window.localStorage.setItem("vic.vod.clock", v ? "0" : "1");
+      } catch {
+        /* 무시 */
+      }
+      return !v;
+    });
+  };
   const [timeline, setTimeline] = useState<PublicVodTimeline | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -280,6 +317,7 @@ export function VodChapters({
           }}
           profile={profile}
           stripRef={stripRef}
+          wall={startedAt ? (sec: number) => wallClock(startedAt, sec) : undefined}
         />,
         stripHost!
       )
@@ -302,6 +340,20 @@ export function VodChapters({
         타임라인 {chapters}개
         {timelineBy ? <em className="vch-by">({timelineBy}님 감사합니다)</em> : null}
       </button>
+      {/* 경과 ↔ 실제 시각(2026-09-18 소유자: "이 영상이 재생될 때의 실제 시간도") — 방송 시작 시각을 아는 방송만. */}
+      {open && startedAt ? (
+        <button
+          aria-pressed={clockMode}
+          className={`vch-clock${clockMode ? " is-on" : ""}`}
+          data-act="vod-clock-toggle"
+          onClick={toggleClock}
+          title={clockMode ? "방송 시작부터의 경과 시간으로 보기" : "그 장면의 실제 시각(KST)으로 보기"}
+          type="button"
+        >
+          <Clock3 aria-hidden="true" size={12} strokeWidth={2.4} />
+          {clockMode ? "실제 시각" : "경과"}
+        </button>
+      ) : null}
       {/* 웃음 등급(0090) — 숫자 없이 '많이 웃은 방송'만. 채팅 웃음(ㅋ)이 전체 상위 25%일 때. 토글 줄에 넣으면 머리줄이 세 줄로
           꺾여(실측) 따로 한 줄. */}
       {profile?.laughTier === "high" ? (
@@ -407,7 +459,9 @@ export function VodChapters({
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    <time className="vch-t">{hhmmss(e.sec)}</time>
+                    <time className="vch-t" title={clockMode ? `경과 ${hhmmss(e.sec)}` : (wallClock(startedAt, e.sec) ?? undefined)}>
+                      {(clockMode && wallClock(startedAt, e.sec)) || hhmmss(e.sec)}
+                    </time>
                     <span className="vch-label">{e.label}</span>
                     {tip?.idx === e.idx ? (
                       <span className={`vch-tip${tip.above ? " is-above" : ""}`} role="tooltip">
@@ -439,10 +493,12 @@ function VodStrip({
   stripRef,
   hhmmss,
   onPick,
-  profile
+  profile,
+  wall
 }: {
   groups: { section: string | null; items: { sec: number; label: string; idx: number; depth: number }[] }[];
   profile: PublicVodChatProfile | null;
+  wall?: (sec: number) => string | null; // 경과 초 → 실제 시각(KST), 모르면 undefined
   durationSec: number;
   activeIdx: number | null;
   headRef: RefObject<HTMLSpanElement | null>;
@@ -534,7 +590,8 @@ function VodStrip({
         if (!at || !line || !tip) return;
         line.style.left = `${at.ratio * 100}%`;
         line.style.opacity = "1";
-        tip.textContent = `${at.item ? `${hhmmss(at.sec)} · ${at.item.label}` : hhmmss(at.sec)}${at.chat ? `\n${at.chat}` : ""}`;
+        const clock = wall ? wall(at.sec) : null;
+        tip.textContent = `${at.item ? `${hhmmss(at.sec)} · ${at.item.label}` : hhmmss(at.sec)}${clock ? ` · ${clock}` : ""}${at.chat ? `\n${at.chat}` : ""}`;
         // 툴팁은 띠 밖으로 잘리지 않게 — 양 끝에서 안쪽으로 민다.
         const x = at.ratio * at.width;
         const half = Math.min(150, at.width / 2);
