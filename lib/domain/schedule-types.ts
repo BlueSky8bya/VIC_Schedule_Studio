@@ -208,6 +208,8 @@ export type PublicSearchRelated = {
   visits: number; // 채팅에만 나온(놀러온) 방송 수(0090) — 합방은 아니어도 친분 근거
 };
 export type PublicSearchTrend = { term: string; recent: number; ratio: number };
+// 입력 중 제안(0096) — 우리 말뭉치 단어·인물·게임·장르. Enter 전에 아래로 뜬다(유튜브식).
+export type PublicSearchSuggest = { term: string; kind: "term" | "person" | "game" | "genre"; weight: number };
 // 관련 검색어(0080) — 큐레이션(rel: 같은 시리즈, 할나~실크송) 또는 말뭉치 공출현(auto).
 export type PublicSearchRelatedTerm = { term: string; coDocs: number; kind: "rel" | "auto" };
 export type PublicSearchResult = {

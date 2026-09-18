@@ -7766,6 +7766,32 @@ html[data-pchrome="3"] .poster-chrome-title {
   border-color: rgb(244 183 64 / 55%);
   background: rgb(244 183 64 / 14%);
 }
+/* 입력 중 제안 목록(0096) — 머리 바로 아래, 유튜브식 한 줄 항목. 결과 목록보다 위에 겹치지 않고 밀어낸다. */
+.ps-suggest {
+  list-style: none;
+  margin: 0;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--ps-line);
+  background: rgb(255 255 255 / 55%);
+}
+.ps-sug {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  color: var(--ink, #23303f);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.ps-sug.is-cursor { background: rgb(35 48 63 / 6%); }
+.ps-sug-ic { flex: none; color: rgb(35 48 63 / 55%); }
+.ps-sug-term { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-sug-term mark { background: transparent; color: inherit; font-weight: 900; }
+.ps-sug-kind { flex: none; font-size: 11.5px; font-weight: 700; color: rgb(35 48 63 / 45%); }
 /* 편집실 검색(2026-09-18): 직접(일정) 구분선은 파랑 잉크 */
 .ps-divider-direct { color: #1d5fb0; }
 /* 편집실 검색(2026-09-18): 행 + ▶(새 탭 다시보기) 한 줄. (⚠ .ps-line은 진행선 클래스 — 이름 겹쳐 행이 2px로 눌렸던 사고.) */

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, Footprints, Headphones, MessageCircle, Music, Play, Search, X } from "lucide-react";
-import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchTrend } from "@/lib/domain/schedule-types";
+import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, Footprints, Gamepad2, Headphones, MessageCircle, Music, Play, Search, Tag, User, X } from "lucide-react";
+import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchSuggest, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
   findMatchRange,
@@ -31,7 +31,7 @@ import { hapticTick } from "@/lib/ui/haptics";
 //     로딩은 머리 아래 얇은 흐름선(본문은 흐리지 않음). reduce-motion이면 전부 정지.
 //   · 정확 적중 뒤 '비슷한 결과' 구분선, 입력 전 요즘 뜨는 말·태그 칩, 곡은 ♪, "N개 더 보기".
 
-const DEBOUNCE_MS = 300;
+const SUGGEST_DEBOUNCE_MS = 120; // 제안 목록(값싼 RPC). 본검색은 Enter 때만(2026-09-18 소유자: 유튜브·구글식).
 const MIN_CHARS = 1; // 정규화 후 글자 수. 한 글자는 서버가 사전에 있을 때만 결과를 준다(메·롤·숲).
 
 type Props = {
@@ -89,6 +89,9 @@ type Row =
 
 export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, onReplay }: Props) {
   const [q, setQ] = useState("");
+  const [submitted, setSubmitted] = useState<string | null>(null); // Enter(또는 칩·제안 클릭)로 확정된 검색어 — 본검색은 이것만 본다
+  const [suggest, setSuggest] = useState<PublicSearchSuggest[]>([]);
+  const [sugCursor, setSugCursor] = useState(-1);
   // 모바일(2026-09-18 소유자): 결과가 오면 키보드를 내리고, 다시보기·챕터는 창 대신 숲 링크(새 탭)로 간다. 640px = 시트 모바일 CSS 기준.
   const [mobile, setMobile] = useState(false);
   useEffect(() => {
@@ -148,16 +151,23 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // 입력 → 디바운스 → 요청. 새 입력이 오면 이전 요청은 끊는다(늦게 온 옛 결과가 새 결과를 덮지 않게).
-  // 결과가 어느 검색어의 것인지(resultForRef)와 대기 중 요청(flushRef)을 기억한다 — Enter가 옛 결과 행을 고르지 않게(아래 onInputKey).
-  const normalizedLen = normalize(q).length;
+  // 확정 검색어(submitted) → 요청. 입력 중엔 본검색을 하지 않는다(키 입력마다 무거운 RPC를 부르던 방식은 2026-09-18 폐기 —
+  // 서버 부하로 '잠시 안 돼요'가 잦았다). 새 확정이 오면 이전 요청은 끊는다.
   const resultForRef = useRef<string | null>(null);
-  const flushRef = useRef<(() => void) | null>(null);
+  const submit = (term?: string) => {
+    const t = (term ?? q).trim();
+    if (normalize(t).length < MIN_CHARS) return;
+    setQ(t);
+    setSuggest([]);
+    setSugCursor(-1);
+    // 같은 말을 다시 Enter — 실패했던 검색의 재시도 경로(문자열이 같아도 다시 부르게 참조를 바꾼다)
+    setSubmitted((prev) => (prev === t ? `${t} ` : t));
+  };
   useEffect(() => {
     abortRef.current?.abort();
-    setCursor(-1); // 검색어가 바뀌면 옛 결과 위의 커서(호버·↑↓)는 무효
-    flushRef.current = null;
-    if (normalizedLen < MIN_CHARS) {
+    setCursor(-1);
+    const term = submitted?.trim() ?? "";
+    if (!term) {
       resultForRef.current = null;
       setResult(null);
       setBusy(false);
@@ -169,15 +179,14 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     setBusy(true);
     setFailed(false);
     const run = async () => {
-      flushRef.current = null;
       try {
-        const res = await fetch(`/api/public/${slug}/search?q=${encodeURIComponent(q.trim())}&limit=200`, {
+        const res = await fetch(`/api/public/${slug}/search?q=${encodeURIComponent(term)}&limit=200`, {
           signal: ctl.signal
         });
         if (!res.ok) throw new Error(String(res.status));
         const json = (await res.json()) as PublicSearchResult;
         if (ctl.signal.aborted) return;
-        resultForRef.current = q;
+        resultForRef.current = term;
         setResult(json);
         setCursor(-1);
         if (window.matchMedia("(max-width: 640px)").matches) inputRef.current?.blur(); // 키보드 내림 — 결과가 화면을 차지하게
@@ -190,16 +199,38 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         if (!ctl.signal.aborted) setBusy(false);
       }
     };
-    const timer = window.setTimeout(run, DEBOUNCE_MS);
-    flushRef.current = () => {
-      window.clearTimeout(timer);
-      void run();
-    };
+    void run();
+    return () => ctl.abort();
+  }, [submitted, slug]);
+
+  // 입력 중 제안(0096): 확정 검색어와 다른 글자가 들어오면 120ms 뒤 값싼 제안 RPC. 결과는 아래 목록으로.
+  const typing = q.trim().length > 0 && q.trim() !== (submitted?.trim() ?? "");
+  useEffect(() => {
+    if (!typing || normalize(q).length < 1) {
+      setSuggest([]);
+      setSugCursor(-1);
+      return;
+    }
+    const ctl = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/public/${slug}/search/suggest?q=${encodeURIComponent(q.trim())}`, { signal: ctl.signal });
+        if (!res.ok) return;
+        const json = (await res.json()) as { items?: PublicSearchSuggest[] };
+        if (!ctl.signal.aborted) {
+          setSuggest(Array.isArray(json.items) ? json.items : []);
+          setSugCursor(-1);
+        }
+      } catch {
+        /* 제안은 없어도 된다 */
+      }
+    }, SUGGEST_DEBOUNCE_MS);
     return () => {
       window.clearTimeout(timer);
       ctl.abort();
     };
-  }, [q, normalizedLen, slug]);
+  }, [q, typing, slug]);
+  const sugOpen = typing && suggest.length > 0;
 
   const groups: SearchDayGroup[] = useMemo(
     () => (result ? sortSearchGroups(groupSearchHits(personalizeHits(result.hits, myHeartIds)), sort) : []),
@@ -252,7 +283,32 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   };
 
   const onInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (rows.length === 0 && e.key !== "Enter") return;
+    // 제안 목록이 떠 있으면 ↑↓는 제안을, Enter는 고른 제안(없으면 입력 그대로)을 확정한다.
+    if (sugOpen) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setSugCursor((c) => (e.key === "ArrowDown" ? Math.min(suggest.length - 1, c + 1) : Math.max(-1, c - 1)));
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submit(sugCursor >= 0 && suggest[sugCursor] ? suggest[sugCursor].term : undefined);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setSuggest([]);
+        return;
+      }
+    }
+    if (e.key === "Enter") {
+      // 결과 위 커서(호버·↑↓)는 지금 결과가 이 검색어의 것일 때만 유효(2026-09-18 옛 행이 열리던 신고). 아니면 Enter = 검색.
+      e.preventDefault();
+      if (cursor >= 0 && rows[cursor] && resultForRef.current === q.trim()) pick(rows[cursor]);
+      else submit();
+      return;
+    }
+    if (rows.length === 0) return;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       setCursor((c) => {
@@ -260,12 +316,6 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         listRef.current?.querySelector<HTMLElement>(`[data-row="${next}"]`)?.scrollIntoView({ block: "nearest" });
         return next;
       });
-    } else if (e.key === "Enter") {
-      // 2026-09-18 소유자 신고: 결과가 떠 있는 채 다른 말을 치고 Enter → 옛 결과의 행(호버로 잡힌 커서)이 열려 다시보기 창으로
-      // 튀었다. 커서는 **지금 결과가 이 검색어의 것일 때만** 유효하고, 아니면 Enter = 디바운스 건너뛰고 바로 검색.
-      e.preventDefault();
-      if (cursor >= 0 && rows[cursor] && resultForRef.current === q) pick(rows[cursor]);
-      else flushRef.current?.();
     }
   };
 
@@ -532,7 +582,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     </section>
   );
 
-  const empty = normalizedLen >= MIN_CHARS && !busy && result && groups.length === 0;
+  const empty = Boolean(submitted) && !busy && result && groups.length === 0;
   const hasResults = Boolean(result && groups.length > 0);
   const related = result?.related;
   const hasRelated = Boolean((related?.people?.length ?? 0) > 0 || (related?.terms?.length ?? 0) > 0);
@@ -565,6 +615,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                 data-act="search-clear"
                 onClick={() => {
                   setQ("");
+                  setSubmitted(null);
                   inputRef.current?.focus();
                 }}
                 type="button"
@@ -593,6 +644,38 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
           />
         </header>
 
+        {sugOpen ? (
+          <ul className="ps-suggest" role="listbox" aria-label="검색어 제안">
+            {suggest.map((sg, i) => {
+              const Icon = sg.kind === "game" ? Gamepad2 : sg.kind === "person" ? User : sg.kind === "genre" ? Tag : Search;
+              return (
+                <li
+                  aria-selected={sugCursor === i}
+                  className={`ps-sug${sugCursor === i ? " is-cursor" : ""}`}
+                  data-act="search-suggest-pick"
+                  key={`${sg.kind}:${sg.term}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // 입력 blur 방지
+                    hapticTick();
+                    submit(sg.term);
+                  }}
+                  onMouseMove={() => {
+                    if (sugCursor !== i) setSugCursor(i);
+                  }}
+                  role="option"
+                >
+                  <Icon aria-hidden="true" className="ps-sug-ic" size={14} strokeWidth={2.2} />
+                  <span className="ps-sug-term">
+                    <Highlight text={sg.term} q={q} />
+                  </span>
+                  <span className="ps-sug-kind">
+                    {sg.kind === "game" ? "게임" : sg.kind === "person" ? "사람" : sg.kind === "genre" ? "장르" : ""}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
         {hasResults ? (
           <div className="ps-toolbar">
             <div className="ps-seg" ref={segRef} role="group" aria-label="정렬">
@@ -644,7 +727,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                       key={t.term}
                       onClick={() => {
                         hapticTick();
-                        setQ(t.term);
+                        submit(t.term);
                         inputRef.current?.focus();
                       }}
                       title={t.kind === "rel" ? "같은 시리즈·짝" : `같은 방송에 ${t.coDocs}번 함께`}
@@ -667,7 +750,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                       key={p.name}
                       onClick={() => {
                         hapticTick();
-                        setQ(p.display);
+                        submit(p.display);
                         inputRef.current?.focus();
                       }}
                       title={`같은 방송 ${p.coDocs}번${p.hapbang ? ` · 합방 ${p.hapbang}번` : ""}${
@@ -690,7 +773,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
 
         <div className={`ps-scroll${railDays.length >= 4 ? " has-rail" : ""}`}>
           <div className="pi-body ps-body" onScroll={onScroll} ref={listRef}>
-            {normalizedLen < MIN_CHARS ? (
+            {!submitted ? (
               <div className="ps-start">
                 <p className="ps-hint">
                   {studio
@@ -707,7 +790,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                           data-act="search-trending-chip"
                           key={t.term}
                           onClick={() => {
-                            setQ(t.term);
+                            submit(t.term);
                             inputRef.current?.focus();
                           }}
                           title={`최근 30일 ${t.recent}번`}
@@ -729,7 +812,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                           data-act="search-tag-chip"
                           key={t.id}
                           onClick={() => {
-                            setQ(t.displayName);
+                            submit(t.displayName);
                             inputRef.current?.focus();
                           }}
                           type="button"

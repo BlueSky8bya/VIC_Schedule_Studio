@@ -641,7 +641,10 @@ export async function searchPublic(
     error = res.error;
   }
   // RPC 오류는 '결과 없음'과 다르다 — failed로 올려 라우트가 캐시하지 않게(빈 200이 CDN에 15분 굳었던 사고).
-  if (error || !Array.isArray(data)) return { ...empty, failed: true };
+  if (error || !Array.isArray(data)) {
+    console.warn("[search] rpc failed:", error?.message ?? "no rows", "q=", q);
+    return { ...empty, failed: true };
+  }
   type Row = {
     kind: string;
     event_id: string | null;
@@ -719,6 +722,24 @@ export async function getPublicSearchRelated(
     coDocs: Number(r.co_docs) || 0,
     hapbang: Number(r.hapbang) || 0,
     visits: Number(r.visits) || 0
+  }));
+}
+
+// 입력 중 제안(0096): 앞글자 일치 우선. 값싼 RPC라 키 입력마다 불러도 된다.
+export async function getPublicSearchSuggest(
+  query: string,
+  limit = 8
+): Promise<import("@/lib/domain/schedule-types").PublicSearchSuggest[]> {
+  const q = query.trim();
+  if (!isSupabaseConfigured() || q.replace(/[\s\p{P}\p{S}]+/gu, "").length < 1) return [];
+  const supabase = createPublicReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("search_suggest", { p_q: q, p_limit: limit });
+  if (error || !Array.isArray(data)) return [];
+  return (data as { term: string; kind: string; weight: number }[]).map((r) => ({
+    term: String(r.term),
+    kind: (["term", "person", "game", "genre"].includes(r.kind) ? r.kind : "term") as "term" | "person" | "game" | "genre",
+    weight: Number(r.weight) || 0
   }));
 }
 

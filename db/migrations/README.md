@@ -67,3 +67,6 @@
 | 0093 | 채팅 단어 → 검색 적중: `vod_chat_terms.peak_bin/peak_cnt/bins`(그 말이 몰린 30초 구간), `search_public`에 `chat_scored`(단어 전체 일치·5회↑·팬 챕터가 못 잡은 방송만, section 채팅·matched_on chat) |
 | 0094 | 장르 검색 — `search_genres`(장르→게임 이름 조각, 33개 장르·818행), `search_intents` genre/noise, 동의어 seed-genre(공겜=공포, 격겜=격투, 시뮬=시뮬레이션…), `search_public` hit_genre(제목·태그·챕터·코너·게임명, matched_on genre) |
 | 0095 | 검색 일정 행에 그 날 다시보기 썸네일(첫 방송) 동봉 — 미래 일정은 null |
+| 0096 | 검색어 제안 `search_suggest`(앞글자 우선, 초성, 굴절형 제거; 단어·인물·게임·장르·시드 동의어) + 단어 그래프 불용어 mic/on/off |
+| 0097 | 검색 성능 — 채팅 적중을 정규식 전수 스캔 → `t.term = any(q.alts)` 인덱스 비교(1~3초·타임아웃 → 수백 ms), 트렌딩은 최근 210일 채팅만 |
+| 0098 | 오타 교정 억제 — 질의가 말뭉치(단어·게임·인물·제목·챕터·일정)에 그대로/앞부분으로 있으면 교정 안 함("마비"→'뮤비' 사고) |

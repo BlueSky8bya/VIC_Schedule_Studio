@@ -91,6 +91,9 @@ for (const file of files) {
   process.stdout.write(`\n실행: ${file} ... `);
   try {
     await client.query(sql);
+    // PostgREST 스키마 캐시 갱신(2026-09-18 실측: 함수 새로 만들거나 반환형을 바꾸면 갱신 전까지 RPC가
+    // "Could not find the function … in the schema cache"로 죽었다 — '무릎' 503의 원인). 매 파일 뒤 알림.
+    await client.query("notify pgrst, 'reload schema'");
     console.log("OK ✅");
   } catch (err) {
     console.log("오류 ❌");
