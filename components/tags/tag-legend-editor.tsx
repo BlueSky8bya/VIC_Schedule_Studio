@@ -1,7 +1,8 @@
 "use client";
 
-import { AlertTriangle, GripVertical, Lock, Palette, Plus, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, GripVertical, HelpCircle, Lock, Palette, Plus, Save, Trash2 } from "lucide-react";
 import {
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   useEffect,
   useLayoutEffect,
@@ -105,6 +106,14 @@ export function TagLegendEditor({
       setDeleteLock(false);
     }, 380);
   }
+
+  // 2026-09-18 대개편(소유자: "스크롤 올렸다 내렸다가 불편"): 콘텐츠/형식을 **세그먼트로 갈라** 한 번에 한 묶음만 보여 주고,
+  // '추가'는 목록 위 고정 줄에 둔다(스크롤 없이 늘 손 닿는 자리). 도움말 4줄은 접어 두고 필요할 때만 편다.
+  const [activeKind, setActiveKind] = useState<TagKind>("content");
+  const [helpOpen, setHelpOpen] = useState(false);
+  // 방금 추가한 행 — 잠깐 강조 링 + 이름칸 포커스(내가 무엇을 만들었는지 눈이 따라가게).
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   // 색 피커 팝오버가 열린 태그 id(한 번에 하나) + 트리거 스와치 화면 좌표(포털 위치용).
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
@@ -596,6 +605,15 @@ export function TagLegendEditor({
       [tempId]: { name: tag.displayName, colorKey: gen.key, bgHex: null, parentId: null, kind }
     }));
     setOrderIds((cur) => [...cur, tempId]);
+    // 추가한 종류의 묶음으로 옮겨 보여 주고, 새 행을 강조·포커스한다(추가했는데 안 보이면 '눌렸나?'가 된다).
+    setActiveKind(kind);
+    setFlashId(tempId);
+    window.setTimeout(() => {
+      const el = listRef.current?.querySelector<HTMLElement>(`[data-tagid="${tempId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      el?.querySelector<HTMLInputElement>("input")?.select();
+    }, 60);
+    window.setTimeout(() => setFlashId((cur) => (cur === tempId ? null : cur)), 1400);
   }
 
   function removeTag(tagId: string) {
@@ -970,90 +988,115 @@ export function TagLegendEditor({
     );
   }
 
-  return (
-    <div className="tag-editor" ref={editorRootRef}>
-      {/* 스크롤 래퍼 — 기본은 display:contents(다른 렌더 지점 영향 0). 태그 모달에서만 이게
-          스크롤 영역이 되고 '전체 저장' 푸터는 스크롤 밖 고정 바닥으로 빠진다(sticky는 그리드
-          아이템이라 바닥에 못 닿아 버튼 아래로 지나가는 행이 비쳤다 — 실측 리포트). */}
-      <div className="tag-editor-scroll">
-      <div className="tag-tips">
-        {/* 문장은 tag-tip-text 하나로 감싼다 — flex 컨테이너에 <b>·텍스트가 형제로 흩어지면
-            각각 개별 아이템으로 줄바꿈돼 좁은 화면에서 단어가 세로로 조각났다. */}
-        <span className="tag-tip">
-          <Palette aria-hidden="true" size={13} />
-          <span className="tag-tip-text">
-            <b>콘텐츠</b>는 칸을 채우는 색<span className="tip-web">·무늬(무슨 방송)</span>,{" "}
-            <b>형식</b>은 그 위 작은 점<span className="tip-web">(어떻게)</span>
-          </span>
-        </span>
-        <span className="tag-tip">
-          <GripVertical aria-hidden="true" size={13} />
-          <span className="tag-tip-text">손잡이를 끌어 순서 변경 · 한 색은 한 태그만</span>
-        </span>
-        <span className="tag-tip">
-          <Save aria-hidden="true" size={13} />
-          <span className="tag-tip-text">새 태그는 ‘전체 저장’을 눌러야 반영돼요</span>
-        </span>
-        <span className="tag-tip warn">
-          <AlertTriangle aria-hidden="true" size={13} />
-          <span className="tag-tip-text">
-            태그를 지우면 쌓인 통계가 흐트러져요.<span className="tip-web"> 삭제보다 추가·이름
-              바꾸기를 권해요.</span>
-          </span>
-        </span>
-      </div>
-      {/* 콘텐츠끼리 / 방식끼리 묶어 한 눈에. 드래그 순서는 묶음 안에서 유지된다. */}
-      {(() => {
-        const contentTops = orderedTops.filter((t) => (draft[t.id]?.kind ?? t.kind) !== "modifier");
-        const modifierTops = orderedTops.filter((t) => (draft[t.id]?.kind ?? t.kind) === "modifier");
-        const section = (rows: BroadcastTag[]) =>
-          rows.map((top) => (
-            <div className="tag-cat-group" key={top.id}>
-              {renderTagRow(top, false)}
-            </div>
-          ));
-        return (
-          <>
-            <div className="tag-editor-section">
-              <div className="tag-editor-section-head">
-                <span className="tag-editor-section-name">콘텐츠</span>
-                <span className="tag-editor-section-sub">셀 색·통계를 차지</span>
-              </div>
-              {section(contentTops)}
-              <button
-                className="tag-add-in-section"
-                disabled={allTags.length >= MAX_TAGS}
-                onClick={() => addTag("content")}
-                type="button"
-               data-act="tag-add-in-section">
-                <Plus aria-hidden="true" size={15} /> 콘텐츠 추가
-              </button>
-            </div>
-            <div className="tag-editor-section is-mod">
-              <div className="tag-editor-section-head">
-                <span className="tag-editor-section-name">형식</span>
-                <span className="tag-editor-section-sub">콘텐츠에 얹는 표식 (합방·시참 등)</span>
-              </div>
-              {modifierTops.length > 0 ? (
-                section(modifierTops)
-              ) : (
-                <p className="tag-editor-section-empty">아직 없어요. 아래에서 추가하세요.</p>
-              )}
-              <button
-                className="tag-add-in-section mod"
-                disabled={allTags.length >= MAX_TAGS}
-                onClick={() => addTag("modifier")}
-                type="button"
-               data-act="tag-add-in-section">
-                <Plus aria-hidden="true" size={15} /> 형식 추가
-              </button>
-            </div>
-          </>
-        );
-      })()}
+  const contentTops = orderedTops.filter((t) => (draft[t.id]?.kind ?? t.kind) !== "modifier");
+  const modifierTops = orderedTops.filter((t) => (draft[t.id]?.kind ?? t.kind) === "modifier");
+  const shown = activeKind === "modifier" ? modifierTops : contentTops;
 
-      {error ? <div className="auth-warning">{error}</div> : null}
-      {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
+  return (
+    <div className="tag-editor tge" data-kind={activeKind} ref={editorRootRef}>
+      {/* 고정 머리줄 — 세그먼트(콘텐츠/형식 + 개수) · 추가 · 도움말. 목록이 아무리 길어도 이 줄은 안 움직인다. */}
+      <div className="tge-top">
+        <div aria-label="태그 종류" className="tge-seg" role="tablist">
+          <span aria-hidden="true" className="tge-seg-thumb" />
+          {(["content", "modifier"] as const).map((k) => (
+            <button
+              aria-selected={activeKind === k}
+              className={`tge-seg-btn${activeKind === k ? " is-on" : ""}`}
+              data-act={k === "content" ? "tag-seg-content" : "tag-seg-modifier"}
+              key={k}
+              onClick={() => {
+                if (activeKind === k) return;
+                hapticTick();
+                setActiveKind(k);
+                setOpenPickerId(null);
+              }}
+              role="tab"
+              type="button"
+            >
+              {k === "content" ? "콘텐츠" : "형식"}
+              <em className="tge-seg-n">{k === "content" ? contentTops.length : modifierTops.length}</em>
+            </button>
+          ))}
+        </div>
+        <div className="tge-top-right">
+          <button
+            className="tge-add"
+            data-act="tag-add-in-section"
+            disabled={allTags.length >= MAX_TAGS}
+            onClick={() => addTag(activeKind)}
+            title={activeKind === "content" ? "콘텐츠 태그 추가" : "형식 태그 추가"}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={16} strokeWidth={2.6} />
+            추가
+          </button>
+          <button
+            aria-expanded={helpOpen}
+            aria-label="도움말"
+            className={`tge-help${helpOpen ? " is-on" : ""}`}
+            data-act="tag-help-toggle"
+            onClick={() => {
+              hapticTick();
+              setHelpOpen((v) => !v);
+            }}
+            type="button"
+          >
+            <HelpCircle aria-hidden="true" size={16} strokeWidth={2.4} />
+          </button>
+        </div>
+      </div>
+
+      {/* 한 줄 설명 — 지금 보고 있는 묶음이 화면에서 무엇이 되는지. */}
+      <p className="tge-lede">
+        {activeKind === "content"
+          ? "칸을 채우는 색 — 무슨 방송인지"
+          : "콘텐츠 위에 얹는 작은 점 — 합방·시참처럼 '어떻게'"}
+      </p>
+
+      {helpOpen ? (
+        <div className="tge-help-panel" role="note">
+          <span className="tag-tip">
+            <Palette aria-hidden="true" size={13} />
+            <span className="tag-tip-text">
+              <b>콘텐츠</b>는 칸을 채우는 색, <b>형식</b>은 그 위 작은 점
+            </span>
+          </span>
+          <span className="tag-tip">
+            <GripVertical aria-hidden="true" size={13} />
+            <span className="tag-tip-text">손잡이를 끌어 순서 변경 · 한 색은 한 태그만</span>
+          </span>
+          <span className="tag-tip">
+            <Save aria-hidden="true" size={13} />
+            <span className="tag-tip-text">새 태그는 ‘전체 저장’을 눌러야 반영돼요</span>
+          </span>
+          <span className="tag-tip warn">
+            <AlertTriangle aria-hidden="true" size={13} />
+            <span className="tag-tip-text">태그를 지우면 쌓인 통계가 흐트러져요 — 삭제보다 이름 바꾸기</span>
+          </span>
+        </div>
+      ) : null}
+
+      <div className="tag-editor-scroll">
+        <div className="tge-list" key={activeKind} ref={listRef}>
+          {shown.length > 0 ? (
+            shown.map((top, i) => (
+              <div
+                className={`tag-cat-group${flashId === top.id ? " is-flash" : ""}`}
+                key={top.id}
+                style={{ "--i": Math.min(i, 14) } as CSSProperties}
+              >
+                {renderTagRow(top, false)}
+              </div>
+            ))
+          ) : (
+            <p className="tge-empty">
+              {activeKind === "content" ? "콘텐츠 태그가 없어요." : "형식 태그가 없어요."} 위 <b>추가</b>를 눌러 만드세요.
+            </p>
+          )}
+        </div>
+
+        {error ? <div className="auth-warning">{error}</div> : null}
+        {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
       </div>
       <div className="tag-editor-actions">
         <button

@@ -8344,6 +8344,226 @@ html[data-reduce-motion] .modal-close:active {
   transform: none;
 }
 
+/* ── 태그 편집 대개편(2026-09-18 소유자: "규칙성이 없고, 추가하려면 스크롤을 올렸다 내렸다") ──────────
+   애플 결: 고정 머리줄(세그먼트 + 추가 + 도움말) · 한 번에 한 묶음 · 균일한 카드 행 · 스프링 동작.
+   토큰 하나로 리듬을 잡는다(--tge-gap). 색은 기존 스킨을 따르되 대비만 또렷하게. */
+.tge {
+  --tge-gap: 10px;
+  --tge-radius: 14px;
+  --tge-line: #e9e5f4;
+  --tge-ink: #3b3557;
+  --tge-soft: #8b85a3;
+  --tge-accent: #6b5bd6;
+  --tge-accent-soft: #f2eeff;
+}
+.tge[data-kind="modifier"] {
+  --tge-accent: #a77a1e;
+  --tge-accent-soft: #fbf3df;
+}
+.tge-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 0;
+}
+/* 세그먼트 — iOS식 알약. 엄지(thumb)가 스프링으로 미끄러진다. */
+.tge-seg {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: #f1eef9;
+  box-shadow: inset 0 0 0 1px rgb(59 53 87 / 5%);
+}
+.tge-seg-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(59 53 87 / 14%), 0 4px 12px rgb(59 53 87 / 8%);
+  transition: transform 0.42s var(--spring-bouncy, cubic-bezier(0.34, 1.32, 0.52, 1));
+}
+.tge[data-kind="modifier"] .tge-seg-thumb {
+  transform: translateX(100%);
+}
+.tge-seg-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: 800;
+  color: var(--tge-soft);
+  cursor: pointer;
+  transition: color 0.22s var(--ease);
+}
+.tge-seg-btn.is-on {
+  color: var(--tge-ink);
+}
+.tge-seg-n {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(59 53 87 / 8%);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  transition: background 0.22s var(--ease);
+}
+.tge-seg-btn.is-on .tge-seg-n {
+  background: var(--tge-accent-soft);
+  color: var(--tge-accent);
+}
+.tge-top-right {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+.tge-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 14px 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tge-accent);
+  color: #fff;
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgb(107 91 214 / 28%);
+  transition: transform 0.18s var(--spring-bouncy, cubic-bezier(0.34, 1.32, 0.52, 1)),
+    box-shadow 0.18s var(--ease), filter 0.18s var(--ease);
+}
+.tge-add:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgb(107 91 214 / 34%);
+  filter: brightness(1.04);
+}
+.tge-add:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.tge-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+.tge-help {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--tge-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tge-soft);
+  cursor: pointer;
+  transition: color 0.18s var(--ease), background 0.18s var(--ease), transform 0.18s var(--ease);
+}
+.tge-help:hover {
+  color: var(--tge-ink);
+  background: #faf9ff;
+}
+.tge-help.is-on {
+  color: var(--tge-accent);
+  background: var(--tge-accent-soft);
+  border-color: color-mix(in srgb, var(--tge-accent) 30%, transparent);
+}
+.tge-lede {
+  margin: 2px 4px 0;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--tge-soft);
+}
+.tge-help-panel {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--tge-line);
+  border-radius: var(--tge-radius);
+  background: #fbfaff;
+  animation: tge-help-in 0.28s var(--ease-enter, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+@keyframes tge-help-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+.tge-list {
+  display: grid;
+  /* 넓은 모달에선 여러 열 — 한 열이면 오른쪽 절반이 비고 스크롤만 길어진다(CLAUDE.md 웹 다열 규칙). */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--tge-gap);
+  align-items: start;
+}
+.tge-list > * { min-width: 0; }
+.tge-empty {
+  margin: 10px 2px;
+  padding: 18px 14px;
+  border: 1px dashed var(--tge-line);
+  border-radius: var(--tge-radius);
+  background: #fcfbff;
+  font-size: var(--text-body);
+  color: var(--tge-soft);
+  text-align: center;
+}
+/* 묶음 전환·추가 시 행이 차례로 떠오른다(뭐가 바뀌었는지 눈이 따라가게). */
+.tge-list .tag-cat-group {
+  margin-bottom: 0;
+  border-radius: var(--tge-radius);
+  animation: tge-row-in 0.36s var(--ease-enter, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  animation-delay: calc(var(--i, 0) * 16ms);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+@keyframes tge-row-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.tge-list .tag-cat-group:hover {
+  border-color: color-mix(in srgb, var(--tge-accent) 26%, var(--tge-line));
+  box-shadow: 0 4px 14px rgb(59 53 87 / 8%);
+  transform: translateY(-1px);
+}
+/* 방금 추가한 행 — 강조 링이 한 번 번졌다 사라진다. */
+.tge-list .tag-cat-group.is-flash {
+  animation: tge-flash 1.3s var(--ease) both;
+}
+@keyframes tge-flash {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tge-accent) 45%, transparent); }
+  35% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--tge-accent) 22%, transparent); }
+  100% { box-shadow: 0 0 0 0 rgb(0 0 0 / 0%); }
+}
+html[data-reduce-motion] .tge-seg-thumb,
+html[data-reduce-motion] .tge-list .tag-cat-group,
+html[data-reduce-motion] .tge-help-panel {
+  animation: none;
+  transition: none;
+}
+@media (max-width: 640px) {
+  .tge-top { flex-wrap: wrap; }
+  .tge-seg { order: 1; flex: 1 1 100%; }
+  .tge-top-right { order: 2; flex: 1 1 100%; justify-content: flex-end; }
+}
+
 /* 태그 이름/색상 편집기 (왼쪽 패널) */
 .tag-editor {
   display: grid;
@@ -12323,6 +12543,24 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
   padding: 0;
   overflow: hidden;
 }
+/* 고정 머리줄(세그먼트·추가·도움말)은 스크롤 밖 — 목록이 길어도 늘 같은 자리(2026-09-18). */
+.modal-card-tags > .tag-editor > .tge-top,
+.modal-card-tags > .tag-editor > .tge-lede,
+.modal-card-tags > .tag-editor > .tge-help-panel {
+  flex: 0 0 auto;
+  margin: 0 20px;
+}
+.modal-card-tags > .tag-editor > .tge-top { margin-top: 16px; }
+.modal-card-tags > .tag-editor > .tge-lede { margin-top: 8px; margin-bottom: 2px; }
+.modal-card-tags > .tag-editor > .tge-help-panel { margin-top: 8px; }
+.modal-card-tags > .tag-editor > .tag-editor-scroll { padding-top: 12px; }
+@media (max-width: 640px) {
+  .modal-card-tags > .tag-editor > .tge-top,
+  .modal-card-tags > .tag-editor > .tge-lede,
+  .modal-card-tags > .tag-editor > .tge-help-panel {
+    margin-inline: var(--space-card);
+  }
+}
 .modal-card-tags > .tag-editor > .tag-editor-scroll {
   display: grid;
   gap: var(--space-4);
@@ -12342,7 +12580,8 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
 
 @media (min-width: 641px) {
   .modal-card-tags > .tag-editor > .tag-editor-scroll {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    /* 2026-09-18 개편: 열 나눔은 목록(.tge-list)이 스스로 한다 — 스크롤 래퍼가 2열이면 목록이 반쪽 칸에 갇힌다. */
+    grid-template-columns: minmax(0, 1fr);
     padding: var(--space-panel);
   }
 
