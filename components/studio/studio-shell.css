@@ -797,7 +797,8 @@ body::-webkit-scrollbar {
   }
 }
 html[data-reduce-motion] .rhh-menu {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .rhh-opt {
   display: flex;
@@ -1259,7 +1260,8 @@ html[data-reduce-motion] .cal-zoom-float {
   }
 }
 html[data-reduce-motion] .insights-track > .insights-panel > * {
-  animation: none !important;
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
 }
 
 /* 모바일: 누르는 '패널 탭'은 엄지 닿는 아래로, 진행 정보(< > 화살표·점)는 위로.
@@ -1365,7 +1367,8 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   0% { background-position: 100% 0; }
   100% { background-position: 0 0; }
 }
-html[data-reduce-motion] .act-skeleton span { animation: none; }
+html[data-reduce-motion] .act-skeleton span { animation-duration: 1ms;
+  animation-iteration-count: 1; }
 
 /* 머리: 제목 + 도구. **줄바꿈하지 않는다** — 도구가 아래로 밀리면 그 줄 왼쪽이 통째로 빈다.
    제목이 남는 폭을 먹고, 도구는 오른쪽 끝에 붙어 필요한 만큼만 차지한다. */
@@ -1608,7 +1611,8 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
 }
 
 html[data-reduce-motion] .act-live::before {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .act-icon {
   flex: none;
@@ -1915,7 +1919,8 @@ html[data-reduce-motion] .act-live::before {
   }
 }
 html[data-reduce-motion] .upick-menu {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .upick-menu button {
   border: 0;
@@ -2211,7 +2216,8 @@ html[data-reduce-motion] .upick-menu {
   }
 }
 html[data-reduce-motion] .perf-spin {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .perf-table {
   display: flex;
@@ -4222,7 +4228,8 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 html[data-reduce-motion] .insights-subtabs button.active,
 html[data-reduce-motion] .perf-windows button.active {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 다음 방송: 날짜 + 일정 제목 칩들(콤마 나열 대신 둥근 박스). */
 
@@ -4763,7 +4770,8 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   }
 }
 html[data-reduce-motion] .event-editor-panel.panel-saved::after {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .studio-left-panel {
   margin-right: 18px; /* 색상 필터와 달력 사이 간격(gap:0 대체) */
@@ -4822,7 +4830,8 @@ html[data-reduce-motion] .event-editor-panel.pop-snapback {
 }
 html[data-reduce-motion] .event-editor-panel {
   transition: none;
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 헤더를 잡아 끄는 동안엔 transition 없이 손끝을 1:1로 따라온다. */
 .event-editor-panel.pop-dragging {
@@ -4945,7 +4954,8 @@ html[data-reduce-motion] .event-editor-panel {
   }
 }
 html[data-reduce-motion] .editor-anchor-link {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .editor-anchor-link line {
   stroke: rgb(139 92 246 / 55%);
@@ -4989,7 +4999,8 @@ html[data-reduce-motion] .editor-anchor-link {
   }
 }
 html[data-reduce-motion] .editor-anchor-link line {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .event-editor-panel form {
   /* ⚠ 이 폭은 .event-detail-readonly(아래)와 반드시 함께 움직인다. */
@@ -5114,7 +5125,8 @@ html[data-reduce-motion] .editor-anchor-link line {
 }
 html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-glow[data-on],
 html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-spark[data-on] {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path.editor-ring-hint-spark[data-on] {
   opacity: 0;
@@ -6498,7 +6510,8 @@ body.cell-range-dragging {
   }
 }
 html[data-reduce-motion] .studio-event-pill.connect-target {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* ── 체인 하이라이트 연속성 — 색이 달라 몸통(칠)은 나뉘어도, 이미 이어진 구간의
    선택·연결 후보 강조는 '한 덩어리'로 보여야 한다(사용자 결정). 이음변의 라운딩·경계·틈을
@@ -6569,7 +6582,8 @@ html[data-reduce-motion] .studio-event-pill.connect-target {
   transform: none;
 }
 html[data-reduce-motion] .studio-event-pill.connect-target::after {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* (끊기 사선 연출은 사용자 결정으로 제거 — 분리 반동 애니메이션만 남긴다.) */
 /* 끊기 — 팽팽하던 고무줄이 풀리듯, 이음새 양쪽이 반대 방향으로 살짝 튕겼다 스프링으로
@@ -6628,7 +6642,8 @@ html[data-reduce-motion] .studio-event-pill.cut-recoil-prev,
 html[data-reduce-motion] .studio-event-pill.cut-recoil-next,
 html[data-reduce-motion] .studio-event-pill.just-linked,
 html[data-reduce-motion] .studio-event-pill.just-linked::after {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 저장·생성 직후: 카드가 통통 착지하며 한 번 반짝(노란 링) — "먹혔다"는 확신 + 귀여움. */
 .studio-event-pill.just-saved {
@@ -7017,7 +7032,8 @@ html[data-reduce-motion] .drop-gap {
 }
 html[data-reduce-motion] .teaser-gate-row.gate-shake,
 html[data-reduce-motion] .tg-num {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* #8 옮긴 직후 서버 반영 전 '동기화 중' 점(돌아감). 상태 표시라 '동작 줄이기'에도 유지.
    절대 위치 오버레이로 띄워 제목을 밀지 않는다(나타났다 사라질 때 글자 좌우 점프 방지). */
@@ -7201,7 +7217,8 @@ html[data-reduce-motion] .tg-num {
   animation: peek-in var(--dur-2, 0.18s) var(--ease-enter, var(--ease)) backwards;
 }
 html[data-reduce-motion] .cal-zoom-float {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .cal-zoom-float .cal-zoom-ctl {
   border: 1.5px solid rgb(124 108 240 / 45%);
@@ -7259,7 +7276,8 @@ html[data-reduce-motion] .cal-zoom-float {
   }
 }
 html[data-reduce-motion] .cal-zoom-peek {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .cal-zoom-peek .peek-head {
   display: flex;
@@ -7471,7 +7489,8 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   transform: scale(0.94);
 }
 html[data-reduce-motion] .delete-snack {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 @keyframes copy-toast-in {
   from {
@@ -8611,7 +8630,8 @@ html[data-reduce-motion] .modal-close:active {
 html[data-reduce-motion] .tge-seg-thumb,
 html[data-reduce-motion] .tge-list .tag-cat-group,
 html[data-reduce-motion] .tge-help-panel {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
 @media (max-width: 640px) {
@@ -11006,7 +11026,8 @@ html[data-reduce-motion] .m-edit-x:active {
   margin-top: 0;
 }
 html[data-reduce-motion] .me-fold-body {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .me-row {
   display: flex;
@@ -11257,7 +11278,8 @@ html[data-reduce-motion] .me-fold-body {
   }
 }
 html[data-reduce-motion] .fold-body {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 배치 3: 캘린더 반복 조작 모션은 사용자 설정 하나로 즉시 상태 전환으로 강등한다. */
@@ -11283,7 +11305,8 @@ html[data-reduce-motion] .studio-mobile .agenda-flow[data-enter],
 html[data-reduce-motion] .studio-mobile .agenda-flow.cal-reveal .agenda-day,
 html[data-reduce-motion] .studio-day.selected::after,
 html[data-reduce-motion] .save-status.saving .ss-dot {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 배치 4: 자주 쓰는 일정 편집·읽기 시트.
@@ -11558,7 +11581,8 @@ html[data-reduce-motion] .save-status.saving .ss-dot {
 }
 
 html[data-reduce-motion] .scope-opt.on::after {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 .event-editor-panel .tag-picker2,
@@ -11776,7 +11800,8 @@ html[data-reduce-motion] .tp-chip.selected,
 html[data-reduce-motion] .m-edit-sheet,
 html[data-reduce-motion] .me-fold-body,
 html[data-reduce-motion] .fold-body {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 html[data-reduce-motion] .editor-collapse,
@@ -12139,7 +12164,8 @@ html[data-reduce-motion] .dtp-sheet,
 html[data-reduce-motion] .dtp-grid,
 html[data-reduce-motion] .dtp-cell.sel,
 html[data-reduce-motion] .tp-chip.selected {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 html[data-reduce-motion] .preview-dd-trigger,
@@ -12305,7 +12331,8 @@ html[data-reduce-motion] .cpop-done:active {
 
 html[data-reduce-motion] .modal-backdrop-passcode,
 html[data-reduce-motion] .modal-backdrop-passcode .modal-card {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
@@ -12654,7 +12681,8 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section,
 html[data-reduce-motion] .tag-editor .tag-color-swatch,
 html[data-reduce-motion] .tag-editor .tag-editor-remove,
 html[data-reduce-motion] .tag-editor-actions .button {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
 
@@ -12917,7 +12945,8 @@ html[data-reduce-motion] .member-row,
 html[data-reduce-motion] .member-sync-dot,
 html[data-reduce-motion] .member-remove,
 html[data-reduce-motion] .members-add .button {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
 
@@ -13294,7 +13323,8 @@ html[data-reduce-motion] .modal-card-developer,
 html[data-reduce-motion] .modal-card-dayVisit,
 html[data-reduce-motion] .modal-card-developer *,
 html[data-reduce-motion] .modal-card-dayVisit * {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
 
@@ -13326,7 +13356,8 @@ html[data-reduce-motion] .modal-card-dayVisit button:active {
   z-index: 2;
 }
 html[data-reduce-motion] .studio-event-pill.just-landed {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 집어 든 유령은 기울지 않는다 — 크기와 그림자만으로 '들렸다'를 말한다. */
 html[data-reduce-motion] .event-drag-ghost {
@@ -13444,7 +13475,8 @@ html[data-studio-calm] .event-editor-panel.panel-saved .editor-save::after {
   }
 }
 html[data-reduce-motion] .event-editor-panel.panel-saved .editor-save::after {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 html[data-studio-calm] .event-editor-panel.panel-saved::after {
   animation-name: editor-panel-saved-calm;

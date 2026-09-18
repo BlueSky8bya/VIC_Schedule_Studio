@@ -177,5 +177,6 @@
 html[data-reduce-motion] .cal-skel-note,
 html[data-reduce-motion] .cal-skel-month,
 html[data-reduce-motion] .cal-skel-cell {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }

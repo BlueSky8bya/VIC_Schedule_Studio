@@ -666,7 +666,8 @@
 
 html[data-reduce-motion] .art-card,
 html[data-reduce-motion] .art-toast {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 html[data-reduce-motion] .art-card:hover {
   transform: none;

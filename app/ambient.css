@@ -141,7 +141,8 @@ html[data-ambient-grab] {
   }
 }
 html[data-reduce-motion] .showcase-btn-glow {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .showcase-btn-spring {
   --showcase-line: rgb(150 190 118 / 55%);
@@ -201,7 +202,8 @@ html[data-reduce-motion] .showcase-btn-glow {
   }
 }
 html[data-reduce-motion] .showcase-exit {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .showcase-exit-key {
   padding: 1px 6px;
@@ -275,7 +277,8 @@ html[data-biome-move="down"] .biome-chev-down { --gy: 14px; }
 html[data-biome-move="left"] .biome-chev-left { --gx: -14px; }
 html[data-biome-move="right"] .biome-chev-right { --gx: 14px; }
 html[data-biome-move] .biome-map { opacity: 1; }
-html[data-reduce-motion] .biome-chev { animation: none !important; }
+html[data-reduce-motion] .biome-chev { animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important; }
 .biome-chev-up.bounce { --by: -8px; }
 .biome-chev-down.bounce { --by: 8px; }
 .biome-chev-left.bounce { --bx: -8px; }
@@ -453,7 +456,8 @@ html[data-reduce-motion] .biome-chev { animation: none !important; }
   0%, 100% { box-shadow: 0 0 0 2.5px rgb(var(--gs-sea-rgb, 56 128 190) / 0.9), 0 5px 14px rgb(40 60 90 / 20%); }
   50% { box-shadow: 0 0 0 4.5px rgb(var(--gs-sea-rgb, 56 128 190) / 0.4), 0 5px 14px rgb(40 60 90 / 20%); }
 }
-html[data-reduce-motion] .biome-dot.on { animation: none; }
+html[data-reduce-motion] .biome-dot.on { animation-duration: 1ms;
+  animation-iteration-count: 1; }
 .biome-dot-meadow { background: rgb(176 208 158 / 62%); }
 .biome-dot-pond { background: rgb(158 200 226 / 60%); }
 .biome-dot-valley { background: rgb(168 204 206 / 58%); }
@@ -501,7 +505,8 @@ html[data-reduce-motion] .biome-dot.on { animation: none; }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 html[data-reduce-motion] .biome-pill,
-html[data-reduce-motion] .biome-chev.bounce { animation: none; }
+html[data-reduce-motion] .biome-chev.bounce { animation-duration: 1ms;
+  animation-iteration-count: 1; }
 @media (max-width: 640px), (max-height: 640px) and (pointer: coarse) {
   .biome-chev, .biome-map, .biome-pill { display: none; }
 }
@@ -865,7 +870,8 @@ html[data-reduce-motion] .showcase-gear svg {
   }
 }
 html[data-reduce-motion] .showcase-set {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 지금 그려지는 값 — '자동'을 골라 뒀을 때 무엇이 나오는지(바이옴 · 시간대 · 날씨). */
 .sc-set-now {

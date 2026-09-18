@@ -32,7 +32,8 @@
   }
 }
 html[data-reduce-motion] .broadcast-panel > * {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 제목줄 — 작업대 위에 바로 얹힌다(배경 없음). 제목 진하게, 힌트 조용하게. */
@@ -404,7 +405,8 @@ html[data-reduce-motion] .bp-close:active {
   }
 }
 html[data-reduce-motion] .bp-tool.on {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .bp-tool:disabled {
   opacity: 0.35;
@@ -640,7 +642,8 @@ body:has(.broadcast-panel) .tag-cpop {
   animation: bp-in var(--dur-2, 0.2s) var(--ease-enter, var(--ease)) both;
 }
 html[data-reduce-motion] .bp-kbd-help {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 재질(C1): 단축키 안내 팝오버도 반투명 블러 유리로. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -997,7 +1000,8 @@ html[data-reduce-motion] .bp-kbd-close:active {
   }
 }
 html[data-reduce-motion] .bp-layer-item {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .bp-layer-item:hover:not(.active) {
   border-color: rgb(124 108 240 / 35%);
@@ -1662,7 +1666,8 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   }
 }
 html[data-reduce-motion] .bp-day-col {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .bp-day-head {
   display: flex;
@@ -1747,7 +1752,8 @@ html[data-reduce-motion] .bp-day-col {
   }
 }
 html[data-reduce-motion] .bp-sel-hint {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 .bp-marquee {
@@ -1782,7 +1788,8 @@ html[data-reduce-motion] .bp-sel-hint {
 }
 html[data-reduce-motion] .bp-marquee,
 html[data-reduce-motion] .bp-stroke-sel {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .bp-stroke-sel-handle {
   position: absolute;
@@ -2900,7 +2907,8 @@ html[data-reduce-motion] .bp-layers-panel,
 html[data-reduce-motion] .bp-layer-item,
 html[data-reduce-motion] .bp-stylus-cursor,
 html[data-reduce-motion] .bp-stylus-footprint {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
 .bp-dots {

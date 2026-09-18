@@ -548,7 +548,8 @@
 }
 html[data-reduce-motion] .agenda-monthbar .mb-act.just-live,
 html[data-reduce-motion] .agenda-monthbar .mb-act.just-live > * {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .mb-live-dot {
   flex: 0 0 auto;
@@ -559,7 +560,8 @@ html[data-reduce-motion] .agenda-monthbar .mb-act.just-live > * {
   animation: slb-pulse 1.8s ease-out infinite;
 }
 html[data-reduce-motion] .mb-live-dot {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 월 전환 시 슬라이드로 들어와 "넘어간다"는 느낌을 준다. */
@@ -991,7 +993,8 @@ html[data-reduce-motion] .mb-live-dot {
   }
 }
 html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 날짜 다시보기 '창' — 화면 중앙의 작은 창(팝오버 → 창 승격, 2026-08-31 사용자 결정).
    백드롭은 일정 상세와 같은 딤 재질, 창은 썸네일 미리보기 + 제목 + 챕터를 세로로. */
@@ -1099,7 +1102,8 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
 }
 html[data-reduce-motion] .day-vod-backdrop,
 html[data-reduce-motion] .day-vod-modal {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 창 컨테이너가 키 입력의 집(tabIndex -1, 프로그램 포커스) — 창 자체 테두리가 이미 경계라
    포커스 링은 그리지 않는다(키보드 Tab은 안의 버튼·링크로 이동해 각자 링을 가진다). */
@@ -1166,7 +1170,8 @@ html[data-reduce-motion] .day-vod-modal {
   white-space: nowrap;
   animation: vch-tip-in 0.16s var(--ease) both;
 }
-html[data-reduce-motion] .dvm-keys { animation: none; }
+html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
+  animation-iteration-count: 1; }
 .dvm-keys > span:nth-child(odd) {
   display: inline-flex;
   gap: 3px;
@@ -1483,7 +1488,8 @@ html[data-reduce-motion] .dvm-keys { animation: none; }
   }
 }
 html[data-reduce-motion] .dvm-notice {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .dvm-ext {
   position: absolute;
@@ -1853,7 +1859,8 @@ html[data-reduce-motion] .vch-item::after { transition: none; }
   }
 }
 html[data-reduce-motion] .vch-tip {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .vch-item.is-past .vch-t { color: #9aa6c7; }
 .vch-item.is-past .vch-label { color: #8a8a99; font-weight: 500; }
@@ -2005,7 +2012,8 @@ html[data-reduce-motion] .vch-caret-ic { transition: none; }
   from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: none; }
 }
-html[data-reduce-motion] .vch-nowbar { animation: none; }
+html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
+  animation-iteration-count: 1; }
 .vch-now-dot {
   flex: none;
   width: 7px;
@@ -2396,7 +2404,8 @@ html[data-reduce-motion] .vch-head { transition: none; }
   }
 }
 html[data-reduce-motion] .day-vod-pop {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 .dvp-date {
   /* 역할별 타입 스케일(2026-09-03 재조정, ≈1.2 비율 계단): 제목 20 > 날짜·레일머리 15 >
@@ -2886,7 +2895,8 @@ html[data-reduce-motion] .poster-page.avatar-scene.panel-open .avatar-slot {
 }
 html[data-reduce-motion] .avatar-top-cards .rail-info-card,
 html[data-reduce-motion] .avatar-top-cards .soop-live-card {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 html[data-reduce-motion] .poster-surface,
 html[data-reduce-motion] .public-right {
@@ -3308,7 +3318,8 @@ body.cell-range-dragging {
 }
 html[data-reduce-motion] .support-bar.is-clickable,
 html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 오른쪽: 색상 안내 레일. 달력 맨 밑줄까지 늘어지게(끝 선 정렬). */
@@ -3918,7 +3929,8 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
 }
 html[data-reduce-motion] .scramble-rest,
 html[data-reduce-motion] .scramble-locked {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 공개 순간 카드가 지지직 흔들린다(글리치) — 해독이 진행되는 동안 계속. */
@@ -3944,7 +3956,8 @@ html[data-reduce-motion] .scramble-locked {
 }
 html[data-reduce-motion] .public-event.just-revealed .event-main,
 html[data-reduce-motion] .agenda-event.just-revealed .agenda-title {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 팝오버가 열린 채 공개되면 시트도 함께 변신 — 흰빛 플래시 + 짧은 글리치. */
@@ -3979,7 +3992,8 @@ html[data-reduce-motion] .agenda-event.just-revealed .agenda-title {
 }
 html[data-reduce-motion] .agenda-detail-sheet.reveal-burst,
 html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 공개 후 남는 "n명이 기다렸어요" 배지 */
 .hope-badge {
@@ -4080,7 +4094,8 @@ p.agenda-sub.hope-badge {
   font-variant-numeric: tabular-nums;
 }
 html[data-reduce-motion] .detail-teaser .dt-orb {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* ── 1분 전 하이프 — 연속 강도(--hype-i)로 구동 ─────────────────────────
@@ -4280,7 +4295,8 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
 html[data-reduce-motion] .reveal-secondary,
 html[data-reduce-motion] .agenda-detail-tag.reveal-secondary,
 html[data-reduce-motion] .reveal-secondary .pill-dots i {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* ── 떡밥 시트 표면 온도 — 카드·링·숫자만 데워지고 가장 넓은 면인 시트가 차갑게 남으면
@@ -4525,7 +4541,8 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 }
 html[data-reduce-motion] .dt-echo,
 html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 눈금(5초 간격 12개) — 바 위에 새긴 눈이다. 남은 구간(호가 채워진 곳)은 밝게 파이고,
@@ -4665,7 +4682,8 @@ html[data-eye-comfort] .dt-grad-c {
    높아야 한다. `html[data-reduce-motion] .dt-count-core strong`은 (0,2,2)라 져서,
    동작 줄이기에서도 이 애니메이션이 계속 돌고 export가 중간 프레임을 잡았다. */
 html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* ── 마지막 10초의 시선 몰입(전부 --hy-final 연속) ─────────────────────────
    ⚠ 이 채널들을 --hy-calm(11.8→10초, 1.8초짜리)에 물리면 10초 언저리에서 한꺼번에
@@ -4748,7 +4766,8 @@ html[data-reduce-motion] .dt-ring-progress,
 html[data-reduce-motion] .dt-ring-spark,
 html[data-reduce-motion] .dt-ring-trail,
 html[data-reduce-motion] .dt-ring-ticks line {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
 /* 기대돼요 — 리더 박동·도트와 같은 심장. 진폭만 다르고 위상·파형은 공유한다. */
@@ -4829,14 +4848,16 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-hope,
 html[data-reduce-motion] .detail-anchor-link .detail-anchor-flow,
 html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-pulse,
 html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 html[data-reduce-motion] .teaser-count.soon,
 html[data-reduce-motion] .public-event.teaser:has(.teaser-count.soon),
 html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon),
 html[data-reduce-motion] .public-event.teaser:has(.teaser-count.soon) .teaser-spark,
 html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spark {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 .event-heart {
@@ -5383,7 +5404,8 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 html[data-reduce-motion] .tier-ring::before,
 html[data-reduce-motion] .tier-halo,
 html[data-reduce-motion] .tier-crown {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 html[data-reduce-motion] .tier-halo {
   opacity: var(--tier-halo-hi, 0.5);
@@ -6205,7 +6227,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   }
 }
 html[data-reduce-motion] .heart-toast {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transform: translateX(-50%);
 }
 
@@ -6254,7 +6277,8 @@ html[data-reduce-motion] .heart-toast {
   }
 }
 html[data-reduce-motion] .slc-player img {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   opacity: 1;
 }
 .slc-badge {
@@ -6464,7 +6488,8 @@ html[data-reduce-motion] .viewer-settings-open svg { transition: none; }
 }
 html[data-reduce-motion] .pi-sheet,
 html[data-reduce-motion] .pi-backdrop {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 @keyframes pi-rise-sheet {
   from {
@@ -6606,7 +6631,8 @@ html[data-reduce-motion] .pi-close:active {
   }
 }
 html[data-reduce-motion] .pi-skeleton {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 못 불러온 경우 — 조용히 0으로 두지 않고 말하고, 그 자리에서 다시 시도하게 한다. */
 .pi-failed {
@@ -6839,7 +6865,8 @@ html[data-reduce-motion] .poster-readonly .viewer-actions .button:active {
 }
 
 html[data-reduce-motion] .poster-readonly .heart-toast {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 /* 배치 6: 꾸미기 chrome. 작품·선택 링 geometry는 유지하고 inspector 표면만 정돈한다. */
@@ -7142,7 +7169,8 @@ html[data-reduce-motion] .agenda-detail-sheet.pop-snapback {
   }
 }
 html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* 이동 손잡이 — 애플 시트 문법: 재질 위 중앙 그립 필 하나(요란한 띠 없음). */
 .detail-grab {
@@ -7370,7 +7398,8 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close:act
 html[data-reduce-motion] .detail-anchor-link .detail-anchor-flow,
 html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-pulse,
 html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 /* PC 시청자: 일정 카드가 클릭 대상임을 커서로 알린다(하트 등 내부 버튼은 각자 커서). */
 .public-event.is-clickable {
@@ -7570,7 +7599,8 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
 
 html[data-reduce-motion] .agenda-detail-backdrop,
 html[data-reduce-motion] .agenda-detail-sheet {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 html[data-reduce-motion] .agenda-detail-close:active {
@@ -7832,6 +7862,37 @@ html[data-pchrome="3"] .poster-chrome-title {
    배경을 가리지 말 것). */
 .public-calendar-header .viewer-actions .account-form:has(.account-email) {
   width: var(--acct-w, auto);
+}
+/* 비로그인 — 버튼 하나를 굳이 카드로 묶지 않는다(2026-09-19 소유자: "로그인 버튼 하나 있는데 뭐하러 박스로 묶여있냐").
+   묶음(테두리·유리 면)은 [이메일 + 로그아웃] 두 칸을 한 덩어리로 보이게 하려던 것이라, 칸이 하나면 상자만 남는다.
+   대신 버튼 자체가 머리줄의 다른 알약(검색·기록·설정)과 같은 44px 알약이 된다. */
+.public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  margin-right: 0; /* --acct-mr 정렬도 끈다 — 패널을 옮길 때마다 버튼이 따라 흔들렸다 */
+}
+.public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button,
+.poster-readonly .public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button {
+  height: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-pill, 999px);
+  background: var(--glass, rgb(255 255 255 / 72%));
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 0 15px;
+  color: var(--ink, #23303f);
+  font-size: var(--text-ui, 15px);
+  box-shadow: var(--shadow-2);
+}
+.public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button:hover,
+.poster-readonly .public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button:hover {
+  border-color: var(--line, #ece9f5);
+  background: #fff;
+  box-shadow: var(--shadow-3);
 }
 .public-calendar-header .viewer-actions .account-form .account-email {
   flex: 1 1 auto;
@@ -8790,7 +8851,8 @@ html[data-reduce-motion] .ps-results,
 html[data-reduce-motion] .ps-row,
 html[data-reduce-motion] .ps-top,
 html[data-reduce-motion] .ps-line.is-busy::before {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 html[data-reduce-motion] .ps-row,
 html[data-reduce-motion] .ps-chip,
@@ -8866,6 +8928,7 @@ html[data-reduce-motion] .ps-rail-dot::before {
 html[data-reduce-motion] .public-day.cell-flash,
 html[data-reduce-motion] .agenda-day.cell-flash,
 html[data-reduce-motion] .studio-day.cell-flash {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   box-shadow: 0 0 0 4px rgb(124 108 240 / 45%);
 }

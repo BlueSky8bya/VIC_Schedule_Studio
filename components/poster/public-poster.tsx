@@ -2060,6 +2060,15 @@ export function PublicPoster({
       const header = document.querySelector<HTMLElement>(".public-calendar-header");
       const form = header?.querySelector<HTMLElement>(".viewer-actions .account-form");
       if (!header || !form) return;
+      // 로그인 버튼 하나뿐(비로그인)이면 **아무 데도 맞추지 않는다**(2026-09-19 소유자: "패널을 왼쪽·오른쪽으로
+      // 옮길 때마다 로그인 버튼이 왔다갔다 한다"). 이 정렬은 [이메일 + 로그아웃] 카드를 오른쪽 레일 폭·끝에
+      // 맞추려고 만든 것인데(2026-09-04), 버튼 하나짜리는 맞출 상대가 없고 패널이 움직일 때마다 --acct-mr이
+      // 다시 계산돼(400·900ms 재실측까지) 버튼이 따라 흔들렸다. 헤더 오른쪽 끝에 그냥 선다.
+      if (!form.querySelector(".account-email")) {
+        form.style.removeProperty("--acct-w");
+        form.style.removeProperty("--acct-mr");
+        return;
+      }
       const hr = header.getBoundingClientRect();
       const zoom = header.offsetWidth > 0 ? hr.width / header.offsetWidth : 1;
       const padR = parseFloat(getComputedStyle(header).paddingRight) || 0;

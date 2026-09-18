@@ -1022,7 +1022,8 @@ select {
 
 html[data-reduce-motion] .passcode-box input,
 html[data-reduce-motion] .passcode-box .button {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
 
@@ -1183,7 +1184,8 @@ html[data-reduce-motion] .agenda-day.today .agenda-when strong,
 html[data-reduce-motion] .agenda-day.today .agenda-when strong::after,
 html[data-reduce-motion] .auth-brand,
 html[data-reduce-motion] .auth-brand-spark {
-  animation: none !important;
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
 }
 
 /* ── #28 눈 편한 테마(eye comfort) ─────────────────────────────────────────
@@ -1359,7 +1361,8 @@ html[data-eye-comfort="lite"] .public-event {
 html[data-reduce-motion] .netstat-badge,
 html[data-reduce-motion] .netstat-toast,
 html[data-reduce-motion] .netstat-dot {
-  animation: none !important;
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
 }
 
 /* Batch 11: login and in-app browser states. OAuth flow stays unchanged. */
@@ -1531,7 +1534,8 @@ html[data-reduce-motion] .auth-error-card,
 html[data-reduce-motion] .auth-brand,
 html[data-reduce-motion] .auth-brand-spark,
 html[data-reduce-motion] .inapp-spinner {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }
 
 html[data-reduce-motion] .auth-panel .button {
@@ -1659,6 +1663,7 @@ html[data-reduce-motion] .auth-panel .button {
 html[data-reduce-motion] .system-state-card,
 html[data-reduce-motion] .system-state-icon,
 html[data-reduce-motion] .system-state-action {
-  animation: none;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
   transition: none;
 }
