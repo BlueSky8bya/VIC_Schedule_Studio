@@ -1875,121 +1875,6 @@ html[data-reduce-motion] .vch-tip {
    모두 좌우 **20px** 고정 안쪽(처음 8px는 초기 화면의 얇은 줄이었다 — 재생·호버 컨트롤의 탐색줄이 기준).
    채팅 반응(면)·발화 밀도(가는 선)가 띠 안을 채우고, 코너 구간은 위쪽 5px 리본으로 물러난다. 숫자 표기 없음.
    결: 유리판 위 낮은 산 — 옅은 파랑 면, 금색 밀도 선, 재생 머리는 금 손잡이(숲의 파란 점과 같은 문법). */
-.vch-strip {
-  position: relative;
-  height: 22px;
-  margin: 0 20px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #f1f3f8, #e6e9f1);
-  overflow: visible;
-  cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 80%),
-    inset 0 0 0 1px rgb(29 29 41 / 5%);
-}
-.vch-strip.has-chat {
-  height: 36px;
-  margin-top: 6px;
-  margin-bottom: 26px; /* 봉우리 단어 알약 자리 */
-}
-.vch-heat {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  overflow: hidden;
-  pointer-events: none;
-}
-.vch-heat-area {
-  fill: rgb(53 100 224 / 20%);
-  transition: fill var(--dur-2) var(--ease);
-}
-.vch-strip:hover .vch-heat-area { fill: rgb(53 100 224 / 28%); }
-.vch-heat-line {
-  fill: none;
-  stroke: rgb(217 162 27 / 75%);
-  stroke-width: 1.4;
-  vector-effect: non-scaling-stroke;
-  stroke-linejoin: round;
-}
-.vch-strip.has-chat .vch-seg {
-  top: 0;
-  bottom: auto;
-  height: 5px;
-  border-radius: 0;
-}
-.vch-strip.has-chat .vch-seg:first-child { border-radius: 7px 0 0 0; }
-.vch-strip.has-chat .vch-seg:last-of-type { border-radius: 0 7px 0 0; }
-.vch-strip.has-chat .vch-tick { opacity: 0.55; }
-.vch-strip.has-chat .vch-head { top: -4px; bottom: -4px; }
-/* 재생 머리 손잡이 — 띠 위에 살짝 걸친 금색 동그라미(잡을 수 있어 보이게). */
-.vch-strip.has-chat .vch-head::after {
-  content: "";
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 11px;
-  height: 11px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #f3c75a, #b47a10);
-  box-shadow: 0 1px 3px rgb(29 29 41 / 30%), 0 0 0 1.5px #fff;
-}
-.vch-strip.has-chat:hover .vch-heat-line { stroke: rgb(217 162 27 / 95%); }
-.vch-peaks {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 24px;
-  pointer-events: none;
-}
-.vch-peak {
-  position: absolute;
-  top: 6px;
-  transform: translateX(-50%);
-  max-width: 170px;
-  height: 22px;
-  padding: 0 9px;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid rgb(35 48 63 / 8%);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 92%);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  color: rgb(35 48 63 / 66%);
-  font: inherit;
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  box-shadow: 0 2px 6px rgb(29 29 41 / 8%);
-  pointer-events: auto;
-  cursor: pointer;
-  transition: transform var(--dur-1) var(--spring-bouncy, var(--ease)), box-shadow var(--dur-1) var(--ease);
-}
-.vch-peak::before {
-  content: "";
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  transform: translateX(-50%) rotate(45deg);
-  background: #fff;
-  border-left: 1px solid #e4e6f0;
-  border-top: 1px solid #e4e6f0;
-}
-.vch-peak:hover {
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 4px 10px rgb(29 29 41 / 14%);
-}
-.vch-peak:active { transform: translateX(-50%) scale(0.96); }
 /* ── 공용 알약(2026-09-18 대개편) — 다시보기 창·검색 시트가 같은 언어를 쓴다: 한 높이(24px)·한 모서리(999px)·
    한 글자(11.5px/800)·아이콘 12px. 뜻만 색으로 구분한다(조용함=회, 금=강조, 파랑=지금 켜짐). */
 .ui-pill {
@@ -2000,7 +1885,7 @@ html[data-reduce-motion] .vch-tip {
   padding: 0 9px;
   border: 1px solid rgb(35 48 63 / 8%);
   border-radius: 999px;
-  background: rgb(255 255 255 / 72%);
+  background: rgb(35 48 63 / 4%);
   color: rgb(35 48 63 / 62%);
   font: inherit;
   font-size: 11.5px;
@@ -2008,8 +1893,6 @@ html[data-reduce-motion] .vch-tip {
   font-style: normal;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
 }
 .ui-pill.is-quiet { color: rgb(35 48 63 / 50%); }
 .ui-pill.is-gold {
@@ -2025,7 +1908,7 @@ html[data-reduce-motion] .vch-tip {
     border-color 0.24s cubic-bezier(0.32, 0.72, 0, 1),
     transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.ui-pill.is-tap:hover { color: #23303f; background: #fff; }
+.ui-pill.is-tap:hover { color: #23303f; background: rgb(35 48 63 / 9%); }
 .ui-pill.is-tap:active { transform: scale(0.97); }
 .ui-pill.is-tap.is-on {
   border-color: rgb(53 100 224 / 32%);
@@ -2034,13 +1917,14 @@ html[data-reduce-motion] .vch-tip {
 }
 html[data-reduce-motion] .ui-pill.is-tap { transition: none; }
 
-/* 레일 아래쪽 페이드 — 목록이 끊기지 않고 '더 있다'가 읽히게(iOS 리스트 문법). 위쪽은 코너 헤더가 붙어 있어 안 건다. */
+/* 레일 아래쪽 페이드 — 목록이 끊기지 않고 '더 있다'가 읽히게(iOS 리스트 문법). */
 .dvm-vod .vch-scroll {
   -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent 100%);
 }
-/* 다시보기 레일 머리줄 — 제목 줄 + 알약 줄(두 줄 고정, 더는 꺾이지 않는다).
-   ⚠ 이름은 .vch-topbar — .vch-head는 이미 가로 띠의 '재생 머리'(금색 선)다(2026-09-18 이름 충돌 사고). */
+
+/* 다시보기 레일 머리줄 — 제목 줄 + 알약 줄(두 줄 고정).
+   ⚠ 이름은 .vch-topbar — .vch-head는 이미 가로 띠의 '재생 머리'다(2026-09-18 이름 충돌 사고). */
 .vch-topbar {
   display: grid;
   gap: 6px;
@@ -2067,45 +1951,265 @@ html[data-reduce-motion] .vch-caret-ic { transition: none; }
 .vch-toggle-main b { font-weight: 900; font-variant-numeric: tabular-nums; }
 .vch-toggle-main i { font-style: normal; opacity: 0.45; }
 
-/* (옛 .vch-clock / .vch-laugh 칩은 .ui-pill로 대체 — 규칙은 남겨 두되 쓰이지 않는다.) */
-.vch-clock {
-  display: inline-flex;
+/* 지금 보고 있는 장면 — 띠 바로 위 한 줄(코너 · 제목 · 시각). 재생을 따라 바뀐다. */
+.vch-nowbar {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  margin: 0 0 6px 4px;
-  padding: 2px 9px;
-  border: 1px solid var(--line, #e6e2f0);
+  gap: 8px;
+  margin: 2px 20px -2px;
+  min-width: 0;
+  animation: vch-now-in 0.34s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes vch-now-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+html[data-reduce-motion] .vch-nowbar { animation: none; }
+.vch-now-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
-  background: var(--surface, #fff);
-  color: rgb(35 48 63 / 62%);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+  background: #d9a21b;
+  box-shadow: 0 0 0 3px rgb(217 162 27 / 18%);
 }
-.vch-clock:hover { color: var(--ink, #23303f); background: #f6f4ff; }
-/* 실제 시각 모드: "오후 5:40"이 들어갈 폭 + 경과(파랑)와 구분되는 잉크 */
-.vod-chapters[data-clock] .vch-t {
-  min-width: 74px;
-  color: #6b5b34;
+.vch-now-main {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
 }
-.vch-clock.is-on {
-  color: #1d4ed8;
-  border-color: rgb(53 100 224 / 35%);
-  background: rgb(53 100 224 / 10%);
-}
-.vch-laugh-row { margin: 0 0 6px; padding: 0 4px; }
-.vch-laugh {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: #fff3d6;
-  color: #7a4d00;
+.vch-now-sec {
+  flex: none;
   font-style: normal;
-  font-size: 11px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgb(35 48 63 / 45%);
+}
+.vch-now-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #23303f;
+}
+.vch-now-time {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(217 162 27 / 12%);
+  font-size: 11.5px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #8a5f0b;
+}
+
+/* ── 다시보기 타임라인바 대개편(2026-09-18) ────────────────────────────────────────────
+   층: ① 시간 눈금(긴 방송에서 '몇 시쯤') ② 코너 캡슐(어디서 어디까지) ③ 반응 파형(대칭 막대,
+   높이=채팅 반응·짙기=웃음) ④ 지나온 구간 채움 ⑤ 항목 눈금·반응 봉우리 ✦ · 재생 머리(금 손잡이).
+   폭은 숲 플레이어 탐색줄과 같다(좌우 20px). 사운드 편집기·유튜브 챕터바·애플 미디어 스크러버 참고. */
+.vch-strip {
+  position: relative;
+  height: 54px;
+  margin: 10px 20px 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f7f8fc, #eef0f7);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 80%),
+    inset 0 0 0 1px rgb(29 29 41 / 5%);
+  overflow: visible;
+  cursor: pointer;
+  transition: box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.vch-strip:hover {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 90%),
+    inset 0 0 0 1px rgb(53 100 224 / 18%),
+    0 6px 18px rgb(29 29 41 / 8%);
+}
+/* ① 시간 눈금 */
+.vch-ruler {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.vch-ruler-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(29 29 41 / 7%);
+}
+.vch-ruler-tick em {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: rgb(29 29 41 / 36%);
+  white-space: nowrap;
+}
+/* ② 코너 캡슐 — 위쪽 6px 띠, 사이를 2px 띄운다 */
+.vch-caps {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 7px;
+  pointer-events: none;
+}
+.vch-cap {
+  position: absolute;
+  top: 0;
+  height: 7px;
+  border-radius: 0 0 4px 4px;
+  background: #b9c4de;
+  transform-origin: center bottom;
+  transition: background 0.28s var(--ease), transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.vch-cap[data-i="1"] { background: #c9d2e8; }
+.vch-cap[data-i="2"] { background: #aebbda; }
+.vch-cap.is-active {
+  background: linear-gradient(180deg, #f0c25c, #d9a21b);
+}
+.vch-strip:hover .vch-cap { transform: scaleY(1.25); }
+/* ③ 반응 파형 */
+.vch-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  bottom: 8px;
+  pointer-events: none;
+}
+.vch-wave svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.vch-bar {
+  fill: #6f86c9;
+  transition: fill 0.28s var(--ease);
+}
+.vch-strip:hover .vch-bar { fill: #4f6cbb; }
+/* 채팅이 아직 없는 방송 — 잔잔한 바닥선만 */
+.vch-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgb(29 29 41 / 8%);
+}
+/* ④ 지나온 구간 */
+.vch-played {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-radius: 12px 0 0 12px;
+  background: linear-gradient(180deg, rgb(217 162 27 / 12%), rgb(217 162 27 / 6%));
+  pointer-events: none;
+  transition: width 0.25s linear;
+}
+html[data-reduce-motion] .vch-played { transition: none; }
+/* ⑤ 항목 눈금 · 봉우리 */
+.vch-tick {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: rgb(255 255 255 / 70%);
+  pointer-events: none;
+}
+.vch-spark {
+  position: absolute;
+  top: 13px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #ffd977, #e08c12);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 85%), 0 1px 4px rgb(224 140 18 / 45%);
+  cursor: pointer;
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.24s var(--ease);
+}
+.vch-spark:hover {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 92%), 0 2px 8px rgb(224 140 18 / 55%);
+}
+.vch-spark:active { transform: scale(1.1); }
+/* 재생 머리 */
+.vch-head {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #e8b53a, #9a6708);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 85%);
+  pointer-events: none;
+  transition: left 0.25s linear;
+}
+.vch-head::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f3c75a, #b47a10);
+  box-shadow: 0 1px 4px rgb(29 29 41 / 32%), 0 0 0 1.5px #fff;
+}
+html[data-reduce-motion] .vch-head { transition: none; }
+.vch-hover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: rgb(29 29 41 / 55%);
+  opacity: 0;
+  pointer-events: none;
+}
+.vch-strip-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 420px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: rgb(29 29 41 / 94%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0;
+  line-height: 1.4;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  text-align: center;
+  box-shadow: 0 8px 24px rgb(29 29 41 / 22%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-1) var(--ease);
 }
 .vch-strip-only { min-height: 0; }
 .vch-seg {

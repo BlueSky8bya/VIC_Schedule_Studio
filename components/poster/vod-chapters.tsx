@@ -138,6 +138,7 @@ export function VodChapters({
   const hoverLineRef = useRef<HTMLSpanElement | null>(null);
   const hoverTipRef = useRef<HTMLSpanElement | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
+  const playedRef = useRef<HTMLSpanElement | null>(null); // 지나온 구간 채움(재생 머리와 같은 신호로 갱신)
   // 채팅 구간 프로필(0090) — 가로 띠가 있는 창에서만 받는다(모바일 아젠다는 띠 없음). 비율만 온다(숫자 없음).
   const [profile, setProfile] = useState<PublicVodChatProfile | null>(null);
   useEffect(() => {
@@ -164,7 +165,9 @@ export function VodChapters({
     if (!subscribeTime || secs.length === 0) return;
     return subscribeTime((sec) => {
       const head = headRef.current;
-      if (head && durationMs > 0) head.style.left = `${Math.min(100, Math.max(0, (sec / (durationMs / 1000)) * 100))}%`;
+      const pctPlayed = durationMs > 0 ? Math.min(100, Math.max(0, (sec / (durationMs / 1000)) * 100)) : 0;
+      if (head && durationMs > 0) head.style.left = `${pctPlayed}%`;
+      if (playedRef.current && durationMs > 0) playedRef.current.style.width = `${pctPlayed}%`;
       let found = -1;
       for (let i = 0; i < secs.length; i++) {
         if (secs[i] <= sec && (found < 0 || secs[i] >= secs[found])) found = i;
@@ -300,8 +303,24 @@ export function VodChapters({
   const hhmmss = formatTimecode;
   // (항목별 구간 길이 표기는 2026-09-01 사용자 결정으로 없음 — 길이는 가로 띠의 구간 폭이 대신 말한다.)
 
+  // 지금 보고 있는 장면(2026-09-18) — 띠 위 한 줄로 '어느 코너의 무엇'을 계속 알려 준다(애플 '재생 중' 문법).
+  const nowItem = activeIdx !== null ? (timeline?.entries ?? [])[activeIdx] : undefined;
+  const nowSection = activeIdx !== null ? groups.find((g) => g.items.some((it) => it.idx === activeIdx))?.section : null;
   const strip = hasStrip
     ? createPortal(
+        <>
+          {nowItem ? (
+            <div className="vch-nowbar">
+              <span aria-hidden="true" className="vch-now-dot" />
+              <span className="vch-now-main">
+                {nowSection ? <em className="vch-now-sec">{nowSection}</em> : null}
+                <b className="vch-now-label">{nowItem.label}</b>
+              </span>
+              <span className="vch-now-time">
+                {clockMode && startedAt ? wallClock(startedAt, nowItem.sec) : formatTimecode(nowItem.sec)}
+              </span>
+            </div>
+          ) : null}
         <VodStrip
           activeIdx={activeIdx}
           durationSec={durationMs / 1000}
@@ -316,10 +335,13 @@ export function VodChapters({
             setActiveIdx(idx < 0 ? null : idx);
             onJump!(sec);
           }}
+          clockMode={clockMode && Boolean(startedAt)}
+          playedRef={playedRef}
           profile={profile}
           stripRef={stripRef}
           wall={startedAt ? (sec: number) => wallClock(startedAt, sec) : undefined}
-        />,
+        />
+        </>,
         stripHost!
       )
     : null;
@@ -509,11 +531,15 @@ function VodStrip({
   hhmmss,
   onPick,
   profile,
-  wall
+  wall,
+  clockMode,
+  playedRef
 }: {
   groups: { section: string | null; items: { sec: number; label: string; idx: number; depth: number }[] }[];
   profile: PublicVodChatProfile | null;
   wall?: (sec: number) => string | null; // 경과 초 → 실제 시각(KST), 모르면 undefined
+  clockMode?: boolean; // 눈금 라벨을 실제 시각으로
+  playedRef?: RefObject<HTMLSpanElement | null>;
   durationSec: number;
   activeIdx: number | null;
   headRef: RefObject<HTMLSpanElement | null>;
@@ -527,6 +553,19 @@ function VodStrip({
   const pct = (sec: number) => `${Math.min(100, Math.max(0, (sec / durationSec) * 100))}%`;
   // 채팅 반응(0090) — 구간 비율을 부드러운 산 모양(면)으로, 발화 밀도는 가는 선으로. 봉우리엔 상위 단어 알약.
   // 좌표는 0~1000 × 0~100 viewBox(preserveAspectRatio none) — 폭이 바뀌어도 다시 계산 없음. 숫자는 어디에도 안 찍는다.
+  // 시간 눈금(2026-09-18 대개편): 길이에 맞춰 1·2·3시간 간격. 라벨은 실제 시각 모드면 "오후 6시", 아니면 "1시간".
+  const ruler = useMemo(() => {
+    if (durationSec <= 0) return [];
+    const hours = durationSec / 3600;
+    const stepH = hours > 10 ? 3 : hours > 5 ? 2 : hours > 2 ? 1 : 0.5;
+    const out: { sec: number; label: string }[] = [];
+    for (let t = stepH * 3600; t < durationSec - 120; t += stepH * 3600) {
+      const w = clockMode && wall ? wall(t) : null;
+      out.push({ sec: t, label: w ? w.replace(/:00$/, "시").replace(/^(오전|오후) /, "") : `${Math.round(t / 3600)}시간` });
+    }
+    return out;
+  }, [durationSec, clockMode, wall]);
+
   const heat = useMemo(() => {
     if (!profile || durationSec <= 0) return null;
     const binSec = profile.binSec;
@@ -550,6 +589,22 @@ function VodStrip({
     const x = (i: number) => ((i + 0.5) / n) * 1000;
     const area = `M 0 100 ${hs.map((v, i) => `L ${x(i).toFixed(1)} ${(100 - v * 92).toFixed(1)}`).join(" ")} L 1000 100 Z`;
     const line = ds.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${(100 - v * 80).toFixed(1)}`).join(" ");
+    // 파형 막대(2026-09-18): 화면 폭에 맞춘 240개 안팎으로 묶어 가운데선 기준 대칭 막대로 그린다(사운드 편집기 문법).
+    // 높이 = 반응(메시지), 색 짙기 = 웃음. 구간이 적은 방송은 원래 해상도 그대로.
+    const BARS = Math.max(24, Math.min(150, n));
+    const per = n / BARS;
+    const bars: { x: number; h: number; l: number }[] = [];
+    for (let bi = 0; bi < BARS; bi += 1) {
+      const from = Math.floor(bi * per);
+      const to = Math.max(from + 1, Math.floor((bi + 1) * per));
+      let mh = 0;
+      let ml = 0;
+      for (let i = from; i < to && i < n; i += 1) {
+        mh = Math.max(mh, hs[i]);
+        ml = Math.max(ml, l[i]);
+      }
+      bars.push({ x: (bi + 0.5) / BARS, h: mh, l: ml });
+    }
     // 봉우리: 원본 값 기준 국소 최대(±3구간)이면서 0.55 이상, 봉우리끼리 최소 8% 간격, 최대 5개. 단어 있는 구간 우선.
     const cand = h
       .map((v, i) => ({ i, v }))
@@ -561,7 +616,7 @@ function VodStrip({
       if (peaks.some((p) => Math.abs(p.i - c.i) / n < 0.08)) continue;
       peaks.push({ i: c.i, v: c.v, terms: t[c.i], sec: c.i * binSec });
     }
-    return { n, binSec, h, d, l, t, area, line, peaks };
+    return { n, binSec, h, d, l, t, area, line, peaks, bars };
   }, [profile, durationSec]);
   // 마우스 x → 초 → 그 시각 이하 마지막 항목.
   const locate = (clientX: number) => {
@@ -616,34 +671,67 @@ function VodStrip({
       ref={stripRef}
       role="presentation"
     >
-      {heat ? (
-        <svg aria-hidden="true" className="vch-heat" preserveAspectRatio="none" viewBox="0 0 1000 100">
-          <path className="vch-heat-area" d={heat.area} />
-          <path className="vch-heat-line" d={heat.line} />
-        </svg>
+      {/* ① 시간 눈금 — 긴 방송에서 '지금 몇 시쯤'을 바로. 실제 시각 모드면 벽시계로 읽힌다. */}
+      {ruler.length > 0 ? (
+        <span aria-hidden="true" className="vch-ruler">
+          {ruler.map((r) => (
+            <i className="vch-ruler-tick" key={r.sec} style={{ left: pct(r.sec) }}>
+              <em>{r.label}</em>
+            </i>
+          ))}
+        </span>
       ) : null}
-      {groups.map((g, gi) => {
-        const start = g.items[0].sec;
-        const end = gi + 1 < groups.length ? groups[gi + 1].items[0].sec : durationSec;
-        return (
-          <span
-            className={`vch-seg${gi === activeGi ? " is-active" : ""}`}
-            data-i={gi % 3}
-            key={gi}
-            style={{ left: pct(start), width: pct(Math.max(0, end - start)) }}
-            title={g.section ?? undefined}
-          />
-        );
-      })}
+
+      {/* ② 코너 캡슐 — 사이를 띄운 알약으로 끊어 '어디서 어디까지가 한 코너'가 보인다(유튜브 챕터 문법). */}
+      <span aria-hidden="true" className="vch-caps">
+        {groups.map((g, gi) => {
+          const start = g.items[0].sec;
+          const end = gi + 1 < groups.length ? groups[gi + 1].items[0].sec : durationSec;
+          return (
+            <i
+              className={`vch-cap${gi === activeGi ? " is-active" : ""}`}
+              data-i={gi % 3}
+              key={gi}
+              style={{ left: pct(start), width: pct(Math.max(0, end - start)) }}
+            />
+          );
+        })}
+      </span>
+
+      {/* ③ 반응 파형 — 가운데선 기준 대칭 막대(높이=반응, 짙기=웃음). 채팅을 아직 못 받은 방송은 잔잔한 바닥선만. */}
+      <span className="vch-wave">
+        {heat ? (
+          <svg aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1000 100">
+            {heat.bars.map((b, i) => {
+              const h = Math.max(3, b.h * 96);
+              return (
+                <rect
+                  className="vch-bar"
+                  height={h}
+                  key={i}
+                  opacity={0.4 + b.l * 0.45}
+                  rx={1.6}
+                  width={Math.max(2.4, 1000 / heat.bars.length - 1.8)}
+                  x={b.x * 1000 - Math.max(1.2, (1000 / heat.bars.length - 1.8) / 2)}
+                  y={50 - h / 2}
+                />
+              );
+            })}
+          </svg>
+        ) : null}
+        <i aria-hidden="true" className="vch-base" />
+      </span>
+
+      {/* ④ 지나온 구간 — 재생 머리 왼쪽이 따뜻하게 채워진다. */}
+      <span aria-hidden="true" className="vch-played" ref={playedRef} />
+
+      {/* ⑤ 항목 눈금 · 반응 봉우리 표식 */}
       {all.map((it) => (it.depth > 0 ? null : <i className="vch-tick" key={it.idx} style={{ left: pct(it.sec) }} />))}
-      <span className="vch-head" ref={headRef} />
-      <span className="vch-hover" ref={hoverLineRef} />
-      <span className="vch-strip-tip" ref={hoverTipRef} />
-      {heat && heat.peaks.length > 0 ? (
-        <span className="vch-peaks">
-          {heat.peaks.map((p) => (
+      {heat && heat.peaks.length > 0
+        ? heat.peaks.map((p) => (
             <button
-              className="vch-peak"
+              aria-label={`${hhmmss(p.sec)} 반응이 몰린 구간`}
+              className="vch-spark"
               data-act="vod-strip-peak"
               key={p.i}
               onClick={(e) => {
@@ -654,12 +742,13 @@ function VodStrip({
               style={{ left: pct(p.sec + heat.binSec / 2) }}
               title={`${hhmmss(p.sec)} · 반응이 몰린 구간${p.terms.length ? ` · ${p.terms.join(" · ")}` : ""}`}
               type="button"
-            >
-              {p.terms.length ? p.terms.slice(0, 2).join(" · ") : "반응 ↑"}
-            </button>
-          ))}
-        </span>
-      ) : null}
+            />
+          ))
+        : null}
+
+      <span className="vch-head" ref={headRef} />
+      <span className="vch-hover" ref={hoverLineRef} />
+      <span className="vch-strip-tip" ref={hoverTipRef} />
     </div>
   );
 }
