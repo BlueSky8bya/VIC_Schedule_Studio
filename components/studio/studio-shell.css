@@ -11919,7 +11919,7 @@ html[data-reduce-motion] .m-edit-actions .button:active {
   width: var(--space-5);
   height: var(--space-5);
   margin-left: var(--space-2);
-  border: var(--stroke-hairline) solid currentColor;
+  border: 0;
   font-size: var(--text-label);
 }
 

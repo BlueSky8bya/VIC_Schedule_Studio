@@ -1163,11 +1163,9 @@ export function StudioShell({
   function renderRoleBadge(withSettings: boolean) {
     return (
       <RoleBadge
-        email={actor.email}
         onToggleOpen={() => setRoleHelpOpen((value) => !value)}
         open={roleHelpOpen}
-        previewing={previewRole !== null}
-        // 웹(설정 슬롯 없음)은 "?"·팝오버 없이 라벨만(2026-09-04 사용자) — 모바일은 설정 목록이 여기 살아 그대로.
+        // 웹은 라벨만, 모바일은 톱니 버튼에서 같은 설정 목록을 연다.
         quiet={!withSettings}
         role={actor.role}
         roleDisplay={roleDisplay}

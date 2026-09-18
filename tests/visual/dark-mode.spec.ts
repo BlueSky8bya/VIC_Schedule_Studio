@@ -181,6 +181,11 @@ for (const surface of ["developer", "owner", "viewer", "anonymous", "preview"] a
       await page.goto(url);
       const open = () => page.locator(studio ? (mobile ? ".role-help-q" : "[data-act=studio-settings]") : "[data-act=open-settings]").first().click();
       await open();
+      if (studio && mobile) {
+        await expect(page.locator(".role-help-q svg")).toBeVisible();
+        await expect(page.locator(".role-help-pop")).toHaveAttribute("aria-label", "설정");
+        await expect(page.locator(".role-help-summary, .role-help-can, .role-help-email")).toHaveCount(0);
+      }
       const toggle = page.getByRole("switch", { name: "다크 모드 켜기/끄기" });
       await expect(toggle).toBeVisible();
       await expect(toggle).toHaveAttribute("aria-checked", "true");

@@ -1,6 +1,6 @@
 # Dark palette follow-up — 2026-09-19
 
-Status: third owner correction in verification — subdued color harmony, continuous popularity rail in both themes, and theme settings for every audience. Earlier release evidence below remains historical.
+Status: third owner correction pushed (`db1bc591`); owner subsequently requested a mobile settings-button follow-up and another push. Latest changes verified locally; production deployment is NOT VERIFIED. Earlier release evidence below remains historical.
 
 ## V3: research-informed harmony — 2026-09-19
 
@@ -22,6 +22,10 @@ Popularity root cause: TierMark deliberately rendered 1–4 children with 2px fl
 Mobile public settings also lacked an entry button. The agenda header now reuses the desktop button and dialog; narrow 320px headers hide decorative sparkles to preserve the 44px settings target. Owner, developer, signed-in viewer UI, anonymous and viewer-preview fixtures exercise the same preference on desktop/mobile, including reload persistence. These fixture roles do not establish real-session/RLS coverage.
 
 V3 local verification: production-build visual/interaction suite 30/30 passed; final 320px header adjustment then passed its settings/persistence test and actual-public screenshot check (no overflow/runtime errors). Typecheck, lint and isolated production build passed. Unit suite 954/956 passed; the same two pre-existing ambient-codex failures remain. Harness still reports the pre-existing duplicate active rule ID. Independent reviewer checked shared rail geometry, mixed-card specificity, role gate removal, migration and public DTO mapping. Gallery: `output/dark-mode-harmony/index.html`; full captures/logs: `tmp/dark-audit/v3-tests`, `tmp/dark-audit/*v3*`.
+
+Deployment history: Vercel canceled `db1bc591` from its dashboard at 2026-09-19 05:15:11 KST. The production check still saw the older rail (0px border, expected 4px) before cancellation. Migration 0123 is already applied additively; existing deployed v2 readers remain compatible. The next push is explicitly authorized by the owner's mobile settings follow-up.
+
+Mobile settings follow-up: developer/owner badges use the shared gear icon instead of `?`. Their popup has a settings heading and shared controls; role explanation, permission list and email block were removed. Accessible names now describe settings; the historical analytics key retains continuity with its display label updated. Owner/developer mobile rendering, toggle and reload checks passed 2/2; typecheck/lint/production build passed. Unit suite remains 954/956 with the same two ambient-codex failures. Captures: `tmp/dark-audit/mobile-role-settings`.
 
 2026-09-19 follow-up: v2 raises pastel chroma and removes the dark eye-comfort amber veil from cards, while leaving neutral colors neutral. `0122` adds generated v2 columns, preserving v1/source values. SQL/TS parity 1,240; existing source hashes unchanged; insert/update/NULL automatic storage verified. Minimum tested text contrast >4.5:1; distinct pastel-family OKLab distances >0.055. Visits now include explicit dark zero values, owner session tracks, criterion chips and day calendar ink. Ribbon base colors were already deployed; solo/hover text and highlights are corrected too. Public ribbon hover now scopes to the actual `.poster-page` root; independent review confirmed the fix.
 
