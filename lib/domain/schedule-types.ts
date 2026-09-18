@@ -195,9 +195,20 @@ export type PublicSearchHit = {
   exact: boolean; // 정규화 구/토큰이 실제로 포함된 적중(false = 트라이그램 유사도만 — 화면은 '비슷한 결과')
   popularity: number; // 0~1 참여 신호(다시보기: 조회·좋아요·댓글·챕터 밀도 / 일정: 하트) — 정렬 '인기순'
 };
+// 관계 그래프(0079) — 질의 인물과 함께 자주 나온 인물. 이름은 공개 제목·챕터의 "○○님"에서 온다.
+export type PublicSearchRelated = {
+  name: string; // 정규화 이름
+  display: string; // 원문 표기(님 없음)
+  coDocs: number; // 같은 방송/일정에 함께 나온 수
+  hapbang: number; // 그중 합방 표식
+};
+export type PublicSearchTrend = { term: string; recent: number; ratio: number };
+// 관련 검색어(0080) — 큐레이션(rel: 같은 시리즈, 할나~실크송) 또는 말뭉치 공출현(auto).
+export type PublicSearchRelatedTerm = { term: string; coDocs: number; kind: "rel" | "auto" };
 export type PublicSearchResult = {
   query: string;
   hits: PublicSearchHit[];
+  related?: { people: PublicSearchRelated[]; terms: PublicSearchRelatedTerm[] };
 };
 
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.

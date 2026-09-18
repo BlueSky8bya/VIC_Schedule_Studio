@@ -660,6 +660,60 @@ export async function searchPublic(
   return { query: q, hits };
 }
 
+// 관계 그래프(0079): 질의 인물과 함께 자주 나온 인물. 이름은 공개 제목·챕터·일정의 "○○님"뿐.
+export async function getPublicSearchRelated(
+  query: string,
+  limit = 8
+): Promise<import("@/lib/domain/schedule-types").PublicSearchRelated[]> {
+  const q = query.trim();
+  if (!isSupabaseConfigured() || q.length < 2) return [];
+  const supabase = createPublicReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("search_related", { p_q: q, p_limit: limit });
+  if (error || !Array.isArray(data)) return [];
+  return (data as { name: string; display: string; co_docs: number; hapbang: number }[]).map((r) => ({
+    name: String(r.name),
+    display: String(r.display),
+    coDocs: Number(r.co_docs) || 0,
+    hapbang: Number(r.hapbang) || 0
+  }));
+}
+
+// 관련 검색어(0080): 큐레이션 관련어 + 단어 공출현 그래프 이웃. 사람 이름은 위 함수가 따로 준다.
+export async function getPublicSearchRelatedTerms(
+  query: string,
+  limit = 8
+): Promise<import("@/lib/domain/schedule-types").PublicSearchRelatedTerm[]> {
+  const q = query.trim();
+  if (!isSupabaseConfigured() || q.length < 2) return [];
+  const supabase = createPublicReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("search_related_terms", { p_q: q, p_limit: limit });
+  if (error || !Array.isArray(data)) return [];
+  return (data as { term: string; co_docs: number; kind: string }[]).map((r) => ({
+    term: String(r.term),
+    coDocs: Number(r.co_docs) || 0,
+    kind: r.kind === "rel" ? "rel" : "auto"
+  }));
+}
+
+// 최근 N일 '갑자기 많이 나온 말'(0079) — 입력 전 제안 칩. 챕터·제목 단어뿐(검색어 저장 아님).
+export async function getPublicSearchTrending(
+  days = 30,
+  limit = 10
+): Promise<import("@/lib/domain/schedule-types").PublicSearchTrend[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = createPublicReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("search_trending", { p_days: days, p_limit: limit });
+  if (error || !Array.isArray(data)) return [];
+  return (data as { term: string; recent: number; ratio: number | string }[]).map((r) => ({
+    term: String(r.term),
+    recent: Number(r.recent) || 0,
+    ratio: Number(r.ratio) || 0
+  }));
+}
+
 // 팬 타임라인 본문(0071) — 챕터를 펼칠 때만 부른다(개별 VOD 단위, CDN 캐시 안전: 익명 동일).
 // 원문이 숲 공개 댓글이라 anon SELECT 정책으로 직접 읽는다. 명시적 DTO(스프레드 금지).
 export async function getPublicVodTimeline(

@@ -50,3 +50,5 @@
 | 0076 | public_search — 시청자 검색: pg_trgm·`search_norm`·`vod_chapter_index`(타임라인 트리거 평탄화)·`search_public` RPC(공개 일정·다시보기·챕터 한 순위) |
 | 0077 | public_search_p3 — 검색 P3: IDF 가중 토큰 비율·초성열(`search_choseong`, `label_cho`)·`exact` 플래그(RPC 반환형 변경) |
 | 0078 | public_search_synonyms — 은어·줄임말: `search_synonyms`(seed 사전+auto 채굴 `search_synonyms_rebuild`)·`search_abbrev_match` 부분열·질의 확장·`popularity` 컬럼 |
+| 0079 | public_search_graph — 은어 사전 보강 + 인물 관계 그래프(`search_entities`/`search_relations`, ○○님 공출현·합방·PPMI, `search_graph_rebuild`) + `search_related`·`search_trending` RPC |
+| 0080 | public_search_related_terms — 관련어 kind(syn/rel)·큐레이션 관련어(할나~실크송)·단어 공출현 PPMI 그래프(`search_terms`/`search_term_relations`, `search_term_graph_rebuild`)·`search_related_terms` RPC·RPC 관련어 보너스 0.5 |

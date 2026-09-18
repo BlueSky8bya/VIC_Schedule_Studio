@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CalendarCheck, ChevronRight, Play, Search, X } from "lucide-react";
-import type { BroadcastTag, PublicSearchHit, PublicSearchResult } from "@/lib/domain/schedule-types";
+import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
   findMatchRange,
@@ -96,6 +96,18 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // 입력 전 제안: 요즘 뜨는 말(0079 search_trending) — 시트 열 때 한 번, 실패하면 조용히 없음.
+  const [trends, setTrends] = useState<PublicSearchTrend[]>([]);
+  useEffect(() => {
+    const ctl = new AbortController();
+    fetch(`/api/public/${slug}/search/trending`, { signal: ctl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { trends?: PublicSearchTrend[] } | null) => {
+        if (j && Array.isArray(j.trends)) setTrends(j.trends.slice(0, 8));
+      })
+      .catch(() => {});
+    return () => ctl.abort();
+  }, [slug]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -379,11 +391,86 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
             </div>
           </div>
         ) : null}
+        {result && ((result.related?.people?.length ?? 0) > 0 || (result.related?.terms?.length ?? 0) > 0) ? (
+          <div className="ps-related">
+            {result.related?.terms?.length ? (
+              <div className="ps-chiprow">
+                <span className="ps-chiplbl">관련 검색어</span>
+                <div className="ps-chips">
+                  {result.related.terms.map((t) => (
+                    <button
+                      className={`ps-chip${t.kind === "rel" ? " ps-chip-rel" : ""}`}
+                      data-act="search-related-term"
+                      key={t.term}
+                      onClick={() => {
+                        hapticTick();
+                        setQ(t.term);
+                        inputRef.current?.focus();
+                      }}
+                      title={t.kind === "rel" ? "같은 시리즈·짝" : `같은 방송에 ${t.coDocs}번 함께`}
+                      type="button"
+                    >
+                      {t.term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {result.related?.people?.length ? (
+              <div className="ps-chiprow">
+                <span className="ps-chiplbl">함께 자주 나온</span>
+                <div className="ps-chips">
+                  {result.related.people.map((p) => (
+                    <button
+                      className="ps-chip ps-chip-person"
+                      data-act="search-related-person"
+                      key={p.name}
+                      onClick={() => {
+                        hapticTick();
+                        setQ(p.display);
+                        inputRef.current?.focus();
+                      }}
+                      title={`같은 방송 ${p.coDocs}번${p.hapbang ? ` · 합방 ${p.hapbang}번` : ""}`}
+                      type="button"
+                    >
+                      {p.display}
+                      {p.hapbang > 0 ? <em>합방 {p.hapbang}</em> : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className={`pi-body ps-body${busy ? " is-busy" : ""}`} ref={listRef}>
           {normalizedLen < MIN_CHARS ? (
             <div className="ps-start">
-              <p className="ps-hint">게임 이름, 방송 제목, 챕터 이름으로. 초성(ㅁㅋ)도 돼요.</p>
+              <p className="ps-hint">게임 이름, 방송 제목, 챕터 이름으로. 초성(ㅁㅋ)·줄임말(배그)도 돼요.</p>
+              {trends.length > 0 ? (
+                <div className="ps-chiprow">
+                  <span className="ps-chiplbl">요즘 자주 나온 말</span>
+                  <div className="ps-chips" aria-label="요즘 자주 나온 말">
+                    {trends.map((t) => (
+                      <button
+                        className="ps-chip ps-chip-hot"
+                        data-act="search-trending-chip"
+                        key={t.term}
+                        onClick={() => {
+                          setQ(t.term);
+                          inputRef.current?.focus();
+                        }}
+                        title={`최근 30일 ${t.recent}번`}
+                        type="button"
+                      >
+                        {t.term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {tagChips.length > 0 ? (
+                <div className="ps-chiprow">
+                <span className="ps-chiplbl">태그로 찾기</span>
                 <div className="ps-chips" aria-label="태그로 찾기">
                   {tagChips.map((t) => (
                     <button
@@ -399,6 +486,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                       {t.displayName}
                     </button>
                   ))}
+                </div>
                 </div>
               ) : null}
             </div>

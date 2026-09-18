@@ -255,8 +255,12 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
   // 검색 동의어 자동 채굴(0078) — 새 챕터가 들어왔으니 제목↔챕터 줄임말 관계를 다시 센다.
   // 실패해도 타임라인 저장 결과와 무관(검색은 옛 사전으로 계속 돈다).
   if (saved > 0) {
-    const { error } = await supabase.rpc("search_synonyms_rebuild");
-    if (error) console.warn("[search] synonyms rebuild failed:", error.message);
+    // 순서: 인물 관계 그래프(0079, 이름 변형 동의어 포함) → 줄임말 채굴(0078). 서로 독립이지만
+    // 둘 다 챕터 색인을 읽으므로 upsert 뒤에 돈다.
+    for (const fn of ["search_graph_rebuild", "search_term_graph_rebuild", "search_synonyms_rebuild"] as const) {
+      const { error } = await supabase.rpc(fn);
+      if (error) console.warn(`[search] ${fn} failed:`, error.message);
+    }
   }
   return { ok: true, saved };
 }

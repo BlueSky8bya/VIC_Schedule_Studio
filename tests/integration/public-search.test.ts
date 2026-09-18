@@ -132,6 +132,23 @@ describe.skipIf(!configured)("시청자 검색 — 공개 경계·순위(실제 
     expect(hit2!.exact).toBe(false);
   });
 
+  it("관련어(0080): '할나'로 치면 '실크송' 일정도 결과에 들고, 관련 검색어·인물 그래프가 응답한다", async () => {
+    const id = await insertEvent({ public_title: `${MARK} 실크송 ${TOKEN}` });
+    const hits = await find(`할나 ${TOKEN}`);
+    const hit = hits.find((h) => h.eventId === id);
+    expect(hit, "관련어 확장 실패").toBeTruthy();
+    const { getPublicSearchRelatedTerms, getPublicSearchRelated, getPublicSearchTrending } = await import(
+      "@/lib/schedules/public-loader"
+    );
+    const terms = await getPublicSearchRelatedTerms("할나");
+    expect(terms.map((t) => t.term)).toContain("실크송");
+    const people = await getPublicSearchRelated("왁굳");
+    expect(people.length, "왁굳 관련 인물이 비었다").toBeGreaterThan(0);
+    for (const p of people) expect(p.display).not.toMatch(/님$/);
+    const trends = await getPublicSearchTrending(30, 5);
+    expect(Array.isArray(trends)).toBe(true);
+  });
+
   it("정규화 후 2글자 미만이면 왕복 없이 빈 결과", async () => {
     expect((await searchPublic(SLUG, " ㅋ ")).hits).toHaveLength(0);
   });

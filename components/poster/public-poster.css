@@ -7476,6 +7476,42 @@ html[data-pchrome="3"] .poster-chrome-title {
   box-shadow: var(--shadow-1);
 }
 
+/* 관련 제안 줄(정렬 아래) — 관련 검색어·함께 자주 나온 인물. 칩은 시작 화면 칩과 같은 부품. */
+.ps-related {
+  display: grid;
+  gap: 6px;
+  border-bottom: 1px solid #efe6d3;
+  padding: 8px 18px 10px;
+}
+.ps-chiprow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.ps-chiplbl {
+  flex: none;
+  padding-top: 6px;
+  font-size: var(--text-caption, 12.5px);
+  font-weight: 800;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ps-chip-rel {
+  border-color: rgb(124 108 240 / 45%);
+  background: rgb(124 108 240 / 8%);
+}
+.ps-chip-hot {
+  border-color: rgb(244 183 64 / 60%);
+  background: rgb(244 183 64 / 14%);
+}
+.ps-chip-person em {
+  margin-left: 5px;
+  font-style: normal;
+  font-weight: 700;
+  color: rgb(124 108 240);
+}
+
 /* 본문 — 2차(2026-09-18): 줄 전체가 버튼, 글자 CTA 없음, 종류는 왼쪽 아이콘/썸네일/타임코드, 행동은
    오른쪽 끝 글리프 하나(›/▶). 유튜브 검색·주요 순간 + Spotlight 묶음 머리. */
 .ps-body {
