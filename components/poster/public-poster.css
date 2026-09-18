@@ -2085,8 +2085,8 @@ html[data-reduce-motion] .vch-nowbar { animation: none; }
 .vch-cap[data-i="1"] { background: rgb(107 114 152 / 15%); }
 .vch-cap[data-i="2"] { background: rgb(107 114 152 / 28%); }
 .vch-cap.is-active {
-  background: linear-gradient(90deg, #f0c25c, #d9a21b);
-  box-shadow: 0 0 10px rgb(217 162 27 / 45%);
+  background: linear-gradient(90deg, rgb(240 194 92 / 85%), rgb(217 162 27 / 85%));
+  box-shadow: 0 0 6px rgb(217 162 27 / 28%);
 }
 .vch-strip:hover .vch-cap { transform: scaleY(1.7); }
 /* ③ 반응 파형 */
@@ -2141,8 +2141,8 @@ html[data-reduce-motion] .vch-nowbar { animation: none; }
   bottom: 0;
   width: 0;
   border-radius: 18px 10px 10px 18px;
-  background: linear-gradient(90deg, rgb(217 162 27 / 7%), rgb(217 162 27 / 16%));
-  box-shadow: inset -12px 0 18px -12px rgb(217 162 27 / 55%);
+  background: linear-gradient(90deg, rgb(217 162 27 / 3%), rgb(217 162 27 / 9%));
+  box-shadow: inset -14px 0 20px -14px rgb(217 162 27 / 38%);
   pointer-events: none;
   transition: width 0.25s linear;
 }
@@ -2160,61 +2160,75 @@ html[data-reduce-motion] .vch-played { transition: none; }
   transition: opacity 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .vch-strip:hover .vch-tick { opacity: 1; }
-/* 반응 봉우리 — 리본 위 작은 빛. 아주 천천히 숨 쉰다. */
+/* 반응 봉우리(2026-09-18 3차, 소유자: "떠 있는 동그라미가 어수선하고 가벼워 보인다")
+   → 점을 버리고 **리본 뒤에서 번지는 금빛 기둥** + 아래 레일의 작은 금색 탭. 띠에 새겨진 것처럼 읽힌다. */
 .vch-spark {
   position: absolute;
-  top: 8px;
-  width: 8px;
-  height: 8px;
-  margin-left: -4px;
+  top: 5px;
+  bottom: 5px;
+  width: 18px;
+  margin-left: -9px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
-  background: radial-gradient(circle at 34% 34%, #ffe9ae, #e8a828);
-  box-shadow: 0 0 0 3px rgb(255 255 255 / 72%), 0 0 12px rgb(232 168 40 / 55%);
+  background: linear-gradient(
+    90deg,
+    rgb(232 168 40 / 0%),
+    rgb(232 168 40 / 14%) 42%,
+    rgb(232 168 40 / 20%) 50%,
+    rgb(232 168 40 / 14%) 58%,
+    rgb(232 168 40 / 0%)
+  );
   cursor: pointer;
-  animation: vch-spark-breathe 3.6s ease-in-out infinite;
-  transition: transform 0.42s cubic-bezier(0.22, 1.12, 0.36, 1), box-shadow 0.3s var(--ease);
+  transition: opacity 0.36s cubic-bezier(0.32, 0.72, 0, 1);
 }
-@keyframes vch-spark-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.16); }
+.vch-spark::after {
+  /* 아래 코너 레일 위에 놓이는 작은 탭 — '여기 눌러 볼 만하다'가 조용히 읽힌다. */
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 10px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f0c25c, #d9a21b);
+  box-shadow: 0 0 8px rgb(217 162 27 / 55%);
+  transition: width 0.42s cubic-bezier(0.22, 1.12, 0.36, 1), box-shadow 0.3s var(--ease);
 }
-.vch-spark:hover {
-  transform: scale(1.6);
-  box-shadow: 0 0 0 4px rgb(255 255 255 / 82%), 0 0 18px rgb(232 168 40 / 70%);
-  animation-play-state: paused;
-}
-.vch-spark:active { transform: scale(1.25); }
-html[data-reduce-motion] .vch-spark { animation: none; transition: none; }
+.vch-spark:hover { opacity: 1; }
+.vch-spark:hover::after { width: 18px; box-shadow: 0 0 14px rgb(217 162 27 / 75%); }
+.vch-spark:active::after { width: 13px; }
+html[data-reduce-motion] .vch-spark,
+html[data-reduce-motion] .vch-spark::after { transition: none; }
 /* 재생 머리 */
 .vch-head {
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: 4px;
+  bottom: 4px;
   left: 0;
-  width: 2px;
-  margin-left: -1px;
+  width: 2.5px;
+  margin-left: -1.25px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgb(232 181 58 / 95%), rgb(184 122 16 / 95%));
   box-shadow: 0 0 10px rgb(217 162 27 / 55%);
   pointer-events: none;
   transition: left 0.25s linear;
 }
+/* 손잡이(동그라미)는 뺐다 — 계기 바늘 한 줄이 더 묵직하다. 대신 바늘 뒤에 옅은 빛을 깔아 위치가 멀리서도 읽힌다. */
 .vch-head::after {
   content: "";
   position: absolute;
-  top: 50%;
+  top: -6px;
+  bottom: -6px;
   left: 50%;
-  width: 13px;
-  height: 13px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 32%, #fff3d2, #d9a21b 62%, #b47a10);
-  box-shadow: 0 2px 6px rgb(29 29 41 / 22%), 0 0 0 2px rgb(255 255 255 / 92%);
-  transition: transform 0.5s cubic-bezier(0.22, 1.12, 0.36, 1);
+  width: 16px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(217 162 27 / 0%), rgb(217 162 27 / 18%) 50%, rgb(217 162 27 / 0%));
+  pointer-events: none;
+  transition: width 0.5s cubic-bezier(0.22, 1.12, 0.36, 1);
 }
-.vch-strip:hover .vch-head::after { transform: translate(-50%, -50%) scale(1.22); }
+.vch-strip:hover .vch-head::after { width: 26px; }
 html[data-reduce-motion] .vch-head::after { transition: none; }
 html[data-reduce-motion] .vch-head { transition: none; }
 .vch-hover {
