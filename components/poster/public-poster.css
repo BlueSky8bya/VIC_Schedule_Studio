@@ -1058,6 +1058,26 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
 .day-vod-backdrop[data-variant="page"] .dvm-vod:has(.vod-chapters) {
   justify-content: center;
 }
+/* 시즌3(2026-09-18): 페이지에선 무대가 폭으로 묶여 있어 아래가 크게 비었다(1440×950 실측 190px).
+   남는 세로는 전부 타임라인 레일에 준다 — 빈 칸 하나를 더 깔고 레일이 세 행을 가로지른다.
+   보이는 챕터가 늘어나는 게 이 화면에서 세로를 쓰는 유일하게 쓸모 있는 방법. */
+.day-vod-backdrop[data-variant="page"] .dvm-body { flex: 1 1 auto; }
+.day-vod-backdrop[data-variant="page"] .dvm-vod:has(.vod-chapters) {
+  flex: 1 1 auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "thumb rail"
+    "strip rail"
+    ".     rail";
+}
+.day-vod-backdrop[data-variant="page"] .dvm-vod[data-rail="left"]:has(.vod-chapters) {
+  grid-template-areas:
+    "rail thumb"
+    "rail strip"
+    "rail .";
+}
+/* 남는 세로의 일부는 띠에도 — 페이지에선 파형이 한 뼘 더 커져 봉우리가 읽힌다(시즌3). */
+.day-vod-backdrop[data-variant="page"] .vch-strip { height: 68px; }
 .day-vod-modal {
   /* 더 넓은 창(2026-09-01 사용자 피드백 2차) — 미리보기가 주인공. 낮은 화면에선 미리보기가
      max-height(아래 .dvm-thumb)로 잡히고 플레이어가 알아서 레터박스를 그린다. */
@@ -1748,9 +1768,30 @@ a.dvm-host-link:active {
 .vch-item[data-depth="3"] { padding-left: 50px; }
 .vch-item[data-depth] .vch-t { color: #9aa3bd; }
 .vch-item[data-depth] .vch-label { color: #4a4a58; }
-.vch-item:hover { background: #f2f5fb; }
+/* 시즌3(2026-09-18) 손맛: 손이 닿으면 왼쪽에 파란 실선이 위아래로 **자라며** 들어온다(scaleY 0→1,
+   애플 감속 곡선). 바탕은 아주 옅게만 — 줄마다 파란 판이 켜지면 목록이 시끄럽다. */
+.vch-item::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  bottom: 6px;
+  width: 2.5px;
+  border-radius: 999px;
+  background: #3564e0;
+  opacity: 0;
+  transform: scaleY(0.3);
+  transform-origin: center;
+  transition:
+    opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.34s cubic-bezier(0.22, 1.12, 0.36, 1);
+}
+.vch-item:hover { background: rgb(53 100 224 / 4%); }
+.vch-item:hover::after { opacity: 0.85; transform: scaleY(1); }
 .vch-item:hover .vch-t { color: #1d4ed8; }
-.vch-item:active { transform: scale(0.995); background: #e9eef9; }
+.vch-item:active { transform: scale(0.995); background: rgb(53 100 224 / 8%); }
+.vch-item.is-active::after { opacity: 0; }
+html[data-reduce-motion] .vch-item::after { transition: none; }
 /* 지금 재생 중인 챕터(2026-09-03: 클릭뿐 아니라 **재생 위치를 따라 이동** — 유튜브 활성 챕터
    문법 완성형): 파란 바탕 + 왼쪽 액센트 바 + ▶. 지나온 챕터(.is-past)는 시각·라벨을 흐려
    '어디까지 봤는지'가 목록 위에 지형처럼 남는다. 재생 중이면 레일이 현재 챕터를 따라 스크롤
@@ -7785,16 +7826,22 @@ html[data-pchrome="3"] .poster-chrome-title {
   backdrop-filter: blur(10px) saturate(1.1);
 }
 .ps-sheet {
-  --ps-accent: rgb(124 108 240);
-  --ps-accent-soft: rgb(124 108 240 / 10%);
+  /* 시즌3(2026-09-18): 보라(rgb 124 108 240) 액센트 폐기 — 화면의 다른 어디에도 없는 색이라 혼자 튀었다.
+     상호작용은 파랑(#3564e0), '지금·기록'은 금(#d9a21b) — 달력·다시보기 창과 같은 두 색만 쓴다. */
+  --ps-accent: #3564e0;
+  --ps-accent-soft: rgb(53 100 224 / 9%);
+  --ps-gold: #d9a21b;
   --ps-line: rgb(35 48 63 / 8%);
+  --ps-surface: #fffdf7;
   --ps-row-h: 52px;
   position: relative;
-  width: min(680px, 100%);
+  width: min(760px, 100%);
   max-height: min(88vh, 860px);
   border: 1px solid rgb(255 255 255 / 55%);
   border-radius: 22px;
-  background: linear-gradient(180deg, rgb(255 253 246 / 96%), rgb(253 246 230 / 96%));
+  /* 불투명(2026-09-18 실측): 96% 반투명 + 백드롭 블러 탓에 뒤 달력의 색이 칩·줄에 배어
+     같은 칩이 자리마다 민트·노랑으로 보였다. 유리 재질감은 바깥 백드롭만 맡는다. */
+  background: linear-gradient(180deg, var(--ps-surface), #fdf6e6);
   box-shadow:
     0 30px 80px -20px rgb(24 20 32 / 45%),
     0 2px 0 rgb(255 255 255 / 60%) inset;
@@ -8021,11 +8068,9 @@ html[data-pchrome="3"] .poster-chrome-title {
   align-items: center;
   gap: 4px;
   height: 28px;
-  border: 1px solid rgb(35 48 63 / 8%);
+  border: 1px solid rgb(35 48 63 / 9%);
   border-radius: 999px;
-  background: rgb(255 255 255 / 86%);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  background: #fff;
   padding: 0 12px;
   font: inherit;
   font-size: 12.5px;
@@ -8041,21 +8086,28 @@ html[data-pchrome="3"] .poster-chrome-title {
 }
 .ps-chip:hover {
   transform: translateY(-1px);
-  border-color: rgb(124 108 240 / 40%);
-  background: var(--ps-accent-soft);
-  box-shadow: 0 4px 10px -6px rgb(124 108 240 / 40%);
+  border-color: rgb(53 100 224 / 32%);
+  color: #1d4ed8;
+  background: #fff;
+  box-shadow: 0 5px 12px -8px rgb(24 30 60 / 55%);
 }
 .ps-chip:active {
   transform: scale(0.95);
 }
-.ps-chip-rel {
-  border-color: rgb(124 108 240 / 35%);
-  background: var(--ps-accent-soft);
+/* 종류는 채운 색이 아니라 **작은 앞 표식**으로 — 칩 여덟 개가 제각기 다른 색으로 물들지 않게(시즌3). */
+.ps-chip-rel::before,
+.ps-chip-hot::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin-right: 1px;
+  border-radius: 50%;
+  background: var(--ps-accent);
 }
-.ps-chip-hot {
-  border-color: rgb(244 183 64 / 55%);
-  background: rgb(244 183 64 / 14%);
-}
+.ps-chip-hot::before { background: var(--ps-gold); }
+.ps-chip-rel { color: #2c3c52; }
+.ps-chip-hot { color: #6b4e0b; }
 /* 입력 중 제안 목록(0096) — 머리 바로 아래, 유튜브식 한 줄 항목. 결과 목록보다 위에 겹치지 않고 밀어낸다. */
 .ps-suggest {
   position: absolute;
@@ -8229,7 +8281,7 @@ html[data-pchrome="3"] .poster-chrome-title {
   gap: 10px;
   margin: 0;
   padding: 10px 0 4px;
-  background: linear-gradient(180deg, rgb(255 253 246 / 98%) 70%, rgb(255 253 246 / 0%));
+  background: linear-gradient(180deg, var(--ps-surface) 72%, rgb(255 253 246 / 0%));
   font-size: 11.5px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -8282,9 +8334,27 @@ html[data-pchrome="3"] .poster-chrome-title {
   box-shadow: 0 1px 2px rgb(24 20 32 / 6%), 0 8px 18px -12px rgb(24 20 32 / 25%);
   transform: translateY(-1px);
 }
+/* 키보드 커서는 마우스 호버와 달리 '선택된 줄'이다 — 왼쪽에 파란 실선을 세워 구분(시즌3). */
+.ps-row.is-cursor::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--ps-accent);
+}
+.ps-row { position: relative; }
 .ps-row:active {
   transform: scale(0.985);
 }
+/* 손맛: 줄에 손이 닿으면 썸네일이 아주 조금 당겨진다(1.05, 애플 감속 곡선). 줄 자체는 1px만 뜬다. */
+.ps-row:hover .ps-thumb img,
+.ps-row.is-cursor .ps-thumb img {
+  transform: scale(1.05);
+}
+html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-lead {
   display: grid;
   flex: none;
