@@ -60,3 +60,4 @@
 | 0086 | public_search_typo_tolerance — `search_jamo`(자모 분해)·`search_correct`(자모 편집거리 사전어 교정, fuzzystrmatch)·챕터 `label_jamo` |
 | 0087 | public_search_correction — 검색 RPC에 오타 교정 배선(사전에 없는 단일어만), 반환 `corrected` |
 | 0088 | vod_chat_terms — 다시보기 채팅 리플레이 단어 빈도(`vod_chat_terms`/`vod_chat_sync`, 원문·닉 미저장) + 단어 그래프·줄임말 채굴·트렌딩에 채팅 합류, `search_chat_top_terms` |
+| 0089 | 채팅 학습 손질 — 이모티콘(`/…/`) 행 삭제·수집 중단, `search_term_relations.last_day` + 관련어 점수 시간 감쇠(1년 ≈0.62배, 바닥 0.4), auto-rel 칩·채팅 줄임말·그래프 합류는 18개월 안 방송만, 트렌딩 이모티콘 제외 |

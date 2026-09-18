@@ -8,7 +8,8 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 //  2) 조각: chat 주소 + "&startTime=N" (600초 단위) → XML <root><chat><m><![CDATA[메시지]]></m>…<t>초</t></chat>…
 //
 // 저장 원칙: 메시지 원문·아이디(<u>)·닉(<n>)은 **절대 저장하지 않는다**. 방송별 단어 빈도(vod_chat_terms)만.
-// 토큰: 숲 이모티콘 "/빅하/"(슬래시째 한 단어), 한글 2~6자, 라틴·숫자 3~12자. ㅋㅋ·ㅠㅠ 류 자모 반복은 버린다.
+// 토큰: 한글 2~6자, 라틴·숫자 3~12자. ㅋㅋ·ㅠㅠ 류 자모 반복은 버린다.
+// 숲 이모티콘 "/빅하/"는 통째로 버린다(소유자 2026-09-18: 영양가 없음 — 요즘/관련어 칩에 올리지 않는다; 0089).
 // 예의: 조각 사이 150ms, 한 번의 호출에 조각 예산(chunkBudget)을 넘기지 않는다. 실패는 조용히(다음 회차).
 
 const VIEW_API = "https://api.m.sooplive.co.kr/station/video/a/view";
@@ -51,16 +52,13 @@ export function extractMessages(xml: string): string[] {
   return out;
 }
 
-// 메시지 → 단어. 이모티콘은 슬래시째, 나머지는 구분자로 자른다.
+// 메시지 → 단어. 이모티콘(/…/)은 통째로 지우고("빅하"로 새지 않게), 나머지는 구분자로 자른다.
 const EMOTE_RE = /\/([가-힣a-zA-Z0-9]{1,8})\//g;
 const JAMO_ONLY = /^[ㄱ-ㅎㅏ-ㅣ]+$/;
 
 export function tokenize(msg: string): string[] {
   const out: string[] = [];
-  const rest = msg.replace(EMOTE_RE, (_m, e: string) => {
-    out.push(`/${e}/`);
-    return " ";
-  });
+  const rest = msg.replace(EMOTE_RE, " ");
   for (const raw of rest.split(/[^가-힣a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ]+/)) {
     if (!raw) continue;
     const w = raw.toLowerCase();
