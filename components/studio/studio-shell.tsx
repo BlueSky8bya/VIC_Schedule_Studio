@@ -1976,7 +1976,7 @@ export function StudioShell({
     window.setTimeout(() => {
       const ev = events.find((e) => e.id === eventId);
       if (ev) selectEvent(ev);
-      else selectDate(dateKey);
+      else selectDate(dateKey, true);
       flashStudioDay(dateKey);
     }, delay);
   };
@@ -2121,13 +2121,18 @@ export function StudioShell({
     }
   }
 
-  function selectDate(isoDate: string) {
-    // 이미 그 날짜의 새 일정 카드가 열려 있는데 같은 날짜를 또 누르면 → 선택 해제(카드 닫기).
-    if (editorVisible && selectedDate === isoDate && selectedEventId === null) {
+  /** 날짜 칸을 고른다. `open`이 참이면 곧장 새 일정 카드를 연다(Alt+N·모바일 추가·검색 결과처럼
+   *  '편집하겠다'가 이미 분명한 길). 기본(칸 클릭)은 **선택만** — A안(2026-09-19 토리님 결정):
+   *  한 번 누르면 고르기만 하고, 고른 칸을 한 번 더 누르거나 더블클릭해야 카드가 뜬다. */
+  function selectDate(isoDate: string, open = false) {
+    // 그 날짜의 새 일정 카드가 떠 있는데 같은 칸을 또 누르면 → 카드 닫기(선택은 남는다).
+    if (!open && editorVisible && selectedDate === isoDate && selectedEventId === null) {
       editorCloseHowRef.current = "cell";
       setEditorVisible(false);
       return;
     }
+    // 이미 고른 칸을 다시 누르면(카드는 닫힌 상태) → 그때 새 일정 카드를 연다.
+    const second = !editorVisible && selectedDate === isoDate && selectedEventId === null;
     setSelectedDate(isoDate);
     setSelectedEventId(null);
     // 빈 새 카드가 기준 — 같은 날짜에 쓰다 만 임시 내용이 있으면 되살린다.
@@ -2135,6 +2140,7 @@ export function StudioShell({
     const draft = freshDraft(`new:${isoDate}`);
     setForm(draft ? draft.form : createEmptyForm());
     setDraftRestored(Boolean(draft));
+    if (!open && !second && !editorVisible) return; // 첫 클릭 = 선택만
     setEditorVisible(true);
     bumpEditor(); // 사용자가 새 날짜 칸을 고름 → 폼 새로 마운트(전환 애니메이션)
   }
@@ -4048,16 +4054,28 @@ export function StudioShell({
     }
   }
 
-  /** 카드·띠를 **다시** 누르면 편집 팝오버를 닫는다(2026-09-07 소유자 신고: 떠 있는 채로 같은 일정을 또 눌러도 안 닫혔다).
-   *  빈 날짜 칸은 `selectDate`가 이미 이 규칙을 쓰고 있었다 — 일정에도 같은 문법을 맞춘다.
+  /** 카드·띠 클릭(A안, 2026-09-19 토리님 결정: "클릭은 선택만, 편집은 한 번 더").
+   *   · 편집창이 닫혀 있을 때 — 처음 누르면 **선택만**, 고른 걸 한 번 더 누르면 편집창.
+   *   · 편집창이 떠 있을 때 — 같은 일정을 누르면 닫고, 다른 일정을 누르면 창이 그 일정으로 **따라간다**.
+   *     (편집 중엔 이미 "고치겠다"가 분명하다 — 일정마다 두 번씩 누르게 하면 연달아 고칠 때 손이 두 배로 든다.)
+   *   더블클릭은 어느 상태에서든 곧장 편집창(openEventEditor).
    *  `selectEvent`가 아니라 여기에 둔다: 저장·생성 뒤 프로그램이 부르는 `selectEvent`까지 토글이 되면 방금 만든 카드가 닫힌다.
    *  id는 `canonId`로 견준다(낙관적 생성의 임시 id ↔ 서버 id를 같은 것으로 본다). */
   function selectOrCloseEvent(event: StudioScheduleEvent) {
-    if (editorVisible && selectedEventId !== null && canonId(selectedEventId) === canonId(event.id)) {
-      editorCloseHowRef.current = "cell";
-      setEditorVisible(false);
+    const same = selectedEventId !== null && canonId(selectedEventId) === canonId(event.id);
+    if (editorVisible) {
+      if (same) {
+        editorCloseHowRef.current = "cell";
+        setEditorVisible(false);
+        return;
+      }
+      selectEvent(event); // 편집 중 — 창이 따라간다
       return;
     }
+    selectEvent(event, same); // 닫혀 있으면: 처음엔 선택만, 고른 걸 다시 누르면 열기
+  }
+  /** 더블클릭·Enter — 상태와 무관하게 곧장 편집창. */
+  function openEventEditor(event: StudioScheduleEvent) {
     selectEvent(event);
   }
 
@@ -5039,7 +5057,7 @@ export function StudioShell({
       // INPUT 가드보다 먼저 처리한다 — 맨 N은 패널이 열린 동안 '제목 글자'로 먹혀 닫기가 불가능했다.
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "n" && !modal) {
         e.preventDefault();
-        selectDate(selectedDate);
+        selectDate(selectedDate, true);
         return;
       }
       // Esc: 편집 패널 닫기 — 제목 입력 중에도(INPUT 가드보다 먼저) 먹힌다.
@@ -5139,7 +5157,7 @@ export function StudioShell({
   }
   function openMobileAdd(isoDate: string, originEl?: HTMLElement) {
     mobileEditOriginRef.current = originEl?.getBoundingClientRect() ?? null;
-    selectDate(isoDate); // 빈 폼 또는 같은 날짜의 임시 내용 복원까지 처리
+    selectDate(isoDate, true); // 빈 폼 또는 같은 날짜의 임시 내용 복원까지 처리
     setMobileEditId("new");
   }
   function closeMobileEdit() {
@@ -6771,7 +6789,7 @@ export function StudioShell({
               const dayClass = [
                 "studio-day",
                 cell.inCurrentMonth ? "" : "outside",
-                editorVisible && selectedDate === cell.isoDate ? "selected" : "",
+                selectedDate === cell.isoDate ? "selected" : "",
                 // 신규 작성 중이면 '날짜 칸'이 대상 — 팝오버 대표색(초록) 점선으로 칸을 두른다.
                 // 기존 일정 편집 중에는 칸이 아니라 그 카드가 대상이라 칸 강조를 끈다(경쟁 방지).
                 editorVisible && !selectedEventId && selectedDate === cell.isoDate
@@ -6806,6 +6824,8 @@ export function StudioShell({
                     }
                     selectDate(cell.isoDate);
                   }}
+                  /* 더블클릭 = 새 일정 카드 바로 열기(A안의 빠른 길). */
+                  onDoubleClick={() => selectDate(cell.isoDate, true)}
                   onPointerDown={(e) => onCellPointerDown(e, cell.isoDate)}
                   onPointerMove={onCellPointerMove}
                   onPointerUp={cancelCellHold}
@@ -6856,7 +6876,8 @@ export function StudioShell({
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       e.stopPropagation();
-                      selectDate(cell.isoDate);
+                      // 키보드는 '고르기'가 이미 포커스로 끝나 있다 — Enter는 곧장 연다.
+                      selectDate(cell.isoDate, true);
                     }
                   }}
                 >
@@ -6903,6 +6924,10 @@ export function StudioShell({
                         onClick={(e) => {
                           e.stopPropagation();
                           selectOrCloseEvent(s);
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          openEventEditor(s);
                         }}
                         style={{
                           // 날짜 헤더가 --cal-zoom으로 커지므로 띠 시작 높이·레인 간격도 같이
@@ -6969,11 +6994,14 @@ export function StudioShell({
                       const colors = eventColors(event);
                       // PR2: 칸 색(≤2)에 못 담은 나머지 대분류 → 작은 점 줄("더 있음").
                       const extraColors = eventExtraColors(event);
-                      // 선택 강조(테두리·X)는 오른쪽 편집/상세 패널이 열려 있을 때만 — 패널이
-                      // 닫히면(다른 버튼으로 슬라이드-아웃) 카드 선택 표시도 함께 사라지게.
-                      const isSel = editorVisible && selectedEventId === event.id;
+                      // 선택 강조(테두리) — A안(2026-09-19)부터 **편집창과 무관하게** 고른 것에 붙는다.
+                      // 클릭이 선택만 하는데 표시가 없으면 무엇을 골랐는지 안 보인다.
+                      const isSel = selectedEventId === event.id;
+                      // 삭제 X는 **편집 중일 때만**(A안, 2026-09-19): 클릭이 선택만 하는데 X까지 따라 뜨면
+                      // 짚어보려다 지우는 사고가 난다. 테두리는 선택만으로도 뜬다(무엇을 골랐는지 보여야).
+                      const isEditing = isSel && editorVisible;
                       // 연결된 체인이면 체인 전체에 선택 테두리를 입힌다.
-                      const inSelChain = editorVisible && selectedChainIds.has(event.id);
+                      const inSelChain = selectedChainIds.has(event.id);
                       // 아직 안 풀린 최초공개는 편집실 달력에서도 내용을 가린다(방송 화면 유출 방지).
                       const { main, subs } = splitEventTitle(
                         teaserStillHidden(event) ? "???" : event.publicTitle
@@ -7087,6 +7115,12 @@ export function StudioShell({
                             }
                             handlePillClick(event.id);
                           }}
+                          /* 더블클릭 = 곧장 편집창(A안의 빠른 길). 칸으로 올라가면 '새 일정'이 열린다 — 막는다. */
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            const target = eventsRef.current.find((x) => canonId(x.id) === canonId(event.id));
+                            if (target) openEventEditor(target);
+                          }}
                           onPointerDown={
                             draggable ? (e) => onPillPointerDown(e, event) : undefined
                           }
@@ -7098,7 +7132,9 @@ export function StudioShell({
                             // 내부 버튼의 Enter가 카드까지 올라와 편집창을 동시에 여는 것 방지.
                             if (e.key === "Enter" && e.target === e.currentTarget) {
                               e.stopPropagation();
-                              handlePillClick(event.id);
+                              // 키보드는 포커스가 이미 '고르기'라 Enter는 곧장 편집창을 연다.
+                              const target = eventsRef.current.find((x) => canonId(x.id) === canonId(event.id));
+                              if (target) openEventEditor(target);
                             }
                           }}
                           // A안 M2: 확대 중 hover/focus로 상세 팝오버 — '숨은 내용'이 있을 때만.
@@ -7172,7 +7208,7 @@ export function StudioShell({
                           {/* 삭제 X는 pill-main 밖(카드 직속)에 둔다 — 2색 카드는 pill-main이
                               position:relative가 돼(무늬 z-index) top:50%가 제목 줄 기준이 되어
                               여러 줄 카드에서 X가 위로 쏠렸다. 카드 직속이면 항상 카드 전체 세로 중앙. */}
-                          {span.showTitle && isSel && canEdit ? (
+                          {span.showTitle && isEditing && canEdit ? (
                             <button
                               aria-label="일정 삭제"
                               className="pill-delete"

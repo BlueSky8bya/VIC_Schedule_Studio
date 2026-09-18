@@ -8197,20 +8197,56 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   letter-spacing: 0.06em;
   color: rgb(35 48 63 / 42%);
 }
-.ps-chips {
+/* 칩 줄(2026-09-19) — 가로 스크롤 + 페이드 마스크를 버리고 **줄바꿈**으로. 평소엔 한 줄만 보이고
+   넘치면 옆의 '더보기'가 전부 펼친다(public-search.tsx ChipsBox). 잘려 보이는 칩이 없다. */
+.ps-chips-wrap {
   display: flex;
+  align-items: flex-start;
   flex: 1 1 auto;
   min-width: 0;
   gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
+}
+.ps-chips {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: 6px;
+  overflow: hidden;
   padding: 2px 0;
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  max-height: 32px; /* 칩 28 + 위아래 여백 2 = 한 줄 */
+  transition: max-height 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.ps-chips.is-open {
+  max-height: 172px; /* 다섯 줄까지 — 그보다 많으면 이 안에서 스크롤 */
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 .ps-chips::-webkit-scrollbar {
   display: none;
 }
+html[data-reduce-motion] .ps-chips { transition: none; }
+.ps-chips-more {
+  flex: none;
+  height: 28px;
+  margin-top: 2px;
+  border: 1px solid rgb(35 48 63 / 9%);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0 10px;
+  color: var(--ps-accent, #3564e0);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    transform 0.16s var(--ease);
+}
+.ps-chips-more:hover { background: var(--ps-accent-soft, rgb(53 100 224 / 9%)); }
+.ps-chips-more:active { transform: scale(0.95); }
 .ps-chip {
   flex: none;
   display: inline-flex;

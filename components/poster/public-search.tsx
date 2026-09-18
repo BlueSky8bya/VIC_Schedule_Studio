@@ -87,6 +87,47 @@ type Row =
   | { kind: "vod"; dateKey: string; titleNo: number }
   | { kind: "chapter"; dateKey: string; titleNo: number; sec: number };
 
+/** 칩 줄(2026-09-19 소유자: "태그 종류가 많아 마지막이 잘려 보인다").
+ *  예전엔 한 줄 가로 스크롤 + 오른쪽 페이드 마스크였다 — 잘린 칩이 '더 있다'는 신호이자 동시에
+ *  '잘렸다'는 흠이었고, 가로 스크롤은 마우스로 굴리기도 어려웠다. 이제 **줄바꿈**이 원칙이고,
+ *  평소엔 한 줄만 보이되 넘치면 '더보기'로 전부 펼친다 — 잘리는 칩이 없다.
+ *  넘침 판정은 접힌 상태에서만 다시 잰다(펼치면 scrollHeight == clientHeight라 판정이 뒤집힌다). */
+function ChipsBox({ children }: { children: ReactNode }) {
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [over, setOver] = useState(false);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el || open) return;
+    const check = () => setOver(el.scrollHeight > el.clientHeight + 2);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [children, open]);
+  return (
+    <div className="ps-chips-wrap">
+      <div className={`ps-chips${open ? " is-open" : ""}`} ref={boxRef}>
+        {children}
+      </div>
+      {over ? (
+        <button
+          aria-expanded={open}
+          className="ps-chips-more"
+          data-act="search-chips-more"
+          onClick={() => {
+            hapticTick();
+            setOpen((v) => !v);
+          }}
+          type="button"
+        >
+          {open ? "접기" : "더보기"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, onReplay }: Props) {
   const [q, setQ] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null); // Enter(또는 칩·제안 클릭)로 확정된 검색어 — 본검색은 이것만 본다
@@ -731,7 +772,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
             {related?.terms?.length ? (
               <div className="ps-chiprow">
                 <span className="ps-chiplbl">관련</span>
-                <div className="ps-chips">
+                <ChipsBox>
                   {related.terms.map((t) => (
                     <button
                       className={`ps-chip${t.kind === "rel" ? " ps-chip-rel" : ""}`}
@@ -748,13 +789,13 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                       {t.term}
                     </button>
                   ))}
-                </div>
+                </ChipsBox>
               </div>
             ) : null}
             {related?.people?.length ? (
               <div className="ps-chiprow">
                 <span className="ps-chiplbl">함께</span>
-                <div className="ps-chips">
+                <ChipsBox>
                   {related.people.map((p) => (
                     <button
                       className="ps-chip ps-chip-person"
@@ -777,7 +818,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                       ) : null}
                     </button>
                   ))}
-                </div>
+                </ChipsBox>
               </div>
             ) : null}
           </div>
@@ -795,7 +836,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                 {!studio && trends.length > 0 ? (
                   <div className="ps-chiprow">
                     <span className="ps-chiplbl">화제</span>
-                    <div className="ps-chips">
+                    <ChipsBox>
                       {trends.map((t) => (
                         <button
                           className="ps-chip ps-chip-hot"
@@ -811,13 +852,13 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                           {t.term}
                         </button>
                       ))}
-                    </div>
+                    </ChipsBox>
                   </div>
                 ) : null}
                 {tagChips.length > 0 ? (
                   <div className="ps-chiprow">
                     <span className="ps-chiplbl">태그</span>
-                    <div className="ps-chips">
+                    <ChipsBox>
                       {tagChips.map((t) => (
                         <button
                           className="ps-chip"
@@ -832,7 +873,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                           {t.displayName}
                         </button>
                       ))}
-                    </div>
+                    </ChipsBox>
                   </div>
                 ) : null}
               </div>
