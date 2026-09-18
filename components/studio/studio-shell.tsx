@@ -6927,7 +6927,8 @@ export function StudioShell({
                         style={{
                           // 날짜 헤더가 --cal-zoom으로 커지므로 띠 시작 높이·레인 간격도 같이
                           // 배율 — 안 그러면 125%+에서 날짜 숫자와 띠가 겹친다.
-                          top: Math.round((26 + lane * 20) * calZoom),
+                          // 레인 간격 26 = 띠 높이 22 + 틈 4(globals.css .support-bar 주석의 근거).
+                          top: Math.round((26 + lane * 26) * calZoom),
                           // 이어지는 칸은 -1px로 칸 경계선을 덮어 마디처럼 끊겨 보이지 않게.
                           left: left ? 3 : -1,
                           right: right ? 3 : -1,
@@ -6960,7 +6961,7 @@ export function StudioShell({
                     className="studio-event-list"
                     style={{
                       ...(cellLaneDepth > 0
-                        ? { paddingTop: Math.round((8 + cellLaneDepth * 20) * calZoom) }
+                        ? { paddingTop: Math.round((8 + cellLaneDepth * 26) * calZoom) } // 띠 레인 간격과 같은 값
                         : {}),
                       // (다른 날에서 들어오는 경우의 '자리 열기'는 아래 .drop-gap 스페이서가
                       //  실제 레이아웃으로 만든다 — paddingBottom+transform 조합은 칸을 못 늘려

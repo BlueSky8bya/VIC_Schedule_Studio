@@ -7190,10 +7190,11 @@ html[data-reduce-motion] .tg-num {
 .studio-event-pill .evt-tentative {
   font-size: calc(10px * var(--cal-zoom, 1));
 }
-/* 업도움 띠도 편집실 스코프에서만 배율 — 본체는 app/globals.css 공용(height 17/글자 10.5 고정).
-   레인 간격·top은 inline에서 calZoom을 곱하므로(스튜디오 셸) 높이·글자만 여기서 따라간다. */
+/* 업도움 띠도 편집실 스코프에서만 배율 — 본체는 app/globals.css 공용(높이 근거는 그쪽 주석).
+   레인 간격·top은 inline에서 calZoom을 곱하므로(스튜디오 셸) 높이·글자만 여기서 따라간다.
+   17 → 22(2026-09-19): 더블클릭 표적이 너무 좁았다. 레인 간격 26과 짝(틈 4×배율). */
 .studio-day .support-bar {
-  height: calc(17px * var(--cal-zoom, 1));
+  height: calc(22px * var(--cal-zoom, 1));
 }
 .studio-day .support-bar span {
   font-size: calc(10.5px * var(--cal-zoom, 1));

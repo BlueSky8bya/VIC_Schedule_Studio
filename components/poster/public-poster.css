@@ -5242,7 +5242,8 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
    키운다. 레인 스텝·일정 목록 paddingTop은 TSX(SUPPORT_LANE_STEP)에서 같은 배율을 곱한다 —
    셋 중 하나만 빠지면 띠끼리 겹치거나 카드가 띠를 덮는다. */
 .public-day .support-bar {
-  height: calc(17px * var(--cal-zoom, 1));
+  /* 17 → 22(2026-09-19, 근거는 app/globals.css .support-bar 주석). 스텝 SUPPORT_LANE_STEP=24와 짝. */
+  height: calc(22px * var(--cal-zoom, 1));
 }
 .public-day .support-bar span,
 .public-day .support-bar .sb-cta {
