@@ -607,11 +607,23 @@ export async function searchPublic(
   const calendarId = await loadPublicCalendarId(calendarSlug);
   const supabase = createPublicReadClient();
   if (!calendarId || !supabase) return empty;
-  const { data, error } = await supabase.rpc("search_public", {
-    p_calendar_id: calendarId,
-    p_q: q,
-    p_limit: Math.max(1, Math.min(200, Math.floor(limit)))
-  });
+  const p_limit = Math.max(1, Math.min(400, Math.floor(limit)));
+  let { data, error } = await supabase.rpc("search_public", { p_calendar_id: calendarId, p_q: q, p_limit });
+  // 영타 오타("shfo") — 결과가 없고 라틴 글자뿐이면 두벌식으로 되돌려 다시 찾는다(소유자 2026-09-18).
+  // 진짜 영어 검색어(zelda·pubg)는 변환에서 걸러진다(lib/search/hangul.ts).
+  let effective = q;
+  if (!error && Array.isArray(data) && data.length === 0) {
+    const { fixLatinTypo } = await import("@/lib/search/hangul");
+    const fixed = fixLatinTypo(q);
+    if (fixed && fixed !== q) {
+      const retry = await supabase.rpc("search_public", { p_calendar_id: calendarId, p_q: fixed, p_limit });
+      if (!retry.error && Array.isArray(retry.data) && retry.data.length > 0) {
+        data = retry.data;
+        error = retry.error;
+        effective = fixed;
+      }
+    }
+  }
   if (error || !Array.isArray(data)) return empty;
   type Row = {
     kind: string;
@@ -630,6 +642,7 @@ export async function searchPublic(
     section: string | null;
     parent: string | null;
     matched_on: string | null;
+    corrected: string | null;
   };
   const hits: import("@/lib/domain/schedule-types").PublicSearchHit[] = [];
   for (const row of data as Row[]) {
@@ -663,7 +676,11 @@ export async function searchPublic(
     if (row.matched_on) hit.matchedOn = row.matched_on;
     hits.push(hit);
   }
-  return { query: q, hits };
+  // query = 실제로 찾은 말. corrected = 영타 교정(로더) 또는 한글 오타 교정(RPC 0087)이 됐으면 그 말 —
+  // 화면이 "'노래'로 찾았어요"를 보여줄 수 있게.
+  const rpcCorrected = (data as Row[]).find((r) => r.corrected)?.corrected ?? "";
+  const corrected = effective !== q ? effective : rpcCorrected || undefined;
+  return { query: corrected ?? effective, hits, corrected };
 }
 
 // 관계 그래프(0079): 질의 인물과 함께 자주 나온 인물. 이름은 공개 제목·챕터·일정의 "○○님"뿐.

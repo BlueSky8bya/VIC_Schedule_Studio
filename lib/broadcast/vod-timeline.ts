@@ -312,6 +312,15 @@ export async function maybeSyncVodPipeline(): Promise<{
   // 옛 타임라인의 나중 수정도 하루 안에 흡수된다. 뱅종 직후엔 최신만 빠르게.
   const [limit, days] = tier === "burst" ? [1, 1] : tier === "hot" ? [3, 2] : [8, 3650];
   await syncVodTimelines(await pickTimelineSyncTargets(limit, days));
+  // 채팅 단어 수집(0088) — 조금씩(평시 1 VOD·40조각 ≈ 6.7시간 분량). 백필은 /api/cron/vod-chat.
+  // Vercel 함수 시간(60초) 안에 끝나도록 조각 예산을 작게 둔다.
+  try {
+    const { pickChatSyncTargets, syncVodChat } = await import("@/lib/broadcast/vod-chat");
+    const chatBudget = tier === "burst" ? 0 : tier === "hot" ? 20 : 40;
+    if (chatBudget > 0) await syncVodChat(await pickChatSyncTargets(1), chatBudget);
+  } catch (err) {
+    console.warn("[vod-chat] sync skipped:", (err as Error).message);
+  }
   return { ran: true, tier, sinceEndMin: sinceEnd };
 }
 

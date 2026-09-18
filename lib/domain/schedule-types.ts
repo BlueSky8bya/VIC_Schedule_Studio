@@ -212,6 +212,7 @@ export type PublicSearchResult = {
   query: string;
   hits: PublicSearchHit[];
   related?: { people: PublicSearchRelated[]; terms: PublicSearchRelatedTerm[] };
+  corrected?: string; // 영타·오타 교정이 적용됐으면 실제로 찾은 말("shfo" → "노래")
 };
 
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.

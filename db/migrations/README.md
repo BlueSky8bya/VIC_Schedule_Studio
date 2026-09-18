@@ -56,3 +56,7 @@
 | 0082 | public_search_song_intent — 곡 분류(song_kind sung/listen, 가수 사전 `search_artists`, `search_song_refresh`), 의도 사전 `search_intents`(노래→song), RPC: 노래 의도면 부른 곡 최상위(1.3)·들은 곡 0.8, limit 400 |
 | 0083 | public_search_game_intent — 학습 게임 목록 `search_games`(코너 '게임 - X'+큐레이션 종겜) + 메이저 사전 `search_game_is_major`, 챕터 `game_norm`·`is_section_start`, 의도 종겜→minor_game(RPC 2.8/2.6) |
 | 0084 | public_search_performance_kinds — song_kind 세분화 sung/listen/dance/hum(팬 이모지 🎤🎵🕺·코너·라벨 어휘·수다 제외), 의도 춤/챌린지·허밍, RPC 종류별 보너스 |
+| 0085 | public_search_person_aliases — 스트리머 별칭 사전(seed-person: 풀네임↔줄임, 왁타버스 활동명) + 이름 오타 변형 자동 생성(auto-typo, 쵸↔초 등) |
+| 0086 | public_search_typo_tolerance — `search_jamo`(자모 분해)·`search_correct`(자모 편집거리 사전어 교정, fuzzystrmatch)·챕터 `label_jamo` |
+| 0087 | public_search_correction — 검색 RPC에 오타 교정 배선(사전에 없는 단일어만), 반환 `corrected` |
+| 0088 | vod_chat_terms — 다시보기 채팅 리플레이 단어 빈도(`vod_chat_terms`/`vod_chat_sync`, 원문·닉 미저장) + 단어 그래프·줄임말 채굴·트렌딩에 채팅 합류, `search_chat_top_terms` |

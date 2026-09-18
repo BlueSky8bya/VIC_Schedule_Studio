@@ -55,9 +55,10 @@ function formatMonthLabel(dateKey: string): string {
   return `${String(y).slice(2)}.${String(m).padStart(2, "0")}`;
 }
 const normalize = (s: string) => s.toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, "");
-// 팬이 라벨 앞에 붙인 표식 이모지("🎵:", "🎤 ", "✨:")를 표시에서 뗀다 — 우리 종류 아이콘과 겹치지 않게. 원문은 title 툴팁에.
+// 팬이 라벨 앞에 붙인 표식 이모지 중 **우리 종류 아이콘과 뜻이 겹치는 것만**(🎵🎶🎤🎧🎼♪♫🕺💃) 표시에서 뗀다.
+// ✨👗🐸 같은 다른 표식은 팬의 표기라 그대로 둔다(소유자 2026-09-18). 원문은 title 툴팁에.
 const stripLeadMark = (s: string) =>
-  s.replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\u{FE0F}\u{200D}\s:：]+/u, "").trim() || s;
+  s.replace(/^(?:[🎵🎶🎤🎧🎼♪♫🕺💃]\u{FE0F}?[\s:：]*)+/u, "").trim() || s;
 const KIND_ICON: Record<string, { Icon: typeof Music; label: string; cls: string }> = {
   song: { Icon: Music, label: "부른 곡", cls: "" },
   listen: { Icon: Headphones, label: "틀어준 곡", cls: " is-listen" },
@@ -521,6 +522,11 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
             </div>
             <span className="ps-count">{hitCount >= 200 ? "200+" : hitCount}</span>
           </div>
+        ) : null}
+        {result?.corrected ? (
+          <p className="ps-corrected">
+            <strong>{result.corrected}</strong>(으)로 찾았어요
+          </p>
         ) : null}
 
         {hasResults && hasRelated ? (

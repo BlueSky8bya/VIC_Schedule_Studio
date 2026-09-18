@@ -7568,6 +7568,17 @@ html[data-pchrome="3"] .poster-chrome-title {
   color: var(--ink, #23303f);
 }
 
+/* 교정 안내 — 영타(shfo)·오타(노레)를 사전어로 바꿔 찾았을 때 한 줄. */
+.ps-corrected {
+  margin: -2px 16px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(35 48 63 / 55%);
+}
+.ps-corrected strong {
+  color: var(--ps-accent);
+  font-weight: 900;
+}
 /* 칩 줄 — 한 줄, 가로 스크롤(세로를 안 먹는다). 스크롤바 숨김. */
 .ps-related {
   display: grid;
