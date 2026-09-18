@@ -2121,18 +2121,13 @@ export function StudioShell({
     }
   }
 
-  /** 날짜 칸을 고른다. `open`이 참이면 곧장 새 일정 카드를 연다(Alt+N·모바일 추가·검색 결과처럼
-   *  '편집하겠다'가 이미 분명한 길). 기본(칸 클릭)은 **선택만** — A안(2026-09-19 토리님 결정):
-   *  한 번 누르면 고르기만 하고, 고른 칸을 한 번 더 누르거나 더블클릭해야 카드가 뜬다. */
+  /** 날짜 칸을 고른다. `open`이 참이면 곧장 새 일정 카드를 연다(Alt+N·모바일 추가·검색 결과·Enter처럼
+   *  '편집하겠다'가 이미 분명한 길).
+   *  기본(칸 클릭)은 **선택만** — 2026-09-19 토리님 2차 결정: "편집창은 **더블클릭에서만**".
+   *  ('고른 걸 한 번 더 누르면 열기'는 폐기했다 — 날짜 칸을 고른 뒤엔 그 안의 일정이 한 번만 눌러도
+   *   열려, 같은 한 번의 클릭이 상황에 따라 다르게 굴어 규칙이 헷갈렸다. 지금은 한 문장이다:
+   *   클릭=고르기, 더블클릭=편집창.) */
   function selectDate(isoDate: string, open = false) {
-    // 그 날짜의 새 일정 카드가 떠 있는데 같은 칸을 또 누르면 → 카드 닫기(선택은 남는다).
-    if (!open && editorVisible && selectedDate === isoDate && selectedEventId === null) {
-      editorCloseHowRef.current = "cell";
-      setEditorVisible(false);
-      return;
-    }
-    // 이미 고른 칸을 다시 누르면(카드는 닫힌 상태) → 그때 새 일정 카드를 연다.
-    const second = !editorVisible && selectedDate === isoDate && selectedEventId === null;
     setSelectedDate(isoDate);
     setSelectedEventId(null);
     // 빈 새 카드가 기준 — 같은 날짜에 쓰다 만 임시 내용이 있으면 되살린다.
@@ -2140,7 +2135,14 @@ export function StudioShell({
     const draft = freshDraft(`new:${isoDate}`);
     setForm(draft ? draft.form : createEmptyForm());
     setDraftRestored(Boolean(draft));
-    if (!open && !second && !editorVisible) return; // 첫 클릭 = 선택만
+    if (!open) {
+      // 클릭은 고르기만 — 떠 있던 편집창은 닫는다(다른 곳을 눌렀다는 뜻).
+      if (editorVisible) {
+        editorCloseHowRef.current = "cell";
+        setEditorVisible(false);
+      }
+      return;
+    }
     setEditorVisible(true);
     bumpEditor(); // 사용자가 새 날짜 칸을 고름 → 폼 새로 마운트(전환 애니메이션)
   }
@@ -4054,25 +4056,16 @@ export function StudioShell({
     }
   }
 
-  /** 카드·띠 클릭(A안, 2026-09-19 토리님 결정: "클릭은 선택만, 편집은 한 번 더").
-   *   · 편집창이 닫혀 있을 때 — 처음 누르면 **선택만**, 고른 걸 한 번 더 누르면 편집창.
-   *   · 편집창이 떠 있을 때 — 같은 일정을 누르면 닫고, 다른 일정을 누르면 창이 그 일정으로 **따라간다**.
-   *     (편집 중엔 이미 "고치겠다"가 분명하다 — 일정마다 두 번씩 누르게 하면 연달아 고칠 때 손이 두 배로 든다.)
-   *   더블클릭은 어느 상태에서든 곧장 편집창(openEventEditor).
-   *  `selectEvent`가 아니라 여기에 둔다: 저장·생성 뒤 프로그램이 부르는 `selectEvent`까지 토글이 되면 방금 만든 카드가 닫힌다.
+  /** 카드·띠(일정·기간 안내·업 도움) 클릭 — **고르기만** 한다(2026-09-19 토리님 2차).
+   *  편집창은 더블클릭(openEventEditor)·Enter에서만 열린다. 떠 있던 편집창은 닫는다.
+   *  `selectEvent`가 아니라 여기에 둔다: 저장·생성 뒤 프로그램이 부르는 `selectEvent`는 그대로 열려야 한다.
    *  id는 `canonId`로 견준다(낙관적 생성의 임시 id ↔ 서버 id를 같은 것으로 본다). */
   function selectOrCloseEvent(event: StudioScheduleEvent) {
-    const same = selectedEventId !== null && canonId(selectedEventId) === canonId(event.id);
+    selectEvent(event, false);
     if (editorVisible) {
-      if (same) {
-        editorCloseHowRef.current = "cell";
-        setEditorVisible(false);
-        return;
-      }
-      selectEvent(event); // 편집 중 — 창이 따라간다
-      return;
+      editorCloseHowRef.current = "cell";
+      setEditorVisible(false);
     }
-    selectEvent(event, same); // 닫혀 있으면: 처음엔 선택만, 고른 걸 다시 누르면 열기
   }
   /** 더블클릭·Enter — 상태와 무관하게 곧장 편집창. */
   function openEventEditor(event: StudioScheduleEvent) {
@@ -6824,7 +6817,7 @@ export function StudioShell({
                     }
                     selectDate(cell.isoDate);
                   }}
-                  /* 더블클릭 = 새 일정 카드 바로 열기(A안의 빠른 길). */
+                  /* 더블클릭 = 새 일정 카드 열기. 편집창으로 가는 **유일한** 마우스 길이다. */
                   onDoubleClick={() => selectDate(cell.isoDate, true)}
                   onPointerDown={(e) => onCellPointerDown(e, cell.isoDate)}
                   onPointerMove={onCellPointerMove}
@@ -6912,7 +6905,9 @@ export function StudioShell({
                         className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
                           showLabel ? " sb-head" : ""
                         }${solo ? " sb-solo" : ""}${s.supportKind === "period" ? " sb-period" : ""}${
-                          editorVisible && selectedEventId === s.id ? " is-editing" : ""
+                          // 고르면 테두리(클릭=고르기라 표시가 없으면 뭘 골랐는지 모른다), 편집창이
+                          // 떠 있으면 같은 테두리를 그대로 — 2026-09-19.
+                          selectedEventId === s.id ? (editorVisible ? " is-editing" : " is-selected") : ""
                         }`}
                         data-supportid={s.id}
                         key={s.id}

@@ -5799,7 +5799,10 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
    마디가 다시 보인다(하나의 블록처럼, 사용자 결정). */
 /* 편집 중인 업 도움 — 이어진 전체를 **하나의 일정**으로 본다: 위/아래는 늘 긋고, 좌/우는
    시작·끝 조각에만. 조각마다 사방을 두르면 대나무 마디처럼 칸 경계마다 선이 생긴다(실측). */
-.studio-day .support-bar.is-editing {
+/* 고른 띠(.is-selected)와 편집 중인 띠(.is-editing)는 같은 테두리 — 클릭은 고르기, 편집창은
+   더블클릭이라(2026-09-19) 고르기 단계에도 표시가 필요하다. */
+.studio-day .support-bar.is-editing,
+.studio-day .support-bar.is-selected {
   z-index: var(--z-cal-ribbon, 6);
   border-top: 2px dashed #e11d48;
   border-bottom: 2px dashed #e11d48;
@@ -5807,7 +5810,8 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border-right: 0;
 }
 /* 기간 안내 띠 편집 중 — 같은 문법, 하늘색(저장된 종류 기준: 달력 위 띠 자체가 저장값). */
-.studio-day .support-bar.sb-period.is-editing {
+.studio-day .support-bar.sb-period.is-editing,
+.studio-day .support-bar.sb-period.is-selected {
   border-top-color: #0e93b4;
   border-bottom-color: #0e93b4;
 }
