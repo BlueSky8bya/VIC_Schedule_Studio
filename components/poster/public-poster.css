@@ -7768,13 +7768,34 @@ html[data-pchrome="3"] .poster-chrome-title {
 }
 /* 편집실 검색(2026-09-18): 직접(일정) 구분선은 파랑 잉크 */
 .ps-divider-direct { color: #1d5fb0; }
-/* 편집실 검색(2026-09-18): 행 + ▶(새 탭 다시보기) 한 줄 */
-.ps-line {
+/* 편집실 검색(2026-09-18): 행 + ▶(새 탭 다시보기) 한 줄. (⚠ .ps-line은 진행선 클래스 — 이름 겹쳐 행이 2px로 눌렸던 사고.) */
+.ps-rowline {
   display: flex;
   align-items: stretch;
   gap: 4px;
 }
-.ps-line > .ps-row { flex: 1 1 auto; min-width: 0; }
+.ps-rowline > .ps-row { flex: 1 1 auto; min-width: 0; }
+/* 편집실 결(소유자 2026-09-18: "코딱지만해서 안 보인다") — 시트 넓게, 행 높게, 글자 한 단계 크게. 구조는 같다. */
+.ps-sheet.is-studio {
+  --ps-row-h: 58px;
+  width: min(860px, 100%);
+  max-height: min(90vh, 960px);
+}
+.ps-sheet.is-studio .ps-field input { font-size: 18px; }
+.ps-sheet.is-studio .ps-day-head { font-size: 13px; }
+.ps-sheet.is-studio .ps-title { font-size: 16px; }
+.ps-sheet.is-studio .ps-meta { font-size: 13px; }
+.ps-sheet.is-studio .ps-side-text { font-size: 13px; }
+.ps-sheet.is-studio .ps-divider { font-size: 13px; }
+.ps-sheet.is-studio .ps-chapter { --ps-row-h: 38px; padding: 4px 8px; }
+.ps-sheet.is-studio .ps-chapter .ps-title { font-size: 14.5px; }
+.ps-sheet.is-studio .ps-tc { font-size: 13px; }
+.ps-sheet.is-studio .ps-section { font-size: 12.5px; }
+.ps-sheet.is-studio .ps-parent-head { font-size: 13px; }
+.ps-sheet.is-studio .ps-more-btn { font-size: 13.5px; }
+.ps-sheet.is-studio .ps-chip { font-size: 13.5px; }
+.ps-sheet.is-studio .ps-ext { width: 36px; }
+.ps-sheet.is-studio .ps-thumb { width: 64px; height: 40px; }
 .ps-ext {
   flex: none;
   display: grid;

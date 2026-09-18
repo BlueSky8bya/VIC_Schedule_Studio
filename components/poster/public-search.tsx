@@ -334,7 +334,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   // 편집실: 행 옆에 ▶(새 탭 다시보기). 시청자 화면(replayHref 없음)은 행 자체가 재생이라 그대로.
   const withExt = (dateKey: string, titleNo: number, sec: number | undefined, node: ReactNode) =>
     replayHref ? (
-      <div className="ps-line" key={`${titleNo}:${sec ?? "v"}`}>
+      <div className="ps-rowline" key={`${titleNo}:${sec ?? "v"}`}>
         {node}
         <a
           aria-label="다시보기 새 탭"
@@ -495,7 +495,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   // 백드롭 클릭으로는 닫지 않는다('이 달 기록'과 같은 결정 — 조준된 행동만: X · Esc · 뒤로가기).
   return (
     <div className="pi-backdrop ps-backdrop" role="presentation">
-      <section aria-label="검색" className="pi-sheet ps-sheet" role="dialog" aria-modal="true">
+      <section aria-label="검색" className={`pi-sheet ps-sheet${studio ? " is-studio" : ""}`} role="dialog" aria-modal="true">
         <header className="pi-head ps-head">
           <label className="ps-field">
             <Search aria-hidden="true" size={17} strokeWidth={2.4} />
