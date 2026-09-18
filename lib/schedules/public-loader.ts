@@ -624,7 +624,8 @@ export async function searchPublic(
       }
     }
   }
-  if (error || !Array.isArray(data)) return empty;
+  // RPC 오류는 '결과 없음'과 다르다 — failed로 올려 라우트가 캐시하지 않게(빈 200이 CDN에 15분 굳었던 사고).
+  if (error || !Array.isArray(data)) return { ...empty, failed: true };
   type Row = {
     kind: string;
     event_id: string | null;

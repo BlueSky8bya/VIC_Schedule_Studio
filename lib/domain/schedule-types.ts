@@ -215,6 +215,7 @@ export type PublicSearchResult = {
   hits: PublicSearchHit[];
   related?: { people: PublicSearchRelated[]; terms: PublicSearchRelatedTerm[] };
   corrected?: string; // 영타·오타 교정이 적용됐으면 실제로 찾은 말("shfo" → "노래")
+  failed?: boolean; // RPC 오류(마이그레이션 순간 등) — 라우트가 503·no-store로 보내 CDN에 빈 결과가 굳지 않게(2026-09-18 '무릎' 사고)
 };
 
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.

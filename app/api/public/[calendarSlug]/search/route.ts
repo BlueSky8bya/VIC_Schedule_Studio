@@ -20,6 +20,10 @@ export async function GET(
     getPublicSearchRelated(q, 8),
     getPublicSearchRelatedTerms(q, 8)
   ]);
+  if (result.failed) {
+    // 검색 RPC 오류(함수 교체 순간·일시 장애) — 503 + no-store. 시트는 "잠시 안 돼요"를 보이고 재시도한다.
+    return NextResponse.json({ error: "search unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
   return NextResponse.json({ ...result, related: { people, terms } }, {
     headers: {
       // 검색 결과는 일정 편집·다시보기 수집으로 바뀌지만 몇 분 늦어도 되는 화면이다(공개 일정
