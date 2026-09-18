@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Clock3 } from "lucide-react";
+import { ChevronRight, Clock3, Heart, Laugh } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { PublicVodChatProfile, PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -328,42 +328,56 @@ export function VodChapters({
 
   return (
     <div className="vod-chapters" data-clock={clockMode && startedAt ? "" : undefined} data-open={open ? "" : undefined}>
-      <button
-        aria-expanded={open}
-        className="vch-toggle"
-        data-act="vod-chapters-open"
-        onClick={toggle}
-        type="button"
-      >
-        <span aria-hidden="true" className="vch-caret">{open ? "▾" : "▸"}</span>
-        {/* 항목 수는 번들이 알고, 챕터(코너) 수는 펼쳐 본문을 받은 뒤 앞에 붙는다. */}
-        {open && timeline && sectionCount > 0 ? `챕터 ${sectionCount}개 · ` : ""}
-        타임라인 {chapters}개
-        {timelineBy ? <em className="vch-by">({timelineBy}님 감사합니다)</em> : null}
-      </button>
-      {/* 경과 ↔ 실제 시각(2026-09-18 소유자: "이 영상이 재생될 때의 실제 시간도") — 방송 시작 시각을 아는 방송만. */}
-      {open && startedAt ? (
+      {/* 머리줄(2026-09-18 대개편) — 제목 한 줄 + 알약 한 줄. 알약(감사·시각 토글·웃음 배지)은 모두 같은 높이·모서리·글자로
+          한 언어를 쓴다(소유자: "배지들도 주변과 어울리게"). 줄바꿈으로 세 줄이 되던 옛 배치를 대체. */}
+      <div className="vch-topbar">
         <button
-          aria-pressed={clockMode}
-          className={`vch-clock${clockMode ? " is-on" : ""}`}
-          data-act="vod-clock-toggle"
-          onClick={toggleClock}
-          title={clockMode ? "방송 시작부터의 경과 시간으로 보기" : "그 장면의 실제 시각(KST)으로 보기"}
+          aria-expanded={open}
+          className="vch-toggle"
+          data-act="vod-chapters-open"
+          onClick={toggle}
           type="button"
         >
-          <Clock3 aria-hidden="true" size={12} strokeWidth={2.4} />
-          {clockMode ? "실제 시각" : "경과"}
+          <ChevronRight aria-hidden="true" className="vch-caret-ic" size={15} strokeWidth={2.6} />
+          <span className="vch-toggle-main">
+            타임라인 <b>{chapters}</b>
+            {open && timeline && sectionCount > 0 ? (
+              <>
+                <i aria-hidden="true">·</i> 챕터 <b>{sectionCount}</b>
+              </>
+            ) : null}
+          </span>
         </button>
-      ) : null}
-      {/* 웃음 등급(0090) — 숫자 없이 '많이 웃은 방송'만. 채팅 웃음(ㅋ)이 전체 상위 25%일 때. 토글 줄에 넣으면 머리줄이 세 줄로
-          꺾여(실측) 따로 한 줄. */}
-      {profile?.laughTier === "high" ? (
-        <p className="vch-laugh-row">
-          <em className="vch-laugh" title="채팅에 웃음(ㅋㅋ)이 유난히 많았던 방송">
-            😂 많이 웃은 방송
-          </em>
-        </p>
-      ) : null}
+        {(timelineBy || (open && startedAt) || profile?.laughTier === "high") && open ? (
+          <div className="vch-pills">
+            {startedAt ? (
+              <button
+                aria-pressed={clockMode}
+                className={`ui-pill is-tap${clockMode ? " is-on" : ""}`}
+                data-act="vod-clock-toggle"
+                onClick={toggleClock}
+                title={clockMode ? "방송 시작부터의 경과 시간으로 보기" : "그 장면의 실제 시각(KST)으로 보기"}
+                type="button"
+              >
+                <Clock3 aria-hidden="true" size={12} strokeWidth={2.4} />
+                {clockMode ? "실제 시각" : "경과"}
+              </button>
+            ) : null}
+            {profile?.laughTier === "high" ? (
+              <span className="ui-pill is-gold" title="채팅에 웃음(ㅋㅋ)이 유난히 많았던 방송">
+                <Laugh aria-hidden="true" size={12} strokeWidth={2.4} />
+                많이 웃은 방송
+              </span>
+            ) : null}
+            {timelineBy ? (
+              <span className="ui-pill is-quiet" title={`팬 타임라인을 적어 주신 ${timelineBy}님`}>
+                <Heart aria-hidden="true" size={11} strokeWidth={2.6} />
+                {timelineBy}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
       {!open ? null : loading ? (
         <p className="vch-note">불러오는 중…</p>
       ) : failed || !timeline ? (
