@@ -9180,70 +9180,9 @@ html[data-reduce-motion] .tge-help-panel {
 .modal-card-wide {
   max-width: 720px;
 }
-/* 설정 모달(2026-09-04) — 좁은 카드(스위치 목록). 줄은 역할 팝오버의 .role-help-haptics 규격을 그대로 쓰되
-   창이라 여백·글자를 한 단계 키운다. */
-.modal-card-settings {
-  max-width: 440px;
-}
-.settings-modal-body {
-  display: flex;
-  flex-direction: column;
-  padding: 4px 22px 18px;
-}
-.settings-modal-body .role-help-haptics {
-  margin-top: 0;
-  padding: 12px 0;
-  gap: 16px;
-}
-.settings-modal-body .role-help-haptics:first-child {
-  border-top: 0;
-}
-.settings-modal-body .rhh-label {
-  font-size: var(--text-ui);
-  font-weight: 800;
-}
-.settings-modal-body .rhh-label svg {
-  width: 16px;
-  height: 16px;
-}
-.settings-modal-body .rhh-select {
-  max-width: 160px;
-  min-height: 32px;
-}
-/* 개발자 세계 시간 여행 줄 — 라벨 옆 작은 각인 태그로 '개발자 전용'을 밝힌다(관리자·시청자엔 줄 자체가 없다). */
-.rhh-dev-tag {
-  margin-left: 6px;
-  padding: 0 6px;
-  border: 1px solid var(--gs-metal-line, var(--line, #e6e2f0));
-  border-radius: var(--gs-metal-radius, 6px);
-  font-size: var(--text-caption);
-  font-style: normal;
-  font-weight: 700;
-  color: var(--ink-soft, #4a4466);
-  opacity: 0.8;
-}
-/* 설정 줄의 링크 버튼(아트 보드 열기) — 셀렉트 트리거와 같은 금(金) 문법·높이. */
-.rhh-link {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 14px;
-  border: 1px solid var(--gs-metal-line-strong, #b9b6ae);
-  border-radius: var(--gs-metal-radius, 10px);
-  background: var(--gs-metal-sheen, #fff);
-  color: var(--gs-metal-ink, #3a3a44);
-  font-size: var(--text-ui);
-  font-weight: 800;
-  text-decoration: none;
-  transition: transform 0.16s var(--ease), background 0.16s var(--ease);
-}
-.rhh-link:hover {
-  background: var(--gs-metal-sheen-hover, #f5f3ee);
-}
-.rhh-link:active {
-  transform: scale(0.97);
-}
+/* (설정 창 전용 규칙은 2026-09-19 components/shared/settings-modal.css로 이사 — 시청자 화면과 같은 창을
+   쓰기 위해 스타일 출처를 하나로 모았다. 여기에 다시 만들지 말 것. 모바일 역할 배지 팝오버가 쓰는
+   일반 .role-help-haptics/.rhh-* 규격은 위쪽에 그대로 남아 있다.) */
 
 /* 시청자 화면 전체보기: 스튜디오 대신 공개 화면만 꽉 채워 보여준다. */
 .viewer-fullscreen {

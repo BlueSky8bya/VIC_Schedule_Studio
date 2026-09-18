@@ -7731,7 +7731,9 @@ export function StudioShell({
       ) : null}
       {modal ? (
         <div
-          className={`modal-backdrop modal-backdrop-${modal}`}
+          /* 설정 창은 시청자 화면과 **같은 창**이다 — 스타일 한 벌(components/shared/settings-modal.css)을
+             .vic-settings 아래 두고 두 화면이 같이 쓴다(2026-09-19 소유자). */
+          className={`modal-backdrop modal-backdrop-${modal}${modal === "settings" ? " vic-settings" : ""}`}
           // 텍스트를 드래그 선택하다 배경에서 마우스를 떼도 닫히지 않도록,
           // 누름과 뗌이 모두 배경(자기 자신)에서 일어났을 때만 닫는다.
           onMouseDown={(e) => {

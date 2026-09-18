@@ -6,6 +6,7 @@
 // 앞으로 생길 설정은 여기에만 추가. data-act 키는 예전 그대로(인사이트 집계 연속).
 // (멤버 관리는 2026-09-04 기능 철수 — ADR-0018.)
 
+import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
 import { BookA, Eye, Gauge, Leaf, Palette, Sparkles, Vibrate } from "lucide-react";

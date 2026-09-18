@@ -4486,17 +4486,21 @@ export function PublicPoster({
           thumbOf={(titleNo) => thumbByTitle.get(titleNo) || undefined}
         />
       ) : null}
-      {/* 설정 시트 — '이 달 기록'과 같은 pi-* 껍데기(이 화면의 창 언어), 목록은 편집실과 같은 컴포넌트. */}
+      {/* 설정 창 — 편집실과 **같은 창**이다(마크업·클래스·스타일 한 벌: components/shared/settings-modal.css). */}
       {sheet === "settings" ? (
-        <div className="pi-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setSheet(null); }}>
-          <section aria-label="설정" aria-modal="true" className="pi-sheet pi-sheet-settings" role="dialog">
-            <header className="pi-head">
+        <div
+          className="modal-backdrop modal-backdrop-settings vic-settings"
+          onClick={(e) => { if (e.target === e.currentTarget) setSheet(null); }}
+          role="presentation"
+        >
+          <div aria-label="설정" aria-modal="true" className="modal-card modal-card-settings" role="dialog">
+            <div className="modal-head">
               <h2>설정</h2>
-              <button aria-label="닫기" className="pi-close" data-act="close-settings" onClick={() => setSheet(null)} type="button">
+              <button aria-label="닫기" className="modal-close" data-act="close-settings" onClick={() => setSheet(null)} type="button">
                 <X aria-hidden="true" size={18} />
               </button>
-            </header>
-            <div className="pi-body settings-modal-body">
+            </div>
+            <div className="settings-modal-body">
               <StudioSettingsList
                 ambientMode={settingsPrefs.ambientMode}
                 eyeComfort={settingsPrefs.eyeComfort}
@@ -4515,7 +4519,7 @@ export function PublicPoster({
                 reduceMotion={settingsPrefs.reduceMotion}
               />
             </div>
-          </section>
+          </div>
         </div>
       ) : null}
       {/* 시청자 화면 미리보기(꾸미기 아님) — 아바타 컨트롤을 페이지 좌상단(absolute)에 둔다. 헤더에

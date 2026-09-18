@@ -1,0 +1,275 @@
+/* 설정 창의 **유일한** 스타일시트(2026-09-19 소유자: "시청자 설정창이 편집실과 다른 이유가 뭐냐,
+   자꾸 새로 만들어서 관리하기 귀찮게 하지 마라").
+   편집실과 시청자 화면이 같은 창을 띄운다 — 마크업도(StudioSettingsList) 스타일도 여기 한 벌뿐.
+   studio-shell.css는 421KB라 공개 페이지에 통째로 실을 수 없어서, **설정 창에 필요한 것만** 여기로
+   옮겨 두 화면이 같이 가져간다. 값은 옮기기 전 편집실 창에서 실측한 그대로다(브라우저 계산값 복사).
+
+   규칙은 전부 `.vic-settings`(창 뿌리) 아래 — 두 클래스 특이도라 편집실에 남아 있는 일반 규칙
+   (.rhh-switch 등, 모바일 역할 배지 팝오버가 쓴다)보다 항상 세다. 그래서 순서와 상관없이 두 화면이
+   같은 그림을 낸다. 설정 줄이 바뀌면 여기만 고친다. */
+
+/* ── 창 ──────────────────────────────────────────────────────────── */
+.vic-settings.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 97; /* 시청자 시트(pi-backdrop)와 같은 층 — 편집실에선 자기 모달 층(50)이 따로 먹는다 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(15 23 42 / 52%);
+  padding: 20px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: vic-settings-fade var(--dur-2, 0.22s) var(--ease, ease) both;
+}
+@keyframes vic-settings-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.vic-settings .modal-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  max-height: 88vh;
+  max-height: 88dvh;
+  border: 1px solid rgb(15 23 42 / 6%);
+  border-radius: var(--r-xl, 20px);
+  background: #fff;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgb(17 24 39 / 28%);
+  animation: vic-settings-pop var(--dur-spring-smooth, 0.34s) var(--spring-smooth, var(--ease, ease)) both;
+}
+@keyframes vic-settings-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+html[data-reduce-motion] .vic-settings.modal-backdrop,
+html[data-reduce-motion] .vic-settings .modal-card {
+  animation: none;
+}
+.vic-settings .modal-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  border-bottom: 1px solid var(--line-soft, #f0e7d5);
+  background: linear-gradient(180deg, #fbfcfe, #f5f7fb);
+  padding: 18px 20px;
+}
+.vic-settings .modal-head h2 {
+  margin: 0;
+  font-size: var(--text-title, 18px);
+  font-weight: 900;
+  color: #2b2737;
+}
+.vic-settings .modal-close {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-pill, 999px);
+  background: transparent;
+  color: #6d7179;
+  cursor: pointer;
+  transition:
+    background var(--dur-1, 0.14s) var(--ease, ease),
+    transform var(--dur-2, 0.22s) var(--spring-bouncy, var(--ease, ease));
+}
+.vic-settings .modal-close:hover {
+  background: rgb(15 23 42 / 6%);
+  transform: rotate(90deg); /* 일정 그림판 X와 통일한 손맛 */
+}
+.vic-settings .modal-close:active { transform: rotate(90deg) scale(0.9); }
+html[data-reduce-motion] .vic-settings .modal-close:hover,
+html[data-reduce-motion] .vic-settings .modal-close:active { transform: none; }
+
+/* ── 목록 ────────────────────────────────────────────────────────── */
+.vic-settings .settings-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+}
+.vic-settings .role-help-haptics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  border-top: 1px solid var(--line-soft, #f0e7d5);
+  padding: 12px 0;
+}
+.vic-settings .role-help-haptics:first-child { border-top: 0; }
+.vic-settings .rhh-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-ui, 15px);
+  font-weight: 800;
+  line-height: var(--lh-body, 1.5);
+  color: #3d414c;
+}
+.vic-settings .rhh-label svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  opacity: 0.75;
+}
+/* 스위치 — 편집실 실측 그대로(44×24, 손잡이 18, 켜짐 = 상태 초록). */
+.vic-settings .rhh-switch {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill, 999px);
+  background: var(--line, #ece0c9);
+  cursor: pointer;
+  transition: background 0.16s var(--ease, ease);
+}
+.vic-settings .rhh-switch.on { background: var(--status-success, #53a870); }
+.vic-settings .rhh-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(40 30 60 / 35%);
+  transition: transform 0.16s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.vic-settings .rhh-switch.on .rhh-knob { transform: translateX(20px); }
+html[data-reduce-motion] .vic-settings .rhh-switch,
+html[data-reduce-motion] .vic-settings .rhh-knob { transition: none; }
+
+/* 셀렉트(배경 효과·포스터 테마) — 금(金) 문법 트리거 + 아래 카드 목록. */
+.vic-settings .rhh-select {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  max-width: 160px;
+  border: 1px solid var(--gs-metal-line-strong, #d3d1cb);
+  border-radius: var(--gs-metal-radius, 10px);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 70%), rgb(255 255 255 / 0%) 55%),
+    var(--gs-metal-sheen, #fdf8ec);
+  padding: 2px 9px 2px 11px;
+  color: var(--gs-metal-ink, #3a3a44);
+  font: inherit;
+  font-size: var(--text-body, 13.5px);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.16s var(--ease, ease),
+    box-shadow 0.16s var(--ease, ease),
+    transform 0.12s var(--ease, ease);
+}
+.vic-settings .rhh-select:hover:not(:disabled),
+.vic-settings .rhh-select.open {
+  border-color: var(--gs-metal-line-strong, #b9b6ae);
+  box-shadow: 0 4px 12px -8px rgb(24 30 60 / 55%);
+}
+.vic-settings .rhh-select:active:not(:disabled) { transform: scale(0.97); }
+.vic-settings .rhh-select:disabled { opacity: 0.5; cursor: default; }
+.vic-settings .rhh-select-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vic-settings .rhh-select-chev {
+  flex: none;
+  opacity: 0.45;
+  transition: transform 0.22s var(--ease, ease);
+}
+.vic-settings .rhh-select.open .rhh-select-chev { transform: rotate(180deg); }
+.vic-settings .rhh-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  min-width: 100%;
+  margin: 0;
+  border: 1px solid rgb(35 48 63 / 10%);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 34px -18px rgb(24 20 32 / 55%);
+  padding: 5px;
+  list-style: none;
+  animation: vic-settings-menu 0.22s var(--ease, ease) both;
+}
+@keyframes vic-settings-menu {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+html[data-reduce-motion] .vic-settings .rhh-menu { animation: none; }
+.vic-settings .rhh-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 7px 10px;
+  color: var(--ink, #1c2433);
+  font: inherit;
+  font-size: var(--text-body, 13.5px);
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.vic-settings .rhh-opt:hover,
+.vic-settings .rhh-opt:focus-visible { background: rgb(15 23 42 / 6%); }
+.vic-settings .rhh-opt.selected { font-weight: 900; }
+.vic-settings .rhh-opt-check { margin-left: auto; opacity: 0.7; }
+
+/* 개발자 전용 줄의 각인 태그 · 링크 버튼(편집실에서만 나타난다). */
+.vic-settings .rhh-dev-tag {
+  margin-left: 6px;
+  border: 1px solid var(--line, #ece0c9);
+  border-radius: 6px;
+  padding: 0 6px;
+  font-size: var(--text-caption, 11px);
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ink-soft, #3b4255);
+  opacity: 0.8;
+}
+.vic-settings .rhh-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid var(--gs-metal-line-strong, #d3d1cb);
+  border-radius: var(--gs-metal-radius, 10px);
+  background: var(--gs-metal-sheen, #fdf8ec);
+  padding: 0 14px;
+  color: var(--gs-metal-ink, #3a3a44);
+  font-size: var(--text-ui, 15px);
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.16s var(--ease, ease), background 0.16s var(--ease, ease);
+}
+.vic-settings .rhh-link:hover { background: var(--gs-metal-sheen-hover, #f5f3ee); }
+.vic-settings .rhh-link:active { transform: scale(0.97); }
+
+/* 모바일(≤640)엔 계절 배경이 없다 — 계절 배경·배경 효과 줄을 숨긴다. */
+@media (max-width: 640px) {
+  .vic-settings .role-help-haptics.rhh-ambient { display: none; }
+}
