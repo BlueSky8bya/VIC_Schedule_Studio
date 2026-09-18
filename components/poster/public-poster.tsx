@@ -43,6 +43,7 @@ import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 import { trackSettle } from "@/lib/ui/settle-track";
+import { SUPPORT_LANE_STEP, supportListPad } from "@/lib/ui/support-bar";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { setBandHover } from "@/lib/ui/band-hover";
@@ -172,11 +173,7 @@ type PublicPosterProps = {
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 업도움/기간 안내 띠의 레인 세로 스텝(px) — 띠 높이 22(globals.css .support-bar) + 틈 2.
-// 띠 top과 일정 목록 paddingTop이 함께 쓴다(어긋나면 카드가 띠를 덮는다).
-// 24를 고른 이유: WCAG 2.2 SC 2.5.8의 Spacing 예외 하한이 정확히 24px이고, 2026-09-02 "띠 사이
-// 간격 과함" 결정(틈 1)을 최대한 살리는 최소 틈이기도 하다(편집실은 더블클릭 표적이라 26 = 틈 4).
-const SUPPORT_LANE_STEP = 24;
+// 띠 치수는 편집실과 **같은 한 벌**을 쓴다 — lib/ui/support-bar.ts(2026-09-19 소유자 "통일").
 
 // 아래 채움 계산에서 포스터 바닥과 창 바닥 사이에 남겨 두는 숨구멍(px, 화면 기준) —
 // 아바타 씬 사이드 레일의 bottom 14와 같은 값이라 크롬들과 끝선이 맞는다.
@@ -3002,11 +2999,11 @@ export function PublicPoster({
               ? {
                   // ×--cal-zoom: 띠 높이·스텝이 확대에 동참하므로 비우는 양도 같이 커져야
                   // 카드가 띠를 덮지 않는다(고정 여유는 다른 목록 패딩처럼 배율 제외).
-                  // 고정 여유 2px = 띠→첫 카드 최종 간격 약 4px(카드끼리 gap 3px과 한 식구).
-                  // 8px이던 시절 띠 아래가 ~10px 떠 보였다(2026-09-02 사용자 신고 2회).
-                  paddingTop: `calc(2px + ${
-                    cellLaneDepth * SUPPORT_LANE_STEP
-                  }px * var(--cal-zoom, 1))`
+                  // 값은 편집실과 공용(lib/ui/support-bar.ts) — 띠→첫 카드 4px.
+                  paddingTop: (() => {
+                    const pad = supportListPad(cellLaneDepth)!;
+                    return `calc(${pad.fixed}px + ${pad.scaled}px * var(--cal-zoom, 1))`;
+                  })()
                 }
               : undefined
           }
