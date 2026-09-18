@@ -65,8 +65,9 @@ export default async function VisualPosterFixture({
   const withLinks = sp?.links === "1" ? {
     ...shown,
     events: [...shown.events,
-      { ...shown.events[0], id: "fixture-untagged", startsAt: "2026-06-18T12:00:00+09:00", publicTitle: "태그 없는 일정", tagIds: [], primaryTagIds: [] },
-      { ...shown.events[0], id: "fixture-period", startsAt: "2026-06-19T12:00:00+09:00", publicTitle: "기간 안내", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture" }
+      { ...shown.events[0], id: "fixture-untagged", startsAt: "2026-06-18T12:00:00+09:00", endsAt: undefined, publicTitle: "태그 없는 일정", tagIds: [], primaryTagIds: [] },
+      { ...shown.events[0], id: "fixture-period", startsAt: "2026-06-19T12:00:00+09:00", endsAt: undefined, publicTitle: "기간 안내", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture" },
+      { ...shown.events[0], id: "fixture-up", startsAt: "2026-06-20T12:00:00+09:00", endsAt: undefined, endDateKey: "2026-06-22", publicTitle: "업 도움", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "up" as const, supportUrl: "https://example.com/fixture" }
     ],
     vods: [{ titleNo: 900000001, title: "샘플 다시보기", dateKey: "2026-06-18", durationMs: 7200000 }]
   } : shown;

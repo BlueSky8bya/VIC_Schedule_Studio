@@ -249,13 +249,13 @@ const loadPublicScheduleData = unstable_cache(
         // 공개 캘린더의 태그·팔레트·일정·스티커가 섞인다(공개 데이터끼리의 교차 혼입).
         supabase
           .from("broadcast_tags")
-          .select("id, tag_key, display_name, color_key, bg_hex, dark_palette, sort_order, is_default, is_active, parent_id, kind, v3_only")
+          .select("id, tag_key, display_name, color_key, bg_hex, dark_palette:dark_palette_v2, sort_order, is_default, is_active, parent_id, kind, v3_only")
           .eq("calendar_id", calendar.id)
           .eq("is_active", true)
           .order("sort_order"),
         supabase
           .from("color_palette")
-          .select("key, name, bg_color, text_color, border_color, dark_palette, sort_order")
+          .select("key, name, bg_color, text_color, border_color, dark_palette:dark_palette_v2, sort_order")
           .eq("calendar_id", calendar.id)
           .order("sort_order"),
         supabase

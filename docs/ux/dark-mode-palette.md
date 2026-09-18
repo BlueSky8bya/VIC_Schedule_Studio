@@ -1,6 +1,10 @@
 # Dark palette follow-up — 2026-09-19
 
-Status: complete, pushed and production-verified. Owner requested dark-specific tag colors (automatically saved for future colors), stronger popularity highlighting, and fixes for trend/loading/showcase controls, plus coherent nearby dark UI improvements.
+Status: second owner correction implemented and locally verified; production push follows. Earlier release evidence below remains historical.
+
+2026-09-19 follow-up: v2 raises pastel chroma and removes the dark eye-comfort amber veil from cards, while leaving neutral colors neutral. `0122` adds generated v2 columns, preserving v1/source values. SQL/TS parity 1,240; existing source hashes unchanged; insert/update/NULL automatic storage verified. Minimum tested text contrast >4.5:1; distinct pastel-family OKLab distances >0.055. Visits now include explicit dark zero values, owner session tracks, criterion chips and day calendar ink. Ribbon base colors were already deployed; solo/hover text and highlights are corrected too. Public ribbon hover now scopes to the actual `.poster-page` root; independent review confirmed the fix.
+
+V2 verification: typecheck, lint and isolated production build passed. Unit suite 954/956 passed (same two pre-existing ambient-codex failures). Production-build visual suite 19/19 passed; strengthened visit-zero/session and support/period hover cases then passed 2/2 on the final build. Support fixtures freeze time inside their active KST period, since expired campaigns are intentionally hidden. Actual local public desktop/mobile captures show distinct tag families, dark period ribbons, no overflow or runtime errors. Evidence: `output/dark-mode-palette/v2-local-*.png`, `tmp/dark-audit/v2-ribbons-tests`, `tmp/dark-audit/reviewer/v2-final`. Migration 0122 applied before loader release, retaining all 43 original color rows.
 
 Plan: shared deterministic palette derivation; additive generated database columns (original colors untouched); explicit public/studio color DTO mapping; one rendering path across viewer/studio/preview/mobile; dark loading/chart/ambient/popularity states; production-build captures and interaction checks, unit/data-parity/type/lint/build validation.
 

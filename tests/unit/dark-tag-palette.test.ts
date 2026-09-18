@@ -15,16 +15,24 @@ describe("automatic dark tag palette", () => {
     for (let r = 0; r <= 255; r += 51) for (let g = 0; g <= 255; g += 51) for (let b = 0; b <= 255; b += 51) {
       const source = "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("");
       const p = deriveDarkTagColors(source), a = hexToOklch(source), d = hexToOklch(p.bgColor);
-      expect((luminance(p.textColor) + .05) / (luminance(p.bgColor) + .05), source).toBeGreaterThan(6);
+      expect((luminance(p.textColor) + .05) / (luminance(p.bgColor) + .05), source).toBeGreaterThan(4.5);
       expect(d.L).toBeGreaterThan(.33);
-      expect(d.L).toBeLessThan(.45);
-      expect(d.C).toBeLessThan(.07);
+      expect(d.L).toBeLessThan(.48);
+      expect(d.C).toBeLessThan(.15);
       if (a.C > .04) expect(Math.abs(((a.h - d.h + 540) % 360) - 180), source).toBeLessThan(5);
       expect(luminance(p.accentColor)).toBeGreaterThan(luminance(p.bgColor));
     }
   });
   it("replaces stale saved metadata immediately after custom source edits", () => {
     expect(readDarkTagColors(deriveDarkTagColors("#ff0000"), "#00ff00")).toEqual(deriveDarkTagColors("#00ff00"));
+  });
+  it("replaces v1 gray-compressed metadata and separates pastel hue families", () => {
+    expect(readDarkTagColors({ ...deriveDarkTagColors("#ff0000"), version: 1, bgColor: "#653835" }, "#ff0000").version).toBe(2);
+    const colors = ["#eab5b5", "#c9c7a5", "#afcabc", "#a9c2dc", "#cbb2da"].map(s => hexToOklch(deriveDarkTagColors(s).bgColor));
+    const lab = colors.map(({ L, C, h }) => [L, C * Math.cos(h * Math.PI / 180), C * Math.sin(h * Math.PI / 180)]);
+    for (let i = 0; i < lab.length; i++) for (let j = i + 1; j < lab.length; j++) {
+      expect(Math.hypot(...lab[i].map((v, k) => v - lab[j][k]))).toBeGreaterThan(.055);
+    }
   });
   it("normalizes invalid and uppercase input", () => {
     expect(deriveDarkTagColors("bad")).toEqual(deriveDarkTagColors("#b8b3aa"));

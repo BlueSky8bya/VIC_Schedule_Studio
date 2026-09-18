@@ -708,3 +708,23 @@ html[data-theme="dark"] .agenda-link.period { background: #283f49; color: #addee
 html[data-theme="dark"] :is(.agenda-link.vod .agenda-vod-dur, .agenda-detail-backdrop.is-pop .agenda-link.vod .agenda-vod-dur) { color: #9ab6eb; }
 html[data-theme="dark"] .agenda-event .event-heart { color: #d5c9c2; }
 html[data-theme="dark"] .agenda-event .event-heart.on { color: #ff9cb7; }
+
+/* Visit data: zero is the dark track, not a white heatmap cell. */
+html[data-theme="dark"] :is(.own-track, .vt-hbar, .vt-hours.empty .vt-hbar) { background: #302d37; }
+html[data-theme="dark"] .vcrit { background: #393244; color: #d0bffa; }
+html[data-theme="dark"] .vt-hours-empty { background: rgb(33 30 28 / 92%); color: var(--ink-soft); }
+html[data-theme="dark"] :is(.vmini-cell, .own-date, .vheat-wd, .vheat-axis, .hour-ticks) { color: var(--ink-soft); }
+/* The light eye-comfort amber veil desaturates every tag into the same brown.
+   Dark already has warm paper/ink; keep only a faint neutral highlight on cards. */
+html[data-theme="dark"] :is(.public-event, .studio-event-pill):not([data-mixed]):not(.teaser) {
+  background-image: linear-gradient(180deg, #ffffff06, #ffffff00 55%);
+}
+html[data-theme="dark"] .support-bar::before { background: linear-gradient(180deg, #ffffff08, transparent 60%); }
+html[data-theme="dark"] .support-bar span { text-shadow: none; }
+html[data-theme="dark"] .support-bar.sb-solo :is(.sb-title, .sb-cta, .sb-go),
+html[data-theme="dark"] .support-bar.is-clickable.is-hover :is(.sb-title, .sb-cta, .sb-go) { color: inherit; }
+html[data-theme="dark"] .support-bar .sb-cta { border-bottom-color: currentColor; }
+html[data-theme="dark"] .support-bar.is-clickable.is-hover,
+html[data-theme="dark"] .support-bar.sb-period.sb-solo.is-clickable.is-hover {
+  box-shadow: inset 0 1px 0 #ffffff16;
+}

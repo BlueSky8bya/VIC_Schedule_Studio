@@ -1,9 +1,9 @@
 import { hexToOklch, oklchToHex } from "@/lib/tags/color-tone";
 
 /** Versioned public visual metadata. DB generated columns use the same OKLCH
- * contract (0121); source colors remain editable and are never overwritten. */
+ * contract (0122); source colors remain editable and are never overwritten. */
 export type DarkTagColors = {
-  version: 1;
+  version: 2;
   source: string;
   bgColor: string;
   borderColor: string;
@@ -19,11 +19,13 @@ export function deriveDarkTagColors(source: string): DarkTagColors {
   if (cached) return cached;
   const { L, C, h } = hexToOklch(hex);
   const colors: DarkTagColors = {
-    version: 1, source: hex,
-    bgColor: oklchToHex(0.34 + L * 0.10, Math.min(0.065, C * 0.45), h),
-    borderColor: oklchToHex(0.55 + L * 0.04, Math.min(0.075, C * 0.55), h),
+    version: 2, source: hex,
+    // Lift pastel chroma without tinting neutral grays. Dark surfaces need hue
+    // separation, not the near-gray compression of v1.
+    bgColor: oklchToHex(0.35 + L * 0.12, Math.min(0.14, C * 0.95 + Math.min(C / 0.04, 1) * 0.035), h),
+    borderColor: oklchToHex(0.60 + L * 0.05, Math.min(0.16, C * 1.05 + Math.min(C / 0.04, 1) * 0.035), h),
     textColor: "#f1ede6",
-    accentColor: oklchToHex(0.72 + L * 0.06, Math.min(0.12, C * 0.75), h)
+    accentColor: oklchToHex(0.74 + L * 0.06, Math.min(0.16, C + Math.min(C / 0.04, 1) * 0.025), h)
   };
   // Color-picker dragging can produce unlimited transient colors.
   if (cache.size >= 512) cache.clear();
@@ -36,9 +38,9 @@ export function deriveDarkTagColors(source: string): DarkTagColors {
 export function readDarkTagColors(value: unknown, source: string): DarkTagColors {
   if (value && typeof value === "object") {
     const v = value as Partial<DarkTagColors>;
-    if (v.version === 1 && v.source === source.toLowerCase() &&
+    if (v.version === 2 && v.source === source.toLowerCase() &&
       [v.bgColor, v.borderColor, v.textColor, v.accentColor].every(c => typeof c === "string" && HEX.test(c))) {
-      return { version: 1, source: v.source, bgColor: v.bgColor!, borderColor: v.borderColor!, textColor: v.textColor!, accentColor: v.accentColor! };
+      return { version: 2, source: v.source, bgColor: v.bgColor!, borderColor: v.borderColor!, textColor: v.textColor!, accentColor: v.accentColor! };
     }
   }
   return deriveDarkTagColors(source);

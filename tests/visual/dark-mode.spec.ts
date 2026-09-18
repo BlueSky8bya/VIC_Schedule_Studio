@@ -1,4 +1,7 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { darkInsightsResponses } from "./fixtures/dark-insights";
 
 // Exercise the shipped theme, not a synthetic set of inline token overrides.
 // API writes and external media are intercepted: local config may use production.
@@ -60,12 +63,54 @@ async function darkSurface(page: Page, selector: string) {
 }
 test.beforeEach(async ({ page }) => { await prepare(page); });
 
+test("visits zero heatmap cells, owner tracks and day calendar stay dark", async ({ page }, info) => {
+  const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node;
+  await page.route("**/*", async route => {
+    const id = route.request().headers()["next-action"];
+    if (!id) return route.fallback();
+    const name = manifest[id]?.exportedName as keyof typeof darkInsightsResponses;
+    const value = darkInsightsResponses[name] ?? { ok: false, error: "Fixture only" };
+    return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":"","b":"fixture"}\n1:${JSON.stringify(value)}\n` });
+  });
+  await page.setViewportSize({ width: 1840, height: 1000 });
+  await page.goto("/visual-fixture/studio?role=developer");
+  if (!await page.locator("[data-act=manage-insights]").isVisible()) await page.locator("[data-act=panel-toggle]").click();
+  await page.locator("[data-act=manage-insights]").click();
+  await page.locator(".insights-tab").nth(5).click();
+  await page.locator(".vheat").scrollIntoViewIfNeeded();
+  await darkSurface(page, '.vheat-row i[title$="· 0세션"]');
+  await darkSurface(page, ".vcrit");
+  await capture(page, info, "visits-heatmap-zero");
+  await page.locator(".own-track").first().scrollIntoViewIfNeeded();
+  await darkSurface(page, ".own-track");
+  await expect(page.locator(".own-seg").first()).toBeVisible();
+  await capture(page, info, "visits-owner-tracks");
+  await page.locator(".vmini-cell:not(.empty)").first().scrollIntoViewIfNeeded();
+  await capture(page, info, "visits-day-calendar");
+});
+
 test("untagged cards, period ribbons and mobile VOD links use dark surfaces", async ({ page }, info) => {
+  // Expired support campaigns are intentionally hidden; inspect the fixture while active.
+  await page.clock.setFixedTime(new Date("2026-06-20T12:00:00+09:00"));
   await page.setViewportSize({ width: 1840, height: 1000 });
   await page.goto("/visual-fixture/poster?links=1");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.locator(".support-bar:not(.sb-period)").first().waitFor();
+  await page.waitForTimeout(500);
   await darkSurface(page, '.public-event:not([data-color]):not([data-mixed]):not(.teaser)');
   const ribbon = await page.locator(".support-bar.sb-period").first().evaluate(el => getComputedStyle(el).backgroundImage);
   expect(ribbon).toContain("rgb(48, 74, 83)");
+  const period = page.locator(".support-bar.sb-period").first();
+  await period.hover();
+  expect(await period.locator(".sb-title").evaluate(el => getComputedStyle(el).color)).toBe("rgb(173, 221, 237)");
+  const support = page.locator(".support-bar:not(.sb-period)").first();
+  await expect(async () => {
+    await page.mouse.move(0, 0);
+    await support.hover();
+    await expect(support).toHaveClass(/is-hover/, { timeout: 500 });
+  }).toPass({ timeout: 5000 });
+  expect(await support.evaluate(el => getComputedStyle(el).backgroundImage)).toContain("rgb(86, 58, 67)");
+  expect(await support.evaluate(el => getComputedStyle(el).boxShadow)).toContain("inset");
   await capture(page, info, "untagged-and-period");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator(".agenda-link.vod").first().scrollIntoViewIfNeeded();

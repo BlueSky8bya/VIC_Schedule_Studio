@@ -6,6 +6,10 @@
 
 ## v0.1.0 — 2026-09-19
 
+### CHG-20260919-002 — 다크 태그 색 구분과 방문탭 빈 상태
+
+사용자 실제 캡처 지적에 따라 팔레트 v2 채도를 높이고 다크 카드의 갈색 베일을 제거한다. `0122` 생성 컬럼은 기존 v1과 원본 색을 보존하며 SQL/TS 1,240색 일치·43행 원본 해시 보존을 확인했다. 방문탭은 0건 히트맵·날짜·세션 트랙도 어두운 값으로 표시한다. 띠 하루/여러 날/hover는 의미색 글자와 약한 광택을 유지한다. 복구는 v1 reader + 이전 CSS로 가능. [현재 검증](../ux/dark-mode-palette.md), [ADR](decisions/ADR-0026-automatic-dark-tag-palette.md).
+
 ### CHG-20260919-001 — 자동 다크 태그 팔레트
 
 사용자 요청에 따라 `0121`로 태그·기본 팔레트의 다크 색을 생성 컬럼에 저장한다. 원본 색·기존 RLS를 보존하고 공개 DTO에는 검증된 시각 필드만 추가했다. 1,240개 SQL/TS 계산 일치, 임시 테이블 insert/update/NULL, 기존 행 원본 해시 보존 확인. [ADR-0026](decisions/ADR-0026-automatic-dark-tag-palette.md), [화면 검증](../ux/dark-mode-palette.md). 복구는 이전 앱 reader를 먼저 배포하고 additive 컬럼은 유지한다.

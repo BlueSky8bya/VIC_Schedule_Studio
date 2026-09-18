@@ -2896,9 +2896,9 @@ export function PublicPoster({
           const bandHover = bandClickable
             ? {
                 onMouseEnter: (e: ReactMouseEvent<HTMLElement>) =>
-                  setBandHover(e.currentTarget.closest(".public-poster"), s.id, true),
+                  setBandHover(e.currentTarget.closest(".poster-page"), s.id, true),
                 onMouseLeave: (e: ReactMouseEvent<HTMLElement>) =>
-                  setBandHover(e.currentTarget.closest(".public-poster"), s.id, false)
+                  setBandHover(e.currentTarget.closest(".poster-page"), s.id, false)
               }
             : {};
           const bandInner = showLabel ? (

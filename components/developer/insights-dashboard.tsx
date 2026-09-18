@@ -1,6 +1,6 @@
 "use client";
 
-import { tagColor } from "@/lib/tags/dark-palette";
+import { tagColor, themeColor } from "@/lib/tags/dark-palette";
 
 import {
   CalendarDays,
@@ -847,7 +847,7 @@ export function InsightsDashboard({
                       <i
                         key={h}
                         title={`${wdays[wd]} ${h}시 · ${c}세션`}
-                        style={{ background: c > 0 ? `rgba(124,92,245,${0.15 + (c / hmMax) * 0.8})` : "#f1eef9" }}
+                        style={{ background: c > 0 ? themeColor(`rgba(124,92,245,${0.15 + (c / hmMax) * 0.8})`, `rgba(177,151,255,${0.25 + (c / hmMax) * 0.7})`) : themeColor("#f1eef9", "#302d37") }}
                       />
                     ))}
                   </div>
@@ -957,7 +957,7 @@ export function InsightsDashboard({
                     title={`${month}/${d.day} · 체류 ${fmtDur(d.stay)} · ${d.total}방문${
                       d.day === todayDay ? " (오늘 — 진행 중)" : ""
                     }`}
-                    style={{ background: d.stay > 0 ? `rgba(52,211,153,${0.18 + (d.stay / stayMax) * 0.75})` : "#f3f1ee" }}
+                    style={{ background: d.stay > 0 ? themeColor(`rgba(52,211,153,${0.18 + (d.stay / stayMax) * 0.75})`, `rgba(40,124,95,${0.3 + (d.stay / stayMax) * 0.65})`) : themeColor("#f3f1ee", "#302d37") }}
                   >
                     {d.day}
                   </span>
