@@ -11,6 +11,7 @@ import { readEditableText, writeEditableText } from "@/lib/ui/editable-text";
 import { ringPath, ringSpring } from "@/lib/ui/ring-path";
 
 import dynamic from "next/dynamic";
+import type { DayVod } from "@/components/poster/day-vod-window";
 import {
   CalendarCheck,
   ChartColumn,
@@ -215,6 +216,8 @@ const BroadcastPanel = dynamic(
 // 다시보기는 옆의 ▶로 /replay 새 탭(편집실엔 다시보기 창이 없다).
 const PublicSearch = dynamic(() => import("@/components/poster/public-search").then((m) => m.PublicSearch), { ssr: false });
 const EMPTY_HEARTS: ReadonlySet<string> = new Set();
+// 편집실 다시보기 창(2026-09-18 소유자: 새 탭 말고 시청자와 같은 창). VOD 목록은 편집실 번들에 없어 열 때 공개 일정 API에서 한 번 받는다.
+const DayVodWindow = dynamic(() => import("@/components/poster/day-vod-window").then((m) => m.DayVodWindow), { ssr: false });
 const DayVisitModal = dynamic(
   () => import("@/components/developer/day-visit-modal").then((m) => m.DayVisitModal),
   { ssr: false }
@@ -1989,8 +1992,38 @@ export function StudioShell({
       document.querySelector<HTMLElement>(`[data-date="${dateKey}"], [data-flip-key="${dateKey}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, delay);
   };
-  const studioReplayHref = (dateKey: string, _titleNo: number, sec?: number) =>
-    `/replay/${dateKey}${sec !== undefined && sec > 0 ? `?t=${Math.floor(sec)}` : ""}`;
+  // ▶ = 다시보기 창(시청자 DayVodWindow 그대로, 한 구현). 그 날 VOD 목록은 공개 일정 응답(vods)에서 — 처음 한 번 받아 둔다.
+  const [dayVodPop, setDayVodPop] = useState<{ dateKey: string; part?: number; sec?: number; vods: DayVod[] } | null>(null);
+  const publicVodsRef = useRef<Map<string, DayVod[]> | null>(null);
+  const loadPublicVods = async (): Promise<Map<string, DayVod[]>> => {
+    if (publicVodsRef.current) return publicVodsRef.current;
+    const map = new Map<string, DayVod[]>();
+    try {
+      const res = await fetch(`/api/public/${schedule.calendar.slug}/events`);
+      const json = (await res.json()) as { vods?: (DayVod & { dateKey: string })[] };
+      for (const v of json.vods ?? []) {
+        const list = map.get(v.dateKey) ?? [];
+        list.push(v);
+        map.set(v.dateKey, list);
+      }
+    } catch {
+      /* 못 받으면 빈 창 대신 열지 않는다 */
+    }
+    publicVodsRef.current = map;
+    return map;
+  };
+  const onStudioReplay = (dateKey: string, titleNo: number, sec?: number) => {
+    setSearchOpen(false);
+    void loadPublicVods().then((map) => {
+      const vods = map.get(dateKey) ?? [];
+      const idx = vods.findIndex((v) => v.titleNo === titleNo);
+      if (vods.length === 0) {
+        flashToast("이 날 다시보기 정보를 아직 못 받았어요");
+        return;
+      }
+      setDayVodPop({ dateKey, part: idx >= 0 ? idx + 1 : undefined, sec, vods });
+    });
+  };
 
   // 어느 달을 보러 왔는지(0062). **실제로 바뀐 view**를 보고 남긴다 — 클릭 핸들러에서
   // 계산하면 렌더 전 클로저라 도착지가 틀린다(위 moveMonth 주석의 실측 사례).
@@ -7664,13 +7697,25 @@ export function StudioShell({
           </button>
         </div>
       ) : null}
+      {dayVodPop ? (
+        <DayVodWindow
+          dateKey={dayVodPop.dateKey}
+          initialPart={dayVodPop.part}
+          initialSec={dayVodPop.sec}
+          onClose={() => setDayVodPop(null)}
+          side={avatarSide}
+          slug={schedule.calendar.slug}
+          variant="modal"
+          vods={dayVodPop.vods}
+        />
+      ) : null}
       {searchOpen ? (
         <PublicSearch
           myHeartIds={EMPTY_HEARTS}
           onClose={() => setSearchOpen(false)}
           onPickEvent={onStudioSearchPickEvent}
           onPickVod={onStudioSearchPickVod}
-          replayHref={studioReplayHref}
+          onReplay={onStudioReplay}
           slug={schedule.calendar.slug}
           tags={viewTags}
           thumbOf={() => undefined}

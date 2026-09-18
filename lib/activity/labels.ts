@@ -175,7 +175,7 @@ const ACT: Record<string, TargetLabel> = {
   "manage-menu": { name: "관리 ▾ 메뉴 열기", area: "옛 화면" },
   "manage-tags": { name: "태그 편집", area: "태그 편집" },
   "stool-search": { name: "편집실 검색 열기", area: "편집실", hint: "도구 카드 '검색' 타일 또는 / 키(2026-09-18) — 시청자 검색 시트와 한 구현" },
-  "search-replay-ext": { name: "검색 결과 다시보기 열기", area: "편집실", hint: "편집실 검색 결과의 ▶ — /replay 페이지 새 탭(편집실엔 다시보기 창이 없다)" },
+  "search-replay-ext": { name: "검색 결과 다시보기 열기", area: "편집실", hint: "편집실 검색 결과의 ▶ — 시청자와 같은 다시보기 창(새 탭 아님, 2026-09-18)" },
   "dev-dictionary-open": { name: "은어 사전 초안 열기", area: "편집실", hint: "설정 모달 → /studio/search-dictionary(개발자) — 채팅에서 새로 배운 말에 뜻 달기(0090)" },
   "dict-note-save": { name: "은어 뜻 저장", area: "은어 사전" },
   "dict-ignore": { name: "은어 무시", area: "은어 사전" },

@@ -42,8 +42,8 @@ type Props = {
   onClose: () => void;
   onPickEvent: (dateKey: string, eventId: string) => void;
   onPickVod: (dateKey: string, titleNo: number, sec?: number) => void;
-  // 편집실(2026-09-18): 다시보기 창이 없으니 행 클릭은 달력 이동(onPickVod)이고, 옆의 ▶ 가 이 주소를 새 탭으로 연다.
-  replayHref?: (dateKey: string, titleNo: number, sec?: number) => string;
+  // 편집실(2026-09-18): 행 클릭 = 달력 이동(onPickVod), 옆의 ▶ = 시청자와 같은 다시보기 **창**(새 탭 아님 — 소유자: 탭 복제·재로딩 무거움).
+  onReplay?: (dateKey: string, titleNo: number, sec?: number) => void;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -86,7 +86,7 @@ type Row =
   | { kind: "vod"; dateKey: string; titleNo: number }
   | { kind: "chapter"; dateKey: string; titleNo: number; sec: number };
 
-export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, replayHref }: Props) {
+export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, onReplay }: Props) {
   const [q, setQ] = useState("");
   const [result, setResult] = useState<PublicSearchResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -198,7 +198,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   const similarGroups = useMemo(() => groups.filter((g) => !g.exact), [groups]);
   // 편집실(2026-09-18 소유자): 토리님이 직접 쓴 것(일정 제목·설명·태그)이 **직접** 결과로 먼저, 타임라인·채팅에서 온
   // 다시보기·챕터는 **간접** 결과(누르면 그 날로). 시청자 화면은 날짜별 섞어 보이는 기존 그대로.
-  const studio = Boolean(replayHref);
+  const studio = Boolean(onReplay);
   const directGroups = useMemo(
     () => (studio ? [...exactGroups, ...similarGroups].map((g) => ({ ...g, vods: [] })).filter((g) => g.events.length > 0) : []),
     [studio, exactGroups, similarGroups]
@@ -331,23 +331,24 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     );
   };
 
-  // 편집실: 행 옆에 ▶(새 탭 다시보기). 시청자 화면(replayHref 없음)은 행 자체가 재생이라 그대로.
+  // 편집실: 행 옆에 ▶(다시보기 창). 시청자 화면(onReplay 없음)은 행 자체가 재생이라 그대로.
   const withExt = (dateKey: string, titleNo: number, sec: number | undefined, node: ReactNode) =>
-    replayHref ? (
+    onReplay ? (
       <div className="ps-rowline" key={`${titleNo}:${sec ?? "v"}`}>
         {node}
-        <a
-          aria-label="다시보기 새 탭"
+        <button
+          aria-label="다시보기 창 열기"
           className="ps-ext"
           data-act="search-replay-ext"
-          href={replayHref(dateKey, titleNo, sec)}
-          onClick={() => hapticTick()}
-          rel="noopener noreferrer"
-          target="_blank"
-          title={sec !== undefined ? `${formatTimecode(sec)}부터 다시보기(새 탭)` : "다시보기(새 탭)"}
+          onClick={() => {
+            hapticTick();
+            onReplay(dateKey, titleNo, sec);
+          }}
+          title={sec !== undefined ? `${formatTimecode(sec)}부터 다시보기` : "다시보기"}
+          type="button"
         >
-          <Play size={12} strokeWidth={2.6} />
-        </a>
+          <Play size={13} strokeWidth={2.6} />
+        </button>
       </div>
     ) : (
       node
@@ -386,7 +387,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         )
       )}
       {g.vods.map((v) => {
-        const thumb = thumbOf(v.titleNo);
+        const thumb = thumbOf(v.titleNo) ?? v.thumb;
         const visible = expanded.has(v.titleNo) ? v.allChapters : v.chapters;
         return (
           <div className="ps-vod" key={v.titleNo}>
@@ -417,7 +418,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                   <Play className="ps-act" size={14} aria-hidden="true" />
                 </span>
               </>,
-              replayHref ? "달력에서 이 날로" : "이 다시보기 처음부터"
+              onReplay ? "달력에서 이 날로" : "이 다시보기 처음부터"
             ))}
             {visible.length > 0 ? (
               <div className="ps-chapters">
@@ -460,7 +461,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                             <Play className="ps-act" size={12} aria-hidden="true" />
                           </span>
                         </>,
-                        `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}${replayHref ? "" : "부터 재생"}`
+                        `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}${onReplay ? "" : "부터 재생"}`
                       ))}
                     </div>
                   );

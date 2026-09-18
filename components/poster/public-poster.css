@@ -7775,36 +7775,43 @@ html[data-pchrome="3"] .poster-chrome-title {
   gap: 4px;
 }
 .ps-rowline > .ps-row { flex: 1 1 auto; min-width: 0; }
-/* 편집실 결(소유자 2026-09-18: "코딱지만해서 안 보인다") — 시트 넓게, 행 높게, 글자 한 단계 크게. 구조는 같다. */
-.ps-sheet.is-studio {
+/* 타이포 상향(소유자 2026-09-18: "전체적으로 작아서 옹졸") — 편집실·시청자 **같은 결**: 시트 넓게, 행 높게, 글자 한 단계 크게,
+   자간·행간은 차분하게(중후함은 크기보다 여백에서 온다). 편집실은 폭만 더 넓다. */
+.ps-sheet {
   --ps-row-h: 58px;
-  width: min(860px, 100%);
+  width: min(780px, 100%);
   max-height: min(90vh, 960px);
 }
-.ps-sheet.is-studio .ps-field input { font-size: 18px; }
-.ps-sheet.is-studio .ps-day-head { font-size: 13px; }
-.ps-sheet.is-studio .ps-title { font-size: 16px; }
-.ps-sheet.is-studio .ps-meta { font-size: 13px; }
-.ps-sheet.is-studio .ps-side-text { font-size: 13px; }
-.ps-sheet.is-studio .ps-divider { font-size: 13px; }
-.ps-sheet.is-studio .ps-chapter { --ps-row-h: 38px; padding: 4px 8px; }
-.ps-sheet.is-studio .ps-chapter .ps-title { font-size: 14.5px; }
-.ps-sheet.is-studio .ps-tc { font-size: 13px; }
-.ps-sheet.is-studio .ps-section { font-size: 12.5px; }
-.ps-sheet.is-studio .ps-parent-head { font-size: 13px; }
-.ps-sheet.is-studio .ps-more-btn { font-size: 13.5px; }
-.ps-sheet.is-studio .ps-chip { font-size: 13.5px; }
-.ps-sheet.is-studio .ps-ext { width: 36px; }
-.ps-sheet.is-studio .ps-thumb { width: 64px; height: 40px; }
+.ps-sheet.is-studio { width: min(880px, 100%); }
+.ps-sheet .ps-field input { font-size: 18px; letter-spacing: -0.01em; }
+.ps-sheet .ps-day-head { font-size: 13px; letter-spacing: 0.02em; }
+.ps-sheet .ps-title { font-size: 16px; line-height: 1.35; letter-spacing: -0.005em; }
+.ps-sheet .ps-meta { font-size: 13px; }
+.ps-sheet .ps-side-text { font-size: 13px; }
+.ps-sheet .ps-divider { font-size: 13px; }
+.ps-sheet .ps-chapter { --ps-row-h: 38px; padding: 4px 8px; }
+.ps-sheet .ps-chapter .ps-title { font-size: 14.5px; }
+.ps-sheet .ps-tc { font-size: 13px; }
+.ps-sheet .ps-section { font-size: 12.5px; }
+.ps-sheet .ps-parent-head { font-size: 13px; }
+.ps-sheet .ps-more-btn { font-size: 13.5px; }
+.ps-sheet .ps-chip { font-size: 13.5px; }
+.ps-sheet .ps-chiplbl { font-size: 12.5px; }
+.ps-sheet .ps-hint { font-size: 14px; }
+.ps-sheet .ps-ext { width: 36px; }
+.ps-sheet .ps-thumb { width: 64px; height: 40px; }
 .ps-ext {
   flex: none;
   display: grid;
   place-items: center;
   width: 30px;
   margin-block: 2px;
+  border: 0;
   border-radius: 10px;
   color: #5b5f7a;
   background: transparent;
+  font: inherit;
+  cursor: pointer;
   transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
 .ps-ext:hover { background: rgb(53 100 224 / 10%); color: #3564e0; }

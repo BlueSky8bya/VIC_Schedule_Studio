@@ -191,6 +191,7 @@ export type PublicSearchHit = {
   snippet: string; // 일정: 설명 발췌 · 챕터: 소속 다시보기 제목 · 그 외 ""
   durationMs?: number; // kind=vod|chapter
   hostNick?: string; // 합방 게스트 출연분(0075)이면 호스트 닉
+  thumb?: string; // 다시보기 썸네일 SnapshotLoad 쿼리(0092) — 편집실처럼 VOD 목록이 없는 곳도 썸네일을 그린다
   score: number;
   exact: boolean; // 정규화 구/토큰이 실제로 포함된 적중(false = 트라이그램 유사도만 — 화면은 '비슷한 결과')
   popularity: number; // 0~1 참여 신호(다시보기: 조회·좋아요·댓글·챕터 밀도 / 일정: 하트) — 정렬 '인기순'

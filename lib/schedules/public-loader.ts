@@ -636,6 +636,7 @@ export async function searchPublic(
     snippet: string | null;
     duration_ms: number | string | null;
     host_nick: string | null;
+    thumb?: string | null;
     score: number | string;
     exact: boolean | null;
     popularity: number | string | null;
@@ -652,6 +653,7 @@ export async function searchPublic(
       dateKey: String(row.date_key).slice(0, 10),
       title: typeof row.title === "string" ? row.title : "",
       snippet: typeof row.snippet === "string" ? row.snippet : "",
+      ...(typeof row.thumb === "string" && row.thumb.includes("?") ? { thumb: row.thumb.slice(row.thumb.indexOf("?") + 1) } : {}),
       score: Number(row.score) || 0,
       exact: row.exact === true,
       popularity: Math.max(0, Math.min(1, Number(row.popularity) || 0))

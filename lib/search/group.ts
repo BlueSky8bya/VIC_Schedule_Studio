@@ -15,6 +15,7 @@ export type SearchVodGroup = {
   title: string;
   durationMs: number;
   hostNick?: string;
+  thumb?: string; // SnapshotLoad 쿼리(0092)
   matched: boolean; // 다시보기 제목 자체가 적중했는가(아니면 챕터만)
   score: number;
   chapters: SearchChapter[]; // 접힌 상태에서 보여줄 상위 N(시각순)
@@ -82,6 +83,7 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
         title: hit.kind === "vod" ? hit.title : hit.snippet,
         durationMs: hit.durationMs ?? 0,
         hostNick: hit.hostNick,
+        thumb: hit.thumb,
         matched: false,
         score: 0,
         chapters: [],
@@ -109,6 +111,7 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
       v.matched = true;
       v.title = hit.title;
       v.durationMs = hit.durationMs ?? v.durationMs;
+      v.thumb = v.thumb ?? hit.thumb;
       continue;
     }
     if (typeof hit.sec === "number") {
