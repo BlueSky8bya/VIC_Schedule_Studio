@@ -3429,13 +3429,20 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 .public-legend-vertical .legend-mods {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-1); /* 4 */
+  /* 부모 목록과 같은 열 간격(2px) — 4px면 오른쪽 열이 위 블록보다 2px 밀려 선이 어긋난다. */
+  gap: var(--space-1) 2px;
   /* '형식' 소제목을 없앤 뒤에도 콘텐츠와 시각적으로 갈리게 구분선만 남긴다. 구분선 리듬 4/8 통일. */
   margin-top: var(--space-1); /* 4 */
   padding-top: var(--space-2); /* 8 */
   border-top: 1px dashed #e6dcc2;
 }
 .public-legend-vertical span,
+/* 색칩 칸(2026-09-19 소유자 "서로 위치 안 맞는다") — 실측하니 태그 줄은 라벨이 32px에서,
+   인기도 줄은 50px에서 시작했다(태그 색칩 18 vs 인기도 알약 26+여백6, 줄 안쪽 여백과 간격도 달랐다).
+   칸 폭을 하나로 두고 둘 다 그 안에 넣으면 네 블록(콘텐츠·방식·인기도)의 라벨이 한 세로선에 선다. */
+.public-legend-vertical {
+  --legend-swatch: 26px;
+}
 .public-legend-vertical .legend-item {
   display: inline-flex;
   align-items: center;
@@ -3502,7 +3509,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 .legend-tiers {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2px; /* 태그 목록(4px 2px)과 같은 리듬 */
+  gap: 4px 2px; /* 태그 목록과 **같은 값**(행 4 · 열 2) — 예전엔 둘 다 2라 행 리듬이 달랐다 */
   margin: 0;
   padding: 0;
   list-style: none;
@@ -3512,10 +3519,12 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   /* 불꽃 3개가 '넘치지 않고' 들어가는 고정 칸 + 라벨 — 네 칸의 라벨 왼쪽 끝이 같다.
      칸이 실제 불꽃 폭보다 좁으면 넘친 만큼 아래 gap을 먹어 '🔥🔥🔥폭발적'처럼 붙어 보인다. */
   /* 불꽃 3개 실폭 39px(11px 글꼴 기준, 실측) — 칸은 그보다 넓어야 gap을 안 먹는다. */
-  grid-template-columns: 41px 1fr;
+  /* 태그 줄과 같은 칸·간격·안쪽 여백(2026-09-19) — 라벨 왼쪽 끝이 위 목록과 정확히 같아진다.
+     (옛 41px 칸은 불꽃 3개(🔥🔥🔥)를 담던 시절의 값이다. 지금 이 칸에 드는 건 알약 하나뿐.) */
+  grid-template-columns: var(--legend-swatch, 26px) 1fr;
   align-items: center;
-  gap: 5px;
-  padding: 2px 4px;
+  gap: 8px;
+  padding: 2px 6px;
   border-radius: var(--r-sm);
   /* 위 태그 목록(.legend-item 14px)과 같은 글자 크기 — 같은 패널에서 여기만 작으면
      '부록'처럼 보인다. 대신 불꽃 칸·간격을 좁혀 2열 폭 안에 넣는다. */
@@ -3524,8 +3533,13 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   color: #6b6450;
   white-space: nowrap; /* 2열이라 좁아진 칸에서 라벨이 꺾이지 않게 */
 }
-.legend-tiers .tier-swatch {
+/* 클래스 셋 — 아래쪽의 `.tier-swatch.tier-swatch { margin: 0 3px }`(모바일 아젠다용)를 이 패널에서만 이긴다.
+   3px가 남아 있으면 알약이 칸 안에서 오른쪽으로 치우쳐 위 사각 색칩과 중심선이 3px 어긋난다.
+   얇은 레일의 축약형(.is-compact)은 28×14·41px 칸이라는 제 규격이 있으므로 건드리지 않는다. */
+.public-legend-vertical .legend-tiers:not(.is-compact) .tier-swatch {
   min-height: 16px; /* 태그 색칩과 같은 줄 높이 */
+  width: var(--legend-swatch, 26px);
+  margin: 0; /* 칸이 여백을 쥔다 — 칩 자체 여백이 남으면 중심선이 밀린다 */
 }
 
 .legend-clear {
@@ -3582,6 +3596,11 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   height: 18px;
   border: 1px solid;
   border-radius: 5px;
+}
+/* 18px 사각 색칩을 26px 칸 가운데에 — 칩 자체 크기는 그대로 두고 자리만 넓힌다. */
+.public-legend-vertical .legend-item > i {
+  flex: none;
+  margin-inline: calc((var(--legend-swatch) - 18px) / 2);
 }
 /* 방식(modifier)은 카드에서 '원'으로 표시되니 색상 안내에서도 원으로 맞춘다.
    꾸미기 모드는 정적 <span class="mod">로 렌더되므로 그 경우도 함께 원으로. */
