@@ -444,13 +444,15 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
       <h3 className="ps-day-head">
         <span>{formatDayLabel(g.dateKey)}</span>
       </h3>
-      {g.events.map((e) =>
+      {g.events.map((e, ei) =>
         rowBtn(
           { kind: "event", dateKey: g.dateKey, hit: e },
           "ps-event",
           "search-hit-event",
           <>
-            {e.thumb ? (
+            {/* 같은 날 같은 그림은 한 번만(소유자 2026-09-18): 다시보기 행이 있으면 그쪽이 그림을 들고, 일정은 배지.
+                다시보기가 없는 날은 첫 일정만 썸네일. */}
+            {e.thumb && g.vods.length === 0 && ei === 0 ? (
               <span className="ps-lead ps-thumb ps-thumb-event" aria-hidden="true">
                 {/* eslint-disable-next-line @next/next/no-img-element -- 외부 스냅샷(숲 CDN), 크기 고정 */}
                 <img alt="" loading="lazy" src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?${e.thumb}`} />
