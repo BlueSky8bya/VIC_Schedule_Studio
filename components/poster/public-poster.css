@@ -7973,6 +7973,21 @@ html[data-pchrome="3"] .poster-chrome-title {
   background: rgb(59 130 246 / 12%);
   box-shadow: 0 0 0 1px rgb(35 48 63 / 6%) inset;
 }
+.ps-thumb-event { position: relative; }
+.ps-thumb-event img { opacity: 0.9; }
+.ps-thumb-badge {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(29 29 41 / 72%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(4px);
+}
 .ps-thumb img {
   display: block;
   width: 100%;

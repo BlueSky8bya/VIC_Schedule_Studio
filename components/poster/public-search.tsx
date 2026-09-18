@@ -401,9 +401,11 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
           "search-hit-event",
           <>
             {e.thumb ? (
-              <span className="ps-lead ps-thumb" aria-hidden="true">
+              <span className="ps-lead ps-thumb ps-thumb-event" aria-hidden="true">
                 {/* eslint-disable-next-line @next/next/no-img-element -- 외부 스냅샷(숲 CDN), 크기 고정 */}
                 <img alt="" loading="lazy" src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?${e.thumb}`} />
+                {/* 그 날 다시보기 그림을 빌려 쓴 일정 — 다시보기 행과 헷갈리지 않게 배지(소유자 2026-09-18) */}
+                <b className="ps-thumb-badge">일정</b>
               </span>
             ) : (
               <span className="ps-lead ps-lead-event" aria-hidden="true">
