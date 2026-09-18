@@ -8388,7 +8388,8 @@ html[data-reduce-motion] .modal-close:active {
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 1px 2px rgb(59 53 87 / 14%), 0 4px 12px rgb(59 53 87 / 8%);
-  transition: transform 0.42s var(--spring-bouncy, cubic-bezier(0.34, 1.32, 0.52, 1));
+  /* 2026-09-18 소유자: "촐싹거린다" — 오버슈트(스프링) 대신 묵직하게 미끄러지는 곡선(애플 결). */
+  transition: transform 0.46s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .tge[data-kind="modifier"] .tge-seg-thumb {
   transform: translateX(100%);
@@ -8409,7 +8410,7 @@ html[data-reduce-motion] .modal-close:active {
   font-weight: 800;
   color: var(--tge-soft);
   cursor: pointer;
-  transition: color 0.22s var(--ease);
+  transition: color 0.34s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .tge-seg-btn.is-on {
   color: var(--tge-ink);
@@ -8451,8 +8452,8 @@ html[data-reduce-motion] .modal-close:active {
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 2px 8px rgb(107 91 214 / 28%);
-  transition: transform 0.18s var(--spring-bouncy, cubic-bezier(0.34, 1.32, 0.52, 1)),
-    box-shadow 0.18s var(--ease), filter 0.18s var(--ease);
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.22s var(--ease), filter 0.22s var(--ease);
 }
 .tge-add:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -8460,7 +8461,7 @@ html[data-reduce-motion] .modal-close:active {
   filter: brightness(1.04);
 }
 .tge-add:active:not(:disabled) {
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
 .tge-add:disabled {
   opacity: 0.4;
@@ -8502,10 +8503,10 @@ html[data-reduce-motion] .modal-close:active {
   border: 1px solid var(--tge-line);
   border-radius: var(--tge-radius);
   background: #fbfaff;
-  animation: tge-help-in 0.28s var(--ease-enter, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  animation: tge-help-in 0.34s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 @keyframes tge-help-in {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }
 }
 .tge-list {
@@ -8530,12 +8531,13 @@ html[data-reduce-motion] .modal-close:active {
 .tge-list .tag-cat-group {
   margin-bottom: 0;
   border-radius: var(--tge-radius);
-  animation: tge-row-in 0.36s var(--ease-enter, cubic-bezier(0.22, 1, 0.36, 1)) both;
-  animation-delay: calc(var(--i, 0) * 16ms);
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+  animation: tge-row-in 0.44s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation-delay: calc(var(--i, 0) * 10ms);
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.24s var(--ease), border-color 0.24s var(--ease);
 }
 @keyframes tge-row-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  /* 튀지 않게: 확대·오버슈트 없이 아주 짧은 거리만 올라오며 스며든다. */
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
 .tge-list .tag-cat-group:hover {
