@@ -7768,11 +7768,26 @@ html[data-pchrome="3"] .poster-chrome-title {
 }
 /* 입력 중 제안 목록(0096) — 머리 바로 아래, 유튜브식 한 줄 항목. 결과 목록보다 위에 겹치지 않고 밀어낸다. */
 .ps-suggest {
+  position: absolute;
+  top: 100%;
+  left: 12px;
+  right: 12px;
+  z-index: 5;
   list-style: none;
-  margin: 0;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--ps-line);
-  background: rgb(255 255 255 / 55%);
+  margin: 2px 0 0;
+  padding: 6px 8px;
+  border: 1px solid rgb(35 48 63 / 8%);
+  border-radius: 14px;
+  background: rgb(255 253 248 / 97%);
+  box-shadow: 0 14px 34px rgb(29 29 41 / 14%);
+  backdrop-filter: blur(8px);
+  animation: ps-sug-in var(--dur-2) var(--ease-enter) both;
+}
+/* 목록이 떠 있는 동안 시트 바깥으로 넘칠 수 있게(시트는 overflow:hidden) — 본문은 .ps-body가 따로 스크롤·클립한다 */
+.ps-sheet:has(.ps-suggest) { overflow: visible; }
+@keyframes ps-sug-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
 }
 .ps-sug {
   display: flex;

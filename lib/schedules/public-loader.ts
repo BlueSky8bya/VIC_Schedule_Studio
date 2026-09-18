@@ -738,7 +738,7 @@ export async function getPublicSearchSuggest(
   if (error || !Array.isArray(data)) return [];
   return (data as { term: string; kind: string; weight: number }[]).map((r) => ({
     term: String(r.term),
-    kind: (["term", "person", "game", "genre"].includes(r.kind) ? r.kind : "term") as "term" | "person" | "game" | "genre",
+    kind: (["term", "person", "game", "genre", "related"].includes(r.kind) ? r.kind : "term") as "term" | "person" | "game" | "genre" | "related",
     weight: Number(r.weight) || 0
   }));
 }

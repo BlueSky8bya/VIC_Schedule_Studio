@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, Footprints, Gamepad2, Headphones, MessageCircle, Music, Play, Search, Tag, User, X } from "lucide-react";
+import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, ChevronRight, Footprints, Gamepad2, Headphones, MessageCircle, Music, Play, Search, Tag, User, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchSuggest, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
@@ -642,12 +642,11 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
             className={`ps-line${busy ? " is-busy" : ""}`}
             style={{ "--p": progress } as React.CSSProperties}
           />
-        </header>
-
+          {/* 제안 목록은 머리 아래에 **겹쳐** 뜬다(absolute) — 개수에 따라 시트 높이가 출렁이지 않게(소유자 2026-09-18). */}
         {sugOpen ? (
           <ul className="ps-suggest" role="listbox" aria-label="검색어 제안">
             {suggest.map((sg, i) => {
-              const Icon = sg.kind === "game" ? Gamepad2 : sg.kind === "person" ? User : sg.kind === "genre" ? Tag : Search;
+              const Icon = sg.kind === "game" ? Gamepad2 : sg.kind === "person" ? User : sg.kind === "genre" ? Tag : sg.kind === "related" ? ChevronRight : Search;
               return (
                 <li
                   aria-selected={sugCursor === i}
@@ -669,13 +668,15 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                     <Highlight text={sg.term} q={q} />
                   </span>
                   <span className="ps-sug-kind">
-                    {sg.kind === "game" ? "게임" : sg.kind === "person" ? "사람" : sg.kind === "genre" ? "장르" : ""}
+                    {sg.kind === "game" ? "게임" : sg.kind === "person" ? "사람" : sg.kind === "genre" ? "장르" : sg.kind === "related" ? "관련" : ""}
                   </span>
                 </li>
               );
             })}
           </ul>
         ) : null}
+        </header>
+
         {hasResults ? (
           <div className="ps-toolbar">
             <div className="ps-seg" ref={segRef} role="group" aria-label="정렬">
