@@ -23,10 +23,18 @@ async function oldestPending(): Promise<number | null> {
 }
 
 let n = 0;
+let last: number | null = null;
 const t0 = Date.now();
 for (;;) {
   const target = await oldestPending();
   if (target === null) break;
+  if (target === last) {
+    // 같은 VOD가 두 번 연속이면 수집기가 완료 표시를 못 한 것 — 무한 반복 대신 강제 완료.
+    await supabase.from("vod_chat_sync").upsert({ title_no: target, complete: true, synced_at: new Date().toISOString() });
+    console.log("forced complete", target);
+    continue;
+  }
+  last = target;
   const r = await syncVodChat([target], budget);
   n += 1;
   console.log(`[${new Date().toISOString().slice(11, 19)}] #${n} vod ${target} chunks=${r.chunks} msgs=${r.messages} elapsed=${Math.round((Date.now() - t0) / 60000)}m`);

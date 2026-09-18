@@ -259,7 +259,11 @@ export async function syncVodChat(
       chunksTotal += 1;
       await new Promise((r) => setTimeout(r, 150));
     }
+    const fetchedThisPass = i - (Number(prev.data?.chunks ?? 0));
     doneChunks = i;
+    // 실패 안전장치(2026-09-18 실측: 한 VOD가 계획보다 짧은 조각 목록이라 다음 조각이 계속 실패 → 무한 재시도).
+    // 이번 회차에 조각을 하나도 못 받았는데 남은 계획이 있으면 포기하고 완료로 표시한다(받은 만큼만 학습).
+    const giveUp = fetchedThisPass === 0 && budget > 0 && doneChunks < plan.length;
     if (counts.size > 0) {
       // 기존 빈도에 더한다(이어받기). 한 번에 upsert하되 충돌 시 합산은 RPC 없이 두 단계로.
       const terms = [...counts.entries()];
@@ -315,7 +319,7 @@ export async function syncVodChat(
       title_no: titleNo,
       chunks: doneChunks,
       messages,
-      complete: doneChunks >= plan.length,
+      complete: doneChunks >= plan.length || giveUp,
       synced_at: new Date().toISOString()
     });
     vods += 1;

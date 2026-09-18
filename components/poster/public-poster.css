@@ -7800,6 +7800,14 @@ html[data-pchrome="3"] .poster-chrome-title {
 .ps-sheet .ps-hint { font-size: 14px; }
 .ps-sheet .ps-ext { width: 36px; }
 .ps-sheet .ps-thumb { width: 192px; height: 108px; border-radius: 12px; } /* 소유자 2026-09-18: 3배 */
+/* 썸네일이 커져 남는 높이 — 다시보기 제목은 두 줄까지(소유자 2026-09-18). */
+.ps-sheet .ps-vod-row .ps-title {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.35;
+}
 .ps-sheet .ps-vod-row { align-items: center; }
 .ps-note.is-chat { color: #1d5fb0; }
 .ps-ext {

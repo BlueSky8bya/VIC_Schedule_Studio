@@ -65,3 +65,4 @@
 | 0091 | 검색 품질 — 두 글자 한글 질의(사전 확장 없음)는 제목·설명·태그·챕터 **원문** 경계로만 적중("이게"≠"이 게임"), 두 글자엔 퍼지 끔; `search_trending` 채팅 단어는 말뭉치·사전에 있는 것만(누르면 결과 보장) + 불용어(아니야·사실…) |
 | 0092 | 검색 결과에 `thumb`(SnapshotLoad 주소) 동봉(편집실 썸네일) + 소유자 은어 시드 `seed-owner`(프클=프로클럽=fc프로클럽, 잔디=fc/피파, rel 프클↔잔디) |
 | 0093 | 채팅 단어 → 검색 적중: `vod_chat_terms.peak_bin/peak_cnt/bins`(그 말이 몰린 30초 구간), `search_public`에 `chat_scored`(단어 전체 일치·5회↑·팬 챕터가 못 잡은 방송만, section 채팅·matched_on chat) |
+| 0094 | 장르 검색 — `search_genres`(장르→게임 이름 조각, 33개 장르·818행), `search_intents` genre/noise, 동의어 seed-genre(공겜=공포, 격겜=격투, 시뮬=시뮬레이션…), `search_public` hit_genre(제목·태그·챕터·코너·게임명, matched_on genre) |
