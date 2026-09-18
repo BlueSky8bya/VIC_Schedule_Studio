@@ -626,6 +626,7 @@ export async function searchPublic(
     host_nick: string | null;
     score: number | string;
     exact: boolean | null;
+    popularity: number | string | null;
   };
   const hits: import("@/lib/domain/schedule-types").PublicSearchHit[] = [];
   for (const row of data as Row[]) {
@@ -636,7 +637,8 @@ export async function searchPublic(
       title: typeof row.title === "string" ? row.title : "",
       snippet: typeof row.snippet === "string" ? row.snippet : "",
       score: Number(row.score) || 0,
-      exact: row.exact === true
+      exact: row.exact === true,
+      popularity: Math.max(0, Math.min(1, Number(row.popularity) || 0))
     };
     if (row.kind === "event") {
       if (!row.event_id) continue;

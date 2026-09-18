@@ -49,3 +49,4 @@
 | 0075 | vod_archive_guest — 합방 게스트 출연분(host_id·host_nick·guest) |
 | 0076 | public_search — 시청자 검색: pg_trgm·`search_norm`·`vod_chapter_index`(타임라인 트리거 평탄화)·`search_public` RPC(공개 일정·다시보기·챕터 한 순위) |
 | 0077 | public_search_p3 — 검색 P3: IDF 가중 토큰 비율·초성열(`search_choseong`, `label_cho`)·`exact` 플래그(RPC 반환형 변경) |
+| 0078 | public_search_synonyms — 은어·줄임말: `search_synonyms`(seed 사전+auto 채굴 `search_synonyms_rebuild`)·`search_abbrev_match` 부분열·질의 확장·`popularity` 컬럼 |

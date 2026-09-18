@@ -118,6 +118,20 @@ describe.skipIf(!configured)("시청자 검색 — 공개 경계·순위(실제 
     expect(exact, JSON.stringify(exact)).toHaveLength(0);
   });
 
+  it("줄임말·동의어: '배그'로 '배틀그라운드' 일정이 정확 적중으로 찾힌다(0078 사전)", async () => {
+    const id = await insertEvent({ public_title: `${MARK} 배틀그라운드 ${TOKEN}` });
+    // '배그' 단독은 실데이터 적중이 100건을 넘어 새 일정이 잘릴 수 있다 — 희귀 토큰과 함께 두 단어로.
+    const hits = await find(`배그 ${TOKEN}`);
+    const hit = hits.find((h) => h.eventId === id);
+    expect(hit, "동의어 확장 실패").toBeTruthy();
+    expect(hit!.exact).toBe(true);
+    // 사전에 없는 줄임말은 부분열 안전망으로 '비슷한 결과'(exact=false)에는 든다.
+    const id2 = await insertEvent({ public_title: `${MARK} 츠쿠요미 온라인` });
+    const hit2 = (await find("츠온")).find((h) => h.eventId === id2);
+    expect(hit2, "줄임말 부분열 실패").toBeTruthy();
+    expect(hit2!.exact).toBe(false);
+  });
+
   it("정규화 후 2글자 미만이면 왕복 없이 빈 결과", async () => {
     expect((await searchPublic(SLUG, " ㅋ ")).hits).toHaveLength(0);
   });

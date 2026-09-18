@@ -7434,6 +7434,48 @@ html[data-pchrome="3"] .poster-chrome-title {
   background: rgb(0 0 0 / 11%);
 }
 
+/* 정렬 줄(머리 아래) — 세그먼트 하나: 관련도 · 최신 · 오래된 · 인기. 다시보기 부 탭과 같은 문법. */
+.ps-sortbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #efe6d3;
+  padding: 8px 18px;
+}
+.ps-count {
+  font-size: var(--text-caption, 12.5px);
+  font-weight: 800;
+  color: var(--muted);
+}
+.ps-seg {
+  display: inline-flex;
+  gap: 2px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 5%);
+  padding: 2px;
+}
+.ps-seg-btn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 5px 11px;
+  font: inherit;
+  font-size: var(--text-caption, 12.5px);
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.ps-seg-btn:hover {
+  color: var(--ink, #23303f);
+}
+.ps-seg-btn.on {
+  background: var(--surface, #fff);
+  color: var(--ink, #23303f);
+  box-shadow: var(--shadow-1);
+}
+
 /* 본문 — 2차(2026-09-18): 줄 전체가 버튼, 글자 CTA 없음, 종류는 왼쪽 아이콘/썸네일/타임코드, 행동은
    오른쪽 끝 글리프 하나(›/▶). 유튜브 검색·주요 순간 + Spotlight 묶음 머리. */
 .ps-body {
@@ -7532,19 +7574,20 @@ html[data-pchrome="3"] .poster-chrome-title {
 .ps-row:active {
   transform: scale(0.99);
 }
-/* 왼쪽 자리(아이콘/썸네일) — 폭을 맞춰 제목 시작선이 줄마다 같다. */
+/* 왼쪽 자리(아이콘/썸네일) — 폭을 맞춰 제목 시작선이 줄마다 같다. 썸네일은 16:9 크게(소유자: 너무 작다). */
 .ps-lead {
   display: grid;
   flex: none;
   place-items: center;
-  width: 56px;
-  height: 32px;
-  border-radius: 8px;
+  width: 112px;
+  height: 63px;
+  border-radius: 10px;
   color: #6b5b34;
   background: rgb(244 183 64 / 18%);
 }
 .ps-lead-event {
-  width: 32px;
+  width: 40px;
+  height: 40px;
 }
 .ps-thumb {
   overflow: hidden;
@@ -7614,7 +7657,7 @@ html[data-pchrome="3"] .poster-chrome-title {
 .ps-chapters {
   display: grid;
   gap: 0;
-  margin: 0 0 4px 24px;
+  margin: 0 0 6px 30px;
   padding-left: 12px;
   border-left: 2px solid #ecdfc0;
 }
@@ -7663,11 +7706,12 @@ html[data-pchrome="3"] .poster-chrome-title {
 }
 @media (max-width: 640px) {
   .ps-lead {
-    width: 44px;
-    height: 28px;
+    width: 88px;
+    height: 50px;
   }
   .ps-lead-event {
-    width: 28px;
+    width: 34px;
+    height: 34px;
   }
   .ps-chapters {
     margin-left: 14px;

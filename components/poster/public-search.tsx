@@ -3,7 +3,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CalendarCheck, ChevronRight, Play, Search, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult } from "@/lib/domain/schedule-types";
-import { findMatchRange, groupSearchHits, personalizeHits, type SearchDayGroup } from "@/lib/search/group";
+import {
+  SEARCH_SORTS,
+  findMatchRange,
+  groupSearchHits,
+  personalizeHits,
+  sortSearchGroups,
+  type SearchDayGroup,
+  type SearchSort
+} from "@/lib/search/group";
 import { formatVodDuration } from "@/components/poster/day-vod-window";
 import { formatTimecode } from "@/components/poster/vod-chapters";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -67,6 +75,24 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [cursor, setCursor] = useState(-1); // 키보드 ↑↓ 현재 행(-1 = 입력창)
+  // 정렬 — 기기별 기억(localStorage, 편의값). 관련도가 기본.
+  const [sort, setSort] = useState<SearchSort>(() => {
+    try {
+      const v = window.localStorage.getItem("vic_search_sort");
+      return SEARCH_SORTS.some((s) => s.key === v) ? (v as SearchSort) : "relevance";
+    } catch {
+      return "relevance";
+    }
+  });
+  const changeSort = (next: SearchSort) => {
+    setSort(next);
+    setCursor(-1);
+    try {
+      window.localStorage.setItem("vic_search_sort", next);
+    } catch {
+      /* 저장 못 해도 동작엔 지장 없음 */
+    }
+  };
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -121,8 +147,8 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   }, [q, normalizedLen, slug]);
 
   const groups: SearchDayGroup[] = useMemo(
-    () => (result ? groupSearchHits(personalizeHits(result.hits, myHeartIds)) : []),
-    [result, myHeartIds]
+    () => (result ? sortSearchGroups(groupSearchHits(personalizeHits(result.hits, myHeartIds)), sort) : []),
+    [result, myHeartIds, sort]
   );
   const exactGroups = groups.filter((g) => g.exact);
   const similarGroups = groups.filter((g) => !g.exact);
@@ -329,6 +355,30 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
           </button>
         </header>
 
+        {result && groups.length > 0 ? (
+          <div className="ps-sortbar" role="group" aria-label="정렬">
+            <span className="ps-count">{result.hits.length}건</span>
+            <div className="ps-seg">
+              {SEARCH_SORTS.map((s) => (
+                <button
+                  aria-pressed={sort === s.key}
+                  className={`ps-seg-btn${sort === s.key ? " on" : ""}`}
+                  data-act="search-sort"
+                  key={s.key}
+                  onClick={() => {
+                    if (sort === s.key) return;
+                    hapticTick();
+                    changeSort(s.key);
+                  }}
+                  title={s.hint}
+                  type="button"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className={`pi-body ps-body${busy ? " is-busy" : ""}`} ref={listRef}>
           {normalizedLen < MIN_CHARS ? (
             <div className="ps-start">

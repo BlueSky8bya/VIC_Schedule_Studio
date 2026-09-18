@@ -25,16 +25,47 @@ export type SearchDayGroup = {
   dateKey: string;
   score: number;
   exact: boolean; // 안에 정확 적중이 하나라도 있는가(없으면 '비슷한 결과' 구역으로)
+  popularity: number; // 안의 최댓값(0~1) — '인기순'
   events: PublicSearchHit[]; // kind=event만
   vods: SearchVodGroup[];
 };
+
+// 정렬(2026-09-18 소유자): 관련도(기본) · 최신 · 오래된 · 인기. 묶음 단위로만 다시 세우고, 묶음 안
+// (일정 → 다시보기 → 챕터 시각순)은 그대로 — 안까지 뒤집으면 방송 흐름이 깨진다.
+// '비슷한 결과'(exact=false) 묶음은 어느 정렬에서도 정확 적중 뒤에 온다.
+export type SearchSort = "relevance" | "newest" | "oldest" | "popular";
+export const SEARCH_SORTS: { key: SearchSort; label: string; hint: string }[] = [
+  { key: "relevance", label: "관련도", hint: "검색어와 가장 잘 맞는 순 + 최신 가산" },
+  { key: "newest", label: "최신", hint: "가까운 날짜부터" },
+  { key: "oldest", label: "오래된", hint: "먼 날짜부터" },
+  { key: "popular", label: "인기", hint: "조회·좋아요·댓글·하트가 많은 순" }
+];
+
+export function sortSearchGroups(groups: SearchDayGroup[], sort: SearchSort): SearchDayGroup[] {
+  const out = [...groups];
+  const byExact = (a: SearchDayGroup, b: SearchDayGroup) => Number(b.exact) - Number(a.exact);
+  switch (sort) {
+    case "newest":
+      out.sort((a, b) => byExact(a, b) || b.dateKey.localeCompare(a.dateKey));
+      break;
+    case "oldest":
+      out.sort((a, b) => byExact(a, b) || a.dateKey.localeCompare(b.dateKey));
+      break;
+    case "popular":
+      out.sort((a, b) => byExact(a, b) || b.popularity - a.popularity || b.score - a.score);
+      break;
+    default:
+      out.sort((a, b) => byExact(a, b) || b.score - a.score || b.dateKey.localeCompare(a.dateKey));
+  }
+  return out;
+}
 
 export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
   const days = new Map<string, SearchDayGroup>();
   const dayOf = (dateKey: string): SearchDayGroup => {
     let d = days.get(dateKey);
     if (!d) {
-      d = { dateKey, score: 0, exact: false, events: [], vods: [] };
+      d = { dateKey, score: 0, exact: false, popularity: 0, events: [], vods: [] };
       days.set(dateKey, d);
     }
     return d;
@@ -63,6 +94,7 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
     if (!hit.dateKey) continue;
     const day = dayOf(hit.dateKey);
     day.score = Math.max(day.score, hit.score);
+    day.popularity = Math.max(day.popularity, hit.popularity ?? 0);
     if (hit.exact) day.exact = true;
     if (hit.kind === "event") {
       day.events.push(hit);

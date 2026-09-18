@@ -5,7 +5,8 @@ import {
   findMatchRange,
   groupSearchHits,
   normalizeQuery,
-  personalizeHits
+  personalizeHits,
+  sortSearchGroups
 } from "@/lib/search/group";
 
 const ev = (over: Partial<PublicSearchHit>): PublicSearchHit => ({
@@ -17,6 +18,7 @@ const ev = (over: Partial<PublicSearchHit>): PublicSearchHit => ({
   snippet: "",
   score: 3,
   exact: true,
+  popularity: 0.2,
   ...over
 });
 const vod = (over: Partial<PublicSearchHit>): PublicSearchHit => ({
@@ -28,6 +30,7 @@ const vod = (over: Partial<PublicSearchHit>): PublicSearchHit => ({
   durationMs: 3600_000,
   score: 2.2,
   exact: true,
+  popularity: 0.6,
   ...over
 });
 const ch = (sec: number, over: Partial<PublicSearchHit> = {}): PublicSearchHit => ({
@@ -40,6 +43,7 @@ const ch = (sec: number, over: Partial<PublicSearchHit> = {}): PublicSearchHit =
   durationMs: 3600_000,
   score: 1.5,
   exact: true,
+  popularity: 0.6,
   ...over
 });
 
@@ -105,6 +109,22 @@ describe("검색 결과 묶기 — 날짜 → 일정·다시보기 → 챕터", 
     expect(out[2].score).toBe(2.2);
     expect(src[0].score).toBe(3);
     expect(personalizeHits(src, new Set())).toBe(src);
+  });
+});
+
+describe("정렬 — 묶음 단위, 비슷한 결과는 항상 뒤", () => {
+  const groups = () =>
+    groupSearchHits([
+      ev({ dateKey: "2026-05-05", score: 1, popularity: 0.1 }),
+      vod({ dateKey: "2024-01-01", score: 2, popularity: 0.9 }),
+      ev({ dateKey: "2025-03-03", score: 3, popularity: 0.5 }),
+      ev({ dateKey: "2026-08-08", score: 9, popularity: 1, exact: false })
+    ]);
+  it("관련도 = 점수, 최신/오래된 = 날짜, 인기 = popularity; exact=false 묶음은 끝", () => {
+    expect(sortSearchGroups(groups(), "relevance").map((g) => g.dateKey)).toEqual(["2025-03-03", "2024-01-01", "2026-05-05", "2026-08-08"]);
+    expect(sortSearchGroups(groups(), "newest").map((g) => g.dateKey)).toEqual(["2026-05-05", "2025-03-03", "2024-01-01", "2026-08-08"]);
+    expect(sortSearchGroups(groups(), "oldest").map((g) => g.dateKey)).toEqual(["2024-01-01", "2025-03-03", "2026-05-05", "2026-08-08"]);
+    expect(sortSearchGroups(groups(), "popular").map((g) => g.dateKey)).toEqual(["2024-01-01", "2025-03-03", "2026-05-05", "2026-08-08"]);
   });
 });
 

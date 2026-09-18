@@ -193,6 +193,7 @@ export type PublicSearchHit = {
   hostNick?: string; // 합방 게스트 출연분(0075)이면 호스트 닉
   score: number;
   exact: boolean; // 정규화 구/토큰이 실제로 포함된 적중(false = 트라이그램 유사도만 — 화면은 '비슷한 결과')
+  popularity: number; // 0~1 참여 신호(다시보기: 조회·좋아요·댓글·챕터 밀도 / 일정: 하트) — 정렬 '인기순'
 };
 export type PublicSearchResult = {
   query: string;
