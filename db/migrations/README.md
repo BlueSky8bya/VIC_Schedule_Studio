@@ -55,3 +55,4 @@
 | 0081 | public_search_chapter_context — 챕터 색인에 코너(section)·상위 항목(parent)·depth, 코너/상위로도 검색(보너스 0.9), RPC section·parent·matched_on 반환, '노래·춤·빅이봤·소통' 관련어, 전수조사 줄임말(메·주보·구플뱅…)·사전에 있는 한 글자 질의 허용 |
 | 0082 | public_search_song_intent — 곡 분류(song_kind sung/listen, 가수 사전 `search_artists`, `search_song_refresh`), 의도 사전 `search_intents`(노래→song), RPC: 노래 의도면 부른 곡 최상위(1.3)·들은 곡 0.8, limit 400 |
 | 0083 | public_search_game_intent — 학습 게임 목록 `search_games`(코너 '게임 - X'+큐레이션 종겜) + 메이저 사전 `search_game_is_major`, 챕터 `game_norm`·`is_section_start`, 의도 종겜→minor_game(RPC 2.8/2.6) |
+| 0084 | public_search_performance_kinds — song_kind 세분화 sung/listen/dance/hum(팬 이모지 🎤🎵🕺·코너·라벨 어휘·수다 제외), 의도 춤/챌린지·허밍, RPC 종류별 보너스 |

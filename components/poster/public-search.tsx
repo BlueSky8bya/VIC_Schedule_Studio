@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, CalendarCheck, ChevronDown, ChevronRight, Music, Play, Search, X } from "lucide-react";
+import { ArrowUp, AudioLines, CalendarCheck, ChevronDown, ChevronRight, Footprints, Headphones, Music, Play, Search, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
@@ -55,6 +55,15 @@ function formatMonthLabel(dateKey: string): string {
   return `${String(y).slice(2)}.${String(m).padStart(2, "0")}`;
 }
 const normalize = (s: string) => s.toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, "");
+// 팬이 라벨 앞에 붙인 표식 이모지("🎵:", "🎤 ", "✨:")를 표시에서 뗀다 — 우리 종류 아이콘과 겹치지 않게. 원문은 title 툴팁에.
+const stripLeadMark = (s: string) =>
+  s.replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\u{FE0F}\u{200D}\s:：]+/u, "").trim() || s;
+const KIND_ICON: Record<string, { Icon: typeof Music; label: string; cls: string }> = {
+  song: { Icon: Music, label: "부른 곡", cls: "" },
+  listen: { Icon: Headphones, label: "틀어준 곡", cls: " is-listen" },
+  dance: { Icon: Footprints, label: "춤·챌린지", cls: " is-dance" },
+  hum: { Icon: AudioLines, label: "허밍", cls: " is-hum" }
+};
 
 // 적중 글자 강조 — 공백·기호를 건너뛰는 정규화 매칭(서버와 같은 규칙). 초성 질의는 강조 없음.
 function Highlight({ text, q }: { text: string; q: string }): ReactNode {
@@ -383,21 +392,18 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                           <b className="ps-tc">{formatTimecode(c.sec)}</b>
                           <span className="ps-main">
                             <span className="ps-title">
-                              {c.matchedOn === "song" || c.matchedOn === "listen" ? (
-                                <Music
-                                  aria-label={c.matchedOn === "song" ? "부른 곡" : "들은 곡"}
-                                  className={`ps-note${c.matchedOn === "listen" ? " is-listen" : ""}`}
-                                  size={12}
-                                />
-                              ) : null}
-                              <Highlight text={c.label} q={q} />
+                              {KIND_ICON[c.matchedOn] ? (() => {
+                                const k = KIND_ICON[c.matchedOn];
+                                return <k.Icon aria-label={k.label} className={`ps-note${k.cls}`} size={12} />;
+                              })() : null}
+                              <Highlight text={KIND_ICON[c.matchedOn] ? stripLeadMark(c.label) : c.label} q={q} />
                             </span>
                           </span>
                           <span className="ps-side">
                             <Play className="ps-act" size={12} aria-hidden="true" />
                           </span>
                         </>,
-                        `${c.section ? `[${c.section}] ` : ""}${formatTimecode(c.sec)}부터 재생`
+                        `${c.section ? `[${c.section}] ` : ""}${c.label} · ${formatTimecode(c.sec)}부터 재생`
                       )}
                     </div>
                   );

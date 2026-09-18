@@ -7964,6 +7964,12 @@ html[data-pchrome="3"] .poster-chrome-title {
 .ps-note.is-listen {
   color: rgb(35 48 63 / 40%);
 }
+.ps-note.is-dance {
+  color: #d9488b;
+}
+.ps-note.is-hum {
+  color: #2a9d8f;
+}
 .ps-more-btn {
   display: inline-flex;
   align-items: center;
