@@ -2586,8 +2586,13 @@ export function StudioShell({
       const slot = document.querySelector<HTMLElement>(".viewer-fullscreen .avatar-slot");
       if (panelRight && fitEl && slot && slot.offsetWidth >= 80) {
         const fr = fitEl.getBoundingClientRect();
+        // .poster-fit에는 페이지 여백(--poster-gutter)이 붙어 있다(2026-09-19 gutter 작업). 그 여백은
+        // 슬롯 **바깥**이므로 fr.right를 그대로 쓰면 카드가 슬롯보다 딱 그만큼(16px) 더 오른쪽에 선다
+        // (2026-09-19 소유자: "박스랑 D+ 박스 시작열과 끝열을 맞춰라"). 슬롯의 오른쪽 끝 =
+        // fr.right − .poster-fit 오른쪽 여백, 카드 끝은 거기서 슬롯 안쪽 여백 10만큼 더 안쪽.
+        const fitPadR = parseFloat(getComputedStyle(fitEl).paddingRight) || 0;
         card.style.setProperty("--pv-w", `${Math.round((slot.offsetWidth - 20) / zoom)}px`);
-        return setMr(fr.right - 10 * zoom);
+        return setMr(fr.right - (fitPadR + 10) * zoom);
       }
       card.style.removeProperty("--pv-w");
       const grid = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-surface .public-month-grid");
