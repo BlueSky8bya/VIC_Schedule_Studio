@@ -343,18 +343,22 @@ export function VodChapters({
   const strip = hasStrip
     ? createPortal(
         <>
-          {nowItem ? (
-            <div className="vch-nowbar">
-              <span aria-hidden="true" className="vch-now-dot" />
-              <span className="vch-now-main">
-                {nowSection ? <em className="vch-now-sec">{nowSection}</em> : null}
-                <b className="vch-now-label">{nowItem.label}</b>
-              </span>
-              <span className="vch-now-time" ref={nowTimeRef}>
-                {fmtNowRef.current(lastSecRef.current || nowItem.sec)}
-              </span>
-            </div>
-          ) : null}
+          {/* '지금 장면' 줄 — 띠가 있으면 **항상** 있다(2026-09-18 소유자: 첫 타임라인 전에는 시각 배지가 아예 안 떴다).
+              첫 항목 전에는 왼쪽을 비우고 시각만 둔다(빈 자리를 설명으로 채우지 않는다). */}
+          <div className="vch-nowbar" data-empty={nowItem ? undefined : ""}>
+            {nowItem ? (
+              <>
+                <span aria-hidden="true" className="vch-now-dot" />
+                <span className="vch-now-main">
+                  {nowSection ? <em className="vch-now-sec">{nowSection}</em> : null}
+                  <b className="vch-now-label">{nowItem.label}</b>
+                </span>
+              </>
+            ) : null}
+            <span className="vch-now-time" ref={nowTimeRef}>
+              {fmtNowRef.current(lastSecRef.current || nowItem?.sec || 0)}
+            </span>
+          </div>
         <VodStrip
           activeIdx={activeIdx}
           durationSec={durationMs / 1000}
