@@ -17,9 +17,11 @@ export type SearchVodGroup = {
   hostNick?: string;
   matched: boolean; // 다시보기 제목 자체가 적중했는가(아니면 챕터만)
   score: number;
-  chapters: { sec: number; label: string; score: number; section: string; parent: string; matchedOn: string }[];
+  chapters: SearchChapter[]; // 접힌 상태에서 보여줄 상위 N(시각순)
+  allChapters: SearchChapter[]; // 전부(시각순) — '더 보기'로 펼친다(노래 의도: 한 방송의 곡 전부)
   chapterOverflow: number; // 잘라낸 챕터 수
 };
+export type SearchChapter = { sec: number; label: string; score: number; section: string; parent: string; matchedOn: string };
 
 export type SearchDayGroup = {
   dateKey: string;
@@ -83,6 +85,7 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
         matched: false,
         score: 0,
         chapters: [],
+        allChapters: [],
         chapterOverflow: 0
       };
       day.vods.push(v);
@@ -125,6 +128,7 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
     day.events.sort((a, b) => b.score - a.score || (a.startTime ?? "").localeCompare(b.startTime ?? ""));
     for (const v of day.vods) {
       // 점수 상위 N개만 남기고 시각순으로 보여준다(방송 흐름대로 읽힌다).
+      v.allChapters = [...v.chapters].sort((a, b) => a.sec - b.sec);
       v.chapters.sort((a, b) => b.score - a.score);
       if (v.chapters.length > MAX_CHAPTERS_PER_VOD) {
         v.chapterOverflow = v.chapters.length - MAX_CHAPTERS_PER_VOD;

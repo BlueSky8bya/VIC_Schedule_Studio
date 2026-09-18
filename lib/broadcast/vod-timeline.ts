@@ -257,7 +257,7 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
   if (saved > 0) {
     // 순서: 인물 관계 그래프(0079, 이름 변형 동의어 포함) → 줄임말 채굴(0078). 서로 독립이지만
     // 둘 다 챕터 색인을 읽으므로 upsert 뒤에 돈다.
-    for (const fn of ["search_graph_rebuild", "search_term_graph_rebuild", "search_synonyms_rebuild"] as const) {
+    for (const fn of ["search_song_refresh", "search_graph_rebuild", "search_term_graph_rebuild", "search_synonyms_rebuild"] as const) {
       const { error } = await supabase.rpc(fn);
       if (error) console.warn(`[search] ${fn} failed:`, error.message);
     }

@@ -149,6 +149,17 @@ describe.skipIf(!configured)("시청자 검색 — 공개 경계·순위(실제 
     expect(Array.isArray(trends)).toBe(true);
   });
 
+  it("노래 의도(0082): '노래'는 실제로 부른 곡(가수 - 곡명)이 최상위, '노래 한로로'는 한로로 곡만", async () => {
+    const hits = await find("노래");
+    const top = hits.slice(0, 10);
+    expect(top.filter((h) => h.matchedOn === "song").length, JSON.stringify(top.map((h) => [h.title, h.matchedOn]))).toBeGreaterThanOrEqual(8);
+    const songs = hits.filter((h) => h.matchedOn === "song");
+    expect(songs.some((h) => /-|–/.test(h.title)), "가수 - 곡명 꼴이 없다").toBe(true);
+    const narrowed = (await find("노래 한로로")).filter((h) => h.kind === "chapter");
+    expect(narrowed.length).toBeGreaterThan(0);
+    for (const h of narrowed.slice(0, 10)) expect(`${h.title} ${h.section ?? ""}`).toMatch(/한로로/);
+  });
+
   it("한 글자는 사전에 있을 때만: '메'는 메이플 결과, 'ㅋ'·'가'는 빈 결과", async () => {
     expect((await searchPublic(SLUG, " ㅋ ")).hits).toHaveLength(0);
     expect((await searchPublic(SLUG, "가")).hits).toHaveLength(0);

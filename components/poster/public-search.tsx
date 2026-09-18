@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { CalendarCheck, ChevronRight, Play, Search, X } from "lucide-react";
+import { CalendarCheck, ChevronDown, ChevronRight, Music, Play, Search, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchTrend } from "@/lib/domain/schedule-types";
 import {
   SEARCH_SORTS,
@@ -93,6 +93,8 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
       /* 저장 못 해도 동작엔 지장 없음 */
     }
   };
+  // 펼친 다시보기(챕터 전부 보기) — 검색어가 바뀌면 접는다.
+  const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -137,7 +139,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     setFailed(false);
     const timer = window.setTimeout(async () => {
       try {
-        const res = await fetch(`/api/public/${slug}/search?q=${encodeURIComponent(q.trim())}&limit=80`, {
+        const res = await fetch(`/api/public/${slug}/search?q=${encodeURIComponent(q.trim())}&limit=200`, {
           signal: ctl.signal
         });
         if (!res.ok) throw new Error(String(res.status));
@@ -145,6 +147,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         if (ctl.signal.aborted) return;
         setResult(json);
         setCursor(-1);
+        setExpanded(new Set());
       } catch (err) {
         if ((err as { name?: string }).name === "AbortError") return;
         setFailed(true);
@@ -178,11 +181,12 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
       for (const e of g.events) out.push({ kind: "event", dateKey: g.dateKey, hit: e });
       for (const v of g.vods) {
         out.push({ kind: "vod", dateKey: g.dateKey, titleNo: v.titleNo });
-        for (const c of v.chapters) out.push({ kind: "chapter", dateKey: g.dateKey, titleNo: v.titleNo, sec: c.sec });
+        for (const c of expanded.has(v.titleNo) ? v.allChapters : v.chapters)
+          out.push({ kind: "chapter", dateKey: g.dateKey, titleNo: v.titleNo, sec: c.sec });
       }
     }
     return out;
-  }, [exactGroups, similarGroups]);
+  }, [exactGroups, similarGroups, expanded]);
 
   const pick = (row: Row) => {
     hapticTick();
@@ -290,10 +294,10 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
             )}
             {v.chapters.length > 0 ? (
               <div className="ps-chapters">
-                {v.chapters.map((c, ci) => {
+                {(expanded.has(v.titleNo) ? v.allChapters : v.chapters).map((c, ci, arr) => {
                   // 코너 소제목: 같은 코너가 이어지면 한 번만(유튜브 챕터 목록·에피소드 그룹 문법).
                   // 코너로 맞은 결과(matched_on=section)는 소제목을 강조해 "왜 나왔는지"를 보인다.
-                  const prev = ci > 0 ? v.chapters[ci - 1] : null;
+                  const prev = ci > 0 ? arr[ci - 1] : null;
                   const showSection = c.section && (!prev || prev.section !== c.section);
                   return (
                     <div className="ps-chapter-wrap" key={`${c.sec}:${c.label}`}>
@@ -308,6 +312,9 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                         "search-hit-chapter",
                         <>
                           <b className="ps-tc">{formatTimecode(c.sec)}</b>
+                          {c.matchedOn === "song" || c.matchedOn === "listen" ? (
+                            <Music aria-label={c.matchedOn === "song" ? "부른 곡" : "들은 곡"} className={`ps-note${c.matchedOn === "listen" ? " is-listen" : ""}`} size={12} />
+                          ) : null}
                           <span className="ps-main">
                             <span className="ps-title">
                               {c.parent ? (
@@ -325,7 +332,19 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                     </div>
                   );
                 })}
-                {v.chapterOverflow > 0 ? <span className="ps-more">+{v.chapterOverflow}개 챕터 더</span> : null}
+                {v.chapterOverflow > 0 && !expanded.has(v.titleNo) ? (
+                  <button
+                    className="ps-more ps-more-btn"
+                    data-act="search-expand-vod"
+                    onClick={() => {
+                      hapticTick();
+                      setExpanded((prev) => new Set(prev).add(v.titleNo));
+                    }}
+                    type="button"
+                  >
+                    <ChevronDown size={13} aria-hidden="true" /> {v.chapterOverflow}개 더 보기
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>
