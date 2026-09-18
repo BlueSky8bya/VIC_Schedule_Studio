@@ -302,4 +302,3 @@ test("theme toggles preserve calendar geometry and exact light colors", async ({
     expect(await page.locator("body").evaluate(el => getComputedStyle(el).color)).toBe(light);
   }
 });
-

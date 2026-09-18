@@ -1,6 +1,6 @@
 # Dark mode audit — 2026-09-19
 
-Status: implementation and local verification complete. Owner authorized commit/push on 2026-09-19; production verification follows deployment.
+Status: complete and deployed. Owner authorized push on 2026-09-19. Product commit `494e8905` pushed to main; Vercel reported successful deployment.
 
 ## Outcome
 
@@ -50,3 +50,8 @@ No auth, role, server DTO, unlock, KST helper or database changes. Public fixtur
 
 Existing unrelated user files/work (including `.vscode`, `preview-360.png`, and concurrent search/migration work) were left untouched. Earlier injected-CSS captures under `tmp/dark-audit` are iteration evidence, not final production verification. Completed results belong here; no completed-history append to CURRENT_STATE.
 
+
+
+## Production verification — 2026-09-19
+
+Public site `https://vic-schedule-studio.vercel.app/` returned 200. Served CSS contains the new dark materials, eye-comfort glass and mobile replay width fix. Headless desktop (1840×1000) and mobile (390×844) captures show the active dark palette; no horizontal document overflow and no browser runtime errors. Production screenshots and machine-readable results remain local in `output/dark-mode-review/production-*.png` and `tmp/dark-audit/production-check.json`. Analytics guards and intercepted non-GET requests prevented synthetic interactions from writing data. Authenticated studio remains covered by the local fixtures, not this anonymous production check.
