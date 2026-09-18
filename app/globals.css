@@ -1342,18 +1342,46 @@ html[data-theme="dark"] {
   --seg-on-quiet-ink: #cdc9c1;
   --seg-on-accent: rgb(155 129 255 / 26%);
   --seg-on-accent-ink: #c3b4ff;
+
+  /* The same metal/glass controls serve studio, viewer and portalled windows. */
+  --gs-metal-line: #494741;
+  --gs-metal-line-strong: #69665e;
+  --gs-metal-ink: var(--ink-soft);
+  --gs-metal-face: #302e29;
+  --gs-metal-sheen: linear-gradient(180deg, #36342f, #2a2824);
+  --gs-metal-sheen-hover: linear-gradient(180deg, #403d36, #33302b);
+  --gs-metal-edge: inset 0 1px 0 rgb(255 255 255 / 7%), 0 2px 5px rgb(0 0 0 / 18%);
+  --shadow-1: 0 2px 8px rgb(0 0 0 / 20%);
+  --shadow-2: 0 8px 28px rgb(0 0 0 / 28%);
+  --shadow-3: 0 24px 70px rgb(0 0 0 / 42%);
+  --night-raised: #302e29;
+  --night-hover: #3a3731;
+  --night-line: rgb(255 255 255 / 12%);
+  --night-sheen: linear-gradient(180deg, rgb(255 255 255 / 4%), transparent 100px);
+  --editor-date-rest: var(--ink-soft);
 }
 
-html[data-eye-comfort="1"] .studio-shell,
-html[data-eye-comfort="lite"] .studio-shell {
+/* Eye comfort warms only UI glass in dark mode too. Both 1/lite retain the
+   warm palette above; the ambient canvas and its compositing stay untouched. */
+html[data-theme="dark"]:not([data-eye-comfort]) {
+  --glass-cell: 42 42 53;
+  --glass-head: 34 34 46;
+  --glass-panel: 38 38 49;
+  --cal-cell: #262632;
+  --cal-head: #23232f;
+  --cal-cell-outside: #1c1d24;
+}
+
+html[data-eye-comfort="1"]:not([data-theme="dark"]) .studio-shell,
+html[data-eye-comfort="lite"]:not([data-theme="dark"]) .studio-shell {
   background:
     radial-gradient(120% 55% at 12% -6%, #faebeb 0%, transparent 46%),
     radial-gradient(120% 55% at 88% -6%, #ebecef 0%, transparent 46%),
     linear-gradient(180deg, #fcf5f1 0%, #f4f2f1 100%);
   color: #2b2737;
 }
-html[data-eye-comfort="1"] .public-event,
-html[data-eye-comfort="lite"] .public-event {
+html[data-eye-comfort="1"]:not([data-theme="dark"]) .public-event,
+html[data-eye-comfort="lite"]:not([data-theme="dark"]) .public-event {
   background: #f2efea;
 }
 

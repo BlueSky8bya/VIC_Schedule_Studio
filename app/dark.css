@@ -3,8 +3,8 @@
    **닿지 못하는 자리**만 고친다 — 오래된 규칙에 색이 리터럴로 박혀 있어(#6b5b34, rgb(17 24 39) …)
    테마를 갈아입어도 그대로 어두운 글자로 남는 곳들.
    다크 규칙은 **여기 한 파일에만** 둔다(파일마다 흩어 두면 관리 지점이 또 늘어난다). 선택자는 전부
-   `html[data-theme="dark"]`로 시작하므로 두 클래스 이상 특이도 → 원 규칙보다 항상 세고, 로드 순서와
-   무관하다. 라이트 화면에는 한 줄도 닿지 않는다.
+   `html[data-theme="dark"]`로 시작한다. 상태·calm·ambient의 복합 선택자는 별도로 맞춰야 한다.
+   라이트 화면에는 한 줄도 닿지 않는다.
    고르는 법: 다크로 켜고 대비(WCAG) 3 미만인 글자·큰 밝은 면을 스크립트로 훑어(scripts 임시 probe)
    나온 자리만 고친다 — 눈대중으로 하나씩 찾지 않는다. */
 
@@ -252,3 +252,365 @@ html[data-theme="dark"] .dvm-close { background: rgb(255 255 255 / 7%); color: v
 html[data-theme="dark"] .dvm-close:hover { background: rgb(255 255 255 / 12%); }
 html[data-theme="dark"] .dvm-keys kbd { background: #2c2921; color: var(--ink-soft); border-color: rgb(255 255 255 / 14%); }
 html[data-theme="dark"] .dvm-tab { color: var(--ink-soft); }
+
+/* ── Shared chrome and workbench ──────────────────────────────────────────
+   No root filter/background: scenery keeps its original pixels and stacking.
+   Calendar geometry, tag fills and drawing ink are intentionally independent. */
+html[data-theme="dark"] .studio-shell {
+  background: var(--paper);
+  color: var(--ink);
+}
+html[data-theme="dark"][data-studio-calm] .studio-shell .studio-topbar {
+  background: rgb(var(--glass-head) / 88%);
+  border-color: var(--line);
+}
+html[data-theme="dark"] :is(.studio-weekdays span, .studio-day-head strong, .tag-legend-filter,
+  .tag-legend-clear, .studio-filter-title, .modal-head h2, .modal-close, .rhh-label,
+  .role-help-title, .role-help-summary, .role-help-can, .kbd-hints, .stool,
+  .studio-role-tools .button, .preview-dd-trigger) { color: var(--ink-soft); }
+html[data-theme="dark"][data-studio-calm] .stool { color: var(--ink-soft); }
+html[data-theme="dark"] .studio-day .studio-day-head strong { color: var(--ink); }
+html[data-theme="dark"] :is(.studio-weekdays .sunday, .studio-day-head strong.red) { color: #ff9b94; }
+html[data-theme="dark"] :is(.studio-weekdays .saturday, .studio-day-head strong.saturday) { color: #98bdff; }
+html[data-theme="dark"] .studio-day.outside .studio-day-head strong { color: var(--muted); }
+html[data-theme="dark"] :is(.studio-day.today, .public-day.today) { background-color: var(--cal-cell); }
+html[data-theme="dark"] :is(.studio-day.today .studio-day-head strong, .public-day.today .day-strip strong) {
+  color: var(--on-accent);
+}
+html[data-theme="dark"] :is(.panel-place-ctl, .panel-place-ctl:hover, .panel-place-ctl:focus-within) {
+  background: rgb(var(--glass-panel) / 94%);
+  border-color: var(--night-line);
+  box-shadow: var(--gs-metal-edge), var(--shadow-2);
+}
+html[data-theme="dark"] .panel-place-ctl button { color: var(--muted); }
+html[data-theme="dark"] .panel-place-ctl button:not(.on):hover { background: var(--night-hover); }
+html[data-theme="dark"] .panel-place-ctl :is(.ppc-side.on, .ppc-toggle[aria-pressed="true"], .ppc-zoom) { color: var(--ink); }
+html[data-theme="dark"] .panel-place-ctl .ppc-side.on {
+  background: var(--night-raised);
+  box-shadow: inset 0 0 0 1px var(--night-line);
+}
+
+/* All overlays use one raised surface. Extra specificity here matches calm's
+   work-control rules; nested content keeps its own semantic/tag colours. */
+html[data-theme="dark"] :is(.modal-card, .vic-settings .modal-card, .role-help-pop,
+  .dtp-panel, .dtp-sheet, .rhh-menu, .rest-menu, .kbd-pop, .preview-dd-menu,
+  .event-detail-readonly, .event-hover-card, .mobile-edit-sheet) {
+  background: var(--night-sheen), var(--surface);
+  border-color: var(--night-line);
+  color: var(--ink);
+  box-shadow: var(--shadow-3), inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+html[data-theme="dark"] :is(.modal-head, .vic-settings .modal-head) {
+  background: var(--night-sheen), var(--surface);
+  border-color: var(--line);
+}
+html[data-theme="dark"][data-studio-calm] .studio-shell .event-editor-panel :is(form, .event-detail-readonly) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--night-line);
+}
+html[data-theme="dark"][data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
+  background: var(--gs-metal-sheen);
+  border-color: var(--night-line);
+  color: var(--ink-soft);
+}
+html[data-theme="dark"] :is(.role-help-pop, .mobile-edit-sheet, .dtp-panel, .modal-card) :is(input:not([type="color"]):not([type="range"]), textarea, select),
+html[data-theme="dark"] :is(.editor-title-input, .title-input) {
+  color: var(--ink);
+  background-color: var(--surface-2);
+  border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(input, textarea)::placeholder { color: var(--muted); }
+html[data-theme="dark"] :is(.rhh-select, .vic-settings .rhh-select, .rhh-link, .vic-settings .rhh-menu,
+  .dtp-trigger, .dtp-nav, .dtp-pop-x, .dtp-clear, .dtp-now, .rest-menu-item,
+  .modal-close:hover, .kbd-hints kbd) {
+  background: var(--gs-metal-sheen);
+  color: var(--ink-soft);
+  border-color: var(--night-line);
+  box-shadow: var(--gs-metal-edge);
+}
+html[data-theme="dark"] :is(.rhh-opt, .vic-settings .rhh-opt, .dtp-title, .dtp-cell, .dtp-readout, .dtp-wheel-item.on) { color: var(--ink); }
+html[data-theme="dark"] :is(.rhh-opt:hover, .rhh-opt:focus-visible, .dtp-cell:hover, .rhh-link:hover) { background: var(--night-hover); }
+html[data-theme="dark"] :is(.rhh-opt.selected, .vic-settings .rhh-opt.selected, .dtp-cell.sel) {
+  background: var(--studio-action-tint);
+  color: var(--studio-action-text);
+}
+html[data-theme="dark"] :is(.rhh-switch, .vic-settings .rhh-switch) { background: #5a574f; }
+html[data-theme="dark"] :is(.rhh-switch.on, .vic-settings .rhh-switch.on) {
+  background: #459c73;
+  box-shadow: inset 0 0 0 1px rgb(155 235 188 / 25%);
+}
+html[data-theme="dark"] :is(.rhh-dev-tag, .role-help-preview, .modal-discard-ask, .draft-restored) {
+  background: var(--violet-soft);
+  color: var(--seg-on-accent-ink);
+  border-color: rgb(var(--violet-rgb) / 30%);
+}
+
+/* ── Records, charts, taxonomy and developer windows ──────────────────── */
+html[data-theme="dark"] :is(.insights-tab, .insights-arrow, .insights-subtabs button,
+  .insight-tile, .insight-next, .insight-trend, .highlight-card, .insight-empty,
+  .insight-banner, .insight-rows li, .insight-change-passcode,
+  .developer-panel-list li, .vt-toolbar, .perf-row, .tag-editor-row) {
+  background: var(--surface-2);
+  border-color: var(--night-line);
+  color: var(--ink-soft);
+}
+html[data-theme="dark"] :is(.insights-tab:hover, .insights-arrow:hover:not(:disabled),
+  .insights-subtabs button:hover, .highlight-card:hover, .insight-tile:hover) { background: var(--night-hover); }
+html[data-theme="dark"] :is(.insights-tab.active, .insights-subtabs button.active) {
+  background: var(--violet-soft);
+  color: var(--seg-on-accent-ink);
+  border-color: rgb(var(--violet-rgb) / 40%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+html[data-theme="dark"] :is(.insights-month, .insight-tile strong, .insight-headline,
+  .insight-next > strong, .insight-rows li strong, .insight-bar-count,
+  .trend-head strong, .hl-main, .vt-tip > strong, .developer-panel-list .dp-count) { color: var(--ink); }
+html[data-theme="dark"] :is(.insight-tile span, .insight-note, .insight-subhead, .insight-bar-label,
+  .insight-rows li span, .insight-next > span, .insights-refresh, .trend-head > span,
+  .trend-bcol > span, .vt-day, .vt-legend, .vt-tip-note, .bcast-chips, .bcast-dx,
+  .developer-panel-hint, .developer-panel-subhead, .perf-thead, .hl-lbreak) { color: var(--muted); }
+html[data-theme="dark"] :is(.insight-bar-track, .insight-skel span, .trend-spark, .bcast-trend) { background-color: var(--surface-2); }
+html[data-theme="dark"] :is(.vt-tip, .bcast-tip, .hl-tip),
+html[data-theme="dark"] .trend-bar::after {
+  background: var(--night-raised);
+  color: var(--ink);
+  border-color: var(--night-line);
+  box-shadow: var(--shadow-2);
+}
+html[data-theme="dark"] :is(.insight-tile[data-tone="heart"] strong, .insight-tile[data-tone="heart"] span, .hl-heart) { color: var(--pink); }
+html[data-theme="dark"] :is(.insight-tile[data-tone="gold"] strong, .ui-pill.is-gold) { color: var(--accent-strong); }
+html[data-theme="dark"] .ui-pill.is-gold { background: var(--accent-soft); border-color: rgb(255 216 115 / 22%); }
+html[data-theme="dark"] .ui-pill.is-on { background: var(--studio-action-tint); color: var(--studio-action-text); border-color: var(--studio-action-line); }
+html[data-theme="dark"] :is(.ui-pill.is-tap:hover, .ui-pill.is-tap:focus-visible) { background: var(--night-hover); }
+
+/* ── Mobile uses the same levels, retaining its distinct agenda geometry. */
+html[data-theme="dark"] :is(.studio-mobile, .poster-agenda, .agenda, .m-head, .agenda-header) {
+  background-color: var(--paper);
+  color: var(--ink);
+}
+html[data-theme="dark"] :is(.m-io, .m-io-pill, .m-io-pop, .agenda-rail, .agenda-legend,
+  .agenda-day, .agenda-empty, .m-edit-sheet, .me-head, .me-foot) {
+  background: var(--surface);
+  border-color: var(--night-line);
+  color: var(--ink-soft);
+}
+html[data-theme="dark"] :is(.agenda-day-num, .agenda-day-title, .agenda-date, .me-title, .me-label) { color: var(--ink); }
+
+/* Developer utility pages own local aliases, which must inherit the palette. */
+html[data-theme="dark"] .art-board {
+  --ab-line: var(--line); --ab-line-strong: var(--gs-metal-line-strong);
+  --ab-card: var(--surface); --ab-ink: var(--ink); --ab-soft: var(--muted);
+  --ab-accent: var(--seg-on-accent-ink); --ab-accent-soft: var(--violet-soft);
+  --ab-ok: var(--green); --ab-ok-soft: var(--green-soft);
+  --ab-warn: var(--accent-strong); --ab-warn-soft: var(--accent-soft);
+  background: var(--paper);
+}
+html[data-theme="dark"] .dict-board {
+  --d-line: var(--line); --d-ink: var(--ink); --d-soft: var(--muted);
+  --d-accent: var(--studio-action-text);
+  background: var(--paper);
+}
+html[data-theme="dark"] :is(.dict-filter, .dict-card, .dict-toolbar, .art-board-toolbar) {
+  background: var(--surface); color: var(--ink); border-color: var(--line);
+}
+
+html[data-theme="dark"] :is(.tge-seg, .tge-help-panel, .tag-editor-footer, .cpop,
+  .cpop-tray, .cpop-kind, .access-card, .sec-kpis, .dict-row) {
+  background: var(--surface-2); color: var(--ink-soft); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.tge-seg-thumb, .tge-help, .cpop-undo, .cpop-kind-swap, .dict-btn) {
+  background: var(--night-raised); color: var(--ink-soft); border-color: var(--night-line);
+  box-shadow: var(--gs-metal-edge);
+}
+html[data-theme="dark"] :is(.tge-seg-btn, .tge-lede, .tge-seg-n, .tag-tip-text, .cpop-label,
+  .cpop-kind-cur, .tag-drag-handle, .sec-kpis li, .access-none) { color: var(--muted); }
+html[data-theme="dark"] .tge-seg-btn.is-on { color: var(--ink); }
+html[data-theme="dark"] :is(.dict-act input, .cpop-hex) { background: var(--surface-2); color: var(--ink); border-color: var(--night-line); }
+html[data-theme="dark"] :is(.dict-msg, .dict-save:not(:disabled)) { background: var(--studio-action-tint); color: var(--studio-action-text); }
+html[data-theme="dark"] .dict-ignore:hover:not(:disabled) { background: var(--night-hover); }
+
+/* Drawing artwork remains unchanged; only the tool tray and picker are themed. */
+html[data-theme="dark"] :is(.broadcast-panel, .bp-header, .bp-toolbar, .bp-picker,
+  .bp-kbd, .bp-text-pop, .bp-palette-pop, .bp-confirm) {
+  background: var(--surface); color: var(--ink); border-color: var(--night-line);
+  box-shadow: var(--shadow-2);
+}
+html[data-theme="dark"] :is(.bp-tool, .bp-close, .bp-month-nav, .bp-picker-toggle, .bp-mini-num,
+  .bp-width, .bp-text-size, .bp-header h2, .bp-mini-title) { color: var(--ink-soft); }
+html[data-theme="dark"] :is(.bp-tool:hover:not(:disabled), .bp-mini-cell:hover, .bp-width:hover) {
+  background: var(--night-hover); color: var(--ink);
+}
+html[data-theme="dark"] :is(.bp-tool.on, .bp-width.on, .bp-mini-cell.picked) {
+  background: var(--violet-soft); color: var(--seg-on-accent-ink);
+  box-shadow: inset 0 0 0 1px rgb(var(--violet-rgb) / 35%);
+}
+html[data-theme="dark"] .bp-tool.danger { color: var(--coral); }
+html[data-theme="dark"] .bp-tool.danger.armed { color: white; }
+
+/* Local ambient card aliases override the inherited light card vocabulary. */
+html[data-theme="dark"] .viewer-ambient-ctl {
+  --amb-title-ink: var(--ink-soft);
+  --amb-card-line: var(--night-line);
+  --amb-tile-hover: var(--night-hover);
+  --amb-tile-hover-line: var(--night-line);
+}
+html[data-theme="dark"] .viewer-ambient-ctl:is(.slot-showcase, .rail-showcase) .ambient-seg-btn { color: var(--ink-soft); }
+html[data-theme="dark"] .viewer-ambient-ctl:is(.slot-showcase, .rail-showcase) .ambient-seg-btn.on {
+  background: var(--violet-soft); color: var(--seg-on-accent-ink);
+  border-color: rgb(var(--violet-rgb) / 30%); box-shadow: var(--gs-metal-edge);
+}
+html[data-theme="dark"] .viewer-ambient-ctl:is(.slot-showcase, .rail-showcase) .ambient-seg-btn.on.mode-on {
+  background: var(--green-soft); color: #9fe3b6; border-color: #3c6650;
+}
+html[data-theme="dark"] .viewer-ambient-ctl:is(.slot-showcase, .rail-showcase) .ambient-seg-btn.on.mode-off {
+  background: var(--night-raised); color: var(--ink); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.showcase-gear, .showcase-gear.on, .showcase-set) { background: var(--surface); color: var(--ink-soft); border-color: var(--night-line); }
+
+html[data-theme="dark"] :is(.insight-headline, .dp-live-tile, .dp-live-tile.is-watching,
+  .vsum, .vsum-kpis li, .vins, .vlog-row, .sec-kpis li, .sys-emails li,
+  .sys-commit, .insight-chip, .badge-criteria li, .tge-empty) {
+  background: var(--surface-2); color: var(--ink-soft); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.highlight-card .hl-main, .highlight-card .hl-label, .access-email,
+  .developer-panel-list .dp-role, .perf-label, .dp-live-tile strong) { color: var(--ink); }
+html[data-theme="dark"] :is(.highlight-card .hl-sub, .perf-num, .dp-live-tile span, .vsum-kpis span) { color: var(--muted); }
+html[data-theme="dark"] .tge-seg-btn.is-on .tge-seg-n { background: var(--violet-soft); color: var(--seg-on-accent-ink); }
+html[data-theme="dark"] :is(.agenda-month, .agenda-debut) { color: var(--accent-strong); }
+html[data-theme="dark"] :is(.agenda-legend-tag, .agenda-title-text, .agenda-title .pill-sub-text,
+  .agenda-event .pill-sub-text) { color: var(--ink-soft); }
+html[data-theme="dark"] .mb-center { background: rgb(var(--glass-panel) / 96%); border-color: var(--night-line); }
+html[data-theme="dark"] :is(.agenda-detail-sheet, .agenda-detail-backdrop.is-pop .agenda-detail-sheet) {
+  background: var(--surface); color: var(--ink); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.agenda-detail-title, .agenda-detail-title .adt-text,
+  .agenda-detail-backdrop.is-pop .agenda-detail-title, .agenda-detail-backdrop.is-pop .agenda-detail-subs li) { color: var(--ink); }
+html[data-theme="dark"] :is(.agenda-detail-date, .agenda-detail-subs, .agenda-detail-close) { color: var(--ink-soft); }
+
+html[data-theme="dark"] .poster-page { background: var(--paper); }
+html[data-theme="dark"] .agenda-header { background: rgb(var(--glass-head) / 96%); }
+html[data-theme="dark"] :is(.agenda-tier-key, .heart-tier-legend, .agenda-legend-hint, .agenda-account button,
+  .me-title, .me-group, .m-sheet-top, .m-edit-x, .editor-title-ce,
+  .bp-layers-panel, .bp-layer, .bp-layer-add, .bp-layer-btn, .bp-shortcuts,
+  .bp-mini-cell, .bp-shelf, .bp-floatbar, .bp-width) {
+  background-color: var(--surface); color: var(--ink-soft); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.editor-date-inline, .editor-heading, .me-row-label, .me-grouptitle,
+  .me-fold-head, .me-tool, .bp-layer-meta, .bp-layers-head) { color: var(--ink-soft); }
+html[data-theme="dark"] .editor-title-ce { color: var(--ink); }
+html[data-theme="dark"] .auth-page { background: var(--paper); }
+html[data-theme="dark"] :is(.auth-panel, .auth-panel-login, .auth-minimal, .auth-error-card, .auth-warning) {
+  background: var(--night-sheen), var(--surface); color: var(--ink); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.auth-panel h1, .auth-panel p, .auth-panel-login .eyebrow) { color: var(--ink-soft); }
+
+html[data-theme="dark"] .poster-surface { background: var(--surface-2); }
+html[data-theme="dark"] .poster-page :is(.insights-open, .viewer-preview-actions .button, .account-form .button) .lbl { color: var(--ink-soft); }
+html[data-theme="dark"] :is(.agenda-tier-help, .dvm-tabs, .dvm-keys, .vlog) {
+  background: var(--surface-2); border-color: var(--night-line); color: var(--ink-soft);
+  box-shadow: var(--gs-metal-edge);
+}
+html[data-theme="dark"] :is(.agenda-tier-help strong, .dvp-date, .dvm-head .dvp-date,
+  .vsum-kpis b, .vsum-split, .sec-kpis b, .sys-email, .vlog-dur, .bcast-chips strong,
+  .vt-legend li, .badge-criteria .bc-body em) { color: var(--ink-soft); }
+html[data-theme="dark"] .badge-criteria .bc-body b { color: var(--amber); }
+html[data-theme="dark"] :is(.dvm-tab.is-on, .dvm-tab:hover) {
+  background: var(--night-raised); color: var(--accent-strong);
+  box-shadow: var(--gs-metal-edge);
+}
+html[data-theme="dark"] .dvm-tab.is-on :is(b, em) { color: var(--accent-strong); }
+html[data-theme="dark"] .vch-item[data-depth] .vch-label { color: var(--ink-soft); }
+html[data-theme="dark"] .vch-item.is-active {
+  background: var(--accent-soft); border-color: rgb(255 216 115 / 18%);
+}
+html[data-theme="dark"] .vch-item.is-active .vch-label {
+  background: none; color: var(--accent-strong); -webkit-text-fill-color: currentColor;
+}
+html[data-theme="dark"] :is(.vch-strip-head, .vch-now-time) { color: var(--accent-strong); }
+
+html[data-theme="dark"] :is(.teaser-when, .dtp-wheel-band, .dtp-wheel-wrap:has(.dtp-wheel.grabbing) .dtp-wheel-band) {
+  background: var(--violet-soft); border-color: rgb(var(--violet-rgb) / 25%);
+}
+html[data-theme="dark"] :is(.teaser-when-label, .teaser-when-hint, .editor-mode-badge.is-edit,
+  .m-rail-insights, .tp-section-label) { color: var(--seg-on-accent-ink); }
+html[data-theme="dark"] .event-editor-panel .editor-date-inline { color: var(--ink-soft); }
+html[data-theme="dark"] .event-editor-panel .editor-save-tab-text { color: var(--studio-action-text); }
+html[data-theme="dark"] :is(.dtp-foot-btn, .dtp-time, .m-topstick, .m-manage) {
+  background: var(--surface); border-color: var(--night-line); color: var(--ink-soft);
+}
+html[data-theme="dark"] .dtp-foot-btn.primary { background: var(--violet-soft); color: var(--seg-on-accent-ink); }
+html[data-theme="dark"] .actor-badge.owner { background: var(--green-soft); color: #9fe3b6; }
+html[data-theme="dark"] .actor-badge.developer { background: var(--studio-action-tint); color: var(--studio-action-text); }
+html[data-theme="dark"] .button.danger { background: #3b2423; color: #ffaaa0; border-color: #6b3f3b; }
+html[data-theme="dark"] :is(.art-board-bar[data-stuck="1"], .art-section h2, .art-search,
+  .art-seg, .art-btn, .art-back, .art-board-head code, .artslot, .artslot-cell,
+  .artslot-spec, .artslot-brief, .artslot-top) {
+  background: var(--surface); color: var(--ink-soft); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.art-btn:hover, .art-btn.primary, .art-chip[aria-pressed="true"], .art-btn.primary:hover) {
+  background: var(--violet-soft); color: var(--seg-on-accent-ink); border-color: rgb(var(--violet-rgb) / 30%);
+}
+
+html[data-theme="dark"] .viewer-fullscreen { background: var(--paper); }
+html[data-theme="dark"] .viewer-preview-actions { background: rgb(var(--glass-panel) / 92%); border-color: var(--night-line); }
+html[data-theme="dark"] .bp-tool-key { color: var(--muted); }
+html[data-theme="dark"] .bp-send { background: var(--violet-soft); color: var(--seg-on-accent-ink); }
+html[data-theme="dark"] :is(.bp-weekdays .sun, .bp-mini-cell.sun .bp-mini-num) { color: #ff9b94; }
+html[data-theme="dark"] :is(.bp-weekdays .sat, .bp-mini-cell.sat .bp-mini-num) { color: #98bdff; }
+html[data-theme="dark"] .bp-mini-title { background: var(--violet); color: transparent; }
+html[data-theme="dark"] .vrecent ul.vlog { background: var(--surface-2); }
+html[data-theme="dark"] .vsum-split b { color: var(--ink); }
+html[data-theme="dark"] .art-sec-bar { background: var(--night-hover); }
+html[data-theme="dark"] .rail-info-card { background: var(--night-sheen); border-color: var(--night-line); }
+html[data-theme="dark"] .ric-debut-sub { color: var(--muted); }
+html[data-theme="dark"] .ric-dplus { background-clip: text; -webkit-background-clip: text; }
+@media (hover: hover) {
+  html[data-theme="dark"] .public-day:not(.outside):hover { background: var(--night-hover); }
+}
+html[data-theme="dark"] .agenda-detail-backdrop .agenda-detail-tag { color: var(--ink-soft); background: var(--night-hover); }
+html[data-theme="dark"] :is(.bp-kbd-head strong, .bp-kbd-row dd) { color: var(--ink-soft); }
+html[data-theme="dark"] .bp-kbd-row kbd { background: var(--night-hover); color: var(--ink); border-color: var(--night-line); }
+html[data-theme="dark"] .agenda-detail-sheet .dt-when { background: var(--violet-soft); color: var(--seg-on-accent-ink); }
+html[data-theme="dark"] .agenda-detail-sheet.is-teaser .dt-hope { background: var(--violet-soft); color: var(--seg-on-accent-ink); }
+html[data-theme="dark"] .agenda-detail-sheet.is-teaser .dt-hope.on { background: var(--violet); color: #171520; }
+/* Art stages keep their original daylight colors; give empty-state text its own readable surface. */
+html[data-theme="dark"] .art-empty { background: var(--surface); color: var(--muted); border-radius: 4px; padding: 3px 6px; }
+
+@media (min-width: 641px) {
+  html[data-theme="dark"]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day.outside {
+    background: rgb(var(--glass-cell) / 32%);
+  }
+}
+
+/* Daily visit drill-down shares the same raised controls and readable ink. */
+html[data-theme="dark"] :is(.dv-total strong, .dv-breakdown li b, .act-acct, .act-name, .usage-name) { color: var(--ink); }
+html[data-theme="dark"] :is(.dv-total span, .dv-breakdown li, .act-gist, .act-span, .act-sub,
+  .act-icon, .usage-gist, .usage-span, .upick-label, .usage-area) { color: var(--ink-soft); }
+html[data-theme="dark"] :is(.act-visit, .act-visit[data-open], .act-items, .upick-menu) {
+  background: var(--surface-2); color: var(--ink-soft); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.act-tool, .usage-range button, .upick-btn, .usage-more) {
+  background: var(--night-raised); color: var(--ink-soft); border-color: var(--night-line);
+}
+html[data-theme="dark"] :is(.act-tool:hover, .usage-range button:hover, .upick-btn:hover,
+  .usage-more:hover, .upick-menu button:hover, .act-items > li:hover) { background: var(--night-hover); }
+html[data-theme="dark"] :is(.act-tool.is-on, .usage-range button.is-on, .upick-btn.is-open,
+  .upick-menu button.is-on, .usage-reset) {
+  background: var(--violet-soft); color: var(--seg-on-accent-ink); border-color: rgb(var(--violet-rgb) / 30%);
+}
+html[data-theme="dark"] .upick-menu button { color: var(--ink-soft); }
+html[data-theme="dark"] :is(.usage-n, .act-day, .act-rep,
+  .act-items > li[data-source="server"] .act-name, .act-items > li[data-fold="open"] .act-name) { color: var(--seg-on-accent-ink); }
+
+/* The art inventory's alternate table view uses the same materials as cards. */
+html[data-theme="dark"] .cx-table thead th { background: var(--surface-2); color: var(--muted); }
+html[data-theme="dark"] .cx-table tbody tr { border-color: var(--line); }
+html[data-theme="dark"] .cx-table tbody tr:hover { background: var(--night-hover); }
+html[data-theme="dark"] .cx-mgrid i { background: var(--night-hover); }
+html[data-theme="dark"] .cx-mgrid i.on { background: var(--violet); }
+html[data-theme="dark"] .cx-tier.tier-rare { color: var(--violet); }
+html[data-theme="dark"] .cx-tier.tier-epic { color: var(--amber); }
+html[data-theme="dark"] .cx-tier.tier-legend { color: var(--pink); }
+html[data-theme="dark"] .art-codex span { background: var(--studio-action-tint); color: var(--studio-action-text); border-color: var(--studio-action-line); }
+html[data-theme="dark"] .art-codex b { color: var(--studio-action-text); }

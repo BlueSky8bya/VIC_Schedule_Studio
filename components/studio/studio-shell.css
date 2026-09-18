@@ -5583,7 +5583,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
     color: #f48fb1;
   }
   100% {
-    color: #574f6b;
+    color: var(--editor-date-rest, #574f6b);
   }
 }
 /* 편집 카드가 오른쪽(필터·달력 옆)에서 통통 미끄러져 들어온다(날짜 변경·카드 열림 시).

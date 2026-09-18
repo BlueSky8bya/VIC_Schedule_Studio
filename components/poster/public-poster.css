@@ -2424,10 +2424,20 @@ html[data-reduce-motion] .vch-head { transition: none; }
 }
 /* 좁은 창(2패널이 안 서는 폭) — 세로 스택으로 복귀, 챕터는 자체 캡 스크롤. */
 @media (max-width: 899px) {
+  /* A stacked rail consumes no horizontal space. Retaining the desktop
+     viewport-minus-rail formula collapses the player/strip on phones. Shared
+     by page/modal and both themes; no separate mobile player implementation. */
+  .day-vod-backdrop .dvm-vod,
+  .day-vod-backdrop .dvm-vod:has(.vod-chapters) {
+    --dvm-stage-w: 100%;
+  }
   .dvm-vod:has(.vod-chapters) {
     display: flex;
     flex-direction: column;
   }
+  .day-vod-backdrop[data-variant="page"] .dvm-vod:has(.vod-chapters) { justify-content: flex-start; }
+  .dvm-vod :is(.dvm-thumb, .dvm-strip) { flex: none; }
+  .dvm-vod:has(.vod-chapters) .vod-chapters { height: auto; min-height: 0; }
   .dvm-body {
     overflow-y: auto;
   }
