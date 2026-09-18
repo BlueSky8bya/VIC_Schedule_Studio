@@ -31,7 +31,7 @@ import { hapticTick } from "@/lib/ui/haptics";
 //   · 입력 전엔 태그 칩 제안(정적, 검색어 저장 없음).
 
 const DEBOUNCE_MS = 300;
-const MIN_CHARS = 2; // 정규화(공백·기호 제거) 후 글자 수 — 서버와 같은 기준
+const MIN_CHARS = 1; // 정규화(공백·기호 제거) 후 글자 수. 한 글자는 서버가 사전에 있을 때만 결과를 준다(메·롤·숲).
 
 type Props = {
   slug: string;
@@ -290,23 +290,41 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
             )}
             {v.chapters.length > 0 ? (
               <div className="ps-chapters">
-                {v.chapters.map((c) =>
-                  rowBtn(
-                    { kind: "chapter", dateKey: g.dateKey, titleNo: v.titleNo, sec: c.sec },
-                    "ps-chapter",
-                    "search-hit-chapter",
-                    <>
-                      <b className="ps-tc">{formatTimecode(c.sec)}</b>
-                      <span className="ps-main">
-                        <span className="ps-title">
-                          <Highlight text={c.label} q={q} />
+                {v.chapters.map((c, ci) => {
+                  // 코너 소제목: 같은 코너가 이어지면 한 번만(유튜브 챕터 목록·에피소드 그룹 문법).
+                  // 코너로 맞은 결과(matched_on=section)는 소제목을 강조해 "왜 나왔는지"를 보인다.
+                  const prev = ci > 0 ? v.chapters[ci - 1] : null;
+                  const showSection = c.section && (!prev || prev.section !== c.section);
+                  return (
+                    <div className="ps-chapter-wrap" key={`${c.sec}:${c.label}`}>
+                      {showSection ? (
+                        <span className={`ps-section${c.matchedOn === "section" ? " is-hit" : ""}`}>
+                          <Highlight text={c.section} q={q} />
                         </span>
-                      </span>
-                      <Play className="ps-act" size={12} aria-hidden="true" />
-                    </>,
-                    `${formatTimecode(c.sec)}부터 재생`
-                  )
-                )}
+                      ) : null}
+                      {rowBtn(
+                        { kind: "chapter", dateKey: g.dateKey, titleNo: v.titleNo, sec: c.sec },
+                        "ps-chapter",
+                        "search-hit-chapter",
+                        <>
+                          <b className="ps-tc">{formatTimecode(c.sec)}</b>
+                          <span className="ps-main">
+                            <span className="ps-title">
+                              {c.parent ? (
+                                <span className="ps-parent">
+                                  <Highlight text={c.parent} q={q} /> ›{" "}
+                                </span>
+                              ) : null}
+                              <Highlight text={c.label} q={q} />
+                            </span>
+                          </span>
+                          <Play className="ps-act" size={12} aria-hidden="true" />
+                        </>,
+                        `${c.section ? `[${c.section}] ` : ""}${formatTimecode(c.sec)}부터 재생`
+                      )}
+                    </div>
+                  );
+                })}
                 {v.chapterOverflow > 0 ? <span className="ps-more">+{v.chapterOverflow}개 챕터 더</span> : null}
               </div>
             ) : null}

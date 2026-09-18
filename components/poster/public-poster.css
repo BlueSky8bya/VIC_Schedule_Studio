@@ -7701,6 +7701,34 @@ html[data-pchrome="3"] .poster-chrome-title {
   min-height: 34px;
   padding: 4px 8px;
 }
+.ps-chapter-wrap {
+  display: grid;
+  gap: 0;
+}
+/* 코너 소제목 — 챕터 줄 위 작은 대문자풍 라벨. 코너 자체가 적중이면(노래 → 노래뱅) 잉크색 강조. */
+.ps-section {
+  display: block;
+  margin: 6px 8px 2px;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.ps-section.is-hit {
+  color: rgb(124 108 240);
+}
+.ps-section mark {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+.ps-parent {
+  font-weight: 600;
+  color: var(--muted);
+}
 .ps-tc {
   flex: none;
   min-width: 56px;

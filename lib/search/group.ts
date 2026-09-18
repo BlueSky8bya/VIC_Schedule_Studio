@@ -17,7 +17,7 @@ export type SearchVodGroup = {
   hostNick?: string;
   matched: boolean; // 다시보기 제목 자체가 적중했는가(아니면 챕터만)
   score: number;
-  chapters: { sec: number; label: string; score: number }[];
+  chapters: { sec: number; label: string; score: number; section: string; parent: string; matchedOn: string }[];
   chapterOverflow: number; // 잘라낸 챕터 수
 };
 
@@ -109,7 +109,14 @@ export function groupSearchHits(hits: PublicSearchHit[]): SearchDayGroup[] {
       continue;
     }
     if (typeof hit.sec === "number") {
-      v.chapters.push({ sec: hit.sec, label: hit.title, score: hit.score });
+      v.chapters.push({
+        sec: hit.sec,
+        label: hit.title,
+        score: hit.score,
+        section: hit.section ?? "",
+        parent: hit.parent ?? "",
+        matchedOn: hit.matchedOn ?? ""
+      });
     }
   }
 

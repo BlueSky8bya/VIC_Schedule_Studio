@@ -602,8 +602,8 @@ export async function searchPublic(
 ): Promise<import("@/lib/domain/schedule-types").PublicSearchResult> {
   const q = query.trim();
   const empty = { query: q, hits: [] };
-  // 서버 search_norm과 같은 최소 길이(정규화 후 2글자). 짧은 검색어는 왕복 자체를 안 한다.
-  if (!isSupabaseConfigured() || q.replace(/[\s\p{P}\p{S}]+/gu, "").length < 2) return empty;
+  // 정규화 후 1글자부터 보낸다 — 한 글자는 RPC가 사전에 있을 때만(메·롤·숲) 결과를 준다(0081).
+  if (!isSupabaseConfigured() || q.replace(/[\s\p{P}\p{S}]+/gu, "").length < 1) return empty;
   const calendarId = await loadPublicCalendarId(calendarSlug);
   const supabase = createPublicReadClient();
   if (!calendarId || !supabase) return empty;
@@ -627,6 +627,9 @@ export async function searchPublic(
     score: number | string;
     exact: boolean | null;
     popularity: number | string | null;
+    section: string | null;
+    parent: string | null;
+    matched_on: string | null;
   };
   const hits: import("@/lib/domain/schedule-types").PublicSearchHit[] = [];
   for (const row of data as Row[]) {
@@ -653,8 +656,11 @@ export async function searchPublic(
       if (row.kind === "chapter") {
         if (typeof row.sec !== "number" || row.sec < 0) continue;
         hit.sec = row.sec;
+        if (row.section) hit.section = row.section;
+        if (row.parent) hit.parent = row.parent;
       }
     }
+    if (row.matched_on) hit.matchedOn = row.matched_on;
     hits.push(hit);
   }
   return { query: q, hits };

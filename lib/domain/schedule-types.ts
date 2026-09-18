@@ -194,6 +194,9 @@ export type PublicSearchHit = {
   score: number;
   exact: boolean; // 정규화 구/토큰이 실제로 포함된 적중(false = 트라이그램 유사도만 — 화면은 '비슷한 결과')
   popularity: number; // 0~1 참여 신호(다시보기: 조회·좋아요·댓글·챕터 밀도 / 일정: 하트) — 정렬 '인기순'
+  section?: string; // kind=chapter — 팬 타임라인 [코너](노래뱅·빅이봤·소통…). 맥락 표시·코너 적중
+  parent?: string; // kind=chapter — "ㄴ" 세부 항목의 상위 항목 라벨
+  matchedOn?: string; // 어디에 맞았나: title|label|section|tag|description|related|abbrev|fuzzy
 };
 // 관계 그래프(0079) — 질의 인물과 함께 자주 나온 인물. 이름은 공개 제목·챕터의 "○○님"에서 온다.
 export type PublicSearchRelated = {

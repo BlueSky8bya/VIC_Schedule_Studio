@@ -149,7 +149,11 @@ describe.skipIf(!configured)("시청자 검색 — 공개 경계·순위(실제 
     expect(Array.isArray(trends)).toBe(true);
   });
 
-  it("정규화 후 2글자 미만이면 왕복 없이 빈 결과", async () => {
+  it("한 글자는 사전에 있을 때만: '메'는 메이플 결과, 'ㅋ'·'가'는 빈 결과", async () => {
     expect((await searchPublic(SLUG, " ㅋ ")).hits).toHaveLength(0);
+    expect((await searchPublic(SLUG, "가")).hits).toHaveLength(0);
+    const id = await insertEvent({ public_title: `${MARK} 메이플스토리 ${TOKEN}` });
+    const hits = await find(`메 ${TOKEN}`);
+    expect(hits.some((h) => h.eventId === id), "'메' → 메이플 확장 실패").toBe(true);
   });
 });
