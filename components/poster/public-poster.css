@@ -7375,13 +7375,6 @@ html[data-pchrome="3"] .poster-chrome-title {
 .search-open svg {
   flex: none;
 }
-/* 모바일 범례 줄의 검색 칩 — 태그 칩과 같은 알약, 아이콘만 다르다. */
-.agenda-legend-tag.search {
-  gap: 5px;
-}
-.agenda-legend-tag.search svg {
-  flex: none;
-}
 
 /* 시트 머리 = 입력창(제목 대신). 넓게 — 검색어가 길어도 한 줄. */
 .ps-sheet {

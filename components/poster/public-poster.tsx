@@ -3385,19 +3385,6 @@ export function PublicPoster({
                 내 관심
               </button>
             ) : null}
-            {/* 모바일 검색 진입점 — 머리줄 알약(PC)과 같은 시트를 연다. 비로그인도. */}
-            <button
-              className="agenda-legend-tag search"
-              onClick={() => {
-                hapticTick();
-                setSheet("search");
-              }}
-              type="button"
-              data-act="agenda-legend-search"
-            >
-              <Search aria-hidden="true" size={13} strokeWidth={2.4} />
-              검색
-            </button>
             {/* 톡은 clearFilters 함수가 아니라 버튼에서 — jumpToday도 clearFilters를 부르는데
                 거긴 이미 톡을 울려서, 함수 안에 넣으면 두 번 울린다. */}
             {filterActive ? (
@@ -4905,22 +4892,20 @@ export function PublicPoster({
         {isNarrow ? (
           <div className="mb-center">
             {interactive ? (
-              // 위치 보존을 위해 '오늘'과 함께 항상 자리에 두되, 비로그인(익명)이면
-              // 관심(서버 1인1하트)은 못 쓰므로 회색 비활성으로 둔다.
+              // '관심' → '검색'(2026-09-18 소유자): PC 머리줄과 같은 교체. ♥ 필터는 범례 줄에 남는다.
+              // 비로그인도 쓴다(공개 데이터만)라 비활성 상태가 없다.
               <button
-                aria-pressed={canHeart ? bookmarkedOnly : undefined}
-                className={`mb-act ${canHeart && bookmarkedOnly ? "on" : ""}`}
-                disabled={!canHeart}
+                className="mb-act"
                 onClick={() => {
-                  if (!canHeart) return;
                   hapticTick();
-                  withAgendaFlip(() => setBookmarkedOnly((v) => !v));
+                  setSheet("search");
                 }}
-                title={canHeart ? "내가 ♥ 누른 일정만 보기" : "로그인하면 관심 일정을 모아볼 수 있어요"}
+                title="일정 · 다시보기 · 챕터 찾기"
                 type="button"
-               data-act="mb-act">
-                <Heart aria-hidden="true" size={18} />
-                <span>관심</span>
+                data-act="mb-search"
+              >
+                <Search aria-hidden="true" size={18} />
+                <span>검색</span>
               </button>
             ) : null}
             {/* '오늘' 버튼: 다른 달이면 오늘로 이동. 이미 오늘 달이라 이동이 무의미한데 방송 중이면,

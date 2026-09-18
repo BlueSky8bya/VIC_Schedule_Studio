@@ -60,10 +60,10 @@ test.describe("desktop search sheet", () => {
 test.describe("mobile search chip", () => {
   test.skip(({ isMobile }) => !isMobile, "모바일 아젠다 전용");
 
-  test("legend chip opens the same sheet", async ({ page }) => {
+  test("bottom pill 검색 (old 관심 slot) opens the same sheet", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".search-open")).toHaveCount(0);
-    await page.click(".agenda-legend-tag.search");
+    await page.click("[data-act=\"mb-search\"]");
     await page.fill(".ps-field input", "마크");
     await expect(page.locator(".ps-row").first()).toBeVisible();
   });

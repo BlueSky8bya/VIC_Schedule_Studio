@@ -229,7 +229,7 @@ const ACT: Record<string, TargetLabel> = {
   "vod-tab": { name: "다시보기 부 탭", area: "시청자 화면", hint: "하루에 방송이 여럿일 때 1부·2부…" },
   "title-input": { name: "제목 입력", area: "편집실" },
   "open-search": { name: "검색 열기", area: "시청자 화면", hint: "머리줄 가운데 알약(옛 '내 관심' 자리)" },
-  "agenda-legend-search": { name: "검색 열기(모바일)", area: "시청자 화면" },
+  "mb-search": { name: "검색 열기(모바일)", area: "시청자 화면", hint: "하단 알약 — 옛 '관심' 자리" },
   "close-public-search": { name: "검색 닫기", area: "시청자 화면" },
   "search-clear": { name: "검색어 지우기", area: "시청자 화면" },
   "search-tag-chip": { name: "검색 태그 제안", area: "시청자 화면" },
