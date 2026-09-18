@@ -645,27 +645,20 @@ html[data-theme="dark"] :is(.sc-set-chip, .sc-set-datetime input, .sc-set-locati
 }
 html[data-theme="dark"] .sc-set-chip.on { background: var(--green-soft); color: #a9dfb7; }
 
-/* Popularity in darkness: stepped light rail + inset rim, no extra layout row.
-   Hue/threshold meaning is unchanged; static marks remain when motion is off. */
-.tier-signal { display: none; }
+/* Shared continuous popularity rail lives in public-poster.css; only color
+   and restrained glow change with the theme. */
 html[data-theme="dark"] [data-tier="warm"] { --pop-color: #dfb782; --pop-glow: #dfb78224; }
 html[data-theme="dark"] [data-tier="hot"] { --pop-color: #ffa284; --pop-glow: #ffa28432; }
 html[data-theme="dark"] [data-tier="blaze"] { --pop-color: #ff8db1; --pop-glow: #ff8db143; }
 html[data-theme="dark"] [data-tier="top"] { --pop-color: #ffe095; --pop-glow: #ffe09552; }
 html[data-theme="dark"] :is(.public-event, .agenda-event)[data-tier] {
-  box-shadow: inset 0 -2px var(--pop-color), 0 0 8px var(--pop-glow);
+  box-shadow: 0 0 6px var(--pop-glow);
 }
 html[data-theme="dark"] .tier-warm { --tier-c: #dfb782; }
 html[data-theme="dark"] .tier-hot { --tier-c: #ffa284; }
 html[data-theme="dark"] .tier-blaze { --tier-c: #ff8db1; --tier-stops: #ff8db1, #ffc5d7, #ff8db1, #ffa284, #ff8db1; }
 html[data-theme="dark"] .tier-top { --tier-c: #ffe095; --tier-stops: #ffe095, #fff2ce, #e4b76a, #ffe095; }
 html[data-theme="dark"] .tier-ring { --tier-w: 1.5px; }
-html[data-theme="dark"] .tier-signal {
-  display: flex; flex-direction: column; gap: 2px; position: absolute;
-  left: 0; top: 20%; bottom: 20%; width: 3px; z-index: 2; pointer-events: none;
-}
-html[data-theme="dark"] .tier-signal i { flex: 1; min-height: 1px; border-radius: 1px; background: var(--tier-c); }
-html[data-theme="dark"] .public-event[data-mixed] > .tier-signal { position: absolute; z-index: 2; }
 html[data-theme="dark"] .tier-swatch.tier-swatch { background: var(--surface-2); border-color: var(--tier-c); box-shadow: inset 3px 0 var(--tier-c); }
 html[data-theme="dark"] .adt-badge[class*="tier-"] { background: var(--surface-2); color: var(--tier-c); border-color: var(--tier-c); }
 

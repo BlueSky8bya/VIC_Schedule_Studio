@@ -143,7 +143,7 @@ describe("ink contract — eventInkStyle", () => {
 describe("style contract — single & mixed", () => {
   it("단색 칸 스타일 = 배경/테두리 + 잉크", () => {
     const style = eventColorStyle(getEventTagColors(ev(["game"]), tags, palette));
-    expect(style.backgroundColor).toBe("light-dark(#d11a2a, #881f22)");
+    expect(style.backgroundColor).toBe("light-dark(#d11a2a, #6e403c)");
     expect(style.borderColor).toMatch(/^light-dark\(#a8121f, #[a-f0-9]{6}\)$/);
   });
 

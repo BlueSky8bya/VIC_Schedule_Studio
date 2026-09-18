@@ -11,6 +11,9 @@
 - 시간은 항상 KST. 스키마 변경은 반드시 이 폴더에 파일로.
 
 ## 목록 (번호 → 목적)
+
+Latest: `0123_dark_tag_palette_harmony.sql` — muted v3 generated palettes; apply before v3 readers, keep v1/v2 for rollback.
+
 | # | 영역 |
 |---|---|
 | 0001 | 초기 스키마 |

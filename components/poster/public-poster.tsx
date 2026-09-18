@@ -186,9 +186,7 @@ const POSTER_BOTTOM_GAP = 14;
 function TierMark({ tier }: { tier: HeartTier }) {
   return (
     <>
-      <span className={`tier-signal tier-${tier.key}`} aria-hidden="true">
-        {Array.from({ length: { warm: 1, hot: 2, blaze: 3, top: 4 }[tier.key] }, (_, i) => <i key={i} />)}
-      </span>
+      <span className={`tier-signal tier-${tier.key}`} aria-hidden="true" />
       {/* halo는 링과 형제(링의 마스크가 자기 그림자를 잘라서). 관심(warm)은 halo 없음 — 조용한 단계. */}
       {tier.key !== "warm" ? <span aria-hidden="true" className={`tier-halo tier-${tier.key}`} /> : null}
       <span
@@ -1773,6 +1771,13 @@ export function PublicPoster({
   const burstId = useRef(0);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = true;
+  const settingsButton = interactive ? (
+    <button aria-label="설정" className="viewer-settings-open" data-act="open-settings"
+      onClick={() => { hapticTick(); setSheet("settings"); }}
+      title="설정 — 동작 · 화면 · 배경" type="button">
+      <Settings aria-hidden="true" size={17} strokeWidth={2.2} />
+    </button>
+  ) : null;
   // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 CSS :hover만으로는 한 조각만 밝아져
   // 마디가 다시 보인다. 같은 일정의 모든 조각을 DOM 클래스 토글로 함께 밝힌다(lib/ui/band-hover).
   // (React 상태였을 땐 띠 위를 지날 때마다 포스터 전체 리렌더 ≈180ms 롱태스크 — 2026-09-03 실측.)
@@ -3269,7 +3274,8 @@ export function PublicPoster({
                   );
                 })()}
                 {/* 관심 단계 링·👑 — 마지막 자식(무늬 위, 본문 아래 z-index 0). 시작 칸에만. */}
-                {tier && span.showTitle ? <TierMark tier={tier} /> : null}
+                {tier ? (span.showTitle ? <TierMark tier={tier} /> :
+                  <span className={`tier-signal tier-${tier.key}`} aria-hidden="true" />) : null}
               </div>
             );
           })}
@@ -4614,6 +4620,7 @@ export function PublicPoster({
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
           <header className="agenda-header">
+            {settingsButton}
             {/* 시청자 미리보기 진입 시 — 제목 왼쪽 여백 칸에 안내(작게). */}
             {previewNote ? <span className="agenda-preview-left">{previewNote}</span> : null}
             {/* 웹과 같은 문법(2026-09-17 소유자): 제목 = 보고 있는 달, 아랫줄 = 데뷔 D+. */}
@@ -4678,21 +4685,7 @@ export function PublicPoster({
                   고정 오버레이(.avatar-ctl-preview)로 뺀다 — 헤더는 shell 폭이 토글마다 바뀌며 좌우로
                   흔들려 버튼이 따라 움직였다(fixed면 안 흔들림). */}
               {/* 설정(2026-09-19 소유자) — 검색·기록·로그인과 같은 줄의 왼쪽 끝. 내용은 편집실 설정 창과 같다. */}
-              {interactive ? (
-                <button
-                  aria-label="설정"
-                  className="viewer-settings-open"
-                  data-act="open-settings"
-                  onClick={() => {
-                    hapticTick();
-                    setSheet("settings");
-                  }}
-                  title="설정 — 동작 · 화면 · 배경"
-                  type="button"
-                >
-                  <Settings aria-hidden="true" size={17} strokeWidth={2.2} />
-                </button>
-              ) : null}
+              {settingsButton}
             </div>
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).

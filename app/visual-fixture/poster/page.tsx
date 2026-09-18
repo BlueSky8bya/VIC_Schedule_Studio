@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; links?: string }>;
+  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; links?: string; signedIn?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -74,8 +74,8 @@ export default async function VisualPosterFixture({
   return (
     <PublicPoster
       ambientForce={ambient}
-      anonymous
-      accountSwitch={false}
+      anonymous={sp?.signedIn !== "1"}
+      accountSwitch={sp?.signedIn !== undefined}
       avatarFixed={fixed}
       avatarSlot={avatar}
       initialNarrow={false}

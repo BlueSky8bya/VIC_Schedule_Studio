@@ -5350,6 +5350,26 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
    ④ halo(.tier-halo, 별도 형제 — 마스크가 그림자를 잘라서)는 spread 0·저농도로 '온기'만: 겹쳐도 딱딱한
       선이 안 생긴다. 모바일 아젠다는 halo 없음.
    본문(.event-main…)은 z-index 1로 링 위. 링·halo는 높이 0(absolute) — 달력 비율에 영향 없음. */
+/* One uninterrupted inset rail in both themes. Border follows rounded corners
+   without changing card geometry or competing with mixed tag fill layers. */
+.tier-signal,
+.public-event[data-mixed] > .tier-signal.tier-signal {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  border-left: 4px solid var(--tier-c);
+  pointer-events: none;
+}
+/* Agenda already has a 10px category stripe: put the popularity rail in its
+   adjacent 9px gutter so both independent meanings remain visible. */
+.agenda-event > .tier-signal {
+  inset: 0 auto 0 12px;
+  width: 3px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--tier-c);
+}
 .tier-ring {
   position: absolute;
   inset: -1px; /* 카드 자체 1px 테두리까지 덮어 링이 곧 카드의 테두리가 된다(안쪽 선 두 겹 X) */
@@ -5515,6 +5535,7 @@ html[data-reduce-motion] .tier-halo {
   border-radius: 5px;
   border: var(--tier-w, 2px) solid var(--tier-c);
   background: #fffdf6;
+  box-shadow: inset 3px 0 var(--tier-c);
   font-size: var(--text-micro);
   line-height: 1;
   font-style: normal;
@@ -6506,6 +6527,18 @@ html[data-reduce-motion] .slc-player img {
 }
 .viewer-settings-open svg {
   transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* Same settings button in the agenda's existing left header cell. */
+.agenda-header > .viewer-settings-open {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+}
+.agenda-header:has(> .viewer-settings-open) .agenda-preview-left { grid-row: 2; }
+@media (max-width: 360px) {
+  /* Keep the shared 44px settings target; decorative sparkles yield on small phones. */
+  .agenda-header:has(> .viewer-settings-open) .title-spark { display: none; }
+  .agenda-header:has(> .viewer-settings-open) .agenda-title { white-space: nowrap; }
 }
 .viewer-settings-open:hover {
   color: #3564e0;

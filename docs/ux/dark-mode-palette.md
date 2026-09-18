@@ -1,6 +1,27 @@
 # Dark palette follow-up — 2026-09-19
 
-Status: second owner correction complete and deployed (`7c1e24fd`, Vercel success, 2026-09-19). Earlier release evidence below remains historical.
+Status: third owner correction in verification — subdued color harmony, continuous popularity rail in both themes, and theme settings for every audience. Earlier release evidence below remains historical.
+
+## V3: research-informed harmony — 2026-09-19
+
+The owner rejected v2's saturated fills. The current UI has warm charcoal surfaces (`--paper: #1a1916`, `--cal-cell: #262420`, `--surface: #26241f`). V3 keeps that background and source hue semantics, while separating quiet card fills from brighter small accents. Example pastel-family fills: rose `#6d494a`, olive `#57563c`, sage `#445a4f`, slate `#435669`, mauve `#5d4c67`.
+
+Evidence and limits:
+
+- [Google's dark-theme guidance](https://developer.android.com/design/ui/wear/guides/m2-5/styles/color) recommends desaturated colors and sparing accents, with darker tones covering larger areas. Its black-background requirement is specific to Wear OS, so we do not import that requirement into this website.
+- [Radix's scale roles](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale) distinguish component backgrounds, borders, solid accents and text. We adopt the separation of roles, not a copied palette or a new dependency.
+- [Chameleon (Karunathilaka et al., revised January 2026)](https://arxiv.org/abs/2512.00516) jointly considers luminance contrast, color semantics and adjacent-color differences. Its 12-person study is not proof of an optimal palette for this calendar or reduced fatigue; no significant analytical-task/fatigue difference was found. It informs what to balance and why to inspect actual renders.
+- [WCAG 2.2 text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) supplies the 4.5:1 normal-text minimum. Contrast is checked independently of aesthetic harmony.
+
+Our application judgment: OKLCH fill L=0.38+0.08×sourceL, chroma capped at 0.065 (v2: 0.14); border cap 0.075, small accent cap 0.11. Preserve source hue, retain neutral grays and avoid the old amber overlay. The five sample fill families remain >0.03 apart in OKLab; this is a product regression guard, not a universal perceptual threshold. Exact constants are our design choices, not values prescribed by the sources.
+
+`0123` stores v3 alongside v1/v2, preserving original colors and inherited NULL values. Apply migration before deploying readers. SQL/TS exact parity: 1,240 colors; 27 stored palettes and original 43 row hashes verified, temporary insert/update/NULL checked. Reverting to v2 readers restores the prior appearance without rewriting source data.
+
+Popularity root cause: TierMark deliberately rendered 1–4 children with 2px flex gaps. It now renders one continuous inset rail in both light and dark. Shared CSS also handles mixed cards and continuation segments; agenda puts the rail beside its existing category stripe. Settings remove only the developer display gate from StudioSettingsList; all audiences use the existing local preference hook, without changing server privileges.
+
+Mobile public settings also lacked an entry button. The agenda header now reuses the desktop button and dialog; narrow 320px headers hide decorative sparkles to preserve the 44px settings target. Owner, developer, signed-in viewer UI, anonymous and viewer-preview fixtures exercise the same preference on desktop/mobile, including reload persistence. These fixture roles do not establish real-session/RLS coverage.
+
+V3 local verification: production-build visual/interaction suite 30/30 passed; final 320px header adjustment then passed its settings/persistence test and actual-public screenshot check (no overflow/runtime errors). Typecheck, lint and isolated production build passed. Unit suite 954/956 passed; the same two pre-existing ambient-codex failures remain. Harness still reports the pre-existing duplicate active rule ID. Independent reviewer checked shared rail geometry, mixed-card specificity, role gate removal, migration and public DTO mapping. Gallery: `output/dark-mode-harmony/index.html`; full captures/logs: `tmp/dark-audit/v3-tests`, `tmp/dark-audit/*v3*`.
 
 2026-09-19 follow-up: v2 raises pastel chroma and removes the dark eye-comfort amber veil from cards, while leaving neutral colors neutral. `0122` adds generated v2 columns, preserving v1/source values. SQL/TS parity 1,240; existing source hashes unchanged; insert/update/NULL automatic storage verified. Minimum tested text contrast >4.5:1; distinct pastel-family OKLab distances >0.055. Visits now include explicit dark zero values, owner session tracks, criterion chips and day calendar ink. Ribbon base colors were already deployed; solo/hover text and highlights are corrected too. Public ribbon hover now scopes to the actual `.poster-page` root; independent review confirmed the fix.
 

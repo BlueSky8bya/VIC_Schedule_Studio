@@ -140,12 +140,12 @@ test("insights loading shimmer stays dark during a delayed request", async ({ pa
   } finally { release(); }
 });
 
-test("dark popularity has four static levels and ambient entry has readable ink", async ({ page }, info) => {
+test("dark popularity has continuous rails and ambient entry has readable ink", async ({ page }, info) => {
   await page.setViewportSize({ width: 1840, height: 1000 });
   await page.goto("/visual-fixture/poster?hearts=1");
-  for (const [tier, count] of Object.entries({ warm: 1, hot: 2, blaze: 3, top: 4 })) {
+  for (const tier of ["warm", "hot", "blaze", "top"]) {
     const card = page.locator(`.public-event[data-tier=${tier}]`).first();
-    await expect(card.locator(".tier-signal i")).toHaveCount(count);
+    await expect(card.locator(".tier-signal i")).toHaveCount(0);
     await expect(card.locator(".tier-signal")).toBeVisible();
   }
   await capture(page, info, "popularity-four-levels");
@@ -168,6 +168,66 @@ test("dark popularity has four static levels and ambient entry has readable ink"
   await capture(page, info, "ambient-year-picker");
   await page.locator("[data-act=biome-map-fold]").click();
   await capture(page, info, "ambient-map-expanded");
+});
+
+for (const surface of ["developer", "owner", "viewer", "anonymous", "preview"] as const) {
+  for (const mobile of [false, true]) {
+    test(`shared dark setting ${surface} ${mobile ? "mobile" : "desktop"}`, async ({ page }, info) => {
+      const studio = surface === "developer" || surface === "owner";
+      const url = studio ? `/visual-fixture/studio?role=${surface}` : surface === "preview"
+        ? "/visual-fixture/studio?viewer=1&role=developer"
+        : `/visual-fixture/poster?signedIn=${surface === "viewer" ? "1" : "0"}`;
+      await page.setViewportSize(mobile ? { width: surface === "anonymous" ? 320 : 390, height: 844 } : { width: 1840, height: 1000 });
+      await page.goto(url);
+      const open = () => page.locator(studio ? (mobile ? ".role-help-q" : "[data-act=studio-settings]") : "[data-act=open-settings]").first().click();
+      await open();
+      const toggle = page.getByRole("switch", { name: "다크 모드 켜기/끄기" });
+      await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveAttribute("aria-checked", "true");
+      await capture(page, info, "settings-dark");
+      await toggle.click();
+      await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
+      await page.reload();
+      await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
+      await open();
+      await expect(toggle).toHaveAttribute("aria-checked", "false");
+      await toggle.click();
+      await page.reload();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    });
+  }
+}
+
+test("popularity rail is continuous inside light and dark cards", async ({ page }, info) => {
+  await page.setViewportSize({ width: 1840, height: 1000 });
+  for (const theme of ["dark", "light"]) {
+    await page.goto("/visual-fixture/poster?hearts=1");
+    await page.evaluate(t => { localStorage.setItem("vic.dark", t === "dark" ? "on" : "off"); }, theme);
+    await page.reload();
+    const cards = page.locator(".public-event[data-tier]");
+    await expect(cards.first()).toBeVisible();
+    for (const card of await cards.all()) {
+      const geometry = await card.evaluate(el => {
+        const rail = el.querySelector(".tier-signal")!;
+        const c = el.getBoundingClientRect(), r = rail.getBoundingClientRect(), s = getComputedStyle(rail);
+        return { height: r.height, cardHeight: c.height, left: r.left - c.left, width: parseFloat(s.borderLeftWidth), position: s.position, children: rail.childElementCount };
+      });
+      expect(geometry.position).toBe("absolute");
+      expect(geometry.children).toBe(0);
+      expect(geometry.width).toBe(4);
+      expect(geometry.height / geometry.cardHeight).toBeGreaterThan(.8);
+      expect(geometry.left).toBeGreaterThanOrEqual(0);
+      expect(geometry.left).toBeLessThan(3);
+    }
+    await page.screenshot({ path: info.outputPath(`continuous-${theme}.png`), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    const agenda = page.locator(".agenda-event[data-tier]").first();
+    await expect(agenda).toBeVisible();
+    const gap = await agenda.evaluate(el => el.querySelector(".tier-signal")!.getBoundingClientRect().left - el.querySelector(".agenda-bar")!.getBoundingClientRect().right);
+    expect(gap).toBeGreaterThanOrEqual(1);
+    await page.screenshot({ path: info.outputPath(`continuous-${theme}-mobile.png`), fullPage: true });
+    await page.setViewportSize({ width: 1840, height: 1000 });
+  }
 });
 
 test("developer setting toggles real theme, persists and restores light", async ({ page }, info) => {

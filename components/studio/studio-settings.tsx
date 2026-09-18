@@ -36,11 +36,9 @@ export type StudioSettingsProps = {
   eyeComfort: boolean;
   onToggleEyeComfort: () => void;
   // 다크 모드(2026-09-19 소유자) — 토큰 팔레트 한 벌을 어둡게. 눈 편한 테마와 독립이다.
-  // 아직 다듬을 곳이 남아 **개발자에게만** 줄이 보인다(2026-09-19 소유자: "자잘하게 수정할 게 많다").
-  // 켜 두면 스위치가 안 보이는 화면에서도 그대로 적용된다 — 상태는 <html data-theme>·localStorage 한 벌이라.
+  // 모든 역할/시청자 미리보기에서 같은 기기 설정을 사용한다. 서버 권한과 무관하다.
   dark: boolean;
   onToggleDark: () => void;
-  showDark?: boolean;
   // (차분한 편집실 스위치는 2026-09-04 제거 — 항상 ON. 사용자: "끄면 살짝 어두워질 뿐 뭐가 차분한지 모르겠다".)
   // 계절 배경(2026-09-04, ADR-0017 개정 2) — 달력 달의 계절(여름 물결·가을 낙엽·겨울 눈밭·봄 풀밭). 기본 ON. OFF면 전부 없음.
   ambientMode: AmbientMode; // 켜짐 · 흐리게 · 끔(2026-09-04 세 상태)
@@ -72,7 +70,6 @@ export function StudioSettingsList({
   onToggleEyeComfort,
   dark,
   onToggleDark,
-  showDark = false,
   ambientMode,
   onChangeAmbientMode,
   gfxPref,
@@ -154,13 +151,11 @@ export function StudioSettingsList({
           <span className="rhh-knob" aria-hidden="true" />
         </button>
       </div>
-      {/* 다크 모드 — 어두운 팔레트 한 벌. 계절 배경 캔버스는 건드리지 않는다(루트 filter 금지 규칙).
-          다듬는 동안은 개발자만(showDark). */}
-      {showDark ? (
-      <div className="role-help-haptics rhh-dev">
+      {/* 다크 모드 — 공용 기기 설정. 계절 배경 캔버스에는 필터를 씌우지 않는다. */}
+      <div className="role-help-haptics">
         <span className="rhh-label">
           <Moon aria-hidden="true" size={14} />
-          다크 모드 <em className="rhh-dev-tag">개발자</em>
+          다크 모드
         </span>
         <button
           aria-checked={dark}
@@ -174,7 +169,6 @@ export function StudioSettingsList({
           <span className="rhh-knob" aria-hidden="true" />
         </button>
       </div>
-      ) : null}
       {/* (차분한 편집실 스위치 제거 — 2026-09-04, 항상 ON. html[data-studio-calm]은 페인트-전 스크립트가 늘 붙인다.) */}
       {/* 계절 배경 — 보고 있는 달력 달의 계절 배경(여름 물결·가을 낙엽·겨울 눈밭·봄 풀밭). OFF면 전부 없음(개정 2).
           세 상태가 늘 다 보이는 세그먼트 [켜기|흐리게|끄기](2026-09-04 사용자: 셀렉트는 '흐리게'가 있는지 안 보였다) — 레일·아바타
