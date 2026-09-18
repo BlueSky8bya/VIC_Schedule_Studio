@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string }>;
+  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; links?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -62,6 +62,14 @@ export default async function VisualPosterFixture({
     : schedule;
   // ambient=spring|summer|autumn|winter → 계절 레이어 강제(ADR-0017 검증용). 없으면 오늘(KST) 절기.
   const ambient = isSeasonKey(sp?.ambient) ? sp.ambient : undefined;
+  const withLinks = sp?.links === "1" ? {
+    ...shown,
+    events: [...shown.events,
+      { ...shown.events[0], id: "fixture-untagged", startsAt: "2026-06-18T12:00:00+09:00", publicTitle: "태그 없는 일정", tagIds: [], primaryTagIds: [] },
+      { ...shown.events[0], id: "fixture-period", startsAt: "2026-06-19T12:00:00+09:00", publicTitle: "기간 안내", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture" }
+    ],
+    vods: [{ titleNo: 900000001, title: "샘플 다시보기", dateKey: "2026-06-18", durationMs: 7200000 }]
+  } : shown;
   return (
     <PublicPoster
       ambientForce={ambient}
@@ -72,7 +80,7 @@ export default async function VisualPosterFixture({
       initialNarrow={false}
       initialYear={2026}
       initialMonth={6}
-      schedule={shown}
+      schedule={withLinks}
     />
   );
 }

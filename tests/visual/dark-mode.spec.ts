@@ -60,6 +60,20 @@ async function darkSurface(page: Page, selector: string) {
 }
 test.beforeEach(async ({ page }) => { await prepare(page); });
 
+test("untagged cards, period ribbons and mobile VOD links use dark surfaces", async ({ page }, info) => {
+  await page.setViewportSize({ width: 1840, height: 1000 });
+  await page.goto("/visual-fixture/poster?links=1");
+  await darkSurface(page, '.public-event:not([data-color]):not([data-mixed]):not(.teaser)');
+  const ribbon = await page.locator(".support-bar.sb-period").first().evaluate(el => getComputedStyle(el).backgroundImage);
+  expect(ribbon).toContain("rgb(48, 74, 83)");
+  await capture(page, info, "untagged-and-period");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator(".agenda-link.vod").first().scrollIntoViewIfNeeded();
+  await darkSurface(page, ".agenda-link.vod");
+  await darkSurface(page, ".agenda-link.period");
+  await capture(page, info, "mobile-links");
+});
+
 test("insights loading shimmer stays dark during a delayed request", async ({ page }, info) => {
   let release!: () => void;
   const held = new Promise<void>(resolve => { release = resolve; });

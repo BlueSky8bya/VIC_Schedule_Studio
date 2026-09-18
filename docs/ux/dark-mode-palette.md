@@ -13,6 +13,7 @@ Implementation:
 - Insights shimmer, plot bars, current-month progress and semantic increase/decrease colors; ordinary mobile subtitles and heart ink.
 - Ambient entry/exit/settings, date/year picker, navigation/map and range controls use the dark surfaces. Original ambient art stays intact.
 - Popularity keeps existing thresholds and meanings, adds static 1–4 segment marks, inset rim and controlled glow. Layout does not gain a row; reduced-motion retains the marks.
+- Deployed-data follow-up: untagged cards, support/period ribbons, mobile inline VOD/period links and heart outlines also use dark materials. Dedicated synthetic link fixture and regression capture added after checking actual PC/mobile schedules.
 
 Verification:
 
@@ -24,4 +25,6 @@ Verification:
 - Harness remains blocked by pre-existing duplicate G-18 in AGENTS.md.
 - Independent reviewer found and verified scope for generated palette/public boundary; final findings (broadcast-day selector, light borders, readonly chip ink) were corrected.
 
-Evidence: `output/dark-mode-palette/index.html` and `tmp/dark-audit/*palette*` (local artifacts, not committed). [ADR-0026](../agent/decisions/ADR-0026-automatic-dark-tag-palette.md) records schema, boundary, supersession and rollback. Deployment result pending; prior push authorization applies.
+Evidence: `output/dark-mode-palette/index.html` and `tmp/dark-audit/*palette*` (local artifacts, not committed). [ADR-0026](../agent/decisions/ADR-0026-automatic-dark-tag-palette.md) records schema, boundary, supersession and rollback.
+
+Release: `a2a72f02` pushed to main; Vercel success at 2026-09-19 04:30 KST. Production API HTTP 200 returned 27 dark palettes; forbidden-field scan clean. Actual desktop/mobile screenshots: dark theme, no overflow or browser errors. Deployed-data CSS follow-up additionally passed a dedicated links test and light-color/geometry regression, plus typecheck/lint/build; final follow-up push verification pending.

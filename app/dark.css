@@ -688,3 +688,23 @@ html[data-theme="dark"] :is(.biome-dot-pond, .biome-dot-sea, .biome-dot-deep) { 
 html[data-theme="dark"] .biome-dot .biome-dot-name { color: var(--ink-soft); }
 html[data-theme="dark"] .biome-dot.on { border-color: #b5d3bd; }
 html[data-theme="dark"] .biome-dot.on .biome-dot-name { color: var(--ink); }
+
+/* Real schedules also contain untagged cards, support periods and inline VODs. */
+html[data-theme="dark"] :is(.public-event, .studio-event-pill):not([data-color]):not([data-mixed]):not(.teaser) {
+  background: var(--night-raised); color: var(--ink); border-color: var(--night-line);
+  --evt-shadow: none;
+}
+html[data-theme="dark"] .support-bar {
+  background: linear-gradient(180deg, #563a43, #422d35); color: #ffc0d2;
+  box-shadow: inset 0 1px 0 #ffffff12;
+}
+html[data-theme="dark"] .support-bar.sb-period {
+  background: linear-gradient(180deg, #304a53, #283c45); color: #addded;
+}
+html[data-theme="dark"] .support-bar :is(.sb-title, .sb-cta, .sb-go, .sb-when) { color: inherit; }
+html[data-theme="dark"] .agenda-link { background: #293e2b; color: #b5db9f; }
+html[data-theme="dark"] :is(.agenda-link.vod, .agenda-detail-backdrop.is-pop .agenda-link.vod) { background: #293650; color: #abc6ff; }
+html[data-theme="dark"] .agenda-link.period { background: #283f49; color: #addeee; }
+html[data-theme="dark"] :is(.agenda-link.vod .agenda-vod-dur, .agenda-detail-backdrop.is-pop .agenda-link.vod .agenda-vod-dur) { color: #9ab6eb; }
+html[data-theme="dark"] .agenda-event .event-heart { color: #d5c9c2; }
+html[data-theme="dark"] .agenda-event .event-heart.on { color: #ff9cb7; }
