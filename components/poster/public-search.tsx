@@ -196,7 +196,21 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   );
   const exactGroups = useMemo(() => groups.filter((g) => g.exact), [groups]);
   const similarGroups = useMemo(() => groups.filter((g) => !g.exact), [groups]);
-  const ordered = useMemo(() => [...exactGroups, ...similarGroups], [exactGroups, similarGroups]);
+  // 편집실(2026-09-18 소유자): 토리님이 직접 쓴 것(일정 제목·설명·태그)이 **직접** 결과로 먼저, 타임라인·채팅에서 온
+  // 다시보기·챕터는 **간접** 결과(누르면 그 날로). 시청자 화면은 날짜별 섞어 보이는 기존 그대로.
+  const studio = Boolean(replayHref);
+  const directGroups = useMemo(
+    () => (studio ? [...exactGroups, ...similarGroups].map((g) => ({ ...g, vods: [] })).filter((g) => g.events.length > 0) : []),
+    [studio, exactGroups, similarGroups]
+  );
+  const indirectGroups = useMemo(
+    () => (studio ? [...exactGroups, ...similarGroups].map((g) => ({ ...g, events: [] })).filter((g) => g.vods.length > 0) : []),
+    [studio, exactGroups, similarGroups]
+  );
+  const ordered = useMemo(
+    () => (studio ? [...directGroups, ...indirectGroups] : [...exactGroups, ...similarGroups]),
+    [studio, directGroups, indirectGroups, exactGroups, similarGroups]
+  );
 
   const tagChips = useMemo(
     () => tags.filter((t) => t.isActive && !t.parentId && t.kind !== "modifier").slice(0, 12),
@@ -632,8 +646,12 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
           <div className="pi-body ps-body" onScroll={onScroll} ref={listRef}>
             {normalizedLen < MIN_CHARS ? (
               <div className="ps-start">
-                <p className="ps-hint">게임·방송 제목·챕터·가수. 초성(ㅁㅋ)과 줄임말(배그)도.</p>
-                {trends.length > 0 ? (
+                <p className="ps-hint">
+                  {studio
+                    ? "일정 제목·설명·태그를 먼저 찾고, 타임라인·채팅에서 나온 건 간접 결과로 그 날짜에 갑니다."
+                    : "게임·방송 제목·챕터·가수. 초성(ㅁㅋ)과 줄임말(배그)도."}
+                </p>
+                {!studio && trends.length > 0 ? (
                   <div className="ps-chiprow">
                     <span className="ps-chiplbl">요즘</span>
                     <div className="ps-chips">
@@ -685,15 +703,34 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
               </p>
             ) : null}
             <div className="ps-results" key={`${result?.query ?? ""}|${sort}`}>
-              {exactGroups.map(renderGroup)}
-              {similarGroups.length > 0 ? (
-                <div className="ps-similar">
-                  <span className="ps-divider">
-                    {exactGroups.length > 0 ? "비슷한 결과" : "정확히 맞는 건 없어요 — 비슷한 결과"}
-                  </span>
-                  {similarGroups.map(renderGroup)}
-                </div>
-              ) : null}
+              {studio ? (
+                <>
+                  {directGroups.length > 0 ? (
+                    <span className="ps-divider ps-divider-direct">직접 · 일정 제목·설명·태그</span>
+                  ) : null}
+                  {directGroups.map(renderGroup)}
+                  {indirectGroups.length > 0 ? (
+                    <div className="ps-similar">
+                      <span className="ps-divider">
+                        {directGroups.length > 0 ? "간접 · 타임라인·채팅에서 — 누르면 그 날로" : "일정엔 없어요 — 타임라인·채팅에서 (누르면 그 날로)"}
+                      </span>
+                      {indirectGroups.map(renderGroup)}
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  {exactGroups.map(renderGroup)}
+                  {similarGroups.length > 0 ? (
+                    <div className="ps-similar">
+                      <span className="ps-divider">
+                        {exactGroups.length > 0 ? "비슷한 결과" : "정확히 맞는 건 없어요 — 비슷한 결과"}
+                      </span>
+                      {similarGroups.map(renderGroup)}
+                    </div>
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
 

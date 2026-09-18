@@ -62,3 +62,4 @@
 | 0088 | vod_chat_terms — 다시보기 채팅 리플레이 단어 빈도(`vod_chat_terms`/`vod_chat_sync`, 원문·닉 미저장) + 단어 그래프·줄임말 채굴·트렌딩에 채팅 합류, `search_chat_top_terms` |
 | 0089 | 채팅 학습 손질 — 이모티콘(`/…/`) 행 삭제·수집 중단, `search_term_relations.last_day` + 관련어 점수 시간 감쇠(1년 ≈0.62배, 바닥 0.4), auto-rel 칩·채팅 줄임말·그래프 합류는 18개월 안 방송만, 트렌딩 이모티콘 제외 |
 | 0090 | 채팅 구간 프로필·방문 인물·은어 초안 — `vod_chat_bins`(30초: 메시지·고유 발화자 **수**·웃음·상위 단어), `vod_chat_people`(아는 스트리머만), `search_dictionary_notes`, `search_known_people`(이름+인사 줄임 샬하/쵸하), `vod_chat_profile`(anon; **비율만**, 웃음 등급), `search_person_mentions`/`search_graph_rebuild`에 채팅 방문 합류 + `search_entities.visits`, `search_related`에 visits, `search_dictionary_draft`(개발자) |
+| 0091 | 검색 품질 — 두 글자 한글 질의(사전 확장 없음)는 제목·설명·태그·챕터 **원문** 경계로만 적중("이게"≠"이 게임"), 두 글자엔 퍼지 끔; `search_trending` 채팅 단어는 말뭉치·사전에 있는 것만(누르면 결과 보장) + 불용어(아니야·사실…) |

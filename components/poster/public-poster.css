@@ -1859,17 +1859,21 @@ html[data-reduce-motion] .vch-tip {
    코너 구간은 세 톤이 번갈아(경계가 글자 없이 보인다), 현재 코너는 진한 파랑, 항목 눈금은 헤어라인, 재생 머리는 금색
    (현재 챕터·오늘과 같은 재질). 호버선 + 툴팁(시각 · 항목)은 JS가 style만 쓴다. 클릭 = 그 시각으로 점프. */
 .dvm-strip:empty { display: none; }
-/* 2026-09-18 개편(0090): 띠 폭을 숲 플레이어의 탐색줄과 맞춘다 — 플레이어는 좌우 8px 안쪽에서 시작(800·1200px 실측 동일).
-   채팅 반응(면)·발화 밀도(가는 선)가 띠 안을 채우고, 코너 구간은 위쪽 5px 리본으로 물러난다. 숫자 표기 없음. */
+/* 2026-09-18 개편(0090/0091): 띠 폭 = 숲 플레이어 탐색줄. iframe 안 DOM(.progress_track) 실측: 플레이어 폭 782·1132·1369
+   모두 좌우 **20px** 고정 안쪽(처음 8px는 초기 화면의 얇은 줄이었다 — 재생·호버 컨트롤의 탐색줄이 기준).
+   채팅 반응(면)·발화 밀도(가는 선)가 띠 안을 채우고, 코너 구간은 위쪽 5px 리본으로 물러난다. 숫자 표기 없음.
+   결: 유리판 위 낮은 산 — 옅은 파랑 면, 금색 밀도 선, 재생 머리는 금 손잡이(숲의 파란 점과 같은 문법). */
 .vch-strip {
   position: relative;
   height: 22px;
-  margin: 0 8px;
-  border-radius: 7px;
-  background: linear-gradient(180deg, #eef0f6, #e6e9f1);
+  margin: 0 20px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f1f3f8, #e6e9f1);
   overflow: visible;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 80%),
+    inset 0 0 0 1px rgb(29 29 41 / 5%);
 }
 .vch-strip.has-chat {
   height: 36px;
@@ -1907,6 +1911,20 @@ html[data-reduce-motion] .vch-tip {
 .vch-strip.has-chat .vch-seg:last-of-type { border-radius: 0 7px 0 0; }
 .vch-strip.has-chat .vch-tick { opacity: 0.55; }
 .vch-strip.has-chat .vch-head { top: -4px; bottom: -4px; }
+/* 재생 머리 손잡이 — 띠 위에 살짝 걸친 금색 동그라미(잡을 수 있어 보이게). */
+.vch-strip.has-chat .vch-head::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f3c75a, #b47a10);
+  box-shadow: 0 1px 3px rgb(29 29 41 / 30%), 0 0 0 1.5px #fff;
+}
+.vch-strip.has-chat:hover .vch-heat-line { stroke: rgb(217 162 27 / 95%); }
 .vch-peaks {
   position: absolute;
   top: 100%;
@@ -7748,6 +7766,8 @@ html[data-pchrome="3"] .poster-chrome-title {
   border-color: rgb(244 183 64 / 55%);
   background: rgb(244 183 64 / 14%);
 }
+/* 편집실 검색(2026-09-18): 직접(일정) 구분선은 파랑 잉크 */
+.ps-divider-direct { color: #1d5fb0; }
 /* 편집실 검색(2026-09-18): 행 + ▶(새 탭 다시보기) 한 줄 */
 .ps-line {
   display: flex;
