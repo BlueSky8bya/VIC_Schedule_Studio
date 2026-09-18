@@ -7914,6 +7914,7 @@ html[data-pchrome="3"] .poster-chrome-title {
   display: flex;
   align-items: center;
   gap: 10px;
+  text-decoration: none; /* 모바일에선 <a>(숲 링크)로도 그려진다 */
   width: 100%;
   min-width: 0;
   min-height: var(--ps-row-h);
@@ -8323,31 +8324,44 @@ html[data-reduce-motion] .ps-act,
 html[data-reduce-motion] .ps-rail-dot::before {
   transition: none;
 }
+/* 모바일 배치(2026-09-18 소유자: 제목이 너무 잘린다) — 썸네일 작게(112×63), 제목은 3줄까지, 길이는 오른쪽 대신 메타 줄에,
+   챕터는 시각 + 두 줄 라벨, 오른쪽 재생 아이콘 없음(행 전체가 숲 링크). */
 @media (max-width: 640px) {
   .ps-sheet {
+    --ps-row-h: 52px;
     border-radius: 18px;
   }
-  .ps-lead {
-    width: 80px;
-    height: 45px;
+  .ps-sheet .ps-field input { font-size: 17px; }
+  .ps-sheet .ps-lead { width: 112px; height: 63px; border-radius: 10px; }
+  .ps-sheet .ps-thumb { width: 112px; height: 63px; border-radius: 10px; }
+  .ps-sheet .ps-lead-event { width: 36px; height: 36px; }
+  .ps-sheet .ps-row { gap: 10px; padding: 6px 4px; align-items: flex-start; }
+  .ps-sheet .ps-vod-row { align-items: flex-start; }
+  .ps-sheet .ps-title { font-size: 15px; line-height: 1.3; }
+  .ps-sheet .ps-vod-row .ps-title { -webkit-line-clamp: 3; }
+  .ps-sheet .ps-event .ps-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
-  .ps-lead-event {
-    width: 32px;
-    height: 32px;
+  .ps-sheet .ps-meta { font-size: 12.5px; }
+  .ps-sheet .ps-vod-row .ps-side { display: none; } /* 길이는 메타 줄로 */
+  .ps-sheet .ps-event .ps-side { min-width: 36px; }
+  .ps-sheet .ps-event .ps-side-text { font-size: 12px; }
+  .ps-sheet .ps-chapters { margin-left: 10px; padding-left: 8px; }
+  .ps-sheet .ps-chapter { --ps-row-h: 36px; padding: 4px 4px; align-items: flex-start; }
+  .ps-sheet .ps-chapter .ps-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 14px;
   }
-  .ps-chapters {
-    margin-left: 14px;
-    padding-left: 8px;
-  }
-  .ps-tc {
-    min-width: 48px;
-  }
-  .ps-side {
-    min-width: 40px;
-  }
-  .ps-body {
-    padding-right: 14px;
-  }
+  .ps-sheet .ps-tc { min-width: 44px; padding-top: 2px; font-size: 12.5px; }
+  .ps-sheet .ps-chapter .ps-side { display: none; }
+  .ps-sheet .ps-body { padding-right: 12px; }
+  .ps-sheet .ps-chip { font-size: 13px; }
 }
 
 /* 검색에서 고른 일정의 칸/줄 점등 — 오늘 링과 같은 색 계열로 두 번 숨쉬고 사라진다. */

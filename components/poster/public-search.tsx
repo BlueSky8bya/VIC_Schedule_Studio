@@ -89,6 +89,15 @@ type Row =
 
 export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, onReplay }: Props) {
   const [q, setQ] = useState("");
+  // 모바일(2026-09-18 소유자): 결과가 오면 키보드를 내리고, 다시보기·챕터는 창 대신 숲 링크(새 탭)로 간다. 640px = 시트 모바일 CSS 기준.
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const apply = () => setMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
   const [result, setResult] = useState<PublicSearchResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -171,6 +180,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         resultForRef.current = q;
         setResult(json);
         setCursor(-1);
+        if (window.matchMedia("(max-width: 640px)").matches) inputRef.current?.blur(); // 키보드 내림 — 결과가 화면을 차지하게
         setExpanded(new Set());
         listRef.current?.scrollTo({ top: 0 });
       } catch (err) {
@@ -312,15 +322,37 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
 
   // 행 번호(키보드 커서·스태거용) — 그리는 순서와 rows 순서가 같아야 한다.
   let rowNo = -1;
+  const soopUrl = (titleNo: number, sec?: number) =>
+    `https://vod.sooplive.co.kr/player/${titleNo}${sec !== undefined && sec >= 3 ? `?change_second=${Math.floor(sec)}` : ""}`;
   const rowBtn = (row: Row, className: string, act: string, children: ReactNode, title: string) => {
     rowNo += 1;
     const i = rowNo;
+    const key = `${row.kind}:${row.dateKey}:${row.kind === "event" ? row.hit.eventId : row.titleNo}:${row.kind === "chapter" ? row.sec : ""}`;
+    // 모바일 다시보기·챕터 = 숲 플레이어 링크(새 탭). 창(DayVodWindow)은 PC 전용 — 폰에선 숲 앱/사이트가 낫다(소유자).
+    if (mobile && row.kind !== "event") {
+      return (
+        <a
+          className={`ps-row ${className}`}
+          data-act={act}
+          data-row={i}
+          href={soopUrl(row.titleNo, row.kind === "chapter" ? row.sec : undefined)}
+          key={key}
+          onClick={() => hapticTick()}
+          rel="noopener noreferrer"
+          style={{ "--i": Math.min(i, 12) } as React.CSSProperties}
+          target="_blank"
+          title={title}
+        >
+          {children}
+        </a>
+      );
+    }
     return (
       <button
         className={`ps-row ${className}${cursor === i ? " is-cursor" : ""}`}
         data-act={act}
         data-row={i}
-        key={`${row.kind}:${row.dateKey}:${row.kind === "event" ? row.hit.eventId : row.titleNo}:${row.kind === "chapter" ? row.sec : ""}`}
+        key={key}
         onClick={() => pick(row)}
         onMouseMove={() => {
           if (cursor !== i) setCursor(i);
@@ -336,7 +368,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
 
   // 편집실: 행 옆에 ▶(다시보기 창). 시청자 화면(onReplay 없음)은 행 자체가 재생이라 그대로.
   const withExt = (dateKey: string, titleNo: number, sec: number | undefined, node: ReactNode) =>
-    onReplay ? (
+    onReplay && !mobile ? (
       <div className="ps-rowline" key={`${titleNo}:${sec ?? "v"}`}>
         {node}
         <button
@@ -421,6 +453,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                   <span className="ps-meta">
                     다시보기{v.hostNick ? ` · 합방 ${v.hostNick}` : ""}
                     {v.allChapters.length > 0 ? ` · 챕터 ${v.allChapters.length}` : ""}
+                    {mobile ? ` · ${formatVodDuration(v.durationMs)}` : ""}
                   </span>
                 </span>
                 <span className="ps-side">
