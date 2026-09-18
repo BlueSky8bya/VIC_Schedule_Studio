@@ -235,6 +235,8 @@ const ACT: Record<string, TargetLabel> = {
   "search-tag-chip": { name: "검색 태그 제안", area: "시청자 화면" },
   "search-sort": { name: "검색 정렬", area: "시청자 화면", hint: "관련도·최신·오래된·인기" },
   "search-expand-vod": { name: "검색 챕터 더 보기", area: "시청자 화면", hint: "한 다시보기의 적중 챕터 전부 펼치기" },
+  "search-rail-jump": { name: "검색 날짜 레일", area: "시청자 화면", hint: "오른쪽 점을 눌러 그 날짜로" },
+  "search-scroll-top": { name: "검색 맨 위로", area: "시청자 화면" },
   "search-related-person": { name: "검색 관련 인물 칩", area: "시청자 화면", hint: "함께 자주 나온 사람" },
   "search-related-term": { name: "검색 관련 검색어 칩", area: "시청자 화면" },
   "search-trending-chip": { name: "검색 요즘 뜨는 말 칩", area: "시청자 화면" },
