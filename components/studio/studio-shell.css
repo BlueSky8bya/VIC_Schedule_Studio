@@ -8510,6 +8510,7 @@ html[data-reduce-motion] .modal-close:active {
   to { opacity: 1; transform: none; }
 }
 .tge-list {
+  align-content: start;
   display: grid;
   /* 넓은 모달에선 여러 열 — 한 열이면 오른쪽 절반이 비고 스크롤만 길어진다(CLAUDE.md 웹 다열 규칙). */
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
@@ -12566,8 +12567,10 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
 .modal-card-tags > .tag-editor > .tag-editor-scroll {
   display: grid;
   gap: var(--space-4);
-  flex: 1 1 auto;
-  min-height: 0;
+  /* 높이 고정(2026-09-18 소유자: 콘텐츠↔형식 전환마다 창이 늘었다 줄어 어지럽다) — 목록 길이와 무관하게
+     같은 높이를 유지하고 넘치면 안에서만 스크롤한다. 뷰포트에 맞춰 clamp. */
+  flex: 0 0 auto;
+  height: clamp(220px, 52vh, 560px);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 20px;
@@ -12612,6 +12615,8 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
 
   .modal-card-tags > .tag-editor > .tag-editor-scroll {
     grid-template-columns: minmax(0, 1fr);
+    /* 모바일 시트도 같은 이유로 고정 높이(전환 시 시트가 출렁이지 않게) */
+    height: clamp(200px, 46svh, 460px);
     padding: var(--space-card);
   }
 
