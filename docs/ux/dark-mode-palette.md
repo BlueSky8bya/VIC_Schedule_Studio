@@ -1,6 +1,12 @@
 # Dark palette follow-up — 2026-09-19
 
-Status: third owner correction pushed (`db1bc591`); owner subsequently requested a mobile settings-button follow-up and another push. Latest changes verified locally; production deployment is NOT VERIFIED. Earlier release evidence below remains historical.
+Status: palette/settings changes pushed (`db1bc591`, `9a73b757`). Ribbon editor follow-up fixes remaining light duration and link controls; production deployment is NOT VERIFIED. Vercel screenshot showed the previous release as Production Staged, not assigned to the operating domain. Earlier release evidence below remains historical.
+
+## Ribbon editor follow-up — 2026-09-19
+
+The calendar ribbons had dark styles, but their editor still inherited light-only `--sd-*` tokens and hardcoded white controls. Central `app/dark.css` now supplies muted rose/cyan tokens for both kinds, desktop slider/thumbs, mobile stepper/scrub, preset states, labels and link input/visit button including focus/hover/disabled. Active preset hover preserves its contrasting selected fill. Light theme, permissions, data boundaries and KST behavior are unchanged.
+
+Verification: isolated production build, typecheck and lint passed. Desktop/mobile fixture interaction checks passed 2/2, covering both kinds with intercepted writes; captures are in `tmp/dark-audit/ribbon-tests`. Independent review identified mobile label contrast and selected-hover specificity; both corrected. Unit suite: 954/956 passed, with the same two unrelated ambient-codex failures. Harness retains its pre-existing duplicate active rule ID failure. No production data writes or schema changes.
 
 ## V3: research-informed harmony — 2026-09-19
 

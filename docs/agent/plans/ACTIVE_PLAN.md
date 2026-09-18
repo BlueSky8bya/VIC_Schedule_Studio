@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| DARK-HARMONY-20260919 | Code verified; owner authorized mobile settings follow-up push after canceled deployment. Production unverified | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
+| DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |
 | PLAN-20260909-014 | In Progress | [Rule preservation, Korean art folders and remaining C choices](PLAN-20260909-014-rule-preservation-and-art-completion.md) |
 | PLAN-20260910-015 | Awaiting visual feedback | [Distance and controls](../../ambient/rounds/ROUND-36-depth-and-showcase-controls.md), [world depth layers](PLAN-20260910-015-world-depth-layers.md) |

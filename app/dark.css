@@ -687,6 +687,67 @@ html[data-theme="dark"] :is(.public-event, .studio-event-pill):not([data-color])
   background: var(--night-raised); color: var(--ink); border-color: var(--night-line);
   --evt-shadow: none;
 }
+/* The ribbon editor shares its semantic palette on desktop and mobile. */
+html[data-theme="dark"] .support-fields {
+  --sd-card: #30262a;
+  --sd-border: #71505c;
+  --sd-ink: #edc3cf;
+  --sd-mid: #dda8b9;
+  --sd-strong: #b7778e;
+  --sd-hover: #48323b;
+  --sd-soft: #3b2c32;
+  --sd-stripe: rgb(221 168 185 / 20%);
+  --sd-glow: rgb(221 168 185 / 18%);
+  --sd-glow-soft: rgb(221 168 185 / 9%);
+  --sd-track-a: #32282d;
+  --sd-track-b: #3f2e36;
+  --sd-thumb-shadow: rgb(0 0 0 / 35%);
+}
+html[data-theme="dark"] .support-fields[data-kind="period"] {
+  --sd-card: #252f32;
+  --sd-border: #466770;
+  --sd-ink: #badddf;
+  --sd-mid: #a1cdd5;
+  --sd-strong: #71a9b6;
+  --sd-hover: #30444a;
+  --sd-soft: #2b3b40;
+  --sd-stripe: rgb(161 205 213 / 20%);
+  --sd-glow: rgb(161 205 213 / 18%);
+  --sd-glow-soft: rgb(161 205 213 / 9%);
+  --sd-track-a: #273235;
+  --sd-track-b: #2c3e44;
+}
+html[data-theme="dark"] .support-fields :is(.duration-chips button, .dstep, .dstep-scrub) {
+  background: var(--sd-soft); color: var(--sd-ink); border-color: var(--sd-border);
+}
+html[data-theme="dark"] .support-fields :is(.duration-chips button, .dstep):hover:not(:disabled):not(.active),
+html[data-theme="dark"] .support-fields .dstep-scrub.scrubbing { background: var(--sd-hover); }
+html[data-theme="dark"] .support-fields .duration-chips button.active {
+  background: var(--sd-strong); color: #201c1d; border-color: var(--sd-strong);
+}
+html[data-theme="dark"] .support-fields :is(button, input, a):focus-visible {
+  outline: 2px solid var(--sd-mid); outline-offset: 3px;
+}
+html[data-theme="dark"] .duration-slider input[type="range"]::-webkit-slider-thumb {
+  background: linear-gradient(180deg, var(--sd-strong) 0 9px, var(--sd-soft) 9px);
+}
+html[data-theme="dark"] .duration-slider input[type="range"]::-moz-range-thumb {
+  background: linear-gradient(180deg, var(--sd-strong) 0 9px, var(--sd-soft) 9px);
+}
+html[data-theme="dark"] .support-fields :is(.support-link-label, .support-link-label svg, .dhint) { color: var(--sd-mid); }
+html[data-theme="dark"] .support-fields :is(.duration-manual, .duration-title) { color: var(--sd-ink); }
+html[data-theme="dark"] .support-fields .support-link-input {
+  background: var(--paper); color: var(--ink); border-color: var(--sd-border);
+}
+html[data-theme="dark"] .support-fields .support-link-input:focus {
+  background: var(--paper); border-color: var(--sd-strong); box-shadow: 0 0 0 3px var(--sd-glow);
+}
+html[data-theme="dark"] .support-fields .support-link-input::placeholder { color: var(--muted); }
+html[data-theme="dark"] .support-fields .support-link-input:disabled { color: var(--muted); opacity: .6; }
+html[data-theme="dark"] .support-fields .support-visit {
+  background: var(--sd-soft); color: var(--sd-ink); border-color: var(--sd-border);
+}
+html[data-theme="dark"] .support-fields .support-visit:hover { background: var(--sd-hover); border-color: var(--sd-strong); }
 html[data-theme="dark"] .support-bar {
   background: linear-gradient(180deg, #563a43, #422d35); color: #ffc0d2;
   box-shadow: inset 0 1px 0 #ffffff12;

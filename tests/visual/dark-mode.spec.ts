@@ -298,6 +298,33 @@ for (const mobile of [false, true]) {
     await capture(page, info, "date-time-picker");
     await darkSurface(page, ".dtp-panel");
   });
+  test(`ribbon duration editor ${mobile ? "mobile" : "desktop"}`, async ({ page }, info) => {
+    await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1840, height: 1000 });
+    await page.goto("/visual-fixture/studio?role=owner");
+    if (mobile) await page.locator("[data-act=agenda-event]").first().click();
+    else await page.locator(".studio-event-pill").first().dblclick();
+    await page.locator(mobile ? "[data-act=me-fold-head]" : "[data-act=fold-head]").click();
+    for (const kind of ["up", "period"]) {
+      await page.locator(`.band-kind.${kind}`).click();
+      await page.locator(".support-link-input").fill("https://example.com/event");
+      for (const selector of [".support-duration", ".duration-chips button", ".dstep", ".support-visit", ".support-link-input"]) {
+        await darkSurface(page, selector);
+      }
+      await page.locator(".duration-chips button").first().click();
+      await expect(page.locator(".duration-chips button").first()).toHaveClass(/active/);
+      const selectedFill = kind === "up" ? "rgb(183, 119, 142)" : "rgb(113, 169, 182)";
+      await expect(page.locator(".duration-chips button").first()).toHaveCSS("background-color", selectedFill);
+      await page.locator(".support-link-input").hover();
+      await expect(page.locator(".duration-chips button").first()).toHaveCSS("background-color", selectedFill);
+      await page.getByRole("button", { name: "하루 늘리기" }).click();
+      await page.locator(".support-visit").hover();
+      await darkSurface(page, ".support-visit");
+      await page.locator(".support-link-input").focus();
+      await darkSurface(page, ".support-link-input");
+      await page.locator(".support-fields").screenshot({ path: info.outputPath(`ribbon-${kind}.png`) });
+      await capture(page, info, `ribbon-${kind}-editor`);
+    }
+  });
   test(`replay parts and help ${mobile ? "mobile" : "desktop"}`, async ({ page }, info) => {
     await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1840, height: 1000 });
     await page.goto("/visual-fixture/theme?surface=replay");
