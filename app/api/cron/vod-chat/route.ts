@@ -20,11 +20,15 @@ export async function GET(req: Request) {
   const chunks = Math.max(1, Math.min(150, Number(url.searchParams.get("chunks") ?? 60)));
   const targets = await pickChatSyncTargets(limit);
   const result = await syncVodChat(targets, chunks);
-  // 새 단어가 들어왔으면 그래프·줄임말 사전을 다시 배운다(무거운 편 — 조각을 실제로 받았을 때만).
+  // 새 단어가 들어왔으면 **가벼운 것만** 다시 배운다(조각을 실제로 받았을 때만).
+  // ⚠ search_term_graph_rebuild는 여기서 부르지 않는다(2026-09-19): 최적화 뒤에도 63초라
+  // 이 라우트의 maxDuration 60초를 넘겨, 채팅이 들어오는 날마다 크론이 통째로 타임아웃했다
+  // (그 바람에 줄임말·요즘 말 갱신도 함께 죽고 있었다). 무거운 재빌드는 pg_cron이 밤에 돌린다
+  // (db/migrations/0120, cron.job 'vic-search-graph' → public.search_graph_nightly()).
   if (result.chunks > 0) {
     const supabase = createSupabaseAdminClient();
     if (supabase) {
-      for (const fn of ["search_term_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
+      for (const fn of ["search_synonyms_rebuild", "search_trending_rebuild"] as const) {
         const { error } = await supabase.rpc(fn);
         if (error) console.warn(`[vod-chat] ${fn} failed:`, error.message);
       }
