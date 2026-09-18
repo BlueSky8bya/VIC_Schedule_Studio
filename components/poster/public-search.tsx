@@ -653,7 +653,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                 </p>
                 {!studio && trends.length > 0 ? (
                   <div className="ps-chiprow">
-                    <span className="ps-chiplbl">요즘</span>
+                    <span className="ps-chiplbl">화제</span>
                     <div className="ps-chips">
                       {trends.map((t) => (
                         <button
