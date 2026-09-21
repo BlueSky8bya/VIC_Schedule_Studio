@@ -6,6 +6,14 @@
 
 ## v0.1.0 — 2026-09-21
 
+### CHG-20260921-003 — Developer-only live aggregates
+
+Restored the live insights tab from existing visit sessions through an authenticated developer
+endpoint. Counts only, no-store, fail-closed role check, visibility-aware polling and stale-value
+clearing on errors/denial. No DB migration or additional personal-data collection. Rollback by
+removing the reader/UI; never restore the public Realtime feed. Evidence and scope:
+[live insights plan](plans/PLAN-20260921-live-insights.md), ADR-0028.
+
 ### CHG-20260921-002 — Privacy boundaries and authorized deployment
 
 Live DB audit found anonymous administrative RPCs and direct REST identity/teaser/nonpublic VOD gaps.

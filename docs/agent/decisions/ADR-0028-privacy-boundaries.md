@@ -23,6 +23,13 @@ Public Realtime role/device/visibility sharing is retired. This supersedes the o
 that omitting email made the presence feed safe. Stable account/device hashes remain pseudonymous
 personal data. Analytics uses reviewed keys and typed values; arbitrary short text is not safe.
 
+Live-tab restoration (2026-09-21): `/api/developer/presence` authenticates the real developer
+on every request before counting existing active visit sessions. Explicit numeric DTO, private
+no-store responses, no raw rows/identifiers, no public channel or new collection. Visible-tab
+polling is 15 seconds; heartbeat window is 90 seconds. Counts represent sessions, not unique
+people; hidden tabs are not measured. Independent counts can differ briefly during arrivals.
+This replaces the temporary unavailable live-tab UI, not the prohibition on public Realtime.
+
 Root AGENTS G-20 and constitution entry codify these rules. Audit scope, remaining historical
 exposure/retention/provider gaps and deployment evidence live in
 [privacy audit](../verification/PRIVACY-20260921.md). No claim of zero prior breach is made.
