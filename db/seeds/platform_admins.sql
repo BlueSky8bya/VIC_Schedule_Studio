@@ -11,7 +11,16 @@
 -- - 공개 API 출력을 바꾸지 않는다. 누가 로그인했든 공개 응답에는 비공개 데이터가
 --   포함되지 않는다.
 
-insert into public.platform_admins (email, note)
-values
-  ('blackspace665@gmail.com', 'Developer / system maintainer')
-on conflict (email) do nothing;
+-- Supply DEVELOPER_EMAIL through apply-db.mjs; never commit an account identity.
+do $$
+declare configured text := current_setting('app.developer_emails', true);
+begin
+  if coalesce(regexp_replace(configured, '[,[:space:]]', '', 'g'), '') = '' then
+    raise exception 'DEVELOPER_EMAIL must be configured for developer seeding';
+  end if;
+  insert into public.platform_admins(email,note)
+    select lower(trim(email)), 'Developer / system maintainer'
+    from unnest(string_to_array(configured, ',')) as email
+    where trim(email) <> ''
+    on conflict(email) do nothing;
+end $$;

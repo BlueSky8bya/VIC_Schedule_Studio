@@ -17,7 +17,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| PRIVACY-20260921 | DB containment applied; authorized release in verification | Verify deployed release; resolve historical Git exposure, legacy realtime tabs, retention and provider evidence separately | [Privacy audit](verification/PRIVACY-20260921.md) |
+| PRIVACY-20260921 | Release7549df6b and DB0124/0125 verified in production | Resolve historical Git exposure, legacy realtime tabs, retention and provider evidence separately | [Privacy audit](verification/PRIVACY-20260921.md) |
 | VIEWER-SEARCH | P0–P3 shipped (`c5620f6a` + follow-up) | Owner visual review on prod; nothing queued | [PLAN-023](plans/PLAN-20260918-023-viewer-search.md) |
 | AMB-FOREST | Release authorized | Review fog sky boundary and entry keys | [R69](../ambient/rounds/ROUND-69-fog-sky-boundary.md) |
 | STYLE-REF-GAMES | Shipped, extensible | New captures: drop into `공통화풍참고/<게임>/`, `style:scan --sheets`, classifier agent fills the worksheet, `style:apply`, `style:check` | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ADR-0021 |

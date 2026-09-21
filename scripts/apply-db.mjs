@@ -85,6 +85,10 @@ if (env.OWNER_EMAIL) {
   console.log(`\n소유자 설정 로드 완료 (${emails.length}개 계정; 식별정보 출력 생략)`);
 }
 
+if (env.DEVELOPER_EMAIL) {
+  await client.query("select set_config('app.developer_emails', $1, false)", [env.DEVELOPER_EMAIL]);
+}
+
 for (const file of files) {
   const sql = readFileSync(file, "utf8");
   process.stdout.write(`\n실행: ${file} ... `);

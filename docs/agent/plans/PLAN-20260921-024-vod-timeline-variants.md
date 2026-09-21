@@ -15,7 +15,7 @@ Subsequent owner instruction authorized migration and push/deployment. Additive0
 
 ## Status
 
-Implementation and local verification complete. Production migration applied; authorized deployment in progress with privacy fixes.
+Implementation and verification complete. DB0124/0125 and release7549df6b deployed; root commit marker and timeline API verified. Reported VOD207499291 refreshed to66entries/1variant. Privacy follow-ups remain in the audit record.
 
 SOOP reply contract verified against an actual four-reply thread: `/comment/<root>/reply` returns the complete `data` array (per_page ignored), with `c_comment_no`, `p_comment_no`, author ID and text. Collector uses four workers and rejects incomplete parent/reply snapshots. Same-author IDs remain transient; reply-only candidate keys are hashed per root to preserve settings after deletion of the first reply.
 

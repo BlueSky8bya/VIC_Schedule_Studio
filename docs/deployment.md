@@ -114,11 +114,13 @@ Supabase 대시보드 → **Storage**
      `app.owner_emails` GUC로 주입해 `calendar_co_owners`를 동기화한다(멱등; 목록에서
      빠진 계정은 공동 소유자에서 자동 제거됨).
 - **개발자(developer/슈퍼관리자)** 는 `platform_admins` 테이블로 관리되며,
-  현재 `blackspace665@gmail.com`(나)이 등록돼 있어 유지보수 권한을 계속 가집니다.
+  실제 개발자 계정은 공개 문서에 적지 않습니다. 로컬 `DEVELOPER_EMAIL`을 설정한 뒤
+  `node scripts/apply-db.mjs db/seeds/platform_admins.sql`로 등록합니다. 문서의 이메일은 예시입니다.
   - 개발자도 공개 API에는 비공개 데이터가 안 나오고, 비공개 레이어 열람은 잠금해제가 필요(설계 규칙).
 - 빅토리님 외 다른 운영자를 개발자로 추가하려면:
-  `db/seeds/platform_admins.sql`에 이메일을 추가하고 `node scripts/apply-db.mjs db/seeds/platform_admins.sql` 실행.
-- 매니저/작업자는 스튜디오의 **신뢰 멤버** 화면에서 빅토리님이 직접 추가.
+  비추적 `.env.local`의 `DEVELOPER_EMAIL`에 이메일을 쉼표로 구분해 설정한 뒤
+  `node scripts/apply-db.mjs db/seeds/platform_admins.sql` 실행. SQL에는 실제 이메일을 넣지 않습니다.
+- 현재 역할은 owner/developer/viewer뿐입니다. 매니저·작업자 및 신뢰 멤버 UI는 폐지됐습니다.
 
 ---
 

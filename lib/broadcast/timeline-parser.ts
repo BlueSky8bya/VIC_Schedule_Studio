@@ -169,4 +169,3 @@ export function parseTimeline(text: string): TimelineEntry[] {
   out.sort((a, b) => a.sec - b.sec);
   return out;
 }
-
