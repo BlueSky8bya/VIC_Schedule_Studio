@@ -27,6 +27,8 @@ if (!U || !K) {
 }
 const H = { apikey: K, Authorization: `Bearer ${K}`, "Content-Type": "application/json" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const managed = await fetch(`${U}/rest/v1/vod_timeline_candidate?select=title_no&limit=1`, { headers: H });
+if (!managed.ok && managed.status !== 404) throw new Error(`Cannot verify timeline schema (${managed.status}).`);
 
 // ── 인자 파싱 ────────────────────────────────────────────────────────────────────────────────
 function parseDay(s) {
@@ -193,7 +195,8 @@ for (const t of targets) {
   };
   await upsert("vod_archive", [row]);
   const tl = await fetchTimeline(row.host_id, t.titleNo);
-  await upsert("vod_timeline", [
+  // Once 0124 exists, only the unified collector may publish the representative.
+  if (!managed.ok) await upsert("vod_timeline", [
     {
       title_no: t.titleNo,
       author_nick: tl?.nick ?? "",

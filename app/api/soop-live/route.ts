@@ -1,7 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { recordLiveTick } from "@/lib/broadcast/session";
 import { fetchSoopLive, type LiveState } from "@/lib/broadcast/soop";
-import { maybeSyncVodPipeline } from "@/lib/broadcast/vod-timeline";
+import { maybeSyncVodPipeline, maybeSyncTimelines } from "@/lib/broadcast/vod-timeline";
 
 // 토리님 SOOP 라이브 상태 — 우리 서버가 대신 폴링한다(시청자 브라우저가 SOOP를 직접
 // 때리지 않게: CORS·남용 방지). 비공식 엔드포인트라 깨질 수 있어 실패하면 조용히 오프라인 처리.
@@ -32,9 +32,12 @@ export async function GET() {
     // 다시보기·타임라인 동기화의 보조 트리거 — 백업 크론이 어떤 이유로든 멈춰도(2026-09-01
     // prod 실측: 하루 종일 0건) 시청자가 포스터를 열기만 하면 치유된다. after()라 응답을 안
     // 막고, 실제 주기는 maybeSyncVodPipeline의 DB 스로틀이 지키므로 과다 실행 없음.
-    if (!data.isLive) {
-      after(() => maybeSyncVodPipeline().catch(() => {}));
-    }
+    after(async () => {
+      await Promise.all([
+        maybeSyncTimelines().catch(() => {}),
+        data.isLive ? Promise.resolve() : maybeSyncVodPipeline().catch(() => {})
+      ]);
+    });
   }
   // build: 서버의 현재 배포 커밋 — 시청자 탭이 오래 떠 있으면 데이터(이 폴링)는 최신인데
   // 코드/CSS는 옛 빌드로 남는다. 클라이언트가 자기 번들 해시와 비교해 새 배포를 감지한다

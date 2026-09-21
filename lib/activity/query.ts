@@ -4,8 +4,9 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails } from "@/lib/auth/config";
 import { accountHashOf } from "@/lib/insights/account-hash";
-import { ACTIVITY_RETENTION_DAYS, DIAG_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
+import { ACTIVITY_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
 import { chooseHostVisit, type HostVisit } from "@/lib/activity/visit-attach";
+import { pruneActivity } from "@/lib/activity/retention";
 import { fetchAllRows } from "@/lib/db/paginate";
 
 // 행동 타임라인 조회(0062) — 개발자 전용. 한 날의 이벤트를 방문(visit_key) 단위로 묶어 돌려준다.
@@ -84,17 +85,9 @@ export async function getActivityDayAction(
     return { ok: false, error: "Supabase service role 키가 필요합니다." };
   }
 
-  // 보존 90일 — 조회할 때 지나가며 정리한다(크론 불필요, private_unlock_attempts와 같은 패턴).
-  const cutoff = new Date(Date.now() - ACTIVITY_RETENTION_DAYS * 86400_000)
-    .toISOString()
-    .slice(0, 10);
-  void supabase.from("activity_event").delete().lt("day", cutoff).eq("diag", false);
-  void supabase.from("activity_daily_count").delete().lt("day", cutoff);
-  // 진단 층은 3일만 — 촘촘한 만큼 빨리 쌓이고, 버그를 쫓을 때만 쓴다.
-  const diagCutoff = new Date(Date.now() - DIAG_RETENTION_DAYS * 86400_000)
-    .toISOString()
-    .slice(0, 10);
-  void supabase.from("activity_event").delete().lt("day", diagCutoff).eq("diag", true);
+  // Enabled only after a restricted backup and explicit cleanup authorization.
+  // Await thenables: discarding a PostgREST builder never sends a request.
+  if (await pruneActivity(supabase) === "failed") console.warn("[privacy-retention] cleanup failed");
 
   const rows = await fetchAllRows<Row>((from, to) => {
     let q = supabase

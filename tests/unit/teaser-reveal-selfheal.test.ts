@@ -41,12 +41,14 @@ describe("진단 층 — 촘촘하되 짧게", () => {
   });
 });
 
-describe("프레즌스 키는 탭 단위", () => {
-  it("localStorage면 두 탭이 서로를 덮어써 보고 있는 탭이 '탭만 열림'으로 잡힌다", () => {
-    const SRC = fs.readFileSync(path.join(process.cwd(), "lib/presence/presence-client.ts"), "utf8");
-    const block = SRC.slice(SRC.indexOf("let presenceKey"), SRC.indexOf("channel = client.channel"));
-    expect(block).toContain("sessionStorage");
-    expect(block).not.toContain("localStorage");
+describe("public presence privacy boundary", () => {
+  it("does not create an anonymous presence channel or publish role and tab state", () => {
+    const source = fs.readFileSync(path.join(process.cwd(), "lib/presence/presence-client.ts"), "utf8");
+    const beacon = fs.readFileSync(path.join(process.cwd(), "components/presence/presence-beacon.tsx"), "utf8");
+    expect(source).not.toMatch(/createBrowserClient|\.channel\(|\.track\(|presenceState/);
+    expect(beacon).not.toContain("startPresence");
+    expect(beacon).toContain('fetch("/api/presence"');
+    expect(beacon).toContain('keepalive: true');
   });
 });
 

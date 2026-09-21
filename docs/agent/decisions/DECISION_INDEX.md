@@ -8,6 +8,8 @@
 
 | ADR | Status | Area | Decision | Revisit Trigger |
 |---|---|---|---|---|
+| [0028](ADR-0028-privacy-boundaries.md) | Accepted | 개인정보 보호 | 공개 신원·인증 신원 분리, DB 직접 경계, 원자적 비번 제한, 공개 presence 철수 | 신원·로그·보존·공개 데이터 경계 변경 |
+| [0027](ADR-0027-fan-timeline-variants.md) | Accepted | 팬 타임라인 | 작성자·스레드별 후보, 동일인 이어쓰기, 대표 검색·공개 대안 분리, 재수집에도 수동 설정 보존 | 목적 분류·노출 정책 변경 |
 | [0026](ADR-0026-automatic-dark-tag-palette.md) | Accepted | 다크 태그 팔레트 | 원본 색 보존, OKLCH 역할별 팔레트 자동 계산·DB 저장, 공개 hex DTO와 공유 렌더 | 색 계약 버전·대비 목표 변경 |
 | [0025](ADR-0025-side-panel-unification.md) | Accepted | 달력 옆 패널 통일 | 편집실·시청자·미리보기가 같은 훅(`use-side-panel`)·같은 알약 `[⇤ 패널 ⇥]`. 패널은 표면 밖 한 줄('끔' 폐지), 1280px 밑 자동 접힘, 열면 떠서 덮기. /onair는 항상 펼침 | 패널 폭·기준·자리 규칙을 바꾸거나 표면 안 레일을 되살릴 때 |
 | [0024](ADR-0024-spring-meadow-three-layers.md) | Accepted | 봄 초원 세 레이어 | 새 F/M/N·나무 없는 초원·봄만 .35 지평선·캐시된 원본 마스크 | 계절 확대 또는 공간 기준 변경 |

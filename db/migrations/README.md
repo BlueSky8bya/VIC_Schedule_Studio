@@ -12,7 +12,7 @@
 
 ## 목록 (번호 → 목적)
 
-Latest: `0123_dark_tag_palette_harmony.sql` — muted v3 generated palettes; apply before v3 readers, keep v1/v2 for rollback.
+Latest: `0125_privacy_boundary.sql` — service-only RPC grants, identity column protection, masked public event view, direct REST teaser/private-unlock rules and atomic shared passcode attempt reservation. `0124` (fan timeline candidates/choices) and `0125` applied successfully to production on 2026-09-21 KST with verified TLS, before code deployment. No row cleanup included. Evidence: [privacy audit](../../docs/agent/verification/PRIVACY-20260921.md).
 
 | # | 영역 |
 |---|---|

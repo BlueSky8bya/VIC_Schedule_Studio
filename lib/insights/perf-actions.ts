@@ -31,7 +31,7 @@ export async function getPerfStatsAction(hours: number): Promise<PerfStatsResult
   const since = new Date(Date.now() - safeHours * 3600 * 1000).toISOString();
   const { data, error } = await supabase.rpc("get_perf_stats", { p_since: since });
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "성능 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요." };
   }
   const rows: PerfStatRow[] = (
     (data as

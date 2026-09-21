@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getCurrentAuthSessionId, getCurrentSupabaseUser } from "@/lib/auth/server";
 import { canUsePrivateLayer } from "@/lib/permissions/roles";
+import { reservePasscodeAttempt } from "@/lib/private-layer/attempt-limit";
 import { verifyPasscode } from "@/lib/private-layer/passcode";
 import {
   UNLOCK_GRANT_COOKIE,
@@ -13,9 +14,8 @@ import {
 } from "@/lib/private-layer/unlock-grant";
 
 const SLUG = "vic";
-// 무차별 대입 방어(P0-PRIV-2): 최근 10분 실패 5회 이상이면 잠시 차단.
-const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
-const MAX_FAILED_ATTEMPTS = 5;
+// 모든 비밀번호 확인 입구에서 공유하는 10분/5회 원자적 예약 제한.
+
 
 // 비공개 레이어 잠금해제: 비밀번호 확인 → 현재 사용자 세션 발급.
 // owner/developer만 가능(매니저·시청자 불가). 최초공개 게이트(verifyOnly)·비밀번호 변경이 이 라우트를 쓴다.
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   // 편집실의 최초공개(떡밥) 일정 게이트가 쓴다 — 게이트 통과가 비공개 레이어 잠금해제로
   // 번지지 않게 한다. 무차별 대입 방어(시도 기록·차단)는 동일하게 적용된다.
   const verifyOnly = body.verifyOnly === true;
-  if (!passcode) {
+  if (!passcode || passcode.length > 256) {
     return NextResponse.json({ error: "비밀번호를 입력하세요." }, { status: 400 });
   }
 
@@ -75,19 +75,13 @@ export async function POST(request: Request) {
     );
   }
 
-  // P0-PRIV-2: 무차별 대입 방어 — 최근 10분 실패 횟수 확인(성공 전에 먼저 본다).
-  const windowStart = new Date(Date.now() - ATTEMPT_WINDOW_MS).toISOString();
-  const { count: failCount } = await supabase
-    .from("private_unlock_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("ok", false)
-    .gte("created_at", windowStart);
-  if ((failCount ?? 0) >= MAX_FAILED_ATTEMPTS) {
-    return NextResponse.json(
-      { error: "시도가 너무 많아요. 10분 뒤 다시 시도해 주세요." },
-      { status: 429 }
-    );
+  // 검증 전에 시도를 예약한다. DB 오류와 동시 요청에서도 제한을 우회할 수 없다.
+  const attempt = await reservePasscodeAttempt(supabase, user.id);
+  if (attempt !== "allowed") {
+    return NextResponse.json({ error: attempt === "limited"
+      ? "시도가 너무 많아요. 10분 뒤 다시 시도해 주세요."
+      : "비밀번호 확인을 사용할 수 없어요. 잠시 후 다시 시도해 주세요." },
+      { status: attempt === "limited" ? 429 : 503 });
   }
 
   // 로컬 개발 전용 테스트 비번 — 실제 비번을 건드리지 않고 비공개 레이어/최초공개 게이트를
@@ -101,13 +95,9 @@ export async function POST(request: Request) {
   const passOk =
     verifyPasscode(passcode, settings.passcode_hash) ||
     (testPass.length > 0 && passcode.trim() === testPass);
-  // 시도 기록(성공/실패) + 창 밖 옛 기록 청소(지나가며 정리 — 별도 크론 불필요).
-  await Promise.all([
-    supabase.from("private_unlock_attempts").insert({ user_id: user.id, ok: passOk }),
-    supabase.from("private_unlock_attempts").delete().lt("created_at", windowStart)
-  ]);
+  // 시도는 RPC에서 이미 기록했다. 응답에는 비밀번호/계정 정보를 싣지 않는다.
   if (!passOk) {
-    // 행동 기록(0062) — 실패한 시도도 남긴다(무차별 대입 흔적은 attempts가 10분만 들고 있다).
+    // 행동 기록에는 실패 사실만 남긴다.
     await recordActivity({ kind: "unlock.fail", meta: { verifyOnly } });
     return NextResponse.json({ error: "비밀번호가 올바르지 않습니다." }, { status: 401 });
   }

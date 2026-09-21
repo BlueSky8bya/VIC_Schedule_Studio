@@ -4,6 +4,25 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-09-21
+
+### CHG-20260921-002 — Privacy boundaries and authorized deployment
+
+Live DB audit found anonymous administrative RPCs and direct REST identity/teaser/nonpublic VOD gaps.
+0125 closes those paths and adds a masked public event view and shared atomic passcode limiter.
+OAuth/cron/password failures deny access; public realtime presence retired; analytics allowlisted.
+Production dependencies patched. Public repository operational backup untracked with local recovery
+copy; owner emails redacted from current docs. History remains a separate exposure.
+0124/0125 applied with verified TLS before application deployment. Retention deletion is disabled
+pending its own backup/authorization. [Audit evidence and open work](verification/PRIVACY-20260921.md),
+[ADR-0028](decisions/ADR-0028-privacy-boundaries.md). Rollback preserves restrictive grants.
+
+### CHG-20260921-001 — Multiple fan timelines (local implementation)
+
+Owner approved separate authors/templates, same-author reply continuations and persistent representative/visibility choices. Migration `0124_vod_timeline_variants.sql` adds private candidates/choices and atomic service-only RPCs; public DTO gains sanitized visible alternatives, while search still indexes only the representative. Direct public timeline/chapter RLS now requires a public archived VOD. New shared replay selector and owner/developer studio management use the existing keepalive queue. Legacy scripts cannot overwrite moderation after migration. Timeline endpoint no longer serves one-hour stale CDN copies.
+
+Verification and rollout: [plan 024](plans/PLAN-20260921-024-vod-timeline-variants.md), [ADR-0027](decisions/ADR-0027-fan-timeline-variants.md). Subsequent owner authorization covers migration/push; 0124 applied2026-09-21. Deployment evidence is in the privacy audit. Retain additive data on rollback.
+
 ## v0.1.0 — 2026-09-19
 
 ### CHG-20260919-003 — 연구 기반 다크 팔레트 v3

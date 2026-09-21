@@ -19,9 +19,8 @@ export async function GET(
   return NextResponse.json(
     timeline ?? { authorNick: "", entries: [] },
     {
-      // 타임라인은 느리게 변한다(팬이 며칠에 걸쳐 다듬음) — 1시간 CDN 캐시면 충분하고,
-      // 증분 수집(broadcast-poll 30분)과 합쳐 최악 1.5시간 지연. 개인 정보 없음 → public 캐시 안전.
-      headers: { "Cache-Control": "public, s-maxage=3600" }
+      // Moderation and late fan additions must not remain behind a one-hour CDN copy.
+      headers: { "Cache-Control": "no-store" }
     }
   );
 }

@@ -7,6 +7,8 @@ import {
   isInternalRole,
   isServerKind,
   sanitizeMeta,
+  sanitizeVisitKey,
+  sanitizeDevice,
   sanitizeTarget
 } from "@/lib/activity/kinds";
 
@@ -46,7 +48,7 @@ describe("버튼 전수 수집", () => {
       expect(isServerKind(k)).toBe(false);
     }
   });
-  it("버튼 id는 target으로 들어가며 길이만 제한된다", () => {
+  it("registered controls survive the allowlist", () => {
     expect(sanitizeTarget("open-day-visit")).toBe("open-day-visit");
     expect(sanitizeTarget("auto:.month-nav-btn")).toBe("auto:.month-nav-btn");
   });
@@ -77,52 +79,35 @@ describe("kind 구분 — 클라는 '실제 변경'을 사칭할 수 없다", ()
   });
 });
 
-describe("sanitizeMeta — 일정 제목·본문 차단(최우선 제약)", () => {
-  it("제목·본문류 키는 통째로 버린다", () => {
-    const meta = sanitizeMeta({
-      title: "비공개 방송 계획",
-      body: "본문",
-      privateTitle: "엠바고 제목",
-      editorNote: "메모",
-      제목: "한글 제목",
-      scope: "owner_private"
-    });
-    expect(meta).toEqual({ scope: "owner_private" });
+describe("activity storage allowlist", () => {
+  it("drops secrets under innocent keys and invalid values under known keys", () => {
+    expect(sanitizeMeta({ payload: "private", foo: "mail@example.test", scope: "private prose", tags: ["secret"], count: "123", how: "password", revealAt: "2026-09-21T00:00:00Z" })).toBeNull();
+    expect(sanitizeMeta({ nested: { on: true }, title: "private", date: "2026-02-30", month: "2026-13", count: Infinity })).toBeNull();
+    expect(sanitizeMeta(JSON.parse('{"__proto__":"secret","constructor":"secret","count":2}'))).toEqual({ count: 2 });
   });
-  it("중첩 객체는 버린다(본문이 숨어들 통로)", () => {
-    expect(sanitizeMeta({ payload: { secret: "x" }, ok: true })).toEqual({ ok: true });
+  it("retains the typed production event and diagnostic metadata", () => {
+    const data = { scope: "owner_private", date: "2026-09-21", month: "2026-09", tags: 2, teaser: true, mode: "edit", typed: true, saved: false, how: "esc", phase: "placeholder", pastSec: -10, asked: 1, got: 1, revealed: 0, visible: true, role: "viewer" };
+    expect(sanitizeMeta(data)).toEqual(data);
+    expect(sanitizeMeta({ count: -1, tags: 1.5, hops: 1e10 })).toBeNull();
   });
-  it("문자열은 64자로 자른다(자유 서술을 담을 수 없는 길이)", () => {
-    const long = "가".repeat(200);
-    const meta = sanitizeMeta({ scope: long });
-    expect((meta?.scope as string).length).toBe(64);
+  it("drops invalid container inputs", () => {
+    for (const value of [null, "secret", [1, 2], 123]) expect(sanitizeMeta(value)).toBeNull();
   });
-  it("원시값 배열은 남기되 개수를 제한한다", () => {
-    expect(sanitizeMeta({ tags: [1, 2, 3] })).toEqual({ tags: [1, 2, 3] });
-    const many = sanitizeMeta({ tags: Array.from({ length: 30 }, (_, i) => i) });
-    expect((many?.tags as number[]).length).toBe(8);
-  });
-  it("남길 게 없으면 null", () => {
-    expect(sanitizeMeta({ title: "x" })).toBeNull();
-    expect(sanitizeMeta(null)).toBeNull();
-    expect(sanitizeMeta("문자열")).toBeNull();
-    expect(sanitizeMeta([1, 2])).toBeNull();
-  });
-  it("키 개수 상한", () => {
-    const wide: Record<string, number> = {};
-    for (let i = 0; i < 40; i += 1) wide[`k${i}`] = i;
-    expect(Object.keys(sanitizeMeta(wide) ?? {}).length).toBe(12);
-  });
-});
-
-describe("sanitizeTarget", () => {
-  it("uuid·경로는 그대로, 길이는 제한", () => {
+  it("keeps registered controls and opaque UUIDs but drops arbitrary targets", () => {
+    const id = "12345678-1234-4234-8234-123456789abc";
+    expect(sanitizeTarget(id)).toBe(id);
     expect(sanitizeTarget("/studio/calendar")).toBe("/studio/calendar");
-    expect(sanitizeTarget("x".repeat(500))?.length).toBe(120);
+    expect(sanitizeTarget("/replay/2026-09-21")).toBe("/replay");
+    expect(sanitizeTarget("open-day-visit#secret@example.test")).toBe("open-day-visit");
+    for (const value of ["secret@example.test", "/studio/user@example.test", "/?token=secret", "auto:private prose", "x".repeat(500), "__proto__", "constructor", 42, " "]) expect(sanitizeTarget(value)).toBeNull();
   });
-  it("빈 값·비문자열은 null", () => {
-    expect(sanitizeTarget("   ")).toBeNull();
-    expect(sanitizeTarget(42)).toBeNull();
+  it("sanitizes visit identifiers and devices without storing prose", () => {
+    const id = "12345678-1234-4234-8234-123456789abc";
+    expect(sanitizeVisitKey(id)).toBe(id);
+    expect(sanitizeVisitKey("private@sample.test")).toBeNull();
+    expect(sanitizeVisitKey("tab-plaintext")).toBeNull();
+    expect(sanitizeDevice("ios")).toBe("ios");
+    expect(sanitizeDevice("secret")).toBe("desktop");
   });
 });
 

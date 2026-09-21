@@ -1,3 +1,4 @@
+import { sanitizeNextPath } from "@/lib/auth/next-path";
 import { headers } from "next/headers";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
@@ -60,12 +61,4 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </section>
     </main>
   );
-}
-
-function sanitizeNextPath(value: string) {
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-
-  return value;
 }

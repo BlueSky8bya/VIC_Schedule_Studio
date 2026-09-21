@@ -10,6 +10,7 @@ import {
 } from "@/lib/schedules/event-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
 import { updatePosterThemeAction } from "@/lib/schedules/calendar-actions";
+import { moderateTimelineAction } from "@/lib/broadcast/timeline-actions";
 
 // 편집실의 '중대한 쓰기'(일정 저장/삭제/이동/태그/업도움/잇기)를 keepalive fetch로 받는 단일 창구.
 // 클라이언트가 keepalive: true 로 보내면 브라우저가 페이지를 떠나거나(달 이동·창 전환·닫기·새로고침)
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
   const p = body.payload ?? {};
   try {
     switch (body.op) {
+      case "vodTimeline":
+        return json(await moderateTimelineAction(p));
       case "save":
         return json(await saveEventAction(p as SaveEventInput));
       case "delete":

@@ -1,5 +1,6 @@
 "use client";
 
+import { RhhSelect } from "@/components/studio/rhh-select";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { ChevronRight, Clock3, Heart, Laugh } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -119,7 +120,13 @@ export function VodChapters({
       return !v;
     });
   };
-  const [timeline, setTimeline] = useState<PublicVodTimeline | null>(null);
+  const [bundle, setTimeline] = useState<PublicVodTimeline | null>(null);
+  const [selectedTimeline, setSelectedTimeline] = useState("");
+  const timeline = useMemo(() => {
+    const variant = bundle?.variants?.find((v) => v.id === selectedTimeline);
+    return variant ? { authorNick: variant.authorNick, entries: variant.entries } : bundle;
+  }, [bundle, selectedTimeline]);
+  const creditedAuthor = timeline?.authorNick ?? timelineBy;
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   // 현재 챕터(entries 인덱스) — 클릭한 챕터 또는 재생 위치가 속한 챕터. 유튜브 활성 챕터처럼
@@ -400,7 +407,7 @@ export function VodChapters({
         >
           <ChevronRight aria-hidden="true" className="vch-caret-ic" size={15} strokeWidth={2.6} />
           <span className="vch-toggle-main">
-            타임라인 <b>{chapters}</b>
+            타임라인 <b>{timeline?.entries.length ?? chapters}</b>
             {open && timeline && sectionCount > 0 ? (
               <>
                 <i aria-hidden="true">·</i> 챕터 <b>{sectionCount}</b>
@@ -408,7 +415,23 @@ export function VodChapters({
             ) : null}
           </span>
         </button>
-        {(timelineBy || (open && startedAt) || profile?.laughTier === "high") && open ? (
+        {open && (bundle?.variants?.length ?? 0) > 1 ? (
+          <div className="vch-variants">
+            <RhhSelect ariaLabel="타임라인 선택" dataAct="vod-timeline-select"
+              value={selectedTimeline || bundle!.variants![0].id}
+              options={bundle!.variants!.map((v, i) => ({ value: v.id, label: `${i === 0 ? "대표" : `다른 타임라인 ${i}`} · ${v.authorNick || "팬"} · ${v.entries.length}개` }))}
+              onChange={(id) => {
+                setSelectedTimeline(id);
+                setFolded(new Set());
+                setTip(null);
+                const next = bundle?.variants?.find((v) => v.id === id);
+                let idx: number | null = null;
+                next?.entries.forEach((e, i) => { if (e.sec <= lastSecRef.current) idx = i; });
+                setActiveIdx(idx);
+              }} />
+          </div>
+        ) : null}
+        {(creditedAuthor || (open && startedAt) || profile?.laughTier === "high") && open ? (
           <div className="vch-pills">
             {startedAt ? (
               <button
@@ -429,10 +452,10 @@ export function VodChapters({
                 많이 웃은 방송
               </span>
             ) : null}
-            {timelineBy ? (
-              <span className="ui-pill is-quiet" title={`팬 타임라인을 적어 주신 ${timelineBy}님`}>
+            {creditedAuthor ? (
+              <span className="ui-pill is-quiet" title={`팬 타임라인을 적어 주신 ${creditedAuthor}님`}>
                 <Heart aria-hidden="true" size={11} strokeWidth={2.6} />
-                {timelineBy}
+                {creditedAuthor}
               </span>
             ) : null}
           </div>

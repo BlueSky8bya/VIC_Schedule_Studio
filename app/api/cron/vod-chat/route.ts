@@ -5,15 +5,15 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 // 다시보기 채팅 단어 수집(0088) — 백필·수동 실행용 크론 라우트.
 // 평시 증분은 broadcast-poll의 maybeSyncVodPipeline이 조금씩 받고, 옛 방송 수백 개를 채우는 백필은
 // 이 라우트를 cron-job.org(또는 curl 반복)로 부른다: GET /api/cron/vod-chat?limit=3&chunks=60
-// CRON_SECRET이 있으면 Bearer 검증(broadcast-poll과 같은 규약). 원문·닉은 저장하지 않는다.
+// CRON_SECRET과 Bearer 인증이 필수(broadcast-poll과 같은 규약). 원문·닉은 저장하지 않는다.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) return NextResponse.json({ ok: false }, { status: 401 });
+  const secret = process.env.CRON_SECRET?.trim();
+  if (!secret) return NextResponse.json({ ok: false }, { status: 503 });
+  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
+    return NextResponse.json({ ok: false }, { status: 401 });
   }
   const url = new URL(req.url);
   const limit = Math.max(1, Math.min(10, Number(url.searchParams.get("limit") ?? 2)));

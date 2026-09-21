@@ -9080,3 +9080,7 @@ html[data-reduce-motion] .studio-day.cell-flash {
   animation-iteration-count: 1;
   box-shadow: 0 0 0 4px rgb(124 108 240 / 45%);
 }
+
+/* Shared selector; rail width is the structural limit in every replay surface. */
+.vch-variants { min-width: 0; max-width: 100%; }
+.vch-variants .rhh-select { width: 100%; max-width: 100%; }

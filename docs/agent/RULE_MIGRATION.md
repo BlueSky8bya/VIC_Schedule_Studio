@@ -146,7 +146,7 @@ Source UTF-8 bytes: 59266
 | 444-448 | 이관 | UI-29 | 좌우 이동에는 side-keyed animation name | 애니메이션 이름 변경과 동일 키프레임 이유를 유지한다. |
 | 449-454 | 이관 | UI-29 | 지연 both hold 값은 방향 무관,5회반복에서0px snap | 실측 조건·합격0px를 복원하고 ±6px/12px 점프는 반려 근거로 보존한다. |
 | 455-471 | 이관 | UI-32 | 오늘 n일 전체 금색 fade12px·sheen1px·bloom3px·padding11px·숫자1.3em·z8>7>6·높이21/18 | 모든 현행 수치와 overlap/header 불변 검수 조건을 복원한다. |
-| 472-475 | 이관 | UI-18 | state segment 공유토큰·insethairline·unselected opacity | 현재 토큰과 선택형태 규칙으로 존속. |
+| 472-475 | 이관 | UI-37 | state segment 공유토큰·insethairline·unselected opacity | 현재 토큰과 선택형태 규칙으로 존속. |
 | 476-479 | 이관 | UI-08 | 대칭·통일높이·공통tokens·콘텐츠 확대/공간 재분배 | 빈 공간을 메우는 구체적 방법까지 복원한다. |
 | 480-482 | 이관 | UI-27 | pressed transition·진입/퇴장·chart tooltip 중앙/clamp·press→confirm2ticks | 누락된 차트 tooltip 위치와2단계 haptic 계약 복원. |
 | 483-486 | 이관 | UI-27 | 모션 기본ON·data-reduce-motion inverse·OSseed 철회 | 현재 앱 설정만 authority로 유지한다. |
@@ -161,9 +161,9 @@ Source UTF-8 bytes: 59266
 | 522-524 | 이관 | G-11, UI-36 | 직렬 쓰기·마지막 동작 우선·서버 재검증·실제 미완료 쓰기 경고 | 직렬 큐와 optimistic 보호, 실제 진행 중 작업 수에 의한 beforeunload 조건을 보존한다. |
 | 525-527 | 이관 | G-11, UI-25 | 실제 작업에만 좁게 게이트 | 광역 pending 때문에 무관한 동작을 막지 않는 계약으로 보존한다. |
 | 528-530 | 의도적 삭제 | — | 빈 줄·Harness loop 제목 | 구조용 구분이며 실행 규칙은 다음 행에 보존한다. |
-| 531-532 | 이관 | G-09, G-18 | 계획 시 경로·역할·공개 경계·KST·역할별 기대 확인 | 공통 변경 범위와 역할별 점검 계약으로 이관한다. |
-| 533-535 | 이관 | G-02, G-04, G-10, G-18 | 좁은 구현·서버 권한·helper 역할 금지·역할에 맞는 화면 | 현행 경계·역할·작업 범위 규칙으로 보존한다. |
-| 536-539 | 이관 | G-12, G-18, UI-23, UI-27, UI-33, UI-36 | 보안·viewer/onair·동작 순서·주변 UI·모션·햅틱 검증 | DoD와 해당 UI 규칙을 함께 적용한다. 실제 실행하지 않은 검증은 성공으로 표시하지 않는다. |
+| 531-532 | 이관 | G-09, G-21 | 계획 시 경로·역할·공개 경계·KST·역할별 기대 확인 | 공통 변경 범위와 역할별 점검 계약으로 이관한다. |
+| 533-535 | 이관 | G-02, G-04, G-10, G-21 | 좁은 구현·서버 권한·helper 역할 금지·역할에 맞는 화면 | 현행 경계·역할·작업 범위 규칙으로 보존한다. |
+| 536-539 | 이관 | G-12, G-21, UI-23, UI-27, UI-33, UI-36 | 보안·viewer/onair·동작 순서·주변 UI·모션·햅틱 검증 | DoD와 해당 UI 규칙을 함께 적용한다. 실제 실행하지 않은 검증은 성공으로 표시하지 않는다. |
 | 540-542 | 의도적 삭제 | — | 빈 줄·Workflow 제목 | 구조용 구분이며 아래 절차를 개별 보존한다. |
 | 543-544 | 이관 | G-12, G-14 | 타입·lint·build 및 공개 경계 확인과 커밋 보고 | 검증은 변경 범위에 맞게 수행한다. 커밋/푸시는 현재 사용자 승인 범위를 따른다. |
 | 545-550 | 이관 | G-07, G-08, G-13 | 자동화·로컬 분석 수집 금지 및 운영 오염 삭제 경계 | 새 통계 경로도 lib/analytics/guard.ts를 사용한다. 기존 오염 정리는 현재 자료·복구 사본·승인 확인을 거친다. |
@@ -420,7 +420,7 @@ Source UTF-8 bytes: 59266
 | G-M05 | 367-367 | code-owned | 태그6개·대표2개 상한 | UI-02, lib/schedules/event-validation.ts:MAX_EVENT_TAGS, lib/schedules/event-validation.ts:MAX_PRIMARY_TAGS | 검증 코드가 현재 상한을 소유. 태그 전체와 대표색을 혼동하지 않는다. |
 | G-M06 | 370-370 | code-owned | 모바일≤640px, agenda/가로터치는 별도 조건 | UI-07, lib/ui/breakpoints.ts:BREAKPOINTS, lib/ui/breakpoints.ts:MOBILE_QUERY | 기기 기준과 studio/poster topology 기준 분리. |
 | G-M07 | 522-527 | retained | 직렬 마지막 쓰기 우선·실제 진행 중 작업 수로 beforeunload·동작별 좁은 게이트 | G-11, UI-25, UI-36, docs/ux/UI_RULES.md:UI-36 | 시간 지연 상수가 아닌 실제 작업 완료 상태라는 측정/절차 계약 유지. |
-| G-M08 | 531-544 | retained | 계획→구현→권한/회귀/시각/모션 검증, 타입+lint+build | G-09, G-12, G-18, docs/agent/DEFINITION_OF_DONE.md | 실행 범위별 검증과 미실행 구분 유지. 자동 push 지시는 별도 철회. |
+| G-M08 | 531-544 | retained | 계획→구현→권한/회귀/시각/모션 검증, 타입+lint+build | G-09, G-12, G-21, docs/agent/DEFINITION_OF_DONE.md | 실행 범위별 검증과 미실행 구분 유지. 자동 push 지시는 별도 철회. |
 | G-M09 | 545-550 | retired | 2일간 2,694개 오염 세션·새벽 동접4명 | G-08, docs/agent/verification/OPEN_CHECKS.md | 과거 사고 측정값. 현재 행 수/정리 대상/실행 승인으로 재사용하지 않는다. |
 | G-M10 | 545-550 | retained | 자동/로컬 유입 guard·운영 삭제 전 백업과 승인 | G-07, G-08, G-10, G-13, lib/analytics/guard.ts | 모든 신규 수집 경로에도 guard 적용, 과거 SQL은 새 실행 권한이 아니다. |
 | G-M11 | 552-553 | retained | 버전 SQL·수동 적용·멱등성 | G-13, scripts/apply-db.mjs:process.argv, docs/agent/DEFINITION_OF_DONE.md | 데이터 작업 DoD와 수동 도구로 보존. |
@@ -463,7 +463,7 @@ UI·AMB·ART의 모든 규칙 줄에 한국어 검색어를 병기했다. 금생
 
 ID 추가·삭제·중복 또는 소유 파일 변경 시 이 표와 해시를 갱신하고 영향을 받는 원문 대응을 다시 판단한다. 존재하지 않는 코드 목적지·원문 누락/중복도 실패한다. 검사: `node scripts/agent-harness/rule-migration.mjs`, `npm run harness:verify`, `npm run test -- tests/unit/rule-migration.test.ts`.
 
-Rule inventory SHA-256: 218e54801ac871bcd8308de0d36cb85fe0b7eef4f4f3d48010e63b016686b9db
+Rule inventory SHA-256: 1456ddf24b89639867a9d28f6e30059f42208c69b62c22eb5d8d84319c9ab9ef
 
 <!-- rule-migration:inventory:start -->
 | 규칙 ID | 현행 문서 |
@@ -530,6 +530,8 @@ Rule inventory SHA-256: 218e54801ac871bcd8308de0d36cb85fe0b7eef4f4f3d48010e63b01
 | G-17 | AGENTS.md |
 | G-18 | AGENTS.md |
 | G-19 | AGENTS.md |
+| G-20 | AGENTS.md |
+| G-21 | AGENTS.md |
 | UI-01 | docs/ux/UI_RULES.md |
 | UI-02 | docs/ux/UI_RULES.md |
 | UI-03 | docs/ux/UI_RULES.md |
@@ -566,4 +568,5 @@ Rule inventory SHA-256: 218e54801ac871bcd8308de0d36cb85fe0b7eef4f4f3d48010e63b01
 | UI-34 | docs/ux/UI_RULES.md |
 | UI-35 | docs/ux/UI_RULES.md |
 | UI-36 | docs/ux/UI_RULES.md |
+| UI-37 | docs/ux/UI_RULES.md |
 <!-- rule-migration:inventory:end -->

@@ -1,3 +1,4 @@
+import { publicTimelineProjection } from "@/lib/broadcast/timeline-public";
 import { readDarkTagColors } from "@/lib/tags/dark-palette";
 import type {
   BroadcastTag,
@@ -168,13 +169,11 @@ export async function loadRevealedEvents(
     .maybeSingle();
   if (!calendar) return { ok: false, events: [] };
   const { data: rows } = await supabase
-    .from("events")
+    .from("public_schedule_events")
     .select(
-      "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order)"
+      "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags"
     )
-    .is("deleted_at", null) // tombstone 제외(P0-DATA-1)
     .eq("calendar_id", calendar.id)
-    .eq("visibility_scope", "public")
     .neq("status", "draft")
     .in("id", eventIds);
   if (!rows) return { ok: false, events: [] }; // 쿼리 실패 — '없음'이 아니다
@@ -259,13 +258,11 @@ const loadPublicScheduleData = unstable_cache(
           .eq("calendar_id", calendar.id)
           .order("sort_order"),
         supabase
-          .from("events")
+          .from("public_schedule_events")
           .select(
-            "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order)"
+            "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags"
           )
-          .is("deleted_at", null)
           .eq("calendar_id", calendar.id)
-          .eq("visibility_scope", "public")
           .neq("status", "draft")
           .order("date_key")
           .order("created_at"),
@@ -823,27 +820,12 @@ export async function getPublicVodTimeline(
   if (!supabase) return null;
   const { data } = await supabase
     .from("vod_timeline")
-    .select("author_nick, entries")
+    .select("author_nick, entries, variants")
     .eq("title_no", titleNo)
     .gt("entry_count", 0)
     .maybeSingle();
   if (!data) return null;
-  const raw = Array.isArray(data.entries) ? (data.entries as unknown[]) : [];
-  const entries = raw
-    .filter((e): e is Record<string, unknown> => Boolean(e) && typeof e === "object")
-    .map((e) => ({
-      sec: Number(e.sec),
-      label: typeof e.label === "string" ? e.label : "",
-      section: typeof e.section === "string" ? e.section : null,
-      // 계층(ㄴ)은 0~3만 통과 — 표시용 들여쓰기 값이라 범위를 넘기면 그냥 최상위로 본다.
-      depth: Number(e.depth) >= 1 && Number(e.depth) <= 3 ? Math.floor(Number(e.depth)) : 0
-    }))
-    .filter((e) => Number.isFinite(e.sec) && e.sec >= 0 && e.label.length > 0);
-  if (entries.length === 0) return null;
-  return {
-    authorNick: typeof data.author_nick === "string" ? data.author_nick : "",
-    entries
-  };
+  return publicTimelineProjection(data);
 }
 
 // 이번 달 1일~말일의 일별 방송시간(길이 = 그 달 일수, 방송 없는 날은 0).

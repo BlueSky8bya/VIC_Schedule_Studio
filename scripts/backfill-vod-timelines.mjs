@@ -26,6 +26,11 @@ const BJ = env.SOOP_BJ_ID || "toryvac";
 const H = { apikey: K, Authorization: `Bearer ${K}`, "Content-Type": "application/json" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const DRY = process.argv.includes("--dry");
+// 0124: legacy single-comment writes would bypass persistent moderation.
+// Use the deployed unified collector after migration; this old parser probe is dry-only.
+const managed = await fetch(`${U}/rest/v1/vod_timeline_candidate?select=title_no&limit=1`, { headers: H });
+if (!DRY && managed.ok) throw new Error("Multiple timelines enabled: legacy backfill writes are disabled. Use the unified timeline collector; --dry remains a legacy-parser probe only.");
+if (!managed.ok && managed.status !== 404) throw new Error(`Cannot verify timeline schema (${managed.status}); refusing legacy writes.`);
 
 // PostgREST 기본 1000행 상한 — 500씩 끊어 전부 읽는다.
 async function fetchAll(path) {

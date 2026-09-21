@@ -1,0 +1,18 @@
+.timeline-board { max-width: 1040px; margin: auto; padding: var(--space-5, 24px); color: var(--ink); font-size: var(--text-body, 13.5px); }
+.timeline-board h1 { font-size: var(--text-title, 20px); }
+.timeline-board h2 { font-size: var(--text-title, 20px); margin: 6px 0; overflow-wrap: anywhere; }
+.timeline-board p { line-height: 1.6; }
+.timeline-board button, .timeline-board input { font: inherit; color: inherit; border: 1px solid var(--line); border-radius: var(--r-sm, 8px); background: rgb(var(--glass-panel) / .8); padding: 8px 12px; min-height: 36px; }
+.timeline-board button { cursor: pointer; }
+.timeline-board button:disabled { opacity: .5; cursor: default; }
+.timeline-tools, .timeline-vod-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2, 8px); }
+.timeline-vod-head { justify-content: space-between; }
+.timeline-filter { display: block; margin-top: var(--space-3, 12px); }
+.timeline-vod { border: 1px solid var(--line); border-radius: var(--r-lg, 16px); background: rgb(var(--glass-panel) / .65); padding: var(--space-4, 16px); margin-top: var(--space-4, 16px); }
+.timeline-candidate { border-top: 1px solid var(--line); margin-top: var(--space-4, 16px); padding-top: var(--space-4, 16px); }
+.timeline-candidate details { margin-top: var(--space-3, 12px); }
+.timeline-candidate summary { cursor: pointer; }
+.timeline-candidate ol { max-height: 320px; overflow: auto; padding-inline-start: 24px; overflow-wrap: anywhere; }
+.timeline-candidate li { padding-block: 5px; }
+.timeline-badge { display: inline-block; border: 1px solid var(--line); border-radius: var(--r-pill, 999px); padding: 2px 8px; margin-inline-start: 6px; font-size: inherit; }
+.timeline-board input { max-width: 100%; min-width: 0; }

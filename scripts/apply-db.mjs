@@ -17,6 +17,8 @@ function parseEnvLocal() {
 }
 
 const env = parseEnvLocal();
+const caPath = process.env.SUPABASE_DB_CA_PATH || env.SUPABASE_DB_CA_PATH;
+const ca = caPath ? readFileSync(caPath, "utf8") : undefined;
 const password = env.SUPABASE_DB_PASSWORD;
 const ref = (env.NEXT_PUBLIC_SUPABASE_URL || "").match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
 
@@ -45,7 +47,7 @@ async function tryConnect(cfg) {
     user: cfg.user,
     password,
     database: "postgres",
-    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: true, ...(ca ? { ca } : {}) },
     connectionTimeoutMillis: 8000,
     statement_timeout: 300000
   });
@@ -80,10 +82,7 @@ if (env.OWNER_EMAIL) {
   const emails = env.OWNER_EMAIL.split(",").map((e) => e.trim()).filter(Boolean);
   await client.query("select set_config('app.owner_email', $1, false)", [emails[0]]);
   await client.query("select set_config('app.owner_emails', $1, false)", [emails.join(",")]);
-  console.log(`\napp.owner_email = ${emails[0]} (주 소유자)`);
-  if (emails.length > 1) {
-    console.log(`app.owner_emails = ${emails.join(", ")} (공동 소유자 포함)`);
-  }
+  console.log(`\n소유자 설정 로드 완료 (${emails.length}개 계정; 식별정보 출력 생략)`);
 }
 
 for (const file of files) {

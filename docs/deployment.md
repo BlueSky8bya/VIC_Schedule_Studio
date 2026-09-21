@@ -46,7 +46,7 @@
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY` (비밀)
-  - `OWNER_EMAIL` = `toryvac2@gmail.com` (빅토리/토리님 구글 계정)
+  - `OWNER_EMAIL` = `co-owner@example.invalid` (빅토리/토리님 구글 계정)
   - `PRIVATE_LAYER_UNLOCK_SECRET` (비밀, 로컬 값 그대로)
   - `SUPABASE_STORAGE_BUCKET` = `vic-schedule-assets`
   - 💡 위 값들은 `.env.vercel.local`에 붙여넣기용으로 정리해 둠 → Vercel 입력칸에 통째로 붙여넣으면 됨
@@ -92,20 +92,20 @@ Supabase 대시보드 → **Storage**
   RLS 적용). 기존 DB의 `owner_id`가 예전(테스트) 계정을 가리키고 있으면, `OWNER_EMAIL`만
   바꿔도 빅토리님 화면엔 편집 UI가 보이지만 **저장이 RLS에 막힙니다.** 그래서 소유자
   이전은 아래 두 가지를 **둘 다** 맞춰야 합니다:
-  1. Vercel `OWNER_EMAIL = toryvac2@gmail.com` (앱 권한)
+  1. Vercel `OWNER_EMAIL = co-owner@example.invalid` (앱 권한)
   2. `calendars.owner_id`를 토리님 계정으로 이전 (DB/RLS) — **순서 주의**:
      - (1) 위 환경변수 설정 후 배포 → (2) **토리님이 한 번 구글 로그인**(auth.users에 행 생성)
        → (3) Supabase SQL 에디터에서 아래 실행:
        ```sql
-       set app.owner_email = 'toryvac2@gmail.com';
+       set app.owner_email = 'co-owner@example.invalid';
        -- 그리고 db/seeds/0003_transfer_owner.sql 내용을 이어서 실행
        ```
-     - 로컬에서 한다면(권장, 더 간단): `.env.local`의 `OWNER_EMAIL`을 `toryvac2@gmail.com`으로
+     - 로컬에서 한다면(권장, 더 간단): `.env.local`의 `OWNER_EMAIL`을 `co-owner@example.invalid`으로
        둔 뒤 `node scripts/apply-db.mjs db/seeds/0003_transfer_owner.sql` — apply-db가
        `.env.local`의 `OWNER_EMAIL`을 `app.owner_email` GUC로 자동 주입한다.
      - 샘플 일정은 그대로 유지됩니다(데이터는 건드리지 않고 owner_id만 바꿈).
 - **한 사람이 계정 2개로 동일한 소유자 권한**을 원하면: `OWNER_EMAIL`에 콤마로
-  여러 계정을 넣는다(예: `toryvac@gmail.com,toryvac2@gmail.com`). 첫 번째가 주 소유자
+  여러 계정을 넣는다(예: `owner@example.invalid,co-owner@example.invalid`). 첫 번째가 주 소유자
   (`calendars.owner_id`)이고, 나머지는 `calendar_co_owners`에 등록돼 동일한 owner 권한을
   갖는다("나만"/owner_private까지 공유). 적용 순서:
   1. 각 계정이 앱에 **구글 로그인 1회**(auth.users에 행 생성)

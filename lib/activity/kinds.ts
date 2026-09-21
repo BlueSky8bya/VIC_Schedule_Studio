@@ -1,3 +1,5 @@
+import { registeredActivityTarget } from "@/lib/activity/labels";
+
 // 행동 기록(0062)의 순수 규약 — 종류 목록, 식별 범위, meta 소독. 서버·클라 공용이고 부수효과 없다.
 // 테스트: tests/unit/activity-kinds.test.ts
 
@@ -143,79 +145,59 @@ export const KIND_LABEL: Record<string, string> = {
 // ⚠ 이 설계의 최우선 제약: 일정 제목·본문은 절대 저장하지 않는다. target에는 uuid만 두고 제목은
 // 읽는 시점에 권한을 확인한 뒤 조인한다. 안 그러면 이 테이블이 owner_private 우회 경로가 되어
 // 비공개 본문 AES-256-GCM 암호화가 통째로 무의미해진다.
-//
-// 그래서 meta는 화이트리스트가 아니라 **형태 제한 + 이름 차단**으로 이중으로 막는다:
-//   - 값은 원시값(문자열·숫자·불리언) 또는 그 배열만. 중첩 객체 금지(본문이 숨어들 통로).
-//   - 문자열은 64자로 자른다(자유 서술을 담을 수 없는 길이).
-//   - 아래 이름은 통째로 버린다.
-const BLOCKED_META_KEYS = [
-  "title",
-  "body",
-  "note",
-  "memo",
-  "content",
-  "description",
-  "text",
-  "detail",
-  "summary",
-  "label",
-  "name",
-  "email",
-  "제목",
-  "내용",
-  "메모"
-];
-const MAX_META_KEYS = 12;
-const MAX_META_STRING = 64;
-const MAX_META_ARRAY = 8;
-
-function isBlockedKey(key: string): boolean {
-  const k = key.toLowerCase();
-  return BLOCKED_META_KEYS.some((bad) => k === bad || k.includes(bad));
-}
-
+// Only reviewed keys and typed values are retained; short free text is still personal data.
 type Primitive = string | number | boolean;
-function cleanPrimitive(v: unknown): Primitive | null {
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  if (typeof v === "boolean") return v;
-  if (typeof v === "string") return v.slice(0, MAX_META_STRING);
-  return null;
+const NUMBER_KEYS = new Set(["count", "tags", "created", "updated", "minutes", "hops", "asked", "got", "gone", "revealed", "stillMasked", "pastSec"]);
+const BOOLEAN_KEYS = new Set(["on", "ok", "bookmarked", "multiday", "teaser", "support", "period", "link", "authed", "verifyOnly", "visible", "typed", "saved"]);
+const ENUMS: Record<string, readonly string[]> = {
+  scope: ["public", "work", "owner_private"],
+  mode: ["new", "edit"],
+  how: ["esc", "outside", "cell", "collapse", "saved", "other"],
+  phase: ["placeholder", "gone", "mount-sync"],
+  role: ["owner", "developer", "viewer", "anon", "unknown"]
+};
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MONTH_RE = /^20\d{2}-(0[1-9]|1[0-2])$/;
+function isDate(value: string): boolean {
+  return /^20\d{2}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/.test(value)
+    && Number.isFinite(Date.parse(`${value}T00:00:00Z`))
+    && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
 }
 
-/** 저장 직전 meta 소독. 남길 게 없으면 null(빈 객체를 굳이 쓰지 않는다). */
-export function sanitizeMeta(raw: unknown): Record<string, Primitive | Primitive[]> | null {
+/** Unknown keys, free text, arrays and nested objects never reach storage. */
+export function sanitizeMeta(raw: unknown): Record<string, Primitive> | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const out: Record<string, Primitive | Primitive[]> = {};
-  let n = 0;
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (n >= MAX_META_KEYS) break;
-    if (isBlockedKey(key)) continue;
-    if (Array.isArray(value)) {
-      const arr = value
-        .slice(0, MAX_META_ARRAY)
-        .map(cleanPrimitive)
-        .filter((x): x is Primitive => x !== null);
-      if (arr.length === 0) continue;
-      out[key] = arr;
-      n += 1;
-      continue;
+  const out: Record<string, Primitive> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (NUMBER_KEYS.has(key) && typeof value === "number" && Number.isFinite(value)
+      && Number.isInteger(value) && Math.abs(value) <= 1_000_000 && (key === "pastSec" || value >= 0)) out[key] = value;
+    else if (BOOLEAN_KEYS.has(key) && typeof value === "boolean") out[key] = value;
+    else if (typeof value === "string") {
+      if (Object.hasOwn(ENUMS, key) && ENUMS[key].includes(value)) out[key] = value;
+      else if (key === "month" && MONTH_RE.test(value)) out[key] = value;
+      else if (key === "date" && isDate(value)) out[key] = value;
+      // revealAt is omitted: private schedule timing is not necessary telemetry.
     }
-    const prim = cleanPrimitive(value);
-    if (prim === null) continue; // 중첩 객체·null·함수 등은 버린다
-    out[key] = prim;
-    n += 1;
   }
-  return n > 0 ? out : null;
+  return Object.keys(out).length ? out : null;
 }
 
-/** target 소독 — uuid·라우트 경로·태그 키 정도. 길이만 제한한다(자유 서술 방지). */
+/** Only known controls/routes, calendar dates, enums and UUID identifiers. */
 export function sanitizeTarget(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const t = raw.trim().slice(0, 120);
-  return t.length > 0 ? t : null;
+  if (typeof raw !== "string" || raw.length > 120) return null;
+  if (UUID_RE.test(raw) || MONTH_RE.test(raw) || isDate(raw)) return raw;
+  return registeredActivityTarget(raw);
 }
 
-/** 보존 기간(일) — 사용자 결정. 조회할 때 지나가며 이보다 오래된 행을 지운다. */
+/** Session keys contain only an opaque generated identifier, never client prose. */
+export function sanitizeVisitKey(raw: unknown): string | null {
+  return typeof raw === "string" && UUID_RE.test(raw) ? raw : null;
+}
+
+export function sanitizeDevice(raw: unknown): string {
+  return typeof raw === "string" && ["desktop", "android", "ios", "mobile"].includes(raw) ? raw : "desktop";
+}
+
 export const ACTIVITY_RETENTION_DAYS = 90;
 
 // 라벨에 숫자가 들어가면(날짜·개수·금액) 항목이 값마다 갈라져 통계가 무한 증식한다

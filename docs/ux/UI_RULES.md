@@ -25,7 +25,7 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 - UI-15: (짧은 이름·툴팁) One short label per control on every platform. No long/short label pairs. A tooltip adds only missing information: hidden label → name only while folded, using `data-tip`; visible but ambiguous action → short result, about 20 characters or fewer and no parenthetical aside; self-explanatory visible label → none. Do not use a native title to repeat a visible label. Keep aria-label as the name. Evidence: `data-tip` chrome rules.
 - UI-16: (칸 안 표식) One useful icon per control and one icon vocabulary per group. Chrome uses lucide strokes; emoji remain on playful surfaces without neighboring stroke icons. If folding would leave two icons, keep the leading identity icon and express popup semantics with aria-haspopup. In cells, icons are inlaid in host ink at one stroke weight, without drop shadow/white ring; saturated color is for data and selected states. Desktop calendar icon sizes are below.
 - UI-17: (스크롤바 숨김) Scrollbars are visually hidden globally, while wheel/touch/keyboard scrolling remains. Do not override with thin/auto on a new scroller. Evidence: global scrollbar rule in `app/globals.css`.
-- UI-18: (상태 선택 강조) Use shared `--seg-on-*`/`--seg-off-op` for state segments. Selected state is tint plus inset hairline, not another bordered box inside a segmented card.
+- UI-37: (상태 선택 강조) Use shared `--seg-on-*`/`--seg-off-op` for state segments. Selected state is tint plus inset hairline, not another bordered box inside a segmented card.
 
 ## Editor, settings and overlays
 

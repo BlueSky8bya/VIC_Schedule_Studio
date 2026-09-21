@@ -1,3 +1,4 @@
+import { sanitizeNextPath } from "@/lib/auth/next-path";
 import { NextResponse } from "next/server";
 import { getSiteUrl, isSupabaseConfigured } from "@/lib/auth/config";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -48,12 +49,4 @@ async function startGoogleOAuth(request: Request, next: string) {
   }
 
   return NextResponse.redirect(data.url, { status: 303 });
-}
-
-function sanitizeNextPath(value: string) {
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-
-  return value;
 }

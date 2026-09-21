@@ -17,6 +17,7 @@ The product is a public broadcast schedule, owner/developer studio, teaser gate,
 - G-06: Use Asia/Seoul and existing KST helpers for dates, boundaries and filenames. Ambient season follows the viewed calendar month; special days use actual KST date.
 - G-07: Never expose secrets, owner-private content or operational analytics in public UI/API. Activity metadata must not contain schedule titles/bodies; viewer analytics stay aggregate. Local personal-fit source notes/natal data remain local, outside commits and UI/API.
 - G-08: Local configuration can point at production Supabase. Use analytics automation guards and stubbed fixtures for UI tests. Real DB tests require the existing past-month fixture, cleanup and zero-residue checks; they do not establish RLS coverage.
+- G-20: Personal information protection is a release requirement. Collect and retain only fields needed for a stated purpose. Never connect public nicknames to real names, email addresses, OAuth profiles, addresses, phone numbers, IPs or account/session identifiers in public API, HTML/RSC, caches, search, logs or committed artifacts. Public display names must come from explicitly public sources, never a fallback to authentication identity. Use explicit DTO allowlists and least-privilege DB/RPC/storage grants; hidden UI is not protection. Verify anonymous and unauthorized access with synthetic sensitive canaries before releases touching identity or data boundaries. Fail closed when authorization/security configuration fails. Record retention/deletion rules and unverified external settings; never claim an audit proves no past breach. Suspected exposure requires containment and preservation of restricted evidence, not copying personal data into reports.
 
 ## Work and verification
 
@@ -44,7 +45,7 @@ The product is a public broadcast schedule, owner/developer studio, teaser gate,
 | Verification gaps | [Open checks](docs/agent/verification/OPEN_CHECKS.md) |
 | Decision context | [Decision index](docs/agent/decisions/DECISION_INDEX.md), only relevant decisions |
 
-G-18: Planner checks boundary, permissions, unlock and KST. Builder keeps server checks. Security reviewer checks DTO/RLS and grant lifetime. UI critic checks viewer clarity, practical studio, readability and mobile layout. QA checks public leakage, route behavior and rendered interactions. Independent reviewers report before the main agent integrates changes.
+G-21: Planner checks boundary, permissions, unlock and KST. Builder keeps server checks. Security reviewer checks DTO/RLS and grant lifetime. UI critic checks viewer clarity, practical studio, readability and mobile layout. QA checks public leakage, route behavior and rendered interactions. Independent reviewers report before the main agent integrates changes.
 
 ## Communication
 

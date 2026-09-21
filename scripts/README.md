@@ -3,6 +3,10 @@
 > Node `.mjs` 스크립트. 대부분 `.env.local`을 읽어 Supabase에 직접 붙는다.
 > 실행: `node scripts/<파일>`. **프로덕션 데이터를 건드리는 것이 있으니** 무엇인지 보고 실행.
 
+`apply-db.mjs`는 TLS 인증서/호스트를 검증한다. Supabase DB 루트 CA가 필요한 환경에서는
+공식 대시보드에서 받은 인증서 경로를 `SUPABASE_DB_CA_PATH` 환경변수 또는 `.env.local`에 설정한다.
+인증서 검증을 끄지 않는다. 소유자 이메일 원문은 실행 로그에 출력하지 않는다.
+
 | 파일 | 역할 | 분류 |
 |---|---|---|
 | `apply-db.mjs` | 마이그레이션 SQL 적용 (`node scripts/apply-db.mjs db/migrations/<file>.sql`, 멱등) | 🔧 상시 도구 |
@@ -17,8 +21,9 @@
 | `sort-tags-by-usage.mjs` | 사용량 기준 태그 정렬 | 🎨 일회성 |
 | `taxonomy-probe.mjs` | 태그 분류 체계 탐색/분석 | 🔍 조사 |
 | `ambient-qa/` | **계절 배경 비주얼 QA 하네스**(2026-09-05, PLAN-20260905-005): 결정적 fixture 캡처·contact sheet·diff·셀프테스트 — [`ambient-qa/README.md`](ambient-qa/README.md). DB 무관 | 🔧 상시 도구 |
-| `backfill-vod-timelines.mjs` | 팬 타임라인 전체 재수집(0071) — 댓글을 다시 읽어 `vod_timeline` upsert. **파싱 규칙을 고친 뒤 과거 VOD를 따라잡을 때** 쓴다. `--dry`로 무엇이 달라지는지 먼저 본다(숲 댓글 API가 죽은 VOD는 건너뛰어 멀쩡한 행을 덮지 않는다) | 🔧 상시 도구 |
-| `lib/timeline-parse.mjs` | 위 스크립트가 쓰는 **파서 거울** — `lib/broadcast/vod-timeline.ts`와 규칙이 같아야 하고, 동치는 `tests/unit/vod-timeline.test.ts`가 지킨다. 규칙을 고치면 양쪽 다 고친다 | 📚 공용 모듈 |
+| `backfill-vod-timelines.mjs` | 이전 단일 댓글 파서 점검용. **0124 이후 쓰기 거부**: 대표 지정·노출 설정을 우회하지 않도록 통합 수집기가 갱신한다. `--dry`는 이전 파서 비교만 하며 대댓글·후보 분류 검증이 아니다 | 🔍 이전 파서 점검 |
+| `lib/timeline-parse.mjs` | 이전 스크립트의 **문법 파서 거울** — `lib/broadcast/timeline-parser.ts`와 동치를 `tests/unit/vod-timeline.test.ts`가 검사. 여러 후보 선정은 거울 대상 아님 | 📚 공용 모듈 |
+| `add-guest-vods.mjs` | 게스트 VOD 등록. 0124 이후 타임라인 직접 쓰기를 건너뛰고 공통 수집기가 처리(수동 대표·노출 설정 보존) | 🔧 운영 도구 |
 | `cleanup-sticker-storage.mjs` | 0065(스티커 철수) 동반 — `sticker-assets` 버킷 비우기(`--delete`). **2026-08-27 실행 완료, 버킷 삭제됨 — 재실행 불필요(404)** | 🗑 일회성(완료) |
 
 **상시 도구**(apply-db / verify-*)는 계속 쓰고, **일회성**(🎨/🔍)은 과거 데이터 정리에 쓴

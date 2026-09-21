@@ -12,6 +12,8 @@ import {
   isInternalRole,
   isServerKind,
   sanitizeMeta,
+  sanitizeDevice,
+  sanitizeVisitKey,
   sanitizeTarget,
   type ActivityKind,
   type ActivitySource
@@ -65,11 +67,11 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
 
   return {
     day: kstDayString(),
-    visit_key: input.visitKey ? input.visitKey.slice(0, 64) : null,
+    visit_key: sanitizeVisitKey(input.visitKey),
     // 내부자만 식별. viewer·비로그인은 여기서 null이 된다(읽는 쪽이 아니라 쓰는 쪽에서 막는다).
     account_hash: accountHashForRole(role, rawHash),
     role,
-    device,
+    device: sanitizeDevice(device),
     source,
     kind: input.kind,
     target: sanitizeTarget(input.target),

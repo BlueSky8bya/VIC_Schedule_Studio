@@ -28,6 +28,7 @@ type WeatherOpt = "real" | Weather;
 type SeasonOpt = "real" | SeasonKey;
 
 export type StudioSettingsProps = {
+  canManageTimelines?: boolean;
   hapticsSupported: boolean;
   hapticsOn: boolean;
   onToggleHaptics: () => void;
@@ -61,6 +62,7 @@ export type StudioSettingsProps = {
 };
 
 export function StudioSettingsList({
+  canManageTimelines = false,
   hapticsSupported,
   hapticsOn,
   onToggleHaptics,
@@ -94,6 +96,12 @@ export function StudioSettingsList({
   ];
   return (
     <>
+      {canManageTimelines ? (
+        <div className="role-help-haptics">
+          <span className="rhh-label"><Clock3 aria-hidden="true" size={14} />팬 타임라인</span>
+          <Link className="rhh-link" data-act="vod-timeline-manage" href={"/studio/timelines" as Route}>관리</Link>
+        </div>
+      ) : null}
       {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
       {hapticsSupported ? (
         <div className="role-help-haptics">

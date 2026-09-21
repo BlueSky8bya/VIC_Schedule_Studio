@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { accountHashOf } from "@/lib/insights/account-hash";
+import { sanitizeVisitKey } from "@/lib/activity/kinds";
 import { fetchAllRows } from "@/lib/db/paginate";
 import { kstDayKey } from "@/lib/calendar/month";
 import {
@@ -179,7 +180,7 @@ export async function startVisitSession(
         device: safeDevice,
         // 탭 수명 그룹 키(0061). 클라 값이라 위조 가능하지만 '구간을 잇는 키'일 뿐 — 역할·계정은
         // 위에서 서버 actor로 확정한다. 길이만 방어적으로 자른다.
-        visit_key: visitKey && visitKey.length >= 8 ? visitKey.slice(0, 64) : null,
+        visit_key: sanitizeVisitKey(visitKey),
         started_at: nowIso,
         last_seen_at: nowIso
       })
@@ -1470,7 +1471,10 @@ export async function getVisitTrendsAction(
   // (요일×시간 히트맵은 buildGraphs가 viewer/all 각각 만든다 — 토글로 즉시 전환.)
 
   // 세션 로그(개발자 디버깅) — 전체 세션, 최근 순. owner만 이메일 매칭 라벨, 겸업자엔 '겸' 표식.
-  const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
+  const hashToOwnerEmail = new Map(getOwnerEmails().flatMap((email) => {
+    const hash = accountHashOf(email);
+    return hash ? [[hash, email] as const] : [];
+  }));
   const dualHashes = NO_DUAL;
   const recent = buildSessionLog(rows, hashToOwnerEmail, dualHashes);
 
@@ -1639,7 +1643,10 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
 
   // 관리자(owner) 방문 기록 — 세션별(여러 번 들어오면 여러 줄). 설정된 owner 이메일과 해시가 맞으면
   // 이메일로, 아니면 익명 #N(일반 방문자는 매칭 집합에 없어 절대 이메일로 안 풀림). 체류는 초 단위.
-  const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
+  const hashToOwnerEmail = new Map(getOwnerEmails().flatMap((email) => {
+    const hash = accountHashOf(email);
+    return hash ? [[hash, email] as const] : [];
+  }));
   const acctTag = new Map<string, number>();
   const ownerVisits = rows
     .filter((r) => r.role === "owner")

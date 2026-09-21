@@ -223,7 +223,8 @@ describe("쓰기 라우트(/api/studio-write) → 캐시 무효화", () => {
     ["restore", { eventId: "evt-1" }],
     ["reorder", { dateKey: "2025-10-01", orderedIds: ["evt-1"] }],
     ["tags", { eventId: "evt-1", tagIds: [], primaryTagIds: [] }],
-    ["support", { eventId: "evt-1", supportUrl: "" }]
+    ["support", { eventId: "evt-1", supportUrl: "" }],
+    ["vodTimeline", { titleNo: 42, key: "root:1", action: "hide" }]
   ];
 
   for (const [op, payload] of OPS) {
@@ -258,7 +259,8 @@ describe("쓰기 라우트(/api/studio-write) → 캐시 무효화", () => {
         "save",
         "support",
         "tags",
-        "unlinkPair"
+        "unlinkPair",
+        "vodTimeline"
       ].sort()
     );
   });

@@ -2,12 +2,12 @@
 
 import { useEffect } from "react";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
-import { detectDevice, startPresence } from "@/lib/presence/presence-client";
+import { detectDevice } from "@/lib/presence/presence-client";
 import { isContentReady, onContentReady } from "@/lib/presence/content-ready";
 import { skipAnalyticsClient } from "@/lib/analytics/guard";
 
 // 모든 로그인 사용자 화면에 1개 깔리는 보이지 않는 컴포넌트.
-// 1) 실시간 프레즌스에 자기 역할만 등록(개발자 창의 실시간 패널 합산용).
+// Visit metadata is sent only to the server; never to public Realtime channels.
 // 2) 방문/체류를 '세션 이벤트'로 기록 — 화면이 보이기 시작하면 세션 생성(start), 보이는 동안
 //    하트비트로 last_seen 갱신(touch), 숨기거나 떠나면 종료(end). 재진입하면 새 세션(여러 번 기록).
 //    체류는 started_at~ended_at의 초 단위로 정확. 모두 keepalive fetch라 떠나며 보낸 end도 끝까지 간다.
@@ -66,7 +66,6 @@ export function PresenceBeacon({ role }: { role: MembershipRole | "anon" }) {
   useEffect(() => {
     // 자동화 브라우저·로컬 호스트는 기록하지 않는다(lib/analytics/guard.ts — 2026-09-04 검증 트래픽이 운영 통계를 오염).
     if (skipAnalyticsClient()) return;
-    startPresence(role);
 
     const device = detectDevice();
     // 비로그인이면 고유 방문자 dedup용 기기 토큰을 함께 보낸다(서버가 해시해 account_hash로).

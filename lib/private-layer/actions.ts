@@ -6,6 +6,8 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { hashPasscode, verifyPasscode } from "@/lib/private-layer/passcode";
+import { getCurrentSupabaseUser } from "@/lib/auth/server";
+import { reservePasscodeAttempt } from "@/lib/private-layer/attempt-limit";
 
 export type PasscodeResult = { ok: true } | { ok: false; error: string };
 export type ClearUnlocksResult = { ok: true; cleared: number } | { ok: false; error: string };
@@ -74,7 +76,7 @@ export async function setPasscodeAction(
     return { ok: false, error: "owner 또는 developer만 비밀번호를 변경할 수 있습니다." };
   }
 
-  if (newPasscode.trim().length < 4) {
+  if (typeof newPasscode !== "string" || typeof currentPasscode !== "string" || newPasscode.length > 256 || currentPasscode.length > 256 || newPasscode.trim().length < 4) {
     return { ok: false, error: "새 비밀번호는 4자 이상이어야 합니다." };
   }
 
@@ -93,11 +95,22 @@ export async function setPasscodeAction(
     return { ok: false, error: "캘린더를 찾을 수 없습니다." };
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: settingsError } = await supabase
     .from("private_layer_settings")
     .select("passcode_version, passcode_hash")
     .eq("calendar_id", calendar.id)
     .maybeSingle();
+
+  if (settingsError) {
+    return { ok: false, error: "비밀번호 설정을 확인할 수 없어요. 잠시 후 다시 시도해 주세요." };
+  }
+
+  const user = await getCurrentSupabaseUser();
+  if (!user) return { ok: false, error: "로그인이 필요합니다." };
+  const attempt = await reservePasscodeAttempt(supabase, user.id);
+  if (attempt !== "allowed") return { ok: false, error: attempt === "limited"
+    ? "시도가 너무 많아요. 10분 뒤 다시 시도해 주세요."
+    : "비밀번호 확인을 사용할 수 없어요. 잠시 후 다시 시도해 주세요." };
 
   // 기존 비밀번호가 있으면 현재 비밀번호 검증
   if (existing && !verifyPasscode(currentPasscode, existing.passcode_hash)) {
@@ -107,19 +120,24 @@ export async function setPasscodeAction(
   const nextVersion = existing ? existing.passcode_version + 1 : 1;
   const now = new Date().toISOString();
 
-  const { error } = await supabase.from("private_layer_settings").upsert(
-    {
-      calendar_id: calendar.id,
-      passcode_hash: hashPasscode(newPasscode),
-      passcode_version: nextVersion,
-      passcode_updated_at: now,
-      updated_at: now
-    },
-    { onConflict: "calendar_id" }
-  );
+  const row = {
+    calendar_id: calendar.id,
+    passcode_hash: hashPasscode(newPasscode),
+    passcode_version: nextVersion,
+    passcode_updated_at: now,
+    updated_at: now
+  };
+  // Compare-and-swap: a concurrent password change must not be overwritten using
+  // a password/version checked before it. First setup uses INSERT, never upsert.
+  const write = existing
+    ? supabase.from("private_layer_settings").update(row)
+        .eq("calendar_id", calendar.id)
+        .eq("passcode_version", existing.passcode_version)
+    : supabase.from("private_layer_settings").insert(row);
+  const { data: saved, error } = await write.select("calendar_id").maybeSingle();
 
-  if (error) {
-    return { ok: false, error: error.message };
+  if (error || !saved) {
+    return { ok: false, error: "비밀번호를 변경하지 못했어요. 새로고침 후 다시 시도해 주세요." };
   }
 
   // 비밀번호가 바뀌면 기존 grant는 version 불일치로 자동 무효화되지만, 깔끔히 삭제한다.

@@ -285,6 +285,8 @@ export const ACT: Record<string, TargetLabel> = {
   "search-suggest-pick": { name: "검색 제안 고르기", area: "시청자 화면", hint: "입력 중 뜨는 추천어 목록" },
   "search-chips-more": { name: "검색 칩 더보기", area: "시청자 화면", hint: "관련·태그 칩 줄 펼치기/접기" },
   "vod-clock-toggle": { name: "다시보기 시각 표기", area: "시청자 화면", hint: "경과 ↔ 실제 시각(KST)" },
+  "vod-timeline-select": { name: "팬 타임라인 선택", area: "시청자 화면", hint: "대표·다른 작성자의 타임라인 전환" },
+  "vod-timeline-manage": { name: "팬 타임라인 관리", area: "편집실", hint: "대표 지정·노출 설정" },
   "vod-rail-left": { name: "타임라인 왼쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },
   "vod-rail-right": { name: "타임라인 오른쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },
   "showcase-bearing": { name: "감상 중 방위 이동", area: "시청자 화면", hint: "배경 감상 모드에서 둘러보기" },
@@ -815,4 +817,24 @@ export function roleBreakdown(roles: Record<string, number>): string {
     if (!ROLE_ORDER.includes(k as (typeof ROLE_ORDER)[number]) && v > 0) parts.push(`${ROLE_NAME[k] ?? k} ${v}`);
   }
   return parts.join(" · ") || "기록 없음";
+}
+
+/** Storage allowlist shares the reviewed UI dictionary. Unknown options collapse to their control. */
+export function registeredActivityTarget(target: string): string | null {
+  if ([ROUTE, SECTION, ACT].some((dict) => Object.hasOwn(dict, target))) return target;
+  if (["/studio/timelines", "/studio/search-dictionary", "/replay", "editor"].includes(target)) return target;
+  if (/^\/replay\/20\d{2}-\d{2}-\d{2}$/.test(target)) return "/replay";
+  if (Object.hasOwn(OPTION_NAME, target)) return target;
+  if (target.startsWith("auto:")) {
+    const raw = target.slice(5);
+    if (Object.hasOwn(AUTO, raw) || Object.hasOwn(ACT, raw.replace(/^\./, ""))) return target;
+    return null;
+  }
+  const separator = target.indexOf("#");
+  if (separator > 0) {
+    const base = target.slice(0, separator), option = target.slice(separator + 1);
+    if (!Object.hasOwn(ACT, base)) return null;
+    return Object.hasOwn(ACT[base].opts ?? {}, option) || Object.hasOwn(OPTION_NAME, option) ? target : base;
+  }
+  return null;
 }

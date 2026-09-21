@@ -7,6 +7,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import "@/components/shared/rhh-select.css";
 import { ChevronDown } from "lucide-react";
 
 export type RhhOption<V extends string> = { value: V; label: string };

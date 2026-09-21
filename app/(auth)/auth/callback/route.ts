@@ -1,3 +1,4 @@
+import { sanitizeNextPath } from "@/lib/auth/next-path";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { providerErrorToCode } from "@/lib/auth/auth-errors";
@@ -39,12 +40,4 @@ function redirectToLogin(request: Request, errorCode: string, next: string) {
     loginUrl.searchParams.set("next", next);
   }
   return NextResponse.redirect(loginUrl);
-}
-
-function sanitizeNextPath(value: string) {
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-
-  return value;
 }
