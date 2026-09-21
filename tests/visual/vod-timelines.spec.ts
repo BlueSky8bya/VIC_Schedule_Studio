@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 for (const width of [1440, 390]) test(`timeline selection and management at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1000 });
   await page.route("**/api/activity", (r) => r.fulfill({ status: 200, body: '{"ok":true}' }));
+  await page.route("**/api/public/fixture/vod-chat?*", (r) => r.fulfill({ json: { binSec: 30, bins: [] } }));
   await page.route("**/api/developer/presence", (r) => r.fulfill({ json: {
     observedAt: "2026-09-21T12:00:00Z", windowSeconds: 90, total: 8,
     roles: { owner: 1, viewer: 3, anon: 3, developer: 1 },

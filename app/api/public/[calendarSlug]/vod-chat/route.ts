@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ cale
   }
   const profile = await getPublicVodChatProfile(titleNo);
   return NextResponse.json(profile ?? { binSec: 30, laughTier: null, bins: [] }, {
-    // 채팅은 방송이 끝나면 더 안 바뀐다 — 수집이 이어지는 동안만 1시간 뒤 갱신되면 충분.
-    headers: { "Cache-Control": "public, s-maxage=3600" }
+    // Late source availability/recovery can change any archived VOD. Never pin an empty profile.
+    headers: { "Cache-Control": profile ? "public, max-age=0, s-maxage=30" : "no-store" }
   });
 }

@@ -179,19 +179,44 @@ export function VodChapters({
   // 채팅 구간 프로필(0090) — 가로 띠가 있는 창에서만 받는다(모바일 아젠다는 띠 없음). 비율만 온다(숫자 없음).
   const [profile, setProfile] = useState<PublicVodChatProfile | null>(null);
   useEffect(() => {
+    setProfile(null);
     if (!stripHost || durationMs <= 0) return;
     let alive = true;
-    (async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let request: AbortController | null = null;
+    const refresh = async () => {
+      if (!alive || document.visibilityState !== "visible") return;
+      const controller = new AbortController();
+      request = controller;
+      const timeout = setTimeout(() => controller.abort(), 10_000);
       try {
-        const res = await fetch(`/api/public/${slug}/vod-chat?titleNo=${titleNo}`);
-        const json = (await res.json()) as PublicVodChatProfile;
-        if (alive && Array.isArray(json.bins) && json.bins.length >= 4) setProfile(json);
-      } catch {
-        /* 프로필 없이도 띠는 그린다 */
+        const res = await fetch(`/api/public/${slug}/vod-chat?titleNo=${titleNo}`, {
+          cache: "no-cache", signal: controller.signal
+        });
+        if (!res.ok) return;
+        const json = await res.json() as PublicVodChatProfile;
+        if (alive && request === controller && Array.isArray(json.bins)) {
+          setProfile(json.bins.length >= 4 ? json : null);
+        }
+      } catch { /* keep the last valid profile; retry late/failed analysis */ }
+      finally {
+        clearTimeout(timeout);
+        if (alive && request === controller) {
+          request = null;
+          timer = setTimeout(() => void refresh(), 30_000);
+        }
       }
-    })();
+    };
+    const visibility = () => {
+      clearTimeout(timer);
+      request?.abort(); request = null;
+      void refresh();
+    };
+    document.addEventListener("visibilitychange", visibility);
+    void refresh();
     return () => {
-      alive = false;
+      alive = false; clearTimeout(timer); request?.abort();
+      document.removeEventListener("visibilitychange", visibility);
     };
   }, [stripHost, durationMs, slug, titleNo]);
 

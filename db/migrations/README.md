@@ -12,7 +12,7 @@
 
 ## 목록 (번호 → 목적)
 
-Latest: `0125_privacy_boundary.sql` — service-only RPC grants, identity column protection, masked public event view, direct REST teaser/private-unlock rules and atomic shared passcode attempt reservation. `0124` (fan timeline candidates/choices) and `0125` applied successfully to production on 2026-09-21 KST with verified TLS, before code deployment. No row cleanup included. Evidence: [privacy audit](../../docs/agent/verification/PRIVACY-20260921.md).
+Latest: `0126_vod_chat_recovery.sql` — service-only resumable aggregate analysis, fair retry queue and late fan-context invalidation. Applied before collector deployment with verified TLS, 2026-09-21 KST. [Evidence](../../docs/agent/plans/PLAN-20260921-chat-recovery.md). `0124`/`0125` privacy/timeline migration evidence remains in the [privacy audit](../../docs/agent/verification/PRIVACY-20260921.md).
 
 | # | 영역 |
 |---|---|

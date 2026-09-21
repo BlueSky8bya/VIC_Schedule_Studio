@@ -6,6 +6,16 @@
 
 ## v0.1.0 — 2026-09-21
 
+### CHG-20260921-004 — Recover automatic VOD chat analysis
+
+First-file404 used to mark the entire VOD complete;600-second steps also skipped half of the
+upstream300-second windows.0126 adds a service-only fair retry queue with atomic aggregate
+checkpoint/publication and timeline-context invalidation. Collector advances past gaps, retries
+them, rebuilds legacy false-complete archives and preserves existing profiles while resuming.
+Public profile cache expires within30s; visible replay refreshes automatically. No raw chat or
+speaker identifiers stored. Rollback: stop collector, retain restrictive grants and profiles;
+never restore forced completion. [Evidence and plan](plans/PLAN-20260921-chat-recovery.md).
+
 ### CHG-20260921-003 — Developer-only live aggregates
 
 Restored the live insights tab from existing visit sessions through an authenticated developer

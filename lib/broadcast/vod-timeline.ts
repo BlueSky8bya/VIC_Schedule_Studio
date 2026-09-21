@@ -129,7 +129,7 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
 }
 
 /**
- * Archive/chat refresh, only while offline. Archive timestamps throttle this work:
+ * Archive refresh, only while offline. Archive timestamps throttle this work:
  * 1 minute within 30 minutes of broadcast end, 5 within 60, otherwise 30.
  * Fan timelines have an independent clock and remain eligible while live.
  */
@@ -168,15 +168,8 @@ export async function maybeSyncVodPipeline(): Promise<{
   }
   if (deep) await syncVodArchiveDeep();
   else await syncVodArchive(1);
-  // 채팅 단어 수집(0088) — 조금씩(평시 1 VOD·40조각 ≈ 6.7시간 분량). 백필은 /api/cron/vod-chat.
-  // Vercel 함수 시간(60초) 안에 끝나도록 조각 예산을 작게 둔다.
-  try {
-    const { pickChatSyncTargets, syncVodChat } = await import("@/lib/broadcast/vod-chat");
-    const chatBudget = tier === "burst" ? 0 : tier === "hot" ? 20 : 40;
-    if (chatBudget > 0) await syncVodChat(await pickChatSyncTargets(1), chatBudget);
-  } catch (err) {
-    console.warn("[vod-chat] sync skipped:", (err as Error).message);
-  }
+  // Chat has its own scheduled route/queue. Do not tie it to archive timestamps,
+  // broadcast state or share this request's time budget with timeline rebuilds.
   return { ran: true, tier, sinceEndMin: sinceEnd };
 }
 
