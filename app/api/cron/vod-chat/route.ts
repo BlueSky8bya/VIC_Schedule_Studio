@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pickChatSyncTargets, syncVodChat } from "@/lib/broadcast/vod-chat";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
+import { isCronAuthorized } from "@/lib/auth/cron-auth";
 
 // 다시보기 채팅 단어 수집(0088) — 백필·수동 실행용 크론 라우트.
 // Independent scheduled queue for new archives, missing chunks and late timeline context.
@@ -10,9 +11,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return NextResponse.json({ ok: false }, { status: 503 });
-  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
+  // 운영 수집은 비밀 설정(CRON_SECRET)이 있어야만 돈다 — broadcast-poll과 같은 규약(없으면 503).
+  if (!process.env.CRON_SECRET?.trim()) return NextResponse.json({ ok: false }, { status: 503 });
+  // 트리거는 둘: GitHub Actions(CRON_SECRET, 백업)와 pg_cron+pg_net(DB Vault 토큰, 5분마다 — 0128, 정본).
+  if (!(await isCronAuthorized(req))) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
   const url = new URL(req.url);

@@ -12,7 +12,7 @@
 
 ## 목록 (번호 → 목적)
 
-Latest: `0127_vod_chat_pick_recent_first.sql` — chat queue picks the newest broadcast first within each lane (the 9/26 VOD sat 8th behind August backfill for 9 hours). Applied 2026-09-27 KST via apply-db. Previous: `0126_vod_chat_recovery.sql` — service-only resumable aggregate analysis, fair retry queue and late fan-context invalidation. Applied before collector deployment with verified TLS, 2026-09-21 KST. [Evidence](../../docs/agent/plans/PLAN-20260921-chat-recovery.md). `0124`/`0125` privacy/timeline migration evidence remains in the [privacy audit](../../docs/agent/verification/PRIVACY-20260921.md).
+Latest: `0128_pg_cron_vod_chat_trigger.sql` — pg_net + Vault token + pg_cron job `vic-vod-chat` (every 5 min) call `/api/cron/vod-chat` from inside the database; the route verifies the token through `cron_token_matches` (service role). Applied 2026-09-27 KST. Then `0127_vod_chat_pick_recent_first.sql` — chat queue picks the newest broadcast first within each lane (the 9/26 VOD sat 8th behind August backfill for 9 hours). Applied 2026-09-27 KST via apply-db. Previous: `0126_vod_chat_recovery.sql` — service-only resumable aggregate analysis, fair retry queue and late fan-context invalidation. Applied before collector deployment with verified TLS, 2026-09-21 KST. [Evidence](../../docs/agent/plans/PLAN-20260921-chat-recovery.md). `0124`/`0125` privacy/timeline migration evidence remains in the [privacy audit](../../docs/agent/verification/PRIVACY-20260921.md).
 
 | # | 영역 |
 |---|---|
