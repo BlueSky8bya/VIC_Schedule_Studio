@@ -429,6 +429,16 @@
   justify-content: space-between;
   pointer-events: none;
 }
+/* › 와 PC '오늘' 플로팅을 한 묶음으로(오늘은 오늘 달을 벗어났을 때만 떠오른다 — components/shared/month-picker). */
+.agenda-monthbar .mb-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.agenda-monthbar .mb-right > * {
+  pointer-events: auto;
+}
 .agenda-monthbar .mb-step {
   pointer-events: auto;
   display: inline-grid;

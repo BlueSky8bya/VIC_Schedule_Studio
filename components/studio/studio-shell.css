@@ -882,6 +882,13 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
 
 /* 하단 플로팅 행 — 배너와 확대 컨트롤을 한 행에 나란히(위아래로 쌓으면 일정 두 줄 가림).
    행 자체는 클릭 통과, 각 알약이 자기 몫만 상호작용. */
+/* PC '오늘' 플로팅 — 달력 우하단. 하단 중앙 알약(.bottom-float-row, z 45)과 같은 층·같은 바닥선. */
+.studio-today-fab {
+  position: fixed;
+  right: calc(var(--space-4) + 2px);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+}
 .bottom-float-row {
   position: fixed;
   bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));

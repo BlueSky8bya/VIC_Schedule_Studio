@@ -1,0 +1,323 @@
+/* 월 이동 부품 세트 — 편집실·시청자, PC·모바일 공용(components/shared/month-picker.tsx).
+   색·간격은 전부 토큰(globals.css)에서 — 다크·눈 편한 테마는 토큰이 알아서 바뀐다. */
+
+/* ── 제목 버튼: 글자는 그대로, 호버 때만 뒤에 알약이 깔린다(상자로 보이지 않게) ── */
+.month-title-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18em;
+  margin: 0;
+  padding: 0.06em 0.32em;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 0 0 0 rgb(var(--selection-rgb) / 0%);
+  transition:
+    background-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease));
+}
+.month-title-btn:hover,
+.month-title-btn:focus-visible,
+.month-title-btn.is-open {
+  background: var(--selection-fill);
+  box-shadow: 0 0 0 1px var(--selection-border);
+  transform: translateY(-1px);
+}
+.month-title-btn:active {
+  transform: translateY(0) scale(0.985);
+}
+.month-title-btn:focus-visible {
+  outline: 2px solid var(--selection-border);
+  outline-offset: 2px;
+}
+/* 모바일은 호버가 없다 → 작은 ▾ 하나로 "눌린다"를 말한다. */
+.month-title-caret {
+  font-size: 0.62em;
+  line-height: 1;
+  opacity: 0.55;
+  transform: translateY(0.06em);
+  transition: transform var(--dur-2) var(--ease);
+}
+.month-title-btn.is-open .month-title-caret {
+  transform: translateY(0.06em) rotate(180deg);
+}
+
+/* ── 피커: PC 팝오버 / 모바일 시트 ── */
+.mp-backdrop {
+  position: fixed;
+  inset: 0;
+  /* 좌하단 계정 원(globals 9000)보다 위 — 모바일 시트의 9월 칸을 그 원이 덮었다(2026-09-27 실측).
+     드래그 유령(9999)·툴팁 셀렉트(10050)보다는 아래. */
+  z-index: 9100;
+}
+.mp-backdrop.is-pop {
+  background: transparent;
+}
+.mp-backdrop.is-sheet {
+  display: flex;
+  align-items: flex-end;
+  background: rgb(24 20 32 / 42%);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: mp-fade var(--dur-2) var(--ease-enter) both;
+}
+@keyframes mp-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.mp-panel {
+  --mp-w: 292px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface, #fffdf6);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-3);
+}
+.is-pop .mp-panel {
+  position: fixed;
+  width: var(--mp-w);
+  border-radius: 18px;
+  transform-origin: top center;
+  animation: mp-pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease-enter)) both;
+}
+@keyframes mp-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.is-sheet .mp-panel {
+  width: 100%;
+  border-radius: var(--r-xl, 20px) var(--r-xl, 20px) 0 0;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  animation: mp-sheet-up var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease-enter)) both;
+}
+@keyframes mp-sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.mp-grab {
+  justify-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 14%);
+}
+.mp-year {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+.mp-year strong {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  animation: mp-num-in 0.26s var(--spring-bouncy, var(--ease)) both;
+}
+@keyframes mp-num-in {
+  from {
+    opacity: 0.3;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mp-year-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface, #fff);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
+}
+.mp-year-btn:hover:not(:disabled) {
+  background: var(--selection-fill);
+  border-color: var(--selection-border);
+}
+.mp-year-btn:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+.mp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.is-sheet .mp-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.mp-month {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease));
+}
+.mp-month:hover:not(:disabled) {
+  background: var(--selection-fill);
+  transform: translateY(-1px);
+}
+.mp-month:focus-visible {
+  outline: 2px solid var(--selection-border);
+  outline-offset: 1px;
+}
+.mp-month.is-current {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+}
+.mp-month:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+/* 오늘 달 — 숫자 아래 작은 점(달력 오늘 칸과 같은 어휘). */
+.mp-today-dot {
+  position: absolute;
+  bottom: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--selection-border);
+}
+
+/* ── 오늘 플로팅(PC) — 오늘 달을 벗어나면 떠오르고, 돌아오면 가라앉는다 ── */
+.today-fab {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--glass-strong, rgb(255 255 255 / 86%));
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--selection-border);
+  box-shadow: var(--shadow-2);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px) scale(0.85);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-3) var(--ease),
+    transform var(--dur-spring-smooth, var(--dur-3)) var(--spring-bouncy, var(--ease)),
+    background-color var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease);
+}
+.today-fab.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.today-fab:hover {
+  background: var(--selection-fill);
+  box-shadow: var(--shadow-3);
+}
+.today-fab:active {
+  transform: scale(0.94);
+}
+.today-fab:focus-visible {
+  outline: 2px solid var(--selection-border);
+  outline-offset: 2px;
+}
+.today-fab .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── 점프 토스트 — 하단 중앙, 돌아가기 한 번 ── */
+.month-jump-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  z-index: 96;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  border-radius: var(--r-pill);
+  background: rgb(28 36 51 / 92%);
+  color: #fff;
+  font-size: var(--text-body);
+  font-weight: 700;
+  box-shadow: var(--shadow-3);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  animation: mp-sheet-up var(--dur-3) var(--ease-enter) both;
+}
+.month-jump-back {
+  appearance: none;
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 6px 12px;
+  background: rgb(255 255 255 / 14%);
+  color: #ffd66a;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.month-jump-back:hover {
+  background: rgb(255 255 255 / 24%);
+}
+
+html[data-reduce-motion] .mp-backdrop,
+html[data-reduce-motion] .mp-panel,
+html[data-reduce-motion] .mp-year strong,
+html[data-reduce-motion] .month-jump-toast {
+  animation: none;
+}
+html[data-reduce-motion] .today-fab,
+html[data-reduce-motion] .month-title-btn,
+html[data-reduce-motion] .mp-month {
+  transition: none;
+}

@@ -84,6 +84,14 @@ import {
 } from "@/lib/ui/hype-curve";
 import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
 import { debutDateLabel, debutDPlus, getDayMark } from "@/lib/calendar/holidays";
+import {
+  MonthJumpToast,
+  MonthPicker,
+  MonthTitleButton,
+  TodayFab,
+  ymOffset,
+  type YM
+} from "@/components/shared/month-picker";
 import { PanelPlaceControl } from "@/components/shared/panel-place-control";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { flipSpring } from "@/lib/ui/flip-motion";
@@ -971,6 +979,23 @@ export function PublicPoster({
   // 뒤로가기 닫기 규약은 시트 종류와 무관하게 하나라, 아래 insightsOpen/setInsightsOpen 이름의
   // 기존 배관(1690~)을 그대로 태운다: 열림 = 어느 시트든 열림, 닫기 = 어느 시트든 닫기.
   const [sheet, setSheet] = useState<null | "insights" | "search" | "settings">(null);
+  // 월 피커(제목 클릭) — PC는 제목 아래 팝오버(anchor), 모바일은 시트(anchor 무시). 부품은 편집실과 공용.
+  const [monthPick, setMonthPick] = useState<{ anchor: DOMRect | null } | null>(null);
+  // 검색→다시보기로 먼 달로 옮겨진 뒤 "돌아가기" — 출발 달을 기억해 한 번에 복귀(2026-09-27 소유자).
+  const [jumpToast, setJumpToast] = useState<{ to: YM; from: YM } | null>(null);
+  const jumpToastTimerRef = useRef<number | null>(null);
+  // T 키 핸들러는 월 바뀔 때만 다시 묶이므로, 필터 상태까지 최신으로 보는 jumpToday는 ref로 부른다.
+  const jumpTodayRef = useRef<() => void>(() => {});
+  // 피커 범위: 데뷔 달 ~ 오늘+12달(시청자). 편집실은 미래를 더 넓게 본다.
+  const monthBounds = useMemo(() => {
+    const [dy, dm] = debutDateLabel().split(".").map(Number);
+    const [ty, tm] = today.split("-").map(Number);
+    const maxIdx = ty * 12 + (tm - 1) + 12;
+    return {
+      min: { year: dy, month: dm } as YM,
+      max: { year: Math.floor(maxIdx / 12), month: (maxIdx % 12) + 1 } as YM
+    };
+  }, [today]);
   // 설정(2026-09-19 소유자) — 시청자 화면 계열(미리보기·시청자·비로그인)도 편집실과 **같은 설정 목록**을
   // 연다. 상태는 공용 훅 한 벌(components/shared/use-settings-prefs.ts), 목록도 편집실과 같은 컴포넌트.
   // 포스터 테마·개발자 시간여행 줄은 편집실(소유자·개발자) 몫이라 여기선 넘기지 않는다.
@@ -1097,7 +1122,10 @@ export function PublicPoster({
     setSheet(null);
     const [y, m] = dateKey.split("-").map(Number);
     const offset = (y - view.year) * 12 + (m - view.month);
-    if (offset !== 0) moveMonth(offset);
+    if (offset !== 0) {
+      moveMonth(offset);
+      showJumpToast({ year: y, month: m });
+    }
     // 월 이동 슬라이드(≈360ms)가 끝난 뒤 그 칸으로 스크롤 + 점등. 같은 달이면 바로.
     const delay = offset !== 0 ? 380 : 40;
     window.setTimeout(() => {
@@ -1117,7 +1145,10 @@ export function PublicPoster({
     // 모달은 뒤에 그 달이 깔린다. 같은 달이면 이동 없음.
     const [y, m] = dateKey.split("-").map(Number);
     const offset = (y - view.year) * 12 + (m - view.month);
-    if (offset !== 0) moveMonth(offset);
+    if (offset !== 0) {
+      moveMonth(offset);
+      showJumpToast({ year: y, month: m });
+    }
     // 시트를 닫으면 히스토리 배관이 history.back()을 부른다 — 그 뒤로가기가 **진행 중인 router.push를
     // 취소**하고(실측: /replay로 안 감), 창(모달)이 쌓는 pushState와도 순서가 꼬인다. 그래서 닫기의
     // popstate가 정리된 뒤(한 번 듣고) 다음 틱에 연다. 시트가 안 떠 있으면 바로.
@@ -2680,6 +2711,10 @@ export function PublicPoster({
       } else if (event.key === "ArrowRight") {
         event.preventDefault();
         moveMonth(1);
+      } else if ((event.key === "t" || event.key === "T") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        // T = 오늘(편집실과 같은 키). 피커가 떠 있으면 피커가 키의 주인이다(자기 키를 삼킨다).
+        event.preventDefault();
+        jumpTodayRef.current();
       }
     }
     window.addEventListener("keydown", onKey);
@@ -2747,6 +2782,17 @@ export function PublicPoster({
       writeViewCookie({ sy: next.year, sm: next.month });
     }
   }
+  // 피커·돌아가기 공용: 원하는 달로 한 번에(몇 달 차이든 슬라이드 1회 — jumpToday와 같은 경로).
+  function goToMonth(target: YM) {
+    const offset = ymOffset(view, target);
+    if (offset !== 0) moveMonth(offset);
+  }
+  // 검색 결과가 달을 옮겼을 때 출발 달을 토스트에 남긴다(8초). 이미 떠 있으면 출발 달은 처음 것을 지킨다.
+  function showJumpToast(to: YM) {
+    setJumpToast((cur) => ({ to, from: cur?.from ?? { year: view.year, month: view.month } }));
+    if (jumpToastTimerRef.current) window.clearTimeout(jumpToastTimerRef.current);
+    jumpToastTimerRef.current = window.setTimeout(() => setJumpToast(null), 8000);
+  }
 
   // 오늘이 속한 달로 한 번에 복귀(모바일 하단 레일 '오늘'). 이미 그 달이면 비활성.
   const todayYM = useMemo(() => {
@@ -2776,8 +2822,15 @@ export function PublicPoster({
     }
     // 상태 변화(필터 해제/월 이동)가 렌더된 뒤 오늘로 스크롤. 월 이동이면 슬라이드만큼 더 기다린다.
     const delay = !onTodayMonth ? 360 : needClear ? 60 : 0;
-    window.setTimeout(scrollToToday, delay);
+    window.setTimeout(() => {
+      scrollToToday();
+      // 오늘 칸을 잠깐 밝힌다 — 이미 오늘 달이면 이동이 없어 이것만이 '눌렀다'의 응답이다.
+      setFlashDate(today);
+      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = window.setTimeout(() => setFlashDate(null), 1800);
+    }, delay);
   }
+  jumpTodayRef.current = jumpToday;
   // D3: 방송이 '켜지는 순간'(false→true 전이)만 젤리 팝 + 햅틱. 첫 마운트에 이미 LIVE면 조용히.
   const [liveJustOn, setLiveJustOn] = useState(false);
   const prevLiveRef = useRef<boolean | null>(null);
@@ -4102,6 +4155,35 @@ export function PublicPoster({
           {heartToast}
         </div>
       ) : null}
+      {/* 월 피커(제목 클릭) — 편집실과 같은 부품. fixed라 캡처 PNG 밖. */}
+      {monthPick ? (
+        <MonthPicker
+          anchor={monthPick.anchor}
+          max={monthBounds.max}
+          min={monthBounds.min}
+          narrow={isNarrow}
+          onClose={() => setMonthPick(null)}
+          onPick={(ym) => {
+            setMonthPick(null);
+            goToMonth(ym);
+          }}
+          today={todayYM}
+          view={view}
+        />
+      ) : null}
+      {/* 검색으로 먼 달에 갔을 때 — 출발 달로 돌아가기 한 번. */}
+      {jumpToast ? (
+        <MonthJumpToast
+          from={jumpToast.from}
+          onBack={() => {
+            hapticTick();
+            const from = jumpToast.from;
+            setJumpToast(null);
+            goToMonth(from);
+          }}
+          to={jumpToast.to}
+        />
+      ) : null}
       {/* 모바일 아젠다 일정 상세 시트 — 카드 탭으로 열리며 전체 제목·기간·태그 이름을 보여준다.
           공개 DTO만 사용(비공개 필드 자체가 없다). fixed 오버레이라 캡쳐 PNG 밖. */}
       {dayVodPop ? (
@@ -4724,7 +4806,14 @@ export function PublicPoster({
             {/* 웹과 같은 문법(2026-09-17 소유자): 제목 = 보고 있는 달, 아랫줄 = 데뷔 D+. */}
             <h1 className="agenda-title">
               <span className="title-spark" aria-hidden="true">✨️</span>
-              {view.year}년 {String(view.month).padStart(2, "0")}월
+              {/* 제목 = 월 피커 버튼(편집실과 같은 부품). 모바일은 ▾가 눌림을 말한다. */}
+              <MonthTitleButton
+                narrow
+                onOpen={() => setMonthPick({ anchor: null })}
+                open={monthPick !== null}
+              >
+                {view.year}년 {String(view.month).padStart(2, "0")}월
+              </MonthTitleButton>
               <span className="title-spark" aria-hidden="true">✨️</span>
             </h1>
             {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
@@ -4814,7 +4903,14 @@ export function PublicPoster({
                     달 이동의 결과가 화면에서 가장 큰 글자로 확인된다(데뷔 D+는 레일 카드로). */}
                 <h1 className="poster-chrome-title">
                   <span aria-hidden="true" className="title-spark">✨️</span>
-                  {view.year}년 {String(view.month).padStart(2, "0")}월
+                  {/* 제목 = 월 피커 버튼. PC는 장식 없이 호버 알약만(2026-09-27 소유자). */}
+                  <MonthTitleButton
+                    narrow={false}
+                    onOpen={(anchor) => setMonthPick({ anchor })}
+                    open={monthPick !== null}
+                  >
+                    {view.year}년 {String(view.month).padStart(2, "0")}월
+                  </MonthTitleButton>
                   <span aria-hidden="true" className="title-spark">✨️</span>
                 </h1>
                 {/* '이 달 기록' — 비로그인 시청자도 볼 수 있다. 좌상단(미니게임·아바타)·우상단(로그인)·
@@ -5116,6 +5212,10 @@ export function PublicPoster({
           </div>
         ) : null}
 
+        {/* PC '오늘' — 지도 앱 '내 위치' 문법: 오늘 달을 벗어났을 때만 › 옆에 떠오른다(헤더에 상자를
+            더하지 않아 제목 대칭·크기 문제가 없다). 모바일은 위 mb-center의 오늘/LIVE가 담당. */}
+        <div className="mb-right">
+        {!isNarrow ? <TodayFab onClick={jumpToday} visible={!onTodayMonth} /> : null}
         <button
           className="mb-step"
           onClick={() => {
@@ -5127,6 +5227,7 @@ export function PublicPoster({
          data-act="다음 달">
           <ChevronRight aria-hidden="true" size={22} />
         </button>
+        </div>
       </nav>
     </main>
   );

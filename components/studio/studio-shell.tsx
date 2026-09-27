@@ -105,7 +105,15 @@ import {
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { markContentReady } from "@/lib/presence/content-ready";
-import { getDayMark } from "@/lib/calendar/holidays";
+import { debutDateLabel, getDayMark } from "@/lib/calendar/holidays";
+import {
+  MonthJumpToast,
+  MonthPicker,
+  MonthTitleButton,
+  TodayFab,
+  ymOffset,
+  type YM
+} from "@/components/shared/month-picker";
 import {
   canEditEventTags,
   canEditSchedule,
@@ -382,6 +390,21 @@ export function StudioShell({
   // (members 모달은 멤버 관리 철수(2026-09-04)로 제거, settings 모달은 같은 날 도구 카드 톱니에서 열린다.)
   const [searchOpen, setSearchOpen] = useState(false);
   const [flashDate, setFlashDate] = useState<string | null>(null);
+  // 월 피커(제목 클릭)·돌아가기 토스트 — 시청자 화면과 같은 부품(components/shared/month-picker).
+  const [monthPick, setMonthPick] = useState<{ anchor: DOMRect | null } | null>(null);
+  const [jumpToast, setJumpToast] = useState<{ to: YM; from: YM } | null>(null);
+  const jumpToastTimerRef = useRef<number | null>(null);
+  const jumpTodayRef = useRef<() => void>(() => {});
+  // 피커 범위: 데뷔 달 ~ 오늘+24달(편집실은 미래 계획을 더 멀리 잡는다).
+  const monthBounds = useMemo(() => {
+    const [dy, dm] = debutDateLabel().split(".").map(Number);
+    const [ty, tm] = today.split("-").map(Number);
+    const maxIdx = ty * 12 + (tm - 1) + 24;
+    return {
+      min: { year: dy, month: dm } as YM,
+      max: { year: Math.floor(maxIdx / 12), month: (maxIdx % 12) + 1 } as YM
+    };
+  }, [today]);
   const flashTimerRef = useRef<number | null>(null);
   const [modal, setModal] = useState<null | "tags" | "settings" | "developer" | "dayVisit">(
     null
@@ -1926,8 +1949,19 @@ export function StudioShell({
   const goToMonthOf = (dateKey: string) => {
     const [y, m] = dateKey.split("-").map(Number);
     const offset = (y - view.year) * 12 + (m - view.month);
-    if (offset !== 0) moveMonth(offset);
+    if (offset !== 0) {
+      moveMonth(offset);
+      // 먼 달로 옮겨졌다 — 출발 달로 "돌아가기"를 8초 남긴다(2026-09-27 소유자: 화살표로만 되돌아오기 힘들다).
+      setJumpToast((cur) => ({ to: { year: y, month: m }, from: cur?.from ?? { year: view.year, month: view.month } }));
+      if (jumpToastTimerRef.current) window.clearTimeout(jumpToastTimerRef.current);
+      jumpToastTimerRef.current = window.setTimeout(() => setJumpToast(null), 8000);
+    }
     return offset !== 0 ? 380 : 0;
+  };
+  // 피커·돌아가기 공용: 몇 달 차이든 슬라이드 1회.
+  const goToMonth = (target: YM) => {
+    const offset = ymOffset(view, target);
+    if (offset !== 0) moveMonth(offset);
   };
   // 그 날 칸을 잠시 밝힌다(시청자 화면의 .cell-flash와 같은 애니메이션) — 달 이동 슬라이드가 끝난 뒤.
   // 클래스는 state(flashDate)로 칸 className에 들어간다 — DOM에 직접 넣으면 selectEvent 리렌더가 지운다(실측).
@@ -2018,7 +2052,9 @@ export function StudioShell({
   // 오늘 카드로 스크롤(가운데). 이미 그 달이면 스크롤만. 슬라이드가 끝난 뒤 스크롤(360ms).
   const todayYM = { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) };
   const onTodayMonth = view.year === todayYM.year && view.month === todayYM.month;
-  function jumpTodayMobile() {
+  // PC도 같은 함수(플로팅 오늘 버튼·T 키): 이동 뒤 오늘 칸을 잠깐 밝힌다 — 이미 오늘 달이면 이동이 없어
+  // 그 점등만이 '눌렀다'의 응답이다(무반응 버튼 금지).
+  function jumpToday() {
     hapticTick();
     const reduceMotion = reduceMotionEnabled();
     if (!onTodayMonth) {
@@ -2026,13 +2062,18 @@ export function StudioShell({
     }
     window.setTimeout(
       () => {
-        document
-          .querySelector(".studio-mobile .agenda-day.today")
-          ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+        if (isNarrow) {
+          document
+            .querySelector(".studio-mobile .agenda-day.today")
+            ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+        }
+        flashStudioDay(today);
       },
       onTodayMonth || reduceMotion ? 0 : 360
     );
   }
+  const jumpTodayMobile = jumpToday;
+  jumpTodayRef.current = jumpToday;
 
   // 키보드 ←/→ 로 월 이동(데스크톱 편집실). 입력칸·모달·시청자 미리보기 중엔 동작 안 함.
   useEffect(() => {
@@ -2066,6 +2107,13 @@ export function StudioShell({
         // ←/→ = 항상 월 이동. (예전 '이어진 일정 선택 중엔 체인 안 이전/다음 선택' 기능은
         // 달이 안 넘어가는 것처럼 보여 사용자 결정으로 제거 — 2026-07-31. 재도입 금지.)
         moveMonth(event.key === "ArrowLeft" ? -1 : 1);
+        return;
+      }
+      if ((event.key === "t" || event.key === "T") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        // T = 오늘(시청자 화면과 같은 키). 이 핸들러는 달이 바뀌어도 다시 안 묶이므로 ref로 최신 함수를 부른다
+        // (직접 부르면 옛 view를 본 closure가 엉뚱한 offset을 계산한다 — 2026-09-27 실측: 5월에서 T → 8월).
+        event.preventDefault();
+        jumpTodayRef.current();
       }
     }
     window.addEventListener("keydown", onKey);
@@ -5318,9 +5366,11 @@ export function StudioShell({
               >
                 <ChevronLeft aria-hidden="true" size={20} strokeWidth={2.5} />
               </button>
-              <strong aria-live="polite">
-                {view.year}년 {view.month}월
-              </strong>
+              <MonthTitleButton narrow onOpen={() => setMonthPick({ anchor: null })} open={monthPick !== null}>
+                <strong aria-live="polite">
+                  {view.year}년 {view.month}월
+                </strong>
+              </MonthTitleButton>
               <button
                 aria-label="다음 달"
                 className="m-month-btn"
@@ -6513,9 +6563,16 @@ export function StudioShell({
           >
             <ChevronLeft aria-hidden="true" size={22} />
           </button>
-          <strong data-enter={monthDir} key={`${view.year}-${view.month}`}>
-            {view.year}년 {view.month}월
-          </strong>
+          {/* 제목 = 월 피커 버튼(시청자 화면과 같은 부품). PC는 장식 없이 호버 알약만. */}
+          <MonthTitleButton
+            narrow={false}
+            onOpen={(anchor) => setMonthPick({ anchor })}
+            open={monthPick !== null}
+          >
+            <strong data-enter={monthDir} key={`${view.year}-${view.month}`}>
+              {view.year}년 {view.month}월
+            </strong>
+          </MonthTitleButton>
           <button
             aria-label="다음 달"
             className="month-nav-btn"
@@ -7745,6 +7802,37 @@ export function StudioShell({
           slug={schedule.calendar.slug}
           variant="modal"
           vods={dayVodPop.vods}
+        />
+      ) : null}
+      {/* PC '오늘' 플로팅 — 오늘 달을 벗어났을 때만 달력 우하단에 떠오른다(시청자 화면과 같은 부품). */}
+      {!isNarrow && !viewerMode ? (
+        <TodayFab className="studio-today-fab" onClick={jumpToday} visible={!onTodayMonth} />
+      ) : null}
+      {monthPick ? (
+        <MonthPicker
+          anchor={monthPick.anchor}
+          max={monthBounds.max}
+          min={monthBounds.min}
+          narrow={isNarrow}
+          onClose={() => setMonthPick(null)}
+          onPick={(ym) => {
+            setMonthPick(null);
+            goToMonth(ym);
+          }}
+          today={todayYM}
+          view={view}
+        />
+      ) : null}
+      {jumpToast ? (
+        <MonthJumpToast
+          from={jumpToast.from}
+          onBack={() => {
+            hapticTick();
+            const from = jumpToast.from;
+            setJumpToast(null);
+            goToMonth(from);
+          }}
+          to={jumpToast.to}
         />
       ) : null}
       {searchOpen ? (
