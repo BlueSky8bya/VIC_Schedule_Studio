@@ -105,7 +105,7 @@ import {
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { markContentReady } from "@/lib/presence/content-ready";
-import { debutDateLabel, getDayMark } from "@/lib/calendar/holidays";
+import { getDayMark } from "@/lib/calendar/holidays";
 import {
   MonthJumpToast,
   MonthPicker,
@@ -395,16 +395,6 @@ export function StudioShell({
   const [jumpToast, setJumpToast] = useState<{ to: YM; from: YM } | null>(null);
   const jumpToastTimerRef = useRef<number | null>(null);
   const jumpTodayRef = useRef<() => void>(() => {});
-  // 피커 범위: 데뷔 달 ~ 오늘+24달(편집실은 미래 계획을 더 멀리 잡는다).
-  const monthBounds = useMemo(() => {
-    const [dy, dm] = debutDateLabel().split(".").map(Number);
-    const [ty, tm] = today.split("-").map(Number);
-    const maxIdx = ty * 12 + (tm - 1) + 24;
-    return {
-      min: { year: dy, month: dm } as YM,
-      max: { year: Math.floor(maxIdx / 12), month: (maxIdx % 12) + 1 } as YM
-    };
-  }, [today]);
   const flashTimerRef = useRef<number | null>(null);
   const [modal, setModal] = useState<null | "tags" | "settings" | "developer" | "dayVisit">(
     null
@@ -5366,7 +5356,7 @@ export function StudioShell({
               >
                 <ChevronLeft aria-hidden="true" size={20} strokeWidth={2.5} />
               </button>
-              <MonthTitleButton narrow onOpen={() => setMonthPick({ anchor: null })} open={monthPick !== null}>
+              <MonthTitleButton onOpen={() => setMonthPick({ anchor: null })} open={monthPick !== null}>
                 <strong aria-live="polite">
                   {view.year}년 {view.month}월
                 </strong>
@@ -6564,11 +6554,7 @@ export function StudioShell({
             <ChevronLeft aria-hidden="true" size={22} />
           </button>
           {/* 제목 = 월 피커 버튼(시청자 화면과 같은 부품). PC는 장식 없이 호버 알약만. */}
-          <MonthTitleButton
-            narrow={false}
-            onOpen={(anchor) => setMonthPick({ anchor })}
-            open={monthPick !== null}
-          >
+          <MonthTitleButton onOpen={(anchor) => setMonthPick({ anchor })} open={monthPick !== null}>
             <strong data-enter={monthDir} key={`${view.year}-${view.month}`}>
               {view.year}년 {view.month}월
             </strong>
@@ -7811,8 +7797,6 @@ export function StudioShell({
       {monthPick ? (
         <MonthPicker
           anchor={monthPick.anchor}
-          max={monthBounds.max}
-          min={monthBounds.min}
           narrow={isNarrow}
           onClose={() => setMonthPick(null)}
           onPick={(ym) => {

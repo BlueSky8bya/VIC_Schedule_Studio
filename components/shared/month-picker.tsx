@@ -8,10 +8,11 @@ import "./month-picker.css";
 
 // 월 이동 부품 세트 — 편집실·시청자, PC·모바일이 **같은 구현**을 쓴다(AGENTS G-18).
 //
-//  · MonthTitleButton  제목("2026년 9월")이 곧 버튼. PC는 호버 알약으로 눌림을 알리고(장식 없음, 2026-09-27
-//                      소유자), 모바일은 호버가 없으니 작은 ▾ 하나만 붙인다.
+//  · MonthTitleButton  제목("2026년 9월")이 곧 버튼. 장식 없음(▾도 없음 — 2026-09-28 소유자, 모바일 포함).
+//                      PC는 호버 때 밑줄이 가운데서 그어지며 글자가 액센트로 물든다.
 //  · MonthPicker       제목을 누르면 뜨는 월 피커 — PC는 제목 아래 팝오버, 모바일은 바텀 시트. 연도 스테퍼 +
-//                      3×4 월 격자. 보고 있는 달 = 선택 링, 오늘 달 = 점. 범위 밖은 비활성.
+//                      3×4 월 격자. 보고 있는 달 = 선택 링, 오늘 달 = 점. 범위 제한 없음(2026-09-28 소유자:
+//                      예전 데뷔 달~오늘+24달 제한은 "전체 다 선택 가능하게"로 폐기).
 //  · TodayFab          지도 앱 '내 위치' 문법 — 오늘 달을 벗어났을 때만 떠오르는 원형 버튼(PC). 헤더에 상자를
 //                      더하지 않아 대칭·크기 문제가 없다. 모바일은 기존 하단 '오늘'이 담당.
 //  · MonthJumpToast    검색→다시보기로 먼 달로 옮겨진 뒤 "돌아가기" 한 번에 — 출발 달로 복귀.
@@ -27,21 +28,16 @@ export function ymOffset(from: YM, to: YM): number {
 export function ymLabel(ym: YM): string {
   return `${ym.year}년 ${ym.month}월`;
 }
-function ymCmp(a: YM, b: YM): number {
-  return a.year !== b.year ? a.year - b.year : a.month - b.month;
-}
 
 // ── 제목 버튼 ────────────────────────────────────────────────────────────────
 export function MonthTitleButton({
   children,
-  narrow,
   open,
   onOpen,
   className = "",
   titleRef
 }: {
   children: React.ReactNode;
-  narrow: boolean; // 모바일: ▾ 표시(호버 없음)
   open: boolean;
   onOpen: (anchor: DOMRect) => void;
   className?: string;
@@ -53,7 +49,7 @@ export function MonthTitleButton({
     <button
       aria-expanded={open}
       aria-haspopup="dialog"
-      className={`month-title-btn${narrow ? " is-narrow" : ""}${open ? " is-open" : ""} ${className}`}
+      className={`month-title-btn${open ? " is-open" : ""} ${className}`}
       data-act="month-title"
       onClick={(e) => {
         hapticTick();
@@ -63,12 +59,7 @@ export function MonthTitleButton({
       title="다른 달로 이동"
       type="button"
     >
-      {children}
-      {narrow ? (
-        <span aria-hidden="true" className="month-title-caret">
-          ▾
-        </span>
-      ) : null}
+      <span className="month-title-text">{children}</span>
     </button>
   );
 }
@@ -77,8 +68,6 @@ export function MonthTitleButton({
 export function MonthPicker({
   view,
   today,
-  min,
-  max,
   narrow,
   anchor,
   onPick,
@@ -86,8 +75,6 @@ export function MonthPicker({
 }: {
   view: YM;
   today: YM;
-  min: YM;
-  max: YM;
   narrow: boolean;
   anchor: DOMRect | null; // PC 팝오버 기준(제목 버튼). 모바일은 무시.
   onPick: (ym: YM) => void;
@@ -95,8 +82,9 @@ export function MonthPicker({
 }) {
   const [year, setYear] = useState(view.year);
   const panelRef = useRef<HTMLDivElement>(null);
-  const canPrevYear = year > min.year;
-  const canNextYear = year < max.year;
+  // 연도는 제한 없이 오간다. 오늘 해로 한 번에 돌아오는 칩만 둔다(멀리 갔을 때).
+  const canPrevYear = true;
+  const canNextYear = true;
   const months = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ year, month: i + 1 })), [year]);
 
   // 열리면 보고 있는 달(같은 해면) 또는 첫 활성 달에 포커스 — 키보드만으로도 고를 수 있게.
@@ -180,7 +168,23 @@ export function MonthPicker({
           >
             <ChevronLeft aria-hidden="true" size={18} strokeWidth={2.4} />
           </button>
-          <strong key={year}>{year}년</strong>
+          <strong key={year}>
+            {year}년
+            {year !== today.year ? (
+              <button
+                className="mp-year-today"
+                data-act="mp-year-today"
+                onClick={() => {
+                  hapticTick();
+                  setYear(today.year);
+                }}
+                title="오늘 해로"
+                type="button"
+              >
+                {today.year}
+              </button>
+            ) : null}
+          </strong>
           <button
             aria-label="다음 해"
             className="mp-year-btn"
@@ -196,7 +200,7 @@ export function MonthPicker({
         </div>
         <div className="mp-grid" onKeyDown={onGridKey} role="group" aria-label={`${year}년`}>
           {months.map((ym) => {
-            const out = ymCmp(ym, min) < 0 || ymCmp(ym, max) > 0;
+            const out = false;
             const isCurrent = ym.year === view.year && ym.month === view.month;
             const isToday = ym.year === today.year && ym.month === today.month;
             return (

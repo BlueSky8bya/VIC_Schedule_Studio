@@ -1,16 +1,14 @@
 /* 월 이동 부품 세트 — 편집실·시청자, PC·모바일 공용(components/shared/month-picker.tsx).
    색·간격은 전부 토큰(globals.css)에서 — 다크·눈 편한 테마는 토큰이 알아서 바뀐다. */
 
-/* ── 제목 버튼: 글자는 그대로, 호버 때만 뒤에 알약이 깔린다(상자로 보이지 않게) ── */
+/* ── 제목 버튼: 상자 없음. 호버 때 글자가 액센트로 물들고, 가운데서 밑줄이 그어진다(탭/링크 문법) ── */
 .month-title-btn {
   appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.18em;
   margin: 0;
-  padding: 0.06em 0.32em;
+  padding: 0.04em 0.1em;
   border: 0;
-  border-radius: var(--r-pill);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -18,36 +16,59 @@
   line-height: inherit;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 0 0 0 rgb(var(--selection-rgb) / 0%);
+  border-radius: 6px;
+}
+.month-title-text {
+  position: relative;
+  display: inline-block;
   transition:
-    background-color var(--dur-2) var(--ease),
-    box-shadow var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
     transform var(--dur-2) var(--spring-bouncy, var(--ease));
 }
-.month-title-btn:hover,
-.month-title-btn:focus-visible,
-.month-title-btn.is-open {
-  background: var(--selection-fill);
-  box-shadow: 0 0 0 1px var(--selection-border);
+/* 밑줄 — 글자 아래 3px, 가운데서 양쪽으로. 색은 선택 토큰(달력 선택·오늘과 같은 파랑). */
+.month-title-text::after {
+  content: "";
+  position: absolute;
+  left: 0.08em;
+  right: 0.08em;
+  bottom: -0.08em;
+  height: 0.09em;
+  min-height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--selection-border) 18%, var(--selection-border) 82%, transparent);
+  opacity: 0;
+  transform: scaleX(0.3);
+  transform-origin: center;
+  transition:
+    transform var(--dur-3) var(--spring-smooth, var(--ease)),
+    opacity var(--dur-2) var(--ease);
+}
+/* 편집실 제목은 안쪽 <strong>이 자기 색(--ink)을 갖는다 → 자식까지 같이 물들인다. */
+.month-title-btn:hover .month-title-text,
+.month-title-btn:hover .month-title-text > *,
+.month-title-btn:focus-visible .month-title-text,
+.month-title-btn:focus-visible .month-title-text > *,
+.month-title-btn.is-open .month-title-text,
+.month-title-btn.is-open .month-title-text > * {
+  color: var(--selection-border);
+}
+.month-title-btn:hover .month-title-text,
+.month-title-btn:focus-visible .month-title-text,
+.month-title-btn.is-open .month-title-text {
   transform: translateY(-1px);
 }
-.month-title-btn:active {
+.month-title-btn:hover .month-title-text::after,
+.month-title-btn:focus-visible .month-title-text::after,
+.month-title-btn.is-open .month-title-text::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+.month-title-btn:active .month-title-text {
   transform: translateY(0) scale(0.985);
 }
 .month-title-btn:focus-visible {
   outline: 2px solid var(--selection-border);
-  outline-offset: 2px;
-}
-/* 모바일은 호버가 없다 → 작은 ▾ 하나로 "눌린다"를 말한다. */
-.month-title-caret {
-  font-size: 0.62em;
-  line-height: 1;
-  opacity: 0.55;
-  transform: translateY(0.06em);
-  transition: transform var(--dur-2) var(--ease);
-}
-.month-title-btn.is-open .month-title-caret {
-  transform: translateY(0.06em) rotate(180deg);
+  outline-offset: 4px;
 }
 
 /* ── 피커: PC 팝오버 / 모바일 시트 ── */
@@ -133,6 +154,10 @@
   gap: 6px;
 }
 .mp-year strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
   font-size: 16px;
   font-weight: 900;
@@ -150,6 +175,21 @@
     opacity: 1;
     transform: none;
   }
+}
+/* 오늘 해로 — 멀리 갔을 때만 연도 옆에 작은 칩으로. */
+.mp-year-today {
+  appearance: none;
+  border: 1px solid var(--selection-border);
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  background: var(--selection-fill);
+  color: var(--selection-border);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.3;
+  cursor: pointer;
+  animation: mp-num-in 0.26s var(--ease) both;
 }
 .mp-year-btn {
   display: inline-grid;
@@ -317,7 +357,8 @@ html[data-reduce-motion] .month-jump-toast {
   animation: none;
 }
 html[data-reduce-motion] .today-fab,
-html[data-reduce-motion] .month-title-btn,
+html[data-reduce-motion] .month-title-text,
+html[data-reduce-motion] .month-title-text::after,
 html[data-reduce-motion] .mp-month {
   transition: none;
 }

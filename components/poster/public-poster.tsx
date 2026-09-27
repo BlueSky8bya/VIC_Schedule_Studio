@@ -986,16 +986,6 @@ export function PublicPoster({
   const jumpToastTimerRef = useRef<number | null>(null);
   // T 키 핸들러는 월 바뀔 때만 다시 묶이므로, 필터 상태까지 최신으로 보는 jumpToday는 ref로 부른다.
   const jumpTodayRef = useRef<() => void>(() => {});
-  // 피커 범위: 데뷔 달 ~ 오늘+12달(시청자). 편집실은 미래를 더 넓게 본다.
-  const monthBounds = useMemo(() => {
-    const [dy, dm] = debutDateLabel().split(".").map(Number);
-    const [ty, tm] = today.split("-").map(Number);
-    const maxIdx = ty * 12 + (tm - 1) + 12;
-    return {
-      min: { year: dy, month: dm } as YM,
-      max: { year: Math.floor(maxIdx / 12), month: (maxIdx % 12) + 1 } as YM
-    };
-  }, [today]);
   // 설정(2026-09-19 소유자) — 시청자 화면 계열(미리보기·시청자·비로그인)도 편집실과 **같은 설정 목록**을
   // 연다. 상태는 공용 훅 한 벌(components/shared/use-settings-prefs.ts), 목록도 편집실과 같은 컴포넌트.
   // 포스터 테마·개발자 시간여행 줄은 편집실(소유자·개발자) 몫이라 여기선 넘기지 않는다.
@@ -4159,8 +4149,6 @@ export function PublicPoster({
       {monthPick ? (
         <MonthPicker
           anchor={monthPick.anchor}
-          max={monthBounds.max}
-          min={monthBounds.min}
           narrow={isNarrow}
           onClose={() => setMonthPick(null)}
           onPick={(ym) => {
@@ -4807,11 +4795,7 @@ export function PublicPoster({
             <h1 className="agenda-title">
               <span className="title-spark" aria-hidden="true">✨️</span>
               {/* 제목 = 월 피커 버튼(편집실과 같은 부품). 모바일은 ▾가 눌림을 말한다. */}
-              <MonthTitleButton
-                narrow
-                onOpen={() => setMonthPick({ anchor: null })}
-                open={monthPick !== null}
-              >
+              <MonthTitleButton onOpen={() => setMonthPick({ anchor: null })} open={monthPick !== null}>
                 {view.year}년 {String(view.month).padStart(2, "0")}월
               </MonthTitleButton>
               <span className="title-spark" aria-hidden="true">✨️</span>
@@ -4904,11 +4888,7 @@ export function PublicPoster({
                 <h1 className="poster-chrome-title">
                   <span aria-hidden="true" className="title-spark">✨️</span>
                   {/* 제목 = 월 피커 버튼. PC는 장식 없이 호버 알약만(2026-09-27 소유자). */}
-                  <MonthTitleButton
-                    narrow={false}
-                    onOpen={(anchor) => setMonthPick({ anchor })}
-                    open={monthPick !== null}
-                  >
+                  <MonthTitleButton onOpen={(anchor) => setMonthPick({ anchor })} open={monthPick !== null}>
                     {view.year}년 {String(view.month).padStart(2, "0")}월
                   </MonthTitleButton>
                   <span aria-hidden="true" className="title-spark">✨️</span>
