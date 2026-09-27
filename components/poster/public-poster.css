@@ -4073,20 +4073,6 @@ html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title 
   animation-duration: 1ms;
   animation-iteration-count: 1;
 }
-/* 공개 후 남는 "n명이 기다렸어요" 배지 */
-.hope-badge {
-  display: inline-block;
-  margin-top: 2px;
-  font-style: normal;
-  font-size: var(--text-micro);
-  font-weight: 800;
-  color: var(--teaser);
-  opacity: 0.85;
-}
-p.agenda-sub.hope-badge {
-  color: var(--teaser);
-  font-size: var(--text-caption);
-}
 /* 떡밥 상세 — 한 줄 요약(오브+시각) + 주 동작. 각주·큰 여백 없이 컴팩트하게. */
 .detail-teaser {
   display: grid;
@@ -4184,6 +4170,10 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   display: inline-flex;
   align-items: baseline;
   gap: 2px;
+  /* 카드도 팝오버와 같은 이어달리기 — 시계(hh:mm:ss)는 앞 절반(66→62초)에 사라지고 큰 숫자는
+     뒤 절반(62→58초)에 스며든다. 같은 자리에서 두 숫자가 겹쳐 세지 않는다(2026-09-27 소유자). */
+  --hy-emerge-a: clamp(0, 1 - var(--hy-emerge, 0) * 2, 1);
+  --hy-emerge-b: clamp(0, var(--hy-emerge, 1) * 2 - 1, 1);
 }
 /* 시계(hh:mm:ss)와 큰 숫자를 같은 격자 칸에 겹쳐 두고 --hy-emerge로 넘겨준다.
    알약 폭은 둘 중 큰 쪽에 맞춰지므로 교차하는 동안 자리가 안 튄다. */
@@ -4194,9 +4184,15 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
 .tc-stack > * {
   grid-area: 1 / 1;
 }
+/* 큰 숫자의 스며듦 — 숫자 자체(b)는 매 초 키프레임을 돌므로 래퍼가 투명도를 든다. */
+.tc-num-wrap {
+  display: inline-grid;
+  place-items: center;
+  opacity: var(--hy-emerge-b, 1);
+}
 .tc-clock {
   font-style: normal;
-  opacity: calc(1 - var(--hy-emerge, 0));
+  opacity: var(--hy-emerge-a, 1);
 }
 .teaser-count.hype b {
   display: inline-block;
@@ -4204,7 +4200,9 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   /* min-width 안에서 기본 좌측 정렬이라 한 자리 수가 왼쪽으로 치우쳤다(사용자 지적).
      자릿수가 줄어도 알약 한가운데 오게 한다. */
   text-align: center;
-  opacity: var(--hy-emerge, 1); /* 시계와 교차하며 스며든다 */
+  /* ⚠ 여기서 opacity를 쓰면 안 된다 — 매 초 도는 hype-tick 키프레임이 opacity를 1로 끌어올려
+     스며듦(--hy-emerge-b)을 0.6초씩 덮는다(2026-09-27 실측: 시계 위에 큰 숫자가 겹쳐 보였다).
+     스며듦은 바깥 .tc-num-wrap이 맡는다. */
   /* 크기도 연속 — 강도에 따라 1.05em → 1.85em로 시나브로 커진다. */
   font-size: calc(var(--hy-num, 1.05) * 1em);
   font-weight: 900;
@@ -4514,12 +4512,38 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
     transparent calc(var(--hy-emerge, 1) * var(--dt-emerge-h))
   );
 }
+/* ── 이어달리기(66→58초) — 같은 숫자가 두 곳에서 동시에 세지 않는다 ─────────────
+   큰 시계(시:분:초)와 링 숫자가 8초 내내 함께 보이면 같은 정보가 두 번 세어진다(2026-09-27
+   소유자 지적). 그래서 등장값 하나를 두 구간으로 나눈다:
+     앞 절반(66→62, --hy-emerge-a 1→0): 시계·시각 알약이 접힌다. 링은 빈 트랙만 자란다.
+     뒤 절반(62→58, --hy-emerge-b 0→1): 링 안에 숫자·라벨·캡션이 스며든다.
+   어느 순간을 잘라 봐도 숫자는 한 곳에만 있다. 반환값이 quantize된 정적 모드(0/1)에서도 그대로 성립. */
+.detail-teaser {
+  --hy-emerge-a: clamp(0, 1 - var(--hy-emerge, 0) * 2, 1);
+  --hy-emerge-b: clamp(0, var(--hy-emerge, 1) * 2 - 1, 1);
+}
+.detail-teaser .tg-countdown {
+  opacity: var(--hy-emerge-a);
+  max-height: calc(var(--hy-emerge-a) * 96px);
+  margin-block: calc(var(--hy-emerge-a) * var(--space-1)) calc(var(--hy-emerge-a) * var(--space-2));
+  transform: scale(calc(0.9 + var(--hy-emerge-a) * 0.1));
+  transform-origin: center bottom;
+  overflow: clip;
+}
+.detail-teaser .dt-count-core,
+.detail-teaser .dt-count-label,
+.detail-teaser .dt-count-when {
+  opacity: var(--hy-emerge-b);
+}
+.detail-teaser .dt-count-core {
+  transform: scale(calc(0.7 + var(--hy-emerge-b) * 0.3));
+}
 .detail-teaser .dt-when {
-  opacity: calc(1 - var(--hy-emerge, 0));
-  max-height: calc((1 - var(--hy-emerge, 0)) * 52px);
+  opacity: var(--hy-emerge-a);
+  max-height: calc(var(--hy-emerge-a) * 52px);
   /* ⚠ 세로 패딩도 함께 접어야 한다 — max-height를 0으로 해도 패딩(위아래 5px)은 남아
      10px짜리 빈 줄이 버티다가, 알약이 DOM에서 빠지는 순간 통째로 사라져 툭 튄다. */
-  padding-block: calc((1 - var(--hy-emerge, 0)) * 5px);
+  padding-block: calc(var(--hy-emerge-a) * 5px);
   overflow: clip;
   /* 간격은 버튼의 위 마진이 전담한다(위 .detail-teaser 주석) → 알약은 마진 0.
      그래야 접히는 동안에도, DOM에서 빠지는 순간에도 총 높이가 자기 높이만큼만 변한다. */
@@ -9297,4 +9321,128 @@ html[data-reduce-motion] .public-event.teaser.hope-hit,
 html[data-reduce-motion] .agenda-item.teaser.hope-hit {
   animation-duration: 1ms;
   animation-iteration-count: 1;
+}
+
+/* ── '기대 중'의 카운트다운은 한 단계 더 뜨겁다 (2026-09-27, 소유자: 누른 것과 안 누른 것의
+   카운트다운 차이가 없다) ──────────────────────────────────────────────────────────
+   같은 곡선·같은 위상을 타되 진폭·온도만 올린다: 내가 기대를 걸어둔 일정은 링이 더 굵고
+   더 금빛이고, 숫자가 더 크고, 후광이 더 넓고, 박동이 더 깊다. 카드도 같은 규칙.
+   버튼 transform·주기(duration/delay)는 절대 안 건드린다 — 한 심장으로 뛰어야 한다. */
+/* 시트 — 링 무대 */
+.agenda-detail-sheet.is-hoped .dt-ring-track {
+  stroke: rgb(255 202 106 / 30%);
+  stroke-width: 8;
+}
+.agenda-detail-sheet.is-hoped .dt-ring-progress {
+  stroke-width: 9;
+  filter: drop-shadow(0 0 calc(4px + var(--hy-glow, 0) * 60px) rgb(255 214 122 / 95%))
+    drop-shadow(0 0 3px rgb(255 240 200 / 80%));
+}
+.agenda-detail-sheet.is-hoped .dt-grad-a {
+  stop-color: color-mix(in srgb, #b39dff calc((1 - var(--hy-gold, 0)) * 60%), #ffd27a);
+}
+.agenda-detail-sheet.is-hoped .dt-grad-b {
+  stop-color: color-mix(in srgb, var(--teaser) calc((1 - var(--hy-gold, 0)) * 60%), #f0a83a);
+}
+.agenda-detail-sheet.is-hoped .dt-grad-c {
+  stop-color: color-mix(in srgb, #6a56e8 calc((1 - var(--hy-gold, 0)) * 60%), #e8892a);
+}
+.agenda-detail-sheet.is-hoped .dt-ring-spark {
+  r: 4.4px;
+}
+.agenda-detail-sheet.is-hoped .dt-count-ringbox::before {
+  inset: 12%;
+  background: radial-gradient(
+    circle at 50% 46%,
+    rgb(255 210 120 / calc(16% + var(--hy-glow, 0) * 260%)) 0%,
+    transparent 100%
+  );
+}
+.agenda-detail-sheet.is-hype.is-hoped .dt-count-ringbox::after {
+  --hy-beat-amp: calc(var(--hy-leader-peak, 0) * 1.5);
+  border-width: 2.5px;
+  inset: -8px;
+}
+.agenda-detail-sheet.is-hoped .dt-count-core strong {
+  font-size: calc(var(--hy-num, 1.05) * 26px * 1.14 * (1 + var(--hy-final, 0) * 1.25));
+  color: color-mix(in srgb, var(--teaser-ink) calc((1 - var(--hy-gold, 0)) * 60%), #6b3d00);
+  text-shadow:
+    0 0 calc(8px + var(--hy-glow, 0) * 34px) rgb(255 200 96 / 85%),
+    0 0 2px rgb(255 240 200 / 60%);
+}
+.agenda-detail-sheet.is-hoped .dt-count-label {
+  color: color-mix(in srgb, rgb(90 80 130 / 80%) calc((1 - var(--hy-gold, 0)) * 100%), #8a4f04);
+  font-weight: 900;
+}
+.agenda-detail-sheet.is-hoped .dt-echo:not(.dt-hope-echo) {
+  border-width: 2.5px;
+  border-color: rgb(255 202 106 / 95%);
+  box-shadow: 0 0 0 4px rgb(255 214 122 / 30%);
+}
+/* 시트 — 알약 무대(60초 밖): 큰 숫자·오브가 금빛을 머금는다. */
+.agenda-detail-sheet.is-hoped .tg-num {
+  color: color-mix(in srgb, var(--teaser-deep) 55%, #c07a10);
+  text-shadow: 0 0 10px rgb(255 214 122 / 55%);
+}
+.agenda-detail-sheet.is-hoped .tg-seg-accent {
+  box-shadow: 0 0 0 1.5px rgb(255 202 106 / 70%), 0 0 14px rgb(255 214 122 / 45%);
+}
+.agenda-detail-sheet.is-hoped .dt-orb {
+  filter: drop-shadow(0 0 8px rgb(255 214 122 / 90%)) drop-shadow(0 2px 5px rgb(var(--teaser-rgb) / 40%));
+}
+/* 버튼의 ✦ — 하이프 중엔 박동에 맞춰 크게 뛴다(버튼 자체가 아니라 ✦만). */
+.agenda-detail-sheet.is-hype .dt-hope-star {
+  --hy-hope-peak: calc(var(--hy-leader-peak, 0) * 0.9);
+  animation: hype-beat-scale var(--hy-beat-dur, 2.4s) linear var(--hy-beat-delay, 0s) infinite;
+}
+/* 카드 — 기대를 걸어둔 카드는 하이프에서 더 넓고 더 금빛인 후광 + 더 진한 파동 링. */
+.public-event.teaser.hoped.hype-live,
+.agenda-item.teaser.hoped.hype-live {
+  box-shadow:
+    0 0 0 calc(var(--hy-glow, 0) * 16px) rgb(255 246 220 / 70%),
+    0 6px calc(14px + var(--hy-glow, 0) * 120px)
+      rgb(var(--teaser-rgb) / calc(40% + var(--hy-gold, 0) * 40%)),
+    0 0 calc(6px + var(--hy-glow, 0) * 60px) rgb(255 202 106 / calc(20% + var(--hy-gold, 0) * 60%));
+}
+.public-event.teaser.hoped.hype-live::before,
+.agenda-item.teaser.hoped.hype-live::before,
+.public-event.teaser.hoped.hype-live::after,
+.agenda-item.teaser.hoped.hype-live::after,
+.public-event.teaser.hoped.hype-live .teaser-ring {
+  border-width: 3px;
+  border-color: color-mix(in srgb, rgb(214 196 255) calc((1 - var(--hy-gold, 0)) * 60%), rgb(255 214 122));
+}
+.public-event.teaser.hoped.hype-live::before,
+.agenda-item.teaser.hoped.hype-live::before {
+  opacity: calc(var(--hy-ring1, 0) * 1.3);
+}
+.public-event.teaser.hoped.hype-live::after,
+.agenda-item.teaser.hoped.hype-live::after {
+  opacity: calc(var(--hy-ring2, 0) * 1.4);
+}
+.public-event.teaser.hoped.hype-live .teaser-ring {
+  opacity: calc(var(--hy-ring3, 0) * 1.6);
+}
+/* 카드 숫자 — 더 크고 더 일찍 금빛. */
+.public-event.teaser.hoped .teaser-count.hype b,
+.agenda-item.teaser.hoped .teaser-count.hype b {
+  font-size: calc(var(--hy-num, 1.05) * 1.14em);
+  color: color-mix(in srgb, #fff calc((1 - var(--hy-gold, 0)) * 55%), #ffe8a3);
+  text-shadow: 0 0 calc(2px + var(--hy-glow, 0) * 16px) rgb(255 214 122 / 90%);
+}
+.public-event.teaser.hoped .teaser-count,
+.agenda-item.teaser.hoped .teaser-count {
+  background: rgba(60, 30, 0, 0.32);
+  box-shadow: inset 0 0 0 1px rgb(255 214 122 / 45%);
+}
+/* 카드의 ✦ 표식 — 하이프 중엔 박동에 맞춰 뛴다(카드 박스·클릭 타깃 불변). */
+.public-event.teaser.hoped.hype-live .teaser-spark::after,
+.agenda-item.teaser.hoped.hype-live .teaser-spark::after {
+  --hy-hope-peak: calc(var(--hy-leader-peak, 0) * 1.2);
+  animation: hype-beat-scale var(--hy-beat-dur, 2.4s) linear var(--hy-beat-delay, 0s) infinite;
+}
+html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-hope-star,
+html[data-reduce-motion] .public-event.teaser.hoped.hype-live .teaser-spark::after,
+html[data-reduce-motion] .agenda-item.teaser.hoped.hype-live .teaser-spark::after {
+  animation: none;
 }

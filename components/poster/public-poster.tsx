@@ -43,7 +43,8 @@ import { pickAmbient } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
-import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
+import { reduceMotionEnabled } from "@/lib/ui/motion";
+import { useRemainSeconds } from "@/lib/ui/use-remain-seconds"; // OS reduce-motion 무시, 앱 토글만 존중
 import { trackSettle } from "@/lib/ui/settle-track";
 import { SUPPORT_LANE_STEP, supportListPad } from "@/lib/ui/support-bar";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
@@ -145,9 +146,6 @@ type PublicPosterProps = {
   toggleHeartAction?: (eventId: string, token?: string) => Promise<HeartResult>;
   // 시청자 화면에서 계정 변경(로그아웃) 버튼을 보일지. 실제 시청자 페이지에서만 true.
   accountSwitch?: boolean;
-  // 공개 후 "🔮 n명이 기다렸어요" 배지 노출 — 당분간 개발자 확인용으로만(사용자 결정:
-  // 카운팅은 계속 쌓되 관리자·시청자에겐 아직 안 보여준다). 기대돼요 버튼/카운트는 공통.
-  showHopeBadge?: boolean;
   // 현재 로그인한 구글 이메일 — "계정변경" 옆에 표시해 어떤 계정으로 들어와 있는지 보여준다.
   accountEmail?: string | null;
   // 비로그인(익명) 시청자 — 공개 포스터만 본다. 하트(서버 1인1하트)는 숨기고, 계정 칸은
@@ -437,8 +435,11 @@ function TeaserCountdown({
       <span className={cls} ref={hostRef}>
         <span className="tc-stack">
           {s > HYPE_WINDOW_S - 2 ? <i className="tc-clock">{`${hh}:${mm}:${ss}`}</i> : null}
-          {/* 초만 크게(분/시는 0이라 잡음) — key로 매 초 리마운트해 숫자가 쿵 떨어지는 연출. */}
-          <b key={s}>{s}</b>
+          {/* 초만 크게(분/시는 0이라 잡음) — key로 매 초 리마운트해 숫자가 쿵 떨어지는 연출.
+              래퍼가 스며듦(--hy-emerge-b)을 든다 — b의 키프레임이 opacity를 덮기 때문. */}
+          <span className="tc-num-wrap">
+            <b key={s}>{s}</b>
+          </span>
         </span>
       </span>
     );
@@ -585,30 +586,6 @@ function revealStagger(
   };
 }
 
-// 남은 초 — 카드와 팝오버가 '같은 숫자를 같은 순간에' 보여주기 위한 공용 시계.
-// 예전엔 두 곳이 각자 setInterval(1000)을 돌려서, 시작 시각이 다르면 최대 1초까지 서로 다른
-// 숫자를 보여줬다(사용자 지적: 살짝 어긋난다). interval은 시작 시점 기준으로 세기 때문에
-// 아무리 정확해도 위상이 안 맞는다 → 매번 '다음 초 경계'를 직접 계산해 그때 깨어난다.
-// 그러면 어느 컴포넌트가 언제 마운트됐든 넘어가는 순간이 같다(+8ms는 경계를 확실히 넘기려는 여유).
-function useRemainSeconds(targetMs: number | null): number | null {
-  const [s, setS] = useState<number | null>(null);
-  useEffect(() => {
-    if (targetMs === null || !Number.isFinite(targetMs)) {
-      setS(null);
-      return;
-    }
-    let timer = 0;
-    const tick = () => {
-      const diff = targetMs - Date.now();
-      // ceil — 남은 시간이 0.2초여도 '1'이다. round면 0.5초 남았을 때 0을 띄워 반 박자 빠르다.
-      setS(Math.max(0, Math.ceil(diff / 1000)));
-      timer = window.setTimeout(tick, (((diff % 1000) + 1000) % 1000) + 8);
-    };
-    tick();
-    return () => window.clearTimeout(timer);
-  }, [targetMs]);
-  return s;
-}
 
 // 서버가 '아직 안 풀린 떡밥'이라고 말하는가. 로컬 공개 캐시(revealedEvents)는 화면이 직접
 // 본 공개만 담는데, 일정을 다시 떡밥으로 되돌리면 그 캐시가 새 떡밥까지 영구히 덮어버려
@@ -769,7 +746,6 @@ export function PublicPoster({
   initialNarrow = false,
   toggleHeartAction,
   accountSwitch = false,
-  showHopeBadge = false,
   accountEmail = null,
   anonymous = false,
   previewNote,
@@ -3290,12 +3266,6 @@ export function PublicPoster({
                   ) : (
                     <p className="span-cont">{main || " "}</p>
                   )}
-                  {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. 당분간 개발자 확인용만. */}
-                  {showHopeBadge && span.showTitle && !event.teaser && hopeCountOf(event) > 0 ? (
-                    <em className="hope-badge" title="공개 전 '기대돼요'를 누른 사람 수">
-                      🔮 {hopeCountOf(event)}명{myHopeIds.has(event.id) ? "과 함께" : "이"} 기다렸어요
-                    </em>
-                  ) : null}
                 </div>
                 {/* 하트는 카드 직속(.event-main 밖)에 둔다 — 2색/무늬(data-mixed) 칸은
                     .event-main이 position:relative라, 그 안에 두면 하트 offset 기준이
@@ -3810,12 +3780,6 @@ export function PublicPoster({
                               </button>
                             ) : null}
                           </p>
-                          {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. 당분간 개발자 확인용만. */}
-                          {showHopeBadge && !support && !event.teaser && hopeCountOf(event) > 0 ? (
-                            <p className="agenda-sub hope-badge">
-                              🔮 {hopeCountOf(event)}명{myHopeIds.has(event.id) ? "과 함께" : "이"} 기다렸어요
-                            </p>
-                          ) : null}
                           {support ? (
                             <p className="agenda-sub">
                               {formatShortDate(cell.isoDate)} ~{" "}
@@ -4289,7 +4253,9 @@ export function PublicPoster({
                     detailHype ? " is-hype" : ""
                   }${teaserActive ? " is-teaser" : ""}${detailFinal ? " is-final" : ""}${
                     detailJustRevealed ? " reveal-burst" : ""
-                  }${hopeCast?.eventId === event.id ? " hope-cast" : ""}`}
+                  }${hopeCast?.eventId === event.id ? " hope-cast" : ""}${
+                    teaserActive && myHopeIds.has(event.id) ? " is-hoped" : ""
+                  }`}
                   ref={(el) => {
                     detailSheetRef.current = el;
                     detailDragSheetRef.current = el;
@@ -4555,7 +4521,13 @@ export function PublicPoster({
                           </div>
                           </div>
                           <p className="dt-count-label">
-                            {detailFinal ? "곧 공개!" : "최초공개까지"}
+                            {myHopeIds.has(event.id)
+                              ? detailFinal
+                                ? "✦ 곧 공개!"
+                                : "✦ 함께 기다리는 중"
+                              : detailFinal
+                                ? "곧 공개!"
+                                : "최초공개까지"}
                           </p>
                           {/* 링이 공개 시각 알약을 밀어냈으니 그 정보를 여기서 되살린다. */}
                           <p className="dt-count-when">
