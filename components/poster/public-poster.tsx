@@ -747,6 +747,8 @@ type HeartFloater = {
   dur: number; // 지속 시간(ms)
   size: number; // 글자 크기(px)
   delay: number; // 시작 지연(ms) — 한 번에 여러 개가 살짝 시차를 두고 오른다
+  kind?: "heart" | "hope"; // hope = 기대돼요 소원 별(✦) — 같은 상승 궤적, 색·글리프만 다르다
+  gold?: number; // hope 전용: 하이프 강도(0~1) — 보라 → 금빛 혼합률
 };
 
 // 특별한 날 탭 → 그 자리에서 방사형으로 흩어지는 색종이 한 조각(빵빠레 폭죽).
@@ -1649,6 +1651,15 @@ export function PublicPoster({
   // 서버 집계가 정본이고 여기엔 낙관적 오버라이드만 둔다(없으면 이벤트의 hopeCount).
   const [hopeCounts, setHopeCounts] = useState<Record<string, number>>({});
   const [myHopeIds, setMyHopeIds] = useState<Set<string>>(new Set());
+  // 기대돼요 '누른 순간' 연출 상태 — cast = 시트 안(오브 도약·잔향·온기 섬광·문구 팝),
+  // hit = 시트 밖 카드(리더선 혜성 도착 → 카드 번쩍), confirm = 서버 확정 글린트(2단계 햅틱의
+  // 시각판). id는 매번 새로 발급해 key 재마운트로 연속 누름에도 애니메이션이 다시 돈다.
+  const [hopeCast, setHopeCast] = useState<{ id: number; eventId: string } | null>(null);
+  const [hopeHit, setHopeHit] = useState<{ id: number; eventId: string } | null>(null);
+  const [hopeConfirm, setHopeConfirm] = useState<{ id: number; eventId: string } | null>(null);
+  const hopeFxId = useRef(0);
+  const hopeFxTimers = useRef<number[]>([]);
+  useEffect(() => () => hopeFxTimers.current.forEach((t) => window.clearTimeout(t)), []);
   useEffect(() => {
     if (!interactive) return;
     if (!schedule.events.some((e) => e.teaser)) return; // 떡밥이 없으면 복원 왕복 생략
@@ -1729,12 +1740,44 @@ export function PublicPoster({
   }, [detailRevealAt]);
   const hopeCountOf = (ev: PublicScheduleEvent): number =>
     hopeCounts[ev.id] ?? ev.hopeCount ?? 0;
-  function toggleHope(ev: PublicScheduleEvent) {
+  function toggleHope(ev: PublicScheduleEvent, btn?: HTMLElement | null) {
     const token = getOrCreateDeviceToken();
     if (!token) return; // 사생활 모드 등 — 조용히 무시(집계 신호일 뿐)
     hapticTick(); // ① 눌림
     const on = myHopeIds.has(ev.id);
     const before = hopeCountOf(ev);
+    // ── 누른 순간 연출 (켤 때만 — 끌 때는 조용히 되돌린다) ──────────────────────────
+    // 하이프 곡선과 '같은 값'으로 세기를 정한다: 60초 밖에선 온기 섬광+별 8개, 하이프가
+    // 오를수록 별은 늘고 금빛으로 익으며 섬광은 (1-I)로 잦아든다(박동과 겹쳐 점멸 예산을
+    // 안 넘기게 — 연속값이라 경계에서 툭 바뀌지 않는다). 마지막 10초(고요)는 별이 적고
+    // 크고 느리다 — '조용하지만 더 깊게'와 같은 문법.
+    hopeFxTimers.current.forEach((t) => window.clearTimeout(t));
+    hopeFxTimers.current = [];
+    if (!on) {
+      const remainMs = ev.teaserRevealAt ? Date.parse(ev.teaserRevealAt) - Date.now() : Infinity;
+      const i = hypeIntensity(remainMs);
+      const calm = hypeCalm(remainMs);
+      const id = ++hopeFxId.current;
+      const sheet = detailSheetRef.current;
+      if (sheet) sheet.style.setProperty("--hope-cast-k", (1 - i).toFixed(3));
+      setHopeCast({ id, eventId: ev.id });
+      if (btn && !reduceMotionEnabled()) {
+        const r = btn.getBoundingClientRect();
+        spawnHopeSparks(r.left + r.width / 2, r.top + r.height / 2, i, calm);
+      }
+      // PC 팝오버는 리더선을 따라 혜성이 카드까지 달려간 뒤(≈420ms) 카드가 번쩍인다.
+      // 모바일 시트(리더선 없음)는 바로 번쩍 — 시트 뒤로 카드가 반응하는 게 보인다.
+      const travel = agendaDetail?.anchor ? 420 : 0;
+      hopeFxTimers.current.push(
+        window.setTimeout(() => setHopeHit({ id, eventId: ev.id }), travel),
+        window.setTimeout(() => setHopeCast((c) => (c?.id === id ? null : c)), 1500),
+        window.setTimeout(() => setHopeHit((h) => (h?.id === id ? null : h)), travel + 1400)
+      );
+    } else {
+      setHopeCast(null);
+      setHopeHit(null);
+      setHopeConfirm(null);
+    }
     setMyHopeIds((prev) => {
       const next = new Set(prev);
       if (on) next.delete(ev.id);
@@ -1746,6 +1789,14 @@ export function PublicPoster({
       if (res.ok) {
         hapticTick(); // ② 서버 확정
         setHopeCounts((prev) => ({ ...prev, [ev.id]: res.count }));
+        if (!on) {
+          // 확정 글린트 — 두 번째 톡과 같은 순간 ✦이 한 번 더 빛난다(왕복이 눈에 보인다).
+          const id = ++hopeFxId.current;
+          setHopeConfirm({ id, eventId: ev.id });
+          hopeFxTimers.current.push(
+            window.setTimeout(() => setHopeConfirm((c) => (c?.id === id ? null : c)), 900)
+          );
+        }
       } else {
         // 실패 → 되돌림(공개가 막 지난 경우 등 — 서버가 거절).
         setMyHopeIds((prev) => {
@@ -1756,6 +1807,17 @@ export function PublicPoster({
         });
         setHopeCounts((prev) => ({ ...prev, [ev.id]: before }));
       }
+    }).catch(() => {
+      // 네트워크 단절 — 낙관 상태를 그대로 두면 '켜졌는데 서버엔 없음'이 된다. 실패와 같이 되돌린다.
+      setMyHopeIds((prev) => {
+        const next = new Set(prev);
+        if (on) next.add(ev.id);
+        else next.delete(ev.id);
+        return next;
+      });
+      setHopeCounts((prev) => ({ ...prev, [ev.id]: before }));
+      setHopeCast(null);
+      setHopeHit(null);
     });
   }
   // 하트 서버 반영을 '일정별 직렬 큐'로 — 빠르게 껐다 켜도 서버가 클릭 순서대로 처리하고(토글
@@ -2373,6 +2435,28 @@ export function PublicPoster({
     window.setTimeout(() => {
       setFloaters((prev) => prev.filter((f) => !ids.has(f.id)));
     }, 2300);
+  }
+  // 기대돼요를 켤 때 버튼에서 소원 별(✦)이 떠오른다 — 하트와 같은 궤적(heart-rise), 색만 떡밥
+  // 보라→금빛. 개수·속도가 하이프 강도를 따르고, 고요 구간은 적고 크고 느리다.
+  function spawnHopeSparks(x: number, y: number, intensity: number, calm: number) {
+    if (reduceMotionEnabled()) return;
+    const n = Math.round((8 + 8 * intensity) * (1 - 0.5 * calm));
+    const batch: HeartFloater[] = Array.from({ length: n }, (_, i) => ({
+      id: `${Date.now()}-h${i}-${Math.random().toString(36).slice(2, 6)}`,
+      x,
+      y,
+      dx: Math.round((Math.random() - 0.5) * (90 + 60 * intensity)),
+      dur: Math.round((1300 + Math.random() * 700) * (1 - 0.3 * intensity) * (1 + 0.5 * calm)),
+      size: Math.round((14 + Math.random() * 14) * (1 + 0.6 * calm)),
+      delay: Math.round(Math.random() * (260 - 120 * intensity)),
+      kind: "hope",
+      gold: intensity
+    }));
+    setFloaters((prev) => [...prev, ...batch]);
+    const ids = new Set(batch.map((b) => b.id));
+    window.setTimeout(() => {
+      setFloaters((prev) => prev.filter((f) => !ids.has(f.id)));
+    }, 3400);
   }
 
   // 특별한 날(공휴일·기념일·절기·월드컵)을 탭하면 그 자리에서 색종이가 '팡' 터진다(빵빠레).
@@ -3057,7 +3141,9 @@ export function PublicPoster({
                   : null;
                 return (
                   <div
-                    className={`public-event teaser${openTeaserDetail ? " is-clickable" : ""}`}
+                    className={`public-event teaser${openTeaserDetail ? " is-clickable" : ""}${
+                      myHopeIds.has(event.id) ? " hoped" : ""
+                    }${hopeHit?.eventId === event.id ? " hope-hit" : ""}`}
                     data-act="teaser-card"
                     key={event.id}
                     {...(openTeaserDetail
@@ -3207,7 +3293,7 @@ export function PublicPoster({
                   {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. 당분간 개발자 확인용만. */}
                   {showHopeBadge && span.showTitle && !event.teaser && hopeCountOf(event) > 0 ? (
                     <em className="hope-badge" title="공개 전 '기대돼요'를 누른 사람 수">
-                      🔮 {hopeCountOf(event)}명이 기다렸어요
+                      🔮 {hopeCountOf(event)}명{myHopeIds.has(event.id) ? "과 함께" : "이"} 기다렸어요
                     </em>
                   ) : null}
                 </div>
@@ -3585,7 +3671,9 @@ export function PublicPoster({
                           : null;
                         return (
                           <div
-                            className={`agenda-item teaser${openTeaserSheet ? " tappable" : ""}`}
+                            className={`agenda-item teaser${openTeaserSheet ? " tappable" : ""}${
+                              myHopeIds.has(event.id) ? " hoped" : ""
+                            }${hopeHit?.eventId === event.id ? " hope-hit" : ""}`}
                             key={event.id}
                             {...(openTeaserSheet
                               ? {
@@ -3725,7 +3813,7 @@ export function PublicPoster({
                           {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. 당분간 개발자 확인용만. */}
                           {showHopeBadge && !support && !event.teaser && hopeCountOf(event) > 0 ? (
                             <p className="agenda-sub hope-badge">
-                              🔮 {hopeCountOf(event)}명이 기다렸어요
+                              🔮 {hopeCountOf(event)}명{myHopeIds.has(event.id) ? "과 함께" : "이"} 기다렸어요
                             </p>
                           ) : null}
                           {support ? (
@@ -4159,6 +4247,17 @@ export function PublicPoster({
                               ref={detailLineGroupRef}
                               transform={`translate(${detailAnchorPt.x} ${detailAnchorPt.y}) rotate(${g.deg})`}
                             >
+                              {/* 기대돼요 혜성 — 팝오버 끝(len)에서 카드 도트(0)까지 선을 타고
+                                  달려간다. 도착 시각(420ms)에 카드가 번쩍인다(toggleHope의 travel). */}
+                              {hopeCast?.eventId === event.id ? (
+                                <circle
+                                  className="detail-anchor-comet"
+                                  cy={0}
+                                  key={hopeCast.id}
+                                  r={4}
+                                  style={{ "--leader-len": `${g.len}px` } as CSSProperties}
+                                />
+                              ) : null}
                               <g clipPath="url(#dt-leader-clip)">
                                 <g className="detail-anchor-flow">
                                   {/* 두 선은 굵기·간격이 고정이고 위 선의 opacity만 박동한다
@@ -4190,7 +4289,7 @@ export function PublicPoster({
                     detailHype ? " is-hype" : ""
                   }${teaserActive ? " is-teaser" : ""}${detailFinal ? " is-final" : ""}${
                     detailJustRevealed ? " reveal-burst" : ""
-                  }`}
+                  }${hopeCast?.eventId === event.id ? " hope-cast" : ""}`}
                   ref={(el) => {
                     detailSheetRef.current = el;
                     detailDragSheetRef.current = el;
@@ -4387,6 +4486,11 @@ export function PublicPoster({
                           {detailFinal ? (
                             <span aria-hidden="true" className="dt-echo" key={detailRemainS} />
                           ) : null}
+                          {/* 기대돼요 잔향 — 링 무대에선 오브가 없으니 링에서 보라·금 파문이
+                              한 번 퍼진다(초 파문과 같은 감속 이징, 색만 다르다). */}
+                          {hopeCast?.eventId === event.id ? (
+                            <span aria-hidden="true" className="dt-echo dt-hope-echo" key={`h${hopeCast.id}`} />
+                          ) : null}
                           <svg aria-hidden="true" className="dt-ring" viewBox="0 0 100 100">
                             <defs>
                               {/* 호를 따라 색이 흐른다 — 단색 바보다 깊이가 생긴다. */}
@@ -4477,13 +4581,25 @@ export function PublicPoster({
                       ) : null}
                       <button
                         aria-pressed={myHopeIds.has(event.id)}
-                        className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}`}
-                        onClick={() => toggleHope(event)}
+                        className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}${
+                          hopeConfirm?.eventId === event.id ? " confirmed" : ""
+                        }`}
+                        onClick={(e) => toggleHope(event, e.currentTarget)}
                         type="button"
                        data-act="dt-hope">
-                        {/* 숫자는 안 보여준다(2026-09-27 소유자 결정) — 누르면 색만 바뀐다.
-                            집계는 서버에 그대로 남아 공개 후 "n명이 기다렸어요" 배지로만 쓴다. */}
-                        {myHopeIds.has(event.id) ? "기대 중" : "기대돼요"}
+                        {/* 숫자는 안 보여준다(2026-09-27 소유자 결정). 집계는 서버에 그대로 남아
+                            공개 후 "n명이 기다렸어요" 배지로만 쓴다.
+                            라벨은 key로 갈아끼워 팝 등장(버튼 자체의 transform은 하이프 박동이
+                            쓰므로 안쪽 span에만 건다). ✦은 켜질 때 피어나고 서버 확정 때 한 번 더 빛난다. */}
+                        <span className="dt-hope-label" key={myHopeIds.has(event.id) ? "on" : "off"}>
+                          {myHopeIds.has(event.id) ? (
+                            <>
+                              기대 중 <i aria-hidden="true" className="dt-hope-star">✦</i>
+                            </>
+                          ) : (
+                            "기대돼요"
+                          )}
+                        </span>
                       </button>
                     </div>
                   ) : null}
@@ -4608,7 +4724,7 @@ export function PublicPoster({
         <div className="heart-floaters" aria-hidden="true">
           {floaters.map((f) => (
             <span
-              className="heart-floater"
+              className={`heart-floater${f.kind === "hope" ? " is-hope" : ""}`}
               key={f.id}
               style={
                 {
@@ -4617,11 +4733,12 @@ export function PublicPoster({
                   fontSize: f.size,
                   animationDuration: `${f.dur}ms`,
                   animationDelay: `${f.delay}ms`,
-                  "--dx": `${f.dx}px`
+                  "--dx": `${f.dx}px`,
+                  "--fl-gold": f.gold ?? 0
                 } as CSSProperties
               }
             >
-              ♥
+              {f.kind === "hope" ? "✦" : "♥"}
             </span>
           ))}
         </div>
