@@ -1764,7 +1764,7 @@ export function PublicPoster({
       }
       // PC 팝오버는 리더선을 따라 혜성이 카드까지 달려간 뒤(≈420ms) 카드가 번쩍인다.
       // 모바일 시트(리더선 없음)는 바로 번쩍 — 시트 뒤로 카드가 반응하는 게 보인다.
-      const travel = agendaDetail?.anchor ? 420 : 0;
+      const travel = agendaDetail?.anchor ? 460 : 0; // 혜성이 닿는 순간(키프레임 72% ≈ 0.45s)
       hopeFxTimers.current.push(
         window.setTimeout(() => setHopeHit({ id, eventId: ev.id }), travel),
         window.setTimeout(() => setHopeCast((c) => (c?.id === id ? null : c)), 1500),
@@ -4260,7 +4260,9 @@ export function PublicPoster({
                 {edge && detailAnchorPt ? (
                   <svg
                     aria-hidden="true"
-                    className={`detail-anchor-link${detailHype ? " is-hype" : ""}`}
+                    className={`detail-anchor-link${detailHype ? " is-hype" : ""}${
+                      hopeCast?.eventId === event.id ? " hope-cast" : ""
+                    }`}
                     style={{ "--dt-line": lineColor } as CSSProperties}
                   >
                     {edge.x === detailAnchorPt.x && edge.y === detailAnchorPt.y ? null : (
@@ -4288,13 +4290,22 @@ export function PublicPoster({
                               {/* 기대돼요 혜성 — 팝오버 끝(len)에서 카드 도트(0)까지 선을 타고
                                   달려간다. 도착 시각(420ms)에 카드가 번쩍인다(toggleHope의 travel). */}
                               {hopeCast?.eventId === event.id ? (
-                                <circle
-                                  className="detail-anchor-comet"
-                                  cy={0}
-                                  key={hopeCast.id}
-                                  r={4}
-                                  style={{ "--leader-len": `${g.len}px` } as CSSProperties}
-                                />
+                                <>
+                                  <circle
+                                    className="detail-anchor-comet-trail"
+                                    cy={0}
+                                    key={`t${hopeCast.id}`}
+                                    r={2.6}
+                                    style={{ "--leader-len": `${g.len}px` } as CSSProperties}
+                                  />
+                                  <circle
+                                    className="detail-anchor-comet"
+                                    cy={0}
+                                    key={hopeCast.id}
+                                    r={4}
+                                    style={{ "--leader-len": `${g.len}px` } as CSSProperties}
+                                  />
+                                </>
                               ) : null}
                               <g clipPath="url(#dt-leader-clip)">
                                 <g className="detail-anchor-flow">
