@@ -153,6 +153,17 @@
   align-items: center;
   gap: 4px;
 }
+/* 끌기 래퍼 — 가로로 잡아 끌면 해가 넘어가고, 던지면 관성으로 촤르륵. 세로 스크롤은 그대로(pan-y). */
+.mp-rail-drag {
+  min-width: 0;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.mp-rail-drag.is-dragging {
+  cursor: grabbing;
+}
 /* 연도 레일 — 5칸(이웃 2·현재·이웃 2). 가운데만 크고 진하다. 바뀔 때 레일 전체가 방향대로 미끄러진다. */
 .mp-rail {
   display: grid;

@@ -92,6 +92,78 @@ export function MonthPicker({
     });
   };
   const panelRef = useRef<HTMLDivElement>(null);
+  // 연도 레일 끌기·던지기(2026-09-28 소유자: 잡고 휙 던지면 촤르륵). 레일은 해마다 key로 다시 마운트되므로
+  // 포인터는 바깥 고정 래퍼가 잡는다. STEP px마다 한 해, 놓는 순간 속도만큼 관성 스텝(간격이 점점 벌어짐).
+  const drag = useRef<{ on: boolean; lastX: number; lastT: number; acc: number; moved: number; vx: number }>({
+    on: false,
+    lastX: 0,
+    lastT: 0,
+    acc: 0,
+    moved: 0,
+    vx: 0
+  });
+  const flingTimers = useRef<number[]>([]);
+  const stopFling = () => {
+    flingTimers.current.forEach((t) => window.clearTimeout(t));
+    flingTimers.current = [];
+  };
+  useEffect(() => stopFling, []);
+  const RAIL_STEP = 32;
+  const onRailDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    stopFling();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { on: true, lastX: e.clientX, lastT: e.timeStamp, acc: 0, moved: 0, vx: 0 };
+    e.currentTarget.classList.add("is-dragging");
+  };
+  const onRailMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d.on) return;
+    const dx = e.clientX - d.lastX;
+    const dt = Math.max(1, e.timeStamp - d.lastT);
+    d.vx = d.vx * 0.6 + (dx / dt) * 0.4; // px/ms, 살짝 평활
+    d.lastX = e.clientX;
+    d.lastT = e.timeStamp;
+    d.acc += dx;
+    d.moved += Math.abs(dx);
+    // 오른쪽으로 끌면 이전 해가 딸려 온다(내용을 끄는 감각).
+    while (d.acc >= RAIL_STEP) {
+      d.acc -= RAIL_STEP;
+      setYear((y) => y - 1);
+    }
+    while (d.acc <= -RAIL_STEP) {
+      d.acc += RAIL_STEP;
+      setYear((y) => y + 1);
+    }
+  };
+  const onRailUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d.on) return;
+    d.on = false;
+    e.currentTarget.classList.remove("is-dragging");
+    const v = d.vx; // px/ms
+    const steps = Math.min(10, Math.round(Math.abs(v) * 9)); // 세게 던져도 10해까지 — 그 너머는 길을 잃는다
+    if (steps < 1) return;
+    const sign = v > 0 ? -1 : 1;
+    let delay = 0;
+    for (let i = 0; i < steps; i += 1) {
+      delay += 38 + i * i * 7; // 촤르륵 — 갈수록 느려진다
+      flingTimers.current.push(
+        window.setTimeout(() => {
+          hapticTick();
+          setYear((y) => y + sign);
+        }, delay)
+      );
+    }
+  };
+  // 끌었으면 놓는 자리의 이웃 해 클릭은 무시(끌기의 끝이 클릭으로 새지 않게).
+  const onRailClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (drag.current.moved > 6) {
+      e.preventDefault();
+      e.stopPropagation();
+      drag.current.moved = 0;
+    }
+  };
   // 연도는 제한 없이 오간다. 오늘 해로 한 번에 돌아오는 칩만 둔다(멀리 갔을 때).
   const canPrevYear = true;
   const canNextYear = true;
@@ -180,6 +252,14 @@ export function MonthPicker({
           >
             <ChevronLeft aria-hidden="true" size={18} strokeWidth={2.4} />
           </button>
+          <div
+            className="mp-rail-drag"
+            onClickCapture={onRailClickCapture}
+            onPointerCancel={onRailUp}
+            onPointerDown={onRailDown}
+            onPointerMove={onRailMove}
+            onPointerUp={onRailUp}
+          >
           <div aria-live="polite" className="mp-rail" data-dir={dir} key={year}>
             {[-2, -1, 0, 1, 2].map((d) => {
               const y = year + d;
@@ -206,6 +286,7 @@ export function MonthPicker({
                 </button>
               );
             })}
+          </div>
           </div>
           <button
             aria-label="다음 해"

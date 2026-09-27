@@ -3532,8 +3532,13 @@ html[data-reduce-motion] .dtp-pop-x:active {
   color: var(--ink-soft);
   font-weight: 900;
 }
-.vsum-toggle {
-  /* 오른쪽 정렬 — 줄바꿈돼 둘째 줄로 내려가도 오른쪽(엄지 자리)에 붙는다. 일별 모달의 역할별|기기별과 같은 자리. */
+/* 오른쪽 정렬 — 줄바꿈돼 둘째 줄로 내려가도 오른쪽(엄지 자리)에 붙는다. 일별 모달의 역할별|기기별과 같은 자리.
+   .modal-card-dayVisit .insights-subtabs(0,2,0)가 margin을 되돌리지 않도록 같은 특이도 이상으로. */
+.vsum-head .vsum-toggle,
+.modal-card-dayVisit .vsum-head .vsum-toggle,
+.modal-card-developer .vsum-head .vsum-toggle {
+  flex: 0 0 auto;
+  width: auto;
   margin: 0 0 0 auto;
 }
 .vsum-kpis {

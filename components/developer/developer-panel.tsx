@@ -86,9 +86,6 @@ export function DeveloperPanel() {
   const c = counts;
   return (
     <div className="developer-panel">
-      <p className="developer-panel-hint">
-        현재 열린 화면의 접속 현황 · 15초마다 갱신
-      </p>
       <div className="developer-panel-live">
         <div className="dp-live-tile is-watching">
           <strong>{c ? c.total : "…"}</strong>

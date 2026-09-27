@@ -5450,11 +5450,9 @@ html[data-reduce-motion] .pop-bloom {
    예전엔 태그 줄 옆 9px 홈에 3px 선을 따로 그었는데 "대충 그은 세로선"으로 읽혔다(2026-09-28 소유자).
    링과 같은 기하(-3/-6, r9)에 border-left만 두껍게 → 모서리 곡선을 따라 한 덩어리로 보인다. */
 .agenda-event > .tier-signal {
-  inset: -3px auto -3px -6px;
-  width: 0;
-  border-left: 5px solid var(--tier-c);
-  border-radius: 9px 0 0 9px;
-  background: none;
+  /* 별도 요소로 그리면 곡률이 링과 안 맞는다(2026-09-28 소유자 지적) — 링 자체의 왼쪽 테두리를 두껍게
+     한다(아래 .agenda-event .tier-ring). 한 도형이라 모서리 곡선이 구조적으로 이어진다. */
+  display: none;
 }
 .tier-ring {
   position: absolute;
@@ -5600,6 +5598,12 @@ html[data-reduce-motion] .tier-halo {
 .agenda-event .tier-ring {
   inset: -3px -6px;
   border-radius: 9px;
+  /* PC 카드의 두꺼운 왼쪽 모서리와 같은 문법 — 링의 왼쪽 두께만 5px. 마스크(padding-box xor)가 안쪽을
+     도려내므로 안쪽 곡선도 브라우저가 한 타원으로 잇는다(따로 그린 요소의 r4/r7 불일치가 사라진다). */
+  border-left-width: 5px;
+}
+.agenda-event .tier-ring::before {
+  left: -5px; /* 두꺼워진 왼쪽 테두리까지 채움이 닿게 */
 }
 .agenda-event .tier-halo {
   display: none;

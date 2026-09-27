@@ -180,15 +180,15 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     <div className="dayvisit-wrap">
       {/* (수동 새로고침 버튼·베일은 2026-09-04 사용자 결정으로 제거 — 대신 30초마다 조용히 다시 받는다.)
           한 줄은 늘 둔다: 멈춤/재개로 높이가 바뀌면 그 아래 내용이 통째로 밀린다. */}
-      <div className="dayvisit-head">
-        {held ? (
+      {/* "30초마다 자동 갱신" 같은 설명 캡션은 뺐다(2026-09-28 소유자: 자잘한 설명이 눈에 구리다).
+          갱신이 멈춘 동안의 '지금 갱신' 버튼만 — 그건 설명이 아니라 동작이다. */}
+      {held ? (
+        <div className="dayvisit-head">
           <button className="act-tool is-on" data-act="dayvisit-refresh-now" onClick={refreshNow} type="button">
             보는 중 — 자동 갱신 멈춤 · 지금 갱신
           </button>
-        ) : (
-          <span className="dayvisit-auto">30초마다 자동 갱신</span>
-        )}
-      </div>
+        </div>
+      ) : null}
       <div
         className="dayvisit"
         onKeyDownCapture={touchHold}
