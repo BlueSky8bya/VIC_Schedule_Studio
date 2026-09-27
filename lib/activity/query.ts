@@ -356,6 +356,9 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
   const acc = new Map<string, UsageRow>();
   const bump = (kind: string, target: string | null, role: string, n: number) => {
     const t = target ?? "";
+    // 대상이 없는 기록(옛 클라이언트가 target 없이 보낸 section.enter/ui.click 몇 건)은 '기능'이 아니다 —
+    // '적게 쓰인 기능' 목록에 "(대상 없음)" 줄로 떠서 후보를 오염시켰다(2026-09-27 소유자 지적).
+    if (!t) return;
     const key = `${kind}|${t}`;
     let row = acc.get(key);
     if (!row) {

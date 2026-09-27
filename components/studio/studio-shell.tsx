@@ -5,6 +5,7 @@ import "@/components/studio/insights-charts.css";
 // 2026-09-03 배치 대개편 레이어(서쪽 도구 카드 · 물결 배경 · 차분 상단바) — studio-shell.css에서 분리.
 import "@/components/studio/studio-calm-layer.css";
 import { PanelPlaceControl } from "@/components/shared/panel-place-control";
+import { TeaserCountdown } from "@/components/shared/teaser-countdown";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { readEditableText, writeEditableText } from "@/lib/ui/editable-text";
@@ -245,38 +246,7 @@ type StudioShellProps = {
 
 
 
-// 최초공개 게이트의 큰 카운트다운 — 설명문 대신 '얼마나 남았는지'를 주인공으로.
-// 값이 바뀌는 숫자만 key 리마운트로 스프링 팝(초 단위 심장박동). reduce-motion은 CSS에서 끔.
-function TeaserGateCountdown({ revealAt }: { revealAt: string }) {
-  const target = new Date(revealAt).getTime();
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, []);
-  const left = Math.max(0, target - now);
-  const days = Math.floor(left / 86_400_000);
-  const hours = Math.floor(left / 3_600_000) % 24;
-  const mins = Math.floor(left / 60_000) % 60;
-  const secs = Math.floor(left / 1_000) % 60;
-  const seg = (value: number, unit: string, id: string, accent = false) => (
-    <span className={`tg-seg${accent ? " tg-seg-accent" : ""}`} key={id}>
-      {/* key에 값 포함 → 값이 바뀔 때만 리마운트돼 팝 애니메이션이 그 숫자에만 걸린다. */}
-      <strong className="tg-num" key={`${id}-${value}`}>
-        {String(value).padStart(2, "0")}
-      </strong>
-      <em className="tg-unit">{unit}</em>
-    </span>
-  );
-  return (
-    <div aria-label="공개까지 남은 시간" className="tg-countdown" role="timer">
-      {days > 0 ? seg(days, "일", "d") : null}
-      {seg(hours, "시간", "h")}
-      {seg(mins, "분", "m")}
-      {seg(secs, "초", "s", true)}
-    </div>
-  );
-}
+// 최초공개 게이트의 큰 카운트다운은 시청자 팝오버와 공용(components/shared/teaser-countdown.tsx).
 
 export function StudioShell({
   actor,
@@ -4147,7 +4117,7 @@ export function StudioShell({
         {head}
         {/* 설명문·아이콘 없이 카운트다운이 주인공 — 🔮은 헤더 배지에 이미 있다(중복 제거). */}
         {selectedLiveEvent?.teaserRevealAt ? (
-          <TeaserGateCountdown revealAt={selectedLiveEvent.teaserRevealAt} />
+          <TeaserCountdown revealAt={selectedLiveEvent.teaserRevealAt} />
         ) : null}
         {/* 오답 흔들림은 입력 줄에만 — 카드 전체를 흔들면 팝오버가 두 번 깜빡이는 느낌(사용자 지적). */}
         <div className={`teaser-gate-row${teaserGateShake ? " gate-shake" : ""}`}>

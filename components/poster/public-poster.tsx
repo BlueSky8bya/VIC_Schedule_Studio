@@ -36,6 +36,8 @@ import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { logActivity } from "@/lib/activity/client";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
+// 카드 안 D-n/시계는 이 파일의 TeaserCountdown, 팝오버 큰 카운트다운은 편집실 게이트와 공용 컴포넌트.
+import { TeaserCountdown as TeaserBigCountdown } from "@/components/shared/teaser-countdown";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
@@ -4460,13 +4462,18 @@ export function PublicPoster({
                         })()
                       ) : null}
                       {detailPill ? (
-                        <p className="dt-when">
-                          <span aria-hidden="true" className="dt-orb">
-                            🔮
-                          </span>
-                          <b>{formatRevealKst(event.teaserRevealAt)}</b>
-                          <em>공개</em>
-                        </p>
+                        <>
+                          {/* 편집실 게이트 카드와 같은 큰 카운트다운(2026-09-27 소유자: "텍스트만 있어 보는
+                              재미가 없다"). 1분 안쪽은 위 링 무대가 대신한다. */}
+                          <TeaserBigCountdown revealAt={event.teaserRevealAt} />
+                          <p className="dt-when">
+                            <span aria-hidden="true" className="dt-orb">
+                              🔮
+                            </span>
+                            <b>{formatRevealKst(event.teaserRevealAt)}</b>
+                            <em>공개</em>
+                          </p>
+                        </>
                       ) : null}
                       <button
                         aria-pressed={myHopeIds.has(event.id)}

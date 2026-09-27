@@ -6145,30 +6145,26 @@ body.cell-range-dragging {
   animation: none;
 }
 
-/* 선택: 오늘 골드와 구분되는 무대 보라 링. hover보다 강하고 focus와 같은 의미축을 쓴다. */
+/* 선택: 시청자 화면의 칸 선택과 같은 **음영만**(2026-09-27 소유자) — 예전 실선 링은 편집 중 일정의
+   점선과 모서리에서 어긋나 보였고, 오늘 골드 링과도 겹쳤다. 색·불투명도는 범위 선택과 같은 토큰. */
 .studio-day.selected::after {
-  box-shadow: inset 0 0 0 2px var(--selection-border);
-  /* 새 날짜를 선택할 때(.selected가 막 붙을 때) 바깥으로 보라 글로우가 한 번 퍼졌다 사라진다
-     → "이 날로 옮겼다"를 시각적으로 알려준다. 애니 종료 후엔 위 정적 box-shadow로 복귀. */
+  background: var(--selection-overlay);
+  opacity: var(--selection-overlay-opacity);
+  /* 새 날짜를 선택할 때(.selected가 막 붙을 때) 음영이 살짝 진하게 들어왔다 가라앉는다
+     → "이 날로 옮겼다"를 시각적으로 알려준다. */
   animation: cell-select-pop var(--dur-4) var(--ease-enter);
 }
 @keyframes cell-select-pop {
   0% {
-    box-shadow:
-      inset 0 0 0 2px var(--selection-border),
-      0 0 0 5px var(--selection-fill);
+    opacity: calc(var(--selection-overlay-opacity) * 2);
   }
   100% {
-    box-shadow:
-      inset 0 0 0 2px var(--selection-border),
-      0 0 0 0 transparent;
+    opacity: var(--selection-overlay-opacity);
   }
 }
-/* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 보라) 둘 다 보이게. */
+/* 오늘이면서 선택된 경우: 오늘 골드 링은 그대로, 그 안에 선택 음영. */
 .studio-day.today.selected::after {
-  box-shadow:
-    inset 0 0 0 2px var(--accent),
-    inset 0 0 0 4px var(--selection-border);
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 /* ⚠ 키보드 포커스 링은 오늘(골드)·선택(보라)·신규(초록) 링과 **같은 ::after**를 쓴다.
@@ -6805,54 +6801,12 @@ html[data-reduce-motion] .drop-gap {
   text-align: center;
   gap: var(--space-2);
 }
-/* 큰 카운트다운 — 설명문 없이 이 카드의 주인공. 유닛 블록 + 초 블록만 보라 강조.
-   숫자는 값이 바뀔 때 key 리마운트 → 스프링 팝(아래 tg-num-in). */
-.tg-countdown {
-  display: flex;
-  align-items: stretch;
-  gap: var(--space-2);
-  margin-block: var(--space-1) var(--space-2);
+/* 손잡이는 다른 팝오버와 같은 전폭 스트립 — 폼이 align-items:center라 손잡이가 내용 폭으로
+   쪼그라들어 '다른 손잡이'처럼 보였다(2026-09-27 소유자). */
+.teaser-gate > .editor-grab {
+  align-self: stretch;
 }
-.tg-seg {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  min-width: 54px;
-  padding: var(--space-2) var(--space-1);
-  border-radius: var(--r-lg);
-  background: rgb(var(--teaser-rgb) / 8%);
-}
-.tg-seg-accent {
-  background: rgb(var(--teaser-rgb) / 16%);
-  box-shadow: inset 0 0 0 1px rgb(var(--teaser-rgb) / 25%);
-}
-.tg-num {
-  display: block;
-  font-size: 30px;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--teaser);
-  font-variant-numeric: tabular-nums;
-  animation: tg-num-in 0.34s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1));
-}
-@keyframes tg-num-in {
-  from {
-    opacity: 0.25;
-    transform: translateY(-7px) scale(1.12);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.tg-unit {
-  font-style: normal;
-  font-size: var(--text-caption);
-  font-weight: var(--weight-bold);
-  color: var(--muted);
-}
+/* 큰 카운트다운(.tg-*)은 components/shared/teaser-countdown.css — 시청자 팝오버와 공용. */
 .teaser-gate-row {
   display: flex;
   gap: var(--space-2);
@@ -6920,10 +6874,6 @@ html[data-reduce-motion] .drop-gap {
   padding: var(--space-5) var(--space-4) var(--space-6);
 }
 html[data-reduce-motion] .teaser-gate-row.gate-shake,
-html[data-reduce-motion] .tg-num {
-  animation-duration: 1ms;
-  animation-iteration-count: 1;
-}
 /* #8 옮긴 직후 서버 반영 전 '동기화 중' 점(돌아감). 상태 표시라 '동작 줄이기'에도 유지.
    절대 위치 오버레이로 띄워 제목을 밀지 않는다(나타났다 사라질 때 글자 좌우 점프 방지). */
 .pill-sync {
@@ -7306,8 +7256,32 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
      업 도움=장미 점선). 실선은 '확정된 것', 점선은 '지금 손대는 중'이라는 구분. */
   border-color: transparent !important;
   background: color-mix(in srgb, var(--selection-hue, #2f7fe0) 12%, transparent);
-  outline: 2.5px dashed var(--selection-border, #2f7fe0);
-  outline-offset: -2px;
+}
+/* 점선은 outline이 아니라 ::after 보더로 — outline은 변을 못 열어서, 이어진 체인(link-join-*)에서
+   이음변 한가운데에 세로 점선이 서고 왼쪽 모서리가 어긋나 보였다(2026-09-27 소유자). 연결 후보
+   링(.connect-target::after)과 같은 문법: 이음변은 열고, 바깥 3px에 그려 카드 칠과 겹치지 않는다. */
+.studio-event-pill.primary-selected::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: 4;
+  border: 2.5px dashed var(--selection-border, #2f7fe0);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.studio-event-pill.primary-selected.link-join-right::after,
+.studio-event-pill.primary-selected.span.no-right::after {
+  right: -9px;
+  border-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.studio-event-pill.primary-selected.link-join-left::after,
+.studio-event-pill.primary-selected.span.no-left::after {
+  left: 0;
+  border-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 /* #2: 복사/붙여넣기 알림 토스트 */
