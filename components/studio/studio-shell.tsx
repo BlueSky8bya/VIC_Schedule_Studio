@@ -4071,7 +4071,9 @@ export function StudioShell({
   }
 
   // 최초공개 게이트 — 비공개 레이어 비밀번호를 서버에서 검증만 하고(grant 발급 없음, verifyOnly)
-  // 통과하면 이 일정 id를 화면이 살아 있는 동안 기억해 평소 편집 폼으로 전환한다.
+  // 통과하면 **이 카드, 이번 열림 한 번만** 편집 폼으로 전환한다. 닫히거나 다른 것을 고르면 리셋.
+  // ⚠ 세션 동안 기억(예: 10분) 재제안 금지 — 2026-09-27 소유자 결정: 방송 화면에서 비밀번호를
+  //   친 뒤 세션이 살아 있는 채로 화면이 송출되면 떡밥이 그대로 노출된다. 매번 치는 게 맞다.
   async function submitTeaserGate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const eventId = selectedEventId;
