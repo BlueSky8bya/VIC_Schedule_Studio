@@ -4101,9 +4101,10 @@ export function PublicPoster({
             // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
             const pos = anchor ? detailManual ?? detailPos : null;
             // 업도움은 띠와 같은 초록 계열로 액센트·선 색을 통일(카드 ↔ 띠 조화).
-            const accent1 = support ? "#9cc46f" : teaserActive ? "#c4b5fd" : (detailTags[0]?.bg ?? "#f4b740");
-            const accent2 = support ? "#7fb04e" : teaserActive ? "#8b5cf6" : (detailTags[1]?.bg ?? accent1);
-            const lineColor = support ? "#6a9c3d" : teaserActive ? "#7c6cf0" : (detailTags[0]?.border ?? "#d3a94f");
+            // 떡밥은 --teaser-* 토큰(CSS 변수 값으로 들어가므로 var()가 그대로 풀린다).
+            const accent1 = support ? "#9cc46f" : teaserActive ? "var(--teaser-soft)" : (detailTags[0]?.bg ?? "#f4b740");
+            const accent2 = support ? "#7fb04e" : teaserActive ? "var(--teaser)" : (detailTags[1]?.bg ?? accent1);
+            const lineColor = support ? "#6a9c3d" : teaserActive ? "var(--teaser)" : (detailTags[0]?.border ?? "#d3a94f");
             const popStyle: CSSProperties | undefined = anchor
               ? pos
                 ? ({

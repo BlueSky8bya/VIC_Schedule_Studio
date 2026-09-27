@@ -3769,7 +3769,9 @@ export function StudioShell({
         g.srcX = sr ? sr.left + sr.width / 2 : g.startX;
         g.srcY = sr ? sr.top + sr.height / 2 : g.startY;
         const line = document.createElementNS(ns, "line");
-        line.setAttribute("stroke", "rgba(139,92,246,0.92)");
+        // 선택/편집 대상 색(물빛) — 속성이 아니라 style로 줘야 var()가 풀린다.
+        line.style.stroke = "var(--selection-border)";
+        line.style.opacity = "0.92";
         line.setAttribute("stroke-width", "3");
         line.setAttribute("stroke-linecap", "round");
         line.setAttribute("stroke-dasharray", "1 8");

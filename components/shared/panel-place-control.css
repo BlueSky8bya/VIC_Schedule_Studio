@@ -11,7 +11,7 @@
   gap: 2px;
   padding: 2px;
   border-radius: var(--r-pill, 999px);
-  border: 1.5px solid rgb(124 108 240 / 30%);
+  border: 1.5px solid rgb(var(--violet-rgb) / 30%);
   background: rgb(255 253 250 / 55%);
   opacity: 0.62;
   box-shadow:
@@ -29,7 +29,7 @@
   -webkit-backdrop-filter: blur(10px) saturate(1.2);
   backdrop-filter: blur(10px) saturate(1.2);
   box-shadow:
-    0 14px 36px rgb(80 70 130 / 24%),
+    0 14px 36px rgb(var(--selection-rgb) / 24%),
     inset 0 0 0 1px rgb(255 255 255 / 55%);
 }
 .panel-place-ctl button {

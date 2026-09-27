@@ -71,7 +71,7 @@
   --green-soft: #e9fff2;
   --coral: #f26d5b;
   --amber: #f4b740;
-  --violet: #5b34f0; /* 무대/선택/포커스(흰 글자). 기존보다 채도↑ */
+  --violet: #5b34f0; /* 무대/브랜드 크롬(흰 글자). 선택·포커스는 --selection-*(물빛), 떡밥은 --teaser-* */
   --violet-rgb: 91 52 240; /* rgb(var(--violet-rgb) / a%) 알파 조합용 — --violet과 같은 색 */
   --violet-soft: #f3eeff;
   --pink: #ff5f8f; /* 토리 핑크 — 하트·팬 반응 */
@@ -83,7 +83,7 @@
   --status-success-fill: var(--surface);
   --status-warning-fill: var(--surface);
   --status-danger-fill: var(--surface);
-  --focus-ring: var(--violet);
+  --focus-ring: var(--selection-hue);
   /* 차분한 편집실(2026-09-03, docs/ux/saju-redesign-direction.md) — 편집실 구조 전용 토큰.
      이름은 기능 중심(action/silver/cell)으로 중립. 눈 편한 테마(saturate .8 · brightness .96 ·
      sepia .1) 렌더값: action #1e5aa8→#2e568a(흰 글자 7.2:1, 종이 배경 6.3:1) · strong #17497f→
@@ -105,11 +105,21 @@
   --studio-silver: #f3f5f7;
   --studio-silver-line: #d7dde5;
   --studio-cell-calm: #eef2f6;
-  /* 선택 계열(칸 링·hover 채움·범위 음영·편집 중 일정 점선) — 보라(--violet)에서 분리(2026-09-27).
-     최초공개(떡밥) 카드·점선이 같은 보라라 '선택된 것'과 '떡밥'이 한 색으로 읽혔다(소유자 지적 ×2).
-     시트식 선택 = 파랑. 보라는 떡밥·무대·설정 강조에만 남긴다. */
-  --selection-hue: #2f7fe0;
-  --selection-fill: #e6f0fc;
+  /* ── 색 의미 3족(2026-09-27 정돈, ADR-0029) ──────────────────────────────
+     · 떡밥(최초공개) = --teaser-* 보라. 카드·점선·게이트·카운트다운 링·기대돼요 전용.
+     · 선택/편집 대상/포커스 = --selection-* = 편집실 물빛(--studio-action) 그대로 흡수.
+       칸 링·범위 음영·편집 중 일정 점선·편집 패널 강조·리더선·잇기 모드·드래그 고스트·
+       키보드 포커스 링·검색 셀 플래시·방송 판서 선택. 테마(눈 편한/다크)는 물빛이 이미 갖고 있다.
+     · --violet = 브랜드 크롬(설정 스위치·칩·dev 배지·무대)만. 선택·포커스 의미 없음.
+     예전엔 셋이 전부 보라 계열이라 '선택된 것'과 '떡밥'이 한 색으로 읽혔다(소유자 지적 ×3). */
+  --teaser: #7c6cf0;
+  --teaser-deep: #5b4aa6;
+  --teaser-ink: #4d3f8f;
+  --teaser-soft: #c4b5fd;
+  --teaser-rgb: 124 108 240;
+  --selection-hue: var(--studio-action);
+  --selection-rgb: var(--studio-action-rgb);
+  --selection-fill: var(--studio-action-tint-hi);
   --selection-overlay: var(--selection-hue);
   --selection-overlay-opacity: 0.14;
   --selection-border: var(--selection-hue);
@@ -378,11 +388,11 @@
 /* 일관된 포커스 링(키보드 이동 시) — 특이도 0이라 컴포넌트가 자유로이 덮을 수 있다. */
 :where(input, select, textarea):focus-visible {
   outline: none;
-  border-color: var(--accent, #7c5cf5);
-  box-shadow: 0 0 0 3px rgb(124 92 245 / 18%);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px rgb(var(--selection-rgb) / 18%);
 }
 :where(a, button, [role="button"], [role="tab"], [role="switch"], summary):focus-visible {
-  outline: 2px solid var(--accent, #7c5cf5);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -1312,7 +1322,6 @@ html[data-theme="dark"] {
   --violet: #9b81ff;
   --violet-rgb: 155 129 255;
   --violet-soft: #2a2244;
-  --selection-hue: #6aa8ff;
   --pink: #ff7ba4;
   --pink-soft: #3a2029;
   --status-success-fill: var(--surface);
@@ -1332,8 +1341,6 @@ html[data-theme="dark"] {
   --studio-silver: #2b2926;
   --studio-silver-line: #423f39;
   --studio-cell-calm: #232220;
-  --selection-fill: #1e2b42;
-  --selection-border: #6aa8ff;
 
   /* 떠 있는 표면 — 다크에선 '흰 유리'가 아니라 **밝은 숯 유리**. 흰 알파를 그대로 두면 알약·칩이
      전부 허옇게 떠서 화면이 얼룩진다. */

@@ -703,7 +703,7 @@ html[data-reduce-motion] .mb-live-dot {
   color: #e2483d;
 }
 .agenda-when strong.saturday {
-  color: #2f6bd8;
+  color: #2563eb;
 }
 .agenda-wd {
   font-size: var(--text-caption);
@@ -3646,7 +3646,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 /* 🔮 떡밥(가림) 카드 — 보라 미스터리 룩 + ??? + 공개까지 카운트다운. 제목·태그는 서버에서
    안 내려오므로 여기엔 실제 내용이 없다(유출 0). */
 .public-event.teaser {
-  background: linear-gradient(135deg, #5b4aa6 0%, #7c6cf0 100%);
+  background: linear-gradient(135deg, var(--teaser-deep) 0%, var(--teaser) 100%);
   border: 1px dashed rgba(255, 255, 255, 0.55);
   color: #fff;
   overflow: hidden;
@@ -3721,7 +3721,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
     filter: brightness(1.9) saturate(1.3);
     box-shadow:
       0 0 40px 16px rgb(255 255 255 / 92%),
-      0 0 0 0 rgb(124 108 240 / 0%);
+      0 0 0 0 rgb(var(--teaser-rgb) / 0%);
   }
   16% {
     transform: scale(1.05);
@@ -3729,7 +3729,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
     filter: brightness(1.42) saturate(1.18);
     box-shadow:
       0 0 34px 12px rgb(255 236 190 / 90%),
-      0 0 0 7px rgb(124 108 240 / 38%);
+      0 0 0 7px rgb(var(--teaser-rgb) / 38%);
   }
   40% {
     transform: scale(0.995);
@@ -3739,12 +3739,12 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
     transform: scale(1.018);
     box-shadow:
       0 0 22px 6px rgb(255 206 58 / 52%),
-      0 0 0 3px rgb(124 108 240 / 22%);
+      0 0 0 3px rgb(var(--teaser-rgb) / 22%);
   }
   100% {
     transform: scale(1);
     filter: brightness(1);
-    box-shadow: 0 0 0 0 rgb(124 108 240 / 0%);
+    box-shadow: 0 0 0 0 rgb(var(--teaser-rgb) / 0%);
   }
 }
 /* 충격파 링 — 카드 테두리에서 두 겹으로 퍼져나간다(두 번째는 살짝 늦게). */
@@ -3799,8 +3799,8 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   position: absolute;
   inset: -4px;
   border-radius: inherit;
-  border: 4px solid rgb(124 108 240 / 90%);
-  box-shadow: 0 0 16px rgb(124 108 240 / 55%);
+  border: 4px solid rgb(var(--teaser-rgb) / 90%);
+  box-shadow: 0 0 16px rgb(var(--teaser-rgb) / 55%);
   animation: tj-shock 1.15s cubic-bezier(0.22, 0.72, 0.3, 1) 0.18s both;
 }
 @keyframes tj-shock {
@@ -3871,7 +3871,7 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
   gap: 6px;
   padding: 7px 10px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #5b4aa6 0%, #7c6cf0 100%);
+  background: linear-gradient(135deg, var(--teaser-deep) 0%, var(--teaser) 100%);
   border: 1px dashed rgba(255, 255, 255, 0.55);
   color: #fff;
 }
@@ -3894,7 +3894,7 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
 .public-event.teaser.is-clickable:hover,
 .agenda-item.teaser.tappable:hover {
   filter: brightness(1.06);
-  box-shadow: 0 3px 12px rgb(124 108 240 / 38%);
+  box-shadow: 0 3px 12px rgb(var(--teaser-rgb) / 38%);
   transform: translateY(-1px);
 }
 .public-event.teaser.is-clickable:active,
@@ -3920,10 +3920,10 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
 @keyframes teaser-card-breathe {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgb(124 108 240 / 0%);
+    box-shadow: 0 0 0 0 rgb(var(--teaser-rgb) / 0%);
   }
   50% {
-    box-shadow: 0 0 14px 2px rgb(124 108 240 / 45%);
+    box-shadow: 0 0 14px 2px rgb(var(--teaser-rgb) / 45%);
   }
 }
 .public-event.teaser:has(.teaser-count.soon) .teaser-spark,
@@ -3978,7 +3978,7 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
   color: inherit;
   text-shadow:
     0 0 5px currentColor,
-    0 0 13px rgb(124 108 240 / 45%);
+    0 0 13px rgb(var(--teaser-rgb) / 45%);
   animation: scramble-jitter 0.09s steps(2) infinite;
 }
 /* ⚠ 밝기(opacity/brightness) 왕복 금지 — 초당 11회 명멸은 광과민성 발작 기준(WCAG 2.3.1,
@@ -4080,11 +4080,11 @@ html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title 
   font-style: normal;
   font-size: var(--text-micro);
   font-weight: 800;
-  color: #6a58e8;
+  color: var(--teaser);
   opacity: 0.85;
 }
 p.agenda-sub.hope-badge {
-  color: #6a58e8;
+  color: var(--teaser);
   font-size: var(--text-caption);
 }
 /* 떡밥 상세 — 한 줄 요약(오브+시각) + 주 동작. 각주·큰 여백 없이 컴팩트하게. */
@@ -4109,8 +4109,8 @@ p.agenda-sub.hope-badge {
   margin: 0;
   padding: 5px 12px 5px 10px;
   border-radius: 999px;
-  background: rgb(124 108 240 / 10%);
-  color: #4d3f8f;
+  background: rgb(var(--teaser-rgb) / 10%);
+  color: var(--teaser-ink);
   font-size: var(--text-body);
   font-variant-numeric: tabular-nums;
 }
@@ -4126,7 +4126,7 @@ p.agenda-sub.hope-badge {
 .detail-teaser .dt-orb {
   font-size: var(--text-title);
   line-height: 1;
-  filter: drop-shadow(0 2px 5px rgb(124 108 240 / 40%));
+  filter: drop-shadow(0 2px 5px rgb(var(--teaser-rgb) / 40%));
   animation: dt-orb-float 2.6s ease-in-out infinite alternate;
 }
 @keyframes dt-orb-float {
@@ -4142,11 +4142,11 @@ p.agenda-sub.hope-badge {
   align-items: center;
   gap: 7px;
   min-height: 40px;
-  border: 1.5px solid rgb(124 108 240 / 45%);
+  border: 1.5px solid rgb(var(--teaser-rgb) / 45%);
   border-radius: 999px;
   background: #fff;
   padding: 0 18px;
-  color: #5b4aa6;
+  color: var(--teaser-deep);
   font-size: var(--text-body);
   font-weight: 900;
   cursor: pointer;
@@ -4157,13 +4157,13 @@ p.agenda-sub.hope-badge {
     box-shadow 0.16s var(--ease);
 }
 .detail-teaser .dt-hope:hover {
-  box-shadow: 0 3px 10px rgb(124 108 240 / 30%);
+  box-shadow: 0 3px 10px rgb(var(--teaser-rgb) / 30%);
 }
 .detail-teaser .dt-hope:active {
   transform: scale(0.93);
 }
 .detail-teaser .dt-hope.on {
-  background: linear-gradient(135deg, #7c6cf0, #5b4aa6);
+  background: linear-gradient(135deg, var(--teaser), var(--teaser-deep));
   border-color: transparent;
   color: #fff;
   box-shadow: 0 3px 12px rgb(91 74 166 / 40%);
@@ -4241,7 +4241,7 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   /* 후광은 반복 점멸이 아니라 '강도에 따라 커지는 고정 빛' — WCAG 2.3.1(3회/초) 안전. */
   box-shadow:
     0 0 0 calc(var(--hy-glow, 0) * 10px) rgb(255 255 255 / 55%),
-    0 6px calc(10px + var(--hy-glow, 0) * 80px) rgb(124 108 240 / calc(35% + var(--hy-gold, 0) * 30%));
+    0 6px calc(10px + var(--hy-glow, 0) * 80px) rgb(var(--teaser-rgb) / calc(35% + var(--hy-gold, 0) * 30%));
   will-change: box-shadow;
 }
 /* 흔들림 — 진폭도 연속(0 → 1.2px). 카드 '내용'만 움직인다. */
@@ -4410,15 +4410,15 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   box-shadow:
     0 0 0 calc(var(--hy-glow, 0) * 8px) rgb(255 255 255 / 45%),
     0 18px 44px rgb(80 70 120 / 22%),
-    0 0 calc(var(--hy-glow, 0) * 60px) rgb(124 108 240 / 45%);
+    0 0 calc(var(--hy-glow, 0) * 60px) rgb(var(--teaser-rgb) / 45%);
 }
 .agenda-detail-sheet.is-hype .dt-when {
   background: color-mix(
     in srgb,
-    rgb(124 108 240 / 20%) calc((1 - var(--hy-gold, 0)) * 100%),
+    rgb(var(--teaser-rgb) / 20%) calc((1 - var(--hy-gold, 0)) * 100%),
     rgb(255 214 122 / 45%)
   );
-  color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #7a4a05);
+  color: color-mix(in srgb, var(--teaser-ink) calc((1 - var(--hy-gold, 0)) * 100%), #7a4a05);
 }
 .agenda-detail-sheet.is-hype .dt-orb {
   animation: hype-shake var(--hy-shake-dur, 1.4s) ease-in-out infinite;
@@ -4572,7 +4572,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 }
 .dt-ring-track {
   fill: none;
-  stroke: rgb(124 108 240 / 14%);
+  stroke: rgb(var(--teaser-rgb) / 14%);
   stroke-width: 7;
 }
 /* 박동하는 테두리 링 — 팝오버의 심장. 링 바깥으로 한 겹 더 얹혀 마스터 비트에 맞춰
@@ -4584,7 +4584,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   border-radius: 999px;
   /* 헤어라인 — 굵은 테두리는 링과 경쟁한다. 얇게 두고 세기는 opacity로만 말한다. */
   border: 1.5px solid
-    color-mix(in srgb, rgb(124 108 240 / 60%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(255 202 106 / 80%));
+    color-mix(in srgb, rgb(var(--teaser-rgb) / 60%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(255 202 106 / 80%));
   opacity: 0;
   pointer-events: none;
 }
@@ -4642,7 +4642,7 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
   stop-color: color-mix(in srgb, #9b8bff calc((1 - var(--hy-gold, 0)) * 100%), #ffd27a);
 }
 .dt-grad-b {
-  stop-color: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #f0a83a);
+  stop-color: color-mix(in srgb, var(--teaser) calc((1 - var(--hy-gold, 0)) * 100%), #f0a83a);
 }
 .dt-grad-c {
   stop-color: color-mix(in srgb, #6a56e8 calc((1 - var(--hy-gold, 0)) * 100%), #e8892a);
@@ -4661,7 +4661,7 @@ html[data-eye-comfort] .dt-grad-a {
   stop-color: color-mix(in srgb, #9b8bff calc((1 - var(--hy-gold, 0)) * 100%), #ffdc93);
 }
 html[data-eye-comfort] .dt-grad-b {
-  stop-color: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #ffb52e);
+  stop-color: color-mix(in srgb, var(--teaser) calc((1 - var(--hy-gold, 0)) * 100%), #ffb52e);
 }
 html[data-eye-comfort] .dt-grad-c {
   stop-color: color-mix(in srgb, #6a56e8 calc((1 - var(--hy-gold, 0)) * 100%), #f59a1e);
@@ -4706,7 +4706,7 @@ html[data-eye-comfort] .dt-grad-c {
   /* 금빛으로 갈수록 '옅어지면' 클라이맥스에서 되레 존재감이 약해진다(실측 스트립에서 8·3초
      숫자가 흐릿한 갈색으로 빠졌다) → 끝점을 깊은 호박색으로 낮춰 색만 데워지고 농도는 유지한다.
      후광도 줄인다(넓은 헤일로가 글자 가장자리를 갉아먹어 더 흐려 보였다). */
-  color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
+  color: color-mix(in srgb, var(--teaser-ink) calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
   text-shadow: 0 0 calc(var(--hy-glow, 0) * 22px) rgb(255 200 96 / 70%);
   /* 오버슈트를 키프레임에 손으로 그리면(1.28 → 0.95 → 1) 물리와 다른 인공적인 튐이 된다.
      시작/끝만 두고 잔진동은 스프링 토큰이 만들게 한다 — 도착 직전 감속이 자연스럽다. */
@@ -4857,22 +4857,22 @@ html[data-reduce-motion] .dt-ring-ticks line {
   border-width: calc(1.5px + var(--hy-final, 0) * 0.8px);
   border-color: color-mix(
     in srgb,
-    rgb(124 108 240 / 45%) calc((1 - var(--hy-gold, 0)) * 100%),
+    rgb(var(--teaser-rgb) / 45%) calc((1 - var(--hy-gold, 0)) * 100%),
     rgb(154 88 0 / 62%)
   );
   background: color-mix(in srgb, #fff calc((1 - var(--hy-gold, 0)) * 100%), #fffaf0);
-  color: color-mix(in srgb, #5b4aa6 calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
+  color: color-mix(in srgb, var(--teaser-deep) calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
   box-shadow: 0 calc(2px + var(--hy-final, 0) * 3px)
     calc(6px + var(--hy-final, 0) * 12px)
-    color-mix(in srgb, rgb(124 108 240 / 18%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(154 88 0 / 26%));
+    color-mix(in srgb, rgb(var(--teaser-rgb) / 18%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(154 88 0 / 26%));
 }
 /* 눌린 상태(기대 중)도 같은 온도로 — 보라 그라데이션만 남으면 혼자 차갑다. */
 .agenda-detail-sheet.is-teaser .dt-hope.on {
   border-color: transparent;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #d98a1a),
-    color-mix(in srgb, #5b4aa6 calc((1 - var(--hy-gold, 0)) * 100%), #8a4f04)
+    color-mix(in srgb, var(--teaser) calc((1 - var(--hy-gold, 0)) * 100%), #d98a1a),
+    color-mix(in srgb, var(--teaser-deep) calc((1 - var(--hy-gold, 0)) * 100%), #8a4f04)
   );
   color: #fff;
 }
@@ -4896,12 +4896,12 @@ html[data-reduce-motion] .dt-ring-ticks line {
 .detail-anchor-link.is-hype .detail-anchor-pulse {
   stroke: color-mix(
     in srgb,
-    var(--dt-line, #7c6cf0) calc((1 - var(--hy-gold, 0)) * 100%),
+    var(--dt-line, var(--teaser)) calc((1 - var(--hy-gold, 0)) * 100%),
     #e8a33c
   );
 }
 .detail-anchor-link.is-hype .detail-anchor-dot {
-  fill: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #ffca6a);
+  fill: color-mix(in srgb, var(--teaser) calc((1 - var(--hy-gold, 0)) * 100%), #ffca6a);
 }
 
 /* 동작 줄이기 — 모션은 전부 끄되 '임박했다'는 정보(큰 숫자·색·후광)는 남긴다. */
@@ -6638,7 +6638,7 @@ html[data-reduce-motion] .pi-backdrop {
 }
 /* 호버 시 90° 회전 — 일정 그림판 X(.bp-close)와 같은 아이패드식 손맛(전 X 버튼 통일). */
 .pi-close:hover {
-  background: rgb(124 108 240 / 12%);
+  background: rgb(var(--violet-rgb) / 12%);
   transform: rotate(90deg);
 }
 .pi-close:active {
@@ -7575,7 +7575,7 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   outline: none;
 }
 .agenda-detail-grab:focus-visible span {
-  box-shadow: 0 0 0 3px rgb(124 108 240 / 45%);
+  box-shadow: 0 0 0 3px rgb(var(--selection-rgb) / 45%);
 }
 .agenda-detail-head {
   display: flex;
@@ -7731,7 +7731,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
 }
 
 .agenda-detail-day.saturday {
-  color: #2f6bd8;
+  color: #2563eb;
 }
 
 .agenda-detail-mark {
@@ -8094,8 +8094,8 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
 }
 .ps-field:focus-within {
   background: #fff;
-  border-color: rgb(124 108 240 / 40%);
-  box-shadow: 0 0 0 4px rgb(124 108 240 / 12%);
+  border-color: rgb(var(--selection-rgb) / 40%);
+  box-shadow: 0 0 0 4px rgb(var(--selection-rgb) / 12%);
 }
 .ps-field svg {
   flex: none;
@@ -8795,7 +8795,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   display: block;
   margin: 0 0 0 var(--ps-sub-rail);
   padding: 6px 0 2px var(--ps-sub-pad);
-  border-left: 2px solid rgb(124 108 240 / 45%);
+  border-left: 2px solid rgb(53 100 224 / 45%);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -8807,7 +8807,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-chapter-wrap.is-child .ps-chapter {
   margin-left: var(--ps-sub-rail);
   padding-left: var(--ps-sub-pad);
-  border-left: 2px solid rgb(124 108 240 / 45%);
+  border-left: 2px solid rgb(53 100 224 / 45%);
   border-radius: 0 9px 9px 0;
 }
 /* 묶음의 마지막 세부 항목에서 레일을 끝맺는다(아래로 새지 않게) — 다음 형제가 세부가 아니면 끝. */
@@ -8932,7 +8932,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-rail-dot.is-now::before {
   background: var(--ps-accent);
   transform: scale(2.1);
-  box-shadow: 0 0 0 3px rgb(124 108 240 / 18%);
+  box-shadow: 0 0 0 3px rgb(53 100 224 / 18%);
 }
 .ps-rail-dot:hover::before {
   transform: scale(1.8);
@@ -9052,19 +9052,19 @@ html[data-reduce-motion] .ps-rail-dot::before {
 /* 검색에서 고른 일정의 칸/줄 점등 — 오늘 링과 같은 색 계열로 두 번 숨쉬고 사라진다. */
 @keyframes cell-flash {
   0% {
-    box-shadow: 0 0 0 0 rgb(124 108 240 / 0%);
+    box-shadow: 0 0 0 0 rgb(var(--selection-rgb) / 0%);
   }
   20% {
-    box-shadow: 0 0 0 4px rgb(124 108 240 / 55%);
+    box-shadow: 0 0 0 4px rgb(var(--selection-rgb) / 55%);
   }
   60% {
-    box-shadow: 0 0 0 4px rgb(124 108 240 / 20%);
+    box-shadow: 0 0 0 4px rgb(var(--selection-rgb) / 20%);
   }
   80% {
-    box-shadow: 0 0 0 4px rgb(124 108 240 / 55%);
+    box-shadow: 0 0 0 4px rgb(var(--selection-rgb) / 55%);
   }
   100% {
-    box-shadow: 0 0 0 0 rgb(124 108 240 / 0%);
+    box-shadow: 0 0 0 0 rgb(var(--selection-rgb) / 0%);
   }
 }
 .public-day.cell-flash,
@@ -9078,7 +9078,7 @@ html[data-reduce-motion] .agenda-day.cell-flash,
 html[data-reduce-motion] .studio-day.cell-flash {
   animation-duration: 1ms;
   animation-iteration-count: 1;
-  box-shadow: 0 0 0 4px rgb(124 108 240 / 45%);
+  box-shadow: 0 0 0 4px rgb(var(--selection-rgb) / 45%);
 }
 
 /* Shared selector; rail width is the structural limit in every replay surface. */

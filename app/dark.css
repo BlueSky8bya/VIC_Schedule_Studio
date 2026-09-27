@@ -551,8 +551,10 @@ html[data-theme="dark"] :is(.vch-strip-head, .vch-now-time) { color: var(--accen
 html[data-theme="dark"] :is(.teaser-when, .dtp-wheel-band, .dtp-wheel-wrap:has(.dtp-wheel.grabbing) .dtp-wheel-band) {
   background: var(--violet-soft); border-color: rgb(var(--violet-rgb) / 25%);
 }
-html[data-theme="dark"] :is(.teaser-when-label, .teaser-when-hint, .editor-mode-badge.is-edit,
+html[data-theme="dark"] :is(.teaser-when-label, .teaser-when-hint, .teaser-gate-badge,
   .m-rail-insights, .tp-section-label) { color: var(--seg-on-accent-ink); }
+/* 편집 중 배지는 선택/편집 대상 색(물빛) — 떡밥 게이트 배지만 보라로 남긴다(ADR-0029). */
+html[data-theme="dark"] .editor-mode-badge.is-edit:not(.teaser-gate-badge) { color: var(--studio-action-text); }
 html[data-theme="dark"] .event-editor-panel .editor-date-inline { color: var(--ink-soft); }
 html[data-theme="dark"] .event-editor-panel .editor-save-tab-text { color: var(--studio-action-text); }
 html[data-theme="dark"] :is(.dtp-foot-btn, .dtp-time, .m-topstick, .m-manage) {
