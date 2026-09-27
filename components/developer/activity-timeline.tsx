@@ -29,7 +29,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 // meta 번역은 lib/activity/narrative.ts describeMeta — 화면·복사본이 같은 말을 쓴다.
 // 이름 뒤에 붙여 보여주는 meta — 여기 든 키는 meta 줄에서 뺀다.
-const NAMED_META = new Set(["date"]);
+const NAMED_META = new Set(["date", "from"]);
 
 // 어느 날짜의 것인가 — 편집 카드처럼 '무엇을 편집했나'가 날짜인 기록에만 있다(meta.date).
 // 없으면 옛 기록이다(2026-09-11 이전에는 안 남겼다).
@@ -37,7 +37,10 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function metaDateLabel(meta: Record<string, unknown> | null): string {
   const d = meta && typeof meta.date === "string" ? meta.date : null;
   if (!d || !DATE_RE.test(d)) return "";
-  return `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`;
+  const md = (x: string) => `${Number(x.slice(5, 7))}월 ${Number(x.slice(8, 10))}일`;
+  // 일정 이동(event.move)은 출발 날(meta.from)이 있다 — "어디서 → 어디로"(2026-09-28 소유자: 어디로 옮겼는지 몰라).
+  const f = meta && typeof meta.from === "string" && DATE_RE.test(meta.from) ? meta.from : null;
+  return f ? `${md(f)} → ${md(d)}` : md(d);
 }
 
 // 복사 텍스트의 줄바꿈. 소스에 개행 리터럴을 직접 쓰면 편집 중 깨지기 쉬워 상수로 둔다.

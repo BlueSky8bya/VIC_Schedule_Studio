@@ -3956,7 +3956,8 @@ export function StudioShell({
     const result = await studioWrite("reorder", {
       dateKey: move.targetDate,
       orderedIds: realOrderedIds as string[],
-      movedId: move.targetDate !== move.sourceDate ? realMovedId : undefined
+      movedId: move.targetDate !== move.sourceDate ? realMovedId : undefined,
+      fromDateKey: move.targetDate !== move.sourceDate ? move.sourceDate : undefined
     });
     if (!result.ok) {
       setActionError(result.error);

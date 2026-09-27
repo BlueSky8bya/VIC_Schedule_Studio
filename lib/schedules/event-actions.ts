@@ -73,6 +73,7 @@ export async function reorderEventsAction(input: {
   dateKey: string;
   orderedIds: string[];
   movedId?: string; // 다른 날에서 이 날로 옮겨온 일정(있으면 date_key도 갱신)
+  fromDateKey?: string; // movedId가 원래 있던 날 — 이용 기록에 "어디서 → 어디로"를 남기기 위한 것
 }): Promise<ActionResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (!canEditSchedule(actor.role)) {
@@ -106,7 +107,9 @@ export async function reorderEventsAction(input: {
     kind: input.movedId ? "event.move" : "event.reorder",
     target: input.movedId ?? input.dateKey,
     actor,
-    meta: { date: input.dateKey, count: input.orderedIds.length }
+    meta: input.movedId
+      ? { date: input.dateKey, from: input.fromDateKey ?? null, count: input.orderedIds.length }
+      : { date: input.dateKey, count: input.orderedIds.length }
   });
   return { ok: true, id: input.movedId ?? input.orderedIds[0] ?? "" };
 }

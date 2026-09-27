@@ -3533,7 +3533,8 @@ html[data-reduce-motion] .dtp-pop-x:active {
   font-weight: 900;
 }
 .vsum-toggle {
-  margin: 0;
+  /* 오른쪽 정렬 — 줄바꿈돼 둘째 줄로 내려가도 오른쪽(엄지 자리)에 붙는다. 일별 모달의 역할별|기기별과 같은 자리. */
+  margin: 0 0 0 auto;
 }
 .vsum-kpis {
   list-style: none;

@@ -101,7 +101,7 @@ export async function getActivityDayAction(
     if (!includeDiag) q = q.eq("diag", false);
     return q.order("occurred_at", { ascending: true }).range(from, to);
   });
-  if (rows.length === 0) return { ok: true, visits: [], total: 0 };
+  // (행동 기록이 0건이어도 바로 돌아가지 않는다 — 아래 visit_session 구간만 있는 방문도 목록에 올린다.)
 
   // 일정 제목 — 공개 일정만 붙인다. 비공개는 범위 라벨로 대체(제목을 절대 내보내지 않는다).
   //
@@ -220,20 +220,23 @@ export async function getActivityDayAction(
     visit_key: string | null;
     account_hash: string | null;
     role: string;
+    device: string;
     started_at: string;
     last_seen_at: string | null;
   }>((from, to) =>
     supabase
       .from("visit_session")
-      .select("visit_key, account_hash, role, started_at, last_seen_at")
+      .select("visit_key, account_hash, role, device, started_at, last_seen_at")
       .eq("day", day)
       .not("visit_key", "is", null)
       .range(from, to)
   );
   // 같은 visit_key의 여러 구간을 한 방문으로 합친다(0061 — 구간은 탭 숨김마다 끊긴다).
   const sessionSpans = new Map<string, HostVisit>();
+  const spanDevice = new Map<string, string>();
   for (const v of sessions) {
     if (!v.visit_key) continue;
+    if (!spanDevice.has(v.visit_key)) spanDevice.set(v.visit_key, v.device);
     const st = Date.parse(v.started_at);
     const en = Date.parse(v.last_seen_at ?? v.started_at);
     const cur = sessionSpans.get(v.visit_key);
@@ -284,6 +287,22 @@ export async function getActivityDayAction(
     const existing = byKey.get(key);
     if (existing) addTo(existing, item);
     else openVisit(key, r, item);
+  }
+
+  // ③ 행동 기록이 한 줄도 없는 세션 구간 — 그래도 '방문'이다. 예전엔 activity_event 행이 있어야만
+  // 방문이 만들어져, 접속 시간표에는 "관리자 11분"이 있는데 타임라인에는 그 방문이 아예 없었다
+  // (2026-09-28 소유자 지적). 세션이 뼈대, 행동 기록은 살 — 살이 없어도 뼈대는 보여준다.
+  for (const span of spanHosts) {
+    if (byKey.has(span.key)) continue;
+    byKey.set(span.key, {
+      key: span.key,
+      account: accountLabel(span.accountHash),
+      role: span.role,
+      device: spanDevice.get(span.key) ?? "unknown",
+      startMs: span.startMs,
+      endMs: span.endMs,
+      items: []
+    });
   }
 
   // 두 번에 나눠 담았으니 방문 안 시간 순서를 다시 맞춘다(화면은 시간 순으로 읽는다).

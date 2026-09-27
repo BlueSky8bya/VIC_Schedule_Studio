@@ -78,6 +78,9 @@ export function describeMeta(meta: Record<string, unknown> | null, skip?: Readon
       case "date":
         out.push(dateLabel(v) || String(v));
         break;
+      case "from":
+        // 출발 날 — 이름 옆 날짜 표기("9월 27일 → 9월 30일")가 말한다(activity-timeline metaDateLabel / 아래 흐름 줄).
+        break;
       case "tags":
         if (typeof v === "number" && v > 0) out.push(`태그 ${v}개`);
         break;
@@ -346,6 +349,14 @@ export function buildStory(items: NarrativeItem[]): string[] {
       continue;
     }
     const name = itemName(it);
+    if (it.kind === "event.move") {
+      // 어디서 → 어디로. 출발 날(meta.from)은 2026-09-28부터 남긴다 — 옛 기록은 도착 날만.
+      const to = dateLabel(it.meta?.date);
+      const from = dateLabel(it.meta?.from);
+      const where = from && to ? ` (${from} → ${to})` : to ? ` (${to}로)` : "";
+      push(it.t, it.t, `일정 옮김${name ? ` — ${name}` : ""}${where}`, `k|${it.kind}|${it.target ?? ""}`);
+      continue;
+    }
     push(it.t, it.t, `${kindLabel(it.kind)}${name ? ` — ${name}` : ""}`, `k|${it.kind}|${it.target ?? ""}`);
   }
   if (ep) {
@@ -363,11 +374,16 @@ export function buildStory(items: NarrativeItem[]): string[] {
 
 /** 한 줄 요약 — 만든 것·고친 것·비밀번호·자리 비움. */
 export function buildGist(items: NarrativeItem[]): string {
+  // 행동 기록이 없는 방문(머문 시간만 있는 세션) — "둘러보기만"이라 말하면 거짓이다.
+  if (items.length === 0) return "행동 기록 없음 — 머문 시간만 남음";
   const rows = [...items].sort((a, b) => a.t - b.t);
   const created = rows.filter((i) => i.kind === "event.create").map(itemName);
   const updated = new Set(rows.filter((i) => i.kind === "event.update").map((i) => i.target ?? ""));
   const updateN = rows.filter((i) => i.kind === "event.update").length;
   const deleted = rows.filter((i) => i.kind === "event.delete").length;
+  // 옮김·순서 바꿈도 변경이다(2026-09-28 소유자: "일정 이동했다면서 왜 바꾼 것 없음").
+  const moved = new Set(rows.filter((i) => i.kind === "event.move").map((i) => i.target ?? "")).size;
+  const reordered = rows.filter((i) => i.kind === "event.reorder").length;
   const gateSubmit = rows.filter((i) => i.kind === "ui.click" && i.target === "teaser-gate-submit").length;
   const gatePass = rows.filter((i) => i.kind === "gate.pass").length;
   let idle = 0;
@@ -379,6 +395,8 @@ export function buildGist(items: NarrativeItem[]): string {
   if (created.length) bits.push(`일정 ${created.length}개 만듦(${created.map((c) => `"${c}"`).join(", ")})`);
   if (updateN) bits.push(`일정 ${updated.size}개를 ${updateN}번 고침`);
   if (deleted) bits.push(`일정 ${deleted}개 지움`);
+  if (moved) bits.push(`일정 ${moved}개 다른 날로 옮김`);
+  if (reordered) bits.push(`같은 날 순서 ${reordered}번 바꿈`);
   if (gatePass || gateSubmit) {
     bits.push(`최초공개 비밀번호 확인 ${gatePass}번${gateSubmit > gatePass ? `(${gateSubmit - gatePass}번 틀림)` : ""}`);
   }

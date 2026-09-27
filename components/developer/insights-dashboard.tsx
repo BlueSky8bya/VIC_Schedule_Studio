@@ -217,9 +217,9 @@ export function VisitSummaryBlock({
     <div className="vsum">
       <div className="vsum-head">
         {/* 분리 배지 순서도 토글과 같게(운영진 → 시청자) — 눈이 두 줄을 오갈 때 자리가 맞아야 한다. */}
+        {/* 세션 수는 뺐다(2026-09-28 소유자: 좁은 폭에서 토글이 줄바꿈되지 않게) — 아래 KPI '세션' 칸이 말한다. */}
         <span className="vsum-split">
-          운영진 <b>{operator.visitors}</b>명 · 시청자 <b>{viewer.visitors}</b>명 · 세션{" "}
-          <b>{all.sessions}</b>회
+          운영진 <b>{operator.visitors}</b>명 · 시청자 <b>{viewer.visitors}</b>명
         </span>
         <div className="insights-subtabs vsum-toggle">
           {tabs.map((t) => (

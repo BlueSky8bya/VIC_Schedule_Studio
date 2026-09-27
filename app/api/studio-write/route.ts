@@ -39,7 +39,8 @@ export async function POST(request: Request) {
           await reorderEventsAction({
             dateKey: String(p.dateKey),
             orderedIds: (p.orderedIds ?? []) as string[],
-            movedId: typeof p.movedId === "string" ? p.movedId : undefined
+            movedId: typeof p.movedId === "string" ? p.movedId : undefined,
+            fromDateKey: typeof p.fromDateKey === "string" ? p.fromDateKey : undefined
           })
         );
       case "tags":

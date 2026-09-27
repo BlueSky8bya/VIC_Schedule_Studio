@@ -5397,14 +5397,15 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   border-left: 4px solid var(--tier-c);
   pointer-events: none;
 }
-/* Agenda already has a 10px category stripe: put the popularity rail in its
-   adjacent 9px gutter so both independent meanings remain visible. */
+/* 모바일 아젠다 — PC와 같은 문법: 카드(=관심 링, inset -3px -6px) 왼쪽 모서리가 두꺼워진다.
+   예전엔 태그 줄 옆 9px 홈에 3px 선을 따로 그었는데 "대충 그은 세로선"으로 읽혔다(2026-09-28 소유자).
+   링과 같은 기하(-3/-6, r9)에 border-left만 두껍게 → 모서리 곡선을 따라 한 덩어리로 보인다. */
 .agenda-event > .tier-signal {
-  inset: 0 auto 0 12px;
-  width: 3px;
-  border: 0;
-  border-radius: 3px;
-  background: var(--tier-c);
+  inset: -3px auto -3px -6px;
+  width: 0;
+  border-left: 5px solid var(--tier-c);
+  border-radius: 9px 0 0 9px;
+  background: none;
 }
 .tier-ring {
   position: absolute;
