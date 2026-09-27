@@ -6761,6 +6761,11 @@ html[data-reduce-motion] .drop-gap {
   outline: 2.5px dashed var(--teaser);
   outline-offset: 2px;
 }
+/* 선택된 동안은 떡밥 점선을 끈다 — 선택 링(::after 파랑 점선)과 같은 자리에 겹쳐 두 점선이 물렸다
+   (2026-09-27 소유자, 1안). 떡밥임은 ???·🔮·게이트 배지가 계속 말한다. */
+.studio-event-pill.teaser.primary-selected {
+  outline: none;
+}
 .pill-teaser {
   flex: 0 0 auto;
   font-size: calc(12px * var(--cal-zoom, 1));

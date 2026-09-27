@@ -71,7 +71,23 @@ export default async function VisualStudioFixture({
                   primaryTagIds: ["tag-big-server"],
                   sortOrder: 1,
                   linkNext: i < 2 ? `chain-${["08", "09", "10"][i + 1]}` : undefined
-                }))
+                })),
+                // 아직 안 풀린 떡밥 하나(6/12) — 떡밥 점선·선택 링 겹침 회귀 실측용.
+                {
+                  id: "fixture-teaser-studio",
+                  startsAt: "2026-06-12T20:00:00+09:00",
+                  endsAt: "2026-06-12T23:00:00+09:00",
+                  isAllDay: false,
+                  publicTitle: "떡밥 테스트",
+                  status: "scheduled" as const,
+                  visibilityScope: "public" as const,
+                  category: "stream" as const,
+                  tagIds: ["tag-big-server"],
+                  primaryTagIds: ["tag-big-server"],
+                  sortOrder: 1,
+                  teaser: true,
+                  teaserRevealAt: new Date(Date.now() + 86_400_000 * 3).toISOString()
+                }
               ]
             }
           : sampleStudioSchedule
