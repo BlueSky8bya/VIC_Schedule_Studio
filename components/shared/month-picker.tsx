@@ -80,7 +80,17 @@ export function MonthPicker({
   onPick: (ym: YM) => void;
   onClose: () => void;
 }) {
-  const [year, setYear] = useState(view.year);
+  const [year, setYearRaw] = useState(view.year);
+  // 해를 바꾸는 방향 — 연도 레일과 월 격자가 그 방향으로 미끄러진다(2026-09-28 소유자: 숫자만 바뀌니
+  // 내가 누른 대로 움직였는지 모르겠다). 이웃 해가 레일에 같이 보여 '어디로 가는지'도 읽힌다.
+  const [dir, setDir] = useState<"prev" | "next" | "jump">("jump");
+  const setYear = (next: number | ((y: number) => number)) => {
+    setYearRaw((y) => {
+      const n = typeof next === "function" ? next(y) : next;
+      setDir(n < y ? "prev" : n > y ? "next" : "jump");
+      return n;
+    });
+  };
   const panelRef = useRef<HTMLDivElement>(null);
   // 연도는 제한 없이 오간다. 오늘 해로 한 번에 돌아오는 칩만 둔다(멀리 갔을 때).
   const canPrevYear = true;
@@ -127,7 +137,7 @@ export function MonthPicker({
   const popStyle: CSSProperties | undefined =
     !narrow && anchor
       ? {
-          left: Math.max(12, Math.min(window.innerWidth - 12 - 292, anchor.left + anchor.width / 2 - 146)),
+          left: Math.max(12, Math.min(window.innerWidth - 12 - 324, anchor.left + anchor.width / 2 - 162)),
           top: Math.min(window.innerHeight - 12 - 260, anchor.bottom + 8)
         }
       : undefined;
@@ -155,6 +165,8 @@ export function MonthPicker({
         style={popStyle}
       >
         {narrow ? <span aria-hidden="true" className="mp-grab" /> : null}
+        {/* 연도 레일 — 가운데 해가 크고, 양옆 이웃 해는 작고 흐리게. ‹ ›나 이웃 해를 누르면 레일이 그
+            방향으로 미끄러진다. 배지 대신 레일 자체가 '지금 어느 해인지·어디로 가는지'를 말한다. */}
         <div className="mp-year">
           <button
             aria-label="이전 해"
@@ -168,23 +180,33 @@ export function MonthPicker({
           >
             <ChevronLeft aria-hidden="true" size={18} strokeWidth={2.4} />
           </button>
-          <strong key={year}>
-            {year}년
-            {year !== today.year ? (
-              <button
-                className="mp-year-today"
-                data-act="mp-year-today"
-                onClick={() => {
-                  hapticTick();
-                  setYear(today.year);
-                }}
-                title="오늘 해로"
-                type="button"
-              >
-                {today.year}
-              </button>
-            ) : null}
-          </strong>
+          <div aria-live="polite" className="mp-rail" data-dir={dir} key={year}>
+            {[-2, -1, 0, 1, 2].map((d) => {
+              const y = year + d;
+              const cls = `mp-rail-y${d === 0 ? " is-cur" : Math.abs(d) === 1 ? " is-near" : " is-far"}${
+                y === today.year ? " is-today" : ""
+              }`;
+              return d === 0 ? (
+                <strong className={cls} key={d}>
+                  {y}년
+                </strong>
+              ) : (
+                <button
+                  aria-label={`${y}년으로`}
+                  className={cls}
+                  key={d}
+                  onClick={() => {
+                    hapticTick();
+                    setYear(y);
+                  }}
+                  tabIndex={-1}
+                  type="button"
+                >
+                  {y}
+                </button>
+              );
+            })}
+          </div>
           <button
             aria-label="다음 해"
             className="mp-year-btn"
@@ -198,7 +220,7 @@ export function MonthPicker({
             <ChevronRight aria-hidden="true" size={18} strokeWidth={2.4} />
           </button>
         </div>
-        <div className="mp-grid" onKeyDown={onGridKey} role="group" aria-label={`${year}년`}>
+        <div aria-label={`${year}년`} className="mp-grid" data-dir={dir} key={`g${year}`} onKeyDown={onGridKey} role="group">
           {months.map((ym) => {
             const out = false;
             const isCurrent = ym.year === view.year && ym.month === view.month;
@@ -222,6 +244,20 @@ export function MonthPicker({
             );
           })}
         </div>
+        {/* 올해에서 멀어졌을 때만 — 배지가 아니라 조용한 글자 링크. */}
+        {year !== today.year ? (
+          <button
+            className="mp-foot-link"
+            data-act="mp-year-today"
+            onClick={() => {
+              hapticTick();
+              setYear(today.year);
+            }}
+            type="button"
+          >
+            {today.year}년으로 돌아가기
+          </button>
+        ) : null}
       </div>
     </div>,
     document.body

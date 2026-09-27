@@ -99,7 +99,7 @@
   }
 }
 .mp-panel {
-  --mp-w: 292px;
+  --mp-w: 324px; /* 연도 레일 5칸(이웃 2·현재·이웃 2)이 잘리지 않는 폭 */
   display: grid;
   gap: 10px;
   padding: 12px;
@@ -151,45 +151,79 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
-.mp-year strong {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-  font-size: 16px;
+/* 연도 레일 — 5칸(이웃 2·현재·이웃 2). 가운데만 크고 진하다. 바뀔 때 레일 전체가 방향대로 미끄러진다. */
+.mp-rail {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto 1fr 1fr;
+  align-items: baseline;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 2px 0;
+}
+.mp-rail[data-dir="next"] {
+  animation: mp-rail-next var(--dur-3) var(--spring-smooth, var(--ease-enter)) both;
+}
+.mp-rail[data-dir="prev"] {
+  animation: mp-rail-prev var(--dur-3) var(--spring-smooth, var(--ease-enter)) both;
+}
+@keyframes mp-rail-next {
+  from { transform: translateX(22%); opacity: 0.35; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes mp-rail-prev {
+  from { transform: translateX(-22%); opacity: 0.35; }
+  to { transform: none; opacity: 1; }
+}
+.mp-rail-y {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0 2px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+  position: relative;
+  line-height: 1.2;
+}
+.mp-rail-y.is-cur {
+  font-size: 17px;
   font-weight: 900;
   letter-spacing: -0.01em;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-  animation: mp-num-in 0.26s var(--spring-bouncy, var(--ease)) both;
 }
-@keyframes mp-num-in {
-  from {
-    opacity: 0.3;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-/* 오늘 해로 — 멀리 갔을 때만 연도 옆에 작은 칩으로. */
-.mp-year-today {
-  appearance: none;
-  border: 1px solid var(--selection-border);
-  border-radius: var(--r-pill);
-  padding: 2px 8px;
-  background: var(--selection-fill);
-  color: var(--selection-border);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 900;
-  line-height: 1.3;
+.mp-rail-y.is-near {
+  font-size: 11.5px;
+  font-weight: 800;
+  opacity: 0.42;
   cursor: pointer;
-  animation: mp-num-in 0.26s var(--ease) both;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.mp-rail-y.is-far {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.16;
+  cursor: pointer;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.mp-rail-y.is-near:hover,
+.mp-rail-y.is-far:hover {
+  opacity: 0.85;
+}
+/* 올해 — 숫자 아래 작은 점(월 격자의 오늘 달 점과 같은 어휘). 배지는 없다. */
+.mp-rail-y.is-today::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--selection-border);
+  transform: translateX(-50%);
 }
 .mp-year-btn {
   display: inline-grid;
@@ -217,6 +251,20 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+}
+.mp-grid[data-dir="next"] {
+  animation: mp-grid-next var(--dur-3) var(--spring-smooth, var(--ease-enter)) both;
+}
+.mp-grid[data-dir="prev"] {
+  animation: mp-grid-prev var(--dur-3) var(--spring-smooth, var(--ease-enter)) both;
+}
+@keyframes mp-grid-next {
+  from { transform: translateX(14px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes mp-grid-prev {
+  from { transform: translateX(-14px); opacity: 0; }
+  to { transform: none; opacity: 1; }
 }
 .is-sheet .mp-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -248,9 +296,18 @@
   outline: 2px solid var(--selection-border);
   outline-offset: 1px;
 }
+/* 보고 있는 달 — 채운 알약(선택 색 바탕 + 흰 글자). 테두리 링보다 한눈에 잡힌다. */
 .mp-month.is-current {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
+  border-color: transparent;
+  background: var(--selection-border);
+  color: #fff;
+  box-shadow: 0 4px 12px rgb(var(--selection-rgb) / 28%);
+}
+.mp-month.is-current:hover:not(:disabled) {
+  background: var(--selection-border);
+}
+.mp-month.is-current .mp-today-dot {
+  background: #fff;
 }
 .mp-month:disabled {
   opacity: 0.28;
@@ -264,6 +321,28 @@
   height: 5px;
   border-radius: 50%;
   background: var(--selection-border);
+}
+
+/* 올해로 돌아가기 — 글자 링크. 멀리 갔을 때만 격자 아래 오른쪽에 조용히. */
+.mp-foot-link {
+  appearance: none;
+  justify-self: end;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--selection-border);
+  cursor: pointer;
+  opacity: 0.8;
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--selection-rgb) / 35%);
+  text-underline-offset: 3px;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.mp-foot-link:hover {
+  opacity: 1;
 }
 
 /* ── 오늘 플로팅(PC) — 오늘 달을 벗어나면 떠오르고, 돌아오면 가라앉는다 ── */
@@ -352,7 +431,8 @@
 
 html[data-reduce-motion] .mp-backdrop,
 html[data-reduce-motion] .mp-panel,
-html[data-reduce-motion] .mp-year strong,
+html[data-reduce-motion] .mp-rail,
+html[data-reduce-motion] .mp-grid,
 html[data-reduce-motion] .month-jump-toast {
   animation: none;
 }
