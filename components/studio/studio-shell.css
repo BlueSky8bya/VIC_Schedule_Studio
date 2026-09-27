@@ -7269,17 +7269,13 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   border-radius: inherit;
   pointer-events: none;
 }
-/* 이어진 체인(link-join-right)은 이웃 카드에 링이 없으니 다리(-9px)를 놓지 않고 이음변(0)에서 끊는다 —
-   다리를 놓으면 위아래 점선이 이웃 카드 위로 9px 더 뻗어 '오른쪽에 점선이 더 그어진' 것처럼 보였다
-   (2026-09-27 소유자). 같은 일정의 멀티데이 칸(span.no-right)은 양쪽 다 링이 있어 다리를 둔다. */
-.studio-event-pill.primary-selected.link-join-right::after {
-  right: 0;
-  border-right: 0;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
+/* 이음변에서 끊는다(0) — 연결 후보 링의 다리(-9px)는 안 놓는다. 이어진 체인은 이웃 카드에 링이 없어
+   다리 끝이 허공에 남았고(2026-09-27 소유자: "오른쪽에 점선이 더 그어진다"), 이어진 단일 일정도
+   `span.no-right` 클래스를 함께 달고 렌더되므로 멀티데이 규칙으로 갈라 잡을 수 없다(실측). 칸들은
+   margin -7px로 flush라 같은 일정의 멀티데이 세그먼트도 0에서 끊어 붙이면 틈이 없다. */
+.studio-event-pill.primary-selected.link-join-right::after,
 .studio-event-pill.primary-selected.span.no-right::after {
-  right: -9px;
+  right: 0;
   border-right: 0;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;

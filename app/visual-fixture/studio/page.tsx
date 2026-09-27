@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -51,7 +51,31 @@ export default async function VisualStudioFixture({
         role
       }}
       hasUnlockSession={false}
-      schedule={sampleStudioSchedule}
+      schedule={
+        // chain=1 → 6/8·6/9·6/10에 이어진 일정 셋(linkNext) 주입 — 체인 선택 링·이음변 회귀 실측용(2026-09-27).
+        sp?.chain === "1"
+          ? {
+              ...sampleStudioSchedule,
+              events: [
+                ...sampleStudioSchedule.events,
+                ...["08", "09", "10"].map((d, i) => ({
+                  id: `chain-${d}`,
+                  startsAt: `2026-06-${d}T20:00:00+09:00`,
+                  endsAt: `2026-06-${d}T23:00:00+09:00`,
+                  isAllDay: false,
+                  publicTitle: `체인 ${i + 1}일차`,
+                  status: "scheduled" as const,
+                  visibilityScope: "public" as const,
+                  category: "stream" as const,
+                  tagIds: ["tag-big-server"],
+                  primaryTagIds: ["tag-big-server"],
+                  sortOrder: 1,
+                  linkNext: i < 2 ? `chain-${["08", "09", "10"][i + 1]}` : undefined
+                }))
+              ]
+            }
+          : sampleStudioSchedule
+      }
       initialView={{ year: y, month: m }}
       initialViewerMode={viewer}
       initialNarrow={false}
