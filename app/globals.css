@@ -105,13 +105,14 @@
   --studio-silver: #f3f5f7;
   --studio-silver-line: #d7dde5;
   --studio-cell-calm: #eef2f6;
-  --selection-fill: var(--violet-soft);
-  /* 범위/칸 선택 음영의 색상 — 보라(--violet)에서 분리(2026-09-27). 최초공개(떡밥) 카드가 같은
-     보라라 '선택된 칸'과 '떡밥'이 한 색으로 읽혔다(소유자 지적). 시트식 선택 = 파랑. */
+  /* 선택 계열(칸 링·hover 채움·범위 음영·편집 중 일정 점선) — 보라(--violet)에서 분리(2026-09-27).
+     최초공개(떡밥) 카드·점선이 같은 보라라 '선택된 것'과 '떡밥'이 한 색으로 읽혔다(소유자 지적 ×2).
+     시트식 선택 = 파랑. 보라는 떡밥·무대·설정 강조에만 남긴다. */
   --selection-hue: #2f7fe0;
+  --selection-fill: #e6f0fc;
   --selection-overlay: var(--selection-hue);
   --selection-overlay-opacity: 0.14;
-  --selection-border: var(--violet);
+  --selection-border: var(--selection-hue);
   /* 브랜드 별칭(의미 명시용; 위 시맨틱 토큰과 동일 값) */
   --victory-yellow: var(--accent);
   --victory-green: var(--green);
@@ -297,7 +298,7 @@
     --status-success-fill: color-mix(in srgb, var(--status-success) 8%, var(--surface));
     --status-warning-fill: color-mix(in srgb, var(--status-warning) 8%, var(--surface));
     --status-danger-fill: color-mix(in srgb, var(--status-danger) 9%, var(--surface));
-    --selection-fill: color-mix(in srgb, var(--violet) 10%, var(--surface));
+    --selection-fill: color-mix(in srgb, var(--selection-hue) 10%, var(--surface));
     --selection-overlay: color-mix(in srgb, var(--selection-hue) 14%, transparent);
     --selection-overlay-opacity: 1;
   }
@@ -1331,8 +1332,8 @@ html[data-theme="dark"] {
   --studio-silver: #2b2926;
   --studio-silver-line: #423f39;
   --studio-cell-calm: #232220;
-  --selection-fill: #2a2244;
-  --selection-border: #9b81ff;
+  --selection-fill: #1e2b42;
+  --selection-border: #6aa8ff;
 
   /* 떠 있는 표면 — 다크에선 '흰 유리'가 아니라 **밝은 숯 유리**. 흰 알파를 그대로 두면 알약·칩이
      전부 허옇게 떠서 화면이 얼룩진다. */

@@ -7293,16 +7293,17 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
 .studio-event-pill.selected {
   background: rgb(250 204 21 / 12%);
 }
-/* 지금 편집 중인 카드 — 굵은 보라 실선. 편집 대상별 색 규율에 맞춘다:
-   신규(날짜 칸)=초록 점선 · 일정=보라 실선 · 업 도움=장미색 띠. 예전 노랑은 '오늘(골드)'과
-   가까워 무엇이 편집 중인지 색만으로 갈리지 않았다.
+/* 지금 편집 중인 카드 — 굵은 선택색 점선. 편집 대상별 색 규율에 맞춘다:
+   신규(날짜 칸)=초록 점선 · 일정=선택색(파랑) 점선 · 업 도움=장미색 띠. 예전 노랑은 '오늘(골드)'과
+   가까워 무엇이 편집 중인지 색만으로 갈리지 않았고, 그 뒤의 보라는 떡밥 점선(#7c6cf0)과
+   같은 색이라 '선택'과 '최초공개'가 갈리지 않았다(2026-09-27 소유자 지적).
    테두리는 no-left/no-right를 따르므로 이어진 쪽엔 선이 안 생기고 떨어진 쪽·위아래만 또렷하다. */
 .studio-event-pill.primary-selected {
-  /* 점선 — 편집 대상 표시는 모두 점선으로 통일한다(칸=초록 점선, 일정=보라 점선,
+  /* 점선 — 편집 대상 표시는 모두 점선으로 통일한다(칸=초록 점선, 일정=선택색 점선,
      업 도움=장미 점선). 실선은 '확정된 것', 점선은 '지금 손대는 중'이라는 구분. */
   border-color: transparent !important;
-  background: rgb(139 92 246 / 12%);
-  outline: 2.5px dashed var(--selection-border, #8b5cf6);
+  background: color-mix(in srgb, var(--selection-hue, #2f7fe0) 12%, transparent);
+  outline: 2.5px dashed var(--selection-border, #2f7fe0);
   outline-offset: -2px;
 }
 
