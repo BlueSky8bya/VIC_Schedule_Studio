@@ -5184,52 +5184,92 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* 진입 직후, 관심(인기) 단계별로 날짜 칸을 잠깐 부각 — 단계마다 다른 움직임으로 재미를 준다.
-   슬라이드가 끝난 뒤(딜레이) 한 번만 재생되고, .pop-intro가 사라지면(2.6초) 더는 안 뜬다. */
-.pop-intro .public-day[data-pop] {
-  z-index: 2; /* 애니메이션 중 이웃 칸 위로 살짝 떠 보이게 */
+/* 진입 직후, 관심(인기) 단계별 부각 — 2026-09-28 재설계(소유자: 칸이 통통 튀며 띠·이어지는 일정을 끊는
+   게 구렸다). 칸의 transform·z-index는 건드리지 않는다. 칸 안에 빛 한 겹(.pop-bloom, 실제 요소)만 두고:
+     ① 안쪽 헤어라인 링이 단계 색으로 스며들었다 진다(inset box-shadow)
+     ② 가운데서 따뜻한 빛이 피었다 진다(radial)
+     ③ 높은 단계(blaze·top)는 사선 광택 한 줄이 왼쪽→오른쪽으로 한 번 지나간다(빛만 움직인다)
+   단계가 오를수록 색이 따뜻해지고(주황→금) 조금 더 오래 머문다. 슬라이드가 끝난 뒤 한 번만. */
+.pop-bloom {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  overflow: hidden;
+  --pb-c: 255 150 60;
+  --pb-dur: 1.6s;
+  --pb-delay: 0.35s;
+  --pb-ring: 0.28;
+  --pb-glow: 0.16;
+  opacity: 0;
+  animation: pop-bloom var(--pb-dur) var(--ease-enter, cubic-bezier(0.05, 0.7, 0.1, 1)) var(--pb-delay) both;
+  background: radial-gradient(ellipse at 50% 42%, rgb(var(--pb-c) / var(--pb-glow)) 0%, transparent 62%);
+  box-shadow: inset 0 0 0 1.5px rgb(var(--pb-c) / var(--pb-ring));
 }
-.pop-intro .public-day[data-pop="warm"] {
-  animation: pop-warm 0.9s ease 0.35s both;
+.pop-bloom[data-pop="hot"] {
+  --pb-c: 255 120 40;
+  --pb-dur: 1.8s;
+  --pb-delay: 0.4s;
+  --pb-ring: 0.38;
+  --pb-glow: 0.2;
 }
-.pop-intro .public-day[data-pop="hot"] {
-  animation: pop-hot 0.95s ease 0.4s both;
+.pop-bloom[data-pop="blaze"] {
+  --pb-c: 255 96 32;
+  --pb-dur: 2s;
+  --pb-delay: 0.45s;
+  --pb-ring: 0.48;
+  --pb-glow: 0.24;
 }
-.pop-intro .public-day[data-pop="blaze"] {
-  animation: pop-blaze 1s ease 0.45s both;
+.pop-bloom[data-pop="top"] {
+  --pb-c: 240 176 24;
+  --pb-dur: 2.3s;
+  --pb-delay: 0.5s;
+  --pb-ring: 0.6;
+  --pb-glow: 0.28;
 }
-.pop-intro .public-day[data-pop="top"] {
-  animation: pop-top 1.15s cubic-bezier(0.3, 1.4, 0.5, 1) 0.5s both;
+@keyframes pop-bloom {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  70% { opacity: 0.85; }
+  100% { opacity: 0; }
 }
-/* 🔥 관심 — 은은한 글로우 한 번 */
-@keyframes pop-warm {
-  0%, 100% { box-shadow: none; }
-  45% { box-shadow: 0 0 0 3px rgb(255 150 60 / 35%); }
+/* 광택 — 얇은 사선 빛이 한 번 지나간다. 칸이 아니라 이 겹의 자식만 움직이므로 레이아웃·이웃 칸 무관. */
+.pop-bloom[data-pop="blaze"]::before,
+.pop-bloom[data-pop="top"]::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 46%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgb(255 255 255 / 0%) 30%,
+    rgb(255 255 255 / 55%) 50%,
+    rgb(255 255 255 / 0%) 70%,
+    transparent 100%
+  );
+  transform: translateX(-120%) skewX(-8deg);
+  animation: pop-sheen 1.1s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--pb-delay) + 0.35s) both;
 }
-/* 🔥🔥 높은 관심 — 글로우 + 살짝 커짐 */
-@keyframes pop-hot {
-  0%, 100% { box-shadow: none; transform: scale(1); }
-  40% { box-shadow: 0 0 0 4px rgb(255 120 40 / 45%); transform: scale(1.035); }
+.pop-bloom[data-pop="top"]::before {
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgb(255 244 200 / 0%) 30%,
+    rgb(255 244 200 / 70%) 50%,
+    rgb(255 244 200 / 0%) 70%,
+    transparent 100%
+  );
 }
-/* 🔥🔥🔥 폭발적 관심 — 주황 글로우 + 부르르 흔들림 */
-@keyframes pop-blaze {
-  0% { box-shadow: none; transform: translateX(0) rotate(0); }
-  15% { box-shadow: 0 0 0 4px rgb(255 90 30 / 50%); transform: translateX(-4px) rotate(-1deg); }
-  32% { transform: translateX(4px) rotate(1deg); }
-  50% { transform: translateX(-3px) rotate(-0.6deg); }
-  68% { transform: translateX(3px) rotate(0.6deg); }
-  100% { box-shadow: none; transform: translateX(0) rotate(0); }
+@keyframes pop-sheen {
+  from { transform: translateX(-120%) skewX(-8deg); }
+  to { transform: translateX(340%) skewX(-8deg); }
 }
-/* 👑 최고 인기 — 금빛 글로우 + 통통 튀어 오름 */
-@keyframes pop-top {
-  0% { box-shadow: none; transform: translateY(0) scale(1); }
-  30% {
-    box-shadow: 0 0 0 5px rgb(255 200 40 / 65%), 0 10px 26px rgb(240 170 20 / 38%);
-    transform: translateY(-9px) scale(1.06);
-  }
-  55% { transform: translateY(0) scale(1); }
-  72% { transform: translateY(-3px) scale(1.02); }
-  100% { box-shadow: none; transform: translateY(0) scale(1); }
+html[data-reduce-motion] .pop-bloom {
+  display: none;
 }
 
 .public-day {

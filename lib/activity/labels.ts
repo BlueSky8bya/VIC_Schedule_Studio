@@ -144,7 +144,8 @@ export function canonRouteTarget(target: string): string {
 }
 
 const ROUTE: Record<string, TargetLabel> = {
-  "/": { name: "공개 포스터", area: "시청자 화면", hint: "시청자가 보는 첫 화면" },
+  // '공개 포스터 열기'는 무슨 기능인지 안 읽혔다(2026-09-28 소유자) — 사용자 말로는 '공개 일정'.
+  "/": { name: "공개 일정", area: "시청자 화면", hint: "시청자가 보는 첫 화면" },
   "/replay/[date]": { name: "다시보기 페이지", area: "시청자 화면", hint: "/replay/<날짜> — 날짜마다 다른 주소지만 한 화면" },
   "/studio/ambient-art/[id]": { name: "아트 보드 항목 화면", area: "편집실", hint: "/studio/ambient-art/<자리> (개발자)" },
   "/studio": { name: "편집실", area: "편집실", hint: "일정을 짜는 달력 화면" },
@@ -600,7 +601,7 @@ const AUTO: Record<string, TargetLabel> = {
     hint: "복제·삭제·뒤집기 등이 합쳐진 옛 기록 (지금은 버튼별로 따로 셉니다)"
   },
   ".public-event": {
-    name: "일정 카드(공개 포스터)",
+    name: "일정 카드(공개 일정)",
     area: "시청자 화면",
     hint: "포스터의 일정 카드 전체가 합쳐진 값 (최초공개 열기는 '최초공개 카드 열기'로 따로 셉니다)"
   },

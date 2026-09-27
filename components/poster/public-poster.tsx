@@ -2928,6 +2928,10 @@ export function PublicPoster({
             : undefined
         }
       >
+        {/* 진입 부각(관심 단계) — 칸 자체는 절대 안 움직인다(scale/translate는 기간 안내 띠·이어지는
+            일정을 이웃 칸과 끊어 놓았다, 2026-09-28 소유자). 대신 빛 한 겹(.pop-bloom)이 칸 위에서
+            피었다 진다. 가상요소는 today/outside가 이미 쓰므로 실제 요소. popIntro가 끝나면 DOM에서 빠진다. */}
+        {popIntro && popTier ? <span aria-hidden="true" className="pop-bloom" data-pop={popTier} /> : null}
         {/* 호버 ▶ 배지 — 가상요소를 쓰면 outside 베일·today 링(::after)과 슬롯이 충돌해
             좌상단으로 튄다(실측). 실제 요소 + hover 표시로. 비인터랙티브(포스터/캡쳐)에선
             cellVods가 없어 DOM 자체가 없다. */}
