@@ -19,7 +19,7 @@
   grid-auto-columns: minmax(0, 1fr);
   gap: 4px;
   box-sizing: border-box;
-  border: 1px solid #ece9f5;
+  border: 1px solid var(--studio-line);
   border-radius: 18px;
   background: #fff;
   padding: 6px;
@@ -45,7 +45,7 @@
   margin-top: 12px;
   padding: 6px;
   border-radius: var(--r-lg);
-  box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
+  box-shadow: 0 2px 10px rgb(17 24 39 / 8%);
   grid-auto-flow: row;
   grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
 }
@@ -107,14 +107,14 @@
 }
 /* 기능별 색조는 글자·아이콘에만(옛 틴트 칩의 색 코딩 유지, 면은 비워 조용히). */
 .stool-tags {
-  color: #4f3fbf;
+  color: var(--studio-action-text);
 }
 .stool-search {
   color: #1d5fb0;
 }
 .stool-search.open {
-  background: rgb(53 100 224 / 12%);
-  border-color: rgb(53 100 224 / 32%);
+  background: rgb(var(--studio-action-rgb) / 12%);
+  border-color: rgb(var(--studio-action-rgb) / 32%);
 }
 .stool-members {
   color: #0b7a68;
@@ -123,11 +123,11 @@
   color: #1f6cba;
 }
 .stool-kbd {
-  color: #5b4bd0;
+  color: var(--studio-action-text);
 }
 .stool-kbd.open {
-  background: rgb(124 108 240 / 12%);
-  border-color: rgb(124 108 240 / 32%);
+  background: rgb(var(--studio-action-rgb) / 12%);
+  border-color: rgb(var(--studio-action-rgb) / 32%);
 }
 /* 설정(톱니, 2026-09-04) — 멤버 관리 타일 자리. 슬레이트(금 잉크) 톤, 펼치면 물빛 테두리(단축키와 같은 문법). */
 .stool-settings {
@@ -590,7 +590,7 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
 .studio-role-tools {
   gap: 4px;
   padding: 6px;
-  border: 1px solid #ece9f5;
+  border: 1px solid var(--studio-line);
   border-radius: 18px;
   background: #fff;
   box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
@@ -771,7 +771,7 @@ html[data-studio-calm] .studio-role-tools {
   color: #0b7a68;
 }
 .studio-role-tools .actor-badge.developer {
-  color: #4f3fbf;
+  color: var(--studio-action-text);
 }
 .studio-role-tools .actor-badge strong {
   font-size: var(--text-body);

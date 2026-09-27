@@ -886,8 +886,8 @@ html[data-reduce-motion] .mb-live-dot {
 }
 /* 다시보기(0068) — 업도움(초록)과 같은 문법, 톤만 숲 파랑. 길이는 옅은 보조 글자. */
 .agenda-link.vod {
-  background: #e9f0fe;
-  color: #2455c9;
+  background: var(--studio-action-tint-hi);
+  color: var(--studio-action-strong);
 }
 /* 기간 안내(support_kind period) '자세히 보기' — 하늘색 띠와 같은 색 언어(정형화, globals .sb-period). */
 .agenda-link.period {
@@ -949,7 +949,7 @@ html[data-reduce-motion] .mb-live-dot {
    배지는 가상요소가 아니라 실제 span(.day-vod-hint) — ::after는 outside 베일·today 링이
    이미 쓰는 슬롯이라 충돌해 좌상단으로 튀었다(실측). */
 .public-day.has-vod:hover {
-  box-shadow: inset 0 0 0 2px rgb(93 139 244 / 30%);
+  box-shadow: inset 0 0 0 2px rgb(var(--studio-action-rgb) / 30%);
 }
 .day-vod-hint {
   position: absolute;
@@ -1231,8 +1231,8 @@ html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
 .dvm-railside-btn.on {
   opacity: 1;
   cursor: default;
-  background: var(--seg-on-accent, rgb(160 145 210 / 30%));
-  color: var(--seg-on-accent-ink, #5a4b7e);
+  background: var(--seg-on-accent, var(--seg-on-accent));
+  color: var(--seg-on-accent-ink, var(--seg-on-accent-ink));
   box-shadow: var(--seg-on-edge, inset 0 0 0 1px rgb(255 255 255 / 60%));
 }
 html[data-reduce-motion] .dvm-railside-btn { transition: none; }
@@ -1251,7 +1251,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
     transform var(--dur-1) var(--ease);
 }
 .dvm-close:hover {
-  background: #ece9f5;
+  background: var(--studio-line);
   transform: rotate(90deg);
 }
 .dvm-close:active { transform: scale(0.9); }
@@ -1432,7 +1432,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 }
 .dvm-thumb:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgb(53 100 224 / 24%);
+  box-shadow: 0 10px 22px rgb(var(--studio-action-rgb) / 24%);
 }
 .dvm-thumb:active { transform: scale(0.99); }
 .dvm-thumb img {
@@ -1543,7 +1543,7 @@ html[data-reduce-motion] .dvm-notice {
   color: #fff;
   transition: background-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
 }
-.dvm-ext:hover { background: rgb(53 100 224 / 85%); }
+.dvm-ext:hover { background: rgb(var(--studio-action-rgb) / 85%); }
 .dvm-ext:active { transform: scale(0.9); }
 .dvm-play {
   position: absolute;
@@ -1560,7 +1560,7 @@ html[data-reduce-motion] .dvm-notice {
   backdrop-filter: blur(2px);
   transition: background-color var(--dur-1) var(--ease);
 }
-.dvm-thumb:hover .dvm-play { background: rgb(53 100 224 / 80%); }
+.dvm-thumb:hover .dvm-play { background: rgb(var(--studio-action-rgb) / 80%); }
 .dvm-dur {
   position: absolute;
   right: 8px;
@@ -1584,7 +1584,7 @@ html[data-reduce-motion] .dvm-notice {
   text-decoration: none;
   transition: color var(--dur-1) var(--ease);
 }
-.dvm-title:hover { color: #3564e0; }
+.dvm-title:hover { color: var(--studio-action); }
 /* 합방 게스트 출연분(0075) — 제목 위 한 줄 배지 "합방 · ○○ 방송국": 다른 채널의 플레이어가 뜬다는 안내. 금 문법의 작은 칩. */
 /* 호스트 아이디가 있으면 칩이 방송국 링크 — 같은 모양에 눌림·호버만 더한다(2026-09-17). */
 a.dvm-host-link {
@@ -1733,7 +1733,7 @@ a.dvm-host-link:active {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.vch-sec-name:hover { color: #3564e0; }
+.vch-sec-name:hover { color: var(--studio-action); }
 .vch-sec-n {
   display: inline-grid;
   place-items: center;
@@ -1767,8 +1767,8 @@ a.dvm-host-link:active {
   transition: background-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
 .vch-sec-go:hover {
-  background: #e8efff;
-  color: #1d4ed8;
+  background: var(--studio-action-tint-hi);
+  color: var(--studio-action-strong);
 }
 .vch-sec-go:active { transform: scale(0.9); }
 /* (2026-09-04) 카드는 챕터 하나 = 카드 하나 — 8개 분절(옛 2열 배치 잔재)은 제거. sticky 헤더의 컨테이닝
@@ -1823,7 +1823,7 @@ a.dvm-host-link:active {
   bottom: 6px;
   width: 2.5px;
   border-radius: 999px;
-  background: #3564e0;
+  background: var(--studio-action);
   opacity: 0;
   transform: scaleY(0.3);
   transform-origin: center;
@@ -1831,10 +1831,10 @@ a.dvm-host-link:active {
     opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1),
     transform 0.34s cubic-bezier(0.22, 1.12, 0.36, 1);
 }
-.vch-item:hover { background: rgb(53 100 224 / 4%); }
+.vch-item:hover { background: rgb(var(--studio-action-rgb) / 4%); }
 .vch-item:hover::after { opacity: 0.85; transform: scaleY(1); }
-.vch-item:hover .vch-t { color: #1d4ed8; }
-.vch-item:active { transform: scale(0.995); background: rgb(53 100 224 / 8%); }
+.vch-item:hover .vch-t { color: var(--studio-action-strong); }
+.vch-item:active { transform: scale(0.995); background: rgb(var(--studio-action-rgb) / 8%); }
 .vch-item.is-active::after { opacity: 0; }
 html[data-reduce-motion] .vch-item::after { transition: none; }
 /* 지금 재생 중인 챕터(2026-09-03: 클릭뿐 아니라 **재생 위치를 따라 이동** — 유튜브 활성 챕터
@@ -1903,7 +1903,7 @@ html[data-reduce-motion] .vch-tip {
 }
 .vch-item.is-past .vch-t { color: #9aa6c7; }
 .vch-item.is-past .vch-label { color: #8a8a99; font-weight: 500; }
-.vch-item.is-past:hover .vch-t { color: #1d4ed8; }
+.vch-item.is-past:hover .vch-t { color: var(--studio-action-strong); }
 .vch-item.is-past:hover .vch-label { color: #33333f; }
 /* 카드 라운드를 항목 호버가 뚫지 않게 — 첫/끝 항목만 모서리를 물려받는다. */
 .vch-item:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
@@ -1914,7 +1914,7 @@ html[data-reduce-motion] .vch-tip {
   white-space: nowrap;
   font-size: 14px; /* 13→14(2026-09-03 가독성 ↑) */
   font-weight: 700;
-  color: #3564e0;
+  color: var(--studio-action);
   font-variant-numeric: tabular-nums;
   transition: color var(--dur-1) var(--ease);
 }
@@ -1998,9 +1998,9 @@ html[data-reduce-motion] .vch-tip {
 .ui-pill.is-tap:hover { color: #23303f; background: rgb(35 48 63 / 9%); }
 .ui-pill.is-tap:active { transform: scale(0.97); }
 .ui-pill.is-tap.is-on {
-  border-color: rgb(53 100 224 / 32%);
-  background: rgb(53 100 224 / 10%);
-  color: #1d4ed8;
+  border-color: rgb(var(--studio-action-rgb) / 32%);
+  background: rgb(var(--studio-action-rgb) / 10%);
+  color: var(--studio-action-strong);
 }
 html[data-reduce-motion] .ui-pill.is-tap { transition: none; }
 
@@ -2118,7 +2118,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
 .vch-strip:hover {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 90%),
-    inset 0 0 0 1px rgb(53 100 224 / 18%),
+    inset 0 0 0 1px rgb(var(--studio-action-rgb) / 18%),
     0 6px 18px rgb(29 29 41 / 8%);
 }
 /* ① 시간 눈금 */
@@ -6541,7 +6541,7 @@ html[data-reduce-motion] .slc-player img {
   .agenda-header:has(> .viewer-settings-open) .agenda-title { white-space: nowrap; }
 }
 .viewer-settings-open:hover {
-  color: #3564e0;
+  color: var(--studio-action);
   box-shadow: var(--shadow-3);
 }
 .viewer-settings-open:hover svg { transform: rotate(45deg); }
@@ -6638,7 +6638,7 @@ html[data-reduce-motion] .pi-backdrop {
 }
 /* 호버 시 90° 회전 — 일정 그림판 X(.bp-close)와 같은 아이패드식 손맛(전 X 버튼 통일). */
 .pi-close:hover {
-  background: rgb(var(--violet-rgb) / 12%);
+  background: rgb(var(--studio-action-rgb) / 12%);
   transform: rotate(90deg);
 }
 .pi-close:active {
@@ -7377,8 +7377,8 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
 }
 /* PC 팝오버의 다시보기 CTA — 업도움 초록 CTA와 같은 자리·모양, 숲 파랑 그라데이션. */
 .agenda-detail-backdrop.is-pop .agenda-link.vod {
-  background: linear-gradient(135deg, #5d8bf4, #3564e0);
-  box-shadow: 0 6px 16px rgb(53 100 224 / 26%);
+  background: linear-gradient(135deg, var(--studio-action), var(--studio-action));
+  box-shadow: 0 6px 16px rgb(var(--studio-action-rgb) / 26%);
 }
 /* 기간 안내 '자세히 보기' — 하늘색 그라데이션(띠와 같은 색 언어). */
 .agenda-detail-backdrop.is-pop .agenda-link.period {
@@ -7386,7 +7386,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   box-shadow: 0 6px 16px rgb(14 147 180 / 26%);
 }
 .agenda-detail-backdrop.is-pop .agenda-link.vod .agenda-vod-dur {
-  color: #dbe6ff;
+  color: var(--studio-action-tint);
   opacity: 1;
 }
 /* 닫기 — 원형 고스트 + 호버 90° 회전(앱 공통 X 손맛: .bp-close/.pi-close와 동일). */
@@ -8039,9 +8039,9 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
 }
 .ps-sheet {
   /* 시즌3(2026-09-18): 보라(rgb 124 108 240) 액센트 폐기 — 화면의 다른 어디에도 없는 색이라 혼자 튀었다.
-     상호작용은 파랑(#3564e0), '지금·기록'은 금(#d9a21b) — 달력·다시보기 창과 같은 두 색만 쓴다. */
-  --ps-accent: #3564e0;
-  --ps-accent-soft: rgb(53 100 224 / 9%);
+     상호작용은 파랑(var(--studio-action)), '지금·기록'은 금(#d9a21b) — 달력·다시보기 창과 같은 두 색만 쓴다. */
+  --ps-accent: var(--studio-action);
+  --ps-accent-soft: rgb(var(--studio-action-rgb) / 9%);
   --ps-gold: #d9a21b;
   --ps-line: rgb(35 48 63 / 8%);
   --ps-surface: #fffdf7;
@@ -8297,7 +8297,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   border-radius: 999px;
   background: transparent;
   padding: 0 10px;
-  color: var(--ps-accent, #3564e0);
+  color: var(--ps-accent, var(--studio-action));
   font: inherit;
   font-size: 12.5px;
   font-weight: 800;
@@ -8308,7 +8308,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
     border-color 0.2s var(--ease),
     transform 0.16s var(--ease);
 }
-.ps-chips-more:hover { background: var(--ps-accent-soft, rgb(53 100 224 / 9%)); }
+.ps-chips-more:hover { background: var(--ps-accent-soft, rgb(var(--studio-action-rgb) / 9%)); }
 .ps-chips-more:active { transform: scale(0.95); }
 .ps-chip {
   flex: none;
@@ -8334,8 +8334,8 @@ html[data-reduce-motion] .ps-chips { transition: none; }
 }
 .ps-chip:hover {
   transform: translateY(-1px);
-  border-color: rgb(53 100 224 / 32%);
-  color: #1d4ed8;
+  border-color: rgb(var(--studio-action-rgb) / 32%);
+  color: var(--studio-action-strong);
   background: #fff;
   box-shadow: 0 5px 12px -8px rgb(24 30 60 / 55%);
 }
@@ -8457,7 +8457,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   cursor: pointer;
   transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
-.ps-ext:hover { background: rgb(53 100 224 / 10%); color: #3564e0; }
+.ps-ext:hover { background: rgb(var(--studio-action-rgb) / 10%); color: var(--studio-action); }
 .ps-chip-visit { margin-left: 3px; opacity: 0.7; }
 .ps-chip-person em {
   margin-left: 5px;
@@ -8620,8 +8620,8 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   border-radius: 10px;
 }
 .ps-thumb {
-  color: #1d4ed8;
-  background: rgb(59 130 246 / 12%);
+  color: var(--studio-action-strong);
+  background: rgb(var(--studio-action-rgb) / 12%);
   box-shadow: 0 0 0 1px rgb(35 48 63 / 6%) inset;
 }
 .ps-thumb-event { position: relative; }
@@ -8773,12 +8773,12 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   font-variant-numeric: tabular-nums;
   font-size: 12px;
   font-weight: 900;
-  color: rgb(29 78 216 / 75%);
+  color: rgb(var(--studio-action-rgb) / 75%);
   transition: color var(--dur-1) var(--ease);
 }
 .ps-row:hover .ps-tc,
 .ps-row.is-cursor .ps-tc {
-  color: #1d4ed8;
+  color: var(--studio-action-strong);
 }
 .ps-chapter .ps-title {
   font-size: 13px;
@@ -8795,7 +8795,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   display: block;
   margin: 0 0 0 var(--ps-sub-rail);
   padding: 6px 0 2px var(--ps-sub-pad);
-  border-left: 2px solid rgb(53 100 224 / 45%);
+  border-left: 2px solid rgb(var(--studio-action-rgb) / 45%);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -8807,7 +8807,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-chapter-wrap.is-child .ps-chapter {
   margin-left: var(--ps-sub-rail);
   padding-left: var(--ps-sub-pad);
-  border-left: 2px solid rgb(53 100 224 / 45%);
+  border-left: 2px solid rgb(var(--studio-action-rgb) / 45%);
   border-radius: 0 9px 9px 0;
 }
 /* 묶음의 마지막 세부 항목에서 레일을 끝맺는다(아래로 새지 않게) — 다음 형제가 세부가 아니면 끝. */
@@ -8932,7 +8932,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-rail-dot.is-now::before {
   background: var(--ps-accent);
   transform: scale(2.1);
-  box-shadow: 0 0 0 3px rgb(53 100 224 / 18%);
+  box-shadow: 0 0 0 3px rgb(var(--studio-action-rgb) / 18%);
 }
 .ps-rail-dot:hover::before {
   transform: scale(1.8);

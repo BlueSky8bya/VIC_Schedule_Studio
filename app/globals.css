@@ -104,6 +104,9 @@
   --studio-action-line: #b9cfe9;
   --studio-silver: #f3f5f7;
   --studio-silver-line: #d7dde5;
+  /* 편집실 안쪽 헤어라인(카드·그리드·칩 테두리). 예전 라벤더 4종(#ece9f5·#e7e3f2·#e6e2f0·#ddd6ee)을
+     한 중립으로 — 편집실 전체가 은은히 보라라 상태색이 구분되지 않았다(ADR-0029 6번). */
+  --studio-line: #e4e6ea;
   --studio-cell-calm: #eef2f6;
   /* ── 색 의미 3족(2026-09-27 정돈, ADR-0029) ──────────────────────────────
      · 떡밥(최초공개) = --teaser-* 보라. 카드·점선·게이트·카운트다운 링·기대돼요 전용.
@@ -121,7 +124,7 @@
   --selection-rgb: var(--studio-action-rgb);
   --selection-fill: var(--studio-action-tint-hi);
   --selection-overlay: var(--selection-hue);
-  --selection-overlay-opacity: 0.14;
+  --selection-overlay-opacity: 0.2; /* 14%는 크림 위에서 회색으로 읽혔다(2026-09-27 실측) */
   --selection-border: var(--selection-hue);
   /* 브랜드 별칭(의미 명시용; 위 시맨틱 토큰과 동일 값) */
   --victory-yellow: var(--accent);
@@ -153,8 +156,8 @@
   --seg-on-edge: inset 0 0 0 1px rgb(255 255 255 / 60%);
   --seg-on-quiet: rgb(120 128 140 / 22%); /* 끔 — 회색 */
   --seg-on-quiet-ink: #4a505a;
-  --seg-on-accent: rgb(160 145 210 / 30%); /* 고름 — 보랏빛(아바타·흐리게 공용) */
-  --seg-on-accent-ink: #5a4b7e;
+  --seg-on-accent: rgb(var(--studio-action-rgb) / 16%); /* 고름 — 물빛(ADR-0029: 크롬 보라 철수, 보라는 떡밥만) */
+  --seg-on-accent-ink: var(--studio-action-text);
   --seg-off-op: 0.72;
   --text-label: 12.5px; /* 필드 라벨·범례·힌트 */
   --text-body: 13.5px; /* 본문·목록 */
@@ -309,7 +312,7 @@
     --status-warning-fill: color-mix(in srgb, var(--status-warning) 8%, var(--surface));
     --status-danger-fill: color-mix(in srgb, var(--status-danger) 9%, var(--surface));
     --selection-fill: color-mix(in srgb, var(--selection-hue) 10%, var(--surface));
-    --selection-overlay: color-mix(in srgb, var(--selection-hue) 14%, transparent);
+    --selection-overlay: color-mix(in srgb, var(--selection-hue) 20%, transparent);
     --selection-overlay-opacity: 1;
   }
 }
@@ -1276,6 +1279,7 @@ html[data-eye-comfort="lite"] {
   --studio-action-line: #becad7;
   --studio-silver: #f2f0eb;
   --studio-silver-line: #d7d8d8;
+  --studio-line: #e4e2de;
   --studio-cell-calm: #eeede9;
 }
 
@@ -1340,6 +1344,7 @@ html[data-theme="dark"] {
   --studio-action-line: #35506f;
   --studio-silver: #2b2926;
   --studio-silver-line: #423f39;
+  --studio-line: #3b3833;
   --studio-cell-calm: #232220;
 
   /* 떠 있는 표면 — 다크에선 '흰 유리'가 아니라 **밝은 숯 유리**. 흰 알파를 그대로 두면 알약·칩이
@@ -1352,8 +1357,8 @@ html[data-theme="dark"] {
 
   --seg-on-quiet: rgb(200 196 188 / 18%);
   --seg-on-quiet-ink: #cdc9c1;
-  --seg-on-accent: rgb(155 129 255 / 26%);
-  --seg-on-accent-ink: #c3b4ff;
+  --seg-on-accent: rgb(var(--studio-action-rgb) / 26%);
+  --seg-on-accent-ink: var(--studio-action-text);
 
   /* The same metal/glass controls serve studio, viewer and portalled windows. */
   --gs-metal-line: #494741;

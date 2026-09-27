@@ -64,8 +64,8 @@ html[data-reduce-motion] .broadcast-panel > * {
   height: 38px;
   border: 0;
   border-radius: 50%;
-  background: rgb(124 108 240 / 10%);
-  color: #5b4bd0;
+  background: rgb(var(--studio-action-rgb) / 10%);
+  color: var(--studio-action-text);
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
@@ -73,7 +73,7 @@ html[data-reduce-motion] .broadcast-panel > * {
     transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-close:hover {
-  background: rgb(124 108 240 / 18%);
+  background: rgb(var(--studio-action-rgb) / 18%);
   transform: rotate(90deg);
 }
 .bp-close:active {
@@ -111,7 +111,7 @@ html[data-reduce-motion] .bp-close:active {
   justify-content: center;
   width: 30px;
   height: 30px;
-  border: 1px solid rgb(124 108 240 / 30%);
+  border: 1px solid rgb(var(--studio-action-rgb) / 30%);
   border-radius: var(--r-pill);
   background: #ffffff;
   color: #4b4468;
@@ -119,7 +119,7 @@ html[data-reduce-motion] .bp-close:active {
   transition: background var(--dur-1) var(--ease);
 }
 .bp-month-nav:hover {
-  background: rgb(124 108 240 / 8%);
+  background: rgb(var(--studio-action-rgb) / 8%);
 }
 .bp-month-nav:active {
   transform: scale(0.94);
@@ -129,7 +129,7 @@ html[data-reduce-motion] .bp-close:active {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  border: 1px solid rgb(124 108 240 / 30%);
+  border: 1px solid rgb(var(--studio-action-rgb) / 30%);
   border-radius: var(--r-pill);
   background: #ffffff;
   color: #4b4468;
@@ -139,7 +139,7 @@ html[data-reduce-motion] .bp-close:active {
   transition: background var(--dur-1) var(--ease);
 }
 .bp-picker-toggle:hover {
-  background: rgb(124 108 240 / 8%);
+  background: rgb(var(--studio-action-rgb) / 8%);
 }
 .bp-picker-toggle:active {
   transform: scale(0.97);
@@ -172,7 +172,7 @@ html[data-reduce-motion] .bp-close:active {
   transform: scale(0.95);
 }
 .bp-send:disabled {
-  background: rgb(124 108 240 / 14%);
+  background: rgb(var(--studio-action-rgb) / 14%);
   color: rgb(91 75 208 / 45%);
   box-shadow: none;
   cursor: default;
@@ -241,7 +241,7 @@ html[data-reduce-motion] .bp-close:active {
   right: 5px;
   font-size: 11px;
   font-weight: 900;
-  color: #5b4bd0;
+  color: var(--studio-action-text);
 }
 /* 이미 판에 붙인 날짜 — 재전송 전에 상태를 알리고, 선택 체크와는 다른 위치·문자로 구분한다. */
 .bp-mini-cell.sent:not(.picked) {
@@ -253,7 +253,7 @@ html[data-reduce-motion] .bp-close:active {
   padding: 1px 4px;
   border-radius: var(--r-pill);
   background: rgb(var(--selection-rgb) / 12%);
-  color: #5b4bd0;
+  color: var(--studio-action-text);
   font-size: 9px;
   font-style: normal;
   font-weight: 900;
@@ -379,8 +379,8 @@ html[data-reduce-motion] .bp-close:active {
     transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-tool:hover:not(:disabled) {
-  background: rgb(124 108 240 / 10%);
-  color: #5b4bd0;
+  background: rgb(var(--studio-action-rgb) / 10%);
+  color: var(--studio-action-text);
 }
 .bp-tool:active:not(:disabled) {
   transform: scale(0.88);
@@ -494,7 +494,7 @@ body:has(.broadcast-panel) .tag-cpop {
     transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-width:hover {
-  background: rgb(124 108 240 / 10%);
+  background: rgb(var(--studio-action-rgb) / 10%);
 }
 .bp-width:active {
   transform: scale(0.88);
@@ -541,7 +541,7 @@ body:has(.broadcast-panel) .tag-cpop {
 .bp-command-status > span {
   padding: 3px 7px;
   border-radius: var(--r-pill);
-  background: rgb(124 108 240 / 9%);
+  background: rgb(var(--studio-action-rgb) / 9%);
   color: #6b5fd0;
   font-size: 10px;
   font-weight: 900;
@@ -597,8 +597,8 @@ body:has(.broadcast-panel) .tag-cpop {
     transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-command-button:hover:not(:disabled) {
-  border-color: rgb(124 108 240 / 36%);
-  background: rgb(124 108 240 / 8%);
+  border-color: rgb(var(--studio-action-rgb) / 36%);
+  background: rgb(var(--studio-action-rgb) / 8%);
 }
 .bp-command-button:active:not(:disabled) {
   transform: scale(0.96);
@@ -621,9 +621,9 @@ body:has(.broadcast-panel) .tag-cpop {
   color: #ffffff;
 }
 .bp-command-button.on {
-  border-color: rgb(124 108 240 / 45%);
-  background: rgb(124 108 240 / 12%);
-  color: #5b4bd0;
+  border-color: rgb(var(--studio-action-rgb) / 45%);
+  background: rgb(var(--studio-action-rgb) / 12%);
+  color: var(--studio-action-text);
 }
 /* 단축키 안내 — 그림판 도움말 레퍼런스: 키 → 동작 두 열. 커맨드 바 아래 플로팅 카드. */
 .bp-kbd-help {
@@ -683,8 +683,8 @@ html[data-reduce-motion] .bp-kbd-help {
     transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
 }
 .bp-kbd-close:hover {
-  background: rgb(124 108 240 / 10%);
-  color: #5b4bd0;
+  background: rgb(var(--studio-action-rgb) / 10%);
+  color: var(--studio-action-text);
   transform: rotate(90deg);
 }
 .bp-kbd-close:active {
@@ -1073,7 +1073,7 @@ html[data-reduce-motion] .bp-layer-item {
   border: 0;
   border-radius: var(--r-md);
   background: transparent;
-  color: #5b4bd0;
+  color: var(--studio-action-text);
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
@@ -1081,7 +1081,7 @@ html[data-reduce-motion] .bp-layer-item {
   color: var(--muted);
 }
 .bp-layer-btn:hover:not([aria-disabled="true"]) {
-  background: rgb(124 108 240 / 10%);
+  background: rgb(var(--studio-action-rgb) / 10%);
 }
 .bp-layer-btn:focus-visible {
   outline: 2px solid var(--violet);
@@ -1109,17 +1109,17 @@ html[data-reduce-motion] .bp-layer-item {
   justify-content: center;
   gap: 4px;
   padding: 8px 0;
-  border: 1.5px dashed rgb(124 108 240 / 45%);
+  border: 1.5px dashed rgb(var(--studio-action-rgb) / 45%);
   border-radius: var(--r-md);
-  background: rgb(124 108 240 / 6%);
-  color: #5b4bd0;
+  background: rgb(var(--studio-action-rgb) / 6%);
+  color: var(--studio-action-text);
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
 .bp-layer-add:hover {
-  background: rgb(124 108 240 / 14%);
+  background: rgb(var(--studio-action-rgb) / 14%);
 }
 .bp-layer-add:active {
   transform: scale(0.97);
@@ -1647,10 +1647,10 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border: 1px solid #ece9f5;
+  border: 1px solid var(--studio-line);
   border-radius: var(--r-card);
   background: #ffffff;
-  box-shadow: 0 4px 16px rgb(120 110 160 / 14%);
+  box-shadow: 0 4px 16px rgb(17 24 39 / 14%);
   /* 보내기 순간 '툭' 떨어져 자리 잡는 스프링 등장(아이패드 드롭 문법). 드래그는
      left/top만 만지므로 등장 keyframe(transform)과 충돌하지 않는다. */
   animation: bp-drop-in 0.28s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
@@ -1715,7 +1715,7 @@ html[data-reduce-motion] .bp-day-col {
   border-color: rgb(var(--selection-rgb) / 75%);
   box-shadow:
     0 0 0 2px rgb(var(--selection-rgb) / 35%),
-    0 4px 16px rgb(120 110 160 / 14%);
+    0 4px 16px rgb(17 24 39 / 14%);
 }
 /* 러버밴드(드래그 다중 선택) */
 /* 러버밴드 — 각진 1.5px 상자는 이 앱의 다른 표면(둥근 모서리·부드러운 그림자)과 따로 놀았다.
