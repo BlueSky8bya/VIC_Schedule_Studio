@@ -37,7 +37,11 @@ Date: 2026-09-27 KST. Authority: owner reported three times that the teaser (최
 - 잇기 모드 배너는 카드 링과 같은 선택 계열. 칸 범위 음영은 14%→20%(크림 위에서 회색으로 읽혔다).
 - 편집실 라벤더 중립 4종(`#ece9f5`·`#e7e3f2`·`#e6e2f0`·`#ddd6ee`)은 새 토큰 `--studio-line`(#e4e6ea, 눈 편한 #e4e2de,
   다크 #3b3833)으로, 라벤더 잉크 5단은 `--ink`/`--ink-soft`/`--muted`로, 보라 그림자 2종은 `--shadow-*`와 같은
-  `rgb(17 24 39 / α)` 베이스로 수렴(편집실 95곳). 남은 라벤더 단발 리터럴(~300)은 필요할 때 같은 표로 옮긴다.
+  `rgb(17 24 39 / α)` 베이스로 수렴(편집실 95곳).
+- 3차(같은 날 저녁): 남은 라벤더 단발 hex 127종·207곳도 명도·채도로 기계 분류해 토큰으로 —
+  L≥92 → `--studio-silver`, 80~92 → `--studio-line`, 60~80 → `--muted`(채도 40↑는 `--studio-action-line`),
+  40~60 → `--ink-soft`(채도 30↑는 `--studio-action-text`), <40 → `--ink`. 제외: 이용 기록 톤 점 `#a78bfa`,
+  색 트레이 디버그 `#0000ff`. 이제 studio-shell.css의 라벤더 계열 리터럴은 0.
 
 ## 규칙
 
