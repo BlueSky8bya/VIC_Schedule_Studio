@@ -22,7 +22,10 @@ export async function GET(req: Request) {
   };
   const limit = number("limit", 2, 10);
   const chunks = number("chunks", 60, 150);
-  const targets = await pickChatSyncTargets(limit);
+  // title=<title_no> — 특정 방송만(운영: 방금 올라온 다시보기를 바로 밀어 넣을 때). 없으면 큐가 고른다.
+  const forced = Number(url.searchParams.get("title") ?? "");
+  const targets =
+    Number.isFinite(forced) && forced > 0 ? [Math.floor(forced)] : await pickChatSyncTargets(limit);
   const result = await syncVodChat(targets, chunks);
   // 새 단어가 들어왔으면 **가벼운 것만** 다시 배운다(조각을 실제로 받았을 때만).
   // ⚠ search_term_graph_rebuild는 여기서 부르지 않는다(2026-09-19): 최적화 뒤에도 63초라

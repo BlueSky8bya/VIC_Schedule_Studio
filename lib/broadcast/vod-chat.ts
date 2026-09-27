@@ -241,8 +241,12 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
   let known: KnownPeople;
   try { known = await loadKnownPeople(db, deadline); }
   catch { return { ok: false, vods, chunks, messages }; }
-  for (const titleNo of [...new Set(titleNos)]) {
+  const list = [...new Set(titleNos)];
+  for (const [i, titleNo] of list.entries()) {
     if (budget <= 0 || Date.now() >= deadline - 1000) break;
+    // 시간 예산을 남은 대상 수로 나눈다(2026-09-27) — 안 나누면 첫 VOD(옛 백필)가 35초를 다 먹어
+    // 뒤의 대상(방금 올라온 방송)은 매 실행 손도 못 댔다(실측: 한 실행에 1~2개만 갱신).
+    const targetDeadline = Math.min(deadline, Date.now() + Math.floor((deadline - Date.now()) / (list.length - i)));
     const [archive, previous, labels] = await Promise.all([
       db.from("vod_archive").select("title,auth_no,broadcast_day").eq("title_no", titleNo)
         .abortSignal(AbortSignal.timeout(Math.max(1, deadline - Date.now()))).maybeSingle(),
@@ -254,8 +258,8 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
     if (archive.error || previous.error || labels.error) { ok = false; continue; }
     if (archive.data?.auth_no !== 101) continue;
     const prev = previous.data as ChatJob | null;
-    const remaining = deadline - Date.now() - 5000;
-    if (remaining <= 0) break;
+    const remaining = targetDeadline - Date.now() - 5000;
+    if (remaining <= 0) continue;
     const files = await fetchChatFiles(titleNo, Math.min(8000, remaining));
     const words = docWordSet([String(archive.data.title ?? ""),
       ...((labels.data ?? []) as { label: string }[]).map(r => r.label)]);
@@ -283,7 +287,7 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
         ? Array.from({ length: plan.length - state.cursor }, (_, i) => state.cursor + i)
         : [...state.missing];
       for (const index of pending) {
-        const timeLeft = deadline - Date.now() - 5000;
+        const timeLeft = targetDeadline - Date.now() - 5000;
         if (budget <= 0 || timeLeft <= 0) break;
         budget--; // failures consume budget as well
         const chunk = plan[index];
@@ -307,7 +311,7 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
         state.cursor = Math.max(state.cursor, index + 1);
         state.missing = state.missing.filter(n => n !== index);
         if (!fetched) state.missing.push(index);
-        if (Date.now() < deadline - 1200) await new Promise(r => setTimeout(r, 150));
+        if (Date.now() < targetDeadline - 1200) await new Promise(r => setTimeout(r, 150));
       }
     }
     const traversed = !!files?.length && plan.length > 0 && state.cursor >= plan.length;
