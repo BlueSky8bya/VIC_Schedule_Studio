@@ -103,6 +103,9 @@ export function MonthPicker({
     vx: 0
   });
   const flingTimers = useRef<number[]>([]);
+  // 끌기·관성 중엔 격자·레일의 등장 애니메이션을 끈다 — 해가 한 칸 넘어갈 때마다 격자가 새로 마운트되며
+  // 투명→불투명을 반복해 깜빡였다(2026-09-28 소유자: 피로감). 손으로 끄는 동안은 내용만 바뀌면 된다.
+  const [scrubbing, setScrubbing] = useState(false);
   const stopFling = () => {
     flingTimers.current.forEach((t) => window.clearTimeout(t));
     flingTimers.current = [];
@@ -112,6 +115,7 @@ export function MonthPicker({
   const onRailDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
     stopFling();
+    setScrubbing(true);
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { on: true, lastX: e.clientX, lastT: e.timeStamp, acc: 0, moved: 0, vx: 0 };
     e.currentTarget.classList.add("is-dragging");
@@ -143,7 +147,10 @@ export function MonthPicker({
     e.currentTarget.classList.remove("is-dragging");
     const v = d.vx; // px/ms
     const steps = Math.min(10, Math.round(Math.abs(v) * 9)); // 세게 던져도 10해까지 — 그 너머는 길을 잃는다
-    if (steps < 1) return;
+    if (steps < 1) {
+      setScrubbing(false);
+      return;
+    }
     const sign = v > 0 ? -1 : 1;
     let delay = 0;
     for (let i = 0; i < steps; i += 1) {
@@ -155,6 +162,8 @@ export function MonthPicker({
         }, delay)
       );
     }
+    // 마지막 관성 스텝이 끝나면 애니메이션 복귀.
+    flingTimers.current.push(window.setTimeout(() => setScrubbing(false), delay + 120));
   };
   // 끌었으면 놓는 자리의 이웃 해 클릭은 무시(끌기의 끝이 클릭으로 새지 않게).
   const onRailClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -228,7 +237,7 @@ export function MonthPicker({
       <div
         aria-label="월 선택"
         aria-modal="true"
-        className="mp-panel"
+        className={`mp-panel${scrubbing ? " is-scrubbing" : ""}`}
         // 피커가 떠 있는 동안은 키의 주인이다 — 밑의 ←/→(월 이동)·T(오늘) 전역 핸들러까지 안 간다
         // (React 17+의 stopPropagation은 루트 밖 native 리스너도 막는다).
         onKeyDown={(e) => e.stopPropagation()}

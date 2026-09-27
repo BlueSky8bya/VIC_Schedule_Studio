@@ -4309,11 +4309,23 @@ export function PublicPoster({
                               ) : null}
                               <g clipPath="url(#dt-leader-clip)">
                                 <g className="detail-anchor-flow">
+                                  {/* 안쪽 <g>: 기대돼요 혜성이 달리는 동안 점선을 같은 속도로 끌고 간다(hope-flow).
+                                      이동량은 무늬 주기 11px의 배수 — 끝나도 무늬가 튀지 않는다. key로 매번 다시 돈다. */}
+                                  <g
+                                    className="detail-anchor-dash"
+                                    key={hopeCast?.eventId === event.id ? `d${hopeCast.id}` : "idle"}
+                                    style={
+                                      {
+                                        "--hope-flow-dx": `${-Math.round((g.len * 0.9) / 11) * 11}px`
+                                      } as CSSProperties
+                                    }
+                                  >
                                   {/* 두 선은 굵기·간격이 고정이고 위 선의 opacity만 박동한다
                                       → 굵어졌다 밝아졌다 하는 인상을 컴포지터로만 만든다
                                       (stroke-width/dasharray 애니메이션은 매 프레임 paint). */}
                                   <line className="detail-anchor-base" x1={-11} x2={g.len + 11} y1={0} y2={0} />
                                   <line className="detail-anchor-pulse" x1={-11} x2={g.len + 11} y1={0} y2={0} />
+                                  </g>
                                 </g>
                               </g>
                             </g>
