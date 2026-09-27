@@ -1337,6 +1337,29 @@ html[data-reduce-motion] .act-skeleton span { animation-duration: 1ms;
 .scrollpos-label::before {
   content: "· ";
 }
+/* 방문 흐름(이야기) — 줄마다 목록 위에 카드 단위로 요약한 문장들(lib/activity/narrative.ts). */
+.act-story {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--studio-silver);
+  border: 1px solid var(--studio-line);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--text-caption);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.act-story li::first-line {
+  font-weight: 700;
+}
+.act-gist-open {
+  margin: 6px 0 0;
+  font-weight: 700;
+  color: var(--ink);
+}
 /* 일일 상세 머리줄의 자동 갱신 안내(멈춤이면 버튼으로 바뀐다) */
 .dayvisit-auto {
   color: var(--muted);

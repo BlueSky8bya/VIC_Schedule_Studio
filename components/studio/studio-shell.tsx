@@ -7441,6 +7441,11 @@ export function StudioShell({
             key={editorKey}
             /* Ctrl/⌘+Enter = 저장(2026-09-17 소유자) — 제목칸은 Enter가 줄바꿈이라 버튼까지 손이 갔다.
                폼 어느 칸에 커서가 있든 requestSubmit → 같은 onSubmit(검증·저장 경로 동일). */
+            onInput={() => {
+              // 여닫기 계측(typed): 모바일 시트에만 있었고 데스크톱 폼엔 빠져 있어 제목을 써도
+              // typed=false로 기록됐다(2026-09-27 리포트 실측). 같은 신호를 여기서도 남긴다.
+              editorTypedRef.current = true;
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.nativeEvent.isComposing) {
                 e.preventDefault();

@@ -7,6 +7,7 @@ import { ScrollPosition } from "@/components/developer/scroll-position";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
 import { describeTarget } from "@/lib/activity/labels";
 import { hapticTick } from "@/lib/ui/haptics";
+import { buildGist, buildStory, describeMeta } from "@/lib/activity/narrative";
 
 // 그날 행동 타임라인(0062) — 방문(탭) 단위로 묶어 무엇을 했는지 시각순으로 보여준다.
 // 개발자 전용. 서버가 개발자 여부를 다시 확인하므로 이 컴포넌트는 표시만 맡는다.
@@ -26,16 +27,7 @@ const ROLE_LABEL: Record<string, string> = {
   developer: "개발자"
 };
 
-// meta를 한 줄로 — 값이 몇 개 안 되고 전부 원시값이라(sanitizeMeta) 단순 나열이면 충분하다.
-// skip에 든 키는 뺀다: 화면에서는 이름 뒤에 이미 사람 말로 나온 값(날짜)을 두 번 쓰지 않는다.
-// 복사본은 skip 없이 부른다 — 붙여넣어 원인을 찾을 때는 원본이 다 있어야 한다.
-function metaLine(meta: Record<string, unknown> | null, skip?: ReadonlySet<string>): string {
-  if (!meta) return "";
-  return Object.entries(meta)
-    .filter(([k]) => !skip?.has(k))
-    .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(",") : String(v)}`)
-    .join(" · ");
-}
+// meta 번역은 lib/activity/narrative.ts describeMeta — 화면·복사본이 같은 말을 쓴다.
 // 이름 뒤에 붙여 보여주는 meta — 여기 든 키는 meta 줄에서 뺀다.
 const NAMED_META = new Set(["date"]);
 
@@ -262,10 +254,10 @@ export function ActivityTimeline({
         it.label + (it.repeat > 1 ? ` ×${it.repeat}` : ""),
         day ? `${name} · ${day}` : name,
         it.durMs ? fmtDur(Math.round(it.durMs / 1000)) : "",
-        metaLine(it.meta),
-        // 화면에선 숨기는 원본 id를 복사본에는 반드시 남긴다 — 붙여넣어 오류를 찾으려면
-        // (이름이 왜 저래? 왜 뭉쳤어?) 원본이 있어야 한다. 이름과 같으면 생략.
-        it.target && it.target !== name ? `[${it.kind} ${it.target}]` : `[${it.kind}]`
+        describeMeta(it.meta, NAMED_META),
+        // 원시 id는 이름이 없는 줄에만 — 관리자가 읽는 리포트라 kind/target 표기는 안 쓴다(2026-09-27 소유자).
+        // 개발자가 원본이 필요하면 화면 줄의 툴팁(itemTitle)과 아래 '기술 정보'의 미등록 목록을 본다.
+        !name && it.target ? `(이름 미등록: ${it.target})` : ""
       ].filter(Boolean);
       return "  " + parts.join("  ");
     });
@@ -293,26 +285,44 @@ export function ActivityTimeline({
         else items = r.visits.flatMap((x) => x.items);
       }
     }
-    const env = [
-      `# VIC 이용 기록 리포트`,
-      `날짜 ${dateKey}${v ? "" : " (그날 전체)"}`,
-      v ? visitHead(v, items) : `방문 ${visits.length}건 · 항목 ${items.length}건`,
-      `진단 층 ${full ? "포함" : "없음(불러오기 실패)"} · 진단 보존 3일 / 일반 90일`,
-      // ⚠ 아래 세 줄은 **복사를 누른 이 기기**의 정보다. 기록된 방문의 기기가 아니다.
-      // 표시를 안 했더니 안드로이드 방문 리포트에 Windows UA가 찍혀 한 세션으로 읽혔다(실측).
-      // 방문의 기기는 위 방문 머리줄에 있다.
-      `— 아래는 복사한 기기(기록된 방문의 기기가 아님) —`,
-      typeof navigator !== "undefined" ? `복사한 브라우저 ${navigator.userAgent}` : "",
-      typeof window !== "undefined"
-        ? `복사한 화면 ${window.innerWidth}×${window.innerHeight} · ${window.location.origin}`
-        : "",
-      `복사 시각 ${new Date().toLocaleString("ko-KR")}`,
-      ""
-    ].filter(Boolean);
-    if (v) return [...env, ...visitLines(items)].join(NL);
+    // 리포트 순서: 머리 → 한 줄 요약 → 흐름(이야기) → 줄마다 → 기술 정보. 관리자가 위에서부터 읽고
+    // 개발자는 맨 아래만 본다. 원시 kind/meta 표기는 어디에도 없다(2026-09-27 소유자: "어떻게 해석해").
+    const techFoot = (all: Item[]): string[] => {
+      const unnamed = new Map<string, number>();
+      for (const it of all) {
+        if (it.kind !== "ui.click" || !it.target) continue;
+        const d = describeTarget(it.kind, it.target);
+        if (d.unnamed) unnamed.set(it.target, (unnamed.get(it.target) ?? 0) + 1);
+      }
+      return [
+        "## 기술 정보 (문의할 때 함께)",
+        `진단 층 ${full ? "포함" : "없음(불러오기 실패)"} · 진단 보존 3일 / 일반 90일`,
+        // ⚠ 아래는 **복사를 누른 이 기기**의 정보다. 기록된 방문의 기기가 아니다(방문 기기는 머리줄).
+        // 표시를 안 했더니 안드로이드 방문 리포트에 Windows UA가 찍혀 한 세션으로 읽혔다(실측).
+        typeof navigator !== "undefined" ? `복사한 기기(기록된 방문의 기기 아님): ${navigator.userAgent}` : "",
+        typeof window !== "undefined"
+          ? `복사한 화면 ${window.innerWidth}×${window.innerHeight} · ${window.location.origin} · ${new Date().toLocaleString("ko-KR")}`
+          : "",
+        unnamed.size
+          ? `이름 미등록 버튼: ${[...unnamed.entries()].map(([t, n]) => `${t} ×${n}`).join(", ")}`
+          : ""
+      ].filter(Boolean);
+    };
+    const visitBlock = (x: ActivityVisit, its: Item[]): string[] => [
+      visitHead(x, its),
+      `요약: ${buildGist(its)}`,
+      "",
+      "흐름",
+      ...buildStory(its).map((l) => "  " + l),
+      "",
+      "줄마다",
+      ...visitLines(its)
+    ];
+    const head = [`# VIC 이용 기록 리포트 · ${dateKey}${v ? "" : " (그날 전체)"}`, ""];
+    if (v) return [...head, ...visitBlock(v, items), "", ...techFoot(items)].join(NL);
     // 그날 전체는 방문별로 나눠 적는다(뭉치면 어느 방문의 일인지 사라진다).
-    const byVisit = visits.map((x) => [visitHead(x, x.items), ...visitLines(x.items)].join(NL));
-    return [...env, ...byVisit].join(NL + NL);
+    const byVisit = visits.map((x) => visitBlock(x, x.items).join(NL));
+    return [...head, `방문 ${visits.length}건 · 항목 ${items.length}건`, "", ...byVisit.flatMap((blk) => [blk, ""]), ...techFoot(items)].join(NL);
   };
 
   const copy = async (text: string, key: string) => {
@@ -487,6 +497,14 @@ export function ActivityTimeline({
                 </button>
               </div>
               {isOpen ? (
+                <>
+                  {/* 흐름 — 카드 단위 이야기. 줄마다 목록은 그 아래(같은 서술 모듈, 복사본과 같은 말). */}
+                  <p className="act-gist act-gist-open">{buildGist(v.items)}</p>
+                  <ol className="act-story">
+                    {buildStory(v.items).map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ol>
                 <ol className="act-items">
                   {withDepth(rows).map(({ it, depth }, i) => {
                     const d = it.target ? describeTarget(it.kind, it.target) : null;
@@ -529,8 +547,8 @@ export function ActivityTimeline({
                           ) : null}
                           {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
                           {name ? <em className="act-kindq">{it.label}</em> : null}
-                          {metaLine(it.meta, NAMED_META) ? (
-                            <span className="act-meta">{metaLine(it.meta, NAMED_META)}</span>
+                          {describeMeta(it.meta, NAMED_META) ? (
+                            <span className="act-meta">{describeMeta(it.meta, NAMED_META)}</span>
                           ) : null}
                         </span>
                         {showArea ? <em className="act-area">{area}</em> : null}
@@ -541,6 +559,7 @@ export function ActivityTimeline({
                     );
                   })}
                 </ol>
+                </>
               ) : (
                 <p className="act-gist">{visitGist(v.items)}</p>
               )}
