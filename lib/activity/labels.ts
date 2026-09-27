@@ -134,8 +134,19 @@ const SPLIT_BASES = new Set([
 ]);
 const RETIRED_SECTIONS = new Set(["decorate"]);
 
+// 동적 조각이 든 화면 주소는 **하나의 화면**으로 접는다(2026-09-27 소유자: 적게 쓰인 기능에 /replay/2026-03-22,
+// /replay/2026-04-13 …이 날짜마다 1건씩 흩어져 목록을 덮었다). 집계(query.ts)와 이름 풀기가 같은 함수를 쓴다.
+export function canonRouteTarget(target: string): string {
+  if (/^\/replay\/\d{4}-\d{2}-\d{2}(?:[/?#].*)?$/.test(target)) return "/replay/[date]";
+  if (/^\/studio\/calendar\/\d{4}\/\d{1,2}(?:[/?#].*)?$/.test(target)) return "/studio/calendar";
+  if (/^\/studio\/ambient-art\/[^/?#]+(?:[/?#].*)?$/.test(target)) return "/studio/ambient-art/[id]";
+  return target;
+}
+
 const ROUTE: Record<string, TargetLabel> = {
   "/": { name: "공개 포스터", area: "시청자 화면", hint: "시청자가 보는 첫 화면" },
+  "/replay/[date]": { name: "다시보기 페이지", area: "시청자 화면", hint: "/replay/<날짜> — 날짜마다 다른 주소지만 한 화면" },
+  "/studio/ambient-art/[id]": { name: "아트 보드 항목 화면", area: "편집실", hint: "/studio/ambient-art/<자리> (개발자)" },
   "/studio": { name: "편집실", area: "편집실", hint: "일정을 짜는 달력 화면" },
   "/studio/calendar": { name: "편집실(달 바로가기)", area: "편집실", hint: "북마크로 특정 달에 바로 들어온 경우" },
   "/studio/decorate": { name: "꾸미기 화면", area: "옛 화면", hint: "스티커·배경을 꾸미는 화면" },
@@ -163,6 +174,7 @@ const SECTION: Record<string, TargetLabel> = {
   "modal:members": { name: "멤버 관리 창", area: "옛 화면", hint: "도구 카드 설정(톱니) → 멤버 관리 '열기'" },
   "modal:developer": { name: "월별 인사이트 창", area: "인사이트", hint: "관리 ▾ → 월별 인사이트" },
   "modal:dayVisit": { name: "이용 기록 창", area: "이용 기록", hint: "지금 보고 있는 이 창" },
+  "modal:settings": { name: "설정 창", area: "편집실", hint: "톱니 → 설정(테마·동작·배경)" },
   // 편집 카드 여닫기(2026-09-03 계측) — leave의 dur_ms=체류, meta.typed=입력 여부, meta.how=닫은 방법
   // (save/esc/outside/cell/collapse/other). "칸 361 vs 저장 176"이 둘러보기인지 포기인지 가르기 위함.
   editor: { name: "편집 카드", area: "편집실", hint: "날짜 칸·일정 카드를 눌러 연 편집 팝오버" },
@@ -667,8 +679,9 @@ export function describeTarget(kind: string, target: string): TargetLabel {
   const mark = (label: TargetLabel, retired: boolean): TargetLabel =>
     retired ? { ...label, retired: true } : label;
   if (kind === "route.enter" || kind === "route.leave") {
-    const hit = ROUTE[target] ?? { name: target, area: "기타", unnamed: true };
-    return mark(hit, RETIRED_ROUTES.has(target));
+    const key = canonRouteTarget(target);
+    const hit = ROUTE[key] ?? { name: target, area: "기타", unnamed: true };
+    return mark(hit, RETIRED_ROUTES.has(key));
   }
   if (kind === "section.enter" || kind === "section.leave") {
     const hit = SECTION[target] ?? { name: target, area: "기타", unnamed: true };

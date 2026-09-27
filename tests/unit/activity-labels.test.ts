@@ -277,3 +277,16 @@ describe("사전에만 남은 이름은 철수로 표시한다", () => {
     expect(orphans).toEqual([]);
   });
 });
+
+describe("동적 화면 주소는 한 화면으로 접힌다(2026-09-27)", () => {
+  it("다시보기·아트 보드·달 바로가기", async () => {
+    const { canonRouteTarget, describeTarget: d } = await import("@/lib/activity/labels");
+    expect(canonRouteTarget("/replay/2026-03-22")).toBe("/replay/[date]");
+    expect(canonRouteTarget("/replay/2026-03-22?part=2")).toBe("/replay/[date]");
+    expect(canonRouteTarget("/studio/ambient-art/cloud-high")).toBe("/studio/ambient-art/[id]");
+    expect(canonRouteTarget("/studio/calendar/2026/9")).toBe("/studio/calendar");
+    expect(canonRouteTarget("/studio")).toBe("/studio");
+    expect(d("route.enter", "/replay/2026-03-22").name).toBe("다시보기 페이지");
+    expect(d("route.enter", "/studio/ambient-art/moon-phase").unnamed).toBeUndefined();
+  });
+});

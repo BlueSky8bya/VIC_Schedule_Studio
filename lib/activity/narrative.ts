@@ -25,6 +25,8 @@ const HOW: Record<string, string> = {
   cell: "다른 칸 눌러 닫음",
   collapse: "접어서 닫음",
   x: "닫기 눌러 닫음",
+  outside: "바깥 눌러 닫음",
+  save: "저장하고 닫음",
   other: "닫음"
 };
 const MODE: Record<string, string> = { new: "새 일정", edit: "일정 수정" };
@@ -220,6 +222,8 @@ export function buildStory(items: NarrativeItem[]): string[] {
   };
 
   let ep: Episode | null = null;
+  // 편집 카드가 아닌 창(설정·태그·다시보기…)도 한 줄로 접는다: "설정 창 — 다크 모드 누름 → 닫음 (5초)".
+  let sec: { name: string; target: string; start: number; verbs: string[] } | null = null;
   let prevT: number | null = null;
   for (const it of rows) {
     // 틈 — 편집 카드 안이면 카드에 귀속, 밖이면 독립 줄.
@@ -267,6 +271,8 @@ export function buildStory(items: NarrativeItem[]): string[] {
         ep = null;
         continue;
       }
+      // 카드 위에서 이용 기록 창을 여닫은 손길은 카드 이야기가 아니다(보는 사람이 곧 그 사람).
+      if (it.target && /^(ui\.click|section\.(enter|leave))$/.test(it.kind) && describeTarget(it.kind, it.target).area === "이용 기록") continue;
       if (it.kind === "ui.click" && it.target) {
         if (it.target === "teaser-gate-submit") ep.gateSubmit += 1;
         else pushUniq(ep.verbs, editorVerb(it.target));
@@ -295,18 +301,42 @@ export function buildStory(items: NarrativeItem[]): string[] {
     if (it.kind === "ui.click" && it.target && /^month-(next|prev)$/.test(it.target)) continue; // month.change가 말한다
     if (it.kind === "gate.pass") continue; // 카드 밖에 찍힌 통과는 순서가 밀린 것 — 카드 줄이 이미 말한다
     if (it.kind.startsWith("diag.")) continue;
+    // 이용 기록 창 자체를 여닫은 손길(열기·펼치기·복사)은 이야기가 아니다 — 보는 사람이 곧 그 사람이다.
+    if (it.kind === "ui.click" && it.target && describeTarget("ui.click", it.target).area === "이용 기록") continue;
+    if (it.kind === "section.enter" && it.target && describeTarget("section.enter", it.target).area === "이용 기록") continue;
     flushBrowse();
     if (it.kind === "month.change") {
       push(it.t, it.t, `${String(it.target ?? "").replace(/^\d{4}-0?/, "")}월 달력 봄`);
       continue;
     }
     if (it.kind === "route.enter") {
-      push(it.t, it.t, `${itemName(it) || "다른 화면"}으로 이동`);
+      // '편집실으로' 같은 조사 오류를 피해 '화면으로 이동'으로 고정한다.
+      push(it.t, it.t, `${itemName(it) || "다른"} 화면으로 이동`, `route|${it.target ?? ""}`);
+      continue;
+    }
+    if (sec) {
+      if (it.kind === "section.leave" && it.target === sec.target) {
+        const dur = it.t > sec.start ? ` (${fmtDur(Math.round((it.t - sec.start) / 1000))})` : "";
+        push(sec.start, it.t, `${sec.name} 창 — ${sec.verbs.length ? sec.verbs.join(", ") : "둘러만 봄"} → 닫음${dur}`, `sec|${sec.target}|${sec.verbs.join("|")}`);
+        sec = null;
+        continue;
+      }
+      if (it.kind === "ui.click" && it.target) {
+        const d = describeTarget("ui.click", it.target);
+        // 창을 닫는 X 같은 손길은 '→ 닫음'이 이미 말한다.
+        if (!d.unnamed && !/닫기|닫음/.test(d.name)) pushUniq(sec.verbs, `${d.name} 누름`);
+        continue;
+      }
+      if (it.source === "server") pushUniq(sec.verbs, `${kindLabel(it.kind)}${itemName(it) ? ` ${itemName(it)}` : ""}`);
       continue;
     }
     if (it.kind === "route.leave" || it.kind === "section.leave") continue;
     if (it.kind === "section.enter") {
-      push(it.t, it.t, `${itemName(it) || "창"} 엶`);
+      // 창을 연 그 클릭('설정 열기 누름')은 창 줄이 대신 말한다 — 직전 3초 안의 누름 줄이면 지운다.
+      const last = lines[lines.length - 1];
+      if (last && last.key.startsWith("click|") && it.t - last.end <= 3000) lines.pop();
+      const name = itemName(it) || (it.target ? describeTarget("section.enter", it.target).name : "") || "다른";
+      sec = { name, target: it.target ?? "", start: it.t, verbs: [] };
       continue;
     }
     if (it.kind === "ui.click") {
@@ -322,6 +352,7 @@ export function buildStory(items: NarrativeItem[]): string[] {
     ep.end = prevT ?? ep.start;
     push(ep.start, ep.end, episodeText(ep) + " (닫힘 기록 없음)");
   }
+  if (sec) push(sec.start, prevT ?? sec.start, `${sec.name} 창 — ${sec.verbs.length ? sec.verbs.join(", ") : "둘러만 봄"} (닫힘 기록 없음)`);
   flushBrowse();
 
   return lines.map((l) => {

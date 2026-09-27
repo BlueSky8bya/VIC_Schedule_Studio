@@ -1,10 +1,12 @@
 "use server";
 
 import { resolveCurrentActor } from "@/lib/auth/actor";
+import { isDeveloperOrFixture } from "@/lib/auth/fixture-dev";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails } from "@/lib/auth/config";
 import { accountHashOf } from "@/lib/insights/account-hash";
 import { ACTIVITY_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
+import { canonRouteTarget } from "@/lib/activity/labels";
 import { chooseHostVisit, type HostVisit } from "@/lib/activity/visit-attach";
 import { pruneActivity } from "@/lib/activity/retention";
 import { fetchAllRows } from "@/lib/db/paginate";
@@ -74,7 +76,7 @@ export async function getActivityDayAction(
   includeDiag = false
 ): Promise<ActivityDayResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
+  if (!isDeveloperOrFixture(actor)) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
@@ -316,7 +318,7 @@ export type UsageResult =
 // 오늘까지의 통계가 나오면 무엇을 보고 있는지 알 수 없다. anchor를 안 주면 오늘 기준.
 export async function getActivityUsageAction(days = 30, anchor?: string): Promise<UsageResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
+  if (!isDeveloperOrFixture(actor)) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   const supabase = createSupabaseAdminClient();
@@ -355,7 +357,8 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
 
   const acc = new Map<string, UsageRow>();
   const bump = (kind: string, target: string | null, role: string, n: number) => {
-    const t = target ?? "";
+    // 날짜·id가 든 화면 주소는 한 화면으로 접어 센다(/replay/<날짜> 30개 → 다시보기 페이지 1줄).
+    const t = kind.startsWith("route.") && target ? canonRouteTarget(target) : (target ?? "");
     // 대상이 없는 기록(옛 클라이언트가 target 없이 보낸 section.enter/ui.click 몇 건)은 '기능'이 아니다 —
     // '적게 쓰인 기능' 목록에 "(대상 없음)" 줄로 떠서 후보를 오염시켰다(2026-09-27 소유자 지적).
     if (!t) return;

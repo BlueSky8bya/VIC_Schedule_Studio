@@ -783,6 +783,11 @@ html[data-theme="dark"] .agenda-link { background: #293e2b; color: #b5db9f; }
 html[data-theme="dark"] :is(.agenda-link.vod, .agenda-detail-backdrop.is-pop .agenda-link.vod) { background: var(--studio-action-tint); color: var(--studio-action-text); }
 html[data-theme="dark"] .agenda-link.period { background: #283f49; color: #addeee; }
 html[data-theme="dark"] :is(.agenda-link.vod .agenda-vod-dur, .agenda-detail-backdrop.is-pop .agenda-link.vod .agenda-vod-dur) { color: #9ab6eb; }
+/* 모바일 업 도움/기간 안내 행의 '수정' 버튼 — 흰 리터럴이 밤에 그대로 떠 있었다(2026-09-27 소유자). */
+html[data-theme="dark"] .m-support-edit { background: var(--surface); border-color: var(--night-line); color: var(--ink-soft); }
+html[data-theme="dark"] .m-support-edit:active { background: var(--night-hover); }
+/* 공휴일 표식(지방선거·현충일) — 연분홍 알약이 어두운 행 위에서 튀었다. 뜻(빨강)은 두고 면만 어둡게. */
+html[data-theme="dark"] .agenda-mark.holiday { background: rgb(255 138 128 / 14%); border-color: rgb(255 138 128 / 35%); color: #ff9b94; }
 html[data-theme="dark"] .agenda-event .event-heart { color: #d5c9c2; }
 html[data-theme="dark"] .agenda-event .event-heart.on { color: #ff9cb7; }
 

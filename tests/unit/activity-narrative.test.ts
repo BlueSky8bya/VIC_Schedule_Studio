@@ -80,3 +80,20 @@ describe("이용 기록 서술(narrative)", () => {
     expect(gist).toContain("자리 비움 48분");
   });
 });
+
+describe("편집 카드가 아닌 창도 한 줄로 접힌다", () => {
+  it("설정 창: 연 클릭은 지우고, 안에서 누른 것만 말하고, 닫힘까지", () => {
+    const t = Date.UTC(2026, 8, 27, 1, 4);
+    const rows: NarrativeItem[] = [
+      { t, kind: "ui.click", target: "open-settings", targetLabel: null, meta: null, durMs: null, source: "client" },
+      { t: t + 500, kind: "section.enter", target: "modal:settings", targetLabel: null, meta: null, durMs: null, source: "client" },
+      { t: t + 2000, kind: "ui.click", target: "다크 모드 켜기/끄기", targetLabel: null, meta: null, durMs: null, source: "client" },
+      { t: t + 4000, kind: "ui.click", target: "close-settings", targetLabel: null, meta: null, durMs: null, source: "client" },
+      { t: t + 5000, kind: "section.leave", target: "modal:settings", targetLabel: null, meta: null, durMs: 4500, source: "client" }
+    ];
+    const story = buildStory(rows);
+    expect(story).toHaveLength(1);
+    expect(story[0]).toMatch(/창 — .*누름 → 닫음 \(5초\)$/);
+    expect(story[0]).not.toContain("열기 누름");
+  });
+});

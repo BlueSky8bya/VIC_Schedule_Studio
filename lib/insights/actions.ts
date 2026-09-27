@@ -1,6 +1,7 @@
 "use server";
 
 import { resolveCurrentActor } from "@/lib/auth/actor";
+import { isDeveloperOrFixture } from "@/lib/auth/fixture-dev";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 import { canEditSchedule } from "@/lib/permissions/roles";
@@ -587,7 +588,7 @@ function ownerSessionsFrom(rows: SessionRow[]): OwnerSession[] {
 
 export async function getInsightsAction(year: number, month: number): Promise<InsightsResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
+  if (!isDeveloperOrFixture(actor)) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   const supabase = createSupabaseAdminClient();
@@ -980,7 +981,7 @@ function mergeVodFallback(sess: BcastRow[], vods: VodFallbackRow[]): BcastRow[] 
 // 트렌드 패널용 — 방문·컨텐츠의 최근 6개월 월별 추이. (하트 6개월은 getInsightsAction이 이미 줌.)
 export async function getTrendAction(year: number, month: number): Promise<TrendResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
+  if (!isDeveloperOrFixture(actor)) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   const supabase = createSupabaseAdminClient();
@@ -1318,7 +1319,7 @@ export async function getVisitTrendsAction(
   month: number
 ): Promise<VisitTrendsResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
+  if (!isDeveloperOrFixture(actor)) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   const supabase = createSupabaseAdminClient();
@@ -1603,7 +1604,7 @@ export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: fa
 
 export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisitDetailResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
+  if (!isDeveloperOrFixture(actor)) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {

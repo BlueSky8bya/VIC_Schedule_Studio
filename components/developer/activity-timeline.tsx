@@ -500,11 +500,21 @@ export function ActivityTimeline({
                 <>
                   {/* 흐름 — 카드 단위 이야기. 줄마다 목록은 그 아래(같은 서술 모듈, 복사본과 같은 말). */}
                   <p className="act-gist act-gist-open">{buildGist(v.items)}</p>
+                  {/* 시각 | 문장 두 칸 — 한 줄에 붙여 두면 벽처럼 읽혔다(2026-09-27 실물). */}
                   <ol className="act-story">
-                    {buildStory(v.items).map((line, i) => (
-                      <li key={i}>{line}</li>
-                    ))}
+                    {buildStory(v.items).map((line, i) => {
+                      const cut = line.indexOf("  ");
+                      return (
+                        <li key={i}>
+                          <time>{cut > 0 ? line.slice(0, cut) : ""}</time>
+                          <span>{cut > 0 ? line.slice(cut + 2) : line}</span>
+                        </li>
+                      );
+                    })}
                   </ol>
+                {/* 줄마다 목록은 접어 둔다 — 흐름이 답이고, 줄은 근거를 찾을 때만 편다. */}
+                <details className="act-lines">
+                  <summary>줄마다 보기 · {rows.length}줄</summary>
                 <ol className="act-items">
                   {withDepth(rows).map(({ it, depth }, i) => {
                     const d = it.target ? describeTarget(it.kind, it.target) : null;
@@ -559,6 +569,7 @@ export function ActivityTimeline({
                     );
                   })}
                 </ol>
+                </details>
                 </>
               ) : (
                 <p className="act-gist">{visitGist(v.items)}</p>
