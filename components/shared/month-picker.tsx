@@ -139,13 +139,19 @@ export function MonthPicker({
       d.acc += RAIL_STEP;
       setYear((y) => y + 1);
     }
+    // 레일이 손가락을 따라온다(2026-09-28 소유자: 글자만 바뀌면 바꾸는 느낌이 없다). 한 스텝(32px) = 슬롯
+    // 한 칸 폭이 되게 비율을 맞춰, 해가 넘어가며 내용이 한 칸 이동하는 순간 이동량이 되감겨 끊김 없이 이어진다.
+    const pitch = e.currentTarget.getBoundingClientRect().width / 5;
+    e.currentTarget.style.setProperty("--rail-dx", `${(d.acc * pitch) / RAIL_STEP}px`);
   };
   const onRailUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d.on) return;
     d.on = false;
     e.currentTarget.classList.remove("is-dragging");
-    const v = d.vx; // px/ms
+    e.currentTarget.style.setProperty("--rail-dx", "0px"); // 놓으면 가까운 칸으로 스냅(transition)
+    // 멈춘 채로 놓으면 던진 게 아니다 — 마지막 움직임에서 80ms 넘게 지났으면 속도 0.
+    const v = e.timeStamp - d.lastT > 80 ? 0 : d.vx; // px/ms
     const steps = Math.min(10, Math.round(Math.abs(v) * 9)); // 세게 던져도 10해까지 — 그 너머는 길을 잃는다
     if (steps < 1) {
       setScrubbing(false);
@@ -334,18 +340,21 @@ export function MonthPicker({
             );
           })}
         </div>
-        {/* 올해에서 멀어졌을 때만 — 배지가 아니라 조용한 글자 링크. */}
-        {year !== today.year ? (
+        {/* 오늘 달로 — 연도만 되감는 게 아니라 곧장 이번 달을 고른다(2026-09-28 소유자). 격자 폭을 다 쓰는
+            버튼 하나. 이미 이번 달을 보고 있고 그 해에 있을 때만 숨긴다. */}
+        {!(year === today.year && view.year === today.year && view.month === today.month) ? (
           <button
-            className="mp-foot-link"
-            data-act="mp-year-today"
+            className="mp-today-btn"
+            data-act="mp-today"
             onClick={() => {
               hapticTick();
-              setYear(today.year);
+              onPick(today);
             }}
             type="button"
           >
-            {today.year}년으로 돌아가기
+            <CalendarCheck aria-hidden="true" size={16} strokeWidth={2.4} />
+            <span>오늘로</span>
+            <em>{ymLabel(today)}</em>
           </button>
         ) : null}
       </div>
