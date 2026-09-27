@@ -498,6 +498,25 @@ html[data-theme="dark"] :is(.agenda-tier-key, .heart-tier-legend, .agenda-legend
 }
 html[data-theme="dark"] :is(.editor-date-inline, .editor-heading, .me-row-label, .me-grouptitle,
   .me-fold-head, .me-tool, .bp-layer-meta, .bp-layers-head) { color: var(--ink-soft); }
+/* 모바일 편집 시트 '이용 기록'·데스크톱 폼 아래 보조 버튼 — 크림 리터럴 배경이 밤에 그대로 떠 있었다
+   (2026-09-27 소유자 지적). */
+html[data-theme="dark"] :is(.me-tool, .aux-open) {
+  background: var(--surface); border-color: var(--night-line); color: var(--ink-soft);
+}
+html[data-theme="dark"] :is(.me-tool, .aux-open):active { background: var(--night-hover); }
+/* 개발자 '미리보기' 드롭다운 — 바닥 레일 트리거는 .m-actionrail .preview-dd-trigger(0,2,0)가
+   슬레이트 리터럴을 박아 위 :is(.m-io-pill) 규칙이 못 닿았다. 메뉴 항목 hover/active도 밤 색으로. */
+html[data-theme="dark"] .preview-dd-trigger,
+html[data-theme="dark"] .m-actionrail .preview-dd-trigger {
+  background: var(--surface); border-color: var(--night-line); color: var(--ink-soft);
+}
+html[data-theme="dark"] .m-actionrail .preview-dd-trigger:active { background: var(--night-hover); }
+html[data-theme="dark"] .preview-dd-trigger.previewing {
+  background: var(--seg-on-accent); border-color: var(--violet); color: var(--seg-on-accent-ink);
+}
+html[data-theme="dark"] .preview-dd-item { color: var(--ink-soft); }
+html[data-theme="dark"] .preview-dd-item:hover { background: var(--night-hover); }
+html[data-theme="dark"] .preview-dd-item.active { background: var(--seg-on-accent); color: var(--seg-on-accent-ink); }
 html[data-theme="dark"] .editor-title-ce { color: var(--ink); }
 html[data-theme="dark"] .auth-page { background: var(--paper); }
 html[data-theme="dark"] :is(.auth-panel, .auth-panel-login, .auth-minimal, .auth-error-card, .auth-warning) {

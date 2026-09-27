@@ -2975,8 +2975,11 @@ body.cell-range-dragging {
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  /* 채움만 — 칸마다 테두리를 그리면 붙은 칸 사이가 이중선이 된다(시트처럼 통짜 음영). */
-  background: rgb(99 102 241 / 14%);
+  /* 채움만 — 칸마다 테두리를 그리면 붙은 칸 사이가 이중선이 된다(시트처럼 통짜 음영).
+     색은 편집실 .studio-day.cell-range-selected와 같은 토큰(한 기능=한 구현) — 예전 하드코딩
+     인디고가 떡밥 보라와 겹쳐 보였다. */
+  background: var(--selection-overlay);
+  opacity: var(--selection-overlay-opacity);
 }
 
 /* 페이지 좌우 여백(2026-09-19 소유자: "로그인 버튼도 달력도 오른쪽에 딱 달라붙어 있다").
@@ -4164,9 +4167,6 @@ p.agenda-sub.hope-badge {
   border-color: transparent;
   color: #fff;
   box-shadow: 0 3px 12px rgb(91 74 166 / 40%);
-}
-.detail-teaser .dt-hope b {
-  font-variant-numeric: tabular-nums;
 }
 html[data-reduce-motion] .detail-teaser .dt-orb {
   animation-duration: 1ms;

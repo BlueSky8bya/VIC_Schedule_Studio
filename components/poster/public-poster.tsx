@@ -4473,8 +4473,9 @@ export function PublicPoster({
                         onClick={() => toggleHope(event)}
                         type="button"
                        data-act="dt-hope">
+                        {/* 숫자는 안 보여준다(2026-09-27 소유자 결정) — 누르면 색만 바뀐다.
+                            집계는 서버에 그대로 남아 공개 후 "n명이 기다렸어요" 배지로만 쓴다. */}
                         {myHopeIds.has(event.id) ? "기대 중" : "기대돼요"}
-                        {hopeCountOf(event) > 0 ? <b>{hopeCountOf(event)}</b> : null}
                       </button>
                     </div>
                   ) : null}

@@ -106,7 +106,10 @@
   --studio-silver-line: #d7dde5;
   --studio-cell-calm: #eef2f6;
   --selection-fill: var(--violet-soft);
-  --selection-overlay: var(--violet);
+  /* 범위/칸 선택 음영의 색상 — 보라(--violet)에서 분리(2026-09-27). 최초공개(떡밥) 카드가 같은
+     보라라 '선택된 칸'과 '떡밥'이 한 색으로 읽혔다(소유자 지적). 시트식 선택 = 파랑. */
+  --selection-hue: #2f7fe0;
+  --selection-overlay: var(--selection-hue);
   --selection-overlay-opacity: 0.14;
   --selection-border: var(--violet);
   /* 브랜드 별칭(의미 명시용; 위 시맨틱 토큰과 동일 값) */
@@ -295,7 +298,7 @@
     --status-warning-fill: color-mix(in srgb, var(--status-warning) 8%, var(--surface));
     --status-danger-fill: color-mix(in srgb, var(--status-danger) 9%, var(--surface));
     --selection-fill: color-mix(in srgb, var(--violet) 10%, var(--surface));
-    --selection-overlay: color-mix(in srgb, var(--violet) 14%, transparent);
+    --selection-overlay: color-mix(in srgb, var(--selection-hue) 14%, transparent);
     --selection-overlay-opacity: 1;
   }
 }
@@ -1308,6 +1311,7 @@ html[data-theme="dark"] {
   --violet: #9b81ff;
   --violet-rgb: 155 129 255;
   --violet-soft: #2a2244;
+  --selection-hue: #6aa8ff;
   --pink: #ff7ba4;
   --pink-soft: #3a2029;
   --status-success-fill: var(--surface);
@@ -1380,8 +1384,10 @@ html[data-eye-comfort="lite"]:not([data-theme="dark"]) .studio-shell {
     linear-gradient(180deg, #fcf5f1 0%, #f4f2f1 100%);
   color: #2b2737;
 }
-html[data-eye-comfort="1"]:not([data-theme="dark"]) .public-event,
-html[data-eye-comfort="lite"]:not([data-theme="dark"]) .public-event {
+/* 떡밥(.teaser) 카드는 제외 — 이 규칙(0,3,0)이 .public-event.teaser(0,2,0)의 보라 그라데이션을
+   덮어 화이트 모드에서 ???·D-n이 회색 위 흰 글씨로 사라졌다(2026-09-27 소유자 지적). */
+html[data-eye-comfort="1"]:not([data-theme="dark"]) .public-event:not(.teaser),
+html[data-eye-comfort="lite"]:not([data-theme="dark"]) .public-event:not(.teaser) {
   background: #f2efea;
 }
 
