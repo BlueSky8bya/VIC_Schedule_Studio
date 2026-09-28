@@ -278,7 +278,18 @@ export function VodChapters({
     setLoading(true);
     (async () => {
       try {
-        const res = await fetch(`/api/public/${slug}/vod-timeline?titleNo=${titleNo}`);
+        // 12초 상한 + 한 번 재시도(2026-09-28): 서버가 DB 소켓에 300초씩 매달리던 동안 이 요청도 같이 매달려
+        // '불러오는 중…'이 영영 안 걷혔다(소유자: 다시보기 창 무한로딩). 서버 쪽은 guarded-fetch가 막고,
+        // 여기서는 손이 닿는 시간 안에 끝내고 안 되면 '다시 시도'로 넘긴다.
+        const load = () =>
+          fetch(`/api/public/${slug}/vod-timeline?titleNo=${titleNo}`, { signal: AbortSignal.timeout(12_000) });
+        let res: Response;
+        try {
+          res = await load();
+        } catch {
+          if (!alive) return;
+          res = await load();
+        }
         const json = (await res.json()) as PublicVodTimeline;
         if (!alive) return;
         if (Array.isArray(json.entries) && json.entries.length > 0) setTimeline(json);
@@ -489,7 +500,9 @@ export function VodChapters({
       {!open ? null : loading ? (
         <p className="vch-note">불러오는 중…</p>
       ) : failed || !timeline ? (
-        <p className="vch-note">챕터를 불러오지 못했어요.</p>
+        <button className="vch-note vch-retry" onClick={() => setFailed(false)} type="button">
+          챕터를 불러오지 못했어요 — 다시 시도
+        </button>
       ) : (
         /* 스크롤 래퍼는 목록과 분리 — 날짜 창(단일 방송)에선 이 래퍼만 흐르고 미리보기는 고정.
            columns를 스크롤 요소에 직접 걸면 높이 제한이 열 개수를 불리므로(가로 넘침) 분리 필수. */

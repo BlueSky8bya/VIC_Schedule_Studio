@@ -15,6 +15,7 @@ import type { PosterThemeKey } from "@/lib/domain/schedule-types";
 import { getCurrentKstYearMonth } from "@/lib/calendar/month";
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
+import { guardedFetch } from "@/lib/net/guarded-fetch";
 import { timed } from "@/lib/perf/perf";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -75,7 +76,9 @@ function createPublicReadClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
+    // 10초 상한 + 읽기 1회 재시도(lib/net/guarded-fetch.ts) — 포스터 SSR의 27%가 죽은 소켓에 305/600/906초
+    // 매달리던 사고(2026-09-28, perf_samples 실측).
+    { auth: { persistSession: false }, global: { fetch: guardedFetch } }
   );
 }
 

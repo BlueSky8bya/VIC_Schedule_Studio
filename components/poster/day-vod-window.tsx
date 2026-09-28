@@ -84,6 +84,8 @@ const VOD_SPACE_MIN_GAP_MS = 250;
 // 시동 직후의 명령은 플레이어를 0초 정지로 리셋하거나 명령 채널을 죽인다(실측: Pplay 0.4초 리셋,
 // Ppause 0.3초 → 정지 후 무반응). 그 전의 챕터 클릭은 재시동(새 첫 Pload)으로, Space는 무시.
 const VOD_SETTLE_MS = 800;
+// 시킹 감시창 — PseekTo 뒤 이 안에 목표 근처 timeUpdate가 없으면 다시 시동(2026-09-28).
+const VOD_SEEK_WATCHDOG_MS = 7_000;
 // 슬롯 식별자(`${titleNo}:${slot}`) — 같은 방송의 주/대기 iframe을 가르는 키(모듈 함수: 훅 deps 밖).
 function dayVodSlotKey(titleNo: number, slot: "a" | "b"): string {
   return `${titleNo}:${slot}`;
@@ -297,6 +299,11 @@ export function DayVodWindow({
   const dayVodStartingAtRef = useRef(new Map<number, number>());
   const dayVodSettledAtRef = useRef(new Map<number, number>()); // 현재 슬롯의 첫 timeUpdate 시각
   const dayVodSeekAtRef = useRef(new Map<number, number>()); // 마지막 PseekTo 시각(정지/재개 금지 창)
+  // 시킹 감시(2026-09-28): PseekTo 뒤 이 시간 안에 목표 근처 timeUpdate가 없으면 그 자리로 다시 시동한다 —
+  // 플레이어가 시킹을 조용히 떨어뜨리는 경우(구간 경계·광고·네트워크) 커버 없는 '무한로딩'을 없앤다.
+  const dayVodSeekWatchRef = useRef(new Map<number, number>());
+  const dayVodLastTuAtRef = useRef(new Map<number, number>()); // 마지막 timeUpdate 시각
+  const armDayVodSeekWatchRef = useRef<(titleNo: number, sec: number) => void>(() => {});
   const dayVodSettled = (titleNo: number) => {
     const at = dayVodSettledAtRef.current.get(titleNo);
     return at !== undefined && performance.now() - at > VOD_SETTLE_MS;
@@ -353,6 +360,9 @@ export function DayVodWindow({
     dayVodBootTimersRef.current.clear();
     for (const t of dayVodFlushTimersRef.current.values()) window.clearTimeout(t);
     dayVodFlushTimersRef.current.clear();
+    for (const t of dayVodSeekWatchRef.current.values()) window.clearTimeout(t);
+    dayVodSeekWatchRef.current.clear();
+    dayVodLastTuAtRef.current.clear();
     setDayVodStandbyOn(new Set());
     window.clearTimeout(dayVodNoticeTimerRef.current);
     setDayVodNotice(null);
@@ -445,6 +455,29 @@ export function DayVodWindow({
       }, VOD_BOOT_WATCHDOG_MS)
     );
   }, []);
+  // 시킹 감시 — PseekTo를 보낸 뒤 VOD_SEEK_WATCHDOG_MS 안에 목표 ±45초의 timeUpdate가 오지 않으면 대기 슬롯을
+  // 그 초부터 음소거로 승격해 다시 시동한다(한 번). 그 사이 정지했거나 새 시동이 시작됐으면 손대지 않는다.
+  const armDayVodSeekWatch = useCallback((titleNo: number, sec: number) => {
+    const old = dayVodSeekWatchRef.current.get(titleNo);
+    if (old) window.clearTimeout(old);
+    const seekAt = dayVodSeekAtRef.current.get(titleNo);
+    dayVodSeekWatchRef.current.set(
+      titleNo,
+      window.setTimeout(() => {
+        dayVodSeekWatchRef.current.delete(titleNo);
+        if (dayVodSeekAtRef.current.get(titleNo) !== seekAt) return; // 그 뒤 다른 시킹이 있었다
+        if (dayVodStartingAtRef.current.has(titleNo)) return; // 이미 다시 시동 중
+        if (dayVodPausedRef.current.has(titleNo)) return; // 사용자가 멈춘 것
+        const tuAt = dayVodLastTuAtRef.current.get(titleNo) ?? 0;
+        const cur = dayVodTimeRef.current.get(titleNo) ?? -1;
+        const landed = seekAt !== undefined && tuAt > seekAt && Math.abs(cur - sec) < 45;
+        if (landed) return;
+        showDayVodNoticeRef.current("이어서 불러오는 중…");
+        promoteDayVodStandbyRef.current(titleNo, sec, true);
+      }, VOD_SEEK_WATCHDOG_MS)
+    );
+  }, []);
+  armDayVodSeekWatchRef.current = armDayVodSeekWatch;
   // 자리잡는 순간, 그 사이에 쌓인 마지막 요청 위치로 한 번만 옮긴다(연타 → 시킹 한 번).
   const flushDayVodWantSec = useCallback((titleNo: number) => {
     const want = dayVodWantSecRef.current.get(titleNo);
@@ -458,6 +491,7 @@ export function DayVodWindow({
     if (!post) return;
     post({ cmd: "PseekTo", seconds: { time: want, seekType: "timelink" } });
     dayVodSeekAtRef.current.set(titleNo, performance.now());
+    armDayVodSeekWatchRef.current(titleNo, want);
     if (dayVodPausedRef.current.has(titleNo)) {
       dayVodPausedRef.current.delete(titleNo);
       post({ cmd: "Pplay" });
@@ -533,7 +567,7 @@ export function DayVodWindow({
     }
     dayVodWantSecRef.current.delete(titleNo);
     dayVodBootTryRef.current.delete(titleNo);
-    for (const map of [dayVodBootTimersRef.current, dayVodFlushTimersRef.current]) {
+    for (const map of [dayVodBootTimersRef.current, dayVodFlushTimersRef.current, dayVodSeekWatchRef.current]) {
       const timer = map.get(titleNo);
       if (timer) {
         window.clearTimeout(timer);
@@ -720,6 +754,7 @@ export function DayVodWindow({
         const cur = data.event?.currentTime;
         if (typeof cur === "number" && Number.isFinite(cur)) {
           dayVodTimeRef.current.set(titleNo, cur);
+          if (evType === "timeUpdate") dayVodLastTuAtRef.current.set(titleNo, performance.now());
           const subs = dayVodTimeSubsRef.current.get(titleNo);
           if (subs) for (const cb of subs) cb(cur);
         }
@@ -760,6 +795,7 @@ export function DayVodWindow({
       post({ cmd: "PseekTo", seconds: { time: sec, seekType: "timelink" } });
       dayVodSeekAtRef.current.set(titleNo, performance.now());
       notifyDayVodTime(titleNo, sec);
+      armDayVodSeekWatch(titleNo, sec);
       // 정지 중이면 시킹 직후 바로 재개(제자리 Pplay는 믿을 수 있는 원시 동작 — 플레이어 3.1.224
       // 실측 seek→Pplay gap 0도 정상). 지연 타이머를 두지 않아 연타 시 다음 PseekTo와 뒤섞이지
       // 않는다. 정지 상태는 낙관적으로 먼저 지운다(재생 중 Pplay는 위치가 튀므로 두 번 안 보내게).

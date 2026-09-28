@@ -3,6 +3,7 @@ import type { SetAllCookies } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { isSupabaseConfigured } from "@/lib/auth/config";
+import { guardedFetch } from "@/lib/net/guarded-fetch";
 
 export async function createSupabaseServerClient() {
   if (!isSupabaseConfigured()) {
@@ -15,6 +16,8 @@ export async function createSupabaseServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // 10초 상한 + 읽기 1회 재시도(lib/net/guarded-fetch.ts) — auth.getUser 등이 죽은 소켓에 300초씩 매달렸다.
+      global: { fetch: guardedFetch },
       cookies: {
         getAll() {
           return cookieStore.getAll();

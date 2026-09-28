@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isSupabaseServiceConfigured } from "@/lib/auth/config";
+import { guardedFetch } from "@/lib/net/guarded-fetch";
 
 // service-role 클라이언트는 '요청과 무관'하다 — 쿠키를 안 읽고(persistSession:false) 세션도 안 든다.
 // 그런데 호출마다 새로 만들면서 GoTrue/Postgrest/Realtime/Functions 클라이언트를 매번 새로 조립했다
@@ -19,7 +20,9 @@ export function createSupabaseAdminClient() {
       {
         auth: {
           persistSession: false
-        }
+        },
+        // 10초 상한 + 읽기 1회 재시도(lib/net/guarded-fetch.ts) — 죽은 keep-alive 소켓에 300초씩 매달리던 사고.
+        global: { fetch: guardedFetch }
       }
     );
   }

@@ -6,9 +6,9 @@
 # 원문·닉은 저장하지 않는다(단어 빈도만). CRON_SECRET 저장소 시크릿은 broadcast-poll과 같은 것을 쓴다.
 name: vod-chat-backfill
 
+# 2026-09-28: 정기 실행은 DB 안 pg_cron(vic-vod-chat, 5분)이 맡는다(0128). 여기 스케줄은 같은 큐를 두 번
+# 두드려 Vercel 함수 시간만 더 썼다 — 수동 실행(workflow_dispatch)만 남긴다.
 on:
-  schedule:
-    - cron: "7,37 * * * *"
   workflow_dispatch: {}
 
 concurrency:

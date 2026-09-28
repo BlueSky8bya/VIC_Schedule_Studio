@@ -19,8 +19,8 @@ export async function GET(
   return NextResponse.json(
     timeline ?? { authorNick: "", entries: [] },
     {
-      // Moderation and late fan additions must not remain behind a one-hour CDN copy.
-      headers: { "Cache-Control": "no-store" }
+      // 60초 CDN 사본(2026-09-28): 창을 여닫을 때마다 함수+DB를 타던 것을 줄인다. 조정·늦은 추가는 1분 안에 반영된다.
+      headers: { "Cache-Control": "public, max-age=0, s-maxage=60" }
     }
   );
 }

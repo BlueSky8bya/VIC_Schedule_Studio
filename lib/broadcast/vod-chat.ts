@@ -318,7 +318,10 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
     const complete = traversed && state.missing.length === 0;
     state.retries = traversed && !complete ? state.retries + 1 : 0;
     const ageDays = (Date.parse(kstDayKey()) - Date.parse(String(archive.data.broadcast_day))) / 86400_000;
-    const completeRetryMs = ageDays >= 0 && ageDays < 14 ? 86400_000 : 30 * 86400_000;
+    // 완료된 방송의 재점검(2026-09-28 Vercel Active CPU 초과 대응): 예전엔 14일 안은 매일, 그 뒤 매달 다시
+    // 전체를 받아 파싱했다(388편 → 하루 13편 × 35초 CPU). 타임라인이 바뀌면 트리거가 즉시 다시 잡으므로
+    // 정기 재점검은 드물어도 된다: 14일 안은 3일마다(늦게 붙는 채팅·챕터), 그 뒤엔 1년.
+    const completeRetryMs = ageDays >= 0 && ageDays < 14 ? 3 * 86400_000 : 365 * 86400_000;
     const retryMs = complete ? completeRetryMs : !files?.length || !plan.length ? 3600_000 :
       traversed ? Math.min(24 * 3600_000, 600_000 * 2 ** Math.min(state.retries - 1, 8)) : 60_000;
     const { data: applied, error } = await db.rpc("vod_chat_commit_job", {
