@@ -57,8 +57,9 @@ const gugi = Gugi({ weight: "400", variable: "--font-gugi", display: "swap", pre
 const hiMelody = Hi_Melody({ weight: "400", variable: "--font-himelody", display: "swap", preload: false });
 
 export const metadata: Metadata = {
-  title: "VIC Schedule Studio",
-  description: "Streamer-first schedule studio and public poster.",
+  // 탭 제목·아이콘(2026-09-28 소유자): "방송일정" + ✨(app/icon.svg — Next가 favicon으로 붙인다).
+  title: "방송일정",
+  description: "빅토리 방송 일정표.",
   // 화면에 표시된 이메일(계정 배지의 로그인 이메일 등)을 모바일 브라우저가 자동으로 mailto
   // 링크로 바꿔 탭하면 메일 작성창이 열리던 문제 방지(이메일·전화·주소 자동감지 끄기).
   formatDetection: { email: false, telephone: false, address: false }
