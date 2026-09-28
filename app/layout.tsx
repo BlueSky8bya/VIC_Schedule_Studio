@@ -57,7 +57,7 @@ const gugi = Gugi({ weight: "400", variable: "--font-gugi", display: "swap", pre
 const hiMelody = Hi_Melody({ weight: "400", variable: "--font-himelody", display: "swap", preload: false });
 
 export const metadata: Metadata = {
-  // 탭 제목·아이콘(2026-09-28 소유자): "방송일정" + ✨(app/icon.svg — Next가 favicon으로 붙인다).
+  // 탭 제목·아이콘(2026-09-28 소유자): "방송일정 ✨" + 벡터 반짝이(app/icon.svg — Next가 favicon으로 붙인다).
   // 왼쪽 ✨는 favicon(app/icon.svg)이 맡는다 — 제목엔 오른쪽만. 간격은 thin space(U+2009): 탭 제목엔
   // CSS가 없어 공백 문자 폭으로만 정한다(보통 공백 > thin > hair U+200A > 없음).
   title: "방송일정 ✨",
