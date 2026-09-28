@@ -9368,7 +9368,9 @@ html[data-reduce-motion] .studio-day.cell-flash {
 /* 점선도 혜성과 같은 속도로 — 혜성이 달리는 동안 점선 무늬가 같은 이징으로 카드 쪽으로 흘러가고, 닿으면
    함께 멈춘다(2026-09-28 소유자: 점선 속도를 혜성에 맞춰 유동적으로). 평소 흐름(detail-link-flow)은
    바깥 <g>가, 이 동기 이동은 안쪽 <g .detail-anchor-dash>가 맡아 transform이 겹쳐 쌓인다.
-   이동량은 무늬 주기(11px)의 배수라 끝나고 클래스가 빠져도 무늬가 튀지 않는다(JS가 --hope-flow-dx 계산). */
+   이동량은 무늬 주기(11px)의 배수라 끝나고 클래스가 빠져도 무늬가 튀지 않는다(JS가 --hope-flow-dx 계산).
+   닿는 순간 점선은 전부 카드 속으로 빨려 들어가 클립 밖 — 혜성이 터지는 동안 선이 비어 있다가 hope-cast가
+   걷히면(1.5s) 되돌아온다. */
 .detail-anchor-link.hope-cast .detail-anchor-dash {
   animation: hope-flow 0.62s cubic-bezier(0.3, 0, 0.15, 1) both;
 }

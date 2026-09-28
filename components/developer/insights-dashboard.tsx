@@ -185,7 +185,7 @@ export function HourTicks({ className = "" }: { className?: string }) {
 // (2026-08-28 관리자 결정: 처음 열면 운영진). 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
 export type VisitScope = "viewer" | "operator" | "all";
 // 처음 열었을 때의 범위 — 방문 패널·일별 모달·요약 블록(비제어형) 셋이 같은 값을 써야 한다.
-export const DEFAULT_VISIT_SCOPE: VisitScope = "operator";
+export const DEFAULT_VISIT_SCOPE: VisitScope = "all"; // 2026-09-28 소유자: 기본은 전체
 export function VisitSummaryBlock({
   viewer,
   operator,

@@ -60,11 +60,9 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   // 그 시각을 찍어두고, 손을 뗀 뒤 HOLD_MS가 지나야 다시 받는다. 멈춰 있는 동안은 그렇다고
   // 말하고(굳은 값을 모른 채 보면 안 된다), 누르면 그 자리에서 갱신한다.
   const holdAtRef = useRef(0);
-  const [held, setHeld] = useState(false);
   const touchHold = useCallback((e: SyntheticEvent) => {
     if (!(e.target as HTMLElement | null)?.closest?.("[data-hold-refresh]")) return;
     holdAtRef.current = Date.now();
-    setHeld(true);
   }, []);
   const sessionListRef = useRef<HTMLUListElement | null>(null);
 
@@ -90,7 +88,6 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     const id = window.setInterval(() => {
       if (document.hidden) return;
       if (Date.now() - holdAtRef.current < HOLD_MS) return; // 살펴보는 중 — 건드리지 않는다
-      setHeld(false);
       setReloadKey((k) => k + 1);
       getDayVisitDetailAction(dateKey).then((r) => {
         if (r.ok) setData(r.data);
@@ -98,18 +95,6 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     }, 30000);
     return () => window.clearInterval(id);
   }, [dateKey]);
-
-  // 멈춤을 풀고 그 자리에서 다시 받는다(멈춤 안내 줄의 버튼).
-  const refreshNow = () => {
-    hapticTick();
-    holdAtRef.current = 0;
-    setHeld(false);
-    setReloadKey((k) => k + 1);
-    getDayVisitDetailAction(dateKey).then((r) => {
-      hapticTick(); // 누름 → 도착 두 번(사이 간격이 실제 왕복)
-      if (r.ok) setData(r.data);
-    });
-  };
 
   if (loading) {
     return (
@@ -178,17 +163,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     // 웹: 2×2 카드 그리드(.dayvisit→grid) — 요약 풀폭, 아래 4카드 좌우 배치로 가로폭을 채운다.
     // 모바일: 같은 마크업이 한 줄 세로 스택(컴팩트, 테두리 없음).
     <div className="dayvisit-wrap">
-      {/* (수동 새로고침 버튼·베일은 2026-09-04 사용자 결정으로 제거 — 대신 30초마다 조용히 다시 받는다.)
-          한 줄은 늘 둔다: 멈춤/재개로 높이가 바뀌면 그 아래 내용이 통째로 밀린다. */}
-      {/* "30초마다 자동 갱신" 같은 설명 캡션은 뺐다(2026-09-28 소유자: 자잘한 설명이 눈에 구리다).
-          갱신이 멈춘 동안의 '지금 갱신' 버튼만 — 그건 설명이 아니라 동작이다. */}
-      {held ? (
-        <div className="dayvisit-head">
-          <button className="act-tool is-on" data-act="dayvisit-refresh-now" onClick={refreshNow} type="button">
-            보는 중 — 자동 갱신 멈춤 · 지금 갱신
-          </button>
-        </div>
-      ) : null}
+      {/* 갱신 안내 줄은 없다(2026-09-28 소유자: 창 높이만 먹는다). 살펴보는 동안 멈추고(touchHold),
+          손을 뗀 뒤 HOLD_MS가 지나면 조용히 다시 받는다 — 말없이 동작만. */}
       <div
         className="dayvisit"
         onKeyDownCapture={touchHold}

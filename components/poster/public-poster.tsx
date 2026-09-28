@@ -4310,13 +4310,15 @@ export function PublicPoster({
                               <g clipPath="url(#dt-leader-clip)">
                                 <g className="detail-anchor-flow">
                                   {/* 안쪽 <g>: 기대돼요 혜성이 달리는 동안 점선을 같은 속도로 끌고 간다(hope-flow).
-                                      이동량은 무늬 주기 11px의 배수 — 끝나도 무늬가 튀지 않는다. key로 매번 다시 돈다. */}
+                                      이동량은 무늬 주기 11px의 배수 — 끝나도 무늬가 튀지 않는다. key로 매번 다시 돈다.
+                                      선은 -11..len+11이라 전체 길이+22만큼 끌어야 클립(0..len) 안에 토막이 안 남는다
+                                      (0.9·len이던 때 카드 옆에 점선 꼬리가 남았다 — 2026-09-28 소유자). */}
                                   <g
                                     className="detail-anchor-dash"
                                     key={hopeCast?.eventId === event.id ? `d${hopeCast.id}` : "idle"}
                                     style={
                                       {
-                                        "--hope-flow-dx": `${-Math.round((g.len * 0.9) / 11) * 11}px`
+                                        "--hope-flow-dx": `${-Math.ceil((g.len + 22) / 11) * 11}px`
                                       } as CSSProperties
                                     }
                                   >
