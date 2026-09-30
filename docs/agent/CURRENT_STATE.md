@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-09-16 (KST)
+Last Updated: 2026-09-30 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed results live in topic records. Historical snapshots are evidence, not startup instructions.
@@ -17,6 +17,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
+| TEASER-RING-20260930 | Fixed, committed `7eab22a0`, not pushed | Owner verifies on prod: move a reveal time earlier while a viewer/preview tab is open — card, big countdown and ring must follow the new time together | commit `7eab22a0` (components/poster/public-poster.tsx `resolveTeaserView`) |
 | PRIVACY-20260921 | Release7549df6b and DB0124/0125 verified in production | Resolve historical Git exposure, legacy realtime tabs, retention and provider evidence separately | [Privacy audit](verification/PRIVACY-20260921.md) |
 | VIEWER-SEARCH | P0–P3 shipped (`c5620f6a` + follow-up) | Owner visual review on prod; nothing queued | [PLAN-023](plans/PLAN-20260918-023-viewer-search.md) |
 | AMB-FOREST | Release authorized | Review fog sky boundary and entry keys | [R69](../ambient/rounds/ROUND-69-fog-sky-boundary.md) |
