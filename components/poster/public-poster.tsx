@@ -595,11 +595,23 @@ function revealStagger(
 }
 
 
-// 서버가 '아직 안 풀린 떡밥'이라고 말하는가. 로컬 공개 캐시(revealedEvents)는 화면이 직접
-// 본 공개만 담는데, 일정을 다시 떡밥으로 되돌리면 그 캐시가 새 떡밥까지 영구히 덮어버려
-// 카운트다운이 다시는 안 나왔다 — 서버 쪽이 미래를 가리키면 캐시를 무시한다.
-function teaserStillAhead(ev: PublicScheduleEvent): boolean {
-  return Boolean(ev.teaser && ev.teaserRevealAt && Date.parse(ev.teaserRevealAt) > Date.now());
+// 떡밥의 '지금 진실' 하나 — 카드(PC·모바일)와 상세 팝오버가 **같은 함수**로 같은 이벤트를 고른다.
+// 캐시(revealedEvents)는 캐시를 우회한 서버 응답만 담으므로 스냅샷(props)보다 항상 새롭다:
+// 공개됐으면 실제 내용, 아직이면 최신 공개시각이 담긴 stub. 있으면 그것이 이긴다.
+//
+// 예전엔 카드만 "스냅샷 공개시각이 미래면 캐시 무시"(teaserStillAhead) 가드를 두고 팝오버는
+// 캐시를 그대로 썼다. 관리자가 공개시각을 **앞당기면** 스냅샷(옛 시각, 미래)과 stub(새 시각)이
+// 갈라져 카드는 옛 시각으로, 팝오버 숫자는 새 시각으로 세고, 링 판정은 열 때 얼린 옛 시각을 봐서
+// 숫자가 11초인데 링이 안 나왔다(2026-09-30 실측, 토리님 PC). 그 가드가 막으려던 '다시 떡밥으로
+// 되돌린 일정을 캐시의 공개본이 영구히 덮는' 문제는 props가 바뀔 때 서버와 재동기화해서 푼다
+// (아래 mount-sync 효과가 schedule.events 변화에도 다시 돈다).
+function resolveTeaserView(
+  raw: PublicScheduleEvent,
+  cached: PublicScheduleEvent | undefined
+): PublicScheduleEvent {
+  if (!cached) return raw;
+  // 기대 수(hopeCount)는 공개 액션 응답에 없으니 스냅샷 값을 이어받는다(배지 유지).
+  return { ...cached, hopeCount: cached.hopeCount ?? raw.hopeCount };
 }
 
 // 링 아래 캡션용 — 시각만. 날짜는 팝오버 머리글이 이미 말하고 있어 다시 쓰면 중복이다.
@@ -1032,6 +1044,10 @@ export function PublicPoster({
         .join(","),
     [schedule.events]
   );
+  // props(schedule.events)가 바뀔 때도 다시 돈다 — 미리보기의 신선한 스냅샷 도착·router.refresh.
+  // 캐시(revealedEvents)는 항상 스냅샷을 이기므로(resolveTeaserView), 스냅샷이 새로 오면 캐시도
+  // 서버 진실로 갱신해야 '다시 떡밥으로 되돌린 일정'을 캐시의 옛 공개본이 덮지 않는다.
+  const scheduleEventsForSync = schedule.events;
   useEffect(() => {
     if (!teaserIdsKey) return;
     const ids = teaserIdsKey.split(",");
@@ -1065,7 +1081,7 @@ export function PublicPoster({
       alive = false;
     };
     // markTeaserGone은 useCallback([]) — 정체성이 고정이라 이 동기화가 매번 다시 돌지 않는다.
-  }, [teaserIdsKey, markTeaserGone]);
+  }, [teaserIdsKey, scheduleEventsForSync, markTeaserGone]);
   // 다시보기(VOD) — 날짜(방송 시작일)별 매핑(0068). 하루에 여러 번 방송하면 여러 개.
   // 등록 순서(=방송 순서)대로 보이게 titleNo 오름차순으로 정렬해 둔다.
   const vodsByDate = useMemo(() => {
@@ -1673,12 +1689,21 @@ export function PublicPoster({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 열린 상세의 '지금' 이벤트 — 하나만 만들고 아래 훅(남은 초·10Hz 채널)과 렌더가 **같은 것**을 쓴다.
+  // agendaDetail.event는 연 순간의 스냅샷이라 얼어 있다. 그 뒤 props(신선한 미리보기 스냅샷)나
+  // 캐시(mount-sync stub·공개본)가 바뀌면 여기서 따라간다. 예전엔 렌더만 캐시를 보고 남은 초는
+  // 얼린 스냅샷을 봐서, 큰 숫자는 새 공개시각으로 11초를 세는데 링 판정은 옛 시각(1분 넘게 남음)을
+  // 봐 링 무대로 안 넘어갔다(2026-09-30 실측 스크린샷).
+  const detailEvent = useMemo(() => {
+    if (!agendaDetail) return null;
+    const id = agendaDetail.event.id;
+    const raw = schedule.events.find((e) => e.id === id) ?? agendaDetail.event;
+    return resolveTeaserView(raw, revealedEvents[id]);
+  }, [agendaDetail, schedule.events, revealedEvents]);
   // 열려 있는 상세가 '아직 안 풀린 떡밥'이면 남은 초를 매초 센다 — 팝오버도 카드와 같은
   // 하이프 리듬을 타게 하려는 용도(카운트다운 숫자는 카드가 담당, 여긴 분위기만).
   const detailRevealAt =
-    agendaDetail?.event.teaser && agendaDetail.event.teaserRevealAt
-      ? agendaDetail.event.teaserRevealAt
-      : null;
+    detailEvent?.teaser && detailEvent.teaserRevealAt ? detailEvent.teaserRevealAt : null;
   // 숫자(1Hz)와 시각 채널(10Hz)을 분리. 숫자는 카드와 '같은 공용 시계'를 써서 초 경계에
   // 함께 넘어간다 — 각자 interval을 돌리면 마운트 시각 차이만큼 어긋난다(사용자 지적).
   const detailRemainS = useRemainSeconds(
@@ -3135,12 +3160,9 @@ export function PublicPoster({
             // 서버가 '이제 없는 일정'이라고 확인해 준 떡밥(삭제/비공개 전환)은 그리지 않는다 —
             // 낡은 캐시가 준 유령이 빈 흰 카드로 남던 자리(2026-08-05).
             if (goneTeaserIds.has(rawEvent.id)) return null;
-            // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
-            // 기대 수(hopeCount)는 공개 액션 응답에 없으니 stub의 값을 이어받는다(배지 유지).
-            const revealedEv = teaserStillAhead(rawEvent) ? undefined : revealedEvents[rawEvent.id];
-            const event = revealedEv
-              ? { ...revealedEv, hopeCount: revealedEv.hopeCount ?? rawEvent.hopeCount }
-              : rawEvent;
+            // 떡밥 즉시 공개 맵에 있으면 서버 진실(실제 일정 또는 최신 stub)로 갈아끼운다 —
+            // 상세 팝오버와 같은 리졸버(resolveTeaserView), 시각이 갈라지지 않는다.
+            const event = resolveTeaserView(rawEvent, revealedEvents[rawEvent.id]);
             // 떡밥(가림): 공개 시각이 미래면 항상 ??? 카드 + 카운트다운(미리보기·실제 시청자 모두 —
             // 데이터가 있어도 ???만 보여 지연 없음). 시각이 지났는데 서버가 가린 stub(제목 빈)을
             // 보냈으면(캐시 지연) 중립 placeholder + 즉시 교체. 시각 지났고 제목 있으면 일반 렌더.
@@ -3666,14 +3688,9 @@ export function PublicPoster({
                   {list.map(({ event: rawEvent, support }) => {
                     // 위 달력 칸과 같은 규칙 — 서버가 없다고 확인한 떡밥은 안 그린다.
                     if (goneTeaserIds.has(rawEvent.id)) return null;
-                    // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
-                    // 기대 수는 공개 응답에 없으니 stub 값을 이어받는다(배지 유지).
-                    const revealedEv = teaserStillAhead(rawEvent)
-                      ? undefined
-                      : revealedEvents[rawEvent.id];
-                    const event = revealedEv
-                      ? { ...revealedEv, hopeCount: revealedEv.hopeCount ?? rawEvent.hopeCount }
-                      : rawEvent;
+                    // 떡밥 즉시 공개 맵에 있으면 서버 진실로 갈아끼운다 — 위 달력 칸·상세 팝오버와
+                    // 같은 리졸버(resolveTeaserView).
+                    const event = resolveTeaserView(rawEvent, revealedEvents[rawEvent.id]);
                     // 떡밥(가림): 미래면 항상 ??? 카드(미리보기·실제 모두). 지났고 빈 stub이면
                     // placeholder+교체, 지났고 제목 있으면 일반 렌더.
                     if (event.teaser && event.teaserRevealAt) {
@@ -4194,7 +4211,8 @@ export function PublicPoster({
         ? (() => {
             const { event: rawDetailEvent, support, dateKey, anchor } = agendaDetail;
             // 열어둔 채로 공개 시각이 지나면 이 팝오버 안에서 ???가 실제 일정으로 변신한다.
-            const event = revealedEvents[rawDetailEvent.id] ?? rawDetailEvent;
+            // 위 detailEvent(리졸버)와 같은 객체 — 남은 초·링 판정·큰 숫자가 한 공개시각을 본다.
+            const event = detailEvent ?? rawDetailEvent;
             const detailJustRevealed = justRevealed.has(rawDetailEvent.id);
             const { main, subs } = splitEventTitle(event.publicTitle);
             const detailTags = event.tagIds.flatMap((id) => {
