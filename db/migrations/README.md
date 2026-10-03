@@ -89,5 +89,6 @@ Latest: `0132_search_synonyms_drop_rel_chip.sql` — the 308k auto-rel / rel-chi
 | 0112 | 요즘 뜨는 말 캐시 `search_trends` + `search_trending_rebuild()` — 채팅 75만 행 집계가 조회마다 타임아웃하던 것을 미리 계산으로(조회 60ms) |
 | 0133 | 화제 칩 최근성 가중: 14일 창·반감기 3일(`search_trending_rebuild`), 방송당 상한 완화(30+sqrt), KST 날짜. 30일 평평한 합계라 순위가 굳던 것 수정 |
 | 0134 | 화제 칩 비슷한 말 합치기: 조사 꼬리(몸통이 후보에 있을 때만)·모음 표기 변형(`search_trend_vowel_variant`, 헷갈리는 모음 짝만) — 소시지/소세지/소시지가 → 소시지 |
+| 0135 | 화제 칩 용언·인용 꼬리 떼기: 된다·한다·라고 등은 몸통(2자 이상)이 문서 어휘·사전·채팅 단어에 있으면 몸통으로 — 빗토리된다 → 빗토리 |
 | 0121 | `dark_palette` STORED generated column — 기본 팔레트·커스텀 태그의 다크 채움/테두리/글자/강조색을 자동 저장. 원본 색 보존, 하위 NULL 상속, 앱 reader보다 먼저 적용. [ADR-0026](../../docs/agent/decisions/ADR-0026-automatic-dark-tag-palette.md) |
 | 0122 | 색 구분 개선 `dark_palette_v2` — 파스텔 채도·명도·테두리 차이 강화. v1/원본 보존, 새 함수/생성 컬럼으로 기존·신규 색 자동 저장. v2 reader보다 먼저 적용 |

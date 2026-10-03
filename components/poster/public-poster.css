@@ -8359,15 +8359,22 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   padding: 0 0 8px;
   border-bottom: 1px solid var(--ps-line);
 }
+/* 균형(2026-10-03 소유자): 펼쳐서 두 줄이 되면 라벨이 두 줄 사이 허공에 뜨고(세로 가운데 정렬) 오른쪽 '접기'만
+   첫 줄에 붙어 한쪽으로 쏠려 보였다. 라벨·칩 첫 줄·더보기 버튼을 **같은 첫 줄(32px)** 에 맞추고, 라벨 칸 폭을
+   고정해 화제·태그 줄의 칩 시작선이 같게 한다. 더보기/접기는 폭을 고정해 글자가 바뀌어도 칩이 다시 흐르지 않는다. */
 .ps-chiprow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 8px;
   min-width: 0;
   padding: 0 16px;
 }
 .ps-chiplbl {
-  flex: none;
+  display: flex;
+  align-items: center;
+  height: 32px; /* 칩 한 줄(.ps-chips max-height)과 같은 높이 — 첫 줄 가운데에 선다 */
+  min-width: 2.4em;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -8405,6 +8412,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
 .ps-chips-more {
   flex: none;
   height: 28px;
+  min-width: 58px; /* '더보기'(3자) 기준 — '접기'로 바뀌어도 칩 영역 폭이 그대로 */
   margin-top: 2px;
   border: 1px solid rgb(35 48 63 / 9%);
   border-radius: 999px;
