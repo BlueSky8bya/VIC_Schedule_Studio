@@ -15,12 +15,13 @@ import type { PosterThemeKey } from "@/lib/domain/schedule-types";
 import { getCurrentKstYearMonth } from "@/lib/calendar/month";
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
+import { cookies } from "next/headers";
 import { guardedFetch } from "@/lib/net/guarded-fetch";
 import { timed } from "@/lib/perf/perf";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
-import { PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/schedules/cache";
+import { EVENT_HEART_COUNTS_CACHE_TAG, PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/schedules/cache";
 import type { TeaserRevealResult } from "@/lib/schedules/teaser-reconcile";
 
 function coercePosterTheme(value: unknown): PosterThemeKey {
@@ -126,30 +127,47 @@ const loadPublicCalendarId = unstable_cache(
   async (calendarSlug: string): Promise<string | null> => {
     const supabase = createPublicReadClient();
     if (!supabase) return null;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("calendars")
       .select("id")
       .eq("slug", calendarSlug)
       .eq("is_public", true)
       .maybeSingle();
+    // 조회 실패는 던진다 — null을 돌려주면 '캘린더 없음'으로 1시간 캐시돼 포스터가 비어 버린다.
+    if (error) throw new Error("public calendar id unavailable");
     return data?.id ?? null;
   },
   ["public-calendar-id"],
   { revalidate: 3600, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
 );
 
-// 일정별 하트 집계 — 캐시하지 않는다(공개 안전: 함수가 공개 일정만, user_id/token 비노출).
-// null = 조회 실패(호출자는 캐시된 값을 그대로 쓴다).
+// 일정별 하트 집계 — 짧게(60초) 캐시하고 하트 토글마다 태그로 즉시 비운다(2026-10-03).
+// 예전엔 캐시 없이 매 렌더 RPC를 불러, 일정 묶음이 캐시 히트여도 포스터 렌더 p50이 ~250ms(왕복 1회)였다.
+// 토글하는 순간 revalidateEventHeartCounts()가 무효화하므로 '방금 누른 수'가 늦는 일은 없고, 늦을 수 있는 건
+// 다른 서버 인스턴스가 이미 들고 있던 값뿐(최대 60초). 공개 안전: 함수가 공개 일정만, user_id/token 비노출.
+// unstable_cache는 Map을 직렬화 못 하므로 행 배열로 담는다. null = 조회 실패(던져서 캐시에 안 남긴다).
+const loadEventHeartRows = unstable_cache(
+  async (calendarSlug: string): Promise<{ event_id: string; count: number }[]> => {
+    const supabase = createPublicReadClient();
+    if (!supabase) return [];
+    const calendarId = await loadPublicCalendarId(calendarSlug);
+    if (!calendarId) return [];
+    const { data, error } = await supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId });
+    if (error || !data) throw new Error("heart counts unavailable");
+    return data as { event_id: string; count: number }[];
+  },
+  ["event-heart-counts"],
+  { revalidate: 60, tags: [EVENT_HEART_COUNTS_CACHE_TAG, PUBLIC_SCHEDULE_CACHE_TAG] }
+);
+
 async function loadLiveEventHeartCounts(calendarSlug: string): Promise<Map<string, number> | null> {
-  const supabase = createPublicReadClient();
-  if (!supabase) return null;
-  const calendarId = await loadPublicCalendarId(calendarSlug);
-  if (!calendarId) return null;
-  const { data, error } = await supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId });
-  if (error || !data) return null;
-  return new Map(
-    (data as { event_id: string; count: number }[]).map((row) => [row.event_id, Number(row.count)])
-  );
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const rows = await loadEventHeartRows(calendarSlug);
+    return new Map(rows.map((row) => [row.event_id, Number(row.count)]));
+  } catch {
+    return null; // 호출자는 일정 묶음에 든 값을 그대로 쓴다
+  }
 }
 
 // 떡밥 즉시 공개 — 캐시(30초)를 우회해 DB를 직접 읽는다. 주어진 일정들 중 '공개 시각이 지난'
@@ -205,16 +223,19 @@ const loadPublicScheduleData = unstable_cache(
       return samplePublicSchedule(calendarSlug);
     }
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select(
-        "id, slug, display_name, title, public_memo, public_memo_lines, poster_theme, public_memo_align, public_memo_valign"
-      )
-      .eq("slug", calendarSlug)
-      .eq("is_public", true)
-      .maybeSingle();
+    // 캘린더 id는 1시간 캐시(loadPublicCalendarId, 같은 태그로 편집 시 무효화)에서 먼저 받고, 캘린더 행은
+    // 아래 병렬 묶음에 함께 넣는다(2026-10-03). 예전엔 캘린더 행 조회가 끝나야 7개 조회가 출발해
+    // 캐시 미스마다 왕복이 하나 더 줄을 섰다.
+    let calendarId: string | null = null;
+    let calendarLookupFailed = false;
+    try {
+      calendarId = await loadPublicCalendarId(calendarSlug);
+    } catch {
+      calendarLookupFailed = true;
+    }
 
-    if (!calendar) {
+    // 공개 캘린더가 없을 때의 빈 포스터(예전과 같은 모양).
+    const emptySchedule = (): PublicSchedule => {
       return {
         calendar: {
           slug: calendarSlug,
@@ -231,12 +252,17 @@ const loadPublicScheduleData = unstable_cache(
         palette: [],
         myHeartIds: []
       };
+    };
+
+    if (!calendarId || calendarLookupFailed) {
+      return emptySchedule();
     }
 
     // RLS 공개 정책이 1차 방어선이지만, 쿼리에서도 명시적으로 공개분만 조회한다.
     // (P2-PROTO-1: support_campaigns 쿼리 제거 — UI 소비자가 0인 죽은 payload였다.
     //  업 도움은 이벤트 단위(is_support/support_url)가 정본.)
     const [
+      calendarRes,
       tagsRes,
       paletteRes,
       eventsRes,
@@ -244,35 +270,43 @@ const loadPublicScheduleData = unstable_cache(
       hopeRes,
       vodsRes,
       timelinesRes
-    ] = await timed("publicSchedule:db(7 parallel queries)", () =>
+    ] = await timed("publicSchedule:db(8 parallel queries)", () =>
       Promise.all([
+        supabase
+          .from("calendars")
+          .select(
+            "id, slug, display_name, title, public_memo, public_memo_lines, poster_theme, public_memo_align, public_memo_valign"
+          )
+          .eq("id", calendarId)
+          .eq("is_public", true)
+          .maybeSingle(),
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
         // 공개 캘린더의 태그·팔레트·일정·스티커가 섞인다(공개 데이터끼리의 교차 혼입).
         supabase
           .from("broadcast_tags")
           .select("id, tag_key, display_name, color_key, bg_hex, dark_palette:dark_palette_v3, sort_order, is_default, is_active, parent_id, kind, v3_only")
-          .eq("calendar_id", calendar.id)
+          .eq("calendar_id", calendarId)
           .eq("is_active", true)
           .order("sort_order"),
         supabase
           .from("color_palette")
           .select("key, name, bg_color, text_color, border_color, dark_palette:dark_palette_v3, sort_order")
-          .eq("calendar_id", calendar.id)
+          .eq("calendar_id", calendarId)
           .order("sort_order"),
         supabase
           .from("public_schedule_events")
           .select(
             "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags"
           )
-          .eq("calendar_id", calendar.id)
+          .eq("calendar_id", calendarId)
           .neq("status", "draft")
           .order("date_key")
           .order("created_at"),
         // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
-        supabase.rpc("get_event_heart_counts", { p_calendar_id: calendar.id }),
+        supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
         // 최초공개 '기대돼요' 집계(0060) — 토큰 비노출, 공개 후에도 남아 배지가 된다.
-        supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendar.id }),
+        supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendarId }),
         // 다시보기 아카이브(0068) — 공개 메타만(번호·날짜·길이). 최신순 1000행 한도(PostgREST
         // 기본 cap과 같은 값이라 잘려도 '가장 오래된 다시보기'부터 빠진다 — 안전한 방향).
         // auth_no=101(전체 공개)만 — 구독(플러스) 전용(107)은 일반 시청자가 클릭해도 재생이
@@ -291,6 +325,12 @@ const loadPublicScheduleData = unstable_cache(
           .limit(1000)
       ])
     );
+
+    const calendar = calendarRes.data;
+    if (!calendar) {
+      // 캐시된 id가 비공개로 바뀐 직후·조회 실패 — 예전처럼 빈 포스터(다음 재검증에서 바로잡힌다).
+      return emptySchedule();
+    }
 
     // 일정 id → 관심 집계 수 맵. 인기 배지 판정에 쓴다.
     const heartCountByEvent = new Map<string, number>(
@@ -378,6 +418,12 @@ const loadPublicScheduleData = unstable_cache(
 // RLS가 본인 행으로 제한하지만, 캘린더 교차 혼입을 막기 위해 events→calendars 조인으로
 // 이 캘린더(slug)의 일정으로 한정한다.
 async function loadMyHeartIds(calendarSlug: string): Promise<string[]> {
+  // 로그인 세션 쿠키가 없으면 RLS상 결과는 늘 빈 배열이다 — DB 왕복을 건너뛴다(2026-10-03: 비로그인 렌더마다
+  // 쓸모없는 왕복 1회가 p50에 얹혀 있었다). 쿠키 이름은 @supabase/ssr 규약 sb-<ref>-auth-token(덩어리면 .0, .1).
+  const hasSession = (await cookies()).getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+  if (!hasSession) {
+    return [];
+  }
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return [];

@@ -16,6 +16,27 @@ function now(): number {
   return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
 }
 
+// 인스턴스 얼음 감지(2026-10-03). Vercel은 응답을 보낸 뒤 함수 인스턴스를 얼려 둘 수 있다. 캐시 재검증처럼
+// 응답 뒤까지 이어지는 구간은 얼어 있던 시간이 통째로 측정에 들어가, 다음 요청이 깨울 때 '291초' 같은 표본이
+// 찍혔다(perf_samples 실측: 표본 길이 = 직전 무요청 간격, 같은 순간 페이지 응답은 0.2~0.5초로 정상).
+// 1초 박동이 5초 넘게 밀렸으면 얼었다고 보고, 그 사이에 걸친 구간은 표본으로 남기지 않는다.
+// (이벤트 루프가 5초 넘게 막힌 진짜 정체도 같이 빠지지만, 그건 로그로 남는다.)
+const TICK_MS = 1000;
+const FREEZE_GAP_MS = 5000;
+let lastTick = now();
+let lastFreezeAt = Number.NEGATIVE_INFINITY;
+if (typeof setInterval === "function") {
+  const ticker = setInterval(() => {
+    const t = now();
+    if (t - lastTick > FREEZE_GAP_MS) lastFreezeAt = t;
+    lastTick = t;
+  }, TICK_MS);
+  (ticker as { unref?: () => void }).unref?.(); // 빌드·종료를 붙잡지 않는다
+}
+function suspendedDuring(t0: number): boolean {
+  return lastFreezeAt >= t0 || now() - lastTick > FREEZE_GAP_MS;
+}
+
 // 비동기 작업 한 구간을 재서 [perf] 로그(LOG_ENABLED일 때) + 표본 기록(패널용, 항상). 투명 래퍼.
 export async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const t0 = now();
@@ -27,8 +48,12 @@ export async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> 
     throw e;
   } finally {
     const ms = now() - t0;
-    if (LOG_ENABLED) console.log(`[perf] ${label} ${ms.toFixed(1)}ms${ok ? "" : " (error)"}`);
-    recordPerfSample(label, ms); // 개발자 인사이트 "서버 성능" 패널용 표본(응답 후 기록)
+    if (suspendedDuring(t0)) {
+      console.warn(`[perf] ${label} ${ms.toFixed(1)}ms — instance was suspended mid-span; sample skipped`);
+    } else {
+      if (LOG_ENABLED) console.log(`[perf] ${label} ${ms.toFixed(1)}ms${ok ? "" : " (error)"}`);
+      recordPerfSample(label, ms); // 개발자 인사이트 "서버 성능" 패널용 표본(응답 후 기록)
+    }
   }
 }
 
