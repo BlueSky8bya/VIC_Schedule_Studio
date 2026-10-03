@@ -772,9 +772,9 @@ export async function getPublicSearchRelatedTerms(
   }));
 }
 
-// 최근 N일 '갑자기 많이 나온 말'(0079) — 입력 전 제안 칩. 챕터·제목 단어뿐(검색어 저장 아님).
+// 최근 N일 '갑자기 많이 나온 말'(0079, 0133 최근성 가중) — 입력 전 제안 칩. 캐시 표를 읽는다(검색어 저장 아님).
 export async function getPublicSearchTrending(
-  days = 30,
+  days = 14,
   limit = 10
 ): Promise<import("@/lib/domain/schedule-types").PublicSearchTrend[]> {
   if (!isSupabaseConfigured()) return [];

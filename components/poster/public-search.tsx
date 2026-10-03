@@ -846,7 +846,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                             submit(t.term);
                             inputRef.current?.focus();
                           }}
-                          title={`최근 30일 ${t.recent}번`}
+                          title={`최근 2주 ${t.recent}번`}
                           type="button"
                         >
                           {t.term}

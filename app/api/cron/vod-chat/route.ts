@@ -38,7 +38,9 @@ export async function GET(req: Request) {
     const supabase = createSupabaseAdminClient();
     if (supabase) {
       for (const fn of ["search_synonyms_rebuild", "search_trending_rebuild"] as const) {
-        const { error } = await supabase.rpc(fn).abortSignal(AbortSignal.timeout(5000));
+        // 화제 재계산은 실측 2초(0134) — 붐빌 때 5초에 잘리면 칩이 밤까지 굳으므로 여유를 준다.
+        const ms = fn === "search_trending_rebuild" ? 15000 : 5000;
+        const { error } = await supabase.rpc(fn).abortSignal(AbortSignal.timeout(ms));
         if (error) console.warn(`[vod-chat] ${fn} failed:`, error.message);
       }
     }
