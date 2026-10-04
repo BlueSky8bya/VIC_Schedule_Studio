@@ -3446,6 +3446,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 .public-legend-vertical .legend-title,
 .public-legend-vertical .legend-mods,
 .public-legend-vertical .legend-heart-help,
+.public-legend-vertical .legend-status-help,
 .public-legend-vertical .legend-clear {
   grid-column: 1 / -1;
 }
@@ -5908,13 +5909,19 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
   vertical-align: -1px;
 }
+/* 인기도 블록(.legend-heart-help)과 같은 점선 구분 — 인기도의 한 단계로 읽히지 않게 따로 선다. */
+.legend-status-help {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px dashed #e6dcc2;
+}
 /* 인기도 줄(.legend-tiers li)과 같은 칸·간격·글자 — 라벨 왼쪽 끝이 위 목록과 맞는다. */
 .legend-tent-line {
   display: grid;
   grid-template-columns: var(--legend-swatch, 26px) 1fr;
   align-items: center;
   gap: 8px;
-  margin: 4px 0 0;
+  margin: 0;
   padding: 2px 6px;
   font-size: var(--text-body);
   font-weight: 800;

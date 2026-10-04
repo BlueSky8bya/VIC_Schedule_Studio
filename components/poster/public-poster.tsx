@@ -4147,9 +4147,12 @@ export function PublicPoster({
             </li>
           </ul>
         )}
-        {/* 빗금 = 미정 — 카드엔 '미정' 글자가 없으니(제목 정렬 유지) 뜻은 범례가 알려 준다(2026-10-05). */}
+      </div>
+      {/* 빗금 = 미정 — 카드엔 '미정' 글자가 없으니(제목 정렬 유지) 뜻은 범례가 알려 준다(2026-10-05).
+          인기도 안에 두면 그 단계 중 하나로 읽혀(소유자) 구분선 아래 따로 둔다. */}
+      <div className="legend-status-help">
         <p className="legend-tent-line">
-          <i aria-hidden="true" className="tent-swatch" /> {compact ? "미정" : "빗금 = 미정"}
+          <i aria-hidden="true" className="tent-swatch" /> 미정
         </p>
       </div>
     </div>
