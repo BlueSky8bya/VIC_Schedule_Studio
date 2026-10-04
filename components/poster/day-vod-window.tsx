@@ -62,6 +62,17 @@ const VOD_SOUND_BLOCKED_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 const VOD_SOUND_WATCHDOG_MS = 1_500;
 // 창이 떠 있는 동안 ←/→ 한 번의 탐색 폭(초).
 const VOD_KEY_SEEK_SEC = 10;
+// ←/→ 연타 묶기(2026-10-05 소유자: "좌/우로 시간 넘길 때 초반에 툭툭 끊긴다").
+//  · 누를 때마다 PseekTo를 보내면 플레이어가 매번 버퍼를 비우고 다시 받는다 → 첫 시킹은 바로, 그 뒤는
+//    이 간격마다 마지막 목표 한 번만(끝 위치는 항상 보낸다).
+//  · 시킹이 내려앉기 전 플레이어는 옛 위치의 timeUpdate를 계속 보낸다 — 그걸 기준으로 다음 키를 계산하면
+//    앞뒤로 튄다. 목표에서 이만큼(초) 안으로 들어오거나 마지막 키 뒤 HOLD_MS가 지나기 전엔 옛 위치를 무시한다.
+const VOD_KEY_SEEK_GAP_MS = 320;
+const VOD_KEY_SEEK_LAND_SEC = 3;
+const VOD_KEY_SEEK_HOLD_MS = 2_500;
+// 물러난(재생 안 하던) 슬롯 리로드 미루기 — 새 주 슬롯이 이만큼 굴러간 뒤에, 늦어도 MAX 뒤엔 한다.
+const VOD_RELOAD_QUIET_MS = 6_000;
+const VOD_RELOAD_DEFER_MAX_MS = 45_000;
 // 시동 감시(2026-09-18) — 첫 Pload(또는 예약)를 보낸 뒤 이 시간까지 미디어 이벤트가 하나도 없으면
 // 한 번 더 시동한다. 음소거 시동은 "항상 굴러간다"는 가정이었지만 실제로는 광고·네트워크·죽은
 // iframe으로 조용히 멈추는 경우가 있고, 그러면 커버(▶)가 영원히 안 걷혀 '무한로딩'으로 보인다.
@@ -281,6 +292,11 @@ export function DayVodWindow({
   const dayVodBootTryRef = useRef(new Map<number, number>());
   const dayVodBootTimersRef = useRef(new Map<number, number>());
   const dayVodFlushTimersRef = useRef(new Map<number, number>());
+  // 리로드를 미뤄 둔 물러난 슬롯(방송별)과 그 확인 타이머 — commitDayVodSwap 참조.
+  const dayVodDeferredReloadRef = useRef(new Map<number, VodSlot>());
+  const dayVodDeferredTimersRef = useRef(new Map<number, number>());
+  // 포스터 초기화 Pload(autoPlay:false)만 받은 슬롯 — 자동재생 Pload를 받으면 빠진다.
+  const dayVodPosterOnlyRef = useRef(new Set<string>());
   // 대기 슬롯을 붙일 때가 된 방송 — 주 슬롯이 준비된 뒤(또는 2.5초 뒤). 창을 열자마자 iframe 두 개가
   // 동시에 로드되어 서로 느려지던 것을 없앤다.
   const [dayVodStandbyOn, setDayVodStandbyOn] = useState<ReadonlySet<number>>(new Set());
@@ -294,6 +310,10 @@ export function DayVodWindow({
   }, []);
   const dayVodFocusRef = useRef<number | null>(null); // 키보드가 조종할 방송(마지막 점프/재생)
   const dayVodKeySeekAtRef = useRef(0); // ←/→ 연타 속도 제한
+  // ←/→ 목표(방송별): sec = 마지막으로 누른 위치, at = 마지막 키 시각. 플레이어가 그 근처에 내려앉으면 지운다.
+  const dayVodKeyTargetRef = useRef(new Map<number, { sec: number; at: number }>());
+  const dayVodKeySentAtRef = useRef(0); // 마지막 키 PseekTo 시각(묶기 간격 기준)
+  const dayVodKeyTimerRef = useRef(0); // 묶인 끝 위치를 보낼 타이머
   // 시동 진행 중 표시(방송별, 시작 시각) — 첫 Pload를 보냈지만 아직 미디어 이벤트가 없는 구간.
   // 이 구간의 Space 연타는 무시한다(누를 때마다 승격=리로드가 반복돼 영영 안 굴러가던 고장).
   const dayVodStartingAtRef = useRef(new Map<number, number>());
@@ -360,9 +380,15 @@ export function DayVodWindow({
     dayVodBootTimersRef.current.clear();
     for (const t of dayVodFlushTimersRef.current.values()) window.clearTimeout(t);
     dayVodFlushTimersRef.current.clear();
+    for (const t of dayVodDeferredTimersRef.current.values()) window.clearTimeout(t);
+    dayVodDeferredTimersRef.current.clear();
+    dayVodDeferredReloadRef.current.clear();
+    dayVodPosterOnlyRef.current.clear();
     for (const t of dayVodSeekWatchRef.current.values()) window.clearTimeout(t);
     dayVodSeekWatchRef.current.clear();
     dayVodLastTuAtRef.current.clear();
+    dayVodKeyTargetRef.current.clear();
+    window.clearTimeout(dayVodKeyTimerRef.current);
     setDayVodStandbyOn(new Set());
     window.clearTimeout(dayVodNoticeTimerRef.current);
     setDayVodNotice(null);
@@ -383,6 +409,7 @@ export function DayVodWindow({
     ) => {
       post(buildDayVodPload(titleNo, sec, true, muted));
       dayVodLoadedRef.current.add(key); // 이 슬롯의 '첫 Pload'를 썼다 — 다음 시동은 반대 슬롯에서
+      dayVodPosterOnlyRef.current.delete(key);
       dayVodStartingAtRef.current.set(titleNo, performance.now());
       if (muted) return; // 음소거 시동은 항상 굴러간다 — 더 물러날 곳도 없다
       // 소리 켠 시도가 정책에 막히면 아무 미디어 이벤트도 안 온다(실측: 조용히 정지 유지).
@@ -407,32 +434,89 @@ export function DayVodWindow({
     },
     []
   );
-  // 슬롯 교체 확정: 새 슬롯을 주로, 물러나는 슬롯은 gen++로 리로드(새 대기).
-  const commitDayVodSwap = useCallback((titleNo: number, newSlot: VodSlot) => {
-    const oldSlot: VodSlot = newSlot === "a" ? "b" : "a";
-    const oldKey = dayVodSlotKey(titleNo, oldSlot);
-    // 물러나는 슬롯이 '첫 Pload'를 아직 안 썼으면(순정) 리로드하지 않는다 — 이미 데워진 대기
-    // 플레이어를 버리고 처음부터 다시 받던 낭비(2026-09-18). 쓴 슬롯만 gen++로 새로 받는다.
-    const reload = dayVodLoadedRef.current.has(oldKey);
-    dayVodLoadedRef.current.delete(oldKey);
-    if (reload) dayVodApisRef.current.delete(oldKey);
-    dayVodPendingRef.current.delete(oldKey);
-    dayVodMutedRef.current.delete(oldKey);
-    dayVodSoundTryRef.current.delete(oldKey);
-    dayVodPausedRef.current.delete(titleNo);
-    dayVodActiveRef.current.set(titleNo, newSlot);
+  // 물러난 슬롯을 gen++로 새로 받는다(새 대기) — 쓴 첫 Pload를 되돌릴 방법은 iframe 리로드뿐.
+  const reloadDayVodSlot = useCallback((titleNo: number, slot: VodSlot) => {
+    const key = dayVodSlotKey(titleNo, slot);
+    dayVodDeferredReloadRef.current.delete(titleNo);
+    dayVodPosterOnlyRef.current.delete(key);
+    dayVodLoadedRef.current.delete(key);
+    dayVodApisRef.current.delete(key);
+    dayVodPendingRef.current.delete(key);
+    dayVodMutedRef.current.delete(key);
+    dayVodSoundTryRef.current.delete(key);
     setDayVodSlots((prev) => {
       const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
       return {
         ...prev,
         [titleNo]: {
-          active: newSlot,
-          genA: reload && oldSlot === "a" ? cur.genA + 1 : cur.genA,
-          genB: reload && oldSlot === "b" ? cur.genB + 1 : cur.genB
+          ...cur,
+          genA: slot === "a" ? cur.genA + 1 : cur.genA,
+          genB: slot === "b" ? cur.genB + 1 : cur.genB
         }
       };
     });
   }, []);
+  // 미뤄 둔 리로드는 새 주 슬롯이 VOD_RELOAD_QUIET_MS 동안 굴러간 뒤에(또는 한도가 지나면) 한다.
+  const scheduleDayVodDeferredReload = useCallback(
+    (titleNo: number) => {
+      const since = performance.now();
+      const tick = () => {
+        const slot = dayVodDeferredReloadRef.current.get(titleNo);
+        if (slot === undefined) return; // 그새 했거나(승격) 창이 비워졌다
+        const settledAt = dayVodSettledAtRef.current.get(titleNo);
+        const now = performance.now();
+        const quiet = settledAt !== undefined && now - settledAt > VOD_RELOAD_QUIET_MS;
+        if (quiet || now - since > VOD_RELOAD_DEFER_MAX_MS) reloadDayVodSlot(titleNo, slot);
+        else dayVodDeferredTimersRef.current.set(titleNo, window.setTimeout(tick, 1_000));
+      };
+      window.clearTimeout(dayVodDeferredTimersRef.current.get(titleNo));
+      dayVodDeferredTimersRef.current.set(titleNo, window.setTimeout(tick, 1_000));
+    },
+    [reloadDayVodSlot]
+  );
+  // 슬롯 교체 확정: 새 슬롯을 주로, 물러나는 슬롯은 gen++로 리로드(새 대기).
+  //  deferReload — 물러나는 슬롯이 재생 중이 아니었으면(포스터+▶ 초기화만 한 주 슬롯) 리로드를 미룬다
+  //  (2026-10-05 소유자: "타임라인 처음 눌러 재생하면 자주 끊긴다" — 새 주 슬롯이 막 굴러가는 순간 옛 슬롯이
+  //  숲 플레이어를 통째로 다시 받아 CPU·망을 빼앗았다. 재생 중이던 슬롯은 소리가 남지 않게 바로 리로드).
+  const commitDayVodSwap = useCallback(
+    (titleNo: number, newSlot: VodSlot, deferReload = false) => {
+      const oldSlot: VodSlot = newSlot === "a" ? "b" : "a";
+      const oldKey = dayVodSlotKey(titleNo, oldSlot);
+      // 물러나는 슬롯이 '첫 Pload'를 아직 안 썼으면(순정) 리로드하지 않는다 — 이미 데워진 대기
+      // 플레이어를 버리고 처음부터 다시 받던 낭비(2026-09-18). 쓴 슬롯만 gen++로 새로 받는다.
+      const reload = dayVodLoadedRef.current.has(oldKey);
+      dayVodPausedRef.current.delete(titleNo);
+      dayVodActiveRef.current.set(titleNo, newSlot);
+      if (reload && deferReload) {
+        dayVodPendingRef.current.delete(oldKey);
+        dayVodSoundTryRef.current.delete(oldKey);
+        dayVodDeferredReloadRef.current.set(titleNo, oldSlot);
+        scheduleDayVodDeferredReload(titleNo);
+        setDayVodSlots((prev) => {
+          const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
+          return { ...prev, [titleNo]: { ...cur, active: newSlot } };
+        });
+        return;
+      }
+      if (reload) {
+        setDayVodSlots((prev) => {
+          const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
+          return { ...prev, [titleNo]: { ...cur, active: newSlot } };
+        });
+        reloadDayVodSlot(titleNo, oldSlot);
+        return;
+      }
+      dayVodLoadedRef.current.delete(oldKey);
+      dayVodPendingRef.current.delete(oldKey);
+      dayVodMutedRef.current.delete(oldKey);
+      dayVodSoundTryRef.current.delete(oldKey);
+      setDayVodSlots((prev) => {
+        const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
+        return { ...prev, [titleNo]: { ...cur, active: newSlot } };
+      });
+    },
+    [reloadDayVodSlot, scheduleDayVodDeferredReload]
+  );
   // 시동 감시(2026-09-18): 첫 Pload/예약 뒤 아무 미디어 이벤트도 없으면 한 번 더 시동한다.
   // 한도를 넘으면 포기하고 알린다 — 조용히 커버가 안 걷히는 '무한로딩'을 없앤다.
   const armDayVodBootWatch = useCallback((titleNo: number) => {
@@ -504,6 +588,12 @@ export function DayVodWindow({
       const active = dayVodActiveRef.current.get(titleNo) ?? "a";
       const standby: VodSlot = active === "a" ? "b" : "a";
       const newKey = dayVodSlotKey(titleNo, standby);
+      // 대기 슬롯이 리로드를 미뤄 둔 '쓴' 슬롯이면 지금 리로드한다 — 쓴 슬롯에 두 번째 Pload는 autoPlay가 안 먹는다.
+      // (리로드로 api가 지워져 아래는 pending 경로 → 새 iframe의 PonReady가 이어 튼다.)
+      if (dayVodDeferredReloadRef.current.get(titleNo) === standby) reloadDayVodSlot(titleNo, standby);
+      // 물러나는 주 슬롯이 포스터 초기화(autoPlay:false)만 받았으면 리로드를 미룬다 — 새 슬롯 시동과 겹치지 않게.
+      // 자동재생 Pload를 받은 슬롯은 늦게라도 굴러 숨은 소리가 날 수 있어 예전처럼 바로 리로드한다.
+      const posterOnly = dayVodPosterOnlyRef.current.has(dayVodSlotKey(titleNo, active));
       const oldTimer = dayVodRetryTimersRef.current.get(titleNo);
       if (oldTimer) window.clearTimeout(oldTimer);
       dayVodRetryTimersRef.current.delete(titleNo);
@@ -517,14 +607,14 @@ export function DayVodWindow({
       dayVodStartingAtRef.current.set(titleNo, performance.now());
       dayVodSettledAtRef.current.delete(titleNo);
       dayVodSeekAtRef.current.delete(titleNo);
-      commitDayVodSwap(titleNo, standby);
+      commitDayVodSwap(titleNo, standby, posterOnly);
       dayVodWantSecRef.current.set(titleNo, sec);
       if (post) startDayVodAutoPlay(titleNo, newKey, post, sec, muted);
       else dayVodPendingRef.current.set(newKey, sec);
       armDayVodStandby(titleNo); // 승격했으니 반대편(새 대기)도 붙여 데운다
       armDayVodBootWatch(titleNo);
     },
-    [startDayVodAutoPlay, commitDayVodSwap, armDayVodStandby, armDayVodBootWatch]
+    [startDayVodAutoPlay, commitDayVodSwap, reloadDayVodSlot, armDayVodStandby, armDayVodBootWatch]
   );
   // 감시 타이머(위)가 승격 함수를 부르는데 선언 순서상 아래에 있어 ref로 잇는다.
   const promoteDayVodStandbyRef = useRef(promoteDayVodStandby);
@@ -564,10 +654,13 @@ export function DayVodWindow({
       dayVodMutedRef.current.delete(k);
       dayVodSoundTryRef.current.delete(k);
       dayVodLoadedRef.current.delete(k);
+      dayVodPosterOnlyRef.current.delete(k);
     }
     dayVodWantSecRef.current.delete(titleNo);
+    dayVodKeyTargetRef.current.delete(titleNo);
     dayVodBootTryRef.current.delete(titleNo);
-    for (const map of [dayVodBootTimersRef.current, dayVodFlushTimersRef.current, dayVodSeekWatchRef.current]) {
+    dayVodDeferredReloadRef.current.delete(titleNo);
+    for (const map of [dayVodBootTimersRef.current, dayVodFlushTimersRef.current, dayVodSeekWatchRef.current, dayVodDeferredTimersRef.current]) {
       const timer = map.get(titleNo);
       if (timer) {
         window.clearTimeout(timer);
@@ -697,6 +790,7 @@ export function DayVodWindow({
         // 어떤 브라우저에서도 소리 켠 재생이 된다).
         post(buildDayVodPload(titleNo, 0, false));
         dayVodLoadedRef.current.add(key);
+        dayVodPosterOnlyRef.current.add(key);
       } else if (data.cmd === "PupdateMediaEvent") {
         if (!isActive) return; // 물러난 슬롯의 잔여 이벤트
         {
@@ -752,7 +846,15 @@ export function DayVodWindow({
           dayVodFocusRef.current = titleNo;
         }
         const cur = data.event?.currentTime;
-        if (typeof cur === "number" && Number.isFinite(cur)) {
+        // ←/→ 시킹이 내려앉기 전의 옛 위치는 버린다 — 기준 시각·재생 머리가 앞뒤로 튀던 원인(상단 VOD_KEY_SEEK_* 참조).
+        const keyTarget = dayVodKeyTargetRef.current.get(titleNo);
+        let staleForKey = false;
+        if (keyTarget && typeof cur === "number") {
+          if (Math.abs(cur - keyTarget.sec) <= VOD_KEY_SEEK_LAND_SEC) dayVodKeyTargetRef.current.delete(titleNo);
+          else if (performance.now() - keyTarget.at < VOD_KEY_SEEK_HOLD_MS) staleForKey = true;
+          else dayVodKeyTargetRef.current.delete(titleNo);
+        }
+        if (typeof cur === "number" && Number.isFinite(cur) && !staleForKey) {
           dayVodTimeRef.current.set(titleNo, cur);
           if (evType === "timeUpdate") dayVodLastTuAtRef.current.set(titleNo, performance.now());
           const subs = dayVodTimeSubsRef.current.get(titleNo);
@@ -785,6 +887,9 @@ export function DayVodWindow({
   const jumpDayVod = (titleNo: number, sec: number) => {
     setDayVodJump({ titleNo, sec }); // ↗ 새 탭 링크의 초 표기 동기화
     dayVodFocusRef.current = titleNo;
+    // 챕터 점프가 ←/→ 묶음을 이긴다 — 남은 키 목표가 늦게 날아가 챕터 자리를 덮지 않게.
+    dayVodKeyTargetRef.current.delete(titleNo);
+    window.clearTimeout(dayVodKeyTimerRef.current);
     dayVodEndedRef.current.delete(titleNo);
     // 챕터 링크(<a>)에 남은 포커스를 창으로 되돌린다 — 안 그러면 다음 Space/M이 링크에 먹혀 죽는다
     // (실측: 챕터 클릭 직후 Space 무반응).
@@ -962,23 +1067,51 @@ export function DayVodWindow({
       // (iframe 자체에 포커스가 있으면 키가 프레임 안으로 가 플레이어가 직접 처리 — 여기 안 온다.)
       e.preventDefault();
       const titleNo = dayVodFocusRef.current;
-      // 재생 전(기준 시각 없음)·시동 직후(명령이 플레이어를 망가뜨림)엔 무시.
-      if (titleNo === null || !dayVodAliveRef.current.has(titleNo) || !dayVodSettled(titleNo)) return;
+      // 재생 전(기준 시각 없음)엔 무시.
+      if (titleNo === null || !dayVodAliveRef.current.has(titleNo)) return;
+      const now = performance.now();
+      if (now - dayVodKeySeekAtRef.current < 120) return; // 키 반복(초당 30회) 홍수 방지
+      dayVodKeySeekAtRef.current = now;
+      const dir = e.key === "ArrowLeft" ? -1 : 1;
+      const max = durations.get(titleNo) ?? Number.POSITIVE_INFINITY;
+      // 자리잡기 전(시동 직후 0.8초)의 명령은 플레이어를 망가뜨린다 — 예전엔 키를 버려 '초반에 안 먹고 툭툭'이었다.
+      // 이제는 위치만 쌓아 두고, 자리잡는 순간 flushDayVodWantSec이 PseekTo 한 번으로 보낸다(챕터 연타와 같은 길).
+      if (!dayVodSettled(titleNo)) {
+        const base = dayVodWantSecRef.current.get(titleNo) ?? dayVodTimeRef.current.get(titleNo) ?? 0;
+        const want = Math.min(Math.max(0, base + dir * VOD_KEY_SEEK_SEC), max);
+        dayVodWantSecRef.current.set(titleNo, want);
+        notifyDayVodTime(titleNo, want);
+        return;
+      }
       const post = dayVodApisRef.current.get(
         dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a")
       );
       if (!post) return;
-      const now = performance.now();
-      if (now - dayVodKeySeekAtRef.current < 120) return; // 키 반복(초당 30회) 홍수 방지
-      dayVodKeySeekAtRef.current = now;
-      const cur = dayVodTimeRef.current.get(titleNo) ?? 0;
-      const max = durations.get(titleNo) ?? Number.POSITIVE_INFINITY;
-      const next = Math.min(Math.max(0, cur + (e.key === "ArrowLeft" ? -1 : 1) * VOD_KEY_SEEK_SEC), max);
-      notifyDayVodTime(titleNo, next); // 연타 시 timeUpdate가 오기 전에도 누적 + 레일 즉시 추적
-      post({ cmd: "PseekTo", seconds: { time: next, seekType: "timelink" } });
-      dayVodSeekAtRef.current.set(titleNo, now);
+      // 기준 = 아직 내려앉지 않은 마지막 키 목표, 없으면 플레이어 위치(옛 위치는 메시지 핸들러가 걸렀다).
+      const base = dayVodKeyTargetRef.current.get(titleNo)?.sec ?? dayVodTimeRef.current.get(titleNo) ?? 0;
+      const next = Math.min(Math.max(0, base + dir * VOD_KEY_SEEK_SEC), max);
+      dayVodKeyTargetRef.current.set(titleNo, { sec: next, at: now });
+      notifyDayVodTime(titleNo, next); // 레일·재생 머리는 키마다 즉시 따라간다
       if (next < max - 5) dayVodEndedRef.current.delete(titleNo); // 끝에서 되감으면 다음 자동 전환을 다시 허용
       // (↗ 링크의 초 표기(dayVodJump)는 갱신하지 않는다 — 키 반복마다 포스터 전체가 다시 그려진다.)
+      // 시킹 묶기: 첫 키는 바로, 간격 안의 키는 끝 위치 하나로 모아 간격이 차면 보낸다.
+      const send = () => {
+        const target = dayVodKeyTargetRef.current.get(titleNo);
+        if (!target) return; // 그새 내려앉았거나 챕터 점프가 가져갔다
+        const p = dayVodApisRef.current.get(
+          dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a")
+        );
+        if (!p) return;
+        const at = performance.now();
+        dayVodKeySentAtRef.current = at;
+        p({ cmd: "PseekTo", seconds: { time: target.sec, seekType: "timelink" } });
+        dayVodSeekAtRef.current.set(titleNo, at);
+        armDayVodSeekWatchRef.current(titleNo, target.sec);
+      };
+      window.clearTimeout(dayVodKeyTimerRef.current);
+      const wait = VOD_KEY_SEEK_GAP_MS - (now - dayVodKeySentAtRef.current);
+      if (wait <= 0) send();
+      else dayVodKeyTimerRef.current = window.setTimeout(send, wait);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
