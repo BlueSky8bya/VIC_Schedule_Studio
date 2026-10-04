@@ -70,9 +70,6 @@ const VOD_KEY_SEEK_SEC = 10;
 const VOD_KEY_SEEK_GAP_MS = 320;
 const VOD_KEY_SEEK_LAND_SEC = 3;
 const VOD_KEY_SEEK_HOLD_MS = 2_500;
-// 물러난(재생 안 하던) 슬롯 리로드 미루기 — 새 주 슬롯이 이만큼 굴러간 뒤에, 늦어도 MAX 뒤엔 한다.
-const VOD_RELOAD_QUIET_MS = 6_000;
-const VOD_RELOAD_DEFER_MAX_MS = 45_000;
 // 시동 감시(2026-09-18) — 첫 Pload(또는 예약)를 보낸 뒤 이 시간까지 미디어 이벤트가 하나도 없으면
 // 한 번 더 시동한다. 음소거 시동은 "항상 굴러간다"는 가정이었지만 실제로는 광고·네트워크·죽은
 // iframe으로 조용히 멈추는 경우가 있고, 그러면 커버(▶)가 영원히 안 걷혀 '무한로딩'으로 보인다.
@@ -292,9 +289,8 @@ export function DayVodWindow({
   const dayVodBootTryRef = useRef(new Map<number, number>());
   const dayVodBootTimersRef = useRef(new Map<number, number>());
   const dayVodFlushTimersRef = useRef(new Map<number, number>());
-  // 리로드를 미뤄 둔 물러난 슬롯(방송별)과 그 확인 타이머 — commitDayVodSwap 참조.
+  // 리로드를 미뤄 둔 물러난 슬롯(방송별) — 다음 승격 때 리로드한다. commitDayVodSwap 참조.
   const dayVodDeferredReloadRef = useRef(new Map<number, VodSlot>());
-  const dayVodDeferredTimersRef = useRef(new Map<number, number>());
   // 포스터 초기화 Pload(autoPlay:false)만 받은 슬롯 — 자동재생 Pload를 받으면 빠진다.
   const dayVodPosterOnlyRef = useRef(new Set<string>());
   // 대기 슬롯을 붙일 때가 된 방송 — 주 슬롯이 준비된 뒤(또는 2.5초 뒤). 창을 열자마자 iframe 두 개가
@@ -380,8 +376,6 @@ export function DayVodWindow({
     dayVodBootTimersRef.current.clear();
     for (const t of dayVodFlushTimersRef.current.values()) window.clearTimeout(t);
     dayVodFlushTimersRef.current.clear();
-    for (const t of dayVodDeferredTimersRef.current.values()) window.clearTimeout(t);
-    dayVodDeferredTimersRef.current.clear();
     dayVodDeferredReloadRef.current.clear();
     dayVodPosterOnlyRef.current.clear();
     for (const t of dayVodSeekWatchRef.current.values()) window.clearTimeout(t);
@@ -456,28 +450,14 @@ export function DayVodWindow({
       };
     });
   }, []);
-  // 미뤄 둔 리로드는 새 주 슬롯이 VOD_RELOAD_QUIET_MS 동안 굴러간 뒤에(또는 한도가 지나면) 한다.
-  const scheduleDayVodDeferredReload = useCallback(
-    (titleNo: number) => {
-      const since = performance.now();
-      const tick = () => {
-        const slot = dayVodDeferredReloadRef.current.get(titleNo);
-        if (slot === undefined) return; // 그새 했거나(승격) 창이 비워졌다
-        const settledAt = dayVodSettledAtRef.current.get(titleNo);
-        const now = performance.now();
-        const quiet = settledAt !== undefined && now - settledAt > VOD_RELOAD_QUIET_MS;
-        if (quiet || now - since > VOD_RELOAD_DEFER_MAX_MS) reloadDayVodSlot(titleNo, slot);
-        else dayVodDeferredTimersRef.current.set(titleNo, window.setTimeout(tick, 1_000));
-      };
-      window.clearTimeout(dayVodDeferredTimersRef.current.get(titleNo));
-      dayVodDeferredTimersRef.current.set(titleNo, window.setTimeout(tick, 1_000));
-    },
-    [reloadDayVodSlot]
-  );
   // 슬롯 교체 확정: 새 슬롯을 주로, 물러나는 슬롯은 gen++로 리로드(새 대기).
-  //  deferReload — 물러나는 슬롯이 재생 중이 아니었으면(포스터+▶ 초기화만 한 주 슬롯) 리로드를 미룬다
+  //  deferReload — 물러나는 슬롯이 포스터 초기화만 받았으면 리로드를 **다음에 그 슬롯이 필요할 때까지** 미룬다
   //  (2026-10-05 소유자: "타임라인 처음 눌러 재생하면 자주 끊긴다" — 새 주 슬롯이 막 굴러가는 순간 옛 슬롯이
-  //  숲 플레이어를 통째로 다시 받아 CPU·망을 빼앗았다. 재생 중이던 슬롯은 소리가 남지 않게 바로 리로드).
+  //  숲 플레이어를 통째로 다시 받아 CPU·망을 빼앗았다).
+  //  ⚠ 재생 중에 리로드하면 안 된다(같은 날 실측·소유자 신고 "UI는 소리 켬인데 음소거로 재생"): 같은 페이지의
+  //  숲 플레이어들은 소리 상태를 공유해서, 새 플레이어가 뜨는 순간 굴러가던 플레이어의 <video>가 muted로
+  //  뒤집혔다(플레이어 UI는 안 바뀜). 그래서 시간 지연이 아니라 승격(promoteDayVodStandby) 때만 리로드한다.
+  //  재생 중이던 슬롯은 소리가 남지 않게 예전처럼 바로 리로드.
   const commitDayVodSwap = useCallback(
     (titleNo: number, newSlot: VodSlot, deferReload = false) => {
       const oldSlot: VodSlot = newSlot === "a" ? "b" : "a";
@@ -491,7 +471,6 @@ export function DayVodWindow({
         dayVodPendingRef.current.delete(oldKey);
         dayVodSoundTryRef.current.delete(oldKey);
         dayVodDeferredReloadRef.current.set(titleNo, oldSlot);
-        scheduleDayVodDeferredReload(titleNo);
         setDayVodSlots((prev) => {
           const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
           return { ...prev, [titleNo]: { ...cur, active: newSlot } };
@@ -515,7 +494,7 @@ export function DayVodWindow({
         return { ...prev, [titleNo]: { ...cur, active: newSlot } };
       });
     },
-    [reloadDayVodSlot, scheduleDayVodDeferredReload]
+    [reloadDayVodSlot]
   );
   // 시동 감시(2026-09-18): 첫 Pload/예약 뒤 아무 미디어 이벤트도 없으면 한 번 더 시동한다.
   // 한도를 넘으면 포기하고 알린다 — 조용히 커버가 안 걷히는 '무한로딩'을 없앤다.
@@ -660,7 +639,7 @@ export function DayVodWindow({
     dayVodKeyTargetRef.current.delete(titleNo);
     dayVodBootTryRef.current.delete(titleNo);
     dayVodDeferredReloadRef.current.delete(titleNo);
-    for (const map of [dayVodBootTimersRef.current, dayVodFlushTimersRef.current, dayVodSeekWatchRef.current, dayVodDeferredTimersRef.current]) {
+    for (const map of [dayVodBootTimersRef.current, dayVodFlushTimersRef.current, dayVodSeekWatchRef.current]) {
       const timer = map.get(titleNo);
       if (timer) {
         window.clearTimeout(timer);
