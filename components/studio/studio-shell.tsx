@@ -5585,7 +5585,7 @@ export function StudioShell({
                             <p className="agenda-title">
                               <span className="agenda-title-text">
                                 {!event.isSupport && event.isTentative ? (
-                                  <span className="evt-tentative">미정</span>
+                                  <span className="sr-only">미정 </span>
                                 ) : null}
                                 {event.isSupport ? (
                                   <>
@@ -7222,9 +7222,10 @@ export function StudioShell({
                                 🔮
                               </span>
                             ) : null}
-                            {/* 미정 칩은 strong 밖, flex 부모(.pill-main) 직속 — 순서는 시청자와 같이 🔮 → 미정 → 제목. */}
+                            {/* 미정은 카드 빗금이 말한다 — 칩을 두면 제목 시작점이 다른 카드와 어긋나고 글자 자리가
+                                줄었다(2026-10-05 소유자). 스크린리더용 '미정'만 남긴다. */}
                             {span.showTitle && event.isTentative ? (
-                              <span className="evt-tentative">미정</span>
+                              <span className="sr-only">미정 </span>
                             ) : null}
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (

@@ -3211,7 +3211,7 @@ export function PublicPoster({
                     {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                     <div className="event-main teaser-main">
                       <span className="teaser-spark" aria-hidden="true">🔮</span>
-                      {event.isTentative ? <span className="evt-tentative">미정</span> : null}
+                      {event.isTentative ? <span className="sr-only">미정 </span> : null}
                       <p className="teaser-q">???</p>
                       <TeaserCountdown
                         motionEnabled={interactive}
@@ -3261,7 +3261,7 @@ export function PublicPoster({
               span.isMulti && !span.roundLeft ? "no-left" : "",
               span.isMulti && !span.roundRight ? "no-right" : "",
               isDimmedByFilter(event) ? "dimmed" : "",
-              // 미정 = 빗금(이어진 칸 전부 — 한 일정이 칸마다 달라 보이지 않게). '미정' 칩은 제목 칸에만.
+              // 미정 = 빗금(이어진 칸 전부 — 한 일정이 칸마다 달라 보이지 않게). 글자 칩은 없다(제목 정렬 유지).
               event.isTentative ? "tentative" : "",
               justRevealed.has(rawEvent.id) ? "just-revealed" : "",
               bookmarked ? "bookmarked" : ""
@@ -3332,7 +3332,7 @@ export function PublicPoster({
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (
                     <p>
-                      {event.isTentative ? <span className="evt-tentative">미정</span> : null}
+                      {event.isTentative ? <span className="sr-only">미정 </span> : null}
                       {/* 방금 공개된 떡밥은 ?에서 글자가 확정되는 스크램블로 등장. */}
                       {justRevealed.has(rawEvent.id) ? <ScrambleText text={main} /> : main}
                     </p>
@@ -3577,6 +3577,10 @@ export function PublicPoster({
                 <i aria-hidden="true" className="tier-swatch tier-top">👑</i>
               </span>
             </div>
+            {/* 빗금 = 미정 — 카드엔 '미정' 글자가 없으니(정렬 유지) 뜻은 여기서 한 번 알려 준다(2026-10-05). */}
+            <p className="agenda-tent-help">
+              <i aria-hidden="true" className="tent-swatch" /> 미정
+            </p>
           </aside>
           ) : null}
           {/* '이 달 기록' — 웹에선 헤더(.public-calendar-header)에 있는데, 그 헤더는 ≤1040px에서
@@ -3728,7 +3732,7 @@ export function PublicPoster({
                           >
                             {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                             <span className="teaser-spark" aria-hidden="true">🔮</span>
-                            {event.isTentative ? <span className="evt-tentative">미정</span> : null}
+                            {event.isTentative ? <span className="sr-only">미정 </span> : null}
                             <p className="agenda-title teaser-q">???</p>
                             <TeaserCountdown
                               motionEnabled={interactive}
@@ -3822,7 +3826,7 @@ export function PublicPoster({
                           <p className="agenda-title">
                             <span className="agenda-title-text">
                               {!support && event.isTentative ? (
-                                <span className="evt-tentative">미정</span>
+                                <span className="sr-only">미정 </span>
                               ) : null}
                               {support
                                 ? (
@@ -4143,6 +4147,10 @@ export function PublicPoster({
             </li>
           </ul>
         )}
+        {/* 빗금 = 미정 — 카드엔 '미정' 글자가 없으니(제목 정렬 유지) 뜻은 범례가 알려 준다(2026-10-05). */}
+        <p className="legend-tent-line">
+          <i aria-hidden="true" className="tent-swatch" /> {compact ? "미정" : "빗금 = 미정"}
+        </p>
       </div>
     </div>
   );

@@ -92,5 +92,6 @@ Latest: `0132_search_synonyms_drop_rel_chip.sql` — the 308k auto-rel / rel-chi
 | 0135 | 화제 칩 용언·인용 꼬리 떼기: 된다·한다·라고 등은 몸통(2자 이상)이 문서 어휘·사전·채팅 단어에 있으면 몸통으로 — 빗토리된다 → 빗토리 |
 | 0136 | DB 한도(무료 0.5GB) 사고 대응: `search_term_relations`는 낱말당 상위 60 이웃 + 제안에 나올 수 있는 이웃 상위 60만(115만 → 34만 행, 275 → 43MB), 야간 재빌드 delete → truncate(밤마다 두 배로 부풀던 것), `perf_samples` 30일 보관(야간 일괄). DB 494 → 247MB |
 | 0137 | 관계 표 재빌드를 옆 표(`search_term_relations_next`)에 짓고 야간 일괄 맨 끝에 이름 맞바꾸기(`search_term_relations_swap`, lock_timeout 5초, 빈 표면 안 바꿈). 0136 truncate 잠금이 일괄 끝까지 검색을 막던 것 해소 — 재빌드 중 익명 검색 241회 실패 0·최대 246ms. 두 표는 권한·RLS 같게 유지, 인덱스·정책 이름은 바꿀 때마다 엇갈림 |
+| 0138 | `public_schedule_events` 뷰: 공개 전 떡밥도 `is_tentative`는 그대로(0125는 false로 덮음) — 미정은 내용이 아닌 상태값, 시청자가 미정 떡밥을 빗금으로 구분. 나머지 가림 그대로 |
 | 0121 | `dark_palette` STORED generated column — 기본 팔레트·커스텀 태그의 다크 채움/테두리/글자/강조색을 자동 저장. 원본 색 보존, 하위 NULL 상속, 앱 reader보다 먼저 적용. [ADR-0026](../../docs/agent/decisions/ADR-0026-automatic-dark-tag-palette.md) |
 | 0122 | 색 구분 개선 `dark_palette_v2` — 파스텔 채도·명도·테두리 차이 강화. v1/원본 보존, 새 함수/생성 컬럼으로 기존·신규 색 자동 저장. v2 reader보다 먼저 적용 |

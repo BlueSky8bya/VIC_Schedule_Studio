@@ -5861,7 +5861,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
    캘린더 표준(Google '참석 미정'·Outlook·Apple 'tentative')을 따라 **빗금**으로 '아직 확정 아님'을 말한다.
    점선은 떡밥(보라 점선 링) 전용 — 예전 미정 점선 테두리는 떡밥과 겹치면 이중 점선이 됐고, 진한 카드 위에선
    거의 안 보였다. 빗금은 카드 글자색(currentColor)으로 옅게 그어 진한 카드엔 흰 줄, 옅은 카드엔 짙은 줄 —
-   어떤 태그색에서도 보이고 글자 대비를 해치지 않는다. 의미(미정 = 주황)는 가로 '미정' 칩이 맡는다.
+   어떤 태그색에서도 보이고 글자 대비를 해치지 않는다. 카드엔 글자 칩을 두지 않는다 — 칩만큼 제목 시작점이
+   다른 카드와 어긋나고 글자 자리가 줄었다(2026-10-05 소유자). 뜻은 범례 '빗금 = 미정'이, 스크린리더는 숨은 '미정'이.
    빗금 레이어는 카드 첫 자식 .evt-hatch(z-index -1) — 카드가 isolation으로 쌓임 맥락을 만들어 카드 면 위·
    글자 아래에 깔린다. 인라인 background(태그색·2색 그라데이션)를 건드리지 않으므로 어떤 칠과도 겹친다. */
 :is(.public-event, .studio-event-pill, .agenda-item).tentative {
@@ -5885,15 +5886,57 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 /* 2색 칸은 자식을 무늬 위로 올리는 규칙(position:relative)이 있다 — 그 규칙은 .evt-hatch를 빼 둔다
    (안 빼면 빗금이 크기 0인 흐름 요소가 돼 2색 미정 카드에서만 사라졌다, 2026-10-05 실측). */
-/* 모바일 아젠다: 카드 면이 없고 색 바가 그 일정의 시각 신호 — 바에 흰 빗금. (떡밥 아젠다 카드는 면 빗금.) */
+/* 모바일 아젠다: 카드 면이 없고 색 바가 그 일정의 시각 신호 — 바에 빗금. (떡밥 아젠다 카드는 면 빗금.) */
 .agenda-event.tentative :is(.agenda-bar:not(.agenda-bar-2), .agenda-bar-half) {
+  /* 흰 줄 + 짙은 가는 줄 한 쌍 — 흰 줄만이면 옅은 색 바(민트 등)에서 안 보였다(2026-10-05 캡처). */
   background-image: repeating-linear-gradient(
     135deg,
-    rgb(255 255 255 / 55%) 0 2px,
-    transparent 2px 6px
+    rgb(255 255 255 / 60%) 0 2px,
+    rgb(0 0 0 / 22%) 2px 3px,
+    transparent 3px 6px
   ) !important; /* 바 색은 인라인 background 단축 속성 — 이미지 층만 덮어쓴다(색은 그대로). */
 }
-/* '미정' 칩 — 가로 두 글자, 의미색 주황. 크림 면 + 짙은 주황 글자라 어떤 카드색 위에서도 읽힌다(대비 6.9:1). */
+/* 범례 스와치 '빗금 = 미정' — 중립 면 + 카드와 같은 각도의 빗금(PC 범례·모바일 레일 공용). */
+.tent-swatch {
+  display: inline-block;
+  width: 22px;
+  height: 12px;
+  border-radius: var(--r-pill);
+  background:
+    repeating-linear-gradient(135deg, rgb(0 0 0 / 30%) 0 2px, transparent 2px 5px),
+    #ece4d0;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+  vertical-align: -1px;
+}
+/* 인기도 줄(.legend-tiers li)과 같은 칸·간격·글자 — 라벨 왼쪽 끝이 위 목록과 맞는다. */
+.legend-tent-line {
+  display: grid;
+  grid-template-columns: var(--legend-swatch, 26px) 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 2px 6px;
+  font-size: var(--text-body);
+  font-weight: 800;
+  color: #6b6450;
+  white-space: nowrap;
+}
+.legend-tent-line .tent-swatch {
+  width: 100%;
+  height: 14px;
+}
+.agenda-tent-help {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: var(--text-caption);
+  font-weight: 900;
+  color: #8a7a4a;
+}
+/* '미정' 칩 — 상세 팝오버·시트·방송 패널처럼 문장으로 읽는 자리에만 쓴다(달력 카드는 빗금만, 정렬 유지).
+   가로 두 글자, 의미색 주황. 크림 면 + 짙은 주황 글자라 어떤 카드색 위에서도 읽힌다(대비 6.9:1). */
 .evt-tentative {
   display: inline-flex;
   flex: 0 0 auto;

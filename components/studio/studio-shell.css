@@ -6860,6 +6860,11 @@ html[data-reduce-motion] .drop-gap {
 .studio-event-pill.teaser.primary-selected {
   outline: none;
 }
+/* 옮기는 동안 원래 자리(::after '원래 위치' 점선)에도 떡밥 점선이 겹쳐 두 줄이 됐다(2026-10-05 소유자) —
+   집은 동안은 끈다. 떡밥임은 ???·🔮가 계속 말한다. */
+.studio-event-pill.teaser.dragging-src {
+  outline: none;
+}
 .pill-teaser {
   flex: 0 0 auto;
   font-size: calc(12px * var(--cal-zoom, 1));
