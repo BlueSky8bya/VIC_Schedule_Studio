@@ -475,7 +475,9 @@ function mapEvent(row: EventRow, nowMs: number): PublicScheduleEvent {
       id: row.id,
       startsAt: toKstIso(row.date_key, null),
       isAllDay: true,
-      isTentative: false,
+      // 미정 여부는 내용이 아닌 공개 안전 상태값 — 가린 떡밥도 '미정'인지는 보여 준다(2026-10-05 소유자:
+      // 시청자 화면에서 미정 떡밥과 확정 떡밥이 구분이 안 된다). 제목·태그·카테고리·시각은 여전히 가린다.
+      isTentative: row.is_tentative ?? false,
       publicTitle: "", // 가림 — 클라가 전용 룩으로 렌더
       status: row.status,
       visibilityScope: "public",

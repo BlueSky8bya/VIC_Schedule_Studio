@@ -5499,7 +5499,7 @@ export function StudioShell({
                             ? { background: tagColor(colors[0].bgColor, "accentColor", colors[0].darkColors) }
                             : undefined;
                       const dimCls = isDimmedByFilter(event) ? " filter-dim" : "";
-                      const tentCls = event.isTentative ? " tentative" : ""; // 미정: 점선 테두리
+                      const tentCls = event.isTentative ? " tentative" : ""; // 미정: 색 바에 빗금 + '미정' 칩
                       // 업 도움: 시청자 화면처럼 기간 + "도우러 가기" 링크를 인라인으로 보여준다.
                       // (링크를 누르려면 <a>가 필요해 편집 버튼으로 감싸지 않고, 따로 "수정"을 둔다.)
                       if (event.isSupport) {
@@ -7073,7 +7073,8 @@ export function StudioShell({
                         inSelChain ? "selected" : "",
                         isSel ? "primary-selected" : "",
                         isDimmedByFilter(event) ? "filter-dim" : "",
-                        event.isTentative && span.showTitle ? "tentative" : "",
+                        // 미정 = 빗금(이어진 칸 전부). '미정' 칩은 제목 칸에만. 점선은 떡밥 전용.
+                        event.isTentative ? "tentative" : "",
                         span.isMulti ? "span" : "",
                         span.isMulti && !span.roundLeft ? "no-left" : "",
                         span.isMulti && !span.roundRight ? "no-right" : "",
@@ -7208,15 +7209,11 @@ export function StudioShell({
                           eventIndex === dateEvents.length - 1 ? (
                             <span className="drop-insert-line end" aria-hidden="true" />
                           ) : null}
+                          {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
                             {span.showTitle && syncingIds.includes(canonId(event.id)) ? (
                               <span className="pill-sync" aria-hidden="true" title="동기화 중…" />
-                            ) : null}
-                            {/* 미정 칩(세로 미/정)은 strong 밖, flex 부모(.pill-main, align-items:center)
-                                직속으로 둬 2줄 높이 칩이 제목과 정확히 가운데 정렬되게 한다. */}
-                            {span.showTitle && event.isTentative ? (
-                              <span className="evt-tentative">미정</span>
                             ) : null}
                             {/* 떡밥(가림) 배지 — 편집실에선 토리·개발자가 어떤 일정이 가려졌는지 한눈에.
                                 시청자에겐 공개 시각 전까지 ???로만 보인다. 호버하면 공개 예정 시각. */}
@@ -7224,6 +7221,10 @@ export function StudioShell({
                               <span className="pill-teaser" title={teaserBadgeTitle(event.teaserRevealAt)}>
                                 🔮
                               </span>
+                            ) : null}
+                            {/* 미정 칩은 strong 밖, flex 부모(.pill-main) 직속 — 순서는 시청자와 같이 🔮 → 미정 → 제목. */}
+                            {span.showTitle && event.isTentative ? (
+                              <span className="evt-tentative">미정</span>
                             ) : null}
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (

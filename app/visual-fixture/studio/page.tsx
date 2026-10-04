@@ -10,6 +10,7 @@ import { StudioShell } from "@/components/studio/studio-shell";
 import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { isBiomeKey } from "@/components/shared/ambient/world/biomes";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
+import { tentativeFixtureEvents } from "../tentative-events";
 
 // 비주얼/E2E 테스트 전용 fixture — 고정 샘플 데이터로 편집실 셸을 렌더한다(인증·DB 없이).
 // 오버레이 스택(시청자 미리보기 → '이 달 기록' 시트) 회귀를 브라우저에서 실측하기 위한 페이지.
@@ -19,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -90,7 +91,10 @@ export default async function VisualStudioFixture({
                 }
               ]
             }
-          : sampleStudioSchedule
+          : sp?.tent === "1"
+            ? // tent=1 → 6/16~19에 미정·떡밥 비교 묶음 — 미정 표시 회귀 실측용(2026-10-05).
+              { ...sampleStudioSchedule, events: [...sampleStudioSchedule.events, ...tentativeFixtureEvents(false)] }
+            : sampleStudioSchedule
       }
       initialView={{ year: y, month: m }}
       initialViewerMode={viewer}

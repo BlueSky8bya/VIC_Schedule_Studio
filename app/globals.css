@@ -120,6 +120,12 @@
   --teaser-ink: #4d3f8f;
   --teaser-soft: #c4b5fd;
   --teaser-rgb: 124 108 240;
+  /* 미정(아직 확정 아님) = --tentative-* 주황(2026-10-05). 카드 면 빗금(.evt-hatch) + 가로 '미정' 칩.
+     점선은 떡밥 전용이라 미정은 점선을 쓰지 않는다(둘이 겹치면 이중 점선으로 헷갈렸다). */
+  --tentative: #d97706;
+  --tentative-ink: #8a4304;
+  --tentative-soft: #fff1db;
+  --tentative-rgb: 217 119 6;
   --selection-hue: var(--studio-action);
   --selection-rgb: var(--studio-action-rgb);
   --selection-fill: var(--studio-action-tint-hi);

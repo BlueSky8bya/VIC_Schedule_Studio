@@ -2352,7 +2352,7 @@ html[data-reduce-motion] .perf-spin {
   --ac: var(--teaser);
 }
 .opt-chip.tentative {
-  --ac: #e08407;
+  --ac: var(--tentative); /* 미정 의미색 단일 출처(globals --tentative-*) */
 }
 /* 달력 띠 종류(2026-09-01 대개편) — 칩 두 개가 곧 스위치: 켜진 칩 다시 누르면 끔.
    마스터 토글·하위 라디오·들여쓰기 없이 한 줄. 업 도움 = 장미, 기간 안내 = 하늘색
@@ -5843,12 +5843,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
     inset 0 1px 0 rgb(255 255 255 / 55%),
     0 2px 6px rgb(159 18 57 / 22%);
 }
-/* 미정(모바일 아젠다) — 카드 전체가 아니라 '세로 색상 바'에 점선을 둘러 미정임을 표시(모바일에선
-   바가 그 일정의 시각 신호라 거기에 두는 게 자연스럽다). 제목 앞 '미정' 칩(공용 .evt-tentative)도 함께. */
-.agenda-event.tentative .agenda-bar {
-  outline: 2px dashed rgb(0 0 0 / 40%);
-  outline-offset: 1px;
-}
+/* 미정(모바일 아젠다) — 색 바 빗금 + '미정' 칩, 공용 규칙은 public-poster.css '미정' 블록. */
 /* 모바일 색상 필터 줄 — 가로 스크롤 없이 그대로 wrap(위 .tlg-group 규칙 적용). */
 
 /* 태그 편집기 — 콘텐츠/방식을 묶음 카드로 갈라 한 눈에 보이게. */
@@ -6426,12 +6421,7 @@ body.cell-range-dragging {
     border-radius var(--dur-3) var(--ease),
     margin var(--dur-3) var(--ease);
 }
-/* 미정(아직 확정 아님) — 굵은 점선 테두리(잘 보이게). '미정' 칩은 공용 .evt-tentative. */
-.studio-event-pill.tentative {
-  border-style: dashed;
-  border-width: 2px;
-  border-color: rgb(0 0 0 / 48%);
-}
+/* 미정(아직 확정 아님) — 빗금 + '미정' 칩, 공용 규칙은 public-poster.css '미정' 블록(.evt-hatch·.evt-tentative). */
 .studio-event-pill:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);
@@ -6487,10 +6477,6 @@ body.cell-range-dragging {
   font-weight: 800;
   letter-spacing: 0.02em;
   pointer-events: none;
-}
-/* 미정 카드는 보더가 2px — 그만큼 더 내밀어야 바깥 크기가 같아진다. */
-.studio-event-pill.tentative.dragging-src::after {
-  inset: -2px;
 }
 /* 드래그로 잇기: 집은 카드와 이을 수 있는 상대만 또렷·강조하고 나머지는 흐릿하게 눌러, "지금
    여기로 끌고 오면 이어진다"를 눈으로 구분시킨다(의도 분리). 합성 전용(opacity/transform/shadow). */
@@ -6851,7 +6837,7 @@ html[data-reduce-motion] .drop-gap {
 /* 무늬 위에 글자/점줄을 올린다. 단, 드롭 안내선(.drop-insert-line)은 제외 — 안 그러면 이
    규칙의 position:relative가 안내선의 position:absolute를 덮어(특이도 우위) 안내선이 틈
    오버레이가 아니라 카드 본문 안 인라인 막대로 박혀 버린다(멀티태그 카드 안내 깨짐). */
-.studio-event-pill[data-mixed] > :not(.evt-pat):not(.drop-insert-line):not(.pill-delete) {
+.studio-event-pill[data-mixed] > :not(.evt-pat):not(.drop-insert-line):not(.pill-delete):not(.evt-hatch) {
   position: relative;
   z-index: 1;
 }
@@ -7159,7 +7145,7 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
 /* 확대 시 의미 텍스트 배지('미정' 칩)도 제목과 함께 커진다 — 본체 스타일은 public-poster.css
    공용이라 건드리지 않고 편집실 카드 안에서만 배율(포스터엔 --cal-zoom이 없어 영향 0). */
 .studio-event-pill .evt-tentative {
-  font-size: calc(10px * var(--cal-zoom, 1));
+  font-size: calc(10.5px * var(--cal-zoom, 1));
 }
 /* 업도움 띠도 편집실 스코프에서만 배율 — 본체는 app/globals.css 공용(높이 근거는 그쪽 주석).
    레인 간격·top은 inline에서 calZoom을 곱하므로(스튜디오 셸) 높이·글자만 여기서 따라간다.
@@ -11504,7 +11490,7 @@ html[data-reduce-motion] .save-status.saving .ss-dot {
 }
 
 .opt-chip.tentative {
-  --ac: var(--status-warning);
+  --ac: var(--tentative);
 }
 
 .opt-chip.support {

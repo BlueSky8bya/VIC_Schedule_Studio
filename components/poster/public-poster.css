@@ -5857,35 +5857,65 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
     filter: saturate(1.08) brightness(1.02);
   }
 }
-/* 미정(아직 확정 아님) — 점선 테두리로 '확정 아님'을 한눈에. (캘린더 표준: tentative=점선) */
-.public-event.tentative {
-  border-style: dashed;
-  border-color: rgb(0 0 0 / 30%);
+/* ── 미정(아직 확정 아님) — 편집실·시청자·PC·모바일 공용 한 구현(UI-18, 2026-10-05) ──────────
+   캘린더 표준(Google '참석 미정'·Outlook·Apple 'tentative')을 따라 **빗금**으로 '아직 확정 아님'을 말한다.
+   점선은 떡밥(보라 점선 링) 전용 — 예전 미정 점선 테두리는 떡밥과 겹치면 이중 점선이 됐고, 진한 카드 위에선
+   거의 안 보였다. 빗금은 카드 글자색(currentColor)으로 옅게 그어 진한 카드엔 흰 줄, 옅은 카드엔 짙은 줄 —
+   어떤 태그색에서도 보이고 글자 대비를 해치지 않는다. 의미(미정 = 주황)는 가로 '미정' 칩이 맡는다.
+   빗금 레이어는 카드 첫 자식 .evt-hatch(z-index -1) — 카드가 isolation으로 쌓임 맥락을 만들어 카드 면 위·
+   글자 아래에 깔린다. 인라인 background(태그색·2색 그라데이션)를 건드리지 않으므로 어떤 칠과도 겹친다. */
+:is(.public-event, .studio-event-pill, .agenda-item).tentative {
+  isolation: isolate;
 }
-/* '미정' 칩 — 제목 앞 작은 점선 알약. 글자색(currentColor)을 따라 카드 색과 어울린다. */
+/* 아젠다 떡밥 카드는 원래 위치 기준이 아니다 — 없으면 빗금이 화면 전체로 번졌다(실측 390×1662). */
+.agenda-item.tentative {
+  position: relative;
+}
+.evt-hatch {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, currentColor 20%, transparent) 0 3px,
+    transparent 3px 9px
+  );
+}
+/* 2색 칸은 자식을 무늬 위로 올리는 규칙(position:relative)이 있다 — 그 규칙은 .evt-hatch를 빼 둔다
+   (안 빼면 빗금이 크기 0인 흐름 요소가 돼 2색 미정 카드에서만 사라졌다, 2026-10-05 실측). */
+/* 모바일 아젠다: 카드 면이 없고 색 바가 그 일정의 시각 신호 — 바에 흰 빗금. (떡밥 아젠다 카드는 면 빗금.) */
+.agenda-event.tentative :is(.agenda-bar:not(.agenda-bar-2), .agenda-bar-half) {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(255 255 255 / 55%) 0 2px,
+    transparent 2px 6px
+  ) !important; /* 바 색은 인라인 background 단축 속성 — 이미지 층만 덮어쓴다(색은 그대로). */
+}
+/* '미정' 칩 — 가로 두 글자, 의미색 주황. 크림 면 + 짙은 주황 글자라 어떤 카드색 위에서도 읽힌다(대비 6.9:1). */
 .evt-tentative {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
-  justify-content: center;
-  margin-right: 4px;
-  /* '미정'을 세로로(미/정) — 좁고 키 큰 칩. */
-  writing-mode: vertical-rl;
-  text-orientation: upright;
-  padding: 3px 2px;
-  border: 1px dashed currentColor;
+  margin-right: 5px;
+  padding: 1px 5px;
   border-radius: var(--r-pill);
+  background: var(--tentative-soft);
+  box-shadow: inset 0 0 0 1px rgb(var(--tentative-rgb) / 45%);
+  color: var(--tentative-ink);
   font-size: var(--text-micro);
   font-weight: 900;
-  line-height: 1;
-  letter-spacing: -1px;
-  opacity: 0.82;
-  vertical-align: middle;
+  line-height: 1.35;
+  letter-spacing: 0;
+  white-space: nowrap;
+  vertical-align: 0.1em;
 }
 /* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
 .public-event[data-mixed] {
   position: relative;
 }
-.public-event[data-mixed] > :not(.evt-pat) {
+.public-event[data-mixed] > :not(.evt-pat):not(.evt-hatch) {
   position: relative;
   z-index: 1;
 }

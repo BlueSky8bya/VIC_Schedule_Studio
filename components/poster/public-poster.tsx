@@ -3186,7 +3186,7 @@ export function PublicPoster({
                   : null;
                 return (
                   <div
-                    className={`public-event teaser${openTeaserDetail ? " is-clickable" : ""}${
+                    className={`public-event teaser${event.isTentative ? " tentative" : ""}${openTeaserDetail ? " is-clickable" : ""}${
                       myHopeIds.has(event.id) ? " hoped" : ""
                     }${hopeHit?.eventId === event.id ? " hope-hit" : ""}`}
                     data-act="teaser-card"
@@ -3208,8 +3208,10 @@ export function PublicPoster({
                   >
                     {/* 3번째 파동 링(후반부터 스며듦) — ::before/::after가 1·2번을 맡는다. */}
                     <span aria-hidden="true" className="teaser-ring" />
+                    {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                     <div className="event-main teaser-main">
                       <span className="teaser-spark" aria-hidden="true">🔮</span>
+                      {event.isTentative ? <span className="evt-tentative">미정</span> : null}
                       <p className="teaser-q">???</p>
                       <TeaserCountdown
                         motionEnabled={interactive}
@@ -3259,7 +3261,8 @@ export function PublicPoster({
               span.isMulti && !span.roundLeft ? "no-left" : "",
               span.isMulti && !span.roundRight ? "no-right" : "",
               isDimmedByFilter(event) ? "dimmed" : "",
-              event.isTentative && span.showTitle ? "tentative" : "",
+              // 미정 = 빗금(이어진 칸 전부 — 한 일정이 칸마다 달라 보이지 않게). '미정' 칩은 제목 칸에만.
+              event.isTentative ? "tentative" : "",
               justRevealed.has(rawEvent.id) ? "just-revealed" : "",
               bookmarked ? "bookmarked" : ""
             ]
@@ -3324,6 +3327,7 @@ export function PublicPoster({
                 {justRevealed.has(rawEvent.id) ? (
                   <span aria-hidden="true" className="reveal-shock" />
                 ) : null}
+                {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (
@@ -3705,7 +3709,7 @@ export function PublicPoster({
                           : null;
                         return (
                           <div
-                            className={`agenda-item teaser${openTeaserSheet ? " tappable" : ""}${
+                            className={`agenda-item teaser${event.isTentative ? " tentative" : ""}${openTeaserSheet ? " tappable" : ""}${
                               myHopeIds.has(event.id) ? " hoped" : ""
                             }${hopeHit?.eventId === event.id ? " hope-hit" : ""}`}
                             key={event.id}
@@ -3722,7 +3726,9 @@ export function PublicPoster({
                                 }
                               : {})}
                           >
+                            {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                             <span className="teaser-spark" aria-hidden="true">🔮</span>
+                            {event.isTentative ? <span className="evt-tentative">미정</span> : null}
                             <p className="agenda-title teaser-q">???</p>
                             <TeaserCountdown
                               motionEnabled={interactive}
@@ -3770,7 +3776,7 @@ export function PublicPoster({
                     };
                     return (
                       <div
-                        className={`agenda-event tappable${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
+                        className={`agenda-event tappable${!support && event.isTentative ? " tentative" : ""}${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
                         data-act="schedule-card"
                         data-eventid={support ? undefined : event.id}
                         data-tier={tier?.key}
