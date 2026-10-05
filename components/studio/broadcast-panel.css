@@ -47,7 +47,7 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-header h2 {
   margin: 0;
   font-size: var(--text-title);
-  font-weight: 900;
+  font-weight: 600;
   color: #4b4468;
   letter-spacing: 0.01em;
 }
@@ -92,8 +92,7 @@ html[data-reduce-motion] .bp-close:active {
   background: #ffffff;
   padding: 10px 14px;
   box-shadow:
-    0 8px 24px rgb(80 70 60 / 14%),
-    0 2px 6px rgb(80 70 60 / 8%);
+    var(--elev-3);
 }
 .bp-picker-head {
   display: flex;
@@ -134,7 +133,7 @@ html[data-reduce-motion] .bp-close:active {
   background: #ffffff;
   color: #4b4468;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 600;
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
@@ -152,7 +151,7 @@ html[data-reduce-motion] .bp-close:active {
   background: linear-gradient(180deg, #6a5ae0, var(--violet));
   color: #ffffff;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   box-shadow:
     0 2px 10px rgb(107 90 224 / 35%),
@@ -240,7 +239,7 @@ html[data-reduce-motion] .bp-close:active {
   top: 3px;
   right: 5px;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--studio-action-text);
 }
 /* 이미 판에 붙인 날짜 — 재전송 전에 상태를 알리고, 선택 체크와는 다른 위치·문자로 구분한다. */
@@ -256,7 +255,7 @@ html[data-reduce-motion] .bp-close:active {
   color: var(--studio-action-text);
   font-size: 9px;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.3;
 }
 /* 오늘 — 숫자에 링(시각 앵커). 선택과 겹쳐도 서로 방해 없음. */
@@ -271,7 +270,7 @@ html[data-reduce-motion] .bp-close:active {
 }
 .bp-mini-num {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: #4b4468;
 }
 .bp-mini-cell.sun .bp-mini-num {
@@ -286,7 +285,7 @@ html[data-reduce-motion] .bp-close:active {
   overflow: hidden;
   font-size: var(--text-micro);
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.25;
   color: #6f6890;
   text-overflow: ellipsis;
@@ -295,7 +294,7 @@ html[data-reduce-motion] .bp-close:active {
 .bp-mini-more {
   font-size: 10px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 
@@ -316,8 +315,7 @@ html[data-reduce-motion] .bp-close:active {
   border-radius: var(--r-lg);
   background: #ffffff;
   box-shadow:
-    0 8px 24px rgb(80 70 60 / 14%),
-    0 2px 6px rgb(80 70 60 / 8%);
+    var(--elev-3);
 }
 .bp-tool-group {
   display: flex;
@@ -355,7 +353,7 @@ html[data-reduce-motion] .bp-close:active {
 .bp-group-label {
   font-size: 9.5px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--muted);
 }
@@ -433,7 +431,7 @@ html[data-reduce-motion] .bp-tool.on {
 }
 .bp-clear-confirm {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 /* 색 트레이 — 그림판식 2줄 격자(17색 + 직접 고르기). */
@@ -544,7 +542,7 @@ body:has(.broadcast-panel) .tag-cpop {
   background: rgb(var(--studio-action-rgb) / 9%);
   color: #6b5fd0;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.05em;
 }
 .bp-command-status strong {
@@ -553,7 +551,7 @@ body:has(.broadcast-panel) .tag-cpop {
   gap: 6px;
   color: #2f2a45;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 600;
 }
 .bp-command-status strong i {
   width: 12px;
@@ -567,7 +565,7 @@ body:has(.broadcast-panel) .tag-cpop {
   color: #777088;
   font-size: 12px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -589,7 +587,7 @@ body:has(.broadcast-panel) .tag-cpop {
   background: #ffffff;
   color: #5d5672;
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
@@ -637,8 +635,7 @@ body:has(.broadcast-panel) .tag-cpop {
   border-radius: var(--r-card);
   background: #ffffff;
   box-shadow:
-    0 14px 36px rgb(80 70 60 / 22%),
-    0 3px 10px rgb(80 70 60 / 10%);
+    var(--elev-3);
   animation: bp-in var(--dur-2, 0.2s) var(--ease-enter, var(--ease)) both;
 }
 html[data-reduce-motion] .bp-kbd-help {
@@ -662,7 +659,7 @@ html[data-reduce-motion] .bp-kbd-help {
 .bp-kbd-head strong {
   color: #2f2a45;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 600;
 }
 .bp-kbd-close {
   display: inline-flex;
@@ -718,7 +715,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   color: #4b4468;
   font-family: inherit;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 .bp-kbd-row dd {
@@ -726,7 +723,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   margin: 0;
   color: #55506b;
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -798,7 +795,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   overflow: hidden;
   max-width: 100%;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -814,7 +811,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   right: 4px;
   font-family: inherit;
   font-size: 8.5px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: 0.02em;
   color: rgb(85 80 107 / 55%);
@@ -883,7 +880,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
 }
 .bp-current-color span {
   font-size: 9.5px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
@@ -902,7 +899,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   right: 10px;
   font-family: inherit;
   font-size: 8.5px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   color: rgb(85 80 107 / 50%);
   pointer-events: none;
@@ -916,7 +913,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
 .bp-width span {
   color: #777088;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
 }
 /* 선택 정렬 — 덱 안의 같은 가족 카드(굵기 오른쪽). 선택 문맥임을 옅은 보라 톤으로만 구분. */
@@ -954,8 +951,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   border-radius: var(--r-lg);
   background: #ffffff;
   box-shadow:
-    0 8px 24px rgb(80 70 60 / 14%),
-    0 2px 6px rgb(80 70 60 / 8%);
+    var(--elev-3);
   overflow-y: auto;
 }
 .bp-layer-status {
@@ -1006,7 +1002,7 @@ html[data-reduce-motion] .bp-layer-item {
 .bp-layer-item:hover:not(.active) {
   border-color: rgb(var(--selection-rgb) / 35%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(80 70 60 / 10%);
+  box-shadow: var(--elev-2);
 }
 .bp-layer-item.off {
   opacity: 0.55;
@@ -1046,7 +1042,7 @@ html[data-reduce-motion] .bp-layer-item {
 .bp-layer-select em {
   font-size: var(--text-label);
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   color: #4b4468;
 }
 .bp-layer-item.active .bp-layer-select em {
@@ -1114,7 +1110,7 @@ html[data-reduce-motion] .bp-layer-item {
   background: rgb(var(--studio-action-rgb) / 6%);
   color: var(--studio-action-text);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
@@ -1164,12 +1160,12 @@ html[data-reduce-motion] .bp-layer-item {
 .bp-layers-head strong {
   color: #2f2a45;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 600;
 }
 .bp-layers-head span {
   color: #817a90;
   font-size: 9.5px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 .bp-layer-list {
@@ -1312,8 +1308,7 @@ html[data-reduce-motion] .bp-layer-item {
   border-radius: var(--r-md);
   background: rgb(255 255 255 / 96%);
   box-shadow:
-    0 0 0 2px rgb(var(--selection-rgb) / 20%),
-    0 14px 30px rgb(60 52 80 / 24%);
+    0 0 0 2px rgb(var(--selection-rgb) / 20%), var(--elev-3);
   opacity: 0.94;
   pointer-events: none;
   transform: rotate(0.7deg) scale(1.015);
@@ -1328,7 +1323,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   border-radius: var(--r-sm);
   background: rgb(190 18 60 / 7%);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: #be123c;
 }
 
@@ -1357,8 +1352,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   background: #ffffff;
   /* 작업대 위 '종이 시트' — 화면의 주인공답게 카드들보다 한 단 깊은 그림자. */
   box-shadow:
-    0 12px 34px rgb(60 52 40 / 18%),
-    0 3px 10px rgb(60 52 40 / 10%);
+    var(--elev-3);
 }
 .bp-board-bg {
   height: 100%;
@@ -1429,7 +1423,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   box-shadow: 0 4px 14px rgb(31 24 59 / 18%);
   color: #3d3757;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   transform: translate(14px, -30px);
   pointer-events: none;
@@ -1480,7 +1474,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   color: #4c3fd0;
   cursor: pointer;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   box-shadow: 0 2px 8px rgb(31 24 59 / 16%);
   transition: transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
@@ -1510,7 +1504,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   color: #ffffff;
   cursor: pointer;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   transition: transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 
@@ -1554,18 +1548,14 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   border-radius: 50%;
   background: rgb(255 255 255 / 12%);
   box-shadow:
-    0 0 0 1px #ffffff,
-    0 0 0 2px rgb(75 68 104 / 72%),
-    0 2px 7px rgb(60 52 80 / 22%);
+    0 0 0 1px #ffffff, 0 0 0 2px rgb(75 68 104 / 72%), var(--elev-2);
 }
 .bp-stylus-cursor[data-contact="true"] {
   opacity: 1;
 }
 .bp-stylus-cursor[data-contact="true"] .bp-stylus-footprint {
   box-shadow:
-    0 0 0 1px #ffffff,
-    0 0 0 2px rgb(75 68 104 / 90%),
-    0 2px 8px rgb(60 52 80 / 30%);
+    0 0 0 1px #ffffff, 0 0 0 2px rgb(75 68 104 / 90%), var(--elev-2);
 }
 .bp-stylus-cursor[data-tool="eraser"] .bp-stylus-footprint {
   border-color: #4b4468;
@@ -1622,7 +1612,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   border-radius: var(--r-xs);
   background: var(--bp-stylus-color);
   color: var(--bp-stylus-ink);
-  box-shadow: 0 2px 7px rgb(60 52 80 / 24%);
+  box-shadow: var(--elev-2);
   transform: translate(8px, -24px);
 }
 .bp-stylus-cursor[data-tool="eraser"] .bp-stylus-glyph {
@@ -1636,7 +1626,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   height: 100%;
   margin: 0;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 /* 날짜 컬럼 = 그림판 위 자유 배치 카드(선택 도구에서 끌어 이동·손잡이로 크기).
@@ -1650,7 +1640,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   border: 1px solid var(--studio-line);
   border-radius: var(--r-card);
   background: #ffffff;
-  box-shadow: 0 4px 16px rgb(17 24 39 / 14%);
+  box-shadow: var(--elev-2);
   /* 보내기 순간 '툭' 떨어져 자리 잡는 스프링 등장(아이패드 드롭 문법). 드래그는
      left/top만 만지므로 등장 keyframe(transform)과 충돌하지 않는다. */
   animation: bp-drop-in 0.28s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
@@ -1682,12 +1672,12 @@ html[data-reduce-motion] .bp-day-col {
 }
 .bp-day-head strong {
   font-size: 1.57em;
-  font-weight: 900;
+  font-weight: 600;
   color: #3b3654;
 }
 .bp-day-head span {
   font-size: 0.93em;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
 }
 .bp-col-x {
@@ -1714,8 +1704,7 @@ html[data-reduce-motion] .bp-day-col {
 .bp-day-col.sel {
   border-color: rgb(var(--selection-rgb) / 75%);
   box-shadow:
-    0 0 0 2px rgb(var(--selection-rgb) / 35%),
-    0 4px 16px rgb(17 24 39 / 14%);
+    0 0 0 2px rgb(var(--selection-rgb) / 35%), var(--elev-2);
 }
 /* 러버밴드(드래그 다중 선택) */
 /* 러버밴드 — 각진 1.5px 상자는 이 앱의 다른 표면(둥근 모서리·부드러운 그림자)과 따로 놀았다.
@@ -1739,7 +1728,7 @@ html[data-reduce-motion] .bp-day-col {
   background: rgb(43 30 70 / 88%);
   color: #fff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 8px 22px rgb(43 30 70 / 28%);
@@ -1897,7 +1886,7 @@ html[data-reduce-motion] .bp-stroke-sel {
 .bp-day-empty {
   margin: 0;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 /* 카드 안 일정 칩 세로 자유 배치 래퍼 — 선택 도구에서 끌어 내려 늘린 카드의 빈 공간에
@@ -1931,7 +1920,7 @@ html[data-reduce-motion] .bp-stroke-sel {
 .bp-card-head strong {
   flex: 1;
   font-size: 1.07em;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.3;
   white-space: pre-line;
   color: #2f2a45;
@@ -1951,7 +1940,7 @@ html[data-reduce-motion] .bp-stroke-sel {
   flex: 0 0 auto;
   font-size: 0.79em;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   color: rgb(0 0 0 / 55%);
 }
 .bp-subs {
@@ -1962,7 +1951,7 @@ html[data-reduce-motion] .bp-stroke-sel {
   border-left: 2px solid rgb(0 0 0 / 24%);
   list-style: none;
   font-size: 0.9em;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.35;
   color: rgb(0 0 0 / 68%);
 }

@@ -90,7 +90,7 @@ html[data-ambient-grab] {
   color: var(--ink-soft, #3d414c);
   font: inherit;
   font-size: var(--text-label, 13px);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
   cursor: pointer;
@@ -180,7 +180,7 @@ html[data-reduce-motion] .showcase-btn-glow {
   color: var(--ink-soft, #3d414c);
   font: inherit;
   font-size: var(--text-label, 13px);
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 6px 18px rgb(60 50 90 / 14%);
   cursor: pointer;
   opacity: 0.55;
@@ -211,7 +211,7 @@ html[data-reduce-motion] .showcase-exit {
   border-radius: var(--r-xs);
   background: rgb(255 255 255 / 55%);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 /* ── 바이옴 내비(PLAN-20260904-004 §5, showcase.tsx ShowcaseNav) — 감상 중에만 body 포털로. 가장자리 쉐브론 4 · 미니맵(3×3 + 2) ·
@@ -296,7 +296,7 @@ html[data-reduce-motion] .biome-chev { animation-duration: 1ms !important;
   border: 1px solid rgb(255 255 255 / 62%);
   border-radius: var(--r-xl);
   background: linear-gradient(180deg, rgb(255 253 250 / 99%), rgb(242 245 251 / 98%));
-  box-shadow: 0 14px 34px rgb(38 46 68 / 18%), inset 0 1px 0 rgb(255 255 255 / 85%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 85%), var(--elev-3);
   opacity: 1;
   transition: transform 0.24s var(--ease-spring, var(--ease));
 }
@@ -350,14 +350,14 @@ html[data-reduce-motion] .biome-chev { animation-duration: 1ms !important;
 .biome-map-title {
   color: var(--ink, #2b2f38);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.015em;
 }
 .biome-map-count {
   margin-left: auto;
   color: var(--ink-soft, #6b7183);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .biome-map-count i {
@@ -382,7 +382,7 @@ html[data-reduce-motion] .biome-chev { animation-duration: 1ms !important;
   margin: 9px 0 5px;
   color: rgb(96 104 122 / 88%);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 .biome-map-cap.sea {
@@ -418,7 +418,7 @@ html[data-reduce-motion] .biome-chev { animation-duration: 1ms !important;
 .biome-dot .biome-dot-name {
   color: rgb(70 78 94 / 55%);
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
@@ -450,7 +450,7 @@ html[data-reduce-motion] .biome-chev { animation-duration: 1ms !important;
 }
 .biome-dot.on .biome-dot-name {
   color: rgb(24 32 48 / 95%);
-  font-weight: 900;
+  font-weight: 600;
 }
 @keyframes biome-here {
   0%, 100% { box-shadow: 0 0 0 2.5px rgb(var(--gs-sea-rgb, 56 128 190) / 0.9), 0 5px 14px rgb(40 60 90 / 20%); }
@@ -489,7 +489,7 @@ html[data-reduce-motion] .biome-dot.on { animation-duration: 1ms;
   color: var(--ink-soft, #3d414c);
   box-shadow: 0 6px 18px rgb(60 50 90 / 14%);
   font-size: var(--text-label, 13px);
-  font-weight: 800;
+  font-weight: 600;
   text-align: center;
   pointer-events: none;
   transform: translateX(-50%);
@@ -562,7 +562,7 @@ html[data-reduce-motion] .biome-chev.bounce { animation-duration: 1ms;
   color: var(--ink-soft, #3d414c);
   font: inherit;
   font-size: var(--text-caption, 12px);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   opacity: var(--seg-off-op);
@@ -615,15 +615,14 @@ html[data-reduce-motion] .biome-chev.bounce { animation-duration: 1ms;
     linear-gradient(180deg, rgb(255 255 255 / 70%), rgb(255 255 255 / 0%) 55%),
     var(--surface, #fff);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 75%),
-    0 1px 2px rgb(60 50 80 / 6%);
+    inset 0 1px 0 rgb(255 255 255 / 75%), var(--elev-1);
 }
 .ambient-seg.metal .ambient-seg-btn {
   height: 26px;
   padding: 0 9px;
   border-radius: calc(var(--gs-metal-radius, var(--r-md, 8px)) - 2px);
   font-size: var(--text-body, 13px);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gs-metal-ink, var(--ink, #2c2740));
 }
 html[data-showcase] .ambient-seg {
@@ -711,7 +710,7 @@ html[data-reduce-motion] .viewer-ambient-ctl.rail-showcase {
   border-bottom: 1px solid var(--amb-card-line);
   color: var(--amb-title-ink, #3b3550);
   font-size: var(--text-title, 15px);
-  font-weight: 850;
+  font-weight: 600;
   letter-spacing: -0.012em;
   line-height: 1;
   text-align: center;
@@ -744,7 +743,7 @@ html[data-reduce-motion] .viewer-ambient-ctl.rail-showcase {
   opacity: 1;
   color: #5b5674;
   font-size: var(--text-ui, 13px);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   transition:
     background 0.16s var(--ease),
@@ -794,7 +793,7 @@ html[data-reduce-motion] .viewer-ambient-ctl.rail-showcase {
   height: 34px;
   border-radius: var(--r-md);
   font-size: var(--text-ui, 13px);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 /* ── 감상 중 배경 설정(2026-09-05 소유자: "감상하면서 시간대·날씨 바꿔 가며 바로 확인") ───────────────────
@@ -855,7 +854,7 @@ html[data-reduce-motion] .showcase-gear svg {
   border: 1px solid rgb(255 255 255 / 62%);
   border-radius: var(--r-lg);
   background: linear-gradient(180deg, rgb(255 253 250 / 99%), rgb(242 245 251 / 98%));
-  box-shadow: 0 14px 34px rgb(38 46 68 / 18%), inset 0 1px 0 rgb(255 255 255 / 85%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 85%), var(--elev-3);
   overflow: auto;
   animation: showcase-set-in 0.22s var(--ease) both;
 }
@@ -879,7 +878,7 @@ html[data-reduce-motion] .showcase-set {
   padding: 0 2px 1px;
   color: #6b7386;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .sc-set-row {
   display: flex;
@@ -889,7 +888,7 @@ html[data-reduce-motion] .showcase-set {
 .sc-set-name {
   color: #8a91a1;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.03em;
 }
 .sc-set-chips {
@@ -905,7 +904,7 @@ html[data-reduce-motion] .showcase-set {
   color: #4a505a;
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   opacity: var(--seg-off-op, 0.72);
   cursor: pointer;
@@ -939,9 +938,9 @@ html[data-reduce-motion] .showcase-set {
 }
 
 /* R36: compact, nonmodal scenery controls; shared by developer studio and fixture. */
-.showcase-exit {left:20px;top:20px;transform:none;animation:none;background:rgba(249,248,235,.9);color:#34493d;box-shadow:0 3px 18px #152d2520;}
+.showcase-exit {left:20px;top:20px;transform:none;animation:none;background:rgba(249,248,235,.9);color:#34493d;box-shadow:var(--elev-3);}
 .showcase-gear {right:20px;top:20px;width:auto;min-width:112px;padding:0 14px;gap:8px;border-radius:24px;background:rgba(249,248,235,.92);color:#34493d;font-size:13px;font-weight:600;}
-.showcase-set {top:72px;right:20px;width:300px;max-height:calc(100dvh - 96px);overflow:auto;padding:18px;border-radius:var(--r-xl);background:rgba(249,248,238,.96);color:#35483e;box-shadow:0 8px 36px #152d252b;backdrop-filter:blur(12px);}
+.showcase-set {top:72px;right:20px;width:300px;max-height:calc(100dvh - 96px);overflow:auto;padding:18px;border-radius:var(--r-xl);background:rgba(249,248,238,.96);color:#35483e;box-shadow:var(--elev-3);backdrop-filter:blur(12px);}
 .sc-set-heading {display:flex;justify-content:space-between;align-items:center;font-size:16px;}
 .sc-set-heading button,.sc-set-reset {border:0;background:transparent;color:#536b5d;font:inherit;cursor:pointer;min-height:32px;}
 .sc-set-heading button {font-size:12px;padding:4px 8px;}
@@ -960,7 +959,7 @@ html[data-reduce-motion] .showcase-set {
 .sc-set-more summary {cursor:pointer;font-size:12px;padding:6px 0;color:#4f654f;}
 .sc-set-more[open] summary {margin-bottom:12px;}
 .showcase-set :focus-visible,.showcase-gear:focus-visible,.showcase-exit:focus-visible {outline:2px solid #50754b;outline-offset:3px;}
-.biome-map {left:20px;right:auto;bottom:20px;border-radius:var(--r-lg);background:rgba(249,248,235,.93);color:#34493d;box-shadow:0 4px 24px #152d2522;}
+.biome-map {left:20px;right:auto;bottom:20px;border-radius:var(--r-lg);background:rgba(249,248,235,.93);color:#34493d;box-shadow:var(--elev-3);}
 .biome-map[data-open="0"] {width:160px;}
 @media(max-height:600px){.showcase-set{top:62px;max-height:calc(100dvh - 74px);padding:14px;}.showcase-exit,.showcase-gear{top:12px;}}
 
@@ -974,7 +973,7 @@ html[data-reduce-motion] .showcase-set {
 /* Compact movable showcase palette: text stays opaque over soft glass. */
 .showcase-set {width:280px;padding:12px;gap:6px;border-radius:var(--r-lg);background:rgb(var(--glass-panel,255 253 246) / .84);backdrop-filter:blur(16px);animation:none;}
 .sc-set-heading {gap:4px;font-size:13px;}
-.sc-set-heading .sc-set-handle {display:flex;align-items:center;gap:6px;flex:1;text-align:left;font-size:13px;font-weight:700;padding:0;cursor:grab;touch-action:none;user-select:none;}
+.sc-set-heading .sc-set-handle {display:flex;align-items:center;gap:6px;flex:1;text-align:left;font-size:13px;font-weight:600;padding:0;cursor:grab;touch-action:none;user-select:none;}
 .sc-set-handle:active {cursor:grabbing;}
 .sc-set-handle span {color:#7a8d7d;font-size:19px;}
 .sc-set-head-actions {display:flex;gap:2px;}
@@ -987,7 +986,7 @@ html[data-reduce-motion] .showcase-set {
 .sc-set-date-row {display:flex;align-items:center;gap:3px;margin-top:3px;}
 .sc-set-date-row button {border:0;border-radius:var(--r-xs);background:rgb(var(--glass-panel,255 253 246) / .65);color:#354c3d;min-height:30px;min-width:27px;cursor:pointer;font:inherit;}
 .sc-set-date-row .sc-set-date-trigger {display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;flex:1;}
-.sc-set-clock {font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;min-width:42px;text-align:right;}
+.sc-set-clock {font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;min-width:42px;text-align:right;}
 .showcase-set .sc-set-time-range {margin:0;height:22px;flex-shrink:0;}
 .showcase-set .sc-set-hours {font-size:9px;}
 .showcase-set .sc-set-more {margin-top:3px;padding-top:5px;}
@@ -999,7 +998,7 @@ html[data-reduce-motion] .showcase-set {
 .sc-date-month button {width:26px;font-size:var(--text-title);}
 .sc-date-days {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;}
 .sc-date-weekday {font-size:10px;color:#778574;padding:3px 0;}
-.sc-date-days button[aria-pressed="true"] {background:#cddfc6;font-weight:700;color:#263f2b;}
+.sc-date-days button[aria-pressed="true"] {background:#cddfc6;font-weight:600;color:#263f2b;}
 .sc-date-days button:hover,.sc-set-date-row button:hover {background:#dce7d4;}
 .sc-set-date-row button:disabled,.sc-date-month button:disabled {opacity:.35;cursor:default;}
 
@@ -1012,5 +1011,5 @@ html[data-reduce-motion] .showcase-set {
 .sc-date-picker {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;max-height:190px;overflow:auto;overscroll-behavior:contain;padding:4px;border-radius:var(--r-sm);background:rgb(var(--glass-panel,255 253 246) / .96);}
 .sc-date-picker button {border:0;border-radius:var(--r-xs);background:transparent;color:#354c3d;font:inherit;font-size:12px;min-height:30px;cursor:pointer;}
 .sc-date-picker button:hover {background:#e3ebda;}
-.sc-date-picker button[aria-selected="true"] {background:#cddfc6;color:#263f2b;font-weight:700;}
+.sc-date-picker button[aria-selected="true"] {background:#cddfc6;color:#263f2b;font-weight:600;}
 .sc-date-picker button:focus-visible {outline:2px solid #668963;outline-offset:-2px;background:#dce8d3;}

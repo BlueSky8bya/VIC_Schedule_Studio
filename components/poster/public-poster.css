@@ -90,7 +90,7 @@
   /* 아래 '편집실'과 같은 글자 크기·한 줄(2026-09-05): 라벨을 "기록"으로 줄여 92px 레일에 한 줄로
      들어가므로 wrap이 필요 없다. 예전엔 "이 달 기록"이 두 줄로 꺾여 형제보다 키가 컸다. */
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   line-height: 1.2;
 }
@@ -107,7 +107,7 @@
   gap: 4px;
   border-radius: var(--r-md);
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   box-shadow: var(--shadow-2);
 }
@@ -115,7 +115,7 @@
    크기도 11 → 12px(작은 글자일수록 대비가 더 필요하고, 포스터는 통째로 축소돼 더 작아진다). */
 .agenda-legend strong {
   font-size: var(--text-label);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.04em;
   padding: 0 3px 1px;
@@ -137,7 +137,7 @@
      (가로 패딩은 살짝 줄여 라벨에 폭을 더 준다 → 4글자 태그가 한 줄에 들어온다.) */
   padding: 7px 5px;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: #4b4636;
   line-height: 1.15;
   text-align: left;
@@ -171,7 +171,7 @@
   border-color: var(--accent);
   background: var(--accent-soft, #fff3d2);
   color: var(--accent-strong, #a9760a);
-  font-weight: 900;
+  font-weight: 600;
   box-shadow: 0 1px 5px rgb(169 118 10 / 22%);
 }
 .agenda-legend-tag.dim {
@@ -213,7 +213,7 @@
   background: var(--surface-2, #fdf6e8);
   padding: 4px;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   color: #8a7a4a;
   cursor: pointer;
   transition:
@@ -314,7 +314,7 @@
   background: rgb(255 255 255 / 78%);
   padding: 0 12px;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -370,7 +370,7 @@
   margin: 0;
   /* 오른쪽에 계정변경 버튼 자리를 비워두므로, 좁은 폰에선 폭에 맞춰 줄어든다(겹침 방지). */
   font-size: clamp(19px, 6vw, 28px);
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.15;
   color: var(--accent-strong, #a9760a);
   letter-spacing: 0.01em;
@@ -382,7 +382,7 @@
   display: block;
   margin-top: 3px;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   color: rgb(20 20 20 / 42%);
   font-variant-numeric: tabular-nums;
 }
@@ -392,7 +392,7 @@
   grid-row: 2;
   justify-self: center;
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   color: #1b1f29;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -406,7 +406,7 @@
 .agenda-debut .ad-sub {
   margin-left: 5px;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   color: #9a7b45;
 }
 /* 현재 로그인 이메일 — 2행 오른쪽(계정변경 버튼 바로 아래, 월 라인에 맞춤) */
@@ -497,7 +497,7 @@
   background: transparent;
   color: var(--accent-strong, #a9760a);
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition: transform var(--dur-1, 120ms) var(--ease),
     background var(--dur-1, 120ms) var(--ease), color var(--dur-1, 120ms) var(--ease);
@@ -634,7 +634,7 @@ html[data-reduce-motion] .mb-live-dot {
   background: rgb(var(--glass-panel) / 55%);
   padding: 8px 12px;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
   transition:
@@ -648,7 +648,7 @@ html[data-reduce-motion] .mb-live-dot {
   flex: 0 0 auto;
   color: var(--ink, #23303f);
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
 }
@@ -666,14 +666,14 @@ html[data-reduce-motion] .mb-live-dot {
   background: rgb(0 0 0 / 5%);
   padding: 3px 8px;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .agenda-empty {
   margin: 24px 0;
   text-align: center;
   color: var(--muted, #9aa0ab);
-  font-weight: 700;
+  font-weight: 600;
 }
 /* 하루 = 한 카드: [날짜·요일] [그 날의 일정 목록] */
 .agenda-day {
@@ -706,7 +706,7 @@ html[data-reduce-motion] .mb-live-dot {
 }
 .agenda-when strong {
   font-size: 22px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
 }
 .agenda-when strong.red {
@@ -717,7 +717,7 @@ html[data-reduce-motion] .mb-live-dot {
 }
 .agenda-wd {
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted, #9aa0ab);
 }
 .agenda-day.today .agenda-when strong {
@@ -757,7 +757,7 @@ html[data-reduce-motion] .mb-live-dot {
 .agenda-mark {
   justify-self: start;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   color: #8a7a4a;
 }
 .agenda-mark.holiday {
@@ -769,7 +769,7 @@ html[data-reduce-motion] .mb-live-dot {
 }
 .agenda-noevent {
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted, #9aa0ab);
 }
 .agenda-event {
@@ -823,7 +823,7 @@ html[data-reduce-motion] .mb-live-dot {
   align-items: center;
   gap: 4px;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: #2b2f38;
   line-height: 1.3;
 }
@@ -834,7 +834,7 @@ html[data-reduce-motion] .mb-live-dot {
 .agenda-sub {
   margin: 0;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted, #9aa0ab);
 }
 /* 아젠다(리스트 뷰) 서브도 그리드 카드와 통일 — 불릿 대신 왼쪽 세로 레일(디자인 통일). */
@@ -892,7 +892,7 @@ html[data-reduce-motion] .mb-live-dot {
   background: #eaf7e3;
   color: #2f7d12;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 /* 다시보기(0068) — 업도움(초록)과 같은 문법, 톤만 숲 파랑. 길이는 옅은 보조 글자. */
 .agenda-link.vod {
@@ -943,7 +943,7 @@ html[data-reduce-motion] .mb-live-dot {
   color: var(--gs-metal-ink, #3d4a5c);
   font-size: var(--text-caption);
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.5;
 }
@@ -1150,7 +1150,7 @@ html[data-reduce-motion] .day-vod-modal {
 /* ? 버튼 — 닫기와 같은 원(같은 부품), 회전 대신 살짝 눌림. */
 .dvm-help {
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
   font-family: inherit;
 }
 .dvm-help:hover { transform: none; }
@@ -1199,7 +1199,7 @@ html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
   background: #fff;
   font-family: inherit;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: #6f6a78;
 }
 .dvm-keys i {
@@ -1299,7 +1299,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
     box-shadow var(--dur-2) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.dvm-tab b { font-weight: 800; }
+.dvm-tab b { font-weight: 600; }
 .dvm-tab em {
   font-style: normal;
   font-weight: 600;
@@ -1314,7 +1314,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   margin-left: 6px;
   font-style: normal;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--gs-metal-ink, #3d4a5c);
 }
 .dvm-tab:hover { color: #1d1d29; }
@@ -1516,7 +1516,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   background: rgb(15 23 42 / 72%);
   color: #fff;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   backdrop-filter: blur(6px);
   animation: dvm-notice-in 1.4s var(--ease) both;
@@ -1581,14 +1581,14 @@ html[data-reduce-motion] .dvm-notice {
   color: #fff;
   font-style: normal;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .dvm-title {
   color: #1d1d29;
   /* 창에서 유일한 최상급 — 스케일 계단(18>15>14>13>11)의 꼭대기. 머리줄로 올라가며 20→18(2026-09-17). */
   font-size: var(--text-title);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.015em; /* 애플식 타이틀 조임 — 큰 굵은 글자는 살짝 좁혀야 단정하다 */
   line-height: 1.3;
   text-decoration: none;
@@ -1631,7 +1631,7 @@ a.dvm-host-link:active {
     rgb(244 247 251 / 90%);
   color: var(--gs-metal-ink, #3d4a5c);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1.5;
   white-space: nowrap;
@@ -1654,7 +1654,7 @@ a.dvm-host-link:active {
   padding: 2px;
   font-family: inherit;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: #23303f;
   text-align: left;
@@ -1723,7 +1723,7 @@ a.dvm-host-link:active {
   gap: 6px;
   padding: 4px 6px 3px 14px;
   font-size: var(--text-ui); /* 스케일 계단(2026-09-03 한 단계 ↑): 헤더 15 = 항목 15, 굵기·색으로 서열 위 */
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: #1d1d29;
   border-bottom: 1px solid rgb(60 60 90 / 8%); /* 헤더 밑 헤어라인 */
@@ -1765,7 +1765,7 @@ a.dvm-host-link:active {
   background: rgb(35 48 63 / 6%);
   font-style: normal;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: rgb(35 48 63 / 48%);
 }
@@ -1807,7 +1807,7 @@ a.dvm-host-link:active {
 .dvm-vod .vch-toggle {
   color: #1d1d29;
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
   padding: 2px 4px 7px;
 }
 .dvm-vod .vch-caret { color: #b9bdcc; }
@@ -1883,7 +1883,7 @@ html[data-reduce-motion] .vch-item::after { transition: none; }
   background-clip: text;
   color: transparent;
 }
-.vch-item.is-active .vch-label { font-weight: 800; }
+.vch-item.is-active .vch-label { font-weight: 600; }
 .vch-item.is-active:hover .vch-t { color: transparent; }
 /* 잘린 라벨 전문 툴팁 — 항목 안 absolute(항목 바로 아래, 레일 바닥 근처면 위), 항목 폭 안에서
    줄바꿈. z-index 5 = sticky 코너 헤더(1)·다음 항목들 위. 레일 overflow는 위/아래 끝에서만 자르는데
@@ -1934,7 +1934,7 @@ html[data-reduce-motion] .vch-tip {
   min-width: 58px;
   white-space: nowrap;
   font-size: 14px; /* 13→14(2026-09-03 가독성 ↑) */
-  font-weight: 700;
+  font-weight: 600;
   color: var(--studio-action);
   font-variant-numeric: tabular-nums;
   transition: color var(--dur-1) var(--ease);
@@ -1997,7 +1997,7 @@ html[data-reduce-motion] .vch-tip {
   color: rgb(35 48 63 / 62%);
   font: inherit;
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 600;
   font-style: normal;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -2056,7 +2056,7 @@ html[data-reduce-motion] .vch-caret-ic { transition: none; }
   align-items: baseline;
   gap: 4px;
 }
-.vch-toggle-main b { font-weight: 900; font-variant-numeric: tabular-nums; }
+.vch-toggle-main b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .vch-toggle-main i { font-style: normal; opacity: 0.45; }
 
 /* 지금 보고 있는 장면 — 띠 바로 위 한 줄(코너 · 제목 · 시각). 재생을 따라 바뀐다. */
@@ -2093,7 +2093,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   flex: none;
   font-style: normal;
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   color: rgb(35 48 63 / 45%);
 }
@@ -2103,7 +2103,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: #23303f;
 }
@@ -2114,7 +2114,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   border-radius: var(--r-pill);
   background: rgb(217 162 27 / 12%);
   font-size: 11.5px;
-  font-weight: 900;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: #8a5f0b;
 }
@@ -2138,9 +2138,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
 }
 .vch-strip:hover {
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 90%),
-    inset 0 0 0 1px rgb(var(--studio-action-rgb) / 18%),
-    0 6px 18px rgb(29 29 41 / 8%);
+    inset 0 1px 0 rgb(255 255 255 / 90%), inset 0 0 0 1px rgb(var(--studio-action-rgb) / 18%), var(--elev-3);
 }
 /* ① 시간 눈금 */
 .vch-ruler {
@@ -2166,7 +2164,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   transform: translateX(-50%);
   font-style: normal;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.01em;
   color: rgb(29 29 41 / 25%);
   white-space: nowrap;
@@ -2367,12 +2365,12 @@ html[data-reduce-motion] .vch-head { transition: none; }
   backdrop-filter: blur(8px);
   color: #fff;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.4;
   white-space: pre-line;
   overflow-wrap: anywhere;
   text-align: center;
-  box-shadow: 0 8px 24px rgb(29 29 41 / 22%);
+  box-shadow: var(--elev-3);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-1) var(--ease);
@@ -2482,7 +2480,7 @@ html[data-reduce-motion] .day-vod-pop {
      코너 헤더·항목 14 > 시각 13 > 크레딧 11. 날짜는 창의 '문패' — 보조지만 작아선 안 된다
      (13.5는 챕터 항목과 구분이 안 갔다, 사용자 신고). */
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.005em;
   color: #4b4b58;
 }
@@ -2505,7 +2503,7 @@ html[data-reduce-motion] .day-vod-pop {
 }
 .agenda-vod-dur {
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--text-caption);
   opacity: 0.72;
 }
@@ -2944,7 +2942,7 @@ body::-webkit-scrollbar {
 }
 .avatar-slot-hint {
   font-size: var(--text-ui);
-  font-weight: 700;
+  font-weight: 600;
   color: rgb(155 134 194 / 70%);
   letter-spacing: 0.02em;
   user-select: none;
@@ -3136,7 +3134,7 @@ body.cell-range-dragging {
   gap: 10px;
   margin: 0;
   font-size: 34px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.05;
   color: var(--ink, #23303f);
@@ -3194,7 +3192,7 @@ body.cell-range-dragging {
 }
 .interest-toggle .it-text strong {
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 600;
   color: #6b5b34;
 }
 .interest-toggle.active .it-text strong {
@@ -3203,7 +3201,7 @@ body.cell-range-dragging {
 .interest-toggle .it-text em {
   font-style: normal;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted, #9a8c66);
 }
 /* 모바일 아젠다 제목(✨ 빅토리 일정표 ✨)의 스파클도 동일하게 반짝/둥실.
@@ -3213,7 +3211,7 @@ body.cell-range-dragging {
   display: inline-block;
   margin: 0;
   font-size: 1em;
-  font-weight: 900;
+  font-weight: 600;
   color: #d59a93;
   transform-origin: center;
   animation: spark-twinkle 2.8s ease-in-out infinite;
@@ -3249,7 +3247,7 @@ body.cell-range-dragging {
 }
 .rail-info-card b {
   color: #7c4d05;
-  font-weight: 900;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 /* 데뷔 기록 카드(2026-09-17: 연·월은 상단 제목으로) — 큰 D+숫자 위, 조용한 해설 아래. */
@@ -3262,7 +3260,7 @@ body.cell-range-dragging {
 }
 .ric-debut-sub {
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: #9a7b45;
   white-space: nowrap;
@@ -3424,7 +3422,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   color: #6b5b34;
   font-size: var(--text-title);
   line-height: 1.1;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 /* 콘텐츠와 방식을 가르는 소제목(세로 안내). */
@@ -3477,7 +3475,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   align-items: center;
   gap: 8px;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   /* 2열에서 이름이 두 줄로 꺾이지 않게 — 폭(레일 252)으로 5글자까지 한 줄 보장. */
   white-space: nowrap;
 }
@@ -3579,7 +3577,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   padding: 4px 10px;
   color: var(--muted);
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   /* 이 버튼은 '자리 예약'(아래 is-hidden)까지 신경 쓴 컨트롤인데 정작 누름 반응만 빠져 있었다. */
   transition:
@@ -3996,7 +3994,7 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
 .scramble-rest {
   display: inline-block;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.03em;
   /* ⚠ 예전엔 민트 고정색이었다. 어두운 떡밥 카드에선 읽혔지만, 공개 직후의 밝은 카드와
      크림색 팝오버에선 배경에 묻혀 난수가 거의 안 보였다(사용자 지적) → 주변 글자색을
@@ -4753,7 +4751,7 @@ html[data-eye-comfort] .dt-grad-c {
      그 자리를 숫자가 링 바깥까지 넘겨받는다(추가 성장 1.15배). 남는 제약은 두 가지뿐:
      아래 라벨과 겹치지 않을 것(링박스 132px 안), 팝오버 폭을 넘지 않을 것. */
   font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-final, 0) * 1.25));
-  font-weight: 900;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   /* 큰 숫자는 자간이 벌어져 보인다 — 광학 보정(애플이 큰 수치에 쓰는 트래킹). */
   letter-spacing: -0.02em;
@@ -4780,7 +4778,7 @@ html[data-eye-comfort] .dt-grad-c {
   height: 14px;
   font-size: var(--text-caption);
   line-height: 14px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap; /* 폰트 fallback에서 줄바꿈으로 박스가 커지지 않게 */
   color: rgb(90 80 130 / 62%);
@@ -4843,7 +4841,7 @@ html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
   margin: 2px 0 0;
   font-size: var(--text-caption);
   line-height: 15px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
   color: rgb(90 80 130 / 46%);
@@ -5755,7 +5753,7 @@ button.agenda-mark.celebratable {
   appearance: none;
   font-family: inherit;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
   transition: transform var(--dur-1) var(--ease);
@@ -5842,7 +5840,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   border-radius: var(--r-sm);
   background: #f3f4f6;
   padding: 3px 8px;
-  box-shadow: 0 1px 1px rgb(17 24 39 / 5%);
+  box-shadow: var(--elev-1);
   /* opacity·filter가 목록에 있어야 필터 흐림(.dimmed)이 스르륵 물러난다 — 예전엔 이 둘이 빠져
      있어 칩을 누르는 순간 달력 절반이 뚝 끊기듯 회색이 됐다(GPU 친화 속성이라 비용도 없다). */
   transition:
@@ -6012,7 +6010,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   gap: 6px;
   margin: 6px 0 0;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   color: #8a7a4a;
 }
 /* '미정' 칩 — 상세 팝오버·시트·방송 패널처럼 문장으로 읽는 자리에만 쓴다(달력 카드는 빗금만, 정렬 유지).
@@ -6177,7 +6175,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   /* 웹 시청자 카드 — 글자크기·줄바꿈은 그대로(스티커 좌표 안전), 모서리·그림자만 한 단계 또렷하게. */
   .public-event {
     border-radius: var(--r-sm);
-    box-shadow: 0 1px 3px rgb(17 24 39 / 8%);
+    box-shadow: var(--elev-1);
   }
 }
 
@@ -6271,7 +6269,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   border: 2px solid #111827;
   border-top: 0;
   padding: 10px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .public-legend span {
@@ -6579,7 +6577,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   padding: 11px 20px;
   color: #fff;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   text-align: center;
   box-shadow: 0 12px 30px -12px rgb(255 92 138 / 70%);
   animation: heart-toast-in var(--dur-4, 300ms) var(--ease-enter, ease-out) both;
@@ -6661,7 +6659,7 @@ html[data-reduce-motion] .slc-player img {
   background: linear-gradient(135deg, #d90f45, #a90f36);
   color: #fff;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.06em;
   pointer-events: none;
   z-index: 2; /* 투명 클릭 레이어 위(장식 — 클릭은 통과) */
@@ -6688,7 +6686,7 @@ html[data-reduce-motion] .slc-player img {
   padding: 9px 12px;
   color: #3a2430;
   text-decoration: none;
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--text-body);
 }
 .slc-caption:hover {
@@ -6755,7 +6753,7 @@ html[data-reduce-motion] .slc-player img {
   /* 13.5 → 15(--text-ui): 큰 제목 옆에서 너무 작았다(2026-09-05 소유자). 가로 패딩을 16 → 13으로 줄여
      **버튼 폭은 그대로** 둔다(글자 +11% ≈ 패딩 -6px). */
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   box-shadow: var(--shadow-2);
@@ -6890,7 +6888,7 @@ html[data-reduce-motion] .pi-backdrop {
 .pi-head strong {
   display: block;
   font-size: var(--text-display);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink, #23303f);
 }
 .pi-close {
@@ -6945,7 +6943,7 @@ html[data-reduce-motion] .pi-close:active {
   margin-bottom: 9px;
   color: var(--muted);
   font-size: var(--text-label);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.04em;
 }
 .pi-stats {
@@ -6963,7 +6961,7 @@ html[data-reduce-motion] .pi-close:active {
 }
 .pi-stat b {
   font-size: var(--text-display);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink, #23303f);
   line-height: 1.1;
 }
@@ -6973,25 +6971,25 @@ html[data-reduce-motion] .pi-close:active {
   gap: 5px;
   color: var(--muted);
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
 }
 .pi-stat i.up {
   color: #16a34a;
   font-style: normal;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
 }
 .pi-stat i.down {
   color: #b45309;
   font-style: normal;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
 }
 .pi-empty {
   margin: 0;
   color: var(--muted);
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
 }
 /* 방송 시간 차트 로딩 자리 — '실제 차트가 착지할 자리'를 미리 잡아둔다(높이는 로드된 차트와
    같게 맞췄다). 예전엔 한 줄 문구였다가 차트로 바뀌며 아래 카드가 통째로 밀려 내려갔다. */
@@ -7029,7 +7027,7 @@ html[data-reduce-motion] .pi-skeleton {
   min-height: 36px;
   color: var(--ink, #23303f);
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition:
     transform var(--dur-1) var(--ease),
@@ -7052,11 +7050,11 @@ html[data-reduce-motion] .pi-skeleton {
 .pi-next span {
   color: var(--muted);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
 }
 .pi-next strong {
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink, #23303f);
 }
 /* (.pi-dist* 분포 행 제거 — 참조 0) */
@@ -7095,7 +7093,7 @@ html[data-reduce-motion] .pi-skeleton {
 .pi-top-title {
   color: var(--ink, #23303f);
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7197,7 +7195,7 @@ html[data-reduce-motion] .pi-skeleton {
   /* 글자를 키운 만큼 가로 패딩을 줄여 폭을 유지한다(2026-09-05 소유자: "너비까지 바뀔 정도로 하지 마"). */
   padding-inline: calc(var(--space-control-x) - 3px);
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .poster-readonly .account-form {
@@ -7587,19 +7585,19 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
 /* 날짜 = 헤더의 주인공(사용자 요청: 더 크게). 요일·기간·특별한 날이 한 줄 위계로 정렬. */
 .agenda-detail-backdrop.is-pop .agenda-detail-day {
   font-size: var(--text-display);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 .agenda-detail-backdrop.is-pop .agenda-detail-date {
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: #8b7f63;
 }
 /* 제목 — 큰 잉크 앵커. 세부 줄은 조용한 보조 위계. */
 .agenda-detail-backdrop.is-pop .agenda-detail-title {
   font-size: 22px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.24;
   color: #2b2415;
@@ -7615,7 +7613,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
 .agenda-detail-backdrop.is-pop .agenda-detail-tag {
   border: 0;
   background: rgb(120 100 60 / 7%);
-  font-weight: 800;
+  font-weight: 600;
   color: #57503c;
 }
 /* 업도움 '도우러 가기' — 카드의 유일한 CTA: 띠·액센트와 같은 초록의 전폭 필 버튼.
@@ -7633,7 +7631,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   background: linear-gradient(135deg, #74a94a, #578f31);
   color: #fff;
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   text-decoration: none;
   box-shadow: 0 6px 16px rgb(87 143 49 / 26%);
   transition:
@@ -7958,7 +7956,7 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   background: color-mix(in srgb, var(--tier-c) 10%, transparent);
   color: var(--tier-c);
   font-size: var(--text-label);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
@@ -7994,7 +7992,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
 }
 
 .agenda-detail-day {
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .agenda-detail-day.red {
@@ -8058,7 +8056,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
   color: #5b5674;
   /* 11 → 13.5px: 44px 카드 안에서 혼자 각주 크기였다(2026-09-05 소유자). */
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   transition:
     background var(--dur-1) var(--ease),
@@ -8134,9 +8132,9 @@ html[data-pchrome] .account-form .button[data-tip]::after {
   background: rgb(32 28 46 / 94%);
   color: #fff;
   font-size: var(--text-caption, 11px);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
-  box-shadow: 0 8px 20px rgb(20 14 40 / 26%);
+  box-shadow: var(--elev-3);
   opacity: 0;
   transform: translate(-50%, -4px);
   pointer-events: none;
@@ -8160,7 +8158,7 @@ html[data-pchrome] .account-form .button[data-tip]:focus-visible::after {
 .poster-page .viewer-preview-actions .button .lbl,
 .poster-page .account-form .button .lbl {
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: normal;
   color: #5b5674;
 }
@@ -8222,7 +8220,7 @@ html[data-pchrome="3"] .poster-chrome-title {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
 }
 .public-calendar-header .viewer-actions .account-form .button:hover,
 .poster-readonly .public-calendar-header .viewer-actions .account-form .button:hover {
@@ -8326,8 +8324,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
      같은 칩이 자리마다 민트·노랑으로 보였다. 유리 재질감은 바깥 백드롭만 맡는다. */
   background: linear-gradient(180deg, var(--ps-surface), #fdf6e6);
   box-shadow:
-    0 30px 80px -20px rgb(24 20 32 / 45%),
-    0 2px 0 rgb(255 255 255 / 60%) inset;
+    0 2px 0 rgb(255 255 255 / 60%) inset, var(--elev-4);
   animation: ps-rise var(--dur-spring-bouncy, 0.6s) var(--spring-bouncy, var(--ease-enter)) both;
 }
 @keyframes ps-rise {
@@ -8378,7 +8375,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   background: transparent;
   font: inherit;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink, #23303f);
   outline: none;
@@ -8452,7 +8449,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
 }
 .ps-count {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: rgb(35 48 63 / 45%);
 }
@@ -8471,7 +8468,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   left: 0;
   border-radius: var(--r-pill);
   background: #fff;
-  box-shadow: 0 1px 2px rgb(24 20 32 / 12%), 0 4px 10px -4px rgb(24 20 32 / 18%);
+  box-shadow: var(--elev-2);
   transition: transform var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease)), width var(--dur-3) var(--ease);
 }
 .ps-seg-btn {
@@ -8483,7 +8480,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   padding: 5px 12px;
   font: inherit;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: rgb(35 48 63 / 55%);
   cursor: pointer;
@@ -8503,12 +8500,12 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
 .ps-corrected {
   margin: -2px 16px 6px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: rgb(35 48 63 / 55%);
 }
 .ps-corrected strong {
   color: var(--ps-accent);
-  font-weight: 900;
+  font-weight: 600;
 }
 /* 칩 줄 — 한 줄, 가로 스크롤(세로를 안 먹는다). 스크롤바 숨김. */
 .ps-related {
@@ -8534,7 +8531,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   height: 32px; /* 칩 한 줄(.ps-chips max-height)과 같은 높이 — 첫 줄 가운데에 선다 */
   min-width: 2.4em;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.06em;
   color: rgb(35 48 63 / 42%);
 }
@@ -8579,7 +8576,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   color: var(--ps-accent, var(--studio-action));
   font: inherit;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -8601,7 +8598,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   padding: 0 12px;
   font: inherit;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink, #23303f);
   cursor: pointer;
@@ -8648,7 +8645,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   border: 1px solid rgb(35 48 63 / 8%);
   border-radius: var(--r-card);
   background: #fffdf8;
-  box-shadow: 0 14px 34px rgb(29 29 41 / 14%);
+  box-shadow: var(--elev-3);
   animation: ps-sug-in var(--dur-2) var(--ease-enter) both;
 }
 /* 목록이 떠 있는 동안 시트 바깥으로 넘칠 수 있게(시트는 overflow:hidden) — 본문은 .ps-body가 따로 스크롤·클립한다 */
@@ -8669,15 +8666,15 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   border-radius: var(--r-sm);
   color: var(--ink, #23303f);
   font-size: var(--text-ui);
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
 .ps-sug.is-cursor { background: rgb(35 48 63 / 6%); }
 .ps-sug-ic { flex: none; color: rgb(35 48 63 / 55%); }
 .ps-sug-term { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ps-sug-term mark { background: transparent; color: inherit; font-weight: 900; }
-.ps-sug-kind { flex: none; font-size: 11.5px; font-weight: 700; color: rgb(35 48 63 / 45%); }
+.ps-sug-term mark { background: transparent; color: inherit; font-weight: 600; }
+.ps-sug-kind { flex: none; font-size: 11.5px; font-weight: 600; color: rgb(35 48 63 / 45%); }
 /* 편집실 검색(2026-09-18): 직접(일정) 구분선은 파랑 잉크 */
 .ps-divider-direct { color: #1d5fb0; }
 /* 편집실 검색(2026-09-18): 행 + ▶(새 탭 다시보기) 한 줄. (⚠ .ps-line은 진행선 클래스 — 이름 겹쳐 행이 2px로 눌렸던 사고.) */
@@ -8742,7 +8739,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   margin-left: 5px;
   font-style: normal;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ps-accent);
 }
 
@@ -8810,7 +8807,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   padding: 10px 0 4px;
   background: linear-gradient(180deg, var(--ps-surface) 72%, rgb(255 253 246 / 0%));
   font-size: 11.5px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
   color: rgb(35 48 63 / 55%);
@@ -8858,7 +8855,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
 .ps-row:hover,
 .ps-row.is-cursor {
   background: #fff;
-  box-shadow: 0 1px 2px rgb(24 20 32 / 6%), 0 8px 18px -12px rgb(24 20 32 / 25%);
+  box-shadow: var(--elev-3);
   transform: translateY(-1px);
 }
 /* 키보드 커서는 마우스 호버와 달리 '선택된 줄'이다 — 왼쪽에 파란 실선을 세워 구분(시즌3). */
@@ -8914,7 +8911,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   background: rgb(29 29 41 / 72%);
   color: #fff;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   backdrop-filter: blur(4px);
 }
@@ -8942,7 +8939,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.012em;
   line-height: 1.3;
 }
@@ -8953,7 +8950,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   color: rgb(35 48 63 / 52%);
 }
 .ps-row mark {
@@ -8977,7 +8974,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   border-radius: var(--r-pill);
   background: rgb(35 48 63 / 5%);
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: rgb(35 48 63 / 50%);
   white-space: nowrap;
@@ -9009,7 +9006,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   gap: 0;
 }
 .ps-vod-row.via-chapter .ps-title {
-  font-weight: 700;
+  font-weight: 600;
 }
 .ps-chapters {
   display: grid;
@@ -9031,7 +9028,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   display: block;
   margin: 6px 6px 1px;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.05em;
   color: rgb(35 48 63 / 45%);
 }
@@ -9051,7 +9048,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   min-width: 54px;
   font-variant-numeric: tabular-nums;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 600;
   color: rgb(var(--studio-action-rgb) / 75%);
   transition: color var(--dur-1) var(--ease);
 }
@@ -9061,7 +9058,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 }
 .ps-chapter .ps-title {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 /* 상위 소제목 + 그 아래 세부 항목 = **하나의 연속 레일**(2026-09-18 소유자: 2px 어긋나 오류처럼 보였다).
    레일 x 좌표와 글자 들여쓰기를 토큰 하나로 묶어 상위·하위가 정확히 같은 선 위에 선다. 위아래 여백은
@@ -9076,7 +9073,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   padding: 6px 0 2px var(--ps-sub-pad);
   border-left: 2px solid rgb(var(--studio-action-rgb) / 45%);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
   color: rgb(35 48 63 / 62%);
   overflow: hidden;
@@ -9131,7 +9128,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   padding: 4px 8px;
   font: inherit;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ps-accent);
   cursor: pointer;
   transition: background var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
@@ -9153,7 +9150,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   gap: 10px;
   margin: 6px 0 2px;
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 600;
   color: rgb(35 48 63 / 45%);
 }
 .ps-divider::before,
@@ -9227,7 +9224,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   color: #fff;
   padding: 3px 7px;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -9255,7 +9252,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   border-radius: var(--r-pill);
   background: rgb(255 255 255 / 92%);
   color: var(--ink, #23303f);
-  box-shadow: 0 6px 16px -8px rgb(24 20 32 / 35%);
+  box-shadow: var(--elev-2);
   cursor: pointer;
   animation: ps-pop var(--dur-3) var(--spring-bouncy, var(--ease-spring)) both;
   transition: transform var(--dur-1) var(--ease);
@@ -9730,7 +9727,7 @@ html[data-reduce-motion] .agenda-item.teaser.hope-hit {
 }
 .agenda-detail-sheet.is-hoped .dt-count-label {
   color: color-mix(in srgb, rgb(90 80 130 / 80%) calc((1 - var(--hy-gold, 0)) * 100%), #8a4f04);
-  font-weight: 900;
+  font-weight: 600;
 }
 .agenda-detail-sheet.is-hoped .dt-echo:not(.dt-hope-echo) {
   border-width: 2.5px;

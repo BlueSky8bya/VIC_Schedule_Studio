@@ -100,7 +100,7 @@
   background: #faf9fe;
   padding: 9px 8px;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: #6b5b95;
   white-space: nowrap;
   cursor: pointer;
@@ -151,7 +151,7 @@
   gap: 8px;
   color: #6b5bd6;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   pointer-events: none;
   animation: insights-veil-in var(--dur-2) var(--ease);
 }
@@ -325,7 +325,7 @@
 
 .insight-tile strong {
   font-size: 26px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   color: #4a3f72;
   /* 값은 한 줄로 — "금요일"이 "금/요일"로 잘리지 않게. 폰트가 달라도 바닥 기준선 정렬. */
@@ -341,7 +341,7 @@
 
 .insight-tile span {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: #8a82a6;
   /* 라벨이 두 줄이 되더라도 단어 중간에서 끊기지 않게(예: "한가한 / 요일"). */
   word-break: keep-all;
@@ -414,7 +414,7 @@
   background: linear-gradient(180deg, #f4f1ff, #efeaff);
   color: #4b3fb0;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 
@@ -426,13 +426,13 @@
 
 .insight-note.warn {
   color: #c2410c;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .insight-subhead {
   margin: 20px 0 11px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: #8b7a59;
 }
 
@@ -454,7 +454,7 @@
 
 .insight-bar-label {
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: #4b4636;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -484,7 +484,7 @@
 
 .insight-bar-count {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: #6b6480;
   min-width: 28px;
   text-align: right;
@@ -512,13 +512,13 @@
 
 .insight-rows li span {
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: #8a82a6;
 }
 
 .insight-rows li strong {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: #3a3550;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -530,7 +530,7 @@
   padding: 11px 14px;
   border-radius: var(--r-md);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.4;
 }
 
@@ -704,13 +704,13 @@
 .insight-next > span {
   flex: none;
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 600;
   color: #5b6bd6;
 }
 
 .insight-next > strong {
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.35;
   color: #2f3a6b;
   word-break: break-all;
@@ -718,13 +718,13 @@
 
 .insight-next .muted {
   color: #9aa0ab;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .insight-trend {
   margin-left: 6px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   font-style: normal;
 }
 
@@ -744,7 +744,7 @@
 .insights-month {
   margin: 0;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 600;
   color: #6b5bd6;
   letter-spacing: 0.01em;
 }
@@ -771,7 +771,7 @@
   background: #e7f8ee;
   color: #1f9d57;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   opacity: 0;
   transform: translateX(6px) scale(0.9);
@@ -861,7 +861,7 @@
   background: transparent;
   padding: 5px 14px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: #6b5b95;
   cursor: pointer;
   /* 활성 전환이 툭 끊기지 않게 — 배경·색·그림자가 부드럽게 이어지고 누르면 살짝 눌린다. */
@@ -922,7 +922,7 @@
   background: #fff;
   border: 1px solid #d7e3fb;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: #2f3a6b;
 }
 
@@ -971,13 +971,13 @@
 
 .trend-head > span {
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: #6b6480;
 }
 
 .trend-head > strong {
   font-size: var(--text-title);
-  font-weight: 900;
+  font-weight: 600;
   color: #3a3550;
 }
 
@@ -985,7 +985,7 @@
 .trend-new {
   margin-left: auto;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   font-style: normal;
 }
 
@@ -1068,7 +1068,7 @@
   background: rgba(91, 52, 240, 0.09);
   color: #6b5bd6;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   font-style: normal;
   white-space: nowrap;
 }
@@ -1083,7 +1083,7 @@
   height: 20px;
   text-align: center;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   color: #b3acc6;
   line-height: 1.15;
 }
@@ -1137,14 +1137,14 @@
 /* 라벨은 [윗줄]<lbreak>[아랫줄] 구조 — 기본(모바일)은 항상 두 줄로 폭을 아낀다. */
 .highlight-card .hl-label {
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   color: #8a82a6;
   white-space: normal;
   word-break: keep-all;
 }
 .highlight-card .hl-main {
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 600;
   color: #3a3550;
   line-height: 1.2;
   overflow: hidden;
@@ -1158,7 +1158,7 @@
   min-width: 0;
   max-width: 62%;
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   color: #6b5bd6;
   white-space: nowrap;
@@ -1169,7 +1169,7 @@
    네 장이 [아이콘][라벨/값] 한 골격만 쓰면 변형이 필요 없다.) */
 /* '컨텐츠 최다요일' 라벨은 굵게(웹·모바일 공통). */
 .highlight-card[data-tone="wd"] .hl-label {
-  font-weight: 900;
+  font-weight: 600;
   color: #2f7d4f;
 }
 .highlight-card[data-tone="day"] {
@@ -1240,7 +1240,7 @@
   color: #fff;
   border-radius: var(--r-sm);
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.32;
   text-align: center;
   white-space: normal;
@@ -1248,7 +1248,7 @@
   word-break: keep-all;
   pointer-events: none;
   z-index: 12;
-  box-shadow: 0 10px 24px -10px rgb(58 53 80 / 65%);
+  box-shadow: var(--elev-3);
   animation: vt-tip-in 0.12s var(--ease, ease);
 }
 
@@ -1298,7 +1298,7 @@
   background: #3a3550;
   color: #fff;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--r-xs);
   transition: opacity 0.12s var(--ease, ease), transform 0.12s var(--ease, ease);
@@ -1379,7 +1379,7 @@
   margin-top: 4px;
   text-align: center;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   color: #9a93ad;
 }
 .vt-legend {
@@ -1395,7 +1395,7 @@
   align-items: center;
   gap: 5px;
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 600;
   color: #6b6480;
 }
 .vt-legend li span {
@@ -1421,14 +1421,14 @@
   border-radius: var(--r-sm);
   white-space: nowrap;
   z-index: 8;
-  box-shadow: 0 8px 20px -8px rgb(58 53 80 / 60%);
+  box-shadow: var(--elev-3);
   animation: vt-tip-in 0.12s var(--ease, ease);
 }
 .vt-tip-float {
   bottom: auto;
   left: auto;
   max-width: min(260px, 92vw);
-  box-shadow: 0 14px 34px -10px rgb(20 16 35 / 55%);
+  box-shadow: var(--elev-3);
 }
 @keyframes vt-tip-in {
   from {
@@ -1440,7 +1440,7 @@
 }
 .vt-tip > strong {
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 600;
   padding-bottom: 3px;
   border-bottom: 1px solid rgb(255 255 255 / 18%);
 }
@@ -1461,7 +1461,7 @@
 }
 .vt-tip-note {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   color: #cfc9e0;
 }
 /* 호버 박스 맨 아래 '진행 중' 한 줄 — .vt-tip은 세로 flex라 그대로 마지막 줄이 된다. */
@@ -1476,7 +1476,7 @@
   align-items: center;
   gap: 6px;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
 }
 .vt-tip-row i {
   width: 8px;
@@ -1487,7 +1487,7 @@
 .vt-tip-row b {
   margin-left: auto;
   padding-left: 10px;
-  font-weight: 900;
+  font-weight: 600;
 }
 @media (min-width: 641px) {
   .vt-legend li {
@@ -1516,7 +1516,7 @@
 
 .bcast-chips strong {
   color: #6b5bd6;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .bcast-daily {
@@ -1540,10 +1540,10 @@
   background: #3a3550;
   color: #fff;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 4px 10px rgb(17 24 39 / 24%);
+  box-shadow: var(--elev-2);
 }
 
 .bcast-dbar[data-active] {
@@ -1592,7 +1592,7 @@
   height: 11px;
   text-align: center;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 600;
   color: #c5bfd6;
   line-height: 1;
 }
@@ -1708,7 +1708,7 @@
   }
 .hl-tip {
     font-size: 26px;
-    font-weight: 900;
+    font-weight: 600;
     padding: 10px 16px;
     border-radius: var(--r-md);
     line-height: 1.28;
@@ -1877,7 +1877,7 @@
   background: transparent;
   padding: 7px 9px 7px 11px;
   font-size: 14.5px;
-  font-weight: 800;
+  font-weight: 600;
   color: #3a3550;
   text-align: left;
   cursor: pointer;
@@ -1927,7 +1927,7 @@
   background: var(--surface-2, #f5f7fb);
   padding: 7px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: #64748b;
   cursor: pointer;
 }

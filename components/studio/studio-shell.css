@@ -67,7 +67,7 @@ body::-webkit-scrollbar {
   border-bottom: 1px solid var(--studio-line);
   background: var(--glass-strong);
   padding: var(--space-4) var(--space-5); /* 16/24 — 17/26 임의값 정리 */
-  box-shadow: 0 2px 12px rgb(17 24 39 / 8%);
+  box-shadow: var(--elev-2);
   backdrop-filter: blur(10px);
 }
 
@@ -156,7 +156,7 @@ body::-webkit-scrollbar {
 }
 .studio-month-label strong {
   font-size: clamp(26px, 2.5vw, 44px);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink, #1c2433);
   line-height: 1;
@@ -252,7 +252,7 @@ body::-webkit-scrollbar {
   background: rgb(var(--studio-action-rgb) / 15%);
   color: var(--studio-action-text);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: pointer;
@@ -333,7 +333,7 @@ body::-webkit-scrollbar {
   background: var(--studio-silver);
   color: var(--ink-soft);
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
 }
 .kbd-hints kbd {
   display: inline-grid;
@@ -348,7 +348,7 @@ body::-webkit-scrollbar {
   color: var(--studio-action-text);
   font-family: inherit;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -465,7 +465,7 @@ body::-webkit-scrollbar {
   gap: var(--space-4); /* 16 */
   /* 1.5배로 키움 */
   font-size: clamp(90px, 10.8vw, 200px);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
   color: var(--ink, #1c2433);
@@ -475,7 +475,7 @@ body::-webkit-scrollbar {
   color: #d59a93;
   /* 이모지 글리프(≈0.86×폰트)와 한글(≈0.72×폰트) 높이를 같게: 0.72/0.86 ≈ 0.83em */
   font-size: 0.83em;
-  font-weight: 900;
+  font-weight: 600;
   display: inline-block;
   transform-origin: center;
   /* 제목 양옆 ✨가 천천히 반짝/둥실 — 시청자·편집실 공통 시그니처(좌우 엇갈리게). */
@@ -507,7 +507,7 @@ body::-webkit-scrollbar {
   border-radius: var(--r-sm);
   background: #ffffff;
   cursor: pointer;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .actor-badge,
@@ -557,7 +557,7 @@ body::-webkit-scrollbar {
   background: transparent;
   color: var(--muted, #8a8077);
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   opacity: 0.6;
@@ -579,7 +579,7 @@ body::-webkit-scrollbar {
   border-radius: var(--r-md);
   background: #ffffff;
   padding: 12px 14px;
-  box-shadow: 0 14px 40px -18px rgba(40, 30, 60, 0.5);
+  box-shadow: var(--elev-4);
   animation: editor-card-enter 0.2s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
 
@@ -598,7 +598,7 @@ body::-webkit-scrollbar {
   background: color-mix(in srgb, var(--accent, var(--studio-action-text)) 9%, #fff);
   color: var(--ink); /* 글자는 늘 진한 잉크 — 액센트가 노랑 계열인 모드에서 액센트 글자가 안 읽혔다(2026-09-17 소유자) */
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   animation: draft-restored-in 0.24s var(--ease, cubic-bezier(0.34, 1.4, 0.64, 1)) both;
 }
@@ -610,7 +610,7 @@ body::-webkit-scrollbar {
   background: #fff;
   color: var(--ink);
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.16s var(--ease, ease), transform 0.12s var(--ease, ease);
 }
@@ -646,7 +646,7 @@ body::-webkit-scrollbar {
 
 .role-help-title {
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
 }
 .role-help-email {
   margin: -2px 0 2px 2px;
@@ -658,7 +658,7 @@ body::-webkit-scrollbar {
 .role-help-summary {
   margin: 0;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted, #8a8077);
 }
 .role-help-can {
@@ -678,7 +678,7 @@ body::-webkit-scrollbar {
 /* 역할명 옆 작은 보조 문구 "(미리보기 중입니다..)" — 제목보다 작고 흐릿하게. */
 .role-help-preview {
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--studio-action-text);
   opacity: 0.75;
 }
@@ -703,7 +703,7 @@ body::-webkit-scrollbar {
   align-items: center;
   gap: 6px;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink-soft, var(--ink));
 }
 .rhh-label svg {
@@ -763,7 +763,7 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
   color: var(--ink-soft, var(--ink));
   font: inherit;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition:
     background 0.16s var(--ease, ease),
@@ -804,7 +804,7 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
   height: 18px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(40, 30, 60, 0.35);
+  box-shadow: var(--elev-1);
   transition: transform 0.16s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 .rhh-switch.on .rhh-knob {
@@ -850,7 +850,7 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
   background: #fff7ed;
   padding: 10px 18px;
   color: #9a3412;
-  font-weight: 900;
+  font-weight: 600;
   /* 잠금 해제 직후 배너가 위에서 뚝 떨어지듯 들어와 한 번 환하게 번쩍 — "방송 공유 주의" 환기.
      순서: 드롭인 → (끝나면) 호박색 번쩍 + 테두리 글로우. 자물쇠는 톡 열리듯 팝. */
   animation:
@@ -869,7 +869,7 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
   background: #fff;
   padding: 5px 13px;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: #9a3412;
   cursor: pointer;
 }
@@ -1028,7 +1028,7 @@ html[data-reduce-motion] .cal-zoom-float {
 .developer-panel-subhead {
   margin: 4px 0 -2px;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   color: #8b7a59;
   text-transform: none;
@@ -1062,13 +1062,13 @@ html[data-reduce-motion] .cal-zoom-float {
 }
 .dp-live-tile strong {
   font-size: 26px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 .dp-live-tile span {
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
 }
 @media (min-width: 641px) {
   .dp-live-tile {
@@ -1102,11 +1102,11 @@ html[data-reduce-motion] .cal-zoom-float {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
+  font-weight: 600;
   color: #374151;
 }
 .developer-panel-list .dp-count {
-  font-weight: 900;
+  font-weight: 600;
   font-size: var(--text-title);
   color: #111827;
 }
@@ -1193,7 +1193,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 }
 .badge-criteria .bc-body b {
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   color: #b5462a;
 }
 .badge-criteria .bc-body em {
@@ -1284,7 +1284,7 @@ html[data-reduce-motion] .act-skeleton span { animation-duration: 1ms;
   background: var(--surface, #fff);
   color: var(--studio-action-text);
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 8px;
   white-space: nowrap;
   cursor: pointer;
@@ -1339,9 +1339,7 @@ html[data-reduce-motion] .act-skeleton span { animation-duration: 1ms;
   border-radius: 3px;
   background: linear-gradient(180deg, #ffe08a, var(--accent) 55%, var(--accent-strong));
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 70%),
-    0 1px 3px rgb(17 24 39 / 18%),
-    0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+    0 0 0 1px rgb(255 255 255 / 70%), 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent), var(--elev-1);
   transform: translateY(calc((var(--sp-h, 0px) - var(--sp-inset) * 2 - var(--sp-bead)) * var(--sp-pct, 0))) scale(0.8);
   transition:
     transform 160ms var(--ease),
@@ -1351,9 +1349,7 @@ html[data-reduce-motion] .act-skeleton span { animation-duration: 1ms;
   /* 만지는 동안 살짝 부풀고 후광이 퍼진다(--spring-smooth: 도착 뒤 잔진동 없이 정착). */
   transform: translateY(calc((var(--sp-h, 0px) - var(--sp-inset) * 2 - var(--sp-bead)) * var(--sp-pct, 0))) scale(1);
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 85%),
-    0 2px 6px rgb(17 24 39 / 20%),
-    0 0 16px color-mix(in srgb, var(--accent) 75%, transparent);
+    0 0 0 1px rgb(255 255 255 / 85%), 0 0 16px color-mix(in srgb, var(--accent) 75%, transparent), var(--elev-2);
   transition:
     transform 160ms var(--ease),
     box-shadow var(--dur-2) var(--ease);
@@ -1432,7 +1428,7 @@ html[data-reduce-motion] .scrollpos-tag {
 }
 .act-story time {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 .act-story span {
@@ -1445,7 +1441,7 @@ html[data-reduce-motion] .scrollpos-tag {
   list-style: none;
   margin: 2px 0 6px;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .act-lines > summary::-webkit-details-marker {
@@ -1459,7 +1455,7 @@ html[data-reduce-motion] .scrollpos-tag {
 }
 .act-gist-open {
   margin: 6px 0 0;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
 }
 /* 일일 상세 머리줄의 자동 갱신 안내(멈춤이면 버튼으로 바뀐다) */
@@ -1562,14 +1558,14 @@ html[data-reduce-motion] .scrollpos-tag {
 }
 .act-acct {
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .act-sub b {
-  font-weight: 800;
+  font-weight: 600;
 }
 .act-sub {
   font-size: var(--text-micro);
@@ -1584,7 +1580,7 @@ html[data-reduce-motion] .scrollpos-tag {
   margin-left: auto;
   padding-left: 8px;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -1698,13 +1694,13 @@ html[data-reduce-motion] .act-live::before {
 /* 닫는 줄은 조용히 — 여기서 끝났다는 표시면 충분하다. */
 .act-items > li[data-fold="close"] .act-name {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 .act-items > li:hover { background: var(--studio-silver); }
 .act-t {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--text-caption);
 }
 /* 접힌 줄(×N)의 끝 시각 — 첫 시각 아래에 작게. 칸이 40px라 옆에 붙이면 줄바꿈이 난다. */
@@ -1732,7 +1728,7 @@ html[data-reduce-motion] .act-live::before {
   flex: 0 1 auto;
   min-width: 5.5em;
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1746,7 +1742,7 @@ html[data-reduce-motion] .act-live::before {
   color: var(--muted);
   font-size: var(--text-micro);
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 /* 며칠 것인가 — 일정·편집 카드 줄에만. 이름과 달리 **안 줄어든다**: 제목이 길어도 날짜는
@@ -1758,7 +1754,7 @@ html[data-reduce-motion] .act-live::before {
   background: rgb(var(--studio-action-rgb) / 10%);
   color: var(--studio-action-text);
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 /* 위치는 오른쪽 끝, 바뀔 때만(마크업에서 판단). 칩 대신 조용한 글자 — 칩 셋이 나란히 서면
@@ -1769,7 +1765,7 @@ html[data-reduce-motion] .act-live::before {
   color: var(--muted);
   font-size: 9.5px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -1786,7 +1782,7 @@ html[data-reduce-motion] .act-live::before {
 .act-dur {
   color: var(--muted);
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .act-rep {
@@ -1796,7 +1792,7 @@ html[data-reduce-motion] .act-live::before {
   background: rgb(var(--studio-action-rgb) / 12%);
   color: var(--studio-action-text);
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 /* 카드 접기 — 두 카드가 같은 머리 형식을 쓴다(한쪽만 접기가 없으면 어색하다). */
@@ -1820,7 +1816,7 @@ html[data-reduce-motion] .act-live::before {
 .usage-gist {
   margin-left: auto;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1861,7 +1857,7 @@ html[data-reduce-motion] .act-live::before {
 }
 .upick-label {
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .upick-btn {
@@ -1875,7 +1871,7 @@ html[data-reduce-motion] .act-live::before {
   color: var(--studio-action-text);
   font-family: inherit;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 9px;
   cursor: pointer;
   white-space: nowrap;
@@ -1916,7 +1912,7 @@ html[data-reduce-motion] .act-live::before {
   border: 1px solid var(--studio-line);
   border-radius: var(--r-md);
   background: var(--surface, #fff);
-  box-shadow: 0 10px 26px rgb(17 24 39 / 18%);
+  box-shadow: var(--elev-3);
   animation: upick-in var(--dur-1) var(--ease);
 }
 @keyframes upick-in {
@@ -1936,7 +1932,7 @@ html[data-reduce-motion] .upick-menu {
   color: var(--ink);
   font-family: inherit;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   text-align: left;
   padding: 5px 8px;
   cursor: pointer;
@@ -1958,7 +1954,7 @@ html[data-reduce-motion] .upick-menu {
   background: rgb(var(--studio-action-rgb) / 12%);
   color: var(--studio-action-text);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   padding: 3px 9px;
   cursor: pointer;
   transition: transform var(--dur-1) var(--ease);
@@ -1972,7 +1968,7 @@ html[data-reduce-motion] .upick-menu {
   background: var(--studio-silver);
   color: var(--muted);
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 10px;
   cursor: pointer;
   transition:
@@ -2035,7 +2031,7 @@ html[data-reduce-motion] .upick-menu {
   align-items: baseline;
   gap: 5px;
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--text-label);
   white-space: nowrap;
   overflow: hidden;
@@ -2046,7 +2042,7 @@ html[data-reduce-motion] .upick-menu {
   color: var(--muted);
   font-style: normal;
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
 }
 .usage-name small,
 .usage-name code {
@@ -2063,7 +2059,7 @@ html[data-reduce-motion] .upick-menu {
   align-items: baseline;
   gap: 4px;
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--studio-action-text);
   font-variant-numeric: tabular-nums;
   cursor: help;
@@ -2072,7 +2068,7 @@ html[data-reduce-motion] .upick-menu {
 .usage-n em {
   font-style: normal;
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .usage-actions {
@@ -2089,7 +2085,7 @@ html[data-reduce-motion] .upick-menu {
   background: var(--surface, #fff);
   color: var(--studio-action-text);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   padding: 5px;
   cursor: pointer;
   transition:
@@ -2113,7 +2109,7 @@ html[data-reduce-motion] .upick-menu {
   color: var(--muted);
   font-family: inherit;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   text-align: left;
   padding: 6px 9px;
   cursor: pointer;
@@ -2127,7 +2123,7 @@ html[data-reduce-motion] .upick-menu {
   margin-left: auto;
   font-style: normal;
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -2144,7 +2140,7 @@ html[data-reduce-motion] .upick-menu {
   background: var(--studio-silver);
   color: var(--muted);
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   padding: 1px 6px;
 }
 
@@ -2185,7 +2181,7 @@ html[data-reduce-motion] .upick-menu {
   background: var(--studio-silver);
   padding: 4px 11px;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--studio-action-text);
   cursor: pointer;
   transition:
@@ -2253,7 +2249,7 @@ html[data-reduce-motion] .perf-spin {
   border: 0;
   padding: 0 10px;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
 }
 .perf-row.perf-thead span:not(:first-child),
@@ -2265,15 +2261,15 @@ html[data-reduce-motion] .perf-spin {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 600;
   color: #4b4636;
 }
 .perf-num {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 .perf-p95 {
-  font-weight: 900;
+  font-weight: 600;
   color: #3f6212;
 }
 .perf-p95[data-warn] {
@@ -2331,7 +2327,7 @@ html[data-reduce-motion] .perf-spin {
   border-radius: var(--r-card); /* 카드 공통 radius 패밀리(스튜디오 14px) 유지 */
   background: #fff;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--studio-action-text);
   cursor: pointer;
   transition:
@@ -2389,7 +2385,7 @@ html[data-reduce-motion] .perf-spin {
 .opt-chip:hover:not(:disabled):not(.on) {
   border-color: color-mix(in srgb, var(--ac) 50%, var(--studio-line));
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px -12px rgb(17 24 39 / 40%);
+  box-shadow: var(--elev-3);
 }
 .opt-chip:active:not(:disabled) {
   transform: scale(var(--press-scale));
@@ -2480,7 +2476,7 @@ html[data-reduce-motion] .perf-spin {
   background: #fff;
   color: var(--muted);
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition:
     border-color var(--dur-1) var(--ease),
@@ -2496,7 +2492,7 @@ html[data-reduce-motion] .perf-spin {
 }
 .dtp-trigger.has {
   color: var(--ink-soft);
-  font-weight: 800;
+  font-weight: 600;
 }
 .dtp-trigger > svg {
   flex: none;
@@ -2624,7 +2620,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .dtp-title {
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 .dtp-nav {
@@ -2656,7 +2652,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .dtp-wdrow span {
   text-align: center;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   padding: 3px 0;
 }
@@ -2694,7 +2690,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-radius: var(--r-sm);
   background: transparent;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-soft);
   cursor: pointer;
   transition:
@@ -2776,7 +2772,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   background: linear-gradient(180deg, var(--studio-action-tint-hi), var(--studio-action-tint-hi));
   color: var(--studio-action-text);
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.2px;
   white-space: nowrap;
 }
@@ -2800,7 +2796,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   right: 0;
   text-align: center;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
 }
 .dtp-wheel-wrap {
@@ -2849,7 +2845,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border: 0;
   background: transparent;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--studio-action-line);
   cursor: pointer;
   font-variant-numeric: tabular-nums;
@@ -2866,7 +2862,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .dtp-wheel-item.on {
   color: var(--ink);
-  font-weight: 900;
+  font-weight: 600;
 }
 /* 잡고 있는 동안 — 밴드가 또렷이 빛나 '이 시간을 쥐고 있다'는 느낌(band는 wheel 앞 형제라 :has로). */
 .dtp-wheel-wrap:has(.dtp-wheel.grabbing) .dtp-wheel-band {
@@ -2882,7 +2878,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .dtp-colon {
   font-size: var(--text-display);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--studio-action-line);
   line-height: 1;
 }
@@ -2897,7 +2893,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border: 0;
   border-radius: var(--r-sm);
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
@@ -3003,7 +2999,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-radius: var(--r-sm);
   background: transparent;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink-soft);
   cursor: pointer;
   white-space: nowrap;
@@ -3082,7 +3078,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
     border: 1px solid var(--studio-line);
     border-radius: var(--r-lg);
     background: linear-gradient(180deg, #fffefb, var(--studio-silver));
-    box-shadow: 0 6px 18px -14px rgb(17 24 39 / 35%);
+    box-shadow: var(--elev-3);
   }
   .vcard > .insight-subhead:first-child {
     margin-bottom: 12px;
@@ -3128,7 +3124,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   background: var(--studio-action-tint-hi);
   color: var(--ink-soft);
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -3140,7 +3136,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   padding-left: 14px;
   color: #e11d48;
   font-size: var(--text-micro);
-  font-weight: 900;
+  font-weight: 600;
   vertical-align: middle;
 }
 .vlive::before {
@@ -3236,7 +3232,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   margin-top: 2px;
   text-align: center;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
   height: 10px;
 }
@@ -3286,7 +3282,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   margin-top: 4px;
   text-align: center;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .vt-legend {
@@ -3302,7 +3298,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   align-items: center;
   gap: 5px;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 .vt-legend li span {
@@ -3355,7 +3351,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   transform: translateX(50%);
   margin-top: 3px;
   font-size: 8.5px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
   pointer-events: none;
 }
@@ -3389,7 +3385,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   color: #fff;
   font-style: normal;
   font-size: 8.5px;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 .vt-hours-empty {
@@ -3403,7 +3399,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.82);
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted, #9aa0ab);
 }
 @media (min-width: 1000px) {
@@ -3427,7 +3423,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .own-date {
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   text-align: right;
   white-space: nowrap;
@@ -3469,7 +3465,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   height: 12px;
   margin-top: 1px;
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .hour-ticks > span {
@@ -3527,13 +3523,13 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .dv-total strong {
   font-size: 30px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   color: var(--ink);
 }
 .dv-total span {
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
 }
 .dv-breakdown {
@@ -3549,7 +3545,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   align-items: center;
   gap: 6px;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
 }
 .dv-breakdown li span {
@@ -3559,7 +3555,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   flex: none;
 }
 .dv-breakdown li b {
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink);
 }
 /* 관리자 세션 — 하루판은 날짜 칼럼 없이 풀폭 트랙. */
@@ -3588,12 +3584,12 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .vsum-split {
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 .vsum-split b {
   color: var(--ink-soft);
-  font-weight: 900;
+  font-weight: 600;
 }
 /* 오른쪽 정렬 — 줄바꿈돼 둘째 줄로 내려가도 오른쪽(엄지 자리)에 붙는다. 일별 모달의 역할별|기기별과 같은 자리.
    .modal-card-dayVisit .insights-subtabs(0,2,0)가 margin을 되돌리지 않도록 같은 특이도 이상으로. */
@@ -3624,13 +3620,13 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .vsum-kpis b {
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink-soft);
   line-height: 1.1;
 }
 .vsum-kpis span {
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 /* R6 자동 인사이트 문장 */
@@ -3643,7 +3639,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-radius: var(--r-md);
   background: var(--studio-silver);
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 /* R7 요일×시간 히트맵 */
@@ -3660,7 +3656,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vheat-wd {
   flex: 0 0 16px;
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   text-align: center;
 }
@@ -3677,7 +3673,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   gap: 3px;
   margin-left: 19px;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .vheat-axis > span {
@@ -3689,7 +3685,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   position: absolute;
   right: 0;
   transform: translateX(50%);
-  font-weight: 700;
+  font-weight: 600;
 }
 /* R8 날짜별 미니 달력 */
 .vmini {
@@ -3701,7 +3697,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vmini-h {
   text-align: center;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
 }
 .vmini-cell {
@@ -3711,7 +3707,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   aspect-ratio: 1;
   border-radius: var(--r-xs);
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
 }
 .vmini-cell.empty {
@@ -3728,7 +3724,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vhealth {
   margin: 8px 2px 0;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted, #9aa0ab);
 }
 /* R10 최근 세션 로그(접이식) */
@@ -3738,7 +3734,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vrecent summary {
   cursor: pointer;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--studio-action-text);
 }
 /* ── 세션 로그 피드(.vlog) — 2줄 행 ──
@@ -3764,7 +3760,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vlog-f-cap {
   color: var(--muted);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -3784,7 +3780,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   padding: 14px 8px;
   text-align: center;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 /* ── 보안 패널: 잠금 암호 핵심값을 스탯 타일로(키-값 나열 대신). 웹은 크게, 모바일 3열 컴팩트. ── */
@@ -3809,18 +3805,18 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .sec-kpis li:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px -10px rgb(17 24 39 / 35%);
+  box-shadow: var(--elev-3);
 }
 .sec-kpis b {
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink-soft);
   line-height: 1.15;
   text-align: center;
 }
 .sec-kpis span {
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 @media (min-width: 1000px) {
@@ -3868,7 +3864,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
 }
 @media (min-width: 1000px) {
@@ -3950,7 +3946,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   align-items: center;
   gap: 8px;
   font-size: var(--text-micro);
-  font-weight: 700;
+  font-weight: 600;
 }
 /* 역할 배지 — 역할별 색(ROLE_META) 알약. owner 이메일이 아주 길면 윗줄 안에서 …로. */
 .vrecent-role {
@@ -3962,7 +3958,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   padding: 2px 9px;
   border-radius: var(--r-pill);
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   color: color-mix(in srgb, var(--rc, var(--ink-soft)) 72%, var(--ink));
   background: color-mix(in srgb, var(--rc, var(--ink-soft)) 15%, #fff);
   border: 1px solid color-mix(in srgb, var(--rc, var(--ink-soft)) 32%, transparent);
@@ -3974,7 +3970,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   padding: 0 5px;
   border-radius: var(--r-pill);
   font-size: 9.5px;
-  font-weight: 900;
+  font-weight: 600;
   background: #fff3e0;
   color: #b5651d;
 }
@@ -3985,7 +3981,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vlog-dur {
   margin-left: auto;
   flex: none;
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink);
 }
 .vlog-t {
@@ -4000,7 +3996,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .vlog-row.glance .vlog-dur {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 /* 웹: 로그 테이블 — 인셋 패널 + zebra + 호버 좌측 액센트. */
 @media (min-width: 1000px) {
@@ -4058,7 +4054,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   align-items: center;
   gap: 8px;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
 }
 .dv-sessions .dv-dev {
@@ -4071,7 +4067,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   font-variant-numeric: tabular-nums;
 }
 .dv-sessions b {
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink);
 }
 /* 관리자 방문 계정(이메일일 수 있어 길면 … 처리) — 시각과 기기 사이를 채운다. */
@@ -4086,7 +4082,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   margin-left: auto;
   font-style: normal;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 @media (min-width: 1000px) {
@@ -4139,14 +4135,14 @@ html[data-reduce-motion] .dtp-pop-x:active {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
 }
 .access-card .rt {
   flex: 0 0 auto;
   font-style: normal;
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: var(--r-pill);
 }
@@ -4172,7 +4168,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   flex: 1;
   min-width: 0;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: #b5491d;
 }
 .access-none {
@@ -4291,7 +4287,7 @@ html[data-reduce-motion] .perf-windows button.active {
   border-radius: var(--r-sm);
   white-space: nowrap;
   z-index: 8;
-  box-shadow: 0 8px 20px -8px rgb(58 53 80 / 60%);
+  box-shadow: var(--elev-3);
   animation: vt-tip-in 0.12s var(--ease, ease);
 }
 /* 포털(body)로 띄우는 트렌드 호버박스 — 위치는 인라인(fixed, left/top/transform)이 잡는다.
@@ -4300,7 +4296,7 @@ html[data-reduce-motion] .perf-windows button.active {
   bottom: auto;
   left: auto;
   max-width: min(260px, 92vw);
-  box-shadow: 0 14px 34px -10px rgb(20 16 35 / 55%);
+  box-shadow: var(--elev-3);
 }
 @keyframes vt-tip-in {
   from {
@@ -4312,7 +4308,7 @@ html[data-reduce-motion] .perf-windows button.active {
 }
 .vt-tip > strong {
   font-size: var(--text-label);
-  font-weight: 900;
+  font-weight: 600;
   padding-bottom: 3px;
   border-bottom: 1px solid rgb(255 255 255 / 18%);
 }
@@ -4335,7 +4331,7 @@ html[data-reduce-motion] .perf-windows button.active {
 }
 .vt-tip-note {
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--studio-line);
 }
 .vt-tip-row {
@@ -4343,7 +4339,7 @@ html[data-reduce-motion] .perf-windows button.active {
   align-items: center;
   gap: 6px;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
 }
 .vt-tip-row i {
   width: 8px;
@@ -4354,7 +4350,7 @@ html[data-reduce-motion] .perf-windows button.active {
 .vt-tip-row b {
   margin-left: auto;
   padding-left: 10px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 /* 데스크톱(>640px)에선 인사이트 글씨를 키운다. 모바일은 컴팩트가 생명이라 기본(작은) 크기를
@@ -4421,7 +4417,7 @@ html[data-reduce-motion] .perf-windows button.active {
   margin-top: 3px;
   text-align: center;
   font-size: 8.5px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
   height: 10px;
 }
@@ -4535,7 +4531,7 @@ html[data-reduce-motion] .perf-windows button.active {
   margin: 0 0 8px;
   /* 2026-09-17: 시청자 패널 '태그 필터' 제목(.legend-title = --text-title 18px/900)과 같은 화면 px(셸 zoom 상쇄). */
   font-size: calc(var(--text-title) / var(--shell-zoom, 1));
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
@@ -4543,7 +4539,7 @@ html[data-reduce-motion] .perf-windows button.active {
 .avatar-rail-filter .tag-legend-filter,
 .avatar-rail-filter .tlg-mod .tag-legend-filter {
   font-size: calc(var(--text-body) / var(--shell-zoom, 1));
-  font-weight: 800;
+  font-weight: 600;
 }
 /* 콘텐츠 색상필터 = 2열(공간 낭비 없이). */
 .avatar-rail-filter .tlg-group {
@@ -4673,7 +4669,7 @@ html[data-reduce-motion] .perf-windows button.active {
 }
 .avatar-slot-hint {
   font-size: var(--text-ui);
-  font-weight: 700;
+  font-weight: 600;
   color: rgb(155 134 194 / 70%);
   letter-spacing: 0.02em;
   user-select: none;
@@ -4865,7 +4861,7 @@ html[data-reduce-motion] .event-editor-panel {
   padding: 3px 9px 3px 7px;
   border-radius: var(--r-pill, 999px);
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
@@ -5050,8 +5046,7 @@ html[data-reduce-motion] .editor-anchor-link line {
 .studio-workspace .event-editor-panel .event-detail-readonly {
   background: var(--surface);
   box-shadow:
-    0 18px 44px rgb(80 70 120 / 16%),
-    0 2px 10px rgb(17 24 39 / 10%);
+    0 18px 44px rgb(80 70 120 / 16%), var(--elev-2);
 }
 /* 점선 링(2026-09-17 3차) = SVG 한 장(.editor-ring) — "카드 ∪ 저장 탭"의 **바깥 윤곽 한 줄**(lib/ui/ring-path). 카드 밖 8px까지
    나가 있고 path는 JS가 탭을 따라 프레임마다 다시 쓴다. 자리(카드에서 4px·2px 점선)와 색(모드)은 옛 outline 그대로. */
@@ -5323,7 +5318,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border-radius: var(--r-md);
   background: #fff;
   padding: 6px;
-  box-shadow: 0 16px 42px -18px rgba(40, 30, 60, 0.5);
+  box-shadow: var(--elev-4);
   animation: editor-card-enter 0.18s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
 .preview-dd-item {
@@ -5333,7 +5328,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   padding: 9px 11px;
   text-align: left;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
   cursor: pointer;
   white-space: nowrap;
@@ -5359,7 +5354,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   top: 50%;
   transform: translate(-50%, -50%);
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--muted);
   pointer-events: none;
@@ -5370,7 +5365,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border-radius: var(--r-pill);
   background: rgb(var(--studio-action-rgb) / 16%);
   color: var(--studio-action-text);
-  font-weight: 800;
+  font-weight: 600;
 }
 /* 모바일 헤더(.agenda-header, grid 1fr auto 1fr) 왼쪽 1열 묶음 — 버전 펄(위) + 저장 칩(아래)을
    세로로 쌓고, 묶음의 세로 중앙이 제목(헤더) 중앙선과 같게(align-self:center).
@@ -5406,7 +5401,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   background: rgb(148 140 168 / 10%);
   color: var(--muted, var(--muted));
   font-size: var(--text-micro);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.03em;
 }
 .studio-mobile .agenda-header .studio-build-tag-m.dev {
@@ -5446,7 +5441,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   padding: 0 11px;
   border-radius: var(--r-pill);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
@@ -5573,7 +5568,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border-radius: var(--r-lg);
   background: #ffffff;
   padding: 18px;
-  box-shadow: 0 2px 10px rgb(17 24 39 / 8%);
+  box-shadow: var(--elev-2);
 }
 
 .studio-left-panel h2,
@@ -5642,7 +5637,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border-radius: var(--r-lg); /* 16 (토큰화) */
   background: #ffffff;
   padding: var(--space-4); /* 16 — 18 정리 */
-  box-shadow: 0 2px 10px rgb(17 24 39 / 8%);
+  box-shadow: var(--elev-2);
 }
 .event-detail-readonly .editor-heading {
   margin-bottom: 6px;
@@ -5656,14 +5651,14 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 }
 .detail-label {
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--muted, #8a8077);
 }
 .detail-value {
   margin: 0;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.5;
   color: var(--ink);
   word-break: break-word;
@@ -5674,7 +5669,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   max-width: 100%;
   color: #5b6bd6;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5699,7 +5694,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border-radius: var(--r-pill);
   padding: 4px 11px;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 .event-detail-readonly .button {
   margin-top: 14px;
@@ -5774,7 +5769,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   align-items: center;
   gap: 6px;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .studio-tag-legend i {
@@ -5874,7 +5869,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 }
 .tag-editor-section-name {
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink);
 }
 .tag-editor-section.is-mod .tag-editor-section-name {
@@ -5896,7 +5891,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   background: var(--studio-silver);
   padding: 6px 16px;
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--studio-action-text);
   cursor: pointer;
   transition: background 0.12s var(--ease, ease), transform 0.1s var(--ease, ease),
@@ -5998,7 +5993,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border-radius: var(--r-card);
   background: linear-gradient(180deg, #fdf1fb, #eef3ff);
   overflow: hidden;
-  box-shadow: 0 2px 10px rgb(17 24 39 / 8%);
+  box-shadow: var(--elev-2);
 }
 
 .studio-weekdays span {
@@ -6036,7 +6031,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   border: 1px solid var(--cal-grid-line, var(--studio-line));
   border-radius: var(--r-lg);
   background: var(--cal-grid, #ffffff);
-  box-shadow: 0 8px 26px rgb(17 24 39 / 12%);
+  box-shadow: var(--elev-3);
   /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남).
      flex:1 1 auto + min-height:0 = 뷰포트 높이에 맞춰(넘치면 위 overflow-y로 스크롤). */
   flex: 1 1 auto;
@@ -6739,7 +6734,7 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   background: rgb(244 114 182 / 8%);
   color: #b3468a;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
 }
 .editor-hearts span {
   color: #c98ab3;
@@ -6747,7 +6742,7 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
 .editor-hearts b {
   margin-left: auto;
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -7432,8 +7427,8 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   padding: 8px 16px;
   color: #fff;
   font-size: var(--text-body);
-  font-weight: 800;
-  box-shadow: 0 6px 20px rgb(17 24 39 / 25%);
+  font-weight: 600;
+  box-shadow: var(--elev-3);
   animation: copy-toast-in 160ms ease-out;
 }
 /* P0-DATA-1 삭제 스낵바 — 하단 중앙, 실행 취소 버튼 포함(8초). 터치 타깃 44px. */
@@ -7459,8 +7454,8 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   padding: 8px 10px 8px 18px;
   color: #fff;
   font-size: var(--text-body);
-  font-weight: 700;
-  box-shadow: 0 8px 26px rgb(17 24 39 / 30%);
+  font-weight: 600;
+  box-shadow: var(--elev-3);
   animation: pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease)) both;
 }
 .delete-snack-title {
@@ -7477,7 +7472,7 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   padding: 6px 14px;
   color: #ffd479;
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
@@ -7519,8 +7514,8 @@ html[data-reduce-motion] .delete-snack {
   padding: 9px 18px;
   color: #fff;
   font-size: var(--text-body);
-  font-weight: 800;
-  box-shadow: 0 6px 20px rgb(17 24 39 / 28%);
+  font-weight: 600;
+  box-shadow: var(--elev-3);
   animation: copy-toast-in 160ms ease-out;
 }
 /* 잠금해제 "여는 중" 단계: 두 줄(주 메시지 + 안내)로 핸드셰이크 단계를 또렷하게 */
@@ -7536,7 +7531,7 @@ html[data-reduce-motion] .delete-snack {
 }
 .private-unlocking-text strong {
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 .private-unlocking-text em {
   font-size: var(--text-label);
@@ -7584,7 +7579,7 @@ html[data-reduce-motion] .delete-snack {
   background: #ef4444;
   color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 28%);
+  box-shadow: var(--elev-2);
 }
 
 .pill-delete:hover {
@@ -7628,7 +7623,7 @@ html[data-reduce-motion] .delete-snack {
 .editor-date-inline {
   flex: none;
   font-size: var(--text-title); /* 18 */
-  font-weight: 900;
+  font-weight: 600;
   color: var(--studio-action-text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -7666,7 +7661,7 @@ html[data-reduce-motion] .delete-snack {
   padding: 9px 10px;
   font: inherit;
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.45;
   color: var(--ink, #23303f);
   white-space: pre-wrap;
@@ -7774,7 +7769,7 @@ html[data-reduce-motion] .delete-snack {
   writing-mode: vertical-rl;
   text-orientation: upright;
   font-size: var(--text-body); /* 폭 30 안에서 두 글자('저장')가 편하게 */
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.1em;
   white-space: nowrap;
 }
@@ -7924,7 +7919,7 @@ html[data-reduce-motion] .editor-save-tab {
   background: var(--ac);
   color: #fff;
   font-size: var(--text-micro); /* 마이크로 배지 — 역할 스케일 의도적 예외 */
-  font-weight: 900;
+  font-weight: 600;
   animation: scope-check-in 0.18s var(--ease, ease) both;
 }
 @keyframes scope-check-in {
@@ -7953,7 +7948,7 @@ html[data-reduce-motion] .editor-save-tab {
   margin-left: 6px;
   color: var(--muted);
   font-size: var(--text-caption); /* 11.5→11 수렴 */
-  font-weight: 700;
+  font-weight: 600;
 }
 .tag-picker button:disabled {
   cursor: not-allowed;
@@ -7973,7 +7968,7 @@ html[data-reduce-motion] .editor-save-tab {
   border-radius: var(--r-pill);
   background: var(--studio-action-tint-hi);
   font-size: var(--text-label); /* 12→12.5 수렴 */
-  font-weight: 900;
+  font-weight: 600;
   color: var(--studio-action-text);
 }
 /* 묶음 카드 — 콘텐츠·형식이 같은 문법(라벨이 칸 '안'). 예전엔 콘텐츠 라벨만 칸 밖이라
@@ -8005,7 +8000,7 @@ html[data-reduce-motion] .editor-save-tab {
   gap: 6px;
   margin-bottom: 8px;
   font-size: var(--text-label); /* 12→12.5 수렴 */
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 .tp-section-label span {
@@ -8042,7 +8037,7 @@ html[data-reduce-motion] .editor-save-tab {
   color: var(--tp-ink, inherit);
   padding: 7px 14px;
   font-size: var(--text-body); /* 13.5 */
-  font-weight: 800;
+  font-weight: 600;
   /* 이름은 한 줄로 — 선택 시 번호가 붙어도 줄바꿈돼 칩이 뚱뚱해지지 않게(높이 균일). */
   white-space: nowrap;
   cursor: pointer;
@@ -8089,7 +8084,7 @@ html[data-reduce-motion] .editor-save-tab {
   background: var(--ink);
   color: #fff;
   font-size: var(--text-micro); /* 마이크로 배지 — 역할 스케일 의도적 예외 */
-  font-weight: 900;
+  font-weight: 600;
   box-shadow: 0 1px 4px -1px rgb(42 37 80 / 55%);
   animation: tp-pop 0.22s var(--ease, ease);
 }
@@ -8115,7 +8110,7 @@ html[data-reduce-motion] .editor-save-tab {
   .tp-chip:hover:not(:disabled) {
     transform: translateY(-2px);
     filter: brightness(1.05);
-    box-shadow: 0 8px 18px -9px rgb(17 24 39 / 50%);
+    box-shadow: var(--elev-3);
   }
   .tp-chip.selected:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.02);
@@ -8249,7 +8244,7 @@ textarea:disabled {
     border: 1px solid var(--line, var(--studio-silver));
     border-radius: var(--r-md);
     background: #fff;
-    box-shadow: 0 1px 3px -2px rgb(17 24 39 / 28%);
+    box-shadow: var(--elev-1);
   }
   /* 색 스와치(단일) — 이름과 삭제 사이(3번 자리). 세부 상속색 칩도 같은 자리. */
   .tag-editor .tag-editor-row .tag-editor-color,
@@ -8480,7 +8475,7 @@ html[data-reduce-motion] .modal-close:active {
   background: transparent;
   font: inherit;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--tge-soft);
   cursor: pointer;
   transition: color 0.34s cubic-bezier(0.32, 0.72, 0, 1);
@@ -8495,7 +8490,7 @@ html[data-reduce-motion] .modal-close:active {
   background: rgb(59 53 87 / 8%);
   font-style: normal;
   font-size: var(--text-caption);
-  font-weight: 900;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: inherit;
   transition: background 0.22s var(--ease);
@@ -8522,7 +8517,7 @@ html[data-reduce-motion] .modal-close:active {
   color: #fff;
   font: inherit;
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   cursor: pointer;
   box-shadow: 0 2px 8px rgb(var(--studio-action-rgb) / 28%);
   transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1),
@@ -8769,7 +8764,7 @@ html[data-reduce-motion] .tge-help-panel {
   border-bottom: 0;
   border-radius: var(--r-sm);
   background: #fff;
-  box-shadow: 0 14px 30px rgb(17 24 39 / 28%);
+  box-shadow: var(--elev-3);
   /* 정밀 조작(정렬) 중엔 회전·흔들림 없이 1:1 — 판정 지점과 시각 객체 일치(감사 P0). */
   transform: scale(1.02);
   opacity: 0.97;
@@ -8785,7 +8780,7 @@ html[data-reduce-motion] .tge-help-panel {
   border-radius: var(--r-control);
   padding: 0 10px;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 /* #6→#3: 태그 행 삭제 버튼. */
 .tag-editor-remove {
@@ -8930,7 +8925,7 @@ html[data-reduce-motion] .tge-help-panel {
   border-radius: var(--r-sm);
   border: 1.5px solid rgb(0 0 0 / 10%);
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
 }
 .cpop-hex {
   flex: 1 1 auto;
@@ -8939,14 +8934,14 @@ html[data-reduce-motion] .tge-help-panel {
   border-radius: var(--r-sm);
   padding: 8px 10px;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-transform: lowercase;
 }
 .cpop-warn {
   margin: -6px 0 0;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: #9a5a12;
 }
 /* 톤 프리셋 — 4칸 균등(넘침 없음). */
@@ -8961,7 +8956,7 @@ html[data-reduce-motion] .tge-help-panel {
   background: var(--studio-silver);
   padding: 7px 0;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink-soft, var(--ink));
   cursor: pointer;
   white-space: nowrap;
@@ -9059,7 +9054,7 @@ html[data-reduce-motion] .tge-help-panel {
   background: var(--studio-silver);
   padding: 5px 11px;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink-soft, var(--ink));
   cursor: pointer;
 }
@@ -9074,7 +9069,7 @@ html[data-reduce-motion] .tge-help-panel {
 }
 .cpop-kind-cur {
   font-size: var(--text-label);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink);
 }
 .cpop-kind-swap {
@@ -9083,7 +9078,7 @@ html[data-reduce-motion] .tge-help-panel {
   background: var(--studio-silver);
   padding: 4px 11px;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--studio-action-text);
   cursor: pointer;
   transition: background var(--ease, 0.18s), transform 0.08s;
@@ -9102,7 +9097,7 @@ html[data-reduce-motion] .tge-help-panel {
   background: var(--studio-silver);
   padding: 4px 10px;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
   cursor: pointer;
   transition: background var(--ease, 0.18s), border-color var(--ease, 0.18s), transform 0.08s;
@@ -9411,7 +9406,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 /* 이어진 막대는 hover 시 살짝 들리면 이음매가 어긋나 보이므로, 들림(transform)을 끈다. */
 .studio-event-pill.span:hover {
   transform: none;
-  box-shadow: 0 1px 2px rgb(17 24 39 / 5%);
+  box-shadow: var(--elev-1);
 }
 /* #7: 열린 쪽 음수 마진만큼 글자 영역이 넓어지는 걸 패딩으로 보정해, 칸마다 줄바꿈이 같게 한다. */
 .studio-event-pill.span.no-left {
@@ -9446,7 +9441,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: var(--selection-fill);
   padding: 10px 18px;
   color: var(--studio-action-text);
-  font-weight: 900;
+  font-weight: 600;
 }
 .studio-event-pill.link-pending {
   box-shadow: 0 0 0 3px var(--selection-border);
@@ -9505,7 +9500,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 .duration-title {
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
 }
 .duration-chips {
   /* 5개 기간을 동일 폭으로 꽉 채워 카드 좌우 패딩에 가지런히 맞춘다(웹·모바일 공통). */
@@ -9520,7 +9515,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: #ffffff;
   padding: 0 6px;
   font-size: var(--text-body);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--sd-ink);
   cursor: pointer;
   transition:
@@ -9541,7 +9536,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   align-items: center;
   gap: 8px;
   font-size: var(--text-label);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .duration-manual input {
@@ -9570,7 +9565,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: #fff;
   color: var(--sd-ink);
   font-size: 22px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -9591,7 +9586,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   flex: 1;
   text-align: center;
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--sd-ink);
 }
 /* 값 좌우 스와이프(모바일) — 스크롤 대신 드래그가 잡히게 + '밀 수 있다'는 커서/표시. */
@@ -9678,7 +9673,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   margin-left: 4px;
   color: #b98ca0;
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   font-style: normal;
 }
 /* ── 웹 전용: 기간 슬라이더(끌어서 한 번에) — 모바일 스텝퍼와 차별화 ── */
@@ -9692,7 +9687,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   justify-content: space-between;
   gap: 10px;
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
 }
 /* 값('1월 1일 ~ 1월 15일')은 절대 접히지 않는다 — 좁아지면 왼쪽 라벨이 먼저 줄어든다.
@@ -9708,7 +9703,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   flex: none;
   white-space: nowrap;
   font-size: var(--text-body);
-  font-weight: 900;
+  font-weight: 600;
   color: var(--sd-ink);
 }
 .dslider-row {
@@ -9731,7 +9726,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: #fff;
   color: var(--sd-mid);
   font-size: var(--text-display);
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -9817,7 +9812,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   border-radius: var(--r-xl);
   padding: 0;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgb(17 24 39 / 28%);
+  box-shadow: var(--elev-4);
 }
 .modal-head {
   flex: 0 0 auto;
@@ -9836,7 +9831,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 .modal-head h2 {
   font-size: var(--text-title);
-  font-weight: 900;
+  font-weight: 600;
 }
 .modal-close {
   display: inline-grid;
@@ -9893,7 +9888,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: var(--accent-soft, var(--studio-silver));
   color: var(--ink-soft);
   font-size: var(--text-label);
-  font-weight: 800;
+  font-weight: 600;
   text-align: center;
   /* '매니저'·'작업자'가 '매지/저'처럼 중간에서 끊기지 않게. */
   white-space: nowrap;
@@ -9920,7 +9915,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 .perm-table tbody th {
   text-align: left;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
   /* 긴 권한 설명은 공백에서만 줄바꿈(한국어 단어 중간 끊김 방지). */
   word-break: keep-all;
@@ -9928,7 +9923,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 .perm-table td {
   width: 60px;
   text-align: center;
-  font-weight: 900;
+  font-weight: 600;
 }
 /* ✓/✕를 색 알약으로 — 초록 체크/연회색 대시. 셀 안에서 동그란 칩처럼 보이게(차가운 표 탈피). */
 .perm-table .yes,
@@ -10149,7 +10144,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   padding: 2px 10px;
   border-radius: var(--r-pill);
   font-size: var(--text-caption);
-  font-weight: 800;
+  font-weight: 600;
 }
 .member-role.manager {
   background: #eef2ff;
@@ -10194,7 +10189,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   border-radius: var(--r-lg);
   color: var(--muted);
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* #6: 태그 편집 하단 버튼 행(추가 + 전체 저장) */
@@ -10215,7 +10210,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 .tag-editor-add-note {
   font-size: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.35;
   color: var(--muted);
   white-space: nowrap;
@@ -10266,7 +10261,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   min-width: 118px;
   text-align: center;
   font-size: var(--text-ui); /* 15 */
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -10342,7 +10337,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   padding: 0 var(--space-2);
   border-radius: var(--r-pill);
   font-size: var(--text-body); /* 13→13.5 수렴 */
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -10437,7 +10432,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   box-shadow: var(--shadow-2);
   color: var(--studio-action-text);
   font-size: var(--text-label); /* 12→12.5 수렴 */
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -10537,7 +10532,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: #fff;
   padding: 0 16px;
   font-size: var(--text-label); /* 12.5 */
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   cursor: pointer;
 }
@@ -10592,7 +10587,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   align-items: center;
   gap: 5px;
   font-size: var(--text-body); /* 13→13.5 수렴 */
-  font-weight: 900;
+  font-weight: 600;
   color: #7a6a52;
 }
 .support-link-label svg {
@@ -10641,7 +10636,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: #fffaf0;
   padding: 0 12px;
   font-size: var(--text-body); /* 13→13.5 수렴 */
-  font-weight: 800;
+  font-weight: 600;
   color: #a9760a;
   text-decoration: none;
   cursor: pointer;
@@ -10660,7 +10655,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   padding: 1px 7px;
   border-radius: var(--r-pill);
   font-size: var(--text-caption); /* 10.5→11 수렴 */
-  font-weight: 800;
+  font-weight: 600;
   background: #eef0f4;
   color: #5b6472;
 }
@@ -10734,7 +10729,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
    .button:active 스프링. 의미색은 웹과 동일(태그=보라/멤버=틸/비공개=amber/미리보기=
    슬레이트) → 의미 일치, 표현(레이아웃)만 플랫폼별. */
 .m-manage .button.m-io {
-  font-weight: 800;
+  font-weight: 600;
 }
 .m-io-tags {
   background: var(--studio-silver);
@@ -10754,7 +10749,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 /* 바닥 레일 알약 — 좌측바 대신 틴트+색 테두리/글자(알약 모양에 맞춤). */
 .m-actionrail .button.m-io-pill {
-  font-weight: 800;
+  font-weight: 600;
 }
 .m-io-preview {
   background: #eef2f9;
@@ -10771,7 +10766,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: #eef2f9;
   border-color: #cdd6e6;
   color: #4a5a78;
-  font-weight: 800;
+  font-weight: 600;
 }
 .m-actionrail .preview-dd-trigger:active {
   background: #e3e9f4;
@@ -10823,7 +10818,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: #f5f1ea;
   /* 좌우 대칭 패딩. 하단은 고정 액션바가 처리하므로 0(safe-area는 액션바에서). */
   padding: 0 16px;
-  box-shadow: 0 -12px 34px rgb(17 24 39 / 22%);
+  box-shadow: var(--elev-3);
   animation: m-sheet-up 0.44s var(--spring-smooth, var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)))
     both;
 }
@@ -10876,14 +10871,14 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 .m-edit-head strong {
   font-size: var(--text-title); /* 19→18 수렴(시트 제목) */
-  font-weight: 900;
+  font-weight: 600;
 }
 .m-edit-date {
   border-radius: var(--r-pill);
   background: var(--studio-silver);
   padding: 4px 13px;
   color: var(--studio-action-text);
-  font-weight: 900;
+  font-weight: 600;
   font-size: var(--text-title); /* 17→18 수렴 */
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -10928,7 +10923,7 @@ html[data-reduce-motion] .m-edit-x:active {
   box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
   padding: 13px 15px;
   font-size: var(--text-input); /* 16 */
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.5;
   /* 내용이 길어지면 오른쪽 아래 손잡이를 끌어 세로로 키울 수 있다. */
   resize: vertical;
@@ -10970,7 +10965,7 @@ html[data-reduce-motion] .m-edit-x:active {
 .title-helper em {
   flex: 0 0 auto;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
 }
 .title-helper em.warn {
@@ -11003,7 +10998,7 @@ html[data-reduce-motion] .m-edit-x:active {
   min-width: 0;
   color: var(--muted);
   font-size: var(--text-label); /* 12→12.5 수렴 */
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -11049,7 +11044,7 @@ html[data-reduce-motion] .me-fold-body {
 
 .me-row-label {
   font-size: var(--text-body); /* 13.5 */
-  font-weight: 800;
+  font-weight: 600;
   color: #6f6a78;
 }
 /* 항목 사이 얇은 구분선(카드 폭 꽉 차게). */
@@ -11068,14 +11063,14 @@ html[data-reduce-motion] .me-fold-body {
   justify-content: space-between;
   padding: 12px 0 10px;
   font-size: var(--text-body); /* 13.5 */
-  font-weight: 800;
+  font-weight: 600;
   color: #6f6a78;
 }
 .me-hint {
   margin-left: 4px;
   color: var(--muted);
   font-size: var(--text-caption); /* 11.5→11 수렴 */
-  font-weight: 700;
+  font-weight: 600;
   font-style: normal;
 }
 /* 선택 슬롯 — 점 2개(최대 2개). 채워진 점 = 고른 개수. 'N/2'(페이지 혼동) 대체. */
@@ -11095,7 +11090,7 @@ html[data-reduce-motion] .me-fold-body {
   border-color: #f4b740;
   background: #fff7e6;
   color: #92400e;
-  font-weight: 800;
+  font-weight: 600;
 }
 .me-tool {
   flex: 1;
@@ -11104,7 +11099,7 @@ html[data-reduce-motion] .me-fold-body {
   border-radius: var(--r-md);
   background: #fffdf3;
   color: #8a6d2f;
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--text-body); /* 14→13.5 수렴 */
   cursor: pointer;
   transition:
@@ -11131,7 +11126,7 @@ html[data-reduce-motion] .me-fold-body {
 }
 .me-group .duration-title {
   font-size: var(--text-label); /* 12.5 */
-  font-weight: 800;
+  font-weight: 600;
   color: #b4543a;
 }
 /* 기간 칩 — 5개를 한 줄에 동일 폭으로(통일성, 줄바꿈 없음). */
@@ -11152,7 +11147,7 @@ html[data-reduce-motion] .me-fold-body {
   align-items: stretch;
   gap: 8px;
   font-size: var(--text-label); /* 12.5 */
-  font-weight: 800;
+  font-weight: 600;
   color: #b4543a;
 }
 /* 링크 입력도 16px(확대 방지) + 손가락 크기. */
@@ -11192,7 +11187,7 @@ html[data-reduce-motion] .me-fold-body {
   min-height: 50px;
   border-radius: var(--r-card);
   font-size: var(--text-input); /* 16 */
-  font-weight: 900;
+  font-weight: 600;
 }
 /* 삭제: 보조(아이콘만, 오탭 방지로 좁게). */
 .m-edit-actions .m-del {
@@ -11240,14 +11235,14 @@ html[data-reduce-motion] .me-fold-body {
 .fold-title {
   flex: 0 0 auto;
   font-size: var(--text-body); /* 13→13.5 수렴 */
-  font-weight: 900;
+  font-weight: 600;
 }
 .fold-summary {
   flex: 1 1 auto;
   min-width: 0;
   color: var(--muted);
   font-size: var(--text-label); /* 12→12.5 수렴 */
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -13036,7 +13031,7 @@ html[data-reduce-motion] .member-row:hover {
     height: 17px;
     border-radius: var(--r-xs);
     font-size: var(--text-caption);
-    font-weight: 900;
+    font-weight: 600;
     line-height: 1;
   }
   .perm-table thead th:nth-child(2) .perm-role-short,
@@ -13071,7 +13066,7 @@ html[data-reduce-motion] .member-row:hover {
     padding: var(--space-2) var(--space-2) 0;
     color: var(--ink-soft, var(--ink-soft));
     font-size: var(--text-caption);
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.01em;
     text-align: center;
   }
@@ -13080,7 +13075,7 @@ html[data-reduce-motion] .member-row:hover {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
   }
 }
@@ -13396,7 +13391,7 @@ html[data-reduce-motion] .event-drag-ghost {
 .modal-discard-ask .mda-card p {
   margin: 0;
   font-size: var(--text-ui);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
 }
 .modal-discard-ask .mda-actions {
@@ -13524,7 +13519,7 @@ html[data-studio-calm] .studio-left-panel > section:first-child {
 html[data-studio-calm] .avatar-rail-filter {
   background: var(--studio-silver);
   border-color: var(--studio-silver-line);
-  box-shadow: 0 8px 24px rgb(40 50 70 / 10%);
+  box-shadow: var(--elev-3);
 }
 /* ④ 중앙 달력 칸 = 반 단계 냉각(카드는 크림 그대로라 따뜻하게 떠 보인다). 오늘·바깥달·편집중·
    드롭 대상·휴식 칸은 제 색을 지킨다. */
@@ -13656,8 +13651,7 @@ body.span-dragging * {
   padding: 0 14px 0 10px;
   border-radius: var(--r-pill);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 55%),
-    0 2px 6px rgb(60 30 50 / 14%);
+    inset 0 1px 0 rgb(255 255 255 / 55%), var(--elev-2);
   font-size: calc(var(--text-label) * var(--cal-zoom, 1));
   font-weight: 900;
   white-space: nowrap;
@@ -13675,9 +13669,7 @@ body.span-dragging * {
 }
 .span-drag-ghost.lifted .span-ghost-chip {
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 55%),
-    0 14px 28px rgb(60 30 50 / 24%),
-    0 4px 8px rgb(60 30 50 / 14%);
+    inset 0 1px 0 rgb(255 255 255 / 55%), var(--elev-3);
 }
 /* 달력 밖 — 놓으면 취소된다는 걸 미리(옅어짐). */
 .span-drag-ghost.is-off {
@@ -13697,7 +13689,7 @@ body.span-dragging * {
   padding: 3px 10px 3px 11px;
   border-radius: var(--r-pill);
   background: rgb(24 24 27 / 88%);
-  box-shadow: 0 6px 16px rgb(0 0 0 / 22%);
+  box-shadow: var(--elev-2);
   color: #fff;
   font-size: var(--text-label);
   font-weight: 800;

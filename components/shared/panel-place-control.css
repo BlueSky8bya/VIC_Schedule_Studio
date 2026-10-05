@@ -38,7 +38,7 @@
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--text-body, 13px);
   /* 히트 영역 확대(2026-09-01 사용자: 누르기 힘듦) — 아이콘 18px + 패딩·최소높이 크게(실측 ~46×32). */
   padding: 9px 16px;
@@ -104,7 +104,7 @@
 }
 .panel-place-ctl .ppc-label {
   font-size: var(--text-caption, 12px);
-  font-weight: 700;
+  font-weight: 600;
 }
 html[data-reduce-motion] .panel-place-ctl,
 html[data-reduce-motion] .panel-place-ctl button {

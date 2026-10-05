@@ -228,10 +228,18 @@
   --press-scale: 0.95;
   --press-scale-lg: 0.985;
 
+  /* 그림자 높이 4단계(2026-10-06 애플식 정리 — 소유자 승인). 그림자는 '얼마나 떠 있나'만 말한다:
+     1 놓인 카드 · 2 살짝 뜬 칩·버튼 · 3 팝오버·메뉴·시트 · 4 모달. 회색 바깥 그림자 267종을 흐림 정도로 이 넷에
+     모았다(안쪽 그림자·색 있는 빛남·테두리 링은 각자 그대로). 새 표면은 이 넷 중 하나만 쓴다. */
+  --elev-1: 0 1px 2px rgb(0 0 0 / 6%);
+  --elev-2: 0 4px 12px rgb(0 0 0 / 8%);
+  --elev-3: 0 12px 32px rgb(0 0 0 / 14%);
+  --elev-4: 0 24px 60px rgb(0 0 0 / 22%);
   /* 그림자 (부드럽게 단계화) */
-  --shadow-1: 0 1px 2px rgb(17 24 39 / 5%), 0 1px 3px rgb(17 24 39 / 4%);
-  --shadow-2: 0 4px 14px rgb(17 24 39 / 7%);
-  --shadow-3: 0 16px 40px rgb(17 24 39 / 14%);
+  /* 옛 이름 — 같은 4단계를 가리킨다(쓰는 곳이 많아 이름은 남긴다). */
+  --shadow-1: var(--elev-1);
+  --shadow-2: var(--elev-2);
+  --shadow-3: var(--elev-4);
 
   /* ── 달력 워크스페이스 z-스케일 (구조 규칙) ──────────────────────────
      .studio-day는 일부러 쌓임 맥락을 만들지 않는다 — 멀티데이 띠·포커스 링이 이웃 칸
@@ -534,7 +542,7 @@ select {
   padding: 10px 20px;
   color: var(--ink);
   font-size: var(--text-ui);
-  font-weight: 900;
+  font-weight: 600;
   box-shadow: var(--shadow-3);
   backdrop-filter: blur(8px);
   animation: pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease)) both;
@@ -612,7 +620,7 @@ select {
 .eyebrow {
   color: var(--accent-strong);
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -665,7 +673,7 @@ select {
   border-color: transparent;
   background: linear-gradient(180deg, #ffd44f, var(--accent));
   color: var(--on-accent);
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .button.primary:hover:not(:disabled) {
@@ -798,7 +806,7 @@ select {
 }
 
 .auth-panel label {
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .auth-panel input {
@@ -812,7 +820,7 @@ select {
   border-radius: var(--r-sm);
   padding: 10px 12px;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -838,7 +846,7 @@ select {
 .auth-error-card p {
   margin: 0;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.5;
   color: #b4453a;
 }
@@ -867,7 +875,7 @@ select {
   padding: 18px 8px;
   color: var(--muted, #6b5b34);
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 600;
 }
 .inapp-spinner {
   width: 18px;
@@ -928,7 +936,7 @@ select {
   background: #ffffff;
   color: #3c4043;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   box-shadow: var(--shadow-2);
   transition:
     box-shadow var(--dur-2) var(--ease),
@@ -1380,9 +1388,11 @@ html[data-theme="dark"] {
   --gs-metal-sheen: linear-gradient(180deg, #36342f, #2a2824);
   --gs-metal-sheen-hover: linear-gradient(180deg, #403d36, #33302b);
   --gs-metal-edge: inset 0 1px 0 rgb(255 255 255 / 7%), 0 2px 5px rgb(0 0 0 / 18%);
-  --shadow-1: 0 2px 8px rgb(0 0 0 / 20%);
-  --shadow-2: 0 8px 28px rgb(0 0 0 / 28%);
-  --shadow-3: 0 24px 70px rgb(0 0 0 / 42%);
+  /* 다크 높이 — 어두운 바탕에선 같은 그림자가 안 보여 농도를 올린다(같은 4단계). */
+  --elev-1: 0 1px 2px rgb(0 0 0 / 22%);
+  --elev-2: 0 4px 12px rgb(0 0 0 / 28%);
+  --elev-3: 0 12px 32px rgb(0 0 0 / 38%);
+  --elev-4: 0 24px 60px rgb(0 0 0 / 50%);
   --night-raised: #302e29;
   --night-hover: #3a3731;
   --night-line: rgb(255 255 255 / 12%);
@@ -1463,7 +1473,7 @@ html[data-eye-comfort="lite"]:not([data-theme="dark"]) .public-event:not(.teaser
   animation: netstat-pulse var(--dur-spring-bouncy) var(--ease-exit) infinite;
 }
 .netstat-sub {
-  font-weight: 700;
+  font-weight: 600;
   opacity: 0.82;
   display: none; /* 모바일 축약: '오프라인'만. 웹에선 아래 media에서 다시 보인다. */
 }

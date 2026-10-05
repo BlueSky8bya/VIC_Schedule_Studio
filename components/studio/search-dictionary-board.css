@@ -17,7 +17,7 @@
   gap: 6px;
   color: var(--d-soft);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
 }
 .dict-back:hover { color: var(--d-ink); }
@@ -27,7 +27,7 @@
   gap: 8px;
   margin: 14px 0 6px;
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .dict-sub { margin: 0 0 14px; color: var(--d-soft); font-size: 13px; line-height: 1.55; max-width: 720px; }
@@ -60,7 +60,7 @@
 }
 .dict-row:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgb(70 50 110 / 10%); }
 .dict-term { display: grid; gap: 3px; min-width: 0; }
-.dict-term b { font-size: 17px; font-weight: 800; }
+.dict-term b { font-size: 17px; font-weight: 600; }
 .dict-meta { color: var(--d-soft); font-size: 12px; font-weight: 600; }
 .dict-samples { color: var(--d-soft); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dict-act { display: flex; align-items: center; gap: 6px; }
@@ -85,7 +85,7 @@
   background: #fff;
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--d-soft);
   cursor: pointer;
   transition: background var(--dur-1, 0.16s) var(--ease, ease), color var(--dur-1, 0.16s) var(--ease, ease);
