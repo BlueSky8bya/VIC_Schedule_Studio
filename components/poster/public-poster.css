@@ -3079,7 +3079,11 @@ body.cell-range-dragging {
   display: flex;
   justify-content: center;
   align-items: flex-start; /* 미축소(1035px) 박스가 stage보다 커도 위를 맞춰 top-origin 축소와 정렬 */
+  /* clip(hidden 아님, 2026-10-05) — hidden은 스크롤 컨테이너라 scrollIntoView가 stage를 몰래 스크롤해
+     표면 위쪽(요일 줄·첫 주)이 잘린 채 굳었다(사용자가 되돌릴 수단 없음). clip은 스크롤 자체가 불가.
+     hidden은 clip 미지원(Safari<16) 폴백. */
   overflow: hidden;
+  overflow: clip;
   /* 아바타 ON/OFF 시 margin이 변하며 일정표가 슬라이드 — 트랜지션을 base에 둬서 클래스가 빠지는
      OFF 순간에도 부드럽게 되돌아온다(살짝 통통). */
   transition: margin 0.55s var(--spring-smooth, var(--ease-spring));

@@ -1138,7 +1138,12 @@ export function PublicPoster({
       const el =
         document.querySelector<HTMLElement>(`.public-day[data-date="${dateKey}"]`) ??
         document.querySelector<HTMLElement>(`.agenda-day[data-flip-key="${dateKey}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // scrollIntoView 금지 — .poster-stage(잘라내기 상자)까지 스크롤해 표면 위쪽이 잘린 채 굳는다
+      // (2026-10-05: 요일 줄·첫 주가 사라지고 고정 띠만 뜸). 창만 스크롤한다.
+      if (el) {
+        const r = el.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + r.top + r.height / 2 - window.innerHeight / 2, behavior: "smooth" });
+      }
       setFlashDate(dateKey);
       if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
       flashTimerRef.current = window.setTimeout(() => setFlashDate(null), 1800);
