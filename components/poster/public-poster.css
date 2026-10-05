@@ -5895,9 +5895,13 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   pointer-events: none;
   background: repeating-linear-gradient(
     135deg,
-    color-mix(in srgb, currentColor 20%, transparent) 0 3px,
-    transparent 3px 9px
+    color-mix(in srgb, currentColor 22%, transparent) 0 2px,
+    transparent 2px 8px
   );
+  /* 글자 아래에선 옅게(2026-10-05 소유자: 빗금 때문에 글씨가 안 읽혔다) — 제목·부제가 앉는 왼쪽은 30%만,
+     오른쪽 끝으로 갈수록 온전히. 카드 전체가 빗금 카드로 읽히는 건 유지하고 글자 뒤만 조용해진다. */
+  -webkit-mask-image: linear-gradient(90deg, rgb(0 0 0 / 30%) 0 55%, #000 100%);
+  mask-image: linear-gradient(90deg, rgb(0 0 0 / 30%) 0 55%, #000 100%);
 }
 /* 2색 칸은 자식을 무늬 위로 올리는 규칙(position:relative)이 있다 — 그 규칙은 .evt-hatch를 빼 둔다
    (안 빼면 빗금이 크기 0인 흐름 요소가 돼 2색 미정 카드에서만 사라졌다, 2026-10-05 실측). */
@@ -6031,14 +6035,17 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 /* 관심 단계 표식(링·halo·👑)은 제외 — 같은 특이도의 되돌림 규칙(위 .tier-ring.tier-ring)보다 이 규칙이 뒤에 있어
    이겨 왔고, 링이 흐름 안으로 들어가 카드 아래 가로선으로 그려졌다(2026-10-05 소유자 리포트). */
-.public-event[data-mixed] > :not(.evt-pat):not(.evt-hatch):not(.tier-ring):not(.tier-halo):not(.tier-crown):not(.tier-signal) {
+/* :not(목록)은 특이도가 인자 중 최댓값 하나뿐(0,1,0) — 제외 목록이 늘어도 규칙이 세지지 않아 아래 하트 규칙을 덮지 않는다. */
+.public-event[data-mixed] > :not(.evt-pat):not(.evt-hatch, .tier-ring, .tier-halo, .tier-crown, .tier-signal) {
   position: relative;
   z-index: 1;
 }
 /* 하트는 위 규칙(무늬 위로 올리는 position:relative)에서 제외 — 카드 직속 자식이라
    위 선택자에 걸리지만, 하트만은 절대배치를 유지해야 평칸/무늬칸 모두 기준이
    .public-event로 같아져 높이가 안 어긋난다. (선택자 우선순위·소스 순서로 덮어씀) */
-.public-event[data-mixed] > .event-heart {
+/* 클래스 겹침으로 위 규칙(0,4,0)을 확실히 이긴다 — 예전엔 0,3,0이라 져서 2색 카드에서만 하트가 흐름에 들어가
+   제목 아래 왼쪽으로 들여써졌다(2026-10-05 소유자 리포트). */
+.public-event[data-mixed] > .event-heart.event-heart {
   position: absolute;
   z-index: 2;
 }
