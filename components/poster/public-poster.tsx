@@ -1035,6 +1035,9 @@ export function PublicPoster({
   // revealAt이 04:21(26분 전 값)로 되돌아가 ???가 아니라 빈 칸이 보였다.
   // loadRevealedEvents는 캐시를 타지 않고 서버가 공개시각을 다시 판정하므로, 한 번의 왕복으로
   // '아직 미공개면 새 공개시각이 담긴 stub, 공개됐으면 실제 내용'을 받아 상태를 바로잡는다.
+  // 공개된 떡밥 → 기대가 하트로 옮겨졌는지 반영(0140). 정의는 아래 기대 상태 옆 — 공개 콜백들이
+  // 이보다 위에 있고 deps가 고정이라 ref로 잇는다.
+  const adoptHopeHeartsRef = useRef<(revealedIds: string[]) => void>(() => {});
   const teaserIdsKey = useMemo(
     () =>
       schedule.events
@@ -1065,6 +1068,7 @@ export function PublicPoster({
             for (const ev of list) next[ev.id] = ev;
             return next;
           });
+          adoptHopeHeartsRef.current(list.filter((ev) => !ev.teaser).map((ev) => ev.id));
         }
         logActivity("diag.reveal", {
           meta: {
@@ -1595,6 +1599,7 @@ export function PublicPoster({
             return next;
           });
           if (ids.length === 0) return;
+          adoptHopeHeartsRef.current(ids);
           // 팝오버가 그 떡밥을 열고 있으면 닫지 않는다 — 그 자리에서 ???가 실제 일정으로
           // '변신'하는 게 훨씬 좋은 구경거리다(예전엔 닫아버려 클라이맥스를 놓쳤다).
           // 내용 교체는 렌더에서 revealedEvents로 자동 반영된다.
@@ -1853,6 +1858,29 @@ export function PublicPoster({
   const heartOpRef = useRef<Map<string, { chain: Promise<void>; seq: number; done: boolean }>>(
     new Map()
   );
+  // 떡밥이 공개되면 이 기기의 '기대돼요'가 비로그인 하트로 옮겨진다(0140, 서버가 공개 응답 전에 처리).
+  // 비로그인만 — 서버 하트 목록을 다시 받아 공개된 일정 중 새로 생긴 하트를 켜고 수를 +1 한다.
+  // 로그인 시청자는 계정 하트라 옮겨지지 않는다(소유자 결정).
+  adoptHopeHeartsRef.current = (revealedIds: string[]) => {
+    if (!anonymous || !serverHearts || revealedIds.length === 0) return;
+    const token = getOrCreateDeviceToken();
+    if (!token) return;
+    getAnonHeartIdsAction(token)
+      .then((ids) => {
+        const server = new Set(ids);
+        const added = revealedIds.filter(
+          (id) => server.has(id) && !heartOpRef.current.has(id) && !bookmarks.includes(id)
+        );
+        if (added.length === 0) return;
+        setBookmarks((prev) => [...prev, ...added.filter((id) => !prev.includes(id))]);
+        setHeartCounts((prev) => {
+          const next = { ...prev };
+          for (const id of added) next[id] = (next[id] ?? 0) + 1;
+          return next;
+        });
+      })
+      .catch(() => {});
+  };
   // 하트를 누를 때 화면에 떠오르는 ♥ 입자들(틱톡식 좋아요 연출). 잠깐 떴다 사라진다.
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 특별한 날(공휴일·기념일·월드컵·한국 승) 탭 시 그 자리에서 터지는 점(point) 폭죽들.

@@ -94,5 +94,6 @@ Latest: `0132_search_synonyms_drop_rel_chip.sql` — the 308k auto-rel / rel-chi
 | 0137 | 관계 표 재빌드를 옆 표(`search_term_relations_next`)에 짓고 야간 일괄 맨 끝에 이름 맞바꾸기(`search_term_relations_swap`, lock_timeout 5초, 빈 표면 안 바꿈). 0136 truncate 잠금이 일괄 끝까지 검색을 막던 것 해소 — 재빌드 중 익명 검색 241회 실패 0·최대 246ms. 두 표는 권한·RLS 같게 유지, 인덱스·정책 이름은 바꿀 때마다 엇갈림 |
 | 0138 | `public_schedule_events` 뷰: 공개 전 떡밥도 `is_tentative`는 그대로(0125는 false로 덮음) — 미정은 내용이 아닌 상태값, 시청자가 미정 떡밥을 빗금으로 구분. 나머지 가림 그대로 |
 | 0139 | 화제 칩에 가장 최근 방송 몫 1~2자리(4·6번째): 7일 안 마지막 방송일, 그날 채팅 분석 끝난 뒤에만. 후보 = 그날 제목·챕터·일정 말(+채팅), 180일 쓰임으로 눌러 새 말 우선, 직전 14일에 뜨던 말·같은 글 한 덩이는 제외. 재계산 2.3초 |
+| 0140 | 떡밥 '기대돼요' → 공개 뒤 비로그인 하트(`event_hearts_anon`)로 1회 복사. `teaser_hope.anon`(누를 때 `auth.uid() is null`)·`settled_at` 추가, `settle_teaser_hopes()`(service_role) = 공개 순간 `revealTeaserAction` + pg_cron `vic-teaser-hope-settle` 5분. 0140 이전 행(anon null)은 그 기기가 비로그인 하트를 누른 적 있을 때만. 로그인 기대는 안 옮김. 적용 2026-10-05 KST(소급 +2) |
 | 0121 | `dark_palette` STORED generated column — 기본 팔레트·커스텀 태그의 다크 채움/테두리/글자/강조색을 자동 저장. 원본 색 보존, 하위 NULL 상속, 앱 reader보다 먼저 적용. [ADR-0026](../../docs/agent/decisions/ADR-0026-automatic-dark-tag-palette.md) |
 | 0122 | 색 구분 개선 `dark_palette_v2` — 파스텔 채도·명도·테두리 차이 강화. v1/원본 보존, 새 함수/생성 컬럼으로 기존·신규 색 자동 저장. v2 reader보다 먼저 적용 |
