@@ -33,7 +33,7 @@ import {
   type SoundCategory,
   type SoundCats
 } from "@/lib/ui/sfx";
-import { flingDeleteEnabled, setFlingDelete, setTextPxPref, textPxPref, TEXT_PX_BASE } from "@/lib/ui/edit-prefs";
+import { applyTextPx, flingDeleteEnabled, setFlingDelete, setTextPxPref, textPxPref, TEXT_PX_BASE } from "@/lib/ui/edit-prefs";
 import { FONT_BASE, fontPref, setFontPref, setWeightPref, weightPref, type WeightStep } from "@/lib/ui/font-prefs";
 
 export type SettingsPrefs = {
@@ -210,7 +210,10 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
   // 글씨 크기(px, 일정 제목 기준) — 달력 글자의 기본 크기. 끌면 바로 미리보기·달력에 반영된다.
   const [textPx, setTextPxState] = useState(TEXT_PX_BASE);
   useEffect(() => {
-    setTextPxState(textPxPref());
+    // 화면을 옮겨 왔으면(시청자 ↔ 편집실, 새로고침 없는 이동) 이 화면의 값으로 다시 입힌다.
+    const px = textPxPref();
+    setTextPxState(px);
+    applyTextPx(px);
   }, []);
   const changeTextPx = useCallback((px: number) => {
     setTextPxPref(px);

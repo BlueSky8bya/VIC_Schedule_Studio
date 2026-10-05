@@ -945,7 +945,7 @@ html[data-reduce-motion] .rhh-font-grid button {
   /* 미리보기 칸 폭은 고정(실제 달력 칸처럼) — 글씨 크기를 키우면 글자만 커지고 줄이 바뀐다.
      폭이 글씨 크기를 따라 늘면 오른쪽 글꼴 타일이 끌 때마다 찌그러졌다(2026-10-06 소유자 캡처). */
   .rhh-preview-pair {
-    grid-template-columns: 236px;
+    grid-template-columns: var(--pv-cell-w, 236px);
     gap: 10px;
   }
 }
@@ -961,7 +961,8 @@ html[data-reduce-motion] .rhh-font-grid button {
   border: 1px solid rgb(0 0 0 / 7%);
   border-radius: var(--r-md);
   background: #fffdf8;
-  padding: 6px 6px 8px;
+  /* 실측 여백에서 미리보기 칸 테두리(1px)를 뺀다 — 진짜 칸은 테두리가 칸 상자 밖이라 그만큼 좁아졌다. */
+  padding: 6px calc(var(--pv-cell-pad, 7px) - 1px) 8px;
 }
 .rhh-text-preview .pv-head {
   display: flex;
@@ -984,7 +985,7 @@ html[data-reduce-motion] .rhh-font-grid button {
   white-space: nowrap;
 }
 .rhh-text-preview .pv-band {
-  margin-inline: -6px;
+  margin-inline: calc(var(--pv-cell-pad, 6px) * -1);
   background: linear-gradient(90deg, #fbcfe0, #f9b4cf);
   padding: 1px 8px;
   color: #9d174d;
@@ -1001,7 +1002,8 @@ html[data-reduce-motion] .rhh-font-grid button {
   gap: 2px;
   border: 1px solid rgb(0 0 0 / 10%);
   border-radius: var(--r-sm, 8px);
-  padding: calc(4px * var(--pv, 1)) calc(8px * var(--pv, 1));
+  /* 실측 안쪽 여백은 진짜 카드 테두리까지 포함한 값 — 미리보기 카드 테두리(1px)만큼 뺀다. */
+  padding: calc(4px * var(--pv, 1)) calc(var(--pv-card-pr, calc(8px * var(--pv, 1) + 1px)) - 1px) calc(4px * var(--pv, 1)) calc(var(--pv-card-pl, calc(8px * var(--pv, 1) + 1px)) - 1px);
   color: #2b2414;
 }
 .rhh-text-preview .pv-card b,
@@ -1013,7 +1015,6 @@ html[data-reduce-motion] .rhh-font-grid button {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-right: 14px;
   font-size: calc(14px * var(--pv, 1));
   line-height: 1.2;
 }

@@ -135,8 +135,9 @@ export default function RootLayout({
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
               // 화면 모드(vic.dark, lib/ui/theme.ts) — 'on'=어둡게, 'system'=기기 따라, 그 외=밝게(기본).
               // 페인트 전에 붙여야 어두운 화면을 기대한 사용자가 흰 화면을 한 번 맞지 않는다.
-              // 글씨 크기(vic.calText, lib/ui/edit-prefs) — 일정 제목 px ÷ 14 = --cal-text. 범위 밖이면 기본.
-              "var tx=Number(s.getItem('vic.calText'));if(tx>=12&&tx<=20)d.style.setProperty('--cal-text',String(tx/14));" +
+              // 글씨 크기(lib/ui/edit-prefs) — 화면별: 편집실(/studio…)은 vic.calText.studio(없으면 시청자 값), 그 외는 vic.calText.
+              // 일정 제목 px ÷ 14 = --cal-text. 범위 밖이면 기본.
+              "var st=location.pathname.split('/').indexOf('studio')>-1,tr=st?(s.getItem('vic.calText.studio')||s.getItem('vic.calText')):s.getItem('vic.calText');var tx=Number(tr);if(tx>=12&&tx<=20)d.style.setProperty('--cal-text',String(tx/14));" +
               // 글꼴·굵기(vic.font·vic.calWeight, lib/ui/font-prefs) — 처음 그릴 때부터 고른 글꼴로.
               "var FS=" +
               JSON.stringify(FONT_STACKS) +

@@ -282,6 +282,40 @@ export function StudioSettingsList({
     ...(devWorld ? [{ key: "dev" as const, label: "개발자", icon: <Wrench size={15} />, tone: "metal" as const, web: true }] : [])
   ];
   const current: TabKey = tabs.some((t) => t.key === activeTab) ? activeTab : "screen";
+  // 미리보기 = 지금 이 화면의 진짜 달력 실측(2026-10-06 소유자: "설정 미리보기와 편집실·시청자 화면 카드가 똑같이 나와야").
+  // 편집실 카드 글자는 화면 폭 환산, 시청자 포스터는 화면에 맞춰 통째로 축소 — 이름뿐인 14px로는 줄바꿈이 달랐다.
+  // 창 뒤 달력의 칸 폭·카드 안쪽 여백·제목의 실제 화면 글자 크기를 재서 그대로 쓴다(글씨 크기를 바꾸면 다시 잰다).
+  // 달력 칸이 없는 곳(모바일 목록)은 이름 크기로 그린다.
+  const [pvMetrics, setPvMetrics] = useState<{ w: number; pv: number; cellPad: number; padL: number; padR: number } | null>(null);
+  useEffect(() => {
+    if (current !== "text") return;
+    let raf = 0;
+    const measure = () => {
+      const titles = Array.from(document.querySelectorAll<HTMLElement>(".pill-main strong:not(.span-cont), .public-event .event-main p:not(.span-cont)"));
+      for (const title of titles) {
+        const card = title.closest<HTMLElement>(".studio-event-pill, .public-event");
+        const cell = title.closest<HTMLElement>(".studio-day, .public-day");
+        if (!card || !cell || card.classList.contains("span") || title.offsetParent === null || !title.offsetHeight) continue;
+        const tr = title.getBoundingClientRect();
+        const cr = card.getBoundingClientRect();
+        const cl = cell.getBoundingClientRect();
+        if (tr.width <= 0) continue;
+        const scale = tr.height / title.offsetHeight;
+        const cs = getComputedStyle(title);
+        return {
+          w: Math.round(cl.width),
+          pv: (parseFloat(cs.fontSize) * scale) / 14,
+          cellPad: Math.max(0, (cl.width - cr.width) / 2),
+          padL: tr.left - cr.left + parseFloat(cs.paddingLeft) * scale,
+          padR: cr.right - tr.right + parseFloat(cs.paddingRight) * scale
+        };
+      }
+      return null;
+    };
+    // 글씨 크기는 <html> 변수라 카드가 같은 프레임에 바뀐다 — 다음 프레임에 잰다.
+    raf = requestAnimationFrame(() => setPvMetrics(measure()));
+    return () => cancelAnimationFrame(raf);
+  }, [current, textPx, font.id, font.weight]);
   const fontGridRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const grid = fontGridRef.current;
@@ -403,7 +437,23 @@ export function StudioSettingsList({
           {/* 미리보기 — 바쁜 날(띠·기념일·두 색·미정 빗금·최초공개·하트·세부 줄)과 한가한 날을 나란히.
               달력 카드와 같은 비율(제목 14 · 세부 12.5 · 날짜 20 · 기념일 11px × 글씨 크기)·같은 굵기 규칙. */}
           <div className="rhh-text-stage" aria-hidden="true">
-            <div className="rhh-preview-pair" style={{ "--pv": textPx / TEXT_PX_BASE, fontFamily: previewFont } as CSSProperties}>
+            <div
+              className="rhh-preview-pair"
+              style={
+                {
+                  "--pv": pvMetrics?.pv ?? textPx / TEXT_PX_BASE,
+                  ...(pvMetrics
+                    ? {
+                        "--pv-cell-w": `${pvMetrics.w}px`,
+                        "--pv-cell-pad": `${pvMetrics.cellPad}px`,
+                        "--pv-card-pl": `${pvMetrics.padL}px`,
+                        "--pv-card-pr": `${pvMetrics.padR}px`
+                      }
+                    : {}),
+                  fontFamily: previewFont
+                } as CSSProperties
+              }
+            >
               <div className="rhh-preview-col">
                 <span className="rhh-preview-cap">일정이 많은 날</span>
                 <div className="rhh-text-preview">
