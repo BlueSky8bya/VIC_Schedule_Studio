@@ -5484,11 +5484,10 @@ html[data-reduce-motion] .pop-bloom {
 }
 .tier-ring {
   position: absolute;
-  /* 카드에서 1.5px 떼어 두른다(2026-10-05 소유자: 카드에 붙은 링은 '카드 테두리 색'으로 읽혀, 태그 색이
-     같은 계열이면 안 보였다). 사이로 칸 바탕이 비쳐 어떤 태그 색 위에서도 '두른 링'으로 읽힌다. */
-  inset: calc(-1px - var(--tier-gap, 1.5px) - var(--tier-w, 2px));
+  inset: -1px; /* 카드 자체 1px 테두리까지 덮어 링이 곧 카드의 테두리가 된다 — 띄우면 카드 테두리와 두 줄(이중링)로
+                  보였다(2026-10-05 소유자). 대신 링을 굵고 진하게(아래 단계 색) 해 태그 색 위에서도 읽힌다. */
   z-index: 0;
-  border-radius: calc(var(--r-sm) + var(--tier-gap, 1.5px) + var(--tier-w, 2px));
+  border-radius: inherit;
   border: var(--tier-w, 2px) solid transparent;
   pointer-events: none;
   /* (overflow:hidden 금지 — padding-box로 잘라 border 영역의 채움까지 지워 링이 사라진다. 마스크가 곧 클립.)
@@ -6025,7 +6024,9 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 .public-event[data-mixed] {
   position: relative;
 }
-.public-event[data-mixed] > :not(.evt-pat):not(.evt-hatch) {
+/* 관심 단계 표식(링·halo·👑)은 제외 — 같은 특이도의 되돌림 규칙(위 .tier-ring.tier-ring)보다 이 규칙이 뒤에 있어
+   이겨 왔고, 링이 흐름 안으로 들어가 카드 아래 가로선으로 그려졌다(2026-10-05 소유자 리포트). */
+.public-event[data-mixed] > :not(.evt-pat):not(.evt-hatch):not(.tier-ring):not(.tier-halo):not(.tier-crown):not(.tier-signal) {
   position: relative;
   z-index: 1;
 }

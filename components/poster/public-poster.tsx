@@ -194,7 +194,8 @@ const POSTER_BOTTOM_GAP = 14;
 function TierMark({ tier }: { tier: HeartTier }) {
   return (
     <>
-      <span className={`tier-signal tier-${tier.key}`} aria-hidden="true" />
+      {/* 링이 있는 카드엔 안쪽 왼쪽 줄(tier-signal)을 겹치지 않는다 — 링·카드 테두리·줄이 겹쳐 이중링으로
+          보였다(2026-10-05 소유자). 줄은 제목 없는 이어짐 칸(링 없음)에만 남는다. */}
       {/* halo는 링과 형제(링의 마스크가 자기 그림자를 잘라서). 관심(warm)은 halo 없음 — 조용한 단계. */}
       {tier.key !== "warm" ? <span aria-hidden="true" className={`tier-halo tier-${tier.key}`} /> : null}
       <span
