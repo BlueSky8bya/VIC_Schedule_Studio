@@ -122,6 +122,8 @@ export default function RootLayout({
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
               // 화면 모드(vic.dark, lib/ui/theme.ts) — 'on'=어둡게, 'system'=기기 따라, 그 외=밝게(기본).
               // 페인트 전에 붙여야 어두운 화면을 기대한 사용자가 흰 화면을 한 번 맞지 않는다.
+              // 글씨 크기(vic.calText, lib/ui/edit-prefs) — 일정 제목 px ÷ 14 = --cal-text. 범위 밖이면 기본.
+              "var tx=Number(s.getItem('vic.calText'));if(tx>=12&&tx<=20)d.style.setProperty('--cal-text',String(tx/14));" +
               "var dk=s.getItem('vic.dark');if(dk==='on'||(dk==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-theme','dark');" +
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.

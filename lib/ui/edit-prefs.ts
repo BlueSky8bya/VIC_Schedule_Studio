@@ -1,10 +1,8 @@
-// 기기에 남는 작업 설정(2026-10-06) — 설정 창의 '던져서 삭제'·'달력 크기'. 진실의 원천은 localStorage,
+// 기기에 남는 작업 설정(2026-10-06) — 설정 창의 '던져서 삭제'·'글씨 크기'. 진실의 원천은 localStorage,
 // 읽기 실패(사생활 모드 등)는 기본값으로 동작한다.
 
 const FLING_KEY = "vic.flingDelete";
-const CAL_SIZE_KEY = "vic.calSize";
-/** 달력 크기가 바뀌면 열려 있는 달력이 즉시 따라오도록 알리는 이벤트(detail = 배율). */
-export const CAL_SIZE_EVENT = "vic:cal-size";
+const TEXT_KEY = "vic.calText";
 
 /** 던져서 삭제 — 기본 켜짐(지금까지의 동작). 'off'면 빠르게 던져도 지우지 않고 제자리로 돌아간다. */
 export function flingDeleteEnabled(): boolean {
@@ -23,28 +21,36 @@ export function setFlingDelete(on: boolean): void {
   }
 }
 
-/** 달력 크기 = 달력 확대(--cal-zoom)의 기본값. Ctrl+휠로 잠깐 바꾼 배율과 별개로, 열 때마다 이 크기에서 시작한다. */
-export const CAL_SIZES = [1, 1.25, 1.5] as const;
-export type CalSize = (typeof CAL_SIZES)[number];
+// 글씨 크기(2026-10-06 소유자: "달력 크기 설정은 없애고, 글씨를 px로 미리보며 고르고, 그걸 기본으로 휠 확대") —
+// 달력 글자(일정 제목·세부·날짜·요일·기념일) 크기의 기본값. 기준은 일정 제목 px(원래 14px). 나머지 글자는 같은 비율로
+// 따라간다: <html style="--cal-text: px/14">. Ctrl+휠 확대(--cal-zoom)는 이 크기에 곱해진다 — 고른 크기가 100%.
+// 페인트 전 적용은 app/layout.tsx 스크립트가 같은 키로 한다(처음 열 때 글씨가 한 번 튀지 않게).
+export const TEXT_PX_BASE = 14;
+export const TEXT_PX_MIN = 12;
+export const TEXT_PX_MAX = 20;
 
-export function calSizePref(): CalSize {
-  if (typeof window === "undefined") return 1;
+export function textPxPref(): number {
+  if (typeof window === "undefined") return TEXT_PX_BASE;
   try {
-    const v = Number(window.localStorage.getItem(CAL_SIZE_KEY));
-    return (CAL_SIZES as readonly number[]).includes(v) ? (v as CalSize) : 1;
+    const v = Number(window.localStorage.getItem(TEXT_KEY));
+    return Number.isFinite(v) && v >= TEXT_PX_MIN && v <= TEXT_PX_MAX ? v : TEXT_PX_BASE;
   } catch {
-    return 1;
+    return TEXT_PX_BASE;
   }
 }
-export function setCalSizePref(size: CalSize): void {
+export function applyTextPx(px: number): void {
   try {
-    window.localStorage.setItem(CAL_SIZE_KEY, String(size));
-  } catch {
-    /* 이번 세션만 */
-  }
-  try {
-    window.dispatchEvent(new CustomEvent(CAL_SIZE_EVENT, { detail: size }));
+    document.documentElement.style.setProperty("--cal-text", String(px / TEXT_PX_BASE));
   } catch {
     /* no-op */
   }
+}
+export function setTextPxPref(px: number): void {
+  const v = Math.min(TEXT_PX_MAX, Math.max(TEXT_PX_MIN, Math.round(px * 2) / 2));
+  try {
+    window.localStorage.setItem(TEXT_KEY, String(v));
+  } catch {
+    /* 이번 세션만 */
+  }
+  applyTextPx(v);
 }

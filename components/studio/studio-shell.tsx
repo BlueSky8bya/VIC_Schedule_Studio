@@ -44,7 +44,7 @@ import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
 import type { GfxMode } from "@/lib/ui/gfx";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
-import { CAL_SIZE_EVENT, calSizePref, flingDeleteEnabled } from "@/lib/ui/edit-prefs";
+import { flingDeleteEnabled } from "@/lib/ui/edit-prefs";
 import { playSfx } from "@/lib/ui/sfx";
 import { useRouter } from "next/navigation";
 import {
@@ -933,8 +933,8 @@ export function StudioShell({
     changeThemeMode,
     flingDelete,
     toggleFlingDelete,
-    calSize,
-    changeCalSize,
+    textPx,
+    changeTextPx,
     soundOn,
     toggleSound,
     soundVol,
@@ -1145,8 +1145,8 @@ export function StudioShell({
   function renderSettingsList() {
     return (
       <StudioSettingsList
-        calSize={calSize}
-        onChangeCalSize={changeCalSize}
+        textPx={textPx}
+        onChangeTextPx={changeTextPx}
         sound={{
           on: soundOn,
           toggle: toggleSound,
@@ -2298,26 +2298,6 @@ export function StudioShell({
     flipRects.current.clear();
     hapticTick();
     setCalZoom(next);
-  }, []);
-  // 달력 크기(설정) = 확대의 기본값 — 열 때 그 크기에서 시작, 설정을 바꾸면 바로 따라간다. 아젠다(좁은 화면)는 확대 없음.
-  const isNarrowRef = useRef(isNarrow);
-  isNarrowRef.current = isNarrow;
-  useEffect(() => {
-    const start = calSizePref();
-    if (!isNarrow && start !== 1) {
-      calZoomRef.current = start;
-      setCalZoom(start);
-    }
-    const on = (e: Event) => {
-      const v = Number((e as CustomEvent<number>).detail) as CalZoom;
-      if (!(v > 0) || isNarrowRef.current) return;
-      calZoomRef.current = v;
-      flipRects.current.clear();
-      setCalZoom(v);
-    };
-    window.addEventListener(CAL_SIZE_EVENT, on);
-    return () => window.removeEventListener(CAL_SIZE_EVENT, on);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     // isNarrow 판정은 STUDIO_AGENDA_QUERY '전체'(폭 999 + 저높이·coarse pointer 포함) — 아젠다

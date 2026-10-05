@@ -5118,7 +5118,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   padding: calc(6px * var(--cal-zoom, 1)) 0;
   /* 날짜 숫자(.day-strip strong 17px)와 같은 크기 — 요일은 달력을 읽는 첫 단서인데 본문 크기
      (13.5px)로는 표면이 화면에 맞춰 축소된 뒤 거의 안 보였다(2026-09-11 소유자). */
-  font-size: calc(17px * var(--cal-zoom, 1));
+  font-size: calc(17px * var(--cal-zoom, 1) * var(--cal-text, 1));
   font-weight: 800;
   letter-spacing: 0.05em;
   text-align: center;
@@ -5387,10 +5387,10 @@ html[data-reduce-motion] .pop-bloom {
 }
 .public-day .support-bar span,
 .public-day .support-bar .sb-cta {
-  font-size: calc(var(--text-micro) * var(--cal-zoom, 1));
+  font-size: calc(var(--text-micro) * var(--cal-zoom, 1) * var(--cal-text, 1));
 }
 .public-day .support-bar.sb-solo .sb-go {
-  font-size: calc(var(--text-caption) * var(--cal-zoom, 1));
+  font-size: calc(var(--text-caption) * var(--cal-zoom, 1) * var(--cal-text, 1));
 }
 .public-day .support-bar.sb-head {
   z-index: 7;
@@ -5422,7 +5422,7 @@ html[data-reduce-motion] .pop-bloom {
 .day-strip strong {
   /* --cal-zoom = 시청자 달력 글자 확대(Ctrl+휠 100/125/150/175/200) — 편집실 A안과 같은 문법.
      '일' 접미사를 뺀 뒤(2026-09-17) 숫자 하나가 옛 "17 일"의 잉크 높이(≈22px)를 이어받도록 20px. */
-  font-size: calc(20px * var(--cal-zoom, 1));
+  font-size: calc(20px * var(--cal-zoom, 1) * var(--cal-text, 1));
   line-height: 1;
   color: var(--ink, #23303f);
 }
@@ -5577,7 +5577,7 @@ html[data-reduce-motion] .pop-bloom {
   top: calc(-11px * var(--cal-zoom, 1));
   right: calc(-6px * var(--cal-zoom, 1));
   z-index: 3;
-  font-size: calc(var(--text-ui) * var(--cal-zoom, 1));
+  font-size: calc(var(--text-ui) * var(--cal-zoom, 1) * var(--cal-text, 1));
   line-height: 1;
   pointer-events: none;
   filter: drop-shadow(0 1px 1.5px rgb(120 80 0 / 30%));
@@ -6074,7 +6074,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   flex: 1;
   margin: 0;
   white-space: pre-line;
-  font-size: calc(14px * var(--cal-zoom, 1));
+  font-size: calc(14px * var(--cal-zoom, 1) * var(--cal-text, 1));
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다(근거: WCAG 1.4.3 등). */
   font-weight: var(--evt-weight, 800);
   line-height: 1.2;
@@ -6117,7 +6117,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   opacity: 0.3;
 }
 .event-subs li {
-  font-size: calc(12.5px * var(--cal-zoom, 1));
+  font-size: calc(12.5px * var(--cal-zoom, 1) * var(--cal-text, 1));
   font-weight: 800;
   line-height: 1.25;
 }

@@ -9,11 +9,11 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Volume1, Volume2, VolumeX, Wrench, ZoomIn, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { SoundCategory, SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
-import type { CalSize } from "@/lib/ui/edit-prefs";
+import { TEXT_PX_BASE, TEXT_PX_MAX, TEXT_PX_MIN } from "@/lib/ui/edit-prefs";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
@@ -43,9 +43,9 @@ export type StudioSettingsProps = {
   // 화면 모드(2026-10-06 세 상태) — 밝게·어둡게·기기 따라. 모든 역할/시청자 미리보기에서 같은 기기 설정.
   themeMode: ThemeMode;
   onChangeThemeMode: (mode: ThemeMode) => void;
-  // 달력 크기(달력 확대의 기본값) — 웹만(모바일은 목록이라 확대가 없다).
-  calSize: CalSize;
-  onChangeCalSize: (size: CalSize) => void;
+  // 글씨 크기(px, 일정 제목 기준) — 달력 글자의 기본 크기. Ctrl+휠 확대는 이 크기에서 시작한다. 웹 달력에만.
+  textPx: number;
+  onChangeTextPx: (px: number) => void;
   // 소리(lib/ui/sfx) — 효과음 전체·음량·종류별·다른 탭. 기본 꺼짐. showEdit = 편집 소리 줄(편집실 편집 권한).
   sound: SoundSettings;
   // 던져서 삭제 — 편집실(편집 권한)에서만 넘긴다. 없으면 줄이 없다.
@@ -173,8 +173,8 @@ export function StudioSettingsList({
   onToggleEyeComfort,
   themeMode,
   onChangeThemeMode,
-  calSize,
-  onChangeCalSize,
+  textPx,
+  onChangeTextPx,
   sound,
   flingDelete = null,
   onToggleFlingDelete,
@@ -301,25 +301,55 @@ export function StudioSettingsList({
             </RowLabel>
             <Switch dataAct="눈 편한 테마 켜기/끄기" label="눈 편한 테마 켜기/끄기" on={eyeComfort} onToggle={onToggleEyeComfort} />
           </div>
-          {/* 달력 크기 — 달력 확대의 기본값(칸·글자·띠가 함께). Ctrl+휠로 잠깐 바꾼 배율과 별개. 웹만. */}
+          {/* 글씨 크기 — px로 고르고 바로 아래 미리보기로 확인. 고른 크기가 달력의 기본(100%), Ctrl+휠 확대는 여기서 시작. 웹만. */}
           <div className="role-help-haptics rhh-web rhh-stack-sm">
-            <RowLabel icon={<ZoomIn size={15} />} tone="water">
-              달력 크기
+            <RowLabel icon={<ALargeSmall size={15} />} tone="water">
+              글씨 크기
             </RowLabel>
-            <SettingsSegment<CalSize>
-              ariaLabel="달력 크기 고르기"
-              dataAct="cal-size-select"
-              onChange={onChangeCalSize}
-              options={[
-                { value: 1, label: "보통" },
-                { value: 1.25, label: "크게" },
-                { value: 1.5, label: "더 크게" }
-              ]}
-              value={calSize}
-            />
+            <div className="rhh-volume">
+              <span aria-hidden="true" className="rhh-size-a small">가</span>
+              <input
+                aria-label="달력 글씨 크기(px)"
+                aria-valuetext={`${textPx}px`}
+                data-act="text-size"
+                max={TEXT_PX_MAX}
+                min={TEXT_PX_MIN}
+                onChange={(e) => onChangeTextPx(Number(e.currentTarget.value))}
+                step={0.5}
+                style={{ "--vol": `${((textPx - TEXT_PX_MIN) / (TEXT_PX_MAX - TEXT_PX_MIN)) * 100}%` } as CSSProperties}
+                type="range"
+                value={textPx}
+              />
+              <span aria-hidden="true" className="rhh-size-a big">가</span>
+              <b className="rhh-vol-num rhh-px">{textPx}px</b>
+              <button
+                className="rhh-link rhh-preview"
+                data-act="text-size-reset"
+                disabled={textPx === TEXT_PX_BASE}
+                onClick={() => onChangeTextPx(TEXT_PX_BASE)}
+                type="button"
+              >
+                기본
+              </button>
+            </div>
+          </div>
+          {/* 미리보기 — 달력 카드와 같은 모양·같은 비율(제목 px, 세부·날짜는 같은 배율). */}
+          <div className="role-help-haptics rhh-web rhh-preview-row" aria-hidden="true">
+            <div className="rhh-text-preview" style={{ "--pv": textPx / TEXT_PX_BASE } as CSSProperties}>
+              <span className="pv-date">1</span>
+              <span className="pv-mark">🎉 데뷔 1주년</span>
+              <div className="pv-card">
+                <b>빅토리 재 데뷔 합니다!!!</b>
+                <span>뉴아바타 · 새로워진 api 공개</span>
+              </div>
+              <div className="pv-card pv-card-2">
+                <b>종겜</b>
+                <span>소시지게임 켠왕</span>
+              </div>
+            </div>
           </div>
         </div>
-        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요.</p>
+        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요. 글씨 크기는 달력의 기본 크기 — 달력 위 Ctrl+휠 확대는 이 크기에서 시작해요.</p>
       </section>
 
       <section {...pane("motion")}>

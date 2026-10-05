@@ -33,7 +33,7 @@ import {
   type SoundCategory,
   type SoundCats
 } from "@/lib/ui/sfx";
-import { calSizePref, flingDeleteEnabled, setCalSizePref, setFlingDelete, type CalSize } from "@/lib/ui/edit-prefs";
+import { flingDeleteEnabled, setFlingDelete, setTextPxPref, textPxPref, TEXT_PX_BASE } from "@/lib/ui/edit-prefs";
 
 export type SettingsPrefs = {
   hapticsSupported: boolean;
@@ -47,8 +47,8 @@ export type SettingsPrefs = {
   changeThemeMode: (mode: ThemeMode) => void;
   flingDelete: boolean;
   toggleFlingDelete: () => void;
-  calSize: CalSize;
-  changeCalSize: (size: CalSize) => void;
+  textPx: number;
+  changeTextPx: (px: number) => void;
   soundOn: boolean;
   toggleSound: () => void;
   soundVol: number;
@@ -202,15 +202,14 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     hapticTick();
   }, []);
 
-  // 달력 크기 — 달력 확대의 기본값. 바꾸면 열린 달력이 이벤트로 즉시 따라간다.
-  const [calSize, setCalSizeState] = useState<CalSize>(1);
+  // 글씨 크기(px, 일정 제목 기준) — 달력 글자의 기본 크기. 끌면 바로 미리보기·달력에 반영된다.
+  const [textPx, setTextPxState] = useState(TEXT_PX_BASE);
   useEffect(() => {
-    setCalSizeState(calSizePref());
+    setTextPxState(textPxPref());
   }, []);
-  const changeCalSize = useCallback((size: CalSize) => {
-    setCalSizePref(size);
-    setCalSizeState(size);
-    hapticTick();
+  const changeTextPx = useCallback((px: number) => {
+    setTextPxPref(px);
+    setTextPxState(px);
   }, []);
 
   // 배경 효과 품질(lib/ui/gfx.ts v3) — 자동(기기 판정)/항상 최대/가볍게 + 자동 판정 결과(표시용).
@@ -272,8 +271,8 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     changeThemeMode,
     flingDelete,
     toggleFlingDelete,
-    calSize,
-    changeCalSize,
+    textPx,
+    changeTextPx,
     soundOn,
     toggleSound,
     soundVol,

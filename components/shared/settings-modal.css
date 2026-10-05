@@ -826,3 +826,83 @@ html[data-reduce-motion] .rhh-panes .rhh-group.is-active,
 html[data-reduce-motion] .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics {
   animation: none;
 }
+
+/* ── 글씨 크기 미리보기(2026-10-06) — 달력 칸 하나를 작게 옮겨 놓는다. 크기 비율은 달력과 같다:
+   날짜 20 · 제목 14 · 세부 12.5 · 기념일 11(px) × --pv(= 고른 px / 14). 글꼴은 앱 글꼴을 그대로 따른다. */
+.rhh-size-a {
+  flex: none;
+  color: var(--muted, #7a7464);
+  font-weight: 600;
+  line-height: 1;
+}
+.rhh-size-a.small {
+  font-size: 11px;
+}
+.rhh-size-a.big {
+  font-size: 18px;
+}
+.rhh-px {
+  width: 3.4em;
+}
+.vic-settings .rhh-preview-row {
+  display: block;
+  padding: 4px 0 12px;
+}
+.rhh-text-preview {
+  display: grid;
+  gap: 5px;
+  max-width: 300px;
+  border: 1px solid rgb(0 0 0 / 6%);
+  border-radius: var(--r-md);
+  background: #fffdf8;
+  padding: 10px 10px 12px;
+}
+.rhh-text-preview .pv-date {
+  font-size: calc(20px * var(--pv, 1));
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink, #23303f);
+}
+.rhh-text-preview .pv-mark {
+  margin-top: -2px;
+  color: #a16207;
+  font-size: calc(11px * var(--pv, 1));
+  font-weight: 700;
+}
+.rhh-text-preview .pv-card {
+  display: grid;
+  gap: 2px;
+  border: 1px solid #e8c25a;
+  border-radius: var(--r-sm);
+  background: #fde9a6;
+  padding: 5px 8px;
+  color: #2b2414;
+}
+.rhh-text-preview .pv-card-2 {
+  border-color: #f08a7e;
+  background: #f9a59b;
+}
+.rhh-text-preview .pv-card b {
+  font-size: calc(14px * var(--pv, 1));
+  font-weight: 800;
+  line-height: 1.2;
+}
+.rhh-text-preview .pv-card span {
+  font-size: calc(12.5px * var(--pv, 1));
+  font-weight: 800;
+  line-height: 1.25;
+  opacity: 0.85;
+}
+html[data-theme="dark"] .rhh-text-preview {
+  border-color: rgb(255 255 255 / 8%);
+  background: #262420;
+}
+html[data-theme="dark"] .rhh-text-preview .pv-card {
+  border-color: #8a7432;
+  background: #5c4f22;
+  color: #f1ede6;
+}
+html[data-theme="dark"] .rhh-text-preview .pv-card-2 {
+  border-color: #a85a55;
+  background: #6e3b3a;
+}
