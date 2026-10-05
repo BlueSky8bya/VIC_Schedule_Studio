@@ -1422,6 +1422,14 @@ export function PublicPoster({
   detailAnchorPtRef.current = detailAnchorPt;
   const detailDragActiveRef = useRef(false);
   const hasDetailPop = Boolean(agendaDetail?.anchor);
+  // 일정별로 사용자가 끌어다 놓은 자리(2026-10-06 소유자) — 같은 일정을 다시 누르면 그 자리에서 연다.
+  // **이 페이지에 있는 동안만**: 저장소에 쓰지 않는 ref라 새로고침·다른 페이지 다녀오기(언마운트)에 초기화된다.
+  // 키는 일정 id(+업도움 여부) — 여러 날 일정은 어느 칸을 눌러도 같은 일정이다.
+  const detailSavedPosRef = useRef(new Map<string, { left: number; top: number }>());
+  const detailKey = agendaDetail?.anchor ? `${agendaDetail.support ? "s" : "e"}:${agendaDetail.event.id}` : null;
+  const detailKeyRef = useRef<string | null>(null);
+  detailKeyRef.current = detailKey;
+  const detailShownKeyRef = useRef<string | null>(null);
   // PC 팝오버가 떠 있는 동안 달력은 그대로 살아 있다(배경 pointer-events:none) — 다른 일정을
   // 누르면 '한 번에' 그 일정의 상세로 교체된다. 바깥 닫기는 여기(문서 레벨)서: 시트 안도,
   // 새 상세로 교체될 일정 카드도 아닌 곳을 누르면 닫는다. 여는 클릭이 바로 닫지 않게 다음 틱부터.
@@ -1472,7 +1480,26 @@ export function PublicPoster({
       setDetailManual(null);
       setDetailAnchorPt(null);
       setDetailPopSize(null);
+      detailShownKeyRef.current = null;
       return;
+    }
+    // 다른 일정으로 열리면(처음 열기·열린 채 교체) 그 일정이 기억한 자리로, 없으면 자동 배치로.
+    if (detailKey !== detailShownKeyRef.current) {
+      detailShownKeyRef.current = detailKey;
+      const saved = detailKey ? detailSavedPosRef.current.get(detailKey) : undefined;
+      let next: { left: number; top: number } | null = null;
+      if (saved) {
+        // 창 크기가 바뀌었으면 보이는 범위로 당긴다(팝오버 크기를 모르면 넉넉히 340×300).
+        const sheet = detailSheetRef.current;
+        const w = sheet?.offsetWidth || 340;
+        const h = sheet?.offsetHeight || 300;
+        next = {
+          left: Math.round(Math.max(12, Math.min(saved.left, window.innerWidth - w - 12))),
+          top: Math.round(Math.max(12, Math.min(saved.top, window.innerHeight - h - 12)))
+        };
+      }
+      detailManualRef.current = next;
+      setDetailManual(next);
     }
     placeDetailPopover();
     let raf = 0;
@@ -1482,7 +1509,7 @@ export function PublicPoster({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [hasDetailPop, agendaDetail, placeDetailPopover]);
+  }, [hasDetailPop, agendaDetail, placeDetailPopover, detailKey]);
   // 헤더/그립 드래그 — 이동 중엔 DOM(style·선 좌표) 직접 갱신, 손 뗄 때만 상태 확정(부드러움).
   function onDetailDragStart(e: ReactPointerEvent<HTMLDivElement>) {
     if ((e.target as HTMLElement).closest("button, a")) return;
@@ -1568,6 +1595,7 @@ export function PublicPoster({
         }
         setDetailManual(snapped);
         detailManualRef.current = snapped;
+        if (detailKeyRef.current) detailSavedPosRef.current.set(detailKeyRef.current, snapped); // 이 일정의 자리로 기억
         // DOM 직접 동기화 — 드래그 직접 쓰기와 React 가상 스타일 어긋남으로 새 상태가 이전
         // 상태와 같으면 React가 DOM을 안 고치는 함정 방지(편집실과 동일 수정).
         sheet.style.left = `${snapped.left}px`;
