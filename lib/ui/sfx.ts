@@ -38,7 +38,9 @@ export type SfxName =
   | "tab"
   | "detent"
   | "toggle-on"
-  | "toggle-off";
+  | "toggle-off"
+  | "copy"
+  | "paste";
 
 const CATEGORY: Record<SfxName, SoundCategory> = {
   fanfare: "celebrate",
@@ -73,7 +75,9 @@ const CATEGORY: Record<SfxName, SoundCategory> = {
   tab: "ui",
   detent: "ui",
   "toggle-on": "ui",
-  "toggle-off": "ui"
+  "toggle-off": "ui",
+  copy: "edit",
+  paste: "edit"
 };
 
 const KEY = "vic.sound";
@@ -404,6 +408,15 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
     case "delete": // 삭제 — 음이 0.6배로 꺼지며 사라짐 + 부드러운 바람(저역)
       tone(ac, out, { f: N(4), glideTo: N(4) * 0.6, glide: 0.12, vol: 0.22, tau: 0.05 });
       whoosh(ac, out, 1400, 300, 0.14, 0.02, 0.1, true);
+      break;
+    case "copy": // 복사 — 같은 음 두 번(메아리 = 하나가 둘로), 두 번째는 옥타브 위로 작게
+      blip(ac, out, N(7), 0, 0.22, 0.03);
+      blip(ac, out, N(19), 0.06, 0.12, 0.03);
+      break;
+    case "paste": // 붙여넣기 — 휙 날아가(짧은 바람) 나무 '똥' 착지 + 오버슈트 꼭짓점 톡
+      whoosh(ac, out, 700, 1600, 0.1, 0, 0.1);
+      marimba(ac, out, N(0), 0.12, 0.28, 0.08);
+      blip(ac, out, N(12), 0.24, 0.07, 0.02);
       break;
     case "fling": // 던지기 — 휙(아래로) + 멀어지는 물방울
       whoosh(ac, out, 2400, 400, 0.24, 0, 0.22);

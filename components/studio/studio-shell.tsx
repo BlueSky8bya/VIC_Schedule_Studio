@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Copy,
   ExternalLink,
   Eye,
   Heart,
@@ -2203,6 +2204,7 @@ export function StudioShell({
    *   클릭=고르기, 더블클릭=편집창.) */
   function selectDate(isoDate: string, open = false) {
     setSelectedDate(isoDate);
+    setDateCue(true);
     setSelectedEventId(null);
     // 빈 새 카드가 기준 — 같은 날짜에 쓰다 만 임시 내용이 있으면 되살린다.
     editBaselineRef.current = draftFingerprint(createEmptyForm());
@@ -2220,6 +2222,31 @@ export function StudioShell({
     setEditorVisible(true);
     bumpEditor(); // 사용자가 새 날짜 칸을 고름 → 폼 새로 마운트(전환 애니메이션)
   }
+
+  // 고른 날짜 음영은 '방금 그 칸을 골랐을 때'만(2026-10-06 소유자: "날짜를 선택 안 하고 있는데도 칸이 어둡다").
+  // 편집실은 늘 어떤 날짜를 쥐고 있어(붙여넣기·Alt+N의 기준), 예전엔 마지막으로 누른 칸이 계속 어두웠다.
+  // 카드를 고르거나, 달력 밖을 누르거나, Esc면 음영만 거둔다 — 기준 날짜(selectedDate)는 그대로.
+  const [dateCue, setDateCue] = useState(false);
+  useEffect(() => {
+    if (selectedEventId) setDateCue(false);
+  }, [selectedEventId]);
+  useEffect(() => {
+    if (!dateCue) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Element | null;
+      if (t?.closest?.(".studio-day")) return; // 칸 안(빈 곳)은 selectDate가, 카드는 위 효과가 맡는다
+      setDateCue(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDateCue(false);
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [dateCue]);
 
   // ── 일정 카드 드래그 이동 ────────────────────────────────────────────────
   // 카드를 끌어 다른 날짜 칸에 놓으면 그 날짜로 옮긴다. 들면 카드가 살짝 기울고 흔들리는
@@ -5245,6 +5272,9 @@ export function StudioShell({
       }
       if (inverses.length === 0) return null;
       flashToast(mode === "undo" ? "이동 취소됨 (Ctrl+Z)" : "다시 이동함 (Ctrl+Shift+Z)");
+      // 되돌린 자리에서도 놓을 때와 같은 '통통 자리 잡기' 파도 — 토스트만으론 어디로 돌아갔는지 안 보인다.
+      const ids = action.actions.flatMap((a) => ("holder" in a ? [canonId(a.holder.id)] : []));
+      requestAnimationFrame(() => requestAnimationFrame(() => settleSpanSegments(ids)));
       return { type: "group", actions: inverses };
     }
     if (action.type === "move") {
@@ -5443,7 +5473,114 @@ export function StudioShell({
 
   // #2: 일정 카드 복사/붙여넣기 — 선택한 일정을 Ctrl+C로 복사, 다른 날짜를 고르고 Ctrl+V.
   const [clipboard, setClipboard] = useState<CopiedEvent | null>(null);
+  // 복사 원본 카드 id — 붙여넣을 때까지(또는 Esc) 원본에 움직이는 점선 테두리(엑셀·피그마 '복사 중' 관행).
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState<string | null>(null);
+  // 복사·붙여넣기 연출(2026-10-06 소유자: "토스트만 뜨고 밋밋해서 복사하고 있다는 느낌이 안 든다").
+  //   복사: 원본 카드가 한 번 통 튀고, 반투명 사본이 살짝 떠올라 사라진다(복제됐다) + 원본에 점선 개미 행렬.
+  //   붙여넣기: 원본 자리에서 사본이 스프링으로 날아가 새 날짜에 안착(원본이 화면에 없으면 새 카드가 톡 튀어나옴).
+  function copySourceEl(id: string): HTMLElement | null {
+    return findPillEl(id) ?? document.querySelector<HTMLElement>(`.support-bar[data-supportid="${CSS.escape(id)}"]`);
+  }
+  /** 카드 사본 유령 — 끌기 유령과 같은 방식(깨끗한 래퍼 + 복제본, 배율 복사, body 직속). */
+  function makeCardGhost(src: HTMLElement, rect: DOMRect, cls: string): HTMLElement {
+    const inner = src.cloneNode(true) as HTMLElement;
+    inner.removeAttribute("data-eventid");
+    inner.removeAttribute("data-supportid");
+    inner.classList.remove("selected", "primary-selected", "is-selected", "is-editing", "copy-bump", "is-copied", "just-saved");
+    inner.querySelector(".copy-ants")?.remove();
+    Object.assign(inner.style, { margin: "0", width: "100%", height: "100%", transform: "none", position: "relative", left: "0", right: "auto", top: "0", visibility: "" });
+    const ghost = document.createElement("div");
+    ghost.className = `event-drag-ghost ${cls}`;
+    Object.assign(ghost.style, { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px` });
+    ghost.style.setProperty("--cal-zoom", String(calZoomRef.current * panelFitRef.current));
+    ghost.appendChild(inner);
+    document.body.appendChild(ghost);
+    return ghost;
+  }
+  function copyEcho(id: string) {
+    const el = copySourceEl(id);
+    if (!el) return;
+    el.classList.remove("copy-bump");
+    void el.offsetWidth;
+    el.classList.add("copy-bump");
+    window.setTimeout(() => el.classList.remove("copy-bump"), 420);
+    if (reduceMotionEnabled()) return;
+    const echo = makeCardGhost(el, el.getBoundingClientRect(), "copy-echo");
+    window.setTimeout(() => echo.remove(), 520);
+  }
+  /** 붙여넣은 카드가 원본 자리(fromRect)에서 새 자리로 날아가 안착한다. */
+  function flyPaste(ghostSrc: HTMLElement | null, fromRect: DOMRect | null, newId: string) {
+    // 서버가 실제 id를 주면 카드가 새로 그려진다(임시 id → 실제 id) — 둘 다 찾는다.
+    const findNew = () => {
+      const real = tempToRealRef.current.get(newId);
+      return copySourceEl(newId) ?? (real ? copySourceEl(real) : null);
+    };
+    const settle = () => {
+      const el = findNew();
+      if (el) el.style.visibility = "";
+      settleSpanSegments([tempToRealRef.current.get(newId) ?? newId]);
+    };
+    if (reduceMotionEnabled() || !ghostSrc || !fromRect) {
+      // 원본이 화면에 없으면(다른 달) 새 카드가 제자리에서 톡 튀어나온다.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = findNew();
+        if (!el || reduceMotionEnabled()) return;
+        el.classList.add("paste-pop");
+        window.setTimeout(() => el.classList.remove("paste-pop"), 520);
+      }));
+      return;
+    }
+    const ghost = makeCardGhost(ghostSrc, fromRect, "paste-ghost");
+    const start = performance.now();
+    let prev = start;
+    const pos = { x: fromRect.left, y: fromRect.top };
+    // 들어 올리는 첫 속도 — 위로 살짝 튀었다가 내려앉는 포물선 느낌(스프링 오버슈트).
+    const vel = { x: 0, y: -520 };
+    let hidden: HTMLElement | null = null;
+    const finish = () => {
+      ghost.remove();
+      if (hidden) hidden.style.visibility = "";
+      settle();
+    };
+    const step = () => {
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - prev) / 1000);
+      prev = now;
+      const el = findNew();
+      if (!el || now - start > LAND_MAX_MS + 200) {
+        finish();
+        return;
+      }
+      if (hidden !== el) {
+        // 날아오는 동안 도착 자리는 비워 둔다(두 장 금지). 다시 그려지면 새 요소에 다시 건다.
+        if (hidden) hidden.style.visibility = "";
+        hidden = el;
+        el.style.visibility = "hidden";
+      }
+      const r = el.getBoundingClientRect();
+      ghost.style.width = `${r.width}px`;
+      ghost.style.height = `${r.height}px`;
+      const nx = springStep(pos.x, vel.x, r.left, LAND_STIFF, LAND_DAMP, dt);
+      const ny = springStep(pos.y, vel.y, r.top, LAND_STIFF, LAND_DAMP, dt);
+      pos.x = nx.pos;
+      pos.y = ny.pos;
+      vel.x = nx.vel;
+      vel.y = ny.vel;
+      ghost.style.left = `${pos.x}px`;
+      ghost.style.top = `${pos.y}px`;
+      if (Math.hypot(pos.x - r.left, pos.y - r.top) < 1.5 && Math.hypot(vel.x, vel.y) < 40) {
+        finish();
+        return;
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  function clearClipboard() {
+    setClipboard(null);
+    setCopiedId(null);
+  }
   function flashToast(message: string) {
     setCopyToast(message);
     window.setTimeout(() => setCopyToast(null), 1600);
@@ -5469,15 +5606,18 @@ export function StudioShell({
       teaser: teaserStillHidden(ev),
       teaserRevealAt: teaserStillHidden(ev) ? (ev.teaserRevealAt ?? "") : ""
     });
-    flashToast("일정 복사됨 · 날짜 고르고 Ctrl+V");
+    setCopiedId(ev.id);
+    playSfx("copy");
+    requestAnimationFrame(() => copyEcho(ev.id)); // 다시 그린 뒤에 — React가 className을 덮어쓰기 전에 붙이면 지워진다
+    // (토스트 대신 아래 '복사 중' 칩이 붙여넣을 때까지 남는다.)
   }
   function pasteCopiedEvent() {
     if (!clipboard) return;
-    insertEventCopy(clipboard, selectedDate, `${selectedDate}에 붙여넣음`);
+    insertEventCopy(clipboard, selectedDate, `${selectedDate.slice(5).replace("-", "/")}에 붙여넣었어요`, copiedId);
   }
   // (복제 버튼 제거 — Ctrl+C/V가 정식 경로. insertEventCopy는 붙여넣기 전용으로 유지.)
   // 복사본 삽입 공통 경로 — Ctrl+V 붙여넣기가 쓴다(targetDate 파라미터화 유지).
-  function insertEventCopy(payload: CopiedEvent, targetDate: string, toast: string) {
+  function insertEventCopy(payload: CopiedEvent, targetDate: string, toast: string, sourceId: string | null = null) {
     if (!canEdit) return;
     // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 일정을 붙여넣으면 예전엔 공개로 강제 변환
     // 됐다 — 비공개 '내용'이 공개 일정으로 복제되는 유출 경로. 조용한 변환 대신 거부한다.
@@ -5511,7 +5651,13 @@ export function StudioShell({
       teaserRevealAt: payload.teaser ? payload.teaserRevealAt || undefined : undefined,
       sortOrder: 0
     };
+    // 원본 자리(화면에 보일 때만) — 사본이 여기서 출발해 새 날짜로 날아간다.
+    const srcEl = sourceId ? copySourceEl(sourceId) : null;
+    const srcRect = srcEl?.getBoundingClientRect() ?? null;
+    const srcVisible = !!srcRect && srcRect.bottom > 0 && srcRect.top < window.innerHeight && srcRect.width > 0;
     setEvents((prev) => [...prev, optimistic]);
+    playSfx("paste");
+    flyPaste(srcVisible ? srcEl : null, srcVisible ? srcRect : null, tempId);
     // 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 만든 이 카드가 사라진다.
     const undoHolder = { id: tempId };
     const undoAction: UndoAction = { type: "remove", holder: undoHolder };
@@ -5611,6 +5757,11 @@ export function StudioShell({
         e.preventDefault();
         editorCloseHowRef.current = "esc";
         setEditorVisible(false);
+        return;
+      }
+      // Esc: 복사 중이면 복사 해제(편집창·창이 없을 때) — 엑셀처럼 점선 행렬이 사라진다.
+      if (e.key === "Escape" && clipboard && !editorVisible && !modal) {
+        clearClipboard();
         return;
       }
       // Delete: 선택한 일정 삭제. 떡밥 게이트가 열려 있으면 포커스가 비번칸(autoFocus)이라
@@ -7017,6 +7168,20 @@ export function StudioShell({
           </div>
         </aside>
       ) : null}
+      {clipboard && canEdit && !deleteSnack ? (
+        <div className="clip-chip" role="status" aria-live="polite">
+          <span aria-hidden="true" className="clip-chip-ico">
+            <Copy size={14} strokeWidth={2.4} />
+          </span>
+          <b>{splitEventTitle(clipboard.teaser ? "???" : clipboard.publicTitle).main}</b>
+          <span className="clip-chip-hint">
+            복사 중 · 날짜 고르고 <kbd>Ctrl</kbd>+<kbd>V</kbd>
+          </span>
+          <button className="clip-chip-x" data-act="clipboard-clear" onClick={clearClipboard} type="button">
+            해제 <kbd>Esc</kbd>
+          </button>
+        </div>
+      ) : null}
       {copyToast ? (
         <div className="copy-toast" role="status" aria-live="polite">
           {copyToast}
@@ -7350,7 +7515,7 @@ export function StudioShell({
               const dayClass = [
                 "studio-day",
                 cell.inCurrentMonth ? "" : "outside",
-                selectedDate === cell.isoDate ? "selected" : "",
+                selectedDate === cell.isoDate && dateCue ? "selected" : "",
                 // 신규 작성 중이면 '날짜 칸'이 대상 — 팝오버 대표색(초록) 점선으로 칸을 두른다.
                 // 기존 일정 편집 중에는 칸이 아니라 그 카드가 대상이라 칸 강조를 끈다(경쟁 방지).
                 editorVisible && !selectedEventId && selectedDate === cell.isoDate
@@ -7369,7 +7534,9 @@ export function StudioShell({
                 // 묶음 드래그의 놓을 범위 — 옅은 칠 + 시작·끝 칸 꺾쇠(아래 span-drop-cap).
                 spanDrop && cell.isoDate >= spanDrop.start && cell.isoDate <= spanDrop.end ? "span-drop-in" : "",
                 spanDrop?.start === cell.isoDate ? "span-drop-start" : "",
-                spanDrop?.end === cell.isoDate ? "span-drop-end" : ""
+                spanDrop?.end === cell.isoDate ? "span-drop-end" : "",
+                // 복사 중이면 고른 날짜 칸 = 붙여넣을 자리(점선 미리보기 카드가 뜬다)
+                clipboard && canEdit && selectedDate === cell.isoDate && !dragEventId && !spanDrag ? "paste-target" : ""
               ]
                 .filter(Boolean)
                 .join(" ");
@@ -7481,6 +7648,8 @@ export function StudioShell({
                           // 떠 있으면 같은 테두리를 그대로 — 2026-09-19.
                           selectedEventId === s.id ? (editorVisible ? " is-editing" : " is-selected") : ""
                         }${spanDrag?.ids.some((x) => canonId(x) === canonId(s.id)) ? " span-drag-src" : ""}${
+                          copiedId && canonId(copiedId) === canonId(s.id) ? " is-copied" : ""
+                        }${
                           canEdit ? " span-draggable" : ""
                         }`}
                         data-supportid={s.id}
@@ -7664,6 +7833,7 @@ export function StudioShell({
                           : "",
                         linkFlashIds.has(event.id) ? "just-linked" : "",
                         justSavedId === event.id ? "just-saved" : "",
+                        copiedId && canonId(copiedId) === canonId(event.id) ? "is-copied" : "",
                         deletingIds.has(canonId(event.id)) ? "deleting" : ""
                       ]
                         .filter(Boolean)
@@ -7780,6 +7950,7 @@ export function StudioShell({
                             <span className="drop-insert-line end" aria-hidden="true" />
                           ) : null}
                           {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
+                          {copiedId && canonId(copiedId) === canonId(event.id) ? <span aria-hidden="true" className="copy-ants" /> : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
                             {span.showTitle && syncingIds.includes(canonId(event.id)) ? (
@@ -7886,6 +8057,12 @@ export function StudioShell({
                       // 스페이서가 있으면 [카드, 자리]로 함께 반환한다(그리드 자식 2개).
                       return gapEl ? [pill, gapEl] : pill;
                     })}
+                    {clipboard && canEdit && selectedDate === cell.isoDate && !dragEventId && !spanDrag ? (
+                      <div aria-hidden="true" className="paste-preview" key={`paste-${cell.isoDate}`}>
+                        <b>{splitEventTitle(clipboard.teaser ? "???" : clipboard.publicTitle).main}</b>
+                        <span className="paste-preview-key">Ctrl+V</span>
+                      </div>
+                    ) : null}
                   </div>
                 </article>
               );

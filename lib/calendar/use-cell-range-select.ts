@@ -177,6 +177,12 @@ export function useCellRangeSelect<T extends HTMLElement>({
             "button, a, input, textarea, select, label, .studio-event-pill, .support-bar" /* 띠는 끌어 옮기기(묶음 드래그) — 범위 선택을 시작하지 않는다 */
           )
         ) {
+          // 카드·띠를 누르면 남아 있던 칸 음영은 지운다 — 관심이 카드로 옮겨 갔는데 예전 칸만 어둡게
+          // 남아 "고르지도 않은 칸이 어둡다"가 됐다(2026-10-06 소유자 캡처). Ctrl/Shift는 선택을 이어 가는 중이라 둔다.
+          if (!e.shiftKey && !e.ctrlKey && !e.metaKey && !clickToggles && grid.contains(target)) {
+            anchor = null;
+            apply(new Set());
+          }
           return;
         }
         const cell = target.closest<HTMLElement>("[data-cell-index]");
@@ -207,9 +213,11 @@ export function useCellRangeSelect<T extends HTMLElement>({
           anchor = i;
           lastAnchor = i;
         } else {
+          // 평소 클릭은 칸을 칠하지 않는다(날짜 고르기는 칸 자신의 선택 테두리가 맡는다) — 한 칸 음영은
+          // 고른 날짜와 따로 놀아 "선택 안 했는데 어두운 칸"으로 남았다(2026-10-06). 끌면 onMove가 범위를 칠한다.
           anchor = i;
           lastAnchor = i;
-          apply(new Set([i]));
+          apply(new Set());
         }
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
