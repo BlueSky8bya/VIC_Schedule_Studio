@@ -86,7 +86,7 @@ import {
 import type { CurrentActor } from "@/lib/auth/actor";
 import {
   assignSupportLanes,
-  supportDepthByWeek,
+  supportDepthByCell,
   buildCalendarMonth,
   buildChainKeys,
   buildLinkChain,
@@ -1212,9 +1212,9 @@ export function StudioShell({
   // (기간 안내=하늘색은 form 선언 뒤의 selectedIsPeriod.)
   const selectedIsSupport = Boolean(selectedLiveEvent?.isSupport);
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
-  // 주 행마다 띠 깊이 — 그 주 모든 칸이 같은 만큼 비워 이어진 일정 높이가 칸마다 맞는다(supportDepthByWeek).
-  const supportWeekDepth = useMemo(
-    () => supportDepthByWeek(cells, liveEvents, supportLanes.lanes),
+  // 칸마다 띠 깊이 — 띠가 지나는 칸만 비우고, 이어진 일정이 지나는 칸끼리만 같은 높이로 맞춘다(supportDepthByCell).
+  const supportCellDepth = useMemo(
+    () => supportDepthByCell(cells, liveEvents, supportLanes.lanes),
     [cells, liveEvents, supportLanes]
   );
   // (띠 줄 수 "주별" 계산은 칸별 계산으로 대체 — 2026-09-02, 시청자 포스터와 동일 규칙.
@@ -3544,11 +3544,281 @@ export function StudioShell({
       e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
   }
 
+  // ── 묶음 드래그: 띠(업 도움·기간 안내)·여러 날 일정·이어진 일정(2026-10-05 소유자) ──────────────
+  // 가로로 긴 것은 '놓을 자리'를 카드 모양으로 다 그리면 다른 일정과 겹친다 → 옮겨 갈 범위는 아주 옅게 칠하고
+  // **시작 칸·끝 칸에만** 날짜 꺾쇠를 세운다(원래 자리는 흐리게, 손에 든 조각엔 "10.5 ~ 10.10" 꼬리표).
+  // 기준점 = 잡은 칸: 셋째 날을 잡아 놓으면 셋째 날이 그 칸에 온다(시작일 기준이면 손과 따로 논다).
+  // 이어진 일정은 한 장만 잡아도 묶음 전체가 함께 — 하나만 떨어져 나가 연결이 끊기지 않게.
+  // 저장은 구성원마다 기존 이동 큐(reorder, 서버가 종료일도 같은 폭으로)를, 되돌리기는 묶음 한 번(group).
+  const [spanDrag, setSpanDrag] = useState<{ ids: string[] } | null>(null);
+  const [spanDrop, setSpanDrop] = useState<{ start: string; end: string } | null>(null);
+  const spanRef = useRef<{
+    ids: string[];
+    anchor: string;
+    start: string;
+    end: string;
+    startX: number;
+    startY: number;
+    offX: number;
+    offY: number;
+    node: HTMLElement;
+    started: boolean;
+    armed: boolean;
+    isTouch: boolean;
+    ghost: HTMLElement | null;
+    label: HTMLElement | null;
+    delta: number;
+    overCell: boolean;
+  } | null>(null);
+  function spanMembersOf(event: StudioScheduleEvent): string[] | null {
+    const live = eventsRef.current;
+    const cur = live.find((x) => canonId(x.id) === canonId(event.id)) ?? event;
+    if (cur.isSupport) return [cur.id];
+    const chain = getLinkedChainIds(cur.id, live);
+    if (chain.size > 1) return [...chain];
+    if (cur.endDateKey && cur.endDateKey > getEventDateKey(cur)) return [cur.id];
+    return null;
+  }
+  function spanRangeOf(ids: string[]) {
+    const live = eventsRef.current;
+    let start = "";
+    let end = "";
+    for (const id of ids) {
+      const ev = live.find((x) => canonId(x.id) === canonId(id));
+      if (!ev) continue;
+      const st = getEventDateKey(ev);
+      const en = ev.endDateKey && ev.endDateKey > st ? ev.endDateKey : st;
+      if (!start || st < start) start = st;
+      if (!end || en > end) end = en;
+    }
+    return { start, end };
+  }
+  function spanCleanup() {
+    window.removeEventListener("pointermove", onSpanMove);
+    window.removeEventListener("pointerup", endSpanDrag);
+    window.removeEventListener("pointercancel", cancelSpanDrag);
+    window.removeEventListener("keydown", onSpanKey, true);
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = null;
+    if (preventTouchScrollRef.current) {
+      document.removeEventListener("touchmove", preventTouchScrollRef.current);
+      preventTouchScrollRef.current = null;
+    }
+    spanRef.current?.ghost?.remove();
+    document.body.style.userSelect = "";
+    setSpanDrag(null);
+    setSpanDrop(null);
+  }
+  function onSpanPointerDown(e: ReactPointerEvent<HTMLElement>, ids: string[]) {
+    if (!canEdit) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("button, a")) return;
+    const node = e.currentTarget as HTMLElement;
+    const anchor = node.closest("[data-isodate]")?.getAttribute("data-isodate");
+    const range = spanRangeOf(ids);
+    if (!anchor || !range.start) return;
+    // 칸의 범위 선택(시트식 드래그)까지 같이 시작되지 않게 — 띠는 칸 위에 얹혀 있어 신호가 칸으로 올라간다.
+    e.stopPropagation();
+    const rect = node.getBoundingClientRect();
+    const isTouch = e.pointerType !== "mouse";
+    justDraggedRef.current = false;
+    spanRef.current = {
+      ids,
+      anchor,
+      start: range.start,
+      end: range.end,
+      startX: e.clientX,
+      startY: e.clientY,
+      offX: e.clientX - rect.left,
+      offY: e.clientY - rect.top,
+      node,
+      started: false,
+      armed: !isTouch,
+      isTouch,
+      ghost: null,
+      label: null,
+      delta: 0,
+      overCell: true
+    };
+    if (isTouch) {
+      // 카드 드래그와 같은 문법 — 약 260ms 제자리로 누르면 집기, 그 전에 움직이면 스크롤.
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = setTimeout(() => {
+        const d = spanRef.current;
+        if (!d || d.started) return;
+        d.armed = true;
+        hapticTick();
+        const block = (ev: TouchEvent) => ev.preventDefault();
+        preventTouchScrollRef.current = block;
+        document.addEventListener("touchmove", block, { passive: false });
+      }, 260);
+    }
+    window.addEventListener("pointermove", onSpanMove);
+    window.addEventListener("pointerup", endSpanDrag, { once: true });
+    window.addEventListener("pointercancel", cancelSpanDrag, { once: true });
+    window.addEventListener("keydown", onSpanKey, true);
+  }
+  function onSpanMove(ev: PointerEvent) {
+    const d = spanRef.current;
+    if (!d) return;
+    if (!d.started) {
+      const dist = Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY);
+      if (d.isTouch && !d.armed) {
+        if (dist > 10) {
+          spanCleanup();
+          spanRef.current = null;
+        }
+        return;
+      }
+      if (dist < 6) return;
+      d.started = true;
+      closeZoomPeek();
+      const r = d.node.getBoundingClientRect();
+      const inner = d.node.cloneNode(true) as HTMLElement;
+      // 띠 조각은 칸 안 절대배치(top·left·right 인라인)라 그대로 복제하면 유령 밖으로 튄다 — 흐름으로 되돌린다.
+      Object.assign(inner.style, {
+        position: "relative",
+        top: "0",
+        left: "0",
+        right: "0",
+        margin: "0",
+        width: "100%",
+        transform: "none"
+      });
+      const ghost = document.createElement("div");
+      ghost.className = "event-drag-ghost span-drag-ghost";
+      ghost.style.width = `${Math.max(r.width, 140)}px`;
+      ghost.style.left = `${r.left}px`;
+      ghost.style.top = `${r.top}px`;
+      ghost.style.setProperty("--cal-zoom", String(calZoomRef.current * panelFitRef.current));
+      ghost.appendChild(inner);
+      const label = document.createElement("div");
+      label.className = "span-ghost-label";
+      label.textContent = `${formatShortDate(d.start)} ~ ${formatShortDate(d.end)}`;
+      ghost.appendChild(label);
+      document.body.appendChild(ghost);
+      d.ghost = ghost;
+      d.label = label;
+      document.body.style.userSelect = "none";
+      setSpanDrag({ ids: d.ids });
+    }
+    if (d.ghost) {
+      d.ghost.style.left = `${ev.clientX - d.offX}px`;
+      d.ghost.style.top = `${ev.clientY - d.offY}px`;
+    }
+    const under = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+    const iso = under?.closest(".studio-month-grid [data-isodate]")?.getAttribute("data-isodate") ?? null;
+    d.overCell = Boolean(iso);
+    if (!iso) {
+      setSpanDrop(null);
+      return;
+    }
+    const delta = daysBetweenIso(d.anchor, iso);
+    const next = { start: addDaysIso(d.start, delta), end: addDaysIso(d.end, delta) };
+    if (d.label) d.label.textContent = `${formatShortDate(next.start)} ~ ${formatShortDate(next.end)}`;
+    d.delta = delta;
+    setSpanDrop((prev) =>
+      delta === 0 ? null : prev && prev.start === next.start && prev.end === next.end ? prev : next
+    );
+  }
+  function onSpanKey(ev: KeyboardEvent) {
+    if (ev.key !== "Escape") return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    cancelSpanDrag();
+  }
+  function cancelSpanDrag() {
+    const d = spanRef.current;
+    if (d?.started) justDraggedRef.current = true;
+    spanCleanup();
+    spanRef.current = null;
+  }
+  function endSpanDrag() {
+    const d = spanRef.current;
+    spanCleanup();
+    spanRef.current = null;
+    if (!d?.started) return;
+    justDraggedRef.current = true; // 놓은 직후의 click(고르기)은 한 번 무시
+    if (!d.overCell || d.delta === 0) return;
+    moveSpanBy(d.ids, d.delta);
+  }
+  function moveSpanBy(ids: string[], delta: number) {
+    const live = eventsRef.current;
+    const members = ids
+      .map((id) => live.find((x) => canonId(x.id) === canonId(id)))
+      .filter((x): x is StudioScheduleEvent => Boolean(x));
+    if (members.length === 0) return;
+    const memberSet = new Set(members.map((m) => canonId(m.id)));
+    const plans = members.map((m) => {
+      const from = getEventDateKey(m);
+      const to = addDaysIso(from, delta);
+      // 도착일의 순서: 옮겨 온 것이 맨 위(이어진 것·띠는 원래 위에 선다), 나머지는 지금 순서 그대로.
+      const others = getEventsForDate(live, to).filter(
+        (x) => !memberSet.has(canonId(x.id)) && getEventDateKey(x) === to
+      );
+      return {
+        id: m.id,
+        from,
+        to,
+        fromOrderedIds: getEventsForDate(live, from).map((x) => x.id),
+        orderedIds: [m.id, ...others.map((x) => x.id)]
+      };
+    });
+    const orderPos = new Map<string, number>();
+    for (const p of plans) p.orderedIds.forEach((eid, i) => orderPos.set(canonId(eid), i));
+    pushUndo({
+      type: "group",
+      actions: plans.map((p) => ({
+        type: "move" as const,
+        holder: { id: p.id },
+        fromDate: p.from,
+        toDate: p.to,
+        fromOrderedIds: p.fromOrderedIds
+      }))
+    });
+    flipArmedRef.current = true;
+    setEvents((prev) =>
+      prev.map((ev) => {
+        const c = canonId(ev.id);
+        let next = ev;
+        if (memberSet.has(c)) {
+          const from = getEventDateKey(ev);
+          next = {
+            ...next,
+            startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, addDaysIso(from, delta)),
+            endDateKey: next.endDateKey ? addDaysIso(next.endDateKey, delta) : next.endDateKey
+          };
+        }
+        const pos = orderPos.get(c);
+        if (pos !== undefined) next = { ...next, sortOrder: pos };
+        return next;
+      })
+    );
+    const range = spanRangeOf(ids);
+    const newStart = addDaysIso(range.start, delta);
+    const newEnd = addDaysIso(range.end, delta);
+    setSelectedDate(newStart);
+    flashToast(
+      newStart === newEnd
+        ? `${formatShortDate(newStart)}로 옮겼어요`
+        : `${formatShortDate(newStart)} ~ ${formatShortDate(newEnd)}로 옮겼어요`
+    );
+    for (const p of plans) {
+      enqueueMovePersist({ id: p.id, sourceDate: p.from, targetDate: p.to, orderedIds: p.orderedIds });
+    }
+  }
+
   function onPillPointerDown(e: ReactPointerEvent<HTMLDivElement>, event: StudioScheduleEvent) {
     if (!canEdit) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     // 카드 안 버튼(삭제 등)을 누른 경우엔 드래그하지 않는다.
     if ((e.target as HTMLElement).closest("button")) return;
+    // 띠·여러 날·이어진 일정은 묶음 드래그로(위 onSpanPointerDown) — 한 장만 옮겨 연결이 끊기지 않게.
+    const spanIds = spanMembersOf(event);
+    if (spanIds) {
+      onSpanPointerDown(e, spanIds);
+      return;
+    }
     const node = e.currentTarget as HTMLElement;
     const rect = node.getBoundingClientRect();
     justDraggedRef.current = false;
@@ -4723,6 +4993,17 @@ export function StudioShell({
   // 그 사이 사라졌으면 null — 항목은 양쪽 스택 어디에도 남지 않고 소멸(충돌 가드).
   function applyHistoryAction(action: UndoAction, mode: "undo" | "redo"): UndoAction | null {
     const keyHint = mode === "undo" ? "Ctrl+Z" : "Ctrl+Shift+Z";
+    if (action.type === "group") {
+      // 묶음 이동(띠·이어진 일정) — 구성원을 역순으로 되돌리고, 역연산도 묶음 하나로 돌려준다.
+      const inverses: UndoAction[] = [];
+      for (const a of [...action.actions].reverse()) {
+        const inv = applyHistoryAction(a, mode);
+        if (inv) inverses.push(inv);
+      }
+      if (inverses.length === 0) return null;
+      flashToast(mode === "undo" ? "이동 취소됨 (Ctrl+Z)" : "다시 이동함 (Ctrl+Shift+Z)");
+      return { type: "group", actions: inverses };
+    }
     if (action.type === "move") {
       // 드래그 이동 되돌리기 — 원래 날짜·원래 순서로 되돌린다(같은 날 안 순서만 바꾼 경우도 포함).
       // 방금 만든 카드(temp id)를 옮겼다면 그 사이 실제 id로 바뀌었을 수 있다 → 매핑으로 해소.
@@ -6820,8 +7101,8 @@ export function StudioShell({
               const gapOpen = (idx: number) => liIdx !== null && liIdx === idx && !dropIsNoop;
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const visibleDayMark = getDayMark(cell.isoDate);
-              // 주 행 단위 깊이 — 같은 주의 띠 없는 칸도 같은 만큼 비워 이어진 일정이 칸마다 같은 높이에 선다.
-              const cellLaneDepth = supportWeekDepth[Math.floor(cellIndex / 7)] ?? 0;
+              // 띠가 지나는 칸만 비우고, 이어진 일정이 지나는 칸끼리는 같은 높이(supportDepthByCell).
+              const cellLaneDepth = supportCellDepth[cellIndex] ?? 0;
 
               const dayClass = [
                 "studio-day",
@@ -6841,7 +7122,11 @@ export function StudioShell({
                 // 시트식 범위 선택(시각 강조). React state라 카드 드래그 리렌더에도 유지.
                 rangeSelected.has(cellIndex) ? "cell-range-selected" : "",
                 // 검색 결과에서 온 날(2026-09-18) — 잠시 밝힘. DOM 클래스는 리렌더에 지워져 state로.
-                flashDate === cell.isoDate ? "cell-flash" : ""
+                flashDate === cell.isoDate ? "cell-flash" : "",
+                // 묶음 드래그의 놓을 범위 — 옅은 칠 + 시작·끝 칸 꺾쇠(아래 span-drop-cap).
+                spanDrop && cell.isoDate >= spanDrop.start && cell.isoDate <= spanDrop.end ? "span-drop-in" : "",
+                spanDrop?.start === cell.isoDate ? "span-drop-start" : "",
+                spanDrop?.end === cell.isoDate ? "span-drop-end" : ""
               ]
                 .filter(Boolean)
                 .join(" ");
@@ -6952,8 +7237,11 @@ export function StudioShell({
                           // 고르면 테두리(클릭=고르기라 표시가 없으면 뭘 골랐는지 모른다), 편집창이
                           // 떠 있으면 같은 테두리를 그대로 — 2026-09-19.
                           selectedEventId === s.id ? (editorVisible ? " is-editing" : " is-selected") : ""
+                        }${spanDrag?.ids.some((x) => canonId(x) === canonId(s.id)) ? " span-drag-src" : ""}${
+                          canEdit ? " span-draggable" : ""
                         }`}
                         data-supportid={s.id}
+                        onPointerDown={canEdit ? (e) => onSpanPointerDown(e, [s.id]) : undefined}
                         key={s.id}
                         title={s.publicTitle} /* 말줄임된 제목의 전문(호버 툴팁) */
                         /* 그룹 호버는 DOM 클래스 토글(lib/ui/band-hover) — React 상태였을 땐 띠 위를
@@ -6962,6 +7250,11 @@ export function StudioShell({
                         onMouseLeave={(e) => setBandHover(e.currentTarget.closest(".studio-shell"), s.id, false)}
                         onClick={(e) => {
                           e.stopPropagation();
+                          // 방금 끌어 옮겼다면 이 클릭(고르기)은 1회 무시 — 카드와 같은 규칙.
+                          if (justDraggedRef.current) {
+                            justDraggedRef.current = false;
+                            return;
+                          }
                           selectOrCloseEvent(s);
                         }}
                         onDoubleClick={(e) => {
@@ -6996,6 +7289,16 @@ export function StudioShell({
                       </div>
                     );
                   })}
+                  {spanDrop && (spanDrop.start === cell.isoDate || spanDrop.end === cell.isoDate) ? (
+                    <span aria-hidden="true" className="span-drop-caps">
+                      {spanDrop.start === cell.isoDate ? (
+                        <b className="span-drop-cap is-start">{formatShortDate(spanDrop.start)} 시작</b>
+                      ) : null}
+                      {spanDrop.end === cell.isoDate && spanDrop.end !== spanDrop.start ? (
+                        <b className="span-drop-cap is-end">{formatShortDate(spanDrop.end)} 끝</b>
+                      ) : null}
+                    </span>
+                  ) : null}
                   <div className="studio-day-head">
                     <strong className={numClass}>{cell.dayOfMonth}</strong>
                     {visibleDayMark?.name ? (
@@ -7104,6 +7407,7 @@ export function StudioShell({
                         joinLeft ? "link-join-left" : "",
                         draggable ? "draggable" : "",
                         dragEventId === event.id ? "dragging-src" : "",
+                        spanDrag?.ids.some((x) => canonId(x) === canonId(event.id)) ? "span-drag-src" : "",
                         isConnTarget ? "connect-target" : "",
                         isConnHover ? "connect-hover" : "",
                         connDim ? "connect-dim" : "",

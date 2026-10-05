@@ -609,28 +609,67 @@ export function assignSupportLanes<T extends PublicScheduleEvent | StudioSchedul
   return { lanes, count: laneEnds.length };
 }
 
-// 주(달력 한 행)마다 띠가 차지하는 레인 깊이 — 그 행의 **모든 칸**이 이만큼 위를 비운다(2026-10-05 소유자).
-// 예전엔 띠가 지나는 칸만 내려앉아, 띠 없는 옆 칸과 이어진 일정(끈·멀티데이)의 높이가 어긋나 연결이 끊겨 보였다.
-// 구글 캘린더의 종일 행처럼 주 단위로 맞추면 같은 주 안의 일정 첫 줄이 항상 같은 높이에 선다.
-// cells는 7칸씩 한 행(월요일/일요일 시작 무관 — 인덱스로만 자른다). 반환: 행 번호 → 깊이(띠 없으면 0).
-export function supportDepthByWeek<T extends PublicScheduleEvent | StudioScheduleEvent>(
+// 칸마다 띠가 차지하는 레인 깊이(일정 목록이 그만큼 아래에서 시작한다).
+// 원칙(2026-10-05 소유자, 두 번의 왕복 끝에): **띠가 지나는 칸만** 비운다 — 띠 없는 칸에 빈 줄을 두면 칸 높이 낭비다.
+// 단 이어진 일정(멀티데이·link_next 묶음)이 지나는 칸들은 같은 주 안에서 그 묶음의 가장 깊은 칸에 맞춘다 —
+// 안 그러면 띠 있는 칸만 내려앉아 이어진 카드의 높이가 칸마다 어긋나 연결이 끊겨 보인다.
+// (한때 주 전체를 맞췄다가 이어진 일정이 없는 칸까지 비워 되돌렸다.)
+// cells는 7칸씩 한 행. 반환: 칸 인덱스 → 깊이(0이면 비우지 않음).
+export function supportDepthByCell<T extends PublicScheduleEvent | StudioScheduleEvent>(
   cells: { isoDate: string }[],
   events: T[],
   lanes: Map<string, number>
 ): number[] {
-  const rows = Math.ceil(cells.length / 7);
-  const depth = new Array<number>(rows).fill(0);
+  const n = cells.length;
+  const depth = new Array<number>(n).fill(0);
+  const indexOf = new Map(cells.map((c, i) => [c.isoDate, i] as const));
+  const coverIdx = (start: string, end: string) => {
+    const out: number[] = [];
+    for (let i = 0; i < n; i += 1) {
+      const d = cells[i].isoDate;
+      if (d >= start && d <= end) out.push(i);
+    }
+    return out;
+  };
+  // 1) 자기 칸을 지나는 띠의 최고 레인 + 1.
   for (const e of events) {
     if (!e.isSupport) continue;
+    const lane = (lanes.get(e.id) ?? 0) + 1;
+    for (const i of coverIdx(getEventDateKey(e), eventEndKey(e))) if (lane > depth[i]) depth[i] = lane;
+  }
+  if (!depth.some((d) => d > 0)) return depth;
+  // 2) 이어진 묶음마다 '같은 주'의 칸들을 그 묶음 최댓값으로 맞춘다(묶음끼리 칸을 공유하면 번질 수 있어 몇 번 반복).
+  const keys = buildChainKeys(events);
+  const groups = new Map<string, Set<number>>();
+  for (const e of events) {
+    if (e.isSupport) continue;
     const start = getEventDateKey(e);
     const end = eventEndKey(e);
-    const lane = (lanes.get(e.id) ?? 0) + 1;
-    for (let r = 0; r < rows; r += 1) {
-      const first = cells[r * 7]?.isoDate;
-      const last = cells[Math.min(r * 7 + 6, cells.length - 1)]?.isoDate;
-      if (!first || !last) continue;
-      if (start <= last && end >= first && lane > depth[r]) depth[r] = lane;
+    const key = keys.get(e.id) ?? e.id;
+    const multi = end > start;
+    const linked = key !== e.id || Boolean(e.linkNext);
+    if (!multi && !linked) continue;
+    const idx = multi ? coverIdx(start, end) : [indexOf.get(start)].filter((i): i is number => i !== undefined);
+    for (const i of idx) {
+      const g = `${key}|${Math.floor(i / 7)}`;
+      if (!groups.has(g)) groups.set(g, new Set());
+      groups.get(g)!.add(i);
     }
+  }
+  for (let pass = 0; pass < 3; pass += 1) {
+    let changed = false;
+    for (const idx of groups.values()) {
+      if (idx.size < 2) continue;
+      let max = 0;
+      for (const i of idx) if (depth[i] > max) max = depth[i];
+      for (const i of idx) {
+        if (depth[i] < max) {
+          depth[i] = max;
+          changed = true;
+        }
+      }
+    }
+    if (!changed) break;
   }
   return depth;
 }

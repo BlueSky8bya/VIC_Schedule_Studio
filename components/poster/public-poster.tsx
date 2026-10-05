@@ -99,7 +99,7 @@ import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
   assignSupportLanes,
-  supportDepthByWeek,
+  supportDepthByCell,
   buildCalendarMonth,
   buildChainKeys,
   buildPaintGroups,
@@ -905,9 +905,9 @@ export function PublicPoster({
     [schedule.events, today]
   );
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
-  // 주 행마다 띠 깊이 — 그 주 모든 칸이 같은 만큼 비워 이어진 일정 높이가 칸마다 맞는다(supportDepthByWeek).
-  const supportWeekDepth = useMemo(
-    () => supportDepthByWeek(cells, liveEvents, supportLanes.lanes),
+  // 칸마다 띠 깊이 — 띠가 지나는 칸만 비우고, 이어진 일정이 지나는 칸끼리만 같은 높이로 맞춘다(supportDepthByCell).
+  const supportCellDepth = useMemo(
+    () => supportDepthByCell(cells, liveEvents, supportLanes.lanes),
     [cells, liveEvents, supportLanes]
   );
   // (띠 줄 수 "주별" 계산은 칸별 계산으로 대체 — 2026-09-02. 띠가 안 지나가는 칸까지 주 최대값
@@ -2985,8 +2985,8 @@ export function PublicPoster({
     const covering = getEventsForDate(liveEvents, cell.isoDate);
     const supportHere = covering.filter((e) => e.isSupport);
     const events = covering.filter((e) => !e.isSupport);
-    // 주 행 단위 깊이(같은 주의 띠 없는 칸도 같은 만큼 비운다 — 이어진 일정이 칸마다 같은 높이).
-    const cellLaneDepth = supportWeekDepth[Math.floor(cellIndex / 7)] ?? 0;
+    // 띠가 지나는 칸만 비우고, 이어진 일정이 지나는 칸끼리는 같은 높이(supportDepthByCell).
+    const cellLaneDepth = supportCellDepth[cellIndex] ?? 0;
     const day = classifyDay(cell.isoDate, cell.weekday, today);
     const visibleDayMark = getDayMark(cell.isoDate);
     const showHeaderMark = Boolean(visibleDayMark?.name);

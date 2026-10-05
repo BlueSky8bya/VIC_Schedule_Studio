@@ -61,7 +61,9 @@ export type UndoAction =
       toDate: string;
       /** 옮기기 전, 원래 날짜의 카드 순서(그 카드 포함) — 순서까지 그대로 되돌린다. */
       fromOrderedIds: string[];
-    };
+    }
+  // group: 한 번의 손동작이 여러 카드를 옮긴 것(띠·이어진 일정 묶음 드래그) — Ctrl+Z 한 번에 전부 되돌린다.
+  | { type: "group"; actions: UndoAction[] };
 
 // 두 YYYY-MM-DD 사이의 일수 차이(later - earlier).
 export function daysBetweenIso(start: string, end: string): number {

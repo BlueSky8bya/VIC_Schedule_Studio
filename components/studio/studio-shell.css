@@ -13556,3 +13556,64 @@ html[data-studio-calm] .studio-poster-title span {
 .bottom-float-row[data-dodge="fade"] .cal-zoom-float[data-idle="1"]:focus-within {
   opacity: 1;
 }
+
+/* ── 묶음 드래그(띠·여러 날·이어진 일정, 2026-10-05) ─────────────────────────────────────────
+   놓을 자리 = 카드 드래그의 '놓을 칸'과 같은 초록. 가로로 긴 것은 카드 모양을 다 그리면 다른 일정과
+   겹치므로 범위는 아주 옅게 칠하고, 시작 칸 왼쪽·끝 칸 오른쪽에 굵은 선 + 날짜 꺾쇠만 세운다.
+   꺾쇠는 칸 아래쪽(날짜 숫자·띠와 안 겹치게). 원래 자리는 흐리게. */
+.span-draggable {
+  cursor: grab;
+}
+.span-drag-src {
+  opacity: 0.32;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.studio-day.span-drop-in {
+  background: #effaf4 !important;
+}
+.studio-day.span-drop-start {
+  box-shadow: inset 3px 0 0 #57c98a;
+}
+.studio-day.span-drop-end {
+  box-shadow: inset -3px 0 0 #57c98a;
+}
+.studio-day.span-drop-start.span-drop-end {
+  box-shadow: inset 3px 0 0 #57c98a, inset -3px 0 0 #57c98a;
+}
+.span-drop-caps {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  left: 6px;
+  z-index: 6;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+.span-drop-cap {
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: #2f9e64;
+  box-shadow: 0 2px 6px rgb(40 120 80 / 25%);
+  color: #fff;
+  font-size: var(--text-label);
+  font-weight: 900;
+  white-space: nowrap;
+}
+.span-drop-cap.is-end {
+  margin-left: auto;
+}
+.span-drag-ghost .span-ghost-label {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: #1f2937;
+  color: #fff;
+  font-size: var(--text-label);
+  font-weight: 800;
+  white-space: nowrap;
+}
+html[data-theme="dark"] .studio-day.span-drop-in {
+  background: rgb(87 201 138 / 12%) !important;
+}
