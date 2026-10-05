@@ -767,7 +767,6 @@ const THEME_SONG: Record<string, string> = {
   newyear: "석별의 정",
   love: "결혼 행진곡",
   children: "반짝반짝 작은 별",
-  spring: "뻐꾸기",
   memorial: "어메이징 그레이스",
   national: "애국가",
   gaecheon: "애국가",
@@ -778,10 +777,6 @@ const THEME_SONG: Record<string, string> = {
   aprilfools: "엔터테이너", // 장난스러운 래그타임
   arbor: "비발디 '봄'", // 새싹
   rest: "브람스 자장가", // 푹 쉬는 날
-  dongji: "고요한 밤", // 가장 긴 밤
-  winter: "고요한 밤",
-  summer: "노를 저어라", // 물놀이
-  autumn: "그린슬리브스", // 쓸쓸한 가을
   bok: "올드 맥도날드", // 농장 친구들
   hangul: "도레미 계단", // 가나다라 = 도레미파
   milestone: "캐논", // 축하·기념
@@ -791,7 +786,7 @@ const THEME_SONG: Record<string, string> = {
 const ALL_MELODIES = [...MELODIES, ...THEME_MELODIES];
 const RANDOM_POOL = MELODIES.map((m, i) => i).filter((i) => !Object.values(THEME_SONG).includes(MELODIES[i].title));
 const STREAK_GAP_MS = 2500;
-let tapStreak = { key: "", at: 0, i: 0, mel: 0 };
+let tapStreak = { key: "", at: 0, i: 0, mel: 0, moved: false }; // moved = 첫 곡을 끝내고 무작위 곡으로 넘어감
 let lastRandomMel = -1;
 /** 곡 전체 음 — 절 수만큼 되풀이(2절·3절까지 이어 친다). */
 function melodySteps(m: Melody): Step[] {
@@ -822,7 +817,7 @@ export function playCelebrationTap(
       mel = choices[Math.floor(Math.random() * choices.length)];
       lastRandomMel = mel;
     }
-    tapStreak = { key, at: now, i: 0, mel };
+    tapStreak = { key, at: now, i: 0, mel, moved: false };
     if (grand) {
       playCelebration(sound);
       return { kind: "first" };
@@ -831,9 +826,21 @@ export function playCelebrationTap(
     tapStreak.at = now;
     if (sound === "birthday" && now < songUntil) return { kind: "busy" };
   }
-  const birthday = sound === "birthday";
-  const notes: Step[] = birthday ? BIRTHDAY_NOTES.map((n) => n[0]) : melodySteps(ALL_MELODIES[tapStreak.mel]);
-  const step = notes[tapStreak.i % notes.length];
+  // 곡이 끝나면(2026-10-06 소유자) 같은 곡을 되풀이하지 않고 무작위로 다른 곡으로 넘어간다 — 날에 매인 곡(성탄 징글벨 등)도
+  // 한 번 끝나면 무작위 곡으로 이어진다. 넘어간 곡의 첫 음에 다시 곡 이름 쪽지.
+  let birthday = sound === "birthday" && !tapStreak.moved;
+  let notes: Step[] = birthday ? BIRTHDAY_NOTES.map((n) => n[0]) : melodySteps(ALL_MELODIES[tapStreak.mel]);
+  if (tapStreak.i >= notes.length) {
+    const choices = RANDOM_POOL.filter((i) => i !== tapStreak.mel && i !== lastRandomMel);
+    const next = choices.length > 0 ? choices[Math.floor(Math.random() * choices.length)] : RANDOM_POOL[0];
+    lastRandomMel = next;
+    tapStreak.mel = next;
+    tapStreak.i = 0;
+    tapStreak.moved = true; // 생일 노래 다음부터도 일반 곡
+    birthday = false;
+    notes = melodySteps(ALL_MELODIES[next]);
+  }
+  const step = notes[tapStreak.i];
   const title = tapStreak.i === 0 ? (birthday ? "생일 축하합니다" : ALL_MELODIES[tapStreak.mel].title) : undefined;
   tapStreak.i += 1;
   pendingNotes = Array.isArray(step) ? step : [step];
