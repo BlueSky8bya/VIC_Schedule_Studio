@@ -2,7 +2,7 @@
 // 앱의 모든 소리는 이 한 곳을 거친다(진동의 lib/ui/haptics.ts와 같은 '두꺼비집' 구조).
 //
 // 통과해야 울리는 자물쇠:
-//   1) 효과음 전체 켜기(vic.sound = 'on') — **기본 꺼짐**: 방송 중 편집실·시청자 화면 소리가 송출에 섞이거나,
+//   1) 효과음 전체 켜기(vic.sound) — **기본 켜짐**(2026-10-06 소유자 결정, 'off'를 고른 기기만 끔). 방송 중엔 편집실·시청자 화면 소리가 송출에 섞이거나,
 //      시청자가 예상 못 한 소리에 놀랄 수 있다.
 //   2) 그 소리의 종류가 켜져 있나(축하·누름·편집·알림 — vic.soundCats, 기본 전부 켜짐).
 //   3) '다른 탭에 있을 땐 조용히'(vic.soundQuietHidden, 기본 켜짐) — 탭이 안 보일 때(카운트다운 공개 등)는 울리지 않는다.
@@ -107,7 +107,7 @@ function write(key: string, value: string): void {
 }
 
 export function soundEnabled(): boolean {
-  return read(KEY) === "on";
+  return read(KEY) !== "off"; // 기본 켜짐 — 끈 적 없는 기기는 소리가 난다
 }
 export function setSoundEnabled(on: boolean): void {
   write(KEY, on ? "on" : "off");

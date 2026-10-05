@@ -1,6 +1,7 @@
 /* 설정 '글꼴'의 눈누·네이버 글꼴(lib/ui/font-prefs.ts) — 선언만 있고, 고른 글꼴로 글자를 그릴 때만 파일을 받는다.
-   이름 앞 "VIC "는 기기에 같은 이름의 글꼴이 깔려 있어도 이 파일을 쓰게 하려는 것. 굵은 파일이 있으면
-   600 이상에 붙인다(브라우저가 굵게 흉내 내면 획이 뭉개진다). 구글 글꼴은 next/font(app/layout.tsx). */
+   이름 앞 "VIC "는 기기에 같은 이름의 글꼴이 깔려 있어도 이 파일을 쓰게 하려는 것. 규칙: 보통 파일은 100~500,
+   굵은 파일은 600 이상 — 설정 '글씨 굵기'(가늘게 400 · 보통 700 · 굵게 800+외곽선)가 어느 글꼴에서나 세 단계로 갈린다.
+   굵은 파일이 없으면 보통 파일만 100~500에 두어 600+는 브라우저가 굵게 그린다. 구글 글꼴은 next/font(app/layout.tsx). */
 @font-face {
   font-family: "VIC NanumSquareRound";
   src: url("https://hangeul.pstatic.net/hangeul_static/webfont/NanumSquareRound/NanumSquareRoundR.woff2") format("woff2");
@@ -22,13 +23,13 @@
 @font-face {
   font-family: "VIC TmoneyRoundWind";
   src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-07@1.0/TmoneyRoundWindRegular.woff") format("woff");
-  font-weight: 100 700;
+  font-weight: 100 500;
   font-display: swap;
 }
 @font-face {
   font-family: "VIC TmoneyRoundWind";
   src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-07@1.0/TmoneyRoundWindExtraBold.woff") format("woff");
-  font-weight: 800 900;
+  font-weight: 600 900;
   font-display: swap;
 }
 @font-face {
@@ -43,11 +44,12 @@
   font-weight: 600 900;
   font-display: swap;
 }
-/* 쿠키런은 굵은 파일이 없다 — 본래 굵은 글꼴이라 모든 굵기에 한 파일(흉내 굵기 없음). */
+/* 쿠키런은 굵은 파일이 없다 — 가는 쪽(100~500)에만 붙여, 보통(600+)은 브라우저가 굵게 그린다.
+   모든 굵기에 걸어 두면 가늘게·보통·굵게가 똑같아 보였다(2026-10-06 소유자 "쿠키런은 차이가 없다"). */
 @font-face {
   font-family: "VIC CookieRun";
   src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/CookieRun-Regular.woff") format("woff");
-  font-weight: 100 900;
+  font-weight: 100 500;
   font-display: swap;
 }
 @font-face {

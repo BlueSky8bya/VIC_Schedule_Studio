@@ -159,8 +159,8 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     hapticTick();
   }, []);
 
-  // 효과음(lib/ui/sfx.ts) — 기본 꺼짐(방송 송출에 섞일 수 있다). 켜는 순간 한 번 들려줘 바로 확인되게.
-  const [soundOn, setSoundOn] = useState(false);
+  // 효과음(lib/ui/sfx.ts) — 기본 켜짐(2026-10-06). 켜는 순간 한 번 들려줘 바로 확인되게.
+  const [soundOn, setSoundOn] = useState(true);
   useEffect(() => {
     setSoundOn(soundEnabled());
   }, []);

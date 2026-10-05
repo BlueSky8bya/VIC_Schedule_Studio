@@ -9,7 +9,7 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick, Pointer, CircleDot, ToggleRight, ToggleLeft, PanelTopOpen, X, ChevronLeft, ChevronRight, Grab, ArrowDownToLine, Save, Link2, Unlink, Undo2, Redo2, LockOpen, CircleAlert } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { playSfx, type SfxName, type SoundCategory, type SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
@@ -49,7 +49,7 @@ export type StudioSettingsProps = {
   onChangeTextPx: (px: number) => void;
   // 글꼴(앱 전체)·글씨 굵기(달력 일정 글자) — lib/ui/font-prefs. 모든 역할·시청자 화면에서 같은 기기 설정.
   font: FontSettings;
-  // 소리(lib/ui/sfx) — 효과음 전체·음량·종류별·다른 탭. 기본 꺼짐. showEdit = 편집 소리 줄(편집실 편집 권한).
+  // 소리(lib/ui/sfx) — 효과음 전체·음량·종류별·다른 탭. 기본 켜짐. showEdit = 편집 소리 줄(편집실 편집 권한).
   sound: SoundSettings;
   // 던져서 삭제 — 편집실(편집 권한)에서만 넘긴다. 없으면 줄이 없다.
   flingDelete?: boolean | null;
@@ -98,28 +98,44 @@ const FONT_GROUPS: { label: string; kinds: FontKind[] }[] = [
 ];
 
 // 소리 모아 듣기 — 기능마다 다른 소리를 한자리에서(음 개수·리듬·오르내림으로 구분된다, lib/ui/sfx 근거 주석).
-const SOUND_SAMPLES: { name: SfxName; label: string; edit?: boolean }[] = [
-  { name: "tap", label: "누르기" },
-  { name: "tab", label: "고르기" },
-  { name: "toggle-on", label: "켜기" },
-  { name: "toggle-off", label: "끄기" },
-  { name: "open", label: "열기" },
-  { name: "close", label: "닫기" },
-  { name: "page", label: "다음 달" },
-  { name: "page-prev", label: "이전 달" },
-  { name: "heart-on", label: "하트" },
-  { name: "lift", label: "집기", edit: true },
-  { name: "drop", label: "놓기", edit: true },
-  { name: "save", label: "저장", edit: true },
-  { name: "link", label: "잇기", edit: true },
-  { name: "unlink", label: "끊기", edit: true },
-  { name: "undo", label: "되돌리기", edit: true },
-  { name: "redo", label: "다시", edit: true },
-  { name: "delete", label: "삭제", edit: true },
-  { name: "unlock", label: "잠금 해제" },
-  { name: "error", label: "실패" },
-  { name: "fanfare", label: "축하" },
-  { name: "birthday", label: "생일 노래" }
+// 2026-10-06 소유자: 생일 노래는 '몰래 하는 축하'라 견본에서 뺀다 · 묶음별 고른 폭 타일로(글꼴 타일과 같은 문법).
+const SOUND_GROUPS: { label: string; edit?: boolean; items: { name: SfxName; label: string; icon: ReactNode }[] }[] = [
+  {
+    label: "누름·이동",
+    items: [
+      { name: "tap", label: "누르기", icon: <Pointer size={15} /> },
+      { name: "tab", label: "고르기", icon: <CircleDot size={15} /> },
+      { name: "toggle-on", label: "켜기", icon: <ToggleRight size={15} /> },
+      { name: "toggle-off", label: "끄기", icon: <ToggleLeft size={15} /> },
+      { name: "open", label: "열기", icon: <PanelTopOpen size={15} /> },
+      { name: "close", label: "닫기", icon: <X size={15} /> },
+      { name: "page-prev", label: "이전 달", icon: <ChevronLeft size={15} /> },
+      { name: "page", label: "다음 달", icon: <ChevronRight size={15} /> }
+    ]
+  },
+  {
+    label: "편집",
+    edit: true,
+    items: [
+      { name: "lift", label: "집기", icon: <Grab size={15} /> },
+      { name: "drop", label: "놓기", icon: <ArrowDownToLine size={15} /> },
+      { name: "save", label: "저장", icon: <Save size={15} /> },
+      { name: "delete", label: "삭제", icon: <Trash2 size={15} /> },
+      { name: "link", label: "잇기", icon: <Link2 size={15} /> },
+      { name: "unlink", label: "끊기", icon: <Unlink size={15} /> },
+      { name: "undo", label: "되돌리기", icon: <Undo2 size={15} /> },
+      { name: "redo", label: "다시", icon: <Redo2 size={15} /> }
+    ]
+  },
+  {
+    label: "반응",
+    items: [
+      { name: "heart-on", label: "하트", icon: <Heart size={15} /> },
+      { name: "unlock", label: "잠금 해제", icon: <LockOpen size={15} /> },
+      { name: "error", label: "실패", icon: <CircleAlert size={15} /> },
+      { name: "fanfare", label: "축하", icon: <PartyPopper size={15} /> }
+    ]
+  }
 ];
 
 export type FontSettings = {
@@ -243,6 +259,8 @@ export function StudioSettingsList({
   const [activeTab, setActiveTab] = useState<TabKey>("screen");
   // 글꼴 미리보기 — 타일에 마우스를 올리면 아래 미리보기만 그 글꼴로(고르기 전 둘러보기), 누르면 고른다.
   const [fontPeek, setFontPeek] = useState<string | null>(null);
+  // 소리 견본 — 누른 타일이 소리 나는 동안 한 번 통 튀고 물결이 퍼진다.
+  const [playingSample, setPlayingSample] = useState<SfxName | null>(null);
   const previewFont = FONT_STACKS[fontPeek ?? font.id] || undefined;
   // 타일 견본 글자는 자기 글꼴로 그린다 — 글꼴 묶음이 화면에 들어올 때 한꺼번에 받고(설정을 연 사람만),
   // 받기 전엔 반짝이는 자리표시로 둔다(대체 글꼴로 그렸다가 바뀌며 튀지 않게).
@@ -608,11 +626,32 @@ export function StudioSettingsList({
             <RowLabel icon={<MousePointerClick size={15} />} tone="water">
               소리 모아 듣기
             </RowLabel>
-            <div className="rhh-font-grid rhh-sound-grid" data-act="sound-sample">
-              {SOUND_SAMPLES.filter((x) => !x.edit || sound.showEdit).map((x) => (
-                <button disabled={!sound.on} key={x.name} onClick={() => playSfx(x.name, { force: true })} type="button">
-                  {x.label}
-                </button>
+            <div className="rhh-sound-board" data-act="sound-sample">
+              {SOUND_GROUPS.filter((g) => !g.edit || sound.showEdit).map((g) => (
+                <div className="rhh-sound-group" key={g.label}>
+                  <span className="rhh-font-group-label">{g.label}</span>
+                  <div className="rhh-sound-tiles">
+                    {g.items.map((x) => (
+                      <button
+                        className={`rhh-sound-tile${playingSample === x.name ? " playing" : ""}`}
+                        disabled={!sound.on}
+                        key={x.name}
+                        onClick={() => {
+                          playSfx(x.name, { force: true });
+                          setPlayingSample(null);
+                          requestAnimationFrame(() => setPlayingSample(x.name));
+                        }}
+                        onAnimationEnd={() => setPlayingSample((cur) => (cur === x.name ? null : cur))}
+                        type="button"
+                      >
+                        <span aria-hidden="true" className="rhh-sound-ico">
+                          {x.icon}
+                        </span>
+                        <span className="rhh-sound-label">{x.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
