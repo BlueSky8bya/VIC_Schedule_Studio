@@ -46,7 +46,7 @@ html[data-reduce-motion] .broadcast-panel > * {
 }
 .bp-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--text-title);
   font-weight: 900;
   color: #4b4468;
   letter-spacing: 0.01em;
@@ -77,7 +77,7 @@ html[data-reduce-motion] .broadcast-panel > * {
   transform: rotate(90deg);
 }
 .bp-close:active {
-  transform: rotate(90deg) scale(0.9);
+  transform: rotate(90deg) scale(var(--press-scale));
 }
 html[data-reduce-motion] .bp-close:hover,
 html[data-reduce-motion] .bp-close:active {
@@ -88,7 +88,7 @@ html[data-reduce-motion] .bp-close:active {
 .bp-picker {
   margin: 12px 16px;
   border: 1px solid #e3ded6;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: #ffffff;
   padding: 10px 14px;
   box-shadow:
@@ -122,7 +122,7 @@ html[data-reduce-motion] .bp-close:active {
   background: rgb(var(--studio-action-rgb) / 8%);
 }
 .bp-month-nav:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 .bp-picker-toggle {
   display: inline-flex;
@@ -142,7 +142,7 @@ html[data-reduce-motion] .bp-close:active {
   background: rgb(var(--studio-action-rgb) / 8%);
 }
 .bp-picker-toggle:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale));
 }
 /* 주 행동(CTA) — 유일하게 '채워진' 버튼. 날짜를 고르면 눌러야 할 곳이 한눈에 보인다. */
 .bp-send {
@@ -169,7 +169,7 @@ html[data-reduce-motion] .bp-close:active {
     inset 0 1px 0 rgb(255 255 255 / 25%);
 }
 .bp-send:active:not(:disabled) {
-  transform: scale(0.95);
+  transform: scale(var(--press-scale));
 }
 .bp-send:disabled {
   background: rgb(var(--studio-action-rgb) / 14%);
@@ -185,7 +185,7 @@ html[data-reduce-motion] .bp-close:active {
 .bp-weekdays span {
   padding: 2px 0;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   color: var(--muted);
 }
@@ -239,7 +239,7 @@ html[data-reduce-motion] .bp-close:active {
   position: absolute;
   top: 3px;
   right: 5px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   color: var(--studio-action-text);
 }
@@ -284,7 +284,7 @@ html[data-reduce-motion] .bp-close:active {
 .bp-mini-title {
   max-width: 100%;
   overflow: hidden;
-  font-size: 10.5px;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 700;
   line-height: 1.25;
@@ -313,7 +313,7 @@ html[data-reduce-motion] .bp-close:active {
   margin: 6px 16px 0;
   padding: 8px 10px 5px;
   border: 1px solid #e3ded6;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: #ffffff;
   box-shadow:
     0 8px 24px rgb(80 70 60 / 14%),
@@ -368,7 +368,7 @@ html[data-reduce-motion] .bp-close:active {
   width: 34px;
   height: 34px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: #6b6486;
   cursor: pointer;
@@ -383,7 +383,7 @@ html[data-reduce-motion] .bp-close:active {
   color: var(--studio-action-text);
 }
 .bp-tool:active:not(:disabled) {
-  transform: scale(0.88);
+  transform: scale(var(--press-scale));
 }
 .bp-tool.on {
   background: linear-gradient(180deg, #8577f2, #6a5ae0);
@@ -486,7 +486,7 @@ body:has(.broadcast-panel) .tag-cpop {
   width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: transparent;
   cursor: pointer;
   transition:
@@ -497,7 +497,7 @@ body:has(.broadcast-panel) .tag-cpop {
   background: rgb(var(--studio-action-rgb) / 10%);
 }
 .bp-width:active {
-  transform: scale(0.88);
+  transform: scale(var(--press-scale));
 }
 /* 점 색 = 현재 펜 색(TSX 인라인) — 굵기 자리에서 색·굵기를 한 번에 확인(상태 가시성). */
 .bp-width i {
@@ -585,7 +585,7 @@ body:has(.broadcast-panel) .tag-cpop {
   gap: 5px;
   padding: 0 10px;
   border: 1px solid rgb(75 68 104 / 13%);
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: #ffffff;
   color: #5d5672;
   font-size: 11.5px;
@@ -601,7 +601,7 @@ body:has(.broadcast-panel) .tag-cpop {
   background: rgb(var(--studio-action-rgb) / 8%);
 }
 .bp-command-button:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 .bp-command-button:disabled {
   opacity: 0.38;
@@ -634,7 +634,7 @@ body:has(.broadcast-panel) .tag-cpop {
   width: 300px;
   padding: 10px 12px;
   border: 1px solid #e3ded6;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: #ffffff;
   box-shadow:
     0 14px 36px rgb(80 70 60 / 22%),
@@ -688,7 +688,7 @@ html[data-reduce-motion] .bp-kbd-help {
   transform: rotate(90deg);
 }
 .bp-kbd-close:active {
-  transform: rotate(90deg) scale(0.9);
+  transform: rotate(90deg) scale(var(--press-scale));
 }
 html[data-reduce-motion] .bp-kbd-close:hover,
 html[data-reduce-motion] .bp-kbd-close:active {
@@ -713,11 +713,11 @@ html[data-reduce-motion] .bp-kbd-close:active {
   padding: 1px 6px;
   border: 1px solid rgb(75 68 104 / 18%);
   border-bottom-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   background: #faf8f5;
   color: #4b4468;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -752,7 +752,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   gap: 7px;
   padding: 26px 10px 9px;
   border: 1px solid rgb(75 68 104 / 10%);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fbfaf8;
 }
 .bp-property-group {
@@ -791,13 +791,13 @@ html[data-reduce-motion] .bp-kbd-close:active {
   flex-direction: column;
   gap: 4px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   color: #55506b; /* 가독성: 라벨·아이콘 대비 상향(연회색 → 본문급) */
 }
 .bp-tool span {
   overflow: hidden;
   max-width: 100%;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   line-height: 1;
   text-overflow: ellipsis;
@@ -847,7 +847,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   gap: 6px;
   padding: 5px 10px 4px;
   border: 1px solid rgb(75 68 104 / 15%);
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: #ffffff;
   color: #5f5874;
   cursor: pointer;
@@ -857,7 +857,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
     transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-current-color:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 .bp-current-color i {
   width: 22px;
@@ -951,7 +951,7 @@ html[data-reduce-motion] .bp-kbd-close:active {
   flex: 0 0 172px;
   padding: 12px;
   border: 1px solid #e3ded6;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: #ffffff;
   box-shadow:
     0 8px 24px rgb(80 70 60 / 14%),
@@ -1017,7 +1017,7 @@ html[data-reduce-motion] .bp-layer-item {
   justify-content: center;
   height: 74px;
   border: 1px solid #eae5dd;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   /* 투명 배경 체커보드 — 그림판 관례 */
   background:
     repeating-conic-gradient(#f1ede7 0% 25%, #ffffff 0% 50%) 0 0 / 14px 14px;
@@ -1044,7 +1044,7 @@ html[data-reduce-motion] .bp-layer-item {
 }
 /* 레이어 이름 — 본문 수준 대비로(연구 아카이브 §5 가독성). 활성이면 더 진하게. */
 .bp-layer-select em {
-  font-size: 12.5px;
+  font-size: var(--text-label);
   font-style: normal;
   font-weight: 800;
   color: #4b4468;
@@ -1053,7 +1053,7 @@ html[data-reduce-motion] .bp-layer-item {
   color: #2f2a45;
 }
 .bp-layer-select:focus-visible {
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   outline: 2px solid var(--violet);
   outline-offset: 2px;
 }
@@ -1122,7 +1122,7 @@ html[data-reduce-motion] .bp-layer-item {
   background: rgb(var(--studio-action-rgb) / 14%);
 }
 .bp-layer-add:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale));
 }
 .bp-layer-add:disabled {
   opacity: 0.5;
@@ -1244,7 +1244,7 @@ html[data-reduce-motion] .bp-layer-item {
   flex: 0 0 52px;
 }
 .bp-layer-thumb-bg {
-  font-size: 20px;
+  font-size: var(--text-display);
 }
 .bp-layer-meta {
   display: flex;
@@ -1325,7 +1325,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
 .bp-lock-hint {
   align-self: flex-start;
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgb(190 18 60 / 7%);
   font-size: 12px;
   font-weight: 700;
@@ -1353,7 +1353,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   height: max-content; /* 카드가 보드보다 길면 inner가 자라 세로 스크롤(캔버스도 같이) */
   padding: 16px;
   border: 1px solid #e0dad1;
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: #ffffff;
   /* 작업대 위 '종이 시트' — 화면의 주인공답게 카드들보다 한 단 깊은 그림자. */
   box-shadow:
@@ -1424,11 +1424,11 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   gap: 6px;
   padding: 4px 8px;
   border: 1px solid rgb(75 68 104 / 18%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(255 255 255 / 94%);
   box-shadow: 0 4px 14px rgb(31 24 59 / 18%);
   color: #3d3757;
-  font-size: 10.5px;
+  font-size: var(--text-micro);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   transform: translate(14px, -30px);
@@ -1458,7 +1458,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
 .bp-region-rect {
   position: absolute;
   border: 1.5px dashed var(--selection-border);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   background: rgb(var(--selection-rgb) / 12%);
   box-shadow: 0 0 0 9999px rgb(31 24 59 / 22%);
   pointer-events: none;
@@ -1475,7 +1475,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   gap: 4px;
   padding: 3px 8px;
   border: 1px solid rgb(var(--selection-rgb) / 45%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #ffffff;
   color: #4c3fd0;
   cursor: pointer;
@@ -1486,7 +1486,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
 }
 
 .bp-region-enter:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 
 /* 확정 막대 — 영역 바로 아래(눈이 방금 그린 사각형에서 그대로 떨어진다). */
@@ -1497,7 +1497,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   gap: 6px;
   padding: 5px;
   border: 1px solid rgb(75 68 104 / 16%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(255 255 255 / 96%);
   box-shadow: 0 6px 18px rgb(31 24 59 / 20%);
 }
@@ -1505,17 +1505,17 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
 .bp-region-bar button {
   padding: 5px 11px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #4c3fd0;
   color: #ffffff;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   transition: transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 
 .bp-region-bar button:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 
 .bp-region-bar button.ghost {
@@ -1619,7 +1619,7 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   width: 20px;
   height: 20px;
   border: 1px solid rgb(75 68 104 / 42%);
-  border-radius: 7px;
+  border-radius: var(--r-xs);
   background: var(--bp-stylus-color);
   color: var(--bp-stylus-ink);
   box-shadow: 0 2px 7px rgb(60 52 80 / 24%);
@@ -1708,7 +1708,7 @@ html[data-reduce-motion] .bp-day-col {
   background: rgb(190 18 60 / 8%);
 }
 .bp-col-x:active {
-  transform: scale(0.9);
+  transform: scale(var(--press-scale));
 }
 /* 선택 표시(피그마 문법) — 다중 선택된 카드에 보라 링. */
 .bp-day-col.sel {
@@ -1798,7 +1798,7 @@ html[data-reduce-motion] .bp-stroke-sel {
   width: 13px;
   height: 13px;
   border: 2px solid #ffffff;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   background: rgb(var(--selection-rgb) / 95%);
   box-shadow: 0 1px 4px rgb(60 50 110 / 35%);
   cursor: nwse-resize;
@@ -2568,7 +2568,7 @@ html[data-reduce-motion] .bp-send {
 }
 
 .bp-layer-item .bp-layer-thumb-bg {
-  font-size: 20px;
+  font-size: var(--text-display);
 }
 
 .bp-layer-actions {

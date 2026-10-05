@@ -16,7 +16,7 @@
   line-height: inherit;
   white-space: nowrap;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 }
 .month-title-text {
   position: relative;
@@ -34,7 +34,7 @@
   bottom: -0.08em;
   height: 0.09em;
   min-height: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, transparent, var(--selection-border) 18%, var(--selection-border) 82%, transparent);
   opacity: 0;
   transform: scaleX(0.3);
@@ -64,7 +64,7 @@
   transform: scaleX(1);
 }
 .month-title-btn:active .month-title-text {
-  transform: translateY(0) scale(0.985);
+  transform: translateY(0) scale(var(--press-scale-lg));
 }
 .month-title-btn:focus-visible {
   outline: 2px solid var(--selection-border);
@@ -110,7 +110,7 @@
 .is-pop .mp-panel {
   position: fixed;
   width: var(--mp-w);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   transform-origin: top center;
   animation: mp-pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease-enter)) both;
 }
@@ -320,7 +320,7 @@
   place-items: center;
   min-height: 44px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--ink);
   font-size: 14px;
@@ -381,7 +381,7 @@
   background: var(--selection-fill);
   color: var(--selection-border);
   font: inherit;
-  font-size: 13.5px;
+  font-size: var(--text-body);
   font-weight: 900;
   cursor: pointer;
   transition:
@@ -404,7 +404,7 @@
   opacity: 0.85;
 }
 .mp-today-btn:active {
-  transform: scale(0.98);
+  transform: scale(var(--press-scale));
 }
 .mp-today-btn:focus-visible {
   outline: 2px solid var(--selection-border);
@@ -444,7 +444,7 @@
   box-shadow: var(--shadow-3);
 }
 .today-fab:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 .today-fab:focus-visible {
   outline: 2px solid var(--selection-border);

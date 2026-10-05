@@ -598,7 +598,7 @@ html[data-theme="dark"] .agenda-detail-sheet .dt-when { background: rgb(var(--te
 html[data-theme="dark"] .agenda-detail-sheet.is-teaser .dt-hope { background: rgb(var(--teaser-rgb) / 18%); color: var(--teaser-soft); }
 html[data-theme="dark"] .agenda-detail-sheet.is-teaser .dt-hope.on { background: var(--teaser); color: #171520; }
 /* Art stages keep their original daylight colors; give empty-state text its own readable surface. */
-html[data-theme="dark"] .art-empty { background: var(--surface); color: var(--muted); border-radius: 4px; padding: 3px 6px; }
+html[data-theme="dark"] .art-empty { background: var(--surface); color: var(--muted); border-radius: var(--r-xs); padding: 3px 6px; }
 
 @media (min-width: 641px) {
   html[data-theme="dark"]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day.outside {

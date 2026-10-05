@@ -27,7 +27,7 @@
      기본 규칙의 flex 축약형(0 0 92px)이 소스 순서상 항상 이겨 한 번도 적용된 적 없고,
      리팩터링 한 번이면 시청자만 116으로 되살아나 편집실(92)과 어긋날 지뢰라 제거.) */
   .agenda-event p {
-    font-size: 15px;
+    font-size: var(--text-ui);
   }
   .agenda-when {
     flex-basis: 52px;
@@ -131,7 +131,7 @@
   gap: 5px;
   /* [Phase 6] 선택 시 2px 테두리로 바뀌어도 안 밀리도록 기본 테두리도 2px 투명. */
   border: 2px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: transparent;
   /* [Phase 6] 모바일 터치 영역 — 패딩을 키워 손가락으로 누르기 편하게.
      (가로 패딩은 살짝 줄여 라벨에 폭을 더 준다 → 4글자 태그가 한 줄에 들어온다.) */
@@ -164,7 +164,7 @@
   inset: -8px -4px;
 }
 .agenda-legend-tag:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 /* [Phase 6] 선택 상태를 더 또렷하게 — 진한 테두리 + 굵은 글씨 + 살짝 떠 보이는 그림자. */
 .agenda-legend-tag.on {
@@ -181,7 +181,7 @@
   width: 12px;
   height: 12px;
   border: 1px solid rgb(0 0 0 / 12%);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
 }
 /* 방식(modifier)은 카드에서 '원'으로 표시되니 모바일 색상 필터에서도 원으로. */
 .agenda-legend-tag.mod i {
@@ -221,7 +221,7 @@
     background var(--dur-1) var(--ease);
 }
 .agenda-legend-clear:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 /* 색상 필터 아래 남는 공간: 인기 배지 단계 안내(간결판) */
 /* 인기 단계 안내 — 옅은 카드 안에 행마다 '불꽃 칩 + 라벨'. 불꽃 칩 폭을 고정해 라벨이 한 세로선에
@@ -331,7 +331,7 @@
   opacity: 0.9;
 }
 .agenda-account button:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 /* 로그아웃(로그인 시) — 뷰어 헤더의 따뜻한 크림/골드 톤과 어울리는 은은한 알약. */
 .agenda-account button.agenda-logout {
@@ -457,7 +457,7 @@
   transition: transform var(--dur-1, 120ms) var(--ease);
 }
 .agenda-monthbar .mb-step:active {
-  transform: scale(0.92);
+  transform: scale(var(--press-scale));
 }
 /* 중앙에 가까운 안쪽 가장자리일수록 더 희미하게 — 일정 위로 살짝 비치게(좌·우 대칭). */
 .agenda-monthbar .mb-step:first-child {
@@ -503,7 +503,7 @@
     background var(--dur-1, 120ms) var(--ease), color var(--dur-1, 120ms) var(--ease);
 }
 .agenda-monthbar .mb-act:active {
-  transform: scale(0.92);
+  transform: scale(var(--press-scale));
 }
 .agenda-monthbar .mb-act.on {
   background: rgb(225 29 72 / 12%);
@@ -642,7 +642,7 @@ html[data-reduce-motion] .mb-live-dot {
     transform var(--dur-1) var(--ease);
 }
 .agenda-gap:active {
-  transform: scale(0.985);
+  transform: scale(var(--press-scale-lg));
 }
 .agenda-gap .ag-range {
   flex: 0 0 auto;
@@ -785,7 +785,7 @@ html[data-reduce-motion] .mb-live-dot {
   flex: 0 0 auto;
   /* 무늬(패턴)가 보이도록 넉넉한 너비 — 비슷한 색끼리 혼동 방지. */
   width: 10px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   align-self: stretch;
   min-height: 22px;
 }
@@ -888,7 +888,7 @@ html[data-reduce-motion] .mb-live-dot {
   margin-top: 5px;
   min-height: 40px;
   padding: 0 13px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: #eaf7e3;
   color: #2f7d12;
   font-size: var(--text-body);
@@ -1104,7 +1104,7 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   display: flex;
   flex-direction: column;
   border: 1px solid rgb(255 255 255 / 65%);
-  border-radius: 20px;
+  border-radius: var(--r-xl);
   background: #fbfbfd; /* 애플 오프화이트 — 안의 흰 카드가 살짝 떠 보인다 */
   box-shadow: 0 24px 60px rgb(20 25 60 / 28%);
   overflow: hidden;
@@ -1149,7 +1149,7 @@ html[data-reduce-motion] .day-vod-modal {
 }
 /* ? 버튼 — 닫기와 같은 원(같은 부품), 회전 대신 살짝 눌림. */
 .dvm-help {
-  font-size: 15px;
+  font-size: var(--text-ui);
   font-weight: 800;
   font-family: inherit;
 }
@@ -1171,7 +1171,7 @@ html[data-reduce-motion] .day-vod-modal {
   row-gap: 7px;
   padding: 12px 14px;
   border: 1px solid rgb(60 60 90 / 10%);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
   box-shadow: 0 10px 28px rgb(20 25 60 / 16%);
   font-size: var(--text-caption);
@@ -1195,10 +1195,10 @@ html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
   padding: 0 5px;
   border: 1px solid rgb(60 60 90 / 14%);
   border-bottom-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   background: #fff;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   color: #6f6a78;
 }
@@ -1216,7 +1216,7 @@ html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
   gap: 2px;
   height: 32px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f4f2f8;
 }
 .dvm-railside-btn {
@@ -1225,7 +1225,7 @@ html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
   width: 30px;
   height: 26px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   color: #6f6a78;
   opacity: var(--seg-off-op, 0.72);
@@ -1237,7 +1237,7 @@ html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
     transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .dvm-railside-btn:hover { opacity: 1; background: rgb(60 50 90 / 6%); }
-.dvm-railside-btn:active { transform: scale(0.92); }
+.dvm-railside-btn:active { transform: scale(var(--press-scale)); }
 .dvm-railside-btn.on {
   opacity: 1;
   cursor: default;
@@ -1264,7 +1264,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   background: var(--studio-line);
   transform: rotate(90deg);
 }
-.dvm-close:active { transform: scale(0.9); }
+.dvm-close:active { transform: scale(var(--press-scale)); }
 /* 영상 탭(2026-09-17 대개편 1번) — 하루 여러 방송을 한 무대에서. 텍스트 칩 "N부 · 길이", 보는 영상은 금색 글자
    (오늘 날짜·D+와 같은 재질). 편집실 태그 필터 칩과 같은 급(12.5~13px 700). */
 .dvm-tabs {
@@ -1275,7 +1275,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   gap: 2px;
   margin: 0 0 10px 24px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #eeeef3;
 }
 /* 탭 한 알: "1부 · 7시간 47분" 한 줄·한 크기·가운데 정렬(2026-09-17 소유자: 글자 정렬). 선택은 흰 알약 + 금색 글자. */
@@ -1285,7 +1285,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   height: 30px;
   padding: 0 14px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   font-family: inherit;
   font-size: 13px;
@@ -1313,12 +1313,12 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 .dvm-tab i {
   margin-left: 6px;
   font-style: normal;
-  font-size: 10.5px;
+  font-size: var(--text-micro);
   font-weight: 800;
   color: var(--gs-metal-ink, #3d4a5c);
 }
 .dvm-tab:hover { color: #1d1d29; }
-.dvm-tab:active { transform: scale(0.96); }
+.dvm-tab:active { transform: scale(var(--press-scale)); }
 .dvm-tab.is-on {
   background-color: #fff;
   box-shadow: 0 1px 3px rgb(20 25 60 / 14%);
@@ -1435,7 +1435,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   /* 창 94vh(2026-09-03 확대) 안에서 머리(≈58)+제목(≈44)+여백(≈100)을 뺀 만큼까지 —
      1080p에선 캡에 안 걸리고(1110×624), 768 높이 노트북만 캡(플레이어가 레터박스). */
   max-height: var(--dvm-stage-h, calc(94vh - 230px)); /* 머리(≈58)+탭(≈40)+띠(≈34)+여백 */
-  border-radius: 14px;
+  border-radius: var(--r-card);
   overflow: hidden;
   background: #10151f; /* 캡·비율 차로 생기는 여백이 플레이어 검정과 이어진다 */
   transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
@@ -1444,7 +1444,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   transform: translateY(-2px);
   box-shadow: 0 10px 22px rgb(var(--studio-action-rgb) / 24%);
 }
-.dvm-thumb:active { transform: scale(0.99); }
+.dvm-thumb:active { transform: scale(var(--press-scale-lg)); }
 .dvm-thumb img {
   width: 100%;
   height: 100%;
@@ -1554,7 +1554,7 @@ html[data-reduce-motion] .dvm-notice {
   transition: background-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
 }
 .dvm-ext:hover { background: rgb(var(--studio-action-rgb) / 85%); }
-.dvm-ext:active { transform: scale(0.9); }
+.dvm-ext:active { transform: scale(var(--press-scale)); }
 .dvm-play {
   position: absolute;
   inset: 0;
@@ -1587,7 +1587,7 @@ html[data-reduce-motion] .dvm-notice {
 .dvm-title {
   color: #1d1d29;
   /* 창에서 유일한 최상급 — 스케일 계단(18>15>14>13>11)의 꼭대기. 머리줄로 올라가며 20→18(2026-09-17). */
-  font-size: 18px;
+  font-size: var(--text-title);
   font-weight: 800;
   letter-spacing: -0.015em; /* 애플식 타이틀 조임 — 큰 굵은 글자는 살짝 좁혀야 단정하다 */
   line-height: 1.3;
@@ -1612,7 +1612,7 @@ a.dvm-host-link:hover {
   border-color: var(--gs-metal-line-strong, rgb(120 140 170 / 80%));
 }
 a.dvm-host-link:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 .dvm-host {
   align-self: start;
@@ -1625,7 +1625,7 @@ a.dvm-host-link:active {
   margin-bottom: 4px;
   padding: 0 9px;
   border: 1px solid rgb(35 48 63 / 8%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background:
     linear-gradient(180deg, rgb(255 255 255 / 70%), rgb(255 255 255 / 0%) 55%),
     rgb(244 247 251 / 90%);
@@ -1662,7 +1662,7 @@ a.dvm-host-link:active {
   transition: opacity var(--dur-1) var(--ease);
 }
 .vch-toggle:hover { opacity: 0.75; }
-.vch-toggle:active { transform: scale(0.97); }
+.vch-toggle:active { transform: scale(var(--press-scale)); }
 .vch-caret {
   width: 10px;
   font-size: 10px;
@@ -1712,7 +1712,7 @@ a.dvm-host-link:active {
 .vch-group {
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
   box-shadow: 0 1px 2px rgb(20 25 60 / 5%);
 }
@@ -1722,7 +1722,7 @@ a.dvm-host-link:active {
   align-items: center;
   gap: 6px;
   padding: 4px 6px 3px 14px;
-  font-size: 15px; /* 스케일 계단(2026-09-03 한 단계 ↑): 헤더 15 = 항목 15, 굵기·색으로 서열 위 */
+  font-size: var(--text-ui); /* 스케일 계단(2026-09-03 한 단계 ↑): 헤더 15 = 항목 15, 굵기·색으로 서열 위 */
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #1d1d29;
@@ -1761,17 +1761,17 @@ a.dvm-host-link:active {
   min-width: 20px;
   height: 18px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(35 48 63 / 6%);
   font-style: normal;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: rgb(35 48 63 / 48%);
 }
 .vch-group[data-folded] .vch-sec {
   border-bottom: 0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 .vch-sec-go {
   flex: none;
@@ -1791,7 +1791,7 @@ a.dvm-host-link:active {
   background: var(--studio-action-tint-hi);
   color: var(--studio-action-strong);
 }
-.vch-sec-go:active { transform: scale(0.9); }
+.vch-sec-go:active { transform: scale(var(--press-scale)); }
 /* (2026-09-04) 카드는 챕터 하나 = 카드 하나 — 8개 분절(옛 2열 배치 잔재)은 제거. sticky 헤더의 컨테이닝
    블록이 카드라 분절하면 8개 뒤에서 헤더가 멈춰 보였다(사용자 신고). */
 /* 날짜 창(2026-09-02 대개편 2차) — 신문식 다열을 버리고 **오른쪽 레일 세로 한 열**:
@@ -1843,7 +1843,7 @@ a.dvm-host-link:active {
   top: 6px;
   bottom: 6px;
   width: 2.5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--studio-action);
   opacity: 0;
   transform: scaleY(0.3);
@@ -1855,7 +1855,7 @@ a.dvm-host-link:active {
 .vch-item:hover { background: rgb(var(--studio-action-rgb) / 4%); }
 .vch-item:hover::after { opacity: 0.85; transform: scaleY(1); }
 .vch-item:hover .vch-t { color: var(--studio-action-strong); }
-.vch-item:active { transform: scale(0.995); background: rgb(var(--studio-action-rgb) / 8%); }
+.vch-item:active { transform: scale(var(--press-scale-lg)); background: rgb(var(--studio-action-rgb) / 8%); }
 .vch-item.is-active::after { opacity: 0; }
 html[data-reduce-motion] .vch-item::after { transition: none; }
 /* 지금 재생 중인 챕터(2026-09-03: 클릭뿐 아니라 **재생 위치를 따라 이동** — 유튜브 활성 챕터
@@ -1895,7 +1895,7 @@ html[data-reduce-motion] .vch-item::after { transition: none; }
   top: calc(100% + 4px);
   z-index: 5;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: rgb(29 29 41 / 94%);
   color: #fff;
   font-size: 14px;
@@ -1945,7 +1945,7 @@ html[data-reduce-motion] .vch-tip {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px; /* 14→15(2026-09-03) — 창 1600에서 14는 레일이 성글어 보였다 */
+  font-size: var(--text-ui); /* 14→15(2026-09-03) — 창 1600에서 14는 레일이 성글어 보였다 */
   font-weight: 600;
   color: #33333f;
   transition: color var(--dur-1) var(--ease);
@@ -1992,7 +1992,7 @@ html[data-reduce-motion] .vch-tip {
   height: 24px;
   padding: 0 9px;
   border: 1px solid rgb(35 48 63 / 8%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(35 48 63 / 4%);
   color: rgb(35 48 63 / 62%);
   font: inherit;
@@ -2017,7 +2017,7 @@ html[data-reduce-motion] .vch-tip {
     transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .ui-pill.is-tap:hover { color: #23303f; background: rgb(35 48 63 / 9%); }
-.ui-pill.is-tap:active { transform: scale(0.97); }
+.ui-pill.is-tap:active { transform: scale(var(--press-scale)); }
 .ui-pill.is-tap.is-on {
   border-color: rgb(var(--studio-action-rgb) / 32%);
   background: rgb(var(--studio-action-rgb) / 10%);
@@ -2078,7 +2078,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   flex: none;
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #d9a21b;
   box-shadow: 0 0 0 3px rgb(217 162 27 / 18%);
 }
@@ -2102,7 +2102,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13.5px;
+  font-size: var(--text-body);
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #23303f;
@@ -2111,7 +2111,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   flex: none;
   margin-left: auto;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(217 162 27 / 12%);
   font-size: 11.5px;
   font-weight: 900;
@@ -2127,7 +2127,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   position: relative;
   height: 54px;
   margin: 10px 20px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: linear-gradient(180deg, #f7f8fc, #eef0f7);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 80%),
@@ -2184,7 +2184,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   position: absolute;
   top: 0;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(107 114 152 / 22%);
   transform-origin: center;
   transition:
@@ -2239,7 +2239,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   right: 0;
   top: 50%;
   height: 1px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, rgb(29 29 41 / 0%), rgb(29 29 41 / 9%) 12%, rgb(29 29 41 / 9%) 88%, rgb(29 29 41 / 0%));
 }
 /* ④ 지나온 구간 */
@@ -2262,7 +2262,7 @@ html[data-reduce-motion] .vch-played { transition: none; }
   top: 14px;
   bottom: 14px;
   width: 1px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(29 29 41 / 13%);
   opacity: 0;
   pointer-events: none;
@@ -2299,7 +2299,7 @@ html[data-reduce-motion] .vch-played { transition: none; }
   width: 10px;
   height: 4px;
   transform: translateX(-50%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, #f0c25c, #d9a21b);
   box-shadow: 0 0 8px rgb(217 162 27 / 55%);
   transition: width 0.42s cubic-bezier(0.22, 1.12, 0.36, 1), box-shadow 0.3s var(--ease);
@@ -2317,7 +2317,7 @@ html[data-reduce-motion] .vch-spark::after { transition: none; }
   left: 0;
   width: 2.5px;
   margin-left: -1.25px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(180deg, rgb(232 181 58 / 95%), rgb(184 122 16 / 95%));
   box-shadow: 0 0 10px rgb(217 162 27 / 55%);
   pointer-events: none;
@@ -2332,7 +2332,7 @@ html[data-reduce-motion] .vch-spark::after { transition: none; }
   left: 50%;
   width: 16px;
   transform: translateX(-50%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, rgb(217 162 27 / 0%), rgb(217 162 27 / 18%) 50%, rgb(217 162 27 / 0%));
   pointer-events: none;
   transition: width 0.5s cubic-bezier(0.22, 1.12, 0.36, 1);
@@ -2347,7 +2347,7 @@ html[data-reduce-motion] .vch-head { transition: none; }
   left: 0;
   width: 2px;
   margin-left: -1px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(180deg, rgb(29 29 41 / 0%), rgb(29 29 41 / 32%) 20%, rgb(29 29 41 / 32%) 80%, rgb(29 29 41 / 0%));
   opacity: 0;
   pointer-events: none;
@@ -2361,12 +2361,12 @@ html[data-reduce-motion] .vch-head { transition: none; }
   width: max-content;
   max-width: 420px;
   padding: 7px 11px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: rgb(29 29 41 / 94%);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: #fff;
-  font-size: 12.5px;
+  font-size: var(--text-label);
   font-weight: 700;
   line-height: 1.4;
   white-space: pre-line;
@@ -2430,7 +2430,7 @@ html[data-reduce-motion] .vch-head { transition: none; }
   width: max-content;
   max-width: 420px; /* 말줄임 없음(2026-09-17 소유자: 무슨 내용인지 정확히 알아야 한다) — 길면 줄바꿈 */
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgb(29 29 41 / 94%);
   color: #fff;
   font-size: 13px;
@@ -2501,7 +2501,7 @@ html[data-reduce-motion] .day-vod-pop {
 }
 /* (팝오버 CTA 규칙 삭제 — 팝오버가 '창'(.day-vod-modal)으로 승격되며 참조 0.) */
 .agenda-link.vod:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale));
 }
 .agenda-vod-dur {
   font-style: normal;
@@ -3180,7 +3180,7 @@ body.cell-range-dragging {
   border-color: #e7d3a0;
 }
 .interest-toggle:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale));
 }
 .interest-toggle.active {
   background: #ffe4f1;
@@ -3340,7 +3340,7 @@ body.cell-range-dragging {
   filter: brightness(0.96);
 }
 .support-bar.sb-solo.is-clickable:active {
-  transform: scale(0.997);
+  transform: scale(var(--press-scale-lg));
 }
 .support-bar.is-clickable:focus-visible {
   outline: 2px solid #9f1239;
@@ -3590,7 +3590,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   background: var(--surface-2, #fdf6e8);
 }
 .legend-clear:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 /* 필터 없을 때도 자리(높이)는 유지하되 안 보이게 — 켤 때 레이아웃이 안 밀려 칩이 제자리에 있다. */
 .legend-clear.is-hidden {
@@ -3624,7 +3624,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   width: 18px;
   height: 18px;
   border: 1px solid;
-  border-radius: 5px;
+  border-radius: var(--r-xs);
 }
 /* 18px 사각 색칩을 26px 칸 가운데에 — 칩 자체 크기는 그대로 두고 자리만 넓힌다. */
 .public-legend-vertical .legend-item > i {
@@ -3896,7 +3896,7 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
   align-items: center;
   gap: 6px;
   padding: 7px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: linear-gradient(135deg, var(--teaser-deep) 0%, var(--teaser) 100%);
   border: 1px dashed rgba(255, 255, 255, 0.55);
   color: #fff;
@@ -3925,7 +3925,7 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
 }
 .public-event.teaser.is-clickable:active,
 .agenda-item.teaser.tappable:active {
-  transform: scale(0.985);
+  transform: scale(var(--press-scale-lg));
 }
 .teaser-count.soon {
   animation: teaser-soon-glow 1.6s ease-in-out infinite;
@@ -4120,7 +4120,7 @@ html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title 
   gap: 6px;
   margin: 0;
   padding: 5px 12px 5px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(var(--teaser-rgb) / 10%);
   color: var(--teaser-ink);
   font-size: var(--text-body);
@@ -4155,7 +4155,7 @@ html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title 
   gap: 7px;
   min-height: 40px;
   border: 1.5px solid rgb(var(--teaser-rgb) / 45%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fff;
   padding: 0 18px;
   color: var(--teaser-deep);
@@ -4172,7 +4172,7 @@ html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title 
   box-shadow: 0 3px 10px rgb(var(--teaser-rgb) / 30%);
 }
 .detail-teaser .dt-hope:active {
-  transform: scale(0.93);
+  transform: scale(var(--press-scale));
 }
 .detail-teaser .dt-hope.on {
   background: linear-gradient(135deg, var(--teaser), var(--teaser-deep));
@@ -4606,7 +4606,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   /* 숫자 뒤 온기만 남기고 '원'으로 읽히지 않게 — 중간 정지점을 없애 경계를 만들지 않는다.
      예전엔 여기 생긴 옅은 원이 눈금으로 오인됐다(사용자 지적: 눈금이 숫자에 파묻혔다). */
   inset: 24%;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: radial-gradient(
     circle at 50% 46%,
     rgb(255 210 120 / calc(9% + var(--hy-glow, 0) * 170%)) 0%,
@@ -4635,7 +4635,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   content: "";
   position: absolute;
   inset: -5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   /* 헤어라인 — 굵은 테두리는 링과 경쟁한다. 얇게 두고 세기는 opacity로만 말한다. */
   border: 1.5px solid
     color-mix(in srgb, rgb(var(--teaser-rgb) / 60%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(255 202 106 / 80%));
@@ -4651,7 +4651,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 .dt-echo {
   position: absolute;
   inset: -5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1.5px solid rgb(255 214 122 / 85%);
   opacity: 0;
   pointer-events: none;
@@ -5000,7 +5000,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   width: 18px;
   height: 18px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--r-xs);
   background: transparent;
   padding: 0;
   color: inherit;
@@ -5037,7 +5037,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   transform: scale(1.06);
 }
 .event-heart[aria-pressed="true"]:active {
-  transform: scale(0.9);
+  transform: scale(var(--press-scale));
 }
 
 /* (.memo-edit-* 메모 편집 바 제거 — 참조 0) */
@@ -5173,7 +5173,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .public-month-grid {
   overflow: hidden;
   border: 1px solid var(--cal-grid-line, #efe9dd);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: var(--cal-grid, #ffffff);
   box-shadow: 0 4px 16px rgb(120 90 60 / 8%);
 }
@@ -5635,7 +5635,7 @@ html[data-reduce-motion] .tier-halo {
 }
 .agenda-event .tier-ring {
   inset: -3px -6px;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   /* PC 카드의 두꺼운 왼쪽 모서리와 같은 문법 — 링의 왼쪽 두께만 5px. 마스크(padding-box xor)가 안쪽을
      도려내므로 안쪽 곡선도 브라우저가 한 타원으로 잇는다(따로 그린 요소의 r4/r7 불일치가 사라진다). */
   border-left-width: 5px;
@@ -5660,7 +5660,7 @@ html[data-reduce-motion] .tier-halo {
   width: 26px;
   height: 14px;
   margin: 0 3px;
-  border-radius: 5px;
+  border-radius: var(--r-xs);
   border: var(--tier-w, 2px) solid var(--tier-c);
   background: #fffdf6;
   box-shadow: inset 3px 0 var(--tier-c);
@@ -5732,7 +5732,7 @@ button.day-mark.celebratable {
     filter var(--dur-1) var(--ease);
 }
 button.day-mark.celebratable:hover { filter: brightness(1.18); }
-button.day-mark.celebratable:active { transform: scale(0.88); }
+button.day-mark.celebratable:active { transform: scale(var(--press-scale)); }
 
 /* 월드컵 경기 대진·스코어 칩 — 날짜칸 본문 최상단의 전체폭 칩. 헤더엔 짧은 라운드 pill만 두고
    경기 결과는 여기로 내려, 헤더가 다른 날과 같은 1줄로 통일되고(리듬) 국가 풀네임이 넉넉한
@@ -5766,7 +5766,7 @@ button.agenda-mark.celebratable:not(.holiday) {
   background: none;
   padding: 0;
 }
-button.agenda-mark.celebratable:active { transform: scale(0.92); }
+button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 
 /* 오늘 칸: 금테만으로는 축소된 포스터에서 거의 안 보였다. 날짜 줄 자체를 금색으로 채워 '오늘'이
    멀리서도 한 번에 잡히게 한다(달력에서 가장 자주 찾는 한 칸). */
@@ -5999,7 +5999,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 .agenda-tier-btn:active,
 .agenda-tent-help:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 .legend-tent-line .tent-swatch {
   width: 100%;
@@ -6176,7 +6176,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   }
   /* 웹 시청자 카드 — 글자크기·줄바꿈은 그대로(스티커 좌표 안전), 모서리·그림자만 한 단계 또렷하게. */
   .public-event {
-    border-radius: 10px;
+    border-radius: var(--r-sm);
     box-shadow: 0 1px 3px rgb(17 24 39 / 8%);
   }
 }
@@ -6285,7 +6285,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   width: 16px;
   height: 16px;
   border: 1px solid;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
 }
 
 @media (max-width: 1040px) {
@@ -6612,7 +6612,7 @@ html[data-reduce-motion] .heart-toast {
   bottom: 18px;
   z-index: 60;
   width: 300px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid rgb(169 15 54 / 25%);
   background: #fffdf6;
@@ -6768,7 +6768,7 @@ html[data-reduce-motion] .slc-player img {
   box-shadow: var(--shadow-3);
 }
 .insights-open:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 
 /* ── 시청자 설정(2026-09-19 소유자: 시청자·미리보기·비로그인에도 설정) ────────────────────
@@ -6816,7 +6816,7 @@ html[data-reduce-motion] .slc-player img {
   box-shadow: var(--shadow-3);
 }
 .viewer-settings-open:hover svg { transform: rotate(45deg); }
-.viewer-settings-open:active { transform: scale(0.94); }
+.viewer-settings-open:active { transform: scale(var(--press-scale)); }
 html[data-reduce-motion] .viewer-settings-open svg { transition: none; }
 
 
@@ -6913,7 +6913,7 @@ html[data-reduce-motion] .pi-backdrop {
   transform: rotate(90deg);
 }
 .pi-close:active {
-  transform: rotate(90deg) scale(0.9);
+  transform: rotate(90deg) scale(var(--press-scale));
 }
 html[data-reduce-motion] .pi-close:hover,
 html[data-reduce-motion] .pi-close:active {
@@ -7039,7 +7039,7 @@ html[data-reduce-motion] .pi-skeleton {
   background: var(--surface-2, #fdf6e8);
 }
 .pi-retry:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 .pi-next {
   display: flex;
@@ -7488,7 +7488,7 @@ html[data-reduce-motion] .pi-retry:active {
   position: fixed;
   width: 344px;
   max-height: min(64vh, 520px);
-  border-radius: 20px;
+  border-radius: var(--r-xl);
   border: 1px solid rgb(120 100 60 / 16%);
   background: #fffdf6;
   padding: 0 20px 18px;
@@ -7564,7 +7564,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
 .detail-grab span {
   width: 36px;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(60 46 20 / 18%);
   transition: background var(--dur-1) var(--ease);
 }
@@ -7629,7 +7629,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   margin-top: 6px;
   padding: 11px 0;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: linear-gradient(135deg, #74a94a, #578f31);
   color: #fff;
   font-size: var(--text-ui);
@@ -7644,7 +7644,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   filter: brightness(1.06);
 }
 .agenda-detail-backdrop.is-pop .agenda-link:active {
-  transform: scale(0.98);
+  transform: scale(var(--press-scale));
 }
 /* PC 팝오버의 다시보기 CTA — 업도움 초록 CTA와 같은 자리·모양, 숲 파랑 그라데이션. */
 .agenda-detail-backdrop.is-pop .agenda-link.vod {
@@ -7665,7 +7665,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(60 46 20 / 7%);
   color: #6b6350;
   transition:
@@ -7677,7 +7677,7 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   transform: rotate(90deg);
 }
 .agenda-detail-backdrop.is-pop .agenda-detail-close:active {
-  transform: rotate(90deg) scale(0.9);
+  transform: rotate(90deg) scale(var(--press-scale));
 }
 html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close,
 html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close:hover,
@@ -7876,7 +7876,7 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
 }
 
 .agenda-detail-close:active {
-  transform: scale(0.94);
+  transform: scale(var(--press-scale));
 }
 
 .agenda-detail-title {
@@ -8032,7 +8032,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
   gap: 4px;
   padding: 3px; /* 36 + 3·2 + 테두리 2 = 44 — 가운데 알약(44)과 같은 높이 */
   border: 1px solid var(--line, #ece9f5);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgb(255 253 249 / 84%);
   box-shadow: var(--shadow-1);
 }
@@ -8052,7 +8052,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
      웹 미리보기 카드는 애초에 rail 폭 그리드(--pv-w)라 카드 폭 자체는 고정이다. */
   padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: transparent;
   box-shadow: none;
   color: #5b5674;
@@ -8074,7 +8074,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
 }
 .account-form .button:active,
 .viewer-preview-actions .button:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 .account-form .account-email {
   align-self: center;
@@ -8087,7 +8087,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
   height: 44px;
   min-height: 44px;
   padding: 0 16px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .interest-toggle {
   --lh-size: 28px;
@@ -8130,7 +8130,7 @@ html[data-pchrome] .account-form .button[data-tip]::after {
   top: calc(100% + 8px);
   z-index: 40;
   padding: 5px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(32 28 46 / 94%);
   color: #fff;
   font-size: var(--text-caption, 11px);
@@ -8215,7 +8215,7 @@ html[data-pchrome="3"] .poster-chrome-title {
   height: 36px;
   min-height: 36px;
   padding: 0 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: transparent;
   border-color: transparent;
   box-shadow: none;
@@ -8321,7 +8321,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   width: min(760px, 100%);
   max-height: min(88vh, 860px);
   border: 1px solid rgb(255 255 255 / 55%);
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   /* 불투명(2026-09-18 실측): 96% 반투명 + 백드롭 블러 탓에 뒤 달력의 색이 칩·줄에 배어
      같은 칩이 자리마다 민트·노랑으로 보였다. 유리 재질감은 바깥 백드롭만 맡는다. */
   background: linear-gradient(180deg, var(--ps-surface), #fdf6e6);
@@ -8354,7 +8354,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   gap: 8px;
   height: 42px;
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: rgb(35 48 63 / 6%);
   padding: 0 8px 0 13px;
   color: var(--muted);
@@ -8396,7 +8396,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   width: 24px;
   height: 24px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(35 48 63 / 14%);
   color: #fff;
   cursor: pointer;
@@ -8406,7 +8406,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   background: rgb(35 48 63 / 28%);
 }
 .ps-clear:active {
-  transform: scale(0.9);
+  transform: scale(var(--press-scale));
 }
 /* 진행선/로딩선 — 머리 바닥 2px. 스크롤 진행은 왼쪽부터 --p 만큼, 로딩 중엔 흐르는 띠. */
 .ps-line {
@@ -8460,7 +8460,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   position: relative;
   display: inline-flex;
   gap: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(35 48 63 / 7%);
   padding: 3px;
 }
@@ -8469,7 +8469,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   top: 3px;
   bottom: 3px;
   left: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fff;
   box-shadow: 0 1px 2px rgb(24 20 32 / 12%), 0 4px 10px -4px rgb(24 20 32 / 18%);
   transition: transform var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease)), width var(--dur-3) var(--ease);
@@ -8478,11 +8478,11 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   position: relative;
   z-index: 1;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   padding: 5px 12px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--text-label);
   font-weight: 800;
   letter-spacing: -0.01em;
   color: rgb(35 48 63 / 55%);
@@ -8493,7 +8493,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   color: var(--ink, #23303f);
 }
 .ps-seg-btn:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 .ps-seg-btn.on {
   color: var(--ink, #23303f);
@@ -8533,7 +8533,7 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   align-items: center;
   height: 32px; /* 칩 한 줄(.ps-chips max-height)과 같은 높이 — 첫 줄 가운데에 선다 */
   min-width: 2.4em;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.06em;
   color: rgb(35 48 63 / 42%);
@@ -8573,12 +8573,12 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   min-width: 58px; /* '더보기'(3자) 기준 — '접기'로 바뀌어도 칩 영역 폭이 그대로 */
   margin-top: 2px;
   border: 1px solid rgb(35 48 63 / 9%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   padding: 0 10px;
   color: var(--ps-accent, var(--studio-action));
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--text-label);
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
@@ -8588,7 +8588,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
     transform 0.16s var(--ease);
 }
 .ps-chips-more:hover { background: var(--ps-accent-soft, rgb(var(--studio-action-rgb) / 9%)); }
-.ps-chips-more:active { transform: scale(0.95); }
+.ps-chips-more:active { transform: scale(var(--press-scale)); }
 .ps-chip {
   flex: none;
   display: inline-flex;
@@ -8596,11 +8596,11 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   gap: 4px;
   height: 28px;
   border: 1px solid rgb(35 48 63 / 9%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fff;
   padding: 0 12px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--text-label);
   font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--ink, #23303f);
@@ -8619,7 +8619,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   box-shadow: 0 5px 12px -8px rgb(24 30 60 / 55%);
 }
 .ps-chip:active {
-  transform: scale(0.95);
+  transform: scale(var(--press-scale));
 }
 /* 종류는 채운 색이 아니라 **작은 앞 표식**으로 — 칩 여덟 개가 제각기 다른 색으로 물들지 않게(시즌3). */
 .ps-chip-rel::before,
@@ -8646,7 +8646,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   margin: 2px 0 0;
   padding: 6px 8px;
   border: 1px solid rgb(35 48 63 / 8%);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: #fffdf8;
   box-shadow: 0 14px 34px rgb(29 29 41 / 14%);
   animation: ps-sug-in var(--dur-2) var(--ease-enter) both;
@@ -8666,9 +8666,9 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   gap: 10px;
   min-height: 40px;
   padding: 6px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   color: var(--ink, #23303f);
-  font-size: 15px;
+  font-size: var(--text-ui);
   font-weight: 700;
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
@@ -8695,7 +8695,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   max-height: min(90vh, 960px);
 }
 .ps-sheet.is-studio { width: min(880px, 100%); }
-.ps-sheet .ps-field input { font-size: 18px; letter-spacing: -0.01em; }
+.ps-sheet .ps-field input { font-size: var(--text-title); letter-spacing: -0.01em; }
 .ps-sheet .ps-day-head { font-size: 13px; letter-spacing: 0.02em; }
 .ps-sheet .ps-title { font-size: 16px; line-height: 1.35; letter-spacing: -0.005em; }
 .ps-sheet .ps-meta { font-size: 13px; }
@@ -8704,14 +8704,14 @@ html[data-reduce-motion] .ps-chips { transition: none; }
 .ps-sheet .ps-chapter { --ps-row-h: 38px; padding: 4px 8px; }
 .ps-sheet .ps-chapter .ps-title { font-size: 14.5px; }
 .ps-sheet .ps-tc { font-size: 13px; }
-.ps-sheet .ps-section { font-size: 12.5px; }
+.ps-sheet .ps-section { font-size: var(--text-label); }
 .ps-sheet .ps-parent-head { font-size: 13px; }
-.ps-sheet .ps-more-btn { font-size: 13.5px; }
-.ps-sheet .ps-chip { font-size: 13.5px; }
-.ps-sheet .ps-chiplbl { font-size: 12.5px; }
+.ps-sheet .ps-more-btn { font-size: var(--text-body); }
+.ps-sheet .ps-chip { font-size: var(--text-body); }
+.ps-sheet .ps-chiplbl { font-size: var(--text-label); }
 .ps-sheet .ps-hint { font-size: 14px; }
 .ps-sheet .ps-ext { width: 36px; }
-.ps-sheet .ps-thumb { width: 192px; height: 108px; border-radius: 12px; } /* 소유자 2026-09-18: 3배 */
+.ps-sheet .ps-thumb { width: 192px; height: 108px; border-radius: var(--r-md); } /* 소유자 2026-09-18: 3배 */
 /* 썸네일이 커져 남는 높이 — 다시보기 제목은 두 줄까지(소유자 2026-09-18). */
 .ps-sheet .ps-vod-row .ps-title {
   white-space: normal;
@@ -8729,7 +8729,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   width: 30px;
   margin-block: 2px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   color: #5b5f7a;
   background: transparent;
   font: inherit;
@@ -8741,7 +8741,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
 .ps-chip-person em {
   margin-left: 5px;
   font-style: normal;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   color: var(--ps-accent);
 }
@@ -8831,7 +8831,7 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   min-width: 0;
   min-height: var(--ps-row-h);
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: transparent;
   padding: 5px 6px;
   text-align: left;
@@ -8869,12 +8869,12 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   top: 8px;
   bottom: 8px;
   width: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--ps-accent);
 }
 .ps-row { position: relative; }
 .ps-row:active {
-  transform: scale(0.985);
+  transform: scale(var(--press-scale-lg));
 }
 /* 손맛: 줄에 손이 닿으면 썸네일이 아주 조금 당겨진다(1.05, 애플 감속 곡선). 줄 자체는 1px만 뜬다. */
 .ps-row:hover .ps-thumb img,
@@ -8888,7 +8888,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   place-items: center;
   width: 96px;
   height: 54px;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   color: #6b5b34;
   background: rgb(244 183 64 / 16%);
   overflow: hidden;
@@ -8896,7 +8896,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-lead-event {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
 }
 .ps-thumb {
   color: var(--studio-action-strong);
@@ -8910,10 +8910,10 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   left: 6px;
   top: 6px;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(29 29 41 / 72%);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.02em;
   backdrop-filter: blur(4px);
@@ -8959,7 +8959,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-row mark {
   background: rgb(244 183 64 / 42%);
   color: inherit;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   padding: 0 1px;
 }
 /* 오른쪽 보조 칸 — 쉬고 있을 땐 정보(길이·시각), 호버/커서엔 행동 글리프. 같은 자리에서 교차 페이드. */
@@ -8974,7 +8974,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-side-text {
   grid-area: 1 / 1;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(35 48 63 / 5%);
   font-size: 11.5px;
   font-weight: 800;
@@ -9025,12 +9025,12 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 .ps-chapter {
   --ps-row-h: 32px;
   padding: 3px 6px;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
 }
 .ps-section {
   display: block;
   margin: 6px 6px 1px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.05em;
   color: rgb(35 48 63 / 45%);
@@ -9126,7 +9126,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   width: fit-content;
   margin: 2px 0 0 4px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   padding: 4px 8px;
   font: inherit;
@@ -9140,7 +9140,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   background: var(--ps-accent-soft);
 }
 .ps-more-btn:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 .ps-similar {
   display: grid;
@@ -9199,7 +9199,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   content: "";
   width: 4px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(35 48 63 / 18%);
   transition:
     transform var(--dur-3) var(--spring-bouncy, var(--ease-spring)),
@@ -9222,11 +9222,11 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   right: 24px;
   top: 50%;
   transform: translate(6px, -50%) scale(0.92);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--ink, #23303f);
   color: #fff;
   padding: 3px 7px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
@@ -9252,7 +9252,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   width: 32px;
   height: 32px;
   border: 1px solid rgb(35 48 63 / 8%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(255 255 255 / 92%);
   color: var(--ink, #23303f);
   box-shadow: 0 6px 16px -8px rgb(24 20 32 / 35%);
@@ -9271,7 +9271,7 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
   }
 }
 .ps-top:active {
-  transform: scale(0.92);
+  transform: scale(var(--press-scale));
 }
 html[data-reduce-motion] .ps-sheet,
 html[data-reduce-motion] .ps-results,
@@ -9293,15 +9293,15 @@ html[data-reduce-motion] .ps-rail-dot::before {
 @media (max-width: 640px) {
   .ps-sheet {
     --ps-row-h: 52px;
-    border-radius: 18px;
+    border-radius: var(--r-lg);
   }
   .ps-sheet .ps-field input { font-size: 17px; }
-  .ps-sheet .ps-lead { width: 112px; height: 63px; border-radius: 10px; }
-  .ps-sheet .ps-thumb { width: 112px; height: 63px; border-radius: 10px; }
+  .ps-sheet .ps-lead { width: 112px; height: 63px; border-radius: var(--r-sm); }
+  .ps-sheet .ps-thumb { width: 112px; height: 63px; border-radius: var(--r-sm); }
   .ps-sheet .ps-lead-event { width: 36px; height: 36px; }
   .ps-sheet .ps-row { gap: 10px; padding: 6px 4px; align-items: flex-start; }
   .ps-sheet .ps-vod-row { align-items: flex-start; }
-  .ps-sheet .ps-title { font-size: 15px; line-height: 1.3; }
+  .ps-sheet .ps-title { font-size: var(--text-ui); line-height: 1.3; }
   .ps-sheet .ps-vod-row .ps-title { -webkit-line-clamp: 3; }
   .ps-sheet .ps-event .ps-title {
     white-space: normal;
@@ -9309,7 +9309,7 @@ html[data-reduce-motion] .ps-rail-dot::before {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-  .ps-sheet .ps-meta { font-size: 12.5px; }
+  .ps-sheet .ps-meta { font-size: var(--text-label); }
   .ps-sheet .ps-vod-row .ps-side { display: none; } /* 길이는 메타 줄로 */
   .ps-sheet .ps-event .ps-side { min-width: 36px; }
   .ps-sheet .ps-event .ps-side-text { font-size: 12px; }
@@ -9322,7 +9322,7 @@ html[data-reduce-motion] .ps-rail-dot::before {
     -webkit-box-orient: vertical;
     font-size: 14px;
   }
-  .ps-sheet .ps-tc { min-width: 44px; padding-top: 2px; font-size: 12.5px; }
+  .ps-sheet .ps-tc { min-width: 44px; padding-top: 2px; font-size: var(--text-label); }
   .ps-sheet .ps-chapter .ps-side { display: none; }
   .ps-sheet .ps-body { padding-right: 12px; }
   .ps-sheet .ps-chip { font-size: 13px; }
@@ -9382,7 +9382,7 @@ html[data-reduce-motion] .studio-day.cell-flash {
   position: absolute;
   inset: -14px -10px;
   z-index: -1;
-  border-radius: 22px;
+  border-radius: var(--r-xl);
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% 85%,

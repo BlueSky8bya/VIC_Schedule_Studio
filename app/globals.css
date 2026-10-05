@@ -209,7 +209,8 @@
   --m-agenda-rail-w: 92px; /* 오른쪽 필터 레일 폭 */
   --m-agenda-gap: 10px; /* 날짜 카드 ↔ 레일 간격 */
 
-  /* 라운드 */
+  /* 라운드 — 단계는 이것뿐(2026-10-05 애플식 정리: 날 px 12종을 이 단계로 모았다). 2·3px은 가는 막대·점의 구조 값이라 예외. */
+  --r-xs: 6px;
   --r-sm: 8px;
   --r-md: 12px;
   /* 편집실 카드 공통 둥글기 — 15곳에서 일관 사용하던 14px을 토큰으로 박아 일관성 잠금. */
@@ -221,6 +222,11 @@
   /* 달력 옆 패널 폭(2026-09-17 소유자: 편집실·시청자·미리보기 같은 폭) — OBS 1920에서 딱 360px(18.75vw), 작은 창 300 하한.
      편집실 rail·시청자 슬롯·밀어내기 margin이 전부 이 값 하나를 본다(lib/ui/use-side-panel의 fit 계산도 같은 식). */
   --side-panel-w: clamp(300px, 18.75vw, 380px);
+
+  /* 누름 반응 — 모든 버튼·칩의 :active는 이 두 값만(애플 시스템 공통 0.95). 큰 표면(카드·행·패널)은 크게 줄면
+     출렁여 보여 0.985. 예전엔 0.88~0.995 열 가지가 섞여 같은 앱 안에서 손맛이 제각각이었다(2026-10-05). */
+  --press-scale: 0.95;
+  --press-scale-lg: 0.985;
 
   /* 그림자 (부드럽게 단계화) */
   --shadow-1: 0 1px 2px rgb(17 24 39 / 5%), 0 1px 3px rgb(17 24 39 / 4%);
@@ -371,7 +377,7 @@
         transform var(--dur-spring-bouncy, 0.18s) var(--spring-bouncy, var(--ease-spring, ease));
   }
   :where(button):active:not(:disabled) {
-    transform: scale(0.95);
+    transform: scale(var(--press-scale));
     /* 누르는 순간은 즉각(≤100ms) 가라앉아야 반응으로 느껴진다 — 복귀용 스프링 duration이
        누름에도 걸리면 굼뜨다. transition-property 순서(bg·border·color·shadow·opacity·transform)
        와 1:1로 맞춘 duration 목록으로 transform만 짧게 덮는다. */
@@ -645,7 +651,7 @@ select {
 /* 누르면 살짝 작아졌다(스프링) 떼면 부드럽게 복귀 — 모든 버튼에 일관된 '손맛'.
    transform이 위에서 var(--dur-1) ease로 트랜지션돼 툭 끊기지 않고 자연스럽게 이어진다. */
 .button:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
   box-shadow: var(--shadow-1);
 }
 
@@ -948,7 +954,7 @@ select {
   min-width: 0;
   min-height: 46px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 0 14px;
   font-size: 16px;
 }

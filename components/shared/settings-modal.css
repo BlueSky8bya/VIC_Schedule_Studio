@@ -85,7 +85,7 @@ html[data-reduce-motion] .vic-settings .modal-card {
   background: rgb(15 23 42 / 6%);
   transform: rotate(90deg); /* 일정 그림판 X와 통일한 손맛 */
 }
-.vic-settings .modal-close:active { transform: rotate(90deg) scale(0.9); }
+.vic-settings .modal-close:active { transform: rotate(90deg) scale(var(--press-scale)); }
 html[data-reduce-motion] .vic-settings .modal-close:hover,
 html[data-reduce-motion] .vic-settings .modal-close:active { transform: none; }
 
@@ -183,7 +183,7 @@ html[data-reduce-motion] .vic-settings .rhh-knob { transition: none; }
   border-color: var(--gs-metal-line-strong, #b9b6ae);
   box-shadow: 0 4px 12px -8px rgb(24 30 60 / 55%);
 }
-.vic-settings .rhh-select:active:not(:disabled) { transform: scale(0.97); }
+.vic-settings .rhh-select:active:not(:disabled) { transform: scale(var(--press-scale)); }
 .vic-settings .rhh-select:disabled { opacity: 0.5; cursor: default; }
 .vic-settings .rhh-select-label {
   flex: 1 1 auto;
@@ -206,7 +206,7 @@ html[data-reduce-motion] .vic-settings .rhh-knob { transition: none; }
   min-width: 100%;
   margin: 0;
   border: 1px solid rgb(35 48 63 / 10%);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
   box-shadow: 0 16px 34px -18px rgb(24 20 32 / 55%);
   padding: 5px;
@@ -225,7 +225,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   gap: 8px;
   width: 100%;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   padding: 7px 10px;
   color: var(--ink, #1c2433);
@@ -245,7 +245,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 .vic-settings .rhh-dev-tag {
   margin-left: 6px;
   border: 1px solid var(--line, #ece0c9);
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   padding: 0 6px;
   font-size: var(--text-caption, 11px);
   font-style: normal;
@@ -269,7 +269,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   transition: transform 0.16s var(--ease, ease), background 0.16s var(--ease, ease);
 }
 .vic-settings .rhh-link:hover { background: var(--gs-metal-sheen-hover, #f5f3ee); }
-.vic-settings .rhh-link:active { transform: scale(0.97); }
+.vic-settings .rhh-link:active { transform: scale(var(--press-scale)); }
 
 /* 모바일(≤640)엔 계절 배경이 없다 — 계절 배경·배경 효과 줄을 숨긴다. */
 @media (max-width: 640px) {
