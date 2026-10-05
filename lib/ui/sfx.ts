@@ -490,14 +490,67 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
 
 // ── '톡' 고르기 — 진동 hapticTick이 앱 곳곳(200곳 넘게)에서 같은 '톡'을 내던 것을, **방금 누른 것**을 보고
 // 그 기능에 맞는 소리로 바꾼다(스위치 켜기/끄기·탭·닫기·열기·슬라이더·끌면서 칸 넘기). 호출부는 그대로.
+//
+// ── 한 동작 = 한 소리(2026-10-06 소유자: "더블클릭으로 창 하나 띄우는데 소리가 두 번 난다 — 전수조사해서 섬세하게") ──
+// 손동작(포인터 누름·키 누름) 하나와 그 결과를 '동작'으로 묶고, 동작 하나에선 소리 하나만 낸다.
+//  · 우선순위: 1 일반 톡(누른 것에서 고른 소리) < 2 화면 소리(열기·닫기·고르기·달 넘김·집기) < 3 결과 소리(저장·놓기·
+//    하트·삭제·알림). 같은 동작에서 뒤에 오는 같거나 낮은 소리는 버리고, 더 높은 소리만 이어 낸다(집기 → 놓기).
+//  · 일반 톡은 TICK_DEFER_MS 미뤄 둔다 — 그 사이 같은 동작의 화면·결과 소리(창이 열림 등)가 오면 톡은 버린다.
+//  · 더블클릭 자리(편집실 카드·띠·날짜 칸): 첫 클릭 소리를 DOUBLE_DEFER_MS 미뤄 둔다. 두 번째 클릭이 오면 버리고,
+//    더블클릭이 여는 창 소리 하나만 낸다. 미룬 소리가 이미 났으면 더블클릭 쪽 소리를 버린다(어느 쪽이든 하나).
+//  · 누른 지 오래된 '두 번째 박자'(서버 확인 진동)는 소리 없음 — 결과 소리(저장 확인음)는 그대로 난다.
+//  · 규칙 밖(동작 하나에 여러 번 나야 하는 것): 칸 넘기 톱니(detent)·축하와 멜로디(celebrate).
+const GESTURE_IDLE_MS = 700; // 마지막 입력 뒤 이만큼 지나면 '입력 없는 소리'(서버 확인 등)로 본다
+const DOUBLE_MS = 380; // 같은 자리 두 번째 누름이 이 안이면 더블클릭(같은 동작)
+const TICK_DEFER_MS = 45; // 일반 톡 대기 — 지각 한계(≈70ms) 안
+const DOUBLE_DEFER_MS = 220; // 더블클릭 자리의 첫 클릭 소리 대기
+const DOUBLE_SURFACE = ".studio-event-pill, .support-bar, .studio-day";
+
 let lastPointer = { el: null as Element | null, at: 0, x: 0, y: 0, down: false, moved: false };
 let lastKey = { key: "", el: null as Element | null, at: 0 };
+let gesture = { id: 0, at: 0, input: 0, el: null as Element | null, best: 0 };
+let pending: { timer: number; gid: number; pr: number; fire: () => void } | null = null;
+
+function surfaceOf(el: Element | null): Element | null {
+  return el?.closest?.(DOUBLE_SURFACE) ?? null;
+}
+function firePending(): void {
+  const p = pending;
+  if (!p) return;
+  window.clearTimeout(p.timer);
+  pending = null;
+  p.fire();
+}
+function dropPending(): void {
+  if (!pending) return;
+  window.clearTimeout(pending.timer);
+  pending = null;
+}
+/** 새 입력 — 같은 자리를 바로 다시 누른 것(더블클릭)이면 같은 동작을 잇고, 아니면 새 동작을 연다. */
+function beginInput(el: Element | null, viaKey: boolean): void {
+  const now = performance.now();
+  const surf = viaKey ? null : surfaceOf(el);
+  const cont = !viaKey && surf !== null && now - gesture.at < DOUBLE_MS && surf === surfaceOf(gesture.el);
+  if (cont) {
+    gesture.at = now;
+    gesture.input = now;
+    // 첫 클릭 소리가 아직 대기 중이면 버리고 다시 판정 — 더블클릭이 여는 소리가 그 자리를 갖는다.
+    if (pending && pending.gid === gesture.id) {
+      dropPending();
+      gesture.best = 0;
+    }
+    return;
+  }
+  firePending(); // 앞 동작의 대기 소리는 그 동작 몫 — 지금 낸다
+  gesture = { id: gesture.id + 1, at: now, input: now, el, best: 0 };
+}
 if (typeof window !== "undefined") {
   const opt = { capture: true, passive: true } as const;
   window.addEventListener(
     "pointerdown",
     (e) => {
       lastPointer = { el: e.target as Element | null, at: performance.now(), x: e.clientX, y: e.clientY, down: true, moved: false };
+      beginInput(e.target as Element | null, false);
     },
     opt
   );
@@ -511,14 +564,23 @@ if (typeof window !== "undefined") {
   const up = () => {
     lastPointer.down = false;
     lastPointer.at = performance.now();
+    gesture.input = lastPointer.at; // 끌기를 놓은 순간도 같은 동작의 입력
   };
   window.addEventListener("pointerup", up, opt);
   window.addEventListener("pointercancel", up, opt);
-  window.addEventListener("keydown", (e) => (lastKey = { key: e.key, el: e.target as Element | null, at: performance.now() }), opt);
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      lastKey = { key: e.key, el: e.target as Element | null, at: performance.now() };
+      beginInput(e.target as Element | null, true);
+    },
+    opt
+  );
 }
 
 const CLOSE_RE = /닫기|취소|close|cancel|dismiss/i;
-function tickFor(): SfxName {
+/** 방금 누른 것에 맞는 소리. 누른 지 오래됐으면(서버 확인 박자 등) null = 소리 없음. */
+function tickFor(): SfxName | null {
   const now = performance.now();
   // 끌고 있는 중(누른 채 움직임) = 칸 넘기 톱니
   if (lastPointer.down && lastPointer.moved) return "detent";
@@ -526,8 +588,8 @@ function tickFor(): SfxName {
   const sincePointer = now - lastPointer.at;
   // 화살표·페이지 키로 값을 옮기는 중 = 톱니
   if (sinceKey < 250 && /^(Arrow|Page|Home|End)/.test(lastKey.key)) return "detent";
-  // 누른 지 오래(서버 확인 박자 등) — 기본 톡
-  if (Math.min(sinceKey, sincePointer) > 400) return "tick";
+  // 누른 지 오래 — '두 번째 박자'(서버 확인)는 진동만, 소리는 없다(한 동작 = 한 소리).
+  if (Math.min(sinceKey, sincePointer) > 400) return null;
   const src = sinceKey < sincePointer ? lastKey.el : lastPointer.el;
   const el = src?.closest?.("input,button,[role],a,summary,label,[data-act]") ?? null;
   if (!el) return "tap";
@@ -548,25 +610,79 @@ function tickFor(): SfxName {
   if (expanded === "false") return "open";
   return "tap";
 }
+/** 지금 소리가 더블클릭 자리(편집실 카드·띠·날짜 칸)를 누른 데서 나왔나. */
+function onDoubleSurface(): boolean {
+  const now = performance.now();
+  return now - lastPointer.at < 400 && lastPointer.at >= lastKey.at && surfaceOf(lastPointer.el) !== null;
+}
+function priorityOf(name: SfxName, fromTick: boolean): number {
+  if (fromTick) return 1;
+  return CATEGORY[name] === "ui" ? 2 : 3;
+}
+/** 동작 규칙을 통과하나(통과하면 그 동작의 최고 우선순위를 올린다). */
+function admit(name: SfxName, fromTick: boolean): boolean {
+  if (name === "detent") return true;
+  if (CATEGORY[name] === "celebrate") {
+    gesture.best = 3; // 축하·멜로디는 늘 나고, 같은 동작의 톡은 따라 나지 않게 자리를 차지한다
+    return true;
+  }
+  const pr = priorityOf(name, fromTick);
+  const active = performance.now() - gesture.input < GESTURE_IDLE_MS;
+  if (!active) return !fromTick; // 입력 없이 난 소리: 톡은 침묵, 화면·결과 소리는 그대로
+  if (pr <= gesture.best) return false;
+  gesture.best = pr;
+  return true;
+}
+/** 소리를 잠시 미뤄 둔다 — 같은 동작에서 더 중요한 소리가 오면 버려진다. 대기 중인 것보다 약하면 줄 서지 않는다. */
+function defer(name: SfxName, fromTick: boolean, ms: number): void {
+  const pr = priorityOf(name, fromTick);
+  if (pending && pending.gid === gesture.id) {
+    if (pending.pr > pr) return;
+    dropPending();
+  }
+  const gid = gesture.id;
+  const fire = () => {
+    if (admit(name, fromTick)) playNow(name);
+  };
+  pending = {
+    gid,
+    pr,
+    fire,
+    timer: window.setTimeout(() => {
+      pending = null;
+      fire();
+    }, ms)
+  };
+}
 
-// '톡'은 진동 hapticTick과 같은 순간에 자동으로 붙는다(lib/ui/haptics). 같은 손동작에서 더 구체적인 소리
-// (하트·놓기·저장…)가 나면 '톡'은 양보한다 — 호출 순서와 무관하게: 톡은 한 틱 미뤄 두고, 그 사이 다른 소리가 났으면 버린다.
-// 무엇을 눌렀는지는 **지금**(처리기 안, 상태가 바뀌기 전) 읽어 둔다.
-let lastSpecificAt = 0;
-
-/** 소리 하나. 자물쇠(전체 켜기·종류·다른 탭)를 여기서 다 본다 — 호출부는 이름만 부르면 된다. */
+/** 소리 하나. 자물쇠(전체 켜기·종류·다른 탭)와 '한 동작 = 한 소리' 규칙을 여기서 다 본다 — 호출부는 이름만 부르면 된다. */
 export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
-  if (name === "tick" && !opts.force) {
-    if (typeof window === "undefined") return;
-    const resolved = tickFor();
-    window.setTimeout(() => {
-      if (performance.now() - lastSpecificAt < 80) return;
-      playNow(resolved);
-    }, 0);
+  if (opts.force) {
+    // 설정의 '들어 보기'·견본 — 규칙 밖, 바로. 같은 동작의 톡은 따라 나지 않게 자리를 차지한다.
+    dropPending();
+    gesture.best = 3;
+    playNow(name, opts);
     return;
   }
-  lastSpecificAt = typeof performance !== "undefined" ? performance.now() : 0;
-  playNow(name, opts);
+  if (typeof window === "undefined") return;
+  if (name === "tick") {
+    const resolved = tickFor();
+    if (!resolved) return;
+    if (resolved === "detent") {
+      playNow(resolved);
+      return;
+    }
+    defer(resolved, true, onDoubleSurface() ? DOUBLE_DEFER_MS : TICK_DEFER_MS);
+    return;
+  }
+  // 더블클릭 자리의 '고르기'는 미뤄 둔다 — 더블클릭이면 여는 소리 하나만.
+  if (name === "select" && onDoubleSurface()) {
+    defer(name, false, DOUBLE_DEFER_MS);
+    return;
+  }
+  // 같은 동작의 미뤄 둔 소리(톡·첫 클릭)는 이 소리에 자리를 내준다.
+  if (pending && pending.gid === gesture.id && pending.pr <= priorityOf(name, false)) dropPending();
+  if (admit(name, false)) playNow(name, opts);
 }
 
 let lastPlayed = { name: "tick" as SfxName, at: 0 };
@@ -726,6 +842,9 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   }
   lastPlayed = { name, at: now };
   document.documentElement.dataset.sfxLast = name; // 검증용 흔적(Playwright가 어떤 소리였는지 읽는다)
+  // 검증용 순서 기록 — 테스트가 window.__sfxTrace = []를 깔아 둔 경우에만(한 동작 = 한 소리 실측).
+  const trace = (window as unknown as { __sfxTrace?: string[] }).__sfxTrace;
+  if (Array.isArray(trace)) trace.push(name);
   const out = ac.createGain();
   // 크기 곡선 — 1.6제곱(낮은 쪽은 섬세하게, 100이면 압축기 뒤에서 또렷하게) × 크기 ±1.5dB 흔들기.
   const level = Math.pow(10, ((Math.random() * 2 - 1) * 1.5) / 20);

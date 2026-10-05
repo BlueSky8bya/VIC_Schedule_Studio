@@ -362,6 +362,7 @@ export function StudioSettingsList({
     if (visible.length === 0) return;
     const i = visible.findIndex((t) => t.key === current);
     const next = visible[(i + (e.key === "ArrowDown" ? 1 : -1) + visible.length) % visible.length];
+    playSfx("tab");
     setActiveTab(next.key);
     nav?.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`)?.focus();
   };
@@ -385,7 +386,10 @@ export function StudioSettingsList({
             data-tab={t.key}
             id={`rhh-tab-${t.key}`}
             key={t.key}
-            onClick={() => setActiveTab(t.key)}
+            onClick={() => {
+              if (t.key !== current) playSfx("tab"); // 탭 바꿈 = 나무 '똑' 한 점(같은 탭 재클릭은 조용히)
+              setActiveTab(t.key);
+            }}
             onKeyDown={onTabKey}
             role="tab"
             tabIndex={current === t.key ? 0 : -1}
