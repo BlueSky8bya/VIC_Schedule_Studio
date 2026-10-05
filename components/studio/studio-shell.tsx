@@ -3547,7 +3547,8 @@ export function StudioShell({
   // ── 묶음 드래그: 띠(업 도움·기간 안내)·여러 날 일정·이어진 일정(2026-10-05 소유자) ──────────────
   // 가로로 긴 것은 '놓을 자리'를 카드 모양으로 다 그리면 다른 일정과 겹친다 → 옮겨 갈 범위는 아주 옅게 칠하고
   // **시작 칸·끝 칸에만** 날짜 꺾쇠를 세운다(원래 자리는 흐리게, 손에 든 칩엔 "10.5 ~ 10.10 · +2일" 꼬리표).
-  // 기준점 = 잡은 칸: 셋째 날을 잡아 놓으면 셋째 날이 그 칸에 온다(시작일 기준이면 손과 따로 논다).
+  // 기준점 = 시작일(2026-10-05 소유자 2차): 어느 칸을 잡든 **놓은 칸이 새 시작일**이다. 손에 든 칩도 띠의
+  // 시작을 대표한다 — 잡은 칸 기준(셋째 날을 잡으면 셋째 날이 그 칸에)은 '어디서 시작하나'가 머릿속 계산이 됐다.
   // 이어진 일정은 한 장만 잡아도 묶음 전체가 함께 — 하나만 떨어져 나가 연결이 끊기지 않게.
   // 저장은 구성원마다 기존 이동 큐(reorder, 서버가 종료일도 같은 폭으로)를, 되돌리기는 묶음 한 번(group).
   //
@@ -3631,9 +3632,10 @@ export function StudioShell({
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if ((e.target as HTMLElement).closest("button, a")) return;
     const node = e.currentTarget as HTMLElement;
-    const anchor = node.closest("[data-isodate]")?.getAttribute("data-isodate");
     const range = spanRangeOf(ids);
-    if (!anchor || !range.start) return;
+    // 기준 = 시작일 — 놓은 칸이 곧 새 시작일(잡은 칸과 무관).
+    const anchor = range.start;
+    if (!node.closest("[data-isodate]") || !range.start) return;
     // 칸의 범위 선택(시트식 드래그)까지 같이 시작되지 않게 — 띠는 칸 위에 얹혀 있어 신호가 칸으로 올라간다.
     e.stopPropagation();
     const rect = node.getBoundingClientRect();
