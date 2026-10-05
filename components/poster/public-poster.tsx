@@ -1286,6 +1286,14 @@ export function PublicPoster({
     detailOpenRef.current = open;
     playSfx(open ? "open" : "close");
   }, [agendaDetail]);
+  // 시트(설정·검색·기록) 열림·닫힘 소리 — 같은 방식.
+  const sheetSoundPrevRef = useRef(sheet);
+  useEffect(() => {
+    const prev = sheetSoundPrevRef.current;
+    sheetSoundPrevRef.current = sheet;
+    if (prev === sheet) return;
+    playSfx(sheet ? "open" : "close");
+  }, [sheet]);
   useEffect(() => {
     if (!agendaDetail) return;
     const onKey = (e: KeyboardEvent) => {
@@ -2982,7 +2990,7 @@ export function PublicPoster({
     }
   }
   function moveMonth(offset: number) {
-    if (offset !== 0) playSfx("page");
+    if (offset !== 0) playSfx(offset > 0 ? "page" : "page-prev");
     didNavigateRef.current = true;
     setDayVodPop(null); // 팝오버는 화면 고정 좌표라 달이 바뀌면 근거를 잃는다
     setMonthDir(offset >= 0 ? "next" : "prev");

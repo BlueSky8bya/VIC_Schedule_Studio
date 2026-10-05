@@ -32,7 +32,13 @@ export type SfxName =
   | "open"
   | "close"
   | "lift"
-  | "page";
+  | "page"
+  | "page-prev"
+  | "tap"
+  | "tab"
+  | "detent"
+  | "toggle-on"
+  | "toggle-off";
 
 const CATEGORY: Record<SfxName, SoundCategory> = {
   fanfare: "celebrate",
@@ -61,7 +67,13 @@ const CATEGORY: Record<SfxName, SoundCategory> = {
   open: "ui",
   close: "ui",
   lift: "ui",
-  page: "ui"
+  page: "ui",
+  "page-prev": "ui",
+  tap: "ui",
+  tab: "ui",
+  detent: "ui",
+  "toggle-on": "ui",
+  "toggle-off": "ui"
 };
 
 const KEY = "vic.sound";
@@ -119,15 +131,22 @@ export function setSoundQuietHidden(on: boolean): void {
   write(HIDDEN_KEY, on ? "on" : "off");
 }
 
-// ── 음색 엔진(2026-10-06 2차 — 소유자: "구리고 촌스러운 거 말고 귀엽고 통통 튀는 애니메이션에 맞게, 애플 형식으로") ──
-// 애플 시스템 사운드·HIG에서 가져온 원칙:
-//   · 짧게(대부분 60~250ms) — 소리는 손동작의 '확인'이지 음악이 아니다. 진동과 같은 순간에 같은 길이로.
-//   · 거친 파형 금지 — 톱니·사각파(삑삑한 전자음)를 쓰지 않는다. 맑은 사인에 배음을 얹어 나무(마림바)·유리(종)·
-//     물방울(퐁) 같은 '실제 물건' 소리를 흉내 낸다. 애플 키보드·AirDrop·Pay 확인음이 이 결이다.
-//   · 장조·완전 음정 — 올라가면 긍정(저장·하트), 내려가면 되돌림(닫기·끄기). 실패만 단2도로 짧게 '어-어'.
-//   · 아주 짧은 잔향 — 마른 소리는 장난감처럼 들린다. 작은 방 정도의 공간을 깔아 부드럽게.
-//   · 크기는 압축기로 고르게 — 음마다 들쭉날쭉하지 않고, 음량 100이면 확실히 들리게(1차는 너무 작았다).
-// 통통 튀는 화면 움직임(스프링)과 짝: 물방울은 음높이가 '튀어 오르고', 보잉은 스프링처럼 출렁인다.
+// ── 음색 엔진(2026-10-06 3차 — 소유자: "애플 형식으로 각 기능에 맞게 더 통통 튀고 촥 감기게, 더 다양하고
+// 귀에 안 거슬리는 부드러운 소리로, 버튼 상호작용·감정 연구자료에 맞게") ──
+// 근거(출처 목록은 docs/ux/UI_RULES.md UI-40):
+//   · 애플 WWDC19 '오디오-햅틱 디자인': 인과·조화·쓸모. 소리는 화면 움직임과 **같은 박자**(애플페이 체크 = 톡 두 번),
+//     날카로운 움직임엔 짧은 어택, 미끄러지는 움직임엔 이어지는 소리(바람). 작은 것은 작게 들려야 한다.
+//   · 날카로움 낮게 = '둥글고 부드럽게' — 기본은 낮고, '딸깍 맞물림'(잇기)만 또렷하게.
+//   · Brewster 이어콘: 음높이 하나로는 구분이 약하다 → **음 개수·리듬**으로 기능을 가른다(한 점 = 누름,
+//     두 점 = 켜기·되돌리기, 세 점 = 해제·단계 상승). 기본음은 200Hz~2kHz, 배음은 5kHz 아래.
+//   · 감정: 올라가는 음 = 긍정(켜기·저장·하트), 내려가는 음 = 되돌림(끄기·닫기·삭제). 실패도 불협화(단2도) 대신
+//     **같은 낮은 음 두 번**(리듬으로 '어-어') — 거칠지 않게.
+//   · 심리음향: 귀는 2~5kHz에 가장 민감·거슬림 → 출력 전체를 부드럽게 깎는다(저역통과 4.2kHz). 겹치는 음은 협화
+//     음정(옥타브·5도·4도·장3도)만, 2도 겹침 금지(Plomp–Levelt 거칠기). 어택이 느리고 밝기가 낮을수록 부드럽다.
+//   · 길이(Material): 자주 나는 소리 40~120ms, 확인음 ≤260ms, 축하만 길게(드물게).
+//   · 반복 피로: 매번 음높이 ±3%·크기 ±1.5dB 흔든다(같은 소리가 기계처럼 반복되지 않게, 알아듣기는 그대로).
+//   · 지연: 누른 뒤 20ms 안에 — 버튼 처리기 안에서 바로 낸다. 스프링 착지 소리는 오버슈트 꼭짓점에 작은 '톡'을 더한다.
+//   · 끝은 setTargetAtTime으로 0에 수렴(지수 램프로 끊으면 '딱' 잡음).
 
 let ctx: AudioContext | null = null;
 let bus: { input: GainNode; ac: AudioContext } | null = null;
@@ -145,10 +164,14 @@ function audio(): AudioContext | null {
   }
 }
 
-/** 공용 출력 버스 — 원음 + 짧은 잔향 → 압축기 → 스피커. 한 번만 만든다. */
+/** 공용 출력 버스 — 원음 + 짧은 잔향 → 부드럽게 깎기(저역통과) → 압축기 → 스피커. 한 번만 만든다. */
 function masterBus(ac: AudioContext): GainNode {
   if (bus && bus.ac === ac) return bus.input;
   const input = ac.createGain();
+  const soften = ac.createBiquadFilter();
+  soften.type = "lowpass";
+  soften.frequency.value = 4200; // 2~5kHz 거슬림 대역을 눌러 둥글게
+  soften.Q.value = 0.5;
   const comp = ac.createDynamicsCompressor();
   comp.threshold.value = -18;
   comp.knee.value = 12;
@@ -156,9 +179,9 @@ function masterBus(ac: AudioContext): GainNode {
   comp.attack.value = 0.003;
   comp.release.value = 0.15;
   const makeup = ac.createGain();
-  makeup.gain.value = 1.8; // 압축으로 줄어든 만큼 되돌려 전체를 키운다
-  // 잔향 — 0.35초 노이즈 감쇠 임펄스(작은 방). 섞는 비율은 낮게.
-  const len = Math.floor(ac.sampleRate * 0.35);
+  makeup.gain.value = 1.9; // 압축·깎기로 줄어든 만큼 되돌려 100에서 또렷하게
+  // 잔향 — 0.3초 노이즈 감쇠 임펄스(작은 방). 마른 소리는 장난감처럼 들린다.
+  const len = Math.floor(ac.sampleRate * 0.3);
   const ir = ac.createBuffer(2, len, ac.sampleRate);
   for (let ch = 0; ch < 2; ch += 1) {
     const d = ir.getChannelData(ch);
@@ -167,224 +190,329 @@ function masterBus(ac: AudioContext): GainNode {
   const verb = ac.createConvolver();
   verb.buffer = ir;
   const wet = ac.createGain();
-  wet.gain.value = 0.16;
-  input.connect(comp);
-  input.connect(verb).connect(wet).connect(comp);
-  comp.connect(makeup).connect(ac.destination);
+  wet.gain.value = 0.14;
+  input.connect(soften);
+  input.connect(verb).connect(wet).connect(soften);
+  soften.connect(comp).connect(makeup).connect(ac.destination);
   bus = { input, ac };
   return input;
 }
 
-/** 엔벨로프 붙은 사인 하나. f0→f1(bendTo)로 휠 수 있다. */
-function partial(ac: AudioContext, out: AudioNode, f: number, t0: number, len: number, vol: number, bendTo = 0, attack = 0.004) {
+const N = (semi: number) => 523.25 * Math.pow(2, semi / 12); // C5 기준 반음
+let jitter = 1; // 이번 소리의 음높이 흔들림(±3%) — playNow가 정한다
+
+type ToneSpec = {
+  f: number; // 시작 음높이
+  at?: number; // 시작(초, 지금부터)
+  vol?: number;
+  tau?: number; // 감쇠 시간상수(초) — 약 5τ 뒤 사라진다
+  attack?: number;
+  glideTo?: number; // 음높이를 여기로(통통 = 아래→위, 내려앉음 = 위→아래)
+  glide?: number; // 미끄러지는 시간
+  type?: OscillatorType;
+};
+/** 소리 하나 — 짧은 어택, 지수 감쇠(끝은 0으로 수렴), 선택적으로 음높이 미끄럼. */
+function tone(ac: AudioContext, out: AudioNode, { f, at = 0, vol = 0.3, tau = 0.06, attack = 0.003, glideTo, glide = 0.025, type = "sine" }: ToneSpec) {
+  const t0 = ac.currentTime + at;
   const o = ac.createOscillator();
   const g = ac.createGain();
-  o.type = "sine";
-  o.frequency.setValueAtTime(f, t0);
-  if (bendTo) o.frequency.exponentialRampToValueAtTime(Math.max(30, bendTo), t0 + Math.min(len, 0.12));
-  g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+  o.type = type;
+  o.frequency.setValueAtTime(f * jitter, t0);
+  if (glideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30, glideTo * jitter), t0 + glide);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + attack);
+  g.gain.setTargetAtTime(0, t0 + attack, tau);
   o.connect(g).connect(out);
   o.start(t0);
-  o.stop(t0 + len + 0.05);
+  o.stop(t0 + attack + tau * 7);
 }
 
-const N = (semi: number) => 523.25 * Math.pow(2, semi / 12); // C5 기준 반음
-
-type Voice = (ac: AudioContext, out: AudioNode, f: number, at: number, vol?: number) => void;
-const T = (ac: AudioContext, at: number) => ac.currentTime + at;
-
-/** 마림바 — 나무 건반. 기음 + 4배 배음(빨리 사라짐) = 따뜻하고 통통한 '똥'. */
-const marimba: Voice = (ac, out, f, at, vol = 0.32) => {
-  const t0 = T(ac, at);
-  partial(ac, out, f, t0, 0.42, vol);
-  partial(ac, out, f * 4, t0, 0.06, vol * 0.35);
-  partial(ac, out, f * 9.9, t0, 0.025, vol * 0.12);
-};
-/** 유리 종 — 맑게 반짝. 비조화 배음(2.76·5.4배)이 '유리'처럼 들린다. */
-const glass: Voice = (ac, out, f, at, vol = 0.22) => {
-  const t0 = T(ac, at);
-  partial(ac, out, f, t0, 0.7, vol);
-  partial(ac, out, f * 2.76, t0, 0.32, vol * 0.4);
-  partial(ac, out, f * 5.4, t0, 0.14, vol * 0.18);
-};
-/** 물방울 — 음높이가 위로 톡 튀어 오르는 '퐁'(통통 튀는 화면과 짝). */
-const bubble: Voice = (ac, out, f, at, vol = 0.3) => {
-  const t0 = T(ac, at);
-  partial(ac, out, f * 0.6, t0, 0.13, vol, f * 1.5, 0.003);
-};
-/** 내려앉는 물방울 — 닫기·끄기. */
-const drip: Voice = (ac, out, f, at, vol = 0.26) => {
-  const t0 = T(ac, at);
-  partial(ac, out, f * 1.4, t0, 0.14, vol, f * 0.7, 0.003);
-};
-/** 보잉 — 스프링처럼 출렁이는 음(비브라토가 점점 잦아든다). */
-const boing: Voice = (ac, out, f, at, vol = 0.24) => {
-  const t0 = T(ac, at);
+/** 톡(blip) — 삼각파가 0.72배에서 제 음으로 톡 올라선다: 가장 작은 '눌렀다'. */
+const blip = (ac: AudioContext, out: AudioNode, f: number, at = 0, vol = 0.26, tau = 0.03) =>
+  tone(ac, out, { f: f * 0.72, glideTo: f, glide: 0.02, at, vol, tau, attack: 0.002, type: "triangle" });
+/** 퐁(bubble) — 더 크게 튀어 오르는 물방울(열기·집기·단계 상승). */
+const bubble = (ac: AudioContext, out: AudioNode, f: number, at = 0, vol = 0.28, tau = 0.045) =>
+  tone(ac, out, { f: f * 0.6, glideTo: f * 1.12, glide: 0.05, at, vol, tau, attack: 0.003 });
+/** 내려앉음(drip) — 위에서 아래로 톡(닫기·끄기). */
+const drip = (ac: AudioContext, out: AudioNode, f: number, at = 0, vol = 0.24, tau = 0.04) =>
+  tone(ac, out, { f: f * 1.25, glideTo: f * 0.8, glide: 0.05, at, vol, tau, attack: 0.003 });
+/** 마림바 — 나무 건반 모드 합성(1 : 4 : 9.88, 위 모드일수록 빨리 사라진다). 따뜻하고 통통한 '똥'. */
+function marimba(ac: AudioContext, out: AudioNode, f: number, at = 0, vol = 0.3, tau = 0.09) {
+  tone(ac, out, { f, at, vol, tau, attack: 0.002 });
+  if (f * 4 < 5000) tone(ac, out, { f: f * 4, at, vol: vol * 0.25, tau: tau / 4, attack: 0.001 });
+  if (f * 9.88 < 5000) tone(ac, out, { f: f * 9.88, at, vol: vol * 0.08, tau: tau / 8, attack: 0.001 });
+}
+/** 종(chime) — FM, 반송:변조 = 1:2(협화), 변조 깊이는 1.5에서 소리보다 빨리 0으로 → 반짝이다 맑게 가라앉는다. */
+function chime(ac: AudioContext, out: AudioNode, f: number, at = 0, vol = 0.22, tau = 0.14) {
+  const t0 = ac.currentTime + at;
+  const fc = f * jitter;
+  const car = ac.createOscillator();
+  const mod = ac.createOscillator();
+  const idx = ac.createGain();
+  const g = ac.createGain();
+  car.frequency.setValueAtTime(fc, t0);
+  mod.frequency.setValueAtTime(fc * 2, t0);
+  idx.gain.setValueAtTime(fc * 2 * 1.5, t0);
+  idx.gain.setTargetAtTime(0, t0, tau / 3);
+  mod.connect(idx).connect(car.frequency);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.002);
+  g.gain.setTargetAtTime(0, t0 + 0.002, tau);
+  car.connect(g).connect(out);
+  car.start(t0);
+  mod.start(t0);
+  car.stop(t0 + tau * 7);
+  mod.stop(t0 + tau * 7);
+}
+/** 보잉 — 튀어 올랐다 출렁이며 자리 잡는 음(오버슈트 → 안착). 하트 '통!'. */
+function boing(ac: AudioContext, out: AudioNode, f: number, at = 0, vol = 0.24) {
+  const t0 = ac.currentTime + at;
+  const fc = f * jitter;
   const o = ac.createOscillator();
   const g = ac.createGain();
-  const lfo = ac.createOscillator();
-  const depth = ac.createGain();
-  o.type = "sine";
-  o.frequency.setValueAtTime(f, t0);
-  lfo.frequency.setValueAtTime(14, t0);
-  depth.gain.setValueAtTime(f * 0.18, t0);
-  depth.gain.exponentialRampToValueAtTime(1, t0 + 0.35);
-  lfo.connect(depth).connect(o.frequency);
-  g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+  o.frequency.setValueAtTime(fc * 0.55, t0);
+  o.frequency.exponentialRampToValueAtTime(fc * 1.18, t0 + 0.045); // 튀어 올라 넘침
+  o.frequency.exponentialRampToValueAtTime(fc * 0.97, t0 + 0.09); // 살짝 되돌아
+  o.frequency.exponentialRampToValueAtTime(fc, t0 + 0.13); // 안착
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.004);
+  g.gain.setTargetAtTime(0, t0 + 0.06, 0.05);
   o.connect(g).connect(out);
   o.start(t0);
-  lfo.start(t0);
-  o.stop(t0 + 0.48);
-  lfo.stop(t0 + 0.48);
-};
-/** 바람 — 짧은 노이즈를 대역 필터로 쓸어 올리거나 내린다(달 넘김·던지기). */
-function swish(ac: AudioContext, out: AudioNode, at: number, from: number, to: number, len: number, vol = 0.3) {
-  const t0 = T(ac, at);
-  const n = Math.floor(ac.sampleRate * len);
+  o.stop(t0 + 0.45);
+}
+/** 바람 — 노이즈를 대역 필터로 쓸어 올리거나(열기·다음 달) 내린다(닫기·이전 달·던지기). */
+function whoosh(ac: AudioContext, out: AudioNode, from: number, to: number, len: number, at = 0, vol = 0.22, lowpass = false) {
+  const t0 = ac.currentTime + at;
+  const n = Math.floor(ac.sampleRate * len * 1.4);
   const buf = ac.createBuffer(1, n, ac.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < n; i += 1) d[i] = Math.random() * 2 - 1;
   const src = ac.createBufferSource();
   src.buffer = buf;
-  const bp = ac.createBiquadFilter();
-  bp.type = "bandpass";
-  bp.Q.value = 1.4;
-  bp.frequency.setValueAtTime(from, t0);
-  bp.frequency.exponentialRampToValueAtTime(to, t0 + len);
+  const f = ac.createBiquadFilter();
+  f.type = lowpass ? "lowpass" : "bandpass";
+  f.Q.value = lowpass ? 0.7 : 1.5;
+  f.frequency.setValueAtTime(from, t0);
+  f.frequency.exponentialRampToValueAtTime(to, t0 + len);
   const g = ac.createGain();
-  g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(vol, t0 + len * 0.3);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
-  src.connect(bp).connect(g).connect(out);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + len * 0.3);
+  g.gain.setTargetAtTime(0, t0 + len * 0.45, len / 5);
+  src.connect(f).connect(g).connect(out);
   src.start(t0);
-  src.stop(t0 + len + 0.02);
+  src.stop(t0 + len * 1.4);
 }
 
 function render(ac: AudioContext, out: AudioNode, name: SfxName) {
   switch (name) {
-    // ── 축하 ──
-    case "fanfare": // 마림바 상행 아르페지오 + 유리 반짝 마무리(도-미-솔-도-미)
-      [0, 4, 7, 12].forEach((s, i) => marimba(ac, out, N(s), i * 0.085));
-      glass(ac, out, N(16), 0.34, 0.2);
-      glass(ac, out, N(24), 0.42, 0.12);
+    // ── 축하(드물게 — 길고 화려해도 된다) ── 장조 아르페지오(1-3-5-8), 반짝임은 작게.
+    case "fanfare":
+      [0, 4, 7, 12].forEach((s, i) => marimba(ac, out, N(s), i * 0.075, 0.3, 0.12));
+      chime(ac, out, N(16), 0.31, 0.2, 0.22);
+      chime(ac, out, N(19), 0.38, 0.12, 0.2);
       break;
-    case "chime": // 유리 종 두 음(솔→도)
-      glass(ac, out, N(7), 0);
-      glass(ac, out, N(12), 0.12);
+    case "chime": // 종 두 음(5도 상행)
+      chime(ac, out, N(0), 0, 0.24, 0.2);
+      chime(ac, out, N(7), 0.11, 0.22, 0.24);
       break;
-    case "bells": // 방울 — 유리 종 빠른 반짝임
-      [12, 16, 19, 16, 24].forEach((s, i) => glass(ac, out, N(s), i * 0.065, 0.14));
+    case "bells": // 방울 — 종 다섯 점(장3화음 오르내림)
+      [0, 4, 7, 4, 12].forEach((s, i) => chime(ac, out, N(s), i * 0.065, 0.15, 0.12));
       break;
-    case "spooky": // 귀여운 으스스 — 출렁이는 보잉 두 번(내려감)
-      boing(ac, out, N(-5), 0);
-      boing(ac, out, N(-9), 0.2, 0.2);
+    case "spooky": // 귀여운 으스스 — 출렁이며 내려가는 보잉 둘(단3도)
+      boing(ac, out, N(-5), 0, 0.24);
+      boing(ac, out, N(-8), 0.18, 0.2);
       break;
-    case "sparkle": // 반짝 — 유리 빠른 상행
-      [12, 16, 19, 24, 28].forEach((s, i) => glass(ac, out, N(s), i * 0.045, 0.12));
+    case "sparkle": // 반짝 — 종 빠른 상행(장조), 작게
+      [0, 4, 7, 12, 16].forEach((s, i) => chime(ac, out, N(s + 7), i * 0.045, 0.12, 0.1));
       break;
     case "soft": // 낮고 조용한 마림바 한 음
-      marimba(ac, out, N(-5), 0, 0.22);
+      marimba(ac, out, N(-5), 0, 0.24, 0.12);
       break;
-    case "levelup": // 단계 상승 — 물방울 셋 + 유리 마무리
-      [0, 4, 7].forEach((s, i) => bubble(ac, out, N(s + 7), i * 0.07, 0.24));
-      glass(ac, out, N(19), 0.22, 0.2);
+    case "levelup": // 단계 상승 — 퐁 셋(1-3-5) + 종 마무리
+      [0, 4, 7].forEach((s, i) => bubble(ac, out, N(s), i * 0.065, 0.24));
+      chime(ac, out, N(12), 0.2, 0.2, 0.2);
       break;
-    case "pop": // 기본 축하 — 물방울 퐁 + 작은 반짝
-      bubble(ac, out, N(7), 0);
-      glass(ac, out, N(19), 0.07, 0.1);
+    case "pop": // 기본 축하 — 퐁 + 작은 종
+      bubble(ac, out, N(7), 0, 0.3);
+      chime(ac, out, N(12), 0.07, 0.12, 0.14);
       break;
     // ── 하트·기대 ──
-    case "heart-on": // 퐁-퐁 위로(장3도)
-      bubble(ac, out, N(4), 0, 0.26);
-      bubble(ac, out, N(8), 0.07, 0.24);
+    case "heart-on": // 보잉(튀어 올라 안착) + 옥타브 위 작은 반짝 = '통!'
+      boing(ac, out, N(4), 0, 0.28);
+      blip(ac, out, N(16), 0.07, 0.1, 0.03);
       break;
     case "heart-off": // 살짝 내려앉음
       drip(ac, out, N(4), 0, 0.2);
       break;
-    case "hope": // 별빛 — 유리 두 점
-      glass(ac, out, N(19), 0, 0.16);
-      glass(ac, out, N(26), 0.08, 0.12);
+    case "hope": // 별빛 — 종 두 점(5도)
+      chime(ac, out, N(7), 0, 0.16, 0.12);
+      chime(ac, out, N(14), 0.08, 0.12, 0.14);
       break;
-    // ── 누름·이동 ──
-    case "tick": // 아주 작은 물방울(진동과 같은 순간)
-      bubble(ac, out, N(19), 0, 0.12);
+    // ── 누름·이동(가장 자주 — 짧고 작게) ──
+    case "tick": // 무엇을 눌렀는지 모를 때의 기본 톡(서버 확인 박자 등)
+      blip(ac, out, N(12), 0, 0.14, 0.022);
       break;
-    case "select": // 고르기 — 마림바 한 점(높게)
-      marimba(ac, out, N(12), 0, 0.24);
+    case "tap": // 단추 한 번 — 한 점
+      blip(ac, out, N(7), 0, 0.2, 0.028);
       break;
-    case "open": // 열림 — 물방울 위로
-      bubble(ac, out, N(7), 0, 0.26);
+    case "tab": // 탭·세그먼트·라디오 고르기 — 나무 '똑' 한 점(높게, 짧게)
+      marimba(ac, out, N(12), 0, 0.2, 0.045);
       break;
-    case "close": // 닫힘 — 물방울 아래로
-      drip(ac, out, N(7), 0, 0.22);
+    case "detent": // 슬라이더 한 칸·끌면서 칸 넘기 — 시계 톱니처럼 아주 작게
+      blip(ac, out, N(19), 0, 0.09, 0.012);
       break;
-    case "lift": // 집기 — 퐁퐁 떠오름
-      bubble(ac, out, N(4), 0, 0.22);
-      bubble(ac, out, N(11), 0.05, 0.2);
+    case "toggle-on": // 스위치 켜기 — 장3도 상행 두 점(40ms)
+      marimba(ac, out, N(7), 0, 0.22, 0.05);
+      marimba(ac, out, N(11), 0.04, 0.22, 0.06);
       break;
-    case "page": // 달 넘김 — 종이 넘기는 바람
-      swish(ac, out, 0, 900, 3200, 0.16, 0.22);
+    case "toggle-off": // 스위치 끄기 — 장3도 하행, 3dB 작게
+      marimba(ac, out, N(11), 0, 0.16, 0.05);
+      marimba(ac, out, N(7), 0.04, 0.16, 0.06);
+      break;
+    case "select": // 일정 카드 고르기 — 마림바 한 점(따뜻하게)
+      marimba(ac, out, N(7), 0, 0.24, 0.07);
+      break;
+    case "open": // 열림 — 바람이 올라오고, 자리 잡는 순간 퐁
+      whoosh(ac, out, 500, 1800, 0.14, 0, 0.12);
+      bubble(ac, out, N(7), 0.1, 0.18, 0.04);
+      break;
+    case "close": // 닫힘 — 바람이 내려가며 사라진다
+      whoosh(ac, out, 1600, 450, 0.13, 0, 0.13);
+      drip(ac, out, N(0), 0.06, 0.1, 0.03);
+      break;
+    case "lift": // 집기 — 퐁 위로(손에 들림)
+      bubble(ac, out, N(4), 0, 0.22, 0.04);
+      break;
+    case "page": // 다음 달 — 위로 쓸리는 바람 + 희미한 톡
+      whoosh(ac, out, 600, 2000, 0.12, 0, 0.16);
+      blip(ac, out, N(12), 0.06, 0.06, 0.02);
+      break;
+    case "page-prev": // 이전 달 — 아래로 쓸리는 바람
+      whoosh(ac, out, 2000, 600, 0.12, 0, 0.16);
+      blip(ac, out, N(7), 0.06, 0.06, 0.02);
       break;
     // ── 편집 ──
-    case "save": // 저장 — 마림바 완전4도 상행(솔→도)
-      marimba(ac, out, N(7), 0);
-      marimba(ac, out, N(12), 0.08);
+    case "save": // 저장 — 체크 애니메이션 박자(톡-톡)에 맞춘 5도 상행 종
+      chime(ac, out, N(0), 0, 0.22, 0.12);
+      chime(ac, out, N(7), 0.09, 0.22, 0.18);
       break;
-    case "drop": // 놓기 — 낮은 마림바 '똥' + 착지 물방울
-      marimba(ac, out, N(-5), 0, 0.3);
-      bubble(ac, out, N(7), 0.04, 0.12);
+    case "drop": // 놓기 — 낮은 나무 '똥' 착지 + 스프링 오버슈트 꼭짓점에 작은 톡
+      marimba(ac, out, N(-5), 0, 0.3, 0.08);
+      blip(ac, out, N(7), 0.12, 0.08, 0.02);
       break;
-    case "delete": // 삭제 — 내려앉는 두 음
-      drip(ac, out, N(7), 0, 0.22);
-      marimba(ac, out, N(-5), 0.07, 0.2);
+    case "delete": // 삭제 — 음이 0.6배로 꺼지며 사라짐 + 부드러운 바람(저역)
+      tone(ac, out, { f: N(4), glideTo: N(4) * 0.6, glide: 0.12, vol: 0.22, tau: 0.05 });
+      whoosh(ac, out, 1400, 300, 0.14, 0.02, 0.1, true);
       break;
-    case "fling": // 던지기 — 휙 + 멀어지는 물방울
-      swish(ac, out, 0, 3000, 500, 0.3, 0.3);
-      drip(ac, out, N(12), 0.05, 0.14);
+    case "fling": // 던지기 — 휙(아래로) + 멀어지는 물방울
+      whoosh(ac, out, 2400, 400, 0.24, 0, 0.22);
+      drip(ac, out, N(12), 0.06, 0.12, 0.04);
       break;
-    case "undo": // 되돌리기 — 짧게 내려감
-      drip(ac, out, N(9), 0, 0.2);
+    case "undo": // 되돌리기 — 온음 하행 두 점
+      marimba(ac, out, N(9), 0, 0.2, 0.05);
+      marimba(ac, out, N(7), 0.05, 0.2, 0.06);
       break;
-    case "redo": // 다시 — 짧게 올라감
-      bubble(ac, out, N(9), 0, 0.2);
+    case "redo": // 다시 — 온음 상행 두 점(되돌리기의 거울)
+      marimba(ac, out, N(7), 0, 0.2, 0.05);
+      marimba(ac, out, N(9), 0.05, 0.2, 0.06);
       break;
-    case "link": // 잇기 — 마림바 두 점 딸깍(위로)
-      marimba(ac, out, N(12), 0, 0.22);
-      marimba(ac, out, N(19), 0.06, 0.2);
+    case "link": // 잇기 — 완전4도 상행, 바짝 붙은 두 점 '찰칵'(맞물림 = 또렷하게)
+      marimba(ac, out, N(7), 0, 0.22, 0.04);
+      marimba(ac, out, N(12), 0.035, 0.24, 0.06);
       break;
-    case "unlink": // 끊기 — 한 점 툭(아래로)
-      marimba(ac, out, N(7), 0, 0.2);
-      drip(ac, out, N(2), 0.03, 0.12);
+    case "unlink": // 끊기 — 완전4도 하행, 간격 넓게
+      marimba(ac, out, N(12), 0, 0.2, 0.04);
+      marimba(ac, out, N(7), 0.08, 0.18, 0.05);
       break;
     // ── 알림 ──
-    case "unlock": // 열림 — 유리 장3화음 상행
-      [0, 4, 7].forEach((s, i) => glass(ac, out, N(s + 12), i * 0.07, 0.18));
+    case "unlock": // 열림 — 종 1-3-5 상행
+      [0, 4, 7].forEach((s, i) => chime(ac, out, N(s), i * 0.07, 0.2, 0.16));
       break;
-    case "error": // 실패 — 귀엽게 '어-어'(마림바 단2도 하행)
-      marimba(ac, out, N(-3), 0, 0.26);
-      marimba(ac, out, N(-4), 0.13, 0.24);
+    case "error": // 실패 — 같은 낮은 음 두 번(리듬으로 '어-어', 불협화 없음), 둥근 삼각파
+      tone(ac, out, { f: 277, vol: 0.26, tau: 0.045, attack: 0.005, type: "triangle" });
+      tone(ac, out, { f: 277, at: 0.11, vol: 0.24, tau: 0.06, attack: 0.005, type: "triangle" });
       break;
     default:
-      bubble(ac, out, N(7), 0);
+      blip(ac, out, N(7));
       break;
   }
 }
 
-// '톡'(tick)은 진동 hapticTick과 같은 순간에 자동으로 붙는다(lib/ui/haptics). 같은 손동작에서 더 구체적인 소리
+// ── '톡' 고르기 — 진동 hapticTick이 앱 곳곳(200곳 넘게)에서 같은 '톡'을 내던 것을, **방금 누른 것**을 보고
+// 그 기능에 맞는 소리로 바꾼다(스위치 켜기/끄기·탭·닫기·열기·슬라이더·끌면서 칸 넘기). 호출부는 그대로.
+let lastPointer = { el: null as Element | null, at: 0, x: 0, y: 0, down: false, moved: false };
+let lastKey = { key: "", el: null as Element | null, at: 0 };
+if (typeof window !== "undefined") {
+  const opt = { capture: true, passive: true } as const;
+  window.addEventListener(
+    "pointerdown",
+    (e) => {
+      lastPointer = { el: e.target as Element | null, at: performance.now(), x: e.clientX, y: e.clientY, down: true, moved: false };
+    },
+    opt
+  );
+  window.addEventListener(
+    "pointermove",
+    (e) => {
+      if (lastPointer.down && !lastPointer.moved && Math.hypot(e.clientX - lastPointer.x, e.clientY - lastPointer.y) > 6) lastPointer.moved = true;
+    },
+    opt
+  );
+  const up = () => {
+    lastPointer.down = false;
+    lastPointer.at = performance.now();
+  };
+  window.addEventListener("pointerup", up, opt);
+  window.addEventListener("pointercancel", up, opt);
+  window.addEventListener("keydown", (e) => (lastKey = { key: e.key, el: e.target as Element | null, at: performance.now() }), opt);
+}
+
+const CLOSE_RE = /닫기|취소|close|cancel|dismiss/i;
+function tickFor(): SfxName {
+  const now = performance.now();
+  // 끌고 있는 중(누른 채 움직임) = 칸 넘기 톱니
+  if (lastPointer.down && lastPointer.moved) return "detent";
+  const sinceKey = now - lastKey.at;
+  const sincePointer = now - lastPointer.at;
+  // 화살표·페이지 키로 값을 옮기는 중 = 톱니
+  if (sinceKey < 250 && /^(Arrow|Page|Home|End)/.test(lastKey.key)) return "detent";
+  // 누른 지 오래(서버 확인 박자 등) — 기본 톡
+  if (Math.min(sinceKey, sincePointer) > 400) return "tick";
+  const src = sinceKey < sincePointer ? lastKey.el : lastPointer.el;
+  const el = src?.closest?.("input,button,[role],a,summary,label,[data-act]") ?? null;
+  if (!el) return "tap";
+  if (el instanceof HTMLInputElement) {
+    if (el.type === "range") return "detent";
+    if (el.type === "checkbox") return el.checked ? "toggle-on" : "toggle-off"; // 네이티브는 이미 바뀐 값
+    if (el.type === "radio") return "tab";
+  }
+  const role = el.getAttribute("role");
+  if (role === "radio" || role === "tab" || role === "option" || role === "menuitemradio" || el.hasAttribute("aria-selected")) return "tab";
+  const checked = el.getAttribute("aria-checked") ?? el.getAttribute("aria-pressed");
+  if (role === "switch" || checked !== null) return checked === "true" ? "toggle-off" : "toggle-on"; // 처리기 안 = 바뀌기 전 값
+  const label = `${el.getAttribute("aria-label") ?? ""} ${el.getAttribute("data-act") ?? ""}`;
+  if (CLOSE_RE.test(label)) return "close";
+  if (/^open-|-open$/.test(el.getAttribute("data-act") ?? "") || el.hasAttribute("aria-haspopup")) return "open";
+  const expanded = el.getAttribute("aria-expanded");
+  if (expanded === "true") return "close";
+  if (expanded === "false") return "open";
+  return "tap";
+}
+
+// '톡'은 진동 hapticTick과 같은 순간에 자동으로 붙는다(lib/ui/haptics). 같은 손동작에서 더 구체적인 소리
 // (하트·놓기·저장…)가 나면 '톡'은 양보한다 — 호출 순서와 무관하게: 톡은 한 틱 미뤄 두고, 그 사이 다른 소리가 났으면 버린다.
+// 무엇을 눌렀는지는 **지금**(처리기 안, 상태가 바뀌기 전) 읽어 둔다.
 let lastSpecificAt = 0;
 
 /** 소리 하나. 자물쇠(전체 켜기·종류·다른 탭)를 여기서 다 본다 — 호출부는 이름만 부르면 된다. */
 export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
   if (name === "tick" && !opts.force) {
     if (typeof window === "undefined") return;
+    const resolved = tickFor();
     window.setTimeout(() => {
       if (performance.now() - lastSpecificAt < 80) return;
-      playNow("tick");
+      playNow(resolved);
     }, 0);
     return;
   }
@@ -392,6 +520,7 @@ export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
   playNow(name, opts);
 }
 
+let lastPlayed = { name: "tick" as SfxName, at: 0 };
 function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   if (!opts.force) {
     if (!soundEnabled()) return;
@@ -402,11 +531,19 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   if (vol <= 0) return;
   const ac = audio();
   if (!ac) return;
+  // 같은 소리가 30ms 안에 겹치면 하나만(두 경로가 같은 순간을 알릴 때 두 배로 커지지 않게)
+  const now = performance.now();
+  if (lastPlayed.name === name && now - lastPlayed.at < 30) return;
+  lastPlayed = { name, at: now };
+  document.documentElement.dataset.sfxLast = name; // 검증용 흔적(Playwright가 어떤 소리였는지 읽는다)
   const out = ac.createGain();
-  // 크기 곡선 — 1.6제곱(낮은 쪽은 섬세하게, 100이면 압축기 뒤에서 또렷하게). 1차(제곱×0.9, 음마다 0.04~0.16)는 너무 작았다.
-  out.gain.value = Math.pow(vol / 100, 1.6) * 1.2;
+  // 크기 곡선 — 1.6제곱(낮은 쪽은 섬세하게, 100이면 압축기 뒤에서 또렷하게) × 크기 ±1.5dB 흔들기.
+  const level = Math.pow(10, ((Math.random() * 2 - 1) * 1.5) / 20);
+  out.gain.value = Math.pow(vol / 100, 1.6) * 1.25 * level;
   out.connect(masterBus(ac));
+  jitter = 1 + (Math.random() * 2 - 1) * 0.03; // 음높이 ±3%(반음 미만 — 같은 소리로 알아듣되 기계적 반복은 아니게)
   render(ac, out, name);
+  jitter = 1;
 }
 
 /** 기념일 테마 소리(lib/ui/celebration의 sound 이름). */

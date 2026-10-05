@@ -11,7 +11,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import type { SoundCategory, SoundCats } from "@/lib/ui/sfx";
+import { playSfx, type SfxName, type SoundCategory, type SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import { TEXT_PX_BASE, TEXT_PX_MAX, TEXT_PX_MIN } from "@/lib/ui/edit-prefs";
 import { FONT_OPTIONS, FONT_STACKS, type WeightStep } from "@/lib/ui/font-prefs";
@@ -89,6 +89,30 @@ export type SoundSettings = {
   showEdit: boolean;
 };
 type Tone = "water" | "leaf" | "metal" | "rose";
+
+// 소리 모아 듣기 — 기능마다 다른 소리를 한자리에서(음 개수·리듬·오르내림으로 구분된다, lib/ui/sfx 근거 주석).
+const SOUND_SAMPLES: { name: SfxName; label: string; edit?: boolean }[] = [
+  { name: "tap", label: "누르기" },
+  { name: "tab", label: "고르기" },
+  { name: "toggle-on", label: "켜기" },
+  { name: "toggle-off", label: "끄기" },
+  { name: "open", label: "열기" },
+  { name: "close", label: "닫기" },
+  { name: "page", label: "다음 달" },
+  { name: "page-prev", label: "이전 달" },
+  { name: "heart-on", label: "하트" },
+  { name: "lift", label: "집기", edit: true },
+  { name: "drop", label: "놓기", edit: true },
+  { name: "save", label: "저장", edit: true },
+  { name: "link", label: "잇기", edit: true },
+  { name: "unlink", label: "끊기", edit: true },
+  { name: "undo", label: "되돌리기", edit: true },
+  { name: "redo", label: "다시", edit: true },
+  { name: "delete", label: "삭제", edit: true },
+  { name: "unlock", label: "잠금 해제" },
+  { name: "error", label: "실패" },
+  { name: "fanfare", label: "축하" }
+];
 
 export type FontSettings = {
   id: string;
@@ -481,6 +505,18 @@ export function StudioSettingsList({
               >
                 들어 보기
               </button>
+            </div>
+          </div>
+          <div className={`role-help-haptics rhh-stack-sm${sound.on ? "" : " is-locked"}`}>
+            <RowLabel icon={<MousePointerClick size={15} />} tone="water">
+              소리 모아 듣기
+            </RowLabel>
+            <div className="rhh-font-grid rhh-sound-grid" data-act="sound-sample">
+              {SOUND_SAMPLES.filter((x) => !x.edit || sound.showEdit).map((x) => (
+                <button disabled={!sound.on} key={x.name} onClick={() => playSfx(x.name, { force: true })} type="button">
+                  {x.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

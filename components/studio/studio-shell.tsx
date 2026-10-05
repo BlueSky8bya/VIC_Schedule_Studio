@@ -738,6 +738,14 @@ export function StudioShell({
     editorSoundPrevRef.current = editorVisible;
     playSfx(editorVisible ? "open" : "close");
   }, [editorVisible]);
+  // 창(설정·태그·인사이트·방문) 열림·닫힘 소리 — 같은 이유로 상태 전환 한 곳에서. 창끼리 바꿔 열면 '열림'만.
+  const modalSoundPrevRef = useRef(modal);
+  useEffect(() => {
+    const prev = modalSoundPrevRef.current;
+    modalSoundPrevRef.current = modal;
+    if (prev === modal) return;
+    playSfx(modal ? "open" : "close");
+  }, [modal]);
 
   // 편집 카드 여닫기 계측(2026-09-03, docs/ux/saju-redesign-direction.md F-3) — 30일 로그에서
   // 칸·카드 열기 606회 대 저장 176회. 둘러보기인지 포기인지 가르려면 체류·입력·닫은 방법이 필요.
@@ -1975,7 +1983,7 @@ export function StudioShell({
   }
 
   function moveMonth(offset: number) {
-    if (offset !== 0) playSfx("page");
+    if (offset !== 0) playSfx(offset > 0 ? "page" : "page-prev");
     hapticTick(); // 달 넘김 손맛 — 버튼·키보드·스와이프 모든 경로 공통(Android만, 그 외 조용히 무시)
     didNavigateRef.current = true; // 이제부턴 달 이동 = 슬라이드(첫 진입 스태거와 구분)
     setMonthDir(offset >= 0 ? "next" : "prev"); // 슬라이드 방향(시청자 화면과 동일)
