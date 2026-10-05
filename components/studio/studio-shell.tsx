@@ -86,6 +86,7 @@ import {
 import type { CurrentActor } from "@/lib/auth/actor";
 import {
   assignSupportLanes,
+  supportDepthByWeek,
   buildCalendarMonth,
   buildChainKeys,
   buildLinkChain,
@@ -1211,6 +1212,11 @@ export function StudioShell({
   // (기간 안내=하늘색은 form 선언 뒤의 selectedIsPeriod.)
   const selectedIsSupport = Boolean(selectedLiveEvent?.isSupport);
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
+  // 주 행마다 띠 깊이 — 그 주 모든 칸이 같은 만큼 비워 이어진 일정 높이가 칸마다 맞는다(supportDepthByWeek).
+  const supportWeekDepth = useMemo(
+    () => supportDepthByWeek(cells, liveEvents, supportLanes.lanes),
+    [cells, liveEvents, supportLanes]
+  );
   // (띠 줄 수 "주별" 계산은 칸별 계산으로 대체 — 2026-09-02, 시청자 포스터와 동일 규칙.
   //  띠가 안 지나가는 칸까지 주 최대값만큼 내려앉아 빈 줄이 생겼다.)
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
@@ -6814,13 +6820,8 @@ export function StudioShell({
               const gapOpen = (idx: number) => liIdx !== null && liIdx === idx && !dropIsNoop;
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const visibleDayMark = getDayMark(cell.isoDate);
-              // 이 칸을 실제로 지나는 띠의 최고 레인 깊이만큼만 위 여백을 둔다(띠 없는 칸은 0).
-              // 레인 번호가 절대 위치(top: lane×20)라 '개수'가 아니라 '최고 레인+1'이어야 한다:
-              // 레인0 띠가 이 칸을 안 지나가도 레인1 띠가 지나가면 그 아래까지 비워야 한다.
-              const cellLaneDepth = supportHere.reduce(
-                (max, s) => Math.max(max, (supportLanes.lanes.get(s.id) ?? 0) + 1),
-                0
-              );
+              // 주 행 단위 깊이 — 같은 주의 띠 없는 칸도 같은 만큼 비워 이어진 일정이 칸마다 같은 높이에 선다.
+              const cellLaneDepth = supportWeekDepth[Math.floor(cellIndex / 7)] ?? 0;
 
               const dayClass = [
                 "studio-day",

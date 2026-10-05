@@ -407,7 +407,9 @@ function inkStyleFor(bgs: string[], haloBg: string): CSSProperties {
   return {
     color: themeColor(ink, "#f1ede6"),
     ["--evt-weight" as string]: String(weight),
-    ["--evt-shadow" as string]: shadow
+    ["--evt-shadow" as string]: shadow,
+    // 카드 바탕색(2색이면 두 색 평균) — 미정 빗금 위 글자 헤일로가 쓴다(public-poster.css '미정' 블록).
+    ["--evt-halo" as string]: themeColor(haloBg, deriveDarkTagColors(haloBg).bgColor)
   } as CSSProperties;
 }
 // 배경색 위 글자 스타일. textColor는 더 이상 잉크로 쓰지 않는다(조화 위해 통일) — 호출부 호환용.
@@ -605,6 +607,32 @@ export function assignSupportLanes<T extends PublicScheduleEvent | StudioSchedul
     lanes.set(e.id, lane);
   }
   return { lanes, count: laneEnds.length };
+}
+
+// 주(달력 한 행)마다 띠가 차지하는 레인 깊이 — 그 행의 **모든 칸**이 이만큼 위를 비운다(2026-10-05 소유자).
+// 예전엔 띠가 지나는 칸만 내려앉아, 띠 없는 옆 칸과 이어진 일정(끈·멀티데이)의 높이가 어긋나 연결이 끊겨 보였다.
+// 구글 캘린더의 종일 행처럼 주 단위로 맞추면 같은 주 안의 일정 첫 줄이 항상 같은 높이에 선다.
+// cells는 7칸씩 한 행(월요일/일요일 시작 무관 — 인덱스로만 자른다). 반환: 행 번호 → 깊이(띠 없으면 0).
+export function supportDepthByWeek<T extends PublicScheduleEvent | StudioScheduleEvent>(
+  cells: { isoDate: string }[],
+  events: T[],
+  lanes: Map<string, number>
+): number[] {
+  const rows = Math.ceil(cells.length / 7);
+  const depth = new Array<number>(rows).fill(0);
+  for (const e of events) {
+    if (!e.isSupport) continue;
+    const start = getEventDateKey(e);
+    const end = eventEndKey(e);
+    const lane = (lanes.get(e.id) ?? 0) + 1;
+    for (let r = 0; r < rows; r += 1) {
+      const first = cells[r * 7]?.isoDate;
+      const last = cells[Math.min(r * 7 + 6, cells.length - 1)]?.isoDate;
+      if (!first || !last) continue;
+      if (start <= last && end >= first && lane > depth[r]) depth[r] = lane;
+    }
+  }
+  return depth;
 }
 
 // a~b 사이가 "매일 연속 + 맞닿는 변의 색이 일치"하면 이을 일정 id 체인(날짜순)을 반환, 아니면 null.
