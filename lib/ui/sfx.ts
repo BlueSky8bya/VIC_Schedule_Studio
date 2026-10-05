@@ -44,6 +44,7 @@ export type SfxName =
 
 const CATEGORY: Record<SfxName, SoundCategory> = {
   fanfare: "celebrate",
+  birthday: "celebrate",
   chime: "celebrate",
   bells: "celebrate",
   spooky: "celebrate",
@@ -311,6 +312,29 @@ function whoosh(ac: AudioContext, out: AudioNode, from: number, to: number, len:
 function render(ac: AudioContext, out: AudioNode, name: SfxName) {
   switch (name) {
     // ── 축하(드물게 — 길고 화려해도 된다) ── 장조 아르페지오(1-3-5-8), 반짝임은 작게.
+    case "birthday": {
+      // 생일 축하 노래(Happy Birthday, 퍼블릭 도메인) 한 절 — 3/4박, 오르골(종) 선율 + 마디 첫 박 나무 베이스.
+      // 음은 C5 기준 반음. [음, 박] — 못갖춘마디(솔솔)로 시작.
+      const beat = 0.27;
+      const melody: [number, number][] = [
+        [-5, 0.75], [-5, 0.25], [-3, 1], [-5, 1], [0, 1], [-1, 2],
+        [-5, 0.75], [-5, 0.25], [-3, 1], [-5, 1], [2, 1], [0, 2],
+        [-5, 0.75], [-5, 0.25], [7, 1], [4, 1], [0, 1], [-1, 1], [-3, 2],
+        [5, 0.75], [5, 0.25], [4, 1], [0, 1], [2, 1], [0, 3]
+      ];
+      let at = 0;
+      melody.forEach(([semi, beats], i) => {
+        const last = i === melody.length - 1;
+        chime(ac, out, N(semi), at * beat, 0.24, last ? 0.5 : Math.min(0.32, beats * beat * 0.9));
+        at += beats;
+      });
+      // 베이스(마디마다 첫 박) — 도·솔·솔·도·도·파·도·도. 못갖춘마디 1박 뒤부터 3박씩.
+      [-24, -17, -17, -24, -24, -19, -24, -24].forEach((semi, m) => marimba(ac, out, N(semi), (1 + m * 3) * beat, 0.2, 0.22));
+      // 마지막 '다~'에 작은 반짝 둘
+      chime(ac, out, N(12), (at - 2.6) * beat, 0.1, 0.3);
+      chime(ac, out, N(16), (at - 2.3) * beat, 0.08, 0.3);
+      break;
+    }
     case "fanfare":
       [0, 4, 7, 12].forEach((s, i) => marimba(ac, out, N(s), i * 0.075, 0.3, 0.12));
       chime(ac, out, N(16), 0.31, 0.2, 0.22);
@@ -534,6 +558,7 @@ export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
 }
 
 let lastPlayed = { name: "tick" as SfxName, at: 0 };
+let songUntil = 0;
 function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   if (!opts.force) {
     if (!soundEnabled()) return;
@@ -547,6 +572,11 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   // 같은 소리가 30ms 안에 겹치면 하나만(두 경로가 같은 순간을 알릴 때 두 배로 커지지 않게)
   const now = performance.now();
   if (lastPlayed.name === name && now - lastPlayed.at < 30) return;
+  // 노래(생일)는 끝나기 전에 또 누르면 겹쳐 부르지 않는다 — 한 곡이 끝날 때까지 새 노래는 무시.
+  if (name === "birthday") {
+    if (now < songUntil) return;
+    songUntil = now + 7400;
+  }
   lastPlayed = { name, at: now };
   document.documentElement.dataset.sfxLast = name; // 검증용 흔적(Playwright가 어떤 소리였는지 읽는다)
   const out = ac.createGain();

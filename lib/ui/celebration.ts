@@ -11,7 +11,7 @@
 // 소리(sound)는 lib/ui/sfx.ts의 짧은 합성음 이름 — 효과음 설정이 켜져 있을 때만 난다.
 
 export type CelebrationShape = "burst" | "firework" | "rise" | "fall" | "calm";
-export type CelebrationSound = "fanfare" | "chime" | "bells" | "spooky" | "sparkle" | "pop" | "soft" | "none";
+export type CelebrationSound = "fanfare" | "chime" | "bells" | "spooky" | "sparkle" | "pop" | "soft" | "birthday" | "none";
 
 export type CelebrationTheme = {
   key: string;
@@ -67,6 +67,18 @@ export function celebrationFor(name: string | null | undefined): CelebrationThem
       emojiRatio: 0.32,
       count: 24,
       sound: "fanfare"
+    });
+  // 생일(2026-10-06 소유자: "토리님 생일은 단순 빵빠레가 아니라 생일축하합니다~ 멜로디") — 케이크·풍선이 떠오르고
+  // 생일 축하 노래 한 소절(lib/ui/sfx 'birthday', 오르골 음색).
+  if (has("생일"))
+    return t("birthday", {
+      shape: "rise",
+      big: true,
+      palette: ["#ff9ec7", "#ffd27a", "#9ad8ff", "#c8b6ff", "#ffffff", "#ffb4a2"],
+      emojis: ["🎂", "🎈", "🎁", "🧁", "🎉", "🕯️"],
+      emojiRatio: 0.5,
+      count: 30,
+      sound: "birthday"
     });
   if (has("할로윈"))
     return t("halloween", {

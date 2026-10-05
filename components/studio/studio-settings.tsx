@@ -111,7 +111,8 @@ const SOUND_SAMPLES: { name: SfxName; label: string; edit?: boolean }[] = [
   { name: "delete", label: "삭제", edit: true },
   { name: "unlock", label: "잠금 해제" },
   { name: "error", label: "실패" },
-  { name: "fanfare", label: "축하" }
+  { name: "fanfare", label: "축하" },
+  { name: "birthday", label: "생일 노래" }
 ];
 
 export type FontSettings = {
