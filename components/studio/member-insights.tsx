@@ -18,7 +18,6 @@ import {
   type MemberInsightsData,
   type OwnerSecurityData
 } from "@/lib/insights/actions";
-import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
 import { HighlightCards } from "@/components/studio/highlight-cards";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
 import { SecurityPanel } from "@/components/studio/security-panel";
@@ -107,18 +106,6 @@ export function MemberInsights({
     });
   }
 
-  async function expireUser(userId: string) {
-    const res = await clearUnlockSessionForUserAction(userId);
-    if (res.ok) {
-      const fresh = await getOwnerSecurityAction();
-      if (fresh.ok) setSecurityData(fresh.data);
-      // 만료는 됐지만 재조회가 실패하면 화면이 옛 세션 목록에 머문다 → 첫 로드처럼 에러+재시도를 노출.
-      else setSecurityError(fresh.error);
-      return { ok: true };
-    }
-    return { ok: false, error: res.error };
-  }
-
   // 보안 탭(관리자 전용)을 마지막에 더한 실제 패널 목록. 키보드/스와이프 경계도 이 길이를 쓴다.
   const panels = canSecurity
     ? [...PANELS, { key: "security" as const, label: "보안", icon: Lock }]
@@ -182,8 +169,6 @@ export function MemberInsights({
       <SecurityPanel
         data={securityData}
         onChangePasscode={onChangePasscode}
-        onExpire={expireUser}
-        showDevelopers={false}
       />
     );
   }

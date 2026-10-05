@@ -39,7 +39,6 @@ import {
 } from "@/lib/insights/actions";
 import { kstDay, monthProgress } from "@/lib/insights/month-progress";
 import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
-import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
 import {
   HEART_BLAZE_MIN,
   HEART_BLAZE_RATIO,
@@ -442,18 +441,6 @@ export function InsightsDashboard({
 
   // 지금 보고 있는 칸만 그 칸의 데이터 소스를 다시 불러 즉시 갱신(전체 모달 재로드 아님).
   // (패널별 수동 새로고침(refreshPanel)은 2026-09-04 제거 — 방문 칸은 20초 자동 갱신.)
-
-  // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화) → 성공하면 보안 데이터를 다시 불러온다.
-  // (확인 대화/버튼 비활성은 SecurityPanel이 담당.)
-  async function expireUser(userId: string) {
-    const res = await clearUnlockSessionForUserAction(userId);
-    if (res.ok) {
-      const fresh = await getInsightsAction(year, month);
-      if (fresh.ok) setData(fresh.data);
-      return { ok: true };
-    }
-    return { ok: false, error: res.error };
-  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1492,8 +1479,6 @@ export function InsightsDashboard({
                   access: d.security.access
                 }}
                 onChangePasscode={onChangePasscode}
-                onExpire={expireUser}
-                showDevelopers
               />
             ))}
           </section>
