@@ -427,13 +427,16 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family:
+  /* --app-font = 설정 '글꼴'(lib/ui/font-prefs.ts). 비어 있으면(기본) 아래 목록. */
+  font-family: var(
+    --app-font,
     "Pretendard",
     "Apple SD Gothic Neo",
     "Malgun Gothic",
     "Segoe UI",
     Arial,
-    sans-serif;
+    sans-serif
+  );
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

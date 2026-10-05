@@ -4976,6 +4976,12 @@ export function PublicPoster({
                 ambientMode={settingsPrefs.ambientMode}
                 textPx={settingsPrefs.textPx}
                 onChangeTextPx={settingsPrefs.changeTextPx}
+                font={{
+                  id: settingsPrefs.fontId,
+                  change: settingsPrefs.changeFont,
+                  weight: settingsPrefs.textWeight,
+                  changeWeight: settingsPrefs.changeTextWeight
+                }}
                 sound={{
           on: settingsPrefs.soundOn,
           toggle: settingsPrefs.toggleSound,

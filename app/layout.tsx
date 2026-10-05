@@ -7,13 +7,19 @@ import {
   Do_Hyeon,
   Gaegu,
   Gamja_Flower,
+  Gowun_Dodum,
   Gugi,
   Hi_Melody,
+  IBM_Plex_Sans_KR,
   Jua,
+  Nanum_Gothic,
   Nanum_Myeongjo,
-  Nanum_Pen_Script
+  Nanum_Pen_Script,
+  Noto_Sans_KR,
+  Sunflower
 } from "next/font/google";
 import "./globals.css";
+import "./fonts.css"; // 설정 '글꼴'의 눈누·네이버 글꼴 선언(고른 것만 내려받는다)
 import "./dark.css"; // 다크 모드 보정 한 파일(토큰이 닿지 않는 리터럴 색만)
 // 금생수 스킨 토큰 + 띠 공용 질감(ADR-0016) — globals 뒤에 와야 :root 토큰이 덮인다.
 import "./metal-water.css";
@@ -27,6 +33,7 @@ import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { FONT_STACKS } from "@/lib/ui/font-prefs";
 import { GfxProbe } from "@/components/ui/gfx-probe";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
@@ -55,6 +62,12 @@ const nanumPen = Nanum_Pen_Script({
 const gamja = Gamja_Flower({ weight: "400", variable: "--font-gamja", display: "swap", preload: false });
 const gugi = Gugi({ weight: "400", variable: "--font-gugi", display: "swap", preload: false });
 const hiMelody = Hi_Melody({ weight: "400", variable: "--font-himelody", display: "swap", preload: false });
+// 설정 '글꼴'(lib/ui/font-prefs.ts)의 구글 글꼴 — preload: false라 고른 사람만 내려받는다(나눔명조·감자꽃은 위 것을 같이 쓴다).
+const notoSansKr = Noto_Sans_KR({ variable: "--font-noto", display: "swap", preload: false });
+const nanumGothic = Nanum_Gothic({ weight: ["400", "700", "800"], variable: "--font-nanumgothic", display: "swap", preload: false });
+const plexKr = IBM_Plex_Sans_KR({ weight: ["400", "500", "600", "700"], variable: "--font-plex", display: "swap", preload: false });
+const gowunDodum = Gowun_Dodum({ weight: "400", variable: "--font-gowun", display: "swap", preload: false });
+const sunflower = Sunflower({ weight: ["300", "500", "700"], variable: "--font-sunflower", display: "swap" }); // 서브셋 없는 글꼴 = 미리 받지 않는다
 
 export const metadata: Metadata = {
   // 탭 제목·아이콘(2026-09-28 소유자): "방송일정 ✨" + 벡터 반짝이(app/icon.svg — Next가 favicon으로 붙인다).
@@ -97,7 +110,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${gaegu.variable} ${blackHanSans.variable} ${nanumMyeongjo.variable} ${jua.variable} ${doHyeon.variable} ${nanumPen.variable} ${gamja.variable} ${gugi.variable} ${hiMelody.variable}`}
+      className={`${gaegu.variable} ${blackHanSans.variable} ${nanumMyeongjo.variable} ${jua.variable} ${doHyeon.variable} ${nanumPen.variable} ${gamja.variable} ${gugi.variable} ${hiMelody.variable} ${notoSansKr.variable} ${nanumGothic.variable} ${plexKr.variable} ${gowunDodum.variable} ${sunflower.variable}`}
       // 아래 페인트-전 스크립트가 hydration 전에 <html>에 data-eye-comfort/-reduce-motion을
       // 박는다 → 서버 HTML과 불일치로 루트 hydration이 매번 실패했고, 그 여파로 Next 라우터가
       // router.refresh()의 RSC 응답을 버렸다(비공개 잠금해제가 화면에 반영 안 되던 근본 원인,
@@ -124,6 +137,10 @@ export default function RootLayout({
               // 페인트 전에 붙여야 어두운 화면을 기대한 사용자가 흰 화면을 한 번 맞지 않는다.
               // 글씨 크기(vic.calText, lib/ui/edit-prefs) — 일정 제목 px ÷ 14 = --cal-text. 범위 밖이면 기본.
               "var tx=Number(s.getItem('vic.calText'));if(tx>=12&&tx<=20)d.style.setProperty('--cal-text',String(tx/14));" +
+              // 글꼴·굵기(vic.font·vic.calWeight, lib/ui/font-prefs) — 처음 그릴 때부터 고른 글꼴로.
+              "var FS=" +
+              JSON.stringify(FONT_STACKS) +
+              ";var fo=FS[s.getItem('vic.font')];if(fo)d.style.setProperty('--app-font',fo);var fw=Number(s.getItem('vic.calWeight'));if(fw===-200||fw===100)d.style.setProperty('--cal-weight',String(fw));" +
               "var dk=s.getItem('vic.dark');if(dk==='on'||(dk==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-theme','dark');" +
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.

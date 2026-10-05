@@ -935,6 +935,10 @@ export function StudioShell({
     toggleFlingDelete,
     textPx,
     changeTextPx,
+    fontId,
+    changeFont,
+    textWeight,
+    changeTextWeight,
     soundOn,
     toggleSound,
     soundVol,
@@ -1147,6 +1151,7 @@ export function StudioShell({
       <StudioSettingsList
         textPx={textPx}
         onChangeTextPx={changeTextPx}
+        font={{ id: fontId, change: changeFont, weight: textWeight, changeWeight: changeTextWeight }}
         sound={{
           on: soundOn,
           toggle: toggleSound,

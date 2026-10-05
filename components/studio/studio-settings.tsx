@@ -9,11 +9,12 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { SoundCategory, SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import { TEXT_PX_BASE, TEXT_PX_MAX, TEXT_PX_MIN } from "@/lib/ui/edit-prefs";
+import { FONT_OPTIONS, FONT_STACKS, type WeightStep } from "@/lib/ui/font-prefs";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
@@ -46,6 +47,8 @@ export type StudioSettingsProps = {
   // 글씨 크기(px, 일정 제목 기준) — 달력 글자의 기본 크기. Ctrl+휠 확대는 이 크기에서 시작한다. 웹 달력에만.
   textPx: number;
   onChangeTextPx: (px: number) => void;
+  // 글꼴(앱 전체)·글씨 굵기(달력 일정 글자) — lib/ui/font-prefs. 모든 역할·시청자 화면에서 같은 기기 설정.
+  font: FontSettings;
   // 소리(lib/ui/sfx) — 효과음 전체·음량·종류별·다른 탭. 기본 꺼짐. showEdit = 편집 소리 줄(편집실 편집 권한).
   sound: SoundSettings;
   // 던져서 삭제 — 편집실(편집 권한)에서만 넘긴다. 없으면 줄이 없다.
@@ -86,6 +89,13 @@ export type SoundSettings = {
   showEdit: boolean;
 };
 type Tone = "water" | "leaf" | "metal" | "rose";
+
+export type FontSettings = {
+  id: string;
+  change: (id: string) => void;
+  weight: WeightStep;
+  changeWeight: (step: WeightStep) => void;
+};
 
 /** 늘 모든 상태가 보이는 세그먼트(라디오) — 셀렉트는 무엇을 고를 수 있는지 안 보인다(2026-09-04 소유자). */
 function SettingsSegment<T extends string | number>({
@@ -175,6 +185,7 @@ export function StudioSettingsList({
   onChangeThemeMode,
   textPx,
   onChangeTextPx,
+  font,
   sound,
   flingDelete = null,
   onToggleFlingDelete,
@@ -198,6 +209,15 @@ export function StudioSettingsList({
   ];
   const hasEditGroup = canManageTimelines || flingDelete !== null;
   const [activeTab, setActiveTab] = useState<TabKey>("screen");
+  // 글꼴 미리보기 — 칩에 마우스를 올리면 아래 미리보기만 그 글꼴로(고르기 전 둘러보기). 한 번 올려 본 칩은
+  // 이름도 제 글꼴로 그린다 — 처음부터 전부 그리면 글꼴 파일 열네 개(수 MB)를 한꺼번에 받게 된다.
+  const [fontPeek, setFontPeek] = useState<string | null>(null);
+  const [fontSeen, setFontSeen] = useState<ReadonlySet<string>>(() => new Set([font.id]));
+  const peekFont = (id: string) => {
+    setFontPeek(id);
+    if (!fontSeen.has(id)) setFontSeen((prev) => new Set(prev).add(id));
+  };
+  const previewFont = FONT_STACKS[fontPeek ?? font.id] || undefined;
   // 설정 창 재설계(2026-10-06 소유자: "많아진 설정에 맞게, 벤치마킹해서") — 애플 설정 앱의 묶음 목록:
   // 성격별 묶음 제목 → 둥근 카드 안 줄들 → 필요할 때만 묶음 아래 한 줄 설명. 줄 이름은 짧게(UI-15),
   // 설명은 '모르면 못 고르는 것'에만 단다. 줄 순서는 자주 바꾸는 것(화면)부터.
@@ -333,9 +353,52 @@ export function StudioSettingsList({
               </button>
             </div>
           </div>
-          {/* 미리보기 — 달력 카드와 같은 모양·같은 비율(제목 px, 세부·날짜는 같은 배율). */}
-          <div className="role-help-haptics rhh-web rhh-preview-row" aria-hidden="true">
-            <div className="rhh-text-preview" style={{ "--pv": textPx / TEXT_PX_BASE } as CSSProperties}>
+          {/* 글꼴 — 앱 전체. 칩에 올리면 미리보기만 바뀌고, 누르면 고른다(바로 화면 전체에 입혀진다). */}
+          <div className="role-help-haptics rhh-stack-sm">
+            <RowLabel icon={<Type size={15} />} tone="water">
+              글꼴
+            </RowLabel>
+            <div aria-label="글꼴 고르기" className="rhh-font-grid" data-act="font-select" onMouseLeave={() => setFontPeek(null)} role="radiogroup">
+              {FONT_OPTIONS.map((f) => (
+                <button
+                  aria-checked={f.id === font.id}
+                  className={f.id === font.id ? "on" : ""}
+                  key={f.id}
+                  onBlur={() => setFontPeek(null)}
+                  onClick={() => {
+                    if (f.id !== font.id) font.change(f.id);
+                  }}
+                  onFocus={() => peekFont(f.id)}
+                  onMouseEnter={() => peekFont(f.id)}
+                  role="radio"
+                  style={fontSeen.has(f.id) && f.stack ? { fontFamily: f.stack } : undefined}
+                  type="button"
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* 글씨 굵기 — 달력 일정 글자(제목·세부)에 한 단계를 빼거나 더한다. 카드마다 바탕색 대비로 정한 굵기는 그대로 위에 얹힌다. */}
+          <div className="role-help-haptics rhh-stack-sm">
+            <RowLabel icon={<Bold size={15} />} tone="water">
+              글씨 굵기
+            </RowLabel>
+            <SettingsSegment<WeightStep>
+              ariaLabel="일정 글씨 굵기 고르기"
+              dataAct="text-weight-select"
+              onChange={font.changeWeight}
+              options={[
+                { value: -200, label: "가늘게" },
+                { value: 0, label: "보통" },
+                { value: 100, label: "굵게" }
+              ]}
+              value={font.weight}
+            />
+          </div>
+          {/* 미리보기 — 달력 카드와 같은 모양·같은 비율(제목 px, 세부·날짜는 같은 배율)·같은 굵기 규칙. */}
+          <div className="role-help-haptics rhh-preview-row" aria-hidden="true">
+            <div className="rhh-text-preview" style={{ "--pv": textPx / TEXT_PX_BASE, fontFamily: previewFont } as CSSProperties}>
               <span className="pv-date">1</span>
               <span className="pv-mark">🎉 데뷔 1주년</span>
               <div className="pv-card">
@@ -349,7 +412,7 @@ export function StudioSettingsList({
             </div>
           </div>
         </div>
-        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요. 글씨 크기는 달력의 기본 크기 — 달력 위 Ctrl+휠 확대는 이 크기에서 시작해요.</p>
+        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요. 글씨 크기는 달력의 기본 크기 — 달력 위 Ctrl+휠 확대는 이 크기에서 시작해요. 글꼴은 화면 전체에, 굵기는 달력 일정 글자에 적용돼요.</p>
       </section>
 
       <section {...pane("motion")}>

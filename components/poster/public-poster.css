@@ -6076,7 +6076,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   white-space: pre-line;
   font-size: calc(14px * var(--cal-zoom, 1) * var(--cal-text, 1));
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다(근거: WCAG 1.4.3 등). */
-  font-weight: var(--evt-weight, 800);
+  font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
   line-height: 1.2;
 }
 /* 무늬 칸에서만 바탕색 헤일로로 글자를 텍스처에서 떼어낸다. 이어지는 칸의 투명 제목(.span-cont)에는
@@ -6086,7 +6086,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   text-shadow: var(--evt-shadow, none);
 }
 .public-event .event-subs:not(.span-cont) li {
-  font-weight: var(--evt-weight, 800);
+  font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
 }
 
 /* 서브항목(들여쓴 줄) — 불릿 대신 '왼쪽 세로 레일'로 묶는다(Notion 인용/중첩 관행 = 미니멀·정갈).

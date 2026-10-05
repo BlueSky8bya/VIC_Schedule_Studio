@@ -34,6 +34,7 @@ import {
   type SoundCats
 } from "@/lib/ui/sfx";
 import { flingDeleteEnabled, setFlingDelete, setTextPxPref, textPxPref, TEXT_PX_BASE } from "@/lib/ui/edit-prefs";
+import { FONT_BASE, fontPref, setFontPref, setWeightPref, weightPref, type WeightStep } from "@/lib/ui/font-prefs";
 
 export type SettingsPrefs = {
   hapticsSupported: boolean;
@@ -49,6 +50,10 @@ export type SettingsPrefs = {
   toggleFlingDelete: () => void;
   textPx: number;
   changeTextPx: (px: number) => void;
+  fontId: string;
+  changeFont: (id: string) => void;
+  textWeight: WeightStep;
+  changeTextWeight: (step: WeightStep) => void;
   soundOn: boolean;
   toggleSound: () => void;
   soundVol: number;
@@ -212,6 +217,22 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     setTextPxState(px);
   }, []);
 
+  // 글꼴·글씨 굵기(lib/ui/font-prefs) — 고르면 바로 앱 전체·달력 카드에 입혀진다.
+  const [fontId, setFontId] = useState(FONT_BASE);
+  const [textWeight, setTextWeight] = useState<WeightStep>(0);
+  useEffect(() => {
+    setFontId(fontPref());
+    setTextWeight(weightPref());
+  }, []);
+  const changeFont = useCallback((id: string) => {
+    setFontPref(id);
+    setFontId(id);
+  }, []);
+  const changeTextWeight = useCallback((step: WeightStep) => {
+    setWeightPref(step);
+    setTextWeight(step);
+  }, []);
+
   // 배경 효과 품질(lib/ui/gfx.ts v3) — 자동(기기 판정)/항상 최대/가볍게 + 자동 판정 결과(표시용).
   const [gfxPrefState, setGfxPrefState] = useState<GfxPref>("auto");
   const [gfxAuto, setGfxAuto] = useState<GfxMode>("full");
@@ -273,6 +294,10 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     toggleFlingDelete,
     textPx,
     changeTextPx,
+    fontId,
+    changeFont,
+    textWeight,
+    changeTextWeight,
     soundOn,
     toggleSound,
     soundVol,
