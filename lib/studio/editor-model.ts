@@ -185,6 +185,8 @@ export const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
 
 // 색상 필터에 섞어 쓰는 특수 필터 id — 태그가 아니라 "비공개(공개 아님) 일정"을 골라본다.
 export const PRIVATE_FILTER = "__private__";
+// 같은 자리의 '미정' 필터(2026-10-05 소유자) — 아직 확정 안 된(빗금) 일정만 골라본다.
+export const TENTATIVE_FILTER = "__tentative__";
 
 export function createEmptyForm(): EventForm {
   return {

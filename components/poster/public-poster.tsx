@@ -246,6 +246,14 @@ const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 
 // 관심 단계 순위(높을수록 인기). 한 칸의 "대표 인기 단계"를 고를 때 쓴다.
 const POP_RANK: Record<string, number> = { warm: 1, hot: 2, blaze: 3, top: 4 };
+// 범례 인기도 단계 = 필터 버튼(2026-10-05). label = 넓은 범례, short = 얇은 레일(축약형)·모바일 title.
+type StatusFilterKey = HeartTier["key"] | "tentative";
+const TIER_FILTERS: { key: HeartTier["key"]; label: string; short: string }[] = [
+  { key: "warm", label: "관심", short: "관심" },
+  { key: "hot", label: "높은 관심", short: "높은" },
+  { key: "blaze", label: "폭발적", short: "폭발" },
+  { key: "top", label: "이 달 1위", short: "1위" }
+];
 
 // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import — 편집실과 동일 모양.)
 
@@ -1007,6 +1015,9 @@ export function PublicPoster({
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  // 범례의 인기도 단계·미정도 누르면 거른다(2026-10-05 소유자). 묶음 안은 '또는', 태그·인기도·미정·
+  // 내 관심 묶음끼리는 '그리고'(관심만 보기와 같은 문법).
+  const [statusFilters, setStatusFilters] = useState<StatusFilterKey[]>([]);
   // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
   //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
   // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
@@ -2725,14 +2736,38 @@ export function PublicPoster({
       setTagFilters((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
     );
   }
+  // 인기도 단계·미정 토글 — 태그 칩과 같은 손맛·같은 활주.
+  function toggleStatusFilter(key: StatusFilterKey) {
+    hapticTick();
+    logActivity("filter.status", { target: key, meta: { on: !statusFilters.includes(key) } });
+    withAgendaFlip(() =>
+      setStatusFilters((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]))
+    );
+  }
+  // 모바일 레일 맨 아래 버튼(인기도·미정)을 누르면 '필터 해제'가 새로 생겨 내용이 밀리고, 방금 누른
+  // 버튼이 레일(자체 스크롤) 밖으로 빠진다 — 그리고 나서 레일만 스크롤해 다시 보이게 한다.
+  // scrollIntoView 금지: 조상 상자까지 굴린다(2026-10-05 요일 줄 사고).
+  function keepInRail(btn: HTMLElement) {
+    requestAnimationFrame(() => {
+      const rail = btn.closest<HTMLElement>(".agenda-legend");
+      if (!rail) return;
+      const r = btn.getBoundingClientRect();
+      const box = rail.getBoundingClientRect();
+      if (r.bottom > box.bottom) rail.scrollTop += r.bottom - box.bottom + 6;
+      else if (r.top < box.top) rail.scrollTop -= box.top - r.top + 6;
+    });
+  }
   function clearFilters() {
-    logActivity("filter.clear", { meta: { tags: tagFilters.length, bookmarked: bookmarkedOnly } });
+    logActivity("filter.clear", {
+      meta: { tags: tagFilters.length, bookmarked: bookmarkedOnly, status: statusFilters.length }
+    });
     withAgendaFlip(() => {
       setTagFilters([]);
+      setStatusFilters([]);
       setBookmarkedOnly(false);
     });
   }
-  const filterActive = tagFilters.length > 0 || bookmarkedOnly;
+  const filterActive = tagFilters.length > 0 || statusFilters.length > 0 || bookmarkedOnly;
 
   // 시청자에서 ←/→ 로 월 이동(입력 칸 안에서는 무시).
   useEffect(() => {
@@ -2782,7 +2817,12 @@ export function PublicPoster({
       // 2계층: 대분류 필터는 그 하위 세부를 가진 일정까지 포함.
       tagFilters.some((id) => eventMatchesTagFilter(event, id, viewTags));
     const matchesBookmark = !bookmarkedOnly || isBookmarked(event.id);
-    return !(matchesTag && matchesBookmark);
+    const tierKeys = statusFilters.filter((k) => k !== "tentative");
+    const tier =
+      tierKeys.length > 0 ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart) : null;
+    const matchesTier = tierKeys.length === 0 || (tier !== null && tierKeys.includes(tier.key));
+    const matchesTentative = !statusFilters.includes("tentative") || Boolean(event.isTentative);
+    return !(matchesTag && matchesBookmark && matchesTier && matchesTentative);
   }
 
   // 월 전환 슬라이드 방향(아젠다): 다음 달=왼쪽으로, 이전 달=오른쪽으로 밀려 들어온다.
@@ -3219,7 +3259,7 @@ export function PublicPoster({
                   : null;
                 return (
                   <div
-                    className={`public-event teaser${event.isTentative ? " tentative" : ""}${openTeaserDetail ? " is-clickable" : ""}${
+                    className={`public-event teaser${event.isTentative ? " tentative" : ""}${isDimmedByFilter(event) ? " dimmed" : ""}${openTeaserDetail ? " is-clickable" : ""}${
                       myHopeIds.has(event.id) ? " hoped" : ""
                     }${hopeHit?.eventId === event.id ? " hope-hit" : ""}`}
                     data-act="teaser-card"
@@ -3596,24 +3636,47 @@ export function PublicPoster({
             <div className="agenda-tier-help">
               <strong>♥ 인기도</strong>
               {/* 좁은 레일(92px = 편집실과 통일) — 텍스트 라벨은 잘려서 뺐다(2026-09-01 사용자:
-                  이미지로만). 단계 순서는 스와치 색 강도가 말하고, 뜻은 title·aria-label이 담는다. */}
-              <span aria-label="관심" title="관심">
-                <i aria-hidden="true" className="tier-swatch tier-warm" />
-              </span>
-              <span aria-label="높은 관심" title="높은 관심">
-                <i aria-hidden="true" className="tier-swatch tier-hot" />
-              </span>
-              <span aria-label="폭발적" title="폭발적">
-                <i aria-hidden="true" className="tier-swatch tier-blaze" />
-              </span>
-              <span aria-label="이 달 1위" title="이 달 1위">
-                <i aria-hidden="true" className="tier-swatch tier-top">👑</i>
-              </span>
+                  이미지로만). 단계 순서는 스와치 색 강도가 말하고, 뜻은 title·aria-label이 담는다.
+                  누르면 그 단계만 거른다(2026-10-05 소유자 — 웹 범례와 같은 상태). */}
+              {TIER_FILTERS.map((t) => {
+                const on = statusFilters.includes(t.key);
+                return (
+                  <button
+                    aria-label={t.label}
+                    aria-pressed={on}
+                    className={`agenda-tier-btn${on ? " on" : ""}${statusFilters.length > 0 && !on ? " dim" : ""}`}
+                    data-act="agenda-tier"
+                    key={t.key}
+                    onClick={(e) => {
+                      toggleStatusFilter(t.key);
+                      keepInRail(e.currentTarget);
+                    }}
+                    title={t.label}
+                    type="button"
+                  >
+                    <i aria-hidden="true" className={`tier-swatch tier-${t.key}`}>
+                      {t.key === "top" ? "👑" : null}
+                    </i>
+                  </button>
+                );
+              })}
             </div>
-            {/* 빗금 = 미정 — 카드엔 '미정' 글자가 없으니(정렬 유지) 뜻은 여기서 한 번 알려 준다(2026-10-05). */}
-            <p className="agenda-tent-help">
+            {/* 빗금 = 미정 — 카드엔 '미정' 글자가 없으니(정렬 유지) 뜻은 여기서 한 번 알려 준다(2026-10-05).
+                누르면 미정만 거른다. */}
+            <button
+              aria-pressed={statusFilters.includes("tentative")}
+              className={`agenda-tent-help${statusFilters.includes("tentative") ? " on" : ""}${
+                statusFilters.length > 0 && !statusFilters.includes("tentative") ? " dim" : ""
+              }`}
+              data-act="agenda-tent"
+              onClick={(e) => {
+                toggleStatusFilter("tentative");
+                keepInRail(e.currentTarget);
+              }}
+              type="button"
+            >
               <i aria-hidden="true" className="tent-swatch" /> 미정
-            </p>
+            </button>
           </aside>
           ) : null}
           {/* '이 달 기록' — 웹에선 헤더(.public-calendar-header)에 있는데, 그 헤더는 ≤1040px에서
@@ -3654,10 +3717,10 @@ export function PublicPoster({
         >
           {groups.length === 0 ? (
             <p className="agenda-empty">
-              {bookmarkedOnly && tagFilters.length === 0
+              {bookmarkedOnly && tagFilters.length === 0 && statusFilters.length === 0
                 ? "아무것도 관심 표현을 안 했어요. 🍃"
                 : filtering
-                  ? "해당 태그 일정이 없어요. 🍃"
+                  ? "조건에 맞는 일정이 없어요. 🍃"
                   : "이 달엔 공개된 일정이 없어요. 🍃"}
             </p>
           ) : (
@@ -4148,45 +4211,44 @@ export function PublicPoster({
         <p className="legend-tier-line">
           <span className="hm">♥</span> 인기도
         </p>
-        {compact ? (
-          // 축약형(얇은 레일) — 짧은 라벨 2×2, 칩 상자 없이 불꽃+라벨만.
-          <ul className="legend-tiers is-compact">
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-warm" /> 관심
-            </li>
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-hot" /> 높은
-            </li>
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-blaze" /> 폭발
-            </li>
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-top">👑</i> 1위
-            </li>
-          </ul>
-        ) : (
-          <ul className="legend-tiers">
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-warm" /> 관심
-            </li>
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-hot" /> 높은 관심
-            </li>
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-blaze" /> 폭발적
-            </li>
-            <li>
-              <i aria-hidden="true" className="tier-swatch tier-top">👑</i> 이 달 1위
-            </li>
-          </ul>
-        )}
+        {/* 단계마다 필터 버튼(2026-10-05 소유자) — 태그 칩과 같은 켜짐/흐림 문법. 축약형(얇은 레일)은
+            짧은 라벨·1열. */}
+        <div className={`legend-tiers${compact ? " is-compact" : ""}`}>
+          {TIER_FILTERS.map((t) => {
+            const on = statusFilters.includes(t.key);
+            return (
+              <button
+                aria-pressed={on}
+                className={`legend-tier${on ? " active" : ""}${statusFilters.length > 0 && !on ? " dim" : ""}`}
+                data-act="legend-tier"
+                key={t.key}
+                onClick={() => toggleStatusFilter(t.key)}
+                type="button"
+              >
+                <i aria-hidden="true" className={`tier-swatch tier-${t.key}`}>
+                  {t.key === "top" ? "👑" : null}
+                </i>
+                {compact ? t.short : t.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {/* 빗금 = 미정 — 카드엔 '미정' 글자가 없으니(제목 정렬 유지) 뜻은 범례가 알려 준다(2026-10-05).
-          인기도 안에 두면 그 단계 중 하나로 읽혀(소유자) 구분선 아래 따로 둔다. */}
+          인기도 안에 두면 그 단계 중 하나로 읽혀(소유자) 구분선 아래 따로 둔다. 누르면 미정만 거른다. */}
       <div className="legend-status-help">
-        <p className="legend-tent-line">
-          <i aria-hidden="true" className="tent-swatch" /> 미정
-        </p>
+        <button
+          aria-pressed={statusFilters.includes("tentative")}
+          className={`legend-tent-line${statusFilters.includes("tentative") ? " active" : ""}${
+            statusFilters.length > 0 && !statusFilters.includes("tentative") ? " dim" : ""
+          }`}
+          data-act="legend-tent"
+          onClick={() => toggleStatusFilter("tentative")}
+          type="button"
+        >
+          <i aria-hidden="true" className="tent-swatch" />
+          미정
+        </button>
       </div>
     </div>
   );
@@ -4200,7 +4262,7 @@ export function PublicPoster({
       )}${
         // 태그 필터 중엔 꾸미기 스티커도 함께 물러난다(일정 카드와 같은 흐림) — 꾸미기
         // 편집(decorate) 중엔 제외. 캡쳐 PNG는 필터 없는 서버 렌더라 영향 없음.
-        tagFilters.length > 0 || bookmarkedOnly ? " tag-filtering" : ""
+        filterActive ? " tag-filtering" : ""
       }`}
       data-poster-theme={effectivePosterTheme}
     >

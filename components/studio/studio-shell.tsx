@@ -161,6 +161,7 @@ import {
   ROLE_DESC,
   SCOPE_LABEL,
   PRIVATE_FILTER,
+  TENTATIVE_FILTER,
   type CopiedEvent,
   type EditDraft,
   type EventForm,
@@ -637,12 +638,16 @@ export function StudioShell({
     if (tagFilters.length === 0) return false;
     const matchesPrivate =
       tagFilters.includes(PRIVATE_FILTER) && event.visibilityScope !== "public";
+    const matchesTentative = tagFilters.includes(TENTATIVE_FILTER) && Boolean(event.isTentative);
     // 2계층: 대분류 필터는 그 하위 세부를 가진 이벤트까지 포함(전체집합 매칭).
     const matchesTag = tagFilters.some(
-      (id) => id !== PRIVATE_FILTER && eventMatchesTagFilter(event, id, viewTags)
+      (id) =>
+        id !== PRIVATE_FILTER && id !== TENTATIVE_FILTER && eventMatchesTagFilter(event, id, viewTags)
     );
-    return !(matchesPrivate || matchesTag);
+    return !(matchesPrivate || matchesTentative || matchesTag);
   }
+  // 태그 필터 아래 상태 필터(태그가 아닌 것) — PC 범례·모바일 레일이 같은 목록을 쓴다.
+  const statusFilterItems = [{ id: TENTATIVE_FILTER, label: "미정", swatchClass: "tent-swatch" }];
 
   // 카드 클릭 = 그 일정을 선택(편집)한다. 잇기는 드래그-놓기, 끊기는 이음새 '칼로 긋기'로만 —
   // 클릭은 어느 쪽도 하지 않는다(제목 편집하려 카드를 오갈 때 실수로 붙거나 끊기던 문제 제거).
@@ -5419,6 +5424,21 @@ export function StudioShell({
                   </>
                 );
               })()}
+              {statusFilterItems.map((item) => {
+                const on = tagFilters.includes(item.id);
+                return (
+                  <button
+                    aria-pressed={on}
+                    className={`agenda-legend-tag status ${on ? "on" : ""} ${filtering && !on ? "dim" : ""}`}
+                    key={item.id}
+                    onClick={() => toggleTagFilter(item.id)}
+                    type="button"
+                    data-act="agenda-legend-tag">
+                    <i aria-hidden="true" className={item.swatchClass} />
+                    {item.label}
+                  </button>
+                );
+              })}
               {filtering ? (
                 <button
                   className="agenda-legend-clear"
@@ -6311,6 +6331,7 @@ export function StudioShell({
         canEdit={false}
         filterIds={tagFilters}
         onToggleFilter={toggleTagFilter}
+        statusFilters={statusFilterItems}
         palette={palette}
         tags={viewTags}
       />

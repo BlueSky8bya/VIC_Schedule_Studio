@@ -251,7 +251,7 @@
   letter-spacing: 0; /* 0.04em이면 '인기도'가 92px 레일에서 줄바꿈됐다 */
   white-space: nowrap;
 }
-.agenda-tier-help span {
+.agenda-tier-help .agenda-tier-btn {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -2694,7 +2694,7 @@ body::-webkit-scrollbar {
   grid-template-columns: 1fr;
   gap: 3px;
 }
-.legend-tiers.is-compact li {
+.legend-tiers.is-compact .legend-tier {
   display: grid;
   /* 칸이 불꽃 3개 실폭(39px, 실측)보다 좁으면 넘친 만큼 gap을 먹어 '🔥🔥🔥폭발'처럼 붙는다. */
   grid-template-columns: 41px auto;
@@ -3543,7 +3543,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   padding: 0;
   list-style: none;
 }
-.legend-tiers li {
+.legend-tiers .legend-tier {
   display: grid;
   /* 불꽃 3개가 '넘치지 않고' 들어가는 고정 칸 + 라벨 — 네 칸의 라벨 왼쪽 끝이 같다.
      칸이 실제 불꽃 폭보다 좁으면 넘친 만큼 아래 gap을 먹어 '🔥🔥🔥폭발적'처럼 붙어 보인다. */
@@ -5919,7 +5919,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   padding-top: var(--space-1);
   border-top: 1px dashed #e6dcc2;
 }
-/* 인기도 줄(.legend-tiers li)과 같은 칸·간격·글자 — 라벨 왼쪽 끝이 위 목록과 맞는다. */
+/* 인기도 줄(.legend-tiers .legend-tier)과 같은 칸·간격·글자 — 라벨 왼쪽 끝이 위 목록과 맞는다. */
 .legend-tent-line {
   display: grid;
   grid-template-columns: var(--legend-swatch, 26px) 1fr;
@@ -5931,6 +5931,56 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   font-weight: 800;
   color: #6b6450;
   white-space: nowrap;
+}
+/* 인기도 단계·미정 = 필터 버튼(2026-10-05) — 태그 칩(.legend-item / .agenda-legend-tag)과 같은
+   켜짐(악센트 면)·흐림(0.4)·누름 문법. 버튼 기본 모양만 지우고 칸·글자는 위 규칙 그대로. */
+.legend-tiers .legend-tier,
+.legend-tent-line,
+.agenda-tier-btn,
+.agenda-tent-help {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    opacity var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.legend-tiers .legend-tier:hover,
+.legend-tent-line:hover {
+  background: rgb(15 23 42 / 4%);
+}
+.legend-tiers .legend-tier.active,
+.legend-tent-line.active {
+  background: var(--accent-soft);
+}
+.legend-tiers .legend-tier.dim,
+.legend-tent-line.dim,
+.agenda-tier-btn.dim,
+.agenda-tent-help.dim {
+  opacity: 0.4;
+}
+.agenda-tier-btn {
+  width: auto;
+  padding: 3px;
+  border-radius: var(--r-sm);
+}
+.agenda-tent-help {
+  padding: 4px 3px;
+  border-radius: var(--r-sm);
+  text-align: center;
+}
+.agenda-tier-btn.on,
+.agenda-tent-help.on {
+  background: var(--accent-soft, #fff3d2);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.agenda-tier-btn:active,
+.agenda-tent-help:active {
+  transform: scale(0.94);
 }
 .legend-tent-line .tent-swatch {
   width: 100%;

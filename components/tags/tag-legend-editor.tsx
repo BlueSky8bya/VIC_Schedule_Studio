@@ -68,6 +68,9 @@ type TagLegendEditorProps = {
   // 읽기 전용 색상 안내를 "필터"로도 쓸 때(편집실/시청자). 누르면 그 태그만 골라본다.
   filterIds?: string[];
   onToggleFilter?: (tagId: string) => void;
+  // 태그가 아닌 상태 필터(예: 미정) — 태그 목록 아래 점선 구분 뒤에 같은 필터 행으로 선다.
+  // id는 filterIds·onToggleFilter를 그대로 탄다(필터 해제도 함께 풀린다).
+  statusFilters?: { id: string; label: string; swatchClass: string }[];
 };
 
 type Draft = {
@@ -89,7 +92,8 @@ export function TagLegendEditor({
   onTagsUpdated,
   onDirtyChange,
   filterIds,
-  onToggleFilter
+  onToggleFilter,
+  statusFilters
 }: TagLegendEditorProps) {
   const [pending, startTransition] = useTransition();
   // 삭제는 저장과 별도 진행 상태 — "전체 저장" 버튼이 "저장 중…"으로 잘못 바뀌지 않게.
@@ -534,6 +538,25 @@ export function TagLegendEditor({
         {modifierTops.length > 0 ? (
           <div className="tlg-group tlg-mod">
             <div className="tlg-chips">{modifierTops.map(legendItem)}</div>
+          </div>
+        ) : null}
+        {onToggleFilter && statusFilters && statusFilters.length > 0 ? (
+          <div className="tlg-group tlg-status">
+            {statusFilters.map((item) => {
+              const on = filterIds?.includes(item.id) ?? false;
+              return (
+                <button
+                  aria-pressed={on}
+                  className={`tag-legend-filter ${on ? "on" : ""} ${filtering && !on ? "dim" : ""}`}
+                  key={item.id}
+                  onClick={() => onToggleFilter(item.id)}
+                  type="button"
+                  data-act="tag-legend-filter">
+                  <i aria-hidden="true" className={item.swatchClass} />
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
         ) : null}
         {filtering ? (

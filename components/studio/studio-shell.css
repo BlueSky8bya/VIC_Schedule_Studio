@@ -5751,10 +5751,15 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   flex-direction: column;
   gap: 2px;
 }
-.tlg-mod {
+.tlg-mod,
+.tlg-status {
   margin-top: 1px;
   padding-top: 9px;
   border-top: 1px dashed var(--studio-line);
+}
+/* 상태 필터(미정) 스와치 — 태그 색칩과 같은 칸(14×14·둥근 모서리)에 빗금만. 테두리는 중립. */
+.studio-tag-legend i.tent-swatch {
+  border-color: rgb(0 0 0 / 18%);
 }
 
 .tlg-chips {
