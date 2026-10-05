@@ -686,3 +686,143 @@ html[data-theme="dark"] .rhh-volume input[type="range"]::-webkit-slider-runnable
 html[data-theme="dark"] .rhh-volume input[type="range"]::-moz-range-track {
   background: rgb(255 255 255 / 14%);
 }
+
+/* ── 애플식 움직임·하이라이트(2026-10-06 3차) ───────────────────────────────────────────────
+   ① 왼쪽 탭: 알약 하나가 고른 항목으로 미끄러진다(macOS 사이드바) — 항목마다 배경을 켜고 끄면 깜빡인다.
+   ② 세그먼트: 흰 손잡이가 고른 칸으로 미끄러진다(iOS) — 칸 너비는 같게.
+   ③ 스위치: 누르는 동안 손잡이가 옆으로 늘어나고, 놓으면 스프링으로 넘어간다(iOS 토글).
+   ④ 탭 전환: 오른쪽 칸이 살짝 떠오르며 들어오고, 줄들이 짧게 차례로.
+   전부 전역 스프링 토큰(--spring-smooth/bouncy)을 쓰고, 동작 줄이기면 즉시. */
+.rhh-nav {
+  position: relative;
+}
+.rhh-nav-item {
+  position: relative;
+  z-index: 1;
+}
+.rhh-nav-pill {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  left: 10px;
+  z-index: 0;
+  border-radius: var(--r-sm);
+  background: rgb(75 134 201 / 15%);
+  pointer-events: none;
+}
+.rhh-nav-pill.ready {
+  transition:
+    transform var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease-spring)),
+    height var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease-spring));
+}
+@container rhh (min-width: 600px) {
+  .rhh-nav-item.on {
+    background: transparent; /* 하이라이트는 미끄러지는 알약이 맡는다 */
+  }
+  .rhh-nav-item.on:hover {
+    background: transparent;
+  }
+  .rhh-panes .rhh-group.is-active {
+    animation: rhh-pane-in var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease)) both;
+  }
+  .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics {
+    animation: rhh-row-in 0.38s var(--spring-smooth, var(--ease)) both;
+  }
+  .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics:nth-child(2) { animation-delay: 25ms; }
+  .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics:nth-child(3) { animation-delay: 50ms; }
+  .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics:nth-child(4) { animation-delay: 75ms; }
+  .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics:nth-child(5) { animation-delay: 100ms; }
+  .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics:nth-child(n + 6) { animation-delay: 120ms; }
+}
+@keyframes rhh-pane-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rhh-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 세그먼트 — 같은 너비 칸 + 미끄러지는 흰 손잡이 */
+.rhh-seg {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+}
+.rhh-seg button,
+.rhh-seg button.on {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  box-shadow: none;
+}
+.rhh-seg-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  z-index: 0;
+  width: calc((100% - 4px) / var(--n, 3));
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: var(--elev-1), 0 0 0 0.5px rgb(0 0 0 / 4%);
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition: transform var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease-spring));
+  pointer-events: none;
+}
+html[data-theme="dark"] .rhh-seg-thumb {
+  background: rgb(255 255 255 / 16%);
+  box-shadow: none;
+}
+html[data-theme="dark"] .rhh-seg button.on {
+  background: transparent;
+}
+
+/* 스위치 — 누르는 동안 손잡이가 늘어난다(켜진 쪽에선 오른쪽 끝을 지키며 왼쪽으로) */
+.vic-settings .rhh-switch {
+  transition: background 0.22s var(--ease, ease);
+}
+.vic-settings .rhh-knob {
+  transition:
+    transform var(--dur-spring-bouncy, 0.6s) var(--spring-bouncy, var(--ease-spring)),
+    width 0.18s var(--ease, ease);
+}
+.vic-settings .rhh-switch:active .rhh-knob {
+  width: 24px;
+}
+.vic-settings .rhh-switch.on:active .rhh-knob {
+  transform: translateX(14px);
+}
+
+/* 음량 손잡이 — 잡으면 살짝 커진다 */
+.rhh-volume input[type="range"]::-webkit-slider-thumb {
+  transition: transform 0.18s var(--ease, ease);
+}
+.rhh-volume input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+html[data-theme="dark"] .rhh-nav-pill {
+  background: rgb(120 170 230 / 18%);
+}
+html[data-reduce-motion] .rhh-nav-pill.ready,
+html[data-reduce-motion] .rhh-seg-thumb,
+html[data-reduce-motion] .vic-settings .rhh-knob {
+  transition: none;
+}
+html[data-reduce-motion] .rhh-panes .rhh-group.is-active,
+html[data-reduce-motion] .rhh-panes .rhh-group.is-active .rhh-group-card > .role-help-haptics {
+  animation: none;
+}

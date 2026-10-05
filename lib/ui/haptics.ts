@@ -13,6 +13,8 @@
 //   으로 "서버에 반영됐다"를 울린다. 두 톡 사이의 간격이 곧 실제 서버 왕복이라 체감이 정직하다.
 //   (한 패턴 [12,40,12]로 한꺼번에 울리지 않는다 — 그건 단일 시점 성공용 hapticSuccess다.)
 
+import { playSfx } from "@/lib/ui/sfx";
+
 const HAPTICS_PREF_KEY = "vic.haptics"; // localStorage: "off"면 끔, 그 외엔 켬(기본 ON)
 
 // [자물쇠 1·2] 기기 지원 + 사용자 설정. SSR(navigator 없음)에서도 안전하게 false.
@@ -45,7 +47,12 @@ function buzz(pattern: number | number[]): void {
 }
 
 // 상황별 "느낌"에 이름을 붙여 둔다 — 호출부는 의미 있는 이름만 부른다.
-export const hapticTick = () => buzz(12); // 가벼운 톡: 하트·카드 탭·드래그 집기, 그리고 2단계 컨벤션의 눌림/서버확인 각 박자
+// 가벼운 톡: 하트·카드 탭·드래그 집기, 그리고 2단계 컨벤션의 눌림/서버확인 각 박자.
+// 같은 순간에 아주 짧은 '톡' 소리도 붙는다(효과음 '누름·이동'이 켜진 기기만 — lib/ui/sfx). 진동이 없는 iOS·PC도 소리는 난다.
+export const hapticTick = () => {
+  buzz(12);
+  playSfx("tick");
+};
 export const hapticSuccess = () => buzz([12, 40, 12]); // 톡-쉼-톡: "한 시점"에 끝나는 성공(예: 잠금 해제)
 export const hapticDelete = () => buzz(24); // 또렷한 한 번: 삭제(되돌리기 어려운 동작)
 export const hapticWarn = () => buzz([20, 60, 20]); // 경고(추후 단계용)

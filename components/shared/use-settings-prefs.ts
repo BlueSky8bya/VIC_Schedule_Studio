@@ -170,7 +170,7 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
   }, []);
   // 음량(0~100) — 끌어 가는 동안은 값만, 손을 떼면(commit) 그 크기로 한 번 들려준다(OS 음량 막대와 같은 문법).
   const [soundVol, setSoundVolState] = useState(DEFAULT_SOUND_VOLUME);
-  const [soundCatsState, setSoundCatsState] = useState<SoundCats>({ celebrate: true, tap: true, edit: true, alert: true });
+  const [soundCatsState, setSoundCatsState] = useState<SoundCats>({ celebrate: true, tap: true, ui: true, edit: true, alert: true });
   const [quietHidden, setQuietHiddenState] = useState(true);
   useEffect(() => {
     setSoundVolState(soundVolume());

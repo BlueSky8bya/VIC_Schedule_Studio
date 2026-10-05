@@ -9,8 +9,8 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Volume1, Volume2, VolumeX, Wrench, ZoomIn, PartyPopper, Heart, BellRing, EyeOff } from "lucide-react";
-import { useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Volume1, Volume2, VolumeX, Wrench, ZoomIn, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { SoundCategory, SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import type { CalSize } from "@/lib/ui/edit-prefs";
@@ -102,7 +102,20 @@ function SettingsSegment<T extends string | number>({
   dataAct: string;
 }) {
   return (
-    <div aria-label={ariaLabel} className="rhh-seg" data-act={dataAct} role="radiogroup">
+    <div
+      aria-label={ariaLabel}
+      className="rhh-seg"
+      data-act={dataAct}
+      role="radiogroup"
+      style={
+        {
+          "--n": options.length,
+          "--i": Math.max(0, options.findIndex((o) => o.value === value))
+        } as CSSProperties
+      }
+    >
+      {/* 흰 손잡이 하나가 고른 칸으로 미끄러진다(iOS 세그먼트) — 칸마다 배경을 켜고 끄면 '깜빡'이 된다. */}
+      <span aria-hidden="true" className="rhh-seg-thumb" />
       {options.map((o) => (
         <button
           aria-checked={o.value === value}
@@ -201,6 +214,15 @@ export function StudioSettingsList({
     ...(devWorld ? [{ key: "dev" as const, label: "개발자", icon: <Wrench size={15} />, tone: "metal" as const, web: true }] : [])
   ];
   const current: TabKey = tabs.some((t) => t.key === activeTab) ? activeTab : "screen";
+  // 왼쪽 탭의 선택 하이라이트 — 항목마다 배경을 켜지 않고, 알약 하나가 고른 항목으로 미끄러진다(macOS 사이드바).
+  const navRef = useRef<HTMLElement | null>(null);
+  const [navPill, setNavPill] = useState<{ y: number; h: number; ready: boolean } | null>(null);
+  const tabSig = tabs.map((t) => t.key).join(",");
+  useLayoutEffect(() => {
+    const el = navRef.current?.querySelector<HTMLElement>(`[data-tab="${current}"]`);
+    if (!el || el.offsetParent === null) return; // 좁은 곳(탭 숨김)에선 재지 않는다
+    setNavPill((prev) => ({ y: el.offsetTop, h: el.offsetHeight, ready: prev !== null }));
+  }, [current, tabSig]);
   const pane = (key: TabKey, extra = "") => ({
     className: `rhh-group${extra ? ` ${extra}` : ""}${current === key ? " is-active" : ""}`,
     id: `rhh-tab-${key}-panel`,
@@ -222,7 +244,14 @@ export function StudioSettingsList({
   return (
     <div className="rhh-tabs">
       <div className="rhh-tabs-grid">
-      <nav aria-label="설정 묶음" aria-orientation="vertical" className="rhh-nav" role="tablist">
+      <nav aria-label="설정 묶음" aria-orientation="vertical" className="rhh-nav" ref={navRef} role="tablist">
+        {navPill ? (
+          <span
+            aria-hidden="true"
+            className={`rhh-nav-pill${navPill.ready ? " ready" : ""}`}
+            style={{ transform: `translateY(${navPill.y}px)`, height: navPill.h }}
+          />
+        ) : null}
         {tabs.map((t) => (
           <button
             aria-controls={`rhh-tab-${t.key}-panel`}
@@ -370,6 +399,12 @@ export function StudioSettingsList({
             <Switch dataAct="sound-cat-celebrate" label="축하 소리 켜기/끄기" on={sound.cats.celebrate} onToggle={() => sound.toggleCat("celebrate")} />
           </div>
           <div className="role-help-haptics">
+            <RowLabel icon={<MousePointerClick size={15} />} tone="water">
+              누름·이동
+            </RowLabel>
+            <Switch dataAct="sound-cat-ui" label="누름·이동 소리 켜기/끄기" on={sound.cats.ui} onToggle={() => sound.toggleCat("ui")} />
+          </div>
+          <div className="role-help-haptics">
             <RowLabel icon={<Heart size={15} />} tone="rose">
               하트·기대
             </RowLabel>
@@ -398,8 +433,8 @@ export function StudioSettingsList({
         </div>
         <p className="rhh-group-foot">
           {sound.showEdit
-            ? "축하는 기념일 빵빠레·최초공개 축포, 편집은 저장·옮기기·잇기·삭제·되돌리기, 알림은 실패·잠금 해제. 방송 중엔 송출에 섞일 수 있어요."
-            : "축하는 기념일 빵빠레·최초공개 축포, 알림은 실패·잠금 해제 소리예요. 다시보기 소리는 플레이어에서 조절해요."}
+            ? "누름·이동은 일정 고르기·집기·편집창 열고 닫기·달 넘기기·버튼 누름, 편집은 놓기·저장·잇기·끊기·삭제·되돌리기예요. 방송 중엔 송출에 섞일 수 있어요."
+            : "누름·이동은 일정 열고 닫기·달 넘기기·버튼 누름, 축하는 기념일 빵빠레·최초공개 축포예요. 다시보기 소리는 플레이어에서 조절해요."}
         </p>
       </section>
 

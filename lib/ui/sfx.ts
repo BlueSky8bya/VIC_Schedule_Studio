@@ -10,7 +10,7 @@
 // 브라우저는 사용자 조작(클릭) 안에서만 소리를 허용한다 — 대부분의 호출은 클릭 처리기 안에서 일어난다.
 import type { CelebrationSound } from "@/lib/ui/celebration";
 
-export type SoundCategory = "celebrate" | "tap" | "edit" | "alert";
+export type SoundCategory = "celebrate" | "tap" | "ui" | "edit" | "alert";
 export type SfxName =
   | Exclude<CelebrationSound, "none">
   | "levelup"
@@ -26,7 +26,13 @@ export type SfxName =
   | "link"
   | "unlink"
   | "unlock"
-  | "error";
+  | "error"
+  | "tick"
+  | "select"
+  | "open"
+  | "close"
+  | "lift"
+  | "page";
 
 const CATEGORY: Record<SfxName, SoundCategory> = {
   fanfare: "celebrate",
@@ -49,7 +55,13 @@ const CATEGORY: Record<SfxName, SoundCategory> = {
   link: "edit",
   unlink: "edit",
   unlock: "alert",
-  error: "alert"
+  error: "alert",
+  tick: "ui",
+  select: "ui",
+  open: "ui",
+  close: "ui",
+  lift: "ui",
+  page: "ui"
 };
 
 const KEY = "vic.sound";
@@ -89,7 +101,7 @@ export function setSoundVolume(v: number): void {
 }
 export type SoundCats = Record<SoundCategory, boolean>;
 export function soundCats(): SoundCats {
-  const base: SoundCats = { celebrate: true, tap: true, edit: true, alert: true };
+  const base: SoundCats = { celebrate: true, tap: true, ui: true, edit: true, alert: true };
   try {
     const raw = JSON.parse(read(CATS_KEY) ?? "null") as Partial<SoundCats> | null;
     return raw ? { ...base, ...raw } : base;
@@ -214,6 +226,25 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
       note(ac, out, N(-12), 0, 0.14, "square", 0.04);
       note(ac, out, N(-11), 0.12, 0.2, "square", 0.04);
       break;
+    case "tick": // 아주 짧은 톡(진동과 같은 순간) — 애플 키 클릭처럼 거의 질감만
+      note(ac, out, 1800, 0, 0.03, "sine", 0.05, 0.6);
+      break;
+    case "select": // 고르기 — 또렷한 한 점
+      note(ac, out, N(9), 0, 0.07, "triangle", 0.08);
+      break;
+    case "open": // 열림 — 짧게 위로 미끄러짐
+      note(ac, out, N(2), 0, 0.12, "sine", 0.07, 1.5);
+      break;
+    case "close": // 닫힘 — 짧게 아래로
+      note(ac, out, N(9), 0, 0.1, "sine", 0.06, 0.66);
+      break;
+    case "lift": // 집기 — 살짝 떠오르는 두 점
+      note(ac, out, N(4), 0, 0.06, "sine", 0.07);
+      note(ac, out, N(11), 0.04, 0.08, "sine", 0.06);
+      break;
+    case "page": // 달 넘김 — 종이 넘기듯 짧은 활강
+      note(ac, out, 1400, 0, 0.09, "triangle", 0.04, 0.5);
+      break;
     case "pop":
     default: // 톡 — 짧게 위로 휘는 팝
       note(ac, out, N(0), 0, 0.12, "sine", 0.14, 1.8);
@@ -222,8 +253,25 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
   }
 }
 
+// '톡'(tick)은 진동 hapticTick과 같은 순간에 자동으로 붙는다(lib/ui/haptics). 같은 손동작에서 더 구체적인 소리
+// (하트·놓기·저장…)가 나면 '톡'은 양보한다 — 호출 순서와 무관하게: 톡은 한 틱 미뤄 두고, 그 사이 다른 소리가 났으면 버린다.
+let lastSpecificAt = 0;
+
 /** 소리 하나. 자물쇠(전체 켜기·종류·다른 탭)를 여기서 다 본다 — 호출부는 이름만 부르면 된다. */
 export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
+  if (name === "tick" && !opts.force) {
+    if (typeof window === "undefined") return;
+    window.setTimeout(() => {
+      if (performance.now() - lastSpecificAt < 80) return;
+      playNow("tick");
+    }, 0);
+    return;
+  }
+  lastSpecificAt = typeof performance !== "undefined" ? performance.now() : 0;
+  playNow(name, opts);
+}
+
+function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   if (!opts.force) {
     if (!soundEnabled()) return;
     if (!soundCats()[CATEGORY[name]]) return;

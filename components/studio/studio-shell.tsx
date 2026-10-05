@@ -657,6 +657,7 @@ export function StudioShell({
   function handlePillClick(eventId: string) {
     const target = eventsRef.current.find((e) => canonId(e.id) === canonId(eventId));
     if (!target) return;
+    playSfx("select");
     selectOrCloseEvent(target);
   }
 
@@ -730,6 +731,14 @@ export function StudioShell({
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
   // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
   const [editorVisible, setEditorVisible] = useState(false);
+  // 편집창 열림·닫힘 소리 — 여는/닫는 경로가 여럿(더블클릭·Enter·Esc·바깥 클릭·저장 뒤)이라 상태 전환 한 곳에서.
+  const editorSoundPrevRef = useRef(editorVisible);
+  useEffect(() => {
+    if (editorSoundPrevRef.current === editorVisible) return;
+    editorSoundPrevRef.current = editorVisible;
+    playSfx(editorVisible ? "open" : "close");
+  }, [editorVisible]);
+
   // 편집 카드 여닫기 계측(2026-09-03, docs/ux/saju-redesign-direction.md F-3) — 30일 로그에서
   // 칸·카드 열기 606회 대 저장 176회. 둘러보기인지 포기인지 가르려면 체류·입력·닫은 방법이 필요.
   // section.enter/leave(target "editor") + leave의 dur_ms·meta{typed, saved, how}. 개인정보 없음.
@@ -1961,6 +1970,7 @@ export function StudioShell({
   }
 
   function moveMonth(offset: number) {
+    if (offset !== 0) playSfx("page");
     hapticTick(); // 달 넘김 손맛 — 버튼·키보드·스와이프 모든 경로 공통(Android만, 그 외 조용히 무시)
     didNavigateRef.current = true; // 이제부턴 달 이동 = 슬라이드(첫 진입 스태거와 구분)
     setMonthDir(offset >= 0 ? "next" : "prev"); // 슬라이드 방향(시청자 화면과 동일)
@@ -3479,6 +3489,7 @@ export function StudioShell({
       }
       if (dist < 6) return;
       info.started = true;
+      playSfx("lift");
       // 열려 있는 확대 팝오버(hover·핀 모두)는 드래그 시작 즉시 닫는다 — 떠 있으면
       // elementFromPoint를 가로채 드롭 칸·삽입선 판정을 막는다.
       closeZoomPeek();
@@ -3834,6 +3845,7 @@ export function StudioShell({
       document.body.style.userSelect = "none";
       document.body.classList.add("span-dragging");
       hapticTick(); // 집었다 — 손에 들린 순간
+      playSfx("lift");
       setSpanDrag({ ids: d.ids });
       spanFollowLoop();
     }
@@ -7493,6 +7505,7 @@ export function StudioShell({
                             justDraggedRef.current = false;
                             return;
                           }
+                          playSfx("select");
                           selectOrCloseEvent(s);
                         }}
                         onDoubleClick={(e) => {

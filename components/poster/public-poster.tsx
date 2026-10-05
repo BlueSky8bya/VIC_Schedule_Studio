@@ -1268,6 +1268,14 @@ export function PublicPoster({
     // PC: 클릭한 카드의 뷰포트 좌표(팝오버 앵커). 포스터는 transform 축소라 gBCR=화면 좌표 그대로.
     anchor?: { x: number; y: number; w: number; h: number };
   } | null>(null);
+  // 일정 상세 열림·닫힘 소리(lib/ui/sfx '누름·이동') — 여는/닫는 경로가 여럿이라 상태 전환 한 곳에서.
+  const detailOpenRef = useRef(false);
+  useEffect(() => {
+    const open = agendaDetail !== null;
+    if (open === detailOpenRef.current) return;
+    detailOpenRef.current = open;
+    playSfx(open ? "open" : "close");
+  }, [agendaDetail]);
   useEffect(() => {
     if (!agendaDetail) return;
     const onKey = (e: KeyboardEvent) => {
@@ -2936,6 +2944,7 @@ export function PublicPoster({
     }
   }
   function moveMonth(offset: number) {
+    if (offset !== 0) playSfx("page");
     didNavigateRef.current = true;
     setDayVodPop(null); // 팝오버는 화면 고정 좌표라 달이 바뀌면 근거를 잃는다
     setMonthDir(offset >= 0 ? "next" : "prev");
