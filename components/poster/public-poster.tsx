@@ -2744,16 +2744,18 @@ export function PublicPoster({
       setStatusFilters((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]))
     );
   }
-  // 모바일 레일 맨 아래 버튼(인기도·미정)을 누르면 '필터 해제'가 새로 생겨 내용이 밀리고, 방금 누른
-  // 버튼이 레일(자체 스크롤) 밖으로 빠진다 — 그리고 나서 레일만 스크롤해 다시 보이게 한다.
+  // 모바일 레일 맨 아래 버튼(인기도·미정)을 누르면 그 밑에 '필터 해제'가 새로 생기는데, 레일(자체 스크롤)이
+  // 짧으면 둘 다 아래로 잘린다 — 누른 버튼과 해제 버튼이 함께 보이게 레일만 스크롤한다.
   // scrollIntoView 금지: 조상 상자까지 굴린다(2026-10-05 요일 줄 사고).
   function keepInRail(btn: HTMLElement) {
     requestAnimationFrame(() => {
       const rail = btn.closest<HTMLElement>(".agenda-legend");
       if (!rail) return;
+      const clear = rail.querySelector<HTMLElement>(".agenda-legend-clear");
       const r = btn.getBoundingClientRect();
+      const bottom = Math.max(r.bottom, clear?.getBoundingClientRect().bottom ?? 0);
       const box = rail.getBoundingClientRect();
-      if (r.bottom > box.bottom) rail.scrollTop += r.bottom - box.bottom + 6;
+      if (bottom > box.bottom) rail.scrollTop += bottom - box.bottom + 6;
       else if (r.top < box.top) rail.scrollTop -= box.top - r.top + 6;
     });
   }
@@ -3618,20 +3620,6 @@ export function PublicPoster({
                 내 관심
               </button>
             ) : null}
-            {/* 톡은 clearFilters 함수가 아니라 버튼에서 — jumpToday도 clearFilters를 부르는데
-                거긴 이미 톡을 울려서, 함수 안에 넣으면 두 번 울린다. */}
-            {filterActive ? (
-              <button
-                className="agenda-legend-clear"
-                onClick={() => {
-                  hapticTick();
-                  clearFilters();
-                }}
-                type="button"
-               data-act="agenda-legend-clear">
-                필터 해제
-              </button>
-            ) : null}
             {/* 남는 공간에 인기 배지 단계 안내(웹과 동일, 모바일용으로 간결하게). */}
             <div className="agenda-tier-help">
               <strong>♥ 인기도</strong>
@@ -3677,6 +3665,20 @@ export function PublicPoster({
             >
               <i aria-hidden="true" className="tent-swatch" /> 미정
             </button>
+            {/* 톡은 clearFilters 함수가 아니라 버튼에서 — jumpToday도 clearFilters를 부르는데
+                거긴 이미 톡을 울려서, 함수 안에 넣으면 두 번 울린다. */}
+            {filterActive ? (
+              <button
+                className="agenda-legend-clear"
+                onClick={() => {
+                  hapticTick();
+                  clearFilters();
+                }}
+                type="button"
+               data-act="agenda-legend-clear">
+                필터 해제
+              </button>
+            ) : null}
           </aside>
           ) : null}
           {/* '이 달 기록' — 웹에선 헤더(.public-calendar-header)에 있는데, 그 헤더는 ≤1040px에서
@@ -4186,22 +4188,6 @@ export function PublicPoster({
           </>
         );
       })()}
-      {/* '필터 해제'는 필터가 있든 없든 항상 자리(높이)를 차지한다 — 필터를 켤 때 이 버튼이
-          새로 생기면서 위 색칩들이 위로 밀려, 방금 누른 칩이 커서 밑에서 벗어나 다시 끄려면
-          마우스를 옮겨야 했다. 항상 자리만 잡아두고 보이기만 토글하면 칩이 안 움직여, 같은
-          자리에서 따닥 눌러 켜고 끌 수 있다. */}
-      <button
-        className={`legend-clear${filterActive ? "" : " is-hidden"}`}
-        onClick={() => {
-          hapticTick();
-          clearFilters();
-        }}
-        type="button"
-        aria-hidden={!filterActive}
-        tabIndex={filterActive ? 0 : -1}
-       data-act="legend-clear">
-        필터 해제
-      </button>
       {/* ♥ 의미·인기 단계 안내 — 하트 토글은 제목 위 배너로 옮겼고, 그 자리에 모바일처럼
           설명을 둔다. margin-top:auto로 안내 박스 바닥에 붙어 빈 공간 없이 채운다.
           **모드로 가르지 않는다**: 시청자에게만 그리면 이 박스(26px)만큼 표면이 길어져,
@@ -4250,6 +4236,23 @@ export function PublicPoster({
           미정
         </button>
       </div>
+      {/* 맨 아래(2026-10-05 소유자 — 태그·인기도·미정 모든 필터를 한꺼번에 푸는 버튼이라 마지막에).
+          '필터 해제'는 필터가 있든 없든 항상 자리(높이)를 차지한다 — 필터를 켤 때 이 버튼이
+          새로 생기면서 위 색칩들이 위로 밀려, 방금 누른 칩이 커서 밑에서 벗어나 다시 끄려면
+          마우스를 옮겨야 했다. 항상 자리만 잡아두고 보이기만 토글하면 칩이 안 움직여, 같은
+          자리에서 따닥 눌러 켜고 끌 수 있다. */}
+      <button
+        className={`legend-clear${filterActive ? "" : " is-hidden"}`}
+        onClick={() => {
+          hapticTick();
+          clearFilters();
+        }}
+        type="button"
+        aria-hidden={!filterActive}
+        tabIndex={filterActive ? 0 : -1}
+       data-act="legend-clear">
+        필터 해제
+      </button>
     </div>
   );
 

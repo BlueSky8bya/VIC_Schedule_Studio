@@ -207,7 +207,7 @@
 }
 
 .agenda-legend-clear {
-  margin-top: 2px;
+  margin-top: 6px; /* 미정 밑(맨 아래)으로 옮김 */
   border: 1px solid var(--line, #ece2cd);
   border-radius: var(--r-sm);
   background: var(--surface-2, #fdf6e8);
@@ -3572,7 +3572,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 }
 
 .legend-clear {
-  margin-top: 2px;
+  margin-top: var(--space-2); /* 맨 아래(미정 밑)로 옮기며 위 점선 블록과 띄움 */
   border: 1px solid var(--line);
   border-radius: var(--r-pill);
   background: var(--surface);
