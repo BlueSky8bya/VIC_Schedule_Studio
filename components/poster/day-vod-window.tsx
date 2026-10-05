@@ -7,6 +7,7 @@ import { ExternalLink, PanelLeft, PanelRight, Play, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { hapticTick } from "@/lib/ui/haptics";
+import { logActivity } from "@/lib/activity/client";
 import { VodChapters, type VodChaptersApi } from "@/components/poster/vod-chapters";
 import "./public-poster.css";
 import "./poster-metal-water.css";
@@ -319,7 +320,15 @@ export function DayVodWindow({
   // 플레이어가 시킹을 조용히 떨어뜨리는 경우(구간 경계·광고·네트워크) 커버 없는 '무한로딩'을 없앤다.
   const dayVodSeekWatchRef = useRef(new Map<number, number>());
   const dayVodLastTuAtRef = useRef(new Map<number, number>()); // 마지막 timeUpdate 시각
-  const armDayVodSeekWatchRef = useRef<(titleNo: number, sec: number) => void>(() => {});
+  const armDayVodSeekWatchRef = useRef<(titleNo: number, sec: number, stage?: 1 | 2) => void>(() => {});
+  // 방송 길이(초) — 시킹 목표를 끝 몇 초 앞으로 묶는다(없는 지점으로 보내 '도착 못 함'이 되던 경우 차단).
+  const vodDurSecRef = useRef(new Map<number, number>());
+  vodDurSecRef.current = new Map(vods.map((v) => [v.titleNo, v.durationMs / 1000]));
+  const clampVodSec = (titleNo: number, sec: number) => {
+    const dur = vodDurSecRef.current.get(titleNo) ?? 0;
+    const max = dur > 30 ? dur - 5 : Number.POSITIVE_INFINITY;
+    return Math.max(0, Math.min(sec, max));
+  };
   const dayVodSettled = (titleNo: number) => {
     const at = dayVodSettledAtRef.current.get(titleNo);
     return at !== undefined && performance.now() - at > VOD_SETTLE_MS;
@@ -518,9 +527,14 @@ export function DayVodWindow({
       }, VOD_BOOT_WATCHDOG_MS)
     );
   }, []);
-  // 시킹 감시 — PseekTo를 보낸 뒤 VOD_SEEK_WATCHDOG_MS 안에 목표 ±45초의 timeUpdate가 오지 않으면 대기 슬롯을
-  // 그 초부터 음소거로 승격해 다시 시동한다(한 번). 그 사이 정지했거나 새 시동이 시작됐으면 손대지 않는다.
-  const armDayVodSeekWatch = useCallback((titleNo: number, sec: number) => {
+  // 시킹 감시(2026-10-06 개정 — 소유자: "이어서 불러오는 중이 우리 쪽 판정 착각으로는 최대한 안 뜨게").
+  // PseekTo 뒤 VOD_SEEK_WATCHDOG_MS 안에 목표 ±45초의 timeUpdate가 없을 때 — 바로 플레이어를 갈아 끼우지 않는다:
+  //  · 화면이 숨겨져 있으면(다른 탭·창 내림) 판정 보류 — 브라우저가 숨은 플레이어를 늦추거나 멈춰 신호가 안 올 뿐이다.
+  //    다시 보이면 새 7초로 다시 잰다.
+  //  · 1단계: 같은 플레이어에 PseekTo를 한 번 더(제자리 재시도 — 조용히 떨어진 시킹·느린 조각 경계 흡수).
+  //  · 2단계: 그래도 안 되면 그때 '이어서 불러오는 중…'과 함께 대기 슬롯을 그 초부터 음소거로 승격.
+  // 매 판정은 진단 로그(diag.vod, 3일 보존)로 남긴다 — 다음에 뜨면 원인을 바로 가른다.
+  const armDayVodSeekWatch = useCallback((titleNo: number, sec: number, stage: 1 | 2 = 1) => {
     const old = dayVodSeekWatchRef.current.get(titleNo);
     if (old) window.clearTimeout(old);
     const seekAt = dayVodSeekAtRef.current.get(titleNo);
@@ -535,6 +549,44 @@ export function DayVodWindow({
         const cur = dayVodTimeRef.current.get(titleNo) ?? -1;
         const landed = seekAt !== undefined && tuAt > seekAt && Math.abs(cur - sec) < 45;
         if (landed) return;
+        const diag = (phase: string) =>
+          logActivity("diag.vod", {
+            target: String(titleNo),
+            meta: {
+              phase,
+              stage,
+              want: Math.round(sec),
+              cur: Math.round(cur),
+              sinceTuMs: tuAt ? Math.round(performance.now() - tuAt) : -1,
+              tuAfterSeek: seekAt !== undefined && tuAt > seekAt,
+              hidden: typeof document !== "undefined" && document.hidden,
+              durSec: Math.round(vodDurSecRef.current.get(titleNo) ?? 0)
+            }
+          });
+        if (document.hidden) {
+          // 숨은 화면 — 판정 보류. 보이면 같은 단계로 새 7초.
+          diag("hidden-hold");
+          const onVis = () => {
+            if (document.hidden) return;
+            document.removeEventListener("visibilitychange", onVis);
+            if (dayVodSeekAtRef.current.get(titleNo) !== seekAt) return;
+            armDayVodSeekWatchRef.current(titleNo, sec, stage);
+          };
+          document.addEventListener("visibilitychange", onVis);
+          return;
+        }
+        if (stage === 1) {
+          // 제자리 재시도 — 플레이어 교체(소리·광고·로딩 비용) 없이 시킹만 한 번 더.
+          const post = dayVodApisRef.current.get(dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a"));
+          if (post) {
+            diag("retry-seek");
+            post({ cmd: "PseekTo", seconds: { time: sec, seekType: "timelink" } });
+            dayVodSeekAtRef.current.set(titleNo, performance.now());
+            armDayVodSeekWatchRef.current(titleNo, sec, 2);
+            return;
+          }
+        }
+        diag("reboot");
         showDayVodNoticeRef.current("이어서 불러오는 중…");
         promoteDayVodStandbyRef.current(titleNo, sec, true);
       }, VOD_SEEK_WATCHDOG_MS)
@@ -543,8 +595,9 @@ export function DayVodWindow({
   armDayVodSeekWatchRef.current = armDayVodSeekWatch;
   // 자리잡는 순간, 그 사이에 쌓인 마지막 요청 위치로 한 번만 옮긴다(연타 → 시킹 한 번).
   const flushDayVodWantSec = useCallback((titleNo: number) => {
-    const want = dayVodWantSecRef.current.get(titleNo);
-    if (want === undefined) return;
+    const wantRaw = dayVodWantSecRef.current.get(titleNo);
+    if (wantRaw === undefined) return;
+    const want = clampVodSec(titleNo, wantRaw);
     dayVodWantSecRef.current.delete(titleNo);
     const cur = dayVodTimeRef.current.get(titleNo) ?? 0;
     if (Math.abs(cur - want) < 2) return; // 이미 그 자리
@@ -878,7 +931,8 @@ export function DayVodWindow({
   }, [dayVodSel, vods, armDayVodStandby]);
   // 챕터 클릭의 단일 진입점 — 재생 중이면 postMessage로만 움직인다(리로드 없음 = 광고 재시작
   // 없음, 소리 상태 유지). 재생 전이면 대기 슬롯 승격(위 주석).
-  const jumpDayVod = (titleNo: number, sec: number) => {
+  const jumpDayVod = (titleNo: number, secRaw: number) => {
+    const sec = clampVodSec(titleNo, secRaw);
     setDayVodJump({ titleNo, sec }); // ↗ 새 탭 링크의 초 표기 동기화
     dayVodFocusRef.current = titleNo;
     // 챕터 점프가 ←/→ 묶음을 이긴다 — 남은 키 목표가 늦게 날아가 챕터 자리를 덮지 않게.
@@ -1098,9 +1152,10 @@ export function DayVodWindow({
         if (!p) return;
         const at = performance.now();
         dayVodKeySentAtRef.current = at;
-        p({ cmd: "PseekTo", seconds: { time: target.sec, seekType: "timelink" } });
+        const t = clampVodSec(titleNo, target.sec);
+        p({ cmd: "PseekTo", seconds: { time: t, seekType: "timelink" } });
         dayVodSeekAtRef.current.set(titleNo, at);
-        armDayVodSeekWatchRef.current(titleNo, target.sec);
+        armDayVodSeekWatchRef.current(titleNo, t);
       };
       window.clearTimeout(dayVodKeyTimerRef.current);
       const wait = VOD_KEY_SEEK_GAP_MS - (now - dayVodKeySentAtRef.current);

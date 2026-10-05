@@ -73,7 +73,8 @@ export const CLIENT_KINDS = [
   "diag.teaser",   // 떡밥 카드가 어떤 상태로 그려졌나(카운트다운/빈 자리/평문)
   "diag.reveal",   // 공개 요청의 결과(몇 개 물어봐서 몇 개가 실제로 공개됐나)
   "diag.visible",  // 탭 가시성 전이(실시간 '탭만 열림' 오판을 쫓기 위해)
-  "diag.refresh"   // 화면 갱신 트리거(새로고침·router.refresh)
+  "diag.refresh",  // 화면 갱신 트리거(새로고침·router.refresh)
+  "diag.vod"       // 다시보기 시킹 감시 판정(숨김 보류·제자리 재시도·재시동 — '이어서 불러오는 중…' 원인 가르기)
 ] as const;
 
 export type ServerKind = (typeof SERVER_KINDS)[number];
@@ -104,6 +105,7 @@ export const KIND_LABEL: Record<string, string> = {
   "diag.reveal": "진단: 공개 요청",
   "diag.visible": "진단: 탭 가시성",
   "diag.refresh": "진단: 화면 갱신",
+  "diag.vod": "진단: 다시보기 시킹",
   "ui.click": "누름",
   "section.enter": "창 열림",
   "section.leave": "창 닫힘",
