@@ -2599,6 +2599,17 @@ export function PublicPoster({
   // 축하 대신 차분히 아래로 떨어지는 응원(💪🙏🥲) — 패배에 폭죽은 결이 안 맞아서.
   // theme(2026-10-06): 기념일 이름별 빵빠레(lib/ui/celebration) — 색·이모지·모양·효과음이 그 날에 맞는다.
   const noteSeqRef = useRef(0);
+  // 생일 선물 카드(2026-10-06 소유자: "생일일 때 내가 첨부한 이미지도 볼 수 있으면") — 생일 표기를 누르면 빵빠레 뒤에
+  // 그림이 사진 카드처럼 기울며 튀어나온다. 바깥·✕·Esc로 닫는다. 생일 노래는 그대로 흐른다.
+  const [giftCard, setGiftCard] = useState<{ src: string; alt: string; caption: string } | null>(null);
+  useEffect(() => {
+    if (!giftCard) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setGiftCard(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [giftCard]);
   const grandRainTimer = useRef<number | null>(null);
   // 특별한 날 당일 '눌러 보세요' 유도(2026-10-06 소유자: "생일 당일이 되면 이 텍스트를 누르고 싶게") —
   // 오늘 칸의 특별한 표기가 반짝·통통 튀고 말풍선이 붙는다. 한 번 누르면 그날은 다시 조르지 않는다(기기 기억).
@@ -2634,10 +2645,18 @@ export function PublicPoster({
     // 기념일은 연속 탭이 멜로디가 된다(lib/ui/sfx playCelebrationTap): 첫 탭 = 빵빠레, 이어 누르면 한 음씩.
     const tap = theme ? playCelebrationTap(theme.key, theme.sound) : null;
     if (!theme) playCelebration(mood === "win" ? "fanfare" : "pop");
+    // 생일 선물 카드(lib/ui/celebration gift) — 연타의 첫 탭에만, 빵빠레가 터진 뒤 그림이 선물처럼 열린다(동작 줄이기여도 그림은 보인다).
+    if (theme?.gift && tap?.kind === "first") {
+      const gift = theme.gift;
+      window.setTimeout(() => setGiftCard(gift), reduceMotionEnabled() ? 0 : 650);
+    }
     if (reduceMotionEnabled()) return;
     if (theme && tap) {
       if (tap.kind === "first") {
         popThemedBurst(clientX, clientY, theme);
+        // 보통 날은 첫 탭도 한 음 — 음표와 곡 이름 쪽지.
+        if (tap.semi !== undefined) popMusicNote(clientX, clientY, tap.semi, noteSeqRef.current++, tap.title);
+
         // 특별한 날(생일·데뷔 주년·D+N00): 화면 곳곳에서 축포가 차례로 + 위에서 색종이 비(오늘 축하와 같은 층).
         if (theme.grand) {
           [260, 520, 820].forEach((ms, k) => {
@@ -5100,6 +5119,25 @@ export function PublicPoster({
             />
           ))}
           <div className="celebrate-toast">🎉 {todayCelebration}</div>
+        </div>
+      ) : null}
+      {giftCard ? (
+        <div className="gift-card-layer" onClick={() => setGiftCard(null)} role="presentation">
+          <figure
+            aria-label={giftCard.alt}
+            aria-modal="true"
+            className="gift-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+          >
+            <button aria-label="닫기" className="gift-card-close" data-act="gift-close" onClick={() => setGiftCard(null)} type="button">
+              ✕
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt={giftCard.alt} className="gift-card-img" decoding="async" src={giftCard.src} />
+            <figcaption className="gift-card-caption">{giftCard.caption}</figcaption>
+            <span aria-hidden="true" className="gift-card-ribbon">🎀</span>
+          </figure>
         </div>
       ) : null}
       {bursts.length > 0 ? (

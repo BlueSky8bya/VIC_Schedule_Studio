@@ -614,15 +614,43 @@ const MELODIES: { title: string; notes: Step[] }[] = [
   { title: "징글벨", notes: [4, 4, 4, 4, 4, 4, 4, 7, 0, 2, 4, 5, 5, 5, 5, 5, 4, 4, 4, 4, 2, 2, 4, 2, 7] },
   { title: "도레미 계단", notes: [0, 2, 4, 5, 7, 9, 11, 12, 12, 11, 9, 7, 5, 4, 2, 0] }
 ];
-const JINGLE = MELODIES.findIndex((m) => m.title === "징글벨");
+// 그 날과 관련된 노래(2026-10-06 소유자: "크리스마스·추석·설날 등 유명한 날은 관련 동요나 유명한 노래, 없으면 상관없는 노래") —
+// 저작권이 끝난 곡만: 까치 까치 설날은·어머님 은혜·스승의 은혜·달달 무슨 달 등은 아직 보호 중이라 쓰지 않는다.
+// 이 곡들은 그 날 전용이라 무작위 차례에는 끼지 않는다.
+const THEME_MELODIES: { title: string; notes: Step[] }[] = [
+  { title: "아리랑", notes: [7, 9, 7, 9, 12, 14, 12, 14, 16, 14, 12, 9, 7, 9, 12, 7, 9, 7, 9, 12, 14, 12, 14, 16, 14, 12, 9, 7, 4, 2] },
+  { title: "산왕의 궁전에서", notes: [-3, -1, 0, 2, 4, 0, 4, 3, -1, 3, 2, -2, 2, -3, -1, 0, 2, 4, 0, 4, 9, 7, 4, 0, 4, 7] },
+  { title: "석별의 정", notes: [0, 5, 5, 5, 9, 7, 5, 7, 9, 7, 5, 5, 9, 12, 14, 14, 12, 9, 9, 5, 7, 5, 7, 9, 5, 2, 2, 0, 5] },
+  { title: "결혼 행진곡", notes: [-5, 0, 0, 0, -5, 2, -1, 0, -5, 0, 5, 5, 4, 2, 0, -1, 0, 2] },
+  { title: "어메이징 그레이스", notes: [-5, 0, 4, 0, 4, 2, 0, -3, -5, -5, 0, 4, 0, 4, 2, 7, 4, 7, 4, 7, 4, 0, -5, -3, 0, 0, -3, -5, -5, 0, 4, 0, 4, 2, 0] },
+  { title: "애국가", notes: [2, 7, 6, 4, 7, 2, -1, 0, 2, 4, 2, 0, -1, -3, 2, 7, 6, 4, 7, 2, -1, 0, 2, 4, 2, 0, -1, -3, -5] }
+];
+/** 테마 키 → 그 날의 노래 제목. 여기 없는 날은 무작위 차례(MELODIES). */
+const THEME_SONG: Record<string, string> = {
+  christmas: "징글벨",
+  halloween: "산왕의 궁전에서",
+  seollal: "아리랑",
+  chuseok: "아리랑",
+  daeboreum: "아리랑",
+  newyear: "석별의 정",
+  love: "결혼 행진곡",
+  children: "반짝반짝 작은 별",
+  spring: "뻐꾸기",
+  memorial: "어메이징 그레이스",
+  national: "애국가",
+  gaecheon: "애국가"
+};
+const ALL_MELODIES = [...MELODIES, ...THEME_MELODIES];
+const RANDOM_POOL = MELODIES.map((m, i) => i).filter((i) => !Object.values(THEME_SONG).includes(MELODIES[i].title));
 const STREAK_GAP_MS = 2500;
 let tapStreak = { key: "", at: 0, i: 0, mel: 0 };
 let melodyCursor = -1;
 
 /**
- * 기념일 탭 — 첫 탭은 그 날의 빵빠레, 2.5초 안에 이어 누르면 한 번에 한 음씩 멜로디(생일 = 생일 노래, 그 외 = 비행기).
- * 쉬었다 누르면 처음(빵빠레)부터. 생일 노래가 흐르는 동안의 탭은 소리 없이 넘긴다(노래를 덮지 않게).
- * 반환: "first"(빵빠레) · "note"(멜로디 한 음 — semi 포함) · "busy"(노래 중).
+ * 기념일 탭 — 한 번 누르면 한 음(2026-10-06 소유자). 그 날의 노래가 있으면 그 노래, 없으면 돌아가며 다른 곡.
+ * 한 번에 쭉 울리는 건 특별한 날뿐: 생일(빵빠레 + 생일 노래)·데뷔 주년/D+N00(의식 빵빠레) — 첫 탭에 통째로,
+ * 이어 누르면 한 음씩. 2.5초 쉬면 곡 처음부터. 생일 노래가 흐르는 동안의 탭은 소리 없이 넘긴다.
+ * 반환: kind "first"(연타의 첫 탭 — 특별한 날이면 노래/빵빠레, 아니면 첫 음 semi·title 포함) · "note"(이어지는 한 음) · "busy".
  */
 export function playCelebrationTap(
   key: string,
@@ -630,29 +658,33 @@ export function playCelebrationTap(
 ): { kind: "first" | "note" | "busy"; semi?: number; title?: string } {
   const now = typeof performance !== "undefined" ? performance.now() : 0;
   const cont = tapStreak.key === key && now - tapStreak.at < STREAK_GAP_MS;
+  const grand = sound === "birthday" || sound === "grand";
   if (!cont) {
-    // 새 연타 — 곡을 고른다: 성탄은 징글벨, 그 밖엔 직전과 다른 곡을 차례로(처음은 무작위에서 출발).
-    let mel = key === "christmas" ? JINGLE : 0;
-    if (key !== "christmas") {
-      if (melodyCursor < 0) melodyCursor = Math.floor(Math.random() * MELODIES.length);
-      melodyCursor = (melodyCursor + 1) % MELODIES.length;
-      if (melodyCursor === JINGLE) melodyCursor = (melodyCursor + 1) % MELODIES.length;
-      mel = melodyCursor;
+    // 새 연타 — 곡을 고른다: 그 날의 노래가 있으면 그 곡, 없으면 직전과 다른 곡을 차례로(처음은 무작위에서 출발).
+    const themed = THEME_SONG[key];
+    let mel = themed ? ALL_MELODIES.findIndex((m) => m.title === themed) : -1;
+    if (mel < 0) {
+      if (melodyCursor < 0) melodyCursor = Math.floor(Math.random() * RANDOM_POOL.length);
+      melodyCursor = (melodyCursor + 1) % RANDOM_POOL.length;
+      mel = RANDOM_POOL[melodyCursor];
     }
     tapStreak = { key, at: now, i: 0, mel };
-    playCelebration(sound);
-    return { kind: "first" };
+    if (grand) {
+      playCelebration(sound);
+      return { kind: "first" };
+    }
+  } else {
+    tapStreak.at = now;
+    if (sound === "birthday" && now < songUntil) return { kind: "busy" };
   }
-  tapStreak.at = now;
-  if (sound === "birthday" && now < songUntil) return { kind: "busy" };
   const birthday = sound === "birthday";
-  const notes: Step[] = birthday ? BIRTHDAY_NOTES.map((n) => n[0]) : MELODIES[tapStreak.mel].notes;
+  const notes: Step[] = birthday ? BIRTHDAY_NOTES.map((n) => n[0]) : ALL_MELODIES[tapStreak.mel].notes;
   const step = notes[tapStreak.i % notes.length];
-  const title = tapStreak.i === 0 ? (birthday ? "생일 축하합니다" : MELODIES[tapStreak.mel].title) : undefined;
+  const title = tapStreak.i === 0 ? (birthday ? "생일 축하합니다" : ALL_MELODIES[tapStreak.mel].title) : undefined;
   tapStreak.i += 1;
   pendingNotes = Array.isArray(step) ? step : [step];
   playSfx("note");
-  return { kind: "note", semi: pendingNotes[pendingNotes.length - 1], title };
+  return { kind: cont ? "note" : "first", semi: pendingNotes[pendingNotes.length - 1], title };
 }
 function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   if (!opts.force) {

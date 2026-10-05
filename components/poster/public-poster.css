@@ -9908,3 +9908,110 @@ html[data-reduce-motion] button.agenda-mark.celebratable.invite,
 html[data-reduce-motion] .mark-invite {
   animation: none;
 }
+
+/* ── 생일 선물 카드(2026-10-06) — 빵빠레 뒤 그림이 사진 카드처럼 기울며 톡 튀어나온다(스프링). 바깥·✕·Esc로 닫힘. ── */
+.gift-card-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(40 24 10 / 38%);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: gift-fade 0.3s ease both;
+}
+@keyframes gift-fade {
+  from {
+    opacity: 0;
+  }
+}
+.gift-card {
+  position: relative;
+  margin: 0;
+  width: min(560px, 92vw);
+  border-radius: 18px;
+  background: #fffdf6;
+  padding: 12px 12px 14px;
+  box-shadow:
+    0 30px 60px rgb(80 40 0 / 28%),
+    0 0 0 6px rgb(255 214 120 / 55%);
+  transform-origin: 50% 80%;
+  animation: gift-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes gift-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.5) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.03) rotate(1.5deg);
+  }
+  100% {
+    transform: rotate(-1.2deg);
+  }
+}
+.gift-card-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+.gift-card-caption {
+  margin-top: 10px;
+  color: #b45309;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+}
+.gift-card-ribbon {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  font-size: 38px;
+  transform: translateX(-50%);
+  animation: gift-ribbon 1.4s ease-in-out 0.7s infinite alternate;
+}
+@keyframes gift-ribbon {
+  from {
+    transform: translateX(-50%) rotate(-8deg);
+  }
+  to {
+    transform: translateX(-50%) rotate(8deg);
+  }
+}
+.gift-card-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  z-index: 1;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #6b4a1c;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
+  cursor: pointer;
+}
+.gift-card-close:focus-visible {
+  outline: 2px solid #2f6fb3;
+  outline-offset: 2px;
+}
+html[data-theme="dark"] .gift-card {
+  background: #2a241c;
+}
+html[data-theme="dark"] .gift-card-caption {
+  color: #fcd34d;
+}
+html[data-reduce-motion] .gift-card-layer,
+html[data-reduce-motion] .gift-card,
+html[data-reduce-motion] .gift-card-ribbon {
+  animation: none;
+}

@@ -26,6 +26,8 @@ export type CelebrationTheme = {
   big?: boolean;
   /** 특별한 축하 날(생일·데뷔 주년·D+N00) — 화면 곳곳 축포 + 위에서 색종이 비 + 의식 빵빠레, 당일엔 '눌러 보세요' 유도. */
   grand?: boolean;
+  /** 누르면 빵빠레 뒤에 열리는 선물 그림(public/celebrate/). */
+  gift?: { src: string; alt: string; caption: string };
 };
 
 const BASE: CelebrationTheme = {
@@ -91,6 +93,11 @@ export function celebrationFor(name: string | null | undefined): CelebrationThem
       shape: "firework", // "빵빠레 한 번 크게 터지고"
       big: true,
       grand: true,
+      gift: {
+        src: "/celebrate/victory-birthday.webp",
+        alt: "빅토리 생일 축하 그림 — 케이크와 토끼 친구들, HAPPY BIRTHDAY VICTORY 현수막",
+        caption: "🎂 생일 축하해요, 빅토리!"
+      },
       palette: ["#ff9ec7", "#ffd27a", "#9ad8ff", "#c8b6ff", "#ffffff", "#ffb4a2"],
       emojis: ["🎂", "🎈", "🎁", "🧁", "🎉", "🕯️"],
       emojiRatio: 0.5,
