@@ -677,11 +677,12 @@ html[data-theme="dark"] [data-tier="top"] { --pop-color: #ffe095; --pop-glow: #f
 html[data-theme="dark"] :is(.public-event, .agenda-event)[data-tier] {
   box-shadow: 0 0 6px var(--pop-glow);
 }
-html[data-theme="dark"] .tier-warm { --tier-c: #dfb782; }
-html[data-theme="dark"] .tier-hot { --tier-c: #ffa284; }
-html[data-theme="dark"] .tier-blaze { --tier-c: #ff8db1; --tier-stops: #ff8db1, #ffc5d7, #ff8db1, #ffa284, #ff8db1; }
-html[data-theme="dark"] .tier-top { --tier-c: #ffe095; --tier-stops: #ffe095, #fff2ce, #e4b76a, #ffe095; }
-html[data-theme="dark"] .tier-ring { --tier-w: 1.5px; }
+html[data-theme="dark"] .tier-warm { --tier-c: #ffbe3b; }
+html[data-theme="dark"] .tier-hot { --tier-c: #ff8640; }
+html[data-theme="dark"] .tier-blaze { --tier-c: #ff4d7d; --tier-stops: #ff4d7d, #ff9a5c, #ff4d7d, #ffb43d, #ff4d7d; }
+html[data-theme="dark"] .tier-top { --tier-c: #ffd23f; --tier-stops: #ffd23f, #fff2b0, #e0a800, #ffd23f; }
+/* 다크: 링 2px + 안쪽 구분선은 어두운 선(카드가 밝은 파스텔이어도 링과 갈라진다) */
+html[data-theme="dark"] .tier-ring { --tier-w: 2px; --tier-key: rgb(12 10 8 / 85%); }
 html[data-theme="dark"] .tier-swatch.tier-swatch { background: var(--surface-2); border-color: var(--tier-c); box-shadow: inset 3px 0 var(--tier-c); }
 html[data-theme="dark"] .adt-badge[class*="tier-"] { background: var(--surface-2); color: var(--tier-c); border-color: var(--tier-c); }
 

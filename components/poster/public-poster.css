@@ -5514,6 +5514,16 @@ html[data-reduce-motion] .pop-bloom {
   inset: calc(-1 * var(--tier-w, 2px));
   background: var(--tier-c, transparent);
 }
+/* 안쪽 구분선(2026-10-05 소유자: 폭발적 링이 게임 태그(살몬) 카드에 묻혔다) — 링 안쪽 가장자리 1px을
+   카드와 대비되는 선으로 칠해, 카드 채움이 링과 같은 색 계열이어도 링이 따로 떨어져 보인다.
+   ::after는 링 padding-box(=안쪽 가장자리)에 놓고 바깥으로 1px 그림자 → 마스크가 남긴 테두리 영역 안. */
+.tier-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px var(--tier-key, #fff);
+}
 .tier-ring.tier-blaze::before,
 .tier-ring.tier-top::before {
   background: conic-gradient(from var(--tier-a, 0deg), var(--tier-stops));
@@ -5531,22 +5541,24 @@ html[data-reduce-motion] .pop-bloom {
   animation: tier-breathe var(--tier-dur-halo, 4s) ease-in-out infinite;
   animation-delay: var(--tier-phase, 0s);
 }
+/* 단계 색 — 태그 팔레트(파스텔)와 겹치지 않게 진하고 채도 높은 한 줄기(호박 → 주황 → 진홍 → 금),
+   단계가 오를수록 링도 굵어진다(2026-10-05). 옛 값은 #f3b85c/#f28a63/#ee6b8b — 파스텔 카드에 묻혔다. */
 .tier-warm {
-  --tier-c: #f3b85c;
-  --tier-w: 2px;
+  --tier-c: #f0a400;
+  --tier-w: 2.5px;
 }
 .tier-hot {
-  --tier-c: #f28a63;
-  --tier-w: 2px;
+  --tier-c: #f26b0f;
+  --tier-w: 2.5px;
   --tier-halo: 10px;
   --tier-halo-lo: 0.3;
   --tier-halo-hi: 0.55;
   --tier-dur-halo: 4.2s;
 }
 .tier-blaze {
-  --tier-c: #ee6b8b;
-  --tier-w: 2.5px;
-  --tier-stops: #ee6b8b, #ffa36e 22%, #ee6b8b 48%, #ffc07a 72%, #ee6b8b;
+  --tier-c: #e3124b;
+  --tier-w: 3px;
+  --tier-stops: #e3124b, #ff6a2b 22%, #e3124b 48%, #ff9a1f 72%, #e3124b;
   --tier-dur: 3.6s;
   --tier-halo: 12px;
   --tier-halo-lo: 0.35;
@@ -5554,9 +5566,9 @@ html[data-reduce-motion] .pop-bloom {
   --tier-dur-halo: 2.8s;
 }
 .tier-top {
-  --tier-c: #e4b02a;
-  --tier-w: 2.5px;
-  --tier-stops: #e4b02a, #fff4c2 18%, #e4b02a 40%, #f9df8c 62%, #e4b02a 80%, #fff4c2 92%, #e4b02a;
+  --tier-c: #d49a00;
+  --tier-w: 3px;
+  --tier-stops: #d49a00, #ffe066 18%, #b98300 40%, #ffd23f 62%, #d49a00 80%, #fff0a8 92%, #d49a00;
   --tier-dur: 3.2s;
   --tier-halo: 14px;
   --tier-halo-lo: 0.4;
@@ -7939,16 +7951,16 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   white-space: nowrap;
 }
 .adt-badge.tier-warm {
-  --tier-c: #c8892c;
+  --tier-c: #b06f00;
 }
 .adt-badge.tier-hot {
-  --tier-c: #d9613a;
+  --tier-c: #c24e05;
 }
 .adt-badge.tier-blaze {
-  --tier-c: #d3496f;
+  --tier-c: #c20f40;
 }
 .adt-badge.tier-top {
-  --tier-c: #a67c12;
+  --tier-c: #9a6b00;
 }
 
 html[data-reduce-motion] .agenda-detail-backdrop,
