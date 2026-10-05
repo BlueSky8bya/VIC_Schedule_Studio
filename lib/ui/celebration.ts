@@ -72,12 +72,12 @@ export function celebrationFor(name: string | null | undefined): CelebrationThem
   // 생일 축하 노래 한 소절(lib/ui/sfx 'birthday', 오르골 음색).
   if (has("생일"))
     return t("birthday", {
-      shape: "rise",
+      shape: "firework", // "빵빠레 한 번 크게 터지고"
       big: true,
       palette: ["#ff9ec7", "#ffd27a", "#9ad8ff", "#c8b6ff", "#ffffff", "#ffb4a2"],
       emojis: ["🎂", "🎈", "🎁", "🧁", "🎉", "🕯️"],
       emojiRatio: 0.5,
-      count: 30,
+      count: 40,
       sound: "birthday"
     });
   if (has("할로윈"))

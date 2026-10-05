@@ -50,7 +50,8 @@ import { SUPPORT_LANE_STEP, supportListPad } from "@/lib/ui/support-bar";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { celebrationFor, type CelebrationTheme } from "@/lib/ui/celebration";
-import { playCelebration, playSfx } from "@/lib/ui/sfx";
+import { playCelebration, playCelebrationTap, playSfx } from "@/lib/ui/sfx";
+import { danceBirthdaySong, popMusicNote } from "@/lib/ui/music-notes";
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
@@ -2597,6 +2598,7 @@ export function PublicPoster({
   // 표기 탭 반응. mood: "win" 큰 축포 / "cheer" 작은 폭죽(기본) / "console" 진 날엔
   // 축하 대신 차분히 아래로 떨어지는 응원(💪🙏🥲) — 패배에 폭죽은 결이 안 맞아서.
   // theme(2026-10-06): 기념일 이름별 빵빠레(lib/ui/celebration) — 색·이모지·모양·효과음이 그 날에 맞는다.
+  const noteSeqRef = useRef(0);
   function popBurst(
     clientX: number,
     clientY: number,
@@ -2607,10 +2609,20 @@ export function PublicPoster({
     if (big) hapticSuccess();
     else hapticTick();
     // 효과음은 움직임과 별개(설정 '효과음', 기본 꺼짐) — 동작 줄이기여도 소리는 난다.
-    playCelebration(theme ? theme.sound : mood === "win" ? "fanfare" : "pop");
+    // 기념일은 연속 탭이 멜로디가 된다(lib/ui/sfx playCelebrationTap): 첫 탭 = 빵빠레, 이어 누르면 한 음씩.
+    const tap = theme ? playCelebrationTap(theme.key, theme.sound) : null;
+    if (!theme) playCelebration(mood === "win" ? "fanfare" : "pop");
     if (reduceMotionEnabled()) return;
-    if (theme) {
-      popThemedBurst(clientX, clientY, theme);
+    if (theme && tap) {
+      if (tap.kind === "first") {
+        popThemedBurst(clientX, clientY, theme);
+        // 생일: 큰 빵빠레 뒤 노래가 흐르는 동안 음표가 음마다 태어나 춤추며 흘러간다(소리와 같은 시간표).
+        if (theme.key === "birthday") danceBirthdaySong(clientX, clientY);
+      } else {
+        // 멜로디 한 음 — 음표 하나 + 작은 색종이(그 날 색). 노래 중(busy)엔 색종이만.
+        if (tap.kind === "note") popMusicNote(clientX, clientY, tap.semi ?? 0, noteSeqRef.current++);
+        popThemedBurst(clientX, clientY, { ...theme, count: 6, big: false, shape: "burst" });
+      }
       return;
     }
     const console_ = mood === "console";

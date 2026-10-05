@@ -40,7 +40,8 @@ export type SfxName =
   | "toggle-on"
   | "toggle-off"
   | "copy"
-  | "paste";
+  | "paste"
+  | "note";
 
 const CATEGORY: Record<SfxName, SoundCategory> = {
   fanfare: "celebrate",
@@ -78,7 +79,8 @@ const CATEGORY: Record<SfxName, SoundCategory> = {
   "toggle-on": "ui",
   "toggle-off": "ui",
   copy: "edit",
-  paste: "edit"
+  paste: "edit",
+  note: "celebrate"
 };
 
 const KEY = "vic.sound";
@@ -313,28 +315,22 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
   switch (name) {
     // ── 축하(드물게 — 길고 화려해도 된다) ── 장조 아르페지오(1-3-5-8), 반짝임은 작게.
     case "birthday": {
-      // 생일 축하 노래(Happy Birthday, 퍼블릭 도메인) 한 절 — 3/4박, 오르골(종) 선율 + 마디 첫 박 나무 베이스.
-      // 음은 C5 기준 반음. [음, 박] — 못갖춘마디(솔솔)로 시작.
-      const beat = 0.27;
-      const melody: [number, number][] = [
-        [-5, 0.75], [-5, 0.25], [-3, 1], [-5, 1], [0, 1], [-1, 2],
-        [-5, 0.75], [-5, 0.25], [-3, 1], [-5, 1], [2, 1], [0, 2],
-        [-5, 0.75], [-5, 0.25], [7, 1], [4, 1], [0, 1], [-1, 1], [-3, 2],
-        [5, 0.75], [5, 0.25], [4, 1], [0, 1], [2, 1], [0, 3]
-      ];
-      let at = 0;
-      melody.forEach(([semi, beats], i) => {
-        const last = i === melody.length - 1;
-        chime(ac, out, N(semi), at * beat, 0.24, last ? 0.5 : Math.min(0.32, beats * beat * 0.9));
-        at += beats;
-      });
-      // 베이스(마디마다 첫 박) — 도·솔·솔·도·도·파·도·도. 못갖춘마디 1박 뒤부터 3박씩.
-      [-24, -17, -17, -24, -24, -19, -24, -24].forEach((semi, m) => marimba(ac, out, N(semi), (1 + m * 3) * beat, 0.2, 0.22));
-      // 마지막 '다~'에 작은 반짝 둘
-      chime(ac, out, N(12), (at - 2.6) * beat, 0.1, 0.3);
-      chime(ac, out, N(16), (at - 2.3) * beat, 0.08, 0.3);
+      // 2026-10-06 소유자: "빵빠레 한 번 크게 터지고 생일축하 멜로디" — 큰 빵빠레(마림바 1-3-5-8 + 종) 뒤
+      // SONG_DELAY초에 생일 축하 노래(Happy Birthday, 퍼블릭 도메인) 한 절: 3/4박, 오르골(종) 선율 + 마디 첫 박 나무 베이스.
+      [0, 4, 7, 12].forEach((s2, i) => marimba(ac, out, N(s2), i * 0.07, 0.32, 0.12));
+      chime(ac, out, N(16), 0.28, 0.22, 0.24);
+      const t0 = SONG_DELAY;
+      for (const n of BIRTHDAY_SONG) chime(ac, out, N(n.semi), t0 + n.at, 0.24, n.len);
+      [-24, -17, -17, -24, -24, -19, -24, -24].forEach((semi, m) => marimba(ac, out, N(semi), t0 + (1 + m * 3) * SONG_BEAT, 0.2, 0.22));
+      const end = t0 + BIRTHDAY_SONG[BIRTHDAY_SONG.length - 1].at;
+      chime(ac, out, N(12), end + 0.08, 0.1, 0.3);
+      chime(ac, out, N(16), end + 0.16, 0.08, 0.3);
       break;
     }
+    case "note": // 연속 탭 멜로디의 한 음 — 오르골 종 + 한 옥타브 아래 나무 받침
+      chime(ac, out, N(pendingNote), 0, 0.26, 0.22);
+      marimba(ac, out, N(pendingNote - 12), 0, 0.12, 0.08);
+      break;
     case "fanfare":
       [0, 4, 7, 12].forEach((s, i) => marimba(ac, out, N(s), i * 0.075, 0.3, 0.12));
       chime(ac, out, N(16), 0.31, 0.2, 0.22);
@@ -559,6 +555,54 @@ export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
 
 let lastPlayed = { name: "tick" as SfxName, at: 0 };
 let songUntil = 0;
+let pendingNote = 0;
+
+// ── 노래·연속 탭 멜로디(2026-10-06 소유자: "빵빠레를 여러 번 연속 클릭하면 한 번에 한 음씩 — 비행기 멜로디처럼") ──
+/** 생일 축하 노래 박 길이(초)와 빵빠레 뒤 노래 시작까지(초). 화면의 춤추는 음표도 이 시간표를 그대로 쓴다. */
+export const SONG_BEAT = 0.27;
+export const SONG_DELAY = 0.75;
+const BIRTHDAY_NOTES: [number, number][] = [
+  [-5, 0.75], [-5, 0.25], [-3, 1], [-5, 1], [0, 1], [-1, 2],
+  [-5, 0.75], [-5, 0.25], [-3, 1], [-5, 1], [2, 1], [0, 2],
+  [-5, 0.75], [-5, 0.25], [7, 1], [4, 1], [0, 1], [-1, 1], [-3, 2],
+  [5, 0.75], [5, 0.25], [4, 1], [0, 1], [2, 1], [0, 3]
+];
+/** 생일 노래 음표 시간표 — at(노래 시작부터 초)·semi(C5 기준 반음)·len(울림). */
+export const BIRTHDAY_SONG: { at: number; semi: number; len: number }[] = (() => {
+  let beat = 0;
+  return BIRTHDAY_NOTES.map(([semi, beats], i) => {
+    const n = { at: beat * SONG_BEAT, semi, len: i === BIRTHDAY_NOTES.length - 1 ? 0.5 : Math.min(0.32, beats * SONG_BEAT * 0.9) };
+    beat += beats;
+    return n;
+  });
+})();
+// 떴다 떴다 비행기(전래 동요) — 미레도레 미미미 레레레 미솔솔 미레도레 미미미 레레미레도
+const AIRPLANE = [4, 2, 0, 2, 4, 4, 4, 2, 2, 2, 4, 7, 7, 4, 2, 0, 2, 4, 4, 4, 2, 2, 4, 2, 0];
+const STREAK_GAP_MS = 2500;
+let tapStreak = { key: "", at: 0, i: 0 };
+
+/**
+ * 기념일 탭 — 첫 탭은 그 날의 빵빠레, 2.5초 안에 이어 누르면 한 번에 한 음씩 멜로디(생일 = 생일 노래, 그 외 = 비행기).
+ * 쉬었다 누르면 처음(빵빠레)부터. 생일 노래가 흐르는 동안의 탭은 소리 없이 넘긴다(노래를 덮지 않게).
+ * 반환: "first"(빵빠레) · "note"(멜로디 한 음 — semi 포함) · "busy"(노래 중).
+ */
+export function playCelebrationTap(key: string, sound: CelebrationSound): { kind: "first" | "note" | "busy"; semi?: number } {
+  const now = typeof performance !== "undefined" ? performance.now() : 0;
+  const cont = tapStreak.key === key && now - tapStreak.at < STREAK_GAP_MS;
+  if (!cont) {
+    tapStreak = { key, at: now, i: 0 };
+    playCelebration(sound);
+    return { kind: "first" };
+  }
+  tapStreak.at = now;
+  if (sound === "birthday" && now < songUntil) return { kind: "busy" };
+  const mel = sound === "birthday" ? BIRTHDAY_NOTES.map((n) => n[0]) : AIRPLANE;
+  const semi = mel[tapStreak.i % mel.length];
+  tapStreak.i += 1;
+  pendingNote = semi;
+  playSfx("note");
+  return { kind: "note", semi };
+}
 function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   if (!opts.force) {
     if (!soundEnabled()) return;
@@ -575,7 +619,7 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   // 노래(생일)는 끝나기 전에 또 누르면 겹쳐 부르지 않는다 — 한 곡이 끝날 때까지 새 노래는 무시.
   if (name === "birthday") {
     if (now < songUntil) return;
-    songUntil = now + 7400;
+    songUntil = now + (SONG_DELAY + BIRTHDAY_SONG[BIRTHDAY_SONG.length - 1].at + 0.6) * 1000;
   }
   lastPlayed = { name, at: now };
   document.documentElement.dataset.sfxLast = name; // 검증용 흔적(Playwright가 어떤 소리였는지 읽는다)

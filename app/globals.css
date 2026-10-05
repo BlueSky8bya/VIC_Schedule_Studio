@@ -1845,3 +1845,101 @@ html[data-reduce-motion] .system-state-action {
   animation-iteration-count: 1;
   transition: none;
 }
+
+/* ── 춤추는 음표(lib/ui/music-notes.ts, 2026-10-06) ──
+   .mn-pop  연속 탭 멜로디의 한 음 — 통 튀어 올라 좌우로 흔들리며 사라진다.
+   .mn-dance 생일 노래 — 음마다 태어나 오른쪽으로 흘러가며(--mn-travel) 안쪽 글자가 박자에 맞춰 까딱인다.
+   transform/opacity만 움직인다(프레임 규칙). 동작 줄이기면 호출부가 아예 만들지 않는다. */
+.mn-note {
+  position: fixed;
+  z-index: 9998;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+}
+.mn-inner {
+  display: inline-block;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 #fff,
+    0 2px 6px rgb(0 0 0 / 18%);
+}
+.mn-pop {
+  animation: mn-pop 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.mn-pop .mn-inner {
+  animation: mn-wiggle 0.36s ease-in-out infinite alternate;
+}
+@keyframes mn-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.4);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(-14px) scale(1.25);
+  }
+  35% {
+    transform: translateY(-22px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-70px) scale(0.9);
+  }
+}
+.mn-dance {
+  animation: mn-travel 3.2s cubic-bezier(0.3, 0.1, 0.4, 1) forwards;
+}
+.mn-dance .mn-inner {
+  font-size: 30px;
+  animation:
+    mn-born 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    mn-bob 0.54s ease-in-out 0.4s infinite alternate;
+}
+@keyframes mn-travel {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  8% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--mn-travel, 400px), -30px);
+  }
+}
+@keyframes mn-born {
+  from {
+    transform: scale(0) rotate(var(--mn-tilt, 0deg));
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes mn-bob {
+  from {
+    transform: translateY(-7px) rotate(calc(var(--mn-tilt, 12deg) * -1));
+  }
+  to {
+    transform: translateY(7px) rotate(var(--mn-tilt, 12deg));
+  }
+}
+@keyframes mn-wiggle {
+  from {
+    transform: rotate(-14deg);
+  }
+  to {
+    transform: rotate(14deg);
+  }
+}
+html[data-theme="dark"] .mn-inner {
+  text-shadow:
+    0 1px 0 rgb(0 0 0 / 50%),
+    0 2px 8px rgb(0 0 0 / 40%);
+}
