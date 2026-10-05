@@ -682,8 +682,7 @@ html[data-theme="dark"] .tier-hot { --tier-c: #ff8640; }
 html[data-theme="dark"] .tier-blaze { --tier-c: #ff4d7d; --tier-stops: #ff4d7d, #ff8fb0, #ff4d7d, #ff6b6b, #ff4d7d; }
 html[data-theme="dark"] .tier-top { --tier-c: #ffd23f; --tier-stops: #ffd23f, #fff2b0, #e0a800, #ffd23f; }
 /* 다크: 링 2px + 안쪽 구분선은 어두운 선(카드가 밝은 파스텔이어도 링과 갈라진다) */
-/* 다크: 링은 카드에서 떨어져 있어(어두운 칸 바탕이 비침) 대비선 없이 색만 — 흰 선은 단계 색을 허옇게 바래게 했다 */
-html[data-theme="dark"] .tier-ring { --tier-w: 2.5px; --tier-key: transparent; --tier-outer: transparent; }
+html[data-theme="dark"] .tier-ring { --tier-w: 2.5px; }
 html[data-theme="dark"] .tier-swatch.tier-swatch { background: var(--surface-2); border-color: var(--tier-c); box-shadow: inset 3px 0 var(--tier-c); }
 html[data-theme="dark"] .adt-badge[class*="tier-"] { background: var(--surface-2); color: var(--tier-c); border-color: var(--tier-c); }
 
