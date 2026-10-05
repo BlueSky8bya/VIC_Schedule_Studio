@@ -45,6 +45,7 @@ import { StudioSettingsList, type DevWorldForce } from "@/components/studio/stud
 import type { GfxMode } from "@/lib/ui/gfx";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { CAL_SIZE_EVENT, calSizePref, flingDeleteEnabled } from "@/lib/ui/edit-prefs";
+import { playSfx } from "@/lib/ui/sfx";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -678,6 +679,7 @@ export function StudioShell({
     );
     setActionError(null);
     hapticTick();
+    playSfx("unlink");
     flashToast("싹둑 — 연결을 끊었어요");
     setCutFlashId(earlierId);
     setCutFlashNextId(prevNext);
@@ -926,6 +928,13 @@ export function StudioShell({
     changeCalSize,
     soundOn,
     toggleSound,
+    soundVol,
+    changeSoundVol,
+    previewSound,
+    soundCatsState,
+    toggleSoundCat,
+    quietHidden,
+    toggleQuietHidden,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,
@@ -1129,8 +1138,18 @@ export function StudioShell({
       <StudioSettingsList
         calSize={calSize}
         onChangeCalSize={changeCalSize}
-        soundOn={soundOn}
-        onToggleSound={toggleSound}
+        sound={{
+          on: soundOn,
+          toggle: toggleSound,
+          vol: soundVol,
+          changeVol: changeSoundVol,
+          preview: previewSound,
+          cats: soundCatsState,
+          toggleCat: toggleSoundCat,
+          quietHidden: quietHidden,
+          toggleQuietHidden: toggleQuietHidden,
+          showEdit: canEdit && !previewRole
+        }}
         themeMode={themeMode}
         onChangeThemeMode={changeThemeMode}
         flingDelete={canEdit && !previewRole ? flingDelete : null}
@@ -3431,6 +3450,7 @@ export function StudioShell({
         setDragEventId(null);
         setDragChipH(0);
         hapticDelete();
+        playSfx("fling");
         commitDelete(eventId); // canonId·현재 배열은 commitDelete 안에서 해석
         flashToast("일정을 던져 버렸어요 · Ctrl+Z로 되돌리기");
         return;
@@ -4006,6 +4026,7 @@ export function StudioShell({
     const newStart = addDaysIso(range.start, delta);
     const newEnd = addDaysIso(range.end, delta);
     setSelectedDate(newStart);
+    playSfx("drop");
     flashToast(
       newStart === newEnd
         ? `${formatShortDate(newStart)}로 옮겼어요`
@@ -4129,6 +4150,7 @@ export function StudioShell({
       if (!curNext || canonId(curNext) !== chainC[i + 1]) changed = true;
     }
     if (!changed) return;
+    playSfx("link");
     // target rollback(P0-DATA-2): 실패 시 체인에 포함됐던 카드들의 linkNext만 이전 값으로
     // 복원(다른 편집 보존). 서버 쪽도 0055 link_chain_atomic이라 반쪽 체인이 안 남는다.
     const prevLinks = new Map(chainC.map((c) => [c, findC(live, c)?.linkNext] as const));
@@ -4536,6 +4558,7 @@ export function StudioShell({
     // 착지 펄스(.just-landed)를 이미 받는다 — 둘 다 켜면 "따닥" 두 번 반짝여 산만하다
     // (2026-08-06 사용자 지적). '반짝'은 저장·생성처럼 결과가 눈에 안 보이는 일에만 쓴다.
     flashToast(targetDate === sourceDate ? "순서를 바꿨어요" : `${targetDate}로 옮겼어요`);
+    playSfx("drop");
     // 서버 저장은 직렬 큐로 — 빠른 연속 이동도 순서대로 저장돼 마지막 위치가 서버 최종값이 된다.
     enqueueMovePersist({ id, sourceDate, targetDate, orderedIds });
   }
@@ -4619,12 +4642,14 @@ export function StudioShell({
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok) {
         hapticSuccess(); // ② 서버확인
+        playSfx("unlock");
         setTeaserGatePass("");
         // 왕복 사이 저장이 끝나 id가 바뀌었을 수 있다 → 실제 id로 기록(안 그러면 방금 푼 카드가 도로 잠김).
         setTeaserUnlockedId(canonId(eventId)); // 이 카드, 이번 열림 한 번만 — 닫히거나 재선택하면 리셋
         bumpEditor(); // 게이트 → 폼: 같은 카드 안에서 폼이 새로 떠오르는 전환
       } else {
         hapticError();
+        playSfx("error");
         setTeaserGateError(data.error ?? "비밀번호가 올바르지 않습니다.");
         setTeaserGateShake(true);
         window.setTimeout(() => setTeaserGateShake(false), 420);
@@ -4837,6 +4862,7 @@ export function StudioShell({
           });
       if (!result.ok) {
         setActionError(result.error);
+        playSfx("error");
         // P0-DATA-2(target rollback): 전체 배열 스냅샷 복원은 이 저장 '뒤'에 한 다른 편집까지
         // 지웠다. 실패한 이 일정만 되돌린다 — 새 카드는 제거, 기존 카드는 원본 복원.
         setEvents((prev) =>
@@ -4849,6 +4875,7 @@ export function StudioShell({
         return;
       }
       hapticTick(); // ② 서버확인: 응답 OK 후 한 번 더 톡 → "서버에 올라갔다"는 체감(2단계 컨벤션)
+      playSfx("save"); // 저장 확인음 — 진동 ②와 같은 순간(서버가 받았다)
       // 새 일정이면 임시 id를 실제 id로 교체 + 이 임시 id를 가리키던 linkNext도 함께 교체.
       if (isNew && result.id) {
         const realId = result.id;
@@ -4921,6 +4948,7 @@ export function StudioShell({
       setDraftRestored(false);
     }
     hapticDelete(); // 또렷한 한 번(Android만; iOS·미지원은 조용히 무시)
+    playSfx("delete");
     // 톡! 줄어들며 사라지는 동안만 잠깐 카드를 남겼다가 실제로 제거한다(reduced-motion이면 즉시).
     // 스냅샷은 commitDelete가 실행되는 순간의 배열을 쓴다(230ms 사이의 다른 편집을 안 잃게).
     if (!prefersReducedMotion() && !deletingIds.has(targetId)) {
@@ -5181,6 +5209,7 @@ export function StudioShell({
     }
     const inverse = applyHistoryAction(action, "undo");
     if (inverse) redoStackRef.current.push(inverse);
+    playSfx("undo");
   }
 
   function redoLastUndo() {
@@ -5193,6 +5222,7 @@ export function StudioShell({
       return;
     }
     const inverse = applyHistoryAction(action, "redo");
+    playSfx("redo");
     if (inverse) deletedStackRef.current.push(inverse);
   }
 

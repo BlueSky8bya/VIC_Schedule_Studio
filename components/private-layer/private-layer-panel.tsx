@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import type { PasscodeResult } from "@/lib/private-layer/actions";
 import { hapticError, hapticSuccess, hapticTick } from "@/lib/ui/haptics";
+import { playSfx } from "@/lib/ui/sfx";
 
 type PrivateLayerPanelProps = {
   canManage: boolean;
@@ -55,16 +56,19 @@ export function PrivateLayerPanel({
       if (res.ok) {
         // 검증 성공 → 따뜻한 성공 진동 + 부모가 팝업을 닫고 "일정을 불러오는 중…"을 띄운 뒤 새로고침(⚠배너 연출).
         hapticSuccess();
+        playSfx("unlock");
         onUnlocked?.();
       } else {
         setError(data.error ?? "잠금 해제에 실패했습니다.");
         // 실패 연출: 에러 진동 + 입력칸 흔들기(붉은 테두리).
         hapticError();
+        playSfx("error");
         setShake(true);
       }
     } catch {
       setError("잠금 해제에 실패했습니다.");
       hapticError();
+      playSfx("error");
       setShake(true);
     } finally {
       // 성공/실패/네트워크 오류 어느 경로든 "확인 중…"을 반드시 푼다 — 성공 후 부모가 패널을

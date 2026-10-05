@@ -9,8 +9,9 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Volume2, Wrench, ZoomIn } from "lucide-react";
-import { useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Volume1, Volume2, VolumeX, Wrench, ZoomIn, PartyPopper, Heart, BellRing, EyeOff } from "lucide-react";
+import { useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import type { SoundCategory, SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import type { CalSize } from "@/lib/ui/edit-prefs";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
@@ -45,9 +46,8 @@ export type StudioSettingsProps = {
   // 달력 크기(달력 확대의 기본값) — 웹만(모바일은 목록이라 확대가 없다).
   calSize: CalSize;
   onChangeCalSize: (size: CalSize) => void;
-  // 효과음(기념일 빵빠레·최초공개 축포) — 기본 꺼짐.
-  soundOn: boolean;
-  onToggleSound: () => void;
+  // 소리(lib/ui/sfx) — 효과음 전체·음량·종류별·다른 탭. 기본 꺼짐. showEdit = 편집 소리 줄(편집실 편집 권한).
+  sound: SoundSettings;
   // 던져서 삭제 — 편집실(편집 권한)에서만 넘긴다. 없으면 줄이 없다.
   flingDelete?: boolean | null;
   onToggleFlingDelete?: () => void;
@@ -71,7 +71,20 @@ export type StudioSettingsProps = {
   devMonth?: number;
 };
 
-type TabKey = "screen" | "motion" | "bg" | "edit" | "viewer" | "dev";
+type TabKey = "screen" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev";
+
+export type SoundSettings = {
+  on: boolean;
+  toggle: () => void;
+  vol: number;
+  changeVol: (v: number, commit?: boolean) => void;
+  preview: () => void;
+  cats: SoundCats;
+  toggleCat: (cat: SoundCategory) => void;
+  quietHidden: boolean;
+  toggleQuietHidden: () => void;
+  showEdit: boolean;
+};
 type Tone = "water" | "leaf" | "metal" | "rose";
 
 /** 늘 모든 상태가 보이는 세그먼트(라디오) — 셀렉트는 무엇을 고를 수 있는지 안 보인다(2026-09-04 소유자). */
@@ -149,8 +162,7 @@ export function StudioSettingsList({
   onChangeThemeMode,
   calSize,
   onChangeCalSize,
-  soundOn,
-  onToggleSound,
+  sound,
   flingDelete = null,
   onToggleFlingDelete,
   ambientMode,
@@ -181,7 +193,8 @@ export function StudioSettingsList({
   // 판단은 화면 폭이 아니라 **이 목록이 놓인 상자의 폭**(컨테이너 쿼리, settings-modal.css)이라 좁은 팝오버에서도 맞다.
   const tabs: { key: TabKey; label: string; icon: ReactNode; tone: Tone; web?: boolean }[] = [
     { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
-    { key: "motion", label: "움직임·소리", icon: <Sparkles size={15} />, tone: "water" },
+    { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
+    { key: "sound", label: "소리", icon: <Volume2 size={15} />, tone: "water" },
     { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
     ...(hasEditGroup ? [{ key: "edit" as const, label: "편집", icon: <PenLine size={15} />, tone: "metal" as const }] : []),
     ...(posterTheme !== null ? [{ key: "viewer" as const, label: "시청자 화면", icon: <Palette size={15} />, tone: "rose" as const }] : []),
@@ -281,7 +294,7 @@ export function StudioSettingsList({
       </section>
 
       <section {...pane("motion")}>
-        <h3 className="rhh-group-title" id="rhh-tab-motion-title">움직임·소리</h3>
+        <h3 className="rhh-group-title" id="rhh-tab-motion-title">움직임</h3>
         <div className="rhh-group-card">
           {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
               저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
@@ -290,13 +303,6 @@ export function StudioSettingsList({
               생동감 있는 동작
             </RowLabel>
             <Switch dataAct="생동감 있는 동작 켜기/끄기" label="생동감 있는 동작 켜기/끄기" on={!reduceMotion} onToggle={onToggleReduceMotion} />
-          </div>
-          {/* 효과음 — 기념일 빵빠레·최초공개 축포의 짧은 합성음(lib/ui/sfx). 기본 꺼짐. */}
-          <div className="role-help-haptics">
-            <RowLabel icon={<Volume2 size={15} />} tone="water">
-              효과음
-            </RowLabel>
-            <Switch dataAct="sound-toggle" label="효과음 켜기/끄기" on={soundOn} onToggle={onToggleSound} />
           </div>
           {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
           {hapticsSupported ? (
@@ -308,7 +314,93 @@ export function StudioSettingsList({
             </div>
           ) : null}
         </div>
-        <p className="rhh-group-foot">효과음은 기념일 빵빠레·최초공개 축포에서 나요. 방송 중엔 송출에 섞일 수 있어요.</p>
+      </section>
+
+      {/* 소리(2026-10-06 — OS·게임 소리 설정 벤치마킹): 전체 켜기 → 음량(끌고 떼면 그 크기로 한 번, 미리 듣기) →
+          종류별 켜기 → 다른 탭일 땐 조용히. 전체가 꺼져 있으면 아래 줄은 흐리게 잠긴다(무엇이 있는지는 보이게). */}
+      <section {...pane("sound")}>
+        <h3 className="rhh-group-title" id="rhh-tab-sound-title">소리</h3>
+        <div className="rhh-group-card">
+          <div className="role-help-haptics">
+            <RowLabel icon={<Volume2 size={15} />} tone="water">
+              효과음
+            </RowLabel>
+            <Switch dataAct="sound-toggle" label="효과음 켜기/끄기" on={sound.on} onToggle={sound.toggle} />
+          </div>
+          <div className={`role-help-haptics rhh-stack-sm${sound.on ? "" : " is-locked"}`}>
+            <RowLabel icon={<Volume1 size={15} />} tone="water">
+              음량
+            </RowLabel>
+            <div className="rhh-volume">
+              <VolumeX aria-hidden="true" className="rhh-vol-ico" size={15} />
+              <input
+                aria-label="효과음 음량"
+                aria-valuetext={`${sound.vol}%`}
+                data-act="sound-volume"
+                disabled={!sound.on}
+                max={100}
+                min={0}
+                onChange={(e) => sound.changeVol(Number(e.currentTarget.value))}
+                onKeyUp={(e) => sound.changeVol(Number(e.currentTarget.value), true)}
+                onPointerUp={(e) => sound.changeVol(Number(e.currentTarget.value), true)}
+                step={5}
+                style={{ "--vol": `${sound.vol}%` } as CSSProperties}
+                type="range"
+                value={sound.vol}
+              />
+              <Volume2 aria-hidden="true" className="rhh-vol-ico" size={15} />
+              <b className="rhh-vol-num">{sound.vol}</b>
+              <button
+                className="rhh-link rhh-preview"
+                data-act="sound-preview"
+                disabled={!sound.on}
+                onClick={sound.preview}
+                type="button"
+              >
+                들어 보기
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className={`rhh-group-card${sound.on ? "" : " is-locked"}`}>
+          <div className="role-help-haptics">
+            <RowLabel icon={<PartyPopper size={15} />} tone="rose">
+              축하
+            </RowLabel>
+            <Switch dataAct="sound-cat-celebrate" label="축하 소리 켜기/끄기" on={sound.cats.celebrate} onToggle={() => sound.toggleCat("celebrate")} />
+          </div>
+          <div className="role-help-haptics">
+            <RowLabel icon={<Heart size={15} />} tone="rose">
+              하트·기대
+            </RowLabel>
+            <Switch dataAct="sound-cat-tap" label="하트·기대 소리 켜기/끄기" on={sound.cats.tap} onToggle={() => sound.toggleCat("tap")} />
+          </div>
+          {sound.showEdit ? (
+            <div className="role-help-haptics">
+              <RowLabel icon={<PenLine size={15} />} tone="metal">
+                편집
+              </RowLabel>
+              <Switch dataAct="sound-cat-edit" label="편집 소리 켜기/끄기" on={sound.cats.edit} onToggle={() => sound.toggleCat("edit")} />
+            </div>
+          ) : null}
+          <div className="role-help-haptics">
+            <RowLabel icon={<BellRing size={15} />} tone="metal">
+              알림
+            </RowLabel>
+            <Switch dataAct="sound-cat-alert" label="알림 소리 켜기/끄기" on={sound.cats.alert} onToggle={() => sound.toggleCat("alert")} />
+          </div>
+          <div className="role-help-haptics">
+            <RowLabel icon={<EyeOff size={15} />} tone="metal">
+              다른 탭일 땐 조용히
+            </RowLabel>
+            <Switch dataAct="sound-quiet-hidden" label="다른 탭일 때 소리 끄기" on={sound.quietHidden} onToggle={sound.toggleQuietHidden} />
+          </div>
+        </div>
+        <p className="rhh-group-foot">
+          {sound.showEdit
+            ? "축하는 기념일 빵빠레·최초공개 축포, 편집은 저장·옮기기·잇기·삭제·되돌리기, 알림은 실패·잠금 해제. 방송 중엔 송출에 섞일 수 있어요."
+            : "축하는 기념일 빵빠레·최초공개 축포, 알림은 실패·잠금 해제 소리예요. 다시보기 소리는 플레이어에서 조절해요."}
+        </p>
       </section>
 
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}

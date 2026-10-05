@@ -595,3 +595,94 @@ html[data-theme="dark"] .rhh-panes .rhh-group-title {
 html[data-reduce-motion] .rhh-nav-item {
   transition: none;
 }
+
+/* ── 소리 탭(2026-10-06) — 음량 막대·미리 듣기·잠김 ─────────────────────────────────────────
+   애플 음량 막대 문법: 가는 막대 + 흰 원형 손잡이, 왼쪽(현재 크기까지)은 채움. 양끝에 작은/큰 스피커. */
+.rhh-volume {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.rhh-vol-ico {
+  flex: none;
+  color: var(--muted, #7a7464);
+}
+.rhh-volume input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 90px;
+  max-width: 220px;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.rhh-volume input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--studio-action, #4b86c9) var(--vol, 60%), rgb(0 0 0 / 12%) var(--vol, 60%));
+}
+.rhh-volume input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 12%);
+}
+.rhh-volume input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--studio-action, #4b86c9);
+}
+.rhh-volume input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 12%), var(--elev-2);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.rhh-volume input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 12%), var(--elev-2);
+}
+.rhh-volume input[type="range"]:focus-visible {
+  outline: 2px solid var(--studio-action, #4b86c9);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+.rhh-vol-num {
+  flex: none;
+  width: 2.2em;
+  color: var(--ink-soft, #4a4f5c);
+  font-size: var(--text-body, 13.5px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.vic-settings .rhh-preview {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: var(--text-body, 13.5px);
+  font-weight: 600;
+}
+/* 효과음이 꺼져 있으면 아래 줄은 흐리게 잠긴다 — 무엇이 있는지는 보이고, 손은 안 닿는다. */
+.is-locked {
+  opacity: 0.45;
+  pointer-events: none;
+}
+html[data-theme="dark"] .rhh-volume input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #7aaee8 var(--vol, 60%), rgb(255 255 255 / 14%) var(--vol, 60%));
+}
+html[data-theme="dark"] .rhh-volume input[type="range"]::-moz-range-track {
+  background: rgb(255 255 255 / 14%);
+}

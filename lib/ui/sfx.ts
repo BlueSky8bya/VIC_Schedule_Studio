@@ -1,25 +1,110 @@
 // 효과음(2026-10-06) — 파일 없이 Web Audio로 짧게 합성한다(에셋·네트워크 0, 1초 미만).
-// **기본 꺼짐**: 방송 중 편집실·시청자 화면 소리가 송출에 섞이거나, 시청자가 예상 못 한 소리에 놀랄 수 있다.
-// 설정 '효과음'을 켠 기기에서만 난다(vic.sound = 'on'). 브라우저는 사용자 조작(클릭) 안에서만 소리를 허용하므로
-// 이 함수는 클릭 처리기에서 불려야 한다.
+// 앱의 모든 소리는 이 한 곳을 거친다(진동의 lib/ui/haptics.ts와 같은 '두꺼비집' 구조).
+//
+// 통과해야 울리는 자물쇠:
+//   1) 효과음 전체 켜기(vic.sound = 'on') — **기본 꺼짐**: 방송 중 편집실·시청자 화면 소리가 송출에 섞이거나,
+//      시청자가 예상 못 한 소리에 놀랄 수 있다.
+//   2) 그 소리의 종류가 켜져 있나(축하·누름·편집·알림 — vic.soundCats, 기본 전부 켜짐).
+//   3) '다른 탭에 있을 땐 조용히'(vic.soundQuietHidden, 기본 켜짐) — 탭이 안 보일 때(카운트다운 공개 등)는 울리지 않는다.
+// 크기는 vic.soundVol(0~100, 기본 60). 다시보기(숲 플레이어) 소리는 플레이어 자신의 것이라 여기서 다루지 않는다.
+// 브라우저는 사용자 조작(클릭) 안에서만 소리를 허용한다 — 대부분의 호출은 클릭 처리기 안에서 일어난다.
 import type { CelebrationSound } from "@/lib/ui/celebration";
 
-const KEY = "vic.sound";
+export type SoundCategory = "celebrate" | "tap" | "edit" | "alert";
+export type SfxName =
+  | Exclude<CelebrationSound, "none">
+  | "levelup"
+  | "heart-on"
+  | "heart-off"
+  | "hope"
+  | "save"
+  | "drop"
+  | "delete"
+  | "fling"
+  | "undo"
+  | "redo"
+  | "link"
+  | "unlink"
+  | "unlock"
+  | "error";
 
-export function soundEnabled(): boolean {
-  if (typeof window === "undefined") return false;
+const CATEGORY: Record<SfxName, SoundCategory> = {
+  fanfare: "celebrate",
+  chime: "celebrate",
+  bells: "celebrate",
+  spooky: "celebrate",
+  sparkle: "celebrate",
+  pop: "celebrate",
+  soft: "celebrate",
+  levelup: "celebrate",
+  "heart-on": "tap",
+  "heart-off": "tap",
+  hope: "tap",
+  save: "edit",
+  drop: "edit",
+  delete: "edit",
+  fling: "edit",
+  undo: "edit",
+  redo: "edit",
+  link: "edit",
+  unlink: "edit",
+  unlock: "alert",
+  error: "alert"
+};
+
+const KEY = "vic.sound";
+const VOL_KEY = "vic.soundVol";
+const CATS_KEY = "vic.soundCats";
+const HIDDEN_KEY = "vic.soundQuietHidden";
+export const DEFAULT_SOUND_VOLUME = 60;
+
+function read(key: string): string | null {
+  if (typeof window === "undefined") return null;
   try {
-    return window.localStorage.getItem(KEY) === "on";
+    return window.localStorage.getItem(key);
   } catch {
-    return false;
+    return null;
   }
 }
-export function setSoundEnabled(on: boolean): void {
+function write(key: string, value: string): void {
   try {
-    window.localStorage.setItem(KEY, on ? "on" : "off");
+    window.localStorage.setItem(key, value);
   } catch {
     /* 이번 세션만 */
   }
+}
+
+export function soundEnabled(): boolean {
+  return read(KEY) === "on";
+}
+export function setSoundEnabled(on: boolean): void {
+  write(KEY, on ? "on" : "off");
+}
+export function soundVolume(): number {
+  const v = Number(read(VOL_KEY));
+  return read(VOL_KEY) !== null && Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : DEFAULT_SOUND_VOLUME;
+}
+export function setSoundVolume(v: number): void {
+  write(VOL_KEY, String(Math.min(100, Math.max(0, Math.round(v)))));
+}
+export type SoundCats = Record<SoundCategory, boolean>;
+export function soundCats(): SoundCats {
+  const base: SoundCats = { celebrate: true, tap: true, edit: true, alert: true };
+  try {
+    const raw = JSON.parse(read(CATS_KEY) ?? "null") as Partial<SoundCats> | null;
+    return raw ? { ...base, ...raw } : base;
+  } catch {
+    return base;
+  }
+}
+export function setSoundCat(cat: SoundCategory, on: boolean): void {
+  write(CATS_KEY, JSON.stringify({ ...soundCats(), [cat]: on }));
+}
+export function soundQuietHidden(): boolean {
+  return read(HIDDEN_KEY) !== "off";
+}
+export function setSoundQuietHidden(on: boolean): void {
+  write(HIDDEN_KEY, on ? "on" : "off");
 }
 
 let ctx: AudioContext | null = null;
@@ -36,7 +121,7 @@ function audio(): AudioContext | null {
   }
 }
 
-/** 음 하나 — 주파수·시작(초)·길이(초)·파형·크기. 짧은 어택 + 지수 감쇠(종·현 느낌). */
+/** 음 하나 — 주파수·시작(초)·길이(초)·파형·크기. 짧은 어택 + 지수 감쇠(종·현 느낌). bend = 끝 주파수 배율. */
 function note(ac: AudioContext, out: AudioNode, f: number, at: number, len: number, type: OscillatorType, vol: number, bend = 0) {
   const o = ac.createOscillator();
   const g = ac.createGain();
@@ -54,15 +139,8 @@ function note(ac: AudioContext, out: AudioNode, f: number, at: number, len: numb
 
 const N = (semi: number) => 523.25 * Math.pow(2, semi / 12); // C5 기준 반음
 
-/** 테마 소리 재생. 효과음이 꺼져 있으면 아무 일도 없다(호출부가 따로 거를 필요 없음). 소리는 움직임과 별개라 동작 줄이기와 무관. */
-export function playCelebration(sound: CelebrationSound): void {
-  if (sound === "none" || !soundEnabled()) return;
-  const ac = audio();
-  if (!ac) return;
-  const out = ac.createGain();
-  out.gain.value = 0.5; // 전체 크기 — 은은하게(방송 배경음 위에서도 튀지 않게)
-  out.connect(ac.destination);
-  switch (sound) {
+function render(ac: AudioContext, out: AudioNode, name: SfxName) {
+  switch (name) {
     case "fanfare": // 도-미-솔-도↑ 금관 느낌(톱니 + 사각 겹침)
       [0, 4, 7, 12].forEach((s, i) => {
         note(ac, out, N(s), i * 0.11, i === 3 ? 0.55 : 0.16, "sawtooth", 0.07);
@@ -87,10 +165,83 @@ export function playCelebration(sound: CelebrationSound): void {
     case "soft": // 낮고 조용한 한 음
       note(ac, out, N(-5), 0, 0.9, "sine", 0.1);
       break;
+    case "levelup": // 단계 상승 — 빠르게 올라가는 네 음 + 마지막 반짝
+      [0, 4, 7, 11, 12].forEach((s, i) => note(ac, out, N(s + 7), i * 0.06, i === 4 ? 0.45 : 0.12, "triangle", 0.1));
+      break;
+    case "heart-on": // 톡 하고 위로
+      note(ac, out, N(7), 0, 0.12, "sine", 0.14, 1.6);
+      note(ac, out, N(19), 0.05, 0.16, "sine", 0.05);
+      break;
+    case "heart-off": // 살짝 아래로
+      note(ac, out, N(5), 0, 0.14, "sine", 0.09, 0.7);
+      break;
+    case "hope": // 별빛 두 점
+      note(ac, out, N(24), 0, 0.22, "sine", 0.07);
+      note(ac, out, N(31), 0.06, 0.3, "sine", 0.05);
+      break;
+    case "save": // 조용한 확인 두 음(위로)
+      note(ac, out, N(4), 0, 0.16, "sine", 0.08);
+      note(ac, out, N(11), 0.07, 0.24, "sine", 0.07);
+      break;
+    case "drop": // 내려놓는 툭(낮은 음이 짧게 가라앉음)
+      note(ac, out, 220, 0, 0.14, "sine", 0.16, 0.55);
+      note(ac, out, N(0), 0.01, 0.06, "triangle", 0.04);
+      break;
+    case "delete": // 아래로 두 음
+      note(ac, out, N(0), 0, 0.12, "triangle", 0.08);
+      note(ac, out, N(-5), 0.08, 0.2, "triangle", 0.07, 0.8);
+      break;
+    case "fling": // 휙 — 높은 데서 길게 떨어지는 활강
+      note(ac, out, 900, 0, 0.32, "sine", 0.08, 0.15);
+      break;
+    case "undo": // 짧게 아래로 되감기
+      note(ac, out, N(7), 0, 0.1, "sine", 0.08, 0.75);
+      break;
+    case "redo": // 짧게 위로
+      note(ac, out, N(2), 0, 0.1, "sine", 0.08, 1.33);
+      break;
+    case "link": // 찰칵 — 맞물리는 두 점(위로)
+      note(ac, out, N(12), 0, 0.05, "triangle", 0.09);
+      note(ac, out, N(19), 0.05, 0.08, "triangle", 0.08);
+      break;
+    case "unlink": // 툭 끊기는 소리(아래로)
+      note(ac, out, N(14), 0, 0.06, "square", 0.04, 0.6);
+      break;
+    case "unlock": // 열림 — 맑은 세 음 상행
+      [0, 4, 7].forEach((s, i) => note(ac, out, N(s + 12), i * 0.08, i === 2 ? 0.5 : 0.18, "sine", 0.1));
+      break;
+    case "error": // 낮은 두 음(단2도) — 조용하지만 '아니요'로 들린다
+      note(ac, out, N(-12), 0, 0.14, "square", 0.04);
+      note(ac, out, N(-11), 0.12, 0.2, "square", 0.04);
+      break;
     case "pop":
     default: // 톡 — 짧게 위로 휘는 팝
       note(ac, out, N(0), 0, 0.12, "sine", 0.14, 1.8);
       note(ac, out, N(12), 0.06, 0.18, "triangle", 0.06);
       break;
   }
+}
+
+/** 소리 하나. 자물쇠(전체 켜기·종류·다른 탭)를 여기서 다 본다 — 호출부는 이름만 부르면 된다. */
+export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
+  if (!opts.force) {
+    if (!soundEnabled()) return;
+    if (!soundCats()[CATEGORY[name]]) return;
+    if (soundQuietHidden() && typeof document !== "undefined" && document.hidden) return;
+  }
+  const vol = soundVolume();
+  if (vol <= 0) return;
+  const ac = audio();
+  if (!ac) return;
+  const out = ac.createGain();
+  // 크기 곡선 — 사람 귀는 로그라 0.5에서 이미 꽤 크다. 제곱으로 낮은 쪽을 넓게(60% ≈ 0.36), 최대 0.9.
+  out.gain.value = Math.pow(vol / 100, 2) * 0.9;
+  out.connect(ac.destination);
+  render(ac, out, name);
+}
+
+/** 기념일 테마 소리(lib/ui/celebration의 sound 이름). */
+export function playCelebration(sound: CelebrationSound): void {
+  if (sound === "none") return;
+  playSfx(sound);
 }

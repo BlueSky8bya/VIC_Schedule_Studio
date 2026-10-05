@@ -50,7 +50,7 @@ import { SUPPORT_LANE_STEP, supportListPad } from "@/lib/ui/support-bar";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { celebrationFor, type CelebrationTheme } from "@/lib/ui/celebration";
-import { playCelebration } from "@/lib/ui/sfx";
+import { playCelebration, playSfx } from "@/lib/ui/sfx";
 import { CAL_SIZE_EVENT, calSizePref } from "@/lib/ui/edit-prefs";
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
@@ -1798,6 +1798,7 @@ export function PublicPoster({
     if (!token) return; // 사생활 모드 등 — 조용히 무시(집계 신호일 뿐)
     hapticTick(); // ① 눌림
     const on = myHopeIds.has(ev.id);
+    playSfx(on ? "heart-off" : "hope");
     const before = hopeCountOf(ev);
     // ── 누른 순간 연출 (켤 때만 — 끌 때는 조용히 되돌린다) ──────────────────────────
     // 하이프 곡선과 '같은 값'으로 세기를 정한다: 60초 밖에선 온기 섬광+별 8개, 하이프가
@@ -2654,6 +2655,7 @@ export function PublicPoster({
   function toggleBookmark(id: string, ev?: ReactMouseEvent<HTMLButtonElement>) {
     const wasOn = bookmarks.includes(id);
     hapticTick(); // 가벼운 톡(Android만; iOS·미지원은 조용히 무시)
+    playSfx(wasOn ? "heart-off" : "heart-on");
     if (!wasOn && ev) {
       // 이벤트 풀링 영향을 피하려 좌표를 동기적으로 먼저 읽는다.
       const rect = ev.currentTarget.getBoundingClientRect();
@@ -2673,6 +2675,7 @@ export function PublicPoster({
             : `${after.flames} 당신의 하트로 "${trimTitle(title)}"이(가) ${after.label}이 됐어요!`
         );
         hapticSuccess();
+        playSfx("levelup");
         if (heartToastTimerRef.current) {
           window.clearTimeout(heartToastTimerRef.current);
         }
@@ -2739,6 +2742,7 @@ export function PublicPoster({
         // 되돌리기만 하고 아무 말도 안 하면 "♥가 켜졌다가 혼자 꺼짐"으로 보인다 → 왜 그런지 알린다.
         // 이미 있는 하트 토스트 자리를 그대로 쓴다(새 UI 없음).
         hapticWarn();
+        playSfx("error");
         setHeartToast("하트를 저장하지 못했어요 — 잠시 뒤 다시 눌러주세요.");
         if (heartToastTimerRef.current) {
           window.clearTimeout(heartToastTimerRef.current);
@@ -4935,8 +4939,18 @@ export function PublicPoster({
                 ambientMode={settingsPrefs.ambientMode}
                 calSize={settingsPrefs.calSize}
                 onChangeCalSize={settingsPrefs.changeCalSize}
-                soundOn={settingsPrefs.soundOn}
-                onToggleSound={settingsPrefs.toggleSound}
+                sound={{
+          on: settingsPrefs.soundOn,
+          toggle: settingsPrefs.toggleSound,
+          vol: settingsPrefs.soundVol,
+          changeVol: settingsPrefs.changeSoundVol,
+          preview: settingsPrefs.previewSound,
+          cats: settingsPrefs.soundCatsState,
+          toggleCat: settingsPrefs.toggleSoundCat,
+          quietHidden: settingsPrefs.quietHidden,
+          toggleQuietHidden: settingsPrefs.toggleQuietHidden,
+          showEdit: false
+        }}
                 onChangeThemeMode={settingsPrefs.changeThemeMode}
                 themeMode={settingsPrefs.themeMode}
                 eyeComfort={settingsPrefs.eyeComfort}

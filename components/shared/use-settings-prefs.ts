@@ -19,7 +19,20 @@ import {
 } from "@/lib/ui/motion";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
 import { applyThemeMode, setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
-import { playCelebration, setSoundEnabled, soundEnabled } from "@/lib/ui/sfx";
+import {
+  playSfx,
+  setSoundCat,
+  setSoundEnabled,
+  setSoundQuietHidden,
+  setSoundVolume,
+  soundCats,
+  soundEnabled,
+  soundQuietHidden,
+  soundVolume,
+  DEFAULT_SOUND_VOLUME,
+  type SoundCategory,
+  type SoundCats
+} from "@/lib/ui/sfx";
 import { calSizePref, flingDeleteEnabled, setCalSizePref, setFlingDelete, type CalSize } from "@/lib/ui/edit-prefs";
 
 export type SettingsPrefs = {
@@ -38,6 +51,13 @@ export type SettingsPrefs = {
   changeCalSize: (size: CalSize) => void;
   soundOn: boolean;
   toggleSound: () => void;
+  soundVol: number;
+  changeSoundVol: (v: number, commit?: boolean) => void;
+  previewSound: () => void;
+  soundCatsState: SoundCats;
+  toggleSoundCat: (cat: SoundCategory) => void;
+  quietHidden: boolean;
+  toggleQuietHidden: () => void;
   ambientMode: AmbientMode;
   changeAmbientMode: (mode: AmbientMode) => void;
   gfxPref: GfxPref;
@@ -143,7 +163,40 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     setSoundOn((prev) => {
       const next = !prev;
       setSoundEnabled(next);
-      if (next) playCelebration("chime");
+      if (next) playSfx("chime", { force: true }); // 켜는 순간 지금 음량으로 한 번
+      return next;
+    });
+    hapticTick();
+  }, []);
+  // 음량(0~100) — 끌어 가는 동안은 값만, 손을 떼면(commit) 그 크기로 한 번 들려준다(OS 음량 막대와 같은 문법).
+  const [soundVol, setSoundVolState] = useState(DEFAULT_SOUND_VOLUME);
+  const [soundCatsState, setSoundCatsState] = useState<SoundCats>({ celebrate: true, tap: true, edit: true, alert: true });
+  const [quietHidden, setQuietHiddenState] = useState(true);
+  useEffect(() => {
+    setSoundVolState(soundVolume());
+    setSoundCatsState(soundCats());
+    setQuietHiddenState(soundQuietHidden());
+  }, []);
+  const changeSoundVol = useCallback((v: number, commit = false) => {
+    setSoundVolume(v);
+    setSoundVolState(v);
+    if (commit) playSfx("pop", { force: true });
+  }, []);
+  const previewSound = useCallback(() => {
+    playSfx("chime", { force: true });
+  }, []);
+  const toggleSoundCat = useCallback((cat: SoundCategory) => {
+    setSoundCatsState((prev) => {
+      const next = { ...prev, [cat]: !prev[cat] };
+      setSoundCat(cat, next[cat]);
+      return next;
+    });
+    hapticTick();
+  }, []);
+  const toggleQuietHidden = useCallback(() => {
+    setQuietHiddenState((prev) => {
+      const next = !prev;
+      setSoundQuietHidden(next);
       return next;
     });
     hapticTick();
@@ -223,6 +276,13 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     changeCalSize,
     soundOn,
     toggleSound,
+    soundVol,
+    changeSoundVol,
+    previewSound,
+    soundCatsState,
+    toggleSoundCat,
+    quietHidden,
+    toggleQuietHidden,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,
