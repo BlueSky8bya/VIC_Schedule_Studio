@@ -471,3 +471,127 @@ html[data-theme="dark"] .vic-settings .rhh-group-card .ambient-seg-btn.on {
     gap: 8px;
   }
 }
+
+/* ── 왼쪽 탭(2026-10-06 2차 — macOS 시스템 설정·디스코드·VS Code 설정 벤치마킹) ─────────────────────
+   넓을 때: 왼쪽 묶음 목록 + 오른쪽에 고른 묶음만(제목이 그 칸의 큰 머리). 창 크기는 탭을 바꿔도 고정 — 애플처럼
+   창이 덜컹이지 않는다. 좁을 때(폰·편집실 모바일 팝오버): 탭 없이 묶음을 위아래로 쌓는다.
+   판단은 **목록이 놓인 상자의 폭**(컨테이너 쿼리) — 화면은 넓어도 좁은 팝오버 안이면 쌓인다. */
+.rhh-tabs {
+  container: rhh / inline-size;
+  min-height: 0;
+}
+.rhh-nav {
+  display: none;
+}
+.rhh-panes {
+  display: grid;
+  gap: 20px;
+}
+@container rhh (min-width: 600px) {
+  .rhh-tabs-grid {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+  }
+  .rhh-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    overflow-y: auto;
+    border-right: 1px solid rgb(0 0 0 / 6%);
+    background: rgb(0 0 0 / 2.5%);
+    padding: 14px 10px;
+  }
+  .rhh-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    padding: 7px 10px;
+    color: var(--ink, #23262e);
+    font: inherit;
+    font-size: var(--text-ui, 15px);
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--dur-1, 0.12s) var(--ease, ease);
+  }
+  .rhh-nav-item:hover {
+    background: rgb(0 0 0 / 5%);
+  }
+  .rhh-nav-item.on {
+    background: rgb(75 134 201 / 15%);
+  }
+  .rhh-nav-item:active {
+    transform: scale(var(--press-scale-lg));
+  }
+  .rhh-nav-item:focus-visible {
+    outline: 2px solid var(--studio-action, #4b86c9);
+    outline-offset: -2px;
+  }
+  .rhh-panes {
+    display: block;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 22px 24px;
+  }
+  .rhh-panes .rhh-group:not(.is-active) {
+    display: none;
+  }
+  .rhh-panes .rhh-group {
+    gap: 10px;
+  }
+  /* 오른쪽 칸의 머리 — 고른 묶음 이름을 크게(작은 묶음 제목 대신). */
+  .rhh-panes .rhh-group-title {
+    padding: 0 2px 4px;
+    color: var(--ink, #23262e);
+    font-size: var(--text-display, 20px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .rhh-panes .rhh-group-foot {
+    padding: 0 4px;
+  }
+}
+/* 탭이 있는 창 — 넓게, 높이 고정, 본문 여백은 탭·칸이 각자 가진다. */
+.vic-settings .modal-card:has(.rhh-tabs) {
+  max-width: 760px;
+}
+@media (min-width: 700px) {
+  .vic-settings .modal-card:has(.rhh-tabs) {
+    height: min(600px, 88dvh);
+  }
+  .vic-settings .settings-modal-body:has(.rhh-tabs) {
+    overflow: hidden;
+    padding: 0;
+  }
+  .vic-settings .settings-modal-body > .rhh-tabs {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+}
+html[data-theme="dark"] .rhh-nav {
+  border-right-color: rgb(255 255 255 / 7%);
+  background: rgb(255 255 255 / 3%);
+}
+html[data-theme="dark"] .rhh-nav-item {
+  color: var(--ink, #eeeae2);
+}
+html[data-theme="dark"] .rhh-nav-item:hover {
+  background: rgb(255 255 255 / 6%);
+}
+html[data-theme="dark"] .rhh-nav-item.on {
+  background: rgb(120 170 230 / 18%);
+}
+html[data-theme="dark"] .rhh-panes .rhh-group-title {
+  color: var(--ink, #eeeae2);
+}
+html[data-reduce-motion] .rhh-nav-item {
+  transition: none;
+}

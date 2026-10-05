@@ -9,8 +9,8 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, Sparkles, SunMoon, Trash2, Vibrate, ZoomIn } from "lucide-react";
-import type { ReactNode } from "react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Wrench, ZoomIn } from "lucide-react";
+import { useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { ThemeMode } from "@/lib/ui/theme";
 import type { CalSize } from "@/lib/ui/edit-prefs";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
@@ -67,6 +67,9 @@ export type StudioSettingsProps = {
   // 지금 보고 있는 달 — 그 달에 가능한 날씨 목록을 정하는 데 쓴다.
   devMonth?: number;
 };
+
+type TabKey = "screen" | "motion" | "bg" | "edit" | "viewer" | "dev";
+type Tone = "water" | "leaf" | "metal" | "rose";
 
 /** 늘 모든 상태가 보이는 세그먼트(라디오) — 셀렉트는 무엇을 고를 수 있는지 안 보인다(2026-09-04 소유자). */
 function SettingsSegment<T extends string | number>({
@@ -164,13 +167,69 @@ export function StudioSettingsList({
     ...weatherOptionsForMonth(weatherMonth).map((w) => ({ value: w as WeatherOpt, label: WEATHER_LABEL[w] }))
   ];
   const hasEditGroup = canManageTimelines || flingDelete !== null;
+  const [activeTab, setActiveTab] = useState<TabKey>("screen");
   // 설정 창 재설계(2026-10-06 소유자: "많아진 설정에 맞게, 벤치마킹해서") — 애플 설정 앱의 묶음 목록:
   // 성격별 묶음 제목 → 둥근 카드 안 줄들 → 필요할 때만 묶음 아래 한 줄 설명. 줄 이름은 짧게(UI-15),
   // 설명은 '모르면 못 고르는 것'에만 단다. 줄 순서는 자주 바꾸는 것(화면)부터.
+  // 왼쪽 탭(2026-10-06 소유자: "왼쪽에 탭으로 관리하는 식으로" — macOS 시스템 설정·디스코드·VS Code 설정 벤치마킹).
+  // 넓은 창: 왼쪽 묶음 목록 + 오른쪽엔 고른 묶음만. 좁은 곳(폰·편집실 모바일 팝오버): 탭 없이 묶음을 위아래로 쌓는다 —
+  // 판단은 화면 폭이 아니라 **이 목록이 놓인 상자의 폭**(컨테이너 쿼리, settings-modal.css)이라 좁은 팝오버에서도 맞다.
+  const tabs: { key: TabKey; label: string; icon: ReactNode; tone: Tone; web?: boolean }[] = [
+    { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
+    { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
+    { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
+    ...(hasEditGroup ? [{ key: "edit" as const, label: "편집", icon: <PenLine size={15} />, tone: "metal" as const }] : []),
+    ...(posterTheme !== null ? [{ key: "viewer" as const, label: "시청자 화면", icon: <Palette size={15} />, tone: "rose" as const }] : []),
+    ...(devWorld ? [{ key: "dev" as const, label: "개발자", icon: <Wrench size={15} />, tone: "metal" as const, web: true }] : [])
+  ];
+  const current: TabKey = tabs.some((t) => t.key === activeTab) ? activeTab : "screen";
+  const pane = (key: TabKey, extra = "") => ({
+    className: `rhh-group${extra ? ` ${extra}` : ""}${current === key ? " is-active" : ""}`,
+    id: `rhh-tab-${key}-panel`,
+    role: "tabpanel" as const,
+    "aria-labelledby": `rhh-tab-${key}`
+  });
+  const onTabKey = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const nav = e.currentTarget.parentElement;
+    // 이 기기에서 실제로 보이는 탭만(폰에서 숨는 웹 전용 묶음 제외).
+    const visible = tabs.filter((t) => nav?.querySelector<HTMLElement>(`[data-tab="${t.key}"]`)?.offsetParent != null);
+    if (visible.length === 0) return;
+    const i = visible.findIndex((t) => t.key === current);
+    const next = visible[(i + (e.key === "ArrowDown" ? 1 : -1) + visible.length) % visible.length];
+    setActiveTab(next.key);
+    nav?.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`)?.focus();
+  };
   return (
-    <>
-      <section className="rhh-group">
-        <h3 className="rhh-group-title">화면</h3>
+    <div className="rhh-tabs">
+      <div className="rhh-tabs-grid">
+      <nav aria-label="설정 묶음" aria-orientation="vertical" className="rhh-nav" role="tablist">
+        {tabs.map((t) => (
+          <button
+            aria-controls={`rhh-tab-${t.key}-panel`}
+            aria-selected={current === t.key}
+            className={`rhh-nav-item${current === t.key ? " on" : ""}${t.web ? " rhh-web" : ""}`}
+            data-act={`settings-tab-${t.key}`}
+            data-tab={t.key}
+            id={`rhh-tab-${t.key}`}
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            onKeyDown={onTabKey}
+            role="tab"
+            tabIndex={current === t.key ? 0 : -1}
+            type="button"
+          >
+            <span aria-hidden="true" className="rhh-ico" data-tone={t.tone}>
+              {t.icon}
+            </span>
+            {t.label}
+          </button>
+        ))}
+      </nav>
+      <div className="rhh-panes">
+      <section {...pane("screen")}>
+        <h3 className="rhh-group-title" id="rhh-tab-screen-title">화면</h3>
         <div className="rhh-group-card">
           <div className="role-help-haptics rhh-stack-sm">
             <RowLabel icon={<SunMoon size={15} />} tone="water">
@@ -216,8 +275,8 @@ export function StudioSettingsList({
         <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요.</p>
       </section>
 
-      <section className="rhh-group">
-        <h3 className="rhh-group-title">움직임</h3>
+      <section {...pane("motion")}>
+        <h3 className="rhh-group-title" id="rhh-tab-motion-title">움직임</h3>
         <div className="rhh-group-card">
           {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
               저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
@@ -240,8 +299,8 @@ export function StudioSettingsList({
       </section>
 
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
-      <section className="rhh-group rhh-web">
-        <h3 className="rhh-group-title">배경</h3>
+      <section {...pane("bg", "rhh-web")}>
+        <h3 className="rhh-group-title" id="rhh-tab-bg-title">배경</h3>
         <div className="rhh-group-card">
           {/* 세 상태가 늘 다 보이는 세그먼트 [켜기|흐리게|끄기] — 레일·아바타 자리의 묶음과 같은 컴포넌트. */}
           <div className="role-help-haptics rhh-ambient rhh-stack-sm">
@@ -274,8 +333,8 @@ export function StudioSettingsList({
       </section>
 
       {hasEditGroup ? (
-        <section className="rhh-group">
-          <h3 className="rhh-group-title">편집</h3>
+        <section {...pane("edit")}>
+          <h3 className="rhh-group-title" id="rhh-tab-edit-title">편집</h3>
           <div className="rhh-group-card">
             {flingDelete !== null && onToggleFlingDelete ? (
               <div className="role-help-haptics">
@@ -304,8 +363,8 @@ export function StudioSettingsList({
 
       {/* 포스터 테마 — 시청자 화면 배경(서버 저장, 소유자만). */}
       {posterTheme !== null ? (
-        <section className="rhh-group">
-          <h3 className="rhh-group-title">시청자 화면</h3>
+        <section {...pane("viewer")}>
+          <h3 className="rhh-group-title" id="rhh-tab-viewer-title">시청자 화면</h3>
           <div className="rhh-group-card">
             <div className="role-help-haptics">
               <RowLabel icon={<Palette size={15} />} tone="rose">
@@ -328,8 +387,8 @@ export function StudioSettingsList({
           effectiveRole이 개발자일 때만 묶음이 생긴다. 날씨는 실제 기상이 아니라 날짜 시드 난수(world/weather.ts)라 "자동".
           계절에 없는 날씨(여름의 눈)는 목록에서 뺀다. */}
       {devWorld ? (
-        <section className="rhh-group rhh-web">
-          <h3 className="rhh-group-title">개발자</h3>
+        <section {...pane("dev", "rhh-web")}>
+          <h3 className="rhh-group-title" id="rhh-tab-dev-title">개발자</h3>
           <div className="rhh-group-card">
             <div className="role-help-haptics rhh-ambient rhh-dev">
               <RowLabel icon={<Leaf size={15} />} tone="metal">
@@ -419,6 +478,8 @@ export function StudioSettingsList({
           <p className="rhh-group-foot">이 기기·이 창에서만 바뀌고 저장되지 않아요.</p>
         </section>
       ) : null}
-    </>
+      </div>
+      </div>
+    </div>
   );
 }
