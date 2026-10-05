@@ -601,12 +601,15 @@ select {
   width: auto;
   height: auto;
   font-size: 16px;
+  font-weight: 800; /* 글자 입자(한글날 ㄱㄴㄷ)가 가늘게 묻히지 않게 */
   line-height: 1;
 }
 .burst.big .burst-bit.emoji { font-size: var(--text-display); }
 @keyframes burst-fly {
   0% { transform: translate(-50%, -50%) scale(0.4) rotate(0deg); opacity: 0; }
   12% { opacity: 1; }
+  /* 날아가는 동안은 또렷하게, 끝에서만 사라진다(2026-10-06 — 내내 옅어져 터진 직후 말고는 흐릿했다). */
+  70% { opacity: 1; }
   100% {
     transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot));
     opacity: 0;

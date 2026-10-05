@@ -9,7 +9,7 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Wrench, ZoomIn } from "lucide-react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, Volume2, Wrench, ZoomIn } from "lucide-react";
 import { useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { ThemeMode } from "@/lib/ui/theme";
 import type { CalSize } from "@/lib/ui/edit-prefs";
@@ -45,6 +45,9 @@ export type StudioSettingsProps = {
   // 달력 크기(달력 확대의 기본값) — 웹만(모바일은 목록이라 확대가 없다).
   calSize: CalSize;
   onChangeCalSize: (size: CalSize) => void;
+  // 효과음(기념일 빵빠레·최초공개 축포) — 기본 꺼짐.
+  soundOn: boolean;
+  onToggleSound: () => void;
   // 던져서 삭제 — 편집실(편집 권한)에서만 넘긴다. 없으면 줄이 없다.
   flingDelete?: boolean | null;
   onToggleFlingDelete?: () => void;
@@ -146,6 +149,8 @@ export function StudioSettingsList({
   onChangeThemeMode,
   calSize,
   onChangeCalSize,
+  soundOn,
+  onToggleSound,
   flingDelete = null,
   onToggleFlingDelete,
   ambientMode,
@@ -176,7 +181,7 @@ export function StudioSettingsList({
   // 판단은 화면 폭이 아니라 **이 목록이 놓인 상자의 폭**(컨테이너 쿼리, settings-modal.css)이라 좁은 팝오버에서도 맞다.
   const tabs: { key: TabKey; label: string; icon: ReactNode; tone: Tone; web?: boolean }[] = [
     { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
-    { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
+    { key: "motion", label: "움직임·소리", icon: <Sparkles size={15} />, tone: "water" },
     { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
     ...(hasEditGroup ? [{ key: "edit" as const, label: "편집", icon: <PenLine size={15} />, tone: "metal" as const }] : []),
     ...(posterTheme !== null ? [{ key: "viewer" as const, label: "시청자 화면", icon: <Palette size={15} />, tone: "rose" as const }] : []),
@@ -276,7 +281,7 @@ export function StudioSettingsList({
       </section>
 
       <section {...pane("motion")}>
-        <h3 className="rhh-group-title" id="rhh-tab-motion-title">움직임</h3>
+        <h3 className="rhh-group-title" id="rhh-tab-motion-title">움직임·소리</h3>
         <div className="rhh-group-card">
           {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
               저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
@@ -285,6 +290,13 @@ export function StudioSettingsList({
               생동감 있는 동작
             </RowLabel>
             <Switch dataAct="생동감 있는 동작 켜기/끄기" label="생동감 있는 동작 켜기/끄기" on={!reduceMotion} onToggle={onToggleReduceMotion} />
+          </div>
+          {/* 효과음 — 기념일 빵빠레·최초공개 축포의 짧은 합성음(lib/ui/sfx). 기본 꺼짐. */}
+          <div className="role-help-haptics">
+            <RowLabel icon={<Volume2 size={15} />} tone="water">
+              효과음
+            </RowLabel>
+            <Switch dataAct="sound-toggle" label="효과음 켜기/끄기" on={soundOn} onToggle={onToggleSound} />
           </div>
           {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
           {hapticsSupported ? (
@@ -296,6 +308,7 @@ export function StudioSettingsList({
             </div>
           ) : null}
         </div>
+        <p className="rhh-group-foot">효과음은 기념일 빵빠레·최초공개 축포에서 나요. 방송 중엔 송출에 섞일 수 있어요.</p>
       </section>
 
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}

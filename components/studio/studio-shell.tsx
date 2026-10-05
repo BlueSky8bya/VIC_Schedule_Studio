@@ -924,6 +924,8 @@ export function StudioShell({
     toggleFlingDelete,
     calSize,
     changeCalSize,
+    soundOn,
+    toggleSound,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,
@@ -1127,6 +1129,8 @@ export function StudioShell({
       <StudioSettingsList
         calSize={calSize}
         onChangeCalSize={changeCalSize}
+        soundOn={soundOn}
+        onToggleSound={toggleSound}
         themeMode={themeMode}
         onChangeThemeMode={changeThemeMode}
         flingDelete={canEdit && !previewRole ? flingDelete : null}

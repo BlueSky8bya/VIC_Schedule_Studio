@@ -19,6 +19,7 @@ import {
 } from "@/lib/ui/motion";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
 import { applyThemeMode, setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
+import { playCelebration, setSoundEnabled, soundEnabled } from "@/lib/ui/sfx";
 import { calSizePref, flingDeleteEnabled, setCalSizePref, setFlingDelete, type CalSize } from "@/lib/ui/edit-prefs";
 
 export type SettingsPrefs = {
@@ -35,6 +36,8 @@ export type SettingsPrefs = {
   toggleFlingDelete: () => void;
   calSize: CalSize;
   changeCalSize: (size: CalSize) => void;
+  soundOn: boolean;
+  toggleSound: () => void;
   ambientMode: AmbientMode;
   changeAmbientMode: (mode: AmbientMode) => void;
   gfxPref: GfxPref;
@@ -131,6 +134,21 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     hapticTick();
   }, []);
 
+  // 효과음(lib/ui/sfx.ts) — 기본 꺼짐(방송 송출에 섞일 수 있다). 켜는 순간 한 번 들려줘 바로 확인되게.
+  const [soundOn, setSoundOn] = useState(false);
+  useEffect(() => {
+    setSoundOn(soundEnabled());
+  }, []);
+  const toggleSound = useCallback(() => {
+    setSoundOn((prev) => {
+      const next = !prev;
+      setSoundEnabled(next);
+      if (next) playCelebration("chime");
+      return next;
+    });
+    hapticTick();
+  }, []);
+
   // 달력 크기 — 달력 확대의 기본값. 바꾸면 열린 달력이 이벤트로 즉시 따라간다.
   const [calSize, setCalSizeState] = useState<CalSize>(1);
   useEffect(() => {
@@ -203,6 +221,8 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     toggleFlingDelete,
     calSize,
     changeCalSize,
+    soundOn,
+    toggleSound,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,

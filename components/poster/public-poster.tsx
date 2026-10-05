@@ -49,6 +49,8 @@ import { trackSettle } from "@/lib/ui/settle-track";
 import { SUPPORT_LANE_STEP, supportListPad } from "@/lib/ui/support-bar";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
+import { celebrationFor, type CelebrationTheme } from "@/lib/ui/celebration";
+import { playCelebration } from "@/lib/ui/sfx";
 import { CAL_SIZE_EVENT, calSizePref } from "@/lib/ui/edit-prefs";
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
@@ -1904,7 +1906,7 @@ export function PublicPoster({
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 특별한 날(공휴일·기념일·월드컵·한국 승) 탭 시 그 자리에서 터지는 점(point) 폭죽들.
   const [bursts, setBursts] = useState<
-    { id: number; x: number; y: number; big: boolean; bits: BurstBit[] }[]
+    { id: number; x: number; y: number; big: boolean; bits: BurstBit[]; core?: string }[]
   >([]);
   const burstId = useRef(0);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
@@ -2539,11 +2541,23 @@ export function PublicPoster({
   // '동작 줄이기'면 입자 없이 햅틱만(다른 모션 연출과 동일 방침). 다중 탭은 쌓여서 각자 정리된다.
   // 표기 탭 반응. mood: "win" 큰 축포 / "cheer" 작은 폭죽(기본) / "console" 진 날엔
   // 축하 대신 차분히 아래로 떨어지는 응원(💪🙏🥲) — 패배에 폭죽은 결이 안 맞아서.
-  function popBurst(clientX: number, clientY: number, mood: "win" | "cheer" | "console") {
-    if (mood === "win") hapticSuccess();
+  // theme(2026-10-06): 기념일 이름별 빵빠레(lib/ui/celebration) — 색·이모지·모양·효과음이 그 날에 맞는다.
+  function popBurst(
+    clientX: number,
+    clientY: number,
+    mood: "win" | "cheer" | "console",
+    theme?: CelebrationTheme
+  ) {
+    const big = theme ? Boolean(theme.big) || theme.shape === "firework" : mood === "win";
+    if (big) hapticSuccess();
     else hapticTick();
+    // 효과음은 움직임과 별개(설정 '효과음', 기본 꺼짐) — 동작 줄이기여도 소리는 난다.
+    playCelebration(theme ? theme.sound : mood === "win" ? "fanfare" : "pop");
     if (reduceMotionEnabled()) return;
-    const big = mood === "win";
+    if (theme) {
+      popThemedBurst(clientX, clientY, theme);
+      return;
+    }
     const console_ = mood === "console";
     const n = big ? 30 : console_ ? 12 : 16;
     // 물빛 테마(mist)에선 쿨톤 색종이 — 물결·별빛·은(2026-09-03 오행 레이어 P2 '연출 옵션'은 별도
@@ -2580,6 +2594,58 @@ export function PublicPoster({
     const id = burstId.current;
     setBursts((prev) => [...prev, { id, x: clientX, y: clientY, big, bits }]);
     window.setTimeout(() => setBursts((prev) => prev.filter((b) => b.id !== id)), 1700);
+  }
+  // 테마 빵빠레 — 모양별로 입자의 방향·거리·시간이 다르다(사방 / 큰 축포 / 위로 떠오름 / 흩날림 / 조용히).
+  function popThemedBurst(clientX: number, clientY: number, th: CelebrationTheme) {
+    const cool = effectivePosterTheme === "mist" && th.key === "default";
+    const palette = cool ? ["#7fb3f5", "#bfe3f4", "#e2ecf7", "#9cc7ff", "#dbeafe", "#ffffff"] : th.palette;
+    const n = th.count;
+    const bits: BurstBit[] = Array.from({ length: n }, (_, i) => {
+      const r = Math.random();
+      const useEmoji = Math.random() < th.emojiRatio;
+      let dx: number;
+      let dy: number;
+      let dur: number;
+      let rot = Math.round((Math.random() * 2 - 1) * 540);
+      if (th.shape === "rise") {
+        dx = (Math.random() - 0.5) * 120;
+        dy = -(50 + r * 110);
+        dur = 1200 + Math.round(Math.random() * 600);
+        rot = Math.round((Math.random() * 2 - 1) * 40); // 풍선·등불은 거의 안 돈다
+      } else if (th.shape === "fall") {
+        dx = (Math.random() - 0.5) * 170;
+        dy = 30 + r * 90;
+        dur = 1300 + Math.round(Math.random() * 700);
+        rot = Math.round((Math.random() * 2 - 1) * 200);
+      } else if (th.shape === "calm") {
+        const ang = (Math.PI * 2 * i) / n;
+        dx = Math.cos(ang) * (20 + r * 30) * 0.6;
+        dy = Math.abs(Math.sin(ang)) * (20 + r * 30) + 18;
+        dur = 1300 + Math.round(Math.random() * 500);
+        rot = Math.round((Math.random() * 2 - 1) * 90);
+      } else {
+        const fw = th.shape === "firework";
+        const ang = (Math.PI * 2 * i) / n + Math.random() * 0.5;
+        const reach = (fw ? 80 : 48) + Math.random() * (fw ? 100 : 56);
+        dx = Math.cos(ang) * reach;
+        dy = Math.sin(ang) * reach - (fw ? 24 : 14);
+        dur = (fw ? 900 : 760) + Math.round(Math.random() * 520);
+      }
+      return {
+        dx,
+        dy,
+        rot,
+        color: palette[i % palette.length],
+        emoji: useEmoji ? th.emojis[(Math.random() * th.emojis.length) | 0] : null,
+        dur
+      };
+    });
+    burstId.current += 1;
+    const id = burstId.current;
+    const big = Boolean(th.big) || th.shape === "firework";
+    // 큰 연출의 가운데 표식도 그 날의 것(신정 축포에 🏆가 뜨지 않게).
+    setBursts((prev) => [...prev, { id, x: clientX, y: clientY, big, bits, core: th.emojis[0] }]);
+    window.setTimeout(() => setBursts((prev) => prev.filter((b) => b.id !== id)), 2200);
   }
   // 떡밥 공개 순간에도 이 폭죽을 쏜다(revealTeaser는 deps [] 콜백이라 ref로 건넨다).
   popBurstRef.current = popBurst;
@@ -3206,7 +3272,7 @@ export function PublicPoster({
                 className="day-mark celebratable"
                 onClick={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
-                  popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer");
+                  popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer", celebrationFor(visibleDayMark?.name));
                 }}
                data-act="day-mark">
                 {visibleDayMark?.name}
@@ -3778,7 +3844,7 @@ export function PublicPoster({
                         className={`agenda-mark celebratable ${mark.isHoliday ? "holiday" : ""}`}
                         onClick={(e) => {
                           const r = e.currentTarget.getBoundingClientRect();
-                          popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer");
+                          popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer", celebrationFor(markText));
                         }}
                        data-act="agenda-mark">
                         {markText}
@@ -4869,6 +4935,8 @@ export function PublicPoster({
                 ambientMode={settingsPrefs.ambientMode}
                 calSize={settingsPrefs.calSize}
                 onChangeCalSize={settingsPrefs.changeCalSize}
+                soundOn={settingsPrefs.soundOn}
+                onToggleSound={settingsPrefs.toggleSound}
                 onChangeThemeMode={settingsPrefs.changeThemeMode}
                 themeMode={settingsPrefs.themeMode}
                 eyeComfort={settingsPrefs.eyeComfort}
@@ -4917,7 +4985,7 @@ export function PublicPoster({
         <div className="burst-layer" aria-hidden="true">
           {bursts.map((b) => (
             <div className={`burst${b.big ? " big" : ""}`} key={b.id} style={{ left: b.x, top: b.y }}>
-              {b.big ? <span className="burst-core">🏆</span> : null}
+              {b.big ? <span className="burst-core">{b.core ?? "🏆"}</span> : null}
               {b.bits.map((bit, i) => (
                 <span
                   className={`burst-bit${bit.emoji ? " emoji" : ""}`}
@@ -4928,7 +4996,9 @@ export function PublicPoster({
                       "--dy": `${bit.dy}px`,
                       "--rot": `${bit.rot}deg`,
                       animationDuration: `${bit.dur}ms`,
-                      background: bit.emoji ? undefined : bit.color
+                      background: bit.emoji ? undefined : bit.color,
+                      // 글자 입자(한글날 ㄱㄴㄷ 등)는 테마 색으로 — 그림 이모지는 색 지정과 무관하게 제 색으로 나온다.
+                      color: bit.emoji ? bit.color : undefined
                     } as CSSProperties
                   }
                 >
