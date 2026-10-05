@@ -11,6 +11,7 @@ import { getCurrentKstYearMonth } from "@/lib/calendar/month";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { createSupabaseServerClient } from "@/lib/auth/server";
+import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getUnlockState } from "@/lib/private-layer/unlock";
 import { canReadOwnerPrivate, canReadPrivateLayer } from "@/lib/permissions/roles";
@@ -68,7 +69,7 @@ export async function getStudioSchedule(
   const [calendarRes, viewerModePreview, actor, unlock] = await Promise.all([
     supabase
       .from("calendars")
-      .select("id, slug, display_name, title, public_memo, birthday_gift_preview")
+      .select("id, slug, display_name, title, public_memo")
       .eq("slug", calendarSlug)
       .maybeSingle(),
     getPublicSchedule(calendarSlug),
@@ -133,7 +134,7 @@ export async function getStudioSchedule(
       publicMemo: calendar.public_memo ?? "",
       posterTheme: viewerModePreview.calendar.posterTheme
     },
-    birthdayGiftPreview: Boolean((calendar as { birthday_gift_preview?: boolean | null }).birthday_gift_preview),
+    birthdayGiftPreview: await readBirthdayGiftPreview(actor.role, calendar.id as string),
     tags: (tagsRes.data ?? []).map(mapTag),
     palette: (paletteRes.data ?? []).map(mapPalette),
     events: filterEventsForViewer(
@@ -298,3 +299,18 @@ function mapPalette(row: {
   };
 }
 
+
+// 생일 선물 미리보기 스위치(0141) — **service_role로 따로** 읽는다. calendars는 열 단위 SELECT 권한이라 로그인 사용자 클라이언트로
+// 새 열을 고르면 질의 전체가 permission denied로 죽고, 위 calendar가 null이 되어 편집실이 태그·일정 없이 떴다
+// (2026-10-06 사고: 태그 필터·검색 전멸). 쓰는 곳이 개발자뿐이라 개발자일 때만 읽고, 실패하면 꺼짐으로 둔다.
+async function readBirthdayGiftPreview(role: string, calendarId: string): Promise<boolean> {
+  if (role !== "developer") return false;
+  try {
+    const admin = createSupabaseAdminClient();
+    if (!admin) return false;
+    const { data } = await admin.from("calendars").select("birthday_gift_preview").eq("id", calendarId).maybeSingle();
+    return Boolean((data as { birthday_gift_preview?: boolean | null } | null)?.birthday_gift_preview);
+  } catch {
+    return false;
+  }
+}
