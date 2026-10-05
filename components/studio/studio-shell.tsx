@@ -3546,10 +3546,15 @@ export function StudioShell({
 
   // ── 묶음 드래그: 띠(업 도움·기간 안내)·여러 날 일정·이어진 일정(2026-10-05 소유자) ──────────────
   // 가로로 긴 것은 '놓을 자리'를 카드 모양으로 다 그리면 다른 일정과 겹친다 → 옮겨 갈 범위는 아주 옅게 칠하고
-  // **시작 칸·끝 칸에만** 날짜 꺾쇠를 세운다(원래 자리는 흐리게, 손에 든 조각엔 "10.5 ~ 10.10" 꼬리표).
+  // **시작 칸·끝 칸에만** 날짜 꺾쇠를 세운다(원래 자리는 흐리게, 손에 든 칩엔 "10.5 ~ 10.10 · +2일" 꼬리표).
   // 기준점 = 잡은 칸: 셋째 날을 잡아 놓으면 셋째 날이 그 칸에 온다(시작일 기준이면 손과 따로 논다).
   // 이어진 일정은 한 장만 잡아도 묶음 전체가 함께 — 하나만 떨어져 나가 연결이 끊기지 않게.
   // 저장은 구성원마다 기존 이동 큐(reorder, 서버가 종료일도 같은 폭으로)를, 되돌리기는 묶음 한 번(group).
+  //
+  // 손맛(같은 날 2차 — 소유자: "더 통통 튀고 중후한 애플식으로"): 카드 드래그와 **같은 스프링 상수**
+  // (lib/studio/drag-physics)를 쓴다 — 집으면 제자리에서 커지며 그림자가 깊어지고(LIFT_SCALE), 칩은 손을
+  // 임계감쇠 스프링으로 살짝 늦게 따라오며(FOLLOW), 놓으면 새 시작 칸으로 빨려 들어가(LAND) 새 조각들이
+  // 왼쪽부터 차례로 통통 자리 잡는다. 취소·밖에 놓기면 원래 자리로 되돌아간다. 동작 줄이기면 전부 즉시.
   const [spanDrag, setSpanDrag] = useState<{ ids: string[] } | null>(null);
   const [spanDrop, setSpanDrop] = useState<{ start: string; end: string } | null>(null);
   const spanRef = useRef<{
@@ -3569,6 +3574,13 @@ export function StudioShell({
     label: HTMLElement | null;
     delta: number;
     overCell: boolean;
+    // 스프링 추적(화면 px) — 목표는 '손 위치 - 잡은 오프셋', 위치·속도는 매 프레임 적분.
+    pos: { x: number; y: number };
+    vel: { x: number; y: number };
+    target: { x: number; y: number };
+    origin: { x: number; y: number };
+    raf: number | null;
+    reduced: boolean;
   } | null>(null);
   function spanMembersOf(event: StudioScheduleEvent): string[] | null {
     const live = eventsRef.current;
@@ -3593,7 +3605,8 @@ export function StudioShell({
     }
     return { start, end };
   }
-  function spanCleanup() {
+  /** 리스너·상태만 정리한다. 유령은 착지/복귀 애니메이션이 직접 치운다(removeGhost=false). */
+  function spanCleanup(removeGhost = true) {
     window.removeEventListener("pointermove", onSpanMove);
     window.removeEventListener("pointerup", endSpanDrag);
     window.removeEventListener("pointercancel", cancelSpanDrag);
@@ -3604,8 +3617,12 @@ export function StudioShell({
       document.removeEventListener("touchmove", preventTouchScrollRef.current);
       preventTouchScrollRef.current = null;
     }
-    spanRef.current?.ghost?.remove();
+    const d = spanRef.current;
+    if (d?.raf != null) cancelAnimationFrame(d.raf);
+    if (d) d.raf = null;
+    if (removeGhost) d?.ghost?.remove();
     document.body.style.userSelect = "";
+    document.body.classList.remove("span-dragging");
     setSpanDrag(null);
     setSpanDrop(null);
   }
@@ -3638,7 +3655,13 @@ export function StudioShell({
       ghost: null,
       label: null,
       delta: 0,
-      overCell: true
+      overCell: true,
+      pos: { x: rect.left, y: rect.top },
+      vel: { x: 0, y: 0 },
+      target: { x: rect.left, y: rect.top },
+      origin: { x: rect.left, y: rect.top },
+      raf: null,
+      reduced: reduceMotionEnabled()
     };
     if (isTouch) {
       // 카드 드래그와 같은 문법 — 약 260ms 제자리로 누르면 집기, 그 전에 움직이면 스크롤.
@@ -3658,6 +3681,79 @@ export function StudioShell({
     window.addEventListener("pointercancel", cancelSpanDrag, { once: true });
     window.addEventListener("keydown", onSpanKey, true);
   }
+  /** 손에 든 칩 — 띠 조각 복제 대신 띠의 색·아이콘·제목을 담은 둥근 칩(조각은 칸 폭에 잘려 제목이 안 보였다). */
+  function buildSpanGhost(d: NonNullable<typeof spanRef.current>) {
+    const src = d.node;
+    const cs = getComputedStyle(src);
+    const ghost = document.createElement("div");
+    ghost.className = "span-drag-ghost";
+    const chip = document.createElement("div");
+    chip.className = "span-ghost-chip";
+    // 띠/카드의 실제 칠을 그대로 — 단색·그라데이션·글자색 모두(같은 대상을 들고 있다는 연속성).
+    chip.style.background = cs.backgroundImage && cs.backgroundImage !== "none" ? cs.backgroundImage : cs.backgroundColor;
+    if (cs.backgroundImage === "none") chip.style.backgroundColor = cs.backgroundColor;
+    chip.style.color = cs.color;
+    const live = eventsRef.current;
+    const first = live.find((x) => canonId(x.id) === canonId(d.ids[0]));
+    const title = document.createElement("span");
+    title.className = "span-ghost-title";
+    title.textContent = first?.publicTitle || src.textContent?.trim() || "";
+    const icon = src.querySelector(".sb-sprout")?.cloneNode(true);
+    if (icon) chip.appendChild(icon);
+    chip.appendChild(title);
+    const label = document.createElement("div");
+    label.className = "span-ghost-label";
+    ghost.appendChild(chip);
+    ghost.appendChild(label);
+    const r = src.getBoundingClientRect();
+    ghost.style.left = `${r.left}px`;
+    ghost.style.top = `${r.top}px`;
+    ghost.style.setProperty("--cal-zoom", String(calZoomRef.current * panelFitRef.current));
+    document.body.appendChild(ghost);
+    // 다음 프레임에 'lifted' — CSS 스프링으로 커지며 그림자가 깊어진다(제자리 들어올림).
+    requestAnimationFrame(() => ghost.classList.add("lifted"));
+    return { ghost, label };
+  }
+  function setSpanLabel(d: NonNullable<typeof spanRef.current>, start: string, end: string, delta: number) {
+    if (!d.label) return;
+    const range = start === end ? formatShortDate(start) : `${formatShortDate(start)} ~ ${formatShortDate(end)}`;
+    const shift = delta === 0 ? "제자리" : delta > 0 ? `+${delta}일` : `${delta}일`;
+    d.label.innerHTML = "";
+    const a = document.createElement("b");
+    a.textContent = range;
+    const b = document.createElement("i");
+    b.textContent = shift;
+    if (delta !== 0) b.className = delta > 0 ? "is-later" : "is-earlier";
+    d.label.append(a, b);
+    // 날짜가 바뀔 때마다 꼬리표가 톡 — 같은 클래스를 다시 걸어 재생.
+    d.label.classList.remove("bump");
+    void d.label.offsetWidth;
+    d.label.classList.add("bump");
+  }
+  function spanFollowLoop() {
+    const d = spanRef.current;
+    if (!d || !d.ghost) return;
+    let prev = performance.now();
+    const step = () => {
+      const cur = spanRef.current;
+      if (!cur || !cur.ghost || cur !== d) return;
+      const now = performance.now();
+      const dt = (now - prev) / 1000;
+      prev = now;
+      if (cur.reduced) {
+        cur.pos = { ...cur.target };
+      } else {
+        const nx = springStep(cur.pos.x, cur.vel.x, cur.target.x, FOLLOW_STIFF, FOLLOW_DAMP, dt);
+        const ny = springStep(cur.pos.y, cur.vel.y, cur.target.y, FOLLOW_STIFF, FOLLOW_DAMP, dt);
+        cur.pos = { x: nx.pos, y: ny.pos };
+        cur.vel = { x: nx.vel, y: ny.vel };
+      }
+      cur.ghost.style.left = `${cur.pos.x}px`;
+      cur.ghost.style.top = `${cur.pos.y}px`;
+      cur.raf = requestAnimationFrame(step);
+    };
+    d.raf = requestAnimationFrame(step);
+  }
   function onSpanMove(ev: PointerEvent) {
     const d = spanRef.current;
     if (!d) return;
@@ -3673,53 +3769,33 @@ export function StudioShell({
       if (dist < 6) return;
       d.started = true;
       closeZoomPeek();
-      const r = d.node.getBoundingClientRect();
-      const inner = d.node.cloneNode(true) as HTMLElement;
-      // 띠 조각은 칸 안 절대배치(top·left·right 인라인)라 그대로 복제하면 유령 밖으로 튄다 — 흐름으로 되돌린다.
-      Object.assign(inner.style, {
-        position: "relative",
-        top: "0",
-        left: "0",
-        right: "0",
-        margin: "0",
-        width: "100%",
-        transform: "none"
-      });
-      const ghost = document.createElement("div");
-      ghost.className = "event-drag-ghost span-drag-ghost";
-      ghost.style.width = `${Math.max(r.width, 140)}px`;
-      ghost.style.left = `${r.left}px`;
-      ghost.style.top = `${r.top}px`;
-      ghost.style.setProperty("--cal-zoom", String(calZoomRef.current * panelFitRef.current));
-      ghost.appendChild(inner);
-      const label = document.createElement("div");
-      label.className = "span-ghost-label";
-      label.textContent = `${formatShortDate(d.start)} ~ ${formatShortDate(d.end)}`;
-      ghost.appendChild(label);
-      document.body.appendChild(ghost);
+      const { ghost, label } = buildSpanGhost(d);
       d.ghost = ghost;
       d.label = label;
+      setSpanLabel(d, d.start, d.end, 0);
       document.body.style.userSelect = "none";
+      document.body.classList.add("span-dragging");
+      hapticTick(); // 집었다 — 손에 들린 순간
       setSpanDrag({ ids: d.ids });
+      spanFollowLoop();
     }
-    if (d.ghost) {
-      d.ghost.style.left = `${ev.clientX - d.offX}px`;
-      d.ghost.style.top = `${ev.clientY - d.offY}px`;
-    }
+    d.target = { x: ev.clientX - d.offX, y: ev.clientY - d.offY };
     const under = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
     const iso = under?.closest(".studio-month-grid [data-isodate]")?.getAttribute("data-isodate") ?? null;
+    const wasOver = d.overCell;
     d.overCell = Boolean(iso);
+    d.ghost?.classList.toggle("is-off", !iso); // 달력 밖 = 놓으면 취소 — 칩이 옅어져 미리 알려 준다
     if (!iso) {
-      setSpanDrop(null);
+      if (wasOver) setSpanDrop(null);
       return;
     }
     const delta = daysBetweenIso(d.anchor, iso);
-    const next = { start: addDaysIso(d.start, delta), end: addDaysIso(d.end, delta) };
-    if (d.label) d.label.textContent = `${formatShortDate(next.start)} ~ ${formatShortDate(next.end)}`;
+    if (delta === d.delta && wasOver) return; // 같은 칸 위 — 꼬리표·꺾쇠 그대로
     d.delta = delta;
-    setSpanDrop((prev) =>
-      delta === 0 ? null : prev && prev.start === next.start && prev.end === next.end ? prev : next
-    );
+    const next = { start: addDaysIso(d.start, delta), end: addDaysIso(d.end, delta) };
+    setSpanLabel(d, next.start, next.end, delta);
+    if (delta !== 0) hapticTick(); // 칸 한 칸 넘을 때마다 톡(멈춤쇠) — Android만, iOS·데스크톱은 조용히
+    setSpanDrop(delta === 0 ? null : next);
   }
   function onSpanKey(ev: KeyboardEvent) {
     if (ev.key !== "Escape") return;
@@ -3727,20 +3803,114 @@ export function StudioShell({
     ev.stopPropagation();
     cancelSpanDrag();
   }
+  /** 유령을 목표 사각형으로 스프링 착지시킨 뒤 치운다. to가 없으면 그 자리에서 사라진다. */
+  function flySpanGhost(
+    d: NonNullable<typeof spanRef.current>,
+    findTarget: () => DOMRect | null,
+    onDone?: () => void
+  ) {
+    const ghost = d.ghost;
+    if (!ghost) {
+      onDone?.();
+      return;
+    }
+    ghost.classList.remove("lifted");
+    ghost.classList.add("landing");
+    if (d.reduced) {
+      ghost.remove();
+      onDone?.();
+      return;
+    }
+    const start = performance.now();
+    let prev = start;
+    const pos = { ...d.pos };
+    const vel = { ...d.vel };
+    const finish = () => {
+      ghost.remove();
+      onDone?.();
+    };
+    const step = () => {
+      const now = performance.now();
+      const dt = (now - prev) / 1000;
+      prev = now;
+      const r = findTarget();
+      if (!r || now - start > LAND_MAX_MS + 160) {
+        finish();
+        return;
+      }
+      const nx = springStep(pos.x, vel.x, r.left, LAND_STIFF, LAND_DAMP, dt);
+      const ny = springStep(pos.y, vel.y, r.top, LAND_STIFF, LAND_DAMP, dt);
+      pos.x = nx.pos;
+      pos.y = ny.pos;
+      vel.x = nx.vel;
+      vel.y = ny.vel;
+      ghost.style.left = `${pos.x}px`;
+      ghost.style.top = `${pos.y}px`;
+      if (Math.hypot(pos.x - r.left, pos.y - r.top) < 1.5 && Math.hypot(vel.x, vel.y) < 40) {
+        finish();
+        return;
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  /** 새 자리의 조각들이 왼쪽부터 차례로 통통 자리 잡는다(파도). */
+  function settleSpanSegments(ids: string[]) {
+    if (reduceMotionEnabled()) return;
+    const sel = ids
+      .map((id) => `[data-supportid="${CSS.escape(id)}"], .studio-event-pill[data-eventid="${CSS.escape(id)}"]`)
+      .join(", ");
+    const els = Array.from(document.querySelectorAll<HTMLElement>(sel)).sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top || a.getBoundingClientRect().left - b.getBoundingClientRect().left
+    );
+    els.forEach((el, i) => {
+      el.classList.remove("span-landed");
+      el.style.setProperty("--land-i", String(Math.min(i, 10)));
+      void el.offsetWidth;
+      el.classList.add("span-landed");
+      window.setTimeout(() => el.classList.remove("span-landed"), 700 + i * 45);
+    });
+  }
   function cancelSpanDrag() {
     const d = spanRef.current;
-    if (d?.started) justDraggedRef.current = true;
-    spanCleanup();
+    spanCleanup(false);
     spanRef.current = null;
+    if (!d?.started) {
+      d?.ghost?.remove();
+      return;
+    }
+    justDraggedRef.current = true;
+    // 원래 자리로 되돌아간다(스프링) — '취소됐다'가 눈에 보인다.
+    flySpanGhost(d, () => new DOMRect(d.origin.x, d.origin.y, 0, 0));
   }
   function endSpanDrag() {
     const d = spanRef.current;
-    spanCleanup();
+    spanCleanup(false);
     spanRef.current = null;
-    if (!d?.started) return;
+    if (!d?.started) {
+      d?.ghost?.remove();
+      return;
+    }
     justDraggedRef.current = true; // 놓은 직후의 click(고르기)은 한 번 무시
-    if (!d.overCell || d.delta === 0) return;
+    if (!d.overCell || d.delta === 0) {
+      flySpanGhost(d, () => new DOMRect(d.origin.x, d.origin.y, 0, 0));
+      return;
+    }
+    const newStart = addDaysIso(d.start, d.delta);
     moveSpanBy(d.ids, d.delta);
+    hapticTick(); // 내려놓음
+    // 새 시작 칸의 첫 조각으로 빨려 들어간다(렌더가 끝난 다음 프레임부터 그 위치를 쫓는다).
+    const firstSel = d.ids
+      .map(
+        (id) =>
+          `.studio-day[data-isodate="${newStart}"] [data-supportid="${CSS.escape(id)}"], .studio-day[data-isodate="${newStart}"] .studio-event-pill[data-eventid="${CSS.escape(id)}"]`
+      )
+      .join(", ");
+    flySpanGhost(
+      d,
+      () => document.querySelector<HTMLElement>(firstSel)?.getBoundingClientRect() ?? null,
+      () => settleSpanSegments(d.ids)
+    );
   }
   function moveSpanBy(ids: string[], delta: number) {
     const live = eventsRef.current;

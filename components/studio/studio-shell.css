@@ -13560,59 +13560,201 @@ html[data-studio-calm] .studio-poster-title span {
 /* ── 묶음 드래그(띠·여러 날·이어진 일정, 2026-10-05) ─────────────────────────────────────────
    놓을 자리 = 카드 드래그의 '놓을 칸'과 같은 초록. 가로로 긴 것은 카드 모양을 다 그리면 다른 일정과
    겹치므로 범위는 아주 옅게 칠하고, 시작 칸 왼쪽·끝 칸 오른쪽에 굵은 선 + 날짜 꺾쇠만 세운다.
-   꺾쇠는 칸 아래쪽(날짜 숫자·띠와 안 겹치게). 원래 자리는 흐리게. */
+   꺾쇠는 칸 아래쪽(날짜 숫자·띠와 안 겹치게). 원래 자리는 흐리고 채도가 빠진다.
+   움직임은 카드 드래그와 같은 문법(애플식): 집으면 제자리에서 커지며 그림자가 깊어지고, 놓으면 새 자리로
+   빨려 들어가 조각들이 왼쪽부터 통통 자리 잡는다. 스프링은 전역 토큰(--spring-bouncy/smooth). */
 .span-draggable {
   cursor: grab;
 }
+body.span-dragging,
+body.span-dragging * {
+  cursor: grabbing !important;
+}
 .span-drag-src {
-  opacity: 0.32;
-  transition: opacity var(--dur-1) var(--ease);
+  opacity: 0.3;
+  filter: saturate(0.35);
+  transition:
+    opacity var(--dur-2) var(--ease),
+    filter var(--dur-2) var(--ease);
 }
 .studio-day.span-drop-in {
   background: #effaf4 !important;
+  transition: background var(--dur-2) var(--ease);
 }
 .studio-day.span-drop-start {
-  box-shadow: inset 3px 0 0 #57c98a;
+  box-shadow: inset 4px 0 0 #2f9e64;
 }
 .studio-day.span-drop-end {
-  box-shadow: inset -3px 0 0 #57c98a;
+  box-shadow: inset -4px 0 0 #2f9e64;
 }
 .studio-day.span-drop-start.span-drop-end {
-  box-shadow: inset 3px 0 0 #57c98a, inset -3px 0 0 #57c98a;
+  box-shadow: inset 4px 0 0 #2f9e64, inset -4px 0 0 #2f9e64;
 }
 .span-drop-caps {
   position: absolute;
   right: 6px;
-  bottom: 5px;
+  bottom: 6px;
   left: 6px;
   z-index: 6;
   display: flex;
   gap: 4px;
   pointer-events: none;
 }
+/* 꺾쇠는 칸이 바뀔 때마다 새로 그려진다 — 마운트마다 아래에서 튀어 오른다(스프링 오버슈트). */
 .span-drop-cap {
-  padding: 1px 8px;
+  padding: 2px 9px;
   border-radius: var(--r-pill);
   background: #2f9e64;
-  box-shadow: 0 2px 6px rgb(40 120 80 / 25%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 35%) inset,
+    0 4px 10px rgb(30 110 70 / 28%);
   color: #fff;
   font-size: var(--text-label);
   font-weight: 900;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  transform-origin: 50% 100%;
+  animation: span-cap-pop var(--dur-spring-bouncy, 0.6s) var(--spring-bouncy, var(--ease-spring)) both;
 }
 .span-drop-cap.is-end {
   margin-left: auto;
 }
-.span-drag-ghost .span-ghost-label {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 2px 9px;
+@keyframes span-cap-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 손에 든 칩 — 위치는 JS 스프링(left/top), 크기·그림자는 CSS 스프링. */
+.span-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: left, top, transform;
+  transform-origin: 20% 50%;
+  transition:
+    transform var(--dur-spring-bouncy, 0.6s) var(--spring-bouncy, var(--ease-spring)),
+    opacity var(--dur-2) var(--ease);
+}
+.span-ghost-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 340px;
+  height: calc(28px * var(--cal-zoom, 1));
+  padding: 0 14px 0 10px;
   border-radius: var(--r-pill);
-  background: #1f2937;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 55%),
+    0 2px 6px rgb(60 30 50 / 14%);
+  font-size: calc(var(--text-label) * var(--cal-zoom, 1));
+  font-weight: 900;
+  white-space: nowrap;
+  transition: box-shadow var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease));
+}
+.span-ghost-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.span-ghost-chip .sb-sprout {
+  display: inline-flex;
+}
+.span-drag-ghost.lifted {
+  transform: scale(1.06);
+}
+.span-drag-ghost.lifted .span-ghost-chip {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 55%),
+    0 14px 28px rgb(60 30 50 / 24%),
+    0 4px 8px rgb(60 30 50 / 14%);
+}
+/* 달력 밖 — 놓으면 취소된다는 걸 미리(옅어짐). */
+.span-drag-ghost.is-off {
+  opacity: 0.55;
+}
+.span-drag-ghost.landing {
+  transform: scale(1);
+}
+.span-drag-ghost.landing .span-ghost-label {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.9);
+}
+.span-ghost-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 11px;
+  border-radius: var(--r-pill);
+  background: rgb(24 24 27 / 88%);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 22%);
   color: #fff;
   font-size: var(--text-label);
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  transition:
+    opacity var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--ease);
+}
+.span-ghost-label i {
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 16%);
+  font-style: normal;
+  font-weight: 900;
+}
+.span-ghost-label i.is-later {
+  background: #2f9e64;
+}
+.span-ghost-label i.is-earlier {
+  background: #3b82f6;
+}
+.span-ghost-label.bump {
+  animation: span-label-bump var(--dur-spring-bouncy, 0.6s) var(--spring-bouncy, var(--ease-spring));
+}
+@keyframes span-label-bump {
+  from {
+    transform: scale(1.14);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* 착지 — 새 조각들이 왼쪽부터 차례로 눌렸다 튀어 오르며 자리 잡는다(--land-i = 순번). */
+.span-landed {
+  animation: span-settle var(--dur-spring-bouncy, 0.6s) var(--spring-bouncy, var(--ease-spring)) both;
+  animation-delay: calc(var(--land-i, 0) * 45ms);
+}
+@keyframes span-settle {
+  0% {
+    transform: scaleY(0.55) translateY(-3px);
+    filter: brightness(1.18);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+html[data-reduce-motion] .span-drop-cap,
+html[data-reduce-motion] .span-ghost-label.bump,
+html[data-reduce-motion] .span-landed {
+  animation: none;
+}
+html[data-reduce-motion] .span-drag-ghost {
+  transition: none;
 }
 html[data-theme="dark"] .studio-day.span-drop-in {
   background: rgb(87 201 138 / 12%) !important;
