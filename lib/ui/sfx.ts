@@ -119,7 +119,19 @@ export function setSoundQuietHidden(on: boolean): void {
   write(HIDDEN_KEY, on ? "on" : "off");
 }
 
+// ── 음색 엔진(2026-10-06 2차 — 소유자: "구리고 촌스러운 거 말고 귀엽고 통통 튀는 애니메이션에 맞게, 애플 형식으로") ──
+// 애플 시스템 사운드·HIG에서 가져온 원칙:
+//   · 짧게(대부분 60~250ms) — 소리는 손동작의 '확인'이지 음악이 아니다. 진동과 같은 순간에 같은 길이로.
+//   · 거친 파형 금지 — 톱니·사각파(삑삑한 전자음)를 쓰지 않는다. 맑은 사인에 배음을 얹어 나무(마림바)·유리(종)·
+//     물방울(퐁) 같은 '실제 물건' 소리를 흉내 낸다. 애플 키보드·AirDrop·Pay 확인음이 이 결이다.
+//   · 장조·완전 음정 — 올라가면 긍정(저장·하트), 내려가면 되돌림(닫기·끄기). 실패만 단2도로 짧게 '어-어'.
+//   · 아주 짧은 잔향 — 마른 소리는 장난감처럼 들린다. 작은 방 정도의 공간을 깔아 부드럽게.
+//   · 크기는 압축기로 고르게 — 음마다 들쭉날쭉하지 않고, 음량 100이면 확실히 들리게(1차는 너무 작았다).
+// 통통 튀는 화면 움직임(스프링)과 짝: 물방울은 음높이가 '튀어 오르고', 보잉은 스프링처럼 출렁인다.
+
 let ctx: AudioContext | null = null;
+let bus: { input: GainNode; ac: AudioContext } | null = null;
+
 function audio(): AudioContext | null {
   if (typeof window === "undefined") return null;
   try {
@@ -133,16 +145,45 @@ function audio(): AudioContext | null {
   }
 }
 
-/** 음 하나 — 주파수·시작(초)·길이(초)·파형·크기. 짧은 어택 + 지수 감쇠(종·현 느낌). bend = 끝 주파수 배율. */
-function note(ac: AudioContext, out: AudioNode, f: number, at: number, len: number, type: OscillatorType, vol: number, bend = 0) {
+/** 공용 출력 버스 — 원음 + 짧은 잔향 → 압축기 → 스피커. 한 번만 만든다. */
+function masterBus(ac: AudioContext): GainNode {
+  if (bus && bus.ac === ac) return bus.input;
+  const input = ac.createGain();
+  const comp = ac.createDynamicsCompressor();
+  comp.threshold.value = -18;
+  comp.knee.value = 12;
+  comp.ratio.value = 4;
+  comp.attack.value = 0.003;
+  comp.release.value = 0.15;
+  const makeup = ac.createGain();
+  makeup.gain.value = 1.8; // 압축으로 줄어든 만큼 되돌려 전체를 키운다
+  // 잔향 — 0.35초 노이즈 감쇠 임펄스(작은 방). 섞는 비율은 낮게.
+  const len = Math.floor(ac.sampleRate * 0.35);
+  const ir = ac.createBuffer(2, len, ac.sampleRate);
+  for (let ch = 0; ch < 2; ch += 1) {
+    const d = ir.getChannelData(ch);
+    for (let i = 0; i < len; i += 1) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  }
+  const verb = ac.createConvolver();
+  verb.buffer = ir;
+  const wet = ac.createGain();
+  wet.gain.value = 0.16;
+  input.connect(comp);
+  input.connect(verb).connect(wet).connect(comp);
+  comp.connect(makeup).connect(ac.destination);
+  bus = { input, ac };
+  return input;
+}
+
+/** 엔벨로프 붙은 사인 하나. f0→f1(bendTo)로 휠 수 있다. */
+function partial(ac: AudioContext, out: AudioNode, f: number, t0: number, len: number, vol: number, bendTo = 0, attack = 0.004) {
   const o = ac.createOscillator();
   const g = ac.createGain();
-  o.type = type;
-  const t0 = ac.currentTime + at;
+  o.type = "sine";
   o.frequency.setValueAtTime(f, t0);
-  if (bend) o.frequency.exponentialRampToValueAtTime(Math.max(40, f * bend), t0 + len);
+  if (bendTo) o.frequency.exponentialRampToValueAtTime(Math.max(30, bendTo), t0 + Math.min(len, 0.12));
   g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
   o.connect(g).connect(out);
   o.start(t0);
@@ -151,104 +192,184 @@ function note(ac: AudioContext, out: AudioNode, f: number, at: number, len: numb
 
 const N = (semi: number) => 523.25 * Math.pow(2, semi / 12); // C5 기준 반음
 
+type Voice = (ac: AudioContext, out: AudioNode, f: number, at: number, vol?: number) => void;
+const T = (ac: AudioContext, at: number) => ac.currentTime + at;
+
+/** 마림바 — 나무 건반. 기음 + 4배 배음(빨리 사라짐) = 따뜻하고 통통한 '똥'. */
+const marimba: Voice = (ac, out, f, at, vol = 0.32) => {
+  const t0 = T(ac, at);
+  partial(ac, out, f, t0, 0.42, vol);
+  partial(ac, out, f * 4, t0, 0.06, vol * 0.35);
+  partial(ac, out, f * 9.9, t0, 0.025, vol * 0.12);
+};
+/** 유리 종 — 맑게 반짝. 비조화 배음(2.76·5.4배)이 '유리'처럼 들린다. */
+const glass: Voice = (ac, out, f, at, vol = 0.22) => {
+  const t0 = T(ac, at);
+  partial(ac, out, f, t0, 0.7, vol);
+  partial(ac, out, f * 2.76, t0, 0.32, vol * 0.4);
+  partial(ac, out, f * 5.4, t0, 0.14, vol * 0.18);
+};
+/** 물방울 — 음높이가 위로 톡 튀어 오르는 '퐁'(통통 튀는 화면과 짝). */
+const bubble: Voice = (ac, out, f, at, vol = 0.3) => {
+  const t0 = T(ac, at);
+  partial(ac, out, f * 0.6, t0, 0.13, vol, f * 1.5, 0.003);
+};
+/** 내려앉는 물방울 — 닫기·끄기. */
+const drip: Voice = (ac, out, f, at, vol = 0.26) => {
+  const t0 = T(ac, at);
+  partial(ac, out, f * 1.4, t0, 0.14, vol, f * 0.7, 0.003);
+};
+/** 보잉 — 스프링처럼 출렁이는 음(비브라토가 점점 잦아든다). */
+const boing: Voice = (ac, out, f, at, vol = 0.24) => {
+  const t0 = T(ac, at);
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  const lfo = ac.createOscillator();
+  const depth = ac.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(f, t0);
+  lfo.frequency.setValueAtTime(14, t0);
+  depth.gain.setValueAtTime(f * 0.18, t0);
+  depth.gain.exponentialRampToValueAtTime(1, t0 + 0.35);
+  lfo.connect(depth).connect(o.frequency);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+  o.connect(g).connect(out);
+  o.start(t0);
+  lfo.start(t0);
+  o.stop(t0 + 0.48);
+  lfo.stop(t0 + 0.48);
+};
+/** 바람 — 짧은 노이즈를 대역 필터로 쓸어 올리거나 내린다(달 넘김·던지기). */
+function swish(ac: AudioContext, out: AudioNode, at: number, from: number, to: number, len: number, vol = 0.3) {
+  const t0 = T(ac, at);
+  const n = Math.floor(ac.sampleRate * len);
+  const buf = ac.createBuffer(1, n, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i += 1) d[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const bp = ac.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(from, t0);
+  bp.frequency.exponentialRampToValueAtTime(to, t0 + len);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + len * 0.3);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+  src.connect(bp).connect(g).connect(out);
+  src.start(t0);
+  src.stop(t0 + len + 0.02);
+}
+
 function render(ac: AudioContext, out: AudioNode, name: SfxName) {
   switch (name) {
-    case "fanfare": // 도-미-솔-도↑ 금관 느낌(톱니 + 사각 겹침)
-      [0, 4, 7, 12].forEach((s, i) => {
-        note(ac, out, N(s), i * 0.11, i === 3 ? 0.55 : 0.16, "sawtooth", 0.07);
-        note(ac, out, N(s), i * 0.11, i === 3 ? 0.55 : 0.16, "square", 0.04);
-      });
+    // ── 축하 ──
+    case "fanfare": // 마림바 상행 아르페지오 + 유리 반짝 마무리(도-미-솔-도-미)
+      [0, 4, 7, 12].forEach((s, i) => marimba(ac, out, N(s), i * 0.085));
+      glass(ac, out, N(16), 0.34, 0.2);
+      glass(ac, out, N(24), 0.42, 0.12);
       break;
-    case "chime": // 맑은 종 두 음(사인 + 배음)
-      [7, 12].forEach((s, i) => {
-        note(ac, out, N(s), i * 0.14, 0.9, "sine", 0.16);
-        note(ac, out, N(s) * 2.01, i * 0.14, 0.5, "sine", 0.05);
-      });
+    case "chime": // 유리 종 두 음(솔→도)
+      glass(ac, out, N(7), 0);
+      glass(ac, out, N(12), 0.12);
       break;
-    case "bells": // 방울 — 빠른 삼각파 반짝임
-      [12, 16, 19, 16, 24].forEach((s, i) => note(ac, out, N(s), i * 0.07, 0.35, "triangle", 0.1));
+    case "bells": // 방울 — 유리 종 빠른 반짝임
+      [12, 16, 19, 16, 24].forEach((s, i) => glass(ac, out, N(s), i * 0.065, 0.14));
       break;
-    case "spooky": // 내려가는 단조 + 살짝 휘는 음
-      [7, 6, 3, -2].forEach((s, i) => note(ac, out, N(s - 12), i * 0.15, 0.4, "triangle", 0.12, 0.94));
+    case "spooky": // 귀여운 으스스 — 출렁이는 보잉 두 번(내려감)
+      boing(ac, out, N(-5), 0);
+      boing(ac, out, N(-9), 0.2, 0.2);
       break;
-    case "sparkle": // 올라가는 반짝임
-      [12, 16, 19, 24, 28].forEach((s, i) => note(ac, out, N(s), i * 0.05, 0.25, "sine", 0.08));
+    case "sparkle": // 반짝 — 유리 빠른 상행
+      [12, 16, 19, 24, 28].forEach((s, i) => glass(ac, out, N(s), i * 0.045, 0.12));
       break;
-    case "soft": // 낮고 조용한 한 음
-      note(ac, out, N(-5), 0, 0.9, "sine", 0.1);
+    case "soft": // 낮고 조용한 마림바 한 음
+      marimba(ac, out, N(-5), 0, 0.22);
       break;
-    case "levelup": // 단계 상승 — 빠르게 올라가는 네 음 + 마지막 반짝
-      [0, 4, 7, 11, 12].forEach((s, i) => note(ac, out, N(s + 7), i * 0.06, i === 4 ? 0.45 : 0.12, "triangle", 0.1));
+    case "levelup": // 단계 상승 — 물방울 셋 + 유리 마무리
+      [0, 4, 7].forEach((s, i) => bubble(ac, out, N(s + 7), i * 0.07, 0.24));
+      glass(ac, out, N(19), 0.22, 0.2);
       break;
-    case "heart-on": // 톡 하고 위로
-      note(ac, out, N(7), 0, 0.12, "sine", 0.14, 1.6);
-      note(ac, out, N(19), 0.05, 0.16, "sine", 0.05);
+    case "pop": // 기본 축하 — 물방울 퐁 + 작은 반짝
+      bubble(ac, out, N(7), 0);
+      glass(ac, out, N(19), 0.07, 0.1);
       break;
-    case "heart-off": // 살짝 아래로
-      note(ac, out, N(5), 0, 0.14, "sine", 0.09, 0.7);
+    // ── 하트·기대 ──
+    case "heart-on": // 퐁-퐁 위로(장3도)
+      bubble(ac, out, N(4), 0, 0.26);
+      bubble(ac, out, N(8), 0.07, 0.24);
       break;
-    case "hope": // 별빛 두 점
-      note(ac, out, N(24), 0, 0.22, "sine", 0.07);
-      note(ac, out, N(31), 0.06, 0.3, "sine", 0.05);
+    case "heart-off": // 살짝 내려앉음
+      drip(ac, out, N(4), 0, 0.2);
       break;
-    case "save": // 조용한 확인 두 음(위로)
-      note(ac, out, N(4), 0, 0.16, "sine", 0.08);
-      note(ac, out, N(11), 0.07, 0.24, "sine", 0.07);
+    case "hope": // 별빛 — 유리 두 점
+      glass(ac, out, N(19), 0, 0.16);
+      glass(ac, out, N(26), 0.08, 0.12);
       break;
-    case "drop": // 내려놓는 툭(낮은 음이 짧게 가라앉음)
-      note(ac, out, 220, 0, 0.14, "sine", 0.16, 0.55);
-      note(ac, out, N(0), 0.01, 0.06, "triangle", 0.04);
+    // ── 누름·이동 ──
+    case "tick": // 아주 작은 물방울(진동과 같은 순간)
+      bubble(ac, out, N(19), 0, 0.12);
       break;
-    case "delete": // 아래로 두 음
-      note(ac, out, N(0), 0, 0.12, "triangle", 0.08);
-      note(ac, out, N(-5), 0.08, 0.2, "triangle", 0.07, 0.8);
+    case "select": // 고르기 — 마림바 한 점(높게)
+      marimba(ac, out, N(12), 0, 0.24);
       break;
-    case "fling": // 휙 — 높은 데서 길게 떨어지는 활강
-      note(ac, out, 900, 0, 0.32, "sine", 0.08, 0.15);
+    case "open": // 열림 — 물방울 위로
+      bubble(ac, out, N(7), 0, 0.26);
       break;
-    case "undo": // 짧게 아래로 되감기
-      note(ac, out, N(7), 0, 0.1, "sine", 0.08, 0.75);
+    case "close": // 닫힘 — 물방울 아래로
+      drip(ac, out, N(7), 0, 0.22);
       break;
-    case "redo": // 짧게 위로
-      note(ac, out, N(2), 0, 0.1, "sine", 0.08, 1.33);
+    case "lift": // 집기 — 퐁퐁 떠오름
+      bubble(ac, out, N(4), 0, 0.22);
+      bubble(ac, out, N(11), 0.05, 0.2);
       break;
-    case "link": // 찰칵 — 맞물리는 두 점(위로)
-      note(ac, out, N(12), 0, 0.05, "triangle", 0.09);
-      note(ac, out, N(19), 0.05, 0.08, "triangle", 0.08);
+    case "page": // 달 넘김 — 종이 넘기는 바람
+      swish(ac, out, 0, 900, 3200, 0.16, 0.22);
       break;
-    case "unlink": // 툭 끊기는 소리(아래로)
-      note(ac, out, N(14), 0, 0.06, "square", 0.04, 0.6);
+    // ── 편집 ──
+    case "save": // 저장 — 마림바 완전4도 상행(솔→도)
+      marimba(ac, out, N(7), 0);
+      marimba(ac, out, N(12), 0.08);
       break;
-    case "unlock": // 열림 — 맑은 세 음 상행
-      [0, 4, 7].forEach((s, i) => note(ac, out, N(s + 12), i * 0.08, i === 2 ? 0.5 : 0.18, "sine", 0.1));
+    case "drop": // 놓기 — 낮은 마림바 '똥' + 착지 물방울
+      marimba(ac, out, N(-5), 0, 0.3);
+      bubble(ac, out, N(7), 0.04, 0.12);
       break;
-    case "error": // 낮은 두 음(단2도) — 조용하지만 '아니요'로 들린다
-      note(ac, out, N(-12), 0, 0.14, "square", 0.04);
-      note(ac, out, N(-11), 0.12, 0.2, "square", 0.04);
+    case "delete": // 삭제 — 내려앉는 두 음
+      drip(ac, out, N(7), 0, 0.22);
+      marimba(ac, out, N(-5), 0.07, 0.2);
       break;
-    case "tick": // 아주 짧은 톡(진동과 같은 순간) — 애플 키 클릭처럼 거의 질감만
-      note(ac, out, 1800, 0, 0.03, "sine", 0.05, 0.6);
+    case "fling": // 던지기 — 휙 + 멀어지는 물방울
+      swish(ac, out, 0, 3000, 500, 0.3, 0.3);
+      drip(ac, out, N(12), 0.05, 0.14);
       break;
-    case "select": // 고르기 — 또렷한 한 점
-      note(ac, out, N(9), 0, 0.07, "triangle", 0.08);
+    case "undo": // 되돌리기 — 짧게 내려감
+      drip(ac, out, N(9), 0, 0.2);
       break;
-    case "open": // 열림 — 짧게 위로 미끄러짐
-      note(ac, out, N(2), 0, 0.12, "sine", 0.07, 1.5);
+    case "redo": // 다시 — 짧게 올라감
+      bubble(ac, out, N(9), 0, 0.2);
       break;
-    case "close": // 닫힘 — 짧게 아래로
-      note(ac, out, N(9), 0, 0.1, "sine", 0.06, 0.66);
+    case "link": // 잇기 — 마림바 두 점 딸깍(위로)
+      marimba(ac, out, N(12), 0, 0.22);
+      marimba(ac, out, N(19), 0.06, 0.2);
       break;
-    case "lift": // 집기 — 살짝 떠오르는 두 점
-      note(ac, out, N(4), 0, 0.06, "sine", 0.07);
-      note(ac, out, N(11), 0.04, 0.08, "sine", 0.06);
+    case "unlink": // 끊기 — 한 점 툭(아래로)
+      marimba(ac, out, N(7), 0, 0.2);
+      drip(ac, out, N(2), 0.03, 0.12);
       break;
-    case "page": // 달 넘김 — 종이 넘기듯 짧은 활강
-      note(ac, out, 1400, 0, 0.09, "triangle", 0.04, 0.5);
+    // ── 알림 ──
+    case "unlock": // 열림 — 유리 장3화음 상행
+      [0, 4, 7].forEach((s, i) => glass(ac, out, N(s + 12), i * 0.07, 0.18));
       break;
-    case "pop":
-    default: // 톡 — 짧게 위로 휘는 팝
-      note(ac, out, N(0), 0, 0.12, "sine", 0.14, 1.8);
-      note(ac, out, N(12), 0.06, 0.18, "triangle", 0.06);
+    case "error": // 실패 — 귀엽게 '어-어'(마림바 단2도 하행)
+      marimba(ac, out, N(-3), 0, 0.26);
+      marimba(ac, out, N(-4), 0.13, 0.24);
+      break;
+    default:
+      bubble(ac, out, N(7), 0);
       break;
   }
 }
@@ -282,9 +403,9 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   const ac = audio();
   if (!ac) return;
   const out = ac.createGain();
-  // 크기 곡선 — 사람 귀는 로그라 0.5에서 이미 꽤 크다. 제곱으로 낮은 쪽을 넓게(60% ≈ 0.36), 최대 0.9.
-  out.gain.value = Math.pow(vol / 100, 2) * 0.9;
-  out.connect(ac.destination);
+  // 크기 곡선 — 1.6제곱(낮은 쪽은 섬세하게, 100이면 압축기 뒤에서 또렷하게). 1차(제곱×0.9, 음마다 0.04~0.16)는 너무 작았다.
+  out.gain.value = Math.pow(vol / 100, 1.6) * 1.2;
+  out.connect(masterBus(ac));
   render(ac, out, name);
 }
 
