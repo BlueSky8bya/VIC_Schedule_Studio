@@ -1009,8 +1009,8 @@ export function StudioShell({
     hapticTick();
     router.refresh();
   };
-  // 생일 선물 미리보기(0141, 2026-10-06 소유자) — 개발자 설정 토글. 켜면 관리자도 시청자 미리보기에서 생일 카드·캡슐
-  // 뽑기를 보고 뽑기는 아무 날이나 열린다. 개발자는 생일 카드를 늘 본다. 시청자 화면(/)은 어느 경우에도 노래만.
+  // 생일 선물 미리보기(0141, 2026-10-06 소유자) — 개발자 설정 토글. 켜면 개발자의 시청자 미리보기에서 생일 표기를 누를 때
+  // 캡슐 뽑기 창이 (날짜 상관없이) 열린다. 끄면 노래만. 관리자·시청자는 늘 노래만(나중에 관리자에게 열 때 조건만 추가).
   const [birthdayPreview, setBirthdayPreview] = useState(Boolean(schedule.birthdayGiftPreview));
   const toggleBirthdayPreview = () => {
     if (actor.role !== "developer") return;
@@ -7006,9 +7006,10 @@ export function StudioShell({
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
           schedule={previewSchedule}
-          // 생일 카드·캡슐 뽑기: 개발자는 늘(뽑기는 생일 당일), 관리자는 개발자 토글이 켜졌을 때만. 토글이 켜지면 뽑기는 아무 날이나.
-          birthdayGift={actor.role === "developer" || (actor.role === "owner" && birthdayPreview)}
-          gachaAnyDay={birthdayPreview && (actor.role === "developer" || actor.role === "owner")}
+          // 생일 캡슐 뽑기(2026-10-06 소유자 개정): 지금은 **개발자가 토글을 켰을 때만**, 개발자의 시청자 미리보기에서 날짜 상관없이.
+          // 관리자·시청자는 토글과 상관없이 생일 노래만. 나중에 관리자에게 열 때는 이 조건에 owner만 더하면 된다.
+          birthdayGift={actor.role === "developer" && birthdayPreview}
+          gachaAnyDay={actor.role === "developer" && birthdayPreview}
           // "n명이 기다렸어요" 배지는 당분간 개발자 확인용만(사용자 결정 — 카운팅은 쌓되
           // 관리자·시청자에겐 아직 비노출). 역할 미리보기(effectiveRole)가 아니라 실제 역할 기준.
           toggleHeartAction={toggleEventHeartAction}

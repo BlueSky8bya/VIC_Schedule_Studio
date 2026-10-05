@@ -70,7 +70,7 @@ export type StudioSettingsProps = {
   // season/onChangeSeason: 감상 톱니에서 계절을 강제해 두고 나오면 편집실 배경이 그 계절로 남는데, 되돌릴 손잡이가
   // 설정에 없었다(2026-09-05 소유자: "가을에서 봄으로 바꾸고 돌아오니 가을로 못 돌아와"). 같은 상태를 여기서도 연다.
   devWorld?: { force: DevWorldForce; onChange: (force: DevWorldForce) => void; season: SeasonKey | null; onChangeSeason: (season: SeasonKey | null) => void } | null;
-  // 생일 선물 미리보기(0141) — 개발자만. 켜면 관리자도 미리보기에서 생일 카드·뽑기, 뽑기는 아무 날이나. open = 지금 뽑기 창 열기.
+  // 생일 선물 미리보기(0141) — 개발자만. 켜면 개발자의 시청자 미리보기에서 생일 뽑기 창(날짜 상관없이). open = 지금 뽑기 창 열기.
   birthdayPreview?: { on: boolean; toggle: () => void; open: () => void } | null;
   // 지금 보고 있는 달 — 그 달에 가능한 날씨 목록을 정하는 데 쓴다.
   devMonth?: number;
@@ -871,7 +871,7 @@ export function StudioSettingsList({
             </div>
           ) : null}
           {birthdayPreview ? (
-            <p className="rhh-group-foot">켜면 관리자도 시청자 미리보기에서 생일 카드·캡슐 뽑기를 보고, 뽑기는 생일 당일이 아니어도 열려요. 시청자 화면엔 늘 생일 노래만.</p>
+            <p className="rhh-group-foot">켜면 시청자 미리보기에서 생일 표기를 누를 때 캡슐 뽑기 창이 열려요(날짜 상관없이, 개발자만). 끄면 노래만. 관리자·시청자는 늘 생일 노래만.</p>
           ) : null}
           <div className="rhh-group-card">
             <div className="role-help-haptics rhh-ambient rhh-dev">

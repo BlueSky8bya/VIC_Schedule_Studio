@@ -95,6 +95,6 @@ Latest: `0132_search_synonyms_drop_rel_chip.sql` — the 308k auto-rel / rel-chi
 | 0138 | `public_schedule_events` 뷰: 공개 전 떡밥도 `is_tentative`는 그대로(0125는 false로 덮음) — 미정은 내용이 아닌 상태값, 시청자가 미정 떡밥을 빗금으로 구분. 나머지 가림 그대로 |
 | 0139 | 화제 칩에 가장 최근 방송 몫 1~2자리(4·6번째): 7일 안 마지막 방송일, 그날 채팅 분석 끝난 뒤에만. 후보 = 그날 제목·챕터·일정 말(+채팅), 180일 쓰임으로 눌러 새 말 우선, 직전 14일에 뜨던 말·같은 글 한 덩이는 제외. 재계산 2.3초 |
 | 0140 | 떡밥 '기대돼요' → 공개 뒤 비로그인 하트(`event_hearts_anon`)로 1회 복사. `teaser_hope.anon`(누를 때 `auth.uid() is null`)·`settled_at` 추가, `settle_teaser_hopes()`(service_role) = 공개 순간 `revealTeaserAction` + pg_cron `vic-teaser-hope-settle` 5분. 0140 이전 행(anon null)은 그 기기가 비로그인 하트를 누른 적 있을 때만. 로그인 기대는 안 옮김. 적용 2026-10-05 KST(소급 +2) |
-| 0141 | `calendars.birthday_gift_preview` (기본 false) — 개발자 설정 토글: 켜면 관리자도 편집실 시청자 미리보기에서 생일 카드·캡슐 뽑기를 보고 뽑기는 아무 날이나 열림. 공개 응답엔 싣지 않음(public-loader 열 지정) |
+| 0141 | `calendars.birthday_gift_preview` (기본 false) — 개발자 설정 토글: 켜면 개발자의 편집실 시청자 미리보기에서 생일 캡슐 뽑기가 날짜 상관없이 열림(관리자·시청자는 노래만, 2026-10-06 개정). 공개 응답엔 싣지 않음(public-loader 열 지정) |
 | 0121 | `dark_palette` STORED generated column — 기본 팔레트·커스텀 태그의 다크 채움/테두리/글자/강조색을 자동 저장. 원본 색 보존, 하위 NULL 상속, 앱 reader보다 먼저 적용. [ADR-0026](../../docs/agent/decisions/ADR-0026-automatic-dark-tag-palette.md) |
 | 0122 | 색 구분 개선 `dark_palette_v2` — 파스텔 채도·명도·테두리 차이 강화. v1/원본 보존, 새 함수/생성 컬럼으로 기존·신규 색 자동 저장. v2 reader보다 먼저 적용 |
