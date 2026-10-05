@@ -7033,6 +7033,7 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다 — 시청자 포스터와 동일.
      태그 선택·저장하면 그 태그 색에 맞춰 즉시(렌더 시점) 반영된다. */
   font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
+  -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
   line-height: 1.2;
 }
 /* 무늬 칸 글자를 바탕 무늬에서 떼어내는 헤일로. 이어지는 칸 투명 제목(.span-cont)엔 미적용. */
@@ -7042,6 +7043,7 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
 }
 .studio-event-pill .pill-subs:not(.span-cont) li {
   font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
+  -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
 }
 
 /* 서브항목 = 불릿 대신 '왼쪽 세로 레일'(뷰어 .event-subs와 통일). 레일색은 currentColor(=통일

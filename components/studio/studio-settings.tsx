@@ -9,12 +9,12 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { playSfx, type SfxName, type SoundCategory, type SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import { TEXT_PX_BASE, TEXT_PX_MAX, TEXT_PX_MIN } from "@/lib/ui/edit-prefs";
-import { FONT_OPTIONS, FONT_STACKS, type WeightStep } from "@/lib/ui/font-prefs";
+import { FONT_BASE, FONT_OPTIONS, FONT_STACKS, type FontKind, type WeightStep } from "@/lib/ui/font-prefs";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
@@ -74,7 +74,7 @@ export type StudioSettingsProps = {
   devMonth?: number;
 };
 
-type TabKey = "screen" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev";
+type TabKey = "screen" | "text" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev";
 
 export type SoundSettings = {
   on: boolean;
@@ -89,6 +89,13 @@ export type SoundSettings = {
   showEdit: boolean;
 };
 type Tone = "water" | "leaf" | "metal" | "rose";
+
+// 글꼴 묶음 — 계열별로 나눠 한 줄씩 고른 폭으로(2026-10-06 소유자: "난잡하게 왼쪽 정렬 말고 좌우 균형감 있게").
+const FONT_GROUPS: { label: string; kinds: FontKind[] }[] = [
+  { label: "고딕", kinds: ["고딕"] },
+  { label: "둥근", kinds: ["둥근"] },
+  { label: "명조 손글씨", kinds: ["명조", "손글씨"] }
+];
 
 // 소리 모아 듣기 — 기능마다 다른 소리를 한자리에서(음 개수·리듬·오르내림으로 구분된다, lib/ui/sfx 근거 주석).
 const SOUND_SAMPLES: { name: SfxName; label: string; edit?: boolean }[] = [
@@ -234,15 +241,12 @@ export function StudioSettingsList({
   ];
   const hasEditGroup = canManageTimelines || flingDelete !== null;
   const [activeTab, setActiveTab] = useState<TabKey>("screen");
-  // 글꼴 미리보기 — 칩에 마우스를 올리면 아래 미리보기만 그 글꼴로(고르기 전 둘러보기). 한 번 올려 본 칩은
-  // 이름도 제 글꼴로 그린다 — 처음부터 전부 그리면 글꼴 파일 열네 개(수 MB)를 한꺼번에 받게 된다.
+  // 글꼴 미리보기 — 타일에 마우스를 올리면 아래 미리보기만 그 글꼴로(고르기 전 둘러보기), 누르면 고른다.
   const [fontPeek, setFontPeek] = useState<string | null>(null);
-  const [fontSeen, setFontSeen] = useState<ReadonlySet<string>>(() => new Set([font.id]));
-  const peekFont = (id: string) => {
-    setFontPeek(id);
-    if (!fontSeen.has(id)) setFontSeen((prev) => new Set(prev).add(id));
-  };
   const previewFont = FONT_STACKS[fontPeek ?? font.id] || undefined;
+  // 타일 견본 글자는 자기 글꼴로 그린다 — 글꼴 묶음이 화면에 들어올 때 한꺼번에 받고(설정을 연 사람만),
+  // 받기 전엔 반짝이는 자리표시로 둔다(대체 글꼴로 그렸다가 바뀌며 튀지 않게).
+  const [fontsReady, setFontsReady] = useState<ReadonlySet<string>>(() => new Set([FONT_BASE]));
   // 설정 창 재설계(2026-10-06 소유자: "많아진 설정에 맞게, 벤치마킹해서") — 애플 설정 앱의 묶음 목록:
   // 성격별 묶음 제목 → 둥근 카드 안 줄들 → 필요할 때만 묶음 아래 한 줄 설명. 줄 이름은 짧게(UI-15),
   // 설명은 '모르면 못 고르는 것'에만 단다. 줄 순서는 자주 바꾸는 것(화면)부터.
@@ -251,6 +255,7 @@ export function StudioSettingsList({
   // 판단은 화면 폭이 아니라 **이 목록이 놓인 상자의 폭**(컨테이너 쿼리, settings-modal.css)이라 좁은 팝오버에서도 맞다.
   const tabs: { key: TabKey; label: string; icon: ReactNode; tone: Tone; web?: boolean }[] = [
     { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
+    { key: "text", label: "글자", icon: <Type size={15} />, tone: "water" },
     { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
     { key: "sound", label: "소리", icon: <Volume2 size={15} />, tone: "water" },
     { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
@@ -259,6 +264,27 @@ export function StudioSettingsList({
     ...(devWorld ? [{ key: "dev" as const, label: "개발자", icon: <Wrench size={15} />, tone: "metal" as const, web: true }] : [])
   ];
   const current: TabKey = tabs.some((t) => t.key === activeTab) ? activeTab : "screen";
+  const fontGridRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const grid = fontGridRef.current;
+    if (!grid || typeof IntersectionObserver === "undefined") return;
+    let started = false;
+    const io = new IntersectionObserver((entries) => {
+      if (started || !entries.some((e) => e.isIntersecting)) return;
+      started = true;
+      io.disconnect();
+      const css = getComputedStyle(document.documentElement);
+      for (const f of FONT_OPTIONS) {
+        if (!f.stack) continue;
+        const fam = f.stack.replace(/var\((--[\w-]+)\)/g, (_m, v: string) => css.getPropertyValue(v).trim() || "sans-serif");
+        Promise.all([document.fonts.load(`400 24px ${fam}`, "가나Aa"), document.fonts.load(`700 24px ${fam}`, "가나Aa")])
+          .catch(() => null)
+          .then(() => setFontsReady((prev) => new Set(prev).add(f.id)));
+      }
+    });
+    io.observe(grid);
+    return () => io.disconnect();
+  }, [current]);
   // 왼쪽 탭의 선택 하이라이트 — 항목마다 배경을 켜지 않고, 알약 하나가 고른 항목으로 미끄러진다(macOS 사이드바).
   const navRef = useRef<HTMLElement | null>(null);
   const [navPill, setNavPill] = useState<{ y: number; h: number; ready: boolean } | null>(null);
@@ -346,8 +372,72 @@ export function StudioSettingsList({
             </RowLabel>
             <Switch dataAct="눈 편한 테마 켜기/끄기" label="눈 편한 테마 켜기/끄기" on={eyeComfort} onToggle={onToggleEyeComfort} />
           </div>
+        </div>
+        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요.</p>
+      </section>
+
+      {/* 글자(2026-10-06 소유자: "글꼴 모양·미리보기를 보면서 크기도 같이, 같은 자리에서 스크롤 없이") —
+          왼쪽 미리보기(바쁜 날·한가한 날)는 늘 보이고, 오른쪽에서 크기·굵기·글꼴을 바꾸면 바로 따라 바뀐다.
+          좁은 곳(폰)은 미리보기가 위에 붙어(sticky) 아래 손잡이를 움직여도 계속 보인다. */}
+      <section {...pane("text", "rhh-text-tab")}>
+        <h3 className="rhh-group-title" id="rhh-tab-text-title">글자</h3>
+        <div className="rhh-text-layout">
+          {/* 미리보기 — 바쁜 날(띠·기념일·두 색·미정 빗금·최초공개·하트·세부 줄)과 한가한 날을 나란히.
+              달력 카드와 같은 비율(제목 14 · 세부 12.5 · 날짜 20 · 기념일 11px × 글씨 크기)·같은 굵기 규칙. */}
+          <div className="rhh-text-stage" aria-hidden="true">
+            <div className="rhh-preview-pair" style={{ "--pv": textPx / TEXT_PX_BASE, fontFamily: previewFont } as CSSProperties}>
+              <div className="rhh-preview-col">
+                <span className="rhh-preview-cap">일정이 많은 날</span>
+                <div className="rhh-text-preview">
+                  <div className="pv-head">
+                    <span className="pv-date">1</span>
+                    <span className="pv-mark">🎉 데뷔 1주년</span>
+                  </div>
+                  <span className="pv-band">🌱 업도움 · 굿즈 사전 판매</span>
+                  <div className="pv-card pv-mixed">
+                    <b>빅토리 재 데뷔 합니다!!!</b>
+                    <ul>
+                      <li>뉴아바타 · 뉴헤어</li>
+                      <li>새로워진 api 공개</li>
+                    </ul>
+                    <i className="pv-heart">♥</i>
+                  </div>
+                  <div className="pv-card pv-tent">
+                    <b>
+                      종겜 <em>미정</em>
+                    </b>
+                    <ul>
+                      <li>소시지게임 켠왕</li>
+                    </ul>
+                  </div>
+                  <div className="pv-card pv-teaser">
+                    <b>🔮 ???</b>
+                    <span className="pv-dday">D-9</span>
+                  </div>
+                  <div className="pv-card pv-plain">
+                    <b>고멤FC</b>
+                  </div>
+                </div>
+              </div>
+              <div className="rhh-preview-col">
+                <span className="rhh-preview-cap">한가한 날</span>
+                <div className="rhh-text-preview">
+                  <div className="pv-head">
+                    <span className="pv-date">14</span>
+                  </div>
+                  <div className="pv-card pv-rest">
+                    <b>휴뱅</b>
+                    <ul>
+                      <li>정기휴방</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="rhh-group-card rhh-text-controls">
           {/* 글씨 크기 — px로 고르고 바로 아래 미리보기로 확인. 고른 크기가 달력의 기본(100%), Ctrl+휠 확대는 여기서 시작. 웹만. */}
-          <div className="role-help-haptics rhh-web rhh-stack-sm">
+          <div className="role-help-haptics rhh-stack-sm">
             <RowLabel icon={<ALargeSmall size={15} />} tone="water">
               글씨 크기
             </RowLabel>
@@ -378,33 +468,53 @@ export function StudioSettingsList({
               </button>
             </div>
           </div>
-          {/* 글꼴 — 앱 전체. 칩에 올리면 미리보기만 바뀌고, 누르면 고른다(바로 화면 전체에 입혀진다). */}
+          {/* 글꼴 — 앱 전체. 계열별 묶음 · 고른 폭의 타일(견본 '가나'는 그 글꼴로). 올리면 미리보기만, 누르면 고른다. */}
           <div className="role-help-haptics rhh-stack-sm">
             <RowLabel icon={<Type size={15} />} tone="water">
               글꼴
             </RowLabel>
-            <div aria-label="글꼴 고르기" className="rhh-font-grid" data-act="font-select" onMouseLeave={() => setFontPeek(null)} role="radiogroup">
-              {FONT_OPTIONS.map((f) => (
-                <button
-                  aria-checked={f.id === font.id}
-                  className={f.id === font.id ? "on" : ""}
-                  key={f.id}
-                  onBlur={() => setFontPeek(null)}
-                  onClick={() => {
-                    if (f.id !== font.id) font.change(f.id);
-                  }}
-                  onFocus={() => peekFont(f.id)}
-                  onMouseEnter={() => peekFont(f.id)}
-                  role="radio"
-                  style={fontSeen.has(f.id) && f.stack ? { fontFamily: f.stack } : undefined}
-                  type="button"
-                >
-                  {f.label}
-                </button>
+            <div aria-label="글꼴 고르기" className="rhh-font-picker" data-act="font-select" onMouseLeave={() => setFontPeek(null)} ref={fontGridRef} role="radiogroup">
+              {FONT_GROUPS.map((g) => (
+                <div className="rhh-font-group" key={g.label}>
+                  <span className="rhh-font-group-label">{g.label}</span>
+                  <div className="rhh-font-tiles">
+                    {FONT_OPTIONS.filter((f) => g.kinds.includes(f.kind)).map((f) => {
+                      const on = f.id === font.id;
+                      const ready = fontsReady.has(f.id);
+                      return (
+                        <button
+                          aria-checked={on}
+                          aria-label={f.label}
+                          className={`rhh-font-tile${on ? " on" : ""}`}
+                          key={f.id}
+                          onBlur={() => setFontPeek(null)}
+                          onClick={() => {
+                            if (!on) font.change(f.id);
+                          }}
+                          onFocus={() => setFontPeek(f.id)}
+                          onMouseEnter={() => setFontPeek(f.id)}
+                          role="radio"
+                          type="button"
+                        >
+                          <span aria-hidden="true" className={`rhh-font-sample${ready ? " ready" : ""}`} style={f.stack ? { fontFamily: f.stack } : undefined}>
+                            가나
+                          </span>
+                          <span className="rhh-font-name">{f.label}</span>
+                          {on ? (
+                            <span aria-hidden="true" className="rhh-font-check">
+                              <Check size={11} strokeWidth={3.4} />
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-          {/* 글씨 굵기 — 달력 일정 글자(제목·세부)에 한 단계를 빼거나 더한다. 카드마다 바탕색 대비로 정한 굵기는 그대로 위에 얹힌다. */}
+          {/* 글씨 굵기 — 달력 일정 글자(제목·세부). 가늘게 = 한 파일 아래(보통 글꼴 파일로), 굵게 = 가장 굵은 파일 위에
+              얇은 외곽선까지 — 굵기 파일이 한두 개뿐인 글꼴에서도 세 단계가 눈에 보이게. */}
           <div className="role-help-haptics rhh-stack-sm">
             <RowLabel icon={<Bold size={15} />} tone="water">
               글씨 굵기
@@ -414,30 +524,16 @@ export function StudioSettingsList({
               dataAct="text-weight-select"
               onChange={font.changeWeight}
               options={[
-                { value: -200, label: "가늘게" },
+                { value: -300, label: "가늘게" },
                 { value: 0, label: "보통" },
                 { value: 100, label: "굵게" }
               ]}
               value={font.weight}
             />
           </div>
-          {/* 미리보기 — 달력 카드와 같은 모양·같은 비율(제목 px, 세부·날짜는 같은 배율)·같은 굵기 규칙. */}
-          <div className="role-help-haptics rhh-preview-row" aria-hidden="true">
-            <div className="rhh-text-preview" style={{ "--pv": textPx / TEXT_PX_BASE, fontFamily: previewFont } as CSSProperties}>
-              <span className="pv-date">1</span>
-              <span className="pv-mark">🎉 데뷔 1주년</span>
-              <div className="pv-card">
-                <b>빅토리 재 데뷔 합니다!!!</b>
-                <span>뉴아바타 · 새로워진 api 공개</span>
-              </div>
-              <div className="pv-card pv-card-2">
-                <b>종겜</b>
-                <span>소시지게임 켠왕</span>
-              </div>
-            </div>
           </div>
         </div>
-        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요. 글씨 크기는 달력의 기본 크기 — 달력 위 Ctrl+휠 확대는 이 크기에서 시작해요. 글꼴은 화면 전체에, 굵기는 달력 일정 글자에 적용돼요.</p>
+        <p className="rhh-group-foot">글꼴은 화면 전체에, 크기·굵기는 달력 일정 글자에 적용돼요. 달력 위 Ctrl+휠 확대는 고른 크기에서 시작해요.</p>
       </section>
 
       <section {...pane("motion")}>

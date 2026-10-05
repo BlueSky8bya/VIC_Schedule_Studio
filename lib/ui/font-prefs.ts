@@ -66,14 +66,18 @@ export function setFontPref(id: string): void {
 }
 
 // 글씨 굵기 — 일정 카드 글자(제목·세부)의 굵기에 더하는 값. 카드 굵기는 바탕색 대비로 700~900을 고르고
-// (inkStyleFor), 여기서 그 위에 한 단계를 얹거나 뺀다. 굵기가 하나뿐인 글꼴은 브라우저가 굵게 흉내 낸다.
-export const WEIGHT_STEPS = [-200, 0, 100] as const;
+// (inkStyleFor), 여기서 그 위에 한 단계를 얹거나 뺀다.
+//   가늘게 −300: 700→400·800→500 — 굵기 파일이 보통/굵게 둘뿐인 글꼴도 '보통 파일'로 내려가게(−200이면 600에 머물러
+//               굵은 파일 그대로였다 — 2026-10-06 소유자 "굵기가 미리보기에 적용 안 된다").
+//   굵게 +100 + 얇은 외곽선(--cal-stroke) — 이미 가장 굵은 파일인 글꼴에서도 한 단계 더 굵어 보이게.
+export const WEIGHT_STEPS = [-300, 0, 100] as const;
 export type WeightStep = (typeof WEIGHT_STEPS)[number];
 
 export function weightPref(): WeightStep {
   if (typeof window === "undefined") return 0;
   try {
     const v = Number(window.localStorage.getItem(WEIGHT_KEY));
+    if (v === -200) return -300; // 1차 값(−200) → 지금의 '가늘게'
     return (WEIGHT_STEPS as readonly number[]).includes(v) ? (v as WeightStep) : 0;
   } catch {
     return 0;
@@ -86,8 +90,11 @@ export function setWeightPref(step: WeightStep): void {
     /* 이번 세션만 */
   }
   try {
-    if (step) document.documentElement.style.setProperty("--cal-weight", String(step));
-    else document.documentElement.style.removeProperty("--cal-weight");
+    const d = document.documentElement.style;
+    if (step) d.setProperty("--cal-weight", String(step));
+    else d.removeProperty("--cal-weight");
+    if (step > 0) d.setProperty("--cal-stroke", "0.35px");
+    else d.removeProperty("--cal-stroke");
   } catch {
     /* no-op */
   }

@@ -140,7 +140,7 @@ export default function RootLayout({
               // 글꼴·굵기(vic.font·vic.calWeight, lib/ui/font-prefs) — 처음 그릴 때부터 고른 글꼴로.
               "var FS=" +
               JSON.stringify(FONT_STACKS) +
-              ";var fo=FS[s.getItem('vic.font')];if(fo)d.style.setProperty('--app-font',fo);var fw=Number(s.getItem('vic.calWeight'));if(fw===-200||fw===100)d.style.setProperty('--cal-weight',String(fw));" +
+              ";var fo=FS[s.getItem('vic.font')];if(fo)d.style.setProperty('--app-font',fo);var fw=Number(s.getItem('vic.calWeight'));if(fw===-200)fw=-300;if(fw===-300||fw===100)d.style.setProperty('--cal-weight',String(fw));if(fw===100)d.style.setProperty('--cal-stroke','0.35px');" +
               "var dk=s.getItem('vic.dark');if(dk==='on'||(dk==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-theme','dark');" +
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.
