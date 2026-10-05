@@ -256,7 +256,7 @@ export function StudioSettingsList({
     ...weatherOptionsForMonth(weatherMonth).map((w) => ({ value: w as WeatherOpt, label: WEATHER_LABEL[w] }))
   ];
   const hasEditGroup = canManageTimelines || flingDelete !== null;
-  const [activeTab, setActiveTab] = useState<TabKey>("screen");
+  const [activeTab, setActiveTab] = useState<TabKey>("text");
   // 글꼴 미리보기 — 타일에 마우스를 올리면 아래 미리보기만 그 글꼴로(고르기 전 둘러보기), 누르면 고른다.
   const [fontPeek, setFontPeek] = useState<string | null>(null);
   // 소리 견본 — 누른 타일이 소리 나는 동안 한 번 통 튀고 물결이 퍼진다.
@@ -272,16 +272,17 @@ export function StudioSettingsList({
   // 넓은 창: 왼쪽 묶음 목록 + 오른쪽엔 고른 묶음만. 좁은 곳(폰·편집실 모바일 팝오버): 탭 없이 묶음을 위아래로 쌓는다 —
   // 판단은 화면 폭이 아니라 **이 목록이 놓인 상자의 폭**(컨테이너 쿼리, settings-modal.css)이라 좁은 팝오버에서도 맞다.
   const tabs: { key: TabKey; label: string; icon: ReactNode; tone: Tone; web?: boolean }[] = [
-    { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
+    // 순서(2026-10-06 소유자): 글자 → 소리 → 나머지. 창을 열면 글자 탭부터.
     { key: "text", label: "글자", icon: <Type size={15} />, tone: "water" },
-    { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
     { key: "sound", label: "소리", icon: <Volume2 size={15} />, tone: "water" },
+    { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
+    { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
     { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
     ...(hasEditGroup ? [{ key: "edit" as const, label: "편집", icon: <PenLine size={15} />, tone: "metal" as const }] : []),
     ...(posterTheme !== null ? [{ key: "viewer" as const, label: "시청자 화면", icon: <Palette size={15} />, tone: "rose" as const }] : []),
     ...(devWorld ? [{ key: "dev" as const, label: "개발자", icon: <Wrench size={15} />, tone: "metal" as const, web: true }] : [])
   ];
-  const current: TabKey = tabs.some((t) => t.key === activeTab) ? activeTab : "screen";
+  const current: TabKey = tabs.some((t) => t.key === activeTab) ? activeTab : "text";
   // 미리보기 = 지금 이 화면의 진짜 달력 실측(2026-10-06 소유자: "설정 미리보기와 편집실·시청자 화면 카드가 똑같이 나와야").
   // 편집실 카드 글자는 화면 폭 환산, 시청자 포스터는 화면에 맞춰 통째로 축소 — 이름뿐인 14px로는 줄바꿈이 달랐다.
   // 창 뒤 달력의 칸 폭·카드 안쪽 여백·제목의 실제 화면 글자 크기를 재서 그대로 쓴다(글씨 크기를 바꾸면 다시 잰다).
@@ -398,36 +399,6 @@ export function StudioSettingsList({
         ))}
       </nav>
       <div className="rhh-panes">
-      <section {...pane("screen")}>
-        <h3 className="rhh-group-title" id="rhh-tab-screen-title">화면</h3>
-        <div className="rhh-group-card">
-          <div className="role-help-haptics rhh-stack-sm">
-            <RowLabel icon={<SunMoon size={15} />} tone="water">
-              화면 모드
-            </RowLabel>
-            <SettingsSegment<ThemeMode>
-              ariaLabel="화면 모드 고르기"
-              dataAct="theme-mode-select"
-              onChange={onChangeThemeMode}
-              options={[
-                { value: "light", label: "밝게" },
-                { value: "dark", label: "어둡게" },
-                { value: "system", label: "자동" }
-              ]}
-              value={themeMode}
-            />
-          </div>
-          {/* 눈 편한 테마 — 채도·눈부심을 낮춰 오래 봐도 덜 피로하게(글자 대비는 유지). */}
-          <div className="role-help-haptics">
-            <RowLabel icon={<Eye size={15} />} tone="water">
-              눈 편한 테마
-            </RowLabel>
-            <Switch dataAct="눈 편한 테마 켜기/끄기" label="눈 편한 테마 켜기/끄기" on={eyeComfort} onToggle={onToggleEyeComfort} />
-          </div>
-        </div>
-        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요.</p>
-      </section>
-
       {/* 글자(2026-10-06 소유자: "글꼴 모양·미리보기를 보면서 크기도 같이, 같은 자리에서 스크롤 없이") —
           왼쪽 미리보기(바쁜 날·한가한 날)는 늘 보이고, 오른쪽에서 크기·굵기·글꼴을 바꾸면 바로 따라 바뀐다.
           좁은 곳(폰)은 미리보기가 위에 붙어(sticky) 아래 손잡이를 움직여도 계속 보인다. */}
@@ -604,29 +575,6 @@ export function StudioSettingsList({
         <p className="rhh-group-foot">글꼴은 화면 전체에, 크기·굵기는 달력 일정 글자에 적용돼요. 달력 위 Ctrl+휠 확대는 고른 크기에서 시작해요.</p>
       </section>
 
-      <section {...pane("motion")}>
-        <h3 className="rhh-group-title" id="rhh-tab-motion-title">움직임</h3>
-        <div className="rhh-group-card">
-          {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
-              저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
-          <div className="role-help-haptics">
-            <RowLabel icon={<Sparkles size={15} />} tone="water">
-              생동감 있는 동작
-            </RowLabel>
-            <Switch dataAct="생동감 있는 동작 켜기/끄기" label="생동감 있는 동작 켜기/끄기" on={!reduceMotion} onToggle={onToggleReduceMotion} />
-          </div>
-          {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
-          {hapticsSupported ? (
-            <div className="role-help-haptics">
-              <RowLabel icon={<Vibrate size={15} />} tone="water">
-                진동
-              </RowLabel>
-              <Switch dataAct="진동 켜기/끄기" label="진동 켜기/끄기" on={hapticsOn} onToggle={onToggleHaptics} />
-            </div>
-          ) : null}
-        </div>
-      </section>
-
       {/* 소리(2026-10-06 — OS·게임 소리 설정 벤치마킹): 전체 켜기 → 음량(끌고 떼면 그 크기로 한 번, 미리 듣기) →
           종류별 켜기 → 다른 탭일 땐 조용히. 전체가 꺼져 있으면 아래 줄은 흐리게 잠긴다(무엇이 있는지는 보이게). */}
       <section {...pane("sound")}>
@@ -751,6 +699,59 @@ export function StudioSettingsList({
             ? "누름·이동은 일정 고르기·집기·편집창 열고 닫기·달 넘기기·버튼 누름, 편집은 놓기·저장·잇기·끊기·삭제·되돌리기예요. 방송 중엔 송출에 섞일 수 있어요."
             : "누름·이동은 일정 열고 닫기·달 넘기기·버튼 누름, 축하는 기념일 빵빠레·최초공개 축포예요. 다시보기 소리는 플레이어에서 조절해요."}
         </p>
+      </section>
+
+      <section {...pane("screen")}>
+        <h3 className="rhh-group-title" id="rhh-tab-screen-title">화면</h3>
+        <div className="rhh-group-card">
+          <div className="role-help-haptics rhh-stack-sm">
+            <RowLabel icon={<SunMoon size={15} />} tone="water">
+              화면 모드
+            </RowLabel>
+            <SettingsSegment<ThemeMode>
+              ariaLabel="화면 모드 고르기"
+              dataAct="theme-mode-select"
+              onChange={onChangeThemeMode}
+              options={[
+                { value: "light", label: "밝게" },
+                { value: "dark", label: "어둡게" },
+                { value: "system", label: "자동" }
+              ]}
+              value={themeMode}
+            />
+          </div>
+          {/* 눈 편한 테마 — 채도·눈부심을 낮춰 오래 봐도 덜 피로하게(글자 대비는 유지). */}
+          <div className="role-help-haptics">
+            <RowLabel icon={<Eye size={15} />} tone="water">
+              눈 편한 테마
+            </RowLabel>
+            <Switch dataAct="눈 편한 테마 켜기/끄기" label="눈 편한 테마 켜기/끄기" on={eyeComfort} onToggle={onToggleEyeComfort} />
+          </div>
+        </div>
+        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요.</p>
+      </section>
+
+      <section {...pane("motion")}>
+        <h3 className="rhh-group-title" id="rhh-tab-motion-title">움직임</h3>
+        <div className="rhh-group-card">
+          {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
+              저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
+          <div className="role-help-haptics">
+            <RowLabel icon={<Sparkles size={15} />} tone="water">
+              생동감 있는 동작
+            </RowLabel>
+            <Switch dataAct="생동감 있는 동작 켜기/끄기" label="생동감 있는 동작 켜기/끄기" on={!reduceMotion} onToggle={onToggleReduceMotion} />
+          </div>
+          {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
+          {hapticsSupported ? (
+            <div className="role-help-haptics">
+              <RowLabel icon={<Vibrate size={15} />} tone="water">
+                진동
+              </RowLabel>
+              <Switch dataAct="진동 켜기/끄기" label="진동 켜기/끄기" on={hapticsOn} onToggle={onToggleHaptics} />
+            </div>
+          ) : null}
+        </div>
       </section>
 
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
