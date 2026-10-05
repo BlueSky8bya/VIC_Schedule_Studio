@@ -572,7 +572,16 @@ export function DayVodWindow({
       if (dayVodDeferredReloadRef.current.get(titleNo) === standby) reloadDayVodSlot(titleNo, standby);
       // 물러나는 주 슬롯이 포스터 초기화(autoPlay:false)만 받았으면 리로드를 미룬다 — 새 슬롯 시동과 겹치지 않게.
       // 자동재생 Pload를 받은 슬롯은 늦게라도 굴러 숨은 소리가 날 수 있어 예전처럼 바로 리로드한다.
-      const posterOnly = dayVodPosterOnlyRef.current.has(dayVodSlotKey(titleNo, active));
+      const activeKey = dayVodSlotKey(titleNo, active);
+      const posterOnly = dayVodPosterOnlyRef.current.has(activeKey);
+      // 물러나는 주 슬롯이 굴러가고 있었으면 바꾸는 그 순간 멈춘다 — 리로드(다음 렌더)까지의 틈에도 소리가 겹치지 않게.
+      if (dayVodAliveRef.current.has(titleNo)) {
+        try {
+          dayVodApisRef.current.get(activeKey)?.({ cmd: "Ppause" });
+        } catch {
+          /* 이미 내려간 창 */
+        }
+      }
       const oldTimer = dayVodRetryTimersRef.current.get(titleNo);
       if (oldTimer) window.clearTimeout(oldTimer);
       dayVodRetryTimersRef.current.delete(titleNo);
@@ -582,11 +591,12 @@ export function DayVodWindow({
       // 승격 — 물러나는 주 슬롯은 곧바로 리로드(새 대기). 대기 슬롯이 이미 준비됐으면 즉시 첫 Pload,
       // 아직 로딩 중이면 PonReady에서 이어간다(pending). 연타로 승격이 겹쳐도 마지막 승격의 pending만
       // 살아남고 나머지는 리로드로 사라진다(수렴).
+      const wasLive = dayVodAliveRef.current.has(titleNo); // 굴러가던 슬롯은 리로드를 미루지 않는다(숨은 소리 방지)
       dayVodAliveRef.current.delete(titleNo);
       dayVodStartingAtRef.current.set(titleNo, performance.now());
       dayVodSettledAtRef.current.delete(titleNo);
       dayVodSeekAtRef.current.delete(titleNo);
-      commitDayVodSwap(titleNo, standby, posterOnly);
+      commitDayVodSwap(titleNo, standby, posterOnly && !wasLive);
       dayVodWantSecRef.current.set(titleNo, sec);
       if (post) startDayVodAutoPlay(titleNo, newKey, post, sec, muted);
       else dayVodPendingRef.current.set(newKey, sec);
@@ -809,6 +819,11 @@ export function DayVodWindow({
         // (음소거 시동이었어도 소리는 자동으로 켜지 않는다 — 플레이어 볼륨 버튼이 담당. 파일 상단
         //  철회 주석 참조.)
         dayVodMutedRef.current.delete(key);
+        // 미디어가 굴러갔으면 더는 '포스터만' 슬롯이 아니다 — 플레이어 안 ▶(프레임 내 클릭)로 재생을 시작하면
+        // startDayVodAutoPlay를 거치지 않아 이 표시가 남았고, 그 뒤 시킹 감시('이어서 불러오는 중…')가 대기 슬롯을
+        // 승격할 때 '재생한 적 없는 슬롯'으로 보고 리로드를 미뤄 숨은 옛 플레이어가 계속 소리를 냈다
+        // (2026-10-06 소유자 신고: "이어서 보기가 뜨며 새 화면으로 옮겨 갔는데 이전 소리가 그대로 겹친다").
+        dayVodPosterOnlyRef.current.delete(key);
         dayVodAliveRef.current.add(titleNo);
         setDayVodLive((prev) => {
           if (prev.has(titleNo)) return prev;
