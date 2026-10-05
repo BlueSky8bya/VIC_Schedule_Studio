@@ -176,6 +176,7 @@ export function ActivityTimeline({
   reloadKey?: number;
 }) {
   const [visits, setVisits] = useState<ActivityVisit[] | null>(null);
+  const [silentVisits, setSilentVisits] = useState<ActivityVisit[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -200,8 +201,14 @@ export function ActivityTimeline({
     getActivityDayAction(dateKey, diag)
       .then((r) => {
         if (!alive) return;
-        if (r.ok) setVisits(r.visits);
-        else setErr(r.error);
+        if (r.ok) {
+          // 시청자·비로그인은 행동을 줄로 남기지 않는다(2026-08-04 결정 — 날짜별 개수만). 그래서 그들의 방문은
+          // 세션 구간만 있는 '0줄' 줄이 되는데(2026-09-28 세션만 있는 방문도 보이게 한 변경의 부작용), 열어 봐도
+          // 아무것도 없다(2026-10-06 소유자: "추적도 못 하는데 왜 있어?"). 개별 줄 대신 맨 아래 요약 한 줄로 접는다.
+          const silent = r.visits.filter((v) => (v.role === "anon" || v.role === "viewer") && v.items.length === 0);
+          setVisits(r.visits.filter((v) => !silent.includes(v)));
+          setSilentVisits(silent);
+        } else setErr(r.error);
       })
       .finally(() => {
         if (alive) {
@@ -581,6 +588,13 @@ export function ActivityTimeline({
           );
         })}
       </ul>
+      {silentVisits.length > 0 ? (
+        <p className="vt-occ-note act-silent">
+          시청자·비로그인 방문 {silentVisits.length}회 · 총{" "}
+          {fmtDur(Math.round(silentVisits.reduce((ms, v) => ms + Math.max(0, v.endMs - v.startMs), 0) / 1000))} — 이 방문들의 행동은 줄로 남기지
+          않고 개수로만 기록해요(이용 집계 참고).
+        </p>
+      ) : null}
       <p className="vt-occ-note">
         진한 줄 = 실제 변경 · 옅은 줄 = 열람 · 비공개는 범위만 · 보존 90일(진단 3일)
         {loadedAt ? ` · ${hhmm(loadedAt)} 기준` : ""}
