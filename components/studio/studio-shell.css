@@ -13962,3 +13962,23 @@ html[data-reduce-motion] .support-bar.is-copied::after,
 html[data-reduce-motion] .paste-preview {
   animation: none;
 }
+
+/* 고른 카드를 끌 때도 '원래 위치'(2026-10-06 소유자: "한 번 클릭하고 옮기면 왜 원래 위치 글자가 안 뜨나") —
+   고른 카드의 점선 링(.primary-selected::after)이 같은 ::after를 쓰면서 파일 뒤쪽에 있어 content를 ""로 덮었다.
+   끄는 중(.dragging-src)이 고름보다 우선 — 클래스를 두 번 써 특정도를 올리고 맨 끝에 둬 링·이음변 규칙을 모두 이긴다. */
+.studio-event-pill.dragging-src.dragging-src::after {
+  content: "원래 위치";
+  position: absolute;
+  inset: -1px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  border: 2.5px dashed var(--selection-border);
+  border-radius: inherit;
+  background: rgb(var(--selection-rgb) / 12%);
+  color: var(--selection-border);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
