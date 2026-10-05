@@ -147,7 +147,7 @@ html[data-theme="dark"] .vic-settings .modal-card {
 }
 html[data-theme="dark"] .vic-settings .modal-head {
   border-bottom-color: rgb(255 255 255 / 10%);
-  background: linear-gradient(180deg, #2a2620, #232019);
+  background: transparent; /* 설정창 재설계(2026-10-06) — 머리 띠 없이 창 바탕 그대로 */
 }
 html[data-theme="dark"] .vic-settings .modal-head h2,
 html[data-theme="dark"] .vic-settings .rhh-label { color: var(--ink); }

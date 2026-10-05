@@ -18,7 +18,8 @@ import {
   setReduceMotion
 } from "@/lib/ui/motion";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
-import { darkEnabled, setDarkMode } from "@/lib/ui/theme";
+import { applyThemeMode, setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
+import { calSizePref, flingDeleteEnabled, setCalSizePref, setFlingDelete, type CalSize } from "@/lib/ui/edit-prefs";
 
 export type SettingsPrefs = {
   hapticsSupported: boolean;
@@ -28,8 +29,12 @@ export type SettingsPrefs = {
   toggleReduceMotion: () => void;
   eyeComfort: boolean;
   toggleEyeComfort: () => void;
-  dark: boolean;
-  toggleDark: () => void;
+  themeMode: ThemeMode;
+  changeThemeMode: (mode: ThemeMode) => void;
+  flingDelete: boolean;
+  toggleFlingDelete: () => void;
+  calSize: CalSize;
+  changeCalSize: (size: CalSize) => void;
   ambientMode: AmbientMode;
   changeAmbientMode: (mode: AmbientMode) => void;
   gfxPref: GfxPref;
@@ -88,17 +93,52 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     hapticTick();
   }, []);
 
-  // 다크 모드 — 토큰 팔레트 한 벌을 어둡게(lib/ui/theme.ts). 눈 편한 테마와 독립이다.
-  const [dark, setDarkState] = useState(false);
+  // 화면 모드(밝게·어둡게·기기 따라) — 토큰 팔레트 한 벌을 어둡게(lib/ui/theme.ts). 눈 편한 테마와 독립이다.
+  // '기기 따라'면 기기의 밝기 설정이 바뀔 때(해 질 녘 자동 전환 등) 새로고침 없이 따라간다.
+  const [themeModeState, setThemeModeState] = useState<ThemeMode>("light");
   useEffect(() => {
-    setDarkState(darkEnabled());
+    setThemeModeState(themeMode());
   }, []);
-  const toggleDark = useCallback(() => {
-    setDarkState((prev) => {
+  useEffect(() => {
+    if (themeModeState !== "system") return;
+    let mq: MediaQueryList | null = null;
+    try {
+      mq = window.matchMedia("(prefers-color-scheme: dark)");
+    } catch {
+      return;
+    }
+    const onChange = () => applyThemeMode("system");
+    mq.addEventListener("change", onChange);
+    return () => mq?.removeEventListener("change", onChange);
+  }, [themeModeState]);
+  const changeThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeMode(mode); // localStorage + <html data-theme> 즉시
+    setThemeModeState(mode);
+    hapticTick();
+  }, []);
+
+  // 던져서 삭제(편집실) — 끄면 빠르게 던져도 지우지 않는다(lib/ui/edit-prefs.ts).
+  const [flingDelete, setFlingDeleteState] = useState(true);
+  useEffect(() => {
+    setFlingDeleteState(flingDeleteEnabled());
+  }, []);
+  const toggleFlingDelete = useCallback(() => {
+    setFlingDeleteState((prev) => {
       const next = !prev;
-      setDarkMode(next); // localStorage + <html data-theme> 즉시
+      setFlingDelete(next);
       return next;
     });
+    hapticTick();
+  }, []);
+
+  // 달력 크기 — 달력 확대의 기본값. 바꾸면 열린 달력이 이벤트로 즉시 따라간다.
+  const [calSize, setCalSizeState] = useState<CalSize>(1);
+  useEffect(() => {
+    setCalSizeState(calSizePref());
+  }, []);
+  const changeCalSize = useCallback((size: CalSize) => {
+    setCalSizePref(size);
+    setCalSizeState(size);
     hapticTick();
   }, []);
 
@@ -157,8 +197,12 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     toggleReduceMotion,
     eyeComfort,
     toggleEyeComfort,
-    dark,
-    toggleDark,
+    themeMode: themeModeState,
+    changeThemeMode,
+    flingDelete,
+    toggleFlingDelete,
+    calSize,
+    changeCalSize,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,

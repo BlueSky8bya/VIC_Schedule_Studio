@@ -120,9 +120,9 @@ export default function RootLayout({
               JSON.stringify(SETTINGS_EPOCH_KEY) +
               ";if(s.getItem(K)!==E){s.removeItem('vic.reduceMotion');s.removeItem('vic.eyeComfort');s.removeItem('vic.studioCalm');s.removeItem('vic.ambient');s.setItem(K,E)}" +
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
-              // 다크 모드(vic.dark, 2026-09-19 소유자) — 기본 OFF, 'on'만 켠다. 페인트 전에 붙여야
-              // 어두운 화면을 기대한 사용자가 흰 화면을 한 번 맞지 않는다.
-              "if(s.getItem('vic.dark')==='on')d.setAttribute('data-theme','dark');" +
+              // 화면 모드(vic.dark, lib/ui/theme.ts) — 'on'=어둡게, 'system'=기기 따라, 그 외=밝게(기본).
+              // 페인트 전에 붙여야 어두운 화면을 기대한 사용자가 흰 화면을 한 번 맞지 않는다.
+              "var dk=s.getItem('vic.dark');if(dk==='on'||(dk==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-theme','dark');" +
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.
               "var gm='full',pf=s.getItem('vic.gfxPref');if(pf==='max'){gm='full'}else if(pf==='lite'||pf==='off'){gm=pf}else{try{var r=JSON.parse(s.getItem('vic.gfx')||'null');if(r&&r.v===3&&(r.mode==='lite'||r.mode==='soft')&&Date.now()-r.at<2592000000)gm=r.mode}catch(e){}}" +

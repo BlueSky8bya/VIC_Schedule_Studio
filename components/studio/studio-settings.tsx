@@ -9,7 +9,10 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookA, Eye, Gauge, Leaf, Moon, Palette, Sparkles, Vibrate } from "lucide-react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, Sparkles, SunMoon, Trash2, Vibrate, ZoomIn } from "lucide-react";
+import type { ReactNode } from "react";
+import type { ThemeMode } from "@/lib/ui/theme";
+import type { CalSize } from "@/lib/ui/edit-prefs";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
@@ -36,10 +39,15 @@ export type StudioSettingsProps = {
   onToggleReduceMotion: () => void;
   eyeComfort: boolean;
   onToggleEyeComfort: () => void;
-  // 다크 모드(2026-09-19 소유자) — 토큰 팔레트 한 벌을 어둡게. 눈 편한 테마와 독립이다.
-  // 모든 역할/시청자 미리보기에서 같은 기기 설정을 사용한다. 서버 권한과 무관하다.
-  dark: boolean;
-  onToggleDark: () => void;
+  // 화면 모드(2026-10-06 세 상태) — 밝게·어둡게·기기 따라. 모든 역할/시청자 미리보기에서 같은 기기 설정.
+  themeMode: ThemeMode;
+  onChangeThemeMode: (mode: ThemeMode) => void;
+  // 달력 크기(달력 확대의 기본값) — 웹만(모바일은 목록이라 확대가 없다).
+  calSize: CalSize;
+  onChangeCalSize: (size: CalSize) => void;
+  // 던져서 삭제 — 편집실(편집 권한)에서만 넘긴다. 없으면 줄이 없다.
+  flingDelete?: boolean | null;
+  onToggleFlingDelete?: () => void;
   // (차분한 편집실 스위치는 2026-09-04 제거 — 항상 ON. 사용자: "끄면 살짝 어두워질 뿐 뭐가 차분한지 모르겠다".)
   // 계절 배경(2026-09-04, ADR-0017 개정 2) — 달력 달의 계절(여름 물결·가을 낙엽·겨울 눈밭·봄 풀밭). 기본 ON. OFF면 전부 없음.
   ambientMode: AmbientMode; // 켜짐 · 흐리게 · 끔(2026-09-04 세 상태)
@@ -48,7 +56,6 @@ export type StudioSettingsProps = {
   gfxPref: GfxPref;
   gfxAuto: GfxMode;
   onChangeGfxPref: (pref: GfxPref) => void;
-  // 배경 감상 모드(웹 편집실만 — 모바일은 배경이 없어 넘기지 않는다). 있으면 줄을 그린다.
   // 포스터 테마(시청자 화면 배경, calendars.poster_theme) — 소유자만(서버도 owner 검사). null이면 안 그림.
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
@@ -61,6 +68,68 @@ export type StudioSettingsProps = {
   devMonth?: number;
 };
 
+/** 늘 모든 상태가 보이는 세그먼트(라디오) — 셀렉트는 무엇을 고를 수 있는지 안 보인다(2026-09-04 소유자). */
+function SettingsSegment<T extends string | number>({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+  dataAct
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+  ariaLabel: string;
+  dataAct: string;
+}) {
+  return (
+    <div aria-label={ariaLabel} className="rhh-seg" data-act={dataAct} role="radiogroup">
+      {options.map((o) => (
+        <button
+          aria-checked={o.value === value}
+          className={o.value === value ? "on" : ""}
+          key={String(o.value)}
+          onClick={() => {
+            if (o.value !== value) onChange(o.value);
+          }}
+          role="radio"
+          type="button"
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** 줄 머리 — 색 타일 속 아이콘 + 이름. 타일 색은 묶음의 성격(물=화면·움직임, 잎=배경, 쇠=편집·개발). */
+function RowLabel({ icon, tone, children }: { icon: ReactNode; tone: "water" | "leaf" | "metal" | "rose"; children: ReactNode }) {
+  return (
+    <span className="rhh-label">
+      <span aria-hidden="true" className="rhh-ico" data-tone={tone}>
+        {icon}
+      </span>
+      {children}
+    </span>
+  );
+}
+
+function Switch({ on, onToggle, label, dataAct }: { on: boolean; onToggle: () => void; label: string; dataAct: string }) {
+  return (
+    <button
+      aria-checked={on}
+      aria-label={label}
+      className={`rhh-switch ${on ? "on" : ""}`}
+      data-act={dataAct}
+      onClick={onToggle}
+      role="switch"
+      type="button"
+    >
+      <span className="rhh-knob" aria-hidden="true" />
+    </button>
+  );
+}
+
 export function StudioSettingsList({
   canManageTimelines = false,
   hapticsSupported,
@@ -70,8 +139,12 @@ export function StudioSettingsList({
   onToggleReduceMotion,
   eyeComfort,
   onToggleEyeComfort,
-  dark,
-  onToggleDark,
+  themeMode,
+  onChangeThemeMode,
+  calSize,
+  onChangeCalSize,
+  flingDelete = null,
+  onToggleFlingDelete,
   ambientMode,
   onChangeAmbientMode,
   gfxPref,
@@ -82,262 +155,269 @@ export function StudioSettingsList({
   devWorld = null,
   devMonth = 1
 }: StudioSettingsProps) {
-  // (월드 날짜 줄은 2026-09-05 제거 — 연대기 철거로 날이 화면을 바꾸지 않는다. 흔적은 달만 본다.)
   // 그 달에 **실제로 생길 수 있는** 날씨만 고를 수 있다 — 여름에 눈을 강제하면 만들지도 않은 "눈 덮인 여름
-  // 바이옴"을 보게 된다(2026-09-05 소유자). 목록은 월별 평년값 표(world/weather.ts)에서 직접 뽑으므로
-  // 표를 고치면 목록도 같이 바뀐다(둘이 어긋날 수 없다).
-  // 계절을 강제해 뒀으면 목록도 **그 계절**의 것이어야 한다(9월에 겨울을 강제해 놓고 눈을 못 고르면 소용없다)
-  // — 감상 톱니(showcase.tsx)와 같은 규칙.
+  // 바이옴"을 보게 된다(2026-09-05 소유자). 계절을 강제해 뒀으면 목록도 그 계절의 것(감상 톱니와 같은 규칙).
   const seasonMonth: Record<SeasonKey, number> = { spring: 4, summer: 7, autumn: 10, winter: 1 };
   const weatherMonth = devWorld?.season ? seasonMonth[devWorld.season] : devMonth;
   const weatherOptions: { value: WeatherOpt; label: string }[] = [
     { value: "real", label: "자동" },
     ...weatherOptionsForMonth(weatherMonth).map((w) => ({ value: w as WeatherOpt, label: WEATHER_LABEL[w] }))
   ];
+  const hasEditGroup = canManageTimelines || flingDelete !== null;
+  // 설정 창 재설계(2026-10-06 소유자: "많아진 설정에 맞게, 벤치마킹해서") — 애플 설정 앱의 묶음 목록:
+  // 성격별 묶음 제목 → 둥근 카드 안 줄들 → 필요할 때만 묶음 아래 한 줄 설명. 줄 이름은 짧게(UI-15),
+  // 설명은 '모르면 못 고르는 것'에만 단다. 줄 순서는 자주 바꾸는 것(화면)부터.
   return (
     <>
-      {canManageTimelines ? (
-        <div className="role-help-haptics">
-          <span className="rhh-label"><Clock3 aria-hidden="true" size={14} />팬 타임라인</span>
-          <Link className="rhh-link" data-act="vod-timeline-manage" href={"/studio/timelines" as Route}>관리</Link>
+      <section className="rhh-group">
+        <h3 className="rhh-group-title">화면</h3>
+        <div className="rhh-group-card">
+          <div className="role-help-haptics rhh-stack-sm">
+            <RowLabel icon={<SunMoon size={15} />} tone="water">
+              화면 모드
+            </RowLabel>
+            <SettingsSegment<ThemeMode>
+              ariaLabel="화면 모드 고르기"
+              dataAct="theme-mode-select"
+              onChange={onChangeThemeMode}
+              options={[
+                { value: "light", label: "밝게" },
+                { value: "dark", label: "어둡게" },
+                { value: "system", label: "자동" }
+              ]}
+              value={themeMode}
+            />
+          </div>
+          {/* 눈 편한 테마 — 채도·눈부심을 낮춰 오래 봐도 덜 피로하게(글자 대비는 유지). */}
+          <div className="role-help-haptics">
+            <RowLabel icon={<Eye size={15} />} tone="water">
+              눈 편한 테마
+            </RowLabel>
+            <Switch dataAct="눈 편한 테마 켜기/끄기" label="눈 편한 테마 켜기/끄기" on={eyeComfort} onToggle={onToggleEyeComfort} />
+          </div>
+          {/* 달력 크기 — 달력 확대의 기본값(칸·글자·띠가 함께). Ctrl+휠로 잠깐 바꾼 배율과 별개. 웹만. */}
+          <div className="role-help-haptics rhh-web rhh-stack-sm">
+            <RowLabel icon={<ZoomIn size={15} />} tone="water">
+              달력 크기
+            </RowLabel>
+            <SettingsSegment<CalSize>
+              ariaLabel="달력 크기 고르기"
+              dataAct="cal-size-select"
+              onChange={onChangeCalSize}
+              options={[
+                { value: 1, label: "보통" },
+                { value: 1.25, label: "크게" },
+                { value: 1.5, label: "더 크게" }
+              ]}
+              value={calSize}
+            />
+          </div>
         </div>
-      ) : null}
-      {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
-      {hapticsSupported ? (
-        <div className="role-help-haptics">
-          <span className="rhh-label">
-            <Vibrate aria-hidden="true" size={14} />
-            진동
-          </span>
-          <button
-            aria-checked={hapticsOn}
-            aria-label="진동 켜기/끄기"
-            className={`rhh-switch ${hapticsOn ? "on" : ""}`}
-            onClick={onToggleHaptics}
-            role="switch"
-            type="button"
-            data-act="진동 켜기/끄기"
-          >
-            <span className="rhh-knob" aria-hidden="true" />
-          </button>
+        <p className="rhh-group-foot">자동은 기기의 밝기 설정을 따라요.</p>
+      </section>
+
+      <section className="rhh-group">
+        <h3 className="rhh-group-title">움직임</h3>
+        <div className="rhh-group-card">
+          {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
+              저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
+          <div className="role-help-haptics">
+            <RowLabel icon={<Sparkles size={15} />} tone="water">
+              생동감 있는 동작
+            </RowLabel>
+            <Switch dataAct="생동감 있는 동작 켜기/끄기" label="생동감 있는 동작 켜기/끄기" on={!reduceMotion} onToggle={onToggleReduceMotion} />
+          </div>
+          {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
+          {hapticsSupported ? (
+            <div className="role-help-haptics">
+              <RowLabel icon={<Vibrate size={15} />} tone="water">
+                진동
+              </RowLabel>
+              <Switch dataAct="진동 켜기/끄기" label="진동 켜기/끄기" on={hapticsOn} onToggle={onToggleHaptics} />
+            </div>
+          ) : null}
         </div>
+      </section>
+
+      {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
+      <section className="rhh-group rhh-web">
+        <h3 className="rhh-group-title">배경</h3>
+        <div className="rhh-group-card">
+          {/* 세 상태가 늘 다 보이는 세그먼트 [켜기|흐리게|끄기] — 레일·아바타 자리의 묶음과 같은 컴포넌트. */}
+          <div className="role-help-haptics rhh-ambient rhh-stack-sm">
+            <RowLabel icon={<Leaf size={15} />} tone="leaf">
+              계절 배경
+            </RowLabel>
+            <AmbientModeSegment ariaLabel="계절 배경 상태 고르기" className="metal" dataAct="ambient-mode-select" mode={ambientMode} onChange={onChangeAmbientMode} />
+          </div>
+          {/* 배경 효과 품질(gfx v3) — 기기 판정이 '가볍게/끔'으로 떨어진 PC에서 사용자가 직접 되돌리는 손잡이.
+              계절 배경이 OFF면 '끄기'로 잠긴다(두 컨트롤이 한 상태). 목록에 '끄기'는 없다(바로 위 줄이 끄는 손잡이). */}
+          <div className="role-help-haptics rhh-ambient">
+            <RowLabel icon={<Gauge size={15} />} tone="leaf">
+              배경 효과
+            </RowLabel>
+            <RhhSelect<GfxPref>
+              ariaLabel="배경 효과 품질 고르기"
+              dataAct="gfx-pref-select"
+              disabled={ambientMode === "off"}
+              lockedLabel="끄기"
+              onChange={onChangeGfxPref}
+              options={[
+                { value: "auto", label: "자동 조절" },
+                { value: "max", label: "항상 최대" },
+                { value: "lite", label: "가볍게" }
+              ]}
+              value={gfxPref === "off" ? "auto" : gfxPref}
+            />
+          </div>
+        </div>
+      </section>
+
+      {hasEditGroup ? (
+        <section className="rhh-group">
+          <h3 className="rhh-group-title">편집</h3>
+          <div className="rhh-group-card">
+            {flingDelete !== null && onToggleFlingDelete ? (
+              <div className="role-help-haptics">
+                <RowLabel icon={<Trash2 size={15} />} tone="metal">
+                  던져서 삭제
+                </RowLabel>
+                <Switch dataAct="fling-delete-toggle" label="던져서 삭제 켜기/끄기" on={flingDelete} onToggle={onToggleFlingDelete} />
+              </div>
+            ) : null}
+            {canManageTimelines ? (
+              <div className="role-help-haptics">
+                <RowLabel icon={<Clock3 size={15} />} tone="metal">
+                  팬 타임라인
+                </RowLabel>
+                <Link className="rhh-link" data-act="vod-timeline-manage" href={"/studio/timelines" as Route}>
+                  관리
+                </Link>
+              </div>
+            ) : null}
+          </div>
+          {flingDelete !== null ? (
+            <p className="rhh-group-foot">끄면 카드를 빠르게 던져도 지워지지 않고 제자리로 돌아가요.</p>
+          ) : null}
+        </section>
       ) : null}
-      {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
-          저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
-      <div className="role-help-haptics">
-        <span className="rhh-label">
-          <Sparkles aria-hidden="true" size={14} />
-          생동감 있는 동작
-        </span>
-        <button
-          aria-checked={!reduceMotion}
-          aria-label="생동감 있는 동작 켜기/끄기"
-          className={`rhh-switch ${reduceMotion ? "" : "on"}`}
-          onClick={onToggleReduceMotion}
-          role="switch"
-          type="button"
-          data-act="생동감 있는 동작 켜기/끄기"
-        >
-          <span className="rhh-knob" aria-hidden="true" />
-        </button>
-      </div>
-      {/* 눈 편한 테마 — 채도·눈부심을 낮춰 오래 봐도 덜 피로하게(글자 대비는 유지). */}
-      <div className="role-help-haptics">
-        <span className="rhh-label">
-          <Eye aria-hidden="true" size={14} />
-          눈 편한 테마
-        </span>
-        <button
-          aria-checked={eyeComfort}
-          aria-label="눈 편한 테마 켜기/끄기"
-          className={`rhh-switch ${eyeComfort ? "on" : ""}`}
-          onClick={onToggleEyeComfort}
-          role="switch"
-          type="button"
-          data-act="눈 편한 테마 켜기/끄기"
-        >
-          <span className="rhh-knob" aria-hidden="true" />
-        </button>
-      </div>
-      {/* 다크 모드 — 공용 기기 설정. 계절 배경 캔버스에는 필터를 씌우지 않는다. */}
-      <div className="role-help-haptics">
-        <span className="rhh-label">
-          <Moon aria-hidden="true" size={14} />
-          다크 모드
-        </span>
-        <button
-          aria-checked={dark}
-          aria-label="다크 모드 켜기/끄기"
-          className={`rhh-switch ${dark ? "on" : ""}`}
-          onClick={onToggleDark}
-          role="switch"
-          type="button"
-          data-act="다크 모드 켜기/끄기"
-        >
-          <span className="rhh-knob" aria-hidden="true" />
-        </button>
-      </div>
-      {/* (차분한 편집실 스위치 제거 — 2026-09-04, 항상 ON. html[data-studio-calm]은 페인트-전 스크립트가 늘 붙인다.) */}
-      {/* 계절 배경 — 보고 있는 달력 달의 계절 배경(여름 물결·가을 낙엽·겨울 눈밭·봄 풀밭). OFF면 전부 없음(개정 2).
-          세 상태가 늘 다 보이는 세그먼트 [켜기|흐리게|끄기](2026-09-04 사용자: 셀렉트는 '흐리게'가 있는지 안 보였다) — 레일·아바타
-          자리의 묶음과 같은 컴포넌트. 모바일(≤640)엔 배경 자체가 없어 이 줄과 '배경 효과' 줄을 숨긴다(.rhh-ambient). */}
-      <div className="role-help-haptics rhh-ambient">
-        <span className="rhh-label">
-          <Leaf aria-hidden="true" size={14} />
-          계절 배경
-        </span>
-        <AmbientModeSegment ariaLabel="계절 배경 상태 고르기" className="metal" dataAct="ambient-mode-select" mode={ambientMode} onChange={onChangeAmbientMode} />
-      </div>
-      {/* 배경 효과 품질(gfx v3) — 기기 판정이 '가볍게/끔'으로 떨어진 PC(토리님)에서 사용자가 직접 되돌리는 손잡이.
-          계절 배경이 OFF면 '끄기'로 잠긴다(두 컨트롤이 한 상태).
-          ⚠ 목록에 '끄기'는 없다(2026-09-05 소유자) — 바로 위 '계절 배경' 줄이 이미 끄는 손잡이라,
-          같은 일을 하는 항목이 둘이면 어느 쪽이 진짜인지 헷갈린다. 끄기는 잠금 표시로만 나타난다. */}
-      <div className="role-help-haptics rhh-ambient">
-        <span className="rhh-label">
-          <Gauge aria-hidden="true" size={14} />
-          배경 효과
-        </span>
-        <RhhSelect<GfxPref>
-          ariaLabel="배경 효과 품질 고르기"
-          dataAct="gfx-pref-select"
-          disabled={ambientMode === "off"}
-          lockedLabel="끄기"
-          onChange={onChangeGfxPref}
-          options={[
-            // 라벨은 짧게 "자동 조절"(2026-09-04 사용자: 주저리 설명 금지). 기기 판정 결과는 title로만.
-            { value: "auto", label: "자동 조절" },
-            { value: "max", label: "항상 최대" },
-            { value: "lite", label: "가볍게" }
-          ]}
-          // 예전에 '끄기'로 저장해 둔 값은 목록에 없다 — 자동으로 읽어 빈 칸이 되지 않게 한다
-          // (배경이 실제로 꺼져 있으면 disabled + lockedLabel이 '끄기'를 보여준다).
-          value={gfxPref === "off" ? "auto" : gfxPref}
-        />
-      </div>
-      {/* (배경 감상 줄은 2026-09-04 사용자 결정으로 제거 — 아바타 자리·시청자 레일의 "감상하기" 버튼 하나만 둔다. 중복 금지.) */}
-      {/* 포스터 테마 — 시청자 화면 배경(서버 저장, 소유자만). 스위치 줄과 같은 규격의 셀렉트. */}
+
+      {/* 포스터 테마 — 시청자 화면 배경(서버 저장, 소유자만). */}
       {posterTheme !== null ? (
-        <div className="role-help-haptics">
-          <span className="rhh-label">
-            <Palette aria-hidden="true" size={14} />
-            포스터 테마
-          </span>
-          <RhhSelect<PosterThemeKey>
-            ariaLabel="포스터 테마 고르기"
-            dataAct="poster-theme-select"
-            disabled={posterThemeSaving}
-            onChange={onChangePosterTheme}
-            options={POSTER_THEMES.map((t) => ({ value: t.key, label: t.label }))}
-            value={posterTheme}
-          />
-        </div>
+        <section className="rhh-group">
+          <h3 className="rhh-group-title">시청자 화면</h3>
+          <div className="rhh-group-card">
+            <div className="role-help-haptics">
+              <RowLabel icon={<Palette size={15} />} tone="rose">
+                포스터 테마
+              </RowLabel>
+              <RhhSelect<PosterThemeKey>
+                ariaLabel="포스터 테마 고르기"
+                dataAct="poster-theme-select"
+                disabled={posterThemeSaving}
+                onChange={onChangePosterTheme}
+                options={POSTER_THEMES.map((t) => ({ value: t.key, label: t.label }))}
+                value={posterTheme}
+              />
+            </div>
+          </div>
+        </section>
       ) : null}
-      {/* (멤버 관리 입구는 기능 철수(2026-09-04, ADR-0018)로 제거.) */}
-      {/* 개발자 월드 강제(PLAN-20260904-003) — 시간대·날씨·날짜를 실제와 무관하게 밀어 넣어 연대기·빛 톤·날씨 훅을
-          기다리지 않고 검사한다. 세션 한정(저장 안 함), effectiveRole이 개발자일 때만 줄이 생긴다. 연·달은 달력 이동으로.
-          · 시간대: 여섯 띠(새벽~밤) — 엔진이 장면 위에 얹는 빛 톤.
-          · 날씨: **실제 기상이 아니라** 날짜 시드 난수다(world/weather.ts, 소유자 결정 — 기상 API 안 씀). 그래서 "자동".
-            계절에 없는 날씨(여름의 눈)는 목록에서 뺀다 — 만들지도 않은 장면을 보게 된다.
-          (월드 날짜는 2026-09-05 제거 — 연대기를 걷어 날이 화면을 바꾸지 않는다.) */}
+
+      {/* 개발자 월드 강제(PLAN-20260904-003) — 시간대·날씨를 실제와 무관하게 밀어 넣어 검사한다. 세션 한정(저장 안 함),
+          effectiveRole이 개발자일 때만 묶음이 생긴다. 날씨는 실제 기상이 아니라 날짜 시드 난수(world/weather.ts)라 "자동".
+          계절에 없는 날씨(여름의 눈)는 목록에서 뺀다. */}
       {devWorld ? (
-        <>
-          {/* 월드 계절 — 기본은 보고 있는 달력 달(자동). 감상 톱니와 **같은 상태**라, 감상 중에 봄으로 바꿔 놓고
-              나와도 여기서 '자동'으로 되돌릴 수 있다(2026-09-05 소유자 보고: 되돌릴 길이 없었다). 계절만은 캔버스를
-              다시 만들지만 서 있던 바이옴은 그대로 실려 간다(studio-shell changeDevSeason). */}
-          <div className="role-help-haptics rhh-ambient rhh-dev">
-            <span className="rhh-label">
-              <Leaf aria-hidden="true" size={14} />
-              월드 계절 <em className="rhh-dev-tag">개발자</em>
-            </span>
-            <RhhSelect<SeasonOpt>
-              ariaLabel="월드 계절 강제(개발자)"
-              dataAct="dev-world-season"
-              onChange={(v) => devWorld.onChangeSeason(v === "real" ? null : v)}
-              options={[
-                { value: "real", label: "자동" },
-                { value: "spring", label: "봄" },
-                { value: "summer", label: "여름" },
-                { value: "autumn", label: "가을" },
-                { value: "winter", label: "겨울" }
-              ]}
-              value={devWorld.season ?? "real"}
-            />
+        <section className="rhh-group rhh-web">
+          <h3 className="rhh-group-title">개발자</h3>
+          <div className="rhh-group-card">
+            <div className="role-help-haptics rhh-ambient rhh-dev">
+              <RowLabel icon={<Leaf size={15} />} tone="metal">
+                월드 계절
+              </RowLabel>
+              <RhhSelect<SeasonOpt>
+                ariaLabel="월드 계절 강제(개발자)"
+                dataAct="dev-world-season"
+                onChange={(v) => devWorld.onChangeSeason(v === "real" ? null : v)}
+                options={[
+                  { value: "real", label: "자동" },
+                  { value: "spring", label: "봄" },
+                  { value: "summer", label: "여름" },
+                  { value: "autumn", label: "가을" },
+                  { value: "winter", label: "겨울" }
+                ]}
+                value={devWorld.season ?? "real"}
+              />
+            </div>
+            <div className="role-help-haptics rhh-ambient rhh-dev">
+              <RowLabel icon={<Clock3 size={15} />} tone="metal">
+                월드 시간대
+              </RowLabel>
+              <RhhSelect<BandOpt>
+                ariaLabel="월드 시간대 강제(개발자)"
+                dataAct="dev-world-band"
+                onChange={(v) => devWorld.onChange({ ...devWorld.force, band: v === "real" ? undefined : v })}
+                options={[
+                  { value: "real", label: "자동" },
+                  { value: "dawn", label: "새벽" },
+                  { value: "morning", label: "아침" },
+                  { value: "noon", label: "점심" },
+                  { value: "dusk", label: "노을" },
+                  { value: "evening", label: "저녁" },
+                  { value: "night", label: "밤" }
+                ]}
+                value={devWorld.force.band ?? "real"}
+              />
+            </div>
+            <div className="role-help-haptics rhh-ambient rhh-dev">
+              <RowLabel icon={<CloudSun size={15} />} tone="metal">
+                월드 날씨
+              </RowLabel>
+              <RhhSelect<WeatherOpt>
+                ariaLabel="월드 날씨 강제(개발자)"
+                dataAct="dev-world-weather"
+                onChange={(v) => devWorld.onChange({ ...devWorld.force, weather: v === "real" ? undefined : v })}
+                options={weatherOptions}
+                value={devWorld.force.weather ?? "real"}
+              />
+            </div>
+            {/* 하늘 사건(2026-09-08) — 별똥별 평균 1분, 혜성 9분에 한 번이라 기다려서는 확인할 수 없다. 밤·맑은 하늘에서만. */}
+            <div className="role-help-haptics rhh-ambient rhh-dev" title="밤 · 맑음/바람에서만 보인다">
+              <RowLabel icon={<Sparkles size={15} />} tone="metal">
+                하늘 사건
+              </RowLabel>
+              <RhhSelect<"real" | "shooting-star" | "comet">
+                ariaLabel="하늘 사건 강제(개발자)"
+                dataAct="dev-sky-event"
+                onChange={(v) => devWorld.onChange({ ...devWorld.force, skyEvent: v === "real" ? undefined : v })}
+                options={[
+                  { value: "real", label: "자동" },
+                  { value: "shooting-star", label: "별똥별 계속" },
+                  { value: "comet", label: "혜성 계속" }
+                ]}
+                value={devWorld.force.skyEvent ?? "real"}
+              />
+            </div>
+            {/* 계절 배경 아트 보드·은어 사전 초안 — 개발자 전용 라우트. */}
+            <div className="role-help-haptics rhh-ambient rhh-dev">
+              <RowLabel icon={<Palette size={15} />} tone="metal">
+                배경 아트 보드
+              </RowLabel>
+              <Link className="rhh-link" data-act="dev-art-board-open" href="/studio/ambient-art">
+                열기
+              </Link>
+            </div>
+            <div className="role-help-haptics rhh-ambient rhh-dev">
+              <RowLabel icon={<BookA size={15} />} tone="metal">
+                은어 사전 초안
+              </RowLabel>
+              <Link className="rhh-link" data-act="dev-dictionary-open" href={"/studio/search-dictionary" as Route}>
+                열기
+              </Link>
+            </div>
           </div>
-          <div className="role-help-haptics rhh-ambient rhh-dev">
-            <span className="rhh-label">
-              <Clock3 aria-hidden="true" size={14} />
-              월드 시간대 <em className="rhh-dev-tag">개발자</em>
-            </span>
-            <RhhSelect<BandOpt>
-              ariaLabel="월드 시간대 강제(개발자)"
-              dataAct="dev-world-band"
-              onChange={(v) => devWorld.onChange({ ...devWorld.force, band: v === "real" ? undefined : v })}
-              options={[
-                { value: "real", label: "자동" },
-                { value: "dawn", label: "새벽" },
-                { value: "morning", label: "아침" },
-                { value: "noon", label: "점심" },
-                { value: "dusk", label: "노을" },
-                { value: "evening", label: "저녁" },
-                { value: "night", label: "밤" }
-              ]}
-              value={devWorld.force.band ?? "real"}
-            />
-          </div>
-          <div className="role-help-haptics rhh-ambient rhh-dev">
-            <span className="rhh-label">
-              <Clock3 aria-hidden="true" size={14} />
-              월드 날씨 <em className="rhh-dev-tag">개발자</em>
-            </span>
-            <RhhSelect<WeatherOpt>
-              ariaLabel="월드 날씨 강제(개발자)"
-              dataAct="dev-world-weather"
-              onChange={(v) => devWorld.onChange({ ...devWorld.force, weather: v === "real" ? undefined : v })}
-              options={weatherOptions}
-              value={devWorld.force.weather ?? "real"}
-            />
-          </div>
-          {/* 하늘 사건(2026-09-08) — 별똥별은 평균 1분, 혜성은 9분에 한 번이라 **기다려서는 확인할 수 없다.**
-              고르면 그 사건이 쉬지 않고 되풀이되고, 되풀이마다 자리·방향·변형이 바뀐다.
-              둘 다 밤·맑은 하늘에서만 뜨므로 위의 월드 시간대·날씨를 함께 맞춰야 보인다. */}
-          <div className="role-help-haptics rhh-ambient rhh-dev" title="밤 · 맑음/바람에서만 보인다">
-            <span className="rhh-label">
-              <Sparkles aria-hidden="true" size={14} />
-              하늘 사건 <em className="rhh-dev-tag">개발자</em>
-            </span>
-            <RhhSelect<"real" | "shooting-star" | "comet">
-              ariaLabel="하늘 사건 강제(개발자)"
-              dataAct="dev-sky-event"
-              onChange={(v) => devWorld.onChange({ ...devWorld.force, skyEvent: v === "real" ? undefined : v })}
-              options={[
-                { value: "real", label: "자동" },
-                { value: "shooting-star", label: "별똥별 계속" },
-                { value: "comet", label: "혜성 계속" }
-              ]}
-              value={devWorld.force.skyEvent ?? "real"}
-            />
-          </div>
-          {/* 계절 배경 아트 보드(2026-09-04) — 배경의 모든 그림 자리(나무·초목·지형·생물)와 코덱스 프롬프트를 한 라우트에서 관리한다. 개발자 전용 라우트. */}
-          <div className="role-help-haptics rhh-ambient rhh-dev">
-            <span className="rhh-label">
-              <Palette aria-hidden="true" size={14} />
-              배경 아트 보드 <em className="rhh-dev-tag">개발자</em>
-            </span>
-            <Link className="rhh-link" data-act="dev-art-board-open" href="/studio/ambient-art">
-              열기
-            </Link>
-          </div>
-          {/* 은어 사전 초안(0090, 2026-09-18) — 다시보기 채팅에서 새로 배운 말에 개발자가 뜻을 달거나 무시한다. 개발자 전용 라우트. */}
-          <div className="role-help-haptics rhh-ambient rhh-dev">
-            <span className="rhh-label">
-              <BookA aria-hidden="true" size={14} />
-              은어 사전 초안 <em className="rhh-dev-tag">개발자</em>
-            </span>
-            <Link className="rhh-link" data-act="dev-dictionary-open" href={"/studio/search-dictionary" as Route}>
-              열기
-            </Link>
-          </div>
-        </>
+          <p className="rhh-group-foot">이 기기·이 창에서만 바뀌고 저장되지 않아요.</p>
+        </section>
       ) : null}
     </>
   );

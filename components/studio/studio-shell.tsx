@@ -44,6 +44,7 @@ import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
 import type { GfxMode } from "@/lib/ui/gfx";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
+import { CAL_SIZE_EVENT, calSizePref, flingDeleteEnabled } from "@/lib/ui/edit-prefs";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -917,8 +918,12 @@ export function StudioShell({
     toggleReduceMotion,
     eyeComfort,
     toggleEyeComfort,
-    dark,
-    toggleDark,
+    themeMode,
+    changeThemeMode,
+    flingDelete,
+    toggleFlingDelete,
+    calSize,
+    changeCalSize,
     ambientMode: ambientModeState,
     changeAmbientMode,
     gfxPref: gfxPrefState,
@@ -1120,12 +1125,16 @@ export function StudioShell({
   function renderSettingsList() {
     return (
       <StudioSettingsList
-        dark={dark}
+        calSize={calSize}
+        onChangeCalSize={changeCalSize}
+        themeMode={themeMode}
+        onChangeThemeMode={changeThemeMode}
+        flingDelete={canEdit && !previewRole ? flingDelete : null}
+        onToggleFlingDelete={toggleFlingDelete}
         eyeComfort={eyeComfort}
         hapticsOn={hapticsOn}
         hapticsSupported={hapticsSupported}
         onChangePosterTheme={(theme) => void changePosterTheme(theme)}
-        onToggleDark={toggleDark}
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
@@ -2257,6 +2266,26 @@ export function StudioShell({
     hapticTick();
     setCalZoom(next);
   }, []);
+  // 달력 크기(설정) = 확대의 기본값 — 열 때 그 크기에서 시작, 설정을 바꾸면 바로 따라간다. 아젠다(좁은 화면)는 확대 없음.
+  const isNarrowRef = useRef(isNarrow);
+  isNarrowRef.current = isNarrow;
+  useEffect(() => {
+    const start = calSizePref();
+    if (!isNarrow && start !== 1) {
+      calZoomRef.current = start;
+      setCalZoom(start);
+    }
+    const on = (e: Event) => {
+      const v = Number((e as CustomEvent<number>).detail) as CalZoom;
+      if (!(v > 0) || isNarrowRef.current) return;
+      calZoomRef.current = v;
+      flipRects.current.clear();
+      setCalZoom(v);
+    };
+    window.addEventListener(CAL_SIZE_EVENT, on);
+    return () => window.removeEventListener(CAL_SIZE_EVENT, on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     // isNarrow 판정은 STUDIO_AGENDA_QUERY '전체'(폭 999 + 저높이·coarse pointer 포함) — 아젠다
     // 레이아웃으로 넘어가면 배율을 초기화한다(아젠다 뷰엔 확대 개념이 없다).
@@ -3325,7 +3354,10 @@ export function StudioShell({
     // 손을 **멈춘 채** 놓으면 던지기가 아니다(2026-09-17): 속도는 마지막 move에서 잰 값이라 넓은 달력에서 빠르게
     // 옮긴 뒤 잠깐 멈춰 놓아도 '던짐'으로 읽혀 카드가 날아가 버렸다. 마지막 움직임에서 80ms 넘게 지났으면 정지 상태.
     const held = !edPtrRef.current || performance.now() - edPtrRef.current.t > 80;
-    const flung = Boolean(info?.started && ghost && !edReducedRef.current && !held && speed > FLING_SPEED);
+    // 설정 '던져서 삭제'가 꺼져 있으면 던져도 지우지 않는다 — 평범한 놓기로 처리(2026-10-06).
+    const flung = Boolean(
+      info?.started && ghost && !edReducedRef.current && !held && speed > FLING_SPEED && flingDeleteEnabled()
+    );
     setDropDate(null);
     setDropSlot(null);
     dropDateRef.current = null;

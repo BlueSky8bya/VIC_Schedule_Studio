@@ -31,12 +31,13 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
   max-height: 88vh;
   max-height: 88dvh;
   border: 1px solid rgb(15 23 42 / 6%);
   border-radius: var(--r-xl, 20px);
-  background: #fff;
+  /* 애플 설정 앱 문법(2026-10-06) — 창 바탕은 옅은 회백, 그 위에 흰 묶음 카드가 놓인다. */
+  background: #f4f3ef;
   padding: 0;
   overflow: hidden;
   box-shadow: var(--elev-4);
@@ -57,9 +58,9 @@ html[data-reduce-motion] .vic-settings .modal-card {
   align-items: center;
   justify-content: space-between;
   margin: 0;
-  border-bottom: 1px solid var(--line-soft, #f0e7d5);
-  background: linear-gradient(180deg, #fbfcfe, #f5f7fb);
-  padding: 18px 20px;
+  border-bottom: 1px solid rgb(0 0 0 / 6%);
+  background: transparent;
+  padding: 16px 18px 14px 22px;
 }
 .vic-settings .modal-head h2 {
   margin: 0;
@@ -97,7 +98,8 @@ html[data-reduce-motion] .vic-settings .modal-close:active { transform: none; }
   flex-direction: column;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 20px;
+  gap: 20px;
+  padding: 16px 18px 22px;
 }
 .vic-settings .role-help-haptics {
   display: flex;
@@ -274,4 +276,198 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 /* 모바일(≤640)엔 계절 배경이 없다 — 계절 배경·배경 효과 줄을 숨긴다. */
 @media (max-width: 640px) {
   .vic-settings .role-help-haptics.rhh-ambient { display: none; }
+}
+
+/* ── 묶음(2026-10-06 재설계 — 애플 설정 앱 벤치마킹) ───────────────────────────────────────
+   성격별 묶음 제목 → 흰 둥근 카드 안의 줄들 → 필요할 때만 묶음 아래 한 줄 설명. 줄 머리는 색 타일 속 아이콘 +
+   짧은 이름(UI-15). 두세 상태 고르기는 늘 다 보이는 세그먼트(셀렉트는 무엇을 고를 수 있는지 안 보인다).
+   타일 색은 묶음 성격만 말한다(물=화면·움직임, 잎=배경, 쇠=편집·개발, 장미=시청자 화면) — 상태 의미색이 아니다.
+   아래 기본 규칙은 범위 없이 둔다: 모바일 역할 배지 팝오버도 같은 목록을 그린다. */
+.rhh-group {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.rhh-group-title {
+  margin: 0;
+  padding: 0 14px;
+  color: var(--muted, #7a7464);
+  font-size: var(--text-label, 12.5px);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.rhh-group-card {
+  display: grid;
+}
+.rhh-group-foot {
+  margin: 0;
+  padding: 0 14px;
+  color: var(--muted, #7a7464);
+  font-size: var(--text-label, 12.5px);
+  line-height: 1.45;
+}
+.rhh-ico {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #5b8fd0;
+  color: #fff;
+}
+.rhh-ico[data-tone="leaf"] {
+  background: #5c9f72;
+}
+.rhh-ico[data-tone="metal"] {
+  background: #8b8f98;
+}
+.rhh-ico[data-tone="rose"] {
+  background: #cf6f8b;
+}
+.rhh-label .rhh-ico svg {
+  width: 15px;
+  height: 15px;
+  opacity: 1;
+}
+.rhh-seg {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  border-radius: 9px;
+  background: rgb(0 0 0 / 6%);
+  padding: 2px;
+}
+.rhh-seg button {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  padding: 5px 12px;
+  color: var(--ink-soft, #4a4f5c);
+  font: inherit;
+  font-size: var(--text-body, 13.5px);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-2, 0.18s) var(--ease, ease),
+    color var(--dur-2, 0.18s) var(--ease, ease),
+    box-shadow var(--dur-2, 0.18s) var(--ease, ease);
+}
+.rhh-seg button.on {
+  background: #fff;
+  box-shadow: var(--elev-1);
+  color: var(--ink, #1f2430);
+}
+.rhh-seg button:active {
+  transform: scale(var(--press-scale));
+}
+.rhh-seg button:focus-visible {
+  outline: 2px solid var(--studio-action, #4b86c9);
+  outline-offset: 1px;
+}
+/* 세그먼트가 이름과 한 줄에 안 들어가는 좁은 창에선 다음 줄로 내려간다(잘리지 않게). */
+.rhh-stack-sm {
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .rhh-web {
+    display: none !important;
+  }
+}
+
+/* 창 안(편집실 웹·시청자 공용 모달) — 흰 카드 + 안쪽 구분선. */
+.vic-settings .rhh-group-card {
+  border: 1px solid rgb(0 0 0 / 6%);
+  border-radius: var(--r-md);
+  background: #fff;
+  padding: 0 14px;
+}
+.vic-settings .rhh-group-card .role-help-haptics {
+  min-height: 48px;
+  padding: 9px 0;
+  border-top: 1px solid rgb(0 0 0 / 6%);
+}
+.vic-settings .rhh-group-card .role-help-haptics:first-child {
+  border-top: 0;
+}
+.vic-settings .rhh-label {
+  gap: 10px;
+  font-weight: 600;
+  color: var(--ink, #23262e);
+}
+html[data-theme="dark"] .vic-settings .modal-card {
+  background: #1d1c1a;
+}
+html[data-theme="dark"] .vic-settings .modal-head {
+  border-bottom-color: rgb(255 255 255 / 7%);
+}
+html[data-theme="dark"] .vic-settings .rhh-group-card {
+  border-color: rgb(255 255 255 / 7%);
+  background: #2a2926;
+}
+html[data-theme="dark"] .vic-settings .rhh-group-card .role-help-haptics {
+  border-top-color: rgb(255 255 255 / 7%);
+}
+html[data-theme="dark"] .rhh-seg {
+  background: rgb(255 255 255 / 8%);
+}
+html[data-theme="dark"] .rhh-seg button {
+  color: var(--muted, #aaa49a);
+}
+html[data-theme="dark"] .rhh-seg button.on {
+  background: rgb(255 255 255 / 16%);
+  color: var(--ink, #eeeae2);
+}
+html[data-reduce-motion] .rhh-seg button {
+  transition: none;
+}
+/* 타일 속 아이콘은 흰색 — 일반 줄 아이콘 색 규칙(.rhh-label svg = 강조색)보다 세게. */
+.rhh-label .rhh-ico svg,
+.vic-settings .rhh-label .rhh-ico svg {
+  color: #fff;
+}
+/* 계절 배경 세그먼트도 같은 세그먼트 문법으로(옛 금속 알약이 창 안에서 혼자 따로 놀았다). */
+.vic-settings .rhh-group-card .ambient-seg {
+  gap: 2px;
+  border: 0;
+  border-radius: 9px;
+  background: rgb(0 0 0 / 6%);
+  box-shadow: none;
+  padding: 2px;
+}
+.vic-settings .rhh-group-card .ambient-seg-btn {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  box-shadow: none;
+  padding: 5px 11px;
+  color: var(--ink-soft, #4a4f5c);
+  font-size: var(--text-body, 13.5px);
+  font-weight: 600;
+}
+.vic-settings .rhh-group-card .ambient-seg-btn.on {
+  background: #fff;
+  box-shadow: var(--elev-1);
+  color: var(--ink, #1f2430);
+}
+html[data-theme="dark"] .vic-settings .rhh-group-card .ambient-seg {
+  background: rgb(255 255 255 / 8%);
+}
+html[data-theme="dark"] .vic-settings .rhh-group-card .ambient-seg-btn {
+  color: var(--muted, #aaa49a);
+}
+html[data-theme="dark"] .vic-settings .rhh-group-card .ambient-seg-btn.on {
+  border: 0;
+  background: rgb(255 255 255 / 16%);
+  color: var(--ink, #eeeae2);
+}
+/* 폰 폭 — 세그먼트 칸 여백을 줄여 이름과 한 줄에(내려가면 줄이 두 층이 돼 묶음 리듬이 깨진다). */
+@media (max-width: 640px) {
+  .rhh-seg button {
+    padding: 5px 9px;
+  }
+  .vic-settings .rhh-label {
+    gap: 8px;
+  }
 }

@@ -49,6 +49,7 @@ import { trackSettle } from "@/lib/ui/settle-track";
 import { SUPPORT_LANE_STEP, supportListPad } from "@/lib/ui/support-bar";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
+import { CAL_SIZE_EVENT, calSizePref } from "@/lib/ui/edit-prefs";
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
@@ -4079,6 +4080,16 @@ export function PublicPoster({
   // 않아 리스너가 떨어져 나간 옛 DOM에 남았다 — 월을 한 번이라도 넘기면 Ctrl+휠이 브라우저
   // 줌으로 새던 원인. callback ref는 요소가 갈릴 때마다 불려 항상 산 노드에 붙는다.
   const [posterZoom, setPosterZoom] = useState(1);
+  // 달력 크기(설정) = 확대의 기본값 — 열 때 그 크기에서 시작하고, 설정을 바꾸면 바로 따라간다(lib/ui/edit-prefs).
+  useEffect(() => {
+    setPosterZoom(calSizePref());
+    const on = (e: Event) => {
+      const v = Number((e as CustomEvent<number>).detail);
+      if (v > 0) setPosterZoom(v);
+    };
+    window.addEventListener(CAL_SIZE_EVENT, on);
+    return () => window.removeEventListener(CAL_SIZE_EVENT, on);
+  }, []);
   // 확대 배지의 '조용해짐' — 배율이 바뀌면 깨어나고, 손을 떼면 물러난다(lib/ui/use-idle).
   // 잠든 동안엔 클릭이 달력으로 통과하고(가림 0), 포인터가 90px 안으로 다가오면 깨어나 다시 눌린다.
   // 배율 표시 창 1.2초(2026-09-17 3차 소유자) — 근접 깨우기 없음: 알약에 마우스가 오면 '패널' 버튼이어야 한다.
@@ -4856,7 +4867,10 @@ export function PublicPoster({
             <div className="settings-modal-body">
               <StudioSettingsList
                 ambientMode={settingsPrefs.ambientMode}
-                dark={settingsPrefs.dark}
+                calSize={settingsPrefs.calSize}
+                onChangeCalSize={settingsPrefs.changeCalSize}
+                onChangeThemeMode={settingsPrefs.changeThemeMode}
+                themeMode={settingsPrefs.themeMode}
                 eyeComfort={settingsPrefs.eyeComfort}
                 gfxAuto={settingsPrefs.gfxAuto}
                 gfxPref={settingsPrefs.gfxPref}
@@ -4865,7 +4879,6 @@ export function PublicPoster({
                 onChangeAmbientMode={settingsPrefs.changeAmbientMode}
                 onChangeGfxPref={settingsPrefs.changeGfxPref}
                 onChangePosterTheme={() => {}}
-                onToggleDark={settingsPrefs.toggleDark}
                 onToggleEyeComfort={settingsPrefs.toggleEyeComfort}
                 onToggleHaptics={settingsPrefs.toggleHaptics}
                 onToggleReduceMotion={settingsPrefs.toggleReduceMotion}
