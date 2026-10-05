@@ -9803,3 +9803,108 @@ html[data-reduce-motion] .public-event.teaser.hoped.hype-live .teaser-spark::aft
 html[data-reduce-motion] .agenda-item.teaser.hoped.hype-live .teaser-spark::after {
   animation: none;
 }
+
+/* ── 특별한 날 당일 '눌러 보세요'(2026-10-06 소유자: "생일 당일이 되면 이 텍스트를 누르고 싶게 만들어서 확인하게 유도") ──
+   표기가 금빛·분홍 알약으로 반짝이며 2.4초마다 통통 튀고, 옆에 말풍선이 까딱인다. 한 번 누르면 그날은 사라진다
+   (public-poster inviteFor). 동작 줄이기면 움직임 없이 알약·말풍선만. */
+button.day-mark.celebratable.invite,
+button.agenda-mark.celebratable.invite {
+  position: relative;
+  border-radius: 999px;
+  background:
+    linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 75%) 45%, transparent 60%) -150% 0 / 250% 100% no-repeat,
+    linear-gradient(90deg, #ffe08a, #ffb3d1);
+  padding: 1px 8px;
+  color: #8a2a52;
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 80%),
+    0 0 14px rgb(255 160 200 / 70%);
+  animation:
+    mark-invite-bounce 2.4s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) infinite,
+    mark-invite-shine 2.4s ease-in-out infinite;
+}
+@keyframes mark-invite-bounce {
+  0%,
+  62%,
+  100% {
+    transform: none;
+  }
+  70% {
+    transform: translateY(-3px) scale(1.08) rotate(-3deg);
+  }
+  78% {
+    transform: translateY(0) scale(0.97) rotate(2deg);
+  }
+  86% {
+    transform: scale(1.03);
+  }
+}
+@keyframes mark-invite-shine {
+  0%,
+  40% {
+    background-position:
+      -150% 0,
+      0 0;
+  }
+  70%,
+  100% {
+    background-position:
+      250% 0,
+      0 0;
+  }
+}
+.day-strip:has(.mark-invite) {
+  position: relative;
+}
+.mark-invite {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 30px;
+  z-index: 6;
+  border-radius: 10px;
+  background: #ff6fa5;
+  padding: 3px 9px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgb(255 80 140 / 35%);
+  animation: mark-invite-bubble 1.2s ease-in-out infinite alternate;
+}
+.mark-invite::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 14px;
+  border: 5px solid transparent;
+  border-top: 0;
+  border-bottom-color: #ff6fa5;
+}
+@keyframes mark-invite-bubble {
+  from {
+    transform: translateY(0) rotate(-2deg);
+  }
+  to {
+    transform: translateY(3px) rotate(2deg);
+  }
+}
+.mark-invite-inline {
+  color: #e0457f;
+  font-weight: 800;
+}
+html[data-theme="dark"] button.day-mark.celebratable.invite,
+html[data-theme="dark"] button.agenda-mark.celebratable.invite {
+  background:
+    linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 30%) 45%, transparent 60%) -150% 0 / 250% 100% no-repeat,
+    linear-gradient(90deg, #7a5a1c, #7a2f50);
+  color: #ffe4ef;
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 15%),
+    0 0 14px rgb(255 120 180 / 45%);
+}
+html[data-reduce-motion] button.day-mark.celebratable.invite,
+html[data-reduce-motion] button.agenda-mark.celebratable.invite,
+html[data-reduce-motion] .mark-invite {
+  animation: none;
+}

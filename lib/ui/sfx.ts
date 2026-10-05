@@ -45,6 +45,7 @@ export type SfxName =
 
 const CATEGORY: Record<SfxName, SoundCategory> = {
   fanfare: "celebrate",
+  grand: "celebrate",
   birthday: "celebrate",
   chime: "celebrate",
   bells: "celebrate",
@@ -327,10 +328,25 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
       chime(ac, out, N(16), end + 0.16, 0.08, 0.3);
       break;
     }
-    case "note": // 연속 탭 멜로디의 한 음 — 오르골 종 + 한 옥타브 아래 나무 받침
-      chime(ac, out, N(pendingNote), 0, 0.26, 0.22);
-      marimba(ac, out, N(pendingNote - 12), 0, 0.12, 0.08);
+    case "note": // 연속 탭 멜로디의 한 음(화음이면 함께) — 오르골 종 + 한 옥타브 아래 나무 받침
+      pendingNotes.forEach((semi, k) => {
+        chime(ac, out, N(semi), 0, k ? 0.18 : 0.26, 0.22);
+        if (k === 0) marimba(ac, out, N(semi - 12), 0, 0.12, 0.08);
+      });
       break;
+    case "grand": {
+      // 의식 빵빠레(데뷔 주년·D+N00) — "따 따 따 따~안!": 같은 음 셋을 빠르게(셋잇단) 두드리고 한 옥타브 위 장화음으로
+      // 크게 펼친다. 화음은 마림바 1-3-5-8을 한꺼번에 + 종 반짝, 끝에 작은 반짝 셋이 흩어진다(축포 박자와 같다).
+      [0, 0.11, 0.22].forEach((t2) => {
+        marimba(ac, out, N(7), t2, 0.3, 0.06);
+        marimba(ac, out, N(-5), t2, 0.16, 0.05);
+      });
+      [0, 4, 7, 12].forEach((s2) => marimba(ac, out, N(s2), 0.36, 0.26, 0.2));
+      chime(ac, out, N(12), 0.36, 0.24, 0.32);
+      chime(ac, out, N(16), 0.4, 0.18, 0.3);
+      [19, 24, 16].forEach((s2, i) => chime(ac, out, N(s2 - 12), 0.7 + i * 0.16, 0.1, 0.14));
+      break;
+    }
     case "fanfare":
       [0, 4, 7, 12].forEach((s, i) => marimba(ac, out, N(s), i * 0.075, 0.3, 0.12));
       chime(ac, out, N(16), 0.31, 0.2, 0.22);
@@ -555,7 +571,7 @@ export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
 
 let lastPlayed = { name: "tick" as SfxName, at: 0 };
 let songUntil = 0;
-let pendingNote = 0;
+let pendingNotes: number[] = [0];
 
 // ── 노래·연속 탭 멜로디(2026-10-06 소유자: "빵빠레를 여러 번 연속 클릭하면 한 번에 한 음씩 — 비행기 멜로디처럼") ──
 /** 생일 축하 노래 박 길이(초)와 빵빠레 뒤 노래 시작까지(초). 화면의 춤추는 음표도 이 시간표를 그대로 쓴다. */
@@ -576,32 +592,67 @@ export const BIRTHDAY_SONG: { at: number; semi: number; len: number }[] = (() =>
     return n;
   });
 })();
-// 떴다 떴다 비행기(전래 동요) — 미레도레 미미미 레레레 미솔솔 미레도레 미미미 레레미레도
-const AIRPLANE = [4, 2, 0, 2, 4, 4, 4, 2, 2, 2, 4, 7, 7, 4, 2, 0, 2, 4, 4, 4, 2, 2, 4, 2, 0];
+// 연속 탭 멜로디(2026-10-06 소유자: "비행기 말고 여러 간단한 멜로디, 최소 10개 — 젓가락 행진곡 같은") —
+// 모두 저작권이 끝난 전래·고전 선율. 숫자 = C5 기준 반음, 배열 = 화음(젓가락 행진곡의 두 손가락).
+// 탭 연타가 새로 시작될 때마다 다른 곡(직전 곡은 피함), 성탄은 징글벨, 생일은 생일 노래.
+type Step = number | number[];
+const MELODIES: { title: string; notes: Step[] }[] = [
+  { title: "떴다 떴다 비행기", notes: [4, 2, 0, 2, 4, 4, 4, 2, 2, 2, 4, 7, 7, 4, 2, 0, 2, 4, 4, 4, 2, 2, 4, 2, 0] },
+  {
+    title: "젓가락 행진곡",
+    notes: [[5, 7], [5, 7], [5, 7], [5, 7], [5, 7], [5, 7], [4, 7], [4, 7], [4, 7], [4, 7], [4, 7], [4, 7], [2, 11], [2, 11], [2, 11], [2, 11], [4, 12], [2, 11], [0, 12], [0, 12]]
+  },
+  { title: "반짝반짝 작은 별", notes: [0, 0, 7, 7, 9, 9, 7, 5, 5, 4, 4, 2, 2, 0, 7, 7, 5, 5, 4, 4, 2, 7, 7, 5, 5, 4, 4, 2, 0, 0, 7, 7, 9, 9, 7, 5, 5, 4, 4, 2, 2, 0] },
+  { title: "나비야", notes: [7, 4, 4, 5, 2, 2, 0, 2, 4, 5, 7, 7, 7, 7, 4, 4, 4, 5, 2, 2, 2, 0, 4, 7, 7, 4, 4, 4] },
+  { title: "환희의 송가", notes: [4, 4, 5, 7, 7, 5, 4, 2, 0, 0, 2, 4, 4, 2, 2, 4, 4, 5, 7, 7, 5, 4, 2, 0, 0, 2, 4, 2, 0, 0] },
+  { title: "엘리제를 위하여", notes: [4, 3, 4, 3, 4, -1, 2, 0, -3, -12, -8, -3, -1, -8, -4, -1, 0, -8, 4, 3, 4, 3, 4, -1, 2, 0, -3, -12, -8, -3, -1, -8, 0, -1, -3] },
+  { title: "런던 다리", notes: [7, 9, 7, 5, 4, 5, 7, 2, 4, 5, 4, 5, 7, 7, 9, 7, 5, 4, 5, 7, 2, 7, 4, 0] },
+  { title: "자크 형제", notes: [0, 2, 4, 0, 0, 2, 4, 0, 4, 5, 7, 4, 5, 7, 7, 9, 7, 5, 4, 0, 7, 9, 7, 5, 4, 0, 0, -5, 0, 0, -5, 0] },
+  { title: "올드 맥도날드", notes: [7, 7, 7, 2, 4, 4, 2, 11, 11, 9, 9, 7, 2, 7, 7, 7, 2, 4, 4, 2, 11, 11, 9, 9, 7] },
+  { title: "노를 저어라", notes: [0, 0, 0, 2, 4, 4, 2, 4, 5, 7, 12, 12, 12, 7, 7, 7, 4, 4, 4, 0, 0, 0, 7, 5, 4, 2, 0] },
+  { title: "뻐꾸기", notes: [7, 4, 7, 4, 2, 0, 2, 0, 2, 4, 5, 2, 4, 5, 7, 4, 7, 4, 7, 4, 5, 4, 2, 0] },
+  { title: "징글벨", notes: [4, 4, 4, 4, 4, 4, 4, 7, 0, 2, 4, 5, 5, 5, 5, 5, 4, 4, 4, 4, 2, 2, 4, 2, 7] },
+  { title: "도레미 계단", notes: [0, 2, 4, 5, 7, 9, 11, 12, 12, 11, 9, 7, 5, 4, 2, 0] }
+];
+const JINGLE = MELODIES.findIndex((m) => m.title === "징글벨");
 const STREAK_GAP_MS = 2500;
-let tapStreak = { key: "", at: 0, i: 0 };
+let tapStreak = { key: "", at: 0, i: 0, mel: 0 };
+let melodyCursor = -1;
 
 /**
  * 기념일 탭 — 첫 탭은 그 날의 빵빠레, 2.5초 안에 이어 누르면 한 번에 한 음씩 멜로디(생일 = 생일 노래, 그 외 = 비행기).
  * 쉬었다 누르면 처음(빵빠레)부터. 생일 노래가 흐르는 동안의 탭은 소리 없이 넘긴다(노래를 덮지 않게).
  * 반환: "first"(빵빠레) · "note"(멜로디 한 음 — semi 포함) · "busy"(노래 중).
  */
-export function playCelebrationTap(key: string, sound: CelebrationSound): { kind: "first" | "note" | "busy"; semi?: number } {
+export function playCelebrationTap(
+  key: string,
+  sound: CelebrationSound
+): { kind: "first" | "note" | "busy"; semi?: number; title?: string } {
   const now = typeof performance !== "undefined" ? performance.now() : 0;
   const cont = tapStreak.key === key && now - tapStreak.at < STREAK_GAP_MS;
   if (!cont) {
-    tapStreak = { key, at: now, i: 0 };
+    // 새 연타 — 곡을 고른다: 성탄은 징글벨, 그 밖엔 직전과 다른 곡을 차례로(처음은 무작위에서 출발).
+    let mel = key === "christmas" ? JINGLE : 0;
+    if (key !== "christmas") {
+      if (melodyCursor < 0) melodyCursor = Math.floor(Math.random() * MELODIES.length);
+      melodyCursor = (melodyCursor + 1) % MELODIES.length;
+      if (melodyCursor === JINGLE) melodyCursor = (melodyCursor + 1) % MELODIES.length;
+      mel = melodyCursor;
+    }
+    tapStreak = { key, at: now, i: 0, mel };
     playCelebration(sound);
     return { kind: "first" };
   }
   tapStreak.at = now;
   if (sound === "birthday" && now < songUntil) return { kind: "busy" };
-  const mel = sound === "birthday" ? BIRTHDAY_NOTES.map((n) => n[0]) : AIRPLANE;
-  const semi = mel[tapStreak.i % mel.length];
+  const birthday = sound === "birthday";
+  const notes: Step[] = birthday ? BIRTHDAY_NOTES.map((n) => n[0]) : MELODIES[tapStreak.mel].notes;
+  const step = notes[tapStreak.i % notes.length];
+  const title = tapStreak.i === 0 ? (birthday ? "생일 축하합니다" : MELODIES[tapStreak.mel].title) : undefined;
   tapStreak.i += 1;
-  pendingNote = semi;
+  pendingNotes = Array.isArray(step) ? step : [step];
   playSfx("note");
-  return { kind: "note", semi };
+  return { kind: "note", semi: pendingNotes[pendingNotes.length - 1], title };
 }
 function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   if (!opts.force) {

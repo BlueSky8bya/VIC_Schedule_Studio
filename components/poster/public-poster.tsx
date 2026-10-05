@@ -2599,6 +2599,28 @@ export function PublicPoster({
   // 축하 대신 차분히 아래로 떨어지는 응원(💪🙏🥲) — 패배에 폭죽은 결이 안 맞아서.
   // theme(2026-10-06): 기념일 이름별 빵빠레(lib/ui/celebration) — 색·이모지·모양·효과음이 그 날에 맞는다.
   const noteSeqRef = useRef(0);
+  const grandRainTimer = useRef<number | null>(null);
+  // 특별한 날 당일 '눌러 보세요' 유도(2026-10-06 소유자: "생일 당일이 되면 이 텍스트를 누르고 싶게") —
+  // 오늘 칸의 특별한 표기가 반짝·통통 튀고 말풍선이 붙는다. 한 번 누르면 그날은 다시 조르지 않는다(기기 기억).
+  const INVITE_KEY = `vic.markTapped.${today}`;
+  const [inviteDone, setInviteDone] = useState(true);
+  useEffect(() => {
+    try {
+      setInviteDone(window.localStorage.getItem(INVITE_KEY) === "1");
+    } catch {
+      setInviteDone(false);
+    }
+  }, [INVITE_KEY]);
+  const markInviteTapped = () => {
+    setInviteDone(true);
+    try {
+      window.localStorage.setItem(INVITE_KEY, "1");
+    } catch {
+      /* 이번 세션만 */
+    }
+  };
+  const inviteFor = (isoDate: string, name: string | null | undefined) =>
+    !inviteDone && isoDate === today && Boolean(name) && Boolean(celebrationFor(name).grand);
   function popBurst(
     clientX: number,
     clientY: number,
@@ -2616,11 +2638,24 @@ export function PublicPoster({
     if (theme && tap) {
       if (tap.kind === "first") {
         popThemedBurst(clientX, clientY, theme);
+        // 특별한 날(생일·데뷔 주년·D+N00): 화면 곳곳에서 축포가 차례로 + 위에서 색종이 비(오늘 축하와 같은 층).
+        if (theme.grand) {
+          [260, 520, 820].forEach((ms, k) => {
+            window.setTimeout(() => {
+              const fx = window.innerWidth * (0.2 + 0.3 * k + Math.random() * 0.1);
+              const fy = window.innerHeight * (0.22 + Math.random() * 0.3);
+              popThemedBurst(fx, fy, { ...theme, count: Math.round(theme.count * 0.6) });
+            }, ms);
+          });
+          setCelebrate(true);
+          if (grandRainTimer.current) window.clearTimeout(grandRainTimer.current);
+          grandRainTimer.current = window.setTimeout(() => setCelebrate(false), 4800);
+        }
         // 생일: 큰 빵빠레 뒤 노래가 흐르는 동안 음표가 음마다 태어나 춤추며 흘러간다(소리와 같은 시간표).
         if (theme.key === "birthday") danceBirthdaySong(clientX, clientY);
       } else {
         // 멜로디 한 음 — 음표 하나 + 작은 색종이(그 날 색). 노래 중(busy)엔 색종이만.
-        if (tap.kind === "note") popMusicNote(clientX, clientY, tap.semi ?? 0, noteSeqRef.current++);
+        if (tap.kind === "note") popMusicNote(clientX, clientY, tap.semi ?? 0, noteSeqRef.current++, tap.title);
         popThemedBurst(clientX, clientY, { ...theme, count: 6, big: false, shape: "burst" });
       }
       return;
@@ -3338,16 +3373,24 @@ export function PublicPoster({
           {showHeaderMark ? (
             interactive ? (
               // 특별한 날 표기를 탭하면 그 자리에서 빵빠레가 터진다.
-              <button
-                type="button"
-                className="day-mark celebratable"
-                onClick={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer", celebrationFor(visibleDayMark?.name));
-                }}
-               data-act="day-mark">
-                {visibleDayMark?.name}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className={`day-mark celebratable${inviteFor(cell.isoDate, visibleDayMark?.name) ? " invite" : ""}`}
+                  onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    if (inviteFor(cell.isoDate, visibleDayMark?.name)) markInviteTapped();
+                    popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer", celebrationFor(visibleDayMark?.name));
+                  }}
+                 data-act="day-mark">
+                  {visibleDayMark?.name}
+                </button>
+                {inviteFor(cell.isoDate, visibleDayMark?.name) ? (
+                  <span aria-hidden="true" className="mark-invite">
+                    눌러 보세요! 🎉
+                  </span>
+                ) : null}
+              </>
             ) : (
               <em className="day-mark">
                 {visibleDayMark?.name}
@@ -3912,13 +3955,15 @@ export function PublicPoster({
                     return interactive ? (
                       <button
                         type="button"
-                        className={`agenda-mark celebratable ${mark.isHoliday ? "holiday" : ""}`}
+                        className={`agenda-mark celebratable ${mark.isHoliday ? "holiday" : ""}${inviteFor(cell.isoDate, markText) ? " invite" : ""}`}
                         onClick={(e) => {
                           const r = e.currentTarget.getBoundingClientRect();
+                          if (inviteFor(cell.isoDate, markText)) markInviteTapped();
                           popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer", celebrationFor(markText));
                         }}
                        data-act="agenda-mark">
                         {markText}
+                        {inviteFor(cell.isoDate, markText) ? <span aria-hidden="true" className="mark-invite-inline"> 눌러 보세요! 🎉</span> : null}
                       </button>
                     ) : (
                       <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>

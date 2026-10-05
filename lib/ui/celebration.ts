@@ -11,7 +11,7 @@
 // 소리(sound)는 lib/ui/sfx.ts의 짧은 합성음 이름 — 효과음 설정이 켜져 있을 때만 난다.
 
 export type CelebrationShape = "burst" | "firework" | "rise" | "fall" | "calm";
-export type CelebrationSound = "fanfare" | "chime" | "bells" | "spooky" | "sparkle" | "pop" | "soft" | "birthday" | "none";
+export type CelebrationSound = "fanfare" | "grand" | "chime" | "bells" | "spooky" | "sparkle" | "pop" | "soft" | "birthday" | "none";
 
 export type CelebrationTheme = {
   key: string;
@@ -24,6 +24,8 @@ export type CelebrationTheme = {
   sound: CelebrationSound;
   /** 큰 연출(햅틱 성공 + 큰 입자). */
   big?: boolean;
+  /** 특별한 축하 날(생일·데뷔 주년·D+N00) — 화면 곳곳 축포 + 위에서 색종이 비 + 의식 빵빠레, 당일엔 '눌러 보세요' 유도. */
+  grand?: boolean;
 };
 
 const BASE: CelebrationTheme = {
@@ -53,11 +55,25 @@ export function celebrationFor(name: string | null | undefined): CelebrationThem
     return t("debut-anniv", {
       shape: "firework",
       big: true,
+      grand: true,
       palette: ["#f5c542", "#ffdf7e", "#ff8fb1", "#ffffff", "#ffd1e0", "#c9a227"],
       emojis: ["🎉", "🎊", "🏆", "✨", "⭐", "🥂"],
       emojiRatio: 0.38,
       count: 34,
-      sound: "fanfare"
+      sound: "grand"
+    });
+  // 데뷔 D+N00(백 단위)은 특별한 날 — 의식 빵빠레·화면 축포. 그 밖의 D+·첫 방송 등은 보통 축포.
+  const dplus = /D\+\s*(\d+)/.exec(n);
+  if (dplus && Number(dplus[1]) % 100 === 0)
+    return t("milestone-grand", {
+      shape: "firework",
+      big: true,
+      grand: true,
+      palette: ["#f5c542", "#ff8fb1", "#7cc4ff", "#ffffff", "#a78bfa", "#ffdf7e"],
+      emojis: ["🎉", "🎊", "✨", "⭐", "💯", "🎈"],
+      emojiRatio: 0.36,
+      count: 36,
+      sound: "grand"
     });
   if (has("D+", "첫 방송", "합격", "공개"))
     return t("milestone", {
@@ -74,6 +90,7 @@ export function celebrationFor(name: string | null | undefined): CelebrationThem
     return t("birthday", {
       shape: "firework", // "빵빠레 한 번 크게 터지고"
       big: true,
+      grand: true,
       palette: ["#ff9ec7", "#ffd27a", "#9ad8ff", "#c8b6ff", "#ffffff", "#ffb4a2"],
       emojis: ["🎂", "🎈", "🎁", "🧁", "🎉", "🕯️"],
       emojiRatio: 0.5,

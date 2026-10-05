@@ -24,10 +24,20 @@ function spawn(x: number, y: number, cls: string, i: number, travel: number): vo
   window.setTimeout(() => wrap.remove(), 3400);
 }
 
-/** 연속 탭 멜로디의 한 음 — 누른 자리에서 음표 하나가 통 튀어 올라 흔들리며 사라진다. */
-export function popMusicNote(x: number, y: number, semi: number, i: number): void {
+/** 연속 탭 멜로디의 한 음 — 누른 자리에서 음표 하나가 통 튀어 올라 흔들리며 사라진다.
+ *  title이 있으면(곡의 첫 음) 곡 이름 쪽지가 위에 잠깐 뜬다 — "아, 이 곡이구나". */
+export function popMusicNote(x: number, y: number, semi: number, i: number, title?: string): void {
   if (typeof document === "undefined") return;
   spawn(x - 10, y - 14 - semi * 4, "mn-pop", i, 0);
+  if (!title) return;
+  const chip = document.createElement("span");
+  chip.className = "mn-title";
+  chip.setAttribute("aria-hidden", "true");
+  chip.textContent = `🎵 ${title}`;
+  chip.style.left = `${Math.max(12, Math.min(window.innerWidth - 12, x))}px`;
+  chip.style.top = `${Math.max(12, y - 64)}px`;
+  document.body.appendChild(chip);
+  window.setTimeout(() => chip.remove(), 2300);
 }
 
 let songTimers: number[] = [];

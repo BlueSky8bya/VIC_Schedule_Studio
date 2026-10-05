@@ -1943,3 +1943,40 @@ html[data-theme="dark"] .mn-inner {
     0 1px 0 rgb(0 0 0 / 50%),
     0 2px 8px rgb(0 0 0 / 40%);
 }
+
+/* 곡 이름 쪽지 — 연타 멜로디의 첫 음에 '🎵 젓가락 행진곡'이 잠깐 떠오른다. */
+.mn-title {
+  position: fixed;
+  z-index: 9998;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgb(31 41 55 / 88%);
+  padding: 4px 12px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+  animation: mn-title 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes mn-title {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.05);
+  }
+  20% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+}
