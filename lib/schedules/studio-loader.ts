@@ -68,7 +68,7 @@ export async function getStudioSchedule(
   const [calendarRes, viewerModePreview, actor, unlock] = await Promise.all([
     supabase
       .from("calendars")
-      .select("id, slug, display_name, title, public_memo")
+      .select("id, slug, display_name, title, public_memo, birthday_gift_preview")
       .eq("slug", calendarSlug)
       .maybeSingle(),
     getPublicSchedule(calendarSlug),
@@ -133,6 +133,7 @@ export async function getStudioSchedule(
       publicMemo: calendar.public_memo ?? "",
       posterTheme: viewerModePreview.calendar.posterTheme
     },
+    birthdayGiftPreview: Boolean((calendar as { birthday_gift_preview?: boolean | null }).birthday_gift_preview),
     tags: (tagsRes.data ?? []).map(mapTag),
     palette: (paletteRes.data ?? []).map(mapPalette),
     events: filterEventsForViewer(

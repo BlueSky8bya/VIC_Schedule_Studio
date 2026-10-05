@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -94,7 +94,10 @@ export default async function VisualStudioFixture({
           : sp?.tent === "1"
             ? // tent=1 → 6/16~19에 미정·떡밥 비교 묶음 — 미정 표시 회귀 실측용(2026-10-05).
               { ...sampleStudioSchedule, events: [...sampleStudioSchedule.events, ...tentativeFixtureEvents(false)] }
-            : sampleStudioSchedule
+            : sp?.gift === "1"
+              ? // gift=1 → 생일 선물 미리보기 토글 켠 상태(0141) — 캡슐 뽑기 창 검증용(2026-10-06).
+                { ...sampleStudioSchedule, birthdayGiftPreview: true }
+              : sampleStudioSchedule
       }
       initialView={{ year: y, month: m }}
       initialViewerMode={viewer}

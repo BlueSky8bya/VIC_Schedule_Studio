@@ -52,6 +52,7 @@ import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { celebrationFor, type CelebrationTheme } from "@/lib/ui/celebration";
 import { playCelebration, playCelebrationTap, playSfx } from "@/lib/ui/sfx";
 import { danceBirthdaySong, popMusicNote } from "@/lib/ui/music-notes";
+import { GachaMachine } from "@/components/poster/gacha-machine";
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
@@ -167,6 +168,10 @@ type PublicPosterProps = {
   // 왼쪽 여백 칸에 안내, 오른쪽 칸에 이동 버튼 → 제목과 같은 자리에서 함께 sticky로 따라온다.
   previewNote?: ReactNode;
   previewNav?: ReactNode;
+  // 생일 카드·캡슐 뽑기(2026-10-06 소유자) — 편집실 시청자 미리보기에서만 넘긴다. 없으면(시청자 화면 /) 생일 노래만.
+  // gachaAnyDay: 개발자 토글 — 생일 당일이 아니어도 뽑기 창이 열린다('지금 열기' 이벤트도 받는다).
+  birthdayGift?: boolean;
+  gachaAnyDay?: boolean;
   // 관리자(owner) 전용: 달력 왼쪽 ~1/3을 버츄얼 스트리머 아바타용 빈 공간으로 비워둔다.
   // export 표면(data-export-surface) 바깥이라 PNG 캡처엔 안 들어가고, 화면 송출 시 그 자리에
   // 아바타를 올리는 용도. 시청자/익명에겐 절대 안 보인다(owner일 때만 true로 넘긴다).
@@ -783,6 +788,8 @@ export function PublicPoster({
   anonymous = false,
   previewNote,
   previewNav,
+  birthdayGift = false,
+  gachaAnyDay = false,
   avatarSlot = false,
   avatarFixed,
   ambientForce,
@@ -2602,6 +2609,14 @@ export function PublicPoster({
   // 생일 선물 카드(2026-10-06 소유자: "생일일 때 내가 첨부한 이미지도 볼 수 있으면") — 생일 표기를 누르면 빵빠레 뒤에
   // 그림이 사진 카드처럼 기울며 튀어나온다. 바깥·✕·Esc로 닫는다. 생일 노래는 그대로 흐른다.
   const [giftCard, setGiftCard] = useState<{ src: string; alt: string; caption: string } | null>(null);
+  // 생일 캡슐 뽑기 창 — 개발자 '지금 열기'(vic:open-gacha)도 받는다(토글이 켜진 미리보기에서만).
+  const [gachaOpen, setGachaOpen] = useState(false);
+  useEffect(() => {
+    if (!birthdayGift || !gachaAnyDay) return;
+    const open = () => setGachaOpen(true);
+    window.addEventListener("vic:open-gacha", open);
+    return () => window.removeEventListener("vic:open-gacha", open);
+  }, [birthdayGift, gachaAnyDay]);
   useEffect(() => {
     if (!giftCard) return;
     const onKey = (e: KeyboardEvent) => {
@@ -2645,10 +2660,14 @@ export function PublicPoster({
     // 기념일은 연속 탭이 멜로디가 된다(lib/ui/sfx playCelebrationTap): 첫 탭 = 빵빠레, 이어 누르면 한 음씩.
     const tap = theme ? playCelebrationTap(theme.key, theme.sound) : null;
     if (!theme) playCelebration(mood === "win" ? "fanfare" : "pop");
-    // 생일 선물 카드(lib/ui/celebration gift) — 연타의 첫 탭에만, 빵빠레가 터진 뒤 그림이 선물처럼 열린다(동작 줄이기여도 그림은 보인다).
-    if (theme?.gift && tap?.kind === "first") {
+    // 생일 선물(lib/ui/celebration gift) — 연타의 첫 탭에만, 빵빠레가 터진 뒤. 허용된 계정(birthdayGift)만:
+    // 생일 당일(또는 개발자 토글)이면 캡슐 뽑기 창, 아니면 선물 카드. 시청자 화면은 노래만(2026-10-06 소유자).
+    if (theme?.gift && tap?.kind === "first" && birthdayGift) {
       const gift = theme.gift;
-      window.setTimeout(() => setGiftCard(gift), reduceMotionEnabled() ? 0 : 650);
+      const birthdayToday = celebrationFor(getDayMark(today)?.name).key === "birthday";
+      const delay = reduceMotionEnabled() ? 0 : 700;
+      if (birthdayToday || gachaAnyDay) window.setTimeout(() => setGachaOpen(true), delay);
+      else window.setTimeout(() => setGiftCard(gift), delay);
     }
     if (reduceMotionEnabled()) return;
     if (theme && tap) {
@@ -5120,6 +5139,17 @@ export function PublicPoster({
           ))}
           <div className="celebrate-toast">🎉 {todayCelebration}</div>
         </div>
+      ) : null}
+      {gachaOpen ? (
+        <GachaMachine
+          onClose={() => setGachaOpen(false)}
+          onLegend={() => {
+            // 전설 캡슐 — 위에서 색종이 비(오늘 축하와 같은 층).
+            setCelebrate(true);
+            if (grandRainTimer.current) window.clearTimeout(grandRainTimer.current);
+            grandRainTimer.current = window.setTimeout(() => setCelebrate(false), 4800);
+          }}
+        />
       ) : null}
       {giftCard ? (
         <div className="gift-card-layer" onClick={() => setGiftCard(null)} role="presentation">

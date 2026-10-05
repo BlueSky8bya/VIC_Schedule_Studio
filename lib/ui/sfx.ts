@@ -41,7 +41,10 @@ export type SfxName =
   | "toggle-off"
   | "copy"
   | "paste"
-  | "note";
+  | "note"
+  | "coin"
+  | "gacha-drop"
+  | "capsule-open";
 
 const CATEGORY: Record<SfxName, SoundCategory> = {
   fanfare: "celebrate",
@@ -81,7 +84,10 @@ const CATEGORY: Record<SfxName, SoundCategory> = {
   "toggle-off": "ui",
   copy: "edit",
   paste: "edit",
-  note: "celebrate"
+  note: "celebrate",
+  coin: "celebrate",
+  "gacha-drop": "celebrate",
+  "capsule-open": "celebrate"
 };
 
 const KEY = "vic.sound";
@@ -444,6 +450,20 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
     case "delete": // 삭제 — 음이 0.6배로 꺼지며 사라짐 + 부드러운 바람(저역)
       tone(ac, out, { f: N(4), glideTo: N(4) * 0.6, glide: 0.12, vol: 0.22, tau: 0.05 });
       whoosh(ac, out, 1400, 300, 0.14, 0.02, 0.1, true);
+      break;
+    // ── 생일 캡슐 뽑기 ──
+    case "coin": // 동전 — 맑은 금속 두 점(높게, 짤랑)
+      chime(ac, out, N(19), 0, 0.2, 0.08);
+      chime(ac, out, N(24), 0.06, 0.16, 0.12);
+      break;
+    case "gacha-drop": // 캡슐이 떨어져 구른다 — 나무 '똥' + 통통 두 번 튐
+      marimba(ac, out, N(-5), 0, 0.3, 0.07);
+      bubble(ac, out, N(4), 0.14, 0.16, 0.035);
+      bubble(ac, out, N(7), 0.26, 0.1, 0.03);
+      break;
+    case "capsule-open": // 캡슐이 '퐁' 열리고 반짝 — 장3화음 종
+      bubble(ac, out, N(0), 0, 0.26, 0.04);
+      [4, 7, 12].forEach((s2, i) => chime(ac, out, N(s2), 0.08 + i * 0.06, 0.16, 0.16));
       break;
     case "copy": // 복사 — 같은 음 두 번(메아리 = 하나가 둘로), 두 번째는 옥타브 위로 작게
       blip(ac, out, N(7), 0, 0.22, 0.03);

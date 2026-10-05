@@ -129,6 +129,7 @@ import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { tagColor } from "@/lib/tags/dark-palette";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
+import { setBirthdayGiftPreviewAction } from "@/lib/schedules/calendar-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { CalendarSkeleton } from "@/components/skeleton/calendar-skeleton";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
@@ -1008,6 +1009,27 @@ export function StudioShell({
     hapticTick();
     router.refresh();
   };
+  // 생일 선물 미리보기(0141, 2026-10-06 소유자) — 개발자 설정 토글. 켜면 관리자도 시청자 미리보기에서 생일 카드·캡슐
+  // 뽑기를 보고 뽑기는 아무 날이나 열린다. 개발자는 생일 카드를 늘 본다. 시청자 화면(/)은 어느 경우에도 노래만.
+  const [birthdayPreview, setBirthdayPreview] = useState(Boolean(schedule.birthdayGiftPreview));
+  const toggleBirthdayPreview = () => {
+    if (actor.role !== "developer") return;
+    const next = !birthdayPreview;
+    setBirthdayPreview(next);
+    void setBirthdayGiftPreviewAction(next).then((r) => {
+      if (!r.ok) {
+        setBirthdayPreview(!next);
+        setActionError(r.error);
+      }
+    });
+  };
+  // '지금 열기' — 설정을 닫고 시청자 미리보기로 들어가 뽑기 창을 연다(새로고침 없이).
+  const openGachaPreview = () => {
+    setModal(null);
+    const wait = viewerMode ? 80 : 900;
+    if (!viewerMode) enterViewerMode();
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent("vic:open-gacha")), wait);
+  };
   // (휴식 넛지 — 2026-09-03 도입, 2026-09-04 철수: 관리자가 안 쓸 기능이라 사용자 결정. 코드는 git 이력,
   //  옛 행동 기록의 라벨(rest-nudge*)만 사전에 남긴다.)
   const canReadPrivate =
@@ -1197,6 +1219,7 @@ export function StudioShell({
         // 개발자 전용 줄은 **미리보기 중인 역할**에도 안 보여야 한다 — raw isDeveloper면 개발자가 관리자로
         // 미리보기 중일 때 그대로 노출된다(2026-09-05 소유자 사진 2).
         devWorld={effectiveRole === "developer" ? { force: devWorld, onChange: setDevWorld, season: devSeason, onChangeSeason: changeDevSeason } : null}
+        birthdayPreview={effectiveRole === "developer" ? { on: birthdayPreview, toggle: toggleBirthdayPreview, open: openGachaPreview } : null}
       />
     );
   }
@@ -6983,6 +7006,9 @@ export function StudioShell({
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
           schedule={previewSchedule}
+          // 생일 카드·캡슐 뽑기: 개발자는 늘(뽑기는 생일 당일), 관리자는 개발자 토글이 켜졌을 때만. 토글이 켜지면 뽑기는 아무 날이나.
+          birthdayGift={actor.role === "developer" || (actor.role === "owner" && birthdayPreview)}
+          gachaAnyDay={birthdayPreview && (actor.role === "developer" || actor.role === "owner")}
           // "n명이 기다렸어요" 배지는 당분간 개발자 확인용만(사용자 결정 — 카운팅은 쌓되
           // 관리자·시청자에겐 아직 비노출). 역할 미리보기(effectiveRole)가 아니라 실제 역할 기준.
           toggleHeartAction={toggleEventHeartAction}

@@ -254,6 +254,8 @@ export type PublicSchedule = {
 
 export type StudioSchedule = Omit<PublicSchedule, "events"> & {
   viewerModePreview: PublicSchedule;
+  // 생일 선물 미리보기 스위치(0141, 개발자 설정) — 편집실 전용, 공개 응답엔 없다.
+  birthdayGiftPreview?: boolean;
   events: StudioScheduleEvent[];
   variantGroups: VariantGroup[];
 };
