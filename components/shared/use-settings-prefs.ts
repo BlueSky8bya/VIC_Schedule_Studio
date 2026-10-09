@@ -34,7 +34,8 @@ import {
   type SoundCats
 } from "@/lib/ui/sfx";
 import { applyTextPx, flingDeleteEnabled, setFlingDelete, setTextPxPref, textPxPref, TEXT_PX_BASE } from "@/lib/ui/edit-prefs";
-import { FONT_BASE, fontPref, setFontPref, setWeightPref, weightPref, type WeightStep } from "@/lib/ui/font-prefs";
+import { applyFont, applyWeight, FONT_BASE, fontPref, setFontPref, setWeightPref, weightPref, type WeightStep } from "@/lib/ui/font-prefs";
+import { PREF_SURFACE_EVENT } from "@/lib/ui/pref-surface";
 
 export type SettingsPrefs = {
   hapticsSupported: boolean;
@@ -209,24 +210,32 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
 
   // 글씨 크기(px, 일정 제목 기준) — 달력 글자의 기본 크기. 끌면 바로 미리보기·달력에 반영된다.
   const [textPx, setTextPxState] = useState(TEXT_PX_BASE);
+  // 글꼴·글씨 굵기(lib/ui/font-prefs) — 고르면 바로 앱 전체·달력 카드에 입혀진다.
+  const [fontId, setFontId] = useState(FONT_BASE);
+  const [textWeight, setTextWeight] = useState<WeightStep>(0);
   useEffect(() => {
-    // 화면을 옮겨 왔으면(시청자 ↔ 편집실, 새로고침 없는 이동) 이 화면의 값으로 다시 입힌다.
-    const px = textPxPref();
-    setTextPxState(px);
-    applyTextPx(px);
+    // 글자 설정 셋(크기·굵기·글꼴)은 화면별로 따로(lib/ui/pref-surface) — 들어올 때와 화면이 바뀔 때(편집실 ↔ 시청자
+    // 화면 미리보기) 그 화면의 값을 다시 읽어 입힌다. 새로고침 없는 이동도 같다.
+    const load = () => {
+      const px = textPxPref();
+      setTextPxState(px);
+      applyTextPx(px);
+      const f = fontPref();
+      setFontId(f);
+      applyFont(f);
+      const w = weightPref();
+      setTextWeight(w);
+      applyWeight(w);
+    };
+    load();
+    window.addEventListener(PREF_SURFACE_EVENT, load);
+    return () => window.removeEventListener(PREF_SURFACE_EVENT, load);
   }, []);
   const changeTextPx = useCallback((px: number) => {
     setTextPxPref(px);
     setTextPxState(px);
   }, []);
 
-  // 글꼴·글씨 굵기(lib/ui/font-prefs) — 고르면 바로 앱 전체·달력 카드에 입혀진다.
-  const [fontId, setFontId] = useState(FONT_BASE);
-  const [textWeight, setTextWeight] = useState<WeightStep>(0);
-  useEffect(() => {
-    setFontId(fontPref());
-    setTextWeight(weightPref());
-  }, []);
   const changeFont = useCallback((id: string) => {
     setFontPref(id);
     setFontId(id);

@@ -137,13 +137,17 @@ export default function RootLayout({
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
               // 화면 모드(vic.dark, lib/ui/theme.ts) — 'on'=어둡게, 'system'=기기 따라, 그 외=밝게(기본).
               // 페인트 전에 붙여야 어두운 화면을 기대한 사용자가 흰 화면을 한 번 맞지 않는다.
-              // 글씨 크기(lib/ui/edit-prefs) — 화면별: 편집실(/studio…)은 vic.calText.studio(없으면 시청자 값), 그 외는 vic.calText.
+              // 글자 설정(크기·굵기·글꼴)은 화면별로 따로(lib/ui/pref-surface, 2026-10-10): 편집실 = /studio… 이면서 시청자 화면
+              // 미리보기(vic_view 쿠키 v=1)가 아닐 때 → 키 뒤에 '.studio'. 그 밖(시청자 화면·미리보기)은 원래 키. 서로 이어받지 않는다.
+              // 분리 전 한 벌이던 글꼴·굵기는 편집실 몫으로 한 번 복사(vic.prefSplit) — 배포 날 편집실 글꼴이 바뀌지 않게.
+              "if(s.getItem('vic.prefSplit')!=='1'){['vic.font','vic.calWeight'].forEach(function(k){var o=s.getItem(k);if(o!==null&&s.getItem(k+'.studio')===null)s.setItem(k+'.studio',o)});s.setItem('vic.prefSplit','1')}" +
+              "var vc=/(?:^|; )vic_view=([^;]*)/.exec(document.cookie),pv=false;try{pv=!!vc&&JSON.parse(decodeURIComponent(vc[1])).v===1}catch(e){}" +
+              "var st=location.pathname.split('/').indexOf('studio')>-1&&!pv,X=st?'.studio':'';" +
               // 일정 제목 px ÷ 14 = --cal-text. 범위 밖이면 기본.
-              "var st=location.pathname.split('/').indexOf('studio')>-1,tr=st?(s.getItem('vic.calText.studio')||s.getItem('vic.calText')):s.getItem('vic.calText');var tx=Number(tr);if(tx>=12&&tx<=20)d.style.setProperty('--cal-text',String(tx/14));" +
-              // 글꼴·굵기(vic.font·vic.calWeight, lib/ui/font-prefs) — 처음 그릴 때부터 고른 글꼴로.
+              "var tx=Number(s.getItem('vic.calText'+X));if(tx>=12&&tx<=20)d.style.setProperty('--cal-text',String(tx/14));" +
               "var FS=" +
               JSON.stringify(FONT_STACKS) +
-              ";var fo=FS[s.getItem('vic.font')];if(fo)d.style.setProperty('--app-font',fo);var fw=Number(s.getItem('vic.calWeight'));if(fw===-200)fw=-300;if(fw===-300||fw===100)d.style.setProperty('--cal-weight',String(fw));if(fw===100)d.style.setProperty('--cal-stroke','0.35px');" +
+              ";var fo=FS[s.getItem('vic.font'+X)];if(fo)d.style.setProperty('--app-font',fo);var fw=Number(s.getItem('vic.calWeight'+X));if(fw===-200)fw=-300;if(fw===-300||fw===100)d.style.setProperty('--cal-weight',String(fw));if(fw===100)d.style.setProperty('--cal-stroke','0.35px');" +
               "var dk=s.getItem('vic.dark');if(dk==='on'||(dk==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-theme','dark');" +
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.

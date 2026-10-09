@@ -47,6 +47,7 @@ import type { GfxMode } from "@/lib/ui/gfx";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { flingDeleteEnabled } from "@/lib/ui/edit-prefs";
 import { playSfx } from "@/lib/ui/sfx";
+import { setPrefSurface } from "@/lib/ui/pref-surface";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -740,6 +741,12 @@ export function StudioShell({
     editorSoundPrevRef.current = editorVisible;
     playSfx(editorVisible ? "open" : "close");
   }, [editorVisible]);
+  // 글자 설정(크기·굵기·글꼴)의 화면 — 미리보기는 시청자 화면 계열이라 시청자 쪽 값을 쓴다(lib/ui/pref-surface, 2026-10-10).
+  // 이 effect가 설정 훅(useSettingsPrefs)보다 먼저 선언돼 있어, 처음 그릴 때도 훅이 맞는 화면 값을 읽는다.
+  useEffect(() => {
+    setPrefSurface(viewerMode ? "viewer" : "studio");
+  }, [viewerMode]);
+  useEffect(() => () => setPrefSurface(null), []);
   // 시청자 화면 미리보기 들어가기·편집실로 돌아오기 소리 — 경로가 여럿(버튼·역할 미리보기·뽑기 열기·Esc)이라 같은 방식.
   const viewerSoundPrevRef = useRef(viewerMode);
   useEffect(() => {

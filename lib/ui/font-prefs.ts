@@ -5,6 +5,9 @@
 // 선언만 있고, 브라우저는 그 글꼴로 실제 글자를 그릴 때 받는다. 페인트 전 적용은 app/layout.tsx 스크립트가
 // 아래 FONT_STACKS를 그대로 받아 한다(처음 열 때 글꼴이 한 번 바뀌어 튀지 않게).
 
+import { migratePrefSplit, prefSurface, surfaceKey } from "@/lib/ui/pref-surface";
+
+// 화면별 키(2026-10-10): 시청자 화면 계열 = vic.font·vic.calWeight, 편집실 = 뒤에 '.studio'(lib/ui/pref-surface).
 const FONT_KEY = "vic.font";
 const WEIGHT_KEY = "vic.calWeight";
 
@@ -44,8 +47,9 @@ export const FONT_STACKS: Record<string, string> = Object.fromEntries(FONT_OPTIO
 
 export function fontPref(): string {
   if (typeof window === "undefined") return FONT_BASE;
+  migratePrefSplit();
   try {
-    const v = window.localStorage.getItem(FONT_KEY);
+    const v = window.localStorage.getItem(surfaceKey(FONT_KEY, prefSurface()));
     return v && FONT_STACKS[v] !== undefined ? v : FONT_BASE;
   } catch {
     return FONT_BASE;
@@ -64,7 +68,7 @@ export function applyFont(id: string): void {
 export function setFontPref(id: string): void {
   const v = FONT_STACKS[id] !== undefined ? id : FONT_BASE;
   try {
-    window.localStorage.setItem(FONT_KEY, v);
+    window.localStorage.setItem(surfaceKey(FONT_KEY, prefSurface()), v);
   } catch {
     /* 이번 세션만 */
   }
@@ -81,8 +85,9 @@ export type WeightStep = (typeof WEIGHT_STEPS)[number];
 
 export function weightPref(): WeightStep {
   if (typeof window === "undefined") return 0;
+  migratePrefSplit();
   try {
-    const v = Number(window.localStorage.getItem(WEIGHT_KEY));
+    const v = Number(window.localStorage.getItem(surfaceKey(WEIGHT_KEY, prefSurface())));
     if (v === -200) return -300; // 1차 값(−200) → 지금의 '가늘게'
     return (WEIGHT_STEPS as readonly number[]).includes(v) ? (v as WeightStep) : 0;
   } catch {
@@ -91,10 +96,14 @@ export function weightPref(): WeightStep {
 }
 export function setWeightPref(step: WeightStep): void {
   try {
-    window.localStorage.setItem(WEIGHT_KEY, String(step));
+    window.localStorage.setItem(surfaceKey(WEIGHT_KEY, prefSurface()), String(step));
   } catch {
     /* 이번 세션만 */
   }
+  applyWeight(step);
+}
+/** 굵기를 바로 입힌다(저장 없음) — 화면을 옮길 때(편집실 ↔ 미리보기) 그 화면 값으로 다시 입힐 때도 쓴다. */
+export function applyWeight(step: WeightStep): void {
   try {
     const d = document.documentElement.style;
     if (step) d.setProperty("--cal-weight", String(step));

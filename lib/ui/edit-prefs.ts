@@ -2,8 +2,9 @@
 // 읽기 실패(사생활 모드 등)는 기본값으로 동작한다.
 
 const FLING_KEY = "vic.flingDelete";
-const TEXT_KEY = "vic.calText"; // 시청자 화면(로그인·비로그인 같은 기기면 같은 값)
-const TEXT_KEY_STUDIO = "vic.calText.studio"; // 편집실(개발자·관리자) — 편집실 카드 폭이 달라 따로 고른다
+import { prefSurface, surfaceKey, type PrefSurface } from "@/lib/ui/pref-surface";
+
+const TEXT_KEY = "vic.calText"; // 시청자 화면 계열은 이 키, 편집실은 vic.calText.studio(lib/ui/pref-surface)
 
 /** 던져서 삭제 — 기본 켜짐(지금까지의 동작). 'off'면 빠르게 던져도 지우지 않고 제자리로 돌아간다. */
 export function flingDeleteEnabled(): boolean {
@@ -30,17 +31,15 @@ export const TEXT_PX_BASE = 14;
 export const TEXT_PX_MIN = 12;
 export const TEXT_PX_MAX = 20;
 
-// 글씨 크기는 화면별로 따로(2026-10-06 소유자: "편집실과 시청자 화면은 카드 폭이 달라 따로 설정") — 지금 있는 화면을
-// 주소로 가른다(/studio… = 편집실). 편집실 값이 없으면 시청자 값을 이어받는다(분리 전 저장값 호환).
-export type TextSurface = "studio" | "viewer";
-export function textSurface(): TextSurface {
-  if (typeof window === "undefined") return "viewer";
-  return /(^|\/)studio(\/|$)/.test(window.location.pathname) ? "studio" : "viewer";
-}
+// 글씨 크기는 화면별로 따로(2026-10-06 소유자: "편집실과 시청자 화면은 카드 폭이 달라 따로 설정") — 화면 판정은
+// lib/ui/pref-surface(편집실 안의 시청자 화면 미리보기도 시청자 쪽). 2026-10-10: 편집실 값이 없을 때 시청자 값을 이어받던
+// 것을 없앴다 — 시청자 화면에서 바꾸면 편집실도 따라 바뀌었다(소유자 "독립적으로").
+export type TextSurface = PrefSurface;
+export const textSurface = prefSurface;
 export function textPxPref(surface: TextSurface = textSurface()): number {
   if (typeof window === "undefined") return TEXT_PX_BASE;
   try {
-    const raw = surface === "studio" ? (window.localStorage.getItem(TEXT_KEY_STUDIO) ?? window.localStorage.getItem(TEXT_KEY)) : window.localStorage.getItem(TEXT_KEY);
+    const raw = window.localStorage.getItem(surfaceKey(TEXT_KEY, surface));
     const v = Number(raw);
     return Number.isFinite(v) && v >= TEXT_PX_MIN && v <= TEXT_PX_MAX ? v : TEXT_PX_BASE;
   } catch {
@@ -57,7 +56,7 @@ export function applyTextPx(px: number): void {
 export function setTextPxPref(px: number, surface: TextSurface = textSurface()): void {
   const v = Math.min(TEXT_PX_MAX, Math.max(TEXT_PX_MIN, Math.round(px * 2) / 2));
   try {
-    window.localStorage.setItem(surface === "studio" ? TEXT_KEY_STUDIO : TEXT_KEY, String(v));
+    window.localStorage.setItem(surfaceKey(TEXT_KEY, surface), String(v));
   } catch {
     /* 이번 세션만 */
   }
