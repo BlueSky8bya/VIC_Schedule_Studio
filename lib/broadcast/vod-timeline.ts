@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { BJ_ID } from "@/lib/broadcast/soop";
 import { syncVodArchive, syncVodArchiveDeep } from "@/lib/broadcast/vod-archive";
+import { syncXlitSynonyms } from "@/lib/search/xlit-sync";
 
 // 팬 타임라인(다시보기 챕터) 수집·파싱(0071) — PLAN-20260831-001 Phase 2 A안.
 // 숲 다시보기 댓글에서 타임라인 댓글(타임스탬프 3개 이상)을 골라 {sec, label, section}[]로
@@ -120,10 +121,12 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
     // 둘 다 챕터 색인을 읽으므로 upsert 뒤에 돈다.
     // ⚠ search_term_graph_rebuild는 빠져 있다(2026-09-19) — 63초짜리라 요청 수명 안에서 못 끝낸다.
     // 밤에 pg_cron이 돌린다(db/migrations/0120). 나머지는 합쳐도 20초 남짓이라 여기서 돈다.
-    for (const fn of ["search_song_refresh", "search_game_refresh", "search_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
+    for (const fn of ["search_song_refresh", "search_song_acronyms_rebuild", "search_game_refresh", "search_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
       const { error } = await supabase.rpc(fn);
       if (error) console.warn(`[search] ${fn} failed:`, error.message);
     }
+    // 새로 분류된 노래의 영문 가수·곡 제목에 한글 읽기 짝을 붙인다(0145) — 새 래퍼·곡도 그날부터 한글로 검색된다.
+    await syncXlitSynonyms(supabase);
   }
   return { ok: true, saved };
 }
