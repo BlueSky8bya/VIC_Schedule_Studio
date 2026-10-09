@@ -567,8 +567,8 @@ export function StudioSettingsList({
               ))}
             </div>
           </div>
-          {/* 글씨 굵기 — 달력 일정 글자(제목·세부). 가늘게 = 한 파일 아래(보통 글꼴 파일로), 굵게 = 가장 굵은 파일 위에
-              얇은 외곽선까지 — 굵기 파일이 한두 개뿐인 글꼴에서도 세 단계가 눈에 보이게. */}
+          {/* 글씨 굵기 — 달력 일정 글자(제목·세부). 보통 / 굵게(가장 굵은 파일 위에 얇은 외곽선) 두 단계 —
+              굵기 파일이 두 개뿐인 글꼴에서 눈에 보이게 나뉘는 게 이 둘뿐이다('가늘게'는 2026-10-10 폐지). */}
           <div className="role-help-haptics rhh-stack-sm">
             <RowLabel icon={<Bold size={15} />} tone="water">
               글씨 굵기
@@ -578,7 +578,6 @@ export function StudioSettingsList({
               dataAct="text-weight-select"
               onChange={font.changeWeight}
               options={[
-                { value: -300, label: "가늘게", opt: "thin" },
                 { value: 0, label: "보통", opt: "normal" },
                 { value: 100, label: "굵게", opt: "bold" }
               ]}
