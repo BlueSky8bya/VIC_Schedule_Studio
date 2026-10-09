@@ -746,6 +746,12 @@ export function StudioShell({
     if (viewerSoundPrevRef.current === viewerMode) return;
     viewerSoundPrevRef.current = viewerMode;
     playSfx(viewerMode ? "peek" : "peek-back");
+    // 시청자 화면(미리보기)으로 넘어가면 복사해 둔 일정은 내려놓는다 — 돌아왔을 때 '복사 중'이 남아 있으면
+    // 무엇을 들고 있었는지 잊은 채 붙여넣게 된다(2026-10-10 소유자). 달 넘김은 그대로 유지(다른 달로 옮겨 붙이기).
+    if (viewerMode) {
+      setClipboard(null);
+      setCopiedId(null);
+    }
   }, [viewerMode]);
   // 창(설정·태그·인사이트·방문) 열림·닫힘 소리 — 같은 이유로 상태 전환 한 곳에서. 창끼리 바꿔 열면 '열림'만.
   const modalSoundPrevRef = useRef(modal);
@@ -4850,7 +4856,7 @@ export function StudioShell({
       category: form.category,
       tagIds: form.tagIds,
       primaryTagIds: form.primaryTagIds.slice(0, 2),
-      sortOrder: existing?.sortOrder ?? 0,
+      sortOrder: existing?.sortOrder ?? nextSortOrder(selectedDate),
       teaser: teaserOn || undefined,
       teaserRevealAt: teaserRevealIso ?? undefined
     };
@@ -5145,7 +5151,7 @@ export function StudioShell({
       category: "dayoff",
       tagIds,
       primaryTagIds: tagIds,
-      sortOrder: 0
+      sortOrder: nextSortOrder(isoDate)
     };
     setEvents((prev) => [...prev, optimistic]);
     markJustSaved(tempId); // 통통 착지 반짝
@@ -5658,6 +5664,12 @@ export function StudioShell({
     insertEventCopy(clipboard, selectedDate, `${selectedDate.slice(5).replace("-", "/")}에 붙여넣었어요`, copiedId);
   }
   // (복제 버튼 제거 — Ctrl+C/V가 정식 경로. insertEventCopy는 붙여넣기 전용으로 유지.)
+  // 새 일정의 자리 = 그 날 맨 아래(지금 가장 큰 순서 + 1) — 서버 save_event_atomic(0144)과 같은 규칙이라
+  // 저장 뒤 새로고침해도 자리가 그대로다. 붙여넣기 미리보기(.paste-preview)도 칸 맨 아래에 뜬다.
+  function nextSortOrder(dateKey: string): number {
+    const day = getEventsForDate(eventsRef.current, dateKey);
+    return day.length ? Math.max(...day.map((e) => e.sortOrder)) + 1 : 0;
+  }
   // 복사본 삽입 공통 경로 — Ctrl+V 붙여넣기가 쓴다(targetDate 파라미터화 유지).
   function insertEventCopy(payload: CopiedEvent, targetDate: string, toast: string, sourceId: string | null = null) {
     if (!canEdit) return;
@@ -5691,7 +5703,7 @@ export function StudioShell({
       primaryTagIds: payload.primaryTagIds.slice(0, 2),
       teaser: payload.teaser || undefined,
       teaserRevealAt: payload.teaser ? payload.teaserRevealAt || undefined : undefined,
-      sortOrder: 0
+      sortOrder: nextSortOrder(targetDate)
     };
     // 원본 자리(화면에 보일 때만) — 사본이 여기서 출발해 새 날짜로 날아간다.
     const srcEl = sourceId ? copySourceEl(sourceId) : null;
@@ -7238,9 +7250,8 @@ export function StudioShell({
             <Copy size={14} strokeWidth={2.4} />
           </span>
           <b>{splitEventTitle(clipboard.teaser ? "???" : clipboard.publicTitle).main}</b>
-          <span className="clip-chip-hint">
-            복사 중 · 날짜 고르고 <kbd>Ctrl</kbd>+<kbd>V</kbd>
-          </span>
+          {/* 붙여넣는 법(Ctrl+V)은 고른 칸의 미리보기 카드가 말한다 — 칩은 '무엇을 들고 있나'와 '내려놓기'만(2026-10-10 소유자). */}
+          <span className="clip-chip-hint">복사 중</span>
           <button className="clip-chip-x" data-act="clipboard-clear" onClick={clearClipboard} type="button">
             해제 <kbd>Esc</kbd>
           </button>
@@ -8122,9 +8133,27 @@ export function StudioShell({
                       return gapEl ? [pill, gapEl] : pill;
                     })}
                     {clipboard && canEdit && selectedDate === cell.isoDate && !dragEventId && !spanDrag ? (
+                      // 붙여넣을 것 그대로 — 주제목 + 부제목 줄(2026-10-10 소유자: "주제목만 보여 주는데 붙여넣으면 부제목까지
+                      // 붙는다 — 의도 불일치"). 자리도 실제와 같은 칸 맨 아래(nextSortOrder · 0144).
                       <div aria-hidden="true" className="paste-preview" key={`paste-${cell.isoDate}`}>
-                        <b>{splitEventTitle(clipboard.teaser ? "???" : clipboard.publicTitle).main}</b>
-                        <span className="paste-preview-key">Ctrl+V</span>
+                        {(() => {
+                          const t = splitEventTitle(clipboard.teaser ? "???" : clipboard.publicTitle);
+                          return (
+                            <>
+                              <div className="paste-preview-head">
+                                <b>{t.main}</b>
+                                <span className="paste-preview-key">Ctrl+V</span>
+                              </div>
+                              {t.subs.length ? (
+                                <ul className="pill-subs">
+                                  {t.subs.map((sub, i) => (
+                                    <li key={i}>{sub}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </div>
                     ) : null}
                   </div>

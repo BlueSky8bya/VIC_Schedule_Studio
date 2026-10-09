@@ -13855,9 +13855,8 @@ html[data-theme="dark"] .studio-shell {
 }
 /* 붙여넣을 자리 — 고른 칸 아래에 점선 미리보기 카드가 '여기 들어간다'를 미리 보여 준다. */
 .paste-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  gap: 2px;
   min-height: 30px;
   border: 2px dashed var(--copy-ink);
   border-radius: var(--r-md);
@@ -13870,8 +13869,19 @@ html[data-theme="dark"] .studio-shell {
     paste-preview-in 0.36s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) both,
     paste-preview-breathe 1.6s ease-in-out 0.4s infinite;
 }
+.paste-preview-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.paste-preview .pill-subs {
+  min-width: 0;
+  opacity: 0.85;
+}
 .paste-preview b {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   font-weight: 700;
   text-overflow: ellipsis;
