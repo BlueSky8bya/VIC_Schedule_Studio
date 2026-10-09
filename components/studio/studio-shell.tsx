@@ -740,6 +740,13 @@ export function StudioShell({
     editorSoundPrevRef.current = editorVisible;
     playSfx(editorVisible ? "open" : "close");
   }, [editorVisible]);
+  // 시청자 화면 미리보기 들어가기·편집실로 돌아오기 소리 — 경로가 여럿(버튼·역할 미리보기·뽑기 열기·Esc)이라 같은 방식.
+  const viewerSoundPrevRef = useRef(viewerMode);
+  useEffect(() => {
+    if (viewerSoundPrevRef.current === viewerMode) return;
+    viewerSoundPrevRef.current = viewerMode;
+    playSfx(viewerMode ? "peek" : "peek-back");
+  }, [viewerMode]);
   // 창(설정·태그·인사이트·방문) 열림·닫힘 소리 — 같은 이유로 상태 전환 한 곳에서. 창끼리 바꿔 열면 '열림'만.
   const modalSoundPrevRef = useRef(modal);
   useEffect(() => {
@@ -5149,6 +5156,14 @@ export function StudioShell({
     // 만든 휴뱅을 곧바로 편집 카드에 띄운다 — 우클릭 한 번으로 만들고 거기서 바로 세부(태그·기간 등)를
     // 만질 수 있게(HCI: 방금 만든 대상이 곧 편집 컨텍스트). 데스크톱 전용 흐름이라 패널을 연다.
     if (!isNarrow) selectEvent(optimistic);
+    // 저장 약속 — 저장됨 전에 옮기거나 고쳐도 이동·편집 큐가 실제 id를 기다린다(붙여넣기와 같다).
+    let resolveSave: (id: string | null) => void = () => {};
+    pendingSavesRef.current.set(
+      tempId,
+      new Promise<string | null>((r) => {
+        resolveSave = r;
+      })
+    );
     startTransition(async () => {
       const result = await studioWrite("save", {
         id: undefined,
@@ -5173,6 +5188,8 @@ export function StudioShell({
         // target rollback — 방금 만든 휴뱅 카드만 제거(다른 편집 보존).
         setEvents((prev) => prev.filter((e) => e.id !== tempId));
         dropUndoEntry(undoAction);
+        resolveSave(null);
+        pendingSavesRef.current.delete(tempId);
         return;
       }
       hapticTick(); // ② 서버확인
@@ -5186,6 +5203,8 @@ export function StudioShell({
         setSelectedEventId((cur) => (cur === tempId ? realId : cur));
         setForm((f) => (f.id === tempId ? { ...f, id: realId } : f));
       }
+      resolveSave(result.id || null);
+      pendingSavesRef.current.delete(tempId);
     });
   }
 
@@ -5687,6 +5706,16 @@ export function StudioShell({
     pushUndo(undoAction);
     flashToast(toast);
     setActionError(null);
+    // 저장이 끝나면 실제 id(실패면 null)로 풀리는 약속 — saveEvent와 같다. 이게 없으면 '저장됨' 전에
+    // 이 카드를 옮기거나(이동 큐) 편집 저장하면 resolveEventId가 곧장 null을 받아 순서 저장을 버리고
+    // 서버 순서로 되돌렸다(2026-10-09 실측: 붙여넣고 바로 순서 바꾼 뒤 편집창을 연 사이 옛 자리로 롤백).
+    let resolveSave: (id: string | null) => void = () => {};
+    pendingSavesRef.current.set(
+      tempId,
+      new Promise<string | null>((r) => {
+        resolveSave = r;
+      })
+    );
     startTransition(async () => {
       const result = await studioWrite("save", {
         id: undefined,
@@ -5714,6 +5743,8 @@ export function StudioShell({
         // target rollback — 붙여넣은 카드만 제거(다른 편집 보존).
         setEvents((prev) => prev.filter((e) => e.id !== tempId));
         dropUndoEntry(undoAction);
+        resolveSave(null);
+        pendingSavesRef.current.delete(tempId);
         return;
       }
       if (result.id) {
@@ -5721,7 +5752,13 @@ export function StudioShell({
         undoHolder.id = realId; // 임시 id → 실제 id: 되돌릴 때 올바른 카드를 지우게.
         tempToRealRef.current.set(tempId, realId); // 붙여넣기 직후 삭제해도 서버 삭제가 실제 id로
         setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
+        setJustSavedId((p) => (p === tempId ? realId : p));
+        // 저장 전에 이 카드를 열어 둔 편집창도 실제 id로 잇는다(휴뱅·saveEvent와 같다).
+        setSelectedEventId((cur) => (cur === tempId ? realId : cur));
+        setForm((f) => (f.id === tempId ? { ...f, id: realId } : f));
       }
+      resolveSave(result.id || null);
+      pendingSavesRef.current.delete(tempId);
     });
   }
 

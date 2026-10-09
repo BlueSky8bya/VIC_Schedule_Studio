@@ -39,6 +39,9 @@ export type SfxName =
   | "detent"
   | "toggle-on"
   | "toggle-off"
+  | "cell"
+  | "peek"
+  | "peek-back"
   | "copy"
   | "paste"
   | "note"
@@ -82,6 +85,9 @@ const CATEGORY: Record<SfxName, SoundCategory> = {
   detent: "ui",
   "toggle-on": "ui",
   "toggle-off": "ui",
+  cell: "ui",
+  peek: "ui",
+  "peek-back": "ui",
   copy: "edit",
   paste: "edit",
   note: "celebrate",
@@ -416,6 +422,18 @@ function render(ac: AudioContext, out: AudioNode, name: SfxName) {
       marimba(ac, out, N(11), 0, 0.16, 0.05);
       marimba(ac, out, N(7), 0.04, 0.16, 0.06);
       break;
+    case "cell": // 날짜 칸 고르기 — 아주 작은 물방울 '뽁'(카드 고르기보다 가볍게: 칸은 가장 자주 누른다)
+      bubble(ac, out, N(9), 0, 0.15, 0.03);
+      break;
+    case "peek": // 시청자 화면 미리보기 — 커튼이 열리듯 퐁 둘 상행(1→5) + 옥타브 위 작은 반짝
+      bubble(ac, out, N(0), 0, 0.18, 0.035);
+      bubble(ac, out, N(7), 0.07, 0.18, 0.04);
+      chime(ac, out, N(12), 0.13, 0.08, 0.12);
+      break;
+    case "peek-back": // 편집실로 돌아오기 — 미리보기의 거울(5→1 내려앉음)
+      bubble(ac, out, N(7), 0, 0.16, 0.035);
+      drip(ac, out, N(0), 0.07, 0.16, 0.04);
+      break;
     case "select": // 일정 카드 고르기 — 마림바 한 점(따뜻하게)
       marimba(ac, out, N(7), 0, 0.24, 0.07);
       break;
@@ -598,6 +616,26 @@ if (typeof window !== "undefined") {
   );
 }
 
+// ── 소리 없는 단추의 기본 소리(2026-10-10 소유자: "날짜칸·미리보기처럼 지금 소리 안 나는 단추에도 귀여운 소리") ──
+// 누를 수 있는 것을 눌렀는데 처리기가 아무 소리도 안 냈으면, 위 '톡 고르기'로 그 단추에 맞는 소리를 낸다.
+// 일반 톡(우선순위 1)으로 미뤄 두므로 같은 동작의 화면·결과 소리(열기·저장·하트 등)가 오면 자리를 내주고,
+// 처리기가 이미 hapticTick()을 불렀어도 같은 동작이라 한 번만 난다. 글 입력칸·끌기는 제외, data-sfx="off"로 끌 수 있다.
+const FALLBACK_SEL =
+  "button,a[href],summary,label,[role=button],[role=tab],[role=switch],[role=checkbox],[role=radio],[role=menuitem],[role=menuitemradio],[role=menuitemcheckbox],[role=option],input[type=checkbox],input[type=radio]";
+if (typeof window !== "undefined") {
+  window.addEventListener(
+    "click",
+    (e) => {
+      if (!e.isTrusted) return;
+      const el = (e.target as Element | null)?.closest?.(FALLBACK_SEL);
+      if (!el || el.closest("[data-sfx='off']") || el.getAttribute("aria-disabled") === "true") return;
+      if (lastPointer.moved && performance.now() - lastPointer.at < 400) return; // 끌어 놓은 뒤 따라오는 click — 놓기 소리(drop)가 맡는다
+      playSfx("tick");
+    },
+    { capture: true, passive: true }
+  );
+}
+
 const CLOSE_RE = /닫기|취소|close|cancel|dismiss/i;
 /** 방금 누른 것에 맞는 소리. 누른 지 오래됐으면(서버 확인 박자 등) null = 소리 없음. */
 function tickFor(): SfxName | null {
@@ -613,6 +651,7 @@ function tickFor(): SfxName | null {
   const src = sinceKey < sincePointer ? lastKey.el : lastPointer.el;
   const el = src?.closest?.("input,button,[role],a,summary,label,[data-act]") ?? null;
   if (!el) return "tap";
+  if (el.classList.contains("studio-day")) return "cell"; // 편집실 날짜 칸(더블클릭 자리 — 위 미룸 규칙을 그대로 탄다)
   if (el instanceof HTMLInputElement) {
     if (el.type === "range") return "detent";
     if (el.type === "checkbox") return el.checked ? "toggle-on" : "toggle-off"; // 네이티브는 이미 바뀐 값
