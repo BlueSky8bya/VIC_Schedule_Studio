@@ -121,7 +121,7 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
     // 둘 다 챕터 색인을 읽으므로 upsert 뒤에 돈다.
     // ⚠ search_term_graph_rebuild는 빠져 있다(2026-09-19) — 63초짜리라 요청 수명 안에서 못 끝낸다.
     // 밤에 pg_cron이 돌린다(db/migrations/0120). 나머지는 합쳐도 20초 남짓이라 여기서 돈다.
-    for (const fn of ["search_song_refresh", "search_song_acronyms_rebuild", "search_game_refresh", "search_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
+    for (const fn of ["search_song_refresh", "search_game_refresh", "search_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
       const { error } = await supabase.rpc(fn);
       if (error) console.warn(`[search] ${fn} failed:`, error.message);
     }
