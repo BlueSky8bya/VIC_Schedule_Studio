@@ -77,3 +77,58 @@
   font-weight: 100 500;
   font-display: swap;
 }
+/* 2026-10-10 추가 — 고딕 셋(SUIT·에스코어드림·지마켓 산스)·둥근 하나(써라운드: 에어와 생김이 달라 다른 글꼴로 둔다). */
+@font-face {
+  font-family: "VIC SUIT";
+  src: url("https://fastly.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT-Regular.woff2") format("woff2");
+  font-weight: 100 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC SUIT";
+  src: url("https://fastly.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT-Bold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC SUIT";
+  src: url("https://fastly.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT-ExtraBold.woff2") format("woff2");
+  font-weight: 800 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC SCoreDream";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-4Regular.woff") format("woff");
+  font-weight: 100 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC SCoreDream";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-6Bold.woff") format("woff");
+  font-weight: 600 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC SCoreDream";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-8Heavy.woff") format("woff");
+  font-weight: 800 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC GmarketSans";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff") format("woff");
+  font-weight: 100 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC GmarketSans";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff") format("woff");
+  font-weight: 600 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VIC Cafe24Ssurround";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24Ssurround.woff") format("woff");
+  font-weight: 100 900;
+  font-display: swap;
+}

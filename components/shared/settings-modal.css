@@ -298,6 +298,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 }
 .rhh-group-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* 내용 폭이 아니라 카드 폭에 묶는다(.rhh-panes와 같은 이유) */
 }
 .rhh-group-foot {
   margin: 0;
@@ -485,6 +486,9 @@ html[data-theme="dark"] .vic-settings .rhh-group-card .ambient-seg-btn.on {
 }
 .rhh-panes {
   display: grid;
+  /* 열을 상자 폭에 묶는다 — 비워 두면 암묵 auto 열이 글자 탭 미리보기의 내용 폭(286px)까지 늘어 320px 폰에서
+     창 밖으로 잘렸다(2026-10-10). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 @container rhh (min-width: 600px) {
@@ -1144,9 +1148,11 @@ html[data-theme="dark"] .rhh-text-preview .pv-band {
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+/* 4열 고정 — 묶음마다 4·8개라 빈칸 없이 줄이 맞는다(2026-10-10 소유자). auto-fill이면 폭에 따라 3열·5열이 되어
+   마지막 줄에 빈칸이 생겼다. 새 글꼴은 묶음이 4의 배수가 되게 넣는다. */
 .rhh-font-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 .rhh-font-tile {
@@ -1214,14 +1220,31 @@ html[data-theme="dark"] .rhh-text-preview .pv-band {
     transform: translateY(2px);
   }
 }
+/* 이름은 말줄임 없이 두 줄까지 — 잘린 이름은 호버로도 볼 길이 없었다(2026-10-10 '카페24 써라운드…'). */
 .rhh-font-name {
   max-width: 100%;
-  overflow: hidden;
   color: var(--muted, #7a7464);
   font-size: 11px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 폰(좁은 상자): 묶음 이름은 타일 위로, 타일은 2열 — 4열이면 이름이 '나눔스퀘/어라운/드'처럼 쪼개졌다.
+   묶음이 8·8·4개라 2열도 빈칸 없이 맞는다. */
+@container rhh (max-width: 420px) {
+  .rhh-font-group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .rhh-font-group-label {
+    padding: 0 2px;
+    text-align: left;
+  }
+  .rhh-font-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .rhh-font-tile.on .rhh-font-name {
   color: #1f5a96;

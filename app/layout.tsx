@@ -7,6 +7,7 @@ import {
   Do_Hyeon,
   Gaegu,
   Gamja_Flower,
+  Gowun_Batang,
   Gowun_Dodum,
   Gugi,
   Hi_Melody,
@@ -67,6 +68,7 @@ const notoSansKr = Noto_Sans_KR({ variable: "--font-noto", display: "swap", prel
 const nanumGothic = Nanum_Gothic({ weight: ["400", "700", "800"], variable: "--font-nanumgothic", display: "swap", preload: false });
 const plexKr = IBM_Plex_Sans_KR({ weight: ["400", "500", "600", "700"], variable: "--font-plex", display: "swap", preload: false });
 const gowunDodum = Gowun_Dodum({ weight: "400", variable: "--font-gowun", display: "swap", preload: false });
+const gowunBatang = Gowun_Batang({ weight: ["400", "700"], variable: "--font-gowunbatang", display: "swap", preload: false });
 const sunflower = Sunflower({ weight: ["300", "500", "700"], variable: "--font-sunflower", display: "swap" }); // 서브셋 없는 글꼴 = 미리 받지 않는다
 
 export const metadata: Metadata = {
@@ -110,7 +112,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${gaegu.variable} ${blackHanSans.variable} ${nanumMyeongjo.variable} ${jua.variable} ${doHyeon.variable} ${nanumPen.variable} ${gamja.variable} ${gugi.variable} ${hiMelody.variable} ${notoSansKr.variable} ${nanumGothic.variable} ${plexKr.variable} ${gowunDodum.variable} ${sunflower.variable}`}
+      className={`${gaegu.variable} ${blackHanSans.variable} ${nanumMyeongjo.variable} ${jua.variable} ${doHyeon.variable} ${nanumPen.variable} ${gamja.variable} ${gugi.variable} ${hiMelody.variable} ${notoSansKr.variable} ${nanumGothic.variable} ${plexKr.variable} ${gowunDodum.variable} ${gowunBatang.variable} ${sunflower.variable}`}
       // 아래 페인트-전 스크립트가 hydration 전에 <html>에 data-eye-comfort/-reduce-motion을
       // 박는다 → 서버 HTML과 불일치로 루트 hydration이 매번 실패했고, 그 여파로 Next 라우터가
       // router.refresh()의 RSC 응답을 버렸다(비공개 잠금해제가 화면에 반영 안 되던 근본 원인,

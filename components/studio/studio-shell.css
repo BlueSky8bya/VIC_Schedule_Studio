@@ -10409,6 +10409,15 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   max-width: min(62vw, 228px);
   z-index: 60;
 }
+/* 설정이 든 팝오버(모바일 편집실 설정)는 폭을 정해 준다(2026-10-10 소유자: "글자 설정에서 화면이 넘어 가로 스크롤").
+   원인: 안의 설정 목록(.rhh-tabs)이 컨테이너 쿼리용 inline-size 봉쇄라 '내용 폭'이 0으로 잡히고, 92px 레일 안의
+   absolute 팝오버는 그 폭(max-content)에 맞춰 64px로 쪼그라들었다 → 글자 탭 미리보기(고정 폭 카드)가 팝오버
+   밖 오른쪽으로 삐져나가 페이지가 가로로 넓어졌다. 화면 폭에 맞춘 고정 폭이면 안이 그 폭에 맞춰 접힌다. */
+.agenda-rail .role-help-pop:has(.rhh-tabs) {
+  width: min(380px, calc(100vw - 24px));
+  max-width: none;
+  overflow-x: clip;
+}
 /* 레일이 sticky를 맡으므로 필터 자체 sticky는 풀고(static), 남는 높이를 채워 내부 스크롤한다.
    행 기준 flex(0 0 92px=컬럼에선 높이 고정)도 풀고 레일 폭(92px)을 채운다. */
 .agenda-rail > .agenda-legend-studio {

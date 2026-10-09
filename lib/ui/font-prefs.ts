@@ -20,14 +20,20 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: "nanumgothic", label: "나눔고딕", kind: "고딕", stack: `var(--font-nanumgothic), ${FALLBACK}` },
   { id: "plex", label: "IBM Plex", kind: "고딕", stack: `var(--font-plex), ${FALLBACK}` },
   { id: "gowun", label: "고운돋움", kind: "고딕", stack: `var(--font-gowun), ${FALLBACK}` },
+  // 2026-10-10 소유자: "빈칸 두지 말고 고딕 3개·둥근 1개·명조 손글씨 1개 더 — 4열 다 맞춰서"
+  { id: "suit", label: "SUIT", kind: "고딕", stack: `"VIC SUIT", ${FALLBACK}` },
+  { id: "scdream", label: "에스코어드림", kind: "고딕", stack: `"VIC SCoreDream", ${FALLBACK}` },
+  { id: "gmarket", label: "지마켓 산스", kind: "고딕", stack: `"VIC GmarketSans", ${FALLBACK}` },
   { id: "nsround", label: "나눔스퀘어라운드", kind: "둥근", stack: `"VIC NanumSquareRound", ${FALLBACK}` },
   { id: "tmoney", label: "티머니 둥근바람", kind: "둥근", stack: `"VIC TmoneyRoundWind", ${FALLBACK}` },
   { id: "binggrae", label: "빙그레체", kind: "둥근", stack: `"VIC Binggrae", ${FALLBACK}` },
   { id: "cookierun", label: "쿠키런체", kind: "둥근", stack: `"VIC CookieRun", ${FALLBACK}` },
   { id: "maple", label: "메이플스토리체", kind: "둥근", stack: `"VIC Maplestory", ${FALLBACK}` },
-  { id: "cafe24air", label: "카페24 써라운드 에어", kind: "둥근", stack: `"VIC Cafe24SsurroundAir", ${FALLBACK}` },
+  { id: "cafe24air", label: "써라운드 에어", kind: "둥근", stack: `"VIC Cafe24SsurroundAir", ${FALLBACK}` },
+  { id: "cafe24", label: "써라운드", kind: "둥근", stack: `"VIC Cafe24Ssurround", ${FALLBACK}` },
   { id: "sunflower", label: "해바라기", kind: "둥근", stack: `var(--font-sunflower), ${FALLBACK}` },
   { id: "myeongjo", label: "나눔명조", kind: "명조", stack: `var(--font-myeongjo), ${FALLBACK}` },
+  { id: "gowunbatang", label: "고운바탕", kind: "명조", stack: `var(--font-gowunbatang), ${FALLBACK}` },
   { id: "omyu", label: "오뮤 다예쁨체", kind: "손글씨", stack: `"VIC omyu", ${FALLBACK}` },
   { id: "gamja", label: "감자꽃", kind: "손글씨", stack: `var(--font-gamja), ${FALLBACK}` }
 ];

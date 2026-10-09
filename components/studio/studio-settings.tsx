@@ -540,6 +540,7 @@ export function StudioSettingsList({
                           onFocus={() => setFontPeek(f.id)}
                           onMouseEnter={() => setFontPeek(f.id)}
                           role="radio"
+                          title={f.label}
                           type="button"
                         >
                           <span aria-hidden="true" className={`rhh-font-sample${ready ? " ready" : ""}`} style={f.stack ? { fontFamily: f.stack } : undefined}>
