@@ -7165,7 +7165,8 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
   height: calc(22px * var(--cal-zoom, 1));
 }
 .studio-day .support-bar span {
-  font-size: calc(10.5px * var(--cal-zoom, 1) * var(--cal-text, 1));
+  /* 글씨 크기는 1.15배까지만 — 시청자 화면 띠와 같은 상한(public-poster.css 근거). */
+  font-size: calc(10.5px * var(--cal-zoom, 1) * min(var(--cal-text, 1), 1.15));
 }
 
 /* 확대 중 하단 중앙 플로팅 배율 표시 — 스크롤로 액션바가 밀려나도 현재 %가 보인다.
