@@ -445,6 +445,9 @@ html[data-theme="dark"] :is(.bp-tool.on, .bp-width.on, .bp-mini-cell.picked) {
   background: var(--studio-action-tint); color: var(--seg-on-accent-ink);
   box-shadow: inset 0 0 0 1px rgb(var(--studio-action-rgb) / 35%);
 }
+/* 펜 색 '직접 고르기' — 밝은 화면의 흰 칸이 어두운 트레이에서 혼자 튀었다(2026-10-10). 트레이와 같은 밤 표면으로. */
+html[data-theme="dark"] .bp-current-color { background: var(--surface-2); border-color: var(--night-line); color: var(--ink-soft); }
+html[data-theme="dark"] .bp-current-color i { border-color: rgb(255 255 255 / 22%); }
 html[data-theme="dark"] .bp-tool.danger { color: var(--coral); }
 html[data-theme="dark"] .bp-tool.danger.armed { color: white; }
 

@@ -135,6 +135,12 @@ const PEN_COLORS = [
   "#e879f9",
   "#f472b6"
 ];
+// 첫 칸(기본 펜 색)은 화면 모드를 따른다 — 어두운 화면에서 검정 펜은 안 보인다(2026-10-10 소유자).
+const INK_LIGHT = "#000000";
+const INK_DARK = "#ffffff";
+function isDarkTheme(): boolean {
+  return typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark";
+}
 // 굵기 6단(펜 기준 px) — 형광펜·지우개는 배수로 키운다.
 const PEN_WIDTHS = [2, 3, 5, 8, 12, 18];
 const TOOL_LABELS: Record<BroadcastTool, string> = {
@@ -296,6 +302,20 @@ export function BroadcastPanel({
   const lastFitRef = useRef({ w: 0, h: 0, scale: 0 });
   const [tool, setTool] = useState<BroadcastTool>("pen");
   const [penColor, setPenColor] = useState(PEN_COLORS[0]);
+  // 화면 모드 — <html data-theme>를 지켜본다. 기본 펜 색(검정↔흰색)을 고른 채면 모드가 바뀔 때 같이 바꾼다.
+  const [darkTheme, setDarkTheme] = useState(false);
+  useEffect(() => {
+    const sync = () => {
+      const dark = isDarkTheme();
+      setDarkTheme(dark);
+      setPenColor((c) => (dark && c === INK_LIGHT ? INK_DARK : !dark && c === INK_DARK ? INK_LIGHT : c));
+    };
+    sync();
+    const mo = new MutationObserver(sync);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => mo.disconnect();
+  }, []);
+  const penPalette = darkTheme ? [INK_DARK, ...PEN_COLORS.slice(1)] : PEN_COLORS;
   const [penWidth, setPenWidth] = useState(PEN_WIDTHS[2]);
   // '색 직접 고르기' 팝오버 — 네이티브 OS 색상판 대신 태그 편집과 같은 인라인 피커를 재사용
   // (주변과 같은 디자인 언어: 같은 트레이·SV 영역·톤 필터). openedWith = 취소 시 복귀 색.
@@ -4181,7 +4201,7 @@ export function BroadcastPanel({
           </div>
           <div className="bp-tool-group bp-color-group" role="group" aria-label="색상 팔레트">
             <div className="bp-colors">
-              {PEN_COLORS.map((c) => (
+              {penPalette.map((c) => (
                 <button
                   aria-label={`펜 색 ${c}`}
                   aria-pressed={penColor === c}
