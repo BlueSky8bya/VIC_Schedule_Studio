@@ -5303,7 +5303,9 @@ html[data-reduce-motion] .pop-bloom {
      예전엔 머리글은 min-height 27px, 띠는 top 26px으로 따로 박혀 있었는데, 확대(--cal-zoom)
      하면 날짜 글자만 커져(17px×1.5 + padding = 28.5px) 띠가 날짜를 덮었다.
      같은 식에서 파생시키면 어떤 배율에서도 구조적으로 겹칠 수 없다. */
-  --day-head-h: calc(25px * var(--cal-zoom, 1));
+  /* 숫자(20px × 확대 × 글씨 크기) + 위 2px + 아래 3px보다 작아지지 않는다 — 글씨 크기를 키우면 머리줄도 같이 자라고,
+     띠(top = 머리줄 + 틈)와 목록 원점이 함께 내려간다(2026-10-10: 고정 25px이라 20px 글씨에서 숫자가 띠를 넘었다). */
+  --day-head-h: max(calc(25px * var(--cal-zoom, 1)), calc(20px * var(--cal-zoom, 1) * var(--cal-text, 1) + 5px));
   /* 칸 높이는 행(grid-auto-rows: minmax(150px,auto))이 정하고, 칸은 그 행에 stretch로 꽉 찬다.
      일정이 많으면 행이 자라 칸도 커지므로 일정이 잘리지 않는다(클립 없음). */
   border-right: 1px solid var(--cal-cell-line, #efe6d3);
@@ -5418,7 +5420,8 @@ html[data-reduce-motion] .pop-bloom {
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  min-height: var(--day-head-h, 25px);
+  /* height로 못박는다 — 띠 top이 이 값을 그대로 쓰므로 내용(기념일 칩 등)이 줄을 키우면 띠와 어긋난다. */
+  height: var(--day-head-h, 25px);
   padding: 2px 6px 0;
   font-weight: 900;
 }

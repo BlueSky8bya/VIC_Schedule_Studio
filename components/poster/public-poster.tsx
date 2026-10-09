@@ -46,7 +46,7 @@ import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
 import { useRemainSeconds } from "@/lib/ui/use-remain-seconds"; // OS reduce-motion 무시, 앱 토글만 존중
 import { trackSettle } from "@/lib/ui/settle-track";
-import { SUPPORT_LANE_STEP, supportListPad } from "@/lib/ui/support-bar";
+import { supportBarTop, supportListPad } from "@/lib/ui/support-bar";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { celebrationFor, type CelebrationTheme } from "@/lib/ui/celebration";
@@ -3306,9 +3306,8 @@ export function PublicPoster({
             // 편집실은 확대 배율이 스텝(20×zoom)엔 곱해지고 높이(17)엔 안 곱해져 배율에 따라
             // 틈이 변하지만, 시청자는 항상 이 고정 틈이다 — SUPPORT_LANE_STEP과 동기.
             // ×--cal-zoom: 띠 높이·글자도 확대에 동참(public-poster.css) — 스텝만 고정이면 겹친다.
-            top: `calc(var(--day-head-h, 27px) - 1px + ${
-              lane * SUPPORT_LANE_STEP
-            }px * var(--cal-zoom, 1))`,
+            // 머리줄 바닥 + 틈(lib/ui/support-bar.ts) — 머리줄 높이(--day-head-h)가 글씨 크기를 따라 자라도 숫자를 안 먹는다.
+            top: supportBarTop(lane),
             // 광택 sweep 지연용 요일 인덱스 — 조각들이 순서대로 반짝여 빛줄기 하나가
             // 띠 전체를 훑는 것처럼 이어진다(CSS .support-bar.is-clickable 참고).
             ["--sb-col" as string]: cell.weekday,
@@ -3444,10 +3443,7 @@ export function PublicPoster({
                   // ×--cal-zoom: 띠 높이·스텝이 확대에 동참하므로 비우는 양도 같이 커져야
                   // 카드가 띠를 덮지 않는다(고정 여유는 다른 목록 패딩처럼 배율 제외).
                   // 값은 편집실과 공용(lib/ui/support-bar.ts) — 띠→첫 카드 4px.
-                  paddingTop: (() => {
-                    const pad = supportListPad(cellLaneDepth)!;
-                    return `calc(${pad.fixed}px + ${pad.scaled}px * var(--cal-zoom, 1))`;
-                  })()
+                  paddingTop: supportListPad(cellLaneDepth)!
                 }
               : undefined
           }

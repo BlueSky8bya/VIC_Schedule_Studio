@@ -6068,6 +6068,10 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 
 .studio-day {
   position: relative;
+  /* 날짜 숫자 크기와 머리줄 높이를 한 식에서 — 띠 top(lib/ui/support-bar.ts)이 --day-head-h를 쓴다. 원본 수치 근거는
+     .studio-day-head strong 주석. 머리줄 = 위 4px + 숫자 + 아래 2px, 최소 22px(2026-10-10). */
+  --day-num-fs: max(12px, calc(100vw * 20 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
+  --day-head-h: max(22px, calc(var(--day-num-fs) + 6px));
   /* --cal-zoom(A안 방송용 확대, 기본 1): 칸·글자·간격이 함께 비례 — transform 없이 레이아웃만
      커져 드래그 좌표·삽입선 판정이 그대로 유효하다. 세로는 원래 내용 따라 자라는 구조라 안전. */
   min-height: calc(132px * var(--cal-zoom, 1));
@@ -6342,7 +6346,8 @@ body.cell-range-dragging {
 .studio-day-head {
   display: flex;
   width: 100%;
-  min-height: 22px;
+  /* height로 못박는다 — 띠 top이 이 값을 그대로 쓴다(내용이 줄을 키우면 띠와 어긋난다). */
+  height: var(--day-head-h, 22px);
   /* 가운데 정렬 — baseline이면 큰 날짜 숫자(clamp 20px)와 월드컵 칩의 baseline을 맞추느라
      칩이 숫자 아래쪽으로 처져 어긋나 보였다. center로 두 요소를 수직 가운데로. */
   align-items: center;
@@ -6356,7 +6361,7 @@ body.cell-range-dragging {
   /* 2026-09-17 소유자: 시청자 포스터와 같은 글자. 포스터는 1840 캔버스 px(날짜 20/900)를 화면 폭에 맞춰 축소하므로
      편집실은 같은 px에 100vw/1840을 곱해 화면 px를 맞춘다(셸 zoom ≥1700 .9는 나눠서 상쇄, 패널 밀어내기 축소는
      --cal-zoom에 이미 곱해져 있다). 하한 12px = 좁은 창 가독성. 원본 수치는 public-poster.css '달력 글자 기준'. */
-  font-size: max(12px, calc(100vw * 20 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
+  font-size: var(--day-num-fs);
   font-weight: 900;
   /* line-height를 1로 고정해 헤더 높이가 글자 크기에 끌려 커지지 않게 한다(웹에서
      숫자가 20px까지 커지면 상속 line-height 1.5 탓에 헤더가 ~34px로 부풀어
