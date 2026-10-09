@@ -5816,10 +5816,13 @@ export function StudioShell({
       if (overlayKeysBlockedRef.current) return;
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
+      // 단축키는 클릭이 아니라 위임 리스너에 안 잡힌다 — 같은 ui.click 줄에 kbd-* id로 남긴다(2026-10-10).
+      const kbd = (id: string) => logActivity("ui.click", { target: id });
       // Ctrl/⌘+S: 어디에 포커스가 있든(제목 입력칸 포함) 브라우저 '페이지 저장'을 가로채고 이 카드
       // 저장. 아래 INPUT/TEXTAREA 가드보다 먼저 처리해야 제목 편집 중에도 'HTML로 저장' 창이 안 뜬다.
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "s") {
         e.preventDefault();
+        kbd("kbd-save");
         if (editorVisible && form.publicTitle.trim()) saveEvent();
         else flashSavedChip();
         return;
@@ -5828,6 +5831,7 @@ export function StudioShell({
       // INPUT 가드보다 먼저 처리한다 — 맨 N은 패널이 열린 동안 '제목 글자'로 먹혀 닫기가 불가능했다.
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "n" && !modal) {
         e.preventDefault();
+        kbd("kbd-new");
         selectDate(selectedDate, true);
         return;
       }
@@ -5840,6 +5844,7 @@ export function StudioShell({
       }
       // Esc: 복사 중이면 복사 해제(편집창·창이 없을 때) — 엑셀처럼 점선 행렬이 사라진다.
       if (e.key === "Escape" && clipboard && !editorVisible && !modal) {
+        kbd("kbd-clip-clear");
         clearClipboard();
         return;
       }
@@ -5852,6 +5857,7 @@ export function StudioShell({
           teaserGateActive && el?.tagName === "INPUT" && el.type === "password" && !el.value;
         if (inEmptyGate) {
           e.preventDefault();
+          kbd("kbd-delete");
           deleteEvent(selectedEventId);
           return;
         }
@@ -5886,6 +5892,7 @@ export function StudioShell({
       // Delete 키: 선택한 일정 삭제(버튼 없이도).
       if (e.key === "Delete" && selectedEventId) {
         e.preventDefault();
+        kbd("kbd-delete");
         deleteEvent(selectedEventId);
         return;
       }
@@ -5896,6 +5903,7 @@ export function StudioShell({
       // Ctrl+Shift+Z: 다시 실행(P1-HIST-1). Shift 조합은 이것만 — 나머지는 기존대로 차단.
       if (key === "z" && e.shiftKey) {
         e.preventDefault();
+        kbd("kbd-redo");
         redoLastUndo();
         return;
       }
@@ -5903,16 +5911,20 @@ export function StudioShell({
       if (key === "z") {
         // 실수로 지운 일정 되살리기(편집 중 텍스트는 위 INPUT/TEXTAREA 가드로 보호됨).
         e.preventDefault();
+        kbd("kbd-undo");
         restoreLastDelete();
       } else if (key === "y") {
         // Ctrl+Y — Windows 관습의 다시 실행(같은 동작).
         e.preventDefault();
+        kbd("kbd-redo");
         redoLastUndo();
       } else if (key === "c" && selectedEventId && !window.getSelection()?.toString()) {
         e.preventDefault();
+        kbd("kbd-copy");
         copySelectedEvent();
       } else if (key === "v" && clipboard) {
         e.preventDefault();
+        kbd("kbd-paste");
         pasteCopiedEvent();
       }
     }

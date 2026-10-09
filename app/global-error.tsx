@@ -30,6 +30,7 @@ export default function GlobalError({
             ) : null}
             <button
               className="button primary system-state-action"
+              data-act="error-retry"
               onClick={() => reset()}
               type="button"
             >

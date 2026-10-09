@@ -1293,6 +1293,7 @@ export function DayVodWindow({
                       aria-expanded={dayVodKeysOpen}
                       aria-label="단축키 안내"
                       className="dvm-close dvm-help"
+                      data-act="dvm-help"
                       onClick={() => {
                         hapticTick();
                         setDayVodKeysOpen((v) => !v);

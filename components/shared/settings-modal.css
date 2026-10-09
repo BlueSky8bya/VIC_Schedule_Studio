@@ -1012,8 +1012,12 @@ html[data-reduce-motion] .rhh-font-grid button {
 }
 .rhh-text-preview .pv-card b,
 .rhh-text-preview .pv-card li {
-  font-weight: clamp(100, calc(700 + var(--cal-weight, 0)), 900);
+  font-weight: clamp(500, calc(700 + var(--cal-weight, 0)), 900);
   -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
+}
+/* 세부 줄 = 제목보다 한 단계(300) 가볍게 — 진짜 카드(.event-subs li)와 같은 식. */
+.rhh-text-preview .pv-card li {
+  font-weight: clamp(300, calc(400 + var(--cal-weight, 0)), 900);
 }
 .rhh-text-preview .pv-card b {
   display: flex;

@@ -55,10 +55,10 @@ export function ShowcaseDate({ value, onChange, onClose }: { value: string; onCh
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if(picker)closePicker();else onClose(); }
   }}>
     <div className="sc-date-month">
-      <button type="button" aria-label="이전 달" disabled={year === 1900 && month === 1} onClick={() => turn(-1)}>‹</button>
-      <button className="sc-date-select" ref={yearRef} type="button" aria-label="연도" aria-haspopup="listbox" aria-expanded={picker==='year'} onClick={()=>setPicker(p=>p==='year'?null:'year')}>{year}년<ChevronDown size={13} aria-hidden="true"/></button>
-      <button className="sc-date-select" ref={monthRef} type="button" aria-label="월" aria-haspopup="listbox" aria-expanded={picker==='month'} onClick={()=>setPicker(p=>p==='month'?null:'month')}>{month}월<ChevronDown size={13} aria-hidden="true"/></button>
-      <button type="button" aria-label="다음 달" disabled={year === 2100 && month === 12} onClick={() => turn(1)}>›</button>
+      <button data-act="showcase-date-prev" type="button" aria-label="이전 달" disabled={year === 1900 && month === 1} onClick={() => turn(-1)}>‹</button>
+      <button className="sc-date-select" data-act="showcase-date-year" ref={yearRef} type="button" aria-label="연도" aria-haspopup="listbox" aria-expanded={picker==='year'} onClick={()=>setPicker(p=>p==='year'?null:'year')}>{year}년<ChevronDown size={13} aria-hidden="true"/></button>
+      <button className="sc-date-select" data-act="showcase-date-month" ref={monthRef} type="button" aria-label="월" aria-haspopup="listbox" aria-expanded={picker==='month'} onClick={()=>setPicker(p=>p==='month'?null:'month')}>{month}월<ChevronDown size={13} aria-hidden="true"/></button>
+      <button data-act="showcase-date-next" type="button" aria-label="다음 달" disabled={year === 2100 && month === 12} onClick={() => turn(1)}>›</button>
     </div>
     {picker?<DateNumberList key={picker} kind={picker} value={picker==='year'?year:month} onClose={closePicker} onPick={v=>{if(picker==='year')setYear(v);else setMonth(v);closePicker();}}/>:<div className="sc-date-days">
       {['일','월','화','수','목','금','토'].map((d,i)=><span key={d} className="sc-date-weekday" data-day-tone={i===0?'red':i===6?'blue':undefined}>{d}</span>)}

@@ -7032,7 +7032,7 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
   font-size: max(12px, calc(100vw * 14 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다 — 시청자 포스터와 동일.
      태그 선택·저장하면 그 태그 색에 맞춰 즉시(렌더 시점) 반영된다. */
-  font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
+  font-weight: clamp(500, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
   -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
   line-height: 1.2;
 }
@@ -7042,7 +7042,8 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
   text-shadow: var(--evt-shadow, none);
 }
 .studio-event-pill .pill-subs:not(.span-cont) li {
-  font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
+  /* 2026-10-10 소유자: 제목 = 설정 굵기, 세부 줄 = 한 단계(300) 가볍게(하한 300) — 위계가 늘 보이게. */
+  font-weight: clamp(300, calc(var(--evt-weight, 800) + var(--cal-weight, 0) - 300), 900);
   -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
 }
 

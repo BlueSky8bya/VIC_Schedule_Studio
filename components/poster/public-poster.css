@@ -831,6 +831,12 @@ html[data-reduce-motion] .mb-live-dot {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+/* 2026-10-10: 모바일 목록 일정도 설정 굵기를 따른다 — 제목 700±, 세부 줄(.agenda-subs)은 그보다 300 가볍게.
+   머리 h1.agenda-title(보고 있는 달)은 일정이 아니라 제외. */
+.agenda-event .agenda-title {
+  font-weight: clamp(500, calc(700 + var(--cal-weight, 0)), 900);
+  -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
+}
 .agenda-sub {
   margin: 0;
   font-size: var(--text-label);
@@ -848,7 +854,8 @@ html[data-reduce-motion] .mb-live-dot {
   position: relative;
   list-style: none;
   font-size: var(--text-label);
-  font-weight: 600;
+  font-weight: clamp(300, calc(400 + var(--cal-weight, 0)), 900);
+  -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
   color: #5b606b;
 }
 .agenda-subs::before {
@@ -5436,9 +5443,7 @@ html[data-reduce-motion] .pop-bloom {
   position: relative;
   z-index: 1;
 }
-.public-event[data-tier] .event-main p {
-  font-weight: 900;
-}
+/* 관심 단계는 제목 굵기를 바꾸지 않는다(2026-10-10 소유자: 굵기는 설정만 따른다). */
 /* 2색 카드는 자식 전부를 position:relative·z-index 1로 바꾸는 규칙(.public-event[data-mixed] >
    :not(.evt-pat))이 있어 링·👑이 흐름 안으로 들어가(링 = 카드 바닥 금색 띠, 👑 = 왼쪽 아래로 밀림 —
    사용자 리포트) 본문과 같은 층에 그려졌다. 둘 다 absolute·층을 되돌린다(특이도 0,4,0 > 0,3,0). */
@@ -6075,8 +6080,9 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   margin: 0;
   white-space: pre-line;
   font-size: calc(14px * var(--cal-zoom, 1) * var(--cal-text, 1));
-  /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다(근거: WCAG 1.4.3 등). */
-  font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
+  /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다(근거: WCAG 1.4.3 등).
+     하한 500 = '가늘게'에서도 세부 줄(−300, 하한 300)보다 한 단계 굵게 남는다(2026-10-10). */
+  font-weight: clamp(500, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
   -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
   line-height: 1.2;
 }
@@ -6087,7 +6093,8 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   text-shadow: var(--evt-shadow, none);
 }
 .public-event .event-subs:not(.span-cont) li {
-  font-weight: clamp(100, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
+  /* 2026-10-10 소유자: 제목 = 설정 굵기, 세부 줄 = 한 단계(300) 가볍게(하한 300) — 위계가 늘 보이게. */
+  font-weight: clamp(300, calc(var(--evt-weight, 800) + var(--cal-weight, 0) - 300), 900);
   -webkit-text-stroke: var(--cal-stroke, 0) currentColor;
 }
 

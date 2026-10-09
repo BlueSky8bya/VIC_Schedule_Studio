@@ -447,7 +447,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     <main className="art-board" data-art-board data-density={density}>
       <header className="art-board-head">
         <div className="art-head-left">
-          <a className="art-back" href="/studio">
+          <a className="art-back" data-act="art-back" href="/studio">
             <ArrowLeft aria-hidden="true" size={12} /> 편집실
           </a>
           <h1>계절 배경 아트 보드</h1>
@@ -545,13 +545,13 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               ))}
             </select>
             <div className="art-seg strong" role="group" aria-label="납품 상태">
-              <button aria-pressed={state === "all"} className="art-chip" onClick={() => setState("all")} type="button">
+              <button aria-pressed={state === "all"} className="art-chip" data-act="art-filter" onClick={() => setState("all")} type="button">
                 전체
               </button>
-              <button aria-pressed={state === "todo"} className="art-chip" onClick={() => setState("todo")} type="button">
+              <button aria-pressed={state === "todo"} className="art-chip" data-act="art-filter" onClick={() => setState("todo")} type="button">
                 남음
               </button>
-              <button aria-pressed={state === "done"} className="art-chip" onClick={() => setState("done")} type="button">
+              <button aria-pressed={state === "done"} className="art-chip" data-act="art-filter" onClick={() => setState("done")} type="button">
                 납품됨
               </button>
             </div>
@@ -575,34 +575,34 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               <summary>필터 더</summary>
               <div className="art-more-body">
                 <div className="art-seg" role="group" aria-label="계절">
-                  <button aria-pressed={season === "all"} className="art-chip" onClick={() => setSeason("all")} type="button">
+                  <button aria-pressed={season === "all"} className="art-chip" data-act="art-filter" onClick={() => setSeason("all")} type="button">
                     사철
                   </button>
                   {SEASONS.map((k) => (
-                    <button aria-pressed={season === k} className="art-chip" key={k} onClick={() => setSeason(k)} type="button">
+                    <button aria-pressed={season === k} className="art-chip" data-act="art-filter" key={k} onClick={() => setSeason(k)} type="button">
                       {SEASON_KO[k]}
                     </button>
                   ))}
                 </div>
                 <div className="art-seg" role="group" aria-label="생성 차수">
-                  <button aria-pressed={wave === "all"} className="art-chip" onClick={() => setWave("all")} type="button">
+                  <button aria-pressed={wave === "all"} className="art-chip" data-act="art-filter" onClick={() => setWave("all")} type="button">
                     차수 전부
                   </button>
                   {WAVES.map((w) => (
-                    <button aria-pressed={wave === w} className="art-chip" key={w} onClick={() => setWave(w)} type="button">
+                    <button aria-pressed={wave === w} className="art-chip" data-act="art-filter" key={w} onClick={() => setWave(w)} type="button">
                       {w}차
                     </button>
                   ))}
                 </div>
                 <div className="art-seg" role="group" aria-label="지금 화면">
                   {NOW_FILTERS.map(({ k, ko }) => (
-                    <button aria-pressed={nowF === k} className="art-chip" key={k} onClick={() => setNowF(k)} type="button">
+                    <button aria-pressed={nowF === k} className="art-chip" data-act="art-filter" key={k} onClick={() => setNowF(k)} type="button">
                       {ko}
                     </button>
                   ))}
                 </div>
                 <div className="art-seg" role="group" aria-label="파일럿">
-                  <button aria-pressed={pilotOnly} className="art-chip" onClick={() => setPilotOnly((v) => !v)} type="button">
+                  <button aria-pressed={pilotOnly} className="art-chip" data-act="art-filter" onClick={() => setPilotOnly((v) => !v)} type="button">
                     파일럿만
                   </button>
                 </div>

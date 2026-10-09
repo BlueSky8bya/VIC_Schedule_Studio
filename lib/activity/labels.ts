@@ -9,6 +9,8 @@
 // 사전에 없으면 이름을 지어내지 않는다. 대신 "아직 이름을 안 붙인 버튼"으로 표시하고
 // 원래 값은 개발자 모드/복사본에만 남긴다.
 
+import { FONT_OPTIONS } from "@/lib/ui/font-prefs";
+
 export type TargetLabel = {
   name: string;
   /** 어디에 있는 것인지 — 코드를 몰라도 찾아갈 수 있게. */
@@ -34,6 +36,11 @@ const RETIRED_TARGETS = new Set([
   // 2026-09-19 점검 — 코드 어디서도 더는 기록되지 않는 값들(스캐너로 대조). 남겨 두면 '한 번도 안 쓴
   // 기능'처럼 후보 목록에 끼어 목록이 거짓말을 한다. 이름은 옛 기록을 읽기 위해 그대로 둔다.
   "agenda-legend-insights",
+  "agenda-legend-search",
+  // 2026-10-10 점검 — 코드에서 사라진 값: 다크 모드 스위치(→ '화면 모드' 세그먼트), 이용 기록 '지금 갱신', 잠금해제 즉시 만료
+  "다크 모드 켜기/끄기",
+  "dayvisit-refresh-now",
+  "access-expire",
   // 기능은 살아 있고 **id만 바뀐** 것(지금은 'insight-change-passcode') — 위 renamed 무리와 같은 처리.
   "change-passcode",
   "decorate",
@@ -138,6 +145,8 @@ const RETIRED_SECTIONS = new Set(["decorate"]);
 // /replay/2026-04-13 …이 날짜마다 1건씩 흩어져 목록을 덮었다). 집계(query.ts)와 이름 풀기가 같은 함수를 쓴다.
 export function canonRouteTarget(target: string): string {
   if (/^\/replay\/\d{4}-\d{2}-\d{2}(?:[/?#].*)?$/.test(target)) return "/replay/[date]";
+  // 저장 단계(registeredActivityTarget)가 날짜를 떼고 "/replay"로 남긴다 — 같은 화면이다.
+  if (target === "/replay") return "/replay/[date]";
   if (/^\/studio\/calendar\/\d{4}\/\d{1,2}(?:[/?#].*)?$/.test(target)) return "/studio/calendar";
   if (/^\/studio\/ambient-art\/[^/?#]+(?:[/?#].*)?$/.test(target)) return "/studio/ambient-art/[id]";
   return target;
@@ -155,6 +164,11 @@ const ROUTE: Record<string, TargetLabel> = {
   "/studio/tags": { name: "태그 관리 화면", area: "태그 편집" },
   "/studio/trusted-members": { name: "멤버 관리 화면", area: "옛 화면", hint: "옛 기록(기능 철수 2026-09-04)" },
   "/login": { name: "로그인 화면", area: "계정" },
+  // 2026-10-10 — 살아 있는데 이름이 없어 '(이름미등록)'으로 보이던 화면들.
+  "/onair": { name: "뱅송 미리보기", area: "시청자 화면", hint: "방송 화면(OBS) 그대로 보기 — 로그인 없이 열림" },
+  "/studio/timelines": { name: "팬 타임라인 관리 화면", area: "편집실", hint: "설정 → 팬 타임라인 관리" },
+  "/studio/search-dictionary": { name: "은어 사전 화면", area: "편집실", hint: "설정 → 은어 사전 초안(개발자)" },
+  "/studio/ambient-art": { name: "아트 보드 화면", area: "편집실", hint: "설정 → 아트 보드(개발자)" },
   // 화면 검사용 고정 화면 — 실제 사용자 화면이 아니라 자동 검사(Playwright)가 여는 곳이다.
   // 사람 기록에 섞이면 "이 화면은 뭐지"가 되므로 그렇다고 이름에 적어 준다.
   "/visual-fixture/poster": {
@@ -183,6 +197,12 @@ const SECTION: Record<string, TargetLabel> = {
   // 꾸미기는 라우트로 잡히므로 섹션 계측을 뺐다 — 옛 기록만 남는다.
   decorate: { name: "꾸미기", area: "옛 화면", hint: "옛 기록(지금은 화면 진입으로 셈)" }
 };
+
+// 글꼴 id → 화면 이름. 기록 단계에서 숫자가 #로 접히므로(cafe24 → cafe#) 키도 같은 모양으로 접는다.
+const FONT_OPT_NAMES: Record<string, string> = Object.fromEntries(
+  FONT_OPTIONS.map((f) => [f.id.replace(/\d+/g, "#"), f.label])
+);
+const TIER_OPT_NAMES: Record<string, string> = { warm: "관심", hot: "높은 관심", blaze: "폭발적", top: "이 달 1위" };
 
 /** 버튼·컨트롤 사전. 테스트가 "코드에 없는 이름"을 잡으려고 함께 읽는다(2026-09-19). */
 export const ACT: Record<string, TargetLabel> = {
@@ -493,6 +513,7 @@ export const ACT: Record<string, TargetLabel> = {
   "agenda-login": { name: "로그인", area: "계정", hint: "모바일 화면 아래 계정 줄" },
   "agenda-logout": { name: "로그아웃", area: "계정", hint: "모바일 화면 아래 계정 줄" },
   "agenda-legend-insights": { name: "이 달 기록 보기", area: "시청자 화면" },
+  "agenda-legend-search": { name: "검색 열기(옛 범례 자리)", area: "시청자 화면", hint: "옛 기록 — 지금은 '검색 열기'로 셉니다" },
   "insights-open": { name: "이 달 기록 보기", area: "시청자 화면" },
   "m-io-tags": { name: "태그 편집(모바일)", area: "태그 편집" },
   "m-io-members": { name: "멤버 관리(모바일)", area: "옛 화면" },
@@ -584,7 +605,112 @@ export const ACT: Record<string, TargetLabel> = {
   "세로 중앙 맞춤": { name: "세로 중앙 맞춤", area: "그림판", hint: "선택 정렬" },
   "왼쪽 맞춤": { name: "왼쪽 맞춤", area: "그림판", hint: "선택 정렬" },
   "오른쪽 맞춤": { name: "오른쪽 맞춤", area: "그림판", hint: "선택 정렬" },
-  "가로 균등 간격": { name: "가로 균등 간격", area: "그림판", hint: "선택 정렬" }
+  "가로 균등 간격": { name: "가로 균등 간격", area: "그림판", hint: "선택 정렬" },
+
+  // ── 2026-10-10 최신화: 새로 생겼는데 사전에 없어 저장 단계에서 이름이 지워지던(타임라인에 빈 '누름') 것들 ──
+  // 설정 창 — 글자·소리·화면·편집 묶음
+  "settings-tab": {
+    name: "설정 묶음 고르기",
+    area: "설정",
+    hint: "설정 창 왼쪽 목록(글자·소리·화면·움직임·배경…)",
+    opts: { text: "글자", sound: "소리", screen: "화면", motion: "움직임", bg: "배경", edit: "편집", viewer: "시청자 화면", dev: "개발자" }
+  },
+  "text-size": { name: "글씨 크기", area: "설정", hint: "달력 글씨 크기(px) 끌개" },
+  "text-size-reset": { name: "글씨 크기 기본으로", area: "설정" },
+  "font-select": { name: "글꼴", area: "설정", hint: "글꼴 타일 — 고른 글꼴까지 셉니다", opts: FONT_OPT_NAMES },
+  "text-weight-select": {
+    name: "글씨 굵기",
+    area: "설정",
+    hint: "일정 글자 굵기(제목 기준, 세부 줄은 한 단계 가볍게)",
+    opts: { thin: "가늘게", normal: "보통", bold: "굵게" }
+  },
+  "theme-mode-select": { name: "화면 모드", area: "설정", opts: { light: "밝게", dark: "어둡게", system: "자동" } },
+  "sound-toggle": { name: "효과음", area: "설정" },
+  "sound-volume": { name: "효과음 음량", area: "설정" },
+  "sound-preview": { name: "효과음 들어보기", area: "설정", hint: "음량 옆 미리듣기" },
+  "sound-sample": {
+    name: "소리 모아 듣기",
+    area: "설정",
+    hint: "소리 타일 — 누른 소리까지 셉니다",
+    opts: {
+      tap: "누르기", tab: "고르기", "toggle-on": "켜기", "toggle-off": "끄기", open: "열기", close: "닫기",
+      "page-prev": "이전 달", page: "다음 달", lift: "집기", drop: "놓기", save: "저장", delete: "삭제",
+      link: "잇기", unlink: "끊기", undo: "되돌리기", redo: "다시", "heart-on": "하트", unlock: "잠금 해제",
+      error: "실패", fanfare: "축하"
+    }
+  },
+  "sound-cat-celebrate": { name: "축하 소리", area: "설정" },
+  "sound-cat-ui": { name: "누름·이동 소리", area: "설정" },
+  "sound-cat-tap": { name: "하트·기대 소리", area: "설정" },
+  "sound-cat-edit": { name: "편집 소리", area: "설정" },
+  "sound-cat-alert": { name: "알림 소리", area: "설정" },
+  "sound-quiet-hidden": { name: "다른 탭일 때 소리 끄기", area: "설정" },
+  "fling-delete-toggle": { name: "던져서 삭제", area: "설정", hint: "편집 묶음 — 카드를 던져 지우기" },
+  "dev-birthday-preview": { name: "생일 선물 미리보기", area: "설정", hint: "개발자 묶음" },
+  "dev-gacha-open": { name: "캡슐 뽑기 열어보기", area: "설정", hint: "개발자 묶음 — 생일 선물 미리보기를 켰을 때" },
+
+  // 달 고르기(편집실·시청자 공용 부품)
+  "month-title": { name: "달 고르기 열기", area: "시청자 화면", hint: "머리줄 '○월' 제목 — 편집실·시청자 공용" },
+  "mp-today": { name: "달 고르기: 오늘로", area: "시청자 화면", hint: "편집실·시청자 공용" },
+  "today-fab": { name: "오늘이 있는 달로(떠 있는 버튼)", area: "시청자 화면", hint: "다른 달을 볼 때 뜨는 둥근 버튼 (T) — 편집실·시청자 공용" },
+  "month-jump-back": { name: "달 이동 되돌리기", area: "시청자 화면", hint: "'○월로 이동했어요' 안내의 되돌리기" },
+
+  "mp-year-prev": { name: "달 고르기: 이전 해", area: "시청자 화면", hint: "편집실·시청자 공용" },
+  "mp-year-next": { name: "달 고르기: 다음 해", area: "시청자 화면", hint: "편집실·시청자 공용" },
+  "mp-year-pick": { name: "달 고르기: 이웃 해 누르기", area: "시청자 화면", hint: "편집실·시청자 공용" },
+  "mp-month": { name: "달 고르기: 달 누르기", area: "시청자 화면", hint: "편집실·시청자 공용" },
+
+  // 인사이트 — 보기 전환
+  "perf-hours": { name: "서버 성능 시간 범위", area: "인사이트", opts: { day: "24시간", week: "7일" } },
+  "visit-view": { name: "방문 일별/주별", area: "인사이트", opts: { day: "일별", week: "주별" } },
+  "visit-dim": { name: "방문 역할별/기기별", area: "인사이트", opts: { role: "역할별", device: "기기별" } },
+
+  // 배경 감상 — 날짜 고르기
+  "showcase-date-prev": { name: "감상 날짜: 이전 달", area: "배경 감상" },
+  "showcase-date-next": { name: "감상 날짜: 다음 달", area: "배경 감상" },
+  "showcase-date-year": { name: "감상 날짜: 연도 고르기", area: "배경 감상" },
+  "showcase-date-month": { name: "감상 날짜: 월 고르기", area: "배경 감상" },
+
+  // 오류 화면·아트 보드
+  "error-retry": { name: "오류 화면 다시 시도", area: "기타", hint: "화면이 깨졌을 때 뜨는 안내의 버튼" },
+  "not-found-home": { name: "없는 페이지에서 홈으로", area: "기타" },
+  "art-filter": { name: "아트 보드 필터 칩", area: "편집실", hint: "/studio/ambient-art(개발자) — 상태·계절·차수·지금 화면" },
+  "vod-chapters-retry": { name: "챕터 다시 불러오기", area: "다시보기 창" },
+
+  // 시청자 화면 — 인기도·미정 필터, 생일 선물
+  "agenda-tier": { name: "인기도 필터(모바일)", area: "시청자 화면", opts: TIER_OPT_NAMES },
+  "legend-tier": { name: "인기도 필터", area: "시청자 화면", opts: TIER_OPT_NAMES },
+  "agenda-tent": { name: "미정 필터(모바일)", area: "시청자 화면" },
+  "legend-tent": { name: "미정 필터", area: "시청자 화면" },
+  "gift-close": { name: "생일 선물 카드 닫기", area: "시청자 화면" },
+  "gacha-coin": { name: "캡슐 뽑기: 동전 넣기", area: "시청자 화면" },
+  "gacha-turn": { name: "캡슐 뽑기: 손잡이 돌리기", area: "시청자 화면" },
+  "gacha-open": { name: "캡슐 뽑기: 캡슐 열기", area: "시청자 화면" },
+  "gacha-again": { name: "캡슐 뽑기: 한 번 더", area: "시청자 화면" },
+  "gacha-done": { name: "캡슐 뽑기: 닫기(결과 카드)", area: "시청자 화면" },
+  "gacha-close": { name: "캡슐 뽑기: 닫기(X)", area: "시청자 화면" },
+
+  // 다시보기 창·챕터
+  "vod-section-fold": { name: "챕터 코너 접기/펴기", area: "다시보기 창", hint: "코너 이름을 눌러 그 묶음 접기" },
+  "dvm-help": { name: "다시보기 단축키 안내", area: "다시보기 창" },
+
+  // 편집실 — 복사·태그 종류·개발자 보드
+  "clipboard-clear": { name: "복사 해제(칩 X)", area: "편집실", hint: "'복사 중' 칩의 X" },
+  "tag-seg-content": { name: "태그 종류: 콘텐츠", area: "태그 편집" },
+  "tag-seg-modifier": { name: "태그 종류: 형식", area: "태그 편집" },
+  "dict-back": { name: "은어 사전에서 편집실로", area: "편집실", hint: "/studio/search-dictionary(개발자)" },
+  "art-back": { name: "아트 보드에서 편집실로", area: "편집실", hint: "/studio/ambient-art(개발자)" },
+  "sc-set-handle": { name: "감상 중 설정창 옮기기", area: "배경 감상", hint: "설정창 손잡이(드래그·방향키)" },
+
+  // 편집실 단축키 — 클릭이 아니라 키라서 위임 리스너에 안 잡힌다. 같은 동작의 버튼과 견줘 보려고 따로 남긴다.
+  "kbd-save": { name: "일정 저장(Ctrl+S)", area: "편집실", hint: "단축키" },
+  "kbd-new": { name: "새 일정 카드(Alt+N)", area: "편집실", hint: "단축키" },
+  "kbd-delete": { name: "일정 삭제(Delete)", area: "편집실", hint: "단축키" },
+  "kbd-undo": { name: "되돌리기(Ctrl+Z)", area: "편집실", hint: "단축키" },
+  "kbd-redo": { name: "다시 실행(Ctrl+Y·Shift+Z)", area: "편집실", hint: "단축키" },
+  "kbd-copy": { name: "일정 복사(Ctrl+C)", area: "편집실", hint: "단축키" },
+  "kbd-paste": { name: "일정 붙여넣기(Ctrl+V)", area: "편집실", hint: "단축키" },
+  "kbd-clip-clear": { name: "복사 해제(Esc)", area: "편집실", hint: "단축키" }
 };
 
 // 이름을 안 붙여 마크업에서 유추된 값(`auto:`). 같은 클래스를 쓰는 버튼들이 한 항목으로 뭉치므로
@@ -618,9 +744,19 @@ const AUTO: Record<string, TargetLabel> = {
   ".agenda-login": { name: "로그인", area: "계정", hint: "모바일 화면 아래 계정 줄" },
   ".agenda-logout": { name: "로그아웃", area: "계정", hint: "모바일 화면 아래 계정 줄" },
   ".legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
-  button: { name: "클래스 없는 버튼", area: "기타", hint: "이름도 클래스도 없어 구분할 수 없는 버튼들" },
+  button: {
+    name: "클래스 없는 버튼",
+    area: "기타",
+    hint: "이름도 클래스도 없어 구분할 수 없는 버튼들 — 대부분 설정 창 세그먼트의 안 고른 칸(2026-10-10에 이름 붙임)"
+  },
   ".modal-close": { name: "창 닫기(X)", area: "기타", hint: "옛 기록" },
-  ".insights-open": { name: "인사이트 열기", area: "인사이트", hint: "옛 기록" }
+  ".insights-open": { name: "인사이트 열기", area: "인사이트", hint: "옛 기록" },
+  // 2026-10-10 이름을 붙이기 전 쌓인 값들
+  ".dvm-close": { name: "다시보기 단축키 안내", area: "다시보기 창", hint: "옛 기록 — 지금은 'dvm-help'로 셉니다" },
+  ".vch-sec-name": { name: "챕터 코너 접기/펴기", area: "다시보기 창", hint: "옛 기록 — 지금은 'vod-section-fold'로 셉니다" },
+  ".rhh-opt": { name: "설정 고르개 항목", area: "설정", hint: "옛 기록 — 지금은 고르개별로 셉니다" },
+  ".on": { name: "설정 칸 고르기(고른 칸)", area: "설정", hint: "옛 기록 — 이름 없던 세그먼트 칸. 지금은 고르개·값별로 셉니다" },
+  ".active": { name: "고른 상태의 버튼", area: "기타", hint: "옛 기록 — 상태 클래스만 남아 어느 버튼인지 알 수 없음" }
 };
 
 /**
@@ -838,6 +974,9 @@ export function registeredActivityTarget(target: string): string | null {
   if ([ROUTE, SECTION, ACT].some((dict) => Object.hasOwn(dict, target))) return target;
   if (["/studio/timelines", "/studio/search-dictionary", "/replay", "editor"].includes(target)) return target;
   if (/^\/replay\/20\d{2}-\d{2}-\d{2}$/.test(target)) return "/replay";
+  // 동적 조각 화면(/studio/ambient-art/<자리>, /studio/calendar/<y>/<m>)은 접은 이름으로 남긴다.
+  const canonRoute = canonRouteTarget(target);
+  if (canonRoute !== target && Object.hasOwn(ROUTE, canonRoute)) return canonRoute;
   if (Object.hasOwn(OPTION_NAME, target)) return target;
   if (target.startsWith("auto:")) {
     const raw = target.slice(5);

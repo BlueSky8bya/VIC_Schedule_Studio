@@ -70,6 +70,13 @@ const SCOPE_LABEL: Record<string, string> = {
   embargo: "(엠바고 일정)"
 };
 
+/** 여러 줄 제목 → "메인 줄 (+2줄)". 빈 줄은 건너뛴다. */
+function oneLineTitle(raw: string | null): string {
+  const lines = (raw ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return "(제목 없음)";
+  return lines.length > 1 ? `${lines[0]} (+${lines.length - 1}줄)` : lines[0];
+}
+
 // diag=true면 진단 층까지 함께 본다(버그 추적용). 기본은 제외 — 끼면 "무엇을 했나"가 안 보인다.
 export async function getActivityDayAction(
   day: string,
@@ -137,7 +144,9 @@ export async function getActivityDayAction(
         titleById.set(e.id, "(공개 전 최초공개 일정)");
         continue;
       }
-      titleById.set(e.id, e.public_title ?? "(제목 없음)");
+      // 제목은 여러 줄(첫 줄 = 메인, 나머지 = 세부)이라 그대로 두면 타임라인·복사본 한 줄이 여러 줄로
+      // 쪼개진다(2026-10-10 소유자 리포트). 기록은 '어느 일정인지'만 알면 되므로 메인 줄 + 남은 줄 수.
+      titleById.set(e.id, oneLineTitle(e.public_title));
     }
   }
 

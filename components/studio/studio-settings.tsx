@@ -156,7 +156,8 @@ function SettingsSegment<T extends string | number>({
   dataAct
 }: {
   value: T;
-  options: { value: T; label: string }[];
+  /** opt = 기록용 값 이름(숫자 값은 자릿수가 접혀 #로 뭉치므로 이름을 따로 준다). */
+  options: { value: T; label: string; opt?: string }[];
   onChange: (v: T) => void;
   ariaLabel: string;
   dataAct: string;
@@ -180,6 +181,9 @@ function SettingsSegment<T extends string | number>({
         <button
           aria-checked={o.value === value}
           className={o.value === value ? "on" : ""}
+          // 칸마다 id — 없으면 고른 칸은 auto:.on, 나머지는 '클래스 없는 버튼'으로 뭉쳐 무엇을 골랐는지 안 남았다(2026-10-10).
+          data-act={dataAct}
+          data-act-opt={o.opt ?? String(o.value)}
           key={String(o.value)}
           onClick={() => {
             if (o.value !== value) onChange(o.value);
@@ -385,7 +389,8 @@ export function StudioSettingsList({
             aria-controls={`rhh-tab-${t.key}-panel`}
             aria-selected={current === t.key}
             className={`rhh-nav-item${current === t.key ? " on" : ""}${t.web ? " rhh-web" : ""}`}
-            data-act={`settings-tab-${t.key}`}
+            data-act="settings-tab"
+            data-act-opt={t.key}
             data-tab={t.key}
             id={`rhh-tab-${t.key}`}
             key={t.key}
@@ -532,6 +537,8 @@ export function StudioSettingsList({
                           aria-checked={on}
                           aria-label={f.label}
                           className={`rhh-font-tile${on ? " on" : ""}`}
+                          data-act="font-select"
+                          data-act-opt={f.id}
                           key={f.id}
                           onBlur={() => setFontPeek(null)}
                           onClick={() => {
@@ -571,9 +578,9 @@ export function StudioSettingsList({
               dataAct="text-weight-select"
               onChange={font.changeWeight}
               options={[
-                { value: -300, label: "가늘게" },
-                { value: 0, label: "보통" },
-                { value: 100, label: "굵게" }
+                { value: -300, label: "가늘게", opt: "thin" },
+                { value: 0, label: "보통", opt: "normal" },
+                { value: 100, label: "굵게", opt: "bold" }
               ]}
               value={font.weight}
             />
@@ -640,6 +647,8 @@ export function StudioSettingsList({
                     {g.items.map((x) => (
                       <button
                         className={`rhh-sound-tile${playingSample === x.name ? " playing" : ""}`}
+                        data-act="sound-sample"
+                        data-act-opt={x.name}
                         disabled={!sound.on}
                         key={x.name}
                         onClick={() => {

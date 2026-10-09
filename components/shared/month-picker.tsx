@@ -258,6 +258,7 @@ export function MonthPicker({
           <button
             aria-label="이전 해"
             className="mp-year-btn"
+            data-act="mp-year-prev"
             disabled={!canPrevYear}
             onClick={() => {
               hapticTick();
@@ -289,6 +290,7 @@ export function MonthPicker({
                 <button
                   aria-label={`${y}년으로`}
                   className={cls}
+                  data-act="mp-year-pick"
                   key={d}
                   onClick={() => {
                     hapticTick();
@@ -306,6 +308,7 @@ export function MonthPicker({
           <button
             aria-label="다음 해"
             className="mp-year-btn"
+            data-act="mp-year-next"
             disabled={!canNextYear}
             onClick={() => {
               hapticTick();
@@ -326,6 +329,7 @@ export function MonthPicker({
                 aria-current={isCurrent ? "true" : undefined}
                 aria-label={`${ym.year}년 ${ym.month}월${isToday ? " (오늘)" : ""}`}
                 className={`mp-month${isCurrent ? " is-current" : ""}${isToday ? " is-today" : ""}`}
+                data-act="mp-month"
                 disabled={out}
                 key={ym.month}
                 onClick={() => {

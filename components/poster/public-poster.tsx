@@ -3597,7 +3597,7 @@ export function PublicPoster({
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
                 // 관심 단계를 카드 자체에 실어, 인기가 '불꽃 이모지 개수'가 아니라 '시각적 무게'
-                // (제목 굵기 + 링)로도 읽히게 한다 — 달력은 훑는(spotted) 화면이라 한눈에 큰 방송이
+                // (링 — 제목 굵기는 설정만 따른다)로도 읽히게 한다 — 달력은 훑는(spotted) 화면이라 한눈에 큰 방송이
                 // 잡혀야 한다. 이모지는 정밀도, 무게는 스캔용.
                 data-tier={tier?.key}
                 key={event.id}
@@ -3854,7 +3854,7 @@ export function PublicPoster({
                     aria-label={t.label}
                     aria-pressed={on}
                     className={`agenda-tier-btn${on ? " on" : ""}${statusFilters.length > 0 && !on ? " dim" : ""}`}
-                    data-act="agenda-tier"
+                    data-act="agenda-tier" data-act-opt={t.key}
                     key={t.key}
                     onClick={(e) => {
                       toggleStatusFilter(t.key);
@@ -4429,7 +4429,7 @@ export function PublicPoster({
               <button
                 aria-pressed={on}
                 className={`legend-tier${on ? " active" : ""}${statusFilters.length > 0 && !on ? " dim" : ""}`}
-                data-act="legend-tier"
+                data-act="legend-tier" data-act-opt={t.key}
                 key={t.key}
                 onClick={() => toggleStatusFilter(t.key)}
                 type="button"

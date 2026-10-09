@@ -633,6 +633,8 @@ export function InsightsDashboard({
             <div className="insights-subtabs">
               <button
                 className={visitView === "day" ? "active" : ""}
+                data-act="visit-view"
+                data-act-opt="day"
                 onClick={() => {
                   hapticTick();
                   setVisitView("day");
@@ -643,6 +645,8 @@ export function InsightsDashboard({
               </button>
               <button
                 className={visitView === "week" ? "active" : ""}
+                data-act="visit-view"
+                data-act-opt="week"
                 onClick={() => {
                   hapticTick();
                   setVisitView("week");
@@ -655,6 +659,8 @@ export function InsightsDashboard({
             <div className="insights-subtabs">
               <button
                 className={visitDim === "role" ? "active" : ""}
+                data-act="visit-dim"
+                data-act-opt="role"
                 onClick={() => {
                   hapticTick();
                   setVisitDim("role");
@@ -665,6 +671,8 @@ export function InsightsDashboard({
               </button>
               <button
                 className={visitDim === "device" ? "active" : ""}
+                data-act="visit-dim"
+                data-act-opt="device"
                 onClick={() => {
                   hapticTick();
                   setVisitDim("device");
@@ -1543,6 +1551,8 @@ export function InsightsDashboard({
                       <button
                         aria-pressed={perfHours === h}
                         className={perfHours === h ? "active" : ""}
+                        data-act="perf-hours"
+                        data-act-opt={h === 24 ? "day" : "week"}
                         key={h}
                         onClick={() => {
                           if (perfHours === h) return;

@@ -500,7 +500,7 @@ export function VodChapters({
       {!open ? null : loading ? (
         <p className="vch-note">불러오는 중…</p>
       ) : failed || !timeline ? (
-        <button className="vch-note vch-retry" onClick={() => setFailed(false)} type="button">
+        <button className="vch-note vch-retry" data-act="vod-chapters-retry" onClick={() => setFailed(false)} type="button">
           챕터를 불러오지 못했어요 — 다시 시도
         </button>
       ) : (
@@ -527,6 +527,7 @@ export function VodChapters({
                     <button
                       aria-expanded={!folded.has(gi)}
                       className="vch-sec-name"
+                      data-act="vod-section-fold"
                       onBlur={hideTip}
                       onFocus={(ev) => showTip(ev.currentTarget, g.section ?? "", -(gi + 1))}
                       onMouseEnter={(ev) => showTip(ev.currentTarget, g.section ?? "", -(gi + 1))}

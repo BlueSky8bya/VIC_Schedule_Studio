@@ -55,7 +55,7 @@ export function SearchDictionaryBoard({ rows, error }: { rows: DictionaryDraftRo
   return (
     <main className="dict-board">
       <header className="dict-head">
-        <Link className="dict-back" href="/studio">
+        <Link className="dict-back" data-act="dict-back" href="/studio">
           <ArrowLeft aria-hidden="true" size={16} />
           편집실
         </Link>

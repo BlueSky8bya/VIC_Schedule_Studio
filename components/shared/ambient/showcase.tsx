@@ -634,7 +634,7 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
         <div aria-label="배경 설정" aria-modal="false" onKeyDown={e=>e.stopPropagation()} className="showcase-set" ref={boxRef} role="dialog"
           style={position?{left:position.x,top:position.y,right:'auto',maxHeight:'calc(100dvh - 24px)'}:undefined}>
           <div className="sc-set-heading">
-            <button className="sc-set-handle" type="button" aria-label="설정창 이동: 드래그 또는 방향키" onPointerDown={e=>{
+            <button className="sc-set-handle" data-act="sc-set-handle" type="button" aria-label="설정창 이동: 드래그 또는 방향키" onPointerDown={e=>{
               if(e.button!==0)return;
               const rect=boxRef.current!.getBoundingClientRect();drag.current={x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};e.currentTarget.setPointerCapture(e.pointerId);
             }} onPointerMove={e=>{const d=drag.current;if(d)setPosition(constrain(d.left+e.clientX-d.x,d.top+e.clientY-d.y));}}
