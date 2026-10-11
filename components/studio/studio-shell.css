@@ -10427,6 +10427,17 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   width: min(380px, calc(100vw - 24px));
   max-width: none;
   overflow-x: clip;
+  /* 높이도 화면에 묶고 안에서 스크롤한다(2026-10-11 소유자: "설정창 스크롤이 안 내려가고 뒤 일정이 내려가").
+     레일이 sticky라 팝오버는 화면에 붙어 있는데 높이 상한이 없어 아래 설정이 화면 밖에 잘렸고, 손가락 스크롤은
+     뒤 페이지로 샜다. 상한은 열 때 잰 '자리~화면 바닥'(role-badge.tsx capToViewport). 변수 없을 때 대비 값 =
+     붙은 레일 기준(top 88 + 배지 36 + 간격 8 + 바닥 12). */
+  max-height: var(--pop-max-h, calc(100svh - 144px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* 세로 flex라 .rhh-tabs(min-height:0)가 상한에 눌려 줄어들면 스크롤 대신 글이 넘쳐 보인다 — 줄지 않게. */
+.agenda-rail .role-help-pop:has(.rhh-tabs) > * {
+  flex-shrink: 0;
 }
 /* 레일이 sticky를 맡으므로 필터 자체 sticky는 풀고(static), 남는 높이를 채워 내부 스크롤한다.
    행 기준 flex(0 0 92px=컬럼에선 높이 고정)도 풀고 레일 폭(92px)을 채운다. */

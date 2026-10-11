@@ -25,6 +25,18 @@ type Props = {
   savedAt?: string | null;
 };
 
+// 팝오버 높이 상한 = 열린 자리에서 화면 바닥까지(2026-10-11 소유자: "설정창 스크롤이 안 내려가고 뒤 일정이 내려가").
+// 레일은 아직 sticky로 붙기 전이면 더 아래에 있어(실측 top 176 vs 붙은 뒤 132) CSS 고정 값으론 바닥이 잘린다 —
+// 열 때 실제 위치를 재서 CSS 변수로 넘긴다. 이후 스크롤로 레일이 위로 붙으면 공간이 늘 뿐이라 다시 잴 필요 없다.
+// 바닥은 모바일 하단 동작 줄(.m-actionrail, z 30) 위에서 끝낸다 — 그 밑에 깔리면 마지막 설정 줄이 가려지고 손가락이 줄을 누른다.
+function capToViewport(el: HTMLDivElement | null) {
+  if (!el) return;
+  const vh = window.visualViewport?.height ?? window.innerHeight;
+  const rail = document.querySelector(".m-actionrail")?.getBoundingClientRect();
+  const floor = rail && rail.height > 0 && rail.top > 0 ? Math.min(vh, rail.top) : vh;
+  el.style.setProperty("--pop-max-h", `${Math.max(160, Math.floor(floor - el.getBoundingClientRect().top - 12))}px`);
+}
+
 export function RoleBadge({ role, roleDisplay, open, onToggleOpen, settings, quiet = false, savedAt }: Props) {
   if (quiet) {
     return (
@@ -56,7 +68,7 @@ export function RoleBadge({ role, roleDisplay, open, onToggleOpen, settings, qui
         </span>
       </button>
       {open ? (
-        <div className="role-help-pop" role="dialog" aria-label="설정">
+        <div className="role-help-pop" role="dialog" aria-label="설정" ref={capToViewport}>
           <strong className="role-help-title">설정</strong>
           {settings}
         </div>
