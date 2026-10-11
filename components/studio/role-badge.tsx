@@ -28,13 +28,13 @@ type Props = {
 // 팝오버 높이 상한 = 열린 자리에서 화면 바닥까지(2026-10-11 소유자: "설정창 스크롤이 안 내려가고 뒤 일정이 내려가").
 // 레일은 아직 sticky로 붙기 전이면 더 아래에 있어(실측 top 176 vs 붙은 뒤 132) CSS 고정 값으론 바닥이 잘린다 —
 // 열 때 실제 위치를 재서 CSS 변수로 넘긴다. 이후 스크롤로 레일이 위로 붙으면 공간이 늘 뿐이라 다시 잴 필요 없다.
-// 바닥은 모바일 하단 동작 줄(.m-actionrail, z 30) 위에서 끝낸다 — 그 밑에 깔리면 마지막 설정 줄이 가려지고 손가락이 줄을 누른다.
+// 하단 동작 줄(.m-actionrail)은 열려 있는 동안 숨으므로(studio-shell.css) 바닥은 화면 끝이다.
 function capToViewport(el: HTMLDivElement | null) {
   if (!el) return;
   const vh = window.visualViewport?.height ?? window.innerHeight;
-  const rail = document.querySelector(".m-actionrail")?.getBoundingClientRect();
-  const floor = rail && rail.height > 0 && rail.top > 0 ? Math.min(vh, rail.top) : vh;
-  el.style.setProperty("--pop-max-h", `${Math.max(160, Math.floor(floor - el.getBoundingClientRect().top - 12))}px`);
+  // 등장 애니메이션(translateY -12px) 중이라 자기 상자를 재면 12px 위로 잡힌다 — 부모 위치 + offsetTop(변형 무시)로.
+  const parentTop = el.offsetParent?.getBoundingClientRect().top ?? 0;
+  el.style.setProperty("--pop-max-h", `${Math.max(160, Math.floor(vh - (parentTop + el.offsetTop) - 12))}px`);
 }
 
 export function RoleBadge({ role, roleDisplay, open, onToggleOpen, settings, quiet = false, savedAt }: Props) {

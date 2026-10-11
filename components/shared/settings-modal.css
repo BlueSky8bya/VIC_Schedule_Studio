@@ -909,15 +909,13 @@ html[data-reduce-motion] .rhh-font-grid button {
 
 /* ── 글자 탭(2026-10-06 소유자: "글꼴 모양·미리보기를 보면서 크기도 같이 — 같은 자리에서 스크롤 없이") ──
    넓은 창: 왼쪽 미리보기(바쁜 날 위·한가한 날 아래) | 오른쪽 손잡이(크기·굵기·글꼴). 이 탭일 땐 창을 키워
-   한 화면에 다 들어오게 한다. 좁은 곳: 미리보기가 위에 붙어(sticky) 손잡이를 움직여도 늘 보인다. */
+   한 화면에 다 들어오게 한다. 좁은 곳(폰): 미리보기도 목록과 같이 스크롤된다(2026-10-11 소유자: "스크롤을 내리는데
+   일정 미리보기가 같이 안 움직여, 모바일에서는 내려가야지" — 위에 붙어 있으면 좁은 창의 절반을 늘 가렸다). */
 .rhh-text-layout {
   display: grid;
   gap: 12px;
 }
 .rhh-text-stage {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   background: #f4f3ef;
   padding-bottom: 6px;
 }
@@ -945,6 +943,12 @@ html[data-reduce-motion] .rhh-font-grid button {
   .rhh-text-layout {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
+  }
+  /* 넓은 창에선 미리보기가 왼쪽 칸 — 오른쪽 손잡이가 길어져도 칸 위에 붙어 있는다. */
+  .rhh-text-stage {
+    position: sticky;
+    top: 0;
+    z-index: 2;
   }
   /* 미리보기 칸 폭은 고정(실제 달력 칸처럼) — 글씨 크기를 키우면 글자만 커지고 줄이 바뀐다.
      폭이 글씨 크기를 따라 늘면 오른쪽 글꼴 타일이 끌 때마다 찌그러졌다(2026-10-06 소유자 캡처). */

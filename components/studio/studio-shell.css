@@ -10326,6 +10326,16 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   gap: 8px;
   pointer-events: none;
 }
+/* 설정 팝오버가 열려 있는 동안 하단 줄은 내린다(2026-10-11 소유자: "설정 누르면 오늘이랑 미리보기 버튼이 아직
+   보이는데? 아래는 막혀 있어야지") — 설정 바닥을 가리고, 설정 중에 다른 동작을 누르게 했다. */
+.m-actionrail {
+  transition: opacity var(--dur-1, 0.12s) var(--ease, ease), visibility 0s linear 0s;
+}
+body:has(.agenda-rail .role-help-pop) .m-actionrail {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--dur-1, 0.12s) var(--ease, ease), visibility 0s linear var(--dur-1, 0.12s);
+}
 .m-actionrail > *,
 .m-actionrail form,
 .m-actionrail .preview-dd {

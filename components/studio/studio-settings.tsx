@@ -413,7 +413,7 @@ export function StudioSettingsList({
       <div className="rhh-panes">
       {/* 글자(2026-10-06 소유자: "글꼴 모양·미리보기를 보면서 크기도 같이, 같은 자리에서 스크롤 없이") —
           왼쪽 미리보기(바쁜 날·한가한 날)는 늘 보이고, 오른쪽에서 크기·굵기·글꼴을 바꾸면 바로 따라 바뀐다.
-          좁은 곳(폰)은 미리보기가 위에 붙어(sticky) 아래 손잡이를 움직여도 계속 보인다. */}
+          좁은 곳(폰)은 미리보기를 위에 두고 목록과 같이 스크롤한다(2026-10-11, 붙여 두면 좁은 창을 가렸다). */}
       <section {...pane("text", "rhh-text-tab")}>
         <h3 className="rhh-group-title" id="rhh-tab-text-title">글자</h3>
         <div className="rhh-text-layout">
