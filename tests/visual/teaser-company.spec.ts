@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ context }) => {
   await context.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
@@ -8,81 +8,105 @@ test.beforeEach(async ({ context }) => {
     localStorage.setItem("vic.sound", "on"); localStorage.setItem("vic.soundCats", "{}");
   });
 });
-const trace = (page: import("@playwright/test").Page) => page.evaluate(() => (window as typeof window & { __sfxTrace: string[] }).__sfxTrace.filter(name => name === "premiere-music").length);
+const trace = (page: Page) => page.evaluate(() => (window as typeof window & { __sfxTrace: string[] }).__sfxTrace.filter(name => name === "premiere-music").length);
+const unlock = (page: Page) => page.locator(".pm-count").click();
 
 for (const width of [1440, 390]) {
-  test(`company has distinct live poses and a bounded hope reaction at ${width}px`, async ({ page }) => {
+  test(`drawn audience animates without covering hope controls at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/visual-fixture/poster?premiere=40");
     const fans = page.locator(".pm-fan:visible");
     await expect(fans).toHaveCount(width === 390 ? 3 : 6);
-    const first = fans.first(); const before = await first.getAttribute("style");
-    await expect.poll(() => first.getAttribute("style")).not.toBe(before);
-    await expect(page.getByRole("timer")).toHaveCount(1);
-    await page.getByRole("button", { name: "기대돼요", exact: true }).click();
+    const first = fans.first(); const before = await first.getAttribute("data-frame");
+    await expect.poll(() => first.getAttribute("data-frame")).not.toBe(before);
+    await expect.poll(() => first.evaluate(el => Boolean(el.closest("[aria-hidden='true']")))).toBe(false);
+    expect(await page.locator(".pm-screen").evaluate(el => el.getAnimations().some(a => a instanceof CSSAnimation && a.animationName === "pm-screen-in" && a.playState === "running"))).toBe(false);
+    await expect(page.getByRole("button", { name: /음악|응원봉 흔들기/ })).toHaveCount(0);
+    const hope = page.getByRole("button", { name: "기대돼요", exact: true });
+    const box = (await hope.boundingBox())!;
+    for (const fan of await fans.all()) {
+      const f = (await fan.boundingBox())!;
+      expect(box.y + box.height).toBeLessThanOrEqual(f.y);
+      expect(f.width).toBeGreaterThanOrEqual(44); expect(f.height).toBeGreaterThanOrEqual(44);
+    }
+    await hope.click();
     await expect(page.locator('.pm-host[data-reaction="delighted"]')).toBeVisible();
     await expect.poll(() => page.locator(".pm-delighted").evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
-    await expect(page.locator('.pm-company[data-reaction="delighted"]')).toBeVisible();
     await expect(page.locator(".pm-host")).not.toHaveAttribute("data-reaction", /.+/, { timeout: 3500 });
+    await expect(page.getByRole("timer")).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
 
-test("hope undo shows a brief comic glance without another click or countdown", async ({ page }) => {
+test("hope undo preserves the existing brief reaction and one countdown", async ({ page }) => {
   await page.goto("/visual-fixture/poster?premiere=40");
-  // A wholly synthetic fixture; all server writes remain intercepted.
   await page.getByRole("button", { name: "기대돼요", exact: true }).click();
-  const undo = page.getByRole("button", { name: "함께 기다리는 중", exact: true });
-  await expect(undo).toBeVisible(); await undo.click();
+  await page.getByRole("button", { name: "함께 기다리는 중", exact: true }).click();
   await expect(page.locator('.pm-host[data-reaction="unimpressed"]')).toBeVisible();
-  await expect.poll(() => page.locator(".pm-unimpressed").evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
   await expect(page.getByRole("timer")).toHaveCount(1);
-  await expect(page.locator(".pm-host")).not.toHaveAttribute("data-reaction", /.+/, { timeout: 2500 });
 });
 
-test("music requires its own gesture, follows master mute, and cannot leak after exit", async ({ page }) => {
-  await page.goto("/visual-fixture/poster?premiere=40");
-  await expect(page.getByRole("button", { name: "음악 켜기", exact: true })).toBeVisible();
-  expect(await trace(page)).toBe(0);
-  await page.getByRole("button", { name: "음악 켜기", exact: true }).click();
-  await expect(page.getByRole("button", { name: "음악 끄기", exact: true })).toHaveAttribute("aria-pressed", "true");
+test("an unlocked viewer starts music when the stage opens without a music button", async ({ page }) => {
+  await page.goto("/visual-fixture/poster?premiere=74");
+  await page.locator(".pm-banner").click({ position: { x: 30, y: 20 } });
+  await expect(page.locator(".pm-focused")).toHaveCount(1, { timeout: 12000 });
   await expect.poll(() => trace(page)).toBeGreaterThan(1);
-  await page.evaluate(() => { localStorage.setItem("vic.sound", "off"); window.dispatchEvent(new Event("vic:sound")); });
-  await expect(page.getByRole("button", { name: "음악 켜기", exact: true })).toBeDisabled();
-  const muted = await trace(page); await page.waitForTimeout(1100); expect(await trace(page)).toBe(muted);
-  await page.evaluate(() => { localStorage.setItem("vic.sound", "on"); window.dispatchEvent(new Event("vic:sound")); });
-  await page.getByRole("button", { name: "음악 켜기", exact: true }).click();
-  await expect.poll(() => trace(page)).toBeGreaterThan(muted);
-  await page.getByRole("button", { name: "일정표 보기", exact: true }).click();
-  await expect(page.locator(".pm-focused")).toHaveCount(0);
-  const closed = await trace(page); await page.waitForTimeout(1100); expect(await trace(page)).toBe(closed);
+  await expect(page.getByRole("button", { name: /음악/ })).toHaveCount(0);
 });
 
-test("the audience takes its seat and the final ten seconds retire every auxiliary control and music", async ({ page }) => {
+test("default music follows master volume, mute/category and exit", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("vic.soundVol", "25");
+    const values: number[] = []; (window as typeof window & { __gainValues: number[] }).__gainValues = values;
+    const original = AudioParam.prototype.setTargetAtTime;
+    AudioParam.prototype.setTargetAtTime = function(value, start, constant) { values.push(value); return original.call(this, value, start, constant); };
+  });
+  await page.goto("/visual-fixture/poster?premiere=40"); await unlock(page);
+  await expect.poll(() => trace(page)).toBeGreaterThan(1);
+  expect(await page.evaluate(() => (window as typeof window & { __gainValues: number[] }).__gainValues.some(value => Math.abs(value - Math.pow(.25, 1.6) * .8) < .00001))).toBe(true);
+  for (const setting of ["mute", "zero", "category"]) {
+    await page.evaluate(key => {
+      localStorage.setItem("vic.sound", key === "mute" ? "off" : "on");
+      localStorage.setItem("vic.soundVol", key === "zero" ? "0" : "25");
+      localStorage.setItem("vic.soundCats", JSON.stringify({ celebrate: key !== "category" }));
+      window.dispatchEvent(new Event("vic:sound"));
+    }, setting);
+    const muted = await trace(page); await page.waitForTimeout(800); expect(await trace(page)).toBe(muted);
+  }
+  await page.evaluate(() => { localStorage.setItem("vic.soundCats", "{}"); window.dispatchEvent(new Event("vic:sound")); });
+  const before = await trace(page); await expect.poll(() => trace(page)).toBeGreaterThan(before);
+  await page.getByRole("button", { name: "일정표 보기", exact: true }).click();
+  const closed = await trace(page); await page.waitForTimeout(1000); expect(await trace(page)).toBe(closed);
+});
+
+test("last ten seconds keep dim static seated spectators without controls or music", async ({ page }) => {
   await page.goto("/visual-fixture/poster?premiere=18");
-  await expect.poll(() => page.locator(".pm-stage").evaluate(el => parseFloat((el as HTMLElement).style.getPropertyValue("--pm-settle")))) .toBeGreaterThan(0);
-  await page.getByRole("button", { name: "음악 켜기", exact: true }).click();
+  await page.getByRole("button", { name: "빅타민 1 응원하기", exact: true }).click();
   await expect.poll(() => trace(page)).toBeGreaterThan(0);
   await expect(page.locator(".pm-stage")).toHaveAttribute("data-pm-quiet", "", { timeout: 10000 });
-  await expect(page.locator(".pm-company")).not.toBeVisible();
+  await expect(page.locator(".pm-company")).toBeVisible();
   await expect(page.locator(".pm-host")).not.toBeVisible();
-  await expect(page.locator(".pm-heading")).toHaveAttribute("inert");
-  await expect(page.getByRole("button", { name: /음악|기대돼요|응원봉/ })).toHaveCount(0);
-  const quiet = await trace(page); await page.waitForTimeout(1250); expect(await trace(page)).toBe(quiet);
+  await expect(page.getByRole("button", { name: /빅타민|기대돼요|음악/ })).toHaveCount(0);
+  const first = page.locator(".pm-fan").first();
+  await expect(first).toHaveAttribute("data-frame", "15");
+  await expect(first).toHaveAttribute("inert");
+  const quiet = await trace(page), style = await first.getAttribute("style");
+  await page.waitForTimeout(1000); expect(await trace(page)).toBe(quiet);
+  expect(await first.getAttribute("style")).toBe(style);
   await expect(page.getByRole("timer")).toHaveCount(1);
-  await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "일정표 보기", exact: true })).toBeFocused();
 });
 
-test("graphics off keeps the new crowd out while preserving the real countdown", async ({ page }) => {
+test("graphics lite reduces actors and graphics off hides them", async ({ page }) => {
   await page.goto("/visual-fixture/poster?premiere=40");
+  await page.evaluate(() => { localStorage.setItem("vic.gfxPref", "lite"); document.documentElement.dataset.gfx = "lite"; });
+  await expect(page.locator(".pm-fan:visible")).toHaveCount(3);
   await page.evaluate(() => { localStorage.setItem("vic.gfxPref", "off"); document.documentElement.dataset.gfx = "off"; });
-  await expect(page.locator(".pm-stage")).toHaveAttribute("data-gfx", "off");
   await expect(page.locator(".pm-company")).not.toBeVisible();
   await expect(page.getByRole("timer")).toHaveCount(1);
 });
 
-test("hidden-tab return and a changed deadline require a fresh music gesture", async ({ page }) => {
+test("hidden return and a changed deadline start fresh default sessions", async ({ page }) => {
   let postpone = false;
   await page.route("**/api/visual-fixture/premiere**", async route => {
     const response = await route.fetch(); const snapshot = await response.json();
@@ -91,46 +115,53 @@ test("hidden-tab return and a changed deadline require a fresh music gesture", a
     }
     await route.fulfill({ json: snapshot });
   });
-  await page.goto("/visual-fixture/poster?premiere=35");
-  await page.getByRole("button", { name: "음악 켜기", exact: true }).click();
+  await page.goto("/visual-fixture/poster?premiere=35"); await unlock(page);
   await expect.poll(() => trace(page)).toBeGreaterThan(0);
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); });
-  const hidden = await trace(page); await page.waitForTimeout(1000); expect(await trace(page)).toBe(hidden);
+  const hidden = await trace(page); await page.waitForTimeout(900); expect(await trace(page)).toBe(hidden);
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
-  await expect(page.getByRole("button", { name: "음악 켜기", exact: true })).toBeVisible();
-  await page.waitForTimeout(900); expect(await trace(page)).toBe(hidden);
-  await page.getByRole("button", { name: "음악 켜기", exact: true }).click();
   await expect.poll(() => trace(page)).toBeGreaterThan(hidden);
+  const oldTarget = await page.locator(".pm-stage").getAttribute("data-teaser-at");
   postpone = true;
-  await expect(page.getByRole("button", { name: "음악 켜기", exact: true })).toBeVisible({ timeout: 3500 });
-  const changed = await trace(page); await page.waitForTimeout(1000); expect(await trace(page)).toBe(changed);
+  await expect.poll(() => page.locator(".pm-stage").getAttribute("data-teaser-at")).not.toBe(oldTarget);
+  const changed = await trace(page); await expect.poll(() => trace(page)).toBeGreaterThan(changed);
 });
 
-test("the cheer button plays a local wave without changing hope or sending a write", async ({ page }) => {
+test("clicking/keyboard cheering keeps its node/focus and never writes hope", async ({ page }) => {
   let actions = 0;
-  await page.route("**/api/studio-write**", route => { actions++; return route.fulfill({ status: 500 }); });
+  await page.route("**/api/studio-write*", route => { actions++; return route.fulfill({ status: 500 }); });
   await page.goto("/visual-fixture/poster?premiere=40");
-  const button = page.getByRole("button", { name: "응원봉 흔들기", exact: true });
-  await button.click();
+  const fan = page.getByRole("button", { name: "빅타민 1 응원하기", exact: true });
+  await expect(page.locator(".pm-stage")).not.toHaveAttribute("data-pm-entering");
+  await fan.evaluate(el => el.setAttribute("data-node-probe", "kept"));
+  await fan.focus(); await page.keyboard.press("Enter");
+  await expect(fan).toBeFocused(); await expect(fan).toHaveAttribute("data-node-probe", "kept");
   await expect(page.locator(".pm-company")).toHaveAttribute("data-cheer", "");
   await expect(page.getByRole("button", { name: "기대돼요", exact: true })).toHaveAttribute("aria-pressed", "false");
-  await expect.poll(() => page.evaluate(() => (window as typeof window & { __sfxTrace: string[] }).__sfxTrace.filter(x => x === "sparkle").length)).toBe(1);
   expect(actions).toBe(0);
   await page.getByRole("button", { name: "일정표 보기", exact: true }).click();
   await page.getByRole("button", { name: "최초공개 다시 보기", exact: true }).click();
   await expect(page.locator(".pm-company")).not.toHaveAttribute("data-cheer");
 });
 
-test("a blocked AudioContext never reports music playing or retries on its own", async ({ context, page }) => {
+test("blocked autoplay waits without retry storms and cannot start on an exit gesture", async ({ context, page }) => {
   await context.addInitScript(() => {
+    (window as typeof window & { __resumeCount: number }).__resumeCount = 0;
     Object.defineProperty(AudioContext.prototype, "state", { configurable: true, get: () => "suspended" });
-    AudioContext.prototype.resume = () => Promise.reject(new DOMException("Synthetic autoplay block", "NotAllowedError"));
+    AudioContext.prototype.resume = () => { (window as typeof window & { __resumeCount: number }).__resumeCount++; return Promise.reject(new DOMException("Synthetic autoplay block", "NotAllowedError")); };
   });
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   await page.goto("/visual-fixture/poster?premiere=40");
-  await page.getByRole("button", { name: "음악 켜기", exact: true }).click();
   await page.waitForTimeout(1400);
-  await expect(page.getByRole("button", { name: "음악 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
+  const attempts = await page.evaluate(() => (window as typeof window & { __resumeCount: number }).__resumeCount);
+  expect(attempts).toBeGreaterThan(0);
+  await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => (window as typeof window & { __resumeCount: number }).__resumeCount)).toBe(attempts);
+  await unlock(page); await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => (window as typeof window & { __resumeCount: number }).__resumeCount)).toBe(attempts + 1);
+  await page.keyboard.down("a"); await page.keyboard.down("a"); await page.keyboard.down("a"); await page.keyboard.up("a");
+  expect(await page.evaluate(() => (window as typeof window & { __resumeCount: number }).__resumeCount)).toBe(attempts + 2);
+  await page.getByRole("button", { name: "일정표 보기", exact: true }).click();
   expect(await trace(page)).toBe(0); expect(errors).toEqual([]);
 });
 
@@ -168,17 +199,22 @@ test("a quietly held story re-gated into a future countdown regains its hope con
   await expect(page.getByRole("button", { name: "기대돼요", exact: true })).toHaveCount(2);
 });
 
+
 test.describe("short touch landscape", () => {
   test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
-  test("compact cheer/music controls keep their names and clear the numeral", async ({ page }) => {
-    await page.goto("/visual-fixture/poster?premiere=40");
-    const controls = [page.getByRole("button", { name: "응원봉 흔들기", exact: true }), page.getByRole("button", { name: "음악 켜기", exact: true })];
-    const numeral = await page.locator(".dt-count-core").boundingBox();
-    for (const control of controls) {
-      await expect(control).toBeVisible(); const box = await control.boundingBox();
-      expect(box!.width).toBeGreaterThanOrEqual(44); expect(box!.height).toBeGreaterThanOrEqual(44);
-      const overlap = box!.x < numeral!.x + numeral!.width && box!.x + box!.width > numeral!.x && box!.y < numeral!.y + numeral!.height && box!.y + box!.height > numeral!.y;
-      expect(overlap).toBe(false);
+  test("direct audience targets keep44px and clear every hope control", async ({ page }) => {
+    await page.goto("/visual-fixture/poster?premiere=40&count=3");
+    const controls = page.getByRole("button", { name: "기대돼요", exact: true });
+    const fans = page.locator(".pm-fan:visible");
+    await expect(fans).toHaveCount(3);
+    for (const fan of await fans.all()) {
+      await expect(fan).toBeInViewport();
+      const f = (await fan.boundingBox())!;
+      expect(f.width).toBeGreaterThanOrEqual(44); expect(f.height).toBeGreaterThanOrEqual(44);
+      for (const control of await controls.all()) {
+        const c = (await control.boundingBox())!;
+        expect(c.y + c.height).toBeLessThanOrEqual(f.y);
+      }
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });

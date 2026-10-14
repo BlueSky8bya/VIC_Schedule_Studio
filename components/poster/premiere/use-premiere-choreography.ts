@@ -6,7 +6,7 @@ import { subscribeClock, syncedNow } from "@/lib/ui/synced-clock";
 import { lateCardDeparture, passage, planCardDepartures, REGION_WINDOWS, type CardDeparture } from "@/lib/ui/premiere/choreography";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 import { premiereFocusMotion } from "@/lib/ui/premiere/focus-motion";
-import { premiereCompany } from "@/lib/ui/premiere/company";
+import { premiereAudienceFrame, premiereCompany } from "@/lib/ui/premiere/company";
 
 export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, root: RefObject<HTMLDivElement | null>, exit: RefObject<HTMLButtonElement | null>, stage: RefObject<HTMLDivElement | null>, previousFocus: RefObject<HTMLElement | null>) {
   const latest = useRef(frame); latest.current = frame;
@@ -84,13 +84,18 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       stage.current?.style.setProperty("--pm-settle", String(company.settle));
       for (const fan of stage.current?.querySelectorAll<HTMLElement>(".pm-fan") ?? []) {
         const seed = Number(fan.style.getPropertyValue("--fan-seed"));
-        const phase = company.phase * Math.PI * 2 + seed;
-        const hop = Math.pow(Math.max(0, Math.sin(phase)), 2);
-        const strength = grade === "full" || grade === "auto" ? company.strength : grade === "lite" ? company.strength * .45 : 0;
-        fan.style.setProperty("--fan-hop", `${-hop * 24 * strength}px`);
-        fan.style.setProperty("--fan-sway", `${Math.sin(phase) * 9 * strength}deg`);
+        const cheerAt = Number(fan.parentElement?.dataset.cheerAt);
+        const age = cheerAt ? performance.now() - cheerAt - Number(fan.style.getPropertyValue("--fan-index")) * 70 : Infinity;
+        const index = grade === "off" || grade === "soft" ? 15 : premiereAudienceFrame(seconds * 1000, seed, age, grade === "lite");
+        if (fan.dataset.frame !== String(index)) {
+          fan.dataset.frame = String(index);
+          fan.style.setProperty("--fan-frame-x", `${index % 4 * 100 / 3}%`);
+          fan.style.setProperty("--fan-frame-y", `${Math.floor(index / 4) * 100 / 3}%`);
+          const hop = [0, 0, 7, 15, 19, 8][index] ?? 0;
+          fan.style.setProperty("--fan-hop", `${-hop * (grade === "lite" ? .45 : 1)}px`);
+        }
       }
-      for (const el of stage.current?.querySelectorAll<HTMLElement>("[data-pm-retreat]") ?? []) {
+      for (const el of stage.current?.querySelectorAll<HTMLElement>("[data-pm-retreat],[data-pm-audience-control]") ?? []) {
         const hidden = retiring > .8 || Boolean(stage.current?.hasAttribute("data-pm-entering"));
         if (hidden && el.contains(document.activeElement)) exit.current?.focus({ preventScroll: true });
         el.inert = hidden;

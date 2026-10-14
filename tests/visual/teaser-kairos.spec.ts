@@ -19,7 +19,7 @@ for (const width of [1440, 390]) {
     await page.evaluate(() => document.fonts.ready);
     // Freeze decorative drift as well: the live numeral's transformed mask
     // otherwise swaps 440×441 / 441×440 bounds between real clock ticks.
-    await page.addStyleTag({ content: ".pm-stage { --pm-gather: .4!important; --pm-fold-drift: 0px!important; --pm-digit-x: 0px!important; --pm-digit-y: 0px!important; --pm-digit-tilt: 0deg!important; } .pm-fan { --fan-hop: 0px!important; --fan-sway: 0deg!important; }" });
+    await page.addStyleTag({ content: ".pm-stage { --pm-gather: .4!important; --pm-fold-drift: 0px!important; --pm-digit-x: 0px!important; --pm-digit-y: 0px!important; --pm-digit-tilt: 0deg!important; } .pm-fan { --fan-hop: 0px!important; --fan-frame-x: 0%!important; --fan-frame-y: 0%!important; }" });
     // Numeric time remains live. Mask its ink, not the surrounding composition.
     await expect(page.locator(".pm-screen")).toHaveScreenshot(`premiere-invitation-${width}.png`, { mask: [page.locator(".dt-count-core")], animations: "disabled" });
   });

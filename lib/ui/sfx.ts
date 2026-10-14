@@ -946,7 +946,7 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
 
 export type PremiereMusic = { readonly playing: boolean; update: (remainMs: number) => boolean; stop: () => void };
 
-/** A bounded user-started music session on the existing sound bus. The shared
+/** A bounded music session on the existing sound bus. The shared
  * premiere clock calls update; no scheduler, asset request or second context.
  * Hidden tabs ALWAYS stop this longer score, even if short hidden SFX are on. */
 export function startPremiereMusic(): PremiereMusic | null {

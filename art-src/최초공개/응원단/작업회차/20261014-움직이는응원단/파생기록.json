@@ -1,0 +1,45 @@
+{
+  "native": "art-src/최초공개/응원단/작업회차/20261014-움직이는응원단/원본/빅타민_응원과관람_16프레임.png",
+  "sha256": "f36c8060b0ce35582b54256b5ab403d5734e2d452b44386ce28f04ed9b1459b6",
+  "nativeGeometry": [
+    1254,
+    1254
+  ],
+  "processing": "Uniform whole-atlas downsample1254→1024 and WebP encoding. Native alpha preserved; no repaint, segmentation, frame transplant or local correction.",
+  "grid": [
+    4,
+    4
+  ],
+  "frameSize": [
+    256,
+    256
+  ],
+  "cheeringFrames": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    11
+  ],
+  "settlingFrames": [
+    12,
+    13,
+    14,
+    15
+  ],
+  "excludedFrames": {
+    "9": "Inner-ear colors reversed against REF-016/017",
+    "10": "Inner-ear colors reversed against REF-016/017"
+  },
+  "output": {
+    "path": "public/premiere/victamin-audience.webp",
+    "bytes": 324218,
+    "sha256": "47e7d666446792bd53f26241f2f082e9a16e8a0bb4f500bd257035d6c97df1d2"
+  },
+  "approval": "Requested implementation; producer observation only. No owner visual approval or independent art PASS inferred."
+}

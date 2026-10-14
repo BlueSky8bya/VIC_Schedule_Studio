@@ -7,8 +7,9 @@ import type { TagVisualResolver } from "@/lib/tags/tag-visual";
 import { tagColor } from "@/lib/tags/dark-palette";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 import { TeaserStageContent } from "@/components/shared/teaser-stage-content";
-import { Sparkles, Check, X, ArrowUpRight, Music2, VolumeX, WandSparkles } from "lucide-react";
+import { Sparkles, Check, X, ArrowUpRight } from "lucide-react";
 import { useRemainSeconds } from "@/lib/ui/use-remain-seconds";
+import { syncedNow } from "@/lib/ui/synced-clock";
 import { usePremiereChoreography } from "./use-premiere-choreography";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
@@ -55,7 +56,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   const focused = frame.focused || frame.phase === "return";
   const active = frame.phase !== "idle";
   const complete = frame.items.length > 0 && frame.items.every(item => item.state === "released");
-  const music = usePremiereMusic(focused && !reduced && frame.phase !== "return" && frame.items.some(item => item.state === "masked"), frame.target);
+  usePremiereMusic(focused && !reduced && frame.phase !== "return" && frame.items.some(item => item.state === "masked"), frame.target);
   const cardVisible = usePremiereCardVisible(root, frame.items.map(item => item.id).join("|"), active && !focused);
   const detailOwnsClock = Boolean(detailEventId && frame.items.some(item => item.id === detailEventId));
   const dockOwnsClock = !focused && !detailOwnsClock && !cardVisible;
@@ -186,7 +187,6 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
       <div className="pm-shock" key={`shock-${bang}`} aria-hidden="true" />
       <div className="pm-viewport">
         <div className={`pm-screen${released.length ? " is-released" : ""}`} ref={screen} style={released[0] ? premierePaper(released[0].event, tagVisual) : undefined}>
-          <PremiereScene pulse={hopePulse} reaction={reaction} cheer={cheerPulse} />
           <header className="pm-heading" data-pm-retreat><span className="pm-kicker">최초공개</span><span>{frame.items.length > 1 ? `${frame.items.length}개의 일정` : shortDate(frame.items[0]?.dateKey)}</span><span className="pm-heading-rule" aria-hidden="true" />{complete ? <div className="pm-keepsake" aria-hidden="true"><span>✦</span><PremierePortrait /><i>✧</i></div> : null}</header>
           <div className="pm-composition">
             {waiting.length ? <div className="pm-count" data-pm-watching={waiting.map(item => item.id).join(" ")}><TeaserStageContent revealAt={new Date(frame.target).toISOString()} presentation="premiere" /></div> : null}
@@ -204,7 +204,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
               </article>)}
             </div>
           </div>
-          {waiting.length ? <div className="pm-music" data-pm-retreat><button type="button" aria-label="응원봉 흔들기" onClick={() => { if (performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }}><WandSparkles size={15} aria-hidden="true" /><span>응원봉 흔들기</span></button><button type="button" data-sfx="off" aria-pressed={music.playing} disabled={!music.available} aria-label={music.playing ? "음악 끄기" : "음악 켜기"} onClick={music.toggle}>{music.playing ? <VolumeX size={15} aria-hidden="true" /> : <Music2 size={15} aria-hidden="true" />}<span>{music.playing ? "음악 끄기" : "음악 켜기"}</span></button></div> : null}
+          <PremiereScene pulse={hopePulse} reaction={reaction} cheer={cheerPulse} onCheer={() => { if (document.hidden || reduced || frame.target - syncedNow() <= 12500 || performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }} />
         </div>
         <div ref={transfer} className="pm-entry" aria-hidden="true">
           <div className="pm-entry-plane"><i /></div>

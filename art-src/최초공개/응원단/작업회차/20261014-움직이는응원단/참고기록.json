@@ -1,0 +1,16 @@
+{
+  "work_id": "PREMIERE-AUDIENCE-20261014",
+  "date_kst": "2026-10-14",
+  "tool": "builtin image_gen",
+  "generation_calls": 1,
+  "independent_art_reviews": 0,
+  "visual_approval": "NONE; requested UI implementation is not owner art acceptance",
+  "inputs_actually_opened_and_submitted": [
+    {"id": "REF-016", "name": "스크린샷 2026-10-06 025419.png", "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4", "role": "read-only original two-ear and silhouette authority"},
+    {"id": "REF-017", "name": "스크린샷 2026-10-06 025426.png", "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5", "role": "read-only original square layers, expression and ear authority"}
+  ],
+  "other_viewed_support": "Existing public victamin-cheer.webp was inspected for UI context but was not submitted to imagegen",
+  "native": "원본/빅타민_응원과관람_16프레임.png",
+  "native_sha256": "F36C8060B0CE35582B54256B5AB403D5734E2D452B44386CE28F04ED9B1459B6",
+  "observation": "Whole generator output and dark-background alpha composite opened. No limb/hand added. Ribbon-mounted lightstick follows body. Cells9/10 reverse inner-ear colors and are excluded from runtime, not repainted. Tile lengths vary between some frames. Last frame watches from behind. No Tori face input or regeneration."
+}

@@ -49,6 +49,8 @@ export function usePremiereEntry({ frame, ready, reduced, root, screen, transfer
       ended = true; timers.forEach(clearTimeout); offClock(); resize.disconnect(); preferences.disconnect();
       window.removeEventListener("resize", finish); document.removeEventListener("visibilitychange", hidden);
       delete stage.dataset.pmEntering; delete stage.dataset.pmEntry;
+      // Removing the morph must not restart the base screen fade from opacity0.
+      el.dataset.pmEntered = "";
       delete el.dataset.pmMorph; el.style.removeProperty("--pm-entry-ms");
       delete layer.dataset.active; delete layer.dataset.phase;
       plane.removeAttribute("style");
@@ -58,7 +60,7 @@ export function usePremiereEntry({ frame, ready, reduced, root, screen, transfer
     stop.current = finish;
     el.dataset.pmMorph = "card"; el.style.setProperty("--pm-entry-ms", `${total}ms`);
     stage.dataset.pmEntering = ""; stage.dataset.pmEntry = "gather";
-    for (const control of stage.querySelectorAll<HTMLElement>("[data-pm-retreat]")) { control.inert = true; control.setAttribute("aria-hidden", "true"); }
+    for (const control of stage.querySelectorAll<HTMLElement>("[data-pm-retreat],[data-pm-audience-control]")) { control.inert = true; control.setAttribute("aria-hidden", "true"); }
     layer.dataset.active = ""; layer.dataset.phase = "gather";
     let primary = { width: 160, height: 44 };
     const meeting: { face: HTMLElement; x: number; y: number; width: number; height: number }[] = [];
