@@ -8,7 +8,7 @@ import { PanelPlaceControl } from "@/components/shared/panel-place-control";
 import { TeaserCountdown } from "@/components/shared/teaser-countdown";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { flipSpring } from "@/lib/ui/flip-motion";
-import { readEditableText, writeEditableText } from "@/lib/ui/editable-text";
+import { normalizeEditableText, readEditableText, writeEditableText } from "@/lib/ui/editable-text";
 import { ringPath, ringSpring } from "@/lib/ui/ring-path";
 
 import dynamic from "next/dynamic";
@@ -8459,8 +8459,15 @@ export function StudioShell({
                 className="editor-title-ce"
                 contentEditable={canEdit}
                 data-act="title-input"
+                onCompositionEnd={(event) => {
+                  const text = normalizeEditableText(event.currentTarget);
+                  setForm((current) => ({ ...current, publicTitle: text }));
+                }}
                 onInput={(event) => {
-                  const text = readEditableText(event.currentTarget); // updater 콜백 안에선 currentTarget이 이미 null
+                  // 조합(한글 IME) 중엔 DOM을 다시 쓰면 조합이 끊긴다 — 값만 읽고, 정규화는 조합 끝에.
+                  // 정규화: Chrome이 Enter로 넣는 <b>·중첩 div·줄 끝 <br>을 걷어 둘째 줄이 굵어지거나 빈 줄이 생기지 않게(2026-10-14).
+                  const el = event.currentTarget; // updater 콜백 안에선 currentTarget이 이미 null
+                  const text = (event.nativeEvent as InputEvent).isComposing ? readEditableText(el) : normalizeEditableText(el);
                   setForm((current) => ({ ...current, publicTitle: text }));
                 }}
                 onPaste={(event) => {
