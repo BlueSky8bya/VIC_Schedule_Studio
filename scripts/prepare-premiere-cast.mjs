@@ -10,7 +10,9 @@ const bytes = await fs.readFile(source);
 if (hash(bytes) !== '05d73d85bd98874a9e874158d841b407648b1409c9f8ccd0ffbc89e717b2e8ee') throw new Error('Preserved generation native changed');
 const { width, height } = await sharp(bytes).metadata();
 if (width !== 1254 || height !== 1254) throw new Error('Unexpected native geometry');
-const variants = [['victory-delighted', 0, 0], ['victory-unimpressed', 627, 0], ['victamin-cheer', 0, 627], ['victamin-seated', 627, 627]];
+// Rejected generated human expressions are no longer runtime deliverables.
+// Actual owner-provided photographs use prepare-premiere-reference-photos.mjs.
+const variants = [['victamin-cheer', 0, 627], ['victamin-seated', 627, 627]];
 await fs.mkdir('public/premiere', { recursive: true });
 const derivatives = [];
 for (const [name, left, top] of variants) {

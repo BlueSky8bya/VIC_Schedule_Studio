@@ -2,16 +2,18 @@
 
 import Image from "next/image";
 import { useEffect, useRef, type CSSProperties } from "react";
+import { PremiereReferencePortrait } from "./premiere-reference-portrait";
 
 // Local cast interactions never claim audience counts or still-gated content.
-export type PremiereReaction = { serial: number; kind: "delighted" | "unimpressed" };
+export type PremiereReaction = { serial: number; kind: "delighted" | "unimpressed"; generation: string };
 const company = [
   { x: 6, size: .78, seed: 0 }, { x: 19, size: 1, seed: 1.7 },
   { x: 32, size: .82, seed: 3.8 }, { x: 45, size: 1, seed: 5.2 },
   { x: 58, size: .76, seed: 7.9 }, { x: 71, size: .9, seed: 9.6 }
 ];
-export function PremiereScene({ pulse, reaction, cheer, onCheer }: { pulse: number; reaction: PremiereReaction | null; cheer: number; onCheer: () => void }) {
+export function PremiereScene({ pulse, reaction, hopeful, calm, generation, cheer, onCheer }: { pulse: number; reaction: PremiereReaction | null; hopeful: boolean; calm: boolean; generation: string; cheer: number; onCheer: () => void }) {
   const audience = useRef<HTMLDivElement>(null);
+  const expression = hopeful ? "delighted" : reaction?.kind === "unimpressed" ? "unimpressed" : "neutral";
   useEffect(() => {
     if (audience.current) {
       if (cheer) audience.current.dataset.cheerAt = String(performance.now());
@@ -32,17 +34,11 @@ export function PremiereScene({ pulse, reaction, cheer, onCheer }: { pulse: numb
           <span className="pm-fan-art" aria-hidden="true" />
         </button>)}
       </div>
-      <div className="pm-host" aria-hidden="true" data-reaction={reaction?.kind}><div key={reaction?.serial ?? 0} className={reaction ? `pm-host-response pm-host-${reaction.kind}` : undefined}>
-        <PremierePortrait />
-        <div className="pm-expression pm-delighted"><CastImage name="victory-delighted" /></div>
-        <div className="pm-expression pm-unimpressed"><CastImage name="victory-unimpressed" /></div>
-      </div></div>
+      <div className="pm-host" aria-hidden="true" data-reaction={expression === "neutral" ? undefined : expression}>
+        <PremiereReferencePortrait key={generation} expression={expression} calm={calm} />
+      </div>
     </div>
   </>;
-}
-
-function CastImage({ name }: { name: string }) {
-  return <Image src={`/premiere/${name}.webp`} width={480} height={480} alt="" sizes="300px" unoptimized loading="eager" draggable={false} />;
 }
 
 export function PremierePortrait() {

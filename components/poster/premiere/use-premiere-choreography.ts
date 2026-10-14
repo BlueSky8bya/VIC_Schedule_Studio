@@ -6,7 +6,8 @@ import { subscribeClock, syncedNow } from "@/lib/ui/synced-clock";
 import { lateCardDeparture, passage, planCardDepartures, REGION_WINDOWS, type CardDeparture } from "@/lib/ui/premiere/choreography";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 import { premiereFocusMotion } from "@/lib/ui/premiere/focus-motion";
-import { premiereAudienceFrame, premiereCompany } from "@/lib/ui/premiere/company";
+import { premiereAudienceFrame, premiereAudienceSeat, premiereCompany } from "@/lib/ui/premiere/company";
+import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 
 export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, root: RefObject<HTMLDivElement | null>, exit: RefObject<HTMLButtonElement | null>, stage: RefObject<HTMLDivElement | null>, previousFocus: RefObject<HTMLElement | null>) {
   const latest = useRef(frame); latest.current = frame;
@@ -33,7 +34,15 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     let fit = page.querySelector<HTMLElement>(".poster-fit");
     const marked = new Set<HTMLElement>();
     let widthRatio = 1, shift = 0, dockTravel = 0;
+    let audienceContainer: HTMLElement | null = null;
+    let seats: { fan: HTMLElement; dx: number }[] = [];
     const measure = () => {
+      const agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
+      seats = [...(stage.current?.querySelectorAll<HTMLElement>(".pm-fan") ?? [])].map(fan => {
+        const index = Number(fan.style.getPropertyValue("--fan-index"));
+        const destination = agenda ? 38 + index * 12 : 36 + index * 6;
+        return { fan, dx: (fan.parentElement?.clientWidth ?? 0) * destination / 100 - fan.offsetLeft };
+      });
       const panel = page.querySelector<HTMLElement>(".poster-panel-ctl");
       const badge = stage.current?.querySelector<HTMLElement>(".pm-banner:not(.pm-banner-focused)");
       // Agenda has no panel slot: keep its badge above the mobile monthbar.
@@ -65,6 +74,13 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     };
     const update = () => {
       const current = latest.current;
+      const nextAudience = stage.current?.querySelector<HTMLElement>(".pm-company") ?? null;
+      if (nextAudience !== audienceContainer) {
+        if (audienceContainer) resize.unobserve(audienceContainer);
+        audienceContainer = nextAudience;
+        if (audienceContainer) resize.observe(audienceContainer);
+        measure();
+      }
       const returning = current.phase === "return" || current.phase === "idle";
       const seconds = returning ? Infinity : (current.target - syncedNow()) / 1000;
       stage.current?.style.setProperty("--pm-progress", String(Math.max(0, Math.min(1, 1 - seconds / 180))));
@@ -75,10 +91,13 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       const company = premiereCompany(seconds * 1000);
       const retiring = current.phase === "reveal" ? 0 : company.retire;
       stage.current?.toggleAttribute("data-pm-quiet", retiring === 1);
+      // Tab return/large clock correction must land directly in the final
+      // seats, without CSS replaying a walk inside the last eight seconds.
+      stage.current?.toggleAttribute("data-pm-seated", seconds <= 8);
       const grade = stage.current?.dataset.gfx;
       const drift = current.phase === "reveal" || grade === "off" ? 0 : grade === "soft" || grade === "lite" ? .45 : 1;
-      // One truthful clock conducts visual gathering too. Motion stops before
-      // the last ten seconds; the ring remains an actual time indicator.
+      // One truthful clock conducts the quiet seating too. Numeral hype stops
+      // before ten; low-contrast audience travel ends before the final eight.
       for (const [key, value] of Object.entries({ "--pm-digit-x": `${motion.x * drift}px`, "--pm-digit-y": `${motion.y * drift}px`, "--pm-digit-tilt": `${motion.tilt * drift}deg`, "--pm-final": String(finale), "--pm-gather": String(passage(seconds, 68, 10)), "--pm-fold-drift": `${Math.sin(Math.max(0, 68 - seconds) * .48) * 5 * drift * (1 - passage(seconds, 12, 10))}px` })) stage.current?.style.setProperty(key, value);
       stage.current?.style.setProperty("--pm-company-retire", String(retiring));
       stage.current?.style.setProperty("--pm-settle", String(company.settle));
@@ -94,6 +113,13 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
           const hop = [0, 0, 7, 15, 19, 8][index] ?? 0;
           fan.style.setProperty("--fan-hop", `${-hop * (grade === "lite" ? .45 : 1)}px`);
         }
+      }
+      for (const { fan, dx } of seats) {
+        const seat = premiereAudienceSeat(seconds * 1000, Number(fan.style.getPropertyValue("--fan-index")), grade === "lite");
+        const move = grade !== "off" && grade !== "soft";
+        fan.style.setProperty("--fan-walk-x", `${move ? dx * seat.progress : 0}px`);
+        fan.style.setProperty("--fan-walk-y", `${move ? seat.y : 0}px`);
+        fan.style.setProperty("--fan-depth", String(move ? seat.depth : 1));
       }
       for (const el of stage.current?.querySelectorAll<HTMLElement>("[data-pm-retreat],[data-pm-audience-control]") ?? []) {
         const hidden = retiring > .8 || Boolean(stage.current?.hasAttribute("data-pm-entering"));

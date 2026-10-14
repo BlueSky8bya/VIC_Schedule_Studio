@@ -31,18 +31,23 @@ for (const width of [1440, 390]) {
     }
     await hope.click();
     await expect(page.locator('.pm-host[data-reaction="delighted"]')).toBeVisible();
-    await expect.poll(() => page.locator(".pm-delighted").evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
-    await expect(page.locator(".pm-host")).not.toHaveAttribute("data-reaction", /.+/, { timeout: 3500 });
+    await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "delighted");
+    await expect(page.locator(".pm-photo-layer[data-visible]")).toHaveAttribute("src", "/premiere/tori-photo-delighted.webp");
+    await page.waitForTimeout(2300);
+    await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "delighted");
     await expect(page.getByRole("timer")).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
 
-test("hope undo preserves the existing brief reaction and one countdown", async ({ page }) => {
+test("hope undo keeps the original contempt photograph and one countdown", async ({ page }) => {
   await page.goto("/visual-fixture/poster?premiere=40");
   await page.getByRole("button", { name: "기대돼요", exact: true }).click();
   await page.getByRole("button", { name: "함께 기다리는 중", exact: true }).click();
   await expect(page.locator('.pm-host[data-reaction="unimpressed"]')).toBeVisible();
+  await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "unimpressed");
+  await page.waitForTimeout(1800);
+  await expect(page.locator(".pm-photo-layer[data-visible]")).toHaveAttribute("src", "/premiere/tori-photo-unimpressed.webp");
   await expect(page.getByRole("timer")).toHaveCount(1);
 });
 
@@ -79,7 +84,7 @@ test("default music follows master volume, mute/category and exit", async ({ pag
   const closed = await trace(page); await page.waitForTimeout(1000); expect(await trace(page)).toBe(closed);
 });
 
-test("last ten seconds keep dim static seated spectators without controls or music", async ({ page }) => {
+test("turned spectators quietly gather after ten, then stay still before eight without controls or music", async ({ page }) => {
   await page.goto("/visual-fixture/poster?premiere=18");
   await page.getByRole("button", { name: "빅타민 1 응원하기", exact: true }).click();
   await expect.poll(() => trace(page)).toBeGreaterThan(0);
@@ -90,7 +95,11 @@ test("last ten seconds keep dim static seated spectators without controls or mus
   const first = page.locator(".pm-fan").first();
   await expect(first).toHaveAttribute("data-frame", "15");
   await expect(first).toHaveAttribute("inert");
-  const quiet = await trace(page), style = await first.getAttribute("style");
+  const quiet = await trace(page), startX = await first.evaluate(el => el.getBoundingClientRect().x);
+  await expect.poll(() => first.evaluate(el => el.getBoundingClientRect().x)).toBeGreaterThan(startX + 5);
+  await expect.poll(() => first.evaluate(el => parseFloat(el.style.getPropertyValue("--fan-depth")))) .toBe(.86);
+  await page.waitForTimeout(400);
+  const style = await first.getAttribute("style");
   await page.waitForTimeout(1000); expect(await trace(page)).toBe(quiet);
   expect(await first.getAttribute("style")).toBe(style);
   await expect(page.getByRole("timer")).toHaveCount(1);

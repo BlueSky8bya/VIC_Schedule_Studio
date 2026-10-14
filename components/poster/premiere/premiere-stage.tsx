@@ -56,6 +56,8 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   const focused = frame.focused || frame.phase === "return";
   const active = frame.phase !== "idle";
   const complete = frame.items.length > 0 && frame.items.every(item => item.state === "released");
+  const generationKey = frame.items.map(item => `${item.id}:${item.revealAt}`).sort().join("|");
+  const currentReaction = reaction?.generation === generationKey ? reaction : null;
   usePremiereMusic(focused && !reduced && frame.phase !== "return" && frame.items.some(item => item.state === "masked"), frame.target);
   const cardVisible = usePremiereCardVisible(root, frame.items.map(item => item.id).join("|"), active && !focused);
   const detailOwnsClock = Boolean(detailEventId && frame.items.some(item => item.id === detailEventId));
@@ -64,13 +66,9 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   usePremiereChoreography(frame, reduced, root, exit, portal, previousFocus);
   useEffect(() => { if (!active) setHopePulse(0); }, [active]);
   useEffect(() => {
-    if (!reaction) return;
-    const timer = setTimeout(() => setReaction(null), reaction.kind === "delighted" ? 2100 : 1500);
-    return () => clearTimeout(timer);
-  }, [reaction]);
-  useEffect(() => {
     if (!focused || complete) { setReaction(null); setCheerPulse(0); lastCheer.current = -Infinity; }
   }, [focused, complete]);
+  useEffect(() => { setReaction(null); setCheerPulse(0); lastCheer.current = -Infinity; }, [generationKey]);
   useEffect(() => { setReady(true); const read = () => setGfx(gfxMode()); read(); const observer = new MutationObserver(read); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-gfx"] }); return () => observer.disconnect(); }, []);
   useEffect(() => { const media = matchMedia(POSTER_AGENDA_QUERY); const read = () => setAgenda(media.matches); read(); media.addEventListener("change", read); return () => media.removeEventListener("change", read); }, []);
   useAmbientPause(active && phaseIndex >= phases.indexOf("curtain"), `premiere-stage-${instanceId}`);
@@ -196,14 +194,14 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
                   <PremiereStory event={item.event} dateKey={item.dateKey} tags={tags} tagVisual={tagVisual} onRead={onRead} />
                 </> : <div className="pm-masked" data-pm-retreat>
                   {frame.items.length > 1 ? <span className="pm-slot-label">{String(index + 1).padStart(2, "0")} <span>{shortDate(item.dateKey)}</span></span> : null}
-                  <button type="button" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { const adding = !hoped.has(item.id); setReaction({ serial: ++reactionSerial.current, kind: adding ? "delighted" : "unimpressed" }); if (adding) { setHopePulse(value => value + 1); setCheerPulse(value => value + 1); } onHope(item.id); }}>
+                  <button type="button" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { const adding = !hoped.has(item.id); setReaction({ serial: ++reactionSerial.current, kind: adding ? "delighted" : "unimpressed", generation: generationKey }); if (adding) { setHopePulse(value => value + 1); setCheerPulse(value => value + 1); } onHope(item.id); }}>
                     {hoped.has(item.id) ? <Check aria-hidden="true" size={20} /> : <Sparkles aria-hidden="true" size={20} />}<span>{hoped.has(item.id) ? "함께 기다리는 중" : "기대돼요"}</span><span className="pm-hope-ripple" aria-hidden="true" key={hopePulse} />
                   </button>
                 </div>}
               </article>)}
             </div>
           </div>
-          <PremiereScene pulse={hopePulse} reaction={reaction} cheer={cheerPulse} onCheer={() => { if (document.hidden || reduced || frame.target - syncedNow() <= 12500 || performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }} />
+          <PremiereScene pulse={hopePulse} reaction={currentReaction} generation={generationKey} hopeful={frame.items.some(item => hoped.has(item.id))} calm={reduced || gfx === "soft" || gfx === "off" || frame.phase === "eye" || frame.phase === "waiting" || complete} cheer={cheerPulse} onCheer={() => { if (document.hidden || reduced || frame.target - syncedNow() <= 12500 || performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }} />
         </div>
         <div ref={transfer} className="pm-entry" aria-hidden="true">
           <div className="pm-entry-plane"><i /></div>

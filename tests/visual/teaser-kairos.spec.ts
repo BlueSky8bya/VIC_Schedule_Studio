@@ -9,9 +9,9 @@ for (const width of [1440, 390]) {
   test(`one familiar host frames one truthful clock at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await page.goto("/visual-fixture/poster?premiere=40");
-    const portrait = page.locator(".pm-host > div > img");
+    const portrait = page.locator(".pm-host .pm-photo-layer[data-visible]");
     await expect(portrait).toBeVisible();
-    await expect.poll(() => portrait.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBe(640);
+    await expect.poll(() => portrait.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBe(320);
     await expect(page.getByRole("timer")).toHaveCount(1);
     await expect(page.locator(".pm-light-field, .pm-count canvas")).toHaveCount(0);
     await expect(page.locator(".pm-scene")).toHaveAttribute("aria-hidden", "true");
@@ -64,7 +64,7 @@ test("a voluntary hope has a short local response without moving the clock", asy
   const before = await clock.boundingBox();
   await page.getByRole("button", { name: "기대돼요", exact: true }).click();
   await expect(page.locator(".pm-wish")).toHaveCount(1);
-  await expect(page.locator(".pm-host-response")).toBeVisible();
+  await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "delighted");
   const after = await clock.boundingBox();
   expect(Math.abs(after!.width - before!.width)).toBeLessThan(1);
   expect(Math.abs(after!.y - before!.y)).toBeLessThan(6); // bounded existing digit texture

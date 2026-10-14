@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { premiereAudienceFrame, premiereCompany, premiereScore } from "@/lib/ui/premiere/company";
+import { premiereAudienceFrame, premiereAudienceSeat, premiereCompany, premiereScore } from "@/lib/ui/premiere/company";
 
 describe("premiere company and original score", () => {
   it("retires host/controls and silences music before the ten-second boundary", () => {
@@ -33,5 +33,28 @@ describe("premiere company and original score", () => {
     expect(premiereScore(Infinity)).toBeNull(); expect(premiereScore(NaN)).toBeNull();
     expect(premiereScore(68001)).toBeNull();
     expect(premiereScore(30000)!.beat).toBeGreaterThan(premiereScore(40000)!.beat);
+  });
+  it("gathers each spectator once after turning, with a fixed seated position before eight", () => {
+    for (let index = 0; index < 6; index++) {
+      expect(premiereAudienceSeat(10500, index)).toEqual({ progress: 0, y: 0, depth: 1 });
+      let previous = 0;
+      for (let ms = 10500; ms >= 8000; ms -= 25) {
+        const seat = premiereAudienceSeat(ms, index);
+        expect(seat.progress).toBeGreaterThanOrEqual(previous);
+        expect(seat.progress).toBeLessThanOrEqual(1);
+        expect(Math.abs(seat.y)).toBeLessThanOrEqual(7.25);
+        expect(seat.depth).toBeGreaterThanOrEqual(.86);
+        previous = seat.progress;
+      }
+      for (const ms of [8000, 7000, 2000, 0, -5000]) expect(premiereAudienceSeat(ms, index)).toEqual(premiereAudienceSeat(8000, index));
+    }
+  });
+  it("uses the current deadline for late entry, return and postponement without a replay state", () => {
+    expect(premiereAudienceSeat(9200, 2).progress).toBeGreaterThan(0);
+    expect(premiereAudienceSeat(9200, 2).progress).toBeLessThan(1);
+    expect(premiereAudienceSeat(30000, 2).progress).toBe(0);
+    expect(premiereAudienceSeat(9000, 2, true).progress).toBe(premiereAudienceSeat(9000, 2).progress);
+    expect(Math.abs(premiereAudienceSeat(9000, 2, true).y)).toBeLessThan(Math.abs(premiereAudienceSeat(9000, 2).y));
+    expect(premiereAudienceSeat(NaN, 0)).toEqual({ progress: 0, y: 0, depth: 1 });
   });
 });

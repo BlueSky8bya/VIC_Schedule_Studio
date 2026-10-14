@@ -1,7 +1,7 @@
 import { hypeIntensity, hypeMotionFrame } from "@/lib/ui/hype-curve";
 import { passage } from "./choreography";
 
-/** Controls/host retire before ten; the audience remains seated and still.
+/** Controls/host retire before ten; the audience quietly gathers until eight.
  * The numbered ring retains its own 10→2s transformation. */
 export function premiereCompany(remainMs: number) {
   const seconds = remainMs / 1000;
@@ -23,6 +23,17 @@ export function premiereAudienceFrame(remainMs: number, seed: number, cheerAgeMs
   // but omit those cells rather than teaching the runtime the wrong design.
   const loop = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11];
   return loop[((Math.floor(step) % loop.length) + loop.length) % loop.length];
+}
+
+/** One finite walk towards the screen after turning around. No loop, restart
+ * on tab return, or animation in the final eight seconds. */
+export function premiereAudienceSeat(remainMs: number, index: number, lite = false) {
+  if (!Number.isFinite(remainMs)) return { progress: 0, y: 0, depth: 1 };
+  const delay = Math.max(0, Math.min(5, index)) * .07;
+  // Leave clock-sample + CSS interpolation margin before the eight-second cut.
+  const progress = passage(remainMs / 1000, 10.5 - delay, 8.8 - delay);
+  const step = Math.sin(Math.PI * progress) * Math.sin(progress * Math.PI * 4) * (lite ? .5 : 1.25);
+  return { progress, y: -progress * (lite ? 3 : 6) + step, depth: 1 - progress * .14 };
 }
 
 /** Original pentatonic ostinato, written here: no recording, sampled melody or

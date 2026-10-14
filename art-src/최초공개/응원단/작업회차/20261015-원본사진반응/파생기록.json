@@ -1,0 +1,53 @@
+{
+  "method": "Whole-photo crop and uniform resize only. Original expression/perspective/wardrobe/background retained. No imagegen, donor-parts or face compositing.",
+  "outputs": [
+    {
+      "source_id": "REF-004",
+      "source": "art-src\\최초공개\\응원단\\작업회차\\20261015-원본사진반응\\고정입력\\기본_원본.png",
+      "source_sha256": "b799c830d2e4eec4ab464c7f07de296560d184b4a487016ff330b750440615ee",
+      "crop_xywh": [
+        240,
+        0,
+        640,
+        800
+      ],
+      "output": "public/premiere/tori-photo-neutral.webp",
+      "width": 320,
+      "height": 400,
+      "bytes": 35902,
+      "sha256": "af40aaf6b80a679d162fafb12aa511106a356ca45ce2e7f3b3459a6407f0f99b"
+    },
+    {
+      "source_id": "REF-284",
+      "source": "art-src\\최초공개\\응원단\\작업회차\\20261015-원본사진반응\\고정입력\\웃음_원본.png",
+      "source_sha256": "7f11cccd01fdcd5f2817144a4b1c79091501f0ba64cdfac5a5890ad5b49824ea",
+      "crop_xywh": [
+        125,
+        0,
+        440,
+        550
+      ],
+      "output": "public/premiere/tori-photo-delighted.webp",
+      "width": 320,
+      "height": 400,
+      "bytes": 18712,
+      "sha256": "ff7028889f23352a3ae1e071d310a3ff513567dba4bbb0d82a387d0f98325de5"
+    },
+    {
+      "source_id": "REF-120",
+      "source": "art-src\\최초공개\\응원단\\작업회차\\20261015-원본사진반응\\고정입력\\경멸_원본.png",
+      "source_sha256": "0b56d6554ad02b333616ab5c84def06636f6c46db91215424f7894f0a30bc151",
+      "crop_xywh": [
+        18,
+        0,
+        480,
+        600
+      ],
+      "output": "public/premiere/tori-photo-unimpressed.webp",
+      "width": 320,
+      "height": 400,
+      "bytes": 24346,
+      "sha256": "357bc723c5c16ee74b4090e2722cac8547f06bd0918cb024f816b51b16ac7db8"
+    }
+  ]
+}
