@@ -1,7 +1,7 @@
 # PLAN-032 — Resume a dismissed premiere
 
 Date: 2026-10-14 KST
-Status: Locally verified; authorized deployment pending
+Status: Deployed and verified — 87bcba64
 
 Closing the preparation chip/stage currently adds its generations to the coordinator's skip set until remount. Provide a small “최초공개 다시 보기” action on the same viewer page, in the existing preparation-chip position. No extra clock, explanation or automatic re-entry.
 
@@ -13,3 +13,5 @@ Closing the preparation chip/stage currently adds its generations to the coordin
 This supplements PLAN-031's exit behavior: dismissal continues to suppress automatic re-entry; an explicit action can now resume a pending premiere.
 
 Implemented. Final fresh-build focused browser checks: 12 PASS; relevant units/memory: 115 PASS. Typecheck/lint/build PASS. Two new resume baselines and one existing mobile invitation mask-edge refresh reviewed. Independent review findings resolved. [QA](../verification/TEASER_RESUME-20261014.md) records initial/intermediate failures, corrections and unchanged global harness gaps. No DB writes or additional requests on resume.
+
+Committed/pushed as 87bcba64. Vercel success and production build SHA matched. Actual main-route PC/mobile synthetic smoke PASS: preparation/stage exit, manual current-time resume, single timer, repeat close/focus and restored calendar, zero page errors/server writes. Deployment evidence and remaining coverage limits are in QA.

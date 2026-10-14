@@ -1,6 +1,6 @@
 # Premiere manual resume — 2026-10-14 KST
 
-Scope: [PLAN-032](../plans/PLAN-20261014-032-premiere-resume.md). Status: locally verified; authorized production rollout pending.
+Scope: [PLAN-032](../plans/PLAN-20261014-032-premiere-resume.md). Status: deployed and verified — 87bcba64.
 
 Explicitly closing the preparation chip/stage leaves one small “최초공개 다시 보기” action at the existing bottom preparation-chip position. Calendar interaction resumes immediately. Clicking continues the shared planner at the actual synchronized time; it neither resets time nor replays already-public items. Repeated dismissal is supported, with keyboard focus returned to the new resume action.
 
@@ -18,6 +18,12 @@ Independent G-21 review found lost focus when the original trigger unmounted and
 - Main-route local synthetic smoke at 1440/390px: PASS. Preparation X and stage Escape → calendar → manual resume, target unchanged, live countdown decreases, one timer, repeat close/focus restoration, no horizontal overflow/page errors. All POSTs intercepted: two blocked per viewport, zero sent.
 - Local rendered review: small dark pill, legible label, 44px target, existing bottom controls/safe area clear; outside the fixed 1840px export surface. New control adds no numeric timer.
 - Global harness: FAIL, same two existing RULE_MIGRATION active-ID/inventory mismatches. No rule changes; unrelated global-unit/geometry gaps from PLAN-031 remain outside this change.
+
+## Deployment
+
+87bcba64 committed/pushed to main. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/9u5aThVDAoYppkHcqWSBv6wfrh8P) succeeded; production `/api/soop-live` build matched. Actual production `/` client checked at 1440/390px with synthetic 2025-09 GET substitutions inside fresh browsers only.
+
+PASS: preparation X → resume button, calendar remains usable, no automatic re-entry, keyboard activation, stage Escape → same-target current-time resume, countdown decreases, one timer, repeated close and focus restoration, no horizontal overflow and zero page errors. All POSTs intercepted: one blocked per viewport, zero sent. Final rollout-record commit contains documentation only; the verified product revision is 87bcba64.
 
 ## Boundary and limits
 
