@@ -66,6 +66,8 @@ test("60→10 numeric texture settles, then 10→2 removes the ring and safe con
   expect(await page.locator(".pm-count .dt-count-core").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a)).toBeGreaterThan(1.3);
   await expect(page.locator(".pm-masked")).toHaveAttribute("inert");
   await expect(page.getByRole("button", { name: "일정표 보기", exact: true })).toBeEnabled();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "일정표 보기", exact: true })).toBeFocused();
 });
 
 for (const edit of [false, true]) {

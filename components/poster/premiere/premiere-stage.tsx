@@ -75,7 +75,8 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
     const key = (event: KeyboardEvent) => {
       if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); onClose(); }
       if (event.key === "Tab") {
-        const buttons = [...(portal.current?.querySelectorAll<HTMLElement>("button:not(:disabled),a[href],[tabindex='0']") ?? [])];
+        const buttons = [...(portal.current?.querySelectorAll<HTMLElement>("button:not(:disabled),a[href],[tabindex='0']") ?? [])]
+          .filter(el => !el.closest("[inert],[aria-hidden='true']") && el.getClientRects().length > 0);
         const first = buttons[0], last = buttons[buttons.length - 1];
         if (document.activeElement === portal.current) { event.preventDefault(); (event.shiftKey ? last : first)?.focus(); }
         else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
