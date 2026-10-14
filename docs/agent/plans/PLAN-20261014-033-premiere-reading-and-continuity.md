@@ -1,6 +1,6 @@
 # PLAN-033 — Stay with the revealed story
 
-2026-10-14 KST · Status: Locally verified; authorized deployment pending
+2026-10-14 KST · Status: Deployed and verified — cb6e0383
 
 Owner requests an unhurried revealed screen, coordinated departure of the bottom panel control, a preparation badge sliding into its vacated place, a more fluid card-to-stage transition, no generic invitation sentence, gentle build-up motion beyond the numeral, and richer tag-colored reading with the original Tori artwork.
 
@@ -20,3 +20,5 @@ Apple [fluid interfaces](https://developer.apple.com/videos/play/wwdc2018/803/) 
 Verify canonical held-reading planner (long wait, cohort isolation, delete/re-gate/update), PC/mobile long/multiple/sparse/tagged reading, close/focus/history/resume, measured panel/badge continuity at intermediate times, morphology frames, final-ten-second calm, OFF/reduce/gfx/landscape, single timer/public canary/export1840. Review new baselines against captured before/after. Independent G-21 review before integration; typecheck/lint/relevant units/build/browser checks, then authorized commit/push and deployed-client smoke. Prior global harness/unit/geometry gaps remain separately recorded.
 
 Implemented and locally verified. Broad browser run: 73 PASS / 1 first-paint Escape failure; listeners/focus/history moved before paint, independently reviewed. Final fresh-build 30-case recheck without updates PASS, including the previous failure and ten snapshot cases (eight intentional new/updated images, two unchanged resume controls). Typecheck/lint/build PASS; relevant units/memory 117 PASS. Real-time PC/mobile light/dark/multiple/long/morph/dock captures reviewed. [QA](../verification/TEASER_READING-20261014.md) records exact scope, corrections and inherited gaps. No DB writes or new polling.
+
+Committed/pushed as cb6e0383; Vercel success and production build matched. Actual production main-route synthetic PC/mobile smoke PASS: measured panel/badge handoff, card morph, one truthful clock, text tension→calm, server-confirmed public tags/subtopics, reading beyond the retired six-second budget, visible manual exit and restored calendar; zero page errors/server writes. Final rollout-record commit is documentation only.

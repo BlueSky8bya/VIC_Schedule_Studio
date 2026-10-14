@@ -1,6 +1,6 @@
 # Premiere reading and continuity — 2026-10-14 KST
 
-Scope: [PLAN-033](../plans/PLAN-20261014-033-premiere-reading-and-continuity.md). Status: locally verified; authorized rollout pending.
+Scope: [PLAN-033](../plans/PLAN-20261014-033-premiere-reading-and-continuity.md). Status: deployed and verified — cb6e0383.
 
 ## Product
 
@@ -25,6 +25,12 @@ Independent G-21 review found that authoritative empty-candidate return still ca
 - Final fresh-build no-update recheck: 30 PASS, including the previously failing first-paint Escape, all new reading/resume checks, studio fresh-snapshot/queued-write entry, one clock, visible-source morph, final calm, hidden return and cross-tab OFF. Ten snapshot cases PASS: six intentionally revised invitation/fluid/outline images, two new tag-colored reading images, two unchanged resume controls.
 - Reading tag chips: three distinct public palettes at PC/mobile, light/dark measured text contrast ≥4.5. Published title/subtopics, internal reading scroll and the bottom exit remain legible; no horizontal overflow or export-width change in checked cases.
 - Global harness rerun: FAIL, same two RULE_MIGRATION active-ID/inventory mismatches. No rule changes.
+
+## Deployment
+
+`cb6e038354fac3d0cf5356d66842b3ee3bbbfdc3` committed/pushed to main. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/G37zBKQB6x2XouUhsxnzq73C5JTh) succeeded and production `/api/soop-live` build matched. Fresh anonymous browsers exercised the actual `/` compiled client at 1440/390px; only synthetic 2025-09 public-state GET responses were substituted. Two existing explicitly public tag identities were obtained from the anonymous public-events API for palette wiring; no private/auth source.
+
+PASS: panel code7/hidden control and occupied measured dock, zero mobile panel travel, card-to-stage morph, removed generic sentence, heading tension followed by ten-second calm, no pre-release canary, one countdown, confirmed public title/two subtopics/two real tag identities, original keepsake, no timer after publication, reading remaining beyond 7.5s, bottom exit in viewport, explicit return/restored calendar and no post-release resume offer. Zero page errors/horizontal overflow. All browser POSTs intercepted: one blocked per viewport, zero sent. Final rollout-record commit changes documentation only; cb6e0383 is the verified product revision.
 
 ## Boundaries and remaining evidence
 
