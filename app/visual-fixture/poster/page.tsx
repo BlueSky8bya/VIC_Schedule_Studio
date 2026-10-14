@@ -96,6 +96,7 @@ export default async function VisualPosterFixture({
       premiereFixture={premiereFixture}
       premiereEnabled={Boolean(sp?.premiere)}
       previewNav={sp?.rehearsal === "1" ? <span>미리보기</span> : undefined}
+      canRehearsePremiere={sp?.rehearsal === "1"}
     />
   );
 }

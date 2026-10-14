@@ -168,6 +168,44 @@ test("the same rehearsal can be restarted immediately after closing without writ
   expect(writes).toEqual([]);
 });
 
+for (const viewport of [{ width: 1440, height: 1200 }, { width: 390, height: 844 }]) {
+  test(`developer rehearsal stays below calendar content at ${viewport.width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    // Real shared studio-to-viewer wiring; no authenticated session or server writes.
+    await page.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
+    await page.route("**/api/public/*/teaser-state**", route => route.fulfill({ json: { ok: true, schemaVersion: 1, sampledAtDbMs: Date.now(), entries: [] } }));
+    await page.goto("/visual-fixture/studio?viewer=1&role=developer");
+    const button = page.getByRole("button", { name: "무대 리허설", exact: true });
+    await expect(button).toBeVisible();
+    await button.scrollIntoViewIfNeeded();
+    const geometry = await button.evaluate(el => {
+      const shell = document.querySelector(".public-calendar-shell")!.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return { top: rect.top, height: rect.height, bottom: shell.bottom, position: style.position, background: style.backgroundColor, inSurface: Boolean(el.closest("[data-export-surface]")) };
+    });
+    expect(geometry.top).toBeGreaterThanOrEqual(geometry.bottom);
+    expect(geometry.height).toBeGreaterThanOrEqual(44);
+    expect(["static", "relative"]).toContain(geometry.position);
+    expect(geometry.background).toBe("rgba(0, 0, 0, 0)");
+    expect(geometry.inSurface).toBe(false);
+    if (viewport.width > 1000) expect(await page.locator("[data-export-surface]").evaluate(el => (el as HTMLElement).offsetWidth)).toBe(1840);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: testInfo.outputPath("developer-rehearsal.png"), fullPage: true });
+  });
+}
+
+test("owner preview and ordinary viewers never receive a rehearsal control", async ({ page }) => {
+  await page.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
+  for (const path of ["/visual-fixture/studio?viewer=1&role=owner", "/visual-fixture/poster?signedIn=1", "/visual-fixture/poster?signedIn=0"]) {
+    await page.goto(path);
+    await expect(page.locator(".public-calendar-shell")).toBeVisible();
+    await expect(page.getByRole("button", { name: "무대 리허설", exact: true })).toHaveCount(0);
+    await expect(page.locator(".pm-rehearsal-tools")).toHaveCount(0);
+  }
+});
+
 test("the stage preference defaults ON, persists OFF and preserves basic publication", async ({ page }) => {
   await page.goto("/visual-fixture/poster");
   const toggle = await openMotionSettings(page);

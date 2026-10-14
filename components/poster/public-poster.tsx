@@ -164,6 +164,8 @@ type PublicPosterProps = {
   // 왼쪽 여백 칸에 안내, 오른쪽 칸에 이동 버튼 → 제목과 같은 자리에서 함께 sticky로 따라온다.
   previewNote?: ReactNode;
   previewNav?: ReactNode;
+  // 실제 개발자 계정의 시청자 미리보기에서만 허용. 일반 공개 화면에는 전달하지 않는다.
+  canRehearsePremiere?: boolean;
   // 생일 카드·캡슐 뽑기(2026-10-06 소유자) — 편집실 시청자 미리보기에서만 넘긴다. 없으면(시청자 화면 /) 생일 노래만.
   // gachaAnyDay: 개발자 토글 — 생일 당일이 아니어도 뽑기 창이 열린다('지금 열기' 이벤트도 받는다).
   birthdayGift?: boolean;
@@ -580,6 +582,7 @@ export function PublicPoster({
   anonymous = false,
   previewNote,
   previewNav,
+  canRehearsePremiere = false,
   birthdayGift = false,
   gachaAnyDay = false,
   avatarSlot = false,
@@ -4087,7 +4090,6 @@ export function PublicPoster({
         month={view.month} tags={viewTags} root={posterRootRef} onClose={premiere.close} hoped={myHopeIds}
         onHope={id => { const event = premiere.frame.items.find(item => item.id === id)?.event ?? schedule.events.find(item => item.id === id); if (event) toggleHope(event); }}
         onOtherMonth={() => { const event = schedule.events.find(item => item.teaser && item.teaserRevealAt && Date.parse(item.teaserRevealAt) - syncedNow() <= 180000); if (event) { const [year, month] = event.startsAt.split("-").map(Number); goToMonth({ year, month }); } }} />
-      {previewNav ? <button className="pm-rehearsal" type="button" onClick={() => setRehearsal({ startedAt: syncedNow(), offsets: [20, 23], rehearsal: true })}>무대 리허설</button> : null}
 
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
@@ -4996,6 +4998,16 @@ export function PublicPoster({
         </div>
         )}
       </section>
+
+      {/* 개발자 시험 도구는 달력·내보내기 표면 밖의 흐름에 둔다. 고정 버튼은 일정을 가린다. */}
+      {canRehearsePremiere && previewNav ? (
+        <div className="pm-rehearsal-tools" data-pm-exit="3">
+          <button className="pm-rehearsal" type="button" data-tip="가상 일정으로 공개 연출 시험"
+            onClick={() => setRehearsal({ startedAt: syncedNow(), offsets: [20, 23], rehearsal: true })}>
+            무대 리허설
+          </button>
+        </div>
+      ) : null}
 
       {/* 하단 중앙 [⇤ | 패널 | ⇥] — 편집실과 같은 부품·같은 자리(2026-09-17 소유자). 자리 선택(⇤ ⇥)은 관리자·개발자
           (avatarSlot)만, 일반 시청자·비로그인은 접기/펼치기 하나. /onair 고정 scene엔 없다(사람이 안 만진다). */}

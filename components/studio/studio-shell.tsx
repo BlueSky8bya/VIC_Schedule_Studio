@@ -7077,6 +7077,7 @@ export function StudioShell({
           initialYear={view.year}
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
+          canRehearsePremiere={actor.role === "developer" && effectiveRole === "developer"}
           schedule={previewSchedule}
           // 생일 캡슐 뽑기(2026-10-06 소유자 개정): 지금은 **개발자가 토글을 켰을 때만**, 개발자의 시청자 미리보기에서 날짜 상관없이.
           // 관리자·시청자는 토글과 상관없이 생일 노래만. 나중에 관리자에게 열 때는 이 조건에 owner만 더하면 된다.
