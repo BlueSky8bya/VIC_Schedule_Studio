@@ -22,21 +22,22 @@ import { PremiereScene } from "./premiere-scene";
 import { createFlashBudget } from "@/lib/ui/premiere/flash-budget";
 import "./premiere-stage.css";
 
-type Props = { frame: PremiereFrame; bang: number; reduced: boolean; hint: boolean; month: number; tags: BroadcastTag[]; root: RefObject<HTMLDivElement | null>; onClose: () => void; onHope: (id: string) => void; onRead?: (id: string) => void; hoped: Set<string>; onOtherMonth: () => void; detailEventId?: string };
+type Props = { frame: PremiereFrame; bang: number; reduced: boolean; hint: boolean; canResume: boolean; onResume: () => void; month: number; tags: BroadcastTag[]; root: RefObject<HTMLDivElement | null>; onClose: () => void; onHope: (id: string) => void; onRead?: (id: string) => void; hoped: Set<string>; onOtherMonth: () => void; detailEventId?: string };
 const phases = ["idle", "prelude", "filters", "chrome", "curtain", "quake", "screen", "build", "eye", "waiting", "reveal", "return"];
 
-export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, onClose, onHope, onRead, hoped, onOtherMonth, detailEventId }: Props) {
+export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume, month, tags, root, onClose, onHope, onRead, hoped, onOtherMonth, detailEventId }: Props) {
   const [ready, setReady] = useState(false);
   const [burst, setBurst] = useState(false);
   const [hopePulse, setHopePulse] = useState(0);
   const [gfx, setGfx] = useState("full");
-  const [announcement, setAnnouncement] = useState("");
+  const [announcement, setAnnouncement] = useState<{ key: string; text: string } | null>(null);
   const [agenda, setAgenda] = useState(false);
   const instanceId = useId();
   const screen = useRef<HTMLDivElement>(null);
   const transfer = useRef<HTMLDivElement>(null);
   const portal = useRef<HTMLDivElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
+  const resumeFocus = useRef(false);
   const lastBang = useRef(0);
   const lastBurstRelease = useRef("");
   const visualFlashBudget = useRef(createFlashBudget());
@@ -171,23 +172,27 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
   }, [bang, focused, reduced, releasedKey]);
 
   useEffect(() => {
-    if (!focused || document.hidden || !releasedKey) { setAnnouncement(""); return; }
+    if (!focused || document.hidden || !releasedKey) { setAnnouncement(null); return; }
     const fresh = releasedKey.split("|").filter(key => !sounded.current.has(key));
-    if (!fresh.length) { setAnnouncement(""); return; }
+    if (!fresh.length) { setAnnouncement(null); return; }
     for (const key of fresh) sounded.current.add(key);
-    setAnnouncement(`공개되었습니다. ${frame.items.filter(item => fresh.includes(`${item.id}:${item.revealAt}`)).map(item => splitEventTitleOutline(item.event.publicTitle).main).join(". ")}`);
+    setAnnouncement({ key: releasedKey, text: `공개되었습니다. ${frame.items.filter(item => fresh.includes(`${item.id}:${item.revealAt}`)).map(item => splitEventTitleOutline(item.event.publicTitle).main).join(". ")}` });
     playSfx("fanfare"); hapticSuccess();
     // Only newly confirmed titles are announced, once per release.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focused, releasedKey]);
 
-  if (!ready || (!active && !hint)) return null;
+  if (!ready) return null;
+  // A plain control, outside the full-viewport stage: the calendar stays usable
+  // and the card/detail keeps the single countdown while a show is dismissed.
+  if (!active && canResume) return createPortal(<div className="pm-banner pm-resume"><button type="button" ref={el => { if (el && resumeFocus.current) { el.focus({ preventScroll: true }); resumeFocus.current = false; } }} onClick={() => { resumeFocus.current = true; onResume(); }}>최초공개 다시 보기 <ArrowUpRight aria-hidden="true" size={16} /></button></div>, document.body);
+  if (!active && !hint) return null;
   const season = month >= 3 && month <= 5 ? "spring" : month >= 6 && month <= 8 ? "summer" : month >= 9 && month <= 11 ? "autumn" : "winter";
   const released = frame.items.filter(item => item.state === "released");
   const waiting = frame.items.filter(item => item.state === "masked");
   const hasHope = waiting.some(item => hoped.has(item.id));
   return createPortal(<div ref={portal} tabIndex={focused ? -1 : undefined} data-clock-owner={focused ? "stage" : detailOwnsClock ? "detail" : dockOwnsClock ? "dock" : "card"} data-teaser-at={focused ? new Date(frame.target).toISOString() : undefined} role={focused ? "dialog" : undefined} aria-modal={focused || undefined} aria-label={focused ? "최초공개 무대" : undefined} className={`pm-stage pm-phase-${frame.phase}${focused ? " pm-focused" : ""}${burst ? " pm-bang" : ""}${reduced ? " pm-static" : ""}${hasHope ? " pm-hoped" : ""}`} data-season={season} data-gfx={gfx}>
-    <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
+    <p className="sr-only" role="status" aria-live="polite">{focused && announcement?.key === releasedKey ? announcement.text : ""}</p>
     {focused ? <>
       <div className="pm-dark" aria-hidden="true" />
       <div className="pm-flash" key={bang} aria-hidden="true" />

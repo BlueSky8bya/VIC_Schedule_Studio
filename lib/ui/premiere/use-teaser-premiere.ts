@@ -29,6 +29,7 @@ export function useTeaserPremiere(options: Options) {
   const latest = useRef(options); latest.current = options;
   const records = useRef(new Map<string, PremiereCandidate>());
   const skipped = useRef(new Set<string>());
+  const dismissed = useRef(new Set<string>());
   const watched = useRef(new Set<string>());
   const validated = useRef(new Set<string>());
   const fired = useRef(new Set<string>());
@@ -44,14 +45,38 @@ export function useTeaserPremiere(options: Options) {
   const [justRevealed, setJustRevealed] = useState<Set<string>>(new Set());
   const [reduced, setReduced] = useState(false);
   const [hint, setHint] = useState(false);
+  const [canResume, setCanResume] = useState(false);
   const wake = useRef<() => void>(() => {});
-  const close = useCallback(() => {
+  const end = useCallback(() => {
     for (const item of frameRef.current.items) skipped.current.add(premiereKey(item));
     cooldown.current = syncedNow() + PREMIERE_TIMING.rest;
     started.current = 0;
     returnUntil.current = syncedNow() + (document.documentElement.hasAttribute("data-reduce-motion") ? 0 : 800);
     setFrame(previous => previous.phase === "idle" ? previous : previous.focused ? { ...previous, phase: "return", focused: false } : idleFrame());
   }, []);
+  const close = useCallback(() => {
+    // Only an explicit exit offers re-entry; automatic stops stay quiet.
+    for (const item of frameRef.current.items) if (item.state === "masked") dismissed.current.add(premiereKey(item));
+    end();
+  }, [end]);
+  const resumable = useCallback((now: number) => {
+    const opts = latest.current;
+    if (!opts.enabled || opts.blocked.current || document.hidden || !navigator.onLine || !clockIsSynced() || document.documentElement.hasAttribute("data-reduce-motion")) return [];
+    return [...records.current.values()].filter(item => {
+      const key = premiereKey(item), remain = presentationTime(item) - now;
+      return item.state === "masked" && item.dateKey.startsWith(opts.month) && validated.current.has(key) && dismissed.current.has(key) && skipped.current.has(key) && remain > 0 && remain <= PREMIERE_TIMING.prelude;
+    });
+  }, []);
+  const resume = useCallback(() => {
+    if (frameRef.current.phase !== "idle") return;
+    const entries = resumable(syncedNow());
+    if (!entries.length) return;
+    for (const item of entries) { const key = premiereKey(item); skipped.current.delete(key); dismissed.current.delete(key); }
+    // A deliberate new viewing session bypasses rest, not the publication gate.
+    cooldown.current = 0;
+    started.current = 0;
+    setCanResume(false);
+  }, [resumable]);
   const sourceKey = options.events.filter(event => event.teaser).map(event => `${event.id}:${event.teaserRevealAt}`).join("|");
   useEffect(() => {
     for (const event of latest.current.events) {
@@ -68,7 +93,8 @@ export function useTeaserPremiere(options: Options) {
     let failures = 0;
     const abort = new AbortController();
     const fixture = latest.current.fixture;
-    records.current.clear(); watched.current.clear(); validated.current.clear(); fired.current.clear(); skipped.current.clear(); stamp.current = 0;
+    records.current.clear(); watched.current.clear(); validated.current.clear(); fired.current.clear(); skipped.current.clear(); dismissed.current.clear(); stamp.current = 0;
+    setCanResume(false);
     if (fixture?.rehearsal) {
       started.current = 0; cooldown.current = 0; returnUntil.current = 0;
       setFrame(idleFrame());
@@ -117,7 +143,7 @@ export function useTeaserPremiere(options: Options) {
             // Only an authoritative transition starts a new observation cycle;
             // A→B→A must not inherit A's old effect/skip state.
             validated.current.delete(nextKey); watched.current.delete(nextKey);
-            fired.current.delete(nextKey); skipped.current.delete(nextKey);
+            fired.current.delete(nextKey); skipped.current.delete(nextKey); dismissed.current.delete(nextKey);
           }
           // Decide late arrival only after calibration, never from the PC clock
           // used by the initial render (which can be minutes ahead).
@@ -183,6 +209,7 @@ export function useTeaserPremiere(options: Options) {
     const root = opts.root.current;
     const staticOnly = document.documentElement.hasAttribute("data-reduce-motion");
     setReduced(value => value === staticOnly ? value : staticOnly);
+    setCanResume(frameRef.current.phase === "idle" && resumable(now).length > 0);
     const all = [...records.current.values()];
     setJustRevealed(previous => {
       const current = new Set([...previous].filter(id => { const at = records.current.get(id)?.confirmedAt; return at !== undefined && now - at < 2400; }));
@@ -218,19 +245,19 @@ export function useTeaserPremiere(options: Options) {
     const next = planPremiere(all.filter(entry => validated.current.has(premiereKey(entry)) || entry.confirmedAt !== undefined), now, opts.month, skipped.current);
     setHint(opts.enabled && all.some(entry => entry.state === "masked" && !entry.dateKey.startsWith(opts.month) && Date.parse(entry.revealAt ?? "") - now <= 180_000 && Date.parse(entry.revealAt ?? "") > now));
     if (!opts.enabled || !clockIsSynced() || opts.blocked.current || staticOnly || cooldown.current > now) {
-      if (frameRef.current.phase !== "idle") close();
+      if (frameRef.current.phase !== "idle") end();
       return;
     }
     if (next.focused && !started.current) started.current = now;
-    if (started.current && now - started.current >= PREMIERE_TIMING.limit) { close(); return; }
-    if (next.phase === "idle" && frameRef.current.phase !== "idle") { close(); return; }
+    if (started.current && now - started.current >= PREMIERE_TIMING.limit) { end(); return; }
+    if (next.phase === "idle" && frameRef.current.phase !== "idle") { end(); return; }
     // Countdown subscribers update their own text; the calendar parent changes
     // only for semantic phases, targets and confirmed data, never at visual 10Hz.
     const signature = `${next.phase}:${next.target}:${next.items.map(item => `${premiereKey(item)}:${item.state}:${item.event.publicTitle}`).join("|")}`;
     const previous = frameRef.current;
     const oldSignature = `${previous.phase}:${previous.target}:${previous.items.map(item => `${premiereKey(item)}:${item.state}:${item.event.publicTitle}`).join("|")}`;
     if (signature !== oldSignature) setFrame(next);
-  }), [close]);
+  }), [end, resumable]);
 
-  return { frame, bang, justRevealed, reduced, hint, close, refresh: () => wake.current() };
+  return { frame, bang, justRevealed, reduced, hint, close, canResume, resume, refresh: () => wake.current() };
 }

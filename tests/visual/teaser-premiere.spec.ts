@@ -55,6 +55,7 @@ test("reduced motion prevents automatic occupancy, including a mid-show preferen
   await expect(page.getByRole("dialog", { name: "최초공개 무대" })).toBeVisible();
   await page.evaluate(() => { document.documentElement.setAttribute("data-reduce-motion", "1"); });
   await expect(page.locator(".pm-stage")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "최초공개 다시 보기", exact: true })).toHaveCount(0);
   expect(await page.locator(".poster-page").getAttribute("inert")).toBeNull();
 });
 

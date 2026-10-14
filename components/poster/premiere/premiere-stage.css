@@ -72,9 +72,9 @@
 .pm-masked { opacity: calc(1 - var(--pm-final, 0)); transform: translateY(calc(var(--pm-final, 0) * 32px)) scale(calc(1 - var(--pm-final, 0) * .035)); transition: opacity .2s linear, transform .2s linear; }
 .pm-slot-label { display: flex; align-items: center; gap: 8px; color: var(--pm-quiet-ink); font-variant-numeric: tabular-nums; font-size: var(--text-body, 13.5px); }
 .pm-slot-label>span { opacity: .75; }
-.pm-stage button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgb(255 255 255 / 12%); border-radius: var(--r-pill); padding: 10px 20px; background: #302c3e; color: #f6f1ff; font: inherit; font-size: var(--text-body, 13.5px); font-weight: 600; cursor: pointer; pointer-events: auto; transition: transform .28s var(--spring-smooth, ease), background-color .3s ease; }
-.pm-stage button:active { transform: scale(var(--press-scale, .95)); }
-.pm-stage button:focus-visible { outline: 3px solid var(--selection-ink, #4583a4); outline-offset: 4px; }
+:is(.pm-stage, .pm-resume) button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgb(255 255 255 / 12%); border-radius: var(--r-pill); padding: 10px 20px; background: #302c3e; color: #f6f1ff; font: inherit; font-size: var(--text-body, 13.5px); font-weight: 600; cursor: pointer; pointer-events: auto; transition: transform .28s var(--spring-smooth, ease), background-color .3s ease; }
+:is(.pm-stage, .pm-resume) button:active { transform: scale(var(--press-scale, .95)); }
+:is(.pm-stage, .pm-resume) button:focus-visible { outline: 3px solid var(--selection-ink, #4583a4); outline-offset: 4px; }
 .pm-stage .pm-hope { position: relative; isolation: isolate; overflow: hidden; min-width: 188px; min-height: 58px; padding: 14px 26px; border-color: rgb(var(--glass-panel) / 18%); background: color-mix(in srgb, var(--pm-violet) 24%, var(--pm-night)); font-size: 16px; box-shadow: inset 0 1px rgb(var(--glass-panel) / 12%); }
 .pm-stage .pm-hope:hover { background: #51415f; }
 .pm-stage .pm-hope.on { background: #72558c; animation: pm-hope-press .65s var(--spring-smooth, ease) both; }
@@ -116,6 +116,7 @@
 .pm-banner { position: absolute; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px); display: flex; align-items: center; gap: 14px; padding: 7px 8px 7px 16px; background: #24222e; color: #f5f1ff; border: 1px solid rgb(255 255 255 / 17%); border-radius: var(--r-pill); box-shadow: var(--elev-3); font-size: var(--text-body, 13.5px); font-weight: 600; white-space: nowrap; pointer-events: auto; animation: pm-dock-in .7s var(--spring-smooth, ease) both; }
 .pm-banner-focused { top: max(14px, env(safe-area-inset-top)); bottom: auto; left: auto; right: 24px; transform: none; padding: 0; border: 0; background: transparent; box-shadow: none; }
 .pm-banner button { padding: 8px 14px; border: 0; background: #37323f; }
+.pm-resume { position: fixed; z-index: 160; padding: 4px; font-family: var(--app-font, inherit); }
 .pm-readout { min-width: 56px; font-size: 24px; line-height: 1; letter-spacing: -.04em; font-weight: 600; font-variant-numeric: tabular-nums; }
 .pm-readout strong { display: block; font: inherit; animation: pm-number .3s var(--spring-smooth, ease) both; }
 .pm-mini-ring { width: 28px; height: 28px; fill: none; stroke: #c3a4e6; stroke-width: 2; overflow: visible; }

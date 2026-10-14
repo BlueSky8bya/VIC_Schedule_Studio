@@ -17,7 +17,9 @@ for (const width of [1440, 390]) {
     await expect(page.locator(".pm-scene")).toHaveAttribute("aria-hidden", "true");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.evaluate(() => document.fonts.ready);
-    await page.addStyleTag({ content: ".pm-stage { --pm-gather: .4!important; --pm-fold-drift: 0px!important; }" });
+    // Freeze decorative drift as well: the live numeral's transformed mask
+    // otherwise swaps 440×441 / 441×440 bounds between real clock ticks.
+    await page.addStyleTag({ content: ".pm-stage { --pm-gather: .4!important; --pm-fold-drift: 0px!important; --pm-digit-x: 0px!important; --pm-digit-y: 0px!important; --pm-digit-tilt: 0deg!important; }" });
     // Numeric time remains live. Mask its ink, not the surrounding composition.
     await expect(page.locator(".pm-screen")).toHaveScreenshot(`premiere-invitation-${width}.png`, { mask: [page.locator(".dt-count-core")], animations: "disabled" });
   });
