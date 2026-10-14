@@ -2,7 +2,6 @@
 
 | ID | Status | Record |
 |---|---|---|
-| TEASER-MUSIC-20261015 | Implementing four original rhythmic scores, random non-repeating selection; shared master/clock and final-ten silence retained | [Music plan](PLAN-20261015-040-premiere-music-library.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

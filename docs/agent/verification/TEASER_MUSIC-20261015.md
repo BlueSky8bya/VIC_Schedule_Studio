@@ -33,3 +33,7 @@
 최종.55 제품은 typecheck/scoped lint/production build 및 영향 브라우저2/2(마스터·음소거·카테고리·종료/최종10초) 재통과. 스냅샷·화면 레이아웃 변경 없음.
 
 기존 harness2실패(active rule inventory/RULE_MIGRATION mapping) 재현, 이번 범위에서 수정하지 않음. 서버/DTO/권한/unlock/KST/포스터 기하 무변경. 기능 확인과 전문 음악 감상 평가는 구분.
+
+## 운영 배포
+
+제품 `634fae18` [Vercel success](https://vercel.com/bluesky-s-project3/vic-schedule-studio/3i56ViqzFuDgj8GBoXXNDbVke37J), 운영 build SHA 일치. 실제 `/` PC1100/모바일390에서 최초곡→재열림 다른곡, 마지막10초 재생 중단 확인. 각 context POST1차단/실제쓰기0/pageerror0. `.scratch-pw/music-live-production.json`. 합성 과거 달 일정 응답이며 운영 DB 기록 변경 없음.
