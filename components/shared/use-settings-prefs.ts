@@ -40,6 +40,7 @@ import {
 import { applyTextPx, flingDeleteEnabled, setFlingDelete, setTextPxPref, textPxPref, TEXT_PX_BASE } from "@/lib/ui/edit-prefs";
 import { applyFont, applyWeight, FONT_BASE, fontPref, setFontPref, setWeightPref, weightPref, type WeightStep } from "@/lib/ui/font-prefs";
 import { PREF_SURFACE_EVENT } from "@/lib/ui/pref-surface";
+import { DEFAULT_COMPANION_PREFERENCES, getCompanionPreferences, setCompanionPreferences, subscribeCompanionPreferences, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 
 export type SettingsPrefs = {
   hapticsSupported: boolean;
@@ -49,6 +50,8 @@ export type SettingsPrefs = {
   toggleReduceMotion: () => void;
   premiereStageOn: boolean;
   togglePremiereStage: () => void;
+  companionPrefs: CompanionPreferences;
+  onCompanionChange: (patch: Partial<CompanionPreferences>) => void;
   eyeComfort: boolean;
   toggleEyeComfort: () => void;
   themeMode: ThemeMode;
@@ -81,6 +84,15 @@ export type SettingsPrefs = {
  * @param onGfxAuto 자동 판정이 스스로 품질을 내렸을 때(vic:gfx-auto). 편집실은 토스트로 알린다.
  */
 export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsPrefs {
+  const [companionPrefs, setCompanionPrefs] = useState<CompanionPreferences>({ ...DEFAULT_COMPANION_PREFERENCES });
+  useEffect(() => {
+    setCompanionPrefs(getCompanionPreferences());
+    return subscribeCompanionPreferences(setCompanionPrefs);
+  }, []);
+  const onCompanionChange = useCallback((patch: Partial<CompanionPreferences>) => {
+    setCompanionPrefs(setCompanionPreferences(patch));
+    hapticTick();
+  }, []);
   // 진동은 Android(Chrome/삼성)에서만 실제로 울린다. iOS엔 'vibrate'가 없고, 데스크톱 Chrome은
   // 있으되 무동작 — 토글이 무의미하므로 Android에서만 노출한다.
   const [hapticsSupported, setHapticsSupported] = useState(false);
@@ -328,6 +340,8 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     toggleReduceMotion,
     premiereStageOn,
     togglePremiereStage,
+    companionPrefs,
+    onCompanionChange,
     eyeComfort,
     toggleEyeComfort,
     themeMode: themeModeState,

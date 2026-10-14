@@ -15,7 +15,7 @@
   display: none;
 }
 @media (min-width: 641px) {
-  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .gs-season {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):is(:not([data-ambient="off"]), [data-ambient-pet]) .gs-season {
     display: block;
   }
 }

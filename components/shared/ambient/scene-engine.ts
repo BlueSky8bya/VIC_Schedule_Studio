@@ -234,7 +234,7 @@ function readQuality(): Quality {
   return g === "soft" || g === "off" ? 0 : g === "lite" ? 1 : 2;
 }
 const readReduced = () => document.documentElement.hasAttribute("data-reduce-motion");
-const readOff = () => document.documentElement.getAttribute("data-ambient") === "off";
+const readOff = () => document.documentElement.getAttribute("data-ambient") === "off" && !document.documentElement.hasAttribute("data-ambient-pet");
 // 일시정지(lib/ui/ambient-pause.ts): VOD 창·모달 백드롭 등 무거운 미디어 중엔 마지막 프레임을 둔 채 루프만 멈춘다.
 const readPaused = () => document.documentElement.hasAttribute("data-ambient-pause");
 // 집중 모드(편집·끌기 중, studio-shell.tsx) 또는 설정 '흐리게'(data-ambient="dim", 감상 모드 제외): 배경이 옅어져 있으니 프레임도
@@ -894,7 +894,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   const mo = new MutationObserver(sync);
   mo.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ["data-reduce-motion", "data-gfx", "data-ambient", "data-ambient-pause", "data-showcase", "data-ambient-dim"]
+    attributeFilter: ["data-reduce-motion", "data-gfx", "data-ambient", "data-ambient-pet", "data-ambient-pause", "data-showcase", "data-ambient-dim"]
   });
   // A stationary calendar still follows KST/date/weather without an animation loop.
   const worldTimer = window.setInterval(() => {

@@ -1,0 +1,17 @@
+.vc-companion { position: fixed; left: 0; top: 0; z-index: 75; width: var(--vc-size, 76px); height: var(--vc-size, 76px); pointer-events: none; will-change: transform; --vc-column: 0%; --vc-row: 0%; }
+.vc-companion[hidden] { display: none; }
+.vc-actor { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); border: 0; padding: 8px; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
+.vc-actor:focus-visible, .vc-menu-toggle:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
+.vc-sprite { display: block; width: 100%; height: 100%; background: url('/companion/victamin-motion.webp') var(--vc-column) var(--vc-row) / 1600% 1600% no-repeat; image-rendering: pixelated; pointer-events: none; }
+.vc-companion[data-state="held"] .vc-actor { cursor: grabbing; }
+.vc-effect { position: absolute; left: 65%; top: 0; color: var(--teaser); font-size: 18px; font-weight: 600; transform: translateY(var(--vc-effect, 0px)); pointer-events: none; white-space: nowrap; }
+.vc-companion[data-hidden] .vc-actor { pointer-events: none; opacity: .18; clip-path: inset(0 0 60%); }
+.vc-companion[data-hidden] .vc-menu-toggle { display: none; }
+.vc-companion[data-placing]::after { content: '놓을 곳을 눌러 주세요'; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding: 6px 10px; border-radius: var(--r-pill); background: rgb(var(--glass-panel)); color: var(--ink); font-size: 12px; white-space: nowrap; box-shadow: var(--elev-2); }
+.vc-menu-toggle { position: absolute; bottom: -8px; right: -10px; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: var(--r-pill); background: rgb(var(--glass-panel)); color: var(--ink); font-size: 16px; line-height: 1; padding: 0; pointer-events: none; opacity: 0; transition: opacity .15s; }
+.vc-companion:hover .vc-menu-toggle, .vc-companion:focus-within .vc-menu-toggle { opacity: .8; pointer-events: auto; }
+.vc-menu { position: absolute; top: var(--vc-menu-top, -192px); left: var(--vc-menu-left, 0px); width: 160px; max-height: min(50dvh, 192px); overflow: auto; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-panel)); box-shadow: var(--elev-3); pointer-events: auto; }
+.vc-menu button { display: block; width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); text-align: left; font-size: var(--text-body); }
+.vc-menu button:hover, .vc-menu button:focus-visible { background: rgb(var(--glass-head)); }
+@media (pointer: coarse) { .vc-menu-toggle { opacity: .7; width: 36px; height: 36px; pointer-events: auto; } }
+html[data-reduce-motion] .vc-menu-toggle { transition: none; }

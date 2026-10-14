@@ -10,7 +10,7 @@ import "./../shared/settings-modal.css";
 import Link from "next/link";
 import type { Route } from "next";
 import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick, Pointer, CircleDot, ToggleRight, ToggleLeft, PanelTopOpen, X, ChevronLeft, ChevronRight, Grab, ArrowDownToLine, Save, Link2, Unlink, Undo2, Redo2, LockOpen, CircleAlert } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { playSfx, type SfxName, type SoundCategory, type SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import { TEXT_PX_BASE, TEXT_PX_MAX, TEXT_PX_MIN } from "@/lib/ui/edit-prefs";
@@ -25,6 +25,7 @@ import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
 import { Clock3 } from "lucide-react";
+import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
 export type DevWorldForce = NonNullable<WorldCtx["force"]>;
@@ -41,6 +42,8 @@ export type StudioSettingsProps = {
   onToggleReduceMotion: () => void;
   premiereStageOn: boolean;
   onTogglePremiereStage: () => void;
+  companionPrefs: CompanionPreferences;
+  onCompanionChange: (patch: Partial<CompanionPreferences>) => void;
   eyeComfort: boolean;
   onToggleEyeComfort: () => void;
   // 화면 모드(2026-10-06 세 상태) — 밝게·어둡게·기기 따라. 모든 역할/시청자 미리보기에서 같은 기기 설정.
@@ -78,7 +81,7 @@ export type StudioSettingsProps = {
   devMonth?: number;
 };
 
-type TabKey = "screen" | "text" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev";
+type TabKey = "screen" | "text" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev" | "companion";
 
 export type SoundSettings = {
   on: boolean;
@@ -228,6 +231,89 @@ function Switch({ on, onToggle, label, dataAct }: { on: boolean; onToggle: () =>
   );
 }
 
+const companionTabs = [
+  { key: "motion", label: "움직임" },
+  { key: "pranks", label: "장난" },
+  { key: "affection", label: "교감" },
+  { key: "personality", label: "성격" }
+] as const;
+type CompanionTab = typeof companionTabs[number]["key"];
+type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "ambientPrank" | "drag" | "petting";
+
+/** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
+function CompanionSettings({ preferences, onChange }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void }) {
+  const [tab, setTab] = useState<CompanionTab>("motion");
+  const id = useId();
+  const nav = useRef<HTMLDivElement>(null);
+  const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
+    <div className="role-help-haptics" key={key}>
+      <RowLabel icon={icon} tone="leaf">{label}</RowLabel>
+      <Switch dataAct={`빅타민 ${label} 켜기/끄기`} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
+    </div>
+  );
+  const onKey = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    const index = companionTabs.findIndex(item => item.key === tab);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? companionTabs.length - 1 : event.key === "ArrowRight" ? (index + 1) % companionTabs.length : event.key === "ArrowLeft" ? (index - 1 + companionTabs.length) % companionTabs.length : -1;
+    if (next < 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setTab(companionTabs[next].key);
+    nav.current?.querySelector<HTMLButtonElement>(`[data-companion-tab="${companionTabs[next].key}"]`)?.focus();
+    playSfx("tab");
+  };
+  return <>
+    <div className="rhh-group-card">
+      <div className="role-help-haptics">
+        <RowLabel icon={<Sparkles size={15} />} tone="leaf">AI 빅타민</RowLabel>
+        <Switch dataAct="AI 빅타민 켜기/끄기" label="AI 빅타민 켜기/끄기" on={preferences.enabled} onToggle={() => onChange({ enabled: !preferences.enabled })} />
+      </div>
+    </div>
+    <p className="rhh-group-foot">시청자 달력에서 함께 놀아요. 꺼도 아래 취향은 기억해요.</p>
+    <div aria-label="빅타민 설정" className="rhh-seg" ref={nav} role="tablist" style={{ "--n": companionTabs.length, "--i": companionTabs.findIndex(item => item.key === tab), width: "100%", marginBottom: 12 } as CSSProperties}>
+      <span aria-hidden="true" className="rhh-seg-thumb" />
+      {companionTabs.map(item => <button aria-controls={`${id}-${item.key}-panel`} aria-selected={tab === item.key} className={tab === item.key ? "on" : ""} data-act="settings-companion-tab" data-act-opt={item.key} data-companion-tab={item.key} id={`${id}-${item.key}`} key={item.key} onClick={() => { if (tab !== item.key) playSfx("tab"); setTab(item.key); }} onKeyDown={onKey} role="tab" tabIndex={tab === item.key ? 0 : -1} type="button">{item.label}</button>)}
+    </div>
+    <div aria-labelledby={`${id}-motion`} hidden={tab !== "motion"} id={`${id}-motion-panel`} role="tabpanel" tabIndex={0}>
+      <div className="rhh-group-card">
+        {row("roam", "돌아다니기", <Pointer size={15} />)}
+        {row("jump", "깡충 뛰기", <Sparkles size={15} />)}
+        {row("sleep", "낮잠", <EyeOff size={15} />)}
+        <div className="role-help-haptics rhh-stack-sm">
+          <RowLabel icon={<Gauge size={15} />} tone="leaf">걸음</RowLabel>
+          <SettingsSegment ariaLabel="빅타민 걸음" dataAct="빅타민 걸음" onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
+        </div>
+        <div className="role-help-haptics rhh-stack-sm">
+          <RowLabel icon={<ALargeSmall size={15} />} tone="leaf">크기</RowLabel>
+          <SettingsSegment ariaLabel="빅타민 크기" dataAct="빅타민 크기" onChange={size => onChange({ size })} options={[{ value: "small", label: "작게" }, { value: "normal", label: "보통" }, { value: "large", label: "크게" }]} value={preferences.size} />
+        </div>
+      </div>
+    </div>
+    <div aria-labelledby={`${id}-pranks`} hidden={tab !== "pranks"} id={`${id}-pranks-panel`} role="tabpanel" tabIndex={0}>
+      <div className="rhh-group-card">
+        {row("heartPrank", "하트 콩", <Heart size={15} />)}
+        {row("ambientPrank", "숨바꼭질", <Leaf size={15} />)}
+      </div>
+      <p className="rhh-group-foot">하트 콩은 실제 하트 수를 바꾸지 않는 장난이에요. 숨바꼭질은 계절 배경을 잠깐 빌려요.</p>
+    </div>
+    <div aria-labelledby={`${id}-affection`} hidden={tab !== "affection"} id={`${id}-affection-panel`} role="tabpanel" tabIndex={0}>
+      <div className="rhh-group-card">
+        {row("drag", "집어 옮기기", <Grab size={15} />)}
+        {row("petting", "쓰다듬기", <Heart size={15} />)}
+      </div>
+      <p className="rhh-group-foot">빅타민을 잡아 옮기거나, 머리에서 꾹 누른 채 살살 문질러 주세요.</p>
+    </div>
+    <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
+      <div className="rhh-group-card">
+        <div className="role-help-haptics rhh-stack-sm">
+          <RowLabel icon={<Sparkles size={15} />} tone="leaf">성격</RowLabel>
+          <SettingsSegment ariaLabel="빅타민 성격" dataAct="빅타민 성격" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
+        </div>
+      </div>
+      <p className="rhh-group-foot">성격에 따라 좋아하는 놀이와 쉬는 빈도가 달라져요.</p>
+    </div>
+  </>;
+}
+
 export function StudioSettingsList({
   canManageTimelines = false,
   hapticsSupported,
@@ -237,6 +323,8 @@ export function StudioSettingsList({
   onToggleReduceMotion,
   premiereStageOn,
   onTogglePremiereStage,
+  companionPrefs,
+  onCompanionChange,
   eyeComfort,
   onToggleEyeComfort,
   themeMode,
@@ -288,6 +376,7 @@ export function StudioSettingsList({
     { key: "sound", label: "소리", icon: <Volume2 size={15} />, tone: "water" },
     { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
     { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
+    { key: "companion", label: "빅타민", icon: <Heart size={15} />, tone: "leaf" },
     { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
     ...(hasEditGroup ? [{ key: "edit" as const, label: "편집", icon: <PenLine size={15} />, tone: "metal" as const }] : []),
     ...(posterTheme !== null ? [{ key: "viewer" as const, label: "시청자 화면", icon: <Palette size={15} />, tone: "rose" as const }] : []),
@@ -782,6 +871,11 @@ export function StudioSettingsList({
       </section>
 
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
+      <section {...pane("companion")}>
+        <h3 className="rhh-group-title" id="rhh-tab-companion-title">빅타민</h3>
+        <CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} />
+      </section>
+
       <section {...pane("bg", "rhh-web")}>
         <h3 className="rhh-group-title" id="rhh-tab-bg-title">배경</h3>
         <div className="rhh-group-card">

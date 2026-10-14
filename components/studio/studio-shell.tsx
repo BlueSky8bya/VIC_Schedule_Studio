@@ -977,6 +977,8 @@ export function StudioShell({
     toggleReduceMotion,
     premiereStageOn,
     togglePremiereStage,
+    companionPrefs,
+    onCompanionChange,
     eyeComfort,
     toggleEyeComfort,
     themeMode,
@@ -1248,6 +1250,8 @@ export function StudioShell({
         onToggleReduceMotion={toggleReduceMotion}
         premiereStageOn={premiereStageOn}
         onTogglePremiereStage={togglePremiereStage}
+        companionPrefs={companionPrefs}
+        onCompanionChange={onCompanionChange}
         ambientMode={ambientModeState}
         onChangeAmbientMode={changeAmbientMode}
         gfxPref={gfxPrefState}

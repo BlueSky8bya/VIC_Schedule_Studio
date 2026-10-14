@@ -8,6 +8,7 @@
 
 | ADR | Status | Area | Decision | Revisit Trigger |
 |---|---|---|---|---|
+| [0031](ADR-0031-viewer-victamin-local-companion.md) | Accepted | 시청자 동행 | 기본OFF 로컬 Utility AI·전용4-subtab 설정·픽셀atlas·실제투표없는장난·일시배경lease | 대화/서버기억/실제투표·다중캐릭터 요청 |
 | [0030](ADR-0030-teaser-premiere-state.md) | Accepted | 최초공개 | DB 공개 판정·익명 공용 캐시·단일 지휘자·단조 시계·표면 밖 무대, 출시/개인 기본 ON·긴급 flag 0 | 상태 경계·캐시/부하·무대 계약 변경 |
 | [0028](ADR-0028-privacy-boundaries.md) | Accepted | 개인정보 보호 | 공개 신원·인증 신원 분리, DB 직접 경계, 원자적 비번 제한, 공개 presence 철수 | 신원·로그·보존·공개 데이터 경계 변경 |
 | [0027](ADR-0027-fan-timeline-variants.md) | Accepted | 팬 타임라인 | 작성자·스레드별 후보, 동일인 이어쓰기, 대표 검색·공개 대안 분리, 재수집에도 수동 설정 보존 | 목적 분류·노출 정책 변경 |

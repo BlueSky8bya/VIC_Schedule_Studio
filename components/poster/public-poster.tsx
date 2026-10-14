@@ -133,6 +133,7 @@ import "./public-poster.css";
 // 금생수 스킨(시청자 화면 = 편집실과 같은 뉘앙스, ADR-0016) — 기본 CSS 뒤에 와서 색·질감만 덮는다.
 import "./poster-metal-water.css";
 import { PremiereStage } from "./premiere/premiere-stage";
+const ViewerCompanion = dynamic(() => import("./viewer-companion/viewer-companion"), { ssr: false });
 import { useTeaserPremiere, type PremiereFixture } from "@/lib/ui/premiere/use-teaser-premiere";
 import { syncedNow } from "@/lib/ui/synced-clock";
 import { ScrambleText, TeaserStageContent } from "@/components/shared/teaser-stage-content";
@@ -4096,6 +4097,9 @@ export function PublicPoster({
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
+      {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
+        blocked={Boolean(sheet || dayVodPop || monthPick || giftCard || gachaOpen || agendaDetail || premiere.frame.phase !== "idle")}
+        agenda={showAgenda} monthKey={`${view.year}-${view.month}`} reduced={settingsPrefs.reduceMotion} /> : null}
       <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}
         canResume={premiere.canResume} onResume={premiere.resume}
         detailEventId={agendaDetail?.event.teaser ? agendaDetail.event.id : undefined}
@@ -4620,6 +4624,8 @@ export function PublicPoster({
                 onToggleReduceMotion={settingsPrefs.toggleReduceMotion}
                 premiereStageOn={settingsPrefs.premiereStageOn}
                 onTogglePremiereStage={settingsPrefs.togglePremiereStage}
+                companionPrefs={settingsPrefs.companionPrefs}
+                onCompanionChange={settingsPrefs.onCompanionChange}
                 posterTheme={null}
                 posterThemeSaving={false}
                 reduceMotion={settingsPrefs.reduceMotion}
