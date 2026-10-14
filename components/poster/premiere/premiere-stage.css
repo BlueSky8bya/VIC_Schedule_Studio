@@ -6,6 +6,7 @@
   --pm-surface-ink: #f5f1ff;
   --pm-quiet-ink: #c1bacc;
   --pm-grow: .48;
+  --pm-night: color-mix(in srgb, #15141e 96%, rgb(var(--glass-panel)));
   position: fixed; inset: 0; z-index: 160; pointer-events: none; overflow: clip;
   isolation: isolate; color: var(--pm-surface-ink); font-family: var(--app-font, inherit);
 }
@@ -13,18 +14,22 @@
 .pm-stage[data-season="summer"] { --pm-season: #92c9d7; }
 .pm-stage[data-season="autumn"] { --pm-season: #d9bb99; }
 .pm-stage[data-season="winter"] { --pm-season: #bacce9; }
-.pm-dark { position: absolute; inset: 0; background: rgb(14 15 23 / 90%); animation: pm-dark-in 1.2s ease both; }
+.pm-dark { position: absolute; inset: 0; background: var(--pm-night); animation: pm-dark-in 1.2s ease both; }
 .pm-viewport { position: absolute; inset: 0; display: grid; place-items: center; padding: 72px 32px 36px; overflow: clip; }
 .pm-screen {
   position: relative; isolation: isolate; width: min(1180px, 100%);
   max-height: calc(100dvh - 116px); overflow: auto; pointer-events: auto;
-  border: 1px solid rgb(255 255 255 / 13%); border-radius: var(--r-xl, 20px);
-  background: #1c1b27; color: var(--pm-surface-ink); padding: 32px 48px 40px;
-  box-shadow: var(--elev-4), inset 0 1px rgb(255 255 255 / 10%);
-  transition: background-color .8s ease, color .8s ease, border-color .8s ease;
+  border: 1px solid rgb(var(--glass-panel) / 10%); border-radius: var(--r-xl, 20px);
+  background: var(--pm-night); color: var(--pm-surface-ink); padding: 32px 48px 40px;
+  box-shadow: var(--elev-4), inset 0 1px rgb(var(--glass-panel) / 5%);
   animation: pm-screen-in .7s var(--spring-smooth, ease) both;
 }
-.pm-screen.is-released { --pm-surface-ink: var(--ink); --pm-quiet-ink: var(--muted); background: var(--material-bg-solid, #fffaf3); border-color: color-mix(in srgb, var(--pm-violet) 20%, transparent); }
+.pm-screen.is-released { --pm-surface-ink: var(--ink); --pm-quiet-ink: var(--muted); background: rgb(var(--glass-panel) / 99%); border-color: color-mix(in srgb, var(--pm-violet) 20%, transparent); }
+.pm-screen:not(.is-released) { background: transparent; border-color: transparent; box-shadow: none; }
+.pm-screen:not(.is-released)::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border: 1px solid rgb(var(--glass-panel) / 10%); border-radius: inherit; background: var(--pm-night); box-shadow: inset 0 1px rgb(var(--glass-panel) / 5%); opacity: calc(1 - var(--pm-final, 0)); transition: opacity .2s linear; }
+/* The reading plane follows theme/eye-comfort tokens. Its light change is a
+   single server-confirmed transition, never a repeated brightness pulse. */
+.pm-screen.is-released::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: var(--pm-night); animation: pm-paper-open .85s ease both; }
 .pm-screen[data-pm-morph] { animation: pm-destination-in 1.1s ease both; }
 .pm-screen[data-pm-morph] > .pm-composition { animation: pm-morph-content 1.1s ease backwards; }
 .pm-card-transfer { display: none; }
@@ -34,8 +39,10 @@
 .pm-heading { opacity: calc(1 - var(--pm-final, 0)); transform: translateY(calc(var(--pm-final, 0) * -20px)); transition: opacity .2s linear, transform .2s linear; }
 .pm-kicker { color: var(--pm-surface-ink); font-weight: 700; letter-spacing: .04em; }
 .pm-heading-rule { height: 1px; flex: 1; margin-left: 8px; background: currentColor; opacity: .18; }
-.pm-composition { position: relative; min-height: min(64dvh, 680px); display: flex; flex-direction: column; justify-content: center; gap: 32px; }
+.pm-composition { position: relative; z-index: 1; min-height: min(64dvh, 680px); display: flex; flex-direction: column; justify-content: center; gap: 32px; }
+.pm-screen.is-released .pm-composition { min-height: min(44dvh, 440px); }
 .pm-count { display: grid; place-items: center; padding: 24px 0 0; }
+.pm-invitation { margin: 0 0 22px; font-size: clamp(18px, 2vw, 24px); letter-spacing: -.035em; font-weight: 400; color: var(--pm-quiet-ink); opacity: calc(1 - var(--pm-final, 0)); transform: translateY(calc(var(--pm-final, 0) * -24px)); transition: opacity .2s linear, transform .2s linear; }
 /* Detail's 196px emerge mask cannot size a viewport clock. Keep its shared
    presenter and time, but give this structurally larger surface its own bounds. */
 .pm-count .dt-count { position: relative; inset: auto; transform: none; width: auto; display: flex; flex-direction: column; align-items: center; text-align: center; opacity: 1; max-height: none; overflow: visible; mask-image: none; -webkit-mask-image: none; gap: 0; margin: 0; }
@@ -48,7 +55,7 @@
 .pm-count .dt-ring-ticks line.on { opacity: .3; }
 .pm-count :is(.dt-ring-spark, .dt-ring-trail) { display: none; }
 .pm-count .dt-count-core { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(140px, 18vw, 300px); font-weight: 600; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -.07em; color: var(--pm-surface-ink); transform: translate(var(--pm-digit-x, 0px), var(--pm-digit-y, 0px)) rotate(var(--pm-digit-tilt, 0deg)) scale(calc(1 + var(--pm-final, 0) * var(--pm-grow))); transition: transform .12s linear; }
-.pm-count .dt-count-core strong { position: static; color: inherit; font: inherit; letter-spacing: inherit; line-height: 1; text-shadow: none; animation: pm-number .32s var(--spring-smooth, ease) both; }
+.pm-count .dt-count-core strong { position: static; color: inherit; font: inherit; letter-spacing: inherit; line-height: 1; text-shadow: none; animation: pm-count-step .32s var(--spring-smooth, ease) both; }
 .pm-count .dt-count-label { position: static; inset: auto; transform: none; margin: 22px 0 0; height: auto; min-height: 20px; color: var(--pm-quiet-ink); font-size: var(--text-body, 13.5px); font-weight: 600; line-height: 1.5; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .pm-count .dt-count.is-final .dt-count-core strong { animation: none; }
 .pm-count .dt-count.is-final .dt-count-label { color: var(--pm-quiet-ink); opacity: 1; }
@@ -68,15 +75,17 @@
 .pm-stage button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgb(255 255 255 / 12%); border-radius: var(--r-pill); padding: 10px 20px; background: #302c3e; color: #f6f1ff; font: inherit; font-size: var(--text-body, 13.5px); font-weight: 600; cursor: pointer; pointer-events: auto; transition: transform .28s var(--spring-smooth, ease), background-color .3s ease; }
 .pm-stage button:active { transform: scale(var(--press-scale, .95)); }
 .pm-stage button:focus-visible { outline: 3px solid var(--selection-ink, #4583a4); outline-offset: 4px; }
-.pm-stage .pm-hope { position: relative; isolation: isolate; overflow: hidden; min-width: 188px; min-height: 58px; padding: 14px 26px; border-color: rgb(255 255 255 / 18%); background: #40354f; font-size: 16px; box-shadow: inset 0 1px rgb(255 255 255 / 12%); }
+.pm-stage .pm-hope { position: relative; isolation: isolate; overflow: hidden; min-width: 188px; min-height: 58px; padding: 14px 26px; border-color: rgb(var(--glass-panel) / 18%); background: color-mix(in srgb, var(--pm-violet) 24%, var(--pm-night)); font-size: 16px; box-shadow: inset 0 1px rgb(var(--glass-panel) / 12%); }
 .pm-stage .pm-hope:hover { background: #51415f; }
 .pm-stage .pm-hope.on { background: #72558c; animation: pm-hope-press .65s var(--spring-smooth, ease) both; }
 .pm-hope svg { flex: none; }
 .pm-hope.on svg { animation: pm-check-in .5s var(--spring-smooth, ease) both; }
 .pm-hope-ripple { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 1px solid rgb(255 255 255 / 50%); opacity: 0; }
 .pm-hope.on .pm-hope-ripple { animation: pm-ripple .8s ease-out both; }
-.pm-hope-bloom { position: absolute; pointer-events: none; inset: 0; border-radius: inherit; background: radial-gradient(ellipse at 50% 70%, rgb(189 149 222 / 24%), transparent 65%); animation: pm-hope-bloom 1.2s ease-out both; }
 .pm-hoped .pm-screen:not(.is-released) { border-color: rgb(196 165 224 / 38%); }
+.pm-stage .pm-read { min-height: 44px; margin: 0 0 16px; padding: 8px 0; background: transparent; border: 0; border-radius: var(--r-sm); color: var(--pm-surface-ink); font-size: var(--text-body, 13.5px); }
+.pm-read svg { color: var(--pm-violet); }
+.pm-stage .pm-read:hover { text-decoration: underline; text-underline-offset: 4px; }
 .pm-film.released { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: start; gap: 38px; padding-block: 22px; animation: pm-story-arrive .8s var(--spring-smooth, ease) both; }
 .pm-date { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--pm-quiet-ink); font-size: 16px; font-weight: 600; }
 .pm-date strong { color: var(--pm-violet); font-size: 88px; line-height: 1; font-weight: 600; letter-spacing: -.06em; }
@@ -112,19 +121,29 @@
 .pm-mini-ring { width: 28px; height: 28px; fill: none; stroke: #c3a4e6; stroke-width: 2; overflow: visible; }
 .pm-mini-ring circle:first-child { stroke-opacity: .18; }
 .pm-mini-ring circle:last-child { stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--pm-progress, 0)); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset .12s linear; }
-/* A few soft fields replace literal orbiting icons. No blur filter or canvas. */
-.pm-light-field { position: absolute; inset: 0; overflow: clip; pointer-events: none; transition: opacity 1.8s ease; }
-.pm-light-field i { position: absolute; width: 100vw; height: 100vh; left: -20vw; top: -30vh; background: radial-gradient(ellipse, color-mix(in srgb, var(--pm-violet) 22%, transparent), transparent 65%); animation: pm-field-drift 9s ease-in-out infinite alternate; opacity: calc(.3 + var(--hype-i, 0) * .7); }
-.pm-light-field i:nth-child(2) { left: 20vw; top: 30vh; background: radial-gradient(ellipse, color-mix(in srgb, var(--pm-season) 17%, transparent), transparent 65%); animation-delay: -4s; animation-direction: alternate-reverse; }
-.pm-light-field i:nth-child(3) { left: 40vw; top: -10vh; width: 65vw; background: radial-gradient(ellipse, rgb(148 131 204 / 13%), transparent 65%); animation-delay: -7s; }
-.pm-phase-eye .pm-light-field, .pm-phase-waiting .pm-light-field { opacity: 0; }
-.pm-phase-eye .pm-light-field i, .pm-phase-waiting .pm-light-field i { animation-play-state: paused; }
+/* Two broad folds frame the moment; no particle orbit or ornamental clock.
+   The synchronized conductor supplies bounded motion, so late arrival and a
+   rescheduled deadline show the same composition without replaying a film. */
+.pm-scene { position: absolute; z-index: 0; inset: 0; overflow: clip; pointer-events: none; border-radius: inherit; }
+.pm-folds { position: absolute; inset: 0; opacity: calc(1 - var(--pm-final, 0)); transition: opacity .2s linear; }
+.pm-folds i { position: absolute; width: 78%; height: 160%; top: -42%; left: -56%; border: 1px solid color-mix(in srgb, var(--pm-season) 24%, transparent); border-radius: 48%; background: linear-gradient(110deg, color-mix(in srgb, var(--pm-violet) 12%, transparent), transparent 60%); transform: translate3d(calc(var(--pm-gather, 0) * 52px), var(--pm-fold-drift, 0px), 0) rotate(-24deg); transition: transform .12s linear; }
+.pm-folds i:nth-child(2) { left: auto; right: -56%; top: -18%; transform: translate3d(calc(var(--pm-gather, 0) * -52px), calc(var(--pm-fold-drift, 0px) * -1), 0) rotate(24deg); }
+.pm-host { position: absolute; right: -12px; bottom: -18px; width: clamp(160px, 24vw, 300px); opacity: calc((1 - var(--pm-final, 0)) * .9); transform: translate3d(calc(var(--pm-gather, 0) * -8px), calc(var(--pm-final, 0) * 60px), 0); transition: opacity .2s linear, transform .2s linear; mask-image: linear-gradient(#000 76%, transparent); }
+.pm-host img { display: block; width: 100%; height: auto; }
+.pm-host-response { animation: pm-host-response .9s var(--spring-smooth, ease) both; transform-origin: center bottom; }
+.pm-wish { position: absolute; z-index: 2; left: 50%; top: 50%; color: var(--teaser-soft, #c8a5eb); }
+.pm-wish span { position: absolute; font-size: 44px; line-height: 1; margin-left: -22px; animation: pm-wish-flight 1.2s var(--spring-smooth, ease) both; }
+.pm-wish i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: currentColor; --wish-x: -45px; --wish-y: -30px; animation: pm-wish-reply 1.2s ease both; }
+.pm-wish i:nth-of-type(2) { --wish-x: 45px; --wish-y: -30px; }
+.pm-wish i:nth-of-type(3) { --wish-x: -34px; --wish-y: 30px; }
+.pm-wish i:nth-of-type(4) { --wish-x: 34px; --wish-y: 30px; }
+.pm-phase-eye .pm-wish, .pm-phase-waiting .pm-wish, .pm-screen.is-released .pm-scene { display: none; }
 .pm-flash, .pm-shock { position: absolute; pointer-events: none; opacity: 0; }
 .pm-flash { inset: 0; background: radial-gradient(ellipse at 50% 48%, #c4b5d7, transparent 68%); }
 .pm-bang .pm-flash { animation: pm-flash .9s ease-out both; }
 .pm-shock { left: 50%; top: 50%; width: 36vw; aspect-ratio: 1; border: 1px solid rgb(208 189 229 / 55%); border-radius: 50%; }
 .pm-bang .pm-shock { animation: pm-shock 1.2s ease-out both; }
-.pm-phase-return :is(.pm-dark, .pm-light-field, .pm-banner) { opacity: 0; transition: opacity .6s ease; }
+.pm-phase-return :is(.pm-dark, .pm-banner) { animation: none; opacity: 0; transition: opacity .6s ease; }
 .pm-phase-return .pm-screen { animation: none; opacity: 0!important; transition: transform .64s var(--spring-smooth, ease), opacity .64s ease; }
 
 /* One score drives both visibility and accessibility. animation-fill:both on
@@ -159,17 +178,20 @@
 
 @keyframes pm-number { from { opacity: .55; transform: translateY(9px) scale(.97); } to { opacity: 1; transform: none; } }
 @keyframes pm-dark-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pm-count-step { from { transform: translateY(5px) scale(.985); } to { transform: none; } }
 @keyframes pm-screen-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pm-destination-in { 0%, 10% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes pm-morph-content { 0%, 40% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes pm-transfer-fade { 0%, 20% { opacity: 1; } 42%, 100% { opacity: 0; } }
 @keyframes pm-dock-in { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
-@keyframes pm-field-drift { from { transform: translate3d(-4vw, -3vh, 0) scale(.88); } to { transform: translate3d(8vw, 6vh, 0) scale(1.16); } }
 @keyframes pm-loading { to { transform: rotate(360deg); } }
 @keyframes pm-hope-press { 0% { scale: .96; } 45% { scale: 1.045; } 100% { scale: 1; } }
 @keyframes pm-check-in { from { opacity: 0; transform: scale(.5) rotate(-12deg); } to { opacity: 1; transform: none; } }
 @keyframes pm-ripple { from { opacity: .4; transform: scale(.84); } to { opacity: 0; transform: scale(1.1); } }
-@keyframes pm-hope-bloom { 0% { opacity: 0; transform: scale(.6); } 28% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2); } }
+@keyframes pm-host-response { 0%, 100% { transform: none; } 35% { transform: translateY(-12px) rotate(-2deg); } 65% { transform: translateY(-3px) rotate(1deg); } }
+@keyframes pm-wish-flight { 0% { opacity: 0; transform: translateY(210px) scale(.3) rotate(-20deg); } 20% { opacity: 1; } 70% { opacity: 1; transform: translateY(-10px) scale(.8) rotate(10deg); } 100% { opacity: 0; transform: translateY(-28px) scale(1.15) rotate(20deg); } }
+@keyframes pm-wish-reply { 0%, 55% { opacity: 0; transform: scale(.4); } 65% { opacity: .65; } 100% { opacity: 0; transform: translate(var(--wish-x), var(--wish-y)) scale(.5); } }
+@keyframes pm-paper-open { from { opacity: 1; } to { opacity: 0; } }
 @keyframes pm-story-arrive { from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.975); } to { opacity: 1; transform: none; } }
 @keyframes pm-flash { 0%, 100% { opacity: 0; } 24% { opacity: .14; } }
 @keyframes pm-shock { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.25); } 15% { opacity: .38; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(4); } }
@@ -180,6 +202,10 @@
   .pm-heading { font-size: 12px; gap: 10px; }
   .pm-composition { min-height: min(66dvh, 640px); gap: 28px; }
   .pm-count { padding-top: 16px; }
+  .pm-invitation { margin-bottom: 16px; font-size: 18px; }
+  .pm-host { width: 128px; right: 0; bottom: -12px; }
+  .pm-folds i { width: 120%; left: -104%; }
+  .pm-folds i:nth-child(2) { right: -104%; }
   .pm-count .dt-count-ringbox { width: clamp(220px, 34dvh, 320px); height: clamp(220px, 34dvh, 320px); }
   .pm-count .dt-count-core { font-size: clamp(104px, 28vw, 154px); }
   .pm-films { grid-template-columns: 1fr; gap: 18px; }
@@ -199,21 +225,23 @@
   .pm-details time { font-size: 20px; }
   .pm-banner { gap: 10px; }
   .pm-banner-focused { right: 12px; }
-  .pm-light-field i:nth-child(3) { display: none; }
 }
 @media (max-height: 520px) {
   .pm-viewport { padding-top: 64px; }
   .pm-screen { padding: 18px 28px; max-height: calc(100dvh - 80px); }
   .pm-composition { min-height: 230px; gap: 12px; }
   .pm-count { padding: 0; }
+  .pm-invitation { display: none; }
+  .pm-host { width: 120px; right: 0; }
   .pm-count .dt-count-ringbox { width: 155px; height: 155px; }
   .pm-count .dt-count-core { font-size: 94px; }
   .pm-count .dt-count-label { margin-top: 8px; }
   .pm-stage .pm-hope { min-height: 44px; padding-block: 8px; }
 }
 html[data-reduce-motion] .pm-stage *, html[data-reduce-motion] .poster-page[data-premiere] * { animation: none!important; transition: none!important; }
-.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) :is(.pm-light-field, .pm-flash, .pm-shock) { display: none; }
-.pm-stage[data-gfx="lite"] .pm-light-field i:nth-child(n+2) { display: none; }
+.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) :is(.pm-folds, .pm-wish, .pm-flash, .pm-shock) { display: none; }
+.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-host-response { animation: none; }
+.pm-stage[data-gfx="lite"] .pm-folds i:nth-child(2) { display: none; }
 /* Stop the shared legacy presenter too, not a nominal 1ms loop. */
 html[data-reduce-motion] :is(.public-event.teaser, .agenda-item.teaser, .agenda-detail-sheet.is-teaser, .just-revealed, .reveal-secondary, .detail-anchor-flow, .detail-anchor-pulse, .detail-anchor-dot),
 html[data-reduce-motion] :is(.public-event.teaser, .agenda-item.teaser, .agenda-detail-sheet.is-teaser, .just-revealed) *,

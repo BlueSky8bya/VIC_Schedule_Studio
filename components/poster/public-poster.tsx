@@ -1033,6 +1033,26 @@ export function PublicPoster({
     // PC: 클릭한 카드의 뷰포트 좌표(팝오버 앵커). 포스터는 transform 축소라 gBCR=화면 좌표 그대로.
     anchor?: { x: number; y: number; w: number; h: number };
   } | null>(null);
+  const premiereReadRef = useRef<{ id: string; dateKey: string } | null>(null);
+  useEffect(() => {
+    if (premiere.frame.phase !== "idle" || !premiereReadRef.current) return;
+    const { id, dateKey } = premiereReadRef.current;
+    // Finish the stage's existing return/focus cleanup before opening the
+    // normal public detail. Resolve fresh data so deletion/re-gating wins.
+    const event = schedule.events.find(item => item.id === id);
+    if (!event || event.teaser) { premiereReadRef.current = null; return; }
+    const tick = requestAnimationFrame(() => {
+      premiereReadRef.current = null;
+      const el = posterRootRef.current?.querySelector<HTMLElement>(`[data-eventid="${CSS.escape(id)}"]`);
+      const r = el?.getBoundingClientRect();
+      const agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
+      agendaDetailOriginRef.current = agenda ? r ?? null : null;
+      detailAnchorElRef.current = agenda ? null : el ?? null;
+      setDetailManual(null);
+      setAgendaDetail({ event, support: false, dateKey, ...(!agenda && r ? { anchor: { x: r.left, y: r.top, w: r.width, h: r.height } } : {}) });
+    });
+    return () => cancelAnimationFrame(tick);
+  }, [premiere.frame.phase, schedule.events]);
   // 일정 상세 열림·닫힘 소리(lib/ui/sfx '누름·이동') — 여는/닫는 경로가 여럿이라 상태 전환 한 곳에서.
   const detailOpenRef = useRef(false);
   useEffect(() => {
@@ -4090,6 +4110,7 @@ export function PublicPoster({
         detailEventId={agendaDetail?.event.teaser ? agendaDetail.event.id : undefined}
         month={view.month} tags={viewTags} root={posterRootRef} onClose={premiere.close} hoped={myHopeIds}
         onHope={id => { const event = premiere.frame.items.find(item => item.id === id)?.event ?? schedule.events.find(item => item.id === id); if (event) toggleHope(event); }}
+        onRead={(rehearsal ?? premiereFixture)?.rehearsal ? undefined : id => { const item = premiere.frame.items.find(item => item.id === id && item.state === "released"); if (item) { premiereReadRef.current = { id, dateKey: item.dateKey }; premiere.close(); } }}
         onOtherMonth={() => { const event = schedule.events.find(item => item.teaser && item.teaserRevealAt && Date.parse(item.teaserRevealAt) - syncedNow() <= 180000); if (event) { const [year, month] = event.startsAt.split("-").map(Number); goToMonth({ year, month }); } }} />
 
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).

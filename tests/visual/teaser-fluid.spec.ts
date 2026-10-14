@@ -203,14 +203,16 @@ test("large countdown, hope feedback and final calm keep conveying progress", as
   const before = Number(await page.locator(".dt-count-core strong").textContent());
   await page.getByRole("button", { name: "기대돼요", exact: true }).click();
   await expect(page.getByRole("button", { name: "함께 기다리는 중", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".pm-hope-bloom")).toHaveCount(1);
+  await expect(page.locator(".pm-wish")).toHaveCount(1);
+  await expect(page.locator(".pm-host-response")).toBeVisible();
   await expect(page.locator(".pm-stage")).toHaveClass(/pm-hoped/);
   await expect.poll(async () => Number(await page.locator(".dt-count-core strong").textContent())).toBeLessThan(before);
   await expect(page.locator(".pm-particle,.pm-orbit,.pm-lightstick")).toHaveCount(0);
   await expect(page.getByText("공개 전까지 비밀이에요", { exact: true })).toHaveCount(0);
   await open(page, 9);
-  await expect.poll(() => page.locator(".pm-light-field").evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.01);
-  expect(await page.locator(".pm-light-field i").first().evaluate(el => getComputedStyle(el).animationPlayState)).toBe("paused");
+  await expect.poll(() => page.locator(".pm-stage").evaluate(el => (el as HTMLElement).style.getPropertyValue("--pm-fold-drift"))).toBe("0px");
+  await expect.poll(() => page.locator(".pm-folds").evaluate(el => Number(getComputedStyle(el).opacity)), { timeout: 9000 }).toBeLessThan(.01);
+  await expect(page.locator(".pm-light-field")).toHaveCount(0);
   const calm = await page.locator(".dt-count-core strong").textContent();
   await expect.poll(() => page.locator(".dt-count-core strong").textContent(), { timeout: 2000 }).not.toBe(calm);
 });
@@ -265,7 +267,7 @@ test("long revealed text scrolls within the screen without hiding the escape con
 test("gfx fallback removes decorative fields while the countdown stays live", async ({ page }) => {
   await open(page, 35);
   await softGfx(page);
-  await expect(page.locator(".pm-light-field")).not.toBeVisible();
+  await expect(page.locator(".pm-folds")).not.toBeVisible();
   const before = await page.locator(".dt-count-core strong").textContent();
   await expect.poll(() => page.locator(".dt-count-core strong").textContent(), { timeout: 2000 }).not.toBe(before);
 });

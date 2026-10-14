@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import type { BroadcastTag } from "@/lib/domain/schedule-types";
+import type { BroadcastTag, PublicScheduleEvent } from "@/lib/domain/schedule-types";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 import { TeaserStageContent } from "@/components/shared/teaser-stage-content";
 import { Sparkles, Check, X, ArrowUpRight } from "lucide-react";
@@ -18,12 +18,14 @@ import { hapticSuccess } from "@/lib/ui/haptics";
 import { splitEventTitleOutline } from "@/lib/calendar/month";
 import { PREMIERE_EASE } from "@/lib/ui/premiere/focus-motion";
 import { usePremiereCardVisible } from "./use-premiere-clock-owner";
+import { PremiereScene } from "./premiere-scene";
+import { createFlashBudget } from "@/lib/ui/premiere/flash-budget";
 import "./premiere-stage.css";
 
-type Props = { frame: PremiereFrame; bang: number; reduced: boolean; hint: boolean; month: number; tags: BroadcastTag[]; root: RefObject<HTMLDivElement | null>; onClose: () => void; onHope: (id: string) => void; hoped: Set<string>; onOtherMonth: () => void; detailEventId?: string };
+type Props = { frame: PremiereFrame; bang: number; reduced: boolean; hint: boolean; month: number; tags: BroadcastTag[]; root: RefObject<HTMLDivElement | null>; onClose: () => void; onHope: (id: string) => void; onRead?: (id: string) => void; hoped: Set<string>; onOtherMonth: () => void; detailEventId?: string };
 const phases = ["idle", "prelude", "filters", "chrome", "curtain", "quake", "screen", "build", "eye", "waiting", "reveal", "return"];
 
-export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, onClose, onHope, hoped, onOtherMonth, detailEventId }: Props) {
+export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, onClose, onHope, onRead, hoped, onOtherMonth, detailEventId }: Props) {
   const [ready, setReady] = useState(false);
   const [burst, setBurst] = useState(false);
   const [hopePulse, setHopePulse] = useState(0);
@@ -36,6 +38,8 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
   const portal = useRef<HTMLDivElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
   const lastBang = useRef(0);
+  const lastBurstRelease = useRef("");
+  const visualFlashBudget = useRef(createFlashBudget());
   const sounded = useRef(new Set<string>());
   const previousFocus = useRef<HTMLElement | null>(null);
   const screenLayout = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -46,6 +50,7 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
   const dockOwnsClock = !focused && !detailOwnsClock && !cardVisible;
   const phaseIndex = phases.indexOf(frame.phase);
   usePremiereChoreography(frame, reduced, root, exit, portal, previousFocus);
+  useEffect(() => { if (!active) setHopePulse(0); }, [active]);
   useEffect(() => { setReady(true); const read = () => setGfx(gfxMode()); read(); const observer = new MutationObserver(read); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-gfx"] }); return () => observer.disconnect(); }, []);
   useEffect(() => { const media = matchMedia(POSTER_AGENDA_QUERY); const read = () => setAgenda(media.matches); read(); media.addEventListener("change", read); return () => media.removeEventListener("change", read); }, []);
   useAmbientPause(active && phaseIndex >= phases.indexOf("curtain"), `premiere-stage-${instanceId}`);
@@ -140,22 +145,31 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
     if (!before || !next.width || !next.height || Math.abs(before.height - next.height) < 2 && Math.abs(before.width - next.width) < 2) return;
     // The same FLIP used for source↔screen also carries publication/re-gating
     // layout changes, instead of replacing the clock with a jumping box.
-    flipSpring(el, `translate(${before.left - next.left}px,${before.top - next.top}px) scale(${before.width / next.width},${before.height / next.height})`, { origin: "top left", ms: 640 });
+    const dx = Math.max(-24, Math.min(24, before.left - next.left));
+    const dy = Math.max(-24, Math.min(24, before.top - next.top));
+    // Carry the plane, never non-uniformly stretch new reading typography.
+    flipSpring(el, `translate(${dx}px,${dy}px) scale(.985)`, { ms: 640, easing: PREMIERE_EASE });
     // Semantic content changes only; never animate layout on a clock tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focused, frame.phase === "return", contentRevision, reduced]);
 
+  const releasedKey = frame.items.filter(item => item.state === "released").map(item => `${item.id}:${item.revealAt}`).join("|");
   useEffect(() => {
+    setBurst(false);
     if (!focused || reduced) { setBurst(false); return; }
     if (!bang || bang === lastBang.current) return;
+    if (!releasedKey || releasedKey === lastBurstRelease.current) return; // Zero is a deadline, not a publication verdict.
+    // Network confirmation can compress originally separated deadline cues.
+    // Reuse the same 1.5s budget at the actual visible effect, dropping excess.
+    if (!visualFlashBudget.current.request(performance.now())) return;
     lastBang.current = bang;
+    lastBurstRelease.current = releasedKey;
     if (!focused || reduced || document.hidden) return;
     setBurst(true);
     const timer = setTimeout(() => setBurst(false), 900);
     return () => clearTimeout(timer);
-  }, [bang, focused, reduced]);
+  }, [bang, focused, reduced, releasedKey]);
 
-  const releasedKey = frame.items.filter(item => item.state === "released").map(item => `${item.id}:${item.revealAt}`).join("|");
   useEffect(() => {
     if (!focused || document.hidden || !releasedKey) { setAnnouncement(""); return; }
     const fresh = releasedKey.split("|").filter(key => !sounded.current.has(key));
@@ -177,19 +191,18 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
     {focused ? <>
       <div className="pm-dark" aria-hidden="true" />
       <div className="pm-flash" key={bang} aria-hidden="true" />
-      <div className="pm-light-field" aria-hidden="true"><i /><i /><i /></div>
       <div className="pm-shock" key={`shock-${bang}`} aria-hidden="true" />
       <div className="pm-viewport">
         <div className={`pm-screen${released.length ? " is-released" : ""}`} ref={screen}>
-          <header className="pm-heading" data-pm-retreat><span className="pm-kicker">최초공개</span><span>{frame.items.length > 1 ? `${frame.items.length}개의 일정` : shortDate(frame.items[0]?.dateKey)}</span><span className="pm-heading-rule" aria-hidden="true" /></header>
-          {hopePulse ? <div key={hopePulse} className="pm-hope-bloom" aria-hidden="true" /> : null}
+          <PremiereScene pulse={hopePulse} />
+          <header className="pm-heading" data-pm-retreat><span className="pm-kicker">{waiting.length ? "최초공개" : "처음 만나는 이야기"}</span><span>{frame.items.length > 1 ? `${frame.items.length}개의 일정` : shortDate(frame.items[0]?.dateKey)}</span><span className="pm-heading-rule" aria-hidden="true" /></header>
           <div className="pm-composition">
-            {waiting.length ? <div className="pm-count"><TeaserStageContent revealAt={new Date(frame.target).toISOString()} presentation="premiere" /></div> : null}
+            {waiting.length ? <div className="pm-count"><p className="pm-invitation" data-pm-retreat>우리의 다음 장면</p><TeaserStageContent revealAt={new Date(frame.target).toISOString()} presentation="premiere" /></div> : null}
             <div className={`pm-films pm-n${frame.items.length}${frame.items.length > (agenda ? 2 : 4) ? " pm-list" : ""}`}>
               {frame.items.map((item, index) => <article className={`pm-film ${item.state}`} key={item.id} data-pm-event={item.id}>
                 {item.state === "released" ? <>
                   <div className="pm-date"><span>{Number(item.dateKey.slice(5, 7))}월</span><strong>{Number(item.dateKey.slice(8, 10))}</strong><span>{new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", weekday: "long" }).format(new Date(`${item.dateKey}T12:00:00+09:00`))}</span></div>
-                  <div className="pm-story"><PremiereTitle title={item.event.publicTitle} /><div className="pm-details"><time dateTime={item.event.startsAt}>{item.event.isAllDay ? "하루 종일" : new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "numeric", minute: "2-digit" }).format(new Date(item.event.startsAt))}</time>{item.event.publicDescription ? <p>{item.event.publicDescription}</p> : null}{item.event.tagIds.length ? <div className="pm-tags">{item.event.tagIds.flatMap(id => { const tag = tags.find(tag => tag.id === id); return tag ? <span key={id}>{tag.displayName}</span> : []; })}</div> : null}</div></div>
+                  <PremiereStory event={item.event} tags={tags} onRead={onRead} />
                 </> : <div className="pm-masked" data-pm-retreat>
                   {frame.items.length > 1 ? <span className="pm-slot-label">{String(index + 1).padStart(2, "0")} <span>{shortDate(item.dateKey)}</span></span> : null}
                   <button type="button" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { if (!hoped.has(item.id)) setHopePulse(value => value + 1); onHope(item.id); }}>
@@ -213,6 +226,20 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
 }
 
 function shortDate(value?: string) { return value ? `${Number(value.slice(5, 7))}월 ${Number(value.slice(8, 10))}일` : ""; }
+
+function PremiereStory({ event, tags, onRead }: { event: PublicScheduleEvent; tags: BroadcastTag[]; onRead?: (id: string) => void }) {
+  return <div className="pm-story">
+    {/* Before long content: a six-second automatic beat must never bury the
+        escape into unhurried reading below several screens of subtopics. */}
+    {onRead ? <button type="button" className="pm-read" onClick={() => onRead(event.id)}>계속 읽기 <ArrowUpRight size={16} aria-hidden="true" /></button> : null}
+    <PremiereTitle title={event.publicTitle} />
+    <div className="pm-details">
+      <time dateTime={event.startsAt}>{event.isAllDay ? "하루 종일" : new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "numeric", minute: "2-digit" }).format(new Date(event.startsAt))}</time>
+      {event.publicDescription ? <p>{event.publicDescription}</p> : null}
+      {event.tagIds.length ? <div className="pm-tags">{event.tagIds.flatMap(id => { const tag = tags.find(tag => tag.id === id); return tag ? <span key={id}>{tag.displayName}</span> : []; })}</div> : null}
+    </div>
+  </div>;
+}
 
 function PremiereTitle({ title }: { title: string }) {
   const { main, subs } = splitEventTitleOutline(title);

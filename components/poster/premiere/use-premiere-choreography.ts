@@ -60,7 +60,9 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       const finale = current.phase === "reveal" ? 0 : motion.retreat;
       const grade = stage.current?.dataset.gfx;
       const drift = grade === "off" ? 0 : grade === "soft" || grade === "lite" ? .45 : 1;
-      for (const [key, value] of Object.entries({ "--pm-digit-x": `${motion.x * drift}px`, "--pm-digit-y": `${motion.y * drift}px`, "--pm-digit-tilt": `${motion.tilt * drift}deg`, "--pm-final": String(finale) })) stage.current?.style.setProperty(key, value);
+      // One truthful clock conducts visual gathering too. Motion stops before
+      // the last ten seconds; the ring remains an actual time indicator.
+      for (const [key, value] of Object.entries({ "--pm-digit-x": `${motion.x * drift}px`, "--pm-digit-y": `${motion.y * drift}px`, "--pm-digit-tilt": `${motion.tilt * drift}deg`, "--pm-final": String(finale), "--pm-gather": String(passage(seconds, 68, 10)), "--pm-fold-drift": `${Math.sin(Math.max(0, 68 - seconds) * .48) * 5 * drift * (1 - passage(seconds, 12, 10))}px` })) stage.current?.style.setProperty(key, value);
       for (const el of stage.current?.querySelectorAll<HTMLElement>("[data-pm-retreat]") ?? []) {
         const hidden = finale > .8;
         if (hidden && el.contains(document.activeElement)) exit.current?.focus({ preventScroll: true });
