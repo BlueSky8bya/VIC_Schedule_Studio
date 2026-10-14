@@ -1,6 +1,6 @@
 # PLAN-039 — 기대에 반응하는 원본 배경
 
-Status: implementation verified, deployment pending. Owner request 2026-10-15 KST.
+Status: complete; `e63261e5` deployed and production3-view smoke verified. Owner request 2026-10-15 KST.
 
 - 원본 `28241791931065693.png` 전체 비율을 보존한 WebP를 무대 배경으로 사용. 얼굴 생성/합성 없음.
 - PLAN-038의 하단 사진 교체/깜빡임을 대체. 하단은 빅타민만, 기대 중인 공개 전 일정이 하나라도 있으면 배경 사진이 은은하게 나타남. 모두 취소하면 페이드아웃. 로드 실패는 배경 없이 기능 유지.

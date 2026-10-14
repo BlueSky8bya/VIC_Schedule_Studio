@@ -1,6 +1,6 @@
 # 최초공개 기대 배경 / 시각 안내 접힘
 
-Scope: PLAN-039. 2026-10-15 KST. Production deployment pending.
+Scope: PLAN-039. 2026-10-15 KST. Product commit `e63261e5` deployed; live build SHA matched.
 
 ## 변경
 
@@ -17,6 +17,7 @@ Scope: PLAN-039. 2026-10-15 KST. Production deployment pending.
 - 관련 unit78/78: teaser-premiere26, company5, focus2, publicDTO2, agent-memory18, rule-migration25.
 - 첫 탐색 렌더11개:8통과/3실패. 테스트 하네스의 한글 stdin 인코딩, 상세 입장scale 완료 전 높이 측정, 모바일 토폴로지 전환 중 detached card 조작. 각각 수정, 제품 실패로 숨기지 않음. 최종 실행 결과 아래 추가.
 - 최종 production fixture 렌더58/58 통과(6분): company13, fluid20, kairos9, reading-layout5, reference8, notice3. 기존 pending 화면4개와 신규 배경3개 기준선 갱신, 이전 표정 crop 기준선6개 제거. 읽기 화면 기준선은 그대로.
+- 신규 배경 기준선은 마스크 변경을 비교 허용오차 아래 차이까지 반영하도록 `--update-snapshots=all`로3뷰 재저장,3/3통과.
 - 실제 `/` 로컬 smoke1100×780 /390×844 /844×390(touch): 모두 통과. 기대ON/OFF, 숫자1개, 관객 모임/정지, 공개 후 수동닫기, focus/inert 복구, pageerror0. 각 context POST3차단(가짜 기대2응답), 실제 서버 쓰기0. 합성 과거 일정은 브라우저 응답에만 주입.
 - 실물 확인: `.scratch-pw/wish-local-happy-{1100,390,844}.png`, 같은 prefix의contempt(해제)/seated. PC·모바일 숫자와 희미한 원본 배경, 하단 관객 확인. 초안에서 발견한 모바일 사진 직사각 경계를 intrinsic image mask로 수정 후 다시 캡처.
 - G21 독립 코드 리뷰: lite selector가 합쳐진 결함 수정, 최종 확인에서 확정 차단 없음. SHA/재현/비율/메타 제거 확인. 전문 미술 승인 아님.
@@ -25,3 +26,10 @@ Scope: PLAN-039. 2026-10-15 KST. Production deployment pending.
 ## 제한
 
 실제 로그인/RLS·실기기Safari·주관적 미술 승인·실음향 품질 검사 아님. 원본 사용 방식 승인과 최종 디자인 승인은 구분한다. 운영 데이터 생성/수정 없음.
+
+## 운영 확인
+
+- [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/6pLv9LXFQGWvAuHWWxLgVtmpQ7DD) success, `/api/soop-live` build가 `e63261e53ac1bb628966aea7619d9b6ffbedd15e`와 일치.
+- 운영 `/premiere/victory-wish.webp`: HTTP200,54,142bytes, SHA256`d4589ec4562769752b13d313811df59ac5c8e352650d2231f810457d4be70bdd` 로컬 동일.
+- 운영 `/`에서도1100×780/390×844/844×390 touch smoke 모두 통과. 기대ON/OFF, 모임/정지, 숫자 가림 없음, 수동 종료, pageerror0. 각 context POST3차단 중 가짜 기대2응답, 실제 쓰기0.
+- 로컬 기록 `.scratch-pw/wish-production-smoke.json`, 화면 `wish-production-happy-*`, `wish-production-contempt-*`(해제), `wish-production-seated-*`. 신규 이미지 생성0회.
