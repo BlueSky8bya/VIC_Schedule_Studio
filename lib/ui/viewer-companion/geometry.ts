@@ -78,7 +78,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
           const heartRect = heart.getBoundingClientRect();
           const x = heartRect.left + heartRect.width / 2;
           const y = heartRect.top + heartRect.height / 2;
-          if (heartRect.width > 0 && heartRect.height > 0 && x >= 0 && x <= width && y >= 0 && y <= height) platform.heart = { x, y };
+          if (heartRect.width > 0 && heartRect.height > 0 && x >= 0 && x <= width && y >= 0 && y <= height) platform.heart = { x, y, blocked: heart.getAttribute("aria-pressed") === "true" || heart.hasAttribute("data-companion-hearted") || heart.hasAttribute("data-companion-heart-blocked") };
         }
         platforms.push(platform);
       }
@@ -118,7 +118,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   });
   mutationObserver.observe(root, {
     subtree: true, childList: true, attributes: true,
-    attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden", "data-premiere", "data-pm-depart"],
+    attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden", "aria-pressed", "data-companion-hearted", "data-companion-heart-blocked", "data-premiere", "data-pm-depart"],
   });
   // Ancestor visibility can change when the same shared viewer enters/leaves
   // preview. Observe only its attributes, not the rest of the application.

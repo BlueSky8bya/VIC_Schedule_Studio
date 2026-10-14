@@ -238,7 +238,7 @@ const companionTabs = [
   { key: "personality", label: "성격" }
 ] as const;
 type CompanionTab = typeof companionTabs[number]["key"];
-type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "ambientPrank" | "drag" | "petting";
+type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "ambientPrank" | "drag" | "petting" | "feeding";
 
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
 function CompanionSettings({ preferences, onChange }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void }) {
@@ -299,17 +299,23 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
       <div className="rhh-group-card">
         {row("drag", "집어 옮기기", <Grab size={15} />)}
         {row("petting", "쓰다듬기", <Heart size={15} />)}
+        {row("feeding", "밥주기", <Leaf size={15} />)}
       </div>
       <p className="rhh-group-foot">빅타민을 잡아 옮기거나, 머리에서 꾹 누른 채 살살 문질러 주세요.</p>
+      <p className="rhh-group-foot">밥주기는 빅타민 전용 사과·레몬을 건네는 놀이예요.</p>
     </div>
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">
+        <div className="role-help-haptics rhh-stack-sm">
+          <RowLabel icon={<Sparkles size={15} />} tone="leaf">동물 모드</RowLabel>
+          <SettingsSegment ariaLabel="빅타민 동물 모드" dataAct="빅타민 동물 모드" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
+        </div>
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">성격</RowLabel>
           <SettingsSegment ariaLabel="빅타민 성격" dataAct="빅타민 성격" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
         </div>
       </div>
-      <p className="rhh-group-foot">성격에 따라 좋아하는 놀이와 쉬는 빈도가 달라져요.</p>
+      <p className="rhh-group-foot">동물 모드는 하나만 골라요. 그 습성 위에 성격이 더해져 좋아하는 놀이와 쉬는 빈도가 달라져요.</p>
     </div>
   </>;
 }

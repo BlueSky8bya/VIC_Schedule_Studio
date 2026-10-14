@@ -22,7 +22,7 @@ describe("viewer companion device preferences", () => {
     expect(getCompanionPreferences()).toEqual(DEFAULT_COMPANION_PREFERENCES);
   });
   it("retains every detailed choice across master OFF and ON", () => {
-    const chosen = { enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, ambientPrank: false, drag: false, petting: false, speed: "relaxed", size: "small", personality: "sleepy" } as const;
+    const chosen = { enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, ambientPrank: false, drag: false, petting: false, feeding: false, animalMode: "cat", speed: "relaxed", size: "small", personality: "sleepy" } as const;
     setCompanionPreferences(chosen);
     setCompanionPreferences({ enabled: false });
     expect(getCompanionPreferences()).toEqual({ ...chosen, enabled: false });
@@ -31,9 +31,15 @@ describe("viewer companion device preferences", () => {
     expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...chosen });
   });
   it("allowlists booleans and enums without importing unknown properties", () => {
-    expect(normalizeCompanionPreferences({ enabled: "true", roam: 1, sleep: false, speed: "turbo", size: "large", personality: "affectionate", email: "synthetic-canary@example.invalid" })).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, sleep: false, size: "large", personality: "affectionate" });
+    expect(normalizeCompanionPreferences({ enabled: "true", roam: 1, sleep: false, speed: "turbo", size: "large", personality: "affectionate", feeding: "yes", animalMode: "cat-and-dog", email: "synthetic-canary@example.invalid" })).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, sleep: false, size: "large", personality: "affectionate" });
     expect(normalizeCompanionPreferences(null)).toEqual(DEFAULT_COMPANION_PREFERENCES);
     expect(normalizeCompanionPreferences([])).toEqual(DEFAULT_COMPANION_PREFERENCES);
+  });
+  it("extends version1 preferences without resetting existing choices", () => {
+    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, enabled: true, roam: false, personality: "sleepy", size: "small" }));
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "sleepy", size: "small", animalMode: "default", feeding: true });
+    setCompanionPreferences({ animalMode: "dog", feeding: false });
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "sleepy", size: "small", animalMode: "dog", feeding: false });
   });
   it("fails closed for corrupt or unsupported saved versions", () => {
     setCompanionPreferences({ enabled: true });

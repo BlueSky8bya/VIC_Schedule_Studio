@@ -23,6 +23,16 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   await panel.getByRole("tab", { name: "장난", exact: true }).click();
   await expect(panel).toContainText("실제 하트 수를 바꾸지 않는 장난");
   await panel.getByRole("switch", { name: "빅타민 하트 콩 켜기/끄기", exact: true }).click();
+  await panel.getByRole("tab", { name: "성격", exact: true }).click();
+  const animalMode = panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true });
+  await expect(animalMode.getByRole("radio", { name: "빅타민", exact: true })).toBeChecked();
+  await animalMode.getByRole("radio", { name: "고양이", exact: true }).click();
+  await animalMode.getByRole("radio", { name: "강아지", exact: true }).click();
+  await expect(animalMode.getByRole("radio", { name: "고양이", exact: true })).not.toBeChecked();
+  await expect(animalMode.getByRole("radio", { name: "강아지", exact: true })).toBeChecked();
+  await panel.getByRole("tab", { name: "교감", exact: true }).click();
+  await expect(panel).toContainText("빅타민 전용 사과·레몬");
+  await panel.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true }).click();
   await master.click();
   await expect(master).toBeChecked();
   await master.click();
@@ -34,6 +44,10 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeChecked();
   await panel.getByRole("tab", { name: "장난", exact: true }).click();
   await expect(panel.getByRole("switch", { name: "빅타민 하트 콩 켜기/끄기", exact: true })).not.toBeChecked();
+  await panel.getByRole("tab", { name: "성격", exact: true }).click();
+  await expect(panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "강아지", exact: true })).toBeChecked();
+  await panel.getByRole("tab", { name: "교감", exact: true }).click();
+  await expect(panel.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true })).not.toBeChecked();
 });
 
 test("companion subtabs support arrows, Home and End with one keyboard stop", async ({ page }) => {
@@ -77,5 +91,7 @@ test("mobile uses the same companion controls and all four subtabs fit", async (
   }
   await panel.getByRole("radio", { name: "애교쟁이", exact: true }).click();
   await expect(panel.getByRole("radio", { name: "애교쟁이", exact: true })).toBeChecked();
+  await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
+  await expect(panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toBeChecked();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

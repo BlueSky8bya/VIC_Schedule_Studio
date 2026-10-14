@@ -8,6 +8,8 @@ export type CompanionPreferences = {
   ambientPrank: boolean;
   drag: boolean;
   petting: boolean;
+  feeding: boolean;
+  animalMode: "default" | "cat" | "dog";
   speed: "relaxed" | "normal" | "lively";
   size: "small" | "normal" | "large";
   personality: "curious" | "affectionate" | "sleepy";
@@ -24,12 +26,14 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   ambientPrank: true,
   drag: true,
   petting: true,
+  feeding: true,
+  animalMode: "default",
   speed: "normal",
   size: "normal",
   personality: "curious"
 });
 
-const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "ambientPrank", "drag", "petting"] as const;
+const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "ambientPrank", "drag", "petting", "feeding"] as const;
 let volatilePreferences: CompanionPreferences | undefined;
 let lastReadableRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined; owner: Window } | undefined;
@@ -43,6 +47,7 @@ export function normalizeCompanionPreferences(value: unknown, base: Readonly<Com
   if (source.speed === "relaxed" || source.speed === "normal" || source.speed === "lively") next.speed = source.speed;
   if (source.size === "small" || source.size === "normal" || source.size === "large") next.size = source.size;
   if (source.personality === "curious" || source.personality === "affectionate" || source.personality === "sleepy") next.personality = source.personality;
+  if (source.animalMode === "default" || source.animalMode === "cat" || source.animalMode === "dog") next.animalMode = source.animalMode;
   return next;
 }
 

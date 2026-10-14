@@ -6,28 +6,34 @@ import { advanceBrain, commitAction, createBrain, getAction, nearestPlatform, pl
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { observeCompanionPlatforms } from "@/lib/ui/viewer-companion/geometry";
 import { acquireCompanionAmbientPreview } from "@/lib/ui/viewer-companion/ambient-preview";
+import { loadCompanionCare, saveCompanionCare } from "@/lib/ui/viewer-companion/care";
+import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { gfxMode } from "@/lib/ui/gfx";
+import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import "./viewer-companion.css";
 
 type Props = { root: RefObject<HTMLDivElement | null>; preferences: CompanionPreferences; blocked: boolean; agenda: boolean; monthKey: string; reduced: boolean };
-type Control = { pet: () => void; place: () => void; rest: () => void };
+type Control = { pet: () => void; place: () => void; rest: () => void; apple: () => void; lemon: () => void; clearFood: () => void; interrupt: () => void };
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const ease = (t: number) => t * t * (3 - 2 * t);
 const sizes = { small: 60, normal: 76, large: 92 };
 
-/** One optional local creature. The only sensed schedule data is geometry.
+/** One optional local creature. It senses geometry, heart occupancy and local
+ * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
 export default function ViewerCompanion({ root, preferences, blocked, agenda, monthKey, reduced }: Props) {
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const control = useRef<Control | null>(null), brain = useRef(createBrain(performance.now()));
+  const food = useRef<CompanionFoodControl>(null), careLoaded = useRef(false);
   const lastPose = useRef<{ x: number; y: number; monthKey: string } | null>(null);
   const menuOpen = useRef(false);
   const [menu, setMenu] = useState(false);
+  const [mood, setMood] = useState(""), [announcement, setAnnouncement] = useState("");
   const [ready, setReady] = useState(false);
   const locateMenu = () => {
     const el = body.current; if (!el) return;
-    const rect = el.getBoundingClientRect(), height = 192;
+    const rect = el.getBoundingClientRect(), height = 280;
     el.style.setProperty("--vc-menu-left", `${clamp(rect.left, 8, innerWidth - 168) - rect.left}px`);
     const top = rect.top > height + 8 ? rect.top - height : Math.min(innerHeight - height - 8, rect.bottom + 8);
     el.style.setProperty("--vc-menu-top", `${Math.max(8, top) - rect.top}px`);
@@ -39,12 +45,15 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const el = body.current, button = actor.current, page = root.current;
     if (!ready || !el || !button || !page || !preferences.enabled) return;
     if (blocked) { el.hidden = true; menuOpen.current = false; setMenu(false); return; }
+    if (!careLoaded.current) { brain.current = { ...brain.current, ...loadCompanionCare() }; careLoaded.current = true; }
+    const hearts = createCompanionHearts(page);
     const saved = lastPose.current?.monthKey === monthKey ? lastPose.current : null;
     let platforms: Platform[] = [], x = saved?.x ?? innerWidth * .68, y = saved?.y ?? innerHeight - 18, support = "";
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), stopped = false, sleeping = false;
-    let pause = true, started = false, nextDecision = 0, releaseAmbient = () => {};
+    let pause = true, started = false, nextDecision = 0, needsLanding = false, afterPetLanding = false, restAfterLanding = false, releaseAmbient = () => {};
     let action: CompanionAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, consumePlacementClick = false;
     let placementPointer: number | null = null;
+    let pointer: { x: number; y: number } | undefined, heartResult: "added" | "blocked" | "missing" | null = null;
     let clickGuard: ReturnType<typeof setTimeout> | undefined;
     let pressed: { id: number; x: number; y: number; at: number; dx: number; dy: number; lastX: number; direction: number; strokes: number; dragged: boolean; petted: boolean } | null = null;
     const size = sizes[preferences.size];
@@ -57,7 +66,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       el.dataset.state = status;
       el.dataset.platform = support;
     };
-    const clearAction = () => { action = null; sleeping = false; releaseAmbient(); releaseAmbient = () => {}; el.removeAttribute("data-hidden"); if (effect.current) { effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = () => { action = null; food.current?.nibble(); heartResult = null; sleeping = false; releaseAmbient(); releaseAmbient = () => {}; el.removeAttribute("data-hidden"); el.removeAttribute("data-heart-result"); if (effect.current) { effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }) => {
       const below = platforms.filter(p => p.y >= point.y - 12 && point.x >= p.x - 10 && point.x <= p.x + p.width + 10);
       const p = nearestPlatform(point, below) ?? platforms.find(p => p.kind === "floor");
@@ -66,16 +75,27 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       if (reduced) { x = target.x; y = target.y; support = target.platformId ?? ""; clearAction(); }
       brain.current = recordCompanionEvent(brain.current, "landed");
     };
+    const supportedNow = () => { const p = platforms.find(p => p.id === support); return Boolean(p && Math.abs(y - p.y) <= 2 && x >= p.x && x <= p.x + p.width); };
+    const releaseHold = () => { if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; };
+    const startRest = () => { action = { kind: "sleep", target: { x, y, platformId: support }, duration: 12000 }; began = performance.now(); total = 12000; };
     const affection = () => {
       if (!preferences.petting) return;
+      afterPetLanding = !supportedNow(); restAfterLanding = false;
       clearAction(); petUntil = performance.now() + (reduced ? 650 : 1500);
       brain.current = recordCompanionEvent(brain.current, "petted");
       nextDecision = petUntil + 500;
     };
     control.current = {
       pet: affection,
-      place: () => { if (preferences.drag) { clearAction(); placing = true; el.dataset.placing = ""; } },
-      rest: () => { if (preferences.sleep) { clearAction(); action = { kind: "sleep", target: { x, y, platformId: support }, duration: 12000 }; began = performance.now(); total = 12000; } }
+      place: () => { if (preferences.drag) { clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; placing = true; el.dataset.placing = ""; } },
+      rest: () => { if (preferences.sleep) { clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
+        if (!supportedNow()) { settle({ x, y }); if (reduced) startRest(); else restAfterLanding = true; }
+        else startRest();
+      } },
+      apple: () => food.current?.spawn("apple", { x: x + size * .7, y }),
+      lemon: () => food.current?.spawn("lemon", { x: x + size * .7, y }),
+      clearFood: () => food.current?.clear(),
+      interrupt: () => { if (action?.kind === "eat") clearAction(); },
     };
     const launch = (next: CompanionAction, now: number) => {
       clearAction(); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
@@ -93,16 +113,19 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     };
     const tick = (now: number) => {
       if (stopped || pause) return;
-      const elapsed = Math.min(100, Math.max(0, now - lastTick)); lastTick = now;
+      const delta = Math.max(0, now - lastTick), elapsed = Math.min(1000, delta); lastTick = now;
       brain.current = advanceBrain(brain.current, elapsed);
-      if (menuOpen.current || placing) { paint(1, Math.floor(now / 160) % 16, placing ? "placing" : "look"); schedule(); return; }
+      saveCompanionCare(brain.current);
+      if (menuOpen.current || placing) { if (action) began += delta; paint(1, Math.floor(now / 160) % 16, placing ? "placing" : "look"); schedule(); return; }
       if (pressed || keyboardHeld) {
         const happy = pressed?.petted;
         paint(happy ? 9 : pressed && now - pressed.at < 250 ? 7 : 8, Math.floor(now / (reduced ? 500 : 80)) % 16, happy ? "petted" : "held");
         schedule(); return;
       }
       if (now < petUntil) { paint(9, Math.floor((1500 - petUntil + now) / 95) % 16, "petted"); schedule(); return; }
-      if (!action && now >= nextDecision) launch(getAction(brain.current, { x, y, platformId: support, platforms, width: innerWidth, height: innerHeight, ambientAvailable: true }, effective, now), now);
+      if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
+      if (action?.foodId && !food.current?.foods().some(item => item.id === action!.foodId)) { clearAction(); settle({ x, y }); nextDecision = now + 300; }
+      if (!action && now >= nextDecision) launch(getAction(brain.current, { x, y, platformId: support, platforms, width: innerWidth, height: innerHeight, ambientAvailable: true, foods: food.current?.foods(), pointer }, effective, now), now);
       let row = 0, frame = Math.floor(now / 150) % 16, status = "idle";
       if (action) {
         const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
@@ -124,8 +147,14 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
           else if (action.kind === "heart") {
             const t = (age - travel) / action.duration; row = 13; frame = t * 15;
             y = origin.y + Math.max(0, Math.sin(t * Math.PI * 2)) * (reduced ? 0 : 18);
+            if (t >= .25 && heartResult === null) {
+              heartResult = action.effectPoint ? hearts.attemptAt(action.effectPoint) : "missing";
+              el.dataset.heartResult = heartResult;
+              if (heartResult !== "missing") setAnnouncement(heartResult === "added" ? "빅타민이 보라 하트를 남겼어요. 관심 수에는 포함되지 않아요." : "이미 있는 하트에 콩! 빅타민이 아쉬워해요.");
+            }
+            if (heartResult === "blocked" && t > .5) { row = 10; frame = Math.min(15, (t - .5) * 30); }
             if (effect.current) {
-              effect.current.textContent = t > .25 && t < .85 ? "♥" : "";
+              effect.current.textContent = t > .25 && t < .85 ? heartResult === "blocked" ? "◌" : heartResult === "added" ? "♥" : "" : "";
               effect.current.style.setProperty("--vc-effect", `${-t * 25}px`);
               if (action.effectPoint) { effect.current.style.left = `${action.effectPoint.x - x + size / 2}px`; effect.current.style.top = `${action.effectPoint.y - y + size}px`; }
             }
@@ -136,11 +165,23 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
             if (t > .82) { el.removeAttribute("data-hidden"); releaseAmbient(); }
             if (effect.current) effect.current.textContent = t > .15 && t < .82 ? "⋯ 🍂" : "";
           }
+        } else if (action.kind === "sniff") { row = 1; frame = p * 15; }
+        else if (action.kind === "eat") {
+          // Existing limbless happy/breathing poses make a tiny nibble loop;
+          // fruit and satisfaction are separate from the sprite, no new limbs.
+          row = p < .2 ? 1 : 9; frame = Math.floor(age / 110) % 16;
+          food.current?.nibble(action.foodId, p);
+          if (effect.current) effect.current.textContent = p > .6 ? "✧" : "";
         } else if (action.kind === "look") { row = 1; frame = p * 15; }
         if (p >= 1) {
           const rested = sleeping;
+          if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
+            brain.current = recordCompanionEvent(brain.current, "ate"); saveCompanionCare(brain.current, true);
+            petUntil = now + (reduced ? 400 : 1100);
+          }
           if (["walk", "jump", "heart", "hide"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
           clearAction(); if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + 450;
+          if (restAfterLanding) { restAfterLanding = false; control.current?.rest(); }
         }
       }
       x = clamp(x, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y, size + 8, innerHeight - 12);
@@ -156,13 +197,15 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       const next = blocked || document.hidden || page.inert || html.hasAttribute("data-showcase") || html.hasAttribute("data-ambient-pause");
       if (next === pause && started) return;
       started = true; pause = next; el.hidden = next;
+      food.current?.pause(next);
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now();
-      if (pause) { clearAction(); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; menuOpen.current = false; setMenu(false); }
-      else { nextDecision = performance.now() + 600; schedule(); }
+      if (pause) { needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; saveCompanionCare(brain.current, true); clearAction(); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; menuOpen.current = false; setMenu(false); }
+      else { if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; schedule(); }
     };
     const down = (event: PointerEvent) => {
       if (pause || event.button !== 0 || (!preferences.drag && !preferences.petting)) return;
       event.preventDefault(); event.stopPropagation(); button.focus({ preventScroll: true }); button.setPointerCapture(event.pointerId);
+      restAfterLanding = false; afterPetLanding = false;
       clearAction(); pressed = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), dx: event.clientX - x, dy: event.clientY - y, lastX: event.clientX, direction: 0, strokes: 0, dragged: false, petted: false };
     };
     const move = (event: PointerEvent) => {
@@ -184,6 +227,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
       if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); }
       else if (event.type !== "pointercancel") affection();
+      else settle({ x, y });
     };
     const key = (event: KeyboardEvent) => {
       const owns = event.key === "Escape" || event.key === "Enter" && preferences.petting || event.key === " " && preferences.drag || keyboardHeld && event.key.startsWith("Arrow");
@@ -209,11 +253,13 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       placementPointer = null; clearTimeout(clickGuard); clickGuard = setTimeout(() => { consumePlacementClick = false; }, 500);
     };
     const click = (event: MouseEvent) => { if (consumePlacementClick) { event.preventDefault(); event.stopImmediatePropagation(); consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard); } };
+    const sensePointer = (event: PointerEvent) => { if (!pause && event.pointerType !== "touch") pointer = { x: event.clientX, y: event.clientY }; };
     const offGeometry = observeCompanionPlatforms(page, next => {
       const previous = platforms;
       // A visible ledge must leave room for this configured sprite above it.
       // Use the same foot boundary as painting/dragging, including after scroll.
       platforms = next.filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
+      food.current?.sync(platforms);
       if (!support) {
         const p = nearestPlatform({ x, y: saved?.y ?? innerHeight * .65 }, saved ? platforms : platforms.filter(p => p.kind !== "floor")) ?? platforms[0];
         if (p) { x = platformLandingX(p, x); y = p.y; support = p.id; }
@@ -236,13 +282,16 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     observer.observe(page, { attributes: true, attributeFilter: ["inert"] });
     document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); document.addEventListener("click", click, true);
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
+    document.addEventListener("pointermove", sensePointer, { passive: true });
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("keydown", key);
     sync();
     return () => {
       lastPose.current = { x, y, monthKey };
-      stopped = true; cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearAction(); control.current = null; observer.disconnect(); offGeometry();
+      saveCompanionCare(brain.current, true);
+      stopped = true; cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearAction(); control.current = null; observer.disconnect(); offGeometry(); hearts.dispose();
       document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
+      document.removeEventListener("pointermove", sensePointer);
       button.removeEventListener("pointerdown", down); button.removeEventListener("pointermove", move); button.removeEventListener("pointerup", up); button.removeEventListener("pointercancel", up); button.removeEventListener("keydown", key);
       if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id);
       el.hidden = true;
@@ -252,15 +301,18 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
   if (!ready) return null;
   const closeMenu = () => { menuOpen.current = false; setMenu(false); actor.current?.focus({ preventScroll: true }); };
   const act = (kind: keyof Control) => { closeMenu(); control.current?.[kind](); };
-  return createPortal(<div className="vc-companion" ref={body} hidden data-sfx="off">
+  return createPortal(<><div className="vc-companion" ref={body} hidden data-sfx="off">
     <button className="vc-actor" ref={actor} type="button" data-sfx="off" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space ArrowUp ArrowDown ArrowLeft ArrowRight Escape"><span className="vc-sprite" aria-hidden="true" /><span className="vc-effect" ref={effect} aria-hidden="true" /></button>
     <span className="sr-only" id="vc-help">Enter로 쓰다듬기. 스페이스로 집고 화살표로 이동한 뒤 스페이스나 Escape로 놓기. 메뉴의 옮기기로 원하는 곳을 눌러도 돼요.</span>
-    <button className="vc-menu-toggle" aria-label="빅타민 메뉴" aria-expanded={menu} type="button" onClick={() => { locateMenu(); menuOpen.current = !menu; setMenu(!menu); }}>···</button>
+    <button className="vc-menu-toggle" aria-label="빅타민 메뉴" aria-expanded={menu} type="button" onClick={() => { locateMenu(); if (!menu) control.current?.interrupt(); setMood(brain.current.hunger >= .7 ? "배가 꼬르륵" : brain.current.hunger >= .35 ? "간식 생각 중" : brain.current.energy < .4 ? "졸음이 솔솔" : "배가 든든해요"); menuOpen.current = !menu; setMenu(!menu); }}>···</button>
     {menu ? <div className="vc-menu" role="group" aria-label="빅타민과 놀기" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeMenu(); } }}>
+      <span className="vc-mood">{mood}</span>
       {preferences.petting ? <button type="button" onClick={() => act("pet")}>쓰다듬기</button> : null}
       {preferences.drag ? <button type="button" onClick={() => act("place")}>옮길 곳 고르기</button> : null}
       {preferences.sleep ? <button type="button" onClick={() => act("rest")}>잠깐 쉬기</button> : null}
+      {preferences.feeding ? <><button type="button" onClick={() => act("apple")}>사과 밥 꺼내기</button><button type="button" onClick={() => act("lemon")}>레몬 밥 꺼내기</button><button type="button" onClick={() => act("clearFood")}>남은 밥 치우기</button></> : null}
       <button type="button" onClick={closeMenu}>닫기</button>
     </div> : null}
-  </div>, document.body);
+    <span className="sr-only" role="status">{announcement}</span>
+  </div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked} monthKey={monthKey} returnFocus={() => { if (!body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} /></>, document.body);
 }

@@ -1,4 +1,5 @@
 import type { CompanionPreferences } from "./preferences";
+import { COMPANION_FULL_THRESHOLD, type CompanionCare } from "./care";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -10,18 +11,21 @@ export type Platform = {
   y: number;
   width: number;
   kind: "card" | "date" | "floor" | "hide";
-  heart?: { x: number; y: number };
+  heart?: { x: number; y: number; blocked?: boolean };
 };
 
 export type CompanionBehaviorPreferences = CompanionPreferences;
 
-export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide";
+export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: "apple" | "lemon" };
+export type Food = CompanionFood;
+export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat";
 export type CompanionAction = {
   kind: CompanionActionKind;
   target: { x: number; y: number; platformId?: string };
   /** Milliseconds, including the whole finite pose/action. */
   duration: number;
   effectPoint?: { x: number; y: number };
+  foodId?: string;
 };
 export type CompanionWorld = {
   x: number;
@@ -32,12 +36,11 @@ export type CompanionWorld = {
   height: number;
   paused?: boolean;
   ambientAvailable?: boolean;
+  foods?: readonly CompanionFood[];
+  pointer?: { x: number; y: number };
 };
-export type CompanionBrain = {
+export type CompanionBrain = CompanionCare & {
   createdAt: number;
-  energy: number;
-  affection: number;
-  curiosity: number;
   recent: CompanionActionKind[];
   visited: string[];
   cooldowns: Partial<Record<CompanionActionKind, number>>;
@@ -99,12 +102,54 @@ export function reachablePlatforms(point: Point, platforms: readonly Platform[],
   });
 }
 
+export type CompanionRouteStep = { kind: "walk" | "jump"; target: { x: number; y: number; platformId: string } };
+type SupportedPoint = Point & { platformId?: string };
+
+/** Directed BFS over real ledges. Walking to a takeoff point is explicit, so
+ * a long floor can bridge a gap without pretending a 500px jump is possible.
+ * Each returned jump is checked with the same ballistic test as wandering. */
+export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint, platforms: readonly Platform[], allowJump = true): CompanionRouteStep[] | null {
+  const available = platforms.filter(p => valid(p) && p.kind !== "hide").slice(0, 200);
+  const start = available.find(p => p.id === origin.platformId) ?? nearestPlatform(origin, available);
+  const goal = available.find(p => p.id === target.platformId) ?? nearestPlatform(target, available);
+  if (!start || !goal || ![origin.x, origin.y, target.x, target.y].every(Number.isFinite)
+    || Math.abs(start.y - origin.y) > 18 || Math.abs(goal.y - target.y) > 18) return null;
+  const finalX = platformLandingX(goal, target.x);
+  const finish = (x: number, steps: CompanionRouteStep[]) => Math.abs(finalX - x) > 1
+    ? [...steps, { kind: "walk" as const, target: { x: finalX, y: goal.y, platformId: goal.id } }] : steps;
+  if (start.id === goal.id) return finish(origin.x, []);
+  if (!allowJump) return null;
+  const queue = [{ platform: start, x: origin.x, steps: [] as CompanionRouteStep[] }];
+  const visited = new Set([start.id]);
+  for (let index = 0; index < queue.length && index < 200; index++) {
+    const node = queue[index];
+    // Favor promising neighbours; route progress is measured by remaining BFS
+    // edges, not by a random new destination after every intermediate landing.
+    const choices = available.filter(p => !visited.has(p.id)).sort((a, b) =>
+      Math.hypot(platformLandingX(a, target.x) - target.x, a.y - target.y)
+      - Math.hypot(platformLandingX(b, target.x) - target.x, b.y - target.y));
+    for (const platform of choices) {
+      const takeoffX = platformLandingX(node.platform, platformLandingX(platform, target.x));
+      if (!reachablePlatforms({ x: takeoffX, y: node.platform.y }, [platform]).length) continue;
+      const landingX = platformLandingX(platform, takeoffX);
+      const steps = [...node.steps];
+      if (Math.abs(takeoffX - node.x) > 1) steps.push({ kind: "walk", target: { x: takeoffX, y: node.platform.y, platformId: node.platform.id } });
+      steps.push({ kind: "jump", target: { x: landingX, y: platform.y, platformId: platform.id } });
+      if (platform.id === goal.id) return finish(landingX, steps);
+      visited.add(platform.id);
+      queue.push({ platform, x: landingX, steps });
+    }
+  }
+  return null;
+}
+
 export function createBrain(now = 0, rng: () => number = Math.random): CompanionBrain {
   return {
     createdAt: Number.isFinite(now) ? now : 0,
     energy: .72 + random(rng) * .16,
     affection: .3,
     curiosity: .6 + random(rng) * .2,
+    hunger: .58,
     recent: [], visited: [], cooldowns: {},
   };
 }
@@ -118,11 +163,13 @@ export function advanceBrain(brain: CompanionBrain, elapsedMs: number): Companio
     energy: unit(brain.energy - seconds / 1400),
     affection: unit(brain.affection - seconds / 2400),
     curiosity: unit(brain.curiosity + seconds / 650),
+    hunger: unit(brain.hunger + seconds / 900),
   };
 }
 
-export type CompanionEvent = "petted" | "dragged" | "landed" | "rested" | "woke";
+export type CompanionEvent = "petted" | "dragged" | "landed" | "rested" | "woke" | "ate";
 export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEvent): CompanionBrain {
+  if (event === "ate") return brain.hunger < COMPANION_FULL_THRESHOLD ? { ...brain } : { ...brain, hunger: unit(brain.hunger - .36), affection: unit(brain.affection + .1), energy: unit(brain.energy + .07), curiosity: unit(brain.curiosity - .04) };
   if (event === "petted") return { ...brain, affection: unit(brain.affection + .08), energy: unit(brain.energy + .015), curiosity: unit(brain.curiosity - .025) };
   if (event === "dragged") return { ...brain, curiosity: unit(brain.curiosity + .08) };
   if (event === "rested") return { ...brain, energy: unit(brain.energy + .24), curiosity: unit(brain.curiosity + .08) };
@@ -131,7 +178,7 @@ export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEven
 }
 
 const cooldownMs: Record<CompanionActionKind, number> = {
-  idle: 0, look: 2500, walk: 1600, jump: 4000, sleep: 25000, heart: 45000, hide: 90000,
+  idle: 0, look: 2500, walk: 1600, jump: 4000, sleep: 25000, heart: 45000, hide: 90000, sniff: 8000, eat: 1500,
 };
 
 /** Commit once when an action begins, not every animation frame. */
@@ -142,8 +189,33 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
     curiosity: unit(brain.curiosity - (["jump", "walk", "heart", "hide"].includes(action.kind) ? .09 : .015)),
     recent: [...brain.recent, action.kind].slice(-8),
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
-    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + cooldownMs[action.kind] },
+    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]) },
   };
+}
+
+/** A hungry pet pursues one reachable food via concrete route steps. Eating
+ * waits until the mouth is nearby; neither food nor disabled movement teleports
+ * the creature. Full pets simply retain their ordinary idle/play choices. */
+export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, prefs: CompanionBehaviorPreferences, now: number): CompanionAction | undefined {
+  if (!prefs.enabled || world.paused || ![world.x, world.y, now].every(Number.isFinite)
+    || !prefs.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return undefined;
+  const supported = { x: world.x, y: world.y, platformId: world.platformId };
+  const foods = world.foods.filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && (food.kind === "apple" || food.kind === "lemon"))
+    .sort((a, b) => Math.hypot(a.x - world.x, a.y - world.y) - Math.hypot(b.x - world.x, b.y - world.y));
+  for (const food of foods) {
+    const route = findPlatformRoute(supported, food, world.platforms, prefs.jump);
+    if (!route) continue;
+    const sameSupport = !route.some(step => step.kind === "jump");
+    if (sameSupport && Math.abs(world.y - food.y) <= 18 && Math.abs(world.x - food.x) <= 36) {
+      if ((brain.cooldowns.eat ?? -Infinity) > now) continue;
+      return { kind: "eat", target: supported, duration: 2600, foodId: food.id, effectPoint: { x: food.x, y: food.y } };
+    }
+    if (!prefs.roam || !route.length) continue;
+    const step = route[0];
+    const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
+    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950, foodId: food.id };
+  }
+  return undefined;
 }
 
 /** Weighted utility with authored affordances: curiosity explores new ledges,
@@ -153,6 +225,8 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const stationary = { x: world.x, y: world.y, platformId: world.platformId };
   const idle: CompanionAction = { kind: "idle", target: stationary, duration: 1800 };
   if (!prefs.enabled || world.paused || !Number.isFinite(world.x) || !Number.isFinite(world.y) || !Number.isFinite(now)) return idle;
+  const foodAction = getFoodAction(brain, world, prefs, now);
+  if (foodAction) return foodAction;
   const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);
   const candidates: { action: CompanionAction; utility: number }[] = [];
   const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point) => {
@@ -164,18 +238,27 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const curious = prefs.personality === "curious" ? .35 : 0;
   const affectionate = prefs.personality === "affectionate" ? .3 : 0;
   const sleepy = prefs.personality === "sleepy" ? .45 : 0;
+  const cat = prefs.animalMode === "cat", dog = prefs.animalMode === "dog";
   add("idle", .3 + (1 - brain.energy) * .3, 1700 + random(rng) * 2300);
-  add("look", .25 + brain.curiosity * .35 + curious, 1200 + random(rng) * 1300);
+  add("look", .25 + brain.curiosity * .35 + curious + (cat ? .3 : 0), (cat ? 800 : 1200) + random(rng) * (cat ? 700 : 1300));
+  if (cat || dog) add("sniff", .4 + brain.curiosity * .3 + (dog ? .2 : 0), cat ? 950 : 1400);
   if (prefs.sleep && brain.energy < .74) add("sleep", (1 - brain.energy) ** 2 * 2 + sleepy, 9000 + random(rng) * 10000);
   if (prefs.roam && current && Math.abs(current.y - world.y) <= 18) {
     const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
-    const walkX = platformLandingX(current, current.x + current.width * (.1 + random(rng) * .8));
-    if (Math.abs(walkX - world.x) > 25) add("walk", .6 + brain.curiosity * .5, Math.max(500, Math.abs(walkX - world.x) / speed * 1000), { x: walkX, y: current.y, platformId: current.id });
+    const pointer = world.pointer && [world.pointer.x, world.pointer.y].every(Number.isFinite) ? world.pointer : undefined;
+    const follows = pointer && (cat || dog) && Math.abs(pointer.y - world.y) < 160;
+    const desiredX = follows ? pointer.x + (world.x < pointer.x ? -1 : 1) * (cat ? 75 : 28) : current.x + current.width * (.1 + random(rng) * .8);
+    const walkX = platformLandingX(current, desiredX);
+    if (Math.abs(walkX - world.x) > 25) add("walk", .6 + brain.curiosity * .5 + (follows && dog ? .8 : follows && cat ? .25 : 0), Math.max(500, Math.abs(walkX - world.x) / speed * (cat ? 1350 : 1000)), { x: walkX, y: current.y, platformId: current.id });
     if (prefs.jump) {
       const reachable = reachablePlatforms(world, world.platforms).filter(p => p.id !== current.id && p.kind !== "hide");
       if (reachable.length) {
         const unvisited = reachable.filter(p => !brain.visited.includes(p.id));
-        const choices = unvisited.length ? unvisited : reachable;
+        let choices = unvisited.length ? unvisited : reachable;
+        if (cat) {
+          const high = choices.filter(p => p.y < world.y - 30);
+          if (high.length && random(rng) < .8) choices = high;
+        }
         const platform = choices[Math.floor(random(rng) * choices.length)];
         // Reachability was proved for this nearest landing. A wide floor's
         // centre may be hundreds of pixels farther away and outside that arc.

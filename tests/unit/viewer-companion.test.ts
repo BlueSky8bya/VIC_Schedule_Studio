@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import {
   advanceBrain, commitAction, createBrain, getAction, nearestPlatform,
   platformLandingX, reachablePlatforms, recordCompanionEvent,
@@ -6,6 +7,7 @@ import {
 } from "@/lib/ui/viewer-companion/brain";
 
 const prefs: CompanionBehaviorPreferences = {
+  ...DEFAULT_COMPANION_PREFERENCES,
   enabled: true, roam: true, jump: true, sleep: true, heartPrank: true,
   ambientPrank: true, drag: true, petting: true,
   speed: "normal", size: "normal", personality: "curious",
