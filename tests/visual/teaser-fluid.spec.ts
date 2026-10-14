@@ -26,7 +26,7 @@ async function softGfx(page: Page) {
 test("the prelude has a running countdown and the debut/season/filter all leave", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await open(page, 170);
-  const readout = page.locator(".pm-readout");
+  const readout = page.locator("[data-pm-target] .teaser-count");
   const before = await readout.textContent();
   await expect.poll(() => readout.textContent(), { timeout: 2000 }).not.toBe(before);
   await expect.poll(() => page.locator(".rail-info-card").evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.01);
@@ -83,7 +83,9 @@ for (const width of [1440, 390]) {
     expect(await target.evaluate(el => getComputedStyle(el).visibility)).toBe("visible");
     await expect(page.locator(".pm-screen")).toHaveAttribute("data-pm-morph", "card", { timeout: 10000 });
     await page.locator(".pm-count .dt-ring").evaluate(el => el.dispatchEvent(new TransitionEvent("transitionend", { bubbles: true, propertyName: "stroke-dashoffset" })));
-    expect(await page.locator(".pm-screen").evaluate(el => (el as HTMLElement).style.transition)).toContain("1000ms");
+    expect(await page.locator(".pm-screen").evaluate(el => (el as HTMLElement).style.transition)).toContain("1100ms");
+    const matrix = await page.locator(".pm-screen").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a);
+    expect(matrix).toBeGreaterThan(.95); expect(matrix).toBeLessThanOrEqual(1);
     await expect(page.locator(".pm-count .dt-count-core")).toBeVisible();
     await expect.poll(() => page.locator(".pm-screen").evaluate(el => getComputedStyle(el).transform)).toBe("none");
     await page.keyboard.press("Escape");
@@ -185,8 +187,8 @@ test("seasonal canvases keep their viewport containing block while exiting", asy
   await open(page, 94, "&ambient=autumn");
   await expect.poll(() => page.locator(".pm-ambient-shell canvas").count()).toBeGreaterThan(0);
   expect(await page.locator(".pm-ambient-shell").evaluate(el => getComputedStyle(el).transform)).toBe("none");
-  const readout = await page.locator(".pm-readout").textContent();
-  await expect.poll(() => page.locator(".pm-readout").textContent(), { timeout: 2000 }).not.toBe(readout);
+  const readout = await page.locator("[data-pm-target] .teaser-count").textContent();
+  await expect.poll(() => page.locator("[data-pm-target] .teaser-count").textContent(), { timeout: 2000 }).not.toBe(readout);
   const viewport = await page.locator(".pm-ambient-shell canvas").first().boundingBox();
   expect(viewport!.width).toBeGreaterThan(1000);
   expect(viewport!.height).toBeGreaterThan(500);
@@ -289,7 +291,7 @@ for (const width of [1440, 390]) {
     // Stable geometry baseline. Real time/motion remain covered by the tests
     // above; don't replace the clock or freeze server/client time.
     await softGfx(page);
-    await page.addStyleTag({ content: ".pm-count .dt-ring-progress{stroke-dashoffset:.4!important}.pm-count .dt-ring-ticks line{opacity:.1!important}.pm-screen{animation:none!important}" });
+    await page.addStyleTag({ content: ".pm-stage{--pm-digit-x:0px!important;--pm-digit-y:0px!important;--pm-digit-tilt:0deg!important}.pm-count .dt-ring-progress{stroke-dashoffset:.4!important}.pm-count .dt-ring-ticks line{opacity:.1!important}.pm-screen{animation:none!important}" });
     await expect(page.locator(".pm-screen")).toHaveScreenshot(`premiere-fluid-${width}.png`, { mask: [page.locator(".dt-count-core")], animations: "disabled" });
   });
 }

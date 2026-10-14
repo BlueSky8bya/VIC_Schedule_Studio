@@ -5,6 +5,7 @@ import { FLIP_SPRING } from "@/lib/ui/flip-motion";
 import { subscribeClock, syncedNow } from "@/lib/ui/synced-clock";
 import { lateCardDeparture, passage, planCardDepartures, REGION_WINDOWS, type CardDeparture } from "@/lib/ui/premiere/choreography";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
+import { premiereFocusMotion } from "@/lib/ui/premiere/focus-motion";
 
 export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, root: RefObject<HTMLDivElement | null>, exit: RefObject<HTMLButtonElement | null>, stage: RefObject<HTMLDivElement | null>, previousFocus: RefObject<HTMLElement | null>) {
   const latest = useRef(frame); latest.current = frame;
@@ -55,6 +56,17 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       const seconds = returning ? Infinity : (current.target - syncedNow()) / 1000;
       stage.current?.style.setProperty("--pm-progress", String(Math.max(0, Math.min(1, 1 - seconds / 180))));
       stage.current?.style.setProperty("--pm-ring-offset", String(1 - Math.max(0, Math.min(1, seconds / 60))));
+      const motion = premiereFocusMotion(seconds * 1000);
+      const finale = current.phase === "reveal" ? 0 : motion.retreat;
+      const grade = stage.current?.dataset.gfx;
+      const drift = grade === "off" ? 0 : grade === "soft" || grade === "lite" ? .45 : 1;
+      for (const [key, value] of Object.entries({ "--pm-digit-x": `${motion.x * drift}px`, "--pm-digit-y": `${motion.y * drift}px`, "--pm-digit-tilt": `${motion.tilt * drift}deg`, "--pm-final": String(finale) })) stage.current?.style.setProperty(key, value);
+      for (const el of stage.current?.querySelectorAll<HTMLElement>("[data-pm-retreat]") ?? []) {
+        const hidden = finale > .8;
+        if (hidden && el.contains(document.activeElement)) exit.current?.focus({ preventScroll: true });
+        el.inert = hidden;
+        if (hidden) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");
+      }
       page.dataset.premiere = current.phase;
       page.style.setProperty("--pm-focus", String(passage(seconds, 180, 76)));
       const yieldPanel = passage(seconds, 138, 124);

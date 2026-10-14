@@ -448,25 +448,43 @@ export function StudioShell({
       pendingRef.current ||
       pendingPersistRef.current > 0 ||
       inflightWritesRef.current.size > 0;
+    // Explicit entry owns the post-flush request. The cold-entry effect must
+    // not race it with a pre-flush snapshot and a second RSC response.
+    coldPreviewFetchedRef.current = true;
+    setPreviewReady(false);
+    viewerModeRef.current = true;
     setViewerMode(true);
     // 눌러두기는 **누른 즉시** 시작한다 — flush가 끝난 뒤에 켜면 그 사이(가장 오래 stale인 구간)를
     // 또렷하게 그려버려 결국 같은 깜빡임이 남는다.
     if (needsRefresh) setPreviewWarming(true);
     void (async () => {
-      await flushPendingWrites();
-      if (needsRefresh) {
-        router.refresh();
-        editedSinceSyncRef.current = false;
-      }
+      try {
+        await flushPendingWrites();
+        if (needsRefresh) {
+          editedSinceSyncRef.current = false;
+          // The public snapshot below refreshes this viewer. A full studio
+          // route refresh belongs after leaving it, so it cannot restart a show.
+          if (viewerModeRef.current) previewStudioRefreshRef.current = true;
+          else router.refresh();
+        }
       // 스냅샷은 **쓰기가 끝난 뒤에** 받는다. 예전엔 viewerMode 변화만 보고 곧바로 받아서,
       // 방금 누른 저장이 아직 날아가는 중인 스냅샷(= 저장 전 상태)이 잡혔다. 그 stale 값이
       // previewSnapshot에 눌러앉아 router.refresh()가 가져온 새 데이터까지 가려, 몇 초 기다리거나
       // 편집실을 나갔다 다시 들어와야 반영됐다(2026-08-04 실측).
-      void refreshPreviewSnapshot(needsRefresh);
-    })();
+      } finally {
+        await refreshPreviewSnapshot(needsRefresh);
+      }
+    })().catch(() => { /* Write queue owns persistence errors; public snapshot remains fail-safe. */ });
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(initialViewerMode);
+  const viewerModeRef = useRef(viewerMode); viewerModeRef.current = viewerMode;
+  const previewStudioRefreshRef = useRef(false);
+  useEffect(() => {
+    if (viewerMode || !previewStudioRefreshRef.current) return;
+    previewStudioRefreshRef.current = false;
+    router.refresh();
+  }, [viewerMode, router]);
   // 좁은 화면(<1000px, P1-IPAD-1): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
   // 아이패드 세로(768)·스플릿뷰도 압축 데스크톱 대신 터치 네이티브 아젠다를 받는다(L4).
   const [isNarrow, setIsNarrow] = useState(initialNarrow);
@@ -1992,6 +2010,7 @@ export function StudioShell({
   // P0-SEC-2: 미리보기를 열 때마다 신선한 서버 공개 스냅샷을 받아온다(떡밥 가림 포함,
   // 낙관적 재가공 금지). 실패하면 페이지 로드 시점 스냅샷(viewerModePreview)으로 동작.
   const [previewSnapshot, setPreviewSnapshot] = useState<PublicSchedule | null>(null);
+  const [previewReady, setPreviewReady] = useState(false);
   // 늦게 도착한 옛 응답이 새 응답을 덮지 않게 하는 순번(요청이 겹칠 수 있다: 진입 + 저장 후 재요청).
   const previewSeqRef = useRef(0);
   // 방금 저장한 내용이 아직 안 실린 스냅샷을 보고 있는 동안 참을 유지한다(살짝 눌러 그린다).
@@ -2006,7 +2025,7 @@ export function StudioShell({
     } catch {
       /* 실패 시 기존 스냅샷 유지 */
     } finally {
-      if (seq === previewSeqRef.current) setPreviewWarming(false);
+      if (seq === previewSeqRef.current) { setPreviewWarming(false); setPreviewReady(true); }
     }
   }, []);
   // 차가운 진입(북마크·쿠키 복원 등 enterViewerMode를 안 거친 경로)만 여기서 받는다.
@@ -7077,6 +7096,7 @@ export function StudioShell({
           initialYear={view.year}
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
+          premiereEnabled={previewReady}
           canRehearsePremiere={actor.role === "developer" && effectiveRole === "developer"}
           schedule={previewSchedule}
           // 생일 캡슐 뽑기(2026-10-06 소유자 개정): 지금은 **개발자가 토글을 켰을 때만**, 개발자의 시청자 미리보기에서 날짜 상관없이.

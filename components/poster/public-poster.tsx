@@ -340,10 +340,11 @@ function recordHeartDelta(owner: string, id: string, on: boolean) {
 
 // 떡밥 카드의 "공개까지" 카운트다운. 매초 갱신, 0이 되면 onReveal()로 서버 데이터를 새로 받아
 // 가려진 제목이 드러나게 한다. SSR/CSR 시간차 hydration 경고를 피하려 마운트 전엔 ⏳만 보인다.
-function TeaserCountdown({ revealAt }: { revealAt: string }) {
+function TeaserCountdown({ revealAt, quiet = false }: { revealAt: string; quiet?: boolean }) {
   const target = Date.parse(revealAt);
   const s0 = useRemainSeconds(Number.isNaN(target) ? null : target);
   const hostRef = useRef<HTMLSpanElement | null>(null);
+  if (quiet) return <span className="teaser-count teaser-count-quiet">최초공개</span>;
   if (Number.isNaN(target)) return null;
   if (s0 === null) return <span className="teaser-count" ref={hostRef}>⏳</span>;
   const s = s0;
@@ -3091,9 +3092,7 @@ export function PublicPoster({
                       {event.isTentative ? <span className="sr-only">미정 </span> : null}
                       <p className="teaser-q">???</p>
                       <TeaserCountdown
-
-
-
+                        quiet={agendaDetail?.event.id === event.id}
                         revealAt={event.teaserRevealAt}
                       />
                     </div>
@@ -3639,9 +3638,7 @@ export function PublicPoster({
                             {event.isTentative ? <span className="sr-only">미정 </span> : null}
                             <p className="agenda-title teaser-q">???</p>
                             <TeaserCountdown
-
-
-
+                              quiet={agendaDetail?.event.id === event.id}
                               revealAt={event.teaserRevealAt}
                             />
                           </div>
@@ -4090,6 +4087,7 @@ export function PublicPoster({
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
       <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}
+        detailEventId={agendaDetail?.event.teaser ? agendaDetail.event.id : undefined}
         month={view.month} tags={viewTags} root={posterRootRef} onClose={premiere.close} hoped={myHopeIds}
         onHope={id => { const event = premiere.frame.items.find(item => item.id === id)?.event ?? schedule.events.find(item => item.id === id); if (event) toggleHope(event); }}
         onOtherMonth={() => { const event = schedule.events.find(item => item.teaser && item.teaserRevealAt && Date.parse(item.teaserRevealAt) - syncedNow() <= 180000); if (event) { const [year, month] = event.startsAt.split("-").map(Number); goToMonth({ year, month }); } }} />

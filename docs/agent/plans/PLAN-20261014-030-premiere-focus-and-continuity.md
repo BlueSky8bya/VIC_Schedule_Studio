@@ -1,0 +1,18 @@
+# PLAN-030 — One countdown, stable preview and directed motion
+
+Date: 2026-10-14 KST
+Status: Locally verified; authorized deployment pending
+
+Owner requests implementation of five corrections. Supersedes PLAN-029's rotating departure variants and full-screen shell stretch; keeps shuffled individual slots, T−75 deadline, public DB release boundary, default ON, shared coordinator/clock/FLIP, developer-only rehearsal and 1840px export geometry.
+
+1. Countdown ownership: card normally, detail while it is open, viewport stage when focused. The prelude dock only shows numeric time when the source is outside the viewport and no teaser detail is open; retain a clear exit. Suppressed card shows a short non-numeric label. Preserve basic/OFF behavior.
+2. Preview entry: prevent the cold-entry effect racing the explicit post-flush snapshot request. Fetch one server-sanitized snapshot after queued writes; start automatic premiere only after it settles. Keep PublicPoster mounted while data changes, and defer full studio route refresh until returning to editing. Do not derive viewer DTOs from studio events. Investigate/reproduce with delayed public snapshots and route responses; record real-session limits.
+3. Released title uses existing splitEventTitle semantics (first line main, following lines subtopics). Smaller/lighter subtopics, deliberate spacing/indentation, long-title size tier, readable wrapping and internal scroll. Actual description stays separate. All content remains server-confirmed public data.
+4. Keep randomized order but use short, coherent depth/lateral departures without cartoon rotation. Stage handover carries a source-card face along a restrained translation/scale while the destination shell dissolves in; no multi-axis enlargement of all typography. Reuse flipSpring and transform/opacity only. Missing/off-screen source gets a centered arrival.
+5. T−60…10: bounded aperiodic numeric drift from the existing hype curve/clock. T−10…2: zero drift, progressively retreat ring/ticks, grow numerals and move/fade surrounding labels/hope actions; maintain visible exit and keyboard safety. At 0, pending confirmation remains legible; do not blank the waiting state. Reduced motion/gfx and flash budget stay intact.
+
+References: [Apple fluid interfaces](https://developer.apple.com/videos/play/wwdc2018/803/), [Apple motion](https://developer.apple.com/design/human-interface-guidelines/motion), [Apple typography](https://developer.apple.com/videos/play/wwdc2020/10175/), [Material motion](https://m2.material.io/develop/android/theming/motion). Adapt continuity, emphasis and hierarchy; no copied artwork/new dependency.
+
+Verify single visible countdown in card/detail/dock/stage, delayed snapshot/flush ordering and stable stage instance, long/multiline/indented releases and cohorts on PC/mobile/landscape, restrained handover, 60→10 drift and 10→2 evacuation, waiting/error/OFF/reduced modes, reschedule/delete/hidden tab, privacy canaries and unchanged export geometry. Synthetic fixtures and intercepted writes only. Typecheck/lint/units/build/production-browser checks plus memory harness; commit/push/deploy authorization persists from the ongoing feature request.
+
+Local completion: production-build matrix 71 PASS, two long-outline baselines added/reviewed and independently matched, existing countdown baselines matched; typecheck/lint/build PASS. Relevant units 35 PASS; full suite 1,086 PASS/8 existing failures. Final built main-route synthetic smoke PASS, including mobile outline/quiet final seconds and zero page errors. [Verification](../verification/TEASER_FOCUS-20261014.md) records root causes, corrected harness issues and genuine-session/hardware limits.

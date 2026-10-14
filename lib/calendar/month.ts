@@ -135,10 +135,19 @@ export function getEventDateKey(event: Pick<PublicScheduleEvent, "startsAt">) {
 
 // 제목의 첫 줄 = 상위 주제, 나머지 줄 = 하위 주제.
 export function splitEventTitle(title: string): { main: string; subs: string[] } {
+  const outline = splitEventTitleOutline(title);
+  return { main: outline.main, subs: outline.subs.map(item => item.text) };
+}
+
+// Same first-line/subtopic semantics as calendar cards. Preserve the public
+// indentation for larger reading surfaces, bounded so deep input still wraps.
+export function splitEventTitleOutline(title: string): { main: string; subs: { text: string; depth: number }[] } {
   const lines = title.split("\n");
+  const subs = lines.slice(1).filter(line => line.trim()).map(line => ({ text: line.trim(), indent: (line.match(/^\s*/)?.[0] ?? "").replace(/\t/g, "  ").length }));
+  const levels = [...new Set(subs.map(item => item.indent))].sort((a, b) => a - b);
   return {
     main: lines[0] ?? "",
-    subs: lines.slice(1).map((l) => l.trim()).filter((l) => l.length > 0)
+    subs: subs.map(item => ({ text: item.text, depth: Math.min(3, levels.indexOf(item.indent)) }))
   };
 }
 

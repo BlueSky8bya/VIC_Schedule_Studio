@@ -11,6 +11,7 @@ import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { isBiomeKey } from "@/components/shared/ambient/world/biomes";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 import { tentativeFixtureEvents } from "../tentative-events";
+import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 
 // 비주얼/E2E 테스트 전용 fixture — 고정 샘플 데이터로 편집실 셸을 렌더한다(인증·DB 없이).
 // 오버레이 스택(시청자 미리보기 → '이 달 기록' 시트) 회귀를 브라우저에서 실측하기 위한 페이지.
@@ -20,12 +21,19 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
   const sp = await searchParams;
+  const premiereSeconds = Number(sp?.premiere);
+  const at = Date.now();
+  const teaser = premiereSeconds > 0 ? buildPremiereFixture(at, [premiereSeconds], at).entries[0].event : null;
+  const premiereSchedule = teaser ? { ...sampleStudioSchedule,
+    events: [...sampleStudioSchedule.events, { ...teaser, publicTitle: "STUDIO_ONLY_PREMIERE_CANARY" }],
+    viewerModePreview: { ...sampleStudioSchedule.viewerModePreview, events: [...sampleStudioSchedule.viewerModePreview.events, teaser] }
+  } : null;
   const viewer = sp?.viewer === "1";
   // 역할별 화면 회귀 검증용(developer/owner — 매니저 철수 2026-09-04). viewer는 (studio) 가드 대상이라 제외.
   const role = sp?.role === "developer" ? sp.role : "owner";
@@ -53,6 +61,7 @@ export default async function VisualStudioFixture({
       }}
       hasUnlockSession={false}
       schedule={
+        premiereSchedule ?? (
         // chain=1 → 6/8·6/9·6/10에 이어진 일정 셋(linkNext) 주입 — 체인 선택 링·이음변 회귀 실측용(2026-09-27).
         sp?.chain === "1"
           ? {
@@ -97,7 +106,7 @@ export default async function VisualStudioFixture({
             : sp?.gift === "1"
               ? // gift=1 → 생일 선물 미리보기 토글 켠 상태(0141) — 캡슐 뽑기 창 검증용(2026-10-06).
                 { ...sampleStudioSchedule, birthdayGiftPreview: true }
-              : sampleStudioSchedule
+              : sampleStudioSchedule)
       }
       initialView={{ year: y, month: m }}
       initialViewerMode={viewer}
