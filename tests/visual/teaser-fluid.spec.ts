@@ -206,7 +206,7 @@ test("large countdown, hope feedback and final calm keep conveying progress", as
   await page.getByRole("button", { name: "기대돼요", exact: true }).click();
   await expect(page.getByRole("button", { name: "함께 기다리는 중", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".pm-wish")).toHaveCount(1);
-  await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "delighted");
+  await expect(page.locator(".pm-wish-photo")).toHaveAttribute("data-visible", "");
   await expect(page.locator(".pm-stage")).toHaveClass(/pm-hoped/);
   await expect.poll(async () => Number(await page.locator(".dt-count-core strong").textContent())).toBeLessThan(before);
   await expect(page.locator(".pm-particle,.pm-orbit,.pm-lightstick")).toHaveCount(0);

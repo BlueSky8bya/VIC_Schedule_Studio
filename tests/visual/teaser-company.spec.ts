@@ -30,24 +30,24 @@ for (const width of [1440, 390]) {
       expect(f.width).toBeGreaterThanOrEqual(44); expect(f.height).toBeGreaterThanOrEqual(44);
     }
     await hope.click();
-    await expect(page.locator('.pm-host[data-reaction="delighted"]')).toBeVisible();
-    await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "delighted");
-    await expect(page.locator(".pm-photo-layer[data-visible]")).toHaveAttribute("src", "/premiere/tori-photo-delighted.webp");
+    await expect(page.locator(".pm-wish-photo")).toHaveAttribute("data-visible", "");
+    await expect(page.locator(".pm-wish-photo")).toHaveAttribute("data-visible", "");
+    await expect(page.locator(".pm-wish-photo")).toHaveAttribute("src", "/premiere/victory-wish.webp");
     await page.waitForTimeout(2300);
-    await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "delighted");
+    await expect(page.locator(".pm-wish-photo")).toHaveAttribute("data-visible", "");
     await expect(page.getByRole("timer")).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
 
-test("hope undo keeps the original contempt photograph and one countdown", async ({ page }) => {
+test("hope undo quietly removes the original backdrop and keeps one countdown", async ({ page }) => {
   await page.goto("/visual-fixture/poster?premiere=40");
   await page.getByRole("button", { name: "기대돼요", exact: true }).click();
   await page.getByRole("button", { name: "함께 기다리는 중", exact: true }).click();
-  await expect(page.locator('.pm-host[data-reaction="unimpressed"]')).toBeVisible();
-  await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "unimpressed");
+  await expect(page.locator(".pm-wish-photo")).not.toHaveAttribute("data-visible");
+  await expect(page.locator(".pm-wish-photo")).not.toHaveAttribute("data-visible");
   await page.waitForTimeout(1800);
-  await expect(page.locator(".pm-photo-layer[data-visible]")).toHaveAttribute("src", "/premiere/tori-photo-unimpressed.webp");
+  await expect(page.locator(".pm-wish-photo")).toHaveCSS("opacity", "0");
   await expect(page.getByRole("timer")).toHaveCount(1);
 });
 

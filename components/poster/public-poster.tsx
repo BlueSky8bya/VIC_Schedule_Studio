@@ -460,16 +460,6 @@ function resolveTeaserView(
   return { ...cached, hopeCount: cached.hopeCount ?? raw.hopeCount };
 }
 
-// 링 아래 캡션용 — 시각만. 날짜는 팝오버 머리글이 이미 말하고 있어 다시 쓰면 중복이다.
-function formatRevealClockKst(iso: string): string {
-  const t = new Date(Date.parse(iso) + 9 * 3_600_000);
-  const hh = t.getUTCHours();
-  const h12 = hh % 12 === 0 ? 12 : hh % 12;
-  const mm = t.getUTCMinutes();
-  // '공개'는 바로 위 라벨("최초공개까지")이 이미 말한다 — 캡션은 시각만 말한다.
-  return `${hh < 12 ? "오전" : "오후"} ${h12}시${mm ? ` ${String(mm).padStart(2, "0")}분` : ""}`;
-}
-
 // 공개 시각을 사람이 읽는 KST로 — 팝오버 전용 정보(카드에는 카운트다운만 → 중복 없음).
 function formatRevealKst(iso: string): string {
   const t = new Date(Date.parse(iso) + 9 * 3_600_000);
@@ -4200,6 +4190,10 @@ export function PublicPoster({
               teaserActive && detailRemainS !== null && detailRemainS <= HYPE_EMERGE_S;
             const detailPill =
               teaserActive && (detailRemainS === null || detailRemainS > HYPE_WINDOW_S - 2);
+            // Shared clock drives this reversible 185→180s fold; no extra timer.
+            // The actual row collapses, so the hope button follows without a gap.
+            const noticeRemain = detailRemainS ?? (event.teaserRevealAt ? Math.ceil((Date.parse(event.teaserRevealAt) - syncedNow()) / 1000) : Infinity);
+            const detailNotice = Math.max(0, Math.min(1, (noticeRemain - 180) / 5));
             // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
             const pos = anchor ? detailManual ?? detailPos : null;
             // 업도움은 띠와 같은 초록 계열로 액센트·선 색을 통일(카드 ↔ 띠 조화).
@@ -4503,12 +4497,13 @@ export function PublicPoster({
                       {/* 1분 안쪽 = 팝오버가 '카운트다운 무대'가 된다(계획 안 B: 링 진행률 +
                           중앙 대형 숫자). 링은 물리 시간(60→0)을, 글로우·크기는 강도 곡선을
                           따르므로 정보와 감정이 분리된다. 그 밖에는 공개 시각 알약. */}
-                      {detailRing && detailRemainS !== null ? <><TeaserStageContent revealAt={event.teaserRevealAt} /><p className="dt-count-when">{formatRevealClockKst(event.teaserRevealAt)}</p></> : null}
+                      {detailRing && detailRemainS !== null ? <TeaserStageContent revealAt={event.teaserRevealAt} /> : null}
                       {detailPill ? (
                         <>
                           {/* 편집실 게이트 카드와 같은 큰 카운트다운(2026-09-27 소유자: "텍스트만 있어 보는
                               재미가 없다"). 1분 안쪽은 위 링 무대가 대신한다. */}
                           <TeaserBigCountdown revealAt={event.teaserRevealAt} />
+                          <div className="dt-reveal-notice" aria-hidden={detailNotice === 0 || undefined} style={{ "--dt-notice": detailNotice, "--dt-notice-row": `${detailNotice}fr` } as CSSProperties}><div>
                           <p className="dt-when">
                             <span aria-hidden="true" className="dt-orb">
                               🔮
@@ -4516,6 +4511,7 @@ export function PublicPoster({
                             <b>{formatRevealKst(event.teaserRevealAt)}</b>
                             <em>공개</em>
                           </p>
+                          </div></div>
                         </>
                       ) : null}
                       <button

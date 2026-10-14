@@ -4119,6 +4119,11 @@ html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title 
 .detail-teaser > .dt-hope {
   margin-top: 8px;
 }
+/* A small detail row deliberately changes layout, so the action reclaims the
+   removed caption's space. The poster canvas itself never changes geometry. */
+.dt-reveal-notice { display: grid; grid-template-rows: var(--dt-notice-row, 1fr); opacity: var(--dt-notice, 1); transition: grid-template-rows .95s linear, opacity .95s linear; }
+.dt-reveal-notice > div { min-height: 0; overflow: hidden; }
+html[data-reduce-motion] .dt-reveal-notice { transition: none; }
 .detail-teaser .dt-when {
   display: inline-flex;
   align-items: center;

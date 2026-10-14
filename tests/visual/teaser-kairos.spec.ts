@@ -6,12 +6,12 @@ test.beforeEach(async ({ context }) => {
 });
 
 for (const width of [1440, 390]) {
-  test(`one familiar host frames one truthful clock at ${width}px`, async ({ page }) => {
+  test(`the audience frames one truthful clock without a corner portrait at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await page.goto("/visual-fixture/poster?premiere=40");
-    const portrait = page.locator(".pm-host .pm-photo-layer[data-visible]");
-    await expect(portrait).toBeVisible();
-    await expect.poll(() => portrait.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBe(320);
+    const portrait = page.locator(".pm-wish-photo");
+    await expect(page.locator(".pm-host")).toHaveCount(0);
+    await expect.poll(() => portrait.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBe(1536);
     await expect(page.getByRole("timer")).toHaveCount(1);
     await expect(page.locator(".pm-light-field, .pm-count canvas")).toHaveCount(0);
     await expect(page.locator(".pm-scene")).toHaveAttribute("aria-hidden", "true");
@@ -64,18 +64,18 @@ test("a voluntary hope has a short local response without moving the clock", asy
   const before = await clock.boundingBox();
   await page.getByRole("button", { name: "기대돼요", exact: true }).click();
   await expect(page.locator(".pm-wish")).toHaveCount(1);
-  await expect(page.locator(".pm-photo-content")).toHaveAttribute("data-expression", "delighted");
+  await expect(page.locator(".pm-wish-photo")).toHaveAttribute("data-visible", "");
   const after = await clock.boundingBox();
   expect(Math.abs(after!.width - before!.width)).toBeLessThan(1);
   expect(Math.abs(after!.y - before!.y)).toBeLessThan(6); // bounded existing digit texture
   await expect.poll(() => page.locator(".pm-wish span").evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.01);
 });
 
-test("the last seconds retire the host and stop the folds while the clock stays alive", async ({ page }) => {
+test("the last seconds retire the backdrop and stop the folds while the clock stays alive", async ({ page }) => {
   await page.goto("/visual-fixture/poster?premiere=10");
   const stage = page.locator(".pm-stage");
   await expect.poll(() => stage.evaluate(el => (el as HTMLElement).style.getPropertyValue("--pm-fold-drift"))).toBe("0px");
-  await expect.poll(() => page.locator(".pm-host").evaluate(el => Number(getComputedStyle(el).opacity)), { timeout: 9000 }).toBeLessThan(.05);
+  await expect.poll(() => page.locator(".pm-wish-backdrop").evaluate(el => Number(getComputedStyle(el).opacity)), { timeout: 9000 }).toBeLessThan(.05);
   await expect(page.locator(".pm-heading")).toHaveAttribute("inert");
   const before = await page.getByRole("timer").textContent();
   await expect.poll(() => page.getByRole("timer").textContent(), { timeout: 2200 }).not.toBe(before);
@@ -89,7 +89,7 @@ test("zero without server publication never starts the opening celebration", asy
   await expect(page.locator(".pm-count")).toContainText("공개 확인 중");
   await expect(page.locator(".pm-count .dt-count-label")).toBeVisible();
   await expect(page.locator(".pm-bang, .pm-screen.is-released")).toHaveCount(0);
-  expect(await page.locator(".pm-host").evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.01);
+  expect(await page.locator(".pm-wish-backdrop").evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.01);
 });
 
 test("a forward server-clock correction cannot compress actual visible flash intervals", async ({ page }) => {

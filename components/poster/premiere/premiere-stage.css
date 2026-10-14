@@ -144,16 +144,9 @@
 .pm-folds { position: absolute; inset: 0; opacity: calc(1 - var(--pm-company-retire, 0)); transition: opacity .2s linear; }
 .pm-folds i { position: absolute; width: 78%; height: 160%; top: -42%; left: -56%; border: 1px solid color-mix(in srgb, var(--pm-season) 24%, transparent); border-radius: 48%; background: linear-gradient(110deg, color-mix(in srgb, var(--pm-violet) 12%, transparent), transparent 60%); transform: translate3d(calc(var(--pm-gather, 0) * 52px), var(--pm-fold-drift, 0px), 0) rotate(-24deg); transition: transform .12s linear; }
 .pm-folds i:nth-child(2) { left: auto; right: -56%; top: -18%; transform: translate3d(calc(var(--pm-gather, 0) * -52px), calc(var(--pm-fold-drift, 0px) * -1), 0) rotate(24deg); }
-.pm-host { position: absolute; right: 0; bottom: 0; height: 100%; width: auto; max-width: 144px; aspect-ratio: 4 / 5; opacity: calc((1 - var(--pm-company-retire, 0)) * .9); transform: translate3d(calc(var(--pm-gather, 0) * -8px), calc(var(--pm-company-retire, 0) * 60px), 0); transition: opacity .2s linear, transform .2s linear; }
-.pm-photo-content { position: relative; height: 100%; overflow: hidden; border-radius: var(--r-xl); background: rgb(var(--glass-panel)); box-shadow: var(--elev-1); }
-.pm-photo-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
-.pm-photo-layer[data-visible] { opacity: 1; }
-.pm-host::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(ellipse, color-mix(in srgb, var(--teaser) 28%, transparent), transparent 66%); opacity: 0; transition: opacity .45s ease; }
-.pm-host[data-reaction="delighted"]::before { opacity: .8; }
-.pm-host img { display: block; width: 100%; height: 100%; }
 .pm-cast-row { position: relative; z-index: 2; height: clamp(120px, 18dvh, 180px); margin-top: 24px; pointer-events: none; }
 .pm-company { position: absolute; inset: 0; opacity: calc(.94 - var(--pm-company-retire, 0) * .7); transition: opacity .2s linear; }
-.pm-audience-line { position: absolute; bottom: 6px; left: 3%; width: 72%; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--teaser) 18%, transparent), transparent); opacity: calc(1 - var(--pm-company-retire, 0)); }
+.pm-audience-line { position: absolute; bottom: 6px; left: 3%; width: 94%; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--teaser) 18%, transparent), transparent); opacity: calc(1 - var(--pm-company-retire, 0)); }
 .pm-stage .pm-fan { position: absolute; left: var(--fan-x); bottom: 0; width: clamp(72px, 10vw, 132px); aspect-ratio: 1; min-height: 44px; padding: 0; border: 0; border-radius: var(--r-lg); background: transparent; box-shadow: none; transform: translate3d(calc(-50% + var(--fan-walk-x, 0px)), var(--fan-walk-y, 0px), 0); transition: transform .1s linear; cursor: pointer; }
 .pm-stage .pm-fan:active { transform: translate3d(calc(-50% + var(--fan-walk-x, 0px)), var(--fan-walk-y, 0px), 0); }
 .pm-fan-art { position: relative; overflow: hidden; display: block; width: 100%; aspect-ratio: 1; transform: translateY(var(--fan-hop, 0px)) scale(calc(var(--fan-size) * var(--fan-depth, 1))); transform-origin: center bottom; transition: transform .1s linear; }
@@ -164,7 +157,7 @@
 .pm-stage .pm-fan[inert] { cursor: default; }
 .pm-stage[data-pm-seated] :is(.pm-fan, .pm-fan-art) { transition: none; }
 /* Hard quiet boundary after a smooth retirement. Exit stays available. */
-.pm-stage[data-pm-quiet] :is(.pm-scene, .pm-host, [data-pm-retreat]) { visibility: hidden; }
+.pm-stage[data-pm-quiet] :is(.pm-scene, [data-pm-retreat]) { visibility: hidden; }
 .pm-stage[data-pm-quiet] .pm-company { pointer-events: none; }
 .pm-stage[data-pm-quiet]:not(.pm-phase-waiting) .dt-count-label { visibility: hidden; }
 .pm-stage.pm-phase-waiting .pm-count .dt-count-label { visibility: visible; opacity: 1; transform: none; }
@@ -263,10 +256,9 @@
   .pm-heading { font-size: 12px; gap: 10px; }
   .pm-composition { min-height: min(48dvh, 480px); gap: 24px; }
   .pm-count { padding-top: 16px; }
-  .pm-host { max-width: 96px; }
   /* Agenda has less side space: three spectators in its own short front row. */
   .pm-cast-row { height: 116px; margin-top: 16px; }
-  .pm-stage .pm-fan { width: 68px; left: calc(9% + var(--fan-index) * 21%); }
+  .pm-stage .pm-fan { width: 68px; left: calc(16% + var(--fan-index) * 34%); }
   .pm-fan:nth-of-type(n+4) { display: none; }
   .pm-folds i { width: 120%; left: -104%; }
   .pm-folds i:nth-child(2) { right: -104%; }
@@ -293,7 +285,6 @@
   .pm-screen { padding: 18px 28px; max-height: calc(100dvh - 80px); }
   .pm-composition { min-height: 230px; gap: 12px; }
   .pm-count { padding: 0; }
-  .pm-host { max-width: 86px; }
   .pm-cast-row { height: 108px; margin-top: 12px; }
   .pm-count .dt-count-ringbox { width: 155px; height: 155px; }
   .pm-count .dt-count-core { font-size: 94px; }
@@ -312,7 +303,6 @@
   .pm-masked { gap: 4px; }
   .pm-stage .pm-hope { min-width: 0; padding-inline: 12px; }
   .pm-cast-row { height: 70px; margin-top: 8px; }
-  .pm-host { max-width: 60px; }
   .pm-stage .pm-fan { width: 58px; }
   .pm-complete .pm-viewport { padding-top: 64px; }
   .pm-complete .pm-screen { padding: 16px 24px; max-height: calc(100dvh - 88px - env(safe-area-inset-bottom, 0px)); }
@@ -323,8 +313,7 @@
 }
 html[data-reduce-motion] .pm-stage *, html[data-reduce-motion] .poster-page[data-premiere] * { animation: none!important; transition: none!important; }
 .pm-stage:is([data-gfx="soft"], [data-gfx="off"]) :is(.pm-folds, .pm-wish, .pm-flash, .pm-shock) { display: none; }
-.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-company,
-.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-host::before { display: none; }
+.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-company { display: none; }
 .pm-stage[data-gfx="lite"] .pm-fan:nth-of-type(2n) { display: none; }
 .pm-stage[data-gfx="lite"] .pm-folds i:nth-child(2) { display: none; }
 /* Stop the shared legacy presenter too, not a nominal 1ms loop. */
@@ -334,3 +323,13 @@ html[data-reduce-motion] :is(.public-event.teaser, .agenda-item.teaser, .agenda-
 html[data-reduce-motion] :is(.public-event.teaser, .agenda-item.teaser, .agenda-detail-sheet.is-teaser, .just-revealed)::after,
 html[data-reduce-motion] :is(.public-event.teaser, .agenda-item.teaser, .agenda-detail-sheet.is-teaser, .just-revealed) *::before,
 html[data-reduce-motion] :is(.public-event.teaser, .agenda-item.teaser, .agenda-detail-sheet.is-teaser, .just-revealed) *::after { animation: none!important; transition: none!important; }
+
+/* Whole original photograph sits beneath ink; bounded opacity avoids flashes.
+   Independent wrappers compose hope fading with the existing quiet countdown. */
+.pm-wish-backdrop { position: absolute; inset: 5% 0 12%; opacity: calc(1 - var(--pm-company-retire, 0)); transition: opacity .2s linear; }
+/* Mask the image's intrinsic box, not a letterboxed container: all four edges
+   dissolve on tall phones as well as wide screens, without cropping the eyes. */
+.pm-wish-photo { position: absolute; top: 40%; left: 0; width: 100%; height: auto; transform: translateY(-40%); opacity: 0; transition: opacity 1.4s ease; mask-image: linear-gradient(transparent, #000 20%, #000 50%, transparent 95%), linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); mask-composite: intersect; }
+.pm-wish-photo[data-visible] { opacity: .18; }
+.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-wish-photo { transition: none; }
+@media (max-width: 640px) { .pm-wish-backdrop { inset: 14% -12% 24%; } }
