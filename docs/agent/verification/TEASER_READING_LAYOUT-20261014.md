@@ -28,4 +28,6 @@
 
 ## 배포
 
-로컬 구현/검증 완료. 승인된 main 푸시와 운영 SHA·3개 화면 검증 대기.
+제품 커밋 `0d7e9b2b09de27790140b67b4b4ad77d185faec4` main 푸시, [Vercel 성공](https://vercel.com/bluesky-s-project3/vic-schedule-studio/G7UzXbiCNKzwn7zchXExGgGdxs5w) 및 운영 `/api/soop-live` build SHA 일치를 확인했다.
+
+[운영 사이트](https://vic-schedule-studio.vercel.app)에서 PC1100×780(CookieRun)/agenda390×844/가로844×390 실제 시청자 경로도 통과했다. 합성 과거 달 공개 응답/모든 브라우저 POST 차단 조건이며, 공개 전 무제목→공개 결과(태그8개·본문 완전 표시)→4.2초 이후 유지→상세 보기→Escape 복원 순서다. 각 context 스크린 추가 스크롤0/콘솔 예외0/서버 전송 POST0(1건씩 차단). 실제 DB 시험 데이터 생성 없음.
