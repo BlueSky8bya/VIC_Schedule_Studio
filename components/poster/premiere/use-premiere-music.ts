@@ -3,12 +3,19 @@
 import { useEffect } from "react";
 import { startPremiereMusic, soundEnabled, soundCats, soundVolume, type PremiereMusic } from "@/lib/ui/sfx";
 import { subscribeClock, syncedNow } from "@/lib/ui/synced-clock";
+import { pickPremiereTrack } from "@/lib/ui/premiere/music";
+
+let previousTrack: string | undefined;
 
 /** Default-on through the master bus. One blocked attempt waits for input;
  * the shared clock never becomes an autoplay retry loop. */
 export function usePremiereMusic(active: boolean, target: number) {
   useEffect(() => {
     if (!active) return;
+    // One choice per opening/target. Visibility, settings and autoplay retries
+    // keep the same score; no persistence or server call is needed.
+    const track = pickPremiereTrack(previousTrack);
+    previousTrack = track.id;
     let music: PremiereMusic | null = null, attempted = false, listening = false;
     const eligible = () => !document.hidden && target - syncedNow() > 10500 && target - syncedNow() <= 68000
       && ("AudioContext" in window || "webkitAudioContext" in window) && soundEnabled() && soundCats().celebrate && soundVolume() > 0;
@@ -20,7 +27,7 @@ export function usePremiereMusic(active: boolean, target: number) {
       else { document.removeEventListener("pointerdown", gesture); document.removeEventListener("keydown", gesture); }
     };
     const start = () => {
-      attempted = true; stop(); music = startPremiereMusic();
+      attempted = true; stop(); music = startPremiereMusic(track);
       if (music && !music.update(target - syncedNow())) stop();
     };
     function gesture(event: Event) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { premiereAudienceFrame, premiereAudienceSeat, premiereCompany, premiereScore } from "@/lib/ui/premiere/company";
+import { premiereAudienceFrame, premiereAudienceSeat, premiereCompany } from "@/lib/ui/premiere/company";
 
 describe("premiere company and original score", () => {
   it("retires host/controls and silences music before the ten-second boundary", () => {
@@ -9,7 +9,6 @@ describe("premiere company and original score", () => {
     for (const ms of [10500, 10000, 9000, 0, -1000]) {
       const company = premiereCompany(ms);
       expect(company.retire).toBe(1); expect(company.strength).toBe(0);
-      expect(premiereScore(ms)).toBeNull();
     }
   });
   it("plays actual cheer frames, omits reversed ears, then settles to an immutable watching pose", () => {
@@ -21,18 +20,6 @@ describe("premiere company and original score", () => {
     expect(premiereAudienceFrame(40000, 0, 0)).toBe(0);
     expect(premiereAudienceFrame(40000, 0, 400)).toBe(4);
     expect(premiereAudienceFrame(NaN, 0)).toBe(15);
-  });
-  it("bounds every original note and its release before silence, including a late arrival", () => {
-    for (let ms = 68000; ms > 10500; ms -= 137) {
-      const score = premiereScore(ms)!;
-      expect(score.duration).toBeGreaterThan(0);
-      expect(score.duration * 1000).toBeLessThanOrEqual(ms - 10500 + .001);
-      expect(score.level).toBeGreaterThanOrEqual(0); expect(score.level).toBeLessThanOrEqual(.13);
-      expect(score.beat).toBeGreaterThanOrEqual(0);
-    }
-    expect(premiereScore(Infinity)).toBeNull(); expect(premiereScore(NaN)).toBeNull();
-    expect(premiereScore(68001)).toBeNull();
-    expect(premiereScore(30000)!.beat).toBeGreaterThan(premiereScore(40000)!.beat);
   });
   it("gathers each spectator once after turning, with a fixed seated position before eight", () => {
     for (let index = 0; index < 6; index++) {

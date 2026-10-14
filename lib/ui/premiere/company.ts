@@ -35,18 +35,3 @@ export function premiereAudienceSeat(remainMs: number, index: number, lite = fal
   const step = Math.sin(Math.PI * progress) * Math.sin(progress * Math.PI * 4) * (lite ? .5 : 1.25);
   return { progress, y: -progress * (lite ? 3 : 6) + step, depth: 1 - progress * .14 };
 }
-
-/** Original pentatonic ostinato, written here: no recording, sampled melody or
- * YouTube countdown audio. Density grows, loudness stays bounded; silence first. */
-export function premiereScore(remainMs: number) {
-  const seconds = remainMs / 1000;
-  if (!Number.isFinite(seconds) || seconds <= 10.5 || seconds > 68) return null;
-  const elapsed = 68 - seconds;
-  // Continuous beat phase: 0.9 → 1.7 beats/sec, no tempo staircase.
-  const phase = elapsed * .9 + elapsed * elapsed * .007;
-  const beat = Math.floor(phase);
-  const motif = [0, 7, 12, 16, 7, 19, 12, 7];
-  return { beat, semi: motif[beat % motif.length], bass: beat % 4 === 0,
-    level: .13 * (1 - passage(seconds, 15, 10.5)),
-    duration: Math.min(.42, Math.max(0, seconds - 10.5)) };
-}

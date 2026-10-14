@@ -10,6 +10,18 @@ test.beforeEach(async ({ context }) => {
 });
 const trace = (page: Page) => page.evaluate(() => (window as typeof window & { __sfxTrace: string[] }).__sfxTrace.filter(name => name === "premiere-music").length);
 const unlock = (page: Page) => page.locator(".pm-count").click();
+const tracks = (page: Page) => page.evaluate(() => (window as typeof window & { __sfxTrace: string[] }).__sfxTrace.filter(name => name.startsWith("premiere-track:")));
+
+test("each new opening picks a different score without adding music controls", async ({ page }) => {
+  await page.goto("/visual-fixture/poster?premiere=50"); await unlock(page);
+  await expect.poll(async () => (await tracks(page)).length).toBe(1);
+  const first = (await tracks(page))[0];
+  await page.getByRole("button", { name: "일정표 보기", exact: true }).click();
+  await page.getByRole("button", { name: "최초공개 다시 보기", exact: true }).click();
+  await expect.poll(async () => (await tracks(page)).length).toBe(2);
+  expect((await tracks(page))[1]).not.toBe(first);
+  await expect(page.getByRole("button", { name: /음악/ })).toHaveCount(0);
+});
 
 for (const width of [1440, 390]) {
   test(`drawn audience animates without covering hope controls at ${width}px`, async ({ page }) => {
@@ -68,7 +80,7 @@ test("default music follows master volume, mute/category and exit", async ({ pag
   });
   await page.goto("/visual-fixture/poster?premiere=40"); await unlock(page);
   await expect.poll(() => trace(page)).toBeGreaterThan(1);
-  expect(await page.evaluate(() => (window as typeof window & { __gainValues: number[] }).__gainValues.some(value => Math.abs(value - Math.pow(.25, 1.6) * .8) < .00001))).toBe(true);
+  expect(await page.evaluate(() => (window as typeof window & { __gainValues: number[] }).__gainValues.some(value => Math.abs(value - Math.pow(.25, 1.6) * .55) < .00001))).toBe(true);
   for (const setting of ["mute", "zero", "category"]) {
     await page.evaluate(key => {
       localStorage.setItem("vic.sound", key === "mute" ? "off" : "on");
@@ -126,10 +138,12 @@ test("hidden return and a changed deadline start fresh default sessions", async 
   });
   await page.goto("/visual-fixture/poster?premiere=35"); await unlock(page);
   await expect.poll(() => trace(page)).toBeGreaterThan(0);
+  const firstTrack = (await tracks(page))[0];
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); });
   const hidden = await trace(page); await page.waitForTimeout(900); expect(await trace(page)).toBe(hidden);
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
   await expect.poll(() => trace(page)).toBeGreaterThan(hidden);
+  expect(new Set(await tracks(page))).toEqual(new Set([firstTrack]));
   const oldTarget = await page.locator(".pm-stage").getAttribute("data-teaser-at");
   postpone = true;
   await expect.poll(() => page.locator(".pm-stage").getAttribute("data-teaser-at")).not.toBe(oldTarget);
