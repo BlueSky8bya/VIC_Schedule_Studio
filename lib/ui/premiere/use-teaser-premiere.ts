@@ -136,7 +136,9 @@ export function useTeaserPremiere(options: Options) {
       const gone = reconcileTeaserReveal(asked ? [asked] : [], { ok: snapshot.ok, events: snapshot.entries.map(entry => entry.event) }).goneIds;
       for (const id of gone) records.current.delete(id);
       if (!fixture?.rehearsal) latest.current.onEvents(updates, gone);
-      if (newReveals.length) setJustRevealed(previous => new Set([...previous, ...newReveals]));
+      // The full stage owns this reveal. A second card shockwave behind it
+      // caused duplicate flashes and mobile document overflow during publication.
+      if (newReveals.length && !frameRef.current.focused && frameRef.current.phase !== "return") setJustRevealed(previous => new Set([...previous, ...newReveals]));
     };
     const poll = async () => {
       clearTimeout(timer);

@@ -16,8 +16,8 @@ export function buildPremiereFixture(startedAt: number, offsets: number[], now: 
     const masked = scenario === "immediate" && now >= original - 1800 ? false : now < target + delay;
     const event: PublicScheduleEvent = {
       id, startsAt: masked ? "2026-06-18T00:00:00+09:00" : "2026-06-18T20:30:00+09:00",
-      isAllDay: masked, isTentative: false, publicTitle: masked ? "" : `${PREMIERE_CANARY} ${i + 1}`,
-      publicDescription: masked ? undefined : "기다려 준 마음에 새로운 이야기가 도착했어요.",
+      isAllDay: masked, isTentative: false, publicTitle: masked ? "" : scenario === "sparse" ? "새로운 시작" : scenario === "long" ? "별빛 우체국에서 보내는 첫 번째 편지 — 오래 기다린 우리들의 새로운 이야기와 아주 특별한 하루" : `${PREMIERE_CANARY} ${i + 1}`,
+      publicDescription: masked || scenario === "sparse" ? undefined : scenario === "long" ? Array.from({ length: 12 }, (_, n) => `${n + 1}. 오랫동안 기다린 만남을 준비했어요. 함께 새로운 이야기를 시작해요.`).join("\n") : "기다려 준 마음에 새로운 이야기가 도착했어요.",
       status: "scheduled", visibilityScope: "public", category: "stream", sortOrder: i,
       tagIds: [], primaryTagIds: [], teaser: masked || undefined,
       teaserRevealAt: masked ? new Date(target).toISOString() : undefined

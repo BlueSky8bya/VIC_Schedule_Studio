@@ -22,7 +22,7 @@ export function ScrambleText({ text }: { text: string }) {
   return <><span className="sr-only">{text}</span><span aria-hidden="true" className="scramble-locked">{text.slice(0, locked)}</span><span aria-hidden="true" className="scramble-rest">{Array.from({ length: 8 }, (_, index) => pool[(step * 3 + index * 7) % pool.length]).join("")}</span></>;
 }
 
-export function TeaserStageContent({ revealAt }: { revealAt: string }) {
+export function TeaserStageContent({ revealAt, presentation = "detail" }: { revealAt: string; presentation?: "detail" | "premiere" }) {
   const remain = useRemainSeconds(Date.parse(revealAt));
   const id = useId();
   const progress = Math.max(0, Math.min(1, (remain ?? 60) / 60));
@@ -36,8 +36,8 @@ export function TeaserStageContent({ revealAt }: { revealAt: string }) {
         <circle className="dt-ring-trail t1" cx="94" cy="50" r="1.8" style={{ transform: `rotate(${progress * 360 - 94}deg)`, transformOrigin: "50px 50px" }} />
         <circle className="dt-ring-spark" cx="94" cy="50" r="3" style={{ transform: `rotate(${progress * 360 - 90}deg)`, transformOrigin: "50px 50px" }} />
       </svg>
-      <div className="dt-count-core" role="timer" aria-live="off"><strong key={remain}>{remain === null ? "…" : remain === 0 ? "✦" : remain}</strong></div>
+      <div className="dt-count-core" role="timer" aria-live="off"><strong key={remain}>{remain === null ? "…" : remain === 0 && presentation === "detail" ? "✦" : remain}</strong></div>
     </div>
-    <p className="dt-count-label">{remain === 0 ? "공개 확인 중" : "최초공개까지"}</p>
+    <p className="dt-count-label">{remain === 0 ? <>{presentation === "premiere" ? <span className="pm-loading" aria-hidden="true" /> : null}공개 확인 중</> : "최초공개까지"}</p>
   </div>;
 }
