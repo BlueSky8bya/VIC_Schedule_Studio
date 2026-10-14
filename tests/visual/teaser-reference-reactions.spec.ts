@@ -15,6 +15,11 @@ for (const [width, height] of [[1100, 780], [390, 844], [844, 390]]) {
     const hope = page.locator(".pm-hope").first();
     await expect(photo(page)).toHaveCSS("opacity", "0");
     await hope.click(); await expect(photo(page)).toHaveCSS("opacity", "0.18");
+    const plane = (await page.locator(".pm-screen").boundingBox())!, picture = (await photo(page).boundingBox())!;
+    // Measure original nose/mouth against the actual dialog, not image-box
+    // symmetry. Their original two-pixel offsets remain below two screen px.
+    for (const x of [794, 798]) expect(Math.abs(picture.x + picture.width * x / 1536 - (plane.x + plane.width / 2))).toBeLessThan(2);
+    expect(Math.abs(picture.y + picture.height / 2 - (plane.y + plane.height / 2))).toBeLessThan(1);
     const h = (await hope.boundingBox())!;
     for (const fan of await page.locator(".pm-fan:visible").all()) {
       const f = (await fan.boundingBox())!;

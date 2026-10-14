@@ -33,3 +33,11 @@ Scope: PLAN-039. 2026-10-15 KST. Product commit `e63261e5` deployed; live build 
 - 운영 `/premiere/victory-wish.webp`: HTTP200,54,142bytes, SHA256`d4589ec4562769752b13d313811df59ac5c8e352650d2231f810457d4be70bdd` 로컬 동일.
 - 운영 `/`에서도1100×780/390×844/844×390 touch smoke 모두 통과. 기대ON/OFF, 모임/정지, 숫자 가림 없음, 수동 종료, pageerror0. 각 context POST3차단 중 가짜 기대2응답, 실제 쓰기0.
 - 로컬 기록 `.scratch-pw/wish-production-smoke.json`, 화면 `wish-production-happy-*`, `wish-production-contempt-*`(해제), `wish-production-seated-*`. 신규 이미지 생성0회.
+
+## 후속: 얼굴 중심축 정렬
+
+- 소유자 요청: 희미한 얼굴의 눈 사이·코·입이 무대 가운데에서 최대한 균형을 이루도록 배치. 원본 자체의 비대칭을 재생성하거나 반쪽 복제로 교정하지 않고 사진 전체 위치만 수정.
+- 1536px 파생 이미지의 코/입 근사 중심 x798/x794, 공통축 x796을 기준으로 `translateX(-51.823%)`. 세로는 이미지 중앙과 무대 중앙 일치. 모바일도 동일 축, 기존 폭과 원본 비율 유지.
+- typecheck/full lint/fixture production build 통과. 관련 unit35/35. 3뷰 렌더3/3 및 기준선 갱신. G21 독립 코드 리뷰에서 확정 차단 없음.
+- 로컬 `/` 실제 렌더1100×780/390×844/844×390 touch: 기대ON/OFF, 수평축 오차 각각 최대1.35/0.59/1.07px, 이미지 세로중앙 오차0.008px 이하. pageerror0. 각 context POST4차단 중 가짜 기대2응답, 실제 쓰기0.
+- `.scratch-pw/axis-local-smoke.json`, `axis-local-happy-{1100,390,844}.png`. 사진 원본/공개 에셋 무변경. 완전한 얼굴 대칭이나 전문 미술 승인 주장 아님.
