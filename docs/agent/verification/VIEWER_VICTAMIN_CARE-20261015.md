@@ -26,4 +26,4 @@
 
 동작/시각 확인은 headless Chromium PC·모바일 viewport다. 실제Safari/장시간 배터리/사용자 HCI연구/256셀 독립 미술 검수 아님. DB/API/역할/unlock/KST/1840기하 변경 없음. 기기 저장 삭제 시 돌봄·pet하트 기억도 초기화된다. 기존 harness2실패는 별도 기록하며 현재 검사를 통과했다고 바꾸지 않는다.
 
-운영 배포 확인 대기.
+제품 `88e75d3ead8eee6bb9947d9983763e62508e5889` [Vercel success](https://vercel.com/bluesky-s-project3/vic-schedule-studio/H3yZygfyZnt1X3xxhvKSFmHxytv8), live build SHA 일치. 운영 실제 `/` PC1440·모바일390에서 기본OFF atlas0→ON→사과 배치·섭취/포만·애정 저장·초점/월 보존→강아지 성향 저장→전체OFF, pageerror0. 각context POST1 차단/실제쓰기0. 과거달 조회만, 시험데이터 생성0. `.scratch-pw/companion-care-root-production.json`, `companion-care-production-{1440,390}.png`. 운영 하트 쓰기/RLS/실기기 검증으로 확장해 주장하지 않는다.
