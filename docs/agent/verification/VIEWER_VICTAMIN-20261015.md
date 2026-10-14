@@ -24,3 +24,9 @@
 ## 한계
 
 실제 신경망/초파리뇌·LLM학습·의식/인격 인증 없음. 리듬/표정/욕구 기반 게임 AI다. headless Chromium 검증이며 실기기Safari/장시간 배터리/HCI사용자연구/256포즈별 전문미술승인 아님. 성격·계절장난의 희귀도는 실제 사용자 피드백으로 조정한다. 원본/반려이력·다른사용자작업은 보존했다. 공개DTO/DB/권한/unlock/KST/1840기하 변경 없음.
+
+## 운영 배포
+
+- 제품 `b4b6c52a8266750f007c7f3c1f1843be1ddc7a96` [Vercel success](https://vercel.com/bluesky-s-project3/vic-schedule-studio/9U11v23Sc8kQGthXdseSQZ5rAV5K), live build SHA 일치.
+- 운영 sprite HTTP200/1,332,324bytes, SHA256 `535d67d02bac975e0f2c41b3d34dadcb393b9ba1cfab3d87187a5017a9d5d24f` 로컬과 일치.
+- 운영 실제 `/` PC1440/모바일390: 기본OFF atlas0, opt-in decode1280, 쓰다듬기, 설정창pause, 장난토글/전체OFF/선호보존, pageerror0. 각 context POST1차단/실제쓰기0. 과거달 조회, 시험데이터 생성0. `.scratch-pw/companion-root-production.json`, `companion-production-{1440,390}.png`.
