@@ -1,7 +1,7 @@
 # PLAN-030 — One countdown, stable preview and directed motion
 
 Date: 2026-10-14 KST
-Status: Deployed and verified — 48e3c8c9
+Status: Deployed and verified — 48e3c8c9 + keyboard follow-up aba30f08
 
 Owner requests implementation of five corrections. Supersedes PLAN-029's rotating departure variants and full-screen shell stretch; keeps shuffled individual slots, T−75 deadline, public DB release boundary, default ON, shared coordinator/clock/FLIP, developer-only rehearsal and 1840px export geometry.
 
@@ -18,3 +18,5 @@ Verify single visible countdown in card/detail/dock/stage, delayed snapshot/flus
 Local completion: production-build matrix 71 PASS, two long-outline baselines added/reviewed and independently matched, existing countdown baselines matched; typecheck/lint/build PASS. Relevant units 35 PASS; full suite 1,086 PASS/8 existing failures. Final built main-route synthetic smoke PASS, including mobile outline/quiet final seconds and zero page errors. [Verification](../verification/TEASER_FOCUS-20261014.md) records root causes, corrected harness issues and genuine-session/hardware limits.
 
 Committed/pushed as 48e3c8c9. Vercel status and production build SHA matched. Deployed-client synthetic checks PASS for single countdown, handover, quiet finale, public title/subtopics, mobile reading layout, interaction recovery and zero page errors; zero browser POSTs sent. Genuine-login preview remains a fixture/Flight-stub verification boundary.
+
+Final keyboard regression found that retired/inert controls remained in the focus trap. Predicate corrected in aba30f08; fresh build/lint/typecheck and related 32 browser cases PASS, including the previously failing test. Deployment/SHA and repeated deployed-client smoke PASS, including Tab-to-exit at T−3. [Verification](../verification/TEASER_FOCUS-20261014.md) keeps both scopes distinct.

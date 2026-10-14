@@ -1,6 +1,6 @@
 # Premiere focus and continuity — 2026-10-14 KST
 
-Scope: [PLAN-030](../plans/PLAN-20261014-030-premiere-focus-and-continuity.md). Deployed and verified: 48e3c8c9.
+Scope: [PLAN-030](../plans/PLAN-20261014-030-premiere-focus-and-continuity.md). Main release 48e3c8c9; final keyboard follow-up aba30f08 deployed/verified.
 
 ## Findings and changes
 
@@ -37,4 +37,6 @@ Personal OFF/Escape and NEXT_PUBLIC_PREMIERE_STAGE=0 remain recovery paths. No s
 
 ## Finale keyboard follow-up
 
-A final Tab regression exposed a real focus-trap defect: the hope control had become inert, but the trap still selected it as the first candidate. Tab from the dialog container could stay there instead of reaching the visible exit. The new regression failed on the deployed implementation's local build. The trap now excludes inert/aria-hidden ancestry and controls without rendered bounds. Fresh production build/typecheck/lint PASS; focus + premiere matrix 32/32 PASS after the predicate correction, including the previously failing Tab assertion and both outline baselines. Full units again 1,086 PASS/8 identical existing failures. Follow-up deployment pending; visual choreography and data paths are unchanged.
+A final Tab regression exposed a real focus-trap defect: the hope control had become inert, but the trap still selected it as the first candidate. Tab from the dialog container could stay there instead of reaching the visible exit. The new regression failed on the deployed implementation's local build. The trap now excludes inert/aria-hidden ancestry and controls without rendered bounds. Fresh production build/typecheck/lint PASS; focus + premiere matrix 32/32 PASS after the predicate correction, including the previously failing Tab assertion and both outline baselines. Full units again 1,086 PASS/8 identical existing failures. Visual choreography and data paths are unchanged.
+
+`aba30f08e0fe919a2db64e6267f4f5cbe7020c12` committed/pushed and [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/HpnqQZbRfBhfJAGY4fkcz8eCXr2y) succeeded; production API build matched. Repeated the full deployed-client synthetic smoke above, now also pressing Tab at T−3 and asserting that the visible exit receives focus. All checks PASS, zero page errors, one browser POST intercepted/zero sent. Final memory/rule checks 43 PASS; the same two global harness inventory mismatches remain.
