@@ -1,6 +1,6 @@
 # Premiere card choreography — 2026-10-14 KST
 
-Scope: [PLAN-029](../plans/PLAN-20261014-029-premiere-card-choreography.md), replacing PLAN-028's date-wide dimming. Release/deployment verification pending.
+Scope: [PLAN-029](../plans/PLAN-20261014-029-premiere-card-choreography.md), replacing PLAN-028's date-wide dimming. Deployed/verified: 40d2e1cb.
 
 ## Behavior
 
@@ -26,7 +26,7 @@ Rendered review covered the partly departed calendar, the sole target at T−74,
 
 Intermediate browser failures were investigated: first-paint transition sampling and a locator based on a deliberately removed temporary attribute were corrected. The reduced-motion test now observes the existing cooldown instead of requiring immediate automatic reentry. The final 63/63 run supersedes the intermediate runs; the separate geometry-snapshot failure remains explicitly recorded above.
 
-The final bundle also passed a local main-route synthetic smoke: prelude interaction/month gate, authoritative-looking time advances, all other cards departed before focus, source morph, no title before confirmation, release, Escape/restored activation, mobile resize with no overflow, anonymous rehearsal absent, zero page errors; one browser POST intercepted/zero sent. This is not yet deployed-client evidence.
+The final bundle also passed a local main-route synthetic smoke: prelude interaction/month gate, authoritative-looking time advances, all other cards departed before focus, source morph, no title before confirmation, release, Escape/restored activation, mobile resize with no overflow, anonymous rehearsal absent, zero page errors; one browser POST intercepted/zero sent. Deployed-client scope is recorded below separately.
 
 All fixtures are synthetic and browser POSTs are intercepted. No real schedule seeds, SQL, migration, dependencies, server DTO, clock/polling changes or DB load test. Public title/body/tags/actual time still require the existing server-confirmed release. Shared viewer, anonymous viewer and studio preview use the same implementation; owner/developer permissions, private unlock and KST semantics are unchanged. Existing search-maintenance WHERE warnings during server rendering are outside this change; browser POST interception does not establish that every pre-existing server path is read-only.
 
@@ -34,4 +34,6 @@ Ignored render captures and geometry comparison live in `.scratch-pw/`; no perso
 
 ## Deployment
 
-Pending authorized commit/push and deployed-client synthetic smoke. No production timed event or genuine-login/RLS result is claimed.
+`40d2e1cbb951c32d3f65bdeee12713dc3a3a4542` committed/pushed to main. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/oJFEUM5c2Ux7ex3zqXKg545HWHnF) reported success and the production API build field matched this exact SHA.
+
+Headless Chromium loaded the deployed main route with the established past-month cookie (2025-09). Browser-local teaser GET substitutions supplied synthetic masked/released content dated 2025-09-16; a temporary synthetic non-target DOM card exercised the deployed interaction gate without writing server data. Verified: pointer/key activation blocked, month arrow inert and keyboard month change suppressed, other cards absent before focus, visible target morph, no title before confirmation, release, Escape/restored activation, mobile agenda/no overflow after resize, anonymous rehearsal absent, zero page errors. Two attempted browser POSTs intercepted, zero sent. The temporary DOM was removed. This is deployed-client coverage, not a real production timed event, genuine-login/RLS or DB-capacity result.

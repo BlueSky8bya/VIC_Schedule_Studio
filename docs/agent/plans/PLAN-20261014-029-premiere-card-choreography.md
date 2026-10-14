@@ -1,7 +1,7 @@
 # PLAN-029 — Individual departures and card-to-screen continuity
 
 Date: 2026-10-14 KST
-Status: Locally verified; authorized deployment pending
+Status: Deployed and verified — 40d2e1cb
 
 The owner replaces PLAN-028 step 3's day-wide spatial dimming with individual, shuffled schedule departures. Keep all existing clock/data/security, default-ON, reduced-motion, 1840px geometry and developer-only rehearsal decisions.
 
@@ -13,3 +13,5 @@ The owner replaces PLAN-028 step 3's day-wide spatial dimming with individual, s
 Verify seeded order/variants/timing, same-day and multi-day cards, desktop/agenda interaction gates and restoration, actual card-to-screen transition, interrupted handover, OFF/reduced modes, rescheduling and release regressions. Use production-build synthetic fixtures with writes intercepted. Run typecheck/lint, affected units, browser checks, build and memory harness; inspect rendered captures. Existing hardware/luminance/fanout gaps stay open.
 
 Implementation and local validation complete: final production-build browser matrix 63 PASS, typecheck/lint PASS, focused units/document checks 74 PASS; full suite 1,084 PASS/8 existing failures. Old geometry snapshot mismatch independently reproduced on unchanged parent with exact parent/candidate geometry equality. Shared FLIP ignores descendant transitionend; unrelated month controls/shortcuts yield to the stage. [Verification](../verification/TEASER_CARDS-20261014.md) records scope and remaining limits.
+
+Committed/pushed as 40d2e1cb. Vercel status and production build SHA matched; deployed-client synthetic prelude/gates/departure/morph/release/restore/mobile smoke PASS, zero page errors, zero browser POSTs sent. No real schedule data changed.
