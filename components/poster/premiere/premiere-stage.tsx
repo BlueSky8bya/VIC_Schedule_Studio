@@ -187,14 +187,13 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
       <div className="pm-shock" key={`shock-${bang}`} aria-hidden="true" />
       <div className="pm-viewport">
         <div className={`pm-screen${released.length ? " is-released" : ""}`} ref={screen} style={released[0] ? premierePaper(released[0].event, tagVisual) : undefined}>
-          <header className="pm-heading" data-pm-retreat><span className="pm-kicker">최초공개</span><span>{frame.items.length > 1 ? `${frame.items.length}개의 일정` : shortDate(frame.items[0]?.dateKey)}</span><span className="pm-heading-rule" aria-hidden="true" />{complete ? <div className="pm-keepsake" aria-hidden="true"><span>✦</span><PremierePortrait /><i>✧</i></div> : null}</header>
+          {!complete ? <header className="pm-heading" data-pm-retreat><span className="pm-kicker">최초공개</span><span>{frame.items.length > 1 ? `${frame.items.length}개의 일정` : shortDate(frame.items[0]?.dateKey)}</span><span className="pm-heading-rule" aria-hidden="true" /></header> : null}
           <div className="pm-composition">
             {waiting.length ? <div className="pm-count" data-pm-watching={waiting.map(item => item.id).join(" ")}><TeaserStageContent revealAt={new Date(frame.target).toISOString()} presentation="premiere" /></div> : null}
             <div className={`pm-films pm-n${frame.items.length}${frame.items.length > (agenda ? 2 : 4) ? " pm-list" : ""}`}>
               {frame.items.map((item, index) => <article className={`pm-film ${item.state}`} key={item.id} data-pm-event={item.id} data-pm-retreat style={item.state === "released" ? premierePaper(item.event, tagVisual) : undefined}>
                 {item.state === "released" ? <>
-                  <div className="pm-date"><span>{Number(item.dateKey.slice(5, 7))}월</span><strong>{Number(item.dateKey.slice(8, 10))}</strong><span>{new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", weekday: "long" }).format(new Date(`${item.dateKey}T12:00:00+09:00`))}</span></div>
-                  <PremiereStory event={item.event} tags={tags} tagVisual={tagVisual} onRead={onRead} />
+                  <PremiereStory event={item.event} dateKey={item.dateKey} tags={tags} tagVisual={tagVisual} onRead={onRead} />
                 </> : <div className="pm-masked" data-pm-retreat>
                   {frame.items.length > 1 ? <span className="pm-slot-label">{String(index + 1).padStart(2, "0")} <span>{shortDate(item.dateKey)}</span></span> : null}
                   <button type="button" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { const adding = !hoped.has(item.id); setReaction({ serial: ++reactionSerial.current, kind: adding ? "delighted" : "unimpressed" }); if (adding) { setHopePulse(value => value + 1); setCheerPulse(value => value + 1); } onHope(item.id); }}>
@@ -223,17 +222,20 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
 
 function shortDate(value?: string) { return value ? `${Number(value.slice(5, 7))}월 ${Number(value.slice(8, 10))}일` : ""; }
 
-function PremiereStory({ event, tags, tagVisual, onRead }: { event: PublicScheduleEvent; tags: BroadcastTag[]; tagVisual: TagVisualResolver; onRead?: (id: string) => void }) {
-  return <div className="pm-story">
-    {/* Before long content: a six-second automatic beat must never bury the
-        escape into unhurried reading below several screens of subtopics. */}
-    {onRead ? <button type="button" className="pm-read" onClick={() => onRead(event.id)}>계속 읽기 <ArrowUpRight size={16} aria-hidden="true" /></button> : null}
+function PremiereStory({ event, dateKey, tags, tagVisual, onRead }: { event: PublicScheduleEvent; dateKey: string; tags: BroadcastTag[]; tagVisual: TagVisualResolver; onRead?: (id: string) => void }) {
+  const { main, subs } = splitEventTitleOutline(event.publicTitle);
+  const density = subs.length >= 5 || (event.publicDescription?.length ?? 0) > 240 || event.tagIds.length > 6 ? "dense"
+    : !event.publicDescription && !subs.length && event.tagIds.length <= 2 && [...main].length <= 18 ? "brief" : "normal";
+  return <div className="pm-story" data-reading={density}>
+    {/* Public metadata belongs to its own released event, including chains.
+        All-day has no artificial time label; nothing is clamped or hidden. */}
+    <header className="pm-story-meta">
+      <div className="pm-meta-date"><span className="pm-release-label">최초공개</span><time dateTime={dateKey}>{shortDate(dateKey)} <span>{new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", weekday: "short" }).format(new Date(`${dateKey}T12:00:00+09:00`))}</span></time>{!event.isAllDay ? <time className="pm-start-time" dateTime={event.startsAt}>{new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "numeric", minute: "2-digit" }).format(new Date(event.startsAt))}</time> : null}</div>
+      {event.tagIds.length ? <div className="pm-tags" aria-label="일정 태그">{event.tagIds.flatMap(id => { const tag = tags.find(tag => tag.id === id), visual = tagVisual.visualOf(id); return tag ? <span key={id} style={{ "--pm-tag": visual.cssAccent ?? "var(--teaser)", background: visual.cssBg ? `color-mix(in srgb, ${visual.cssBg} 24%, rgb(var(--glass-panel)))` : undefined, borderColor: visual.cssBorder ? `color-mix(in srgb, ${visual.cssBorder} 36%, transparent)` : undefined } as CSSProperties}>{tag.displayName}</span> : []; })}</div> : null}
+      {onRead ? <button type="button" className="pm-read" onClick={() => onRead(event.id)}>상세 보기 <ArrowUpRight size={16} aria-hidden="true" /></button> : null}
+    </header>
     <PremiereTitle title={event.publicTitle} />
-    <div className="pm-details">
-      <time dateTime={event.startsAt}>{event.isAllDay ? "하루 종일" : new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "numeric", minute: "2-digit" }).format(new Date(event.startsAt))}</time>
-      {event.publicDescription ? <p>{event.publicDescription}</p> : null}
-      {event.tagIds.length ? <div className="pm-tags">{event.tagIds.flatMap(id => { const tag = tags.find(tag => tag.id === id), visual = tagVisual.visualOf(id); return tag ? <span key={id} style={{ "--pm-tag": visual.cssAccent ?? "var(--teaser)", background: visual.cssBg ? `color-mix(in srgb, ${visual.cssBg} 24%, rgb(var(--glass-panel)))` : undefined, borderColor: visual.cssBorder ? `color-mix(in srgb, ${visual.cssBorder} 36%, transparent)` : undefined } as CSSProperties}>{tag.displayName}</span> : []; })}</div> : null}
-    </div>
+    {event.publicDescription ? <div className="pm-details"><p>{event.publicDescription}</p></div> : null}
   </div>;
 }
 
@@ -245,7 +247,7 @@ function premierePaper(event: PublicScheduleEvent, visual: TagVisualResolver): C
 
 function PremiereTitle({ title }: { title: string }) {
   const { main, subs } = splitEventTitleOutline(title);
-  return <><h2 data-density={[...main].length > 42 ? "long" : undefined}>{main}</h2>{subs.length ? <ul className="pm-subtopics" aria-label="세부 내용">{subs.map((item, index) => <li key={index} data-depth={item.depth} style={{ "--pm-indent": item.depth } as CSSProperties}>{item.text}</li>)}</ul> : null}</>;
+  return <><h2 data-density={[...main].length > 26 ? "long" : undefined}>{main}</h2>{subs.length ? <ul className="pm-subtopics" aria-label="세부 내용">{subs.map((item, index) => <li key={index} data-depth={item.depth} style={{ "--pm-indent": item.depth } as CSSProperties}>{item.text}</li>)}</ul> : null}</>;
 }
 
 function PremiereReadout({ target }: { target: number }) {

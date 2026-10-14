@@ -34,7 +34,7 @@ for (const width of [1440, 390]) {
     }
     const accents = await page.locator(".pm-film.released").evaluate(el => ({ first: getComputedStyle(el).getPropertyValue("--pm-accent"), second: getComputedStyle(el).getPropertyValue("--pm-accent-two") }));
     expect(accents.first).not.toBe(accents.second);
-    await expect(page.locator(".pm-keepsake img")).toBeVisible();
+    await expect(page.locator(".pm-keepsake")).toHaveCount(0);
     await expect(page.getByRole("timer")).toHaveCount(0);
     await expect(page.locator(".pm-invitation")).toHaveCount(0);
     const exit = page.getByRole("button", { name: "일정표 보기", exact: true });

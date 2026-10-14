@@ -28,7 +28,7 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await page.goto("/visual-fixture/poster?premiere=5&scenario=outline");
     await expect(page.locator(".pm-story h2")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole("button", { name: "계속 읽기", exact: true })).toBeInViewport();
+    await expect(page.getByRole("button", { name: "상세 보기", exact: true })).toBeInViewport();
     const contrast = () => page.locator(".pm-read").evaluate(el => {
       const luminance = (color: string) => {
         const rgb = color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(value => { const c = value / 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; });
@@ -40,7 +40,7 @@ for (const width of [1440, 390]) {
     expect(await contrast()).toBeGreaterThanOrEqual(4.5);
     await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
     expect(await contrast()).toBeGreaterThanOrEqual(4.5);
-    await page.getByRole("button", { name: "계속 읽기", exact: true }).click();
+    await page.getByRole("button", { name: "상세 보기", exact: true }).click();
     await expect(page.locator(".pm-stage")).toHaveCount(0);
     const detail = page.locator(".agenda-detail-sheet:not(.is-teaser)");
     await expect(detail).toBeVisible();

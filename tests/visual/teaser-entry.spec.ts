@@ -53,7 +53,7 @@ test("publication during convergence cancels the journey and keeps confirmed rea
   await expect(page.locator(".pm-story h2")).toHaveText("합성 진입 중 공개", { timeout: 3000 });
   await expect(page.locator(".pm-entry")).not.toHaveAttribute("data-active");
   await expect(page.locator(".pm-complete")).toBeVisible();
-  await expect(page.getByRole("button", { name: "계속 읽기", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "상세 보기", exact: true })).toBeEnabled();
 });
 
 test("a changed deadline, hidden tab and resize clear transient entry state", async ({ page }) => {
