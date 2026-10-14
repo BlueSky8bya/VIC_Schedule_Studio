@@ -26,4 +26,4 @@
 
 ## 상태
 
-구현·독립 코드 검토·타입/lint/build·관련 단위119·최종 fixture75·실제 시청자 경로 PC/agenda 검증 완료. 미변경 경로 전체 단위8실패/기존 harness2실패는 [검증 기록](../verification/TEASER_AUDIENCE-20261014.md)에 분리했다. 승인된 커밋/푸시/운영 확인 진행.
+완료. 제품 `9bea3e08` main 푸시 및 Vercel 성공/운영 SHA, PC/agenda 공개 전·응원·음악·quiet·공개·수동 종료 확인. 독립 코드 검토·타입/lint/build·관련 단위119·최종 fixture75 통과. 미변경 경로 전체 단위8실패/기존 harness2실패, 미술 승인·실기기 한계는 [검증 기록](../verification/TEASER_AUDIENCE-20261014.md)에 분리했다. 토리 얼굴 시안은 로컬 미적용 유지.

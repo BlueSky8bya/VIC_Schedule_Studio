@@ -29,4 +29,10 @@
 
 ## 배포
 
-최종 회귀 완료. 커밋/푸시/운영 SHA 확인 대기. 실제 결과로 갱신한다.
+제품 커밋 `9bea3e08f5c50d9924d7f6ec4b51505b348395a9` main 푸시, [Vercel 성공](https://vercel.com/bluesky-s-project3/vic-schedule-studio/fxx5WgWfVK17NaNj3jmV9iWWpuiJ) 및 운영 `/api/soop-live` build SHA 일치 확인.
+
+[운영 사이트](https://vic-schedule-studio.vercel.app)에서 PC1440/agenda390 실제 시청자 경로를 위와 같은 합성 과거 달/POST차단 조건으로 실행했다. 직접 응원·단일 시계·기본 음악·숨김 후 기본 재개·마지막10초 정지/무음·공개 제목/2개 태그/들여쓰기·7.5초 이후 수동 종료/복원 모두 통과. 각 context 콘솔 예외0/서버 전송POST0.
+
+운영의 새 atlas 및 기존 토리3개 이미지와 로컬 파일 SHA 일치(4개) 확인. 시험 fixture API404, 페이지는 Next 스트리밍 notFound의 HTTP200/noindex이며 포스터 DOM 없음. 이는 fixture 데이터가 운영에 노출된 HTTP200이 아니다.
+
+미적용 토리 로컬 시안/반려 기록과 기존 개인 파일은 이번 커밋·푸시에서 제외했다. 최종 미술 만족/실기기 음향·Safari/실제 로그인·RLS는 별도다.
