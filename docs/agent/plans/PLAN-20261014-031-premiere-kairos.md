@@ -1,7 +1,7 @@
 # PLAN-031 — A moment worth waiting for
 
 Date: 2026-10-14 KST
-Status: Locally verified; authorized deployment pending
+Status: Deployed and verified — 4a34433a
 
 Owner asks for a substantial premiere redesign informed by HCI, temporal experience and restrained beauty (검이불루·화이불치). Scope includes the calendar-to-premiere journey, not unrelated studio/VOD/ambient features. Preserve PLAN-030's single countdown, stable public preview entry, title/subtopic hierarchy and 10→2s retreat. Replace the generic dark modal composition and ornamental light blobs with one recognizable invitation, one focal plane, a small voluntary response and a legible reading moment.
 
@@ -29,3 +29,5 @@ Record primary sources, evidence strength, concrete adaptations and limitations 
 Before integrating: independent UI/security/QA review required by G-21. Production build + relevant units/typecheck/lint; fixture interactions at 1440/390/landscape-touch, off/reduce/gfx, final seconds, release/multiple/re-gating, one clock/preview stability. Review intentional baseline changes before accepting; no real DB fixture writes. Then authorized commit/push and deployed build/client verification.
 
 Implemented and locally verified. 78 browser cases PASS, then 40 after the monotonic flash-budget correction, 16 after light/dark reading-control contrast, and final 17 after the return fade correction. Both clock-budget and return regressions failed before their fixes and passed after fresh builds. Relevant units 72 PASS; typecheck/lint/build PASS; 6 intentional PC/mobile baselines reviewed. [QA](../verification/TEASER_KAIROS-20261014.md) distinguishes all scopes and unverified human/device/provider evidence. No DB/schema/API/dependency changes.
+
+Committed/pushed as 4a34433a; Vercel and production build verified. Deployed main-route synthetic client smoke PASS including original portrait, wish response, final focus, public release, mobile reading continuation and restored interactions; zero page errors/server writes. [QA](../verification/TEASER_KAIROS-20261014.md) records exact scope and remaining evidence gaps.

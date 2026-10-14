@@ -1,6 +1,6 @@
 # Premiere moment — 2026-10-14 KST
 
-Scope: [PLAN-031](../plans/PLAN-20261014-031-premiere-kairos.md), [research and provenance](../../ux/motion/premiere-kairos-research.ko.md). Local verification complete; authorized deployment pending.
+Scope: [PLAN-031](../plans/PLAN-20261014-031-premiere-kairos.md), [research and provenance](../../ux/motion/premiere-kairos-research.ko.md). Deployed and verified: 4a34433a.
 
 ## Product and review
 
@@ -18,7 +18,7 @@ Final independent review found that a server-clock correction could advance the 
 |---|---|
 | Final production build, standalone typecheck/lint | PASS |
 | Relevant unit tests | 72 PASS: premiere planning/choreography/focus, public DTO and hype curve |
-| Memory/rule tests | 43 PASS; rerun after final documentation changes before commit |
+| Memory/rule tests | 43 PASS after local completion; final rollout record checked before its separate documentation commit |
 | Global harness | FAIL: the same two RULE_MIGRATION active-ID/inventory mismatches; no rule changes |
 | Intentional baselines | 6 PASS with update: desktop/mobile fluid, outline and original-host invitation; before/after reviewed |
 | Full relevant browser matrix without updates | 78 PASS before the final monotonic visual-budget correction |
@@ -26,9 +26,15 @@ Final independent review found that a server-clock correction could advance the 
 | Reading-control contrast | Themed body ink, light/dark computed ratio ≥4.5; fresh-build focus/moment recheck 16 PASS |
 | Return fade follow-up | Regression failed before fix: completed entry animation held opacity 1 throughout return. Entry animation disabled during return; final fresh-build 17-case recheck PASS |
 | Local rendered inspection | PC/390px invitation, voluntary hope, long/indented outline and T−3; original portrait intact, quiet countdown, no global filter/canvas |
-| Deployed result | Pending |
+| Deployed result | Vercel success + production build SHA matched; actual main-route client synthetic smoke PASS |
 
 Browser cases cover unchanged preview-save continuity and single clock, individual departures, public masking/re-gating/deletion/immediate/multiple release, hidden tab, gfx/reduced motion, focus restoration, mobile/landscape touch, plus new asset load, local wish, unhurried reading and no premature bang during data delay. Snapshot cases freeze decorative position or mask numeric ink; server/client time stays real. No page.clock.
+
+## Deployment
+
+`4a34433a04df745d4f7118648e638c1416af55ad` committed/pushed to main. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/2cnHK969QsNCXQ3fhEF7wptDGWzX) succeeded and production `/api/soop-live` build matched. Deployed-client checks used the real `/` and its compiled client, with synthetic 2025-09 GET responses substituted only inside a fresh test browser; all browser POSTs intercepted (2 blocked, 0 sent).
+
+PASS: original 640px portrait loaded, local wish response, one detail countdown, unrelated/month navigation lock, individual departure deadline and restrained carrier entry, no pre-release canary, quiet finale/zero drift/retired ring/Tab-to-exit, server-confirmed title + 3 subtopics, mobile full-width reading/no horizontal overflow, continuation into the normal mobile detail surviving 6.5s, Escape/native interaction restoration, no anonymous rehearsal and zero page errors. Genuine-login studio preview remains fixture/Flight-stub coverage, not a real production authenticated session.
 
 ## Safety and limits
 
