@@ -24,4 +24,8 @@
 
 ## 배포
 
-로컬 검증/독립 검토 완료. 승인된 main 푸시와 운영 SHA·실제3개 화면 확인 대기.
+제품 커밋 `21c87d72da69891622a48f07452b723058559e06` main 푸시, [Vercel 성공](https://vercel.com/bluesky-s-project3/vic-schedule-studio/A9tmAFCnm9xNDRV1bXodX44xm6R1) 및 운영 `/api/soop-live` build SHA 일치를 확인했다.
+
+[운영 사이트](https://vic-schedule-studio.vercel.app) 실제 `/` 경로에서1100×780/390×844/844×390 터치 모두 통과했다. 합성 과거 달 공개 응답/모든 POST 가로채기(각3건 중 기대2건은 RSC 성공 응답 모의), 사진 유지→취소→조용한 이동→마지막8초 정지/숫자 비가림→공개→3.3초 이후 수동 종료·inert 복원. 콘솔 예외0/서버 전송POST0, 실제 DB 시험 데이터0. 의도된 고조 흔들림 때문에 자동 locator의 정지 대기를 쓰지 않고, 진입 inert 해제 및 실제 hit-test를 확인한 뒤 버튼 중심을 native 포인터로 눌렀다. force 클릭이나 모션 강제 해제는 하지 않았다.
+
+운영 새 사진3장·기존 V 배지·빅타민 atlas의 로컬 SHA 일치(5개) 확인. 제거한 생성 표정2개 URL은404이며 이미지를 제공하지 않는다. 실제 시청자 반응 화면과 모여 앉은 관객을 직접 확인했다. 사용자 시각 승인/실제 로그인/RLS 인증을 추가로 주장하지 않는다.
