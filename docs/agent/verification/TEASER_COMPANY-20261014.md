@@ -28,4 +28,8 @@
 
 ## 배포
 
-아직 이 기록 기준 배포 미확인. 승인된 main push 후 Vercel 성공, 실제 build SHA, 일반 공개 페이지 PC/agenda 합성 smoke와 runtime 자산 해시를 확인한다.
+제품 커밋 `777ab929892584baa9ab9986863baefd7960ff10` main push 완료. [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/7HkskhzAnFCsgsUEVonMrRCBZMVd) success와 운영 build SHA 일치를 확인했다.
+
+`https://vic-schedule-studio.vercel.app/` 일반 페이지 PC1440/agenda390 합성 smoke **PASS**: 실제 클라이언트의 진입·응원·음악 시작·숨김 후 자동 재개 금지·9초 숫자 집중·공개·7.5초 이상 읽기 유지·수동 종료. 각 환경 page error 0, public tag 2개, POST 1건 차단/전송 0건. 실제 운영 일정 생성/변경 없음. 런타임 WebP 4장의 HTTP200·byte 수·SHA256 모두 저장소와 일치(합계 195,376 bytes). 운영 대기/고요/읽기 캡처도 실제 열람했다.
+
+배포 증거는 무시된 `.scratch-pw/company-production-deploy.json`, `company-production-smoke.json`, `company-production-assets.json`과 캡처에 보존했다. 뒤따르는 기록 커밋은 문서만 변경하며 제품 검증 SHA는 위 커밋이다.

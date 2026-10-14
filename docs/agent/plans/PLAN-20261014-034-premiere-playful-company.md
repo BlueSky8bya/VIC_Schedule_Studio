@@ -33,4 +33,4 @@
 
 ## 검증 상태
 
-타입/lint/production build, 관련 단위·메모리 119, fresh-build 브라우저 86, 일반 `/` PC/agenda 합성 smoke PASS. 시각 baseline 3장 의도된 변경 확인, 읽기 baseline 유지. 독립 검토 지적 및 공개 관측 회귀 수정 후 전체 재실행 완료. 배포는 승인된 main push 후 확인. 상세 실패/수정 이력·범위는 [QA](../verification/TEASER_COMPANY-20261014.md).
+타입/lint/production build, 관련 단위·메모리 119, fresh-build 브라우저 86, 일반 `/` PC/agenda 합성 smoke PASS. 시각 baseline 3장 의도된 변경 확인, 읽기 baseline 유지. 독립 검토 지적 및 공개 관측 회귀 수정 후 전체 재실행 완료. `777ab929` main push/Vercel success/운영 SHA 일치와 운영 PC/agenda smoke·WebP 4장 해시 확인 완료. 상세 실패/수정 이력·범위는 [QA](../verification/TEASER_COMPANY-20261014.md).
