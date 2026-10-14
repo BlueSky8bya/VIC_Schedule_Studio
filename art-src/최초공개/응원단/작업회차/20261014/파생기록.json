@@ -1,0 +1,60 @@
+{
+  "native": "art-src\\최초공개\\응원단\\작업회차\\20261014\\원본\\최초공개_표정과응원_원본.png",
+  "sha256": "05d73d85bd98874a9e874158d841b407648b1409c9f8ccd0ffbc89e717b2e8ee",
+  "mode": "builtin imagegen; one generation; draft, no human visual approval claimed",
+  "processing": "quadrant extraction, uniform downsample, WebP; native alpha preserved",
+  "derivatives": [
+    {
+      "path": "public/premiere/victory-delighted.webp",
+      "box": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "width": 480,
+      "height": 480,
+      "sha256": "bd7af08882d963222c11b3ab6335fb126fac76fae8c73a771d86323dd644d433",
+      "bytes": 53622
+    },
+    {
+      "path": "public/premiere/victory-unimpressed.webp",
+      "box": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "width": 480,
+      "height": 480,
+      "sha256": "ecc3a70a823b1fbb05013e465bdaf841ed070f20b7f6f89609dcfe75049dfaae",
+      "bytes": 53296
+    },
+    {
+      "path": "public/premiere/victamin-cheer.webp",
+      "box": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "width": 480,
+      "height": 480,
+      "sha256": "ea7490d00a351ae3d7e7c8247ca51022704fb202f28cafe277f8aab83c36c0cd",
+      "bytes": 47326
+    },
+    {
+      "path": "public/premiere/victamin-seated.webp",
+      "box": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "width": 480,
+      "height": 480,
+      "sha256": "6cffa0ce0ee812f972a7fef7244f623ae9e5201ca6415a08a0d01a9e54dab4e6",
+      "bytes": 41132
+    }
+  ]
+}

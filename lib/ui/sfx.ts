@@ -10,6 +10,8 @@
 // 브라우저는 사용자 조작(클릭) 안에서만 소리를 허용한다 — 대부분의 호출은 클릭 처리기 안에서 일어난다.
 import type { CelebrationSound } from "@/lib/ui/celebration";
 
+import { premiereScore } from "./premiere/company";
+
 export type SoundCategory = "celebrate" | "tap" | "ui" | "edit" | "alert";
 export type SfxName =
   | Exclude<CelebrationSound, "none">
@@ -116,6 +118,7 @@ function write(key: string, value: string): void {
   } catch {
     /* 이번 세션만 */
   }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("vic:sound"));
 }
 
 export function soundEnabled(): boolean {
@@ -177,7 +180,7 @@ function audio(): AudioContext | null {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
     ctx ??= new AC();
-    if (ctx.state === "suspended") void ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume().catch(() => { /* browser gesture/OS policy */ });
     return ctx;
   } catch {
     return null;
@@ -939,6 +942,52 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   jitter = CATEGORY[name] === "celebrate" || name === "unlock" ? 1 : 1 + (Math.random() * 2 - 1) * 0.03;
   render(ac, out, name);
   jitter = 1;
+}
+
+export type PremiereMusic = { readonly playing: boolean; update: (remainMs: number) => boolean; stop: () => void };
+
+/** A bounded user-started music session on the existing sound bus. The shared
+ * premiere clock calls update; no scheduler, asset request or second context.
+ * Hidden tabs ALWAYS stop this longer score, even if short hidden SFX are on. */
+export function startPremiereMusic(): PremiereMusic | null {
+  if (!soundEnabled() || !soundCats().celebrate || soundVolume() <= 0 || document.hidden) return null;
+  const ac = audio();
+  if (!ac) return null;
+  const out = ac.createGain(); out.gain.value = 0; out.connect(masterBus(ac));
+  const voices = new Set<OscillatorNode>();
+  let lastBeat = -1, stopped = false;
+  const started = performance.now();
+  const stop = () => {
+    if (stopped) return;
+    stopped = true; out.gain.cancelScheduledValues(ac.currentTime); out.gain.setValueAtTime(0, ac.currentTime);
+    for (const voice of voices) { voice.stop(); voice.disconnect(); }
+    voices.clear(); out.disconnect();
+  };
+  const note = (semi: number, duration: number, level: number) => {
+    const voice = ac.createOscillator(), envelope = ac.createGain(), now = ac.currentTime;
+    voice.type = "sine"; voice.frequency.value = 261.6256 * Math.pow(2, semi / 12);
+    envelope.gain.setValueAtTime(0, now);
+    envelope.gain.linearRampToValueAtTime(level, now + Math.min(.025, duration / 4));
+    envelope.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    voice.connect(envelope).connect(out); voices.add(voice);
+    voice.onended = () => { voices.delete(voice); voice.disconnect(); envelope.disconnect(); };
+    voice.start(); voice.stop(now + duration);
+  };
+  return { stop, get playing() { return !stopped && ac.state === "running"; }, update(remainMs) {
+    const score = premiereScore(remainMs);
+    if (stopped || !score || document.hidden || !soundEnabled() || !soundCats().celebrate || soundVolume() <= 0 || ac.state === "closed") { stop(); return false; }
+    // A suspended/interrupted browser is not playing. No false 'playing' UI or
+    // deferred notes when an autoplay/OS interruption later resumes the context.
+    if (ac.state !== "running") { if (performance.now() - started > 1000) { stop(); return false; } return true; }
+    out.gain.setTargetAtTime(Math.pow(soundVolume() / 100, 1.6) * .8, ac.currentTime, .025);
+    if (lastBeat === score.beat) return true;
+    lastBeat = score.beat; // clock jumps skip missed beats; never catch up.
+    note(score.semi, score.duration, score.level);
+    if (score.bass) note(-12, Math.min(.7, (remainMs - 10500) / 1000), score.level * .55);
+    const trace = (window as unknown as { __sfxTrace?: string[] }).__sfxTrace;
+    if (Array.isArray(trace)) trace.push("premiere-music");
+    return true;
+  } };
 }
 
 /** 기념일 테마 소리(lib/ui/celebration의 sound 이름). */

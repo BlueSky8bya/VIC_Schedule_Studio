@@ -6,6 +6,7 @@ import { subscribeClock, syncedNow } from "@/lib/ui/synced-clock";
 import { lateCardDeparture, passage, planCardDepartures, REGION_WINDOWS, type CardDeparture } from "@/lib/ui/premiere/choreography";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 import { premiereFocusMotion } from "@/lib/ui/premiere/focus-motion";
+import { premiereCompany } from "@/lib/ui/premiere/company";
 
 export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, root: RefObject<HTMLDivElement | null>, exit: RefObject<HTMLButtonElement | null>, stage: RefObject<HTMLDivElement | null>, previousFocus: RefObject<HTMLElement | null>) {
   const latest = useRef(frame); latest.current = frame;
@@ -71,13 +72,26 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       stage.current?.style.setProperty("--pm-ring-offset", String(1 - Math.max(0, Math.min(1, seconds / 60))));
       const motion = premiereFocusMotion(seconds * 1000);
       const finale = current.phase === "reveal" ? 0 : motion.retreat;
+      const company = premiereCompany(seconds * 1000);
+      const retiring = current.phase === "reveal" ? 0 : company.retire;
+      stage.current?.toggleAttribute("data-pm-quiet", retiring === 1);
       const grade = stage.current?.dataset.gfx;
       const drift = current.phase === "reveal" || grade === "off" ? 0 : grade === "soft" || grade === "lite" ? .45 : 1;
       // One truthful clock conducts visual gathering too. Motion stops before
       // the last ten seconds; the ring remains an actual time indicator.
       for (const [key, value] of Object.entries({ "--pm-digit-x": `${motion.x * drift}px`, "--pm-digit-y": `${motion.y * drift}px`, "--pm-digit-tilt": `${motion.tilt * drift}deg`, "--pm-final": String(finale), "--pm-gather": String(passage(seconds, 68, 10)), "--pm-fold-drift": `${Math.sin(Math.max(0, 68 - seconds) * .48) * 5 * drift * (1 - passage(seconds, 12, 10))}px` })) stage.current?.style.setProperty(key, value);
+      stage.current?.style.setProperty("--pm-company-retire", String(retiring));
+      stage.current?.style.setProperty("--pm-settle", String(company.settle));
+      for (const fan of stage.current?.querySelectorAll<HTMLElement>(".pm-fan") ?? []) {
+        const seed = Number(fan.style.getPropertyValue("--fan-seed"));
+        const phase = company.phase * Math.PI * 2 + seed;
+        const hop = Math.pow(Math.max(0, Math.sin(phase)), 2);
+        const strength = grade === "full" || grade === "auto" ? company.strength : grade === "lite" ? company.strength * .45 : 0;
+        fan.style.setProperty("--fan-hop", `${-hop * 24 * strength}px`);
+        fan.style.setProperty("--fan-sway", `${Math.sin(phase) * 9 * strength}deg`);
+      }
       for (const el of stage.current?.querySelectorAll<HTMLElement>("[data-pm-retreat]") ?? []) {
-        const hidden = finale > .8;
+        const hidden = retiring > .8;
         if (hidden && el.contains(document.activeElement)) exit.current?.focus({ preventScroll: true });
         el.inert = hidden;
         if (hidden) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");

@@ -9,7 +9,7 @@ for (const width of [1440, 390]) {
   test(`one familiar host frames one truthful clock at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await page.goto("/visual-fixture/poster?premiere=40");
-    const portrait = page.locator(".pm-host img");
+    const portrait = page.locator(".pm-host > div > img");
     await expect(portrait).toBeVisible();
     await expect.poll(() => portrait.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBe(640);
     await expect(page.getByRole("timer")).toHaveCount(1);
@@ -19,7 +19,7 @@ for (const width of [1440, 390]) {
     await page.evaluate(() => document.fonts.ready);
     // Freeze decorative drift as well: the live numeral's transformed mask
     // otherwise swaps 440×441 / 441×440 bounds between real clock ticks.
-    await page.addStyleTag({ content: ".pm-stage { --pm-gather: .4!important; --pm-fold-drift: 0px!important; --pm-digit-x: 0px!important; --pm-digit-y: 0px!important; --pm-digit-tilt: 0deg!important; }" });
+    await page.addStyleTag({ content: ".pm-stage { --pm-gather: .4!important; --pm-fold-drift: 0px!important; --pm-digit-x: 0px!important; --pm-digit-y: 0px!important; --pm-digit-tilt: 0deg!important; } .pm-fan { --fan-hop: 0px!important; --fan-sway: 0deg!important; }" });
     // Numeric time remains live. Mask its ink, not the surrounding composition.
     await expect(page.locator(".pm-screen")).toHaveScreenshot(`premiere-invitation-${width}.png`, { mask: [page.locator(".dt-count-core")], animations: "disabled" });
   });
@@ -87,6 +87,7 @@ test("zero without server publication never starts the opening celebration", asy
   await page.goto("/visual-fixture/poster?premiere=6&scenario=delay");
   await expect(page.locator(".pm-phase-waiting")).toBeVisible({ timeout: 10000 });
   await expect(page.locator(".pm-count")).toContainText("공개 확인 중");
+  await expect(page.locator(".pm-count .dt-count-label")).toBeVisible();
   await expect(page.locator(".pm-bang, .pm-screen.is-released")).toHaveCount(0);
   expect(await page.locator(".pm-host").evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.01);
 });

@@ -25,6 +25,13 @@ function visible(el: Element | null): boolean {
   return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && style.visibility !== "hidden" && style.opacity !== "0";
 }
 
+function visiblePremiere(id: string): boolean {
+  // Decorative/control retirement deliberately makes each article inert. The
+  // shared visible countdown still witnesses the pending cohort through zero;
+  // a hidden tab or hidden/inert clock never earns that witness.
+  return visible(document.querySelector(`.pm-focused:not(.pm-phase-return) [data-pm-watching~="${id}"]`));
+}
+
 export function useTeaserPremiere(options: Options) {
   const latest = useRef(options); latest.current = options;
   const records = useRef(new Map<string, PremiereCandidate>());
@@ -132,7 +139,7 @@ export function useTeaserPremiere(options: Options) {
         if (entry.state === "released" && !prior) continue; // Already-public arrivals never celebrate.
         const key = premiereKey(prior ?? entry);
         const observing = !document.hidden && !latest.current.blocked.current && entry.dateKey.startsWith(latest.current.month) &&
-          (visible(latest.current.root.current?.querySelector(`[data-eventid="${entry.id}"]`) ?? null) || visible(document.querySelector(`[data-pm-event="${entry.id}"]`)));
+          (visible(latest.current.root.current?.querySelector(`[data-eventid="${entry.id}"]`) ?? null) || visiblePremiere(entry.id));
         const confirmedAt = entry.state === "released" ? (prior?.state === "released" ? prior.confirmedAt : watched.current.has(key) && observing ? syncedNow() : undefined) : undefined;
         const next: PremiereCandidate = { id: entry.id, dateKey: entry.dateKey, revealAt: entry.revealAt ?? prior?.revealAt ?? null, state: entry.state, event: entry.event, confirmedAt };
         records.current.set(entry.id, next);
@@ -219,8 +226,7 @@ export function useTeaserPremiere(options: Options) {
       const key = premiereKey(item);
       const target = presentationTime(item);
       const card = root?.querySelector(`[data-eventid="${item.id}"]`);
-      const screen = document.querySelector(`[data-pm-event="${item.id}"]`);
-      const observing = !opts.blocked.current && item.dateKey.startsWith(opts.month) && (visible(card ?? null) || visible(screen));
+      const observing = !opts.blocked.current && item.dateKey.startsWith(opts.month) && (visible(card ?? null) || visiblePremiere(item.id));
       if (target > now && target - now <= 180_000 && validated.current.has(key) && observing) watched.current.add(key);
       if (lastNow.current !== null && lastNow.current < target && now >= target && observing && watched.current.has(key) && !fired.current.has(key)) {
         fired.current.add(key);

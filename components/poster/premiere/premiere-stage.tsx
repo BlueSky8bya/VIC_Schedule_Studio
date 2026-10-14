@@ -7,7 +7,7 @@ import type { TagVisualResolver } from "@/lib/tags/tag-visual";
 import { tagColor } from "@/lib/tags/dark-palette";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 import { TeaserStageContent } from "@/components/shared/teaser-stage-content";
-import { Sparkles, Check, X, ArrowUpRight } from "lucide-react";
+import { Sparkles, Check, X, ArrowUpRight, Music2, VolumeX, WandSparkles } from "lucide-react";
 import { useRemainSeconds } from "@/lib/ui/use-remain-seconds";
 import { usePremiereChoreography } from "./use-premiere-choreography";
 import { flipSpring, FLIP_SPRING } from "@/lib/ui/flip-motion";
@@ -16,11 +16,12 @@ import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { gfxMode } from "@/lib/ui/gfx";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { playSfx } from "@/lib/ui/sfx";
-import { hapticSuccess } from "@/lib/ui/haptics";
+import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { splitEventTitleOutline } from "@/lib/calendar/month";
 import { PREMIERE_EASE } from "@/lib/ui/premiere/focus-motion";
 import { usePremiereCardVisible } from "./use-premiere-clock-owner";
-import { PremiereScene, PremierePortrait } from "./premiere-scene";
+import { PremiereScene, PremierePortrait, type PremiereReaction } from "./premiere-scene";
+import { usePremiereMusic } from "./use-premiere-music";
 import { createFlashBudget } from "@/lib/ui/premiere/flash-budget";
 import "./premiere-stage.css";
 
@@ -31,6 +32,10 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   const [ready, setReady] = useState(false);
   const [burst, setBurst] = useState(false);
   const [hopePulse, setHopePulse] = useState(0);
+  const [reaction, setReaction] = useState<PremiereReaction | null>(null);
+  const [cheerPulse, setCheerPulse] = useState(0);
+  const lastCheer = useRef(-Infinity);
+  const reactionSerial = useRef(0);
   const [gfx, setGfx] = useState("full");
   const [announcement, setAnnouncement] = useState<{ key: string; text: string } | null>(null);
   const [agenda, setAgenda] = useState(false);
@@ -48,12 +53,22 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   const screenLayout = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
   const focused = frame.focused || frame.phase === "return";
   const active = frame.phase !== "idle";
+  const complete = frame.items.length > 0 && frame.items.every(item => item.state === "released");
+  const music = usePremiereMusic(focused && !reduced && frame.phase !== "return" && frame.items.some(item => item.state === "masked"), frame.target);
   const cardVisible = usePremiereCardVisible(root, frame.items.map(item => item.id).join("|"), active && !focused);
   const detailOwnsClock = Boolean(detailEventId && frame.items.some(item => item.id === detailEventId));
   const dockOwnsClock = !focused && !detailOwnsClock && !cardVisible;
   const phaseIndex = phases.indexOf(frame.phase);
   usePremiereChoreography(frame, reduced, root, exit, portal, previousFocus);
   useEffect(() => { if (!active) setHopePulse(0); }, [active]);
+  useEffect(() => {
+    if (!reaction) return;
+    const timer = setTimeout(() => setReaction(null), reaction.kind === "delighted" ? 2100 : 1500);
+    return () => clearTimeout(timer);
+  }, [reaction]);
+  useEffect(() => {
+    if (!focused || complete) { setReaction(null); setCheerPulse(0); lastCheer.current = -Infinity; }
+  }, [focused, complete]);
   useEffect(() => { setReady(true); const read = () => setGfx(gfxMode()); read(); const observer = new MutationObserver(read); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-gfx"] }); return () => observer.disconnect(); }, []);
   useEffect(() => { const media = matchMedia(POSTER_AGENDA_QUERY); const read = () => setAgenda(media.matches); read(); media.addEventListener("change", read); return () => media.removeEventListener("change", read); }, []);
   useAmbientPause(active && phaseIndex >= phases.indexOf("curtain"), `premiere-stage-${instanceId}`);
@@ -194,7 +209,6 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   const season = month >= 3 && month <= 5 ? "spring" : month >= 6 && month <= 8 ? "summer" : month >= 9 && month <= 11 ? "autumn" : "winter";
   const released = frame.items.filter(item => item.state === "released");
   const waiting = frame.items.filter(item => item.state === "masked");
-  const complete = released.length > 0 && waiting.length === 0;
   const hasHope = waiting.some(item => hoped.has(item.id));
   return createPortal(<div ref={portal} tabIndex={focused ? -1 : undefined} data-clock-owner={focused ? "stage" : detailOwnsClock ? "detail" : dockOwnsClock ? "dock" : "card"} data-teaser-at={focused && waiting.length ? new Date(frame.target).toISOString() : undefined} role={focused ? "dialog" : undefined} aria-modal={focused || undefined} aria-label={focused ? "최초공개 무대" : undefined} className={`pm-stage pm-phase-${frame.phase}${focused ? " pm-focused" : ""}${complete ? " pm-complete" : ""}${burst ? " pm-bang" : ""}${reduced ? " pm-static" : ""}${hasHope ? " pm-hoped" : ""}`} data-season={season} data-gfx={gfx}>
     <p className="sr-only" role="status" aria-live="polite">{focused && announcement?.key === releasedKey ? announcement.text : ""}</p>
@@ -204,24 +218,25 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
       <div className="pm-shock" key={`shock-${bang}`} aria-hidden="true" />
       <div className="pm-viewport">
         <div className={`pm-screen${released.length ? " is-released" : ""}`} ref={screen} style={released[0] ? premierePaper(released[0].event, tagVisual) : undefined}>
-          <PremiereScene pulse={hopePulse} />
+          <PremiereScene pulse={hopePulse} reaction={reaction} cheer={cheerPulse} />
           <header className="pm-heading" data-pm-retreat><span className="pm-kicker">최초공개</span><span>{frame.items.length > 1 ? `${frame.items.length}개의 일정` : shortDate(frame.items[0]?.dateKey)}</span><span className="pm-heading-rule" aria-hidden="true" />{complete ? <div className="pm-keepsake" aria-hidden="true"><span>✦</span><PremierePortrait /><i>✧</i></div> : null}</header>
           <div className="pm-composition">
-            {waiting.length ? <div className="pm-count"><TeaserStageContent revealAt={new Date(frame.target).toISOString()} presentation="premiere" /></div> : null}
+            {waiting.length ? <div className="pm-count" data-pm-watching={waiting.map(item => item.id).join(" ")}><TeaserStageContent revealAt={new Date(frame.target).toISOString()} presentation="premiere" /></div> : null}
             <div className={`pm-films pm-n${frame.items.length}${frame.items.length > (agenda ? 2 : 4) ? " pm-list" : ""}`}>
-              {frame.items.map((item, index) => <article className={`pm-film ${item.state}`} key={item.id} data-pm-event={item.id} style={item.state === "released" ? premierePaper(item.event, tagVisual) : undefined}>
+              {frame.items.map((item, index) => <article className={`pm-film ${item.state}`} key={item.id} data-pm-event={item.id} data-pm-retreat style={item.state === "released" ? premierePaper(item.event, tagVisual) : undefined}>
                 {item.state === "released" ? <>
                   <div className="pm-date"><span>{Number(item.dateKey.slice(5, 7))}월</span><strong>{Number(item.dateKey.slice(8, 10))}</strong><span>{new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", weekday: "long" }).format(new Date(`${item.dateKey}T12:00:00+09:00`))}</span></div>
                   <PremiereStory event={item.event} tags={tags} tagVisual={tagVisual} onRead={onRead} />
                 </> : <div className="pm-masked" data-pm-retreat>
                   {frame.items.length > 1 ? <span className="pm-slot-label">{String(index + 1).padStart(2, "0")} <span>{shortDate(item.dateKey)}</span></span> : null}
-                  <button type="button" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { if (!hoped.has(item.id)) setHopePulse(value => value + 1); onHope(item.id); }}>
+                  <button type="button" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { const adding = !hoped.has(item.id); setReaction({ serial: ++reactionSerial.current, kind: adding ? "delighted" : "unimpressed" }); if (adding) { setHopePulse(value => value + 1); setCheerPulse(value => value + 1); } onHope(item.id); }}>
                     {hoped.has(item.id) ? <Check aria-hidden="true" size={20} /> : <Sparkles aria-hidden="true" size={20} />}<span>{hoped.has(item.id) ? "함께 기다리는 중" : "기대돼요"}</span><span className="pm-hope-ripple" aria-hidden="true" key={hopePulse} />
                   </button>
                 </div>}
               </article>)}
             </div>
           </div>
+          {waiting.length ? <div className="pm-music" data-pm-retreat><button type="button" aria-label="응원봉 흔들기" onClick={() => { if (performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }}><WandSparkles size={15} aria-hidden="true" /><span>응원봉 흔들기</span></button><button type="button" data-sfx="off" aria-pressed={music.playing} disabled={!music.available} aria-label={music.playing ? "음악 끄기" : "음악 켜기"} onClick={music.toggle}>{music.playing ? <VolumeX size={15} aria-hidden="true" /> : <Music2 size={15} aria-hidden="true" />}<span>{music.playing ? "음악 끄기" : "음악 켜기"}</span></button></div> : null}
         </div>
         <div ref={transfer} className="pm-card-transfer" aria-hidden="true"><span>🔮</span><strong>???</strong><span>✦</span></div>
       </div>

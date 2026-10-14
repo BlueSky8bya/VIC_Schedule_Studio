@@ -22,6 +22,10 @@
 
 ## 채택한 장면
 
+2026-10-14 PLAN-034가 아래의 인물 한 명/생성 없음/10→2초 주변 퇴장 결정을 대체한다. [현재 계획](../../agent/plans/PLAN-20261014-034-premiere-playful-company.md): 표정·응원단 1회 제작, 직접 합성한 선택형 BGM, T−18부터 착석·퇴장하여 T−10에는 숫자에만 집중. 기존 원본 초상은 기본·읽기 표면에 유지한다. [제작 기록](../../../art-src/최초공개/응원단/제작기록.md)에 native·최종 prompt·파생 SHA를 보존한다.
+
+추가로 실제 열람한 [YouTube Premiere 공식 설명](https://support.google.com/youtube/answer/9080341?hl=en)과 [운영 팁](https://support.google.com/youtube/answer/12356784?hl=en)에서 공동 대기/별도 카운트다운 테마/대기 중 참여를 참고했다. 채팅을 만들거나 YouTube 녹음·멜로디를 복사하지 않는다. [Apple 오디오·햅틱 설계](https://developer.apple.com/videos/play/wwdc2019/810/)의 인과가 명확한 피드백과 고조 후 끊김을, [Web Audio 모범 사례](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)의 제스처 시작·제어·단일 context를 적용한다. 논문의 기대/긴장 모델은 장면 설계 가설이며, 이 제품의 재미/체감 대기시간이 개선됐다는 실험 결과는 아니다.
+
 - 달력의 개별 퇴장 순서와 T−75 완료는 유지. 실제 시계·공개 시각 변경·다중 일정 대응도 공유한다.
 - T−68 진입: 날짜/최초공개 표식과 얕은 카드 이동. 한 프레임 안에서 카운트다운, 원본 인물, 기대 버튼으로 시선이 좁혀진다.
 - T−60→10: 두 개의 넓은 얇은 면이 조금씩 모인다. 숫자는 기존 고조 곡선에 따라 작게 움직인다. 기대 버튼을 누르면 별 하나가 중심으로 이동하고 토리님이 짧게 반응한다. 실제 다른 시청자가 눌렀다는 암시나 집계는 없다.

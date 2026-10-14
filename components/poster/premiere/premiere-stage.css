@@ -37,7 +37,7 @@
 .pm-card-transfer[data-active] { position: fixed; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border-radius: var(--r-sm); background: linear-gradient(135deg, var(--teaser-deep), var(--pm-violet)); color: #fff; font-size: 12px; pointer-events: none; box-shadow: var(--elev-2); animation: pm-transfer-fade 1.35s var(--spring-smooth, ease) both; }
 .pm-card-transfer .pm-readout { min-width: 0; font-size: 12px; }
 .pm-heading { position: relative; z-index: 1; display: flex; align-items: center; gap: 16px; color: var(--pm-quiet-ink); font-size: var(--text-body, 13.5px); font-weight: 600; }
-.pm-heading { opacity: calc(1 - var(--pm-final, 0)); transform: translateY(calc(var(--pm-final, 0) * -20px)); transition: opacity .2s linear, transform .2s linear; }
+.pm-heading { opacity: calc(1 - var(--pm-company-retire, 0)); transform: translateY(calc(var(--pm-company-retire, 0) * -20px)); transition: opacity .2s linear, transform .2s linear; }
 .pm-kicker { color: var(--pm-surface-ink); font-weight: 700; letter-spacing: .04em; }
 .pm-heading-rule { height: 1px; flex: 1; margin-left: 8px; background: currentColor; opacity: .18; }
 .pm-composition { position: relative; z-index: 1; min-height: min(64dvh, 680px); display: flex; flex-direction: column; justify-content: center; gap: 32px; }
@@ -61,15 +61,15 @@
 .pm-count .dt-count.is-final .dt-count-label { color: var(--pm-quiet-ink); opacity: 1; }
 .pm-count .dt-ring { opacity: calc(1 - var(--pm-final, 0)); transition: opacity .2s linear; }
 .pm-count .dt-ring-ticks { opacity: calc(1 - var(--pm-final, 0)); transform: scale(calc(1 + var(--pm-final, 0) * .08)); transform-origin: center; transition: opacity .2s linear, transform .2s linear; }
-.pm-count .dt-count-label { opacity: calc(1 - var(--pm-final, 0)); transform: translateY(calc(var(--pm-final, 0) * 24px)); transition: opacity .2s linear, transform .2s linear; }
-.pm-count .dt-count.is-final .dt-count-label { opacity: calc(1 - var(--pm-final, 0)); }
+.pm-count .dt-count-label { opacity: calc(1 - var(--pm-company-retire, 0)); transform: translateY(calc(var(--pm-company-retire, 0) * 24px)); transition: opacity .2s linear, transform .2s linear; }
+.pm-count .dt-count.is-final .dt-count-label { opacity: calc(1 - var(--pm-company-retire, 0)); }
 .pm-phase-waiting .pm-count .dt-count-label { opacity: 1; transform: none; }
 .pm-loading { width: 12px; height: 12px; border: 1.5px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: pm-loading 1s linear infinite; }
 .pm-films { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 24px; }
 .pm-film { position: relative; min-width: 0; }
 .pm-film.masked { display: flex; justify-content: center; }
 .pm-masked { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.pm-masked { opacity: calc(1 - var(--pm-final, 0)); transform: translateY(calc(var(--pm-final, 0) * 32px)) scale(calc(1 - var(--pm-final, 0) * .035)); transition: opacity .2s linear, transform .2s linear; }
+.pm-masked { opacity: calc(1 - var(--pm-company-retire, 0)); transform: translateY(calc(var(--pm-company-retire, 0) * 32px)) scale(calc(1 - var(--pm-company-retire, 0) * .035)); transition: opacity .2s linear, transform .2s linear; }
 .pm-slot-label { display: flex; align-items: center; gap: 8px; color: var(--pm-quiet-ink); font-variant-numeric: tabular-nums; font-size: var(--text-body, 13.5px); }
 .pm-slot-label>span { opacity: .75; }
 :is(.pm-stage, .pm-resume) button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgb(255 255 255 / 12%); border-radius: var(--r-pill); padding: 10px 20px; background: #302c3e; color: #f6f1ff; font: inherit; font-size: var(--text-body, 13.5px); font-weight: 600; cursor: pointer; pointer-events: auto; transition: transform .28s var(--spring-smooth, ease), background-color .3s ease; }
@@ -129,12 +129,36 @@
    The synchronized conductor supplies bounded motion, so late arrival and a
    rescheduled deadline show the same composition without replaying a film. */
 .pm-scene { position: absolute; z-index: 0; inset: 0; overflow: clip; pointer-events: none; border-radius: inherit; }
-.pm-folds { position: absolute; inset: 0; opacity: calc(1 - var(--pm-final, 0)); transition: opacity .2s linear; }
+.pm-folds { position: absolute; inset: 0; opacity: calc(1 - var(--pm-company-retire, 0)); transition: opacity .2s linear; }
 .pm-folds i { position: absolute; width: 78%; height: 160%; top: -42%; left: -56%; border: 1px solid color-mix(in srgb, var(--pm-season) 24%, transparent); border-radius: 48%; background: linear-gradient(110deg, color-mix(in srgb, var(--pm-violet) 12%, transparent), transparent 60%); transform: translate3d(calc(var(--pm-gather, 0) * 52px), var(--pm-fold-drift, 0px), 0) rotate(-24deg); transition: transform .12s linear; }
 .pm-folds i:nth-child(2) { left: auto; right: -56%; top: -18%; transform: translate3d(calc(var(--pm-gather, 0) * -52px), calc(var(--pm-fold-drift, 0px) * -1), 0) rotate(24deg); }
-.pm-host { position: absolute; right: -12px; bottom: -18px; width: clamp(160px, 24vw, 300px); opacity: calc((1 - var(--pm-final, 0)) * .9); transform: translate3d(calc(var(--pm-gather, 0) * -8px), calc(var(--pm-final, 0) * 60px), 0); transition: opacity .2s linear, transform .2s linear; mask-image: linear-gradient(#000 76%, transparent); }
+.pm-host { position: absolute; right: -12px; bottom: -18px; width: clamp(160px, 24vw, 300px); opacity: calc((1 - var(--pm-company-retire, 0)) * .9); transform: translate3d(calc(var(--pm-gather, 0) * -8px), calc(var(--pm-company-retire, 0) * 60px), 0); transition: opacity .2s linear, transform .2s linear; mask-image: linear-gradient(#000 76%, transparent); }
+.pm-host > div { position: relative; }
+.pm-expression { position: absolute; inset: 0; opacity: 0; transition: opacity .22s ease; }
+.pm-host-response > img { opacity: 0; transition: opacity .22s ease; }
+.pm-host-delighted .pm-delighted, .pm-host-unimpressed .pm-unimpressed { opacity: 1; }
+.pm-host::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(ellipse, color-mix(in srgb, var(--teaser) 28%, transparent), transparent 66%); opacity: 0; transition: opacity .45s ease; }
+.pm-host[data-reaction="delighted"]::before { opacity: .8; }
 .pm-host img { display: block; width: 100%; height: auto; }
 .pm-host-response { animation: pm-host-response .9s var(--spring-smooth, ease) both; transform-origin: center bottom; }
+.pm-host-unimpressed { animation: pm-host-glance .65s var(--spring-smooth, ease) both; }
+.pm-company { position: absolute; inset: auto 0 4px; height: clamp(90px, 13vw, 160px); opacity: calc((1 - var(--pm-company-retire, 0)) * .94); transform: translateY(calc(var(--pm-company-retire, 0) * 30px)); transition: opacity .2s linear, transform .2s linear; }
+.pm-audience-line { position: absolute; bottom: 6px; left: 3%; width: 72%; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--teaser) 18%, transparent), transparent); opacity: calc(1 - var(--pm-company-retire, 0)); }
+.pm-fan { position: absolute; bottom: 0; width: clamp(72px, 12vw, 146px); transform: translate3d(0, calc(var(--fan-hop, 0px) + var(--pm-settle, 0) * 16px), 0) rotate(var(--fan-sway, 0deg)) scale(var(--fan-size)); transform-origin: center bottom; transition: transform .12s linear; }
+.pm-fan-bounce { position: relative; }
+.pm-fan img { width: 100%; height: auto; display: block; }
+.pm-fan img:first-child { opacity: calc(1 - var(--pm-settle, 0)); }
+.pm-fan img:last-child { position: absolute; inset: 0; opacity: var(--pm-settle, 0); }
+.pm-company[data-cheer] .pm-fan-bounce { animation: pm-cheer-wave .75s var(--spring-smooth, ease) var(--fan-delay) both; }
+.pm-music { position: absolute; z-index: 2; top: 60px; inset-inline: 0; display: flex; justify-content: center; gap: 8px; opacity: calc(1 - var(--pm-company-retire, 0)); transform: translateY(calc(var(--pm-company-retire, 0) * -12px)); }
+.pm-stage .pm-music button { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 8px 14px; border: 1px solid rgb(255 255 255 / 10%); border-radius: var(--r-pill); background: rgb(255 255 255 / 3%); color: var(--pm-quiet-ink); font-size: 12px; font-weight: 400; }
+.pm-stage .pm-music button[aria-pressed="true"] { color: var(--pm-surface-ink); border-color: color-mix(in srgb, var(--teaser) 40%, transparent); }
+.pm-stage .pm-music button:disabled { opacity: .35; }
+/* Hard quiet boundary after a smooth retirement. Exit stays available. */
+.pm-stage[data-pm-quiet] :is(.pm-scene, [data-pm-retreat]) { visibility: hidden; }
+.pm-stage[data-pm-quiet]:not(.pm-phase-waiting) .dt-count-label { visibility: hidden; }
+.pm-stage.pm-phase-waiting .pm-count .dt-count-label { visibility: visible; opacity: 1; transform: none; }
+.pm-stage:not(.pm-complete) .pm-film.released { opacity: calc(1 - var(--pm-company-retire, 0)); transition: opacity .2s linear; }
 .pm-wish { position: absolute; z-index: 2; left: 50%; top: 50%; color: var(--teaser-soft, #c8a5eb); }
 .pm-wish span { position: absolute; font-size: 44px; line-height: 1; margin-left: -22px; animation: pm-wish-flight 1.2s var(--spring-smooth, ease) both; }
 .pm-wish i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: currentColor; --wish-x: -45px; --wish-y: -30px; animation: pm-wish-reply 1.2s ease both; }
@@ -224,6 +248,8 @@
 @keyframes pm-check-in { from { opacity: 0; transform: scale(.5) rotate(-12deg); } to { opacity: 1; transform: none; } }
 @keyframes pm-ripple { from { opacity: .4; transform: scale(.84); } to { opacity: 0; transform: scale(1.1); } }
 @keyframes pm-host-response { 0%, 100% { transform: none; } 35% { transform: translateY(-12px) rotate(-2deg); } 65% { transform: translateY(-3px) rotate(1deg); } }
+@keyframes pm-host-glance { 0%, 100% { transform: none; } 45% { transform: translateX(5px) rotate(2deg); } }
+@keyframes pm-cheer-wave { 0%, 100% { transform: none; } 35% { transform: translateY(-20px) rotate(-6deg); } 65% { transform: translateY(-5px) rotate(4deg); } }
 @keyframes pm-wish-flight { 0% { opacity: 0; transform: translateY(210px) scale(.3) rotate(-20deg); } 20% { opacity: 1; } 70% { opacity: 1; transform: translateY(-10px) scale(.8) rotate(10deg); } 100% { opacity: 0; transform: translateY(-28px) scale(1.15) rotate(20deg); } }
 @keyframes pm-wish-reply { 0%, 55% { opacity: 0; transform: scale(.4); } 65% { opacity: .65; } 100% { opacity: 0; transform: translate(var(--wish-x), var(--wish-y)) scale(.5); } }
 @keyframes pm-paper-open { from { opacity: 1; } to { opacity: 0; } }
@@ -238,6 +264,11 @@
   .pm-composition { min-height: min(66dvh, 640px); gap: 28px; }
   .pm-count { padding-top: 16px; }
   .pm-host { width: 128px; right: 0; bottom: -12px; }
+  /* Agenda has less side space: three spectators in its own short front row. */
+  .pm-company { height: 80px; bottom: 0; }
+  .pm-fan { width: 68px; }
+  .pm-fan:nth-of-type(n+5) { display: none; }
+  .pm-music { top: 54px; }
   .pm-folds i { width: 120%; left: -104%; }
   .pm-folds i:nth-child(2) { right: -104%; }
   .pm-count .dt-count-ringbox { width: clamp(220px, 34dvh, 320px); height: clamp(220px, 34dvh, 320px); }
@@ -265,6 +296,10 @@
   .pm-keepsake img { width: 60px; height: 76px; }
 }
 @media (max-height: 520px) {
+  .pm-screen:not(.is-released) > .pm-heading { padding-inline-end: 108px; }
+  .pm-music { top: 8px; inset-inline-start: auto; inset-inline-end: 16px; }
+  .pm-stage .pm-music button { width: 44px; justify-content: center; padding: 8px; }
+  .pm-music button span { display: none; }
   .pm-viewport { padding-top: 64px; }
   .pm-screen { padding: 18px 28px; max-height: calc(100dvh - 80px); }
   .pm-composition { min-height: 230px; gap: 12px; }
@@ -278,6 +313,9 @@
 html[data-reduce-motion] .pm-stage *, html[data-reduce-motion] .poster-page[data-premiere] * { animation: none!important; transition: none!important; }
 .pm-stage:is([data-gfx="soft"], [data-gfx="off"]) :is(.pm-folds, .pm-wish, .pm-flash, .pm-shock) { display: none; }
 .pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-host-response { animation: none; }
+.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-company,
+.pm-stage:is([data-gfx="soft"], [data-gfx="off"]) .pm-host::before { display: none; }
+.pm-stage[data-gfx="lite"] .pm-fan:nth-of-type(2n) { display: none; }
 .pm-stage[data-gfx="lite"] .pm-folds i:nth-child(2) { display: none; }
 /* Stop the shared legacy presenter too, not a nominal 1ms loop. */
 html[data-reduce-motion] :is(.public-event.teaser, .agenda-item.teaser, .agenda-detail-sheet.is-teaser, .just-revealed, .reveal-secondary, .detail-anchor-flow, .detail-anchor-pulse, .detail-anchor-dot),

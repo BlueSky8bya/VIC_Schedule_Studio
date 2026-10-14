@@ -36,6 +36,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Editor, settings and overlays
 
+Premiere music (2026-10-14 owner request; UI-40 extension): the optional longer score uses `startPremiereMusic` in the same sfx module/context/output bus, started only by the stage music button. It obeys master/celebrate/volume, stops on hide regardless of the short-SFX hidden preference, deadline change, exit or T−10.5, and requires a fresh gesture to resume. No recording/sample or autoplay bypass. Local cheer uses the existing sparkle/haptic gesture; no audience count or DB write. [PLAN-034](../agent/plans/PLAN-20261014-034-premiere-playful-company.md).
+
 Depth P0 amendment ([ADR-0022](../agent/decisions/ADR-0022-world-depth-and-showcase-motion.md)): seasonal scenery moves only in showcase; calendar/studio background stays still. Mobile and short coarse-pointer landscape do not mount the ambient engine. Keep the current shared settings; graphics preference defaults to auto and explicit max/lite/off remain respected. A desktop without mouse/trackpad input shows centered scenery without simulated pointer drift.
 
 - UI-19: (편집 팝오버) Editor popover prefers left of the selected date; flip only when space is insufficient. Reason: right-side popovers obscure the next day in chronological editing. Keep anchoring, viewport clamp, manual drag and leader line consistent through zoom. Evidence: `placeEditorPopover`.
