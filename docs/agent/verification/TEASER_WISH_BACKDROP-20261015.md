@@ -41,3 +41,4 @@ Scope: PLAN-039. 2026-10-15 KST. Product commit `e63261e5` deployed; live build 
 - typecheck/full lint/fixture production build 통과. 관련 unit35/35. 3뷰 렌더3/3 및 기준선 갱신. G21 독립 코드 리뷰에서 확정 차단 없음.
 - 로컬 `/` 실제 렌더1100×780/390×844/844×390 touch: 기대ON/OFF, 수평축 오차 각각 최대1.35/0.59/1.07px, 이미지 세로중앙 오차0.008px 이하. pageerror0. 각 context POST4차단 중 가짜 기대2응답, 실제 쓰기0.
 - `.scratch-pw/axis-local-smoke.json`, `axis-local-happy-{1100,390,844}.png`. 사진 원본/공개 에셋 무변경. 완전한 얼굴 대칭이나 전문 미술 승인 주장 아님.
+- 제품 `7cbc8a17` [운영 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/A4SUGTgRyiQn5Esag5tkcob1NyG1) success, live build SHA 일치. 운영3뷰 동일 중심축 오차/기대ON·OFF 확인, pageerror0. 각 context POST3차단(가짜 기대2), 실제 쓰기0. `.scratch-pw/axis-production-smoke.json` 및 `axis-production-happy-*` 화면 기록.
