@@ -4109,7 +4109,7 @@ export function PublicPoster({
       <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}
         canResume={premiere.canResume} onResume={premiere.resume}
         detailEventId={agendaDetail?.event.teaser ? agendaDetail.event.id : undefined}
-        month={view.month} tags={viewTags} root={posterRootRef} onClose={premiere.close} hoped={myHopeIds}
+        month={view.month} tags={viewTags} tagVisual={tagVisual} root={posterRootRef} onClose={premiere.close} hoped={myHopeIds}
         onHope={id => { const event = premiere.frame.items.find(item => item.id === id)?.event ?? schedule.events.find(item => item.id === id); if (event) toggleHope(event); }}
         onRead={(rehearsal ?? premiereFixture)?.rehearsal ? undefined : id => { const item = premiere.frame.items.find(item => item.id === id && item.state === "released"); if (item) { premiereReadRef.current = { id, dateKey: item.dateKey }; premiere.close(); } }}
         onOtherMonth={() => { const event = schedule.events.find(item => item.teaser && item.teaserRevealAt && Date.parse(item.teaserRevealAt) - syncedNow() <= 180000); if (event) { const [year, month] = event.startsAt.split("-").map(Number); goToMonth({ year, month }); } }} />
@@ -5035,7 +5035,7 @@ export function PublicPoster({
       {/* 하단 중앙 [⇤ | 패널 | ⇥] — 편집실과 같은 부품·같은 자리(2026-09-17 소유자). 자리 선택(⇤ ⇥)은 관리자·개발자
           (avatarSlot)만, 일반 시청자·비로그인은 접기/펼치기 하나. /onair 고정 scene엔 없다(사람이 안 만진다). */}
       {sceneOn && !avatarFixed ? (
-        <div className="poster-panel-ctl" data-pm-exit="3">
+        <div className="poster-panel-ctl" data-pm-exit="7">
           {/* 자리 선택(⇤ ⇥)은 비로그인 시청자에게도(2026-09-17 소유자). 확대 직후 1.2초는 가운데 글자만 배율. */}
           <PanelPlaceControl
             onSide={panel.pickSide}

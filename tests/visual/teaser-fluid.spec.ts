@@ -83,7 +83,7 @@ for (const width of [1440, 390]) {
     expect(await target.evaluate(el => getComputedStyle(el).visibility)).toBe("visible");
     await expect(page.locator(".pm-screen")).toHaveAttribute("data-pm-morph", "card", { timeout: 10000 });
     await page.locator(".pm-count .dt-ring").evaluate(el => el.dispatchEvent(new TransitionEvent("transitionend", { bubbles: true, propertyName: "stroke-dashoffset" })));
-    expect(await page.locator(".pm-screen").evaluate(el => (el as HTMLElement).style.transition)).toContain("1100ms");
+    expect(await page.locator(".pm-screen").evaluate(el => (el as HTMLElement).style.transition)).toContain("1350ms");
     const matrix = await page.locator(".pm-screen").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a);
     expect(matrix).toBeGreaterThan(.95); expect(matrix).toBeLessThanOrEqual(1);
     await expect(page.locator(".pm-count .dt-count-core")).toBeVisible();

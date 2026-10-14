@@ -47,12 +47,12 @@ export function useTeaserPremiere(options: Options) {
   const [hint, setHint] = useState(false);
   const [canResume, setCanResume] = useState(false);
   const wake = useRef<() => void>(() => {});
-  const end = useCallback(() => {
+  const end = useCallback((purge = false) => {
     for (const item of frameRef.current.items) skipped.current.add(premiereKey(item));
     cooldown.current = syncedNow() + PREMIERE_TIMING.rest;
     started.current = 0;
     returnUntil.current = syncedNow() + (document.documentElement.hasAttribute("data-reduce-motion") ? 0 : 800);
-    setFrame(previous => previous.phase === "idle" ? previous : previous.focused ? { ...previous, phase: "return", focused: false } : idleFrame());
+    setFrame(previous => previous.phase === "idle" ? previous : previous.focused ? { ...previous, phase: "return", focused: false, items: purge ? [] : previous.items } : idleFrame());
   }, []);
   const close = useCallback(() => {
     // Only an explicit exit offers re-entry; automatic stops stay quiet.
@@ -242,20 +242,23 @@ export function useTeaserPremiere(options: Options) {
       for (const [key, value] of Object.entries(vars)) host.style.setProperty(key, value);
       host.classList.toggle("hype-live", raw > 0 && !staticOnly);
     }
-    const next = planPremiere(all.filter(entry => validated.current.has(premiereKey(entry)) || entry.confirmedAt !== undefined), now, opts.month, skipped.current);
+    const next = planPremiere(all.filter(entry => validated.current.has(premiereKey(entry)) || entry.confirmedAt !== undefined), now, opts.month, skipped.current, frameRef.current);
     setHint(opts.enabled && all.some(entry => entry.state === "masked" && !entry.dateKey.startsWith(opts.month) && Date.parse(entry.revealAt ?? "") - now <= 180_000 && Date.parse(entry.revealAt ?? "") > now));
     if (!opts.enabled || !clockIsSynced() || opts.blocked.current || staticOnly || cooldown.current > now) {
       if (frameRef.current.phase !== "idle") end();
       return;
     }
-    if (next.focused && !started.current) started.current = now;
+    // Confirmed reading belongs to the viewer. Only pending spectacle is timed.
+    const reading = next.phase === "reveal" && next.items.every(item => item.state === "released");
+    if (reading) started.current = 0;
+    else if (next.focused && !started.current) started.current = now;
     if (started.current && now - started.current >= PREMIERE_TIMING.limit) { end(); return; }
-    if (next.phase === "idle" && frameRef.current.phase !== "idle") { end(); return; }
+    if (next.phase === "idle" && frameRef.current.phase !== "idle") { end(true); return; }
     // Countdown subscribers update their own text; the calendar parent changes
     // only for semantic phases, targets and confirmed data, never at visual 10Hz.
-    const signature = `${next.phase}:${next.target}:${next.items.map(item => `${premiereKey(item)}:${item.state}:${item.event.publicTitle}`).join("|")}`;
+    const signature = `${next.phase}:${next.target}:${next.items.map(item => `${premiereKey(item)}:${item.state}:${JSON.stringify(item.event)}`).join("|")}`;
     const previous = frameRef.current;
-    const oldSignature = `${previous.phase}:${previous.target}:${previous.items.map(item => `${premiereKey(item)}:${item.state}:${item.event.publicTitle}`).join("|")}`;
+    const oldSignature = `${previous.phase}:${previous.target}:${previous.items.map(item => `${premiereKey(item)}:${item.state}:${JSON.stringify(item.event)}`).join("|")}`;
     if (signature !== oldSignature) setFrame(next);
   }), [end, resumable]);
 

@@ -76,7 +76,7 @@ test("the last seconds retire the host and stop the folds while the clock stays 
   const stage = page.locator(".pm-stage");
   await expect.poll(() => stage.evaluate(el => (el as HTMLElement).style.getPropertyValue("--pm-fold-drift"))).toBe("0px");
   await expect.poll(() => page.locator(".pm-host").evaluate(el => Number(getComputedStyle(el).opacity)), { timeout: 9000 }).toBeLessThan(.05);
-  await expect(page.locator(".pm-invitation")).toHaveAttribute("inert");
+  await expect(page.locator(".pm-heading")).toHaveAttribute("inert");
   const before = await page.getByRole("timer").textContent();
   await expect.poll(() => page.getByRole("timer").textContent(), { timeout: 2200 }).not.toBe(before);
   await page.keyboard.press("Tab");

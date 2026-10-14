@@ -54,6 +54,28 @@ describe("premiere timeline and multiple releases", () => {
 });
 
 describe("public synthetic canaries and transition confirmation", () => {
+  it("holds the confirmed active cohort beyond both automatic budgets, without replaying late arrivals", () => {
+    const list = entries([0, 2], start + 3000).map(item => ({ ...item, confirmedAt: start + 3000 }));
+    const current = planPremiere(list, start + 3000, month);
+    const other = entries([4], start + 149_000)[0];
+    const unrelated = { ...other, id: "unrelated", event: { ...other.event, id: "unrelated" }, confirmedAt: start + 149_000 };
+    const held = planPremiere([...list, unrelated], start + 150_000, month, new Set(), current);
+    expect(held.phase).toBe("reveal");
+    expect(held.items.map(item => item.id)).toEqual(current.items.map(item => item.id));
+    expect(planPremiere(list, start + 150_000, month).phase).toBe("idle");
+  });
+  it("resolves held reading against canonical deletion, re-gating and public edits", () => {
+    const list = entries([0, 2], start + 3000).map(item => ({ ...item, confirmedAt: start + 3000 }));
+    const current = planPremiere(list, start + 3000, month);
+    const changed = { ...list[0], event: { ...list[0].event, publicDescription: "Changed public text" } };
+    expect(planPremiere([changed], start + 30_000, month, new Set(), current).items[0].event.publicDescription).toBe("Changed public text");
+    expect(planPremiere([], start + 30_000, month, new Set(), current).phase).toBe("idle");
+    const masked = entries([40], start + 5000);
+    const regated = planPremiere(masked, start + 5000, month, new Set(), current);
+    expect(regated.items[0].state).toBe("masked");
+    expect(regated.items[0].event.publicTitle).toBe("");
+    expect(planPremiere(list, start + 5000, "2026-07", new Set(), current).phase).toBe("idle");
+  });
   it("keeps title, body, actual time out of every pre-release fixture DTO", () => {
     const before = JSON.stringify(buildPremiereFixture(start, [10,12], start));
     expect(before).not.toContain(PREMIERE_CANARY);

@@ -8,17 +8,19 @@ export const idleFrame = (): PremiereFrame => ({ phase: "idle", target: 0, remai
 export const premiereKey = (entry: TeaserStateEntry) => `${entry.id}:${entry.revealAt ?? "released"}`;
 export const presentationTime = (entry: PremiereCandidate) => Math.min(Date.parse(entry.revealAt ?? ""), entry.confirmedAt ?? Infinity);
 
-export function planPremiere(entries: PremiereCandidate[], now: number, month: string, skipped: ReadonlySet<string> = new Set()): PremiereFrame {
+export function planPremiere(entries: PremiereCandidate[], now: number, month: string, skipped: ReadonlySet<string> = new Set(), current?: PremiereFrame): PremiereFrame {
+  const activeKeys = new Set(current?.focused ? current.items.map(premiereKey) : []);
+  const readingIds = current?.focused && current.phase === "reveal" && current.items.every(item => item.state === "released") ? new Set(current.items.map(item => item.id)) : null;
   const candidates = entries.filter(entry => {
     const target = presentationTime(entry);
-    return entry.dateKey.startsWith(month) && Number.isFinite(target) && !skipped.has(premiereKey(entry)) &&
+    return (!readingIds || readingIds.has(entry.id)) && entry.dateKey.startsWith(month) && Number.isFinite(target) && !skipped.has(premiereKey(entry)) &&
       target - now <= PREMIERE_TIMING.prelude &&
-      (entry.state === "released" ? entry.confirmedAt !== undefined && now - entry.confirmedAt <= PREMIERE_TIMING.read : now - target <= PREMIERE_TIMING.wait);
+      (entry.state === "released" ? entry.confirmedAt !== undefined && (activeKeys.has(premiereKey(entry)) || now - entry.confirmedAt <= PREMIERE_TIMING.read) : now - target <= PREMIERE_TIMING.wait);
   }).sort((a, b) => presentationTime(a) - presentationTime(b) || a.event.sortOrder - b.event.sortOrder || a.id.localeCompare(b.id));
   if (!candidates.length) return idleFrame();
   const items = [candidates[0]];
   for (const item of candidates.slice(1)) {
-    if (presentationTime(item) - presentationTime(items[items.length - 1]) > PREMIERE_TIMING.chain) break;
+    if (presentationTime(item) - presentationTime(items[items.length - 1]) > PREMIERE_TIMING.chain && !activeKeys.has(premiereKey(item))) break;
     items.push(item);
   }
   const next = items.find(item => item.state === "masked") ?? items[items.length - 1];

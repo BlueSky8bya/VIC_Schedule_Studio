@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/presence", route => route.fulfill({ status: 204 }));
 });
 
-test("one shared stage reveals simultaneous content and returns without changing 1840px geometry", async ({ page }) => {
+test("one shared stage keeps simultaneous revealed content until exit without changing 1840px geometry", async ({ page }) => {
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   await page.goto("/visual-fixture/poster?premiere=9&count=2");
   const surface = page.locator("[data-export-surface]");
@@ -25,7 +25,10 @@ test("one shared stage reveals simultaneous content and returns without changing
   expect(await surface.evaluate(el => (el as HTMLElement).offsetWidth)).toBe(1840);
   await expect(page.locator(".pm-film.released")).toHaveCount(2, { timeout: 16000 });
   await expect(page.locator(".pm-film.released").first()).toContainText("별빛 우체국", { timeout: 3000 });
-  await expect(page.locator(".pm-stage")).toHaveCount(0, { timeout: 12000 });
+  await page.waitForTimeout(7500);
+  await expect(page.locator(".pm-film.released")).toHaveCount(2);
+  await page.getByRole("button", { name: "일정표 보기", exact: true }).click();
+  await expect(page.locator(".pm-stage")).toHaveCount(0);
   expect(await surface.evaluate(el => (el as HTMLElement).offsetWidth)).toBe(1840);
   expect(await page.locator(".poster-page").getAttribute("inert")).toBeNull();
   expect(errors).toEqual([]);

@@ -31,8 +31,17 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     let canvas = page.querySelector<HTMLElement>(".poster-stage");
     let fit = page.querySelector<HTMLElement>(".poster-fit");
     const marked = new Set<HTMLElement>();
-    let widthRatio = 1, shift = 0;
+    let widthRatio = 1, shift = 0, dockTravel = 0;
     const measure = () => {
+      const panel = page.querySelector<HTMLElement>(".poster-panel-ctl");
+      const badge = stage.current?.querySelector<HTMLElement>(".pm-banner:not(.pm-banner-focused)");
+      // Agenda has no panel slot: keep its badge above the mobile monthbar.
+      // Ignore departure transforms; CSS zoom/safe-area still define the slot.
+      if (panel && badge) {
+        const style = getComputedStyle(panel), zoom = parseFloat(style.getPropertyValue("zoom")) || 1;
+        const center = (parseFloat(style.bottom) + panel.offsetHeight / 2) * zoom;
+        dockTravel = (parseFloat(getComputedStyle(badge).bottom) || 84) - center + badge.offsetHeight / 2;
+      } else dockTravel = 0;
       if (!canvas || !fit) return;
       const style = getComputedStyle(fit);
       const left = parseFloat(style.paddingLeft) || 0, right = parseFloat(style.paddingRight) || 0;
@@ -45,6 +54,9 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     const resize = new ResizeObserver(measure);
     if (canvas) resize.observe(canvas);
     if (fit) resize.observe(fit);
+    const panel = page.querySelector<HTMLElement>(".poster-panel-ctl"), badge = stage.current?.querySelector<HTMLElement>(".pm-banner");
+    if (panel) resize.observe(panel);
+    if (badge) resize.observe(badge);
     page.style.setProperty("--pm-spring", FLIP_SPRING);
     const restoreRegion = (item: typeof regions[number]) => {
       item.el.inert = item.inert;
@@ -55,11 +67,12 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       const returning = current.phase === "return" || current.phase === "idle";
       const seconds = returning ? Infinity : (current.target - syncedNow()) / 1000;
       stage.current?.style.setProperty("--pm-progress", String(Math.max(0, Math.min(1, 1 - seconds / 180))));
+      stage.current?.style.setProperty("--pm-dock-y", `${passage(seconds, 158, 138) * dockTravel}px`);
       stage.current?.style.setProperty("--pm-ring-offset", String(1 - Math.max(0, Math.min(1, seconds / 60))));
       const motion = premiereFocusMotion(seconds * 1000);
       const finale = current.phase === "reveal" ? 0 : motion.retreat;
       const grade = stage.current?.dataset.gfx;
-      const drift = grade === "off" ? 0 : grade === "soft" || grade === "lite" ? .45 : 1;
+      const drift = current.phase === "reveal" || grade === "off" ? 0 : grade === "soft" || grade === "lite" ? .45 : 1;
       // One truthful clock conducts visual gathering too. Motion stops before
       // the last ten seconds; the ring remains an actual time indicator.
       for (const [key, value] of Object.entries({ "--pm-digit-x": `${motion.x * drift}px`, "--pm-digit-y": `${motion.y * drift}px`, "--pm-digit-tilt": `${motion.tilt * drift}deg`, "--pm-final": String(finale), "--pm-gather": String(passage(seconds, 68, 10)), "--pm-fold-drift": `${Math.sin(Math.max(0, 68 - seconds) * .48) * 5 * drift * (1 - passage(seconds, 12, 10))}px` })) stage.current?.style.setProperty(key, value);

@@ -3,6 +3,7 @@ export const REGION_WINDOWS: Record<string, readonly [number, number]> = {
   "1": [180, 168], // debut
   "6": [174, 162], // live card
   "5": [166, 154], // season controls
+  "7": [174, 150], // bottom panel yields with the side boxes, before badge arrival
   "2": [154, 138], // filters
   "3": [122, 112], // navigation/chrome
   "4": [96, 84] // ambient
