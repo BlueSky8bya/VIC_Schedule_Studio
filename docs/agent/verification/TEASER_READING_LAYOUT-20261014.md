@@ -10,6 +10,7 @@
 - 로컬 실제 `/` PC1500/모바일390: 반대 순서로 전달된 합성 과거 일정도12일→30일 배치. 각 context POST1차단/실제쓰기0/pageerror0. `.scratch-pw/date-order-local.json`, `date-order-local-{1500,390}.png`.
 - 첫 reading-layout 렌더6통과/1실패: 가로 화면 테스트 종료 중 fixture route.fetch 잔여 요청이 닫힌 브라우저를 참조. afterEach에서 요청 완료를 기다리도록 보완. 제품 오류로 숨기지 않음.
 - 보완 후 reading-layout 최종7/7 통과. PC/모바일 역순 날짜 회귀 포함, 기존 단일 일정 스냅샷 변경 없음. 최종 수정 파일 scoped lint/diff check 통과.
+- 제품 `dc8052bf` [운영 배포 성공](https://vercel.com/bluesky-s-project3/vic-schedule-studio/GH4sSu9MRUFtLVgBpygVX8Jve79B), live build SHA 일치. 운영 `/` PC1500/모바일390에서 합성12일→30일 순서와 실제 좌우/상하 좌표 확인. 각 context POST2차단/실제쓰기0/pageerror0. `.scratch-pw/date-order-production.json` 및 `date-order-production-{1500,390}.png`.
 
 ## 변경
 
