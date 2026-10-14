@@ -2,6 +2,15 @@
 
 [PLAN-037](../plans/PLAN-20261014-037-premiere-reading-layout.md). 사용자 요청 및 기존 커밋/푸시/배포 승인에 따른 구현.
 
+## 2026-10-15 후속: 날짜순 배치
+
+- 소유자 요청: 복수 공개 결과는 일정 날짜가 빠른 순으로 PC 왼쪽→오른쪽, 모바일 위→아래. 같은 날짜는 기존 순서 유지.
+- 원인: 지휘자의 공개 시각/일별 sortOrder 순서를 읽기 화면에도 그대로 사용. 공유 PremiereStage에서 public `dateKey`로 복사본을 정렬해 표시/발표/첫 공개 종이색에 사용한다. 지휘자 원배열·대상 시각·연쇄 판정·공개 경계·서버·권한·KST 날짜 생성은 무변경.
+- 타입·전체 lint·fixture production build, 관련 unit28/28 통과. G21 독립 코드 리뷰에서 확정 문제 없음.
+- 로컬 실제 `/` PC1500/모바일390: 반대 순서로 전달된 합성 과거 일정도12일→30일 배치. 각 context POST1차단/실제쓰기0/pageerror0. `.scratch-pw/date-order-local.json`, `date-order-local-{1500,390}.png`.
+- 첫 reading-layout 렌더6통과/1실패: 가로 화면 테스트 종료 중 fixture route.fetch 잔여 요청이 닫힌 브라우저를 참조. afterEach에서 요청 완료를 기다리도록 보완. 제품 오류로 숨기지 않음.
+- 보완 후 reading-layout 최종7/7 통과. PC/모바일 역순 날짜 회귀 포함, 기존 단일 일정 스냅샷 변경 없음. 최종 수정 파일 scoped lint/diff check 통과.
+
 ## 변경
 
 - 완료 화면의 큰 날짜 열·반복 헤더·V 포즈 장식·단일 일정의 중첩 카드를 없앴다. 각 일정의 날짜/KST 요일·실제 시작 시각·모든 태그·상세 버튼을 상단에 모았다. 종일 일정의 `하루 종일` 문구는 생략한다.

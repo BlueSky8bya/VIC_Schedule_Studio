@@ -11,12 +11,15 @@ test.beforeEach(async ({ context }) => {
   await context.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
 });
 
-async function content(page: Page, options: { long?: boolean; timed?: boolean; multiple?: boolean } = {}) {
+// Finish an in-flight fixture refresh before Playwright closes its page.
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" }); });
+
+async function content(page: Page, options: { long?: boolean; timed?: boolean; multiple?: boolean; reverseDates?: boolean } = {}) {
   await page.route("**/api/visual-fixture/premiere**", async route => {
     const response = await route.fetch(), snapshot = await response.json() as TeaserStateSnapshot;
     for (const [index, item] of snapshot.entries.entries()) {
       if (item.state !== "released") continue;
-      item.dateKey = `2026-06-${18 + index}`;
+      item.dateKey = `2026-06-${options.reverseDates ? 19 - index : 18 + index}`;
       item.event.startsAt = `${item.dateKey}T${options.timed ? "20:30" : "00:00"}:00+09:00`;
       item.event.isAllDay = !options.timed;
       item.event.publicTitle = [options.multiple ? `${title} ${index + 1}` : title, ...subtopics].join("\n");
@@ -91,6 +94,21 @@ test("actual time appears once in the metadata, and each released event owns its
   await expect(events.first().locator(".pm-tags")).toContainText("합방");
   await expect(events.last().locator(".pm-tags")).not.toContainText("합방");
 });
+
+for (const width of [1500, 390]) {
+  test(`earlier calendar date reads first despite opposite reveal order at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await content(page, { multiple: true, reverseDates: true });
+    const cards = page.locator(".pm-film.released");
+    await expect(cards).toHaveCount(2);
+    await expect(cards.locator(".pm-meta-date time")).toHaveText(["6월 18일 목", "6월 19일 금"]);
+    await expect(cards.first().locator("h2")).toHaveText(`${title} 2`);
+    await expect(cards.last().locator("h2")).toHaveText(`${title} 1`);
+    const earlier = (await cards.first().boundingBox())!, later = (await cards.last().boundingBox())!;
+    if (width > 640) expect(earlier.x + earlier.width).toBeLessThanOrEqual(later.x);
+    else expect(earlier.y + earlier.height).toBeLessThanOrEqual(later.y);
+  });
+}
 
 test("extreme content stays complete with one keyboard scroller and a persistent exit", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

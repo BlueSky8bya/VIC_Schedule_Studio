@@ -54,6 +54,10 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   const focused = frame.focused || frame.phase === "return";
   const active = frame.phase !== "idle";
   const complete = frame.items.length > 0 && frame.items.every(item => item.state === "released");
+  // Reading order follows public KST calendar dates, not reveal deadlines or
+  // per-day sortOrder. Keep the conductor's array/clock untouched; equal dates
+  // retain their existing stable order, including while a chain is releasing.
+  const displayItems = [...frame.items].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
   const generationKey = frame.items.map(item => `${item.id}:${item.revealAt}`).sort().join("|");
   usePremiereMusic(focused && !reduced && frame.phase !== "return" && frame.items.some(item => item.state === "masked"), frame.target);
   const cardVisible = usePremiereCardVisible(root, frame.items.map(item => item.id).join("|"), active && !focused);
@@ -159,7 +163,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
     const fresh = releasedKey.split("|").filter(key => !sounded.current.has(key));
     if (!fresh.length) { setAnnouncement(null); return; }
     for (const key of fresh) sounded.current.add(key);
-    setAnnouncement({ key: releasedKey, text: `공개되었습니다. ${frame.items.filter(item => fresh.includes(`${item.id}:${item.revealAt}`)).map(item => splitEventTitleOutline(item.event.publicTitle).main).join(". ")}` });
+    setAnnouncement({ key: releasedKey, text: `공개되었습니다. ${displayItems.filter(item => fresh.includes(`${item.id}:${item.revealAt}`)).map(item => splitEventTitleOutline(item.event.publicTitle).main).join(". ")}` });
     playSfx("fanfare"); hapticSuccess();
     // Only newly confirmed titles are announced, once per release.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,7 +175,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   if (!active && canResume) return createPortal(<div className="pm-banner pm-resume"><button type="button" ref={el => { if (el && resumeFocus.current) { el.focus({ preventScroll: true }); resumeFocus.current = false; } }} onClick={() => { resumeFocus.current = true; onResume(); }}>최초공개 다시 보기 <ArrowUpRight aria-hidden="true" size={16} /></button></div>, document.body);
   if (!active && !hint) return null;
   const season = month >= 3 && month <= 5 ? "spring" : month >= 6 && month <= 8 ? "summer" : month >= 9 && month <= 11 ? "autumn" : "winter";
-  const released = frame.items.filter(item => item.state === "released");
+  const released = displayItems.filter(item => item.state === "released");
   const waiting = frame.items.filter(item => item.state === "masked");
   const hasHope = waiting.some(item => hoped.has(item.id));
   return createPortal(<div ref={portal} tabIndex={focused ? -1 : undefined} data-clock-owner={focused ? "stage" : detailOwnsClock ? "detail" : dockOwnsClock ? "dock" : "card"} data-teaser-at={focused && waiting.length ? new Date(frame.target).toISOString() : undefined} role={focused ? "dialog" : undefined} aria-modal={focused || undefined} aria-label={focused ? "최초공개 무대" : undefined} className={`pm-stage pm-phase-${frame.phase}${focused ? " pm-focused" : ""}${complete ? " pm-complete" : ""}${burst ? " pm-bang" : ""}${reduced ? " pm-static" : ""}${hasHope ? " pm-hoped" : ""}`} data-season={season} data-gfx={gfx}>
@@ -186,7 +190,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
           <div className="pm-composition">
             {waiting.length ? <div className="pm-count" data-pm-watching={waiting.map(item => item.id).join(" ")}><TeaserStageContent revealAt={new Date(frame.target).toISOString()} presentation="premiere" /></div> : null}
             <div className={`pm-films pm-n${frame.items.length}${frame.items.length > (agenda ? 2 : 4) ? " pm-list" : ""}`}>
-              {frame.items.map((item, index) => <article className={`pm-film ${item.state}`} key={item.id} data-pm-event={item.id} data-pm-retreat style={item.state === "released" ? premierePaper(item.event, tagVisual) : undefined}>
+              {displayItems.map((item, index) => <article className={`pm-film ${item.state}`} key={item.id} data-pm-event={item.id} data-pm-retreat style={item.state === "released" ? premierePaper(item.event, tagVisual) : undefined}>
                 {item.state === "released" ? <>
                   <PremiereStory event={item.event} dateKey={item.dateKey} tags={tags} tagVisual={tagVisual} onRead={onRead} />
                 </> : <div className="pm-masked" data-pm-retreat>
