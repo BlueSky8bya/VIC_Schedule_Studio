@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-test.beforeEach(async ({ page }) => {
-  await page.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
+test.beforeEach(async ({ page, context }) => {
+  await context.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
   await page.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
 });
 
@@ -57,14 +57,93 @@ test("panel space becomes calendar space continuously and dismissal restores its
   await expect(page.locator(".rail-info-card")).not.toHaveAttribute("inert");
 });
 
-test("calendar emphasis is spatial and gradual before other days withdraw", async ({ page }) => {
-  await open(page, 100);
-  await expect.poll(() => page.locator(".public-day").first().evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.8);
-  const values = await page.locator(".public-day:not(:has([data-pm-target]))").evaluateAll(els => els.map(el => Number(getComputedStyle(el).opacity)));
-  expect(Math.max(...values) - Math.min(...values)).toBeGreaterThan(.02);
-  expect(Math.min(...values)).toBeGreaterThan(.15);
+test("cards leave in shuffled individual slots while date cells stay still", async ({ page }) => {
+  await open(page, 100, "&links=1");
+  const cards = page.locator("[data-pm-depart]");
+  await expect.poll(() => cards.count()).toBeGreaterThan(5);
+  await expect.poll(() => cards.evaluateAll(els => els.some(el => Number(getComputedStyle(el).opacity) < .01))).toBe(true);
+  const values = await cards.evaluateAll(els => els.map(el => ({ opacity: Number(getComputedStyle(el).opacity), kind: el.getAttribute("data-pm-depart"), id: el.getAttribute("data-eventid") ?? el.getAttribute("data-supportid") })));
+  expect(values.some(item => item.opacity < .01)).toBe(true);
+  expect(values.some(item => item.opacity > .99)).toBe(true);
+  expect(new Set(values.map(item => item.kind)).size).toBe(4);
+  for (const item of values) expect(values.filter(other => other.id === item.id).every(other => other.kind === item.kind && Math.abs(other.opacity - item.opacity) < .01)).toBe(true);
+  expect(await page.locator(".public-day").evaluateAll(els => els.every(el => getComputedStyle(el).opacity === "1" && getComputedStyle(el).transform === "none"))).toBe(true);
   await expect(page.locator("[data-pm-target]")).toHaveCount(1);
   expect(await page.locator("[data-pm-target]").evaluate(el => getComputedStyle(el).visibility)).toBe("visible");
+});
+
+for (const width of [1440, 390]) {
+  test(`only the premiere remains by T−75 and its visible card becomes the screen at ${width}px`, async ({ page }) => {
+    test.setTimeout(20000);
+    await page.setViewportSize({ width, height: 1000 });
+    await open(page, 76, "&links=1");
+    const target = page.locator("[data-pm-target]");
+    await target.evaluate(el => el.scrollIntoView({ block: "center" }));
+    await expect.poll(() => page.locator("[data-pm-depart]").evaluateAll(els => els.every(el => Number(getComputedStyle(el).opacity) < .01)), { timeout: 3000 }).toBe(true);
+    expect(await target.evaluate(el => getComputedStyle(el).visibility)).toBe("visible");
+    await expect(page.locator(".pm-screen")).toHaveAttribute("data-pm-morph", "card", { timeout: 10000 });
+    await page.locator(".pm-count .dt-ring").evaluate(el => el.dispatchEvent(new TransitionEvent("transitionend", { bubbles: true, propertyName: "stroke-dashoffset" })));
+    expect(await page.locator(".pm-screen").evaluate(el => (el as HTMLElement).style.transition)).toContain("1000ms");
+    await expect(page.locator(".pm-count .dt-count-core")).toBeVisible();
+    await expect.poll(() => page.locator(".pm-screen").evaluate(el => getComputedStyle(el).transform)).toBe("none");
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".poster-page")).not.toHaveAttribute("inert");
+    await expect(page.locator("[data-pm-depart]")).toHaveCount(0);
+  });
+
+  test(`ON locks unrelated cards, hearts, support links and day navigation; dismissal restores them at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await open(page, 170, "&links=1");
+    const card = page.locator('[data-eventid="evt-001"]').first();
+    await expect(card).toHaveAttribute("inert");
+    // Programmatic activation bypasses hit testing; capture also guards day
+    // backgrounds and delegated React handlers. No detail/navigation may open.
+    const activated = await page.locator(".public-day,.agenda-day").evaluateAll(days => {
+      let blocked = 0;
+      for (const day of days) {
+        const e = new MouseEvent("click", { bubbles: true, cancelable: true });
+        if (!day.dispatchEvent(e)) blocked++;
+      }
+      return blocked;
+    });
+    expect(activated).toBeGreaterThan(0);
+    await card.evaluate(el => { el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })); });
+    await expect(page.locator(".agenda-detail-backdrop")).toHaveCount(0);
+    expect(await card.evaluate(el => { (el as HTMLElement).focus(); return document.activeElement === el; })).toBe(false);
+    await expect(page.locator("[data-pm-target]")).not.toHaveAttribute("inert");
+    await expect(page.getByRole("button", { name: "설정", exact: true })).toBeEnabled();
+    await expect(page.locator('[data-act="다음 달"]')).toHaveAttribute("inert");
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator(".pm-stage")).toBeVisible();
+    await expect(page.locator("[data-pm-target]")).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".pm-stage")).toHaveCount(0);
+    await expect(card).not.toHaveAttribute("inert");
+    await expect(page.locator('[data-act="다음 달"]')).not.toHaveAttribute("inert");
+    await card.click();
+    await expect(page.locator(".agenda-detail-backdrop")).toHaveCount(1);
+  });
+}
+
+test("OFF and reduced motion release every calendar interaction gate during preparation", async ({ page, context }) => {
+  await open(page, 170, "&links=1");
+  await expect(page.locator('[data-eventid="evt-001"]')).toHaveAttribute("inert");
+  await page.evaluate(() => document.documentElement.setAttribute("data-reduce-motion", "1"));
+  await expect(page.locator(".pm-stage")).toHaveCount(0);
+  await expect(page.locator('[data-eventid="evt-001"]')).not.toHaveAttribute("inert");
+  await page.evaluate(() => document.documentElement.removeAttribute("data-reduce-motion"));
+  // Reduced motion intentionally enters the existing cooldown. A new page
+  // observes a fresh fixture rather than asserting an unwanted auto-reentry.
+  await open(page, 170, "&links=1");
+  const other = await context.newPage();
+  await other.goto("/visual-fixture/poster");
+  await other.getByRole("button", { name: "설정", exact: true }).click();
+  const motion = other.getByRole("tab", { name: "움직임", exact: true });
+  if (await motion.isVisible()) await motion.click();
+  await other.getByRole("switch", { name: "최초공개 무대 켜기/끄기", exact: true }).click();
+  await expect(page.locator(".pm-stage")).toHaveCount(0);
+  await expect(page.locator('[data-eventid="evt-001"]')).not.toHaveAttribute("inert");
+  await expect(page.locator("[data-pm-depart]")).toHaveCount(0);
 });
 
 test("an asynchronously arriving live card inherits the current exit score", async ({ page }) => {
@@ -76,6 +155,29 @@ test("an asynchronously arriving live card inherits the current exit score", asy
   await page.keyboard.press("Escape");
   await expect(page.locator(".synthetic-live")).not.toHaveAttribute("inert");
   await expect(page.locator(".synthetic-live")).not.toHaveAttribute("data-pm-exit");
+});
+
+test("late calendar segments keep their event's slot and new schedules inherit the current deadline", async ({ page }) => {
+  await open(page, 74, "&links=1");
+  await page.locator('[data-eventid="evt-001"]').evaluate(el => {
+    const otherDay = document.querySelectorAll(".day-events")[3];
+    const segment = el.cloneNode(true) as HTMLElement;
+    segment.classList.add("synthetic-segment");
+    segment.removeAttribute("inert"); segment.removeAttribute("data-pm-depart");
+    otherDay.append(segment);
+    const fresh = el.cloneNode(true) as HTMLElement;
+    fresh.dataset.eventid = "synthetic-late";
+    fresh.removeAttribute("inert"); fresh.removeAttribute("data-pm-depart");
+    otherDay.append(fresh);
+  });
+  await expect(page.locator(".synthetic-segment")).toHaveAttribute("inert");
+  const original = page.locator('[data-eventid="evt-001"]').first();
+  expect(await page.locator(".synthetic-segment").getAttribute("data-pm-depart")).toBe(await original.getAttribute("data-pm-depart"));
+  await expect.poll(() => page.locator('[data-eventid="synthetic-late"]').evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.01);
+  await expect(page.locator('[data-eventid="synthetic-late"]')).toHaveAttribute("inert");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".synthetic-segment")).not.toHaveAttribute("inert");
+  await expect(page.locator('[data-eventid="synthetic-late"]')).not.toHaveAttribute("inert");
 });
 
 test("seasonal canvases keep their viewport containing block while exiting", async ({ page }) => {

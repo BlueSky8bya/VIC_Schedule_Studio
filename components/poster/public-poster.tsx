@@ -2583,6 +2583,8 @@ export function PublicPoster({
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
         return;
       }
+      const premierePhase = posterRootRef.current?.dataset.premiere;
+      if (premierePhase && premierePhase !== "return") return;
       // 다시보기 창이 떠 있는 동안은 ←/→가 영상 탐색이다 — 월 이동은 어떤 경우에도 안 일어난다
       // (2026-09-03 사용자: 영상 보다가 키로 넘기면 달이 바뀌어 끊겼다). 창 쪽 핸들러가 처리.
       if (dayVodOpenRef.current) {
@@ -3685,6 +3687,7 @@ export function PublicPoster({
                         className={`agenda-event tappable${!support && event.isTentative ? " tentative" : ""}${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
                         data-act="schedule-card"
                         data-eventid={support ? undefined : event.id}
+                        data-supportid={support ? event.id : undefined}
                         data-tier={tier?.key}
                         key={(support ? "s-" : "") + event.id}
                         role="button"

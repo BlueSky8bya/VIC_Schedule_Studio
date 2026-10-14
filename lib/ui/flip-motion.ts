@@ -23,7 +23,10 @@ export function flipSpring(
   void el.offsetWidth; // 되돌린 자리를 한 프레임 확정(그래야 다음 줄이 트랜지션이 된다)
   el.style.transition = `transform ${ms}ms ${easing}`;
   el.style.transform = "";
-  const done = () => {
+  const done = (event: TransitionEvent) => {
+    // Descendant transitions (e.g. the live countdown ring every 100ms) bubble.
+    // They must not terminate this element's longer shared-layout transition.
+    if (event.target !== el || event.propertyName !== "transform") return;
     el.style.transition = "";
     if (origin) el.style.transformOrigin = "";
     el.removeEventListener("transitionend", done);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarPassage, passage, REGION_WINDOWS } from "@/lib/ui/premiere/choreography";
+import { lateCardDeparture, passage, planCardDepartures, REGION_WINDOWS } from "@/lib/ui/premiere/choreography";
 
 describe("continuous public premiere choreography", () => {
   it("orders every panel region and finishes them before the screen handover", () => {
@@ -18,12 +18,30 @@ describe("continuous public premiere choreography", () => {
     expect(passage(-5, 154, 138)).toBe(1);
     expect(Math.abs(passage(145, 154, 138) - passage(144.99, 154, 138))).toBeLessThan(.002);
   });
-  it("de-emphasizes other days before departure and sweeps from the outside inward", () => {
-    expect(calendarPassage(135, 0)).toEqual({ dim: 0, leave: 0 });
-    const far = calendarPassage(100, 8), near = calendarPassage(100, 0);
-    expect(far.dim).toBeGreaterThan(near.dim);
-    expect(far.leave).toBe(0); expect(near.leave).toBe(0);
-    expect(calendarPassage(76, 8).leave).toBeGreaterThan(calendarPassage(76, 0).leave);
-    expect(calendarPassage(68, 0)).toEqual({ dim: 1, leave: 1 });
+  it("shuffles unique schedules, not dates or DOM segments, and finishes every departure by T−75", () => {
+    const ids = Array.from({ length: 80 }, (_, i) => `event:${i}`);
+    const plan = planCardDepartures([...ids, ids[0]], "generation-A");
+    expect(plan.size).toBe(80);
+    expect(plan).toEqual(planCardDepartures([...ids].reverse(), "generation-A"));
+    expect([...plan.keys()]).not.toEqual(ids);
+    expect([...plan.keys()]).not.toEqual([...planCardDepartures(ids, "generation-B").keys()]);
+    const scores = [...plan.values()];
+    expect(new Set(scores.map(score => score.variant)).size).toBe(4);
+    scores.forEach((score, i) => {
+      expect(score.end).toBeGreaterThanOrEqual(75);
+      expect(passage(75, score.start, score.end)).toBe(1);
+      expect(passage(127, score.start, score.end)).toBe(0);
+      if (i) expect(score.start).toBeLessThan(scores[i - 1].end);
+    });
+  });
+  it("keeps a late arrival deterministic and within the deadline, including tiny calendars", () => {
+    expect(planCardDepartures([], "A").size).toBe(0);
+    const only = [...planCardDepartures(["one"], "A").values()][0];
+    expect(passage(75, only.start, only.end)).toBe(1);
+    const late = lateCardDeparture("new", "A");
+    expect(late).toEqual(lateCardDeparture("new", "A"));
+    expect(late.end).toBeGreaterThanOrEqual(75);
+    expect(passage(75, late.start, late.end)).toBe(1);
+    expect(passage(Infinity, late.start, late.end)).toBe(0);
   });
 });

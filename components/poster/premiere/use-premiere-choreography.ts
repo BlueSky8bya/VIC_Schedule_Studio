@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import { FLIP_SPRING } from "@/lib/ui/flip-motion";
 import { subscribeClock, syncedNow } from "@/lib/ui/synced-clock";
-import { calendarPassage, passage, REGION_WINDOWS } from "@/lib/ui/premiere/choreography";
+import { lateCardDeparture, passage, planCardDepartures, REGION_WINDOWS, type CardDeparture } from "@/lib/ui/premiere/choreography";
 import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 
 export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, root: RefObject<HTMLDivElement | null>, exit: RefObject<HTMLButtonElement | null>, stage: RefObject<HTMLDivElement | null>, previousFocus: RefObject<HTMLElement | null>) {
@@ -21,7 +21,12 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     ].map(item => ({ ...item, before: item.el.getAttribute("data-pm-exit") }));
     for (const { el, code } of extra) el.dataset.pmExit = code;
     const regions = [...new Set([...page.querySelectorAll<HTMLElement>("[data-pm-exit]"), ...extra.map(item => item.el)])].map(el => ({ el, inert: el.inert, hidden: el.getAttribute("aria-hidden") }));
-    let days = [...page.querySelectorAll<HTMLElement>(".public-day,.agenda-day")];
+    const cardSelector = "[data-eventid],[data-supportid]";
+    const navigationSelector = '[data-act="이전 달"],[data-act="다음 달"],[data-act="month-title"],[data-act="today-fab"],[data-act="mb-act"]';
+    const controlled = new Map<HTMLElement, boolean>();
+    const cards = new Set<HTMLElement>();
+    let generation = "";
+    let departures = new Map<string, CardDeparture>();
     let canvas = page.querySelector<HTMLElement>(".poster-stage");
     let fit = page.querySelector<HTMLElement>(".poster-fit");
     const marked = new Set<HTMLElement>();
@@ -70,20 +75,45 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       const targets = [...page.querySelectorAll<HTMLElement>("[data-eventid]")].filter(el => ids.has(el.dataset.eventid ?? ""));
       for (const el of marked) if (!targets.includes(el)) { delete el.dataset.pmTarget; marked.delete(el); }
       for (const el of targets) { el.dataset.pmTarget = "1"; marked.add(el); }
-      const targetDay = targets[0]?.closest(".public-day,.agenda-day");
-      const sourceIndex = Math.max(0, days.indexOf(targetDay as HTMLElement));
-      days.forEach((day, index) => {
-        // Grid distance, not viewport coordinates: expansion doesn't reorder
-        // the withdrawal wave. Agenda uses the same bounded progression.
-        const distance = page.classList.contains("poster-agenda") ? Math.abs(index - sourceIndex) : Math.hypot(Math.floor(index / 7) - Math.floor(sourceIndex / 7), index % 7 - sourceIndex % 7);
-        const { dim, leave } = calendarPassage(seconds, distance);
-        day.style.setProperty("--pm-dim", String(dim));
-        day.style.setProperty("--pm-leave", String(leave));
-      });
+      page.style.setProperty("--pm-lift", String(passage(seconds, 75, 68)));
+      const allCards = [...page.querySelectorAll<HTMLElement>(cardSelector)];
+      const keyOf = (el: HTMLElement) => el.dataset.eventid ? `event:${el.dataset.eventid}` : `support:${el.dataset.supportid}`;
+      const seed = current.items.map(item => `${item.id}:${item.revealAt}`).sort().join("|");
+      if (generation !== seed) {
+        generation = seed;
+        departures = planCardDepartures(allCards.filter(el => !el.dataset.pmTarget).map(keyOf), seed);
+      }
+      for (const el of allCards) {
+        cards.add(el);
+        if (el.dataset.pmTarget) { delete el.dataset.pmDepart; el.style.removeProperty("--pm-leave"); continue; }
+        const key = keyOf(el);
+        if (!departures.has(key)) departures.set(key, lateCardDeparture(key, seed));
+        const score = departures.get(key)!;
+        el.dataset.pmDepart = String(score.variant);
+        el.style.setProperty("--pm-leave", String(passage(seconds, score.start, score.end)));
+      }
+      // Native inert covers keyboard/focus and nested heart/support links.
+      // Day-background VOD handlers need the capture guard below as well.
+      const controls = page.querySelectorAll<HTMLElement>(`${cardSelector},${navigationSelector},.public-day button,.public-day a,.public-day [tabindex],.agenda-day button,.agenda-day a,.agenda-day [tabindex]`);
+      for (const el of controls) {
+        if (!controlled.has(el)) controlled.set(el, el.inert);
+        const locked = !returning && !el.closest("[data-pm-target]");
+        if (locked && el.contains(document.activeElement)) { previousFocus.current = document.activeElement as HTMLElement; exit.current?.focus({ preventScroll: true }); }
+        el.inert = locked || controlled.get(el)!;
+      }
     };
+    const guard = (event: Event) => {
+      if (latest.current.phase === "return" || latest.current.phase === "idle") return;
+      if (event instanceof KeyboardEvent && event.key !== "Enter" && event.key !== " ") return;
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(`.public-day,.agenda-day,${navigationSelector}`) || target.closest("[data-pm-target]")) return;
+      event.preventDefault(); event.stopImmediatePropagation();
+    };
+    const guardedEvents = ["pointerdown", "click", "auxclick", "keydown", "contextmenu"];
+    for (const name of guardedEvents) page.addEventListener(name, guard, true);
     const known = new Set(regions.map(item => item.el));
     const topology = new MutationObserver(changes => {
-      const relevant = ".soop-live-card,.viewer-ambient-ctl,[data-pm-exit],.public-day,.agenda-day";
+      const relevant = `.soop-live-card,.viewer-ambient-ctl,[data-pm-exit],.public-day,.agenda-day,${cardSelector}`;
       if (!changes.some(change => [...change.addedNodes].some(node => node instanceof Element && (node.matches(relevant) || node.querySelector(relevant))))) return;
       for (const [selector, code] of [[".viewer-ambient-ctl", "5"], [".soop-live-card", "6"]]) {
         for (const el of page.querySelectorAll<HTMLElement>(selector)) {
@@ -96,7 +126,6 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
         if (known.has(el)) continue;
         regions.push({ el, inert: el.inert, hidden: el.getAttribute("aria-hidden") }); known.add(el);
       }
-      days = [...page.querySelectorAll<HTMLElement>(".public-day,.agenda-day")];
       const nextCanvas = page.querySelector<HTMLElement>(".poster-stage"), nextFit = page.querySelector<HTMLElement>(".poster-fit");
       if (nextCanvas !== canvas) { if (canvas) resize.unobserve(canvas); canvas = nextCanvas; if (canvas) resize.observe(canvas); }
       if (nextFit !== fit) { if (fit) resize.unobserve(fit); fit = nextFit; if (fit) resize.observe(fit); }
@@ -109,11 +138,13 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     const unsubscribe = subscribeClock(update);
     return () => {
       unsubscribe(); resize.disconnect(); topology.disconnect();
+      for (const name of guardedEvents) page.removeEventListener(name, guard, true);
       delete page.dataset.premiere;
-      for (const key of ["--pm-spring", "--pm-focus", "--pm-panel-yield", "--pm-canvas-scale", "--pm-canvas-x"]) page.style.removeProperty(key);
+      for (const key of ["--pm-spring", "--pm-focus", "--pm-lift", "--pm-panel-yield", "--pm-canvas-scale", "--pm-canvas-x"]) page.style.removeProperty(key);
       for (const item of regions) { item.el.style.removeProperty("--pm-region"); restoreRegion(item); }
       for (const el of marked) delete el.dataset.pmTarget;
-      for (const day of days) { day.style.removeProperty("--pm-dim"); day.style.removeProperty("--pm-leave"); }
+      for (const el of cards) { delete el.dataset.pmDepart; el.style.removeProperty("--pm-leave"); }
+      for (const [el, inert] of controlled) el.inert = inert;
       for (const { el, before } of extra) { if (before === null) delete el.dataset.pmExit; else el.dataset.pmExit = before; }
     };
   }, [active, reduced, root, exit, stage, previousFocus]);

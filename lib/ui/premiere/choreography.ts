@@ -11,7 +11,28 @@ export function passage(seconds: number, from: number, to: number): number {
   const t = Math.max(0, Math.min(1, (from - seconds) / (from - to)));
   return t * t * t * (t * (t * 6 - 15) + 10);
 }
-export function calendarPassage(seconds: number, distance: number) {
-  const offset = Math.min(8, Math.max(0, distance)) * .8;
-  return { dim: passage(seconds, 126 + offset, 83 + offset), leave: passage(seconds, 81 + offset, 69 + offset) };
+export type CardDeparture = { start: number; end: number; variant: number };
+
+function hash(value: string): number {
+  let n = 2166136261;
+  for (let i = 0; i < value.length; i++) n = Math.imul(n ^ value.charCodeAt(i), 16777619);
+  return n >>> 0;
+}
+
+// Public IDs and reveal generation only. Segments share one slot; DOM order,
+// viewport size and clock ticks cannot reshuffle an ongoing performance.
+export function planCardDepartures(ids: string[], seed: string): Map<string, CardDeparture> {
+  const shuffled = [...new Set(ids)].sort((a, b) => hash(`${seed}:${a}`) - hash(`${seed}:${b}`) || a.localeCompare(b));
+  const spacing = shuffled.length > 1 ? 49.6 / (shuffled.length - 1) : 0;
+  const duration = Math.min(1.4, spacing ? spacing * .85 : 1.4);
+  return new Map(shuffled.map((id, index) => {
+    const start = 126 - index * spacing;
+    return [id, { start, end: start - duration, variant: index % 4 }];
+  }));
+}
+
+// New schedules must not reset the slots of cards already leaving.
+export function lateCardDeparture(id: string, seed: string): CardDeparture {
+  const start = 126 - (hash(`${seed}:${id}`) / 0xffffffff) * 49.6;
+  return { start, end: start - 1.4, variant: hash(id) % 4 };
 }

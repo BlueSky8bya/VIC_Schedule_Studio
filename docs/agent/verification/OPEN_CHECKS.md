@@ -6,7 +6,7 @@ This file keeps unresolved evidence gaps out of startup history. A prior PASS ap
 
 ## TEASER-PREMIERE — authorized rollout and remaining QA
 
-Latest visual/motion rework and exact verification scope: [fluid redesign](TEASER_FLUID-20261014.md). This does not close the hardware, formal luminance or deployed fanout gaps below.
+Latest visual/motion rework and exact verification scope: [individual card choreography](TEASER_CARDS-20261014.md), following [fluid redesign](TEASER_FLUID-20261014.md). These do not close the hardware, formal luminance or deployed fanout gaps below.
 
 See [release evidence](TEASER_PREMIERE-20261014.md). Functional release a6c60ca9 deployed/verified. 0142 applied with verified TLS; real anon/unprivileged-authenticated SQL canaries and anonymous REST passed (rolled-back past-date rows, zero residue). Actual Next HTTP-to-stub-DB bursts at 1/100/1,000 requests on one/two instances passed after fixing background-revalidation fanout. Production commit/API/CDN/client smoke passed; client timed-release checks used intercepted synthetic past-month GETs with no server writes. Full Vercel multi-region fanout and nano capacity, formal composite luminance, real mobile/landscape/screen-reader hardware and full-duration occupancy remain unverified. The authorized release defaults ON with personal OFF/reduced-motion controls; `NEXT_PUBLIC_PREMIERE_STAGE=0` is the deployment stop (PLAN-027 §8 supersedes the initial OFF gate). Use synthetic DB counters for large loads, never the production nano. No real schedule rewrite/cleanup performed.
 

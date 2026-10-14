@@ -94,17 +94,30 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
     const item = frame.items[0];
     const source = root.current?.querySelector<HTMLElement>(`[data-eventid="${item?.id}"]`);
     const from = source?.getBoundingClientRect();
-    if (from && target.width && from.width) {
+    const inView = from && from.bottom > 0 && from.top < innerHeight && from.right > 0 && from.left < innerWidth;
+    if (from && target.width && from.width && (inView || frame.phase === "return")) {
       const transform = `translate(${from.left - target.left}px,${from.top - target.top}px) scale(${from.width / target.width},${from.height / target.height})`;
       if (frame.phase === "return") {
         el.style.transition = "transform 520ms cubic-bezier(0.3,1.25,0.5,1), opacity 520ms ease";
         el.style.transformOrigin = "top left"; el.style.transform = transform; el.style.opacity = "0";
-      } else flipSpring(el, transform, { origin: "top left" });
+      } else {
+        // Keep the measured source shell opaque at the first frame. The old
+        // screen fade concealed the FLIP and made entry look like a new modal.
+        el.dataset.pmMorph = "card";
+        el.style.setProperty("--pm-from-x", String(target.width / from.width));
+        el.style.setProperty("--pm-from-y", String(target.height / from.height));
+        el.style.setProperty("--pm-from-radius", getComputedStyle(source!).borderRadius);
+        flipSpring(el, transform, { origin: "top left", ms: 1000 });
+      }
     }
-    return () => { el.style.transform = ""; el.style.transition = ""; el.style.transformOrigin = ""; el.style.opacity = ""; };
+    return () => {
+      el.style.transform = ""; el.style.transition = ""; el.style.transformOrigin = ""; el.style.opacity = "";
+      delete el.dataset.pmMorph;
+      for (const key of ["--pm-from-x", "--pm-from-y", "--pm-from-radius"]) el.style.removeProperty(key);
+    };
     // Only the entry/return changes position, never the per-second frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focused, frame.phase === "return", reduced]);
+  }, [ready, focused, frame.phase === "return", reduced]);
 
   const contentRevision = frame.items.map(item => `${item.id}:${item.state}:${item.event.publicTitle}`).join("|");
   useLayoutEffect(() => {
@@ -157,6 +170,7 @@ export function PremiereStage({ frame, bang, reduced, hint, month, tags, root, o
       <div className="pm-shock" key={`shock-${bang}`} aria-hidden="true" />
       <div className="pm-viewport">
         <div className={`pm-screen${released.length ? " is-released" : ""}`} ref={screen}>
+          <div className="pm-card-face" aria-hidden="true"><span>🔮</span><strong>???</strong><PremiereReadout target={frame.target} /></div>
           <header className="pm-heading"><span className="pm-kicker">최초공개</span><span>{frame.items.length > 1 ? `${frame.items.length}개의 일정` : shortDate(frame.items[0]?.dateKey)}</span><span className="pm-heading-rule" aria-hidden="true" /></header>
           {hopePulse ? <div key={hopePulse} className="pm-hope-bloom" aria-hidden="true" /> : null}
           <div className="pm-composition">

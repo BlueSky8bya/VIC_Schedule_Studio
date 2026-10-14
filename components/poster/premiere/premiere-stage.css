@@ -24,6 +24,11 @@
   animation: pm-screen-in .7s var(--spring-smooth, ease) both;
 }
 .pm-screen.is-released { --pm-surface-ink: var(--ink); --pm-quiet-ink: var(--muted); background: var(--material-bg-solid, #fffaf3); border-color: color-mix(in srgb, var(--pm-violet) 20%, transparent); }
+.pm-card-face { display: none; }
+.pm-screen[data-pm-morph] { animation: pm-shell-morph 1s ease backwards; }
+.pm-screen[data-pm-morph] > :is(.pm-heading, .pm-composition) { animation: pm-morph-content 1s ease both; }
+.pm-screen[data-pm-morph] .pm-card-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; color: #fff; font-size: 14px; animation: pm-card-face 1s var(--pm-spring, var(--spring-smooth, ease)) both; pointer-events: none; }
+.pm-card-face .pm-readout { min-width: 0; font-size: 12px; }
 .pm-heading { position: relative; z-index: 1; display: flex; align-items: center; gap: 16px; color: var(--pm-quiet-ink); font-size: var(--text-body, 13.5px); font-weight: 600; }
 .pm-kicker { color: var(--pm-surface-ink); font-weight: 700; letter-spacing: .04em; }
 .pm-heading-rule { height: 1px; flex: 1; margin-left: 8px; background: currentColor; opacity: .18; }
@@ -120,10 +125,20 @@
 .poster-page .poster-stage { transition: transform .64s var(--pm-spring, var(--spring-smooth, ease)); }
 .poster-page[data-premiere] .poster-stage { overflow: visible; transform-origin: top left; transform: translate3d(var(--pm-canvas-x, 0px), 0, 0) scale(var(--pm-canvas-scale, 1)); }
 .poster-page[data-premiere] .avatar-slot { opacity: calc(1 - var(--pm-panel-yield, 0)); }
-.poster-page :is(.public-day, .agenda-day) { transition: transform .32s ease, opacity .32s ease; }
-.poster-page[data-premiere] :is(.public-day, .agenda-day):not(:has([data-pm-target])) { opacity: calc((1 - var(--pm-dim, 0) * .78) * (1 - var(--pm-leave, 0))); transform: translate3d(0, calc(var(--pm-leave, 0) * -18px), 0) scale(calc(1 - var(--pm-leave, 0) * .045)); }
-.poster-page[data-premiere] :is(.public-day, .agenda-day):has([data-pm-target]) [data-eventid]:not([data-pm-target]) { opacity: calc((1 - var(--pm-dim, 0) * .78) * (1 - var(--pm-leave, 0))); transition: opacity .32s ease; }
-.poster-page[data-premiere] [data-pm-target] { animation: none!important; outline: 2px solid color-mix(in srgb, var(--teaser) calc(var(--pm-focus, 0) * 70%), transparent); outline-offset: 3px; }
+/* Each event owns a seeded slot. Calendar/date-cell geometry and opacity stay
+   still; a multi-day event's segments share the same trajectory and timing. */
+.poster-page[data-premiere] [data-pm-depart] {
+  --pm-dx: -100px; --pm-dy: -84px; --pm-turn: -7deg; --pm-shrink: .18;
+  animation: none!important; opacity: calc(1 - var(--pm-leave, 0));
+  transform: translate3d(calc(var(--pm-leave, 0) * var(--pm-dx)), calc(var(--pm-leave, 0) * var(--pm-dy)), 0) rotate(calc(var(--pm-leave, 0) * var(--pm-turn))) scale(calc(1 - var(--pm-leave, 0) * var(--pm-shrink)));
+  transform-origin: center; transition: transform .12s linear, opacity .12s linear;
+  pointer-events: none;
+}
+.poster-page[data-premiere] [data-pm-depart="1"] { --pm-dx: 110px; --pm-dy: -38px; --pm-turn: 6deg; --pm-shrink: .26; }
+.poster-page[data-premiere] [data-pm-depart="2"] { --pm-dx: -42px; --pm-dy: 100px; --pm-turn: 4deg; --pm-shrink: .32; transform-origin: left bottom; }
+.poster-page[data-premiere] [data-pm-depart="3"] { --pm-dx: 38px; --pm-dy: -120px; --pm-turn: -4deg; --pm-shrink: .12; transform-origin: right top; }
+.poster-page[data-premiere="return"] [data-pm-depart] { transition: transform .64s var(--pm-spring, ease), opacity .64s ease; }
+.poster-page[data-premiere] [data-pm-target] { animation: none!important; outline: 2px solid color-mix(in srgb, var(--teaser) calc(var(--pm-focus, 0) * 70%), transparent); outline-offset: 3px; transform: translateY(calc(var(--pm-lift, 0) * -6px)) scale(calc(1 + var(--pm-lift, 0) * .06)); transition: transform .12s linear; }
 .poster-page[data-premiere] :is(.teaser-ring, .public-event.teaser::before, .public-event.teaser::after, .agenda-item.teaser::before, .agenda-item.teaser::after) { animation: none!important; opacity: 0!important; }
 .poster-page:is([data-premiere="screen"], [data-premiere="build"], [data-premiere="eye"], [data-premiere="waiting"], [data-premiere="reveal"]) :is([data-pm-target], .agenda-detail-backdrop) { visibility: hidden; }
 .pm-rehearsal-tools { display: flex; justify-content: flex-end; padding: 8px var(--poster-gutter, 16px) calc(72px + env(safe-area-inset-bottom, 0px)); }
@@ -133,6 +148,9 @@
 @keyframes pm-number { from { opacity: .55; transform: translateY(9px) scale(.97); } to { opacity: 1; transform: none; } }
 @keyframes pm-dark-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pm-screen-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pm-shell-morph { from { border-radius: var(--pm-from-radius, 12px); background-color: var(--teaser-deep, #6150b5); } to { border-radius: var(--r-xl, 20px); background-color: #1c1b27; } }
+@keyframes pm-morph-content { 0%, 22% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes pm-card-face { 0% { opacity: 1; transform: scale(var(--pm-from-x, 1), var(--pm-from-y, 1)); } 60%, 100% { opacity: 0; transform: scale(1); } }
 @keyframes pm-dock-in { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
 @keyframes pm-field-drift { from { transform: translate3d(-4vw, -3vh, 0) scale(.88); } to { transform: translate3d(8vw, 6vh, 0) scale(1.16); } }
 @keyframes pm-loading { to { transform: rotate(360deg); } }
