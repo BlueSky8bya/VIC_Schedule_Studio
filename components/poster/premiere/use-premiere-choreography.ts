@@ -91,7 +91,7 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
         fan.style.setProperty("--fan-sway", `${Math.sin(phase) * 9 * strength}deg`);
       }
       for (const el of stage.current?.querySelectorAll<HTMLElement>("[data-pm-retreat]") ?? []) {
-        const hidden = retiring > .8;
+        const hidden = retiring > .8 || Boolean(stage.current?.hasAttribute("data-pm-entering"));
         if (hidden && el.contains(document.activeElement)) exit.current?.focus({ preventScroll: true });
         el.inert = hidden;
         if (hidden) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");

@@ -22,6 +22,10 @@
 
 ## 채택한 장면
 
+2026-10-14 [PLAN-035](../../agent/plans/PLAN-20261014-035-premiere-card-convergence.md)는 PLAN-033의 1.35초 동시 입장을 대체한다. 카드가 원래 크기로 1.7초 동안 화면 중앙 근처로 모이고, 0.2초 동안 한 장으로 포개진 뒤, 표면만 1.5초 동안 창 크기로 펼쳐진다. 여러 일정은 최대 8개의 운반체로 합류를 표현한다. 글자는 최종 크기로 나타나 비등방 확대하지 않는다. 기존 `flipSpring`과 `--spring-smooth`를 재사용한다. 이는 앞서 확인한 Apple의 공간적 연속성 원칙을 이 제품에 적용한 설계 판단이며, 3.4초가 최적이라는 실험 근거를 주장하지 않는다.
+
+마지막 22초 이내 입장·동작 줄이기·gfx soft/off에서는 이동을 생략한다. 진행 중 공개 상태/시각/일정 묶음 변경, 숨김, 화면 크기나 gfx 변경은 운반체를 정리하고 실제 카운트다운/공개 화면으로 즉시 이어진다. 시계 보정으로 18초 경계에 도달해도 입장을 종료하여 주변 퇴장과 겹치지 않게 한다. 실제 시계와 공개 관측은 중단하지 않는다.
+
 2026-10-14 PLAN-034가 아래의 인물 한 명/생성 없음/10→2초 주변 퇴장 결정을 대체한다. [현재 계획](../../agent/plans/PLAN-20261014-034-premiere-playful-company.md): 표정·응원단 1회 제작, 직접 합성한 선택형 BGM, T−18부터 착석·퇴장하여 T−10에는 숫자에만 집중. 기존 원본 초상은 기본·읽기 표면에 유지한다. [제작 기록](../../../art-src/최초공개/응원단/제작기록.md)에 native·최종 prompt·파생 SHA를 보존한다.
 
 추가로 실제 열람한 [YouTube Premiere 공식 설명](https://support.google.com/youtube/answer/9080341?hl=en)과 [운영 팁](https://support.google.com/youtube/answer/12356784?hl=en)에서 공동 대기/별도 카운트다운 테마/대기 중 참여를 참고했다. 채팅을 만들거나 YouTube 녹음·멜로디를 복사하지 않는다. [Apple 오디오·햅틱 설계](https://developer.apple.com/videos/play/wwdc2019/810/)의 인과가 명확한 피드백과 고조 후 끊김을, [Web Audio 모범 사례](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)의 제스처 시작·제어·단일 context를 적용한다. 논문의 기대/긴장 모델은 장면 설계 가설이며, 이 제품의 재미/체감 대기시간이 개선됐다는 실험 결과는 아니다.

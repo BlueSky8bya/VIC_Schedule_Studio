@@ -10,7 +10,7 @@ import { TeaserStageContent } from "@/components/shared/teaser-stage-content";
 import { Sparkles, Check, X, ArrowUpRight, Music2, VolumeX, WandSparkles } from "lucide-react";
 import { useRemainSeconds } from "@/lib/ui/use-remain-seconds";
 import { usePremiereChoreography } from "./use-premiere-choreography";
-import { flipSpring, FLIP_SPRING } from "@/lib/ui/flip-motion";
+import { flipSpring } from "@/lib/ui/flip-motion";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { gfxMode } from "@/lib/ui/gfx";
@@ -22,6 +22,7 @@ import { PREMIERE_EASE } from "@/lib/ui/premiere/focus-motion";
 import { usePremiereCardVisible } from "./use-premiere-clock-owner";
 import { PremiereScene, PremierePortrait, type PremiereReaction } from "./premiere-scene";
 import { usePremiereMusic } from "./use-premiere-music";
+import { usePremiereEntry } from "./use-premiere-entry";
 import { createFlashBudget } from "@/lib/ui/premiere/flash-budget";
 import "./premiere-stage.css";
 
@@ -119,41 +120,8 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
     };
   }, [focused, onClose, reduced, root]);
 
-  useLayoutEffect(() => {
-    if (!focused || reduced || !screen.current) return;
-    const el = screen.current;
-    const face = transfer.current;
-    const target = el.getBoundingClientRect();
-    const item = frame.items[0];
-    const source = root.current?.querySelector<HTMLElement>(`[data-eventid="${item?.id}"]`);
-    const from = source?.getBoundingClientRect();
-    const inView = from && from.bottom > 0 && from.top < innerHeight && from.right > 0 && from.left < innerWidth;
-    if (from && target.width && from.width && (inView || frame.phase === "return")) {
-      if (frame.phase === "return") {
-        el.style.transition = `transform 520ms ${PREMIERE_EASE}, opacity 520ms ease`;
-        el.style.transform = "translateY(14px) scale(.985)"; el.style.opacity = "0";
-      } else {
-        // A small sprung carrier lands at the clock. The painted plane unfolds
-        // separately; every glyph appears at its final, un-stretched size.
-        el.dataset.pmMorph = "card";
-        const landing = el.querySelector<HTMLElement>(".dt-count-ringbox")?.getBoundingClientRect() ?? target;
-        if (face) {
-          const left = landing.left + (landing.width - from.width) / 2, top = landing.top + (landing.height - from.height) / 2;
-          Object.assign(face.style, { left: `${left}px`, top: `${top}px`, width: `${from.width}px`, height: `${from.height}px` });
-          face.dataset.active = "true";
-          flipSpring(face, `translate(${from.left - left}px,${from.top - top}px)`, { ms: 1350, easing: FLIP_SPRING });
-        }
-        flipSpring(el, "translateY(18px) scale(.985)", { ms: 1350, easing: PREMIERE_EASE });
-      }
-    }
-    return () => {
-      el.style.transform = ""; el.style.transition = ""; el.style.transformOrigin = ""; el.style.opacity = "";
-      delete el.dataset.pmMorph;
-      if (face) { delete face.dataset.active; face.removeAttribute("style"); }
-    };
-    // Only the entry/return changes position, never the per-second frame.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, focused, frame.phase === "return", reduced]);
+  // Measure after the dialog has locked body scrolling and owns focus.
+  usePremiereEntry({ frame, ready, reduced, root, screen, transfer, portal });
 
   const contentRevision = frame.items.map(item => `${item.id}:${item.state}:${JSON.stringify(item.event)}`).join("|");
   useLayoutEffect(() => {
@@ -238,7 +206,10 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
           </div>
           {waiting.length ? <div className="pm-music" data-pm-retreat><button type="button" aria-label="응원봉 흔들기" onClick={() => { if (performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }}><WandSparkles size={15} aria-hidden="true" /><span>응원봉 흔들기</span></button><button type="button" data-sfx="off" aria-pressed={music.playing} disabled={!music.available} aria-label={music.playing ? "음악 끄기" : "음악 켜기"} onClick={music.toggle}>{music.playing ? <VolumeX size={15} aria-hidden="true" /> : <Music2 size={15} aria-hidden="true" />}<span>{music.playing ? "음악 끄기" : "음악 켜기"}</span></button></div> : null}
         </div>
-        <div ref={transfer} className="pm-card-transfer" aria-hidden="true"><span>🔮</span><strong>???</strong><span>✦</span></div>
+        <div ref={transfer} className="pm-entry" aria-hidden="true">
+          <div className="pm-entry-plane"><i /></div>
+          {waiting.slice(0, 8).map((item, index) => <div className="pm-card-transfer" key={item.id} data-pm-carrier={item.id} data-pm-primary={index === 0 || undefined}><span>🔮</span><strong>???</strong><span>{index === 0 && waiting.length > 1 ? `${waiting.length}개` : "✦"}</span></div>)}
+        </div>
       </div>
     </> : null}
     <div className={`pm-banner${focused ? " pm-banner-focused" : ""}${focused && complete ? " pm-banner-reading" : ""}`}>

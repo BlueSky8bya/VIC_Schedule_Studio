@@ -17,7 +17,7 @@
 .pm-dark { position: absolute; inset: 0; background: var(--pm-night); animation: pm-dark-in 1.2s ease both; }
 .pm-viewport { position: absolute; inset: 0; display: grid; place-items: center; padding: 72px 32px 36px; overflow: clip; }
 .pm-screen {
-  position: relative; isolation: isolate; width: min(1180px, 100%);
+  position: relative; z-index: 1; isolation: isolate; width: min(1180px, 100%);
   max-height: calc(100dvh - 116px); overflow: auto; pointer-events: auto;
   border: 1px solid rgb(var(--glass-panel) / 10%); border-radius: var(--r-xl, 20px);
   background: var(--pm-night); color: var(--pm-surface-ink); padding: 32px 48px 40px;
@@ -30,12 +30,19 @@
 /* The reading plane follows theme/eye-comfort tokens. Its light change is a
    single server-confirmed transition, never a repeated brightness pulse. */
 .pm-screen.is-released::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: var(--pm-night); animation: pm-paper-open .85s ease both; }
-.pm-screen[data-pm-morph] { animation: pm-destination-in 1.35s ease both; }
-.pm-screen[data-pm-morph] > .pm-composition { animation: pm-morph-content 1.35s ease backwards; }
-.pm-screen[data-pm-morph]:not(.is-released)::before { animation: pm-plane-unfold 1.35s var(--spring-smooth, ease) backwards; }
+.pm-screen[data-pm-morph] { animation: pm-entry-life var(--pm-entry-ms) linear both; }
+.pm-screen[data-pm-morph] > :is(.pm-heading, .pm-composition, .pm-scene, .pm-music) { animation: pm-entry-content var(--pm-entry-ms) linear both; }
+.pm-screen[data-pm-morph]:not(.is-released)::before { visibility: hidden; }
+.pm-entry { display: none; position: fixed; inset: 0; pointer-events: none; }
+.pm-entry[data-active] { display: block; }
+.pm-entry-plane { display: none; position: fixed; z-index: 0; border: 1px solid rgb(var(--glass-panel) / 10%); border-radius: var(--r-xl, 20px); background: var(--pm-night); overflow: clip; box-shadow: var(--elev-4); }
+.pm-entry[data-phase="unfold"] .pm-entry-plane { display: block; }
+.pm-entry-plane i { position: absolute; inset: 0; background: linear-gradient(135deg, var(--teaser-deep), var(--pm-violet)); animation: pm-entry-paint var(--pm-expand-ms) ease-out both; }
 .pm-card-transfer { display: none; }
-.pm-card-transfer[data-active] { position: fixed; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border-radius: var(--r-sm); background: linear-gradient(135deg, var(--teaser-deep), var(--pm-violet)); color: #fff; font-size: 12px; pointer-events: none; box-shadow: var(--elev-2); animation: pm-transfer-fade 1.35s var(--spring-smooth, ease) both; }
-.pm-card-transfer .pm-readout { min-width: 0; font-size: 12px; }
+.pm-card-transfer[data-active] { position: fixed; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border-radius: var(--r-sm); background: linear-gradient(135deg, var(--teaser-deep), var(--pm-violet)); color: #fff; font-size: 12px; pointer-events: none; box-shadow: var(--elev-2); }
+.pm-entry[data-phase="merge"] .pm-card-transfer:not([data-pm-primary]) { opacity: 0; transition: opacity .2s ease; }
+.pm-entry[data-phase="unfold"] .pm-card-transfer { animation: pm-entry-ink .45s ease-out both; }
+.pm-entry[data-phase="unfold"] .pm-card-transfer:not([data-pm-primary]) { display: none; }
 .pm-heading { position: relative; z-index: 1; display: flex; align-items: center; gap: 16px; color: var(--pm-quiet-ink); font-size: var(--text-body, 13.5px); font-weight: 600; }
 .pm-heading { opacity: calc(1 - var(--pm-company-retire, 0)); transform: translateY(calc(var(--pm-company-retire, 0) * -20px)); transition: opacity .2s linear, transform .2s linear; }
 .pm-kicker { color: var(--pm-surface-ink); font-weight: 700; letter-spacing: .04em; }
@@ -238,10 +245,10 @@
 @keyframes pm-dark-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pm-count-step { from { transform: translateY(5px) scale(.985); } to { transform: none; } }
 @keyframes pm-screen-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pm-destination-in { 0%, 10% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes pm-morph-content { 0%, 34% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes pm-transfer-fade { 0% { opacity: 1; scale: 1; rotate: -3deg; } 34% { opacity: 1; scale: 1.16; rotate: 1deg; } 62%, 100% { opacity: 0; scale: 1.4; rotate: 0deg; } }
-@keyframes pm-plane-unfold { 0%, 18% { opacity: 0; transform: scale(.78, .58); } 65% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes pm-entry-life { from, to { opacity: 1; } }
+@keyframes pm-entry-content { 0%, 76% { opacity: 0; translate: 0 8px; } 100% { opacity: 1; translate: 0 0; } }
+@keyframes pm-entry-paint { 0% { opacity: 1; } 38%, 100% { opacity: 0; } }
+@keyframes pm-entry-ink { 0% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.12; } }
 @keyframes pm-dock-in { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
 @keyframes pm-loading { to { transform: rotate(360deg); } }
 @keyframes pm-hope-press { 0% { scale: .96; } 45% { scale: 1.045; } 100% { scale: 1; } }

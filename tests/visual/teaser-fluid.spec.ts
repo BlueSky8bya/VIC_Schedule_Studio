@@ -10,6 +10,7 @@ async function open(page: Page, seconds: number, options = "") {
   await expect(page.locator(".pm-stage")).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   if (await page.locator(".pm-screen").count()) {
+    await expect(page.locator(".pm-stage")).not.toHaveAttribute("data-pm-entering", "", { timeout: 6000 });
     await expect.poll(() => page.locator(".pm-screen").evaluate(el => el.getAnimations().some(animation => animation.playState === "running"))).toBe(false);
   }
 }
@@ -83,7 +84,8 @@ for (const width of [1440, 390]) {
     expect(await target.evaluate(el => getComputedStyle(el).visibility)).toBe("visible");
     await expect(page.locator(".pm-screen")).toHaveAttribute("data-pm-morph", "card", { timeout: 10000 });
     await page.locator(".pm-count .dt-ring").evaluate(el => el.dispatchEvent(new TransitionEvent("transitionend", { bubbles: true, propertyName: "stroke-dashoffset" })));
-    expect(await page.locator(".pm-screen").evaluate(el => (el as HTMLElement).style.transition)).toContain("1350ms");
+    await expect(page.locator(".pm-stage")).toHaveAttribute("data-pm-entry", "gather");
+    expect(await page.locator(".pm-card-transfer[data-active]").first().evaluate(el => (el as HTMLElement).style.transition)).toContain("1700ms");
     const matrix = await page.locator(".pm-screen").evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).a);
     expect(matrix).toBeGreaterThan(.95); expect(matrix).toBeLessThanOrEqual(1);
     await expect(page.locator(".pm-count .dt-count-core")).toBeVisible();
@@ -293,7 +295,7 @@ for (const width of [1440, 390]) {
     // Stable geometry baseline. Real time/motion remain covered by the tests
     // above; don't replace the clock or freeze server/client time.
     await softGfx(page);
-    await page.addStyleTag({ content: ".pm-stage{--pm-digit-x:0px!important;--pm-digit-y:0px!important;--pm-digit-tilt:0deg!important}.pm-count .dt-ring-progress{stroke-dashoffset:.4!important}.pm-count .dt-ring-ticks line{opacity:.1!important}.pm-screen{animation:none!important}" });
+    await page.addStyleTag({ content: ".pm-stage{--pm-gather:.4!important;--pm-digit-x:0px!important;--pm-digit-y:0px!important;--pm-digit-tilt:0deg!important}.pm-count .dt-ring-progress{stroke-dashoffset:.4!important}.pm-count .dt-ring-ticks line{opacity:.1!important}.pm-screen{animation:none!important}" });
     await expect(page.locator(".pm-screen")).toHaveScreenshot(`premiere-fluid-${width}.png`, { mask: [page.locator(".dt-count-core")], animations: "disabled" });
   });
 }
