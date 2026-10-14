@@ -27,4 +27,8 @@
 
 ## 배포
 
-아직 배포 전. 승인된 main push 후 실제 운영 build SHA, PC/agenda 동작과 읽기/종료를 확인한다.
+제품 커밋 `2bc5b21d08b0a34ae2024d3bcf8eb27c99649337` main push 완료. [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/2W2GfH3TogLiqBW2YzCGkvZn3way) success와 운영 build SHA 일치를 확인했다.
+
+`https://vic-schedule-studio.vercel.app/` PC1440/agenda390 **PASS**: 3장의 합류→중앙 포개짐→표면 확장, 펼치기 직전 중앙 오차 0.18/0.06px, 타이머 1개·기대 버튼 3개·나가기 복원·가로 넘침 없음. 배포 화면의 중간 프레임과 최종 창을 실제 열어 확인했다. 별도 운영 smoke도 두 환경 PASS: 응원·음악·숨김 후 자동 재생 금지·9초 집중·실제 공개 경로의 합성 응답·7.5초 이상 읽기 유지·수동 종료. 각 smoke/환경 page error 0, POST 차단 1/전송 0. 실제 운영 일정 생성/변경 없음.
+
+증거는 무시된 `.scratch-pw/entry-production-deploy.json`, `entry-production-smoke.json`, `company-production-smoke.json` 및 캡처에 보존했다. 후속 검증 기록 커밋은 문서만 변경하며, 병행 작업의 별도 편집기 수정은 이 제품 검증 범위에 포함하지 않는다.
