@@ -1,9 +1,9 @@
 # PLAN-20261014-027 — 최초공개 무대 최종 설계 결정
 
-Status: **Owner-authorized rollout in progress; 0142 applied; default ON, emergency flag 0**
+Status: **Deployed and verified 2026-10-14 (functional release a6c60ca9); default ON, emergency flag 0**
 Date: 2026-10-14 KST
 
-소유자가 두 계획과 상호 평가를 제시하고 최종 설계 판단을 위임한 뒤, “클로드가 짠 계획 참고해서 너가 다 해”라고 전체 구현을 맡겼다. Codex가 아래 결정에 따라 제품 코드와 검증을 수행했다. Claude의 원안은 연출 참고 자료로 보존한다. 운영 DB·배포·commit/push는 변경하지 않았다.
+소유자가 두 계획과 상호 평가를 제시하고 최종 설계 판단을 위임한 뒤, “클로드가 짠 계획 참고해서 너가 다 해”라고 전체 구현을 맡겼다. Codex가 아래 결정에 따라 제품 코드와 검증을 수행했다. Claude의 원안은 연출 참고 자료로 보존한다. 이후 소유자의 커밋·푸시·배포 요청에 따라 §8의 DB 적용과 운영 출시 검증까지 완료했다.
 
 비교 원본 [PLAN-025](PLAN-20261014-025-teaser-premiere-stage.md), [PLAN-026](PLAN-20261014-026-teaser-premiere-codex.md)은 보존한다. 충돌하는 제안은 이 문서가 대체한다. 충돌하지 않는 공개 경계·KST·권한·공용 구현·기하·접근성 검증 조건은 PLAN-026을 계승한다. CURRENT_STATE의 다른 작업이나 TEASER-RING 운영 확인 상태를 완료로 바꾸지 않는다.
 
@@ -92,13 +92,13 @@ Date: 2026-10-14 KST
 
 The owner's subsequent instruction was to refer to Claude's plan and let Codex implement everything. Codex owns the clock, public read boundary, coordinator, stage/choreography, rehearsal, integration and verification. No task was sent to Claude or another agent. PLAN-027-final remains the visual reference; the latest in-session decisions above settle conflicts. Local stage development proceeds behind an OFF production flag while deployment load/flash gates remain pending.
 
-Local work includes shared DB-authoritative state and canonical confirmations (no timestamp rewrite or registry), cache/single-flight, no-store monotonic clock with an origin-paired DB offset, a single coordinator/scheduler, shared ring/scramble presenter, seasonal storm, inert/focus/history restoration, bounded chains, film strip, personal lightstick and local-only rehearsal. Fixtures use synthetic state and local hope interactions, no live SOOP/hope writes. SQL 0142 is prepared, not applied. Public response DTO allowlists and the existing masked view remain mandatory.
+Local work includes shared DB-authoritative state and canonical confirmations (no timestamp rewrite or registry), cache/single-flight, no-store monotonic clock with an origin-paired DB offset, a single coordinator/scheduler, shared ring/scramble presenter, seasonal storm, inert/focus/history restoration, bounded chains, film strip, personal lightstick and local-only rehearsal. Fixtures use synthetic state and local hope interactions, no live SOOP/hope writes. SQL 0142 was prepared during this local phase and subsequently applied under §8. Public response DTO allowlists and the existing masked view remain mandatory.
 
 ## 6. 구현과 검증
 
 구현 파일·실행 결과·실패 범위·fixture 재현법·배포 순서는 [검증 기록](../verification/TEASER_PREMIERE-20261014.md)에 모은다. 관련 단위·문서 테스트 138개, TypeScript, ESLint, production build와 browser 39개가 통과했다. 전체 단위 검사에서 확인한 기존 무관 실패 여덟 건과 기존 RULE_MIGRATION harness 불일치 두 건은 해당 기록에 구분한다.
 
-0142는 준비만 했고 운영 적용하지 않았다. 실제 캐시 fanout·nano 예산·anon/RLS·실기기·섬광 합성 검증은 **NOT VERIFIED**이며 production stage flag는 OFF다. PLAN-025/026 및 Claude PLAN-027 원본을 보존하고, 현재 다른 작업이나 과거 운영 확인 항목을 완료로 바꾸지 않는다.
+이 초기 검증 시점에는 0142 미적용·production OFF였으며 실제 캐시/anon 경계도 미검증이었다. 이후 적용·검증·출시 판단은 §8을 따른다. PLAN-025/026 및 Claude PLAN-027 원본을 보존하고, 현재 다른 작업이나 과거 운영 확인 항목을 완료로 바꾸지 않는다.
 
 ## 7. 개인 설정 추가 — 2026-10-14 소유자 요청
 
@@ -115,3 +115,5 @@ Local work includes shared DB-authoritative state and canonical confirmations (n
 실제 Next production API를 별도 로컬 harness에서 가짜 DB에 연결했다. 100개 요청의 캐시 만료 시 80개 DB 조회가 겹치는 문제를 발견해, Data Cache 바깥뿐 아니라 **background 재검증 콜백 안의 실제 DB 호출**에도 single-flight/1초 창을 적용했다. 수정 후 한/두 인스턴스 모두 1/100/1,000 요청의 원본 조회가 1/1/2회로 제한됐다(1,000개 시험 0.899~1.365초). 실 DB에 대량 부하를 보내지 않았다. 배포 후 CDN HIT도 별도로 확인한다.
 
 출시 동작은 개인 설정과 기능 모두 기본 ON으로 바꾸고 `NEXT_PUBLIC_PREMIERE_STAGE=0`을 긴급 중지 수단으로 유지한다. 기존 “미설정 시 production OFF” 및 모든 물리 기기 검증 완료 때까지 출시를 차단한다는 조항을 이 배포 판단으로 대체한다. 공개/비공개 경계·공용 구현·개인 OFF·동작 줄이기·큰 효과 1.5초 간격은 유지한다. 실제 무대의 1초 간격 연쇄 공개도 effect 횟수로 회귀 검사한다. 물리 기기/화면 낭독기, 완전한 합성 영상 휘도 분석, 배포 환경 전체 리전 부하 증명은 후속 검증으로 명시하며 통과했다고 주장하지 않는다.
+
+출시 검증: feature unit 96개 + 문서 43개, production browser 40개, typecheck/lint/build PASS. `a6c60ca9` main 푸시 후 Vercel 성공과 운영 build 일치를 확인했다. 실제 공개 API 200·CDN HIT·clock no-store·fixture 차단을 확인했고, 배포된 클라이언트는 과거 달의 synthetic GET만 주입하여 기본 ON 무대·공개·종료·OFF 저장을 검증했다(서버 쓰기 0, page error 0). 자세한 범위와 남은 검증은 [기록](../verification/TEASER_PREMIERE-20261014.md)에 유지한다.

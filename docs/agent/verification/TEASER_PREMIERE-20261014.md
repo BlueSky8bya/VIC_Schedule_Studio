@@ -1,6 +1,6 @@
 # Teaser premiere — implementation and verification
 
-Date: 2026-10-14 KST. Owner asked Codex to implement the complete feature using Claude's plan, then authorized commit/push/deployment. 0142 applied; reader/default-ON stage rollout in progress. No production schedule data rewrite or cleanup.
+Date: 2026-10-14 KST. Owner asked Codex to implement the complete feature using Claude's plan, then authorized commit/push/deployment. Functional release `a6c60ca9` deployed and verified; 0142 applied before it. No production schedule data rewrite or cleanup.
 
 ## Delivered behavior
 
@@ -41,7 +41,7 @@ Existing whole-suite failures, outside changed files: `ambient-codex` two missin
 
 ## Reproduce without touching the DB
 
-Use the production fixture server (`VISUAL_TEST_FIXTURE=1`, production build + `next start`). Normal deployments leave that flag unset; fixture pages/APIs then return 404.
+Use the production fixture server (`VISUAL_TEST_FIXTURE=1`, production build + `next start`). Normal deployments leave that flag unset; fixture APIs return HTTP 404 and pages render the not-found UI without a poster surface (streamed pages can have HTTP 200).
 
 - `/visual-fixture/poster?premiere=45&count=2&gap=3` — shared screen and separate releases.
 - `?premiere=8&scenario=postpone|immediate|delete|remove-after|delay|regate` — choose one scenario; `?premiere=160&scenario=advance` moves a distant reservation earlier.
@@ -63,8 +63,17 @@ An isolated production Next harness imported the actual route/loader/cache and u
 | 2 | 100 | 1 | 279 |
 | 2 | 1,000 | 2 | 899 |
 
-These bursts stayed inside the per-instance/time-window refresh budget; they do not prove Vercel multi-region global collapse or the earlier normalized preview 20% target. No large request burst was sent to the real nano. Production CDN headers and the deployed client will be checked after push. Full deployed fanout, hardware devices/haptics/screen readers, full-duration occupancy and formal composite-video luminance analysis remain unverified follow-ups. Local rendered flash-frequency/cleanup tests supplement the shared 1.5-second large-effect budget, without claiming a complete accessibility audit.
+These bursts stayed inside the per-instance/time-window refresh budget; they do not prove Vercel multi-region global collapse or the earlier normalized preview 20% target. No large request burst was sent to the real nano. Production CDN/client checks passed below. Full deployed fanout, hardware devices/haptics/screen readers, full-duration occupancy and formal composite-video luminance analysis remain unverified follow-ups. Local rendered flash-frequency/cleanup tests supplement the shared 1.5-second large-effect budget, without claiming a complete accessibility audit.
 
 This authorized rollout supersedes the initial default-OFF release clause (PLAN-027 §8). Feature and personal setting both default ON; `NEXT_PUBLIC_PREMIERE_STAGE=0` plus rebuild/redeploy stops automatic occupancy. An individual can turn OFF immediately in settings. Retain the public masked boundary, canonical confirmations, restrictive grants and RPC for the shared reader. Reverting the reader is a separate code rollback; do not drop its RPC while deployed readers need it. No real schedule rewrite/cleanup is part of this release.
+
+## Production evidence — 2026-10-14 KST
+
+`a6c60ca99cfa8c02bf54dff8bd38bc6334f4ade9` pushed to main; [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/6DPuQeMV2qsiZcKFRJi8ZaFwzESW) reported success. The production `/api/soop-live` build field matched that exact commit.
+
+- Actual anonymous `/api/public/vic/teaser-state`: 200, schema/DB timestamp/public-only fields/masked content validated, no identity cookie; four ordinary reads observed MISS → HIT → HIT → HIT. This is a deployed-cache smoke check, not a load/capacity proof.
+- Actual clock: 200 and `Cache-Control: no-store`. Unbounded discovery query rejected with 400. Fixture API: 404. Fixture page: not-found/noindex marker, no `data-export-surface`; HTTP 200 because streaming had begun, matching [Next's documented not-found behavior](https://nextjs.org/docs/app/api-reference/file-conventions/not-found).
+- Headless Chromium loaded the real production page/bundle, using the normal `vic_view` cookie to view the established past month (2025-09). Only that browser's teaser GET responses were replaced with synthetic masked/released DTOs; all browser POSTs were blocked. Default-ON full stage, no title before reveal, release presentation, Escape/inert restoration, default-ON settings switch and OFF persisted after reload all passed; zero page errors and zero server writes. This verifies the deployed client, not an actual timed production event.
+- No private calendar/authentication bypass, operational load burst, current/future-month seed or persistent test event was introduced. Genuine owner/developer login, physical devices and the remaining coverage above are not claimed by this check.
 
 Decisions: [PLAN-027](../plans/PLAN-20261014-027-teaser-premiere-final-decisions.md), [ADR-0030](../decisions/ADR-0030-teaser-premiere-state.md). Release gaps: [OPEN_CHECKS](OPEN_CHECKS.md).
