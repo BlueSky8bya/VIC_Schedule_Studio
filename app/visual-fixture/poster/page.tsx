@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
+import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 import { tentativeFixtureEvents } from "../tentative-events";
 
 // 비주얼 회귀 테스트 전용 fixture 페이지 — 고정된 공개 샘플 데이터로 포스터를 렌더한다.
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; links?: string; signedIn?: string; tent?: string }>;
+  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; links?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -74,6 +75,13 @@ export default async function VisualPosterFixture({
   } : shown;
   // tent=1 → 6/16~19에 미정·떡밥 비교 묶음(가린 떡밥 stub 포함) — 미정 표시 회귀 실측용(2026-10-05).
   const withTent = sp?.tent === "1" ? { ...withLinks, events: [...withLinks.events, ...tentativeFixtureEvents(true)] } : withLinks;
+  const premiereSeconds = Number(sp?.premiere ?? sp?.teaser ?? "");
+  const premiereFixture = Number.isFinite(premiereSeconds) && premiereSeconds > 0 ? {
+    startedAt: Date.now(), offsets: Array.from({ length: Math.min(8, Math.max(1, Number(sp?.count) || 1)) }, (_, i) => premiereSeconds + i * (Number(sp?.gap) || 0)), scenario: sp?.scenario
+  } : { startedAt: Date.now(), offsets: [], scenario: "empty" };
+  const premiereSchedule = premiereFixture ? {
+    ...withTent, events: [...withTent.events.filter(event => event.id !== "fixture-teaser"), ...buildPremiereFixture(premiereFixture.startedAt, premiereFixture.offsets, premiereFixture.startedAt).entries.map(entry => entry.event)]
+  } : withTent;
   return (
     <PublicPoster
       ambientForce={ambient}
@@ -84,7 +92,10 @@ export default async function VisualPosterFixture({
       initialNarrow={false}
       initialYear={2026}
       initialMonth={6}
-      schedule={withTent}
+      schedule={premiereSchedule}
+      premiereFixture={premiereFixture}
+      premiereEnabled={Boolean(sp?.premiere)}
+      previewNav={sp?.rehearsal === "1" ? <span>미리보기</span> : undefined}
     />
   );
 }

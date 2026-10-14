@@ -957,6 +957,8 @@ export function StudioShell({
     toggleHaptics,
     reduceMotion,
     toggleReduceMotion,
+    premiereStageOn,
+    togglePremiereStage,
     eyeComfort,
     toggleEyeComfort,
     themeMode,
@@ -1226,6 +1228,8 @@ export function StudioShell({
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
+        premiereStageOn={premiereStageOn}
+        onTogglePremiereStage={togglePremiereStage}
         ambientMode={ambientModeState}
         onChangeAmbientMode={changeAmbientMode}
         gfxPref={gfxPrefState}

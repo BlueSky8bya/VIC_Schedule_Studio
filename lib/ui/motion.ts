@@ -52,6 +52,20 @@ export function setReduceMotion(on: boolean): void {
   }
 }
 
+// Personal stage preference; the production release flag is a separate gate.
+export const PREMIERE_STAGE_KEY = "vic.premiereStage";
+export const PREMIERE_STAGE_EVENT = "vic:premiere-stage";
+export function premiereStageEnabled(): boolean {
+  if (typeof window === "undefined") return true;
+  try { return window.localStorage.getItem(PREMIERE_STAGE_KEY) !== "off"; }
+  catch { return true; }
+}
+export function setPremiereStageEnabled(on: boolean): void {
+  try { window.localStorage.setItem(PREMIERE_STAGE_KEY, on ? "on" : "off"); }
+  catch { /* Keep the current tab usable when storage is unavailable. */ }
+  window.dispatchEvent(new CustomEvent(PREMIERE_STAGE_EVENT, { detail: on }));
+}
+
 // #28 눈 편한 테마(eye comfort) — 방송 전후 오래 보는 작업자용. 켜면 <html data-eye-comfort>가
 // 붙어 CSS가 **UI 토큰 팔레트**를 크림 톤으로 바꾼다(글자 대비는 유지). reduce-motion과 같은 결의 설정.
 // 2026-09-06부터 루트 filter는 쓰지 않는다 — 계절 배경 캔버스까지 물들이기 때문(소유자 지시).

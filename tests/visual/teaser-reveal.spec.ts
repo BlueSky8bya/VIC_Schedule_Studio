@@ -11,9 +11,9 @@ const SECRET = "이 제목은 공개 전에 보이면 안 된다";
 /** 서버 액션(공개 요청) 호출을 센다. 응답은 실패로 돌려도 된다 — 여기서 볼 것은 '쐈는가'다. */
 async function countRevealCalls(page: Page) {
   const calls: string[] = [];
-  await page.route("**/visual-fixture/poster**", async (route) => {
+  await page.route("**/api/visual-fixture/premiere**", async (route) => {
     const req = route.request();
-    const isAction = req.method() === "POST" && Boolean(await req.headerValue("next-action"));
+    const isAction = req.method() === "GET";
     if (isAction) {
       calls.push(req.url());
       await route.fulfill({ status: 500, body: "" }); // 실패 응답 — 클라는 조용히 넘어가야 한다

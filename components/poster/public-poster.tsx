@@ -69,22 +69,12 @@ import {
   type PublicScheduleEvent
 } from "@/lib/domain/schedule-types";
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
-import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
-import { reconcileTeaserReveal } from "@/lib/schedules/teaser-reconcile";
 import { getTeaserHopeIdsAction, toggleTeaserHopeAction } from "@/lib/schedules/hope-actions";
 import {
   HYPE_EMERGE_S,
   HYPE_WINDOW_S,
-  STATIC_MOTION_FRAME,
-  hypeEmerge,
-  hypeFinale,
-  hypeChannels,
   hypeCalm,
-  hypeCssVars,
-  hypeIntensity,
-  hypeMotionCssVars,
-  hypeMotionFrame,
-  quantizeStaticIntensity
+  hypeIntensity
 } from "@/lib/ui/hype-curve";
 import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
 import { debutDateLabel, debutDPlus, getDayMark } from "@/lib/calendar/holidays";
@@ -142,11 +132,17 @@ import { useIdleAfter } from "@/lib/ui/use-idle";
 import "./public-poster.css";
 // 금생수 스킨(시청자 화면 = 편집실과 같은 뉘앙스, ADR-0016) — 기본 CSS 뒤에 와서 색·질감만 덮는다.
 import "./poster-metal-water.css";
+import { PremiereStage } from "./premiere/premiere-stage";
+import { useTeaserPremiere, type PremiereFixture } from "@/lib/ui/premiere/use-teaser-premiere";
+import { syncedNow } from "@/lib/ui/synced-clock";
+import { ScrambleText, TeaserStageContent } from "@/components/shared/teaser-stage-content";
 
 // (일정표 캡쳐(클립보드/PNG 다운로드) 기능 삭제 — 2026-07-31 사용자 결정: 토리님이 안 씀.
 //  PosterExportActions 컴포넌트·html2canvas 경로 제거. 필요해지면 git 이력에 구현이 있다.)
 
 type PublicPosterProps = {
+  premiereEnabled?: boolean;
+  premiereFixture?: PremiereFixture;
   schedule: PublicSchedule;
   initialYear?: number;
   initialMonth?: number;
@@ -342,96 +338,10 @@ function recordHeartDelta(owner: string, id: string, on: boolean) {
 
 // 떡밥 카드의 "공개까지" 카운트다운. 매초 갱신, 0이 되면 onReveal()로 서버 데이터를 새로 받아
 // 가려진 제목이 드러나게 한다. SSR/CSR 시간차 hydration 경고를 피하려 마운트 전엔 ⏳만 보인다.
-function TeaserCountdown({
-  revealAt,
-  onReveal,
-  onWatch,
-  motionEnabled = true
-}: {
-  revealAt: string;
-  onReveal: () => void;
-  // 마운트 즉시 '이 화면이 이 떡밥을 라이브로 지켜보고 있다'고 알린다. 0초에 알리면 늦다 —
-  // 그 순간 부모가 리렌더되면 이 컴포넌트가 먼저 언마운트돼 effect가 아예 안 돌고,
-  // 축하 연출이 통째로 사라진다(사용자 지적: 0초에 애니메이션이 안 나온다).
-  onWatch?: () => void;
-  // 꾸미기(스티커 편집) 중에는 하이프 연출을 돌리지 않는다 — 편집실은 편집에 도움되는
-  // 것만 한다. 숫자는 그대로 흐르되 10Hz 시각 루프와 박동은 아예 시작하지 않는다.
-  motionEnabled?: boolean;
-}) {
-  const target = useMemo(() => Date.parse(revealAt), [revealAt]);
-  const onRevealRef = useRef(onReveal);
-  onRevealRef.current = onReveal;
-  const onWatchRef = useRef(onWatch);
-  onWatchRef.current = onWatch;
-  useEffect(() => {
-    onWatchRef.current?.();
-  }, []);
-  // 팝오버와 같은 공용 시계 — 초 경계에 맞춰 함께 넘어간다(각자 interval을 돌리면 어긋난다).
+function TeaserCountdown({ revealAt }: { revealAt: string }) {
+  const target = Date.parse(revealAt);
   const s0 = useRemainSeconds(Number.isNaN(target) ? null : target);
-  // 시각 채널은 10Hz로 '요소에 직접' 기록한다 — 리렌더는 1Hz(숫자)만. 하이프 창(60초) 밖이거나
-  // 동작 줄이기면 루프를 아예 돌리지 않는다(배터리·CPU).
   const hostRef = useRef<HTMLSpanElement | null>(null);
-  useEffect(() => {
-    if (Number.isNaN(target) || !motionEnabled) return;
-    // 동작 줄이기(앱 토글이 최종 권한): 모션은 CSS가 끄고, 값은 3단계로 양자화해 1Hz만 쓴다
-    // → 임박 상태는 보이되 캡처 시각에 따라 픽셀이 흔들리지 않는다(export 결정성).
-    const staticOnly =
-      typeof document !== "undefined" &&
-      document.documentElement.hasAttribute("data-reduce-motion");
-    let raf = 0;
-    const write = () => {
-      const el = hostRef.current;
-      if (!el) return;
-      const card = el.closest<HTMLElement>(".public-event, .agenda-item");
-      const remainMs = target - Date.now();
-      const raw = hypeIntensity(remainMs);
-      const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
-      // 폭풍의 눈 — 정적 모드에선 0/1로 양자화해 캡처가 결정적이게 한다.
-      const rawCalm = hypeCalm(remainMs);
-      const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
-      // 등장 — 하이프 창(60초) 바깥에서도 써야 하므로 강도와 별개로 계산한다.
-      const rawEmerge = hypeEmerge(remainMs);
-      const rawFinale = hypeFinale(remainMs);
-      const emerge = staticOnly ? (rawEmerge > 0.5 ? 1 : 0) : rawEmerge;
-      const finale = staticOnly ? quantizeStaticIntensity(rawFinale) : rawFinale;
-      const vars = {
-        ...hypeCssVars(hypeChannels(i, calm)),
-        // 박동 위상 — 정지 모드에선 진폭 0 프레임이라 파형이 곱해져도 안 움직인다.
-        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i)),
-        "--hy-emerge": emerge.toFixed(3),
-        "--hy-final": finale.toFixed(3)
-      };
-      for (const [k, v] of Object.entries(vars)) {
-        el.style.setProperty(k, v);
-        card?.style.setProperty(k, v);
-      }
-      card?.classList.toggle("hype-live", raw > 0);
-    };
-    const tick = () => {
-      if (document.hidden) return; // 안 보이는 탭에선 쉰다
-      if (staticOnly) {
-        write();
-        return;
-      }
-      raf = window.requestAnimationFrame(write);
-    };
-    tick();
-    // 10Hz 커밋(60fps rAF의 1/6 비용). 동작 줄이기면 1Hz면 충분.
-    const id = window.setInterval(tick, staticOnly ? 1000 : 100);
-    return () => {
-      window.clearInterval(id);
-      if (raf) window.cancelAnimationFrame(raf);
-    };
-  }, [target, motionEnabled]);
-  const revealed = s0 !== null && s0 <= 0;
-  // 공개 시각이 지나면 즉시 실제 내용을 받아온다(캐시 우회 액션). 서버 시계가 reveal에 아직 안
-  // 닿았으면(미세한 시계차) 빈 결과 → 카드가 그대로라 짧게 재시도, 풀리면 카드가 사라져 멈춘다.
-  useEffect(() => {
-    if (!revealed) return;
-    onRevealRef.current();
-    const id = window.setInterval(() => onRevealRef.current(), 2000);
-    return () => window.clearInterval(id);
-  }, [revealed]);
   if (Number.isNaN(target)) return null;
   if (s0 === null) return <span className="teaser-count" ref={hostRef}>⏳</span>;
   const s = s0;
@@ -476,87 +386,6 @@ function TeaserCountdown({
     </span>
   );
 }
-
-// 공개 순간 제목 해독 연출 — 해커 영화식 디코딩. 두 국면으로 나뉜다:
-//  ① 0~0.75s: 제목 전체가 난수 문자(23436t#$@ 같은)로 미친 듯이 교체된다(60ms마다).
-//  ② 이후: 왼쪽부터 한 글자씩 '확정'되고 남은 자리는 계속 난동친다(글자당 90ms).
-// 예전(글자만 슥 채워짐)은 짧은 제목이면 0.3초에 끝나 아무도 못 봤다 → 최소 1.5초는 논다.
-// reduce-motion이면 그냥 완성된 제목.
-const SCRAMBLE_POOL = "!@#$%&*?/\\<>[]{}=+~0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-const SCRAMBLE_QM_MS = 260; // ???를 잠깐 붙들고 있는 구간
-const SCRAMBLE_CHAOS_MS = 750; // 전부 난수인 구간
-const SCRAMBLE_STEP_MS = 90; // 글자당 확정 간격
-function ScrambleText({ text }: { text: string }) {
-  const [tick, setTick] = useState(0);
-  const [locked, setLocked] = useState(0);
-  const [done, setDone] = useState(false);
-  // ??? → 난수 → 평문. 공개 직전까지 카드가 보여주던 ???를 잠깐 그대로 붙들었다가
-  // 무너뜨린다 — 바로 난수로 갈아치우면 '무엇이 풀리는 중인지'의 연결이 끊긴다.
-  const [phase, setPhase] = useState<"qm" | "chaos">("qm");
-  useEffect(() => {
-    setTick(0);
-    setLocked(0);
-    setDone(false);
-    setPhase("qm");
-    if (document.documentElement.hasAttribute("data-reduce-motion")) {
-      setDone(true);
-      return;
-    }
-    const started = Date.now();
-    const toChaos = window.setTimeout(() => setPhase("chaos"), SCRAMBLE_QM_MS);
-    // 난수 자리를 새로 뽑는 간격. 60ms(초당 16회)는 너무 빨라 글자가 뭉개진 노이즈로만
-    // 보였다 — 개별 글자가 인지되는 90ms로 늦춰 '난수가 돌아가는 중'이 읽히게 한다.
-    const chaos = window.setInterval(() => setTick((t) => t + 1), 90);
-    let lockTimer = 0;
-    const startLocking = window.setTimeout(() => {
-      let i = 0;
-      lockTimer = window.setInterval(() => {
-        i += 1;
-        setLocked(i);
-        if (i >= text.length) {
-          window.clearInterval(lockTimer);
-          window.clearInterval(chaos);
-          setDone(true);
-        }
-      }, SCRAMBLE_STEP_MS);
-    }, SCRAMBLE_QM_MS + SCRAMBLE_CHAOS_MS);
-    return () => {
-      window.clearInterval(chaos);
-      window.clearTimeout(toChaos);
-      window.clearTimeout(startLocking);
-      if (lockTimer) window.clearInterval(lockTimer);
-      void started;
-    };
-  }, [text]);
-  if (done) return <>{text}</>;
-  if (phase === "qm") {
-    return (
-      <span aria-hidden="true" className="scramble-rest scramble-qm">
-        ???
-      </span>
-    );
-  }
-  const rest = text.length - locked;
-  return (
-    <>
-      {locked > 0 ? <span className="scramble-locked">{text.slice(0, locked)}</span> : null}
-      <span aria-hidden="true" className="scramble-rest">
-        {Array.from(
-          { length: Math.max(0, rest) },
-          (_, k) => SCRAMBLE_POOL[(tick * 13 + k * 7 + locked * 3) % SCRAMBLE_POOL.length]
-        ).join("")}
-      </span>
-    </>
-  );
-}
-// 스크램블 총 길이(연출 상태를 언제 풀지 계산) — 카오스 + 글자당 확정 + 여유.
-function scrambleDurationMs(text: string): number {
-  return SCRAMBLE_QM_MS + SCRAMBLE_CHAOS_MS + Math.max(1, text.length) * SCRAMBLE_STEP_MS + 400;
-}
-
-// 리더선 기하 — 앵커점에 원점을 두고 대상점 방향으로 회전시킨 뒤, 선은 그 로컬 x축 위에
-// 눕힌다. 클립은 실제 구간(0~길이)만 남겨 흐름 애니메이션이 끝을 넘어가도 안 보이게 한다.
-// (선 좌표를 직접 고치던 예전 방식은 점선 흐름을 stroke-dashoffset으로만 굴릴 수 있었다.)
 function leaderGeom(
   a: { x: number; y: number },
   e: { x: number; y: number }
@@ -583,15 +412,11 @@ function applyLeaderGeom(
 // 알아보기 시작하는 최소 단서이자 기존 상수에서 그대로 나오는 값이라 새 매직 넘버가 아니다.
 // 다만 제목이 길면 해독이 2.5초까지 가서 부제목이 '제목보다 먼저' 끝나 위계가 뒤집힌다
 // → 제목 60%가 확정되는 시점까지 민다(짧은 제목은 1,020ms 그대로).
-const SECONDARY_BASE_MS = SCRAMBLE_QM_MS + 1_020;
+const SECONDARY_BASE_MS = 1080;
 const SECONDARY_STEP_MS = 70; // 60Hz 약 4.2프레임 — 순서는 읽히되 끊긴 목록으로 안 느껴지는 간격
 const SECONDARY_MAX_STEPS = 4; // 줄이 많아도 총 지연은 280ms에서 멈춘다
 function secondaryStartMs(title: string): number {
-  const n = Math.max(1, title.length);
-  return Math.max(
-    SECONDARY_BASE_MS,
-    SCRAMBLE_QM_MS + SCRAMBLE_CHAOS_MS + Math.ceil(n * 0.6) * SCRAMBLE_STEP_MS
-  );
+  return Math.min(1400, SECONDARY_BASE_MS + Math.min(title.length, 8) * 20);
 }
 // order: 부제목 0..n-1 → 메타 → 태그. 지연만 다르고 연출은 같다(디자인 통일).
 function secondaryDelayMs(title: string, order: number): number {
@@ -656,43 +481,8 @@ function formatRevealKst(iso: string): string {
 
 // 공개 시각이 이미 지난 떡밥(캐시 지연으로 서버가 아직 가린 stub을 보낸 경우) — 보라 ??? 하이프
 // 카드를 깜빡 띄우지 않고, 자리만 잡는 중립 placeholder를 두고 즉시 실제 내용을 받아 갈아끼운다.
-function TeaserRevealing({
-  onReveal,
-  className,
-  eventId,
-  revealAt
-}: {
-  onReveal: () => void;
-  className: string;
-  eventId: string;
-  revealAt?: string;
-}) {
-  const fired = useRef(false);
-  const ref = useRef(onReveal);
-  ref.current = onReveal;
-  // 진단 로그에 쓸 값도 ref로 — 이 effect는 마운트 1회만 돌아야 한다(재시도 interval 재설치 금지).
-  const diag = useRef({ eventId, revealAt });
-  diag.current = { eventId, revealAt };
-  useEffect(() => {
-    if (!fired.current) {
-      fired.current = true;
-      // 진단(3일): 이 자리는 '비어 있는 카드'다. 여기서 못 빠져나오면 시청자에게 빈 칸이 보인다 —
-      // 실제로 그랬고, 그때 로그가 없어 코드를 읽어서야 원인을 알았다.
-      const d = diag.current;
-      logActivity("diag.teaser", {
-        target: d.eventId,
-        meta: {
-          phase: "placeholder",
-          revealAt: d.revealAt ?? "",
-          pastSec: d.revealAt ? Math.round((Date.now() - Date.parse(d.revealAt)) / 1000) : 0
-        }
-      });
-      ref.current();
-    }
-    const id = window.setInterval(() => ref.current(), 2000);
-    return () => window.clearInterval(id);
-  }, []);
-  return <div className={className} aria-hidden="true" />;
+function TeaserRevealing({ className, eventId, revealAt }: { className: string; eventId: string; revealAt?: string }) {
+  return <div className={className} data-eventid={eventId} data-teaser-at={revealAt} role="status">공개 내용을 불러오는 중…</div>;
 }
 
 const REST_TAG_NAME = "휴뱅";
@@ -780,7 +570,9 @@ export function PublicPoster({
   initialMonth,
   initialYear,
   onViewChange,
-  schedule,
+  schedule: sourceSchedule,
+  premiereEnabled = process.env.NEXT_PUBLIC_PREMIERE_STAGE !== "0",
+  premiereFixture,
   initialNarrow = false,
   toggleHeartAction,
   accountSwitch = false,
@@ -795,6 +587,17 @@ export function PublicPoster({
   ambientForce,
   ambientWorldForce
 }: PublicPosterProps) {
+  const posterRootRef = useRef<HTMLDivElement | null>(null);
+  const premiereBlockedRef = useRef(false);
+  const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
+  const [goneTeaserIds, setGoneTeaserIds] = useState<Set<string>>(() => new Set());
+  const [rehearsal, setRehearsal] = useState<PremiereFixture | undefined>();
+  const schedule = useMemo(() => {
+    const events = new Map(sourceSchedule.events.map(event => [event.id, event]));
+    for (const event of Object.values(revealedEvents)) events.set(event.id, resolveTeaserView(events.get(event.id) ?? event, event));
+    return { ...sourceSchedule, events: [...events.values()].filter(event => !goneTeaserIds.has(event.id)) };
+  }, [sourceSchedule, revealedEvents, goneTeaserIds]);
+
   // 다음 콜드 엔트리의 로딩 스켈레톤 톤 힌트 — 독립 포스터 화면(`/`)일 때만 "포스터"로.
   // accountSwitch=false인 편집실/꾸미기 미리보기는 편집 맥락이라 힌트를 건드리지 않는다.
   useEffect(() => {
@@ -808,7 +611,7 @@ export function PublicPoster({
   // 토리님 SOOP 라이브 상태 — 꾸미기 아니면 폴링(편집실 '시청자 미리보기'에서도 켜서 개발자/오너가
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
-  const soopLiveRaw = useSoopLive();
+  const soopLiveRaw = useSoopLive(!premiereFixture && !rehearsal);
   // 새 배포 자동 반영(시청자 전용) — 시청자 탭은 며칠씩 떠 있어 폴링 데이터는 최신인데 코드/CSS는
   // 옛 빌드로 남는다(2026-09-01 '카드 폭이 화면마다 다르다' 재신고의 실체 = 옛 빌드로 떠 있던 탭).
   // 60초 라이브 폴링에 실린 서버 빌드 해시가 내 번들 해시와 다르면, 탭이 화면에서 사라진 순간
@@ -1048,85 +851,25 @@ export function PublicPoster({
   const [statusFilters, setStatusFilters] = useState<StatusFilterKey[]>([]);
   // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
   //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
-  // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
-  // (이게 있으면 렌더에서 가린 stub 대신 실제 일정을 쓴다 → 캐시 30초 안 기다리고 그 순간 풀림.)
-  const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
-  // 서버가 "그런 일정 없다"고 확인해 준 떡밥 id — 지워졌거나 공개가 아니게 된 것들.
-  // 낡은 공개 캐시가 준 유령 카드(빈 흰 카드)를 여기서 걷어낸다(reconcileTeaserReveal 주석 참조).
-  const [goneTeaserIds, setGoneTeaserIds] = useState<Set<string>>(() => new Set());
-  const markTeaserGone = useCallback((ids: string[]) => {
-    if (ids.length === 0) return;
-    setGoneTeaserIds((prev) => {
-      if (ids.every((id) => prev.has(id))) return prev; // 참조 유지 — 무한 리렌더 방지
-      const next = new Set(prev);
-      for (const id of ids) next.add(id);
-      return next;
-    });
-    logActivity("diag.teaser", { target: ids[0], meta: { phase: "gone", count: ids.length } });
-  }, []);
-
-  // ⚠ 마운트할 때마다 떡밥의 '지금 진실'을 캐시를 우회해 한 번 받아온다.
-  //
-  // 왜 필요한가: 편집실 미리보기가 쓰는 viewerModePreview는 **페이지가 서버에서 그려진 시점의
-  // 스냅샷**이다(공개 스케줄은 5분 캐시). 저장은 /api/studio-write 라우트로 나가므로 RSC가 다시
-  // 그려지지 않는다 → 미리보기를 껐다 켤 때마다 옛 공개시각이 되살아난다.
-  // 실측(2026-08-04 진단 로그): 저장 직후엔 자가복구로 04:48이 됐다가, 미리보기를 다시 켜니
-  // revealAt이 04:21(26분 전 값)로 되돌아가 ???가 아니라 빈 칸이 보였다.
-  // loadRevealedEvents는 캐시를 타지 않고 서버가 공개시각을 다시 판정하므로, 한 번의 왕복으로
-  // '아직 미공개면 새 공개시각이 담긴 stub, 공개됐으면 실제 내용'을 받아 상태를 바로잡는다.
-  // 공개된 떡밥 → 기대가 하트로 옮겨졌는지 반영(0140). 정의는 아래 기대 상태 옆 — 공개 콜백들이
-  // 이보다 위에 있고 deps가 고정이라 ref로 잇는다.
-  const adoptHopeHeartsRef = useRef<(revealedIds: string[]) => void>(() => {});
-  const teaserIdsKey = useMemo(
-    () =>
-      schedule.events
-        .filter((e) => e.teaser)
-        .map((e) => e.id)
-        .sort()
-        .join(","),
-    [schedule.events]
-  );
-  // props(schedule.events)가 바뀔 때도 다시 돈다 — 미리보기의 신선한 스냅샷 도착·router.refresh.
-  // 캐시(revealedEvents)는 항상 스냅샷을 이기므로(resolveTeaserView), 스냅샷이 새로 오면 캐시도
-  // 서버 진실로 갱신해야 '다시 떡밥으로 되돌린 일정'을 캐시의 옛 공개본이 덮지 않는다.
-  const scheduleEventsForSync = schedule.events;
-  useEffect(() => {
-    if (!teaserIdsKey) return;
-    const ids = teaserIdsKey.split(",");
-    let alive = true;
-    revealTeaserAction(ids)
-      .then((result) => {
-        if (!alive) return;
-        const { events: list, goneIds } = reconcileTeaserReveal(ids, result);
-        // 서버가 '없다'고 확인해 준 id는 카드에서 치운다 — 낡은 스냅샷이 준 유령(지운 일정)이
-        // 빈 흰 카드로 남던 경로(2026-08-05 실측). 캐시 무효화 복구가 1차, 이건 2차 방어.
-        markTeaserGone(goneIds);
-        if (list.length > 0) {
-          setRevealedEvents((prev) => {
-            const next = { ...prev };
-            for (const ev of list) next[ev.id] = ev;
-            return next;
-          });
-          adoptHopeHeartsRef.current(list.filter((ev) => !ev.teaser).map((ev) => ev.id));
-        }
-        logActivity("diag.reveal", {
-          meta: {
-            phase: "mount-sync",
-            asked: ids.length,
-            got: list.length,
-            gone: goneIds.length,
-            revealed: list.filter((ev) => !ev.teaser).length
-          }
-        });
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-    // markTeaserGone은 useCallback([]) — 정체성이 고정이라 이 동기화가 매번 다시 돌지 않는다.
-  }, [teaserIdsKey, scheduleEventsForSync, markTeaserGone]);
-  // 다시보기(VOD) — 날짜(방송 시작일)별 매핑(0068). 하루에 여러 번 방송하면 여러 개.
-  // 등록 순서(=방송 순서)대로 보이게 titleNo 오름차순으로 정렬해 둔다.
+  // One public coordinator supplies DB-confirmed DTOs to cards, details and stage.
+  const premiere = useTeaserPremiere({
+    slug: schedule.calendar.slug, events: sourceSchedule.events,
+    month: `${view.year}-${String(view.month).padStart(2, "0")}`,
+    enabled: ((premiereEnabled && settingsPrefs.premiereStageOn) || Boolean(rehearsal)) && !avatarFixed,
+    root: posterRootRef, blocked: premiereBlockedRef, fixture: rehearsal ?? premiereFixture,
+    onEvents: (events, gone) => {
+      if (events.length) setRevealedEvents(previous => {
+        const next = { ...previous }; let changed = false;
+        for (const event of events) if (JSON.stringify(next[event.id]) !== JSON.stringify(event)) { next[event.id] = event; changed = true; }
+        return changed ? next : previous;
+      });
+      if (gone.length) setGoneTeaserIds(previous => new Set([...previous, ...gone]));
+      if (events.length) setGoneTeaserIds(previous => {
+        if (!events.some(event => previous.has(event.id))) return previous;
+        const next = new Set(previous); for (const event of events) next.delete(event.id); return next;
+      });
+    }
+  });
   const vodsByDate = useMemo(() => {
     const map = new Map<
       string,
@@ -1634,107 +1377,7 @@ export function PublicPoster({
   // celebrate: '카운트다운이 0이 되는 순간을 이 화면에서 지켜본' 경우에만 true —
   // 공개가 지난 뒤 새로고침으로 들어온 캐시-지연 교체(TeaserRevealing)는 조용히 갈아끼운다
   // (매 새로고침마다 팡 터지던 문제, 사용자 지적).
-  const [justRevealed, setJustRevealed] = useState<Set<string>>(() => new Set());
-  // 공개 순간 폭죽을 쏘려면 popBurst가 필요한데 정의가 아래쪽이라 ref로 잡아 쓴다
-  // (revealTeaser는 deps [] 콜백 — 직접 참조하면 stale).
-  const popBurstRef = useRef<
-    ((x: number, y: number, mood: "win" | "cheer" | "console") => void) | null
-  >(null);
-  // 축하 연출의 주인은 '누가 공개를 호출했는지'가 아니라 '이 화면이 0초를 라이브로 봤는지'다.
-  // 예전엔 호출자가 넘긴 celebrate 인자로 정했는데, 카운트다운이 0에 닿은 뒤 서버 응답이
-  // 오기까지 그 사이에 부모가 한 번이라도 리렌더되면 카드가 조용한 교체 경로
-  // (TeaserRevealing, celebrate=false)로 넘어가 축포가 통째로 사라졌다 — 첫 공개는 부모가
-  // 조용해서 안 걸리고, 그 뒤부터는 상태가 늘어 리렌더 요인이 생겨 걸렸다(사용자 지적:
-  // "처음만 된다"). 라이브로 봤다는 표시를 여기에 남기면 어느 경로가 이기든 결과가 같다.
-  const liveWatchedRef = useRef<Set<string>>(new Set());
-  // 이미 연출을 시작한 떡밥 — 2초 재시도가 축포를 두 번 쏘지 않게 한다(세션 동안 유지).
-  const celebratedRef = useRef<Set<string>>(new Set());
-  // 카운트다운이 화면에 뜬 순간 기록한다(0초가 아니라 마운트 시점). 0초에 기록하면,
-  // 그 찰나에 부모가 리렌더돼 카드가 조용한 교체 경로로 넘어가면 기록 자체를 못 남긴다.
-  const markTeaserWatched = useCallback((id: string) => {
-    liveWatchedRef.current.add(id);
-  }, []);
-  const revealTeaser = useCallback((id: string, celebrate: boolean) => {
-    if (celebrate) liveWatchedRef.current.add(id);
-    revealTeaserAction([id])
-      .then((result) => {
-        const { events: list, goneIds } = reconcileTeaserReveal([id], result);
-        // 진단(3일): 저장과 렌더 사이가 비어 있어 원인을 코드로만 찾을 수 있었다 — 그 구간을 남긴다.
-        logActivity("diag.reveal", {
-          target: id,
-          meta: {
-            asked: 1,
-            got: list.length,
-            gone: goneIds.length,
-            revealed: list.filter((ev) => !ev.teaser).length,
-            stillMasked: list.filter((ev) => ev.teaser).length
-          }
-        });
-        // 서버가 '그런 일정 없다'고 확인 → 유령 카드를 걷어내고 재시도를 끝낸다.
-        markTeaserGone(goneIds);
-        if (list.length > 0) {
-          // 서버는 '아직 미공개'인 것도 최신 stub으로 돌려준다(공개시각이 미래로 다시 잡힌 경우).
-          // 그건 공개가 아니므로 축하 연출 대상에서 빼고, 상태만 갈아끼워 카운트다운으로 복귀시킨다.
-          const ids = list.filter((ev) => !ev.teaser).map((ev) => ev.id);
-          setRevealedEvents((prev) => {
-            const next = { ...prev };
-            for (const ev of list) next[ev.id] = ev;
-            return next;
-          });
-          if (ids.length === 0) return;
-          adoptHopeHeartsRef.current(ids);
-          // 팝오버가 그 떡밥을 열고 있으면 닫지 않는다 — 그 자리에서 ???가 실제 일정으로
-          // '변신'하는 게 훨씬 좋은 구경거리다(예전엔 닫아버려 클라이맥스를 놓쳤다).
-          // 내용 교체는 렌더에서 revealedEvents로 자동 반영된다.
-          // 라이브로 지켜본 것만 연출. 캐시-지연 교체(새로고침으로 들어온 경우)는 조용히.
-          const targets = ids.filter(
-            (x) => liveWatchedRef.current.has(x) && !celebratedRef.current.has(x)
-          );
-          if (targets.length === 0) return;
-          for (const x of targets) celebratedRef.current.add(x);
-          // 공개 순간 폭죽(월드컵 승리와 같은 큰 연출) — 카드에서 한 번, 팝오버가 열려 있으면
-          // 거기서도 한 번 더. 다음 프레임에 실제 요소가 그려진 뒤 좌표를 잰다.
-          window.setTimeout(() => {
-            for (const id of targets) {
-              const el = document.querySelector<HTMLElement>(`[data-eventid="${id}"]`);
-              if (el) {
-                const r = el.getBoundingClientRect();
-                popBurstRef.current?.(r.left + r.width / 2, r.top + r.height / 2, "win");
-              }
-            }
-            const sheet = document.querySelector<HTMLElement>(".agenda-detail-sheet.reveal-burst");
-            if (sheet) {
-              const r = sheet.getBoundingClientRect();
-              popBurstRef.current?.(r.left + r.width / 2, r.top + r.height / 2, "win");
-            }
-          }, 90);
-          // 연출 유지 시간은 스크램블 해독이 끝날 때까지(제목이 길면 더 오래) — 예전엔 연출이
-          // 중간에 잘려 글자 난동을 끝까지 못 봤다. 타이머 예약은 상태 갱신 함수 밖에서 한다
-          // (updater는 순수해야 하고, StrictMode에서 두 번 불려 중복 예약될 수 있다).
-          const holdMs = Math.max(
-            2400,
-            ...list
-              .filter((ev) => targets.includes(ev.id))
-              .map((ev) => scrambleDurationMs(ev.publicTitle || ""))
-          );
-          setJustRevealed((prev) => {
-            const next = new Set(prev);
-            for (const x of targets) next.add(x);
-            return next;
-          });
-          window.setTimeout(() => {
-            setJustRevealed((cur) => {
-              const n = new Set(cur);
-              for (const x of targets) n.delete(x);
-              return n;
-            });
-          }, holdMs);
-        }
-      })
-      .catch(() => {});
-    // 이제 상태를 직접 읽지 않는다(전부 ref·함수형 갱신) → 콜백 정체성이 안정적이다.
-    // markTeaserGone도 useCallback([])이라 정체성이 고정 — 2초 재시도가 재설치되지 않는다.
-  }, [markTeaserGone]);
+  const justRevealed = premiere.justRevealed;
   const serverHearts = Boolean(toggleHeartAction);
   // 비로그인 하트용 기기 토큰(로그인 시엔 빈 값, 계정 기준으로 동작). 마운트 후 채워진다.
   const [deviceToken, setDeviceToken] = useState("");
@@ -1768,6 +1411,7 @@ export function PublicPoster({
   useEffect(() => () => hopeFxTimers.current.forEach((t) => window.clearTimeout(t)), []);
   useEffect(() => {
     if (!interactive) return;
+    if (premiereFixture || rehearsal) return;
     if (!schedule.events.some((e) => e.teaser)) return; // 떡밥이 없으면 복원 왕복 생략
     const token = getOrCreateDeviceToken();
     if (!token) return;
@@ -1802,60 +1446,14 @@ export function PublicPoster({
   const detailRemainS = useRemainSeconds(
     detailRevealAt ? Date.parse(detailRevealAt) : null
   );
-  useEffect(() => {
-    if (!detailRevealAt) return;
-    const staticOnly =
-      typeof document !== "undefined" &&
-      document.documentElement.hasAttribute("data-reduce-motion");
-    const target = Date.parse(detailRevealAt);
-    let raf = 0;
-    const write = () => {
-      const el = detailSheetRef.current;
-      if (!el) return;
-      const remainMs = target - Date.now();
-      const raw = hypeIntensity(remainMs);
-      const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
-      // 폭풍의 눈 — 정적 모드에선 0/1로 양자화해 캡처가 결정적이게 한다.
-      const rawCalm = hypeCalm(remainMs);
-      const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
-      // 등장 — 하이프 창(60초) 바깥에서도 써야 하므로 강도와 별개로 계산한다.
-      const rawEmerge = hypeEmerge(remainMs);
-      const rawFinale = hypeFinale(remainMs);
-      const emerge = staticOnly ? (rawEmerge > 0.5 ? 1 : 0) : rawEmerge;
-      const finale = staticOnly ? quantizeStaticIntensity(rawFinale) : rawFinale;
-      const vars = {
-        ...hypeCssVars(hypeChannels(i, calm)),
-        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i)),
-        "--hy-emerge": emerge.toFixed(3),
-        "--hy-final": finale.toFixed(3)
-      };
-      for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
-      el.classList.toggle("hype-live", raw > 0);
-      // 리더선(팝오버 밖 SVG)도 같은 값을 받는다 — 선만 멈춰 있으면 끊겨 보인다.
-      const link = document.querySelector<SVGElement>(".detail-anchor-link");
-      if (link) {
-        for (const [k, v] of Object.entries(vars)) link.style.setProperty(k, v);
-        link.classList.toggle("hype-live", raw > 0);
-      }
-    };
-    const tick = () => {
-      if (document.hidden) return;
-      if (staticOnly) {
-        write();
-        return;
-      }
-      raf = window.requestAnimationFrame(write);
-    };
-    tick();
-    const id = window.setInterval(tick, staticOnly ? 1000 : 100);
-    return () => {
-      window.clearInterval(id);
-      if (raf) window.cancelAnimationFrame(raf);
-    };
-  }, [detailRevealAt]);
   const hopeCountOf = (ev: PublicScheduleEvent): number =>
     hopeCounts[ev.id] ?? ev.hopeCount ?? 0;
   function toggleHope(ev: PublicScheduleEvent, btn?: HTMLElement | null) {
+    if (premiereFixture || rehearsal) {
+      hapticTick(); playSfx(myHopeIds.has(ev.id) ? "heart-off" : "hope");
+      setMyHopeIds(previous => { const next = new Set(previous); if (next.has(ev.id)) next.delete(ev.id); else next.add(ev.id); return next; });
+      return;
+    }
     const token = getOrCreateDeviceToken();
     if (!token) return; // 사생활 모드 등 — 조용히 무시(집계 신호일 뿐)
     hapticTick(); // ① 눌림
@@ -1870,7 +1468,7 @@ export function PublicPoster({
     hopeFxTimers.current.forEach((t) => window.clearTimeout(t));
     hopeFxTimers.current = [];
     if (!on) {
-      const remainMs = ev.teaserRevealAt ? Date.parse(ev.teaserRevealAt) - Date.now() : Infinity;
+      const remainMs = ev.teaserRevealAt ? Date.parse(ev.teaserRevealAt) - syncedNow() : Infinity;
       const i = hypeIntensity(remainMs);
       const calm = hypeCalm(remainMs);
       const id = ++hopeFxId.current;
@@ -1945,26 +1543,7 @@ export function PublicPoster({
   // 떡밥이 공개되면 이 기기의 '기대돼요'가 비로그인 하트로 옮겨진다(0140, 서버가 공개 응답 전에 처리).
   // 비로그인만 — 서버 하트 목록을 다시 받아 공개된 일정 중 새로 생긴 하트를 켜고 수를 +1 한다.
   // 로그인 시청자는 계정 하트라 옮겨지지 않는다(소유자 결정).
-  adoptHopeHeartsRef.current = (revealedIds: string[]) => {
-    if (!anonymous || !serverHearts || revealedIds.length === 0) return;
-    const token = getOrCreateDeviceToken();
-    if (!token) return;
-    getAnonHeartIdsAction(token)
-      .then((ids) => {
-        const server = new Set(ids);
-        const added = revealedIds.filter(
-          (id) => server.has(id) && !heartOpRef.current.has(id) && !bookmarks.includes(id)
-        );
-        if (added.length === 0) return;
-        setBookmarks((prev) => [...prev, ...added.filter((id) => !prev.includes(id))]);
-        setHeartCounts((prev) => {
-          const next = { ...prev };
-          for (const id of added) next[id] = (next[id] ?? 0) + 1;
-          return next;
-        });
-      })
-      .catch(() => {});
-  };
+
   // 하트를 누를 때 화면에 떠오르는 ♥ 입자들(틱톡식 좋아요 연출). 잠깐 떴다 사라진다.
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 특별한 날(공휴일·기념일·월드컵·한국 승) 탭 시 그 자리에서 터지는 점(point) 폭죽들.
@@ -2788,7 +2367,6 @@ export function PublicPoster({
     window.setTimeout(() => setBursts((prev) => prev.filter((b) => b.id !== id)), 2200);
   }
   // 떡밥 공개 순간에도 이 폭죽을 쏜다(revealTeaser는 deps [] 콜백이라 ref로 건넨다).
-  popBurstRef.current = popBurst;
 
   // 관심 토글 — 낙관적으로 즉시 반영하고, 서버 모드면 호출 후 집계 수를 권위값으로 보정한다.
   function toggleBookmark(id: string, ev?: ReactMouseEvent<HTMLButtonElement>) {
@@ -3459,7 +3037,7 @@ export function PublicPoster({
             // 데이터가 있어도 ???만 보여 지연 없음). 시각이 지났는데 서버가 가린 stub(제목 빈)을
             // 보냈으면(캐시 지연) 중립 placeholder + 즉시 교체. 시각 지났고 제목 있으면 일반 렌더.
             if (event.teaser && event.teaserRevealAt) {
-              if (Date.parse(event.teaserRevealAt) > Date.now()) {
+              if (Date.parse(event.teaserRevealAt) > syncedNow()) {
                 // 클릭 = 떡밥 상세 팝오버(공개 시각 + 기대돼요) — 카드에는 카운트다운만(중복 없음).
                 const openTeaserDetail = interactive
                   ? (el: HTMLElement) => {
@@ -3481,6 +3059,8 @@ export function PublicPoster({
                     className={`public-event teaser${event.isTentative ? " tentative" : ""}${isDimmedByFilter(event) ? " dimmed" : ""}${openTeaserDetail ? " is-clickable" : ""}${
                       myHopeIds.has(event.id) ? " hoped" : ""
                     }${hopeHit?.eventId === event.id ? " hope-hit" : ""}`}
+                    data-eventid={event.id}
+                    data-teaser-at={event.teaserRevealAt}
                     data-act="teaser-card"
                     key={event.id}
                     {...(openTeaserDetail
@@ -3506,9 +3086,9 @@ export function PublicPoster({
                       {event.isTentative ? <span className="sr-only">미정 </span> : null}
                       <p className="teaser-q">???</p>
                       <TeaserCountdown
-                        motionEnabled={interactive}
-                        onReveal={() => revealTeaser(rawEvent.id, true)}
-                        onWatch={() => markTeaserWatched(rawEvent.id)}
+
+
+
                         revealAt={event.teaserRevealAt}
                       />
                     </div>
@@ -3525,7 +3105,7 @@ export function PublicPoster({
                     className="public-event teaser-revealing"
                     eventId={event.id}
                     key={event.id}
-                    onReveal={() => revealTeaser(rawEvent.id, false)}
+
                     revealAt={event.teaserRevealAt}
                   />
                 );
@@ -3786,7 +3366,7 @@ export function PublicPoster({
             예전엔 legendTags가 0개인 달엔 '이 달 기록' 진입점까지 통째로 사라졌다.
             태그 필터 박스만 태그(또는 하트 필터)가 있을 때 그린다. */}
         {interactive ? (
-          <div className="agenda-legend-rail">
+          <div className="agenda-legend-rail" data-pm-exit="2">
           {legendTags.length > 0 || canHeart ? (
           <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
             <strong>색상 필터</strong>
@@ -4019,7 +3599,7 @@ export function PublicPoster({
                     // 떡밥(가림): 미래면 항상 ??? 카드(미리보기·실제 모두). 지났고 빈 stub이면
                     // placeholder+교체, 지났고 제목 있으면 일반 렌더.
                     if (event.teaser && event.teaserRevealAt) {
-                      if (Date.parse(event.teaserRevealAt) > Date.now()) {
+                      if (Date.parse(event.teaserRevealAt) > syncedNow()) {
                         // 탭 = 떡밥 상세 시트(공개 시각 + 기대돼요). 카드엔 카운트다운만(중복 없음).
                         const openTeaserSheet = interactive
                           ? () => {
@@ -4030,6 +3610,8 @@ export function PublicPoster({
                           : null;
                         return (
                           <div
+                            data-eventid={event.id}
+                            data-teaser-at={event.teaserRevealAt}
                             className={`agenda-item teaser${event.isTentative ? " tentative" : ""}${openTeaserSheet ? " tappable" : ""}${
                               myHopeIds.has(event.id) ? " hoped" : ""
                             }${hopeHit?.eventId === event.id ? " hope-hit" : ""}`}
@@ -4052,9 +3634,9 @@ export function PublicPoster({
                             {event.isTentative ? <span className="sr-only">미정 </span> : null}
                             <p className="agenda-title teaser-q">???</p>
                             <TeaserCountdown
-                              motionEnabled={interactive}
-                              onReveal={() => revealTeaser(rawEvent.id, true)}
-                              onWatch={() => markTeaserWatched(rawEvent.id)}
+
+
+
                               revealAt={event.teaserRevealAt}
                             />
                           </div>
@@ -4066,7 +3648,7 @@ export function PublicPoster({
                             className="agenda-item teaser-revealing"
                             eventId={event.id}
                             key={event.id}
-                            onReveal={() => revealTeaser(rawEvent.id, false)}
+
                             revealAt={event.teaserRevealAt}
                           />
                         );
@@ -4335,7 +3917,7 @@ export function PublicPoster({
     if (dplus === null) return null; // 데뷔 전이면 카드 자체를 내린다(빈 상자 금지)
     const days = dplus.toLocaleString("ko-KR");
     return (
-      <div className="rail-info-card">
+      <div className="rail-info-card" data-pm-exit="1">
         {/* 팬 페이지에서 가장 흔한 데뷔 기록 표기 — 큰 D+숫자(주인공) + 조용한 해설. 해설은 날짜(2026-09-17 소유자:
             'D+352'와 '352일째'로 같은 숫자를 두 번 말하지 않는다) — "데뷔 2025.10.01". */}
         <span className="ric-debut" title={`데뷔 ${days}일째`}>
@@ -4475,6 +4057,14 @@ export function PublicPoster({
     </div>
   );
 
+  const rehearsalSeen = useRef(false);
+  useEffect(() => {
+    if (!rehearsal) { rehearsalSeen.current = false; return; }
+    if (premiere.frame.phase !== "idle") rehearsalSeen.current = true;
+    else if (rehearsalSeen.current) setRehearsal(undefined);
+  }, [rehearsal, premiere.frame.phase]);
+  premiereBlockedRef.current = Boolean(sheet || dayVodPop || monthPick || giftCard || gachaOpen || (agendaDetail && !agendaDetail.event.teaser));
+
   return (
     <main
       /* poster-agenda = 모바일(아젠다) 표식 — 금(金) 스킨 같은 웹 전용 재질을 이 아래로 내려보내지
@@ -4487,11 +4077,18 @@ export function PublicPoster({
         filterActive ? " tag-filtering" : ""
       }`}
       data-poster-theme={effectivePosterTheme}
+      ref={posterRootRef}
     >
       {/* 앰비언트 배경(ADR-0016 물결 + ADR-0017 계절, components/shared/ambient — 편집실과 같은
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
-      <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} />
+      <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
+      <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}
+        month={view.month} tags={viewTags} root={posterRootRef} onClose={premiere.close} hoped={myHopeIds}
+        onHope={id => { const event = premiere.frame.items.find(item => item.id === id)?.event ?? schedule.events.find(item => item.id === id); if (event) toggleHope(event); }}
+        onOtherMonth={() => { const event = schedule.events.find(item => item.teaser && item.teaserRevealAt && Date.parse(item.teaserRevealAt) - syncedNow() <= 180000); if (event) { const [year, month] = event.startsAt.split("-").map(Number); goToMonth({ year, month }); } }} />
+      {previewNav ? <button className="pm-rehearsal" type="button" onClick={() => setRehearsal({ startedAt: syncedNow(), offsets: [20, 23], rehearsal: true })}>무대 리허설</button> : null}
+
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
       {/* 하트 승급 순간 — 화면 밖(fixed)이라 캡쳐 PNG엔 안 들어간다. */}
@@ -4566,7 +4163,7 @@ export function PublicPoster({
             const end = event.endDateKey;
             // 아직 안 풀린 떡밥 상세 — 공개 시각 + 기대돼요만(내용 0). 액센트는 떡밥 보라.
             const teaserActive = Boolean(
-              event.teaser && event.teaserRevealAt && Date.parse(event.teaserRevealAt) > Date.now()
+              event.teaser && event.teaserRevealAt && Date.parse(event.teaserRevealAt) > syncedNow()
             );
             // 카드와 같은 연속 강도 — 위 10Hz 루프가 CSS 변수로 흘려보낸다. 여기선 '무엇을
             // 그릴지'(문구 전환)만 판단한다. 이산 단계(hs1~hs4)는 폐기.
@@ -4881,113 +4478,7 @@ export function PublicPoster({
                       {/* 1분 안쪽 = 팝오버가 '카운트다운 무대'가 된다(계획 안 B: 링 진행률 +
                           중앙 대형 숫자). 링은 물리 시간(60→0)을, 글로우·크기는 강도 곡선을
                           따르므로 정보와 감정이 분리된다. 그 밖에는 공개 시각 알약. */}
-                      {detailRing && detailRemainS !== null ? (
-                        (() => {
-                          // 남은 비율 p. 진행 호는 SVG 원 경로의 시작점(로컬 3시 방향)에서
-                          // 시계방향으로 길이 p만큼 그려진다 → 호의 '끝'은 시작점에서 360p°다.
-                          // 별을 12시에서 출발시키면 정확히 90° 어긋난다(사용자 지적한 그 버그).
-                          const p = Math.max(0, Math.min(1, detailRemainS / HYPE_WINDOW_S));
-                          const deg = 360 * p;
-                          // 눈금 12개(5초 간격) — 남은 호 안에 있는 것만 켠다. 시계 문자판처럼
-                          // '얼마나 남았는지'를 숫자 없이도 읽히게 하고, 빈 원의 허전함을 없앤다.
-                          const ticks = Array.from({ length: 12 }, (_, k) => k / 12);
-                          return (
-                        <div className={`dt-count${detailFinal ? " is-final" : ""}`}>
-                          {/* 링과 라벨은 형제다 — 예전엔 라벨이 링 안에 absolute로 얹혀 있어
-                              원 아래쪽 좁은 현(chord)에서 링 stroke와 겹쳤다(글씨 가림 버그).
-                              숫자를 줄여도 안 풀리는 기하 문제라 라벨을 링 밖 독립 행으로 뺐다. */}
-                          <div className="dt-count-ringbox">
-                          {/* 여운 — 마지막 10초, 초가 바뀔 때마다 링에서 파문이 한 번 퍼진다.
-                              key로 매초 다시 마운트되므로 1초에 정확히 한 번이다(점멸 예산 안전).
-                              흔들림이 멎은 자리에 이 파문만 남아 '고요한데 더 크게' 들린다. */}
-                          {detailFinal ? (
-                            <span aria-hidden="true" className="dt-echo" key={detailRemainS} />
-                          ) : null}
-                          {/* 기대돼요 잔향 — 링 무대에선 오브가 없으니 링에서 보라·금 파문이
-                              한 번 퍼진다(초 파문과 같은 감속 이징, 색만 다르다). */}
-                          {hopeCast?.eventId === event.id ? (
-                            <span aria-hidden="true" className="dt-echo dt-hope-echo" key={`h${hopeCast.id}`} />
-                          ) : null}
-                          <svg aria-hidden="true" className="dt-ring" viewBox="0 0 100 100">
-                            <defs>
-                              {/* 호를 따라 색이 흐른다 — 단색 바보다 깊이가 생긴다. */}
-                              <linearGradient id="dt-ring-grad" x1="0" x2="1" y1="0" y2="1">
-                                <stop className="dt-grad-a" offset="0%" />
-                                <stop className="dt-grad-b" offset="55%" />
-                                <stop className="dt-grad-c" offset="100%" />
-                              </linearGradient>
-                            </defs>
-                            <circle className="dt-ring-track" cx="50" cy="50" r="44" />
-                            <circle
-                              className="dt-ring-progress"
-                              cx="50"
-                              cy="50"
-                              pathLength={1}
-                              r="44"
-                              style={{ strokeDasharray: 1, strokeDashoffset: 1 - p }}
-                            />
-                            {/* 눈금은 바 '위에' 새긴다(반지름 41.8~46.2 = stroke 폭 40.5~47.5 안).
-                                안쪽에 두면 링박스 후광의 경계와 겹쳐 숫자 주변에 묻혀 버렸다.
-                                진행 호 뒤에 그려야 채워진 구간에서도 새김눈이 보인다. */}
-                            <g className="dt-ring-ticks">
-                              {ticks.map((f) => (
-                                <line
-                                  className={f <= p ? "on" : undefined}
-                                  key={f}
-                                  transform={`rotate(${360 * f} 50 50)`}
-                                  /* ⚠ x는 '반지름'이 아니라 좌표다(중심 50). 반지름 41.8을
-                                     쓰려면 50+41.8 = 91.8이어야 한다. 예전엔 41.8을 그대로
-                                     넣어 반지름 8.2 — 숫자 한가운데에 눈금 12개가 뭉쳐 있었다. */
-                                  x1="91.8"
-                                  x2="96.2"
-                                  y1="50"
-                                  y2="50"
-                                />
-                              ))}
-                            </g>
-                            {/* 진행 끝을 따라가는 별 + 꼬리 — 캔버스 없이 SVG만. 기준점은 경로
-                                시작점(94,50)이고 회전량은 호 길이와 같은 360p°라 항상 붙어 있다. */}
-                            {[
-                              { k: 1, off: -4, cls: "dt-ring-trail t1" },
-                              { k: 0, off: 0, cls: "dt-ring-spark" }
-                            ].map(({ k, off, cls }) => (
-                              <circle
-                                className={cls}
-                                cx="94"
-                                cy="50"
-                                key={k}
-                                r={3.2 - k * 0.7}
-                                style={{
-                                  transform: `rotate(${deg + off}deg)`,
-                                  transformOrigin: "50px 50px"
-                                }}
-                              />
-                            ))}
-                          </svg>
-                          {/* 숫자만 — '초'를 붙이면 두 글자의 무게 때문에 숫자가 원 중심에서
-                              왼쪽으로 밀려 보였다(사용자 지적). 자릿수가 줄면 그때그때 다시
-                              가운데로 온다(고정 슬롯 없음). */}
-                          <div className="dt-count-core">
-                            <strong key={detailRemainS}>{detailRemainS}</strong>
-                          </div>
-                          </div>
-                          <p className="dt-count-label">
-                            {myHopeIds.has(event.id)
-                              ? detailFinal
-                                ? "✦ 곧 공개!"
-                                : "✦ 함께 기다리는 중"
-                              : detailFinal
-                                ? "곧 공개!"
-                                : "최초공개까지"}
-                          </p>
-                          {/* 링이 공개 시각 알약을 밀어냈으니 그 정보를 여기서 되살린다. */}
-                          <p className="dt-count-when">
-                            {formatRevealClockKst(event.teaserRevealAt)}
-                          </p>
-                        </div>
-                          );
-                        })()
-                      ) : null}
+                      {detailRing && detailRemainS !== null ? <><TeaserStageContent revealAt={event.teaserRevealAt} /><p className="dt-count-when">{formatRevealClockKst(event.teaserRevealAt)}</p></> : null}
                       {detailPill ? (
                         <>
                           {/* 편집실 게이트 카드와 같은 큰 카운트다운(2026-09-27 소유자: "텍스트만 있어 보는
@@ -5106,6 +4597,8 @@ export function PublicPoster({
                 onToggleEyeComfort={settingsPrefs.toggleEyeComfort}
                 onToggleHaptics={settingsPrefs.toggleHaptics}
                 onToggleReduceMotion={settingsPrefs.toggleReduceMotion}
+                premiereStageOn={settingsPrefs.premiereStageOn}
+                onTogglePremiereStage={settingsPrefs.togglePremiereStage}
                 posterTheme={null}
                 posterThemeSaving={false}
                 reduceMotion={settingsPrefs.reduceMotion}
@@ -5220,7 +4713,7 @@ export function PublicPoster({
       ) : null}
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
-          <header className="agenda-header">
+          <header className="agenda-header" data-pm-exit="3">
             {settingsButton}
             {/* 시청자 미리보기 진입 시 — 제목 왼쪽 여백 칸에 안내(작게). */}
             {previewNote ? <span className="agenda-preview-left">{previewNote}</span> : null}
@@ -5283,7 +4776,7 @@ export function PublicPoster({
           </header>
         ) : null}
         {showAgenda ? null : (
-          <header className="public-calendar-header">
+          <header className="public-calendar-header" data-pm-exit="3">
             <div className="header-left">
               {/* 달력 꾸미기 꺼짐 상태 켜기 토글만 헤더에 둔다. 시청자 미리보기는 켜짐/꺼짐 모두 좌상단
                   고정 오버레이(.avatar-ctl-preview)로 뺀다 — 헤더는 shell 폭이 토글마다 바뀌며 좌우로
@@ -5486,7 +4979,7 @@ export function PublicPoster({
               {railInfoCard}
               <SoopLiveBeacon inRail live={soopLive} />
             </div>
-            <div className="slot-legend">{renderLegendFilter(false)}</div>
+            <div className="slot-legend" data-pm-exit="2">{renderLegendFilter(false)}</div>
             {/* 아바타 scene에선 계절 배경 카드가 아바타 자리 위쪽으로(레일이 접히므로). 점선 박스 **밖·위** —
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
             {interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
@@ -5507,7 +5000,7 @@ export function PublicPoster({
       {/* 하단 중앙 [⇤ | 패널 | ⇥] — 편집실과 같은 부품·같은 자리(2026-09-17 소유자). 자리 선택(⇤ ⇥)은 관리자·개발자
           (avatarSlot)만, 일반 시청자·비로그인은 접기/펼치기 하나. /onair 고정 scene엔 없다(사람이 안 만진다). */}
       {sceneOn && !avatarFixed ? (
-        <div className="poster-panel-ctl">
+        <div className="poster-panel-ctl" data-pm-exit="3">
           {/* 자리 선택(⇤ ⇥)은 비로그인 시청자에게도(2026-09-17 소유자). 확대 직후 1.2초는 가운데 글자만 배율. */}
           <PanelPlaceControl
             onSide={panel.pickSide}
@@ -5550,7 +5043,7 @@ export function PublicPoster({
 
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
           시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}
-      <nav className="agenda-monthbar" aria-label="월 이동">
+      <nav className="agenda-monthbar" data-pm-exit="3" aria-label="월 이동">
         {/* 스와이프(2629)는 톡이 울리는데 화살표는 맨손이었다 — 같은 동작은 같은 감촉.
             톡은 moveMonth 안이 아니라 여기서 울린다(안에 넣으면 jumpToday·스와이프가 두 번 울린다). */}
         <button

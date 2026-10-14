@@ -4,6 +4,14 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-10-14
+
+### CHG-20261014-001 — Shared public premiere stage and DB-authoritative state
+
+One coordinator replaces card-specific public reveal loops. Cards/detail/stage share the monotonic clock and existing hype curve; the viewport stage preserves the 1840px poster and adds seasonal storm/eye/bigbang, bounded chains, FLIP return and synthetic preview rehearsal. The shared motion settings include a default-ON personal stage switch; explicit OFF keeps card/detail presentation and syncs across tabs. Additive 0142 returns DB-authoritative masking from the existing public view through explicit fields; public GETs use canonical shared cache keys without service-role reads or settlement. Existing cron owns hope settlement. No identity/history collection added.
+
+Owner then authorized commit/push/deployment. 0142 applied with verified TLS before reader rollout; anonymous/unprivileged-authenticated past-month canaries passed with zero residue. Real Next-to-stub-DB testing found stale-background refresh fanout; origin coalescing inside the Data Cache callback fixed it. Stage and personal preference default ON; set `NEXT_PUBLIC_PREMIERE_STAGE=0` and rebuild/redeploy for motion rollback. Keep masked boundaries/grants and the RPC needed by deployed readers. Verification, unrelated failures and remaining deployed-load/flash/device evidence: [record](verification/TEASER_PREMIERE-20261014.md), [ADR-0030](decisions/ADR-0030-teaser-premiere-state.md).
+
 ## v0.1.0 — 2026-09-21
 
 ### CHG-20260921-004 — Recover automatic VOD chat analysis

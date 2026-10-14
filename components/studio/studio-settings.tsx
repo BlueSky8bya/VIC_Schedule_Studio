@@ -39,6 +39,8 @@ export type StudioSettingsProps = {
   onToggleHaptics: () => void;
   reduceMotion: boolean;
   onToggleReduceMotion: () => void;
+  premiereStageOn: boolean;
+  onTogglePremiereStage: () => void;
   eyeComfort: boolean;
   onToggleEyeComfort: () => void;
   // 화면 모드(2026-10-06 세 상태) — 밝게·어둡게·기기 따라. 모든 역할/시청자 미리보기에서 같은 기기 설정.
@@ -233,6 +235,8 @@ export function StudioSettingsList({
   onToggleHaptics,
   reduceMotion,
   onToggleReduceMotion,
+  premiereStageOn,
+  onTogglePremiereStage,
   eyeComfort,
   onToggleEyeComfort,
   themeMode,
@@ -758,6 +762,12 @@ export function StudioSettingsList({
             </RowLabel>
             <Switch dataAct="생동감 있는 동작 켜기/끄기" label="생동감 있는 동작 켜기/끄기" on={!reduceMotion} onToggle={onToggleReduceMotion} />
           </div>
+          <div className="role-help-haptics">
+            <RowLabel icon={<PartyPopper size={15} />} tone="water">
+              최초공개 무대
+            </RowLabel>
+            <Switch dataAct="최초공개 무대 켜기/끄기" label="최초공개 무대 켜기/끄기" on={premiereStageOn} onToggle={onTogglePremiereStage} />
+          </div>
           {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
           {hapticsSupported ? (
             <div className="role-help-haptics">
@@ -768,6 +778,7 @@ export function StudioSettingsList({
             </div>
           ) : null}
         </div>
+        <p className="rhh-group-foot">최초공개 무대를 끄면 카드·상세에서만 공개돼요. 생동감 있는 동작을 끄면 전체 무대도 쉬어요.</p>
       </section>
 
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}

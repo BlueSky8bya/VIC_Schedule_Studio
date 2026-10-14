@@ -23,6 +23,42 @@ import { createSupabaseServerClient } from "@/lib/auth/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { EVENT_HEART_COUNTS_CACHE_TAG, PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/schedules/cache";
 import type { TeaserRevealResult } from "@/lib/schedules/teaser-reconcile";
+import { emptyTeaserState, type TeaserStateSnapshot } from "@/lib/schedules/teaser-state";
+import { singleFlightCache } from "@/lib/schedules/teaser-state-cache";
+
+const coalesceTeaserState = singleFlightCache<TeaserStateSnapshot>();
+const coalesceTeaserOrigin = singleFlightCache<TeaserStateSnapshot>();
+// Time-based Data Cache expiry can start background revalidations after the
+// caller has already received a stale value. Coalesce the actual origin read
+// inside that callback too; an outer wrapper cannot see its lifetime.
+const cachedTeaserState = unstable_cache((slug: string, id: string | null): Promise<TeaserStateSnapshot> => coalesceTeaserOrigin(`${slug}:${id ?? "all"}`, async () => {
+  const client = createPublicReadClient();
+  if (!client) throw new Error("Public state unavailable");
+  const began = Date.now();
+  const { data, error } = await client.rpc("get_public_teaser_state", { p_slug: slug, p_event_id: id });
+  const ended = Date.now();
+  if (error || !data || !Number.isFinite(data.sampledAtDbMs) || !Array.isArray(data.rows)) throw new Error("Public state unavailable");
+  const sampledAtDbMs = Number(data.sampledAtDbMs);
+  const entries = (data.rows as (EventRow & { hidden: boolean })[]).map(row => {
+    if (typeof row.hidden !== "boolean") throw new Error("Missing DB release decision");
+    return {
+      id: row.id, dateKey: row.date_key, revealAt: row.teaser_reveal_at,
+      state: row.hidden ? "masked" as const : "released" as const,
+      event: mapEvent(row, sampledAtDbMs)
+    };
+  });
+  // Paired at origin, so a cache-aged response carries an offset, not a fake now.
+  return { ok: true, schemaVersion: 1, sampledAtDbMs, clockSkewMs: sampledAtDbMs - (began + ended) / 2, clockUncertaintyMs: (ended - began) / 2, entries };
+}), ["public-teaser-state-v1"], { revalidate: 1, tags: [PUBLIC_SCHEDULE_CACHE_TAG] });
+
+// Canonical keys only. Errors are unknown, never a successful empty/deleted list.
+export async function loadPublicTeaserState(slug: string, id: string | null = null): Promise<TeaserStateSnapshot> {
+  if (slug !== "vic" || (id !== null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) return emptyTeaserState();
+  return coalesceTeaserState(`${slug}:${id ?? "all"}`, async () => {
+    try { return await cachedTeaserState(slug, id); }
+    catch { return emptyTeaserState(); }
+  }, state => state.ok ? 0 : 1000);
+}
 
 function coercePosterTheme(value: unknown): PosterThemeKey {
   return typeof value === "string" && isPosterThemeKey(value) ? value : "none";
@@ -461,6 +497,7 @@ type EventRow = {
   category: PublicScheduleEvent["category"];
   teaser: boolean | null;
   teaser_reveal_at: string | null;
+  hidden?: boolean;
   event_tags: Array<{ tag_id: string; is_primary: boolean; sort_order: number }> | null;
 };
 
@@ -470,7 +507,9 @@ function mapEvent(row: EventRow, nowMs: number): PublicScheduleEvent {
   // 떡밥: 공개 시각 전이면 제목·태그·카테고리·기간을 통째로 가린 DTO만 내보낸다(유출 방지).
   // 시청자는 전용 떡밥 룩 + 공개까지 카운트다운만 본다. 공개 시각이 지나면 아래 평범한 DTO로.
   const revealMs = row.teaser && row.teaser_reveal_at ? Date.parse(row.teaser_reveal_at) : 0;
-  if (revealMs && nowMs < revealMs) {
+  // RPC callers use the DB decision; legacy snapshots fail closed on SQL-masked
+  // empty content when the application host clock runs ahead of the database.
+  if (row.hidden === true || (row.hidden === undefined && revealMs && (nowMs < revealMs || !row.public_title))) {
     return {
       id: row.id,
       startsAt: toKstIso(row.date_key, null),

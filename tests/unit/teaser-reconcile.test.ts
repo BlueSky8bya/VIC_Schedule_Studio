@@ -76,7 +76,9 @@ describe("시청자 포스터는 '없어진 떡밥'을 그리지 않는다", () 
     expect(guards.length).toBe(2);
   });
   it("공개 요청 응답은 reconcile을 거쳐 처리된다(마운트 동기화 + 카운트다운 0)", () => {
-    expect(POSTER).toContain("reconcileTeaserReveal(ids, result)");
-    expect(POSTER).toContain("reconcileTeaserReveal([id], result)");
+    const coordinator = fs.readFileSync(path.join(process.cwd(), "lib/ui/premiere/use-teaser-premiere.ts"), "utf8");
+    expect(coordinator).toContain("reconcileTeaserReveal(asked ? [asked] : []");
+    expect(POSTER).toContain("useTeaserPremiere({");
+    expect(POSTER).not.toContain("revealTeaserAction(");
   });
 });

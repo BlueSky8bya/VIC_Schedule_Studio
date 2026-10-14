@@ -1,8 +1,12 @@
 # Open verification and operations checks
 
-Updated: 2026-09-21
+Updated: 2026-10-14
 
 This file keeps unresolved evidence gaps out of startup history. A prior PASS applies to its tested revision and scope only. Recheck before closing; do not infer current production state from old notes.
+
+## TEASER-PREMIERE — authorized rollout and remaining QA
+
+See [release evidence](TEASER_PREMIERE-20261014.md). Owner authorized commit/push/deployment. 0142 applied with verified TLS; real anon/unprivileged-authenticated SQL canaries and anonymous REST passed (rolled-back past-date rows, zero residue). Actual Next HTTP-to-stub-DB bursts at 1/100/1,000 requests on one/two instances passed after fixing background-revalidation fanout. Deployment/client/CDN checks are in progress. Full Vercel multi-region fanout and nano capacity, formal composite luminance, real mobile/landscape/screen-reader hardware and full-duration occupancy remain unverified. The authorized release defaults ON with personal OFF/reduced-motion controls; `NEXT_PUBLIC_PREMIERE_STAGE=0` is the deployment stop (PLAN-027 §8 supersedes the initial OFF gate). Use synthetic DB counters for large loads, never the production nano. No real schedule rewrite/cleanup performed.
 
 ## PRIVACY-20260921 — historical exposure and provider/retention follow-up
 

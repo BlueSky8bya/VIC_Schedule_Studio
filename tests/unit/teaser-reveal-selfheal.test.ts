@@ -52,12 +52,16 @@ describe("public presence privacy boundary", () => {
   });
 });
 
-describe("떡밥은 마운트마다 캐시 우회로 진실을 다시 받는다", () => {
-  it("미리보기 스냅샷은 페이지 로드 시점 값이라 저장 후 껐다 켜면 되살아난다", () => {
-    const SRC = fs.readFileSync(path.join(process.cwd(), "components/poster/public-poster.tsx"), "utf8");
-    const block = SRC.slice(SRC.indexOf("const teaserIdsKey"), SRC.indexOf("const [agendaDetail"));
-    // 마운트 동기화가 사라지면 '저장했는데 미리보기가 옛 공개시각'이 재발한다.
-    expect(block).toContain("revealTeaserAction(ids)");
-    expect(block).toContain("mount-sync");
+describe("fresh public confirmation repairs an expired preview snapshot", () => {
+  it("keeps the latest masked schedule instead of treating postponement as deletion", async () => {
+    const { buildPremiereFixture } = await import("@/lib/schedules/premiere-fixture");
+    const { reconcileTeaserReveal } = await import("@/lib/schedules/teaser-reconcile");
+    const old = buildPremiereFixture(1000, [5], 1000).entries[0];
+    const fresh = buildPremiereFixture(1000, [5], 5500, "postpone").entries[0];
+    const result = reconcileTeaserReveal([old.id], { ok: true, events: [fresh.event] });
+    expect(result.goneIds).toEqual([]);
+    expect(result.events[0].teaser).toBe(true);
+    expect(result.events[0].teaserRevealAt).not.toBe(old.revealAt);
+    expect(result.events[0].publicTitle).toBe("");
   });
 });

@@ -13,6 +13,10 @@ import {
   ambientMode,
   eyeComfortEnabled,
   reduceMotionEnabled,
+  premiereStageEnabled,
+  setPremiereStageEnabled,
+  PREMIERE_STAGE_KEY,
+  PREMIERE_STAGE_EVENT,
   setAmbientMode,
   setEyeComfort,
   setReduceMotion
@@ -43,6 +47,8 @@ export type SettingsPrefs = {
   toggleHaptics: () => void;
   reduceMotion: boolean;
   toggleReduceMotion: () => void;
+  premiereStageOn: boolean;
+  togglePremiereStage: () => void;
   eyeComfort: boolean;
   toggleEyeComfort: () => void;
   themeMode: ThemeMode;
@@ -107,6 +113,28 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     });
     hapticTick();
   }, []);
+
+  // 최초공개 무대 — 기본 ON, 기기 저장값과 열린 미리보기/다른 탭을 함께 갱신.
+  const [premiereStageOn, setPremiereStageOn] = useState(true);
+  useEffect(() => {
+    setPremiereStageOn(premiereStageEnabled());
+    const changed = (event: Event) => {
+      const value = (event as CustomEvent<unknown>).detail;
+      if (typeof value === "boolean") setPremiereStageOn(value);
+    };
+    const stored = (event: StorageEvent) => {
+      if (event.key === PREMIERE_STAGE_KEY || event.key === null) setPremiereStageOn(premiereStageEnabled());
+    };
+    window.addEventListener(PREMIERE_STAGE_EVENT, changed);
+    window.addEventListener("storage", stored);
+    return () => { window.removeEventListener(PREMIERE_STAGE_EVENT, changed); window.removeEventListener("storage", stored); };
+  }, []);
+  const togglePremiereStage = useCallback(() => {
+    const next = !premiereStageOn;
+    setPremiereStageEnabled(next);
+    setPremiereStageOn(next);
+    hapticTick();
+  }, [premiereStageOn]);
 
   // 눈 편한 테마 — 채도·눈부심을 낮춘다.
   const [eyeComfort, setEyeComfortState] = useState(false);
@@ -298,6 +326,8 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
     toggleHaptics,
     reduceMotion,
     toggleReduceMotion,
+    premiereStageOn,
+    togglePremiereStage,
     eyeComfort,
     toggleEyeComfort,
     themeMode: themeModeState,
