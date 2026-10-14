@@ -1,7 +1,7 @@
 # PLAN-028 — Fluid premiere redesign
 
 Date: 2026-10-14 KST
-Status: Locally verified; deployment verification pending
+Status: Deployed and verified — e74bd1b3
 
 ## Owner direction and replacement decisions
 
@@ -31,4 +31,4 @@ Production-build fixtures, before/after captures and actual-time browser interac
 
 ## Completion
 
-Implemented and rendered review complete. Production-build matrix 56 PASS; after the final ambient-only containing-block correction, all 14 fluid cases and both visual baselines PASS. Typecheck/lint/build PASS; full units 1,082 PASS/8 existing failures. Exact scope and remaining checks: [verification](../verification/TEASER_FLUID-20261014.md). Commit/push and deployed-client verification remain. Previous production release remains evidence, not proof of this revision.
+Implemented, visually reviewed, committed/pushed and deployed as e74bd1b3. Production-build matrix 56 PASS; after the final ambient-only containing-block correction, all 14 fluid cases and both visual baselines PASS. Typecheck/lint/build PASS; full units 1,082 PASS/8 existing failures. Production SHA and synthetic deployed-client checks PASS: early screen, time advance/release, no duplicate effect/mobile overflow, Escape, anonymous rehearsal absence and default-ON/persisted OFF. Exact scope and hardware/formal-audit limits: [verification](../verification/TEASER_FLUID-20261014.md).

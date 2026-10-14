@@ -1,7 +1,7 @@
 # Premiere fluid redesign — verification
 
 Date: 2026-10-14 KST
-Status: Local verification complete; deployment verification pending
+Status: Deployed and verified — functional release e74bd1b3
 Decision: [PLAN-028](../plans/PLAN-20261014-028-premiere-fluid-redesign.md)
 Previous release: [premiere implementation and deployment](TEASER_PREMIERE-20261014.md)
 
@@ -48,4 +48,8 @@ Formal composite-video luminance, real screen readers/haptics/mobile hardware, c
 
 ## Deployment
 
-Pending commit/push and verification of the deployed SHA/client. Retain `NEXT_PUBLIC_PREMIERE_STAGE=0` as deployment stop and the immediate personal OFF control. Reader/RPC rollback policy remains the previous release's policy; this revision requires no migration.
+`e74bd1b3e12f5b80fee03108cd5e8aa878eabab6` committed/pushed to main. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/A6ZPtK6yUxRwfPdnQhX4eaeLhEy9) reported success; the production API build field matched that exact SHA.
+
+Headless Chromium loaded the deployed bundle using the established past-month cookie (2025-09). Only that browser's teaser GET responses were substituted with synthetic masked/released content dated 2025-09-16; all attempted browser POSTs were blocked (two intercepted, zero sent). Verified T−65 screen uniqueness/unmasked clock, no title before release, an authoritative-looking synthetic time advance to a near deadline, public release/title, no duplicate underlying shockwave, a mid-show resize into the mobile agenda with no overflow after topology settlement, Escape/inert restoration, anonymous rehearsal absence, default-ON switch and OFF persisted after reload. Zero page errors. This is deployed-client coverage, not a genuine production timed event or developer/owner login test.
+
+Retain `NEXT_PUBLIC_PREMIERE_STAGE=0` as deployment stop and the immediate personal OFF control. Reader/RPC rollback policy remains the previous release's policy; this revision required no migration.
