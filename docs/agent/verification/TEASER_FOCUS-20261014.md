@@ -1,6 +1,6 @@
 # Premiere focus and continuity — 2026-10-14 KST
 
-Scope: [PLAN-030](../plans/PLAN-20261014-030-premiere-focus-and-continuity.md). Local verification complete; deployment pending.
+Scope: [PLAN-030](../plans/PLAN-20261014-030-premiere-focus-and-continuity.md). Deployed and verified: 48e3c8c9.
 
 ## Findings and changes
 
@@ -29,4 +29,8 @@ Existing old geometry-snapshot mismatch was independently reproduced in [PLAN-02
 
 ## Deployment
 
-Pending authorized commit/push and deployed-client smoke. Personal OFF/Escape and NEXT_PUBLIC_PREMIERE_STAGE=0 remain recovery paths.
+`48e3c8c9c73706051b8757230f80a80c7a58bbba` committed/pushed to main. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/3h4tbec7FYZCa8zawEMwiQQUMhPf) reported success; the production API build field matched this exact SHA.
+
+Headless Chromium loaded the deployed main route with the existing past-month cookie (2025-09). Browser-local teaser GET substitutions supplied synthetic masked/released content dated 2025-09-16; a temporary synthetic non-target DOM card tested interaction gates. Verified: one visible detail timer/card non-numeric/dock non-numeric, live prelude/individual departure deadline, restrained card handover, numeric calm/growth/ring retreat, no pre-release title, confirmed title plus three separated/indented subtopics, mobile full-width outline/date row/no overflow, non-target/month navigation gates, Escape/restored activation and anonymous rehearsal absence. Zero page errors; one attempted browser POST intercepted, zero sent. The temporary DOM card was removed. This does not constitute a genuine authenticated studio session, real timed production event, RLS/device/luminance or DB-capacity audit.
+
+Personal OFF/Escape and NEXT_PUBLIC_PREMIERE_STAGE=0 remain recovery paths. No schema rollback is needed.
