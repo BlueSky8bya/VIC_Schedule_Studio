@@ -1,7 +1,7 @@
 /** One device-local bridge. Public event ids identify already rendered cards;
  * no title, date, tag, account, server request or persisted game state crosses it. */
 export const COMPANION_DETAIL_EVENT = "vic:companion-detail";
-export type CompanionDetailNotice = { eventId: string | null; sheet: HTMLElement | null };
+export type CompanionDetailNotice = { eventId: string | null; sheet: HTMLElement | null; ready: boolean };
 export type CompanionHideRect = { left: number; top: number; right: number; bottom: number; width: number; height: number };
 export type CompanionHideTarget = { eventId: string; element: HTMLElement; rect: CompanionHideRect; entry: { x: number; y: number } };
 const CARD = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";

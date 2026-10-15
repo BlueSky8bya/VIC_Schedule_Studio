@@ -179,15 +179,27 @@
 
 /* One score drives both visibility and accessibility. animation-fill:both on
    avatar-card-pop previously overrode debut exit transform/opacity. */
-.poster-page [data-pm-exit], .viewer-preview-overlay[data-pm-exit] { transition: transform .32s var(--spring-smooth, ease), opacity .32s ease; }
-.poster-page[data-premiere] [data-pm-exit], .viewer-preview-overlay[data-pm-exit] { animation: none!important; opacity: calc(1 - var(--pm-region, 0)); transform: translate3d(0, calc(var(--pm-region, 0) * -28px), 0) scale(calc(1 - var(--pm-region, 0) * .08)); transform-origin: center top; }
+/* Include fixed body portals without making the long agenda a scroll container.
+   Its vertical flow, sticky headers and the 1840px export surface stay intact. */
+html[data-pm-viewport-clip], html[data-pm-viewport-clip] body { overflow-x: clip; }
+.poster-page [data-pm-exit], .viewer-preview-overlay[data-pm-exit], [data-pm-region-active] { transition: transform .64s var(--pm-spring, var(--spring-smooth, ease)), opacity .48s ease; }
+[data-pm-region-active] {
+  --pm-region-gentle: 1;
+  --pm-region-arc: calc(4 * var(--pm-region-travel, 0) * (1 - var(--pm-region-travel, 0)));
+  animation: none!important; opacity: var(--pm-region-opacity, 1);
+  transform-origin: var(--pm-region-origin, center);
+  transform: perspective(1100px) translate3d(calc(var(--pm-region-edge-x, 0px) * var(--pm-region-travel, 0) - var(--pm-region-unit-x, 0) * 10px * var(--pm-region-anticipation, 0) + var(--pm-region-arc-x, 0px) * var(--pm-region-arc) * var(--pm-region-gentle)), calc(var(--pm-region-edge-y, 0px) * var(--pm-region-travel, 0) - var(--pm-region-unit-y, 0) * 8px * var(--pm-region-anticipation, 0) + var(--pm-region-arc-y, 0px) * var(--pm-region-arc) * var(--pm-region-gentle)), 0) rotateY(calc(var(--pm-region-unit-x, 0) * var(--pm-region-fold, 0) * -5deg * var(--pm-region-gentle))) rotateZ(calc(var(--pm-region-unit-x, 0) * var(--pm-region-fold, 0) * -1.8deg * var(--pm-region-gentle))) scale(calc(1 - var(--pm-region-fold, 0) * .10 * var(--pm-region-gentle)), calc(1 - var(--pm-region-fold, 0) * .035 * var(--pm-region-gentle)));
+  transition: transform .11s linear, opacity .11s linear;
+}
+[data-pm-region-active][data-pm-region-return] { transition: transform .64s var(--pm-spring, var(--spring-smooth, ease)), opacity .48s ease; }
+html[data-gfx="lite"] [data-pm-region-active] { --pm-region-gentle: .5; }
+html:is([data-gfx="soft"], [data-gfx="off"]) [data-pm-region-active] { transform: none; }
 /* Ambient children are fixed to the viewport. Even an identity transform on
    their zero-height wrapper would change that containing block. Fade it only. */
 .poster-page[data-premiere] .pm-ambient-shell { transform: none; }
 .poster-page .poster-stage { transition: transform .64s var(--pm-spring, var(--spring-smooth, ease)); }
 .poster-page[data-premiere] .poster-stage { overflow: visible; transform-origin: top left; transform: translate3d(var(--pm-canvas-x, 0px), 0, 0) scale(var(--pm-canvas-scale, 1)); }
 .poster-page[data-premiere] .avatar-slot { opacity: calc(1 - var(--pm-panel-yield, 0)); }
-.poster-page[data-premiere] .poster-panel-ctl { transform: translateY(calc(var(--pm-region, 0) * 10px)) scale(calc(1 - var(--pm-region, 0) * .05)); transform-origin: center bottom; }
 /* Each event owns a seeded slot. Calendar/date-cell geometry and opacity stay
    still; a multi-day event's segments share the same trajectory and timing. */
 .poster-page[data-premiere] [data-pm-depart] {

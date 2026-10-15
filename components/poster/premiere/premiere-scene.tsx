@@ -9,7 +9,7 @@ const company = [
   { x: 42, size: .82, seed: 3.8 }, { x: 58, size: 1, seed: 5.2 },
   { x: 75, size: .76, seed: 7.9 }, { x: 92, size: .9, seed: 9.6 }
 ];
-export function PremiereScene({ pulse, hopeful, cheer, onCheer }: { pulse: number; hopeful: boolean; cheer: number; onCheer: () => void }) {
+export function PremiereScene({ pulse, hopeful, cheer, onCheer, companionJoined = false }: { pulse: number; hopeful: boolean; cheer: number; onCheer: () => void; companionJoined?: boolean }) {
   const audience = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -33,7 +33,7 @@ export function PremiereScene({ pulse, hopeful, cheer, onCheer }: { pulse: numbe
     <div className="pm-cast-row">
       <div className="pm-company" ref={audience} data-cheer={cheer ? "" : undefined}>
         <div className="pm-audience-line" aria-hidden="true" />
-        {company.map((member, index) => <button type="button" className="pm-fan" key={index} data-pm-audience-control data-sfx="off" aria-label={`빅타민 ${index + 1} 응원하기`} onClick={onCheer} style={{ "--fan-x": `${member.x}%`, "--fan-size": member.size, "--fan-seed": member.seed, "--fan-index": index } as CSSProperties}>
+        {company.map((member, index) => <button type="button" className="pm-fan" key={index} data-pm-audience-control data-companion-joined={companionJoined && index === 0 ? "" : undefined} data-sfx="off" aria-label={companionJoined && index === 0 ? "우리 빅타민 응원하기" : `빅타민 ${index + 1} 응원하기`} onClick={onCheer} style={{ "--fan-x": `${member.x}%`, "--fan-size": member.size, "--fan-seed": member.seed, "--fan-index": index } as CSSProperties}>
           <span className="pm-fan-art" aria-hidden="true" />
         </button>)}
       </div>

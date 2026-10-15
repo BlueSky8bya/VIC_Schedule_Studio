@@ -8,26 +8,91 @@ import type { PremiereFrame } from "@/lib/ui/premiere/plan";
 import { premiereFocusMotion } from "@/lib/ui/premiere/focus-motion";
 import { premiereAudienceFrame, premiereAudienceSeat, premiereCompany } from "@/lib/ui/premiere/company";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
+import { premiereViewportBounds, regionDeparture } from "@/lib/ui/premiere/panel-departure";
 
-export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, root: RefObject<HTMLDivElement | null>, exit: RefObject<HTMLButtonElement | null>, stage: RefObject<HTMLDivElement | null>, previousFocus: RefObject<HTMLElement | null>) {
+// A rapid OFF/Escape can remove choreography before the existing .64s return
+// finishes. Share one finite clip lease so that tail cannot inflate mobile
+// layout, and a new opening cannot inherit an old cleanup timer.
+const viewportClips = new WeakMap<HTMLElement, { users: number; original: string | null; timer: number | null }>();
+function clipViewport(root: HTMLElement): () => void {
+  let entry = viewportClips.get(root);
+  if (!entry) { entry = { users: 0, original: root.getAttribute("data-pm-viewport-clip"), timer: null }; viewportClips.set(root, entry); }
+  const lease = entry;
+  if (lease.timer !== null) { window.clearTimeout(lease.timer); lease.timer = null; }
+  lease.users++; root.setAttribute("data-pm-viewport-clip", "");
+  return () => {
+    if (--lease.users > 0) return;
+    lease.timer = window.setTimeout(() => {
+      if (lease.original === null) root.removeAttribute("data-pm-viewport-clip"); else root.setAttribute("data-pm-viewport-clip", lease.original);
+      viewportClips.delete(root);
+    }, 700);
+  };
+}
+
+export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, root: RefObject<HTMLDivElement | null>, exit: RefObject<HTMLButtonElement | null>, stage: RefObject<HTMLDivElement | null>, previousFocus: RefObject<HTMLElement | null>, companionOwner?: string) {
   const latest = useRef(frame); latest.current = frame;
   const active = frame.phase !== "idle";
   useLayoutEffect(() => {
     const page = root.current;
     if (!page || !active || reduced) return;
-    // These shared cards keep their original DOM/layout. Mark every topology,
-    // including cards outside the export surface and the preview navigation.
-    const extra = [
-      ...[...page.querySelectorAll<HTMLElement>(".viewer-ambient-ctl")].map(el => ({ el, code: "5" })),
-      ...[...page.querySelectorAll<HTMLElement>(".soop-live-card")].map(el => ({ el, code: "6" })),
-      ...[...(page.parentElement?.querySelectorAll<HTMLElement>(".viewer-preview-overlay") ?? [])].map(el => ({ el, code: "3" }))
-    ].map(item => ({ ...item, before: item.el.getAttribute("data-pm-exit") }));
-    for (const { el, code } of extra) el.dataset.pmExit = code;
-    const regions = [...new Set([...page.querySelectorAll<HTMLElement>("[data-pm-exit]"), ...extra.map(item => item.el)])].map(el => ({ el, inert: el.inert, hidden: el.getAttribute("aria-hidden") }));
+    const regionVars = ["--pm-region", "--pm-region-travel", "--pm-region-anticipation", "--pm-region-fold", "--pm-region-opacity", "--pm-region-edge-x", "--pm-region-edge-y", "--pm-region-unit-x", "--pm-region-unit-y", "--pm-region-arc-x", "--pm-region-arc-y", "--pm-region-origin", "--pm-spring"];
+    const readStyle = (el: HTMLElement, keys: string[]) => keys.map(key => ({ key, value: el.style.getPropertyValue(key), priority: el.style.getPropertyPriority(key) }));
+    const restoreStyle = (el: HTMLElement, values: ReturnType<typeof readStyle>) => { for (const { key, value, priority } of values) { if (value) el.style.setProperty(key, value, priority); else el.style.removeProperty(key); } };
+    const restoreAttribute = (el: HTMLElement, key: string, value: string | null) => { if (value === null) el.removeAttribute(key); else el.setAttribute(key, value); };
+    // Root clipping also contains this page's body-portal house. Unlike hidden,
+    // clip does not create a scroll container or change sticky/vertical scroll.
+    const viewportRoot = page.ownerDocument.documentElement;
+    const releaseViewport = clipViewport(viewportRoot);
+    type Region = { el: HTMLElement; code: string; index: number; reactInert: boolean; inert: boolean; hidden: string | null; attributes: { key: string; value: string | null }[]; styles: ReturnType<typeof readStyle> };
+    const regions = new Map<HTMLElement, Region>(), nextIndex = new Map<string, number>();
+    const resize = new ResizeObserver(() => queueMeasure());
+    let measureFrame = 0;
+    const restoreRegion = (item: Region) => {
+      // Either exact house can mount while React already owns inactive=true.
+      // Restoring that captured value would leave it locked after the show.
+      if (item.reactInert) return;
+      item.el.inert = item.inert;
+      restoreAttribute(item.el, "aria-hidden", item.hidden);
+    };
+    const unregister = (item: Region) => {
+      restoreRegion(item); restoreStyle(item.el, item.styles);
+      for (const { key, value } of item.attributes) restoreAttribute(item.el, key, value);
+      resize?.unobserve(item.el); regions.delete(item.el);
+    };
+    // Only the public page, its preview navigation and this exact creature's
+    // compact portal are owned. Never style another calendar's floating house.
+    const registerRegions = () => {
+      const candidates = new Map<HTMLElement, string>();
+      for (const el of page.querySelectorAll<HTMLElement>("[data-pm-exit]")) candidates.set(el, el.dataset.pmExit ?? "");
+      for (const [selector, code] of [[".viewer-ambient-ctl", "5"], [".soop-live-card", "6"]]) for (const el of page.querySelectorAll<HTMLElement>(selector)) candidates.set(el, code);
+      for (const el of page.parentElement?.querySelectorAll<HTMLElement>(".viewer-preview-overlay") ?? []) candidates.set(el, "3");
+      if (companionOwner) for (const el of page.ownerDocument.querySelectorAll<HTMLElement>(".vc-compact-home[data-companion-home-owner]")) {
+        if (el.dataset.companionHomeOwner === companionOwner) candidates.set(el, "5");
+      }
+      // The compact shell already carries its whole house. Applying the same
+      // score again to its nested home would double displacement and opacity.
+      for (const el of candidates.keys()) {
+        const shell = el.matches(".vc-home") ? el.closest<HTMLElement>(".vc-compact-home") : null;
+        if (shell && candidates.has(shell)) candidates.delete(el);
+      }
+      let changed = false;
+      for (const item of regions.values()) if (!candidates.has(item.el) || candidates.get(item.el) !== item.code) { unregister(item); changed = true; }
+      for (const [el, code] of candidates) {
+        if (regions.has(el) || !REGION_WINDOWS[code]) continue;
+        const index = nextIndex.get(code) ?? 0; nextIndex.set(code, index + 1);
+        const reactInert = Boolean(companionOwner && el.matches(".vc-home,.vc-compact-home") && el.dataset.companionHomeOwner === companionOwner);
+        regions.set(el, { el, code, index, reactInert, inert: el.inert, hidden: el.getAttribute("aria-hidden"), styles: readStyle(el, regionVars), attributes: ["data-pm-exit", "data-pm-region-active", "data-pm-region-return"].map(key => ({ key, value: el.getAttribute(key) })) });
+        el.dataset.pmExit = code; el.setAttribute("data-pm-region-active", "");
+        el.style.setProperty("--pm-spring", FLIP_SPRING); resize?.observe(el); changed = true;
+      }
+      return changed;
+    };
+    registerRegions();
     const cardSelector = "[data-eventid],[data-supportid]";
     const navigationSelector = '[data-act="이전 달"],[data-act="다음 달"],[data-act="month-title"],[data-act="today-fab"],[data-act="mb-act"]';
     const controlled = new Map<HTMLElement, boolean>();
-    const cards = new Set<HTMLElement>();
+    const cards = new Map<HTMLElement, { target: string | null; departure: string | null; styles: ReturnType<typeof readStyle> }>();
+    const rememberCard = (el: HTMLElement) => { if (!cards.has(el)) cards.set(el, { target: el.getAttribute("data-pm-target"), departure: el.getAttribute("data-pm-depart"), styles: readStyle(el, ["--pm-leave"]) }); };
     let generation = "";
     let departures = new Map<string, CardDeparture>();
     let canvas = page.querySelector<HTMLElement>(".poster-stage");
@@ -37,6 +102,32 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     let audienceContainer: HTMLElement | null = null;
     let seats: { fan: HTMLElement; dx: number }[] = [];
     const measure = () => {
+      const viewport = premiereViewportBounds({ clientWidth: viewportRoot.clientWidth, clientHeight: viewportRoot.clientHeight, visualViewport: window.visualViewport });
+      for (const { el, code } of regions.values()) {
+        if (!el.isConnected || code === "4") continue;
+        // Neutralize only this owned presentation transform for one finite
+        // layout read. Resizing an already departed panel must not measure its
+        // offscreen position and compound the next edge distance.
+        const before = readStyle(el, ["transform", "transition"]);
+        el.style.setProperty("transition", "none", "important"); el.style.setProperty("transform", "none", "important");
+        const rect = el.getBoundingClientRect();
+        restoreStyle(el, before.filter(value => value.key === "transform"));
+        // Commit the original presentation with transitions still disabled;
+        // otherwise a resize could replay an offscreen panel from identity.
+        void getComputedStyle(el).transform;
+        restoreStyle(el, before.filter(value => value.key === "transition"));
+        if (!rect.width || !rect.height) continue;
+        const sx = rect.width / (el.offsetWidth || rect.width), sy = rect.height / (el.offsetHeight || rect.height);
+        const bottom = code === "7" || el.matches(".agenda-monthbar"), direction = rect.left + rect.width / 2 < viewport.left + viewport.width / 2 ? -1 : 1;
+        const geometry = {
+          "--pm-region-edge-x": `${bottom ? 0 : (direction < 0 ? viewport.left - rect.right - 32 : viewport.right - rect.left + 32) / sx}px`,
+          "--pm-region-edge-y": `${bottom ? (viewport.bottom - rect.top + 32) / sy : 0}px`,
+          "--pm-region-unit-x": String(bottom ? 0 : direction), "--pm-region-unit-y": String(bottom ? 1 : 0),
+          "--pm-region-arc-x": `${bottom ? direction * 18 / sx : 0}px`, "--pm-region-arc-y": `${bottom ? 0 : -28 / sy}px`,
+          "--pm-region-origin": bottom ? "center bottom" : direction < 0 ? "left center" : "right center",
+        };
+        for (const [key, value] of Object.entries(geometry)) el.style.setProperty(key, value);
+      }
       const agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
       seats = [...(stage.current?.querySelectorAll<HTMLElement>(".pm-fan") ?? [])].map(fan => {
         const index = Number(fan.style.getPropertyValue("--fan-index"));
@@ -61,30 +152,31 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       shift = left - canvas.offsetLeft;
     };
     measure();
-    const resize = new ResizeObserver(measure);
+    const queueMeasure = () => {
+      if (!measureFrame) measureFrame = requestAnimationFrame(() => { measureFrame = 0; measure(); update(); });
+    };
+    for (const { el } of regions.values()) resize.observe(el);
     if (canvas) resize.observe(canvas);
     if (fit) resize.observe(fit);
     const panel = page.querySelector<HTMLElement>(".poster-panel-ctl"), badge = stage.current?.querySelector<HTMLElement>(".pm-banner");
     if (panel) resize.observe(panel);
     if (badge) resize.observe(badge);
+    const pageStyle = readStyle(page, ["--pm-spring", "--pm-focus", "--pm-lift", "--pm-panel-yield", "--pm-canvas-scale", "--pm-canvas-x"]);
+    const pagePhase = page.getAttribute("data-premiere");
     page.style.setProperty("--pm-spring", FLIP_SPRING);
-    const restoreRegion = (item: typeof regions[number]) => {
-      item.el.inert = item.inert;
-      if (item.hidden === null) item.el.removeAttribute("aria-hidden"); else item.el.setAttribute("aria-hidden", item.hidden);
-    };
     const update = () => {
       const current = latest.current;
       const nextAudience = stage.current?.querySelector<HTMLElement>(".pm-company") ?? null;
       if (nextAudience !== audienceContainer) {
-        if (audienceContainer) resize.unobserve(audienceContainer);
+        if (audienceContainer) resize?.unobserve(audienceContainer);
         audienceContainer = nextAudience;
-        if (audienceContainer) resize.observe(audienceContainer);
+        if (audienceContainer) resize?.observe(audienceContainer);
         measure();
       }
       const returning = current.phase === "return" || current.phase === "idle";
       const seconds = returning ? Infinity : (current.target - syncedNow()) / 1000;
       stage.current?.style.setProperty("--pm-progress", String(Math.max(0, Math.min(1, 1 - seconds / 180))));
-      stage.current?.style.setProperty("--pm-dock-y", `${passage(seconds, 158, 138) * dockTravel}px`);
+      stage.current?.style.setProperty("--pm-dock-y", `${passage(seconds, 156, 152) * dockTravel}px`);
       stage.current?.style.setProperty("--pm-ring-offset", String(1 - Math.max(0, Math.min(1, seconds / 60))));
       const motion = premiereFocusMotion(seconds * 1000);
       const finale = current.phase === "reveal" ? 0 : motion.retreat;
@@ -129,24 +221,34 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       }
       page.dataset.premiere = current.phase;
       page.style.setProperty("--pm-focus", String(passage(seconds, 180, 76)));
-      const yieldPanel = passage(seconds, 138, 124);
+      const yieldPanel = passage(seconds, 152, 148);
       page.style.setProperty("--pm-panel-yield", String(yieldPanel));
       page.style.setProperty("--pm-canvas-scale", String(1 + (widthRatio - 1) * yieldPanel));
       page.style.setProperty("--pm-canvas-x", `${shift * yieldPanel}px`);
-      for (const item of regions) {
-        const window = REGION_WINDOWS[item.el.dataset.pmExit ?? ""];
+      for (const item of regions.values()) {
+        if (!item.el.isConnected) continue;
+        const window = REGION_WINDOWS[item.code];
         if (!window) continue;
-        const progress = passage(seconds, ...window);
-        item.el.style.setProperty("--pm-region", String(progress));
+        // Fixed ambient children keep their original containing block and
+        // whole-window fade. Every physical panel follows its short flight.
+        const score = item.code === "4" ? { progress: passage(seconds, ...window), travel: 0, anticipation: 0, fold: 0, opacity: 1 - passage(seconds, ...window) } : regionDeparture(seconds, window, item.index);
+        const { progress } = score;
+        // Once a panel is seated/offscreen its score is constant. Avoid
+        // repeated style invalidation during the rest of the countdown.
+        for (const [key, value] of Object.entries({ "--pm-region": progress, "--pm-region-travel": score.travel, "--pm-region-anticipation": score.anticipation, "--pm-region-fold": score.fold, "--pm-region-opacity": score.opacity })) {
+          const next = String(value);
+          if (item.el.style.getPropertyValue(key) !== next) item.el.style.setProperty(key, next);
+        }
+        item.el.toggleAttribute("data-pm-region-return", returning);
         if (progress > .05 && !returning) {
           if (item.el.contains(document.activeElement)) { previousFocus.current = document.activeElement as HTMLElement; exit.current?.focus({ preventScroll: true }); }
-          item.el.inert = true; item.el.setAttribute("aria-hidden", "true");
+          if (!item.reactInert) { item.el.inert = true; item.el.setAttribute("aria-hidden", "true"); }
         } else restoreRegion(item);
       }
       const ids = new Set(current.items.map(item => item.id));
       const targets = [...page.querySelectorAll<HTMLElement>("[data-eventid]")].filter(el => ids.has(el.dataset.eventid ?? ""));
-      for (const el of marked) if (!targets.includes(el)) { delete el.dataset.pmTarget; marked.delete(el); }
-      for (const el of targets) { el.dataset.pmTarget = "1"; marked.add(el); }
+      for (const el of marked) if (!targets.includes(el)) { restoreAttribute(el, "data-pm-target", cards.get(el)?.target ?? null); marked.delete(el); }
+      for (const el of targets) { rememberCard(el); el.dataset.pmTarget = "1"; marked.add(el); }
       page.style.setProperty("--pm-lift", String(passage(seconds, 75, 68)));
       const allCards = [...page.querySelectorAll<HTMLElement>(cardSelector)];
       const keyOf = (el: HTMLElement) => el.dataset.eventid ? `event:${el.dataset.eventid}` : `support:${el.dataset.supportid}`;
@@ -156,7 +258,7 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
         departures = planCardDepartures(allCards.filter(el => !el.dataset.pmTarget).map(keyOf), seed);
       }
       for (const el of allCards) {
-        cards.add(el);
+        rememberCard(el);
         if (el.dataset.pmTarget) { delete el.dataset.pmDepart; el.style.removeProperty("--pm-leave"); continue; }
         const key = keyOf(el);
         if (!departures.has(key)) departures.set(key, lateCardDeparture(key, seed));
@@ -183,41 +285,35 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
     };
     const guardedEvents = ["pointerdown", "click", "auxclick", "keydown", "contextmenu"];
     for (const name of guardedEvents) page.addEventListener(name, guard, true);
-    const known = new Set(regions.map(item => item.el));
     const topology = new MutationObserver(changes => {
       const relevant = `.soop-live-card,.viewer-ambient-ctl,[data-pm-exit],.public-day,.agenda-day,${cardSelector}`;
-      if (!changes.some(change => [...change.addedNodes].some(node => node instanceof Element && (node.matches(relevant) || node.querySelector(relevant))))) return;
-      for (const [selector, code] of [[".viewer-ambient-ctl", "5"], [".soop-live-card", "6"]]) {
-        for (const el of page.querySelectorAll<HTMLElement>(selector)) {
-          if (known.has(el)) continue;
-          extra.push({ el, code, before: el.getAttribute("data-pm-exit") });
-          el.dataset.pmExit = code;
-        }
-      }
-      for (const el of page.querySelectorAll<HTMLElement>("[data-pm-exit]")) {
-        if (known.has(el)) continue;
-        regions.push({ el, inert: el.inert, hidden: el.getAttribute("aria-hidden") }); known.add(el);
-      }
+      if (!changes.some(change => [...change.addedNodes, ...change.removedNodes].some(node => node instanceof Element && (node.matches(relevant) || node.querySelector(relevant))))) return;
+      let remeasure = registerRegions();
       const nextCanvas = page.querySelector<HTMLElement>(".poster-stage"), nextFit = page.querySelector<HTMLElement>(".poster-fit");
-      if (nextCanvas !== canvas) { if (canvas) resize.unobserve(canvas); canvas = nextCanvas; if (canvas) resize.observe(canvas); }
-      if (nextFit !== fit) { if (fit) resize.unobserve(fit); fit = nextFit; if (fit) resize.observe(fit); }
-      measure(); update();
+      if (nextCanvas !== canvas) { if (canvas) resize?.unobserve(canvas); canvas = nextCanvas; if (canvas) resize?.observe(canvas); remeasure = true; }
+      if (nextFit !== fit) { if (fit) resize?.unobserve(fit); fit = nextFit; if (fit) resize?.observe(fit); remeasure = true; }
+      if (remeasure) queueMeasure();
+      else update();
     });
     // Watch topology changes, not the 10Hz style writes. A live card arriving
     // after the prelude must immediately inherit the same exit/inert score.
     topology.observe(page, { childList: true, subtree: true });
+    const homeChanged = () => { registerRegions(); queueMeasure(); };
+    window.addEventListener("resize", queueMeasure, { passive: true });
+    window.visualViewport?.addEventListener("resize", queueMeasure, { passive: true });
+    window.addEventListener("vic:companion-home", homeChanged);
     update();
     const unsubscribe = subscribeClock(update);
     return () => {
-      unsubscribe(); resize.disconnect(); topology.disconnect();
+      unsubscribe(); resize?.disconnect(); topology.disconnect(); cancelAnimationFrame(measureFrame);
+      window.removeEventListener("resize", queueMeasure); window.removeEventListener("vic:companion-home", homeChanged);
+      window.visualViewport?.removeEventListener("resize", queueMeasure);
       for (const name of guardedEvents) page.removeEventListener(name, guard, true);
-      delete page.dataset.premiere;
-      for (const key of ["--pm-spring", "--pm-focus", "--pm-lift", "--pm-panel-yield", "--pm-canvas-scale", "--pm-canvas-x"]) page.style.removeProperty(key);
-      for (const item of regions) { item.el.style.removeProperty("--pm-region"); restoreRegion(item); }
-      for (const el of marked) delete el.dataset.pmTarget;
-      for (const el of cards) { delete el.dataset.pmDepart; el.style.removeProperty("--pm-leave"); }
+      restoreAttribute(page, "data-premiere", pagePhase); restoreStyle(page, pageStyle);
+      for (const item of regions.values()) unregister(item);
+      for (const [el, before] of cards) { restoreAttribute(el, "data-pm-target", before.target); restoreAttribute(el, "data-pm-depart", before.departure); restoreStyle(el, before.styles); }
       for (const [el, inert] of controlled) el.inert = inert;
-      for (const { el, before } of extra) { if (before === null) delete el.dataset.pmExit; else el.dataset.pmExit = before; }
+      releaseViewport();
     };
-  }, [active, reduced, root, exit, stage, previousFocus]);
+  }, [active, reduced, root, exit, stage, previousFocus, companionOwner]);
 }

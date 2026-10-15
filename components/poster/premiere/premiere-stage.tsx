@@ -27,10 +27,10 @@ import { usePremiereEntry } from "./use-premiere-entry";
 import { createFlashBudget } from "@/lib/ui/premiere/flash-budget";
 import "./premiere-stage.css";
 
-type Props = { frame: PremiereFrame; bang: number; reduced: boolean; hint: boolean; canResume: boolean; onResume: () => void; month: number; tags: BroadcastTag[]; tagVisual: TagVisualResolver; root: RefObject<HTMLDivElement | null>; onClose: () => void; onHope: (id: string) => void; onRead?: (id: string) => void; hoped: Set<string>; onOtherMonth: () => void; detailEventId?: string };
+type Props = { frame: PremiereFrame; bang: number; reduced: boolean; hint: boolean; canResume: boolean; onResume: () => void; month: number; tags: BroadcastTag[]; tagVisual: TagVisualResolver; root: RefObject<HTMLDivElement | null>; onClose: (reason?: "calendar" | "dismiss") => void; onHope: (id: string) => void; onRead?: (id: string) => void; hoped: Set<string>; onOtherMonth: () => void; detailEventId?: string; companionOwner?: string; companionJoined?: boolean };
 const phases = ["idle", "prelude", "filters", "chrome", "curtain", "quake", "screen", "build", "eye", "waiting", "reveal", "return"];
 
-export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume, month, tags, tagVisual, root, onClose, onHope, onRead, hoped, onOtherMonth, detailEventId }: Props) {
+export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume, month, tags, tagVisual, root, onClose, onHope, onRead, hoped, onOtherMonth, detailEventId, companionOwner, companionJoined = false }: Props) {
   const [ready, setReady] = useState(false);
   const [burst, setBurst] = useState(false);
   const [hopePulse, setHopePulse] = useState(0);
@@ -64,7 +64,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   const detailOwnsClock = Boolean(detailEventId && frame.items.some(item => item.id === detailEventId));
   const dockOwnsClock = !focused && !detailOwnsClock && !cardVisible;
   const phaseIndex = phases.indexOf(frame.phase);
-  usePremiereChoreography(frame, reduced, root, exit, portal, previousFocus);
+  usePremiereChoreography(frame, reduced, root, exit, portal, previousFocus, companionOwner);
   useEffect(() => { if (!active) setHopePulse(0); }, [active]);
   useEffect(() => {
     if (!focused || complete) { setCheerPulse(0); lastCheer.current = -Infinity; }
@@ -72,7 +72,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   useEffect(() => { setCheerPulse(0); lastCheer.current = -Infinity; }, [generationKey]);
   useEffect(() => { setReady(true); const read = () => setGfx(gfxMode()); read(); const observer = new MutationObserver(read); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-gfx"] }); return () => observer.disconnect(); }, []);
   useEffect(() => { const media = matchMedia(POSTER_AGENDA_QUERY); const read = () => setAgenda(media.matches); read(); media.addEventListener("change", read); return () => media.removeEventListener("change", read); }, []);
-  useAmbientPause(active && phaseIndex >= phases.indexOf("curtain"), `premiere-stage-${instanceId}`);
+  useAmbientPause(active && phaseIndex >= phases.indexOf("curtain"), companionOwner ?? `premiere-stage-${instanceId}`);
 
   useLayoutEffect(() => {
     if (!active) { if (previousFocus.current?.isConnected) previousFocus.current.focus({ preventScroll: true }); previousFocus.current = null; return; }
@@ -88,9 +88,15 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
     const before = document.activeElement as HTMLElement | null;
     const page = root.current;
     const oldInert = page?.inert;
+    const oldCompanionOwner = page?.getAttribute("data-companion-premiere-owner");
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    if (page) page.inert = true;
+    if (page) {
+      page.inert = true;
+      // Presentation permission belongs to this exact stage instance. Other
+      // modal/ambient owners still stop the optional companion completely.
+      if (companionOwner) page.dataset.companionPremiereOwner = companionOwner;
+    }
     const token = `premiere-${performance.now()}`;
     history.pushState({ ...history.state, vicPremiere: token }, "");
     pushInnerOverlay();
@@ -112,13 +118,17 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
     document.addEventListener("keydown", key, true);
     return () => {
       window.removeEventListener("popstate", back); document.removeEventListener("keydown", key, true);
-      if (page) page.inert = oldInert ?? false;
+      if (page) {
+        page.inert = oldInert ?? false;
+        if (oldCompanionOwner === null || oldCompanionOwner === undefined) delete page.dataset.companionPremiereOwner;
+        else page.setAttribute("data-companion-premiere-owner", oldCompanionOwner);
+      }
       document.body.style.overflow = oldOverflow;
       popInnerOverlay();
       if (!popped && history.state?.vicPremiere === token) history.back();
       if (before?.isConnected) before.focus({ preventScroll: true });
     };
-  }, [focused, onClose, reduced, root]);
+  }, [focused, onClose, reduced, root, companionOwner]);
 
   // Measure after the dialog has locked body scrolling and owns focus.
   usePremiereEntry({ frame, ready, reduced, root, screen, transfer, portal });
@@ -202,7 +212,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
               </article>)}
             </div>
           </div>
-          <PremiereScene pulse={hopePulse} hopeful={hasHope} cheer={cheerPulse} onCheer={() => { if (document.hidden || reduced || frame.target - syncedNow() <= 12500 || performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }} />
+          <PremiereScene pulse={hopePulse} hopeful={hasHope} cheer={cheerPulse} companionJoined={companionJoined} onCheer={() => { if (document.hidden || reduced || frame.target - syncedNow() <= 12500 || performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }} />
         </div>
         <div ref={transfer} className="pm-entry" aria-hidden="true">
           <div className="pm-entry-plane"><i /></div>
@@ -213,7 +223,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
     <div className={`pm-banner${focused ? " pm-banner-focused" : ""}${focused && complete ? " pm-banner-reading" : ""}`}>
       {hint && !active ? <><span>다른 달에서 최초공개</span><button onClick={onOtherMonth} type="button">보러 가기 <ArrowUpRight aria-hidden="true" size={16} /></button></> : <>
         {!focused ? <><div className="pm-badge-portrait" aria-hidden="true"><PremierePortrait /></div>{dockOwnsClock ? <><svg className="pm-mini-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" /><circle cx="18" cy="18" r="15" pathLength="1" /></svg><span>최초공개</span><PremiereReadout target={frame.target} /></> : <span>최초공개 준비 중</span>}</> : null}
-        <button ref={exit} onClick={onClose} type="button" aria-label="일정표 보기">{focused ? <><span>일정표 보기</span><ArrowUpRight aria-hidden="true" size={16} /></> : <X aria-hidden="true" size={18} />}</button>
+        <button ref={exit} onClick={() => onClose(focused ? "calendar" : "dismiss")} type="button" aria-label="일정표 보기">{focused ? <><span>일정표 보기</span><ArrowUpRight aria-hidden="true" size={16} /></> : <X aria-hidden="true" size={18} />}</button>
       </>}
     </div>
   </div>, document.body);

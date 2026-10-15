@@ -44,7 +44,7 @@ test("panel space becomes calendar space continuously and dismissal restores its
   test.setTimeout(40000);
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.addInitScript(() => localStorage.removeItem("vic_panel_collapsed"));
-  await open(page, 141);
+  await open(page, 155);
   const canvas = page.locator(".poster-stage"), surface = page.locator("[data-export-surface]");
   const before = await canvas.boundingBox();
   const geometry = await surface.evaluate(el => ({ width: (el as HTMLElement).offsetWidth, height: (el as HTMLElement).offsetHeight }));

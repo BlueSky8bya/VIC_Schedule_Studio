@@ -9,7 +9,7 @@ import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences
 import "./companion-home.css";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood";
-type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
+type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
 
 // The open U is shared by the room drawing and the separate foreground layer.
 // Its centre begins at54/100: the actual seat stays behind14–18px of cloth at
@@ -44,13 +44,13 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 
 /** One small room, shared by the desktop rail and compact portal. The cushion
  * is a real landing anchor; food and care stay in the existing single runtime. */
-export function CompanionHome({ care, preferences, inactive, onAction, onClose }: Props) {
+export function CompanionHome({ care, preferences, inactive, owner, onAction, onClose }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
-  return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" collapsible headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-size={preferences.size} data-sfx="off" data-pm-exit="5">
+  return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" collapsible headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
     <div className="vc-home-room">
       <svg className="vc-home-window" viewBox="0 0 76 66" aria-hidden="true" focusable="false">
         <defs>

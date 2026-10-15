@@ -137,6 +137,7 @@ import { PremiereStage } from "./premiere/premiere-stage";
 import { CompanionDetailBridge } from "./viewer-companion/companion-detail-bridge";
 const ViewerCompanion = dynamic(() => import("./viewer-companion/viewer-companion"), { ssr: false });
 import { useTeaserPremiere, type PremiereFixture } from "@/lib/ui/premiere/use-teaser-premiere";
+import { useCompanionPremiere } from "./premiere/use-companion-premiere";
 import { syncedNow } from "@/lib/ui/synced-clock";
 import { ScrambleText, TeaserStageContent } from "@/components/shared/teaser-stage-content";
 
@@ -867,6 +868,7 @@ export function PublicPoster({
       });
     }
   });
+  const companionPremiere = useCompanionPremiere(premiere.frame, settingsPrefs.companionPrefs.enabled && !avatarFixed, premiere.close);
   const vodsByDate = useMemo(() => {
     const map = new Map<
       string,
@@ -4103,14 +4105,16 @@ export function PublicPoster({
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
       {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
-              blocked={Boolean(monthPick || giftCard || gachaOpen || premiere.frame.phase !== "idle")}
+              blocked={Boolean(monthPick || giftCard || gachaOpen)}
               overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
+        premiereCue={companionPremiere.cue} onPremiereJoin={companionPremiere.onJoin}
         homeHost={companionHomeHost} homeVisible={Boolean(sceneOn && panel.open && !showAgenda)}
         agenda={showAgenda} monthKey={`${view.year}-${view.month}`} reduced={settingsPrefs.reduceMotion} /> : null}
       <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}
         canResume={premiere.canResume} onResume={premiere.resume}
         detailEventId={agendaDetail?.event.teaser ? agendaDetail.event.id : undefined}
-        month={view.month} tags={viewTags} tagVisual={tagVisual} root={posterRootRef} onClose={premiere.close} hoped={myHopeIds}
+        month={view.month} tags={viewTags} tagVisual={tagVisual} root={posterRootRef} onClose={companionPremiere.onClose} hoped={myHopeIds}
+        companionOwner={companionPremiere.pauseKey} companionJoined={companionPremiere.joined}
         onHope={id => { const event = premiere.frame.items.find(item => item.id === id)?.event ?? schedule.events.find(item => item.id === id); if (event) toggleHope(event); }}
         onRead={(rehearsal ?? premiereFixture)?.rehearsal ? undefined : id => { const item = premiere.frame.items.find(item => item.id === id && item.state === "released"); if (item) { premiereReadRef.current = { id, dateKey: item.dateKey }; premiere.close(); } }}
         onOtherMonth={() => { const event = schedule.events.find(item => item.teaser && item.teaserRevealAt && Date.parse(item.teaserRevealAt) - syncedNow() <= 180000); if (event) { const [year, month] = event.startsAt.split("-").map(Number); goToMonth({ year, month }); } }} />
@@ -4551,7 +4555,7 @@ export function PublicPoster({
                     </div>
                   ) : null}
                 </div>
-                {settingsPrefs.companionPrefs.enabled ? <CompanionDetailBridge eventId={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : null} sheetRef={detailSheetRef} /> : null}
+                {settingsPrefs.companionPrefs.enabled ? <CompanionDetailBridge eventId={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : null} sheetRef={detailSheetRef} ready={!anchor || Boolean(pos)} /> : null}
               </div>
             );
           })()

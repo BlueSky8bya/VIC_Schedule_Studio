@@ -11,4 +11,4 @@
 
 ## 결과
 
-로컬 구현·검증 완료. 단위386건, build/lint/type, 실제 입력29개 고유 사례와 실제 공개 경로 PC/native2화면 통과. 운영 배포 확인 대기. 실패한 검사와 수정 이유·실행 범위는 [검증 기록](../verification/VIEWER_VICTAMIN_FOOD_FLOOR-20261016.md)에 분리했다.
+`8d0412d3` 커밋·push·운영 PC/native 확인 완료. 단위386건, build/lint/type, 실제 입력29개 고유 사례와 실제 공개 경로 로컬·운영 PC/native 통과. 실패한 검사와 수정 이유·실행 범위는 [검증 기록](../verification/VIEWER_VICTAMIN_FOOD_FLOOR-20261016.md)에 분리했다.
