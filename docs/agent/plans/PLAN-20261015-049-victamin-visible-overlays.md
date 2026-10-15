@@ -9,4 +9,4 @@
 
 공용 viewer/anonymous/preview 한 구현. 서버 DTO·권한·unlock·DB/KST·1840 표면 변경0, 원화 변경0. 구현 전후 현재 규칙/토픽 정정. 단위/type/lint/build, PC/390 실제 네 창·sameDOM/가시성/초점/입력통과·유한 뒤 quiet·hardhide 유지 검사. fixture/과거 월·POST 전부차단, DB 시험 데이터0. 독립 검토 후 승인된 commit/push·운영확인.
 
-상태: 로컬 검증 완료, 배포 대기. 결과는 [검증 기록](../verification/VIEWER_VICTAMIN_VISIBLE_OVERLAYS-20261015.md)에 둔다.
+상태: 완료·운영 배포 검증(`b73b9fc9`). 결과와 남은 장비 검증 범위는 [검증 기록](../verification/VIEWER_VICTAMIN_VISIBLE_OVERLAYS-20261015.md)에 둔다.
