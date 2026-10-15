@@ -1,6 +1,6 @@
 # 쓰다듬기 손·커서와 집 바닥 음식
 
-2026-10-15 KST. 기준판 `0de4f7c9`. [PLAN-055](../plans/PLAN-20261015-055-companion-hover-and-home-floor.md). 로컬 구현·검증 완료, 운영 배포 대기.
+2026-10-15 KST. 기준판 `0de4f7c9`. [PLAN-055](../plans/PLAN-20261015-055-companion-hover-and-home-floor.md). 구현·검증·운영 배포 완료. 제품 커밋 `528192dfcdf9f0c9c561e6805ce2d4524cc04770`.
 
 손 표시가 접촉 압력550ms와 행복 포즈650ms의 종료마다 제거되고, 작은 배우 버튼 밖의 넓은 센서 영역에서는 기본 커서가 되살아나는 두 경로를 수정했다. 유효 hover의 ready 상태가 손·커서만 유지한다. 실제 위치 아래 한 요소에만 임시 cursor 속성을 부여하고 이탈·다른 조작·pause/blur/창·세계 이동·숨김/정리에서 해제한다. 드래그 버튼 크기와 왕복 인식/4초 보상은 유지한다. 압력과 행복 표정은 별도로 끝나며 단순 hover로 보상을 얻거나 뇌를 계속 멈추지 않는다. 손은 opacity/visibility로 짧게 연결하고 감소동작/gfx OFF에서는 전환을 생략한다.
 
@@ -16,7 +16,7 @@
 | 손·커서 연속성 | 새 full/reduced4/4 PASS, child exit0. 약6.2초씩373~374rAF, native .5px 이동96회·900ms 정지·actor↔여백·6px 이탈 여유에서 hand/cursor 손실0·capture0·배우 기하 변화0. 친밀도 보상1회(.08) 이후 추가0. 주변 native 버튼 실제 클릭·문서 밖·마우스를 둔 채 키보드로 창 열기 정리도 PASS. PNG2개 직접 열람 |
 | 집 바닥 실물 | 새4/4 PASS, child exit0. PC1920/native390의 바닥 드래그·재집기·탭/키보드·접기·좌우·wide↔compact·스크롤, 원점 오차2px 미만/44px 조작 버튼 겹침0, native 자판기/휴지통 도달 검증. 실제 바닥 점프/식사·집 접기3초 중단 무보상·같은 집 바닥 거주 보존·재개 후 섭취/hunger<.5 확인. POST/페이지 오류0, PNG4개 직접 열람 |
 | 실제 익명 `/` 로컬 | PC1920/DPR2·native390 모두 PASS. PC 정지 hover58rAF 손·커서 유지, 기존 교감/잡힘, 양쪽 실제 바닥·방석 직접 드래그·접기/재열기·위치 유지/예기치 않은 낙하0·동일 DOM. 모바일 compact 닫기/재열기도 유지. 각 POST1차단/실제 전달0·페이지 오류0. 로컬 설정/cookie만 seed하며 focus/random/세계/시계 주입0 |
-| 운영 | 배포 후 기록 |
+| 운영 | Vercel success·실제 build528192df 일치. 운영 `/` PC1920/DPR2와 native390 모두 PASS/child exit0. PC 정지 hover58rAF 손·커서 유지, 양쪽 실제 바닥/방석 드래그·동일 집 위치·접기/재열기·모바일 compact 닫기/재열기·동일 펫 DOM·예기치 않은 낙하0. 각 POST1차단/전달0·페이지 오류0. 운영 PNG2개 직접 열람 |
 
 새 검사의 localStorage 보상 즉시 조회는 기존 저장 throttle 때문에 실제 UI meter로 수정했다. 모달 opener의 focus 유지도 기존 동작을 보존하며 펫이 초점을 훔치지 않는지 검사한다. 제품 시간·좌표를 주입하거나 임계값을 완화하지 않았다.
 
@@ -24,4 +24,4 @@
 
 미검증 범위: 실제 OBS/물리 기기 성능, 진짜 로그인/RLS. 이전 전체 단위9·harness inventory2·구형 확장 검사15 미해결은 [이전 기록](VIEWER_VICTAMIN_DRAG_JUMP-20261015.md)에 분리되어 있다. 이번 관련 검사의 통과로 덮어쓰지 않는다.
 
-재현 로그(ignored): `.scratch-pw/companion-055-{build,typecheck-final,lint-final,unit,core,hover-final2,floor-final,harness}.log`, `companion-055-core.json`, `.scratch-pw/.scratch-pw/companion-055-{hover-report,floor}.json`, `companion-055-public-local.json`/`companion-055-public-local-final.log`, 같은 prefix PNG/동영상·rAF 기록. 빌드 뒤 제품6파일의 SHA256 불변도 확인했다.
+재현 로그(ignored): `.scratch-pw/companion-055-{build,typecheck-final,lint-final,unit,core,hover-final2,floor-final,harness-final}.log`, `companion-055-core.json`, `.scratch-pw/.scratch-pw/companion-055-{hover-report,floor}.json`, `companion-055-public-{local,production}.json`/`companion-055-public-{local-final,production}.log`, `companion-055-production-deploy.json`, 같은 prefix PNG/동영상·rAF 기록. 빌드 뒤 제품6파일의 SHA256 불변도 확인했다. 이번 브라우저/로컬 서버/배포 감시 작업 종료.

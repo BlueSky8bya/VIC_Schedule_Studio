@@ -1,6 +1,6 @@
 # 쓰다듬기 손·커서 안정화와 집 바닥 음식
 
-2026-10-15 KST. 기준판 `0de4f7c9`. 최신 소유자 요청, 구현 중.
+2026-10-15 KST. 기준판 `0de4f7c9`. 최신 소유자 요청, 구현·배포 완료(`528192df`).
 
 1. 손·커서의 유효 hover 상태를 접촉550ms/행복650ms/보상4000ms와 분리한다. 유효한 몸통·귀·좌우 여유 안에서는 미세 이동/잠깐 정지에도 전용 손이 유지되고 기본 커서와 번갈아 보이지 않는다. 작은 드래그 hitbox는 확대하지 않는다. 실제 아래 native 컨트롤은 입력·커서를 즉시 돌려받으며 문서 이탈·모달·blur·숨김·이동 시작/드래그·설정 OFF/정리 시 모든 임시 cursor 속성을 해제한다. 단순 hover로 행복/친밀도나 수명 타이머를 연장하지 않는다. 기존 렌더 시계와 숫자 좌표만 재사용한다.
 2. 집의 실제 `.vc-home-floor` 바닥도 음식 수신면이 된다. 방석/출구/바닥을 서로 다른 부착으로 구분하고, 실제 놓은 집 로컬 위치를 접기·스크롤·좌우 패널·compact 재마운트 때 유지한다. 직접 드래그와 명시 키보드 집기만 이동을 소유하고 달력 클릭 배치는 복원하지 않는다. native hit/clip/컨트롤·휴지통 우선권, 방석·바깥 첫 하단 발판 중력을 보존한다.
@@ -14,4 +14,4 @@ viewer/anonymous/preview 한 구현. 기본OFF·92px HD·1840 포스터·공개 
 
 ## 결과
 
-로컬 구현·검증 완료, 운영 배포 대기. 관련 단위327/327, 기존 실물37/37+새 hover4/4+바닥4/4, 최종 typecheck/전체 lint/production fixture build PASS. 실제 익명 `/` PC1920/DPR2·native390도 손·커서 유지/방석·바닥 드래그·접기/재열기·동일 DOM PASS. 기존 harness inventory2는 그대로 분리한다. 브라우저의 CDP 드래그 후 탭 누락은 plain HTML 대조 후 실제4rAF 정지 표본을 보내는 입력 교정으로 검증했으며 제품 지연/추가 탭을 넣지 않았다. 상세는 [검증 기록](../verification/VIEWER_VICTAMIN_HOVER_FLOOR-20261015.md).
+구현·검증·운영 배포 완료. 관련 단위327/327, 기존 실물37/37+새 hover4/4+바닥4/4, 최종 typecheck/전체 lint/production fixture build PASS. 실제 익명 `/` PC1920/DPR2·native390은 로컬·운영 모두 손·커서 유지/방석·바닥 드래그·접기/재열기·동일 DOM PASS. Vercel success·실제 build528192df 일치, 운영 PNG2개 직접 열람. 기존 harness inventory2는 그대로 분리한다. 브라우저의 CDP 드래그 후 탭 누락은 plain HTML 대조 후 실제4rAF 정지 표본을 보내는 입력 교정으로 검증했으며 제품 지연/추가 탭을 넣지 않았다. 상세는 [검증 기록](../verification/VIEWER_VICTAMIN_HOVER_FLOOR-20261015.md).
