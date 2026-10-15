@@ -3,6 +3,7 @@ import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/
 import { DEFAULT_COMPANION_CARE, type CompanionCare } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionCare } from "./helpers/companion-home";
+import { COMPANION_FOOD_NAMES, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 
 const posts = new WeakMap<Page, string[]>();
 test.beforeEach(async ({ page, context }) => {
@@ -77,23 +78,27 @@ async function openHome(page: Page) {
   if (!(await home.isVisible())) await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).click();
   await expect(home).toBeVisible();
 }
-async function spawn(page: Page, kind: "사과" | "레몬") {
+async function spawn(page: Page) {
   const before = await food(page).count();
   await openHome(page);
-  await page.getByRole("button", { name: `${kind} 밥 꺼내기`, exact: true }).click();
+  await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(before + 1);
   const item = food(page).last();
   await expect(item).toHaveAttribute("data-selected", "");
   await expect(item).toBeFocused();
-  await expect(page.locator(".vc-food-hint")).toBeVisible();
+  await expect(page.locator(".vc-food-hint")).toHaveCount(0);
+  const kind = await item.getAttribute("data-kind");
+  expect(isCompanionFoodKind(kind)).toBe(true);
+  if (!isCompanionFoodKind(kind)) throw new Error("Unknown snack catalogue kind");
+  await expect(item).toHaveAccessibleName(`빅타민 밥 ${COMPANION_FOOD_NAMES[kind]} · 잡아서 옮기기`);
   return item;
 }
 async function placeNear(page: Page, item: Locator) {
   const before = await month(page).textContent();
   // Keyboard movement still belongs to the food rather than month shortcuts.
-  const original = await item.evaluate(el => Number.parseFloat((el as HTMLElement).style.left));
+  const original = await item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   await item.press("ArrowLeft");
-  await expect.poll(() => item.evaluate(el => Number.parseFloat((el as HTMLElement).style.left))).toBeCloseTo(Math.max(24, original - 24), 1);
+  await expect.poll(() => item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41)).toBeCloseTo(Math.max(24, original - 24), 1);
   await item.press("ArrowRight");
   const target = await pet(page).evaluate(el => { const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 24, y: rect.bottom }; });
   await page.mouse.click(target.x, target.y);
@@ -103,12 +108,14 @@ async function placeNear(page: Page, item: Locator) {
 }
 
 for (const width of [1440, 390]) {
-  for (const kind of ["사과", "레몬"] as const) {
-    test(`a hungry ${kind} snack is placed, nibbled and remembered at ${width}px`, async ({ page }) => {
+  for (const mode of ["cat", "dog"] as const) {
+    test(`a hungry ${mode} snack is placed, nibbled and remembered at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-      await setup(page, .58, { animalMode: kind === "사과" ? "cat" : "dog" });
-      const item = await spawn(page, kind);
-      await expect(item).toHaveAccessibleName(`빅타민 밥 ${kind} · 잡아서 옮기기`);
+      await setup(page, .58, { animalMode: mode });
+      const item = await spawn(page);
+      // Position selection now acknowledges its two taps immediately. Measure
+      // meal credit from the resulting live care state, not a pre-tap constant.
+      const beforeAffection = Number(await page.getByRole("meter", { name: "빅타민 친밀도", exact: true }).getAttribute("value"));
       await page.waitForTimeout(350);
       await expect(item).toHaveAttribute("data-selected", "");
       await expect(pet(page)).not.toHaveAttribute("data-state", "eat");
@@ -116,12 +123,12 @@ for (const width of [1440, 390]) {
       await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
       await expect.poll(() => item.evaluate(el => Number((el as HTMLElement).style.getPropertyValue("--vc-nibble")))).toBeLessThan(.99);
       await expect(page.locator("[data-export-surface] .vc-food,[data-export-surface] .vc-companion")).toHaveCount(0);
-      if (kind === "사과") await page.screenshot({ path: `.scratch-pw/viewer-companion-eating-${width}.png` });
+      if (mode === "cat") await page.screenshot({ path: `.scratch-pw/viewer-companion-eating-${width}.png` });
       await expect(food(page)).toHaveCount(0, { timeout: 6000 });
       await expect(actor(page)).toBeFocused();
       const care = await storedCare(page);
       expect(care.hunger).toBeGreaterThan(.18); expect(care.hunger).toBeLessThan(.28);
-      expect(care.affection).toBeGreaterThan(.39); expect(care.affection).toBeLessThan(.42);
+      expect(care.affection - beforeAffection).toBeGreaterThan(.09); expect(care.affection - beforeAffection).toBeLessThan(.105);
       expect(care.version).toBe(1);
       await expect(pet(page)).toHaveAttribute("data-state", "petted");
     });
@@ -131,7 +138,7 @@ for (const width of [1440, 390]) {
 test("a full creature refuses more food, at most three snacks stay, and leftovers can be cleared", async ({ page }) => {
   test.setTimeout(30000);
   await setup(page, .1);
-  const item = await spawn(page, "사과");
+  const item = await spawn(page);
   await placeNear(page, item);
   await pet(page).evaluate(el => {
     el.setAttribute("data-test-ate", "false");
@@ -141,9 +148,9 @@ test("a full creature refuses more food, at most three snacks stay, and leftover
   await expect(food(page)).toHaveCount(1);
   await expect(pet(page)).toHaveAttribute("data-test-ate", "false");
   expect((await storedCare(page)).hunger).toBeLessThan(.15);
-  for (const kind of ["레몬", "사과"] as const) { const extra = await spawn(page, kind); await extra.press("Enter"); }
+  for (let i = 0; i < 2; i++) { const extra = await spawn(page); await extra.press("Enter"); }
   await expect(food(page)).toHaveCount(3);
-  await openHome(page); await page.getByRole("button", { name: "레몬 밥 꺼내기", exact: true }).click();
+  await openHome(page); await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(3);
   await expect(page.locator(".vc-food-layer [role='status']")).toContainText("세 개까지");
   await openHome(page); await chooseCompanionCare(page, "남은 밥 치우기");
@@ -153,13 +160,13 @@ test("a full creature refuses more food, at most three snacks stay, and leftover
 
 test("food dragging and a long placement consume their clicks before cards underneath", async ({ page }) => {
   await setup(page, .1);
-  const item = await spawn(page, "레몬");
+  const item = await spawn(page);
   const from = await centre(item);
   const height = page.viewportSize()!.height;
   await page.mouse.move(from.x, from.y); await page.mouse.down();
   await page.mouse.move(180, height - 26, { steps: 8 }); await page.mouse.up();
   await expect(item).not.toHaveAttribute("data-selected");
-  await expect.poll(() => item.evaluate(el => Number.parseFloat((el as HTMLElement).style.top))).toBe(await floorY(page));
+  await expect.poll(() => item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m42)).toBe(await floorY(page));
   await expect(item).toBeInViewport({ ratio: 1 });
   await page.locator(".public-event:visible").first().evaluate(card => {
     // The visual fixture has no server voting prop. A native-button sentinel
@@ -184,7 +191,7 @@ test("food dragging and a long placement consume their clicks before cards under
 
 test("settings pause food, feeding OFF clears it, and changing month removes temporary snacks", async ({ page }) => {
   await setup(page, .1);
-  const item = await spawn(page, "레몬"); await item.press("Enter");
+  const item = await spawn(page); await item.press("Enter");
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const settings = page.getByRole("dialog", { name: "설정", exact: true });
   await expect(settings).toBeVisible();
@@ -206,7 +213,7 @@ test("settings pause food, feeding OFF clears it, and changing month removes tem
   await settings.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(actor(page)).toBeVisible();
   await expect(food(page)).toHaveCount(0);
-  const next = await spawn(page, "사과"); await next.press("Enter");
+  const next = await spawn(page); await next.press("Enter");
   const before = await month(page).textContent();
   await page.locator("[data-act='다음 달']").click();
   await expect(month(page)).not.toHaveText(before!);
@@ -216,7 +223,7 @@ test("settings pause food, feeding OFF clears it, and changing month removes tem
 
 test("a settings pause interrupts a meal and closing starts a fresh visible nibble", async ({ page }) => {
   await setup(page, .58);
-  const item = await spawn(page, "사과");
+  const item = await spawn(page);
   await placeNear(page, item);
   await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
   await expect.poll(() => item.evaluate(el => Number((el as HTMLElement).style.getPropertyValue("--vc-nibble")))).toBeLessThan(.9);

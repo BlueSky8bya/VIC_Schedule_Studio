@@ -7,7 +7,7 @@ import { chooseCompanionCare } from "./helpers/companion-home";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const posts = new WeakMap<Page, string[]>();
-type Trace = { at: number; state: string; phase: string; hidden: boolean; y: number };
+type Trace = { at: number; state: string; phase: string; hidden: boolean; y: number; platform: string };
 type ProbeWindow = Window & { passiveTrace?: Trace[]; passiveRanges?: number; passiveWrites?: number };
 
 test.beforeEach(async ({ page }) => {
@@ -51,7 +51,7 @@ async function trace(page: Page) {
     const el = node as HTMLElement, probe = window as ProbeWindow;
     probe.passiveTrace = [];
     const record = () => {
-      const next = { at: performance.now(), state: el.dataset.state ?? "", phase: el.dataset.presence ?? "", hidden: el.hidden, y: el.getBoundingClientRect().bottom };
+      const next = { at: performance.now(), state: el.dataset.state ?? "", phase: el.dataset.presence ?? "", hidden: el.hidden, y: el.getBoundingClientRect().bottom, platform: el.dataset.platform ?? "" };
       const previous = probe.passiveTrace!.at(-1);
       if (!previous || next.state !== previous.state || next.phase !== previous.phase || next.hidden !== previous.hidden) probe.passiveTrace!.push(next);
     };
@@ -129,7 +129,7 @@ test("visible blur finishes a landing, parks with CSS breathing, and disconnects
 
 test("a meal already in progress completes once before passive sleep", async ({ page }) => {
   await setup(page, { feeding: true }); await placeOnFloor(page);
-  await openHome(page); await page.getByRole("button", { name: "사과 밥 꺼내기", exact: true }).click();
+  await openHome(page); await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   await expect(page.locator(".vc-food")).toHaveCount(1);
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
   const point = await pet(page).evaluate(el => { const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 18, y: rect.bottom }; });
@@ -192,7 +192,7 @@ test("empty measured geometry stays hidden through passive sleep and hard resume
   const events = await page.evaluate(() => (window as ProbeWindow).passiveTrace!);
   expect(events.some(event => event.phase === "resting")).toBe(true);
   expect(events.some(event => event.phase === "yawning")).toBe(true);
-  expect(events.every(event => event.hidden)).toBe(true);
+  expect(events.every(event => event.hidden), JSON.stringify(events)).toBe(true);
 
   await page.evaluate(() => {
     const probe = window as ProbeWindow; probe.passiveRanges = 0;

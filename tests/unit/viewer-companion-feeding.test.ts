@@ -6,6 +6,7 @@ import {
   type CompanionWorld, type Platform,
 } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_FULL_THRESHOLD } from "@/lib/ui/viewer-companion/care";
+import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, feeding: true };
 const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" };
@@ -87,8 +88,14 @@ describe("local companion feeding and animal habits", () => {
     expect(getFoodAction(hungry(), { ...world, foods: [food] }, still, 100000)).toBeUndefined();
   });
 
-  it("full or feeding-disabled pets ignore both apples and lemons", () => {
-    for (const kind of ["apple", "lemon"] as const) {
+  it.each(COMPANION_FOOD_KINDS)("a hungry pet can eat the offered %s without moving its support", kind => {
+    const context = { ...world, foods: [{ ...food, x: 50, y: 700, platformId: "floor", kind }] };
+    const action = getFoodAction(hungry(), context, prefs, 100000);
+    expect(action).toMatchObject({ kind: "eat", foodId: food.id, target: { x: world.x, y: world.y, platformId: world.platformId } });
+  });
+
+  it("full or feeding-disabled pets ignore all thirteen snacks", () => {
+    for (const kind of COMPANION_FOOD_KINDS) {
       const context = { ...world, foods: [{ ...food, x: 50, y: 700, platformId: "floor", kind }] };
       expect(getFoodAction({ ...hungry(), hunger: .2 }, context, prefs, 100000)).toBeUndefined();
       expect(getFoodAction(hungry(), context, { ...prefs, feeding: false }, 100000)).toBeUndefined();

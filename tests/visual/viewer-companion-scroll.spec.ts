@@ -201,7 +201,9 @@ test("parked text support follows scrolling, then releases geometry and DOM writ
   const summary = expectSmoothTextContact(frames);
   expect(frames.every(frame => frame.presence === "parked" && frame.state === "sleep")).toBe(true);
   expect(new Set(frames.map(frame => frame.platform))).toEqual(new Set([support.platform]));
-  await page.waitForTimeout(500);
+  // The explicit scroll response now owns a finite900ms settling tail. Measure
+  // autonomous quiet only after that requested response has actually ended.
+  await page.waitForTimeout(1000);
   await page.evaluate(() => { const probe = window as ScrollProbe; probe.companionScrollRanges = 0; probe.companionScrollWrites = 0; });
   await page.waitForTimeout(800);
   expect(await page.evaluate(() => ({ ranges: (window as ScrollProbe).companionScrollRanges, writes: (window as ScrollProbe).companionScrollWrites, hidden: document.hidden, focused: document.hasFocus() }))).toEqual({ ranges: 0, writes: 0, hidden: false, focused: false });

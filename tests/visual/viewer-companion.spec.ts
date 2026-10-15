@@ -94,8 +94,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator(".vc-effect")).toHaveText("♡");
     const before = await position(page), grab = await centre(actor(page));
     await page.mouse.move(grab.x, grab.y); await page.mouse.down();
-    await page.waitForTimeout(420);
-    await expect(pet(page)).toHaveAttribute("data-grab-ready", "");
+    await expect(pet(page)).not.toHaveAttribute("data-grab-ready");
     const targetX = grab.x < width / 2 ? Math.min(width - 55, grab.x + 110) : Math.max(55, grab.x - 110);
     await page.mouse.move(targetX, Math.max(130, grab.y - 80), { steps: 5 });
     await expect(pet(page)).toHaveAttribute("data-state", "held");
@@ -110,7 +109,7 @@ for (const width of [1440, 390]) {
   });
 }
 
-test("keyboard and the home offer non-dragging placement, plus a finite nap", async ({ page }) => {
+test("keyboard and direct double-click offer non-dragging placement, plus a finite nap", async ({ page }) => {
   await stationaryFixture(page);
   await actor(page).focus();
   await page.keyboard.press("Enter");

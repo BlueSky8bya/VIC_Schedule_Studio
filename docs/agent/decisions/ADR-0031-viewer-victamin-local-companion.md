@@ -2,6 +2,8 @@
 
 Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시각 승인과 기능 구현 승인은 구별한다.
 
+직접 교감 후속 정정([PLAN-047](../plans/PLAN-20261015-047-victamin-direct-life-and-home.md)): 최신 요청이 꾹 누르는 집기·돌봄 메뉴/장문 안내·두 과일 선택을 대체한다.6px 이동 즉시 집기, 직접 쿠션·랜덤13과일 출구·음식을 넣는 쓰레기통과 숨은 키보드/비드래그 대안을 쓴다. 월 변경은 viewport 위치를 이어받아 새 안전 발판으로 짧게 착지하고, 집 주민은 실제 쿠션을 유지한다. 스크롤 반동은 별도 유한 body spring으로 logical geometry와 parked JS0에서 분리한다. 과일은 SVG·입으로 가져가는 presentation이며 캐릭터 raster/서버/DB/모델 변경0. [근거·검증](../verification/VIEWER_VICTAMIN_DIRECT_LIFE-20261015.md).
+
 살아있는 동작 후속 정정([PLAN-046](../plans/PLAN-20261015-046-victamin-fluid-life-and-compact-home.md)): 소유자가16포즈의 경직·스크롤 끊김·긴 집을 지적했다. PLAN-045의16키포즈 고정과8Hz 정지 cadence·120ms만으로 스크롤 교정하는 조항을 대체한다. 새256+보존16 원화 슬롯 중18 clip을 선택하며 재생 안전성이 낮은 구간은 기존 포즈를 쓴다. full60/lite30 위치, 반복 그림<=14Hz(단발 동작은 진행률 기반),100ms scalar 연결·도착 감속과 짧은 탐험/회복 리듬을 분리한다. 실측 anchor최대2개의 이동만 유한 이벤트 루프에서 carry하고 행동 시계를 유지한다. 조용한 parked 상태의 자율 JS0과 defaultOFF·로컬 전용·사람 하트 우선은 유지한다. 집은 직접 쿠션/먹이와 접힌 돌봄 메뉴로 줄인다. 원화 시각 승인을 주장하지 않으며 결과는 [검증](../verification/VIEWER_VICTAMIN_FLUID_LIFE-20261015.md)에 둔다.
 
 방송 성능·작은 그림 확장([PLAN-045](../plans/PLAN-20261015-045-victamin-clean-art-and-passive-sleep.md)): 과거256셀은 이력으로 보존하고 현 시청자 동행은16개 일관된 키포즈의 작은 atlas로 교체한다. 얇은 세부선·pixelated 축소를 줄이고 full60/lite30 이동과 낮은 정지 cadence를 분리한다. 아래043의 무제한 full-rAF와 현 공개atlas 바이트 유지 조항은 이번 사용자 재디자인 요청으로 대체한다. 인간의 보라 하트 첫 클릭은 빈 하트로만 지우고 다음 클릭이 실제 투표다. visible blur는 현재 행동→짧은 휴식/하품→CSS 수면이며 판단/타이머/기하·하트변이 관측을 멈춘다. hidden/차단 UI는 기존 즉시 숨김을 유지한다. 복귀 재측정·활성 시계와 부재 벌점 없음. 브라우저 지표와 실제 OBS 장비 검증을 구별한다. [근거/검증](../verification/VIEWER_VICTAMIN_PASSIVE_SLEEP-20261015.md).

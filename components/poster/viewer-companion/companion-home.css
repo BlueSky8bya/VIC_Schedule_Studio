@@ -1,59 +1,66 @@
-/* One room for the shared desktop rail and compact agenda home. Only the
-   runtime host/launcher position belongs in viewer-companion.css. */
+/* One quiet material and three direct objects, shared by rail and compact.
+   Native vector scenery is static; only a deliberate interaction moves. */
 .vc-home {
-  --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #e9e2ce);
-  --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #dacdb0);
+  --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 94%, #e2dccb);
+  --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 87%, #d4c9b4);
+  --vc-sage: color-mix(in srgb, rgb(var(--glass-panel)) 54%, #a9bfa6);
   position: relative;
+  box-sizing: border-box;
+  padding: var(--space-2);
   pointer-events: auto;
   isolation: isolate;
-  box-sizing: border-box;
-  padding: 8px 10px 6px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   color: var(--ink);
   background: rgb(var(--glass-panel));
-  box-shadow: inset 0 1px 0 #fff5, var(--elev-1);
+  box-shadow: inset 0 1px 0 #fff3, var(--elev-1);
   font-size: var(--text-body);
 }
-.vc-home-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; margin-bottom: 6px; }
-.vc-home-title { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--text-title); font-weight: 700; }
-.vc-home-title > svg { color: var(--muted); }
-.vc-home-tools { display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; }
-.vc-home-tool { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--muted); cursor: pointer; }
-.vc-home-tool:hover { color: var(--ink); background: rgb(var(--glass-head)); }
-.vc-home-room { position: relative; height: 116px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: linear-gradient(180deg, var(--vc-wall), rgb(var(--glass-cell)) 78%, var(--vc-floor) 78%); }
-.vc-home-room::before { content: ''; position: absolute; inset: 0; background: linear-gradient(132deg, #fff4 0 25%, transparent 58%); pointer-events: none; }
-.vc-home-room::after { content: ''; position: absolute; left: 0; right: 0; bottom: 22%; height: 1px; background: var(--line); pointer-events: none; }
-.vc-home-window { position: absolute; top: 11px; left: 20px; display: flex; width: 48px; height: 43px; padding: 4px; gap: 3px; border: 1px solid #b8b6a575; border-radius: 12px 12px 3px 3px; background: #eee5d1; box-shadow: inset 0 1px 0 #fff7, 0 2px 3px #5c644313; }
-.vc-home-sky { position: absolute; inset: 5px; border-radius: 8px 8px 1px 1px; background: radial-gradient(ellipse at 70% 30%, #faf5ce 0 10%, transparent 11%), linear-gradient(155deg, #a9c7c8, #d3ddc5 78%); }
-.vc-home-window > i { position: relative; flex: 1; border: 1px solid #fff7; border-radius: 6px 6px 1px 1px; }
-.vc-home-window-sill { position: absolute; bottom: -4px; left: -4px; right: -4px; height: 5px; border: 1px solid #a99e7c3d; border-radius: 2px; background: #e8ddbf; }
-.vc-home-lamp { position: absolute; left: 35%; top: 0; height: 19px; border-left: 1px solid #a69b7b70; }
-.vc-home-lamp > i { position: absolute; top: 17px; left: -10px; width: 20px; height: 10px; border: 1px solid #aaa08270; border-radius: 12px 12px 3px 3px; background: #dfd8b2; box-shadow: 0 8px 16px 6px #eddb9a25; }
-.vc-home-rug { position: absolute; left: 8%; bottom: 5px; width: 47%; height: 19px; border: 1px solid #adbead42; border-radius: 50%; background: repeating-linear-gradient(0deg, #b9c9b42b 0 2px, #d9e0c933 2px 4px); }
-.vc-cushion-button { position: absolute; z-index: 1; left: 10%; bottom: 5px; width: 42%; height: 44px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); cursor: pointer; }
-.vc-home-cushion { position: absolute; top: 15px; left: 0; right: 0; height: 13px; border: 1px solid #8ca48a78; border-radius: 50%; background: linear-gradient(180deg, #e3e8d2, #bfd0b5 70%); box-shadow: inset 0 -3px 0 #718d7040, 0 3px 2px #59634f15; }
-.vc-home-cushion > i { position: absolute; inset: 2px 8px 4px; border: 1px dashed #a3b49a70; border-radius: 50%; }
-.vc-cushion-button:hover .vc-home-cushion { background: linear-gradient(180deg, #edf0db, #c5d7ba 70%); }
-.vc-cushion-label { position: absolute; bottom: 0; left: 0; right: 0; font-size: var(--text-label); line-height: 1; }
-.vc-dispenser { position: absolute; z-index: 1; right: 11px; bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; width: 100px; height: 81px; padding: 4px 3px 13px; box-sizing: border-box; border: 1px solid #a9b6a670; border-radius: 9px 9px 5px 5px; background: linear-gradient(135deg, #edf0de, #d4dfcf); box-shadow: inset 0 1px 0 #fff9, 2px 3px 0 #52636a12; }
-.vc-dispenser::before { content: ''; position: absolute; left: 10px; right: 10px; top: -3px; height: 4px; border: 1px solid #b4bba36b; border-radius: 2px; background: #e7e7cc; }
-.vc-dispenser button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; min-height: 44px; padding: 0; border: 0; border-radius: var(--r-xs); background: #ffffff58; color: #4f6257; font: inherit; font-size: var(--text-label); cursor: pointer; }
-.vc-dispenser button:hover { background: #ffffffa0; }
-.vc-dispenser .vc-fruit { width: 29px; height: 29px; }
-.vc-dispenser-slot { position: absolute; bottom: 5px; left: 13px; right: 13px; height: 5px; border-radius: var(--r-pill); background: #71807955; box-shadow: inset 0 1px 2px #31413b30; }
-.vc-home-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; padding-top: 2px; color: var(--muted); font-size: var(--text-label); }
-.vc-home-bond { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
-.vc-home-bond > svg { flex: 0 0 auto; color: #b49a91; }
-.vc-home-bond > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vc-home-mood { flex: 0 0 auto; font-size: var(--text-label); }
-/* The occasional-actions menu floats within the room instead of making a
-   second tall panel. Its trigger remains a normal Tab stop when it is closed. */
-.vc-home-menu { position: absolute; z-index: 3; right: 8px; bottom: 8px; width: min(190px, calc(100% - 16px)); padding: 4px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-panel)); box-shadow: var(--elev-3); }
-.vc-home-menu > button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 36px; padding: 7px 10px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); font: inherit; font-size: var(--text-body); text-align: left; cursor: pointer; }
-.vc-home-menu > button > svg { flex: 0 0 auto; color: var(--muted); }
-.vc-home-menu > button:hover, .vc-home-menu > button:focus-visible { background: rgb(var(--glass-head)); }
-.vc-home button:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
-.vc-home button:active { transform: translateY(1px); }
-.vc-home button:disabled { opacity: .4; cursor: default; }
-@media (pointer: coarse) { .vc-home-tool { width: 44px; height: 44px; } .vc-home-menu > button { min-height: 44px; } }
+.vc-home-room { position: relative; height: 168px; overflow: hidden; border-radius: var(--r-sm); background: var(--vc-wall); }
+.vc-home-heading { position: absolute; z-index: 3; inset: 0 0 auto; display: flex; align-items: center; justify-content: space-between; height: var(--control-hit); padding-left: 10px; pointer-events: none; }
+.vc-home-mark { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); }
+.vc-home-bond { display: inline-flex; color: color-mix(in srgb, var(--muted) 55%, #ba9086); }
+.vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
+.vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
+.vc-home-window { position: absolute; left: 20px; top: 43px; width: 64px; height: 56px; }
+.vc-window-frame { fill: rgb(var(--glass-panel)); stroke: var(--line); }
+.vc-window-sky { fill: color-mix(in srgb, rgb(var(--glass-panel)) 62%, #b2c8c5); }
+.vc-window-sun { fill: color-mix(in srgb, rgb(var(--glass-panel)) 24%, #e4d9a8); }
+.vc-window-hill { fill: color-mix(in srgb, rgb(var(--glass-panel)) 62%, #b6c8ad); }
+.vc-window-mullion { fill: none; stroke: rgb(var(--glass-panel)); stroke-width: 2; }
+.vc-window-sill { fill: none; stroke: var(--line); stroke-width: 2; stroke-linecap: round; }
+.vc-home-light { position: absolute; top: 35px; left: 77px; width: 45%; height: 96px; background: linear-gradient(125deg, #eadbb31a, transparent 80%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
+.vc-home-floor { position: absolute; inset: auto 0 0; height: 36px; background: linear-gradient(180deg, transparent, var(--vc-floor)); pointer-events: none; }
+.vc-home-rug { position: absolute; left: 8%; bottom: 9px; width: 48%; height: 20px; border-radius: 50%; background: color-mix(in srgb, var(--vc-sage) 35%, transparent); pointer-events: none; }
+.vc-cushion-button { position: absolute; z-index: 2; left: 11%; bottom: 10px; width: 42%; height: 70px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
+/* Keep the actual landing anchor out of hover/press transforms. The pet's
+   feet follow this same span; only its inner fabric acknowledges a press. */
+.vc-home-cushion { position: absolute; bottom: 9px; left: 0; right: 0; height: 16px; border: 1px solid color-mix(in srgb, var(--muted) 22%, transparent); border-radius: 50%; background: linear-gradient(180deg, rgb(var(--glass-panel)), var(--vc-sage)); box-shadow: inset 0 -3px 0 #637e5f22, 0 3px 2px #53634912; }
+.vc-home-cushion > i { position: absolute; inset: 3px 10px 5px; border: 1px solid color-mix(in srgb, var(--muted) 14%, transparent); border-radius: 50%; }
+.vc-cushion-button:hover .vc-home-cushion > i { background: #fff2; }
+.vc-home .vc-cushion-button:active { transform: none; }
+.vc-cushion-button:active .vc-home-cushion > i { transform: scaleY(.75); }
+.vc-dispenser { position: absolute; z-index: 2; right: 61px; bottom: 8px; width: 48px; height: 62px; box-sizing: border-box; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: linear-gradient(150deg, rgb(var(--glass-panel)), color-mix(in srgb, var(--vc-sage) 48%, rgb(var(--glass-cell)))); box-shadow: inset 0 1px 0 #fff5, var(--elev-1); color: var(--muted); cursor: pointer; }
+.vc-dispenser-face { position: absolute; inset: 8px 8px auto; display: grid; place-items: center; height: 27px; }
+.vc-dispenser-dot { position: absolute; right: -1px; top: -1px; width: 3px; height: 3px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 45%, #bed6ad); }
+.vc-dispenser-slot { position: absolute; bottom: 10px; left: 10px; right: 10px; height: 5px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--muted) 27%, transparent); box-shadow: inset 0 1px 1px #0001; }
+.vc-dispenser:hover { color: var(--ink); }
+.vc-home-trash { --vc-trash-progress: 0; position: absolute; z-index: 2; right: 9px; bottom: 8px; display: grid; place-items: center; width: var(--control-hit); height: 56px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
+.vc-home-trash > svg { width: 28px; height: 32px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.vc-trash-body { fill: color-mix(in srgb, rgb(var(--glass-cell)) 70%, var(--vc-sage)); }
+.vc-trash-lines { opacity: .35; }
+.vc-trash-lid { transform-origin: 5px 9px; }
+.vc-home-trash:hover, .vc-home-trash:focus-visible, .vc-home-trash[data-food-over] { color: var(--ink); background: color-mix(in srgb, rgb(var(--glass-head)) 68%, transparent); }
+.vc-home-trash[data-food-over] .vc-trash-lid { transform: translateY(-2px) rotate(-24deg); }
+.vc-trash-progress { position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; border-radius: var(--r-pill); background: var(--muted); transform: scaleX(var(--vc-trash-progress)); transform-origin: left; }
+.vc-home button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.vc-home button:disabled { opacity: .38; cursor: default; }
+.vc-home button:not(.vc-cushion-button):active { transform: scale(var(--press-scale)); }
+.vc-home-close, .vc-dispenser, .vc-home-trash, .vc-home-cushion > i, .vc-trash-lid { transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease); }
+.vc-home button:active { transition-duration: .07s; }
+html[data-reduce-motion] .vc-home button, html[data-reduce-motion] .vc-home-cushion > i, html[data-reduce-motion] .vc-trash-lid,
+html[data-gfx="off"] .vc-home button, html[data-gfx="off"] .vc-home-cushion > i, html[data-gfx="off"] .vc-trash-lid,
+html[data-gfx="soft"] .vc-home button, html[data-gfx="soft"] .vc-home-cushion > i, html[data-gfx="soft"] .vc-trash-lid { transition: none; }
+html[data-reduce-motion] .vc-home button:active, html[data-reduce-motion] .vc-cushion-button:active .vc-home-cushion > i,
+html[data-gfx="off"] .vc-home button:active, html[data-gfx="off"] .vc-cushion-button:active .vc-home-cushion > i,
+html[data-gfx="soft"] .vc-home button:active, html[data-gfx="soft"] .vc-cushion-button:active .vc-home-cushion > i { transform: none; }

@@ -1,5 +1,6 @@
 import type { CompanionPreferences } from "./preferences";
 import { COMPANION_FULL_THRESHOLD, type CompanionCare } from "./care";
+import { isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -16,7 +17,7 @@ export type Platform = {
 
 export type CompanionBehaviorPreferences = CompanionPreferences;
 
-export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: "apple" | "lemon" };
+export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: CompanionFoodKind };
 export type Food = CompanionFood;
 export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake";
 export type CompanionAction = {
@@ -211,7 +212,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
   if (!prefs.enabled || world.paused || ![world.x, world.y, now].every(Number.isFinite)
     || !prefs.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return undefined;
   const supported = { x: world.x, y: world.y, platformId: world.platformId };
-  const foods = world.foods.filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && (food.kind === "apple" || food.kind === "lemon"))
+  const foods = world.foods.filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && isCompanionFoodKind(food.kind))
     .sort((a, b) => Math.hypot(a.x - world.x, a.y - world.y) - Math.hypot(b.x - world.x, b.y - world.y));
   for (const food of foods) {
     const route = findPlatformRoute(supported, food, world.platforms, prefs.jump);

@@ -1,78 +1,45 @@
 "use client";
 
-import { Hand, Heart, Home, Moon, MoreHorizontal, Move, Sprout, X } from "lucide-react";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Heart, Home, Utensils, X } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import { CompanionFruit } from "./companion-fruit";
 import "./companion-home.css";
 
-export type CompanionHomeAction = "pet" | "place" | "rest" | "home" | "apple" | "lemon" | "clearFood";
+export type CompanionHomeAction = "home" | "feed" | "clearFood";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
 
-/** A single set of care controls, portalled into the shared rail or the compact
- * home. No second brain, care store or pet sprite lives inside this room. */
+/** One small room, shared by the desktop rail and compact portal. The cushion
+ * is a real landing anchor; food and care stay in the existing single runtime. */
 export function CompanionHome({ care, preferences, onAction, onClose }: Props) {
   const room = useRef<HTMLElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null), menu = useRef<HTMLDivElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuId = useId(), triggerId = `${menuId}-trigger`;
-  // The shared panel already owns its FLIP. This tiny entry only acknowledges
-  // the room mounting; it never scales/reflows the calendar or repeats on care.
+  // Its host already owns the panel FLIP. A tiny entry never resizes the room,
+  // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
-  const closeness = care.affection >= .75 ? "마음이 통해요" : care.affection >= .45 ? "제법 친해졌어요" : "알아가는 중";
-  const mood = care.energy < .35 ? "졸려요" : care.hunger >= .7 ? "배고파요" : care.hunger < .35 ? "든든해요" : "간식 생각";
-  const actions: { action: CompanionHomeAction; label: string; icon: ReactNode }[] = [
-    ...(preferences.petting ? [{ action: "pet" as const, label: "쓰다듬기", icon: <Hand size={15} aria-hidden="true" /> }] : []),
-    ...(preferences.drag ? [{ action: "place" as const, label: "옮길 곳 고르기", icon: <Move size={15} aria-hidden="true" /> }] : []),
-    ...(preferences.sleep ? [{ action: "rest" as const, label: "여기서 낮잠", icon: <Moon size={15} aria-hidden="true" /> }] : []),
-    ...(preferences.feeding ? [{ action: "clearFood" as const, label: "남은 밥 치우기", icon: <Sprout size={15} aria-hidden="true" /> }] : []),
-  ];
-  useEffect(() => {
-    if (!menuOpen) return;
-    const frame = requestAnimationFrame(() => menu.current?.querySelector<HTMLButtonElement>("[role='menuitem']")?.focus({ preventScroll: true }));
-    const outside = (event: PointerEvent) => { if (!menu.current?.contains(event.target as Node) && !trigger.current?.contains(event.target as Node)) setMenuOpen(false); };
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setMenuOpen(false); trigger.current?.focus({ preventScroll: true }); } };
-    document.addEventListener("pointerdown", outside, true); document.addEventListener("keydown", escape, true);
-    return () => { cancelAnimationFrame(frame); document.removeEventListener("pointerdown", outside, true); document.removeEventListener("keydown", escape, true); };
-  }, [menuOpen]);
-  const choose = (action: CompanionHomeAction) => {
-    setMenuOpen(false); onAction(action);
-    // The placement action deliberately transfers focus to the real creature.
-    if (action !== "place") trigger.current?.focus({ preventScroll: true });
-  };
   return <section ref={room} className="vc-home" aria-label="빅타민 집" data-size={preferences.size} data-sfx="off" data-pm-exit="5">
-    <header className="vc-home-heading">
-      <span className="vc-home-title"><Home size={15} aria-hidden="true" /> 빅타민 집</span>
-      <div className="vc-home-tools">
-        {actions.length ? <button ref={trigger} id={triggerId} type="button" data-home-action="care-menu" data-tip="돌보기" className="vc-home-tool" aria-label="빅타민 돌보기" aria-haspopup="menu" aria-expanded={menuOpen} aria-controls={menuOpen ? menuId : undefined} onClick={() => setMenuOpen(open => !open)} onKeyDown={event => { if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); event.stopPropagation(); setMenuOpen(true); } }}><MoreHorizontal size={19} aria-hidden="true" /></button> : null}
-        {onClose ? <button type="button" data-home-action="close" className="vc-home-tool vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={16} /></button> : null}
-      </div>
-    </header>
     <div className="vc-home-room">
-      <div className="vc-home-window" aria-hidden="true"><span className="vc-home-sky" /><i /><i /><span className="vc-home-window-sill" /></div>
-      <span className="vc-home-lamp" aria-hidden="true"><i /></span>
+      <div className="vc-home-heading">
+        <span className="vc-home-mark" aria-hidden="true"><Home size={15} strokeWidth={1.6} /><span className="vc-home-bond" style={{ opacity: .32 + care.affection * .68 }}><Heart size={11} strokeWidth={1.6} fill="currentColor" /></span></span>
+        {onClose ? <button type="button" data-home-action="close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : null}
+      </div>
+      <svg className="vc-home-window" viewBox="0 0 76 66" aria-hidden="true" focusable="false">
+        <rect className="vc-window-frame" x="3" y="3" width="70" height="58" rx="15" />
+        <rect className="vc-window-sky" x="8" y="8" width="60" height="48" rx="11" />
+        <circle className="vc-window-sun" cx="51" cy="23" r="7" />
+        <path className="vc-window-hill" d="M8 45c14-14 20-3 30-5 13-12 22-11 30-5v10a11 11 0 0 1-11 11H19A11 11 0 0 1 8 45Z" />
+        <path className="vc-window-mullion" d="M38 9v46M9 32h58" />
+        <path className="vc-window-sill" d="M3 62h70" />
+      </svg>
+      <span className="vc-home-light" aria-hidden="true" />
+      <span className="vc-home-floor" aria-hidden="true" />
       <span className="vc-home-rug" aria-hidden="true" />
-      <button type="button" data-home-action="home" className="vc-cushion-button" disabled={!preferences.sleep} onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기"><span className="vc-home-cushion"><i /></span><span className="vc-cushion-label">포근한 자리</span></button>
-      {preferences.feeding ? <div className="vc-dispenser" role="group" aria-label="간식 자판기">
-        <button type="button" data-home-action="apple" onClick={() => onAction("apple")} aria-label="사과 밥 꺼내기"><CompanionFruit kind="apple" /><span>사과</span></button>
-        <button type="button" data-home-action="lemon" onClick={() => onAction("lemon")} aria-label="레몬 밥 꺼내기"><CompanionFruit kind="lemon" /><span>레몬</span></button>
-        <span className="vc-dispenser-slot" aria-hidden="true" />
-      </div> : null}
+      <button type="button" data-home-action="home" data-tip="집으로 부르기" className="vc-cushion-button" disabled={!preferences.sleep} onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기"><span className="vc-home-cushion"><i /></span></button>
+      {preferences.feeding ? <>
+        <button type="button" data-home-action="feed" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기"><span className="vc-dispenser-face" aria-hidden="true"><Utensils size={19} strokeWidth={1.5} /><span className="vc-dispenser-dot" /></span><span className="vc-dispenser-slot" aria-hidden="true" /></button>
+        <button type="button" data-home-action="clearFood" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><svg viewBox="0 0 28 32" aria-hidden="true" focusable="false"><g className="vc-trash-lid"><path d="M5 9h18M10 9V6.5A1.5 1.5 0 0 1 11.5 5h5A1.5 1.5 0 0 1 18 6.5V9" /></g><path className="vc-trash-body" d="m7 12 1.3 14.2A2 2 0 0 0 10.3 28h7.4a2 2 0 0 0 2-1.8L21 12" /><path className="vc-trash-lines" d="m12 15 .5 9m3.5-9-.5 9" /></svg><span className="vc-trash-progress" aria-hidden="true" /></button>
+      </> : null}
     </div>
-    <div className="vc-home-status"><span className="vc-home-bond"><Heart size={12} aria-hidden="true" /><span>{closeness}</span></span><span className="vc-home-mood">{mood}</span></div>
     <div className="sr-only"><meter min="0" max="1" value={care.affection} aria-label="빅타민 친밀도" /><meter min="0" max="1" value={1 - care.hunger} aria-label="빅타민 포만감" /><meter min="0" max="1" value={care.energy} aria-label="빅타민 기력" /></div>
-    {menuOpen ? <div ref={menu} id={menuId} role="menu" aria-labelledby={triggerId} className="vc-home-menu" onKeyDown={event => {
-      if (event.key === "Tab") { setMenuOpen(false); trigger.current?.focus({ preventScroll: true }); return; }
-      if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-      event.preventDefault(); event.stopPropagation();
-      const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("[role='menuitem']")];
-      const index = items.indexOf(document.activeElement as HTMLButtonElement);
-      const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : event.key === "ArrowDown" ? (index + 1) % items.length : event.key === "ArrowUp" ? (index + items.length - 1) % items.length : index;
-      items[next]?.focus({ preventScroll: true });
-    }}>
-      {actions.map(item => <button key={item.action} type="button" role="menuitem" data-home-action={item.action} onClick={() => choose(item.action)}>{item.icon}<span>{item.label}</span></button>)}
-    </div> : null}
   </section>;
 }

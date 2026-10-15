@@ -138,8 +138,11 @@ test("a settings overlay interrupts an airborne jump and resumes on a real suppo
 test("pausing a dragged snack releases capture and returns it to the floor", async ({ page }) => {
   await setup(page, false, { feeding: true });
   await keyboardHome(page);
-  await home(page).getByRole("button", { name: "사과 밥 꺼내기", exact: true }).click();
+  await home(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   const snack = page.locator(".vc-food");
+  // Food now uses a world transform, not left/top positioning. Measure the
+  // actual button centre; its44px hit box is centred16px above the foot anchor.
+  const snackFoot = () => snack.evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 + 16 }; });
   await expect(snack).toHaveCount(1);
   await expect(snack).toBeFocused();
   await snack.evaluate(node => node.addEventListener("pointerdown", event => { (node as HTMLElement).dataset.capturePointer = String((event as PointerEvent).pointerId); }));
@@ -154,11 +157,11 @@ test("pausing a dragged snack releases capture and returns it to the floor", asy
   await page.mouse.up();
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
   await expect(snack).toBeVisible();
-  await expect.poll(() => snack.evaluate(node => Number.parseFloat((node as HTMLElement).style.top))).toBe(await floorY(page));
-  await expect.poll(() => snack.evaluate(node => Number.parseFloat((node as HTMLElement).style.left))).toBe(180);
+  await expect.poll(async () => (await snackFoot()).y).toBeCloseTo(await floorY(page), 1);
+  await expect.poll(async () => (await snackFoot()).x).toBeCloseTo(180, 1);
   await page.mouse.move(260, height - 80, { steps: 5 });
   await page.waitForTimeout(300);
-  expect(await snack.evaluate(node => Number.parseFloat((node as HTMLElement).style.left))).toBe(180);
+  expect((await snackFoot()).x).toBeCloseTo(180, 1);
   await expect(snack).not.toHaveAttribute("data-selected");
   await expect(snack).toBeInViewport({ ratio: 1 });
 });

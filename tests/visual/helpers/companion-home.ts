@@ -16,30 +16,27 @@ export async function openCompanionHome(page: Page, input: HomeInput = "pointer"
   return home(page);
 }
 
-/** Use the same real care menu everywhere. Cushion and fruit remain their
- * direct room controls; no DOM dispatch, fake clock or product debug hook. */
+/** Preserve the callers' care intent through the public direct interactions.
+ * No removed menu, DOM dispatch, fake clock or product debug hook. */
 export async function chooseCompanionCare(page: Page, action: CareAction, input: HomeInput = "pointer") {
-  await expect(home(page)).toBeVisible();
-  const trigger = home(page).getByRole("button", { name: "빅타민 돌보기", exact: true });
-  const menu = home(page).getByRole("menu", { name: "빅타민 돌보기", exact: true });
-  const wasOpen = await trigger.getAttribute("aria-expanded") === "true";
-  if (!wasOpen) {
-    if (input === "keyboard") { await trigger.focus(); await trigger.press("ArrowDown"); }
-    else if (input === "touch") await trigger.tap();
-    else await trigger.click();
+  const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
+  await expect(actor).toBeVisible();
+  if (action === "남은 밥 치우기") {
+    await openCompanionHome(page, input);
+    const bin = home(page).getByRole("button", { name: "음식 버리기", exact: true });
+    if (input === "keyboard") { await bin.focus(); await bin.press("Enter"); }
+    else if (input === "touch") await bin.tap();
+    else await bin.click();
+  } else if (action === "쓰다듬기") {
+    if (input === "keyboard") { await actor.focus(); await actor.press("Enter"); }
+    else if (input === "touch") await actor.tap();
+    else await actor.click();
+  } else if (action === "옮길 곳 고르기" && input !== "keyboard") {
+    if (input === "touch") { await actor.tap(); await actor.tap(); }
+    else await actor.dblclick();
+    await expect(page.locator(".vc-companion")).toHaveAttribute("data-placing", "");
+  } else {
+    await actor.focus(); await actor.press(action === "옮길 곳 고르기" ? "p" : "n");
   }
-  await expect(menu).toBeVisible();
-  const item = menu.getByRole("menuitem", { name: action, exact: true });
-  if (input === "keyboard") {
-    const items = menu.getByRole("menuitem");
-    if (!wasOpen) await expect(items.first()).toBeFocused();
-    else await expect.poll(() => menu.evaluate(node => node.contains(document.activeElement))).toBe(true);
-    await page.keyboard.press("Home");
-    const index = await items.evaluateAll((nodes, label) => nodes.findIndex(node => node.textContent?.trim() === label), action);
-    expect(index).toBeGreaterThanOrEqual(0);
-    for (let step = 0; step < index; step++) await page.keyboard.press("ArrowDown");
-    await expect(item).toBeFocused(); await page.keyboard.press("Enter");
-  } else if (input === "touch") await item.tap();
-  else await item.click();
   await expect(page.getByRole("menu", { name: "빅타민 돌보기", exact: true })).toHaveCount(0);
 }

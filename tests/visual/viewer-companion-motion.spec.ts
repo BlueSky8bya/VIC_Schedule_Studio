@@ -78,7 +78,7 @@ async function sampleFrames(page: Page, duration = 1000): Promise<Frame[]> {
 async function geometry(page: Page) {
   return pet(page).evaluate(element => {
     const outer = element.getBoundingClientRect();
-    return [".vc-actor", ".vc-effect", ".vc-grip", ".vc-contact-shadow"].map(selector => {
+    return [".vc-actor", ".vc-effect", ".vc-contact-shadow"].map(selector => {
       const node = element.querySelector<HTMLElement>(selector)!;
       const box = node.getBoundingClientRect();
       return { selector, localX: box.left - outer.left, localY: box.top - outer.top, width: box.width, mirror: new DOMMatrixReadOnly(getComputedStyle(node).transform).a, insideFacing: element.querySelector(".vc-facing")!.contains(node) };
