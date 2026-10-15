@@ -1,6 +1,6 @@
 # 빅타민 중력·교감·패널·화질 검증
 
-2026-10-15 KST. [PLAN-050](../plans/PLAN-20261015-050-victamin-gravity-contact-and-polish.md). 현재 상태: 로컬 production build·브라우저 확인 완료, 운영 배포 대기. 아래 연구의 결과와 제품에 적용한 판단을 구별한다.
+2026-10-15 KST. [PLAN-050](../plans/PLAN-20261015-050-victamin-gravity-contact-and-polish.md). 현재 상태: `23fe0259` main push·운영 배포 및 PC/터치 확인 완료. 아래 연구의 결과와 제품에 적용한 판단을 구별한다.
 
 ## 원자료와 적용 근거
 
@@ -72,10 +72,10 @@
 | 자산 시각 확인 | ignored PNG `.scratch-pw/companion-keyposes-2x-050.png`, `.scratch-pw/companion-fluid-q95-050.png` 직접 열람. 기존 표정·선과 보존된 경계 흔적 확인; 독립 미술 승인/새 연속모션 PASS가 아니다. |
 | production fixture 브라우저 | 고유23항목 PASS: 신규 polish6 + contact6 + food-direct9 + overlays2. 동일 최종 상품 build에서23항목 실행21PASS, 하네스 교정 뒤 food9실행8PASS, 남은 PC 준비만 교정해 해당1PASS를 합산한 범위다. 한 번의23전체 실행이 모두 통과했다는 뜻은 아니다. 실제 낙하·공중 재집기·스크롤 attachment·중단·쓰레기통·첫 pass/보상·master OFF·감소동작·패널 이동/reload/prepaint·큰 decode/fallback·일반 창 표시 유지 확인. POST attempt0/forward0, 실제 DB 시험 쓰기0. |
 | 실제 익명 `/` 로컬 | 1920 PC/390 native touch 두 화면 PASS. 기본 OFF에서 기존/신규 atlas 요청0, 설정 ON·크게·sharp, 동일 DOM으로 설정/검색/기록 창에서 표시·inert·입력 통과, 접기 reload·다크·export 내 pet0·pageerror0. 각 화면 bootstrap POST2를 전부 차단, 전달0. 과거2025-09 cookie 사용. |
-| 배포·운영 | PENDING: 아직 이 작업의 commit/push/운영 SHA·실제 PC/터치 결과를 기록하지 않았다. |
+| 배포·운영 | `23fe0259` main push, GitHub/Vercel success 및 운영 `/api/soop-live` build SHA 일치. [운영 사이트](https://vic-schedule-studio.vercel.app)의 실제 익명 `/`에서1920 PC/390 touch 두 화면 PASS: 기본OFF 모든 atlas 요청0, 설정ON·크게·sharp, 일반 창3종 동일 DOM·inert·입력 통과, 접힘 reload·다크·export내 pet0·pageerror0. 각 bootstrap POST2 전부 차단·전달0. 두 신규 WebP의 운영 bytes/전체 SHA가 커밋과 일치했다. |
 
 낙하 중간60프레임에서 초기 기울기0.498→후기1.383px/ms로 가속했고 실제 발판y1030에 착지했다. PC/390의 스크롤50프레임 p95 오차0/max3px, quiet Range/rect/style write0, 큰 그림 decode 뒤 정지 write0을 확인했다. 실제390×844/900×600 coarse에서 제목 대비11.90:1, 집/기록 공통 높이44px·라운드12px였다. fixture export 폭1840을 유지했다. 직접 열람한 PNG는 큰 contact·다크390/900·착지·prepaint 접힘과 익명 설정/기록 화면이며, prepaint PNG는 JS 보류 시 접힘 근거로만 쓴다.
 
 재현 범위: `npm run test -- viewer-companion ambient-pause panel-section-preferences agent-memory rule-migration`, `npm run typecheck`, `npm run lint`, `VISUAL_TEST_FIXTURE=1 npm run build`, visual config의 위4spec. 하네스/메모리43단위 포함, `npm run harness:verify`는 기존 inventory2개 오류만 남았다. 세부 회차 로그·원본 이벤트 trace·PNG·실제 익명 smoke JSON은 ignored `.scratch-pw`의 `companion-050-qa-summary.json`, `companion-trash-trace.json`, `companion-polish-public-local.json` 등에 보관하며 커밋하지 않는다.
 
-공용 viewer/anonymous/미리보기 한 구현, default OFF·로컬 전용을 유지한다. 서버 DTO·권한/unlock·KST·실제 달력 데이터·1840 export 기하·원화 생성 변경0. 기존 harness 2개 오류(UI-38~44 rule inventory SHA/table 누락)는 이번 기능 PASS로 상쇄하지 않는다. 실제 OBS 장비·물리 햅틱·주관적 교감 만족도는 미검증이다.
+공용 viewer/anonymous/미리보기 한 구현, default OFF·로컬 전용을 유지한다. 서버 DTO·권한/unlock·KST·실제 달력 데이터·1840 export 기하·원화 생성 변경0. 기존 harness 2개 오류(UI-38~44 rule inventory SHA/table 누락)는 이번 기능 PASS로 상쇄하지 않는다. touch는 Chromium의 실제 터치 입력 경로/에뮬레이션 검증이며 물리 휴대폰 검증은 아니다. 실제 OBS 장비·물리 햅틱·주관적 교감 만족도는 미검증이다. 운영 증거도 ignored `companion-polish-production-deploy.json`, `companion-polish-public-production.json`, `companion-polish-production-assets.json`에 남겼다. 독립 리뷰에서 연구·자산·QA 합산 범위의 추가 차단은 없었다.
