@@ -44,6 +44,8 @@
 
 9표본 모두 POST0/layout0. 자율 companion Range/DOM write0은 별도 parked 상호작용 검사로 확인했으며 CSS 호흡/꿈·페이지 자체가 무비용이라는 주장은 아니다. 원자료는 ignored `.scratch-pw/companion-panel-metrics.json`. 기존 시각 디자인에 대한 소유자 승인이나 실제 OBS 성능을 이 표로 대신하지 않는다.
 
-Type/lint/build와226 unit, 고유88 browser, root PC/터치,9비용 표본을 확인했다. 소스 diff whitespace 검사는 통과하며, SVG 전체 검사에서는 byte 보존한 upstream peach/그 파생 apricot의 빈 줄 들여쓰기10줄이 보고된다. 원본/배포 hash를 지키기 위해 vendor bytes는 임의 정리하지 않았다. 독립 최종 검토에서 추가 확정 차단 없음. 운영 배포 확인 진행 중.
+Type/lint/build와226 unit, 고유88 browser, root PC/터치,9비용 표본을 확인했다. 소스 diff whitespace 검사는 통과하며, SVG 전체 검사에서는 byte 보존한 upstream peach/그 파생 apricot의 빈 줄 들여쓰기10줄이 보고된다. 원본/배포 hash를 지키기 위해 vendor bytes는 임의 정리하지 않았다. 독립 최종 검토에서 추가 확정 차단 없음.
+
+기능 `a45af40636d84a92b5a8ba5cc008257805d218f2` main push 뒤 Vercel success와 실제 서비스 `/api/soop-live` 동일 build SHA를 확인했다. 운영 anonymous `/`의1920 PC/390touch를 과거2025-09로 열어 새 제목 fold/Space expand·defaultOFF atlas0·tap/drag·SVG급식·쿠션·반응형 같은 개체·설정OFF·export 내부0·pageerror0을 재검사했다. PC 머리 hover/손도 통과했다. 두 화면 모두 기존 초기 POST1 차단/전송0, 운영390 캡처 직접 검수. 운영13 SVG도 정상 MIME/HTTP와 로컬 SHA256 일치를 확인했다. 배포/입력 결과는 ignored `.scratch-pw/companion-panel-production-deploy.json`, `companion-panel-root-production.json`에 둔다. 이후 문서 커밋은 기능을 바꾸지 않는다.
 
 공개 서버 DTO/권한/unlock/DB/KST/1840 기하 변경0. fixture 또는 과거 월·모든 POST 차단·실제 DB 시험 데이터0. 실제 OBS/GPU/OS-focus·Safari·스크린리더 장비는 별도 증거가 필요하다.
