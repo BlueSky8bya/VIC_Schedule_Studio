@@ -133,6 +133,10 @@ for (const width of [1440, 390]) {
     await expect.poll(async () => { const point = await foodPoint(item); return Math.hypot(point.x - original.x, point.y - original.y); }).toBeLessThan(2);
     await expect(item).toBeInViewport();
     if (width >= 1040) {
+      // Attachment returns in one rAF; the pet's full text scan coalesces for
+      //120ms. Finish this setup scan before asking it to share the source.
+      // The separate scroll40→native food release below still has no wait.
+      await page.waitForTimeout(180);
       // Deliberately share this exact source with the pet. Its renderer
       // follows and mutates its own platform copy during scroll; food must
       // retain an independent baseline for the following native release.
@@ -241,7 +245,15 @@ for (const width of [1440, 390]) {
 test("trash dwell can be left, canceled or blurred before one finite removal", async ({ page }) => {
   await setup(page); const item = await spawn(page); await item.press("Escape"); await trackPointer(item);
   const target = await centre(bin(page));
-  const take = async () => { const p = await centre(item); await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 5 }); };
+  const take = async () => {
+    // This case tests dwell/cancel ownership from rest. A new finite fall can
+    // outlast the old550ms pause; sample its hitbox only after real landing.
+    await expect(item).not.toHaveAttribute("data-falling", "", { timeout: 1800 });
+    const p = await centre(item); await page.mouse.move(p.x, p.y); await page.mouse.down();
+    // Cancellation can correctly leave the fruit at the bin's centre. Make
+    // the next interaction an actual >6px drag, rather than another still hold.
+    await page.mouse.move(p.x - 12, p.y); await page.mouse.move(target.x, target.y, { steps: 5 });
+  };
   await take(); await expect(bin(page)).toHaveAttribute("data-food-over", "");
   await page.mouse.move(target.x - 100, target.y - 70, { steps: 3 });
   await expect(bin(page)).not.toHaveAttribute("data-food-over"); await page.waitForTimeout(550); await expect(item).toBeVisible(); await page.mouse.up();
@@ -271,8 +283,10 @@ test("a real mobile touch cancellation keeps its snack and a held trash drop can
   const item = await spawn(page); await item.press("Escape");
   const client = await page.context().newCDPSession(page), target = await centre(bin(page));
   const take = async () => {
+    await expect(item).not.toHaveAttribute("data-falling", "", { timeout: 1800 });
     const from = await centre(item);
     await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from.x, y: from.y, id: 11 }] });
+    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from.x - 16, y: from.y, id: 11 }] });
     await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: target.x, y: target.y, id: 11 }] });
     await expect(bin(page)).toHaveAttribute("data-food-over", "");
   };

@@ -4,16 +4,14 @@ import { ChevronDown } from "lucide-react";
 import { forwardRef, useCallback, useId, useImperativeHandle, useLayoutEffect, useRef, useSyncExternalStore, type HTMLAttributes, type ReactNode } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { hapticTick } from "@/lib/ui/haptics";
+import { applyPanelSectionPreferences, getPanelSectionPreferences, setPanelSectionExpanded, subscribePanelSectionPreferences, type PanelSectionKey } from "@/lib/ui/panel-section-preferences";
 import "./panel-section.css";
 
-type SectionKey = "tag-filter" | "season" | "companion-home";
-const expandedSections = new Map<SectionKey, boolean>();
-const subscribers = new Set<() => void>();
 const serverExpanded = () => true;
 
 type Props = Omit<HTMLAttributes<HTMLElement>, "title" | "children"> & {
   title: string;
-  sectionKey: SectionKey;
+  sectionKey: PanelSectionKey;
   as?: "div" | "section" | "aside";
   collapsible?: boolean;
   headingClassName?: string;
@@ -23,18 +21,18 @@ type Props = Omit<HTMLAttributes<HTMLElement>, "title" | "children"> & {
 };
 
 /** One disclosure for the viewer's three cards; studio keeps the same heading
- * without a disclosure. Memory is tab-local and contains only three booleans.
+ * without a disclosure. Device storage contains only three booleans.
  * Mounted hidden bodies retain filters, ambient state and real home anchors. */
 export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection({ title, sectionKey, as: Tag = "section", collapsible = false, headingClassName = "", headingData, actions, className = "", children, ...attributes }, forwardedRef) {
   const root = useRef<HTMLElement | null>(null);
   const before = useRef<Map<Element, DOMRect> | null>(null);
   const bodyId = useId();
-  const subscribe = useCallback((listener: () => void) => { subscribers.add(listener); return () => { subscribers.delete(listener); }; }, []);
-  const snapshot = useCallback(() => expandedSections.get(sectionKey) ?? true, [sectionKey]);
-  const savedExpanded = useSyncExternalStore(subscribe, snapshot, serverExpanded);
+  const snapshot = useCallback(() => getPanelSectionPreferences()[sectionKey], [sectionKey]);
+  const savedExpanded = useSyncExternalStore(subscribePanelSectionPreferences, snapshot, serverExpanded);
   const expanded = !collapsible || savedExpanded;
   useImperativeHandle(forwardedRef, () => root.current!, []);
   useLayoutEffect(() => {
+    applyPanelSectionPreferences();
     const captured = before.current; before.current = null;
     if (captured) for (const [element, previous] of captured) {
       if (!(element instanceof HTMLElement) || !element.isConnected) continue;
@@ -49,9 +47,9 @@ export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection
     // cards rather than creating another layout/animation mechanism.
     for (let depth = 0; group && group.children.length === 1 && depth < 2; depth++) group = group.parentElement;
     before.current = new Map([...(group?.children ?? [])].map(element => [element, element.getBoundingClientRect()]));
-    expandedSections.set(sectionKey, !expanded); subscribers.forEach(listener => listener()); hapticTick();
+    setPanelSectionExpanded(sectionKey, !expanded); hapticTick();
   };
-  return <Tag {...attributes} ref={element => { root.current = element; }} className={`panel-section ${className}`.trim()} aria-label={attributes["aria-label"] ?? title} data-panel-section={sectionKey} data-panel-collapsed={expanded ? undefined : ""}>
+  return <Tag {...attributes} ref={element => { root.current = element; }} className={`panel-section ${className}`.trim()} aria-label={attributes["aria-label"] ?? title} data-panel-section={sectionKey} data-panel-collapsible={collapsible ? "" : undefined} data-panel-collapsed={expanded ? undefined : ""}>
     <header className="panel-section-heading">
       <h2 className={`panel-section-title ${headingClassName}`.trim()}>{collapsible ? <button {...headingData} type="button" className="panel-section-toggle" aria-label={title} aria-expanded={expanded} aria-controls={bodyId} data-panel-section-toggle={sectionKey} onClick={toggle}><span>{title}</span><ChevronDown className="panel-section-chevron" size={13} aria-hidden="true" /></button> : <span>{title}</span>}</h2>
       {actions ? <div className="panel-section-actions">{actions}</div> : null}

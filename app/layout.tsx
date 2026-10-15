@@ -36,6 +36,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { FONT_STACKS } from "@/lib/ui/font-prefs";
 import { GfxProbe } from "@/components/ui/gfx-probe";
+import { PANEL_SECTION_BOOTSTRAP } from "@/lib/ui/panel-section-preferences";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
 // preload:false + subsets 미지정 → 전체 글리프(한글 포함) 로드, 경고 없이.
@@ -155,7 +156,7 @@ export default function RootLayout({
               "if(gm!=='full')d.setAttribute('data-gfx',gm);if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',gm==='soft'?'lite':'1');d.setAttribute('data-studio-calm','1');" +
               // 계절 배경(vic.ambient, ADR-0017 개정 2 · 2026-09-04 기본 OFF): 저장값이 없으면 'off'.
               // 켜기/흐리게/끄기 중 고른 값이 기기에 남아 다음 방문에 페인트 전에 복원된다.
-              "var am=s.getItem('vic.ambient');if(am!=='on'&&am!=='dim')am='off';if(am!=='on')d.setAttribute('data-ambient',am)}catch(e){}"
+              "var am=s.getItem('vic.ambient');if(am!=='on'&&am!=='dim')am='off';if(am!=='on')d.setAttribute('data-ambient',am)}catch(e){}" + PANEL_SECTION_BOOTSTRAP
           }}
         />
         {children}

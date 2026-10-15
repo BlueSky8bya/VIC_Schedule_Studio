@@ -17,12 +17,32 @@ describe("companion food support", () => {
     expect(reconcileCompanionFood(placed, [floor])).toEqual(placed);
     expect(reconcileCompanionFood(placed, [floor, { ...card, x: 250, y: 420 }])).toEqual({ ...placed, x: 262, y: 420 });
   });
-  it("keeps either fruit inside the visible supporting rail", () => {
-    expect(placeCompanionFood({ ...apple, kind: "lemon" }, { x: 0, y: 800 }, [floor]).x).toBe(24);
-    expect(placeCompanionFood(apple, { x: 9999, y: 800 }, [floor]).x).toBe(976);
+  it("keeps x at real safe edges without the creature's walking inset", () => {
+    expect(placeCompanionFood({ ...apple, kind: "lemon" }, { x: 12, y: 700 }, [floor]).x).toBe(12);
+    expect(placeCompanionFood(apple, { x: 988, y: 700 }, [floor]).x).toBe(988);
+    expect(placeCompanionFood(apple, { x: 0, y: 700 }, [floor]).x).toBe(12);
   });
-  it("uses a real safe ledge when mobile controls leave no usable floor", () => {
-    expect(placeCompanionFood(apple, { x: 200, y: 800 }, [card])).toEqual({ id: "apple", kind: "apple", x: 200, y: 350, platformId: "card" });
+  it("retains a document point when every real ledge is above or horizontally distant", () => {
+    expect(placeCompanionFood(apple, { x: 200, y: 800 }, [card, floor])).toEqual({ id: "apple", kind: "apple", x: 200, y: 800 });
+    expect(placeCompanionFood(apple, { x: 9999, y: 700 }, [floor])).toEqual({ id: "apple", kind: "apple", x: 9999, y: 700 });
+  });
+  it("chooses the nearest lower height at the current x before considering small edge attraction", () => {
+    const close = { ...card, id: "close", y: 400 }, far = { ...card, id: "far", y: 600 };
+    expect(placeCompanionFood(apple, { x: 200, y: 370 }, [floor, far, close])).toEqual({ ...apple, y: 400, platformId: "close" });
+    expect(placeCompanionFood(apple, { x: 90, y: 300 }, [card])).toEqual({ ...apple, x: 100, y: 350, platformId: "card" });
+    expect(placeCompanionFood(apple, { x: 77, y: 300 }, [card]).platformId).toBeUndefined();
+  });
+  it("does not mutate the platform ordering and skips malformed lower surfaces", () => {
+    const invalid = [{ ...card, id: "", y: 360 }, { ...card, x: NaN }, { ...card, width: -2 }, { ...card, y: Infinity }];
+    const platforms = Object.freeze([Object.freeze(floor), ...invalid, Object.freeze(card)]);
+    expect(placeCompanionFood(apple, apple, platforms).platformId).toBe("card");
+    expect(platforms[0]).toBe(floor);
+    expect(placeCompanionFood(apple, { x: NaN, y: 5 }, platforms)).toEqual(apple);
+  });
+  it("keeps a subpixel contact on its actual ledge without choosing an upper day", () => {
+    expect(placeCompanionFood(apple, { x: 200, y: card.y + .000366 }, [floor, card])).toEqual({ ...apple, y: card.y, platformId: "card" });
+    expect(placeCompanionFood(apple, { x: 200, y: card.y + .49 }, [floor, card]).platformId).toBe("card");
+    expect(placeCompanionFood(apple, { x: 200, y: card.y + .51 }, [floor, card]).platformId).toBe(floor.id);
   });
 });
 

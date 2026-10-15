@@ -4,6 +4,9 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffec
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, placeCompanionFood, presentCompanionFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
+import { createCompanionFoodGravity } from "@/lib/ui/viewer-companion/food-gravity";
+import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
+import { gfxMode } from "@/lib/ui/gfx";
 import { COMPANION_FOOD_NAMES as names, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { CompanionFruit } from "./companion-fruit";
 
@@ -35,6 +38,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const nodes = useRef(new Map<string, HTMLButtonElement>()), presentations = useRef(new Map<string, CompanionFoodPresentation>());
   const attachments = useRef(new Map<string, { element?: Element; position: CompanionFoodAttachment }>()), visibility = useRef(new Map<string, boolean>());
   const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
+  const drops = useRef(new Map<string, ReturnType<typeof createCompanionFoodGravity>>());
+  const dropFrame = useRef(0), lastDropPaint = useRef(0), suspending = useRef(false), animateDrops = useRef<() => void>(() => {});
   const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean }>());
   const renderedTransforms = useRef(new Map<string, string>());
   const serial = useRef(0), dragging = useRef<Drag | null>(null), hover = useRef<Hover | null>(null), discard = useRef<Discard | null>(null);
@@ -45,6 +50,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const update = useCallback((next: Food[]) => {
     const ids = new Set(next.map(food => food.id));
     for (const id of attachments.current.keys()) if (!ids.has(id)) { attachments.current.delete(id); visibility.current.delete(id); presentations.current.delete(id); }
+    for (const id of drops.current.keys()) if (!ids.has(id)) { drops.current.delete(id); presentations.current.delete(id); }
+    if (!drops.current.size) { cancelAnimationFrame(dropFrame.current); dropFrame.current = 0; }
     current.current = next; setFoods(next);
   }, []);
   const choose = useCallback((id: string | null) => { selection.current = id; setSelected(id); }, []);
@@ -52,48 +59,69 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const node = nodes.current.get(food.id); if (!node || discard.current?.id === food.id) return;
     const hidden = visibility.current.get(food.id) === false;
     if (node.hidden !== hidden) node.hidden = hidden;
+    if (node.hasAttribute("data-falling") !== drops.current.has(food.id)) node.toggleAttribute("data-falling", drops.current.has(food.id));
     const pose = presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
     const next = transform(pose), cached = painted.current.get(node);
     if (cached?.transform !== next) node.style.transform = next;
     const art = node.firstElementChild as HTMLElement | null;
-    const local = `rotate(${pose.rotation.toFixed(3)}deg) scale(${pose.scale.toFixed(4)})`;
+    const local = `rotate(${pose.rotation.toFixed(3)}deg) scale(${(pose.scaleX ?? pose.scale).toFixed(4)},${(pose.scaleY ?? pose.scale).toFixed(4)})`;
     if (art && painted.current.get(art)?.transform !== local) { art.style.transform = local; painted.current.set(art, { transform: local }); }
-    const nibble = String(pose.scale), eating = Boolean(presentation);
+    const nibble = String(pose.scale), eating = Boolean(presentation) && !drops.current.has(food.id);
     if (cached?.nibble !== nibble) node.style.setProperty("--vc-nibble", nibble);
     if (cached?.eating !== eating) node.toggleAttribute("data-eating", eating);
     painted.current.set(node, { transform: next, nibble, eating });
   }, []);
   const resetNibble = useCallback((id?: string) => {
-    for (const food of current.current) if (!id || food.id === id) { presentations.current.delete(food.id); paint(food); }
+    for (const food of current.current) if ((!id || food.id === id) && !drops.current.has(food.id)) { presentations.current.delete(food.id); paint(food); }
   }, [paint]);
   const rebasePresentation = useCallback((id: string) => {
     const food = current.current.find(item => item.id === id); if (!food) return;
     const pose = presentations.current.get(id) ?? food;
+    drops.current.delete(id);
+    if (!drops.current.size) { cancelAnimationFrame(dropFrame.current); dropFrame.current = 0; }
     attachments.current.delete(id); visibility.current.set(id, true);
     current.current = current.current.map(item => item.id === id ? { ...item, x: pose.x, y: pose.y, platformId: undefined } : item);
     resetNibble(id); return pose;
   }, [resetNibble]);
   const settleFood = useCallback((food: Food, point: Point) => {
-    let placed = placeCompanionFood(food, point, platforms.current);
     const scroll = { x: window.scrollX, y: window.scrollY };
-    const source = placed.platformId ? anchorFor.current?.(placed.platformId) : undefined;
-    let origin: Point | undefined;
-    if (source?.element?.isConnected) {
-      const rect = source.element.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        const support = platforms.current.find(platform => platform.id === placed.platformId);
-        if (support) placed = placeCompanionFood(food, point, [{ ...support, x: support.x + rect.left - source.left, y: support.y + rect.top - source.top }]);
-        origin = { x: rect.left, y: rect.top };
-      }
-    }
+    const measured = new Map<Element, DOMRect>(), sources = new Map<string, { element: Element; origin: Point }>();
+    // Rebase the bounded existing platform list once at deliberate release.
+    // Choosing from stale pre-scroll heights could otherwise select a ledge
+    // that is now above the pointer. No selector walk or Range scan is needed.
+    const available = platforms.current.slice(0, 200).flatMap(support => {
+      const source = anchorFor.current?.(support.id);
+      if (!source?.element) return [support];
+      if (!source.element.isConnected || source.element.closest("[data-panel-collapsed]")) return [];
+      let rect = measured.get(source.element);
+      if (!rect) { rect = source.element.getBoundingClientRect(); measured.set(source.element, rect); }
+      if (rect.width <= 0 || rect.height <= 0) return [];
+      sources.set(support.id, { element: source.element, origin: { x: rect.left, y: rect.top } });
+      return [{ ...support, x: support.x + rect.left - source.left, y: support.y + rect.top - source.top }];
+    });
+    const placed = placeCompanionFood(food, point, available);
+    const source = placed.platformId ? sources.get(placed.platformId) : undefined, origin = source?.origin;
     // Bind to the current origin once. A subsequent scroll reads only this
     // retained source, never applies a second baseline delta or picks a day.
     const position = attachCompanionFood(placed, scroll, origin);
-    attachments.current.set(food.id, { element: origin ? source?.element : undefined, position }); visibility.current.set(food.id, true);
+    attachments.current.set(food.id, { element: source?.element, position }); visibility.current.set(food.id, true);
+    drops.current.delete(food.id); presentations.current.delete(food.id);
+    const gravity = createCompanionFoodGravity(point, placed, performance.now());
+    if (placed.platformId && gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && gfxMode() !== "off") {
+      drops.current.set(food.id, gravity);
+      const presentation = gravity.sample(performance.now()); presentations.current.set(food.id, presentation); paint(placed, presentation);
+      animateDrops.current();
+    } else paint(placed);
     return placed;
-  }, []);
+  }, [paint]);
+  const finishDrops = useCallback(() => {
+    cancelAnimationFrame(dropFrame.current); dropFrame.current = 0;
+    for (const id of drops.current.keys()) {
+      drops.current.delete(id); presentations.current.delete(id);
+      const food = current.current.find(item => item.id === id); if (food) paint(food);
+    }
+  }, [paint]);
   const followAttachments = useCallback(() => {
-    followFrame.current = 0;
     if (!operating.current || document.hidden) return;
     const scroll = { x: window.scrollX, y: window.scrollY }, measured = new Map<Element, DOMRect>();
     current.current = current.current.map(food => {
@@ -113,6 +141,33 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       paint(next, presentations.current.get(food.id)); return next;
     });
   }, [paint]);
+  const runDrops = useCallback(() => {
+    if (dropFrame.current || !drops.current.size) return;
+    lastDropPaint.current = performance.now() - 1000 / 60;
+    const step = (now: number) => {
+      dropFrame.current = 0;
+      const mode = gfxMode();
+      if (!operating.current || document.hidden || reduced() || mode === "off") { finishDrops(); return; }
+      const deadline = nextCompanionPaint(now, lastDropPaint.current, mode === "full" ? 60 : 30);
+      if (deadline !== null) {
+        lastDropPaint.current = deadline;
+        // At most three retained source rects, only while a finite fall runs.
+        // A moving target carries the fall; neither its clock nor x is reseeded.
+        followAttachments();
+        for (const [id, gravity] of drops.current) {
+          const food = current.current.find(item => item.id === id);
+          if (!food) { drops.current.delete(id); presentations.current.delete(id); continue; }
+          const presentation = gravity.sample(now, food);
+          if (presentation.active) presentations.current.set(id, presentation);
+          else { drops.current.delete(id); presentations.current.delete(id); }
+          paint(food, presentation.active ? presentation : undefined);
+        }
+      }
+      if (drops.current.size) dropFrame.current = requestAnimationFrame(step);
+    };
+    dropFrame.current = requestAnimationFrame(step);
+  }, [finishDrops, followAttachments, paint]);
+  animateDrops.current = runDrops;
   const clearGuard = useCallback(() => { clearTimeout(guard.current.timer); guard.current = { owns: false, pointer: null }; }, []);
   const ownClick = useCallback((pointer: number) => { clearTimeout(guard.current.timer); guard.current = { owns: true, pointer }; }, []);
   const clearBin = (bin: HTMLElement) => { bin.removeAttribute("data-food-over"); bin.style.removeProperty("--vc-trash-progress"); };
@@ -185,10 +240,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     choose(null); setMessage("밥을 놓았어요. 배고프면 빅타민이 찾아와요.");
   }, [cancelHover, choose, resetNibble, settleFood, startHover, trashAt, update]);
   const interrupt = useCallback(() => {
+    suspending.current = true; finishDrops();
     cancelAnimationFrame(senseFrame.current); cancelAnimationFrame(followFrame.current); followFrame.current = 0; cancelHover(); cancelDiscard(true); release(true); resetNibble();
     if (selection.current) update(current.current.map(food => food.id === selection.current ? settleFood(food, food) : food));
-    choose(null);
-  }, [cancelDiscard, cancelHover, choose, release, resetNibble, settleFood, update]);
+    choose(null); suspending.current = false;
+  }, [cancelDiscard, cancelHover, choose, finishDrops, release, resetNibble, settleFood, update]);
 
   useImperativeHandle(ref, () => ({
     spawn(kind, point) {
@@ -198,14 +254,15 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       const settled = current.current.map(item => item.id === selection.current ? settleFood(item, item) : item);
       cancelHover(); update([...settled, food]); choose(food.id); setMessage(`${names[kind]} 놓을 곳을 누르거나 방향키와 Enter로 놓아 주세요.`);
     },
-    foods: () => current.current.filter(food => visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
+    foods: () => current.current.filter(food => !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
     consume(id) {
-      if (visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || !current.current.some(food => food.id === id)) return false;
+      if (drops.current.has(id) || visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || !current.current.some(food => food.id === id)) return false;
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
       presentations.current.delete(id); update(current.current.filter(food => food.id !== id)); setMessage("빅타민이 밥을 맛있게 먹었어요."); return true;
     },
     nibble(id, progress = 0, mouth, facing = 1) {
       for (const food of current.current) {
+        if (drops.current.has(food.id)) continue;
         if (food.id !== id || food.id === selection.current || food.id === dragging.current?.id || food.id === discard.current?.id) { presentations.current.delete(food.id); paint(food); continue; }
         const presentation = presentCompanionFood(food, progress, mouth, facing, reduced());
         presentations.current.set(food.id, presentation); paint(food, presentation);
@@ -282,12 +339,12 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       document.removeEventListener("pointerdown", down, true); document.removeEventListener("pointermove", move, true);
       document.removeEventListener("pointerup", up, true); document.removeEventListener("pointercancel", up, true); document.removeEventListener("click", click, true);
       document.removeEventListener("visibilitychange", hidden); window.removeEventListener("blur", interrupt);
-      cancelAnimationFrame(senseFrame.current); cancelHover(); cancelDiscard(); release(); clearGuard();
+      cancelAnimationFrame(senseFrame.current); finishDrops(); cancelHover(); cancelDiscard(); release(); clearGuard();
     };
-  }, [enabled, cancelDiscard, cancelHover, choose, clearGuard, interrupt, ownClick, release, resetNibble, settleFood, startHover, trashAt, update]);
+  }, [enabled, cancelDiscard, cancelHover, choose, clearGuard, finishDrops, interrupt, ownClick, release, resetNibble, settleFood, startHover, trashAt, update]);
   useEffect(() => {
     if (!enabled) return;
-    const schedule = () => { if (operating.current && !document.hidden && !followFrame.current) followFrame.current = requestAnimationFrame(followAttachments); };
+    const schedule = () => { if (operating.current && !document.hidden && !followFrame.current) followFrame.current = requestAnimationFrame(() => { followFrame.current = 0; followAttachments(); }); };
     window.addEventListener("scroll", schedule, { passive: true, capture: true }); window.addEventListener("resize", schedule, { passive: true });
     window.visualViewport?.addEventListener("scroll", schedule, { passive: true }); window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("vic:panel-section", schedule); window.addEventListener("vic:companion-home", schedule);
@@ -332,7 +389,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       onKeyDown={event => {
         if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " ", "Escape", "Delete", "Backspace"].includes(event.key)) return;
         event.preventDefault(); event.stopPropagation();
-        if (event.key === "Escape") { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); release(true); resetNibble(food.id); update(current.current.map(item => item.id === food.id ? settleFood(item, item) : item)); choose(null); return; }
+        if (event.key === "Escape") { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); release(); const point = rebasePresentation(food.id); update(current.current.map(item => item.id === food.id ? settleFood(item, point ?? item) : item)); choose(null); return; }
         if (["Delete", "Backspace"].includes(event.key)) { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); focusReturn.current(); presentations.current.delete(food.id); update(current.current.filter(item => item.id !== food.id)); choose(null); setMessage("밥을 치웠어요."); return; }
         if (["Enter", " "].includes(event.key)) { if (!event.repeat) { if (selection.current === food.id) drop(food.id); else { rebasePresentation(food.id); choose(food.id); } } return; }
         rebasePresentation(food.id); choose(food.id);

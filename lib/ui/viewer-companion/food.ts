@@ -1,9 +1,9 @@
-import { nearestPlatform, platformLandingX, type CompanionFood, type Platform } from "./brain";
+import { platformLandingX, type CompanionFood, type Platform } from "./brain";
 
 export const MAX_COMPANION_FOOD = 3;
 export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
-export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number };
+export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
 export type CompanionFoodAttachment = { documentX: number; documentY: number; offsetX: number; offsetY: number };
 type Point = { x: number; y: number };
 type AnchorRect = { left: number; top: number; width?: number; height?: number };
@@ -46,12 +46,21 @@ export function companionTrashProgress(elapsedMs: number): number {
   return Number.isFinite(elapsedMs) ? Math.max(0, Math.min(1, elapsedMs / COMPANION_TRASH_DWELL_MS)) : 0;
 }
 
-/** Initial deliberate placement chooses a safe ledge. Following later uses
- * its attachment, so scrolling cannot make this choose a different day. */
+/** Deliberate placement falls onto a real lower ledge. Prefer the same x;
+ * only a nearby edge may attract a fruit. No upper/distant fallback invents
+ * a floor or teleports a dropped fruit to a different calendar column. */
 export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[]): CompanionFood {
-  const below = platforms.filter(p => p.y >= point.y - 12 && point.x >= p.x - 12 && point.x <= p.x + p.width + 12);
-  const support = nearestPlatform(point, below) ?? platforms.find(p => p.kind === "floor") ?? nearestPlatform(point, platforms);
-  return support ? { id: food.id, kind: food.kind, x: platformLandingX(support, point.x), y: support.y, platformId: support.id }
+  if (![point.x, point.y].every(Number.isFinite)) return { id: food.id, kind: food.kind, x: food.x, y: food.y };
+  // DOM Range and a painted transform can differ by a fraction of a pixel.
+  // Treat an existing contact as that same ledge instead of falling through
+  // it to the next date; genuinely higher ledges remain excluded.
+  const contactTolerance = .5;
+  const below = platforms.filter(p => p.id && [p.x, p.y, p.width, p.x + p.width].every(Number.isFinite) && p.width > 0 && p.y >= point.y - contactTolerance);
+  const offset = (p: Platform) => Math.max(p.x - point.x, point.x - p.x - p.width, 0);
+  const covered = below.filter(p => offset(p) === 0).sort((a, b) => a.y - b.y);
+  const nearby = below.filter(p => offset(p) <= 22).sort((a, b) => a.y - point.y + offset(a) * 4 - (b.y - point.y + offset(b) * 4));
+  const support = covered[0] ?? nearby[0];
+  return support ? { id: food.id, kind: food.kind, x: Math.max(support.x, Math.min(support.x + support.width, point.x)), y: support.y, platformId: support.id }
     : { id: food.id, kind: food.kind, x: point.x, y: point.y };
 }
 

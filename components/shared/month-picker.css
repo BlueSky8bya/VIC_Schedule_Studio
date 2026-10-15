@@ -21,6 +21,7 @@
 .month-title-text {
   position: relative;
   display: inline-block;
+  color: inherit;
   transition:
     color var(--dur-2) var(--ease),
     transform var(--dur-2) var(--spring-bouncy, var(--ease));

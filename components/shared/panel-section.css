@@ -11,13 +11,22 @@
 .panel-section-heading:has(.panel-section-actions) .panel-section-toggle { padding-inline: var(--control-hit); }
 .panel-section-body { display: contents; }
 .panel-section-body[hidden] { display: none !important; }
+/* The root's prepaint marker prevents remembered closed cards flashing open
+   while React hydrates. Noncollapsible studio panels never match this gate. */
+html[data-panel-sections~="tag-filter"] [data-panel-section="tag-filter"][data-panel-collapsible] > .panel-section-body,
+html[data-panel-sections~="season"] [data-panel-section="season"][data-panel-collapsible] > .panel-section-body,
+html[data-panel-sections~="companion-home"] [data-panel-section="companion-home"][data-panel-collapsible] > .panel-section-body { display: none !important; }
+html[data-panel-sections~="tag-filter"] [data-panel-section="tag-filter"][data-panel-collapsible] .panel-section-chevron,
+html[data-panel-sections~="season"] [data-panel-section="season"][data-panel-collapsible] .panel-section-chevron,
+html[data-panel-sections~="companion-home"] [data-panel-section="companion-home"][data-panel-collapsible] .panel-section-chevron { transform: rotate(-90deg); }
 .viewer-ambient-ctl .panel-section-heading { border-bottom: 1px solid var(--amb-card-line, var(--line)); color: var(--amb-title-ink, var(--ink)); }
 /* The studio workspace itself is scaled; panel type retains the same visible
    token size as the unscaled public viewer (UI-18). */
 .studio-shell .panel-section .panel-section-title { margin: 0; font-size: calc(var(--text-title) / var(--shell-zoom, 1)); font-weight: 600; line-height: 1.1; }
 /* A folded agenda card gives its empty height back to the rail. The disclosure
    retains the same type token; only its narrow structural padding is smaller. */
-.agenda-legend[data-panel-collapsed] { flex: 0 0 auto; }
+.agenda-legend[data-panel-collapsed],
+html[data-panel-sections~="tag-filter"] .agenda-legend[data-panel-collapsible] { flex: 0 0 auto; }
 .agenda-legend .panel-section-toggle { padding-inline: 8px; }
 .agenda-legend .panel-section-chevron { left: -5px; }
 @media (pointer: coarse) { .panel-section-toggle { min-height: var(--control-hit); } }
