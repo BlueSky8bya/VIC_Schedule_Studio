@@ -41,7 +41,9 @@ export function createCompanionHeldInertia() {
       if (![dx, dy, now].every(Number.isFinite) || dx === 0 && dy === 0) return;
       const time = clock(now), current = read(time);
       angle = current.angle; stretch = current.stretch;
-      angle.velocity = clamp(angle.velocity - clamp(dx, -160, 160) * 5, -700, 700);
+      // CSS y grows downward: positive rotation leaves the body below an
+      // upper grip to the left when the hand travels right, rather than ahead.
+      angle.velocity = clamp(angle.velocity + clamp(dx, -160, 160) * 5, -700, 700);
       stretch.velocity = clamp(stretch.velocity - clamp(dy, -160, 160) * .012, -2.4, 2.4);
       pushedAt = time;
     },

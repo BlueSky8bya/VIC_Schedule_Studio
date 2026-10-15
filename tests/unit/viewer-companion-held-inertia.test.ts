@@ -6,8 +6,12 @@ describe("captured companion inertia", () => {
     const motion = createCompanionHeldInertia();
     motion.push(40, 0, 100);
     expect(motion.sample(100).tilt).toBe(0);
-    expect(motion.sample(160).tilt).toBeLessThan(-3);
-    expect(motion.sample(420).tilt).toBeGreaterThan(.5);
+    const lag = motion.sample(160).tilt;
+    expect(lag).toBeGreaterThan(3);
+    // A body point below the grip must stay behind a right-moving hand in
+    // CSS's downward-y coordinates, not merely have a nonzero angle.
+    expect(-20 * Math.sin(lag * Math.PI / 180)).toBeLessThan(0);
+    expect(motion.sample(420).tilt).toBeLessThan(-.5);
     expect(motion.sample(1600)).toEqual({ tilt: 0, stretch: 0, active: false });
   });
   it("stretches on an upward tug and compresses on a downward tug", () => {
@@ -22,7 +26,7 @@ describe("captured companion inertia", () => {
     const before = motion.sample(1070);
     motion.push(-40, 20, 1070);
     expect(motion.sample(1070)).toEqual(before);
-    expect(motion.sample(1130).tilt).toBeGreaterThan(3);
+    expect(motion.sample(1130).tilt).toBeLessThan(-3);
   });
   it("gives the same trajectory at60Hz/120Hz and never advances at the same timestamp", () => {
     const atRate = (rate: number) => {

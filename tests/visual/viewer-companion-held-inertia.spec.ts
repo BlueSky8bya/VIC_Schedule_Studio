@@ -8,7 +8,7 @@ const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const posts = new WeakMap<Page, string[]>();
 type Point = { x: number; y: number };
-type Frame = { at: number; phase: string; state: string; hidden: boolean; x: number; y: number; angle: number; sx: number; sy: number; tx: number; ty: number; gripError: number; pivotError: number; facing: string; captured: boolean; left: number; top: number; right: number; bottom: number };
+type Frame = { at: number; phase: string; state: string; hidden: boolean; x: number; y: number; angle: number; sx: number; sy: number; tx: number; ty: number; bodyLagX: number; gripError: number; pivotError: number; facing: string; captured: boolean; left: number; top: number; right: number; bottom: number };
 type Probe = { frames: Frame[]; phase: string; pointer: Point; grip?: Point; pointerId: number; raf: number; down: (event: PointerEvent) => void; move: (event: PointerEvent) => void };
 type ProbeWindow = Window & { heldInertiaProbe?: Probe };
 
@@ -57,6 +57,9 @@ async function startProbe(page: Page) {
         const px = r.left - Math.min(...corners.map(c => c.x)) + ox + m.e, py = r.top - Math.min(...corners.map(c => c.y)) + oy + m.f;
         probe.frames.push({ at: now - began, phase: probe.phase, state: element.dataset.state, hidden: element.hidden || getComputedStyle(element).display === "none", x: p.x, y: p.y,
           angle: Math.atan2(m.b, m.a) * 180 / Math.PI, sx: Math.hypot(m.a, m.b), sy: Math.hypot(m.c, m.d), tx: m.e, ty: m.f,
+          // The lower body is below this upper grip. Its actual local matrix
+          // must carry this point left when the hand accelerates right.
+          bodyLagX: ox + m.a * (46 - ox) + m.c * (76 - oy) + m.e - 46,
           gripError: Math.hypot(p.x + probe.grip.x - probe.pointer.x, p.y + probe.grip.y - probe.pointer.y), pivotError: Math.hypot(px - probe.pointer.x, py - probe.pointer.y),
           facing: element.dataset.facing ?? "", captured: button.hasPointerCapture(probe.pointerId), left: r.left, top: r.top, right: r.right, bottom: r.bottom });
       }
@@ -100,16 +103,21 @@ for (const mobile of [false, true]) test.describe(mobile ? "native touch inertia
   test("real reversals lag and overshoot around a stable grip, then reach exact neutral while still held", async ({ page }) => {
     test.setTimeout(25000); await setup(page); await startProbe(page); const drag = await input(page, mobile);
     await drag.move({ x: drag.start.x + 10, y: drag.start.y + 8 }); await expect(pet(page)).toHaveAttribute("data-state", "held"); await page.waitForTimeout(1600);
+    await mark(page, "rightward"); await drag.move({ x: drag.start.x + 36, y: drag.start.y + 15 }, 12);
     await mark(page, "shake");
-    for (const [dx, dy] of [[36, 15], [-24, -12], [36, 15]]) await drag.move({ x: drag.start.x + dx, y: drag.start.y + dy }, 12);
+    for (const [dx, dy] of [[-24, -12], [36, 15]]) await drag.move({ x: drag.start.x + dx, y: drag.start.y + dy }, 12);
     await mark(page, "tail"); await page.waitForTimeout(1700);
-    const frames = await finishProbe(page, mobile ? "touch" : "pointer"), drive = frames.filter(f => f.phase === "shake"), tail = frames.filter(f => f.phase === "tail");
+    const frames = await finishProbe(page, mobile ? "touch" : "pointer"), rightward = frames.filter(f => f.phase === "rightward"), drive = frames.filter(f => ["rightward", "shake"].includes(f.phase)), tail = frames.filter(f => f.phase === "tail");
+    expect(rightward.at(-1)!.x - rightward[0].x).toBeGreaterThan(15);
+    expect(Math.min(...rightward.map(f => f.bodyLagX))).toBeLessThan(-.2);
+    const responding = rightward.filter(f => f.x > rightward[0].x + .5 && Math.abs(f.angle) > .2);
+    expect(responding.length).toBeGreaterThan(3); expect(responding.every(f => f.bodyLagX < 0)).toBe(true);
     expect(Math.max(...drive.map(f => Math.abs(f.angle)))).toBeGreaterThan(1); expect(Math.max(...drive.map(f => Math.abs(f.sy - 1)))).toBeGreaterThan(.002);
     expect(Math.max(...tail.map(f => f.angle))).toBeGreaterThan(.05); expect(Math.min(...tail.map(f => f.angle))).toBeLessThan(-.05);
     expect(Math.max(...tail.map(f => f.x)) - Math.min(...tail.map(f => f.x))).toBeLessThan(.01); expect(Math.max(...tail.map(f => f.y)) - Math.min(...tail.map(f => f.y))).toBeLessThan(.01);
     const end = tail.filter(f => f.at >= tail[0].at + 1530); expect(end.length).toBeGreaterThanOrEqual(4);
     expect(end.every(f => f.angle === 0 && f.sx === 1 && f.sy === 1)).toBe(true);
-    console.log(JSON.stringify({ check: "held-inertia", input: mobile ? "touch" : "mouse", frames: frames.length, tailFrames: tail.length, maxGripError: Math.max(...frames.map(f => f.gripError)), maxPivotError: Math.max(...frames.map(f => f.pivotError)), angle: [Math.min(...tail.map(f => f.angle)), Math.max(...tail.map(f => f.angle))], exactNeutralFrames: end.length }));
+    console.log(JSON.stringify({ check: "held-inertia", input: mobile ? "touch" : "mouse", frames: frames.length, tailFrames: tail.length, maxGripError: Math.max(...frames.map(f => f.gripError)), maxPivotError: Math.max(...frames.map(f => f.pivotError)), rightwardBodyLagX: Math.min(...rightward.map(f => f.bodyLagX)), angle: [Math.min(...tail.map(f => f.angle)), Math.max(...tail.map(f => f.angle))], exactNeutralFrames: end.length }));
     await page.screenshot({ path: `.scratch-pw/companion-056-inertia-${mobile ? "touch" : "pointer"}.png` });
     await drag.end(); await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 5000 });
   });
