@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
 
 describe("companion passive presence", () => {
+  it("lets direct focused input take over waking without overriding blur", () => {
+    const p = createCompanionPresence(false, 0);
+    p.step(0, false); p.step(700, false); p.step(1600, false);
+    p.focus(true, 2000); expect(p.phase).toBe("waking");
+    p.focus(true, 2100, true); expect(p.phase).toBe("active");
+    p.focus(false, 2200, true); expect(p.phase).toBe("finishing");
+  });
   it("finishes even a long meal before its rest beat and yawn", () => {
     const p = createCompanionPresence(true, 0);
     p.focus(false, 10);

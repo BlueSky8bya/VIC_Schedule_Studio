@@ -26,6 +26,7 @@ export function CompanionHome({ care, preferences, inactive, onAction, onClose }
         <circle className="vc-window-sun" cx="51" cy="23" r="7" />
         <path className="vc-window-hill" d="M8 45c14-14 20-3 30-5 13-12 22-11 30-5v10a11 11 0 0 1-11 11H19A11 11 0 0 1 8 45Z" />
         <path className="vc-window-mullion" d="M38 9v46M9 32h58" />
+        <path className="vc-window-curtain" d="M8 9h13c-1 12-5 17-12 18V9Zm47 0h13v18c-8-2-12-8-13-18Z" />
         <path className="vc-window-sill" d="M3 62h70" />
       </svg>
       <svg className="vc-home-shelf" viewBox="0 0 108 55" aria-hidden="true" focusable="false">
@@ -34,12 +35,13 @@ export function CompanionHome({ care, preferences, inactive, onAction, onClose }
         <circle className="vc-shelf-picture-sun" cx="28" cy="12" r="3" />
         <path className="vc-shelf-stem" d="M76 27V11m0 10c-9 0-13-5-12-10 7-1 12 3 12 10Zm0-4c8 0 12-5 11-10-7 0-11 3-11 10Z" />
         <path className="vc-shelf-pot" d="m65 25 3 13h16l3-13Z" />
-        <path className="vc-shelf-board" d="M6 39h96M16 40v7m76-7v7" />
+        <rect className="vc-shelf-board" x="6" y="37" width="96" height="5" rx="2.5" />
+        <path className="vc-shelf-bracket" d="M16 42v5m76-5v5" />
       </svg>
       <span className="vc-home-light" aria-hidden="true" />
       <span className="vc-home-floor" aria-hidden="true" />
       <span className="vc-home-rug" aria-hidden="true" />
-      <button type="button" data-home-action="home" data-tip="집으로 부르기" className="vc-cushion-button" disabled={!preferences.sleep} onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기"><span className="vc-home-cushion"><i /></span></button>
+      <button type="button" data-home-action="home" data-tip="집으로 부르기" className="vc-cushion-button" disabled={!preferences.sleep} onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기"><span className="vc-home-cushion" aria-hidden="true"><i /></span></button>
       {preferences.feeding ? <>
         <button type="button" data-home-action="feed" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기"><span className="vc-dispenser-face" aria-hidden="true"><Utensils size={19} strokeWidth={1.5} /><span className="vc-dispenser-dot" /></span><span className="vc-dispenser-slot" aria-hidden="true" /></button>
         <button type="button" data-home-action="clearFood" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><svg viewBox="0 0 28 32" aria-hidden="true" focusable="false"><g className="vc-trash-lid"><path d="M5 9h18M10 9V6.5A1.5 1.5 0 0 1 11.5 5h5A1.5 1.5 0 0 1 18 6.5V9" /></g><path className="vc-trash-body" d="m7 12 1.3 14.2A2 2 0 0 0 10.3 28h7.4a2 2 0 0 0 2-1.8L21 12" /><path className="vc-trash-lines" d="m12 15 .5 9m3.5-9-.5 9" /></svg><span className="vc-trash-progress" aria-hidden="true" /></button>

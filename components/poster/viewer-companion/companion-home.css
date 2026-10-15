@@ -1,9 +1,17 @@
-/* One quiet material and three direct objects, shared by rail and compact.
-   Native vector scenery is static; only a deliberate interaction moves. */
+/* One quiet room and three direct objects, shared by rail and compact.
+   Wood, linen and light mix with the theme's glass bases, including dark.
+   Object contours are fabric/wood silhouettes, not new control-radius steps.
+   Every scene layer is static; only a deliberate interaction moves. */
 .vc-home {
-  --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 94%, #e2dccb);
-  --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 87%, #d4c9b4);
-  --vc-sage: color-mix(in srgb, rgb(var(--glass-panel)) 54%, #a9bfa6);
+  --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #dfc9ab);
+  --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #c5a47e);
+  --vc-wood: color-mix(in srgb, rgb(var(--glass-panel)) 46%, #ae8864);
+  --vc-wood-edge: color-mix(in srgb, var(--muted) 38%, #bc9874);
+  --vc-linen: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #d8bea2);
+  --vc-linen-edge: color-mix(in srgb, var(--muted) 20%, var(--vc-linen));
+  --vc-sage: color-mix(in srgb, rgb(var(--glass-panel)) 58%, #b4c2a1);
+  --vc-soft-shadow: #795b3924;
+  --vc-thread: color-mix(in srgb, var(--vc-wood-edge) 38%, transparent);
   position: relative;
   box-sizing: border-box;
   padding: var(--space-2);
@@ -16,42 +24,49 @@
   box-shadow: inset 0 1px 0 #fff3, var(--elev-1);
   font-size: var(--text-body);
 }
-.vc-home-room { position: relative; height: 132px; overflow: hidden; border-radius: var(--r-sm); background: var(--vc-wall); }
+.vc-home-room { position: relative; height: 132px; overflow: hidden; border-radius: var(--r-sm); background: radial-gradient(ellipse at 18% 18%, #fff5 0, transparent 60%), linear-gradient(180deg, var(--vc-wall), color-mix(in srgb, var(--vc-wall) 88%, var(--vc-wood))); box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
+.vc-home-room::before { content: ''; position: absolute; inset: auto 0 34px; height: 5px; background: linear-gradient(180deg, color-mix(in srgb, var(--vc-wood) 45%, var(--vc-wall)), var(--vc-wood)); box-shadow: 0 1px 2px var(--vc-soft-shadow), inset 0 1px 0 #fff2; pointer-events: none; }
 .vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
 .vc-home-window { position: absolute; left: 20px; top: 14px; width: 64px; height: 56px; }
-.vc-window-frame { fill: rgb(var(--glass-panel)); stroke: var(--line); }
-.vc-window-sky { fill: color-mix(in srgb, rgb(var(--glass-panel)) 62%, #b2c8c5); }
-.vc-window-sun { fill: color-mix(in srgb, rgb(var(--glass-panel)) 24%, #e4d9a8); }
-.vc-window-hill { fill: color-mix(in srgb, rgb(var(--glass-panel)) 62%, #b6c8ad); }
-.vc-window-mullion { fill: none; stroke: rgb(var(--glass-panel)); stroke-width: 2; }
-.vc-window-sill { fill: none; stroke: var(--line); stroke-width: 2; stroke-linecap: round; }
-.vc-home-shelf { position: absolute; top: 9px; right: 7%; width: 34%; max-width: 108px; height: 55px; fill: none; stroke: var(--line); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-.vc-shelf-frame { fill: rgb(var(--glass-panel)); }
+.vc-window-frame { fill: var(--vc-wood); stroke: var(--vc-wood-edge); stroke-width: 1; }
+.vc-window-sky { fill: color-mix(in srgb, rgb(var(--glass-panel)) 52%, #c2d5ce); }
+.vc-window-sun { fill: color-mix(in srgb, rgb(var(--glass-cell)) 22%, #ead4a4); }
+.vc-window-hill { fill: color-mix(in srgb, rgb(var(--glass-panel)) 48%, #b6c6a3); }
+.vc-window-mullion { fill: none; stroke: var(--vc-wood); stroke-width: 2.2; }
+.vc-window-curtain { fill: var(--vc-linen); stroke: color-mix(in srgb, var(--vc-linen-edge) 55%, transparent); stroke-width: .8; stroke-linejoin: round; }
+.vc-window-sill { fill: none; stroke: var(--vc-wood); stroke-width: 4; stroke-linecap: round; }
+.vc-home-shelf { position: absolute; top: 9px; right: 7%; width: 34%; max-width: 108px; height: 55px; fill: none; stroke: var(--vc-wood-edge); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.vc-shelf-frame { fill: var(--vc-linen); }
 .vc-shelf-picture { fill: var(--vc-sage); stroke: none; }
 .vc-shelf-picture-sun { fill: color-mix(in srgb, rgb(var(--glass-panel)) 24%, #e4d9a8); stroke: none; }
 .vc-shelf-stem { fill: color-mix(in srgb, var(--vc-sage) 72%, #7a9172); stroke: color-mix(in srgb, var(--vc-sage) 70%, var(--muted)); }
-.vc-shelf-pot { fill: color-mix(in srgb, rgb(var(--glass-panel)) 64%, #cba995); }
-.vc-shelf-board { stroke: color-mix(in srgb, var(--muted) 24%, transparent); stroke-width: 3; }
-.vc-home-light { position: absolute; top: 18px; left: 77px; width: 45%; height: 96px; background: linear-gradient(125deg, #eadbb31a, transparent 80%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
-.vc-home-floor { position: absolute; inset: auto 0 0; height: 36px; background: linear-gradient(180deg, transparent, var(--vc-floor)); pointer-events: none; }
-.vc-home-rug { position: absolute; left: 8%; bottom: 9px; width: 48%; height: 20px; border-radius: 50%; background: color-mix(in srgb, var(--vc-sage) 35%, transparent); pointer-events: none; }
+.vc-shelf-pot { fill: color-mix(in srgb, rgb(var(--glass-panel)) 62%, #d3ae91); }
+.vc-shelf-board { fill: var(--vc-wood); stroke: color-mix(in srgb, var(--vc-wood-edge) 60%, transparent); stroke-width: .8; }
+.vc-shelf-bracket { stroke: var(--vc-wood-edge); stroke-width: 2; }
+.vc-home-light { position: absolute; top: 18px; left: 77px; width: 45%; height: 96px; background: linear-gradient(125deg, #f4e2b72e, transparent 84%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
+.vc-home-floor { position: absolute; inset: auto 0 0; height: 36px; background: radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), repeating-linear-gradient(98deg, transparent 0 39px, #795b390a 40px 41px), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff2; pointer-events: none; }
+.vc-home-rug { position: absolute; left: 8%; bottom: 9px; width: 48%; height: 20px; border-radius: 50%; background: repeating-linear-gradient(0deg, #fff1 0 1px, transparent 1px 3px), color-mix(in srgb, var(--vc-sage) 62%, var(--vc-linen)); box-shadow: inset 0 0 0 1px var(--vc-thread), 0 2px 2px var(--vc-soft-shadow); pointer-events: none; }
 .vc-cushion-button { position: absolute; z-index: 2; left: 11%; bottom: 10px; width: 42%; height: 70px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
-/* Keep the actual landing anchor out of hover/press transforms. The pet's
-   feet follow this same span; only its inner fabric acknowledges a press. */
-.vc-home-cushion { position: absolute; bottom: 9px; left: 0; right: 0; height: 16px; border: 1px solid color-mix(in srgb, var(--muted) 22%, transparent); border-radius: 50%; background: linear-gradient(180deg, rgb(var(--glass-panel)), var(--vc-sage)); box-shadow: inset 0 -3px 0 #637e5f22, 0 3px 2px #53634912; }
-.vc-home-cushion > i { position: absolute; inset: 3px 10px 5px; border: 1px solid color-mix(in srgb, var(--muted) 14%, transparent); border-radius: 50%; }
-.vc-cushion-button:hover .vc-home-cushion > i { background: #fff2; }
+/* The real16px landing span and its top never resize or transform. Soft
+   thickness/folds are visual children below that same contact plane. */
+.vc-home-cushion { position: absolute; bottom: 9px; left: 0; right: 0; height: 16px; border: 1px solid var(--vc-linen-edge); border-radius: 50% 50% 44% 44% / 64% 64% 42% 42%; background: linear-gradient(180deg, rgb(var(--glass-cell)), var(--vc-linen)); box-shadow: inset 0 2px 2px #fff5, inset 0 -4px 5px var(--vc-thread), 0 4px 5px var(--vc-soft-shadow); }
+.vc-home-cushion::before { content: ''; position: absolute; inset: 4px -1px -4px; border: 1px solid var(--vc-linen-edge); border-radius: 45% 45% 43% 43%; background: linear-gradient(180deg, var(--vc-linen), color-mix(in srgb, var(--vc-linen) 80%, var(--vc-wood))); box-shadow: inset 0 -2px 2px var(--vc-thread); pointer-events: none; }
+.vc-home-cushion > i { position: absolute; z-index: 1; inset: 1px 6px 3px; border: 1px dashed var(--vc-thread); border-radius: 50%; background: radial-gradient(ellipse at 40% 0, #fff6, transparent 80%), var(--vc-linen); box-shadow: inset 0 2px 1px #fff2; }
+.vc-home-cushion > i::before, .vc-home-cushion > i::after { content: ''; position: absolute; top: 4px; width: 6px; height: 4px; border-bottom: 1px solid var(--vc-thread); border-radius: 50%; }
+.vc-home-cushion > i::before { left: 1px; transform: rotate(-24deg); }
+.vc-home-cushion > i::after { right: 1px; transform: rotate(24deg); }
+.vc-cushion-button:hover .vc-home-cushion > i { box-shadow: inset 0 2px 2px #fff4; }
 .vc-home .vc-cushion-button:active { transform: none; }
 .vc-cushion-button:active .vc-home-cushion > i { transform: scaleY(.75); }
-.vc-dispenser { position: absolute; z-index: 2; right: 61px; bottom: 8px; width: 48px; height: 62px; box-sizing: border-box; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: linear-gradient(150deg, rgb(var(--glass-panel)), color-mix(in srgb, var(--vc-sage) 48%, rgb(var(--glass-cell)))); box-shadow: inset 0 1px 0 #fff5, var(--elev-1); color: var(--muted); cursor: pointer; }
+.vc-dispenser { position: absolute; z-index: 2; right: 61px; bottom: 8px; width: 48px; height: 62px; box-sizing: border-box; padding: 0; border: 1px solid var(--vc-linen-edge); border-radius: var(--r-md); background: linear-gradient(155deg, rgb(var(--glass-cell)), var(--vc-linen)); box-shadow: inset 0 2px 0 #fff4, inset 0 -4px 0 var(--vc-thread), var(--elev-1); color: var(--muted); cursor: pointer; }
 .vc-dispenser-face { position: absolute; inset: 8px 8px auto; display: grid; place-items: center; height: 27px; }
 .vc-dispenser-dot { position: absolute; right: -1px; top: -1px; width: 3px; height: 3px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 45%, #bed6ad); }
 .vc-dispenser-slot { position: absolute; bottom: 10px; left: 10px; right: 10px; height: 5px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--muted) 27%, transparent); box-shadow: inset 0 1px 1px #0001; }
 .vc-dispenser:hover { color: var(--ink); }
 .vc-home-trash { --vc-trash-progress: 0; position: absolute; z-index: 2; right: 9px; bottom: 8px; display: grid; place-items: center; width: var(--control-hit); height: 56px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
 .vc-home-trash > svg { width: 28px; height: 32px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.vc-trash-body { fill: color-mix(in srgb, rgb(var(--glass-cell)) 70%, var(--vc-sage)); }
+.vc-trash-body { fill: color-mix(in srgb, rgb(var(--glass-cell)) 70%, var(--vc-linen)); }
 .vc-trash-lines { opacity: .35; }
 .vc-trash-lid { transform-origin: 5px 9px; }
 .vc-home-trash:hover, .vc-home-trash:focus-visible, .vc-home-trash[data-food-over] { color: var(--ink); background: color-mix(in srgb, rgb(var(--glass-head)) 68%, transparent); }
@@ -68,3 +83,4 @@ html[data-gfx="soft"] .vc-home button, html[data-gfx="soft"] .vc-home-cushion > 
 html[data-reduce-motion] .vc-home button:active, html[data-reduce-motion] .vc-cushion-button:active .vc-home-cushion > i,
 html[data-gfx="off"] .vc-home button:active, html[data-gfx="off"] .vc-cushion-button:active .vc-home-cushion > i,
 html[data-gfx="soft"] .vc-home button:active, html[data-gfx="soft"] .vc-cushion-button:active .vc-home-cushion > i { transform: none; }
+html[data-theme="dark"] .vc-home { --vc-soft-shadow: #21181045; }

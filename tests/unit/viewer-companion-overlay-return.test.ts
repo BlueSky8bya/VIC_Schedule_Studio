@@ -1,0 +1,48 @@
+import { describe, expect, it } from "vitest";
+import { createCompanionOverlayReturn } from "@/lib/ui/viewer-companion/overlay-return";
+
+const from = { x: 120, y: 700, scale: 44 / 76 }, target = { x: 800, y: 360, scale: 1 };
+describe("ordinary-window display return", () => {
+  it("keeps the actual perch and scale through waking, then travels and settles before decisions", () => {
+    const bridge = createCompanionOverlayReturn(from, 100, true, 520);
+    expect(bridge.sample(100, target, true).point).toEqual(from);
+    expect(bridge.sample(899, target, true).point).toEqual(from);
+    const middle = bridge.sample(1160, target, true);
+    expect(middle.progress).toBe(.5); expect(middle.point.x).toBe(460); expect(middle.phase).toBe("return");
+    expect(bridge.sample(1420, target, true)).toMatchObject({ point: target, phase: "settle", done: false });
+    expect(bridge.sample(1769, target, true).done).toBe(false);
+    expect(bridge.sample(1770, target, true).done).toBe(true);
+  });
+  it("waits for the real geometry without starting a new journey on every delivery", () => {
+    const bridge = createCompanionOverlayReturn(from, 0, false, 520);
+    expect(bridge.sample(240, target, false).point).toEqual(from);
+    expect(bridge.sample(300, target, true).point).toEqual(from);
+    expect(bridge.sample(560, target, true).progress).toBe(.5);
+    expect(bridge.sample(820, { ...target, y: 400 }, true).point.y).toBe(400);
+    expect(bridge.sample(1170, target, true).done).toBe(true);
+  });
+  it("expires missing support rather than holding a visible creature forever", () => {
+    const bridge = createCompanionOverlayReturn(from, 0, true, 520);
+    expect(bridge.sample(999, target, false)).toMatchObject({ done: false, expired: false });
+    expect(bridge.sample(1000, target, false)).toMatchObject({ done: true, expired: true });
+  });
+  it("stops at the last display if the actual return support disappears", () => {
+    const bridge = createCompanionOverlayReturn(from, 0, false, 520);
+    bridge.sample(0, target, true);
+    const shown = bridge.sample(420, target, true).point;
+    expect(bridge.sample(430, { ...target, y: 9000 }, false)).toMatchObject({ point: shown, expired: true, done: true });
+  });
+  it("skips wake/travel for reduced graphics but retains a short decision cooldown", () => {
+    const bridge = createCompanionOverlayReturn(from, 0, true, 520);
+    expect(bridge.sample(0, target, true, true)).toMatchObject({ point: target, phase: "settle", done: false });
+    expect(bridge.sample(350, target, true, true).done).toBe(true);
+  });
+  it("can seed a reopened window from the current mid-return display", () => {
+    const bridge = createCompanionOverlayReturn(from, 0, false, 520);
+    bridge.sample(0, target, true);
+    const current = bridge.sample(420, target, true).point;
+    const replacement = createCompanionOverlayReturn(current, 420, false, 520);
+    expect(replacement.sample(420, target, true).point).toEqual(current);
+    expect(current.scale).toBeGreaterThan(from.scale); expect(current.scale).toBeLessThan(1);
+  });
+});

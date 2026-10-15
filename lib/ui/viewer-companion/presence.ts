@@ -7,9 +7,10 @@ export function createCompanionPresence(focused: boolean, now: number) {
   return {
     get phase() { return phase; },
     elapsed(time: number) { return Math.max(0, time - entered); },
-    focus(next: boolean, time: number) {
+    focus(next: boolean, time: number, directInput = false) {
       if (next) {
-        if (phase === "parked" || phase === "yawning") { phase = "waking"; entered = time; }
+        if (directInput) { phase = "active"; entered = time; }
+        else if (phase === "parked" || phase === "yawning") { phase = "waking"; entered = time; }
         else if (phase !== "active" && phase !== "waking") { phase = "active"; entered = time; }
       } else if (phase === "active" || phase === "waking") { phase = "finishing"; entered = time; }
     },
