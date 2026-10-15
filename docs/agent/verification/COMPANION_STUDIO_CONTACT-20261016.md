@@ -1,6 +1,6 @@
 # 빅타민 편집실·잡기·소파·최초공개 검증
 
-2026-10-16 KST. [PLAN-062](../plans/PLAN-20261016-062-companion-studio-and-contact.md). 구현 중 기록이며 실행하지 않은 항목은 미검증이다.
+2026-10-16 KST. [PLAN-062](../plans/PLAN-20261016-062-companion-studio-and-contact.md). 구현·검증·제품 배포 완료. 실행하지 않은 항목은 미검증이다.
 
 ## 조사 범위와 경계
 
@@ -43,7 +43,13 @@
 
 ## 커밋·배포
 
-승인된 main 커밋·푸시·운영 확인 진행 중. 실제 배포 및 익명 공개 경로를 확인하기 전 완료로 표시하지 않는다.
+제품 `c40586c2ba6563db62bb4336bbac00c3774b56f7`를 main에 커밋·푸시했고 GitHub/Vercel success와 운영 `/api/soop-live`의 같은 build SHA를 확인했다. [운영 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/CKauuL814RodrFLDKHDfZJbX3TYT). `.scratch-pw/companion-062-production-deploy.json`.
+
+운영 익명 `/`의 실제 과거2025-09에서PC1920/DPR2·native390/DPR1 smoke PASS. 일반 개인 설정만 seed하고 최초공개 무대는 개인OFF로 두어 현재 실제 공개와 이 음식/잡기 검사를 섞지 않았다. HD·실제 pointer/touch·늘어짐/관성·소파를 통과하는 음식의 바닥 낙하·8개/9번째 cap·달력 클릭 무이동·집 고정/접기/다시열기·같은pet DOM을 확인했다. 계절/live는 기존 설정/GET stub이며 모든 POST를 가로채 전달0, pageerror0이었다. 모바일 hover는 unsupported/미실행으로 기록한다. `.scratch-pw/companion-062-public-production.json` 및 `companion-059-062-production-smoke.log`.
+
+운영 `/visual-fixture/poster`와 `/visual-fixture/studio`는 HTTP200 스트리밍 응답 안의404 fallback이며 실제 제품 markup·studio opt-in이 없었다. 익명 `/studio`도 HTTP200 안의 `NEXT_REDIRECT;replace;/;307;`로 공개 `/`를 가리키며 studio markup이 없다. 최초 추가 probe는 HTTP3xx만 허용해 실패했으므로, 실제 route group의 `redirect("/")`와 스트리밍 지시를 함께 검증하도록 probe만 바로잡았다. 제품/권한 검사를 완화하지 않았다. `.scratch-pw/companion-062-production-gates.json`.
+
+미술 기록26줄·보류 자산·기존 사용자 로컬 파일은 커밋하지 않았다. 이후 완료 상태를 정리하는 마감 커밋은 문서만 포함한다. 실제 로그인/RLS·물리 OBS·실기기는 위 smoke로 검증했다고 주장하지 않는다.
 - 최초 ambient-pause 추가 검사에서 테스트의 marker-write 개수 기대값이 틀렸다. 실제 hold/release 뒤 기준을 저장하도록 oracle을 고쳐 최종6개가 통과했다. 제품 pause 로직을 완화하지 않았다.
 - 잡기 독립 검토가 비대칭 grip의 세로 관성 회전 부호 오류를 찾아 수정했다. 몸통 점의 실제 world-Y 지연을 검증하는 독립 수식 검사를 추가했다.
 - 기존 최초공개 시각 검사061은 prelude 일반 이동을 허용하는 새 요구에 맞춰 정지 care 기준을 실제73초 진입 직후에 잡는다. 관측하지 않은95초 연속 구간을 검증했다고 주장하지 않는다.
