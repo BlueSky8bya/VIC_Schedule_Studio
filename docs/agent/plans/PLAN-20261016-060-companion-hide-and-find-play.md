@@ -11,4 +11,4 @@
 
 ## 결과
 
-구현·독립 코드 검토 완료. 최종 PC1920/native390 포함4개 렌더 사례 통과(41.6초). 잡기 취소250ms 뒤 배율1·중립 피벗92px 복구까지 확인했다. 관련 단위·전체lint·production fixture build→type 통과. 운영 배포와 공유 최초공개 회귀 검사는 PLAN-061과 함께 마무리한다. 세부 증거와 이전 실패는 [검증 기록](../verification/VIEWER_VICTAMIN_HIDE_PREMIERE-20261016.md)에 구분한다.
+완료. `8f4dcd46` 커밋·푸시·Vercel 운영 배포와 실제 익명 공개 PC1920/native390 검사를 확인했다. 최종 숨바꼭질4개 렌더 사례 통과(41.6초), 잡기 취소250ms 뒤 배율1·중립 피벗92px 복구까지 확인했다. 관련 단위·전체lint·production fixture build→type, 공유 최초공개 회귀 검사도 통과했다. 세부 증거와 이전 실패는 [검증 기록](../verification/VIEWER_VICTAMIN_HIDE_PREMIERE-20261016.md)에 구분한다.

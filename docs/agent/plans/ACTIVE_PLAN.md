@@ -2,8 +2,6 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261016-060 | Verified locally; deployment pending | [숨바꼭질 힌트와 발견 조작](PLAN-20261016-060-companion-hide-and-find-play.md) |
-| PLAN-20261016-061 | Verified locally; deployment pending | [최초공개 입장과 귀환](PLAN-20261016-061-companion-premiere-handoff.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

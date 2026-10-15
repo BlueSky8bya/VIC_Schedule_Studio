@@ -1,6 +1,6 @@
 # 빅타민 숨바꼭질 교감·최초공개 연결 검증
 
-2026-10-16 KST. [PLAN-060](../plans/PLAN-20261016-060-companion-hide-and-find-play.md), [PLAN-061](../plans/PLAN-20261016-061-companion-premiere-handoff.md). 구현·로컬 검증 완료, 운영 배포 대기. 실행 범위와 미검증 항목을 구분한다.
+2026-10-16 KST. [PLAN-060](../plans/PLAN-20261016-060-companion-hide-and-find-play.md), [PLAN-061](../plans/PLAN-20261016-061-companion-premiere-handoff.md). 구현·배포·실제 공개 화면 검사 완료. 실행 범위와 미검증 항목을 구분한다.
 
 ## 숨바꼭질
 
@@ -30,6 +30,16 @@
 
 실제 시간 PC fixture181의 데뷔 박스와 native390 fixture167의 compact 집을 별도로119/146rAF 관측했다. 진행률.4699/.4515에서 opacity1을 유지한 곡선 퇴장 PNG를 직접 열어 검수했다. POST0·브라우저 오류0, 실제 화면 폭/세로pan/1840 기하 확인과 원래 상태 복구를 기록했다. `companion-061-panel-capture.{log,json}`, `companion-061-panel-mid-{1920,390}.{png,json}`에 보존한다. native181에는 퇴장 영역이 없으므로 그 구간을 모바일 비행 검증이라고 부르지 않는다.
 
-로컬 증거: ignored `.scratch-pw/companion-059-final4-hide-premiere-unit.log`, `companion-059-final5-hide-premiere-{build,lint,type}.log`, `companion-061-built-source.json`. 최종3·4차와 이전 스냅샷·최초 build 타입 오류·수정 전060 P2 증거도 삭제하지 않았다. 문서 harness는 기존 RULE_MIGRATION 규칙 목록/실제ID 불일치2건으로 실패했고 이번 제품 코드와 분리해 둔다(`companion-059-final5-hide-premiere-harness.log`). 운영 배포는 대기다.
+로컬 증거: ignored `.scratch-pw/companion-059-final4-hide-premiere-unit.log`, `companion-059-final5-hide-premiere-{build,lint,type}.log`, `companion-061-built-source.json`. 최종3·4차와 이전 스냅샷·최초 build 타입 오류·수정 전060 P2 증거도 삭제하지 않았다. 문서 harness는 기존 RULE_MIGRATION 규칙 목록/실제ID 불일치2건으로 실패했고 이번 제품 코드와 분리해 둔다(`companion-059-final5-hide-premiere-harness.log`).
+
+## 운영 확인
+
+코드 `8f4dcd4662f7b9168f9392dcae9769aa9d50a33e`를 main에 푸시했고 Vercel 자동 배포 success 및 실제 `/api/soop-live` build 동일 SHA를 확인했다. [운영 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/BmR1rYASjX287yVSHRQTcsbX7i6S). 로컬 production fixture와 운영을 혼동하지 않는다. 운영에는 시험 일정을 만들지 않았다.
+
+실제 익명 `/`의 과거2025-09를 PC1920 DPR2/native390 DPR1로 검사한2사례가 exit0이다. 공개 build/자두 asset hash 확인 후 기존059 검사를 출력 파일 접두어만061로 바꿔 재사용했다. 양쪽 실제 포인터의 actor hit, 세로 held 최소1.185·HD17/16포즈·관성,8개 음식/9번째 기존8개 보존, 소파 관통 후 실제 바닥30/31rAF·45.78~52.04px 낙하·바닥local오차.0005px 이하, 집 위치/접힘/compact 복귀·같은DOM 유지·임의 추락 없음이 통과했다. POST는 각1개 차단/전달0, 페이지 오류0. PC·모바일 PNG를 직접 검수했다. 개인 최초공개 설정OFF로 다른 달의 실제 공연과 이 일반 동작 검사를 분리했다. 운영에서 최초공개 시험 데이터를 만들거나 실제 공개 시각을 바꾼 검사는 아니다.
+
+증거는 ignored `companion-061-production-deploy.json`, `companion-061-public-production.json`, `companion-059-hide-premiere-public-production.log`, `companion-061-public-production-{1920,390}-home-food.png`다. 재사용한 probe의 SHA256은 `11FF3F9CD69F614518FB8DBF9D53CA0B248490FE2D54214E1657226E7318B093`이다.059 당시 결과는 원래 접두어로 보존했다.
+
+운영 fixture 접근도 읽기만 확인했다. HTTP status만404로 요구한 첫 수동 검사는200으로 실패했으나 응답은 `NEXT_HTTP_ERROR_FALLBACK;404`이며 포스터/fixture props/샘플 이벤트는 없다. 스트리밍 시작 후 not-found가200을 유지할 수 있다는 [Next.js 공식 문서](https://nextjs.org/docs/app/api-reference/file-conventions/not-found)에 맞춰 실제 경계 응답을 확인했다. fixture가 운영에 열렸다고 판단하거나 상태 코드를 바꾸는 제품 수정은 하지 않았다. 증거는 `companion-061-production-fixture-gate.json`이다.
 
 기존 defaultOFF/92px/1840 표면, 공개 DTO/권한/언락/KST, DB/폴링/생산 의존성은 유지한다. 실제 로그인/RLS·물리 OBS·실제 OS 초점/기기 및 소유자 미감 평가는 별도다. 캐릭터 이미지 생성/교체는 하지 않았고 기존 사용자 미술 기록과 보류 자산은 그대로다.
