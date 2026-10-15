@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionCare } from "./helpers/companion-home";
+import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
 const requests = new WeakMap<Page, { posts: string[]; atlas: number }>();
 test.beforeEach(async ({ page, context }) => {
@@ -66,6 +67,8 @@ test("default OFF downloads no sprite, and the shared settings turn it on and of
   await expect(master).toHaveAttribute("aria-checked", "false");
   await master.click();
   await expect(master).toHaveAttribute("aria-checked", "true");
+  await expectQuietCompanionVisible(page);
+  await expect(master).toBeFocused();
   const month = page.locator(".poster-chrome-title:visible,.agenda-title:visible");
   const monthBefore = await month.textContent();
   const detailTabs = settings.getByRole("tablist", { name: "빅타민 설정", exact: true });
@@ -77,7 +80,7 @@ test("default OFF downloads no sprite, and the shared settings turn it on and of
   await expect(actor(page)).toBeVisible();
   await expect.poll(() => requests.get(page)!.atlas).toBeGreaterThan(0);
   await page.getByRole("button", { name: "설정", exact: true }).click();
-  await expect(pet(page)).not.toBeVisible();
+  await expectQuietCompanionVisible(page);
   await settings.getByRole("tab", { name: "빅타민", exact: true }).click();
   await settings.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
   await settings.getByRole("button", { name: "닫기", exact: true }).click();
@@ -199,11 +202,11 @@ test("keyboard and direct double-click offer non-dragging placement, plus a fini
   expect(requests.get(page)!.posts).toEqual([]);
 });
 
-test("a settings overlay pauses the companion and closing resumes it", async ({ page }) => {
+test("a settings overlay keeps the companion visible and closing resumes interaction", async ({ page }) => {
   await stationaryFixture(page);
   await page.getByRole("button", { name: "설정", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "설정", exact: true })).toBeVisible();
-  await expect(pet(page)).not.toBeVisible();
+  await expectQuietCompanionVisible(page);
   await page.getByRole("dialog", { name: "설정", exact: true }).getByRole("button", { name: "닫기", exact: true }).click();
   await expect(actor(page)).toBeVisible();
   await expect(pet(page)).toBeInViewport({ ratio: .99999 });

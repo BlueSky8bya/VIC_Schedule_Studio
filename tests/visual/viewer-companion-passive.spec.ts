@@ -3,6 +3,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionCare } from "./helpers/companion-home";
+import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -150,7 +151,7 @@ test("a meal already in progress completes once before passive sleep", async ({ 
   console.log(JSON.stringify({ check: "passive-meal", before, after, events }));
 });
 
-test("quick and repeated refocus cancels parking while hidden and modal blocking keep precedence", async ({ page }) => {
+test("quick refocus cancels parking while hidden tabs and ordinary overlay quieting keep their own behavior", async ({ page }) => {
   await setup(page);
   for (let i = 0; i < 5; i++) { await focus(page, false); await page.waitForTimeout(80); await focus(page, true); }
   await expect(pet(page)).toHaveAttribute("data-presence", "active");
@@ -163,7 +164,7 @@ test("quick and repeated refocus cancels parking while hidden and modal blocking
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-presence", "parked");
   await focus(page, true); await expect(pet(page)).toHaveAttribute("data-presence", "active");
   await page.getByRole("button", { name: "설정", exact: true }).click();
-  await expect(pet(page)).toBeHidden();
+  await expectQuietCompanionVisible(page);
   await page.keyboard.press("Escape"); await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveCount(1);
 });
 

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { chooseCompanionCare } from "./helpers/companion-home";
+import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
 const requests = new WeakMap<Page, string[]>();
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -116,7 +117,7 @@ test("a visibility-event pause releases an airborne keyboard hold and resumes on
   await expect.poll(() => supportDistance(page)).toBeLessThan(3);
 });
 
-test("a settings overlay interrupts an airborne jump and resumes on a real support", async ({ page }) => {
+test("a settings overlay keeps an airborne companion visible and resumes on a real support", async ({ page }) => {
   test.setTimeout(25_000);
   await setup(page, false, { roam: true, jump: true, sleep: false, speed: "lively" });
   await expect(pet(page)).toHaveAttribute("data-state", "jump", { timeout: 15_000 });
@@ -124,7 +125,10 @@ test("a settings overlay interrupts an airborne jump and resumes on a real suppo
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const settings = page.getByRole("dialog", { name: "설정", exact: true });
   await expect(settings).toBeVisible();
-  await expect(pet(page)).not.toBeVisible();
+  await expectQuietCompanionVisible(page);
+  // The ordinary overlay lets this finite jump land, then parks. Its quiet
+  // presentation must hold still rather than keeping an airborne loop alive.
+  await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 8000 });
   const frozen = await pet(page).evaluate(el => (el as HTMLElement).style.transform);
   await page.waitForTimeout(1250);
   expect(await pet(page).evaluate(el => (el as HTMLElement).style.transform)).toBe(frozen);

@@ -65,8 +65,18 @@ html[data-reduce-motion] .vc-companion[data-presence="parked"] .vc-pose { animat
    Short landscape screens need one reachable scroll plane for these controls. */
 .vc-compact-home > .vc-home { max-height: calc(100dvh - 96px); overflow: auto; box-sizing: border-box; box-shadow: var(--elev-3); }
 .vc-compact-home:has(.vc-home-launcher) { z-index: 76; }
+/* Agenda's right rail owns records/studio. Its closed home launcher uses the
+   opposite margin so those native controls stay reachable on small screens. */
+.vc-compact-home[data-agenda]:has(.vc-home-launcher) { left: max(14px, env(safe-area-inset-left)); right: auto; width: max-content; }
 .vc-home-launcher { display: flex; align-items: center; gap: 6px; float: right; min-height: 44px; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 8px 14px; color: var(--ink); background: rgb(var(--glass-panel)); box-shadow: var(--elev-2); pointer-events: auto; font: inherit; font-size: var(--text-body); cursor: pointer; }
 html[data-reduce-motion] .vc-food, html[data-reduce-motion] .vc-food > span, html[data-reduce-motion] .vc-dream i, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-effect, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-actor::after { animation: none; }
 html[data-reduce-motion] .vc-dream i { opacity: .7; }
 html[data-reduce-motion] .vc-dream i:nth-child(2) { transform: translate(9px, -9px); }
 html[data-reduce-motion] .vc-dream i:nth-child(3) { transform: translate(18px, -18px); }
+
+/* Ordinary windows keep a decorative creature above their backdrop. Its
+   display perch is separate from its calendar support; input belongs to UI. */
+.vc-companion { transform-origin: 50% 100%; }
+.vc-companion[data-overlay="quiet"] { z-index: 98; }
+.vc-companion[data-overlay="quiet"] .vc-actor { pointer-events: none; }
+.vc-companion[data-overlay="quiet"] .vc-contact-shadow, .vc-companion[data-overlay="quiet"] .vc-effect { visibility: hidden; }

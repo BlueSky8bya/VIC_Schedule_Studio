@@ -10,6 +10,12 @@ import { useEffect } from "react";
 
 const holders = new Set<string>();
 
+/** A small decorative companion can stay visible over the viewer's own
+ * windows while other ambient owners retain their existing hard pause. */
+export function hasAmbientPauseOutside(key: string): boolean {
+  return [...holders].some(holder => holder !== key);
+}
+
 function apply(): void {
   const root = document.documentElement;
   if (holders.size) root.setAttribute("data-ambient-pause", "1");

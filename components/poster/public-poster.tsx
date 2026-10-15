@@ -4100,7 +4100,8 @@ export function PublicPoster({
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
       {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
-        blocked={Boolean(sheet || dayVodPop || monthPick || giftCard || gachaOpen || agendaDetail || premiere.frame.phase !== "idle")}
+              blocked={Boolean(monthPick || giftCard || gachaOpen || premiere.frame.phase !== "idle")}
+              overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
         homeHost={companionHomeHost} homeVisible={Boolean(sceneOn && panel.open && !showAgenda)}
         agenda={showAgenda} monthKey={`${view.year}-${view.month}`} reduced={settingsPrefs.reduceMotion} /> : null}
       <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}

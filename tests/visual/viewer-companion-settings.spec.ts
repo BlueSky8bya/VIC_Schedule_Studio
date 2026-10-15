@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
 async function openCompanionSettings(page: Page) {
   await page.getByRole("button", { name: "설정", exact: true }).click();
@@ -35,6 +36,8 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   await panel.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true }).click();
   await master.click();
   await expect(master).toBeChecked();
+  await expectQuietCompanionVisible(page);
+  await expect(master).toBeFocused();
   await master.click();
   await expect(master).not.toBeChecked();
   await page.reload();
