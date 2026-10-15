@@ -1,6 +1,6 @@
 # 빅타민 바닥·잡힘 연속성·교감·먹이 추적·일정 숨바꼭질
 
-2026-10-15 KST. [PLAN-057](../plans/PLAN-20261015-057-companion-ground-and-contact.md), 기준 `7a015c6e`, 검증 진행 중.
+2026-10-15 KST. [PLAN-057](../plans/PLAN-20261015-057-companion-ground-and-contact.md), 기준 `7a015c6e`, 제품 `f264537f8e4546b529825242a7989dedeaea9ac3` 배포/운영 확인 완료.
 
 집 바닥이 음식32px 낙하 후보에서 빠져 있었다. 실제 바닥−6px의 안전한44px 조작 구간을 제공하고, 첫 충돌 뒤 같은 floor source로 붙여 기존 중력/접기/재배치 경로를 사용한다.200개 후보 예산에서도 집 바닥을 보존한다. 실제 업 도움/기간 띠 위와 요일 헤더 아래쪽의 안전한 빈 구간은 같은 DOM/Range/control 측정으로 보행 후보가 된다.92px 공간이 없는 상단 크롬에는 가짜 발판/강제 축소를 만들지 않는다.
 
@@ -27,8 +27,8 @@
 | 새 검사 최종 회귀 | 교감8+실제바닥/영역3+먼먹이1=12/12 한 회차 PASS. 위 수치는 해당 개별 회차 근거이며 최종 controlled-focus PC91/native94rAF hidden0 |
 | 일정 숨바꼭질 | PC/native390 발견2+자동 등장1=3/3 PASS, 자동 등장은 실제 휠 스크롤을 추가한 강화본1/1도 PASS. 숨은 source−16px 이동 후 같은 발판 유지·착지 y오차0.000031/x0.000290px(<3 유지)·실제 글자/전체 버튼 비가림. 실제 카드 입력/동일 DOM/잘못된 창32초 보존/일치 발견/기존 귀환/정지 중1000ms mutation0/POST0.45초 유예·12~28초 대기·32초 다른 창 대기는 제어 시계·결정적 RNG로 검사했으며 실제 OS 배경 타이머 검사로 부르지 않음. PC·모바일 PNG 직접 열람 |
 | 과거 달 실제 공개 경로 | 최종 PC/native390 각1회 PASS. 실제38px above-floor 낙하/compact·접기/8개 제한/왕복/관성·잡힘 min scaleY>1.027·POST전달0/오류0. 시계/난수/포커스 주입 없음. 최종 운영은 별도 |
-| 운영 | 미실행 |
+| 운영 | GitHub/Vercel success 및 실제 API build SHA `f264537f` 일치. PC1920 DPR2/native390 각1회 PASS: min scaleY>1.027·16포즈·관성 종료0·실제38px 바닥 낙하·8개/9번째 보존·whole-body 교감·접기/compact·동일 DOM·예상치 못한 낙하0. 각 live GET1 stub/POST1 차단·전달0·오류0, 과거2025-09만 읽음. PNG2 직접 열람. 배포 자두 hash도 일치 |
 
 기존 harness inventory2 실패는 같은 문구로 재현됐다. 이전 전체 단위9·구형 확장15는 이번 관련 검사로 덮어쓰지 않는다. 물리 OBS/기기·실제 로그인/RLS는 미검증이다. 복구는 기기 빅타민 OFF 또는 별도 revert 배포 후 재확인으로 가능하며 실행하지 않았다.
 
-근거(ignored): `.scratch-pw/companion-057-{unit,build,lint,typecheck,harness,core}.log`, 같은 prefix의 contact/physical/pursuit JSON·영상/PNG, `companion-057-wake-controlled-baseline.{log,json}`, `plum-056/{before-057,final-057}.png`, `companion-057-product-hashes.json`. 최종 결과/배포는 검증 뒤 갱신한다.
+근거(ignored): `.scratch-pw/companion-057-{unit-hide-reviewed,build-hide-reviewed2,lint-release,type-release,harness-release,regression-hide,new-release,hide-final-all,hide-auto-scroll-native,public-production}.log`, 같은 prefix의 contact/physical/pursuit/hide JSON·영상/PNG, `companion-057-wake-controlled-baseline.{log,json}`, `plum-056/{before-057,final-057}.png`, `companion-057-release-hashes.json`, `companion-057-public-production.json`, `companion-057-production-deploy.json`.
