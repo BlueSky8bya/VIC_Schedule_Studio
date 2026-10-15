@@ -1,7 +1,7 @@
 "use client";
 
 import { Utensils, X } from "lucide-react";
-import { useLayoutEffect, useRef } from "react";
+import { useId, useLayoutEffect, useRef } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
@@ -15,6 +15,7 @@ type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?
  * is a real landing anchor; food and care stay in the existing single runtime. */
 export function CompanionHome({ care, preferences, inactive, onAction, onClose }: Props) {
   const room = useRef<HTMLElement>(null);
+  const bedId = useId().replace(/:/g, "");
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
@@ -40,8 +41,29 @@ export function CompanionHome({ care, preferences, inactive, onAction, onClose }
       </svg>
       <span className="vc-home-light" aria-hidden="true" />
       <span className="vc-home-floor" aria-hidden="true" />
-      <span className="vc-home-rug" aria-hidden="true" />
-      <button type="button" data-home-action="home" data-tip="집으로 부르기" className="vc-cushion-button" disabled={!preferences.sleep} onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기"><span className="vc-home-cushion" aria-hidden="true"><i /></span></button>
+      <button type="button" data-home-action="home" data-tip="집으로 부르기" className="vc-cushion-button" disabled={!preferences.sleep} onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기">
+        <svg className="vc-plush-bed" viewBox="0 0 180 100" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id={`${bedId}-rim`} x2=".15" y2="1"><stop stopColor="var(--vc-bed-light)" /><stop offset=".55" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></linearGradient>
+            <radialGradient id={`${bedId}-nest`} cx=".48" cy=".6" r=".65"><stop stopColor="var(--vc-bed-cloth)" /><stop offset=".65" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></radialGradient>
+          </defs>
+          <ellipse className="vc-bed-ground" cx="90" cy="89" rx="77" ry="8" />
+          <path fill={`url(#${bedId}-rim)`} d="M8 50C8 19 42 7 90 7s82 12 82 43v17c0 23-35 29-82 29S8 90 8 67Z" />
+          <ellipse fill={`url(#${bedId}-nest)`} cx="90" cy="48" rx="59" ry="27" />
+          <ellipse className="vc-bed-centre" cx="90" cy="58" rx="51" ry="18" />
+          {/* Broad rounded ribs follow the torus, with darker seams tucked
+              between them. No noisy texture or blur filter at panel scale. */}
+          {Array.from({ length: 29 }, (_, i) => {
+            const a = Math.PI * 2 * i / 29, cx = Math.cos(a), sy = Math.sin(a);
+            const inner = { x: 90 + cx * 58, y: 48 + sy * 27 };
+            const outer = { x: 90 + cx * 80, y: 49 + sy * 40 };
+            const end = { x: 90 + cx * 78, y: 58 + sy * 35 + (sy > 0 ? 0 : 1) };
+            return <path key={i} className="vc-bed-rib" d={`M${inner.x} ${inner.y}Q${outer.x} ${outer.y - 5} ${outer.x} ${outer.y}Q${outer.x} ${outer.y + 6} ${end.x} ${end.y}`} />;
+          })}
+          <path className="vc-bed-seam" d="M32 70c15 13 100 18 118-1" />
+        </svg>
+        <span className="vc-home-cushion" aria-hidden="true" />
+      </button>
       {preferences.feeding ? <>
         <button type="button" data-home-action="feed" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기"><span className="vc-dispenser-face" aria-hidden="true"><Utensils size={19} strokeWidth={1.5} /><span className="vc-dispenser-dot" /></span><span className="vc-dispenser-slot" aria-hidden="true" /></button>
         <button type="button" data-home-action="clearFood" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><svg viewBox="0 0 28 32" aria-hidden="true" focusable="false"><g className="vc-trash-lid"><path d="M5 9h18M10 9V6.5A1.5 1.5 0 0 1 11.5 5h5A1.5 1.5 0 0 1 18 6.5V9" /></g><path className="vc-trash-body" d="m7 12 1.3 14.2A2 2 0 0 0 10.3 28h7.4a2 2 0 0 0 2-1.8L21 12" /><path className="vc-trash-lines" d="m12 15 .5 9m3.5-9-.5 9" /></svg><span className="vc-trash-progress" aria-hidden="true" /></button>

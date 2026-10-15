@@ -2,8 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { safeCompanionSurfaces } from "@/lib/ui/viewer-companion/geometry";
-import { expectCompanionPerchClear, expectQuietCompanionTail, expectQuietCompanionVisible } from "./helpers/companion-overlay";
+import { expectCompanionPerchClear, expectQuietCompanionTail, expectQuietCompanionVisible, waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 const posts = new WeakMap<Page, string[]>();
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -53,40 +52,9 @@ for (const mobile of [false, true]) test.describe(mobile ? "real touch ordinary 
     if (mobile) {
       // A real public input command gives this regression a calendar glyph
       // anchor instead of allowing initial timing to choose a fixed floor.
-      const measured = await page.evaluate(() => {
-        const root = document.querySelector(".poster-page")!, obstacles: { left: number; right: number; top: number; bottom: number }[] = [], surfaces: { x: number; y: number; width: number }[] = [];
-        const visible = (element: Element | null): boolean => {
-          if (!element) return true;
-          const style = getComputedStyle(element);
-          return !element.hasAttribute("hidden") && style.display !== "none" && !["hidden", "collapse"].includes(style.visibility) && Number(style.opacity || 1) > .05 && visible(element.parentElement);
-        };
-        const range = document.createRange(), walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-          const parent = node.parentElement;
-          if (!parent || !visible(parent) || parent.closest("script,style,svg,.sr-only")) continue;
-          range.selectNodeContents(node);
-          for (const rect of range.getClientRects()) if (rect.width > .5 && rect.height > .5) obstacles.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom });
-        }
-        for (const control of root.querySelectorAll("button,a[href],input,[role='button']")) {
-          if (!visible(control) || control.matches(".agenda-event[data-eventid],.agenda-item[data-eventid]")) continue;
-          const rect = control.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) obstacles.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom });
-        }
-        for (const element of root.querySelectorAll(".agenda-event .agenda-title-text,.agenda-item .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-subs li,.agenda-day .agenda-when > strong")) {
-          if (!visible(element)) continue;
-          range.selectNodeContents(element);
-          for (const rect of range.getClientRects()) if (rect.width > .5 && rect.top > 90 && rect.top < innerHeight - 100) surfaces.push({ x: rect.left, y: rect.top - 3, width: rect.width });
-        }
-        return { surfaces, obstacles, viewport: { width: innerWidth, height: innerHeight } };
-      });
-      // Reuse the public geometry's pure interval helper for setup only, then
-      // exercise the real input/runtime and assert an actual measured glyph id.
-      // This does not inject platforms or supply a test hook to the product.
-      // The real Small preference fits the first visible title below the
-      // header. Normal76 has no safe glyph ledge in this dense first viewport.
-      const safe = measured.surfaces.flatMap(surface => safeCompanionSurfaces(surface, measured.obstacles, 60, measured.viewport, { width: 60 * .76, height: 60 * .76 })).find(surface => surface.width >= 4);
-      expect(safe, "the Small agenda companion needs a real clear glyph ledge for this setup").toBeTruthy();
-      const point = { x: safe!.x + safe!.width / 2, y: safe!.y };
+      // Manual placement intentionally uses the actual card top, including
+      // dense agenda rows with no text-safe autonomous ledge at92px.
+      const point = await page.locator(".agenda-event:visible,.agenda-item:visible").first().evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top - 12 }; });
       await actor(page).focus(); await actor(page).press("p");
       await expect(pet(page)).toHaveAttribute("data-placing", "");
       await page.touchscreen.tap(point.x, point.y);
@@ -148,6 +116,7 @@ for (const mobile of [false, true]) test.describe(mobile ? "real touch ordinary 
     await expect(detail).toBeVisible(); await sameCreature();
     await diagnostic("opened-detail");
     const detailClose = detail.getByRole("button", { name: "닫기", exact: true });
+    await waitForOverlayEntrance(detail);
     await detailClose.focus(); await expectQuietCompanionTail(page, detailClose);
     await expectCompanionPerchClear(page, detail); await snapshot("detail");
     if (!mobile) {
@@ -180,12 +149,14 @@ for (const mobile of [false, true]) test.describe(mobile ? "real touch ordinary 
     const records = page.getByRole("dialog", { name: "6월 기록", exact: true });
     await expect(records).toBeVisible(); await expect(records).toContainText("이번 달 컨텐츠");
     const recordClose = records.getByRole("button", { name: "닫기", exact: true });
+    await waitForOverlayEntrance(records);
     await recordClose.focus(); await sameCreature(); await expectQuietCompanionTail(page, recordClose);
     await expectCompanionPerchClear(page, records);
     await snapshot("records"); await closeAndResume(records);
 
     await press(page.getByRole("button", { name: "설정", exact: true }));
     const settings = page.getByRole("dialog", { name: "설정", exact: true });
+    await waitForOverlayEntrance(settings);
     const companionTab = settings.getByRole("tab", { name: "빅타민", exact: true });
     if (await companionTab.isVisible()) await press(companionTab);
     const prank = settings.getByRole("tab", { name: "장난", exact: true });

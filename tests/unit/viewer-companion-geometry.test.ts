@@ -30,7 +30,7 @@ class FixtureElement extends FixtureEvents {
   parentElement: FixtureElement | null = null;
   rect = box(0, 0, 1000, 800);
   getBoundingClientRect = vi.fn(() => this.rect);
-  hasAttribute = () => false;
+  hasAttribute: (name: string) => boolean = () => false;
   getAttribute = () => null;
   querySelector: (selector: string) => FixtureElement | null = () => null;
   querySelectorAll: (selector: string) => FixtureElement[] = () => [];
@@ -75,12 +75,111 @@ function geometryFixture() {
   } });
   const flush = () => { const pending = [...frames.values()]; frames.clear(); for (const callback of pending) callback(now); };
   const advance = (elapsed: number) => { now += elapsed; for (const [id, timer] of [...timers]) if (timer.at <= now) { timers.delete(id); timer.callback(); } flush(); };
-  return { root: root as unknown as HTMLElement, sourceRoot: root, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, range, frames, timers, flush, advance };
+  return { root: root as unknown as HTMLElement, sourceRoot: root, card, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, range, frames, timers, flush, advance };
 }
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
+  it("offers real card tops plus real floor/home for deliberate drops, excluding glyph ledges", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(470, 430, 260, 60);
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}, { home: fixture.home as unknown as HTMLElement });
+    fixture.flush();
+    const landings = subscription.landings(), card = landings.find(p => p.id.includes("-top"))!;
+    expect(card).toMatchObject({ x: 470, y: 427, width: 260, kind: "card", manualOnly: true });
+    expect(landings.some(p => p.kind === "floor")).toBe(true); expect(landings.some(p => p.id === "companion-home")).toBe(true);
+    expect(landings.every(p => p.kind === "floor" || p.id === "companion-home" || p.id.includes("-top"))).toBe(true);
+    expect(subscription.anchor(card.id)).toEqual({ element: fixture.card, left: 470, top: 430 });
+    const ranges = fixture.range.getClientRects.mock.calls.length;
+    fixture.card.rect = box(480, 450, 260, 60);
+    expect(subscription.follow([card.id])[0]).toMatchObject({ platform: { x: 480, y: 447 }, anchorX: 480, anchorY: 450 });
+    expect(fixture.range.getClientRects).toHaveBeenCalledTimes(ranges);
+    subscription();
+  });
+  it("keeps a first card in dense text while still excluding real control hit targets", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(470, 430, 260, 60); fixture.date.rect = box(500, 400, 200, 20);
+    let roaming: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, next => { roaming = next; }); fixture.flush();
+    const covers = (p: Platform, x: number) => x >= p.x && x <= p.x + p.width;
+    expect(subscription.landings().some(p => p.id.includes("-top") && covers(p, 600))).toBe(true);
+    expect(roaming.some(p => p.kind === "card" && covers(p, 600))).toBe(false);
+    const control = new FixtureElement(); control.parentElement = fixture.sourceRoot; control.rect = box(580, 400, 40, 40); fixture.controls.push(control);
+    fixture.win.emit("resize"); fixture.advance(120);
+    expect(subscription.landings().some(p => p.id.includes("-top") && covers(p, 600))).toBe(false);
+    expect(subscription.landings().some(p => p.id.includes("-top"))).toBe(true);
+    subscription();
+  });
+  it("publishes a changed card-top baseline even when glyph geometry is unchanged", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(470, 430, 260, 60);
+    let deliveries = 0, latest: readonly Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, () => { deliveries++; latest = subscription.landings(); });
+    fixture.flush(); const card = latest.find(p => p.id.includes("-top"))!;
+    card.x = -10000;
+    expect(subscription.landings().find(p => p.id === card.id)?.x).toBe(470);
+    fixture.card.rect = box(480, 440, 260, 60); fixture.win.emit("resize"); fixture.advance(120);
+    expect(deliveries).toBe(2); expect(latest.find(p => p.id === card.id)).toMatchObject({ x: 480, y: 437 });
+    expect(subscription.anchor(card.id)).toEqual({ element: fixture.card, left: 480, top: 440 });
+    subscription();
+  });
+  it("does not invent a visible landing through a hidden card or full control cover", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(470, 430, 260, 60);
+    fixture.card.hasAttribute = name => name === "hidden";
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}); fixture.flush();
+    expect(subscription.landings().some(p => p.id.includes("-top"))).toBe(false);
+    const control = new FixtureElement(); control.parentElement = fixture.sourceRoot; control.rect = box(0, 0, 1000, 800); fixture.controls.push(control);
+    fixture.win.emit("resize"); fixture.advance(120);
+    expect(subscription.landings()).toEqual([]);
+    fixture.sourceRoot.isConnected = false; fixture.win.emit("resize"); fixture.advance(120);
+    expect(subscription.landings()).toEqual([]);
+    subscription();
+  });
+  it("keeps a low first card for32px fruit even when the92px creature cannot fit", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(100, 62, 90, 30);
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92 }); fixture.flush();
+    expect(subscription.landings().some(p => p.id.includes("-top"))).toBe(false);
+    const food = subscription.landings(32).find(p => p.id.includes("-food-top"))!;
+    expect(food).toMatchObject({ x: 100, y: 59, width: 90, manualOnly: true });
+    expect(subscription.anchor(food.id)).toEqual({ element: fixture.card, left: 100, top: 62 });
+    const rects = fixture.card.getBoundingClientRect.mock.calls.length, ranges = fixture.range.getClientRects.mock.calls.length;
+    subscription.landings(32); subscription.landings(); subscription.anchor(food.id);
+    expect(fixture.card.getBoundingClientRect).toHaveBeenCalledTimes(rects); expect(fixture.range.getClientRects).toHaveBeenCalledTimes(ranges);
+    subscription();
+  });
+  it("keeps food and pet spans on separate paired baselines at narrow viewport edges", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(12, 430, 70, 60);
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92 }); fixture.flush();
+    const pet = subscription.landings().find(p => p.id.includes("-top"))!, food = subscription.landings(32).find(p => p.id.includes("-food-top"))!;
+    expect(pet.x).toBe(50); expect(food.x).toBe(26); expect(food.id).not.toBe(pet.id);
+    fixture.card.rect = box(22, 450, 70, 60); fixture.card.getBoundingClientRect.mockClear();
+    const followed = subscription.follow([pet.id, food.id]);
+    expect(followed[0].platform).toMatchObject({ id: pet.id, x: 60, y: 447 });
+    expect(followed[1].platform).toMatchObject({ id: food.id, x: 36, y: 447 });
+    expect(fixture.card.getBoundingClientRect).toHaveBeenCalledTimes(1);
+    expect(subscription.landings().find(p => p.id === pet.id)?.x).toBe(50);
+    expect(subscription.landings(32).find(p => p.id === food.id)?.x).toBe(26);
+    subscription();
+  });
+  it("computes real home and floor food supports independently of the larger pet clearance", () => {
+    const fixture = geometryFixture(); fixture.home.rect = box(200, 62, 120, 2);
+    const control = new FixtureElement(); control.parentElement = fixture.sourceRoot; control.rect = box(0, 680, 1000, 40); fixture.controls.push(control);
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92, home: fixture.home as unknown as HTMLElement }); fixture.flush();
+    expect(subscription.landings().some(p => p.id === "companion-home" || p.kind === "floor")).toBe(false);
+    expect(subscription.landings(32).some(p => p.id === "companion-home-food" && p.y === 62)).toBe(true);
+    expect(subscription.landings(32).some(p => p.id === "viewport-floor-food" && p.y === 782)).toBe(true);
+    subscription();
+  });
+  it("publishes food-only geometry changes and retains full control protection at the food tier", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(100, 62, 90, 30);
+    const changed = vi.fn(), subscription = observeCompanionPlatforms(fixture.root, changed, { size: 92 }); fixture.flush();
+    fixture.card.rect = box(110, 62, 90, 30); fixture.win.emit("resize"); fixture.advance(120);
+    expect(changed).toHaveBeenCalledTimes(2);
+    const control = new FixtureElement(); control.parentElement = fixture.sourceRoot; control.rect = box(130, 35, 40, 40); fixture.controls.push(control);
+    fixture.win.emit("resize"); fixture.advance(120);
+    expect(subscription.landings(32).some(p => p.id.includes("-food-top") && p.x <= 150 && p.x + p.width >= 150)).toBe(false);
+    fixture.sourceRoot.isConnected = false; subscription.follow([]);
+    expect(subscription.landings(32)).toEqual([]); expect(subscription.landings()).toEqual([]);
+    subscription();
+  });
   it("keeps anonymous anchor identities across an observer sleep and reconnect", () => {
     const fixture = geometryFixture(), identity = createCompanionGeometryIdentity();
     let first: Platform[] = [], second: Platform[] = [];
@@ -324,6 +423,21 @@ describe("companion text platforms", () => {
     expect(safe({ x: 0, y: 60, width: 1000 }, [])).toEqual([]);
     expect(safe({ x: 0, y: 795, width: 1000 }, [])).toEqual([]);
     expect(safeCompanionSurfaces({ x: 0, y: 200, width: 50 }, [], 76, { width: 50, height: 300 })).toEqual([]);
+  });
+
+  it("keeps the complete44x38 food input target visible around its32px drawing", () => {
+    const footprint = { width: 44, height: 38 };
+    const food = (y: number, width = viewport.width) => safeCompanionSurfaces({ x: 0, y, width }, [], 32, { ...viewport, width }, footprint);
+    expect(food(40)).toEqual([]);
+    const spans = food(41);
+    expect(spans).toEqual([{ x: 26, y: 41, width: 948 }]);
+    for (const span of spans) for (const x of [span.x, span.x + span.width]) {
+      expect(x - footprint.width / 2).toBeGreaterThanOrEqual(4);
+      expect(x + footprint.width / 2).toBeLessThanOrEqual(viewport.width - 4);
+      expect(span.y - footprint.height).toBeGreaterThanOrEqual(3);
+    }
+    // A32px image alone fits here; its real native target does not.
+    expect(food(100, 50)).toEqual([]);
   });
 
   it("removes a floor segment beneath visible controls instead of obscuring their labels", () => {

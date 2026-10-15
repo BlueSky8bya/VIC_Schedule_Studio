@@ -67,9 +67,17 @@ async function roomyRelease(page: Page) {
 }
 async function renderedSupport(page: Page, point: { x: number; y: number }, mark = false) {
   return page.evaluate(({ selector, point, mark }) => {
+    if (mark) document.querySelectorAll("[data-polish-food-anchor]").forEach(node => node.removeAttribute("data-polish-food-anchor"));
     let floor = innerHeight - 18;
     for (const node of document.querySelectorAll(".agenda-monthbar")) { const r = node.getBoundingClientRect(); if (getComputedStyle(node).position === "fixed" && r.width > 0 && r.top > innerHeight * .65 && r.bottom <= innerHeight + 1) floor = Math.min(floor, r.top - 8); }
     if (Math.abs(point.y - floor) < 2) return { kind: "floor", error: Math.abs(point.y - floor), offset: { x: point.x, y: point.y } };
+    for (const node of document.querySelectorAll<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]")) {
+      const r = node.getBoundingClientRect();
+      if (r.width > .5 && point.x >= r.left - 1 && point.x <= r.right + 1 && Math.abs(point.y - r.top + 3) < 2) {
+        if (mark) node.dataset.polishFoodAnchor = "";
+        return { kind: "card", error: Math.abs(point.y - r.top + 3), offset: { x: point.x - r.left, y: point.y - r.top } };
+      }
+    }
     for (const node of document.querySelectorAll<HTMLElement>(selector)) {
       const range = document.createRange(); range.selectNodeContents(node);
       for (const r of range.getClientRects()) if (r.width > .5 && point.x >= r.left - 1 && point.x <= r.right + 1 && Math.abs(point.y - r.top + 3) < 2) {
@@ -132,10 +140,16 @@ test("fruit retains its real text attachment through scroll, interrupts for sett
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-/);
   const point = await world(page); expect(await renderedSupport(page, point, true)).not.toBeNull();
   const anchor = page.locator("[data-polish-food-anchor]"); await expect(anchor).toHaveCount(1);
-  const item = await spawn(page); await page.mouse.click(point.x, Math.max(48, point.y - 65));
+  const item = await spawn(page);
+  const drop = await page.locator(".public-event[data-eventid]").evaluateAll(nodes => {
+    const cards = nodes.map(node => node.getBoundingClientRect()).filter(r => r.width > 90 && r.top > 200 && r.top < innerHeight - 120);
+    const r = cards[0]; if (!r) throw Error("A real lower card is required for this attachment regression");
+    return { x: r.left + r.width / 2, y: r.top - 30 };
+  });
+  await page.mouse.click(drop.x, drop.y);
   await expect(item).not.toHaveAttribute("data-selected"); await expect(item).not.toHaveAttribute("data-falling", { timeout: 1800 });
   const landed = await foodPoint(item), source = await renderedSupport(page, landed, true);
-  expect(source?.kind).toBe("text");
+  expect(source?.kind).toBe("card");
   await page.evaluate(() => { document.documentElement.style.overflowY = "auto"; document.documentElement.style.scrollBehavior = "auto"; document.body.style.overflowY = "visible"; const spacer = document.createElement("div"); spacer.style.cssText = "height:1200px;pointer-events:none"; spacer.setAttribute("aria-hidden", "true"); document.body.append(spacer); scrollTo({ top: 64, behavior: "instant" }); });
   await expect.poll(async () => { const current = await foodPoint(item), rect = (await anchor.boundingBox())!; return Math.hypot(current.x - rect.x - source!.offset.x, current.y - rect.y - source!.offset.y); }).toBeLessThan(2);
   await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
@@ -158,11 +172,11 @@ test("fruit retains its real text attachment through scroll, interrupts for sett
 test("large native keyposes and first-pass contact stay fluid, reward only real strokes and park without geometry work", async ({ page }) => {
   test.setTimeout(35_000); await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, { size: "large" });
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-size", "large");
-  await expect(pet(page)).toHaveAttribute("data-quality", "sharp", { timeout: 10000 }); await expect(pet(page)).toHaveAttribute("data-atlas", "keypose");
+  await expect(pet(page)).toHaveAttribute("data-quality", "sharp", { timeout: 10000 }); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   const sprite = page.locator(".vc-sprite"); await expect(sprite).toHaveCSS("image-rendering", "auto");
-  expect(await sprite.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("vitamin-keyposes-2x.webp");
-  const intrinsic = await page.evaluate(async () => { const image = new Image(); image.src = "/companion/vitamin-keyposes-2x.webp"; await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight }; });
-  expect(intrinsic).toEqual({ width: 640, height: 640 });
+  expect(await sprite.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("/hd/");
+  const intrinsic = await sprite.evaluate(async node => { const image = new Image(); image.src = getComputedStyle(node).backgroundImage.slice(5, -2); await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight }; });
+  expect(intrinsic).toEqual({ width: 1536, height: 384 });
   const focus = page.locator('[data-panel-section-toggle="tag-filter"]'); await focus.focus();
   const before = await world(page), y = before.y - before.size * .49, left = before.x - before.size * .22, right = before.x + before.size * .22;
   const bond = page.getByRole("meter", { name: "빅타민 친밀도", exact: true }), initial = await bond.evaluate(node => (node as HTMLMeterElement).value);
@@ -177,11 +191,11 @@ test("large native keyposes and first-pass contact stay fluid, reward only real 
   await page.screenshot({ path: ".scratch-pw/companion-polish-contact-large.png" });
   await page.mouse.down(); await page.mouse.move(right + 8, y);
   await expect(pet(page)).toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-petting");
-  await expect(pet(page)).toHaveAttribute("data-atlas", "fluid"); expect(await sprite.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("vitamin-fluid-q95.webp");
+  await expect(pet(page)).toHaveAttribute("data-atlas", "hd"); expect(await sprite.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("/hd/");
   await page.mouse.up(); await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 4000 });
   // Explicit focus-event branch, not a native OS/OBS performance claim.
   await page.evaluate(() => { Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false }); dispatchEvent(new FocusEvent("blur")); });
-  await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 8000 }); await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "keypose");
+  await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 8000 }); await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   await page.waitForTimeout(1100);
   const quiet = await pet(page).evaluate(node => new Promise<{ ranges: number; writes: number }>(resolve => {
     let ranges = 0, writes = 0; const original = Range.prototype.getClientRects;

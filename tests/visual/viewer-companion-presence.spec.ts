@@ -158,7 +158,7 @@ test("PC stationary safety follows viewport resize and poster zoom without chang
   console.log(JSON.stringify({ check: "presence-PC", initial, zoomed, resized }));
 });
 
-test("mobile closed-house presence remains safe at small, normal and large sizes", async ({ page }) => {
+test("legacy small, normal and large preferences all render the single92 default safely", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
   await settled(page); // wait for preference hydration before changing settings
@@ -170,7 +170,7 @@ test("mobile closed-house presence remains safe at small, normal and large sizes
       localStorage.setItem(key, JSON.stringify(next)); dispatchEvent(new CustomEvent(event, { detail: next }));
     }, { size, key: COMPANION_PREFERENCES_KEY, event: COMPANION_PREFERENCES_EVENT });
     const result = await settled(page);
-    expect(result.cell!.width).toBeCloseTo({ normal: 76, small: 60, large: 92 }[size], 3);
+    expect(result.cell!.width).toBeCloseTo(92, 3);
     await expect(page.locator(".vc-home")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "빅타민 집 열기", exact: true })).toBeVisible();
     await page.screenshot({ path: `.scratch-pw/companion-presence-mobile-${size}.png` });

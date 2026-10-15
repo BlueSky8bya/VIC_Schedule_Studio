@@ -11,6 +11,9 @@
   --vc-linen-edge: color-mix(in srgb, var(--muted) 20%, var(--vc-linen));
   --vc-sage: color-mix(in srgb, rgb(var(--glass-panel)) 58%, #b4c2a1);
   --vc-soft-shadow: #795b3924;
+  --vc-bed-cloth: color-mix(in srgb, rgb(var(--glass-cell)) 36%, #c4bcae);
+  --vc-bed-light: color-mix(in srgb, rgb(var(--glass-cell)) 55%, #e1d9ca);
+  --vc-bed-shade: color-mix(in srgb, var(--muted) 38%, #aaa292);
   --vc-thread: color-mix(in srgb, var(--vc-wood-edge) 38%, transparent);
   position: relative;
   box-sizing: border-box;
@@ -46,19 +49,17 @@
 .vc-shelf-bracket { stroke: var(--vc-wood-edge); stroke-width: 2; }
 .vc-home-light { position: absolute; top: 18px; left: 77px; width: 45%; height: 96px; background: linear-gradient(125deg, #f4e2b72e, transparent 84%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
 .vc-home-floor { position: absolute; inset: auto 0 0; height: 36px; background: radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), repeating-linear-gradient(98deg, transparent 0 39px, #795b390a 40px 41px), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff2; pointer-events: none; }
-.vc-home-rug { position: absolute; left: 8%; bottom: 9px; width: 48%; height: 20px; border-radius: 50%; background: repeating-linear-gradient(0deg, #fff1 0 1px, transparent 1px 3px), color-mix(in srgb, var(--vc-sage) 62%, var(--vc-linen)); box-shadow: inset 0 0 0 1px var(--vc-thread), 0 2px 2px var(--vc-soft-shadow); pointer-events: none; }
-.vc-cushion-button { position: absolute; z-index: 2; left: 11%; bottom: 10px; width: 42%; height: 70px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
-/* The real16px landing span and its top never resize or transform. Soft
-   thickness/folds are visual children below that same contact plane. */
-.vc-home-cushion { position: absolute; bottom: 9px; left: 0; right: 0; height: 16px; border: 1px solid var(--vc-linen-edge); border-radius: 50% 50% 44% 44% / 64% 64% 42% 42%; background: linear-gradient(180deg, rgb(var(--glass-cell)), var(--vc-linen)); box-shadow: inset 0 2px 2px #fff5, inset 0 -4px 5px var(--vc-thread), 0 4px 5px var(--vc-soft-shadow); }
-.vc-home-cushion::before { content: ''; position: absolute; inset: 4px -1px -4px; border: 1px solid var(--vc-linen-edge); border-radius: 45% 45% 43% 43%; background: linear-gradient(180deg, var(--vc-linen), color-mix(in srgb, var(--vc-linen) 80%, var(--vc-wood))); box-shadow: inset 0 -2px 2px var(--vc-thread); pointer-events: none; }
-.vc-home-cushion > i { position: absolute; z-index: 1; inset: 1px 6px 3px; border: 1px dashed var(--vc-thread); border-radius: 50%; background: radial-gradient(ellipse at 40% 0, #fff6, transparent 80%), var(--vc-linen); box-shadow: inset 0 2px 1px #fff2; }
-.vc-home-cushion > i::before, .vc-home-cushion > i::after { content: ''; position: absolute; top: 4px; width: 6px; height: 4px; border-bottom: 1px solid var(--vc-thread); border-radius: 50%; }
-.vc-home-cushion > i::before { left: 1px; transform: rotate(-24deg); }
-.vc-home-cushion > i::after { right: 1px; transform: rotate(24deg); }
-.vc-cushion-button:hover .vc-home-cushion > i { box-shadow: inset 0 2px 2px #fff4; }
+/* The recessed seat is the real anchor. The raised torus can grow around
+   it without pretending a flat rug is a bed (PLAN052 replaces16px cushion). */
+.vc-cushion-button { position: absolute; z-index: 2; left: 7%; bottom: 5px; width: 49%; height: 78px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
+.vc-plush-bed { position: absolute; bottom: 0; left: 0; width: 100%; height: auto; overflow: visible; pointer-events: none; transform-origin: 50% 85%; }
+.vc-home-cushion { position: absolute; bottom: 26%; left: 22%; right: 22%; height: 2px; pointer-events: none; }
+.vc-bed-ground { fill: var(--vc-soft-shadow); }
+.vc-bed-centre { fill: var(--vc-bed-light); opacity: .36; }
+.vc-bed-rib { fill: none; stroke: var(--vc-bed-light); stroke-width: 6; stroke-linecap: round; opacity: .62; }
+.vc-bed-seam { fill: none; stroke: var(--vc-bed-shade); stroke-width: 1.2; opacity: .28; }
 .vc-home .vc-cushion-button:active { transform: none; }
-.vc-cushion-button:active .vc-home-cushion > i { transform: scaleY(.75); }
+.vc-cushion-button:active .vc-plush-bed { transform: scale(1.025,.93); }
 .vc-dispenser { position: absolute; z-index: 2; right: 61px; bottom: 8px; width: 48px; height: 62px; box-sizing: border-box; padding: 0; border: 1px solid var(--vc-linen-edge); border-radius: var(--r-md); background: linear-gradient(155deg, rgb(var(--glass-cell)), var(--vc-linen)); box-shadow: inset 0 2px 0 #fff4, inset 0 -4px 0 var(--vc-thread), var(--elev-1); color: var(--muted); cursor: pointer; }
 .vc-dispenser-face { position: absolute; inset: 8px 8px auto; display: grid; place-items: center; height: 27px; }
 .vc-dispenser-dot { position: absolute; right: -1px; top: -1px; width: 3px; height: 3px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 45%, #bed6ad); }
@@ -75,12 +76,12 @@
 .vc-home button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .vc-home button:disabled { opacity: .38; cursor: default; }
 .vc-home button:not(.vc-cushion-button):active { transform: scale(var(--press-scale)); }
-.vc-home-close, .vc-dispenser, .vc-home-trash, .vc-home-cushion > i, .vc-trash-lid { transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease); }
+.vc-home-close, .vc-dispenser, .vc-home-trash, .vc-plush-bed, .vc-trash-lid { transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease); }
 .vc-home button:active { transition-duration: .07s; }
-html[data-reduce-motion] .vc-home button, html[data-reduce-motion] .vc-home-cushion > i, html[data-reduce-motion] .vc-trash-lid,
-html[data-gfx="off"] .vc-home button, html[data-gfx="off"] .vc-home-cushion > i, html[data-gfx="off"] .vc-trash-lid,
-html[data-gfx="soft"] .vc-home button, html[data-gfx="soft"] .vc-home-cushion > i, html[data-gfx="soft"] .vc-trash-lid { transition: none; }
-html[data-reduce-motion] .vc-home button:active, html[data-reduce-motion] .vc-cushion-button:active .vc-home-cushion > i,
-html[data-gfx="off"] .vc-home button:active, html[data-gfx="off"] .vc-cushion-button:active .vc-home-cushion > i,
-html[data-gfx="soft"] .vc-home button:active, html[data-gfx="soft"] .vc-cushion-button:active .vc-home-cushion > i { transform: none; }
+html[data-reduce-motion] .vc-home button, html[data-reduce-motion] .vc-plush-bed, html[data-reduce-motion] .vc-trash-lid,
+html[data-gfx="off"] .vc-home button, html[data-gfx="off"] .vc-plush-bed, html[data-gfx="off"] .vc-trash-lid,
+html[data-gfx="soft"] .vc-home button, html[data-gfx="soft"] .vc-plush-bed, html[data-gfx="soft"] .vc-trash-lid { transition: none; }
+html[data-reduce-motion] .vc-home button:active, html[data-reduce-motion] .vc-cushion-button:active .vc-plush-bed,
+html[data-gfx="off"] .vc-home button:active, html[data-gfx="off"] .vc-cushion-button:active .vc-plush-bed,
+html[data-gfx="soft"] .vc-home button:active, html[data-gfx="soft"] .vc-cushion-button:active .vc-plush-bed { transform: none; }
 html[data-theme="dark"] .vc-home { --vc-soft-shadow: #21181045; }

@@ -282,10 +282,6 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
           <RowLabel icon={<Gauge size={15} />} tone="leaf">걸음</RowLabel>
           <SettingsSegment ariaLabel="빅타민 걸음" dataAct="빅타민 걸음" onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
         </div>
-        <div className="role-help-haptics rhh-stack-sm">
-          <RowLabel icon={<ALargeSmall size={15} />} tone="leaf">크기</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 크기" dataAct="빅타민 크기" onChange={size => onChange({ size })} options={[{ value: "small", label: "작게" }, { value: "normal", label: "보통" }, { value: "large", label: "크게" }]} value={preferences.size} />
-        </div>
       </div>
     </div>
     <div aria-labelledby={`${id}-pranks`} hidden={tab !== "pranks"} id={`${id}-pranks-panel`} role="tabpanel" tabIndex={0}>
@@ -301,8 +297,8 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}
       </div>
-      <p className="rhh-group-foot">빅타민을 잡아 옮기거나, 머리에서 꾹 누른 채 살살 문질러 주세요.</p>
-      <p className="rhh-group-foot">밥주기는 빅타민 전용 사과·레몬을 건네는 놀이예요.</p>
+      <p className="rhh-group-foot">잡아서 옮기거나, 누르지 않고 머리 위에서 마우스를 살살 왕복해 주세요.</p>
+      <p className="rhh-group-foot">집 자판기에서 여러 과일을 꺼내 건넬 수 있어요.</p>
     </div>
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">

@@ -10,7 +10,7 @@ test.beforeEach(async ({ page, context }) => {
   requests.set(page, seen);
   await context.route("**/*", route => {
     const request = route.request();
-    if (request.url().includes("/companion/victamin-fluid.webp")) seen.atlas++;
+    if (/\/companion\/.*\.webp/.test(request.url())) seen.atlas++;
     if (request.method() === "POST") { seen.posts.push(request.url()); return route.fulfill({ status: 500, body: "" }); }
     return route.continue();
   });
@@ -94,7 +94,8 @@ for (const width of [1440, 390]) {
     await stationaryFixture(page);
     await actor(page).click();
     await expect(pet(page)).toHaveAttribute("data-state", "petted");
-    await expect(page.locator(".vc-effect")).toHaveText("♡");
+    await expect(page.locator(".vc-affection-hearts")).toBeVisible();
+    await expect(page.locator(".vc-affection-hearts i")).toHaveCount(3);
     const before = await position(page), grab = await centre(actor(page));
     await page.mouse.move(grab.x, grab.y); await page.mouse.down();
     await expect(pet(page)).not.toHaveAttribute("data-grab-ready");
@@ -266,13 +267,19 @@ test("the premiere owns the stage while the optional roaming pet stays outside t
 test("document visibility and showcase locks pause and resume the same local creature", async ({ page }) => {
   await stationaryFixture(page);
   const before = await position(page);
+  const support = await pet(page).getAttribute("data-platform");
   // This checks the app's visibility-event branch, not real device throttling.
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); });
   await expect(pet(page)).not.toBeVisible();
   await page.waitForTimeout(300);
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
   await expect(actor(page)).toBeVisible();
-  expect(await position(page)).toEqual(before);
+  const resumed = await position(page);
+  // Native font/layout registration is subpixel. Preserve the actual support
+  // and half-pixel continuity instead of requiring identical float spelling.
+  expect(resumed.width).toBe(before.width); expect(resumed.height).toBe(before.height);
+  expect(Math.hypot(resumed.x - before.x, resumed.y - before.y)).toBeLessThan(.5);
+  await expect(pet(page)).toHaveAttribute("data-platform", support!);
   await page.evaluate(() => { document.documentElement.dataset.showcase = "1"; });
   await expect(pet(page)).not.toBeVisible();
   await page.evaluate(() => { delete document.documentElement.dataset.showcase; });

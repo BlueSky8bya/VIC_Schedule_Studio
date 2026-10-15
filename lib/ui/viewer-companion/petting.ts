@@ -1,5 +1,5 @@
-/** A mouse resting on the head is not a stroke. Two deliberate horizontal
- * reversals establish intent; rewards are bounded independently of animation. */
+/** A mouse resting on the head is not a stroke. One deliberate out-and-back
+ * establishes intent; rewards require a reversal and retain their own budget. */
 export function createCompanionPettingGesture() {
   let lastAt = -Infinity, movedAt = -Infinity, anchor = 0, direction = 0, reversals = 0, lastReward = -Infinity;
   const reset = () => { lastAt = movedAt = -Infinity; anchor = 0; direction = 0; reversals = 0; };
@@ -7,16 +7,17 @@ export function createCompanionPettingGesture() {
     reset,
     sample(x: number, now: number) {
       if (!Number.isFinite(x) || !Number.isFinite(now)) { reset(); return { stroking: false, reward: false }; }
-      if (now < lastAt || now - movedAt > 550) { reset(); anchor = x; movedAt = lastAt = now; return { stroking: false, reward: false }; }
+      if (now < lastAt || now - movedAt >= 900) { reset(); anchor = x; movedAt = lastAt = now; return { stroking: false, reward: false }; }
       lastAt = now;
       const delta = x - anchor;
-      const moved = Math.abs(delta) >= .16;
+      const moved = Math.abs(delta) + Number.EPSILON >= .10;
+      let reversed = false;
       if (moved) {
         const next = Math.sign(delta);
-        if (direction && direction !== next) reversals++;
+        if (direction && direction !== next) { reversals++; reversed = true; }
         direction = next; anchor = x; movedAt = now;
       }
-      const stroking = moved && reversals >= 2, reward = stroking && now - lastReward >= 4000;
+      const stroking = moved && reversals >= 1, reward = stroking && reversed && now - lastReward >= 4000;
       if (reward) lastReward = now;
       return { stroking, reward };
     },
@@ -47,7 +48,7 @@ export function createCompanionPettingContact() {
     },
     sample(now: number, reduced = false) {
       const age = now - movedAt;
-      const envelope = Number.isFinite(now) && age >= 0 && age < 420 ? (1 - age / 420) ** 2 : 0;
+      const envelope = Number.isFinite(now) && age >= 0 && age < 550 ? (1 - age / 550) ** 2 : 0;
       const pressure = force * envelope * (reduced ? .2 : 1);
       if (!pressure) return { x: 0, y: 0, tilt: 0, squash: 0, pressure: 0 };
       return { x: reduced ? 0 : (at - .5) * pressure * 1.6, y: pressure * 1.6, tilt: reduced ? 0 : direction * pressure * 2.4, squash: pressure * .035, pressure };

@@ -9,6 +9,10 @@ const MAX_PLATFORMS = 200;
 const MEASUREMENT_INTERVAL_MS = 120;
 const CLEARANCE = 3;
 const DEFAULT_SIZE = 76;
+const FOOD_SIZE = 32;
+// The fruit's 32px art has a 44px native hit target, reaching 38px above its foot.
+// Reserve that hit target around controls without imposing the pet's 92px fit.
+const FOOD_FOOTPRINT = { width: 44, height: 38 };
 
 export type CompanionTextRect = { left: number; right: number; top: number; bottom: number };
 export type CompanionSurface = { x: number; y: number; width: number };
@@ -17,7 +21,7 @@ export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; serial:
 export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity };
 export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number };
 export type CompanionGeometryAnchor = { element?: Element; left: number; top: number };
-export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined };
+export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined; landings: (size?: number) => readonly Platform[] };
 
 /** A renderer can retain anonymous anchor identity while its observers sleep. */
 export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
@@ -25,7 +29,7 @@ export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
 }
 
 type AnchorSnapshot = { platform: Platform; anchor?: Element; rect?: { left: number; top: number } };
-const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.heart ? { heart: { ...platform.heart } } : {}) });
+const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}) });
 
 /** Text behind the opaque house is not visible ink. Keep any part outside its
  * bounds, so a character overhanging the house still avoids exposed labels. */
@@ -53,8 +57,10 @@ export function safeCompanionSurfaces(
   footprint: CompanionFootprint = { width: size, height: size },
 ): CompanionSurface[] {
   if (![surface.x, surface.y, surface.width, size, viewport.width, viewport.height, footprint.width, footprint.height].every(Number.isFinite)
-    || size <= 0 || footprint.width <= 0 || footprint.height <= 0 || surface.width <= 0 || surface.y < size + CLEARANCE || surface.y > viewport.height - 12) return [];
-  const half = size / 2;
+    || size <= 0 || footprint.width <= 0 || footprint.height <= 0 || surface.width <= 0 || surface.y < Math.max(size, footprint.height) + CLEARANCE || surface.y > viewport.height - 12) return [];
+  // A small drawing may have a larger native input target (food32:44x38).
+  // Preserve full-cell bounds for the pet and the full input target for food.
+  const half = Math.max(size, footprint.width) / 2;
   const bodyHalf = footprint.width / 2;
   const left = Math.max(surface.x, half + 4);
   const right = Math.min(surface.x + surface.width, viewport.width - half - 4);
@@ -83,7 +89,7 @@ export function safeCompanionSurfaces(
  * Nothing is measured on an idle animation loop; layout events coalesce. */
 export function observeCompanionPlatforms(root: HTMLElement, onChange: (platforms: Platform[]) => void, options: CompanionGeometryOptions = {}): CompanionGeometrySubscription {
   const win = root.ownerDocument.defaultView;
-  if (!win) return Object.assign(() => {}, { follow: (): CompanionFollowSample[] => [], anchor: () => undefined });
+  if (!win) return Object.assign(() => {}, { follow: (): CompanionFollowSample[] => [], anchor: () => undefined, landings: (): Platform[] => [] });
   const size = Number.isFinite(options.size) && options.size! > 0 ? options.size! : DEFAULT_SIZE;
   // Registered/curated atlas union occupies <.70 width and <.713 height of the
   // square cell. .76 plus 3px clearance includes pose bob/scale and pixel edges;
@@ -103,6 +109,8 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   let timer = 0;
   let measuredAt = -Infinity;
   let previous = "";
+  let landingSnapshot: Platform[] = [];
+  let foodLandingSnapshot: Platform[] = [];
   const observed = new Set<Element>();
   let observedHome: HTMLElement | null = null;
   const resizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(schedule);
@@ -112,7 +120,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     frame = 0;
     if (disposed) return;
     if (!root.isConnected) {
-      anchors.clear(); followedIds = []; retainedIds.clear();
+      anchors.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = [];
       if (previous !== "[]") { previous = "[]"; onChange([]); }
       return;
     }
@@ -120,10 +128,19 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const width = win!.innerWidth;
     const height = win!.innerHeight;
     const platforms: Platform[] = [];
+    const landings: Platform[] = [];
+    const foodLandings: Platform[] = [];
     const nextAnchors = new Map<string, AnchorSnapshot>();
     const remember = (platform: Platform, anchor?: Element, rect?: DOMRect) => {
       platforms.push(platform);
+      if ((platform.kind === "floor" || platform.id === "companion-home") && landings.length < MAX_PLATFORMS) landings.push(copyPlatform(platform));
       nextAnchors.set(platform.id, { platform, anchor, rect: rect ? { left: rect.left, top: rect.top } : undefined });
+    };
+    const rememberFood = (id: string, spans: readonly CompanionSurface[], kind: Platform["kind"], anchor?: Element, rect?: DOMRect) => {
+      for (let i = 0; i < spans.length && foodLandings.length < MAX_PLATFORMS; i++) {
+        const platform: Platform = { id: i ? `${id}-${i}` : id, ...spans[i], kind, manualOnly: true };
+        foodLandings.push(platform); nextAnchors.set(platform.id, { platform, anchor, rect: rect ? { left: rect.left, top: rect.top } : undefined });
+      }
     };
     const nextObserved = new Set<Element>([root]);
     const visibleCache = new Map<Element, boolean>();
@@ -249,6 +266,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (rect.width > 0 && rect.height > 0 && rect.top >= height * .65 && rect.bottom <= height + 1) floorY = Math.min(floorY, rect.top - 8);
       }
       addSurface("viewport-floor", "floor", { x: 12, y: floorY, width: width - 24 });
+      rememberFood("viewport-floor-food", safeCompanionSurfaces({ x: 12, y: floorY, width: width - 24 }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor");
       if (home?.isConnected && visible(home)) {
         const rect = home.getBoundingClientRect();
         const clip = clipping(home.parentElement);
@@ -257,6 +275,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const centre = rect.left + rect.width / 2;
         const preferred = safe.sort((a, b) => Math.abs(a.x + a.width / 2 - centre) - Math.abs(b.x + b.width / 2 - centre))[0];
         if (rect.height > 0 && preferred && platforms.length < MAX_PLATFORMS) remember({ id: "companion-home", ...preferred, kind: "date" }, home, rect);
+        if (rect.height > 0 && rect.top >= clip.top && rect.top < clip.bottom) rememberFood("companion-home-food", safeCompanionSurfaces({ x, y: rect.top, width: right - x }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "date", home, rect);
       }
       const cardPlatforms = new Map<HTMLElement, Platform[]>();
       for (const [element, rects] of lines) {
@@ -280,6 +299,26 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       }
       for (const element of root.querySelectorAll<HTMLElement>(CARD_SELECTOR)) {
         nextObserved.add(element);
+        if ((landings.length < MAX_PLATFORMS || foodLandings.length < MAX_PLATFORMS) && visible(element)) {
+          const rect = element.getBoundingClientRect(), clip = clipping(element.parentElement);
+          const left = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
+          if (rect.width > 0 && rect.height > 0 && rect.top >= clip.top && rect.top < clip.bottom && right > left) {
+            // A user-directed drop hits the rendered card edge, including on
+            // dense agenda rows. Keep full control/home/viewport protection;
+            // unlike autonomous roaming, do not silently skip this first card
+            // merely because the body may overlap earlier text above it.
+            const dropObstacles = houseBounds ? [...controls, houseBounds] : controls;
+            const spans = safeCompanionSurfaces({ x: left, y: rect.top - CLEARANCE, width: right - left }, dropObstacles, size, viewport, footprint);
+            const foodSpans = safeCompanionSurfaces({ x: left, y: rect.top - CLEARANCE, width: right - left }, dropObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT);
+            const baseId = spans.length || foodSpans.length ? idFor(element, "card") : "";
+            const id = `${baseId}-top`;
+            for (let i = 0; i < spans.length && landings.length < MAX_PLATFORMS; i++) {
+              const platform: Platform = { id: i ? `${id}-${i}` : id, ...spans[i], kind: "card", manualOnly: true };
+              landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: element, rect: { left: rect.left, top: rect.top } });
+            }
+            rememberFood(`${baseId}-food-top`, foodSpans, "card", element, rect);
+          }
+        }
         const candidates = cardPlatforms.get(element);
         if (!candidates?.length) continue;
         const heart = element.querySelector<HTMLElement>(".event-heart");
@@ -320,8 +359,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // may follow/rebase an old world from inside this same onChange delivery.
     // Keep private copies so imperative carry cannot mutate the next baseline.
     anchors = new Map([...nextAnchors].map(([id, snapshot]) => [id, { ...snapshot, platform: copyPlatform(snapshot.platform) }]));
+    landingSnapshot = landings.map(copyPlatform);
+    foodLandingSnapshot = foodLandings.map(copyPlatform);
     // Suppress equal layout deliveries, including a countdown's text mutation.
-    const signature = JSON.stringify(platforms);
+    const signature = JSON.stringify([platforms, landings, foodLandings]);
     if (signature !== previous) { previous = signature; onChange(platforms); }
   }
 
@@ -383,6 +424,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     observed.clear();
   };
   return Object.assign(dispose, {
+    // Fresh baseline copies, paired with anchor(). Only the cached food32 tier
+    // differs from the configured pet size; no caller triggers a new scan.
+    // Callers own deliberate release rebasing; this performs no layout work.
+    landings: (requestedSize?: number) => (requestedSize === FOOD_SIZE ? foodLandingSnapshot : landingSnapshot).map(copyPlatform),
     // Food captures its own small set of anchor offsets at placement. Expose
     // the already measured baseline, without enlarging the pet's follow pair
     // or doing an additional selector/Range/rect read.
@@ -391,7 +436,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       return snapshot ? { element: snapshot.anchor, left: snapshot.rect?.left ?? 0, top: snapshot.rect?.top ?? 0 } : undefined;
     },
     follow(requested: readonly string[]): CompanionFollowSample[] {
-      if (!root.isConnected) { anchors.clear(); followedIds = []; retainedIds.clear(); return []; }
+      if (!root.isConnected) { anchors.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; return []; }
       followedIds = [...new Set(requested)].slice(0, 2);
       for (const id of retainedIds) {
         if (!followedIds.includes(id)) { anchors.delete(id); retainedIds.delete(id); }

@@ -1,0 +1,13 @@
+{
+  "work_id": "VICTAMIN-COMPANION-HD-20261015",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\VICTAMIN-COMPANION-HD-20261015\\검토용\\8437C0F20F3065B96F82.png",
+  "sha256": "5C4D081BAEFCF66C2EC8255D214C447B345AAFA098EEAC4C78A6DABFEA0FDDC7",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Generator observation only: two ears, limbless layered rectangular paper identity retained. Sixteen disappointed/sulky expression keyframes including folded-ear poses, mild downturned mouths and half-lidded eyes. One small surprise accent and low-alpha edge artifacts exist in preview; actual alpha/connected body clipping will be measured. No specialist review, user visual approval or claim of sixteen fully continuous animation loops."
+  ],
+  "cycle_id": "8437C0F20F3065B96F82",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

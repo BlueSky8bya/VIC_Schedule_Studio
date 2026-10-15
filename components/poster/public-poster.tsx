@@ -1213,6 +1213,8 @@ export function PublicPoster({
     const onDown = (e: PointerEvent) => {
       const t = e.target as HTMLElement | null;
       if (t?.closest(".agenda-detail-sheet")) return;
+      if (t?.closest(".vc-companion[data-overlay='quiet'] .vc-actor")) return; // sleeping pet owns its direct lift; keep this window
+      if (document.querySelector(".vc-companion[data-overlay='quiet'][data-placing]") && !t?.closest("button,a,input,select,textarea,[role='button']")) return;
       if (t?.closest(".public-event.is-clickable")) return; // 카드 클릭 → 상세 교체가 처리
       if (t?.closest(".support-bar.is-clickable")) return; // 업도움 띠 클릭 → 상세 교체가 처리
       setAgendaDetail(null);

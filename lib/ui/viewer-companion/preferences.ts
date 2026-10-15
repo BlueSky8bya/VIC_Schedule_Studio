@@ -11,6 +11,7 @@ export type CompanionPreferences = {
   feeding: boolean;
   animalMode: "default" | "cat" | "dog";
   speed: "relaxed" | "normal" | "lively";
+  /** Legacy values remain readable; normalization always selects the 92px size. */
   size: "small" | "normal" | "large";
   personality: "curious" | "affectionate" | "sleepy";
 };
@@ -29,7 +30,7 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   feeding: true,
   animalMode: "default",
   speed: "normal",
-  size: "normal",
+  size: "large",
   personality: "curious"
 });
 
@@ -40,12 +41,11 @@ let unwritten: { raw: string | null | undefined; owner: Window } | undefined;
 
 /** Explicit allowlist: malformed values never turn the optional companion on. */
 export function normalizeCompanionPreferences(value: unknown, base: Readonly<CompanionPreferences> = DEFAULT_COMPANION_PREFERENCES): CompanionPreferences {
-  const next = { ...base };
+  const next: CompanionPreferences = { ...base, size: "large" };
   if (!value || typeof value !== "object" || Array.isArray(value)) return next;
   const source = value as Record<string, unknown>;
   for (const key of booleanKeys) if (typeof source[key] === "boolean") next[key] = source[key];
   if (source.speed === "relaxed" || source.speed === "normal" || source.speed === "lively") next.speed = source.speed;
-  if (source.size === "small" || source.size === "normal" || source.size === "large") next.size = source.size;
   if (source.personality === "curious" || source.personality === "affectionate" || source.personality === "sleepy") next.personality = source.personality;
   if (source.animalMode === "default" || source.animalMode === "cat" || source.animalMode === "dog") next.animalMode = source.animalMode;
   return next;

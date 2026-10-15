@@ -1,4 +1,5 @@
 import { platformLandingX, type CompanionFood, type Platform } from "./brain";
+import { firstCompanionSupportBelow } from "./support-landing";
 
 export const MAX_COMPANION_FOOD = 3;
 export const COMPANION_TRASH_DWELL_MS = 320;
@@ -14,11 +15,13 @@ export function attachCompanionFood(point: Point, scroll: Point, origin?: Point)
   return { documentX: point.x + scroll.x, documentY: point.y + scroll.y, offsetX: origin ? point.x - origin.x : 0, offsetY: origin ? point.y - origin.y : 0 };
 }
 
-export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect): { point: Point; attachment: CompanionFoodAttachment } {
+export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect, clampToSource = true): { point: Point; attachment: CompanionFoodAttachment } {
   // Width/height change is an actual reflow: keep the same source and clamp
   // only to its new local bounds. Scrolling alone never changes either offset.
-  const localX = rect?.width !== undefined ? Math.min(attachment.offsetX, Math.max(0, rect.width)) : attachment.offsetX;
-  const localY = rect?.height !== undefined ? Math.min(attachment.offsetY, Math.max(-3, rect.height - 3)) : attachment.offsetY;
+  // A dispenser tray deliberately sits outside the tiny outlet rectangle.
+  // Its local home offset survives topology changes without a glyph clamp.
+  const localX = clampToSource && rect?.width !== undefined ? Math.min(attachment.offsetX, Math.max(0, rect.width)) : attachment.offsetX;
+  const localY = clampToSource && rect?.height !== undefined ? Math.min(attachment.offsetY, Math.max(-3, rect.height - 3)) : attachment.offsetY;
   const point = rect ? { x: rect.left + localX, y: rect.top + localY } : { x: attachment.documentX - scroll.x, y: attachment.documentY - scroll.y };
   return { point, attachment: { ...attachment, documentX: point.x + scroll.x, documentY: point.y + scroll.y } };
 }
@@ -51,15 +54,7 @@ export function companionTrashProgress(elapsedMs: number): number {
  * a floor or teleports a dropped fruit to a different calendar column. */
 export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[]): CompanionFood {
   if (![point.x, point.y].every(Number.isFinite)) return { id: food.id, kind: food.kind, x: food.x, y: food.y };
-  // DOM Range and a painted transform can differ by a fraction of a pixel.
-  // Treat an existing contact as that same ledge instead of falling through
-  // it to the next date; genuinely higher ledges remain excluded.
-  const contactTolerance = .5;
-  const below = platforms.filter(p => p.id && [p.x, p.y, p.width, p.x + p.width].every(Number.isFinite) && p.width > 0 && p.y >= point.y - contactTolerance);
-  const offset = (p: Platform) => Math.max(p.x - point.x, point.x - p.x - p.width, 0);
-  const covered = below.filter(p => offset(p) === 0).sort((a, b) => a.y - b.y);
-  const nearby = below.filter(p => offset(p) <= 22).sort((a, b) => a.y - point.y + offset(a) * 4 - (b.y - point.y + offset(b) * 4));
-  const support = covered[0] ?? nearby[0];
+  const support = firstCompanionSupportBelow(point, platforms, 22);
   return support ? { id: food.id, kind: food.kind, x: Math.max(support.x, Math.min(support.x + support.width, point.x)), y: support.y, platformId: support.id }
     : { id: food.id, kind: food.kind, x: point.x, y: point.y };
 }

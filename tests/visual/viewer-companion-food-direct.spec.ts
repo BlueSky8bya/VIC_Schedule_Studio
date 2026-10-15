@@ -1,9 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_NAMES, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { chooseCompanionCare, openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const foods = (page: Page) => page.locator(".vc-food");
@@ -55,7 +56,7 @@ async function cancelPointer(item: Locator, different = false) {
   await item.evaluate((node, different) => node.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId: Number(node.getAttribute("data-test-pointer")) + (different ? 99 : 0), pointerType: "mouse" })), different);
 }
 
-const TEXT_SURFACES = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
+const CARD_SURFACES = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
 const foodPoint = (item: Locator) => item.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; });
 async function allowDocumentScroll(page: Page) {
   await page.evaluate(async () => {
@@ -67,39 +68,35 @@ async function allowDocumentScroll(page: Page) {
   });
 }
 async function identifyInitialSupport(page: Page) {
-  if (!(await pet(page).getAttribute("data-platform"))?.match(/^(?:card|date)-/)) {
-    // Dense phone rows can correctly have no safe initial character landing.
-    // Give one existing card inert flow space. This food-only setup uses the
-    // real source line directly, without a fabricated companion pose.
-    await page.locator(".agenda-title-text").first().evaluate(node => {
-      const day = node.closest<HTMLElement>(".agenda-day")!; day.style.marginTop = "100px";
-    });
-    await page.waitForTimeout(180);
-    return page.locator(".agenda-title-text").first().evaluate(node => {
-      const range = document.createRange(); range.selectNodeContents(node); const line = range.getClientRects()[0]; range.detach();
-      node.setAttribute("data-test-food-anchor", ""); const rect = node.getBoundingClientRect();
-      return { x: line.left + line.width / 2 - rect.left, y: line.top - 3 - rect.top, error: 0 };
-    });
-  }
-  await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-/);
   const found = await page.evaluate(selector => {
-    const pet = document.querySelector(".vc-companion")!.getBoundingClientRect(), x = pet.left + pet.width / 2;
-    const candidates: { node: HTMLElement; error: number }[] = [];
+    // Deliberate food/pet placement now collides with the rendered card top,
+    // independently of the autonomous text ledges. Pick a real shared ray with
+    // room for the92px pet body and44x38 snack hitbox above that same card.
+    const controls = [...document.querySelectorAll("button,a[href],input,select,textarea,[role='button']")]
+      .filter(node => !node.matches(`${selector},.public-day,.agenda-day`) && !node.closest(".vc-companion,.vc-cushion-button"))
+      .map(node => node.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+    const halfWidth = Math.max(92 * .76, 44) / 2 + 3, height = Math.max(92 * .76, 38) + 3;
     for (const node of document.querySelectorAll<HTMLElement>(selector)) {
-      const range = document.createRange(); range.selectNodeContents(node);
-      for (const line of range.getClientRects()) if (x >= line.left - .5 && x <= line.right + .5 && line.width > .5 && line.height > .5) candidates.push({ node, error: Math.abs(pet.bottom - line.top + 3) });
-      range.detach();
+      const rect = node.getBoundingClientRect(), y = rect.top - 3;
+      if (rect.width < 80 || rect.height <= 0 || y < 120 || rect.bottom > innerHeight - 60) continue;
+      // The centre of an agenda card can sit below a holiday button. An actual
+      // clear point toward either side preserves hit-target protection.
+      for (const fraction of [.5, .86, .14]) {
+        const x = rect.left + rect.width * fraction;
+        if (x < 50 || x > innerWidth - 50 || controls.some(control => control.left < x + halfWidth && control.right > x - halfWidth && control.top < y && control.bottom > y - height)) continue;
+        if (document.elementFromPoint(x, rect.top + Math.min(4, rect.height / 2))?.closest(selector) !== node) continue;
+        node.setAttribute("data-test-food-anchor", "");
+        return { x: x - rect.left, y: -3 };
+      }
     }
-    const closest = candidates.sort((a, b) => a.error - b.error)[0];
-    if (!closest) return null;
-    closest.node.setAttribute("data-test-food-anchor", ""); const rect = closest.node.getBoundingClientRect();
-    return { x: x - rect.left, y: pet.bottom - rect.top, error: closest.error };
-  }, TEXT_SURFACES);
-  expect(found).not.toBeNull(); expect(found!.error).toBeLessThan(2); return found!;
+    return null;
+  }, CARD_SURFACES);
+  expect(found, "fixture needs a visible actual card top with a clear pet/food ray").not.toBeNull();
+  return found!;
 }
 
 for (const width of [1440, 390]) {
-  test(`food keeps its actual text support offscreen and returns at ${width}px`, async ({ page }) => {
+  test(`food keeps its actual card support offscreen and returns at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page, .1, false);
     await allowDocumentScroll(page); const offset = await identifyInitialSupport(page), anchor = page.locator("[data-test-food-anchor]");
     const item = await spawn(page);
@@ -113,18 +110,20 @@ for (const width of [1440, 390]) {
     const original = await foodPoint(item);
     let actualOffset = await anchor.evaluate((node, point) => { const rect = node.getBoundingClientRect(); return { x: point.x - rect.left, y: point.y - rect.top }; }, original);
     expect(Math.abs(original.y - target.y)).toBeLessThan(3);
-    const samples = await page.evaluate(({ offset }) => new Promise<{ error: number; scroll: number }[]>(resolve => {
+    const samples = await page.evaluate(({ offset }) => new Promise<{ error: number; scroll: number; x: number; y: number; sourceX: number; sourceY: number }[]>(resolve => {
       const food = document.querySelector<HTMLElement>(".vc-food")!, source = document.querySelector("[data-test-food-anchor]")!, startY = scrollY;
-      const result: { error: number; scroll: number }[] = []; let began = 0;
+      const result: { error: number; scroll: number; x: number; y: number; sourceX: number; sourceY: number }[] = []; let began = 0;
       const frame = (now: number) => {
         began ||= now; const matrix = new DOMMatrixReadOnly(getComputedStyle(food).transform), rect = source.getBoundingClientRect();
-        result.push({ error: Math.hypot(matrix.m41 - rect.left - offset.x, matrix.m42 - rect.top - offset.y), scroll: scrollY - startY });
+        result.push({ error: Math.hypot(matrix.m41 - rect.left - offset.x, matrix.m42 - rect.top - offset.y), scroll: scrollY - startY, x: matrix.m41, y: matrix.m42, sourceX: rect.left, sourceY: rect.top });
         if (now - began > 800) { resolve(result); return; }
         window.scrollTo({ top: startY + 96 * Math.min((now - began) / 600, 1), behavior: "instant" }); requestAnimationFrame(frame);
       }; requestAnimationFrame(frame);
     }), { offset: actualOffset });
     expect(samples.length).toBeGreaterThan(20); expect(samples.at(-1)!.scroll).toBeGreaterThan(90);
     const sorted = samples.map(sample => sample.error).sort((a, b) => a - b);
+    await writeFile(`.scratch-pw/companion-food-card-scroll-${width}.json`, JSON.stringify({ width, target, original, actualOffset, samples }, null, 2));
+    console.log(JSON.stringify({ check: "food-anchor-scroll-diagnostic", width, target, original, actualOffset, first: samples.slice(0, 5), last: samples.slice(-5) }));
     expect(sorted[Math.floor(sorted.length * .95)]).toBeLessThan(5); expect(sorted.at(-1)).toBeLessThan(9);
     await page.evaluate(() => window.scrollTo({ top: 1100, behavior: "instant" }));
     await expect(item).toHaveJSProperty("hidden", true); await expect(foods(page)).toHaveCount(1);
@@ -133,7 +132,7 @@ for (const width of [1440, 390]) {
     await expect.poll(async () => { const point = await foodPoint(item); return Math.hypot(point.x - original.x, point.y - original.y); }).toBeLessThan(2);
     await expect(item).toBeInViewport();
     if (width >= 1040) {
-      // Attachment returns in one rAF; the pet's full text scan coalesces for
+      // Attachment returns in one rAF; the pet's full geometry scan coalesces for
       //120ms. Finish this setup scan before asking it to share the source.
       // The separate scroll40→native food release below still has no wait.
       await page.waitForTimeout(180);
@@ -142,7 +141,7 @@ for (const width of [1440, 390]) {
       // retain an independent baseline for the following native release.
       const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
       await expect(actor).toBeVisible(); await actor.focus(); await actor.press("p"); await page.mouse.click(original.x, original.y);
-      await expect(pet(page)).not.toHaveAttribute("data-state", "jump"); await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-/);
+      await expect(pet(page)).not.toHaveAttribute("data-state", "jump"); await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top(?:-\d+)?$/);
     }
     // Regrab the restored real button, scroll while it is held, then release
     // before depending on a new full scan. Binding must apply the DOM delta
@@ -301,10 +300,20 @@ test("a real mobile touch cancellation keeps its snack and a held trash drop can
 for (const input of ["pointer", "keyboard"] as const) {
   test(`food reaches the mouth and ${input} regrabbing interrupts without care credit`, async ({ page }) => {
     await setup(page, .58);
-    await chooseCompanionCare(page, "옮길 곳 고르기"); await page.mouse.click(180, page.viewportSize()!.height - 20);
+    const offset = await identifyInitialSupport(page), anchor = page.locator("[data-test-food-anchor]");
+    // This regression concerns mouth presentation and interruption, not an
+    // assumed floor span at an authored coordinate. Place by a real command on
+    // the same measured manual card top that will support the offered snack.
+    const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
+    await actor.focus(); await actor.press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
+    const destination = await anchor.evaluate((node, offset) => { const rect = node.getBoundingClientRect(); return { x: rect.left + offset.x, y: rect.top + offset.y }; }, offset);
+    await page.mouse.click(destination.x, destination.y);
     await expect(pet(page)).not.toHaveAttribute("data-placing"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+    await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top(?:-\d+)?$/);
+    const placed = await pet(page).evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; });
+    expect(Math.hypot(placed.x - destination.x, placed.y - destination.y)).toBeLessThan(2);
     const item = await spawn(page);
-    const target = await pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2 + 24, y: r.bottom }; });
+    const target = await pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom }; });
     await page.mouse.click(target.x, target.y);
     await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
     await expect(item).toHaveAttribute("data-eating", "");

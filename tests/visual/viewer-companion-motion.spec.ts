@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { chooseCompanionCare } from "./helpers/companion-home";
-import registration from "@/lib/ui/viewer-companion/fluid-sprite.json";
+import registration from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -46,33 +46,87 @@ async function setup(page: Page, graphics: "max" | "lite" = "max", sentinel = fa
 }
 
 async function walkOnFloor(page: Page, startX: number, pointerX: number) {
-  const home = page.getByRole("region", { name: "빅타민 집", exact: true });
-  if (!(await home.isVisible())) {
-    const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
-    await launcher.focus(); await launcher.press("Enter");
-  }
-  await chooseCompanionCare(page, "옮길 곳 고르기");
-  const height = page.viewportSize()!.height;
-  await page.mouse.click(startX, height - 20);
+  // P is the native placement command; opening a house is unrelated to gait
+  // and can cover the old hard-coded floor point. Keep any already visible
+  // house/controls intact and choose a real clear point around them.
+  await chooseCompanionCare(page, "옮길 곳 고르기", "keyboard");
+  await expect(pet(page)).toHaveAttribute("data-placing", "");
+  await page.evaluate(async () => {
+    await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished));
+  });
+  await page.waitForTimeout(180); // final native layout and coalesced geometry
+  const floor = await page.evaluate(requestedX => {
+    const root = document.querySelector<HTMLElement>(".poster-page")!;
+    const cell = document.querySelector<HTMLElement>(".vc-companion")!.getBoundingClientRect();
+    const body = document.querySelector<HTMLElement>(".vc-actor")!.getBoundingClientRect();
+    let y = innerHeight - 18;
+    const half = Math.max(body.width, cell.width * .76) / 2, height = Math.max(body.height, cell.height * .76), gap = 4;
+    type Rect = { left: number; top: number; right: number; bottom: number };
+    const obstacles: Rect[] = [], styles = new Map<Element, CSSStyleDeclaration>();
+    const style = (node: Element) => { const value = styles.get(node) ?? getComputedStyle(node); styles.set(node, value); return value; };
+    const visible = (node: Element | null): boolean => !node || !node.hasAttribute("hidden") && style(node).display !== "none" && !["hidden", "collapse"].includes(style(node).visibility) && Number(style(node).opacity || 1) > .05 && visible(node.parentElement);
+    // The shared fixed month bar can occupy the bottom on either layout.
+    // Its actual top, rather than viewport height alone, defines this floor.
+    for (const bar of root.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
+      if (!visible(bar) || style(bar).position !== "fixed") continue;
+      const box = bar.getBoundingClientRect();
+      if (box.width > 0 && box.height > 0 && box.top >= innerHeight * .65 && box.bottom <= innerHeight + 1) y = Math.min(y, box.top - 8);
+    }
+    const add = (rect: Rect, parent: Element | null) => {
+      const clipped = { left: Math.max(0, rect.left), top: Math.max(0, rect.top), right: Math.min(innerWidth, rect.right), bottom: Math.min(innerHeight, rect.bottom) };
+      for (let node = parent; node; node = node.parentElement) {
+        const css = style(node), clipX = /^(auto|scroll|hidden|clip)$/.test(css.overflowX), clipY = /^(auto|scroll|hidden|clip)$/.test(css.overflowY);
+        if (!clipX && !clipY) continue;
+        const box = node.getBoundingClientRect();
+        if (clipX) { clipped.left = Math.max(clipped.left, box.left); clipped.right = Math.min(clipped.right, box.right); }
+        if (clipY) { clipped.top = Math.max(clipped.top, box.top); clipped.bottom = Math.min(clipped.bottom, box.bottom); }
+      }
+      if (clipped.right > clipped.left && clipped.bottom > clipped.top) obstacles.push(clipped);
+    };
+    const range = document.createRange(), walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const parent = node.parentElement;
+      if (!parent || !visible(parent) || parent.closest("script,style,svg,.sr-only,.vc-companion")) continue;
+      range.selectNodeContents(node);
+      for (const rect of range.getClientRects()) add(rect, parent);
+    }
+    range.detach();
+    const controls = new Set(root.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role='button']"));
+    for (const node of document.querySelectorAll<HTMLElement>(".vc-home,.vc-home-launcher")) controls.add(node);
+    for (const node of controls) {
+      if (!visible(node) || node.matches(".public-event,.agenda-event,.agenda-item,.public-day,.agenda-day") || node.closest(".vc-companion")) continue;
+      add(node.getBoundingClientRect(), node.parentElement);
+    }
+    // Independent rendered-body collision oracle: no product platform helper,
+    // injected geometry or fake floor. Scan viewport pixels nearest the request.
+    const min = Math.ceil(cell.width / 2 + gap), max = Math.floor(innerWidth - cell.width / 2 - gap);
+    const candidates = Array.from({ length: Math.max(0, max - min + 1) }, (_, index) => min + index).sort((a, b) => Math.abs(a - requestedX) - Math.abs(b - requestedX) || a - b);
+    const x = candidates.find(x => obstacles.every(rect => x + half + gap <= rect.left || x - half - gap >= rect.right || y + gap <= rect.top || y - height - gap >= rect.bottom));
+    return { x: y >= cell.height + 8 && y <= innerHeight - 12 ? x : undefined, y, cell: cell.width, obstacles: obstacles.length };
+  }, startX);
+  expect(floor.cell).toBeCloseTo(92, 2);
+  expect(floor.x, "the actual floor needs a clear92px companion point").toBeDefined();
+  console.log(JSON.stringify({ check: "motion-native-floor", requestedX: startX, ...floor }));
+  await page.mouse.click(floor.x!, floor.y);
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
-  await page.mouse.move(pointerX, height - 18);
+  await page.mouse.move(pointerX, floor.y);
   await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 5000 });
 }
 
 async function sampleFrames(page: Page, duration = 1000): Promise<Frame[]> {
-  return page.evaluate(duration => new Promise(resolve => {
+  return page.evaluate(({ duration, rowCount }) => new Promise(resolve => {
     const element = document.querySelector<HTMLElement>(".vc-companion")!;
     const facing = element.querySelector<HTMLElement>(".vc-facing")!;
     const result: Frame[] = [], start = performance.now();
     const sample = (now: number) => {
       const matrix = new DOMMatrixReadOnly(element.style.transform);
       const mirror = new DOMMatrixReadOnly(getComputedStyle(facing).transform);
-      result.push({ t: now - start, x: matrix.m41, y: matrix.m42, state: element.dataset.state ?? "", facing: element.dataset.facing ?? "", mirror: mirror.a, row: Math.round(parseFloat(element.style.getPropertyValue("--vc-row")) * .15), column: Math.round(parseFloat(element.style.getPropertyValue("--vc-column")) * .15), pose: Number(element.dataset.pose) });
+      result.push({ t: now - start, x: matrix.m41, y: matrix.m42, state: element.dataset.state ?? "", facing: element.dataset.facing ?? "", mirror: mirror.a, row: Math.round(parseFloat(element.style.getPropertyValue("--vc-row")) * (rowCount - 1) / 100), column: Math.round(parseFloat(element.style.getPropertyValue("--vc-column")) * .15), pose: Number(element.dataset.pose) });
       if (now - start >= duration) resolve(result);
       else requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
-  }), duration);
+  }), { duration, rowCount: registration.rows.length });
 }
 
 async function geometry(page: Page) {

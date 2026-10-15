@@ -29,9 +29,9 @@ describe("input-owned petting contact", () => {
     const contact = createCompanionPettingContact();
     contact.move(.2, 0); contact.move(.7, 80);
     expect(contact.sample(150).pressure).toBeLessThan(contact.sample(80).pressure);
-    expect(contact.sample(490).pressure).toBeGreaterThan(0);
-    expect(contact.sample(500).pressure).toBe(0);
-    contact.reset(); expect(contact.sample(510).pressure).toBe(0);
+    expect(contact.sample(629).pressure).toBeGreaterThan(0);
+    expect(contact.sample(630).pressure).toBe(0);
+    contact.reset(); expect(contact.sample(640).pressure).toBe(0);
   });
   it("reduced motion retains only a subtle press", () => {
     const contact = createCompanionPettingContact();

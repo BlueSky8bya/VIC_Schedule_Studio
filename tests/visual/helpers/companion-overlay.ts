@@ -1,7 +1,19 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-/** Ordinary overlays retain the rendered creature, while native hit targets
- * and keyboard navigation belong to the overlay. Hard visibility locks have
+/** Deliberate control focus follows the actual window entrance, rather than
+ * racing a sheet's native autofocus while it is still entering. No animation
+ * or application clock is stopped or replaced. */
+export async function waitForOverlayEntrance(dialog: Locator) {
+  await dialog.evaluate(async node => {
+    await Promise.allSettled(node.getAnimations({ subtree: true })
+      .filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)))
+      .map(animation => animation.finished));
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  });
+}
+
+/** Ordinary overlays retain the rendered creature, while direct sleeping lifts remain available.
+ * Dialog controls and keyboard navigation keep their own input. Hard visibility locks have
  * separate tests and intentionally do not use this assertion. */
 export async function expectQuietCompanionVisible(page: Page) {
   const pet = page.locator(".vc-companion");
@@ -9,7 +21,7 @@ export async function expectQuietCompanionVisible(page: Page) {
   await expect.poll(() => pet.locator(".vc-actor").evaluate(node => {
     const actor = node as HTMLButtonElement;
     return { pointer: getComputedStyle(actor).pointerEvents, keyboardExcluded: actor.disabled || Boolean(actor.closest("[inert]")) || actor.tabIndex < 0 };
-  })).toEqual({ pointer: "none", keyboardExcluded: true });
+  })).toEqual({ pointer: "auto", keyboardExcluded: true });
 }
 
 type ProbeWindow = Window & { overlayProbe: { ranges: number; rects: number; writes: number; original: typeof Range.prototype.getClientRects; rectOriginal: typeof Element.prototype.getBoundingClientRect; observer: MutationObserver } };

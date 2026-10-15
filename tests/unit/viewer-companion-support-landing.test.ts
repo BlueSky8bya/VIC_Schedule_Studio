@@ -1,8 +1,51 @@
 import { describe, expect, it } from "vitest";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
-import { nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { firstCompanionSupportBelow, nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
 
 const span = (id: string, x: number, y: number, width: number, kind: Platform["kind"] = "card"): Platform => ({ id, x, y, width, kind });
+
+describe("deliberate first-contact landing", () => {
+  it("hits the first lower card instead of the closest upper line or an early floor entry", () => {
+    const upper = span("above", 80, 299, 80), first = span("first", 80, 360, 80), lower = span("lower", 80, 500, 80), floor = span("floor", 0, 780, 1000, "floor");
+    expect(firstCompanionSupportBelow({ x: 100, y: 300 }, [floor, lower, upper, first])).toBe(first);
+    expect(firstCompanionSupportBelow({ x: 100, y: 400 }, [floor, lower, first])).toBe(lower);
+  });
+  it("keeps the exact vertical ray, including both actual card edges", () => {
+    const first = span("first", 100, 400, 80), floor = span("floor", 0, 780, 1000, "floor");
+    for (const x of [100, 140, 180]) expect(firstCompanionSupportBelow({ x, y: 300 }, [floor, first])).toBe(first);
+    expect(firstCompanionSupportBelow({ x: 99, y: 300 }, [first, floor])).toBe(floor);
+    expect(firstCompanionSupportBelow({ x: 181, y: 300 }, [first])).toBeUndefined();
+  });
+  it("uses edge attraction only when no real lower span covers x", () => {
+    const card = span("card", 100, 400, 80), floor = span("floor", 0, 780, 1000, "floor");
+    expect(firstCompanionSupportBelow({ x: 90, y: 300 }, [card], 22)).toBe(card);
+    expect(firstCompanionSupportBelow({ x: 77, y: 300 }, [card], 22)).toBeUndefined();
+    expect(firstCompanionSupportBelow({ x: 90, y: 300 }, [card, floor], 22)).toBe(floor);
+  });
+  it("does not fall through the same contact because painted feet round by a fraction", () => {
+    const card = span("card", 100, 400, 80), floor = span("floor", 0, 780, 1000, "floor");
+    expect(firstCompanionSupportBelow({ x: 120, y: 400.000366 }, [floor, card])).toBe(card);
+    expect(firstCompanionSupportBelow({ x: 120, y: 400.49 }, [floor, card])).toBe(card);
+    expect(firstCompanionSupportBelow({ x: 120, y: 400.51 }, [floor, card])).toBe(floor);
+  });
+  it("has deterministic nonfloor/id ties regardless of candidate order", () => {
+    const a = span("card-a", 0, 500, 300), b = span("card-b", 0, 500, 300), floor = span("floor", 0, 500, 1000, "floor");
+    for (const candidates of [[floor, b, a], [a, floor, b], [b, a, floor]]) expect(firstCompanionSupportBelow({ x: 100, y: 400 }, candidates)).toBe(a);
+  });
+  it("has no upper or invented floor fallback", () => {
+    const upper = span("upper", 0, 200, 500), remote = span("remote", 500, 700, 100);
+    expect(firstCompanionSupportBelow({ x: 100, y: 400 }, [upper, remote])).toBeUndefined();
+    expect(firstCompanionSupportBelow({ x: 100, y: 400 }, [])).toBeUndefined();
+  });
+  it("skips invalid surfaces and preserves the input records/order", () => {
+    const valid = Object.freeze(span("valid", 0, 500, 200));
+    const candidates = Object.freeze([span("bad", 0, 450, -10), span("nan", NaN, 450, 500), span("", 0, 450, 500), span("overflow", Number.MAX_VALUE, 450, Number.MAX_VALUE), valid]);
+    expect(firstCompanionSupportBelow({ x: 100, y: 400 }, candidates)).toBe(valid);
+    expect(candidates.at(-1)).toBe(valid);
+    expect(firstCompanionSupportBelow({ x: NaN, y: 400 }, candidates)).toBeUndefined();
+    expect(firstCompanionSupportBelow({ x: 100, y: Infinity }, candidates)).toBeUndefined();
+  });
+});
 
 describe("companion vertical support recovery", () => {
   it("selects the closest height that actually covers the current x", () => {

@@ -47,6 +47,16 @@ describe("companion food support", () => {
 });
 
 describe("companion food attachments", () => {
+  it("keeps a home tray outside its tiny dispenser origin without the glyph reflow clamp", () => {
+    const attached = attachCompanionFood({ x: 460, y: 509 }, { x: 0, y: 0 }, { x: 500, y: 500 });
+    const moved = followCompanionFood(attached, { x: 0, y: 100 }, { left: 200, top: 350, width: 18, height: 5 }, false);
+    expect(moved.point).toEqual({ x: 160, y: 359 });
+    expect(moved.attachment.offsetX).toBe(-40); expect(moved.attachment.offsetY).toBe(9);
+    // The same local origin can bind a remounted home after a fold/portal move.
+    expect(followCompanionFood(moved.attachment, { x: 0, y: 0 }, { left: 700, top: 500, width: 24, height: 5 }, false).point).toEqual({ x: 660, y: 509 });
+    // Ordinary text attachment keeps its existing height-clamp contract.
+    expect(followCompanionFood(attached, { x: 0, y: 0 }, { left: 500, top: 500, width: 18, height: 5 }).point.y).toBe(502);
+  });
   it("keeps a document point through scrolling and restores it at the original place", () => {
     const attached = attachCompanionFood({ x: 200, y: 350 }, { x: 0, y: 200 });
     const away = followCompanionFood(attached, { x: 40, y: 900 });

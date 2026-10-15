@@ -1,0 +1,55 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "VICTAMIN-COMPANION-HD-20261015",
+  "operation": "new",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "codex",
+  "inputs": [
+    {
+      "id": "REF-016",
+      "source_id": "REF-016",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "id": "REF-017",
+      "source_id": "REF-017",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "authorities": {
+    "mascot": "REF-017"
+  },
+  "opened_files": [
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "mascot_variation_plan": "One limbless mascot, exactly two normal long oval ears and layered rectangular paper body. Only mild disappointed/sulky expression, gaze and bounded ear/body pose vary; no new character design, accessories or human anatomy.",
+  "scene_exception": "UI emotion animation keyframe sheet. Repeated identity and camera are deliberate; variation belongs to temporal expression rather than extra individuals. Original16-keypose draft is a separate rig texture source, not falsely marked as approved/original generator input.",
+  "structure_plan": {
+    "connected_anatomy": "Two ears remain connected to the same layered limbless body.",
+    "occluded_continuation": "No new hidden anatomy or rear eyes; all sixteen characters remain completely inside their own cells.",
+    "contacts_support": "Transparent asset without ground/shadow; uniform88% baseline for runtime registration.",
+    "vr_physics_corrections": "Preserve the source square paper layers and long ears; do not invent limbs or copy VR clipping."
+  },
+  "scene_plan": {
+    "mode": "design_sheet",
+    "purpose": "Two coherent eight-keyframe emotion actions for the same local calendar mascot."
+  },
+  "construction_method": "One builtin transparent image generation from unchanged original design references. Subsequent cropping/packing and bounded2D mechanical animation baking preserve native pixels as textures; no manual facial painting, Python raster editing or synthesized detail claims.",
+  "user_cycle": {
+    "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/_project/runs/VICTAMIN-COMPANION-HD-20261015/plan.json",
+    "sha256": "632CD3CC08AFF3ED47C1682712DE0ADA3737EF06F5EBF55E9C7192B1CC2D7FD8"
+  }
+}
