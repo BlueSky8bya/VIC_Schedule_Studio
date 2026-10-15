@@ -1,6 +1,6 @@
 # 빅타민 직접 이동·발버둥·상단 점프
 
-2026-10-15 KST. 기준판 `9fcd02db`. [PLAN-054](../plans/PLAN-20261015-054-companion-drag-and-jump.md). 로컬 검증 중, 운영 배포는 아직 확인 전이다.
+2026-10-15 KST. 기준판 `9fcd02db`. [PLAN-054](../plans/PLAN-20261015-054-companion-drag-and-jump.md). 구현·검증·운영 배포 완료. 제품 커밋 `3194f66fd2f7401d6245318390f0a6a6cd7898e7`.
 
 ## 변경 계약
 
@@ -23,7 +23,7 @@ viewer/anonymous/preview 공유 구현. 기본OFF·92px·1840 포스터 기하·
 | 잡힘·상단 비행·주변 회귀 | 최종6파일37/37 PASS(1.5분). 실제 PC/native touch의 정지 grip에서 HD16포즈·세계 좌표 고정·연속적인 bob/scale/회전과 해제 확인, 감소동작/gfx OFF 정적. 창 위 수면 이동/zzZ·몸통/좌우 교감·음식의 집/실제 카드·휴지통·중단·식사·스크롤 회귀 포함. 상단 일반 점프는 PC99/native390105개 rAF에서92px 셀 전체와 실제 종점을 확인, hidden mutation0·정점 발 높이≥100px. 양쪽 천장 근처 놓기/집 복귀도 PASS |
 | 실제 익명 `/` 로컬 | PC1920/DPR2·native touch390 PASS. 정지한 grip에서16포즈·회전폭 약11.1도·세계 좌표 변화0, 해제·생성 뒤 다른 곳 클릭 비이동·실제 방석 드래그·접기/재열기·모바일 compact 유지. 각 POST1차단/실제 전달0·브라우저 오류0. 로컬 설정/cookie만 seed, hasFocus/Math.random/DOM 주입 없음 |
 | 문서 harness | 기존 rule inventory 불일치2건 FAIL 유지 |
-| 운영 SHA·익명 화면 | 미확인, 배포 후 기록 |
+| 운영 SHA·익명 화면 | Vercel success·실제 build3194f66f 일치. 운영 `/` PC1920/DPR2·native touch390 모두 PASS. 정지 grip에서16개 이상 HD포즈·회전폭 약11.1도·세계좌표 변화0, 음식 클릭 비이동·실제 방석 드래그/2px 미만 오차·접기/재열기·모바일 compact 유지·동일 펫 DOM. 각 POST1차단/전달0·브라우저 오류0, 실제 PNG2개 직접 열람. 운영 자두 SVG SHA256도 수정본과 일치. 로컬 개인 설정/cookie만 seed하며 focus/random/세계/시계 주입 없음 |
 
 첫6파일 렌더 실행은32PASS/5FAIL이었다. 새 음식 검사는 숨겨진 레이어의 computed transform이 Chromium에서 `none`이 되는 측정 오류를 고쳤다. 표시 중에는 실제 computed 좌표, 숨김 중에는 동일 inline carrier를 읽고 실제 상세 열림·동일 DOM·2px 문턱·낙하 검사는 유지했다. 상단 비행은 실제 모바일 카드를 native scroll로 안전선 근처에 배치하고 실제 드래그로 놓은 음식을 뇌의 이동 목표로 사용한다. 도착 즉시 시작할 수 있는 다음 수면 여정과 이번 비행을 구분한다. 제품 시간/기하를 주입하거나 위치 문턱을 완화하지 않는다. 단독 home5/jump4 통과 후6파일37개를 한 번에 다시 통과했다(JSON expected37/unexpected0/errors0; PowerShell은 NO_COLOR stderr 경고를 NativeCommandError로 포장). 이후 모바일 착지 직후/100/500ms의 동일 지지면·가시성 검사도 추가해 상단4/4와 실제 자식 exit0을 별도로 확인했다. PNG 직접 열람으로 펫/음식 표시도 확인했다. 빌드 이후 제품5파일의 SHA256 불변도 확인했다.
 
@@ -31,4 +31,4 @@ viewer/anonymous/preview 공유 구현. 기본OFF·92px·1840 포스터 기하·
 
 독립 검토: 음식 입력/부착·모달 숨김 측정, 잡힘 시계/수면/감소동작, 상단 탄도 계수·정점·기존 안전 가드를 분리 검토했다. 새 서버/권한 경로가 없으므로 RLS/운영 DB 검증을 했다고 주장하지 않는다.
 
-재현 로그(ignored): `.scratch-pw/companion-054-{unit,typecheck-final,lint-final,build,harness-final,visual-final,home-food,jump-final,legacy}.log`, `companion-054-public-local.{json,log}` 및 해당 PNG/전 rAF 궤적 JSON.
+재현 로그(ignored): `.scratch-pw/companion-054-{unit,typecheck-final,lint-final,build,harness-final,visual-final,home-food,jump-final,legacy}.log`, `companion-054-public-{local,production}.{json,log}`, `companion-054-production-deploy.json` 및 해당 PNG/전 rAF 궤적 JSON. 운영 스모크·배포 감시 모두 exit0, 브라우저와 이번 작업의 로컬 서버 종료.
