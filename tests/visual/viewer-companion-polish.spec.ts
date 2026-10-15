@@ -238,37 +238,4 @@ test("all three disclosures survive full navigation and prepaint reload while st
   for (const key of keys) { const toggle = page.locator(`[data-panel-section-toggle="${key}"]`); await expect(toggle).toHaveAttribute("aria-expanded", "false"); await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "true"); }
 });
 
-test.describe("native coarse mobile polish", () => {
-  test.use({ hasTouch: true });
-  for (const viewport of [{ width: 390, height: 844 }, { width: 900, height: 600 }]) test(`dark month and house launcher share readable tokens at ${viewport.width}x${viewport.height}`, async ({ page }) => {
-    await page.setViewportSize(viewport); await setup(page, { dark: true, gfx: viewport.width === 900 ? "off" : "max", reduced: true });
-    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
-    const month = page.locator(".agenda-header .month-title-text"); await expect(month).toBeVisible();
-    const palette = await month.evaluate(node => {
-      const header = node.closest(".agenda-header")!, root = getComputedStyle(document.documentElement), color = getComputedStyle(node).color, background = getComputedStyle(header).backgroundColor;
-      const probe = document.createElement("span"); probe.style.color = "var(--accent-strong)"; document.body.append(probe); const expected = getComputedStyle(probe).color; probe.remove();
-      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number);
-      const luminance = (values: number[]) => values.slice(0, 3).map(value => { const s = value / 255; return s <= .04045 ? s / 12.92 : ((s + .055) / 1.055) ** 2.4; }).reduce((sum, value, i) => sum + value * [.2126, .7152, .0722][i], 0);
-      const bg = rgb(background), paper = rgb(root.getPropertyValue("--paper"));
-      // Header opacity96% composites over dark paper. Resolve a hex paper
-      // token through a computed probe instead of treating its digits as RGB.
-      const paperProbe = document.createElement("span"); paperProbe.style.color = "var(--paper)"; document.body.append(paperProbe); const resolvedPaper = rgb(getComputedStyle(paperProbe).color); paperProbe.remove();
-      const alpha = bg[3] ?? 1, composite = bg.slice(0, 3).map((v, i) => v * alpha + (resolvedPaper[i] ?? paper[i]) * (1 - alpha));
-      const a = luminance(rgb(color)), b = luminance(composite);
-      return { color, expected, contrast: (Math.max(a, b) + .05) / (Math.min(a, b) + .05), size: parseFloat(getComputedStyle(node).fontSize) };
-    });
-    expect(palette.color).toBe(palette.expected); expect(palette.contrast).toBeGreaterThanOrEqual(4.5); expect(palette.size).toBeGreaterThanOrEqual(19);
-    const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true }), records = page.locator(".agenda-legend-insights");
-    await expect(launcher).toBeVisible(); await expect(launcher).toHaveClass(/\bbutton\b/);
-    await page.mouse.move(0, 0); // compare resting native surfaces, not a stale hover
-    const material = (node: Element) => { const s = getComputedStyle(node), r = node.getBoundingClientRect(); return { background: s.backgroundColor, radius: s.borderRadius, border: s.borderColor, color: s.color, height: r.height }; };
-    const houseMaterial = await launcher.evaluate(material), recordMaterial = await records.evaluate(material);
-    expect(houseMaterial.background).toBe(recordMaterial.background); expect(houseMaterial.radius).toBe(recordMaterial.radius); expect(houseMaterial.border).toBe(recordMaterial.border); expect(houseMaterial.color).toBe(recordMaterial.color);
-    expect(houseMaterial.height).toBeGreaterThanOrEqual(44); expect(recordMaterial.height).toBeGreaterThanOrEqual(44);
-    await launcher.tap(); await expect(page.getByRole("region", { name: "빅타민 집", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "빅타민 집 닫기", exact: true }).tap(); await expect(launcher).toBeVisible();
-    await expect(page.locator(".gs-season canvas")).toHaveCount(0);
-    console.log(JSON.stringify({ check: "mobile-polish", viewport, palette, houseMaterial, recordMaterial }));
-    await page.screenshot({ path: `.scratch-pw/companion-polish-dark-${viewport.width}.png` });
-  });
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.

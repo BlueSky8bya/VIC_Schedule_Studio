@@ -99,7 +99,8 @@ async function input(page: Page, mobile: boolean) {
   };
 }
 
-for (const mobile of [false, true]) test.describe(mobile ? "native touch inertia" : "pointer inertia", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "native touch inertia" : "pointer inertia", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
   test("real reversals lag and overshoot around a stable grip, then reach exact neutral while still held", async ({ page }) => {
     test.setTimeout(25000); await setup(page); await startProbe(page); const drag = await input(page, mobile);

@@ -205,21 +205,4 @@ test.describe("real pointer contact and world transitions", () => {
   });
 });
 
-test.describe("native390 right rail", () => {
-  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  test("viewer and studio house launchers sit below their actual record and editor controls", async ({ page }) => {
-    await seed(page);
-    for (const studio of [false, true]) {
-      await page.goto(studio ? "/visual-fixture/studio" : "/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
-      const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true }); await expect(launcher).toBeVisible();
-      await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))); });
-      const rail = page.locator(studio ? ".agenda-rail" : ".agenda-legend-rail"), controls = rail.locator(studio ? ".m-rail-insights" : ".agenda-legend-insights,.agenda-legend-nav button,.agenda-legend-nav a");
-      expect(await controls.count()).toBeGreaterThan(0);
-      const l = (await launcher.boundingBox())!, r = (await rail.boundingBox())!, bottom = Math.max(...await Promise.all((await controls.all()).map(async node => { const b = (await node.boundingBox())!; return b.y + b.height; })));
-      expect(l.y).toBeGreaterThanOrEqual(bottom + 3); expect(l.x).toBeGreaterThanOrEqual(r.x - 1); expect(l.x + l.width).toBeLessThanOrEqual(r.x + r.width + 1); expect(l.y + l.height).toBeLessThanOrEqual(844 - 8);
-      expect(await launcher.evaluate(node => { const r = node.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(".vc-home-launcher") === node; })).toBe(true);
-      await openCompanionHome(page, "touch"); await expect(home(page)).toHaveCount(1);
-      await page.screenshot({ path: `.scratch-pw/companion-062-native-launcher-${studio ? "studio" : "viewer"}.png` });
-    }
-  });
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.

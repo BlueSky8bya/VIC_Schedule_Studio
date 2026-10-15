@@ -8,8 +8,7 @@ import { openCompanionHome } from "./helpers/companion-home";
 const cases = [
   { name: "pc-light", width: 1920, height: 1100, touch: false, dark: false },
   { name: "pc-dark", width: 1920, height: 1100, touch: false, dark: true },
-  { name: "native390-light", width: 390, height: 844, touch: true, dark: false },
-  { name: "landscape-touch-dark", width: 844, height: 390, touch: true, dark: true },
+  // PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
 ] as const;
 const captureLabel = process.env.VIC_PLUSH_BASELINE === "1" ? "before" : "after";
 const home = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });

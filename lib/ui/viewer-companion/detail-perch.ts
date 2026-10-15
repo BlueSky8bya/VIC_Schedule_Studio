@@ -7,7 +7,7 @@ const MAX_NODES = 1024;
 const MAX_RECTS = 2048;
 const MAX_CONTROLS = 256;
 const MAX_EDGE_ROWS = 128;
-const CONTENT = "button,a[href],input,select,textarea,[role=button],[tabindex],img,svg,video,canvas,iframe,object,embed,[role=img]";
+const CONTENT = "button,a[href],input,select,textarea,[contenteditable],[role=button],[tabindex],img,svg,video,canvas,iframe,object,embed,[role=img]";
 const intersects = (a: Rect, b: Rect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 const intersection = (a: Rect, b: Rect): Rect => ({ left: Math.max(a.left, b.left), top: Math.max(a.top, b.top), right: Math.min(a.right, b.right), bottom: Math.min(a.bottom, b.bottom) });
 const valid = (rect: Rect) => [rect.left, rect.top, rect.right, rect.bottom].every(Number.isFinite) && rect.right > rect.left && rect.bottom > rect.top;
@@ -69,7 +69,13 @@ export function findCompanionDetailPerch(sheet: HTMLElement, preferredSize = 92)
     return result;
   };
   const windowBounds = clipping(sheet.parentElement, intersection(rect(sheet), viewport));
-  const bounds = { left: windowBounds.left + PADDING, top: windowBounds.top + PADDING, right: windowBounds.right - PADDING, bottom: windowBounds.bottom - PADDING };
+  // The studio has one title/body editor. Occupy only its genuinely empty
+  // geometry; never insert a child into contenteditable or inspect its text.
+  const editor = sheet.hasAttribute("data-companion-detail-editor") ? sheet.querySelector<HTMLElement>("[data-companion-editor-perch][contenteditable]") : null;
+  if (sheet.hasAttribute("data-companion-detail-editor") && (!editor?.isConnected || !visible(editor))) return null;
+  const area = editor ? clipping(editor, intersection(rect(editor), windowBounds)) : windowBounds;
+  const padding = editor ? 6 : PADDING;
+  const bounds = { left: area.left + padding, top: area.top + padding, right: area.right - padding, bottom: area.bottom - padding };
   if (!valid(bounds)) return null;
   const obstacles: Rect[] = [];
   const append = (value: Rect, parent: Element) => {
@@ -91,7 +97,10 @@ export function findCompanionDetailPerch(sheet: HTMLElement, preferredSize = 92)
     const controls = sheet.querySelectorAll(CONTENT);
     if (controls.length > MAX_CONTROLS) return null;
     for (const element of controls) {
-      if (!visible(element) || element.closest(".vc-companion")) continue;
+      if (element === editor || !visible(element) || element.closest(".vc-companion")) continue;
+      // Studio's direct decorative outline SVG spans the whole inspector,
+      // but paints only its perimeter. Its empty interior is not a control.
+      if (editor && element.parentElement === sheet && element.matches("svg.editor-ring[aria-hidden='true']")) continue;
       if (!append(rect(element), element.parentElement ?? sheet)) return null;
     }
   } catch { return null; }

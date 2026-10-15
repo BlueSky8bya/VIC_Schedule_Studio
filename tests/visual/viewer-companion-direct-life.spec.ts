@@ -142,7 +142,8 @@ async function expectNeutral(page: Page) {
   await expect.poll(async () => { const current = await pose(page); return { lift: current.lift, scaleY: current.scaleY }; }, { timeout: 2500 }).toEqual({ lift: 0, scaleY: 1 });
 }
 
-for (const mobile of [false, true]) test(`month change preserves the same viewport creature before a nearby landing (${mobile ? "agenda safe-gap recovery" : "desktop"})`, async ({ page }) => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test(`month change preserves the same viewport creature before a nearby landing (${mobile ? "agenda safe-gap recovery" : "desktop"})`, async ({ page }) => {
   await setup(page, { mobile });
   if (mobile) {
     // The native initial viewport has one genuine floor interval. Scrolling

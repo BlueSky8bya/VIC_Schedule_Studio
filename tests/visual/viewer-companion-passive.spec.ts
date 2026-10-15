@@ -173,9 +173,9 @@ test("quick refocus cancels parking while hidden tabs and ordinary overlay quiet
 });
 
 test("empty measured geometry stays hidden through passive sleep and hard resume, then recovers on a safe surface", async ({ page }) => {
-  // Agenda keeps the compact house closed, so a separate cushion cannot supply
+  // Compact desktop keeps the house closed, so a separate cushion cannot supply
   // a safe ledge behind this deliberately viewport-sized control obstacle.
-  await page.setViewportSize({ width: 900, height: 900 });
+  await page.setViewportSize({ width: 1280, height: 900 });
   await setup(page);
   await expect(page.locator(".vc-home-cushion")).toHaveCount(0);
   await page.evaluate(() => {
@@ -279,20 +279,4 @@ test("a parked floor sleeper remeasures hidden viewport changes without focus an
   await page.screenshot({ path: ".scratch-pw/companion-passive-resize.png" });
 });
 
-test.describe("mobile touch and reduced motion", () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-  test("a touch still pets the same creature and reduced passive sleep stays static", async ({ page }) => {
-    await setup(page, { reduced: true });
-    await expect(page.locator(".public-calendar-shell.agenda-mode")).toBeVisible();
-    await actor(page).tap(); await expect(pet(page)).toHaveAttribute("data-state", "petted");
-    await focus(page, false); await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 8000 });
-    await expect(actor(page)).toBeVisible(); await expectFloorContact(page);
-    const snapshot = await pet(page).evaluate(el => ({ transform: (el as HTMLElement).style.transform, animation: getComputedStyle(el.querySelector(".vc-pose")!).animationName, dreams: [...el.querySelectorAll(".vc-dream i")].map(node => getComputedStyle(node).animationName) }));
-    expect(snapshot.animation).toBe("none"); expect(snapshot.dreams).toEqual(["none", "none", "none"]);
-    await page.waitForTimeout(1000);
-    expect(await pet(page).evaluate(el => (el as HTMLElement).style.transform)).toBe(snapshot.transform);
-    await page.screenshot({ path: ".scratch-pw/companion-passive-mobile-reduced.png" });
-    await focus(page, true); await expect(pet(page)).toHaveAttribute("data-presence", "active");
-    await actor(page).tap(); await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(pet(page)).toHaveCount(1);
-  });
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.

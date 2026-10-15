@@ -42,6 +42,8 @@ import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
+import { SettingsButton } from "@/components/shared/settings-button";
+import { CompanionDetailBridge } from "@/components/poster/viewer-companion/companion-detail-bridge";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
 import type { GfxMode } from "@/lib/ui/gfx";
@@ -143,6 +145,7 @@ import { RoleBadge } from "@/components/studio/role-badge";
 import { useStudioWriteQueue } from "@/lib/studio/use-write-queue";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
+import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
 // P2-ARCH-1 1단계: 모듈 레벨 순수 코드(폼 모델·실행취소 타입·날짜/드래프트/떡밥 헬퍼·라벨·
 // studio-write 클라이언트)는 lib/studio/editor-model.ts로 이동(동작 변화 0).
 import {
@@ -490,6 +493,7 @@ export function StudioShell({
   // 좁은 화면(<1000px, P1-IPAD-1): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
   // 아이패드 세로(768)·스플릿뷰도 압축 데스크톱 대신 터치 네이티브 아젠다를 받는다(L4).
   const [isNarrow, setIsNarrow] = useState(initialNarrow);
+  const companionDesktop = useCompanionDesktop();
   useEffect(() => {
     const mq = window.matchMedia(STUDIO_AGENDA_QUERY);
     const apply = () => setIsNarrow(mq.matches);
@@ -1228,6 +1232,7 @@ export function StudioShell({
         premiereStageOn={premiereStageOn}
         onTogglePremiereStage={togglePremiereStage}
         companionPrefs={companionPrefs}
+        companionAvailable={companionDesktop}
         onCompanionChange={onCompanionChange}
         ambientMode={ambientModeState}
         onChangeAmbientMode={changeAmbientMode}
@@ -1247,20 +1252,13 @@ export function StudioShell({
     );
   }
 
-  // One role label; its mobile gear opens the shared settings window.
-  // Mobile and the west tool card both open the same modal/history path.
-  function renderRoleBadge(withSettings: boolean) {
+  // Desktop keeps its quiet role/save label; mobile has a shared header gear.
+  function renderRoleBadge() {
     return (
       <RoleBadge
-        onOpenSettings={() => { hapticTick(); setModal("settings"); }}
-        settingsOpen={modal === "settings"}
-        // 웹은 라벨만, 모바일은 톱니 버튼에서 같은 설정 목록을 연다.
-        quiet={!withSettings}
         role={actor.role}
         roleDisplay={roleDisplay}
-        // 저장이 한 번이라도 끝났으면 배지 자리에 그 시각을 쓴다(웹 조용한 배지에만 — 모바일 배지는
-        // 설정 목록을 여는 버튼이라 이름이 그대로여야 한다).
-        savedAt={withSettings ? null : lastSavedKst}
+        savedAt={lastSavedKst}
       />
     );
   }
@@ -1351,8 +1349,15 @@ export function StudioShell({
     // '바깥'으로 치지 않는다: 편집 패널·날짜칸·비공개 토글·날짜시간 선택기 백드롭에 더해,
     // 휴뱅 미니메뉴(.rest-menu), 월 이동 < >(.studio-monthbar, 키보드 ←/→와 동작 일치),
     // 색상 필터 사이드바(.studio-left-panel). 빈 배경 클릭만 닫기로 남긴다.
+    // Only this editor's discovered guest is part of its input owner. Ordinary
+    // roaming pets retain the existing outside-click policy.
+    const isOwnedDetailGuest = (el: HTMLElement | null) => {
+      const actor = el?.closest<HTMLElement>(".vc-companion[data-detail-guest] .vc-actor");
+      return Boolean(actor?.id && editorPanelRef.current?.getAttribute("aria-owns")?.split(/\s+/).includes(actor.id));
+    };
     const isOutside = (el: HTMLElement | null) =>
       !(
+        isOwnedDetailGuest(el) ||
         el?.closest(".event-editor-panel") ||
         el?.closest(".studio-day") ||
         el?.closest(".private-toggle") ||
@@ -2098,6 +2103,12 @@ export function StudioShell({
   };
   // ▶ = 다시보기 창(시청자 DayVodWindow 그대로, 한 구현). 그 날 VOD 목록은 공개 일정 응답(vods)에서 — 처음 한 번 받아 둔다.
   const [dayVodPop, setDayVodPop] = useState<{ dateKey: string; part?: number; sec?: number; vods: DayVod[] } | null>(null);
+  // The local detail bridge receives only an existing public ordinary id.
+  // Unsaved conversion or a foreground window revokes the guest immediately.
+  const companionEditorEventId = companionDesktop && companionPrefs.enabled && editorVisible && !isNarrow &&
+    modal === null && !searchOpen && !dayVodPop &&
+    selectedLiveEvent?.visibilityScope === "public" && !selectedLiveEvent.isSupport && !selectedLiveEvent.teaser &&
+    form.visibilityScope === "public" && !form.isSupport && !form.teaser ? selectedLiveEvent.id : null;
   // 다시보기 창·검색 시트가 떠 있는 동안 편집실 전역 키를 전부 막는다(2026-09-18 소유자: 다시보기 창에서
   // ←/→를 누르면 10초 탐색이 아니라 바깥 달력의 달이 넘어갔다). 창이 ←/→·Space·C·[ ]·↑/↓를 쓰므로
   // 편집실은 창이 열린 동안 키를 건드리지 않는다 — 시청자 화면은 이미 같은 가드가 있다(dayVodOpenRef).
@@ -6092,7 +6103,7 @@ export function StudioShell({
           <div className="m-topstick">
             <header className="agenda-header">
               {/* 좌측 1열: 배포 버전(커밋) 위 + 저장 상태 칩 아래로 세로로 쌓고, 묶음의 세로
-                  중앙이 제목(헤더) 중앙선과 같게 한다. 우상단(3열)은 계정변경 버튼 자리로 비운다. */}
+                  중앙이 제목(헤더) 중앙선과 같게 한다. 우상단(3열)은 공용 설정 톱니 자리다. */}
               <div className="m-head-left">
                 <span
                   className={`studio-build-tag-m${isDevInsights ? " dev" : ""}`}
@@ -6107,7 +6118,9 @@ export function StudioShell({
                 {/* 월 표기는 바로 아래 월 내비가 담당 — 중복·겹침 제거(사용자 요청). */}
                 <span>편집실</span>
               </h1>
-              {/* 로그아웃 — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤과 어울리게.
+              <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setModal("settings"); }} />
+              <span className="sr-only">역할: {roleDisplay.label}</span>
+              {/* Account action stays below the shared gear, as in the viewer.
                   로그아웃하면 익명 상태로 공개 포스터를 계속 본다(계정 바꾸려면 다시 로그인). */}
               {actor.isAuthenticated ? (
                 <form className="m-head-logout" action="/api/auth/logout" method="post" data-act="logout">
@@ -6164,8 +6177,6 @@ export function StudioShell({
           >
             {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
             <div className="agenda-rail">
-              {/* The shared settings gear opens the same modal/history path above the mobile filter. */}
-              {renderRoleBadge(true)}
             <PanelSection as="aside" title="태그 필터" sectionKey="tag-filter" collapsible className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
               {(() => {
                 const tops = legendTags.filter((t) => (t.parentId ?? null) === null);
@@ -7238,7 +7249,7 @@ export function StudioShell({
       data-companion-surface="studio"
       ref={setShellRef}
     >
-      {companionPrefs.enabled ? <ViewerCompanion root={shellRef} preferences={companionPrefs}
+      {companionDesktop && companionPrefs.enabled ? <ViewerCompanion root={shellRef} preferences={companionPrefs}
         blocked={Boolean(monthPick || passcodeModal || dragEventId || spanDrag || navMsg)}
         overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
@@ -7265,7 +7276,7 @@ export function StudioShell({
                 점선 박스 **밖·위**에 둔다 — 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자 사진).
                 감상 진입은 개발자만 — 세계가 다 만들어지기 전엔 관리자에게 배경으로만 보인다. */}
             <ViewerAmbientControl collapsible className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} showcase={effectiveRole === "developer"} />
-            {companionPrefs.enabled ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
+            {companionDesktop && companionPrefs.enabled ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
             {/* 아바타 빈 자리 — 관리자·개발자만(시청자 역할 미리보기엔 없다). */}
             {avatarRoleOk ? (
               <div className="avatar-dock-inner">
@@ -7403,7 +7414,7 @@ export function StudioShell({
           <div className="studio-meta-capsule">{renderSaveStatus()}</div>
           {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한 팝오버)는 미리보기 버튼 **왼쪽**
               (사용자 지정 순서: 저장 상태 · 관리자 · 시청자 화면 보여주기 · 로그아웃). 관리 도구·설정은 서쪽 rail. */}
-          {renderRoleBadge(false)}
+          {renderRoleBadge()}
           {/* 역할 배지·로그아웃은 액션바 오른쪽(단축키 옆)으로 이사(2026-08-27 사용자 지정 배치) —
               헤더는 저장 상태 + 미리보기만. */}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
@@ -7761,6 +7772,7 @@ export function StudioShell({
                           canEdit ? " span-draggable" : ""
                         }`}
                         data-supportid={s.id}
+                        data-companion-band={s.visibilityScope === "public" && !s.teaser ? "public" : undefined}
                         onPointerDown={canEdit ? (e) => onSpanPointerDown(e, [s.id]) : undefined}
                         key={s.id}
                         title={s.publicTitle} /* 말줄임된 제목의 전문(호버 툴팁) */
@@ -8299,6 +8311,8 @@ export function StudioShell({
             teaserGateActive ? " is-gated" : ""
           }`}
           key={`pop-${editorKey}`}
+          data-companion-detail-editor={companionEditorEventId ? "" : undefined}
+          data-companion-detail-event={companionEditorEventId ?? undefined}
           ref={editorPanelRef}
           style={(() => {
             const maxH = editorPopMaxH ? { "--pop-max-h": `${editorPopMaxH}px` } : {};
@@ -8314,6 +8328,11 @@ export function StudioShell({
             } as CSSProperties;
           })()}
         >
+          {companionDesktop && companionPrefs.enabled ? <CompanionDetailBridge
+            eventId={companionEditorEventId}
+            sheetRef={editorPanelRef}
+            ready={Boolean(editorPopPos)}
+          /> : null}
           {/* 아직 안 풀린 최초공개(떡밥) 일정 — 역할과 무관하게 먼저 비번 게이트.
               같은 팝오버 껍데기(점선 리더 라인·드래그·바깥 클릭 닫기)를 그대로 쓰고 속만 바꾼다. */}
           {teaserGateActive ? (
@@ -8448,6 +8467,7 @@ export function StudioShell({
                 aria-multiline="true"
                 className="editor-title-ce"
                 contentEditable={canEdit}
+                data-companion-editor-perch=""
                 data-act="title-input"
                 onCompositionEnd={(event) => {
                   const text = normalizeEditableText(event.currentTarget);

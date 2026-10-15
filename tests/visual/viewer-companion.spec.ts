@@ -88,7 +88,8 @@ test("default OFF downloads no sprite, and the shared settings turn it on and of
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).enabled)).toBe(false);
 });
 
-for (const width of [1440, 390]) {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const width of [1440]) {
   test(`pointer petting and dragging stay inside the viewport at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await stationaryFixture(page);

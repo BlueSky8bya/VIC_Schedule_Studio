@@ -6,7 +6,7 @@ import { COMPANION_DETAIL_EVENT, type CompanionDetailNotice } from "@/lib/ui/vie
 /** PC popover and agenda sheet share this committed-DOM notification. The
  * existing card input still opens the detail; this bridge never clicks/opens it
  * and creates no observer, timer, sprite request or duplicate detail state. */
-export function CompanionDetailBridge({ eventId, sheetRef, ready }: { eventId: string | null; sheetRef: RefObject<HTMLDivElement | null>; ready: boolean }) {
+export function CompanionDetailBridge({ eventId, sheetRef, ready }: { eventId: string | null; sheetRef: RefObject<HTMLElement | null>; ready: boolean }) {
   useLayoutEffect(() => {
     const sheet = sheetRef.current, win = sheet?.ownerDocument.defaultView;
     if (!win) return;

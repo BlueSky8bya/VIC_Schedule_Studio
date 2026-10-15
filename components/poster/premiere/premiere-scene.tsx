@@ -3,10 +3,12 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { premiereAudienceSeed } from "@/lib/ui/premiere/company";
+import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
 
 // Local cast interactions never claim audience counts or still-gated content.
 const company = [8, 25, 42, 58, 75, 92];
 export function PremiereScene({ pulse, hopeful, cheer, onCheer, companionJoined = false }: { pulse: number; hopeful: boolean; cheer: number; onCheer: () => void; companionJoined?: boolean }) {
+  const companionDesktop = useCompanionDesktop();
   const audience = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
   // This scene mounts once per focused opening. Keep this draw through hope,
@@ -30,14 +32,14 @@ export function PremiereScene({ pulse, hopeful, cheer, onCheer, companionJoined 
     </div>
     {/* In-flow cast bay. Stable native buttons keep keyboard focus as frames
         change; decorative art has its own accessibility boundary. */}
-    <div className="pm-cast-row">
+    {companionDesktop ? <div className="pm-cast-row">
       <div className="pm-company" ref={audience} data-opening={openingSeed} data-cheer={cheer ? "" : undefined}>
         <div className="pm-audience-line" aria-hidden="true" />
         {company.map((x, index) => <button type="button" className="pm-fan" key={index} data-pm-audience-control data-companion-joined={companionJoined && index === 0 ? "" : undefined} data-sfx="off" aria-label={companionJoined && index === 0 ? "우리 빅타민 응원하기" : `빅타민 ${index + 1} 응원하기`} onClick={onCheer} style={{ "--fan-x": `${x}%`, "--fan-seed": premiereAudienceSeed(openingSeed, index), "--fan-index": index } as CSSProperties}>
           <span className="pm-fan-art" aria-hidden="true" />
         </button>)}
       </div>
-    </div>
+    </div> : null}
   </>;
 }
 

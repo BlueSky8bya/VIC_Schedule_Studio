@@ -65,7 +65,8 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(observed.get(page)).toEqual({ posts: [], errors: [] }); });
 
-for (const touch of [false, true]) test.describe(touch ? "native390 eight snacks" : "PC1920 eight snacks", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const touch of [false]) test.describe(touch ? "native390 eight snacks" : "PC1920 eight snacks", () => {
   test.use({ viewport: touch ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: touch, isMobile: touch });
   test("eight local foods survive capacity refusal, eighth-food feeding, home follow and direct trash", async ({ page }) => {
     test.setTimeout(40000);

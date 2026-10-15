@@ -1,9 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
 import { premiereAudienceTiming } from "@/lib/ui/premiere/company";
 
-test.beforeEach(async ({ context }) => {
+const audienceAssets = new WeakMap<Page, string[]>();
+test.beforeEach(async ({ context, page }) => {
+  const assets: string[] = []; audienceAssets.set(page, assets);
+  page.on("request", request => { const path = new URL(request.url()).pathname; if (path === "/premiere/victamin-audience.webp" || path.startsWith("/companion/")) assets.push(path); });
   await context.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
   await context.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
+  await context.addInitScript(() => {
+    const win = window as typeof window & { audienceMounted: boolean; __sfxTrace: string[] };
+    win.audienceMounted = false; win.__sfxTrace = []; localStorage.setItem("vic.sound", "on");
+    new MutationObserver(records => { if (records.some(record => [...record.addedNodes].some(node => node instanceof Element && (node.matches(".pm-cast-row,.pm-company,.pm-fan") || node.querySelector(".pm-cast-row,.pm-company,.pm-fan"))))) win.audienceMounted = true; }).observe(document, { childList: true, subtree: true });
+  });
 });
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" }); });
 
@@ -12,6 +20,12 @@ async function opened(page: Page, count = 1, seconds = 40, gap = 0) {
   await expect(page.locator(".pm-focused")).toBeVisible();
   if (seconds > 22) await expect(page.locator(".pm-screen")).toHaveAttribute("data-pm-entered", "", { timeout: 8000 });
   await expect(page.locator(".pm-stage")).not.toHaveAttribute("data-pm-entering");
+}
+
+async function noMobileAudience(page: Page) {
+  await expect(page.locator(".pm-cast-row,.pm-company,.pm-fan")).toHaveCount(0);
+  expect(await page.evaluate(() => (window as typeof window & { audienceMounted: boolean }).audienceMounted)).toBe(false);
+  expect(audienceAssets.get(page)).toEqual([]);
 }
 
 async function layout(page: Page) {
@@ -25,28 +39,29 @@ async function layout(page: Page) {
   });
 }
 
-test.describe("native agenda audience", () => {
+test.describe("native agenda without audience", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   for (const count of [1, 2, 3, 5]) {
-    test(`all six equal spectators fit below${count} pending events`, async ({ page }) => {
+    test(`${count} pending events keep their clock and controls without mounting spectators`, async ({ page }) => {
       await opened(page, count);
+      await noMobileAudience(page);
       const metrics = await layout(page);
       expect(metrics.viewport).toEqual({ width: 390, height: 844 });
       expect(metrics.width).toBeLessThanOrEqual(390); expect(metrics.scroll).toBeLessThanOrEqual(2);
-      expect(metrics.fans).toHaveLength(6);
-      expect(Math.max(...metrics.fans.map(fan => fan.artWidth)) - Math.min(...metrics.fans.map(fan => fan.artWidth))).toBeLessThan(.05);
-      for (const fan of metrics.fans) {
-        expect(fan.width).toBeGreaterThanOrEqual(44); expect(fan.height).toBeGreaterThanOrEqual(44);
-        expect(fan.left).toBeGreaterThanOrEqual(metrics.screen.left); expect(fan.right).toBeLessThanOrEqual(metrics.screen.right);
-        expect(fan.bottom).toBeLessThanOrEqual(metrics.viewport.height); expect(fan.bottom).toBeLessThanOrEqual(metrics.screen.bottom);
-        expect(fan.top).toBeGreaterThanOrEqual(metrics.clock.bottom);
-        for (const control of metrics.controls) expect(fan.top).toBeGreaterThanOrEqual(control.bottom);
-      }
+      expect(metrics.fans).toHaveLength(0);
+      expect(metrics.clock.top).toBeGreaterThanOrEqual(metrics.header.bottom); expect(metrics.clock.bottom).toBeLessThanOrEqual(metrics.viewport.height);
       expect(metrics.header.top).toBeGreaterThanOrEqual(0); expect(metrics.exit.bottom).toBeLessThanOrEqual(metrics.screen.top);
       for (const control of await page.locator(".pm-hope").all()) await expect(control).toBeInViewport({ ratio: 1 });
       await page.locator(".pm-hope").last().tap();
       await expect(page.locator(".pm-hope").last()).toHaveAttribute("aria-pressed", "true");
-      await page.screenshot({ path: `.scratch-pw/companion-062-audience-390-${count}.png` });
+      if (count === 1) {
+        const before = await page.getByRole("timer").textContent();
+        await expect.poll(() => page.getByRole("timer").textContent()).not.toBe(before);
+        await expect.poll(() => page.evaluate(() => (window as typeof window & { __sfxTrace: string[] }).__sfxTrace.filter(name => name === "premiere-music").length)).toBeGreaterThan(0);
+      }
+      await noMobileAudience(page);
+      await expect(page.getByRole("button", { name: "일정표 보기", exact: true })).toBeInViewport({ ratio: 1 });
+      await page.screenshot({ path: `.scratch-pw/companion-063-audience-390-${count}.png` });
       console.log("audience-native-layout", JSON.stringify({ count, ...metrics }));
     });
   }
@@ -68,36 +83,33 @@ test.describe("native agenda audience", () => {
     await expect(page.locator(".pm-film.released .pm-details")).toHaveText(publicBody);
     await expect(page.locator(".pm-count")).toBeInViewport({ ratio: 1 });
     expect(await page.locator(".pm-screen").evaluate(el => getComputedStyle(el).overflowY)).toBe("auto");
-    // Reading has always removed the decorative cast once any story releases.
-    await expect(page.locator(".pm-cast-row")).toHaveCSS("display", "none");
+    await noMobileAudience(page);
     await expect(page.locator(".pm-complete")).toBeVisible({ timeout: 10000 });
     await expect(page.locator(".pm-tags span")).toHaveCount(16);
     for (const tag of await page.locator(".pm-tags span").all()) { await tag.scrollIntoViewIfNeeded(); await expect(tag).toBeInViewport({ ratio: 1 }); }
     await expect(page.getByRole("button", { name: "일정표 보기", exact: true })).toBeInViewport({ ratio: 1 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-    await page.screenshot({ path: ".scratch-pw/companion-062-audience-mixed-390.png" });
+    await noMobileAudience(page);
+    await page.screenshot({ path: ".scratch-pw/companion-063-audience-mixed-390.png" });
   });
 });
 
-test.describe("short native landscape audience", () => {
+test.describe("short native landscape without audience", () => {
   test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
-  test("the clock and six spectators remain visible while all five controls stay reachable", async ({ page }) => {
+  test("the clock and all five controls stay reachable without spectator DOM or assets", async ({ page }) => {
     await opened(page, 5);
+    await noMobileAudience(page);
     const metrics = await layout(page);
     expect(metrics.viewport).toEqual({ width: 844, height: 390 });
-    expect(metrics.width).toBeLessThanOrEqual(844); expect(metrics.fans).toHaveLength(6);
-    for (const fan of metrics.fans) {
-      expect(fan.width).toBeGreaterThanOrEqual(44); expect(fan.height).toBeGreaterThanOrEqual(44);
-      expect(fan.left).toBeGreaterThanOrEqual(0); expect(fan.right).toBeLessThanOrEqual(844);
-      expect(fan.top).toBeGreaterThanOrEqual(metrics.clock.bottom); expect(fan.bottom).toBeLessThanOrEqual(390);
-    }
+    expect(metrics.width).toBeLessThanOrEqual(844); expect(metrics.fans).toHaveLength(0);
+    expect(metrics.clock.top).toBeGreaterThanOrEqual(0); expect(metrics.clock.bottom).toBeLessThanOrEqual(390);
     const controls = page.locator(".pm-hope");
     for (const control of await controls.all()) {
       await control.scrollIntoViewIfNeeded(); await expect(control).toBeInViewport({ ratio: 1 }); await control.tap();
       await expect(control).toHaveAttribute("aria-pressed", "true");
     }
-    for (const fan of await page.locator(".pm-fan").all()) await expect(fan).toBeInViewport({ ratio: 1 });
-    await page.screenshot({ path: ".scratch-pw/companion-062-audience-844-5.png" });
+    await noMobileAudience(page);
+    await page.screenshot({ path: ".scratch-pw/companion-063-audience-844-5.png" });
     console.log("audience-landscape-layout", JSON.stringify(metrics));
   });
 });
@@ -151,6 +163,6 @@ test("individual turns finish before quiet, seats stop beforeeight and backs van
   const remaining = await stage.getAttribute("data-teaser-at");
   expect(Date.parse(remaining!) - Date.now()).toBeGreaterThan(1000);
   await expect(page.getByRole("timer")).toHaveCount(1);
-  await page.screenshot({ path: ".scratch-pw/companion-062-audience-quiet.png" });
+  await page.screenshot({ path: ".scratch-pw/companion-063-audience-quiet.png" });
   console.log("audience-quiet", JSON.stringify({ turnTimes, turnStarts, seated, remaining }));
 });

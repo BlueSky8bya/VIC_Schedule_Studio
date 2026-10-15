@@ -68,7 +68,7 @@ test("one home follows the shared panel and keeps the same creature and care", a
   expect(affection).toBeGreaterThan(.36);
   await page.evaluate(() => { localStorage.setItem("vic_avatar_side", "right"); dispatchEvent(new Event("vic:side-panel")); });
   await expect(page.locator(".avatar-right .avatar-slot .vc-home")).toHaveCount(1); await expect(pet(page)).toHaveCount(1);
-  await page.setViewportSize({ width: 900, height: 900 });
+  await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.getByRole("button", { name: "빅타민 집 열기", exact: true })).toBeVisible();
   await showHome(page); await expect(page.locator(".vc-compact-home .vc-home")).toHaveCount(1); await expectSmallHome(page);
   expect(Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"))).toBeGreaterThan(.36);
@@ -76,14 +76,14 @@ test("one home follows the shared panel and keeps the same creature and care", a
   await page.screenshot({ path: ".scratch-pw/companion-home-responsive.png" });
 });
 
-test("compact home stays reachable in landscape and transfers keyboard focus", async ({ page }) => {
-  await page.setViewportSize({ width: 844, height: 390 });
+test("compact desktop home stays reachable and transfers keyboard focus", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible();
   const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
   await launcher.focus(); await launcher.press("Enter"); await expect(house(page)).toBeVisible();
   const close = house(page).getByRole("button", { name: "빅타민 집 닫기", exact: true });
   await expect(house(page).getByRole("button", { name: "빅타민 집", exact: true })).toBeFocused();
-  const box = (await house(page).boundingBox())!; expect(box.y).toBeGreaterThanOrEqual(10); expect(box.y + box.height).toBeLessThan(390);
+  const box = (await house(page).boundingBox())!; expect(box.y).toBeGreaterThanOrEqual(10); expect(box.y + box.height).toBeLessThan(900);
   await expectSmallHome(page);
   await chooseCompanionCare(page, "옮길 곳 고르기", "keyboard");
   await expect(actor(page)).toBeFocused(); await expect(pet(page)).toHaveAttribute("data-placing", "");
@@ -140,54 +140,7 @@ test("the desktop icon room offers three direct controls, bounded random food an
   await page.screenshot({ path: ".scratch-pw/companion-direct-home-desktop.png" });
 });
 
-test.describe("touch direct room", () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-  test("the compact icon room has real touch targets, direct food and a reachable bin", async ({ page }) => {
-    await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible();
-    await openCompanionHome(page, "touch"); await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(180); // Coalesced home geometry must settle before native food grabbing.
-    await expectIconRoom(page, true); const height = await expectSmallHome(page);
-    await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).tap();
-    await expect(page.locator(".vc-food")).toHaveCount(1);
-    expect(COMPANION_FOOD_KINDS).toContain(await page.locator(".vc-food").getAttribute("data-kind"));
-    await expect(house(page)).toBeVisible();
-    const food = page.locator(".vc-food"), start = (await food.boundingBox())!, cdp = await page.context().newCDPSession(page);
-    const from = { x: start.x + start.width / 2, y: start.y + start.height / 2 };
-    try {
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...from, id: 41 }] });
-      for (let step = 1; step <= 8; step++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from.x + (110 - from.x) * step / 8, y: from.y + (700 - from.y) * step / 8, id: 41 }] });
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    } finally { await cdp.detach(); }
-    await expect(page.locator(".vc-food")).not.toHaveAttribute("data-selected");
-    await house(page).getByRole("button", { name: "음식 버리기", exact: true }).tap();
-    await expect(page.locator(".vc-food")).toHaveCount(0);
-    expect(Math.abs((await expectSmallHome(page)) - height)).toBeLessThan(.5);
-    await chooseCompanionCare(page, "쓰다듬기", "touch"); await expect(pet(page)).toHaveAttribute("data-state", "petted");
-    await expect(page.locator(".vc-effect")).toHaveText("♡");
-    await expect(page.locator("[data-export-surface] .vc-home,[data-export-surface] .vc-companion")).toHaveCount(0);
-    await page.screenshot({ path: ".scratch-pw/companion-direct-home-touch.png" });
-  });
-
-  test("a second touch cannot move or release the first pointer's held creature", async ({ page, context }) => {
-    await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible();
-    const start = await point(page), cdp = await context.newCDPSession(page);
-    const first = { id: 1, x: start.x, y: start.y }, second = { id: 2, x: Math.min(350, start.x + 95), y: Math.min(760, start.y + 45) };
-    try {
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [first] });
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...first, x: first.x + 18 },] });
-      await expect(pet(page)).toHaveAttribute("data-state", "held");
-      const before = await pet(page).boundingBox();
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...first, x: first.x + 18 }, second] });
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...first, x: first.x + 18 }, { ...second, x: second.x - 30 }] });
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [{ ...first, x: first.x + 18 }] });
-      await expect(pet(page)).toHaveAttribute("data-state", "held");
-      const after = (await pet(page).boundingBox())!;
-      expect(Math.abs(after.x - before!.x)).toBeLessThan(1); expect(Math.abs(after.y - before!.y)).toBeLessThan(1);
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-      await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-state", "petted");
-    } finally { await cdp.detach(); }
-  });
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
 
 test("reduced-motion tap and a stationary long press both acknowledge without a hold gate", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("vic.reduceMotion", "on"));
@@ -202,7 +155,8 @@ test("reduced-motion tap and a stationary long press both acknowledge without a 
   await expect.poll(async () => Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"))).toBeGreaterThan(before + .05);
 });
 
-for (const width of [1920, 390]) test(`cushion recall and breathing dreams use the same world at ${width}px`, async ({ page }) => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const width of [1920]) test(`cushion recall and breathing dreams use the same world at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 1100 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
   await house(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).click();

@@ -175,7 +175,8 @@ async function cancelBedReentry(page: Page, item: Locator, target: { x: number; 
   await page.mouse.up();
 }
 
-for (const view of [{ mobile: false, landscape: false, width: 1920, height: 1100 }, { mobile: true, landscape: false, width: 390, height: 844 }, { mobile: true, landscape: true, width: 844, height: 390 }]) test.describe(view.landscape ? "native landscape home food" : view.mobile ? "native touch home food" : "PC home food", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const view of [{ mobile: false, landscape: false, width: 1920, height: 1100 }]) test.describe(view.landscape ? "native landscape home food" : view.mobile ? "native touch home food" : "PC home food", () => {
   const { mobile, landscape } = view, label = landscape ? "844-landscape" : mobile ? "390" : "1920";
   test.use({ viewport: { width: view.width, height: view.height }, hasTouch: mobile, isMobile: mobile });
   test("sofa and above-sofa drops fall onto the first house floor and keep that attachment through home topology", async ({ page }) => {

@@ -12,6 +12,9 @@ class FixtureNode {
   control = false;
   companion = false;
   excluded = false;
+  day = false;
+  classList = { contains: (name: string) => name === "studio-day" && this.day };
+  contains(node: FixtureNode): boolean { return node === this || Boolean(node.parentElement && this.contains(node.parentElement)); }
   getBoundingClientRect = vi.fn(() => this.box);
   // The adapter must never inspect schedule text or other DTO fields.
   get textContent(): never { throw new Error("SYNTHETIC_TITLE_CANARY must not be read"); }
@@ -90,5 +93,19 @@ describe("ordinary public-card hide targets", () => {
     f.add("nan").box = rect(NaN, 100, 100, 40);
     expect(collectCompanionHideTargets(f.root)).toEqual([]);
     f.sourceRoot.isConnected = false; expect(collectCompanionHideTargets(f.root)).toEqual([]);
+  });
+
+  it("requires an ordinary-public studio marker and accepts its structural day container only", () => {
+    const f = fixture(); f.sourceRoot.dataset.companionSurface = "studio";
+    const card = f.add(); expect(collectCompanionHideTargets(f.root)).toEqual([]);
+    card.dataset.companionEvent = "ordinary";
+    const day = new FixtureNode(); day.day = true; day.control = true; day.parentElement = f.sourceRoot;
+    card.parentElement = day; card.card = false;
+    // The real card is a div, whose enclosing day has role=button.
+    const originalClosest = card.closest.bind(card);
+    card.closest = selector => selector.startsWith(".public-event[") ? card : originalClosest(selector);
+    expect(collectCompanionHideTargets(f.root)).toHaveLength(1);
+    day.day = false; expect(collectCompanionHideTargets(f.root)).toEqual([]);
+    card.dataset.companionEvent = "teaser"; day.day = true; expect(collectCompanionHideTargets(f.root)).toEqual([]);
   });
 });

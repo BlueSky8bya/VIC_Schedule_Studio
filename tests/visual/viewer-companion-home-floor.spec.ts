@@ -104,7 +104,8 @@ async function stopNoFall(page: Page) {
   expect(await page.evaluate(() => { const witness = (window as unknown as FloorWitnessWindow).floorFoodWitness; witness.observer.disconnect(); return witness.fell; })).toBe(false);
 }
 
-for (const touch of [false, true]) test.describe(touch ? "native390 house floor" : "PC1920 house floor", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const touch of [false]) test.describe(touch ? "native390 house floor" : "PC1920 house floor", () => {
   test.use({ viewport: touch ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: touch, isMobile: touch });
 
   test("real drags, taps and keyboard moves retain a separate floor attachment through home topology", async ({ page }) => {
@@ -130,7 +131,8 @@ for (const touch of [false, true]) test.describe(touch ? "native390 house floor"
     } else {
       await page.getByRole("button", { name: "패널을 오른쪽에 두기", exact: true }).click(); await expect(page.locator(".avatar-right .vc-home")).toBeVisible(); await expectFloor(page, item, offset);
       await page.getByRole("button", { name: "패널을 왼쪽에 두기", exact: true }).click(); await expectFloor(page, item, offset);
-      await page.setViewportSize({ width: 390, height: 844 });
+      // PLAN-063: retain wide-to-compact house reflow on a supported desktop.
+      await page.setViewportSize({ width: 1280, height: 1000 });
       await expect.poll(async () => await page.locator(".vc-compact-home .vc-home").isVisible() || await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).isVisible()).toBe(true);
       await openCompanionHome(page); await expectFloor(page, item);
       await page.setViewportSize({ width: 1920, height: 1100 }); await expect(page.locator(".avatar-left .vc-home")).toBeVisible(); await expectFloor(page, item, offset);

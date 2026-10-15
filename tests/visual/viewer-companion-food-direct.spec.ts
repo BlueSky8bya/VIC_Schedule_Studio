@@ -113,7 +113,8 @@ async function identifyInitialSupport(page: Page) {
   return found!;
 }
 
-for (const width of [1440, 390]) {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const width of [1440]) {
   test(`food keeps its actual card support offscreen and returns at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page, .1, false);
     await allowDocumentScroll(page); const offset = await identifyInitialSupport(page), anchor = page.locator("[data-test-food-anchor]");
@@ -211,7 +212,8 @@ test("a floor snack belongs to its document point rather than the fixed viewport
   await expect.poll(async () => Math.abs((await foodPoint(item)).y - original.y)).toBeLessThan(2);
 });
 
-for (const width of [1440, 390]) {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const width of [1440]) {
   test(`three real dispenser clicks vary fruit; dragging one to trash preserves the others at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page);
     const kinds: string[] = [];
@@ -301,25 +303,7 @@ test("trash dwell can be left, canceled or blurred before one finite removal", a
   await expect(bin(page)).toHaveAttribute("data-test-clicks", "0");
 });
 
-test("a real mobile touch cancellation keeps its snack and a held trash drop cannot click through", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 }); await setup(page);
-  const item = await spawn(page); await item.press("Escape");
-  const client = await page.context().newCDPSession(page), target = await centre(bin(page));
-  const take = async () => {
-    await expect(item).not.toHaveAttribute("data-falling", "", { timeout: 1800 });
-    const from = await centre(item);
-    await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from.x, y: from.y, id: 11 }] });
-    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from.x - 16, y: from.y, id: 11 }] });
-    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: target.x, y: target.y, id: 11 }] });
-    await expect(bin(page)).toHaveAttribute("data-food-over", "");
-  };
-  await take(); await client.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
-  await expect(bin(page)).not.toHaveAttribute("data-food-over"); await page.waitForTimeout(550); await expect(item).toBeVisible();
-  await take(); await expect(foods(page)).toHaveCount(0, { timeout: 2000 });
-  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  await expect(bin(page)).toHaveAttribute("data-test-clicks", "0");
-  await client.detach();
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
 
 for (const input of ["pointer", "keyboard"] as const) {
   test(`food reaches the mouth and ${input} regrabbing interrupts without care credit`, async ({ page }) => {

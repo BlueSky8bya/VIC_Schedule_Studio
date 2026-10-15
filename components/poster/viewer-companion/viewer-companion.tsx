@@ -249,7 +249,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let overlayHomeResident = false;
     let hideCandidate: CompanionHideTarget | undefined;
     let hideWakeTimer: ReturnType<typeof setTimeout> | undefined;
-    const hideValid = () => Boolean(hiding && hiding.target.element.isConnected && page.contains(hiding.target.element) && hiding.target.element.dataset.eventid === hiding.target.eventId && !hiding.target.element.closest(".teaser,.teaser-revealing,.dimmed,[hidden]"));
+    const hideValid = () => Boolean(hiding && hiding.target.element.isConnected && page.contains(hiding.target.element) && hiding.target.element.dataset.eventid === hiding.target.eventId && (!studio || hiding.target.element.dataset.companionEvent === "ordinary") && !hiding.target.element.closest(".teaser,.teaser-revealing,.dimmed,[hidden],[inert],[aria-hidden='true']"));
     const hideHint = (show: boolean) => { hiding?.target.element.toggleAttribute("data-companion-hide-hint", show); };
     const resetHide = () => { if (hiding?.sheet) cancelGuestInput(); hideHint(false); ownGuest(null); clearTimeout(hideWakeTimer); hideSeek.reset(); hiding = undefined; hideCandidate = undefined; hideObserver.disconnect(); el.removeAttribute("data-hide-phase"); el.removeAttribute("data-hide-event"); el.removeAttribute("data-hide-perch"); el.removeAttribute("data-detail-guest"); style(el, "opacity", "1"); button.tabIndex = overlayRef.current ? -1 : 0; };
     const hideClock = (now: number) => { if (!hiding) return; if (!pause && !(overlayActive && (!hiding.sheet || !hiding.ready))) presentationNow += Math.max(0, now - lastTick); lastTick = now; };
@@ -305,6 +305,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (premiereAwaitingGeometry && !premiereActive && !premiereBounce) { hideBed(); el.hidden = true; return; }
       if (premiereActive && !premiereDisplay) { hideBed(); el.hidden = true; return; }
       if (hiding) { data("hidePhase", hide.phase); if (hide.phase === "hidden" || overlayActive && (!hiding.sheet || !hiding.ready)) { hideBed(); el.hidden = true; return; } }
+      // The studio's found guest dozes in a measured blank part of the
+      // editing field. Its visual carrier stays outside contenteditable.
+      if (hiding?.ready && hiding.sheet?.hasAttribute("data-companion-detail-editor") && isDetailGuest()) {
+        const dozing = status === "watch";
+        if (dozing) { row = 11; frame = 0; status = "sleep"; }
+        el.toggleAttribute("data-dreaming", dozing);
+      }
       lastPoseSample = { row, frame, status };
       // Cursor presence belongs to a valid hover, not the pressure/reward
       // envelopes. Existing paints also release it when the world moves away.
@@ -617,7 +624,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (!hideCandidate) { action = null; nextDecision = now + 1000; return; }
         hiding = { target: hideCandidate, from: { x, y } }; hideSeek.start(hideCandidate.eventId, presentationNow, 12000 + Math.random() * 16000);
         data("hideEvent", hideCandidate.eventId); button.tabIndex = -1; stopHover();
-        hideObserver.observe(page, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "data-eventid"] });
+        hideObserver.observe(page, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "data-eventid", "data-companion-event", "hidden", "inert", "aria-hidden"] });
         setAnnouncement("빅타민이 일정 속에 숨었어요. 그 일정의 상세창에서 찾아보세요.");
       }
       if (next.kind === "jump") supportMotion.reset(now);
@@ -776,10 +783,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const availableFood = accessibleCompanionFoods(food.current?.foods() ?? [], [...platforms, ...landingPlatforms]);
         const explicitSupports = landingPlatforms.filter(p => p.manualOnly && (p.id === occupied?.id || availableFood.some(item => item.platformId === p.id)));
         const worldPlatforms = explicitSupports.length ? [...platforms, ...explicitSupports] : platforms;
-        const source = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]");
-        // Studio cards open editors, not the public detail bridge. Never let
-        // an autonomous action click/edit or hide in a private/support card.
-        hideCandidate = !studio && effective.ambientPrank && occupied?.kind === "card" && now - brain.current.createdAt >= 45000 ? collectCompanionHideTargets(page).find(target => target.element === source) : undefined;
+        const source = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
+        // Both surfaces share one hide action. The explicit public marker
+        // and user-opened detail bridge protect studio editing and data.
+        hideCandidate = effective.ambientPrank && occupied?.kind === "card" && now - brain.current.createdAt >= 45000 ? collectCompanionHideTargets(page).find(target => target.element === source) : undefined;
         launch(getAction(brain.current, { x, y, platformId: support, platforms: worldPlatforms, width: innerWidth, height: innerHeight, hideAvailable: Boolean(hideCandidate), foods: availableFood, pointer }, effective, now), now);
         if (hiding) { paint(14, 0, "hide"); schedule(); return; }
       }
@@ -903,7 +910,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const changed = windows.length !== overlayObserved.size || windows.some(node => !overlayObserved.has(node));
       for (const node of overlayObserved) if (!windows.includes(node)) { overlayResize?.unobserve(node); overlayObserved.delete(node); }
       for (const node of windows) if (!overlayObserved.has(node)) { overlayObserved.add(node); overlayResize?.observe(node); }
-      if (changed) { overlayMutation.disconnect(); windows.forEach(node => overlayMutation.observe(node, { attributes: true, attributeFilter: ["style", "class"] })); }
+      if (changed) {
+        overlayMutation.disconnect();
+        windows.forEach(node => overlayMutation.observe(node, node.hasAttribute("data-companion-detail-editor")
+          ? { attributes: true, attributeFilter: ["style", "class"], childList: true, characterData: true, subtree: true }
+          : { attributes: true, attributeFilter: ["style", "class"] }));
+      }
       const inside = hiding?.ready && hiding.sheet?.isConnected ? findCompanionDetailPerch(hiding.sheet, size) : null;
       const next: CompanionOverlayPerch = inside ? { x: inside.x, y: inside.y, scale: inside.size / size, overlap: false } : placeCompanionOverlayPerch(current, size, { width: innerWidth, height: innerHeight }, windows.map(node => node.getBoundingClientRect()), overlayPerch ? { preferNearby: true } : undefined);
       if (hiding?.sheet) data("hidePerch", inside ? "inside" : "outside");
@@ -918,6 +930,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!reduced && gfxMode() !== "off" && from !== "none") perchAnimation = el.animate([{ transform: from }, { transform: el.style.transform }], { duration: FLIP_MS, easing: getComputedStyle(document.documentElement).getPropertyValue("--ease").trim() || "ease-out" });
     };
     const queueOverlayPerch = () => { if (overlayActive && !pause && !overlayRaf) overlayRaf = requestAnimationFrame(updateOverlayPerch); };
+    const detailScrolled = (event: Event) => {
+      const sheet = hiding?.ready ? hiding.sheet : null;
+      if (sheet && event.target instanceof Node && (event.target === document || sheet.contains(event.target))) queueOverlayPerch();
+    };
     const releaseOverlayDrag = () => {
       const drag = overlayDrag; overlayDrag = undefined; el.removeAttribute("data-overlay-drag");
       if (drag && button.hasPointerCapture(drag.id)) button.releasePointerCapture(drag.id);
@@ -1564,7 +1580,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const detailChanged = (event: Event) => {
       hideClock(performance.now());
       const notice = (event as CustomEvent<CompanionDetailNotice>).detail;
-      detailSheet = notice?.sheet instanceof HTMLElement && notice.sheet.isConnected && notice.sheet.matches(".agenda-detail-sheet") && notice.sheet.dataset.companionDetailEvent === notice.eventId ? notice.sheet : null;
+      detailSheet = notice?.sheet instanceof HTMLElement && notice.sheet.isConnected && (notice.sheet.matches(".agenda-detail-sheet") || studio && page.contains(notice.sheet) && notice.sheet.hasAttribute("data-companion-detail-editor")) && notice.sheet.dataset.companionDetailEvent === notice.eventId ? notice.sheet : null;
       if (extractedFrom && (extractedFrom !== detailSheet || notice.eventId !== extractedEvent)) {
         cancelGuestInput(); ownGuest(null); extractedFrom = null; extractedEvent = null; if (overlayRef.current) pendingDetailDrop = undefined;
         el.removeAttribute("data-detail-guest"); el.removeAttribute("data-hide-perch"); button.tabIndex = overlayRef.current ? -1 : 0;
@@ -1602,6 +1618,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     window.addEventListener(COMPANION_DETAIL_EVENT, detailChanged);
     window.addEventListener("resize", viewportResized, { passive: true });
     document.addEventListener("animationend", queueOverlayPerch, true);
+    window.addEventListener("scroll", detailScrolled, { passive: true, capture: true });
     window.addEventListener("resize", parkedLayout, { passive: true }); window.addEventListener("scroll", parkedLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", parkedLayout);
     window.addEventListener("scroll", followLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", followLayout); window.addEventListener("vic:side-panel", followLayout);
     window.addEventListener("vic:panel-section", panelChanged);
@@ -1619,6 +1636,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       stopped = true; clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
       window.removeEventListener("vic:companion-overlay", sync); window.removeEventListener("resize", viewportResized); document.removeEventListener("animationend", queueOverlayPerch, true);
+      window.removeEventListener("scroll", detailScrolled, true);
       window.removeEventListener("vic:companion-premiere", sync);
       window.removeEventListener("vic:companion-sprite", spriteDecoded);
       window.removeEventListener(COMPANION_DETAIL_EVENT, detailChanged);

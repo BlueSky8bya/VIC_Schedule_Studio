@@ -180,7 +180,8 @@ async function dragGuest(page: Page, to: Point, mobile: boolean, cancel = false)
   await expect(pet(page)).not.toHaveAttribute("data-overlay-drag");
 }
 
-for (const mobile of [false, true]) test.describe(mobile ? "native touch finding" : "native pointer finding", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "native touch finding" : "native pointer finding", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1400 }, hasTouch: mobile, isMobile: mobile });
   test("wrong detail pauses hiding; the ready matching window reveals one interactive guest which can be taken outside", async ({ page }) => {
     test.setTimeout(60_000);

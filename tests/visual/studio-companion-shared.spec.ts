@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const home = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
@@ -87,22 +86,4 @@ test.describe("shared companion in the studio", () => {
   });
 });
 
-for (const topology of [{ name: "native390", width: 390, height: 844 }, { name: "coarse-landscape", width: 900, height: 600 }]) test.describe(topology.name, () => {
-  test.use({ viewport: { width: topology.width, height: topology.height }, isMobile: true, hasTouch: true });
-  test("mobile settings X and browser Back return to studio; dark rail and local house stay shared", async ({ page }) => {
-    await seed(page, true, true); await studio(page);
-    const opener = page.locator('.agenda-rail .viewer-settings-open');
-    await expect(opener).toHaveAccessibleName("설정");
-    await opener.tap(); await expect(settings(page)).toBeVisible(); await expect(page.locator(".role-help-pop")).toHaveCount(0);
-    await settings(page).locator(".modal-head .modal-close").tap(); await expect(settings(page)).toHaveCount(0);
-    await expect(page.locator(".studio-shell")).toBeVisible(); await expect(opener).toBeFocused();
-    await opener.tap(); await expect(settings(page)).toBeVisible(); await page.goBack(); await expect(settings(page)).toHaveCount(0);
-    await expect(page.locator(".studio-shell")).toBeVisible(); expect(new URL(page.url()).pathname).toBe("/visual-fixture/studio");
-    const palette = await page.locator(".agenda-rail").evaluate(node => ({ background: getComputedStyle(node).backgroundColor, text: getComputedStyle(node.querySelector(".agenda-legend")!).color }));
-    expect(palette.background).toBe("rgba(0, 0, 0, 0)"); expect(palette.text).not.toBe("rgb(0, 0, 0)");
-    await openCompanionHome(page, "touch"); await expect(home(page)).toHaveCount(1);
-    await home(page).getByRole("button", { name: "밥 꺼내기", exact: true }).tap(); await expect(page.locator(".vc-food")).toHaveCount(1);
-    await home(page).getByRole("button", { name: "음식 버리기", exact: true }).tap(); await expect(page.locator(".vc-food")).toHaveCount(0);
-    await sharedLayout(page); await page.screenshot({ path: `.scratch-pw/companion-062-studio-${topology.name}-dark.png` });
-  });
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.

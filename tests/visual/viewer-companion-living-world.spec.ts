@@ -119,7 +119,8 @@ async function expectHomeOffsets(page: Page, expected: Awaited<ReturnType<typeof
   }).toBe(true);
 }
 
-for (const mobile of [false, true]) test.describe(mobile ? "agenda first physical card" : "PC first physical card", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "agenda first physical card" : "PC first physical card", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
   test("deliberate pet and fruit releases land on the first real card and nearby offered food remains edible", async ({ page }) => {
     test.setTimeout(25000); await setup(page, .8);
@@ -187,20 +188,4 @@ test("untouched and explicitly keyboard-selected tray food follows native foldin
   await page.screenshot({ path: ".scratch-pw/companion-living-tray-PC.png" });
 });
 
-test.describe("real touch compact tray", () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-  test("closing and reopening the same home preserves both untouched snacks and their local tray positions", async ({ page }) => {
-    await setup(page); await dispense(page, true); await dispense(page, true); const expected = await homeOffsets(page); await startNoFallWitness(page);
-    const fold = house(page).getByRole("button", { name: "빅타민 집", exact: true });
-    await fold.tap(); for (const item of await food(page).all()) await expect(item).toHaveJSProperty("hidden", true);
-    await fold.tap(); await expectHomeOffsets(page, expected);
-    await house(page).getByRole("button", { name: "빅타민 집 닫기", exact: true }).tap();
-    await expect(house(page)).toHaveCount(0);
-    for (const item of await food(page).all()) await expect(item).toHaveJSProperty("hidden", true);
-    await openCompanionHome(page, "touch"); await expectHomeOffsets(page, expected);
-    await expect(food(page)).toHaveCount(2); await finishNoFallWitness(page);
-    await expect(page.locator("[data-export-surface] .vc-food-layer")).toHaveCount(0);
-    console.log(JSON.stringify({ check: "living-tray-touch", offsets: expected, restored: await homeOffsets(page) }));
-    await page.screenshot({ path: ".scratch-pw/companion-living-tray-touch.png" });
-  });
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.

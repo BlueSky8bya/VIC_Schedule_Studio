@@ -79,22 +79,4 @@ test("companion subtabs support arrows, Home and End with one keyboard stop", as
   await expect(page.locator(".public-calendar-header h1")).toHaveText(monthBefore!);
 });
 
-test("mobile uses the same companion controls and all four subtabs fit", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/visual-fixture/poster");
-  const panel = await openCompanionSettings(page);
-  const tabs = panel.getByRole("tablist", { name: "빅타민 설정", exact: true });
-  await tabs.scrollIntoViewIfNeeded();
-  expect(await tabs.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
-  for (const name of ["움직임", "장난", "교감", "성격"]) {
-    const tab = tabs.getByRole("tab", { name, exact: true });
-    await tab.click();
-    await expect(tab).toHaveAttribute("aria-selected", "true");
-    await expect(panel.getByRole("tabpanel")).toHaveCount(1);
-  }
-  await panel.getByRole("radio", { name: "애교쟁이", exact: true }).click();
-  await expect(panel.getByRole("radio", { name: "애교쟁이", exact: true })).toBeChecked();
-  await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
-  await expect(panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toBeChecked();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.

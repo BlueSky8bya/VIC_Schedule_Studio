@@ -4,7 +4,7 @@ export const COMPANION_DETAIL_EVENT = "vic:companion-detail";
 export type CompanionDetailNotice = { eventId: string | null; sheet: HTMLElement | null; ready: boolean };
 export type CompanionHideRect = { left: number; top: number; right: number; bottom: number; width: number; height: number };
 export type CompanionHideTarget = { eventId: string; element: HTMLElement; rect: CompanionHideRect; entry: { x: number; y: number } };
-const CARD = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
+const CARD = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]";
 const EXCLUDED = ".teaser,.teaser-revealing,.dimmed,[inert],[hidden],[aria-hidden='true']";
 const CONTROL = "button,a[href],input,select,textarea,[role='button']";
 const publicId = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,95}$/.test(value);
@@ -32,6 +32,9 @@ export function collectCompanionHideTargets(root: HTMLElement): CompanionHideTar
   for (let index = 0; index < Math.min(cards.length, 200); index++) {
     const element = cards[index];
     const eventId = element.dataset.eventid;
+    // Studio DOM also contains nonpublic/support/teaser cards. Only the
+    // explicit ordinary-public marker may participate in the shared game.
+    if (root.dataset.companionSurface === "studio" && element.dataset.companionEvent !== "ordinary") continue;
     if (!publicId(eventId) || !element.isConnected || !visible(element)) continue;
     const box = measure(element);
     if (![box.left, box.top, box.right, box.bottom].every(Number.isFinite)) continue;
@@ -54,7 +57,7 @@ export function collectCompanionHideTargets(root: HTMLElement): CompanionHideTar
         const hit = doc.elementsFromPoint(point.x, point.y).find(node => !node.closest(".vc-companion,.vc-food-layer"));
         if (!hit || hit.closest(CARD) !== element) continue;
         const control = hit.closest(CONTROL);
-        if (control && control !== element) continue;
+        if (control && control !== element && !(root.dataset.companionSurface === "studio" && control.classList.contains("studio-day") && control.contains(element))) continue;
         entry = point; break;
       }
       if (entry) break;

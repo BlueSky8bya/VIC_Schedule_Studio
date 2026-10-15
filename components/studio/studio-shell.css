@@ -5428,11 +5428,10 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 .studio-mobile .agenda-header .m-head-left .save-status.failed {
   background: var(--status-danger-fill);
 }
-/* 계정변경(로그아웃) — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤(연한 라인·표면) 버튼 그대로
-   재사용해 주변 색과 어울리게, 한 줄로(아이콘 작게). */
+/* Shared header gear owns row 1. Keep the account action directly below it. */
 .studio-mobile .agenda-header .m-head-logout {
   grid-column: 3;
-  grid-row: 1;
+  grid-row: 2;
   justify-self: end;
   align-self: center;
 }
@@ -10254,7 +10253,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   top: 0;
   z-index: 12;
   margin: 0 calc(-1 * var(--m-agenda-pad-x, 14px));
-  padding: 6px var(--m-agenda-pad-x, 14px) 8px;
+  padding: max(9px, env(safe-area-inset-top, 0px)) var(--m-agenda-pad-x, 14px) 8px;
   background: linear-gradient(180deg, #f4f6fb 88%, rgb(244 246 251 / 0%));
 }
 /* 스튜디오 헤더는 컴팩트하게(고정 영역을 너무 키우지 않게) */

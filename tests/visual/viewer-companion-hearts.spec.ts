@@ -79,7 +79,8 @@ test("month reuse, resize, OFF cleanup and remount preserve only correct public 
   expect(await attempt(page, "#a")).toBe("added");
   await page.locator("#a").evaluate(node => node.closest("[data-eventid]")!.setAttribute("data-eventid", "synthetic-public-c"));
   await expect(page.locator("#a")).not.toHaveAttribute("data-companion-hearted");
-  await page.setViewportSize({ width: 1024, height: 768 });
+  // PLAN-063: exercise adapter resize on a supported desktop, not the removed mobile pet.
+  await page.setViewportSize({ width: 1100, height: 768 });
   expect(await attempt(page, "#a")).toBe("added");
   await page.evaluate(() => (window as unknown as FixtureWindow).__hearts.dispose());
   await expect(page.locator("[data-companion-hearted]")).toHaveCount(0);

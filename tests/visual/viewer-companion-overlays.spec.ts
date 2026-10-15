@@ -38,7 +38,8 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => expect(posts.get(page)).toEqual([]));
 
-for (const mobile of [false, true]) test.describe(mobile ? "real touch ordinary overlays" : "desktop ordinary overlays", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overlays" : "desktop ordinary overlays", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
   test("detail, search, records and settings keep one visible quiet companion without taking overlay focus", async ({ page }) => {
     test.setTimeout(90_000);

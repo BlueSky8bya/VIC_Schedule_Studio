@@ -34,7 +34,8 @@ async function observeHold(page: Page) {
   });
 }
 
-for (const mobile of [false, true]) test.describe(mobile ? "native touch held motion" : "pointer held motion", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "native touch held motion" : "pointer held motion", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
   test("a stationary grip stays under the pointer while the HD body wriggles, then lands on release", async ({ page }) => {
     await setup(page); const pet = page.locator(".vc-companion"), actor = page.locator(".vc-actor");

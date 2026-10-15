@@ -23,7 +23,7 @@ test("each new opening picks a different score without adding music controls", a
   await expect(page.getByRole("button", { name: /음악/ })).toHaveCount(0);
 });
 
-for (const width of [1440, 390]) {
+for (const width of [1440]) {
   test(`drawn audience animates without covering hope controls at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/visual-fixture/poster?premiere=40");
@@ -223,22 +223,5 @@ test("a quietly held story re-gated into a future countdown regains its hope con
 });
 
 
-test.describe("short touch landscape", () => {
-  test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
-  test("direct audience targets keep44px and clear every hope control", async ({ page }) => {
-    await page.goto("/visual-fixture/poster?premiere=40&count=3");
-    const controls = page.getByRole("button", { name: "기대돼요", exact: true });
-    const fans = page.locator(".pm-fan:visible");
-    await expect(fans).toHaveCount(6);
-    for (const fan of await fans.all()) {
-      await expect(fan).toBeInViewport();
-      const f = (await fan.boundingBox())!;
-      expect(f.width).toBeGreaterThanOrEqual(44); expect(f.height).toBeGreaterThanOrEqual(44);
-      for (const control of await controls.all()) {
-        const c = (await control.boundingBox())!;
-        expect(c.y + c.height).toBeLessThanOrEqual(f.y);
-      }
-    }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  });
-});
+// PLAN-063 retires mobile spectator input. The native portrait/landscape
+// replacement in teaser-audience.spec.ts proves DOM/assets0 and working CTAs.

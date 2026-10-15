@@ -21,6 +21,7 @@ for (const [width, height] of [[1100, 780], [390, 844], [844, 390]]) {
     for (const x of [794, 798]) expect(Math.abs(picture.x + picture.width * x / 1536 - (plane.x + plane.width / 2))).toBeLessThan(2);
     expect(Math.abs(picture.y + picture.height / 2 - (plane.y + plane.height / 2))).toBeLessThan(1);
     const h = (await hope.boundingBox())!;
+    await expect(page.locator(".pm-fan")).toHaveCount(width <= 1040 ? 0 : 6);
     for (const fan of await page.locator(".pm-fan:visible").all()) {
       const f = (await fan.boundingBox())!;
       expect(f.y).toBeGreaterThanOrEqual(h.y + h.height);
@@ -96,8 +97,8 @@ test("a changed deadline keeps the selection and the identical focused audience 
   expect(await fan.evaluate(el => el === (window as typeof window & { __sameFan: Element }).__sameFan)).toBe(true);
 });
 
-test("agenda spectators gather below the clock and hidden return after eight snaps to their seats", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test("desktop spectators gather below the clock and hidden return after eight snaps to their seats", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 780 });
   await page.goto("/visual-fixture/poster?premiere=12");
   await expect(page.locator(".pm-stage")).toHaveAttribute("data-pm-quiet", "");
   const first = page.locator(".pm-fan").first(), start = (await first.boundingBox())!;

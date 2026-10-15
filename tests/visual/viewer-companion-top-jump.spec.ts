@@ -206,7 +206,8 @@ async function offerLowerCardFood(page: Page, origin: { x: number; y: number }) 
   console.log(JSON.stringify({ check: "top-jump-native-offered-card", origin, target }));
 }
 
-for (const mobile of [false, true]) test.describe(mobile ? "agenda top flights" : "desktop top flights", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "agenda top flights" : "desktop top flights", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
   test("a real reachable upper-card transfer stays visible through its entire ballistic arc", async ({ page }) => {
     test.setTimeout(25000); await setup(page, true, mobile);

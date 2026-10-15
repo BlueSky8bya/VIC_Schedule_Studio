@@ -114,7 +114,8 @@ async function placeNear(page: Page, item: Locator) {
   await expect(month(page)).toHaveText(before!);
 }
 
-for (const width of [1440, 390]) {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const width of [1440]) {
   for (const mode of ["cat", "dog"] as const) {
     test(`a hungry ${mode} snack is placed, nibbled and remembered at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });

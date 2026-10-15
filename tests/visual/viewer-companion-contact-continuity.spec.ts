@@ -113,7 +113,8 @@ test("reduced-motion retention starts only in the base and expires outside after
   await page.mouse.move(outside.x + 1, outside.y); await expect(hand(page)).toBeHidden(); await ready(page, { x: p.x, y });
 });
 
-for (const mobile of [false, true]) test.describe(mobile ? "touch hanging tension" : "cold pointer hanging tension", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "touch hanging tension" : "cold pointer hanging tension", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1400 }, hasTouch: mobile, isMobile: mobile });
   test("pickup retains the visible drawing, hangs below the grip and preserves keyboard focus feedback", async ({ page }) => {
     let unblock = () => {}, requested = false; const gate = new Promise<void>(resolve => { unblock = resolve; });
@@ -140,7 +141,8 @@ for (const mobile of [false, true]) test.describe(mobile ? "touch hanging tensio
   });
 });
 
-for (const mobile of [false, true]) test.describe(mobile ? "controlled-focus touch pickup" : "controlled-focus pointer pickup", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "controlled-focus touch pickup" : "controlled-focus pointer pickup", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1400 }, hasTouch: mobile, isMobile: mobile });
   test("native capture during the real800ms wake stays visible after leaving its old ledge (fixture focus override)", async ({ page }) => {
     test.setTimeout(25000);

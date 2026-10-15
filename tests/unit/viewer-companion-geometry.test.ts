@@ -61,12 +61,12 @@ function geometryFixture() {
   const root = new FixtureElement(), day = new FixtureElement(), date = new FixtureElement(), card = new FixtureElement(), title = new FixtureElement(), heart = new FixtureElement(), home = new FixtureElement();
   day.parentElement = root; date.parentElement = day; card.parentElement = root; title.parentElement = card; heart.parentElement = card;
   date.rect = box(200, 300, 100, 20); title.rect = box(500, 450, 200, 20); home.rect = box(200, 600, 120, 14); heart.rect = box(720, 450, 20, 20);
-  date.closest = selector => selector.includes(".day-strip") ? date : selector === ".public-day,.agenda-day" ? day : null;
+  date.closest = selector => selector.includes(".day-strip") ? date : selector.includes(".public-day") ? day : null;
   date.matches = selector => selector.includes(".day-strip");
   title.closest = selector => selector.includes(".event-main") ? title : selector.includes("data-eventid") ? card : null;
   card.querySelector = selector => selector === ".event-heart" ? heart : null;
   const controls: FixtureElement[] = [];
-  root.querySelectorAll = selector => selector.includes("data-eventid") ? [card] : selector === ".public-day,.agenda-day" ? [day] : selector.startsWith("button,") ? controls : [];
+  root.querySelectorAll = selector => selector.includes("data-eventid") ? [card] : selector.startsWith(".public-day") ? [day] : selector.startsWith("button,") ? controls : [];
   const nodes = [{ parentElement: date }, { parentElement: title }];
   const range = { current: nodes[0], selectNodeContents(node: typeof nodes[number]) { this.current = node; }, getClientRects: vi.fn(function (this: { current: typeof nodes[number] }) { return [this.current.parentElement.rect]; }), detach() {} };
   Object.assign(root, { ownerDocument: {
@@ -76,7 +76,7 @@ function geometryFixture() {
   } });
   const flush = () => { const pending = [...frames.values()]; frames.clear(); for (const callback of pending) callback(now); };
   const advance = (elapsed: number) => { now += elapsed; for (const [id, timer] of [...timers]) if (timer.at <= now) { timers.delete(id); timer.callback(); } flush(); };
-  return { root: root as unknown as HTMLElement, sourceRoot: root, card, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, range, frames, timers, flush, advance };
+  return { root: root as unknown as HTMLElement, sourceRoot: root, day, card, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, range, frames, timers, flush, advance };
 }
 
 function addHouseFloor(fixture: ReturnType<typeof geometryFixture>) {
@@ -94,15 +94,52 @@ function addHouseFloor(fixture: ReturnType<typeof geometryFixture>) {
 
 function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, bands: FixtureElement[] = [], headers: FixtureElement[] = []) {
   const query = fixture.sourceRoot.querySelectorAll;
-  fixture.sourceRoot.querySelectorAll = selector => selector === ".support-bar[data-supportid],.agenda-event[data-supportid],.agenda-item[data-supportid]" ? bands
-    : selector === ".weekday-row,.public-calendar-header,.agenda-header" ? headers : query(selector);
+  fixture.sourceRoot.querySelectorAll = selector => selector.startsWith(".support-bar[data-supportid],") ? bands
+    : selector.startsWith(".weekday-row,") ? headers : query(selector);
   for (const element of [...bands, ...headers]) element.parentElement = fixture.sourceRoot;
 }
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
-  it("uses only opt-in ordinary studio cards as targets, never editor dates or unmarked private/support rows", () => {
+  it("treats the studio day role as a calendar container while retaining nested edit/private controls and scroll anchors", () => {
+    const f = geometryFixture(), edit = new FixtureElement(), privateCard = new FixtureElement();
+    const marker = "[data-companion-event='ordinary'][data-eventid]";
+    f.sourceRoot.getAttribute = name => name === "data-companion-surface" ? "studio" : null;
+    f.day.rect = box(450, 280, 320, 320); f.day.matches = selector => selector.includes(".studio-day");
+    f.card.parentElement = f.day; f.card.rect = box(470, 430, 260, 60); f.card.matches = selector => selector === marker;
+    f.title.closest = selector => selector === marker ? f.card : selector.includes(".pill-main") ? f.title : selector.includes("data-eventid") ? f.card : null;
+    edit.parentElement = f.card; edit.rect = box(680, 380, 40, 40);
+    privateCard.parentElement = f.day; privateCard.rect = box(100, 360, 160, 90);
+    f.controls.push(f.day, edit, privateCard);
+    let platforms: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, next => { platforms = next; }, { size: 92 }); f.flush();
+    const ledge = platforms.find(p => sub.anchor(p.id)?.element === (f.title as unknown as Element));
+    expect(ledge, "a role=button day must not suppress its entire ordinary card").toBeDefined();
+    expect(sub.landings().some(p => sub.anchor(p.id)?.element === (f.card as unknown as Element))).toBe(true);
+    expectClear(platforms, [edit.rect, privateCard.rect], 92 * .76);
+    const initial = ledge!; const ranges = f.range.getClientRects.mock.calls.length;
+    f.title.rect = box(510, 354, 200, 20);
+    expect(sub.follow([initial.id])[0]).toMatchObject({ platform: { x: initial.x + 10, y: initial.y - 96 }, anchorX: 510, anchorY: 354 });
+    expect(f.range.getClientRects).toHaveBeenCalledTimes(ranges);
+    sub();
+  });
+  it("publishes public studio weekday/band edges but never an unmarked support band", () => {
+    const f = geometryFixture(), weekdays = new FixtureElement(), publicBand = new FixtureElement(), privateBand = new FixtureElement();
+    f.sourceRoot.getAttribute = name => name === "data-companion-surface" ? "studio" : null;
+    weekdays.rect = box(100, 70, 800, 60); weekdays.matches = selector => selector.includes(".studio-weekdays");
+    publicBand.rect = box(100, 550, 400, 22); publicBand.matches = selector => selector.includes("data-companion-band");
+    privateBand.rect = box(100, 650, 400, 22);
+    addStructuralSurfaces(f, [publicBand, privateBand], [weekdays]);
+    let platforms: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, next => { platforms = next; }, { size: 92 }); f.flush();
+    expect(platforms.some(p => p.id.includes("-header") && p.y === 127)).toBe(true);
+    expect(platforms.some(p => p.id.includes("-band") && p.y === 547)).toBe(true);
+    expect(platforms.some(p => p.id.includes("-band") && p.y === 647)).toBe(false);
+    expectClear(platforms, [f.date.rect, f.title.rect], 92 * .76);
+    sub();
+  });
+  it("uses anonymous public date chrome and opt-in studio cards, never unmarked private/support rows", () => {
     const f = geometryFixture(), privateCard = new FixtureElement(), privateTitle = new FixtureElement();
     const marker = "[data-companion-event='ordinary'][data-eventid]";
     f.card.rect = box(470, 430, 260, 60);
@@ -118,7 +155,7 @@ describe("companion geometry anchor subscription", () => {
     let platforms: Platform[] = [];
     const sub = observeCompanionPlatforms(f.root, next => { platforms = next; }); f.flush();
     expect(platforms.filter(p => p.kind === "card").length).toBeGreaterThan(0);
-    expect(platforms.filter(p => p.kind === "date")).toEqual([]);
+    expect(platforms.some(p => p.kind === "date")).toBe(true);
     expect([...platforms, ...sub.landings(), ...sub.landings(32)].every(p => sub.anchor(p.id)?.element !== (privateCard as unknown as Element) && sub.anchor(p.id)?.element !== (privateTitle as unknown as Element))).toBe(true);
     expect(sub.landings().some(p => sub.anchor(p.id)?.element === (f.card as unknown as Element))).toBe(true);
     sub();

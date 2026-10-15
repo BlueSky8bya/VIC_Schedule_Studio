@@ -60,7 +60,8 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(observations.get(page)).toEqual({ posts: [], errors: [] }); });
 
-for (const touch of [false, true]) test.describe(touch ? "native390 physical floor" : "PC1920 physical floor", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const touch of [false]) test.describe(touch ? "native390 physical floor" : "PC1920 physical floor", () => {
   test.use({ viewport: touch ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: touch, isMobile: touch });
   test("a genuine release above the room falls onto its floor and retains that home through topology", async ({ page }) => {
     await setup(page, touch);

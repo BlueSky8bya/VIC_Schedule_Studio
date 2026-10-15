@@ -43,6 +43,7 @@ export type StudioSettingsProps = {
   premiereStageOn: boolean;
   onTogglePremiereStage: () => void;
   companionPrefs: CompanionPreferences;
+  companionAvailable: boolean;
   onCompanionChange: (patch: Partial<CompanionPreferences>) => void;
   eyeComfort: boolean;
   onToggleEyeComfort: () => void;
@@ -326,6 +327,7 @@ export function StudioSettingsList({
   premiereStageOn,
   onTogglePremiereStage,
   companionPrefs,
+  companionAvailable,
   onCompanionChange,
   eyeComfort,
   onToggleEyeComfort,
@@ -378,7 +380,7 @@ export function StudioSettingsList({
     { key: "sound", label: "소리", icon: <Volume2 size={15} />, tone: "water" },
     { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
     { key: "motion", label: "움직임", icon: <Sparkles size={15} />, tone: "water" },
-    { key: "companion", label: "빅타민", icon: <Heart size={15} />, tone: "leaf" },
+    ...(companionAvailable ? [{ key: "companion" as const, label: "빅타민", icon: <Heart size={15} />, tone: "leaf" as const }] : []),
     { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
     ...(hasEditGroup ? [{ key: "edit" as const, label: "편집", icon: <PenLine size={15} />, tone: "metal" as const }] : []),
     ...(posterTheme !== null ? [{ key: "viewer" as const, label: "시청자 화면", icon: <Palette size={15} />, tone: "rose" as const }] : []),
@@ -873,10 +875,10 @@ export function StudioSettingsList({
       </section>
 
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
-      <section {...pane("companion")}>
+      {companionAvailable ? <section {...pane("companion")}>
         <h3 className="rhh-group-title" id="rhh-tab-companion-title">빅타민</h3>
         <CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} />
-      </section>
+      </section> : null}
 
       <section {...pane("bg", "rhh-web")}>
         <h3 className="rhh-group-title" id="rhh-tab-bg-title">배경</h3>

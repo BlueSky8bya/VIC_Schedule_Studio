@@ -118,6 +118,8 @@ import { markContentReady } from "@/lib/presence/content-ready";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
+import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
@@ -817,6 +819,17 @@ export function PublicPoster({
   // 뒤로가기 닫기 규약은 시트 종류와 무관하게 하나라, 아래 insightsOpen/setInsightsOpen 이름의
   // 기존 배관(1690~)을 그대로 태운다: 열림 = 어느 시트든 열림, 닫기 = 어느 시트든 닫기.
   const [sheet, setSheet] = useState<null | "insights" | "search" | "settings">(null);
+  const settingsOpenerRef = useRef<HTMLElement | null>(null);
+  const settingsWasOpen = useRef(false);
+  // Match the studio lifecycle: capture before the shared trap takes focus,
+  // then restore the actual opener for X, Escape and browser Back alike.
+  useEffect(() => {
+    const open = sheet === "settings", wasOpen = settingsWasOpen.current;
+    settingsWasOpen.current = open;
+    if (open && !wasOpen) settingsOpenerRef.current = document.activeElement as HTMLElement | null;
+    else if (!open && wasOpen) { settingsOpenerRef.current?.focus({ preventScroll: true }); settingsOpenerRef.current = null; }
+  }, [sheet]);
+  const settingsTrapRef = useFocusTrap<HTMLDivElement>(sheet === "settings");
   // 설정 창은 Esc로 닫힌다(UI-21 — 편집실 설정 모달과 같은 동작). 인사이트·검색 시트는 각자 처리한다.
   useEffect(() => {
     if (sheet !== "settings") return;
@@ -839,6 +852,7 @@ export function PublicPoster({
   // 연다. 상태는 공용 훅 한 벌(components/shared/use-settings-prefs.ts), 목록도 편집실과 같은 컴포넌트.
   // 포스터 테마·개발자 시간여행 줄은 편집실(소유자·개발자) 몫이라 여기선 넘기지 않는다.
   const settingsPrefs = useSettingsPrefs();
+  const companionDesktop = useCompanionDesktop();
   const insightsOpen = sheet !== null;
   const setInsightsOpen = (open: boolean) => setSheet(open ? "insights" : null);
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
@@ -868,7 +882,7 @@ export function PublicPoster({
       });
     }
   });
-  const companionPremiere = useCompanionPremiere(premiere.frame, settingsPrefs.companionPrefs.enabled && !avatarFixed, premiere.close);
+  const companionPremiere = useCompanionPremiere(premiere.frame, companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed, premiere.close);
   const vodsByDate = useMemo(() => {
     const map = new Map<
       string,
@@ -4100,7 +4114,7 @@ export function PublicPoster({
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
-      {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
+      {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
               blocked={Boolean(monthPick || giftCard || gachaOpen)}
               overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
         premiereCue={companionPremiere.cue} onPremiereJoin={companionPremiere.onJoin}
@@ -4551,7 +4565,7 @@ export function PublicPoster({
                     </div>
                   ) : null}
                 </div>
-                {settingsPrefs.companionPrefs.enabled ? <CompanionDetailBridge eventId={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : null} sheetRef={detailSheetRef} ready={!anchor || Boolean(pos)} /> : null}
+                {companionDesktop && settingsPrefs.companionPrefs.enabled ? <CompanionDetailBridge eventId={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : null} sheetRef={detailSheetRef} ready={!anchor || Boolean(pos)} /> : null}
               </div>
             );
           })()
@@ -4588,7 +4602,7 @@ export function PublicPoster({
           onClick={(e) => { if (e.target === e.currentTarget) setSheet(null); }}
           role="presentation"
         >
-          <div aria-label="설정" aria-modal="true" className="modal-card modal-card-settings" role="dialog">
+          <div aria-label="설정" aria-modal="true" className="modal-card modal-card-settings" role="dialog" ref={settingsTrapRef}>
             <div className="modal-head">
               <h2>설정</h2>
               <button aria-label="닫기" className="modal-close" data-act="close-settings" onClick={() => setSheet(null)} type="button">
@@ -4634,6 +4648,7 @@ export function PublicPoster({
                 premiereStageOn={settingsPrefs.premiereStageOn}
                 onTogglePremiereStage={settingsPrefs.togglePremiereStage}
                 companionPrefs={settingsPrefs.companionPrefs}
+                companionAvailable={companionDesktop}
                 onCompanionChange={settingsPrefs.onCompanionChange}
                 posterTheme={null}
                 posterThemeSaving={false}
@@ -5019,7 +5034,7 @@ export function PublicPoster({
             {/* 아바타 scene에선 계절 배경 카드가 아바타 자리 위쪽으로(레일이 접히므로). 점선 박스 **밖·위** —
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
             {interactive ? <ViewerAmbientControl collapsible className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
-            {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
+            {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
             {/* 아바타 빈 자리 — 관리자·개발자(avatarSlot)·/onair 고정 scene에만. 일반 시청자 패널은 카드까지만. */}
             {avatarCapable ? (
               <div className="avatar-dock-inner">

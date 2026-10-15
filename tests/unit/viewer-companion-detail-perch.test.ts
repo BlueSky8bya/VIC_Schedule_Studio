@@ -8,10 +8,15 @@ class ElementFixture {
   hidden = false;
   inert = false;
   ignored = false;
+  editor = false;
+  editorField: ElementFixture | null = null;
+  decorativeEditorRing = false;
+  matches = () => this.decorativeEditorRing;
   style = { display: "block", visibility: "visible", opacity: "1", overflowX: "visible", overflowY: "visible" };
   rect = box(0, 0, 400, 300);
   getBoundingClientRect = vi.fn(() => this.rect);
-  hasAttribute = (name: string) => name === "hidden" && this.hidden;
+  hasAttribute = (name: string) => name === "hidden" && this.hidden || name === "data-companion-detail-editor" && this.editor;
+  querySelector = () => this.editorField;
   closest(selector: string): ElementFixture | null {
     if (selector === "[inert]" && this.inert || selector !== "[inert]" && this.ignored) return this;
     return this.parentElement?.closest(selector) ?? null;
@@ -101,6 +106,38 @@ describe("finite public detail-window companion perch", () => {
     f.text([box(0, 0, 400, 300)], hidden); const image = box(200, 150, 400, 300); f.control(image);
     const point = f.find()!; expect(point.size).toBe(92); clear(point, image);
     expect(f.range.getClientRects).not.toHaveBeenCalled();
+  });
+
+  it("lets a studio guest nap only in blank editable geometry without touching its text", () => {
+    const f = fixture(); f.sheet.editor = true;
+    const field = f.control(box(20, 40, 380, 120)); f.sheet.editorField = field;
+    const title = box(30, 50, 190, 75); f.text([title], field);
+    const point = f.find()!;
+    expect(point).toEqual({ x: 352, y: 114, size: 44 }); clear(point, title);
+    expect(cell(point).left).toBeGreaterThanOrEqual(field.rect.left + 6);
+    expect(cell(point).top).toBeGreaterThanOrEqual(field.rect.top + 6);
+    expect(f.range.selectNodeContents).toHaveBeenCalledOnce();
+  });
+
+  it("fails closed for missing/full/clipped studio fields and keeps other editables protected", () => {
+    const f = fixture(); f.sheet.editor = true; expect(f.find()).toBeNull();
+    const field = f.control(box(20, 40, 380, 120)); f.sheet.editorField = field;
+    f.text([box(20, 40, 380, 120)], field); expect(f.find()).toBeNull();
+    f.nodes.length = 0;
+    const otherField = f.control(box(20, 40, 380, 120)); expect(f.find()).toBeNull();
+    otherField.hidden = true;
+    field.hidden = true; expect(f.find()).toBeNull();
+    field.hidden = false; field.style.overflowY = "auto";
+    f.sheet.rect = box(0, 0, 400, 80); expect(f.find()).toBeNull();
+  });
+
+  it("ignores only the studio's direct decorative perimeter, retaining real media/control protection", () => {
+    const f = fixture(); f.sheet.editor = true;
+    f.sheet.editorField = f.control(box(20, 40, 380, 120));
+    const outline = f.control(box(0, 0, 400, 300)); outline.decorativeEditorRing = true;
+    expect(f.find()).toEqual({ x: 352, y: 114, size: 44 });
+    outline.decorativeEditorRing = false; expect(f.find()).toBeNull();
+    outline.decorativeEditorRing = true; f.sheet.editor = false; expect(f.find()).toBeNull();
   });
 
   it("fails closed for hidden, detached, inert, malformed or excessively dense windows", () => {

@@ -98,7 +98,7 @@ async function startProbe(page: Page, target: number) {
 }
 async function finishProbe(page: Page, label: string) {
   const result = await page.evaluate(() => { const p = (window as ProbeWindow).companionPremiereProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect(); return { sameDom: p.node === document.querySelector(".vc-companion"), realClock: true, frames: p.frames, transitions: p.transitions }; });
-  await writeFile(`.scratch-pw/companion-062-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(20); return result;
+  await writeFile(`.scratch-pw/companion-063-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(20); return result;
 }
 async function layout(page: Page, mobile: boolean) {
   if (!mobile) expect(await page.locator("[data-export-surface]").evaluate(node => (node as HTMLElement).offsetWidth)).toBe(1840);
@@ -110,7 +110,9 @@ async function layout(page: Page, mobile: boolean) {
   console.log(JSON.stringify({ check: "premiere-clip-tail-restored", ended, normal, leaseTailMs: normal.at - ended.at }));
 }
 
-for (const mobile of [false, true]) test.describe(mobile ? "native compact premiere" : "pointer panel premiere", () => {
+// PLAN-063 retires mobile companion handoff/home presentation. Its replacement
+// is the mobile DOM/assets0 matrix in teaser-audience and capability tests.
+for (const mobile of [false]) test.describe(mobile ? "native compact premiere" : "pointer panel premiere", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
 
   test("one companion enters the actual placeholder before gather and bounces from its released card only after the calendar action", async ({ page }) => {
@@ -129,15 +131,15 @@ for (const mobile of [false, true]) test.describe(mobile ? "native compact premi
     // entry hands the creature to the performance and pauses its needs.
     const careBefore = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
     const enteredId = (await pet(page).getAttribute("data-premiere-source"))!;
-    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-062-entry-${mobile ? "390" : "1920"}.png` });
+    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-063-entry-${mobile ? "390" : "1920"}.png` });
     await expect(pet(page)).toHaveAttribute("data-premiere-companion", "joined", { timeout: 5500 });
     await expect(stage(page)).toHaveAttribute("data-pm-entry", "gather", { timeout: 2500 }); await expect(page.locator(".pm-fan[data-companion-joined]")).toHaveCount(1);
     await expect(pet(page)).toBeHidden(); await expect(pet(page)).toHaveCount(1); await expect(page.getByRole("timer")).toHaveCount(1);
-    await page.screenshot({ path: `.scratch-pw/companion-062-joined-${mobile ? "390" : "1920"}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-063-joined-${mobile ? "390" : "1920"}.png` });
     release = true; await expect(page.locator(".pm-complete")).toBeVisible({ timeout: 5000 });
     const exit = page.getByRole("button", { name: "일정표 보기", exact: true }); if (mobile) await exit.tap(); else await exit.click();
     await expect(pet(page)).toHaveAttribute("data-premiere-companion", "return", { timeout: 5000 }); await expect(pet(page)).toHaveAttribute("data-premiere-source", enteredId);
-    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-062-return-${mobile ? "390" : "1920"}.png` });
+    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-063-return-${mobile ? "390" : "1920"}.png` });
     await expect(pet(page)).not.toHaveAttribute("data-premiere-companion", /enter|joined|return/, { timeout: 3500 }); await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /\S+/);
     await expect(page.locator(".poster-page")).not.toHaveAttribute("inert"); await expect(page.locator("[data-companion-premiere-owner]")).toHaveCount(0);
     const result = await finishProbe(page, mobile ? "handoff-390" : "handoff-1920");
@@ -173,7 +175,7 @@ for (const mobile of [false, true]) test.describe(mobile ? "native compact premi
     expect(values.some(value => value.progress > .1 && value.progress < .9)).toBe(true); expect(values.at(-1)!.progress).toBeGreaterThan(.99); expect(values.at(-1)!.opacity).toBeLessThan(.02);
     await expect(home).toHaveAttribute("inert"); await expect(home).toHaveAttribute("aria-hidden", "true");
     expect(await home.evaluate(node => node === (window as Window & { premiereHome?: Element }).premiereHome)).toBe(true);
-    await page.screenshot({ path: `.scratch-pw/companion-062-house-departed-${mobile ? "390" : "1920"}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-063-house-departed-${mobile ? "390" : "1920"}.png` });
     await page.keyboard.press("Escape"); await expect(stage(page)).not.toBeVisible();
     await expect(home).toHaveAttribute("data-pm-exit", before.exit!); await expect(home).toBeVisible(); await expect(home).not.toHaveAttribute("inert"); await expect(home).not.toHaveAttribute("aria-hidden", "true");
     expect(await home.evaluate(() => localStorage.getItem("vic.viewerCompanion"))).toBe(before.pref);

@@ -3,11 +3,15 @@ import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET } from "./food";
 import { companionSofaSeat } from "./sofa";
 
 const STUDIO_CARD_SELECTOR = "[data-companion-event='ordinary'][data-eventid]";
+const STUDIO_BAND_SELECTOR = "[data-companion-band='public'][data-supportid]";
+const STUDIO_HEADER_SELECTOR = ".studio-weekdays";
 const CARD_SELECTOR = `.public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],${STUDIO_CARD_SELECTOR}`;
-const BAND_SELECTOR = ".support-bar[data-supportid],.agenda-event[data-supportid],.agenda-item[data-supportid]";
-const HEADER_SELECTOR = ".weekday-row,.public-calendar-header,.agenda-header";
-const DAY_SELECTOR = ".public-day,.agenda-day";
-const DATE_TEXT_SELECTOR = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong";
+const BAND_SELECTOR = `.support-bar[data-supportid],.agenda-event[data-supportid],.agenda-item[data-supportid],${STUDIO_BAND_SELECTOR}`;
+const HEADER_SELECTOR = `.weekday-row,.public-calendar-header,.agenda-header,${STUDIO_HEADER_SELECTOR}`;
+// A day is a large clickable container on both surfaces, not one giant control
+// obstacle. Its nested edit/delete/private-card controls remain protected.
+const DAY_SELECTOR = ".public-day,.agenda-day,.studio-day";
+const DATE_TEXT_SELECTOR = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.studio-day .studio-day-head > strong";
 const CARD_TEXT_SELECTOR = `.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li,${STUDIO_CARD_SELECTOR} .pill-main strong,${STUDIO_CARD_SELECTOR} .pill-subs li,${STUDIO_CARD_SELECTOR} .pill-sub-last .pill-sub-text,${STUDIO_CARD_SELECTOR} .agenda-title-text,${STUDIO_CARD_SELECTOR} .agenda-subs li`;
 const TEXT_SURFACE_SELECTOR = `${DATE_TEXT_SELECTOR},${CARD_TEXT_SELECTOR}`;
 const MAX_PLATFORMS = 200;
@@ -210,7 +214,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         // Do not read or retain nodeValue/textContent. The local brain receives
         // only anonymous geometry, including for server-masked teaser content.
         const target = supports ? parent.closest<HTMLElement>(TEXT_SURFACE_SELECTOR) : null;
-        const candidate = target && root.contains(target) && supportVisible(target) && (!studio || Boolean(target.closest(STUDIO_CARD_SELECTOR))) ? target : null;
+        const candidate = target && root.contains(target) && supportVisible(target) && (!studio || target.matches(DATE_TEXT_SELECTOR) || Boolean(target.closest(STUDIO_CARD_SELECTOR))) ? target : null;
         for (const rect of range.getClientRects()) {
           const clipped = { left: Math.max(rect.left, clip.left), right: Math.min(rect.right, clip.right), top: Math.max(rect.top, clip.top), bottom: Math.min(rect.bottom, clip.bottom) };
           if (clipped.right - clipped.left < .5 || clipped.bottom - clipped.top < .5) continue;
@@ -323,7 +327,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       for (const surface of [{ selector: BAND_SELECTOR, kind: "card" as const, edge: "top" }, { selector: HEADER_SELECTOR, kind: "date" as const, edge: "bottom" }]) {
         for (const element of root.querySelectorAll<HTMLElement>(surface.selector)) {
           nextObserved.add(element);
-          if (platforms.length >= MAX_PLATFORMS || !visible(element) || !supportVisible(element) || studio) continue;
+          if (platforms.length >= MAX_PLATFORMS || !visible(element) || !supportVisible(element) || studio && !element.matches(`${STUDIO_HEADER_SELECTOR},${STUDIO_BAND_SELECTOR}`)) continue;
           const rect = measuredControls.get(element) ?? element.getBoundingClientRect(), clip = clipping(element.parentElement);
           const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
           const edge = surface.edge === "top" ? rect.top : rect.bottom;
@@ -441,7 +445,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   });
   mutationObserver.observe(root, {
     subtree: true, childList: true, characterData: true, attributes: true,
-    attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden", "aria-pressed", "data-companion-hearted", "data-companion-heart-blocked", "data-premiere", "data-pm-depart"],
+    attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden", "aria-pressed", "data-companion-event", "data-companion-band", "data-companion-hearted", "data-companion-heart-blocked", "data-premiere", "data-pm-depart"],
   });
   // Ancestor visibility can change when the same shared viewer enters/leaves
   // preview. Observe only its attributes, not the rest of the application.

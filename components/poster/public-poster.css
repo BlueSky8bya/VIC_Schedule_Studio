@@ -285,22 +285,21 @@
   z-index: 8;
   /* 좌우 = 셸 패딩 토큰 — .agenda-mode 셸 패딩과 항상 같아 헤더가 화면 폭 끝까지 꽉 차게(full-bleed). */
   margin: 0 calc(-1 * var(--m-agenda-pad-x, 14px)) 8px;
-  padding: 9px var(--m-agenda-pad-x, 14px) 10px;
+  padding: max(9px, env(safe-area-inset-top, 0px)) var(--m-agenda-pad-x, 14px) 10px;
   background: linear-gradient(180deg, #fbf2df 72%, #f7eddb);
   border-bottom: 1px solid #e3d6bb;
-  /* 2행 그리드: [여백 | 제목·월(가운데) | 계정변경·이메일(오른쪽)].
-     1행=제목/계정변경, 2행=월/이메일 → 버튼이 제목 이모티콘을 가리지 않고,
-     이메일은 버튼 왼쪽이 아니라 "2026년 N월" 라인(아래)에 맞춰 오른쪽에 놓인다. */
+  /* Shared agenda grid: the 44px settings gear owns the upper-right cell.
+     Account actions remain below it; the title keeps its centered column. */
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   column-gap: 8px;
   row-gap: 2px;
 }
-/* 시청자 화면 계정 변경(로그아웃) — 우상단(1행 오른쪽 칸) */
+/* Account action remains below the shared upper-right settings gear. */
 .agenda-account {
   grid-column: 3;
-  grid-row: 1;
+  grid-row: 2;
   justify-self: end;
 }
 .agenda-account button {
@@ -409,10 +408,10 @@
   font-weight: 600;
   color: #9a7b45;
 }
-/* 현재 로그인 이메일 — 2행 오른쪽(계정변경 버튼 바로 아래, 월 라인에 맞춤) */
+/* Optional account identity stays below its action; neither shares the gear cell. */
 .agenda-email {
   grid-column: 3;
-  grid-row: 2;
+  grid-row: 3;
   justify-self: end;
   max-width: 42vw;
   font-size: var(--text-caption);
@@ -6821,13 +6820,16 @@ html[data-reduce-motion] .slc-player img {
 .viewer-settings-open svg {
   transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
-/* Same settings button in the agenda's existing left header cell. */
+/* One 44px top-right gear in both agenda headers. Desktop poster chrome keeps
+   its original placement. Safe-area margin uses the existing page padding. */
 .agenda-header > .viewer-settings-open {
-  grid-column: 1;
+  grid-column: 3;
   grid-row: 1;
-  justify-self: start;
+  justify-self: end;
+  align-self: start;
+  margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px)));
 }
-.agenda-header:has(> .viewer-settings-open) .agenda-preview-left { grid-row: 2; }
+.agenda-header > :is(.agenda-account, .m-head-logout) { margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px))); }
 @media (max-width: 360px) {
   /* Keep the shared 44px settings target; decorative sparkles yield on small phones. */
   .agenda-header:has(> .viewer-settings-open) .title-spark { display: none; }

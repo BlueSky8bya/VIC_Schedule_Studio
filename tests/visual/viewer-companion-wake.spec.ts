@@ -149,38 +149,7 @@ test("desktop wake preserves its first display frame, handles reopening in fligh
   await page.screenshot({ path: ".scratch-pw/companion-wake-desktop.png" }); await identity.dispose();
 });
 
-test.describe("real touch scaled return", () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-  test("the small window perch wakes and regains its real size through distinct middle frames", async ({ page }) => {
-    test.setTimeout(25_000); await setup(page); const target = await point(page);
-    await openParked(page, true); const perch = await point(page); expect(perch.scale).toBeLessThan(.9);
-    await startFrames(page); await close(page, true); const result = await complete(page);
-    fullReturn(result, target, "wake-touch-scale");
-    await expect(pet(page)).toHaveAttribute("data-platform", target.platform);
-    await expect(page.locator("[data-export-surface] .vc-companion")).toHaveCount(0);
-    await page.evaluate(() => { Math.random = () => 0; });
-    await openParked(page, true); await startFrames(page); await close(page, true);
-    await expect(pet(page)).toHaveAttribute("data-returning", "wake");
-    const heldFrom = await point(page), pickupAt = await page.evaluate(() => performance.now());
-    expect(heldFrom.scale).toBeLessThan(.9);
-    const hit = (await page.locator(".vc-actor").boundingBox())!, pointer = { x: hit.x + hit.width / 2, y: hit.y + hit.height / 2 };
-    const client = await page.context().newCDPSession(page);
-    await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...pointer, id: 17 }] });
-    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: pointer.x + 14, y: pointer.y, id: 17 }] });
-    await expect(pet(page)).not.toHaveAttribute("data-returning"); await expect(pet(page)).toHaveAttribute("data-state", "held");
-    await page.waitForTimeout(300);
-    const pickup = await stopFrames(page), adopted = pickup.frames.filter(frame => frame.at >= pickupAt && frame.phase === null);
-    expect(adopted.length).toBeGreaterThan(3); expect(adopted.every(frame => !frame.hidden)).toBe(true);
-    expect(distance(adopted[0], heldFrom)).toBeLessThan(24); expect(adopted[0].scale - heldFrom.scale).toBeLessThan(.12);
-    expect(adopted.at(-1)!.scale).toBeGreaterThan(.98);
-    expect(new Set(adopted.map(frame => frame.scale.toFixed(3))).size).toBeGreaterThan(2);
-    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: 60, y: 700, id: 17 }] });
-    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await client.detach();
-    await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).toBeVisible();
-    console.log(JSON.stringify({ check: "wake-touch-native-pickup", frames: adopted.length, firstPositionError: distance(adopted[0], heldFrom), initialScale: heldFrom.scale, firstScale: adopted[0].scale, finalScale: adopted.at(-1)!.scale }));
-    await page.screenshot({ path: ".scratch-pw/companion-wake-touch.png" });
-  });
-});
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
 
 test("reduced motion returns to the real support without intermediate travel", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, true); const target = await point(page);

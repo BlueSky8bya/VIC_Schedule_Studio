@@ -159,7 +159,8 @@ test("PC stationary safety follows viewport resize and poster zoom without chang
 });
 
 test("legacy small, normal and large preferences all render the single92 default safely", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  // PLAN-063: keep preference migration coverage on a supported compact desktop.
+  await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
   await settled(page); // wait for preference hydration before changing settings
   const results = [];
@@ -173,10 +174,10 @@ test("legacy small, normal and large preferences all render the single92 default
     expect(result.cell!.width).toBeCloseTo(92, 3);
     await expect(page.locator(".vc-home")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "빅타민 집 열기", exact: true })).toBeVisible();
-    await page.screenshot({ path: `.scratch-pw/companion-presence-mobile-${size}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-presence-compact-desktop-${size}.png` });
     results.push({ size, ...result });
   }
-  console.log(JSON.stringify({ check: "presence-mobile", results }));
+  console.log(JSON.stringify({ check: "presence-compact-desktop", results }));
 });
 
 test("reflowed calendar and an opaque compact home both retain readable text and usable controls", async ({ page }) => {
@@ -188,7 +189,9 @@ test("reflowed calendar and an opaque compact home both retain readable text and
     const line = node as HTMLElement; line.style.fontFamily = "Georgia,serif"; line.style.fontSize = "22px"; line.style.lineHeight = "1.5";
   });
   await settled(page);
-  await page.setViewportSize({ width: 390, height: 844 });
+  // PLAN-063: compact desktop retains the same local creature; mobile absence
+  // and restoration are exercised in mobile-companion-disabled.spec.ts.
+  await page.setViewportSize({ width: 1280, height: 1000 });
   await settled(page);
   await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).click();
   await expect(page.getByRole("region", { name: "빅타민 집", exact: true })).toBeVisible();
@@ -197,6 +200,6 @@ test("reflowed calendar and an opaque compact home both retain readable text and
   const result = await settled(page);
   const cushionY = await page.locator(".vc-home-cushion").evaluate(node => node.getBoundingClientRect().top);
   expect(Math.abs(result.body!.bottom - cushionY)).toBeLessThan(2);
-  await page.screenshot({ path: ".scratch-pw/companion-presence-mobile-home.png" });
-  console.log(JSON.stringify({ check: "presence-mobile-home", ...result, cushionY }));
+  await page.screenshot({ path: ".scratch-pw/companion-presence-compact-desktop-home.png" });
+  console.log(JSON.stringify({ check: "presence-compact-desktop-home", ...result, cushionY }));
 });

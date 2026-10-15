@@ -47,7 +47,8 @@ test("OFF requests no sprite; legacy size becomes the single92 default and the s
   expect(images.every(src => src.includes("/hd/"))).toBe(true);
 });
 
-for (const mobile of [false, true]) test.describe(mobile ? "touch sleeping lift" : "desktop sleeping lift", () => {
+// PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
+for (const mobile of [false]) test.describe(mobile ? "touch sleeping lift" : "desktop sleeping lift", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
   test("the sleeping display moves while its world and modal stay intact; Z cues keep running with no parked writes", async ({ page }) => {
     test.setTimeout(35000); await setup(page); const world = await point(page);
