@@ -1,11 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
+import { COMPANION_HOME_BED_FOOD } from "@/lib/ui/viewer-companion/food";
+import { createBrain, getFoodAction } from "@/lib/ui/viewer-companion/brain";
+import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
 
 const food: CompanionFood = { id: "snack", x: 150, y: 300, platformId: "card-3-food-top-1", kind: "apple" };
 const top: Platform = { id: "card-3-top-2", x: 120, y: 300, width: 70, kind: "card", manualOnly: true };
 
 describe("snack collision and creature access remain separate", () => {
+  it("offers a manually placed bed snack from an actual safe home without moving the visible food", () => {
+    const snack = Object.freeze({ ...food, x: 150, y: 312, platformId: COMPANION_HOME_BED_FOOD });
+    const home = { ...top, id: "companion-home", kind: "date" as const, manualOnly: false };
+    const available = accessibleCompanionFoods([snack], [home]);
+    expect(available).toEqual([{ ...snack, y: 300, platformId: home.id }]);
+    expect(snack).toMatchObject({ x: 150, y: 312, platformId: COMPANION_HOME_BED_FOOD });
+    expect(getFoodAction({ ...createBrain(0), hunger: .8 }, { x: 150, y: 300, platformId: home.id, platforms: [home], foods: available, width: 1000, height: 800 }, { ...DEFAULT_COMPANION_PREFERENCES, enabled: true }, 1000)).toMatchObject({ kind: "eat", foodId: snack.id, target: { x: 150, y: 300, platformId: home.id } });
+  });
+  it("withholds unreachable bed food and never invents a home while folded or too narrow/far", () => {
+    const snack = { ...food, platformId: COMPANION_HOME_BED_FOOD };
+    const home = { ...top, id: "companion-home", kind: "date" as const, manualOnly: false };
+    expect(accessibleCompanionFoods([snack], [])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [top])).toEqual([]);
+    expect(accessibleCompanionFoods([{ ...snack, y: 318 }], [home])).toHaveLength(1);
+    expect(accessibleCompanionFoods([{ ...snack, y: 318.1 }], [home])).toEqual([]);
+    expect(accessibleCompanionFoods([{ ...snack, x: 95 }], [home])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...home, x: 190, width: 2 }])).toEqual([]);
+  });
   it("maps only a matching anonymous card top with a real pet-safe x and height", () => {
     const result = accessibleCompanionFoods([food], [top]);
     expect(result).toEqual([{ ...food, platformId: top.id }]);

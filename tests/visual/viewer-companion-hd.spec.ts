@@ -85,17 +85,52 @@ for (const mobile of [false, true]) test.describe(mobile ? "touch sleeping lift"
   });
 });
 
-test("a gentle ear-height round trip has immediate contact, a happy HD pose and pink hearts", async ({ page }) => {
+for (const area of [
+  { name: "ear-height", height: .82, offset: 0, stroke: 10 },
+  { name: "lower-body", height: .12, offset: 0, stroke: 10 },
+  { name: "left-margin", height: .42, offset: -.60, stroke: 5 },
+  { name: "right-margin", height: .42, offset: .60, stroke: 5 },
+]) test(`a gentle ${area.name} round trip has immediate contact, a happy HD pose and pink hearts`, async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
   const p = await point(page); expect(p.width).toBe(92);
-  const y = p.y - 92 * .82, x = p.x;
-  await page.mouse.move(x - 10, y); await page.mouse.move(x + 10, y, { steps: 6 });
+  const y = p.y - 92 * area.height, x = p.x + 92 * area.offset;
+  await page.mouse.move(x - area.stroke, y); await page.mouse.move(x + area.stroke, y, { steps: 6 });
   await expect(pet(page).locator(".vc-petting-hand")).toBeVisible();
-  await page.mouse.move(x - 10, y, { steps: 6 });
+  await page.mouse.move(x - area.stroke, y, { steps: 6 });
   await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   const palette = await pet(page).locator(".vc-affection-hearts").evaluate(node => ({ color: getComputedStyle(node).color, teaser: getComputedStyle(node).getPropertyValue("--teaser"), visible: getComputedStyle(node).display }));
   expect(palette.visible).not.toBe("none"); expect(palette.color).toBe("rgb(237, 133, 154)");
-  await page.screenshot({ path: ".scratch-pw/companion-052-petting.png" });
+  await page.screenshot({ path: `.scratch-pw/companion-053-petting-${area.name}.png` });
+});
+
+test("a stroke can cross the drag button edge without losing intent, and leaving the body clears contact", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
+  const p = await point(page), y = p.y - 92 * .42;
+  await page.mouse.move(p.x + 28, y); await page.mouse.move(p.x + 50, y);
+  await expect(pet(page).locator(".vc-petting-hand")).toBeVisible();
+  await page.mouse.move(p.x + 28, y);
+  await expect(pet(page)).toHaveAttribute("data-state", "petted");
+  await page.mouse.move(p.x + 92 * .8, y);
+  await expect(pet(page)).not.toHaveAttribute("data-petting");
+  await expect(pet(page).locator(".vc-petting-hand")).not.toBeVisible();
+});
+
+test("leaving the drag button for another control cannot award affection or consume its click", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
+  const p = await point(page), y = p.y - 92 * .42;
+  await page.evaluate(({ x, y }) => {
+    const button = document.createElement("button"); button.textContent = "인접 조작 테스트";
+    button.id = "companion-contact-neighbour";
+    Object.assign(button.style, { position: "fixed", left: `${x + 42}px`, top: `${y - 12}px`, width: "24px", height: "24px", zIndex: "80" });
+    button.addEventListener("click", () => { button.dataset.clicked = "true"; }); document.body.append(button);
+  }, { x: p.x, y });
+  // The last leg reverses direction exactly when pointerleave targets another
+  // control. Its native ownership must win before any affection is awarded.
+  await page.mouse.move(p.x + 50, y); await page.mouse.move(p.x + 28, y); await page.mouse.move(p.x + 50, y);
+  await expect(pet(page)).not.toHaveAttribute("data-state", "petted");
+  await expect(pet(page)).not.toHaveAttribute("data-petting");
+  const neighbour = page.locator("#companion-contact-neighbour"); await neighbour.click();
+  await expect(neighbour).toHaveAttribute("data-clicked", "true");
 });
 
 test("sleeping two-tap placement keeps a detail window open and changes only the display perch", async ({ page }) => {

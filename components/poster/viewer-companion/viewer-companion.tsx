@@ -323,13 +323,19 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       nextDecision = petUntil + 500;
     };
+    const isOtherControl = (target: EventTarget | null) => target instanceof Element && !el.contains(target) && Boolean(target.closest("button,a,input,select,textarea,[role='button']"));
     const stopHover = () => { petting.reset(); touch.reset(); hoverPetting = false; el.removeAttribute("data-petting"); style(contactLayer, "transform", "translate3d(0,0,0) rotate(0deg) scale(1,1)"); };
     const hover = (event: PointerEvent) => {
-      const head = Math.abs(event.clientX - x) <= size * .56 && event.clientY >= y - size * .99 && event.clientY <= y - size * .20;
-      if (event.pointerType !== "mouse" || event.buttons !== 0 || !head || pause || overlayActive || returning || el.hidden || !document.hasFocus() || presence.phase !== "active" || !preferences.petting || pressed || keyboardHeld || placing || pendingMonth || awaitingAtX || action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind)) { stopHover(); return; }
+      // A forgiving whole-body sensor, independent of the smaller drag button:
+      // passive hover never expands the hit target over calendar controls.
+      const horizontalReach = size * .68;
+      const withinBody = Math.abs(event.clientX - x) <= horizontalReach && event.clientY >= y - size * 1.04 && event.clientY <= y + size * .10;
+      if (event.pointerType !== "mouse" || event.buttons !== 0 || !withinBody || pause || overlayActive || returning || el.hidden || !document.hasFocus() || presence.phase !== "active" || !preferences.petting || pressed || keyboardHeld || placing || pendingMonth || awaitingAtX || action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind)) { stopHover(); return; }
       const normalized = (event.clientX - x) / (size * .76) + .5;
       const now = performance.now();
-      const moving = touch.move(normalized, now);
+      // Preserve the familiar stroke distance while contact also responds in
+      // the side padding, rather than clamping an entire margin to one point.
+      const moving = touch.move((event.clientX - x) / (horizontalReach * 2) + .5, now);
       const result = petting.sample(normalized, now);
       // The first pass has a small continuous contact response. Intent and
       // bounded affection still require a real back-and-forth gesture.
@@ -347,6 +353,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       hoverPetting = true; petUntil = now + 650; nextDecision = petUntil + 500;
       data("petting", "hover");
       paint(9, reduced ? 0 : ((now - hoverStarted) % 950) / 950 * 15, "petted");
+    };
+    const leave = (event: PointerEvent) => {
+      // pointerleave precedes the next document move. Yield to its real
+      // destination before a reversal can award affection over another control.
+      if (!event.relatedTarget || isOtherControl(event.relatedTarget)) stopHover();
+      else hover(event);
     };
     control.current = {
       place: () => { if (preferences.drag) {
@@ -751,11 +763,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const sensePointer = (event: PointerEvent) => {
       if (!pause && !overlayActive && event.pointerType !== "touch") {
         pointer = { x: event.clientX, y: event.clientY };
-        // Hover can reach ears without an enlarged hitbox stealing adjacent
+        // Hover can reach the whole body without an enlarged hitbox stealing adjacent
         // calendar/window buttons. Reuse this existing passive pointer sensor.
         if (!el.contains(event.target as Node)) {
-          const target = event.target as Element | null;
-          if (target?.closest("button,a,input,select,textarea,[role='button']")) stopHover();
+          if (isOtherControl(event.target)) stopHover();
           else hover(event);
         }
       }
@@ -893,7 +904,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     window.visualViewport?.addEventListener("scroll", followLayout, { passive: true });
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
     document.addEventListener("pointermove", sensePointer, { passive: true });
-    button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", stopHover); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
+    button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", leave); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
     sync();
     return () => {
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: support === "companion-home" && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" };
@@ -909,7 +920,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
-      button.removeEventListener("pointerdown", down); button.removeEventListener("pointermove", move); button.removeEventListener("pointerleave", stopHover); button.removeEventListener("pointerup", up); button.removeEventListener("pointercancel", up); button.removeEventListener("lostpointercapture", lostCapture); button.removeEventListener("keydown", key);
+      button.removeEventListener("pointerdown", down); button.removeEventListener("pointermove", move); button.removeEventListener("pointerleave", leave); button.removeEventListener("pointerup", up); button.removeEventListener("pointercancel", up); button.removeEventListener("lostpointercapture", lostCapture); button.removeEventListener("keydown", key);
       if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id);
       el.hidden = true;
     };
@@ -925,7 +936,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     <span className="vc-effect" ref={effect} aria-hidden="true" />
     <span className="vc-affection-hearts" aria-hidden="true"><i>♥</i><i>♥</i><i>♥</i></span>
     <span className="vc-petting-hand" ref={pettingHand} aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M10 26c-3-3-5-6-6-9-1-2 1-4 3-2l3 3-1-9c0-3 3-4 4-1l1 6V6c0-3 4-3 4 0v8l1-6c1-3 4-2 4 1l-1 8 2-3c2-2 4 0 2 3l-4 7c-1 2-3 4-6 4h-3Z"/><path className="vc-hand-fold" d="M11 21c2-2 5-2 7 0"/><path className="vc-hand-cuff" d="M10 27h11v4H10Z"/></svg></span>
-    <span className="sr-only" id="vc-help">머리 위에서 마우스를 좌우로 움직이거나 눌러서 쓰다듬기. 끌어서 옮기기. 두 번 누른 뒤 놓을 곳 선택. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
+    <span className="sr-only" id="vc-help">빅타민의 머리나 몸통에서 마우스를 좌우로 움직이거나 눌러서 쓰다듬기. 끌어서 옮기기. 두 번 누른 뒤 놓을 곳 선택. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
     <span className="sr-only" role="status">{announcement}</span>
   </div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
     {!suspended && !blocked ? homeVisible && homeHost ? createPortal(house, homeHost) : <div className="vc-compact-home" data-agenda={agenda ? "" : undefined} inert={overlayOpen ? true : undefined} aria-hidden={overlayOpen ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeHome(); } }}>

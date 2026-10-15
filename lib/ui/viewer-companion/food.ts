@@ -2,12 +2,28 @@ import { platformLandingX, type CompanionFood, type Platform } from "./brain";
 import { firstCompanionSupportBelow } from "./support-landing";
 
 export const MAX_COMPANION_FOOD = 3;
+export const COMPANION_HOME_BED_FOOD = "companion-home-bed-food";
 export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
 export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
 export type CompanionFoodAttachment = { documentX: number; documentY: number; offsetX: number; offsetY: number };
 type Point = { x: number; y: number };
 type AnchorRect = { left: number; top: number; width?: number; height?: number };
+type HomeFoodRect = { left: number; top: number; width: number; height: number };
+
+/** A deliberate release receives food on the visible bed, not on its two-pixel
+ * creature support. Keep the release's local position; only the pointer's grab
+ * offset may put the food foot just outside the bed and needs a small clamp.
+ * Callers pass the real pointer (or keyboard art centre), never a nearest home. */
+export function receiveCompanionHomeFood(point: Point, release: Point, bed: HomeFoodRect): Point | undefined {
+  if (![point.x, point.y, release.x, release.y, bed.left, bed.top, bed.width, bed.height].every(Number.isFinite) || bed.width <= 0 || bed.height <= 0) return;
+  const right = bed.left + bed.width, bottom = bed.top + bed.height;
+  if (release.x < bed.left || release.x > right || release.y < bed.top || release.y > bottom) return;
+  // A stale or unrelated logical position must not bind invisibly across the
+  // screen. The native44px snack has at most a44px pointer-to-foot offset.
+  if (Math.abs(point.x - release.x) > 44 || Math.abs(point.y - release.y) > 44) return;
+  return { x: Math.max(bed.left, Math.min(right, point.x)), y: Math.max(bed.top, Math.min(bottom, point.y)) };
+}
 
 /** A local attachment contains only coordinates. DOM identity stays with the
  * presentation layer; visibility never chooses a replacement support. */
@@ -15,13 +31,17 @@ export function attachCompanionFood(point: Point, scroll: Point, origin?: Point)
   return { documentX: point.x + scroll.x, documentY: point.y + scroll.y, offsetX: origin ? point.x - origin.x : 0, offsetY: origin ? point.y - origin.y : 0 };
 }
 
-export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect, clampToSource = true): { point: Point; attachment: CompanionFoodAttachment } {
+export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect, clampToSource: boolean | "bed" = true): { point: Point; attachment: CompanionFoodAttachment } {
   // Width/height change is an actual reflow: keep the same source and clamp
   // only to its new local bounds. Scrolling alone never changes either offset.
   // A dispenser tray deliberately sits outside the tiny outlet rectangle.
   // Its local home offset survives topology changes without a glyph clamp.
-  const localX = clampToSource && rect?.width !== undefined ? Math.min(attachment.offsetX, Math.max(0, rect.width)) : attachment.offsetX;
-  const localY = clampToSource && rect?.height !== undefined ? Math.min(attachment.offsetY, Math.max(-3, rect.height - 3)) : attachment.offsetY;
+  let localX = attachment.offsetX, localY = attachment.offsetY;
+  if (clampToSource && rect) {
+    if (rect.width !== undefined) localX = Math.min(localX, Math.max(0, rect.width));
+    if (rect.height !== undefined) localY = Math.min(localY, clampToSource === "bed" ? rect.height : Math.max(-3, rect.height - 3));
+    if (clampToSource === "bed") { localX = Math.max(0, localX); localY = Math.max(0, localY); }
+  }
   const point = rect ? { x: rect.left + localX, y: rect.top + localY } : { x: attachment.documentX - scroll.x, y: attachment.documentY - scroll.y };
   return { point, attachment: { ...attachment, documentX: point.x + scroll.x, documentY: point.y + scroll.y } };
 }
