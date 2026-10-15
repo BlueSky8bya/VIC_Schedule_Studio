@@ -45,6 +45,14 @@
 
 실제 `/` local PC1920×1080·mobile390×844(hasTouch/isMobile) 두뷰 완료. 과거2025-09 cookie/표시 연도 확인, 기본OFF atlas0→ON1, 손길/실제 Chromium touch430ms 집기·이동/공통SVG 음식 선택·배치·섭취/쿠션 수면/resize 동일DOM pet와 care/하단 집 조작 native click/설정OFF 제거/export밖 확인. 각뷰 pageerror0·기존 루트POST1차단·송신0. `.scratch-pw/companion-home-root-local.json`과 두뷰 PNG 보존. PC의 긴 기존 태그 필터 아래 집 하단은 첫 화면에 전부 담기지 않지만 전체 페이지 스크롤로 접근됨을 실제 클릭으로 확인했다. 모바일 compact는 한 화면/짧은 가로에서 한 내부 스크롤 평면을 사용한다.
 
-운영 배포 확인은 진행 중이며 완료 후 아래에 기록한다. 기존 `harness:verify`의 rule inventory2실패 유지. 별도 session-brief 생성은 기존 AGENTS/CURRENT_STATE 크기 예산·완료 행 문제로 실패하며 이 기능 수정의 성공으로 숨기지 않는다.
+기존 `harness:verify`의 rule inventory2실패 유지. 별도 session-brief 생성은 기존 AGENTS/CURRENT_STATE 크기 예산·완료 행 문제로 실패하며 이 기능 수정의 성공으로 숨기지 않는다.
+
+## 운영 배포
+
+제품 `5e0c04d4ecc9e819d62fea72eb384d0111d1f8c7` push 후 [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/5MikY7nGdVC3R1JP4vBK1XAi5ZX7) 성공과 운영 `/api/soop-live` build SHA 일치를 확인했다.
+
+배포 후 실제 `/` PC1920×1080·mobile390×844 두뷰 smoke exit0. 과거2025-09 확인, 기본OFF atlas0→ON1, 패널/compact집 및 하단 조작 접근, 손길 친밀도·집기(모바일 trusted Chromium touch)·SVG 음식 배치/섭취·쿠션 수면·resize 동일DOM/care·OFF 제거·export밖을 확인했다. 각뷰 pageerror0·기존 루트POST1차단·실제서버송신0. `.scratch-pw/companion-home-root-production.json`과 `companion-home-root-production-{1920,390}.png` 보존·직접 열람했다. 실제 Safari/물리 GPU/장기 사용성 검증으로 확대하지 않는다.
+
+배포 후 변경은 완료 상태·검증 기록 문서뿐이다. 제품 실행 코드와 실제 데이터는 수정하지 않았다.
 
 공개DTO/인증/권한/unlock/KST/1840기하 변경0, 실제 DB 쓰기0을 목표로 fixture·차단한 POST만 검증한다. 실제 Safari·물리 저사양 GPU/배터리·스크린리더와 장기 애착/주관적 재미는 별도 미검증이다.

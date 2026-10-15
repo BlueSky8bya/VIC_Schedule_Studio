@@ -23,4 +23,4 @@
 2. 순수 기하·하트 토글·포인터 분기 단위, 실제 PC/agenda/가로터치·좌우/접힘/resize/폰트·reduced·중단복귀·음식 이동/집과바깥수면 렌더 검사. 전 POST차단/fixture, 실제 DB 쓰기0.
 3. 독립 코드/UX 검토 후 type/lint/unit/build, 같은 production fixture 실물 확인. 기존 harness 규칙목록2실패는 별도로 기록. 승인된 commit/push 후 live SHA/운영 PC·모바일 확인.
 
-상태: 구현·독립 코드/화면 검토·B2 검증 완료. 관련 단위95/문서43/렌더42/type/lint/build/실제 local root2뷰 통과, atlas 불변. 기존 harness2실패·별도 brief 예산 실패 유지. 승인된 commit/push·운영 확인 대기. [검증 기록](../verification/VIEWER_VICTAMIN_HOME-20261015.md).
+상태: 완료. 제품 `5e0c04d4` commit/push·Vercel 배포 성공과 live SHA 일치, 운영 실제 PC/모바일2뷰 확인. 관련 단위95/문서43/렌더42/type/lint/build/local root2뷰 통과, atlas 불변. 기존 harness2실패·별도 brief 예산 실패 유지. [검증 기록](../verification/VIEWER_VICTAMIN_HOME-20261015.md).
