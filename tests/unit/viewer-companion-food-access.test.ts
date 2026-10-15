@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
-import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD, MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food";
 import { createBrain, getFoodAction } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
@@ -73,7 +73,11 @@ describe("snack collision and creature access remain separate", () => {
 
   it("ignores unplaced/malformed snacks and caps the already bounded working set", () => {
     expect(accessibleCompanionFoods([{ ...food, platformId: undefined }, { ...food, x: NaN }, food], [top])).toEqual([{ ...food, platformId: top.id }]);
-    expect(accessibleCompanionFoods(Array.from({ length: 10 }, (_, i) => ({ ...food, id: `snack-${i}` })), [top])).toHaveLength(3);
+    const snacks = Object.freeze(Array.from({ length: MAX_COMPANION_FOOD + 2 }, (_, i) => Object.freeze({ ...food, id: `snack-${i + 1}` })));
+    const available = accessibleCompanionFoods(snacks, [top]);
+    expect(available.map(item => item.id)).toEqual(snacks.slice(0, MAX_COMPANION_FOOD).map(item => item.id));
+    expect(available.slice(3).map(item => item.platformId)).toEqual(Array(MAX_COMPANION_FOOD - 3).fill(top.id));
+    expect(snacks.every(item => item.platformId === food.platformId)).toBe(true);
     expect(accessibleCompanionFoods([food], [{ ...top, width: Infinity }])).toEqual([]);
   });
 });

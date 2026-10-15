@@ -3,6 +3,7 @@ import { COMPANION_FULL_THRESHOLD, type CompanionCare } from "./care";
 import { isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 import { advanceCompanionAffect, appraiseCompanionEvent, companionMood, createCompanionAffect, type CompanionAffect } from "./affect";
 import { planCompanionGoal, rememberCompanionOutcomes, type CompanionIntention, type CompanionOutcome, type CompanionPlaceMemory } from "./planner";
+import { MAX_COMPANION_FOOD } from "./food-capacity";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -240,7 +241,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
   if (!prefs.enabled || world.paused || ![world.x, world.y, now].every(Number.isFinite)
     || !prefs.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return undefined;
   const supported = { x: world.x, y: world.y, platformId: world.platformId };
-  const foods = world.foods.filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && isCompanionFoodKind(food.kind))
+  const foods = world.foods.slice(0, MAX_COMPANION_FOOD).filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && isCompanionFoodKind(food.kind))
     .sort((a, b) => Number(b.id === brain.intention?.foodId) - Number(a.id === brain.intention?.foodId) || Math.hypot(a.x - world.x, a.y - world.y) - Math.hypot(b.x - world.x, b.y - world.y));
   for (const food of foods) {
     const platform = world.platforms.find(p => p.id === food.platformId);

@@ -37,7 +37,7 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const reduced = () => document.documentElement.hasAttribute("data-reduce-motion");
 const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point.y.toFixed(3)}px,0)`;
 
-/** Three local snacks, one logical position per snack. Dragging and mouth
+/** Bounded local snacks, one logical position per snack. Dragging and mouth
  * presentation only write transforms; React commits placement/removal. Native
  * capture owns only real drag/trash gestures. Pointer taps never arm a global
  * placement mode; keyboard grab/arrow/put-down remains an explicit alternative. */
@@ -210,7 +210,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       const deadline = nextCompanionPaint(now, lastDropPaint.current, mode === "full" ? 60 : 30);
       if (deadline !== null) {
         lastDropPaint.current = deadline;
-        // At most three retained source rects, only while a finite fall runs.
+        // At most MAX_COMPANION_FOOD retained source rects, only during a fall.
         // A moving target carries the fall; neither its clock nor x is reseeded.
         followAttachments();
         for (const [id, gravity] of drops.current) {
@@ -315,7 +315,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   useImperativeHandle(ref, () => ({
     spawn(kind, point, source) {
       if (!operating.current || !isCompanionFoodKind(kind) || ![point.x, point.y].every(Number.isFinite)) return;
-      if (current.current.length >= MAX_COMPANION_FOOD) { setMessage("밥은 세 개까지 놓을 수 있어요. 남은 밥을 기다리거나 휴지통에 치워 주세요."); return; }
+      if (current.current.length >= MAX_COMPANION_FOOD) { setMessage(`밥은 ${MAX_COMPANION_FOOD}개까지 놓을 수 있어요. 남은 밥을 기다리거나 휴지통에 치워 주세요.`); return; }
       const food: Food = { id: `snack-${++serial.current}`, kind, x: clamp(point.x, 24, innerWidth - 24), y: clamp(point.y, 48, innerHeight - 24) };
       if (source?.isConnected) {
         const rect = source.getBoundingClientRect();

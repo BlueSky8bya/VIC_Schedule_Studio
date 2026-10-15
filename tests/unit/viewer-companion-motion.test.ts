@@ -206,6 +206,15 @@ describe("companion clip and facing continuity", () => {
     expect(atRate(60)).toEqual(atRate(120));
   });
 
+  it("keeps facing while a hand reverses travel and resumes heading after release", () => {
+    const motion = createCompanionMotion();
+    motion.sample(input({ row: 2, x: 100 }));
+    expect(motion.sample(input({ row: 2, x: 90, now: 50 })).facing).toBe(-1);
+    expect(motion.sample(input({ row: 8, status: "held", x: 140, now: 100 })).facing).toBe(-1);
+    expect(motion.sample(input({ row: 8, status: "held", x: 60, now: 150 })).facing).toBe(-1);
+    expect(motion.sample(input({ row: 2, x: 70, now: 200 })).facing).toBe(1);
+  });
+
   it("reduced motion cancels even an interrupted stretch or shake mixer immediately", () => {
     const motion = createCompanionMotion({ rowCount: 18 });
     motion.sample(input({ row: 17, phase: .25 }));

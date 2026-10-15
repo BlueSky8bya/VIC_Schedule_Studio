@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionCare, openCompanionHome } from "./helpers/companion-home";
 
@@ -115,7 +116,7 @@ test("the desktop icon room offers three direct controls, bounded random food an
   const month = page.locator("h1.poster-chrome-title:visible,h1.agenda-title:visible"), before = await month.textContent();
   const height = await expectSmallHome(page), kinds: string[] = [];
   const feed = house(page).getByRole("button", { name: "밥 꺼내기", exact: true });
-  for (let count = 1; count <= 3; count++) {
+  for (let count = 1; count <= MAX_COMPANION_FOOD; count++) {
     // Each real click dispenses stationary food without arming a global
     // placement mode or moving focus away from the outlet.
     await feed.click();
@@ -128,7 +129,7 @@ test("the desktop icon room offers three direct controls, bounded random food an
     expect(COMPANION_FOOD_KINDS).toContain(kinds.at(-1));
   }
   expect(kinds[1]).not.toBe(kinds[0]); expect(kinds[2]).not.toBe(kinds[1]);
-  await feed.click(); await expect(page.locator(".vc-food")).toHaveCount(3);
+  await feed.click(); await expect(page.locator(".vc-food")).toHaveCount(MAX_COMPANION_FOOD);
   await page.keyboard.press("Escape"); // Test whole-room keyboard cleanup separately from selected-food discard.
   const bin = house(page).getByRole("button", { name: "음식 버리기", exact: true });
   await bin.focus(); await bin.press("Enter"); await expect(page.locator(".vc-food")).toHaveCount(0);

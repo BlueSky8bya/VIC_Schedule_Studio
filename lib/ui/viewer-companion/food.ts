@@ -1,7 +1,7 @@
 import { platformLandingX, type CompanionFood, type Platform } from "./brain";
 import { firstCompanionSupportBelow } from "./support-landing";
 
-export const MAX_COMPANION_FOOD = 3;
+export { MAX_COMPANION_FOOD } from "./food-capacity";
 export const COMPANION_HOME_BED_FOOD = "companion-home-bed-food";
 export const COMPANION_HOME_FLOOR_FOOD = "companion-home-floor-food";
 export const COMPANION_HOME_FLOOR_INSET = 6;

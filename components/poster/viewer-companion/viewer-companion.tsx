@@ -16,6 +16,7 @@ import { createCompanionOverlayReturn, type CompanionReturnPoint } from "@/lib/u
 import { FLIP_MS, FLIP_SPRING } from "@/lib/ui/flip-motion";
 import { hasAmbientPauseOutside } from "@/lib/ui/ambient-pause";
 import { createCompanionSupportMotion } from "@/lib/ui/viewer-companion/support-motion";
+import { boundCompanionHeldPose, createCompanionHeldInertia } from "@/lib/ui/viewer-companion/held-inertia";
 import { firstCompanionSupportBelow, nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
 import { boundCompanionBallisticArc, boundCompanionSineArc } from "@/lib/ui/viewer-companion/jump-arc";
 import { createCompanionPettingContact, createCompanionPettingGesture } from "@/lib/ui/viewer-companion/petting";
@@ -48,6 +49,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
   const pettingHand = useRef<HTMLSpanElement>(null);
   const contact = useRef<HTMLSpanElement>(null);
+  const inertia = useRef<HTMLSpanElement>(null);
   const control = useRef<Control | null>(null), brain = useRef(createBrain(performance.now()));
   const food = useRef<CompanionFoodControl>(null), careLoaded = useRef(false);
   const homeLauncher = useRef<HTMLButtonElement>(null);
@@ -96,8 +98,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-overlay")); }, [overlayOpen]);
 
   useEffect(() => {
-    const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current;
-    if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !preferences.enabled) return;
+    const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current, inertiaLayer = inertia.current;
+    if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !inertiaLayer || !preferences.enabled) return;
     if (blocked) { el.hidden = true; setSuspended(true); setHomeExpanded(false); return; }
     if (!careLoaded.current) { brain.current = { ...brain.current, ...loadCompanionCare() }; careLoaded.current = true; }
     const publishCare = () => { const { hunger, affection, energy, curiosity } = brain.current; setCare({ hunger, affection, energy, curiosity }); };
@@ -120,6 +122,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const size = COMPANION_SIZE;
     const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11], maxFrameRate: 14 });
     const supportMotion = createCompanionSupportMotion();
+    const heldInertia = createCompanionHeldInertia();
+    let grip = { x: size / 2, y: size / 2 };
     const petting = createCompanionPettingGesture();
     const touch = createCompanionPettingContact();
     let hoverPetting = false, hoverStarted = 0, petStarted = 0;
@@ -152,6 +156,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (values.get(name) !== value) { node.style.setProperty(name, value); values.set(name, value); }
     };
     const data = (name: string, value: string) => { if (el.dataset[name] !== value) el.dataset[name] = value; };
+    const resetInertia = () => { heldInertia.reset(); style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       lastPoseSample = { row, frame, status };
@@ -167,6 +172,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const hasWorldSupport = platforms.length > 0 || Boolean(supportById(support) || action?.target.platformId && supportById(action.target.platformId));
       if (!overlayActive && !returning && !pressed && !keyboardHeld && !recoveringPickup && (awaitingAtX || !hasWorldSupport && !pendingMonth || homeOccluded && isHomeSupport(support) || x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12)) { stopHover(); el.hidden = true; return; }
       const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: x - carrier.x, y: y - carrier.y, now: presentationNow, reduced: reduced || gfxMode() === "off" });
+      if (reduced || gfxMode() === "off" || overlayActive) resetInertia();
+      const sway = boundCompanionHeldPose(heldInertia.sample(performance.now()), { x: x - size / 2, y: y - size }, grip, size, { width: innerWidth, height: innerHeight });
+      style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${(1 - sway.stretch * .35).toFixed(4)},${(1 + sway.stretch).toFixed(4)})`);
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off");
       if (!pressure.pressure && !hoverPetting && el.dataset.petting === "touch") data("petting", "ready");
       style(contactLayer, "transform", `translate3d(${(pressure.x * sample.facing).toFixed(3)}px,${pressure.y.toFixed(3)}px,0) rotate(${(pressure.tilt * sample.facing).toFixed(3)}deg) scale(${(1 + pressure.squash * .65).toFixed(4)},${(1 - pressure.squash).toFixed(4)})`);
@@ -310,7 +318,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       brain.current = recordCompanionEvent(brain.current, "landed");
     };
     const supportedNow = () => { const p = supportById(support); return Boolean(p && Math.abs(y - p.y) <= 2 && x >= p.x && x <= p.x + p.width); };
-    const releaseHold = () => { const held = pressed; pressed = null; keyboardHeld = false; if (held && button.hasPointerCapture(held.id)) button.releasePointerCapture(held.id); };
+    const releaseHold = () => { resetInertia(); const held = pressed; pressed = null; keyboardHeld = false; if (held && button.hasPointerCapture(held.id)) button.releasePointerCapture(held.id); };
     const startRest = () => { action = { kind: "sleep", target: { x, y, platformId: support }, duration: 12000 }; began = performance.now(); total = 12000; };
     const affection = () => {
       if (!preferences.petting) return;
@@ -465,6 +473,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (overlayActive || supportedNow()) paint(phase === "yawning" ? 10 : phase === "parked" ? 11 : phase === "waking" ? 12 : 0, (elapsed / (phase === "waking" ? 800 : 900)) * 15, phase === "parked" ? "sleep" : phase === "waking" ? "wake" : phase === "yawning" ? "yawn" : "idle");
         else { stopHover(); el.hidden = true; }
         if (phase === "parked") {
+          resetInertia();
           el.dataset.dreaming = "";
           offGeometry?.(); offGeometry = undefined; geometryReady = false;
           hearts.pause(true);
@@ -577,7 +586,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (stopped || pause || presence.phase === "parked" && !returning) return;
       if (reduced) timer = setTimeout(() => tick(performance.now()), 400);
       else {
-        const moving = Boolean(returning || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat"].includes(action.kind));
+        const moving = Boolean(returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat"].includes(action.kind));
         // Continuous travel/scalar transitions, cyclic drawings at<=14Hz; action poses follow their phase.
         // A quiet creature needs only the cadence of its native idle loop.
         const fps = moving ? gfxMode() === "full" ? 60 : 30 : 14;
@@ -677,6 +686,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const now = performance.now(), wasParked = presence.phase === "parked";
       presence.focus(!overlayActive && document.hasFocus(), now);
       if (!document.hasFocus()) {
+        resetInertia();
         const liftedDisplay = Boolean(overlayDrag);
         releaseOverlayDrag();
         if (liftedDisplay) updateOverlayPerch();
@@ -711,6 +721,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       restAfterLanding = false; afterPetLanding = false;
       petUntil = 0;
       pendingMonth = false; supportMotion.reset();
+      // The grip remains under the pointer while the body lags around it.
+      // This layer precedes facing, so horizontal turns never mirror inertia.
+      // A new hand owns a fresh grip, not the previous release's spring tail.
+      resetInertia();
+      grip = { x: clamp(event.clientX - x + size / 2, 0, size), y: clamp(event.clientY - y + size, 0, size) };
+      style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`);
       clearAction(); pressed = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), dx: event.clientX - x, dy: event.clientY - y, dragged: false, grabbed: false, cancelled: false };
     };
     const move = (event: PointerEvent) => {
@@ -723,9 +739,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (pressed.id !== event.pointerId) return;
       const distance = Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y);
       if (!preferences.drag && distance > 6) pressed.cancelled = true;
-      if (preferences.drag && distance > 6) {
+      if (preferences.drag && (pressed.grabbed || distance > 6)) {
+        const previousX = x, previousY = y;
         pressed.grabbed = true;
         pressed.dragged = true; x = clamp(event.clientX - pressed.dx, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY - pressed.dy, size + 8, innerHeight - 12);
+        if (reduced || gfxMode() === "off") resetInertia();
+        else heldInertia.push(x - previousX, y - previousY, performance.now());
         paint(8, 0, "held");
       }
     };
@@ -733,6 +752,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (overlayDrag?.id === event.pointerId) { releaseOverlayDrag(); updateOverlayPerch(); return; }
       if (!pressed || pressed.id !== event.pointerId) return;
       const held = pressed; pressed = null;
+      if (event.type === "pointercancel" || held.cancelled) resetInertia();
       el.removeAttribute("data-grab-ready");
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
       if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); }
@@ -943,7 +963,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     return () => {
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump", homeSupportId: isHomeSupport(support) ? support : undefined };
       saveCompanionCare(brain.current, true);
-      stopped = true; returning = undefined; el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      stopped = true; resetInertia(); returning = undefined; el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
       window.removeEventListener("vic:companion-overlay", sync); window.removeEventListener("resize", queueOverlayPerch); document.removeEventListener("animationend", queueOverlayPerch, true);
       window.removeEventListener("vic:companion-sprite", spriteDecoded);
@@ -967,7 +987,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<><div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
-    <button className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); control.current?.place(); }}><span className="vc-facing" ref={facing} aria-hidden="true"><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span></span></span><span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span></button>
+    <button className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); control.current?.place(); }}><span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span></span></span></span><span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span></button>
     <span className="vc-effect" ref={effect} aria-hidden="true" />
     <span className="vc-affection-hearts" aria-hidden="true"><i>♥</i><i>♥</i><i>♥</i></span>
     <span className="vc-petting-hand" ref={pettingHand} aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M10 26c-3-3-5-6-6-9-1-2 1-4 3-2l3 3-1-9c0-3 3-4 4-1l1 6V6c0-3 4-3 4 0v8l1-6c1-3 4-2 4 1l-1 8 2-3c2-2 4 0 2 3l-4 7c-1 2-3 4-6 4h-3Z"/><path className="vc-hand-fold" d="M11 21c2-2 5-2 7 0"/><path className="vc-hand-cuff" d="M10 27h11v4H10Z"/></svg></span>

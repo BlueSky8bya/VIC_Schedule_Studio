@@ -93,7 +93,8 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const entered = first || previousRow !== row;
       const dx = first ? 0 : x - previousX;
       const seconds = first ? 0 : Math.max(0, now - previousNow) / 1000;
-      if (Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
+      // A hand moves the body in world space; it is not a walking intention.
+      if (!(row === 8 && input.status === "held") && Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
       if (entered) { enteredAt = now; walkDistance = 0; walkSteps = 0; travelLean = 0; }
       else if (row === 2) walkDistance += Math.abs(dx);
       previousRow = row; previousX = x; previousY = y; previousNow = now;

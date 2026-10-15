@@ -7,6 +7,7 @@ import {
 } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_FULL_THRESHOLD } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, feeding: true };
 const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" };
@@ -86,6 +87,16 @@ describe("local companion feeding and animal habits", () => {
     expect(action.kind).toBe("eat"); expect(action.target.x).toBe(world.x); expect(action.target.y).toBe(world.y);
     expect(getFoodAction(hungry(), { ...world, foods: [{ ...near, x: 100 }] }, still, 100000)).toBeUndefined();
     expect(getFoodAction(hungry(), { ...world, foods: [food] }, still, 100000)).toBeUndefined();
+  });
+
+  it("can eat the eighth offered snack while bounding any ninth input outside local capacity", () => {
+    const unreachable = Array.from({ length: MAX_COMPANION_FOOD - 1 }, (_, i) => Object.freeze({ ...food, id: `unreachable-${i}`, y: 250, platformId: `missing-${i}` }));
+    const last = Object.freeze({ ...food, id: "eighth", x: world.x + 10, y: world.y, platformId: world.platformId });
+    const foods = Object.freeze([...unreachable, last]);
+    expect(getFoodAction(hungry(), { ...world, foods }, { ...prefs, roam: false }, 100000)).toMatchObject({ kind: "eat", foodId: last.id, target: { x: world.x, y: world.y } });
+    const fullUnreachable = Object.freeze([...unreachable, { ...food, id: "unreachable-last", y: 250, platformId: "missing-last" }, last]);
+    expect(getFoodAction(hungry(), { ...world, foods: fullUnreachable }, prefs, 100000)).toBeUndefined();
+    expect(foods[MAX_COMPANION_FOOD - 1]).toBe(last);
   });
 
   it.each(COMPANION_FOOD_KINDS)("a hungry pet can eat the offered %s without moving its support", kind => {

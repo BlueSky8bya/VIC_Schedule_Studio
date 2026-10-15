@@ -4,6 +4,7 @@ import { DEFAULT_COMPANION_CARE, type CompanionCare } from "@/lib/ui/viewer-comp
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionCare } from "./helpers/companion-home";
 import { COMPANION_FOOD_NAMES, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
+import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 
 const posts = new WeakMap<Page, string[]>();
 test.beforeEach(async ({ page, context }) => {
@@ -141,7 +142,7 @@ for (const width of [1440, 390]) {
   }
 }
 
-test("a full creature refuses more food, at most three snacks stay, and leftovers can be cleared", async ({ page }) => {
+test("a full creature refuses more food, local snack capacity stays bounded, and leftovers can be cleared", async ({ page }) => {
   test.setTimeout(30000);
   await setup(page, .1);
   const item = await spawn(page);
@@ -154,11 +155,11 @@ test("a full creature refuses more food, at most three snacks stay, and leftover
   await expect(food(page)).toHaveCount(1);
   await expect(pet(page)).toHaveAttribute("data-test-ate", "false");
   expect((await storedCare(page)).hunger).toBeLessThan(.15);
-  for (let i = 0; i < 2; i++) await spawn(page);
-  await expect(food(page)).toHaveCount(3);
+  for (let i = 1; i < MAX_COMPANION_FOOD; i++) await spawn(page);
+  await expect(food(page)).toHaveCount(MAX_COMPANION_FOOD);
   await openHome(page); await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
-  await expect(food(page)).toHaveCount(3);
-  await expect(page.locator(".vc-food-layer [role='status']")).toContainText("세 개까지");
+  await expect(food(page)).toHaveCount(MAX_COMPANION_FOOD);
+  await expect(page.locator(".vc-food-layer [role='status']")).toContainText(`${MAX_COMPANION_FOOD}개까지`);
   await openHome(page); await chooseCompanionCare(page, "남은 밥 치우기");
   await expect(food(page)).toHaveCount(0);
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);

@@ -8,7 +8,7 @@ const directory = join(process.cwd(), "public/companion/food");
 const manifest = JSON.parse(readFileSync(join(directory, "sources.json"), "utf8")) as {
   upstreamCommit: string; license: string;
   files: { kind: string; url: string; sha256: string }[];
-  derivatives: Record<string, { basedOn: string; changes: string; replacesSha256?: string; originalBasisSha256?: string; reproduction?: string }>;
+  derivatives: Record<string, { basedOn: string; changes: string; replacesSha256?: string; previousRoundSha256?: string; originalBasisSha256?: string; reproduction?: string }>;
   delivered: { kind: string; sha256: string }[];
 };
 
@@ -39,6 +39,7 @@ describe("local companion food vectors", () => {
   it("records the plum correction separately from its unchanged apple source", () => {
     const plum = manifest.derivatives.plum;
     expect(plum.replacesSha256).toBe("fa6913b2ec7de27b806e8e2d2708f9f6c4764c624e1ed668a994303072a2d234");
+    expect(plum.previousRoundSha256).toBe("02176fce14522c20ba86fabd8e5edb581e233f8f908f32ef5a6bed8baf9772c2");
     expect(plum.originalBasisSha256).toBe(manifest.files.find(item => item.kind === "apple")?.sha256);
     expect(plum.changes).toContain("short bare stem");
     expect(plum.changes).toContain("No apple shoulder/waist or leaf");

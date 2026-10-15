@@ -1,12 +1,13 @@
 import { platformLandingX, type CompanionFood, type Platform } from "./brain";
 import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD } from "./food";
+import { MAX_COMPANION_FOOD } from "./food-capacity";
 
 /** The snack's own32px collision can fit where a92px creature cannot. Preserve
  * that visible placement and expose it to the brain only when a separately
  * measured pet support covers the same x/top. No nearest-column fallback. */
 export function accessibleCompanionFoods(foods: readonly CompanionFood[], petSupports: readonly Platform[]): CompanionFood[] {
   const supports = petSupports.slice(0, 400).filter(p => p.id && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0);
-  return foods.slice(0, 3).flatMap(food => {
+  return foods.slice(0, MAX_COMPANION_FOOD).flatMap(food => {
     if (!food.platformId || ![food.x, food.y].every(Number.isFinite)) return [];
     if (food.platformId === COMPANION_HOME_BED_FOOD) {
       // A manually offered snack keeps its exact bed position. The planner
