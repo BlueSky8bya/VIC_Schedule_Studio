@@ -1,6 +1,6 @@
 # 빅타민 몸통 쓰다듬기·집에 음식 돌려놓기
 
-2026-10-15 KST. 기준판 `6839b9bb`. 최신 소유자 요청에 따른 두 상호작용 보정. 구현·로컬 검증 완료, 운영 배포 확인 중.
+2026-10-15 KST. 기준판 `6839b9bb`. 최신 소유자 요청에 따른 두 상호작용 보정. 구현·검증·운영 배포 완료. 제품 커밋 `5a374a1322d64491dcc00e133e36a9370edfd21a`.
 
 ## 변경 계약
 
@@ -22,10 +22,10 @@
 | 집 방석으로 직접 놓기·재집기·집 추종·바깥 첫 착지 | 최종 제품의 고유27건 PASS(24+2+1 분할 실행). PC/native touch390의 실제 방석 배치·드래그·제자리 탭/Enter·방석 재진입 취소·접기·좌우/compact 재열기·스크롤, 대기350ms DOM 쓰기0 확인. 배고픈 펫의 실제 집 식사 후 hunger 약.448, 기존 PC/agenda 첫 카드·먹기·휴지통 회귀도 PASS |
 | 실제 익명 `/` 과거2025-09 | PC1920/DPR2와 모바일390 PASS. PC는 몸통 아래/좌우 쓰다듬기와 분홍 하트, 양쪽은 선택 배치·실제 드래그·집 접기/재열기·위치 오차2px 미만·동일 펫 DOM 확인. 각 POST1차단/실제 전달0·브라우저 오류0. 로컬 설정/cookie만 seed하며 hasFocus/Math.random/DOM 주입 없음 |
 | 문서/harness | rule-migration25/25 PASS. harness는 기존 rule inventory 불일치2건 FAIL 유지 |
-| 운영 SHA·시청자 화면 | 커밋/배포 후 확인 |
+| 운영 SHA·시청자 화면 | Vercel success 및 실제 build가5a374a13과 일치. 운영 `/` PC1920/DPR2와 native touch390 각각 PASS: PC 몸통/좌우 교감과 pink, 양쪽 방석 배치·실제 드래그·접기/재열기·2px 미만 위치 오차·동일 DOM, 모바일 compact 닫기/재열기 확인. 각 POST1차단/실제 전달0·브라우저 오류0, 운영 PNG5개 직접 열람 |
 
 기존 전체 단위9실패/harness inventory2실패는 기준판의 별도 항목이며 이번 수정의 통과로 덮어쓰지 않는다.
 
 독립 검토에서 외부 컨트롤로 이탈할 때의 선행 보상, 제자리 음식 재탭, 취소 후 재진입, 방석 축소의 부착 범위를 확인하고 수정했다. 새 음식 검사의 초기화는 지연 로드된 집이 실제 표시된 뒤 진행하며,1840 표면 검증은 PC에만 적용한다. 모바일은 실제 agenda/no-export 토폴로지를 검사한다. 제품이나2px 위치 문턱을 완화한 보정이 아니다.
 
-재현 로그(ignored): `.scratch-pw/companion-053-{unit-final,typecheck-final,lint-final,build-final,visual-final,home-food-final,home-food-touch-final}.log`, `companion-053-public-local.{json,log}`. 첫 렌더 실행의24건, 집 음식 재실행의2건, 마지막 native touch1건을 합친 고유27건이며 한 번의27/27 실행으로 표기하지 않는다. 실제 물리 기기/OBS 동시 송출 성능은 미검증이다.
+재현 로그(ignored): `.scratch-pw/companion-053-{unit-final,typecheck-final,lint-final,build-final,visual-final,home-food-final,home-food-touch-final}.log`, `companion-053-public-local.{json,log}`, `companion-053-public-production.{json,log}`, `companion-053-production-deploy.json`. 첫 렌더 실행의24건, 집 음식 재실행의2건, 마지막 native touch1건을 합친 고유27건이며 한 번의27/27 실행으로 표기하지 않는다. 실제 물리 기기/OBS 동시 송출 성능은 미검증이다.
