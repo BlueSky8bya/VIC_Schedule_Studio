@@ -31,6 +31,8 @@ runtime WebP1280×1360,987,198bytes, SHA256 `140a2485bd3afbdcd072c6456146ea9b707
 - 동시 브라우저 작업 없이 CPU창5초×3회×3조건 측정 완료. headless 전체 renderer task 중앙값 OFF0.239%, 활성1.627%, parked0.403%; script1.092/4.069/1.164ms/s, layout 세 조건 모두0. `.scratch-pw/companion-fluid-metrics.json`. 활성 조건은 roam/jump OFF지만 자연스러운 제자리 포즈가 재생된다. PLAN-045의 정적인 키포즈보다 활성 비용이 늘었고 더 빠르다고 주장하지 않는다. 수면 시 자율 JS0은 별도 Range/actor-write·observer 해제 검사와 구별한다. 이 수치는 전체 PC CPU·실제 OBS/GPU 성능 보장이 아니다.
 - 실제 anonymous `/` PC1920×1080/모바일390×844 PASS. 과거2025-09 쿠키, 실제 tap/hold-drag(터치는CDP touch), 먹이 배치/섭취/친밀도·쿠션 복귀·반응형 동일 creature·OFF 정리·defaultOFF atlas0 확인. POST는 기존 bootstrap1건씩 차단, 실제 전송0/오류0. Playwright routing으로 HTTP cache를 끈 전체 시나리오 atlas 요청은PC2/모바일1이었으므로 모든 재배치에서 네트워크 요청이 항상1회라고 주장하지 않는다. `.scratch-pw/companion-home-root-local.json`/화면 캡처.
 
-운영 배포/live SHA 검증은 진행 중이다. 실행하지 않은 검사를 PASS로 세지 않는다.
+- 운영 `592c801fef5d631b53e16651174be2ac569a43bc` push 후 Vercel success와 실제 API build SHA 동일 확인. `/companion/victamin-fluid.webp` HTTP200/987,198bytes/SHA 동일. 운영 anonymous `/` PC1920/모바일390에서 local과 같은 실제 tap·hold/touch drag·먹이·쿠션·resize 동일 creature·OFF 정리 재검증 PASS, defaultOFF atlas0, POST bootstrap1건씩 차단/실제전송0/오류0. 전체 시나리오 atlas 요청PC2/모바일1. `.scratch-pw/companion-fluid-production-deploy.json`, `companion-home-root-production.json`와 캡처.
+
+요청 범위 구현·배포 완료. 수면/동작 원화의 제작 관찰, 더 큰 활성 비용, 아래 장비/기존 harness 제한을 결과와 구별한다. 실행하지 않은 검사를 PASS로 세지 않는다.
 
 공개 DTO/서버 권한/unlock/KST/DB/1840 export 기하 변경0. UI검사는 stub fixture 또는 과거2025-09/10 달, 모든 POST 차단. 기존 실제 root의 bootstrap POST는 차단 수와 실제 전송0을 구별한다. 실제 OBS 송출·GPU·OS focus·Safari·스크린리더 장비는 별도 미검증이다. 기존 harness의 rule inventory/migration mapping2실패를 이번 기능 성공으로 덮지 않는다.

@@ -10,4 +10,4 @@
 
 검증: 실제 스크롤 프레임에서 발판 상대위치와 튀는 좌표·불필요한 행동 취소 측정, 새 frame 등록/재현·동작 시작/종료·전환·방향/활동 반복, 집 PC/mobile 높이·직접조작/메뉴/키보드/포털, 기존 food/heart/pause/geometry. 관련 unit·type/lint/build·production fixture/실제 루트·독립 리뷰·비용비교 후 승인된 commit/push/live SHA·운영 화면 확인. 실제 OBS 장비 검증과 브라우저 수치는 구분한다.
 
-상태: 진행 중. [검증 기록](../verification/VIEWER_VICTAMIN_FLUID_LIFE-20261015.md).
+상태: 구현·검증·승인된 commit/push/운영 배포 완료(`592c801f`). Unit129/docs43/rendered60/type/lint/build, 실제 root local2/production2views,9개 비용 표본·독립 검토·live SHA/atlas 확인. 실제 OBS 장비와 기존 harness2개 실패는 미해결 범위로 구별한다. [검증 기록](../verification/VIEWER_VICTAMIN_FLUID_LIFE-20261015.md).
