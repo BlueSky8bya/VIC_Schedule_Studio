@@ -10,4 +10,4 @@
 
 검증: 하트 실제 핸들러 차단/다음 클릭/키보드·중복ID, 행동 중 blur/빠른 복귀/수면 중 resize·설정변경/hidden·모달, full/lite/reduced, PC/agenda/터치. 성능은 일정 이동과 parked sleep의 rAF·JS·layout·asset 비용을 비교한다. 관련 unit/렌더/type/lint/build, 독립 코드 리뷰, harness 기존 실패 분리. 승인된 commit/push 후 실제 배포 SHA와 PC·모바일 확인.
 
-상태: 구현·로컬 검증 완료, 승인된 배포 대기. 제품 단위106/문서43/화면54·type/lint/build·native 파생 재현 통과. 실제 루트PC/모바일2뷰·고립 비용9표본 확인. 기존 harness2실패 유지. [검증 기록](../verification/VIEWER_VICTAMIN_PASSIVE_SLEEP-20261015.md).
+상태: 완료. 제품 `b005a6dd` commit/push·Vercel success/live SHA 일치·운영 atlas SHA 일치. 제품 단위106/문서43/화면54·type/lint/build·native 파생 재현 통과. 실제 루트local2뷰·운영집2뷰·운영새하트/수면2뷰·고립 비용9표본 확인. 기존 harness2실패 유지. 실제OS focus/OBS 동시송출 장비는 미검증. [검증 기록](../verification/VIEWER_VICTAMIN_PASSIVE_SLEEP-20261015.md).

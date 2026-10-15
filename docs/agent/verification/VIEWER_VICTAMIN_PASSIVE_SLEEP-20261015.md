@@ -60,3 +60,13 @@ parked의 CSS 호흡/꿈과 사이트 기본 작업은 남는다. 따라서 ‘C
 재현: 이미 띄운 로컬 production fixture에 `node scripts/measure-viewer-companion.mjs`. 스크립트는 새 서버를 만들지 않으며 모든POST를 차단한다. raw 결과는 `.scratch-pw/companion-passive-metrics.json`에만 쓰며 실제 일정 내용이나 계정 식별자는 수집하지 않는다.
 
 한계: 실제 OBS 동시송출/장비별GPU·encoder, Safari, 실제 스크린리더, 배터리는 미검증. 테스트에서는 fixture/과거 월과 모든POST 차단을 사용하며 실제DB 쓰기 없음.
+
+## 운영 배포
+
+제품 `b005a6dd2279d442372644fa9073384d7d130db2` push 후 [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/HfLcDAFaMyR81wABmQmPtTtjQr66) success와 운영 live SHA 일치를 확인했다. 새 atlas HTTP200/164,524bytes/SHA `edcbded8440f0d78a86ad335998a7a5df5530986880d6f51eb2abd49fc4844dc`가 로컬과 일치한다.
+
+운영 실제 `/` PC1920×1080·mobile390×844(hasTouch/isMobile) 두뷰 smoke exit0. 과거2025-09/기본OFF0→ON 시 새 atlas 요청, 공유집/compact집·하단조작·tap·trusted Chromium touch hold-drag·SVG 음식 배치/섭취·쿠션·resize 동일개체/care·OFF 제거/export밖을 확인했다. 각뷰 pageerror0·기존 루트POST1차단·서버송신0. 테스트 최종 atlas 요청수는PC2/mobile1이며 초기OFF0를 확인했다. `.scratch-pw/companion-home-root-production.json` 및 두뷰 PNG를 보존·직접 열람했다. 설정/집·기기 로컬값 외 실제DB 쓰기0.
+
+새 하트·passive의 실제 운영 `/` PC/모바일 추가2뷰도 exit0. 실제 공개 카드의 purple 첫 click/tap 후 원래 타깃 handler0, 인간 aria/tier/bookmarked/투표 로컬 기억 불변, 투표POST 증가0을 확인하고 테스트 purple을 모두 정리했다. 실제 숫자 count는 UI가 노출하지 않으므로 숫자 렌더 검증으로 부르지 않는다. 550ms parked 구간에서 캐릭터 DOM 변경·Range0, visible 유지와 wake→active를 확인했다. PC export폭1840 유지, 모바일 agenda는 해당 export표면이 마운트되지 않는다. 양쪽 entity는 export밖·오류0. 모바일9월에는 일정이 없어 허용된 과거2025-10로 reload했다. 초기 `/` bootstrap action만 load당1회 차단했고 첫 하트 클릭의 POST delta는0, 모든 실제송신0. `.scratch-pw/companion-clean-production-behavior.json`에 보존했다. hasFocus override+이벤트 분기 검증이며 실제OS focus/OBS 장비 측정은 아니다.
+
+완료 기록 후속 변경은 문서뿐이며 제품 실행코드는 B4/`b005a6dd`와 같다. 사용자 기존 미커밋 그림/기록/설정 파일은 제외·보존했다.

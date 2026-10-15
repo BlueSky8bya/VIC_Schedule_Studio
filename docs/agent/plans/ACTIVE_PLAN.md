@@ -2,7 +2,6 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261015-045 | Verified locally; authorized deployment pending | [빅타민 그림·보라 하트·비활성 창 수면과 성능](PLAN-20261015-045-victamin-clean-art-and-passive-sleep.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |
