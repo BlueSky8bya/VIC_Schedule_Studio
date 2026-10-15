@@ -8,7 +8,7 @@ const directory = join(process.cwd(), "public/companion/food");
 const manifest = JSON.parse(readFileSync(join(directory, "sources.json"), "utf8")) as {
   upstreamCommit: string; license: string;
   files: { kind: string; url: string; sha256: string }[];
-  derivatives: Record<string, { basedOn: string; changes: string }>;
+  derivatives: Record<string, { basedOn: string; changes: string; replacesSha256?: string; originalBasisSha256?: string; reproduction?: string }>;
   delivered: { kind: string; sha256: string }[];
 };
 
@@ -35,5 +35,17 @@ describe("local companion food vectors", () => {
     expect(readFileSync(join(directory, "LICENSE.txt"), "utf8")).toContain("Version 2.0, January 2004");
     expect(readFileSync(join(directory, "UPSTREAM_NOTICE.txt"), "utf8")).toContain("Copyright 2013 Google, Inc.");
     expect(readFileSync(join(directory, "SOURCES.md"), "utf8")).toContain("Five files are VIC Schedule Studio derivatives");
+  });
+  it("records the plum correction separately from its unchanged apple source", () => {
+    const plum = manifest.derivatives.plum;
+    expect(plum.replacesSha256).toBe("fa6913b2ec7de27b806e8e2d2708f9f6c4764c624e1ed668a994303072a2d234");
+    expect(plum.originalBasisSha256).toBe(manifest.files.find(item => item.kind === "apple")?.sha256);
+    expect(plum.changes).toContain("short bare stem");
+    expect(plum.changes).toContain("No apple shoulder/waist or leaf");
+    expect(plum.reproduction).toBe("node scripts/prepare-companion-plum.mjs --check");
+    expect(manifest.delivered.find(item => item.kind === "plum")?.sha256).not.toBe(plum.replacesSha256);
+    const svg = readFileSync(join(directory, "plum.svg"), "utf8");
+    expect(svg).not.toContain("#986CC1"); expect(svg).not.toContain("#68468E");
+    expect(svg).toContain("code-native red plum contour");
   });
 });

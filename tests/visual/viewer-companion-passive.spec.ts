@@ -134,7 +134,11 @@ test("a meal already in progress completes once before passive sleep", async ({ 
   await expect(page.locator(".vc-food")).toHaveCount(1);
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
   const point = await pet(page).evaluate(el => { const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 18, y: rect.bottom }; });
-  await page.mouse.click(point.x, point.y);
+  const snack = page.locator(".vc-food"), start = (await snack.boundingBox())!;
+  const foot = await snack.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
+  const from = { x: start.x + start.width / 2, y: start.y + start.height / 2 };
+  await page.mouse.move(from.x, from.y); await page.mouse.down();
+  await page.mouse.move(point.x + from.x - foot.x, point.y + from.y - foot.y, { steps: 8 }); await page.mouse.up();
   await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
   await trace(page); await focus(page, false);
   await expect(pet(page)).toHaveAttribute("data-presence", "finishing");

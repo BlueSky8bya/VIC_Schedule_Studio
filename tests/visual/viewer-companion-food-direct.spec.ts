@@ -44,8 +44,25 @@ async function spawn(page: Page) {
   const feed = page.getByRole("button", { name: "밥 꺼내기", exact: true });
   if (touch) await feed.tap(); else await feed.click();
   await expect(foods(page)).toHaveCount(before + 1);
-  const item = foods(page).last(); await expect(item).toHaveAttribute("data-selected", ""); await expect(item).toBeFocused();
+  const item = foods(page).last(); await expect(item).not.toHaveAttribute("data-selected"); await expect(feed).toBeFocused();
   return item;
+}
+async function dragFoodToPointer(page: Page, item: Locator, target: { x: number; y: number }, touch = false) {
+  const from = await centre(item);
+  if (touch) {
+    const client = await page.context().newCDPSession(page);
+    try {
+      await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from.x, y: from.y, id: 31 }] });
+      for (let step = 1; step <= 8; step++) await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from.x + (target.x - from.x) * step / 8, y: from.y + (target.y - from.y) * step / 8, id: 31 }] });
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    } finally { await client.detach(); }
+  } else {
+    await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 8 }); await page.mouse.up();
+  }
+}
+async function dragFoodToFeet(page: Page, item: Locator, target: { x: number; y: number }, touch = false) {
+  const from = await centre(item), foot = await foodPoint(item);
+  await dragFoodToPointer(page, item, { x: target.x + from.x - foot.x, y: target.y + from.y - foot.y }, touch);
 }
 async function trackPointer(item: Locator) {
   await item.evaluate(node => node.addEventListener("pointerdown", event => node.setAttribute("data-test-pointer", String((event as PointerEvent).pointerId)), { capture: true }));
@@ -100,13 +117,16 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page, .1, false);
     await allowDocumentScroll(page); const offset = await identifyInitialSupport(page), anchor = page.locator("[data-test-food-anchor]");
     const item = await spawn(page);
-    // Opening/closing the compact house while carrying food is a real control
-    // action, not an accidental placement click through the disclosure.
-    const close = page.getByRole("button", { name: "빅타민 집 닫기", exact: true });
-    if (await close.isVisible()) { await close.click(); await expect(item).toHaveAttribute("data-selected", ""); }
     await page.waitForTimeout(180); // Full geometry delivery after home topology.
     const target = await anchor.evaluate((node, offset) => { const rect = node.getBoundingClientRect(); return { x: rect.left + offset.x, y: rect.top + offset.y }; }, offset);
-    await page.mouse.click(target.x, target.y); await expect(item).not.toHaveAttribute("data-selected");
+    await dragFoodToFeet(page, item, { x: target.x, y: target.y - 20 }, width === 390);
+    await expect(item).not.toHaveAttribute("data-selected");
+    await expect.poll(async () => Math.abs((await foodPoint(item)).y - target.y)).toBeLessThan(3);
+    // A compact home can close after an actual drag has detached the snack.
+    // Its native close button cannot act as an implicit food placement.
+    const close = page.getByRole("button", { name: "빅타민 집 닫기", exact: true });
+    if (await close.isVisible()) { await close.click(); await expect(item).toBeVisible(); await expect(item).not.toHaveAttribute("data-selected"); }
+    await page.waitForTimeout(180);
     const original = await foodPoint(item);
     let actualOffset = await anchor.evaluate((node, point) => { const rect = node.getBoundingClientRect(); return { x: point.x - rect.left, y: point.y - rect.top }; }, original);
     expect(Math.abs(original.y - target.y)).toBeLessThan(3);
@@ -178,7 +198,8 @@ for (const width of [1440, 390]) {
 
 test("a floor snack belongs to its document point rather than the fixed viewport floor", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 }); await setup(page); await allowDocumentScroll(page);
-  const item = await spawn(page); await page.mouse.click(180, 980); await expect(item).not.toHaveAttribute("data-selected");
+  const item = await spawn(page); await dragFoodToFeet(page, item, { x: 180, y: 960 }); await expect(item).not.toHaveAttribute("data-selected");
+  await expect(item).not.toHaveAttribute("data-falling");
   const original = await foodPoint(item); expect(original.y).toBeGreaterThan(850);
   await page.evaluate(() => window.scrollTo({ top: 180, behavior: "instant" }));
   await expect.poll(async () => (await foodPoint(item)).y + await page.evaluate(() => scrollY)).toBeCloseTo(original.y, 1);
@@ -189,7 +210,7 @@ test("a floor snack belongs to its document point rather than the fixed viewport
 });
 
 for (const width of [1440, 390]) {
-  test(`three real dispenser clicks vary fruit; selected trash only removes one at ${width}px`, async ({ page }) => {
+  test(`three real dispenser clicks vary fruit; dragging one to trash preserves the others at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page);
     const kinds: string[] = [];
     for (let i = 0; i < 3; i++) {
@@ -204,19 +225,20 @@ for (const width of [1440, 390]) {
     await expect(page.locator("[data-export-surface] .vc-food")).toHaveCount(0);
     const disclosure = page.getByRole("region", { name: "빅타민 집", exact: true }).getByRole("button", { name: "빅타민 집", exact: true });
     await disclosure.click({ position: { x: 12, y: 16 } }); await expect(disclosure).toHaveAttribute("aria-expanded", "false");
-    await expect(foods(page).last()).toHaveAttribute("data-selected", "");
-    // The freely selected snack can overlap the folded header's centre.
-    // Its exposed left edge remains a native, unforced disclosure target.
+    await expect(foods(page).last()).not.toHaveAttribute("data-selected");
+    // Dispensing creates stationary food rather than a global placement mode.
     await disclosure.click({ position: { x: 12, y: 16 } }); await expect(disclosure).toHaveAttribute("aria-expanded", "true");
     await expect(foods(page)).toHaveCount(3);
     await expect(foods(page).last()).toHaveCSS("outline-style", "none");
     await page.evaluate(() => Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)));
     await page.screenshot({ path: `.scratch-pw/companion-food-selected-${width}.png` });
-    // A selected snack can cover the intended placement point, especially on
-    // mobile. Tapping that snack again must place it instead of reselecting.
+    // A pointer tap only focuses food. Placement requires a genuine drag or
+    // the explicit keyboard Enter/Arrow/Enter alternative.
     const selected = foods(page).last();
+    const beforeTap = await foodPoint(selected);
     if (width === 390) await selected.tap(); else await selected.click();
     await expect(selected).not.toHaveAttribute("data-selected");
+    expect(Math.hypot((await foodPoint(selected)).x - beforeTap.x, (await foodPoint(selected)).y - beforeTap.y)).toBeLessThan(2);
     await selected.focus(); await selected.press("Enter");
     await expect(selected).toHaveAttribute("data-selected", "");
     await foods(page).last().evaluate(node => {
@@ -228,7 +250,7 @@ for (const width of [1440, 390]) {
     await expect(foods(page).last()).toHaveAttribute("data-selected", "");
     await expect(foods(page).last()).toHaveAttribute("data-test-style-writes", "0");
     const lastId = await foods(page).last().getAttribute("data-food");
-    const p = await centre(bin(page)); if (width === 390) await page.touchscreen.tap(p.x, p.y); else await page.mouse.click(p.x, p.y);
+    const p = await centre(bin(page)); await dragFoodToPointer(page, selected, p, width === 390);
     await expect(foods(page)).toHaveCount(2, { timeout: 2000 });
     await expect(page.locator(`[data-food="${lastId}"]`)).toHaveCount(0);
     await expect(bin(page)).toHaveAttribute("data-test-clicks", "0");
@@ -314,7 +336,7 @@ for (const input of ["pointer", "keyboard"] as const) {
     expect(Math.hypot(placed.x - destination.x, placed.y - destination.y)).toBeLessThan(2);
     const item = await spawn(page);
     const target = await pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom }; });
-    await page.mouse.click(target.x, target.y);
+    await dragFoodToFeet(page, item, { x: target.x, y: target.y - 16 });
     await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
     await expect(item).toHaveAttribute("data-eating", "");
     await expect.poll(() => item.evaluate(node => Number((node as HTMLElement).style.getPropertyValue("--vc-nibble")))).toBeLessThan(.92);
@@ -334,7 +356,7 @@ for (const input of ["pointer", "keyboard"] as const) {
       await item.focus(); await item.press("Enter"); await expect(item).toHaveAttribute("data-selected", "");
       const held = await centre(item); expect(Math.hypot(held.x - before.x, held.y - before.y)).toBeLessThan(12);
       for (let i = 0; i < 8; i++) await item.press("ArrowRight");
-      await page.mouse.click(480, page.viewportSize()!.height - 20);
+      await item.press("Enter");
     }
     await expect(item).not.toHaveAttribute("data-eating"); await expect(item).not.toHaveAttribute("data-selected");
     await page.waitForTimeout(2900); await expect(foods(page)).toHaveCount(1);

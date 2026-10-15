@@ -4,6 +4,41 @@ import { createCompanionMotion, nextCompanionPaint, sampleCompanionTravel, type 
 const input = (patch: Partial<CompanionMotionInput> = {}): CompanionMotionInput => ({ row: 0, phase: 0, status: "idle", x: 100, y: 500, now: 0, ...patch });
 
 describe("companion clip and facing continuity", () => {
+  it("keeps a stationary held creature wriggling with HD frames and bounded independent pose motion", () => {
+    const motion = createCompanionMotion({ loopRows: [8] });
+    const samples = Array.from({ length: 181 }, (_, frame) => motion.sample(input({ row: 8, status: "held", now: frame * 1000 / 120 })));
+    expect(new Set(samples.map(p => p.column)).size).toBe(16);
+    expect(Math.max(...samples.map(p => p.tilt)) - Math.min(...samples.map(p => p.tilt))).toBeGreaterThan(7);
+    expect(Math.max(...samples.map(p => p.bob)) - Math.min(...samples.map(p => p.bob))).toBeGreaterThan(2);
+    expect(Math.max(...samples.map(p => p.scaleY)) - Math.min(...samples.map(p => p.scaleY))).toBeGreaterThan(.06);
+    expect(samples.every(p => p.facing === 1 && Math.abs(p.tilt) <= 7 && p.scaleX >= .94 && p.scaleX <= 1.06 && p.scaleY >= .93 && p.scaleY <= 1.07)).toBe(true);
+  });
+
+  it("samples the same held pose at the same time across display rates, with at most12 drawing changes a second", () => {
+    const run = (hz: number) => {
+      const motion = createCompanionMotion({ loopRows: [8] }); let previous = -1, changes = 0;
+      let pose = motion.sample(input({ row: 8, status: "held" }));
+      for (let frame = 1; frame <= hz * 2; frame++) {
+        pose = motion.sample(input({ row: 8, status: "held", now: frame * 1000 / hz }));
+        if (pose.column !== previous) changes++; previous = pose.column;
+      }
+      return { pose, changes };
+    };
+    const full = run(60), fast = run(120);
+    expect(full.pose).toEqual(fast.pose); expect(full.changes).toBeLessThanOrEqual(25); expect(fast.changes).toBeLessThanOrEqual(25);
+  });
+
+  it("carries a held pose smoothly into release and keeps reduced held poses static", () => {
+    const motion = createCompanionMotion({ loopRows: [8] });
+    let held = motion.sample(input({ row: 8, status: "held" }));
+    for (let now = 16; now <= 1200; now += 16) held = motion.sample(input({ row: 8, status: "held", now }));
+    const firstRelease = motion.sample(input({ now: 1216 }));
+    for (const key of ["bob", "tilt", "scaleX", "scaleY"] as const) expect(firstRelease[key]).toBe(held[key]);
+    expect(motion.sample(input({ now: 1320 }))).toMatchObject({ bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+    const quiet = createCompanionMotion({ loopRows: [8] });
+    for (const now of [0, 50, 500, 1500]) expect(quiet.sample(input({ row: 8, status: "held", now, reduced: true }))).toMatchObject({ column: 0, bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+  });
+
   it("keeps the lite30 cadence at60/120Hz, including fractional rAF origins", () => {
     for (const hz of [60, 120]) for (const offset of [0, .04, 7.7]) {
       let deadline = offset;

@@ -50,10 +50,15 @@ async function spawn(page: Page) {
   const count = await food(page).count();
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(count + 1);
-  const item = food(page).last(); await expect(item).toHaveAttribute("data-selected", "");
+  const item = food(page).last(); await expect(item).not.toHaveAttribute("data-selected");
   return item;
 }
 const foodPoint = (item: Locator) => item.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
+async function dragFoodToFeet(page: Page, item: Locator, target: { x: number; y: number }) {
+  const r = (await item.boundingBox())!, foot = await foodPoint(item), from = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  await page.mouse.move(from.x, from.y); await page.mouse.down();
+  await page.mouse.move(target.x + from.x - foot.x, target.y + from.y - foot.y, { steps: 8 }); await page.mouse.up();
+}
 async function world(page: Page) {
   return pet(page).evaluate(node => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform), size = parseFloat((node as HTMLElement).style.getPropertyValue("--vc-size")); return { x: m.m41 + size / 2, y: m.m42 + size, size }; });
 }
@@ -108,7 +113,7 @@ async function finishRecording(page: Page) {
 test("released fruit accelerates to a real lower ledge, can be caught in flight and leaves no resting writes", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
   const item = await spawn(page), release = await roomyRelease(page); expect(release.gap).toBeGreaterThan(200);
-  await page.mouse.move(release.x, release.y); await recordFall(page, item); await page.mouse.click(release.x, release.y);
+  await recordFall(page, item); await dragFoodToFeet(page, item, release);
   await expect(item).toHaveAttribute("data-falling", ""); await expect(item).not.toHaveAttribute("data-eating"); await page.waitForTimeout(1600);
   await expect(item).not.toHaveAttribute("data-falling"); await expect(item).not.toHaveAttribute("data-eating");
   const end = await foodPoint(item), frames = await finishRecording(page);
@@ -122,7 +127,7 @@ test("released fruit accelerates to a real lower ledge, can be caught in flight 
   console.log(JSON.stringify({ check: "food-gravity", frames: airborne.length, early, late, release, end }));
   await page.screenshot({ path: ".scratch-pw/companion-polish-gravity-landed.png" });
   await item.focus(); await item.press("Delete");
-  const next = await spawn(page); await page.mouse.click(release.x, release.y); await page.waitForTimeout(70);
+  const next = await spawn(page); await dragFoodToFeet(page, next, release); await page.waitForTimeout(70);
   await expect(next).toHaveAttribute("data-falling", "");
   const box = (await next.boundingBox())!, before = await foodPoint(next);
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
@@ -146,15 +151,19 @@ test("fruit retains its real text attachment through scroll, interrupts for sett
     const r = cards[0]; if (!r) throw Error("A real lower card is required for this attachment regression");
     return { x: r.left + r.width / 2, y: r.top - 30 };
   });
-  await page.mouse.click(drop.x, drop.y);
+  await dragFoodToFeet(page, item, drop);
   await expect(item).not.toHaveAttribute("data-selected"); await expect(item).not.toHaveAttribute("data-falling", { timeout: 1800 });
   const landed = await foodPoint(item), source = await renderedSupport(page, landed, true);
   expect(source?.kind).toBe("card");
   await page.evaluate(() => { document.documentElement.style.overflowY = "auto"; document.documentElement.style.scrollBehavior = "auto"; document.body.style.overflowY = "visible"; const spacer = document.createElement("div"); spacer.style.cssText = "height:1200px;pointer-events:none"; spacer.setAttribute("aria-hidden", "true"); document.body.append(spacer); scrollTo({ top: 64, behavior: "instant" }); });
   await expect.poll(async () => { const current = await foodPoint(item), rect = (await anchor.boundingBox())!; return Math.hypot(current.x - rect.x - source!.offset.x, current.y - rect.y - source!.offset.y); }).toBeLessThan(2);
   await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+  // Native grabbing must wait for the same retained food attachment to return
+  // from the preceding scroll; a global placement click never needed to hit
+  // the fruit and concealed this stale-screen-position setup race.
+  await expect.poll(async () => { const current = await foodPoint(item), rect = (await anchor.boundingBox())!; return Math.hypot(current.x - rect.x - source!.offset.x, current.y - rect.y - source!.offset.y); }).toBeLessThan(2);
   const release = await roomyRelease(page);
-  await item.focus(); await item.press("Enter"); await page.mouse.click(release.x, release.y); await expect(item).toHaveAttribute("data-falling", "");
+  await dragFoodToFeet(page, item, release); await expect(item).toHaveAttribute("data-falling", "");
   await page.getByRole("button", { name: "설정", exact: true }).click();
   await expect(page.locator(".vc-food-layer")).toBeHidden(); await expect(item).not.toHaveAttribute("data-falling");
   const settings = page.getByRole("dialog", { name: "설정", exact: true });
@@ -163,7 +172,7 @@ test("fruit retains its real text attachment through scroll, interrupts for sett
   await expect(page.locator("html")).toHaveAttribute("data-reduce-motion", "1");
   await settings.locator("[data-act=close-settings]").click(); await expect(item).toBeVisible(); await expect(item).not.toHaveAttribute("data-falling");
   await item.focus(); await item.press("Delete");
-  const still = await spawn(page); await page.mouse.click(release.x, release.y);
+  const still = await spawn(page); await dragFoodToFeet(page, still, release);
   await expect(still).not.toHaveAttribute("data-selected"); await expect(still).not.toHaveAttribute("data-falling");
   expect(await renderedSupport(page, await foodPoint(still))).not.toBeNull();
   const settled = await foodPoint(still); await page.waitForTimeout(450); expect(await foodPoint(still)).toEqual(settled);

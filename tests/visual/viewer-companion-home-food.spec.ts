@@ -7,7 +7,13 @@ import { openCompanionHome } from "./helpers/companion-home";
 const foods = (page: Page) => page.locator(".vc-food");
 const house = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
 const bed = (page: Page) => house(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
-const position = (item: Locator) => item.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
+const position = (item: Locator) => item.evaluate(node => {
+  // Chromium computes transform:none inside the deliberately hidden food
+  // layer while a dialog owns input. Its retained inline carrier is the only
+  // position during that interval; visible frames still use computed style.
+  const transform = node.closest("[hidden]") ? (node as HTMLElement).style.transform : getComputedStyle(node).transform;
+  const m = new DOMMatrixReadOnly(transform); return { x: m.m41, y: m.m42 };
+});
 const posts = new WeakMap<Page, string[]>();
 type FoodWitnessWindow = Window & { homeFoodWitness: { fell: boolean; observer: MutationObserver } };
 
@@ -82,7 +88,7 @@ async function unchangedSelfPutDown(item: Locator, mobile: boolean) {
   await item.focus();
   if (!(await item.evaluate(node => node.hasAttribute("data-selected")))) await item.press("Enter");
   await item.press("Enter"); await expect(item).not.toHaveAttribute("data-selected");
-  await press(item, mobile); await expect(item).toHaveAttribute("data-selected", "");
+  await press(item, mobile); await expect(item).not.toHaveAttribute("data-selected");
   await press(item, mobile); await expect(item).not.toHaveAttribute("data-selected");
   expect(Math.hypot((await position(item)).x - original.x, (await position(item)).y - original.y)).toBeLessThan(2);
   await expect(item).not.toHaveAttribute("data-falling");
@@ -110,14 +116,13 @@ async function cancelBedReentry(page: Page, item: Locator, target: { x: number; 
 
 for (const mobile of [false, true]) test.describe(mobile ? "native touch home food" : "PC home food", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
-  test("new two-tap and existing dragged food stays on the real bed through home topology", async ({ page }) => {
+  test("new and existing dragged food stays on the real bed through home topology", async ({ page }) => {
     test.setTimeout(30000); await setup(page, mobile);
     await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), mobile);
-    const item = foods(page).last(); await expect(item).toHaveAttribute("data-selected", "");
+    const item = foods(page).last(); await expect(item).not.toHaveAttribute("data-selected");
     await watchNoFall(item); await unchangedSelfPutDown(item, mobile);
-    await item.focus(); await item.press("Enter"); await expect(item).toHaveAttribute("data-selected", "");
     const first = await bedPoint(page);
-    if (mobile) await page.touchscreen.tap(first.x, first.y); else await page.mouse.click(first.x, first.y);
+    await dragFood(page, item, { x: first.x, y: first.y - 16 }, mobile);
     await expect(item).not.toHaveAttribute("data-selected"); await expect(item).not.toHaveAttribute("data-falling");
     await expect.poll(async () => { const p = await position(item); return Math.hypot(p.x - first.x, p.y - first.y); }).toBeLessThan(2);
     const initial = await bedOffset(page, item); await stopNoFall(page);
@@ -161,6 +166,34 @@ for (const mobile of [false, true]) test.describe(mobile ? "native touch home fo
     console.log(JSON.stringify({ check: "manual-home-food", width: mobile ? 390 : 1920, initial, dragged: next, keyboard: final, quietWrites350ms: quiet }));
     await page.screenshot({ path: `.scratch-pw/companion-home-food-${mobile ? 390 : 1920}.png` });
   });
+
+  test("spawn, food taps and an explicit keyboard grab never turn calendar clicks into food placement", async ({ page }) => {
+    test.setTimeout(30000); await setup(page, mobile);
+    await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), mobile);
+    const item = foods(page).last(); await expect(item).not.toHaveAttribute("data-selected");
+    const identity = (await item.elementHandle())!;
+    const offset = async () => { const p = await position(item), r = (await page.locator(".vc-dispenser-slot").boundingBox())!; return { x: p.x - r.x, y: p.y - r.y }; };
+    const initial = await offset(), errors: number[] = []; await watchNoFall(item);
+    const cards = page.locator(mobile ? ".agenda-event" : ".public-event");
+    const index = await cards.evaluateAll(nodes => nodes.findIndex(node => { const r = node.getBoundingClientRect(); return r.width > 40 && r.height > 10 && r.top > 100 && r.bottom < innerHeight * .6; }));
+    expect(index).toBeGreaterThanOrEqual(0);
+    for (const mode of ["spawn", "tap", "keyboard"] as const) {
+      if (mode === "tap") { await press(item, mobile); await expect(item).not.toHaveAttribute("data-selected"); }
+      if (mode === "keyboard") { await item.focus(); await item.press("Enter"); await expect(item).toHaveAttribute("data-selected", ""); }
+      await press(cards.nth(index), mobile);
+      const detail = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(detail).toBeVisible();
+      await expect(page.locator(".vc-food-layer")).toBeHidden();
+      const during = await offset(), duringError = Math.hypot(during.x - initial.x, during.y - initial.y); errors.push(duringError); expect(duringError).toBeLessThan(2);
+      await press(detail.getByRole("button", { name: "닫기", exact: true }), mobile); await expect(detail).toHaveCount(0);
+      await expect(item).toHaveJSProperty("hidden", false);
+      const after = await offset(), afterError = Math.hypot(after.x - initial.x, after.y - initial.y); errors.push(afterError); expect(afterError).toBeLessThan(2);
+      expect(await identity.evaluate(node => node === document.querySelector(".vc-food"))).toBe(true);
+    }
+    await item.press("Enter"); await expect(item).not.toHaveAttribute("data-selected");
+    await stopNoFall(page); await expect(foods(page)).toHaveCount(1);
+    console.log(JSON.stringify({ check: "food-calendar-no-teleport", width: mobile ? 390 : 1920, localOffset: initial, finalOffset: await offset(), maximumError: Math.max(...errors) }));
+    await page.screenshot({ path: `.scratch-pw/companion-food-no-teleport-${mobile ? 390 : 1920}.png` });
+  });
 });
 
 test("a hungry companion eats a manually offered bed snack from its real home support", async ({ page }) => {
@@ -173,8 +206,8 @@ test("a hungry companion eats a manually offered bed snack from its real home su
   // A native affectionate tap finishes the requested nap before offering food.
   await actor.focus(); await actor.press("Enter"); await expect(creature).toHaveAttribute("data-state", "petted");
   await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
-  const item = foods(page).last(); await expect(item).toHaveAttribute("data-selected", "");
-  const target = await bedPoint(page, .5, .65); await page.mouse.click(target.x, target.y);
+  const item = foods(page).last(); await expect(item).not.toHaveAttribute("data-selected");
+  const target = await bedPoint(page, .5, .65); await dragFood(page, item, { x: target.x, y: target.y - 16 }, false);
   await expect(item).not.toHaveAttribute("data-selected"); await expect(item).not.toHaveAttribute("data-falling");
   const placed = await position(item); expect(Math.hypot(placed.x - target.x, placed.y - target.y)).toBeLessThan(2);
   await expect(creature).toHaveAttribute("data-state", "eat", { timeout: 8000 });

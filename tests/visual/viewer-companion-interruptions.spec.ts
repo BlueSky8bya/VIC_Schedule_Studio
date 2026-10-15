@@ -148,7 +148,8 @@ test("pausing a dragged snack releases capture and returns it to the floor", asy
   // actual button centre; its44px hit box is centred16px above the foot anchor.
   const snackFoot = () => snack.evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 + 16 }; });
   await expect(snack).toHaveCount(1);
-  await expect(snack).toBeFocused();
+  await expect(home(page).getByRole("button", { name: "밥 꺼내기", exact: true })).toBeFocused();
+  await expect(snack).not.toHaveAttribute("data-selected");
   await snack.evaluate(node => node.addEventListener("pointerdown", event => { (node as HTMLElement).dataset.capturePointer = String((event as PointerEvent).pointerId); }));
   const box = (await snack.boundingBox())!, height = page.viewportSize()!.height;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

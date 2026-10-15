@@ -34,6 +34,11 @@ async function centre(locator: Locator) {
   const box = (await locator.boundingBox())!;
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
+async function dragFoodToFeet(page: Page, item: Locator, point: { x: number; y: number }) {
+  const from = await centre(item), foot = await item.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
+  await page.mouse.move(from.x, from.y); await page.mouse.down();
+  await page.mouse.move(point.x + from.x - foot.x, point.y + from.y - foot.y, { steps: 8 }); await page.mouse.up();
+}
 async function setup(page: Page, hunger = .58, patch: Partial<CompanionPreferences> = {}) {
   await page.addInitScript(({ key, epoch, preferences, care }) => {
     localStorage.setItem(key, epoch);
@@ -81,11 +86,11 @@ async function openHome(page: Page) {
 async function spawn(page: Page) {
   const before = await food(page).count();
   await openHome(page);
-  await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
+  const feed = page.getByRole("button", { name: "밥 꺼내기", exact: true }); await feed.click();
   await expect(food(page)).toHaveCount(before + 1);
   const item = food(page).last();
-  await expect(item).toHaveAttribute("data-selected", "");
-  await expect(item).toBeFocused();
+  await expect(item).not.toHaveAttribute("data-selected");
+  await expect(feed).toBeFocused();
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);
   const kind = await item.getAttribute("data-kind");
   expect(isCompanionFoodKind(kind)).toBe(true);
@@ -96,12 +101,13 @@ async function spawn(page: Page) {
 async function placeNear(page: Page, item: Locator) {
   const before = await month(page).textContent();
   // Keyboard movement still belongs to the food rather than month shortcuts.
+  await item.focus(); await item.press("Enter"); await expect(item).toHaveAttribute("data-selected", "");
   const original = await item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
   await item.press("ArrowLeft");
   await expect.poll(() => item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41)).toBeCloseTo(Math.max(24, original - 24), 1);
   await item.press("ArrowRight");
   const target = await pet(page).evaluate(el => { const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 24, y: rect.bottom }; });
-  await page.mouse.click(target.x, target.y);
+  await dragFoodToFeet(page, item, target);
   await expect(item).not.toHaveAttribute("data-selected");
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);
   await expect(month(page)).toHaveText(before!);
@@ -113,11 +119,11 @@ for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
       await setup(page, .58, { animalMode: mode });
       const item = await spawn(page);
-      // Position selection now acknowledges its two taps immediately. Measure
-      // meal credit from the resulting live care state, not a pre-tap constant.
+      // Dispensing leaves food stationary and unselected. Measure meal credit
+      // from the current care state before deliberately offering it by drag.
       const beforeAffection = Number(await page.getByRole("meter", { name: "빅타민 친밀도", exact: true }).getAttribute("value"));
       await page.waitForTimeout(350);
-      await expect(item).toHaveAttribute("data-selected", "");
+      await expect(item).not.toHaveAttribute("data-selected");
       await expect(pet(page)).not.toHaveAttribute("data-state", "eat");
       await placeNear(page, item);
       await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
@@ -148,7 +154,7 @@ test("a full creature refuses more food, at most three snacks stay, and leftover
   await expect(food(page)).toHaveCount(1);
   await expect(pet(page)).toHaveAttribute("data-test-ate", "false");
   expect((await storedCare(page)).hunger).toBeLessThan(.15);
-  for (let i = 0; i < 2; i++) { const extra = await spawn(page); await extra.press("Enter"); }
+  for (let i = 0; i < 2; i++) await spawn(page);
   await expect(food(page)).toHaveCount(3);
   await openHome(page); await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(3);
@@ -158,7 +164,7 @@ test("a full creature refuses more food, at most three snacks stay, and leftover
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);
 });
 
-test("food dragging and a long placement consume their clicks before cards underneath", async ({ page }) => {
+test("food dragging and a long held release consume their clicks before cards underneath", async ({ page }) => {
   await setup(page, .1);
   const item = await spawn(page);
   const from = await centre(item);
@@ -178,12 +184,10 @@ test("food dragging and a long placement consume their clicks before cards under
     button.addEventListener("click", () => button.setAttribute("data-native-clicks", String(Number(button.getAttribute("data-native-clicks")) + 1)));
     card.appendChild(button);
   });
-  await item.focus(); await item.press("Enter");
-  await expect(item).toHaveAttribute("data-selected", "");
   const target = page.locator("#food-placement-sentinel"), point = await centre(target);
-  await page.mouse.move(point.x, point.y);
   await expect.poll(() => target.evaluate((el, p) => document.elementFromPoint(p.x, p.y)?.closest(".event-heart") === el, point)).toBe(true);
-  await page.mouse.down(); await page.waitForTimeout(1200); await page.mouse.up();
+  const grab = await centre(item); await page.mouse.move(grab.x, grab.y); await page.mouse.down();
+  await page.mouse.move(point.x, point.y, { steps: 8 }); await page.waitForTimeout(1200); await page.mouse.up();
   await expect(item).not.toHaveAttribute("data-selected");
   await expect(target).toHaveAttribute("data-native-clicks", "0");
   await expect(page.locator(".agenda-detail-backdrop")).toHaveCount(0);

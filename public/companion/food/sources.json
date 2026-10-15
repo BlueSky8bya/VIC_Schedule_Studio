@@ -60,8 +60,11 @@
       "changes": "Added pink cut-face/cream segment spokes."
     },
     "plum": {
-      "basedOn": "apple.svg",
-      "changes": "Purple fruit palette; retained stem/leaf/highlight paths."
+      "basedOn": "VIC code-native plum contour using Noto Emoji food colour/shading conventions; original apple.svg retained unchanged for source lineage.",
+      "changes": "Replaced the apple-derived silhouette with one round-oval red/burgundy plum, short bare stem, a single fruit seam and subtle wax bloom. No apple shoulder/waist or leaf; no upstream plum original claimed.",
+      "replacesSha256": "fa6913b2ec7de27b806e8e2d2708f9f6c4764c624e1ed668a994303072a2d234",
+      "originalBasisSha256": "b74174d580462c259f2fb0cdceeb3734203cca15f669c5d9c18fc9f2336586a4",
+      "reproduction": "node scripts/prepare-companion-plum.mjs --check"
     },
     "persimmon": {
       "basedOn": "tomato.svg",
@@ -116,7 +119,7 @@
     },
     {
       "kind": "plum",
-      "sha256": "fa6913b2ec7de27b806e8e2d2708f9f6c4764c624e1ed668a994303072a2d234"
+      "sha256": "02176fce14522c20ba86fabd8e5edb581e233f8f908f32ef5a6bed8baf9772c2"
     },
     {
       "kind": "persimmon",

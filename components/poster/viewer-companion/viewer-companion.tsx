@@ -17,6 +17,7 @@ import { FLIP_MS, FLIP_SPRING } from "@/lib/ui/flip-motion";
 import { hasAmbientPauseOutside } from "@/lib/ui/ambient-pause";
 import { createCompanionSupportMotion } from "@/lib/ui/viewer-companion/support-motion";
 import { firstCompanionSupportBelow, nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { boundCompanionBallisticArc, boundCompanionSineArc } from "@/lib/ui/viewer-companion/jump-arc";
 import { createCompanionPettingContact, createCompanionPettingGesture } from "@/lib/ui/viewer-companion/petting";
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
@@ -158,7 +159,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const recoveringPickup = Boolean(pickupScale !== 1 || pickupOffset.x || pickupOffset.y) && performance.now() - pickupAt < 200 && !reduced && gfxMode() !== "off";
       const hasWorldSupport = platforms.length > 0 || Boolean(supportById(support) || action?.target.platformId && supportById(action.target.platformId));
       if (!overlayActive && !returning && !pressed && !keyboardHeld && !recoveringPickup && (awaitingAtX || !hasWorldSupport && !pendingMonth || homeOccluded && support === "companion-home" || x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12)) { el.hidden = true; return; }
-      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: x - carrier.x, y: y - carrier.y, now: presentationNow, reduced });
+      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: x - carrier.x, y: y - carrier.y, now: presentationNow, reduced: reduced || gfxMode() === "off" });
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off");
       if (!pressure.pressure && !hoverPetting && el.dataset.petting === "touch") el.removeAttribute("data-petting");
       style(contactLayer, "transform", `translate3d(${(pressure.x * sample.facing).toFixed(3)}px,${pressure.y.toFixed(3)}px,0) rotate(${(pressure.tilt * sample.facing).toFixed(3)}deg) scale(${(1 + pressure.squash * .65).toFixed(4)},${(1 - pressure.squash).toFixed(4)})`);
@@ -483,15 +484,16 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
         if (action.kind === "walk") { x = lerp(origin.x, action.target.x, sampleCompanionTravel(p)); row = 2; }
         else if (action.kind === "jump") {
-          if (travel === -2) { const eased = sampleCompanionTravel(p); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * (reduced ? 0 : 60); row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
-          else if (travel === -3) { const progress = clamp(p / .78, 0, 1), eased = sampleCompanionTravel(progress); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(progress * Math.PI) * (reduced ? 0 : 10); row = p < .78 ? 5 : 6; frame = (p < .78 ? progress : (p - .78) / .22) * 15; }
+          if (travel === -2) { const eased = sampleCompanionTravel(p), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 60, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * lift; row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
+          else if (travel === -3) { const progress = clamp(p / .78, 0, 1), eased = sampleCompanionTravel(progress), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 10, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(progress * Math.PI) * lift; row = p < .78 ? 5 : 6; frame = (p < .78 ? progress : (p - .78) / .22) * 15; }
           else if (travel === -1) { x = lerp(origin.x, action.target.x, p); y = lerp(origin.y, action.target.y, p * p); row = p < .8 ? 5 : 6; frame = (p < .8 ? p / .8 : (p - .8) / .2) * 15; }
           else if (age < 180) { row = 3; frame = age / 180 * 15; }
           else if (age < 180 + travel) {
             const t = (age - 180) / 1000, progress = clamp((age - 180) / travel, 0, 1);
-            x = lerp(origin.x, action.target.x, progress); y = lerp(origin.y, action.target.y, progress) - .5 * 1100 * (travel / 1000) ** 2 * progress * (1 - progress);
-            const apex = Math.sqrt(2 * 1100 * (action.jumpHeight ?? 140)) / 1100;
-            row = t < apex ? 4 : 5; frame = (t < apex ? t / apex : (t - apex) / Math.max(.001, travel / 1000 - apex)) * 15;
+            const arc = boundCompanionBallisticArc(origin.y, action.target.y, .5 * 1100 * (travel / 1000) ** 2, size + 8);
+            x = lerp(origin.x, action.target.x, progress); y = lerp(origin.y, action.target.y, progress) - arc.coefficient * progress * (1 - progress);
+            const apex = arc.apexProgress * travel / 1000;
+            row = t < apex ? 4 : 5; frame = (t < apex ? t / Math.max(.001, apex) : (t - apex) / Math.max(.001, travel / 1000 - apex)) * 15;
           } else { x = action.target.x; y = action.target.y; row = 6; frame = (age - 180 - travel) / 260 * 15; }
         } else if (action.kind === "sleep") {
           sleeping = true; row = age < 1000 ? 10 : total - age < 1100 ? 12 : 11;

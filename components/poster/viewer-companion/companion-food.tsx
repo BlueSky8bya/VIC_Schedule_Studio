@@ -22,7 +22,7 @@ export type CompanionFoodControl = {
   clear: () => void;
 };
 type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void };
-type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; offset: Point; moved: boolean; wasSelected: boolean; startHome?: HomeAnchor };
+type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; offset: Point; moved: boolean; startHome?: HomeAnchor };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
 type HomeAnchor = "tray" | "bed";
@@ -33,7 +33,8 @@ const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point
 
 /** Three local snacks, one logical position per snack. Dragging and mouth
  * presentation only write transforms; React commits placement/removal. Native
- * capture owns placement/trash clicks even after selection or a node vanishes. */
+ * capture owns only real drag/trash gestures. Pointer taps never arm a global
+ * placement mode; keyboard grab/arrow/put-down remains an explicit alternative. */
 export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, returnFocus }, ref) {
   const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(blocked);
   const [message, setMessage] = useState("");
@@ -46,7 +47,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean }>());
   const renderedTransforms = useRef(new Map<string, string>());
   const serial = useRef(0), dragging = useRef<Drag | null>(null), hover = useRef<Hover | null>(null), discard = useRef<Discard | null>(null);
-  const dragFrame = useRef(0), hoverFrame = useRef(0), senseFrame = useRef(0), followFrame = useRef(0), operating = useRef(false);
+  const dragFrame = useRef(0), hoverFrame = useRef(0), followFrame = useRef(0), operating = useRef(false);
   const followUntil = useRef(0), followHome = useRef<() => void>(() => {});
   const focusReturn = useRef(returnFocus); focusReturn.current = returnFocus;
   const guard = useRef<{ owns: boolean; pointer: number | null; timer?: ReturnType<typeof setTimeout> }>({ owns: false, pointer: null });
@@ -78,14 +79,14 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const resetNibble = useCallback((id?: string) => {
     for (const food of current.current) if ((!id || food.id === id) && !drops.current.has(food.id)) { presentations.current.delete(food.id); paint(food); }
   }, [paint]);
-  const rebasePresentation = useCallback((id: string) => {
+  const rebasePresentation = useCallback((id: string, keepSupport = false) => {
     const food = current.current.find(item => item.id === id); if (!food) return;
     const pose = presentations.current.get(id) ?? food;
     drops.current.delete(id);
     if (!drops.current.size) { cancelAnimationFrame(dropFrame.current); dropFrame.current = 0; }
-    if (!attachments.current.get(id)?.home) attachments.current.delete(id);
+    if (!keepSupport && !attachments.current.get(id)?.home) attachments.current.delete(id);
     visibility.current.set(id, true);
-    current.current = current.current.map(item => item.id === id ? { ...item, x: pose.x, y: pose.y, platformId: attachments.current.get(id)?.home === "bed" ? COMPANION_HOME_BED_FOOD : undefined } : item);
+    current.current = current.current.map(item => item.id === id ? { ...item, x: pose.x, y: pose.y, platformId: keepSupport ? item.platformId : attachments.current.get(id)?.home === "bed" ? COMPANION_HOME_BED_FOOD : undefined } : item);
     resetNibble(id); return pose;
   }, [resetNibble]);
   const receivingHome = useCallback((point: Point, release: Point) => {
@@ -280,7 +281,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const interrupt = useCallback(() => {
     const homeSelection = selection.current && attachments.current.get(selection.current)?.home ? selection.current : null;
     suspending.current = true; finishDrops();
-    cancelAnimationFrame(senseFrame.current); cancelAnimationFrame(followFrame.current); followFrame.current = 0; followUntil.current = 0; cancelHover(); cancelDiscard(true); release(true); resetNibble();
+    cancelAnimationFrame(followFrame.current); followFrame.current = 0; followUntil.current = 0; cancelHover(); cancelDiscard(true); release(true); resetNibble();
     if (selection.current) update(current.current.map(food => food.id === selection.current ? settleFood(food, food) : food));
     choose(homeSelection); suspending.current = false;
   }, [cancelDiscard, cancelHover, choose, finishDrops, release, resetNibble, settleFood, update]);
@@ -290,12 +291,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (!operating.current || !isCompanionFoodKind(kind) || ![point.x, point.y].every(Number.isFinite)) return;
       if (current.current.length >= MAX_COMPANION_FOOD) { setMessage("밥은 세 개까지 놓을 수 있어요. 남은 밥을 기다리거나 휴지통에 치워 주세요."); return; }
       const food: Food = { id: `snack-${++serial.current}`, kind, x: clamp(point.x, 24, innerWidth - 24), y: clamp(point.y, 48, innerHeight - 24) };
-      const settled = current.current.map(item => item.id === selection.current ? settleFood(item, item) : item);
       if (source?.isConnected) {
         const rect = source.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) attachments.current.set(food.id, { home: "tray", element: source, position: attachCompanionFood(food, { x: scrollX, y: scrollY }, { x: rect.left, y: rect.top }) });
       }
-      cancelHover(); update([...settled, food]); choose(food.id); setMessage(`${names[kind]} 놓을 곳을 누르거나 방향키와 Enter로 놓아 주세요.`);
+      cancelHover(); update([...current.current, food]); setMessage(`${names[kind]} 꺼냈어요. 잡아 끌어 옮겨 주세요.`);
       if (attachments.current.get(food.id)?.home) followHome.current();
     },
     foods: () => current.current.filter(food => !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
@@ -345,28 +345,6 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       }
       // A fresh pointer sequence supersedes an old canceled/missing click.
       if (guard.current.owns) clearGuard();
-      if (!operating.current || event.button !== 0 || layer.current?.contains(event.target as Node)) return;
-      // Carrying a selected snack must still allow opening its compact home.
-      if ((event.target as Element | null)?.closest?.(".vc-home-launcher,[data-home-action=feed],.panel-section-toggle,[data-home-action=close]")) return;
-      const food = current.current.find(food => food.id === selection.current); if (!food) return;
-      const target = event.target as Element | null;
-      const point = { x: event.clientX, y: event.clientY };
-      if (attachments.current.get(food.id)?.home && target?.closest?.(".panel-place-ctl,.vc-home") && !target.closest("[data-companion-trash]") && !receivingHome(point, point)) return;
-      event.preventDefault(); event.stopImmediatePropagation(); ownClick(event.pointerId);
-      const bin = trashAt(point);
-      if (bin) { startHover(food.id, bin, point, true); return; }
-      cancelHover(); resetNibble(food.id);
-      update(current.current.map(item => item.id === food.id ? settleFood(item, point, point) : item)); choose(null);
-    };
-    const move = (event: PointerEvent) => {
-      if (!operating.current || dragging.current || !selection.current || event.pointerType === "touch") return;
-      const point = { x: event.clientX, y: event.clientY };
-      cancelAnimationFrame(senseFrame.current); senseFrame.current = requestAnimationFrame(() => {
-        if (!selection.current || !operating.current) return;
-        const bin = trashAt(point);
-        if (bin) startHover(selection.current, bin, point);
-        else if (!hover.current?.pinned) cancelHover();
-      });
     };
     const up = (event: PointerEvent) => {
       if (!guard.current.owns || guard.current.pointer !== event.pointerId) return;
@@ -379,16 +357,16 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (guard.current.owns) { event.preventDefault(); event.stopImmediatePropagation(); clearGuard(); }
     };
     const hidden = () => { if (document.hidden) interrupt(); };
-    document.addEventListener("pointerdown", down, true); document.addEventListener("pointermove", move, { capture: true, passive: true });
+    document.addEventListener("pointerdown", down, true);
     document.addEventListener("pointerup", up, true); document.addEventListener("pointercancel", up, true); document.addEventListener("click", click, true);
     document.addEventListener("visibilitychange", hidden); window.addEventListener("blur", interrupt);
     return () => {
-      document.removeEventListener("pointerdown", down, true); document.removeEventListener("pointermove", move, true);
+      document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointerup", up, true); document.removeEventListener("pointercancel", up, true); document.removeEventListener("click", click, true);
       document.removeEventListener("visibilitychange", hidden); window.removeEventListener("blur", interrupt);
-      cancelAnimationFrame(senseFrame.current); finishDrops(); cancelHover(); cancelDiscard(); release(); clearGuard();
+      finishDrops(); cancelHover(); cancelDiscard(); release(); clearGuard();
     };
-  }, [enabled, cancelDiscard, cancelHover, choose, clearGuard, finishDrops, interrupt, ownClick, receivingHome, release, resetNibble, settleFood, startHover, trashAt, update]);
+  }, [enabled, cancelDiscard, cancelHover, clearGuard, finishDrops, interrupt, release]);
   useEffect(() => {
     if (!enabled) return;
     // Only real layout events own this finite follow. A closed/remounted home
@@ -431,10 +409,10 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (!operating.current || event.button !== 0 || dragging.current) return;
         event.preventDefault(); event.stopPropagation(); cancelHover();
         if (discard.current?.id === food.id) cancelDiscard();
-        const wasSelected = selection.current === food.id, position = rebasePresentation(food.id)!;
+        const position = rebasePresentation(food.id, !drops.current.has(food.id) && !presentations.current.has(food.id))!;
         choose(null); ownClick(event.pointerId);
         event.currentTarget.focus({ preventScroll: true }); event.currentTarget.setPointerCapture(event.pointerId);
-        dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget, start: { x: event.clientX, y: event.clientY }, offset: { x: event.clientX - position.x, y: event.clientY - position.y }, moved: false, wasSelected, startHome: attachments.current.get(food.id)?.home };
+        dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget, start: { x: event.clientX, y: event.clientY }, offset: { x: event.clientX - position.x, y: event.clientY - position.y }, moved: false, startHome: attachments.current.get(food.id)?.home };
       }}
       onPointerMove={event => {
         const drag = dragging.current; if (!drag || drag.id !== food.id || drag.pointer !== event.pointerId) return;
@@ -452,7 +430,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
           const bin = trashAt(pointer); if (bin) startHover(food.id, bin, pointer); else cancelHover();
         });
       }}
-      onPointerUp={event => { const drag = dragging.current; if (drag?.pointer !== event.pointerId) return; event.stopPropagation(); release(); if (drag.moved || drag.wasSelected) drop(food.id, { x: event.clientX, y: event.clientY }, drag.moved); else { choose(food.id); setMessage("밥 놓을 곳이나 휴지통을 눌러 주세요."); } }}
+      onPointerUp={event => { const drag = dragging.current; if (drag?.pointer !== event.pointerId) return; event.stopPropagation(); release(); if (drag.moved) drop(food.id, { x: event.clientX, y: event.clientY }, true); else choose(null); }}
       onPointerCancel={event => { if (dragging.current?.pointer === event.pointerId) { cancelHover(); release(true); choose(null); } }}
       onLostPointerCapture={event => { if (dragging.current?.pointer === event.pointerId) { cancelHover(); release(true); choose(null); } }}
       onClick={event => { event.preventDefault(); event.stopPropagation(); }}
@@ -465,7 +443,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         rebasePresentation(food.id); attachments.current.delete(food.id); visibility.current.set(food.id, true); choose(food.id);
         update(current.current.map(item => item.id === food.id ? { ...item, platformId: undefined, x: clamp(item.x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), 24, innerWidth - 24), y: clamp(item.y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), 48, innerHeight - 24) } : item));
       }}><span aria-hidden="true"><CompanionFruit kind={food.kind} /></span></button>)}
-    <span className="sr-only" id="vc-food-help">밥을 누른 뒤 놓을 곳이나 휴지통을 누르거나 드래그로 옮기기. Enter로 집고 방향키로 옮긴 뒤 Enter로 놓기. Delete로 치우기.</span>
+    <span className="sr-only" id="vc-food-help">밥을 잡아 끌어 놓을 곳이나 휴지통으로 옮기기. Enter로 집고 방향키로 옮긴 뒤 Enter로 놓기. Delete로 치우기.</span>
     <span className="sr-only" role="status">{message}</span>
   </div>;
 });

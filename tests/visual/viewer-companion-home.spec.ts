@@ -99,7 +99,7 @@ test("the desktop icon room offers three direct controls, bounded random food an
   });
   const cushion = house(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
   const cushionGeometry = () => cushion.evaluate(button => {
-    const anchor = button.querySelector<HTMLElement>(".vc-home-cushion")!, fabric = anchor.querySelector("i")!;
+    const anchor = button.querySelector<HTMLElement>(".vc-home-cushion")!, fabric = button.querySelector(".vc-plush-bed")!;
     const rect = anchor.getBoundingClientRect();
     return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, outerTransform: getComputedStyle(button).transform, fabricScaleY: new DOMMatrixReadOnly(getComputedStyle(fabric).transform).d };
   });
@@ -116,13 +116,13 @@ test("the desktop icon room offers three direct controls, bounded random food an
   const height = await expectSmallHome(page), kinds: string[] = [];
   const feed = house(page).getByRole("button", { name: "밥 꺼내기", exact: true });
   for (let count = 1; count <= 3; count++) {
-    // Keep the previous food selected: the next real mouse click must hit the
-    // outlet, settle that selection, and create another snack without a menu.
+    // Each real click dispenses stationary food without arming a global
+    // placement mode or moving focus away from the outlet.
     await feed.click();
     await expect(page.locator(".vc-food")).toHaveCount(count);
     const food = page.locator(".vc-food").last();
-    await expect(food).toHaveAttribute("data-selected", "");
-    await expect(page.locator(".vc-food[data-selected]")).toHaveCount(1);
+    await expect(food).not.toHaveAttribute("data-selected");
+    await expect(page.locator(".vc-food[data-selected]")).toHaveCount(0); await expect(feed).toBeFocused();
     await expect(food.locator("svg.vc-fruit")).toHaveCount(1);
     kinds.push((await food.getAttribute("data-kind"))!);
     expect(COMPANION_FOOD_KINDS).toContain(kinds.at(-1));
@@ -144,12 +144,19 @@ test.describe("touch direct room", () => {
   test("the compact icon room has real touch targets, direct food and a reachable bin", async ({ page }) => {
     await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible();
     await openCompanionHome(page, "touch"); await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(180); // Coalesced home geometry must settle before native food grabbing.
     await expectIconRoom(page, true); const height = await expectSmallHome(page);
     await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).tap();
     await expect(page.locator(".vc-food")).toHaveCount(1);
     expect(COMPANION_FOOD_KINDS).toContain(await page.locator(".vc-food").getAttribute("data-kind"));
     await expect(house(page)).toBeVisible();
-    await page.touchscreen.tap(110, 700); // Native one-pointer placement owns its click.
+    const food = page.locator(".vc-food"), start = (await food.boundingBox())!, cdp = await page.context().newCDPSession(page);
+    const from = { x: start.x + start.width / 2, y: start.y + start.height / 2 };
+    try {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...from, id: 41 }] });
+      for (let step = 1; step <= 8; step++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from.x + (110 - from.x) * step / 8, y: from.y + (700 - from.y) * step / 8, id: 41 }] });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    } finally { await cdp.detach(); }
     await expect(page.locator(".vc-food")).not.toHaveAttribute("data-selected");
     await house(page).getByRole("button", { name: "음식 버리기", exact: true }).tap();
     await expect(page.locator(".vc-food")).toHaveCount(0);
@@ -209,7 +216,7 @@ for (const width of [1920, 390]) test(`cushion recall and breathing dreams use t
   expect(contact.error).toBeLessThan(3); expect(contact.animations).toEqual(["vc-dream", "vc-dream", "vc-dream"]); expect(Number(contact.shadow)).toBeGreaterThan(.1);
   await page.screenshot({ path: `.scratch-pw/companion-home-cushion-${width}.png` });
   await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
-  await expect(page.locator(".vc-food .vc-fruit")).toHaveCount(1); await expect(page.locator(".vc-food")).toHaveAttribute("data-selected", "");
+  await expect(page.locator(".vc-food .vc-fruit")).toHaveCount(1); await expect(page.locator(".vc-food")).not.toHaveAttribute("data-selected");
   await expect(house(page)).toBeVisible(); await page.keyboard.press("Escape");
 });
 

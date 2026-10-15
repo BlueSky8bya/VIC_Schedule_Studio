@@ -20,6 +20,20 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 async function press(button: Locator, touch: boolean) { if (touch) await button.tap(); else await button.click(); }
+async function dragSnackToFeet(page: Page, item: Locator, destination: { x: number; y: number }, touch: boolean) {
+  const from = await item.evaluate(node => { const r = node.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: r.left + r.width / 2, y: r.top + r.height / 2, footX: m.m41, footY: m.m42 }; });
+  const to = { x: destination.x + from.x - from.footX, y: destination.y + from.y - from.footY };
+  if (touch) {
+    const client = await page.context().newCDPSession(page);
+    try {
+      await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from.x, y: from.y, id: 23 }] });
+      for (let step = 1; step <= 8; step++) await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from.x + (to.x - from.x) * step / 8, y: from.y + (to.y - from.y) * step / 8, id: 23 }] });
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    } finally { await client.detach(); }
+  } else {
+    await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(to.x, to.y, { steps: 8 }); await page.mouse.up();
+  }
+}
 async function setup(page: Page, hunger = .05) {
   await page.addInitScript(({ epoch, key, prefs, care }) => {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.reduceMotion", "off");
@@ -77,7 +91,7 @@ async function firstCardBelowRelease(page: Page, mobile: boolean) {
 async function dispense(page: Page, touch: boolean) {
   await openCompanionHome(page, touch ? "touch" : "pointer");
   const before = await food(page).count(); await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), touch);
-  await expect(food(page)).toHaveCount(before + 1); await expect(food(page).last()).toHaveAttribute("data-selected", "");
+  await expect(food(page)).toHaveCount(before + 1); await expect(food(page).last()).not.toHaveAttribute("data-selected");
   return food(page).last();
 }
 async function startNoFallWitness(page: Page) {
@@ -124,7 +138,7 @@ for (const mobile of [false, true]) test.describe(mobile ? "agenda first physica
     const card = page.locator(mobile ? ".agenda-event[data-eventid]" : ".public-event[data-eventid]").nth(target!.index);
     const rect = (await card.boundingBox())!, release = { x: rect.x + rect.width * target!.offset, y: rect.y - 24 };
     await watchFoodLanding(snack);
-    if (mobile) await page.touchscreen.tap(release.x, release.y); else await page.mouse.click(release.x, release.y);
+    await dragSnackToFeet(page, snack, release, mobile);
     await expect(snack).not.toHaveAttribute("data-selected"); await expect(snack).not.toHaveAttribute("data-falling");
     const fruit = await foodLanding(page);
     expect(Math.abs(fruit.x - release.x)).toBeLessThan(2); expect(Math.abs(fruit.y - rect.y + 3)).toBeLessThan(2);
@@ -139,9 +153,11 @@ for (const mobile of [false, true]) test.describe(mobile ? "agenda first physica
   });
 });
 
-test("untouched selected and unselected tray food follows native folding and left-right panels without falling", async ({ page }) => {
+test("untouched and explicitly keyboard-selected tray food follows native folding and panels without falling", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
-  await dispense(page, false); await dispense(page, false); const expected = await homeOffsets(page);
+  await dispense(page, false); const second = await dispense(page, false);
+  await second.focus(); await second.press("Enter"); await expect(second).toHaveAttribute("data-selected", "");
+  const expected = await homeOffsets(page);
   expect(expected.map(p => p.selected)).toEqual([false, true]); await startNoFallWitness(page);
   const fold = house(page).getByRole("button", { name: "빅타민 집", exact: true });
   await fold.click(); await expect(fold).toHaveAttribute("aria-expanded", "false");
