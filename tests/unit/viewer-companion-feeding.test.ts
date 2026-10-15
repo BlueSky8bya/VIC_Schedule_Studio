@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import {
-  advanceBrain, commitAction, createBrain, findPlatformRoute, getAction, getFoodAction,
+  advanceBrain, commitAction, createBrain, findPlatformRoute, getAction, getFoodAction, COMPANION_ROUTE_LIMITS,
   reachablePlatforms, recordCompanionEvent, type CompanionBrain,
   type CompanionWorld, type Platform,
 } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_FULL_THRESHOLD } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
+import { COMPANION_FEED_ACTION_BUDGET, COMPANION_FEED_RETRY_MS } from "@/lib/ui/viewer-companion/planner";
 
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, feeding: true };
 const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" };
@@ -71,6 +72,75 @@ describe("local companion feeding and animal habits", () => {
       context = { ...context, ...action.target };
     }
     expect(ate).toBe(true);
+  });
+
+  it("remembers and completes a visible twelve-hop meal route with a decreasing finite action budget", () => {
+    const ground: Platform = { ...floor, y: 1900 };
+    const ledges: Platform[] = Array.from({ length: COMPANION_ROUTE_LIMITS.maxHops }, (_, i) => ({ id: `ledge-${i}`, x: 100, y: 1780 - i * 120, width: 100, kind: "card" }));
+    const last = ledges.at(-1)!, snack = { ...food, x: 150, y: last.y, platformId: last.id };
+    let context: CompanionWorld = { ...world, x: 150, y: ground.y, platformId: ground.id, platforms: [ground, ...ledges], foods: [snack], height: 2100 }, state = hungry();
+    let jumps = 0, ate = false;
+    for (let step = 0; step < COMPANION_FEED_ACTION_BUDGET; step++) {
+      const action = getAction(state, context, prefs, 100000 + step * 5000, seeded(step));
+      expect(action.foodId).toBe(snack.id);
+      expect(action.intention?.remaining).toBe(COMPANION_FEED_ACTION_BUDGET - step);
+      state = commitAction(state, action, 100000 + step * 5000);
+      expect(state.foodGoal).toMatchObject({ foodId: snack.id, remaining: COMPANION_FEED_ACTION_BUDGET - step - 1 });
+      if (action.kind === "eat") { ate = true; break; }
+      expect(action.kind).toBe("jump"); jumps++; context = { ...context, ...action.target };
+    }
+    expect(jumps).toBe(12); expect(ate).toBe(true);
+    expect(recordCompanionEvent(state, "ate").foodGoal).toBeUndefined();
+    const thirteenth = { ...last, id: "thirteenth", y: last.y - 120 };
+    expect(findPlatformRoute({ x: 150, y: ground.y, platformId: ground.id }, { x: 150, y: thirteenth.y, platformId: thirteenth.id }, [ground, ...ledges, thirteenth])).toBeNull();
+  });
+
+  it("splits a long supported walk into180px decisions without renewing the same food goal", () => {
+    const snack = { ...food, x: 800, y: floor.y, platformId: floor.id };
+    let state = hungry(), context: CompanionWorld = { ...world, foods: [snack] };
+    for (let step = 0; step < 4; step++) {
+      const action = getFoodAction(state, context, prefs, 100000 + step * 5000)!;
+      expect(action.kind).toBe("walk"); expect(action.target.x - context.x).toBe(180);
+      state = commitAction(state, action, 100000 + step * 5000);
+      expect(state.foodGoal?.remaining).toBe(COMPANION_FEED_ACTION_BUDGET - step - 1);
+      context = { ...context, ...action.target };
+    }
+    expect(getFoodAction(state, context, prefs, 130000)?.kind).toBe("walk");
+    expect(getFoodAction(state, { ...context, x: 790 }, prefs, 130000)).toMatchObject({ kind: "eat", target: { x: 790, y: floor.y } });
+  });
+
+  it("keeps only the food identity and budget while unavailable, then replans fresh geometry before a closer new snack", () => {
+    const first = getFoodAction(hungry(), { ...world, foods: [food] }, prefs, 100000)!;
+    const state = commitAction(hungry(), first, 100000), memory = state.foodGoal;
+    expect(getFoodAction(state, { ...world, foods: [] }, prefs, 101000)).toBeUndefined();
+    const rested = commitAction(state, { kind: "look", target: { x: world.x, y: world.y, platformId: floor.id }, duration: 900 }, 101000);
+    expect(rested.foodGoal).toEqual(memory); expect(rested.intention).toBeUndefined();
+    const moved = { ...food, x: 360 }, closer = { ...food, id: "new-near", x: world.x + 10, y: floor.y, platformId: floor.id };
+    const next = getFoodAction(rested, { ...world, foods: [closer, moved] }, prefs, 102000)!;
+    expect(next.foodId).toBe(food.id); expect(next.intention?.remaining).toBe(COMPANION_FEED_ACTION_BUDGET - 1);
+    expect(getFoodAction(rested, { ...world, foods: [moved], platforms: [floor] }, prefs, 102000)).toBeUndefined();
+    expect(recordCompanionEvent(rested, "food-lost").foodGoal).toBeUndefined();
+  });
+
+  it("yields after its finite attempts and retries only after four seconds of supplied active time", () => {
+    const state = { ...hungry(), foodGoal: { foodId: food.id, remaining: 1, retryAfter: 0 }, activeMs: 500 };
+    const action = getFoodAction(state, { ...world, foods: [food] }, prefs, 100000)!;
+    expect(action.intention?.remaining).toBe(1);
+    const waiting = commitAction(state, action, 100000);
+    expect(waiting.foodGoal).toEqual({ foodId: food.id, remaining: 0, retryAfter: 500 + COMPANION_FEED_RETRY_MS });
+    expect(getFoodAction(waiting, { ...world, foods: [food] }, prefs, 86400000)).toBeUndefined();
+    const ready = advanceBrain(waiting, COMPANION_FEED_RETRY_MS);
+    expect(getFoodAction(ready, { ...world, foods: [food] }, prefs, 86401000)?.intention?.remaining).toBe(COMPANION_FEED_ACTION_BUDGET);
+    expect(getFoodAction({ ...ready, hunger: .2 }, { ...world, foods: [food] }, prefs, 86401000)).toBeUndefined();
+    expect(getFoodAction(ready, { ...world, foods: [food] }, { ...prefs, roam: false }, 86401000)).toBeUndefined();
+    expect(getFoodAction(ready, { ...world, foods: [food] }, { ...prefs, jump: false }, 86401000)).toBeUndefined();
+  });
+
+  it("never substitutes a different platform for a missing or out-of-budget named food support", () => {
+    const identical = Array.from({ length: COMPANION_ROUTE_LIMITS.maxNodes }, (_, i) => ({ ...floor, id: `safe-${i}` }));
+    const beyond = { ...floor, id: "outside-bounded-graph" };
+    expect(findPlatformRoute(world, { x: food.x, y: floor.y, platformId: "missing" }, [floor])).toBeNull();
+    expect(findPlatformRoute({ ...world, platformId: identical[0].id }, { x: 150, y: floor.y, platformId: beyond.id }, [...identical, beyond])).toBeNull();
   });
 
   it("rejects impossible gaps, unsupported food and jumping disabled", () => {

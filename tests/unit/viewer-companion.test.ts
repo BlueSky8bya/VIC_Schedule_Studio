@@ -14,7 +14,7 @@ const prefs: CompanionBehaviorPreferences = {
 };
 const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" };
 const card: Platform = { id: "card", x: 300, y: 580, width: 170, kind: "card", heart: { x: 450, y: 595 } };
-const world: CompanionWorld = { x: 400, y: 580, platformId: "card", platforms: [floor, card], width: 1000, height: 800, ambientAvailable: true };
+const world: CompanionWorld = { x: 400, y: 580, platformId: "card", platforms: [floor, card], width: 1000, height: 800, hideAvailable: true };
 function seeded(seed = 123) {
   let value = seed;
   return () => { value = Math.imul(value, 1664525) + 1013904223 | 0; return (value >>> 0) / 4294967296; };
@@ -116,17 +116,33 @@ describe("viewer companion's local platform brain", () => {
     expect(Array.from({ length: 300 }, () => getAction(next, world, prefs, 100001, seeded())).some(a => a.kind === "heart")).toBe(false);
   });
 
-  it("hides rarely, only with a suitable floor and available ambient", () => {
-    const context = { ...world, x: 120, y: 700, platformId: "floor" };
-    const actions = decisions({}, context);
+  it("hides rarely only in a renderer-proven ordinary occupied card", () => {
+    const actions = decisions();
     const hides = actions.filter(a => a.kind === "hide");
     expect(hides.length).toBeGreaterThan(0);
     expect(hides.length).toBeLessThan(100);
-    expect(hides.every(a => a.target.y === floor.y)).toBe(true);
-    expect(decisions({}, { ...context, ambientAvailable: false }).some(a => a.kind === "hide")).toBe(false);
-    expect(decisions({ ambientPrank: false }, context).some(a => a.kind === "hide")).toBe(false);
-    const brain = createBrain();
-    expect(Array.from({ length: 200 }, () => getAction(brain, context, prefs, 44000, seeded())).some(a => a.kind === "hide")).toBe(false);
+    expect(hides.every(a => a.duration === 700 && a.target.x === world.x && a.target.y === world.y && a.target.platformId === card.id)).toBe(true);
+    expect(decisions({}, { ...world, hideAvailable: false }).some(a => a.kind === "hide")).toBe(false);
+    expect(decisions({}, { ...world, hideAvailable: undefined }).some(a => a.kind === "hide")).toBe(false);
+    expect(decisions({}, { ...world, x: 120, y: 700, platformId: "floor" }).some(a => a.kind === "hide")).toBe(false);
+    const manualHides = decisions({}, { ...world, platforms: [{ ...card, manualOnly: true }] }).filter(a => a.kind === "hide");
+    expect(manualHides.length).toBeGreaterThan(0);
+    expect(manualHides.every(a => a.target.x === world.x && a.target.y === world.y && a.target.platformId === card.id)).toBe(true);
+    expect(decisions({}, { ...world, platforms: [{ ...card, kind: "date" }] }).some(a => a.kind === "hide")).toBe(false);
+    expect(decisions({ ambientPrank: false }).some(a => a.kind === "hide")).toBe(false);
+    const brain = createBrain(0);
+    expect(Array.from({ length: 200 }, () => getAction(brain, world, prefs, 44000, seeded())).some(a => a.kind === "hide")).toBe(false);
+  });
+
+  it("commits one finite hide entry and retains the rare-action cooldown", () => {
+    const brain = { ...createBrain(0), cooldowns: { idle: Infinity, look: Infinity, stretch: Infinity, shake: Infinity, walk: Infinity } };
+    const options = { ...prefs, jump: false, sleep: false, heartPrank: false };
+    const hide = getAction(brain, world, options, 100000, () => 0);
+    expect(hide).toEqual({ kind: "hide", target: { x: world.x, y: world.y, platformId: card.id }, duration: 700 });
+    const next = commitAction(brain, hide, 100000);
+    expect(next.cooldowns.hide).toBe(190700);
+    expect(getAction(next, world, options, 100701, () => 0).kind).toBe("idle");
+    expect(getAction(brain, world, options, 100000, () => .999).kind).toBe("idle");
   });
 
   it("clamps needs, rewards affection and ignores hidden-tab catch-up time", () => {

@@ -61,9 +61,11 @@
     },
     "plum": {
       "basedOn": "VIC code-native plum contour using Noto Emoji food colour/shading conventions; original apple.svg retained unchanged for source lineage.",
-      "changes": "Replaced the earlier round contour with one subtly asymmetric vertical-oval red/burgundy plum, short bare stem, a shallow fruit seam and subtle wax bloom. No apple shoulder/waist or leaf; no peach-like split or upstream plum original claimed.",
+      "changes": "Replaced the elongated burgundy oval with a plump rounded plum, dominant warm-red skin, an off-centre golden-yellow/orange blush, short bare stem and shallow curved seam, following the owner-provided photo direction. No apple shoulder/waist or leaf; no peach-like split or upstream plum original claimed.",
       "replacesSha256": "fa6913b2ec7de27b806e8e2d2708f9f6c4764c624e1ed668a994303072a2d234",
       "previousRoundSha256": "02176fce14522c20ba86fabd8e5edb581e233f8f908f32ef5a6bed8baf9772c2",
+      "previousOvalSha256": "20f95f69573988fdc3dbb5a4b664ca9cbc16d389534367d3d5dbe63a09772851",
+      "visualDirection": "Owner-provided inline photo: red/yellow plums. Photo shape/colour direction relayed by the root agent; no photo file, bytes or license claim is attached to this derivative.",
       "originalBasisSha256": "b74174d580462c259f2fb0cdceeb3734203cca15f669c5d9c18fc9f2336586a4",
       "reproduction": "node scripts/prepare-companion-plum.mjs --check"
     },
@@ -120,7 +122,7 @@
     },
     {
       "kind": "plum",
-      "sha256": "20f95f69573988fdc3dbb5a4b664ca9cbc16d389534367d3d5dbe63a09772851"
+      "sha256": "122354ab1ec58276e0b2f9b24419c135a3fd32871742ab82e8212c9d55a7e1dc"
     },
     {
       "kind": "persimmon",

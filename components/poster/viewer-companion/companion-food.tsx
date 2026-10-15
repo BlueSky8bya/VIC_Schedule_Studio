@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFood, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFood, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { createCompanionFoodGravity } from "@/lib/ui/viewer-companion/food-gravity";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
@@ -15,6 +15,7 @@ type Point = { x: number; y: number };
 export type CompanionFoodControl = {
   spawn: (kind: Food["kind"], point: Point, source?: HTMLElement) => void;
   foods: () => readonly Food[];
+  contains: (id: string) => boolean;
   consume: (id: string) => boolean;
   nibble: (id?: string, progress?: number, mouth?: Point, facing?: -1 | 1) => void;
   sync: (platforms: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined, landings?: readonly Platform[]) => void;
@@ -149,10 +150,12 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     });
     const placed = placeCompanionFood(food, point, available);
     const source = placed.platformId ? sources.get(placed.platformId) : undefined, origin = source?.origin;
+    const houseFloor = isCompanionHomeFloorFoodSupport(placed.platformId) && source?.element.matches(".vc-home-floor");
+    if (houseFloor) placed.platformId = COMPANION_HOME_FLOOR_FOOD;
     // Bind to the current origin once. A subsequent scroll reads only this
     // retained source, never applies a second baseline delta or picks a day.
     const position = attachCompanionFood(placed, scroll, origin);
-    attachments.current.set(food.id, { element: source?.element, position }); visibility.current.set(food.id, true);
+    attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}) }); visibility.current.set(food.id, true);
     drops.current.delete(food.id); presentations.current.delete(food.id);
     const gravity = createCompanionFoodGravity(point, placed, performance.now());
     if (placed.platformId && gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && gfxMode() !== "off") {
@@ -325,6 +328,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (attachments.current.get(food.id)?.home) followHome.current();
     },
     foods: () => current.current.filter(food => !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
+    contains: id => current.current.some(food => food.id === id),
     consume(id) {
       if (drops.current.has(id) || visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || !current.current.some(food => food.id === id)) return false;
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();

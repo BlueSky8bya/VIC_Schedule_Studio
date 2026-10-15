@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFood, receiveCompanionHomeFloorFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFood, receiveCompanionHomeFloorFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
 
 const floor: Platform = { id: "floor", x: 12, y: 782, width: 976, kind: "floor" };
@@ -7,6 +7,16 @@ const card: Platform = { id: "card", x: 100, y: 350, width: 200, kind: "card" };
 const apple: CompanionFood = { id: "apple", x: 200, y: 340, kind: "apple" };
 
 describe("companion food support", () => {
+  it("falls onto the real house floor first and recognizes only its explicit attachment family", () => {
+    const homeFloor: Platform = { id: `${COMPANION_HOME_FLOOR_FOOD}-1`, x: 140, y: 600, width: 120, kind: "floor", manualOnly: true };
+    const placed = placeCompanionFood(apple, { x: 200, y: 490 }, [floor, homeFloor]);
+    expect(placed).toEqual({ ...apple, y: 600, platformId: homeFloor.id });
+    expect(isCompanionHomeFloorFoodSupport(placed.platformId)).toBe(true);
+    expect(isCompanionHomeFloorFoodSupport(COMPANION_HOME_FLOOR_FOOD)).toBe(true);
+    for (const id of [undefined, "companion-home-floor", "companion-home-food", `${COMPANION_HOME_FLOOR_FOOD}-extra`, `${COMPANION_HOME_FLOOR_FOOD}-1-extra`]) expect(isCompanionHomeFloorFoodSupport(id)).toBe(false);
+    expect(placeCompanionFood(apple, { x: 200, y: 610 }, [floor, homeFloor]).platformId).toBe(floor.id);
+    expect(placeCompanionFood(apple, { x: 400, y: 490 }, [floor, homeFloor]).platformId).toBe(floor.id);
+  });
   it("lands on a ledge instead of covering its text and keeps only explicit snack fields", () => {
     const placed = placeCompanionFood(apple, apple, [floor, card]);
     expect(placed).toEqual({ id: "apple", kind: "apple", x: 200, y: 350, platformId: "card" });

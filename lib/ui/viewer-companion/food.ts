@@ -5,6 +5,11 @@ export { MAX_COMPANION_FOOD } from "./food-capacity";
 export const COMPANION_HOME_BED_FOOD = "companion-home-bed-food";
 export const COMPANION_HOME_FLOOR_FOOD = "companion-home-floor-food";
 export const COMPANION_HOME_FLOOR_INSET = 6;
+/** Geometry may split the real floor around controls. Its separate anonymous
+ * spans all retain the same home attachment after a physical falling contact. */
+export function isCompanionHomeFloorFoodSupport(id?: string): boolean {
+  return /^companion-home-floor-food(?:-\d+)?$/.test(id ?? "");
+}
 export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
 export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };

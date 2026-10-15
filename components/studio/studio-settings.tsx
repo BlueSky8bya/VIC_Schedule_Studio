@@ -289,7 +289,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         {row("heartPrank", "하트 콩", <Heart size={15} />)}
         {row("ambientPrank", "숨바꼭질", <Leaf size={15} />)}
       </div>
-      <p className="rhh-group-foot">하트 콩은 실제 하트 수를 바꾸지 않는 장난이에요. 숨바꼭질은 계절 배경을 잠깐 빌려요.</p>
+      <p className="rhh-group-foot">하트 콩은 실제 하트 수를 바꾸지 않는 장난이에요. 일정 속에 숨으면 그 일정의 상세창에서 찾을 수 있어요.</p>
     </div>
     <div aria-labelledby={`${id}-affection`} hidden={tab !== "affection"} id={`${id}-affection-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">
@@ -297,7 +297,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}
       </div>
-      <p className="rhh-group-foot">잡아서 옮기거나, 누르지 않고 머리 위에서 마우스를 살살 왕복해 주세요.</p>
+      <p className="rhh-group-foot">잡아서 옮기거나, 누르지 않고 몸 전체에서 마우스를 살살 왕복해 주세요.</p>
       <p className="rhh-group-foot">집 자판기에서 여러 과일을 꺼내 건넬 수 있어요.</p>
     </div>
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>

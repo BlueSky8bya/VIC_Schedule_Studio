@@ -137,10 +137,15 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const held = row === 8 && input.status === "held" && !input.reduced
         ? sampleCompanionTravel(heldTime / .18) * (.68 + .32 * Math.sin(heldTime * Math.PI * 1.16)) : 0;
       const wriggle = Math.sin(heldTime * Math.PI * 4.3), kick = Math.sin(heldTime * Math.PI * 7.2 + .7);
+      // Gravity keeps the hanging body longer and narrower through the whole
+      // kick cycle. The renderer supplies its actual grip as this pose's pivot.
+      const hanging = held * (.11 + wriggle * .025 + kick * .008);
       const target: Scalars = {
-        bob: (movingPose ? -Math.abs(Math.sin(stride)) * 1.2 : 0) - held * (1.9 + wriggle * 1.6),
-        scaleX: 1 + stretch * .012 - extension * .014 + held * (wriggle * .045 + kick * .012),
-        scaleY: 1 - stretch * .018 + extension * .026 - held * (wriggle * .055 + kick * .012),
+        // A hanging grip must not translate with the rest of the body. Its
+        // pivoted extension supplies the downward travel below the hand.
+        bob: movingPose ? -Math.abs(Math.sin(stride)) * 1.2 : 0,
+        scaleX: 1 + stretch * .012 - extension * .014 - hanging * .55,
+        scaleY: 1 - stretch * .018 + extension * .026 + hanging,
         tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1) + held * (Math.sin(heldTime * Math.PI * 3.6) * 5.2 + kick * 1.6),
       };
       // A100ms Hermite correction carries the last scalar pose and velocity

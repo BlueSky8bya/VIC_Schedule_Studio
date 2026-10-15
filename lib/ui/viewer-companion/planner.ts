@@ -9,6 +9,11 @@ export type CompanionIntention = {
   stage: "travel" | "observe";
   foodId?: string;
 };
+/** One offered-food identity survives a temporary occlusion or another need.
+ * The live food source owns coordinates/existence; this is not a second map. */
+export type CompanionFeedGoal = { foodId: string; remaining: number; retryAfter: number };
+export const COMPANION_FEED_ACTION_BUDGET = 32;
+export const COMPANION_FEED_RETRY_MS = 4000;
 export type CompanionOutcome = { targetId: string; result: "completed" | "blocked" | "lost" };
 export type CompanionPlaceMemory = { id: string; visits: number; failures: number; retryAfter: number };
 type Ports = {

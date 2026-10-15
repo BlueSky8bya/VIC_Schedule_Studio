@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompanionSurfaces, unoccludedCompanionRects, type CompanionSurface, type CompanionTextRect, type CompanionGeometrySubscription, type CompanionFollowSample } from "@/lib/ui/viewer-companion/geometry";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
+import { COMPANION_HOME_FLOOR_FOOD, placeCompanionFood } from "@/lib/ui/viewer-companion/food";
 
 const viewport = { width: 1000, height: 800 };
 const text = (left: number, top: number, right: number, bottom: number): CompanionTextRect => ({ left, top, right, bottom });
@@ -91,6 +92,13 @@ function addHouseFloor(fixture: ReturnType<typeof geometryFixture>) {
   return { house, room, floor, feed, trash };
 }
 
+function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, bands: FixtureElement[] = [], headers: FixtureElement[] = []) {
+  const query = fixture.sourceRoot.querySelectorAll;
+  fixture.sourceRoot.querySelectorAll = selector => selector === ".support-bar[data-supportid],.agenda-event[data-supportid],.agenda-item[data-supportid]" ? bands
+    : selector === ".weekday-row,.public-calendar-header,.agenda-header" ? headers : query(selector);
+  for (const element of [...bands, ...headers]) element.parentElement = fixture.sourceRoot;
+}
+
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
@@ -104,11 +112,57 @@ describe("companion geometry anchor subscription", () => {
     expect(autonomous.some(p => p.id.startsWith("companion-home-floor"))).toBe(false);
     expect(subscription.anchor(floor[0].id)).toEqual({ element: house.floor, left: 110, top: 624 });
     expectClear(floor, [text(350, 590, 398, 652), text(406, 596, 450, 652)], 92 * .76);
+    const foodFloors = subscription.landings(32).filter(p => p.id.startsWith(COMPANION_HOME_FLOOR_FOOD));
+    expect(foodFloors.length).toBeGreaterThan(0);
+    expect(foodFloors.every(p => p.y === 654 && p.x >= 132 && p.x + p.width <= 428)).toBe(true);
+    expectClear(foodFloors, [text(350, 590, 398, 652), text(406, 596, 450, 652)], 44);
+    expect(subscription.anchor(foodFloors[0].id)).toEqual({ element: house.floor, left: 110, top: 624 });
+    const dropped = placeCompanionFood({ id: "falling", kind: "apple", x: 300, y: 580 }, { x: 300, y: 580 }, subscription.landings(32));
+    expect(dropped).toMatchObject({ x: 300, y: 654, platformId: foodFloors[0].id });
     const ranges = fixture.range.getClientRects.mock.calls.length; house.floor.getBoundingClientRect.mockClear();
     house.floor.rect = box(120, 594, 340, 36);
     expect(subscription.follow([floor[0].id])[0]).toMatchObject({ platform: { id: floor[0].id, x: floor[0].x + 10, y: 624, manualOnly: true }, anchorX: 120, anchorY: 594 });
     expect(house.floor.getBoundingClientRect).toHaveBeenCalledTimes(1);
     expect(fixture.range.getClientRects).toHaveBeenCalledTimes(ranges);
+    subscription();
+  });
+  it("roams on actual support/period edges while retaining all text and native control protection", () => {
+    const fixture = geometryFixture(), support = new FixtureElement(), period = new FixtureElement();
+    support.rect = box(100, 420, 300, 22); period.rect = box(100, 550, 300, 52);
+    fixture.date.rect = box(220, 380, 80, 20); fixture.controls.push(support, period);
+    addStructuralSurfaces(fixture, [support, period]);
+    let platforms: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; }, { size: 92 }); fixture.flush();
+    const bands = () => platforms.filter(p => /-band(?:-\d+)?$/.test(p.id));
+    expect(bands().length).toBeGreaterThanOrEqual(2);
+    expect(bands().every(p => !p.manualOnly && p.kind === "card" && (p.y === 417 || p.y === 547))).toBe(true);
+    expectClear(bands(), [fixture.date.rect, fixture.title.rect, support.rect, period.rect], 92 * .76);
+    const first = bands().find(p => p.y === 417)!;
+    expect(subscription.anchor(first.id)).toEqual({ element: support, left: 100, top: 420 });
+    expect(support.getBoundingClientRect).toHaveBeenCalledTimes(1); // Control and structural edge share their rect.
+    const ranges = fixture.range.getClientRects.mock.calls.length;
+    support.rect = box(110, 440, 300, 22);
+    expect(subscription.follow([first.id])[0]).toMatchObject({ platform: { x: first.x + 10, y: 437 }, anchorX: 110, anchorY: 440 });
+    expect(fixture.range.getClientRects).toHaveBeenCalledTimes(ranges);
+    period.closest = selector => selector === ".dimmed,[inert]" ? period : null;
+    fixture.win.emit("resize"); fixture.advance(120); expect(bands().every(p => p.y !== 547)).toBe(true);
+    subscription();
+  });
+  it("uses only real header-bottom gaps clear of weekday glyphs, controls and viewport bounds", () => {
+    const fixture = geometryFixture(), header = new FixtureElement(), control = new FixtureElement();
+    header.rect = box(100, 70, 800, 60); header.hasAttribute = name => name === "aria-hidden";
+    control.rect = box(500, 60, 44, 44); fixture.controls.push(control);
+    fixture.date.rect = box(220, 100, 30, 18);
+    addStructuralSurfaces(fixture, [], [header]);
+    let platforms: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; }, { size: 92 }); fixture.flush();
+    const headers = () => platforms.filter(p => /-header(?:-\d+)?$/.test(p.id));
+    expect(headers().length).toBeGreaterThan(0);
+    expect(headers().every(p => p.y === 127 && p.kind === "date" && !p.manualOnly)).toBe(true);
+    expectClear(headers(), [fixture.date.rect, control.rect], 92 * .76);
+    expect(subscription.anchor(headers()[0].id)).toEqual({ element: header, left: 100, top: 70 });
+    header.rect = box(100, 0, 800, 80); fixture.win.emit("resize"); fixture.advance(120); expect(headers()).toEqual([]);
+    header.rect = box(100, 70, 800, 60); header.hasAttribute = name => name === "hidden"; fixture.win.emit("resize"); fixture.advance(120); expect(headers()).toEqual([]);
     subscription();
   });
   it("withholds a folded, clipped or control-covered house floor and publishes the real resized plane", () => {
@@ -121,6 +175,18 @@ describe("companion geometry anchor subscription", () => {
     house.room.rect = box(110, 528, 340, 132); house.floor.rect = box(110, 614, 340, 36); fixture.win.emit("resize"); fixture.advance(120);
     expect(floors().every(p => p.y === 644)).toBe(true); expect(floors().length).toBeGreaterThan(0);
     house.feed.rect = box(0, 500, 1000, 170); fixture.win.emit("resize"); fixture.advance(120); expect(floors()).toEqual([]);
+    subscription();
+  });
+  it("reserves its real house floor before a dense calendar reaches the200-food-surface budget", () => {
+    const fixture = geometryFixture(); addHouseFloor(fixture);
+    const cards = Array.from({ length: 240 }, () => { const card = new FixtureElement(); card.parentElement = fixture.sourceRoot; card.rect = box(470, 430, 260, 60); return card; });
+    const query = fixture.sourceRoot.querySelectorAll;
+    fixture.sourceRoot.querySelectorAll = selector => selector === ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]" ? cards : query(selector);
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92, home: fixture.home as unknown as HTMLElement }); fixture.flush();
+    const food = subscription.landings(32);
+    expect(food).toHaveLength(200);
+    expect(food[0].id.startsWith(COMPANION_HOME_FLOOR_FOOD)).toBe(true);
+    expect(subscription.anchor(food[0].id)?.element).toBeDefined();
     subscription();
   });
   it("offers real card tops plus real floor/home for deliberate drops, excluding glyph ledges", () => {

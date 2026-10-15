@@ -4,14 +4,15 @@ import { createCompanionMotion, nextCompanionPaint, sampleCompanionTravel, type 
 const input = (patch: Partial<CompanionMotionInput> = {}): CompanionMotionInput => ({ row: 0, phase: 0, status: "idle", x: 100, y: 500, now: 0, ...patch });
 
 describe("companion clip and facing continuity", () => {
-  it("keeps a stationary held creature wriggling with HD frames and bounded independent pose motion", () => {
+  it("keeps a stationary held creature kicking while gravity always extends it below its fixed grip", () => {
     const motion = createCompanionMotion({ loopRows: [8] });
     const samples = Array.from({ length: 181 }, (_, frame) => motion.sample(input({ row: 8, status: "held", now: frame * 1000 / 120 })));
     expect(new Set(samples.map(p => p.column)).size).toBe(16);
     expect(Math.max(...samples.map(p => p.tilt)) - Math.min(...samples.map(p => p.tilt))).toBeGreaterThan(7);
-    expect(Math.max(...samples.map(p => p.bob)) - Math.min(...samples.map(p => p.bob))).toBeGreaterThan(2);
+    expect(samples.every(p => p.bob === 0)).toBe(true);
     expect(Math.max(...samples.map(p => p.scaleY)) - Math.min(...samples.map(p => p.scaleY))).toBeGreaterThan(.06);
-    expect(samples.every(p => p.facing === 1 && Math.abs(p.tilt) <= 7 && p.scaleX >= .94 && p.scaleX <= 1.06 && p.scaleY >= .93 && p.scaleY <= 1.07)).toBe(true);
+    expect(samples.every(p => p.facing === 1 && Math.abs(p.tilt) <= 7 && p.scaleX >= .92 && p.scaleX <= 1 && p.scaleY >= 1 && p.scaleY <= 1.145)).toBe(true);
+    expect(samples.filter((_, i) => i >= 24).every(p => p.scaleY > 1.02 && p.scaleX < 1)).toBe(true);
   });
 
   it("samples the same held pose at the same time across display rates, with at most12 drawing changes a second", () => {

@@ -1,7 +1,9 @@
 import type { Platform } from "./brain";
-import { COMPANION_HOME_FLOOR_INSET } from "./food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET } from "./food";
 
 const CARD_SELECTOR = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
+const BAND_SELECTOR = ".support-bar[data-supportid],.agenda-event[data-supportid],.agenda-item[data-supportid]";
+const HEADER_SELECTOR = ".weekday-row,.public-calendar-header,.agenda-header";
 const DAY_SELECTOR = ".public-day,.agenda-day";
 const DATE_TEXT_SELECTOR = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong";
 const CARD_TEXT_SELECTOR = ".public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
@@ -245,10 +247,12 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       // cushion's own button is the deliberate support, so its label alone is
       // an obstacle. All other house controls remain protected on that ledge.
       const controlElements = new Set(root.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role='button']"));
+      const measuredControls = new Map<Element, DOMRect>();
       for (const element of root.ownerDocument.querySelectorAll<HTMLElement>(".vc-home-launcher,.vc-home button")) controlElements.add(element);
       for (const element of controlElements) {
         if (!visible(element) || element.matches(`${CARD_SELECTOR},${DAY_SELECTOR}`) || element.closest(".vc-companion,.vc-cushion-button")) continue;
         const rect = element.getBoundingClientRect(), clip = clipping(element.parentElement);
+        measuredControls.set(element, rect);
         const bounds = { left: Math.max(rect.left, clip.left), right: Math.min(rect.right, clip.right), top: Math.max(rect.top, clip.top), bottom: Math.min(rect.bottom, clip.bottom) };
         if (bounds.right > bounds.left && bounds.bottom > bounds.top) controls.push(...unoccludedCompanionRects(bounds, house?.contains(element) ? undefined : houseBounds));
       }
@@ -267,7 +271,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (rect.width > 0 && rect.height > 0 && rect.top >= height * .65 && rect.bottom <= height + 1) floorY = Math.min(floorY, rect.top - 8);
       }
       addSurface("viewport-floor", "floor", { x: 12, y: floorY, width: width - 24 });
-      rememberFood("viewport-floor-food", safeCompanionSurfaces({ x: 12, y: floorY, width: width - 24 }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor");
+      let homeFood: { spans: CompanionSurface[]; anchor: HTMLElement; rect: DOMRect } | undefined;
       if (home?.isConnected && visible(home)) {
         const rect = home.getBoundingClientRect();
         const clip = clipping(home.parentElement);
@@ -276,7 +280,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const centre = rect.left + rect.width / 2;
         const preferred = safe.sort((a, b) => Math.abs(a.x + a.width / 2 - centre) - Math.abs(b.x + b.width / 2 - centre))[0];
         if (rect.height > 0 && preferred && platforms.length < MAX_PLATFORMS) remember({ id: "companion-home", ...preferred, kind: "date" }, home, rect);
-        if (rect.height > 0 && rect.top >= clip.top && rect.top < clip.bottom) rememberFood("companion-home-food", safeCompanionSurfaces({ x, y: rect.top, width: right - x }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "date", home, rect);
+        if (rect.height > 0 && rect.top >= clip.top && rect.top < clip.bottom) homeFood = { spans: safeCompanionSurfaces({ x, y: rect.top, width: right - x }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), anchor: home, rect };
       }
       const homeFloor = house?.querySelector<HTMLElement>(".vc-home-floor");
       if (homeFloor?.isConnected && visible(homeFloor)) {
@@ -293,6 +297,30 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         for (let i = 0; i < spans.length && landings.length < MAX_PLATFORMS; i++) {
           const platform: Platform = { id: i ? `companion-home-floor-${i}` : "companion-home-floor", ...spans[i], kind: "floor", manualOnly: true };
           landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: homeFloor, rect: { left: rect.left, top: rect.top } });
+        }
+        // A drop from above uses the same real floor as a direct room release.
+        // The food's smaller footprint remains independent of the pet tier.
+        if (rect.height > 0 && y >= clip.top && y < clip.bottom) rememberFood(COMPANION_HOME_FLOOR_FOOD,
+          safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor", homeFloor, rect);
+      }
+      // A dense calendar cannot spend the whole bounded food snapshot before
+      // its real house floor is published. First-contact selection still sorts
+      // by physical height rather than this list order.
+      if (homeFood) rememberFood("companion-home-food", homeFood.spans, "date", homeFood.anchor, homeFood.rect);
+      rememberFood("viewport-floor-food", safeCompanionSurfaces({ x: 12, y: floorY, width: width - 24 }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor");
+      // These are existing visible physical edges, not extra rows or invented
+      // heights. Header bottoms leave the92px cell inside the viewport; every
+      // weekday glyph and complete control above that edge stays an obstacle.
+      for (const surface of [{ selector: BAND_SELECTOR, kind: "card" as const, edge: "top" }, { selector: HEADER_SELECTOR, kind: "date" as const, edge: "bottom" }]) {
+        for (const element of root.querySelectorAll<HTMLElement>(surface.selector)) {
+          nextObserved.add(element);
+          if (platforms.length >= MAX_PLATFORMS || !visible(element) || element.closest(".dimmed,[inert]")) continue;
+          const rect = measuredControls.get(element) ?? element.getBoundingClientRect(), clip = clipping(element.parentElement);
+          const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
+          const edge = surface.edge === "top" ? rect.top : rect.bottom;
+          if (rect.width <= 0 || rect.height <= 0 || edge < clip.top || edge > clip.bottom || right <= x) continue;
+          const id = `${idFor(element, surface.kind)}-${surface.edge === "top" ? "band" : "header"}`;
+          addSurface(id, surface.kind, { x, y: edge - CLEARANCE, width: right - x }, element, rect);
         }
       }
       const cardPlatforms = new Map<HTMLElement, Platform[]>();

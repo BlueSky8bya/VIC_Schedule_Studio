@@ -21,12 +21,13 @@ async function setup(page: Page, mode: "full" | "reduced" | "off" = "full") {
 
 async function observeHold(page: Page) {
   return page.locator(".vc-companion").evaluate(async node => {
-    const samples: { x: number; y: number; angle: number; scale: number; bob: number; pose: string | undefined; hidden: boolean }[] = [];
+    const samples: { x: number; y: number; angle: number; scale: number; scaleY: number; bob: number; gripError: number; pose: string | undefined; hidden: boolean }[] = [];
     const start = performance.now();
     await new Promise<void>(resolve => {
       const tick = () => {
-        const rect = node.getBoundingClientRect(), matrix = new DOMMatrixReadOnly(getComputedStyle(node.querySelector(".vc-pose")!).transform);
-        samples.push({ x: rect.x, y: rect.y, angle: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI, scale: Math.hypot(matrix.a, matrix.b), bob: matrix.m42, pose: (node as HTMLElement).dataset.pose, hidden: (node as HTMLElement).hidden });
+        const rect = node.getBoundingClientRect(), pose = getComputedStyle(node.querySelector(".vc-pose")!), matrix = new DOMMatrixReadOnly(pose.transform);
+        const [ox, oy] = pose.transformOrigin.split(" ").map(parseFloat), [gx, gy] = getComputedStyle(node.querySelector(".vc-inertia")!).transformOrigin.split(" ").map(parseFloat), facing = new DOMMatrixReadOnly(getComputedStyle(node.querySelector(".vc-facing")!).transform).a;
+        samples.push({ x: rect.x, y: rect.y, angle: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI, scale: Math.hypot(matrix.a, matrix.b), scaleY: Math.hypot(matrix.c, matrix.d), bob: matrix.m42, gripError: Math.hypot(ox - (facing < 0 ? rect.width - gx : gx), oy - gy), pose: (node as HTMLElement).dataset.pose, hidden: (node as HTMLElement).hidden });
         if (performance.now() - start < 1500) requestAnimationFrame(tick); else resolve();
       }; requestAnimationFrame(tick);
     }); return samples;
@@ -48,7 +49,10 @@ for (const mobile of [false, true]) test.describe(mobile ? "native touch held mo
     const samples = await observeHold(page), span = (key: "x" | "y" | "angle" | "scale" | "bob") => Math.max(...samples.map(s => s[key])) - Math.min(...samples.map(s => s[key]));
     expect(samples.length).toBeGreaterThan(15); expect(samples.every(s => !s.hidden)).toBe(true);
     expect(span("x")).toBeLessThan(1); expect(span("y")).toBeLessThan(1);
-    expect(span("angle")).toBeGreaterThan(7); expect(span("scale")).toBeGreaterThan(.04); expect(span("bob")).toBeGreaterThan(2);
+    expect(span("angle")).toBeGreaterThan(7); expect(span("scale")).toBeGreaterThan(.04);
+    // Gravity extends below the actual grip; whole-body translation would
+    // move that grip and the superseded bob/squash test allowed flattening.
+    expect(samples.every(s => s.scaleY > 1.02 && s.scale < 1 && Math.abs(s.bob) < .001 && s.gripError < .1)).toBe(true);
     expect(new Set(samples.map(s => s.pose)).size).toBeGreaterThanOrEqual(10);
     await expect(pet).toHaveAttribute("data-atlas", "hd");
     await page.screenshot({ path: `.scratch-pw/companion-054-held-${mobile ? "touch" : "pc"}.png` });

@@ -134,6 +134,7 @@ import "./public-poster.css";
 // 금생수 스킨(시청자 화면 = 편집실과 같은 뉘앙스, ADR-0016) — 기본 CSS 뒤에 와서 색·질감만 덮는다.
 import "./poster-metal-water.css";
 import { PremiereStage } from "./premiere/premiere-stage";
+import { CompanionDetailBridge } from "./viewer-companion/companion-detail-bridge";
 const ViewerCompanion = dynamic(() => import("./viewer-companion/viewer-companion"), { ssr: false });
 import { useTeaserPremiere, type PremiereFixture } from "@/lib/ui/premiere/use-teaser-premiere";
 import { syncedNow } from "@/lib/ui/synced-clock";
@@ -4324,6 +4325,7 @@ export function PublicPoster({
                 <div
                   aria-label="일정 상세"
                   aria-modal="true"
+                  data-companion-detail-event={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : undefined}
                   className={`agenda-detail-sheet${detailDragging ? " pop-dragging" : ""}${
                     detailSnapback ? " pop-snapback" : ""
                   }${
@@ -4549,6 +4551,7 @@ export function PublicPoster({
                     </div>
                   ) : null}
                 </div>
+                {settingsPrefs.companionPrefs.enabled ? <CompanionDetailBridge eventId={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : null} sheetRef={detailSheetRef} /> : null}
               </div>
             );
           })()

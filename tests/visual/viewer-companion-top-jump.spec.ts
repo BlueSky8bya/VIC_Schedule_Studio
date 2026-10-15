@@ -146,6 +146,29 @@ async function actualSupportError(page: Page, point: { x: number; y: number }) {
     for (const node of document.querySelectorAll(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],.vc-home-cushion")) {
       const r = node.getBoundingClientRect(); if (r.width > 0 && r.height > 0) supports.push({ left: r.left, right: r.right, y: r.top - (node.matches(".vc-home-cushion") ? 0 : 3) });
     }
+    // New structural ledges use actual band tops and header bottoms. A header
+    // match must also clear every visible glyph/control at the landing x;
+    // merely widening the old glyph-height tolerance would hide a real error.
+    const visible = (element: Element | null): boolean => { if (!element) return true; const style = getComputedStyle(element); return !element.hasAttribute("hidden") && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > .05 && visible(element.parentElement); };
+    const obstacles: { left: number; right: number; top: number; bottom: number }[] = [];
+    const root = document.querySelector(".poster-page")!;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), glyph = document.createRange();
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const parent = node.parentElement; if (!parent || !visible(parent) || parent.closest("script,style,svg,.sr-only,.vc-companion,.vc-food-layer")) continue;
+      glyph.selectNodeContents(node); for (const r of glyph.getClientRects()) if (r.width > .5 && r.height > .5) obstacles.push(r);
+    }
+    glyph.detach();
+    for (const node of root.querySelectorAll("button,a[href],input,select,textarea,[role=button]")) {
+      if (!visible(node) || node.matches(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],.public-day,.agenda-day") || node.closest(".vc-companion,.vc-cushion-button")) continue;
+      const r = node.getBoundingClientRect(); if (r.width > 0 && r.height > 0) obstacles.push(r);
+    }
+    for (const node of root.querySelectorAll(".support-bar[data-supportid],.agenda-event[data-supportid],.agenda-item[data-supportid],.weekday-row,.public-calendar-header,.agenda-header")) {
+      if (!visible(node)) continue;
+      const r = node.getBoundingClientRect(), header = node.matches(".weekday-row,.public-calendar-header,.agenda-header"), y = (header ? r.bottom : r.top) - 3;
+      const half = 92 * .76 / 2, body = { left: point.x - half, right: point.x + half, top: y - half * 2, bottom: y };
+      if (r.width <= 0 || r.height <= 0 || y - 92 < 4 || y > innerHeight - 12 || point.x - 46 < 4 || point.x + 46 > innerWidth - 4 || obstacles.some(o => body.left < o.right && body.right > o.left && body.top < o.bottom && body.bottom > o.top)) continue;
+      supports.push({ left: r.left, right: r.right, y });
+    }
     return Math.min(...supports.filter(s => point.x >= s.left - .5 && point.x <= s.right + .5).map(s => Math.abs(point.y - s.y)));
   }, point);
 }
@@ -218,10 +241,13 @@ for (const mobile of [false, true]) test.describe(mobile ? "agenda top flights" 
   });
 
   test("ceiling-height release and a real home return keep their sine paths visible", async ({ page }) => {
-    test.setTimeout(25000); await setup(page, false); await openCompanionHome(page, mobile ? "touch" : "pointer");
+    test.setTimeout(25000); await setup(page, false);
+    // The compact room legitimately occludes the initial viewport-floor pet.
+    // Place it on the actual upper card before opening the separate home UI.
     const card = await placeOnCard(page, mobile);
     await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 4000 });
     await expect.poll(() => pet(page).evaluate((node, card) => Math.abs(node.getBoundingClientRect().bottom - card.y), card)).toBeLessThan(2);
+    await openCompanionHome(page, mobile ? "touch" : "pointer");
     await holdAtCeiling(page); await startProbe(page, false); await actor(page).press("Space");
     const near = await finishProbe(page, `near-${mobile ? 390 : 1920}`);
     expect(Math.abs(near.start.y - 100)).toBeLessThan(2); expect(Math.abs(near.end.y - card.y)).toBeLessThan(2);

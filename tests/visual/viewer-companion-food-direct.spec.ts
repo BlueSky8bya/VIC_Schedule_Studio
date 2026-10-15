@@ -28,6 +28,7 @@ async function setup(page: Page, hunger = .1, open = true) {
     localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.sound", "off");
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
+
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, sleep: false, heartPrank: false, ambientPrank: false, feeding: true }, care: { ...DEFAULT_COMPANION_CARE, hunger } });
   await page.goto("/visual-fixture/poster");
   if (open) await expect(pet(page)).toBeVisible(); else await expect(pet(page)).toHaveCount(1);
@@ -172,6 +173,7 @@ for (const width of [1440, 390]) {
     const release = await anchor.evaluate((node, offset) => { const rect = node.getBoundingClientRect(); return { x: rect.left + offset.x, y: rect.top + offset.y - 16 }; }, actualOffset);
     await page.mouse.move(release.x, release.y, { steps: 2 });
     await page.mouse.up(); await expect(item).not.toHaveAttribute("data-selected");
+    await expect(item).not.toHaveAttribute("data-falling");
     await expect.poll(async () => {
       const point = await foodPoint(item), rect = (await anchor.boundingBox())!; return Math.abs(point.y - rect.y - actualOffset.y);
     }).toBeLessThan(3);

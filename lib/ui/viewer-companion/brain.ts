@@ -2,7 +2,7 @@ import type { CompanionPreferences } from "./preferences";
 import { COMPANION_FULL_THRESHOLD, type CompanionCare } from "./care";
 import { isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 import { advanceCompanionAffect, appraiseCompanionEvent, companionMood, createCompanionAffect, type CompanionAffect } from "./affect";
-import { planCompanionGoal, rememberCompanionOutcomes, type CompanionIntention, type CompanionOutcome, type CompanionPlaceMemory } from "./planner";
+import { COMPANION_FEED_ACTION_BUDGET, COMPANION_FEED_RETRY_MS, planCompanionGoal, rememberCompanionOutcomes, type CompanionFeedGoal, type CompanionIntention, type CompanionOutcome, type CompanionPlaceMemory } from "./planner";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
@@ -49,7 +49,8 @@ export type CompanionWorld = {
   width: number;
   height: number;
   paused?: boolean;
-  ambientAvailable?: boolean;
+  /** Renderer proved an ordinary public card at the occupied support. */
+  hideAvailable?: boolean;
   foods?: readonly CompanionFood[];
   pointer?: { x: number; y: number };
 };
@@ -62,6 +63,7 @@ export type CompanionBrain = CompanionCare & {
   activeMs: number;
   affect: CompanionAffect;
   intention?: CompanionIntention;
+  foodGoal?: CompanionFeedGoal;
   places: CompanionPlaceMemory[];
 };
 
@@ -73,6 +75,7 @@ export const COMPANION_JUMP_LIMITS = Object.freeze({
   gravity: 1100,
   landingInset: 12,
 });
+export const COMPANION_ROUTE_LIMITS = Object.freeze({ maxNodes: 200, maxHops: 12 });
 type JumpLimits = { [K in keyof typeof COMPANION_JUMP_LIMITS]: number };
 type Point = { x: number; y: number };
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n));
@@ -128,12 +131,14 @@ type SupportedPoint = Point & { platformId?: string };
  * a long floor can bridge a gap without pretending a 500px jump is possible.
  * Each returned jump is checked with the same ballistic test as wandering. */
 export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint, platforms: readonly Platform[], allowJump = true, foodTargetId?: string): CompanionRouteStep[] | null {
-  const available = platforms.filter(p => valid(p) && p.kind !== "hide" && !p.manualOnly).slice(0, 200);
+  const available = platforms.filter(p => valid(p) && p.kind !== "hide" && !p.manualOnly).slice(0, COMPANION_ROUTE_LIMITS.maxNodes);
   const start = platforms.find(p => p.id === origin.platformId && valid(p)) ?? nearestPlatform(origin, available);
   const namedGoal = target.platformId ? platforms.find(p => p.id === target.platformId) : undefined;
   if (namedGoal?.manualOnly && foodTargetId !== namedGoal.id) return null;
   const manualFoodGoal = namedGoal?.manualOnly && foodTargetId === namedGoal.id && valid(namedGoal) && namedGoal.kind !== "hide" ? namedGoal : undefined;
-  const goal = manualFoodGoal ?? available.find(p => p.id === target.platformId) ?? nearestPlatform(target, available);
+  // A named food/support cannot silently become a nearby different ledge,
+  // including one excluded by the bounded graph or a fresh visibility scan.
+  const goal = manualFoodGoal ?? (target.platformId ? available.find(p => p.id === target.platformId) : nearestPlatform(target, available));
   if (!start || !goal || ![origin.x, origin.y, target.x, target.y].every(Number.isFinite)
     || Math.abs(start.y - origin.y) > 18 || Math.abs(goal.y - target.y) > 18) return null;
   const finalX = platformLandingX(goal, target.x);
@@ -141,10 +146,11 @@ export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint
     ? [...steps, { kind: "walk" as const, target: { x: finalX, y: goal.y, platformId: goal.id } }] : steps;
   if (start.id === goal.id) return finish(origin.x, []);
   if (!allowJump) return null;
-  const queue = [{ platform: start, x: origin.x, steps: [] as CompanionRouteStep[] }];
+  const queue = [{ platform: start, x: origin.x, steps: [] as CompanionRouteStep[], hops: 0 }];
   const visited = new Set([start.id]);
-  for (let index = 0; index < queue.length && index < 200; index++) {
+  for (let index = 0; index < queue.length && index < COMPANION_ROUTE_LIMITS.maxNodes; index++) {
     const node = queue[index];
+    if (node.hops >= COMPANION_ROUTE_LIMITS.maxHops) continue;
     // Favor promising neighbours; route progress is measured by remaining BFS
     // edges, not by a random new destination after every intermediate landing.
     const choices = (manualFoodGoal ? [...available, manualFoodGoal] : available).filter(p => !visited.has(p.id)).sort((a, b) =>
@@ -162,7 +168,7 @@ export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint
       steps.push({ kind: "jump", target: { x: landingX, y: platform.y, platformId: platform.id } });
       if (platform.id === goal.id) return finish(landingX, steps);
       visited.add(platform.id);
-      queue.push({ platform, x: landingX, steps });
+      queue.push({ platform, x: landingX, steps, hops: node.hops + 1 });
     }
   }
   return null;
@@ -202,11 +208,11 @@ export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEven
   if (event === "woke") return { ...brain, curiosity: unit(brain.curiosity + .05) };
   if (event === "landed") return { ...brain, energy: unit(brain.energy - .008) };
   const state = { ...brain, affect: appraiseCompanionEvent(brain.affect ?? createCompanionAffect(), event === "dragged" ? "handled" : event) };
-  if (event === "ate") return { ...state, hunger: unit(brain.hunger - .36), affection: unit(brain.affection + .1), energy: unit(brain.energy + .07), curiosity: unit(brain.curiosity - .04), intention: undefined, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "completed" }], brain.activeMs) : brain.places };
+  if (event === "ate") return { ...state, hunger: unit(brain.hunger - .36), affection: unit(brain.affection + .1), energy: unit(brain.energy + .07), curiosity: unit(brain.curiosity - .04), intention: undefined, foodGoal: undefined, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "completed" }], brain.activeMs) : brain.places };
   if (event === "petted") return { ...state, affection: unit(brain.affection + .08), energy: unit(brain.energy + .015), curiosity: unit(brain.curiosity - .025) };
   if (event === "dragged" || event === "handled") return { ...state, curiosity: unit(brain.curiosity + .08), intention: undefined };
   if (event === "rested") return { ...state, energy: unit(brain.energy + .24), curiosity: unit(brain.curiosity + .08), intention: undefined };
-  if (event === "food-lost") return { ...state, intention: undefined, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "lost" }], brain.activeMs) : brain.places };
+  if (event === "food-lost") return { ...state, intention: brain.intention?.kind === "feed" ? undefined : brain.intention, foodGoal: undefined, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "lost" }], brain.activeMs) : brain.places };
   if (event === "heart-blocked") return state;
   return state;
 }
@@ -219,6 +225,7 @@ const cooldownMs: Record<CompanionActionKind, number> = {
 export function commitAction(brain: CompanionBrain, action: CompanionAction, now: number): CompanionBrain {
   const moving = action.kind === "jump" || action.kind === "walk";
   const novel = Boolean(action.target.platformId && !brain.visited.includes(action.target.platformId));
+  const remaining = action.foodId && action.intention?.kind === "feed" ? Math.max(0, Math.min(COMPANION_FEED_ACTION_BUDGET, action.intention.remaining) - 1) : undefined;
   return {
     ...brain,
     // A few curious steps should not exhaust an initially healthy creature.
@@ -230,6 +237,7 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
     cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]) },
     intention: action.intention ? { ...action.intention, remaining: Math.max(0, action.intention.remaining - 1) } : undefined,
+    foodGoal: action.foodId && remaining !== undefined ? { foodId: action.foodId, remaining, retryAfter: remaining === 0 ? (brain.activeMs ?? 0) + COMPANION_FEED_RETRY_MS : 0 } : brain.foodGoal,
     places: rememberCompanionOutcomes(brain.places ?? [], action.outcomes ?? [], brain.activeMs ?? 0),
   };
 }
@@ -241,11 +249,14 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
   if (!prefs.enabled || world.paused || ![world.x, world.y, now].every(Number.isFinite)
     || !prefs.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return undefined;
   const supported = { x: world.x, y: world.y, platformId: world.platformId };
+  const remembered = brain.foodGoal, activeMs = brain.activeMs ?? 0;
   const foods = world.foods.slice(0, MAX_COMPANION_FOOD).filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && isCompanionFoodKind(food.kind))
-    .sort((a, b) => Number(b.id === brain.intention?.foodId) - Number(a.id === brain.intention?.foodId) || Math.hypot(a.x - world.x, a.y - world.y) - Math.hypot(b.x - world.x, b.y - world.y));
+    .sort((a, b) => Number(b.id === (remembered?.foodId ?? brain.intention?.foodId)) - Number(a.id === (remembered?.foodId ?? brain.intention?.foodId)) || Math.hypot(a.x - world.x, a.y - world.y) - Math.hypot(b.x - world.x, b.y - world.y));
   for (const food of foods) {
+    if (remembered?.foodId === food.id && remembered.remaining <= 0 && remembered.retryAfter > activeMs) continue;
     const platform = world.platforms.find(p => p.id === food.platformId);
-    const intention: CompanionIntention = { kind: "feed", targetId: food.platformId ?? "", offset: platform ? unit((food.x - platform.x) / platform.width) : .5, remaining: 12, stage: "travel", foodId: food.id };
+    const budget = remembered?.foodId === food.id && remembered.remaining > 0 ? remembered.remaining : COMPANION_FEED_ACTION_BUDGET;
+    const intention: CompanionIntention = { kind: "feed", targetId: food.platformId ?? "", offset: platform ? unit((food.x - platform.x) / platform.width) : .5, remaining: budget, stage: "travel", foodId: food.id };
     const route = findPlatformRoute(supported, food, world.platforms, prefs.jump, platform?.manualOnly ? platform.id : undefined);
     if (!route) continue;
     const sameSupport = !route.some(step => step.kind === "jump");
@@ -254,7 +265,10 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
       return { kind: "eat", target: supported, duration: 2600, foodId: food.id, effectPoint: { x: food.x, y: food.y }, intention: { ...intention, stage: "observe" } };
     }
     if (!prefs.roam || !route.length) continue;
-    const step = route[0];
+    const first = route[0];
+    // Long safe floors remain useful routes, with short finite walks that
+    // revalidate the current graph instead of owning the pet for half a minute.
+    const step = first.kind === "walk" ? { ...first, target: { ...first.target, x: world.x + clamp(first.target.x - world.x, -180, 180) } } : first;
     const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
     return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950, foodId: food.id, intention, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), direction: step.target.x < world.x ? -1 : 1 };
   }
@@ -336,10 +350,10 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
     if (!current.manualOnly && prefs.heartPrank && current.heart && now - brain.createdAt >= 18000) {
       add("heart", .12 + brain.affection * .2 + affectionate, 2200, { x: platformLandingX(current, current.heart.x), y: current.y, platformId: current.id }, current.heart);
     }
-    const hideSupport = current.kind === "hide" || current.kind === "floor";
-    if (prefs.ambientPrank && world.ambientAvailable && hideSupport && now - brain.createdAt >= 45000 && random(rng) < .08) {
-      const x = platformLandingX(current, world.x < world.width / 2 ? 12 : world.width - 12);
-      add("hide", .2 + brain.curiosity * .2, 7000 + random(rng) * 6000, { x, y: current.y, platformId: current.id });
+    if (prefs.ambientPrank && world.hideAvailable && current.kind === "card" && now - brain.createdAt >= 45000 && random(rng) < .08) {
+      // Enter the actual occupied schedule locally. The renderer owns its
+      // matched public detail and the user-driven finding session afterward.
+      add("hide", .2 + brain.curiosity * .2, 700, { x: world.x, y: world.y, platformId: current.id });
     }
   }
   const total = candidates.reduce((sum, candidate) => sum + candidate.utility, 0);
