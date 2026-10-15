@@ -21,6 +21,7 @@ import { boundCompanionBallisticArc, boundCompanionSineArc } from "@/lib/ui/view
 import { createCompanionPettingContact, createCompanionPettingGesture } from "@/lib/ui/viewer-companion/petting";
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
+import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import registration from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import { companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { gfxMode } from "@/lib/ui/gfx";
@@ -35,6 +36,8 @@ type Control = Record<CompanionHomeAction | "place" | "rest", () => void>;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const COMPANION_SIZE = 92;
+const isHomeFloor = (id: string) => /^companion-home-floor(?:-\d+)?$/.test(id);
+const isHomeSupport = (id: string) => id === "companion-home" || isHomeFloor(id);
 const spriteSources = registration.rows.map((_, row) => companionSpriteSources(row));
 
 /** One optional local creature. It senses geometry, heart occupancy and local
@@ -49,7 +52,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const food = useRef<CompanionFoodControl>(null), careLoaded = useRef(false);
   const homeLauncher = useRef<HTMLButtonElement>(null);
   const homeFocus = useRef<string | null>(null);
-  const lastPose = useRef<{ x: number; y: number; monthKey: string; atHome: boolean; seeded: boolean } | null>(null);
+  const lastPose = useRef<{ x: number; y: number; monthKey: string; atHome: boolean; homeSupportId?: string; seeded: boolean } | null>(null);
   const lastFood = useRef<CompanionFoodKind | undefined>(undefined);
   const overlayRef = useRef(overlayOpen);
   const spriteQuality = useRef({ pending: new Set<string>(), failures: new Map<string, number>() });
@@ -104,7 +107,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const saved = lastPose.current;
     let pendingMonth = Boolean(saved && saved.monthKey !== monthKey && !saved.atHome);
     const monthStarted = performance.now(), monthReadyAt = monthStarted + (reduced ? 0 : 340);
-    let platforms: Platform[] = [], landingPlatforms: Platform[] = [], x = saved?.x ?? innerWidth * .68, y = saved?.y ?? innerHeight - 18, support = saved?.atHome ? "companion-home" : "";
+    let platforms: Platform[] = [], landingPlatforms: Platform[] = [], x = saved?.x ?? innerWidth * .68, y = saved?.y ?? innerHeight - 18, support = saved?.atHome ? saved.homeSupportId ?? "companion-home" : "";
     const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
     let worldSeeded = saved?.seeded ?? false;
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
@@ -120,6 +123,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const petting = createCompanionPettingGesture();
     const touch = createCompanionPettingContact();
     let hoverPetting = false, hoverStarted = 0, petStarted = 0;
+    let hoverPoint: { x: number; y: number } | undefined, hoverTarget: Element | null = null;
     let awaitingAtX = false, verticalLanding = false, measuredWidth = innerWidth;
     let presentationNow = 0;
     let offGeometry: CompanionGeometrySubscription | undefined, geometryTracker: CompanionGeometrySubscription | undefined;
@@ -151,6 +155,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       lastPoseSample = { row, frame, status };
+      // Cursor presence belongs to a valid hover, not the pressure/reward
+      // envelopes. Existing paints also release it when the world moves away.
+      if (hoverPoint && (!canHover(hoverPoint, 6) || !hoverTarget?.isConnected || isOtherControl(hoverTarget))) stopHover();
       if (supportById(support)) worldSeeded = true;
       // Scroll can carry an anchor outside the safe viewport between full
       // scans. Never paint that interim frame over headers or clipped edges.
@@ -158,10 +165,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // as the main loop, including its final neutral spring frame.
       const recoveringPickup = Boolean(pickupScale !== 1 || pickupOffset.x || pickupOffset.y) && performance.now() - pickupAt < 200 && !reduced && gfxMode() !== "off";
       const hasWorldSupport = platforms.length > 0 || Boolean(supportById(support) || action?.target.platformId && supportById(action.target.platformId));
-      if (!overlayActive && !returning && !pressed && !keyboardHeld && !recoveringPickup && (awaitingAtX || !hasWorldSupport && !pendingMonth || homeOccluded && support === "companion-home" || x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12)) { el.hidden = true; return; }
+      if (!overlayActive && !returning && !pressed && !keyboardHeld && !recoveringPickup && (awaitingAtX || !hasWorldSupport && !pendingMonth || homeOccluded && isHomeSupport(support) || x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12)) { stopHover(); el.hidden = true; return; }
       const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: x - carrier.x, y: y - carrier.y, now: presentationNow, reduced: reduced || gfxMode() === "off" });
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off");
-      if (!pressure.pressure && !hoverPetting && el.dataset.petting === "touch") el.removeAttribute("data-petting");
+      if (!pressure.pressure && !hoverPetting && el.dataset.petting === "touch") data("petting", "ready");
       style(contactLayer, "transform", `translate3d(${(pressure.x * sample.facing).toFixed(3)}px,${pressure.y.toFixed(3)}px,0) rotate(${(pressure.tilt * sample.facing).toFixed(3)}deg) scale(${(1 + pressure.squash * .65).toFixed(4)},${(1 - pressure.squash).toFixed(4)})`);
       const response = supportMotion.sample(performance.now());
       style(reactionLayer, "transform", `translate3d(0,${response.lift.toFixed(3)}px,0) scale(${(1 + response.squash * .35).toFixed(4)},${(1 - response.squash).toFixed(4)})`);
@@ -207,6 +214,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = !paintedCell;
+      if (el.hidden) stopHover();
     };
     const displayedPoint = (): CompanionReturnPoint => {
       // Read before cancelling a finite WAAPI relocation, including its
@@ -261,8 +269,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       const dx = lerp(from.x, to.x, px), dy = lerp(from.y, to.y, py);
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
-      if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && support !== "companion-home" && action?.kind !== "jump") supportMotion.push(dy, now);
-      if (support === "companion-home" || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
+      if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump") supportMotion.push(dy, now);
+      if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
       return Boolean(dx || dy);
     };
     const followLayout = (event?: Event) => {
@@ -294,7 +302,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // separate text ledges remain the only autonomous destinations.
       const p = atX ? nearestVerticalCompanionSupport(point, platforms) : nearby ? nearestPlatform(point, platforms) : firstCompanionSupportBelow(point, landingPlatforms);
       awaitingAtX = atX && !p; verticalLanding = atX || !nearby;
-      if (!p) { support = ""; clearAction(); el.hidden = true; return; }
+      if (!p) { support = ""; clearAction(); stopHover(); el.hidden = true; return; }
       supportMotion.reset();
       const target = { x: atX || !nearby ? point.x : platformLandingX(p, point.x), y: p.y, platformId: p.id };
       origin = { x, y }; action = { kind: "jump", target, duration: 650 }; began = performance.now(); total = 650; travel = nearby || atX ? -3 : -1;
@@ -325,13 +333,25 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       nextDecision = petUntil + 500;
     };
     const isOtherControl = (target: EventTarget | null) => target instanceof Element && !el.contains(target) && Boolean(target.closest("button,a,input,select,textarea,[role='button']"));
-    const stopHover = () => { petting.reset(); touch.reset(); hoverPetting = false; el.removeAttribute("data-petting"); style(contactLayer, "transform", "translate3d(0,0,0) rotate(0deg) scale(1,1)"); };
-    const hover = (event: PointerEvent) => {
+    const canHover = (point: { x: number; y: number }, margin = 0) => Math.abs(point.x - x) <= size * .68 + margin && point.y >= y - size * 1.04 - margin && point.y <= y + size * .10 + margin && !pause && !overlayActive && !returning && !el.hidden && document.hasFocus() && presence.phase === "active" && preferences.petting && !pressed && !keyboardHeld && !placing && !pendingMonth && !awaitingAtX && !(action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind));
+    const stopHover = () => {
+      petting.reset(); touch.reset(); hoverPetting = false; hoverPoint = undefined;
+      hoverTarget?.removeAttribute("data-vc-petting-cursor"); hoverTarget = null;
+      el.removeAttribute("data-petting"); style(contactLayer, "transform", "translate3d(0,0,0) rotate(0deg) scale(1,1)");
+    };
+    const hover = (event: PointerEvent, target = event.target) => {
       // A forgiving whole-body sensor, independent of the smaller drag button:
       // passive hover never expands the hit target over calendar controls.
       const horizontalReach = size * .68;
-      const withinBody = Math.abs(event.clientX - x) <= horizontalReach && event.clientY >= y - size * 1.04 && event.clientY <= y + size * .10;
-      if (event.pointerType !== "mouse" || event.buttons !== 0 || !withinBody || pause || overlayActive || returning || el.hidden || !document.hasFocus() || presence.phase !== "active" || !preferences.petting || pressed || keyboardHeld || placing || pendingMonth || awaitingAtX || action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind)) { stopHover(); return; }
+      const point = { x: event.clientX, y: event.clientY };
+      if (event.pointerType !== "mouse" || event.buttons !== 0 || !canHover(point, hoverPoint ? 6 : 0) || !(target instanceof Element) || isOtherControl(target)) { stopHover(); return; }
+      hoverPoint = point;
+      if (hoverTarget !== target) {
+        hoverTarget?.removeAttribute("data-vc-petting-cursor"); hoverTarget = target;
+        // Mark only the actual non-control surface under this pointer. No
+        // enlarged hitbox, global cursor override or inline-style replacement.
+        hoverTarget.setAttribute("data-vc-petting-cursor", "");
+      }
       const normalized = (event.clientX - x) / (size * .76) + .5;
       const now = performance.now();
       // Preserve the familiar stroke distance while contact also responds in
@@ -342,7 +362,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // bounded affection still require a real back-and-forth gesture.
       if (result.stroking || hoverPetting) data("petting", "hover");
       else if (moving || touch.sample(now).pressure > 0) data("petting", "touch");
-      else el.removeAttribute("data-petting");
+      else data("petting", "ready");
       if (pettingHand.current) style(pettingHand.current, "transform", `translate3d(${(event.clientX - x + size / 2 - 12).toFixed(2)}px,${(event.clientY - y + size - 21).toFixed(2)}px,0) rotate(${reduced ? 0 : -18 + (normalized - .5) * 12}deg)`);
       if (!result.stroking) { paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); return; }
       if (!hoverPetting) {
@@ -359,8 +379,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // pointerleave precedes the next document move. Yield to its real
       // destination before a reversal can award affection over another control.
       if (!event.relatedTarget || isOtherControl(event.relatedTarget)) stopHover();
-      else hover(event);
+      else hover(event, event.relatedTarget);
     };
+    const outsideDocument = (event: PointerEvent) => { if (!event.relatedTarget) stopHover(); };
     control.current = {
       place: () => { if (preferences.drag) {
         if (overlayActive) { overlayPlacing = true; el.dataset.placing = ""; setAnnouncement("빅타민을 놓을 곳을 한 번 눌러 주세요."); return; }
@@ -442,7 +463,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!action && ["resting", "yawning", "parked", "waking"].includes(phase)) {
         const elapsed = presence.elapsed(now);
         if (overlayActive || supportedNow()) paint(phase === "yawning" ? 10 : phase === "parked" ? 11 : phase === "waking" ? 12 : 0, (elapsed / (phase === "waking" ? 800 : 900)) * 15, phase === "parked" ? "sleep" : phase === "waking" ? "wake" : phase === "yawning" ? "yawn" : "idle");
-        else el.hidden = true;
+        else { stopHover(); el.hidden = true; }
         if (phase === "parked") {
           el.dataset.dreaming = "";
           offGeometry?.(); offGeometry = undefined; geometryReady = false;
@@ -455,7 +476,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         schedule(); return;
       }
       if (action?.kind !== "sleep") el.removeAttribute("data-dreaming");
-      if (!overlayActive && (awaitingAtX || !platforms.length && !supportById(support) && !(action?.target.platformId && supportById(action.target.platformId)) && !pressed && !keyboardHeld)) { el.hidden = true; schedule(); return; }
+      if (!overlayActive && (awaitingAtX || !platforms.length && !supportById(support) && !(action?.target.platformId && supportById(action.target.platformId)) && !pressed && !keyboardHeld)) { stopHover(); el.hidden = true; schedule(); return; }
       if (placing) { if (action) began += delta; paint(1, 0, "placing"); schedule(); return; }
       if (pressed || keyboardHeld) {
         el.toggleAttribute("data-grab-ready", Boolean(pressed?.grabbed));
@@ -468,11 +489,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // coordinates. A hover gesture never moves the support or captures it.
         paint(9, reduced ? 0 : ((now - petStarted) % 950) / 950 * 15, "petted"); schedule(); return;
       }
-      if (hoverPetting) { hoverPetting = false; el.removeAttribute("data-petting"); petting.reset(); }
+      if (hoverPetting) { hoverPetting = false; if (hoverPoint) data("petting", "ready"); else el.removeAttribute("data-petting"); petting.reset(); }
       if (el.dataset.state === "petted" && effect.current) effect.current.textContent = "";
       if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
-      if (action?.foodId && !food.current?.foods().some(item => item.id === action!.foodId)) { brain.current = recordCompanionEvent(brain.current, "food-lost"); clearAction(); if (!supportedNow()) settle({ x, y }); nextDecision = now + 300; }
-      if (!action && presence.phase === "active" && geometryReady && now >= nextDecision && (support !== "companion-home" || platforms.some(p => p.id === support))) {
+      if (action?.foodId && !food.current?.foods().some(item => item.id === action!.foodId)) { brain.current = recordCompanionEvent(brain.current, "food-lost"); clearAction(); if (!supportedNow() && !(homeOccluded && isHomeSupport(support))) settle({ x, y }); nextDecision = now + 300; }
+      if (!action && presence.phase === "active" && geometryReady && now >= nextDecision && (!isHomeSupport(support) || supportById(support))) {
         const occupied = supportById(support);
         const availableFood = accessibleCompanionFoods(food.current?.foods() ?? [], [...platforms, ...landingPlatforms]);
         const explicitSupports = landingPlatforms.filter(p => p.manualOnly && (p.id === occupied?.id || availableFood.some(item => item.platformId === p.id)));
@@ -738,6 +759,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); }
     };
     const place = (event: PointerEvent) => {
+      if (!el.contains(event.target as Node)) stopHover();
       if (!pause && overlayActive && overlayPlacing && !el.contains(event.target as Node)) {
         overlayPlacing = false; delete el.dataset.placing;
         // A two-tap alternative to dragging; ordinary dialog controls always
@@ -787,20 +809,29 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       food.current?.sync(platforms, id => geometryTracker?.anchor(id), geometryTracker?.landings(32));
       if (pendingMonth) return;
       homeOccluded = false;
-      const residesAtHome = support === "companion-home" && !pressed && !keyboardHeld && !placing && !afterPetLanding && (!action || action.target.platformId === "companion-home") && action?.kind !== "jump";
+      const residesAtHome = isHomeSupport(support) && !pressed && !keyboardHeld && !placing && !afterPetLanding && (!action || isHomeSupport(action.target.platformId ?? "")) && action?.kind !== "jump";
       if (residesAtHome) {
-        const home = document.querySelector<HTMLElement>(".vc-home-cushion");
-        if (home?.closest(".vc-home")?.hasAttribute("data-panel-collapsed")) {
-          homeOccluded = true; if (!returning) el.hidden = true;
+        const floor = isHomeFloor(support);
+        const home = document.querySelector<HTMLElement>(floor ? ".vc-home-floor" : ".vc-home-cushion");
+        const occludeResident = () => {
+          homeOccluded = true; stopHover(); if (!returning) el.hidden = true;
           if (presence.phase === "parked") { offGeometry?.(); offGeometry = undefined; geometryReady = false; }
-          return;
+        };
+        if (home?.closest(".vc-home")?.hasAttribute("data-panel-collapsed")) {
+          occludeResident(); return;
         }
         const rect = home?.isConnected ? home.getBoundingClientRect() : undefined;
+        // A closed compact room or a temporary portal gap still owns its
+        // resident. Wait for the same room, rather than choosing a calendar.
+        if (!rect || rect.width <= 0 || rect.height <= 0) { occludeResident(); return; }
         if (rect && rect.width > 0 && rect.height > 0) {
-          const safe = platforms.find(p => p.id === "companion-home");
+          const floorSupports = floor ? landingPlatforms.filter(p => isHomeFloor(p.id)) : [];
+          const safe = floor ? nearestVerticalCompanionSupport({ x, y: rect.bottom - COMPANION_HOME_FLOOR_INSET }, floorSupports) ?? nearestPlatform({ x, y }, floorSupports) : platforms.find(p => p.id === "companion-home");
           const homeX = safe ? platformLandingX(safe, x) : clamp(x, rect.left + rect.width * .25, rect.right - rect.width * .25);
-          const dx = homeX - x, dy = rect.top - y;
-          x = homeX; y = rect.top; carrier.x += dx; carrier.y += dy;
+          const homeY = floor ? rect.bottom - COMPANION_HOME_FLOOR_INSET : rect.top;
+          const dx = homeX - x, dy = homeY - y;
+          x = homeX; y = homeY; carrier.x += dx; carrier.y += dy;
+          if (safe) { support = safe.id; if (action) action.target.platformId = safe.id; }
           if (action) { origin.x += dx; origin.y += dy; action.target.x += dx; action.target.y += dy; }
           supportMotion.reset();
           // A house scrolling outside the viewport still owns its resident.
@@ -808,7 +839,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           if (!safe) {
             homeOccluded = true;
             paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
-            if (!returning) el.hidden = true;
+            if (!returning) { stopHover(); el.hidden = true; }
             if (presence.phase === "parked") { offGeometry?.(); offGeometry = undefined; geometryReady = false; }
             return;
           }
@@ -816,7 +847,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       const resolve = (id: string, point: { x: number; y: number }) => {
         const exact = supportById(id);
-        if (id === "companion-home" && exact) return exact;
+        if (isHomeSupport(id) && exact) return exact;
         if (exact && Math.abs(point.y - exact.y) <= 3 && point.x >= exact.x && point.x <= exact.x + exact.width) return exact;
         const group = id.match(/^(?:card|date)-\d+/)?.[0];
         return group ? nearestVerticalCompanionSupport(point, platforms.filter(p => (p.id === group || p.id.startsWith(`${group}-`)) && Math.abs(point.y - p.y) <= 3)) : undefined;
@@ -839,7 +870,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         clearAction();
         awaitingAtX = !p;
         if (p) { support = p.id; if (widthChanged) x = platformLandingX(p, x); y = p.y; paint(11, 0, "sleep"); el.dataset.dreaming = ""; }
-        else { support = ""; el.hidden = true; }
+        else { support = ""; stopHover(); el.hidden = true; }
         clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryReady = false;
         return;
       }
@@ -885,7 +916,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const panelChanged = (event: Event) => {
       if (overlayActive) return;
-      if (support === "companion-home" && document.querySelector(".vc-home[data-panel-collapsed]")) {
+      if (isHomeSupport(support) && document.querySelector(".vc-home[data-panel-collapsed]")) {
         homeOccluded = true; el.hidden = true; stopHover();
       }
       parkedLayout(); followLayout(event);
@@ -906,10 +937,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     window.visualViewport?.addEventListener("scroll", followLayout, { passive: true });
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
     document.addEventListener("pointermove", sensePointer, { passive: true });
+    document.addEventListener("pointerout", outsideDocument, { passive: true });
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", leave); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
     sync();
     return () => {
-      lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: support === "companion-home" && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" };
+      lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump", homeSupportId: isHomeSupport(support) ? support : undefined };
       saveCompanionCare(brain.current, true);
       stopped = true; returning = undefined; el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
@@ -922,6 +954,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
+      document.removeEventListener("pointerout", outsideDocument);
       button.removeEventListener("pointerdown", down); button.removeEventListener("pointermove", move); button.removeEventListener("pointerleave", leave); button.removeEventListener("pointerup", up); button.removeEventListener("pointercancel", up); button.removeEventListener("lostpointercapture", lostCapture); button.removeEventListener("keydown", key);
       if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id);
       el.hidden = true;

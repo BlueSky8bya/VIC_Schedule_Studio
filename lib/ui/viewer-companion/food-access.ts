@@ -1,5 +1,5 @@
 import { platformLandingX, type CompanionFood, type Platform } from "./brain";
-import { COMPANION_HOME_BED_FOOD } from "./food";
+import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD } from "./food";
 
 /** The snack's own32px collision can fit where a92px creature cannot. Preserve
  * that visible placement and expose it to the brain only when a separately
@@ -18,9 +18,11 @@ export function accessibleCompanionFoods(foods: readonly CompanionFood[], petSup
       return Math.abs(food.x - x) <= 36 && Math.abs(food.y - home.y) <= 18 ? [{ ...food, x, y: home.y, platformId: home.id }] : [];
     }
     const card = /^(card-\d+)-food-top(?:-\d+)?$/.exec(food.platformId);
+    const houseFloor = food.platformId === COMPANION_HOME_FLOOR_FOOD;
     const home = /^companion-home-food(?:-\d+)?$/.test(food.platformId);
     const floor = /^viewport-floor-food(?:-\d+)?$/.test(food.platformId);
-    const matches = (p: Platform) => card ? p.kind === "card" && (p.id === `${card[1]}-top` || p.id.startsWith(`${card[1]}-top-`) && /^\d+$/.test(p.id.slice(`${card[1]}-top-`.length)))
+    const matches = (p: Platform) => houseFloor ? p.kind === "floor" && p.manualOnly === true && /^companion-home-floor(?:-\d+)?$/.test(p.id)
+      : card ? p.kind === "card" && (p.id === `${card[1]}-top` || p.id.startsWith(`${card[1]}-top-`) && /^\d+$/.test(p.id.slice(`${card[1]}-top-`.length)))
       : home ? p.id === "companion-home"
       : floor ? p.kind === "floor" && /^viewport-floor(?:-\d+)?$/.test(p.id)
       : p.id === food.platformId;

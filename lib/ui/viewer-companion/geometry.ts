@@ -1,4 +1,5 @@
 import type { Platform } from "./brain";
+import { COMPANION_HOME_FLOOR_INSET } from "./food";
 
 const CARD_SELECTOR = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
 const DAY_SELECTOR = ".public-day,.agenda-day";
@@ -276,6 +277,23 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const preferred = safe.sort((a, b) => Math.abs(a.x + a.width / 2 - centre) - Math.abs(b.x + b.width / 2 - centre))[0];
         if (rect.height > 0 && preferred && platforms.length < MAX_PLATFORMS) remember({ id: "companion-home", ...preferred, kind: "date" }, home, rect);
         if (rect.height > 0 && rect.top >= clip.top && rect.top < clip.bottom) rememberFood("companion-home-food", safeCompanionSurfaces({ x, y: rect.top, width: right - x }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "date", home, rect);
+      }
+      const homeFloor = house?.querySelector<HTMLElement>(".vc-home-floor");
+      if (homeFloor?.isConnected && visible(homeFloor)) {
+        nextObserved.add(homeFloor);
+        const rect = homeFloor.getBoundingClientRect(), clip = clipping(homeFloor.parentElement);
+        const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right), y = rect.bottom - COMPANION_HOME_FLOOR_INSET;
+        // The room's floor is a real, separate plane. Only a deliberate food
+        // target or the occupied manual support exposes it to the brain;
+        // ordinary roaming must not start walking through house controls.
+        // The bed is the existing deliberate room prop, while its own labels
+        // and every other complete control remain obstacles at the92px tier.
+        const spans = rect.height > 0 && y >= clip.top && y < clip.bottom
+          ? safeCompanionSurfaces({ x, y, width: right - x }, homeObstacles, size, viewport, footprint) : [];
+        for (let i = 0; i < spans.length && landings.length < MAX_PLATFORMS; i++) {
+          const platform: Platform = { id: i ? `companion-home-floor-${i}` : "companion-home-floor", ...spans[i], kind: "floor", manualOnly: true };
+          landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: homeFloor, rect: { left: rect.left, top: rect.top } });
+        }
       }
       const cardPlatforms = new Map<HTMLElement, Platform[]>();
       for (const [element, rects] of lines) {

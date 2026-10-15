@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
-import { COMPANION_HOME_BED_FOOD } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD } from "@/lib/ui/viewer-companion/food";
 import { createBrain, getFoodAction } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
@@ -9,6 +9,22 @@ const food: CompanionFood = { id: "snack", x: 150, y: 300, platformId: "card-3-f
 const top: Platform = { id: "card-3-top-2", x: 120, y: 300, width: 70, kind: "card", manualOnly: true };
 
 describe("snack collision and creature access remain separate", () => {
+  it("eats a real house-floor snack from its separate manual support without moving its physical position", () => {
+    const snack = Object.freeze({ ...food, platformId: COMPANION_HOME_FLOOR_FOOD });
+    const floor: Platform = { ...top, id: "companion-home-floor-1", kind: "floor" };
+    const available = accessibleCompanionFoods([snack], [floor]);
+    expect(available).toEqual([{ ...snack, platformId: floor.id }]);
+    expect(snack).toEqual({ ...food, platformId: COMPANION_HOME_FLOOR_FOOD });
+    expect(getFoodAction({ ...createBrain(0), hunger: .8 }, { x: 150, y: 300, platformId: floor.id, platforms: [floor], foods: available, width: 1000, height: 800 }, { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false }, 1000)).toMatchObject({ kind: "eat", foodId: snack.id, target: { x: 150, y: 300, platformId: floor.id } });
+  });
+  it("never projects house-floor food onto a bed, a distant floor span or a stale/different plane", () => {
+    const snack = { ...food, platformId: COMPANION_HOME_FLOOR_FOOD }, floor: Platform = { ...top, id: "companion-home-floor", kind: "floor" };
+    expect(accessibleCompanionFoods([snack], [])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...floor, id: "companion-home" }, { ...floor, id: "viewport-floor" }])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...floor, x: 151 }, { ...floor, y: 300.6 }, { ...floor, manualOnly: false }])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...floor, id: "companion-home-floor-extra" }])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...floor, y: 300.4 }])).toEqual([{ ...snack, platformId: floor.id }]);
+  });
   it("offers a manually placed bed snack from an actual safe home without moving the visible food", () => {
     const snack = Object.freeze({ ...food, x: 150, y: 312, platformId: COMPANION_HOME_BED_FOOD });
     const home = { ...top, id: "companion-home", kind: "date" as const, manualOnly: false };

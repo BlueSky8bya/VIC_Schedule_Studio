@@ -3,6 +3,8 @@ import { firstCompanionSupportBelow } from "./support-landing";
 
 export const MAX_COMPANION_FOOD = 3;
 export const COMPANION_HOME_BED_FOOD = "companion-home-bed-food";
+export const COMPANION_HOME_FLOOR_FOOD = "companion-home-floor-food";
+export const COMPANION_HOME_FLOOR_INSET = 6;
 export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
 export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
@@ -23,6 +25,26 @@ export function receiveCompanionHomeFood(point: Point, release: Point, bed: Home
   // screen. The native44px snack has at most a44px pointer-to-foot offset.
   if (Math.abs(point.x - release.x) > 44 || Math.abs(point.y - release.y) > 44) return;
   return { x: Math.max(bed.left, Math.min(right, point.x)), y: Math.max(bed.top, Math.min(bottom, point.y)) };
+}
+
+/** The room floor is a different physical receiving surface from its bed.
+ * Choose a nearby44px input-safe centre on its real plane, leaving actual
+ * controls usable. The bed itself is a furnishing/recipient, not a blocker.
+ * This runs only for an explicit drag or keyboard put-down. */
+export function receiveCompanionHomeFloorFood(point: Point, release: Point, floor: HomeFoodRect, controls: readonly HomeFoodRect[], reflow = false): Point | undefined {
+  if (!receiveCompanionHomeFood(point, release, floor) || floor.width < 44 || floor.height <= COMPANION_HOME_FLOOR_INSET) return;
+  const y = reflow ? point.y : floor.top + floor.height - COMPANION_HOME_FLOOR_INSET;
+  let spans: [number, number][] = [[floor.left + 22, floor.left + floor.width - 22]];
+  for (const control of controls) {
+    if (![control.left, control.top, control.width, control.height].every(Number.isFinite) || control.width <= 0 || control.height <= 0
+      || control.top >= y + 6 || control.top + control.height <= y - 38) continue;
+    const left = control.left - 22, right = control.left + control.width + 22;
+    spans = spans.flatMap(([a, b]) => right <= a || left >= b ? [[a, b] as [number, number]] : [[a, Math.min(b, left)], [Math.max(a, right), b]].filter(([start, end]) => end >= start) as [number, number][]);
+  }
+  const candidates = spans.map(([left, right]) => Math.max(left, Math.min(right, point.x))).sort((a, b) => Math.abs(a - point.x) - Math.abs(b - point.x));
+  const x = candidates[0];
+  if (x === undefined || !reflow && (Math.abs(x - point.x) > 22 || Math.hypot(x - point.x, y - point.y) > 44)) return;
+  return { x, y };
 }
 
 /** A local attachment contains only coordinates. DOM identity stays with the

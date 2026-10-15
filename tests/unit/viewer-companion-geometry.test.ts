@@ -45,7 +45,7 @@ function geometryFixture() {
   const style = { display: "block", visibility: "visible", opacity: "1", overflowX: "visible", overflowY: "visible", position: "static" };
   const win = Object.assign(new FixtureEvents(), {
     innerWidth: 1000, innerHeight: 800, visualViewport: viewportEvents, performance: { now: () => now },
-    getComputedStyle: vi.fn(() => style),
+    getComputedStyle: vi.fn<(element?: unknown) => typeof style>(() => style),
     requestAnimationFrame: (callback: FrameRequestCallback) => { const id = ++serial; frames.set(id, callback); return id; },
     cancelAnimationFrame: vi.fn((id: number) => { frames.delete(id); }),
     setTimeout: (callback: () => void, delay: number) => { const id = ++serial; timers.set(id, { at: now + delay, callback }); return id; },
@@ -78,9 +78,51 @@ function geometryFixture() {
   return { root: root as unknown as HTMLElement, sourceRoot: root, card, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, range, frames, timers, flush, advance };
 }
 
+function addHouseFloor(fixture: ReturnType<typeof geometryFixture>) {
+  const house = new FixtureElement(), room = new FixtureElement(), floor = new FixtureElement();
+  house.parentElement = fixture.sourceRoot; room.parentElement = house; floor.parentElement = room; fixture.home.parentElement = room;
+  house.rect = box(100, 480, 360, 190); room.rect = box(110, 528, 340, 132); floor.rect = box(110, 624, 340, 36); fixture.home.rect = box(145, 632, 130, 2);
+  fixture.home.closest = selector => selector === ".vc-home" ? house : null;
+  house.querySelector = selector => selector === ".vc-home-floor" ? floor : null;
+  const style = fixture.win.getComputedStyle();
+  fixture.win.getComputedStyle.mockImplementation(element => element === room ? { ...style, overflowX: "hidden", overflowY: "hidden" } : style);
+  const feed = new FixtureElement(); feed.parentElement = room; feed.rect = box(350, 590, 48, 62); fixture.controls.push(feed);
+  const trash = new FixtureElement(); trash.parentElement = room; trash.rect = box(406, 596, 44, 56); fixture.controls.push(trash);
+  return { house, room, floor, feed, trash };
+}
+
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
+  it("offers the real house floor only as a manual feeding/drop support and keeps full controls clear", () => {
+    const fixture = geometryFixture(), house = addHouseFloor(fixture); let autonomous: Platform[] = [];
+    house.floor.hasAttribute = name => name === "aria-hidden"; // Decorative AT exclusion must not hide real floor ink.
+    const subscription = observeCompanionPlatforms(fixture.root, next => { autonomous = next; }, { size: 92, home: fixture.home as unknown as HTMLElement }); fixture.flush();
+    const floor = subscription.landings().filter(p => /^companion-home-floor(?:-\d+)?$/.test(p.id));
+    expect(floor.length).toBeGreaterThan(0);
+    expect(floor.every(p => p.y === 654 && p.kind === "floor" && p.manualOnly)).toBe(true);
+    expect(autonomous.some(p => p.id.startsWith("companion-home-floor"))).toBe(false);
+    expect(subscription.anchor(floor[0].id)).toEqual({ element: house.floor, left: 110, top: 624 });
+    expectClear(floor, [text(350, 590, 398, 652), text(406, 596, 450, 652)], 92 * .76);
+    const ranges = fixture.range.getClientRects.mock.calls.length; house.floor.getBoundingClientRect.mockClear();
+    house.floor.rect = box(120, 594, 340, 36);
+    expect(subscription.follow([floor[0].id])[0]).toMatchObject({ platform: { id: floor[0].id, x: floor[0].x + 10, y: 624, manualOnly: true }, anchorX: 120, anchorY: 594 });
+    expect(house.floor.getBoundingClientRect).toHaveBeenCalledTimes(1);
+    expect(fixture.range.getClientRects).toHaveBeenCalledTimes(ranges);
+    subscription();
+  });
+  it("withholds a folded, clipped or control-covered house floor and publishes the real resized plane", () => {
+    const fixture = geometryFixture(), house = addHouseFloor(fixture);
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92, home: fixture.home as unknown as HTMLElement }); fixture.flush();
+    const floors = () => subscription.landings().filter(p => p.id.startsWith("companion-home-floor"));
+    expect(floors().length).toBeGreaterThan(0);
+    house.house.hasAttribute = name => name === "hidden"; fixture.win.emit("vic:panel-section"); fixture.advance(120); expect(floors()).toEqual([]);
+    house.house.hasAttribute = () => false; house.room.rect = box(110, 528, 340, 90); fixture.win.emit("resize"); fixture.advance(120); expect(floors()).toEqual([]);
+    house.room.rect = box(110, 528, 340, 132); house.floor.rect = box(110, 614, 340, 36); fixture.win.emit("resize"); fixture.advance(120);
+    expect(floors().every(p => p.y === 644)).toBe(true); expect(floors().length).toBeGreaterThan(0);
+    house.feed.rect = box(0, 500, 1000, 170); fixture.win.emit("resize"); fixture.advance(120); expect(floors()).toEqual([]);
+    subscription();
+  });
   it("offers real card tops plus real floor/home for deliberate drops, excluding glyph ledges", () => {
     const fixture = geometryFixture(); fixture.card.rect = box(470, 430, 260, 60);
     const subscription = observeCompanionPlatforms(fixture.root, () => {}, { home: fixture.home as unknown as HTMLElement });
