@@ -45,7 +45,9 @@ async function setup(page: Page, hunger = .58, patch: Partial<CompanionPreferenc
   // finite date-row entrances finish before testing a static ledge drop.
   await expect.poll(() => page.locator(".agenda-day,.public-day").evaluateAll(elements => elements.some(el => el.getAnimations().some(animation => animation.playState === "running" && animation.effect?.getComputedTiming().iterations !== Infinity)))).toBe(false);
   await page.waitForTimeout(160); // Geometry observer's 120ms coalescing window.
-  await expect(pet(page)).toBeInViewport({ ratio: 1 });
+  // Chromium reports .99999916 for a fully visible subpixel-translated76px
+  // box. The tiny tolerance is below .001px clipping; keep smooth travel.
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 });
 }
 async function openMenu(page: Page) {
   await actor(page).focus();

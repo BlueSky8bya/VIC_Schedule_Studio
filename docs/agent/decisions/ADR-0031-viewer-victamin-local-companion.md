@@ -17,3 +17,5 @@ Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시
 설정OFF는 즉시 언마운트·루프/observer/lease 해제, 세부취향 유지. 최초공개/상세/설정/미디어/쇼케이스/숨김에는 방해하지 않는다. 동작 줄이기는 제자리 표정 중심, 메뉴·키보드 대안 제공.
 
 재검토: 자연어 대화·서버 기억/학습·다중 캐릭터·실제 투표 동작 요청 때 범위/비용/권한을 별도 결정.
+
+동작 품질 정정([PLAN-043](../plans/PLAN-20261015-043-victamin-motion-continuity.md)): 256개 byte-distinct 포즈는 부드러운 연속 보행 인증이 아니다. 원본/공개 이미지 바이트를 보존하고 접지·중심 metadata와 의미 있는 짧은 clip을 별도로 쓴다. 위치는 full rAF/lite30Hz, 그림은6~8Hz·이동 거리 기반, 중단 시 활성 시계 유지. 그림만 실제 이동 방향으로 반사하고 UI/입력은 유지한다. 041의 full30/lite12 위치 cadence는 이 결정으로 대체한다. 빈번한 기하 관찰로 idle pose를 그리지 않는다.

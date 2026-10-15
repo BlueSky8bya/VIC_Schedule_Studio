@@ -77,7 +77,7 @@ test("reduced-motion keyboard lift can enter the menu, land and nap instead of s
   await menu(page).getByRole("button", { name: "잠깐 쉬기", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
   await expect.poll(() => supportDistance(page)).toBeLessThan(3);
-  await expect(pet(page)).toBeInViewport({ ratio: 1 });
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 }); // Subpixel intersection-ratio precision.
   await page.waitForTimeout(700);
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
 });
@@ -93,7 +93,7 @@ test("a visibility-event pause releases an airborne keyboard hold and resumes on
   await expect(actor(page)).toBeVisible();
   await expect(pet(page)).not.toHaveAttribute("data-state", "held");
   await expect.poll(() => supportDistance(page), { timeout: 4000 }).toBeLessThan(3);
-  await expect(pet(page)).toBeInViewport({ ratio: 1 });
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 });
   // A fresh hold/release still works; the old held state cannot leak back in.
   await actor(page).focus(); await page.keyboard.press("Space");
   await expect(pet(page)).toHaveAttribute("data-state", "held");
@@ -116,7 +116,7 @@ test("an autonomous jump freezes for a long-open menu and finishes after closing
   await expect.poll(async () => { const point = await feet(page); return Math.hypot(point.x - held.x, point.y - held.y); }, { timeout: 4000 }).toBeGreaterThan(4);
   await expect.poll(() => supportDistance(page), { timeout: 5000 }).toBeLessThan(3);
   await expect(pet(page)).not.toHaveAttribute("data-state", "held");
-  await expect(pet(page)).toBeInViewport({ ratio: 1 });
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 });
 });
 
 test("pausing a dragged snack releases capture and returns it to the floor", async ({ page }) => {

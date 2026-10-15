@@ -8,6 +8,8 @@ import { observeCompanionPlatforms } from "@/lib/ui/viewer-companion/geometry";
 import { acquireCompanionAmbientPreview } from "@/lib/ui/viewer-companion/ambient-preview";
 import { loadCompanionCare, saveCompanionCare } from "@/lib/ui/viewer-companion/care";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
+import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
+import registration from "@/lib/ui/viewer-companion/sprite-registration.json";
 import { gfxMode } from "@/lib/ui/gfx";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import "./viewer-companion.css";
@@ -16,7 +18,6 @@ type Props = { root: RefObject<HTMLDivElement | null>; preferences: CompanionPre
 type Control = { pet: () => void; place: () => void; rest: () => void; apple: () => void; lemon: () => void; clearFood: () => void; interrupt: () => void };
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const ease = (t: number) => t * t * (3 - 2 * t);
 const sizes = { small: 60, normal: 76, large: 92 };
 
 /** One optional local creature. It senses geometry, heart occupancy and local
@@ -24,6 +25,7 @@ const sizes = { small: 60, normal: 76, large: 92 };
  * Imperative transform/frame writes never re-render the calendar on a tick. */
 export default function ViewerCompanion({ root, preferences, blocked, agenda, monthKey, reduced }: Props) {
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
+  const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null);
   const control = useRef<Control | null>(null), brain = useRef(createBrain(performance.now()));
   const food = useRef<CompanionFoodControl>(null), careLoaded = useRef(false);
   const lastPose = useRef<{ x: number; y: number; monthKey: string } | null>(null);
@@ -42,14 +44,14 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
   useEffect(() => { menuOpen.current = menu; }, [menu]);
 
   useEffect(() => {
-    const el = body.current, button = actor.current, page = root.current;
-    if (!ready || !el || !button || !page || !preferences.enabled) return;
+    const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, facingLayer = facing.current;
+    if (!ready || !el || !button || !page || !image || !poseLayer || !facingLayer || !preferences.enabled) return;
     if (blocked) { el.hidden = true; menuOpen.current = false; setMenu(false); return; }
     if (!careLoaded.current) { brain.current = { ...brain.current, ...loadCompanionCare() }; careLoaded.current = true; }
     const hearts = createCompanionHearts(page);
     const saved = lastPose.current?.monthKey === monthKey ? lastPose.current : null;
     let platforms: Platform[] = [], x = saved?.x ?? innerWidth * .68, y = saved?.y ?? innerHeight - 18, support = "";
-    let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), stopped = false, sleeping = false;
+    let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, stopped = false, sleeping = false;
     let pause = true, started = false, nextDecision = 0, needsLanding = false, afterPetLanding = false, restAfterLanding = false, releaseAmbient = () => {};
     let action: CompanionAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, consumePlacementClick = false;
     let placementPointer: number | null = null;
@@ -57,14 +59,29 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     let clickGuard: ReturnType<typeof setTimeout> | undefined;
     let pressed: { id: number; x: number; y: number; at: number; dx: number; dy: number; lastX: number; direction: number; strokes: number; dragged: boolean; petted: boolean } | null = null;
     const size = sizes[preferences.size];
+    const visual = createCompanionMotion({ clips: registration.clips });
+    let presentationNow = 0;
+    let paintedRow = -1, paintedColumn = -1, paintedFacing = 0;
     const effective = reduced ? { ...preferences, roam: false, jump: false, ambientPrank: false } : preferences;
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
-      el.style.transform = `translate3d(${Math.round(x - size / 2)}px,${Math.round(y - size)}px,0)`;
-      el.style.setProperty("--vc-column", `${clamp(Math.floor(frame), 0, 15) / 15 * 100}%`);
-      el.style.setProperty("--vc-row", `${row / 15 * 100}%`);
+      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x, y, now: presentationNow, reduced });
+      // World travel stays smooth even when the pixel pose holds. Registration
+      // is measured from the opaque body, not transparent padding/shadow specks.
+      el.style.transform = `translate3d(${(x - size / 2).toFixed(3)}px,${(y - size).toFixed(3)}px,0)`;
+      poseLayer.style.transform = `translate3d(0,${sample.bob.toFixed(3)}px,0) scale(${sample.scaleX.toFixed(4)},${sample.scaleY.toFixed(4)})`;
+      if (sample.facing !== paintedFacing) { facingLayer.style.transform = `scaleX(${sample.facing})`; el.dataset.facing = sample.facing < 0 ? "left" : "right"; paintedFacing = sample.facing; }
+      if (sample.row !== paintedRow || sample.column !== paintedColumn) {
+        const cell = registration.frames[sample.row][sample.column];
+        el.style.setProperty("--vc-column", `${sample.column / 15 * 100}%`);
+        el.style.setProperty("--vc-row", `${sample.row / 15 * 100}%`);
+        image.style.transform = `translate3d(${cell.x / 80 * size}px,${cell.y / 80 * size}px,0)`;
+        image.style.clipPath = `inset(${cell.clip.map(value => `${value / 80 * 100}%`).join(" ")})`;
+        paintedRow = sample.row; paintedColumn = sample.column;
+      }
       el.dataset.state = status;
       el.dataset.platform = support;
+      el.hidden = false;
     };
     const clearAction = () => { action = null; food.current?.nibble(); heartResult = null; sleeping = false; releaseAmbient(); releaseAmbient = () => {}; el.removeAttribute("data-hidden"); el.removeAttribute("data-heart-result"); if (effect.current) { effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }) => {
@@ -113,37 +130,38 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     };
     const tick = (now: number) => {
       if (stopped || pause) return;
-      const delta = Math.max(0, now - lastTick), elapsed = Math.min(1000, delta); lastTick = now;
-      brain.current = advanceBrain(brain.current, elapsed);
-      saveCompanionCare(brain.current);
-      if (menuOpen.current || placing) { if (action) began += delta; paint(1, Math.floor(now / 160) % 16, placing ? "placing" : "look"); schedule(); return; }
+      const delta = Math.max(0, now - lastTick); lastTick = now;
+      presentationNow += delta;
+      if (now - lastNeeds >= 250) { brain.current = advanceBrain(brain.current, now - lastNeeds); saveCompanionCare(brain.current); lastNeeds = now; }
+      if (menuOpen.current || placing) { if (action) began += delta; paint(1, 0, placing ? "placing" : "look"); schedule(); return; }
       if (pressed || keyboardHeld) {
         const happy = pressed?.petted;
-        paint(happy ? 9 : pressed && now - pressed.at < 250 ? 7 : 8, Math.floor(now / (reduced ? 500 : 80)) % 16, happy ? "petted" : "held");
+        paint(happy ? 9 : pressed && now - pressed.at < 250 ? 7 : 8, pressed ? (now - pressed.at) / 250 * 15 : 15, happy ? "petted" : "held");
         schedule(); return;
       }
-      if (now < petUntil) { paint(9, Math.floor((1500 - petUntil + now) / 95) % 16, "petted"); schedule(); return; }
+      if (now < petUntil) { paint(9, 0, "petted"); schedule(); return; }
       if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
       if (action?.foodId && !food.current?.foods().some(item => item.id === action!.foodId)) { clearAction(); settle({ x, y }); nextDecision = now + 300; }
       if (!action && now >= nextDecision) launch(getAction(brain.current, { x, y, platformId: support, platforms, width: innerWidth, height: innerHeight, ambientAvailable: true, foods: food.current?.foods(), pointer }, effective, now), now);
-      let row = 0, frame = Math.floor(now / 150) % 16, status = "idle";
+      let row = 0, frame = 0, status = "idle";
       if (action) {
         const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
-        if (action.kind === "walk") { x = lerp(origin.x, action.target.x, ease(p)); row = 2; frame = Math.floor(age / 75) % 16; }
+        if (action.kind === "walk") { x = lerp(origin.x, action.target.x, p); row = 2; }
         else if (action.kind === "jump") {
-          if (travel === -1) { x = lerp(origin.x, action.target.x, p); y = lerp(origin.y, action.target.y, p * p); row = p < .8 ? 5 : 6; frame = Math.floor(p * 15); }
+          if (travel === -1) { x = lerp(origin.x, action.target.x, p); y = lerp(origin.y, action.target.y, p * p); row = p < .8 ? 5 : 6; frame = (p < .8 ? p / .8 : (p - .8) / .2) * 15; }
           else if (age < 180) { row = 3; frame = age / 180 * 15; }
           else if (age < 180 + travel) {
             const t = (age - 180) / 1000, progress = clamp((age - 180) / travel, 0, 1);
             x = lerp(origin.x, action.target.x, progress); y = origin.y - Math.sqrt(2 * 1100 * 140) * t + .5 * 1100 * t * t;
-            row = t < Math.sqrt(2 * 1100 * 140) / 1100 ? 4 : 5; frame = progress * 15;
+            const apex = Math.sqrt(2 * 1100 * 140) / 1100;
+            row = t < apex ? 4 : 5; frame = (t < apex ? t / apex : (t - apex) / Math.max(.001, travel / 1000 - apex)) * 15;
           } else { x = action.target.x; y = action.target.y; row = 6; frame = (age - 180 - travel) / 260 * 15; }
         } else if (action.kind === "sleep") {
           sleeping = true; row = age < 1000 ? 10 : total - age < 1100 ? 12 : 11;
-          frame = row === 10 ? age / 1000 * 15 : row === 12 ? (age - total + 1100) / 1100 * 15 : Math.floor(age / 200) % 16;
+          frame = row === 10 ? age / 1000 * 15 : row === 12 ? (age - total + 1100) / 1100 * 15 : 0;
           if (effect.current) effect.current.textContent = row === 11 ? "z Z" : "";
         } else if (action.kind === "heart" || action.kind === "hide") {
-          if (age < travel) { x = lerp(origin.x, action.target.x, age / Math.max(1, travel)); row = 2; frame = Math.floor(age / 75) % 16; }
+          if (age < travel) { x = lerp(origin.x, action.target.x, age / Math.max(1, travel)); row = 2; }
           else if (action.kind === "heart") {
             const t = (age - travel) / action.duration; row = 13; frame = t * 15;
             y = origin.y + Math.max(0, Math.sin(t * Math.PI * 2)) * (reduced ? 0 : 18);
@@ -169,18 +187,19 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         else if (action.kind === "eat") {
           // Existing limbless happy/breathing poses make a tiny nibble loop;
           // fruit and satisfaction are separate from the sprite, no new limbs.
-          row = p < .2 ? 1 : 9; frame = Math.floor(age / 110) % 16;
+          row = p < .2 ? 1 : 9; frame = p < .2 ? p / .2 * 15 : 0;
           food.current?.nibble(action.foodId, p);
           if (effect.current) effect.current.textContent = p > .6 ? "✧" : "";
         } else if (action.kind === "look") { row = 1; frame = p * 15; }
         if (p >= 1) {
           const rested = sleeping;
+          const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump"));
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
             brain.current = recordCompanionEvent(brain.current, "ate"); saveCompanionCare(brain.current, true);
             petUntil = now + (reduced ? 400 : 1100);
           }
           if (["walk", "jump", "heart", "hide"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
-          clearAction(); if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + 450;
+          clearAction(); if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (continueRoute ? 0 : 220);
           if (restAfterLanding) { restAfterLanding = false; control.current?.rest(); }
         }
       }
@@ -190,15 +209,19 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const schedule = () => {
       if (stopped || pause) return;
       if (reduced) timer = setTimeout(() => tick(performance.now()), 400);
-      else raf = requestAnimationFrame(now => { const interval = gfxMode() === "full" ? 1000 / 30 : 1000 / 12; if (now - lastPaint >= interval) { lastPaint = now; tick(now); } else schedule(); });
+      else raf = requestAnimationFrame(now => {
+        const deadline = nextCompanionPaint(now, lastPaint, gfxMode() === "full" ? 0 : 30);
+        if (deadline !== null) { lastPaint = deadline; tick(now); }
+        else schedule();
+      });
     };
     const sync = () => {
       const html = document.documentElement;
       const next = blocked || document.hidden || page.inert || html.hasAttribute("data-showcase") || html.hasAttribute("data-ambient-pause");
       if (next === pause && started) return;
-      started = true; pause = next; el.hidden = next;
+      started = true; pause = next; if (next) el.hidden = true;
       food.current?.pause(next);
-      cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now();
+      cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
       if (pause) { needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; saveCompanionCare(brain.current, true); clearAction(); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; menuOpen.current = false; setMenu(false); }
       else { if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; schedule(); }
     };
@@ -275,7 +298,8 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         if (!p || action && (changed(support) || target && changed(target))) { clearAction(); settle({ x, y }); }
         else if (!action) { x = platformLandingX(p, x); y = p.y; }
       }
-      if (!pressed && !keyboardHeld) paint(0, 0, "idle");
+      // Only the animation loop paints. Heart/resize observations must not
+      // insert an idle frame into a running walk, jump or meal.
     });
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-showcase", "data-ambient-pause", "data-gfx"] });
@@ -302,7 +326,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
   const closeMenu = () => { menuOpen.current = false; setMenu(false); actor.current?.focus({ preventScroll: true }); };
   const act = (kind: keyof Control) => { closeMenu(); control.current?.[kind](); };
   return createPortal(<><div className="vc-companion" ref={body} hidden data-sfx="off">
-    <button className="vc-actor" ref={actor} type="button" data-sfx="off" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space ArrowUp ArrowDown ArrowLeft ArrowRight Escape"><span className="vc-sprite" aria-hidden="true" /><span className="vc-effect" ref={effect} aria-hidden="true" /></button>
+    <button className="vc-actor" ref={actor} type="button" data-sfx="off" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space ArrowUp ArrowDown ArrowLeft ArrowRight Escape"><span className="vc-facing" ref={facing} aria-hidden="true"><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span><span className="vc-effect" ref={effect} aria-hidden="true" /></button>
     <span className="sr-only" id="vc-help">Enter로 쓰다듬기. 스페이스로 집고 화살표로 이동한 뒤 스페이스나 Escape로 놓기. 메뉴의 옮기기로 원하는 곳을 눌러도 돼요.</span>
     <button className="vc-menu-toggle" aria-label="빅타민 메뉴" aria-expanded={menu} type="button" onClick={() => { locateMenu(); if (!menu) control.current?.interrupt(); setMood(brain.current.hunger >= .7 ? "배가 꼬르륵" : brain.current.hunger >= .35 ? "간식 생각 중" : brain.current.energy < .4 ? "졸음이 솔솔" : "배가 든든해요"); menuOpen.current = !menu; setMenu(!menu); }}>···</button>
     {menu ? <div className="vc-menu" role="group" aria-label="빅타민과 놀기" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeMenu(); } }}>

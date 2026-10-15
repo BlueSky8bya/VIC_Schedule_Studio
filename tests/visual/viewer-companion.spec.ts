@@ -44,7 +44,7 @@ async function stationaryFixture(page: Page, reduced = false) {
   await seed(page, { enabled: true, roam: false, heartPrank: false, ambientPrank: false }, reduced);
   await page.goto("/visual-fixture/poster");
   await expect(actor(page)).toBeVisible();
-  await expect(pet(page)).toBeInViewport({ ratio: 1 });
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 }); // Subpixel intersection-ratio precision.
 }
 
 test("default OFF downloads no sprite, and the shared settings turn it on and off", async ({ page }) => {
@@ -101,7 +101,7 @@ for (const width of [1440, 390]) {
     await page.mouse.up();
     await expect.poll(async () => (await pet(page).getAttribute("data-state")) !== "held").toBe(true);
     await page.waitForTimeout(750);
-    await expect(pet(page)).toBeInViewport({ ratio: 1 });
+    await expect(pet(page)).toBeInViewport({ ratio: .99999 });
     await page.screenshot({ path: `.scratch-pw/viewer-companion-${width}.png` });
     expect(requests.get(page)!.posts).toEqual([]);
   });
@@ -184,7 +184,7 @@ test("a settings overlay pauses the companion and closing resumes it", async ({ 
   await expect(pet(page)).not.toBeVisible();
   await page.getByRole("dialog", { name: "설정", exact: true }).getByRole("button", { name: "닫기", exact: true }).click();
   await expect(actor(page)).toBeVisible();
-  await expect(pet(page)).toBeInViewport({ ratio: 1 });
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 });
   const a = await pet(page).evaluate(el => (el as HTMLElement).style.getPropertyValue("--vc-column"));
   await expect.poll(() => pet(page).evaluate(el => (el as HTMLElement).style.getPropertyValue("--vc-column"))).not.toBe(a);
 });
@@ -216,7 +216,7 @@ test("autonomous exploration advances sprite poses and moves without a server re
     const p = await position(page);
     return Math.hypot(p.x - before.x, p.y - before.y);
   }, { timeout: 15000 }).toBeGreaterThan(8);
-  await expect(pet(page)).toBeInViewport({ ratio: 1 });
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 });
   expect(requests.get(page)!.posts).toEqual([]);
 });
 

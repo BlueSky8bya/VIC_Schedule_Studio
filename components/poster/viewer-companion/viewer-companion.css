@@ -2,6 +2,7 @@
 .vc-companion[hidden] { display: none; }
 .vc-actor { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); border: 0; padding: 8px; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
 .vc-actor:focus-visible, .vc-menu-toggle:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
+.vc-facing, .vc-pose { display: block; width: 100%; height: 100%; pointer-events: none; transform-origin: 50% 100%; }
 .vc-sprite { display: block; width: 100%; height: 100%; background: url('/companion/victamin-motion.webp') var(--vc-column) var(--vc-row) / 1600% 1600% no-repeat; image-rendering: pixelated; pointer-events: none; }
 .vc-companion[data-state="held"] .vc-actor { cursor: grabbing; }
 .vc-effect { position: absolute; left: 65%; top: 0; color: var(--teaser); font-size: 18px; font-weight: 600; transform: translateY(var(--vc-effect, 0px)); pointer-events: none; white-space: nowrap; }
@@ -23,8 +24,6 @@ html .poster-page .event-heart[data-companion-hearted]:not([aria-pressed="true"]
 .event-heart[data-companion-hearted]::before { content: '✧'; position: absolute; right: -5px; top: -6px; font-size: 10px; line-height: 1; pointer-events: none; }
 .vc-companion[data-heart-result="blocked"] .vc-effect { color: var(--muted); animation: vc-bonk .65s ease-out both; }
 @keyframes vc-bonk { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.8) translateY(-8px); opacity: .2; } }
-.vc-companion[data-state="eat"] .vc-sprite { animation: vc-nibble .38s ease-in-out infinite alternate; transform-origin: 50% 90%; }
-@keyframes vc-nibble { to { transform: scale(1.025, .965) rotate(1deg); } }
 .vc-food-layer { position: fixed; inset: 0; z-index: 74; pointer-events: none; }
 .vc-food-layer[hidden] { display: none; }
 .vc-food { position: absolute; width: 44px; height: 44px; margin: -38px 0 0 -22px; padding: 4px; border: 0; background: transparent; border-radius: var(--r-pill); pointer-events: auto; touch-action: none; cursor: grab; user-select: none; }
@@ -33,5 +32,4 @@ html .poster-page .event-heart[data-companion-hearted]:not([aria-pressed="true"]
 .vc-food:active { cursor: grabbing; }
 .vc-food-hint { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: calc(100vw - 24px); padding: 10px 16px; border: 1px solid var(--line); border-radius: var(--r-pill); background: rgb(var(--glass-panel)); box-shadow: var(--elev-2); color: var(--ink); font-size: var(--text-body); white-space: nowrap; }
 .vc-food-hint kbd { margin-left: 8px; color: var(--muted); font: inherit; font-size: var(--text-label); }
-html[data-reduce-motion] .vc-companion[data-heart-result="blocked"] .vc-effect,
-html[data-reduce-motion] .vc-companion[data-state="eat"] .vc-sprite { animation: none; }
+html[data-reduce-motion] .vc-companion[data-heart-result="blocked"] .vc-effect { animation: none; }
