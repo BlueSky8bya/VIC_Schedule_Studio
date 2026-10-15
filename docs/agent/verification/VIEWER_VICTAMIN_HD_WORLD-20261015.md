@@ -1,6 +1,6 @@
 # 빅타민 전체 HD·환경 목표·직접 생활 검증
 
-2026-10-15 KST. [PLAN-052](../plans/PLAN-20261015-052-companion-unified-hd-and-living-world.md). 구현과 fixture 검증 완료. 실제 익명 화면·운영 확인은 아래 완료 표에 별도로 기록한다.
+2026-10-15 KST. [PLAN-052](../plans/PLAN-20261015-052-companion-unified-hd-and-living-world.md). 구현·fixture·실제 익명 화면 검증 및 운영 배포 완료. 제품 커밋 `8cdfeb63efa32549df2506f2a7093457dbb60363`.
 
 ## 구현 계약
 
@@ -29,12 +29,16 @@ DB/서버 모델 요청/새 생산 의존성0. packet당 RGBA2.25MiB, 완료 강
 | 단위·원본/전체304 밀도/face 보호/packet 재현 | 관련26파일275/275 PASS. HD 자산8검사와 오프라인 `--check` 재현 PASS. 원본3개 hash 보존, 전체304셀별 RGB hash·alpha 및 얼굴 rigid 보호 검증 |
 | production fixture PC·터치·창 복귀·수면 조작·첫 충돌·집 추종 | 최종 제품의 고유47건 PASS: 일반42건+모션4건+수면 두 번 누르기1건으로 나눠 실행 |
 | 문서/harness | rule-migration25/25 PASS. harness 본 검사는 기존 rule inventory 불일치2건 FAIL 유지 |
-| 익명 실제 `/` 과거2025-09·기본OFF→설정ON·창/접기 | 최종 실행 중 |
-| 운영 SHA/PC·터치 확인 | 커밋/배포 후 확인 |
+| 익명 실제 `/` 과거2025-09·기본OFF→설정ON·창/접기 | PC1920/DPR2 PASS(수면 드래그+세 창 닫기/복귀). 모바일390 네이티브 일반 조작 PASS(세 창 첫 단일 탭 닫기/복귀·드래그 제외). 기본OFF 이미지0·92HD·동일DOM·dark·접힘 reload·POST 차단 확인 |
+| 운영 SHA/PC·터치 확인 | Vercel success·실제 `/api/soop-live` build가8cdfeb63과 일치. 운영 `/` PC1920/DPR2와 모바일390 각각 PASS. PC는 수면 드래그 포함, 모바일은 일반 네이티브 조작 대조이며 위 자동화 제한을 유지한다. 두 실행 모두 POST2차단/실제 전송0·오류0 |
 
 모든 UI 검사는 fixture/합성 응답 또는 과거 달 읽기이며 모든POST를 가로챈다. 실제 DB 시험 쓰기/현재·미래 시험 일정0. public DTO/서버 권한/unlock/KST 경로 변경0. 독립 검토에서 상세창 outside-close, 수동 지원 숨김·inset,32px 입력 경계·먹이 접근 매핑, drag중blur 안전 자리 복구를 확인하고 수정했다. 스크롤 직후 첫 rAF가 누락되던 음식 추종의 시각 기준도 수정했다. full/lite의 fixture 상대 위치 갱신은60/29Hz였고, PC 음식 추종 오차 p95 약0.00081px·최대2px였다. 이는 실제 OBS 성능 보장이 아니다.
 
 일정 클릭 시 브라우저의 기본 초점 스크롤16px는 발판과 펫이 함께 이동하는 정상 동작이었다. 수면 두 번 누르기 검사는 같은 DOM 발판과 문서 좌표로 비교하도록 수정했다. 원래 오차 문턱3px는 유지했고 독립3회 측정의 최대 문서 좌표 오차는0.078px였다. 잠든 상태350ms의 runtime DOM 쓰기0·CSS zzZ 진행, PC/네이티브 CDP 터치 이동, 창 닫기 전후 동일 DOM/행렬, LRU 퇴출 뒤 실제 재디코드도 검사했다.
+
+실제 `/`의 추가 모바일 CDP 드래그 뒤 다음 첫 탭에서는 trusted down/up/touchend가 도착해도 Chromium이 click을 합성하지 않는 경우가 있었다. React·앱·CSS가 없는 두 버튼 HTML에서도 preventDefault/capture 유무4조합 모두 재현됐다. 창 가림·앱의 이벤트 취소와는 분리했으며 닫기 버튼이나 수면 입력을 임의 우회 수정하지 않았다. 일반 네이티브 터치 세 창 닫기와 fixture 수면 드래그를 별도 근거로 기록한다. CDP 드래그→세 창 첫 탭 닫기의 단일 모바일 흐름 전체 PASS나 실제 휴대폰 검증으로 합치지 않는다. 대조 로그: `.scratch-pw/companion-052-native-touch-reduced.{cjs,json}`, `companion-052-public-mobile-control-final.log`. 운영 스모크도 `mobileControlOnly:true/sleepingDrag:false`를 기록한다.
+
+운영 모바일의350ms settle 단계를 polling이 놓친 검사는 창 닫기 전 MutationObserver로 모든 단계를 보존해 확인하도록 바꿨다. 세 창 모두 `wake→return→settle→done→제거`, 첫 wake의 좌표/폭 오차0을 확인했으며 제품이나 연속성 문턱은 바꾸지 않았다. 운영의 PC와 모바일은 별도 성공 실행이다. 합성 근거 `.scratch-pw/companion-052-public-production-combined.json`, PC 로그 `companion-052-public-production-final.log`, 모바일 로그 `companion-052-public-production-mobile-final.log`, 배포 증거 `companion-052-production-deploy.json`.
 
 전체 저장소 단위 검사는157파일1381건 중1372 PASS/9 FAIL이다. 기존 실패는 HEAD36fba2b1을 별도 source archive로 실행해 분리했다. 변경 전7파일9실패가 동일하게 재현됐다: activity-labels(기존 settings-companion-tab), ambient-codex2, centering-vs-animation(month-picker), public-cache-revalidate, scroll-position-wiring, timeline-route, vod-chat-recovery2. 해당7파일의 기준판 재실행은82 PASS/9 FAIL이며 이번 범위 검사를 약화하거나 관련 없는 제품을 수정하지 않았다. 기존 harness inventory2실패도 그대로다. 전체 검사 PASS로 보고하지 않는다.
 
