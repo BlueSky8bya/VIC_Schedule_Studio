@@ -4,7 +4,11 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
-[PLAN-063](../agent/plans/PLAN-20261016-063-mobile-without-companion.md)의 최신 소유자 결정이062의 모바일 집/관객과 편집실 숨바꼭질 제외를 대체한다. 모바일에는 빅타민 엔진·집·음식·설정 탭·최초공개 응원단을 마운트하지 않는다. 시청자·편집실·미리보기 모두 기존 `POSTER_AGENDA_QUERY`를 capability로 공유해 화면 전환 경계가 달라도 다시 켜지지 않게 한다. PC의 저장된 ON/세부 취향은 유지한다. 모바일 공통44px 설정 톱니는 양쪽 헤더 오른쪽 safe-area 같은 위치에 놓고 X·뒤로가기·원래 버튼 focus 복원을 보존한다.
+[PLAN-063](../agent/plans/PLAN-20261016-063-mobile-without-companion.md)의 소유자 결정이062의 모바일 집/관객과 편집실 숨바꼭질 제외를 대체한다. 모바일에는 빅타민 엔진·집·음식·설정 탭·최초공개 응원단을 마운트하지 않는다. 시청자·편집실·미리보기 모두 기존 `POSTER_AGENDA_QUERY`를 capability로 공유해 화면 전환 경계가 달라도 다시 켜지지 않게 한다. PC의 저장된 ON/세부 취향은 유지한다. 모바일도 공통44px 설정 톱니·설정 창과 X·뒤로가기·원래 버튼 focus 복원을 공유한다.
+
+[PLAN-064](../agent/plans/PLAN-20261016-064-companion-production-sofa.md)의 최신 소유자 위치 예외는063의 양쪽 헤더 동일 위치와 UI-18의 위치 통일에 한정해 우선한다. 편집실 톱니는 가운데 월 이동 그룹을 유지한 채 그 줄 오른쪽 safe-area에 놓고, 시청자는 기존 헤더 오른쪽 위치를 유지한다. 컨트롤 크기·설정 목록·창·history·focus 구현은 계속 공유한다.
+
+같은064의 소파 앞면은 실제 전체 표시 몸체로 안/밖 깊이를 판정한다. 잡기·도약 중 발판 이름만 보고 앞면을 켜지 않는다. 실제 소파 그림/좌석/앞면은 동일 기하를 유지한다. pet의 보라 원형 focus/placing 표시는 쓰지 않으며 키보드는 중립색 짧은 선을 사용한다. [운영 검증](../agent/verification/COMPANION_PRODUCTION_CONTACT-20261016.md).
 
 [PLAN-062](../agent/plans/PLAN-20261016-062-companion-studio-and-contact.md) extends the same optional/default-OFF92px companion to ordinary studio screens. Use the same preferences, renderer, local care, house, disclosure persistence and settings gear/window. Studio adapters opt in only rendered public ordinary schedules; never invoke edit/save/delete/vote/navigation controls. The studio's structural day role=button must not block all nested public platforms; actual controls/private cards remain protected. A hidden guest appears only after the user opens that public ordinary event's editor. It dozes in measured blank content-field space, outside editable DOM, avoiding actual glyphs and controls; typed reflow or insufficient space moves its visual perch safely. Selected event and unsaved form must both remain public/non-teaser; closing, changing selection or scope revokes the bridge. Native editor gestures and input always win.
 

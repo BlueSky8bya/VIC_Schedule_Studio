@@ -13,7 +13,9 @@ import { companionPremiereMoment, companionPremiereReturn, COMPANION_PREMIERE_EN
 import { sampleCompanionPremiereTravel } from "@/lib/ui/viewer-companion/premiere-travel";
 import { syncedNow } from "@/lib/ui/synced-clock";
 import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
-import { companionSofaRelease } from "@/lib/ui/viewer-companion/sofa";
+import { companionSofaDepth, companionSofaRelease, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
+import { projectCompanionSofaBody } from "@/lib/ui/viewer-companion/sofa-pose";
+import { sampleCompanionSofaTravel } from "@/lib/ui/viewer-companion/sofa-travel";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare } from "@/lib/ui/viewer-companion/care";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
@@ -202,6 +204,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const front = bedForeground.current;
     let bedScene: { anchor: Element; anchorX: number; anchorY: number; left: number; top: number; width: number; height: number; clip: { left: number; top: number; right: number; bottom: number } } | undefined;
+    const sofaPassage = (progress: number) => bedScene?.anchor.isConnected && action?.kind === "jump" && (travel === -2 || travel > 0) && (support === "companion-home" || action.target.platformId === "companion-home")
+      ? sampleCompanionSofaTravel(origin, action.target, progress, Math.max(size + 8, bedScene.top + bedScene.height * .19 - size * .24 - 8)) : undefined;
     const hideBed = () => { if (front && !front.hidden) front.hidden = true; };
     // One extra static scene sample per existing geometry delivery. Frame
     // following below carries its cached anchor delta without new DOM reads.
@@ -288,6 +292,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const overlayObserved = new Set<HTMLElement>();
     const disconnectOverlay = () => { overlayResize?.disconnect(); overlayMutation?.disconnect(); overlayObserved.clear(); };
     let paintedRow = -1, paintedColumn = -1, paintedCell = "", paintedFacing = 0, forceNeutralPose = false;
+    let paintedRegistration: { x: number; y: number; clip: readonly number[] } | undefined;
+    let sofaDepth: CompanionSofaDepth = "clear";
+    let sofaContact: { point: CompanionSofaPoint; body: readonly CompanionSofaPoint[]; depth: CompanionSofaDepth } | undefined;
     const effective = reduced ? { ...preferences, roam: false, jump: false, ambientPrank: false } : preferences;
     const paintedStyles = new WeakMap<HTMLElement, Map<string, string>>();
     const style = (node: HTMLElement, name: string, value: string) => {
@@ -298,7 +305,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (values.get(name) !== value) { node.style.setProperty(name, value); values.set(name, value); }
     };
     const data = (name: string, value: string) => { if (el.dataset[name] !== value) el.dataset[name] = value; };
-    const resetInertia = () => { heldInertia.reset(); style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
+    const resetInertia = () => { heldInertia.reset(); sofaContact = undefined; style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       const hide = hideSeek.sample(presentationNow);
@@ -382,6 +389,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         image.style.clipPath = `inset(${cell.clip.map(value => `${value / 80 * 100}%`).join(" ")})`;
         data("pose", String(selected.physicalIndex)); data("atlas", "hd"); data("quality", "sharp");
         paintedCell = cellKey;
+        paintedRegistration = cell;
       }
       data("state", status);
       data("platform", support);
@@ -394,13 +402,28 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = !paintedCell;
-      if (front && bedScene?.anchor.isConnected && !el.hidden && !pause && !premiereActive && !premiereBounce && (!overlayActive || overlayHomeResident) && !hiding && !homeOccluded && (support === "companion-home" || action?.target.platformId === "companion-home")) {
+      // Depth belongs to the complete currently painted body, including its
+      // held pivot and inertia. Support/target IDs cannot describe a side-on
+      // drag or the middle of a jump. Reuse this frame's numbers and cached
+      // bed geometry: no computed-style reads or new animation loop.
+      sofaContact = undefined;
+      if (front && bedScene?.anchor.isConnected && paintedRegistration && !el.hidden && !pause && !premiereActive && !premiereBounce && (!overlayActive || overlayHomeResident) && !hiding && !homeOccluded) {
         const b = bedScene, right = b.left + b.width, bottom = b.top + b.height;
+        const body = projectCompanionSofaBody({ size, display, cell: paintedRegistration, shape, pressure, response, facing: sample.facing, sway, chew,
+          poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
+          inertiaOrigin: grip });
+        sofaDepth = companionSofaDepth({ point: display, body, bed: { left: b.left, right, top: b.top, bottom }, seatY: supportById("companion-home")?.y ?? b.anchorY, previous: sofaDepth });
+        sofaContact = { point: { x, y }, body, depth: sofaDepth };
+        data("sofaDepth", sofaDepth);
+        if (front.dataset.depth !== sofaDepth) front.dataset.depth = sofaDepth;
+        // Front/outside creatures paint above the whole sofa. Only a fully
+        // contained resident belongs between its back and the matching U.
+        style(front, "z-index", sofaDepth === "seat" || sofaDepth === "back" ? "76" : "74");
         style(front, "transform", `translate3d(${b.left.toFixed(3)}px,${b.top.toFixed(3)}px,0)`);
         style(front, "width", `${b.width}px`); style(front, "height", `${b.height}px`);
         style(front, "clip-path", `inset(${Math.max(0, b.clip.top - b.top, -b.top)}px ${Math.max(0, right - b.clip.right, right - innerWidth)}px ${Math.max(0, bottom - b.clip.bottom, bottom - innerHeight)}px ${Math.max(0, b.clip.left - b.left, -b.left)}px)`);
         if (front.hidden) front.hidden = false;
-      } else hideBed();
+      } else { sofaDepth = "clear"; data("sofaDepth", "clear"); hideBed(); }
       if (el.hidden) stopHover();
     };
     const displayedPoint = (): CompanionReturnPoint => {
@@ -429,6 +452,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     // the real DOM anchor delta carries a journey; its clock never restarts.
     const refreshAnchors = (now: number, scroll = false) => {
       if (premiereActive || overlayActive || hiding) return false;
+      const progress = action ? clamp((now - began) / Math.max(1, total), 0, 1) : 0;
+      const previousPassage = sofaPassage(progress);
       const samples = geometryTracker?.follow([support, action?.target.platformId ?? ""].filter(Boolean)) ?? [];
       const deltas = new Map<string, { x: number; y: number }>();
       for (const sample of samples) {
@@ -452,14 +477,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       let px = 0, py = 0;
       if (action) {
         const age = now - began, p = clamp(age / Math.max(1, total), 0, 1);
-        if (action.kind === "jump") { px = travel > 0 ? clamp((age - 180) / travel, 0, 1) : travel === -2 || travel === -4 ? sampleCompanionTravel(p) : travel === -3 ? sampleCompanionTravel(clamp(p / .78, 0, 1)) : p; py = travel === -1 ? p * p : px; }
+        if (action.kind === "jump") { px = sofaPassage(p)?.horizontal ?? (travel > 0 ? clamp((age - 180) / travel, 0, 1) : travel === -2 || travel === -4 ? sampleCompanionTravel(p) : travel === -3 ? sampleCompanionTravel(clamp(p / .78, 0, 1)) : p); py = travel === -1 ? p * p : px; }
         else if (action.kind === "walk") px = py = sampleCompanionTravel(p);
         else if (action.kind === "heart" || action.kind === "hide") px = py = sampleCompanionTravel(clamp(age / Math.max(1, travel), 0, 1));
         origin.x += from.x; origin.y += from.y;
         action.target.x += to.x; action.target.y += to.y;
         if (action.effectPoint) { action.effectPoint.x += to.x; action.effectPoint.y += to.y; }
       }
-      const dx = lerp(from.x, to.x, px), dy = lerp(from.y, to.y, py);
+      // Lift/land carry different vertical weights from lateral passage.
+      // Compare the same clock sample before/after moving its real anchors;
+      // using horizontal progress for y would snap on the next world tick.
+      const movedPassage = previousPassage && sofaPassage(progress);
+      const dx = movedPassage ? movedPassage.x - previousPassage!.x : lerp(from.x, to.x, px), dy = movedPassage ? movedPassage.y - previousPassage!.y : lerp(from.y, to.y, py);
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
       if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump") supportMotion.push(dy, now);
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
@@ -497,7 +526,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // User releases hit the first real card top on this vertical ray. The
       // separate text ledges remain the only autonomous destinations.
       const bed = bedScene?.anchor.isConnected ? bedScene : undefined;
-      const sofa = !nearby && !atX && bed ? companionSofaRelease(point, { left: bed.left, right: bed.left + bed.width, top: bed.top, bottom: bed.top + bed.height }, supportById("companion-home"), landingPlatforms, size) : null;
+      const contact = sofaContact && Math.hypot(sofaContact.point.x - point.x, sofaContact.point.y - point.y) <= 1 ? sofaContact : undefined;
+      const sofa = !nearby && !atX && bed ? companionSofaRelease(point, { left: bed.left, right: bed.left + bed.width, top: bed.top, bottom: bed.top + bed.height }, supportById("companion-home"), landingPlatforms, size, contact) : null;
       const p = sofa ? supportById(sofa.platformId) : atX ? nearestVerticalCompanionSupport(point, platforms) : nearby ? nearestPlatform(point, platforms) : firstCompanionSupportBelow(point, landingPlatforms);
       awaitingAtX = atX && !p; verticalLanding = atX || !nearby;
       if (!p) { support = ""; clearAction(); stopHover(); el.hidden = true; return; }
@@ -795,7 +825,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
         if (action.kind === "walk") { x = lerp(origin.x, action.target.x, sampleCompanionTravel(p)); row = 2; }
         else if (action.kind === "jump") {
-          if (travel === -2) { const eased = sampleCompanionTravel(p), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 60, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * lift; row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
+          const passage = sofaPassage(p);
+          if (passage) { x = passage.x; y = passage.y; row = p < .28 ? 4 : p < .84 ? 5 : 6; frame = (p < .28 ? p / .28 : p < .84 ? (p - .28) / .56 : (p - .84) / .16) * 15; }
+          else if (travel === -2) { const eased = sampleCompanionTravel(p), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 60, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * lift; row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
           else if (travel === -3) { const progress = clamp(p / .78, 0, 1), eased = sampleCompanionTravel(progress), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 10, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(progress * Math.PI) * lift; row = p < .78 ? 5 : 6; frame = (p < .78 ? progress : (p - .78) / .22) * 15; }
           else if (travel === -4) { const eased = sampleCompanionTravel(p); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased); row = p < .8 ? 5 : 6; frame = p * 15; }
           else if (travel === -1) { x = lerp(origin.x, action.target.x, p); y = lerp(origin.y, action.target.y, p * p); row = p < .8 ? 5 : 6; frame = (p < .8 ? p / .8 : (p - .8) / .2) * 15; }
@@ -1299,7 +1331,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (overlayDrag?.id === event.pointerId) { releaseOverlayDrag(); updateOverlayPerch(); return; }
       if (!pressed || pressed.id !== event.pointerId) return;
       const held = pressed; pressed = null;
-      if (event.type === "pointercancel" || held.cancelled) resetInertia();
+      if (event.type === "pointercancel" || held.cancelled) { resetInertia(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); }
       el.removeAttribute("data-grab-ready");
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
       if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); }

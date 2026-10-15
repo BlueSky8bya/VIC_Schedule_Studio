@@ -71,7 +71,7 @@ for (const view of [{ name: "native390", width: 390, height: 844 }, { name: "coa
   for (const route of routes) test(`${route.name} ignores stored master ON without loading any pet and keeps the rest of settings usable`, async ({ page }) => {
     await page.goto(route.path); await expect(page.locator(route.surface)).toBeVisible(); await settle(page);
     await absent(page); const saved = await preferences(page); expect(JSON.parse(saved!).enabled).toBe(true);
-    const gear = page.locator(".agenda-header > .viewer-settings-open"); await gear.tap();
+    const gear = page.locator(".agenda-header > .viewer-settings-open,.m-month-nav > .viewer-settings-open"); await gear.tap();
     const modal = page.getByRole("dialog", { name: "설정", exact: true }); await expect(modal).toBeVisible();
     await expect(modal.locator('[data-tab="companion"]')).toHaveCount(0);
     await expect(modal.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toHaveCount(0);
@@ -84,7 +84,7 @@ for (const view of [{ name: "native390", width: 390, height: 844 }, { name: "coa
     await textSize.press("ArrowLeft"); await expect(textSize).toHaveValue(String(beforeSize));
     await modal.locator(".modal-head .modal-close").tap(); await expect(modal).toHaveCount(0);
     await absent(page); expect(await preferences(page)).toBe(saved); expect(pets.get(page)).toEqual([]);
-    await page.screenshot({ path: `.scratch-pw/companion-063-disabled-${route.name}-${view.name}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-064-disabled-${route.name}-${view.name}.png` });
   });
 });
 

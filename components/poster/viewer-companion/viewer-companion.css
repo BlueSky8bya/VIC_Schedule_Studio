@@ -6,15 +6,19 @@
 .vc-bed-foreground { position: fixed; left: 0; top: 0; z-index: 76; pointer-events: none; }
 .vc-bed-foreground[hidden] { display: none; }
 .vc-actor { position: absolute; left: 12%; bottom: 0; width: 76%; height: 76%; border: 0; padding: 0; overflow: visible; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
-.vc-actor:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
-/* Pointer handling owns its visible character feedback. A keyboard event
-   clears this marker, retaining the normal keyboard focus indication. */
-.vc-companion[data-pointer-focus] .vc-actor:focus-visible { outline: none; box-shadow: none; }
+/* The global button focus rule must not restore a circular pet halo. A small
+   ink baseline preserves keyboard focus without painting over the character. */
+html .vc-companion .vc-actor { outline: none; box-shadow: none; }
+.vc-actor:focus-visible::before { content: ""; position: absolute; left: 50%; bottom: -6px; width: 24px; height: 2px; border-radius: 1px; background: var(--ink); opacity: .65; transform: translateX(-50%); pointer-events: none; }
+.vc-companion[data-pointer-focus] .vc-actor:focus-visible::before { opacity: 0; }
+.vc-companion:is([data-sofa-depth="seat"],[data-sofa-depth="back"]) .vc-actor:focus-visible::before { top: -6px; bottom: auto; }
 /* This captured drag plane must stay aligned with its world/grip coordinates.
    The inner pose owns feedback, instead of the global button press scale. */
 .vc-actor, .vc-actor:active:not(:disabled) { transform: none; transition: none; }
 .vc-inertia, .vc-facing, .vc-reaction, .vc-contact, .vc-pose { display: block; width: 100%; height: 100%; pointer-events: none; transform-origin: 50% 100%; }
-.vc-contact { transition: transform var(--dur-1) var(--ease); }
+/* The contact envelope already interpolates on the shared paint clock. A
+   second CSS tween would leave visible cloth contact behind its geometry. */
+.vc-contact { transition: none; }
 .vc-actor > .vc-inertia { position: absolute; bottom: 0; left: calc((100% - var(--vc-size, 76px)) / 2); width: var(--vc-size, 76px); height: var(--vc-size, 76px); }
 .vc-sprite { display: block; width: 100%; height: 100%; background-position: var(--vc-cell-x, 0%) var(--vc-cell-y, 0%); background-repeat: no-repeat; image-rendering: auto; pointer-events: none; }
 .vc-companion[data-state="held"] .vc-actor { cursor: grabbing; }
@@ -27,7 +31,7 @@
 [data-companion-hide-hint] { animation: vc-hide-hint 4.8s ease-in-out infinite; }
 @keyframes vc-hide-hint { 0%, 82%, 100% { rotate: 0deg; } 87% { rotate: -.32deg; } 92% { rotate: .32deg; } 97% { rotate: -.12deg; } }
 html[data-reduce-motion] [data-companion-hide-hint], html[data-gfx="off"] [data-companion-hide-hint], html[data-gfx="soft"] [data-companion-hide-hint] { animation: none; box-shadow: 0 0 0 1px #d7ae6852, 0 0 9px #d7ae6818; }
-.vc-companion[data-placing] .vc-actor { outline: 2px dashed var(--teaser); outline-offset: 3px; cursor: crosshair; }
+.vc-companion[data-placing] .vc-actor { cursor: crosshair; }
 /* Human red and pressed semantics stay with the existing vote. This is only a
    pet souvenir: no size/layout/counter changes on the 1840px export surface. */
 html :is(.poster-page,[data-companion-event="ordinary"]) .event-heart[data-companion-hearted]:not([aria-pressed="true"]) { color: var(--teaser); opacity: 1; }

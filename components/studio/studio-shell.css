@@ -10266,11 +10266,30 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 /* P0-A11Y-1: 모바일 월 이동 — 스와이프를 몰라도 보이는 ◀ ▶. 터치 타깃 44px. */
 .studio-mobile .m-month-nav {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  margin: 2px 0 10px;
+}
+.studio-mobile .m-month-switch {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
-  margin: 2px 0 10px;
+}
+/* Explicit owner placement exception; inherit the shared 44px gear skin. */
+.studio-mobile .m-month-nav > .viewer-settings-open {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px)));
+}
+@media (max-width: 360px) {
+  /* Keep all 44px targets apart when the two side columns become narrower. */
+  .studio-mobile .m-month-switch { gap: 6px; }
 }
 .studio-mobile .m-month-nav strong {
   min-width: 118px;

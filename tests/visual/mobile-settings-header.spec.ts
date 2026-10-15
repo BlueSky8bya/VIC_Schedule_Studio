@@ -5,7 +5,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 
 const posts = new WeakMap<Page, string[]>(), errors = new WeakMap<Page, string[]>();
 const windowOf = (page: Page) => page.getByRole("dialog", { name: "설정", exact: true });
-const gearOf = (page: Page) => page.locator(".agenda-header > .viewer-settings-open");
+const gearOf = (page: Page) => page.locator(".agenda-header > .viewer-settings-open,.m-month-nav > .viewer-settings-open");
 
 test.beforeEach(async ({ page }) => {
   const attempted: string[] = [], failures: string[] = [];
@@ -41,17 +41,29 @@ async function seed(page: Page, dark: boolean) {
 async function headerMetrics(page: Page) {
   return gearOf(page).evaluate(node => {
     const gear = node.getBoundingClientRect();
-    const header = node.parentElement!;
+    const studio = node.closest(".studio-mobile");
+    const header = studio?.querySelector(".agenda-header") ?? node.parentElement!;
     const title = header.querySelector("h1")!.getBoundingClientRect();
     const account = header.querySelector<HTMLElement>(".agenda-account button,.m-head-logout button,a.m-head-logout")!;
     const accountRect = account.getBoundingClientRect();
     const hit = document.elementFromPoint(gear.x + gear.width / 2, gear.y + gear.height / 2);
     const accountHit = document.elementFromPoint(accountRect.x + accountRect.width / 2, accountRect.y + accountRect.height / 2);
+    const overlap = (a: DOMRect, b: DOMRect) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    const monthGroup = studio?.querySelector(".m-month-switch");
+    const month = monthGroup ? (() => {
+      const r = monthGroup.getBoundingClientRect(), buttons = [...monthGroup.querySelectorAll("button")];
+      const next = buttons.at(-1)!.getBoundingClientRect();
+      return { centreX: r.x + r.width / 2, centreY: r.y + r.height / 2,
+        gearGap: gear.left - next.right,
+        nativeHits: buttons.map(button => { const b = button.getBoundingClientRect(), hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2); return Boolean(hit && (hit === button || button.contains(hit))); }) };
+    })() : null;
     return {
       x: gear.x, y: gear.y, width: gear.width, height: gear.height,
       right: document.documentElement.clientWidth - gear.right,
       titleGap: gear.left - title.right,
       accountGap: accountRect.top - gear.bottom,
+      titleOverlap: overlap(gear, title), accountOverlap: overlap(gear, accountRect),
+      month,
       nativeHit: Boolean(hit?.closest(".viewer-settings-open") === node),
       accountHit: Boolean(accountHit && (account === accountHit || account.contains(accountHit))),
       scrollWidth: document.documentElement.scrollWidth,
@@ -68,7 +80,7 @@ for (const topology of [
 ]) test.describe(topology.name, () => {
   test.use({ viewport: { width: topology.width, height: topology.height }, isMobile: true, hasTouch: true });
 
-  test("viewer and studio share one upper-right gear with native X, Back and focus restoration", async ({ page }) => {
+  test("viewer keeps its header gear while studio uses the month row, preserving native X, Back and focus", async ({ page }) => {
     await seed(page, topology.dark);
     const measured: Record<string, Awaited<ReturnType<typeof headerMetrics>>> = {};
     for (const route of [
@@ -87,12 +99,24 @@ for (const topology of [
       expect(metric.width).toBe(44); expect(metric.height).toBe(44);
       expect(metric.y).toBeGreaterThanOrEqual(0);
       expect(metric.right).toBeCloseTo(14, 1);
-      expect(metric.titleGap).toBeGreaterThanOrEqual(0);
-      expect(metric.accountGap).toBeGreaterThanOrEqual(0);
+      expect(metric.titleOverlap).toBe(0); expect(metric.accountOverlap).toBe(0);
+      if (route.name === "viewer") {
+        await expect(page.locator(".agenda-header > .viewer-settings-open")).toHaveCount(1);
+        expect(metric.titleGap).toBeGreaterThanOrEqual(0); expect(metric.accountGap).toBeGreaterThanOrEqual(0);
+        expect(metric.y).toBe(9); expect(metric.month).toBeNull();
+      } else {
+        await expect(page.locator(".agenda-header > .viewer-settings-open")).toHaveCount(0);
+        await expect(page.locator(".m-month-nav > .viewer-settings-open")).toHaveCount(1);
+        expect(metric.month).not.toBeNull();
+        expect(Math.abs(metric.month!.centreX - metric.widthOfPage / 2)).toBeLessThan(.5);
+        expect(Math.abs(metric.month!.centreY - metric.y - metric.height / 2)).toBeLessThan(.5);
+        expect(metric.month!.gearGap).toBeGreaterThanOrEqual(8);
+        expect(metric.month!.nativeHits).toEqual([true, true, true]);
+      }
       expect(metric.nativeHit).toBe(true); expect(metric.accountHit).toBe(true);
       expect(metric.scrollWidth).toBeLessThanOrEqual(metric.widthOfPage + 1);
 
-      await page.screenshot({ path: `.scratch-pw/companion-063-settings-${route.name}-${topology.name}.png` });
+      await page.screenshot({ path: `.scratch-pw/companion-064-settings-${route.name}-${topology.name}.png` });
       await gear.tap(); await expect(windowOf(page)).toBeVisible();
       await expect(gear).toHaveAttribute("aria-expanded", "true");
       await windowOf(page).locator(".modal-head .modal-close").tap();
@@ -104,10 +128,10 @@ for (const topology of [
       expect(new URL(page.url()).pathname).toBe(new URL(route.path, "http://fixture").pathname);
       expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).enabled)).toBe(true);
     }
-    // Absolute viewport placement is shared even though studio wraps its
-    // sticky header in a separate topstick and shows editor save information.
+    // PLAN-064 owner exception: the same control stays at the same right
+    // inset, but the studio places it beside month navigation below its title.
     expect(Math.abs(measured.viewer.x - measured.studio.x)).toBeLessThan(.5);
-    expect(Math.abs(measured.viewer.y - measured.studio.y)).toBeLessThan(.5);
-    writeFileSync(`.scratch-pw/companion-063-settings-${topology.name}.json`, JSON.stringify(measured, null, 2));
+    expect(measured.studio.y - measured.viewer.y).toBeGreaterThan(44);
+    writeFileSync(`.scratch-pw/companion-064-settings-${topology.name}.json`, JSON.stringify(measured, null, 2));
   });
 });

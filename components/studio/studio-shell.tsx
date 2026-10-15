@@ -6103,7 +6103,7 @@ export function StudioShell({
           <div className="m-topstick">
             <header className="agenda-header">
               {/* 좌측 1열: 배포 버전(커밋) 위 + 저장 상태 칩 아래로 세로로 쌓고, 묶음의 세로
-                  중앙이 제목(헤더) 중앙선과 같게 한다. 우상단(3열)은 공용 설정 톱니 자리다. */}
+                  중앙이 제목(헤더) 중앙선과 같게 한다. 설정은 아래 월 이동 줄에 둔다. */}
               <div className="m-head-left">
                 <span
                   className={`studio-build-tag-m${isDevInsights ? " dev" : ""}`}
@@ -6118,9 +6118,8 @@ export function StudioShell({
                 {/* 월 표기는 바로 아래 월 내비가 담당 — 중복·겹침 제거(사용자 요청). */}
                 <span>편집실</span>
               </h1>
-              <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setModal("settings"); }} />
               <span className="sr-only">역할: {roleDisplay.label}</span>
-              {/* Account action stays below the shared gear, as in the viewer.
+              {/* Preserve the existing account action's header cell.
                   로그아웃하면 익명 상태로 공개 포스터를 계속 본다(계정 바꾸려면 다시 로그인). */}
               {actor.isAuthenticated ? (
                 <form className="m-head-logout" action="/api/auth/logout" method="post" data-act="logout">
@@ -6143,7 +6142,8 @@ export function StudioShell({
 
             {/* P0-A11Y-1: 월 이동을 스와이프 없이도 — 보이는 ◀ ▶(44px 터치 타깃). 스와이프·키보드와
                 같은 moveMonth 경로라 슬라이드/햅틱도 동일. */}
-            <div aria-label="월 이동" className="m-month-nav" role="group">
+            <div className="m-month-nav">
+              <div aria-label="월 이동" className="m-month-switch" role="group">
               <button
                 aria-label="이전 달"
                 className="m-month-btn"
@@ -6165,6 +6165,11 @@ export function StudioShell({
               >
                 <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
               </button>
+              </div>
+              {/* 2026-10-16 owner placement exception to UI-18: studio settings
+                  sit beside month navigation; viewer keeps its header gear.
+                  The 44px control, settings modal and focus/history stay shared. */}
+              <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setModal("settings"); }} />
             </div>
           </div>
 

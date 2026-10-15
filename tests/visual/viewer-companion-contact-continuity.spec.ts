@@ -136,7 +136,17 @@ for (const mobile of [false]) test.describe(mobile ? "touch hanging tension" : "
       await page.screenshot({ path: `.scratch-pw/companion-058-contact-held-${mobile ? "touch" : "cold"}.png` });
     } finally { unblock(); if (client) { await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await client.detach(); } else await page.mouse.up(); }
     await expect(pet(page)).not.toHaveAttribute("data-state", "held");
-    if (!mobile) { await page.keyboard.press("Tab"); await actor(page).focus(); await expect(actor(page)).toBeFocused(); expect(await actor(page).evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none"); }
+    if (!mobile) {
+      await page.keyboard.press("Tab"); await actor(page).focus(); await expect(actor(page)).toBeFocused();
+      // PLAN-064 replaces the circular ring with a visible neutral baseline.
+      const cue = await actor(page).evaluate(node => {
+        const style = getComputedStyle(node), before = getComputedStyle(node, "::before");
+        return { focusVisible: node.matches(":focus-visible"), outline: style.outlineStyle, shadow: style.boxShadow, content: before.content, width: parseFloat(before.width), height: parseFloat(before.height), opacity: Number(before.opacity), rgb: before.backgroundColor.match(/[\d.]+/g)?.map(Number) ?? [] };
+      });
+      expect(cue.focusVisible).toBe(true); expect(cue.outline).toBe("none"); expect(cue.shadow).toBe("none");
+      expect(cue.content).not.toBe("none"); expect(cue.width).toBe(24); expect(cue.height).toBe(2); expect(cue.opacity).toBeGreaterThanOrEqual(.6);
+      expect(cue.rgb.length).toBeGreaterThanOrEqual(3); expect(cue.rgb[3] ?? 1).toBeGreaterThan(0); expect(Math.max(...cue.rgb.slice(0, 3)) - Math.min(...cue.rgb.slice(0, 3))).toBeLessThan(80);
+    }
     expect(p.size).toBeCloseTo(92, 2);
   });
 });

@@ -87,7 +87,9 @@
 .vc-bed-front-ribs { fill: none; stroke: var(--vc-bed-light); stroke-width: 4.2; stroke-linecap: round; opacity: .5; }
 .vc-bed-front-welt { fill: none; stroke: var(--vc-bed-light); stroke-width: 1.8; stroke-linecap: round; opacity: .45; }
 .vc-home .vc-cushion-button:active { transform: none; }
-.vc-cushion-button:active .vc-plush-bed { transform: scale(1.025,.93); }
+/* The back drawing, measured seat and fixed foreground share one geometry.
+   Scaling only this SVG on press would separate the two fabric layers. */
+.vc-cushion-button:active .vc-plush-bed { transform: none; }
 .vc-dispenser { position: absolute; z-index: 2; right: 61px; bottom: 8px; width: 48px; height: 62px; box-sizing: border-box; padding: 0; border: 1px solid transparent; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
 /* Keep the1px border and actual slot/control rectangles: food owns the
    unchanged five-pixel slot anchor inside this matte container drawing. */
