@@ -35,7 +35,7 @@ export type CompanionPettingRect = { left: number; right: number; top: number; b
  * base rectangle and all control/focus/pause gates. This passive retention
  * never enlarges a hitbox and never creates a clock or an animation loop. */
 export function createCompanionPettingWindow() {
-  const margin = .30, threshold = .076, idle = 900;
+  const margin = .50, threshold = .076, idle = 900;
   let anchor: CompanionPettingPoint | undefined, armed = false, movedAt = -Infinity, lastAt = -Infinity;
   const reset = () => { anchor = undefined; armed = false; movedAt = lastAt = -Infinity; };
   const valid = (p: CompanionPettingPoint, base: CompanionPettingRect, now: number) => [p.x, p.y, base.left, base.right, base.top, base.bottom, now].every(Number.isFinite) && base.left < base.right && base.top < base.bottom;
@@ -62,9 +62,11 @@ export function createCompanionPettingWindow() {
         anchor = { ...p }; lastAt = now; return true;
       }
       if (!inside(p, base, margin)) { reset(); return false; }
+      // Only a meaningful pass established inside the body owns extra space.
+      // Entering once then making the first real movement outside cannot arm it.
+      if (!inBase && !armed) { reset(); return false; }
       const moved = Math.hypot(p.x - anchor.x, p.y - anchor.y) + Number.EPSILON >= threshold;
       if (moved) { armed = true; movedAt = now; anchor = { ...p }; }
-      if (!inBase && !armed) { reset(); return false; }
       lastAt = now; return true;
     },
   };

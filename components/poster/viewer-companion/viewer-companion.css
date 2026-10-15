@@ -1,5 +1,10 @@
 .vc-companion { position: fixed; left: 0; top: 0; z-index: 75; width: var(--vc-size, 92px); height: var(--vc-size, 92px); pointer-events: none; will-change: transform; --vc-column: 0%; --vc-row: 0%; }
 .vc-companion[hidden] { display: none; }
+/* The room remains behind the pet. Only its matching static U-shaped rim
+   sits above the body, so lifting naturally clears the fabric without hiding
+   the sofa or changing the native cushion/food hit targets. */
+.vc-bed-foreground { position: fixed; left: 0; top: 0; z-index: 76; pointer-events: none; }
+.vc-bed-foreground[hidden] { display: none; }
 .vc-actor { position: absolute; left: 12%; bottom: 0; width: 76%; height: 76%; border: 0; padding: 0; overflow: visible; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
 .vc-actor:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
 /* Pointer handling owns its visible character feedback. A keyboard event

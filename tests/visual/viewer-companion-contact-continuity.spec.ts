@@ -67,25 +67,32 @@ async function probe(page: Page, pointer: Point) {
 }
 async function finish(page: Page, label: string) {
   const result = await page.evaluate(() => { const p = (window as ProbeWindow).contactContinuityProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect(); document.removeEventListener("pointermove", p.move, true); document.removeEventListener("gotpointercapture", p.capture, true); return { frames: p.frames, losses: p.losses, hiddenChanges: p.hiddenChanges, captures: p.captures, sameDom: document.querySelector(".vc-companion") === p.node }; });
-  await writeFile(`.scratch-pw/companion-057-contact-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(12); expect(result.frames.every(f => !f.hidden)).toBe(true); expect(result.hiddenChanges).toBe(0); return result;
+  await writeFile(`.scratch-pw/companion-058-contact-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(12); expect(result.frames.every(f => !f.hidden)).toBe(true); expect(result.hiddenChanges).toBe(0); return result;
 }
 async function move(page: Page, p: Point, steps = 12) { await page.mouse.move(p.x, p.y, { steps }); await page.waitForTimeout(30); }
 
-for (const axis of ["x", "y"] as const) test(`${axis}-axis round trips retain the hand through the thirty-percent excursion without extra affection`, async ({ page }) => {
+for (const axis of ["x", "y"] as const) test(`${axis}-axis round trips retain the hand through the fifty-percent excursion without extra affection`, async ({ page }) => {
   const p = await setup(page), center = { x: p.x, y: p.y - p.size * .45 }, initial = await affection(page);
-  const route = axis === "x" ? [{ x: p.x - p.size * .2, y: center.y }, { x: p.x + p.size * .2, y: center.y }, { x: p.x + p.size * .93, y: center.y }, { x: p.x - p.size * .93, y: center.y }, center]
-    : [{ x: p.x, y: p.y - p.size * .65 }, { x: p.x, y: p.y - p.size * .30 }, { x: p.x, y: p.y - p.size * 1.29 }, { x: p.x, y: p.y + p.size * .35 }, center];
+  const route = axis === "x" ? [{ x: p.x - p.size * .2, y: center.y }, { x: p.x + p.size * .2, y: center.y }, { x: p.x + p.size * 1.13, y: center.y }, { x: p.x - p.size * 1.13, y: center.y }, center]
+    : [{ x: p.x, y: p.y - p.size * .65 }, { x: p.x, y: p.y - p.size * .30 }, { x: p.x, y: p.y - p.size * 1.49 }, center];
   // The full path must be real clear calendar space. Native controls outrank
   // retention, so a fixture with a button on this route cannot prove it.
-  expect(await page.evaluate(points => points.every(p => { const hit = document.elementFromPoint(p.x, p.y); return hit && (!hit.closest("button,a,input,select,textarea,[role=button]") || hit.closest(".vc-companion")); }), route)).toBe(true);
+  expect(await page.evaluate(points => points.every((point, index) => {
+    const from = points[Math.max(0, index - 1)], steps = Math.max(1, Math.ceil(Math.hypot(point.x - from.x, point.y - from.y) / 8));
+    for (let step = 0; step <= steps; step++) {
+      const hit = document.elementFromPoint(from.x + (point.x - from.x) * step / steps, from.y + (point.y - from.y) * step / steps);
+      if (!hit || (hit.closest("button,a,input,select,textarea,[role=button]") && !hit.closest(".vc-companion"))) return false;
+    }
+    return true;
+  }), route)).toBe(true);
   await ready(page, route[0]); await move(page, route[1]); await probe(page, route[1]);
   for (const point of route.slice(2)) await move(page, point, 24);
   await expect.poll(async () => await affection(page) - initial).toBeGreaterThan(.07); const awarded = await affection(page); expect(awarded - initial).toBeLessThan(.09);
   await page.waitForTimeout(650); const result = await finish(page, axis);
   expect(result.losses).toBe(0); expect(result.captures).toBe(0); expect(result.frames.every(f => f.mode && f.hand && f.cursor === "none")).toBe(true);
   expect(await affection(page)).toBeLessThanOrEqual(awarded + .001);
-  await page.screenshot({ path: `.scratch-pw/companion-057-contact-${axis}.png` });
-  await move(page, { x: p.x + p.size * .99, y: center.y }); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+  await page.screenshot({ path: `.scratch-pw/companion-058-contact-${axis}.png` });
+  await move(page, { x: p.x + p.size * 1.19, y: center.y }); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
 });
 
 test("retention yields to a native neighbouring button before reversal or click", async ({ page }) => {
@@ -97,8 +104,9 @@ test("retention yields to a native neighbouring button before reversal or click"
 });
 
 test("reduced-motion retention starts only in the base and expires outside after real movement stops", async ({ page }) => {
-  const p = await setup(page, true), y = p.y - p.size * .45, outside = { x: p.x + p.size * .90, y };
+  const p = await setup(page, true), y = p.y - p.size * .45, outside = { x: p.x + p.size * 1.10, y };
   await page.mouse.move(outside.x, outside.y); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+  await ready(page, { x: p.x, y }); await page.mouse.move(outside.x, outside.y); await expect(hand(page)).toBeHidden();
   await ready(page, { x: p.x, y }); await move(page, { x: p.x + 12, y }); await move(page, outside);
   await expect(hand(page)).toBeVisible(); await page.waitForTimeout(350); await expect(hand(page)).toBeVisible();
   await expect(hand(page)).toBeHidden({ timeout: 1300 }); await expect(marks(page)).toHaveCount(0);
@@ -122,9 +130,9 @@ for (const mobile of [false, true]) test.describe(mobile ? "touch hanging tensio
       unblock(); await expect.poll(() => pet(page).locator(".vc-sprite").evaluate(node => getComputedStyle(node).backgroundImage)).toContain(companionSpriteSources(8)[0]);
       await page.waitForTimeout(250); await page.waitForTimeout(650);
       const result = await finish(page, mobile ? "held-touch" : "held-cold"), settled = result.frames.filter(f => f.state === "held" && f.at > 450);
-      expect(settled.length).toBeGreaterThan(12); expect(settled.every(f => f.poseY > 1.02 && f.poseX < 1 && Math.abs(f.bob) < .001 && f.originError < .1 && f.lowerBodyY > .2)).toBe(true);
+      expect(settled.length).toBeGreaterThan(12); expect(settled.every(f => f.poseY >= 1.18 && f.poseY <= 1.32 && f.poseX < 1 && Math.abs(f.bob) < .001 && f.originError < .1 && f.lowerBodyY > .2)).toBe(true);
       expect(new Set(settled.map(f => f.facing)).size).toBe(1); expect(Math.max(...settled.map(f => f.x)) - Math.min(...settled.map(f => f.x))).toBeLessThan(.05); expect(Math.max(...settled.map(f => f.y)) - Math.min(...settled.map(f => f.y))).toBeLessThan(.05);
-      await page.screenshot({ path: `.scratch-pw/companion-057-contact-held-${mobile ? "touch" : "cold"}.png` });
+      await page.screenshot({ path: `.scratch-pw/companion-058-contact-held-${mobile ? "touch" : "cold"}.png` });
     } finally { unblock(); if (client) { await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await client.detach(); } else await page.mouse.up(); }
     await expect(pet(page)).not.toHaveAttribute("data-state", "held");
     if (!mobile) { await page.keyboard.press("Tab"); await actor(page).focus(); await expect(actor(page)).toBeFocused(); expect(await actor(page).evaluate(node => getComputedStyle(node).outlineStyle)).not.toBe("none"); }

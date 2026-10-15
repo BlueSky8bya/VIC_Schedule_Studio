@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-15 (KST)
+Last Updated: 2026-10-16 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed results live in topic records. Historical snapshots are evidence, not startup instructions.
@@ -17,7 +17,7 @@ Style captures are now a working pipeline (ADR-0021): every one of the owner's 4
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| VIEWER-VICTAMIN | PLAN-057 deployed `f264537f`: floor/contact/feeding/stretch/photo plum and schedule hide-and-seek with random return | Owner play feedback. Unit380/UI68/build/lint/type and deployed SHA/PC/native390 public smoke passed. DefaultOFF/public boundary retained; harness2/physical OBS/device gaps separate | [verification](verification/VIEWER_VICTAMIN_GROUND_CONTACT-20261015.md) |
+| VIEWER-VICTAMIN | PLAN-058 locally verified: stronger hanging, established-stroke50% retention, sofa-only plush with clipped ribs/clean seams, warm wood/matte props and larger bin | Authorized commit/push/deploy and production PC/native390 checks. DefaultOFF/public boundary retained; harness2/physical OBS/device gaps separate | [PLAN-058](plans/PLAN-20261015-058-companion-plush-and-gravity.md), [verification](verification/VIEWER_VICTAMIN_PLUSH_GRAVITY-20261016.md) |
 | OPS-DB-QUOTA-20261005 | Resolved: 0136 applied (DB 494 → 247MB), 0137 builds relations in a side table and swaps names at the end of the nightly batch (search never blocks); service-role REST `PGRST303 JWT issued at future` cleared by Supabase project restart (PostgREST up since 09-28) | Watch DB size weekly (free 0.5GB); Pro only if pruning no longer holds | [0136](../../db/migrations/0136_search_relations_topk.sql) |
 | TEASER-PREMIERE | PLAN-040 deployed (`634fae18`): music4/random, master settings/final-ten silence retained. Type/lint/build, unit35, music browser6 + final gain2, offline4×2 and production2-view/SHA checked. Existing harness2 failures retained | Owner listening/visual feedback; no subjective approval inferred from functional checks | [PLAN-040](plans/PLAN-20261015-040-premiere-music-library.md), [music verification](verification/TEASER_MUSIC-20261015.md) |
 | TEASER-RING-20260930 | Fixed, committed `7eab22a0`, not pushed | Owner verifies on prod: move a reveal time earlier while a viewer/preview tab is open — card, big countdown and ring must follow the new time together | commit `7eab22a0` (components/poster/public-poster.tsx `resolveTeaserView`) |

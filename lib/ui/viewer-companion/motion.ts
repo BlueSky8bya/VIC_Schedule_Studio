@@ -50,6 +50,45 @@ export function nextCompanionPaint(now: number, previous: number, fps: number): 
   const intervals = Math.floor((elapsed + .1) / interval);
   return intervals >= 1 ? previous + intervals * interval : null;
 }
+
+/** Bound the held local deformation after the renderer has bounded its outer
+ * inertia plane. Origin is that plane's viewport top-left; grip is unmirrored
+ * local pixels. Facing conjugates the inner rotation, while the outer scale
+ * and rotation remain in world axes. Neither the hand nor world point moves.
+ * The caller supplies a neutral outer plane that already fits the viewport;
+ * an invalid/unsafe neutral plane cannot be repaired by a decorative pose. */
+export function boundCompanionHangingPose(
+  pose: CompanionMotionPose,
+  origin: { x: number; y: number },
+  grip: { x: number; y: number },
+  size: number,
+  viewport: { width: number; height: number },
+  outer: { tilt: number; stretch: number },
+): CompanionMotionPose {
+  const neutral = (): CompanionMotionPose => ({ ...pose, bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
+  if (![pose.scaleX, pose.scaleY, pose.tilt, origin.x, origin.y, grip.x, grip.y, size, viewport.width, viewport.height, outer.tilt, outer.stretch].every(Number.isFinite)
+    || size <= 0 || viewport.width <= 0 || viewport.height <= 0 || ![1, -1].includes(pose.facing)) return neutral();
+  const outerAngle = outer.tilt * Math.PI / 180, outerCos = Math.cos(outerAngle), outerSin = Math.sin(outerAngle);
+  const outerX = 1 - outer.stretch * .35, outerY = 1 + outer.stretch;
+  if (outerX <= 0 || outerY <= 0) return neutral();
+  const fits = (gain: number) => {
+    const angle = pose.tilt * pose.facing * gain * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
+    const sx = 1 + (pose.scaleX - 1) * gain, sy = 1 + (pose.scaleY - 1) * gain;
+    for (const cx of [0, size]) for (const cy of [0, size]) {
+      const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
+      const ix = (dx * cos - dy * sin) * outerX, iy = (dx * sin + dy * cos) * outerY;
+      const x = origin.x + grip.x + ix * outerCos - iy * outerSin;
+      const y = origin.y + grip.y + ix * outerSin + iy * outerCos;
+      if (x < 2 || x > viewport.width - 2 || y < 2 || y > viewport.height - 2) return false;
+    }
+    return true;
+  };
+  if (fits(1)) return pose.bob === 0 ? pose : { ...pose, bob: 0 };
+  if (!fits(0)) return neutral();
+  let low = 0, high = 1;
+  for (let step = 0; step < 9; step++) { const mid = (low + high) / 2; if (fits(mid)) low = mid; else high = mid; }
+  return { ...pose, bob: 0, scaleX: 1 + (pose.scaleX - 1) * low, scaleY: 1 + (pose.scaleY - 1) * low, tilt: pose.tilt * low };
+}
 function pingPong(step: number, length: number): number {
   if (length <= 1) return 0;
   const end = length - 1, period = 2 * end;
@@ -135,16 +174,17 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       // remain owned by the renderer, with no extra timer or random clock.
       const heldTime = (now - enteredAt) / 1000;
       const held = row === 8 && input.status === "held" && !input.reduced
-        ? sampleCompanionTravel(heldTime / .18) * (.68 + .32 * Math.sin(heldTime * Math.PI * 1.16)) : 0;
+        ? sampleCompanionTravel(heldTime / .18) : 0;
       const wriggle = Math.sin(heldTime * Math.PI * 4.3), kick = Math.sin(heldTime * Math.PI * 7.2 + .7);
-      // Gravity keeps the hanging body longer and narrower through the whole
-      // kick cycle. The renderer supplies its actual grip as this pose's pivot.
-      const hanging = held * (.11 + wriggle * .025 + kick * .008);
+      // Gravity has a sustained18.5..31.5% extension after the180ms pickup
+      // ramp. Kicks modulate that load instead of multiplying it toward zero.
+      // Keep the silhouette broad; the renderer supplies the real grip pivot.
+      const hanging = held * (.25 + Math.sin(heldTime * Math.PI * 1.16) * .035 + wriggle * .022 + kick * .008);
       const target: Scalars = {
         // A hanging grip must not translate with the rest of the body. Its
         // pivoted extension supplies the downward travel below the hand.
         bob: movingPose ? -Math.abs(Math.sin(stride)) * 1.2 : 0,
-        scaleX: 1 + stretch * .012 - extension * .014 - hanging * .55,
+        scaleX: 1 + stretch * .012 - extension * .014 - hanging * .18,
         scaleY: 1 - stretch * .018 + extension * .026 + hanging,
         tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1) + held * (Math.sin(heldTime * Math.PI * 3.6) * 5.2 + kick * 1.6),
       };

@@ -8,7 +8,7 @@ const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const posts = new WeakMap<Page, string[]>();
 type Point = { x: number; y: number };
-type Frame = { at: number; phase: string; state: string; hidden: boolean; x: number; y: number; angle: number; sx: number; sy: number; tx: number; ty: number; bodyLagX: number; gripError: number; pivotError: number; facing: string; captured: boolean; left: number; top: number; right: number; bottom: number };
+type Frame = { at: number; phase: string; state: string; hidden: boolean; x: number; y: number; angle: number; sx: number; sy: number; tx: number; ty: number; bodyLagX: number; gripError: number; pivotError: number; facing: string; captured: boolean; left: number; top: number; right: number; bottom: number; poseLeft: number; poseTop: number; poseRight: number; poseBottom: number };
 type Probe = { frames: Frame[]; phase: string; pointer: Point; grip?: Point; pointerId: number; raf: number; down: (event: PointerEvent) => void; move: (event: PointerEvent) => void };
 type ProbeWindow = Window & { heldInertiaProbe?: Probe };
 
@@ -49,7 +49,7 @@ async function startProbe(page: Page) {
     const began = performance.now();
     const sample = (now: number) => {
       if (element.dataset.state === "held" && probe.grip) {
-        const p = world(), css = getComputedStyle(layer), m = new DOMMatrixReadOnly(css.transform), r = layer.getBoundingClientRect();
+        const p = world(), css = getComputedStyle(layer), m = new DOMMatrixReadOnly(css.transform), r = layer.getBoundingClientRect(), shape = node.querySelector(".vc-pose")!.getBoundingClientRect();
         const [ox, oy] = css.transformOrigin.split(" ").map(parseFloat), width = parseFloat(css.width), height = parseFloat(css.height);
         // Reconstruct the untransformed plane from its actual transformed
         // AABB. This independently checks the CSS pivot against the pointer.
@@ -61,7 +61,8 @@ async function startProbe(page: Page) {
           // must carry this point left when the hand accelerates right.
           bodyLagX: ox + m.a * (46 - ox) + m.c * (76 - oy) + m.e - 46,
           gripError: Math.hypot(p.x + probe.grip.x - probe.pointer.x, p.y + probe.grip.y - probe.pointer.y), pivotError: Math.hypot(px - probe.pointer.x, py - probe.pointer.y),
-          facing: element.dataset.facing ?? "", captured: button.hasPointerCapture(probe.pointerId), left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+          facing: element.dataset.facing ?? "", captured: button.hasPointerCapture(probe.pointerId), left: r.left, top: r.top, right: r.right, bottom: r.bottom,
+          poseLeft: shape.left, poseTop: shape.top, poseRight: shape.right, poseBottom: shape.bottom });
       }
       probe.raf = requestAnimationFrame(sample);
     };
@@ -123,13 +124,15 @@ for (const mobile of [false, true]) test.describe(mobile ? "native touch inertia
   });
 });
 
-test("captured edge travel bounds only the inertial plane and keeps every corner visible", async ({ page }) => {
+test("captured edge travel bounds the inertial plane and the complete gravity pose, keeping every corner visible", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 }); await setup(page); await startProbe(page);
   const before = await pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom, size: r.width }; }), drag = await input(page, false);
   const grip = { x: drag.start.x - before.x, y: drag.start.y - before.y };
   await mark(page, "edge");
   for (const target of [{ x: before.size / 2 + 4, y: before.size + 8 }, { x: 1440 - before.size / 2 - 4, y: before.size + 8 }, { x: 1440 - before.size / 2 - 4, y: 988 }, { x: before.size / 2 + 4, y: 988 }]) await drag.move({ x: target.x + grip.x, y: target.y + grip.y }, 20);
   const frames = await finishProbe(page, "edges"); expect(frames.every(f => f.left >= 1.95 && f.top >= 1.95 && f.right <= 1438.05 && f.bottom <= 998.05)).toBe(true);
+  expect(frames.every(f => f.poseLeft >= 1.95 && f.poseTop >= 1.95 && f.poseRight <= 1438.05 && f.poseBottom <= 998.05)).toBe(true);
+  console.log(JSON.stringify({ check: "held-complete-shape-edges", frames: frames.length, fullPoseBounds: { left: Math.min(...frames.map(f => f.poseLeft)), top: Math.min(...frames.map(f => f.poseTop)), right: Math.max(...frames.map(f => f.poseRight)), bottom: Math.max(...frames.map(f => f.poseBottom)) }, maxGripError: Math.max(...frames.map(f => f.gripError)), maxPivotError: Math.max(...frames.map(f => f.pivotError)) }));
   await drag.end(); await expect(pet(page)).not.toHaveAttribute("data-state", "held");
 });
 

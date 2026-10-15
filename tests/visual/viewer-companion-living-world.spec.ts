@@ -83,7 +83,7 @@ async function firstCardBelowRelease(page: Page, mobile: boolean) {
       const body = { left: x - 92 * .38 - 3, right: x + 92 * .38 + 3, top: choice.r.top - 3 - 92 * .76 - 3, bottom: choice.r.top - 3 };
       if (controls.some(r => r.left < body.right && r.right > body.left && r.top < body.bottom && r.bottom > body.top)) continue;
       const first = visible.filter(item => x >= item.r.left && x <= item.r.right && item.r.top > y).sort((a, b) => a.r.top - b.r.top)[0];
-      if (first.index === choice.index) return { index: first.index, x, offset, releaseY: y, cardTop: first.r.top, cardHeight: first.r.height };
+      if (first.index === choice.index) return { index: first.index, eventId: (elements[first.index] as HTMLElement).dataset.eventid!, x, offset, releaseY: y, cardTop: first.r.top, cardHeight: first.r.height };
     }
     return null;
   });
@@ -124,18 +124,28 @@ for (const mobile of [false, true]) test.describe(mobile ? "agenda first physica
   test("deliberate pet and fruit releases land on the first real card and nearby offered food remains edible", async ({ page }) => {
     test.setTimeout(25000); await setup(page, .8);
     const target = await firstCardBelowRelease(page, mobile); expect(target).toBeTruthy();
+    const card = page.locator(mobile ? ".agenda-event[data-eventid]" : ".public-event[data-eventid]").nth(target!.index), selectedCard = await card.elementHandle();
+    expect(selectedCard).not.toBeNull(); await expect(card).toHaveAttribute("data-eventid", target!.eventId);
     await expect(actor(page)).toBeVisible(); await actor(page).focus(); await actor(page).press("p");
     await expect(pet(page)).toHaveAttribute("data-placing", "");
     if (mobile) await page.touchscreen.tap(target!.x, target!.releaseY); else await page.mouse.click(target!.x, target!.releaseY);
     await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top(?:-\d+)?$/);
     await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
     const landed = await feet(page);
+    const liveCard = await selectedCard!.evaluate((node, { mobile, target }) => {
+      const r = node.getBoundingClientRect(), nodes = [...document.querySelectorAll(mobile ? ".agenda-event[data-eventid]" : ".public-event[data-eventid]")];
+      const first = nodes.map(element => ({ element, r: element.getBoundingClientRect() })).filter(({ r }) => r.width > 0 && r.height > 0 && target.x >= r.left && target.x <= r.right && r.top > target.releaseY && r.top < innerHeight).sort((a, b) => a.r.top - b.r.top)[0];
+      return { eventId: (node as HTMLElement).dataset.eventid, sameNode: node.isConnected && nodes[target.index] === node, firstOnRay: first?.element === node, left: r.left, top: r.top, width: r.width, height: r.height };
+    }, { mobile, target: target! });
+    console.log(JSON.stringify({ check: "living-cached-vs-live-card", nativeTouch: mobile, target, liveCard, landed, cachedFootError: Math.abs(landed.y - target!.cardTop + 3), liveFootError: Math.abs(landed.y - liveCard.top + 3) }));
     console.log(JSON.stringify({ check: `living-card-drop-diagnostic-${mobile ? 390 : 1920}`, target, landed, state: await pet(page).getAttribute("data-state"), platform: await pet(page).getAttribute("data-platform"), scroll: await page.evaluate(() => scrollY), blockingControls: await page.evaluate(({ x, cardTop }) => [...document.querySelectorAll("button,a[href],input,select,textarea,[role=button]")].filter(node => !node.matches(".agenda-event,.public-event,.agenda-day,.public-day") && !node.closest(".vc-companion")).flatMap(node => { const r = node.getBoundingClientRect(); return r.width > 0 && r.left < x + 38 && r.right > x - 38 && r.top < cardTop - 3 && r.bottom > cardTop - 76 ? [{ tag: node.tagName, className: node.className, aria: node.getAttribute("aria-label"), left: r.left, top: r.top, right: r.right, bottom: r.bottom }] : []; }), target!) }));
-    expect(Math.abs(landed.x - target!.x)).toBeLessThan(2); expect(Math.abs(landed.y - target!.cardTop + 3)).toBeLessThan(2);
+    expect(liveCard.sameNode).toBe(true); expect(liveCard.eventId).toBe(target!.eventId); expect(liveCard.firstOnRay).toBe(true);
+    // Agenda's finite entrance may still move this same card after selection.
+    // The real landing follows its current anchor, not the cached entry pose.
+    expect(Math.abs(landed.x - target!.x)).toBeLessThan(2); expect(Math.abs(landed.y - liveCard.top + 3)).toBeLessThan(2);
     const petPlatform = await pet(page).getAttribute("data-platform"), snack = await dispense(page, mobile);
     // Re-read actual card geometry after the home opened; this is native input
     // against the public document, never a supplied product platform list.
-    const card = page.locator(mobile ? ".agenda-event[data-eventid]" : ".public-event[data-eventid]").nth(target!.index);
     const rect = (await card.boundingBox())!, release = { x: rect.x + rect.width * target!.offset, y: rect.y - 24 };
     await watchFoodLanding(snack);
     await dragSnackToFeet(page, snack, release, mobile);

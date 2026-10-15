@@ -46,13 +46,14 @@ for (const mobile of [false, true]) test.describe(mobile ? "native touch held mo
       await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...target, id: 54 }] });
     } else { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 8 }); }
     await expect(pet).toHaveAttribute("data-state", "held"); await page.waitForTimeout(220);
-    const samples = await observeHold(page), span = (key: "x" | "y" | "angle" | "scale" | "bob") => Math.max(...samples.map(s => s[key])) - Math.min(...samples.map(s => s[key]));
+    const samples = await observeHold(page), span = (key: "x" | "y" | "angle" | "scale" | "scaleY" | "bob") => Math.max(...samples.map(s => s[key])) - Math.min(...samples.map(s => s[key]));
     expect(samples.length).toBeGreaterThan(15); expect(samples.every(s => !s.hidden)).toBe(true);
     expect(span("x")).toBeLessThan(1); expect(span("y")).toBeLessThan(1);
-    expect(span("angle")).toBeGreaterThan(7); expect(span("scale")).toBeGreaterThan(.04);
+    expect(span("angle")).toBeGreaterThan(7); expect(span("scaleY")).toBeGreaterThan(.08);
     // Gravity extends below the actual grip; whole-body translation would
     // move that grip and the superseded bob/squash test allowed flattening.
-    expect(samples.every(s => s.scaleY > 1.02 && s.scale < 1 && Math.abs(s.bob) < .001 && s.gripError < .1)).toBe(true);
+    expect(samples.every(s => s.scaleY >= 1.18 && s.scaleY <= 1.32 && s.scale < 1 && Math.abs(s.bob) < .001 && s.gripError < .1)).toBe(true);
+    console.log(JSON.stringify({ check: "held-gravity", nativeTouch: mobile, frames: samples.length, verticalScale: [Math.min(...samples.map(s => s.scaleY)), Math.max(...samples.map(s => s.scaleY))], verticalSpan: span("scaleY"), horizontalScale: [Math.min(...samples.map(s => s.scale)), Math.max(...samples.map(s => s.scale))], maxGripError: Math.max(...samples.map(s => s.gripError)) }));
     expect(new Set(samples.map(s => s.pose)).size).toBeGreaterThanOrEqual(10);
     await expect(pet).toHaveAttribute("data-atlas", "hd");
     await page.screenshot({ path: `.scratch-pw/companion-054-held-${mobile ? "touch" : "pc"}.png` });

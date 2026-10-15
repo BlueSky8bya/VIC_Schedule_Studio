@@ -183,7 +183,7 @@ for (const mobile of [false, true]) test.describe(mobile ? "native touch home fo
       await press(cards.nth(index), mobile);
       const detail = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(detail).toBeVisible();
       await expect(page.locator(".vc-food-layer")).toBeHidden();
-      const during = await offset(), duringError = Math.hypot(during.x - initial.x, during.y - initial.y); errors.push(duringError); expect(duringError).toBeLessThan(2);
+      const during = await offset(), duringError = Math.hypot(during.x - initial.x, during.y - initial.y); errors.push(duringError); expect(duringError, JSON.stringify({ mode, initial, during })).toBeLessThan(2);
       await press(detail.getByRole("button", { name: "닫기", exact: true }), mobile); await expect(detail).toHaveCount(0);
       await expect(item).toHaveJSProperty("hidden", false);
       const after = await offset(), afterError = Math.hypot(after.x - initial.x, after.y - initial.y); errors.push(afterError); expect(afterError).toBeLessThan(2);

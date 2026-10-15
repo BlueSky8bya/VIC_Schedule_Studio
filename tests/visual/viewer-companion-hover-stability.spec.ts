@@ -108,11 +108,11 @@ for (const reduced of [false, true]) test.describe(reduced ? "reduced hover curs
     // Traverse the smaller drag ellipse into passive left/right padding while
     // the authored happy pose changes. Input geometry must remain fixed.
     for (const offset of [.30, .60, .30, -.30, -.60, -.30]) await page.mouse.move(p.x + p.size * offset, y, { steps: 8 });
-    await page.mouse.move(p.x + p.size * .68 + 3, y); // An established stroke retains the new30% overshoot.
+    await page.mouse.move(p.x + p.size * .68 + 3, y); // An established stroke retains the new50% overshoot.
     await page.waitForTimeout(120); await expect(hand(page)).toBeVisible();
     await stopProbe(page, reduced ? "reduced" : "full"); await expect(focus).toBeFocused();
     await page.screenshot({ path: `.scratch-pw/companion-055-hover-${reduced ? "reduced" : "full"}.png` });
-    await page.mouse.move(p.x + p.size * (.68 + .30) + 3, y); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+    await page.mouse.move(p.x + p.size * (.68 + .50) + 3, y); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
   });
 
   test("native neighbouring controls, document exit and an ordinary window release the cursor immediately", async ({ page }) => {

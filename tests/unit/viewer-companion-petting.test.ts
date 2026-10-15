@@ -94,20 +94,24 @@ describe("passive whole-body petting retention", () => {
     expect(window.move({ x: .8, y: -.4 }, base, 0)).toBe(false);
     expect(window.move(start, base, 100)).toBe(true);
   });
-  it("requires actual cumulative movement, and supports a first meaningful move across the boundary", () => {
+  it("requires actual cumulative movement inside the body before an excursion", () => {
     const window = createCompanionPettingWindow();
     window.move(start, base, 0);
     for (let at = 10; at <= 100; at += 10) window.move({ x: at % 20 ? .03 : 0, y: -.4 }, base, at);
     expect(window.contains({ x: .8, y: -.4 }, base, 100)).toBe(false);
-    expect(window.move({ x: .9, y: -.4 }, base, 110)).toBe(true);
-    expect(window.contains({ x: .9, y: -.4 }, base, 111)).toBe(true);
+    expect(window.move({ x: .9, y: -.4 }, base, 110)).toBe(false);
+    expect(window.contains({ x: .9, y: -.4 }, base, 111)).toBe(false);
+    expect(window.move(start, base, 120)).toBe(true);
+    expect(window.move({ x: .1, y: -.4 }, base, 130)).toBe(true);
+    expect(window.move({ x: 1.1, y: -.4 }, base, 140)).toBe(true);
+    expect(window.contains({ x: 1.1, y: -.4 }, base, 141)).toBe(true);
   });
-  it("retains exactly thirty percent of a displayed body in all four directions", () => {
-    for (const point of [{ x: -.98, y: -.4 }, { x: .98, y: -.4 }, { x: 0, y: -1.34 }, { x: 0, y: .40 }]) {
+  it("retains exactly fifty percent of a displayed body in all four directions", () => {
+    for (const point of [{ x: -1.18, y: -.4 }, { x: 1.18, y: -.4 }, { x: 0, y: -1.54 }, { x: 0, y: .60 }]) {
       const window = createCompanionPettingWindow(); arm(window);
       expect(window.move(point, base, 200)).toBe(true); expect(window.contains(point, base, 201)).toBe(true);
     }
-    for (const point of [{ x: -.980001, y: -.4 }, { x: .980001, y: -.4 }, { x: 0, y: -1.340001 }, { x: 0, y: .400001 }]) {
+    for (const point of [{ x: -1.180001, y: -.4 }, { x: 1.180001, y: -.4 }, { x: 0, y: -1.540001 }, { x: 0, y: .600001 }]) {
       const window = createCompanionPettingWindow(); arm(window);
       expect(window.move(point, base, 200)).toBe(false); expect(window.contains(point, base, 201)).toBe(false);
     }
