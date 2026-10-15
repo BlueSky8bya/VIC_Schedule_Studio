@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE, type CompanionCare } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { chooseCompanionCare } from "./helpers/companion-home";
 
 const posts = new WeakMap<Page, string[]>();
 test.beforeEach(async ({ page, context }) => {
@@ -60,7 +61,7 @@ async function setup(page: Page, hunger = .58, patch: Partial<CompanionPreferenc
   // creature first, then put each snack on its actual settled support. Mobile
   // may reject a floor occupied by bottom navigation and choose a safe ledge.
   await openHome(page);
-  await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await chooseCompanionCare(page, "옮길 곳 고르기");
   await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(180, page.viewportSize()!.height - 20);
   await expect(pet(page)).not.toHaveAttribute("data-placing");
@@ -145,7 +146,7 @@ test("a full creature refuses more food, at most three snacks stay, and leftover
   await openHome(page); await page.getByRole("button", { name: "레몬 밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(3);
   await expect(page.locator(".vc-food-layer [role='status']")).toContainText("세 개까지");
-  await openHome(page); await page.getByRole("button", { name: "남은 밥 치우기", exact: true }).click();
+  await openHome(page); await chooseCompanionCare(page, "남은 밥 치우기");
   await expect(food(page)).toHaveCount(0);
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);
 });

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
+import { chooseCompanionCare } from "./helpers/companion-home";
 
 const requests = new WeakMap<Page, string[]>();
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -87,7 +88,7 @@ test("reduced-motion keyboard lift can enter the home, land and nap instead of s
   await setup(page, true);
   await liftWithKeyboard(page);
   await keyboardHome(page);
-  await home(page).getByRole("button", { name: "여기서 낮잠", exact: true }).click();
+  await chooseCompanionCare(page, "여기서 낮잠", "keyboard");
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
   await expect.poll(() => supportDistance(page)).toBeLessThan(3);
   await expect(pet(page)).toBeInViewport({ ratio: .99999 }); // Subpixel intersection-ratio precision.

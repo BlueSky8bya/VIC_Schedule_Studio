@@ -17,7 +17,14 @@ export type CompanionMotionPose = {
   scaleY: number;
   tilt: number;
 };
-type Options = { clips?: Readonly<Record<number, readonly number[]>> };
+type Options = {
+  clips?: Readonly<Record<number, readonly number[]>>;
+  /** Logical clip rows; atlas cell indices remain renderer metadata. */
+  rowCount?: number;
+  /** Only explicitly authored seamless cycles advance forward. */
+  loopRows?: readonly number[];
+  maxFrameRate?: number;
+};
 const FRAME_COUNT = 16;
 // Four curated cells form six ping-pong steps: at the fastest100px/s walk an
 // 80px stride changes drawing7.5 times/s while world travel remains per-rAF.
@@ -25,6 +32,14 @@ const WALK_STRIDE_PX = 80;
 const ALL_FRAMES = Object.freeze(Array.from({ length: FRAME_COUNT }, (_, index) => index));
 const LOOP_FPS: Readonly<Record<number, number>> = { 0: 6, 8: 6, 9: 8, 11: 6 };
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
+const rounded = (value: number) => Math.round(value * 1e6) / 1e6;
+
+/** Zero velocity and acceleration at both ends. The renderer still owns the
+ * collision/landing geometry; this only eases progress along that safe span. */
+export function sampleCompanionTravel(progress: number): number {
+  const p = Number.isFinite(progress) ? clamp(progress, 0, 1) : 0;
+  return p * p * p * (p * (p * 6 - 15) + 10);
+}
 
 /** Consume complete display intervals, including the same tolerance used by
  * eligibility. Using raw `% interval` after an early epsilon match can leave
@@ -47,57 +62,96 @@ function pingPong(step: number, length: number): number {
 /** Atlas row identifies a clip. A status label or a fresh walk target does not
  * reset the same clip. Native clips may later be curated without changing the
  * public runtime API; repeated frames deliberately preserve authored holds. */
-export function createCompanionMotion({ clips = {} }: Options = {}) {
+export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loopRows = [], maxFrameRate = 14 }: Options = {}) {
+  const rows = Number.isFinite(rowCount) ? clamp(Math.floor(rowCount), 1, 64) : FRAME_COUNT;
+  const frameRate = Number.isFinite(maxFrameRate) ? clamp(maxFrameRate, 1, 16) : 14;
+  const loops = new Set(loopRows.filter(row => Number.isInteger(row) && row >= 0 && row < rows));
   const selected = new Map<number, readonly number[]>();
   for (const [key, frames] of Object.entries(clips)) {
     const row = Number(key);
-    if (!Number.isInteger(row) || row < 0 || row >= FRAME_COUNT || !Array.isArray(frames)) continue;
+    if (!Number.isInteger(row) || row < 0 || row >= rows || !Array.isArray(frames)) continue;
     const valid = frames.filter(frame => Number.isInteger(frame) && frame >= 0 && frame < FRAME_COUNT);
     if (valid.length) selected.set(row, valid);
   }
   let previousRow: number | undefined;
   let previousX = 0, previousY = 0, previousNow = 0;
-  let enteredAt = 0, walkDistance = 0;
+  let enteredAt = 0, walkDistance = 0, walkSteps = 0, travelLean = 0;
   let facing: -1 | 1 = 1;
+  type Scalars = Pick<CompanionMotionPose, "bob" | "scaleX" | "scaleY" | "tilt">;
+  const neutral = (): Scalars => ({ bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
+  let shown = neutral();
+  const velocity = neutral(), offset = neutral(), momentum = neutral();
+  velocity.scaleX = velocity.scaleY = 0;
+  let mixing = false;
   return {
     sample(input: CompanionMotionInput): CompanionMotionPose {
-      const row = Number.isFinite(input.row) ? clamp(Math.floor(input.row), 0, FRAME_COUNT - 1) : 0;
+      const row = Number.isFinite(input.row) ? clamp(Math.floor(input.row), 0, rows - 1) : 0;
       const now = Number.isFinite(input.now) ? Math.max(previousNow, input.now) : previousNow;
       const x = Number.isFinite(input.x) ? input.x : previousX;
       const y = Number.isFinite(input.y) ? input.y : previousY;
       const first = previousRow === undefined;
       const entered = first || previousRow !== row;
       const dx = first ? 0 : x - previousX;
+      const seconds = first ? 0 : Math.max(0, now - previousNow) / 1000;
       if (Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
-      if (entered) { enteredAt = now; walkDistance = 0; }
+      if (entered) { enteredAt = now; walkDistance = 0; walkSteps = 0; travelLean = 0; }
       else if (row === 2) walkDistance += Math.abs(dx);
       previousRow = row; previousX = x; previousY = y; previousNow = now;
 
       const frames = selected.get(row) ?? ALL_FRAMES;
       const end = frames.length - 1;
+      const cyclicIndex = (step: number) => loops.has(row) ? Math.floor(Math.max(0, step) + 1e-8) % frames.length : pingPong(step, frames.length);
       let index = 0;
       if (!entered) {
-        if (row === 2) index = input.reduced ? 0 : pingPong(walkDistance / WALK_STRIDE_PX * 2 * end, frames.length);
-        else if (LOOP_FPS[row]) index = input.reduced ? 0 : pingPong((now - enteredAt) / 1000 * LOOP_FPS[row], frames.length);
+        if (row === 2) {
+          const steps = Math.abs(dx) / WALK_STRIDE_PX * (loops.has(row) ? frames.length : 2 * end);
+          // Distance owns stride phase, with an authored-frame rate ceiling.
+          // A stationary walk pose never advances just to catch up with time.
+          walkSteps += Math.min(steps, seconds * frameRate);
+          index = input.reduced ? 0 : cyclicIndex(walkSteps);
+        }
+        else if (LOOP_FPS[row]) index = input.reduced ? 0 : cyclicIndex((now - enteredAt) / 1000 * Math.min(frameRate, LOOP_FPS[row]));
         else {
           const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
           // Every selected cell needs a positive interval: runtime changes to
           // the next jump stage before phase1, so multiplying by `end` made
           // the final crouch/ascent cell impossible to see.
-          index = Math.min(end, Math.floor(phase * frames.length + 1e-8));
+          index = input.reduced ? 0 : Math.min(end, Math.floor(phase * frames.length + 1e-8));
         }
       }
       const stride = walkDistance / WALK_STRIDE_PX * 2 * Math.PI;
       const movingPose = row === 2 && !input.reduced;
       const stretch = movingPose ? Math.sin(stride * 2) : 0;
-      return {
-        row,
-        column: frames[index],
-        facing,
+      if (movingPose && seconds > 0 && Math.abs(dx) > .001) travelLean = clamp(dx / seconds / 150, -1, 1) * .65;
+      const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
+      const extension = row === 16 ? Math.sin(phase * Math.PI) : 0;
+      const shake = row === 17 ? Math.sin(phase * Math.PI * 6) * Math.sin(phase * Math.PI) : 0;
+      const target: Scalars = {
         bob: movingPose ? -Math.abs(Math.sin(stride)) * 1.2 : 0,
-        scaleX: 1 + stretch * .012,
-        scaleY: 1 - stretch * .018,
-        tilt: movingPose ? Math.sin(stride) * .75 * facing : 0,
+        scaleX: 1 + stretch * .012 - extension * .014,
+        scaleY: 1 - stretch * .018 + extension * .026,
+        tilt: movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1,
+      };
+      // A100ms Hermite correction carries the last scalar pose and velocity
+      // into a new clip. This is a small pose mixer, not alpha ghosting between
+      // two drawings. World motion and collision coordinates stay untouched.
+      if (entered && !first) {
+        for (const key of Object.keys(target) as (keyof Scalars)[]) { offset[key] = shown[key] - target[key]; momentum[key] = velocity[key]; }
+        mixing = true;
+      }
+      const t = clamp((now - enteredAt) / 100, 0, 1);
+      const hold = 2 * t ** 3 - 3 * t ** 2 + 1, carry = t ** 3 - 2 * t ** 2 + t;
+      const next = { ...target };
+      for (const key of Object.keys(target) as (keyof Scalars)[]) {
+        if (mixing && t < 1) next[key] += offset[key] * hold + momentum[key] * .1 * carry;
+        if (input.reduced) next[key] = key === "scaleX" || key === "scaleY" ? 1 : 0;
+        if (seconds > 0) velocity[key] = clamp((next[key] - shown[key]) / seconds, key === "scaleX" || key === "scaleY" ? -2 : -60, key === "scaleX" || key === "scaleY" ? 2 : 60);
+      }
+      if (t >= 1 || input.reduced) mixing = false;
+      shown = next;
+      return {
+        row, column: frames[index], facing,
+        bob: rounded(next.bob), scaleX: rounded(next.scaleX), scaleY: rounded(next.scaleY), tilt: rounded(next.tilt),
       };
     },
   };

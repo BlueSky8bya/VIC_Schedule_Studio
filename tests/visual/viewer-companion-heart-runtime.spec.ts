@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { safeCompanionSurfaces } from "@/lib/ui/viewer-companion/geometry";
+import { chooseCompanionCare } from "./helpers/companion-home";
 
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -86,7 +87,7 @@ async function standOnCard(page: Page) {
   const { card } = await addSyntheticHeart(page, false);
   const home = page.getByRole("region", { name: "빅타민 집", exact: true });
   if (!(await home.isVisible())) await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).click();
-  await home.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await chooseCompanionCare(page, "옮길 곳 고르기");
   const anchor = (await cardAnchor(page, card))!;
   expect(anchor).toBeTruthy();
   await page.mouse.click(anchor.x + anchor.width / 2, anchor.y);

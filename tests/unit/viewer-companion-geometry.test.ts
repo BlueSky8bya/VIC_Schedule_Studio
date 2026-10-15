@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { safeCompanionSurfaces, unoccludedCompanionRects, type CompanionSurface, type CompanionTextRect } from "@/lib/ui/viewer-companion/geometry";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompanionSurfaces, unoccludedCompanionRects, type CompanionSurface, type CompanionTextRect, type CompanionGeometrySubscription, type CompanionFollowSample } from "@/lib/ui/viewer-companion/geometry";
+import type { Platform } from "@/lib/ui/viewer-companion/brain";
 
 const viewport = { width: 1000, height: 800 };
 const text = (left: number, top: number, right: number, bottom: number): CompanionTextRect => ({ left, top, right, bottom });
@@ -15,6 +16,213 @@ function expectClear(surfaces: CompanionSurface[], obstacles: CompanionTextRect[
     }
   }
 }
+
+const box = (left: number, top: number, width: number, height: number) => ({ left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON: () => ({ left, top, width, height }) }) as DOMRect;
+class FixtureEvents {
+  listeners = new Map<string, Set<() => void>>();
+  addEventListener = (type: string, callback: () => void) => { const set = this.listeners.get(type) ?? new Set(); set.add(callback); this.listeners.set(type, set); };
+  removeEventListener = (type: string, callback: () => void) => { this.listeners.get(type)?.delete(callback); };
+  emit(type: string) { for (const callback of this.listeners.get(type) ?? []) callback(); }
+  count() { return [...this.listeners.values()].reduce((count, set) => count + set.size, 0); }
+}
+class FixtureElement extends FixtureEvents {
+  isConnected = true;
+  parentElement: FixtureElement | null = null;
+  rect = box(0, 0, 1000, 800);
+  getBoundingClientRect = vi.fn(() => this.rect);
+  hasAttribute = () => false;
+  getAttribute = () => null;
+  querySelector: (selector: string) => FixtureElement | null = () => null;
+  querySelectorAll: (selector: string) => FixtureElement[] = () => [];
+  closest: (selector: string) => FixtureElement | null = () => null;
+  matches: (selector: string) => boolean = () => false;
+  contains(node: FixtureElement | null): boolean { return node === this || Boolean(node?.parentElement && this.contains(node.parentElement)); }
+}
+function geometryFixture() {
+  let now = 0, serial = 0;
+  const frames = new Map<number, FrameRequestCallback>(), timers = new Map<number, { at: number; callback: () => void }>();
+  const viewportEvents = new FixtureEvents(), fontEvents = new FixtureEvents();
+  const style = { display: "block", visibility: "visible", opacity: "1", overflowX: "visible", overflowY: "visible", position: "static" };
+  const win = Object.assign(new FixtureEvents(), {
+    innerWidth: 1000, innerHeight: 800, visualViewport: viewportEvents, performance: { now: () => now },
+    getComputedStyle: vi.fn(() => style),
+    requestAnimationFrame: (callback: FrameRequestCallback) => { const id = ++serial; frames.set(id, callback); return id; },
+    cancelAnimationFrame: vi.fn((id: number) => { frames.delete(id); }),
+    setTimeout: (callback: () => void, delay: number) => { const id = ++serial; timers.set(id, { at: now + delay, callback }); return id; },
+    clearTimeout: vi.fn((id: number) => { timers.delete(id); }),
+  });
+  const observers: { disconnect: ReturnType<typeof vi.fn>; observe: ReturnType<typeof vi.fn> }[] = [];
+  class FixtureObserver {
+    disconnect = vi.fn(); observe = vi.fn(); unobserve = vi.fn();
+    constructor() { observers.push(this); }
+  }
+  vi.stubGlobal("MutationObserver", FixtureObserver); vi.stubGlobal("ResizeObserver", FixtureObserver); vi.stubGlobal("NodeFilter", { SHOW_TEXT: 4 });
+  const root = new FixtureElement(), day = new FixtureElement(), date = new FixtureElement(), card = new FixtureElement(), title = new FixtureElement(), heart = new FixtureElement(), home = new FixtureElement();
+  day.parentElement = root; date.parentElement = day; card.parentElement = root; title.parentElement = card; heart.parentElement = card;
+  date.rect = box(200, 300, 100, 20); title.rect = box(500, 450, 200, 20); home.rect = box(200, 600, 120, 14); heart.rect = box(720, 450, 20, 20);
+  date.closest = selector => selector.includes(".day-strip") ? date : selector === ".public-day,.agenda-day" ? day : null;
+  date.matches = selector => selector.includes(".day-strip");
+  title.closest = selector => selector.includes(".event-main") ? title : selector.includes("data-eventid") ? card : null;
+  card.querySelector = selector => selector === ".event-heart" ? heart : null;
+  const controls: FixtureElement[] = [];
+  root.querySelectorAll = selector => selector.includes("data-eventid") ? [card] : selector === ".public-day,.agenda-day" ? [day] : selector.startsWith("button,") ? controls : [];
+  const nodes = [{ parentElement: date }, { parentElement: title }];
+  const range = { current: nodes[0], selectNodeContents(node: typeof nodes[number]) { this.current = node; }, getClientRects: vi.fn(function (this: { current: typeof nodes[number] }) { return [this.current.parentElement.rect]; }), detach() {} };
+  Object.assign(root, { ownerDocument: {
+    defaultView: win, fonts: fontEvents, querySelectorAll: () => [],
+    createTreeWalker: () => { let index = 0; return { nextNode: () => nodes[index++] ?? null }; },
+    createRange: () => range,
+  } });
+  const flush = () => { const pending = [...frames.values()]; frames.clear(); for (const callback of pending) callback(now); };
+  const advance = (elapsed: number) => { now += elapsed; for (const [id, timer] of [...timers]) if (timer.at <= now) { timers.delete(id); timer.callback(); } flush(); };
+  return { root: root as unknown as HTMLElement, sourceRoot: root, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, range, frames, timers, flush, advance };
+}
+
+afterEach(() => { vi.unstubAllGlobals(); });
+
+describe("companion geometry anchor subscription", () => {
+  it("keeps anonymous anchor identities across an observer sleep and reconnect", () => {
+    const fixture = geometryFixture(), identity = createCompanionGeometryIdentity();
+    let first: Platform[] = [], second: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, platforms => { first = platforms; }, { identity });
+    fixture.flush(); subscription();
+    const reconnect = observeCompanionPlatforms(fixture.root, platforms => { second = platforms; }, { identity });
+    fixture.flush(); reconnect();
+    expect(first.map(platform => platform.id)).toEqual(second.map(platform => platform.id));
+    expect(identity.serial).toBe(2);
+    expect(identity.ids.get(fixture.date as unknown as Element)).toBe("date-1");
+  });
+
+  it("follows only two actual anchors with absolute deltas, including heart coordinates", () => {
+    const fixture = geometryFixture(); let platforms: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; }, { home: fixture.home as unknown as HTMLElement });
+    fixture.flush();
+    const source = platforms.find(platform => platform.kind === "card")!;
+    fixture.title.rect = box(525, 410, 200, 20); fixture.home.rect = box(210, 620, 120, 14);
+    const rangeCalls = fixture.range.getClientRects.mock.calls.length, styleCalls = fixture.win.getComputedStyle.mock.calls.length;
+    fixture.title.getBoundingClientRect.mockClear(); fixture.home.getBoundingClientRect.mockClear(); fixture.date.getBoundingClientRect.mockClear();
+    const result = subscription.follow([source.id, "companion-home", "date-1"]);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ platform: { ...source, x: source.x + 25, y: source.y - 40, heart: { ...source.heart!, x: source.heart!.x + 25, y: source.heart!.y - 40 } }, anchorX: 525, anchorY: 410 });
+    expect(result[1]).toMatchObject({ platform: { id: "companion-home", x: 210, y: 620 }, anchorX: 210, anchorY: 620 });
+    expect(fixture.title.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.home.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.date.getBoundingClientRect).not.toHaveBeenCalled();
+    expect(fixture.range.getClientRects).toHaveBeenCalledTimes(rangeCalls); expect(fixture.win.getComputedStyle).toHaveBeenCalledTimes(styleCalls);
+    expect(subscription.follow([source.id])[0]).toEqual(result[0]);
+    source.x = -10000; source.heart!.x = -10000;
+    expect(subscription.follow([source.id])[0]).toEqual(result[0]);
+    subscription();
+  });
+
+  it("publishes a fresh baseline before onChange, avoiding a second scroll delta", () => {
+    const fixture = geometryFixture(); let delivered: Platform[] = [], followed: CompanionFollowSample[] = [];
+    const subscription: CompanionGeometrySubscription = observeCompanionPlatforms(fixture.root, next => { delivered = next; followed = subscription.follow(["date-1"]); });
+    fixture.flush(); fixture.date.rect = box(215, 340, 100, 20);
+    fixture.win.emit("scroll"); fixture.advance(120);
+    expect(followed[0].platform).toEqual(delivered.find(platform => platform.id === "date-1"));
+    expect(followed[0]).toMatchObject({ platform: { x: 215, y: 337 }, anchorX: 215, anchorY: 340 });
+    fixture.date.rect = box(220, 345, 100, 20);
+    expect(subscription.follow(["date-1"])[0]).toMatchObject({ platform: { x: 220, y: 342 }, anchorX: 220, anchorY: 345 });
+    subscription();
+  });
+
+  it("retains read-only following after unsubscribe but rejects missing or disconnected anchors", () => {
+    const fixture = geometryFixture(); let platforms: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; }); fixture.flush();
+    const floor = platforms.find(platform => platform.kind === "floor")!;
+    subscription(); fixture.date.rect = box(210, 320, 100, 20);
+    expect(subscription.follow(["date-1"])[0]).toMatchObject({ platform: { x: 210, y: 317 }, anchorX: 210, anchorY: 320 });
+    expect(subscription.follow([floor.id])[0]).toEqual({ platform: floor, anchorX: 0, anchorY: 0 });
+    fixture.date.isConnected = false;
+    expect(subscription.follow(["date-1", "missing"])).toEqual([]);
+    fixture.date.isConnected = true; fixture.date.rect = box(0, 0, 0, 0);
+    expect(subscription.follow(["date-1"])).toEqual([]);
+    fixture.sourceRoot.isConnected = false;
+    expect(subscription.follow([floor.id])).toEqual([]);
+  });
+
+  it("distinguishes safe-span reclipping from movement of the actual anchor", () => {
+    const fixture = geometryFixture(); let platforms: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; }); fixture.flush();
+    const id = platforms.find(platform => platform.kind === "card")!.id;
+    const before = subscription.follow([id])[0];
+    const control = new FixtureElement(); control.parentElement = fixture.sourceRoot; control.rect = box(450, 400, 100, 40); fixture.controls.push(control);
+    fixture.win.emit("resize"); fixture.advance(120);
+    const after = subscription.follow([id])[0];
+    expect(after.platform.x).toBeGreaterThan(before.platform.x + 80);
+    expect(after.anchorX - before.anchorX).toBe(0); expect(after.anchorY - before.anchorY).toBe(0);
+    expect(after.platform).toEqual(platforms.find(platform => platform.id === id));
+    subscription();
+  });
+
+  it("retains a followed flight source outside safe clipping without making it a landing surface", () => {
+    const fixture = geometryFixture(); let platforms: Platform[] = [], inCallback: CompanionFollowSample[] = [];
+    const subscription: CompanionGeometrySubscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; inCallback = subscription.follow(["date-1", "card-2"]); });
+    fixture.flush();
+    const initial = subscription.follow(["date-1"])[0];
+    fixture.date.rect = box(200, 30, 100, 20);
+    fixture.win.emit("scroll"); fixture.advance(120);
+    expect(platforms.some(platform => platform.id === "date-1")).toBe(false);
+    expect(inCallback.find(sample => sample.platform.id === "date-1")).toMatchObject({ platform: { x: initial.platform.x, y: 27 }, anchorX: 200, anchorY: 30 });
+    fixture.date.rect = box(205, 10, 100, 20);
+    const rangeCalls = fixture.range.getClientRects.mock.calls.length;
+    expect(subscription.follow(["date-1"])[0]).toMatchObject({ platform: { x: initial.platform.x + 5, y: 7 }, anchorX: 205, anchorY: 10 });
+    expect(fixture.range.getClientRects).toHaveBeenCalledTimes(rangeCalls);
+    subscription(); fixture.date.rect = box(205, -10, 100, 20);
+    expect(subscription.follow(["date-1"])[0]).toMatchObject({ anchorX: 205, anchorY: -10 });
+  });
+
+  it("releases retained snapshots on a new followed pair, source deletion, and root removal", () => {
+    const fixture = geometryFixture(); let platforms: Platform[] = [];
+    const subscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; }); fixture.flush();
+    subscription.follow(["date-1", "card-2"]);
+    fixture.date.rect = box(200, 30, 100, 20); fixture.title.rect = box(500, 30, 200, 20);
+    fixture.win.emit("scroll"); fixture.advance(120);
+    expect(platforms.every(platform => platform.kind === "floor")).toBe(true);
+    expect(subscription.follow(["date-1", "card-2"])).toHaveLength(2);
+    subscription.follow(["card-2"]);
+    expect(subscription.follow(["date-1", "card-2"])).toHaveLength(1);
+    fixture.title.isConnected = false;
+    expect(subscription.follow(["card-2"])).toEqual([]);
+    fixture.title.isConnected = true;
+    expect(subscription.follow(["card-2"])).toEqual([]);
+    const floor = platforms[0];
+    expect(subscription.follow([floor.id])).toHaveLength(1);
+    fixture.sourceRoot.isConnected = false;
+    expect(subscription.follow([floor.id])).toEqual([]);
+    fixture.sourceRoot.isConnected = true;
+    expect(subscription.follow([floor.id])).toEqual([]);
+    subscription();
+  });
+
+  it("coalesces scrollend and visual-viewport events and removes every scheduled callback on cleanup", () => {
+    const fixture = geometryFixture(), onChange = vi.fn();
+    const subscription = observeCompanionPlatforms(fixture.root, onChange); fixture.flush();
+    fixture.date.rect = box(200, 310, 100, 20);
+    fixture.win.emit("scrollend"); fixture.viewportEvents.emit("scroll"); fixture.viewportEvents.emit("resize");
+    expect(fixture.timers.size).toBe(1);
+    fixture.advance(120); expect(onChange).toHaveBeenCalledTimes(2);
+    fixture.viewportEvents.emit("resize"); expect(fixture.timers.size).toBe(1);
+    subscription(); subscription();
+    expect(fixture.timers.size).toBe(0); expect(fixture.frames.size).toBe(0);
+    expect(fixture.win.count()).toBe(0); expect(fixture.viewportEvents.count()).toBe(0); expect(fixture.fontEvents.count()).toBe(0);
+    for (const observer of fixture.observers) expect(observer.disconnect).toHaveBeenCalledTimes(1);
+    fixture.win.emit("scrollend"); fixture.viewportEvents.emit("resize"); fixture.advance(1000);
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers an inert callable follow handle when a capture has no browsing window", () => {
+    const subscription = observeCompanionPlatforms({ ownerDocument: { defaultView: null } } as unknown as HTMLElement, vi.fn());
+    expect(subscription.follow(["anything"])).toEqual([]); expect(() => subscription()).not.toThrow();
+  });
+
+  it("cancels an initial frame before any measurement can outlive its owner", () => {
+    const fixture = geometryFixture(), onChange = vi.fn();
+    const subscription = observeCompanionPlatforms(fixture.root, onChange);
+    expect(fixture.frames.size).toBe(1); subscription(); fixture.flush();
+    expect(onChange).not.toHaveBeenCalled(); expect(fixture.frames.size).toBe(0);
+    expect(subscription.follow(["date-1"])).toEqual([]);
+  });
+});
 
 describe("companion text platforms", () => {
   it("uses the registered opaque body while retaining full-cell viewport bounds", () => {

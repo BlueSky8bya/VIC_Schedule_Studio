@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCompanionMotion, nextCompanionPaint, type CompanionMotionInput } from "@/lib/ui/viewer-companion/motion";
+import { createCompanionMotion, nextCompanionPaint, sampleCompanionTravel, type CompanionMotionInput } from "@/lib/ui/viewer-companion/motion";
 
 const input = (patch: Partial<CompanionMotionInput> = {}): CompanionMotionInput => ({ row: 0, phase: 0, status: "idle", x: 100, y: 500, now: 0, ...patch });
 
@@ -103,5 +103,78 @@ describe("companion clip and facing continuity", () => {
     expect(motion.sample(input({ now: 100000 })).column).toBe(4);
     const invalid = motion.sample(input({ row: NaN, phase: NaN, x: NaN, y: NaN, now: NaN }));
     expect(Object.values(invalid).every(Number.isFinite)).toBe(true);
+  });
+
+  it("eases travel monotonically with quiet velocity and acceleration at both ends", () => {
+    expect(sampleCompanionTravel(-1)).toBe(0); expect(sampleCompanionTravel(2)).toBe(1);
+    expect(sampleCompanionTravel(NaN)).toBe(0); expect(sampleCompanionTravel(.5)).toBe(.5);
+    const samples = Array.from({ length: 101 }, (_, i) => sampleCompanionTravel(i / 100));
+    expect(samples.every((value, index) => index === 0 || value >= samples[index - 1])).toBe(true);
+    const e = 1e-5;
+    expect(sampleCompanionTravel(e) / e).toBeLessThan(.00001);
+    expect((1 - sampleCompanionTravel(1 - e)) / e).toBeLessThan(.00001);
+    expect(Math.abs((sampleCompanionTravel(2 * e) - 2 * sampleCompanionTravel(e)) / e ** 2)).toBeLessThan(.001);
+  });
+
+  it("allows the two new logical clips only when the renderer supplies rowCount18", () => {
+    const clips = { 16: [0, 1, 2, 3, 4, 5, 6, 7], 17: [0, 1, 2, 3, 4, 5, 6, 7] };
+    const legacy = createCompanionMotion({ clips });
+    expect(legacy.sample(input({ row: 16 })).row).toBe(15);
+    const native = createCompanionMotion({ clips, rowCount: 18 });
+    expect(native.sample(input({ row: 16 })).column).toBe(0);
+    expect(native.sample(input({ row: 16, phase: .5, now: 200 }))).toMatchObject({ row: 16, column: 4, scaleX: .986, scaleY: 1.026 });
+    expect(native.sample(input({ row: 17, phase: 0, now: 400 })).row).toBe(17);
+    const shaking = native.sample(input({ row: 17, phase: .25, now: 600 }));
+    expect(shaking.column).toBe(2); expect(Math.abs(shaking.tilt)).toBeGreaterThan(1);
+    expect(Object.values(native.sample(input({ row: 999, phase: 1, now: 800 }))).every(Number.isFinite)).toBe(true);
+  });
+
+  it("cycles explicitly authored walking frames forward while legacy clips keep ping-pong", () => {
+    const frames = Array.from({ length: 8 }, (_, index) => index);
+    const motion = createCompanionMotion({ clips: { 2: frames }, loopRows: [2] });
+    const seen = Array.from({ length: 9 }, (_, step) => motion.sample(input({ row: 2, x: step * 10, now: step * 100 })).column);
+    expect(seen).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 0]);
+  });
+
+  it("caps a16-frame native walk at14 authored changes per second without a catch-up dance", () => {
+    const motion = createCompanionMotion({ clips: { 2: Array.from({ length: 16 }, (_, i) => i) }, loopRows: [2], maxFrameRate: 14 });
+    let pose = motion.sample(input({ row: 2, x: 0 })), changes = 0;
+    for (let frame = 1; frame <= 120; frame++) {
+      const next = motion.sample(input({ row: 2, x: frame / 120 * 200, now: frame / 120 * 1000 }));
+      if (next.column !== pose.column) changes++;
+      pose = next;
+    }
+    expect(changes).toBe(14);
+    expect(motion.sample(input({ row: 2, x: 200, now: 50000 }))).toEqual(pose);
+  });
+
+  it("carries a moving body's scalar pose across a clip change and settles within100ms", () => {
+    const motion = createCompanionMotion();
+    motion.sample(input({ row: 2, x: 0 }));
+    motion.sample(input({ row: 2, x: 4, now: 40 }));
+    const walking = motion.sample(input({ row: 2, x: 8, now: 80 }));
+    expect(Math.abs(walking.bob)).toBeGreaterThan(.5);
+    const resting = motion.sample(input({ row: 0, x: 8, now: 96 }));
+    for (const key of ["bob", "scaleX", "scaleY", "tilt"] as const) expect(resting[key]).toBe(walking[key]);
+    const next = motion.sample(input({ row: 0, x: 8, now: 97 }));
+    expect(Math.abs(next.bob - resting.bob)).toBeLessThan(.05);
+    expect(motion.sample(input({ row: 0, x: 8, now: 196 }))).toMatchObject({ bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
+  });
+
+  it("keeps a native capped walk identical at60Hz and120Hz", () => {
+    const atRate = (hz: number) => {
+      const motion = createCompanionMotion({ rowCount: 18, clips: { 2: Array.from({ length: 16 }, (_, i) => i) }, loopRows: [2] });
+      let pose = motion.sample(input({ row: 2, x: 0 }));
+      for (let frame = 1; frame <= hz * 2; frame++) pose = motion.sample(input({ row: 2, x: frame / hz * 70, now: frame / hz * 1000 }));
+      return pose;
+    };
+    expect(atRate(60)).toEqual(atRate(120));
+  });
+
+  it("reduced motion cancels even an interrupted stretch or shake mixer immediately", () => {
+    const motion = createCompanionMotion({ rowCount: 18 });
+    motion.sample(input({ row: 17, phase: .25 }));
+    motion.sample(input({ row: 17, phase: .25, now: 200 }));
+    for (const row of [16, 17, 2, 0]) expect(motion.sample(input({ row, phase: .5, x: 200, now: 220 + row, reduced: true }))).toMatchObject({ column: 0, bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
   });
 });

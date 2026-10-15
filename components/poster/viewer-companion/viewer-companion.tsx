@@ -5,13 +5,13 @@ import { createPortal } from "react-dom";
 import { Home } from "lucide-react";
 import { advanceBrain, commitAction, createBrain, getAction, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import { observeCompanionPlatforms } from "@/lib/ui/viewer-companion/geometry";
+import { createCompanionGeometryIdentity, observeCompanionPlatforms, type CompanionGeometrySubscription } from "@/lib/ui/viewer-companion/geometry";
 import { acquireCompanionAmbientPreview } from "@/lib/ui/viewer-companion/ambient-preview";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare } from "@/lib/ui/viewer-companion/care";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
-import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
+import { createCompanionMotion, nextCompanionPaint, sampleCompanionTravel } from "@/lib/ui/viewer-companion/motion";
 import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
-import registration from "@/lib/ui/viewer-companion/clean-sprite.json";
+import registration from "@/lib/ui/viewer-companion/fluid-sprite.json";
 import { gfxMode } from "@/lib/ui/gfx";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import { CompanionHome, type CompanionHomeAction } from "./companion-home";
@@ -37,6 +37,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
   const [homeExpanded, setHomeExpanded] = useState(false), [suspended, setSuspended] = useState(true);
   const [care, setCare] = useState({ ...DEFAULT_COMPANION_CARE }), [announcement, setAnnouncement] = useState("");
   const [ready, setReady] = useState(false);
+  const [geometryIdentity] = useState(createCompanionGeometryIdentity);
   useEffect(() => { setReady(true); }, []);
   useEffect(() => {
     const track = (event: FocusEvent) => { const target = event.target as HTMLElement; if (target === document.body) return; homeFocus.current = target.closest(".vc-home,.vc-home-launcher") ? target.dataset.homeAction ?? "home" : null; };
@@ -69,9 +70,13 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     let clickGuard: ReturnType<typeof setTimeout> | undefined;
     let pressed: { id: number; x: number; y: number; at: number; dx: number; dy: number; dragged: boolean; grabbed: boolean; cancelled: boolean } | null = null;
     const size = sizes[preferences.size];
-    const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])) });
+    const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11], maxFrameRate: 14 });
     let presentationNow = 0;
-    let offGeometry: (() => void) | undefined;
+    let offGeometry: CompanionGeometrySubscription | undefined, geometryTracker: CompanionGeometrySubscription | undefined;
+    const anchorSeen = new Map<string, { x: number; y: number }>();
+    const carrier = { x: 0, y: 0 };
+    let followRaf = 0, followUntil = 0, lastFollow = 0;
+    let lastPoseSample = { row: 0, frame: 0, status: "idle" };
     let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
     let geometryReady = false;
     let paintedRow = -1, paintedColumn = -1, paintedCell = -1, paintedFacing = 0;
@@ -87,25 +92,27 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const data = (name: string, value: string) => { if (el.dataset[name] !== value) el.dataset[name] = value; };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
-      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x, y, now: presentationNow, reduced });
+      lastPoseSample = { row, frame, status };
+      // Scroll can carry an anchor outside the safe viewport between full
+      // scans. Never paint that interim frame over headers or clipped edges.
+      if (x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12) { el.hidden = true; return; }
+      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: x - carrier.x, y: y - carrier.y, now: presentationNow, reduced });
       // World travel stays smooth even when the authored pose holds. Registration
       // is measured from the opaque body, not transparent padding/shadow specks.
       style(el, "transform", `translate3d(${(x - size / 2).toFixed(3)}px,${(y - size).toFixed(3)}px,0)`);
-      style(poseLayer, "transform", `translate3d(0,${sample.bob.toFixed(3)}px,0) scale(${sample.scaleX.toFixed(4)},${sample.scaleY.toFixed(4)})`);
+      style(poseLayer, "transform", `translate3d(0,${sample.bob.toFixed(3)}px,0) rotate(${sample.tilt.toFixed(3)}deg) scale(${sample.scaleX.toFixed(4)},${sample.scaleY.toFixed(4)})`);
       if (sample.facing !== paintedFacing) { facingLayer.style.transform = `scaleX(${sample.facing})`; el.dataset.facing = sample.facing < 0 ? "left" : "right"; paintedFacing = sample.facing; }
-      // A rare short blink, not the old6Hz whole-face toggle. Keeping one
-      // authored pose between blinks also removes idle outline shimmer.
-      const index = sample.row === 0 ? !reduced && presentationNow % 5400 > 5200 ? 1 : 0 : registration.rows[sample.row][sample.column];
-      const column = sample.row === 0 ? 0 : sample.column;
+      const index = registration.rows[sample.row][sample.column];
+      const column = sample.column;
       if (sample.row !== paintedRow || column !== paintedColumn) {
         el.style.setProperty("--vc-column", `${column / 15 * 100}%`);
-        el.style.setProperty("--vc-row", `${sample.row / 15 * 100}%`);
+        el.style.setProperty("--vc-row", `${sample.row / (registration.rows.length - 1) * 100}%`);
         paintedRow = sample.row; paintedColumn = column;
       }
       if (index !== paintedCell) {
         const cell = registration.frames[index];
         el.style.setProperty("--vc-cell-x", `${index % registration.grid / (registration.grid - 1) * 100}%`);
-        el.style.setProperty("--vc-cell-y", `${Math.floor(index / registration.grid) / (registration.grid - 1) * 100}%`);
+        el.style.setProperty("--vc-cell-y", `${Math.floor(index / registration.grid) / (registration.gridRows - 1) * 100}%`);
         image.style.transform = `translate3d(${cell.x / 80 * size}px,${cell.y / 80 * size}px,0)`;
         image.style.clipPath = `inset(${cell.clip.map(value => `${value / 80 * 100}%`).join(" ")})`;
         data("pose", String(index));
@@ -113,6 +120,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       }
       data("state", status);
       data("platform", support);
+      data("journey", action ? String(began) : "");
       if (shadow.current) {
         const progress = action ? clamp((performance.now() - began) / total, 0, 1) : 0;
         const ground = action?.kind === "jump" ? lerp(origin.y, action.target.y, progress) : platforms.find(p => p.id === support)?.y ?? y;
@@ -121,6 +129,56 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = false;
+    };
+    // Anchor translation and safe-span re-clipping are different things. Only
+    // the real DOM anchor delta carries a journey; its clock never restarts.
+    const refreshAnchors = (now: number) => {
+      const samples = geometryTracker?.follow([support, action?.target.platformId ?? ""].filter(Boolean)) ?? [];
+      const deltas = new Map<string, { x: number; y: number }>();
+      for (const sample of samples) {
+        const id = sample.platform.id, before = anchorSeen.get(id);
+        anchorSeen.set(id, { x: sample.anchorX, y: sample.anchorY });
+        const delta = before ? { x: sample.anchorX - before.x, y: sample.anchorY - before.y } : { x: 0, y: 0 };
+        deltas.set(id, delta);
+        const platform = platforms.find(p => p.id === id);
+        if (platform && (delta.x || delta.y)) {
+          platform.x += delta.x; platform.y += delta.y;
+          if (platform.heart) { platform.heart.x += delta.x; platform.heart.y += delta.y; }
+        }
+      }
+      if (pressed || keyboardHeld || placing) return false;
+      const from = deltas.get(support) ?? { x: 0, y: 0 }, to = deltas.get(action?.target.platformId ?? support) ?? { x: 0, y: 0 };
+      let px = 0, py = 0;
+      if (action) {
+        const age = now - began, p = clamp(age / Math.max(1, total), 0, 1);
+        if (action.kind === "jump") { px = travel > 0 ? clamp((age - 180) / travel, 0, 1) : travel === -2 ? sampleCompanionTravel(p) : p; py = travel === -1 ? p * p : px; }
+        else if (action.kind === "walk") px = py = sampleCompanionTravel(p);
+        else if (action.kind === "heart" || action.kind === "hide") px = py = sampleCompanionTravel(clamp(age / Math.max(1, travel), 0, 1));
+        origin.x += from.x; origin.y += from.y;
+        action.target.x += to.x; action.target.y += to.y;
+        if (action.effectPoint) { action.effectPoint.x += to.x; action.effectPoint.y += to.y; }
+      }
+      const dx = lerp(from.x, to.x, px), dy = lerp(from.y, to.y, py);
+      x += dx; y += dy; carrier.x += dx; carrier.y += dy;
+      return Boolean(dx || dy);
+    };
+    const followLayout = (event?: Event) => {
+      if (stopped || pause) return;
+      // Real scroll/panel events own this short loop. Parked/quiet creatures
+      // have no autonomous tracking, timers, geometry scans or brain ticks.
+      const now = performance.now();
+      followUntil = Math.max(followUntil, now + (event?.type.startsWith("vic:") ? 900 : 180));
+      if (followRaf) return;
+      const follow = (time: number) => {
+        followRaf = 0;
+        if (stopped || pause) return;
+        if (time - lastFollow >= 1000 / 60 - .1) {
+          lastFollow = time;
+          if (refreshAnchors(time)) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
+        }
+        if (time < followUntil) followRaf = requestAnimationFrame(follow);
+      };
+      followRaf = requestAnimationFrame(follow);
     };
     const clearAction = () => { action = null; food.current?.nibble(); heartResult = null; sleeping = false; releaseAmbient(); releaseAmbient = () => {}; el.removeAttribute("data-hidden"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }) => {
@@ -181,13 +239,14 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         total += travel;
       }
       if (next.kind === "jump") {
-        const g = 1100, impulse = Math.sqrt(2 * g * 140), dy = next.target.y - y;
+        const g = 1100, impulse = Math.sqrt(2 * g * (next.jumpHeight ?? 140)), dy = next.target.y - y;
         travel = (impulse + Math.sqrt(Math.max(0, impulse * impulse + 2 * g * dy))) / g * 1000;
         total = 180 + travel + 260;
       }
     };
     const tick = (now: number) => {
       if (stopped || pause) return;
+      refreshAnchors(now);
       const delta = Math.max(0, now - lastTick); lastTick = now;
       presentationNow += delta;
       if (presence.phase === "active" && now - lastNeeds >= 250) { brain.current = advanceBrain(brain.current, now - lastNeeds); saveCompanionCare(brain.current); lastNeeds = now; }
@@ -227,15 +286,15 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       let row = 0, frame = 0, status = "idle";
       if (action) {
         const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
-        if (action.kind === "walk") { x = lerp(origin.x, action.target.x, p); row = 2; }
+        if (action.kind === "walk") { x = lerp(origin.x, action.target.x, sampleCompanionTravel(p)); row = 2; }
         else if (action.kind === "jump") {
-          if (travel === -2) { const eased = p * p * (3 - 2 * p); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * (reduced ? 0 : 60); row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
+          if (travel === -2) { const eased = sampleCompanionTravel(p); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * (reduced ? 0 : 60); row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
           else if (travel === -1) { x = lerp(origin.x, action.target.x, p); y = lerp(origin.y, action.target.y, p * p); row = p < .8 ? 5 : 6; frame = (p < .8 ? p / .8 : (p - .8) / .2) * 15; }
           else if (age < 180) { row = 3; frame = age / 180 * 15; }
           else if (age < 180 + travel) {
             const t = (age - 180) / 1000, progress = clamp((age - 180) / travel, 0, 1);
-            x = lerp(origin.x, action.target.x, progress); y = origin.y - Math.sqrt(2 * 1100 * 140) * t + .5 * 1100 * t * t;
-            const apex = Math.sqrt(2 * 1100 * 140) / 1100;
+            x = lerp(origin.x, action.target.x, progress); y = lerp(origin.y, action.target.y, progress) - .5 * 1100 * (travel / 1000) ** 2 * progress * (1 - progress);
+            const apex = Math.sqrt(2 * 1100 * (action.jumpHeight ?? 140)) / 1100;
             row = t < apex ? 4 : 5; frame = (t < apex ? t / apex : (t - apex) / Math.max(.001, travel / 1000 - apex)) * 15;
           } else { x = action.target.x; y = action.target.y; row = 6; frame = (age - 180 - travel) / 260 * 15; }
         } else if (action.kind === "sleep") {
@@ -243,7 +302,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
           frame = row === 10 ? age / 1000 * 15 : row === 12 ? (age - total + 1100) / 1100 * 15 : 0;
           el.toggleAttribute("data-dreaming", row === 11);
         } else if (action.kind === "heart" || action.kind === "hide") {
-          if (age < travel) { x = lerp(origin.x, action.target.x, age / Math.max(1, travel)); row = 2; }
+          if (age < travel) { x = lerp(origin.x, action.target.x, sampleCompanionTravel(age / Math.max(1, travel))); row = 2; }
           else if (action.kind === "heart") {
             const t = (age - travel) / action.duration; row = 13; frame = t * 15;
             y = origin.y + Math.max(0, Math.sin(t * Math.PI * 2)) * (reduced ? 0 : 18);
@@ -273,6 +332,8 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
           food.current?.nibble(action.foodId, p);
           if (effect.current) effect.current.textContent = p > .6 ? "✧" : "";
         } else if (action.kind === "look") { row = 1; frame = p * 15; }
+        else if (action.kind === "stretch") { row = 16; frame = p * 15; }
+        else if (action.kind === "shake") { row = 17; frame = p * 15; }
         if (p >= 1) {
           const rested = sleeping;
           const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump"));
@@ -285,17 +346,16 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
           if (restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
         }
       }
-      x = clamp(x, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y, size + 8, innerHeight - 12);
       paint(row, frame, status); schedule();
     };
     const schedule = () => {
       if (stopped || pause || presence.phase === "parked") return;
       if (reduced) timer = setTimeout(() => tick(performance.now()), 400);
       else {
-        const moving = Boolean(pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide"].includes(action.kind));
-        // Keep travel fluid, cap high-refresh displays at60. Static poses do
-        // not need a full-speed JS loop; authored pose holds change at8Hz.
-        const fps = moving ? gfxMode() === "full" ? 60 : 30 : 8;
+        const moving = Boolean(pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake"].includes(action.kind));
+        // Continuous travel/scalar transitions, cyclic drawings at<=14Hz; action poses follow their phase.
+        // A quiet creature needs only the cadence of its native idle loop.
+        const fps = moving ? gfxMode() === "full" ? 60 : 30 : 14;
         const draw = (now: number) => {
         const deadline = nextCompanionPaint(now, lastPaint, fps);
         if (deadline !== null) { lastPaint = deadline; tick(now); }
@@ -312,7 +372,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       started = true; pause = next; setSuspended(next); if (next) el.hidden = true;
       food.current?.pause(next);
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
-      if (pause) { needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; setHomeExpanded(false); }
+      if (pause) { needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; setHomeExpanded(false); }
       else { presence.focus(document.hasFocus(), lastTick); connectGeometry(); hearts.pause(presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); }
     };
     const focusChanged = () => {
@@ -344,7 +404,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       if (!pressed.grabbed && performance.now() - pressed.at < 360 && distance > 12) pressed.cancelled = true;
       if (preferences.drag && !pressed.cancelled && performance.now() - pressed.at >= 360 && distance > 8) {
         pressed.grabbed = true;
-        pressed.dragged = true; x = clamp(event.clientX - pressed.dx, size / 2, innerWidth - size / 2); y = clamp(event.clientY - pressed.dy, size, innerHeight - 12);
+        pressed.dragged = true; x = clamp(event.clientX - pressed.dx, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY - pressed.dy, size + 8, innerHeight - 12);
         paint(8, 0, "held");
       }
     };
@@ -364,7 +424,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key === " " && preferences.drag) { event.preventDefault(); clearAction(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) settle({ x, y }); }
       else if (event.key === "Escape") { event.preventDefault(); keyboardHeld = false; placing = false; delete el.dataset.placing; settle({ x, y }); }
-      else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2, innerWidth - size / 2); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size, innerHeight - 12); }
+      else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); }
     };
     const place = (event: PointerEvent) => {
       if (!placing || el.contains(event.target as Node)) return;
@@ -372,7 +432,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       // pointerdown cancellation alone does not cancel the independent click:
       // consume this placement's click before a real card/heart can receive it.
       consumePlacementClick = true; placementPointer = event.pointerId; clearTimeout(clickGuard);
-      x = clamp(event.clientX, size / 2, innerWidth - size / 2); y = clamp(event.clientY, size, innerHeight - 12); settle({ x, y });
+      x = clamp(event.clientX, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY, size + 8, innerHeight - 12); settle({ x, y });
     };
     const placementReleased = (event: PointerEvent) => {
       if (placementPointer !== event.pointerId) return;
@@ -384,16 +444,20 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const sensePointer = (event: PointerEvent) => { if (!pause && event.pointerType !== "touch") pointer = { x: event.clientX, y: event.clientY }; };
     const onGeometry = (next: Platform[]) => {
       geometryReady = true;
-      const previous = platforms;
-      // A visible ledge must leave room for this configured sprite above it.
-      // Use the same foot boundary as painting/dragging, including after scroll.
+      refreshAnchors(performance.now());
+      // A full scan revalidates safe spans; scrolling itself was already
+      // carried per-frame by its actual anchor, including nested/fixed panels.
       platforms = next.filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
       food.current?.sync(platforms);
+      const resolve = (id: string, point: { x: number; y: number }) => {
+        const exact = platforms.find(p => p.id === id);
+        if (exact && Math.abs(point.y - exact.y) <= 3 && point.x >= exact.x - 2 && point.x <= exact.x + exact.width + 2) return exact;
+        const group = id.match(/^(?:card|date)-\d+/)?.[0];
+        return group ? nearestPlatform(point, platforms.filter(p => (p.id === group || p.id.startsWith(`${group}-`)) && Math.abs(point.y - p.y) <= 3)) : exact && Math.abs(point.y - exact.y) <= 3 ? exact : undefined;
+      };
       if (presence.phase === "parked") {
-        // A browser source may resize while it never receives focus. Respond
-        // once to that actual layout event, then disconnect again; no polling.
-        const oldSupport = platforms.find(p => p.id === support && Math.abs(p.y - y) <= 2 && x >= p.x && x <= p.x + p.width);
-        const p = oldSupport ?? nearestPlatform({ x, y }, platforms);
+        const old = resolve(support, { x, y });
+        const p = old ?? nearestPlatform({ x, y }, platforms);
         clearAction();
         if (p) { support = p.id; x = platformLandingX(p, x); y = p.y; paint(11, 0, "sleep"); el.dataset.dreaming = ""; }
         else { support = ""; el.hidden = true; }
@@ -404,29 +468,31 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         const p = nearestPlatform({ x, y: saved?.y ?? innerHeight * .65 }, saved ? platforms : platforms.filter(p => p.kind !== "floor")) ?? platforms[0];
         if (p) { x = platformLandingX(p, x); y = p.y; support = p.id; }
       } else if (!pressed && !keyboardHeld) {
-        const p = platforms.find(p => p.id === support);
-        const target = action?.target.platformId;
-        const changed = (id: string) => {
-          const before = previous.find(p => p.id === id), after = platforms.find(p => p.id === id);
-          return !before || !after || Math.abs(before.x - after.x) > 1 || Math.abs(before.y - after.y) > 1 || Math.abs(before.width - after.width) > 1;
-        };
-        // Scroll/resize/deletion invalidates a ballistic destination. Cancel
-        // the old journey and land on current visible geometry, never thin air.
-        const returningHome = action?.kind === "jump" && travel === -2 && target === "companion-home";
-        const newHome = returningHome ? platforms.find(p => p.id === "companion-home") : undefined;
-        if (returningHome && newHome && changed("companion-home")) {
-          // A shared-panel spring moves the real cushion during the invitation.
-          // Retarget from the current pose instead of falling onto the calendar.
-          origin = { x, y }; began = performance.now(); total = clamp(Math.hypot(newHome.x + newHome.width / 2 - x, newHome.y - y) * 2, 350, 1000);
-          action = { kind: "jump", target: { x: platformLandingX(newHome, newHome.x + newHome.width / 2), y: newHome.y, platformId: newHome.id }, duration: total };
+        const p = resolve(support, { x, y });
+        if (p) support = p.id;
+        const destination = action?.target.platformId;
+        const target = destination && action ? resolve(destination, action.target) : undefined;
+        if (action && target) {
+          action.target.platformId = target.id;
+          action.target.x = platformLandingX(target, action.target.x);
+          action.target.y = target.y;
         }
-        else if (!p && !returningHome || action && !returningHome && (changed(support) || target && changed(target)) || returningHome && !newHome) { clearAction(); settle({ x, y }); }
-        else if (!action && p) { x = platformLandingX(p, x); y = p.y; }
+        // Genuine deletion/occlusion/resize needs one safe landing. A source
+        // leaving the viewport during a valid flight does not cancel it.
+        if (action && destination && !target || !action && !p) {
+          clearAction(); settle({ x, y });
+        } else if (!action && p) { x = platformLandingX(p, x); y = p.y; }
       }
-      // Only the animation loop paints. Heart/resize observations must not
-      // insert an idle frame into a running walk, jump or meal.
+      // Seed current baselines after span identity remapping, not with span.x:
+      // clipping can move that x without the underlying text moving at all.
+      refreshAnchors(performance.now());
     };
-    const connectGeometry = () => { if (!offGeometry) { geometryReady = false; offGeometry = observeCompanionPlatforms(page, onGeometry, { size, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion") }); } };
+    const connectGeometry = () => {
+      if (!offGeometry) {
+        geometryReady = false;
+        geometryTracker = offGeometry = observeCompanionPlatforms(page, onGeometry, { size, identity: geometryIdentity, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion") });
+      }
+    };
     const parkedLayout = () => {
       if (pause || presence.phase !== "parked") return;
       clearTimeout(parkedLayoutTimer);
@@ -438,6 +504,8 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); document.addEventListener("click", click, true);
     window.addEventListener("blur", focusChanged); window.addEventListener("focus", focusChanged);
     window.addEventListener("resize", parkedLayout, { passive: true }); window.addEventListener("scroll", parkedLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", parkedLayout);
+    window.addEventListener("scroll", followLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", followLayout); window.addEventListener("vic:side-panel", followLayout);
+    window.visualViewport?.addEventListener("scroll", followLayout, { passive: true });
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
     document.addEventListener("pointermove", sensePointer, { passive: true });
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("keydown", key);
@@ -445,9 +513,10 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     return () => {
       lastPose.current = { x, y, monthKey };
       saveCompanionCare(brain.current, true);
-      stopped = true; cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      stopped = true; cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       window.removeEventListener("blur", focusChanged); window.removeEventListener("focus", focusChanged);
       window.removeEventListener("resize", parkedLayout); window.removeEventListener("scroll", parkedLayout, true); window.removeEventListener("vic:companion-home", parkedLayout);
+      window.removeEventListener("scroll", followLayout, true); window.removeEventListener("vic:companion-home", followLayout); window.removeEventListener("vic:side-panel", followLayout); window.visualViewport?.removeEventListener("scroll", followLayout);
       document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
@@ -455,7 +524,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id);
       el.hidden = true;
     };
-  }, [ready, root, preferences, blocked, agenda, monthKey, reduced]);
+  }, [ready, root, preferences, blocked, agenda, monthKey, reduced, geometryIdentity]);
 
   if (!ready) return null;
   const closeHome = () => { setHomeExpanded(false); };

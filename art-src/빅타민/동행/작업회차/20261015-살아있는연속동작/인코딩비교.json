@@ -1,0 +1,140 @@
+{
+  "reference": {
+    "path": "art-src/빅타민/동행/작업회차/20261015-살아있는연속동작/보존본/최초무손실_272셀.webp",
+    "sha256": "cb9eb5ac98d41677f687db2e37e8fd90490e71996f1897dba5af2d54bd5799c2",
+    "bytes": 1843134
+  },
+  "definition": "Opaque pixels reference alpha>160. Rec.709-weighted RGB RMSE and luma MAE, alpha-weighted, displayed over cream249/245/232 in sRGB0..255. Perceptual proxies, not SSIM/DeltaE or art acceptance. Alpha measured separately over every pixel.",
+  "documentation": "https://sharp.pixelplumbing.com/api-output/#webp",
+  "candidates": [
+    {
+      "id": "near70",
+      "options": {
+        "nearLossless": true,
+        "quality": 70,
+        "alphaQuality": 100,
+        "effort": 6
+      },
+      "bytes": 1297880,
+      "sha256": "d78b3094b3bc4b80e49af3c740a5ac34b48e8ee3a2c84b0cff712c2897d36f8c",
+      "alphaChangedPixels": 574155,
+      "maxAlphaError": 2,
+      "opaqueAlphaWeightedRgbRmse": 1.1317470438126302,
+      "opaqueAlphaWeightedLumaMae": 0.7029177234735609,
+      "opaqueLumaP99": 1.9238188235294114,
+      "maxOpaqueRenderedChannelError": 3.686274509803912
+    },
+    {
+      "id": "near80",
+      "options": {
+        "nearLossless": true,
+        "quality": 80,
+        "alphaQuality": 100,
+        "effort": 6
+      },
+      "bytes": 1543632,
+      "sha256": "be55b81e89161021ab8eeb94010a0980e2bdf18570ff6df3798d5698733be70f",
+      "alphaChangedPixels": 417127,
+      "maxAlphaError": 1,
+      "opaqueAlphaWeightedRgbRmse": 0.6658586847762882,
+      "opaqueAlphaWeightedLumaMae": 0.38220897159391,
+      "opaqueLumaP99": 1.012709803921585,
+      "maxOpaqueRenderedChannelError": 1.8705882352941146
+    },
+    {
+      "id": "near85",
+      "options": {
+        "nearLossless": true,
+        "quality": 85,
+        "alphaQuality": 100,
+        "effort": 6
+      },
+      "bytes": 1543632,
+      "sha256": "be55b81e89161021ab8eeb94010a0980e2bdf18570ff6df3798d5698733be70f",
+      "alphaChangedPixels": 417127,
+      "maxAlphaError": 1,
+      "opaqueAlphaWeightedRgbRmse": 0.6658586847762882,
+      "opaqueAlphaWeightedLumaMae": 0.38220897159391,
+      "opaqueLumaP99": 1.012709803921585,
+      "maxOpaqueRenderedChannelError": 1.8705882352941146
+    },
+    {
+      "id": "lossy90",
+      "options": {
+        "quality": 90,
+        "alphaQuality": 100,
+        "smartSubsample": true,
+        "effort": 6
+      },
+      "bytes": 987198,
+      "sha256": "140a2485bd3afbdcd072c6456146ea9b7074d9c71bafe1fbd01241b38aed2ef9",
+      "alphaChangedPixels": 0,
+      "maxAlphaError": 0,
+      "opaqueAlphaWeightedRgbRmse": 4.331248933795257,
+      "opaqueAlphaWeightedLumaMae": 1.8649966180975834,
+      "opaqueLumaP99": 7.060348235294106,
+      "maxOpaqueRenderedChannelError": 74.03529411764706
+    },
+    {
+      "id": "lossy95",
+      "options": {
+        "quality": 95,
+        "alphaQuality": 100,
+        "smartSubsample": true,
+        "effort": 6
+      },
+      "bytes": 1107594,
+      "sha256": "daa9251b37ccb9cf6dbf174c74341711f6eb3e1bc604ad2dd360201fd57712ff",
+      "alphaChangedPixels": 0,
+      "maxAlphaError": 0,
+      "opaqueAlphaWeightedRgbRmse": 3.7655507398567427,
+      "opaqueAlphaWeightedLumaMae": 1.3448266812105107,
+      "opaqueLumaP99": 5.396555294117649,
+      "maxOpaqueRenderedChannelError": 70.05490196078432
+    }
+  ],
+  "at52px": {
+    "definition": "Every80px source cell resized to52px with Lanczos3. Same opaque alpha-weighted Rec.709 error. No art approval. Contact sheet uses identical registration, with half-pixel x rounded for the diagnostic raster.",
+    "candidates": [
+      {
+        "id": "near70",
+        "opaqueAlphaWeightedRgbRmse": 0.9793591240037112,
+        "alphaChangedPixels": 213624
+      },
+      {
+        "id": "near80",
+        "opaqueAlphaWeightedRgbRmse": 0.7772934289585895,
+        "alphaChangedPixels": 160416
+      },
+      {
+        "id": "near85",
+        "opaqueAlphaWeightedRgbRmse": 0.7772934289585895,
+        "alphaChangedPixels": 160416
+      },
+      {
+        "id": "lossy90",
+        "opaqueAlphaWeightedRgbRmse": 3.3099041040570394,
+        "alphaChangedPixels": 0
+      },
+      {
+        "id": "lossy95",
+        "opaqueAlphaWeightedRgbRmse": 2.873027459837781,
+        "alphaChangedPixels": 0
+      }
+    ],
+    "preview": ".scratch-pw/companion-fluid-encoding-52.png",
+    "previewIndices": [
+      0,
+      7,
+      32,
+      39,
+      112,
+      127,
+      192,
+      207,
+      266,
+      267,
+      271
+    ]
+  }
+}

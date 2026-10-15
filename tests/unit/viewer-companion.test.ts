@@ -67,7 +67,7 @@ describe("viewer companion's local platform brain", () => {
 
   it("roam off permits only stationary poses and sleep", () => {
     const actions = decisions({ roam: false });
-    expect(new Set(actions.map(a => a.kind))).toEqual(new Set(["idle", "look", "sleep"]));
+    expect(new Set(actions.map(a => a.kind))).toEqual(new Set(["idle", "look", "stretch", "shake", "sleep"]));
     expect(actions.every(a => a.target.x === world.x && a.target.y === world.y)).toBe(true);
   });
 
@@ -83,14 +83,19 @@ describe("viewer companion's local platform brain", () => {
     const origin: Platform = { id: "origin", x: 0, y: 400, width: 80, kind: "card" };
     const broad: Platform = { id: "broad", x: 140, y: 450, width: 850, kind: "card" };
     const context = { ...world, x: 40, y: 400, platformId: "origin", platforms: [origin, broad] };
-    const jumps = decisions({}, context).filter(action => action.kind === "jump");
+    const jumps = decisions({}, context).filter(action => action.kind === "jump" && action.target.platformId === broad.id);
     expect(jumps.length).toBeGreaterThan(0);
-    expect(jumps.every(action => action.target.x === 152 && action.target.y === 450)).toBe(true);
+    for (const action of jumps) {
+      expect(action.target.y).toBe(450);
+      expect(action.target.x).toBeGreaterThanOrEqual(152);
+      expect(action.target.x).toBeLessThanOrEqual(context.x + 260);
+      expect(reachablePlatforms(context, [{ ...broad, x: action.target.x - 12, width: 24 }])).toHaveLength(1);
+    }
   });
 
   it("crossed preferences suppress each optional action independently", () => {
     const actions = decisions({ jump: false, sleep: false, heartPrank: false, ambientPrank: false });
-    expect(new Set(actions.map(a => a.kind))).toEqual(new Set(["idle", "look", "walk"]));
+    expect(new Set(actions.map(a => a.kind))).toEqual(new Set(["idle", "look", "stretch", "shake", "walk"]));
     expect(decisions({ heartPrank: false }).some(a => a.kind === "heart")).toBe(false);
   });
 
@@ -132,5 +137,84 @@ describe("viewer companion's local platform brain", () => {
     expect(recordCompanionEvent(brain, "rested").energy).toBeGreaterThan(brain.energy);
     expect(advanceBrain(brain, 3600000)).toEqual(advanceBrain(brain, 30000));
     expect(advanceBrain(brain, -100)).toEqual(brain);
+  });
+
+  it("keeps floor excursions short, coherent and reverses at an edge", () => {
+    const options = { ...prefs, jump: false, sleep: false, heartPrank: false, ambientPrank: false };
+    const context = { ...world, platforms: [floor], platformId: floor.id, x: 400, y: floor.y };
+    const healthy = { ...createBrain(), energy: .85 };
+    const first = getAction(healthy, context, options, 100000, () => .999999);
+    expect(first.kind).toBe("walk"); expect(first.direction).toBe(1);
+    expect(first.target.x - context.x).toBeGreaterThan(35);
+    expect(first.target.x - context.x).toBeLessThanOrEqual(120);
+    const next = commitAction(healthy, first, 100000);
+    const second = getAction(next, { ...context, ...first.target }, options, 110000, () => .999999);
+    expect(second.kind).toBe("walk"); expect(second.direction).toBe(1);
+    const edge = getAction(healthy, { ...context, x: 980 }, options, 100000, () => .999999);
+    expect(edge.kind).toBe("walk"); expect(edge.direction).toBe(-1);
+    expect(edge.target.x).toBeLessThan(980);
+  });
+
+  it("adds small same-support hops only when both navigation preferences allow them", () => {
+    const options = { sleep: false, heartPrank: false, ambientPrank: false };
+    const hops = decisions(options).filter(action => action.jumpHeight !== undefined);
+    expect(hops.length).toBeGreaterThan(0);
+    for (const hop of hops) {
+      expect(hop.kind).toBe("jump"); expect(hop.target.platformId).toBe(card.id);
+      expect(hop.target.y).toBe(world.y);
+      expect(hop.jumpHeight).toBeGreaterThanOrEqual(28); expect(hop.jumpHeight).toBeLessThanOrEqual(44);
+      expect(Math.abs(hop.target.x - world.x)).toBeGreaterThan(18);
+      expect(Math.abs(hop.target.x - world.x)).toBeLessThanOrEqual(52);
+      expect(reachablePlatforms(world, [{ ...card, x: hop.target.x - 12, width: 24 }], { maxRise: hop.jumpHeight! })).toHaveLength(1);
+    }
+    expect(decisions({ ...options, jump: false }).every(action => action.jumpHeight === undefined)).toBe(true);
+    expect(decisions({ ...options, roam: false }).every(action => action.jumpHeight === undefined)).toBe(true);
+  });
+
+  it("favors exploration when fresh, then short stationary recovery after a movement burst", () => {
+    const fresh = { ...createBrain(0, () => .5), energy: .85, curiosity: .8 };
+    const recovering: CompanionBrain = { ...fresh, recent: ["walk", "jump", "walk"] };
+    const sample = (brain: CompanionBrain) => {
+      const rng = seeded(37);
+      return Array.from({ length: 2000 }, () => getAction(brain, world, { ...prefs, sleep: false, heartPrank: false, ambientPrank: false }, 100000, rng));
+    };
+    const moving = (action: ReturnType<typeof getAction>) => action.kind === "walk" || action.kind === "jump";
+    const active = sample(fresh), rested = sample(recovering);
+    expect(active.filter(moving).length).toBeGreaterThan(1100);
+    expect(rested.filter(moving).length).toBeLessThan(350);
+    expect(rested.filter(action => !moving(action)).every(action => action.duration <= 1700)).toBe(true);
+    expect(new Set(active.map(action => action.kind))).toEqual(new Set(["idle", "look", "stretch", "shake", "walk", "jump"]));
+  });
+
+  it("retains energy and curiosity through a short exploration sequence", () => {
+    let brain = { ...createBrain(0, () => .5), energy: .8, curiosity: .8 };
+    for (let step = 0; step < 20; step++) brain = commitAction(brain, { kind: step % 2 ? "walk" : "jump", target: { x: 400, y: 580, platformId: `public-ledge-${step % 6}` }, duration: 1000 }, step * 1500);
+    expect(brain.energy).toBeGreaterThan(.65);
+    expect(brain.curiosity).toBeGreaterThan(.5);
+    expect(brain.visited).toHaveLength(6);
+    expect(brain.recent).toHaveLength(8);
+  });
+
+  it("gives stretch and shake independent cooldowns while keeping every pose on its support", () => {
+    const options = { ...prefs, roam: false, sleep: false };
+    const brain = createBrain(0, () => .5), rng = seeded(5);
+    const all = Array.from({ length: 1000 }, () => getAction(brain, world, options, 100000, rng));
+    const stretch = all.find(action => action.kind === "stretch")!;
+    expect(stretch).toBeTruthy();
+    const committed = commitAction(brain, stretch, 100000), later = seeded(7);
+    const next = Array.from({ length: 1000 }, () => getAction(committed, world, options, 100000 + stretch.duration + 1, later));
+    expect(next.some(action => action.kind === "stretch")).toBe(false);
+    expect(next.some(action => action.kind === "shake")).toBe(true);
+    expect(next.every(action => action.target.x === world.x && action.target.y === world.y && action.target.platformId === world.platformId)).toBe(true);
+  });
+
+  it("keeps cat stalking and dog approach within short, valid steps", () => {
+    const context = { ...world, platforms: [floor], platformId: floor.id, x: 400, y: floor.y, pointer: { x: 950, y: floor.y } };
+    for (const animalMode of ["cat", "dog"] as const) {
+      const walks = decisions({ animalMode, jump: false, sleep: false, heartPrank: false, ambientPrank: false }, context).filter(action => action.kind === "walk");
+      expect(walks.length).toBeGreaterThan(0);
+      expect(walks.every(action => action.target.x > world.x && action.target.x - context.x <= (animalMode === "cat" ? 100 : 140))).toBe(true);
+      if (animalMode === "cat") expect(walks.every(action => action.pace === "amble")).toBe(true);
+    }
   });
 });

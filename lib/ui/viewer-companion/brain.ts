@@ -18,7 +18,7 @@ export type CompanionBehaviorPreferences = CompanionPreferences;
 
 export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: "apple" | "lemon" };
 export type Food = CompanionFood;
-export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat";
+export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake";
 export type CompanionAction = {
   kind: CompanionActionKind;
   target: { x: number; y: number; platformId?: string };
@@ -26,6 +26,11 @@ export type CompanionAction = {
   duration: number;
   effectPoint?: { x: number; y: number };
   foodId?: string;
+  pace?: "amble" | "scoot";
+  /** Small same-support hops use a lower impulse than a platform transfer. */
+  jumpHeight?: number;
+  /** Retained wander heading, not an instruction to mirror the renderer. */
+  direction?: -1 | 1;
 };
 export type CompanionWorld = {
   x: number;
@@ -44,6 +49,7 @@ export type CompanionBrain = CompanionCare & {
   recent: CompanionActionKind[];
   visited: string[];
   cooldowns: Partial<Record<CompanionActionKind, number>>;
+  heading: -1 | 1;
 };
 
 export const COMPANION_JUMP_LIMITS = Object.freeze({
@@ -150,7 +156,7 @@ export function createBrain(now = 0, rng: () => number = Math.random): Companion
     affection: .3,
     curiosity: .6 + random(rng) * .2,
     hunger: .58,
-    recent: [], visited: [], cooldowns: {},
+    recent: [], visited: [], cooldowns: {}, heading: 1,
   };
 }
 
@@ -178,15 +184,20 @@ export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEven
 }
 
 const cooldownMs: Record<CompanionActionKind, number> = {
-  idle: 0, look: 2500, walk: 1600, jump: 4000, sleep: 25000, heart: 45000, hide: 90000, sniff: 8000, eat: 1500,
+  idle: 0, look: 700, walk: 350, jump: 1400, sleep: 25000, heart: 45000, hide: 90000, sniff: 5000, eat: 1500, stretch: 18000, shake: 14000,
 };
 
 /** Commit once when an action begins, not every animation frame. */
 export function commitAction(brain: CompanionBrain, action: CompanionAction, now: number): CompanionBrain {
+  const moving = action.kind === "jump" || action.kind === "walk";
+  const novel = Boolean(action.target.platformId && !brain.visited.includes(action.target.platformId));
   return {
     ...brain,
-    energy: unit(brain.energy - (action.kind === "jump" ? .035 : action.kind === "walk" ? .012 : 0)),
-    curiosity: unit(brain.curiosity - (["jump", "walk", "heart", "hide"].includes(action.kind) ? .09 : .015)),
+    // A few curious steps should not exhaust an initially healthy creature.
+    // Rest remains useful over minutes, while exploration has a short rhythm.
+    energy: unit(brain.energy - (action.kind === "jump" ? action.jumpHeight ? .005 : .009 : action.kind === "walk" ? .004 : 0)),
+    curiosity: unit(brain.curiosity - (moving ? .018 : .008) + (moving && novel ? .025 : 0)),
+    heading: action.direction ?? brain.heading,
     recent: [...brain.recent, action.kind].slice(-8),
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
     cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]) },
@@ -213,7 +224,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
     if (!prefs.roam || !route.length) continue;
     const step = route[0];
     const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
-    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950, foodId: food.id };
+    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950, foodId: food.id, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), direction: step.target.x < world.x ? -1 : 1 };
   }
   return undefined;
 }
@@ -223,33 +234,48 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
  * Inject a seeded RNG in fixtures/replays; all decisions stay on the device. */
 export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: CompanionBehaviorPreferences, now: number, rng: () => number = Math.random): CompanionAction {
   const stationary = { x: world.x, y: world.y, platformId: world.platformId };
-  const idle: CompanionAction = { kind: "idle", target: stationary, duration: 1800 };
+  const idle: CompanionAction = { kind: "idle", target: stationary, duration: 900 };
   if (!prefs.enabled || world.paused || !Number.isFinite(world.x) || !Number.isFinite(world.y) || !Number.isFinite(now)) return idle;
   const foodAction = getFoodAction(brain, world, prefs, now);
   if (foodAction) return foodAction;
   const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);
   const candidates: { action: CompanionAction; utility: number }[] = [];
-  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point) => {
+  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point, movement: Pick<CompanionAction, "pace" | "jumpHeight" | "direction"> = {}) => {
     if ((brain.cooldowns[kind] ?? -Infinity) > now) return;
     const repeats = brain.recent.slice(-4).filter(item => item === kind).length;
     const lastPenalty = brain.recent.at(-1) === kind ? .35 : 1;
-    candidates.push({ action: { kind, target, duration, ...(effectPoint ? { effectPoint } : {}) }, utility: Math.max(0, utility) * lastPenalty / (1 + repeats * .65) });
+    candidates.push({ action: { kind, target, duration, ...(effectPoint ? { effectPoint } : {}), ...movement }, utility: Math.max(0, utility) * lastPenalty / (1 + repeats * .65) });
   };
   const curious = prefs.personality === "curious" ? .35 : 0;
   const affectionate = prefs.personality === "affectionate" ? .3 : 0;
   const sleepy = prefs.personality === "sleepy" ? .45 : 0;
   const cat = prefs.animalMode === "cat", dog = prefs.animalMode === "dog";
-  add("idle", .3 + (1 - brain.energy) * .3, 1700 + random(rng) * 2300);
-  add("look", .25 + brain.curiosity * .35 + curious + (cat ? .3 : 0), (cat ? 800 : 1200) + random(rng) * (cat ? 700 : 1300));
-  if (cat || dog) add("sniff", .4 + brain.curiosity * .3 + (dog ? .2 : 0), cat ? 950 : 1400);
-  if (prefs.sleep && brain.energy < .74) add("sleep", (1 - brain.energy) ** 2 * 2 + sleepy, 9000 + random(rng) * 10000);
+  let movingStreak = 0;
+  for (let i = brain.recent.length - 1; i >= 0 && ["walk", "jump"].includes(brain.recent[i]); i--) movingStreak++;
+  const recovery = movingStreak >= 3;
+  const tired = brain.energy < .28;
+  const mobility = (recovery ? .16 : 1) * (tired ? .38 : 1);
+  add("idle", .14 + (1 - brain.energy) * .25 + (recovery ? 1.15 : 0), (recovery ? 1000 : 550) + random(rng) * (recovery ? 700 : 650));
+  add("look", .2 + brain.curiosity * .25 + curious * .45 + (cat ? .25 : 0) + (recovery ? .45 : 0), (cat ? 550 : 700) + random(rng) * 600);
+  add("stretch", .12 + (1 - brain.energy) * .2 + (recovery ? .3 : 0), 1150 + random(rng) * 450);
+  add("shake", .13 + brain.energy * .1 + (dog ? .18 : 0), 750 + random(rng) * 350);
+  if (cat || dog) add("sniff", .25 + brain.curiosity * .25 + (dog ? .15 : 0), cat ? 800 : 1100);
+  if (prefs.sleep && brain.energy < .62) add("sleep", (1 - brain.energy) ** 2 * 1.7 + sleepy, 8000 + random(rng) * 7000);
   if (prefs.roam && current && Math.abs(current.y - world.y) <= 18) {
     const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
     const pointer = world.pointer && [world.pointer.x, world.pointer.y].every(Number.isFinite) ? world.pointer : undefined;
     const follows = pointer && (cat || dog) && Math.abs(pointer.y - world.y) < 160;
-    const desiredX = follows ? pointer.x + (world.x < pointer.x ? -1 : 1) * (cat ? 75 : 28) : current.x + current.width * (.1 + random(rng) * .8);
+    // Coherent short excursions, rather than picking an unrelated location on
+    // a long floor every time. Reverse only at an edge or after an occasional
+    // observation; the recent movement streak supplies natural rest beats.
+    let direction = brain.heading ?? 1;
+    if (world.x < current.x + 35) direction = 1;
+    else if (world.x > current.x + current.width - 35) direction = -1;
+    else if (brain.recent.at(-1) === "look" && random(rng) < .22) direction = direction === 1 ? -1 : 1;
+    const desiredX = follows ? clamp(pointer.x + (world.x < pointer.x ? -1 : 1) * (cat ? 75 : 28), world.x - (cat ? 100 : 140), world.x + (cat ? 100 : 140)) : world.x + direction * (40 + random(rng) * (dog ? 100 : 80));
     const walkX = platformLandingX(current, desiredX);
-    if (Math.abs(walkX - world.x) > 25) add("walk", .6 + brain.curiosity * .5 + (follows && dog ? .8 : follows && cat ? .25 : 0), Math.max(500, Math.abs(walkX - world.x) / speed * (cat ? 1350 : 1000)), { x: walkX, y: current.y, platformId: current.id });
+    const pace = !tired && !cat && random(rng) < .55 ? "scoot" : "amble";
+    if (Math.abs(walkX - world.x) > 20) add("walk", (1 + brain.curiosity * .7 + (follows && dog ? .65 : follows && cat ? .2 : 0)) * mobility, Math.max(500, Math.abs(walkX - world.x) / speed * (pace === "scoot" ? 850 : cat ? 1250 : 1100)), { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1 });
     if (prefs.jump) {
       const reachable = reachablePlatforms(world, world.platforms).filter(p => p.id !== current.id && p.kind !== "hide");
       if (reachable.length) {
@@ -262,9 +288,14 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
         const platform = choices[Math.floor(random(rng) * choices.length)];
         // Reachability was proved for this nearest landing. A wide floor's
         // centre may be hundreds of pixels farther away and outside that arc.
-        const x = platformLandingX(platform, world.x);
-        add("jump", .5 + brain.curiosity * .65 + curious, 950, { x, y: platform.y, platformId: platform.id });
+        const nearX = platformLandingX(platform, world.x);
+        const aimedX = platformLandingX(platform, nearX + direction * (28 + random(rng) * 48));
+        const exactTarget = { ...platform, x: aimedX - 12, width: 24 };
+        const x = reachablePlatforms(world, [exactTarget]).length ? aimedX : nearX;
+        add("jump", (1 + brain.curiosity * .8 + curious + (!brain.visited.includes(platform.id) ? .45 : 0)) * mobility, 950, { x, y: platform.y, platformId: platform.id }, undefined, { direction: x < world.x ? -1 : 1 });
       }
+      const hopX = platformLandingX(current, world.x + direction * (24 + random(rng) * 28));
+      if (!tired && Math.abs(hopX - world.x) > 18) add("jump", (.22 + brain.energy * .23 + (dog ? .15 : 0)) * mobility * (cat ? .25 : 1), 650, { x: hopX, y: current.y, platformId: current.id }, undefined, { jumpHeight: 28 + random(rng) * 16, direction: hopX < world.x ? -1 : 1 });
     }
     // A prank is a local gesture on the support already occupied; navigation
     // remains a separate walk/jump, so disabled jumping cannot teleport a pet.

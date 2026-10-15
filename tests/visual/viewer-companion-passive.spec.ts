@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { chooseCompanionCare } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -67,7 +68,7 @@ async function openHome(page: Page) {
 
 async function placeOnFloor(page: Page) {
   await openHome(page);
-  await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await chooseCompanionCare(page, "옮길 곳 고르기");
   await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(650, page.viewportSize()!.height - 20);
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump");

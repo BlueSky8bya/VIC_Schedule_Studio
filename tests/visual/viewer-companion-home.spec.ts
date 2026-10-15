@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { chooseCompanionCare, openCompanionHome } from "./helpers/companion-home";
 
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -23,17 +24,23 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
 async function showHome(page: Page) {
-  if (!await house(page).isVisible()) await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).click();
-  await expect(house(page)).toBeVisible();
-  await expect(house(page)).toHaveCount(1);
+  await openCompanionHome(page);
   await page.waitForTimeout(180); // coalesced support measurement
+}
+
+async function expectSmallHome(page: Page) {
+  const box = (await house(page).boundingBox())!;
+  expect(box.height).toBeGreaterThan(150);
+  expect(box.height).toBeLessThanOrEqual(230);
+  return box.height;
 }
 
 test("one home follows the shared panel and keeps the same creature and care", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
   await expect(page.locator(".avatar-slot .vc-home")).toHaveCount(1);
-  await house(page).getByRole("button", { name: "쓰다듬기", exact: true }).click();
+  await expectSmallHome(page);
+  await chooseCompanionCare(page, "쓰다듬기");
   const affection = Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"));
   expect(affection).toBeGreaterThan(.36);
   await page.evaluate(() => { localStorage.setItem("vic_avatar_side", "right"); dispatchEvent(new Event("vic:side-panel")); });
@@ -45,6 +52,7 @@ test("one home follows the shared panel and keeps the same creature and care", a
   await expect(page.getByRole("button", { name: "빅타민 집 열기", exact: true })).toBeVisible();
   await showHome(page);
   await expect(page.locator(".vc-compact-home .vc-home")).toHaveCount(1);
+  await expectSmallHome(page);
   expect(Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"))).toBeGreaterThan(.36);
   await expect(page.locator("[data-export-surface] .vc-home,[data-export-surface] .vc-companion")).toHaveCount(0);
   await page.screenshot({ path: ".scratch-pw/companion-home-responsive.png" });
@@ -55,12 +63,75 @@ test("compact home stays reachable in landscape and transfers keyboard focus", a
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible();
   const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
   await launcher.focus(); await launcher.press("Enter"); await expect(house(page)).toBeVisible();
-  await expect(house(page).getByRole("button", { name: "빅타민 집 닫기", exact: true })).toBeFocused();
+  // The first control is now the compact care menu; opening the room still
+  // transfers focus inside it instead of leaving focus on its launcher.
+  await expect(house(page).getByRole("button", { name: "빅타민 돌보기", exact: true })).toBeFocused();
   const box = (await house(page).boundingBox())!; expect(box.y).toBeGreaterThanOrEqual(10); expect(box.y + box.height).toBeLessThan(390);
-  await house(page).getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await expectSmallHome(page);
+  await chooseCompanionCare(page, "옮길 곳 고르기", "keyboard");
   await expect(actor(page)).toBeFocused(); await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.keyboard.press("Escape"); await expect(pet(page)).not.toHaveAttribute("data-placing");
   await showHome(page); await house(page).getByRole("button", { name: "빅타민 집 닫기", exact: true }).click(); await expect(launcher).toBeFocused();
+});
+
+test("the small desktop home overlays four care actions and preserves keyboard focus and calendar month", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1100 });
+  await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
+  await page.evaluate(() => document.fonts.ready);
+  const height = await expectSmallHome(page);
+  const month = page.locator("h1.poster-chrome-title:visible,h1.agenda-title:visible"), before = await month.textContent();
+  const trigger = house(page).getByRole("button", { name: "빅타민 돌보기", exact: true });
+  await expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(house(page).getByRole("menuitem")).toHaveCount(0);
+  await trigger.focus(); await trigger.press("ArrowDown");
+  const menu = house(page).getByRole("menu", { name: "빅타민 돌보기", exact: true });
+  await expect(menu).toBeVisible();
+  expect(await trigger.getAttribute("aria-controls")).toBe(await menu.getAttribute("id"));
+  const items = menu.getByRole("menuitem");
+  await expect(items).toHaveText(["쓰다듬기", "옮길 곳 고르기", "여기서 낮잠", "남은 밥 치우기"]);
+  await expect(items.first()).toBeFocused();
+  expect(Math.abs((await expectSmallHome(page)) - height)).toBeLessThan(.5);
+  await page.screenshot({ path: ".scratch-pw/companion-fluid-home-desktop-menu.png" });
+  await page.keyboard.press("End"); await expect(items.last()).toBeFocused();
+  await page.keyboard.press("Home"); await expect(items.first()).toBeFocused();
+  await page.keyboard.press("ArrowUp"); await expect(items.last()).toBeFocused();
+  await page.keyboard.press("ArrowDown"); await expect(items.first()).toBeFocused();
+  await page.keyboard.press("ArrowRight"); await expect(items.first()).toBeFocused();
+  await expect(month).toHaveText(before!);
+  await page.keyboard.press("Escape"); await expect(menu).toHaveCount(0); await expect(trigger).toBeFocused();
+  const affection = Number(await house(page).getByRole("meter", { name: "빅타민 친밀도", exact: true }).getAttribute("value"));
+  await chooseCompanionCare(page, "쓰다듬기", "keyboard");
+  await expect(trigger).toBeFocused();
+  await expect.poll(async () => Number(await house(page).getByRole("meter", { name: "빅타민 친밀도", exact: true }).getAttribute("value"))).toBeGreaterThan(affection + .05);
+  await expect(month).toHaveText(before!);
+});
+
+test.describe("touch care menu", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test("the compact room keeps its height and real touch targets while opening and choosing care", async ({ page }) => {
+    await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible();
+    await openCompanionHome(page, "touch"); await page.evaluate(() => document.fonts.ready);
+    const height = await expectSmallHome(page);
+    const trigger = house(page).getByRole("button", { name: "빅타민 돌보기", exact: true });
+    const triggerBox = (await trigger.boundingBox())!;
+    expect(triggerBox.width).toBeGreaterThanOrEqual(44); expect(triggerBox.height).toBeGreaterThanOrEqual(44);
+    await trigger.tap();
+    const menu = house(page).getByRole("menu", { name: "빅타민 돌보기", exact: true });
+    await expect(menu).toBeVisible(); await expect(menu.getByRole("menuitem")).toHaveCount(4);
+    for (const item of await menu.getByRole("menuitem").all()) expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    expect(Math.abs((await expectSmallHome(page)) - height)).toBeLessThan(.5);
+    await page.screenshot({ path: ".scratch-pw/companion-fluid-home-touch-menu.png" });
+    await house(page).getByText("빅타민 집", { exact: true }).tap();
+    await expect(menu).toHaveCount(0); await expect(house(page)).toBeVisible();
+    await chooseCompanionCare(page, "쓰다듬기", "touch");
+    await expect(pet(page)).toHaveAttribute("data-state", "petted");
+    await expect(page.locator(".vc-effect")).toHaveText("♡");
+    await expect(trigger).toBeFocused();
+    await expectSmallHome(page);
+    await page.screenshot({ path: ".scratch-pw/companion-fluid-home-touch.png" });
+    await expect(page.locator("[data-export-surface] .vc-home,[data-export-surface] .vc-companion")).toHaveCount(0);
+  });
 });
 
 test("reduced-motion tap acknowledges immediately and long hold does not pet", async ({ page }) => {

@@ -1,0 +1,59 @@
+/* One room for the shared desktop rail and compact agenda home. Only the
+   runtime host/launcher position belongs in viewer-companion.css. */
+.vc-home {
+  --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #e9e2ce);
+  --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #dacdb0);
+  position: relative;
+  pointer-events: auto;
+  isolation: isolate;
+  box-sizing: border-box;
+  padding: 8px 10px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  color: var(--ink);
+  background: rgb(var(--glass-panel));
+  box-shadow: inset 0 1px 0 #fff5, var(--elev-1);
+  font-size: var(--text-body);
+}
+.vc-home-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; margin-bottom: 6px; }
+.vc-home-title { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--text-title); font-weight: 700; }
+.vc-home-title > svg { color: var(--muted); }
+.vc-home-tools { display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.vc-home-tool { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--muted); cursor: pointer; }
+.vc-home-tool:hover { color: var(--ink); background: rgb(var(--glass-head)); }
+.vc-home-room { position: relative; height: 116px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: linear-gradient(180deg, var(--vc-wall), rgb(var(--glass-cell)) 78%, var(--vc-floor) 78%); }
+.vc-home-room::before { content: ''; position: absolute; inset: 0; background: linear-gradient(132deg, #fff4 0 25%, transparent 58%); pointer-events: none; }
+.vc-home-room::after { content: ''; position: absolute; left: 0; right: 0; bottom: 22%; height: 1px; background: var(--line); pointer-events: none; }
+.vc-home-window { position: absolute; top: 11px; left: 20px; display: flex; width: 48px; height: 43px; padding: 4px; gap: 3px; border: 1px solid #b8b6a575; border-radius: 12px 12px 3px 3px; background: #eee5d1; box-shadow: inset 0 1px 0 #fff7, 0 2px 3px #5c644313; }
+.vc-home-sky { position: absolute; inset: 5px; border-radius: 8px 8px 1px 1px; background: radial-gradient(ellipse at 70% 30%, #faf5ce 0 10%, transparent 11%), linear-gradient(155deg, #a9c7c8, #d3ddc5 78%); }
+.vc-home-window > i { position: relative; flex: 1; border: 1px solid #fff7; border-radius: 6px 6px 1px 1px; }
+.vc-home-window-sill { position: absolute; bottom: -4px; left: -4px; right: -4px; height: 5px; border: 1px solid #a99e7c3d; border-radius: 2px; background: #e8ddbf; }
+.vc-home-lamp { position: absolute; left: 35%; top: 0; height: 19px; border-left: 1px solid #a69b7b70; }
+.vc-home-lamp > i { position: absolute; top: 17px; left: -10px; width: 20px; height: 10px; border: 1px solid #aaa08270; border-radius: 12px 12px 3px 3px; background: #dfd8b2; box-shadow: 0 8px 16px 6px #eddb9a25; }
+.vc-home-rug { position: absolute; left: 8%; bottom: 5px; width: 47%; height: 19px; border: 1px solid #adbead42; border-radius: 50%; background: repeating-linear-gradient(0deg, #b9c9b42b 0 2px, #d9e0c933 2px 4px); }
+.vc-cushion-button { position: absolute; z-index: 1; left: 10%; bottom: 5px; width: 42%; height: 44px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); cursor: pointer; }
+.vc-home-cushion { position: absolute; top: 15px; left: 0; right: 0; height: 13px; border: 1px solid #8ca48a78; border-radius: 50%; background: linear-gradient(180deg, #e3e8d2, #bfd0b5 70%); box-shadow: inset 0 -3px 0 #718d7040, 0 3px 2px #59634f15; }
+.vc-home-cushion > i { position: absolute; inset: 2px 8px 4px; border: 1px dashed #a3b49a70; border-radius: 50%; }
+.vc-cushion-button:hover .vc-home-cushion { background: linear-gradient(180deg, #edf0db, #c5d7ba 70%); }
+.vc-cushion-label { position: absolute; bottom: 0; left: 0; right: 0; font-size: var(--text-label); line-height: 1; }
+.vc-dispenser { position: absolute; z-index: 1; right: 11px; bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; width: 100px; height: 81px; padding: 4px 3px 13px; box-sizing: border-box; border: 1px solid #a9b6a670; border-radius: 9px 9px 5px 5px; background: linear-gradient(135deg, #edf0de, #d4dfcf); box-shadow: inset 0 1px 0 #fff9, 2px 3px 0 #52636a12; }
+.vc-dispenser::before { content: ''; position: absolute; left: 10px; right: 10px; top: -3px; height: 4px; border: 1px solid #b4bba36b; border-radius: 2px; background: #e7e7cc; }
+.vc-dispenser button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; min-height: 44px; padding: 0; border: 0; border-radius: var(--r-xs); background: #ffffff58; color: #4f6257; font: inherit; font-size: var(--text-label); cursor: pointer; }
+.vc-dispenser button:hover { background: #ffffffa0; }
+.vc-dispenser .vc-fruit { width: 29px; height: 29px; }
+.vc-dispenser-slot { position: absolute; bottom: 5px; left: 13px; right: 13px; height: 5px; border-radius: var(--r-pill); background: #71807955; box-shadow: inset 0 1px 2px #31413b30; }
+.vc-home-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; padding-top: 2px; color: var(--muted); font-size: var(--text-label); }
+.vc-home-bond { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.vc-home-bond > svg { flex: 0 0 auto; color: #b49a91; }
+.vc-home-bond > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vc-home-mood { flex: 0 0 auto; font-size: var(--text-label); }
+/* The occasional-actions menu floats within the room instead of making a
+   second tall panel. Its trigger remains a normal Tab stop when it is closed. */
+.vc-home-menu { position: absolute; z-index: 3; right: 8px; bottom: 8px; width: min(190px, calc(100% - 16px)); padding: 4px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-panel)); box-shadow: var(--elev-3); }
+.vc-home-menu > button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 36px; padding: 7px 10px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); font: inherit; font-size: var(--text-body); text-align: left; cursor: pointer; }
+.vc-home-menu > button > svg { flex: 0 0 auto; color: var(--muted); }
+.vc-home-menu > button:hover, .vc-home-menu > button:focus-visible { background: rgb(var(--glass-head)); }
+.vc-home button:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
+.vc-home button:active { transform: translateY(1px); }
+.vc-home button:disabled { opacity: .4; cursor: default; }
+@media (pointer: coarse) { .vc-home-tool { width: 44px; height: 44px; } .vc-home-menu > button { min-height: 44px; } }

@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { chooseCompanionCare } from "./helpers/companion-home";
 
 const requests = new WeakMap<Page, { posts: string[]; atlas: number }>();
 test.beforeEach(async ({ page, context }) => {
@@ -8,7 +9,7 @@ test.beforeEach(async ({ page, context }) => {
   requests.set(page, seen);
   await context.route("**/*", route => {
     const request = route.request();
-    if (request.url().includes("/companion/victamin-clean.webp")) seen.atlas++;
+    if (request.url().includes("/companion/victamin-fluid.webp")) seen.atlas++;
     if (request.method() === "POST") { seen.posts.push(request.url()); return route.fulfill({ status: 500, body: "" }); }
     return route.continue();
   });
@@ -122,11 +123,29 @@ test("keyboard and the home offer non-dragging placement, plus a finite nap", as
   await page.keyboard.press("ArrowLeft");
   await expect.poll(async () => (await position(page)).x).toBeCloseTo(before.x - 24, 0);
   await expect(month).toHaveText(monthBefore!);
+  // Native repeated keydowns reach both viewport edges while the pet is held.
+  // A looser input clamp used to let paint hide the focused actor at an edge,
+  // so subsequent arrows escaped into calendar shortcuts.
+  for (const key of ["ArrowLeft", "ArrowUp"]) {
+    await page.keyboard.down(key);
+    for (let repeat = 0; repeat < 70; repeat++) await page.keyboard.down(key);
+    await page.keyboard.up(key);
+  }
+  await expect(actor(page)).toBeVisible(); await expect(actor(page)).toBeFocused();
+  await expect(pet(page)).toHaveAttribute("data-state", "held");
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 });
+  const edge = await position(page);
+  expect(edge.x).toBeGreaterThanOrEqual(0); expect(edge.x).toBeLessThanOrEqual(8);
+  expect(edge.y).toBeGreaterThanOrEqual(0); expect(edge.y).toBeLessThanOrEqual(12);
+  await expect(month).toHaveText(monthBefore!);
   await page.keyboard.press("Space");
   await expect.poll(async () => (await pet(page).getAttribute("data-state")) !== "held").toBe(true);
-  await page.waitForTimeout(750);
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 5000 });
+  await expect(actor(page)).toBeVisible(); await expect(actor(page)).toBeFocused();
+  await expect(pet(page)).toBeInViewport({ ratio: .99999 });
+  await expect(pet(page)).toHaveAttribute("data-platform", /.+/);
   await openHome(page);
-  await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await chooseCompanionCare(page, "옮길 곳 고르기");
   await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(180, 800);
   await expect(pet(page)).not.toHaveAttribute("data-placing");
@@ -150,7 +169,7 @@ test("keyboard and the home offer non-dragging placement, plus a finite nap", as
   const heartPoint = await centre(heart);
   for (const hold of [0, 1200]) {
     await openHome(page);
-    await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+    await chooseCompanionCare(page, "옮길 곳 고르기");
     await expect(pet(page)).toHaveAttribute("data-placing", "");
     await page.mouse.move(heartPoint.x, heartPoint.y);
     await expect.poll(() => heart.evaluate((el, point) => document.elementFromPoint(point.x, point.y)?.closest(".event-heart") === el, heartPoint)).toBe(true);
@@ -164,14 +183,14 @@ test("keyboard and the home offer non-dragging placement, plus a finite nap", as
     await page.waitForTimeout(750);
   }
   await openHome(page);
-  await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await chooseCompanionCare(page, "옮길 곳 고르기");
   await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.keyboard.press("Escape");
   await expect(pet(page)).not.toHaveAttribute("data-placing");
   await expect(actor(page)).toBeFocused();
   await page.waitForTimeout(750);
   await openHome(page);
-  await page.getByRole("button", { name: "여기서 낮잠", exact: true }).click();
+  await chooseCompanionCare(page, "여기서 낮잠");
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
   await expect(pet(page)).toHaveAttribute("data-dreaming", "");
   await expect(page.locator(".vc-dream")).toBeVisible();

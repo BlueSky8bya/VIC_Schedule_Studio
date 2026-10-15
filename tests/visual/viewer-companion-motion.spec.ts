@@ -3,11 +3,13 @@ import { writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
+import { chooseCompanionCare } from "./helpers/companion-home";
+import registration from "@/lib/ui/viewer-companion/fluid-sprite.json";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const posts = new WeakMap<Page, string[]>();
-type Frame = { t: number; x: number; y: number; state: string; facing: string; mirror: number; row: number; column: number };
+type Frame = { t: number; x: number; y: number; state: string; facing: string; mirror: number; row: number; column: number; pose: number };
 
 test.beforeEach(async ({ page }) => {
   const blocked: string[] = []; posts.set(page, blocked);
@@ -49,7 +51,7 @@ async function walkOnFloor(page: Page, startX: number, pointerX: number) {
     const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
     await launcher.focus(); await launcher.press("Enter");
   }
-  await home.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await chooseCompanionCare(page, "옮길 곳 고르기");
   const height = page.viewportSize()!.height;
   await page.mouse.click(startX, height - 20);
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
@@ -65,7 +67,7 @@ async function sampleFrames(page: Page, duration = 1000): Promise<Frame[]> {
     const sample = (now: number) => {
       const matrix = new DOMMatrixReadOnly(element.style.transform);
       const mirror = new DOMMatrixReadOnly(getComputedStyle(facing).transform);
-      result.push({ t: now - start, x: matrix.m41, y: matrix.m42, state: element.dataset.state ?? "", facing: element.dataset.facing ?? "", mirror: mirror.a, row: Math.round(parseFloat(element.style.getPropertyValue("--vc-row")) * .15), column: Math.round(parseFloat(element.style.getPropertyValue("--vc-column")) * .15) });
+      result.push({ t: now - start, x: matrix.m41, y: matrix.m42, state: element.dataset.state ?? "", facing: element.dataset.facing ?? "", mirror: mirror.a, row: Math.round(parseFloat(element.style.getPropertyValue("--vc-row")) * .15), column: Math.round(parseFloat(element.style.getPropertyValue("--vc-column")) * .15), pose: Number(element.dataset.pose) });
       if (now - start >= duration) resolve(result);
       else requestAnimationFrame(sample);
     };
@@ -129,7 +131,7 @@ test("left and right travel face their movement while controls stay unmirrored",
 });
 
 for (const graphics of ["max", "lite"] as const) {
-  test(`${graphics} renders smooth position independently from the compact authored gait`, async ({ page }) => {
+  test(`${graphics} renders smooth position independently from the16-frame authored gait`, async ({ page }) => {
     await setup(page, graphics);
     // Full hit-target avoidance leaves a shorter left floor interval than the
     // old text-only geometry. Its whole continuous walk still exceeds1s.
@@ -148,12 +150,19 @@ for (const graphics of ["max", "lite"] as const) {
     // Lite's policy is a30Hz upper budget. This is a cap check against the
     // measured duration, not an assumption about the display's refresh rate.
     if (graphics === "lite") expect(observedPositionRate).toBeLessThanOrEqual(34);
-    expect(frames.every(frame => frame.state === "walk" && frame.row === 2 && [0, 1].includes(frame.column))).toBe(true);
-    expect(changedColumn).toBeGreaterThan(1);
+    const gait = registration.rows[2];
+    expect(gait).toHaveLength(16);
+    expect(frames.every(frame => frame.state === "walk" && frame.row === 2 && frame.column >= 0 && frame.column < gait.length && frame.pose === gait[frame.column])).toBe(true);
+    expect(new Set(frames.map(frame => frame.column)).size).toBeGreaterThanOrEqual(6);
+    expect(changedColumn).toBeGreaterThanOrEqual(5);
+    expect(changedColumn).toBeLessThanOrEqual(Math.ceil((frames.at(-1)!.t - frames[0].t) / 1000 * 14) + 1);
     expect(changedColumn).toBeLessThan(changedPosition * .65);
     expect(frames.some(frame => Math.abs(frame.x - Math.round(frame.x)) > .01)).toBe(true);
     expect(frames.at(-1)!.x - frames[0].x).toBeGreaterThan(60);
-    for (const step of steps) expect(step.dx).toBeLessThanOrEqual(Math.max(12, step.dt * .14 + 2));
+    // Quintic travel has a1.875 peak/mean speed ratio; the lively scoot's
+    // shortest .85 duration factor gives a221px/s upper speed, not the retired
+    // constant100px/s walk. Keep a small sampling/rounding margin above that.
+    for (const step of steps) expect(step.dx).toBeLessThanOrEqual(Math.max(12, step.dt * .24 + 2));
   });
 }
 

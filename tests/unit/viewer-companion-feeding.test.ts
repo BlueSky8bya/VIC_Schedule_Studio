@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import {
-  advanceBrain, createBrain, findPlatformRoute, getAction, getFoodAction,
+  advanceBrain, commitAction, createBrain, findPlatformRoute, getAction, getFoodAction,
   reachablePlatforms, recordCompanionEvent, type CompanionBrain,
   type CompanionWorld, type Platform,
 } from "@/lib/ui/viewer-companion/brain";
@@ -121,7 +121,20 @@ describe("local companion feeding and animal habits", () => {
     const rng = seeded(), actions = Array.from({ length: 800 }, () => getAction(hungry(), context, { ...prefs, animalMode: "dog", jump: false }, 100000, rng));
     const walks = actions.filter(action => action.kind === "walk");
     expect(walks.length).toBeGreaterThan(250);
-    expect(walks.every(action => action.target.x === 672 && action.target.platformId === "floor")).toBe(true);
+    expect(walks.every(action => action.target.x > context.x && action.target.x - context.x <= 140 && action.target.platformId === "floor")).toBe(true);
+    let approaching = context, state = hungry(), now = 100000;
+    // Each finite excursion preserves the same owner-approach intention. It
+    // reaches the old672px stopping distance through small, valid steps.
+    for (let step = 0; step < 3; step++) {
+      const next = getAction(state, approaching, { ...prefs, animalMode: "dog", jump: false, heartPrank: false, ambientPrank: false }, now, () => .999999);
+      expect(next.kind).toBe("walk");
+      expect(next.target.x - approaching.x).toBeLessThanOrEqual(140);
+      state = commitAction(state, next, now);
+      approaching = { ...approaching, ...next.target };
+      now += next.duration + 1000;
+      if (approaching.x === 672) break;
+    }
+    expect(approaching.x).toBe(672);
     expect(actions.some(action => action.kind === "sniff")).toBe(true);
     expect(actions.some(action => action.kind === "jump")).toBe(false);
   });

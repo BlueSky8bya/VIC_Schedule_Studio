@@ -4,7 +4,7 @@
 .vc-actor:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
 .vc-facing, .vc-pose { display: block; width: 100%; height: 100%; pointer-events: none; transform-origin: 50% 100%; }
 .vc-actor > .vc-facing { position: absolute; bottom: 0; left: calc((100% - var(--vc-size, 76px)) / 2); width: var(--vc-size, 76px); height: var(--vc-size, 76px); }
-.vc-sprite { display: block; width: 100%; height: 100%; background: url('/companion/victamin-clean.webp') var(--vc-cell-x, 0%) var(--vc-cell-y, 0%) / 400% 400% no-repeat; image-rendering: auto; pointer-events: none; }
+.vc-sprite { display: block; width: 100%; height: 100%; background: url('/companion/victamin-fluid.webp') var(--vc-cell-x, 0%) var(--vc-cell-y, 0%) / 1600% 1700% no-repeat; image-rendering: auto; pointer-events: none; }
 .vc-companion[data-state="held"] .vc-actor { cursor: grabbing; }
 .vc-effect { position: absolute; left: 65%; top: 0; color: var(--teaser); font-size: 18px; font-weight: 600; transform: translateY(var(--vc-effect, 0px)); pointer-events: none; white-space: nowrap; }
 .vc-companion[data-hidden] .vc-actor { pointer-events: none; opacity: .18; clip-path: inset(0 0 60%); }
@@ -60,46 +60,14 @@ html[data-reduce-motion] .vc-companion[data-presence="parked"] .vc-pose { animat
 @keyframes vc-snack { from { opacity: 0; scale: .65; } to { opacity: 1; scale: 1; } }
 
 .vc-home-host { flex: 0 0 auto; min-width: 0; width: 100%; }
-.vc-home { position: relative; pointer-events: auto; border: 1px solid var(--line); border-radius: var(--r-card); background: rgb(var(--glass-panel)); color: var(--ink); box-shadow: var(--elev-1); padding: 12px; font-size: var(--text-body); isolation: isolate; }
-.vc-home-heading { display: flex; align-items: center; justify-content: space-between; min-height: 28px; gap: 8px; margin-bottom: 6px; }
-.vc-home-heading > span:first-child { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-title); font-weight: 700; }
-.vc-home-mood { color: var(--muted); font-size: var(--text-label); }
-.vc-home-close { display: grid; place-items: center; width: 44px; height: 44px; margin: -8px -8px -8px 0; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; }
-.vc-home-room { position: relative; height: 140px; border-radius: var(--r-md); border: 1px solid var(--line); overflow: hidden; background: linear-gradient(180deg, rgb(var(--glass-cell)) 0 78%, rgb(var(--glass-head)) 78%); }
-.vc-home[data-size="large"] .vc-home-room { height: 160px; }
-.vc-home-room::after { content: ''; position: absolute; left: 0; right: 0; bottom: 20%; height: 1px; background: var(--line); pointer-events: none; }
-.vc-home-window { position: absolute; left: 22px; top: 12px; width: 50px; height: 44px; display: flex; padding: 4px; gap: 3px; border: 1px solid var(--line); border-radius: var(--r-sm) var(--r-sm) 2px 2px; box-shadow: inset 0 -3px 0 #fff3; }
-.vc-home-window i { flex: 1; border-radius: 3px; background: linear-gradient(145deg, #abc9ca55, #e9eddc66); }
-.vc-cushion-button { position: absolute; left: 10%; bottom: 8px; width: 42%; height: 44px; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-.vc-home-cushion { position: absolute; left: 0; right: 0; height: 14px; top: 12px; border: 1px solid #a7b5a36b; border-radius: 50%; background: linear-gradient(180deg, #dce5ce, #afc6b4); box-shadow: inset 0 -3px 0 #7b9b7a33, 0 3px 0 #63715b0c; }
-.vc-cushion-label { position: absolute; left: 0; right: 0; bottom: 0; font-size: var(--text-label); }
-.vc-dispenser { position: absolute; right: 10px; bottom: 9px; height: 94px; width: 98px; padding: 3px 4px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgb(var(--glass-panel)); box-shadow: inset 2px 1px 0 #fff4, 2px 3px 0 #52636a12; }
-.vc-dispenser button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 44px; padding: 0; border: 0; border-radius: var(--r-xs); color: var(--ink); background: rgb(var(--glass-cell)); font-size: var(--text-label); cursor: pointer; }
-.vc-dispenser .vc-fruit { width: 31px; height: 31px; }
-.vc-dispenser-slot { position: absolute; bottom: 5px; left: 16px; right: 16px; height: 6px; border-radius: var(--r-pill); background: #7180794d; box-shadow: inset 0 2px 2px #31413b22; }
-.vc-home-bond { display: grid; gap: 6px; padding: 12px 0 8px; }
-.vc-home-bond > span { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: var(--text-label); }
-.vc-home-bond strong { color: var(--ink); font-weight: 600; }
-.vc-home meter { display: block; width: 100%; height: 6px; border: 0; border-radius: var(--r-pill); overflow: hidden; background: rgb(var(--glass-head)); }
-.vc-home meter::-webkit-meter-bar { background: rgb(var(--glass-head)); border: 0; border-radius: var(--r-pill); }
-.vc-home meter::-webkit-meter-optimum-value { background: #9fb5aa; border-radius: var(--r-pill); }
-.vc-home meter::-moz-meter-bar { background: #9fb5aa; border-radius: var(--r-pill); }
-.vc-home-needs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; color: var(--muted); font-size: var(--text-label); }
-.vc-home-needs span { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px; }
-.vc-home-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 12px; }
-.vc-home-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: rgb(var(--glass-cell)); color: var(--ink); font: inherit; font-size: var(--text-label); cursor: pointer; }
-.vc-home button:hover { background-color: rgb(var(--glass-head)); }
-.vc-home button:active, .vc-home-launcher:active { transform: scale(var(--press-scale)); }
-.vc-home button:focus-visible, .vc-home-launcher:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
-.vc-home button:disabled { opacity: .4; cursor: default; }
-.vc-home-help { margin: 8px 0 0; color: var(--muted); font-size: var(--text-label); text-align: center; line-height: 1.5; }
+.vc-home-launcher:active { transform: scale(var(--press-scale)); }
+.vc-home-launcher:focus-visible { outline: 2px solid var(--teaser); outline-offset: 2px; }
 .vc-compact-home { position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(74px, env(safe-area-inset-bottom)); z-index: 73; width: min(310px, calc(100vw - 28px)); pointer-events: none; }
 /* The compact home is a user-opened sheet, unlike the in-flow desktop rail.
    Short landscape screens need one reachable scroll plane for these controls. */
 .vc-compact-home > .vc-home { max-height: calc(100dvh - 96px); overflow: auto; box-sizing: border-box; box-shadow: var(--elev-3); }
 .vc-compact-home:has(.vc-home-launcher) { z-index: 76; }
 .vc-home-launcher { display: flex; align-items: center; gap: 6px; float: right; min-height: 44px; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 8px 14px; color: var(--ink); background: rgb(var(--glass-panel)); box-shadow: var(--elev-2); pointer-events: auto; font: inherit; font-size: var(--text-body); cursor: pointer; }
-@media (pointer: coarse) { .vc-home-actions button { min-height: 44px; } }
 html[data-reduce-motion] .vc-food, html[data-reduce-motion] .vc-dream i, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-effect, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-actor::after { animation: none; }
 html[data-reduce-motion] .vc-dream i { opacity: .7; }
 html[data-reduce-motion] .vc-dream i:nth-child(2) { transform: translate(9px, -9px); }
