@@ -1,6 +1,6 @@
 # 빅타민 창 닫기 복귀·포근한 집
 
-2026-10-15 KST. [PLAN-051](../plans/PLAN-20261015-051-companion-wake-and-cozy-home.md). 상태: 구현·독립 소스/시각 리뷰·로컬 검증 완료, 운영 배포 대기.
+2026-10-15 KST. [PLAN-051](../plans/PLAN-20261015-051-companion-wake-and-cozy-home.md). 상태: `f47ef129` main push·운영 배포 및 PC/터치 확인 완료.
 
 ## 진단과 변경
 
@@ -33,10 +33,10 @@ PLAN-050의 각 제목 접기는 `vic.panelSections`에 이미 저장된다. 이
 | 복귀 렌더·기존 창 회귀 | 고유6 PASS: 기존 overlays2 + 신규 wake4. 초기 candidate에서5PASS(PC1의 모든 모션은 통과했으나 새 focus 가정 실패), 그 가정을 교정한 최종 PC1 PASS를 합산했다. 최종 seed latch 수정 후6개 전체를 다시 실행했다는 주장은 아니다. 실제 root 최초 켜기 분기는 별도로 아래2뷰에서 검증했다. 기존 설정 창은 opener focus 복원을 보장하지 않으므로 잘못 추가한 해당 단언을 실제 activeElement/복귀 중 pet focusin0 검증으로 교정했다. 상품 focus 계약은 변경하지 않았다. |
 | 최종 실제 익명 `/` 로컬 |1920 PC/390 touch 두 화면 PASS. 기본OFF→설정 안에서ON/크게→수면→닫기, 설정/검색/기록3창의 첫 위치·너비 연속성→settle→marker 종료·계속 표시를 확인했다. 기본OFF atlas 요청0, sharp, inert/입력 통과·동일 DOM·접기 reload·export 내 pet0·pageerror0. 각 bootstrap POST2 전부 차단·전달0, 과거2025-09 사용. |
 | 집 렌더/기하 |5뷰 PASS: PC1920 밝음/다크·390 밝음/다크·900×600 coarse 다크+gfxsoft/눈편안lite. 동일 새 markup에 HEAD oldCSS를 적용한 재질 before/after 비교이며 옛 빌드 PNG는 아니다. 방132·쿠션16/top97, room/anchor/controls6rect의 x/y/w/h 최대차0px. PC room322/쿠션135.234×16, touch room292/쿠션122.625×16, feed48×62·slot26×5·trash44×56 유지. native home/feed/trash 입력 및 음식1→0, 버튼 중심 hit-test 전뷰 PASS, filter:none/room animation:none·pageerror0·POST0. |
-| 배포·운영 | PENDING. main push와 운영 build SHA, 실제 익명 PC/터치 창 복귀를 확인한다. |
+| 배포·운영 | `f47ef1299c9b1405343035150a70823ad7fbe8ff` main push, GitHub/Vercel success 및 운영 API build SHA 일치. [실제 사이트](https://vic-schedule-studio.vercel.app)의 익명1920 PC/390 touch 두 화면 모두 로컬 root와 같은 최초ON/크게·수면·설정/검색/기록3창의 첫 위치/너비 연속성→착지→marker 종료·표시 유지 PASS. 기본OFF atlas0·sharp·접힘 reload·동일 DOM/inert/입력 통과·export내 pet0·pageerror0 확인. 각 bootstrap POST2 전부 차단·전달0. |
 
 공개 DTO·서버 권한/unlock·KST·DB·실제 일정·1840 표면 기하 변경0. 기본 OFF·로컬만·시청자/비로그인/미리보기 공용 한 구현을 유지했다. 모든 UI 검사는 fixture/합성 또는 과거2025-09 읽기·POST 차단으로 시행한다. Chromium touch 경로는 물리 휴대폰 검증이 아니며, 실OBS·물리 햅틱·주관적 미술 승인은 별도다. 기존 harness inventory2 오류는 이번 변경과 분리한다.
 
 최종 PC218.74px 귀환의 첫 프레임 오차0.00305px, 최대13.323px/관측 프레임·scale step0, return31/settle21프레임을 기록했다. 종료 후 첫250ms15프레임은 원래 발판 고정, 다음 실제 자율 행동까지416.3ms였다. touch 배율0.579→1, 직접 집기의 첫 위치·배율 변화0과 여러 단계의200ms 복구를 확인했다. blur 후 귀환은 유한하게 끝나 수면 꼬리 Range0/style write0, native close 뒤 실제 activeElement는 BODY였고 pet focusin0이었다. 재열기·동일 DOM·감소동작 이동 생략도 확인했다.
 
-근거는 ignored `.scratch-pw/companion-051-wake-summary.json`, `companion-051-wake-final-pc.log`, `companion-wake-public-local.json`, `companion-cozy-051.json`과 PC/touch/cozy PNG에 남겼다. 직접 열람에서 밝음/다크의 목재·리넨·쿠션 앞면/솔기·바닥층이 읽히고 가림/클립은 없었다. root와 독립 담당의 시각 검토이며 최종 소유자 취향 승인을 대신하지 않는다.
+근거는 ignored `.scratch-pw/companion-051-wake-summary.json`, `companion-051-wake-final-pc.log`, `companion-wake-public-local.json`, `companion-cozy-051.json`, `companion-wake-production-deploy.json`, `companion-wake-public-production.json`과 PC/touch/cozy PNG에 남겼다. 직접 열람에서 밝음/다크의 목재·리넨·쿠션 앞면/솔기·바닥층이 읽히고 가림/클립은 없었다. root와 독립 담당의 시각 검토이며 최종 소유자 취향 승인을 대신하지 않는다. 검증용 서버/브라우저는 종료했다.
