@@ -129,7 +129,7 @@ test("left and right travel face their movement while controls stay unmirrored",
 });
 
 for (const graphics of ["max", "lite"] as const) {
-  test(`${graphics} renders smooth position independently from the pixel gait`, async ({ page }) => {
+  test(`${graphics} renders smooth position independently from the compact authored gait`, async ({ page }) => {
     await setup(page, graphics);
     // Full hit-target avoidance leaves a shorter left floor interval than the
     // old text-only geometry. Its whole continuous walk still exceeds1s.
@@ -148,8 +148,8 @@ for (const graphics of ["max", "lite"] as const) {
     // Lite's policy is a30Hz upper budget. This is a cap check against the
     // measured duration, not an assumption about the display's refresh rate.
     if (graphics === "lite") expect(observedPositionRate).toBeLessThanOrEqual(34);
-    expect(frames.every(frame => frame.state === "walk" && frame.row === 2 && [5, 6, 7, 8].includes(frame.column))).toBe(true);
-    expect(changedColumn).toBeGreaterThan(3);
+    expect(frames.every(frame => frame.state === "walk" && frame.row === 2 && [0, 1].includes(frame.column))).toBe(true);
+    expect(changedColumn).toBeGreaterThan(1);
     expect(changedColumn).toBeLessThan(changedPosition * .65);
     expect(frames.some(frame => Math.abs(frame.x - Math.round(frame.x)) > .01)).toBe(true);
     expect(frames.at(-1)!.x - frames[0].x).toBeGreaterThan(60);
@@ -172,7 +172,9 @@ test("a human-heart geometry update does not insert an idle pose into a walk", a
     setTimeout(() => button.setAttribute("aria-pressed", "false"), 750);
     setTimeout(() => { observer.disconnect(); resolve(states); }, 1000);
   }));
-  expect(states.length).toBeGreaterThan(10);
+  // Equal state writes are now elided: attribute traffic must not be used as
+  // proof that the animation is alive. Check both ends across the updates.
+  expect(await pet(page).getAttribute("data-state")).toBe("walk");
   expect(states.every(state => state === "walk")).toBe(true);
   await writeFile(".scratch-pw/companion-motion-heart-observation.json", JSON.stringify(states, null, 2));
 });

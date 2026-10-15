@@ -147,3 +147,39 @@ test("the real companion bumps an existing human heart and cannot replace or inc
   await expect(page.locator(".vc-effect")).toHaveText("◌");
   await page.screenshot({ path: ".scratch-pw/companion-heart-runtime-blocked.png" });
 });
+
+for (const input of ["pointer", "keyboard"] as const) {
+  test(`the bundled adapter consumes the first purple ${input} click and preserves the following human handler`, async ({ page }) => {
+    await page.goto("/visual-fixture/poster");
+    await expect(actor(page)).toBeVisible();
+    await page.evaluate(() => {
+      const preferences = { ...JSON.parse(localStorage.getItem("vic.viewerCompanion")!), roam: false, heartPrank: false };
+      localStorage.setItem("vic.viewerCompanion", JSON.stringify(preferences));
+      window.dispatchEvent(new CustomEvent("vic:viewer-companion", { detail: preferences }));
+    });
+    const { id } = await addSyntheticHeart(page, false);
+    await page.evaluate(id => {
+      const value = JSON.stringify({ version: 1, ids: [id] });
+      localStorage.setItem("vic.viewerCompanion.hearts", value);
+      window.dispatchEvent(new StorageEvent("storage", { key: "vic.viewerCompanion.hearts", newValue: value }));
+    }, id);
+    await expect(heart(page)).toHaveAttribute("data-companion-hearted", "");
+    if (input === "pointer") await heart(page).locator("svg path").click();
+    else { await heart(page).focus(); await page.keyboard.press("Enter"); }
+    await expect(heart(page)).not.toHaveAttribute("data-companion-hearted");
+    await expect(heart(page)).toHaveAttribute("aria-pressed", "false");
+    await expect(heart(page)).toHaveAttribute("data-native-clicks", "0");
+    await expect(page.locator("#companion-runtime-human-count")).toHaveText("17");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!))).toEqual({ version: 1, ids: [] });
+    expect(posts.get(page)).toEqual([]);
+
+    // The fixture has no authenticated real-heart prop. Its inserted native
+    // sentinel verifies original-handler delivery, not server authorization.
+    if (input === "pointer") { await heart(page).focus(); await page.keyboard.press("Enter"); }
+    else await heart(page).locator("svg path").click();
+    await expect(heart(page)).toHaveAttribute("data-native-clicks", "1");
+    await expect(heart(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#companion-runtime-human-count")).toHaveText("18");
+    await expect(heart(page)).not.toHaveAttribute("data-companion-hearted");
+  });
+}

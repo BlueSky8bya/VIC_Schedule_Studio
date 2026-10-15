@@ -5,7 +5,11 @@ const HEART_SELECTOR = ".public-event[data-eventid] .event-heart,.agenda-event[d
 const CARD_SELECTOR = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
 const validPublicId = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,95}$/.test(value);
 export type CompanionHeartResult = "added" | "removed" | "blocked" | "missing";
-export type CompanionHearts = { attemptAt: (point: { x: number; y: number }) => CompanionHeartResult; dispose: () => void };
+export type CompanionHearts = {
+  attemptAt: (point: { x: number; y: number }) => CompanionHeartResult;
+  pause: (paused: boolean) => void;
+  dispose: () => void;
+};
 
 /** Bounded explicit public ids only; no titles, dates, tags, counts or identity. */
 export function readCompanionHeartIds(raw: string | null): string[] {
@@ -23,7 +27,7 @@ export function readCompanionHeartIds(raw: string | null): string[] {
 
 export function createCompanionHearts(root: HTMLElement): CompanionHearts {
   const win = root.ownerDocument.defaultView;
-  if (!win) return { attemptAt: () => "missing", dispose: () => {} };
+  if (!win) return { attemptAt: () => "missing", pause: () => {}, dispose: () => {} };
   let disposed = false;
   const marked = new Set<HTMLElement>();
   const blocked = new Set<HTMLElement>();
@@ -85,6 +89,21 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
     }
     return true;
   }
+  function remember(id: string, present: boolean) {
+    if (present) remembered.add(id);
+    else remembered.delete(id);
+    if (storedIds.has(id) === present) pending.delete(id);
+    else pending.set(id, present);
+    remembered = new Set([...remembered].slice(-MAX_COMPANION_HEARTS));
+    for (const [key, retained] of pending) if (retained && !remembered.has(key)) pending.delete(key);
+    try {
+      win!.localStorage.setItem(COMPANION_HEARTS_KEY, JSON.stringify({ version: 1, ids: [...remembered] }));
+      storedIds = new Set(remembered);
+      pending.clear();
+    }
+    catch { /* The current companion still remembers its own local gesture. */ }
+    sync();
+  }
   function attemptAt(point: { x: number; y: number }): CompanionHeartResult {
     if (disposed || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return "missing";
     const nodes = hearts();
@@ -104,23 +123,42 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
     refreshSaved();
     if (nodes.some(node => idFor(node) === id && node.getAttribute("aria-pressed") === "true")) { sync(); return "blocked"; }
     const removing = remembered.has(id);
-    if (removing) remembered.delete(id);
-    else remembered.add(id);
-    if (storedIds.has(id) === !removing) pending.delete(id);
-    else pending.set(id, !removing);
-    remembered = new Set([...remembered].slice(-MAX_COMPANION_HEARTS));
-    for (const [key, present] of pending) if (present && !remembered.has(key)) pending.delete(key);
-    try {
-      win!.localStorage.setItem(COMPANION_HEARTS_KEY, JSON.stringify({ version: 1, ids: [...remembered] }));
-      storedIds = new Set(remembered);
-      pending.clear();
-    }
-    catch { /* The current companion still remembers its own local gesture. */ }
-    sync();
+    remember(id, !removing);
     return removing ? "removed" : "added";
   }
+  const clicked = (event: MouseEvent) => {
+    if (disposed || event.defaultPrevented || event.button !== 0) return;
+    const source = event.target as Element | null;
+    const target = source && typeof source.closest === "function" ? source.closest<HTMLElement>(".event-heart") : null;
+    if (!target || !root.contains(target) || !visible(target)) return;
+    const id = idFor(target);
+    if (!id) return;
+    // A visibly purple souvenir still consumes its clearing click if another
+    // tab removed it before this tab received the storage event.
+    const wasPurple = target.hasAttribute("data-companion-hearted");
+    refreshSaved();
+    if (hearts().some(node => idFor(node) === id && node.getAttribute("aria-pressed") === "true")) { sync(); return; }
+    if (!wasPurple && !remembered.has(id)) { sync(); return; }
+    // Clear before the original human vote handler sees this pointer/keyboard
+    // click. The following click reaches that unchanged handler normally.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    remember(id, false);
+  };
   const observer = new MutationObserver(sync);
-  observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-pressed", "data-eventid", "class", "data-companion-hearted"] });
+  const observation = { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-pressed", "data-eventid", "class", "data-companion-hearted"] };
+  observer.observe(root, observation);
+  let paused = false;
+  const pause = (next: boolean) => {
+    if (disposed || paused === next) return;
+    paused = next;
+    if (paused) observer.disconnect();
+    else {
+      refreshSaved();
+      sync();
+      observer.observe(root, observation);
+    }
+  };
   const stored = (event: StorageEvent) => {
     if (event.key === COMPANION_HEARTS_KEY || event.key === null) {
       // Read current storage, not a possibly delayed event.newValue. Explicit
@@ -131,13 +169,15 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
   };
   win.addEventListener("storage", stored);
   win.addEventListener("resize", sync);
+  root.addEventListener("click", clicked, true);
   sync();
-  return { attemptAt, dispose: () => {
+  return { attemptAt, pause, dispose: () => {
     if (disposed) return;
     disposed = true;
     observer.disconnect();
     win.removeEventListener("storage", stored);
     win.removeEventListener("resize", sync);
+    root.removeEventListener("click", clicked, true);
     for (const node of marked) node.removeAttribute("data-companion-hearted");
     for (const node of blocked) node.removeAttribute("data-companion-heart-blocked");
     marked.clear();

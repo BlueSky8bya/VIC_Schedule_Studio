@@ -39,7 +39,11 @@ test("one home follows the shared panel and keeps the same creature and care", a
   await page.evaluate(() => { localStorage.setItem("vic_avatar_side", "right"); dispatchEvent(new Event("vic:side-panel")); });
   await expect(page.locator(".avatar-right .avatar-slot .vc-home")).toHaveCount(1);
   await expect(pet(page)).toHaveCount(1);
-  await page.setViewportSize({ width: 900, height: 900 }); await showHome(page);
+  await page.setViewportSize({ width: 900, height: 900 });
+  // Wait for the responsive portal handoff, rather than observing the old
+  // inline house for one frame and skipping the new compact launcher.
+  await expect(page.getByRole("button", { name: "빅타민 집 열기", exact: true })).toBeVisible();
+  await showHome(page);
   await expect(page.locator(".vc-compact-home .vc-home")).toHaveCount(1);
   expect(Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"))).toBeGreaterThan(.36);
   await expect(page.locator("[data-export-surface] .vc-home,[data-export-surface] .vc-companion")).toHaveCount(0);

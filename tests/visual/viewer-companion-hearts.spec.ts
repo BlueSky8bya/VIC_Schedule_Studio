@@ -5,7 +5,7 @@ import ts from "typescript";
 const compile = (path: string) => ts.transpileModule(readFileSync(path, "utf8"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
 const heartsCode = compile("lib/ui/viewer-companion/hearts.ts");
 const geometryCode = compile("lib/ui/viewer-companion/geometry.ts");
-type HeartAdapter = { attemptAt: (point: { x: number; y: number }) => "added" | "removed" | "blocked" | "missing"; dispose: () => void };
+type HeartAdapter = { attemptAt: (point: { x: number; y: number }) => "added" | "removed" | "blocked" | "missing"; pause: (paused: boolean) => void; dispose: () => void };
 type FixtureWindow = Window & { __hearts: HeartAdapter; __createHearts: () => HeartAdapter; __stopPlatforms: () => void; __platforms: { heart?: { blocked?: boolean } }[]; __humanClicks: number };
 
 test.beforeEach(async ({ page }) => {
@@ -90,4 +90,82 @@ test("month reuse, resize, OFF cleanup and remount preserve only correct public 
   expect(await attempt(page, "#a")).toBe("removed");
   await expect(page.locator("#a")).not.toHaveAttribute("data-companion-hearted");
   expect(await page.evaluate(() => (window as unknown as FixtureWindow).__humanClicks)).toBe(0);
+});
+
+for (const input of ["pointer", "keyboard"] as const) {
+  test(`the first ${input} click clears purple only; the following click reaches the synthetic vote handler`, async ({ page }) => {
+    const voteRequests: string[] = [];
+    // This deliberately synthetic endpoint verifies propagation only. Every
+    // request is fulfilled locally; no production vote/session is exercised.
+    await page.route("**/synthetic-human-vote", route => {
+      voteRequests.push(route.request().method());
+      return route.fulfill({ status: 200, json: { ok: true } });
+    });
+    await page.evaluate(() => {
+      const original = document.getElementById("a")!;
+      const clone = original.closest("article")!.cloneNode(true) as HTMLElement;
+      clone.querySelector("button")!.id = "copy";
+      document.getElementById("root")!.append(clone);
+      original.addEventListener("click", () => {
+        original.setAttribute("aria-pressed", "true");
+        original.closest("article")!.querySelector(".human-count")!.textContent = "18";
+        void fetch("/synthetic-human-vote", { method: "POST" });
+      });
+    });
+    expect(await attempt(page, "#a")).toBe("added");
+    await expect(page.locator("#copy")).toHaveAttribute("data-companion-hearted", "");
+    if (input === "pointer") await page.locator("#a svg path").click();
+    else { await page.locator("#a").focus(); await page.keyboard.press("Enter"); }
+    await expect(page.locator("[data-companion-hearted]")).toHaveCount(0);
+    await expect(page.locator("#a")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#a").locator("..").locator(".human-count")).toHaveText("17");
+    expect(await page.evaluate(() => (window as unknown as FixtureWindow).__humanClicks)).toBe(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!))).toEqual({ version: 1, ids: [] });
+    expect(voteRequests).toEqual([]);
+
+    if (input === "pointer") { await page.locator("#a").focus(); await page.keyboard.press("Enter"); }
+    else await page.locator("#a svg path").click();
+    await expect(page.locator("#a")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#a").locator("..").locator(".human-count")).toHaveText("18");
+    expect(await page.evaluate(() => (window as unknown as FixtureWindow).__humanClicks)).toBe(1);
+    await expect.poll(() => voteRequests).toEqual(["POST"]);
+  });
+}
+
+test("a real storage event preserves removals and never resurrects an old purple copy", async ({ page }) => {
+  expect(await attempt(page, "#a")).toBe("added");
+  await page.locator("#a svg").click();
+  await expect(page.locator("#a")).not.toHaveAttribute("data-companion-hearted");
+  const peer = await page.context().newPage();
+  try {
+    await peer.route("**/*", route => route.request().method() === "POST" ? route.abort() : route.fulfill({ contentType: "text/html", body: "<!doctype html><title>synthetic storage peer</title>" }));
+    await peer.goto(new URL("/companion-storage-peer", page.url()).href);
+    await peer.evaluate(() => localStorage.setItem("vic.viewerCompanion.hearts", JSON.stringify({ version: 1, ids: ["synthetic-public-b"] })));
+    await expect(page.locator("#a")).not.toHaveAttribute("data-companion-hearted");
+    // The second fixture is a human red heart; its stored companion memory
+    // must remain dormant until that human state clears.
+    await page.locator("#b").evaluate(button => button.setAttribute("aria-pressed", "false"));
+    await expect(page.locator("#b")).toHaveAttribute("data-companion-hearted", "");
+    await peer.evaluate(() => localStorage.removeItem("vic.viewerCompanion.hearts"));
+    await expect(page.locator("[data-companion-hearted]")).toHaveCount(0);
+    await page.locator("#a").click();
+    expect(await page.evaluate(() => (window as unknown as FixtureWindow).__humanClicks)).toBe(1);
+  } finally { await peer.close(); }
+});
+
+test("pausing DOM observation keeps human red priority and resumes current DOM synchronization", async ({ page }) => {
+  expect(await attempt(page, "#a")).toBe("added");
+  await page.evaluate(() => {
+    (window as unknown as FixtureWindow).__hearts.pause(true);
+    document.getElementById("a")!.setAttribute("aria-pressed", "true");
+  });
+  // The paused observer has not cleared the old purple attribute. The click
+  // capture must inspect aria-pressed directly and pass this human red click.
+  await expect(page.locator("#a")).toHaveAttribute("data-companion-hearted", "");
+  await page.locator("#a svg").click();
+  expect(await page.evaluate(() => (window as unknown as FixtureWindow).__humanClicks)).toBe(1);
+  await expect(page.locator("#a")).not.toHaveAttribute("data-companion-hearted");
+  await page.locator("#a").evaluate(button => button.setAttribute("aria-pressed", "false"));
+  await page.evaluate(() => (window as unknown as FixtureWindow).__hearts.pause(false));
+  await expect(page.locator("#a")).toHaveAttribute("data-companion-hearted", "");
 });

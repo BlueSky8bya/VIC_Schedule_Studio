@@ -1,0 +1,23 @@
+{
+  "tool": "image_gen",
+  "args": {
+    "prompt": "Use case: stylized-concept.\nAsset: ONE transparent 4 by 4 sprite sheet, sixteen equally sized square cells, read left to right, top to bottom. This replaces a noisy tiny calendar pet. Reference images1 and2 are original Victamin design authorities, not a background to reproduce.\nDraw the SAME cute limbless Victamin in every cell. Preserve exactly two tall rounded upright rabbit-like ears, left inner ear orange/right inner ear yellow, cream/white layered rectangular paper-tab pompom body, two orange square cheeks, dark tiny eyes and smile. NO arms, hands, legs, feet, hats, props, speech, text or ground shadow. Simplify the overlapping rectangular tabs into a few broad readable groups. Keep the recognizable layered-paper silhouette, never fur spikes or a plain rabbit. Clean soft matte cel illustration, smooth antialiased edges, consistent medium warm-taupe outline, sparse interior seams. Warm ivory/soft butter yellow/apricot palette fits a tidy cream calendar. No pixel dithering, noise, hairs, sketch texture, bloom, translucent white haze, tiny busy lines or photorealism.\nEach cell has the same scale, centered face/body registration and ground baseline at88% of the cell; keep all ears and body inside with generous transparent margins. Draw shallow three-quarter facing RIGHT wherever awake so horizontal mirroring indicates travel. Camera, proportions, layer arrangement and light remain consistent; change only the specified pose/expression. The body is rounded and wider than tall, with long ears above, no limbs.\nCells1–4: neutral alert; gentle blink; tiny rightward scoot compression; rightward scoot extension.\nCells5–8: anticipatory crouch; joyful upward jump ears trail slightly; falling with ears lifting slightly; soft squash landing.\nCells9–12: picked up, squirming body/ears; delighted closed-eye smile; sleepy yawn; sleeping closed eyes, settled rounded body, ears relaxed but still present.\nCells13–16: waking half-open eyes; small pleased heart-tap bounce without heart icon; shy low crouch peeking; alert reappearance.\nThe changes are subtle coherent animation keyposes, not sixteen different mascots. No grids or cell borders. Genuine transparent background.",
+    "referenced_image_paths": [
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\02_표정\\스크린샷 2026-10-06 025426.png"
+    ],
+    "transparent_background": true
+  },
+  "provenance": {
+    "workId": "VICTAMIN-COMPANION-CLEAN-20261015",
+    "cycleId": "0815350E3480AB567EC5",
+    "sourceDesignIds": [
+      "REF-016",
+      "REF-017"
+    ],
+    "nativeSha256": "d303c111b3671dffe1b7bcd529c900f63c4d54f178c4bbd097ab2f8c8603ef47",
+    "status": "requested runtime draft, not owner visual approval",
+    "calls": 1,
+    "automaticArtReviews": 0
+  }
+}

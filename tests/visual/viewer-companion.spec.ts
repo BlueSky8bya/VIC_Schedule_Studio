@@ -8,7 +8,7 @@ test.beforeEach(async ({ page, context }) => {
   requests.set(page, seen);
   await context.route("**/*", route => {
     const request = route.request();
-    if (request.url().includes("/companion/victamin-motion.webp")) seen.atlas++;
+    if (request.url().includes("/companion/victamin-clean.webp")) seen.atlas++;
     if (request.method() === "POST") { seen.posts.push(request.url()); return route.fulfill({ status: 500, body: "" }); }
     return route.continue();
   });
@@ -189,8 +189,10 @@ test("a settings overlay pauses the companion and closing resumes it", async ({ 
   await page.getByRole("dialog", { name: "설정", exact: true }).getByRole("button", { name: "닫기", exact: true }).click();
   await expect(actor(page)).toBeVisible();
   await expect(pet(page)).toBeInViewport({ ratio: .99999 });
-  const a = await pet(page).evaluate(el => (el as HTMLElement).style.getPropertyValue("--vc-column"));
-  await expect.poll(() => pet(page).evaluate(el => (el as HTMLElement).style.getPropertyValue("--vc-column"))).not.toBe(a);
+  // A held keypose is intentional, so clip-column churn no longer proves
+  // liveness. Verify the resumed creature accepts a real direct interaction.
+  await actor(page).click();
+  await expect(pet(page)).toHaveAttribute("data-state", "petted");
 });
 
 test("reduce motion keeps the enabled creature stationary and direct affection usable", async ({ page }) => {

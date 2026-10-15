@@ -2,6 +2,8 @@
 
 Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시각 승인과 기능 구현 승인은 구별한다.
 
+방송 성능·작은 그림 확장([PLAN-045](../plans/PLAN-20261015-045-victamin-clean-art-and-passive-sleep.md)): 과거256셀은 이력으로 보존하고 현 시청자 동행은16개 일관된 키포즈의 작은 atlas로 교체한다. 얇은 세부선·pixelated 축소를 줄이고 full60/lite30 이동과 낮은 정지 cadence를 분리한다. 아래043의 무제한 full-rAF와 현 공개atlas 바이트 유지 조항은 이번 사용자 재디자인 요청으로 대체한다. 인간의 보라 하트 첫 클릭은 빈 하트로만 지우고 다음 클릭이 실제 투표다. visible blur는 현재 행동→짧은 휴식/하품→CSS 수면이며 판단/타이머/기하·하트변이 관측을 멈춘다. hidden/차단 UI는 기존 즉시 숨김을 유지한다. 복귀 재측정·활성 시계와 부재 벌점 없음. 브라우저 지표와 실제 OBS 장비 검증을 구별한다. [근거/검증](../verification/VIEWER_VICTAMIN_PASSIVE_SLEEP-20261015.md).
+
 소유자는 달력 발판 탐험·집기·쓰다듬기·수면·하트 장난·배경 숨바꼭질, 수백 픽셀 프레임과 모든 행동의 전용 설정을 요청했다. 전체 기본값은OFF다.
 
 채택: 순수 Utility AI+중단 가능한 실행 상태, visible DOM geometry 발판, opt-in 동적 UI 하나,256셀 새 atlas, 기기 설정v1. 모델/DB/외부 추론 요청0. 설정은 공유 리스트의 `빅타민`→`움직임/장난/교감/성격` 한 구현이다. 욕구·친밀도·짧은 기억·쿨다운으로 행동을 고르며 직접 입력이 우선한다.

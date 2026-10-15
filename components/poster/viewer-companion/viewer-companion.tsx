@@ -10,7 +10,8 @@ import { acquireCompanionAmbientPreview } from "@/lib/ui/viewer-companion/ambien
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare } from "@/lib/ui/viewer-companion/care";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
-import registration from "@/lib/ui/viewer-companion/sprite-registration.json";
+import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
+import registration from "@/lib/ui/viewer-companion/clean-sprite.json";
 import { gfxMode } from "@/lib/ui/gfx";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import { CompanionHome, type CompanionHomeAction } from "./companion-home";
@@ -57,6 +58,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const publishCare = () => { const { hunger, affection, energy, curiosity } = brain.current; setCare({ hunger, affection, energy, curiosity }); };
     publishCare();
     const hearts = createCompanionHearts(page);
+    const presence = createCompanionPresence(document.hasFocus(), performance.now());
     const saved = lastPose.current?.monthKey === monthKey ? lastPose.current : null;
     let platforms: Platform[] = [], x = saved?.x ?? innerWidth * .68, y = saved?.y ?? innerHeight - 18, support = "";
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
@@ -67,34 +69,56 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     let clickGuard: ReturnType<typeof setTimeout> | undefined;
     let pressed: { id: number; x: number; y: number; at: number; dx: number; dy: number; dragged: boolean; grabbed: boolean; cancelled: boolean } | null = null;
     const size = sizes[preferences.size];
-    const visual = createCompanionMotion({ clips: registration.clips });
+    const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])) });
     let presentationNow = 0;
-    let paintedRow = -1, paintedColumn = -1, paintedFacing = 0;
+    let offGeometry: (() => void) | undefined;
+    let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
+    let geometryReady = false;
+    let paintedRow = -1, paintedColumn = -1, paintedCell = -1, paintedFacing = 0;
     const effective = reduced ? { ...preferences, roam: false, jump: false, ambientPrank: false } : preferences;
+    const paintedStyles = new WeakMap<HTMLElement, Map<string, string>>();
+    const style = (node: HTMLElement, name: string, value: string) => {
+      let values = paintedStyles.get(node);
+      if (!values) { values = new Map(); paintedStyles.set(node, values); }
+      // CSSOM serializes transforms with different spacing/zero units. Cache
+      // desired values instead of comparing against that normalized string.
+      if (values.get(name) !== value) { node.style.setProperty(name, value); values.set(name, value); }
+    };
+    const data = (name: string, value: string) => { if (el.dataset[name] !== value) el.dataset[name] = value; };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x, y, now: presentationNow, reduced });
-      // World travel stays smooth even when the pixel pose holds. Registration
+      // World travel stays smooth even when the authored pose holds. Registration
       // is measured from the opaque body, not transparent padding/shadow specks.
-      el.style.transform = `translate3d(${(x - size / 2).toFixed(3)}px,${(y - size).toFixed(3)}px,0)`;
-      poseLayer.style.transform = `translate3d(0,${sample.bob.toFixed(3)}px,0) scale(${sample.scaleX.toFixed(4)},${sample.scaleY.toFixed(4)})`;
+      style(el, "transform", `translate3d(${(x - size / 2).toFixed(3)}px,${(y - size).toFixed(3)}px,0)`);
+      style(poseLayer, "transform", `translate3d(0,${sample.bob.toFixed(3)}px,0) scale(${sample.scaleX.toFixed(4)},${sample.scaleY.toFixed(4)})`);
       if (sample.facing !== paintedFacing) { facingLayer.style.transform = `scaleX(${sample.facing})`; el.dataset.facing = sample.facing < 0 ? "left" : "right"; paintedFacing = sample.facing; }
-      if (sample.row !== paintedRow || sample.column !== paintedColumn) {
-        const cell = registration.frames[sample.row][sample.column];
-        el.style.setProperty("--vc-column", `${sample.column / 15 * 100}%`);
+      // A rare short blink, not the old6Hz whole-face toggle. Keeping one
+      // authored pose between blinks also removes idle outline shimmer.
+      const index = sample.row === 0 ? !reduced && presentationNow % 5400 > 5200 ? 1 : 0 : registration.rows[sample.row][sample.column];
+      const column = sample.row === 0 ? 0 : sample.column;
+      if (sample.row !== paintedRow || column !== paintedColumn) {
+        el.style.setProperty("--vc-column", `${column / 15 * 100}%`);
         el.style.setProperty("--vc-row", `${sample.row / 15 * 100}%`);
+        paintedRow = sample.row; paintedColumn = column;
+      }
+      if (index !== paintedCell) {
+        const cell = registration.frames[index];
+        el.style.setProperty("--vc-cell-x", `${index % registration.grid / (registration.grid - 1) * 100}%`);
+        el.style.setProperty("--vc-cell-y", `${Math.floor(index / registration.grid) / (registration.grid - 1) * 100}%`);
         image.style.transform = `translate3d(${cell.x / 80 * size}px,${cell.y / 80 * size}px,0)`;
         image.style.clipPath = `inset(${cell.clip.map(value => `${value / 80 * 100}%`).join(" ")})`;
-        paintedRow = sample.row; paintedColumn = sample.column;
+        data("pose", String(index));
+        paintedCell = index;
       }
-      el.dataset.state = status;
-      el.dataset.platform = support;
+      data("state", status);
+      data("platform", support);
       if (shadow.current) {
         const progress = action ? clamp((performance.now() - began) / total, 0, 1) : 0;
         const ground = action?.kind === "jump" ? lerp(origin.y, action.target.y, progress) : platforms.find(p => p.id === support)?.y ?? y;
         const altitude = Math.max(0, ground - y), scale = clamp(1 - altitude / 260, .35, 1);
-        shadow.current.style.transform = `translate3d(0,${Math.max(0, ground - y).toFixed(2)}px,0) scale(${scale.toFixed(3)})`;
-        shadow.current.style.opacity = pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale);
+        style(shadow.current, "transform", `translate3d(0,${Math.max(0, ground - y).toFixed(2)}px,0) scale(${scale.toFixed(3)})`);
+        style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = false;
     };
@@ -166,8 +190,26 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       if (stopped || pause) return;
       const delta = Math.max(0, now - lastTick); lastTick = now;
       presentationNow += delta;
-      if (now - lastNeeds >= 250) { brain.current = advanceBrain(brain.current, now - lastNeeds); saveCompanionCare(brain.current); lastNeeds = now; }
+      if (presence.phase === "active" && now - lastNeeds >= 250) { brain.current = advanceBrain(brain.current, now - lastNeeds); saveCompanionCare(brain.current); lastNeeds = now; }
       if (now - lastCare >= 1000) { publishCare(); lastCare = now; }
+      const phase = presence.step(now, Boolean(action || now < petUntil || afterPetLanding));
+      data("presence", phase);
+      if (!action && ["resting", "yawning", "parked", "waking"].includes(phase)) {
+        const elapsed = presence.elapsed(now);
+        if (supportedNow()) paint(phase === "yawning" ? 10 : phase === "parked" ? 11 : phase === "waking" ? 12 : 0, (elapsed / (phase === "waking" ? 800 : 900)) * 15, phase === "parked" ? "sleep" : phase === "waking" ? "wake" : phase === "yawning" ? "yawn" : "idle");
+        else el.hidden = true;
+        if (phase === "parked") {
+          el.dataset.dreaming = "";
+          offGeometry?.(); offGeometry = undefined; geometryReady = false;
+          hearts.pause(true);
+          publishCare(); saveCompanionCare(brain.current, true);
+          // No companion rAF, timer, needs or layout observer remains. Only
+          // the small compositor sleep cue moves while OBS can still see it.
+          return;
+        }
+        schedule(); return;
+      }
+      if (action?.kind !== "sleep") el.removeAttribute("data-dreaming");
       if (!platforms.length && !pressed && !keyboardHeld) { el.hidden = true; schedule(); return; }
       if (placing) { if (action) began += delta; paint(1, 0, "placing"); schedule(); return; }
       if (pressed || keyboardHeld) {
@@ -181,7 +223,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       if (el.dataset.state === "petted" && effect.current) effect.current.textContent = "";
       if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
       if (action?.foodId && !food.current?.foods().some(item => item.id === action!.foodId)) { clearAction(); settle({ x, y }); nextDecision = now + 300; }
-      if (!action && now >= nextDecision) launch(getAction(brain.current, { x, y, platformId: support, platforms, width: innerWidth, height: innerHeight, ambientAvailable: true, foods: food.current?.foods(), pointer }, effective, now), now);
+      if (!action && presence.phase === "active" && geometryReady && now >= nextDecision) launch(getAction(brain.current, { x, y, platformId: support, platforms, width: innerWidth, height: innerHeight, ambientAvailable: true, foods: food.current?.foods(), pointer }, effective, now), now);
       let row = 0, frame = 0, status = "idle";
       if (action) {
         const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
@@ -240,20 +282,28 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
           }
           if (["walk", "jump", "heart", "hide"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
           clearAction(); if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (continueRoute ? 0 : 220);
-          if (restAfterLanding) { restAfterLanding = false; control.current?.rest(); }
+          if (restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
         }
       }
       x = clamp(x, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y, size + 8, innerHeight - 12);
       paint(row, frame, status); schedule();
     };
     const schedule = () => {
-      if (stopped || pause) return;
+      if (stopped || pause || presence.phase === "parked") return;
       if (reduced) timer = setTimeout(() => tick(performance.now()), 400);
-      else raf = requestAnimationFrame(now => {
-        const deadline = nextCompanionPaint(now, lastPaint, gfxMode() === "full" ? 0 : 30);
+      else {
+        const moving = Boolean(pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide"].includes(action.kind));
+        // Keep travel fluid, cap high-refresh displays at60. Static poses do
+        // not need a full-speed JS loop; authored pose holds change at8Hz.
+        const fps = moving ? gfxMode() === "full" ? 60 : 30 : 8;
+        const draw = (now: number) => {
+        const deadline = nextCompanionPaint(now, lastPaint, fps);
         if (deadline !== null) { lastPaint = deadline; tick(now); }
         else schedule();
-      });
+        };
+        if (moving && fps === 60) raf = requestAnimationFrame(draw);
+        else timer = setTimeout(() => { raf = requestAnimationFrame(draw); }, Math.max(1, 1000 / fps - (performance.now() - lastPaint) - 1));
+      }
     };
     const sync = () => {
       const html = document.documentElement;
@@ -262,8 +312,24 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       started = true; pause = next; setSuspended(next); if (next) el.hidden = true;
       food.current?.pause(next);
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
-      if (pause) { needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; saveCompanionCare(brain.current, true); clearAction(); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; setHomeExpanded(false); }
-      else { if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; schedule(); }
+      if (pause) { needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; setHomeExpanded(false); }
+      else { presence.focus(document.hasFocus(), lastTick); connectGeometry(); hearts.pause(presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); }
+    };
+    const focusChanged = () => {
+      if (pause) return;
+      const now = performance.now(), wasParked = presence.phase === "parked";
+      presence.focus(document.hasFocus(), now);
+      if (!document.hasFocus()) {
+        // A held pointer/placement has no natural endpoint; release it and
+        // finish a short landing rather than leaving a dangling capture.
+        if (pressed || keyboardHeld || placing) { clearAction(); releaseHold(); placing = false; delete el.dataset.placing; settle({ x, y }); }
+      } else if (wasParked) {
+        cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(parkedLayoutTimer);
+        lastTick = lastNeeds = lastCare = lastPaint = now;
+        el.removeAttribute("data-dreaming");
+        connectGeometry(); hearts.pause(false); schedule();
+      }
+      if (document.hasFocus()) lastNeeds = now;
     };
     const down = (event: PointerEvent) => {
       if (pause || event.button !== 0 || (!preferences.drag && !preferences.petting)) return;
@@ -316,12 +382,24 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     };
     const click = (event: MouseEvent) => { if (consumePlacementClick) { event.preventDefault(); event.stopImmediatePropagation(); consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard); } };
     const sensePointer = (event: PointerEvent) => { if (!pause && event.pointerType !== "touch") pointer = { x: event.clientX, y: event.clientY }; };
-    const offGeometry = observeCompanionPlatforms(page, next => {
+    const onGeometry = (next: Platform[]) => {
+      geometryReady = true;
       const previous = platforms;
       // A visible ledge must leave room for this configured sprite above it.
       // Use the same foot boundary as painting/dragging, including after scroll.
       platforms = next.filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
       food.current?.sync(platforms);
+      if (presence.phase === "parked") {
+        // A browser source may resize while it never receives focus. Respond
+        // once to that actual layout event, then disconnect again; no polling.
+        const oldSupport = platforms.find(p => p.id === support && Math.abs(p.y - y) <= 2 && x >= p.x && x <= p.x + p.width);
+        const p = oldSupport ?? nearestPlatform({ x, y }, platforms);
+        clearAction();
+        if (p) { support = p.id; x = platformLandingX(p, x); y = p.y; paint(11, 0, "sleep"); el.dataset.dreaming = ""; }
+        else { support = ""; el.hidden = true; }
+        clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryReady = false;
+        return;
+      }
       if (!support) {
         const p = nearestPlatform({ x, y: saved?.y ?? innerHeight * .65 }, saved ? platforms : platforms.filter(p => p.kind !== "floor")) ?? platforms[0];
         if (p) { x = platformLandingX(p, x); y = p.y; support = p.id; }
@@ -347,11 +425,19 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       }
       // Only the animation loop paints. Heart/resize observations must not
       // insert an idle frame into a running walk, jump or meal.
-    }, { size, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion") });
+    };
+    const connectGeometry = () => { if (!offGeometry) { geometryReady = false; offGeometry = observeCompanionPlatforms(page, onGeometry, { size, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion") }); } };
+    const parkedLayout = () => {
+      if (pause || presence.phase !== "parked") return;
+      clearTimeout(parkedLayoutTimer);
+      parkedLayoutTimer = setTimeout(() => { if (!pause && presence.phase === "parked") connectGeometry(); }, 120);
+    };
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-showcase", "data-ambient-pause", "data-gfx"] });
     observer.observe(page, { attributes: true, attributeFilter: ["inert"] });
     document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); document.addEventListener("click", click, true);
+    window.addEventListener("blur", focusChanged); window.addEventListener("focus", focusChanged);
+    window.addEventListener("resize", parkedLayout, { passive: true }); window.addEventListener("scroll", parkedLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", parkedLayout);
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
     document.addEventListener("pointermove", sensePointer, { passive: true });
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("keydown", key);
@@ -359,7 +445,9 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     return () => {
       lastPose.current = { x, y, monthKey };
       saveCompanionCare(brain.current, true);
-      stopped = true; cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearAction(); control.current = null; observer.disconnect(); offGeometry(); hearts.dispose();
+      stopped = true; cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      window.removeEventListener("blur", focusChanged); window.removeEventListener("focus", focusChanged);
+      window.removeEventListener("resize", parkedLayout); window.removeEventListener("scroll", parkedLayout, true); window.removeEventListener("vic:companion-home", parkedLayout);
       document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
