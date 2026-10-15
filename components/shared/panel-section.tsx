@@ -20,8 +20,8 @@ type Props = Omit<HTMLAttributes<HTMLElement>, "title" | "children"> & {
   children: ReactNode;
 };
 
-/** One disclosure for the viewer's three cards; studio keeps the same heading
- * without a disclosure. Device storage contains only three booleans.
+/** One disclosure across viewer, studio and previews. Device storage contains
+ * only three booleans.
  * Mounted hidden bodies retain filters, ambient state and real home anchors. */
 export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection({ title, sectionKey, as: Tag = "section", collapsible = false, headingClassName = "", headingData, actions, className = "", children, ...attributes }, forwardedRef) {
   const root = useRef<HTMLElement | null>(null);

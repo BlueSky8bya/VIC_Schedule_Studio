@@ -1,12 +1,14 @@
 import type { Platform } from "./brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET } from "./food";
+import { companionSofaSeat } from "./sofa";
 
-const CARD_SELECTOR = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
+const STUDIO_CARD_SELECTOR = "[data-companion-event='ordinary'][data-eventid]";
+const CARD_SELECTOR = `.public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],${STUDIO_CARD_SELECTOR}`;
 const BAND_SELECTOR = ".support-bar[data-supportid],.agenda-event[data-supportid],.agenda-item[data-supportid]";
 const HEADER_SELECTOR = ".weekday-row,.public-calendar-header,.agenda-header";
 const DAY_SELECTOR = ".public-day,.agenda-day";
 const DATE_TEXT_SELECTOR = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong";
-const CARD_TEXT_SELECTOR = ".public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
+const CARD_TEXT_SELECTOR = `.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li,${STUDIO_CARD_SELECTOR} .pill-main strong,${STUDIO_CARD_SELECTOR} .pill-subs li,${STUDIO_CARD_SELECTOR} .pill-sub-last .pill-sub-text,${STUDIO_CARD_SELECTOR} .agenda-title-text,${STUDIO_CARD_SELECTOR} .agenda-subs li`;
 const TEXT_SURFACE_SELECTOR = `${DATE_TEXT_SELECTOR},${CARD_TEXT_SELECTOR}`;
 const MAX_PLATFORMS = 200;
 const MEASUREMENT_INTERVAL_MS = 120;
@@ -151,6 +153,15 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const clippedCache = new Map<Element, CompanionTextRect>();
     const viewport = { width, height };
     const viewportRect = { left: 0, right: width, top: 0, bottom: height };
+    const studio = root.getAttribute("data-companion-surface") === "studio";
+    const supportVisible = (element: HTMLElement) => {
+      if (element.closest(".dimmed,[hidden]")) return false;
+      const lock = element.closest<HTMLElement>("[inert],[aria-hidden='true']");
+      // Prelude disables card input before retiring its actual drawing. A
+      // public physical ledge remains usable until its transform/opacity exits;
+      // other modal/ancestor locks are never treated as this choreography.
+      return !lock || Boolean(root.hasAttribute("data-premiere") && lock.matches(CARD_SELECTOR) && !lock.parentElement?.closest("[inert],[aria-hidden='true']"));
+    };
     function styleFor(element: Element) {
       let style = styles.get(element);
       if (!style) { style = win!.getComputedStyle(element); styles.set(element, style); }
@@ -199,7 +210,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         // Do not read or retain nodeValue/textContent. The local brain receives
         // only anonymous geometry, including for server-masked teaser content.
         const target = supports ? parent.closest<HTMLElement>(TEXT_SURFACE_SELECTOR) : null;
-        const candidate = target && root.contains(target) && !target.closest(".dimmed,[inert],[aria-hidden='true']") ? target : null;
+        const candidate = target && root.contains(target) && supportVisible(target) && (!studio || Boolean(target.closest(STUDIO_CARD_SELECTOR))) ? target : null;
         for (const rect of range.getClientRects()) {
           const clipped = { left: Math.max(rect.left, clip.left), right: Math.min(rect.right, clip.right), top: Math.max(rect.top, clip.top), bottom: Math.min(rect.bottom, clip.bottom) };
           if (clipped.right - clipped.left < .5 || clipped.bottom - clipped.top < .5) continue;
@@ -275,7 +286,8 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const rect = home.getBoundingClientRect();
         const clip = clipping(home.parentElement);
         const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
-        const safe = rect.top >= clip.top && rect.top < clip.bottom ? safeCompanionSurfaces({ x, y: rect.top, width: right - x }, homeObstacles, size, viewport, footprint) : [];
+        const opening = companionSofaSeat({ left: x, right, top: rect.top }, size);
+        const safe = opening && rect.top >= clip.top && rect.top < clip.bottom ? safeCompanionSurfaces(opening, homeObstacles, size, viewport, footprint) : [];
         const centre = rect.left + rect.width / 2;
         const preferred = safe.sort((a, b) => Math.abs(a.x + a.width / 2 - centre) - Math.abs(b.x + b.width / 2 - centre))[0];
         if (rect.height > 0 && preferred && platforms.length < MAX_PLATFORMS) remember({ id: "companion-home", ...preferred, kind: "date" }, home, rect);
@@ -311,7 +323,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       for (const surface of [{ selector: BAND_SELECTOR, kind: "card" as const, edge: "top" }, { selector: HEADER_SELECTOR, kind: "date" as const, edge: "bottom" }]) {
         for (const element of root.querySelectorAll<HTMLElement>(surface.selector)) {
           nextObserved.add(element);
-          if (platforms.length >= MAX_PLATFORMS || !visible(element) || element.closest(".dimmed,[inert]")) continue;
+          if (platforms.length >= MAX_PLATFORMS || !visible(element) || !supportVisible(element) || studio) continue;
           const rect = measuredControls.get(element) ?? element.getBoundingClientRect(), clip = clipping(element.parentElement);
           const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
           const edge = surface.edge === "top" ? rect.top : rect.bottom;
@@ -341,6 +353,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         }
       }
       for (const element of root.querySelectorAll<HTMLElement>(CARD_SELECTOR)) {
+        // Studio opts in only sanitized ordinary public cards. Its broader
+        // agenda classes also contain support/private editor rows.
+        if (studio && !element.matches(STUDIO_CARD_SELECTOR)) continue;
         nextObserved.add(element);
         if ((landings.length < MAX_PLATFORMS || foodLandings.length < MAX_PLATFORMS) && visible(element)) {
           const rect = element.getBoundingClientRect(), clip = clipping(element.parentElement);
@@ -378,7 +393,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
           }
         }
       }
-      for (const day of root.querySelectorAll<HTMLElement>(DAY_SELECTOR)) {
+      for (const day of studio ? [] : root.querySelectorAll<HTMLElement>(DAY_SELECTOR)) {
         nextObserved.add(day);
       }
     }

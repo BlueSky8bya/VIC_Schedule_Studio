@@ -74,7 +74,8 @@
    it without pretending a flat rug is a bed (PLAN052 replaces16px cushion). */
 .vc-cushion-button { position: absolute; z-index: 2; left: 7%; bottom: 5px; width: 49%; height: 78px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
 .vc-plush-bed { position: absolute; bottom: 0; left: 0; width: 100%; height: auto; overflow: visible; pointer-events: none; transform-origin: 50% 85%; }
-.vc-home-cushion { position: absolute; bottom: 26%; left: 22%; right: 22%; height: 2px; pointer-events: none; }
+/* The 62% seat opening stays inside the SVG's actual 31..149/180 sidewalls. */
+.vc-home-cushion { position: absolute; bottom: 26%; left: 19%; right: 19%; height: 2px; pointer-events: none; }
 .vc-bed-ground { fill: var(--vc-soft-shadow); }
 .vc-bed-centre { fill: var(--vc-bed-light); opacity: .36; }
 .vc-bed-back-ribs { fill: none; stroke: var(--vc-bed-light); stroke-width: 3.6; stroke-linecap: round; opacity: .46; }

@@ -1,3 +1,5 @@
+import { companionGripProfile, type CompanionGrip } from "./contact-grip";
+
 /** Pose sampling only. The renderer owns world position and its rAF cadence. */
 export type CompanionMotionInput = {
   row: number;
@@ -7,6 +9,7 @@ export type CompanionMotionInput = {
   y: number;
   now: number;
   reduced?: boolean;
+  grip?: CompanionGrip;
 };
 export type CompanionMotionPose = {
   row: number;
@@ -151,8 +154,13 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
           index = input.reduced ? 0 : cyclicIndex(walkSteps);
         }
         else if (LOOP_FPS[row]) {
-          const fps = row === 8 && input.status === "held" ? 12 : LOOP_FPS[row];
-          index = input.reduced ? 0 : cyclicIndex((now - enteredAt) / 1000 * Math.min(frameRate, fps));
+          const heldClip = row === 8 && input.status === "held";
+          const fps = heldClip ? 12 : LOOP_FPS[row];
+          const age = (now - enteredAt) / 1000, grip = companionGripProfile(input.grip);
+          // A monotonic tempo warp gives each grip a different authored kick
+          // sequence without skipping backwards or exceeding the14Hz ceiling.
+          const variation = heldClip && input.grip ? Math.min(.65, Math.max(0, frameRate - fps) / 2.1) * (Math.sin(age * 2.1 + grip.phase) - Math.sin(grip.phase)) : 0;
+          index = input.reduced ? 0 : cyclicIndex(age * Math.min(frameRate, fps) + variation);
         }
         else {
           const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
@@ -173,20 +181,21 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       // local pose scalars move: the pointer, world support and collision path
       // remain owned by the renderer, with no extra timer or random clock.
       const heldTime = (now - enteredAt) / 1000;
+      const heldGrip = companionGripProfile(input.grip);
       const held = row === 8 && input.status === "held" && !input.reduced
         ? sampleCompanionTravel(heldTime / .18) : 0;
-      const wriggle = Math.sin(heldTime * Math.PI * 4.3), kick = Math.sin(heldTime * Math.PI * 7.2 + .7);
+      const wriggle = Math.sin(heldTime * Math.PI * 4.3 + heldGrip.phase), kick = Math.sin(heldTime * Math.PI * 7.2 + .7 + heldGrip.phase * .6);
       // Gravity has a sustained18.5..31.5% extension after the180ms pickup
       // ramp. Kicks modulate that load instead of multiplying it toward zero.
       // Keep the silhouette broad; the renderer supplies the real grip pivot.
-      const hanging = held * (.25 + Math.sin(heldTime * Math.PI * 1.16) * .035 + wriggle * .022 + kick * .008);
+      const hanging = held * (.25 + Math.sin(heldTime * Math.PI * 1.16) * .035 + wriggle * .022 + kick * .008) * heldGrip.extension;
       const target: Scalars = {
         // A hanging grip must not translate with the rest of the body. Its
         // pivoted extension supplies the downward travel below the hand.
         bob: movingPose ? -Math.abs(Math.sin(stride)) * 1.2 : 0,
-        scaleX: 1 + stretch * .012 - extension * .014 - hanging * .18,
+        scaleX: 1 + stretch * .012 - extension * .014 - hanging * heldGrip.width,
         scaleY: 1 - stretch * .018 + extension * .026 + hanging,
-        tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1) + held * (Math.sin(heldTime * Math.PI * 3.6) * 5.2 + kick * 1.6),
+        tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1) + held * (Math.sin(heldTime * Math.PI * 3.6 + heldGrip.phase) * 5.2 + kick * 1.6 + heldGrip.lean * facing),
       };
       // A100ms Hermite correction carries the last scalar pose and velocity
       // into a new clip. This is a small pose mixer, not alpha ghosting between

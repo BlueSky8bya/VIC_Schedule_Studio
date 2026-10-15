@@ -1,8 +1,8 @@
 /** Companion-only heart souvenirs. Never click or mutate the human heart. */
 export const COMPANION_HEARTS_KEY = "vic.viewerCompanion.hearts";
 export const MAX_COMPANION_HEARTS = 128;
-const HEART_SELECTOR = ".public-event[data-eventid] .event-heart,.agenda-event[data-eventid] .event-heart,.agenda-item[data-eventid] .event-heart";
-const CARD_SELECTOR = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
+const HEART_SELECTOR = ".public-event[data-eventid] .event-heart,.agenda-event[data-eventid] .event-heart,.agenda-item[data-eventid] .event-heart,[data-companion-event='ordinary'][data-eventid] .event-heart";
+const CARD_SELECTOR = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]";
 const validPublicId = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,95}$/.test(value);
 export type CompanionHeartResult = "added" | "removed" | "blocked" | "missing";
 export type CompanionHearts = {
@@ -55,7 +55,8 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
   const idFor = (heart: HTMLElement) => {
     const card = heart.closest<HTMLElement>(CARD_SELECTOR);
     const id = card?.dataset.eventid;
-    return card && root.contains(card) && !card.classList.contains("teaser") && validPublicId(id) ? id : undefined;
+    const allowed = root.dataset.companionSurface !== "studio" || card?.matches("[data-companion-event='ordinary'][data-eventid]");
+    return card && allowed && root.contains(card) && !card.classList.contains("teaser") && validPublicId(id) ? id : undefined;
   };
   const hearts = () => [...root.querySelectorAll<HTMLElement>(HEART_SELECTOR)];
   function sync() {
@@ -85,7 +86,8 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
     if (!node.isConnected || !root.isConnected || node.hasAttribute("disabled") || node.getAttribute("aria-disabled") === "true") return false;
     for (let parent: HTMLElement | null = node; parent; parent = parent.parentElement) {
       const style = win!.getComputedStyle(parent);
-      if (parent.hidden || parent.inert || parent.getAttribute("aria-hidden") === "true" || style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" || Number(style.opacity || 1) <= .05) return false;
+      const ownPreludeCard = root.hasAttribute("data-premiere") && parent.matches(CARD_SELECTOR);
+      if (parent.hidden || !ownPreludeCard && (parent.inert || parent.getAttribute("aria-hidden") === "true") || style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" || Number(style.opacity || 1) <= .05) return false;
     }
     return true;
   }

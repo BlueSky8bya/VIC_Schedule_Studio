@@ -73,7 +73,7 @@ function fixture(ids = ["public-a", "public-a", "public-b"], initial: string | n
   const adapter = createCompanionHearts(domRoot as unknown as HTMLElement);
   cleanups.push(adapter.dispose);
   const humanVotes = hearts.map(() => vi.fn());
-  return { state, storage, cards, hearts, adapter, observation, humanVotes,
+  return { root: domRoot, state, storage, cards, hearts, adapter, observation, humanVotes,
     point: (index = 0) => ({ x: 30 + index * 60, y: 30 }),
     mutate: () => { if (observation.active) mutation(); },
     humanClick: (index = 0, nested = false) => {
@@ -103,6 +103,27 @@ function expectHumanUnchanged(test: ReturnType<typeof fixture>, pressed = ["fals
 }
 
 describe("companion-only local heart toggle", () => {
+  it("requires an explicit ordinary-public studio marker even when a private row shares agenda classes", () => {
+    const test = fixture(["public-a", "private-b"]);
+    test.root.dataset.companionSurface = "studio";
+    test.cards.forEach((card, index) => Object.assign(card, { matches: (selector: string) => selector.includes("data-companion-event") && index === 0 }));
+    expect(test.adapter.attemptAt(test.point(1))).toBe("missing");
+    expect(test.adapter.attemptAt(test.point(0))).toBe("added");
+    expect(readCompanionHeartIds(test.state.raw)).toEqual(["public-a"]);
+    expectHumanUnchanged(test);
+  });
+  it("can pretend on a physically visible prelude card without bypassing another ancestor's input lock", () => {
+    const test = fixture(["public-a"]);
+    test.root.attrs.set("data-premiere", "prelude");
+    Object.assign(test.root, { matches: () => false });
+    Object.assign(test.hearts[0], { matches: () => false });
+    Object.assign(test.cards[0], { matches: (selector: string) => selector.includes("data-eventid") });
+    test.cards[0].inert = true;
+    expect(test.adapter.attemptAt(test.point())).toBe("added");
+    test.root.inert = true;
+    expect(test.adapter.attemptAt(test.point())).toBe("missing");
+    expectHumanUnchanged(test);
+  });
   it("adds then removes every spanning copy without a human click, count or pressed change", () => {
     const test = fixture();
     expect(test.adapter.attemptAt(test.point())).toBe("added");

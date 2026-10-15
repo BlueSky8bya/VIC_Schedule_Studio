@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+﻿import { expect, test, type Page } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
@@ -98,7 +98,7 @@ async function startProbe(page: Page, target: number) {
 }
 async function finishProbe(page: Page, label: string) {
   const result = await page.evaluate(() => { const p = (window as ProbeWindow).companionPremiereProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect(); return { sameDom: p.node === document.querySelector(".vc-companion"), realClock: true, frames: p.frames, transitions: p.transitions }; });
-  await writeFile(`.scratch-pw/companion-061-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(20); return result;
+  await writeFile(`.scratch-pw/companion-062-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(20); return result;
 }
 async function layout(page: Page, mobile: boolean) {
   if (!mobile) expect(await page.locator("[data-export-surface]").evaluate(node => (node as HTMLElement).offsetWidth)).toBe(1840);
@@ -123,18 +123,21 @@ for (const mobile of [false, true]) test.describe(mobile ? "native compact premi
       await route.fulfill({ response, json: data });
     });
     const target = await begin(page, 80, true, mobile ? 1 : 2); await showActualSource(page, mobile, target); await startProbe(page, target);
-    const careBefore = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
+    const preludeCare = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
     await expect(pet(page)).toHaveAttribute("data-premiere-companion", "enter", { timeout: 8000 }); await expect(pet(page)).toHaveAttribute("data-premiere-source", /^00000000-0000-4000-8000-00000000000[12]$/);
+    //062 keeps ordinary life active through the prelude. Only actual card
+    // entry hands the creature to the performance and pauses its needs.
+    const careBefore = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
     const enteredId = (await pet(page).getAttribute("data-premiere-source"))!;
-    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-061-entry-${mobile ? "390" : "1920"}.png` });
+    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-062-entry-${mobile ? "390" : "1920"}.png` });
     await expect(pet(page)).toHaveAttribute("data-premiere-companion", "joined", { timeout: 5500 });
     await expect(stage(page)).toHaveAttribute("data-pm-entry", "gather", { timeout: 2500 }); await expect(page.locator(".pm-fan[data-companion-joined]")).toHaveCount(1);
     await expect(pet(page)).toBeHidden(); await expect(pet(page)).toHaveCount(1); await expect(page.getByRole("timer")).toHaveCount(1);
-    await page.screenshot({ path: `.scratch-pw/companion-061-joined-${mobile ? "390" : "1920"}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-062-joined-${mobile ? "390" : "1920"}.png` });
     release = true; await expect(page.locator(".pm-complete")).toBeVisible({ timeout: 5000 });
     const exit = page.getByRole("button", { name: "일정표 보기", exact: true }); if (mobile) await exit.tap(); else await exit.click();
     await expect(pet(page)).toHaveAttribute("data-premiere-companion", "return", { timeout: 5000 }); await expect(pet(page)).toHaveAttribute("data-premiere-source", enteredId);
-    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-061-return-${mobile ? "390" : "1920"}.png` });
+    await expect(pet(page)).toBeVisible(); await page.screenshot({ path: `.scratch-pw/companion-062-return-${mobile ? "390" : "1920"}.png` });
     await expect(pet(page)).not.toHaveAttribute("data-premiere-companion", /enter|joined|return/, { timeout: 3500 }); await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /\S+/);
     await expect(page.locator(".poster-page")).not.toHaveAttribute("inert"); await expect(page.locator("[data-companion-premiere-owner]")).toHaveCount(0);
     const result = await finishProbe(page, mobile ? "handoff-390" : "handoff-1920");
@@ -153,7 +156,7 @@ for (const mobile of [false, true]) test.describe(mobile ? "native compact premi
     const affectionDelta = careAfter.affection - careBefore.affection;
     expect(affectionDelta).toBeGreaterThanOrEqual(-.001); expect(affectionDelta).toBeLessThanOrEqual(1e-12);
     expect(Math.abs(careAfter.hunger - careBefore.hunger)).toBeLessThan(.01); expect(Math.abs(careAfter.energy - careBefore.energy)).toBeLessThan(.01);
-    console.log(JSON.stringify({ check: "premiere-preserved-care", mobile, affectionDelta, ordinaryEquivalentMs: -affectionDelta * 2_400_000, lastReturnAt: returning.at(-1)!.at, lastObservedAt: result.frames.at(-1)!.at, careBefore, careAfter }));
+    console.log(JSON.stringify({ check: "premiere-preserved-care", mobile, affectionDelta, ordinaryEquivalentMs: -affectionDelta * 2_400_000, lastReturnAt: returning.at(-1)!.at, lastObservedAt: result.frames.at(-1)!.at, preludeCare, careBefore, careAfter }));
     await layout(page, mobile); console.log(JSON.stringify({ check: "premiere-handoff-real-clock", mobile, enteredId, firstEnter: entering[0], firstJoin: joined[0], firstGather: gathered, firstReturn: first, returnFrames: returning.length, returnEdges: returnEdges.length, careBefore, careAfter }));
   });
 
@@ -170,7 +173,7 @@ for (const mobile of [false, true]) test.describe(mobile ? "native compact premi
     expect(values.some(value => value.progress > .1 && value.progress < .9)).toBe(true); expect(values.at(-1)!.progress).toBeGreaterThan(.99); expect(values.at(-1)!.opacity).toBeLessThan(.02);
     await expect(home).toHaveAttribute("inert"); await expect(home).toHaveAttribute("aria-hidden", "true");
     expect(await home.evaluate(node => node === (window as Window & { premiereHome?: Element }).premiereHome)).toBe(true);
-    await page.screenshot({ path: `.scratch-pw/companion-061-house-departed-${mobile ? "390" : "1920"}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-062-house-departed-${mobile ? "390" : "1920"}.png` });
     await page.keyboard.press("Escape"); await expect(stage(page)).not.toBeVisible();
     await expect(home).toHaveAttribute("data-pm-exit", before.exit!); await expect(home).toBeVisible(); await expect(home).not.toHaveAttribute("inert"); await expect(home).not.toHaveAttribute("aria-hidden", "true");
     expect(await home.evaluate(() => localStorage.getItem("vic.viewerCompanion"))).toBe(before.pref);

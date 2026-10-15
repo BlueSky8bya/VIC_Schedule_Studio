@@ -4497,6 +4497,10 @@ html[data-reduce-motion] .perf-windows button.active {
 .studio-shell.avatar-scene .avatar-rail .viewer-ambient-ctl {
   pointer-events: auto;
 }
+.studio-shell.avatar-scene .avatar-rail .vc-home-host { pointer-events: auto; }
+/* The shared disclosure gives its spare height back to the same rail. */
+.studio-shell .avatar-rail-filter:has([data-panel-collapsed]),
+html[data-panel-sections~="tag-filter"] .studio-shell .avatar-rail-filter:has([data-panel-collapsible]) { flex: 0 0 auto; min-height: 0; }
 /* 빈 자리(아바타가 들어올 칸)만 다시 통과 — .avatar-slot은 이미 none이고, 그 안의 카드가 auto다. */
 .studio-shell.avatar-scene .avatar-rail .avatar-slot,
 .studio-shell.avatar-scene .avatar-rail .avatar-dock-inner {
@@ -10402,6 +10406,9 @@ body:has(.agenda-rail .role-help-pop) .m-actionrail {
      조금 생긴다. 필터가 길면 필터 안쪽만 스크롤. */
   height: calc(100svh - 168px);
 }
+/* The rail is layout, not another full-height dark card. Its actual filter
+   and controls keep the shared raised surface tokens. */
+html[data-theme="dark"] .studio-shell.studio-narrow .agenda-rail { background: transparent; }
 /* 레일 맨 위 역할 배지 — 색상 필터 폭(92px)에 맞춰 한 줄, 가운데 정렬. */
 .agenda-rail .actor-badge-wrap {
   flex: 0 0 auto;

@@ -1,3 +1,5 @@
+import { companionGripProfile, type CompanionGrip } from "./contact-grip";
+
 export type CompanionHeldPose = { tilt: number; stretch: number; active: boolean };
 type Spring = { position: number; velocity: number };
 type Point = { x: number; y: number };
@@ -9,8 +11,7 @@ const quiet = (): CompanionHeldPose => ({ tilt: 0, stretch: 0, active: false });
 /** Unlike a one-shot FLIP, captured input can reverse before the previous
  * response ends. An analytic underdamped spring carries that velocity without
  * depending on display cadence or adding a second animation loop. */
-function springAt(spring: Spring, seconds: number): Spring {
-  const decay = 5.6, frequency = 13;
+function springAt(spring: Spring, seconds: number, frequency = 13, decay = 5.6): Spring {
   const carried = (spring.velocity + decay * spring.position) / frequency;
   const cos = Math.cos(frequency * seconds), sin = Math.sin(frequency * seconds);
   const value = spring.position * cos + carried * sin, envelope = Math.exp(-decay * seconds);
@@ -28,23 +29,24 @@ export function createCompanionHeldInertia() {
     const age = Math.max(0, now - pushedAt), p = clamp((age - FADE_MS) / (TAIL_MS - FADE_MS), 0, 1);
     const fade = 1 - p ** 3 * (p * (p * 6 - 15) + 10);
     const fadeVelocity = -30 * p ** 2 * (p - 1) ** 2 / ((TAIL_MS - FADE_MS) / 1000);
-    const project = (spring: Spring): Spring => {
-      const next = springAt(spring, age / 1000);
+    const project = (spring: Spring, vertical = false): Spring => {
+      const next = springAt(spring, age / 1000, vertical ? 17.5 : 13, vertical ? 6.5 : 5.6);
       return { position: next.position * fade, velocity: next.velocity * fade + next.position * fadeVelocity };
     };
-    return { angle: project(angle), stretch: project(stretch) };
+    return { angle: project(angle), stretch: project(stretch, true) };
   };
   return {
     /** Actual clamped pointer-owned world travel only; scroll/geometry never
      * calls this. Zero input neither excites nor extends the finite tail. */
-    push(dx: number, dy: number, now: number): void {
+    push(dx: number, dy: number, now: number, grip?: CompanionGrip): void {
       if (![dx, dy, now].every(Number.isFinite) || dx === 0 && dy === 0) return;
       const time = clock(now), current = read(time);
       angle = current.angle; stretch = current.stretch;
+      const material = companionGripProfile(grip);
       // CSS y grows downward: positive rotation leaves the body below an
       // upper grip to the left when the hand travels right, rather than ahead.
-      angle.velocity = clamp(angle.velocity + clamp(dx, -160, 160) * 5, -700, 700);
-      stretch.velocity = clamp(stretch.velocity - clamp(dy, -160, 160) * .012, -2.4, 2.4);
+      angle.velocity = clamp(angle.velocity + clamp(dx, -160, 160) * 5 * material.impulse - clamp(dy, -160, 160) * material.side * 2.2, -700, 700);
+      stretch.velocity = clamp(stretch.velocity - clamp(dy, -160, 160) * .012 * material.impulse + clamp(dx, -160, 160) * material.side * .002, -2.4, 2.4);
       pushedAt = time;
     },
     sample(now: number): CompanionHeldPose {

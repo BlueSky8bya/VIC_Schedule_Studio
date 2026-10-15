@@ -32,7 +32,7 @@ class FixtureElement extends FixtureEvents {
   rect = box(0, 0, 1000, 800);
   getBoundingClientRect = vi.fn(() => this.rect);
   hasAttribute: (name: string) => boolean = () => false;
-  getAttribute = () => null;
+  getAttribute: (name: string) => string | null = () => null;
   querySelector: (selector: string) => FixtureElement | null = () => null;
   querySelectorAll: (selector: string) => FixtureElement[] = () => [];
   closest: (selector: string) => FixtureElement | null = () => null;
@@ -102,6 +102,46 @@ function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, band
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
+  it("uses only opt-in ordinary studio cards as targets, never editor dates or unmarked private/support rows", () => {
+    const f = geometryFixture(), privateCard = new FixtureElement(), privateTitle = new FixtureElement();
+    const marker = "[data-companion-event='ordinary'][data-eventid]";
+    f.card.rect = box(470, 430, 260, 60);
+    f.sourceRoot.getAttribute = name => name === "data-companion-surface" ? "studio" : null;
+    privateCard.parentElement = f.sourceRoot; privateTitle.parentElement = privateCard;
+    privateCard.rect = box(110, 430, 250, 60); privateTitle.rect = box(140, 450, 100, 20);
+    f.title.closest = selector => selector === marker ? f.card : selector.includes(".pill-main") ? f.title : selector.includes("data-eventid") ? f.card : null;
+    privateTitle.closest = selector => selector === marker ? null : selector.includes(".pill-main") ? privateTitle : selector.includes("data-eventid") ? privateCard : null;
+    f.card.matches = selector => selector === marker;
+    f.sourceRoot.querySelectorAll = selector => selector.includes("data-eventid") ? [f.card, privateCard] : selector === ".public-day,.agenda-day" ? [f.sourceRoot] : [];
+    const nodes = [{ parentElement: f.date }, { parentElement: f.title }, { parentElement: privateTitle }];
+    f.root.ownerDocument.createTreeWalker = () => { let index = 0; return { nextNode: () => nodes[index++] ?? null } as unknown as TreeWalker; };
+    let platforms: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, next => { platforms = next; }); f.flush();
+    expect(platforms.filter(p => p.kind === "card").length).toBeGreaterThan(0);
+    expect(platforms.filter(p => p.kind === "date")).toEqual([]);
+    expect([...platforms, ...sub.landings(), ...sub.landings(32)].every(p => sub.anchor(p.id)?.element !== (privateCard as unknown as Element) && sub.anchor(p.id)?.element !== (privateTitle as unknown as Element))).toBe(true);
+    expect(sub.landings().some(p => sub.anchor(p.id)?.element === (f.card as unknown as Element))).toBe(true);
+    sub();
+  });
+  it("retains a prelude-inert physical public card until it actually leaves, but rejects unrelated ancestor locks", () => {
+    const f = geometryFixture();
+    f.sourceRoot.hasAttribute = name => name === "data-premiere";
+    f.card.matches = selector => selector.includes("data-eventid");
+    const originalClosest = f.title.closest;
+    f.title.closest = selector => selector === "[inert],[aria-hidden='true']" ? f.card : originalClosest(selector);
+    let platforms: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, next => { platforms = next; }); f.flush();
+    expect(platforms.some(p => sub.anchor(p.id)?.element === (f.title as unknown as Element))).toBe(true);
+    f.sourceRoot.closest = selector => selector.includes("[inert]") ? f.sourceRoot : null;
+    f.win.emit("resize"); f.advance(120);
+    expect(platforms.some(p => sub.anchor(p.id)?.element === (f.title as unknown as Element))).toBe(false);
+    f.sourceRoot.closest = () => null;
+    const css = f.win.getComputedStyle();
+    f.win.getComputedStyle.mockImplementation(element => element === f.card ? { ...css, opacity: ".03" } : css);
+    f.win.emit("resize"); f.advance(120);
+    expect(platforms.some(p => sub.anchor(p.id)?.element === (f.title as unknown as Element))).toBe(false);
+    sub();
+  });
   it("offers the real house floor only as a manual feeding/drop support and keeps full controls clear", () => {
     const fixture = geometryFixture(), house = addHouseFloor(fixture); let autonomous: Platform[] = [];
     house.floor.hasAttribute = name => name === "aria-hidden"; // Decorative AT exclusion must not hide real floor ink.
@@ -144,7 +184,7 @@ describe("companion geometry anchor subscription", () => {
     support.rect = box(110, 440, 300, 22);
     expect(subscription.follow([first.id])[0]).toMatchObject({ platform: { x: first.x + 10, y: 437 }, anchorX: 110, anchorY: 440 });
     expect(fixture.range.getClientRects).toHaveBeenCalledTimes(ranges);
-    period.closest = selector => selector === ".dimmed,[inert]" ? period : null;
+    period.closest = selector => selector.includes("[inert]") ? period : null;
     fixture.win.emit("resize"); fixture.advance(120); expect(bands().every(p => p.y !== 547)).toBe(true);
     subscription();
   });
@@ -181,7 +221,7 @@ describe("companion geometry anchor subscription", () => {
     const fixture = geometryFixture(); addHouseFloor(fixture);
     const cards = Array.from({ length: 240 }, () => { const card = new FixtureElement(); card.parentElement = fixture.sourceRoot; card.rect = box(470, 430, 260, 60); return card; });
     const query = fixture.sourceRoot.querySelectorAll;
-    fixture.sourceRoot.querySelectorAll = selector => selector === ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]" ? cards : query(selector);
+    fixture.sourceRoot.querySelectorAll = selector => selector.includes("[data-eventid]") && !selector.includes(" ") ? cards : query(selector);
     const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92, home: fixture.home as unknown as HTMLElement }); fixture.flush();
     const food = subscription.landings(32);
     expect(food).toHaveLength(200);
@@ -315,7 +355,7 @@ describe("companion geometry anchor subscription", () => {
     const result = subscription.follow([source.id, "companion-home", "date-1"]);
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ platform: { ...source, x: source.x + 25, y: source.y - 40, heart: { ...source.heart!, x: source.heart!.x + 25, y: source.heart!.y - 40 } }, anchorX: 525, anchorY: 410 });
-    expect(result[1]).toMatchObject({ platform: { id: "companion-home", x: 210, y: 620 }, anchorX: 210, anchorY: 620 });
+    expect(result[1]).toMatchObject({ platform: { id: "companion-home", x: 210 + 76 * .38 + 3, y: 620 }, anchorX: 210, anchorY: 620 });
     expect(fixture.title.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.home.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.date.getBoundingClientRect).not.toHaveBeenCalled();
     expect(fixture.range.getClientRects).toHaveBeenCalledTimes(rangeCalls); expect(fixture.win.getComputedStyle).toHaveBeenCalledTimes(styleCalls);
     expect(subscription.follow([source.id])[0]).toEqual(result[0]);

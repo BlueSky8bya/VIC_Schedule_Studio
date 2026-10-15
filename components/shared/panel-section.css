@@ -12,7 +12,7 @@
 .panel-section-body { display: contents; }
 .panel-section-body[hidden] { display: none !important; }
 /* The root's prepaint marker prevents remembered closed cards flashing open
-   while React hydrates. Noncollapsible studio panels never match this gate. */
+   while React hydrates, including the studio's shared disclosure cards. */
 html[data-panel-sections~="tag-filter"] [data-panel-section="tag-filter"][data-panel-collapsible] > .panel-section-body,
 html[data-panel-sections~="season"] [data-panel-section="season"][data-panel-collapsible] > .panel-section-body,
 html[data-panel-sections~="companion-home"] [data-panel-section="companion-home"][data-panel-collapsible] > .panel-section-body { display: none !important; }

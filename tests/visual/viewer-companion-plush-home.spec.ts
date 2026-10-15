@@ -100,7 +100,7 @@ for (const view of cases) test.describe(view.name, () => {
     expect(metrics.window.left - metrics.room.left).toBeCloseTo(20, 3); expect(metrics.window.top - metrics.room.top).toBeCloseTo(14, 3);
     expect(metrics.shelf.height).toBeCloseTo(55, 3); expect(metrics.shelf.top - metrics.room.top).toBeCloseTo(9, 3);
     expect(metrics.button.height).toBeCloseTo(78, 3); expect(metrics.button.width / metrics.room.width).toBeCloseTo(.49, 3); expect(metrics.room.bottom - metrics.button.bottom).toBeCloseTo(5, 3);
-    expect(metrics.cushion.height).toBeCloseTo(2, 3); expect(metrics.cushion.width / metrics.button.width).toBeCloseTo(.56, 3);
+    expect(metrics.cushion.height).toBeCloseTo(2, 3); expect(metrics.cushion.width / metrics.button.width).toBeCloseTo(.62, 3);
     // Chromium lays out percentage offsets on its1/64px grid (20.28→20.265625).
     expect(Math.abs(metrics.button.bottom - metrics.cushion.bottom - metrics.button.height * .26)).toBeLessThan(.02);
     expect(metrics.feed.width).toBeCloseTo(48, 3); expect(metrics.feed.height).toBeCloseTo(62, 3); expect(metrics.room.right - metrics.feed.right).toBeCloseTo(61, 3);

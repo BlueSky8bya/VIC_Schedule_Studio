@@ -20,8 +20,8 @@
 .vc-companion[data-state="held"] .vc-actor { cursor: grabbing; }
 .vc-effect { position: absolute; left: 65%; top: 0; color: var(--teaser); font-size: 18px; font-weight: 600; transform: translateY(var(--vc-effect, 0px)); pointer-events: none; white-space: nowrap; }
 .vc-companion[data-hide-phase]:not([data-detail-guest]) .vc-actor { pointer-events: none; }
-.vc-companion[data-premiere-companion] .vc-actor { pointer-events: none; }
-.vc-companion[data-premiere-companion] .vc-contact-shadow { visibility: hidden; }
+.vc-companion[data-premiere-companion]:not([data-premiere-companion="prelude"]) .vc-actor { pointer-events: none; }
+.vc-companion[data-premiere-companion]:not([data-premiere-companion="prelude"]) .vc-contact-shadow { visibility: hidden; }
 /* A hint composes the individual rotate property with the card's existing
    transform/FLIP. It changes neither its layout nor its pointer target. */
 [data-companion-hide-hint] { animation: vc-hide-hint 4.8s ease-in-out infinite; }
@@ -30,8 +30,8 @@ html[data-reduce-motion] [data-companion-hide-hint], html[data-gfx="off"] [data-
 .vc-companion[data-placing] .vc-actor { outline: 2px dashed var(--teaser); outline-offset: 3px; cursor: crosshair; }
 /* Human red and pressed semantics stay with the existing vote. This is only a
    pet souvenir: no size/layout/counter changes on the 1840px export surface. */
-html .poster-page .event-heart[data-companion-hearted]:not([aria-pressed="true"]) { color: var(--teaser); opacity: 1; }
-html .poster-page .event-heart[data-companion-hearted]:not([aria-pressed="true"]) svg { fill: currentColor; }
+html :is(.poster-page,[data-companion-event="ordinary"]) .event-heart[data-companion-hearted]:not([aria-pressed="true"]) { color: var(--teaser); opacity: 1; }
+html :is(.poster-page,[data-companion-event="ordinary"]) .event-heart[data-companion-hearted]:not([aria-pressed="true"]) svg { fill: currentColor; }
 .vc-companion[data-heart-result="blocked"] .vc-effect { color: var(--muted); animation: vc-bonk .65s ease-out both; }
 @keyframes vc-bonk { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.8) translateY(-8px); opacity: .2; } }
 .vc-food-layer { position: fixed; inset: 0; z-index: 76; pointer-events: none; }
@@ -90,9 +90,12 @@ html[data-reduce-motion] .vc-companion[data-presence="parked"] .vc-pose, html[da
    Short landscape screens need one reachable scroll plane for these controls. */
 .vc-compact-home > .vc-home { max-height: calc(100dvh - 96px); overflow: auto; box-sizing: border-box; box-shadow: var(--elev-3); }
 .vc-compact-home:has(.vc-home-launcher) { z-index: 76; }
-/* Agenda's right rail owns records/studio. Its closed home launcher uses the
-   opposite margin so those native controls stay reachable on small screens. */
-.vc-compact-home[data-agenda]:has(.vc-home-launcher) { left: max(14px, env(safe-area-inset-left)); right: auto; width: max-content; }
+/* Viewer and studio measure their actual shared right-rail controls once per
+   topology/scroll event. Only the closed launcher follows those controls. */
+.vc-compact-home[data-agenda]:has(.vc-home-launcher) { left: auto; right: var(--vc-launcher-right, max(14px, env(safe-area-inset-right))); top: var(--vc-launcher-top, auto); bottom: auto; width: max-content; }
+[data-companion-launcher-space]::after { content: ""; flex: 0 0 44px; pointer-events: none; }
+.vc-compact-home[data-agenda]:has(.vc-home-launcher) { width: var(--m-agenda-rail-w, 92px); }
+.vc-compact-home[data-agenda] .vc-home-launcher { width: 100%; padding-inline: 6px; gap: 4px; }
 .vc-home-launcher { float: right; min-height: 44px; border-radius: var(--r-md); pointer-events: auto; font-size: var(--text-body); white-space: nowrap; }
 html[data-reduce-motion] .vc-contact, html[data-gfx="off"] .vc-contact { transition: none; }
 html[data-reduce-motion] .vc-food, html[data-reduce-motion] .vc-food > span, html[data-reduce-motion] .vc-dream i, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-effect, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-actor::after { animation: none; }
@@ -106,5 +109,7 @@ html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
    only direct pointer lifts. Display perch and calendar support stay separate. */
 .vc-companion { transform-origin: 50% 100%; }
 .vc-companion[data-overlay="quiet"] { z-index: 98; }
+.vc-companion[data-overlay="quiet"][data-home-window] { z-index: 75; }
+.vc-companion[data-home-window] .vc-actor { pointer-events: none; }
 .vc-companion[data-overlay-drag] .vc-actor { cursor: grabbing; }
 .vc-companion[data-overlay="quiet"] .vc-contact-shadow, .vc-companion[data-overlay="quiet"] .vc-effect { visibility: hidden; }

@@ -49,7 +49,7 @@ export function getPanelSectionPreferences(): PanelSectionPreferences {
 }
 
 /** The same marker is set before paint and after hydration. It affects only
- * collapsible sections; the studio's static heading/body always stays open. */
+ * collapsible sections on the viewer, studio and preview surfaces. */
 export function applyPanelSectionPreferences(): void {
   const target = browser();
   if (!target?.document?.documentElement) return;

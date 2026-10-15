@@ -12,8 +12,8 @@ const holders = new Set<string>();
 
 /** A small decorative companion can stay visible over the viewer's own
  * windows while other ambient owners retain their existing hard pause. */
-export function hasAmbientPauseOutside(key: string): boolean {
-  return [...holders].some(holder => holder !== key);
+export function hasAmbientPauseOutside(key: string, additional: readonly string[] = []): boolean {
+  return [...holders].some(holder => holder !== key && !additional.includes(holder));
 }
 
 function apply(): void {

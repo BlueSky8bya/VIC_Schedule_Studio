@@ -18,6 +18,25 @@ function expectClear(perch: CompanionOverlayPerch, size: number, view: { width: 
 }
 
 describe("companion ordinary-overlay perch", () => {
+  it("keeps a moving window's already small guest nearby without growing it again", () => {
+    const previous = { x: 390, y: 450, scale: 44 / 92 };
+    const moved = { ...dialog, left: 395 };
+    const next = placeCompanionOverlayPerch(previous, 92, viewport, [moved], { preferNearby: true });
+    expectClear(next, 92, viewport, [moved]);
+    expect(next.scale).toBe(previous.scale);
+    expect(Math.hypot(next.x - previous.x, next.y - previous.y)).toBeLessThan(25);
+    expect(placeCompanionOverlayPerch(next, 92, viewport, [moved], { preferNearby: true })).toEqual(next);
+  });
+
+  it("chooses a nearby smaller gap when the full-size alternative would fling across the window", () => {
+    const view = { width: 390, height: 844 }, rect = { left: 0, top: 0, right: 300, bottom: 700 };
+    const previous = { x: 328, y: 430, scale: 1 };
+    const full = placeCompanionOverlayPerch(previous, 92, view, [rect]);
+    const next = placeCompanionOverlayPerch(previous, 92, view, [rect], { preferNearby: true });
+    expectClear(next, 92, view, [rect]);
+    expect(Math.hypot(next.x - previous.x, next.y - previous.y)).toBeLessThan(Math.hypot(full.x - previous.x, full.y - previous.y));
+    expect(next.scale).toBeLessThan(1);
+  });
   it("preserves a clear world point and never mutates its inputs", () => {
     const point = Object.freeze({ x: 220, y: 380 });
     const rects = Object.freeze([Object.freeze({ ...dialog })]);

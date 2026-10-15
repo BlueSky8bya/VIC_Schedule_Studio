@@ -31,9 +31,9 @@ describe("held gravity viewport composition", () => {
   it("keeps every composed corner inside all four edges without reversing gravity or moving the grip", () => {
     const edges = [{ x: 4, y: 100 }, { x: 304, y: 100 }, { x: 150, y: 8 }, { x: 150, y: 196 }];
     let limited = 0;
-    for (const origin of edges) for (const facing of [-1, 1] as const) for (const sign of [-1, 1]) {
+    for (const origin of edges) for (const facing of [-1, 1] as const) for (const sign of [-1, 1]) for (const material of [pose, { ...pose, scaleX: .91, scaleY: 1.45, tilt: 30 }]) {
       const outer = boundCompanionHeldPose({ tilt: sign * 17, stretch: .08, active: true }, origin, grip, size, viewport);
-      const candidate = { ...pose, facing, tilt: sign * pose.tilt }, bounded = boundCompanionHangingPose(candidate, origin, grip, size, viewport, outer);
+      const candidate = { ...material, facing, tilt: sign * material.tilt }, bounded = boundCompanionHangingPose(candidate, origin, grip, size, viewport, outer);
       if (bounded.scaleY < candidate.scaleY) limited++;
       expect(bounded).toMatchObject({ row: candidate.row, column: candidate.column, facing, bob: 0 });
       expect(bounded.scaleY).toBeGreaterThanOrEqual(1); expect(bounded.scaleY).toBeLessThanOrEqual(candidate.scaleY);

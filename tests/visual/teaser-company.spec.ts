@@ -28,7 +28,7 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/visual-fixture/poster?premiere=40");
     const fans = page.locator(".pm-fan:visible");
-    await expect(fans).toHaveCount(width === 390 ? 3 : 6);
+    await expect(fans).toHaveCount(6);
     const first = fans.first(); const before = await first.getAttribute("data-frame");
     await expect.poll(() => first.getAttribute("data-frame")).not.toBe(before);
     await expect.poll(() => first.evaluate(el => Boolean(el.closest("[aria-hidden='true']")))).toBe(false);
@@ -229,7 +229,7 @@ test.describe("short touch landscape", () => {
     await page.goto("/visual-fixture/poster?premiere=40&count=3");
     const controls = page.getByRole("button", { name: "기대돼요", exact: true });
     const fans = page.locator(".pm-fan:visible");
-    await expect(fans).toHaveCount(3);
+    await expect(fans).toHaveCount(6);
     for (const fan of await fans.all()) {
       await expect(fan).toBeInViewport();
       const f = (await fan.boundingBox())!;

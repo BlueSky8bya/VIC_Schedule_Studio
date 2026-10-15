@@ -26,4 +26,13 @@ describe("companion premiere display travel", () => {
     expect(middle.x).toBeGreaterThan(from.x); expect(middle.x).toBeLessThan(to.x);
     expect(middle.scale).toBeGreaterThan(to.scale); expect(middle.scale).toBeLessThan(from.scale);
   });
+  it("takes off at its actual size, arcs visibly, then folds into the card without crossing the ceiling", () => {
+    expect(sampleCompanionPremiereTravel(from, to, .35, 92).scale).toBe(1);
+    const middle = sampleCompanionPremiereTravel(from, to, .5, 92);
+    expect((from.y + to.y) / 2 - middle.y).toBeGreaterThan(70);
+    for (let index = 0; index <= 120; index++) {
+      const point = sampleCompanionPremiereTravel({ x: 90, y: 110, scale: 1 }, { x: 160, y: 26, scale: .12 }, index / 120, 92);
+      expect(point.y - point.scale * 92).toBeGreaterThanOrEqual(4 - 1e-8);
+    }
+  });
 });

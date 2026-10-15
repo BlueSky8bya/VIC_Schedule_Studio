@@ -12,7 +12,6 @@ import {
   Pin,
   Play,
   Search,
-  Settings,
   Sprout,
   X
 } from "lucide-react";
@@ -42,6 +41,7 @@ import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
+import { SettingsButton } from "@/components/shared/settings-button";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
@@ -1575,11 +1575,7 @@ export function PublicPoster({
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = true;
   const settingsButton = interactive ? (
-    <button aria-label="설정" className="viewer-settings-open" data-act="open-settings"
-      onClick={() => { hapticTick(); setSheet("settings"); }}
-      title="설정 — 동작 · 화면 · 배경" type="button">
-      <Settings aria-hidden="true" size={17} strokeWidth={2.2} />
-    </button>
+    <SettingsButton open={sheet === "settings"} onClick={() => { hapticTick(); setSheet("settings"); }} />
   ) : null;
   // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 CSS :hover만으로는 한 조각만 밝아져
   // 마디가 다시 보인다. 같은 일정의 모든 조각을 DOM 클래스 토글로 함께 밝힌다(lib/ui/band-hover).

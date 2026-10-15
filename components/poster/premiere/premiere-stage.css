@@ -145,11 +145,11 @@
 .pm-folds i { position: absolute; width: 78%; height: 160%; top: -42%; left: -56%; border: 1px solid color-mix(in srgb, var(--pm-season) 24%, transparent); border-radius: 48%; background: linear-gradient(110deg, color-mix(in srgb, var(--pm-violet) 12%, transparent), transparent 60%); transform: translate3d(calc(var(--pm-gather, 0) * 52px), var(--pm-fold-drift, 0px), 0) rotate(-24deg); transition: transform .12s linear; }
 .pm-folds i:nth-child(2) { left: auto; right: -56%; top: -18%; transform: translate3d(calc(var(--pm-gather, 0) * -52px), calc(var(--pm-fold-drift, 0px) * -1), 0) rotate(24deg); }
 .pm-cast-row { position: relative; z-index: 2; height: clamp(120px, 18dvh, 180px); margin-top: 24px; pointer-events: none; }
-.pm-company { position: absolute; inset: 0; opacity: calc(.94 - var(--pm-company-retire, 0) * .7); transition: opacity .2s linear; }
+.pm-company { position: absolute; inset: 0; opacity: calc((.94 - var(--pm-company-retire, 0) * .7) * var(--pm-audience-opacity, 1)); transition: opacity .2s linear; }
 .pm-audience-line { position: absolute; bottom: 6px; left: 3%; width: 94%; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--teaser) 18%, transparent), transparent); opacity: calc(1 - var(--pm-company-retire, 0)); }
 .pm-stage .pm-fan { position: absolute; left: var(--fan-x); bottom: 0; width: clamp(72px, 10vw, 132px); aspect-ratio: 1; min-height: 44px; padding: 0; border: 0; border-radius: var(--r-lg); background: transparent; box-shadow: none; transform: translate3d(calc(-50% + var(--fan-walk-x, 0px)), var(--fan-walk-y, 0px), 0); transition: transform .1s linear; cursor: pointer; }
 .pm-stage .pm-fan:active { transform: translate3d(calc(-50% + var(--fan-walk-x, 0px)), var(--fan-walk-y, 0px), 0); }
-.pm-fan-art { position: relative; overflow: hidden; display: block; width: 100%; aspect-ratio: 1; transform: translateY(var(--fan-hop, 0px)) scale(calc(var(--fan-size) * var(--fan-depth, 1))); transform-origin: center bottom; transition: transform .1s linear; }
+.pm-fan-art { position: relative; overflow: hidden; display: block; width: 100%; aspect-ratio: 1; transform: translateY(var(--fan-hop, 0px)) scale(var(--fan-depth, 1)); transform-origin: center bottom; transition: transform .1s linear; }
 /* Slide one cached atlas beneath its cell clip; frame changes move the image
    with transform instead of repainting six animated background positions. */
 .pm-fan-art::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 400%; height: 400%; background: url('/premiere/victamin-audience.webp') 0 0 / 100% 100% no-repeat; transform: translate(calc(var(--fan-frame-x, 0%) * -.75), calc(var(--fan-frame-y, 0%) * -.75)); }
@@ -267,14 +267,24 @@ html:is([data-gfx="soft"], [data-gfx="off"]) [data-pm-region-active] { transform
   .pm-screen { padding: 22px 22px 28px; max-height: calc(100dvh - 100px - env(safe-area-inset-bottom, 0px)); }
   .pm-heading { font-size: 12px; gap: 10px; }
   .pm-composition { min-height: min(48dvh, 480px); gap: 24px; }
-  .pm-count { padding-top: 16px; }
-  /* Agenda has less side space: three spectators in its own short front row. */
-  .pm-cast-row { height: 116px; margin-top: 16px; }
-  .pm-stage .pm-fan { width: 68px; left: calc(16% + var(--fan-index) * 34%); }
-  .pm-fan:nth-of-type(n+4) { display: none; }
+  /* Only pending screens allocate a finite clock/controls/cast stack. Reading
+     retains its one complete content scroller and every wrapping tag. */
+  .pm-screen:not(.is-released) { display: flex; flex-direction: column; overflow: clip; }
+  .pm-screen:not(.is-released) .pm-heading { flex: none; }
+  .pm-screen:not(.is-released) .pm-composition { min-height: 0; flex: 1 1 auto; gap: 16px; }
+  .pm-screen:not(.is-released) .pm-count { flex: none; }
+  .pm-screen:not(.is-released) .pm-films { flex: 0 1 auto; min-height: 44px; overflow: auto; padding-block: 2px; }
+  .pm-count { padding-top: 12px; }
+  .pm-cast-row { flex: none; height: 76px; margin-top: 12px; }
+  .pm-stage .pm-fan { width: clamp(44px, 12vw, 60px); left: calc(8% + var(--fan-index) * 16.8%); }
   .pm-folds i { width: 120%; left: -104%; }
   .pm-folds i:nth-child(2) { right: -104%; }
-  .pm-count .dt-count-ringbox { width: clamp(220px, 34dvh, 320px); height: clamp(220px, 34dvh, 320px); }
+  .pm-count .dt-count-ringbox { width: clamp(160px, 25dvh, 220px); height: clamp(160px, 25dvh, 220px); }
+  .pm-count .dt-count-label { margin-top: 12px; }
+  .pm-stage .pm-hope { min-width: 0; padding-inline: 12px; }
+  .pm-screen:not(.is-released) .pm-films.pm-n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pm-n2 .pm-slot-label { flex-wrap: wrap; justify-content: center; gap: 2px 6px; }
+  .pm-n2 .pm-masked { gap: 8px; }
   .pm-count .dt-count-core { font-size: clamp(104px, 28vw, 154px); }
   .pm-films { grid-template-columns: 1fr; gap: 18px; }
   .pm-story-meta { grid-template-areas: "date action" "tags tags"; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; margin-bottom: 14px; }

@@ -2,6 +2,16 @@
 
 Updated: 2026-09-09. Read only sections affected by the task. Shared security, KST and authorization rules live in [AGENTS](../../AGENTS.md). This file preserves standing UI constraints formerly mixed with history in CLAUDE; historical explanations remain in git and dated reports.
 
+## Shared companion follow-up (2026-10-16)
+
+모바일 빅타민 집 런처는 양쪽 화면의92px 오른쪽 레일에서 기록/편집실 버튼 아래에 놓는다. 같은44px 컨트롤과 기존8px flex 간격을 레일에 예약하고 실제 표시 버튼을 측정한다. 폰트·요소 크기·관련 진입 애니메이션 완료도 유한 재측정하되 상시 루프는 추가하지 않는다. 공통 설정 톱니는 tap 때 자신을 focus하고, 편집실은 trap이 초기 focus를 옮기기 전에 opener를 기록해 X·뒤로가기 뒤 원래 버튼으로 복원한다.
+
+[PLAN-062](../agent/plans/PLAN-20261016-062-companion-studio-and-contact.md) extends the same optional/default-OFF92px companion to ordinary studio screens. Use the same preferences, renderer, local care, house, disclosure persistence and settings gear/window. Studio adapters opt in only rendered public ordinary schedules; never invoke edit/save/delete/vote/navigation controls. Studio cards open editors, so hide-and-find remains unavailable there until a real shared public detail exists; this structural difference is explicit beside the adapter. Native editor gestures and input always win.
+
+This replaces061's frozen prelude: normal activity continues before the actual73→69s card jump, and a resident wakes and hops out before its house retires. Focused performance still stops ordinary brain/food/pranks; other modal/hidden/showcase owners retain priority. It also replaces the general home-resident overlay relocation: a resident stays nested behind the sofa's front/side carrier and ordinary window backdrop. Found detail guests retain their separate direct interaction. Sofa safe centres contain the whole opaque body; deliberate rim drops settle finitely to the actual seat or room floor, while food remains floor-only. Moving popovers prefer a nearby current-or-smaller display perch, preserving world anchors.
+
+Captured physical grip controls material response: ears lean/stretch with off-centre gravity, torso stays broad, and orthogonal finite springs lag real horizontal/vertical input. Preserve the actual pivot, mirrored composition, full-pose viewport clamp and release mixer; reduced/off stay neutral. One shared clock samples equal-size audience members from a stable random opening seed with individual gestures/pauses/turns. Turn before10.5s, finish seating before8s, and fade the watching backs5→2s to zero by1s. Pending mobile1/2/3/5 layouts reserve a visible cast bay; mixed/released reading keeps all existing public content and its one scroller.
+
 ## Materials and meaning
 
 - UI-01: (금생수·오행) Work controls use the existing metal tokens; containers use water/glass tokens. Keep a metal hairline edge, quiet top sheen, slate ink, small work-control radii and larger container radii. Water/glass faces may sit inside metal frames, including 저장. Reason: related surfaces must read as one product. Evidence: [ADR-0016](../agent/decisions/ADR-0016-metal-water-design-language.md), `app/metal-water.css`; current translucent fills use `--glass-*`, not retired `--gs-water-*` names.

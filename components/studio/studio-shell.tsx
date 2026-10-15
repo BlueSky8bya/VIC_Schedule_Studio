@@ -209,6 +209,7 @@ import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 
 // 모달 콘텐츠는 '열 때만' 로드해 편집실 첫 로딩을 가볍게(특히 인사이트 차트는 1600줄+). 전부 클라
 // 전용 모달(사용자 동작으로 열림)이라 ssr:false. 닫혀 있는 동안엔 번들·실행에 들어가지 않는다.
+const ViewerCompanion = dynamic(() => import("@/components/poster/viewer-companion/viewer-companion"), { ssr: false });
 const InsightsDashboard = dynamic(
   () => import("@/components/developer/insights-dashboard").then((m) => m.InsightsDashboard),
   { ssr: false }
@@ -959,8 +960,6 @@ export function StudioShell({
     summary: ROLE_DESC[effectiveRole].summary,
     can: ROLE_DESC[effectiveRole].can
   };
-  // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
-  const [roleHelpOpen, setRoleHelpOpen] = useState(false);
   // 설정 스위치 상태(2026-09-19) — 시청자 화면도 같은 설정 창을 열므로 상태 로직은 공용 훅 한 벌
   // (components/shared/use-settings-prefs.ts, G-18). 편집실만의 몫은 자동 판정 알림(토스트)뿐.
   const onGfxAuto = useCallback((mode: GfxMode) => {
@@ -1026,7 +1025,9 @@ export function StudioShell({
   // 배경 감상 모드는 공용(components/shared/ambient/showcase.tsx: enterShowcase/<ShowcaseExit/>/<ShowcaseButton/>) —
   // 진입은 아바타 자리의 큰 버튼 + 설정 줄, 나가기는 Esc/상단 알약(body 포털). 무거운 모달(태그·인사이트·이용 기록)이
   // 떠 있는 동안은 배경을 일시정지한다(blur 백드롭이 매 프레임 다시 흐려지는 비용 — lib/ui/ambient-pause.ts).
-  useAmbientPause(modal !== null && modal !== "settings", "studio-modal");
+  // Ordinary studio windows share the viewer pause owner. Seasonal canvases
+  // pause while the companion keeps its shared quiet window/home policy.
+  useAmbientPause(!viewerMode && (modal !== null || editorVisible || mobileEditId !== null || searchOpen), "poster-window");
   const ambientSeason = pickAmbient(view.month, ambientForce ?? devSeason).season;
   // 포스터 테마(2026-09-03, 물빛 테마와 함께 입구 복원) — 소유자만, 서버(updatePosterThemeAction)도
   // owner 검사. 낙관적으로 먼저 바꿔 보이고(미리보기 즉시), 실패면 되돌린다. 성공 후 router.refresh로
@@ -1089,7 +1090,6 @@ export function StudioShell({
   }
   // 역할 미리보기 적용/해제. 시청자는 기존 viewerMode 경로 재사용, 나머지는 previewRole.
   function applyPreview(role: MembershipRole | "") {
-    setRoleHelpOpen(false);
     if (role === "" || role === effectiveRole) {
       setPreviewRole(null);
       setViewerMode(false);
@@ -1172,29 +1172,6 @@ export function StudioShell({
     setPasscodeModal("change");
   }
 
-  // 역할 도움말 팝오버: 배지 바깥을 누르거나 Esc로 닫는다.
-  useEffect(() => {
-    if (!roleHelpOpen) {
-      return;
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (!(event.target as HTMLElement | null)?.closest(".actor-badge-wrap")) {
-        setRoleHelpOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setRoleHelpOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [roleHelpOpen]);
-
   // 미리보기 드롭다운: 바깥을 누르거나 Esc로 닫는다.
   useEffect(() => {
     if (!previewMenuOpen) {
@@ -1218,8 +1195,7 @@ export function StudioShell({
     };
   }, [previewMenuOpen]);
 
-  // 설정 목록(2026-09-04) — 스위치 4종 + 포스터 테마 + 멤버 관리 입구. 웹은 도구 카드의 설정(톱니) 팝오버,
-  // 모바일은 역할 배지 팝오버 아래에 같은 목록(도구 카드가 없어서). 한 컴포넌트, 두 자리.
+  // 웹 도구 카드와 모바일 공통 톱니 버튼이 같은 설정 모달을 연다.
   function renderSettingsList() {
     return (
       <StudioSettingsList
@@ -1271,15 +1247,13 @@ export function StudioShell({
     );
   }
 
-  // A3: 역할 배지 + "?" 도움말 팝오버. 이메일은 배지에 인라인으로 두지 않고(폭 절약·깔끔)
-  // 팝오버 안 역할 라벨 아래에 보여준다.
-  // P2-ARCH-1 2단계: 역할 배지+권한 팝오버는 RoleBadge 컴포넌트로 분리(동작 0 변화).
-  // withSettings: 모바일(도구 카드 없음)만 true — 웹의 설정은 서쪽 도구 카드 톱니(2026-09-04).
+  // One role label; its mobile gear opens the shared settings window.
+  // Mobile and the west tool card both open the same modal/history path.
   function renderRoleBadge(withSettings: boolean) {
     return (
       <RoleBadge
-        onToggleOpen={() => setRoleHelpOpen((value) => !value)}
-        open={roleHelpOpen}
+        onOpenSettings={() => { hapticTick(); setModal("settings"); }}
+        settingsOpen={modal === "settings"}
         // 웹은 라벨만, 모바일은 톱니 버튼에서 같은 설정 목록을 연다.
         quiet={!withSettings}
         role={actor.role}
@@ -1287,7 +1261,6 @@ export function StudioShell({
         // 저장이 한 번이라도 끝났으면 배지 자리에 그 시각을 쓴다(웹 조용한 배지에만 — 모바일 배지는
         // 설정 목록을 여는 버튼이라 이름이 그대로여야 한다).
         savedAt={withSettings ? null : lastSavedKst}
-        settings={withSettings ? renderSettingsList() : undefined}
       />
     );
   }
@@ -1893,9 +1866,8 @@ export function StudioShell({
     setTagsDiscardAsk(false);
     if (modal !== "tags") tagsDirtyRef.current = false;
   }, [modal]);
-  // P1-DIALOG-1: 각 모달 카드에 Tab 포커스 가두기(순환)+초기 포커스. Esc·복원은 위 B2 효과.
-  const mainModalTrapRef = useFocusTrap<HTMLDivElement>(modal !== null);
-  const passcodeTrapRef = useFocusTrap<HTMLDivElement>(passcodeModal !== null);
+  // Capture the real opener before the trap's effect moves focus into the
+  // dialog. Recording it afterwards stores a soon-to-be-unmounted close button.
   const modalOpenerRef = useRef<HTMLElement | null>(null);
   const prevModalRef = useRef<typeof modal>(null);
   useEffect(() => {
@@ -1908,6 +1880,9 @@ export function StudioShell({
       modalOpenerRef.current = null;
     }
   }, [modal]);
+  // P1-DIALOG-1: 각 모달 카드에 Tab 포커스 가두기(순환)+초기 포커스. Esc·복원은 위 B2 효과.
+  const mainModalTrapRef = useFocusTrap<HTMLDivElement>(modal !== null);
+  const passcodeTrapRef = useFocusTrap<HTMLDivElement>(passcodeModal !== null);
 
   // (1) 오버레이가 하나라도 열려 있으면 배경 스크롤·당겨서 새로고침을 잠근다.
   useEffect(() => {
@@ -2618,6 +2593,8 @@ export function StudioShell({
   const workspaceRef = useRef<HTMLElement | null>(null);
   const editorPanelRef = useRef<HTMLElement | null>(null);
   const shellRef = useRef<HTMLElement | null>(null);
+  const [companionHomeHost, setCompanionHomeHost] = useState<HTMLElement | null>(null);
+  const companionHomeHostRef = useCallback((node: HTMLDivElement | null) => setCompanionHomeHost(node), []);
   // 셸 요소를 **상태**로도 쥔다(콜백 ref) — 시청자 미리보기는 셸을 통째로 언마운트했다 다시 그리므로, 단계 측정 effect가
   // 새 요소에 다시 붙어야 한다(2026-09-04 사용자: "미리보기 갔다 오면 창이 넓은데도 아이콘만 남는다").
   const [shellEl, setShellEl] = useState<HTMLElement | null>(null);
@@ -6187,9 +6164,9 @@ export function StudioShell({
           >
             {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
             <div className="agenda-rail">
-              {/* 역할 배지(시각 정보)는 색상 필터 위에. 모바일은 도구 카드가 없어 설정 목록도 이 팝오버에. */}
+              {/* The shared settings gear opens the same modal/history path above the mobile filter. */}
               {renderRoleBadge(true)}
-            <PanelSection as="aside" title="태그 필터" sectionKey="tag-filter" className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
+            <PanelSection as="aside" title="태그 필터" sectionKey="tag-filter" collapsible className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
               {(() => {
                 const tops = legendTags.filter((t) => (t.parentId ?? null) === null);
                 const legendBtn = (tag: (typeof tops)[number]) => {
@@ -6469,6 +6446,8 @@ export function StudioShell({
                       return canEdit ? (
                         <button
                           className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(canonId(event.id)) ? " deleting" : ""}`}
+                          data-eventid={event.id}
+                          data-companion-event={event.visibilityScope === "public" && !event.isSupport && !event.teaser ? "ordinary" : undefined}
                           key={event.id}
                           onClick={(e) => openMobileEdit(event, e.currentTarget)}
                           type="button"
@@ -6476,7 +6455,7 @@ export function StudioShell({
                           {inner}
                         </button>
                       ) : (
-                        <div className={`agenda-event${dimCls}`} key={event.id}>
+                        <div className={`agenda-event${dimCls}`} key={event.id} data-eventid={event.id} data-companion-event={event.visibilityScope === "public" && !event.isSupport && !event.teaser ? "ordinary" : undefined}>
                           {inner}
                         </div>
                       );
@@ -7130,7 +7109,7 @@ export function StudioShell({
 
   // 색상 필터 패널 — 평소엔 좌측 그리드 칸, 아바타 scene에선 아바타 위 rail에 넣어 재사용.
   const studioFilterPanel = (
-    <PanelSection title="태그 필터" sectionKey="tag-filter">
+    <PanelSection title="태그 필터" sectionKey="tag-filter" collapsible>
       <TagLegendEditor
         canEdit={false}
         filterIds={tagFilters}
@@ -7256,8 +7235,14 @@ export function StudioShell({
         avatarReady ? "" : " avatar-no-anim"
       }`}
       data-chrome={chromeTier || undefined}
+      data-companion-surface="studio"
       ref={setShellRef}
     >
+      {companionPrefs.enabled ? <ViewerCompanion root={shellRef} preferences={companionPrefs}
+        blocked={Boolean(monthPick || passcodeModal || dragEventId || spanDrag || navMsg)}
+        overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
+        homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
+        agenda={isNarrow} monthKey={`${view.year}-${view.month}`} reduced={reduceMotion} /> : null}
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
           flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
       {/* 떠서 덮기(좁은 화면, panel-overlay) — 패널 뒤 옅은 scrim. 밖을 누르면 닫힌다(Esc도, 훅 안). */}
@@ -7279,7 +7264,8 @@ export function StudioShell({
                 설정의 셀렉트·배경 효과 잠금과 같은 경로(changeAmbientMode)를 타서 설정 안 상태와 한 몸.
                 점선 박스 **밖·위**에 둔다 — 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자 사진).
                 감상 진입은 개발자만 — 세계가 다 만들어지기 전엔 관리자에게 배경으로만 보인다. */}
-            <ViewerAmbientControl className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} showcase={effectiveRole === "developer"} />
+            <ViewerAmbientControl collapsible className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} showcase={effectiveRole === "developer"} />
+            {companionPrefs.enabled ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
             {/* 아바타 빈 자리 — 관리자·개발자만(시청자 역할 미리보기엔 없다). */}
             {avatarRoleOk ? (
               <div className="avatar-dock-inner">
@@ -7988,6 +7974,7 @@ export function StudioShell({
                           data-chain={chainKeys.get(event.id)}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-eventid={event.id}
+                          data-companion-event={event.visibilityScope === "public" && !event.isSupport && !event.teaser ? "ordinary" : undefined}
                           // A1: 평평한(이어진) 변 — 'L'/'R'. 이 값이 바뀌면 seam 연출(연결/끊김).
                           data-seam={`${span.isMulti && !span.roundLeft ? "L" : ""}${span.isMulti && !span.roundRight ? "R" : ""}`}
                           data-mixed={mixed ? "" : undefined}
@@ -8745,6 +8732,7 @@ export function StudioShell({
           <div
             className={`modal-card modal-card-${modal} ${modal === "tags" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
             aria-modal="true"
+            aria-label={modal === "settings" ? "설정" : undefined}
             role="dialog"
             ref={mainModalTrapRef}
           >

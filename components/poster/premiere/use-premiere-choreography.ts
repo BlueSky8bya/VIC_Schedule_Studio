@@ -131,7 +131,7 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       const agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
       seats = [...(stage.current?.querySelectorAll<HTMLElement>(".pm-fan") ?? [])].map(fan => {
         const index = Number(fan.style.getPropertyValue("--fan-index"));
-        const destination = agenda ? 38 + index * 12 : 36 + index * 6;
+        const destination = agenda ? 15 + index * 14 : 36 + index * 6;
         return { fan, dx: (fan.parentElement?.clientWidth ?? 0) * destination / 100 - fan.offsetLeft };
       });
       const panel = page.querySelector<HTMLElement>(".poster-panel-ctl");
@@ -192,6 +192,7 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       // before ten; low-contrast audience travel ends before the final eight.
       for (const [key, value] of Object.entries({ "--pm-digit-x": `${motion.x * drift}px`, "--pm-digit-y": `${motion.y * drift}px`, "--pm-digit-tilt": `${motion.tilt * drift}deg`, "--pm-final": String(finale), "--pm-gather": String(passage(seconds, 68, 10)), "--pm-fold-drift": `${Math.sin(Math.max(0, 68 - seconds) * .48) * 5 * drift * (1 - passage(seconds, 12, 10))}px` })) stage.current?.style.setProperty(key, value);
       stage.current?.style.setProperty("--pm-company-retire", String(retiring));
+      stage.current?.style.setProperty("--pm-audience-opacity", String(company.audienceOpacity));
       stage.current?.style.setProperty("--pm-settle", String(company.settle));
       for (const fan of stage.current?.querySelectorAll<HTMLElement>(".pm-fan") ?? []) {
         const seed = Number(fan.style.getPropertyValue("--fan-seed"));
@@ -207,7 +208,7 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
         }
       }
       for (const { fan, dx } of seats) {
-        const seat = premiereAudienceSeat(seconds * 1000, Number(fan.style.getPropertyValue("--fan-index")), grade === "lite");
+        const seat = premiereAudienceSeat(seconds * 1000, Number(fan.style.getPropertyValue("--fan-index")), grade === "lite", Number(fan.style.getPropertyValue("--fan-seed")));
         const move = grade !== "off" && grade !== "soft";
         fan.style.setProperty("--fan-walk-x", `${move ? dx * seat.progress : 0}px`);
         fan.style.setProperty("--fan-walk-y", `${move ? seat.y : 0}px`);

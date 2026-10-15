@@ -17,6 +17,7 @@ export function placeCompanionOverlayPerch(
   size: number,
   viewport: CompanionOverlayViewport,
   exclusions: readonly CompanionOverlayRect[],
+  options: { preferNearby?: boolean } = {},
 ): CompanionOverlayPerch {
   const width = Math.max(1, positive(viewport.width, 1));
   const height = Math.max(1, positive(viewport.height, 1));
@@ -53,7 +54,9 @@ export function placeCompanionOverlayPerch(
     : sizes[0];
   if (inside(origin, previous) && !collision(origin, previous)) return result(origin, previous);
 
-  for (const cell of sizes) {
+  let nearby: CompanionOverlayPerch | undefined, nearbyCost = Infinity;
+  const candidates = options.preferNearby ? [...new Set(sizes.map(cell => Math.min(cell, previous)))] : sizes;
+  for (const cell of candidates) {
     const b = bounds(cell);
     const xs = [clamp(origin.x, b.left, b.right), b.left, b.right];
     const ys = [clamp(origin.y, b.top, b.bottom), b.top, b.bottom];
@@ -70,8 +73,15 @@ export function placeCompanionOverlayPerch(
       if (next < distance) { nearest = point; distance = next; }
     }
     // Prefer the full-size pet; shrink only when that tier has no clear space.
-    if (nearest) return result(nearest, cell);
+    if (nearest) {
+      if (!options.preferNearby) return result(nearest, cell);
+      // Moving windows should push a sleeping companion a little, instead
+      // of promoting it to a distant full-size gap on each drag update.
+      const cost = distance + (previous - cell) * 1.25;
+      if (cost < nearbyCost) { nearby = result(nearest, cell); nearbyCost = cost; }
+    }
   }
+  if (nearby) return nearby;
 
   // No body-sized gap exists (e.g. a fullscreen dialog). Stay visibly bounded
   // in a corner; the caller disables all pet hit targets while overlaying UI.

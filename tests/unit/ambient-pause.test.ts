@@ -23,6 +23,18 @@ afterEach(() => {
 });
 
 describe("ambient pause ownership", () => {
+  it("allows exactly the local window and prelude presentation while retaining every unrelated pause", () => {
+    holdAmbient(own); holdAmbient("test-vod");
+    expect(hasAmbientPauseOutside(own, ["test-vod"])).toBe(false);
+    expect(attributes.get("data-ambient-pause")).toBe("1");
+    holdAmbient("test-showcase");
+    expect(hasAmbientPauseOutside(own, ["test-vod"])).toBe(true);
+    releaseAmbient("test-showcase");
+    const writes = root.setAttribute.mock.calls.length;
+    expect(hasAmbientPauseOutside(own, ["test-vod"])).toBe(false);
+    expect(root.setAttribute).toHaveBeenCalledTimes(writes);
+    expect(hasAmbientPauseOutside(own)).toBe(true);
+  });
   it("excludes the viewer window's own holder without unpausing the ambient background", () => {
     expect(hasAmbientPauseOutside(own)).toBe(false);
     holdAmbient(own);
