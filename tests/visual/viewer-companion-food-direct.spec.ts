@@ -21,7 +21,7 @@ test.beforeEach(async ({ page, context }) => {
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
 async function centre(item: Locator) { const rect = (await item.boundingBox())!; return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }; }
-async function setup(page: Page, hunger = .1) {
+async function setup(page: Page, hunger = .1, open = true) {
   await page.addInitScript(({ key, epoch, preferences, care }) => {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.reduceMotion", "off");
     localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.sound", "off");
@@ -29,9 +29,10 @@ async function setup(page: Page, hunger = .1) {
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, sleep: false, heartPrank: false, ambientPrank: false, feeding: true }, care: { ...DEFAULT_COMPANION_CARE, hunger } });
   await page.goto("/visual-fixture/poster");
-  await expect(pet(page)).toBeVisible(); await page.evaluate(() => document.fonts.ready);
-  await openCompanionHome(page);
-  await bin(page).evaluate(node => {
+  if (open) await expect(pet(page)).toBeVisible(); else await expect(pet(page)).toHaveCount(1);
+  await page.evaluate(() => document.fonts.ready);
+  if (open) await openCompanionHome(page);
+  if (open) await bin(page).evaluate(node => {
     node.setAttribute("data-test-clicks", "0");
     node.addEventListener("click", () => node.setAttribute("data-test-clicks", String(Number(node.getAttribute("data-test-clicks")) + 1)));
   });
@@ -54,6 +55,136 @@ async function cancelPointer(item: Locator, different = false) {
   await item.evaluate((node, different) => node.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId: Number(node.getAttribute("data-test-pointer")) + (different ? 99 : 0), pointerType: "mouse" })), different);
 }
 
+const TEXT_SURFACES = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
+const foodPoint = (item: Locator) => item.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; });
+async function allowDocumentScroll(page: Page) {
+  await page.evaluate(async () => {
+    await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished));
+    // The PC fixture normally fits one screen. Add inert flow, leaving the
+    // real calendar DOM and its transforms/geometry untouched.
+    document.documentElement.style.overflowY = "auto"; document.documentElement.style.scrollBehavior = "auto"; document.body.style.overflowY = "visible";
+    const spacer = document.createElement("div"); spacer.setAttribute("aria-hidden", "true"); spacer.style.cssText = "height:1400px;pointer-events:none"; document.body.append(spacer);
+  });
+}
+async function identifyInitialSupport(page: Page) {
+  if (!(await pet(page).getAttribute("data-platform"))?.match(/^(?:card|date)-/)) {
+    // Dense phone rows can correctly have no safe initial character landing.
+    // Give one existing card inert flow space. This food-only setup uses the
+    // real source line directly, without a fabricated companion pose.
+    await page.locator(".agenda-title-text").first().evaluate(node => {
+      const day = node.closest<HTMLElement>(".agenda-day")!; day.style.marginTop = "100px";
+    });
+    await page.waitForTimeout(180);
+    return page.locator(".agenda-title-text").first().evaluate(node => {
+      const range = document.createRange(); range.selectNodeContents(node); const line = range.getClientRects()[0]; range.detach();
+      node.setAttribute("data-test-food-anchor", ""); const rect = node.getBoundingClientRect();
+      return { x: line.left + line.width / 2 - rect.left, y: line.top - 3 - rect.top, error: 0 };
+    });
+  }
+  await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-/);
+  const found = await page.evaluate(selector => {
+    const pet = document.querySelector(".vc-companion")!.getBoundingClientRect(), x = pet.left + pet.width / 2;
+    const candidates: { node: HTMLElement; error: number }[] = [];
+    for (const node of document.querySelectorAll<HTMLElement>(selector)) {
+      const range = document.createRange(); range.selectNodeContents(node);
+      for (const line of range.getClientRects()) if (x >= line.left - .5 && x <= line.right + .5 && line.width > .5 && line.height > .5) candidates.push({ node, error: Math.abs(pet.bottom - line.top + 3) });
+      range.detach();
+    }
+    const closest = candidates.sort((a, b) => a.error - b.error)[0];
+    if (!closest) return null;
+    closest.node.setAttribute("data-test-food-anchor", ""); const rect = closest.node.getBoundingClientRect();
+    return { x: x - rect.left, y: pet.bottom - rect.top, error: closest.error };
+  }, TEXT_SURFACES);
+  expect(found).not.toBeNull(); expect(found!.error).toBeLessThan(2); return found!;
+}
+
+for (const width of [1440, 390]) {
+  test(`food keeps its actual text support offscreen and returns at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page, .1, false);
+    await allowDocumentScroll(page); const offset = await identifyInitialSupport(page), anchor = page.locator("[data-test-food-anchor]");
+    const item = await spawn(page);
+    // Opening/closing the compact house while carrying food is a real control
+    // action, not an accidental placement click through the disclosure.
+    const close = page.getByRole("button", { name: "빅타민 집 닫기", exact: true });
+    if (await close.isVisible()) { await close.click(); await expect(item).toHaveAttribute("data-selected", ""); }
+    await page.waitForTimeout(180); // Full geometry delivery after home topology.
+    const target = await anchor.evaluate((node, offset) => { const rect = node.getBoundingClientRect(); return { x: rect.left + offset.x, y: rect.top + offset.y }; }, offset);
+    await page.mouse.click(target.x, target.y); await expect(item).not.toHaveAttribute("data-selected");
+    const original = await foodPoint(item);
+    let actualOffset = await anchor.evaluate((node, point) => { const rect = node.getBoundingClientRect(); return { x: point.x - rect.left, y: point.y - rect.top }; }, original);
+    expect(Math.abs(original.y - target.y)).toBeLessThan(3);
+    const samples = await page.evaluate(({ offset }) => new Promise<{ error: number; scroll: number }[]>(resolve => {
+      const food = document.querySelector<HTMLElement>(".vc-food")!, source = document.querySelector("[data-test-food-anchor]")!, startY = scrollY;
+      const result: { error: number; scroll: number }[] = []; let began = 0;
+      const frame = (now: number) => {
+        began ||= now; const matrix = new DOMMatrixReadOnly(getComputedStyle(food).transform), rect = source.getBoundingClientRect();
+        result.push({ error: Math.hypot(matrix.m41 - rect.left - offset.x, matrix.m42 - rect.top - offset.y), scroll: scrollY - startY });
+        if (now - began > 800) { resolve(result); return; }
+        window.scrollTo({ top: startY + 96 * Math.min((now - began) / 600, 1), behavior: "instant" }); requestAnimationFrame(frame);
+      }; requestAnimationFrame(frame);
+    }), { offset: actualOffset });
+    expect(samples.length).toBeGreaterThan(20); expect(samples.at(-1)!.scroll).toBeGreaterThan(90);
+    const sorted = samples.map(sample => sample.error).sort((a, b) => a - b);
+    expect(sorted[Math.floor(sorted.length * .95)]).toBeLessThan(5); expect(sorted.at(-1)).toBeLessThan(9);
+    await page.evaluate(() => window.scrollTo({ top: 1100, behavior: "instant" }));
+    await expect(item).toHaveJSProperty("hidden", true); await expect(foods(page)).toHaveCount(1);
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await expect(item).toHaveJSProperty("hidden", false);
+    await expect.poll(async () => { const point = await foodPoint(item); return Math.hypot(point.x - original.x, point.y - original.y); }).toBeLessThan(2);
+    await expect(item).toBeInViewport();
+    if (width >= 1040) {
+      // Deliberately share this exact source with the pet. Its renderer
+      // follows and mutates its own platform copy during scroll; food must
+      // retain an independent baseline for the following native release.
+      const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
+      await expect(actor).toBeVisible(); await actor.focus(); await actor.press("p"); await page.mouse.click(original.x, original.y);
+      await expect(pet(page)).not.toHaveAttribute("data-state", "jump"); await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-/);
+    }
+    // Regrab the restored real button, scroll while it is held, then release
+    // before depending on a new full scan. Binding must apply the DOM delta
+    // once; later deliveries cannot drag the food a second time.
+    const from = await centre(item); await page.mouse.move(from.x, from.y); await page.mouse.down();
+    await page.mouse.move(from.x, from.y - 8, { steps: 3 });
+    await page.evaluate(() => { window.scrollTo({ top: 40, behavior: "instant" }); });
+    const release = await anchor.evaluate((node, offset) => { const rect = node.getBoundingClientRect(); return { x: rect.left + offset.x, y: rect.top + offset.y - 16 }; }, actualOffset);
+    await page.mouse.move(release.x, release.y, { steps: 2 });
+    await page.mouse.up(); await expect(item).not.toHaveAttribute("data-selected");
+    await expect.poll(async () => {
+      const point = await foodPoint(item), rect = (await anchor.boundingBox())!; return Math.abs(point.y - rect.y - actualOffset.y);
+    }).toBeLessThan(3);
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" })); await page.waitForTimeout(180);
+    const regrabbed = await foodPoint(item);
+    actualOffset = await anchor.evaluate((node, point) => { const rect = node.getBoundingClientRect(); return { x: point.x - rect.left, y: point.y - rect.top }; }, regrabbed);
+    await page.screenshot({ path: `.scratch-pw/companion-food-scroll-return-${width}.png` });
+    // A real reflow moves that same DOM source. It does not select a different
+    // visible date merely because its safe-span ID was absent while away.
+    await anchor.evaluate(node => { const spacer = document.createElement("div"); spacer.dataset.testFoodReflow = ""; spacer.style.height = "28px"; node.before(spacer); });
+    await expect.poll(async () => {
+      const point = await foodPoint(item), rect = (await anchor.boundingBox())!;
+      return Math.hypot(point.x - rect.x - actualOffset.x, point.y - rect.y - actualOffset.y);
+    }).toBeLessThan(3);
+    const beforeDisconnect = await foodPoint(item);
+    await anchor.evaluate(node => node.remove()); await page.waitForTimeout(200);
+    await expect.poll(async () => { const point = await foodPoint(item); return Math.hypot(point.x - beforeDisconnect.x, point.y - beforeDisconnect.y); }).toBeLessThan(2);
+    await page.evaluate(() => window.scrollTo({ top: 80, behavior: "instant" }));
+    await expect.poll(async () => { const point = await foodPoint(item); return Math.hypot(point.x - beforeDisconnect.x, point.y + 80 - beforeDisconnect.y); }).toBeLessThan(2);
+    await expect(page.locator("[data-export-surface] .vc-food")).toHaveCount(0);
+    console.log(JSON.stringify({ check: "food-anchor-scroll", width, samples: samples.length, p95: sorted[Math.floor(sorted.length * .95)], max: sorted.at(-1) }));
+  });
+}
+
+test("a floor snack belongs to its document point rather than the fixed viewport floor", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 }); await setup(page); await allowDocumentScroll(page);
+  const item = await spawn(page); await page.mouse.click(180, 980); await expect(item).not.toHaveAttribute("data-selected");
+  const original = await foodPoint(item); expect(original.y).toBeGreaterThan(850);
+  await page.evaluate(() => window.scrollTo({ top: 180, behavior: "instant" }));
+  await expect.poll(async () => (await foodPoint(item)).y + await page.evaluate(() => scrollY)).toBeCloseTo(original.y, 1);
+  expect((await foodPoint(item)).y).toBeLessThan(original.y - 170);
+  await page.evaluate(() => window.scrollTo({ top: 1100, behavior: "instant" })); await expect(item).toHaveJSProperty("hidden", true);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" })); await expect(item).toHaveJSProperty("hidden", false);
+  await expect.poll(async () => Math.abs((await foodPoint(item)).y - original.y)).toBeLessThan(2);
+});
+
 for (const width of [1440, 390]) {
   test(`three real dispenser clicks vary fruit; selected trash only removes one at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page);
@@ -68,6 +199,16 @@ for (const width of [1440, 390]) {
     }
     await expect(page.locator(".vc-food-hint")).toHaveCount(0);
     await expect(page.locator("[data-export-surface] .vc-food")).toHaveCount(0);
+    const disclosure = page.getByRole("region", { name: "빅타민 집", exact: true }).getByRole("button", { name: "빅타민 집", exact: true });
+    await disclosure.click({ position: { x: 12, y: 16 } }); await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+    await expect(foods(page).last()).toHaveAttribute("data-selected", "");
+    // The freely selected snack can overlap the folded header's centre.
+    // Its exposed left edge remains a native, unforced disclosure target.
+    await disclosure.click({ position: { x: 12, y: 16 } }); await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    await expect(foods(page)).toHaveCount(3);
+    await expect(foods(page).last()).toHaveCSS("outline-style", "none");
+    await page.evaluate(() => Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)));
+    await page.screenshot({ path: `.scratch-pw/companion-food-selected-${width}.png` });
     // A selected snack can cover the intended placement point, especially on
     // mobile. Tapping that snack again must place it instead of reselecting.
     const selected = foods(page).last();

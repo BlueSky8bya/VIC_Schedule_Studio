@@ -41,6 +41,7 @@ import { TeaserCountdown as TeaserBigCountdown } from "@/components/shared/tease
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
+import { PanelSection } from "@/components/shared/panel-section";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
@@ -3386,8 +3387,7 @@ export function PublicPoster({
         {interactive ? (
           <div className="agenda-legend-rail" data-pm-exit="2">
           {legendTags.length > 0 || canHeart ? (
-          <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
-            <strong>색상 필터</strong>
+          <PanelSection as="aside" title="태그 필터" sectionKey="tag-filter" collapsible className="agenda-legend" aria-label="색상 안내(태그 필터)">
             {(() => {
               const legendBtn = (tag: (typeof legendTags)[number]) => {
                 const v = tagVisual.visualOf(tag.id);
@@ -3494,7 +3494,7 @@ export function PublicPoster({
                 필터 해제
               </button>
             ) : null}
-          </aside>
+          </PanelSection>
           ) : null}
           {/* '이 달 기록' — 웹에선 헤더(.public-calendar-header)에 있는데, 그 헤더는 ≤1040px에서
               통째로 안 그려진다. 그래서 폰·태블릿 시청자는 만들어 둔 기록 시트를 열 방법이 아예
@@ -3949,12 +3949,11 @@ export function PublicPoster({
   // 반대편 얇은 레일용(follow=false)이 같은 마크업을 쓴다(1열 압축·폭은 CSS 담당).
   // compact: 인기도 안내를 '🔥 관심' 짧은 라벨 2×2로 축약(얇은 레일 전용).
   const renderLegendFilter = (follow: boolean, compact = false) => (
-    <div
+    <PanelSection as="div" title="태그 필터" sectionKey="tag-filter" collapsible={interactive}
       className="public-legend-vertical"
       aria-label="태그 필터"
       ref={follow ? legendFollowRef : undefined}
     >
-      <strong className="legend-title">태그 필터</strong>
       {(() => {
         const legendBtn = (tag: (typeof legendTags)[number]) => {
           const v = tagVisual.visualOf(tag.id);
@@ -4071,7 +4070,7 @@ export function PublicPoster({
        data-act="legend-clear">
         필터 해제
       </button>
-    </div>
+    </PanelSection>
   );
 
   const rehearsalSeen = useRef(false);
@@ -4981,7 +4980,7 @@ export function PublicPoster({
                 <SoopLiveBeacon inRail live={soopLive} />
                 {renderLegendFilter(true)}
                 {/* 배경 감상 진입(2026-09-04) — 레일 맨 아래, 태그 필터 밑의 조용한 계절 버튼(시청자·비로그인 모두). */}
-                {interactive ? <ViewerAmbientControl className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+                {interactive ? <ViewerAmbientControl collapsible className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
               </>
             )}
           </aside>
@@ -5013,7 +5012,7 @@ export function PublicPoster({
             <div className="slot-legend" data-pm-exit="2">{renderLegendFilter(false)}</div>
             {/* 아바타 scene에선 계절 배경 카드가 아바타 자리 위쪽으로(레일이 접히므로). 점선 박스 **밖·위** —
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
-            {interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+            {interactive ? <ViewerAmbientControl collapsible className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
             {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
             {/* 아바타 빈 자리 — 관리자·개발자(avatarSlot)·/onair 고정 scene에만. 일반 시청자 패널은 카드까지만. */}
             {avatarCapable ? (

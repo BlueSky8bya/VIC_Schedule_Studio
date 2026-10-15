@@ -1,0 +1,130 @@
+{
+  "upstreamCommit": "e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e",
+  "files": [
+    {
+      "kind": "apple",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f34e.svg",
+      "sha256": "b74174d580462c259f2fb0cdceeb3734203cca15f669c5d9c18fc9f2336586a4",
+      "bytes": 2122
+    },
+    {
+      "kind": "lemon",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f34b.svg",
+      "sha256": "352026cc0953e1b6a437ab40a83c230af94ca55d5f85c7937c03671a86984321",
+      "bytes": 2160
+    },
+    {
+      "kind": "strawberry",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f353.svg",
+      "sha256": "34ac09e00cee6975c054bebcfe5ac043e2e8adc6c158e551277fbd236dc1b37f",
+      "bytes": 5162
+    },
+    {
+      "kind": "watermelon",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f349.svg",
+      "sha256": "a76c1229d2473993fee28ba7fd50e9d24679589bbf0315f6cd2f0c0df5f67aa5",
+      "bytes": 3030
+    },
+    {
+      "kind": "tomato",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f345.svg",
+      "sha256": "e28691f186cd3edb036ac279801d2870f6d1a9656241f4dc96397fc134c531cb",
+      "bytes": 2901
+    },
+    {
+      "kind": "peach",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f351.svg",
+      "sha256": "afed80913a9c236d334782ef4d6a6856d04dbf08ff4a8a7eb04a81854cbad9ce",
+      "bytes": 6168
+    },
+    {
+      "kind": "orange",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f34a.svg",
+      "sha256": "6d3d9a75ff8111f57a2f64f8dbb86819fb7ebc63d824be2c76865cd6a91a9243",
+      "bytes": 2452
+    },
+    {
+      "kind": "pear",
+      "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/svg/emoji_u1f350.svg",
+      "sha256": "352a0075720ffbe98efeda54492c191c40c47cbbce530f6f1e9fe74417018cbd",
+      "bytes": 2262
+    }
+  ],
+  "derivatives": {
+    "raspberry": {
+      "basedOn": "Noto Emoji strawberry/tomato palette and leaf vocabulary",
+      "changes": "Original code-native aggregate berry contours; no Unicode raspberry original claimed."
+    },
+    "grapefruit": {
+      "basedOn": "orange.svg",
+      "changes": "Added pink cut-face/cream segment spokes."
+    },
+    "plum": {
+      "basedOn": "apple.svg",
+      "changes": "Purple fruit palette; retained stem/leaf/highlight paths."
+    },
+    "persimmon": {
+      "basedOn": "tomato.svg",
+      "changes": "Orange fruit palette; retained calyx and silhouette."
+    },
+    "apricot": {
+      "basedOn": "peach.svg",
+      "changes": "Golden-orange fruit palette; retained leaf and split contour."
+    }
+  },
+  "license": "Apache-2.0",
+  "delivered": [
+    {
+      "kind": "apple",
+      "sha256": "b74174d580462c259f2fb0cdceeb3734203cca15f669c5d9c18fc9f2336586a4"
+    },
+    {
+      "kind": "lemon",
+      "sha256": "352026cc0953e1b6a437ab40a83c230af94ca55d5f85c7937c03671a86984321"
+    },
+    {
+      "kind": "strawberry",
+      "sha256": "34ac09e00cee6975c054bebcfe5ac043e2e8adc6c158e551277fbd236dc1b37f"
+    },
+    {
+      "kind": "watermelon",
+      "sha256": "a76c1229d2473993fee28ba7fd50e9d24679589bbf0315f6cd2f0c0df5f67aa5"
+    },
+    {
+      "kind": "tomato",
+      "sha256": "e28691f186cd3edb036ac279801d2870f6d1a9656241f4dc96397fc134c531cb"
+    },
+    {
+      "kind": "peach",
+      "sha256": "afed80913a9c236d334782ef4d6a6856d04dbf08ff4a8a7eb04a81854cbad9ce"
+    },
+    {
+      "kind": "orange",
+      "sha256": "6d3d9a75ff8111f57a2f64f8dbb86819fb7ebc63d824be2c76865cd6a91a9243"
+    },
+    {
+      "kind": "pear",
+      "sha256": "352a0075720ffbe98efeda54492c191c40c47cbbce530f6f1e9fe74417018cbd"
+    },
+    {
+      "kind": "raspberry",
+      "sha256": "3a8ecf05c653a7be3bad21130337560a306738e7ab7812eed701afec04a7ab52"
+    },
+    {
+      "kind": "grapefruit",
+      "sha256": "de84fed7fa329a8c8bb12de0cd39122eb47f3d12c9d4a5bb4f3f920eacda4654"
+    },
+    {
+      "kind": "plum",
+      "sha256": "fa6913b2ec7de27b806e8e2d2708f9f6c4764c624e1ed668a994303072a2d234"
+    },
+    {
+      "kind": "persimmon",
+      "sha256": "465ac36ce8dac89a62c07dbdf283f5a8f6655c6702d69a1eb412f66d42937645"
+    },
+    {
+      "kind": "apricot",
+      "sha256": "3cde017282773f7137d0d1a8d984a14b2b1e16724c70fcd1ca4578ab95f24334"
+    }
+  ]
+}

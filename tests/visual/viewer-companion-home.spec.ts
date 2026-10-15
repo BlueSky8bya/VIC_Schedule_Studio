@@ -32,7 +32,8 @@ async function expectSmallHome(page: Page) {
   const box = (await house(page).boundingBox())!;
   expect(box.height).toBeGreaterThan(150);
   expect(box.height).toBeLessThanOrEqual(200);
-  expect(box.height).toBeCloseTo(186, 0);
+  const coarse = await page.evaluate(() => matchMedia("(pointer: coarse)").matches);
+  expect(box.height).toBeCloseTo(coarse ? 194 : 186, 0);
   return box.height;
 }
 async function point(page: Page) {
@@ -41,13 +42,16 @@ async function point(page: Page) {
 }
 async function expectIconRoom(page: Page, compact: boolean) {
   await expectSmallHome(page);
-  expect(await house(page).locator(".vc-home-room").textContent()).toBe("");
+  await expect(house(page).getByRole("heading", { name: "빅타민 집", exact: true })).toBeVisible();
+  await expect(house(page).getByRole("button", { name: "빅타민 집", exact: true })).toHaveAttribute("aria-expanded", "true");
   await expect(house(page).getByRole("menu")).toHaveCount(0);
   await expect(house(page).getByRole("menuitem")).toHaveCount(0);
-  await expect(house(page).getByRole("button")).toHaveCount(compact ? 4 : 3);
+  await expect(house(page).getByRole("button")).toHaveCount(compact ? 5 : 4);
   for (const button of await house(page).getByRole("button").all()) {
     const bounds = (await button.boundingBox())!;
-    expect(bounds.width).toBeGreaterThanOrEqual(44); expect(bounds.height).toBeGreaterThanOrEqual(44);
+    const title = await button.getAttribute("data-panel-section-toggle");
+    const coarse = await page.evaluate(() => matchMedia("(pointer: coarse)").matches);
+    expect(bounds.width).toBeGreaterThanOrEqual(44); expect(bounds.height).toBeGreaterThanOrEqual(title && !coarse ? 36 : 44);
     expect(await button.getAttribute("aria-label")).toBeTruthy();
   }
   await expect(house(page).getByRole("meter")).toHaveCount(3);
@@ -77,7 +81,7 @@ test("compact home stays reachable in landscape and transfers keyboard focus", a
   const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
   await launcher.focus(); await launcher.press("Enter"); await expect(house(page)).toBeVisible();
   const close = house(page).getByRole("button", { name: "빅타민 집 닫기", exact: true });
-  await expect(close).toBeFocused();
+  await expect(house(page).getByRole("button", { name: "빅타민 집", exact: true })).toBeFocused();
   const box = (await house(page).boundingBox())!; expect(box.y).toBeGreaterThanOrEqual(10); expect(box.y + box.height).toBeLessThan(390);
   await expectSmallHome(page);
   await chooseCompanionCare(page, "옮길 곳 고르기", "keyboard");

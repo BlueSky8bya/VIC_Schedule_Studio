@@ -41,6 +41,7 @@ import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
+import { PanelSection } from "@/components/shared/panel-section";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
 import type { GfxMode } from "@/lib/ui/gfx";
@@ -6188,8 +6189,7 @@ export function StudioShell({
             <div className="agenda-rail">
               {/* 역할 배지(시각 정보)는 색상 필터 위에. 모바일은 도구 카드가 없어 설정 목록도 이 팝오버에. */}
               {renderRoleBadge(true)}
-            <aside className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
-              <strong>태그 필터</strong>
+            <PanelSection as="aside" title="태그 필터" sectionKey="tag-filter" className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
               {(() => {
                 const tops = legendTags.filter((t) => (t.parentId ?? null) === null);
                 const legendBtn = (tag: (typeof tops)[number]) => {
@@ -6247,7 +6247,7 @@ export function StudioShell({
                   필터 해제
                 </button>
               ) : null}
-            </aside>
+            </PanelSection>
               {/* 인사이트 진입은 색상 필터 '아래'(시각 정보 위, 누르는 버튼 아래 원칙). */}
               {isDevInsights || canMemberInsights ? (
                 <button
@@ -7130,8 +7130,7 @@ export function StudioShell({
 
   // 색상 필터 패널 — 평소엔 좌측 그리드 칸, 아바타 scene에선 아바타 위 rail에 넣어 재사용.
   const studioFilterPanel = (
-    <section>
-      <h2>태그 필터</h2>
+    <PanelSection title="태그 필터" sectionKey="tag-filter">
       <TagLegendEditor
         canEdit={false}
         filterIds={tagFilters}
@@ -7140,7 +7139,7 @@ export function StudioShell({
         palette={palette}
         tags={viewTags}
       />
-    </section>
+    </PanelSection>
   );
 
   // 도구 카드(2026-09-03 배치 대개편) — 옛 액션바(두 번째 크롬 행)의 관리 3종 + 단축키를 서쪽 rail로.

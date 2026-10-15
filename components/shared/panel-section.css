@@ -1,0 +1,25 @@
+.panel-section-heading { position: relative; grid-column: 1 / -1; min-width: 0; }
+.panel-section-title { display: block; margin: 0; min-width: 0; color: inherit; font-size: var(--text-title); font-weight: 600; line-height: 1.1; letter-spacing: -.01em; text-align: center; word-break: keep-all; }
+.panel-section-title > span { display: block; padding: 8px 0; }
+.panel-section-toggle { position: relative; display: block; width: 100%; min-height: 36px; box-sizing: border-box; padding: 4px 22px; border: 0; border-radius: var(--r-sm); background: transparent; color: inherit; font: inherit; text-align: center; cursor: pointer; }
+.panel-section-toggle:hover { background: color-mix(in srgb, rgb(var(--glass-head)) 70%, transparent); }
+.panel-section-toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.panel-section-toggle:active { transform: scale(var(--press-scale-lg)); }
+.panel-section-chevron { position: absolute; left: 5px; top: calc(50% - 6.5px); color: var(--muted); transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)); }
+[data-panel-collapsed] > .panel-section-heading .panel-section-chevron { transform: rotate(-90deg); }
+.panel-section-actions { position: absolute; z-index: 1; right: 0; top: 0; height: 100%; display: flex; align-items: center; }
+.panel-section-heading:has(.panel-section-actions) .panel-section-toggle { padding-inline: var(--control-hit); }
+.panel-section-body { display: contents; }
+.panel-section-body[hidden] { display: none !important; }
+.viewer-ambient-ctl .panel-section-heading { border-bottom: 1px solid var(--amb-card-line, var(--line)); color: var(--amb-title-ink, var(--ink)); }
+/* The studio workspace itself is scaled; panel type retains the same visible
+   token size as the unscaled public viewer (UI-18). */
+.studio-shell .panel-section .panel-section-title { margin: 0; font-size: calc(var(--text-title) / var(--shell-zoom, 1)); font-weight: 600; line-height: 1.1; }
+/* A folded agenda card gives its empty height back to the rail. The disclosure
+   retains the same type token; only its narrow structural padding is smaller. */
+.agenda-legend[data-panel-collapsed] { flex: 0 0 auto; }
+.agenda-legend .panel-section-toggle { padding-inline: 8px; }
+.agenda-legend .panel-section-chevron { left: -5px; }
+@media (pointer: coarse) { .panel-section-toggle { min-height: var(--control-hit); } }
+html[data-reduce-motion] .panel-section-chevron { transition: none; }
+html[data-reduce-motion] .panel-section-toggle:active { transform: none; }

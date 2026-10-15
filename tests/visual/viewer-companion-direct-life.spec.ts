@@ -145,10 +145,10 @@ async function expectNeutral(page: Page) {
 for (const mobile of [false, true]) test(`month change preserves the same viewport creature before a nearby landing (${mobile ? "agenda safe-gap recovery" : "desktop"})`, async ({ page }) => {
   await setup(page, { mobile });
   if (mobile) {
-    // Use the real calendar region; never add a fictitious surface to the
-    // dense agenda fixture just to make a character visible.
-    await page.evaluate(() => scrollTo({ top: 400, behavior: "instant" }));
-    await page.waitForTimeout(200);
+    // The native initial viewport has one genuine floor interval. Scrolling
+    // 400px leaves no safe interval at this same x; PLAN-048 correctly waits
+    // there instead of warping to another column. Start this month-specific
+    // regression on the actual initial ledge, without manufacturing a surface.
     await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 6000 });
     await expect(actor(page)).toBeVisible(); await expectActualContact(page);
   } else await markTextSupport(page);

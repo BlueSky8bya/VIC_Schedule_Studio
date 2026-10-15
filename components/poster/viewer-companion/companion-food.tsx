@@ -2,7 +2,8 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, companionTrashProgress, placeCompanionFood, presentCompanionFood, reconcileCompanionFood, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, placeCompanionFood, presentCompanionFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { COMPANION_FOOD_NAMES as names, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { CompanionFruit } from "./companion-fruit";
 
@@ -12,7 +13,7 @@ export type CompanionFoodControl = {
   foods: () => readonly Food[];
   consume: (id: string) => boolean;
   nibble: (id?: string, progress?: number, mouth?: Point, facing?: -1 | 1) => void;
-  sync: (platforms: readonly Platform[]) => void;
+  sync: (platforms: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined) => void;
   pause: (paused: boolean) => void;
   clear: () => void;
 };
@@ -32,17 +33,25 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const [message, setMessage] = useState("");
   const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly Platform[]>([]), layer = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLButtonElement>()), presentations = useRef(new Map<string, CompanionFoodPresentation>());
+  const attachments = useRef(new Map<string, { element?: Element; position: CompanionFoodAttachment }>()), visibility = useRef(new Map<string, boolean>());
+  const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
   const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean }>());
   const renderedTransforms = useRef(new Map<string, string>());
   const serial = useRef(0), dragging = useRef<Drag | null>(null), hover = useRef<Hover | null>(null), discard = useRef<Discard | null>(null);
-  const dragFrame = useRef(0), hoverFrame = useRef(0), senseFrame = useRef(0), operating = useRef(false);
+  const dragFrame = useRef(0), hoverFrame = useRef(0), senseFrame = useRef(0), followFrame = useRef(0), operating = useRef(false);
   const focusReturn = useRef(returnFocus); focusReturn.current = returnFocus;
   const guard = useRef<{ owns: boolean; pointer: number | null; timer?: ReturnType<typeof setTimeout> }>({ owns: false, pointer: null });
   operating.current = enabled && !blocked && !paused;
-  const update = useCallback((next: Food[]) => { current.current = next; setFoods(next); }, []);
+  const update = useCallback((next: Food[]) => {
+    const ids = new Set(next.map(food => food.id));
+    for (const id of attachments.current.keys()) if (!ids.has(id)) { attachments.current.delete(id); visibility.current.delete(id); presentations.current.delete(id); }
+    current.current = next; setFoods(next);
+  }, []);
   const choose = useCallback((id: string | null) => { selection.current = id; setSelected(id); }, []);
   const paint = useCallback((food: Food, presentation?: CompanionFoodPresentation) => {
     const node = nodes.current.get(food.id); if (!node || discard.current?.id === food.id) return;
+    const hidden = visibility.current.get(food.id) === false;
+    if (node.hidden !== hidden) node.hidden = hidden;
     const pose = presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
     const next = transform(pose), cached = painted.current.get(node);
     if (cached?.transform !== next) node.style.transform = next;
@@ -60,9 +69,50 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const rebasePresentation = useCallback((id: string) => {
     const food = current.current.find(item => item.id === id); if (!food) return;
     const pose = presentations.current.get(id) ?? food;
+    attachments.current.delete(id); visibility.current.set(id, true);
     current.current = current.current.map(item => item.id === id ? { ...item, x: pose.x, y: pose.y, platformId: undefined } : item);
     resetNibble(id); return pose;
   }, [resetNibble]);
+  const settleFood = useCallback((food: Food, point: Point) => {
+    let placed = placeCompanionFood(food, point, platforms.current);
+    const scroll = { x: window.scrollX, y: window.scrollY };
+    const source = placed.platformId ? anchorFor.current?.(placed.platformId) : undefined;
+    let origin: Point | undefined;
+    if (source?.element?.isConnected) {
+      const rect = source.element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const support = platforms.current.find(platform => platform.id === placed.platformId);
+        if (support) placed = placeCompanionFood(food, point, [{ ...support, x: support.x + rect.left - source.left, y: support.y + rect.top - source.top }]);
+        origin = { x: rect.left, y: rect.top };
+      }
+    }
+    // Bind to the current origin once. A subsequent scroll reads only this
+    // retained source, never applies a second baseline delta or picks a day.
+    const position = attachCompanionFood(placed, scroll, origin);
+    attachments.current.set(food.id, { element: origin ? source?.element : undefined, position }); visibility.current.set(food.id, true);
+    return placed;
+  }, []);
+  const followAttachments = useCallback(() => {
+    followFrame.current = 0;
+    if (!operating.current || document.hidden) return;
+    const scroll = { x: window.scrollX, y: window.scrollY }, measured = new Map<Element, DOMRect>();
+    current.current = current.current.map(food => {
+      if (food.id === selection.current || food.id === dragging.current?.id || food.id === discard.current?.id) return food;
+      let bound = attachments.current.get(food.id);
+      if (!bound) { bound = { position: attachCompanionFood(food, scroll) }; attachments.current.set(food.id, bound); }
+      if (bound.element && !bound.element.isConnected) { bound.element = undefined; food = { ...food, platformId: undefined }; }
+      let rect: DOMRect | undefined;
+      if (bound.element) {
+        rect = measured.get(bound.element);
+        if (!rect) { rect = bound.element.getBoundingClientRect(); measured.set(bound.element, rect); }
+        if (rect.width <= 0 || rect.height <= 0 || bound.element.closest("[data-panel-collapsed]")) { visibility.current.set(food.id, false); paint(food); return food; }
+      }
+      const followed = followCompanionFood(bound.position, scroll, rect); bound.position = followed.attachment;
+      const next = { ...food, ...followed.point };
+      visibility.current.set(food.id, next.x >= -22 && next.x <= innerWidth + 22 && next.y >= -6 && next.y <= innerHeight + 38);
+      paint(next, presentations.current.get(food.id)); return next;
+    });
+  }, [paint]);
   const clearGuard = useCallback(() => { clearTimeout(guard.current.timer); guard.current = { owns: false, pointer: null }; }, []);
   const ownClick = useCallback((pointer: number) => { clearTimeout(guard.current.timer); guard.current = { owns: true, pointer }; }, []);
   const clearBin = (bin: HTMLElement) => { bin.removeAttribute("data-food-over"); bin.style.removeProperty("--vc-trash-progress"); };
@@ -72,15 +122,15 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const drag = dragging.current; dragging.current = null;
     if (!drag) return;
     if (drag.node.hasPointerCapture(drag.pointer)) drag.node.releasePointerCapture(drag.pointer);
-    if (settle) update(current.current.map(food => food.id === drag.id ? placeCompanionFood(food, food, platforms.current) : food));
-  }, [update]);
+    if (settle) update(current.current.map(food => food.id === drag.id ? settleFood(food, food) : food));
+  }, [settleFood, update]);
   const cancelDiscard = useCallback((settle = false) => {
     const pending = discard.current; if (!pending) return;
     discard.current = null; clearTimeout(pending.timer); pending.animation?.cancel();
     pending.node.removeAttribute("data-discarding"); clearBin(pending.bin);
-    if (settle) update(current.current.map(food => food.id === pending.id ? placeCompanionFood(food, food, platforms.current) : food));
+    if (settle) update(current.current.map(food => food.id === pending.id ? settleFood(food, food) : food));
     const food = current.current.find(food => food.id === pending.id); if (food) paint(food);
-  }, [paint, update]);
+  }, [paint, settleFood, update]);
   const trashAt = useCallback((point: Point) => {
     for (const bin of document.querySelectorAll<HTMLElement>("[data-companion-trash]")) {
       if (bin.hasAttribute("disabled") || bin.getAttribute("aria-disabled") === "true") continue;
@@ -131,26 +181,26 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const point = pointer ?? { x: food.x, y: food.y - 16 }, bin = trashAt(point);
     if (bin) { startHover(id, bin, point, true); return; }
     cancelHover(); resetNibble(id);
-    update(current.current.map(item => item.id === id ? placeCompanionFood(item, item, platforms.current) : item));
+    update(current.current.map(item => item.id === id ? settleFood(item, item) : item));
     choose(null); setMessage("밥을 놓았어요. 배고프면 빅타민이 찾아와요.");
-  }, [cancelHover, choose, resetNibble, startHover, trashAt, update]);
+  }, [cancelHover, choose, resetNibble, settleFood, startHover, trashAt, update]);
   const interrupt = useCallback(() => {
-    cancelAnimationFrame(senseFrame.current); cancelHover(); cancelDiscard(true); release(true); resetNibble();
-    if (selection.current) update(current.current.map(food => food.id === selection.current ? placeCompanionFood(food, food, platforms.current) : food));
+    cancelAnimationFrame(senseFrame.current); cancelAnimationFrame(followFrame.current); followFrame.current = 0; cancelHover(); cancelDiscard(true); release(true); resetNibble();
+    if (selection.current) update(current.current.map(food => food.id === selection.current ? settleFood(food, food) : food));
     choose(null);
-  }, [cancelDiscard, cancelHover, choose, release, resetNibble, update]);
+  }, [cancelDiscard, cancelHover, choose, release, resetNibble, settleFood, update]);
 
   useImperativeHandle(ref, () => ({
     spawn(kind, point) {
       if (!operating.current || !isCompanionFoodKind(kind) || ![point.x, point.y].every(Number.isFinite)) return;
       if (current.current.length >= MAX_COMPANION_FOOD) { setMessage("밥은 세 개까지 놓을 수 있어요. 남은 밥을 기다리거나 휴지통에 치워 주세요."); return; }
       const food: Food = { id: `snack-${++serial.current}`, kind, x: clamp(point.x, 24, innerWidth - 24), y: clamp(point.y, 48, innerHeight - 24) };
-      const settled = current.current.map(item => item.id === selection.current ? placeCompanionFood(item, item, platforms.current) : item);
+      const settled = current.current.map(item => item.id === selection.current ? settleFood(item, item) : item);
       cancelHover(); update([...settled, food]); choose(food.id); setMessage(`${names[kind]} 놓을 곳을 누르거나 방향키와 Enter로 놓아 주세요.`);
     },
-    foods: () => current.current.filter(food => food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
+    foods: () => current.current.filter(food => visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
     consume(id) {
-      if (selection.current === id || dragging.current?.id === id || discard.current?.id === id || !current.current.some(food => food.id === id)) return false;
+      if (visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || !current.current.some(food => food.id === id)) return false;
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
       presentations.current.delete(id); update(current.current.filter(food => food.id !== id)); setMessage("빅타민이 밥을 맛있게 먹었어요."); return true;
     },
@@ -161,12 +211,14 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         presentations.current.set(food.id, presentation); paint(food, presentation);
       }
     },
-    sync(next) {
-      platforms.current = next;
-      const updated = current.current.map(food => food.id === selection.current || food.id === dragging.current?.id || food.id === discard.current?.id ? food : reconcileCompanionFood(food, next));
-      if (JSON.stringify(updated) !== JSON.stringify(current.current)) update(updated);
+    sync(next, getAnchor) {
+      // The pet carries its occupied/target Platform objects between full
+      // scans. Food needs the immutable full-scan baseline paired with anchor()
+      // so a drag/drop during scrolling applies the DOM delta exactly once.
+      platforms.current = next.map(platform => ({ ...platform })); if (getAnchor) anchorFor.current = getAnchor;
+      followAttachments();
     },
-    pause(next) { operating.current = enabled && !blocked && !next; setPaused(next); if (next) interrupt(); },
+    pause(next) { operating.current = enabled && !blocked && !next; setPaused(next); if (next) interrupt(); else followAttachments(); },
     clear() { interrupt(); if ((document.activeElement as HTMLElement | null)?.closest(".vc-food")) focusReturn.current(); update([]); setMessage("남은 밥을 치웠어요."); },
   }));
   useLayoutEffect(() => {
@@ -194,13 +246,13 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (guard.current.owns) clearGuard();
       if (!operating.current || event.button !== 0 || layer.current?.contains(event.target as Node)) return;
       // Carrying a selected snack must still allow opening its compact home.
-      if ((event.target as Element | null)?.closest?.(".vc-home-launcher,[data-home-action=feed]")) return;
+      if ((event.target as Element | null)?.closest?.(".vc-home-launcher,[data-home-action=feed],.panel-section-toggle,[data-home-action=close]")) return;
       const food = current.current.find(food => food.id === selection.current); if (!food) return;
       event.preventDefault(); event.stopImmediatePropagation(); ownClick(event.pointerId);
       const point = { x: event.clientX, y: event.clientY }, bin = trashAt(point);
       if (bin) { startHover(food.id, bin, point, true); return; }
       cancelHover(); resetNibble(food.id);
-      update(current.current.map(item => item.id === food.id ? placeCompanionFood(item, point, platforms.current) : item)); choose(null);
+      update(current.current.map(item => item.id === food.id ? settleFood(item, point) : item)); choose(null);
     };
     const move = (event: PointerEvent) => {
       if (!operating.current || dragging.current || !selection.current || event.pointerType === "touch") return;
@@ -232,7 +284,21 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       document.removeEventListener("visibilitychange", hidden); window.removeEventListener("blur", interrupt);
       cancelAnimationFrame(senseFrame.current); cancelHover(); cancelDiscard(); release(); clearGuard();
     };
-  }, [enabled, cancelDiscard, cancelHover, choose, clearGuard, interrupt, ownClick, release, resetNibble, startHover, trashAt, update]);
+  }, [enabled, cancelDiscard, cancelHover, choose, clearGuard, interrupt, ownClick, release, resetNibble, settleFood, startHover, trashAt, update]);
+  useEffect(() => {
+    if (!enabled) return;
+    const schedule = () => { if (operating.current && !document.hidden && !followFrame.current) followFrame.current = requestAnimationFrame(followAttachments); };
+    window.addEventListener("scroll", schedule, { passive: true, capture: true }); window.addEventListener("resize", schedule, { passive: true });
+    window.visualViewport?.addEventListener("scroll", schedule, { passive: true }); window.visualViewport?.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("vic:panel-section", schedule); window.addEventListener("vic:companion-home", schedule);
+    document.addEventListener("visibilitychange", schedule);
+    return () => {
+      cancelAnimationFrame(followFrame.current); followFrame.current = 0;
+      window.removeEventListener("scroll", schedule, true); window.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("scroll", schedule); window.visualViewport?.removeEventListener("resize", schedule);
+      window.removeEventListener("vic:panel-section", schedule); window.removeEventListener("vic:companion-home", schedule); document.removeEventListener("visibilitychange", schedule);
+    };
+  }, [enabled, followAttachments]);
 
   if (!enabled) return null;
   return <div className="vc-food-layer" ref={layer} hidden={blocked || paused} data-sfx="off">
@@ -266,7 +332,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       onKeyDown={event => {
         if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " ", "Escape", "Delete", "Backspace"].includes(event.key)) return;
         event.preventDefault(); event.stopPropagation();
-        if (event.key === "Escape") { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); release(true); resetNibble(food.id); update(current.current.map(item => item.id === food.id ? placeCompanionFood(item, item, platforms.current) : item)); choose(null); return; }
+        if (event.key === "Escape") { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); release(true); resetNibble(food.id); update(current.current.map(item => item.id === food.id ? settleFood(item, item) : item)); choose(null); return; }
         if (["Delete", "Backspace"].includes(event.key)) { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); focusReturn.current(); presentations.current.delete(food.id); update(current.current.filter(item => item.id !== food.id)); choose(null); setMessage("밥을 치웠어요."); return; }
         if (["Enter", " "].includes(event.key)) { if (!event.repeat) { if (selection.current === food.id) drop(food.id); else { rebasePresentation(food.id); choose(food.id); } } return; }
         rebasePresentation(food.id); choose(food.id);

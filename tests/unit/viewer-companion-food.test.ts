@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, companionTrashProgress, placeCompanionFood, presentCompanionFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, placeCompanionFood, presentCompanionFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
 
 const floor: Platform = { id: "floor", x: 12, y: 782, width: 976, kind: "floor" };
@@ -12,9 +12,9 @@ describe("companion food support", () => {
     expect(placed).toEqual({ id: "apple", kind: "apple", x: 200, y: 350, platformId: "card" });
     expect(placeCompanionFood(apple, { x: 200, y: 400 }, [floor, card]).platformId).toBe("floor");
   });
-  it("drops to the floor when its card disappears and follows a moving support", () => {
+  it("never picks another visible support when its card leaves the landing list", () => {
     const placed = placeCompanionFood(apple, apple, [floor, card]);
-    expect(reconcileCompanionFood(placed, [floor])).toEqual({ ...placed, y: 782, platformId: "floor" });
+    expect(reconcileCompanionFood(placed, [floor])).toEqual(placed);
     expect(reconcileCompanionFood(placed, [floor, { ...card, x: 250, y: 420 }])).toEqual({ ...placed, x: 262, y: 420 });
   });
   it("keeps either fruit inside the visible supporting rail", () => {
@@ -23,6 +23,33 @@ describe("companion food support", () => {
   });
   it("uses a real safe ledge when mobile controls leave no usable floor", () => {
     expect(placeCompanionFood(apple, { x: 200, y: 800 }, [card])).toEqual({ id: "apple", kind: "apple", x: 200, y: 350, platformId: "card" });
+  });
+});
+
+describe("companion food attachments", () => {
+  it("keeps a document point through scrolling and restores it at the original place", () => {
+    const attached = attachCompanionFood({ x: 200, y: 350 }, { x: 0, y: 200 });
+    const away = followCompanionFood(attached, { x: 40, y: 900 });
+    expect(away.point).toEqual({ x: 160, y: -350 });
+    expect(followCompanionFood(away.attachment, { x: 0, y: 200 }).point).toEqual({ x: 200, y: 350 });
+    expect(away.attachment.documentY).toBe(550);
+  });
+  it("follows the same DOM origin even outside the viewport and across nested scrolling", () => {
+    const attached = attachCompanionFood({ x: 180, y: 347 }, { x: 0, y: 200 }, { x: 100, y: 350 });
+    const away = followCompanionFood(attached, { x: 0, y: 900 }, { left: 90, top: -350, width: 200, height: 30 });
+    expect(away.point).toEqual({ x: 170, y: -353 });
+    const returned = followCompanionFood(away.attachment, { x: 0, y: 200 }, { left: 100, top: 350, width: 200, height: 30 });
+    expect(returned.point).toEqual({ x: 180, y: 347 });
+    // A nested scroller changes only the actual origin, not window.scrollY.
+    expect(followCompanionFood(returned.attachment, { x: 0, y: 200 }, { left: 100, top: 310 }).point.y).toBe(307);
+  });
+  it("uses the same source during reflow, and detachment keeps the last document point", () => {
+    const attached = attachCompanionFood({ x: 280, y: 380 }, { x: 0, y: 100 }, { x: 100, y: 350 });
+    const narrowed = followCompanionFood(attached, { x: 0, y: 100 }, { left: 80, top: 400, width: 90, height: 20 });
+    expect(narrowed.point).toEqual({ x: 170, y: 417 });
+    // Restore original local offsets when that same source grows again.
+    expect(followCompanionFood(narrowed.attachment, { x: 0, y: 100 }, { left: 100, top: 350, width: 250, height: 40 }).point).toEqual({ x: 280, y: 380 });
+    expect(followCompanionFood(narrowed.attachment, { x: 0, y: 300 }).point).toEqual({ x: 170, y: 217 });
   });
 });
 

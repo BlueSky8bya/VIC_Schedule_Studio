@@ -2,6 +2,8 @@
 
 Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시각 승인과 기능 구현 승인은 구별한다.
 
+패널·교감 후속 정정([PLAN-048](../plans/PLAN-20261015-048-victamin-panel-and-touch.md)): 소유자가 제목 복원·시청자 개별 접기·음식 스크롤 고정·가로 warp 제거·호버 쓰다듬기를 요청했다. PLAN-047의 무문자 집 제목/클릭 전용 교감과 보이는 발판 목록으로 음식 재배치하는 정책을 대체한다. 공유 PanelSection·실제 DOM/문서 attachment·x 보존 안전 접지·보상 제한된 mouse 왕복/손 반응으로 구현한다. 음식은 Apache-2.0 Noto 계열 원본8/파생5로 구별하며 캐릭터 raster·모델/서버/DB는 변경하지 않는다. [검증](../verification/VIEWER_VICTAMIN_PANEL_TOUCH-20261015.md).
+
 직접 교감 후속 정정([PLAN-047](../plans/PLAN-20261015-047-victamin-direct-life-and-home.md)): 최신 요청이 꾹 누르는 집기·돌봄 메뉴/장문 안내·두 과일 선택을 대체한다.6px 이동 즉시 집기, 직접 쿠션·랜덤13과일 출구·음식을 넣는 쓰레기통과 숨은 키보드/비드래그 대안을 쓴다. 월 변경은 viewport 위치를 이어받아 새 안전 발판으로 짧게 착지하고, 집 주민은 실제 쿠션을 유지한다. 스크롤 반동은 별도 유한 body spring으로 logical geometry와 parked JS0에서 분리한다. 과일은 SVG·입으로 가져가는 presentation이며 캐릭터 raster/서버/DB/모델 변경0. [근거·검증](../verification/VIEWER_VICTAMIN_DIRECT_LIFE-20261015.md).
 
 살아있는 동작 후속 정정([PLAN-046](../plans/PLAN-20261015-046-victamin-fluid-life-and-compact-home.md)): 소유자가16포즈의 경직·스크롤 끊김·긴 집을 지적했다. PLAN-045의16키포즈 고정과8Hz 정지 cadence·120ms만으로 스크롤 교정하는 조항을 대체한다. 새256+보존16 원화 슬롯 중18 clip을 선택하며 재생 안전성이 낮은 구간은 기존 포즈를 쓴다. full60/lite30 위치, 반복 그림<=14Hz(단발 동작은 진행률 기반),100ms scalar 연결·도착 감속과 짧은 탐험/회복 리듬을 분리한다. 실측 anchor최대2개의 이동만 유한 이벤트 루프에서 carry하고 행동 시계를 유지한다. 조용한 parked 상태의 자율 JS0과 defaultOFF·로컬 전용·사람 하트 우선은 유지한다. 집은 직접 쿠션/먹이와 접힌 돌봄 메뉴로 줄인다. 원화 시각 승인을 주장하지 않으며 결과는 [검증](../verification/VIEWER_VICTAMIN_FLUID_LIFE-20261015.md)에 둔다.

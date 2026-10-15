@@ -12,6 +12,8 @@ import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { createCompanionMotion, nextCompanionPaint, sampleCompanionTravel } from "@/lib/ui/viewer-companion/motion";
 import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
 import { createCompanionSupportMotion } from "@/lib/ui/viewer-companion/support-motion";
+import { nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { createCompanionPettingGesture } from "@/lib/ui/viewer-companion/petting";
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import registration from "@/lib/ui/viewer-companion/fluid-sprite.json";
 import { gfxMode } from "@/lib/ui/gfx";
@@ -31,6 +33,7 @@ const sizes = { small: 60, normal: 76, large: 92 };
 export default function ViewerCompanion({ root, preferences, blocked, agenda, monthKey, reduced, homeHost, homeVisible }: Props) {
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
+  const pettingHand = useRef<HTMLSpanElement>(null);
   const control = useRef<Control | null>(null), brain = useRef(createBrain(performance.now()));
   const food = useRef<CompanionFoodControl>(null), careLoaded = useRef(false);
   const homeLauncher = useRef<HTMLButtonElement>(null);
@@ -77,6 +80,9 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const size = sizes[preferences.size];
     const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11], maxFrameRate: 14 });
     const supportMotion = createCompanionSupportMotion();
+    const petting = createCompanionPettingGesture();
+    let hoverPetting = false, hoverStarted = 0, petStarted = 0;
+    let awaitingAtX = false, verticalLanding = false, measuredWidth = innerWidth;
     let presentationNow = 0;
     let offGeometry: CompanionGeometrySubscription | undefined, geometryTracker: CompanionGeometrySubscription | undefined;
     const anchorSeen = new Map<string, { x: number; y: number }>();
@@ -103,7 +109,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       // scans. Never paint that interim frame over headers or clipped edges.
       // Event-owned follow frames must preserve the same empty-geometry gate
       // as the main loop, including its final neutral spring frame.
-      if (!platforms.length && !pendingMonth && !pressed && !keyboardHeld || homeOccluded && support === "companion-home" || x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12) { el.hidden = true; return; }
+      if (awaitingAtX || !platforms.length && !pendingMonth && !pressed && !keyboardHeld || homeOccluded && support === "companion-home" || x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12) { el.hidden = true; return; }
       const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: x - carrier.x, y: y - carrier.y, now: presentationNow, reduced });
       const response = supportMotion.sample(performance.now());
       style(reactionLayer, "transform", `translate3d(0,${response.lift.toFixed(3)}px,0) scale(${(1 + response.squash * .35).toFixed(4)},${(1 - response.squash).toFixed(4)})`);
@@ -199,12 +205,14 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       followRaf = requestAnimationFrame(follow);
     };
     const clearAction = () => { action = null; food.current?.nibble(); heartResult = null; sleeping = false; releaseAmbient(); releaseAmbient = () => {}; el.removeAttribute("data-hidden"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
-    const settle = (point: { x: number; y: number }, nearby = false) => {
+    const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
       const below = platforms.filter(p => p.y >= point.y - 12 && point.x >= p.x - 10 && point.x <= p.x + p.width + 10);
-      const p = nearby ? nearestPlatform(point, platforms) : nearestPlatform(point, below) ?? platforms.find(p => p.kind === "floor") ?? nearestPlatform(point, platforms);
+      const p = atX ? nearestVerticalCompanionSupport(point, platforms) : nearby ? nearestPlatform(point, platforms) : nearestPlatform(point, below) ?? platforms.find(p => p.kind === "floor") ?? nearestPlatform(point, platforms);
+      awaitingAtX = atX && !p; verticalLanding = atX;
       if (!p) { support = ""; clearAction(); el.hidden = true; return; }
-      const target = p ? { x: platformLandingX(p, point.x), y: p.y, platformId: p.id } : { x: point.x, y: innerHeight - 18 };
-      origin = { x, y }; action = { kind: "jump", target, duration: 650 }; began = performance.now(); total = 650; travel = nearby ? -3 : -1;
+      supportMotion.reset();
+      const target = { x: atX ? point.x : platformLandingX(p, point.x), y: p.y, platformId: p.id };
+      origin = { x, y }; action = { kind: "jump", target, duration: 650 }; began = performance.now(); total = 650; travel = nearby || atX ? -3 : -1;
       if (reduced) { x = target.x; y = target.y; support = target.platformId ?? ""; clearAction(); }
       brain.current = recordCompanionEvent(brain.current, "landed");
     };
@@ -214,6 +222,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const affection = () => {
       if (!preferences.petting) return;
       pendingMonth = false;
+      awaitingAtX = false; petStarted = performance.now();
       afterPetLanding = !supportedNow(); restAfterLanding = false;
       clearAction(); petUntil = performance.now() + (reduced ? 650 : 1500);
       brain.current = recordCompanionEvent(brain.current, "petted");
@@ -227,8 +236,27 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       }
       nextDecision = petUntil + 500;
     };
+    const stopHover = () => { petting.reset(); hoverPetting = false; el.removeAttribute("data-petting"); };
+    const hover = (event: PointerEvent) => {
+      const head = event.clientY >= y - size * .70 && event.clientY <= y - size * .28;
+      if (event.pointerType !== "mouse" || event.buttons !== 0 || !head || pause || el.hidden || !document.hasFocus() || presence.phase !== "active" || !preferences.petting || pressed || keyboardHeld || placing || pendingMonth || awaitingAtX || action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind)) { stopHover(); return; }
+      const normalized = (event.clientX - x) / (size * .76) + .5;
+      const result = petting.sample(normalized, performance.now());
+      if (!result.stroking) return;
+      const now = performance.now();
+      if (!hoverPetting) {
+        hoverStarted = petStarted = now;
+        afterPetLanding = !supportedNow(); restAfterLanding = false;
+        clearAction();
+      }
+      if (result.reward) affection();
+      hoverPetting = true; petUntil = now + 650; nextDecision = petUntil + 500;
+      data("petting", "hover");
+      if (pettingHand.current) style(pettingHand.current, "transform", `translate3d(${(event.clientX - x + size / 2 - 15).toFixed(2)}px,${(event.clientY - y + size - 26).toFixed(2)}px,0) rotate(${reduced ? 0 : ((normalized - .5) * 18).toFixed(2)}deg)`);
+      paint(9, reduced ? 0 : ((now - hoverStarted) % 950) / 950 * 15, "petted");
+    };
     control.current = {
-      place: () => { if (preferences.drag) { pendingMonth = false; clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = false; placing = true; el.dataset.placing = ""; } },
+      place: () => { if (preferences.drag) { stopHover(); awaitingAtX = false; pendingMonth = false; clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = false; placing = true; el.dataset.placing = ""; } },
       rest: () => { if (preferences.sleep) { pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
         if (!supportedNow()) { settle({ x, y }); if (reduced) startRest(); else restAfterLanding = true; }
         else startRest();
@@ -238,6 +266,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         pendingMonth = false;
         const home = platforms.find(p => p.id === "companion-home");
         if (!home) { setAnnouncement("쿠션이 보이도록 집을 펼쳐 주세요."); return; }
+        stopHover(); awaitingAtX = false; verticalLanding = false;
         clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = true;
         const target = { x: platformLandingX(home, home.x + home.width / 2), y: home.y, platformId: home.id };
         origin = { x, y }; began = performance.now(); total = clamp(Math.hypot(target.x - x, target.y - y) * 2, 650, 1600); travel = -2;
@@ -303,14 +332,20 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         schedule(); return;
       }
       if (action?.kind !== "sleep") el.removeAttribute("data-dreaming");
-      if (!platforms.length && !pressed && !keyboardHeld) { el.hidden = true; schedule(); return; }
+      if (awaitingAtX || !platforms.length && !pressed && !keyboardHeld) { el.hidden = true; schedule(); return; }
       if (placing) { if (action) began += delta; paint(1, 0, "placing"); schedule(); return; }
       if (pressed || keyboardHeld) {
         el.toggleAttribute("data-grab-ready", Boolean(pressed?.grabbed));
         paint(pressed?.grabbed || keyboardHeld ? 8 : 1, 0, pressed?.grabbed || keyboardHeld ? "held" : "touch");
         schedule(); return;
       }
-      if (now < petUntil) { if (effect.current) effect.current.textContent = "♡"; paint(9, 0, "petted"); schedule(); return; }
+      if (now < petUntil) {
+        if (effect.current) effect.current.textContent = "♡";
+        // Authored happy poses and a small contact lean, independent of world
+        // coordinates. A hover gesture never moves the support or captures it.
+        paint(9, reduced ? 0 : ((now - petStarted) % 950) / 950 * 15, "petted"); schedule(); return;
+      }
+      if (hoverPetting) { hoverPetting = false; el.removeAttribute("data-petting"); petting.reset(); }
       if (el.dataset.state === "petted" && effect.current) effect.current.textContent = "";
       if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
       if (action?.foodId && !food.current?.foods().some(item => item.id === action!.foodId)) { clearAction(); settle({ x, y }); nextDecision = now + 300; }
@@ -403,7 +438,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       started = true; pause = next; setSuspended(next); if (next) el.hidden = true;
       food.current?.pause(next);
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
-      if (pause) { needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; setHomeExpanded(false); }
+      if (pause) { stopHover(); needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id); pressed = null; keyboardHeld = false; placing = false; delete el.dataset.placing; setHomeExpanded(false); }
       else { presence.focus(document.hasFocus(), lastTick); connectGeometry(); hearts.pause(presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); }
     };
     const focusChanged = () => {
@@ -411,6 +446,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       const now = performance.now(), wasParked = presence.phase === "parked";
       presence.focus(document.hasFocus(), now);
       if (!document.hasFocus()) {
+        stopHover();
         // A held pointer/placement has no natural endpoint; release it and
         // finish a short landing rather than leaving a dangling capture.
         if (pressed || keyboardHeld || placing) { clearAction(); releaseHold(); placing = false; delete el.dataset.placing; settle({ x, y }); }
@@ -424,6 +460,7 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     };
     const down = (event: PointerEvent) => {
       if (pause || pressed || event.button !== 0 || (!preferences.drag && !preferences.petting)) return;
+      stopHover(); awaitingAtX = false;
       event.preventDefault(); event.stopPropagation(); button.focus({ preventScroll: true }); button.setPointerCapture(event.pointerId);
       restAfterLanding = false; afterPetLanding = false;
       petUntil = 0;
@@ -431,7 +468,8 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       clearAction(); pressed = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), dx: event.clientX - x, dy: event.clientY - y, dragged: false, grabbed: false, cancelled: false };
     };
     const move = (event: PointerEvent) => {
-      if (!pressed || pressed.id !== event.pointerId) return;
+      if (!pressed) { hover(event); return; }
+      if (pressed.id !== event.pointerId) return;
       const distance = Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y);
       if (!preferences.drag && distance > 6) pressed.cancelled = true;
       if (preferences.drag && distance > 6) {
@@ -456,11 +494,12 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const key = (event: KeyboardEvent) => {
       const owns = event.key === "Escape" || event.key === "Enter" && preferences.petting || (event.key === " " || event.key.toLowerCase() === "p") && preferences.drag || event.key.toLowerCase() === "n" && preferences.sleep || keyboardHeld && event.key.startsWith("Arrow");
       if (owns) { event.preventDefault(); event.stopPropagation(); }
+      if (owns) stopHover();
       if (event.repeat && (event.key === " " || event.key === "Enter")) return;
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) control.current?.rest();
-      else if (event.key === " " && preferences.drag) { event.preventDefault(); pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) settle({ x, y }); }
+      else if (event.key === " " && preferences.drag) { event.preventDefault(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) settle({ x, y }); }
       else if (event.key === "Escape") { event.preventDefault(); pendingMonth = false; keyboardHeld = false; placing = false; delete el.dataset.placing; settle({ x, y }); }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); }
     };
@@ -481,17 +520,25 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     const click = (event: MouseEvent) => { if (consumePlacementClick) { event.preventDefault(); event.stopImmediatePropagation(); consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard); } };
     const sensePointer = (event: PointerEvent) => { if (!pause && event.pointerType !== "touch") pointer = { x: event.clientX, y: event.clientY }; };
     const onGeometry = (next: Platform[]) => {
+      const widthChanged = measuredWidth !== innerWidth;
+      measuredWidth = innerWidth;
       geometryReady = true;
       refreshAnchors(performance.now());
       // A full scan revalidates safe spans; scrolling itself was already
       // carried per-frame by its actual anchor, including nested/fixed panels.
       platforms = next.filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
-      food.current?.sync(platforms);
+      food.current?.sync(platforms, id => geometryTracker?.anchor(id));
       if (pendingMonth) return;
       homeOccluded = false;
       const residesAtHome = support === "companion-home" && !pressed && !keyboardHeld && !placing && !afterPetLanding && (!action || action.target.platformId === "companion-home") && action?.kind !== "jump";
       if (residesAtHome) {
-        const home = document.querySelector<HTMLElement>(".vc-home-cushion"), rect = home?.isConnected ? home.getBoundingClientRect() : undefined;
+        const home = document.querySelector<HTMLElement>(".vc-home-cushion");
+        if (home?.closest(".vc-home")?.hasAttribute("data-panel-collapsed")) {
+          homeOccluded = true; el.hidden = true;
+          if (presence.phase === "parked") { offGeometry?.(); offGeometry = undefined; geometryReady = false; }
+          return;
+        }
+        const rect = home?.isConnected ? home.getBoundingClientRect() : undefined;
         if (rect && rect.width > 0 && rect.height > 0) {
           const safe = platforms.find(p => p.id === "companion-home");
           const homeX = safe ? platformLandingX(safe, x) : clamp(x, rect.left + rect.width * .25, rect.right - rect.width * .25);
@@ -513,18 +560,25 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       const resolve = (id: string, point: { x: number; y: number }) => {
         const exact = platforms.find(p => p.id === id);
         if (id === "companion-home" && exact) return exact;
-        if (exact && Math.abs(point.y - exact.y) <= 3 && point.x >= exact.x - 2 && point.x <= exact.x + exact.width + 2) return exact;
+        if (exact && Math.abs(point.y - exact.y) <= 3 && point.x >= exact.x && point.x <= exact.x + exact.width) return exact;
         const group = id.match(/^(?:card|date)-\d+/)?.[0];
-        return group ? nearestPlatform(point, platforms.filter(p => (p.id === group || p.id.startsWith(`${group}-`)) && Math.abs(point.y - p.y) <= 3)) : exact && Math.abs(point.y - exact.y) <= 3 ? exact : undefined;
+        return group ? nearestVerticalCompanionSupport(point, platforms.filter(p => (p.id === group || p.id.startsWith(`${group}-`)) && Math.abs(point.y - p.y) <= 3)) : undefined;
       };
       if (presence.phase === "parked") {
         const old = resolve(support, { x, y });
-        const p = old ?? nearestPlatform({ x, y }, platforms);
+        const p = old ?? nearestVerticalCompanionSupport({ x, y }, platforms) ?? (widthChanged ? nearestPlatform({ x, y }, platforms) : undefined);
         clearAction();
-        if (p) { support = p.id; x = platformLandingX(p, x); y = p.y; paint(11, 0, "sleep"); el.dataset.dreaming = ""; }
+        awaitingAtX = !p;
+        if (p) { support = p.id; if (widthChanged) x = platformLandingX(p, x); y = p.y; paint(11, 0, "sleep"); el.dataset.dreaming = ""; }
         else { support = ""; el.hidden = true; }
         clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryReady = false;
         return;
+      }
+      // A clipped support is not a request to visit another column. Keep the
+      // same x while waiting for a real ledge there; never reseed as a new pet.
+      if (awaitingAtX && !pressed && !keyboardHeld && !placing) {
+        settle({ x, y }, false, !widthChanged);
+        if (awaitingAtX) return;
       }
       if (!support && !action && !pressed && !keyboardHeld && !placing && !afterPetLanding) {
         const p = nearestPlatform({ x, y: saved?.y ?? innerHeight * .65 }, saved ? platforms : platforms.filter(p => p.kind !== "floor")) ?? platforms[0];
@@ -536,14 +590,14 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
         const target = destination && action ? resolve(destination, action.target) : undefined;
         if (action && target) {
           action.target.platformId = target.id;
-          action.target.x = platformLandingX(target, action.target.x);
+          if (!verticalLanding) action.target.x = platformLandingX(target, action.target.x);
           action.target.y = target.y;
         }
         // Genuine deletion/occlusion/resize needs one safe landing. A source
         // leaving the viewport during a valid flight does not cancel it.
         if (action && destination && !target || !action && !p) {
-          clearAction(); settle({ x, y });
-        } else if (!action && p) { x = platformLandingX(p, x); y = p.y; }
+          clearAction(); settle({ x, y }, false, !widthChanged);
+        } else if (!action && p) { y = p.y; }
       }
       // Seed current baselines after span identity remapping, not with span.x:
       // clipping can move that x without the underlying text moving at all.
@@ -560,6 +614,12 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
       clearTimeout(parkedLayoutTimer);
       parkedLayoutTimer = setTimeout(() => { if (!pause && presence.phase === "parked") connectGeometry(); }, 120);
     };
+    const panelChanged = (event: Event) => {
+      if (support === "companion-home" && document.querySelector(".vc-home[data-panel-collapsed]")) {
+        homeOccluded = true; el.hidden = true; stopHover();
+      }
+      parkedLayout(); followLayout(event);
+    };
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-showcase", "data-ambient-pause", "data-gfx"] });
     observer.observe(page, { attributes: true, attributeFilter: ["inert"] });
@@ -567,22 +627,24 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     window.addEventListener("blur", focusChanged); window.addEventListener("focus", focusChanged);
     window.addEventListener("resize", parkedLayout, { passive: true }); window.addEventListener("scroll", parkedLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", parkedLayout);
     window.addEventListener("scroll", followLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", followLayout); window.addEventListener("vic:side-panel", followLayout);
+    window.addEventListener("vic:panel-section", panelChanged);
     window.visualViewport?.addEventListener("scroll", followLayout, { passive: true });
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
     document.addEventListener("pointermove", sensePointer, { passive: true });
-    button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
+    button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", stopHover); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
     sync();
     return () => {
       lastPose.current = { x, y, monthKey, atHome: support === "companion-home" && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" };
       saveCompanionCare(brain.current, true);
-      stopped = true; cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      stopped = true; stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       window.removeEventListener("blur", focusChanged); window.removeEventListener("focus", focusChanged);
       window.removeEventListener("resize", parkedLayout); window.removeEventListener("scroll", parkedLayout, true); window.removeEventListener("vic:companion-home", parkedLayout);
       window.removeEventListener("scroll", followLayout, true); window.removeEventListener("vic:companion-home", followLayout); window.removeEventListener("vic:side-panel", followLayout); window.visualViewport?.removeEventListener("scroll", followLayout);
+      window.removeEventListener("vic:panel-section", panelChanged);
       document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
-      button.removeEventListener("pointerdown", down); button.removeEventListener("pointermove", move); button.removeEventListener("pointerup", up); button.removeEventListener("pointercancel", up); button.removeEventListener("lostpointercapture", lostCapture); button.removeEventListener("keydown", key);
+      button.removeEventListener("pointerdown", down); button.removeEventListener("pointermove", move); button.removeEventListener("pointerleave", stopHover); button.removeEventListener("pointerup", up); button.removeEventListener("pointercancel", up); button.removeEventListener("lostpointercapture", lostCapture); button.removeEventListener("keydown", key);
       if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id);
       el.hidden = true;
     };
@@ -596,7 +658,8 @@ export default function ViewerCompanion({ root, preferences, blocked, agenda, mo
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
     <button className="vc-actor" ref={actor} type="button" data-sfx="off" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); control.current?.place(); }}><span className="vc-facing" ref={facing} aria-hidden="true"><span className="vc-reaction" ref={reaction}><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span></span><span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span></button>
     <span className="vc-effect" ref={effect} aria-hidden="true" />
-    <span className="sr-only" id="vc-help">누르면 쓰다듬기. 끌어서 옮기기. 두 번 누른 뒤 놓을 곳 선택. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
+    <span className="vc-petting-hand" ref={pettingHand} aria-hidden="true"><svg viewBox="0 0 32 38" focusable="false"><path d="M9 22 5 16c-2-3-5-1-3 2l5 10c2 3 4 5 5 9h13l1-7 4-12c1-3-3-4-4-1l-2 5V8c0-3-4-3-4 0v11V4c0-3-4-3-4 0v15V6c0-3-4-3-4 0v14L9 9C8 6 5 7 6 10Z" /><path className="vc-hand-cuff" d="M10 32h16v5H11Z" /><path className="vc-hand-fold" d="M10 23c3-3 8-2 10 1" /></svg></span>
+    <span className="sr-only" id="vc-help">머리 위에서 마우스를 좌우로 움직이거나 눌러서 쓰다듬기. 끌어서 옮기기. 두 번 누른 뒤 놓을 곳 선택. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
     <span className="sr-only" role="status">{announcement}</span>
   </div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked} monthKey={monthKey} returnFocus={() => { if (!body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
     {!suspended && !blocked ? homeVisible && homeHost ? createPortal(house, homeHost) : <div className="vc-compact-home" data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeHome(); } }}>

@@ -16,20 +16,24 @@
   box-shadow: inset 0 1px 0 #fff3, var(--elev-1);
   font-size: var(--text-body);
 }
-.vc-home-room { position: relative; height: 168px; overflow: hidden; border-radius: var(--r-sm); background: var(--vc-wall); }
-.vc-home-heading { position: absolute; z-index: 3; inset: 0 0 auto; display: flex; align-items: center; justify-content: space-between; height: var(--control-hit); padding-left: 10px; pointer-events: none; }
-.vc-home-mark { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); }
-.vc-home-bond { display: inline-flex; color: color-mix(in srgb, var(--muted) 55%, #ba9086); }
+.vc-home-room { position: relative; height: 132px; overflow: hidden; border-radius: var(--r-sm); background: var(--vc-wall); }
 .vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
-.vc-home-window { position: absolute; left: 20px; top: 43px; width: 64px; height: 56px; }
+.vc-home-window { position: absolute; left: 20px; top: 14px; width: 64px; height: 56px; }
 .vc-window-frame { fill: rgb(var(--glass-panel)); stroke: var(--line); }
 .vc-window-sky { fill: color-mix(in srgb, rgb(var(--glass-panel)) 62%, #b2c8c5); }
 .vc-window-sun { fill: color-mix(in srgb, rgb(var(--glass-panel)) 24%, #e4d9a8); }
 .vc-window-hill { fill: color-mix(in srgb, rgb(var(--glass-panel)) 62%, #b6c8ad); }
 .vc-window-mullion { fill: none; stroke: rgb(var(--glass-panel)); stroke-width: 2; }
 .vc-window-sill { fill: none; stroke: var(--line); stroke-width: 2; stroke-linecap: round; }
-.vc-home-light { position: absolute; top: 35px; left: 77px; width: 45%; height: 96px; background: linear-gradient(125deg, #eadbb31a, transparent 80%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
+.vc-home-shelf { position: absolute; top: 9px; right: 7%; width: 34%; max-width: 108px; height: 55px; fill: none; stroke: var(--line); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.vc-shelf-frame { fill: rgb(var(--glass-panel)); }
+.vc-shelf-picture { fill: var(--vc-sage); stroke: none; }
+.vc-shelf-picture-sun { fill: color-mix(in srgb, rgb(var(--glass-panel)) 24%, #e4d9a8); stroke: none; }
+.vc-shelf-stem { fill: color-mix(in srgb, var(--vc-sage) 72%, #7a9172); stroke: color-mix(in srgb, var(--vc-sage) 70%, var(--muted)); }
+.vc-shelf-pot { fill: color-mix(in srgb, rgb(var(--glass-panel)) 64%, #cba995); }
+.vc-shelf-board { stroke: color-mix(in srgb, var(--muted) 24%, transparent); stroke-width: 3; }
+.vc-home-light { position: absolute; top: 18px; left: 77px; width: 45%; height: 96px; background: linear-gradient(125deg, #eadbb31a, transparent 80%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
 .vc-home-floor { position: absolute; inset: auto 0 0; height: 36px; background: linear-gradient(180deg, transparent, var(--vc-floor)); pointer-events: none; }
 .vc-home-rug { position: absolute; left: 8%; bottom: 9px; width: 48%; height: 20px; border-radius: 50%; background: color-mix(in srgb, var(--vc-sage) 35%, transparent); pointer-events: none; }
 .vc-cushion-button { position: absolute; z-index: 2; left: 11%; bottom: 10px; width: 42%; height: 70px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }

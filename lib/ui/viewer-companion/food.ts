@@ -4,6 +4,24 @@ export const MAX_COMPANION_FOOD = 3;
 export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
 export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number };
+export type CompanionFoodAttachment = { documentX: number; documentY: number; offsetX: number; offsetY: number };
+type Point = { x: number; y: number };
+type AnchorRect = { left: number; top: number; width?: number; height?: number };
+
+/** A local attachment contains only coordinates. DOM identity stays with the
+ * presentation layer; visibility never chooses a replacement support. */
+export function attachCompanionFood(point: Point, scroll: Point, origin?: Point): CompanionFoodAttachment {
+  return { documentX: point.x + scroll.x, documentY: point.y + scroll.y, offsetX: origin ? point.x - origin.x : 0, offsetY: origin ? point.y - origin.y : 0 };
+}
+
+export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect): { point: Point; attachment: CompanionFoodAttachment } {
+  // Width/height change is an actual reflow: keep the same source and clamp
+  // only to its new local bounds. Scrolling alone never changes either offset.
+  const localX = rect?.width !== undefined ? Math.min(attachment.offsetX, Math.max(0, rect.width)) : attachment.offsetX;
+  const localY = rect?.height !== undefined ? Math.min(attachment.offsetY, Math.max(-3, rect.height - 3)) : attachment.offsetY;
+  const point = rect ? { x: rect.left + localX, y: rect.top + localY } : { x: attachment.documentX - scroll.x, y: attachment.documentY - scroll.y };
+  return { point, attachment: { ...attachment, documentX: point.x + scroll.x, documentY: point.y + scroll.y } };
+}
 
 /** Logical support coordinates stay unchanged while the separate presentation
  * approaches the mouth. Mouth coordinates describe its viewport centre; the
@@ -28,9 +46,8 @@ export function companionTrashProgress(elapsedMs: number): number {
   return Number.isFinite(elapsedMs) ? Math.max(0, Math.min(1, elapsedMs / COMPANION_TRASH_DWELL_MS)) : 0;
 }
 
-/** Fruit rests on a visible ledge, never over schedule text. A removed ledge
- * drops it onto the next visible support/floor; it does not become a floating
- * unreachable target after scrolling or changing calendar layout. */
+/** Initial deliberate placement chooses a safe ledge. Following later uses
+ * its attachment, so scrolling cannot make this choose a different day. */
 export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[]): CompanionFood {
   const below = platforms.filter(p => p.y >= point.y - 12 && point.x >= p.x - 12 && point.x <= p.x + p.width + 12);
   const support = nearestPlatform(point, below) ?? platforms.find(p => p.kind === "floor") ?? nearestPlatform(point, platforms);
@@ -40,5 +57,5 @@ export function placeCompanionFood(food: CompanionFood, point: { x: number; y: n
 
 export function reconcileCompanionFood(food: CompanionFood, platforms: readonly Platform[]): CompanionFood {
   const support = platforms.find(p => p.id === food.platformId);
-  return support ? { ...food, x: platformLandingX(support, food.x), y: support.y } : placeCompanionFood(food, food, platforms);
+  return support ? { ...food, x: platformLandingX(support, food.x), y: support.y } : { ...food };
 }

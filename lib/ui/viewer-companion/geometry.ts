@@ -16,7 +16,8 @@ export type CompanionFootprint = { width: number; height: number };
 export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; serial: number };
 export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity };
 export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number };
-export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[] };
+export type CompanionGeometryAnchor = { element?: Element; left: number; top: number };
+export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined };
 
 /** A renderer can retain anonymous anchor identity while its observers sleep. */
 export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
@@ -82,7 +83,7 @@ export function safeCompanionSurfaces(
  * Nothing is measured on an idle animation loop; layout events coalesce. */
 export function observeCompanionPlatforms(root: HTMLElement, onChange: (platforms: Platform[]) => void, options: CompanionGeometryOptions = {}): CompanionGeometrySubscription {
   const win = root.ownerDocument.defaultView;
-  if (!win) return Object.assign(() => {}, { follow: (): CompanionFollowSample[] => [] });
+  if (!win) return Object.assign(() => {}, { follow: (): CompanionFollowSample[] => [], anchor: () => undefined });
   const size = Number.isFinite(options.size) && options.size! > 0 ? options.size! : DEFAULT_SIZE;
   // Registered/curated atlas union occupies <.70 width and <.713 height of the
   // square cell. .76 plus 3px clearance includes pose bob/scale and pixel edges;
@@ -331,6 +332,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       timer = win!.setTimeout(() => { timer = 0; if (!disposed) frame = win!.requestAnimationFrame(measure); }, wait);
     } else frame = win!.requestAnimationFrame(measure);
   }
+  // A disclosure can close and reopen inside the same measurement interval.
+  // Its final geometry may equal the previous scan, but residents still need
+  // an explicit visibility validation after the temporary hidden state.
+  const panelChanged = () => { previous = ""; schedule(); };
 
   const mutationObserver = new MutationObserver(records => {
     if (records.some(record => record.type === "childList" || record.type === "attributes" || record.type === "characterData")) schedule();
@@ -350,6 +355,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   win.visualViewport?.addEventListener("resize", schedule, { passive: true });
   win.visualViewport?.addEventListener("scroll", schedule, { passive: true });
   win.addEventListener("vic:companion-home", schedule);
+  win.addEventListener("vic:panel-section", panelChanged);
   root.addEventListener("transitionend", schedule);
   root.addEventListener("animationend", schedule);
   root.ownerDocument.fonts?.addEventListener("loadingdone", schedule);
@@ -370,12 +376,20 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     win.visualViewport?.removeEventListener("resize", schedule);
     win.visualViewport?.removeEventListener("scroll", schedule);
     win.removeEventListener("vic:companion-home", schedule);
+    win.removeEventListener("vic:panel-section", panelChanged);
     root.removeEventListener("transitionend", schedule);
     root.removeEventListener("animationend", schedule);
     root.ownerDocument.fonts?.removeEventListener("loadingdone", schedule);
     observed.clear();
   };
   return Object.assign(dispose, {
+    // Food captures its own small set of anchor offsets at placement. Expose
+    // the already measured baseline, without enlarging the pet's follow pair
+    // or doing an additional selector/Range/rect read.
+    anchor(id: string): CompanionGeometryAnchor | undefined {
+      const snapshot = anchors.get(id);
+      return snapshot ? { element: snapshot.anchor, left: snapshot.rect?.left ?? 0, top: snapshot.rect?.top ?? 0 } : undefined;
+    },
     follow(requested: readonly string[]): CompanionFollowSample[] {
       if (!root.isConnected) { anchors.clear(); followedIds = []; retainedIds.clear(); return []; }
       followedIds = [...new Set(requested)].slice(0, 2);
