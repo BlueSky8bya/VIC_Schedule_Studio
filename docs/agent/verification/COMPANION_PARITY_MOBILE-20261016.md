@@ -21,17 +21,25 @@
 | 모바일/설정/최초공개 | 설정2 PASS: native390·1120×600 가로 터치에서 양쪽44×44/right14, X/Back/focus/route 일치. 최초공개·anchor34 고유 PASS(초기32+모바일 snapshot2 갱신 뒤 normal 재검사2). 모바일1/2/3/5·mixed·844가로 관객 DOM/atlas0, 타이머·기대·본문/태그/exit 유지. PC seed/개별 turn·fade/음악/진입·복귀 유지. 공통 모바일 제외8 PASS: public/studio/preview ×390·1120가로 +PC양쪽 resize. pet/집/음식/탭/atlas0, masterON 취향·1840 export 보존 |
 | PC 공유/교감 회귀 | 16 PASS: 실제 Studio geometry1+역할별 공유2+contact4+잡기/관성5+집 light/dark2+집 바닥 음식2. reduced/off 중립·parked mutation0·소파 레이어/주민·최초공개 집 깨기/73초 진입 유지. POST0/errors0 |
 | 문서 하네스 | 기존 inventory/mapping 불일치2건으로 exit1. 단위25 PASS와 구별 |
-| 배포 | 미실행. 제품/문서 SHA와 실제 운영 결과를 확인한 뒤 기입 |
+| 배포 | 제품 `db1d53e81fe1b23b045d5a8cf8f7ce2193663492` main 커밋/푸시, GitHub/Vercel success와 운영 동일 build 확인. 익명 fixture/Studio gate3 PASS. 실제 PC1920/DPR2 +native390·1120가로/DPR1 smoke3 PASS |
 
 기존 모바일 pet 양성 검사38개는 최신 제외 정책으로 철수하고 PC 검사를 유지했다. 새 음성 capability·회전/resize·설정·모바일 최초공개 검사로 대체한다. 검사 발견 수를 실행 PASS로 세지 않는다. 실패한 탐색과 의도한 모바일 snapshot 변경은 최종 재검증과 구별한다.
 
-총 고유 UI61 PASS=설정2+숨기1+최초공개/anchor34+PC회귀16+모바일 제외8. 모든 실제 서버 쓰기는 차단했으며 돌연변이 요청0/pageerror0이다. 미리보기의 기존 읽기 전용 `getPublicPreviewAction`도 POST transport라서 build manifest의 정확한 exportedName/id만 분리하고 공개 전용 fixture로 응답했다(각 preview1회, 실제 DB/서버 전달0). 모바일 초기 검사의 숨겨진 desktop 탭 클릭, 읽기 POST를 쓰기로 분류한 가정, 공개 fixture import 실수를 바로잡고 최종8 전체를 다시 실행해22.6초/실패·skip·flaky0을 확인했다. 제품을 이 검사에 맞춰 완화하지 않았다.
+총 고유 UI61 PASS=설정2+숨기1+최초공개/anchor34+PC회귀16+모바일 제외8. 모든 실제 서버 쓰기는 차단했으며 데이터 변경 요청0/pageerror0이다. 미리보기의 기존 읽기 전용 `getPublicPreviewAction`도 POST transport라서 build manifest의 정확한 exportedName/id만 분리하고 공개 전용 fixture로 응답했다(각 preview1회, 실제 DB/서버 전달0). 모바일 초기 검사의 숨겨진 desktop 탭 클릭, 읽기 POST를 쓰기로 분류한 가정, 공개 fixture import 실수를 바로잡고 최종8 전체를 다시 실행해22.6초/실패·skip·flaky0을 확인했다. 제품을 이 검사에 맞춰 완화하지 않았다.
 
 초기 실제 UI 검사에서 공개 설정창의 trap/초점 복원 누락과 편집창 테두리SVG의 빈 내부를 장애물로 잡는 문제를 발견했다. 기존 공유 trap과 opener 순서로 고치고, 명시 editor의 직접 장식 `svg.editor-ring[aria-hidden]`만 기하 예외로 두었다. 실제 이미지/버튼/다른 편집칸 보호와 밀집 입력 fallback은 유지한다. 재검사에서 설정2와 내용칸/수면/꺼내기는 통과했다. 다른 창과의 동시 유지 검사는 기존 편집기 외부 pointer 닫기 정책을 바꾸지 않도록 native keyboard로 열고 닫는다. 초기 실패 기록은 별도 보존한다.
 
 최초공개 초기34회 실행은32 PASS+의도한 모바일 기준 이미지2 FAIL이었다. 제거된 관객과 줄어든 화면 높이를 before/after에서 직접 검수하고 `wish-background-390/844`만 갱신했다. 같은2개 normal 재검사가 PASS였으며 PC1100 기준선 SHA는 불변이다. 단일34 green 실행으로 바꿔 적지 않는다. `.scratch-pw/companion-063-premiere-review-report.json`, `companion-063-wish-{update,check}-report.json`, `companion-063-gear-hide-final-receipt.json`.
 
 추가 근거: `.scratch-pw/companion-063-{integration-qa-summary,mobile-report,product-hashes}.json`, `companion-063-studio-follow.json`, `companion-059-063-mobile-verified.log`. 기존062 raw/운영/이미지 근거는 별도 백업과 SHA 대조 후 보존했다. 사용자의 미술 기록26줄·보류 자산·개인 로컬 파일은 커밋에서 제외한다.
+
+## 운영 배포
+
+제품 `db1d53e81fe1b23b045d5a8cf8f7ce2193663492`를 main에 푸시하고 [Vercel 성공 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/8nnjEww3Gv1TWQEQNNdXrnhVpjGg), 운영 `/api/soop-live`의 같은 build를 확인했다. `.scratch-pw/companion-063-production-deploy.json`.
+
+실제 익명 `/`의 과거2025-09에서 PC1920/DPR2는 HD·그립/세로 늘어짐/관성·소파와 별개 바닥 낙하·먹이8개 cap·호버/일반 달력 클릭 무이동·집 접기/귀환을 통과했다. native390×844·1120×600 coarse/DPR1은 저장된 masterON을 유지하면서 초기 순간을 포함한 pet/집/음식/관객 DOM0·자산 요청0·설정 탭0이었다. 같은44×44 설정 버튼은 y9/right14, 실제 터치·보이는 slider의 키 입력/원복·X·브라우저 Back·focus를 통과했다. 각 운영 화면의 POST1건은 가로채 실제 전달0, pageerror0이었다. 실제 로그인/DB 수정은 없었다. 최초 운영 모바일 검사의 숨긴 nav 탭 가정을 바로잡은 뒤 모바일2만 재실행했으며 PC 성공을 재실행 횟수로 부풀리지 않는다. `.scratch-pw/companion-063-{public-production,pc-public-production}.json` 및 초기 별도 raw/log.
+
+운영 fixture poster/studio는 스트리밍404 fallback·제품 markup0, 익명 Studio는 HTTP200 안의 공개 `/` redirect 지시와 제품 markup0을 확인했다. HTTP3xx만으로 인증 경계를 판정하지 않았다. `.scratch-pw/companion-063-production-gates.json`. 이후 마감 커밋은 완료 상태/검증 문서만 포함하며 실제 운영 build SHA도 다시 확인한다.
 
 ## 한계
 
