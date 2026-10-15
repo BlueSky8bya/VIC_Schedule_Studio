@@ -47,6 +47,8 @@
 
 9표본 모두 POST0/layout0. parked의 자율 companion timer/brain/Range/DOM write0은 별도 상호작용 검사로 확인했으며 CSS 호흡/꿈과 페이지의 기존 작업이 완전히 무비용이라는 뜻은 아니다. 원자료는 ignored `.scratch-pw/companion-direct-metrics.json`에 둔다.
 
-배포 확인 진행 중. 실제 OBS/GPU·OS focus·Safari·스크린리더 장비는 별도 미검증이다. 이벤트로 만든 blur 검사는 실제 운영체제의 창 전환/브라우저 throttling을 증명하지 않는다.
+기능 커밋 `5d10e17dc04b3cae7880dab6bd043046d16cfb2d`를 main에 push했고 Vercel success와 실제 서비스 `/api/soop-live`의 동일 build SHA를 확인했다. 운영 anonymous `/`를 과거2025-09로 열어1920 PC/390 trusted touch 각각 기본OFF atlas0·tap/즉시drag·랜덤SVG 먹기·쿠션복귀·반응형 동일 개체·설정OFF·export 내부 요소0·pageerror0을 재검사했다. 두 화면 모두 통과, 각각 기존 초기 POST1 차단/전송0, 운영390 캡처도 직접 열어 확인했다. 배포 증거는 ignored `.scratch-pw/companion-direct-production-deploy.json`, 운영 입력 결과는 `companion-direct-root-production.json`이다. 실제 DB 시험 데이터0. 이후 문서 커밋은 이 기능 배포 결과를 기록하며 기능 변경은 없다.
+
+실제 OBS/GPU·OS focus·Safari·스크린리더 장비는 별도 미검증이다. 이벤트로 만든 blur 검사는 실제 운영체제의 창 전환/브라우저 throttling을 증명하지 않는다. 보존된 캐릭터 atlas는987,198bytes/SHA256 `140a2485bd3afbdcd072c6456146ea9b7074d9c71bafe1fbd01241b38aed2ef9`이며 이번 작업에 raster 재생성은 없다.
 
 범위: public viewer/anonymous/studio viewer preview 공용 client feature. 서버 공개 DTO/권한/unlock/DB/KST/1840 표면 변경0, 외부 추론/모델/DB polling0. fixture 또는 과거 월·모든 POST 차단, 실제 DB 시험 데이터0. 기존 harness rule inventory/migration mapping2실패를 이번 기능 결과로 덮지 않는다.

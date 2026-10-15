@@ -12,4 +12,4 @@
 
 검증: 월 이동 반복/순서·집 스크롤 붙음·양방향 스크롤 반동/착지·즉시 drag/tap/취소·13과일 무작위/먹기/쓰레기통·키보드/터치·설정/중단/절전/보라하트. 관련 unit/type/lint/build와 production fixture 렌더·actual anonymous root PC/agenda, 비용·독립 검토. 실제 DB 시험 자료는 쓰지 않고 모든 POST 차단/과거 월을 쓴다. 승인된 commit/push/기능 배포 후 live SHA/운영 UI 확인.
 
-상태: 진행 중. [검증 기록](../verification/VIEWER_VICTAMIN_DIRECT_LIFE-20261015.md).
+상태: 완료. 기능 `5d10e17d` main push·Vercel success·운영 동일 SHA/실제 anonymous PC/터치 확인. type/lint/build·unit204·browser76 고유 회귀·9비용 표본 통과. 실제 OBS/OS-focus·모바일 visible→visible 월 이동 증거와 기존 harness2 실패는 제한으로 남긴다. [검증 기록](../verification/VIEWER_VICTAMIN_DIRECT_LIFE-20261015.md).
