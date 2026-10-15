@@ -14,4 +14,4 @@
 
 ## 결과
 
-로컬 구현·확대 소파 검수 완료, 배포 확인 진행 중. 관련 단위388/388, 최종 이음선 교정본 build/lint/type0, 주름 교정 집4뷰 모두 PASS. 마지막 정적 이음선 변경은 새 빌드 확대4장/실제PC2장으로 독립 재검수했다. 기존 회귀62/64 뒤 판정 경로/실시간 카드 기하를 교정한 타겟2건 각각 PASS, 실제 잡힘/전체 pose 가장자리 별도3건 PASS. 공유 공개 경로 PC/native390 로컬 확인은 주름 교정 전 버전에서 수행했으며 운영은 최종본으로 다시 확인한다. 기존 harness inventory2 실패와 음식 상세창 중16px 미확정 관측은 [검증 기록](../verification/VIEWER_VICTAMIN_PLUSH_GRAVITY-20261016.md)에 분리했다. 실행하지 않은 검사는 통과로 표시하지 않는다.
+제품 `309cbfe0` 푸시·배포 SHA 및 운영 PC/native390 확인 완료. 관련 단위388/388, 최종 이음선 교정본 build/lint/type0, 주름 교정 집4뷰 모두 PASS. 마지막 정적 이음선 변경은 새 빌드 확대4장/실제PC2장으로 독립 재검수했다. 기존 회귀62/64 뒤 판정 경로/실시간 카드 기하를 교정한 타겟2건 각각 PASS, 실제 잡힘/전체 pose 가장자리 별도3건 PASS. 기존 harness inventory2 실패와 음식 상세창 중16px 미확정 관측은 [검증 기록](../verification/VIEWER_VICTAMIN_PLUSH_GRAVITY-20261016.md)에 분리했다. 이후 음식의 소파 착지는 최신 소유자 요청 [PLAN-059](PLAN-20261016-059-companion-food-floor-only.md)에서 대체한다. 실행하지 않은 검사는 통과로 표시하지 않는다.

@@ -271,7 +271,6 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (rect.width > 0 && rect.height > 0 && rect.top >= height * .65 && rect.bottom <= height + 1) floorY = Math.min(floorY, rect.top - 8);
       }
       addSurface("viewport-floor", "floor", { x: 12, y: floorY, width: width - 24 });
-      let homeFood: { spans: CompanionSurface[]; anchor: HTMLElement; rect: DOMRect } | undefined;
       if (home?.isConnected && visible(home)) {
         const rect = home.getBoundingClientRect();
         const clip = clipping(home.parentElement);
@@ -280,7 +279,6 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const centre = rect.left + rect.width / 2;
         const preferred = safe.sort((a, b) => Math.abs(a.x + a.width / 2 - centre) - Math.abs(b.x + b.width / 2 - centre))[0];
         if (rect.height > 0 && preferred && platforms.length < MAX_PLATFORMS) remember({ id: "companion-home", ...preferred, kind: "date" }, home, rect);
-        if (rect.height > 0 && rect.top >= clip.top && rect.top < clip.bottom) homeFood = { spans: safeCompanionSurfaces({ x, y: rect.top, width: right - x }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), anchor: home, rect };
       }
       const homeFloor = house?.querySelector<HTMLElement>(".vc-home-floor");
       if (homeFloor?.isConnected && visible(homeFloor)) {
@@ -306,7 +304,6 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       // A dense calendar cannot spend the whole bounded food snapshot before
       // its real house floor is published. First-contact selection still sorts
       // by physical height rather than this list order.
-      if (homeFood) rememberFood("companion-home-food", homeFood.spans, "date", homeFood.anchor, homeFood.rect);
       rememberFood("viewport-floor-food", safeCompanionSurfaces({ x: 12, y: floorY, width: width - 24 }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor");
       // These are existing visible physical edges, not extra rows or invented
       // heights. Header bottoms leave the92px cell inside the viewport; every

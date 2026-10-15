@@ -11,11 +11,25 @@ const foods = (page: Page) => page.locator(".vc-food");
 const pet = (page: Page) => page.locator(".vc-companion");
 const observed = new WeakMap<Page, { posts: string[]; errors: string[] }>();
 type Point = { x: number; y: number };
+type CapacityWindow = Window & { replacementFall?: { fell: boolean; observer: MutationObserver } };
 const position = (item: Locator) => item.evaluate(node => {
   const matrix = new DOMMatrixReadOnly(node.closest("[hidden]") ? (node as HTMLElement).style.transform : getComputedStyle(node).transform);
   return { x: matrix.m41, y: matrix.m42 };
 });
 async function press(item: Locator, touch: boolean) { if (touch) await item.tap(); else await item.click(); }
+async function pressExposed(page: Page, item: Locator, touch: boolean) {
+  const point = await item.evaluate(node => {
+    const r = node.getBoundingClientRect();
+    for (const fy of [.5, .12, .88, .25, .75]) for (const fx of [.5, .12, .88, .25, .75]) {
+      const point = { x: r.left + r.width * fx, y: r.top + r.height * fy };
+      const hit = document.elementFromPoint(point.x, point.y);
+      if (hit && (hit === node || node.contains(hit))) return point;
+    }
+    return null;
+  });
+  expect(point, "the native sofa control needs an exposed point beside its floor resident").not.toBeNull();
+  if (touch) await page.touchscreen.tap(point!.x, point!.y); else await page.mouse.click(point!.x, point!.y);
+}
 async function drag(page: Page, item: Locator, target: Point, touch: boolean) {
   const rect = (await item.boundingBox())!, start = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   if (!touch) { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 12 }); await page.mouse.up(); return; }
@@ -89,15 +103,27 @@ for (const touch of [false, true]) test.describe(touch ? "native390 eight snacks
     await expect(foods(page)).toHaveCount(MAX_COMPANION_FOOD - 1);
     expect(await foods(page).evaluateAll(nodes => nodes.map(node => node.getAttribute("data-food")))).toEqual(ids.slice(0, -1));
 
+    // One meal can leave hunger above the real feeding threshold. Request a
+    // native sofa nap before testing replacement/folding/trash, so an allowed
+    // second floor meal does not race this separate capacity interaction.
+    await pressExposed(page, house(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }), touch);
+    await expect(pet(page)).toHaveAttribute("data-platform", "companion-home"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+
     // Consuming one item reopens exactly one slot; the remaining seven objects
-    // keep their identities. The new item still uses ordinary bed attachment.
+    // keep their identities. A replacement released over the sofa passes
+    // through its seat and attaches to the real house floor below it.
     await press(feed, touch); await expect(foods(page)).toHaveCount(MAX_COMPANION_FOOD);
     const replacement = foods(page).last(), replacementId = await replacement.getAttribute("data-food");
     expect(ids).not.toContain(replacementId);
     const bed = (await house(page).locator(".vc-cushion-button").boundingBox())!;
+    await replacement.evaluate(node => { const witness = { fell: false, observer: new MutationObserver(records => { witness.fell ||= node.hasAttribute("data-falling") || records.some(record => record.oldValue !== null); }) }; witness.observer.observe(node, { attributes: true, attributeFilter: ["data-falling"], attributeOldValue: true }); (window as CapacityWindow).replacementFall = witness; });
     await drag(page, replacement, { x: bed.x + bed.width / 2, y: bed.y + 3 }, touch);
+    await expect.poll(() => page.evaluate(() => Boolean((window as CapacityWindow).replacementFall?.fell))).toBe(true);
+    await page.evaluate(() => (window as CapacityWindow).replacementFall?.observer.disconnect());
     await expect(replacement).not.toHaveAttribute("data-falling");
     const placed = await position(replacement);
+    const floor = (await house(page).locator(".vc-home-floor").boundingBox())!;
+    expect(Math.abs(placed.y - (floor.y + floor.height - COMPANION_HOME_FLOOR_INSET))).toBeLessThan(2);
     const fold = house(page).getByRole("button", { name: "빅타민 집", exact: true });
     await press(fold, touch); await expect(fold).toHaveAttribute("aria-expanded", "false");
     await expect(page.locator(".vc-food:not([hidden])")).toHaveCount(0);

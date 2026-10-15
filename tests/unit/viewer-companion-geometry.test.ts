@@ -267,13 +267,17 @@ describe("companion geometry anchor subscription", () => {
     expect(subscription.landings(32).find(p => p.id === food.id)?.x).toBe(26);
     subscription();
   });
-  it("computes real home and floor food supports independently of the larger pet clearance", () => {
+  it("retains the creature sofa but never publishes it as a food landing, including at food-only heights", () => {
     const fixture = geometryFixture(); fixture.home.rect = box(200, 62, 120, 2);
     const control = new FixtureElement(); control.parentElement = fixture.sourceRoot; control.rect = box(0, 680, 1000, 40); fixture.controls.push(control);
     const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92, home: fixture.home as unknown as HTMLElement }); fixture.flush();
     expect(subscription.landings().some(p => p.id === "companion-home" || p.kind === "floor")).toBe(false);
-    expect(subscription.landings(32).some(p => p.id === "companion-home-food" && p.y === 62)).toBe(true);
+    expect(subscription.landings(32).some(p => /^companion-home(?:-food)?(?:-\d+)?$/.test(p.id))).toBe(false);
     expect(subscription.landings(32).some(p => p.id === "viewport-floor-food" && p.y === 782)).toBe(true);
+    fixture.home.rect = box(200, 600, 120, 2); fixture.win.emit("resize"); fixture.advance(120);
+    expect(subscription.landings().find(p => p.id === "companion-home")).toMatchObject({ y: 600 });
+    expect(subscription.landings(32).some(p => /^companion-home(?:-food)?(?:-\d+)?$/.test(p.id))).toBe(false);
+    expect(subscription.anchor("companion-home-food")).toBeUndefined();
     subscription();
   });
   it("publishes food-only geometry changes and retains full control protection at the food tier", () => {

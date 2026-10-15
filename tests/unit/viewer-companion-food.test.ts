@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFood, receiveCompanionHomeFloorFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFloorFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
 
 const floor: Platform = { id: "floor", x: 12, y: 782, width: 976, kind: "floor" };
@@ -7,6 +7,18 @@ const card: Platform = { id: "card", x: 100, y: 350, width: 200, kind: "card" };
 const apple: CompanionFood = { id: "apple", x: 200, y: 340, kind: "apple" };
 
 describe("companion food support", () => {
+  it("passes through the creature's sofa and every retired food seat, retaining the real first floor below", () => {
+    const houseFloor: Platform = Object.freeze({ id: COMPANION_HOME_FLOOR_FOOD, x: 100, y: 600, width: 200, kind: "floor", manualOnly: true });
+    for (const id of ["companion-home", "companion-home-1", "companion-home-food", "companion-home-food-2", "companion-home-bed-food", "companion-home-bed-food-3"]) {
+      const seat = Object.freeze({ ...card, id, y: 450 });
+      expect(isCompanionFoodBedSupport(id)).toBe(true);
+      expect(placeCompanionFood(apple, apple, Object.freeze([floor, seat, houseFloor]))).toEqual({ ...apple, y: 600, platformId: houseFloor.id });
+      expect(placeCompanionFood(apple, apple, [seat])).toEqual(apple);
+      expect(reconcileCompanionFood({ ...apple, platformId: id }, [seat])).toEqual({ ...apple, platformId: undefined });
+      expect(seat.y).toBe(450);
+    }
+    for (const id of [undefined, COMPANION_HOME_FLOOR_FOOD, "companion-home-floor-2", "card-3-food-top", "viewport-floor-food"]) expect(isCompanionFoodBedSupport(id)).toBe(false);
+  });
   it("falls onto the real house floor first and recognizes only its explicit attachment family", () => {
     const homeFloor: Platform = { id: `${COMPANION_HOME_FLOOR_FOOD}-1`, x: 140, y: 600, width: 120, kind: "floor", manualOnly: true };
     const placed = placeCompanionFood(apple, { x: 200, y: 490 }, [floor, homeFloor]);
@@ -57,7 +69,6 @@ describe("companion food support", () => {
 });
 
 describe("companion food attachments", () => {
-  const bed = { left: 100, top: 400, width: 140, height: 78 };
   const roomFloor = { left: 100, top: 600, width: 300, height: 36 };
   it("settles a real floor release on the room's physical plane independently of its bed", () => {
     expect(receiveCompanionHomeFloorFood({ x: 220, y: 624 }, { x: 220, y: 608 }, roomFloor, [])).toEqual({ x: 220, y: 630 });
@@ -75,49 +86,36 @@ describe("companion food attachments", () => {
   it("carries a floor attachment across side/scroll/remount without settling it again", () => {
     const placed = receiveCompanionHomeFloorFood({ x: 220, y: 624 }, { x: 220, y: 608 }, roomFloor, [])!;
     const attached = attachCompanionFood(placed, { x: 0, y: 100 }, { x: roomFloor.left, y: roomFloor.top });
-    const moved = followCompanionFood(attached, { x: 0, y: 300 }, { ...roomFloor, left: 700, top: 400 }, "bed");
+    const moved = followCompanionFood(attached, { x: 0, y: 300 }, { ...roomFloor, left: 700, top: 400 }, "floor");
     expect(moved.point).toEqual({ x: 820, y: 430 });
-    expect(followCompanionFood(moved.attachment, { x: 0, y: 0 }, roomFloor, "bed").point).toEqual({ x: 220, y: 630 });
+    expect(followCompanionFood(moved.attachment, { x: 0, y: 0 }, roomFloor, "floor").point).toEqual({ x: 220, y: 630 });
   });
   it("reflows floor food around shifted controls and restores its intended local x on regrowth", () => {
     const original = { x: 250, y: 630 }, attachment = attachCompanionFood(original, { x: 0, y: 0 }, { x: roomFloor.left, y: roomFloor.top });
     const narrow = { ...roomFloor, width: 220 }, feeder = { left: 200, top: 574, width: 118, height: 54 };
-    const followed = followCompanionFood(attachment, { x: 0, y: 0 }, narrow, "bed");
+    const followed = followCompanionFood(attachment, { x: 0, y: 0 }, narrow, "floor");
     expect(receiveCompanionHomeFloorFood(followed.point, { x: followed.point.x, y: 634 }, narrow, [feeder])).toBeUndefined();
     const safe = receiveCompanionHomeFloorFood(followed.point, { x: followed.point.x, y: 634 }, narrow, [feeder], true)!;
     expect(safe).toEqual({ x: 178, y: 630 });
     const retained = { ...followed.attachment, documentX: safe.x, documentY: safe.y };
     expect(retained.offsetX).toBe(150);
-    const grown = followCompanionFood(retained, { x: 0, y: 0 }, roomFloor, "bed");
+    const grown = followCompanionFood(retained, { x: 0, y: 0 }, roomFloor, "floor");
     expect(receiveCompanionHomeFloorFood(grown.point, { x: grown.point.x, y: 634 }, roomFloor, [{ ...feeder, left: 280 }], true)).toEqual(original);
   });
-  it("receives a deliberate bed release independently of the tiny creature support", () => {
-    expect(receiveCompanionHomeFood({ x: 170, y: 450 }, { x: 170, y: 450 }, bed)).toEqual({ x: 170, y: 450 });
-    // A normal centre grab puts the logical foot16px below the pointer.
-    expect(receiveCompanionHomeFood({ x: 170, y: 486 }, { x: 170, y: 470 }, bed)).toEqual({ x: 170, y: 478 });
-    // Picking the top of the native44px control can put its foot38px below.
-    expect(receiveCompanionHomeFood({ x: 170, y: 508 }, { x: 170, y: 470 }, bed)).toEqual({ x: 170, y: 478 });
+  it("validates the actual floor recipient without accepting malformed or distant releases", () => {
+    for (const invalid of [{ ...roomFloor, width: 0 }, { ...roomFloor, height: -1 }, { ...roomFloor, left: NaN }, { ...roomFloor, top: Infinity }]) {
+      expect(receiveCompanionHomeFloorFood({ x: 220, y: 624 }, { x: 220, y: 608 }, invalid, [])).toBeUndefined();
+    }
+    expect(receiveCompanionHomeFloorFood({ x: NaN, y: 624 }, { x: 220, y: 608 }, roomFloor, [])).toBeUndefined();
+    expect(receiveCompanionHomeFloorFood({ x: 220, y: 624 }, { x: 401, y: 608 }, roomFloor, [])).toBeUndefined();
+    expect(receiveCompanionHomeFloorFood({ x: 220, y: 637 }, { x: 220, y: 635 }, roomFloor, [])).toEqual({ x: 220, y: 630 });
   });
-  it("does not attract outside releases, malformed beds or unrelated distant food", () => {
-    expect(receiveCompanionHomeFood({ x: 170, y: 450 }, { x: 170, y: 399 }, bed)).toBeUndefined();
-    expect(receiveCompanionHomeFood({ x: 170, y: 450 }, { x: 241, y: 450 }, bed)).toBeUndefined();
-    expect(receiveCompanionHomeFood({ x: 900, y: 450 }, { x: 170, y: 450 }, bed)).toBeUndefined();
-    for (const invalid of [{ ...bed, width: 0 }, { ...bed, height: -1 }, { ...bed, left: NaN }, { ...bed, top: Infinity }]) expect(receiveCompanionHomeFood({ x: 170, y: 450 }, { x: 170, y: 450 }, invalid)).toBeUndefined();
-    expect(receiveCompanionHomeFood({ x: NaN, y: 450 }, { x: 170, y: 450 }, bed)).toBeUndefined();
-  });
-  it("preserves a manually received local bed point across scroll and remount", () => {
-    const point = receiveCompanionHomeFood({ x: 170, y: 450 }, { x: 170, y: 434 }, bed)!;
-    const attached = attachCompanionFood(point, { x: 0, y: 100 }, { x: bed.left, y: bed.top });
-    const moved = followCompanionFood(attached, { x: 0, y: 180 }, { ...bed, left: 700, top: 320 }, false);
-    expect(moved.point).toEqual({ x: 770, y: 370 });
-    expect(followCompanionFood(moved.attachment, { x: 0, y: 0 }, { ...bed, left: 40, top: 600 }, false).point).toEqual({ x: 110, y: 650 });
-  });
-  it("keeps bed food inside a smaller remounted bed while remembering its original local position", () => {
-    const attached = attachCompanionFood({ x: 238, y: 476 }, { x: 0, y: 0 }, { x: bed.left, y: bed.top });
-    const smaller = followCompanionFood(attached, { x: 0, y: 0 }, { left: 700, top: 300, width: 100, height: 60 }, "bed");
-    expect(smaller.point).toEqual({ x: 800, y: 360 });
-    expect(smaller.attachment).toMatchObject({ offsetX: 138, offsetY: 76 });
-    expect(followCompanionFood(smaller.attachment, { x: 0, y: 0 }, bed, "bed").point).toEqual({ x: 238, y: 476 });
+  it("keeps floor food inside its remounted source while retaining the intended local x for regrowth", () => {
+    const attached = attachCompanionFood({ x: 398, y: 630 }, { x: 0, y: 0 }, { x: roomFloor.left, y: roomFloor.top });
+    const smaller = followCompanionFood(attached, { x: 0, y: 0 }, { left: 700, top: 300, width: 100, height: 36 }, "floor");
+    expect(smaller.point).toEqual({ x: 800, y: 330 });
+    expect(smaller.attachment).toMatchObject({ offsetX: 298, offsetY: 30 });
+    expect(followCompanionFood(smaller.attachment, { x: 0, y: 0 }, roomFloor, "floor").point).toEqual({ x: 398, y: 630 });
   });
   it("keeps a home tray outside its tiny dispenser origin without the glyph reflow clamp", () => {
     const attached = attachCompanionFood({ x: 460, y: 509 }, { x: 0, y: 0 }, { x: 500, y: 500 });

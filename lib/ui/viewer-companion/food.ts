@@ -2,6 +2,7 @@ import { platformLandingX, type CompanionFood, type Platform } from "./brain";
 import { firstCompanionSupportBelow } from "./support-landing";
 
 export { MAX_COMPANION_FOOD } from "./food-capacity";
+/** Retired attachment id, recognized only to reject stale seat targets. */
 export const COMPANION_HOME_BED_FOOD = "companion-home-bed-food";
 export const COMPANION_HOME_FLOOR_FOOD = "companion-home-floor-food";
 export const COMPANION_HOME_FLOOR_INSET = 6;
@@ -9,6 +10,11 @@ export const COMPANION_HOME_FLOOR_INSET = 6;
  * spans all retain the same home attachment after a physical falling contact. */
 export function isCompanionHomeFloorFoodSupport(id?: string): boolean {
   return /^companion-home-floor-food(?:-\d+)?$/.test(id ?? "");
+}
+/** The creature keeps its sofa support; every food path excludes that seat,
+ * including old food-only snapshots and their anonymous split segments. */
+export function isCompanionFoodBedSupport(id?: string): boolean {
+  return /^companion-home(?:-(?:food|bed-food))?(?:-\d+)?$/.test(id ?? "");
 }
 export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
@@ -18,26 +24,23 @@ type Point = { x: number; y: number };
 type AnchorRect = { left: number; top: number; width?: number; height?: number };
 type HomeFoodRect = { left: number; top: number; width: number; height: number };
 
-/** A deliberate release receives food on the visible bed, not on its two-pixel
- * creature support. Keep the release's local position; only the pointer's grab
- * offset may put the food foot just outside the bed and needs a small clamp.
- * Callers pass the real pointer (or keyboard art centre), never a nearest home. */
-export function receiveCompanionHomeFood(point: Point, release: Point, bed: HomeFoodRect): Point | undefined {
-  if (![point.x, point.y, release.x, release.y, bed.left, bed.top, bed.width, bed.height].every(Number.isFinite) || bed.width <= 0 || bed.height <= 0) return;
-  const right = bed.left + bed.width, bottom = bed.top + bed.height;
-  if (release.x < bed.left || release.x > right || release.y < bed.top || release.y > bottom) return;
+/** Validate a real floor recipient and a bounded native grab offset. This is
+ * intentionally private: a generic rectangle must not re-enable sofa drops. */
+function receivesFoodRect(point: Point, release: Point, rect: HomeFoodRect): boolean {
+  if (![point.x, point.y, release.x, release.y, rect.left, rect.top, rect.width, rect.height].every(Number.isFinite) || rect.width <= 0 || rect.height <= 0) return false;
+  const right = rect.left + rect.width, bottom = rect.top + rect.height;
+  if (release.x < rect.left || release.x > right || release.y < rect.top || release.y > bottom) return false;
   // A stale or unrelated logical position must not bind invisibly across the
   // screen. The native44px snack has at most a44px pointer-to-foot offset.
-  if (Math.abs(point.x - release.x) > 44 || Math.abs(point.y - release.y) > 44) return;
-  return { x: Math.max(bed.left, Math.min(right, point.x)), y: Math.max(bed.top, Math.min(bottom, point.y)) };
+  return Math.abs(point.x - release.x) <= 44 && Math.abs(point.y - release.y) <= 44;
 }
 
 /** The room floor is a different physical receiving surface from its bed.
  * Choose a nearby44px input-safe centre on its real plane, leaving actual
- * controls usable. The bed itself is a furnishing/recipient, not a blocker.
+ * controls usable. The sofa is a furnishing above this floor, not a recipient.
  * This runs only for an explicit drag or keyboard put-down. */
 export function receiveCompanionHomeFloorFood(point: Point, release: Point, floor: HomeFoodRect, controls: readonly HomeFoodRect[], reflow = false): Point | undefined {
-  if (!receiveCompanionHomeFood(point, release, floor) || floor.width < 44 || floor.height <= COMPANION_HOME_FLOOR_INSET) return;
+  if (!receivesFoodRect(point, release, floor) || floor.width < 44 || floor.height <= COMPANION_HOME_FLOOR_INSET) return;
   const y = reflow ? point.y : floor.top + floor.height - COMPANION_HOME_FLOOR_INSET;
   let spans: [number, number][] = [[floor.left + 22, floor.left + floor.width - 22]];
   for (const control of controls) {
@@ -58,7 +61,7 @@ export function attachCompanionFood(point: Point, scroll: Point, origin?: Point)
   return { documentX: point.x + scroll.x, documentY: point.y + scroll.y, offsetX: origin ? point.x - origin.x : 0, offsetY: origin ? point.y - origin.y : 0 };
 }
 
-export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect, clampToSource: boolean | "bed" = true): { point: Point; attachment: CompanionFoodAttachment } {
+export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect, clampToSource: boolean | "floor" = true): { point: Point; attachment: CompanionFoodAttachment } {
   // Width/height change is an actual reflow: keep the same source and clamp
   // only to its new local bounds. Scrolling alone never changes either offset.
   // A dispenser tray deliberately sits outside the tiny outlet rectangle.
@@ -66,8 +69,8 @@ export function followCompanionFood(attachment: CompanionFoodAttachment, scroll:
   let localX = attachment.offsetX, localY = attachment.offsetY;
   if (clampToSource && rect) {
     if (rect.width !== undefined) localX = Math.min(localX, Math.max(0, rect.width));
-    if (rect.height !== undefined) localY = Math.min(localY, clampToSource === "bed" ? rect.height : Math.max(-3, rect.height - 3));
-    if (clampToSource === "bed") { localX = Math.max(0, localX); localY = Math.max(0, localY); }
+    if (rect.height !== undefined) localY = Math.min(localY, clampToSource === "floor" ? rect.height : Math.max(-3, rect.height - 3));
+    if (clampToSource === "floor") { localX = Math.max(0, localX); localY = Math.max(0, localY); }
   }
   const point = rect ? { x: rect.left + localX, y: rect.top + localY } : { x: attachment.documentX - scroll.x, y: attachment.documentY - scroll.y };
   return { point, attachment: { ...attachment, documentX: point.x + scroll.x, documentY: point.y + scroll.y } };
@@ -101,12 +104,13 @@ export function companionTrashProgress(elapsedMs: number): number {
  * a floor or teleports a dropped fruit to a different calendar column. */
 export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[]): CompanionFood {
   if (![point.x, point.y].every(Number.isFinite)) return { id: food.id, kind: food.kind, x: food.x, y: food.y };
-  const support = firstCompanionSupportBelow(point, platforms, 22);
+  const support = firstCompanionSupportBelow(point, platforms.filter(platform => !isCompanionFoodBedSupport(platform.id)), 22);
   return support ? { id: food.id, kind: food.kind, x: Math.max(support.x, Math.min(support.x + support.width, point.x)), y: support.y, platformId: support.id }
     : { id: food.id, kind: food.kind, x: point.x, y: point.y };
 }
 
 export function reconcileCompanionFood(food: CompanionFood, platforms: readonly Platform[]): CompanionFood {
-  const support = platforms.find(p => p.id === food.platformId);
+  if (isCompanionFoodBedSupport(food.platformId)) return { ...food, platformId: undefined };
+  const support = platforms.find(p => p.id === food.platformId && !isCompanionFoodBedSupport(p.id));
   return support ? { ...food, x: platformLandingX(support, food.x), y: support.y } : { ...food };
 }

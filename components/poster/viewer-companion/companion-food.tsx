@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_HOME_BED_FOOD, COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFood, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { createCompanionFoodGravity } from "@/lib/ui/viewer-companion/food-gravity";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
@@ -26,9 +26,9 @@ type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus
 type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; offset: Point; moved: boolean; startHome?: HomeAnchor };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
-type HomeAnchor = "tray" | "bed" | "floor";
-const homeSelector = (kind: HomeAnchor) => kind === "bed" ? ".vc-home .vc-cushion-button" : kind === "floor" ? ".vc-home .vc-home-floor" : ".vc-home .vc-dispenser-slot";
-const homeFoodId = (kind?: HomeAnchor) => kind === "bed" ? COMPANION_HOME_BED_FOOD : kind === "floor" ? COMPANION_HOME_FLOOR_FOOD : undefined;
+type HomeAnchor = "tray" | "floor";
+const homeSelector = (kind: HomeAnchor) => kind === "floor" ? ".vc-home .vc-home-floor" : ".vc-home .vc-dispenser-slot";
+const homeFoodId = (kind?: HomeAnchor) => kind === "floor" ? COMPANION_HOME_FLOOR_FOOD : undefined;
 const homeControlRects = (element: Element, measured = new Map<Element, DOMRect>()) => [...element.closest(".vc-home")!.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role=button]")].filter(node => !node.matches(".vc-cushion-button")).map(node => {
   let rect = measured.get(node);
   if (!rect) { rect = node.getBoundingClientRect(); measured.set(node, rect); }
@@ -102,23 +102,20 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // visible recipient, including when captured food/creature is in front.
     const hit = document.elementsFromPoint(release.x, release.y).find(node => !node.closest(".vc-food-layer,.vc-companion"));
     if (!hit) return;
-    for (const kind of ["bed", "floor"] as const) {
-      const element = document.querySelector<HTMLElement>(homeSelector(kind));
-      // Sleep's disabled cushion still receives food. Visibility and modal
-      // ownership, rather than that separate preference, decide availability.
-      if (!element?.isConnected || element.matches("[hidden],[inert],[data-panel-collapsed]") || element.parentElement?.closest("[hidden],[inert],[aria-hidden=true],[data-panel-collapsed]")) continue;
-      // The floor span is decorative aria-hidden content, while its visible
-      // room still receives drops. An aria-hidden ancestor remains unavailable.
-      if (kind === "bed" && element.getAttribute("aria-hidden") === "true") continue;
-      const style = getComputedStyle(element);
-      if (style.visibility === "hidden" || Number(style.opacity || 1) <= .05) continue;
-      const room = element.closest(".vc-home-room");
-      if (kind === "bed" ? hit !== element && !element.contains(hit) : hit !== room && hit !== element) continue;
-      const rect = element.getBoundingClientRect();
-      const controls = kind === "floor" ? homeControlRects(element) : [];
-      const placed = kind === "bed" ? receiveCompanionHomeFood(point, release, rect) : receiveCompanionHomeFloorFood(point, release, rect, controls);
-      if (placed) return { element, rect, point: placed, kind };
-    }
+    const element = document.querySelector<HTMLElement>(homeSelector("floor"));
+    // The decorative floor receives direct drops; the sofa is never a food
+    // support. A release above the floor continues through the shared gravity.
+    if (!element?.isConnected || element.matches("[hidden],[inert],[data-panel-collapsed]") || element.parentElement?.closest("[hidden],[inert],[aria-hidden=true],[data-panel-collapsed]")) return;
+    const style = getComputedStyle(element);
+    if (style.visibility === "hidden" || Number(style.opacity || 1) <= .05) return;
+    const room = element.closest(".vc-home-room");
+    // The sofa art overlaps the real floor at its feet. This grants only the
+    // floor's own rectangle; touching its seat cannot bind a snack to the bed.
+    const throughSofa = room?.contains(hit) && Boolean(hit.closest(".vc-cushion-button"));
+    if (hit !== room && hit !== element && !throughSofa) return;
+    const rect = element.getBoundingClientRect();
+    const placed = receiveCompanionHomeFloorFood(point, release, rect, homeControlRects(element));
+    if (placed) return { element, rect, point: placed, kind: "floor" as const };
   }, []);
   const bindHome = useCallback((food: Food, target: NonNullable<ReturnType<typeof receivingHome>>) => {
     const placed: Food = { id: food.id, kind: food.kind, ...target.point, platformId: homeFoodId(target.kind) };
@@ -189,7 +186,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (!rect) { rect = bound.element.getBoundingClientRect(); measured.set(bound.element, rect); }
         if (rect.width <= 0 || rect.height <= 0 || bound.element.closest("[data-panel-collapsed]")) { visibility.current.set(food.id, false); paint(food); return food; }
       }
-      let followed = followCompanionFood(bound.position, scroll, rect, bound.home === "tray" ? false : bound.home ? "bed" : true);
+      let followed = followCompanionFood(bound.position, scroll, rect, bound.home === "tray" ? false : bound.home === "floor" ? "floor" : true);
       if (bound.home === "floor" && rect && bound.element) {
         const safe = receiveCompanionHomeFloorFood(followed.point, { x: followed.point.x, y: rect.top + rect.height - 2 }, rect, homeControlRects(bound.element, measured), true);
         if (!safe) { visibility.current.set(food.id, false); paint(food); return food; }
@@ -448,12 +445,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         const drag = dragging.current; if (!drag || drag.id !== food.id || drag.pointer !== event.pointerId) return;
         if (Math.hypot(event.clientX - drag.start.x, event.clientY - drag.start.y) > 6) drag.moved = true;
         if (!drag.moved) return;
-        let point = { x: clamp(event.clientX - drag.offset.x, 24, innerWidth - 24), y: clamp(event.clientY - drag.offset.y, 48, innerHeight - 24) };
+        const point = { x: clamp(event.clientX - drag.offset.x, 24, innerWidth - 24), y: clamp(event.clientY - drag.offset.y, 48, innerHeight - 24) };
         const home = drag.startHome ? receivingHome(point, { x: event.clientX, y: event.clientY }) : undefined;
         if (home) {
           // Keep a floor drag under its pointer until it is actually released.
           // The floor plane is committed once, never forced on held frames.
-          if (home.kind === "bed") point = home.point;
           attachments.current.set(food.id, { home: home.kind, element: home.element, position: attachCompanionFood(home.point, { x: scrollX, y: scrollY }, { x: home.rect.left, y: home.rect.top }) });
         }
         else attachments.current.delete(food.id);
