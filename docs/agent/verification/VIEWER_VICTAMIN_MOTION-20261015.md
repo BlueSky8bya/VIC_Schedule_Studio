@@ -80,4 +80,10 @@ geometry observer는 상태만 갱신하고 tick만 그린다. 걷기 도중 하
 
 공개DTO/권한/unlock/KST/1840기하·실제 하트/DB 쓰기 경로는 변경하지 않았다. 기본OFF와 공유 시청자 구현 유지. 원본의 작은 귀/눈/종이조각 표현 차이는 여전히 존재한다. 연결 보행이나 미술이 완벽하다고 주장하지 않는다. headless Chromium 외 실제 사용자 GPU/OBS 부하·Safari·장시간 배터리는 이번 검증 범위가 아니다.
 
-운영 배포 확인 대기.
+## 운영 배포
+
+제품 커밋 `e07d916ae51a26e55e71080cf43fc53081e478df` push 후 [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/FpjUZw9QBFaaAntQJsrRsYS82ohV) 성공 및 운영 `/api/soop-live`의 `build` SHA 일치를 확인했다.
+
+배포 후 실제 `/` PC1440·모바일390을 과거2025년9월·POST차단 조건으로 점검해 exit0. PC 오른쪽97display frames/97위치쓰기·왼쪽37/37, 모바일 오른쪽38/38·왼쪽37/37이며, 첫쓰기 제외 위치변화비율100%·평균16.66~16.67ms였다. 좌우 facing·셀5~8·발등록 metadata 일치, actor/메뉴/효과 비반전, export surface 내부 pet없음 확인. 각뷰 defaultOFF atlas0→ON1·pageerror0·POST1차단/서버송신0. PC/모바일 crop 직접 열람. `.scratch-pw/companion-motion-root-production.json`에 보존한다. 이는 동일 headless 브라우저 표본이며 모든 사용자 기기60fps 인증은 아니다.
+
+최종 문서 정리 시 `harness:verify`는 앞서 기록한 기존2실패 그대로, `git diff --check`는 통과했다. 제품 검증 이후 변경은 배포·완료 상태 문서뿐이다.

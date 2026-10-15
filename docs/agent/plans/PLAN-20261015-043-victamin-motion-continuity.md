@@ -20,4 +20,4 @@
 
 [rAF 공식 문서](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame): repaint 시각·timestamp 기반 진행/숨김 중단. [image-rendering](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/image-rendering): 픽셀 샘플링과 이동 주기는 서로 다른 문제다.
 
-상태: 수정·독립 코드 리뷰·최종 build/type/lint·unit73·fixture rendered33·실제 root2뷰 완료. 같은브라우저 기존운영/수정본 비교에서 위치갱신37~39%→100% 확인, 기기 일반화하지 않음. 승인된 운영 배포 확인 대기. [검증 기록](../verification/VIEWER_VICTAMIN_MOTION-20261015.md).
+상태: 완료. 수정·독립 코드 리뷰·최종 build/type/lint·unit73·fixture rendered33·실제 root2뷰 완료. 같은브라우저 기존운영/수정본 비교에서 위치갱신37~39%→100% 확인, 기기 일반화하지 않음. 제품 `e07d916a` 운영 배포·live SHA 일치·배포 후 실제 PC/모바일 좌우 이동 확인. 기존 harness2실패 유지. [검증 기록](../verification/VIEWER_VICTAMIN_MOTION-20261015.md).
