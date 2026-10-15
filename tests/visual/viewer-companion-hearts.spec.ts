@@ -5,13 +5,16 @@ import ts from "typescript";
 const compile = (path: string) => ts.transpileModule(readFileSync(path, "utf8"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
 const heartsCode = compile("lib/ui/viewer-companion/hearts.ts");
 const geometryCode = compile("lib/ui/viewer-companion/geometry.ts");
-type HeartAdapter = { attemptAt: (point: { x: number; y: number }) => "added" | "blocked" | "missing"; dispose: () => void };
+type HeartAdapter = { attemptAt: (point: { x: number; y: number }) => "added" | "removed" | "blocked" | "missing"; dispose: () => void };
 type FixtureWindow = Window & { __hearts: HeartAdapter; __createHearts: () => HeartAdapter; __stopPlatforms: () => void; __platforms: { heart?: { blocked?: boolean } }[]; __humanClicks: number };
 
 test.beforeEach(async ({ page }) => {
   // An isolated public-DOM fixture executes the actual adapter source. No
   // product debug API, authenticated session, server action or DB is involved.
-  await page.route("**/companion-hearts-fixture", route => route.fulfill({ contentType: "text/html", body: `<!doctype html><style>.public-event{position:relative;width:400px;height:80px;margin:30px}.event-heart{position:absolute;right:10px;top:10px;width:32px;height:32px}</style><main id="root"><article class="public-event" data-eventid="synthetic-public-a"><p>SYNTHETIC_PUBLIC_TITLE</p><span class="human-count">17</span><button class="event-heart" id="a" aria-pressed="false"><svg width="14" height="14"><path d="M1 1h10v10H1z"/></svg></button></article><article class="public-event" data-eventid="synthetic-public-b"><span class="human-count">23</span><button class="event-heart" id="b" aria-pressed="true">heart</button></article></main>` }));
+  await page.route("**/companion-hearts-fixture", route => route.fulfill({ contentType: "text/html", body: `<!doctype html><style>
+    .public-event{position:relative;width:400px;height:100px;margin:110px 30px 70px}
+    .event-main p{margin:0}.event-heart{position:absolute;right:10px;top:10px;width:32px;height:32px}
+    </style><main id="root"><article class="public-event" data-eventid="synthetic-public-a"><div class="event-main"><p>SYNTHETIC_PUBLIC_TITLE</p></div><span class="human-count">17</span><button class="event-heart" id="a" aria-pressed="false"><svg width="14" height="14"><path d="M1 1h10v10H1z"/></svg></button></article><article class="public-event" data-eventid="synthetic-public-b"><div class="event-main"><p>SYNTHETIC_PUBLIC_B</p></div><span class="human-count">23</span><button class="event-heart" id="b" aria-pressed="true">heart</button></article></main>` }));
   await page.route("**/*", route => route.request().method() === "POST" ? route.abort() : route.fallback());
   await page.goto("/companion-hearts-fixture");
   await page.evaluate(({ hearts, geometry }) => {
@@ -27,6 +30,7 @@ test.beforeEach(async ({ page }) => {
     win.__createHearts = () => create(root);
     win.__hearts = win.__createHearts();
     win.__humanClicks = 0;
+    win.__platforms = [];
     for (const button of root.querySelectorAll("button")) button.addEventListener("click", () => win.__humanClicks++);
     const observe = load(geometry).observeCompanionPlatforms as (root: HTMLElement, changed: (platforms: FixtureWindow["__platforms"]) => void) => () => void;
     win.__stopPlatforms = observe(root, platforms => { win.__platforms = platforms; });
@@ -38,12 +42,15 @@ const attempt = (page: Page, selector: string) => page.evaluate(selector => {
   return (window as unknown as FixtureWindow).__hearts.attemptAt({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
 }, selector);
 
-test("a pet souvenir marks violet once without clicking or changing any human data", async ({ page }) => {
+test("a pet toggles its violet souvenir without clicking or changing any human data", async ({ page }) => {
   const before = await page.locator("#root").textContent();
   expect(await attempt(page, "#a")).toBe("added");
   await expect(page.locator("#a")).toHaveAttribute("data-companion-hearted", "");
   await expect(page.locator("#a")).toHaveAttribute("aria-pressed", "false");
-  expect(await attempt(page, "#a")).toBe("blocked");
+  expect(await attempt(page, "#a")).toBe("removed");
+  await expect(page.locator("#a")).not.toHaveAttribute("data-companion-hearted");
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!))).toEqual({ version: 1, ids: [] });
+  expect(await attempt(page, "#a")).toBe("added");
   expect(await attempt(page, "#b")).toBe("blocked");
   await expect(page.locator("#b")).not.toHaveAttribute("data-companion-hearted");
   expect(await page.locator("#root").textContent()).toBe(before);
@@ -80,6 +87,7 @@ test("month reuse, resize, OFF cleanup and remount preserve only correct public 
   expect(await attempt(page, "#a")).toBe("missing");
   await page.evaluate(() => { const win = window as unknown as FixtureWindow; win.__hearts = win.__createHearts(); });
   await expect(page.locator("#a")).toHaveAttribute("data-companion-hearted", "");
-  expect(await attempt(page, "#a")).toBe("blocked");
+  expect(await attempt(page, "#a")).toBe("removed");
+  await expect(page.locator("#a")).not.toHaveAttribute("data-companion-hearted");
   expect(await page.evaluate(() => (window as unknown as FixtureWindow).__humanClicks)).toBe(0);
 });

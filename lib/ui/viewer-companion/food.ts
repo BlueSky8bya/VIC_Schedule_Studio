@@ -7,7 +7,7 @@ export const MAX_COMPANION_FOOD = 3;
  * unreachable target after scrolling or changing calendar layout. */
 export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[]): CompanionFood {
   const below = platforms.filter(p => p.y >= point.y - 12 && point.x >= p.x - 12 && point.x <= p.x + p.width + 12);
-  const support = nearestPlatform(point, below) ?? platforms.find(p => p.kind === "floor");
+  const support = nearestPlatform(point, below) ?? platforms.find(p => p.kind === "floor") ?? nearestPlatform(point, platforms);
   return support ? { id: food.id, kind: food.kind, x: platformLandingX(support, point.x), y: support.y, platformId: support.id }
     : { id: food.id, kind: food.kind, x: point.x, y: point.y };
 }

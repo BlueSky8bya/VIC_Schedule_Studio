@@ -18,4 +18,6 @@ Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시
 
 재검토: 자연어 대화·서버 기억/학습·다중 캐릭터·실제 투표 동작 요청 때 범위/비용/권한을 별도 결정.
 
+집·생활 확장([PLAN-044](../plans/PLAN-20261015-044-victamin-home-and-presence.md)): 기존 메뉴 중심 조작은 공유 패널의 집과 패널 없는 화면의 동일 compact집으로 대체한다. 한 runtime/brain/care/food를 유지하고 동일 월드의 쿠션·자판기를 연결한다. 클릭 손길과 꾹 누른 집기, 비드래그 배치·키보드 대안을 구별한다. 보라 하트는 스스로 다시 거둘 수 있으므로042의 ‘이미 있는 하트 차단’은 인간 빨강에 한정한다. 실제 수치/투표/서버는 여전히 불변. 실측 글자/조작 영역 회피와 지지면 그림자·꿈 표현을 더한다. 부재 벌점·새 모델·DB·raster 재생성은 추가하지 않는다. 조사 근거와 제한은 [검증 기록](../verification/VIEWER_VICTAMIN_HOME-20261015.md).
+
 동작 품질 정정([PLAN-043](../plans/PLAN-20261015-043-victamin-motion-continuity.md)): 256개 byte-distinct 포즈는 부드러운 연속 보행 인증이 아니다. 원본/공개 이미지 바이트를 보존하고 접지·중심 metadata와 의미 있는 짧은 clip을 별도로 쓴다. 위치는 full rAF/lite30Hz, 그림은6~8Hz·이동 거리 기반, 중단 시 활성 시계 유지. 그림만 실제 이동 방향으로 반사하고 UI/입력은 유지한다. 041의 full30/lite12 위치 cadence는 이 결정으로 대체한다. 빈번한 기하 관찰로 idle pose를 그리지 않는다.

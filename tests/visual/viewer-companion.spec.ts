@@ -35,15 +35,19 @@ async function centre(locator: Locator) {
   const box = (await locator.boundingBox())!;
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
-async function openMenu(page: Page) {
-  await actor(page).focus();
-  await page.getByRole("button", { name: "빅타민 메뉴", exact: true }).click();
-  await expect(page.getByRole("group", { name: "빅타민과 놀기" })).toBeVisible();
+async function openHome(page: Page) {
+  const home = page.getByRole("region", { name: "빅타민 집", exact: true });
+  if (!(await home.isVisible())) await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).click();
+  await expect(home).toBeVisible();
 }
 async function stationaryFixture(page: Page, reduced = false) {
   await seed(page, { enabled: true, roam: false, heartPrank: false, ambientPrank: false }, reduced);
   await page.goto("/visual-fixture/poster");
   await expect(actor(page)).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  await expect.poll(() => page.locator(".agenda-day,.public-day").evaluateAll(elements => elements.some(el => el.getAnimations().some(animation => animation.playState === "running" && animation.effect?.getComputedTiming().iterations !== Infinity)))).toBe(false);
+  await page.waitForTimeout(180); // Observe the completed font/entrance geometry.
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   await expect(pet(page)).toBeInViewport({ ratio: .99999 }); // Subpixel intersection-ratio precision.
 }
 
@@ -84,17 +88,15 @@ for (const width of [1440, 390]) {
   test(`pointer petting and dragging stay inside the viewport at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await stationaryFixture(page);
-    const start = await centre(actor(page));
-    await page.mouse.move(start.x, start.y);
-    await page.mouse.down();
-    await page.waitForTimeout(220);
-    for (const dx of [12, -12, 12, -12]) { await page.mouse.move(start.x + dx, start.y, { steps: 3 }); await page.waitForTimeout(45); }
+    await actor(page).click();
     await expect(pet(page)).toHaveAttribute("data-state", "petted");
-    await page.mouse.up();
-    await expect(pet(page)).toHaveAttribute("data-state", "petted");
+    await expect(page.locator(".vc-effect")).toHaveText("♡");
     const before = await position(page), grab = await centre(actor(page));
     await page.mouse.move(grab.x, grab.y); await page.mouse.down();
-    await page.mouse.move(Math.max(55, grab.x - 110), Math.max(130, grab.y - 80), { steps: 5 });
+    await page.waitForTimeout(420);
+    await expect(pet(page)).toHaveAttribute("data-grab-ready", "");
+    const targetX = grab.x < width / 2 ? Math.min(width - 55, grab.x + 110) : Math.max(55, grab.x - 110);
+    await page.mouse.move(targetX, Math.max(130, grab.y - 80), { steps: 5 });
     await expect(pet(page)).toHaveAttribute("data-state", "held");
     const held = await position(page);
     expect(Math.abs(held.x - before.x)).toBeGreaterThan(30);
@@ -107,7 +109,7 @@ for (const width of [1440, 390]) {
   });
 }
 
-test("keyboard and the menu offer non-dragging placement, plus a finite nap", async ({ page }) => {
+test("keyboard and the home offer non-dragging placement, plus a finite nap", async ({ page }) => {
   await stationaryFixture(page);
   await actor(page).focus();
   await page.keyboard.press("Enter");
@@ -123,7 +125,7 @@ test("keyboard and the menu offer non-dragging placement, plus a finite nap", as
   await page.keyboard.press("Space");
   await expect.poll(async () => (await pet(page).getAttribute("data-state")) !== "held").toBe(true);
   await page.waitForTimeout(750);
-  await openMenu(page);
+  await openHome(page);
   await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(180, 800);
@@ -147,7 +149,7 @@ test("keyboard and the menu offer non-dragging placement, plus a finite nap", as
   const heart = page.locator("#companion-placement-sentinel");
   const heartPoint = await centre(heart);
   for (const hold of [0, 1200]) {
-    await openMenu(page);
+    await openHome(page);
     await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
     await expect(pet(page)).toHaveAttribute("data-placing", "");
     await page.mouse.move(heartPoint.x, heartPoint.y);
@@ -161,17 +163,19 @@ test("keyboard and the menu offer non-dragging placement, plus a finite nap", as
     await expect(page.locator(".agenda-detail-backdrop")).toHaveCount(0);
     await page.waitForTimeout(750);
   }
-  await openMenu(page);
+  await openHome(page);
   await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.keyboard.press("Escape");
   await expect(pet(page)).not.toHaveAttribute("data-placing");
   await expect(actor(page)).toBeFocused();
   await page.waitForTimeout(750);
-  await openMenu(page);
-  await page.getByRole("button", { name: "잠깐 쉬기", exact: true }).click();
+  await openHome(page);
+  await page.getByRole("button", { name: "여기서 낮잠", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
-  await expect(page.locator(".vc-effect")).toHaveText("z Z");
+  await expect(pet(page)).toHaveAttribute("data-dreaming", "");
+  await expect(page.locator(".vc-dream")).toBeVisible();
+  await expect(page.locator(".vc-dream i")).toHaveText(["z", "z", "Z"]);
   await actor(page).click();
   await expect(pet(page)).toHaveAttribute("data-state", "petted");
   expect(requests.get(page)!.posts).toEqual([]);

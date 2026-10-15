@@ -5,24 +5,37 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 const requests = new WeakMap<Page, string[]>();
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const pet = (page: Page) => page.locator(".vc-companion");
-const menu = (page: Page) => page.getByRole("group", { name: "빅타민과 놀기", exact: true });
+const home = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
 const feet = (page: Page) => pet(page).evaluate(element => {
   const box = element.getBoundingClientRect();
   return { x: box.left + box.width / 2, y: box.bottom };
 });
-// Measure the actual DOM ledges, rather than duplicating the brain's weak ids.
+const floorY = (page: Page) => page.evaluate(() => {
+  let y = innerHeight - 18;
+  for (const bar of document.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
+    const rect = bar.getBoundingClientRect(), style = getComputedStyle(bar);
+    if (style.position === "fixed" && style.display !== "none" && rect.width > 0 && rect.height > 0 && rect.top >= innerHeight * .65 && rect.bottom <= innerHeight + 1) y = Math.min(y, rect.top - 8);
+  }
+  return y;
+});
+// Measure rendered line tops and the cushion rather than the retired card-box
+// tops. Text content and the brain's anonymous platform ids are never read.
 const supportDistance = (page: Page) => pet(page).evaluate(element => {
   const box = element.getBoundingClientRect(), x = box.left + box.width / 2, y = box.bottom;
-  const supports = [{ left: 12, right: innerWidth - 12, y: innerHeight - 18 }];
-  const selector = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
-  for (const card of document.querySelectorAll<HTMLElement>(selector)) {
-    const rect = card.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.top + 1 });
+  let floor = innerHeight - 18;
+  for (const bar of document.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
+    const rect = bar.getBoundingClientRect(), style = getComputedStyle(bar);
+    if (style.position === "fixed" && style.display !== "none" && rect.width > 0 && rect.height > 0 && rect.top >= innerHeight * .65 && rect.bottom <= innerHeight + 1) floor = Math.min(floor, rect.top - 8);
   }
-  for (const day of document.querySelectorAll<HTMLElement>(".public-day,.agenda-day")) {
-    const rect = day.getBoundingClientRect();
-    if (rect.height >= 88 && !day.querySelector(selector)) supports.push({ left: rect.left, right: rect.right, y: rect.bottom - 12 });
+  const supports = [{ left: 12, right: innerWidth - 12, y: floor }];
+  const selector = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
+  const range = document.createRange();
+  for (const scope of document.querySelectorAll<HTMLElement>(selector)) {
+    range.selectNodeContents(scope);
+    for (const rect of range.getClientRects()) if (rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.top - 3 });
   }
+  range.detach();
+  for (const cushion of document.querySelectorAll<HTMLElement>(".vc-home-cushion")) { const rect = cushion.getBoundingClientRect(); if (rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.top }); }
   return Math.min(...supports.filter(support => x >= support.left - 1 && x <= support.right + 1).map(support => Math.abs(support.y - y)));
 });
 
@@ -62,19 +75,19 @@ async function liftWithKeyboard(page: Page) {
   await expect.poll(async () => before.y - (await feet(page)).y).toBeGreaterThan(20);
   return feet(page);
 }
-async function keyboardMenu(page: Page) {
-  await actor(page).focus();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "빅타민 메뉴", exact: true })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(menu(page)).toBeVisible();
+async function keyboardHome(page: Page) {
+  if (!(await home(page).isVisible())) {
+    const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
+    await launcher.focus(); await launcher.press("Enter");
+  }
+  await expect(home(page)).toBeVisible();
 }
 
-test("reduced-motion keyboard lift can enter the menu, land and nap instead of staying held", async ({ page }) => {
+test("reduced-motion keyboard lift can enter the home, land and nap instead of staying held", async ({ page }) => {
   await setup(page, true);
   await liftWithKeyboard(page);
-  await keyboardMenu(page);
-  await menu(page).getByRole("button", { name: "잠깐 쉬기", exact: true }).click();
+  await keyboardHome(page);
+  await home(page).getByRole("button", { name: "여기서 낮잠", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
   await expect.poll(() => supportDistance(page)).toBeLessThan(3);
   await expect(pet(page)).toBeInViewport({ ratio: .99999 }); // Subpixel intersection-ratio precision.
@@ -102,18 +115,20 @@ test("a visibility-event pause releases an airborne keyboard hold and resumes on
   await expect.poll(() => supportDistance(page)).toBeLessThan(3);
 });
 
-test("an autonomous jump freezes for a long-open menu and finishes after closing", async ({ page }) => {
+test("a settings overlay interrupts an airborne jump and resumes on a real support", async ({ page }) => {
   test.setTimeout(25_000);
   await setup(page, false, { roam: true, jump: true, sleep: false, speed: "lively" });
   await expect(pet(page)).toHaveAttribute("data-state", "jump", { timeout: 15_000 });
   await expect.poll(() => supportDistance(page), { intervals: [16, 25, 50], timeout: 15_000 }).toBeGreaterThan(20);
-  await keyboardMenu(page);
-  const frozen = await feet(page);
+  await page.getByRole("button", { name: "설정", exact: true }).click();
+  const settings = page.getByRole("dialog", { name: "설정", exact: true });
+  await expect(settings).toBeVisible();
+  await expect(pet(page)).not.toBeVisible();
+  const frozen = await pet(page).evaluate(el => (el as HTMLElement).style.transform);
   await page.waitForTimeout(1250);
-  const held = await feet(page);
-  expect(Math.hypot(frozen.x - held.x, frozen.y - held.y)).toBeLessThan(2);
-  await menu(page).getByRole("button", { name: "닫기", exact: true }).click();
-  await expect.poll(async () => { const point = await feet(page); return Math.hypot(point.x - held.x, point.y - held.y); }, { timeout: 4000 }).toBeGreaterThan(4);
+  expect(await pet(page).evaluate(el => (el as HTMLElement).style.transform)).toBe(frozen);
+  await settings.getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(actor(page)).toBeVisible();
   await expect.poll(() => supportDistance(page), { timeout: 5000 }).toBeLessThan(3);
   await expect(pet(page)).not.toHaveAttribute("data-state", "held");
   await expect(pet(page)).toBeInViewport({ ratio: .99999 });
@@ -121,8 +136,8 @@ test("an autonomous jump freezes for a long-open menu and finishes after closing
 
 test("pausing a dragged snack releases capture and returns it to the floor", async ({ page }) => {
   await setup(page, false, { feeding: true });
-  await keyboardMenu(page);
-  await menu(page).getByRole("button", { name: "사과 밥 꺼내기", exact: true }).click();
+  await keyboardHome(page);
+  await home(page).getByRole("button", { name: "사과 밥 꺼내기", exact: true }).click();
   const snack = page.locator(".vc-food");
   await expect(snack).toHaveCount(1);
   await expect(snack).toBeFocused();
@@ -138,7 +153,7 @@ test("pausing a dragged snack releases capture and returns it to the floor", asy
   await page.mouse.up();
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
   await expect(snack).toBeVisible();
-  await expect.poll(() => snack.evaluate(node => Number.parseFloat((node as HTMLElement).style.top))).toBe(height - 18);
+  await expect.poll(() => snack.evaluate(node => Number.parseFloat((node as HTMLElement).style.top))).toBe(await floorY(page));
   await expect.poll(() => snack.evaluate(node => Number.parseFloat((node as HTMLElement).style.left))).toBe(180);
   await page.mouse.move(260, height - 80, { steps: 5 });
   await page.waitForTimeout(300);

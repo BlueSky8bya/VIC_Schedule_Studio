@@ -3,6 +3,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
 import { MAX_COMPANION_FOOD, placeCompanionFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
+import { CompanionFruit } from "./companion-fruit";
 
 export type CompanionFoodControl = {
   spawn: (kind: Food["kind"], point: { x: number; y: number }) => void;
@@ -24,7 +25,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(blocked);
   const [message, setMessage] = useState("");
   const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly Platform[]>([]), layer = useRef<HTMLDivElement>(null);
-  const serial = useRef(0), dragging = useRef<{ id: string; pointer: number; node: HTMLButtonElement } | null>(null);
+  const serial = useRef(0), dragging = useRef<{ id: string; pointer: number; node: HTMLButtonElement; x: number; y: number; moved: boolean } | null>(null);
   const update = useCallback((next: Food[]) => { current.current = next; setFoods(next); }, []);
   const choose = useCallback((id: string | null) => { selection.current = id; setSelected(id); }, []);
   const release = useCallback((settle = false) => {
@@ -97,9 +98,9 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   return <div className="vc-food-layer" ref={layer} hidden={blocked || paused} data-sfx="off">
     {foods.map(food => <button type="button" className="vc-food" key={food.id} data-food={food.id} data-kind={food.kind} data-selected={selected === food.id ? "" : undefined}
       style={{ left: food.x, top: food.y }} aria-label={`빅타민 밥 ${names[food.kind]} · 잡아서 옮기기`} aria-describedby="vc-food-help"
-      onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.stopPropagation(); event.currentTarget.focus({ preventScroll: true }); event.currentTarget.setPointerCapture(event.pointerId); choose(null); dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget }; }}
-      onPointerMove={event => { if (dragging.current?.id !== food.id || dragging.current.pointer !== event.pointerId) return; update(current.current.map(item => item.id === food.id ? { ...item, platformId: undefined, x: clamp(event.clientX, 24, innerWidth - 24), y: clamp(event.clientY, 48, innerHeight - 24) } : item)); }}
-      onPointerUp={event => { if (dragging.current?.pointer !== event.pointerId) return; event.stopPropagation(); release(); drop(food.id); }}
+      onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.stopPropagation(); event.currentTarget.focus({ preventScroll: true }); event.currentTarget.setPointerCapture(event.pointerId); choose(null); dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget, x: event.clientX, y: event.clientY, moved: false }; }}
+      onPointerMove={event => { const drag = dragging.current; if (drag?.id !== food.id || drag.pointer !== event.pointerId) return; if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 6) drag.moved = true; if (drag.moved) update(current.current.map(item => item.id === food.id ? { ...item, platformId: undefined, x: clamp(event.clientX, 24, innerWidth - 24), y: clamp(event.clientY, 48, innerHeight - 24) } : item)); }}
+      onPointerUp={event => { const drag = dragging.current; if (drag?.pointer !== event.pointerId) return; event.stopPropagation(); release(); if (drag.moved) drop(food.id); else { choose(food.id); setMessage("밥 놓을 곳을 눌러 주세요."); } }}
       onPointerCancel={() => { release(); drop(food.id); }}
       onClick={event => { event.stopPropagation(); }}
       onKeyDown={event => {
@@ -109,9 +110,9 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (["Delete", "Backspace"].includes(event.key)) { returnFocus(); update(current.current.filter(item => item.id !== food.id)); choose(null); setMessage("밥을 치웠어요."); return; }
         if (["Enter", " "].includes(event.key)) { if (!event.repeat) { if (selection.current === food.id) drop(food.id); else choose(food.id); } return; }
         choose(food.id); update(current.current.map(item => item.id === food.id ? { ...item, platformId: undefined, x: clamp(item.x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), 24, innerWidth - 24), y: clamp(item.y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), 48, innerHeight - 24) } : item));
-      }}><span aria-hidden="true">{food.kind === "apple" ? "🍎" : "🍋"}</span></button>)}
+      }}><span aria-hidden="true"><CompanionFruit kind={food.kind} /></span></button>)}
     {selected ? <span className="vc-food-hint">밥 놓을 곳을 눌러 주세요 <kbd>Esc</kbd> 놓기</span> : null}
-    <span className="sr-only" id="vc-food-help">드래그하거나 Enter로 집고 방향키로 옮긴 뒤 Enter로 놓기. Delete로 치우기.</span>
+    <span className="sr-only" id="vc-food-help">밥을 누른 뒤 놓을 곳을 누르거나 드래그로 옮기기. Enter로 집고 방향키로 옮긴 뒤 Enter로 놓기. Delete로 치우기.</span>
     <span className="sr-only" role="status">{message}</span>
   </div>;
 });

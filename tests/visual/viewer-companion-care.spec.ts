@@ -20,6 +20,14 @@ const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰
 const food = (page: Page) => page.locator(".vc-food");
 const month = (page: Page) => page.locator("h1.poster-chrome-title:visible,h1.agenda-title:visible");
 const storedCare = (page: Page): Promise<CompanionCare & { version: number }> => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
+const floorY = (page: Page) => page.evaluate(() => {
+  let y = innerHeight - 18;
+  for (const bar of document.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
+    const rect = bar.getBoundingClientRect(), style = getComputedStyle(bar);
+    if (style.position === "fixed" && style.display !== "none" && rect.width > 0 && rect.height > 0 && rect.top >= innerHeight * .65 && rect.bottom <= innerHeight + 1) y = Math.min(y, rect.top - 8);
+  }
+  return y;
+});
 async function centre(locator: Locator) {
   const box = (await locator.boundingBox())!;
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -48,15 +56,29 @@ async function setup(page: Page, hunger = .58, patch: Partial<CompanionPreferenc
   // Chromium reports .99999916 for a fully visible subpixel-translated76px
   // box. The tiny tolerance is below .001px clipping; keep smooth travel.
   await expect(pet(page)).toBeInViewport({ ratio: .99999 });
+  // Vending outlets and calendar ledges need not share a support. Place the
+  // creature first, then put each snack on its actual settled support. Mobile
+  // may reject a floor occupied by bottom navigation and choose a safe ledge.
+  await openHome(page);
+  await page.getByRole("button", { name: "옮길 곳 고르기", exact: true }).click();
+  await expect(pet(page)).toHaveAttribute("data-placing", "");
+  await page.mouse.click(180, page.viewportSize()!.height - 20);
+  await expect(pet(page)).not.toHaveAttribute("data-placing");
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+  if (page.viewportSize()!.width >= 1040) {
+    await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
+    const supportY = await floorY(page);
+    await expect.poll(() => pet(page).evaluate((el, supportY) => Math.abs(el.getBoundingClientRect().bottom - supportY), supportY)).toBeLessThan(2);
+  } else await expect(pet(page)).toHaveAttribute("data-platform", /^(?:date-|card-|viewport-floor|companion-home)/);
 }
-async function openMenu(page: Page) {
-  await actor(page).focus();
-  await page.getByRole("button", { name: "빅타민 메뉴", exact: true }).click();
-  await expect(page.getByRole("group", { name: "빅타민과 놀기", exact: true })).toBeVisible();
+async function openHome(page: Page) {
+  const home = page.getByRole("region", { name: "빅타민 집", exact: true });
+  if (!(await home.isVisible())) await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).click();
+  await expect(home).toBeVisible();
 }
 async function spawn(page: Page, kind: "사과" | "레몬") {
   const before = await food(page).count();
-  await openMenu(page);
+  await openHome(page);
   await page.getByRole("button", { name: `${kind} 밥 꺼내기`, exact: true }).click();
   await expect(food(page)).toHaveCount(before + 1);
   const item = food(page).last();
@@ -67,9 +89,13 @@ async function spawn(page: Page, kind: "사과" | "레몬") {
 }
 async function placeNear(page: Page, item: Locator) {
   const before = await month(page).textContent();
-  // Two 24px steps put a fruit beside the mouth even when the initial sprite
-  // rests against a narrow agenda ledge's right edge.
-  await item.press("ArrowLeft"); await item.press("ArrowLeft"); await item.press("Enter");
+  // Keyboard movement still belongs to the food rather than month shortcuts.
+  const original = await item.evaluate(el => Number.parseFloat((el as HTMLElement).style.left));
+  await item.press("ArrowLeft");
+  await expect.poll(() => item.evaluate(el => Number.parseFloat((el as HTMLElement).style.left))).toBeCloseTo(Math.max(24, original - 24), 1);
+  await item.press("ArrowRight");
+  const target = await pet(page).evaluate(el => { const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 24, y: rect.bottom }; });
+  await page.mouse.click(target.x, target.y);
   await expect(item).not.toHaveAttribute("data-selected");
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);
   await expect(month(page)).toHaveText(before!);
@@ -116,10 +142,10 @@ test("a full creature refuses more food, at most three snacks stay, and leftover
   expect((await storedCare(page)).hunger).toBeLessThan(.15);
   for (const kind of ["레몬", "사과"] as const) { const extra = await spawn(page, kind); await extra.press("Enter"); }
   await expect(food(page)).toHaveCount(3);
-  await openMenu(page); await page.getByRole("button", { name: "레몬 밥 꺼내기", exact: true }).click();
+  await openHome(page); await page.getByRole("button", { name: "레몬 밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(3);
   await expect(page.locator(".vc-food-layer [role='status']")).toContainText("세 개까지");
-  await openMenu(page); await page.getByRole("button", { name: "남은 밥 치우기", exact: true }).click();
+  await openHome(page); await page.getByRole("button", { name: "남은 밥 치우기", exact: true }).click();
   await expect(food(page)).toHaveCount(0);
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);
 });
@@ -132,7 +158,7 @@ test("food dragging and a long placement consume their clicks before cards under
   await page.mouse.move(from.x, from.y); await page.mouse.down();
   await page.mouse.move(180, height - 26, { steps: 8 }); await page.mouse.up();
   await expect(item).not.toHaveAttribute("data-selected");
-  await expect.poll(() => item.evaluate(el => Number.parseFloat((el as HTMLElement).style.top))).toBe(height - 18);
+  await expect.poll(() => item.evaluate(el => Number.parseFloat((el as HTMLElement).style.top))).toBe(await floorY(page));
   await expect(item).toBeInViewport({ ratio: 1 });
   await page.locator(".public-event:visible").first().evaluate(card => {
     // The visual fixture has no server voting prop. A native-button sentinel
@@ -187,17 +213,20 @@ test("settings pause food, feeding OFF clears it, and changing month removes tem
   await expect(actor(page)).toBeVisible();
 });
 
-test("opening the menu interrupts a meal and closing starts a fresh visible nibble", async ({ page }) => {
+test("a settings pause interrupts a meal and closing starts a fresh visible nibble", async ({ page }) => {
   await setup(page, .58);
   const item = await spawn(page, "사과");
   await placeNear(page, item);
   await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
   await expect.poll(() => item.evaluate(el => Number((el as HTMLElement).style.getPropertyValue("--vc-nibble")))).toBeLessThan(.9);
-  await openMenu(page);
+  await page.getByRole("button", { name: "설정", exact: true }).click();
+  const settings = page.getByRole("dialog", { name: "설정", exact: true });
+  await expect(settings).toBeVisible();
+  await expect(page.locator(".vc-food-layer")).not.toBeVisible();
   await page.waitForTimeout(3100);
   await expect(food(page)).toHaveCount(1);
   expect((await storedCare(page)).hunger).toBeGreaterThan(.5);
-  await page.getByRole("group", { name: "빅타민과 놀기", exact: true }).getByRole("button", { name: "닫기", exact: true }).click();
+  await settings.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-state", "eat");
   await page.waitForTimeout(1500);
   await expect(food(page)).toHaveCount(1);

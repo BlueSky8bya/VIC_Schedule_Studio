@@ -4,7 +4,7 @@ export const MAX_COMPANION_HEARTS = 128;
 const HEART_SELECTOR = ".public-event[data-eventid] .event-heart,.agenda-event[data-eventid] .event-heart,.agenda-item[data-eventid] .event-heart";
 const CARD_SELECTOR = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
 const validPublicId = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,95}$/.test(value);
-export type CompanionHeartResult = "added" | "blocked" | "missing";
+export type CompanionHeartResult = "added" | "removed" | "blocked" | "missing";
 export type CompanionHearts = { attemptAt: (point: { x: number; y: number }) => CompanionHeartResult; dispose: () => void };
 
 /** Bounded explicit public ids only; no titles, dates, tags, counts or identity. */
@@ -27,11 +27,27 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
   let disposed = false;
   const marked = new Set<HTMLElement>();
   const blocked = new Set<HTMLElement>();
-  const readSaved = () => {
-    try { return readCompanionHeartIds(win.localStorage.getItem(COMPANION_HEARTS_KEY)); }
-    catch { return []; }
+  let remembered = new Set<string>();
+  let storedIds = new Set<string>();
+  // Keep only failed local edits over the latest stored snapshot. A union of
+  // old/current ids cannot represent removal and resurrects deleted souvenirs.
+  const pending = new Map<string, boolean>();
+  const refreshSaved = (explicitClear = false) => {
+    try {
+      const raw = win.localStorage.getItem(COMPANION_HEARTS_KEY);
+      if (explicitClear && raw === null) pending.clear();
+      const saved = new Set(readCompanionHeartIds(raw));
+      storedIds = new Set(saved);
+      for (const [id, present] of pending) {
+        if (saved.has(id) === present) pending.delete(id);
+        else if (present) saved.add(id);
+        else saved.delete(id);
+      }
+      remembered = new Set([...saved].slice(-MAX_COMPANION_HEARTS));
+      for (const [id, present] of pending) if (present && !remembered.has(id)) pending.delete(id);
+    } catch { /* Blocked reads never erase this tab's last local interaction. */ }
   };
-  let remembered = new Set(readSaved());
+  refreshSaved();
   const idFor = (heart: HTMLElement) => {
     const card = heart.closest<HTMLElement>(CARD_SELECTOR);
     const id = card?.dataset.eventid;
@@ -47,7 +63,7 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
     const nextBlocked = new Set<HTMLElement>();
     for (const node of nodes) {
       const id = idFor(node);
-      if (id && (remembered.has(id) || human.has(id))) {
+      if (id && human.has(id)) {
         if (!node.hasAttribute("data-companion-heart-blocked")) node.setAttribute("data-companion-heart-blocked", "");
         nextBlocked.add(node);
       } else if (node.hasAttribute("data-companion-heart-blocked")) node.removeAttribute("data-companion-heart-blocked");
@@ -84,21 +100,34 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
     }
     if (!target) return "missing";
     const id = idFor(target)!;
-    // Re-read before each attempt to respect another tab, while preserving an
-    // in-memory souvenir if device storage is full or unavailable.
-    remembered = new Set([...new Set([...readSaved(), ...remembered])].slice(-MAX_COMPANION_HEARTS));
-    if (remembered.has(id) || nodes.some(node => idFor(node) === id && node.getAttribute("aria-pressed") === "true")) { sync(); return "blocked"; }
-    remembered.delete(id); remembered.add(id);
+    // A human's red selection always wins, including a different spanning copy.
+    refreshSaved();
+    if (nodes.some(node => idFor(node) === id && node.getAttribute("aria-pressed") === "true")) { sync(); return "blocked"; }
+    const removing = remembered.has(id);
+    if (removing) remembered.delete(id);
+    else remembered.add(id);
+    if (storedIds.has(id) === !removing) pending.delete(id);
+    else pending.set(id, !removing);
     remembered = new Set([...remembered].slice(-MAX_COMPANION_HEARTS));
-    try { win!.localStorage.setItem(COMPANION_HEARTS_KEY, JSON.stringify({ version: 1, ids: [...remembered] })); }
+    for (const [key, present] of pending) if (present && !remembered.has(key)) pending.delete(key);
+    try {
+      win!.localStorage.setItem(COMPANION_HEARTS_KEY, JSON.stringify({ version: 1, ids: [...remembered] }));
+      storedIds = new Set(remembered);
+      pending.clear();
+    }
     catch { /* The current companion still remembers its own local gesture. */ }
     sync();
-    return "added";
+    return removing ? "removed" : "added";
   }
   const observer = new MutationObserver(sync);
   observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-pressed", "data-eventid", "class", "data-companion-hearted"] });
   const stored = (event: StorageEvent) => {
-    if (event.key === COMPANION_HEARTS_KEY || event.key === null) { remembered = new Set(readSaved()); sync(); }
+    if (event.key === COMPANION_HEARTS_KEY || event.key === null) {
+      // Read current storage, not a possibly delayed event.newValue. Explicit
+      // device-memory clearing wins once the current stored value is absent.
+      refreshSaved(event.key === null || event.newValue === null);
+      sync();
+    }
   };
   win.addEventListener("storage", stored);
   win.addEventListener("resize", sync);

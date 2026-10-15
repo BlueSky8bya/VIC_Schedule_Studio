@@ -1690,6 +1690,9 @@ export function PublicPoster({
   const panel = useSidePanel({ enabled: !showAgenda, fixedSide: avatarFixed });
   const sceneOn = panel.ready; // 패널이 표면 밖에 선 레이아웃(접혀 있어도 표면 안 레일은 접힌 채)
   const avatarSide = panel.side;
+  const [companionHomeHost, setCompanionHomeHost] = useState<HTMLElement | null>(null);
+  // The side-keyed slot remounts; publish its live node without remounting the companion runtime.
+  const companionHomeHostRef = useCallback((node: HTMLDivElement | null) => setCompanionHomeHost(node), []);
   // 흐름 안 sticky 패널이 창보다 길면(라이브 카드 + 긴 태그 목록) top을 음수로 낮춰 **아래쪽이 붙게** — 페이지를 내리면
   // 끝까지 보이고, 창보다 짧으면 평소처럼 76px에 붙는다. 독립 스크롤러였을 때 D+ 카드가 잘린 채 굳던 문제의 대체.
   useEffect(() => {
@@ -4099,6 +4102,7 @@ export function PublicPoster({
       <ShowcaseExit />
       {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
         blocked={Boolean(sheet || dayVodPop || monthPick || giftCard || gachaOpen || agendaDetail || premiere.frame.phase !== "idle")}
+        homeHost={companionHomeHost} homeVisible={Boolean(sceneOn && panel.open && !showAgenda)}
         agenda={showAgenda} monthKey={`${view.year}-${view.month}`} reduced={settingsPrefs.reduceMotion} /> : null}
       <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}
         canResume={premiere.canResume} onResume={premiere.resume}
@@ -5010,6 +5014,7 @@ export function PublicPoster({
             {/* 아바타 scene에선 계절 배경 카드가 아바타 자리 위쪽으로(레일이 접히므로). 점선 박스 **밖·위** —
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
             {interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+            {settingsPrefs.companionPrefs.enabled && !avatarFixed ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
             {/* 아바타 빈 자리 — 관리자·개발자(avatarSlot)·/onair 고정 scene에만. 일반 시청자 패널은 카드까지만. */}
             {avatarCapable ? (
               <div className="avatar-dock-inner">

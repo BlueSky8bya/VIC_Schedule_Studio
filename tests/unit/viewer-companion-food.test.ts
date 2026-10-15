@@ -21,4 +21,7 @@ describe("companion food support", () => {
     expect(placeCompanionFood({ ...apple, kind: "lemon" }, { x: 0, y: 800 }, [floor]).x).toBe(24);
     expect(placeCompanionFood(apple, { x: 9999, y: 800 }, [floor]).x).toBe(976);
   });
+  it("uses a real safe ledge when mobile controls leave no usable floor", () => {
+    expect(placeCompanionFood(apple, { x: 200, y: 800 }, [card])).toEqual({ id: "apple", kind: "apple", x: 200, y: 350, platformId: "card" });
+  });
 });
