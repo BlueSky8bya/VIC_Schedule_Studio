@@ -30,10 +30,11 @@ export function createCompanionCardPlay() {
       moved();
     },
     restore(target: EventTarget | null) {
-      if (!active || !(target instanceof Node) || !active.node.contains(target)) return;
+      if (!active || active.node.dataset.vcRuffled === undefined || !(target instanceof Node) || !active.node.contains(target)) return false;
       // The same click still opens/edits the event. Recovery yields its world
       // geometry immediately and only eases the decorative angle to neutral.
       restore();
+      return true;
     },
     clear,
   };

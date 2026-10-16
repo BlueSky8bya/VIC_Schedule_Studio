@@ -8,6 +8,11 @@ import { applyPanelSectionPreferences, getPanelSectionPreferences, setPanelSecti
 import "./panel-section.css";
 
 const serverExpanded = () => true;
+const headingActions: Record<PanelSectionKey, string> = {
+  "tag-filter": "tag-filter-fold",
+  season: "season-panel-fold",
+  "companion-home": "companion-home-fold"
+};
 
 type Props = Omit<HTMLAttributes<HTMLElement>, "title" | "children"> & {
   title: string;
@@ -31,6 +36,7 @@ export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection
   const snapshot = useCallback(() => getPanelSectionPreferences()[sectionKey], [sectionKey]);
   const savedExpanded = useSyncExternalStore(subscribePanelSectionPreferences, snapshot, serverExpanded);
   const expanded = !collapsible || savedExpanded;
+  const action = headingAction ?? headingActions[sectionKey];
   useImperativeHandle(forwardedRef, () => root.current!, []);
   useLayoutEffect(() => {
     applyPanelSectionPreferences();
@@ -52,7 +58,7 @@ export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection
   };
   return <Tag {...attributes} ref={element => { root.current = element; }} className={`panel-section ${className}`.trim()} aria-label={attributes["aria-label"] ?? title} data-panel-section={sectionKey} data-panel-collapsible={collapsible ? "" : undefined} data-panel-collapsed={expanded ? undefined : ""}>
     <header className="panel-section-heading">
-      <h2 className={`panel-section-title ${headingClassName}`.trim()}>{collapsible ? <button {...headingData} data-act={headingAction} data-act-opt={headingAction ? expanded ? "close" : "open" : undefined} type="button" className="panel-section-toggle" aria-label={title} aria-expanded={expanded} aria-controls={bodyId} data-panel-section-toggle={sectionKey} onClick={toggle}><span>{title}</span><ChevronDown className="panel-section-chevron" size={13} aria-hidden="true" /></button> : <span>{title}</span>}</h2>
+      <h2 className={`panel-section-title ${headingClassName}`.trim()}>{collapsible ? <button {...headingData} data-act={action} data-act-opt={expanded ? "close" : "open"} type="button" className="panel-section-toggle" aria-label={title} aria-expanded={expanded} aria-controls={bodyId} data-panel-section-toggle={sectionKey} onClick={toggle}><span>{title}</span><ChevronDown className="panel-section-chevron" size={13} aria-hidden="true" /></button> : <span>{title}</span>}</h2>
       {actions ? <div className="panel-section-actions">{actions}</div> : null}
     </header>
     <div id={bodyId} className="panel-section-body" hidden={!expanded} inert={expanded ? undefined : true} aria-hidden={expanded ? undefined : true}>{children}</div>

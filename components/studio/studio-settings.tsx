@@ -485,7 +485,7 @@ export function StudioSettingsList({
     const next = visible[(i + (e.key === "ArrowDown" ? 1 : -1) + visible.length) % visible.length];
     playSfx("tab");
     setActiveTab(next.key);
-    if (next.key === "companion") logActivity("ui.click", { target: "settings-tab#companion" });
+    logActivity("ui.click", { target: `settings-tab#${next.key}` });
     nav?.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`)?.focus();
   };
   return (

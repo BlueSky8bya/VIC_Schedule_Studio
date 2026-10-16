@@ -15,10 +15,19 @@ const ACTIONS = [
   "companion-home-open", "companion-home-close", "companion-home-fold", "companion-home-call",
   "companion-food-spawn", "companion-food-move", "companion-food-discard", "companion-food-clear",
   "companion-pet", "companion-drag", "companion-bonk", "companion-rest",
-  "companion-find", "companion-extract", "companion-heart-clear"
+  "companion-find", "companion-extract", "companion-heart-clear", "companion-card-restore"
 ] as const;
 
 describe("빅타민 행동 기록 이름과 저장 경계", () => {
+  it("패널과 최초공개의 새 고정 조작도 이름·선택값을 잃지 않는다", () => {
+    for (const target of ["tag-filter-fold#open", "tag-filter-fold#close", "season-panel-fold#open", "season-panel-fold#close", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-exit#dismiss", "premiere-read", "premiere-cheer", "premiere-rehearsal"]) {
+      expect(sanitizeTarget(target), target).toBe(target);
+      const label = describeTarget("ui.click", target);
+      expect(label.unnamed, target).toBeUndefined(); expect(label.retired, target).toBeUndefined(); expect(label.area, target).toBe("시청자 화면");
+      expect(label.name, target).not.toContain("premiere-");
+      expect(sanitizeTarget(`${target.split("#")[0]}#sensitive-canary@example.test`)).toBe(target.split("#")[0]);
+    }
+  });
   it("행동 흐름과 복사 요약도 같은 사람 말 이름을 쓴다", () => {
     const items: NarrativeItem[] = ["companion-pet", "companion-food-spawn", "companion-speed#lively"].map((target, i) => ({
       t: Date.UTC(2026, 9, 16, 3, 0, i * 5), kind: "ui.click", target,

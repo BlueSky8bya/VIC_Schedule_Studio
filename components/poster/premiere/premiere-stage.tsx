@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { logActivity } from "@/lib/activity/client";
 import type { BroadcastTag, PublicScheduleEvent } from "@/lib/domain/schedule-types";
 import type { TagVisualResolver } from "@/lib/tags/tag-visual";
 import { tagColor } from "@/lib/tags/dark-palette";
@@ -77,7 +78,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   useLayoutEffect(() => {
     if (!active) { if (previousFocus.current?.isConnected) previousFocus.current.focus({ preventScroll: true }); previousFocus.current = null; return; }
     if (focused) return;
-    const key = (event: KeyboardEvent) => { if (event.key === "Escape") { event.preventDefault(); onClose(); } };
+    const key = (event: KeyboardEvent) => { if (event.key === "Escape") { event.preventDefault(); logActivity("ui.click", { target: "premiere-exit#dismiss" }); onClose(); } };
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
   }, [active, focused, onClose]);
@@ -104,7 +105,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
     let popped = false;
     const back = () => { popped = true; onClose(); };
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); onClose(); }
+      if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); logActivity("ui.click", { target: "premiere-exit#dismiss" }); onClose(); }
       if (event.key === "Tab") {
         const buttons = [...(portal.current?.querySelectorAll<HTMLElement>("button:not(:disabled),a[href],[tabindex='0']") ?? [])]
           .filter(el => !el.closest("[inert],[aria-hidden='true']") && el.getClientRects().length > 0);
@@ -182,7 +183,7 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
   if (!ready) return null;
   // A plain control, outside the full-viewport stage: the calendar stays usable
   // and the card/detail keeps the single countdown while a show is dismissed.
-  if (!active && canResume) return createPortal(<div className="pm-banner pm-resume"><button type="button" ref={el => { if (el && resumeFocus.current) { el.focus({ preventScroll: true }); resumeFocus.current = false; } }} onClick={() => { resumeFocus.current = true; onResume(); }}>최초공개 다시 보기 <ArrowUpRight aria-hidden="true" size={16} /></button></div>, document.body);
+  if (!active && canResume) return createPortal(<div className="pm-banner pm-resume"><button type="button" data-act="premiere-resume" ref={el => { if (el && resumeFocus.current) { el.focus({ preventScroll: true }); resumeFocus.current = false; } }} onClick={() => { resumeFocus.current = true; onResume(); }}>최초공개 다시 보기 <ArrowUpRight aria-hidden="true" size={16} /></button></div>, document.body);
   if (!active && !hint) return null;
   const season = month >= 3 && month <= 5 ? "spring" : month >= 6 && month <= 8 ? "summer" : month >= 9 && month <= 11 ? "autumn" : "winter";
   const released = displayItems.filter(item => item.state === "released");
@@ -205,14 +206,14 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
                   <PremiereStory event={item.event} dateKey={item.dateKey} tags={tags} tagVisual={tagVisual} onRead={onRead} />
                 </> : <div className="pm-masked" data-pm-retreat>
                   {frame.items.length > 1 ? <span className="pm-slot-label">{String(index + 1).padStart(2, "0")} <span>{shortDate(item.dateKey)}</span></span> : null}
-                  <button type="button" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { if (!hoped.has(item.id)) { setHopePulse(value => value + 1); setCheerPulse(value => value + 1); } onHope(item.id); }}>
+                  <button type="button" data-act="dt-hope" aria-pressed={hoped.has(item.id)} className={`pm-hope${hoped.has(item.id) ? " on" : ""}`} onClick={() => { if (!hoped.has(item.id)) { setHopePulse(value => value + 1); setCheerPulse(value => value + 1); } onHope(item.id); }}>
                     {hoped.has(item.id) ? <Check aria-hidden="true" size={20} /> : <Sparkles aria-hidden="true" size={20} />}<span>{hoped.has(item.id) ? "함께 기다리는 중" : "기대돼요"}</span><span className="pm-hope-ripple" aria-hidden="true" key={hopePulse} />
                   </button>
                 </div>}
               </article>)}
             </div>
           </div>
-          <PremiereScene pulse={hopePulse} hopeful={hasHope} cheer={cheerPulse} companionJoined={companionJoined} onCheer={() => { if (document.hidden || reduced || frame.target - syncedNow() <= 12500 || performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); hapticTick(); playSfx("sparkle"); }} />
+          <PremiereScene pulse={hopePulse} hopeful={hasHope} cheer={cheerPulse} companionJoined={companionJoined} onCheer={() => { if (document.hidden || reduced || frame.target - syncedNow() <= 12500 || performance.now() - lastCheer.current < 800) return; lastCheer.current = performance.now(); setCheerPulse(value => value + 1); logActivity("ui.click", { target: "premiere-cheer" }); hapticTick(); playSfx("sparkle"); }} />
         </div>
         <div ref={transfer} className="pm-entry" aria-hidden="true">
           <div className="pm-entry-plane"><i /></div>
@@ -221,9 +222,9 @@ export function PremiereStage({ frame, bang, reduced, hint, canResume, onResume,
       </div>
     </> : null}
     <div className={`pm-banner${focused ? " pm-banner-focused" : ""}${focused && complete ? " pm-banner-reading" : ""}`}>
-      {hint && !active ? <><span>다른 달에서 최초공개</span><button onClick={onOtherMonth} type="button">보러 가기 <ArrowUpRight aria-hidden="true" size={16} /></button></> : <>
+      {hint && !active ? <><span>다른 달에서 최초공개</span><button data-act="premiere-other-month" onClick={onOtherMonth} type="button">보러 가기 <ArrowUpRight aria-hidden="true" size={16} /></button></> : <>
         {!focused ? <><div className="pm-badge-portrait" aria-hidden="true"><PremierePortrait /></div>{dockOwnsClock ? <><svg className="pm-mini-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" /><circle cx="18" cy="18" r="15" pathLength="1" /></svg><span>최초공개</span><PremiereReadout target={frame.target} /></> : <span>최초공개 준비 중</span>}</> : null}
-        <button ref={exit} onClick={() => onClose(focused ? "calendar" : "dismiss")} type="button" aria-label="일정표 보기">{focused ? <><span>일정표 보기</span><ArrowUpRight aria-hidden="true" size={16} /></> : <X aria-hidden="true" size={18} />}</button>
+        <button ref={exit} data-act="premiere-exit" data-act-opt={focused ? "calendar" : "dismiss"} onClick={() => onClose(focused ? "calendar" : "dismiss")} type="button" aria-label="일정표 보기">{focused ? <><span>일정표 보기</span><ArrowUpRight aria-hidden="true" size={16} /></> : <X aria-hidden="true" size={18} />}</button>
       </>}
     </div>
   </div>, document.body);
@@ -241,7 +242,7 @@ function PremiereStory({ event, dateKey, tags, tagVisual, onRead }: { event: Pub
     <header className="pm-story-meta">
       <div className="pm-meta-date"><span className="pm-release-label">최초공개</span><time dateTime={dateKey}>{shortDate(dateKey)} <span>{new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", weekday: "short" }).format(new Date(`${dateKey}T12:00:00+09:00`))}</span></time>{!event.isAllDay ? <time className="pm-start-time" dateTime={event.startsAt}>{new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "numeric", minute: "2-digit" }).format(new Date(event.startsAt))}</time> : null}</div>
       {event.tagIds.length ? <div className="pm-tags" aria-label="일정 태그">{event.tagIds.flatMap(id => { const tag = tags.find(tag => tag.id === id), visual = tagVisual.visualOf(id); return tag ? <span key={id} style={{ "--pm-tag": visual.cssAccent ?? "var(--teaser)", background: visual.cssBg ? `color-mix(in srgb, ${visual.cssBg} 24%, rgb(var(--glass-panel)))` : undefined, borderColor: visual.cssBorder ? `color-mix(in srgb, ${visual.cssBorder} 36%, transparent)` : undefined } as CSSProperties}>{tag.displayName}</span> : []; })}</div> : null}
-      {onRead ? <button type="button" className="pm-read" onClick={() => onRead(event.id)}>상세 보기 <ArrowUpRight size={16} aria-hidden="true" /></button> : null}
+      {onRead ? <button type="button" data-act="premiere-read" className="pm-read" onClick={() => onRead(event.id)}>상세 보기 <ArrowUpRight size={16} aria-hidden="true" /></button> : null}
     </header>
     <PremiereTitle title={event.publicTitle} />
     {event.publicDescription ? <div className="pm-details"><p>{event.publicDescription}</p></div> : null}

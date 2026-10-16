@@ -5057,7 +5057,7 @@ export function PublicPoster({
       {/* 개발자 시험 도구는 달력·내보내기 표면 밖의 흐름에 둔다. 고정 버튼은 일정을 가린다. */}
       {canRehearsePremiere && previewNav ? (
         <div className="pm-rehearsal-tools" data-pm-exit="3">
-          <button className="pm-rehearsal" type="button" data-tip="가상 일정으로 공개 연출 시험"
+          <button className="pm-rehearsal" data-act="premiere-rehearsal" type="button" data-tip="가상 일정으로 공개 연출 시험"
             onClick={() => setRehearsal({ startedAt: syncedNow(), offsets: [20, 23], rehearsal: true })}>
             무대 리허설
           </button>

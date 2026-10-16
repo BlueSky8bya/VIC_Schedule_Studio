@@ -35,7 +35,7 @@ export function PremiereScene({ pulse, hopeful, cheer, onCheer, companionJoined 
     {companionDesktop ? <div className="pm-cast-row">
       <div className="pm-company" ref={audience} data-opening={openingSeed} data-cheer={cheer ? "" : undefined}>
         <div className="pm-audience-line" aria-hidden="true" />
-        {company.map((x, index) => <button type="button" className="pm-fan" key={index} data-pm-audience-control data-companion-joined={companionJoined && index === 0 ? "" : undefined} data-sfx="off" aria-label={companionJoined && index === 0 ? "우리 빅타민 응원하기" : `빅타민 ${index + 1} 응원하기`} onClick={onCheer} style={{ "--fan-x": `${x}%`, "--fan-seed": premiereAudienceSeed(openingSeed, index), "--fan-index": index } as CSSProperties}>
+        {company.map((x, index) => <button type="button" className="pm-fan" key={index} data-activity-manual="" data-pm-audience-control data-companion-joined={companionJoined && index === 0 ? "" : undefined} data-sfx="off" aria-label={companionJoined && index === 0 ? "우리 빅타민 응원하기" : `빅타민 ${index + 1} 응원하기`} onClick={onCheer} style={{ "--fan-x": `${x}%`, "--fan-seed": premiereAudienceSeed(openingSeed, index), "--fan-index": index } as CSSProperties}>
           <span className="pm-fan-art" aria-hidden="true" />
         </button>)}
       </div>

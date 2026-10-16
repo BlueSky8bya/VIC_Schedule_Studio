@@ -1739,7 +1739,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
       else if (event.key === " " && preferences.drag) { event.preventDefault(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
-      else if (event.key === "Escape") { event.preventDefault(); pendingMonth = false; keyboardHeld = false; placing = false; delete el.dataset.placing; settle({ x, y }); }
+      else if (event.key === "Escape") { event.preventDefault(); const moved = keyboardHeld && keyboardMoved; pendingMonth = false; keyboardHeld = false; keyboardMoved = false; placing = false; delete el.dataset.placing; settle({ x, y }); if (moved) transferred(); }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
     };
@@ -1784,7 +1784,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // after release/cancel if the browser does not synthesize a click.
       placementPointer = null; clearTimeout(clickGuard); clickGuard = setTimeout(() => { consumePlacementClick = false; }, 500);
     };
-    const click = (event: MouseEvent) => { cardPlay.restore(event.target); if (consumePlacementClick) { event.preventDefault(); event.stopImmediatePropagation(); consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard); } };
+    const click = (event: MouseEvent) => {
+      // A completed placement owns its synthetic click before document-level
+      // activity collection or a card's independent restore/open gesture.
+      if (consumePlacementClick) {
+        event.preventDefault(); event.stopImmediatePropagation(); consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard); return;
+      }
+      if (cardPlay.restore(event.target)) logActivity("ui.click", { target: "companion-card-restore" });
+    };
     const sensePointer = (event: PointerEvent) => {
       if (premiereActive || premiereBounce) return;
       if (!pause && (!overlayActive || isDetailGuest()) && event.pointerType !== "touch") {
@@ -2123,7 +2130,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const graphicsStored = (event: StorageEvent) => { if (event.key === null || event.key === "vic.gfx" || event.key === "vic.gfxPref") sync(); };
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-showcase", "data-ambient-pause", "data-gfx", "data-theme", "data-eye-comfort"] });
     observer.observe(page, { attributes: true, attributeFilter: ["inert", "data-companion-premiere-owner"] });
-    document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); document.addEventListener("click", click, true);
+    document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); window.addEventListener("click", click, true);
     window.addEventListener("blur", focusChanged); window.addEventListener("focus", focusChanged);
     window.addEventListener("vic:companion-overlay", sync);
     window.addEventListener("vic:companion-workspace", workspaceChanged);
@@ -2170,7 +2177,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       window.visualViewport?.removeEventListener("resize", viewportResized);
       window.removeEventListener("vic:panel-section", panelChanged);
       window.removeEventListener(COMPANION_CARD_PLAY_EVENT, followLayout);
-      document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
+      document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); window.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
       document.removeEventListener("pointerout", outsideDocument);
