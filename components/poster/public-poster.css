@@ -288,26 +288,27 @@
   padding: max(9px, env(safe-area-inset-top, 0px)) var(--m-agenda-pad-x, 14px) 10px;
   background: linear-gradient(180deg, #fbf2df 72%, #f7eddb);
   border-bottom: 1px solid #e3d6bb;
-  /* Shared agenda grid: the 44px settings gear owns the upper-right cell.
-     Account actions remain below it; the title keeps its centered column. */
+  /* Mobile settings and account actions flank the centered title. Equal
+     zero-minimum side tracks keep that center independent of account labels. */
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   column-gap: 8px;
   row-gap: 2px;
 }
-/* Account action remains below the shared upper-right settings gear. */
+/* Login and logout share the title's upper-right row on every agenda surface. */
 .agenda-account {
   grid-column: 3;
-  grid-row: 2;
+  grid-row: 1;
   justify-self: end;
+  align-self: center;
 }
 .agenda-account button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 30px;
+  min-height: var(--control-hit, 44px);
   border: 1px solid #e3d6bb;
   border-radius: var(--r-pill);
   background: rgb(255 255 255 / 78%);
@@ -351,11 +352,11 @@
   background: #fff;
   box-shadow: 0 1px 5px rgb(168 118 10 / 16%);
 }
-/* 시청자 미리보기 진입 시 — 제목 헤더의 왼쪽 여백 칸(안내)·오른쪽 칸(이동 버튼).
-   가운데 제목(col2)은 그대로 두고 양옆에 배치 → 제목과 같은 자리에서 함께 sticky로 따라온다. */
+/* Optional preview guidance uses the second row; the first-left cell belongs
+   to settings on viewer, anonymous and preview agendas alike. */
 .agenda-header .agenda-preview-left {
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 2;
   justify-self: start;
   align-self: center;
   min-width: 0;
@@ -6820,18 +6821,19 @@ html[data-reduce-motion] .slc-player img {
 .viewer-settings-open svg {
   transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
-/* One 44px top-right gear in both agenda headers. Desktop poster chrome keeps
-   its original placement. Safe-area margin uses the existing page padding. */
+/* One shared 44px upper-left gear on viewer/anonymous/preview agendas.
+   Desktop poster chrome keeps its original placement and safe-area padding. */
 .agenda-header > .viewer-settings-open {
-  grid-column: 3;
+  grid-column: 1;
   grid-row: 1;
-  justify-self: end;
-  align-self: start;
-  margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px)));
+  justify-self: start;
+  align-self: center;
+  margin-inline-start: max(0px, calc(env(safe-area-inset-left, 0px) - var(--m-agenda-pad-x, 14px)));
 }
 .agenda-header > :is(.agenda-account, .m-head-logout) { margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px))); }
-@media (max-width: 360px) {
-  /* Keep the shared 44px settings target; decorative sparkles yield on small phones. */
+@media (max-width: 480px) {
+  /* The longer account pill now shares this row. Decorations yield first so
+     the title stays centered between the unchanged control/text tokens. */
   .agenda-header:has(> .viewer-settings-open) .title-spark { display: none; }
   .agenda-header:has(> .viewer-settings-open) .agenda-title { white-space: nowrap; }
 }

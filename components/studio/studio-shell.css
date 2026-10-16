@@ -5428,7 +5428,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 .studio-mobile .agenda-header .m-head-left .save-status.failed {
   background: var(--status-danger-fill);
 }
-/* Restore the account action beside the title; settings owns the separate month row. */
+/* Account stays upper-right; settings owns the left of the separate month row. */
 .studio-mobile .agenda-header .m-head-logout {
   grid-column: 3;
   grid-row: 1;
@@ -5440,7 +5440,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 30px;
+  min-height: var(--control-hit, 44px);
   padding: 0 11px;
   border-radius: var(--r-pill);
   font-size: var(--text-caption);
@@ -10279,17 +10279,23 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   justify-content: center;
   gap: 14px;
 }
-/* Explicit owner placement exception; inherit the shared 44px gear skin. */
+/* The studio's month-row placement remains distinct from the viewer header,
+   with the same left safe-area alignment and shared 44px settings control. */
 .studio-mobile .m-month-nav > .viewer-settings-open {
-  grid-column: 3;
+  grid-column: 1;
   grid-row: 1;
-  justify-self: end;
+  justify-self: start;
   align-self: center;
-  margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px)));
+  margin-inline-start: max(0px, calc(env(safe-area-inset-left, 0px) - var(--m-agenda-pad-x, 14px)));
 }
 @media (max-width: 360px) {
   /* Keep all 44px targets apart when the two side columns become narrower. */
   .studio-mobile .m-month-switch { gap: 6px; }
+  /* Metadata gives up padding before the centered title or account target.
+     Keep the version and save state readable at320px without a new type size. */
+  .studio-mobile .agenda-header .m-head-left :is(.studio-build-tag-m, .save-status) {
+    padding-inline: var(--space-1);
+  }
 }
 .studio-mobile .m-month-nav strong {
   min-width: 118px;
@@ -10322,10 +10328,8 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   transition-duration: var(--dur-1);
   transition-timing-function: var(--ease-exit);
 }
-/* 시청자 화면(.agenda-header h1: 28px/13px)과 동일한 크기로 맞춘다. */
-.studio-mobile .agenda-header h1 {
-  font-size: var(--text-hero); /* 화면 대제목 — 역할 스케일 위 전용 크기(의도적 예외) */
-}
+/* The shared .agenda-header h1 responsive scale also leaves room for the
+   studio's real account action on small phones; do not fix it at28px. */
 .studio-mobile .agenda-header h1 span {
   font-size: var(--text-body); /* 13→13.5 수렴 */
 }

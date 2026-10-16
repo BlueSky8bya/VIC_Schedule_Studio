@@ -2,6 +2,8 @@
 
 Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시각 승인과 기능 구현 승인은 구별한다.
 
+모바일 헤더 위치 재정정(2026-10-16 최신 소유자 요청): 아래063/064/066의 설정·계정 위치만 대체한다. 익명 로그인과 설정의 오른쪽 충돌을 없애기 위해 시청자(로그인/비로그인)·미리보기 설정은 헤더 왼쪽, 편집실 설정은 월 이동 줄 왼쪽에 둔다. 로그인/로그아웃은 헤더 오른쪽1행, 중앙 제목·월 그룹과 공유44px·safe-area·창·X/뒤로가기·focus 복원은 유지한다. 다크 agenda sticky 외층을 실제 달력 `--paper`와 통일하고 내부 Studio 헤더만 투명하게 하여 색 띠/테두리/blur/shadow를 없앤다. 인증 form/handler·권한/DTO/DB/KST·PC1840·모바일 빅타민 제외 변경0. CSS 배치 정정(L1)이며 새 동작/인프라/자산은 없다. [검증](../verification/MOBILE_HEADER_ALIGNMENT-20261016.md).
+
 방송 프레임 경로 정리([PLAN-066](../plans/PLAN-20261016-066-companion-frame-pipeline.md), 2026-10-16 소유자 요청): 화질·동작/cadence를 낮추지 않고 같은 엔진의 full main/follow/pointer 표시 중복, 정적 anchor 읽기, 프레임별 동기 gfx 조회와 음식 read/write 교차를 줄인다. 실제 변경 이벤트가 유한 추종을 열며 deadline이 지난 첫 프레임에도 dirty anchor를 한 번 측정한다. full scan/창 경계는 강제 재기준화하고 낮은 등급·감소동작·quiet의 유한 추종과 해제 즉시 충돌 판정을 유지한다. 새 상시 loop·DB/DTO/자산 변경은 없다. 모바일 편집실 로그아웃의063 잔여2행은 원래 제목 오른쪽1행으로 복원하며064 설정 위치 예외는 유지한다. Chromium 부하 측정과 실제 OBS/SOOP 송출 증거는 구별한다. [검증](../verification/COMPANION_FRAME_PIPELINE-20261016.md).
 
 편집실·미리보기 위치 연결([PLAN-065](../plans/PLAN-20261016-065-companion-preview-continuity.md), 2026-10-16 소유자 요청): 화면별 새 엔진의 기본 위치로 돌아가던 경계를 같은 StudioShell의 일시 ref로 잇는다. 실제 owner/developer만 위치·viewport·월과 집/집바닥 또는 명시적인 공개 일반 카드 ID·전체 실측 BCR 상대 비율을 전달한다. 비공개/미공개 ID·제목/본문/태그·인증 정보·DOM·brain/행동·음식·모달/공연 상태는 전달하지 않으며 storage/서버/DTO를 추가하지 않는다. DOM 삭제 전 layout cleanup에서 포착하고, 새 화면 실측의 같은 공개 카드/집 안전 span에 한 번 재연결한다. 임시 geometry ID 재사용과 잘린 visible rect의 비율은 금지한다. 카드 소실/월 변경은 가까운 실제 지원으로 복구하며 접힌 집 주민은 기존 가림 정책을 따른다. 최초공개/숨김/모바일 OFF/master OFF 우선, 자율 스크롤·새 loop 없음. 기존 엔진 내부 lastPose와 권한·공개 preview 경계는 유지한다. [검증 상태](../verification/COMPANION_PREVIEW_CONTINUITY-20261016.md).

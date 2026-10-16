@@ -492,7 +492,18 @@ html[data-theme="dark"] :is(.agenda-detail-title, .agenda-detail-title .adt-text
 html[data-theme="dark"] :is(.agenda-detail-date, .agenda-detail-subs, .agenda-detail-close) { color: var(--ink-soft); }
 
 html[data-theme="dark"] .poster-page { background: var(--paper); }
-html[data-theme="dark"] .agenda-header { background: rgb(var(--glass-head) / 96%); }
+/* Agenda headers retain their mobile sticky geometry, so the canvas paper
+   covers scrolling text without introducing a separate glass/surface band.
+   The studio's nested header stays transparent inside that same paper layer;
+   desktop ambient topbars keep their existing transparent UI-13 treatment. */
+html[data-theme="dark"] :is(.agenda-header, .m-topstick) {
+  background: var(--paper);
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-theme="dark"] .studio-mobile .agenda-header { background: transparent; }
 html[data-theme="dark"] :is(.agenda-tier-key, .heart-tier-legend, .agenda-legend-hint, .agenda-account button,
   .me-title, .me-group, .m-sheet-top, .m-edit-x, .editor-title-ce,
   .bp-layers-panel, .bp-layer, .bp-layer-add, .bp-layer-btn, .bp-shortcuts,
@@ -562,7 +573,7 @@ html[data-theme="dark"] :is(.m-rail-insights, .tp-section-label) { color: var(--
 html[data-theme="dark"] .editor-mode-badge.is-edit:not(.teaser-gate-badge) { color: var(--studio-action-text); }
 html[data-theme="dark"] .event-editor-panel .editor-date-inline { color: var(--ink-soft); }
 html[data-theme="dark"] .event-editor-panel .editor-save-tab-text { color: var(--studio-action-text); }
-html[data-theme="dark"] :is(.dtp-foot-btn, .dtp-time, .m-topstick, .m-manage) {
+html[data-theme="dark"] :is(.dtp-foot-btn, .dtp-time, .m-manage) {
   background: var(--surface); border-color: var(--night-line); color: var(--ink-soft);
 }
 html[data-theme="dark"] .dtp-foot-btn.primary { background: var(--studio-action-tint); color: var(--seg-on-accent-ink); }

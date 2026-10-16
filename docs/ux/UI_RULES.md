@@ -4,6 +4,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
+최신 모바일 헤더 정정(2026-10-16 소유자 요청): 아래063/064/066의 설정·계정 위치 조항만 대체한다. 설정은 시청자(로그인/비로그인)·미리보기의 헤더 왼쪽, 편집실은 가운데 월 이동 그룹을 유지한 그 줄 왼쪽에 둔다. 로그인·로그아웃은 헤더 오른쪽1행이며 중앙 제목·44px 표적·safe-area·같은 설정 창/history/focus를 유지한다. 작은 화면에서는 제목 양쪽 장식을 먼저 양보한다. 다크 agenda의 sticky 외층은 달력과 같은 `--paper`로 아래 스크롤 글자를 가리고, 편집실 내부 헤더는 투명하게 둬 별도 색 띠·경계선·blur/shadow가 생기지 않게 한다. PC poster와 모바일 빅타민 제외는 그대로다. [검증](../agent/verification/MOBILE_HEADER_ALIGNMENT-20261016.md).
+
 [PLAN-066](../agent/plans/PLAN-20261016-066-companion-frame-pipeline.md): 모바일 편집실 로그아웃은 원래 제목 오른쪽1행으로 복원하고, 설정은064의 월 이동 줄 오른쪽을 유지한다. 방송 병행의 여유는 해상도·행동·full/lite cadence 축소 대신 공유 프레임의 중복 anchor 측정/표시와 동기 설정 재조회를 줄여 확보한다. 실제 layout 변경은 유한 구간에서 추종하되 긴 프레임 뒤에도 미측정 변경을 한 번 소비한다. 음식은 source/control 읽기→계산→음식별 표시 순서를 지킨다. 감소동작·quiet/parked·직접 입력·소파 전체 몸체·065 handoff·최초공개 우선순위는 유지한다. [검증 범위](../agent/verification/COMPANION_FRAME_PIPELINE-20261016.md).
 
 [PLAN-063](../agent/plans/PLAN-20261016-063-mobile-without-companion.md)의 소유자 결정이062의 모바일 집/관객과 편집실 숨바꼭질 제외를 대체한다. 모바일에는 빅타민 엔진·집·음식·설정 탭·최초공개 응원단을 마운트하지 않는다. 시청자·편집실·미리보기 모두 기존 `POSTER_AGENDA_QUERY`를 capability로 공유해 화면 전환 경계가 달라도 다시 켜지지 않게 한다. PC의 저장된 ON/세부 취향은 유지한다. 모바일도 공통44px 설정 톱니·설정 창과 X·뒤로가기·원래 버튼 focus 복원을 공유한다.
