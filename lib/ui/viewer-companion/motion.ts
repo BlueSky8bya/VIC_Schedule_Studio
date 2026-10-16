@@ -11,6 +11,9 @@ export type CompanionMotionInput = {
   now: number;
   reduced?: boolean;
   grip?: CompanionGrip;
+  /** A proved target may orient a stationary observation. It never changes
+   * world position, travel heading or a captured/manual performance. */
+  attention?: { direction: -1 | 1; elevation: number };
 };
 export type CompanionMotionPose = {
   row: number;
@@ -135,9 +138,15 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const first = previousRow === undefined;
       const entered = first || previousRow !== row;
       const dx = first ? 0 : x - previousX;
+      const dy = first ? 0 : y - previousY;
       const seconds = first ? 0 : Math.max(0, now - previousNow) / 1000;
+      const attention = (row === 1 || row === 26) && (input.status === "look" || input.status === "sniff")
+        && Math.abs(dx) < .05 && Math.abs(dy) < .05
+        && input.attention && (input.attention.direction === -1 || input.attention.direction === 1) && Number.isFinite(input.attention.elevation)
+        ? input.attention : undefined;
       // A hand moves the body in world space; it is not a walking intention.
       if (!(row === 8 && input.status === "held") && input.status !== "play" && Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
+      else if (attention) facing = attention.direction;
       if (entered) { enteredAt = now; walkDistance = 0; walkSteps = 0; travelLean = 0; }
       else if (row === 2 || row === 20) walkDistance += Math.abs(dx);
       previousRow = row; previousX = x; previousY = y; previousNow = now;
@@ -176,6 +185,7 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const stretch = movingPose ? Math.sin(stride * 2) : 0;
       if (movingPose && seconds > 0 && Math.abs(dx) > .001) travelLean = clamp(dx / seconds / 150, -1, 1) * .65;
       const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
+      const attending = attention && !input.reduced && phase > 0 && phase < 1 ? Math.sin(phase * Math.PI) : 0;
       const extension = row === 16 ? Math.sin(phase * Math.PI) : 0;
       const shake = row === 17 ? Math.sin(phase * Math.PI * 6) * Math.sin(phase * Math.PI) : 0;
       // A held creature keeps kicking even under a stationary pointer. Only
@@ -193,10 +203,12 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const target: Scalars = {
         // A hanging grip must not translate with the rest of the body. Its
         // pivoted extension supplies the downward travel below the hand.
-        bob: movingPose ? -Math.abs(Math.sin(stride)) * (row === 20 ? 3.5 : 1.2) : 0,
+        bob: movingPose ? -Math.abs(Math.sin(stride)) * (row === 20 ? 3.5 : 1.2) : attending ? attending * clamp(attention?.elevation ?? 0, -1, 1) : 0,
         scaleX: 1 + stretch * .012 - extension * .014 - hanging * heldGrip.width,
         scaleY: 1 - stretch * .018 + extension * .026 + hanging,
-        tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1) + held * (Math.sin(heldTime * Math.PI * 3.6 + heldGrip.phase) * 5.2 + kick * 1.6 + heldGrip.lean * facing),
+        // The existing facing plane mirrors this local lean toward the target;
+        // multiplying by direction here would reverse a leftward observation.
+        tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1 + attending * 1.6) + held * (Math.sin(heldTime * Math.PI * 3.6 + heldGrip.phase) * 5.2 + kick * 1.6 + heldGrip.lean * facing),
       };
       // A100ms Hermite correction carries the last scalar pose and velocity
       // into a new clip. This is a small pose mixer, not alpha ghosting between

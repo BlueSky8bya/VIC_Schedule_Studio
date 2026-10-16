@@ -6,6 +6,7 @@ import { advanceCompanionAffect, appraiseCompanionEvent, companionMood, createCo
 import { COMPANION_FEED_ACTION_BUDGET, COMPANION_FEED_RETRY_MS, planCompanionGoal, rememberCompanionOutcomes, type CompanionFeedGoal, type CompanionIntention, type CompanionOutcome, type CompanionPlaceMemory } from "./planner";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
+import type { CompanionAttention } from "./deliberation";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -47,6 +48,7 @@ export type CompanionAction = {
   /** Retained wander heading, not an instruction to mirror the renderer. */
   direction?: -1 | 1;
   intention?: CompanionIntention;
+  attention?: CompanionAttention;
   outcomes?: CompanionOutcome[];
 };
 export type CompanionWorld = {
@@ -365,7 +367,8 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
     const pace = !tired && random(rng) < profile.scootChance ? "scoot" : "amble";
     if (!current.manualOnly && Math.abs(walkX - world.x) > 20) add("walk", (1 + brain.curiosity * .7 + (follows ? profile.socialPull : 0)) * mobility, Math.max(500, Math.abs(walkX - world.x) / speed * (pace === "scoot" ? 850 : profile.walkScale * 1000)), { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1 });
     if (prefs.jump) {
-      const reachable = reachablePlatforms(world, world.platforms).filter(p => p.id !== current.id && p.kind !== "hide" && !p.manualOnly);
+      const reachable = reachablePlatforms(world, world.platforms).filter(p => p.id !== current.id && p.kind !== "hide" && !p.manualOnly
+        && !brain.places?.some(place => place.id === p.id && place.retryAfter > (brain.activeMs ?? 0)));
       if (reachable.length) {
         const unvisited = reachable.filter(p => !brain.visited.includes(p.id));
         let choices = unvisited.length ? unvisited : reachable;

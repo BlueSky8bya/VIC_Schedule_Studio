@@ -4,6 +4,78 @@ import { boundCompanionHeldPose } from "@/lib/ui/viewer-companion/held-inertia";
 
 const input = (patch: Partial<CompanionMotionInput> = {}): CompanionMotionInput => ({ row: 0, phase: 0, status: "idle", x: 100, y: 500, now: 0, ...patch });
 
+describe("targeted companion observation", () => {
+  it("turns a stationary look or sniff toward its actual target without scaling the body", () => {
+    for (const row of [1, 26]) for (const status of ["look", "sniff"]) {
+      const motion = createCompanionMotion({ rowCount: 32 });
+      const target: CompanionMotionInput["attention"] = { direction: -1, elevation: -.5 };
+      expect(motion.sample(input({ row, status, attention: target }))).toMatchObject({ facing: -1, bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+      expect(motion.sample(input({ row, status, attention: target, phase: .5, now: 200 }))).toMatchObject({ facing: -1, bob: -.5, tilt: 1.6, scaleX: 1, scaleY: 1 });
+      expect(motion.sample(input({ row, status, attention: { ...target, direction: 1 }, phase: .5, now: 250 }))).toMatchObject({ facing: 1, bob: -.5, tilt: 1.6 });
+      expect(target).toEqual({ direction: -1, elevation: -.5 });
+    }
+  });
+
+  it("bounds the finite attention arc and returns to neutral at its endpoints", () => {
+    for (const elevation of [-10, -1, 0, 1, 10]) {
+      const motion = createCompanionMotion({ rowCount: 32 });
+      for (let step = 0; step <= 100; step++) {
+        const phase = step / 100, pose = motion.sample(input({ row: 26, status: "look", attention: { direction: 1, elevation }, phase, now: step * 6 }));
+        expect(Math.abs(pose.bob)).toBeLessThanOrEqual(1);
+        expect(pose.tilt).toBeGreaterThanOrEqual(0); expect(pose.tilt).toBeLessThanOrEqual(1.6);
+        expect(pose.scaleX).toBe(1); expect(pose.scaleY).toBe(1);
+        if (step === 0 || step === 100) expect(pose).toMatchObject({ bob: 0, tilt: 0 });
+      }
+    }
+    const invalid = createCompanionMotion().sample(input({ row: 1, status: "look", phase: .5, attention: { direction: -1, elevation: NaN } }));
+    expect(invalid).toMatchObject({ facing: 1, bob: 0, tilt: 0 });
+    expect(Object.values(invalid).every(Number.isFinite)).toBe(true);
+  });
+
+  it("gives actual motion priority and never adds an observation during vertical travel", () => {
+    const motion = createCompanionMotion({ rowCount: 32 });
+    motion.sample(input({ row: 1, status: "look" }));
+    expect(motion.sample(input({ row: 1, status: "look", x: 101, phase: .5, now: 200, attention: { direction: -1, elevation: 1 } }))).toMatchObject({ facing: 1, bob: 0, tilt: 0 });
+    expect(motion.sample(input({ row: 1, status: "look", x: 100, phase: .5, now: 400, attention: { direction: 1, elevation: 1 } }))).toMatchObject({ facing: -1, bob: 0, tilt: 0 });
+    expect(motion.sample(input({ row: 1, status: "look", y: 490, phase: .5, now: 600, attention: { direction: 1, elevation: 1 } }))).toMatchObject({ facing: -1, bob: 0, tilt: 0 });
+  });
+
+  it("ignores attention throughout captured, play, travel and unrelated poses", () => {
+    for (const [row, status] of [[8, "held"], [26, "play"], [1, "walk"], [2, "walk"], [4, "jump"], [6, "land"], [0, "look"], [1, "idle"]] as const) {
+      const ordinary = createCompanionMotion({ rowCount: 32 }), distracted = createCompanionMotion({ rowCount: 32 });
+      for (let step = 0; step <= 30; step++) {
+        const next = input({ row, status, phase: step / 30, now: step * 16, x: step < 15 ? 100 - step : 85 + step });
+        expect(distracted.sample({ ...next, attention: { direction: -1, elevation: -1 } })).toEqual(ordinary.sample(next));
+      }
+    }
+  });
+
+  it("samples the same target attention at the same elapsed time at60 and120Hz", () => {
+    const run = (hz: number, row: number) => {
+      const motion = createCompanionMotion({ rowCount: 32 });
+      let pose = motion.sample(input({ row, status: "look", attention: { direction: -1, elevation: .75 } }));
+      for (let frame = 1; frame <= hz * .5; frame++) {
+        const now = frame / hz * 1000;
+        pose = motion.sample(input({ row, status: "look", attention: { direction: -1, elevation: .75 }, phase: now / 700, now }));
+      }
+      return pose;
+    };
+    for (const row of [1, 26]) expect(run(60, row)).toEqual(run(120, row));
+  });
+
+  it("keeps static orientation under reduced motion and carries the existing100ms release mixer", () => {
+    const reduced = createCompanionMotion({ rowCount: 32 });
+    for (const now of [0, 150, 300]) expect(reduced.sample(input({ row: 1, status: "look", attention: { direction: -1, elevation: -1 }, phase: .5, now, reduced: true }))).toMatchObject({ facing: -1, bob: 0, tilt: 0, scaleX: 1, scaleY: 1, column: 0 });
+    const motion = createCompanionMotion({ rowCount: 32 });
+    const looking = input({ row: 1, status: "look", attention: { direction: 1, elevation: -1 }, phase: .5 });
+    motion.sample(looking); motion.sample({ ...looking, now: 150 });
+    const observed = motion.sample({ ...looking, now: 200 });
+    const released = motion.sample(input({ now: 216 }));
+    for (const key of ["bob", "tilt", "scaleX", "scaleY"] as const) expect(released[key]).toBe(observed[key]);
+    expect(motion.sample(input({ now: 316 }))).toMatchObject({ bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+  });
+});
+
 describe("held gravity viewport composition", () => {
   const size = 92, viewport = { width: 400, height: 300 }, grip = { x: 24, y: 28 };
   const pose: CompanionMotionPose = { row: 8, column: 7, facing: 1, bob: 0, scaleX: .95, scaleY: 1.315, tilt: 6.8 };

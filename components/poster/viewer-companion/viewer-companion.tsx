@@ -6,6 +6,7 @@ import { Home } from "lucide-react";
 import { logActivity } from "@/lib/activity/client";
 import { COMPANION_CLIP_TIMING, COMPANION_TIMING, companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
 import { getCompanionArrivalPlay } from "@/lib/ui/viewer-companion/arrival-play";
+import { companionAttentionPoint, deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
 import { advanceBrain, commitAction, createBrain, getAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, type CompanionGeometrySubscription } from "@/lib/ui/viewer-companion/geometry";
@@ -329,6 +330,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let followRaf = 0, followUntil = 0, scrollUntil = 0;
     let followedAt = -Infinity, followedKeys = "", anchorsDirty = false;
     let lastPoseSample = { row: 0, frame: 0, status: "idle" };
+    let lastFoodPoint: { id: string; x: number; y: number } | undefined;
     let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
     let geometryReady = false, homeOccluded = false;
     let overlayActive = false, overlayPerch: CompanionOverlayPerch | undefined;
@@ -386,7 +388,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!premiereActive && !premiereBounce && !hiding && !overlayActive && !returning && !pressed && !keyboardHeld && !recoveringPickup && (awaitingAtX || !hasWorldSupport && !pendingMonth || homeOccluded && isHomeSupport(support) || x < size / 2 + 4 || x > innerWidth - size / 2 - 4 || y < size + 8 || y > innerHeight - 12)) { hideBed(); stopHover(); el.hidden = true; return; }
       const displayFrame = isDetailGuest() ? interactionFrame() : { x, y, size, scale: 1 };
       const normalizedGrip = { x: grip.x / size, y: grip.y / size };
-      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: isDetailGuest() ? displayFrame.x : x - carrier.x, y: isDetailGuest() ? displayFrame.y : y - carrier.y, now: presentationNow, grip: normalizedGrip, reduced: forceNeutralPose || reduced || gfxMode() === "off" });
+      // Resolve just the attended cached support/snack. No route search or DOM
+      // measurement runs in pose sampling; the existing follower owns layout.
+      const attention = ["look", "sniff"].includes(status) ? action?.attention : undefined;
+      const attendedSupport = attention?.goal && supportById(attention.goal.targetId);
+      const attendedPoint = companionAttentionPoint(attention, attendedSupport ? [attendedSupport] : [], attention?.goal?.foodId ? food.current?.foods() : []);
+      if (attention) data("attention", attention.kind); else el.removeAttribute("data-attention");
+      if (attention?.goal) data("intent", attention.goal.kind); else el.removeAttribute("data-intent");
+      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: isDetailGuest() ? displayFrame.x : x - carrier.x, y: isDetailGuest() ? displayFrame.y : y - carrier.y, now: presentationNow, grip: normalizedGrip, reduced: forceNeutralPose || reduced || gfxMode() === "off", attention: attendedPoint ? { direction: Math.abs(attendedPoint.x - x) < 3 ? brain.current.heading : attendedPoint.x < x ? -1 : 1, elevation: clamp((y - size * .5 - attendedPoint.y) / 160, -1, 1) } : undefined });
       if (forceNeutralPose) { heldPivot = false; releasedPivotAt = -Infinity; }
       forceNeutralPose = false;
       if (status === "held") { heldPivot = true; releasedPivotAt = Infinity; }
@@ -513,7 +522,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // Static world travel changes only our numbers. Real layout/scroll
       // events open a finite tracking window; a full scan always rebases.
       // Main and follow rAFs share a timestamp, so read each pair just once.
-      const keys = `${support}\n${action?.target.platformId ?? ""}`;
+      const followedIds = [...new Set([support, action?.target.platformId, action?.attention?.goal?.targetId].filter((id): id is string => Boolean(id)))];
+      const keys = followedIds.join("\n");
       // A blocked frame may outlive the tracking window. Still consume its
       // pending layout change once before drawing at the old support point.
       if (!force && !anchorsDirty && (now > followUntil && now > scrollUntil || now === followedAt && keys === followedKeys)) return false;
@@ -521,7 +531,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       followedAt = now; followedKeys = keys;
       const progress = action ? clamp((now - began) / Math.max(1, total), 0, 1) : 0;
       const previousPassage = sofaPassage(progress);
-      const samples = geometryTracker?.follow([support, action?.target.platformId ?? ""].filter(Boolean)) ?? [];
+      const samples = geometryTracker?.follow(followedIds) ?? [];
       const seatSample = samples.find(sample => sample.platform.id === "companion-home");
       const beforeBed = bedScene && { x: bedScene.anchorX, y: bedScene.anchorY };
       const bedMoved = followBed(seatSample);
@@ -606,7 +616,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       };
       followRaf = requestAnimationFrame(follow);
     };
-    const clearAction = () => { if (homeDeparture?.flying) homeDeparture = undefined; action = null; food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = () => { if (homeDeparture?.flying) homeDeparture = undefined; action = null; food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
       // User releases hit the first real card top on this vertical ray. The
       // separate text ledges remain the only autonomous destinations.
@@ -738,6 +748,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const launch = (next: CompanionAction, now: number) => {
       clearAction(); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
+      if (next.attention) spriteSources[next.attention.kind === "reconsider" ? 26 : 1].forEach(src => requestSprite.current(src));
       if (next.kind === "play" && next.play) {
         // Decode just the contact and expression packets ahead of their beat.
         // Keep the existing bounded cache; never warm the entire pose library.
@@ -901,24 +912,37 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (el.dataset.state === "petted" && effect.current) effect.current.textContent = "";
       if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
       const foodGoalId = brain.current.foodGoal?.foodId;
-      const lostGoalId = foodGoalId && food.current && !food.current.contains(foodGoalId) ? foodGoalId : undefined;
+      const liveFoods = food.current?.foods() ?? [];
+      const seenFood = liveFoods.find(item => item.id === (action?.foodId ?? foodGoalId));
+      if (seenFood) lastFoodPoint = { id: seenFood.id, x: seenFood.x, y: seenFood.y };
+      const lostGoalId = food.current && [foodGoalId, action?.foodId].find(id => id && !food.current!.contains(id));
       if (lostGoalId) brain.current = recordCompanionEvent(brain.current, "food-lost");
-      if (action?.foodId && !food.current?.foods().some(item => item.id === action!.foodId)) {
+      const interruptedFood = action?.foodId && !liveFoods.some(item => item.id === action!.foodId);
+      if (interruptedFood) {
         // A folded/clipped/held snack still exists. Suspend its visual action
         // without treating a temporary unavailable support as a deleted meal.
-        if (action.foodId !== lostGoalId && !food.current?.contains(action.foodId)) brain.current = recordCompanionEvent(brain.current, "food-lost");
         clearAction(); if (!supportedNow() && !(homeOccluded && isHomeSupport(support))) settle({ x, y }); nextDecision = now + 300;
+      }
+      // A genuinely removed meal earns one finite recheck at the last seen
+      // point. A held/occluded snack merely suspends, and midair feet finish
+      // their safe landing instead of freezing to perform an expression.
+      if (lostGoalId && !action && supportedNow() && !workspaceBusyRef.current && presence.phase === "active" && !reduced && gfxMode() !== "off") {
+        launch({ kind: "look", target: { x, y, platformId: support }, duration: 480, attention: { kind: "reconsider", ...(lastFoodPoint?.id === lostGoalId ? { point: { x: lastFoodPoint.x, y: lastFoodPoint.y } } : {}) } }, now);
       }
       if (!action && !workspaceBusyRef.current && presence.phase === "active" && geometryReady && now >= nextDecision && (!isHomeSupport(support) || supportById(support))) {
         const occupied = supportById(support);
-        const availableFood = accessibleCompanionFoods(food.current?.foods() ?? [], [...platforms, ...landingPlatforms]);
+        const availableFood = accessibleCompanionFoods(liveFoods, [...platforms, ...landingPlatforms]);
         const explicitSupports = landingPlatforms.filter(p => p.manualOnly && (p.id === occupied?.id || availableFood.some(item => item.platformId === p.id)));
         const worldPlatforms = explicitSupports.length ? [...platforms, ...explicitSupports] : platforms;
         const source = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
         // Both surfaces share one hide action. The explicit public marker
         // and user-opened detail bridge protect studio editing and data.
         hideCandidate = effective.ambientPrank && occupied?.kind === "card" && now - brain.current.createdAt >= 45000 ? collectCompanionHideTargets(page).find(target => target.element === source) : undefined;
-        launch(getAction(brain.current, { x, y, platformId: support, platforms: worldPlatforms, width: innerWidth, height: innerHeight, hideAvailable: Boolean(hideCandidate), foods: availableFood, pointer }, effective, now), now);
+        const world = { x, y, platformId: support, platforms: worldPlatforms, width: innerWidth, height: innerHeight, hideAvailable: Boolean(hideCandidate), foods: availableFood, pointer };
+        const chosen = getAction(brain.current, world, effective, now);
+        const chosenFood = availableFood.find(item => item.id === chosen.foodId);
+        if (chosenFood) lastFoodPoint = { id: chosenFood.id, x: chosenFood.x, y: chosenFood.y };
+        launch(deliberateCompanionAction(brain.current, world, effective, chosen, !reduced && gfxMode() !== "off"), now);
         if (hiding) { paint(14, 0, "hide"); schedule(); return; }
       }
       let row = 0, frame = 0, status = "idle";
@@ -994,7 +1018,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
               food.current?.jostle({ x, y }, 100);
             }
           }
-        } else if (action.kind === "look") { row = 1; frame = p * 15; }
+        } else if (action.kind === "look") { row = action.attention?.kind === "reconsider" ? 26 : 1; frame = p * 15; }
         else if (action.kind === "stretch") { row = 16; frame = p * 15; }
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
         if (p >= 1) {
@@ -1026,7 +1050,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           }
           clearAction();
           if (ejected && presence.phase === "parked") { row = 11; frame = 0; status = "sleep"; el.dataset.dreaming = ""; offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
-          if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (continueRoute ? 0 : 220);
+          if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (continueRoute ? 0 : completed.attention && completed.attention.kind !== "social" ? 60 : 220);
           if (restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
           if (arrivalPlay) {
             // The actual completed run/landing owns this one contact. Start
@@ -1043,7 +1067,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (mood === "disappointed" || mood === "sulky") {
         const moodRow = mood === "sulky" ? 19 : 18;
         spriteSources[moodRow].forEach(src => requestSprite.current(src));
-        if (["idle", "look"].includes(status)) { row = moodRow; frame = reduced ? 0 : clamp((presentationNow - moodStarted) / (COMPANION_CLIP_TIMING[moodRow].duration ?? 1400), 0, 1) * 15; }
+        if (["idle", "look"].includes(status) && !action?.attention) { row = moodRow; frame = reduced ? 0 : clamp((presentationNow - moodStarted) / (COMPANION_CLIP_TIMING[moodRow].duration ?? 1400), 0, 1) * 15; }
       }
       data("mood", mood);
       paint(row, frame, status); schedule();

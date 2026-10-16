@@ -7,7 +7,7 @@ export type CompanionIntention = {
   /** Normalized support location follows real geometry rather than stale px. */
   offset: number;
   remaining: number;
-  stage: "travel" | "observe";
+  stage: "consider" | "travel" | "observe";
   foodId?: string;
 };
 /** One offered-food identity survives a temporary occlusion or another need.
@@ -62,12 +62,12 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
     }
     const step = route[0];
     const pace = brain.energy >= .5 && profile.scootChance >= .5 ? "scoot" as const : "amble" as const;
-    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * (pace === "scoot" ? 850 : profile.walkScale * 1000)) : 950, direction: step.target.x < world.x ? -1 : 1, ...(step.kind === "walk" ? { pace } : {}), intention };
+    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * (pace === "scoot" ? 850 : profile.walkScale * 1000)) : 950, direction: step.target.x < world.x ? -1 : 1, ...(step.kind === "walk" ? { pace } : {}), intention: { ...intention, stage: "travel" } };
   };
   const previous = brain.intention;
   const rested = previous?.kind === "rest" && (!prefs.sleep || brain.energy >= profile.restedEnergy);
   const exhausted = previous?.kind === "explore" && brain.energy < .28;
-  if (previous && previous.kind !== "feed" && previous.stage === "travel" && !rested && !exhausted) {
+  if (previous && previous.kind !== "feed" && (previous.stage === "travel" || previous.stage === "consider") && !rested && !exhausted) {
     const action = pursue(previous);
     if (action) return { action, outcomes };
   }

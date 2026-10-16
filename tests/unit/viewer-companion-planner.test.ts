@@ -77,6 +77,36 @@ describe("environment-driven finite companion intentions", () => {
     expect(spent.intention?.targetId).not.toBe(brain.intention!.targetId);
   });
 
+  it("resumes a considered goal as travel using its current support geometry", () => {
+    const first = getAction(fresh(), world, prefs, 0, () => .5);
+    const considered = { ...first.intention!, stage: "consider" as const };
+    const brain = { ...fresh(), intention: considered };
+    const moved = { ...world, x: world.x + 31, y: world.y - 45, platforms: world.platforms.map(platform => ({ ...platform, x: platform.x + 31, y: platform.y - 45 })) };
+    const next = getAction(brain, moved, prefs, 900, () => .99);
+    expect(next.intention).toEqual({ ...considered, stage: "travel" });
+    expect(next.target.x).toBeCloseTo(first.target.x + 31);
+    expect(next.target.y).toBe(first.target.y - 45);
+    expect(["walk", "jump"]).toContain(next.kind);
+    expect(brain.intention.stage).toBe("consider");
+  });
+
+  it("keeps a failed directly reachable ledge out of local choices until active-time retry expiry", () => {
+    const context = { ...world, platforms: [floor, low] };
+    const draws = Array.from({ length: 101 }, (_, index) => index / 101);
+    const actions = (brain: CompanionBrain, now: number) => draws.map(draw => getAction(brain, context, prefs, now, () => draw));
+    const reachesLow = (action: ReturnType<typeof getAction>) => action.kind === "jump" && action.target.platformId === low.id;
+    const brain = fresh();
+    expect(reachablePlatforms(context, [low])).toHaveLength(1);
+    expect(actions(brain, 1000).some(reachesLow)).toBe(true);
+    const failed = { ...brain, activeMs: 7999, places: rememberCompanionOutcomes([], [{ targetId: low.id, result: "blocked" }], 0) };
+    expect(actions(failed, 1000).some(reachesLow)).toBe(false);
+    // Advancing a wall/performance clock alone must not turn a hidden-tab
+    // absence into retry time. Only supplied active time expires this memory.
+    expect(actions(failed, 2_000_000_000).some(reachesLow)).toBe(false);
+    expect(actions({ ...failed, activeMs: 8000 }, 1000).some(reachesLow)).toBe(true);
+    expect(failed.places[0]).toMatchObject({ id: low.id, failures: 1, retryAfter: 8000 });
+  });
+
   it("uses remembered outcomes to prefer a less-visited goal and bounds memory without persistent identity", () => {
     const first = getAction(fresh(), world, prefs, 0, () => .5);
     const places = rememberCompanionOutcomes([], Array.from({ length: 3 }, () => ({ targetId: first.intention!.targetId, result: "completed" as const })), 0);
