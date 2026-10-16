@@ -1,6 +1,6 @@
 # 모바일 헤더 좌우 배치·다크 경계 정정
 
-2026-10-16 KST. 최신 소유자 요청이063/064/066의 설정 위치만 대체한다. 설정은 시청자 로그인/익명/미리보기 헤더 왼쪽, 편집실 월 이동 줄 왼쪽이다. 계정 동작은 양쪽 헤더 오른쪽1행이다. CSS 배치 정정(L1), 새 기능·서버·DB·권한·공개 DTO·KST·자산 변경은 없다.
+2026-10-16 KST. 제품 `3fa86d21f0f940f72acaa936631f16be7249e77c` 배포·운영 확인 완료. 최신 소유자 요청이063/064/066의 설정 위치만 대체한다. 설정은 시청자 로그인/익명/미리보기 헤더 왼쪽, 편집실 월 이동 줄 왼쪽이다. 계정 동작은 양쪽 헤더 오른쪽1행이다. CSS 배치 정정(L1), 새 기능·서버·DB·권한·공개 DTO·KST·자산 변경은 없다.
 
 ## 원인과 변경
 
@@ -12,7 +12,7 @@
 
 ## 검증 상태
 
-로컬 최종 빌드 `Nkungp4UPThbx5yG57aBG`에서 아래 검증을 완료했다. 운영 배포 확인은 별도로 수행한다. CSS 담당과 다크 담당의 상호 독립 소스 검토는 차단 문제0이며, 렌더 결과를 대신하지 않는다.320px 메타 padding 보완도 재검토했다.
+로컬 최종 빌드 `Nkungp4UPThbx5yG57aBG`에서 아래 검증을 완료했다. 운영 배포 확인은 아래 별도 범위를 따른다. CSS 담당과 다크 담당의 상호 독립 소스 검토는 차단 문제0이며, 렌더 결과를 대신하지 않는다.320px 메타 padding 보완도 재검토했다.
 
 첫 렌더4개 중390px/coarse1120px2개는 통과했고320/360px2개는 Studio 고정28px 제목과 로그아웃 BCR 겹침(각1227.875/347.875px²)을 잡았다. Studio 별도 제목 override를 제거해 같은 viewer 반응형 규칙을 쓴다. 두 번째 빌드 `09gyV5WzmeKWitsyELeCw`의 확장 검사는3통과/1실패였고,320px 저장 상태 캡슐과 제목이2.25px 겹쳤다.360px 이하 메타 양옆 여백만 기존 `--space-1`로 줄였다.44px 조작 표적과 글자 크기는 더 줄이지 않는다. 이 실패 raw/PNG는 `.scratch-pw/mobile-header-20261016-*`, `mobile-header-20261016-v2-*`에 보존한다.
 
@@ -34,3 +34,16 @@
 `npm run harness:verify`는 기존 rule inventory 불일치2건으로 exit1이다: `Active rule IDs changed; update RULE_MIGRATION inventory and mappings`, `RULE_MIGRATION inventory table differs from live rule IDs`. 이번 CSS/문서 위치 정정으로 rule ID를 추가/삭제하지 않았으며 이 별도 기존 불일치를 PASS로 표시하지 않는다.
 
 인증 form/handler·서버 경계·역할/KST는 소스 변화0이다. Fixture owner와 익명/로그인 표시는 실제 OAuth/RLS 감사를 대신하지 않는다. iOS 실기기 notch·시스템 확대·사용자 정의 모든 글꼴 조합은 미검증이다. 이번에는 빅타민 프레임 처리나 실제 OBS/SOOP encoder 품질을 변경/재측정하지 않았다. 그 범위는 [066 기록](COMPANION_FRAME_PIPELINE-20261016.md)을 따른다.
+
+## 운영 확인
+
+Vercel success와 운영 `/api/soop-live`의 전체 build SHA가 제품 `3fa86d21f0f940f72acaa936631f16be7249e77c`와 일치했다. 로컬에서 검사한 CSS3파일·테스트1파일과 해당 커밋 소스는 줄바꿈 정규화 후 동일함을 `mobile-header-20261016-commit-source-proof.json`으로 확인했다.
+
+- 실제 익명 `/`:390 light/320 dark/1120 coarse dark와 PC1920 dark4개 통과. 과거2025-11월을 읽기 전용으로 봤다. 모바일 설정 x14px/계정 오른쪽14px, 제목 중앙 오차<0.5px, 겹침0·44px·native hit·X/Back/focus를 확인했다. 다크2개는 실제 스크롤 뒤에도 종이색 일치/gradient·테두리·blur·shadow0이다. PC `[data-export-surface]`는1840px이다.
+- 실제 로그인 developer `/studio`: 사용자 Chrome CSS390×844에서 배포 표시 `3fa86d2`, 설정 x13.993px/월 이동 줄 y60.399px, 계정 오른쪽13.993px·제목 중앙195px을 확인했다. 설정 열기→창 내부 focus→X→opener focus, 재열기→브라우저 Back→같은 `/studio`/opener focus가 정상이다. 모바일 pet0, 종료 후 viewport override를 해제해 원래 PC2133×987·pet1·dialogs0·scroll0으로 복원했다. 로그인/로그아웃 제출이나 일정 편집은 하지 않았다.
+- production fixture poster/Studio는 스트리밍 NotFound이며 상품 markup0, 익명 `/studio`는 공개 화면으로 redirect하고 Studio markup0이다. HTTP200만 보고 정상 페이지로 판정하지 않았다.
+- 두 자리 월 제목의 추가 로컬 확인:320px 로그인 viewer·2025-11월에서 제목/로그아웃 간극1.703px, 겹침0이다. 사용자 정의 모든 폰트 조합의 보장은 아니다.
+
+운영 helper 독립 검토에서 증거 덮어쓰기·예상 SHA 누락 시 허위 동등 비교·차단된 요청과 실제 전달 요청의 구별을 지적했다. 고유 attempt prefix/기존 파일 존재 시 중단, 필수40자리 SHA·HTTP OK·응답 build 문자열 검사, 차단 목록과 전달 목록 별도 단언으로 보완했다. 강화한 재실행4/4는 루트 POST4건을 **차단**했고 전달한 mutation request0이다. 초기 실행도 실제 전체 SHA는 일치했으며, 이 보완을 제품 결함이나 초기 요청0으로 바꿔 쓰지 않는다. 익명 하트 등 차단된 Server Action의 실제 응답 기능은 이번 헤더 검사 범위가 아니다.
+
+로컬 보존 증거: `mobile-header-20261016-production-deploy.json`, `mobile-header-20261016-production-checked.json` 및 PNG, `mobile-header-20261016-production-gates.json`, `mobile-header-20261016-operating-before.jpg`/`operating-after.jpg`, 두 자리 월 `mobile-header-20261016-november320-signedin.png`. 초기 운영 JSON/PNG도 보존했다. 모두 `.scratch-pw/`에 두며 공개 일정/인증 신상이나 토큰을 보고서에 복사하지 않았다. CURRENT_STATE에는 완료 이력을 더하지 않고 해당 UI/ADR와 이 주제 기록을 갱신했다.
