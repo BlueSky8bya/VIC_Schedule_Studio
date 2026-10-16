@@ -4,6 +4,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
+[PLAN-066](../agent/plans/PLAN-20261016-066-companion-frame-pipeline.md): 모바일 편집실 로그아웃은 원래 제목 오른쪽1행으로 복원하고, 설정은064의 월 이동 줄 오른쪽을 유지한다. 방송 병행의 여유는 해상도·행동·full/lite cadence 축소 대신 공유 프레임의 중복 anchor 측정/표시와 동기 설정 재조회를 줄여 확보한다. 실제 layout 변경은 유한 구간에서 추종하되 긴 프레임 뒤에도 미측정 변경을 한 번 소비한다. 음식은 source/control 읽기→계산→음식별 표시 순서를 지킨다. 감소동작·quiet/parked·직접 입력·소파 전체 몸체·065 handoff·최초공개 우선순위는 유지한다. [검증 범위](../agent/verification/COMPANION_FRAME_PIPELINE-20261016.md).
+
 [PLAN-063](../agent/plans/PLAN-20261016-063-mobile-without-companion.md)의 소유자 결정이062의 모바일 집/관객과 편집실 숨바꼭질 제외를 대체한다. 모바일에는 빅타민 엔진·집·음식·설정 탭·최초공개 응원단을 마운트하지 않는다. 시청자·편집실·미리보기 모두 기존 `POSTER_AGENDA_QUERY`를 capability로 공유해 화면 전환 경계가 달라도 다시 켜지지 않게 한다. PC의 저장된 ON/세부 취향은 유지한다. 모바일도 공통44px 설정 톱니·설정 창과 X·뒤로가기·원래 버튼 focus 복원을 공유한다.
 
 [PLAN-064](../agent/plans/PLAN-20261016-064-companion-production-sofa.md)의 최신 소유자 위치 예외는063의 양쪽 헤더 동일 위치와 UI-18의 위치 통일에 한정해 우선한다. 편집실 톱니는 가운데 월 이동 그룹을 유지한 채 그 줄 오른쪽 safe-area에 놓고, 시청자는 기존 헤더 오른쪽 위치를 유지한다. 컨트롤 크기·설정 목록·창·history·focus 구현은 계속 공유한다.

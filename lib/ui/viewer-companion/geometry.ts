@@ -27,7 +27,7 @@ export type CompanionTextRect = { left: number; right: number; top: number; bott
 export type CompanionSurface = { x: number; y: number; width: number };
 export type CompanionFootprint = { width: number; height: number };
 export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; serial: number };
-export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity };
+export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity; onInvalidate?: () => void };
 export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number };
 export type CompanionGeometryAnchor = { element?: Element; left: number; top: number };
 export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined; landings: (size?: number) => readonly Platform[] };
@@ -429,7 +429,12 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   }
 
   function schedule() {
-    if (disposed || frame || timer) return;
+    if (disposed) return;
+    // The renderer may track its retained pair during an existing CSS motion
+    // before this full scan is due. Notification performs no layout reads and
+    // starts no new loop; static calendars otherwise reuse cached baselines.
+    options.onInvalidate?.();
+    if (frame || timer) return;
     const wait = Math.max(0, MEASUREMENT_INTERVAL_MS - (win!.performance.now() - measuredAt));
     if (wait > 0) {
       timer = win!.setTimeout(() => { timer = 0; if (!disposed) frame = win!.requestAnimationFrame(measure); }, wait);

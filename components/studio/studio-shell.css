@@ -5428,10 +5428,10 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 .studio-mobile .agenda-header .m-head-left .save-status.failed {
   background: var(--status-danger-fill);
 }
-/* Shared header gear owns row 1. Keep the account action directly below it. */
+/* Restore the account action beside the title; settings owns the separate month row. */
 .studio-mobile .agenda-header .m-head-logout {
   grid-column: 3;
-  grid-row: 2;
+  grid-row: 1;
   justify-self: end;
   align-self: center;
 }

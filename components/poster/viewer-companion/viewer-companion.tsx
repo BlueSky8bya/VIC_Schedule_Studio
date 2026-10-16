@@ -36,7 +36,7 @@ import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access"
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import registration from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import { companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
-import { gfxMode } from "@/lib/ui/gfx";
+import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { playSfx } from "@/lib/ui/sfx";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
@@ -155,6 +155,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current, inertiaLayer = inertia.current;
     if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !inertiaLayer || !preferences.enabled) return;
     if (blocked) { el.hidden = true; setSuspended(true); setHomeExpanded(false); return; }
+    // Settings/auto/storage notifications own this snapshot. Animation frames
+    // must not synchronously reread localStorage for each pose/spring/layer.
+    let graphicsMode = readGfxMode();
+    const gfxMode = () => graphicsMode;
     if (!careLoaded.current) { brain.current = { ...brain.current, ...loadCompanionCare() }; careLoaded.current = true; }
     const publishCare = () => { const { hunger, affection, energy, curiosity } = brain.current; setCare({ hunger, affection, energy, curiosity }); };
     publishCare();
@@ -291,6 +295,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const anchorSeen = new Map<string, { x: number; y: number }>();
     const carrier = { x: 0, y: 0 };
     let followRaf = 0, followUntil = 0, lastFollow = 0, scrollUntil = 0;
+    let followedAt = -Infinity, followedKeys = "", anchorsDirty = false;
     let lastPoseSample = { row: 0, frame: 0, status: "idle" };
     let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
     let geometryReady = false, homeOccluded = false;
@@ -322,7 +327,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       if (premiereActive || premiereBounce) pendingPosition.current = null;
-      if (pendingPosition.current) { hideBed(); el.hidden = true; return; }
+      if (pendingPosition.current) { hideBed(); if (!el.hidden) el.hidden = true; return; }
       const hide = hideSeek.sample(presentationNow);
       if (premiereAwaitingGeometry && !premiereActive && !premiereBounce) { hideBed(); el.hidden = true; return; }
       if (premiereActive && !premiereDisplay) { hideBed(); el.hidden = true; return; }
@@ -465,8 +470,17 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     // Anchor translation and safe-span re-clipping are different things. Only
     // the real DOM anchor delta carries a journey; its clock never restarts.
-    const refreshAnchors = (now: number, scroll = false) => {
+    const refreshAnchors = (now: number, scroll = false, force = false) => {
       if (premiereActive || overlayActive || hiding) return false;
+      // Static world travel changes only our numbers. Real layout/scroll
+      // events open a finite tracking window; a full scan always rebases.
+      // Main and follow rAFs share a timestamp, so read each pair just once.
+      const keys = `${support}\n${action?.target.platformId ?? ""}`;
+      // A blocked frame may outlive the tracking window. Still consume its
+      // pending layout change once before drawing at the old support point.
+      if (!force && !anchorsDirty && (now > followUntil && now > scrollUntil || now === followedAt && keys === followedKeys)) return false;
+      anchorsDirty = false;
+      followedAt = now; followedKeys = keys;
       const progress = action ? clamp((now - began) / Math.max(1, total), 0, 1) : 0;
       const previousPassage = sofaPassage(progress);
       const samples = geometryTracker?.follow([support, action?.target.platformId ?? ""].filter(Boolean)) ?? [];
@@ -509,6 +523,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
       return Boolean(dx || dy);
     };
+    const continuousMotion = () => Boolean(homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat"].includes(action.kind));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -518,6 +533,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // Real scroll/panel events own this short loop. Parked/quiet creatures
       // have no autonomous tracking, timers, geometry scans or brain ticks.
       const now = performance.now();
+      anchorsDirty = true;
       if (event?.type === "scroll") scrollUntil = now + 180;
       followUntil = Math.max(followUntil, now + (event?.type.startsWith("vic:") ? 900 : 180));
       if (followRaf) return;
@@ -527,10 +543,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (time - lastFollow >= 1000 / 60 - .1) {
           lastFollow = time;
           const moved = refreshAnchors(time, time <= scrollUntil), response = supportMotion.sample(time);
-          if (moved || response.active) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
+          // Full-rate travel already commits this frame in the main loop.
+          // Quiet/parked/30Hz creatures still need the finite scroll follower.
+          const mainOwnsFrame = !reduced && gfxMode() === "full" && continuousMotion();
+          if ((moved || response.active) && !mainOwnsFrame) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
           // The final neutral frame must be committed too, so no residual
           // spring offset survives when the event-owned loop stops.
-          else if (time >= followUntil) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
+          else if (time >= followUntil && !mainOwnsFrame) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
         }
         if (time < followUntil || supportMotion.sample(time).active) followRaf = requestAnimationFrame(follow);
       };
@@ -920,7 +939,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (stopped || pause || hiding && overlayActive && !hiding.ready || !premiereActive && !premiereBounce && !homeDeparture && (isDetailGuest() ? !guestBusy(performance.now()) : hiding ? !hideSeek.sample(presentationNow).active : presence.phase === "parked" && !returning && !action)) return;
       if (reduced) timer = setTimeout(() => tick(performance.now()), 400);
       else {
-        const moving = Boolean(homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat"].includes(action.kind));
+        const moving = continuousMotion();
         // Continuous travel/scalar transitions, cyclic drawings at<=14Hz; action poses follow their phase.
         // A quiet creature needs only the cadence of its native idle loop.
         const fps = moving ? gfxMode() === "full" ? 60 : 30 : 14;
@@ -1164,6 +1183,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       tickPremiere(performance.now()); return true;
     };
     const sync = () => {
+      graphicsMode = readGfxMode();
       if (syncPremiere()) return;
       hideClock(performance.now());
       const html = document.documentElement;
@@ -1193,11 +1213,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // A native tap may scroll its card into view before the window opens.
         // Carry that final anchor delta now, and retain the disposed follow
         // snapshot to restore any layout delta before reconnecting on close.
-        if (wantsOverlay) refreshAnchors(performance.now());
+        if (wantsOverlay) refreshAnchors(performance.now(), false, true);
         if (wantsOverlay) overlayHomeResident = isHomeSupport(support) && supportedNow() && action?.kind !== "jump";
         overlayActive = wantsOverlay;
         el.toggleAttribute("data-home-window", overlayActive && overlayHomeResident);
-        if (!overlayActive) refreshAnchors(performance.now());
+        if (!overlayActive) refreshAnchors(performance.now(), false, true);
         const held = Boolean(pressed || keyboardHeld || placing);
         stopHover(); releaseHold(); releaseOverlayDrag(); placing = overlayPlacing = false; delete el.dataset.placing;
         if (held) { clearAction(); settle({ x, y }); }
@@ -1335,7 +1355,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         pressed.dragged = true; x = clamp(event.clientX - pressed.dx, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY - pressed.dy, size + 8, innerHeight - 12);
         if (reduced || gfxMode() === "off") resetInertia();
         else heldInertia.push(x - previousX, y - previousY, performance.now(), { x: grip.x / size, y: grip.y / size });
-        paint(8, 0, "held");
+        // Keep every physical input sample, but let the already running60Hz
+        // loop commit the newest pose once per display frame. Reduced/lower
+        // grades retain immediate pointer feedback instead of waiting400ms.
+        if (reduced || gfxMode() !== "full") paint(8, 0, "held");
       }
     };
     const up = (event: PointerEvent) => {
@@ -1350,6 +1373,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       if (overlayDrag?.id === event.pointerId) { releaseOverlayDrag(); updateOverlayPerch(); return; }
       if (!pressed || pressed.id !== event.pointerId) return;
+      // A release can arrive before the next display frame. Commit its last
+      // held body now so sofa release tests the current full pose, never the
+      // previous pointer sample. Capture and cancellation remain synchronous.
+      if (pressed.grabbed && event.type !== "pointercancel" && !pressed.cancelled && !reduced && gfxMode() === "full") paint(8, 0, "held");
       const held = pressed; pressed = null;
       if (event.type === "pointercancel" || held.cancelled) { resetInertia(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); }
       el.removeAttribute("data-grab-ready");
@@ -1462,18 +1489,20 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     capturePosition.current = captureForSurface;
     const onGeometry = (next: Platform[]) => {
       if (premiereActive || overlayActive || hiding) return;
+      const geometryAt = performance.now();
+      followUntil = Math.max(followUntil, geometryAt + FLIP_MS);
       premiereAwaitingGeometry = false;
       const widthChanged = measuredWidth !== innerWidth;
       measuredWidth = innerWidth;
       geometryReady = true;
       if (returning) returnTargetValid = false;
-      refreshAnchors(performance.now());
+      refreshAnchors(geometryAt, false, true);
       // A full scan revalidates safe spans; scrolling itself was already
       // carried per-frame by its actual anchor, including nested/fixed panels.
       platforms = next.filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
       landingPlatforms = [...(geometryTracker?.landings() ?? [])].filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
-      food.current?.sync(platforms, id => geometryTracker?.anchor(id), geometryTracker?.landings(32));
       measureBed();
+      food.current?.sync(platforms, id => geometryTracker?.anchor(id), geometryTracker?.landings(32));
       if (premiereExit && premiereMemory.current.consumedExit === premiereExit.token) {
         const exit = premiereExit, cue = premiereRef.current.cue, now = performance.now();
         premiereExit = undefined;
@@ -1547,7 +1576,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
               }
             });
           }
-          el.hidden = true; return;
+          if (!el.hidden) el.hidden = true; return;
         }
         // A folded/offscreen/remounting house still owns its resident. Keep
         // the existing home-occlusion wait, rather than moving it to a card.
@@ -1562,7 +1591,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           // Geometry, not repeated AI ticks, wakes a waiting handoff. This
           // also leaves a folded house completely quiet until it reappears.
           cancelAnimationFrame(raf); clearTimeout(timer); schedule();
-        } else if (!waitingHome) { el.hidden = true; return; }
+        } else if (!waitingHome) { if (!el.hidden) el.hidden = true; return; }
       }
       if (pendingMonth) return;
       // Geometry may refresh during a captured drag or keyboard placement.
@@ -1574,7 +1603,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const floor = isHomeFloor(support);
         const home = document.querySelector<HTMLElement>(floor ? ".vc-home-floor" : ".vc-home-cushion");
         const occludeResident = () => {
-          homeOccluded = true; hideBed(); stopHover(); if (!returning) el.hidden = true;
+          homeOccluded = true; hideBed(); stopHover(); if (!returning && !el.hidden) el.hidden = true;
           if (presence.phase === "parked") { offGeometry?.(); offGeometry = undefined; geometryReady = false; }
         };
         if (home?.closest(".vc-home")?.hasAttribute("data-panel-collapsed")) {
@@ -1666,7 +1695,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const connectGeometry = () => {
       if (!premiereActive && !hiding && !overlayActive && !offGeometry) {
         geometryReady = false;
-        geometryTracker = offGeometry = observeCompanionPlatforms(page, onGeometry, { size, identity: geometryIdentity, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion") });
+        geometryTracker = offGeometry = observeCompanionPlatforms(page, onGeometry, { size, identity: geometryIdentity, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion"),
+          // Reuse the existing observer's invalidation. Main frames follow an
+          // in-flight CSS/WAAPI reflow immediately, before its coalesced scan;
+          // unchanged calendars never need a perpetual rectangle read loop.
+          onInvalidate: () => { anchorsDirty = true; followUntil = Math.max(followUntil, performance.now() + FLIP_MS); } });
       }
     };
     const parkedLayout = () => {
@@ -1730,6 +1763,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (records.some(record => record.target === document.documentElement && ["data-theme", "data-eye-comfort"].includes(record.attributeName ?? ""))) { measureBed(); if (!pause) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); }
       sync();
     });
+    const graphicsStored = (event: StorageEvent) => { if (event.key === null || event.key === "vic.gfx" || event.key === "vic.gfxPref") sync(); };
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-showcase", "data-ambient-pause", "data-gfx", "data-theme", "data-eye-comfort"] });
     observer.observe(page, { attributes: true, attributeFilter: ["inert", "data-companion-premiere-owner"] });
     document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); document.addEventListener("click", click, true);
@@ -1737,6 +1771,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     window.addEventListener("vic:companion-overlay", sync);
     window.addEventListener("vic:companion-premiere", sync);
     window.addEventListener("vic:companion-sprite", spriteDecoded);
+    window.addEventListener("vic:gfx-pref", sync); window.addEventListener("vic:gfx-auto", sync); window.addEventListener("storage", graphicsStored);
     window.addEventListener(COMPANION_DETAIL_EVENT, detailChanged);
     window.addEventListener("resize", viewportResized, { passive: true });
     document.addEventListener("animationend", queueOverlayPerch, true);
@@ -1762,6 +1797,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       window.removeEventListener("scroll", detailScrolled, true);
       window.removeEventListener("vic:companion-premiere", sync);
       window.removeEventListener("vic:companion-sprite", spriteDecoded);
+      window.removeEventListener("vic:gfx-pref", sync); window.removeEventListener("vic:gfx-auto", sync); window.removeEventListener("storage", graphicsStored);
       window.removeEventListener(COMPANION_DETAIL_EVENT, detailChanged);
       window.removeEventListener("blur", focusChanged); window.removeEventListener("focus", focusChanged);
       window.removeEventListener("resize", parkedLayout); window.removeEventListener("scroll", parkedLayout, true); window.removeEventListener("vic:companion-home", parkedLayout);

@@ -102,6 +102,23 @@ function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, band
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
+  it("notifies layout invalidation before a coalesced scan without reading geometry or surviving disposal", () => {
+    const f = geometryFixture(), invalidate = vi.fn(), changed = vi.fn();
+    const off = observeCompanionPlatforms(f.root, changed, { onInvalidate: invalidate });
+    f.flush(); invalidate.mockClear(); changed.mockClear();
+    f.title.getBoundingClientRect.mockClear(); f.win.getComputedStyle.mockClear(); f.range.getClientRects.mockClear();
+    f.win.emit("scroll"); f.win.emit("scroll");
+    expect(invalidate).toHaveBeenCalledTimes(2);
+    expect(f.title.getBoundingClientRect).not.toHaveBeenCalled();
+    expect(f.win.getComputedStyle).not.toHaveBeenCalled();
+    expect(f.range.getClientRects).not.toHaveBeenCalled();
+    expect(changed).not.toHaveBeenCalled();
+    expect(f.timers.size + f.frames.size).toBe(1);
+    off(); f.win.emit("scroll"); f.advance(200);
+    expect(invalidate).toHaveBeenCalledTimes(2);
+    expect(changed).not.toHaveBeenCalled();
+    expect(f.timers.size + f.frames.size).toBe(0);
+  });
   it("treats the studio day role as a calendar container while retaining nested edit/private controls and scroll anchors", () => {
     const f = geometryFixture(), edit = new FixtureElement(), privateCard = new FixtureElement();
     const marker = "[data-companion-event='ordinary'][data-eventid]";

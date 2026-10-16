@@ -4,6 +4,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 
 const posts = new WeakMap<Page, string[]>(), errors = new WeakMap<Page, string[]>();
+const artifactPrefix = process.env.COMPANION_HEADER_ARTIFACT_PREFIX ?? "companion-064-settings";
 const windowOf = (page: Page) => page.getByRole("dialog", { name: "설정", exact: true });
 const gearOf = (page: Page) => page.locator(".agenda-header > .viewer-settings-open,.m-month-nav > .viewer-settings-open");
 
@@ -46,6 +47,7 @@ async function headerMetrics(page: Page) {
     const title = header.querySelector("h1")!.getBoundingClientRect();
     const account = header.querySelector<HTMLElement>(".agenda-account button,.m-head-logout button,a.m-head-logout")!;
     const accountRect = account.getBoundingClientRect();
+    const accountSlot = account.closest<HTMLElement>(".agenda-account,.m-head-logout")!;
     const hit = document.elementFromPoint(gear.x + gear.width / 2, gear.y + gear.height / 2);
     const accountHit = document.elementFromPoint(accountRect.x + accountRect.width / 2, accountRect.y + accountRect.height / 2);
     const overlap = (a: DOMRect, b: DOMRect) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
@@ -63,6 +65,10 @@ async function headerMetrics(page: Page) {
       titleGap: gear.left - title.right,
       accountGap: accountRect.top - gear.bottom,
       titleOverlap: overlap(gear, title), accountOverlap: overlap(gear, accountRect),
+      accountTitleOverlap: overlap(accountRect, title),
+      accountRow: getComputedStyle(accountSlot).gridRowStart,
+      titleCentreY: title.y + title.height / 2,
+      accountCentreY: accountRect.y + accountRect.height / 2,
       month,
       nativeHit: Boolean(hit?.closest(".viewer-settings-open") === node),
       accountHit: Boolean(accountHit && (account === accountHit || account.contains(accountHit))),
@@ -100,13 +106,17 @@ for (const topology of [
       expect(metric.y).toBeGreaterThanOrEqual(0);
       expect(metric.right).toBeCloseTo(14, 1);
       expect(metric.titleOverlap).toBe(0); expect(metric.accountOverlap).toBe(0);
+      expect(metric.accountTitleOverlap).toBe(0);
       if (route.name === "viewer") {
         await expect(page.locator(".agenda-header > .viewer-settings-open")).toHaveCount(1);
         expect(metric.titleGap).toBeGreaterThanOrEqual(0); expect(metric.accountGap).toBeGreaterThanOrEqual(0);
+        expect(metric.accountRow).toBe("2");
         expect(metric.y).toBe(9); expect(metric.month).toBeNull();
       } else {
         await expect(page.locator(".agenda-header > .viewer-settings-open")).toHaveCount(0);
         await expect(page.locator(".m-month-nav > .viewer-settings-open")).toHaveCount(1);
+        expect(metric.accountRow).toBe("1");
+        expect(Math.abs(metric.accountCentreY - metric.titleCentreY)).toBeLessThan(.5);
         expect(metric.month).not.toBeNull();
         expect(Math.abs(metric.month!.centreX - metric.widthOfPage / 2)).toBeLessThan(.5);
         expect(Math.abs(metric.month!.centreY - metric.y - metric.height / 2)).toBeLessThan(.5);
@@ -116,7 +126,7 @@ for (const topology of [
       expect(metric.nativeHit).toBe(true); expect(metric.accountHit).toBe(true);
       expect(metric.scrollWidth).toBeLessThanOrEqual(metric.widthOfPage + 1);
 
-      await page.screenshot({ path: `.scratch-pw/companion-064-settings-${route.name}-${topology.name}.png` });
+      await page.screenshot({ path: `.scratch-pw/${artifactPrefix}-${route.name}-${topology.name}.png` });
       await gear.tap(); await expect(windowOf(page)).toBeVisible();
       await expect(gear).toHaveAttribute("aria-expanded", "true");
       await windowOf(page).locator(".modal-head .modal-close").tap();
@@ -132,6 +142,6 @@ for (const topology of [
     // inset, but the studio places it beside month navigation below its title.
     expect(Math.abs(measured.viewer.x - measured.studio.x)).toBeLessThan(.5);
     expect(measured.studio.y - measured.viewer.y).toBeGreaterThan(44);
-    writeFileSync(`.scratch-pw/companion-064-settings-${topology.name}.json`, JSON.stringify(measured, null, 2));
+    writeFileSync(`.scratch-pw/${artifactPrefix}-${topology.name}.json`, JSON.stringify(measured, null, 2));
   });
 });

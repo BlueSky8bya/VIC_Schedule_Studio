@@ -7,9 +7,22 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const posts = new WeakMap<Page, string[]>();
+const artifactPrefix = process.env.COMPANION_INERTIA_ARTIFACT_PREFIX ?? "companion-056-inertia";
 type Point = { x: number; y: number };
 type Frame = { at: number; phase: string; state: string; hidden: boolean; x: number; y: number; angle: number; sx: number; sy: number; tx: number; ty: number; bodyLagX: number; gripError: number; pivotError: number; facing: string; captured: boolean; left: number; top: number; right: number; bottom: number; poseLeft: number; poseTop: number; poseRight: number; poseBottom: number };
-type Probe = { frames: Frame[]; phase: string; pointer: Point; grip?: Point; pointerId: number; raf: number; down: (event: PointerEvent) => void; move: (event: PointerEvent) => void };
+type Observation = {
+  rafAt: number; readAt: number; phaseAtRaf: string;
+  inputVersionAtRaf: number; inputVersionAtRead: number; rafSerial: number; latestRafSerial: number;
+  pointerAtRaf: Point; pointerAtRead: Point; paintedAtRaf: Point;
+  comparable: boolean; frame?: Frame;
+};
+type Commit = { at: number; inputVersion: number; rafSerial: number; pointer: Point; frame: Frame };
+type Probe = {
+  inputVersion: number; rafSerial: number; stopped: boolean; timers: Set<number>;
+  observations: Observation[]; commits: Commit[]; observer?: MutationObserver;
+  frames: Frame[]; phase: string; pointer: Point; grip?: Point; pointerId: number; raf: number;
+  down: (event: PointerEvent) => void; move: (event: PointerEvent) => void;
+};
 type ProbeWindow = Window & { heldInertiaProbe?: Probe };
 
 test.beforeEach(async ({ page }) => {
@@ -41,13 +54,13 @@ async function startProbe(page: Page) {
   await pet(page).evaluate(node => {
     const element = node as HTMLElement, button = node.querySelector<HTMLButtonElement>(".vc-actor")!, layer = node.querySelector<HTMLElement>(".vc-inertia")!;
     const world = () => { const m = new DOMMatrixReadOnly(element.style.transform), size = parseFloat(element.style.getPropertyValue("--vc-size")); return { x: m.m41 + size / 2, y: m.m42 + size }; };
-    const probe: Probe = { frames: [], phase: "pickup", pointer: { x: 0, y: 0 }, pointerId: -1, raf: 0,
-      down: event => { if (!button.contains(event.target as Node)) return; const p = world(); probe.pointer = { x: event.clientX, y: event.clientY }; probe.grip = { x: event.clientX - p.x, y: event.clientY - p.y }; probe.pointerId = event.pointerId; },
-      move: event => { if (event.pointerId === probe.pointerId) probe.pointer = { x: event.clientX, y: event.clientY }; },
+    const probe: Probe = { inputVersion: 0, rafSerial: 0, stopped: false, timers: new Set(), observations: [], commits: [], frames: [], phase: "pickup", pointer: { x: 0, y: 0 }, pointerId: -1, raf: 0,
+      down: event => { if (!button.contains(event.target as Node)) return; probe.inputVersion++; const p = world(); probe.pointer = { x: event.clientX, y: event.clientY }; probe.grip = { x: event.clientX - p.x, y: event.clientY - p.y }; probe.pointerId = event.pointerId; },
+      move: event => { if (event.pointerId === probe.pointerId) { probe.inputVersion++; probe.pointer = { x: event.clientX, y: event.clientY }; } },
     };
     document.addEventListener("pointerdown", probe.down, true); document.addEventListener("pointermove", probe.move, { capture: true, passive: true });
     const began = performance.now();
-    const sample = (now: number) => {
+    const readFrame = (now: number): Frame | undefined => {
       if (element.dataset.state === "held" && probe.grip) {
         const p = world(), css = getComputedStyle(layer), m = new DOMMatrixReadOnly(css.transform), r = layer.getBoundingClientRect(), shape = node.querySelector(".vc-pose")!.getBoundingClientRect();
         const [ox, oy] = css.transformOrigin.split(" ").map(parseFloat), width = parseFloat(css.width), height = parseFloat(css.height);
@@ -55,24 +68,79 @@ async function startProbe(page: Page) {
         // AABB. This independently checks the CSS pivot against the pointer.
         const corners = [0, width].flatMap(x => [0, height].map(y => ({ x: ox + m.a * (x - ox) + m.c * (y - oy) + m.e, y: oy + m.b * (x - ox) + m.d * (y - oy) + m.f })));
         const px = r.left - Math.min(...corners.map(c => c.x)) + ox + m.e, py = r.top - Math.min(...corners.map(c => c.y)) + oy + m.f;
-        probe.frames.push({ at: now - began, phase: probe.phase, state: element.dataset.state, hidden: element.hidden || getComputedStyle(element).display === "none", x: p.x, y: p.y,
+        return { at: now - began, phase: probe.phase, state: element.dataset.state, hidden: element.hidden || getComputedStyle(element).display === "none", x: p.x, y: p.y,
           angle: Math.atan2(m.b, m.a) * 180 / Math.PI, sx: Math.hypot(m.a, m.b), sy: Math.hypot(m.c, m.d), tx: m.e, ty: m.f,
           // The lower body is below this upper grip. Its actual local matrix
           // must carry this point left when the hand accelerates right.
           bodyLagX: ox + m.a * (46 - ox) + m.c * (76 - oy) + m.e - 46,
           gripError: Math.hypot(p.x + probe.grip.x - probe.pointer.x, p.y + probe.grip.y - probe.pointer.y), pivotError: Math.hypot(px - probe.pointer.x, py - probe.pointer.y),
           facing: element.dataset.facing ?? "", captured: button.hasPointerCapture(probe.pointerId), left: r.left, top: r.top, right: r.right, bottom: r.bottom,
-          poseLeft: shape.left, poseTop: shape.top, poseRight: shape.right, poseBottom: shape.bottom });
+          poseLeft: shape.left, poseTop: shape.top, poseRight: shape.right, poseBottom: shape.bottom };
       }
-      probe.raf = requestAnimationFrame(sample);
+    };
+    // Independent witness of the complete synchronous style commit and the
+    // input available to it. This does not claim physical display presentation.
+    probe.observer = new MutationObserver(() => {
+      if (probe.stopped) return;
+      const frame = readFrame(performance.now());
+      if (frame) probe.commits.push({ at: performance.now() - began, inputVersion: probe.inputVersion, rafSerial: probe.rafSerial, pointer: { ...probe.pointer }, frame });
+    });
+    probe.observer.observe(element, { attributes: true, subtree: true, attributeFilter: ["style"] });
+    const sample = (now: number) => {
+      if (probe.stopped) return;
+      const rafSerial = ++probe.rafSerial, inputVersionAtRaf = probe.inputVersion, pointerAtRaf = { ...probe.pointer }, paintedAtRaf = world(), phaseAtRaf = probe.phase;
+      // This probe may run before the engine in the same rAF batch. Read after
+      // that batch, retaining every raw sample. Apply alignment errors only
+      // when neither input nor the next rAF has advanced during that interval.
+      const task = window.setTimeout(() => {
+        probe.timers.delete(task); if (probe.stopped) return;
+        const inputVersionAtRead = probe.inputVersion, latestRafSerial = probe.rafSerial, pointerAtRead = { ...probe.pointer }, readAt = performance.now() - began;
+        const comparable = inputVersionAtRaf === inputVersionAtRead && rafSerial === latestRafSerial;
+        const frame = readFrame(now);
+        probe.observations.push({ rafAt: now - began, readAt, phaseAtRaf, inputVersionAtRaf, inputVersionAtRead, rafSerial, latestRafSerial, pointerAtRaf, pointerAtRead, paintedAtRaf, comparable, frame });
+        if (frame && comparable) probe.frames.push(frame);
+      }, 0);
+      probe.timers.add(task); probe.raf = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).heldInertiaProbe = probe; probe.raf = requestAnimationFrame(sample);
   });
 }
 const mark = (page: Page, phase: string) => page.evaluate(value => { (window as ProbeWindow).heldInertiaProbe!.phase = value; }, phase);
 async function finishProbe(page: Page, label: string) {
-  const frames = await page.evaluate(() => { const p = (window as ProbeWindow).heldInertiaProbe!; cancelAnimationFrame(p.raf); document.removeEventListener("pointerdown", p.down, true); document.removeEventListener("pointermove", p.move, true); return p.frames; });
-  await writeFile(`.scratch-pw/companion-056-inertia-${label}.json`, JSON.stringify(frames, null, 2));
+  const proof = await page.evaluate(() => {
+    const p = (window as ProbeWindow).heldInertiaProbe!;
+    p.stopped = true; cancelAnimationFrame(p.raf);
+    const cancelledTimers = p.timers.size;
+    for (const timer of p.timers) clearTimeout(timer);
+    p.timers.clear(); p.observer?.disconnect();
+    document.removeEventListener("pointerdown", p.down, true); document.removeEventListener("pointermove", p.move, true);
+    return { frames: p.frames, observations: p.observations, commits: p.commits, cancelledTimers, viewport: { width: innerWidth, height: innerHeight } };
+  });
+  const frames = proof.frames;
+  const phases = [...new Set(proof.observations.filter(item => item.frame).map(item => item.frame!.phase))].map(phase => {
+    const all = proof.observations.filter(item => item.frame?.phase === phase), kept = all.filter(item => item.comparable), mixed = all.filter(item => !item.comparable), points = kept.map(item => item.frame!), commits = proof.commits.filter(item => item.frame.phase === phase);
+    return {
+      phase, retained: kept.length, mixed: mixed.length,
+      inputAdvanced: mixed.filter(item => item.inputVersionAtRaf !== item.inputVersionAtRead).length,
+      rafAdvanced: mixed.filter(item => item.rafSerial !== item.latestRafSerial).length,
+      distinctRetainedPoints: new Set(points.map(item => item.x.toFixed(3) + "," + item.y.toFixed(3))).size,
+      travelX: points.length ? Math.max(...points.map(item => item.x)) - Math.min(...points.map(item => item.x)) : 0,
+      travelY: points.length ? Math.max(...points.map(item => item.y)) - Math.min(...points.map(item => item.y)) : 0,
+      maxGrip: points.length ? Math.max(...points.map(item => item.gripError)) : 0,
+      maxPivot: points.length ? Math.max(...points.map(item => item.pivotError)) : 0,
+      commitCount: commits.length,
+      maxCommitGrip: commits.length ? Math.max(...commits.map(item => item.frame.gripError)) : 0,
+      maxCommitPivot: commits.length ? Math.max(...commits.map(item => item.frame.pivotError)) : 0,
+    };
+  });
+  const allFrames = [...proof.observations.flatMap(item => item.frame ? [item.frame] : []), ...proof.commits.map(item => item.frame)];
+  console.log(JSON.stringify({ check: "held-inertia-observation-phase", label, phases, cancelledTimers: proof.cancelledTimers, retained: frames.length, allSamples: allFrames.length }));
+  await writeFile(`.scratch-pw/${artifactPrefix}-${label}.json`, JSON.stringify({ ...proof, phases }, null, 2));
+  expect(allFrames.every(f => !f.hidden && f.captured)).toBe(true);
+  expect(allFrames.every(f => f.left >= 1.95 && f.top >= 1.95 && f.right <= proof.viewport.width - 1.95 && f.bottom <= proof.viewport.height - 1.95 && f.poseLeft >= 1.95 && f.poseTop >= 1.95 && f.poseRight <= proof.viewport.width - 1.95 && f.poseBottom <= proof.viewport.height - 1.95)).toBe(true);
+  expect(proof.commits.length).toBeGreaterThan(12);
+  expect(Math.max(...proof.commits.map(item => item.frame.gripError))).toBeLessThan(.1);
+  expect(Math.max(...proof.commits.map(item => item.frame.pivotError))).toBeLessThan(.15);
   expect(frames.length).toBeGreaterThan(12); expect(frames.every(f => !f.hidden && f.captured)).toBe(true);
   expect(Math.max(...frames.map(f => f.gripError))).toBeLessThan(.1); expect(Math.max(...frames.map(f => f.pivotError))).toBeLessThan(.15);
   expect(frames.every(f => Math.abs(f.tx) < .001 && Math.abs(f.ty) < .001)).toBe(true); expect(new Set(frames.map(f => f.facing)).size).toBe(1);
@@ -120,7 +188,7 @@ for (const mobile of [false]) test.describe(mobile ? "native touch inertia" : "p
     const end = tail.filter(f => f.at >= tail[0].at + 1530); expect(end.length).toBeGreaterThanOrEqual(4);
     expect(end.every(f => f.angle === 0 && f.sx === 1 && f.sy === 1)).toBe(true);
     console.log(JSON.stringify({ check: "held-inertia", input: mobile ? "touch" : "mouse", frames: frames.length, tailFrames: tail.length, maxGripError: Math.max(...frames.map(f => f.gripError)), maxPivotError: Math.max(...frames.map(f => f.pivotError)), rightwardBodyLagX: Math.min(...rightward.map(f => f.bodyLagX)), angle: [Math.min(...tail.map(f => f.angle)), Math.max(...tail.map(f => f.angle))], exactNeutralFrames: end.length }));
-    await page.screenshot({ path: `.scratch-pw/companion-056-inertia-${mobile ? "touch" : "pointer"}.png` });
+    await page.screenshot({ path: `.scratch-pw/${artifactPrefix}-${mobile ? "touch" : "pointer"}.png` });
     await drag.end(); await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 5000 });
   });
 });
