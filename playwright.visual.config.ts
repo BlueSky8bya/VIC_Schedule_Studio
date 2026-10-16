@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "./lib/ui/motion";
+import { COMPANION_PREFERENCES_KEY, DEFAULT_COMPANION_PREFERENCES } from "./lib/ui/viewer-companion/preferences";
 
 // 비주얼 회귀 전용 설정(일반 e2e와 분리). 요구사항:
 //  · production build로 띄운다(dev 서버 아님 — 실제 배포와 같은 렌더).
@@ -32,6 +33,10 @@ export default defineConfig({
           origin: "http://127.0.0.1:3100",
           localStorage: [
             { name: SETTINGS_EPOCH_KEY, value: SETTINGS_EPOCH },
+            // Content/layout snapshots choose a quiet companion state. Pet
+            // interaction tests opt in; fresh-default tests remove this saved
+            // choice explicitly so the shipping ON default remains covered.
+            { name: COMPANION_PREFERENCES_KEY, value: JSON.stringify({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, enabled: false }) },
             // 그래픽 여력 판정(lib/ui/gfx.ts v3)을 미리 'full'로 못 박고 우선순위도 '항상 최대'로 — 헤드리스
             // Chromium은 WebGL이 SwiftShader라 v3 판정이 즉시 'soft'(배경 OFF + 토큰 팔레트)로 떨어져 스냅샷이
             // 실제 GPU 기기와 달라진다.

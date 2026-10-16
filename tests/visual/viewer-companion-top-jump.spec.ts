@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
-import registration from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
+import { companionSpriteMetadata as registration } from "@/lib/ui/viewer-companion/sprite-quality";
 import { openCompanionHome } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -213,7 +213,12 @@ for (const mobile of [false]) test.describe(mobile ? "agenda top flights" : "des
     test.setTimeout(25000); await setup(page, true, mobile);
     if (mobile) await openCompanionHome(page, "touch");
     const original = await pet(page).elementHandle();
-    const card = await placeOnCard(page, mobile); await startProbe(page, true);
+    const card = await placeOnCard(page, mobile);
+    // Explicit placement first falls onto this real card. Observe its completed
+    // landing before probing a separate autonomous jump and its anticipation.
+    await expect.poll(() => pet(page).evaluate((node, card) =>
+      (node as HTMLElement).dataset.state !== "jump" && Math.abs(node.getBoundingClientRect().bottom - card.y) < 2, card)).toBe(true);
+    await startProbe(page, true);
     if (mobile) await offerLowerCardFood(page, card);
     const probe = await finishProbe(page, `ballistic-${mobile ? 390 : 1920}`);
     expect(Math.abs(probe.start.y - card.y)).toBeLessThan(2);
@@ -228,8 +233,8 @@ for (const mobile of [false]) test.describe(mobile ? "agenda top flights" : "des
       for (const delay of [0, 100, 400]) {
         if (delay) await page.waitForTimeout(delay);
         after.push(await pet(page).evaluate(node => {
-          const box = node.getBoundingClientRect(), sprite = node.querySelector<HTMLElement>(".vc-sprite")!, image = getComputedStyle(sprite), actor = node.querySelector(".vc-actor")!, pose = node.querySelector(".vc-pose")!;
-          return { at: performance.now(), hidden: (node as HTMLElement).hidden, data: { ...(node as HTMLElement).dataset }, box: box.toJSON(), transform: (node as HTMLElement).style.transform, sprite: { background: image.backgroundImage, position: image.backgroundPosition, size: image.backgroundSize, clip: image.clipPath, transform: image.transform, visibility: image.visibility, opacity: image.opacity, rect: sprite.getBoundingClientRect().toJSON() }, actor: { opacity: getComputedStyle(actor).opacity, visibility: getComputedStyle(actor).visibility }, pose: { transform: getComputedStyle(pose).transform, opacity: getComputedStyle(pose).opacity }, focused: document.hasFocus(), scrollY };
+          const box = node.getBoundingClientRect(), sprite = node.querySelector<HTMLElement>(".vc-sprite")!, texture = sprite.querySelector<HTMLImageElement>(".vc-texture"), image = getComputedStyle(sprite), actor = node.querySelector(".vc-actor")!, pose = node.querySelector(".vc-pose")!;
+          return { at: performance.now(), hidden: (node as HTMLElement).hidden, data: { ...(node as HTMLElement).dataset }, box: box.toJSON(), transform: (node as HTMLElement).style.transform, sprite: { source: texture?.currentSrc || texture?.src || "", textureTransform: texture?.style.transform ?? "", naturalWidth: texture?.naturalWidth ?? 0, naturalHeight: texture?.naturalHeight ?? 0, clip: image.clipPath, transform: image.transform, visibility: image.visibility, opacity: image.opacity, rect: sprite.getBoundingClientRect().toJSON() }, actor: { opacity: getComputedStyle(actor).opacity, visibility: getComputedStyle(actor).visibility }, pose: { transform: getComputedStyle(pose).transform, opacity: getComputedStyle(pose).opacity }, focused: document.hasFocus(), scrollY };
         }));
         await page.screenshot({ path: `.scratch-pw/companion-054-ballistic-390-after-${after.length - 1}.png` });
       }

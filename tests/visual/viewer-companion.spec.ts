@@ -37,6 +37,16 @@ async function centre(locator: Locator) {
   const box = (await locator.boundingBox())!;
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
+async function stroke(page: Page) {
+  const point = await centre(actor(page));
+  await page.mouse.move(point.x - 20, point.y);
+  await expect(pet(page).locator(".vc-petting-hand")).toBeVisible();
+  for (const dx of [20, -20, 20]) {
+    await page.mouse.move(point.x + dx, point.y, { steps: 12 });
+    await page.waitForTimeout(40);
+  }
+  await expect(pet(page)).toHaveAttribute("data-state", "petted");
+}
 async function openHome(page: Page) {
   const home = page.getByRole("region", { name: "빅타민 집", exact: true });
   if (!(await home.isVisible())) await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).click();
@@ -53,8 +63,8 @@ async function stationaryFixture(page: Page, reduced = false) {
   await expect(pet(page)).toBeInViewport({ ratio: .99999 }); // Subpixel intersection-ratio precision.
 }
 
-test("default OFF downloads no sprite, and the shared settings turn it on and off", async ({ page }) => {
-  await seed(page);
+test("explicit OFF downloads no sprite, and the shared settings turn it on and off", async ({ page }) => {
+  await seed(page, { enabled: false });
   await page.goto("/visual-fixture/poster");
   await expect(page.locator(".poster-page")).toBeVisible();
   await page.waitForTimeout(900);
@@ -93,8 +103,8 @@ for (const width of [1440]) {
   test(`pointer petting and dragging stay inside the viewport at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await stationaryFixture(page);
-    await actor(page).click();
-    await expect(pet(page)).toHaveAttribute("data-state", "petted");
+    // Short clicks are bonks; affection is a genuine hover round trip.
+    await stroke(page);
     await expect(page.locator(".vc-affection-hearts")).toBeVisible();
     await expect(page.locator(".vc-affection-hearts i")).toHaveCount(3);
     const before = await position(page), grab = await centre(actor(page));
@@ -137,6 +147,10 @@ test("keyboard and direct double-click offer non-dragging placement, plus a fini
   }
   await expect(actor(page)).toBeVisible(); await expect(actor(page)).toBeFocused();
   await expect(pet(page)).toHaveAttribute("data-state", "held");
+  // Key samples are synchronous; the existing display owner commits the last
+  // sample on its next frame. Keep the actual edge requirement unchanged.
+  await expect.poll(async () => (await position(page)).x).toBeLessThanOrEqual(8);
+  await expect.poll(async () => (await position(page)).y).toBeLessThanOrEqual(12);
   await expect(pet(page)).toBeInViewport({ ratio: .99999 });
   const edge = await position(page);
   expect(edge.x).toBeGreaterThanOrEqual(0); expect(edge.x).toBeLessThanOrEqual(8);
@@ -199,8 +213,7 @@ test("keyboard and direct double-click offer non-dragging placement, plus a fini
   await expect(pet(page)).toHaveAttribute("data-dreaming", "");
   await expect(page.locator(".vc-dream")).toBeVisible();
   await expect(page.locator(".vc-dream i")).toHaveText(["z", "z", "Z"]);
-  await actor(page).click();
-  await expect(pet(page)).toHaveAttribute("data-state", "petted");
+  await stroke(page);
   expect(requests.get(page)!.posts).toEqual([]);
 });
 
@@ -214,8 +227,7 @@ test("a settings overlay keeps the companion visible and closing resumes interac
   await expect(pet(page)).toBeInViewport({ ratio: .99999 });
   // A held keypose is intentional, so clip-column churn no longer proves
   // liveness. Verify the resumed creature accepts a real direct interaction.
-  await actor(page).click();
-  await expect(pet(page)).toHaveAttribute("data-state", "petted");
+  await stroke(page);
 });
 
 test("reduce motion keeps the enabled creature stationary and direct affection usable", async ({ page }) => {

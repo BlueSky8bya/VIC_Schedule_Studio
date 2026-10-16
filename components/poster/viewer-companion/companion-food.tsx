@@ -7,7 +7,7 @@ import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { createCompanionFoodGravity } from "@/lib/ui/viewer-companion/food-gravity";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
-import { gfxMode } from "@/lib/ui/gfx";
+import { gfxMode as readGfxMode, type GfxMode } from "@/lib/ui/gfx";
 import { FLIP_MS } from "@/lib/ui/flip-motion";
 import { COMPANION_CARD_PLAY_EVENT } from "@/lib/ui/viewer-companion/card-play";
 import { COMPANION_FOOD_NAMES as names, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
@@ -26,7 +26,7 @@ export type CompanionFoodControl = {
   clear: () => void;
 };
 type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void };
-type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor };
+type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; point: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
 type Jostle = { node: HTMLElement; animation: Animation };
@@ -63,11 +63,22 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const renderedTransforms = useRef(new Map<string, string>());
   const serial = useRef(0), dragging = useRef<Drag | null>(null), hover = useRef<Hover | null>(null), discard = useRef<Discard | null>(null);
   const dragFrame = useRef(0), hoverFrame = useRef(0), followFrame = useRef(0), operating = useRef(false);
+  const graphics = useRef<GfxMode>("full");
   const followUntil = useRef(0), followHome = useRef<() => void>(() => {});
   const followedFrame = useRef<{ time: number; foods: Food[] } | null>(null);
   const focusReturn = useRef(returnFocus); focusReturn.current = returnFocus;
   const guard = useRef<{ owns: boolean; pointer: number | null; timer?: ReturnType<typeof setTimeout> }>({ owns: false, pointer: null });
   operating.current = enabled && !blocked && !paused;
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    // Settings own this snapshot. Falling/following snacks never synchronously
+    // reread localStorage on the display clock, including auto-mode JSON.
+    const changed = () => { graphics.current = readGfxMode(); };
+    const stored = (event: StorageEvent) => { if (event.key === null || event.key === "vic.gfx" || event.key === "vic.gfxPref") changed(); };
+    changed();
+    window.addEventListener("vic:gfx-pref", changed); window.addEventListener("vic:gfx-auto", changed); window.addEventListener("storage", stored);
+    return () => { window.removeEventListener("vic:gfx-pref", changed); window.removeEventListener("vic:gfx-auto", changed); window.removeEventListener("storage", stored); };
+  }, [enabled]);
   const cancelJostle = useCallback((id?: string) => {
     for (const [key, active] of jostles.current) if (!id || key === id) {
       active.animation.onfinish = null; active.animation.oncancel = null;
@@ -135,6 +146,16 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const placed = receiveCompanionHomeFloorFood(point, release, rect, homeControlRects(element));
     if (placed) return { element, rect, point: placed, kind: "floor" as const };
   }, []);
+  const followDragHome = useCallback((drag: Drag) => {
+    const food = current.current.find(item => item.id === drag.id); if (!food) return;
+    const home = drag.startHome ? receivingHome(food, drag.point) : undefined;
+    // Logical pointer coordinates are captured on every input. Hit tests and
+    // house/control geometry belong to one display batch, not each high-rate
+    // mouse sample. Release also flushes once before settling.
+    if (home) attachments.current.set(drag.id, { home: home.kind, element: home.element, position: attachCompanionFood(home.point, { x: scrollX, y: scrollY }, { x: home.rect.left, y: home.rect.top }) });
+    else attachments.current.delete(drag.id);
+    current.current = current.current.map(item => item.id === drag.id ? { ...item, platformId: homeFoodId(home?.kind) } : item);
+  }, [receivingHome]);
   const bindHome = useCallback((food: Food, target: NonNullable<ReturnType<typeof receivingHome>>) => {
     const placed: Food = { id: food.id, kind: food.kind, ...target.point, platformId: homeFoodId(target.kind) };
     attachments.current.set(food.id, { home: target.kind, element: target.element, position: attachCompanionFood(placed, { x: scrollX, y: scrollY }, { x: target.rect.left, y: target.rect.top }) });
@@ -173,7 +194,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}) }); visibility.current.set(food.id, true);
     drops.current.delete(food.id); presentations.current.delete(food.id);
     const gravity = createCompanionFoodGravity(point, placed, performance.now());
-    if (gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && gfxMode() !== "off") {
+    if (gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
       drops.current.set(food.id, gravity);
       const presentation = gravity.sample(performance.now()); presentations.current.set(food.id, presentation); paint(placed, presentation);
       animateDrops.current();
@@ -264,7 +285,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     lastDropPaint.current = performance.now() - 1000 / 60;
     const step = (now: number) => {
       dropFrame.current = 0;
-      const mode = gfxMode();
+      const mode = graphics.current;
       if (!operating.current || document.hidden || reduced() || mode === "off") { finishDrops(); return; }
       const deadline = nextCompanionPaint(now, lastDropPaint.current, mode === "full" ? 60 : 30);
       if (deadline !== null) {
@@ -284,11 +305,13 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const cancelHover = useCallback(() => { cancelAnimationFrame(hoverFrame.current); hoverFrame.current = 0; if (hover.current) clearBin(hover.current.bin); hover.current = null; }, []);
   const release = useCallback((settle = false) => {
     cancelAnimationFrame(dragFrame.current); dragFrame.current = 0;
-    const drag = dragging.current; dragging.current = null;
+    const drag = dragging.current;
     if (!drag) return;
+    if (drag.moved) { followDragHome(drag); const latest = current.current.find(item => item.id === drag.id); if (latest) paint(latest); }
+    dragging.current = null;
     if (drag.node.hasPointerCapture(drag.pointer)) drag.node.releasePointerCapture(drag.pointer);
     if (settle) update(current.current.map(food => food.id === drag.id ? settleFood(food, food, drag.moved && attachments.current.get(food.id)?.home === "floor" ? { x: food.x + drag.offset.x, y: food.y + drag.offset.y } : undefined) : food));
-  }, [settleFood, update]);
+  }, [followDragHome, paint, settleFood, update]);
   const cancelDiscard = useCallback((settle = false) => {
     const pending = discard.current; if (!pending) return;
     discard.current = null; clearTimeout(pending.timer); pending.animation?.cancel();
@@ -403,7 +426,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     },
     pause(next) { operating.current = enabled && !blocked && !next; setPaused(next); if (next) interrupt(); else followAttachments(); },
     jostle(point, radius) {
-      if (!operating.current || document.hidden || reduced() || gfxMode() === "off" || ![point.x, point.y, radius].every(Number.isFinite) || radius <= 0) return;
+      if (!operating.current || document.hidden || reduced() || graphics.current === "off" || ![point.x, point.y, radius].every(Number.isFinite) || radius <= 0) return;
       // Cosmetic art only: the native food target, logical support, gravity
       // and eating eligibility keep their exact coordinates and ownership.
       const nearby = current.current.filter(food => !drops.current.has(food.id) && !presentations.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id)
@@ -477,7 +500,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // retains its local tray origin; no idle observer or perpetual rAF runs.
     const schedule = (event?: Event) => {
       if (!operating.current || document.hidden) return;
-      if ((!event || event.type.startsWith("vic:")) && (event?.type === COMPANION_CARD_PLAY_EVENT || [...attachments.current.values()].some(bound => bound.home)) && !reduced() && gfxMode() !== "off") followUntil.current = performance.now() + FLIP_MS + 80;
+      if ((!event || event.type.startsWith("vic:")) && (event?.type === COMPANION_CARD_PLAY_EVENT || [...attachments.current.values()].some(bound => bound.home)) && !reduced() && graphics.current !== "off") followUntil.current = performance.now() + FLIP_MS + 80;
       if (followFrame.current) return;
       // The event can run later than this frame's rAF timestamp. Always carry
       // its first frame, then use that same clock for the finite follow tail.
@@ -485,11 +508,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       const frame = (now: number) => {
         followFrame.current = 0;
         if (!operating.current || document.hidden) return;
-        const deadline = lastPaint === undefined ? now : nextCompanionPaint(now, lastPaint, gfxMode() === "full" ? 60 : 30);
+        const deadline = lastPaint === undefined ? now : nextCompanionPaint(now, lastPaint, graphics.current === "full" ? 60 : 30);
         // A live fall already follows every attachment at the same cadence.
         // Yield its reads/paint to that owner, then resume the finite tail.
         if (deadline !== null) { lastPaint = deadline; if (!drops.current.size) followAttachments(now); }
-        if (now < followUntil.current && !reduced() && gfxMode() !== "off") followFrame.current = requestAnimationFrame(frame);
+        if (now < followUntil.current && !reduced() && graphics.current !== "off") followFrame.current = requestAnimationFrame(frame);
       };
       followFrame.current = requestAnimationFrame(frame);
     };
@@ -521,27 +544,24 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         const position = rebasePresentation(food.id, !wasFalling && !presentations.current.has(food.id))!;
         choose(null); ownClick(event.pointerId);
         event.currentTarget.focus({ preventScroll: true }); event.currentTarget.setPointerCapture(event.pointerId);
-        dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget, start: { x: event.clientX, y: event.clientY }, offset: { x: event.clientX - position.x, y: event.clientY - position.y }, moved: false, wasFalling, startHome: attachments.current.get(food.id)?.home };
+        dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget, start: { x: event.clientX, y: event.clientY }, point: { x: event.clientX, y: event.clientY }, offset: { x: event.clientX - position.x, y: event.clientY - position.y }, moved: false, wasFalling, startHome: attachments.current.get(food.id)?.home };
       }}
       onPointerMove={event => {
         const drag = dragging.current; if (!drag || drag.id !== food.id || drag.pointer !== event.pointerId) return;
         if (Math.hypot(event.clientX - drag.start.x, event.clientY - drag.start.y) > 6) drag.moved = true;
         if (!drag.moved) return;
         const point = { x: clamp(event.clientX - drag.offset.x, 24, innerWidth - 24), y: clamp(event.clientY - drag.offset.y, 48, innerHeight - 24) };
-        const home = drag.startHome ? receivingHome(point, { x: event.clientX, y: event.clientY }) : undefined;
-        if (home) {
-          // Keep a floor drag under its pointer until it is actually released.
-          // The floor plane is committed once, never forced on held frames.
-          attachments.current.set(food.id, { home: home.kind, element: home.element, position: attachCompanionFood(home.point, { x: scrollX, y: scrollY }, { x: home.rect.left, y: home.rect.top }) });
-        }
-        else attachments.current.delete(food.id);
+        drag.point = { x: event.clientX, y: event.clientY };
         visibility.current.set(food.id, true);
-        current.current = current.current.map(item => item.id === food.id ? { ...item, platformId: homeFoodId(home?.kind), ...point } : item);
-        const pointer = { x: event.clientX, y: event.clientY };
-        cancelAnimationFrame(dragFrame.current); dragFrame.current = requestAnimationFrame(() => {
-          const bin = trashAt(pointer);
+        current.current = current.current.map(item => item.id === food.id ? { ...item, ...point } : item);
+        if (dragFrame.current) return;
+        dragFrame.current = requestAnimationFrame(() => {
+          dragFrame.current = 0;
+          if (dragging.current !== drag || !operating.current) return;
+          followDragHome(drag);
+          const bin = trashAt(drag.point);
           const item = current.current.find(item => item.id === food.id); if (item) paint(item);
-          if (bin) startHover(food.id, bin, pointer); else cancelHover();
+          if (bin) startHover(food.id, bin, drag.point); else cancelHover();
         });
       }}
       onPointerUp={event => {

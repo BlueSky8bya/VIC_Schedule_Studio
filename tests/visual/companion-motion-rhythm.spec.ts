@@ -91,7 +91,7 @@ async function observe(page: Page) {
       const css = getComputedStyle(probe.node), rect = probe.node.getBoundingClientRect(), data = probe.node.dataset;
       if (scope.motionRhythmAutonomy) scope.motionRhythmRandom = ["walk", "jump"].includes(data.state ?? "") ? .01 : undefined;
       probe.frames.push({ at: performance.now(), visible: probe.node.isConnected && !probe.node.hidden && css.display !== "none" && css.visibility !== "hidden" && Number(css.opacity) > .05 && rect.width > 0 && rect.height > 0,
-        same: document.querySelector(".vc-companion") === node, state: data.state ?? "", play: data.play ?? "", beat: data.playBeat ?? "", row: probe.node.style.getPropertyValue("--vc-row"), image: probe.node.querySelector<HTMLElement>(".vc-sprite")?.style.backgroundImage ?? "", platform: data.platform ?? "", x: rect.left + rect.width / 2, foot: rect.bottom, ruffled: document.querySelectorAll("[data-vc-ruffled]").length });
+        same: document.querySelector(".vc-companion") === node, state: data.state ?? "", play: data.play ?? "", beat: data.playBeat ?? "", row: probe.node.style.getPropertyValue("--vc-row"), image: probe.node.querySelector<HTMLImageElement>(".vc-texture")?.currentSrc || probe.node.querySelector<HTMLImageElement>(".vc-texture")?.src || "", platform: data.platform ?? "", x: rect.left + rect.width / 2, foot: rect.bottom, ruffled: document.querySelectorAll("[data-vc-ruffled]").length });
       probe.raf = requestAnimationFrame(sample);
     };
     scope.motionRhythmProbe = probe; probe.raf = requestAnimationFrame(sample);

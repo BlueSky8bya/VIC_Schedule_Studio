@@ -44,16 +44,37 @@ export function companionSpriteSources(row: number): string[] {
   return [...new Set((frames ?? metadata.rows[0]).map(index => metadata.atlases[metadata.frames[index].atlas].src))];
 }
 
-// Warm only enabled companions. Keep at most three decoded Image references;
-// CSS/browser/GPU caches and currently decoding packets are separate costs.
+// Warm only enabled companions. Keep at most three decoded Image references,
+// including connected presentation nodes; at most two decodes are in flight.
 // Failed requests leave no permanent Promise entry and can retry finitely in
 // the renderer. In-flight calls for the same packet share one decode.
 const pending = new Map<string, Promise<boolean>>();
 const decoded = new Map<string, HTMLImageElement>();
-/** A prior success is insufficient after LRU eviction. Query actual retained
- * decoded storage before swapping CSS to a different packet. */
+/** A prior success is insufficient after LRU eviction. */
 export function isCompanionSpriteDecoded(src: string): boolean {
   return decoded.has(src);
+}
+
+/** A connected presentation owns its exact decoded node. Cold callers yield
+ * without queueing/failure poisoning when all three retained nodes are owned.
+ * An ordinary later paint may retry after a host releases one; no polling
+ * timer or permanent rejected Promise is retained here. */
+export function canDecodeCompanionSprite(src: string): boolean {
+  if (decoded.has(src) || decoded.size < 3) return true;
+  for (const image of decoded.values()) if (!image.isConnected) return true;
+  return false;
+}
+
+/** Return the SAME Image whose decode resolved, not a URI, clone or new Image.
+ * Moving this already prepared node into its host avoids a separate CSS image
+ * request/first-paint gap. A live foreign host cannot have its drawing stolen;
+ * disconnected hosts may hand their cached node to the next mounted surface.
+ * The caller configures and inserts synchronously before yielding control. */
+export function acquireDecodedCompanionSprite(src: string, owner: HTMLElement): HTMLImageElement | undefined {
+  const image = decoded.get(src);
+  if (!image || image.isConnected && image.parentElement !== owner) return;
+  decoded.delete(src); decoded.set(src, image);
+  return image;
 }
 const queued: Array<() => Promise<void>> = [];
 let activeDecodes = 0;
@@ -68,15 +89,25 @@ export function decodeCompanionSprite(src: string): Promise<boolean> {
   const cached = decoded.get(src);
   if (cached) { decoded.delete(src); decoded.set(src, cached); return Promise.resolve(true); }
   const existing = pending.get(src); if (existing) return existing;
+  if (!canDecodeCompanionSprite(src)) return Promise.resolve(false);
   let finish!: (ready: boolean) => void;
   const ready = new Promise<boolean>(resolve => { finish = resolve; });
   pending.set(src, ready);
   queued.push(async () => {
     let success = false;
     try {
+      // Other completed packets may have filled the bounded cache while this
+      // work waited in the shared two-slot queue. Busy is a retriable yield.
+      if (!canDecodeCompanionSprite(src)) return;
       const image = new Image(); image.src = src;
-      await image.decode(); decoded.set(src, image);
-      while (decoded.size > 3) decoded.delete(decoded.keys().next().value!);
+      await image.decode();
+      // A late decode must never evict a connected presentation or expand the
+      // retained budget. Its caller can retry after ownership changes.
+      if (!canDecodeCompanionSprite(src)) return;
+      decoded.set(src, image);
+      if (decoded.size > 3) for (const [key, retained] of decoded) {
+        if (!retained.isConnected) { decoded.delete(key); break; }
+      }
       success = true;
     } catch { /* Failed packets can retry through the renderer's finite cap. */ }
     finally {

@@ -84,7 +84,10 @@ export type SettingsPrefs = {
  * @param onGfxAuto 자동 판정이 스스로 품질을 내렸을 때(vic:gfx-auto). 편집실은 토스트로 알린다.
  */
 export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsPrefs {
-  const [companionPrefs, setCompanionPrefs] = useState<CompanionPreferences>({ ...DEFAULT_COMPANION_PREFERENCES });
+  // This is an unread hydration seed, not the product default. Read the saved
+  // master first so a stored OFF never mounts/decodes a pet for one frame when
+  // desktop capability becomes available before this passive effect runs.
+  const [companionPrefs, setCompanionPrefs] = useState<CompanionPreferences>(() => ({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false }));
   useEffect(() => {
     setCompanionPrefs(getCompanionPreferences());
     return subscribeCompanionPreferences(setCompanionPrefs);

@@ -14,7 +14,7 @@ const affection = (page: Page) => page.getByRole("meter", { name: "빅타민 친
 const posts = new WeakMap<Page, string[]>();
 type Point = { x: number; y: number };
 type Body = Point & { size: number };
-type Frame = { at: number; x: number; y: number; hidden: boolean; mode: string | null; hand: boolean; cursor: string; poseX: number; poseY: number; bob: number; originError: number; lowerBodyY: number; state: string; facing: string };
+type Frame = { at: number; x: number; y: number; hidden: boolean; mode: string | null; hand: boolean; cursor: string; poseX: number; poseY: number; bob: number; originError: number; lowerBodyY: number; state: string; facing: string; textureCell: string };
 type Probe = { frames: Frame[]; pointer: Point; losses: number; hiddenChanges: number; captures: number; raf: number; observer: MutationObserver; move: (event: PointerEvent) => void; capture: () => void; node: Element };
 type ProbeWindow = Window & { contactContinuityProbe?: Probe };
 type FocusFixtureWindow = Window & { companionFixtureFocused?: boolean };
@@ -59,7 +59,7 @@ async function probe(page: Page, pointer: Point) {
       const el = node as HTMLElement, r = node.getBoundingClientRect(), hs = getComputedStyle(node.querySelector(".vc-petting-hand")!), pose = getComputedStyle(node.querySelector(".vc-pose")!), m = new DOMMatrixReadOnly(pose.transform), hit = document.elementFromPoint(p.pointer.x, p.pointer.y);
       const [ox, oy] = pose.transformOrigin.split(" ").map(parseFloat), [gx, gy] = getComputedStyle(node.querySelector(".vc-inertia")!).transformOrigin.split(" ").map(parseFloat), facing = new DOMMatrixReadOnly(getComputedStyle(node.querySelector(".vc-facing")!).transform).a;
       p.frames.push({ at: now - began, x: r.left + r.width / 2, y: r.bottom, hidden: el.hidden || getComputedStyle(node).display === "none", mode: el.getAttribute("data-petting"), hand: hs.visibility === "visible" && Number(hs.opacity) === 1, cursor: hit ? getComputedStyle(hit).cursor : "", poseX: Math.hypot(m.a, m.b), poseY: Math.hypot(m.c, m.d), bob: m.f,
-        originError: Math.hypot(ox - (facing < 0 ? r.width - gx : gx), oy - gy), lowerBodyY: oy + m.b * (46 - ox) + m.d * (76 - oy) + m.f - 76, state: el.dataset.state ?? "", facing: el.dataset.facing ?? "" });
+        originError: Math.hypot(ox - (facing < 0 ? r.width - gx : gx), oy - gy), lowerBodyY: oy + m.b * (46 - ox) + m.d * (76 - oy) + m.f - 76, state: el.dataset.state ?? "", facing: el.dataset.facing ?? "", textureCell: node.querySelector<HTMLImageElement>(".vc-texture")?.style.transform ?? "" });
       p.raf = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).contactContinuityProbe = p; p.raf = requestAnimationFrame(sample);
@@ -117,8 +117,8 @@ test("reduced-motion retention starts only in the base and expires outside after
 for (const mobile of [false]) test.describe(mobile ? "touch hanging tension" : "cold pointer hanging tension", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1400 }, hasTouch: mobile, isMobile: mobile });
   test("pickup retains the visible drawing, hangs below the grip and preserves keyboard focus feedback", async ({ page }) => {
-    let unblock = () => {}, requested = false; const gate = new Promise<void>(resolve => { unblock = resolve; });
-    if (!mobile) for (const src of companionSpriteSources(8)) await page.route(`**${src}`, async route => { requested = true; await gate; await route.continue(); });
+    let unblock = () => {}, requested = false, heldRequests = 0; const gate = new Promise<void>(resolve => { unblock = resolve; });
+    if (!mobile) for (const src of companionSpriteSources(8)) await page.route(`**${src}`, async route => { requested = true; heldRequests++; await gate; await route.continue(); });
     const p = await setup(page, false, mobile), box = (await actor(page).boundingBox())!, start = { x: box.x + box.width / 2, y: box.y + box.height * .3 }, target = { x: start.x + 18, y: start.y + 15 };
     const client = mobile ? await page.context().newCDPSession(page) : null;
     await probe(page, start);
@@ -127,10 +127,22 @@ for (const mobile of [false]) test.describe(mobile ? "touch hanging tension" : "
       for (let i = 1; i <= 8; i++) { const point = { x: start.x + (target.x - start.x) * i / 8, y: start.y + (target.y - start.y) * i / 8 }; if (client) await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...point, id: 57 }] }); else await page.mouse.move(point.x, point.y); await page.waitForTimeout(16); }
       await expect(pet(page)).toHaveAttribute("data-state", "held");
       expect(await actor(page).evaluate(node => getComputedStyle(node).outlineStyle)).toBe("none");
-      if (!mobile) { await expect.poll(() => requested).toBe(true); const image = await pet(page).locator(".vc-sprite").evaluate(node => getComputedStyle(node).backgroundImage); expect(companionSpriteSources(8).every(src => !image.includes(src))).toBe(true); await page.waitForTimeout(350); await expect(pet(page)).toBeVisible(); }
-      unblock(); await expect.poll(() => pet(page).locator(".vc-sprite").evaluate(node => getComputedStyle(node).backgroundImage)).toContain(companionSpriteSources(8)[0]);
+      if (!mobile) {
+        await expect.poll(() => requested).toBe(true);
+        const retained = await pet(page).locator(".vc-texture").elementHandle(); expect(retained).not.toBeNull();
+        const image = await retained!.evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src);
+        expect(companionSpriteSources(8).every(src => !image.includes(src))).toBe(true);
+        await page.waitForTimeout(350); await expect(pet(page)).toBeVisible();
+        expect(await retained!.evaluate(node => ({ same: node === document.querySelector(".vc-companion .vc-texture"), decoded: (node as HTMLImageElement).complete && (node as HTMLImageElement).naturalWidth > 0, connected: node.isConnected }))).toEqual({ same: true, decoded: true, connected: true });
+      }
+      unblock(); await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(companionSpriteSources(8)[0]);
+      const decoded = await pet(page).locator(".vc-texture").elementHandle(); expect(decoded).not.toBeNull();
+      await decoded!.evaluate(node => (node as HTMLImageElement).decode());
       await page.waitForTimeout(250); await page.waitForTimeout(650);
       const result = await finish(page, mobile ? "held-touch" : "held-cold"), settled = result.frames.filter(f => f.state === "held" && f.at > 450);
+      expect(await decoded!.evaluate(node => ({ same: node === document.querySelector(".vc-companion .vc-texture"), decoded: (node as HTMLImageElement).complete && (node as HTMLImageElement).naturalWidth > 0, connected: node.isConnected }))).toEqual({ same: true, decoded: true, connected: true });
+      expect(new Set(settled.map(frame => frame.textureCell).filter(Boolean)).size).toBeGreaterThan(1);
+      if (!mobile) expect(heldRequests).toBe(1);
       expect(settled.length).toBeGreaterThan(12); expect(settled.every(f => f.poseY >= 1.18 && f.poseY <= 1.32 && f.poseX < 1 && Math.abs(f.bob) < .001 && f.originError < .1 && f.lowerBodyY > .2)).toBe(true);
       expect(new Set(settled.map(f => f.facing)).size).toBe(1); expect(Math.max(...settled.map(f => f.x)) - Math.min(...settled.map(f => f.x))).toBeLessThan(.05); expect(Math.max(...settled.map(f => f.y)) - Math.min(...settled.map(f => f.y))).toBeLessThan(.05);
       await page.screenshot({ path: `.scratch-pw/companion-058-contact-held-${mobile ? "touch" : "cold"}.png` });

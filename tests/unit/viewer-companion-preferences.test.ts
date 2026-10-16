@@ -15,12 +15,32 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("viewer companion device preferences", () => {
-  it("starts OFF with complete safe defaults, including SSR", () => {
+  it("starts ON for a missing preference without writing or resetting choices, including the SSR default", () => {
+    const write = vi.spyOn(browser.localStorage, "setItem");
     expect(getCompanionPreferences()).toEqual(DEFAULT_COMPANION_PREFERENCES);
-    expect(getCompanionPreferences().enabled).toBe(false);
+    expect(getCompanionPreferences().enabled).toBe(true);
     expect(getCompanionPreferences().size).toBe("large");
+    expect(entries.has(COMPANION_PREFERENCES_KEY)).toBe(false);
+    expect(write).not.toHaveBeenCalled();
     vi.stubGlobal("window", undefined);
     expect(getCompanionPreferences()).toEqual(DEFAULT_COMPANION_PREFERENCES);
+  });
+  it("preserves an explicit saved OFF and every detailed choice across rereads, remount and legacy-size migration", () => {
+    const chosen = { ...DEFAULT_COMPANION_PREFERENCES, enabled: false, jump: false, feeding: false, learnFromYou: false, personality: "sleepy" as const, animalMode: "cat" as const, speed: "relaxed" as const };
+    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, ...chosen, size: "small" }));
+    expect(getCompanionPreferences()).toEqual(chosen);
+    expect(getCompanionPreferences()).toEqual(chosen);
+    const remounted = Object.assign(new EventTarget(), { localStorage: browser.localStorage });
+    vi.stubGlobal("window", remounted);
+    expect(getCompanionPreferences()).toEqual(chosen);
+    setCompanionPreferences({ heartPrank: false });
+    expect(getCompanionPreferences()).toEqual({ ...chosen, heartPrank: false });
+    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...chosen, heartPrank: false });
+  });
+  it("uses ON for a valid legacy record's missing master field while retaining its other settings", () => {
+    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, jump: false, speed: "lively", animalMode: "dog", learnFromYou: false }));
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, jump: false, speed: "lively", animalMode: "dog", learnFromYou: false });
+    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).not.toHaveProperty("enabled");
   });
   it("normalizes old, missing and malformed sizes without resetting other choices", () => {
     for (const size of ["small", "normal", "large", "giant", null, undefined]) {
@@ -67,13 +87,20 @@ describe("viewer companion device preferences", () => {
     stop();
   });
   it("fails closed for corrupt or unsupported saved versions", () => {
-    setCompanionPreferences({ enabled: true });
-    entries.set(COMPANION_PREFERENCES_KEY, "{");
-    expect(getCompanionPreferences().enabled).toBe(false);
-    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 2, enabled: true }));
-    expect(getCompanionPreferences().enabled).toBe(false);
-    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ enabled: true }));
-    expect(getCompanionPreferences().enabled).toBe(false);
+    for (const raw of ["{", "", "null", "[]", "5", JSON.stringify({ version: 2, enabled: true }), JSON.stringify({ enabled: true })]) {
+      entries.set(COMPANION_PREFERENCES_KEY, raw);
+      expect(getCompanionPreferences().enabled).toBe(false);
+    }
+    entries.delete(COMPANION_PREFERENCES_KEY);
+    expect(getCompanionPreferences().enabled).toBe(true);
+  });
+  it("keeps a malformed stored master OFF while ignoring malformed patches against the current base", () => {
+    for (const enabled of ["true", "false", 0, 1, null, [], {}]) {
+      entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, enabled, jump: false, animalMode: "cat" }));
+      expect(getCompanionPreferences()).toMatchObject({ enabled: false, jump: false, animalMode: "cat" });
+      expect(normalizeCompanionPreferences({ enabled }, getCompanionPreferences()).enabled).toBe(false);
+    }
+    expect(normalizeCompanionPreferences({ enabled: "false" }).enabled).toBe(true);
   });
   it("updates same-tab subscribers once and releases listeners", () => {
     const listener = vi.fn();
@@ -94,6 +121,10 @@ describe("viewer companion device preferences", () => {
     expect(listener).not.toHaveBeenCalled();
     stored(COMPANION_PREFERENCES_KEY);
     expect(listener).toHaveBeenLastCalledWith({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, heartPrank: false });
+    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, enabled: false, heartPrank: false, feeding: false }));
+    stored(COMPANION_PREFERENCES_KEY);
+    expect(listener).toHaveBeenLastCalledWith({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false, heartPrank: false, feeding: false });
+    expect(getCompanionPreferences().enabled).toBe(false);
     entries.clear(); stored(null);
     expect(listener).toHaveBeenLastCalledWith(DEFAULT_COMPANION_PREFERENCES);
     stop();
@@ -106,7 +137,7 @@ describe("viewer companion device preferences", () => {
     const stop = subscribeCompanionPreferences(listener);
     setCompanionPreferences({ enabled: true, jump: false });
     setCompanionPreferences({ enabled: false });
-    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, jump: false });
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false, jump: false });
     expect(listener).toHaveBeenCalledTimes(2);
     stop();
   });
@@ -119,7 +150,22 @@ describe("viewer companion device preferences", () => {
     expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, jump: false, size: "large" });
     expect(entries.get(COMPANION_PREFERENCES_KEY)).toBe(oldRaw);
     setCompanionPreferences({ enabled: false });
-    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, jump: false, size: "large" });
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false, jump: false, size: "large" });
+  });
+  it("keeps a quota-limited explicit OFF across same-tab consumers, then persists it when writes recover", () => {
+    const write = browser.localStorage.setItem;
+    const listener = vi.fn(), stop = subscribeCompanionPreferences(listener);
+    browser.localStorage.setItem = () => { throw new Error("quota exceeded"); };
+    setCompanionPreferences({ enabled: false, animalMode: "dog", petting: false });
+    expect(listener).toHaveBeenLastCalledWith({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false, animalMode: "dog", petting: false });
+    expect(getCompanionPreferences()).toMatchObject({ enabled: false, animalMode: "dog", petting: false });
+    const remountedListener = vi.fn(), stopRemounted = subscribeCompanionPreferences(remountedListener);
+    setCompanionPreferences({ jump: false });
+    expect(remountedListener).toHaveBeenLastCalledWith({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false, animalMode: "dog", petting: false, jump: false });
+    browser.localStorage.setItem = write;
+    setCompanionPreferences({ sleep: false });
+    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toMatchObject({ enabled: false, animalMode: "dog", petting: false, jump: false, sleep: false });
+    stop(); stopRemounted();
   });
   it("persists all unwritten local choices once storage recovers", () => {
     const save = browser.localStorage.setItem;
@@ -158,8 +204,8 @@ describe("viewer companion device preferences", () => {
     stop();
   });
   it("returns copies so callers cannot mutate the saved defaults or other consumers", () => {
-    getCompanionPreferences().enabled = true;
-    expect(getCompanionPreferences().enabled).toBe(false);
+    getCompanionPreferences().enabled = false;
+    expect(getCompanionPreferences().enabled).toBe(true);
     const chosen = setCompanionPreferences({ size: "large" });
     chosen.size = "small";
     expect(getCompanionPreferences().size).toBe("large");

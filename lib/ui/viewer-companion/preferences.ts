@@ -25,7 +25,7 @@ export type CompanionPreferences = {
 export const COMPANION_PREFERENCES_KEY = "vic.viewerCompanion";
 export const COMPANION_PREFERENCES_EVENT = "vic:viewer-companion";
 export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Object.freeze({
-  enabled: false,
+  enabled: true,
   roam: true,
   jump: true,
   sleep: true,
@@ -48,7 +48,8 @@ let volatilePreferences: CompanionPreferences | undefined;
 let lastReadableRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined; owner: Window } | undefined;
 
-/** Explicit allowlist: malformed values never turn the optional companion on. */
+/** Explicit allowlist: malformed patches keep the current/default choices.
+ * Saved malformed configuration has its own conservative OFF fallback below. */
 export function normalizeCompanionPreferences(value: unknown, base: Readonly<CompanionPreferences> = DEFAULT_COMPANION_PREFERENCES): CompanionPreferences {
   const next: CompanionPreferences = { ...base, size: "large" };
   if (!value || typeof value !== "object" || Array.isArray(value)) return next;
@@ -61,11 +62,17 @@ export function normalizeCompanionPreferences(value: unknown, base: Readonly<Com
 }
 
 function parseStoredPreferences(raw: string | null): CompanionPreferences {
+  if (raw === null) return { ...DEFAULT_COMPANION_PREFERENCES };
   try {
-    const stored: unknown = raw ? JSON.parse(raw) : null;
-    return stored && typeof stored === "object" && "version" in stored && stored.version === 1
-      ? normalizeCompanionPreferences(stored) : { ...DEFAULT_COMPANION_PREFERENCES };
-  } catch { return { ...DEFAULT_COMPANION_PREFERENCES }; }
+    const stored: unknown = JSON.parse(raw);
+    if (!stored || typeof stored !== "object" || Array.isArray(stored) || !("version" in stored) || stored.version !== 1) return { ...DEFAULT_COMPANION_PREFERENCES, enabled: false };
+    const next = normalizeCompanionPreferences(stored);
+    // A missing field in an otherwise valid old preference record adopts the
+    // new default. Explicit ON/OFF remains the user's choice; an invalid master
+    // field cannot accidentally turn a corrupt saved record into an opt-in.
+    if ("enabled" in stored && typeof stored.enabled !== "boolean") next.enabled = false;
+    return next;
+  } catch { return { ...DEFAULT_COMPANION_PREFERENCES, enabled: false }; }
 }
 
 export function getCompanionPreferences(): CompanionPreferences {

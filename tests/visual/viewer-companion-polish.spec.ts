@@ -183,8 +183,9 @@ test("large native keyposes and first-pass contact stay fluid, reward only real 
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-size", "large");
   await expect(pet(page)).toHaveAttribute("data-quality", "sharp", { timeout: 10000 }); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   const sprite = page.locator(".vc-sprite"); await expect(sprite).toHaveCSS("image-rendering", "auto");
-  expect(await sprite.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("/hd/");
-  const intrinsic = await sprite.evaluate(async node => { const image = new Image(); image.src = getComputedStyle(node).backgroundImage.slice(5, -2); await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight }; });
+  const texture = sprite.locator(".vc-texture");
+  expect(await texture.evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain("/hd/");
+  const intrinsic = await texture.evaluate(async node => { const image = node as HTMLImageElement; await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight }; });
   expect(intrinsic).toEqual({ width: 1536, height: 384 });
   const focus = page.locator('[data-panel-section-toggle="tag-filter"]'); await focus.focus();
   const before = await world(page), y = before.y - before.size * .49, left = before.x - before.size * .22, right = before.x + before.size * .22;
@@ -200,7 +201,7 @@ test("large native keyposes and first-pass contact stay fluid, reward only real 
   await page.screenshot({ path: ".scratch-pw/companion-polish-contact-large.png" });
   await page.mouse.down(); await page.mouse.move(right + 8, y);
   await expect(pet(page)).toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-petting");
-  await expect(pet(page)).toHaveAttribute("data-atlas", "hd"); expect(await sprite.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("/hd/");
+  await expect(pet(page)).toHaveAttribute("data-atlas", "hd"); expect(await texture.evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain("/hd/");
   await page.mouse.up(); await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 4000 });
   // Explicit focus-event branch, not a native OS/OBS performance claim.
   await page.evaluate(() => { Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false }); dispatchEvent(new FocusEvent("blur")); });
@@ -215,14 +216,28 @@ test("large native keyposes and first-pass contact stay fluid, reward only real 
   expect(quiet).toEqual({ ranges: 0, writes: 0 });
 });
 
-test("all three disclosures survive full navigation and prepaint reload while studio remains open", async ({ page }) => {
+test("all three disclosures share saved viewer and studio state through navigation and prepaint reload", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
   const keys = ["tag-filter", "season", "companion-home"];
   for (const key of keys) { const toggle = page.locator(`[data-panel-section-toggle="${key}"]`); await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "false"); }
   const saved = await page.evaluate(key => localStorage.getItem(key), PANEL_SECTION_PREFERENCES_KEY);
   expect(JSON.parse(saved!)).toEqual({ version: 1, "tag-filter": false, season: false, "companion-home": false });
-  await page.goto("/visual-fixture/studio");
-  const studio = page.locator('[data-panel-section="tag-filter"]'); await expect(studio.locator(".tag-legend-filter").first()).toBeVisible(); await expect(studio.locator(".panel-section-toggle")).toHaveCount(0);
+  await page.goto("/visual-fixture/studio?role=owner");
+  for (const key of keys) {
+    const toggle = page.locator(`[data-panel-section-toggle="${key}"]`);
+    const body = page.locator(`[data-panel-section="${key}"][data-panel-collapsible] > .panel-section-body`);
+    await expect(toggle).toHaveAttribute("aria-expanded", "false"); await expect(body).toBeHidden();
+    await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "true"); await expect(body).toBeVisible();
+  }
+  const studioExpanded = await page.evaluate(key => localStorage.getItem(key), PANEL_SECTION_PREFERENCES_KEY);
+  expect(JSON.parse(studioExpanded!)).toEqual({ version: 1, "tag-filter": true, season: true, "companion-home": true });
+  for (const key of keys) {
+    const toggle = page.locator(`[data-panel-section-toggle="${key}"]`);
+    const body = page.locator(`[data-panel-section="${key}"][data-panel-collapsible] > .panel-section-body`);
+    await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "false"); await expect(body).toBeHidden();
+  }
+  const studioCollapsed = await page.evaluate(key => localStorage.getItem(key), PANEL_SECTION_PREFERENCES_KEY);
+  expect(JSON.parse(studioCollapsed!)).toEqual(JSON.parse(saved!));
   await page.goto("/visual-fixture/poster?avatar=1");
   for (const key of keys) await expect(page.locator(`[data-panel-section-toggle="${key}"]`)).toHaveAttribute("aria-expanded", "false");
   // Inline prepaint code still runs; block hydration chunks so React cannot

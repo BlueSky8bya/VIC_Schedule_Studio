@@ -81,7 +81,7 @@ async function observe(page: Page) {
       if (probe.stopped) return;
       const current = document.querySelector<HTMLElement>(".vc-companion"), css = getComputedStyle(probe.node), rect = probe.node.getBoundingClientRect();
       probe.frames.push({ at: performance.now(), same: current === probe.node, visible: probe.node.isConnected && !probe.node.hidden && css.display !== "none" && css.visibility !== "hidden" && Number(css.opacity) > .05 && rect.width > 0 && rect.height > 0,
-        state: probe.node.dataset.state ?? "", play: probe.node.dataset.play ?? "", beat: probe.node.dataset.playBeat ?? "", atlas: (probe.node.querySelector<HTMLElement>(".vc-sprite")?.style.backgroundImage ?? ""), row: probe.node.style.getPropertyValue("--vc-row"), platform: probe.node.dataset.platform ?? "", x: rect.left + rect.width / 2, foot: rect.bottom });
+        state: probe.node.dataset.state ?? "", play: probe.node.dataset.play ?? "", beat: probe.node.dataset.playBeat ?? "", atlas: (probe.node.querySelector<HTMLImageElement>(".vc-texture")?.currentSrc || probe.node.querySelector<HTMLImageElement>(".vc-texture")?.src || ""), row: probe.node.style.getPropertyValue("--vc-row"), platform: probe.node.dataset.platform ?? "", x: rect.left + rect.width / 2, foot: rect.bottom });
       probe.raf = requestAnimationFrame(sample);
     };
     (window as PlayWindow).companionPlayProbe = probe; probe.raf = requestAnimationFrame(sample);
@@ -142,10 +142,10 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} native sho
   await setup(page, surface); await standOnRealSeat(page); await observe(page);
   await shortClick(page);
   await expect(pet(page)).toHaveAttribute("data-play-beat", "checking");
-  await expect.poll(() => pet(page).locator(".vc-sprite").evaluate(node => (node as HTMLElement).style.backgroundImage)).toContain(packet(27));
+  await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(packet(27));
   await page.screenshot({ path: `${prefix}-${surface}-tears.png` });
   await expect(pet(page)).toHaveAttribute("data-play-beat", "recover");
-  await expect.poll(() => pet(page).locator(".vc-sprite").evaluate(node => (node as HTMLElement).style.backgroundImage)).toContain(packet(23));
+  await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(packet(23));
   await expect(pet(page)).not.toHaveAttribute("data-play", "bonk-tears", { timeout: 5000 });
   await expect(pet(page)).toBeVisible();
   await page.screenshot({ path: `${prefix}-${surface}-recovered.png` });
@@ -245,7 +245,7 @@ test("studio native short click during a real released fall keeps falling, lands
   }), { timeout: 2000 }).toBeLessThanOrEqual(1);
   await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
   await expect(pet(page)).toHaveAttribute("data-play-beat", "checking");
-  await expect.poll(() => pet(page).locator(".vc-sprite").evaluate(node => (node as HTMLElement).style.backgroundImage)).toContain(packet(27));
+  await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(packet(27));
   await page.screenshot({ path: `${prefix}-studio-midair-contact.png` });
   await expect(pet(page)).not.toHaveAttribute("data-play", "bonk-tears", { timeout: 5000 });
   await expect(pet(page)).toHaveAttribute("data-platform", "companion-home");

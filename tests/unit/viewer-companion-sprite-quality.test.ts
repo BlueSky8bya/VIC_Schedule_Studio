@@ -50,6 +50,104 @@ describe("one high-resolution pipeline for every companion action", () => {
 });
 
 describe("bounded decoded reference lifetime", () => {
+  function imageFixture() {
+    const images: PreparedImage[] = [], held = new Set<string>(), release = new Map<string, () => void>();
+    class PreparedImage {
+      private source = "";
+      srcWrites = 0;
+      isConnected = false;
+      parentElement: HTMLElement | null = null;
+      constructor() { images.push(this); }
+      get src() { return this.source; }
+      set src(value: string) { this.source = value; this.srcWrites++; }
+      async decode() {
+        if (held.has(this.src)) await new Promise<void>(resolve => { release.set(this.src, resolve); });
+      }
+    }
+    vi.stubGlobal("Image", PreparedImage);
+    const connect = (image: HTMLImageElement, owner: HTMLElement) => {
+      const prepared = image as unknown as PreparedImage;
+      prepared.isConnected = true; prepared.parentElement = owner;
+    };
+    return { images, held, release, connect };
+  }
+
+  it("presents the exact prepared Image without a second source assignment or stealing a live owner", async () => {
+    vi.resetModules();
+    const fixture = imageFixture(), owner = {} as HTMLElement, foreignOwner = {} as HTMLElement;
+    try {
+      const { acquireDecodedCompanionSprite: acquire, decodeCompanionSprite: decode } = await import("@/lib/ui/viewer-companion/sprite-quality");
+      fixture.held.add("body");
+      const ready = decode("body");
+      expect(acquire("body", owner)).toBeUndefined();
+      fixture.release.get("body")!(); expect(await ready).toBe(true);
+      const image = acquire("body", owner)!;
+      expect(image).toBe(fixture.images[0]); expect(fixture.images[0].srcWrites).toBe(1);
+      fixture.connect(image, owner);
+      expect(acquire("body", owner)).toBe(image);
+      expect(acquire("body", foreignOwner)).toBeUndefined();
+      expect(image.parentElement).toBe(owner);
+      fixture.images[0].isConnected = false;
+      expect(acquire("body", foreignOwner)).toBe(image);
+      expect(fixture.images).toHaveLength(1); expect(fixture.images[0].srcWrites).toBe(1);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it("pins a displayed node while evicting only an unowned packet within the three-image budget", async () => {
+    vi.resetModules();
+    const fixture = imageFixture(), owner = {} as HTMLElement;
+    try {
+      const { acquireDecodedCompanionSprite: acquire, decodeCompanionSprite: decode, isCompanionSpriteDecoded: retained } = await import("@/lib/ui/viewer-companion/sprite-quality");
+      await decode("display"); fixture.connect(acquire("display", owner)!, owner);
+      await decode("old"); await decode("next"); await decode("fourth");
+      expect(retained("display")).toBe(true); expect(acquire("display", owner)).toBe(fixture.images[0]);
+      expect(retained("old")).toBe(false);
+      expect(["display", "old", "next", "fourth"].filter(retained)).toHaveLength(3);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it("yields when all three nodes are connected and permits a later retry after release", async () => {
+    vi.resetModules();
+    const fixture = imageFixture();
+    try {
+      const { acquireDecodedCompanionSprite: acquire, canDecodeCompanionSprite: capacity, decodeCompanionSprite: decode, isCompanionSpriteDecoded: retained } = await import("@/lib/ui/viewer-companion/sprite-quality");
+      for (const src of ["one", "two", "three"]) {
+        const owner = {} as HTMLElement;
+        await decode(src); fixture.connect(acquire(src, owner)!, owner);
+      }
+      expect(capacity("fourth")).toBe(false);
+      expect(await decode("fourth")).toBe(false); expect(await decode("fourth")).toBe(false);
+      expect(fixture.images).toHaveLength(3);
+      expect(["one", "two", "three"].every(retained)).toBe(true);
+      fixture.images[0].isConnected = false;
+      expect(capacity("fourth")).toBe(true); expect(await decode("fourth")).toBe(true);
+      expect(retained("one")).toBe(false);
+      expect(["two", "three", "fourth"].every(retained)).toBe(true);
+      expect(fixture.images).toHaveLength(4);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it("does not evict connected nodes if ownership fills the budget during an in-flight decode", async () => {
+    vi.resetModules();
+    const fixture = imageFixture();
+    try {
+      const { acquireDecodedCompanionSprite: acquire, decodeCompanionSprite: decode, isCompanionSpriteDecoded: retained } = await import("@/lib/ui/viewer-companion/sprite-quality");
+      for (const src of ["one", "two", "three"]) await decode(src);
+      fixture.held.add("late");
+      const pending = decode("late");
+      for (const src of ["one", "two", "three"]) {
+        const owner = {} as HTMLElement;
+        fixture.connect(acquire(src, owner)!, owner);
+      }
+      fixture.release.get("late")!(); expect(await pending).toBe(false);
+      expect(retained("late")).toBe(false); expect(["one", "two", "three"].every(retained)).toBe(true);
+      fixture.images[0].isConnected = false; fixture.held.delete("late");
+      expect(await decode("late")).toBe(true);
+      expect(["one", "two", "three", "late"].filter(retained)).toHaveLength(3);
+      expect(fixture.images).toHaveLength(5);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
   it("runs at most two image decoders and releases slots after failure", async () => {
     vi.resetModules();
     const release = new Map<string, () => void>(), requested: string[] = [];

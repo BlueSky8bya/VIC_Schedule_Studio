@@ -155,7 +155,12 @@ test("PC stationary safety follows viewport resize and poster zoom without chang
   const resized = await settled(page);
   expect(await page.locator("[data-export-surface]").evaluate(node => (node as HTMLElement).offsetWidth)).toBe(1840);
   await page.screenshot({ path: ".scratch-pw/companion-presence-pc1280.png" });
-  console.log(JSON.stringify({ check: "presence-PC", initial, zoomed, resized }));
+  // A height-only OBS/browser resize also invalidates the old floor ray.
+  await page.setViewportSize({ width: 1280, height: 760 });
+  const shorter = await settled(page);
+  expect(await page.locator("[data-export-surface]").evaluate(node => (node as HTMLElement).offsetWidth)).toBe(1840);
+  await page.screenshot({ path: ".scratch-pw/companion-presence-pc1280-short.png" });
+  console.log(JSON.stringify({ check: "presence-PC", initial, zoomed, resized, shorter }));
 });
 
 test("legacy small, normal and large preferences all render the single92 default safely", async ({ page }) => {

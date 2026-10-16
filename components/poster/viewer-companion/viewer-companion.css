@@ -20,7 +20,10 @@ html .vc-companion .vc-actor { outline: none; box-shadow: none; }
    second CSS tween would leave visible cloth contact behind its geometry. */
 .vc-contact { transition: none; }
 .vc-actor > .vc-inertia { position: absolute; bottom: 0; left: calc((100% - var(--vc-size, 76px)) / 2); width: var(--vc-size, 76px); height: var(--vc-size, 76px); }
-.vc-sprite { display: block; width: 100%; height: 100%; background-position: var(--vc-cell-x, 0%) var(--vc-cell-y, 0%); background-repeat: no-repeat; image-rendering: auto; pointer-events: none; }
+.vc-sprite { display: block; position: relative; width: 100%; height: 100%; overflow: hidden; image-rendering: auto; pointer-events: none; }
+/* The prepared atlas Image itself owns pixels. The existing registered span
+   keeps its92px cell and clip; the translated child exposes exactly one cell. */
+.vc-sprite > .vc-texture { position: absolute; left: 0; top: 0; display: block; max-width: none; max-height: none; image-rendering: inherit; pointer-events: none; user-select: none; }
 .vc-companion[data-state="held"] .vc-actor { cursor: grabbing; }
 .vc-effect { position: absolute; left: 65%; top: 0; color: var(--teaser); font-size: 18px; font-weight: 600; transform: translateY(var(--vc-effect, 0px)); pointer-events: none; white-space: nowrap; }
 .vc-companion[data-hide-phase]:not([data-detail-guest]) .vc-actor { pointer-events: none; }

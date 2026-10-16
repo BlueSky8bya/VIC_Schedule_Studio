@@ -4,11 +4,11 @@ Updated: 2026-10-17
 
 This file keeps unresolved evidence gaps out of startup history. A prior PASS applies to its tested revision and scope only. Recheck before closing; do not infer current production state from old notes.
 
-## COMPANION-TEXTURE — 첫 CSS packet paint 간격
+## COMPANION-BROADCAST — 실제 OBS/SOOP 장비
 
-[성향 학습 검증](COMPANION_HABITS-20261017.md)의 추가 공유 회귀에서 편집실 음식 관찰 screenshot이 그림자만 기록됐다(24개 중23 PASS/1 FAIL). 직전 deliberation 검사에서도 같은 증상이 보존되어 있다.075의 sprite/paint/CSS 경로 변경은 없다. Image decode 뒤 CSS URI를 교체하는 경로에서 별도 CSS 요청과 첫 paint 사이의 간격을 관찰했다. route interception은 HTTP cache를 끄므로 실제 운영 빈도/재현은 별도 확인이 필요하다. PASS 재실행으로 원 실패를 지우지 않는다.
+[PLAN-076 검증](COMPANION_BROADCAST_PIPELINE-20261017.md)은 실제 decoded 이미지의 단일 표시 경로, 중복 표시 쓰기/저장소 조회 제거와 native fixture를 확인한다. 실제 토리님 방송 PC의 GPU·OBS 합성/인코딩·SOOP 송출을 함께 측정하지 않았다. 장면/캡처 방식·브라우저 하드웨어 가속·GPU 여유에 따라 결과가 달라지므로 무끊김을 보장하지 않는다.
 
-후속은 이미 decode한 실제 이미지의 단일 표시 경로 등으로 전환 간격을 없애되,92px 등록/clip·소파 몸체 경계·프레임 예산·최대3 decoded 이미지·OFF 요청0을 보존하는 범위다. 임의 대기나 screenshot 조건 완화는 수정 증거가 아니다. 이번 느린 성향 학습 기능과 별도이며 실제 OBS/일반 운영에서 해결됐다고 주장하지 않는다.
+이전 COMPANION-TEXTURE 간격은076 후보 빌드 `-S59OcmbVUz2SMdS-qZsY`에서 수정·검증했다. cold 지연 packet 중 기존 몸체 유지/동일 decoded DOM/요청1회, 원래20 warm-pixel 기준을 유지한 음식 관찰에서 시청자395·편집실331픽셀을 확인했다. [075 원 실패](COMPANION_HABITS-20261017.md)와 `.scratch-pw/companion-075-inspect-failure.{json,png}`는 보존한다. 이 fixture 결과는 실제 방송 장비와 운영 빈도의 증거가 아니다.
 
 ## TEASER-PREMIERE — authorized rollout and remaining QA
 

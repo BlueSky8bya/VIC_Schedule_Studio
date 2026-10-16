@@ -12,7 +12,7 @@ import { openCompanionHome } from "./helpers/companion-home";
 type Surface = "viewer" | "studio";
 type Point = { x: number; y: number };
 type Frame = Point & { at: number; state: string; attention: string; intent: string; facing: string; foods: string[]; mood: string; pose: string; source: string; spriteTransform: string; spriteClip: string };
-type TextureSnapshot = { at: number; attention: string; state: string; pose: string; source: string; pet: { x: number; y: number; width: number; height: number }; chain: { name: string; display: string; visibility: string; opacity: string; transform: string; clip: string; overflow: string; background: string; position: string; size: string; box: { x: number; y: number; width: number; height: number } }[]; resources: { name: string; responseEnd: number; transferSize: number; decodedBodySize: number }[] };
+type TextureSnapshot = { at: number; attention: string; state: string; pose: string; source: string; pet: { x: number; y: number; width: number; height: number }; chain: { name: string; display: string; visibility: string; opacity: string; transform: string; clip: string; overflow: string; texture: string; position: string; size: string; box: { x: number; y: number; width: number; height: number } }[]; resources: { name: string; responseEnd: number; transferSize: number; decodedBodySize: number }[] };
 type TextureCapture = { label: string; before: TextureSnapshot; after: TextureSnapshot; warmPixels: number; image: string };
 type Witness = { frames: Frame[]; raf: number; stopped: boolean; captures: TextureCapture[] };
 type ObservationWindow = Window & { companionDeliberationWitness?: Witness };
@@ -153,7 +153,8 @@ async function observe(page: Page) {
     const sample = () => {
       if (witness.stopped) return;
       const rect = node.getBoundingClientRect();
-      witness.frames.push({ at: performance.now(), x: rect.left + rect.width / 2, y: rect.bottom, state: node.dataset.state ?? "", attention: node.dataset.attention ?? "", intent: node.dataset.intent ?? "", facing: node.dataset.facing ?? "", mood: node.dataset.mood ?? "", foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => food.dataset.food!), pose: node.dataset.pose ?? "", source: sprite.style.backgroundImage, spriteTransform: sprite.style.transform, spriteClip: sprite.style.clipPath });
+      const texture = sprite.querySelector<HTMLImageElement>(".vc-texture");
+      witness.frames.push({ at: performance.now(), x: rect.left + rect.width / 2, y: rect.bottom, state: node.dataset.state ?? "", attention: node.dataset.attention ?? "", intent: node.dataset.intent ?? "", facing: node.dataset.facing ?? "", mood: node.dataset.mood ?? "", foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => food.dataset.food!), pose: node.dataset.pose ?? "", source: texture?.currentSrc || texture?.src || "", spriteTransform: sprite.style.transform, spriteClip: sprite.style.clipPath });
       if (witness.frames.length < 1800) witness.raf = requestAnimationFrame(sample);
     };
     (window as ObservationWindow).companionDeliberationWitness = witness; witness.raf = requestAnimationFrame(sample);
@@ -164,15 +165,15 @@ function entries(samples: Frame[], attention: string) { return samples.filter((s
 
 async function textureSnapshot(page: Page): Promise<TextureSnapshot> {
   return page.evaluate(() => {
-    const node = document.querySelector<HTMLElement>(".vc-companion")!, sprite = node.querySelector<HTMLElement>(".vc-sprite")!, pet = node.getBoundingClientRect();
+    const node = document.querySelector<HTMLElement>(".vc-companion")!, sprite = node.querySelector<HTMLElement>(".vc-sprite")!, texture = sprite.querySelector<HTMLImageElement>(".vc-texture"), pet = node.getBoundingClientRect();
     const chain: TextureSnapshot["chain"] = [];
     // Heavy computed-style/layout diagnostics occur at the screenshot boundary
     // only. They never preload a source or run in the production renderer.
-    for (let layer: HTMLElement | null = sprite; layer; layer = layer.parentElement) {
+    for (let layer: HTMLElement | null = texture ?? sprite; layer; layer = layer.parentElement) {
       const css = getComputedStyle(layer), box = layer.getBoundingClientRect();
-      chain.push({ name: `${layer.tagName}.${layer.className}`, display: css.display, visibility: css.visibility, opacity: css.opacity, transform: css.transform, clip: css.clipPath, overflow: css.overflow, background: css.backgroundImage, position: css.backgroundPosition, size: css.backgroundSize, box: { x: box.x, y: box.y, width: box.width, height: box.height } });
+      chain.push({ name: `${layer.tagName}.${layer.className}`, display: css.display, visibility: css.visibility, opacity: css.opacity, transform: css.transform, clip: css.clipPath, overflow: css.overflow, texture: layer instanceof HTMLImageElement ? layer.currentSrc || layer.src : "", position: css.objectPosition, size: layer instanceof HTMLImageElement ? `${layer.naturalWidth}x${layer.naturalHeight}` : "", box: { x: box.x, y: box.y, width: box.width, height: box.height } });
     }
-    const source = sprite.style.backgroundImage, resources = (performance.getEntriesByType("resource") as PerformanceResourceTiming[]).filter(entry => source.includes(entry.name) || source.includes(new URL(entry.name).pathname)).map(entry => ({ name: entry.name, responseEnd: entry.responseEnd, transferSize: entry.transferSize, decodedBodySize: entry.decodedBodySize }));
+    const source = texture?.currentSrc || texture?.src || "", resources = (performance.getEntriesByType("resource") as PerformanceResourceTiming[]).filter(entry => source.includes(entry.name) || source.includes(new URL(entry.name).pathname)).map(entry => ({ name: entry.name, responseEnd: entry.responseEnd, transferSize: entry.transferSize, decodedBodySize: entry.decodedBodySize }));
     return { at: performance.now(), attention: node.dataset.attention ?? "", state: node.dataset.state ?? "", pose: node.dataset.pose ?? "", source, pet: { x: pet.x, y: pet.y, width: pet.width, height: pet.height }, chain, resources };
   });
 }
