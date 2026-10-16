@@ -1,6 +1,6 @@
 # 음식 낙하·종/성향/걸음·덤벙 놀이·야간 가독성
 
-2026-10-16 KST. [PLAN-068](../plans/PLAN-20261016-068-companion-character-and-play.md). 구현·로컬 검증 완료, 실제 배포/운영 확인 대기. 보호된 기존 미술26줄과 보류 자산은 보존하며 DB/권한/공개 DTO/KST/1840 poster/모바일 빅타민 제외는 변경하지 않는다.
+2026-10-16 KST. [PLAN-068](../plans/PLAN-20261016-068-companion-character-and-play.md). 구현·검증·운영 배포 확인 완료. 제품 `ceaefc3a28757b29b9f354ddd91d08591c1e00ca`. 보호된 기존 미술26줄과 보류 자산은 보존하며 DB/권한/공개 DTO/KST/1840 poster/모바일 빅타민 제외는 변경하지 않는다.
 
 ## 원인과 구현
 
@@ -20,7 +20,7 @@
 
 기존 생산 빌드의 야간 baseline은 인기도/미정2.63:1, 방제1.05:1을 재현했다. 새 unit은27개 종/성향/걸음 조합의 결정성·로컬 지원·설정 gate, 실제 식사/수동 발판 우선, bounded 사고/cooldown, finite pose/click 판별과 card recovery lifetime을 검사한다. 첫 전체 unit 실행 중 패킹 recipe가 아직 갱신 중이어서 provenance assertion1개 실패가 있었으며 source 동결 뒤 전부 다시 실행한다. 실제 코드 결함과 setup/동시 작성 문제는 섞어 PASS 처리하지 않는다.
 
-실제 운영/OBS 송출·GPU/encoder 품질·학습 모델/동물 인격의 검증이 아니다. 새로운 외부 모델·네트워크·DB writes는 없고 모든 상품 상호작용은 동일 local brain/renderer로 제한한다. 최종 type/lint/unit/build·실제 렌더/운영 결과는 아래에 추가한다.
+실제 OBS 송출·GPU/encoder 품질·학습 모델/동물 인격의 검증이 아니다. 새로운 외부 모델·네트워크·DB writes는 없고 모든 상품 상호작용은 동일 local brain/renderer로 제한한다. 최종 type/lint/unit/build·실제 렌더/운영 결과는 아래에 남긴다.
 
 첫 생산 fixture37개 추가 전36개는33통과/3실패였다(`vv2XG-xG6TAwpKYln1N6N`). 음식 viewer setup은160ms Ctrl+wheel이 실제220ms zoom cooldown에 걸려 목표200%에 도달하지 않은 준비 오류였고, settings는 상시 마운트된 숨김 Studio editor를 열린 창으로 센 oracle 오류였다. 실제 사용자에게도 영향을 주는 나머지 경계는 착지 중 짧은 click이 `supportedNow()`를 만족하지 못해 예전 affection으로 빠지는 것이었다. 이제 즉각 만화 반응을 시작하며 같은 유한 action 안에서 첫 실제 lower support까지650ms 중력 낙하를 마치고 연결한다. 이 비행은 집 주민/overlay/handoff/스크롤 carry/pause에도 명시해 공중에서 소파로 snap하지 않게 한다. 독립 검토의 카드 복귀 추종/중단과 이 비행 경계를 보완했다. Setup은 실제 허용 zoom과 실제 안정된 좌석을 준비하고, 별도 native midair click 회귀를 추가한다. 낙하/정렬/가시성 임계값을 완화하지 않는다. 첫 실패 raw/PNG는 보존한다.
 
@@ -31,3 +31,11 @@
 야간 익명/로그인/미리보기/Studio/agenda와 밝은 viewer6개 통과. 검사한 야간 텍스트 대비 최저5.3818:1(Studio9.0039:1)로4.5:1 기준을 만족했다. 기존 집 앞면6·소파3·프레임4·모바일 헤더4·모바일 제외8도 같은 빌드에서 통과했다. 개인정보/실DB 시험 생성·쓰기는0이며 정확한 공개 preview read만 synthetic 응답했다. 문서 unit43개 통과. Harness는 기존 rule inventory2건 실패를 그대로 기록하며 PASS로 합치지 않는다.
 
 원래 전체 보고서는 `.scratch-pw/companion-068-final-report.json`, 최종 빌드 첫37개는 `companion-068-final-v2-report.json`, 관련6개는 `companion-068-interactions-report.json`, 최종 viewer1개는 `companion-068-viewer-seat-final-report.json`, 음식2개는 `companion-068-food-final-report.json`이다. 소스13파일의 정규화 SHA/build는 `companion-068-final-source.json`이다. 각 prefix의 raw/PNG/실패 context를 보존한다. 세 독립 담당의 코드 검토 지적(카드 finite 원복/중단·비행 carry/집 주민 경계)을 통합한 뒤 추가 차단 이슈0이며 미술 전문 검수나 실제 OBS 송출 합격으로 부르지 않는다.
+
+## 운영 확인과 상태 복원
+
+제품 commit `ceaefc3a28757b29b9f354ddd91d08591c1e00ca`의 [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/Hbf8j77odruDSsnuwjxfNQu22Xcd)가 success이며 운영 `/api/soop-live`의 build도 같은 전체 SHA였다(`.scratch-pw/companion-068-production-deploy.json`). 운영 새 packet12개 모두 HTTP200이며 로컬 파일 SHA와 일치했다(`companion-068-operating-assets.json`). 최종 소스13파일의 commit 일치는 `companion-068-commit-source-proof.json`, 같은 제품 빌드에서37개 고유 시나리오의 실제 통과 합집합/미해결0은 `companion-068-final-coverage.json`에 기록했다. 앞선 실패를 지우거나 단일 무실패 실행으로 합치지 않았다.
+
+실제 로그인된 개발자 편집실의 build 배지 `ceaefc3`와 새 native 짧은 클릭 반응 `bonk-tears`/checking 및 울먹이는 그림을 확인했다. 해당 편집실의 실제 미리보기 메뉴로 시청자 화면을 연 뒤 설정에서 야간 모드를 골라 필터와 실제 생방송 방제를 확인했다. 필터 제목은 `rgb(255,216,115)`, 인기도/미정은 `rgb(201,197,188)`, 실제 보이는 생방송 caption은 `rgb(236,233,226)`였고 BCR은357.778×34.653px였다. 시청자 미리보기에서도 native 클릭의 `bonk-tears` 반응과 새 그림을 직접 확인했다. 운영 screenshot은 `.scratch-pw/companion-068-operating-studio-tears.jpg`, `companion-068-operating-viewer-dark-play.jpg`이다. 운영에서 특정 packet27을 기다린 단일 wait는 timeout이었으므로 연속 packet27→23/236프레임 증거는 위 local fixture 검사로만 한정한다.
+
+실제 일정 생성/편집·음식 배치·역할 변경 없이 확인했다. 확인 뒤 화면 모드를 원래 밝게, 설정 탭을 원래 글자로, 태그 필터 접힘/계절 펼침/빅타민 집 펼침을 원래 false/true/true로 돌리고 실제 편집실 돌아가기 버튼으로 preview 모드도 종료했다. 최종 DOM은 theme 속성 없음·viewer fullscreen0·열린 dialog0이었다. master/종/성향/걸음 설정은 변경하지 않았다. 운영 음식 낙하/OBS 녹화/개인정보 RLS 감사까지 실행한 것으로 주장하지 않는다. 음식의 실제 중간 잡기·양쪽 낙하와 제자리 보관은 쓰기 차단된 production-build fixture 근거다.
