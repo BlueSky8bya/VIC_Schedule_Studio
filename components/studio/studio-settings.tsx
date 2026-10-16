@@ -26,6 +26,7 @@ import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
 import { Clock3 } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { logActivity } from "@/lib/activity/client";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
 export type DevWorldForce = NonNullable<WorldCtx["force"]>;
@@ -216,13 +217,14 @@ function RowLabel({ icon, tone, children }: { icon: ReactNode; tone: "water" | "
   );
 }
 
-function Switch({ on, onToggle, label, dataAct }: { on: boolean; onToggle: () => void; label: string; dataAct: string }) {
+function Switch({ on, onToggle, label, dataAct, dataActOpt }: { on: boolean; onToggle: () => void; label: string; dataAct: string; dataActOpt?: string }) {
   return (
     <button
       aria-checked={on}
       aria-label={label}
       className={`rhh-switch ${on ? "on" : ""}`}
       data-act={dataAct}
+      data-act-opt={dataActOpt}
       onClick={onToggle}
       role="switch"
       type="button"
@@ -240,6 +242,11 @@ const companionTabs = [
 ] as const;
 type CompanionTab = typeof companionTabs[number]["key"];
 type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "ambientPrank" | "panelPrank" | "drag" | "petting" | "feeding";
+const companionToggleActions: Record<CompanionToggle, string> = {
+  roam: "companion-roam", jump: "companion-jump", sleep: "companion-sleep",
+  heartPrank: "companion-heart-prank", ambientPrank: "companion-hide", panelPrank: "companion-panel-prank",
+  drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled"
+};
 
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
 function CompanionSettings({ preferences, onChange }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void }) {
@@ -249,7 +256,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
     <div className="role-help-haptics" key={key}>
       <RowLabel icon={icon} tone="leaf">{label}</RowLabel>
-      <Switch dataAct={`빅타민 ${label} 켜기/끄기`} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
+      <Switch dataAct={companionToggleActions[key]} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
     </div>
   );
   const onKey = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -259,6 +266,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
     event.preventDefault();
     event.stopPropagation();
     setTab(companionTabs[next].key);
+    logActivity("ui.click", { target: `settings-companion-tab#${companionTabs[next].key}` });
     nav.current?.querySelector<HTMLButtonElement>(`[data-companion-tab="${companionTabs[next].key}"]`)?.focus();
     playSfx("tab");
   };
@@ -266,7 +274,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
     <div className="rhh-group-card">
       <div className="role-help-haptics">
         <RowLabel icon={<Sparkles size={15} />} tone="leaf">AI 빅타민</RowLabel>
-        <Switch dataAct="AI 빅타민 켜기/끄기" label="AI 빅타민 켜기/끄기" on={preferences.enabled} onToggle={() => onChange({ enabled: !preferences.enabled })} />
+        <Switch dataAct="companion-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="AI 빅타민 켜기/끄기" on={preferences.enabled} onToggle={() => onChange({ enabled: !preferences.enabled })} />
       </div>
     </div>
     <p className="rhh-group-foot">시청자 달력에서 함께 놀아요. 꺼도 아래 취향은 기억해요.</p>
@@ -281,7 +289,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         {row("sleep", "낮잠", <EyeOff size={15} />)}
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Gauge size={15} />} tone="leaf">걸음</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 걸음" dataAct="빅타민 걸음" onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
+          <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
         </div>
       </div>
     </div>
@@ -306,11 +314,11 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
       <div className="rhh-group-card">
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">동물 모드</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 동물 모드" dataAct="빅타민 동물 모드" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
+          <SettingsSegment ariaLabel="빅타민 동물 모드" dataAct="companion-animal" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
         </div>
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">성격</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 성격" dataAct="빅타민 성격" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
+          <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
         </div>
       </div>
       <p className="rhh-group-foot">동물 모드는 하나만 골라요. 그 습성 위에 성격이 더해져 좋아하는 놀이와 쉬는 빈도가 달라져요.</p>
@@ -469,6 +477,7 @@ export function StudioSettingsList({
     const next = visible[(i + (e.key === "ArrowDown" ? 1 : -1) + visible.length) % visible.length];
     playSfx("tab");
     setActiveTab(next.key);
+    if (next.key === "companion") logActivity("ui.click", { target: "settings-tab#companion" });
     nav?.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`)?.focus();
   };
   return (

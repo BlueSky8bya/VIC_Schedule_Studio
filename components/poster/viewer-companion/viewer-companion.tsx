@@ -3,6 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Home } from "lucide-react";
+import { logActivity } from "@/lib/activity/client";
 import { advanceBrain, commitAction, createBrain, getAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, type CompanionGeometrySubscription } from "@/lib/ui/viewer-companion/geometry";
@@ -188,7 +189,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let worldSeeded = saved?.seeded ?? false;
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
     let pause = true, started = false, nextDecision = 0, needsLanding = false, afterPetLanding = false, restAfterLanding = false;
-    let action: CompanionAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, consumePlacementClick = false;
+    let action: CompanionAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, keyboardMoved = false, consumePlacementClick = false;
     let placementPointer: number | null = null;
     let pointer: { x: number; y: number } | undefined, heartResult: "added" | "removed" | "blocked" | "missing" | null = null;
     let clickGuard: ReturnType<typeof setTimeout> | undefined;
@@ -328,7 +329,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
     let geometryReady = false, homeOccluded = false;
     let overlayActive = false, overlayPerch: CompanionOverlayPerch | undefined;
-    let overlayDrag: { id: number; dx: number; dy: number; worldOrigin?: { x: number; y: number }; guest?: { x: number; y: number; origin: CompanionOverlayPerch; dragged: boolean } } | undefined, overlayPlacing = false;
+    let overlayDrag: { id: number; dx: number; dy: number; moved?: boolean; worldOrigin?: { x: number; y: number }; guest?: { x: number; y: number; origin: CompanionOverlayPerch; dragged: boolean } } | undefined, overlayPlacing = false;
     const isDetailGuest = () => overlayActive && Boolean(hiding?.sheet && hiding.ready || extractedFrom?.isConnected && extractedFrom === detailSheet && extractedFrom.dataset.companionDetailEvent === extractedEvent);
     const guestBusy = (now: number) => Boolean(overlayDrag?.guest || guestKeyboardHeld || now < petUntil || now < guestUntil || hiding?.ready && hideSeek.sample(presentationNow).active);
     let returning: ReturnType<typeof createCompanionOverlayReturn> | undefined;
@@ -632,6 +633,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!guest) { pendingMonth = false; awaitingAtX = false; afterPetLanding = !supportedNow(); restAfterLanding = false; clearAction(); }
       petUntil = performance.now() + (reduced ? 650 : 1500);
       brain.current = recordCompanionEvent(brain.current, "petted");
+      // One acknowledged gesture/reward, never a pose or pointer sample.
+      logActivity("ui.click", { target: "companion-pet" });
       data("mood", "happy");
       // One deliberate reward, never pointermove audio. Both feedback buses
       // retain the app's master/category/volume/hidden-tab preferences.
@@ -710,6 +713,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         pendingMonth = false;
         const home = platforms.find(p => p.id === "companion-home");
         if (!home) { setAnnouncement("쿠션이 보이도록 집을 펼쳐 주세요."); return; }
+        logActivity("ui.click", { target: "companion-home-call" });
         interruptReturn();
         stopHover(); awaitingAtX = false; verticalLanding = false;
         clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = true;
@@ -1093,13 +1097,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       releaseOverlayDrag(); guestKeyboardHeld = false; guestKeyboardOrigin = undefined; guestUntil = animate ? performance.now() + 160 : 0; petUntil = 0; forceNeutralPose = !animate; stopHover();
       if (animate) wakeGuest();
     };
-    const dropGuest = (point: { x: number; y: number }) => {
+    const dropGuest = (point: { x: number; y: number }, moved = true) => {
       if (!isDetailGuest() || !overlayPerch) return;
+      const extracting = Boolean(hiding?.ready);
       guestKeyboardHeld = false; guestKeyboardOrigin = undefined; guestUntil = performance.now() + 160; petUntil = 0; stopHover();
       const sheet = hiding?.sheet ?? extractedFrom;
       const rect = sheet?.isConnected ? sheet.getBoundingClientRect() : null;
       const inside = rect && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
-      if (inside && hiding?.ready) { updateOverlayPerch(); paint(9, 0, "watch"); wakeGuest(); return; }
+      if (inside && hiding?.ready) { if (moved) logActivity("ui.click", { target: "companion-drag" }); updateOverlayPerch(); paint(9, 0, "watch"); wakeGuest(); return; }
       // A user extraction remains a display-only guest until this window
       // closes. Only the next real world geometry delivery consumes its one
       // pending drop; no planner, vote or food action runs in the dialog.
@@ -1110,6 +1115,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       data("detailGuest", ""); data("hidePerch", "outside"); button.tabIndex = 0;
       overlayPerch = placeCompanionOverlayPerch(shown, size, { width: innerWidth, height: innerHeight }, overlayWindows().map(node => node.getBoundingClientRect()));
       pendingDetailDrop = { x: overlayPerch.x, y: overlayPerch.y };
+      if (moved) {
+        if (extracting) logActivity("ui.click", { target: "companion-extract" });
+        else logActivity("ui.click", { target: "companion-drag" });
+      }
       paint(9, 0, "watch"); wakeGuest();
     };
     const overlayResize = new ResizeObserver(queueOverlayPerch);
@@ -1435,6 +1444,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         }
         const previous = overlayPerch, scaled = size * overlayPerch.scale;
         overlayPerch = { ...overlayPerch, x: clamp(event.clientX - overlayDrag.dx, scaled / 2 + 4, innerWidth - scaled / 2 - 4), y: clamp(event.clientY - overlayDrag.dy, scaled + 4, innerHeight - 4) };
+        if (overlayPerch.x !== previous.x || overlayPerch.y !== previous.y) overlayDrag.moved = true;
         if (overlayDrag.guest && !reduced && gfxMode() !== "off") heldInertia.push((overlayPerch.x - previous.x) / previous.scale, (overlayPerch.y - previous.y) / previous.scale, performance.now(), { x: grip.x / size, y: grip.y / size });
         if (overlayDrag.guest) { paint(8, 0, "held"); wakeGuest(); } else paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); return;
       }
@@ -1465,9 +1475,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         return;
       }
       if (overlayDrag?.id === event.pointerId) {
+        const moved = overlayDrag.moved && event.type !== "pointercancel";
         const point = event.type === "pointercancel" ? overlayDrag.worldOrigin : overlayPerch;
         releaseOverlayDrag(); overlayPerch = undefined;
         if (point) { x = point.x; y = point.y; clearAction(); settle({ x, y }); }
+        if (moved && point) logActivity("ui.click", { target: "companion-drag" });
         lastTick = lastNeeds = lastPaint = performance.now(); schedule(); return;
       }
       if (!pressed || pressed.id !== event.pointerId) return;
@@ -1479,13 +1491,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.type === "pointercancel" || held.cancelled) { resetInertia(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); }
       el.removeAttribute("data-grab-ready");
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
-      if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); }
+      if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); if (!held.cancelled && event.type !== "pointercancel") logActivity("ui.click", { target: "companion-drag" }); }
       else if (!held.cancelled && !held.grabbed && event.type !== "pointercancel") {
         const reaction = preferences.petting ? companionTapReaction({ elapsed: performance.now() - held.at, moved: Math.hypot(event.clientX - held.x, event.clientY - held.y), cancelled: held.cancelled, recentMishap: performance.now() < mishapUntil }) : null;
         if (reaction) {
           petUntil = 0; const now = performance.now();
           launch({ kind: "play", play: reaction, target: { x, y, platformId: support }, duration: reduced ? 900 : 3200 }, now);
           data("play", reaction); paint(25, 0, "play");
+          logActivity("ui.click", { target: "companion-bonk" });
           setAnnouncement(reaction === "bonk-sad" ? "빅타민이 눈치를 보며 잠깐 시무룩해져요." : "깜짝 놀란 빅타민의 눈가가 잠깐 촉촉해져요. 쓰다듬어 달래 줄 수 있어요.");
         } else affection();
       }
@@ -1507,7 +1520,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (event.key === "Enter") affection();
         else if (event.key === "Escape") { cancelGuestInput(true); paint(9, 0, "watch"); }
         else if (event.key === " ") {
-          if (guestKeyboardHeld && overlayPerch) dropGuest({ x: overlayPerch.x, y: overlayPerch.y - size * overlayPerch.scale / 2 });
+          if (guestKeyboardHeld && overlayPerch) dropGuest({ x: overlayPerch.x, y: overlayPerch.y - size * overlayPerch.scale / 2 }, Boolean(guestKeyboardOrigin && Math.hypot(overlayPerch.x - guestKeyboardOrigin.x, overlayPerch.y - guestKeyboardOrigin.y) > 6));
           else if (overlayPerch) { const shown = displayedPoint(); perchAnimation?.cancel(); overlayPerch = { ...shown, overlap: overlayPerch.overlap }; guestKeyboardOrigin = { ...overlayPerch }; guestKeyboardHeld = true; grip = { x: size / 2, y: size / 2 }; style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`); paint(8, 0, "held"); }
         } else if (guestKeyboardHeld && overlayPerch) {
           const scaled = size * overlayPerch.scale;
@@ -1527,10 +1540,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.repeat && (event.key === " " || event.key === "Enter")) return;
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
-      else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) control.current?.rest();
-      else if (event.key === " " && preferences.drag) { event.preventDefault(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) settle({ x, y }); }
+      else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
+      else if (event.key === " " && preferences.drag) { event.preventDefault(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) { settle({ x, y }); if (keyboardMoved) logActivity("ui.click", { target: "companion-drag" }); } keyboardMoved = false; }
       else if (event.key === "Escape") { event.preventDefault(); pendingMonth = false; keyboardHeld = false; placing = false; delete el.dataset.placing; settle({ x, y }); }
-      else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); }
+      else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
     };
     const keyboardModality = () => { el.removeAttribute("data-pointer-focus"); };
@@ -1545,6 +1558,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         event.preventDefault(); event.stopImmediatePropagation();
         consumePlacementClick = true; placementPointer = event.pointerId; clearTimeout(clickGuard);
         overlayPerch = placeCompanionOverlayPerch({ x: event.clientX, y: event.clientY, scale: overlayPerch?.scale }, size, { width: innerWidth, height: innerHeight }, overlayWindows().map(node => node.getBoundingClientRect()));
+        logActivity("ui.click", { target: "companion-drag" });
         perchAnimation?.cancel(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); return;
       }
       if (pause || overlayActive || !placing || el.contains(event.target as Node)) return;
@@ -1553,6 +1567,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // consume this placement's click before a real card/heart can receive it.
       consumePlacementClick = true; placementPointer = event.pointerId; clearTimeout(clickGuard);
       x = clamp(event.clientX, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY, size + 8, innerHeight - 12); settle({ x, y });
+      logActivity("ui.click", { target: "companion-drag" });
     };
     const placementReleased = (event: PointerEvent) => {
       if (placementPointer !== event.pointerId) return;
@@ -1871,6 +1886,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         hiding.sheet = detailSheet; hiding.ready = false; hideHint(false); clearTimeout(hideWakeTimer); stopHover(); perchAnimation?.cancel(); el.hidden = true; sync(); return;
       }
       if (hideSeek.find(hiding.target.eventId, presentationNow)) {
+        logActivity("ui.click", { target: "companion-find" });
         hiding.sheet = detailSheet; hiding.ready = true; hideHint(false); clearAction(); stopHover();
         data("hidePhase", "found"); data("detailGuest", ""); data("presence", "active"); button.tabIndex = 0; ownGuest(detailSheet); el.removeAttribute("data-dreaming");
         setAnnouncement("찾았다! 빅타민이 일정 안에서 반겨요.");
@@ -1945,15 +1961,15 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<><div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
-    <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); control.current?.place(); }}><span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span></span></span></span><span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span></button>
+    <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" data-activity-manual="" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); control.current?.place(); }}><span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span></span></span></span><span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span></button>
     <span className="vc-effect" ref={effect} aria-hidden="true" />
     <span className="vc-affection-hearts" aria-hidden="true"><i>♥</i><i>♥</i><i>♥</i></span>
     <span className="vc-petting-hand" ref={pettingHand} aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M10 26c-3-3-5-6-6-9-1-2 1-4 3-2l3 3-1-9c0-3 3-4 4-1l1 6V6c0-3 4-3 4 0v8l1-6c1-3 4-2 4 1l-1 8 2-3c2-2 4 0 2 3l-4 7c-1 2-3 4-6 4h-3Z"/><path className="vc-hand-fold" d="M11 21c2-2 5-2 7 0"/><path className="vc-hand-cuff" d="M10 27h11v4H10Z"/></svg></span>
     <span className="sr-only" id="vc-help">빅타민의 몸 위에서 마우스를 좌우로 움직여 쓰다듬기. 짧게 누르면 톡 치기. 끌어서 옮기기. 두 번 누른 뒤 놓을 곳 선택. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
     <span className="sr-only" role="status">{announcement}</span>
   </div><div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
-    {!suspended && !blocked ? homeVisible && homeHost ? createPortal(house, homeHost) : <div className="vc-compact-home" ref={compactHome} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" data-agenda={agenda ? "" : undefined} inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeHome(); } }}>
-      {homeExpanded ? house : <button ref={homeLauncher} data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label="빅타민 집 열기" aria-expanded={false} onClick={() => setHomeExpanded(true)}><Home size={16} aria-hidden="true" />빅타민 집</button>}
+    {!suspended && !blocked ? homeVisible && homeHost ? createPortal(house, homeHost) : <div className="vc-compact-home" ref={compactHome} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" data-agenda={agenda ? "" : undefined} inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>
+      {homeExpanded ? house : <button ref={homeLauncher} data-act="companion-home-open" data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label="빅타민 집 열기" aria-expanded={false} onClick={() => setHomeExpanded(true)}><Home size={16} aria-hidden="true" />빅타민 집</button>}
     </div> : null}
   </>, document.body);
 }

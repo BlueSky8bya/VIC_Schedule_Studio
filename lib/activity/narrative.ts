@@ -386,6 +386,11 @@ export function buildGist(items: NarrativeItem[]): string {
   const reordered = rows.filter((i) => i.kind === "event.reorder").length;
   const gateSubmit = rows.filter((i) => i.kind === "ui.click" && i.target === "teaser-gate-submit").length;
   const gatePass = rows.filter((i) => i.kind === "gate.pass").length;
+  // Local companion gestures/settings are real use even though they do not
+  // write schedules. Do not summarize a play session as passive browsing.
+  const companionUse = rows.filter(i => i.kind === "ui.click" && i.target?.startsWith("companion-"));
+  const companionSettings = companionUse.filter(i => describeTarget(i.kind, i.target!).area === "설정").length;
+  const companionActions = companionUse.filter(i => describeTarget(i.kind, i.target!).area === "빅타민").length;
   let idle = 0;
   for (let i = 1; i < rows.length; i++) {
     const gap = rows[i].t - rows[i - 1].t;
@@ -397,6 +402,8 @@ export function buildGist(items: NarrativeItem[]): string {
   if (deleted) bits.push(`일정 ${deleted}개 지움`);
   if (moved) bits.push(`일정 ${moved}개 다른 날로 옮김`);
   if (reordered) bits.push(`같은 날 순서 ${reordered}번 바꿈`);
+  if (companionSettings) bits.push(`빅타민 설정 ${companionSettings}번 사용`);
+  if (companionActions) bits.push(`빅타민과 ${companionActions}번 상호작용`);
   if (gatePass || gateSubmit) {
     bits.push(`최초공개 비밀번호 확인 ${gatePass}번${gateSubmit > gatePass ? `(${gateSubmit - gatePass}번 틀림)` : ""}`);
   }

@@ -16,6 +16,7 @@ type Props = Omit<HTMLAttributes<HTMLElement>, "title" | "children"> & {
   collapsible?: boolean;
   headingClassName?: string;
   headingData?: Record<`data-${string}`, string>;
+  headingAction?: string;
   actions?: ReactNode;
   children: ReactNode;
 };
@@ -23,7 +24,7 @@ type Props = Omit<HTMLAttributes<HTMLElement>, "title" | "children"> & {
 /** One disclosure across viewer, studio and previews. Device storage contains
  * only three booleans.
  * Mounted hidden bodies retain filters, ambient state and real home anchors. */
-export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection({ title, sectionKey, as: Tag = "section", collapsible = false, headingClassName = "", headingData, actions, className = "", children, ...attributes }, forwardedRef) {
+export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection({ title, sectionKey, as: Tag = "section", collapsible = false, headingClassName = "", headingData, headingAction, actions, className = "", children, ...attributes }, forwardedRef) {
   const root = useRef<HTMLElement | null>(null);
   const before = useRef<Map<Element, DOMRect> | null>(null);
   const bodyId = useId();
@@ -51,7 +52,7 @@ export const PanelSection = forwardRef<HTMLElement, Props>(function PanelSection
   };
   return <Tag {...attributes} ref={element => { root.current = element; }} className={`panel-section ${className}`.trim()} aria-label={attributes["aria-label"] ?? title} data-panel-section={sectionKey} data-panel-collapsible={collapsible ? "" : undefined} data-panel-collapsed={expanded ? undefined : ""}>
     <header className="panel-section-heading">
-      <h2 className={`panel-section-title ${headingClassName}`.trim()}>{collapsible ? <button {...headingData} type="button" className="panel-section-toggle" aria-label={title} aria-expanded={expanded} aria-controls={bodyId} data-panel-section-toggle={sectionKey} onClick={toggle}><span>{title}</span><ChevronDown className="panel-section-chevron" size={13} aria-hidden="true" /></button> : <span>{title}</span>}</h2>
+      <h2 className={`panel-section-title ${headingClassName}`.trim()}>{collapsible ? <button {...headingData} data-act={headingAction} data-act-opt={headingAction ? expanded ? "close" : "open" : undefined} type="button" className="panel-section-toggle" aria-label={title} aria-expanded={expanded} aria-controls={bodyId} data-panel-section-toggle={sectionKey} onClick={toggle}><span>{title}</span><ChevronDown className="panel-section-chevron" size={13} aria-hidden="true" /></button> : <span>{title}</span>}</h2>
       {actions ? <div className="panel-section-actions">{actions}</div> : null}
     </header>
     <div id={bodyId} className="panel-section-body" hidden={!expanded} inert={expanded ? undefined : true} aria-hidden={expanded ? undefined : true}>{children}</div>

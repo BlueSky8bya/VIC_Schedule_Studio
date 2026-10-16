@@ -1,3 +1,5 @@
+import { logActivity } from "@/lib/activity/client";
+
 /** Companion-only heart souvenirs. Never click or mutate the human heart. */
 export const COMPANION_HEARTS_KEY = "vic.viewerCompanion.hearts";
 export const MAX_COMPANION_HEARTS = 128;
@@ -146,6 +148,7 @@ export function createCompanionHearts(root: HTMLElement): CompanionHearts {
     event.preventDefault();
     event.stopImmediatePropagation();
     remember(id, false);
+    logActivity("ui.click", { target: "companion-heart-clear" });
   };
   const observer = new MutationObserver(sync);
   const observation = { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-pressed", "data-eventid", "class", "data-companion-hearted"] };

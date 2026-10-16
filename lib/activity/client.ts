@@ -141,6 +141,12 @@ function wireClicks(): void {
       if (!start || typeof start.closest !== "function") return;
       const el = start.closest<HTMLElement>("[data-act], button, a, [role='button']");
       if (!el) return;
+      // Drag/hover controls report their completed gesture themselves. Their
+      // synthetic click must not add a second use (or count a cancelled drag).
+      if (el.hasAttribute("data-activity-manual")) return;
+      // Clearing a companion souvenir is consumed by its root capture handler,
+      // after this document capture. It reports success there, never a human vote.
+      if (el.matches(".event-heart[data-companion-hearted]:not([aria-pressed='true'])")) return;
       // 비활성 컨트롤은 '눌렀다'가 아니다.
       if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") return;
       const explicit = el.getAttribute("data-act");

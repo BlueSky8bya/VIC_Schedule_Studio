@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { logActivity } from "@/lib/activity/client";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
@@ -51,6 +52,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(blocked);
   const [message, setMessage] = useState("");
   const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly Platform[]>([]), layer = useRef<HTMLDivElement>(null);
+  const keyboardMoved = useRef(false);
   const nodes = useRef(new Map<string, HTMLButtonElement>()), presentations = useRef(new Map<string, CompanionFoodPresentation>());
   const attachments = useRef(new Map<string, FoodAttachment>()), visibility = useRef(new Map<string, boolean>());
   const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
@@ -80,7 +82,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (!drops.current.size) { cancelAnimationFrame(dropFrame.current); dropFrame.current = 0; }
     current.current = next; setFoods(next);
   }, [cancelJostle]);
-  const choose = useCallback((id: string | null) => { selection.current = id; setSelected(id); }, []);
+  const choose = useCallback((id: string | null) => { if (selection.current !== id) keyboardMoved.current = false; selection.current = id; setSelected(id); }, []);
   const paint = useCallback((food: Food, presentation?: CompanionFoodPresentation) => {
     const node = nodes.current.get(food.id); if (!node || discard.current?.id === food.id) return;
     const hidden = visibility.current.get(food.id) === false;
@@ -319,6 +321,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       discard.current = null; clearBin(bin); animation?.cancel();
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
       presentations.current.delete(id); update(current.current.filter(food => food.id !== id)); setMessage("밥을 휴지통에 버렸어요.");
+      logActivity("ui.click", { target: "companion-food-discard" });
     }, COMPANION_TRASH_DISCARD_MS);
     discard.current = { id, bin, node, animation, timer };
   }, [cancelDiscard, cancelHover, choose, release, resetNibble, update]);
@@ -351,6 +354,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // does not turn the dispenser tray into an intentional outside release.
     const release = moved || !attachments.current.get(id)?.home ? releasePoint : undefined;
     update(current.current.map(item => item.id === id ? settleFood(item, item, release) : item));
+    if (moved || selection.current === id && keyboardMoved.current) logActivity("ui.click", { target: "companion-food-move" });
     choose(null); setMessage("밥을 놓았어요. 배고프면 빅타민이 찾아와요.");
   }, [cancelHover, choose, resetNibble, settleFood, startHover, trashAt, update]);
   const interrupt = useCallback(() => {
@@ -371,6 +375,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (rect.width > 0 && rect.height > 0) attachments.current.set(food.id, { home: "tray", element: source, position: attachCompanionFood(food, { x: scrollX, y: scrollY }, { x: rect.left, y: rect.top }) });
       }
       cancelHover(); update([...current.current, food]); setMessage(`${names[kind]} 꺼냈어요. 잡아 끌어 옮겨 주세요.`);
+      logActivity("ui.click", { target: "companion-food-spawn" });
       if (attachments.current.get(food.id)?.home) followHome.current();
     },
     foods: () => current.current.filter(food => !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
@@ -419,7 +424,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         animation.onfinish = done; animation.oncancel = done;
       }
     },
-    clear() { interrupt(); if ((document.activeElement as HTMLElement | null)?.closest(".vc-food")) focusReturn.current(); update([]); choose(null); setMessage("남은 밥을 치웠어요."); },
+    clear() { const hadFood = current.current.length > 0; interrupt(); if ((document.activeElement as HTMLElement | null)?.closest(".vc-food")) focusReturn.current(); update([]); choose(null); setMessage("남은 밥을 치웠어요."); if (hadFood) logActivity("ui.click", { target: "companion-food-clear" }); },
   }));
   useLayoutEffect(() => {
     // Only a changed React transform prop can overwrite the imperative pose.
@@ -506,7 +511,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
 
   if (!enabled) return null;
   return <div className="vc-food-layer" ref={layer} hidden={blocked || paused} data-sfx="off">
-    {foods.map(food => <button type="button" className="vc-food" key={food.id} ref={node => { if (node) nodes.current.set(food.id, node); else nodes.current.delete(food.id); }} data-food={food.id} data-kind={food.kind} data-selected={selected === food.id ? "" : undefined}
+    {foods.map(food => <button type="button" className="vc-food" key={food.id} ref={node => { if (node) nodes.current.set(food.id, node); else nodes.current.delete(food.id); }} data-activity-manual="" data-food={food.id} data-kind={food.kind} data-selected={selected === food.id ? "" : undefined}
       style={{ left: 0, top: 0, transform: transform(food) }} aria-label={`빅타민 밥 ${names[food.kind]} · 잡아서 옮기기`} aria-describedby="vc-food-help"
       onPointerDown={event => {
         if (!operating.current || event.button !== 0 || dragging.current) return;
@@ -558,10 +563,15 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " ", "Escape", "Delete", "Backspace"].includes(event.key)) return;
         event.preventDefault(); event.stopPropagation();
         if (event.key === "Escape") { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); release(); const point = rebasePresentation(food.id); update(current.current.map(item => item.id === food.id ? settleFood(item, point ?? item) : item)); choose(null); return; }
-        if (["Delete", "Backspace"].includes(event.key)) { cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); focusReturn.current(); presentations.current.delete(food.id); update(current.current.filter(item => item.id !== food.id)); choose(null); setMessage("밥을 치웠어요."); return; }
+        if (["Delete", "Backspace"].includes(event.key)) { if (!current.current.some(item => item.id === food.id)) return; cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); focusReturn.current(); presentations.current.delete(food.id); update(current.current.filter(item => item.id !== food.id)); choose(null); setMessage("밥을 치웠어요."); logActivity("ui.click", { target: "companion-food-discard" }); return; }
         if (["Enter", " "].includes(event.key)) { if (!event.repeat) { if (selection.current === food.id) drop(food.id); else { rebasePresentation(food.id); choose(food.id); } } return; }
         rebasePresentation(food.id); attachments.current.delete(food.id); visibility.current.set(food.id, true); choose(food.id);
-        update(current.current.map(item => item.id === food.id ? { ...item, platformId: event.key === "ArrowLeft" || event.key === "ArrowRight" ? item.platformId === COMPANION_HOME_FLOOR_FOOD ? item.platformId : undefined : undefined, x: clamp(item.x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), 24, innerWidth - 24), y: clamp(item.y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), 48, innerHeight - 24) } : item));
+        update(current.current.map(item => {
+          if (item.id !== food.id) return item;
+          const point = { x: clamp(item.x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), 24, innerWidth - 24), y: clamp(item.y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), 48, innerHeight - 24) };
+          keyboardMoved.current ||= point.x !== item.x || point.y !== item.y;
+          return { ...item, ...point, platformId: event.key === "ArrowLeft" || event.key === "ArrowRight" ? item.platformId === COMPANION_HOME_FLOOR_FOOD ? item.platformId : undefined : undefined };
+        }));
       }}><span aria-hidden="true"><CompanionFruit kind={food.kind} /></span></button>)}
     <span className="sr-only" id="vc-food-help">밥을 잡아 끌어 놓을 곳이나 휴지통으로 옮기기. Enter로 집고 방향키로 옮긴 뒤 Enter로 놓기. Delete로 치우기.</span>
     <span className="sr-only" role="status">{message}</span>
