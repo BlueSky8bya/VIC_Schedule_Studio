@@ -79,4 +79,10 @@
 - 관찰1,106프레임 모두 같은 펫 DOM이 계속 표시됐고, 일정 기울이기 ON에서 회전1개/OFF에서0개·클릭 복원·설정 재진입/새로고침 저장을 확인했다. 서버 쓰기와 페이지 오류0. 최종 테스트 작성 뒤 typecheck/ESLint도 exit0.
 - 증거: `.scratch-pw/companion-071-rhythm-final-v4-report.json`, `companion-071-rhythm-measurements.json`, `companion-071-activity-report.json` 및 surface별 screenshot. 운영 DB 시험 쓰기 없이 fixture의 mutation을 가로챘다. 실제 OBS 송출 실측을 했다는 뜻은 아니다.
 - 기존 스크롤/프레임 지연·음식 첫 발판/집 이동·소파 전체 몸체 접촉·팝오버 뒤 가림·편집 입력칸 숨기/추출·모바일 제외 회귀18개 PASS(128.2초, 재시도/skip0). `companion-071-regression-report.json`. 소파 검사에서도 서버 쓰기/페이지 오류0.
-- 최종 문서/세션 검사18개 PASS. harness는 위 기존 inventory 불일치2건을 다시 확인했으며 PASS가 아니다. 운영 배포와 정확한 SHA/정적 리소스 확인은 진행 중.
+- 최종 문서/세션 검사18개 PASS. harness는 위 기존 inventory 불일치2건을 다시 확인했으며 PASS가 아니다.
+
+## 운영 배포
+
+- 제품 커밋 `2a65aeadd577f6c0a16ecd78a8ff042fbb34e1c2`를 main에 push했고 2026-10-16 21:08 KST에 Vercel success와 운영 `/api/soop-live`의 정확한 build SHA를 확인했다. 공개 화면 HTTP200, 정적 script24개 정상 응답, `companion-card-prank`와 기존 설정/조작 marker를 확인했다.
+- 검사한 fixture build의 제품 소스12개와 커밋 소스가 일치한다. `presence.ts`의 마지막 빈 줄1개 제거만 별도로 입증했다. 코드 의미 변경은 없다. `.scratch-pw/companion-071-committed-source-proof.json`, `companion-071-production-deploy.json`, `companion-071-deployed-resources.json`.
+- 실제 운영 로그인 계정의 전 기능 검사나 OBS 방송 장비 실측을 수행한 것으로 확대하지 않는다. 두 surface의 native 동작 검사는 위 fixture 증거에 한정한다. 승인된 아트 및 사용자의 미커밋 제작기록/이미지는 포함하거나 변경하지 않았다.
