@@ -7146,8 +7146,8 @@ export function StudioShell({
   // 도구 카드(2026-09-03 배치 대개편) — 옛 액션바(두 번째 크롬 행)의 관리 3종 + 단축키를 서쪽 rail로.
   // 방위 규칙(CLAUDE.md Owner-fit palette rule): 서=금=도구. 30일 사용 0~2회(콜드 존)라 아이콘+짧은
   // 라벨 타일이면 충분하고, 달력(핫 존)은 액션바 행 높이만큼 세로를 얻는다. 역할 분기는 옛 액션바와
-  // 동일, data-act 키도 동일(인사이트 집계 연속). 아바타 scene이면 rail [필터|도구|아바타 자리],
-  // 아니면 .studio-left-panel의 필터 아래. 2026-08의 '관리 3종 드롭다운 접기 철회'는 접지 않는 타일로 존중.
+  // 동일, data-act 키도 동일(인사이트 집계 연속). 아바타 scene이면 rail [도구|필터|계절 배경|빅타민 집],
+  // 준비 전 .studio-left-panel도 도구→필터 순서. 2026-08의 '관리 3종 드롭다운 접기 철회'는 접지 않는 타일로 존중.
   // 2026-09-04: '멤버 관리' 타일은 빠지고(토리님이 안 쓰는 기능 — 설정 팝오버 맨 아래의 조용한 입구로 강등)
   // 그 자리에 **설정(톱니)** — 스위치 4종·포스터 테마 등 앞으로 생길 설정 전부의 단일 입구. 설정은 역할과
   // 무관하게 편집실의 모두에게 있으므로 카드는 항상 그린다(다른 타일은 역할 분기 그대로).
@@ -7266,8 +7266,8 @@ export function StudioShell({
         overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
         agenda={isNarrow} monthKey={`${view.year}-${view.month}`} reduced={reduceMotion} /> : null}
-      {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
-          flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
+      {/* PC rail order: tools → tag filter → season → companion home.
+          Keep the existing flex budget and home host; mobile renders separately. */}
       {/* 떠서 덮기(좁은 화면, panel-overlay) — 패널 뒤 옅은 scrim. 밖을 누르면 닫힌다(Esc도, 훅 안). */}
       {avatarEditor && panel.mode === "overlay" && panel.open ? (
         <div aria-hidden="true" className="panel-scrim" onClick={panel.close} />
@@ -7279,9 +7279,8 @@ export function StudioShell({
           /* 접히면 inert — 화면 밖으로 미끄러져 나간 뒤 포커스·클릭이 닿지 않는다(visibility는 CSS가 뒤따라 끈다). */
           inert={panel.open ? undefined : true}
         >
-          <div className="avatar-rail-filter">{studioFilterPanel}</div>
-          {/* 서쪽 도구 카드 — 필터와 아바타 자리 사이(2026-09-03 배치 대개편). */}
           {studioToolsPanel}
+          <div className="avatar-rail-filter">{studioFilterPanel}</div>
           <div className="avatar-slot">
             {/* [켜기 | 흐리게 | 끄기] + 감상하기 — 시청자 레일과 같은 묶음(2026-09-04 사용자: 설정 열지 않고 바꾸기). onChange가
                 설정의 셀렉트·배경 효과 잠금과 같은 경로(changeAmbientMode)를 타서 설정 안 상태와 한 몸.
@@ -7525,8 +7524,8 @@ export function StudioShell({
         <aside className="studio-left-panel">
           {avatarSceneOn ? null : (
             <>
-              {studioFilterPanel}
               {studioToolsPanel}
+              {studioFilterPanel}
             </>
           )}
         </aside>

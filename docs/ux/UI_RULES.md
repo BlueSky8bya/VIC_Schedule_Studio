@@ -4,6 +4,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
+[PLAN-067](../agent/plans/PLAN-20261016-067-companion-house-follow.md): 소파 앞면은 펫의 현재/목적 발판과 별개인 집의 실제 anchor를 기존 유한 패널 추종 안에서 따른다. 집바닥·달력·집기 상태에서도 앞면/깊이/착지의 좌표를 맞추며 집 자체를 접으면 밖의 펫은 유지하고 앞면만 즉시 숨긴다. 이동 중 창을 연 집 주민은 이미 열린 추종 구간만 마저 소비한다. 새 상시 loop·전체 scan은 없다. 편집실 PC의 준비 전/후 순서는 도구(검색·태그·인사이트·단축키·설정)→태그 필터→계절 배경→빅타민 집이다. 모바일 빅타민 제외·최신 헤더 위치·소파 재질/전체 몸체·권한은 유지한다. [검증](../agent/verification/COMPANION_HOUSE_FOLLOW-20261016.md).
+
 최신 모바일 헤더 정정(2026-10-16 소유자 요청): 아래063/064/066의 설정·계정 위치 조항만 대체한다. 설정은 시청자(로그인/비로그인)·미리보기의 헤더 왼쪽, 편집실은 가운데 월 이동 그룹을 유지한 그 줄 왼쪽에 둔다. 로그인·로그아웃은 헤더 오른쪽1행이며 중앙 제목·44px 표적·safe-area·같은 설정 창/history/focus를 유지한다. 작은 화면에서는 제목 양쪽 장식을 먼저 양보한다. 다크 agenda의 sticky 외층은 달력과 같은 `--paper`로 아래 스크롤 글자를 가리고, 편집실 내부 헤더는 투명하게 둬 별도 색 띠·경계선·blur/shadow가 생기지 않게 한다. PC poster와 모바일 빅타민 제외는 그대로다. [검증](../agent/verification/MOBILE_HEADER_ALIGNMENT-20261016.md).
 
 [PLAN-066](../agent/plans/PLAN-20261016-066-companion-frame-pipeline.md): 모바일 편집실 로그아웃은 원래 제목 오른쪽1행으로 복원하고, 설정은064의 월 이동 줄 오른쪽을 유지한다. 방송 병행의 여유는 해상도·행동·full/lite cadence 축소 대신 공유 프레임의 중복 anchor 측정/표시와 동기 설정 재조회를 줄여 확보한다. 실제 layout 변경은 유한 구간에서 추종하되 긴 프레임 뒤에도 미측정 변경을 한 번 소비한다. 음식은 source/control 읽기→계산→음식별 표시 순서를 지킨다. 감소동작·quiet/parked·직접 입력·소파 전체 몸체·065 handoff·최초공개 우선순위는 유지한다. [검증 범위](../agent/verification/COMPANION_FRAME_PIPELINE-20261016.md).

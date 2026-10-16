@@ -9481,15 +9481,20 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+/* The pre-ready PC column follows the rail's tools-first order; its own gap
+   separates the filter, so the old below-filter top margin must not remain. */
+.studio-left-panel > .studio-tools-wrap:first-child .studio-tools {
+  margin-top: 0;
+}
 .studio-left-panel::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
-.studio-left-panel > section:first-child {
+.studio-left-panel > section:first-of-type {
   flex: 0 0 auto;
 }
 /* 색상 필터 목록은 내용만큼만(위로 정렬) — 더 이상 박스 높이를 채우려 늘리지 않는다. */
-.studio-left-panel > section:first-child .studio-tag-legend {
+.studio-left-panel > section:first-of-type .studio-tag-legend {
   align-content: start;
 }
 .studio-left-panel section {
@@ -13579,7 +13584,7 @@ html[data-studio-calm] .month-nav-btn:hover {
   background: rgb(var(--studio-action-rgb) / 7%);
 }
 /* ③ 서쪽(좌측) 태그 필터 패널 = 은백 카드. 눈 편한 테마가 냉·온 차를 누르므로 헤어라인으로 세운다. */
-html[data-studio-calm] .studio-left-panel > section:first-child {
+html[data-studio-calm] .studio-left-panel > section:first-of-type {
   border: 1px solid var(--studio-silver-line);
   border-radius: var(--r-card);
   background: var(--studio-silver);

@@ -2,6 +2,8 @@
 
 Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시각 승인과 기능 구현 승인은 구별한다.
 
+집의 유한 좌표 추종 정정([PLAN-067](../plans/PLAN-20261016-067-companion-house-follow.md), 2026-10-16 소유자 요청): 현재/목적 발판만으로 고정 소파 앞면의 위치를 대표하던 경로를 대체한다. 기존 finite follow에서 실제 집 seat anchor를 독립 추적하고, 이미 같은 anchor를 읽었으면 재사용한다. 앞면만 움직인 경우도 repaint하며 캐시된 좌석 플랫폼/seen 기준·전체 몸체 depth/수동 착지를 같은 현재 좌표로 맞춘다. 집 자체 접힘은 펫 위치와 무관하게 앞면을 해제한다. 집 주민이 이동 중 창을 열면 기존 deadline만 마저 따라가고 일반 modal/guest·hard pause는 완화하지 않는다. PC 편집실 순서는 도구→태그 필터→계절 배경→빅타민 집이며 준비 전 fallback도 같게 한다. 새 loop·매 프레임 전체 scan·서버/DTO/DB/권한/KST·1840·자산 변경0. [검증](../verification/COMPANION_HOUSE_FOLLOW-20261016.md).
+
 모바일 헤더 위치 재정정(2026-10-16 최신 소유자 요청): 아래063/064/066의 설정·계정 위치만 대체한다. 익명 로그인과 설정의 오른쪽 충돌을 없애기 위해 시청자(로그인/비로그인)·미리보기 설정은 헤더 왼쪽, 편집실 설정은 월 이동 줄 왼쪽에 둔다. 로그인/로그아웃은 헤더 오른쪽1행, 중앙 제목·월 그룹과 공유44px·safe-area·창·X/뒤로가기·focus 복원은 유지한다. 다크 agenda sticky 외층을 실제 달력 `--paper`와 통일하고 내부 Studio 헤더만 투명하게 하여 색 띠/테두리/blur/shadow를 없앤다. 인증 form/handler·권한/DTO/DB/KST·PC1840·모바일 빅타민 제외 변경0. CSS 배치 정정(L1)이며 새 동작/인프라/자산은 없다. [검증](../verification/MOBILE_HEADER_ALIGNMENT-20261016.md).
 
 방송 프레임 경로 정리([PLAN-066](../plans/PLAN-20261016-066-companion-frame-pipeline.md), 2026-10-16 소유자 요청): 화질·동작/cadence를 낮추지 않고 같은 엔진의 full main/follow/pointer 표시 중복, 정적 anchor 읽기, 프레임별 동기 gfx 조회와 음식 read/write 교차를 줄인다. 실제 변경 이벤트가 유한 추종을 열며 deadline이 지난 첫 프레임에도 dirty anchor를 한 번 측정한다. full scan/창 경계는 강제 재기준화하고 낮은 등급·감소동작·quiet의 유한 추종과 해제 즉시 충돌 판정을 유지한다. 새 상시 loop·DB/DTO/자산 변경은 없다. 모바일 편집실 로그아웃의063 잔여2행은 원래 제목 오른쪽1행으로 복원하며064 설정 위치 예외는 유지한다. Chromium 부하 측정과 실제 OBS/SOOP 송출 증거는 구별한다. [검증](../verification/COMPANION_FRAME_PIPELINE-20261016.md).

@@ -225,14 +225,14 @@ html[data-studio-calm] .studio-shell .studio-weekdays {
   background: var(--cal-head, #fbf7ee);
   box-shadow: 0 2px 10px rgb(120 100 60 / 8%);
 }
-html[data-studio-calm] .studio-shell .studio-left-panel > section:first-child,
+html[data-studio-calm] .studio-shell .studio-left-panel > section:first-of-type,
 html[data-studio-calm] .studio-shell .avatar-rail-filter,
 html[data-studio-calm] .studio-shell .studio-tools {
   background: var(--surface, #fffdf6);
   border-color: var(--line, #ece2cd);
   box-shadow: 0 8px 24px rgb(120 100 60 / 10%);
 }
-html[data-studio-calm] .studio-shell .studio-left-panel > section:first-child {
+html[data-studio-calm] .studio-shell .studio-left-panel > section:first-of-type {
   box-shadow: 0 2px 10px rgb(120 100 60 / 8%);
 }
 html[data-studio-calm] .studio-shell .studio-topbar {
@@ -269,7 +269,7 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-weekdays {
     background: rgb(var(--glass-head) / 86%);
   }
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-left-panel > section:first-child,
+  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-left-panel > section:first-of-type,
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .avatar-rail-filter,
   html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-tools {
     background: rgb(var(--glass-panel) / 84%);

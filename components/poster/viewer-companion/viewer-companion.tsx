@@ -221,19 +221,38 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const front = bedForeground.current;
     let bedScene: { anchor: Element; anchorX: number; anchorY: number; left: number; top: number; width: number; height: number; clip: { left: number; top: number; right: number; bottom: number } } | undefined;
+    let bedNeedsPaint = false;
     const sofaPassage = (progress: number) => bedScene?.anchor.isConnected && action?.kind === "jump" && (travel === -2 || travel > 0) && (support === "companion-home" || action.target.platformId === "companion-home")
       ? sampleCompanionSofaTravel(origin, action.target, progress, Math.max(size + 8, bedScene.top + bedScene.height * .19 - size * .24 - 8)) : undefined;
     const hideBed = () => { if (front && !front.hidden) front.hidden = true; };
     // One extra static scene sample per existing geometry delivery. Frame
-    // following below carries its cached anchor delta without new DOM reads.
+    // following below carries its cached anchor delta without new scene scans.
     const measureBed = () => {
       const bed = document.querySelector<SVGSVGElement>(".vc-home:not([data-panel-collapsed]) .vc-plush-bed"), anchor = bed?.parentElement?.querySelector(".vc-home-cushion"), room = bed?.closest(".vc-home-room");
       if (!front || !bed || !anchor || !room || !bed.isConnected) { bedScene = undefined; hideBed(); return; }
       const rect = bed.getBoundingClientRect(), seat = anchor.getBoundingClientRect(), clip = room.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0 || clip.width <= 0 || clip.height <= 0) { bedScene = undefined; hideBed(); return; }
       bedScene = { anchor, anchorX: seat.left, anchorY: seat.top, left: rect.left, top: rect.top, width: rect.width, height: rect.height, clip: { left: clip.left, top: clip.top, right: clip.right, bottom: clip.bottom } };
+      bedNeedsPaint = true;
       const material = getComputedStyle(room.closest(".vc-home")!);
       for (const token of ["--vc-bed-light", "--vc-bed-cloth", "--vc-bed-shade", "--vc-soft-shadow"]) style(front, token, material.getPropertyValue(token));
+    };
+    // The fixed front belongs to the room even while the creature stands on
+    // a card or the house floor. Reuse an already followed seat when present;
+    // otherwise read just its retained anchor during the existing finite
+    // layout window, never a new scan or an autonomous animation loop.
+    const followBed = (sample?: { anchorX: number; anchorY: number }) => {
+      const bed = bedScene;
+      if (!bed) return false;
+      if (!bed.anchor.isConnected) { bedScene = undefined; hideBed(); return true; }
+      const rect = sample ? undefined : bed.anchor.getBoundingClientRect();
+      if (rect && (rect.width <= 0 || rect.height <= 0)) { bedScene = undefined; hideBed(); return true; }
+      const anchorX = sample?.anchorX ?? rect!.left, anchorY = sample?.anchorY ?? rect!.top;
+      const dx = anchorX - bed.anchorX, dy = anchorY - bed.anchorY;
+      bed.left += dx; bed.top += dy;
+      bed.clip.left += dx; bed.clip.right += dx; bed.clip.top += dy; bed.clip.bottom += dy;
+      bed.anchorX = anchorX; bed.anchorY = anchorY;
+      return Boolean(dx || dy);
     };
     const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11], maxFrameRate: 14 });
     const supportMotion = createCompanionSupportMotion();
@@ -294,7 +313,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let offGeometry: CompanionGeometrySubscription | undefined, geometryTracker: CompanionGeometrySubscription | undefined;
     const anchorSeen = new Map<string, { x: number; y: number }>();
     const carrier = { x: 0, y: 0 };
-    let followRaf = 0, followUntil = 0, lastFollow = 0, scrollUntil = 0;
+    let followRaf = 0, followUntil = 0, scrollUntil = 0;
     let followedAt = -Infinity, followedKeys = "", anchorsDirty = false;
     let lastPoseSample = { row: 0, frame: 0, status: "idle" };
     let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
@@ -326,6 +345,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const resetInertia = () => { heldInertia.reset(); sofaContact = undefined; style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
+      bedNeedsPaint = false;
       if (premiereActive || premiereBounce) pendingPosition.current = null;
       if (pendingPosition.current) { hideBed(); if (!el.hidden) el.hidden = true; return; }
       const hide = hideSeek.sample(presentationNow);
@@ -432,7 +452,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const body = projectCompanionSofaBody({ size, display, cell: paintedRegistration, shape, pressure, response, facing: sample.facing, sway, chew,
           poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
           inertiaOrigin: grip });
-        sofaDepth = companionSofaDepth({ point: display, body, bed: { left: b.left, right, top: b.top, bottom }, seatY: supportById("companion-home")?.y ?? b.anchorY, previous: sofaDepth });
+        sofaDepth = companionSofaDepth({ point: display, body, bed: { left: b.left, right, top: b.top, bottom }, seatY: b.anchorY, previous: sofaDepth });
         sofaContact = { point: { x, y }, body, depth: sofaDepth };
         data("sofaDepth", sofaDepth);
         if (front.dataset.depth !== sofaDepth) front.dataset.depth = sofaDepth;
@@ -471,7 +491,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     // Anchor translation and safe-span re-clipping are different things. Only
     // the real DOM anchor delta carries a journey; its clock never restarts.
     const refreshAnchors = (now: number, scroll = false, force = false) => {
-      if (premiereActive || overlayActive || hiding) return false;
+      if (premiereActive || overlayActive && !overlayHomeResident || hiding) return false;
       // Static world travel changes only our numbers. Real layout/scroll
       // events open a finite tracking window; a full scan always rebases.
       // Main and follow rAFs share a timestamp, so read each pair just once.
@@ -484,6 +504,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const progress = action ? clamp((now - began) / Math.max(1, total), 0, 1) : 0;
       const previousPassage = sofaPassage(progress);
       const samples = geometryTracker?.follow([support, action?.target.platformId ?? ""].filter(Boolean)) ?? [];
+      const seatSample = samples.find(sample => sample.platform.id === "companion-home");
+      const beforeBed = bedScene && { x: bedScene.anchorX, y: bedScene.anchorY };
+      const bedMoved = followBed(seatSample);
+      if (bedMoved) bedNeedsPaint = true;
+      if (!seatSample && beforeBed && bedScene) {
+        // A later drop/depth check uses this same seat, even when it was not
+        // the occupied pair. Rebase its cached platform and seen anchor once;
+        // if it enters the pair next frame, its movement must not apply twice.
+        const seat = supportById("companion-home");
+        if (seat) { seat.x += bedScene.anchorX - beforeBed.x; seat.y += bedScene.anchorY - beforeBed.y; }
+        anchorSeen.set("companion-home", { x: bedScene.anchorX, y: bedScene.anchorY });
+      }
       const deltas = new Map<string, { x: number; y: number }>();
       for (const sample of samples) {
         const id = sample.platform.id, before = anchorSeen.get(id);
@@ -491,17 +523,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         anchorSeen.set(id, { x: sample.anchorX, y: sample.anchorY });
         const delta = before ? { x: sample.anchorX - before.x, y: sample.anchorY - before.y } : platform ? { x: sample.platform.x - platform.x, y: sample.platform.y - platform.y } : { x: 0, y: 0 };
         deltas.set(id, delta);
-        if (id === "companion-home" && bedScene?.anchor.isConnected) {
-          const dx = sample.anchorX - bedScene.anchorX, dy = sample.anchorY - bedScene.anchorY;
-          bedScene.left += dx; bedScene.top += dy; bedScene.clip.left += dx; bedScene.clip.right += dx; bedScene.clip.top += dy; bedScene.clip.bottom += dy;
-          bedScene.anchorX = sample.anchorX; bedScene.anchorY = sample.anchorY;
-        }
         if (platform && (delta.x || delta.y)) {
           platform.x += delta.x; platform.y += delta.y;
           if (platform.heart) { platform.heart.x += delta.x; platform.heart.y += delta.y; }
         }
       }
-      if (pressed || keyboardHeld || placing) { supportMotion.reset(now); return false; }
+      if (pressed || keyboardHeld || placing) { supportMotion.reset(now); return bedMoved; }
       const from = deltas.get(support) ?? { x: 0, y: 0 }, to = deltas.get(action?.target.platformId ?? support) ?? { x: 0, y: 0 };
       let px = 0, py = 0;
       if (action) {
@@ -519,9 +546,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const movedPassage = previousPassage && sofaPassage(progress);
       const dx = movedPassage ? movedPassage.x - previousPassage!.x : lerp(from.x, to.x, px), dy = movedPassage ? movedPassage.y - previousPassage!.y : lerp(from.y, to.y, py);
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
+      if (overlayActive && overlayHomeResident) overlayPerch = { x, y, scale: 1, overlap: false };
       if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump") supportMotion.push(dy, now);
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
-      return Boolean(dx || dy);
+      return Boolean(dx || dy || bedMoved);
     };
     const continuousMotion = () => Boolean(homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat"].includes(action.kind));
     const followLayout = (event?: Event) => {
@@ -529,28 +557,33 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // A compact room can unmount while the creature is parked. Drop its
       // front immediately at the topology event, before the120ms rescan.
       if (bedScene && !bedScene.anchor.isConnected) { bedScene = undefined; hideBed(); }
-      if (stopped || pause || premiereActive || overlayActive || hiding) return;
+      if (stopped || pause || premiereActive || overlayActive && !overlayHomeResident || hiding) return;
       // Real scroll/panel events own this short loop. Parked/quiet creatures
       // have no autonomous tracking, timers, geometry scans or brain ticks.
       const now = performance.now();
+      // Opening a window can interrupt a real panel FLIP. A resident stays
+      // inside that moving room, consuming only the already-open tail; window
+      // activity itself never starts or extends background tracking.
+      const residentTail = overlayActive && overlayHomeResident;
+      if (residentTail && now >= followUntil) return;
       anchorsDirty = true;
-      if (event?.type === "scroll") scrollUntil = now + 180;
-      followUntil = Math.max(followUntil, now + (event?.type.startsWith("vic:") ? 900 : 180));
+      if (!residentTail) {
+        if (event?.type === "scroll") scrollUntil = now + 180;
+        followUntil = Math.max(followUntil, now + (event?.type.startsWith("vic:") ? 900 : 180));
+      }
       if (followRaf) return;
       const follow = (time: number) => {
         followRaf = 0;
-        if (stopped || pause || premiereActive || overlayActive || hiding) return;
-        if (time - lastFollow >= 1000 / 60 - .1) {
-          lastFollow = time;
-          const moved = refreshAnchors(time, time <= scrollUntil), response = supportMotion.sample(time);
-          // Full-rate travel already commits this frame in the main loop.
-          // Quiet/parked/30Hz creatures still need the finite scroll follower.
-          const mainOwnsFrame = !reduced && gfxMode() === "full" && continuousMotion();
-          if ((moved || response.active) && !mainOwnsFrame) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
-          // The final neutral frame must be committed too, so no residual
-          // spring offset survives when the event-owned loop stops.
-          else if (time >= followUntil && !mainOwnsFrame) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
-        }
+        if (stopped || pause || premiereActive || overlayActive && !overlayHomeResident || hiding) return;
+        // rAF already follows the display's real frames. A second60Hz gate
+        // can skip a16.5ms frame while the CSS panel still advances, leaving
+        // the fixed front and its resident behind for exactly that frame.
+        const moved = refreshAnchors(time, time <= scrollUntil), response = supportMotion.sample(time);
+        const mainOwnsFrame = !reduced && gfxMode() === "full" && continuousMotion();
+        // A main paint consumes this flag too, so a front already committed
+        // in this frame does not need a duplicate full follower paint.
+        if (bedNeedsPaint || (moved || response.active) && !mainOwnsFrame) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
+        else if (time >= followUntil && !mainOwnsFrame) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
         if (time < followUntil || supportMotion.sample(time).active) followRaf = requestAnimationFrame(follow);
       };
       followRaf = requestAnimationFrame(follow);
@@ -1245,6 +1278,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           lastTick = lastNeeds = lastCare = lastPaint = performance.now();
           el.removeAttribute("data-dreaming");
         }
+        if (overlayActive && overlayHomeResident) followLayout();
       }
       food.current?.pause(next || overlayActive);
       if (next === pause && started) {
@@ -1709,8 +1743,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const panelChanged = (event: Event) => {
       if (premiereActive || hiding || overlayActive) return;
-      if (isHomeSupport(support) && document.querySelector(".vc-home[data-panel-collapsed]")) {
-        homeOccluded = true; hideBed(); el.hidden = true; stopHover();
+      if (document.querySelector(".vc-home[data-panel-collapsed]")) {
+        bedScene = undefined; hideBed();
+        if (isHomeSupport(support)) { homeOccluded = true; el.hidden = true; stopHover(); }
       }
       parkedLayout(); followLayout(event);
     };
