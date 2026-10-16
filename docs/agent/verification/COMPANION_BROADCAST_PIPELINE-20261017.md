@@ -13,7 +13,7 @@
 
 ## 전후 측정
 
-기준은 직전 실제 빌드 `BGFWYstCt9Lc1MVFCiW2_`, 이후는 위 측정 후보 빌드다. 최종 변경과의 차이는 viewport 복구이며 이 측정은 창 크기를 바꾸지 않는다. 동일 Chromium148·화면1920×1100·시청자/편집실·full/lite·각2회로 전후8회씩, 별도 깨끗한 CDP 구간의 평균이다. 입력은 실제 native80번/약1.4초로 약57Hz이며1000Hz 장치 측정이 아니다. 카운터 관측 구간과 무계측 CDP 구간은 분리했다. 모든 경우 서버 mutation/페이지 오류0.
+기준은 직전 실제 빌드 `BGFWYstCt9Lc1MVFCiW2_`, 이후는 위 측정 후보 빌드다. 최종 변경과의 차이는 viewport 복구이며 이 측정은 창 크기를 바꾸지 않는다. 동일 Chromium148·화면1920×1100·시청자/편집실·full/lite·각2회로 전후8회씩, 별도 깨끗한 CDP 구간의 평균이다. 입력은 실제 native80번/약1.4초로 약57Hz이며1000Hz 장치 측정이 아니다. 카운터 관측 구간과 무계측 CDP 구간은 분리했다. 모든 경우 관측한 클라이언트 mutation 요청/페이지 오류0.
 
 | 화면/등급 | 쓰다듬기 Script ms/s 전→후 | 음식 이동 Script ms/s 전→후 |
 |---|---:|---:|
@@ -37,7 +37,15 @@
 - 첫 기존70 회귀는60 PASS/10 FAIL(7.5분, retry0). 실제 viewport 축소 복구1건을 수정했다. 나머지는 최신 승인과 어긋난 창 강제 이동3·클릭 쓰다듬기2·편집실 접힘 제외1·옛 설정 문구1,20행 metadata로32행 runtime의 수동 낙하를 점프로 오인한1, 마지막 키 입력의 다음 display를 기다리지 않은1이다. 제품을 옛 동작으로 되돌리지 않고 검사를 최신 의미로 정정했다. 원본 `.scratch-pw/companion-076-regression-first-report.json`과 최초 실패 artifacts는 보존한다.
 - 수정 검사에서 감소 동작의400ms 표시 주기 사이에 짧은 waking 표시를 강제한 추가 실패가 있었다. 감소 동작에만 중간 프레임 개수 의무를 없애고 동일 DOM·좌표·focus·여행 없음·active 도달은 유지했다. full/reopen/blur의 실제 waking 프레임과 parked Range/DOM 쓰기0 기준은 보존한다. 이 실패도 `.scratch-pw/companion-076-corrected-wake-reduced-first-error.md`에 남겼다.
 - 최종 build/type/lint PASS, viewport 수정 뒤 관련 viewer-companion48파일539검사·prefs/sprite/문서48검사 PASS. companion-activity-labels7은 앞선 전체 실행 PASS이며 변경 없다. 실제 두 축 및 높이 단독 resize, 자율 ballistic, pointer/keyboard/창 복귀의 집중 검사도 통과했다.
-- 최종 `o7_pMOvCqDKGUak92NA9H` native51/51 PASS(208.330초, retry/skip/flake/unexpected0). freshON/legacyOFF와 요청0·cold decoded-node 유지·실제 두 축/높이 단독 resize·키보드/hover/drag·집/음식/소파/긴 프레임·감소동작·모바일 제외·창 뒤 유지/재기상·숨김/최초공개 우선순위를 확인했다. 창 닫힘 첫 프레임/기상 중 위치 오차0, focus 탈취0, blur 후 parked 기하조회/DOM쓰기0. `.scratch-pw/companion-076-final-report.json`, `companion-076-source-proof.json`, `companion-076-final-resize.png`. native 단계는 완료이며 운영 확인은 진행 중이다.
+- 최종 `o7_pMOvCqDKGUak92NA9H` native51/51 PASS(208.330초, retry/skip/flake/unexpected0). freshON/legacyOFF와 요청0·cold decoded-node 유지·실제 두 축/높이 단독 resize·키보드/hover/drag·집/음식/소파/긴 프레임·감소동작·모바일 제외·창 뒤 유지/재기상·숨김/최초공개 우선순위를 확인했다. 창 닫힘 첫 프레임/기상 중 위치 오차0, focus 탈취0, blur 후 parked 기하조회/DOM쓰기0. `.scratch-pw/companion-076-final-report.json`, `companion-076-source-proof.json`, `companion-076-final-resize.png`.
+
+## 운영 확인
+
+2026-10-17(KST) 제품 `0da8ce9ec79f60612a7fdcedf82a9281c69ae92a` commit/push 후 Vercel/GitHub success, 실제 `/api/soop-live` build 전체 SHA 일치와 공개 페이지200을 확인했다. 제품6파일은 검증한 최종 fixture build의 SHA와 commit 내용이 일치한다. 운영 runtime에서 동일 lazy CSS `818f468665319dcd`·JS `7863.951e9155fe0af329` 및 실제 요청 응답·`vc-texture`/gfx/학습 설정 표지를 확인했다.
+
+운영 공개 `/`의 독립 익명 Chromium2context: 설정 key 없는 freshON에서 mount1·실제 준비된 `<img>`1(1536×384)을 확인했고 저장 key를 임의 생성하지 않았다. 명시v1OFF는 cold/reload 모두 mount0·texture0·이미지 요청0, 저장값false 유지다. 양쪽 페이지 오류0. 클라이언트 mutation은 전부 차단했으며 fresh1/OFF2개의 시도는 전송되지 않았다. 일정 선택/하트/로그인/실제 내용·계정정보 수집은 하지 않았다. 버전용 기존 GET 자체의 서버 유지 작업까지 DB쓰기0이라고 주장하지 않는다. 실제 계정 편집실과 OBS/SOOP/GPU 실기기 검증은 이 익명 smoke의 범위가 아니다.
+
+근거: `.scratch-pw/companion-076-production-deploy.json`, `companion-076-deployed-resources.json`, `companion-076-committed-source-proof.json`, `companion-076-production-smoke-0da8ce9e.json`. 로컬 fixture 서버·검증 browser는 종료했다. 기존 아트/사용자 미커밋 파일은 그대로 두었다.
 
 ## 공식 근거와 한계
 

@@ -1,6 +1,6 @@
 # PLAN-20261017-076 — 방송 병행 빅타민 표시 파이프라인
 
-Status: In Progress
+Status: Complete
 Date: 2026-10-17 (KST)
 Scope: L2, 공유 클라이언트 표시·프레임 예산·기본 설정
 
@@ -25,3 +25,7 @@ OBS 송출과 함께 실행할 때 가능한 끊김 원인을 줄이고 다음 �
 ## 근거와 위험
 
 출발 증거는 [075 texture 재현](../verification/COMPANION_HABITS-20261017.md), [열린 검사](../verification/OPEN_CHECKS.md#companion-broadcast--실제-obssoop-장비), 현재 실제 코드다. 브라우저 이미지/렌더 단계와 OBS 부하 특성은 공식 자료로 확인한다. 이미지 소비 경로를 바꾸므로 프레임 셀/경계·복수 renderer의 node 탈취·현재 이미지 메모리 수명이 핵심 위험이다. 실제 방송 장비/GPU/OBS 조합에서의 무끊김 보장은 별도 실측 없이는 하지 않는다.
+
+## 완료
+
+제품 `0da8ce9ec79f60612a7fdcedf82a9281c69ae92a` commit/push 및 운영 Vercel 성공·API 전체 SHA·공개200·검증한 lazy JS/CSS 지문을 확인했다. 운영 익명 독립2context에서 freshON/실제 decoded 그림1개, 명시OFF cold/reload mount0·이미지 요청0·페이지 오류0을 확인했다. 최종 type/lint/build·관련 단위546·native51 PASS, 전체 unit의 기존8 및 harness 기존2 실패는 별도 보존한다. [측정·실패 원본·운영 범위](../verification/COMPANION_BROADCAST_PIPELINE-20261017.md). 서버/DB/아트/의존성 변경은 없으며 복구 기준은 위 제품 commit이다. 실제 OBS/SOOP 장비 측정은 열린 검사로 유지한다.
