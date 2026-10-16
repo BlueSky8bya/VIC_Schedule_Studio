@@ -12,4 +12,4 @@ StudioShell 생명주기 안의 client-only ref 하나를 두 화면의 같은 �
 
 ## 검증·상태
 
-관련 단위45파일457개·전체 타입/린트·production build 통과. 새 native fixture6개(owner/developer 왕복·집/바닥·접힌 집 복구·빠른 왕복·모바일 OFF) 통과. 기존 회귀는 최종 빌드 첫20/22, 실패2개 동일 빌드·단언 그대로 별도2/2 통과로 구별한다. 운영 로그인 재확인·승인된 배포를 진행한다. 기존 문서 inventory2건 및 실제 OBS/물리 기기/RLS 범위는 별도다. 사용자 미술26줄·보류 파일은 보존한다. 상세 근거는 [검증 기록](../verification/COMPANION_PREVIEW_CONTINUITY-20261016.md).
+완료. 관련 단위45파일457개·전체 타입/린트·production build 통과. 새 native fixture6개(owner/developer 왕복·집/바닥·접힌 집 복구·빠른 왕복·모바일 OFF) 통과. 기존 회귀는 최종 빌드 첫20/22, 실패2개 동일 빌드·단언 그대로 별도2/2 통과로 구별한다. 제품 `eb607974`의 Vercel 성공/운영 build 일치, 실제 로그인 개발자 편집실의 공개 카드·쿠션 왕복과 익명3뷰·GET gate를 확인했다. 운영 일정 편집·저장·시험 데이터 생성0, 임시 이동 설정 모두 원복. 기존 문서 inventory2건 및 실제 OBS/물리 기기/RLS 범위는 별도다. 사용자 미술26줄·보류 파일은 보존한다. 상세 근거는 [검증 기록](../verification/COMPANION_PREVIEW_CONTINUITY-20261016.md).

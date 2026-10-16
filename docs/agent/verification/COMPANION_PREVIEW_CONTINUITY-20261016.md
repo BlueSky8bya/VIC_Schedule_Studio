@@ -1,6 +1,6 @@
 # 편집실·시청자 미리보기 빅타민 위치 연결 검증
 
-2026-10-16 KST. [PLAN-065](../plans/PLAN-20261016-065-companion-preview-continuity.md). 최종 단위·타입·린트·빌드 완료, UI 검증 진행 중·운영 배포 대기. 이전063/064의 PASS를 이번 수정의 실행 근거로 재사용하지 않는다.
+2026-10-16 KST. [PLAN-065](../plans/PLAN-20261016-065-companion-preview-continuity.md). 최종 제품 `eb6079747d562f646670349aa894fdb1046beca5`의 로컬·운영 검증 기록이다. 이전063/064의 PASS를 이번 수정의 실행 근거로 재사용하지 않는다.
 
 ## 범위와 경계
 
@@ -29,7 +29,7 @@
 | 전체 type/lint/build | 최종 전체 type/lint exit0, production build27914 exit0. 세 시계 재기준화와 조건 없는 유한 진입 대기를 포함한다. |
 | 새 실제 입력 fixture6 | 최종 v3 6/6 PASS, child exit0·실패/skip/flaky0·50.21초. owner/developer 공개 카드 왕복, 실제 쿠션/집바닥, 접힌 집 대기/복구, 닫힌 집 상태 실제 floor 배치, 모바일 owner/developer 전환 제외를 포함한다. 공개 snapshot 읽기 POST13회는 정확히 가로채고 실제 mutation/pageerror0·중복 pet 프레임0. 독립 QA가 PNG6장을 직접 검수했다. |
 | 기존 공유 회귀22 | 최종 빌드 첫 실행20/22, 동일 빌드·단언 변경 없이 실패2개 별도 실행2/2 PASS(child exit0·18.6초). 정상22/22 단일 실행으로 쓰지 않는다. 이전 조건부 intro 빌드에서는22/22였다. 아래 실패 근거를 보존한다. |
-| 운영·배포 | 대기. 실제 로그인 편집실 확인, 배포 SHA/결과, 운영 데이터 쓰기0 여부는 확보한 뒤 기록한다. |
+| 운영·배포 | `eb607974` main push 후 Vercel success와 운영 API의 전체 build SHA 일치. 실제 로그인된 개발자 편집실에서 공개 카드·집 쿠션 왕복을 확인했다. 아래 익명 smoke/GET gate와 구별한다. |
 
 ```text
 node node_modules/vitest/vitest.mjs run tests/unit/viewer-companion-position-memory.test.ts
@@ -40,5 +40,16 @@ node scripts/agent-harness/verify-harness.mjs
 v3 프레임 수는 owner101·developer 빠른 왕복342·집 쿠션/바닥246·접힌 집226·닫힌 집 floor133이며 중복 pet 프레임0이다. 앞의 네 실행에서 정확히 가로챈 공개 snapshot 읽기 POST는 각각2/4/2/1회, 닫힌 집 floor는2회, 모바일 전환은2회로 총13회다. 실제 쓰기 POST와 pageerror는 각 실행0이다. 접힌 집은66개 숨김 프레임과 대기 중 DOM writes0을 확인했다. 이 수치는 DOM 읽기 횟수나 실제 서버 전달 횟수가 아니다. raw는 `.scratch-pw/companion-065-continuity-v3-report.json`에 보존한다.
 
 기존 회귀의 첫 실패는 cold-held 검사가 probe450ms 이후를 정지 구간으로 간주한 것이다. 실제 로그에서는458→491ms x1273.854,508ms부터 x1276.104로 마지막 스크립트 이동 한 단계(2.25px)가 그 구간에 포함됐다. 둘째는 최초공개 진입/반환·care 단언까지 끝난 뒤 teardown 중 진행 중인 `route.fetch`가 page close를 만난 오류다. 별도 재실행은 두 검사 모두 통과했다. 제품/단언을 수정하거나 실패 raw를 덮지 않았다. `companion-065-integration-settled-*`와 `-targeted-*`에 각각 보존했으며221개 기존 아티팩트의 원본 SHA도 유지했다.
+
+## 실제 운영 재확인
+
+사용자 Chrome의 기존 로그인 세션을 그대로 사용했다. 인증/세션 추출·권한 변경·운영 시험 일정·본문 입력·저장 없이 실제 개발자 편집실과 기존 시청자 미리보기 메뉴만 조작했다. 기록에는 일정 식별자·제목·계정 정보가 없다. 실제 owner 로그인은 이 실행에 없으며 owner 동작은 위 fixture로 확인했다.
+
+- 원래 브라우저 배율과2133×987 viewport를 유지했다. 공개 일반 일정 위에 native P 배치 후 발 x385.0413/u.4999909를 기록했다. 미리보기에서 같은 공개 카드의 현재 기하로 연결됐고 x 오차.000824px/y 오차.003411px, 다시 편집실에서 x 오차0/y 오차.003106px였다. 양쪽 `position-transfer=public-card`, pet1을 확인했다.
+- 실제 집 쿠션의 u.4999849/depth seat에서 왕복했다. 미리보기 x 오차.000023px/y 오차.003136px, 편집실 복귀 x 오차0/y 오차.003014px. 양쪽 `position-transfer=home`, 실제 cushion support/depth seat/pet1을 유지했다.
+- 안정적인 카드 측정을 위해 돌아다니기/점프/낮잠을 잠시 OFF했다. 집 검증 전에 낮잠을 ON으로 돌렸으며, 종료 때 세 항목 모두 원래 ON과 master ON을 UI에서 재확인했다. 처음 집 recall 버튼이 낮잠 OFF 때문에 disabled인 점, 나중의 sleep12초가 끝나 idle이 된 점은 검사 조건으로 구별했고 실제 홈 발판과 depth를 기준으로 확인했다. 실제 편집실로 돌아와 집 recall을 남겼다.
+- 익명 운영 PC1920/DPR2·390×844·1120×600 coarse3뷰 smoke child0, 전체 build SHA 일치. PC 기존 교감/집기/관성/음식/소파, 모바일 pet/집/asset/설정 탭0·master 취향 유지·공통 설정 X/Back/focus 확인. 각 뷰 POST `/`1회(총3회) 시도는 차단했으며 실제 mutation 전달0/pageerror0이었다. SOOP GET 각1회 stub. PNG9장 중 대표 PC 소파·390 화면·coarse 설정3장을 직접 검수했다. 실제 로그인 검사를 익명 결과로 대체하지 않는다.
+- GET gate child0: fixture poster/studio는 HTTP200 스트림의 NotFound fallback이며 product markup0, 익명 `/studio`는 `/`로 streamed redirect/Studio markup0. 이는 전체 RLS나 과거 노출 부재의 증명이 아니다.
+- 배포/raw: `.scratch-pw/companion-065-product-production-deploy.json`, `companion-065-public-production.json`, `companion-065-production-gates.json`. 검사한 제품4개 SHA는 `companion-065-verified-product-hashes.json`에 보존하고 종료 문서 커밋 전 일치 여부를 확인한다.
 
 물리 OBS·실기기 smoothness·실제 RLS/인증 커버리지는 위 순수 검사나 fixture로 증명하지 않는다. 사용자 미술26줄·보류 자산과 이전 raw/PNG 증거는 보존한다.
