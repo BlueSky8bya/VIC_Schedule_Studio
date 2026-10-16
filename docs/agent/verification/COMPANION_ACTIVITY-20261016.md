@@ -1,7 +1,7 @@
 # 빅타민 이용기록 — 2026-10-16
 
 Plan: [PLAN-070](../plans/PLAN-20261016-070-companion-activity.md)
-Status: Local verification complete; production unverified.
+Status: Deployed and verified (`7d377dd3`).
 
 ## 범위
 
@@ -35,4 +35,6 @@ Status: Local verification complete; production unverified.
 - 호버 쓰다듬기·숨바꼭질 발견/추출·보라 하트 지우기·모든 취소 분기의 기록을 전부 native input으로 재현한 것은 아니다. 이 범위는 호출 위치 리뷰와 해당 기존/신규 단위 계약에 한정한다.
 - 기본 서버 `127.0.0.1` 바인드에서 검사 완료. 테스트 브라우저의 loopback alias GET만 기본 서버에 재지정하며, WebDriver getter 예외는 테스트 안에만 존재한다. SW 차단·모든 mutation 가로채기로 실제 수집 API/DB 쓰기에 도달하지 않는다. 제품의 analytics guard는 변경하지 않았다.
 - 로컬 증거: `.scratch-pw/companion-070-activity-report.json`, `.scratch-pw/companion-070-activity.png`, `.scratch-pw/companion-070-source-proof.json`(제품 9파일 SHA256).
-- 소급 기록 없음. 운영 배포 SHA 확인은 다음 단계.
+- 제품 커밋 `7d377dd386bb49adc4b4bd7b2c2cbe1120064181`: GitHub/Vercel success, 운영 `/api/soop-live` build SHA 일치. 공개 페이지 HTTP200 및 static script 24개 정상, 새 설정/교감/먹이/하트 ID 4종의 운영 리소스 포함 확인.
+- `.scratch-pw/companion-070-production-deploy.json`, `.scratch-pw/companion-070-deployed-resources.json`, `.scratch-pw/companion-070-committed-source-proof.json`: 배포/리소스/검증한 제품 9파일과 커밋 내용 일치 증거. 실제 이용기록 데이터나 개인 식별 자료 없음.
+- 운영 계정의 빅타민 조작을 반복해 인위적 이용기록을 만들지 않았다. 운영의 실제 신규 기록 누적은 이후 자연 사용부터이며, 실제 DB에 시험 기록을 넣어 end-to-end 저장을 증명한 것은 아니다.

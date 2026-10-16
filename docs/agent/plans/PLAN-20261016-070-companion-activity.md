@@ -1,6 +1,6 @@
 # PLAN-20261016-070 — 빅타민 이용기록 연결
 
-Status: Implementation verified; deployment pending
+Status: Complete — deployed `7d377dd3`
 Date: 2026-10-16 (KST)
 
 ## 목적
@@ -28,4 +28,4 @@ Date: 2026-10-16 (KST)
 
 ## 결과
 
-설정 14개 계열·직접 조작 15개 계열의 안정 ID/이름/고정 선택값을 연결했다. 교감만 한 방문도 빅타민 사용으로 요약한다. 단위 565개, 실물 6개, typecheck/lint/build 통과. 기존 harness inventory 실패 2건은 유지한다. [검증 기록](../verification/COMPANION_ACTIVITY-20261016.md). 운영 배포는 미확인.
+설정 14개 계열·직접 조작 15개 계열의 안정 ID/이름/고정 선택값을 연결했다. 교감만 한 방문도 빅타민 사용으로 요약한다. 단위 565개, 실물 6개, typecheck/lint/build 통과. 기존 harness inventory 실패 2건은 유지한다. `7d377dd3` Vercel success·운영 build SHA·공개 HTTP200·새 기록 ID의 배포 리소스 포함 확인. [검증 기록](../verification/COMPANION_ACTIVITY-20261016.md).
