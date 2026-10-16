@@ -1,0 +1,13 @@
+{
+  "final_sha256": "36F27E7187701047706C655C4CD8EA1DC2567FA69AFFC21593466F3350A106C5",
+  "whole_visual_inspection": true,
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-덤벙놀이\\원본\\빅타민_덤벙놀이_36키포즈.png",
+      "sha256": "36F27E7187701047706C655C4CD8EA1DC2567FA69AFFC21593466F3350A106C5"
+    }
+  ],
+  "findings": [
+    "Generated sheet was visually inspected in the image tool:36 limbless two-eared paper mascot key poses, actual back/side tumble, watery eyes and comic stress strokes. Some bodies cross nominal cells; technical connected-body extraction preserves them. No independent visual PASS or user approval claimed."
+  ]
+}

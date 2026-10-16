@@ -9,6 +9,8 @@ export type CompanionPreferences = {
   drag: boolean;
   petting: boolean;
   feeding: boolean;
+  /** Habits, motivation and gait are independent; no combination replaces the
+   * character design, turns another switch on or changes device capability. */
   animalMode: "default" | "cat" | "dog";
   speed: "relaxed" | "normal" | "lively";
   /** Legacy values remain readable; normalization always selects the 92px size. */

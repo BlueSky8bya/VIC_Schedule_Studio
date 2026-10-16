@@ -24,17 +24,39 @@ html[data-theme="dark"] .public-day strong.saturday {
   color: #7fb0ff;
 }
 /* 태그 필터 패널 — 제목·항목 글자가 크림 위 짙은 갈색이었다. */
-html[data-theme="dark"] .legend-title {
+html[data-theme="dark"] .legend-title,
+html[data-theme="dark"] .public-legend-vertical .panel-section-title {
   color: var(--accent-strong);
 }
 html[data-theme="dark"] .legend-item,
 html[data-theme="dark"] .legend-item.mod,
 html[data-theme="dark"] .public-legend-vertical li,
+html[data-theme="dark"] .public-legend-vertical .legend-heart-help,
+html[data-theme="dark"] .public-legend-vertical .legend-tier-line,
+html[data-theme="dark"] .public-legend-vertical .legend-tier,
+html[data-theme="dark"] .public-legend-vertical .legend-tent-line,
 html[data-theme="dark"] .legend-hint {
   color: var(--ink-soft);
 }
 html[data-theme="dark"] .legend-item:hover {
   background: rgb(255 255 255 / 7%);
+}
+/* These remain actionable filters. Light-mode 0.4 opacity erases their text
+   against a night surface even after correcting the foreground colour. */
+html[data-theme="dark"] .public-legend-vertical :is(.legend-item, .legend-tier, .legend-tent-line).dim,
+html[data-theme="dark"] .agenda-legend :is(.agenda-legend-tag, .agenda-tier-btn, .agenda-tent-help).dim {
+  opacity: .72;
+}
+/* The live card uses dark glass, while its caption retained a light-theme
+   brown literal. Keep the title and its hover surface on the same palette. */
+html[data-theme="dark"] .soop-live-card {
+  background: var(--material-bg-strong);
+}
+html[data-theme="dark"] .soop-live-card .slc-caption {
+  color: var(--ink);
+}
+html[data-theme="dark"] .soop-live-card .slc-caption:hover {
+  background: var(--night-hover);
 }
 /* D+ 카드의 금빛 숫자 — 어두운 바닥에선 진한 금이 안 읽힌다. 그라데이션을 한 단 밝게. */
 html[data-theme="dark"] .ric-dplus {

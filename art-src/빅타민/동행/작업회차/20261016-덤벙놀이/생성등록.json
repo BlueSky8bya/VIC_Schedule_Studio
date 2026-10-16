@@ -1,0 +1,13 @@
+{
+  "work_id": "VICTAMIN-COMPANION-PLAY-20261016",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\VICTAMIN-COMPANION-PLAY-20261016\\검토용\\06586E2A149568028ABF.png",
+  "sha256": "36F27E7187701047706C655C4CD8EA1DC2567FA69AFFC21593466F3350A106C5",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Generated sheet was visually inspected in the image tool:36 limbless two-eared paper mascot key poses, actual back/side tumble, watery eyes and comic stress strokes. Some bodies cross nominal cells; technical connected-body extraction preserves them. No independent visual PASS or user approval claimed."
+  ],
+  "cycle_id": "06586E2A149568028ABF",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

@@ -8,6 +8,7 @@ import { createCompanionFoodGravity } from "@/lib/ui/viewer-companion/food-gravi
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
 import { gfxMode } from "@/lib/ui/gfx";
 import { FLIP_MS } from "@/lib/ui/flip-motion";
+import { COMPANION_CARD_PLAY_EVENT } from "@/lib/ui/viewer-companion/card-play";
 import { COMPANION_FOOD_NAMES as names, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { CompanionFruit } from "./companion-fruit";
 
@@ -20,12 +21,14 @@ export type CompanionFoodControl = {
   nibble: (id?: string, progress?: number, mouth?: Point, facing?: -1 | 1) => void;
   sync: (platforms: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined, landings?: readonly Platform[]) => void;
   pause: (paused: boolean) => void;
+  jostle: (point: Point, radius: number) => void;
   clear: () => void;
 };
 type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void };
-type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; offset: Point; moved: boolean; startHome?: HomeAnchor };
+type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
+type Jostle = { node: HTMLElement; animation: Animation };
 type HomeAnchor = "tray" | "floor";
 type FoodAttachment = { element?: Element; position: CompanionFoodAttachment; home?: HomeAnchor };
 type AttachmentRead = { food: Food; bound?: FoodAttachment; rect?: DOMRect; controls?: readonly DOMRect[]; unavailable?: boolean };
@@ -52,6 +55,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const attachments = useRef(new Map<string, FoodAttachment>()), visibility = useRef(new Map<string, boolean>());
   const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
   const drops = useRef(new Map<string, ReturnType<typeof createCompanionFoodGravity>>());
+  const jostles = useRef(new Map<string, Jostle>());
   const dropFrame = useRef(0), lastDropPaint = useRef(0), suspending = useRef(false), animateDrops = useRef<() => void>(() => {});
   const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean }>());
   const renderedTransforms = useRef(new Map<string, string>());
@@ -62,17 +66,25 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const focusReturn = useRef(returnFocus); focusReturn.current = returnFocus;
   const guard = useRef<{ owns: boolean; pointer: number | null; timer?: ReturnType<typeof setTimeout> }>({ owns: false, pointer: null });
   operating.current = enabled && !blocked && !paused;
+  const cancelJostle = useCallback((id?: string) => {
+    for (const [key, active] of jostles.current) if (!id || key === id) {
+      active.animation.onfinish = null; active.animation.oncancel = null;
+      active.animation.cancel(); jostles.current.delete(key); active.node.removeAttribute("data-jostling");
+    }
+  }, []);
   const update = useCallback((next: Food[]) => {
     const ids = new Set(next.map(food => food.id));
+    for (const id of jostles.current.keys()) if (!ids.has(id)) cancelJostle(id);
     for (const id of attachments.current.keys()) if (!ids.has(id)) { attachments.current.delete(id); visibility.current.delete(id); presentations.current.delete(id); }
     for (const id of drops.current.keys()) if (!ids.has(id)) { drops.current.delete(id); presentations.current.delete(id); }
     if (!drops.current.size) { cancelAnimationFrame(dropFrame.current); dropFrame.current = 0; }
     current.current = next; setFoods(next);
-  }, []);
+  }, [cancelJostle]);
   const choose = useCallback((id: string | null) => { selection.current = id; setSelected(id); }, []);
   const paint = useCallback((food: Food, presentation?: CompanionFoodPresentation) => {
     const node = nodes.current.get(food.id); if (!node || discard.current?.id === food.id) return;
     const hidden = visibility.current.get(food.id) === false;
+    if (hidden) cancelJostle(food.id);
     if (node.hidden !== hidden) node.hidden = hidden;
     if (node.hasAttribute("data-falling") !== drops.current.has(food.id)) node.toggleAttribute("data-falling", drops.current.has(food.id));
     const pose = presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
@@ -85,12 +97,13 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (cached?.nibble !== nibble) node.style.setProperty("--vc-nibble", nibble);
     if (cached?.eating !== eating) node.toggleAttribute("data-eating", eating);
     painted.current.set(node, { transform: next, nibble, eating });
-  }, []);
+  }, [cancelJostle]);
   const resetNibble = useCallback((id?: string) => {
     for (const food of current.current) if ((!id || food.id === id) && !drops.current.has(food.id)) { presentations.current.delete(food.id); paint(food); }
   }, [paint]);
   const rebasePresentation = useCallback((id: string, keepSupport = false) => {
     const food = current.current.find(item => item.id === id); if (!food) return;
+    cancelJostle(id);
     const pose = presentations.current.get(id) ?? food;
     drops.current.delete(id);
     if (!drops.current.size) { cancelAnimationFrame(dropFrame.current); dropFrame.current = 0; }
@@ -98,7 +111,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     visibility.current.set(id, true);
     current.current = current.current.map(item => item.id === id ? { ...item, x: pose.x, y: pose.y, platformId: keepSupport ? item.platformId : homeFoodId(attachments.current.get(id)?.home) } : item);
     resetNibble(id); return pose;
-  }, [resetNibble]);
+  }, [cancelJostle, resetNibble]);
   const receivingHome = useCallback((point: Point, release: Point) => {
     if (release.x < 0 || release.x > innerWidth || release.y < 0 || release.y > innerHeight) return;
     // The compact room can clip its content. Native hit testing protects the
@@ -148,7 +161,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       sources.set(support.id, { element: source.element, origin: { x: rect.left, y: rect.top } });
       return [{ ...support, x: support.x + rect.left - source.left, y: support.y + rect.top - source.top }];
     });
-    const placed = placeCompanionFood(food, point, available);
+    const placed = placeCompanionFood(food, point, available, { width: innerWidth, height: innerHeight });
     const source = placed.platformId ? sources.get(placed.platformId) : undefined, origin = source?.origin;
     const houseFloor = isCompanionHomeFloorFoodSupport(placed.platformId) && source?.element.matches(".vc-home-floor");
     if (houseFloor) placed.platformId = COMPANION_HOME_FLOOR_FOOD;
@@ -158,7 +171,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}) }); visibility.current.set(food.id, true);
     drops.current.delete(food.id); presentations.current.delete(food.id);
     const gravity = createCompanionFoodGravity(point, placed, performance.now());
-    if (placed.platformId && gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && gfxMode() !== "off") {
+    if (gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && gfxMode() !== "off") {
       drops.current.set(food.id, gravity);
       const presentation = gravity.sample(performance.now()); presentations.current.set(food.id, presentation); paint(placed, presentation);
       animateDrops.current();
@@ -200,22 +213,25 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       }
       return { food, bound, rect, controls: bound.element ? controls.get(bound.element) : undefined };
     });
-    const paintIds = new Set<string>();
+    const paintIds = new Set<string>(), unavailableIds = new Set<string>();
     current.current = readings.map(({ food, bound, rect, controls: obstacles, unavailable }) => {
       if (!bound) return food;
       paintIds.add(food.id);
-      if (unavailable) { visibility.current.set(food.id, false); return food; }
+      if (unavailable) { unavailableIds.add(food.id); visibility.current.set(food.id, false); return food; }
       let followed = followCompanionFood(bound.position, scroll, rect, bound.home === "tray" ? false : bound.home === "floor" ? "floor" : true);
       if (bound.home === "floor" && rect && bound.element) {
         const safe = receiveCompanionHomeFloorFood(followed.point, { x: followed.point.x, y: rect.top + rect.height - 2 }, rect, obstacles ?? [], true);
-        if (!safe) { visibility.current.set(food.id, false); return food; }
+        if (!safe) { unavailableIds.add(food.id); visibility.current.set(food.id, false); return food; }
         // Reflow may move controls across a retained local x. Keep its source
         // offset for regrowth; only the displayed safe x/document point changes.
         followed = { point: safe, attachment: { ...followed.attachment, documentX: safe.x + scroll.x, documentY: safe.y + scroll.y } };
       }
       bound.position = followed.attachment;
       const next = { ...food, ...followed.point };
-      visibility.current.set(food.id, next.x >= -22 && next.x <= viewport.width + 22 && next.y >= -6 && next.y <= viewport.height + 38);
+      // A geometry sync may arrive between gravity frames. Its logical target
+      // can already be below the viewport while the drawing is still falling.
+      const shown = drops.current.has(food.id) ? presentations.current.get(food.id) ?? next : next;
+      visibility.current.set(food.id, shown.x >= -22 && shown.x <= viewport.width + 22 && shown.y >= -6 && shown.y <= viewport.height + 38);
       return next;
     });
     if (frameTime !== undefined) {
@@ -227,6 +243,10 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
           // Sample against the carried target before the only paint. Following
           // a moving support never reseeds the fall's original clock or x.
           const presentation = gravity.sample(frameTime, food);
+          // An unsupported world floor may be below the viewport. Visibility
+          // follows the actual falling drawing until it arrives there, while
+          // folded/unsafe house attachments retain their existing occlusion.
+          if (!unavailableIds.has(id)) visibility.current.set(id, presentation.x >= -22 && presentation.x <= viewport.width + 22 && presentation.y >= -6 && presentation.y <= viewport.height + 38);
           if (presentation.active) presentations.current.set(id, presentation);
           else { drops.current.delete(id); presentations.current.delete(id); }
           paintIds.add(id);
@@ -335,11 +355,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   }, [cancelHover, choose, resetNibble, settleFood, startHover, trashAt, update]);
   const interrupt = useCallback(() => {
     const homeSelection = selection.current && attachments.current.get(selection.current)?.home ? selection.current : null;
-    suspending.current = true; finishDrops();
+    suspending.current = true; cancelJostle(); finishDrops();
     cancelAnimationFrame(followFrame.current); followFrame.current = 0; followUntil.current = 0; cancelHover(); cancelDiscard(true); release(true); resetNibble();
     if (selection.current) update(current.current.map(food => food.id === selection.current ? settleFood(food, food) : food));
     choose(homeSelection); suspending.current = false;
-  }, [cancelDiscard, cancelHover, choose, finishDrops, release, resetNibble, settleFood, update]);
+  }, [cancelDiscard, cancelHover, cancelJostle, choose, finishDrops, release, resetNibble, settleFood, update]);
 
   useImperativeHandle(ref, () => ({
     spawn(kind, point, source) {
@@ -361,6 +381,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       presentations.current.delete(id); update(current.current.filter(food => food.id !== id)); setMessage("빅타민이 밥을 맛있게 먹었어요."); return true;
     },
     nibble(id, progress = 0, mouth, facing = 1) {
+      if (id) cancelJostle(id);
       for (const food of current.current) {
         if (drops.current.has(food.id)) continue;
         if (food.id !== id || food.id === selection.current || food.id === dragging.current?.id || food.id === discard.current?.id) { presentations.current.delete(food.id); paint(food); continue; }
@@ -376,6 +397,28 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       followAttachments();
     },
     pause(next) { operating.current = enabled && !blocked && !next; setPaused(next); if (next) interrupt(); else followAttachments(); },
+    jostle(point, radius) {
+      if (!operating.current || document.hidden || reduced() || gfxMode() === "off" || ![point.x, point.y, radius].every(Number.isFinite) || radius <= 0) return;
+      // Cosmetic art only: the native food target, logical support, gravity
+      // and eating eligibility keep their exact coordinates and ownership.
+      const nearby = current.current.filter(food => !drops.current.has(food.id) && !presentations.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id)
+        .map(food => ({ food, distance: Math.hypot(food.x - point.x, food.y - point.y) }))
+        .filter(({ distance }) => distance <= radius).sort((a, b) => a.distance - b.distance).slice(0, 3);
+      cancelJostle();
+      for (const { food, distance } of nearby) {
+        const node = nodes.current.get(food.id), art = node?.firstElementChild as HTMLElement | null;
+        if (!node || !art?.animate) continue;
+        const height = 12 + 12 * (1 - distance / radius), rotation = food.x < point.x ? -6 : 6;
+        const animation = art.animate([
+          { transform: "translate3d(0,0,0) rotate(0deg)" },
+          { transform: `translate3d(0,${-height}px,0) rotate(${rotation}deg)`, offset: .45 },
+          { transform: "translate3d(0,0,0) rotate(0deg)" },
+        ], { duration: 420, easing: "cubic-bezier(.2,.65,.35,1)" });
+        jostles.current.set(food.id, { node, animation }); node.setAttribute("data-jostling", "");
+        const done = () => { if (jostles.current.get(food.id)?.animation === animation) { jostles.current.delete(food.id); node.removeAttribute("data-jostling"); } };
+        animation.onfinish = done; animation.oncancel = done;
+      }
+    },
     clear() { interrupt(); if ((document.activeElement as HTMLElement | null)?.closest(".vc-food")) focusReturn.current(); update([]); choose(null); setMessage("남은 밥을 치웠어요."); },
   }));
   useLayoutEffect(() => {
@@ -429,7 +472,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // retains its local tray origin; no idle observer or perpetual rAF runs.
     const schedule = (event?: Event) => {
       if (!operating.current || document.hidden) return;
-      if ((!event || event.type.startsWith("vic:")) && [...attachments.current.values()].some(bound => bound.home) && !reduced() && gfxMode() !== "off") followUntil.current = performance.now() + FLIP_MS + 80;
+      if ((!event || event.type.startsWith("vic:")) && (event?.type === COMPANION_CARD_PLAY_EVENT || [...attachments.current.values()].some(bound => bound.home)) && !reduced() && gfxMode() !== "off") followUntil.current = performance.now() + FLIP_MS + 80;
       if (followFrame.current) return;
       // The event can run later than this frame's rAF timestamp. Always carry
       // its first frame, then use that same clock for the finite follow tail.
@@ -449,6 +492,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     window.addEventListener("scroll", schedule, { passive: true, capture: true }); window.addEventListener("resize", schedule, { passive: true });
     window.visualViewport?.addEventListener("scroll", schedule, { passive: true }); window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("vic:panel-section", schedule); window.addEventListener("vic:companion-home", schedule); window.addEventListener("vic:side-panel", schedule);
+    window.addEventListener(COMPANION_CARD_PLAY_EVENT, schedule);
     document.addEventListener("visibilitychange", schedule);
     return () => {
       cancelAnimationFrame(followFrame.current); followFrame.current = 0;
@@ -456,6 +500,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       window.removeEventListener("scroll", schedule, true); window.removeEventListener("resize", schedule);
       window.visualViewport?.removeEventListener("scroll", schedule); window.visualViewport?.removeEventListener("resize", schedule);
       window.removeEventListener("vic:panel-section", schedule); window.removeEventListener("vic:companion-home", schedule); window.removeEventListener("vic:side-panel", schedule); document.removeEventListener("visibilitychange", schedule);
+      window.removeEventListener(COMPANION_CARD_PLAY_EVENT, schedule);
     };
   }, [enabled, followAttachments]);
 
@@ -467,10 +512,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (!operating.current || event.button !== 0 || dragging.current) return;
         event.preventDefault(); event.stopPropagation(); cancelHover();
         if (discard.current?.id === food.id) cancelDiscard();
-        const position = rebasePresentation(food.id, !drops.current.has(food.id) && !presentations.current.has(food.id))!;
+        const wasFalling = drops.current.has(food.id);
+        const position = rebasePresentation(food.id, !wasFalling && !presentations.current.has(food.id))!;
         choose(null); ownClick(event.pointerId);
         event.currentTarget.focus({ preventScroll: true }); event.currentTarget.setPointerCapture(event.pointerId);
-        dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget, start: { x: event.clientX, y: event.clientY }, offset: { x: event.clientX - position.x, y: event.clientY - position.y }, moved: false, startHome: attachments.current.get(food.id)?.home };
+        dragging.current = { id: food.id, pointer: event.pointerId, node: event.currentTarget, start: { x: event.clientX, y: event.clientY }, offset: { x: event.clientX - position.x, y: event.clientY - position.y }, moved: false, wasFalling, startHome: attachments.current.get(food.id)?.home };
       }}
       onPointerMove={event => {
         const drag = dragging.current; if (!drag || drag.id !== food.id || drag.pointer !== event.pointerId) return;
@@ -493,7 +539,18 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
           if (bin) startHover(food.id, bin, pointer); else cancelHover();
         });
       }}
-      onPointerUp={event => { const drag = dragging.current; if (drag?.pointer !== event.pointerId) return; event.stopPropagation(); release(); if (drag.moved) drop(food.id, { x: event.clientX, y: event.clientY }, true); else choose(null); }}
+      onPointerUp={event => {
+        const drag = dragging.current; if (drag?.pointer !== event.pointerId) return;
+        event.stopPropagation(); release();
+        if (drag.moved) drop(food.id, { x: event.clientX, y: event.clientY }, true);
+        else {
+          // Catching a falling snack pauses it under the pointer. Releasing
+          // without moving resumes that fall; a resting/home tap stays put
+          // and never becomes a trash gesture or a global placement mode.
+          if (drag.wasFalling) update(current.current.map(item => item.id === food.id ? settleFood(item, item, { x: event.clientX, y: event.clientY }) : item));
+          choose(null);
+        }
+      }}
       onPointerCancel={event => { if (dragging.current?.pointer === event.pointerId) { cancelHover(); release(true); choose(null); } }}
       onLostPointerCapture={event => { if (dragging.current?.pointer === event.pointerId) { cancelHover(); release(true); choose(null); } }}
       onClick={event => { event.preventDefault(); event.stopPropagation(); }}

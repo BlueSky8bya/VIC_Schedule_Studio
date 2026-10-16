@@ -1,4 +1,5 @@
 import type { CompanionAction, CompanionBehaviorPreferences, CompanionBrain, CompanionRouteStep, CompanionWorld, Platform } from "./brain";
+import { getCompanionBehaviorProfile } from "./behavior-profile";
 
 export type CompanionIntention = {
   kind: "explore" | "rest" | "feed";
@@ -48,7 +49,7 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
   const platforms = world.platforms.slice(0, 200), current = platforms.find(p => p.id === world.platformId);
   if (!current || Math.abs(current.y - world.y) > 18) return { outcomes };
   const memories = brain.places ?? [], activeMs = brain.activeMs ?? 0;
-  const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
+  const profile = getCompanionBehaviorProfile(prefs), speed = profile.walkSpeed;
   const pursue = (intention: CompanionIntention, proven?: CompanionRouteStep[]): CompanionAction | undefined => {
     const target = platforms.find(p => p.id === intention.targetId && safe(p));
     if (!target || intention.remaining <= 0) { outcomes.push({ targetId: intention.targetId, result: target ? "blocked" : "lost" }); return; }
@@ -57,24 +58,34 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
     if (!route || route.length > 10) { outcomes.push({ targetId: target.id, result: "blocked" }); return; }
     if (!route.length) {
       outcomes.push({ targetId: target.id, result: "completed" });
-      return { kind: intention.kind === "rest" ? "sleep" : "look", target: { x: world.x, y: world.y, platformId: current.id }, duration: intention.kind === "rest" ? 9000 : 1050, intention: { ...intention, stage: "observe" } };
+      return { kind: intention.kind === "rest" ? "sleep" : "look", target: { x: world.x, y: world.y, platformId: current.id }, duration: intention.kind === "rest" ? 9000 * profile.pauseScale : 1050 * profile.lookScale, intention: { ...intention, stage: "observe" } };
     }
     const step = route[0];
-    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1100) : 950, direction: step.target.x < world.x ? -1 : 1, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), intention };
+    const pace = brain.energy >= .5 && profile.scootChance >= .5 ? "scoot" as const : "amble" as const;
+    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * (pace === "scoot" ? 850 : profile.walkScale * 1000)) : 950, direction: step.target.x < world.x ? -1 : 1, ...(step.kind === "walk" ? { pace } : {}), intention };
   };
   const previous = brain.intention;
-  const rested = previous?.kind === "rest" && (!prefs.sleep || brain.energy >= .62);
+  const rested = previous?.kind === "rest" && (!prefs.sleep || brain.energy >= profile.restedEnergy);
   const exhausted = previous?.kind === "explore" && brain.energy < .28;
   if (previous && previous.kind !== "feed" && previous.stage === "travel" && !rested && !exhausted) {
     const action = pursue(previous);
     if (action) return { action, outcomes };
   }
+  // An expedition's final observation yields one local choice. Otherwise a
+  // sequence of new multi-ledge goals could permanently starve species habits
+  // (grooming/play invitations) and personality recovery behind this planner.
+  if (previous?.stage === "observe") return { outcomes };
   const home = platforms.find(p => p.id === "companion-home" && safe(p));
-  if (prefs.sleep && brain.energy < .4 && home) {
+  if (prefs.sleep && brain.energy < profile.restEnergy && home) {
     const action = pursue({ kind: "rest", targetId: home.id, offset: .5, remaining: 12, stage: "travel" });
     if (action) return { action, outcomes };
   }
-  if (!prefs.jump || brain.energy < .4 || brain.curiosity < .35) return { outcomes };
+  if (!prefs.jump || brain.energy < profile.exploreEnergy || brain.curiosity < profile.exploreCuriosity) return { outcomes };
+  // Keep a proven expedition, but do not launch a new one over a social cue.
+  // The local utility can approach/sniff/invite play on the real current ledge.
+  const pointer = world.pointer;
+  if (profile.socialPull >= 1 && pointer && [pointer.x, pointer.y].every(Number.isFinite)
+    && Math.abs(pointer.y - world.y) < 160 && Math.abs(pointer.x - world.x) < 600) return { outcomes };
   // Keep the existing short one-hop/walk utility for ordinary local play. The
   // planner adds previously missing multi-ledge expeditions, not another random
   // target every landing. Rank at most six, prove at most two actual routes.
@@ -85,8 +96,8 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
       const memory = memories.find(item => item.id === platform.id);
       const distance = Math.hypot(ports.landingX(platform, world.x) - world.x, platform.y - world.y);
       const visited = memory?.visits ?? Number(brain.visited.includes(platform.id));
-      const heightTaste = prefs.animalMode === "cat" && platform.y < world.y ? .35 : 0;
-      return { platform, available: !memory || memory.retryAfter <= activeMs, score: 2 / (1 + visited) + heightTaste - distance / 1600 - (memory?.failures ?? 0) * .35 };
+      const heightTaste = platform.y < world.y ? profile.highPlaceWeight : 0;
+      return { platform, available: !memory || memory.retryAfter <= activeMs, score: profile.noveltyWeight / (1 + visited) + heightTaste - distance / 1600 - (memory?.failures ?? 0) * .35 };
     }).filter(item => item.available).sort((a, b) => b.score - a.score).slice(0, 6);
   let proofs = 0;
   for (const { platform } of ranked) {

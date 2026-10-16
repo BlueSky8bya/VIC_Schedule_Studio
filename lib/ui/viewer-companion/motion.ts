@@ -136,9 +136,9 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const dx = first ? 0 : x - previousX;
       const seconds = first ? 0 : Math.max(0, now - previousNow) / 1000;
       // A hand moves the body in world space; it is not a walking intention.
-      if (!(row === 8 && input.status === "held") && Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
+      if (!(row === 8 && input.status === "held") && input.status !== "play" && Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
       if (entered) { enteredAt = now; walkDistance = 0; walkSteps = 0; travelLean = 0; }
-      else if (row === 2) walkDistance += Math.abs(dx);
+      else if (row === 2 || row === 20) walkDistance += Math.abs(dx);
       previousRow = row; previousX = x; previousY = y; previousNow = now;
 
       const frames = selected.get(row) ?? ALL_FRAMES;
@@ -146,8 +146,8 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const cyclicIndex = (step: number) => loops.has(row) ? Math.floor(Math.max(0, step) + 1e-8) % frames.length : pingPong(step, frames.length);
       let index = 0;
       if (!entered) {
-        if (row === 2) {
-          const steps = Math.abs(dx) / WALK_STRIDE_PX * (loops.has(row) ? frames.length : 2 * end);
+        if (row === 2 || row === 20) {
+          const steps = Math.abs(dx) / (row === 20 ? 54 : WALK_STRIDE_PX) * (loops.has(row) ? frames.length : 2 * end);
           // Distance owns stride phase, with an authored-frame rate ceiling.
           // A stationary walk pose never advances just to catch up with time.
           walkSteps += Math.min(steps, seconds * frameRate);
@@ -170,8 +170,8 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
           index = input.reduced ? 0 : Math.min(end, Math.floor(phase * frames.length + 1e-8));
         }
       }
-      const stride = walkDistance / WALK_STRIDE_PX * 2 * Math.PI;
-      const movingPose = row === 2 && !input.reduced;
+      const stride = walkDistance / (row === 20 ? 54 : WALK_STRIDE_PX) * 2 * Math.PI;
+      const movingPose = (row === 2 || row === 20) && !input.reduced;
       const stretch = movingPose ? Math.sin(stride * 2) : 0;
       if (movingPose && seconds > 0 && Math.abs(dx) > .001) travelLean = clamp(dx / seconds / 150, -1, 1) * .65;
       const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
@@ -192,7 +192,7 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const target: Scalars = {
         // A hanging grip must not translate with the rest of the body. Its
         // pivoted extension supplies the downward travel below the hand.
-        bob: movingPose ? -Math.abs(Math.sin(stride)) * 1.2 : 0,
+        bob: movingPose ? -Math.abs(Math.sin(stride)) * (row === 20 ? 3.5 : 1.2) : 0,
         scaleX: 1 + stretch * .012 - extension * .014 - hanging * heldGrip.width,
         scaleY: 1 - stretch * .018 + extension * .026 + hanging,
         tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1) + held * (Math.sin(heldTime * Math.PI * 3.6 + heldGrip.phase) * 5.2 + kick * 1.6 + heldGrip.lean * facing),

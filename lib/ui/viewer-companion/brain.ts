@@ -4,6 +4,7 @@ import { isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 import { advanceCompanionAffect, appraiseCompanionEvent, companionMood, createCompanionAffect, type CompanionAffect } from "./affect";
 import { COMPANION_FEED_ACTION_BUDGET, COMPANION_FEED_RETRY_MS, planCompanionGoal, rememberCompanionOutcomes, type CompanionFeedGoal, type CompanionIntention, type CompanionOutcome, type CompanionPlaceMemory } from "./planner";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
+import { getCompanionBehaviorProfile } from "./behavior-profile";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -25,7 +26,8 @@ export type CompanionBehaviorPreferences = CompanionPreferences;
 
 export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: CompanionFoodKind };
 export type Food = CompanionFood;
-export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake";
+export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake" | "play";
+export type CompanionPlay = "tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow";
 export type CompanionAction = {
   kind: CompanionActionKind;
   target: { x: number; y: number; platformId?: string };
@@ -34,6 +36,8 @@ export type CompanionAction = {
   effectPoint?: { x: number; y: number };
   foodId?: string;
   pace?: "amble" | "scoot";
+  /** Finite local performance; its target remains the occupied real support. */
+  play?: CompanionPlay;
   /** Small same-support hops use a lower impulse than a platform transfer. */
   jumpHeight?: number;
   /** Retained wander heading, not an instruction to mirror the renderer. */
@@ -65,6 +69,9 @@ export type CompanionBrain = CompanionCare & {
   intention?: CompanionIntention;
   foodGoal?: CompanionFeedGoal;
   places: CompanionPlaceMemory[];
+  /** Current consecutive movement burst only; no wall-clock/absence history. */
+  movementMs?: number;
+  lastPace?: "amble" | "scoot";
 };
 
 export const COMPANION_JUMP_LIMITS = Object.freeze({
@@ -218,7 +225,7 @@ export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEven
 }
 
 const cooldownMs: Record<CompanionActionKind, number> = {
-  idle: 0, look: 700, walk: 350, jump: 1400, sleep: 25000, heart: 45000, hide: 90000, sniff: 5000, eat: 1500, stretch: 18000, shake: 14000,
+  idle: 0, look: 700, walk: 350, jump: 1400, sleep: 25000, heart: 45000, hide: 90000, sniff: 5000, eat: 1500, stretch: 18000, shake: 14000, play: 20000,
 };
 
 /** Commit once when an action begins, not every animation frame. */
@@ -233,6 +240,8 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
     energy: unit(brain.energy - (action.kind === "jump" ? action.jumpHeight ? .005 : .009 : action.kind === "walk" ? .004 : 0)),
     curiosity: unit(brain.curiosity - (moving ? .018 : .008) + (moving && novel ? .025 : 0)),
     heading: action.direction ?? brain.heading,
+    movementMs: moving ? Math.min(12000, (brain.movementMs ?? 0) + Math.max(0, action.duration)) : 0,
+    lastPace: moving ? action.pace ?? brain.lastPace : undefined,
     recent: [...brain.recent, action.kind].slice(-8),
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
     cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]) },
@@ -269,7 +278,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
     // Long safe floors remain useful routes, with short finite walks that
     // revalidate the current graph instead of owning the pet for half a minute.
     const step = first.kind === "walk" ? { ...first, target: { ...first.target, x: world.x + clamp(first.target.x - world.x, -180, 180) } } : first;
-    const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
+    const speed = getCompanionBehaviorProfile(prefs).walkSpeed;
     return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950, foodId: food.id, intention, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), direction: step.target.x < world.x ? -1 : 1 };
   }
   return undefined;
@@ -284,11 +293,24 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   if (!prefs.enabled || world.paused || !Number.isFinite(world.x) || !Number.isFinite(world.y) || !Number.isFinite(now)) return idle;
   const foodAction = getFoodAction(brain, world, prefs, now);
   if (foodAction) return foodAction;
+  const profile = getCompanionBehaviorProfile(prefs);
+  const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);
+  let movingStreak = 0;
+  for (let i = brain.recent.length - 1; i >= 0 && ["walk", "jump"].includes(brain.recent[i]); i--) movingStreak++;
+  // A cartoon mishap follows a genuine committed run, not time spent waiting.
+  // It never introduces a fake support, moves the world, or preempts a meal.
+  if (prefs.roam && current && !current.manualOnly && current.id === world.platformId && current.width >= 64
+    && Math.abs(current.y - world.y) <= 18 && brain.energy >= .28
+    && movingStreak >= 2 && (brain.movementMs ?? 0) >= 1800 && (brain.lastPace === "scoot" || movingStreak >= 3)
+    && (brain.cooldowns.play ?? -Infinity) <= now && random(rng) < profile.accidentChance) {
+    const choice = random(rng);
+    const play: CompanionPlay = choice < .5 && prefs.jump ? "tumble" : choice < .78 ? "slip" : "bump";
+    return { kind: "play", play, target: stationary, duration: 2800 + random(rng) * 1500 };
+  }
   const planned = planCompanionGoal(brain, world, prefs, { route: findPlatformRoute, landingX: platformLandingX, reachable: reachablePlatforms });
   if (planned.action) return { ...planned.action, ...(planned.outcomes.length ? { outcomes: planned.outcomes } : {}) };
-  const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);
   const candidates: { action: CompanionAction; utility: number }[] = [];
-  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point, movement: Pick<CompanionAction, "pace" | "jumpHeight" | "direction"> = {}) => {
+  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point, movement: Pick<CompanionAction, "pace" | "jumpHeight" | "direction" | "play"> = {}) => {
     if ((brain.cooldowns[kind] ?? -Infinity) > now) return;
     const repeats = brain.recent.slice(-4).filter(item => item === kind).length;
     const lastPenalty = brain.recent.at(-1) === kind ? .35 : 1;
@@ -298,21 +320,27 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const affectionate = prefs.personality === "affectionate" ? .3 : 0;
   const sleepy = prefs.personality === "sleepy" ? .45 : 0;
   const cat = prefs.animalMode === "cat", dog = prefs.animalMode === "dog";
-  let movingStreak = 0;
-  for (let i = brain.recent.length - 1; i >= 0 && ["walk", "jump"].includes(brain.recent[i]); i--) movingStreak++;
   const recovery = movingStreak >= 3;
   const tired = brain.energy < .28;
-  const mobility = (recovery ? .16 : 1) * (tired ? .38 : 1);
-  add("idle", .14 + (1 - brain.energy) * .25 + (recovery ? 1.15 : 0), (recovery ? 1000 : 550) + random(rng) * (recovery ? 700 : 650));
-  add("look", .2 + brain.curiosity * .25 + curious * .45 + (cat ? .25 : 0) + (recovery ? .45 : 0), (cat ? 550 : 700) + random(rng) * 600);
+  const mobility = (recovery ? .16 : 1) * (tired ? .38 : 1) * profile.movementWeight;
+  const pointer = world.pointer && [world.pointer.x, world.pointer.y].every(Number.isFinite) ? world.pointer : undefined;
+  const follows = pointer && profile.socialPull > 0 && Math.abs(pointer.y - world.y) < 160;
+  add("idle", .14 + (1 - brain.energy) * .25 + sleepy + (recovery ? 1.15 : 0), ((recovery ? 1000 : 550) + random(rng) * (recovery ? 700 : 650)) * profile.pauseScale);
+  add("look", (.2 + brain.curiosity * .25 + curious * .45 + (recovery ? .45 : 0)) * profile.lookWeight, (700 + random(rng) * 600) * profile.lookScale);
   add("stretch", .12 + (1 - brain.energy) * .2 + (recovery ? .3 : 0), 1150 + random(rng) * 450);
   add("shake", .13 + brain.energy * .1 + (dog ? .18 : 0), 750 + random(rng) * 350);
   if (cat || dog) add("sniff", .25 + brain.curiosity * .25 + (dog ? .15 : 0), cat ? 800 : 1100);
-  if (prefs.sleep && brain.energy < .62) add("sleep", (1 - brain.energy) ** 2 * 1.7 + sleepy, 8000 + random(rng) * 7000);
+  if (prefs.sleep && brain.energy < profile.sleepEnergy) add("sleep", (1 - brain.energy) ** 2 * 1.7 + sleepy, (8000 + random(rng) * 7000) * (sleepy ? 1.25 : 1));
+  // Social contact remains visible with heart jokes disabled. Cats groom,
+  // dogs invite play, and an affectionate mascot responds near the pointer.
+  if (current && current.id === world.platformId && Math.abs(current.y - world.y) <= 18) {
+    if (cat) add("play", profile.playWeight, 3000, stationary, undefined, { play: "groom" });
+    else if (dog) add("play", profile.playWeight * (follows ? 1.7 : 1), 2800, stationary, undefined, { play: "bow" });
+    else if ((brain.affect?.joy ?? 0) >= .18 || affectionate && follows) add("play", profile.playWeight * 1.5, 3000, stationary, undefined, { play: "celebrate" });
+    if (cat && prefs.roam && prefs.jump && !current.manualOnly && current.width >= 100 && follows && !tired) add("play", profile.playWeight * .8, 2800, stationary, undefined, { play: "pounce" });
+  }
   if (prefs.roam && current && Math.abs(current.y - world.y) <= 18) {
-    const speed = prefs.speed === "relaxed" ? 45 : prefs.speed === "lively" ? 100 : 70;
-    const pointer = world.pointer && [world.pointer.x, world.pointer.y].every(Number.isFinite) ? world.pointer : undefined;
-    const follows = pointer && (cat || dog) && Math.abs(pointer.y - world.y) < 160;
+    const speed = profile.walkSpeed;
     // Coherent short excursions, rather than picking an unrelated location on
     // a long floor every time. Reverse only at an edge or after an occasional
     // observation; the recent movement streak supplies natural rest beats.
@@ -320,10 +348,10 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
     if (world.x < current.x + 35) direction = 1;
     else if (world.x > current.x + current.width - 35) direction = -1;
     else if (brain.recent.at(-1) === "look" && random(rng) < .22) direction = direction === 1 ? -1 : 1;
-    const desiredX = follows ? clamp(pointer.x + (world.x < pointer.x ? -1 : 1) * (cat ? 75 : 28), world.x - (cat ? 100 : 140), world.x + (cat ? 100 : 140)) : world.x + direction * (40 + random(rng) * (dog ? 100 : 80));
+    const desiredX = follows ? clamp(pointer.x + (world.x < pointer.x ? -1 : 1) * profile.pointerGap, world.x - profile.pointerStep, world.x + profile.pointerStep) : world.x + direction * Math.min(180, profile.stepMin + random(rng) * profile.stepRange);
     const walkX = platformLandingX(current, desiredX);
-    const pace = !tired && !cat && random(rng) < .55 ? "scoot" : "amble";
-    if (!current.manualOnly && Math.abs(walkX - world.x) > 20) add("walk", (1 + brain.curiosity * .7 + (follows && dog ? .65 : follows && cat ? .2 : 0)) * mobility, Math.max(500, Math.abs(walkX - world.x) / speed * (pace === "scoot" ? 850 : cat ? 1250 : 1100)), { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1 });
+    const pace = !tired && random(rng) < profile.scootChance ? "scoot" : "amble";
+    if (!current.manualOnly && Math.abs(walkX - world.x) > 20) add("walk", (1 + brain.curiosity * .7 + (follows ? profile.socialPull : 0)) * mobility, Math.max(500, Math.abs(walkX - world.x) / speed * (pace === "scoot" ? 850 : profile.walkScale * 1000)), { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1 });
     if (prefs.jump) {
       const reachable = reachablePlatforms(world, world.platforms).filter(p => p.id !== current.id && p.kind !== "hide" && !p.manualOnly);
       if (reachable.length) {
@@ -343,7 +371,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
         add("jump", (1 + brain.curiosity * .8 + curious + (!brain.visited.includes(platform.id) ? .45 : 0)) * mobility, 950, { x, y: platform.y, platformId: platform.id }, undefined, { direction: x < world.x ? -1 : 1 });
       }
       const hopX = platformLandingX(current, world.x + direction * (24 + random(rng) * 28));
-      if (!current.manualOnly && !tired && Math.abs(hopX - world.x) > 18) add("jump", (.22 + brain.energy * .23 + (dog ? .15 : 0)) * mobility * (cat ? .25 : 1), 650, { x: hopX, y: current.y, platformId: current.id }, undefined, { jumpHeight: 28 + random(rng) * 16, direction: hopX < world.x ? -1 : 1 });
+      if (!current.manualOnly && !tired && Math.abs(hopX - world.x) > 18) add("jump", (.22 + brain.energy * .23 + (dog ? .15 : 0)) * mobility * (cat ? .25 : 1), 650, { x: hopX, y: current.y, platformId: current.id }, undefined, { jumpHeight: profile.hopHeight + random(rng) * 16, direction: hopX < world.x ? -1 : 1 });
     }
     // A prank is a local gesture on the support already occupied; navigation
     // remains a separate walk/jump, so disabled jumping cannot teleport a pet.

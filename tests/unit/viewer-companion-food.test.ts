@@ -66,6 +66,49 @@ describe("companion food support", () => {
     expect(placeCompanionFood(apple, { x: 200, y: card.y + .49 }, [floor, card]).platformId).toBe("card");
     expect(placeCompanionFood(apple, { x: 200, y: card.y + .51 }, [floor, card]).platformId).toBe(floor.id);
   });
+  it("uses the nearest existing protected screen-floor span only after every real lower ray misses", () => {
+    const left = Object.freeze({ id: "viewport-floor-food", x: 24, y: 782, width: 136, kind: "floor" as const });
+    const right = Object.freeze({ id: "viewport-floor-food-1", x: 720, y: 782, width: 256, kind: "floor" as const });
+    const distantCard = Object.freeze({ ...card, id: "card-4-food-top", x: 600, width: 80, y: 400 });
+    const platforms = Object.freeze([left, distantCard, right]);
+    const point = Object.freeze({ x: 500, y: 200 });
+    expect(placeCompanionFood(apple, point, platforms, { width: 1000, height: 800 })).toEqual({ ...apple, x: 720, y: 782, platformId: right.id });
+    expect(placeCompanionFood(apple, point, [...platforms].reverse(), { width: 1000, height: 800 })).toEqual({ ...apple, x: 720, y: 782, platformId: right.id });
+    expect(platforms[1]).toBe(distantCard); expect(point).toEqual({ x: 500, y: 200 });
+  });
+  it("preserves the first crossed card or house floor instead of jumping to the final screen floor", () => {
+    const screenFloor: Platform = { id: "viewport-floor-food", x: 500, y: 782, width: 200, kind: "floor" };
+    const houseFloor: Platform = { id: COMPANION_HOME_FLOOR_FOOD, x: 150, y: 600, width: 100, kind: "floor" };
+    const sofa: Platform = { ...houseFloor, id: "companion-home-food", y: 500 };
+    const viewport = { width: 1000, height: 800 };
+    expect(placeCompanionFood(apple, apple, [screenFloor, houseFloor, card, sofa], viewport)).toEqual({ ...apple, y: 350, platformId: card.id });
+    expect(placeCompanionFood(apple, { x: 200, y: 450 }, [screenFloor, houseFloor, card, sofa], viewport)).toEqual({ ...apple, y: 600, platformId: houseFloor.id });
+  });
+  it("retains an unsupported document floor below the viewport when safe floor spans are absent or above the release", () => {
+    const point = { x: 500, y: 700 }, viewport = { width: 1000, height: 800 };
+    const candidates: Platform[] = [
+      { id: "viewport-floor-food", x: 50, y: 600, width: 100, kind: "floor" },
+      { id: "viewport-floor-food-old", x: 800, y: 780, width: 100, kind: "floor" },
+      { id: "companion-home-food", x: 450, y: 750, width: 100, kind: "floor" },
+      { id: "viewport-floor-food-2", x: NaN, y: 780, width: 100, kind: "floor" },
+      { id: "viewport-floor-food-3", x: 800, y: 780, width: -1, kind: "floor" },
+    ];
+    const placed = placeCompanionFood(apple, point, candidates, viewport);
+    expect(placed).toEqual({ ...apple, x: 500, y: 844 });
+    expect(placed.platformId).toBeUndefined();
+    const attachment = attachCompanionFood(placed, { x: 0, y: 120 });
+    expect(followCompanionFood(attachment, { x: 0, y: 220 }).point).toEqual({ x: 500, y: 744 });
+    expect(followCompanionFood(attachment, { x: 0, y: 120 }).point).toEqual({ x: 500, y: 844 });
+    expect(placeCompanionFood(apple, { x: 1, y: 700 }, [], viewport)).toEqual({ ...apple, x: 24, y: 844 });
+    expect(placeCompanionFood(apple, { x: 999, y: 700 }, [], viewport)).toEqual({ ...apple, x: 976, y: 844 });
+  });
+  it("keeps the optional viewport fallback fail-closed for invalid dimensions and preserves legacy callers", () => {
+    const point = { x: 500, y: 700 }, expected = { ...apple, ...point };
+    for (const viewport of [{ width: 0, height: 800 }, { width: 47, height: 800 }, { width: 1000, height: 0 }, { width: NaN, height: 800 }, { width: 1000, height: Infinity }]) {
+      expect(placeCompanionFood(apple, point, [], viewport)).toEqual(expected);
+    }
+    expect(placeCompanionFood(apple, point, [])).toEqual(expected);
+  });
 });
 
 describe("companion food attachments", () => {

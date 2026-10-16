@@ -1,4 +1,15 @@
-import metadata from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
+import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
+import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
+
+/** Add authored play packets without rewriting the established HD lineage or
+ * registration. Every consumer uses this same global frame/atlas mapping. */
+export const companionSpriteMetadata = {
+  ...base,
+  atlases: [...base.atlases, ...play.atlases],
+  frames: [...base.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + base.atlases.length }))],
+  rows: [...base.rows, ...play.rows.map(row => row.map(index => index + base.frames.length))],
+};
+const metadata = companionSpriteMetadata;
 
 export type CompanionSpriteSelection = {
   atlas: "hd";
@@ -14,8 +25,8 @@ export type CompanionSpriteSelection = {
 
 /** Every action reads the same genuine high-resolution texture pipeline.
  * Runtime decoding chooses when to display a packet; this selector never
- * substitutes a blurry legacy sheet while an action is loading. The 304 slots
- * are offline rig derivatives, not 304 newly hand-drawn animation frames. */
+ * substitutes a blurry legacy sheet while an action is loading. Base slots
+ * remain offline rigs; play packets hold/repeat36 new native key drawings. */
 export function selectCompanionSprite(index: number, row = 0, column = 0): CompanionSpriteSelection {
   const selectedRow = Number.isInteger(row) ? metadata.rows[row] : undefined;
   const selectedColumn = Number.isFinite(column) ? Math.max(0, Math.floor(column)) : 0;

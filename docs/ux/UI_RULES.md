@@ -4,6 +4,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
+[PLAN-068](../agent/plans/PLAN-20261016-068-companion-character-and-play.md): 종·성향·걸음은 공유 로컬 profile에서 독립 합성하고 일반 행동/먹이/다단계 이동에 같이 반영한다. 기본 빅타민은 무사지 폼폼 토끼의 활발하고 덤벙거리는 성격이다. 소유자의 이번 짧은 클릭=톡 치기 요청이 기존 클릭 쓰다듬기만 대체한다. hover 왕복/Enter 쓰다듬기·즉시 drag·pause/최초공개 우선순위는 유지한다. 새 달리기/구르기/미끄러짐/눈치/감정은 유한 clip이며 공개 일반 카드 비틀림·음식 튀기는 연출은 실제 일정/식사/하트 데이터를 바꾸지 않는다. 음식은 아래 일정이 없어도 보호된 바닥까지 연속 낙하하며 소파에는 오르지 않는다. [검증](../agent/verification/COMPANION_CHARACTER_PLAY-20261016.md).
+
 [PLAN-067](../agent/plans/PLAN-20261016-067-companion-house-follow.md): 소파 앞면은 펫의 현재/목적 발판과 별개인 집의 실제 anchor를 기존 유한 패널 추종 안에서 따른다. 집바닥·달력·집기 상태에서도 앞면/깊이/착지의 좌표를 맞추며 집 자체를 접으면 밖의 펫은 유지하고 앞면만 즉시 숨긴다. 이동 중 창을 연 집 주민은 이미 열린 추종 구간만 마저 소비한다. 새 상시 loop·전체 scan은 없다. 편집실 PC의 준비 전/후 순서는 도구(검색·태그·인사이트·단축키·설정)→태그 필터→계절 배경→빅타민 집이다. 모바일 빅타민 제외·최신 헤더 위치·소파 재질/전체 몸체·권한은 유지한다. [검증](../agent/verification/COMPANION_HOUSE_FOLLOW-20261016.md).
 
 최신 모바일 헤더 정정(2026-10-16 소유자 요청): 아래063/064/066의 설정·계정 위치 조항만 대체한다. 설정은 시청자(로그인/비로그인)·미리보기의 헤더 왼쪽, 편집실은 가운데 월 이동 그룹을 유지한 그 줄 왼쪽에 둔다. 로그인·로그아웃은 헤더 오른쪽1행이며 중앙 제목·44px 표적·safe-area·같은 설정 창/history/focus를 유지한다. 작은 화면에서는 제목 양쪽 장식을 먼저 양보한다. 다크 agenda의 sticky 외층은 달력과 같은 `--paper`로 아래 스크롤 글자를 가리고, 편집실 내부 헤더는 투명하게 둬 별도 색 띠·경계선·blur/shadow가 생기지 않게 한다. PC poster와 모바일 빅타민 제외는 그대로다. [검증](../agent/verification/MOBILE_HEADER_ALIGNMENT-20261016.md).

@@ -34,8 +34,9 @@ import { createCompanionPettingContact, createCompanionPettingGesture, createCom
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
-import registration from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
-import { companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { companionSpriteMetadata as registration, companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { companionTapReaction, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
+import { COMPANION_CARD_PLAY_EVENT, createCompanionCardPlay } from "@/lib/ui/viewer-companion/card-play";
 import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { playSfx } from "@/lib/ui/sfx";
@@ -163,6 +164,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const publishCare = () => { const { hunger, affection, energy, curiosity } = brain.current; setCare({ hunger, affection, energy, curiosity }); };
     publishCare();
     const hearts = createCompanionHearts(page);
+    const cardPlay = createCompanionCardPlay();
+    let playImpact = false, playFalling = false, mishapUntil = 0;
     const presence = createCompanionPresence(document.hasFocus(), performance.now());
     const saved = lastPose.current;
     if (!saved && !pendingPosition.current && positionMemory?.current) pendingPosition.current = positionMemory.current;
@@ -254,7 +257,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       bed.anchorX = anchorX; bed.anchorY = anchorY;
       return Boolean(dx || dy);
     };
-    const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11], maxFrameRate: 14 });
+    const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
     const supportMotion = createCompanionSupportMotion();
     const heldInertia = createCompanionHeldInertia();
     let grip = { x: size / 2, y: size / 2 };
@@ -386,7 +389,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (reduced || gfxMode() === "off" || overlayActive && !(isDetailGuest() && (overlayDrag?.guest?.dragged || guestKeyboardHeld))) resetInertia();
       const physicalOrigin = { x: displayFrame.x - displayFrame.size / 2, y: displayFrame.y - displayFrame.size }, physicalGrip = { x: grip.x * displayFrame.scale, y: grip.y * displayFrame.scale };
       const sway = boundCompanionHeldPose(heldInertia.sample(performance.now()), physicalOrigin, physicalGrip, displayFrame.size, { width: innerWidth, height: innerHeight });
-      const shape = heldPivot || presentationNow - releasedPivotAt < 100 ? boundCompanionHangingPose(sample, physicalOrigin, physicalGrip, displayFrame.size, { width: innerWidth, height: innerHeight }, sway) : sample;
+      const shape = heldPivot || presentationNow - releasedPivotAt < 100 ? boundCompanionHangingPose(sample, physicalOrigin, physicalGrip, displayFrame.size, { width: innerWidth, height: innerHeight }, sway) : { ...sample };
+      if (action?.kind === "play" && action.play && status === "play") {
+        const play = sampleCompanionPlay(action.play, (performance.now() - began) / total, reduced || gfxMode() === "off");
+        // The current actual support owns world position throughout the gag.
+        shape.bob += play.lift; shape.tilt += play.lean;
+      }
       style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${(1 - sway.stretch * .35).toFixed(4)},${(1 + sway.stretch).toFixed(4)})`);
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off");
       if (!pressure.pressure && !hoverPetting && el.dataset.petting === "touch") data("petting", "ready");
@@ -436,7 +444,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       data("journey", action ? String(began) : "");
       if (shadow.current) {
         const progress = action ? clamp((performance.now() - began) / total, 0, 1) : 0;
-        const ground = action?.kind === "jump" ? lerp(origin.y, action.target.y, progress) : supportById(support)?.y ?? y;
+        const ground = playFalling ? action!.target.y : action?.kind === "jump" ? lerp(origin.y, action.target.y, progress) : supportById(support)?.y ?? y;
         const altitude = Math.max(0, ground - y - response.lift), scale = clamp(1 - altitude / 260, .35, 1);
         style(shadow.current, "transform", `translate3d(0,${Math.max(0, ground - y).toFixed(2)}px,0) scale(${scale.toFixed(3)})`);
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
@@ -534,6 +542,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (action) {
         const age = now - began, p = clamp(age / Math.max(1, total), 0, 1);
         if (action.kind === "jump") { px = sofaPassage(p)?.horizontal ?? (travel > 0 ? clamp((age - 180) / travel, 0, 1) : travel === -2 || travel === -4 ? sampleCompanionTravel(p) : travel === -3 ? sampleCompanionTravel(clamp(p / .78, 0, 1)) : p); py = travel === -1 ? p * p : px; }
+        else if (playFalling) py = clamp(age / Math.min(650, total), 0, 1) ** 2;
         else if (action.kind === "walk") px = py = sampleCompanionTravel(p);
         else if (action.kind === "heart" || action.kind === "hide") px = py = sampleCompanionTravel(clamp(age / Math.max(1, travel), 0, 1));
         origin.x += from.x; origin.y += from.y;
@@ -547,11 +556,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const dx = movedPassage ? movedPassage.x - previousPassage!.x : lerp(from.x, to.x, px), dy = movedPassage ? movedPassage.y - previousPassage!.y : lerp(from.y, to.y, py);
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
       if (overlayActive && overlayHomeResident) overlayPerch = { x, y, scale: 1, overlap: false };
-      if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump") supportMotion.push(dy, now);
+      if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump" && !playFalling) supportMotion.push(dy, now);
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
       return Boolean(dx || dy || bedMoved);
     };
-    const continuousMotion = () => Boolean(homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat"].includes(action.kind));
+    const continuousMotion = () => Boolean(homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -588,7 +597,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       };
       followRaf = requestAnimationFrame(follow);
     };
-    const clearAction = () => { if (homeDeparture?.flying) homeDeparture = undefined; action = null; food.current?.nibble(); heartResult = null; sleeping = false; el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = () => { if (homeDeparture?.flying) homeDeparture = undefined; action = null; food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = false; el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
       // User releases hit the first real card top on this vertical ray. The
       // separate text ledges remain the only autonomous destinations.
@@ -717,6 +726,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const launch = (next: CompanionAction, now: number) => {
       clearAction(); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
+      if (next.kind === "play" && next.play?.startsWith("bonk-") && !supportedNow()) {
+        // A tap during landing still has the requested immediate expression.
+        // Its feet finish falling onto the first real lower support, rather
+        // than freezing in midair or falling back to the old friendly tap.
+        const landing = firstCompanionSupportBelow({ x, y }, landingPlatforms);
+        if (landing) { action = { ...next, target: { x, y: landing.y, platformId: landing.id } }; playFalling = true; }
+      }
       if (next.kind === "hide") {
         if (!hideCandidate) { action = null; nextDecision = now + 1000; return; }
         hiding = { target: hideCandidate, from: { x, y } }; hideSeek.start(hideCandidate.eventId, presentationNow, 12000 + Math.random() * 16000);
@@ -725,7 +741,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         setAnnouncement("빅타민이 일정 속에 숨었어요. 그 일정의 상세창에서 찾아보세요.");
       }
       if (next.kind === "jump") supportMotion.reset(now);
-      brain.current = commitAction(brain.current, next, now);
+      brain.current = commitAction(brain.current, action ?? next, now);
       if (next.kind === "heart") {
         const speed = preferences.speed === "relaxed" ? 45 : preferences.speed === "lively" ? 100 : 70;
         travel = Math.abs(next.target.x - x) / speed * 1000;
@@ -891,7 +907,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       let row = 0, frame = 0, status = "idle";
       if (action) {
         const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
-        if (action.kind === "walk") { x = lerp(origin.x, action.target.x, sampleCompanionTravel(p)); row = 2; }
+        if (action.kind === "walk") { x = lerp(origin.x, action.target.x, sampleCompanionTravel(p)); row = action.pace === "scoot" ? 20 : 2; }
         else if (action.kind === "jump") {
           const passage = sofaPassage(p);
           if (passage) { x = passage.x; y = passage.y; row = p < .28 ? 4 : p < .84 ? 5 : 6; frame = (p < .28 ? p / .28 : p < .84 ? (p - .28) / .56 : (p - .84) / .16) * 15; }
@@ -934,6 +950,26 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           row = p < .18 ? 1 : 9; frame = p < .18 ? p / .18 * 15 : 0;
           const direction = paintedFacing < 0 ? -1 : 1;
           food.current?.nibble(action.foodId, p, { x: x + direction * size * .045, y: y - size * .24 }, direction);
+        } else if (action.kind === "play" && action.play) {
+          const play = sampleCompanionPlay(action.play, p, reduced || gfxMode() === "off");
+          row = play.row; frame = play.phase * 15;
+          const platform = supportById(support), direction = action.direction ?? brain.current.heading;
+          const room = platform ? Math.max(0, Math.min(22, origin.x - platform.x - 8, platform.x + platform.width - origin.x - 8)) : 0;
+          x = origin.x + direction * play.shift * room / 22;
+          if (playFalling) {
+            const fall = reduced ? 1 : clamp(age / Math.min(650, total), 0, 1);
+            y = lerp(origin.y, action.target.y, fall * fall);
+            if (fall >= 1) { playFalling = false; support = action.target.platformId ?? support; }
+          }
+          data("play", action.play); data("playBeat", play.beat);
+          if (!playImpact && p >= .12 && ["tumble", "bump", "slip"].includes(action.play)) {
+            playImpact = true; mishapUntil = now + 6500;
+            if (!reduced && gfxMode() !== "off" && !isHomeSupport(support)) {
+              const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
+              if (node && collectCompanionHideTargets(page).some(target => target.element === node)) cardPlay.bump(node, paintedFacing);
+              food.current?.jostle({ x, y }, 100);
+            }
+          }
         } else if (action.kind === "look") { row = 1; frame = p * 15; }
         else if (action.kind === "stretch") { row = 16; frame = p * 15; }
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
@@ -944,7 +980,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             brain.current = recordCompanionEvent(brain.current, "ate"); saveCompanionCare(brain.current, true);
             petUntil = now + (reduced ? 400 : 1100);
           }
-          if (["walk", "jump", "heart", "hide"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
+          if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
           clearAction();
           if (ejected && presence.phase === "parked") { row = 11; frame = 0; status = "sleep"; el.dataset.dreaming = ""; offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
           if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (continueRoute ? 0 : 220);
@@ -1217,12 +1253,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const sync = () => {
       graphicsMode = readGfxMode();
+      if (blocked || document.hidden || overlayRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cardPlay.clear();
       if (syncPremiere()) return;
       hideClock(performance.now());
       const html = document.documentElement;
       const wantsOverlay = overlayRef.current;
       const livePrelude = preludeCue();
       const next = blocked || document.hidden || page.inert || html.hasAttribute("data-showcase") || html.hasAttribute("data-ambient-pause") && hasAmbientPauseOutside("poster-window", livePrelude ? [livePrelude.owner] : []);
+      if (next) cardPlay.clear();
       if (hiding && !hideValid()) resetHide();
       if (hiding && !(hiding.sheet && !wantsOverlay)) {
         hideHint(false);
@@ -1247,7 +1285,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // Carry that final anchor delta now, and retain the disposed follow
         // snapshot to restore any layout delta before reconnecting on close.
         if (wantsOverlay) refreshAnchors(performance.now(), false, true);
-        if (wantsOverlay) overlayHomeResident = isHomeSupport(support) && supportedNow() && action?.kind !== "jump";
+        if (wantsOverlay) overlayHomeResident = isHomeSupport(support) && supportedNow() && action?.kind !== "jump" && !playFalling;
         overlayActive = wantsOverlay;
         el.toggleAttribute("data-home-window", overlayActive && overlayHomeResident);
         if (!overlayActive) refreshAnchors(performance.now(), false, true);
@@ -1293,7 +1331,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (pause) { if (isDetailGuest()) cancelGuestInput(); else releaseOverlayDrag(); }
       if (pause) { overlayPlacing = false; delete el.dataset.placing; }
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
-      if (pause) { clearTimeout(preludeTimer); preludeDeadline = 0; homeDeparture = undefined; returning = undefined; el.removeAttribute("data-returning"); pickupScale = 1; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0; stopHover(); needsLanding = action?.kind === "jump" || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); releaseHold(); placing = false; delete el.dataset.placing; setHomeExpanded(false); }
+      if (pause) { clearTimeout(preludeTimer); preludeDeadline = 0; homeDeparture = undefined; returning = undefined; el.removeAttribute("data-returning"); pickupScale = 1; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0; stopHover(); needsLanding = action?.kind === "jump" || playFalling || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); releaseHold(); placing = false; delete el.dataset.placing; setHomeExpanded(false); }
       else { presence.focus(!overlayActive && document.hasFocus(), lastTick); if (overlayActive) updateOverlayPerch(); else connectGeometry(); hearts.pause(overlayActive || presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); armPrelude(); }
     };
     const focusChanged = () => {
@@ -1416,7 +1454,15 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       el.removeAttribute("data-grab-ready");
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
       if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); }
-      else if (!held.cancelled && !held.grabbed && event.type !== "pointercancel") affection();
+      else if (!held.cancelled && !held.grabbed && event.type !== "pointercancel") {
+        const reaction = preferences.petting ? companionTapReaction({ elapsed: performance.now() - held.at, moved: Math.hypot(event.clientX - held.x, event.clientY - held.y), cancelled: held.cancelled, recentMishap: performance.now() < mishapUntil }) : null;
+        if (reaction) {
+          petUntil = 0; const now = performance.now();
+          launch({ kind: "play", play: reaction, target: { x, y, platformId: support }, duration: reduced ? 900 : 3200 }, now);
+          data("play", reaction); paint(25, 0, "play");
+          setAnnouncement(reaction === "bonk-sad" ? "빅타민이 눈치를 보며 잠깐 시무룩해져요." : "깜짝 놀란 빅타민의 눈가가 잠깐 촉촉해져요. 쓰다듬어 달래 줄 수 있어요.");
+        } else affection();
+      }
       else settle({ x, y });
     };
     const lostCapture = (event: PointerEvent) => {
@@ -1488,7 +1534,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // after release/cancel if the browser does not synthesize a click.
       placementPointer = null; clearTimeout(clickGuard); clickGuard = setTimeout(() => { consumePlacementClick = false; }, 500);
     };
-    const click = (event: MouseEvent) => { if (consumePlacementClick) { event.preventDefault(); event.stopImmediatePropagation(); consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard); } };
+    const click = (event: MouseEvent) => { cardPlay.restore(event.target); if (consumePlacementClick) { event.preventDefault(); event.stopImmediatePropagation(); consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard); } };
     const sensePointer = (event: PointerEvent) => {
       if (premiereActive || premiereBounce) return;
       if (!pause && (!overlayActive || isDetailGuest()) && event.pointerType !== "touch") {
@@ -1504,7 +1550,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const captureForSurface = () => {
       if (!positionMemory || !worldSeeded && !supportById(support)) return;
       let anchor: CompanionPositionSnapshot["anchor"];
-      const stable = !pressed && !keyboardHeld && action?.kind !== "jump";
+      const stable = !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling;
       if (stable && isHomeSupport(support) && (homeOccluded || supportedNow())) {
         const floor = isHomeFloor(support), node = document.querySelector(floor ? ".vc-home-floor" : ".vc-home-cushion"), rect = node?.getBoundingClientRect();
         anchor = { kind: floor ? "home-floor" : "home", u: rect && rect.width > 0 ? clamp((x - rect.left) / rect.width, 0, 1) : .5 };
@@ -1632,7 +1678,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // Publish new supports, but input alone owns the displayed world point.
       if (pressed || keyboardHeld || placing) return;
       homeOccluded = false;
-      const residesAtHome = isHomeSupport(support) && !pressed && !keyboardHeld && !placing && !afterPetLanding && (!action || isHomeSupport(action.target.platformId ?? "")) && action?.kind !== "jump";
+      const residesAtHome = isHomeSupport(support) && !pressed && !keyboardHeld && !placing && !afterPetLanding && (!action || isHomeSupport(action.target.platformId ?? "")) && action?.kind !== "jump" && !playFalling;
       if (residesAtHome) {
         const floor = isHomeFloor(support);
         const home = document.querySelector<HTMLElement>(floor ? ".vc-home-floor" : ".vc-home-cushion");
@@ -1814,6 +1860,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     window.addEventListener("resize", parkedLayout, { passive: true }); window.addEventListener("scroll", parkedLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", parkedLayout);
     window.addEventListener("scroll", followLayout, { passive: true, capture: true }); window.addEventListener("vic:companion-home", followLayout); window.addEventListener("vic:side-panel", followLayout);
     window.addEventListener("vic:panel-section", panelChanged);
+    window.addEventListener(COMPANION_CARD_PLAY_EVENT, followLayout);
     window.visualViewport?.addEventListener("scroll", followLayout, { passive: true });
     window.visualViewport?.addEventListener("resize", viewportResized, { passive: true });
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
@@ -1823,10 +1870,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", leave); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
     sync();
     return () => {
-      lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump", homeSupportId: isHomeSupport(support) ? support : undefined };
+      lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       saveCompanionCare(brain.current, true);
       stopped = true; clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      cardPlay.clear();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
       window.removeEventListener("vic:companion-overlay", sync); window.removeEventListener("resize", viewportResized); document.removeEventListener("animationend", queueOverlayPerch, true);
       window.removeEventListener("scroll", detailScrolled, true);
@@ -1839,6 +1887,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       window.removeEventListener("scroll", followLayout, true); window.removeEventListener("vic:companion-home", followLayout); window.removeEventListener("vic:side-panel", followLayout); window.visualViewport?.removeEventListener("scroll", followLayout);
       window.visualViewport?.removeEventListener("resize", viewportResized);
       window.removeEventListener("vic:panel-section", panelChanged);
+      window.removeEventListener(COMPANION_CARD_PLAY_EVENT, followLayout);
       document.removeEventListener("visibilitychange", sync); document.removeEventListener("pointerdown", place, true); document.removeEventListener("click", click, true);
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
@@ -1862,7 +1911,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     <span className="vc-effect" ref={effect} aria-hidden="true" />
     <span className="vc-affection-hearts" aria-hidden="true"><i>♥</i><i>♥</i><i>♥</i></span>
     <span className="vc-petting-hand" ref={pettingHand} aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M10 26c-3-3-5-6-6-9-1-2 1-4 3-2l3 3-1-9c0-3 3-4 4-1l1 6V6c0-3 4-3 4 0v8l1-6c1-3 4-2 4 1l-1 8 2-3c2-2 4 0 2 3l-4 7c-1 2-3 4-6 4h-3Z"/><path className="vc-hand-fold" d="M11 21c2-2 5-2 7 0"/><path className="vc-hand-cuff" d="M10 27h11v4H10Z"/></svg></span>
-    <span className="sr-only" id="vc-help">빅타민의 머리나 몸통에서 마우스를 좌우로 움직이거나 눌러서 쓰다듬기. 끌어서 옮기기. 두 번 누른 뒤 놓을 곳 선택. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
+    <span className="sr-only" id="vc-help">빅타민의 몸 위에서 마우스를 좌우로 움직여 쓰다듬기. 짧게 누르면 톡 치기. 끌어서 옮기기. 두 번 누른 뒤 놓을 곳 선택. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
     <span className="sr-only" role="status">{announcement}</span>
   </div><div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
     {!suspended && !blocked ? homeVisible && homeHost ? createPortal(house, homeHost) : <div className="vc-compact-home" ref={compactHome} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" data-agenda={agenda ? "" : undefined} inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeHome(); } }}>

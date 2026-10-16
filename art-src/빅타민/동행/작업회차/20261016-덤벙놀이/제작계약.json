@@ -1,0 +1,55 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "VICTAMIN-COMPANION-PLAY-20261016",
+  "operation": "new",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "codex",
+  "inputs": [
+    {
+      "id": "REF-016",
+      "source_id": "REF-016",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "id": "REF-017",
+      "source_id": "REF-017",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "authorities": {
+    "mascot": "REF-017"
+  },
+  "opened_files": [
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "mascot_variation_plan": "One unchanged limbless two-eared layered paper-pompom bunny, temporal sprint, tumble, dizzy, recover, glance, tears, sulk, bow, groom and pounce poses. No limbs or new identity.",
+  "scene_exception": "UI animation contact sheet; repeated camera and identity intentional. Cartoony accidents and temporary sadness, no injuries.",
+  "structure_plan": {
+    "connected_anatomy": "Two ears remain connected to the same layered limbless body.",
+    "occluded_continuation": "No new hidden anatomy or rear eyes; all sixteen characters remain completely inside their own cells.",
+    "contacts_support": "Transparent asset without ground/shadow; uniform88% baseline for runtime registration.",
+    "vr_physics_corrections": "Preserve the source square paper layers and long ears; do not invent limbs or copy VR clipping."
+  },
+  "scene_plan": {
+    "mode": "design_sheet",
+    "purpose": "Six rows of six high-resolution action key poses for local finite play clips."
+  },
+  "construction_method": "One builtin transparent image generation from unchanged original design references. Subsequent cropping/packing and bounded2D mechanical animation baking preserve native pixels as textures; no manual facial painting, Python raster editing or synthesized detail claims.",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-PLAY-20261016\\plan.json",
+    "sha256": "E4DFDCAE8E266EB5CA0E60EF70E8D0BB6AEEB3C11D3687BB93BFEC4B956A1F4D"
+  }
+}

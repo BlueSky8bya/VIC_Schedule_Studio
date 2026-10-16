@@ -99,14 +99,35 @@ export function companionTrashProgress(elapsedMs: number): number {
   return Number.isFinite(elapsedMs) ? Math.max(0, Math.min(1, elapsedMs / COMPANION_TRASH_DWELL_MS)) : 0;
 }
 
-/** Deliberate placement falls onto a real lower ledge. Prefer the same x;
- * only a nearby edge may attract a fruit. No upper/distant fallback invents
- * a floor or teleports a dropped fruit to a different calendar column. */
-export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[]): CompanionFood {
+/** Deliberate placement first falls onto a real lower ledge at the same x or
+ * a nearby edge. Only the optional final screen-floor fallback may attract
+ * farther to an already protected floor span; it never picks a distant card. */
+export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[], fallbackViewport?: Readonly<{ width: number; height: number }>): CompanionFood {
   if (![point.x, point.y].every(Number.isFinite)) return { id: food.id, kind: food.kind, x: food.x, y: food.y };
   const support = firstCompanionSupportBelow(point, platforms.filter(platform => !isCompanionFoodBedSupport(platform.id)), 22);
-  return support ? { id: food.id, kind: food.kind, x: Math.max(support.x, Math.min(support.x + support.width, point.x)), y: support.y, platformId: support.id }
-    : { id: food.id, kind: food.kind, x: point.x, y: point.y };
+  if (support) return { id: food.id, kind: food.kind, x: Math.max(support.x, Math.min(support.x + support.width, point.x)), y: support.y, platformId: support.id };
+  if (fallbackViewport && [fallbackViewport.width, fallbackViewport.height].every(Number.isFinite) && fallbackViewport.width >= 48 && fallbackViewport.height > 0) {
+    // The geometry's food32 tier already protects the whole44px native input
+    // against visible controls and text. Reuse those exact floor spans rather
+    // than manufacturing a full-width ledge across a bottom toolbar. This
+    // wider attraction is only a final floor fallback, never a distant card.
+    let floor: Platform | undefined, floorX = point.x, distance = Infinity;
+    for (const candidate of platforms) {
+      if (candidate.kind !== "floor" || !/^viewport-floor-food(?:-\d+)?$/.test(candidate.id)
+        || ![candidate.x, candidate.y, candidate.width, candidate.x + candidate.width].every(Number.isFinite)
+        || candidate.width <= 0 || candidate.y < point.y - .5) continue;
+      const x = Math.max(candidate.x, Math.min(candidate.x + candidate.width, point.x)), delta = Math.abs(x - point.x);
+      if (delta < distance || delta === distance && (!floor || candidate.y < floor.y || candidate.y === floor.y && candidate.id < floor.id)) {
+        floor = candidate; floorX = x; distance = delta;
+      }
+    }
+    if (floor) return { id: food.id, kind: food.kind, x: floorX, y: floor.y, platformId: floor.id };
+    // No safe screen-floor span exists. Fall completely below the visible
+    // input plane, retaining a document/world attachment for later scrolling
+    // and retrieval. It remains unsupported and cannot be offered as food.
+    return { id: food.id, kind: food.kind, x: Math.max(24, Math.min(fallbackViewport.width - 24, point.x)), y: Math.max(point.y, fallbackViewport.height + 44) };
+  }
+  return { id: food.id, kind: food.kind, x: point.x, y: point.y };
 }
 
 export function reconcileCompanionFood(food: CompanionFood, platforms: readonly Platform[]): CompanionFood {

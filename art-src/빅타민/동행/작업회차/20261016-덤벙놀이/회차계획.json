@@ -1,0 +1,33 @@
+{
+  "status": "PLANNED_USER_DIRECTED_CYCLE",
+  "plan_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-PLAY-20261016\\plan.json",
+  "plan_sha256": "E4DFDCAE8E266EB5CA0E60EF70E8D0BB6AEEB3C11D3687BB93BFEC4B956A1F4D",
+  "plan": {
+    "schema_version": 1,
+    "workflow_mode": "user_directed_cycle",
+    "cycle_id": "06586E2A149568028ABF",
+    "run_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-PLAY-20261016\\cycle_06586E2A149568028ABF",
+    "action_budget_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-PLAY-20261016\\user_actions_F0A37C465EA3642B0BD8",
+    "work_id": "VICTAMIN-COMPANION-PLAY-20261016",
+    "phase": "generate",
+    "user_source": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-92b93d12055a2b032c161dcf.json",
+      "sha256": "36A52A0DB48771E11736D261A3CCCE9E33AB3991142078A764A7EBA353547459",
+      "excerpt": "빅타민은 이게 치어리더가 사용하는 폼폼을 모티브인 토끼 팬캐릭터거든? 그래서 최대한 활발하고 토리님처럼 덤벙거리는 성격을 디폴트로 해줘."
+    },
+    "role_focus": {},
+    "force_review": false,
+    "candidate": null,
+    "policy_sha256": "2153332C2BC33B0FECA8D689FEFADEF131A26B1F518FDFBE666ACEBD07766F91",
+    "request_turn_id": "msg_01a1440c-2626-73a2-b53d-bc854ffb287b",
+    "limits": {
+      "imagegen_calls": 1,
+      "review_rounds": 0,
+      "repair_calls": 0,
+      "post_repair_agent_rounds": 0
+    },
+    "next_action": "one_generation_then_show",
+    "automatic_full_review": false,
+    "user_approval_is_visual_not_numeric_certification": true
+  }
+}
