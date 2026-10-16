@@ -7,6 +7,7 @@ import { COMPANION_FEED_ACTION_BUDGET, COMPANION_FEED_RETRY_MS, planCompanionGoa
 import { MAX_COMPANION_FOOD } from "./food-capacity";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionAttention } from "./deliberation";
+import { advanceCompanionHabits, DEFAULT_COMPANION_HABITS, type CompanionHabits } from "./habits";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -65,6 +66,7 @@ export type CompanionWorld = {
   pointer?: { x: number; y: number };
 };
 export type CompanionBrain = CompanionCare & {
+  habits?: CompanionHabits;
   createdAt: number;
   recent: CompanionActionKind[];
   visited: string[];
@@ -195,13 +197,13 @@ export function createBrain(now = 0, rng: () => number = Math.random): Companion
     curiosity: .6 + random(rng) * .2,
     hunger: .58,
     recent: [], visited: [], cooldowns: {}, heading: 1,
-    activeMs: 0, affect: createCompanionAffect(), places: [],
+    activeMs: 0, affect: createCompanionAffect(), places: [], habits: { ...DEFAULT_COMPANION_HABITS },
   };
 }
 
 /** Call only for visible, active elapsed time. A long tab sleep cannot make the
  * character exhausted or force a catch-up action on return. */
-export function advanceBrain(brain: CompanionBrain, elapsedMs: number): CompanionBrain {
+export function advanceBrain(brain: CompanionBrain, elapsedMs: number, learning = true): CompanionBrain {
   const seconds = clamp(Number.isFinite(elapsedMs) ? elapsedMs / 1000 : 0, 0, 30);
   return {
     ...brain,
@@ -211,6 +213,7 @@ export function advanceBrain(brain: CompanionBrain, elapsedMs: number): Companio
     hunger: unit(brain.hunger + seconds / 900),
     activeMs: (brain.activeMs ?? 0) + seconds * 1000,
     affect: advanceCompanionAffect(brain.affect ?? createCompanionAffect(), seconds * 1000),
+    habits: advanceCompanionHabits(brain.habits, seconds * 1000, learning),
   };
 }
 
@@ -284,7 +287,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
     // Long safe floors remain useful routes, with short finite walks that
     // revalidate the current graph instead of owning the pet for half a minute.
     const step = first.kind === "walk" ? { ...first, target: { ...first.target, x: world.x + clamp(first.target.x - world.x, -180, 180) } } : first;
-    const speed = getCompanionBehaviorProfile(prefs).walkSpeed;
+    const speed = getCompanionBehaviorProfile(prefs, brain.habits).walkSpeed;
     return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950, foodId: food.id, intention, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), direction: step.target.x < world.x ? -1 : 1 };
   }
   return undefined;
@@ -299,7 +302,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   if (!prefs.enabled || world.paused || !Number.isFinite(world.x) || !Number.isFinite(world.y) || !Number.isFinite(now)) return idle;
   const foodAction = getFoodAction(brain, world, prefs, now);
   if (foodAction) return foodAction;
-  const profile = getCompanionBehaviorProfile(prefs);
+  const profile = getCompanionBehaviorProfile(prefs, brain.habits);
   const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);
   // A rare toe-tap starts only on the actual occupied arrow. The renderer
   // rechecks its exact live control at impact; no remote button targeting.

@@ -11,6 +11,8 @@ export type CompanionPreferences = {
   drag: boolean;
   petting: boolean;
   feeding: boolean;
+  /** Direct shared experiences slowly adjust motivation around these choices. */
+  learnFromYou: boolean;
   /** Habits, motivation and gait are independent; no combination replaces the
    * character design, turns another switch on or changes device capability. */
   animalMode: "default" | "cat" | "dog";
@@ -34,13 +36,14 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   drag: true,
   petting: true,
   feeding: true,
+  learnFromYou: true,
   animalMode: "default",
   speed: "normal",
   size: "large",
   personality: "curious"
 });
 
-const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "drag", "petting", "feeding"] as const;
+const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "drag", "petting", "feeding", "learnFromYou"] as const;
 let volatilePreferences: CompanionPreferences | undefined;
 let lastReadableRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined; owner: Window } | undefined;

@@ -22,7 +22,8 @@ import { projectCompanionSofaBody } from "@/lib/ui/viewer-companion/sofa-pose";
 import { sampleCompanionSofaTravel } from "@/lib/ui/viewer-companion/sofa-travel";
 import { companionPositionPoint, resolveCompanionPosition, type CompanionPositionMemory, type CompanionPositionSnapshot } from "@/lib/ui/viewer-companion/position-memory";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
-import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare } from "@/lib/ui/viewer-companion/care";
+import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits } from "@/lib/ui/viewer-companion/care";
+import { learnCompanionHabits, type CompanionExperience } from "@/lib/ui/viewer-companion/habits";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel } from "@/lib/ui/viewer-companion/motion";
 import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
@@ -171,6 +172,20 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let graphicsMode = readGfxMode();
     const gfxMode = () => graphicsMode;
     if (!careLoaded.current) { brain.current = { ...brain.current, ...loadCompanionCare() }; careLoaded.current = true; }
+    else brain.current = { ...brain.current, habits: loadCompanionCare().habits };
+    const persistCare = (force = false) => { brain.current = { ...brain.current, habits: saveCompanionCare(brain.current, force).habits }; };
+    const offHabits = subscribeCompanionHabits(habits => { brain.current = { ...brain.current, habits }; });
+    const experience = (kind: CompanionExperience) => {
+      if (!preferences.enabled || !preferences.learnFromYou) return false;
+      const habits = learnCompanionHabits(brain.current.habits, kind);
+      if (habits === brain.current.habits) return false;
+      brain.current = { ...brain.current, habits };
+      // Only a credited experience flushes. Persist its spent credit too, so
+      // a quick reload cannot train another full experience immediately.
+      persistCare(true);
+      return true;
+    };
+    const transferred = () => { experience("played"); logActivity("ui.click", { target: "companion-drag" }); };
     const publishCare = () => { const { hunger, affection, energy, curiosity } = brain.current; setCare({ hunger, affection, energy, curiosity }); };
     publishCare();
     const hearts = createCompanionHearts(page);
@@ -646,6 +661,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!guest) { pendingMonth = false; awaitingAtX = false; afterPetLanding = !supportedNow(); restAfterLanding = false; clearAction(); }
       petUntil = performance.now() + (reduced ? 650 : COMPANION_TIMING.petReward);
       brain.current = recordCompanionEvent(brain.current, "petted");
+      experience("petted");
       // One acknowledged gesture/reward, never a pose or pointer sample.
       logActivity("ui.click", { target: "companion-pet" });
       data("mood", "happy");
@@ -853,7 +869,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         }
         paint(hide.phase === "emerging" ? 15 : 14, hide.progress * 15, hide.phase === "emerging" ? "emerge" : "hide"); lastNeeds = lastCare = now; schedule(); return;
       }
-      if (!returning && presence.phase === "active" && now - lastNeeds >= 250) { brain.current = advanceBrain(brain.current, now - lastNeeds); saveCompanionCare(brain.current); lastNeeds = now; }
+      if (!returning && presence.phase === "active" && now - lastNeeds >= 250) { brain.current = advanceBrain(brain.current, now - lastNeeds, preferences.learnFromYou); persistCare(); lastNeeds = now; }
       if (now - lastCare >= 1000) { publishCare(); lastCare = now; }
       const phase = presence.step(now, Boolean(returning || action || pressed || keyboardHeld || placing || now < petUntil || afterPetLanding || pendingMonth && !overlayActive));
       data("presence", phase);
@@ -887,7 +903,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           el.dataset.dreaming = "";
           offGeometry?.(); offGeometry = undefined; geometryReady = false;
           hearts.pause(true);
-          publishCare(); saveCompanionCare(brain.current, true);
+          publishCare(); persistCare(true);
           // No companion rAF, timer, needs or layout observer remains. Only
           // the small compositor sleep cue moves while OBS can still see it.
           return;
@@ -1026,7 +1042,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           const rested = sleeping, ejected = Boolean(homeDeparture?.flying);
           const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump"));
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
-            brain.current = recordCompanionEvent(brain.current, "ate"); saveCompanionCare(brain.current, true);
+            brain.current = recordCompanionEvent(brain.current, "ate"); if (!experience("fed")) persistCare(true);
             petUntil = now + (reduced ? 400 : 1100);
           }
           if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
@@ -1165,7 +1181,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const sheet = hiding?.sheet ?? extractedFrom;
       const rect = sheet?.isConnected ? sheet.getBoundingClientRect() : null;
       const inside = rect && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
-      if (inside && hiding?.ready) { if (moved) logActivity("ui.click", { target: "companion-drag" }); updateOverlayPerch(); paint(9, 0, "watch"); wakeGuest(); return; }
+      if (inside && hiding?.ready) { if (moved) transferred(); updateOverlayPerch(); paint(9, 0, "watch"); wakeGuest(); return; }
       // A user extraction remains a display-only guest until this window
       // closes. Only the next real world geometry delivery consumes its one
       // pending drop; no planner, vote or food action runs in the dialog.
@@ -1177,8 +1193,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       overlayPerch = placeCompanionOverlayPerch(shown, size, { width: innerWidth, height: innerHeight }, overlayWindows().map(node => node.getBoundingClientRect()));
       pendingDetailDrop = { x: overlayPerch.x, y: overlayPerch.y };
       if (moved) {
-        if (extracting) logActivity("ui.click", { target: "companion-extract" });
-        else logActivity("ui.click", { target: "companion-drag" });
+        if (extracting) { experience("played"); logActivity("ui.click", { target: "companion-extract" }); }
+        else transferred();
       }
       paint(9, 0, "watch"); wakeGuest();
     };
@@ -1422,7 +1438,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (pause) { if (isDetailGuest()) cancelGuestInput(); else releaseOverlayDrag(); }
       if (pause) { overlayPlacing = false; delete el.dataset.placing; }
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
-      if (pause) { clearTimeout(preludeTimer); preludeDeadline = 0; homeDeparture = undefined; returning = undefined; el.removeAttribute("data-returning"); pickupScale = 1; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0; stopHover(); needsLanding = action?.kind === "jump" || playFalling || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); saveCompanionCare(brain.current, true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); releaseHold(); placing = false; delete el.dataset.placing; setHomeExpanded(false); }
+      if (pause) { clearTimeout(preludeTimer); preludeDeadline = 0; homeDeparture = undefined; returning = undefined; el.removeAttribute("data-returning"); pickupScale = 1; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0; stopHover(); needsLanding = action?.kind === "jump" || playFalling || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); persistCare(true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); releaseHold(); placing = false; delete el.dataset.placing; setHomeExpanded(false); }
       else { presence.focus(!overlayActive && document.hasFocus(), lastTick); if (overlayActive) updateOverlayPerch(); else connectGeometry(); hearts.pause(overlayActive || presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); armPrelude(); }
     };
     const focusChanged = () => {
@@ -1540,7 +1556,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const point = event.type === "pointercancel" ? overlayDrag.worldOrigin : overlayPerch;
         releaseOverlayDrag(); overlayPerch = undefined;
         if (point) { x = point.x; y = point.y; clearAction(); settle({ x, y }); }
-        if (moved && point) logActivity("ui.click", { target: "companion-drag" });
+        if (moved && point) transferred();
         lastTick = lastNeeds = lastPaint = performance.now(); schedule(); return;
       }
       if (!pressed || pressed.id !== event.pointerId) return;
@@ -1552,10 +1568,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.type === "pointercancel" || held.cancelled) { resetInertia(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); }
       el.removeAttribute("data-grab-ready");
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
-      if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); if (!held.cancelled && event.type !== "pointercancel") logActivity("ui.click", { target: "companion-drag" }); }
+      if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); if (!held.cancelled && event.type !== "pointercancel") transferred(); }
       else if (!held.cancelled && !held.grabbed && event.type !== "pointercancel") {
         const reaction = preferences.petting ? companionTapReaction({ elapsed: performance.now() - held.at, moved: Math.hypot(event.clientX - held.x, event.clientY - held.y), cancelled: held.cancelled, recentMishap: performance.now() < mishapUntil }) : null;
         if (reaction) {
+          experience("bonked");
           petUntil = 0; const now = performance.now();
           launch({ kind: "play", play: reaction, target: { x, y, platformId: support }, duration: companionPlayDuration(reaction, reduced) }, now);
           data("play", reaction); paint(25, 0, "play");
@@ -1602,7 +1619,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
-      else if (event.key === " " && preferences.drag) { event.preventDefault(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) { settle({ x, y }); if (keyboardMoved) logActivity("ui.click", { target: "companion-drag" }); } keyboardMoved = false; }
+      else if (event.key === " " && preferences.drag) { event.preventDefault(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
       else if (event.key === "Escape") { event.preventDefault(); pendingMonth = false; keyboardHeld = false; placing = false; delete el.dataset.placing; settle({ x, y }); }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
@@ -1619,7 +1636,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         event.preventDefault(); event.stopImmediatePropagation();
         consumePlacementClick = true; placementPointer = event.pointerId; clearTimeout(clickGuard);
         overlayPerch = placeCompanionOverlayPerch({ x: event.clientX, y: event.clientY, scale: overlayPerch?.scale }, size, { width: innerWidth, height: innerHeight }, overlayWindows().map(node => node.getBoundingClientRect()));
-        logActivity("ui.click", { target: "companion-drag" });
+        transferred();
         perchAnimation?.cancel(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); return;
       }
       if (pause || overlayActive || !placing || el.contains(event.target as Node)) return;
@@ -1628,7 +1645,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // consume this placement's click before a real card/heart can receive it.
       consumePlacementClick = true; placementPointer = event.pointerId; clearTimeout(clickGuard);
       x = clamp(event.clientX, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY, size + 8, innerHeight - 12); settle({ x, y });
-      logActivity("ui.click", { target: "companion-drag" });
+      transferred();
     };
     const placementReleased = (event: PointerEvent) => {
       if (placementPointer !== event.pointerId) return;
@@ -1985,9 +2002,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", leave); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
     sync();
     return () => {
+      offHabits();
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
-      saveCompanionCare(brain.current, true);
+      persistCare(true);
       stopped = true; clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       cardPlay.clear();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);

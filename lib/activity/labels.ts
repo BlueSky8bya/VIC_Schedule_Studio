@@ -633,6 +633,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-speed": { name: "빅타민 걸음", area: "설정", opts: { relaxed: "느긋하게", normal: "보통", lively: "발랄하게" } },
   "companion-animal": { name: "빅타민 동물 모드", area: "설정", opts: { default: "빅타민", cat: "고양이", dog: "강아지" } },
   "companion-personality": { name: "빅타민 성격", area: "설정", opts: { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기" } },
+  "companion-learning-enabled": { name: "빅타민 함께 지내며 배우기", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-learning-reset": { name: "빅타민 배운 습관 초기화", area: "설정" },
   "companion-home-open": { name: "빅타민 집 열기", area: "빅타민" },
   "companion-home-close": { name: "빅타민 집 닫기", area: "빅타민" },
   "companion-home-fold": { name: "빅타민 집", area: "빅타민", opts: { open: "펴기", close: "접기" } },

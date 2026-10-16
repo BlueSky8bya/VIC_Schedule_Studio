@@ -1,8 +1,14 @@
 # Open verification and operations checks
 
-Updated: 2026-10-14
+Updated: 2026-10-17
 
 This file keeps unresolved evidence gaps out of startup history. A prior PASS applies to its tested revision and scope only. Recheck before closing; do not infer current production state from old notes.
+
+## COMPANION-TEXTURE — 첫 CSS packet paint 간격
+
+[성향 학습 검증](COMPANION_HABITS-20261017.md)의 추가 공유 회귀에서 편집실 음식 관찰 screenshot이 그림자만 기록됐다(24개 중23 PASS/1 FAIL). 직전 deliberation 검사에서도 같은 증상이 보존되어 있다.075의 sprite/paint/CSS 경로 변경은 없다. Image decode 뒤 CSS URI를 교체하는 경로에서 별도 CSS 요청과 첫 paint 사이의 간격을 관찰했다. route interception은 HTTP cache를 끄므로 실제 운영 빈도/재현은 별도 확인이 필요하다. PASS 재실행으로 원 실패를 지우지 않는다.
+
+후속은 이미 decode한 실제 이미지의 단일 표시 경로 등으로 전환 간격을 없애되,92px 등록/clip·소파 몸체 경계·프레임 예산·최대3 decoded 이미지·OFF 요청0을 보존하는 범위다. 임의 대기나 screenshot 조건 완화는 수정 증거가 아니다. 이번 느린 성향 학습 기능과 별도이며 실제 OBS/일반 운영에서 해결됐다고 주장하지 않는다.
 
 ## TEASER-PREMIERE — authorized rollout and remaining QA
 

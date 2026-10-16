@@ -6,10 +6,10 @@ import { buildGist, buildStory, type NarrativeItem } from "@/lib/activity/narrat
 const TOGGLES = [
   "companion-enabled", "companion-roam", "companion-jump", "companion-sleep",
   "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-panel-prank",
-  "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled"
+  "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled"
 ] as const;
 const SETTINGS = [
-  "settings-companion-tab", ...TOGGLES, "companion-speed", "companion-animal", "companion-personality"
+  "settings-companion-tab", ...TOGGLES, "companion-speed", "companion-animal", "companion-personality", "companion-learning-reset"
 ] as const;
 const ACTIONS = [
   "companion-home-open", "companion-home-close", "companion-home-fold", "companion-home-call",

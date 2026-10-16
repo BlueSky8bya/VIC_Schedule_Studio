@@ -62,7 +62,8 @@ export function deliberateCompanionAction(brain: CompanionBrain, world: Companio
       if (!retained && point) {
         const speciesMs = prefs.animalMode === "cat" ? 410 : prefs.animalMode === "dog" ? 250 : 330;
         const gaitScale = prefs.speed === "relaxed" ? 1.2 : prefs.speed === "lively" ? .8 : 1;
-        const duration = Math.max(180, Math.min(520, Math.round(speciesMs * gaitScale)));
+        const confidence = prefs.learnFromYou === false ? 0 : Math.max(-1, Math.min(1, brain.habits?.confidence ?? 0));
+        const duration = Math.max(180, Math.min(520, Math.round(speciesMs * gaitScale * (1 - confidence * .15))));
         const intention: CompanionIntention = { ...goal, stage: "consider" };
         return {
           kind: "look", target: { x: world.x, y: world.y, platformId: world.platformId }, duration,
@@ -78,7 +79,7 @@ export function deliberateCompanionAction(brain: CompanionBrain, world: Companio
   // Existing local social choices gain a real gaze cue, not an additional
   // action. Cats without the affectionate personality keep their own distance.
   const pointer = world.pointer;
-  if ((candidate.kind === "look" || candidate.kind === "sniff") && !candidate.intention && getCompanionBehaviorProfile(prefs).socialPull >= 1
+  if ((candidate.kind === "look" || candidate.kind === "sniff") && !candidate.intention && getCompanionBehaviorProfile(prefs, brain.habits).socialPull >= 1
     && finitePoint(pointer) && Math.abs(pointer.x - world.x) < 600 && Math.abs(pointer.y - world.y) < 160) {
     return { ...candidate, direction: pointer.x === world.x ? brain.heading : pointer.x < world.x ? -1 : 1, attention: { kind: "social", point: { ...pointer } } };
   }

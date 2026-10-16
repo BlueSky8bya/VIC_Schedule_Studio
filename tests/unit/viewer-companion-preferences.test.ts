@@ -35,7 +35,7 @@ describe("viewer companion device preferences", () => {
     expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toMatchObject({ size: "large", enabled: false, petting: false });
   });
   it("retains every detailed choice across master OFF and ON", () => {
-    const chosen = { enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, drag: false, petting: false, feeding: false, animalMode: "cat", speed: "relaxed", size: "large", personality: "sleepy" } as const;
+    const chosen = { enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, drag: false, petting: false, feeding: false, learnFromYou: false, animalMode: "cat", speed: "relaxed", size: "large", personality: "sleepy" } as const;
     setCompanionPreferences(chosen);
     setCompanionPreferences({ enabled: false });
     expect(getCompanionPreferences()).toEqual({ ...chosen, enabled: false });

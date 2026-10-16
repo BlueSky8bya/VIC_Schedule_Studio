@@ -26,6 +26,8 @@ import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
 import { Clock3 } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
+import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
@@ -241,11 +243,11 @@ const companionTabs = [
   { key: "personality", label: "성격" }
 ] as const;
 type CompanionTab = typeof companionTabs[number]["key"];
-type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "drag" | "petting" | "feeding";
+type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "drag" | "petting" | "feeding" | "learnFromYou";
 const companionToggleActions: Record<CompanionToggle, string> = {
   roam: "companion-roam", jump: "companion-jump", sleep: "companion-sleep",
   heartPrank: "companion-heart-prank", cardPrank: "companion-card-prank", ambientPrank: "companion-hide", panelPrank: "companion-panel-prank",
-  drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled"
+  drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled", learnFromYou: "companion-learning-enabled"
 };
 
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
@@ -321,8 +323,13 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">성격</RowLabel>
           <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
         </div>
+        {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
+        <div className="role-help-haptics">
+          <RowLabel icon={<Undo2 size={15} />} tone="leaf">배운 습관</RowLabel>
+          <button aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); hapticTick(); playSfx("tab"); }} type="button">초기화</button>
+        </div>
       </div>
-      <p className="rhh-group-foot">동물 모드는 하나만 골라요. 그 습성 위에 성격이 더해져 좋아하는 놀이와 쉬는 빈도가 달라져요.</p>
+      <p className="rhh-group-foot">고른 성격을 바탕으로 함께 지낸 경험이 조금씩 쌓여요. 꺼 두면 배운 습관을 보존하고 고른 성격으로 행동해요.</p>
     </div>
   </>;
 }
