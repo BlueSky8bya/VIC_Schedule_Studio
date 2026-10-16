@@ -78,7 +78,8 @@ export function followCompanionFood(attachment: CompanionFoodAttachment, scroll:
 
 /** Logical support coordinates stay unchanged while the separate presentation
  * approaches the mouth. Mouth coordinates describe its viewport centre; the
- * 44px food button's art centre is 16px above its foot anchor. */
+ * 44px food button's art centre is 16px above its foot anchor. Eating art
+ * scales/rotates around that centre, so the final bite stays at the mouth. */
 export function presentCompanionFood(food: { x: number; y: number }, progress: number, mouth?: { x: number; y: number }, facing: -1 | 1 = 1, reduced = false): CompanionFoodPresentation {
   const p = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 0;
   if (!mouth || ![mouth.x, mouth.y].every(Number.isFinite)) return { x: food.x, y: food.y, scale: reduced ? 1 : Math.max(.25, 1 - p * .72), rotation: 0 };
@@ -87,10 +88,11 @@ export function presentCompanionFood(food: { x: number; y: number }, progress: n
   if (reduced) return { ...target, scale: 1, rotation: 0 };
   const lift = Math.min(1, p / .24), eased = lift * lift * (3 - 2 * lift);
   const chewing = Math.max(0, (p - .24) / .76), nibble = Math.sin(chewing * Math.PI * 14);
+  const remaining = 1 - chewing;
   return {
     x: food.x + (target.x - food.x) * eased,
     y: food.y + (target.y - food.y) * eased - Math.sin(lift * Math.PI) * 12 + (chewing > 0 ? nibble * .8 : 0),
-    scale: Math.max(.25, 1 - chewing * .72 + (chewing > 0 ? nibble * .018 : 0)),
+    scale: remaining * (1 + (chewing > 0 ? nibble * .018 : 0)),
     rotation: -direction * Math.sin(lift * Math.PI) * 16 + (chewing > 0 ? nibble * 4 * direction : 0),
   };
 }

@@ -85,8 +85,8 @@ async function allowDocumentScroll(page: Page) {
     const spacer = document.createElement("div"); spacer.setAttribute("aria-hidden", "true"); spacer.style.cssText = "height:1400px;pointer-events:none"; document.body.append(spacer);
   });
 }
-async function identifyInitialSupport(page: Page) {
-  const found = await page.evaluate(selector => {
+async function identifyInitialSupport(page: Page, awayFrom?: { x: number; y: number }) {
+  const found = await page.evaluate(({ selector, awayFrom }) => {
     // Deliberate food/pet placement now collides with the rendered card top,
     // independently of the autonomous text ledges. Pick a real shared ray with
     // room for the92px pet body and44x38 snack hitbox above that same card.
@@ -101,14 +101,15 @@ async function identifyInitialSupport(page: Page) {
       // clear point toward either side preserves hit-target protection.
       for (const fraction of [.5, .86, .14]) {
         const x = rect.left + rect.width * fraction;
+        if (awayFrom && Math.hypot(x - awayFrom.x, y - awayFrom.y) < 180) continue;
         if (x < 50 || x > innerWidth - 50 || controls.some(control => control.left < x + halfWidth && control.right > x - halfWidth && control.top < y && control.bottom > y - height)) continue;
         if (document.elementFromPoint(x, rect.top + Math.min(4, rect.height / 2))?.closest(selector) !== node) continue;
         node.setAttribute("data-test-food-anchor", "");
-        return { x: x - rect.left, y: -3 };
+        return { x: x - rect.left, y: -3, point: { x, y } };
       }
     }
     return null;
-  }, CARD_SURFACES);
+  }, { selector: CARD_SURFACES, awayFrom });
   expect(found, "fixture needs a visible actual card top with a clear pet/food ray").not.toBeNull();
   return found!;
 }
@@ -337,7 +338,10 @@ for (const input of ["pointer", "keyboard"] as const) {
       await page.mouse.move(before.x, before.y); await page.mouse.down();
       await expect(item).not.toHaveAttribute("data-eating");
       const held = await centre(item); expect(Math.hypot(held.x - before.x, held.y - before.y)).toBeLessThan(12);
-      await page.mouse.move(480, page.viewportSize()!.height - 26, { steps: 8 }); await page.mouse.up();
+      // The fixed month bar can put the actual floor above height−26. Drop
+      // onto another measured card, so later native Delete has a visible target.
+      const putDown = (await identifyInitialSupport(page, target)).point;
+      await page.mouse.move(putDown.x, putDown.y - 40, { steps: 8 }); await page.mouse.up();
     } else {
       await item.focus(); await item.press("Enter"); await expect(item).toHaveAttribute("data-selected", "");
       const held = await centre(item); expect(Math.hypot(held.x - before.x, held.y - before.y)).toBeLessThan(12);
@@ -347,6 +351,7 @@ for (const input of ["pointer", "keyboard"] as const) {
     await expect(item).not.toHaveAttribute("data-eating"); await expect(item).not.toHaveAttribute("data-selected");
     await page.waitForTimeout(2900); await expect(foods(page)).toHaveCount(1);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!).hunger)).toBeGreaterThan(.5);
-    await item.focus(); await item.press("Delete"); await expect(foods(page)).toHaveCount(0);
+    await expect(item).toBeVisible(); await item.focus(); await expect(item).toBeFocused();
+    await item.press("Delete"); await expect(foods(page)).toHaveCount(0);
   });
 }

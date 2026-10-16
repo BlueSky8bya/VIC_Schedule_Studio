@@ -213,8 +213,9 @@ describe("companion food presentation", () => {
     const poses = Array.from({ length: 77 }, (_, i) => presentCompanionFood(apple, .24 + i / 100, mouth));
     expect(new Set(poses.map(pose => pose.rotation.toFixed(2))).size).toBeGreaterThan(20);
     expect(poses.every(pose => Math.abs(pose.x - 424) < .001 && Math.abs(pose.y - 276) <= .801)).toBe(true);
-    expect(poses.at(-1)!.scale).toBeCloseTo(.28);
-    expect(poses.every(pose => pose.scale >= .25 && pose.scale <= 1.02)).toBe(true);
+    expect(poses.at(-1)!.scale).toBe(0);
+    expect(poses.every(pose => pose.scale >= 0 && pose.scale <= 1.02)).toBe(true);
+    expect(presentCompanionFood(apple, .95, mouth).scale).toBeLessThan(.1);
   });
   it("mirrors the small approach offset, freezes reduced motion, and safely clamps bad progress", () => {
     expect(presentCompanionFood(apple, .24, mouth, -1).x).toBe(416);
