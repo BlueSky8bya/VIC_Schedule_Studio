@@ -1,6 +1,6 @@
 # 빅타민 프레임 경로·모바일 로그아웃 검증
 
-2026-10-16 KST. [PLAN-066](../plans/PLAN-20261016-066-companion-frame-pipeline.md). 기준/후보 production 빌드의 전후 측정과 최종 렌더41개를 완료했다. 운영 배포 확인은 진행 중이다. 모든 상황의 처리 시간 감소나 실제 OBS 송출 품질을 확정하지 않는다.
+2026-10-16 KST. [PLAN-066](../plans/PLAN-20261016-066-companion-frame-pipeline.md). 제품 `f8ca092870590b092dbe78ceeb4343714ccb87f0`의 전후 측정·최종 렌더41개·운영 배포 확인을 완료했다. 모든 상황의 처리 시간 감소나 실제 OBS 송출 품질을 확정하지 않는다.
 
 ## 변경 원인과 경로
 
@@ -58,12 +58,21 @@
 | 전후 frame/layout/style/JS 비교 | 위 표와 제한. `.scratch-pw/companion-066-comparison.json`, `companion-066-final-receipt.json`에 원본 경로·환경·제품SHA·요청 자산SHA·예외를 보존했다. |
 | 최종 type/lint/unit/build | 최종 production build40554 exit0(type/lint 포함), 관련 최종 unit37파일417개 PASS(10:29 KST). 앞선 넓은458개 실행과 합산하지 않는다. |
 | 실제 입력·UI 회귀 | 최종41/41 PASS: 기존 공유22(148.65초), 위치 연결6(48.8초), 추가13(70.7초), child모두0·retry/skip/flaky0. `.scratch-pw/companion-066-final-v2-suite-summary.json`, integration-final2/continuity-v4/additional-final2의 각 report/results/raw를 보존한다. |
-| 운영·배포 | 배포 SHA/운영 재확인 대기. 실제 일정 수정·저장·시험 데이터 생성은 하지 않는다. |
+| 운영·배포 | f8ca0928 main push 후 Vercel success·운영 API의 전체 build SHA 일치. 실제 개발자 모바일 편집실과 익명 PC/mobile3뷰·GET gate를 아래처럼 확인했다. 운영 일정 수정/저장/시험 데이터 생성0. |
 | 문서 하네스 | exit1: 기존 Active rule IDs inventory/mapping 불일치2건. 제품 type/lint/build 결과와 구별한다. |
 
 공유22는 실제 귀/몸통 잡기·50% hover excursion·cold decode·두 축 관성·전체 몸체/viewport·소파 안/밖 낙하·일반 창/blur/parked·reduced/off·집 바닥 먹기·최초공개 집 퇴장/합류/반환·OFF 관객을 포함한다. 위치 연결6은 owner/developer 왕복·실제 쿠션/바닥·접힌 집 복구/350ms writes0·안전 바닥·모바일 제외를 확인한다. 추가13은390/coarse 모바일 logout/gear·두 화면 native scroll/800ms 지연 후 첫 coherent DOM batch·native full/lite/full 변경·8개 음식의 낙하/집 FLIP·full/lite 보행·소파 세 경로다. off는 native picker에서 선택했다고 주장하지 않고 기존 초기 off 검사를 사용한다. 읽기용 preview POST는 별도 집계하고 실제 mutation 전달은 차단한다.
 
 시각 검수는 초기 최종 후보 PNG10장과 최종 재실행의 모바일·held/소파/blur 대표 화면을 구별해 읽었다. 제목 오른쪽 로그아웃·월 이동 줄 gear, 실제 표시 크기의 HD, 소파 전후 깊이와 중립 키보드 표시는 확인했으나 정지 PNG로 모든 이동 경로나8개 음식 수량을 증명하지 않는다. 기존221개 통합 증거와 motion18개의 SHA를 백업/복원했고 초기 실패4개·진단·최종 성공의 raw를 모두 분리했다.
+
+## 실제 운영 확인
+
+- 기존 Chrome의 개발자 로그인 세션에서 열린 편집창/일반 창이 없음을 확인한 후 새 배포를 읽었다. 인증/세션 추출·실제 로그아웃 클릭·권한 변경·일정 입력/저장 없이 UI만 확인했다.
+- 실제 CSS390×844 모바일 편집실의 로그아웃 grid row1, 제목/로그아웃 중앙Y가 모두34.34028px, gear top65.67709px/right13.99303px였다. 설정을 실제로 열고 X로 닫은 뒤 `/studio` 유지·dialog0·원래 gear 초점 복원을 확인했다. mobile pet0, viewport override 해제 후 PC pet1이었다. 교감/볼륨 등 저장 취향을 바꾸지 않았다.
+- 모바일 전환의 scroll anchoring으로220px 내려간 초기 캡처는 최종 배치 증거로 쓰지 않았다. native Ctrl+Home으로 실제 scroll0을 확인한 뒤 제목/로그아웃/월 이동/gear가 함께 있는 `companion-066-production-mobile-header-correct.jpg`를 새로 저장했다. 원래 scroll0과 PC 화면을 복구했다.
+- 익명 운영 PC1920/DPR2·390×844·1120×600 coarse3뷰 smoke exit0. PC 실제 집기/관성/hover/음식8개/소파 앞면/집 접기 복귀, 모바일 pet/집/asset/설정 탭0·기존 master 취향 보존·설정 X/Back/focus를 확인했다. 각 뷰 POST `/`1회는 차단했고 실제 mutation 전달0/pageerror0·SOOP GET stub각1회였다. 현재/미래 달에 시험 일정을 만들지 않고 기존2025-09를 읽었다. 초기 smoke 명령의 `VIC_VERIFY_SHA` 누락은 브라우저 시작 전 preflight 실패였으며 변수를 지정한 실행과 구별한다.
+- 운영 GET gate exit0. 두 fixture는 HTTP200 스트림의404 NotFound fallback이며 제품 markup0, 익명 Studio는 공개 화면으로 streamed redirect/Studio markup0이었다. 이는 전체 RLS/과거 노출 부재 검증이 아니다.
+- `.scratch-pw/companion-066-product-production-deploy.json`, `companion-066-public-production.json`, `companion-066-pc-public-production.json`, `companion-066-production-gates.json`에 배포/운영 원자료를 보존했다. 최종4파일 SHA는 `companion-066-final-product-hashes.json`, 최종41개 요약은 `companion-066-final-v2-qa-summary.json`이다. 종료 문서는 제품 파일을 더 수정하지 않는다.
 
 브라우저 부하/CPU throttle 검증은 해당 브라우저·장비 조건의 증거다. 실제 OBS 장면의 인코더/GPU·SOOP 업로드/수신·네트워크 지연을 측정한 실험이 아니며, 모든 방송 환경의 프레임 안정성을 보증하지 않는다.
 

@@ -16,4 +16,4 @@
 3. 관련 단위·타입·린트·production build, 동일 입력의 전후 비교, 소파/스크롤/집기/parked/미리보기/모바일·최초공개 회귀 검증.
 4. 승인된 커밋·배포와 실제 운영 확인. 주제 검증 기록에 수치·제약을 남기고 완료 시 현재 작업에서 제거한다.
 
-상태: 로컬 구현·검증 완료, 운영 배포 확인 중. 기준/후보 각 production 측정8회·별도 trace2회, 최종 build/type/lint·unit417개·native 렌더41개 통과. 독립 검토의 긴 프레임 첫 추종과 접힌 집의 동일 hidden 쓰기를 보완했고 원래 관측 위상이 틀린 held 검사와 scroll이 발생하지 않은 Studio stress setup을 엄격 기준 유지로 교정했다. 처리시간이 모든 경우 줄었다는 결론은 없으며 실제 OBS 송출은 미측정이다. [수치·검증 범위](../verification/COMPANION_FRAME_PIPELINE-20261016.md). 사용자 미술26줄과 보류 자산·기존 증거는 보존한다. 기존 문서 inventory 불일치2건은 별도다.
+상태: 완료. 제품f8ca0928 main 배포의 Vercel success·전체 운영 build SHA 일치, 실제 개발자 모바일 편집실·익명 PC/모바일3뷰와 GET gate 확인. 기준/후보 각 production 측정8회·별도 trace2회, 최종 build/type/lint·unit417개·native 렌더41개 통과. 독립 검토의 긴 프레임 첫 추종과 접힌 집의 동일 hidden 쓰기를 보완했고 held 관측 위상과 Studio stress setup을 엄격 기준 유지로 교정했다. 처리시간이 모든 경우 줄었다는 결론은 없으며 실제 OBS 송출은 미측정이다. [수치·운영 검증 범위](../verification/COMPANION_FRAME_PIPELINE-20261016.md). 사용자 미술26줄과 보류 자산·기존 증거는 보존한다. 기존 문서 inventory 불일치2건은 별도다.
