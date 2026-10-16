@@ -119,6 +119,7 @@ import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
+import type { CompanionPositionMemory } from "@/lib/ui/viewer-companion/position-memory";
 import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
@@ -154,6 +155,8 @@ type PublicPosterProps = {
   initialMonth?: number;
   // 월을 바꿀 때 부모(편집실)에 알린다 — 시청자 미리보기에서 본 달을 편집실로 돌아갈 때 잇기 위함.
   onViewChange?: (year: number, month: number) => void;
+  // Optional client-only staff preview handoff; never part of PublicSchedule.
+  positionMemory?: CompanionPositionMemory;
   // (canExport 삭제 — 일정표 캡쳐 기능 제거, 2026-07-31. decorate·스티커 액션 props 삭제 — 꾸미기 기능 제거, 2026-08-27.)
   // 서버 UA 판정 휴대폰 여부 — 모바일 아젠다를 처음부터 그려 깜빡임을 없앤다(클라가 보정).
   initialNarrow?: boolean;
@@ -569,6 +572,7 @@ export function PublicPoster({
   initialMonth,
   initialYear,
   onViewChange,
+  positionMemory,
   schedule: sourceSchedule,
   premiereEnabled = process.env.NEXT_PUBLIC_PREMIERE_STAGE !== "0",
   premiereFixture,
@@ -4115,6 +4119,7 @@ export function PublicPoster({
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
       {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
+        positionMemory={positionMemory}
               blocked={Boolean(monthPick || giftCard || gachaOpen)}
               overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
         premiereCue={companionPremiere.cue} onPremiereJoin={companionPremiere.onJoin}

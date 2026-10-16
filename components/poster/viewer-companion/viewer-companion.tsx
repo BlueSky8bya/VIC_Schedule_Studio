@@ -16,6 +16,7 @@ import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
 import { companionSofaDepth, companionSofaRelease, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
 import { projectCompanionSofaBody } from "@/lib/ui/viewer-companion/sofa-pose";
 import { sampleCompanionSofaTravel } from "@/lib/ui/viewer-companion/sofa-travel";
+import { companionPositionPoint, resolveCompanionPosition, type CompanionPositionMemory, type CompanionPositionSnapshot } from "@/lib/ui/viewer-companion/position-memory";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare } from "@/lib/ui/viewer-companion/care";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
@@ -42,7 +43,7 @@ import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import { CompanionBedForeground, CompanionHome, type CompanionHomeAction } from "./companion-home";
 import "./viewer-companion.css";
 
-type Props = { root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; agenda: boolean; monthKey: string; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void };
+type Props = { root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; agenda: boolean; monthKey: string; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<CompanionHomeAction | "place" | "rest", () => void>;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -54,7 +55,7 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
 /** One optional local creature. It senses geometry, heart occupancy and local
  * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
-export default function ViewerCompanion({ root, preferences, blocked, overlayOpen, agenda, monthKey, reduced, homeHost, homeVisible, premiereCue = null, onPremiereJoin }: Props) {
+export default function ViewerCompanion({ root, preferences, blocked, overlayOpen, agenda, monthKey, reduced, homeHost, homeVisible, premiereCue = null, onPremiereJoin, positionMemory }: Props) {
   const actorId = useId();
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
@@ -68,6 +69,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const compactHome = useRef<HTMLDivElement>(null);
   const homeFocus = useRef<string | null>(null);
   const lastPose = useRef<{ x: number; y: number; monthKey: string; atHome: boolean; homeSupportId?: string; seeded: boolean } | null>(null);
+  const capturePosition = useRef<(() => void) | null>(null);
+  const pendingPosition = useRef<CompanionPositionSnapshot | null>(null);
+  // Layout cleanup runs before the old calendar/house DOM disappears. The
+  // ordinary passive cleanup must not overwrite a new surface's memory.
+  useLayoutEffect(() => () => { capturePosition.current?.(); }, [positionMemory]);
   const lastFood = useRef<CompanionFoodKind | undefined>(undefined);
   const overlayRef = useRef(overlayOpen);
   const premiereRef = useRef({ cue: premiereCue, onJoin: onPremiereJoin });
@@ -155,9 +161,16 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const hearts = createCompanionHearts(page);
     const presence = createCompanionPresence(document.hasFocus(), performance.now());
     const saved = lastPose.current;
+    if (!saved && !pendingPosition.current && positionMemory?.current) pendingPosition.current = positionMemory.current;
+    const received = pendingPosition.current;
+    const transferredPoint = received && companionPositionPoint(received, { width: innerWidth, height: innerHeight }, COMPANION_SIZE);
+    const incoming = transferredPoint ? received : null;
+    if (!incoming) pendingPosition.current = null;
     let pendingMonth = Boolean(saved && saved.monthKey !== monthKey && !saved.atHome);
     const monthStarted = performance.now(), monthReadyAt = monthStarted + (reduced ? 0 : 340);
-    let platforms: Platform[] = [], landingPlatforms: Platform[] = [], x = saved?.x ?? innerWidth * .68, y = saved?.y ?? innerHeight - 18, support = saved?.atHome ? saved.homeSupportId ?? "companion-home" : "";
+    const incomingHome = incoming?.monthKey === monthKey && (incoming.anchor?.kind === "home" || incoming.anchor?.kind === "home-floor") ? incoming.anchor.kind : undefined;
+    let platforms: Platform[] = [], landingPlatforms: Platform[] = [], x = saved?.x ?? transferredPoint?.x ?? innerWidth * .68, y = saved?.y ?? transferredPoint?.y ?? innerHeight - 18, support = saved?.atHome ? saved.homeSupportId ?? "companion-home" : incomingHome === "home" ? "companion-home" : incomingHome === "home-floor" ? "companion-home-floor" : "";
+    let positionEntryWait = false;
     const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
     let worldSeeded = saved?.seeded ?? false;
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
@@ -308,6 +321,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const resetInertia = () => { heldInertia.reset(); sofaContact = undefined; style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
+      if (premiereActive || premiereBounce) pendingPosition.current = null;
+      if (pendingPosition.current) { hideBed(); el.hidden = true; return; }
       const hide = hideSeek.sample(presentationNow);
       if (premiereAwaitingGeometry && !premiereActive && !premiereBounce) { hideBed(); el.hidden = true; return; }
       if (premiereActive && !premiereDisplay) { hideBed(); el.hidden = true; return; }
@@ -673,6 +688,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const tick = (now: number) => {
       if (stopped || pause) return;
       if (premiereActive) { tickPremiere(now); return; }
+      if (pendingPosition.current) { lastTick = lastNeeds = lastCare = now; return; }
       const cue = preludeCue();
       if (!cue && premiereRef.current.cue?.generation && !["idle", "return"].includes(premiereRef.current.cue.phase) && !premiereMemory.current.joined) { sync(); return; }
       if (hiding && overlayActive && (!hiding.sheet || !hiding.ready)) { lastTick = now; return; }
@@ -1088,6 +1104,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       if (memory.generation !== cue.generation) { memory.generation = cue.generation; memory.joined = false; memory.entryId = ""; premiereSource = undefined; premierePerch = undefined; premiereExit = undefined; premiereProgress = 0; premiereInterrupted = false; premiereSeeded = false; premiereActive = false; }
       if (!premiereActive) {
+        // A late/reduced-motion join can become hidden without any paint.
+        // Once the premiere owns placement, no pending surface handoff may
+        // overwrite its released-card return on a later geometry delivery.
+        pendingPosition.current = null;
         const shown = el.hidden ? { x, y, scale: 1 } : displayedPoint();
         homeDeparture = undefined; clearTimeout(preludeTimer); preludeDeadline = 0;
         resetHide(); cancelGuestInput(); extractedFrom = null; extractedEvent = null; pendingDetailDrop = undefined;
@@ -1420,6 +1440,26 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         }
       }
     };
+    const captureForSurface = () => {
+      if (!positionMemory || !worldSeeded && !supportById(support)) return;
+      let anchor: CompanionPositionSnapshot["anchor"];
+      const stable = !pressed && !keyboardHeld && action?.kind !== "jump";
+      if (stable && isHomeSupport(support) && (homeOccluded || supportedNow())) {
+        const floor = isHomeFloor(support), node = document.querySelector(floor ? ".vc-home-floor" : ".vc-home-cushion"), rect = node?.getBoundingClientRect();
+        anchor = { kind: floor ? "home-floor" : "home", u: rect && rect.width > 0 ? clamp((x - rect.left) / rect.width, 0, 1) : .5 };
+      } else if (stable && !premiereActive && !premiereBounce) {
+        const node = geometryTracker?.anchor(support)?.element;
+        // Reuse the existing public/ordinary/visible-card allowlist. Text,
+        // private or unreleased IDs never enter the surface handoff.
+        const card = node && collectCompanionHideTargets(page).find(target => target.element === node || target.element.contains(node));
+        if (card) {
+          const rect = card.element.getBoundingClientRect();
+          anchor = { kind: "public-card", eventId: card.eventId, u: clamp((x - rect.left) / rect.width, 0, 1), manualTop: Boolean(supportById(support)?.manualOnly) };
+        }
+      }
+      positionMemory.current = { point: { x, y }, viewport: { width: innerWidth, height: innerHeight }, monthKey, seeded: worldSeeded || Boolean(supportById(support)), ...(anchor ? { anchor } : {}) };
+    };
+    capturePosition.current = captureForSurface;
     const onGeometry = (next: Platform[]) => {
       if (premiereActive || overlayActive || hiding) return;
       premiereAwaitingGeometry = false;
@@ -1473,6 +1513,56 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         returnTargetValid = Boolean(target); nextDecision = performance.now() + FLIP_MS + 600;
         refreshAnchors(performance.now());
         return;
+      }
+      const transfer = pendingPosition.current;
+      if (transfer && !pendingMonth && !pressed && !keyboardHeld && !placing) {
+        const point = companionPositionPoint(transfer, { width: innerWidth, height: innerHeight }, size);
+        const transferCardId = transfer.monthKey === monthKey && transfer.anchor?.kind === "public-card" ? transfer.anchor.eventId : undefined;
+        const card = transferCardId ? collectCompanionHideTargets(page)
+          .filter(target => target.eventId === transferCardId)
+          .sort((a, b) => Math.hypot(a.entry.x - (point?.x ?? x), a.entry.y - (point?.y ?? y)) - Math.hypot(b.entry.x - (point?.x ?? x), b.entry.y - (point?.y ?? y)))[0] : undefined;
+        const belongs = (platform: Platform) => { const node = geometryTracker?.anchor(platform.id)?.element; return Boolean(card && node && (card.element === node || card.element.contains(node))); };
+        const homeNode = document.querySelector(".vc-home-cushion"), floorNode = document.querySelector(".vc-home-floor");
+        const homeRect = homeNode?.getBoundingClientRect(), floorRect = floorNode?.getBoundingClientRect(), cardRect = card?.element.getBoundingClientRect();
+        const restored = resolveCompanionPosition(transfer, { monthKey, platforms, landings: landingPlatforms, viewport: { width: innerWidth, height: innerHeight }, size,
+          ...(card && cardRect ? { publicCard: { eventId: card.eventId, range: { x: cardRect.left, width: cardRect.width }, platforms: platforms.filter(belongs), landings: landingPlatforms.filter(belongs) } } : {}),
+          ...(homeRect && homeRect.width > 0 ? { homeRange: { x: homeRect.left, width: homeRect.width } } : {}),
+          ...(floorRect && floorRect.width > 0 ? { homeFloorRange: { x: floorRect.left, width: floorRect.width } } : {}) });
+        // An entering calendar can initially expose only its floor while its
+        // finite intro owns opacity/fit. Keep the handoff until that intro
+        // settles; one existing geometry subscription reconnect also delivers
+        // an unchanged empty-calendar floor. No polling or perpetual timer.
+        const entering = page.getAnimations({ subtree: true }).filter(animation => {
+          const target = (animation.effect as KeyframeEffect | null)?.target;
+          return animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))
+            && target instanceof Element && !target.closest(".vc-companion,.vc-food-layer,.vc-home");
+        });
+        if (entering.length) {
+          if (!positionEntryWait) {
+            positionEntryWait = true;
+            void Promise.allSettled(entering.map(animation => animation.finished)).then(() => {
+              positionEntryWait = false;
+              if (!stopped && !pause && pendingPosition.current && !premiereActive && !overlayActive && !hiding) {
+                offGeometry?.(); offGeometry = undefined; connectGeometry();
+              }
+            });
+          }
+          el.hidden = true; return;
+        }
+        // A folded/offscreen/remounting house still owns its resident. Keep
+        // the existing home-occlusion wait, rather than moving it to a card.
+        const waitingHome = transfer.monthKey === monthKey && (transfer.anchor?.kind === "home" || transfer.anchor?.kind === "home-floor") && !restored;
+        const fallback = !restored && !waitingHome && point ? nearestPlatform(point, platforms) : undefined;
+        if (restored || fallback) {
+          clearAction(); supportMotion.reset(); resetInertia();
+          x = restored?.point.x ?? platformLandingX(fallback!, point!.x); y = restored?.point.y ?? fallback!.y; support = restored?.platformId ?? fallback!.id;
+          worldSeeded = true; awaitingAtX = false; needsLanding = false; pendingPosition.current = null;
+          lastTick = lastNeeds = lastCare = performance.now(); nextDecision = lastTick + 1100;
+          data("positionTransfer", restored?.kind ?? "nearby");
+          // Geometry, not repeated AI ticks, wakes a waiting handoff. This
+          // also leaves a folded house completely quiet until it reappears.
+          cancelAnimationFrame(raf); clearTimeout(timer); schedule();
+        } else if (!waitingHome) { el.hidden = true; return; }
       }
       if (pendingMonth) return;
       // Geometry may refresh during a captured drag or keyboard placement.
@@ -1664,6 +1754,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     sync();
     return () => {
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump", homeSupportId: isHomeSupport(support) ? support : undefined };
+      if (capturePosition.current === captureForSurface) capturePosition.current = null;
       saveCompanionCare(brain.current, true);
       stopped = true; clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
@@ -1687,7 +1778,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       el.hidden = true;
       hideBed();
     };
-  }, [ready, root, preferences, blocked, agenda, monthKey, reduced, geometryIdentity]);
+  }, [ready, root, preferences, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory]);
 
   if (!ready) return null;
   const closeHome = () => { setHomeExpanded(false); };

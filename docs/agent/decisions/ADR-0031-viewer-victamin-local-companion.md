@@ -2,6 +2,8 @@
 
 Status: Accepted for implementation by owner request, 2026-10-15 KST. 미술 시각 승인과 기능 구현 승인은 구별한다.
 
+편집실·미리보기 위치 연결([PLAN-065](../plans/PLAN-20261016-065-companion-preview-continuity.md), 2026-10-16 소유자 요청): 화면별 새 엔진의 기본 위치로 돌아가던 경계를 같은 StudioShell의 일시 ref로 잇는다. 실제 owner/developer만 위치·viewport·월과 집/집바닥 또는 명시적인 공개 일반 카드 ID·전체 실측 BCR 상대 비율을 전달한다. 비공개/미공개 ID·제목/본문/태그·인증 정보·DOM·brain/행동·음식·모달/공연 상태는 전달하지 않으며 storage/서버/DTO를 추가하지 않는다. DOM 삭제 전 layout cleanup에서 포착하고, 새 화면 실측의 같은 공개 카드/집 안전 span에 한 번 재연결한다. 임시 geometry ID 재사용과 잘린 visible rect의 비율은 금지한다. 카드 소실/월 변경은 가까운 실제 지원으로 복구하며 접힌 집 주민은 기존 가림 정책을 따른다. 최초공개/숨김/모바일 OFF/master OFF 우선, 자율 스크롤·새 loop 없음. 기존 엔진 내부 lastPose와 권한·공개 preview 경계는 유지한다. [검증 상태](../verification/COMPANION_PREVIEW_CONTINUITY-20261016.md).
+
 모바일 설정 위치 예외([PLAN-064](../plans/PLAN-20261016-064-companion-production-sofa.md), 2026-10-16 최신 소유자 요청): 아래063의 양쪽 헤더 동일 위치와 UI-18의 위치 통일만 대체한다. 편집실의 같은44px 톱니를 가운데 월 이동 그룹 옆 오른쪽 safe-area에 놓고, 시청자의 기존 헤더 오른쪽 위치는 유지한다. 설정 목록·창·X/뒤로가기·opener focus는 한 구현을 유지하며 모바일 빅타민 제외와 PC 저장 취향 보존은 그대로다.
 
 같은064의 소파 접촉 정정: 안/밖 깊이는 발판/목적지 이름 대신 실제 마지막 디코딩 그림의 등록·전체 변형 몸체와 실측 소파로 판정한다. 바깥 몸체는 소파 앞, 완전히 안쪽인 몸체는 앞/뒤 천 사이에 놓는다. 잡은 손 위치는 유지하고 도약은 턱 위로 건너며, 정착만 검사하지 않고 집기·낙하·도약 중간 프레임을 검사한다. 소파 그림만 축소하는 press 효과는 실제 좌석/앞면과 분리되므로 제거한다. 보라 원형 pet focus/placing 표시 대신 중립색 선으로 키보드 focus를 알린다. 기존 이벤트/동작 시계만 쓰며 새 루프·프레임 DOM 측정·서버 호출은 추가하지 않는다. [운영 확인·검증](../verification/COMPANION_PRODUCTION_CONTACT-20261016.md).

@@ -146,6 +146,7 @@ import { useStudioWriteQueue } from "@/lib/studio/use-write-queue";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
+import type { CompanionPositionMemory } from "@/lib/ui/viewer-companion/position-memory";
 // P2-ARCH-1 1단계: 모듈 레벨 순수 코드(폼 모델·실행취소 타입·날짜/드래프트/떡밥 헬퍼·라벨·
 // studio-write 클라이언트)는 lib/studio/editor-model.ts로 이동(동작 변화 0).
 import {
@@ -1010,6 +1011,10 @@ export function StudioShell({
     gfxAuto,
     changeGfxPref
   } = useSettingsPrefs(onGfxAuto);
+  // Position-only handoff lives for this shell, outside either engine's
+  // mount. Actual staff authority gates it; role preview changes no authority.
+  const companionPositionMemory = useRef<CompanionPositionMemory["current"]>(null);
+  const staffCompanionPositionMemory = actor.role === "owner" || actor.role === "developer" ? companionPositionMemory : undefined;
   // 계절 배경 세 상태(켜짐·흐리게·끔, 2026-09-04). 상태의 진실은 <html data-ambient>(lib/ui/motion.ts) — 설정 셀렉트, 아바타
   // 자리·시청자 미리보기 레일의 순환 버튼, 페인트-전 스크립트가 전부 그 속성을 쓰므로 여기선 속성 변화를 지켜보며 따라간다.
   // 개발자 세계 시간 여행(2026-09-04 소유자): 개발자 계정만 띠·날씨·날을 강제해 연대기·빛 톤·날씨 훅을 검사한다 — 세션 한정, 저장 없음,
@@ -7094,6 +7099,7 @@ export function StudioShell({
           initialNarrow={isNarrow}
           initialYear={view.year}
           onViewChange={(year, month) => setView({ year, month })}
+          positionMemory={staffCompanionPositionMemory}
           previewNav={previewNav}
           premiereEnabled={previewReady}
           canRehearsePremiere={actor.role === "developer" && effectiveRole === "developer"}
@@ -7255,6 +7261,7 @@ export function StudioShell({
       ref={setShellRef}
     >
       {companionDesktop && companionPrefs.enabled ? <ViewerCompanion root={shellRef} preferences={companionPrefs}
+        positionMemory={staffCompanionPositionMemory}
         blocked={Boolean(monthPick || passcodeModal || dragEventId || spanDrag || navMsg)}
         overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
