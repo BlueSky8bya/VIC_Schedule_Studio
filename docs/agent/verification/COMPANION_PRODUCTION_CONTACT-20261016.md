@@ -23,9 +23,22 @@
 - 최종 `npm run typecheck`, `npm run lint`, `npm run build`: exit0. 관련 빅타민/최초공개·공개 DTO/역할/KST 단위44파일445개 통과. 서버/DB/DTO/권한/KST/1840 표면 변경0.
 - 새 소파 회귀3개: 최종 v3 child0, skipped/flaky0.506 중간 프레임(집바닥240·편집실221·귀환45), 최대 그립 오차.000635px·앞면 정렬.000252px, 같은 DOM/표시·현재 깊이·소파 앞뒤 순서·실제 발판2px 착지·중립 키보드 표식·POST0/pageerror0. PNG6장 직접 검수. 첫 실행의 `outline:none`을 CSSOM 폭3px만 보고 실패시킨 하네스 오류는 실제 `outlineStyle:none` 검사로 고쳤다. 당시 실패/수정 전 중단 실행은 보존하고 최종 v3와 구별한다.
 - 모바일 톱니2+기능 제외8:10/10, child0, skipped/flaky0.390·1120×600 coarse light/dark, Studio gear y97.703/Viewer y9, 모두44px/right14. 가운데 월 그룹 오차.008px, 최소 간격38.03px, 겹침/가로 넘침0. X/뒤로가기 focus·PC 복귀 통과. PNG10장 직접 검수. mutation POST/pageerror0, preview read는 각각1회 exact stub, 실제 운영 송신0.
-- 기존 교감/스크롤/최초공개22건:22/22 child0,149.10초. 실제 Studio 휠57프레임의 source−90px/feet−89.999985px, p95 오차.000382px. 부위별 집기·관성5·HD cold decode·쓰다듬기·소파 좌석/바닥·모달 배경 주민·낮잠 후 귀환·음식/접힘·최초공개 PC4 연결을 검증했다. 기존 증거221개 SHA 백업, 새064 묶음 저장 후 변경38개 복원·전체 원본 SHA 일치. 이번 실행의22건 증거와 묶음 안의 보존용 옛 파일은 구별한다. 새 소파3·모바일10을 합쳐 fixture35건 통과이며 단일 전체 suite 실행으로 부풀리지 않는다.
+- 기존 교감/스크롤/최초공개22건:22/22 child0,149.10초. 실제 Studio 휠57프레임의 source−90px/feet−89.999985px, p95 오차.000382px. 부위별 집기·관성5·HD cold decode·쓰다듬기·소파 좌석/바닥·모달 배경 주민·낮잠 후 귀환·음식/접힘·최초공개 PC4 연결을 검증했다. POST0 단언22건, pageerror0 명시 관측20건(continuity2는 미계측). 새 PNG8장 검수. 기존 증거221개 SHA 백업, 새064 묶음 저장 후 변경38개 복원·전체 원본 SHA 일치. 이번 실행의22건 증거와 묶음 안의 보존용 옛 파일은 구별한다. 새 소파3·모바일10을 합쳐 fixture35건 통과이며 단일 전체 suite 실행으로 부풀리지 않는다.
 - 문서 `npm run harness:verify`: exit1, 기존 rule inventory/mapping 불일치2건. 이번 UI 완료를 이유로 PASS로 바꾸거나 무관한 규칙 마이그레이션을 수정하지 않았다. 기존 사용자 미술26줄과 로컬 파일 보존.
 
 ## 한계
 
 실제 OBS 송출·물리 모바일·전체 RLS 범위는 이 UI 검사로 증명하지 않는다. 기존 문서 하네스 inventory2건은 별도 미해결이며 이번 UI 수정의 통과로 덮지 않는다.
+
+## 운영 배포 재확인
+
+제품 `995e0983693490a40e5cb83d3e86e4d0e9c3aa62` main push 후 Vercel 성공과 운영 `/api/soop-live` build 일치를 확인했다. 다음은 새 배포를 새로고침한 실제 로그인 Chrome UI 검사다.
+
+- 사용자 브라우저 배율을 유지해 실제 CSS390×844를 만들었다. Studio 톱니 x332.014/y97.674/43.993px, 월 그룹 중심194.991px/가로 넘침0. X와 브라우저 뒤로가기 모두 편집실과 해당 톱니 focus를 유지했다. Viewer는 x332.014/y8.993px로 기존 헤더 위치를 유지했다. 양쪽 모바일 pet0. 임시 viewport를 원래2133×987로 복원했다.
+- PC Studio 실제 소파 seat depth/앞면76/outline·shadow none, 소파와 앞면 BCR 오차.001px 미만. 현재 pet 위치를 읽고 네이티브로 옆 턱에 끌어 놓았을 때 실제 home-floor/front/앞면74로 착지했다. 위치 읽기 후 한참 지나 자율 도약한 pet을 옛 좌표로 잡으려던 첫 시도는 검사 성립 실패로 구별하며, 새 위치를 잡아 같은 호출에서 조작한 결과를 사용한다.
+- 집에 돌아가 쉬게 한 뒤 실제 설정 창을 열었다. pet75·앞면76·backdrop97/blur6px, home-window/quiet/seat와 계속 보이는 상태를 확인했다. 집 주민과 천 레이어가 함께 배경 blur 아래에 있다.
+- 새 운영 Studio 스크롤220px: card424.549→204.549, feet421.546→201.546. 실제 시청자 미리보기132.222px: card395.479→263.257, feet392.476→260.254. 같은 x에서 실제 발판을 따라 이동했다. 시청자 전환은 역할 미리보기만 사용했으며 실제 권한 변경0. 편집실로 복귀했다.
+- 새 배포에서도 실제 자율 숨기 표시→공개 일정 더블클릭→내용칸 안44px 발견 guest→네이티브 드래그로 팝오버 밖 꺼내기를 재확인했다. DOM은 editable 밖, 편집 창은 열린 채, 추출 후 hide phase가 해제되고 바깥 watch 상태로 이어졌다. 새 실행은 발견 애니메이션 도중 곧장 꺼낸 것으로 위의 변경 전 sleep/zzZ 관측과 구분한다. 랜덤 행동은 가짜 시계·RNG·앱 상태 주입 없이 기다렸다. 검사 후 점프/낮잠 ON을 원복했고 실제 편집실·원래 viewport·소파 휴식으로 돌려놓았다. 운영 일정/폼 내용 변경·저장0.
+- 익명 운영 PC1920/DPR2,390×844,1120×600 coarse3뷰: child0, 정확한995e0983 build 확인. PC 실제 교감/집기/음식 낙하/집 접힘/소파, 모바일 pet 첫 마운트·asset·설정 탭0과 공통44px 톱니/X/Back/focus 통과. PNG9장 검수. 각 뷰의 `POST /`1회 시도는 차단했다(총3); 서버로 전달한 mutation0, pageerror0. 시도0으로 주장하지 않는다. SOOP GET은 각1회 stub. 익명 검사를 실제 로그인 증거와 혼동하지 않는다.
+- GET gate child0: 운영 fixture poster/studio는 HTTP200 스트림의 NotFound fallback이고 product markup/Studio opt-in0, 익명 `/studio`는 `/`로 streamed redirect하며 Studio markup0. fixture나 owner 권한이 운영에 노출되지 않았다. 이 검사는 전체 RLS나 과거 노출 부재의 증명은 아니다.
+- 로컬 증거: `.scratch-pw/companion-064-sofa-contact-v3-report.json`, `companion-064-header-absence-final-receipt.json`, `companion-064-integration-qa-summary.json`, `companion-064-production-final-run.json`, `companion-064-production-gates.json`. 기존063 증거는 유지한다. 종료 문서만 후속 커밋하며 검사한 제품8개 SHA는 유지한다.

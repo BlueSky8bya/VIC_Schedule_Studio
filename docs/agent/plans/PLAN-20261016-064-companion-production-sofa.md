@@ -15,4 +15,4 @@
 
 ## 상태
 
-실제 로그인 운영의220px 스크롤 추종·자율 숨기→편집 내용칸 zzZ→네이티브 드래그 꺼내기를 확인했다. 점프/낮잠 임시 설정은 원복했다. 독립 source 검토의 도약 중 앵커 carry·취소 후 관성 캐시·소파 press 기하 지적3건을 반영했다. 최종 type/lint/build와 단위445, 소파3·모바일10·기존 교감/스크롤/최초공개22의 fixture35건이 통과했다. 승인된 커밋·배포·운영 재확인을 진행한다. 사용자 기존 미술 기록26줄·보류 자산·로컬 파일은 보존한다. 상세 [검증 기록](../verification/COMPANION_PRODUCTION_CONTACT-20261016.md).
+완료. 제품995e0983 main 배포 성공/운영 API SHA 일치. 독립 source 검토의 도약 중 앵커 carry·취소 후 관성 캐시·소파 press 기하 지적3건 반영. 최종 type/lint/build·단위445·fixture35·익명 운영3뷰/접근 gate 통과. 새 운영의 실제 로그인 편집실/시청자 스크롤, 모바일 월 이동 줄/X/Back, 소파 좌석/옆 턱 드롭/설정 blur, 실제 자율 숨기→편집 내용칸 발견→네이티브 꺼내기 재확인. 임시 설정/viewport 원복, 운영 일정/폼 편집·저장0. 기존 문서 inventory2건과 실제 OBS/물리 기기/전체 RLS는 별도 한계. 사용자 미술 기록26줄·보류 자산·로컬 파일 보존. 상세 [검증 기록](../verification/COMPANION_PRODUCTION_CONTACT-20261016.md).
