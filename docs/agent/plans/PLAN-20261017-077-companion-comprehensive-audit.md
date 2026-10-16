@@ -1,6 +1,6 @@
 # PLAN-20261017-077 — 빅타민 전수 점검과 실물 회귀 수정
 
-Status: In Progress
+Status: Completed — 제품 e845aafb 운영 배포 확인
 Date: 2026-10-17 (KST)
 Scope: L2, 공유 빅타민의 행동·기하·입력·화면 연결과 검증
 
@@ -45,3 +45,5 @@ Scope: L2, 공유 빅타민의 행동·기하·입력·화면 연결과 검증
 기존 검사 중 과거76px·20행 metadata, 짧은 클릭=쓰다듬기, 창 자동 밀기, 같은 입력 이벤트 안의 동기 DOM 갱신을 가정한 검사는 원본/SHA와 실패 trace를 남기고 현재 승인 계약으로 교정한다. 중력·capture·실제 입력 hit·친밀도·parked0·포즈 cadence·원본 하트 불변 검사는 유지한다. 새 입력12·집2·표시4·발견 guest 최하단 추출1 검사는 별도 추가해 수정 전/후 실행한다.
 
 실제 실행·수정 전후 결과와 남은 범위: [전수 점검 검증 기록](../verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md).
+
+최종 빌드 `-ya8Orx0Nh8_s6xLwH-Dh`: native66/66·관련 unit557·typecheck/lint/build PASS. 기존 전체 unit8·harness2는 별도 기록했다. 제품 `e845aafb`의 운영 SHA·실제 JS/CSS, 새 익명 기본ON/저장OFF, 실제 개발자 편집실 소파 복귀와 시청자 미리보기 왕복을 확인했다. 실제 OBS/RLS 전체 검증과 구별한다.

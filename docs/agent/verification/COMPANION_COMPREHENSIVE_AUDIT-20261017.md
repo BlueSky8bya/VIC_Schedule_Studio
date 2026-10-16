@@ -1,6 +1,6 @@
 # 빅타민 전수 점검 — 2026-10-17
 
-Status: 수정본 production-fixture 최종66개 PASS. 운영 배포 검증 대기.
+Status: Completed — 수정본 최종66개 PASS. 제품 `e845aafb` 운영 SHA·리소스·익명 smoke·개발자 실물 점검 확인.
 Plan: [PLAN-077](../plans/PLAN-20261017-077-companion-comprehensive-audit.md)
 
 ## 범위와 재현 기준
@@ -62,7 +62,8 @@ Plan: [PLAN-077](../plans/PLAN-20261017-077-companion-comprehensive-audit.md)
 | 최종 후속66개 |66/66 PASS,8.7분,worker1·재시도0·skip0·flaky0. 동결168개 소스의 실행 전후 SHA 일치 |
 | 독립 제품/검사/PNG 검토 | 원인별 완료. 음식/바닥 작성자의 자체 검토는 별도 표시하고 다른 리뷰어의 독립 검토도 받음 |
 | harness | 기존2건 FAIL: active rule ID·RULE_MIGRATION inventory 불일치 |
-| 운영 배포·익명 smoke | 미실행 |
+| 운영 배포·익명 smoke | `e845aafb` SHA 일치·배포 성공, 공개 HTTP200·검증한 lazy JS/CSS 일치. 새 익명 기본ON/저장OFF·새로고침 유지 PASS, OFF 이미지 요청0·임시 mount0·페이지 오류0 |
+| 실제 개발자 세션 spot-check | 운영 편집실의 실제1개·decoded 이미지, native 쿠션 복귀 sleep/seat·local 앞면 hidden/외부 앞면 표시, 시청자 미리보기→편집실 왕복의 실제1개·정상 이미지 확인. 일정 편집·저장 없음 |
 
 전체 unit의 기존8건은 ambient-codex2, centering-vs-animation1, public-cache-revalidate1, scroll-position-wiring1, timeline-route1, vod-chat-recovery2다.076의 기존 실패 목록과 같다. 이 작업의 PASS로 부르지 않는다.
 
@@ -78,6 +79,12 @@ Plan: [PLAN-077](../plans/PLAN-20261017-077-companion-comprehensive-audit.md)
 
 최종 실행은 `companion-077-r5-report.json`, 소스 일치는 `companion-077-r5-final-proof.json`, 진입 정량 비교는 `companion-077-r5-entry-comparison-actions.json`, 원본24장 검수는 `companion-077-r5-ui-aa-review.json`, geometry·runtime 독립 검토는 `companion-077-home-revalidation-independent-review.json`이 근거다.
 
+## 출하
+
+제품 커밋 `e845aafb639a1a3abf13d487025a87752bcd2bef`를 main에 push하고, 운영 build API의 동일 SHA와 Vercel 성공을 확인했다. 로컬에서 검증한 lazy JS `7863.b2e6e808d6f669c5.js`·CSS `818f468665319dcd.css`와 운영 runtime/실제 리소스 HTTP200을 대조했다. 이후 기록만 완료하는 커밋은 제품 변경이 없다.
+
+새 익명 ON은 실제 고해상도 이미지가 준비된1개, 저장OFF는 첫 진입·새로고침 모두0개·이미지 요청0으로 확인했다. 이 자동화는 모든 비읽기 요청을 차단했다. 실제 Chrome 개발자 세션에서는 위의 작은 실물 점검을 수행했고, 보존한 운영 이미지에는 집만 포함했다. 증거는 `companion-077-audit-production-deploy.json`, `companion-077-deployed-resources-e845aafb.json`, `companion-077-production-smoke-e845aafb.json`, `companion-077-production-authenticated-spot-check.json`, `companion-077-production-house.jpg`에 보존한다.
+
 ## 한계
 
-fixture의 owner/developer는 실제 로그인·운영 RLS 증명이 아니다. 기존 Chrome의 실제 운영 개발자 세션과 당시5ff385f 버전 접근은 읽기로 확인했으며 편집·저장하지 않았다. 이 짧은 기존 브라우저 접근의 일반 방문 telemetry는 인터셉트하지 않았으므로 fixture/자동화 smoke의 쓰기 차단 증거와 구별한다. 실제 OBS/SOOP 송출·스트리머 GPU/브라우저 장비, 감각적 만족도, OS 자체의 백그라운드 스케줄링은 검증하지 않았다. 코드/브라우저 측 프레임·정지 비용 검사와 구별한다. 사용자가 열어 둔 이미지·미커밋 아트·설정 파일은 보존했다.
+fixture의 owner/developer는 실제 로그인·운영 RLS 증명이 아니다. 기존 Chrome의5ff385f 접근과 e845aafb 개발자 spot-check는 일정 편집·저장 없이 수행했다. 이 브라우저 접근의 일반 방문 telemetry는 인터셉트하지 않았으므로 fixture/자동화 smoke의 쓰기 차단 증거와 구별한다. 실제 로그인 실물 관찰도 역할별 RLS 전수 증명이 아니다. 실제 OBS/SOOP 송출·스트리머 GPU/브라우저 장비, 감각적 만족도, OS 자체의 백그라운드 스케줄링은 검증하지 않았다. 코드/브라우저 측 프레임·정지 비용 검사와 구별한다. 사용자가 열어 둔 이미지·미커밋 아트·설정 파일은 보존했다.
