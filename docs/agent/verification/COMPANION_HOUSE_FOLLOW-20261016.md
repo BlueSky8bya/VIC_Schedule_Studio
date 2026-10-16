@@ -1,6 +1,6 @@
 # 집 이동 시 소파 앞면 정렬·편집실 패널 순서
 
-2026-10-16 KST. [PLAN-067](../plans/PLAN-20261016-067-companion-house-follow.md). 진행 중. 사용자 미술26줄·보류 자산·기존 증거를 보존한다. 서버/공개 DTO/DB/역할·unlock·KST·1840·이미지·기존 행동 cadence는 변경하지 않는다.
+2026-10-16 KST. [PLAN-067](../plans/PLAN-20261016-067-companion-house-follow.md). 제품 `ad7db544` 배포·운영 확인 완료. 사용자 미술26줄·보류 자산·기존 증거를 보존한다. 서버/공개 DTO/DB/역할·unlock·KST·1840·이미지·기존 행동 cadence는 변경하지 않는다.
 
 ## 재현과 원인
 
@@ -17,7 +17,7 @@
 
 ## 검증 상태
 
-진행 중. 첫 후보 `Kf46N6irB7X7xT4Kyf7Mt`의25개는20통과/5실패였다. 신규3개에서 수백 프레임 중 한 프레임씩3.033/11.819/5.530px가 어긋났으며 오차는 정확히 이전 표시 프레임의 집 위치였다. 기존 follower의 두 번째60Hz gate가16.5ms display rAF를 건너뛰는 것을 확인해 제거했다. 실제 집 이동/재측정의 `bedNeedsPaint`를 그리기 시작에 소비해 이미 main이 표시한 앞면은 follower에서 중복 표시하지 않는다. 새 loop·brain cadence 변경은 없으며 유한 패널 구간만 실제 화면 주사율을 따른다. 고주사율에서도 비용이 항상60Hz라는 주장은 하지 않는다. follower가 main보다 먼저 실행된 일부 프레임에는 같은 프레임 내 full paint가 두 번 가능하며, 이를 없애려고 한 프레임 지연을 다시 넣지 않는다.
+첫 후보 `Kf46N6irB7X7xT4Kyf7Mt`의25개는20통과/5실패였다. 신규3개에서 수백 프레임 중 한 프레임씩3.033/11.819/5.530px가 어긋났으며 오차는 정확히 이전 표시 프레임의 집 위치였다. 기존 follower의 두 번째60Hz gate가16.5ms display rAF를 건너뛰는 것을 확인해 제거했다. 실제 집 이동/재측정의 `bedNeedsPaint`를 그리기 시작에 소비해 이미 main이 표시한 앞면은 follower에서 중복 표시하지 않는다. 새 loop·brain cadence 변경은 없으며 유한 패널 구간만 실제 화면 주사율을 따른다. 고주사율에서도 비용이 항상60Hz라는 주장은 하지 않는다. follower가 main보다 먼저 실행된 일부 프레임에는 같은 프레임 내 full paint가 두 번 가능하며, 이를 없애려고 한 프레임 지연을 다시 넣지 않는다.
 
 나머지2개는 실제 집/HD 마운트 전에 한 번 호출한 settle 뒤 첫 입력을 시작해, 집의 초기 entrance와 첫 geometry delivery가 아직 진행 중이었다. viewport 밖/scroll 문제는 실측으로 기각했고 당시 실제 지원 부재 안내 또는 실제 seat보다13.266px 아래에서 cushion 선택을 기록했다. 별도 진단의1.4초 jump 중 snapshot은 완료 실패로 단정하지 않는다. 검사 목적에 맞게 실제 집/HD 마운트 후 finite entrance 종료를 기다리고, 실제 BCR이140ms 안정됨을 관찰해 기존120ms geometry coalesce를 지나도록 setup만 보완했다. blind sleep/retry·임계값 완화는 하지 않았다. 원래5실패 raw와 별도 진단은 보존한다.
 
@@ -28,3 +28,11 @@
 최종 raw/report/PNG는 `.scratch-pw/companion-067-final-v2-*`, 소파는 `companion-067-final-sofa-v2-*`, 기존 프레임은 `companion-067-final-pipeline-v2-*`, 헤더는 `companion-067-final-header-v2-*`로 분리해 과거 결과를 덮지 않았다. 정렬 수치는 `companion-067-final-v2-metrics.json`, 검사 소스5파일의 줄바꿈 정규화 SHA256/빌드는 `companion-067-final-source.json`에 기록했다. 독립 소스 검토는 초기2개 깊이/창 tail 결함을 보완한 뒤 차단 문제0이다.
 
 `npm run harness:verify`는 기존 rule inventory 불일치2건으로 exit1이다. `Active rule IDs changed; update RULE_MIGRATION inventory and mappings`, `RULE_MIGRATION inventory table differs from live rule IDs`를 PASS로 계산하지 않는다. 이번 작업에서 rule ID를 추가/삭제하지 않았다. 실제 OAuth/RLS/실기기 notch나 실제 OBS/GPU/encoder 송출 품질 보증은 이번 정렬 검사 범위가 아니다.
+
+## 배포와 실제 운영 확인
+
+제품 커밋 `ad7db5447965bbba126bd58bc24be1a1f70a7404`의 Vercel 성공과 운영 `/api/soop-live`의 동일 build SHA를 함께 확인했다. 증거는 `.scratch-pw/companion-067-production-deploy.json`, 검사 소스와 커밋 일치는 `companion-067-commit-source-proof.json`이다.
+
+Chrome의 실제 로그인된 developer 세션에서 운영 `/studio`와 실제 미리보기 메뉴로 연 시청자 화면을 확인했다. PC CSS viewport2133×1050, 브라우저 배율90%였다. Studio의 실제 rail은 `tools,tags,slot`, slot 안은 계절→집 순서였다. 집의 실제 귀환 버튼으로 소파에 돌아온 상태에서 두 화면의 태그 펼치기/접기와 계절 접기/펼치기 총8회 후 집/고정 앞면 BCR 오차는 각각0.000489px 미만이었고 앞면과 펫이 표시됐다. 이 운영 수치는 native 조작 후 안정된 위치 관찰이며, 연속 프레임 oracle은 위 로컬 production-build fixture 결과다. 운영의 매 프레임 trace나 익명/RLS 검사로 확대하지 않는다.
+
+실제 일정 저장·삭제·시험 데이터 생성·인증 변경0. 기존 오른쪽 패널 위치와 접힘 상태(태그 접힘, 계절/집 펼침)를 보존하고 viewer preview에서 편집실로 돌아와 원래 화면 모드도 복원했다. 실제 운영 전체 스크린샷은 `.scratch-pw/companion-067-operating-studio-final-full.jpg`다. 문서 마감 커밋은 제품 소스를 변경하지 않는다.
