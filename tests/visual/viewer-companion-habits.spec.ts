@@ -224,3 +224,32 @@ test("a native reset can relearn the exact same first petting after learning is 
   await page.reload(); await page.bringToFront(); await stableActor(page);
   expect(traits((await memory(page, "relearned triple persists after native reload")).habits)).toEqual(traits(first.habits));
 });
+
+test("same browser viewer studio round trip preserves real earned habits and spent credit", async ({ page }) => {
+  await setup(page, "viewer"); await petOnce(page);
+  await expect.poll(async () => (await memory(page)).habits?.sociability, { intervals: [50], timeout: 7000 }).toBeGreaterThan(.02);
+  const earned = await memory(page, "viewer actual petting before changing surfaces");
+  expect(earned.habits.credit).toBeLessThan(.08);
+
+  // Reuse this exact browser page, origin and seed-once session. No second
+  // setup call may overwrite the actual memory while entering the studio.
+  await page.goto("/visual-fixture/studio?role=owner"); await page.bringToFront();
+  await page.evaluate(() => document.fonts.ready); await stableActor(page);
+  const studio = await memory(page, "same browser studio adopts viewer memory");
+  expect(traits(studio.habits)).toEqual(traits(earned.habits));
+  expect(studio.habits.generation).toBe(earned.habits.generation);
+  expect(studio.habits.credit).toBeLessThan(.3);
+  await petOnce(page);
+  // This second real input also proves that mounting a different surface did
+  // not grant a fresh learning credit behind an unchanged storage snapshot.
+  expect(traits((await memory(page, "studio petting cannot relearn with the viewer credit spent")).habits)).toEqual(traits(earned.habits));
+
+  await page.goBack(); await expect(page).toHaveURL(/\/visual-fixture\/poster\?avatar=1$/);
+  await page.bringToFront(); await stableActor(page);
+  const returned = await memory(page, "browser back returns the same earned traits to viewer");
+  expect(traits(returned.habits)).toEqual(traits(earned.habits));
+  expect(returned.habits.generation).toBe(earned.habits.generation);
+  expect(returned.habits.credit).toBeLessThan(.5);
+  await expect(pet(page)).toHaveCount(1);
+  expect(await page.locator("[data-export-surface]").evaluate(node => getComputedStyle(node).width)).toBe("1840px");
+});

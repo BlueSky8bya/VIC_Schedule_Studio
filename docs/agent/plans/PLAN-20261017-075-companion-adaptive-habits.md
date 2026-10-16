@@ -1,6 +1,6 @@
 # PLAN-20261017-075 — 함께 지내며 달라지는 빅타민 성향
 
-Status: In Progress
+Status: Complete
 Date: 2026-10-17 (KST)
 Scope: L2, 공유 로컬 행동·설정·저장
 
@@ -31,3 +31,7 @@ Scope: L2, 공유 로컬 행동·설정·저장
 2. 느린 누적·반대 경험 회복·동일 입력 제한·부재 변화0·상한·중립/OFF 동등성·전체 종/성격/걸음·권한 우선, v1 migration/불량값/quota/민감 canary·reset/다른 탭을 단위 검증한다.
 3. 생산 빌드 fixture에서 두 화면의 실제 쓰다듬기/딱밤/수동 이동/식사, 설정 OFF/reset/새로고침/왕복 및 자율 동작의 무학습을 확인한다. 모든 mutation 차단·실DB 쓰기0. 소파/스크롤/창/모바일 제외 회귀를 수행한다.
 4. 독립 리뷰·type/lint/unit/build·문서 검사 후 기존 승인 범위의 commit/push·운영 SHA/리소스를 확인한다. 완료 결과는 별도 검증 기록에 두고 현재 작업 row를 제거한다. 기존 전체 unit8/harness2 실패는 변경 전 증거와 분리한다.
+
+## 완료
+
+제품 `08b72ade9810bcd060b50e60828d696b9ce69335` push 및 운영 SHA/Vercel success·공개 응답200·검증 빌드와 같은 companion JS/CSS 확인 완료. 관련 단위538·새 native7+왕복1·핵심 공유 회귀18 PASS. 추가 deliberation 회귀는5 PASS/1 기존 texture FAIL이며 원 실패와 독립 재검사3 PASS를 함께 보존했다. 전체 unit8/harness2 기존 실패도 남아 있다. 정확한 환경·저장/비용·독립 검토·제한은 [검증 기록](../verification/COMPANION_HABITS-20261017.md)에 있다.
