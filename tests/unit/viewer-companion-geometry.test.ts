@@ -140,6 +140,52 @@ describe("companion geometry anchor subscription", () => {
     expect(changed).not.toHaveBeenCalled();
     expect(f.timers.size + f.frames.size).toBe(0);
   });
+  it("coalesces validation-only scans without layout reads or invalidation until the existing120ms boundary", () => {
+    const f = geometryFixture(), invalidate = vi.fn(), changed = vi.fn();
+    const sub = observeCompanionPlatforms(f.root, changed, { onInvalidate: invalidate }); f.flush();
+    invalidate.mockClear(); changed.mockClear(); f.range.getClientRects.mockClear();
+    f.date.rect = box(200, 310, 100, 20);
+    sub.revalidate(); sub.revalidate(); sub.revalidate();
+    expect(invalidate).not.toHaveBeenCalled(); expect(changed).not.toHaveBeenCalled();
+    expect(f.range.getClientRects).not.toHaveBeenCalled(); expect(f.timers.size + f.frames.size).toBe(1);
+    f.advance(119); expect(changed).not.toHaveBeenCalled();
+    f.advance(1); expect(changed).toHaveBeenCalledTimes(1); expect(changed.mock.calls[0][1]).toBe(true);
+    expect((changed.mock.calls[0][0] as Platform[]).find(p => p.id === "date-1")?.y).toBe(307);
+    expect(invalidate).not.toHaveBeenCalled(); expect(f.timers.size + f.frames.size).toBe(0); sub();
+  });
+  it.each(["validation-first", "real-first"] as const)("keeps real event priority when %s requests share a scan", order => {
+    const f = geometryFixture(), invalidate = vi.fn(), changed = vi.fn();
+    const sub = observeCompanionPlatforms(f.root, changed, { onInvalidate: invalidate }); f.flush();
+    invalidate.mockClear(); changed.mockClear(); f.date.rect = box(200, 320, 100, 20);
+    if (order === "validation-first") { sub.revalidate(); f.win.emit("scroll"); }
+    else { f.win.emit("scroll"); sub.revalidate(); }
+    sub.revalidate();
+    expect(f.timers.size + f.frames.size).toBe(1); expect(invalidate).toHaveBeenCalledTimes(1);
+    f.advance(120); expect(changed).toHaveBeenCalledTimes(1); expect(changed.mock.calls[0][1]).toBe(false);
+    expect((changed.mock.calls[0][0] as Platform[]).find(p => p.id === "date-1")?.y).toBe(317); sub();
+  });
+  it("restores an entering cushion only after a validation scan proves its full safe span clear", () => {
+    const f = geometryFixture(), invalidate = vi.fn(), changed = vi.fn();
+    f.home.rect = box(-140, 600, 98.31, 2);
+    const sub = observeCompanionPlatforms(f.root, changed, { size: 92, home: f.home as unknown as HTMLElement, onInvalidate: invalidate }); f.flush();
+    expect(sub.landings().some(p => p.id === "companion-home")).toBe(false); invalidate.mockClear();
+    const control = new FixtureElement(); control.parentElement = f.sourceRoot; control.rect = box(30, 530, 150, 80); f.controls.push(control);
+    f.home.rect = box(36.65, 600, 98.31, 2); sub.revalidate(); f.advance(120);
+    expect(sub.landings().some(p => p.id === "companion-home")).toBe(false);
+    f.controls.splice(f.controls.indexOf(control), 1); sub.revalidate(); f.advance(120);
+    const seat = sub.landings().find(p => p.id === "companion-home")!;
+    expect(seat).toBeDefined(); expect(seat.x).toBeCloseTo(74.61); expect(seat.width).toBeCloseTo(22.39);
+    expect(changed.mock.calls.at(-1)![1]).toBe(true); expect(invalidate).not.toHaveBeenCalled(); sub();
+  });
+  it("cancels queued validation and makes later validation inert after disposal", () => {
+    const f = geometryFixture(), invalidate = vi.fn(), changed = vi.fn();
+    const sub = observeCompanionPlatforms(f.root, changed, { onInvalidate: invalidate }); f.flush();
+    invalidate.mockClear(); changed.mockClear(); f.range.getClientRects.mockClear();
+    f.date.rect = box(200, 330, 100, 20); sub.revalidate(); expect(f.timers.size).toBe(1);
+    sub(); sub.revalidate(); f.win.emit("scroll"); f.advance(1000);
+    expect(changed).not.toHaveBeenCalled(); expect(invalidate).not.toHaveBeenCalled(); expect(f.range.getClientRects).not.toHaveBeenCalled();
+    expect(f.timers.size + f.frames.size).toBe(0);
+  });
   it("treats the studio day role as a calendar container while retaining nested edit/private controls and scroll anchors", () => {
     const f = geometryFixture(), edit = new FixtureElement(), privateCard = new FixtureElement();
     const marker = "[data-companion-event='ordinary'][data-eventid]";
@@ -538,7 +584,7 @@ describe("companion geometry anchor subscription", () => {
 
   it("offers an inert callable follow handle when a capture has no browsing window", () => {
     const subscription = observeCompanionPlatforms({ ownerDocument: { defaultView: null } } as unknown as HTMLElement, vi.fn());
-    expect(subscription.follow(["anything"])).toEqual([]); expect(() => subscription()).not.toThrow();
+    expect(subscription.follow(["anything"])).toEqual([]); expect(() => subscription.revalidate()).not.toThrow(); expect(() => subscription()).not.toThrow();
   });
 
   it("cancels an initial frame before any measurement can outlive its owner", () => {

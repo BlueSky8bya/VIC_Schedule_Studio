@@ -43,6 +43,8 @@ async function discardByDrag(page: Page, item: Locator, bin: Locator, touch: boo
 
 async function liftFromBed(page: Page, touch: boolean, label: string) {
   const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }), pet = page.locator(".vc-companion"), foreground = page.locator(".vc-bed-foreground");
+  const original = await pet.elementHandle(), bed = home(page).locator(".vc-plush-bed"), localFront = bed.locator(".vc-bed-local-front");
+  const originalBed = (await bed.boundingBox())!;
   const r = (await actor.boundingBox())!, start = { x: r.x + r.width / 2, y: r.y + r.height * .4 }, end = { x: start.x, y: start.y - 70 };
   const cdp = touch ? await page.context().newCDPSession(page) : null;
   try {
@@ -52,12 +54,16 @@ async function liftFromBed(page: Page, touch: boolean, label: string) {
     if (cdp) for (let step = 1; step <= 12; step++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: start.x, y: start.y + (end.y - start.y) * step / 12, id: 41 }] });
     else await page.mouse.move(end.x, end.y, { steps: 12 });
     await expect(pet).toHaveAttribute("data-state", "held");
-    // The front/side bolsters stay put. Depth comes from lifting the real
-    // hanging drawing clear of the central rim, never fading the sofa away.
-    await expect(foreground).toBeVisible();
-    await expect.poll(() => foreground.evaluate(node => Number(getComputedStyle(node).opacity))).toBeGreaterThan(.9);
-    const rim = (await foreground.boundingBox())!, rimTop = rim.y + rim.height * .54;
+    // The complete local sofa keeps its bolsters. Once the real hanging body
+    // clears the crest, it no longer needs a second fixed foreground cloth.
+    await expect(pet).toHaveAttribute("data-sofa-depth", "clear");
+    await expect(foreground).toBeHidden(); await expect(localFront).toHaveCount(1);
+    await expect(localFront.locator(".vc-bed-front-shape")).toBeVisible();
+    await expect.poll(() => localFront.evaluate(node => Number(getComputedStyle(node).opacity))).toBeGreaterThan(.99);
+    const rim = (await bed.boundingBox())!, rimTop = rim.y + rim.height * .54;
+    for (const key of ["x", "y", "width", "height"] as const) expect(Math.abs(rim[key] - originalBed[key])).toBeLessThanOrEqual(.1);
     await expect.poll(async () => { const pose = (await pet.locator(".vc-pose").boundingBox())!; return pose.y + pose.height; }).toBeLessThan(rimTop);
+    expect(await pet.evaluate((node, original) => node === original && node.isConnected, original)).toBe(true);
     expect(await actor.evaluate(node => { const r = node.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(".vc-actor") === node; })).toBe(true);
     await home(page).screenshot({ path: `.scratch-pw/companion-plush-home-${captureLabel}-${label}-lift.png` });
     if (cdp) {
@@ -133,8 +139,11 @@ for (const view of cases) test.describe(view.name, () => {
     await press(cushion, view.touch); await expect(pet).toHaveAttribute("data-platform", "companion-home", { timeout: 6000 });
     await expect(pet).toHaveAttribute("data-state", "sleep", { timeout: 6000 });
     const foreground = page.locator(".vc-bed-foreground"); await expect(foreground).toBeVisible();
+    await expect(pet).toHaveAttribute("data-sofa-depth", /^(seat|back)$/);
+    await expect(home(page).locator(".vc-bed-local-front")).toHaveCount(1);
+    await expect(home(page).locator(".vc-bed-local-front .vc-bed-front-shape")).toHaveCSS("visibility", "hidden");
     await expect(foreground).toHaveCSS("pointer-events", "none");
-    await expect.poll(() => foreground.evaluate(node => Number(getComputedStyle(node).opacity))).toBeGreaterThan(.9);
+    await expect.poll(() => foreground.evaluate(node => Number(getComputedStyle(node).opacity))).toBeGreaterThan(.99);
     const layer = await foreground.evaluate(node => { const r = node.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height, z: Number(getComputedStyle(node).zIndex) }; });
     const originalBed = (await home(page).locator(".vc-plush-bed").boundingBox())!;
     for (const [actual, expected] of [[layer.left, originalBed.x], [layer.top, originalBed.y], [layer.width, originalBed.width], [layer.height, originalBed.height]]) expect(Math.abs(actual - expected)).toBeLessThanOrEqual(.1);

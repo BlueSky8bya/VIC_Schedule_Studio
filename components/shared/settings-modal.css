@@ -414,7 +414,7 @@ html[data-theme="dark"] .rhh-seg {
   background: rgb(255 255 255 / 8%);
 }
 html[data-theme="dark"] .rhh-seg button {
-  color: var(--muted, #aaa49a);
+  color: var(--ink-soft, #c9c5bc);
 }
 html[data-theme="dark"] .rhh-seg button.on {
   background: rgb(255 255 255 / 16%);

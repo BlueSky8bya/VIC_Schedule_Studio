@@ -238,19 +238,21 @@ test("studio native short click during a real released fall keeps falling, lands
   await page.mouse.click(down.x, down.y, { delay: 50 }); await page.mouse.move(5, 5);
   await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
   await expect(pet(page)).not.toHaveAttribute("data-state", "petted");
+  // The finite900ms expression can finish while gravity is still settling.
+  // Observe its decoded tears on their actual beat, before waiting for feet.
+  await expect(pet(page)).toHaveAttribute("data-play-beat", "checking");
+  await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(packet(27));
+  await page.screenshot({ path: `${prefix}-studio-midair-contact.png` });
   await expect.poll(() => pet(page).evaluate(node => node.getBoundingClientRect().bottom)).toBeGreaterThan(before + 8);
   await expect.poll(() => page.evaluate(() => {
     const body = document.querySelector<HTMLElement>(".vc-companion")!, seat = document.querySelector<HTMLElement>(".vc-home-cushion")!;
     return Math.abs(body.getBoundingClientRect().bottom - seat.getBoundingClientRect().top);
   }), { timeout: 2000 }).toBeLessThanOrEqual(1);
-  await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
-  await expect(pet(page)).toHaveAttribute("data-play-beat", "checking");
-  await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(packet(27));
-  await page.screenshot({ path: `${prefix}-studio-midair-contact.png` });
   await expect(pet(page)).not.toHaveAttribute("data-play", "bonk-tears", { timeout: 5000 });
   await expect(pet(page)).toHaveAttribute("data-platform", "companion-home");
   const frames = await page.evaluate(() => (window as PlayWindow).companionPlayProbe!.frames);
   const falling = frames.filter(frame => frame.play === "bonk-tears");
+  expect(falling.some(frame => frame.beat === "checking" && frame.atlas.endsWith(packet(27)))).toBe(true);
   expect(falling.length).toBeGreaterThan(10);
   expect(Math.max(...falling.map(frame => frame.foot)) - Math.min(...falling.map(frame => frame.foot))).toBeGreaterThan(20);
   expect(frames.filter(frame => !frame.visible || !frame.same)).toEqual([]);

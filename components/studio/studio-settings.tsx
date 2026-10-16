@@ -279,7 +279,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         <Switch dataAct="companion-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="AI 빅타민 켜기/끄기" on={preferences.enabled} onToggle={() => onChange({ enabled: !preferences.enabled })} />
       </div>
     </div>
-    <p className="rhh-group-foot">시청자 달력에서 함께 놀아요. 꺼도 아래 취향은 기억해요.</p>
+    <p className="rhh-group-foot">달력에서 함께 놀아요. 꺼도 아래 취향은 기억해요.</p>
     <div aria-label="빅타민 설정" className="rhh-seg" ref={nav} role="tablist" style={{ "--n": companionTabs.length, "--i": companionTabs.findIndex(item => item.key === tab), width: "100%", marginBottom: 12 } as CSSProperties}>
       <span aria-hidden="true" className="rhh-seg-thumb" />
       {companionTabs.map(item => <button aria-controls={`${id}-${item.key}-panel`} aria-selected={tab === item.key} className={tab === item.key ? "on" : ""} data-act="settings-companion-tab" data-act-opt={item.key} data-companion-tab={item.key} id={`${id}-${item.key}`} key={item.key} onClick={() => { if (tab !== item.key) playSfx("tab"); setTab(item.key); }} onKeyDown={onKey} role="tab" tabIndex={tab === item.key ? 0 : -1} type="button">{item.label}</button>)}

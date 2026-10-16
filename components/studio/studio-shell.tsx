@@ -1354,8 +1354,9 @@ export function StudioShell({
     // '바깥'으로 치지 않는다: 편집 패널·날짜칸·비공개 토글·날짜시간 선택기 백드롭에 더해,
     // 휴뱅 미니메뉴(.rest-menu), 월 이동 < >(.studio-monthbar, 키보드 ←/→와 동작 일치),
     // 색상 필터 사이드바(.studio-left-panel). 빈 배경 클릭만 닫기로 남긴다.
-    // Only this editor's discovered guest is part of its input owner. Ordinary
-    // roaming pets retain the existing outside-click policy.
+    // This editor owns its discovered guest; a directly exposed world actor
+    // also retains its gesture while the editor stays open, as in the viewer.
+    // Clicking ordinary paper/background still follows the dismissal policy.
     const isOwnedDetailGuest = (el: HTMLElement | null) => {
       const actor = el?.closest<HTMLElement>(".vc-companion[data-detail-guest] .vc-actor");
       return Boolean(actor?.id && editorPanelRef.current?.getAttribute("aria-owns")?.split(/\s+/).includes(actor.id));
@@ -1363,6 +1364,7 @@ export function StudioShell({
     const isOutside = (el: HTMLElement | null) =>
       !(
         isOwnedDetailGuest(el) ||
+        el?.closest(".vc-companion:not([data-detail-guest]) .vc-actor") ||
         el?.closest(".event-editor-panel") ||
         el?.closest(".studio-day") ||
         el?.closest(".private-toggle") ||

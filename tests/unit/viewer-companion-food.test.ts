@@ -133,6 +133,28 @@ describe("companion food attachments", () => {
     expect(moved.point).toEqual({ x: 820, y: 430 });
     expect(followCompanionFood(moved.attachment, { x: 0, y: 0 }, roomFloor, "floor").point).toEqual({ x: 220, y: 630 });
   });
+  it("uses the current floor plane and control bounds after a zoomed house remounts into its compact portal", () => {
+    // The studio's36px room floor measures32.390625px under shell zoom;
+    // its compact body portal measures36px. A local y from the first room
+    // would otherwise leave this snack3.609375px above its new floor.
+    const zoomed = { ...roomFloor, height: 32.390625 };
+    const placed = receiveCompanionHomeFloorFood({ x: 250, y: 624 }, { x: 250, y: 608 }, zoomed, [])!;
+    expect(placed).toEqual({ x: 250, y: 626.390625 });
+    const attached = attachCompanionFood(placed, { x: 0, y: 100 }, { x: zoomed.left, y: zoomed.top });
+    const compact = { ...roomFloor, left: 700, top: 500 };
+    const moved = followCompanionFood(attached, { x: 0, y: 300 }, compact, "floor");
+    expect(receiveCompanionHomeFloorFood(moved.point, { x: moved.point.x, y: 534 }, compact, [], true)).toEqual({ x: 850, y: 530 });
+    // This control intersects only the new foot plane, so a stale y would
+    // also put the full44px native snack input over the control.
+    const control = { left: 830, top: 534, width: 40, height: 20 };
+    const safe = receiveCompanionHomeFloorFood(moved.point, { x: moved.point.x, y: 534 }, compact, [control], true)!;
+    expect(safe).toEqual({ x: 808, y: 530 });
+    const retained = { ...moved.attachment, documentX: safe.x, documentY: safe.y + 300 };
+    expect(retained).toMatchObject({ offsetX: 150, offsetY: 26.390625 });
+    const returned = followCompanionFood(retained, { x: 0, y: 0 }, zoomed, "floor");
+    expect(receiveCompanionHomeFloorFood(returned.point, { x: returned.point.x, y: 630 }, zoomed, [], true)).toEqual(placed);
+    expect(attached).toMatchObject({ offsetX: 150, offsetY: 26.390625 });
+  });
   it("reflows floor food around shifted controls and restores its intended local x on regrowth", () => {
     const original = { x: 250, y: 630 }, attachment = attachCompanionFood(original, { x: 0, y: 0 }, { x: roomFloor.left, y: roomFloor.top });
     const narrow = { ...roomFloor, width: 220 }, feeder = { left: 200, top: 574, width: 118, height: 54 };

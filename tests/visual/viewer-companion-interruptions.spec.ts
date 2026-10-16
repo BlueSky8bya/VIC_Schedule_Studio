@@ -154,7 +154,10 @@ test("pausing a dragged snack releases capture and returns it to the floor", asy
   const box = (await snack.boundingBox())!, height = page.viewportSize()!.height;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(180, height - 26, { steps: 8 });
+  // The centre grip is16px above its foot. Leave that foot12px above the
+  // measured protected floor so pause settles onto a real lower support,
+  // rather than exercising the separate intentional offscreen-food fallback.
+  await page.mouse.move(180, await floorY(page) - 28, { steps: 8 });
   await expect.poll(() => snack.evaluate(node => node.hasPointerCapture(Number((node as HTMLElement).dataset.capturePointer)))).toBe(true);
   await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); });
   await expect(page.locator(".vc-food-layer")).not.toBeVisible();

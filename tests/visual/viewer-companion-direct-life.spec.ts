@@ -9,7 +9,8 @@ const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰
 const textSurfaces = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
 const posts = new WeakMap<Page, string[]>();
 type Frame = { at: number; x: number; y: number; hidden: boolean; state: string; platform: string; journey: string; lift: number; scaleY: number };
-type Probe = Window & { directFrames?: Frame[]; directRaf?: number; directNode?: Element; directRanges?: number; directWrites?: number; directPointer?: number; directDrag?: { state: string; elapsed: number } };
+type DragFrame = { state: string; elapsed: number; captured: boolean; deltaX: number };
+type Probe = Window & { directFrames?: Frame[]; directRaf?: number; directNode?: Element; directRanges?: number; directWrites?: number; directPointer?: number; directDrag?: DragFrame; directDragFrames?: DragFrame[] };
 
 test.beforeEach(async ({ page }) => {
   const blocked: string[] = []; posts.set(page, blocked);
@@ -213,6 +214,10 @@ test("another month during the actual landing starts from its current airborne v
   await expect.poll(() => page.evaluate(() => (window as Probe).directRanges)).toBeGreaterThan(0);
   await expect(pet(page)).toHaveAttribute("data-journey", firstJourney!);
   await expect(pet(page)).toHaveAttribute("data-state", "jump");
+  // A fast resize/scan can finish within two actual display frames. Observe
+  // the required native frames before stopping, retaining the original
+  // frame-count, journey and speed assertions instead of loosening them.
+  await expect.poll(() => page.evaluate(() => ((window as Probe).directFrames ?? []).filter(frame => !frame.hidden).length), { intervals: [16], timeout: 500 }).toBeGreaterThan(2);
   const resized = await stopRecord(page);
   expect(resized.sameNode).toBe(true);
   const visible = resized.frames.filter(frame => !frame.hidden);
@@ -340,24 +345,44 @@ test("reduced motion retains actual scroll contact without the decorative respon
 
 test("a7px drag starts immediately and losing native capture cancels the hold without petting", async ({ page }) => {
   await setup(page);
+  let previous: { x: number; y: number; support: string } | undefined, stable = 0;
+  await expect.poll(async () => {
+    const current = await pet(page).evaluate(node => { const el = node as HTMLElement, matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41 + 46, y: matrix.m42 + 92, support: el.dataset.platform ?? "", stationary: !el.hidden && !["jump", "held"].includes(el.dataset.state ?? "") }; });
+    stable = current.stationary && current.support && previous?.support === current.support && Math.hypot(current.x - previous.x, current.y - previous.y) < .05 ? stable + 1 : 0;
+    previous = current; return stable;
+  }, { intervals: [80], timeout: 5000 }).toBeGreaterThanOrEqual(2);
   await actor(page).evaluate(node => {
-    let started = 0, initialX = 0;
-    node.addEventListener("pointerdown", event => { (window as Probe).directPointer = (event as PointerEvent).pointerId; started = performance.now(); initialX = (event as PointerEvent).clientX; }, { once: true });
-    // Registered after the product listener: witness the state in this same
-    // native pointer event, rather than letting an old360ms hold pass a poll.
+    let started = 0, initialX = 0, worldX = 0, observing = false;
+    node.addEventListener("pointerdown", event => { const probe = window as Probe; probe.directPointer = (event as PointerEvent).pointerId; probe.directDragFrames = []; started = performance.now(); initialX = (event as PointerEvent).clientX; worldX = new DOMMatrixReadOnly(getComputedStyle(document.querySelector(".vc-companion")!).transform).m41 + 46; }, { once: true });
+    // The first displayed held frame must still beat the old360ms hold. Read
+    // actual display frames, not an obsolete same-pointer-event DOM repaint.
     node.addEventListener("pointermove", event => {
-      if (started && Math.abs((event as PointerEvent).clientX - initialX) > 6) (window as Probe).directDrag = { state: document.querySelector<HTMLElement>(".vc-companion")!.dataset.state ?? "", elapsed: performance.now() - started };
+      if (!started || observing || Math.abs((event as PointerEvent).clientX - initialX) <= 6) return;
+      observing = true;
+      const sample = (now: number) => {
+        const body = document.querySelector<HTMLElement>(".vc-companion")!, probe = window as Probe;
+        const frame: DragFrame = { state: body.dataset.state ?? "", elapsed: now - started, captured: node.hasPointerCapture(probe.directPointer!), deltaX: new DOMMatrixReadOnly(getComputedStyle(body).transform).m41 + 46 - worldX };
+        probe.directDragFrames!.push(frame);
+        if (frame.state === "held" || frame.elapsed >= 300 || !frame.captured) probe.directDrag = frame;
+        else requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
     });
   });
   const box = (await actor(page).boundingBox())!, x = box.x + box.width / 2, y = box.y + box.height / 2;
   await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + 7, y);
-  const immediate = await page.evaluate(() => (window as Probe).directDrag);
-  expect(immediate?.state).toBe("held"); expect(immediate!.elapsed).toBeLessThan(300);
+  await expect.poll(() => page.evaluate(() => (window as Probe).directDrag)).toBeTruthy();
+  const immediate = (await page.evaluate(() => (window as Probe).directDrag))!;
+  console.log(JSON.stringify({ check: "native-seven-pixel-first-display", firstHeld: immediate, frames: await page.evaluate(() => (window as Probe).directDragFrames) }));
+  expect(immediate.state).toBe("held"); expect(immediate.elapsed).toBeLessThan(300);
+  expect(immediate.captured).toBe(true); expect(immediate.deltaX).toBeGreaterThan(6);
   await expect(pet(page)).toHaveAttribute("data-state", "held");
   await actor(page).evaluate(node => { const pointer = (window as Probe).directPointer!; if (node.hasPointerCapture(pointer)) node.releasePointerCapture(pointer); });
   await page.mouse.move(x + 30, y + 30); await page.mouse.up();
   await expect(pet(page)).not.toHaveAttribute("data-state", "held");
   await expect(pet(page)).not.toHaveAttribute("data-state", "petted");
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 6000 });
-  await actor(page).click(); await expect(pet(page)).toHaveAttribute("data-state", "petted");
+  // PLAN-068 assigns short clicks to bonking. Enter remains the native
+  // friendly interaction and must work immediately after a cancelled lift.
+  await actor(page).focus(); await actor(page).press("Enter"); await expect(pet(page)).toHaveAttribute("data-state", "petted");
 });

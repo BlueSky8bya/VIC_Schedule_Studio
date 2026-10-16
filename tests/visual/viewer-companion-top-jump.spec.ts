@@ -9,7 +9,7 @@ const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const posts = new WeakMap<Page, string[]>();
 type Frame = { at: number; x: number; y: number; width: number; top: number; left: number; right: number; bottom: number; hidden: boolean; row: number; state: string; journey: string; platform: string };
-type Probe = { frames: Frame[]; journey: string; start: Frame | null; end: Frame | null; hiddenMutation: boolean; done: boolean; raf: number; observer: MutationObserver };
+type Probe = { frames: Frame[]; contact: Frame | null; journey: string; start: Frame | null; end: Frame | null; hiddenMutation: boolean; done: boolean; raf: number; observer: MutationObserver };
 type ProbeWindow = Window & { topJumpProbe?: Probe };
 
 test.beforeEach(async ({ page }) => {
@@ -63,7 +63,7 @@ async function topCard(page: Page) {
   });
 }
 
-async function placeOnCard(page: Page, mobile: boolean) {
+async function placeOnCard(page: Page, mobile: boolean, beforeRelease?: (card: { x: number; y: number }) => Promise<void>) {
   await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
   let card = await topCard(page);
   if (!card && mobile) {
@@ -80,15 +80,16 @@ async function placeOnCard(page: Page, mobile: boolean) {
     card = await topCard(page);
   }
   expect(card, "a real upper card must have a clear92px receiving point").not.toBeNull();
+  await beforeRelease?.(card!);
   if (mobile) await page.touchscreen.tap(card!.x, card!.releaseY); else await page.mouse.click(card!.x, card!.releaseY);
   return card!;
 }
 
-async function startProbe(page: Page, ballistic: boolean) {
-  await pet(page).evaluate((element, { ballistic, rows }) => {
+async function startProbe(page: Page, ballistic: boolean, receiving?: { x: number; y: number }) {
+  await pet(page).evaluate((element, { ballistic, rows, receiving }) => {
     const win = window as ProbeWindow;
     if (win.topJumpProbe) { cancelAnimationFrame(win.topJumpProbe.raf); win.topJumpProbe.observer.disconnect(); }
-    const probe: Probe = { frames: [], journey: "", start: null, end: null, hiddenMutation: false, done: false, raf: 0, observer: new MutationObserver(records => {
+    const probe: Probe = { frames: [], contact: null, journey: "", start: null, end: null, hiddenMutation: false, done: false, raf: 0, observer: new MutationObserver(records => {
       if (records.some(record => record.attributeName === "hidden")) probe.hiddenMutation = true;
     }) };
     probe.observer.observe(element, { attributes: true, attributeFilter: ["hidden"], attributeOldValue: true });
@@ -98,13 +99,17 @@ async function startProbe(page: Page, ballistic: boolean) {
       const frame: Frame = { at: now - began, x: box.left + box.width / 2, y: box.bottom, width: box.width, top: box.top, left: box.left, right: box.right, bottom: box.bottom,
         hidden: node.hidden || getComputedStyle(node).display === "none", row: Math.round(parseFloat(node.style.getPropertyValue("--vc-row")) * (rows - 1) / 100), state: node.dataset.state ?? "", journey: node.dataset.journey ?? "", platform: node.dataset.platform ?? "" };
       probe.frames.push(frame);
-      if (!probe.start && frame.state === "jump" && frame.journey && (!ballistic || frame.row === 3)) { probe.start = frame; probe.journey = frame.journey; }
+      // A lively brain may start anticipation immediately after its finite
+      // manual landing. Observe the real support contact continuously instead
+      // of requiring a stationary state to survive a cross-process poll.
+      if (receiving && !probe.contact && /^card-\d+-top(?:-\d+)?$/.test(frame.platform) && Math.hypot(frame.x - receiving.x, frame.y - receiving.y) < 2) probe.contact = frame;
+      if (!probe.start && (!receiving || probe.contact) && frame.state === "jump" && frame.journey && (!ballistic || frame.row === 3)) { probe.start = frame; probe.journey = frame.journey; }
       else if (probe.start && (frame.state !== "jump" || frame.journey !== probe.journey)) { probe.end = frame; probe.done = true; }
       if (probe.done || now - began > 15000) return;
       probe.raf = requestAnimationFrame(record);
     };
     win.topJumpProbe = probe; probe.raf = requestAnimationFrame(record);
-  }, { ballistic, rows: registration.rows.length });
+  }, { ballistic, rows: registration.rows.length, receiving });
 }
 
 async function finishProbe(page: Page, label: string) {
@@ -113,14 +118,14 @@ async function finishProbe(page: Page, label: string) {
   } catch (error) {
     const failed = await page.evaluate(() => {
       const p = (window as ProbeWindow).topJumpProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect();
-      return { frames: p.frames, start: p.start, end: p.end, journey: p.journey, hiddenMutation: p.hiddenMutation };
+      return { frames: p.frames, contact: p.contact, start: p.start, end: p.end, journey: p.journey, hiddenMutation: p.hiddenMutation };
     });
     await writeFile(`.scratch-pw/companion-054-${label}-failed-frames.json`, JSON.stringify(failed, null, 2));
     throw error;
   }
   const probe = await page.evaluate(() => {
     const p = (window as ProbeWindow).topJumpProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect();
-    return { frames: p.frames, start: p.start!, end: p.end!, journey: p.journey, hiddenMutation: p.hiddenMutation };
+    return { frames: p.frames, contact: p.contact, start: p.start!, end: p.end!, journey: p.journey, hiddenMutation: p.hiddenMutation };
   });
   await writeFile(`.scratch-pw/companion-054-${label}-frames.json`, JSON.stringify(probe, null, 2));
   expect(probe.hiddenMutation, "even a between-rAF hidden/visible flicker is a regression").toBe(false);
@@ -213,14 +218,12 @@ for (const mobile of [false]) test.describe(mobile ? "agenda top flights" : "des
     test.setTimeout(25000); await setup(page, true, mobile);
     if (mobile) await openCompanionHome(page, "touch");
     const original = await pet(page).elementHandle();
-    const card = await placeOnCard(page, mobile);
-    // Explicit placement first falls onto this real card. Observe its completed
-    // landing before probing a separate autonomous jump and its anticipation.
-    await expect.poll(() => pet(page).evaluate((node, card) =>
-      (node as HTMLElement).dataset.state !== "jump" && Math.abs(node.getBoundingClientRect().bottom - card.y) < 2, card)).toBe(true);
-    await startProbe(page, true);
+    const card = await placeOnCard(page, mobile, candidate => startProbe(page, true, candidate));
     if (mobile) await offerLowerCardFood(page, card);
     const probe = await finishProbe(page, `ballistic-${mobile ? 390 : 1920}`);
+    expect(probe.contact, "native placement must first contact the independently measured card").not.toBeNull();
+    expect(Math.hypot(probe.contact!.x - card.x, probe.contact!.y - card.y)).toBeLessThan(2);
+    expect(probe.start.at).toBeGreaterThanOrEqual(probe.contact!.at);
     expect(Math.abs(probe.start.y - card.y)).toBeLessThan(2);
     expect(probe.start.y).toBeLessThan(235); expect(probe.start.y).toBeGreaterThan(116);
     expect(probe.frames.some(frame => frame.journey === probe.journey && frame.row === 4)).toBe(true);

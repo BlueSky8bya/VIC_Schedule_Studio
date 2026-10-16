@@ -9,7 +9,7 @@ import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 
 type Surface = "viewer" | "studio";
-type Frame = { at: number; phase: string; bedY: number; alignment: number; bedVisible: boolean; frontVisible: boolean; petVisible: boolean; sameDom: boolean; support: string; presence: string; state: string; foot: number; ground: number | null; footError: number | null };
+type Frame = { at: number; phase: string; bedY: number; alignment: number; bedVisible: boolean; depth: string; frontVisible: boolean; frontHidden: boolean; frontOpacity: number; localFronts: number; localFrontVisible: boolean; localFrontOpacity: number; petVisible: boolean; sameDom: boolean; support: string; presence: string; state: string; foot: number; ground: number | null; footError: number | null };
 type ProbeWindow = Window & { houseFlipFocused?: boolean; houseFlipPanelAt?: number; houseFlipSearchAt?: number; houseFlip?: { node: Element; frames: Frame[]; phase: string; raf: number; timers: Set<ReturnType<typeof setTimeout>>; stopped: boolean } };
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
@@ -124,13 +124,19 @@ async function startProbe(page: Page) {
         const bed = document.querySelector<SVGSVGElement>(".vc-home:not([data-panel-collapsed]) .vc-plush-bed"), front = document.querySelector<HTMLElement>(".vc-bed-foreground"), current = document.querySelector<HTMLElement>(".vc-companion");
         if (!bed || !front || !current) return;
         const b = bed.getBoundingClientRect(), f = front.getBoundingClientRect(), style = getComputedStyle(front), foot = current.getBoundingClientRect().bottom;
+        const localFronts = bed.querySelectorAll(".vc-bed-local-front"), localFront = localFronts[0]?.querySelector(".vc-bed-front-shape");
+        const localStyle = localFront ? getComputedStyle(localFront) : undefined;
+        let localFrontOpacity = 1;
+        for (let element: Element | null = localFront ?? null; element; element = element.parentElement) localFrontOpacity *= Number(getComputedStyle(element).opacity);
         const support = current.dataset.platform ?? "", state = current.dataset.state ?? "";
         const seat = document.querySelector(".vc-home .vc-home-cushion"), floor = document.querySelector(".vc-home .vc-home-floor");
         const ground = support === "companion-home" && seat ? seat.getBoundingClientRect().top : /^companion-home-floor(?:-\d+)?$/.test(support) && floor ? floor.getBoundingClientRect().bottom - floorInset : null;
         proof.frames.push({ at: performance.now(), phase: proof.phase, bedY: b.top,
           alignment: Math.max(Math.abs(b.left - f.left), Math.abs(b.top - f.top), Math.abs(b.width - f.width), Math.abs(b.height - f.height)),
           bedVisible: b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight,
-          frontVisible: !front.hidden && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > .9,
+          depth: current.dataset.sofaDepth ?? "", frontHidden: front.hidden, frontOpacity: Number(style.opacity),
+          frontVisible: !front.hidden && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0,
+          localFronts: localFronts.length, localFrontVisible: Boolean(localStyle && localStyle.display !== "none" && localStyle.visibility !== "hidden" && localFrontOpacity > 0), localFrontOpacity,
           petVisible: !current.hidden, sameDom: current === proof.node, support, presence: current.dataset.presence ?? "", state, foot, ground, footError: ground === null ? null : Math.abs(foot - ground) });
       }, 0);
       proof.timers.add(timer); proof.raf = requestAnimationFrame(frame);
@@ -157,16 +163,27 @@ async function disclosures(page: Page, label: string, instant = false) {
     }
   }
 }
-function verify(proof: Frame[], requireHome = false, minPhases = 4, checkFoot = true) {
+function verify(proof: Frame[], requireHome = false, minPhases = 4, checkFoot = true, requireInterior = false) {
   expect(proof.length).toBeGreaterThan(8);
   expect(proof.every(frame => frame.sameDom)).toBe(true);
   const phases = [...new Set(proof.map(frame => frame.phase).filter(phase => phase !== "start"))];
   expect(phases.length).toBeGreaterThanOrEqual(minPhases);
   expect(Math.max(...proof.map(frame => frame.bedY)) - Math.min(...proof.map(frame => frame.bedY)), "native disclosures must genuinely move the house").toBeGreaterThan(20);
-  const visible = proof.filter(frame => frame.frontVisible && frame.bedVisible);
+  const visible = proof.filter(frame => frame.petVisible && frame.bedVisible);
   expect(visible.length).toBeGreaterThan(4);
-  expect(Math.max(...visible.map(frame => frame.alignment)), "fixed foreground must follow the actual moving bed in every coherent displayed frame").toBeLessThan(1);
-  if (requireHome) expect(proof.filter(frame => frame.bedVisible && frame.petVisible && /^companion-home(?:-floor)?/.test(frame.support)).every(frame => frame.frontVisible)).toBe(true);
+  expect(visible.every(frame => frame.localFronts === 1), "the moving room keeps one local shared front group").toBe(true);
+  expect(visible.every(frame => ["clear", "front", "seat", "back"].includes(frame.depth))).toBe(true);
+  const interior = visible.filter(frame => ["seat", "back"].includes(frame.depth));
+  if (requireInterior) expect(interior.length, "the cushion foreground positive must include an actual interior resident").toBeGreaterThan(4);
+  for (const frame of interior) {
+    expect(frame.frontVisible).toBe(true); expect(frame.frontHidden).toBe(false); expect(frame.frontOpacity).toBeGreaterThan(.99);
+    expect(frame.alignment, "the sole external front follows the actual moving bed").toBeLessThan(1);
+    expect(frame.localFrontVisible, "the local front yields paint to the resident's foreground").toBe(false);
+  }
+  for (const frame of visible.filter(frame => ["clear", "front"].includes(frame.depth))) {
+    expect(frame.frontHidden, "outside and floor bodies do not need a fixed sofa clone").toBe(true); expect(frame.frontVisible).toBe(false);
+    expect(frame.localFrontVisible).toBe(true); expect(frame.localFrontOpacity).toBeGreaterThan(.99);
+  }
   if (requireHome && checkFoot) {
     const contact = proof.filter(frame => frame.bedVisible && frame.petVisible && frame.state !== "jump" && frame.footError !== null);
     expect(contact.length).toBeGreaterThan(4);
@@ -181,7 +198,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} independen
     await startProbe(page);
     let proof: Frame[] = [];
     try { await disclosures(page, state); } finally { proof = await finishProbe(page, `${surface}-${state}`); }
-    await page.screenshot({ path: `${prefix}-${surface}-${state}.png` }); verify(proof, state !== "outside");
+    await page.screenshot({ path: `${prefix}-${surface}-${state}.png` }); verify(proof, state !== "outside", 4, true, state === "cushion");
     if (state === "outside") {
       const toggle = page.locator("[data-panel-section-toggle='companion-home']:visible"), original = await pet(page).getAttribute("data-platform");
       await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -190,9 +207,10 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} independen
       expect(folded).toEqual({ frontHidden: true, petVisible: true });
       await expect(pet(page)).toHaveAttribute("data-platform", original!);
       await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "true"); await settle(page); await page.waitForTimeout(180);
-      await expect(page.locator(".vc-bed-foreground")).toBeVisible();
-      const alignment = await page.evaluate(() => { const bed = document.querySelector(".vc-home .vc-plush-bed")!.getBoundingClientRect(), front = document.querySelector(".vc-bed-foreground")!.getBoundingClientRect(); return Math.max(Math.abs(bed.x - front.x), Math.abs(bed.y - front.y), Math.abs(bed.width - front.width), Math.abs(bed.height - front.height)); });
-      expect(alignment).toBeLessThan(1); await expect(pet(page)).toHaveAttribute("data-platform", original!);
+      await expect(page.locator(".vc-bed-foreground")).toBeHidden();
+      await expect(home(page).locator(".vc-bed-local-front")).toHaveCount(1);
+      await expect(home(page).locator(".vc-bed-local-front .vc-bed-front-shape")).toBeVisible();
+      await expect(pet(page)).toHaveAttribute("data-platform", original!);
     }
   }
 });
@@ -241,5 +259,5 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} opening na
   } finally { proof = await finishProbe(page, `${surface}-modal`); }
   // Modal display perches can differ from the retained logical support;
   // strict foot contact belongs to the floor/cushion world cases above.
-  verify(proof, true, 1, false); await expect(pet(page)).toHaveAttribute("data-platform", "companion-home"); await expect(pet(page)).toBeVisible();
+  verify(proof, true, 1, false, true); await expect(pet(page)).toHaveAttribute("data-platform", "companion-home"); await expect(pet(page)).toBeVisible();
 });

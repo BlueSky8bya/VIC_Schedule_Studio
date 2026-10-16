@@ -9,7 +9,8 @@ type Point = { x: number; y: number };
 type Rect = { left: number; top: number; right: number; bottom: number; width: number; height: number };
 type Frame = {
   at: number; phase: string; point: Point; body: Point[]; bed: Rect; seatY: number;
-  depth: string; frontDepth: string; frontVisible: boolean; frontZ: number; frontOpacity: number; alignment: number;
+  depth: string; frontDepth: string; frontVisible: boolean; frontHidden: boolean; frontZ: number; frontOpacity: number; alignment: number;
+  localFronts: number; localFrontVisible: boolean; localFrontOpacity: number;
   rimSamples: number; visible: boolean; sameDom: boolean; platform: string; state: string;
   captured: boolean; gripError: number | null; outline: string; shadow: string;
 };
@@ -125,6 +126,10 @@ async function startProbe(page: Page) {
       const body = local.map(point => project(point, [sprite, ...layers]));
       const bedNode = document.querySelector<SVGSVGElement>(".vc-home .vc-plush-bed")!, bed = bedNode.getBoundingClientRect(), seat = document.querySelector(".vc-home .vc-home-cushion")!.getBoundingClientRect();
       const front = document.querySelector<HTMLElement>(".vc-bed-foreground")!, f = front.getBoundingClientRect(), frontStyle = getComputedStyle(front), outline = getComputedStyle(button);
+      const localFronts = bedNode.querySelectorAll(".vc-bed-local-front"), localFront = localFronts[0]?.querySelector(".vc-bed-front-shape");
+      const localStyle = localFront ? getComputedStyle(localFront) : undefined;
+      let localFrontOpacity = 1;
+      for (let element: Element | null = localFront ?? null; element; element = element.parentElement) localFrontOpacity *= Number(getComputedStyle(element).opacity);
       const path = bedNode.querySelector<SVGGeometryElement>(".vc-bed-front-shape")!, matrix = path.getScreenCTM(); let rimSamples = 0;
       if (matrix) for (let u = 0; u <= 4; u++) for (let v = 0; v <= 4; v++) {
         const point = project({ x: ll + (localSize - rr - ll) * u / 4, y: t + (localSize - bb - t) * v / 4 }, [sprite, ...layers]);
@@ -135,7 +140,8 @@ async function startProbe(page: Page) {
       const gripError = captured && node.getAttribute("data-state") === "held" && probe.lastPoint && performance.now() - probe.lastPoint.at > 24 ? Math.hypot(grip.x - probe.lastPoint.x, grip.y - probe.lastPoint.y) : null;
       return { at: performance.now() - began, phase: probe.phase, point: { x: r.left + r.width / 2, y: r.bottom }, body,
         bed: { left: bed.left, top: bed.top, right: bed.right, bottom: bed.bottom, width: bed.width, height: bed.height }, seatY: seat.top,
-        depth: (node as HTMLElement).dataset.sofaDepth ?? "", frontDepth: front.dataset.depth ?? "", frontVisible: !front.hidden && frontStyle.display !== "none", frontZ: Number(frontStyle.zIndex), frontOpacity: Number(frontStyle.opacity), alignment: Math.max(Math.abs(f.left - bed.left), Math.abs(f.top - bed.top), Math.abs(f.width - bed.width), Math.abs(f.height - bed.height)),
+        depth: (node as HTMLElement).dataset.sofaDepth ?? "", frontDepth: front.dataset.depth ?? "", frontVisible: !front.hidden && frontStyle.display !== "none" && frontStyle.visibility !== "hidden", frontHidden: front.hidden, frontZ: Number(frontStyle.zIndex), frontOpacity: Number(frontStyle.opacity), alignment: Math.max(Math.abs(f.left - bed.left), Math.abs(f.top - bed.top), Math.abs(f.width - bed.width), Math.abs(f.height - bed.height)),
+        localFronts: localFronts.length, localFrontVisible: Boolean(localStyle && localStyle.display !== "none" && localStyle.visibility !== "hidden" && localFrontOpacity > 0), localFrontOpacity,
         rimSamples, visible: !(node as HTMLElement).hidden && getComputedStyle(node).display !== "none", sameDom: document.querySelector(".vc-companion") === node, platform: (node as HTMLElement).dataset.platform ?? "", state: (node as HTMLElement).dataset.state ?? "", captured, gripError, outline: outline.outlineStyle, shadow: outline.boxShadow };
     };
     const frame = () => { probe.frames.push(probe.sample()); probe.raf = requestAnimationFrame(frame); };
@@ -153,10 +159,15 @@ async function finishProbe(page: Page, label: string) {
   expect(frames.every(frame => frame.outline === "none" && frame.shadow === "none")).toBe(true);
   for (const frame of frames) {
     expect(["clear", "back", "seat", "front"]).toContain(frame.depth);
+    expect(frame.localFronts, "the room retains exactly one shared local cloth group").toBe(1);
     const intersects = Math.max(...frame.body.map(p => p.x)) > frame.bed.left && Math.min(...frame.body.map(p => p.x)) < frame.bed.right && Math.max(...frame.body.map(p => p.y)) > frame.bed.top && Math.min(...frame.body.map(p => p.y)) < frame.bed.bottom;
-    if (intersects || ["back", "seat"].includes(frame.depth)) {
-      expect(frame.frontVisible).toBe(true); expect(frame.frontDepth).toBe(frame.depth); expect(frame.frontOpacity).toBeGreaterThan(.99); expect(frame.alignment).toBeLessThan(1);
-      expect(frame.frontZ).toBe(["back", "seat"].includes(frame.depth) ? 76 : 74);
+    if (["back", "seat"].includes(frame.depth)) {
+      expect(frame.frontVisible).toBe(true); expect(frame.frontHidden).toBe(false); expect(frame.frontDepth).toBe(frame.depth);
+      expect(frame.frontOpacity).toBeGreaterThan(.99); expect(frame.alignment).toBeLessThan(1); expect(frame.frontZ).toBe(76);
+      expect(frame.localFrontVisible, "an interior resident needs one external front, without a second local copy").toBe(false);
+    } else {
+      expect(frame.frontHidden, "an outside body needs the complete room's local front only").toBe(true); expect(frame.frontVisible).toBe(false);
+      expect(frame.localFrontVisible).toBe(true); expect(frame.localFrontOpacity).toBeGreaterThan(.99);
     }
     if (Math.max(...frame.body.map(p => p.y)) < frame.bed.top + frame.bed.height * .19 - .25) expect(frame.depth).toBe("clear");
     if (intersects && Math.max(...frame.body.map(p => p.y)) > frame.bed.top + frame.bed.height * .19 + .25 &&
@@ -213,6 +224,7 @@ test("the studio resident exits sideways without dragging the foreground through
   await drag.move(target!, "card-release"); await drag.drop("outside-fall");
   await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top(?:-\d+)?$/);
   const frames = await finishProbe(page, "studio-home-exit");
+  expect(frames.some(f => ["back", "seat"].includes(f.depth) && f.frontVisible && f.rimSamples > 0), "the native exit starts behind a real foreground mask").toBe(true);
   const exit = frames.filter(f => f.phase === "home-side-exit" && f.state === "held"); expect(exit.length).toBeGreaterThanOrEqual(12);
   expect(exit.some(f => f.depth === "front" && f.rimSamples > 0 && f.platform === "companion-home")).toBe(true);
   expect(Math.abs(frames.at(-1)!.point.y - await page.locator(".studio-event-pill[data-companion-event='ordinary'][data-eventid]").nth(target!.index).evaluate(node => node.getBoundingClientRect().top) + 3)).toBeLessThan(2);

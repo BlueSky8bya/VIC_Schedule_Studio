@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
@@ -149,6 +150,7 @@ async function finishProbe(page: Page, label: string) {
 
 async function input(page: Page, mobile: boolean) {
   const box = (await actor(page).boundingBox())!, start = { x: box.x + box.width * .5, y: box.y + box.height * .3 };
+  expect(await page.evaluate(point => Boolean(document.elementFromPoint(point.x, point.y)?.closest(".vc-actor")), start), "native capture must start on the exposed actor, never a covering window").toBe(true);
   const client: CDPSession | null = mobile ? await page.context().newCDPSession(page) : null;
   let at = start;
   if (client) await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...start, id: 56 }] });
@@ -212,9 +214,19 @@ for (const mode of ["reduced", "off"] as const) test(`real captured movement rem
   expect(frames.every(f => f.angle === 0 && f.sx === 1 && f.sy === 1)).toBe(true); await drag.end(); await expect(pet(page)).not.toHaveAttribute("data-state", "held");
 });
 
-test("an ordinary sleeping-window lift remains inertially neutral and returns to zero parked mutations", async ({ page }) => {
+test("an exposed sleeping detail-window lift remains inertially neutral and returns to zero parked mutations", async ({ page }) => {
   test.setTimeout(25000); await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
-  await page.getByRole("button", { name: "설정", exact: true }).click(); const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible();
+  // PLAN-069 leaves ordinary windows above their real world. Settings has a
+  // full-screen97 backdrop, so dragging at the covered actor's BCR actually
+  // selects settings text. An actual distant detail exposes this quiet actor
+  // while keeping that same ordinary-window ownership and native input.
+  const cards = page.locator(".public-event[data-eventid]:not(.teaser):not(.dimmed):not(.is-support)");
+  const index = await cards.evaluateAll(nodes => {
+    const pet = document.querySelector(".vc-actor")!.getBoundingClientRect(), x = pet.left + pet.width / 2, y = pet.top + pet.height / 2;
+    return nodes.map((node, index) => { const rect = node.getBoundingClientRect(); return { index, rect, distance: Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) }; }).filter(item => item.rect.width > 0 && item.rect.height > 0 && item.rect.top >= 0 && item.rect.bottom <= innerHeight).sort((a, b) => b.distance - a.distance)[0]?.index;
+  });
+  expect(index, "a real distant public card must expose a native detail").toBeDefined();
+  await cards.nth(index!).click(); const dialog = page.locator(".agenda-detail-sheet"); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 10000 }); await page.waitForTimeout(650);
   const focus = await page.evaluate(() => document.activeElement?.outerHTML), support = await pet(page).getAttribute("data-platform"), drag = await input(page, false);
   for (const dx of [30, -30, 30]) { await drag.move({ x: drag.start.x + dx, y: drag.start.y - 30 }); expect(await pet(page).locator(".vc-inertia").evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).isIdentity)).toBe(true); }

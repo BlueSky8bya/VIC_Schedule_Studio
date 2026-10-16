@@ -101,6 +101,13 @@ for (const reduced of [false, true]) test.describe(reduced ? "reduced hover curs
       await page.mouse.move(x, y); await page.waitForTimeout(18);
     }
     await page.evaluate(() => { (window as ProbeWindow).hoverStabilityProbe!.slow = false; });
+    // Cursor stability must also cover movements too slow to establish a
+    // stroke. With tracing/transport overhead, fourteen .5px samples can take
+    // longer than the real900ms gesture window around a reversal. Retain all
+    //96 tiny samples above, then supply one clear native round trip for the
+    // separate positive affection assertion; do not loosen that time window.
+    expect(await affection(page)).toBeLessThanOrEqual(initial + .081);
+    for (const x of [p.x - 18, p.x + 18, p.x - 18]) await page.mouse.move(x, y, { steps: 6 });
     await expect(pet(page)).toHaveAttribute("data-state", "petted"); const awarded = await affection(page);
     expect(awarded - initial).toBeGreaterThan(.06); expect(awarded - initial).toBeLessThan(.09);
     await page.waitForTimeout(900); await expect(pet(page)).toHaveAttribute("data-petting", "ready");

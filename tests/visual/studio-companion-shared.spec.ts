@@ -25,9 +25,14 @@ async function seed(page: Page, enabled: boolean, dark = false) {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.gfxPref", "max"); localStorage.setItem("vic.sound", "off");
     localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.reduceMotion", "off"); localStorage.setItem("vic.dark", dark ? "on" : "off");
     localStorage.setItem("vic_avatar_side", "left"); localStorage.removeItem("vic_panel_collapsed");
-    // Reload and a second shared surface retain choices made by native UI.
-    if (!localStorage.getItem("vic.viewerCompanion")) localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
-    if (!localStorage.getItem("vic.viewerCompanionCare")) localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
+    // Explicitly seed the first visit, including over the global layout
+    // fixture's saved OFF. Reload and surface navigation then exercise the
+    // user's real choices rather than restoring this initial preset.
+    if (!sessionStorage.getItem("companion-shared-prepared")) {
+      localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
+      localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
+      sessionStorage.setItem("companion-shared-prepared", "1");
+    }
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, dark, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled, roam: false, jump: false, sleep: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 } });
 }
 async function studio(page: Page, role = "owner") {

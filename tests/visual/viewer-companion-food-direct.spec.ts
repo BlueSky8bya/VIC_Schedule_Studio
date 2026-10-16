@@ -76,6 +76,14 @@ async function cancelPointer(item: Locator, different = false) {
 
 const CARD_SURFACES = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
 const foodPoint = (item: Locator) => item.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; });
+const floorY = (page: Page) => page.evaluate(() => {
+  let y = innerHeight - 18;
+  for (const bar of document.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
+    const rect = bar.getBoundingClientRect(), style = getComputedStyle(bar);
+    if (style.position === "fixed" && style.display !== "none" && rect.width > 0 && rect.height > 0 && rect.top >= innerHeight * .65 && rect.bottom <= innerHeight + 1) y = Math.min(y, rect.top - 8);
+  }
+  return y;
+});
 async function allowDocumentScroll(page: Page) {
   await page.evaluate(async () => {
     await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished));
@@ -202,9 +210,14 @@ for (const width of [1440]) {
 
 test("a floor snack belongs to its document point rather than the fixed viewport floor", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 }); await setup(page); await allowDocumentScroll(page);
-  const item = await spawn(page); await dragFoodToFeet(page, item, { x: 180, y: 960 }); await expect(item).not.toHaveAttribute("data-selected");
+  const item = await spawn(page), plane = await floorY(page);
+  // Drop above the real protected floor, including the fixed month bar. A
+  // release below that plane deliberately falls offscreen in the food model.
+  await dragFoodToFeet(page, item, { x: 180, y: plane - 12 }); await expect(item).not.toHaveAttribute("data-selected");
   await expect(item).not.toHaveAttribute("data-falling");
+  await expect(item).toBeVisible();
   const original = await foodPoint(item); expect(original.y).toBeGreaterThan(850);
+  expect(Math.abs(original.y - plane)).toBeLessThan(2);
   await page.evaluate(() => window.scrollTo({ top: 180, behavior: "instant" }));
   await expect.poll(async () => (await foodPoint(item)).y + await page.evaluate(() => scrollY)).toBeCloseTo(original.y, 1);
   expect((await foodPoint(item)).y).toBeLessThan(original.y - 170);

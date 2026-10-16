@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { chooseCompanionCare } from "./helpers/companion-home";
-import registration from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
+import { companionSpriteMetadata as registration } from "@/lib/ui/viewer-companion/sprite-quality";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });

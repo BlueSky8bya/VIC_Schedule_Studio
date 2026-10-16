@@ -1,10 +1,25 @@
 import { expect, test, type Page } from "@playwright/test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { posix } from "node:path";
 import ts from "typescript";
 
-const compile = (path: string) => ts.transpileModule(readFileSync(path, "utf8"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
-const heartsCode = compile("lib/ui/viewer-companion/hearts.ts");
-const geometryCode = compile("lib/ui/viewer-companion/geometry.ts");
+type CompiledFixtureModule = { code: string; imports: Record<string, string> };
+const modules: Record<string, CompiledFixtureModule> = {};
+function compile(path: string): void {
+  if (modules[path]) return;
+  const code = ts.transpileModule(readFileSync(path, "utf8"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  const imports: Record<string, string> = {};
+  modules[path] = { code, imports };
+  for (const [, specifier] of code.matchAll(/require\("([^"]+)"\)/g)) {
+    if (!specifier.startsWith(".") && !specifier.startsWith("@/")) throw new Error(`Unexpected fixture dependency: ${specifier}`);
+    const base = specifier.startsWith("@/") ? specifier.slice(2) : posix.normalize(posix.join(posix.dirname(path), specifier));
+    const dependency = [base + ".ts", base + ".tsx"].find(existsSync);
+    if (!dependency) throw new Error(`Missing fixture dependency: ${base}`);
+    imports[specifier] = dependency; compile(dependency);
+  }
+}
+compile("lib/ui/viewer-companion/hearts.ts");
+compile("lib/ui/viewer-companion/geometry.ts");
 type HeartAdapter = { attemptAt: (point: { x: number; y: number }) => "added" | "removed" | "blocked" | "missing"; pause: (paused: boolean) => void; dispose: () => void };
 type FixtureWindow = Window & { __hearts: HeartAdapter; __createHearts: () => HeartAdapter; __stopPlatforms: () => void; __platforms: { heart?: { blocked?: boolean } }[]; __humanClicks: number };
 
@@ -17,24 +32,30 @@ test.beforeEach(async ({ page }) => {
     </style><main id="root"><article class="public-event" data-eventid="synthetic-public-a"><div class="event-main"><p>SYNTHETIC_PUBLIC_TITLE</p></div><span class="human-count">17</span><button class="event-heart" id="a" aria-pressed="false"><svg width="14" height="14"><path d="M1 1h10v10H1z"/></svg></button></article><article class="public-event" data-eventid="synthetic-public-b"><div class="event-main"><p>SYNTHETIC_PUBLIC_B</p></div><span class="human-count">23</span><button class="event-heart" id="b" aria-pressed="true">heart</button></article></main>` }));
   await page.route("**/*", route => route.request().method() === "POST" ? route.abort() : route.fallback());
   await page.goto("/companion-hearts-fixture");
-  await page.evaluate(({ hearts, geometry }) => {
-    const load = (code: string) => {
+  await page.evaluate(modules => {
+    const cache = new Map<string, { exports: Record<string, unknown> }>();
+    const load = (path: string): Record<string, unknown> => {
+      const cached = cache.get(path);
+      if (cached) return cached.exports;
+      const source = modules[path];
+      if (!source) throw new Error(`Missing browser fixture module: ${path}`);
       const compiledModule = { exports: {} as Record<string, unknown> };
-      new Function("module", "exports", code)(compiledModule, compiledModule.exports);
+      cache.set(path, compiledModule);
+      new Function("require", "module", "exports", source.code)((specifier: string) => load(source.imports[specifier]), compiledModule, compiledModule.exports);
       return compiledModule.exports;
     };
     const win = window as unknown as FixtureWindow;
     const root = document.getElementById("root")!;
     localStorage.removeItem("vic.viewerCompanion.hearts");
-    const create = load(hearts).createCompanionHearts as (root: HTMLElement) => HeartAdapter;
+    const create = load("lib/ui/viewer-companion/hearts.ts").createCompanionHearts as (root: HTMLElement) => HeartAdapter;
     win.__createHearts = () => create(root);
     win.__hearts = win.__createHearts();
     win.__humanClicks = 0;
     win.__platforms = [];
     for (const button of root.querySelectorAll("button")) button.addEventListener("click", () => win.__humanClicks++);
-    const observe = load(geometry).observeCompanionPlatforms as (root: HTMLElement, changed: (platforms: FixtureWindow["__platforms"]) => void) => () => void;
+    const observe = load("lib/ui/viewer-companion/geometry.ts").observeCompanionPlatforms as (root: HTMLElement, changed: (platforms: FixtureWindow["__platforms"]) => void) => () => void;
     win.__stopPlatforms = observe(root, platforms => { win.__platforms = platforms; });
-  }, { hearts: heartsCode, geometry: geometryCode });
+  }, modules);
 });
 
 const attempt = (page: Page, selector: string) => page.evaluate(selector => {

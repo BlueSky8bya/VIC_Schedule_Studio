@@ -5,7 +5,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { openCompanionHome } from "./helpers/companion-home";
-import { expectQuietCompanionTail, waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { expectCompanionBehindOverlay, expectQuietCompanionTail, waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 type Point = { x: number; y: number };
 type Sample = { at: number; x: number; y: number; visible: boolean; state: string | null; platform: string | null; stage: string | null; homeOpacity: number | null; pose: string; inertia: string; facing: string | null; grip: string | null; captured: boolean; corners: Point[]; gripError: number | null };
@@ -167,21 +167,36 @@ test.describe("real pointer contact and world transitions", () => {
     expect(Math.abs((final.x - finalBed.x) - (initial.x - initialBed.x))).toBeLessThan(2); expect(Math.abs((final.y - finalBed.y) - (initial.y - initialBed.y))).toBeLessThan(2);
   });
 
-  test("dragging an ordinary detail toward the quiet companion makes only a nearby finite relocation", async ({ page }) => {
+  test("dragging an ordinary detail over the quiet companion preserves its world point behind the window", async ({ page }) => {
     test.setTimeout(35_000); await seed(page); await ready(page);
     const card = page.locator(".public-event:not(.teaser):not(.dimmed)").filter({ visible: true }).first(); await card.click();
     const detail = page.locator(".agenda-detail-sheet"); await waitForOverlayEntrance(detail); await expect(pet(page)).toBeVisible();
     const h = detail.locator(".detail-grab");
     const reposition = async (dx: number, dy: number) => { const r = (await h.boundingBox())!; await page.mouse.move(r.x + r.width * .5, r.y + r.height * .5); await page.mouse.down(); await page.mouse.move(r.x + r.width * .5 + dx, r.y + r.height * .5 + dy, { steps: 12 }); await page.mouse.up(); await waitForOverlayEntrance(detail); };
+    const original = await frame(page), platform = await pet(page).getAttribute("data-platform");
     const p = (await actor(page).boundingBox())!, d = (await detail.boundingBox())!;
     const placeLeft = p.x > d.width + 30, targetLeft = placeLeft ? p.x - d.width - 12 : p.x + p.width + 12;
     await reposition(targetLeft - d.x, Math.max(12, Math.min(1088 - d.height, p.y + p.height / 2 - d.height / 2)) - d.y);
-    const before = await frame(page); await startProbe(page); await reposition(placeLeft ? 60 : -60, 0);
+    expect(Math.hypot((await frame(page)).x - original.x, (await frame(page)).y - original.y)).toBeLessThan(3);
+    await startProbe(page); await reposition(placeLeft ? 60 : -60, 0);
     const close = detail.locator(".agenda-detail-close"); await close.focus(); await expectQuietCompanionTail(page, close);
-    const samples = await finishProbe(page, "detail-nearby"), after = await frame(page);
-    expect(samples.every(f => f.visible)).toBe(true); expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(1);
-    expect(Math.max(...samples.map(f => Math.hypot(f.x - before.x, f.y - before.y)))).toBeLessThan(200);
-    await page.screenshot({ path: ".scratch-pw/companion-062-detail-relocation.png" });
+    // PLAN-069 intentionally supersedes ordinary-window collision avoidance.
+    // Keep this real two-step drag; the window must cover the same creature,
+    // not push it aside or create a return trip when the user closes it.
+    const body = (await actor(page).boundingBox())!, pane = (await detail.boundingBox())!;
+    expect(Math.min(body.x + body.width, pane.x + pane.width) - Math.max(body.x, pane.x)).toBeGreaterThan(2);
+    expect(Math.min(body.y + body.height, pane.y + pane.height) - Math.max(body.y, pane.y)).toBeGreaterThan(2);
+    await expectCompanionBehindOverlay(page, detail);
+    const samples = await finishProbe(page, "detail-behind"), after = await frame(page);
+    expect(samples.length).toBeGreaterThan(15);
+    expect(samples.every(f => f.visible && f.platform === platform)).toBe(true);
+    expect(Math.hypot(after.x - original.x, after.y - original.y)).toBeLessThan(3);
+    expect(Math.max(...samples.map(f => Math.hypot(f.x - original.x, f.y - original.y)))).toBeLessThan(3);
+    await page.screenshot({ path: ".scratch-pw/companion-077-detail-behind.png" });
+    await close.click(); await expect(detail).toHaveCount(0);
+    await expect(pet(page)).not.toHaveAttribute("data-returning");
+    await expect(pet(page)).toHaveAttribute("data-platform", platform!);
+    await expect.poll(async () => { const point = await frame(page); return Math.hypot(point.x - original.x, point.y - original.y); }).toBeLessThan(3);
   });
 
   test("a sleeping home resident wakes and hops off before the home exits, then uses the existing73second handoff", async ({ page }) => {

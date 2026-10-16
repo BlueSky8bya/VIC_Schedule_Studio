@@ -137,7 +137,7 @@ for (const width of [1440]) {
       const care = await storedCare(page);
       expect(care.hunger).toBeGreaterThan(.18); expect(care.hunger).toBeLessThan(.28);
       expect(care.affection - beforeAffection).toBeGreaterThan(.09); expect(care.affection - beforeAffection).toBeLessThan(.105);
-      expect(care.version).toBe(1);
+      expect(care.version).toBe(2);
       await expect(pet(page)).toHaveAttribute("data-state", "petted");
     });
   }
@@ -170,9 +170,9 @@ test("food dragging and a long held release consume their clicks before cards un
   await setup(page, .1);
   const item = await spawn(page);
   const from = await centre(item);
-  const height = page.viewportSize()!.height;
   await page.mouse.move(from.x, from.y); await page.mouse.down();
-  await page.mouse.move(180, height - 26, { steps: 8 }); await page.mouse.up();
+  // Release inside the real protected world, with its16px native grip offset.
+  await page.mouse.move(180, await floorY(page) - 28, { steps: 8 }); await page.mouse.up();
   await expect(item).not.toHaveAttribute("data-selected");
   await expect.poll(() => item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m42)).toBe(await floorY(page));
   await expect(item).toBeInViewport({ ratio: 1 });
@@ -227,23 +227,45 @@ test("settings pause food, feeding OFF clears it, and changing month removes tem
   await expect(actor(page)).toBeVisible();
 });
 
-test("a settings pause interrupts a meal and closing starts a fresh visible nibble", async ({ page }) => {
+test("settings lets the current meal finish once, parks, and closing does not replay it", async ({ page }) => {
   await setup(page, .58);
   const item = await spawn(page);
   await placeNear(page, item);
   await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
   await expect.poll(() => item.evaluate(el => Number((el as HTMLElement).style.getPropertyValue("--vc-nibble")))).toBeLessThan(.9);
+  const before = await storedCare(page);
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const settings = page.getByRole("dialog", { name: "설정", exact: true });
   await expect(settings).toBeVisible();
   await expect(page.locator(".vc-food-layer")).not.toBeVisible();
-  await page.waitForTimeout(3100);
-  await expect(food(page)).toHaveCount(1);
-  expect((await storedCare(page)).hunger).toBeGreaterThan(.5);
+  // Ordinary windows preserve an already-running action, then rest/yawn
+  // into CSS-only sleep. Pausing food input never restarts the same meal.
+  await expect(pet(page)).toHaveAttribute("data-presence", "finishing");
+  await expect(food(page)).toHaveCount(0, { timeout: 6000 });
+  await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 8000 });
+  await expect(actor(page)).toBeVisible();
+  const parked = await storedCare(page);
+  expect(parked.hunger).toBeLessThan(.3);
+  expect(before.hunger - parked.hunger).toBeGreaterThan(.35);
+  expect(before.hunger - parked.hunger).toBeLessThan(.37);
+  expect(parked.affection - before.affection).toBeGreaterThan(.09);
+  expect(parked.affection - before.affection).toBeLessThan(.105);
+  await page.waitForTimeout(1200);
+  expect(await storedCare(page)).toEqual(parked);
   await settings.getByRole("button", { name: "닫기", exact: true }).click();
-  await expect(pet(page)).toHaveAttribute("data-state", "eat");
-  await page.waitForTimeout(1500);
-  await expect(food(page)).toHaveCount(1);
-  await expect(food(page)).toHaveCount(0, { timeout: 5000 });
-  expect((await storedCare(page)).hunger).toBeLessThan(.3);
+  await expect(settings).not.toBeVisible();
+  await expect(page.locator(".vc-food-layer")).toBeVisible();
+  await expect(actor(page)).toBeVisible();
+  await expect(pet(page)).toHaveAttribute("data-presence", "active");
+  // Cover another whole2200ms meal window: closing must neither resurrect
+  // the consumed snack nor grant a second hunger/affection reward.
+  await page.waitForTimeout(2600);
+  await expect(food(page)).toHaveCount(0);
+  await expect(pet(page)).not.toHaveAttribute("data-state", "eat");
+  const after = await storedCare(page);
+  expect(after.hunger).toBeLessThan(.3);
+  expect(Math.abs(after.hunger - parked.hunger)).toBeLessThan(.02);
+  expect(Math.abs(after.affection - parked.affection)).toBeLessThan(.01);
+  expect(after.affection - before.affection).toBeGreaterThan(.09);
+  expect(after.affection - before.affection).toBeLessThan(.105);
 });

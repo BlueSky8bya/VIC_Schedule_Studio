@@ -96,16 +96,19 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
           <defs>
             <linearGradient id={`${bedId}-rim`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="27" y2="100"><stop stopColor="var(--vc-bed-light)" /><stop offset=".55" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></linearGradient>
             <radialGradient id={`${bedId}-nest`} cx=".48" cy=".6" r=".65"><stop stopColor="var(--vc-bed-cloth)" /><stop offset=".65" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></radialGradient>
+            <mask id={`${bedId}-body-surface`} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="100"><path d={BED_OUTER} fill="white" /><path d={BED_FRONT} fill="black" /></mask>
             <mask id={`${bedId}-back-surface`} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="100"><path d={BED_OUTER} fill="white" /><path d={BED_SEAT} fill="black" /><path d={BED_FRONT} fill="black" /></mask>
             <mask id={`${bedId}-seat-surface`} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="100"><path d={BED_SEAT} fill="white" /><path d={BED_FRONT} fill="black" /></mask>
           </defs>
           <ellipse className="vc-bed-ground" cx="90" cy="89" rx="77" ry="8" />
-          <path fill={`url(#${bedId}-rim)`} d={BED_OUTER} />
+          <path fill={`url(#${bedId}-rim)`} d={BED_OUTER} mask={`url(#${bedId}-body-surface)`} />
           <g mask={`url(#${bedId}-seat-surface)`}><ellipse fill={`url(#${bedId}-nest)`} cx="90" cy="48" rx="59" ry="27" /><ellipse className="vc-bed-centre" cx="90" cy="58" rx="51" ry="18" /></g>
           {/* Each back rib ends inside its own exposed surface. The seat and
               entire foreground are explicitly subtracted, not painted over. */}
           <path className="vc-bed-back-ribs" mask={`url(#${bedId}-back-surface)`} d="M54.6 28.4Q48.3 20.2 42 12M63.45 25.89Q58.73 17.08 54 8.28M72.3 24.24Q69.15 15.04 66 5.84M81.15 23.31Q79.58 13.88 78 4.45M90 23Q90 13.5 90 4M98.85 23.31Q100.42 13.88 102 4.45M107.7 24.24Q110.85 15.04 114 5.84M116.55 25.89Q121.28 17.08 126 8.28M125.4 28.4Q131.7 20.2 138 12" />
-          <BedFront gradientId={`${bedId}-rim`} clipId={`${bedId}-front-clip`} />
+          {/* The full local sofa owns this cloth except while the one runtime
+              portal must place it over an interior resident. */}
+          <g className="vc-bed-local-front"><BedFront gradientId={`${bedId}-rim`} clipId={`${bedId}-front-clip`} /></g>
         </svg>
         <span className="vc-home-cushion" aria-hidden="true" />
       </button>

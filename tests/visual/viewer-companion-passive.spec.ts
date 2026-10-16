@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { COMPANION_TIMING as T } from "@/lib/ui/viewer-companion/timing";
 import { chooseCompanionCare } from "./helpers/companion-home";
 import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
@@ -103,7 +104,14 @@ test("visible blur finishes a landing, parks with CSS breathing, and disconnects
   expect(events.some(event => event.phase === "yawning")).toBe(true);
   expect(events.every(event => !event.hidden)).toBe(true);
   const restedAt = events.find(event => event.phase === "resting")!.at;
-  expect(events.find(event => event.phase === "parked")!.at - restedAt).toBeGreaterThanOrEqual(1500);
+  const yawnedAt = events.find(event => event.phase === "yawning")!.at;
+  const parkedAt = events.find(event => event.phase === "parked")!.at;
+  // The unit test pins each exact monotonic700ms boundary. These browser
+  // samples run later in MutationObserver microtasks, so allow only1ms of
+  // observation resolution per beat, rather than asserting a render cadence.
+  const observerResolutionMs = 1;
+  expect(yawnedAt - restedAt + observerResolutionMs).toBeGreaterThanOrEqual(T.presenceRest);
+  expect(parkedAt - yawnedAt + observerResolutionMs).toBeGreaterThanOrEqual(T.presenceYawn);
   await page.evaluate(() => {
     const probe = window as ProbeWindow; probe.passiveRanges = 0; probe.passiveWrites = 0;
     const original = Range.prototype.getClientRects;

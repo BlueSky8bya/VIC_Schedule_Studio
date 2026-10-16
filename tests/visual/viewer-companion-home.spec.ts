@@ -41,6 +41,14 @@ async function point(page: Page) {
   const box = (await actor(page).boundingBox())!;
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
+async function expectImmediateAffection(page: Page) {
+  // Affection owns the dedicated pink hearts. The generic effect is reserved
+  // for a schedule-heart attempt, so its empty text is intentional.
+  expect(await pet(page).evaluate(node => {
+    const hearts = node.querySelector(".vc-affection-hearts")!, style = getComputedStyle(hearts);
+    return { state: (node as HTMLElement).dataset.state, display: style.display, visibility: style.visibility, color: style.color, glyphs: [...hearts.querySelectorAll("i")].map(heart => heart.textContent) };
+  })).toEqual({ state: "petted", display: "block", visibility: "visible", color: "rgb(237, 133, 154)", glyphs: ["♥", "♥", "♥"] });
+}
 async function expectIconRoom(page: Page, compact: boolean) {
   await expectSmallHome(page);
   await expect(house(page).getByRole("heading", { name: "빅타민 집", exact: true })).toBeVisible();
@@ -63,7 +71,7 @@ test("one home follows the shared panel and keeps the same creature and care", a
   await page.setViewportSize({ width: 1920, height: 1100 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
   await expect(page.locator(".avatar-slot .vc-home")).toHaveCount(1); await expectSmallHome(page);
-  await chooseCompanionCare(page, "쓰다듬기");
+  await chooseCompanionCare(page, "쓰다듬기", "keyboard"); await expectImmediateAffection(page);
   const affection = Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"));
   expect(affection).toBeGreaterThan(.36);
   await page.evaluate(() => { localStorage.setItem("vic_avatar_side", "right"); dispatchEvent(new Event("vic:side-panel")); });
@@ -101,15 +109,27 @@ test("the desktop icon room offers three direct controls, bounded random food an
   const cushion = house(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
   const cushionGeometry = () => cushion.evaluate(button => {
     const anchor = button.querySelector<HTMLElement>(".vc-home-cushion")!, fabric = button.querySelector(".vc-plush-bed")!;
-    const rect = anchor.getBoundingClientRect();
-    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, outerTransform: getComputedStyle(button).transform, fabricScaleY: new DOMMatrixReadOnly(getComputedStyle(fabric).transform).d };
+    const rect = anchor.getBoundingClientRect(), bed = fabric.getBoundingClientRect();
+    const foreground = document.querySelector<HTMLElement>(".vc-bed-foreground")!, front = foreground.getBoundingClientRect(), frontStyle = getComputedStyle(foreground);
+    const depth = document.querySelector<HTMLElement>(".vc-companion")!.dataset.sofaDepth;
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, outerTransform: getComputedStyle(button).transform, fabricScaleY: new DOMMatrixReadOnly(getComputedStyle(fabric).transform).d,
+      alignment: Math.max(Math.abs(front.left - bed.left), Math.abs(front.top - bed.top), Math.abs(front.width - bed.width), Math.abs(front.height - bed.height)),
+      frontVisible: !foreground.hidden && frontStyle.display !== "none", frontDepth: foreground.dataset.depth, depth, frontZ: Number(frontStyle.zIndex) };
   });
   const anchorBefore = await cushionGeometry(), cushionBox = (await cushion.boundingBox())!;
   await page.mouse.move(cushionBox.x + cushionBox.width / 2, cushionBox.y + cushionBox.height / 2); await page.mouse.down();
-  await expect.poll(async () => (await cushionGeometry()).fabricScaleY).toBeLessThan(.95);
   const anchorPressed = await cushionGeometry();
+  // The fixed rim and the local back/seat are one physical sofa. Scaling only
+  // the back on press used to separate those layers; the accepted shared
+  // material now keeps the real seat and foreground registered instead.
+  expect(anchorPressed.fabricScaleY).toBeCloseTo(1, 4);
   expect(anchorPressed.outerTransform).toBe("none");
   for (const key of ["left", "top", "width", "height"] as const) expect(anchorPressed[key]).toBeCloseTo(anchorBefore[key], 3);
+  for (const geometry of [anchorBefore, anchorPressed]) {
+    expect(geometry.frontVisible).toBe(true); expect(geometry.alignment).toBeLessThan(1);
+    expect(geometry.frontDepth).toBe(geometry.depth);
+    expect(geometry.frontZ).toBe(["back", "seat"].includes(geometry.depth ?? "") ? 76 : 74);
+  }
   // Release outside the button: this test checks native press feedback without
   // starting the separate, already-covered recall journey.
   await page.mouse.move(cushionBox.x + cushionBox.width / 2, cushionBox.y - 8); await page.mouse.up();
@@ -142,11 +162,12 @@ test("the desktop icon room offers three direct controls, bounded random food an
 
 // PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
 
-test("reduced-motion tap and a stationary long press both acknowledge without a hold gate", async ({ page }) => {
+test("reduced-motion keyboard affection and a stationary long press both acknowledge without a hold gate", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("vic.reduceMotion", "on"));
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
-  await actor(page).click();
-  expect(await actor(page).evaluate(button => ({ state: button.parentElement!.dataset.state, heart: button.parentElement!.querySelector(".vc-effect")!.textContent }))).toEqual({ state: "petted", heart: "♡" });
+  // Short clicks are bonks since PLAN-068; Enter remains direct affection.
+  await actor(page).focus(); await actor(page).press("Enter");
+  await expectImmediateAffection(page);
   const before = Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"));
   const start = await point(page); await page.mouse.move(start.x, start.y); await page.mouse.down();
   await page.waitForTimeout(450); await expect(pet(page)).not.toHaveAttribute("data-grab-ready");
@@ -178,7 +199,7 @@ for (const width of [1920]) test(`cushion recall and breathing dreams use the sa
 test("an immediate drag never becomes a tap after returning, and pointer cancellation never pets", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
-  await actor(page).click(); await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(page.locator(".vc-effect")).toHaveText("♡");
+  await actor(page).focus(); await actor(page).press("Enter"); await expectImmediateAffection(page);
   const affection = async () => Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"));
   const before = await affection(), start = await point(page);
   await page.mouse.move(start.x, start.y); await page.mouse.down();

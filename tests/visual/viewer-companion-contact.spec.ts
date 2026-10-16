@@ -41,6 +41,15 @@ async function setup(page: Page, options: { home?: boolean; reduced?: boolean } 
   });
   await expect(pet(page)).toHaveAttribute("data-presence", "active");
   if (options.home) await openCompanionHome(page);
+  let previous: { x: number; y: number; support: string } | undefined, stable = 0;
+  // The calendar's final reflow may invalidate its initial text ledge and
+  // start a genuine landing. Stroke the settled actor, rather than coordinates
+  // captured in mid-fall while hovering is intentionally unavailable.
+  await expect.poll(async () => {
+    const current = await pet(page).evaluate(node => { const el = node as HTMLElement, matrix = new DOMMatrixReadOnly(el.style.transform); return { x: matrix.m41 + 46, y: matrix.m42 + 92, support: el.dataset.platform ?? "", stationary: !el.hidden && el.dataset.presence === "active" && !el.hasAttribute("data-returning") && ["idle", "look", "sniff"].includes(el.dataset.state ?? "") }; });
+    stable = current.stationary && current.support && previous?.support === current.support && Math.hypot(current.x - previous.x, current.y - previous.y) < .05 ? stable + 1 : 0;
+    previous = current; return stable;
+  }, { intervals: [80], timeout: 5000 }).toBeGreaterThanOrEqual(2);
 }
 
 async function world(page: Page) {
@@ -64,6 +73,14 @@ async function stroke(page: Page) {
   return point;
 }
 const affection = (page: Page) => bond(page).evaluate(node => (node as HTMLMeterElement).value);
+async function neutralContact(page: Page) {
+  await expect.poll(() => pet(page).locator(".vc-contact").evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { a: matrix.a, b: matrix.b, c: matrix.c, d: matrix.d, x: matrix.e, y: matrix.f }; })).toEqual({ a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 });
+}
+async function leaveContact(page: Page) {
+  await page.mouse.move(4, 4);
+  await expect(page.locator(".vc-petting-hand")).toBeHidden();
+  await expect(page.locator("[data-vc-petting-cursor]")).toHaveCount(0);
+}
 
 for (const reduced of [false, true]) test(`native head strokes are finite and leave focus, capture and calendar clicks alone (${reduced ? "reduced" : "full"})`, async ({ page }) => {
   await setup(page, { home: true, reduced });
@@ -87,10 +104,14 @@ for (const reduced of [false, true]) test(`native head strokes are finite and le
   const after = await world(page);
   expect(Math.abs(after.x - before.x)).toBeLessThan(.01); expect(Math.abs(after.y - before.y)).toBeLessThan(.01);
   if (reduced) expect(await page.locator(".vc-petting-hand").evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).b)).toBe(0);
-  // No further pointer input: the hand and happy reaction have a real end.
+  // PLAN-055 keeps the eligible hover's hand/cursor steady. Only pressure,
+  // happiness and rewards end without another deliberate stroke.
   await expect(pet(page)).not.toHaveAttribute("data-petting", "hover", { timeout: 2000 });
-  await expect(page.locator(".vc-petting-hand")).toBeHidden();
+  await expect(pet(page)).toHaveAttribute("data-petting", "ready");
+  await expect(page.locator(".vc-petting-hand")).toBeVisible();
   await expect(pet(page)).not.toHaveAttribute("data-state", "petted", { timeout: 2000 });
+  await neutralContact(page); expect(await affection(page) - initialBond).toBeLessThan(.09);
+  await leaveContact(page);
   await expect(pet(page)).toHaveCount(1);
 });
 
@@ -105,13 +126,16 @@ test("one pass and jitter never award affection, including jitter after a genuin
   await expect(pet(page)).toHaveAttribute("data-petting", "hover");
   await expect.poll(async () => await affection(page) - initialBond).toBeGreaterThan(.07);
   const awarded = await affection(page);
-  // Real events beyond the 4s reward budget: subpixel noise must neither keep
-  // the hand alive nor manufacture another reward from old direction changes.
+  // Real events beyond the4s reward budget: subpixel noise retains the valid
+  // hand/cursor but cannot manufacture another reward or happy-pose envelope.
   for (let i = 0; i < 80; i++) { await page.mouse.move(end.right + (i % 2) * .5, end.y); await page.waitForTimeout(55); }
   await expect(pet(page)).not.toHaveAttribute("data-petting", "hover");
-  await expect(page.locator(".vc-petting-hand")).toBeHidden();
+  await expect(pet(page)).toHaveAttribute("data-petting", "ready");
+  await expect(page.locator(".vc-petting-hand")).toBeVisible();
+  await expect(pet(page)).not.toHaveAttribute("data-state", "petted"); await neutralContact(page);
   expect(await affection(page)).toBeLessThanOrEqual(awarded + .001);
   expect(await affection(page)).toBeGreaterThan(awarded - .02);
+  await leaveContact(page);
 });
 
 test("hover yields immediately to native dragging and keeps keyboard pickup", async ({ page }) => {
@@ -119,11 +143,13 @@ test("hover yields immediately to native dragging and keeps keyboard pickup", as
   await expect(pet(page)).toHaveAttribute("data-petting", "hover");
   const before = await world(page);
   await page.mouse.down(); await page.mouse.move(point.right + 7, point.y);
-  // The native pointermove itself owns the transition, before any hold timer.
-  expect(await pet(page).getAttribute("data-state")).toBe("held");
+  // Native input owns the lift without a hold timer; the shared display frame
+  // commits its DOM state instead of repainting in the pointer listener.
+  await expect(pet(page)).toHaveAttribute("data-state", "held");
   expect((await world(page)).x - before.x).toBeGreaterThan(6);
   await expect(pet(page)).not.toHaveAttribute("data-petting", "hover");
   await page.mouse.up();
+  await expect(pet(page)).not.toHaveAttribute("data-state", "held");
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 4000 });
   await actor(page).focus(); await actor(page).press("Space"); await actor(page).press("ArrowRight");
   await expect(pet(page)).toHaveAttribute("data-state", "held");

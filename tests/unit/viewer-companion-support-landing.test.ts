@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
-import { firstCompanionSupportBelow, nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { companionViewportFloorAbove, firstCompanionSupportBelow, nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
 
 const span = (id: string, x: number, y: number, width: number, kind: Platform["kind"] = "card"): Platform => ({ id, x, y, width, kind });
 
@@ -44,6 +44,39 @@ describe("deliberate first-contact landing", () => {
     expect(candidates.at(-1)).toBe(valid);
     expect(firstCompanionSupportBelow({ x: NaN, y: 400 }, candidates)).toBeUndefined();
     expect(firstCompanionSupportBelow({ x: 100, y: Infinity }, candidates)).toBeUndefined();
+  });
+});
+
+describe("explicit release below the protected viewport floor", () => {
+  it("recovers the actual nearest protected floor at the same x", () => {
+    const upper = span("viewport-floor", 80, 900, 160, "floor"), lower = span("viewport-floor-2", 80, 940, 160, "floor");
+    const point = { x: 180, y: 980 };
+    expect(firstCompanionSupportBelow(point, [upper, lower])).toBeUndefined();
+    expect(companionViewportFloorAbove(point, [upper, lower])).toBe(lower);
+  });
+  it("never substitutes a date, a home floor or a floor outside the safe ray", () => {
+    const point = { x: 180, y: 980 };
+    const candidates = [span("date-3", 80, 975, 160, "date"), span("companion-home-floor", 80, 975, 160, "floor"), span("viewport-floor-1", 181, 950, 80, "floor"), span("viewport-floor-lookalike", 80, 950, 160, "floor"), span("viewport-floor", 80, 950, 160, "card")];
+    expect(companionViewportFloorAbove(point, candidates)).toBeUndefined();
+  });
+  it("keeps both safe edges and rejects the occluded gap between fragments", () => {
+    const left = span("viewport-floor", 100, 940, 20, "floor"), right = span("viewport-floor-1", 160, 940, 20, "floor");
+    for (const x of [100, 110, 120]) expect(companionViewportFloorAbove({ x, y: 980 }, [left, right])).toBe(left);
+    for (const x of [160, 170, 180]) expect(companionViewportFloorAbove({ x, y: 980 }, [left, right])).toBe(right);
+    expect(companionViewportFloorAbove({ x: 140, y: 980 }, [left, right])).toBeUndefined();
+  });
+  it("leaves ordinary downward contacts to the original first-hit rule", () => {
+    const point = { x: 180, y: 920 }, floor = span("viewport-floor", 80, 940, 160, "floor"), card = span("card-top", 80, 930, 160);
+    expect(companionViewportFloorAbove(point, [floor, card])).toBeUndefined();
+    expect(firstCompanionSupportBelow(point, [floor, card])).toBe(card);
+  });
+  it("rejects corrupt coordinates without changing caller records", () => {
+    const floor = Object.freeze(span("viewport-floor", 80, 940, 160, "floor")), point = Object.freeze({ x: 180, y: 980 });
+    const candidates = Object.freeze([span("viewport-floor-1", NaN, 950, 160, "floor"), span("viewport-floor-2", 80, Infinity, 160, "floor"), span("viewport-floor-3", 80, 950, -1, "floor"), floor]);
+    expect(companionViewportFloorAbove(point, candidates)).toBe(floor);
+    expect(companionViewportFloorAbove({ x: NaN, y: 980 }, candidates)).toBeUndefined();
+    expect(companionViewportFloorAbove({ x: 180, y: Infinity }, candidates)).toBeUndefined();
+    expect(candidates.at(-1)).toBe(floor); expect(point).toEqual({ x: 180, y: 980 });
   });
 });
 

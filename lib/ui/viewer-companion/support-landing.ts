@@ -18,6 +18,23 @@ export function firstCompanionSupportBelow(point: Readonly<{ x: number; y: numbe
   return exact ?? edge;
 }
 
+/** A deliberate drop can start below the viewport's protected floor, notably
+ * beside fixed month controls. After first-contact landing finds nothing,
+ * recover only that real floor on the same vertical ray. Never attract to a
+ * different column, house floor, or a card/date above the user's release. */
+export function companionViewportFloorAbove(point: Readonly<{ x: number; y: number }>, platforms: readonly Platform[]): Platform | undefined {
+  if (![point.x, point.y].every(Number.isFinite)) return undefined;
+  let nearest: Platform | undefined;
+  for (const platform of platforms) {
+    const end = platform.x + platform.width;
+    if (platform.kind !== "floor" || !/^viewport-floor(?:-\d+)?$/.test(platform.id)
+      || ![platform.x, platform.y, platform.width, end].every(Number.isFinite) || platform.width <= 0
+      || platform.y > point.y || point.x < platform.x || point.x > end) continue;
+    if (!nearest || platform.y > nearest.y || platform.y === nearest.y && platform.id < nearest.id) nearest = platform;
+  }
+  return nearest;
+}
+
 /** Geometry already supplies safe character-centre intervals. Passive landing
  * preserves the current x, including at a safe edge, rather than applying the
  * brain's walking inset or choosing a horizontally distant floor. The caller

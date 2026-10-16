@@ -1,7 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.locator(".vc-actor");
@@ -33,6 +35,32 @@ async function point(page: Page) {
   return pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom, width: r.width, platform: (node as HTMLElement).dataset.platform }; });
 }
 
+async function placeExposedSleeper(page: Page) {
+  // A real command puts the creature outside the later ordinary detail.
+  // PLAN-069 lets windows cover pets, so blindly clicking an old BCR beneath
+  // a dialog/backdrop would exercise that window's text instead of the pet.
+  await actor(page).focus(); await actor(page).press("p");
+  await expect(pet(page)).toHaveAttribute("data-placing", "");
+  await page.mouse.click(1760, 280);
+  await expect.poll(async () => Math.abs((await point(page)).x - 1760)).toBeLessThan(1);
+  await expect(pet(page)).toHaveAttribute("data-state", "jump");
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 6000 });
+  await expect(pet(page)).toHaveAttribute("data-platform", /\S+/);
+}
+
+async function exposedGrip(page: Page) {
+  const grip = await actor(page).evaluate(node => {
+    const r = node.getBoundingClientRect();
+    for (const fy of [.5, .3, .7]) for (const fx of [.5, .3, .7]) {
+      const x = r.left + r.width * fx, y = r.top + r.height * fy;
+      if (document.elementFromPoint(x, y)?.closest(".vc-actor") === node) return { x, y };
+    }
+    return null;
+  });
+  expect(grip, "an exposed native actor point, not a covered window target").not.toBeNull();
+  return grip!;
+}
+
 test("OFF requests no sprite; legacy size becomes the single92 default and the settings size row is retired", async ({ page }) => {
   const images: string[] = []; page.on("request", request => { if (/\/companion\/.*\.webp/.test(request.url())) images.push(request.url()); });
   await setup(page, false); await expect(pet(page)).toHaveCount(0); expect(images).toEqual([]);
@@ -50,39 +78,43 @@ test("OFF requests no sprite; legacy size becomes the single92 default and the s
 // PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
 for (const mobile of [false]) test.describe(mobile ? "touch sleeping lift" : "desktop sleeping lift", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
-  test("the sleeping display moves while its world and modal stay intact; Z cues keep running with no parked writes", async ({ page }) => {
-    test.setTimeout(35000); await setup(page); const world = await point(page);
-    const open = page.getByRole("button", { name: "설정", exact: true }); if (mobile) await open.tap(); else await open.click();
-    const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible();
+  test("an exposed sleeper accepts a native world move while its detail and Z cues stay intact with no parked writes", async ({ page }) => {
+    test.setTimeout(35000); await setup(page); await placeExposedSleeper(page); const world = await point(page);
+    await page.locator(".public-event:visible").first().click();
+    const dialog = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
     await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 10000 }); await page.waitForTimeout(650);
     await expect(pet(page)).toHaveAttribute("data-dreaming", "");
     const z = pet(page).locator(".vc-dream i").first(); const beforeTime = await z.evaluate(node => node.getAnimations()[0]?.currentTime);
     await page.waitForTimeout(180); const afterTime = await z.evaluate(node => node.getAnimations()[0]?.currentTime);
     expect(Number(afterTime)).toBeGreaterThan(Number(beforeTime));
     const before = await point(page), focus = await page.evaluate(() => document.activeElement?.outerHTML);
-    const box = (await actor(page).boundingBox())!, start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-    const delta = before.y > 240 ? -95 : 95;
+    const start = await exposedGrip(page);
+    const delta = before.y > 240 ? -95 : 95, deltaX = -120;
     if (mobile) {
       const client = await page.context().newCDPSession(page);
       await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...start, id: 42 }] });
-      await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: start.x, y: start.y + delta, id: 42 }] });
+      await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: start.x + deltaX, y: start.y + delta, id: 42 }] });
       await expect(pet(page)).toHaveAttribute("data-overlay-drag", "");
       expect(Math.abs((await point(page)).y - before.y)).toBeGreaterThan(40);
       await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await client.detach();
     } else {
-      await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(start.x, start.y + delta, { steps: 12 });
+      await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(start.x + deltaX, start.y + delta, { steps: 12 });
       await expect(pet(page)).toHaveAttribute("data-overlay-drag", ""); expect(Math.abs((await point(page)).y - before.y)).toBeGreaterThan(40); await page.mouse.up();
     }
+    await expect(pet(page)).toHaveAttribute("data-state", "jump");
+    await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 6000 });
     await expect(dialog).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-presence", "parked"); await expect(pet(page)).toHaveAttribute("data-dreaming", "");
     expect(await page.evaluate(() => document.activeElement?.outerHTML)).toBe(focus);
-    expect(await pet(page).getAttribute("data-platform")).toBe(world.platform);
+    await expect(pet(page)).toHaveAttribute("data-platform", /\S+/);
+    const moved = await point(page); expect(Math.abs(moved.x - world.x - deltaX)).toBeLessThan(1);
     await page.waitForTimeout(800);
     const writes = await pet(page).evaluate(async node => { let count = 0; const observer = new MutationObserver(records => { count += records.length; }); observer.observe(node, { attributes: true, subtree: true }); await new Promise(resolve => setTimeout(resolve, 350)); observer.disconnect(); return count; });
     expect(writes).toBe(0);
-    await page.screenshot({ path: `.scratch-pw/companion-052-sleep-${mobile ? "touch" : "pc"}.png` });
-    const close = dialog.locator("[data-act=close-settings]"); if (mobile) await close.tap(); else await close.click();
+    await page.screenshot({ path: `.scratch-pw/companion-077-sleep-${mobile ? "touch" : "pc"}.png` });
+    const close = dialog.getByRole("button", { name: "닫기", exact: true }); if (mobile) await close.tap(); else await close.click();
     await expect(pet(page)).not.toHaveAttribute("data-returning", { timeout: 6000 });
-    const restored = await point(page); expect(Math.hypot(restored.x - world.x, restored.y - world.y)).toBeLessThan(3);
+    const restored = await point(page); expect(restored.platform).toBe(moved.platform);
+    expect(Math.hypot(restored.x - moved.x, restored.y - moved.y)).toBeLessThan(3);
   });
 });
 
@@ -134,23 +166,47 @@ test("leaving the drag button for another control cannot award affection or cons
   await expect(neighbour).toHaveAttribute("data-clicked", "true");
 });
 
-test("sleeping two-tap placement keeps a detail window open and changes only the display perch", async ({ page }) => {
-  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page); const world = await point(page);
-  const originalScroll = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
+test("sleeping two-tap placement commits its first lower real card without closing the detail or returning to an old world point", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page); await placeExposedSleeper(page);
   await page.locator(".public-event:visible").first().click();
-  const dialog = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(dialog).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 10000 }); await page.waitForTimeout(600);
-  await actor(page).dblclick(); await expect(pet(page)).toHaveAttribute("data-placing", "");
-  await page.mouse.click(1760, 480); await expect(dialog).toBeVisible(); await expect(pet(page)).not.toHaveAttribute("data-placing");
-  const placed = await point(page); expect(Math.hypot(placed.x - 1760, placed.y - 480)).toBeLessThan(1);
-  expect(placed.platform).toBe(world.platform); await expect(pet(page)).toHaveAttribute("data-presence", "parked");
+  const grip = await exposedGrip(page); await page.mouse.dblclick(grip.x, grip.y); await expect(pet(page)).toHaveAttribute("data-placing", "");
+  const target = await dialog.evaluate(sheet => {
+    const pane = sheet.getBoundingClientRect();
+    const cards = [...document.querySelectorAll<HTMLElement>(".public-event:not(.teaser):not(.dimmed):not(.is-support)")].map(node => ({ node, r: node.getBoundingClientRect() })).filter(({ r }) => r.width > 100 && r.height > 0);
+    for (const { node, r } of cards) {
+      const x = r.left + r.width / 2, y = r.top - 40;
+      if (y < 240 || r.top > innerHeight - 120 || x > pane.left - 60 && x < pane.right + 60 || x < 50 || x > innerWidth - 50) continue;
+      const first = cards.filter(card => x >= card.r.left && x <= card.r.right && card.r.top - 3 >= y).sort((a, b) => a.r.top - b.r.top)[0];
+      if (first?.node === node && !document.elementFromPoint(x, y)?.closest("button,a,input,select,textarea,[role='button']")) return { id: node.dataset.eventid!, x, y, plane: r.top - 3 };
+    }
+    return null;
+  });
+  expect(target, "a genuine first lower card outside the ordinary detail").not.toBeNull();
+  type PlacementWindow = Window & { hdPlacement?: { frames: { x: number; y: number; hidden: boolean }[]; raf: number } };
+  await pet(page).evaluate(node => {
+    const witness = { frames: [] as { x: number; y: number; hidden: boolean }[], raf: 0 };
+    const sample = () => { const r = node.getBoundingClientRect(); witness.frames.push({ x: r.left + r.width / 2, y: r.bottom, hidden: (node as HTMLElement).hidden }); witness.raf = requestAnimationFrame(sample); };
+    (window as PlacementWindow).hdPlacement = witness; witness.raf = requestAnimationFrame(sample);
+  });
+  await page.mouse.click(target!.x, target!.y); await expect(dialog).toBeVisible(); await expect(pet(page)).not.toHaveAttribute("data-placing");
+  await expect(pet(page)).toHaveAttribute("data-state", "jump");
+  await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 6000 });
+  const frames = await page.evaluate(() => { const witness = (window as PlacementWindow).hdPlacement!; cancelAnimationFrame(witness.raf); return witness.frames; });
+  await writeFile(".scratch-pw/companion-077-sleeping-placement.json", JSON.stringify({ target, frames }, null, 2));
+  // Hidden frames have a zero BCR and must not disappear from the x-filtered flight.
+  expect(frames.every(frame => !frame.hidden), "the entire native placement stays unhidden, including its first and last frames").toBe(true);
+  const flight = frames.filter(frame => Math.abs(frame.x - target!.x) < 1 && frame.y < target!.plane - 4);
+  expect(flight.length).toBeGreaterThan(2); expect(Math.max(...flight.map(frame => frame.y)) - Math.min(...flight.map(frame => frame.y))).toBeGreaterThan(10);
+  expect(flight.every(frame => !frame.hidden && frame.y >= target!.y - 3)).toBe(true);
+  const placed = await point(page); expect(Math.abs(placed.x - target!.x)).toBeLessThan(1); expect(Math.abs(placed.y - target!.plane)).toBeLessThan(3);
+  await expect(pet(page)).toHaveAttribute("data-presence", "parked");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(pet(page)).not.toHaveAttribute("data-returning", { timeout: 6000 });
-  const restored = await point(page), scroll = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
-  // Native card focus may scroll16px before opening. The retained DOM world
-  // follows that scroll; the decorative perch must not change its document point.
-  expect(restored.platform).toBe(world.platform);
-  expect(Math.hypot(restored.x + scroll.x - world.x - originalScroll.x, restored.y + scroll.y - world.y - originalScroll.y)).toBeLessThan(3);
+  const actualCard = page.locator(`.public-event[data-eventid="${target!.id}"]`);
+  await expect.poll(async () => Math.abs((await point(page)).y - await actualCard.evaluate(node => node.getBoundingClientRect().top) + 3)).toBeLessThan(3);
+  expect(Math.abs((await point(page)).x - target!.x)).toBeLessThan(1);
 });
 
 test("repeated distinct pickups show the sulky HD action briefly, then friendly input immediately wins", async ({ page }) => {
@@ -174,5 +230,7 @@ test("repeated distinct pickups show the sulky HD action briefly, then friendly 
   // perform a fresh real decode, not trust an immortal ready boolean.
   expect(await page.evaluate(() => (window as unknown as Window & { companionDecodes: string[] }).companionDecodes.filter(src => src.endsWith("victamin-action-00.webp")).length)).toBeGreaterThanOrEqual(2);
   await page.screenshot({ path: ".scratch-pw/companion-052-sulky.png" });
-  await actor(page).click(); await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(pet(page)).toHaveAttribute("data-mood", "happy");
+  // PLAN-068 assigns short clicks to bonking. Native keyboard affection is
+  // still friendly input and must supersede the sulky pose immediately.
+  await actor(page).focus(); await actor(page).press("Enter"); await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(pet(page)).toHaveAttribute("data-mood", "happy");
 });

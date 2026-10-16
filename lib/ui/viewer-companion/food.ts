@@ -38,10 +38,11 @@ function receivesFoodRect(point: Point, release: Point, rect: HomeFoodRect): boo
 /** The room floor is a different physical receiving surface from its bed.
  * Choose a nearby44px input-safe centre on its real plane, leaving actual
  * controls usable. The sofa is a furnishing above this floor, not a recipient.
- * This runs only for an explicit drag or keyboard put-down. */
+ * Direct put-down and retained floor reflow use the same current foot plane;
+ * a studio shell's zoom can differ from the compact home's body portal. */
 export function receiveCompanionHomeFloorFood(point: Point, release: Point, floor: HomeFoodRect, controls: readonly HomeFoodRect[], reflow = false): Point | undefined {
   if (!receivesFoodRect(point, release, floor) || floor.width < 44 || floor.height <= COMPANION_HOME_FLOOR_INSET) return;
-  const y = reflow ? point.y : floor.top + floor.height - COMPANION_HOME_FLOOR_INSET;
+  const y = floor.top + floor.height - COMPANION_HOME_FLOOR_INSET;
   let spans: [number, number][] = [[floor.left + 22, floor.left + floor.width - 22]];
   for (const control of controls) {
     if (![control.left, control.top, control.width, control.height].every(Number.isFinite) || control.width <= 0 || control.height <= 0

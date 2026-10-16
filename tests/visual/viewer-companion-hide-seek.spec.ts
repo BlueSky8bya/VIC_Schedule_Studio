@@ -18,6 +18,8 @@ type FoundProbe = { node: Element; frames: FoundFrame[]; ready: boolean; readyAt
 type FoundWindow = Window & { foundProbe?: FoundProbe };
 type DropClosingFrame = { at: number; x: number; y: number; width: number; hidden: boolean; same: boolean; returning: string | null; platform: string };
 type DropClosingWindow = Window & { guestDropClosing?: { frames: DropClosingFrame[]; raf: number } };
+type BottomClosingFrame = DropClosingFrame & { visible: boolean; decoded: boolean };
+type BottomClosingWindow = Window & { guestBottomClosing?: { frames: BottomClosingFrame[]; raf: number; node: Element } };
 const hint = (page: Page) => page.locator("[data-companion-hide-hint]");
 
 test.beforeEach(async ({ page }) => {
@@ -328,4 +330,58 @@ test("gfx-off has no animated hiding hint and a found guest still supports nativ
   expect(await pet(page).locator(".vc-affection-hearts i").evaluateAll(nodes => nodes.map(node => getComputedStyle(node).animationName))).toEqual(["none", "none", "none"]);
   await page.keyboard.press("Escape"); await expect(sheet(page)).toHaveCount(0); await expect(pet(page)).not.toHaveAttribute("data-detail-guest");
   await finishFoundProbe(page, "gfx-off");
+});
+
+test("an extracted guest below the protected bottom floor closes onto that same real floor without disappearing", async ({ page }) => {
+  test.setTimeout(60_000); await page.setViewportSize({ width: 1920, height: 1100 });
+  const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+  await page.route("**/*", route => {
+    const request = route.request();
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { posts.get(page)!.push(`${request.method()} ${new URL(request.url()).pathname}`); return route.fulfill({ status: 500, body: "fixture mutation blocked" }); }
+    return route.fallback();
+  });
+  const target = await setup(page, false), identity = await pet(page).elementHandle();
+  // Only rare hide selection/aging above uses the controlled clock. The
+  // actual window entrance, extraction and closing bridge below run in time.
+  await page.clock.resume(); await nativeClick(page, await cardPoint(page, target.eventId, true), false);
+  await expect(sheet(page)).toHaveAttribute("data-companion-detail-event", target.eventId);
+  await expect(pet(page)).toHaveAttribute("data-hide-phase", "settled"); await expect(pet(page)).toBeVisible(); await waitForOverlayEntrance(sheet(page));
+  const grip = await actor(page).evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height * .4 }; });
+  expect(await page.evaluate(point => Boolean(document.elementFromPoint(point.x, point.y)?.closest(".vc-actor")), grip)).toBe(true);
+  const floor = await page.evaluate(() => {
+    let y = innerHeight - 18;
+    const bars = [...document.querySelectorAll<HTMLElement>(".poster-page .agenda-monthbar")].filter(node => { const css = getComputedStyle(node); return css.position === "fixed" && css.display !== "none" && css.visibility !== "hidden"; }).map(node => node.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0 && rect.top >= innerHeight * .65 && rect.bottom <= innerHeight + 1);
+    for (const rect of bars) y = Math.min(y, rect.top - 8);
+    return { x: 180, y, pointerY: innerHeight - 1, bars: bars.map(rect => ({ top: rect.top, bottom: rect.bottom })) };
+  });
+  await dragGuest(page, { x: floor.x, y: floor.pointerY }, false);
+  await expect(pet(page)).toHaveAttribute("data-hide-perch", "outside"); await expect(pet(page)).not.toHaveAttribute("data-hide-phase");
+  const released = await point(page);
+  expect(Math.abs(released.x - floor.x)).toBeLessThan(2); expect(released.y).toBeGreaterThan(floor.y);
+  await page.screenshot({ path: ".scratch-pw/companion-077-guest-bottom-extracted.png", animations: "allow" });
+  await pet(page).evaluate(node => {
+    const witness = { frames: [] as BottomClosingFrame[], raf: 0, node }, began = performance.now();
+    const sample = (now: number) => {
+      const rect = node.getBoundingClientRect(), el = node as HTMLElement, css = getComputedStyle(node), image = node.querySelector<HTMLImageElement>(".vc-texture");
+      witness.frames.push({ at: now - began, x: rect.left + rect.width / 2, y: rect.bottom, width: rect.width, hidden: el.hidden, visible: !el.hidden && css.display !== "none" && css.visibility !== "hidden" && Number(css.opacity || 1) > .05, decoded: Boolean(image?.complete && image.naturalWidth > 0), same: node.isConnected && node === document.querySelector(".vc-companion"), returning: el.getAttribute("data-returning"), platform: el.dataset.platform ?? "" });
+      witness.raf = requestAnimationFrame(sample);
+    };
+    (window as BottomClosingWindow).guestBottomClosing = witness; witness.raf = requestAnimationFrame(sample);
+  });
+  let frames: BottomClosingFrame[] = [];
+  try {
+    await page.keyboard.press("Escape"); await expect(sheet(page)).toHaveCount(0);
+    await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
+    await expect(pet(page)).not.toHaveAttribute("data-returning", { timeout: 4000 }); await expect(pet(page)).toBeVisible();
+    await expect.poll(async () => Math.abs((await point(page)).y - floor.y)).toBeLessThan(2);
+    expect(Math.abs((await point(page)).x - released.x)).toBeLessThan(2);
+    expect(await identity!.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
+    await page.screenshot({ path: ".scratch-pw/companion-077-guest-bottom-landed.png", animations: "allow" });
+  } finally {
+    frames = await page.evaluate(() => { const witness = (window as BottomClosingWindow).guestBottomClosing!; cancelAnimationFrame(witness.raf); return witness.frames; });
+    await writeFile(".scratch-pw/companion-077-guest-bottom-close.json", JSON.stringify({ agingClockControlled: true, closingFramesRealTime: true, floor, released, frames, mutations: posts.get(page), errors }, null, 2));
+  }
+  expect(frames.length).toBeGreaterThan(5); expect(frames.every(frame => frame.same && !frame.hidden && frame.visible && frame.decoded)).toBe(true);
+  expect(Math.max(...frames.map(frame => Math.abs(frame.x - released.x)))).toBeLessThan(2); expect(errors).toEqual([]);
+  await evidence(page, "bottom-close-077");
 });

@@ -31,7 +31,7 @@ export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; serial:
 export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity; onInvalidate?: () => void };
 export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number };
 export type CompanionGeometryAnchor = { element?: Element; left: number; top: number };
-export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined; landings: (size?: number) => readonly Platform[] };
+export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined; landings: (size?: number) => readonly Platform[]; revalidate: () => void };
 
 /** A renderer can retain anonymous anchor identity while its observers sleep. */
 export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
@@ -97,9 +97,9 @@ export function safeCompanionSurfaces(
 /** The pet sees walkable rectangles, never event ids, titles, tag text or auth
  * data. All coordinates are fixed viewport CSS pixels, including under zoom.
  * Nothing is measured on an idle animation loop; layout events coalesce. */
-export function observeCompanionPlatforms(root: HTMLElement, onChange: (platforms: Platform[]) => void, options: CompanionGeometryOptions = {}): CompanionGeometrySubscription {
+export function observeCompanionPlatforms(root: HTMLElement, onChange: (platforms: Platform[], validationOnly?: boolean) => void, options: CompanionGeometryOptions = {}): CompanionGeometrySubscription {
   const win = root.ownerDocument.defaultView;
-  if (!win) return Object.assign(() => {}, { follow: (): CompanionFollowSample[] => [], anchor: () => undefined, landings: (): Platform[] => [] });
+  if (!win) return Object.assign(() => {}, { follow: (): CompanionFollowSample[] => [], anchor: () => undefined, landings: (): Platform[] => [], revalidate: () => {} });
   const size = Number.isFinite(options.size) && options.size! > 0 ? options.size! : DEFAULT_SIZE;
   // Registered/curated atlas union occupies <.70 width and <.713 height of the
   // square cell. .76 plus 3px clearance includes pose bob/scale and pixel edges;
@@ -117,6 +117,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   let disposed = false;
   let frame = 0;
   let timer = 0;
+  let pendingValidationOnly = false;
   let measuredAt = -Infinity;
   let previous = "";
   let landingSnapshot: Platform[] = [];
@@ -129,9 +130,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   function measure() {
     frame = 0;
     if (disposed) return;
+    const validationOnly = pendingValidationOnly; pendingValidationOnly = false;
     if (!root.isConnected) {
       anchors.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = [];
-      if (previous !== "[]") { previous = "[]"; onChange([]); }
+      if (previous !== "[]") { previous = "[]"; onChange([], validationOnly); }
       return;
     }
     measuredAt = win!.performance.now();
@@ -442,7 +444,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     foodLandingSnapshot = foodLandings.map(copyPlatform);
     // Suppress equal layout deliveries, including a countdown's text mutation.
     const signature = JSON.stringify([platforms, landings, foodLandings]);
-    if (signature !== previous) { previous = signature; onChange(platforms); }
+    if (signature !== previous) { previous = signature; onChange(platforms, validationOnly); }
   }
 
   function schedule() {
@@ -451,7 +453,14 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // before this full scan is due. Notification performs no layout reads and
     // starts no new loop; static calendars otherwise reuse cached baselines.
     options.onInvalidate?.();
-    if (frame || timer) return;
+    enqueue(false);
+  }
+  function enqueue(validationOnly: boolean) {
+    if (disposed) return;
+    // A real DOM/event cause always wins over an already queued validation.
+    // Validation alone never opens or extends the renderer's finite lease.
+    if (frame || timer) { pendingValidationOnly = pendingValidationOnly && validationOnly; return; }
+    pendingValidationOnly = validationOnly;
     const wait = Math.max(0, MEASUREMENT_INTERVAL_MS - (win!.performance.now() - measuredAt));
     if (wait > 0) {
       timer = win!.setTimeout(() => { timer = 0; if (!disposed) frame = win!.requestAnimationFrame(measure); }, wait);
@@ -508,6 +517,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     observed.clear();
   };
   return Object.assign(dispose, {
+    // Reuse the existing120ms queue. The finite renderer owns its lifetime;
+    // this method performs no immediate reads, invalidation or autonomous loop.
+    revalidate: () => enqueue(true),
     // Fresh baseline copies, paired with anchor(). Only the cached food32 tier
     // differs from the configured pet size; no caller triggers a new scan.
     // Callers own deliberate release rebasing; this performs no layout work.
