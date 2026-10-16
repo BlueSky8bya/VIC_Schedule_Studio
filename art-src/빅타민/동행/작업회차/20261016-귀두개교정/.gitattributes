@@ -1,2 +1,2 @@
 # Frozen generation/review evidence keeps its original SHA and line endings.
-*.json -text
+*.json -text -eol whitespace=cr-at-eol

@@ -1,6 +1,6 @@
 # 빅타민 귀·편집 이동·창 소유권·패널 버튼
 
-2026-10-16 KST. [PLAN-069](../plans/PLAN-20261016-069-companion-ears-and-window-ownership.md). 구현/검증 진행 중. 실제 운영 반영·미술 승인·OBS 송출 합격은 아직 주장하지 않는다. DB/공개 DTO/권한/unlock/KST·1840 poster·모바일 companion 제외는 보존한다.
+2026-10-16 KST. [PLAN-069](../plans/PLAN-20261016-069-companion-ears-and-window-ownership.md). 구현·검증·운영 배포 확인 완료. 제품 `0432443a3874523a1f2b035aabb06af0d97b7f82`. 미술 승인·OBS 송출 합격은 주장하지 않는다. DB/공개 DTO/권한/unlock/KST·1840 poster·모바일 companion 제외는 보존한다.
 
 ## 확인한 원인
 
@@ -27,3 +27,13 @@ Fixture만 과거6월 시작/실제 KST오늘 종료의 synthetic 지원바로 �
 이 보완 뒤 관련43파일463unit·문서2파일43unit 통과. 기존helper의 guest-only 수직 착지/배율/고정x도 별도 unit으로 검사했다. 최종 code/build/source 및35개 화면 재검증 결과는 이어 기록한다. Controlled focus/clock을 쓰는 기존 숨바꼭질 fixture 결과는 실제 OS background/OBS 검증으로 확장하지 않는다.
 
 최종 build `ildIRXlnDruMSctRs4fW9`의 타입·린트·build exit0, 변경 source31파일의 build 전후SHA 동일. 최종 실물35/35통과(4.9분, retries0), flaky/skipped0이다(`.scratch-pw/companion-069-final-v3-report.json`). 앞선 실패/중단을 이 배치로 덮어쓰지 않았다. 양쪽 실제 창을 pet 위로 native drag해 hit-test로 창의 입력 레이어 우선을 확인했고, 열기/닫기 전 프레임의 실제 위치·같은DOM·hidden/returning0을 검사했다. Studio 일정/업도움/기간안내125/123/124프레임에서 hidden/교체/POST/pageerror0, busy 동안 입력 잠금을 확인했다. 발견 guest의 실제 닫힘 프레임은 `companion-069-guest-close-1920.json`에 x<3px 기준과 함께 보존했다. 패널의 실제 발판/사람 클릭영역,7초 복귀·사람 선택 우선, 기존 집6·소파3·프레임4·숨바꼭질/편집실 guest·모바일 제외8도 최종 배치에서 통과했다. 자연90초/5.5% 결정은 seed unit,7초 callback 수명은 명시된 controlled capability와 실제 UI로 분리해 검사했다. 실제 운영 SHA/자산/두 화면 확인은 배포 뒤 기록한다.
+
+원화/기술 패킹의 독립 코드 검토와 창/패널 담당의 상호 검토를 통합했으며 차단 지적은 남지 않았다. 수정 후 독립 미술검수는 추가하지 않았다. 일반 창186/196프레임의 최대 위치 차이는 viewer0.83px/Studio0.90px, hidden/DOM교체/returning/POST/pageerror0이었다. 발견 guest의84개 닫힘 프레임은 x오차0·hidden/교체0이었다. 생성·검수 JSON은 Git의 줄바꿈 정규화로 원본과 byte 차이가 생긴 것을 확인해 이번 회차에만 `-text -eol whitespace=cr-at-eol`을 지정하고19개 회차 파일의 실제 index/raw 바이트 일치를 확인했다. 계약·원문·claim을 재작성하거나 원본 SHA를 바꾸지 않았다. 제품 source31파일은 commit `0432443a3874523a1f2b035aabb06af0d97b7f82`와 정규화 SHA가 모두 일치한다(`companion-069-committed-source-proof.json`).
+
+## 운영 확인과 종료
+
+제품 [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/8VGCQh41sznbAATu1MjkSQjRfozK)는 success이며 운영 `/api/soop-live` build도 같은 전체 SHA였다(`.scratch-pw/companion-069-production-deploy.json`). 새 귀 교정4WebP 모두 HTTP200/로컬 SHA 일치(`companion-069-operating-assets.json`). 실제 로그인된 개발자 편집실의0432443 배지와 ordinary 편집창의80/pet75·quiet/parked·returning 없음, native X와 Escape 닫힘을 확인했다. 첫 close wait는 timeout이었으나 Escape로 닫은 뒤 새 native 열기/X는 정상 종료됐다. form 입력·일정/띠 이동·하트 투표·설정 변경은 하지 않았다. 실제 이동은 쓰기 차단한 위 fixture의 세 native drag로만 검증했다.
+
+실제 메뉴로 시청자 미리보기에 들어가 같은 공개 일정을 열고 pet75/실제 backdrop90·quiet/parked·returning 없음과 닫힘을 확인했다. native 짧은 클릭이 `bonk-tears`로 들어가는 것까지 운영에서 확인했으나 순간 packet27을 기다린 단일 wait는 timeout이었다. 운영 연속 포즈 계측을 합격으로 부르지 않고, **동일 최종 제품 build**에서 기존 실제 클릭/drag/중력 검사4개를 추가 실행해 모두 통과했다(32.3초, retry0, `companion-069-play-report.json`). 실제 새27-ear-v2 packet→회복과 양쪽 drag interrupt,9개 설정 조합 UI,Studio 낙하 중 클릭이 포함된다. 이로써 해당 build의35개 회귀+4개 보강이 통과했으며 단일39개 배치라고 부르지 않는다. `companion-069-live-packets-*` raw/PNG도 별도 보존했다.
+
+운영 screenshot은 `companion-069-operating-studio-window.png`, `companion-069-operating-viewer-window.png`다. 실제 편집실 돌아가기 버튼으로 preview를 종료했고 editorOpen false·preview0·태그/계절/집 펼침 false/true/true·저장 side right를 유지했다. 원래 theme/master/종/성향/걸음은 바꾸지 않았고 확인용 탭도 닫았다. 운영 노출 이미지의 외형은 위 생성자 관찰/실제92CSS 확인 범위이며 별도 수정 후 전문 검수·사용자 시각 승인이나 실제 OS/OBS 송출 품질을 인증하지 않는다. 남은 harness2오류는 기존 inventory 문제로 별도다.
