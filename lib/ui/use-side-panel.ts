@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PANEL_WIDE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
+import { COMPANION_PANEL_PREVIEW_MS } from "./viewer-companion/panel-play";
 
 // 달력 옆 패널의 상태(단일 출처, 2026-09-17 소유자 결정) — 편집실·시청자·시청자 미리보기가 같은 훅을 쓴다.
 //
@@ -42,6 +43,14 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
   const [wide, setWide] = useState(true);
   const [side, setSide] = useState<PanelSide>(fixedSide ?? "left");
   const [open, setOpen] = useState(true);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cancelPreview = useCallback((restore = false) => {
+    if (previewTimer.current === undefined) return;
+    clearTimeout(previewTimer.current);
+    previewTimer.current = undefined;
+    if (restore) setSide(fixedSide ?? readSide());
+  }, [fixedSide]);
+  useEffect(() => () => cancelPreview(), [cancelPreview]);
   // 밀어낼 때 달력이 잃는 폭의 비율(창 폭 대비) — 편집실이 달력을 이 비율로 통째로 줄여(--cal-zoom에 곱함) 시청자
   // 포스터의 '폭 기준 축소'와 같은 결과를 낸다: 패널을 펴도 달력이 한눈에(2026-09-17 소유자·관리자 취향). 패널 폭 식은
   // CSS 토큰 --side-panel-w(globals.css)와 같다.
@@ -62,6 +71,7 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
     setOpen(fixedSide ? true : mq.matches ? !readCollapsed() : false);
     setReady(true);
     const sync = () => {
+      cancelPreview(true);
       const w = mq.matches;
       setWide(w);
       // 폭 기준을 넘나들면 자동값으로 되돌린다 — 좁아지면 접히고, 다시 넓어지면 기억한 대로 펼친다.
@@ -75,6 +85,7 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
     // 이 이벤트가 없으면 미리보기에서 옮긴 패널이 편집실로 돌아왔을 때 옛 자리에 있었다(2026-09-17 소유자).
     // 같은 창 안이라 `storage` 이벤트는 안 울린다 → 쓴 쪽이 직접 쏘는 커스텀 이벤트.
     const onPeer = () => {
+      cancelPreview();
       setSide(fixedSide ?? readSide());
       if (!fixedSide && mq.matches) setOpen(!readCollapsed());
     };
@@ -82,15 +93,28 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
     window.addEventListener("resize", onResize);
     window.addEventListener(SYNC_EVENT, onPeer);
     return () => {
+      cancelPreview();
       mq.removeEventListener("change", sync);
       window.removeEventListener("resize", onResize);
       window.removeEventListener(SYNC_EVENT, onPeer);
     };
-  }, [enabled, fixedSide]);
+  }, [enabled, fixedSide, cancelPreview]);
+
+  // A pet's occasional button play is a reversible local presentation. Only a
+  // human pickSide writes vic_avatar_side; any later human control wins.
+  const previewSide = useCallback((next: PanelSide) => {
+    if (!enabled || fixedSide || !ready || !open || next === side || previewTimer.current !== undefined) return;
+    setSide(next);
+    previewTimer.current = setTimeout(() => {
+      previewTimer.current = undefined;
+      setSide(readSide());
+    }, COMPANION_PANEL_PREVIEW_MS);
+  }, [enabled, fixedSide, ready, open, side]);
 
   const pickSide = useCallback(
     (next: PanelSide) => {
       if (fixedSide) return;
+      cancelPreview();
       hapticTick();
       setSide(next);
       try {
@@ -100,11 +124,12 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
       }
       window.dispatchEvent(new Event(SYNC_EVENT));
     },
-    [fixedSide]
+    [fixedSide, cancelPreview]
   );
 
   const toggle = useCallback(() => {
     if (fixedSide) return;
+    cancelPreview(true);
     hapticTick();
     setOpen((cur) => {
       const next = !cur;
@@ -120,26 +145,27 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
       }
       return next;
     });
-  }, [fixedSide, wide]);
+  }, [fixedSide, wide, cancelPreview]);
 
   const close = useCallback(() => {
+    cancelPreview(true);
     setOpen(false);
-  }, []);
+  }, [cancelPreview]);
 
   const mode: PanelMode = wide ? "push" : "overlay";
   // 떠 있는 패널은 Esc로도 닫힌다(밖을 누르는 것과 같은 결).
   useEffect(() => {
     if (!enabled || mode !== "overlay" || !open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [enabled, mode, open]);
+  }, [enabled, mode, open, close]);
 
   // fit: 밀어내는 동안(넓은 창 + 펼침)만 <1, 그 외 1. 떠 있을 땐 달력 폭이 그대로라 1.
   const fit = enabled && ready && open && mode === "push" && !fixedSide ? fitRatio : 1;
-  return { ready: enabled && ready, wide, side, open, mode, fit, pickSide, toggle, close };
+  return { ready: enabled && ready, wide, side, open, mode, fit, pickSide, previewSide, toggle, close };
 }
 
 // 셸(main)에 붙는 클래스 — 편집실·시청자가 같은 이름을 써서 CSS 문법이 하나다.

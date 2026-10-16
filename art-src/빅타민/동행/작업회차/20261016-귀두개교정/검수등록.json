@@ -1,0 +1,7 @@
+{
+  "status": "TARGETED_FINDINGS_RECORDED_AWAITING_USER",
+  "errors": [],
+  "final_sha256": "36F27E7187701047706C655C4CD8EA1DC2567FA69AFFC21593466F3350A106C5",
+  "no_full_pass_claim": true,
+  "automatic_retry": false
+}

@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 import { createCompanionOverlayReturn } from "@/lib/ui/viewer-companion/overlay-return";
 
 const from = { x: 120, y: 700, scale: 44 / 76 }, target = { x: 800, y: 360, scale: 1 };
-describe("ordinary-window display return", () => {
+describe("explicit guest-drop display return", () => {
+  it("keeps a user-dropped guest's horizontal position while its scale and feet settle onto fresh support", () => {
+    const released = { x: 419.75, y: 480.5, scale: .72 }, support = { x: released.x, y: 760, scale: 1 };
+    const bridge = createCompanionOverlayReturn(released, 100, false, 520);
+    expect(bridge.sample(120, support, false).point).toEqual(released);
+    const frames = Array.from({ length: 73 }, (_, i) => bridge.sample(140 + i * 16, support, true));
+    expect(frames.every(frame => frame.point.x === released.x)).toBe(true);
+    expect(frames.some(frame => frame.point.y > released.y && frame.point.y < support.y)).toBe(true);
+    expect(frames.some(frame => frame.point.scale > released.scale && frame.point.scale < 1)).toBe(true);
+    expect(frames.at(-1)).toMatchObject({ done: true, expired: false, point: support });
+  });
   it("keeps the actual perch and scale through waking, then travels and settles before decisions", () => {
     const bridge = createCompanionOverlayReturn(from, 100, true, 520);
     expect(bridge.sample(100, target, true).point).toEqual(from);

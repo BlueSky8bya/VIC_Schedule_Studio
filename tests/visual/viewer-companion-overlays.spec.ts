@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { expectCompanionPerchClear, expectQuietCompanionTail, expectQuietCompanionVisible, waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { expectCompanionBehindOverlay, expectQuietCompanionTail, expectQuietCompanionVisible, waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 const posts = new WeakMap<Page, string[]>();
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -107,7 +107,7 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
         const witness = (window as unknown as ClosingWindow).companionClosing;
         witness.observer.disconnect(); return witness.hidden;
       })).toBe(false);
-      await press(actor(page)); await expect(pet(page)).toHaveAttribute("data-state", "petted");
+      await actor(page).press("Enter"); await expect(pet(page)).toHaveAttribute("data-state", "petted");
     };
     const snapshot = (name: string) => page.screenshot({ path: `.scratch-pw/companion-overlay-${mobile ? "390" : "1920"}-${name}.png` });
 
@@ -119,7 +119,7 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
     const detailClose = detail.getByRole("button", { name: "닫기", exact: true });
     await waitForOverlayEntrance(detail);
     await detailClose.focus(); await expectQuietCompanionTail(page, detailClose);
-    await expectCompanionPerchClear(page, detail); await snapshot("detail");
+    await expectCompanionBehindOverlay(page, detail); await snapshot("detail");
     if (!mobile) {
       const before = (await detail.boundingBox())!, body = (await actor(page).boundingBox())!, grip = (await detail.locator(".detail-grab").boundingBox())!;
       const target = { x: Math.max(12, Math.min(1920 - before.width - 12, body.x + body.width / 2 - before.width / 2)), y: Math.max(12, Math.min(1100 - before.height - 12, body.y + body.height / 2 - before.height / 2)) };
@@ -129,7 +129,7 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
       expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(80);
       expect(after.width).toBeCloseTo(before.width, 1); expect(after.height).toBeCloseTo(before.height, 1);
       await detailClose.focus(); await expectQuietCompanionTail(page, detailClose);
-      await expectCompanionPerchClear(page, detail); await snapshot("detail-drag");
+      await expectCompanionBehindOverlay(page, detail); await snapshot("detail-drag");
     }
     await closeAndResume(detail);
 
@@ -143,7 +143,7 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
     const sort = search.getByRole("button", { name: "최신", exact: true });
     await press(sort); await expect(sort).toHaveAttribute("aria-pressed", "true");
     await expectQuietCompanionVisible(page); await sameCreature();
-    await expectCompanionPerchClear(page, search);
+    await expectCompanionBehindOverlay(page, search);
     await snapshot("search"); await closeAndResume(search);
 
     await press(page.locator(mobile ? "[data-act='이 달 기록 보기']:visible" : "[data-act=open-insights]:visible"));
@@ -152,7 +152,7 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
     const recordClose = records.getByRole("button", { name: "닫기", exact: true });
     await waitForOverlayEntrance(records);
     await recordClose.focus(); await sameCreature(); await expectQuietCompanionTail(page, recordClose);
-    await expectCompanionPerchClear(page, records);
+    await expectCompanionBehindOverlay(page, records);
     await snapshot("records"); await closeAndResume(records);
 
     await press(page.getByRole("button", { name: "설정", exact: true }));
@@ -163,7 +163,7 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
     const prank = settings.getByRole("tab", { name: "장난", exact: true });
     await press(prank); await expect(prank).toHaveAttribute("aria-selected", "true");
     await prank.focus(); await sameCreature(); await expectQuietCompanionTail(page, prank);
-    await expectCompanionPerchClear(page, settings);
+    await expectCompanionBehindOverlay(page, settings);
     await snapshot("settings"); await closeAndResume(settings);
 
     await expect(page.locator("[data-export-surface] .vc-companion")).toHaveCount(0);

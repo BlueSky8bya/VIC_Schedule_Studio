@@ -7258,11 +7258,14 @@ export function StudioShell({
       }`}
       data-chrome={chromeTier || undefined}
       data-companion-surface="studio"
+      data-companion-workspace-busy={dragEventId || spanDrag ? "" : undefined}
+      data-companion-window={companionDesktop && companionPrefs.enabled && (editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop) ? "" : undefined}
       ref={setShellRef}
     >
       {companionDesktop && companionPrefs.enabled ? <ViewerCompanion root={shellRef} preferences={companionPrefs}
         positionMemory={staffCompanionPositionMemory}
-        blocked={Boolean(monthPick || passcodeModal || dragEventId || spanDrag || navMsg)}
+        blocked={Boolean(monthPick || passcodeModal || navMsg)}
+        workspaceBusy={Boolean(dragEventId || spanDrag)}
         overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
         agenda={isNarrow} monthKey={`${view.year}-${view.month}`} reduced={reduceMotion} /> : null}
@@ -7485,6 +7488,7 @@ export function StudioShell({
               포인터가 다가오면(useIdleAfter el=이 행) 다시 배율을 보인다. */}
           <PanelPlaceControl
             onSide={pickAvatarSide}
+            onCompanionSide={panel.previewSide}
             onToggle={panel.toggle}
             open={panel.open}
             side={avatarSide}

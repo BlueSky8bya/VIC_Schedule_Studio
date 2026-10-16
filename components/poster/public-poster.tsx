@@ -5071,6 +5071,7 @@ export function PublicPoster({
           {/* 자리 선택(⇤ ⇥)은 비로그인 시청자에게도(2026-09-17 소유자). 확대 직후 1.2초는 가운데 글자만 배율. */}
           <PanelPlaceControl
             onSide={panel.pickSide}
+            onCompanionSide={panel.previewSide}
             onToggle={panel.toggle}
             open={panel.open}
             side={panel.side}

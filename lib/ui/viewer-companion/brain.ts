@@ -15,7 +15,9 @@ export type Platform = {
   x: number;
   y: number;
   width: number;
-  kind: "card" | "date" | "floor" | "hide";
+  kind: "card" | "date" | "floor" | "hide" | "control";
+  /** Only the measured shared panel arrows expose this local affordance. */
+  panelSide?: "left" | "right";
   /** A user-chosen top never attracts aimless play; actual food may explicitly
    * invite one proved terminal jump. It cannot be a walking/intermediate node. */
   manualOnly?: boolean;
@@ -26,7 +28,7 @@ export type CompanionBehaviorPreferences = CompanionPreferences;
 
 export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: CompanionFoodKind };
 export type Food = CompanionFood;
-export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake" | "play";
+export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake" | "play" | "panel";
 export type CompanionPlay = "tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow";
 export type CompanionAction = {
   kind: CompanionActionKind;
@@ -38,6 +40,7 @@ export type CompanionAction = {
   pace?: "amble" | "scoot";
   /** Finite local performance; its target remains the occupied real support. */
   play?: CompanionPlay;
+  panelSide?: "left" | "right";
   /** Small same-support hops use a lower impulse than a platform transfer. */
   jumpHeight?: number;
   /** Retained wander heading, not an instruction to mirror the renderer. */
@@ -225,7 +228,7 @@ export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEven
 }
 
 const cooldownMs: Record<CompanionActionKind, number> = {
-  idle: 0, look: 700, walk: 350, jump: 1400, sleep: 25000, heart: 45000, hide: 90000, sniff: 5000, eat: 1500, stretch: 18000, shake: 14000, play: 20000,
+  idle: 0, look: 700, walk: 350, jump: 1400, sleep: 25000, heart: 45000, hide: 90000, sniff: 5000, eat: 1500, stretch: 18000, shake: 14000, play: 20000, panel: 90000,
 };
 
 /** Commit once when an action begins, not every animation frame. */
@@ -295,6 +298,14 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   if (foodAction) return foodAction;
   const profile = getCompanionBehaviorProfile(prefs);
   const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);
+  // A rare toe-tap starts only on the actual occupied arrow. The renderer
+  // rechecks its exact live control at impact; no remote button targeting.
+  if (prefs.roam && prefs.panelPrank && current?.kind === "control" && current.panelSide
+    && current.id === world.platformId && !current.manualOnly && Math.abs(current.y - world.y) <= 4
+    && world.x >= current.x && world.x <= current.x + current.width
+    && brain.activeMs >= 90000 && (brain.cooldowns.panel ?? -Infinity) <= now && random(rng) < .055) {
+    return { kind: "panel", panelSide: current.panelSide, target: stationary, duration: 1550 };
+  }
   let movingStreak = 0;
   for (let i = brain.recent.length - 1; i >= 0 && ["walk", "jump"].includes(brain.recent[i]); i--) movingStreak++;
   // A cartoon mishap follows a genuine committed run, not time spent waiting.

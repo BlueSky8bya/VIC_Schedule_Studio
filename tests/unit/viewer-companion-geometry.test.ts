@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompanionSurfaces, unoccludedCompanionRects, type CompanionSurface, type CompanionTextRect, type CompanionGeometrySubscription, type CompanionFollowSample } from "@/lib/ui/viewer-companion/geometry";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_HOME_FLOOR_FOOD, placeCompanionFood } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_PANEL_SIDE_SELECTOR } from "@/lib/ui/viewer-companion/panel-play";
 
 const viewport = { width: 1000, height: 800 };
 const text = (left: number, top: number, right: number, bottom: number): CompanionTextRect => ({ left, top, right, bottom });
@@ -102,6 +103,26 @@ function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, band
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
+  it("measures real shared panel arrows as top ledges without covering their pointer targets", () => {
+    const f = geometryFixture(), changed = vi.fn(), left = new FixtureElement(), right = new FixtureElement();
+    left.parentElement = f.sourceRoot; right.parentElement = f.sourceRoot;
+    left.rect = box(450, 740, 36, 44); right.rect = box(550, 740, 36, 44);
+    left.getAttribute = name => name === "data-companion-panel-side" ? "left" : name === "aria-pressed" ? "true" : null;
+    right.getAttribute = name => name === "data-companion-panel-side" ? "right" : name === "aria-pressed" ? "false" : null;
+    f.controls.push(left, right);
+    const query = f.sourceRoot.querySelectorAll;
+    f.sourceRoot.querySelectorAll = selector => selector === COMPANION_PANEL_SIDE_SELECTOR ? [left, right] : query(selector);
+    const off = observeCompanionPlatforms(f.root, changed, { size: 92 }); f.flush();
+    const platforms = changed.mock.calls.at(-1)![0] as Platform[];
+    expect(platforms.filter(platform => platform.kind === "control")).toEqual([
+      { id: "panel-side-left", x: 450, y: 737, width: 36, kind: "control" },
+      { id: "panel-side-right", x: 550, y: 737, width: 36, kind: "control", panelSide: "right" },
+    ]);
+    expect(off.anchor("panel-side-right")?.element).toBe(right);
+    expect(off.follow(["panel-side-right"])[0].platform.panelSide).toBe("right");
+    expect(platforms.filter(platform => platform.kind === "control").every(platform => platform.y < left.rect.top)).toBe(true);
+    off();
+  });
   it("notifies layout invalidation before a coalesced scan without reading geometry or surviving disposal", () => {
     const f = geometryFixture(), invalidate = vi.fn(), changed = vi.fn();
     const off = observeCompanionPlatforms(f.root, changed, { onInvalidate: invalidate });

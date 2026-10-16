@@ -1,6 +1,7 @@
 import type { Platform } from "./brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET } from "./food";
 import { companionSofaSeat } from "./sofa";
+import { COMPANION_PANEL_SIDE_SELECTOR } from "./panel-play";
 
 const STUDIO_CARD_SELECTOR = "[data-companion-event='ordinary'][data-eventid]";
 const STUDIO_BAND_SELECTOR = "[data-companion-band='public'][data-supportid]";
@@ -38,7 +39,7 @@ export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
 }
 
 type AnchorSnapshot = { platform: Platform; anchor?: Element; rect?: { left: number; top: number } };
-const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}) });
+const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}), ...(platform.panelSide ? { panelSide: platform.panelSide } : {}) });
 
 /** Text behind the opaque house is not visible ink. Keep any part outside its
  * bounds, so a character overhanging the house still avoids exposed labels. */
@@ -142,7 +143,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const nextAnchors = new Map<string, AnchorSnapshot>();
     const remember = (platform: Platform, anchor?: Element, rect?: DOMRect) => {
       platforms.push(platform);
-      if ((platform.kind === "floor" || platform.id === "companion-home") && landings.length < MAX_PLATFORMS) landings.push(copyPlatform(platform));
+      if ((platform.kind === "floor" || platform.kind === "control" || platform.id === "companion-home") && landings.length < MAX_PLATFORMS) landings.push(copyPlatform(platform));
       nextAnchors.set(platform.id, { platform, anchor, rect: rect ? { left: rect.left, top: rect.top } : undefined });
     };
     const rememberFood = (id: string, spans: readonly CompanionSurface[], kind: Platform["kind"], anchor?: Element, rect?: DOMRect) => {
@@ -286,6 +287,22 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (rect.width > 0 && rect.height > 0 && rect.top >= height * .65 && rect.bottom <= height + 1) floorY = Math.min(floorY, rect.top - 8);
       }
       addSurface("viewport-floor", "floor", { x: 12, y: floorY, width: width - 24 });
+      // The feet rest just above the real arrow's top; the body never covers
+      // its human pointer target. Labels/adjacent controls still constrain the
+      // entire footprint. No coordinates are guessed from viewport width.
+      for (const element of root.querySelectorAll<HTMLElement>(COMPANION_PANEL_SIDE_SELECTOR)) {
+        nextObserved.add(element);
+        if (!visible(element) || !supportVisible(element) || element.hasAttribute("disabled")) continue;
+        const side = element.getAttribute("data-companion-panel-side");
+        if (side !== "left" && side !== "right") continue;
+        const rect = measuredControls.get(element) ?? element.getBoundingClientRect(), clip = clipping(element.parentElement);
+        const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
+        if (rect.width <= 0 || rect.height <= 0 || rect.top < clip.top || rect.top > clip.bottom || right <= x) continue;
+        const safe = safeCompanionSurfaces({ x, y: rect.top - CLEARANCE, width: right - x }, ordinaryObstacles, size, viewport, footprint);
+        for (let i = 0; i < safe.length && platforms.length < MAX_PLATFORMS; i++) {
+          remember({ id: `panel-side-${side}${i ? `-${i}` : ""}`, ...safe[i], kind: "control", ...(element.getAttribute("aria-pressed") === "false" ? { panelSide: side } : {}) }, element, rect);
+        }
+      }
       if (home?.isConnected && visible(home)) {
         const rect = home.getBoundingClientRect();
         const clip = clipping(home.parentElement);
@@ -450,7 +467,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   });
   mutationObserver.observe(root, {
     subtree: true, childList: true, characterData: true, attributes: true,
-    attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden", "aria-pressed", "data-companion-event", "data-companion-band", "data-companion-hearted", "data-companion-heart-blocked", "data-premiere", "data-pm-depart"],
+    attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden", "aria-pressed", "data-companion-event", "data-companion-band", "data-companion-hearted", "data-companion-heart-blocked", "data-premiere", "data-pm-depart", "data-companion-workspace-busy"],
   });
   // Ancestor visibility can change when the same shared viewer enters/leaves
   // preview. Observe only its attributes, not the rest of the application.

@@ -1,0 +1,13 @@
+{
+  "work_id": "VICTAMIN-COMPANION-EARS-20261016",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\VICTAMIN-COMPANION-EARS-20261016\\검토용\\EB1A935A0B35F414937B.png",
+  "sha256": "A155A1597DD89DBC8957CB1C9AAD20DE7CC68245BED54C077BC53C81056AB89A",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Builtin result full native inspected: all four complete limbless paper bodies show two distinct connected oval ears. Rotated tumble, flattened slip, teary face and drooping sulk remain separate poses. New four-pose drawing is an ear correction draft, not pixel-identical to parent body details. Other32 parent poses stay outside the new output. No independent post-repair review or owner visual approval claimed."
+  ],
+  "cycle_id": "EB1A935A0B35F414937B",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

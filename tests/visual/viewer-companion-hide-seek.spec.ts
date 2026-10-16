@@ -16,6 +16,8 @@ type HideWitness = Window & { hideSeekNode?: Element; hideSeekPhases?: (string |
 type FoundFrame = { at: number; visible: boolean; x: number; y: number; width: number; height: number; ready: boolean; sheet: { left: number; top: number; right: number; bottom: number } | null };
 type FoundProbe = { node: Element; frames: FoundFrame[]; ready: boolean; readyAt: number | null; captures: number; clicks: number; raf: number; detail: EventListener; capture: EventListener; click: EventListener };
 type FoundWindow = Window & { foundProbe?: FoundProbe };
+type DropClosingFrame = { at: number; x: number; y: number; width: number; hidden: boolean; same: boolean; returning: string | null; platform: string };
+type DropClosingWindow = Window & { guestDropClosing?: { frames: DropClosingFrame[]; raf: number } };
 const hint = (page: Page) => page.locator("[data-companion-hide-hint]");
 
 test.beforeEach(async ({ page }) => {
@@ -252,10 +254,22 @@ for (const mobile of [false]) test.describe(mobile ? "native touch finding" : "n
     const released = await point(page); await page.waitForTimeout(500); const still = await point(page);
     expect(Math.hypot(still.x - released.x, still.y - released.y)).toBeLessThan(2);
     await page.screenshot({ path: `.scratch-pw/companion-060-hide-outside-${mobile ? "390" : "1920"}.png` });
+    await pet(page).evaluate(node => {
+      const witness = { frames: [] as DropClosingFrame[], raf: 0 }, began = performance.now();
+      const sample = (now: number) => { const r = node.getBoundingClientRect(), el = node as HTMLElement; witness.frames.push({ at: now - began, x: r.left + r.width / 2, y: r.bottom, width: r.width, hidden: el.hidden, same: node.isConnected && node === document.querySelector(".vc-companion"), returning: el.getAttribute("data-returning"), platform: el.dataset.platform ?? "" }); witness.raf = requestAnimationFrame(sample); };
+      (window as DropClosingWindow).guestDropClosing = witness; witness.raf = requestAnimationFrame(sample);
+    });
     await page.keyboard.press("Escape"); await expect(sheet(page)).toHaveCount(0);
     await expect(pet(page)).not.toHaveAttribute("data-returning", /./, { timeout: 4000 }); await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /\S+/);
     await expect(pet(page)).not.toHaveAttribute("data-detail-guest"); await expect(hint(page)).toHaveCount(0);
-    const landed = await point(page); expect(Math.abs(landed.x - released.x)).toBeLessThan(3);
+    const landed = await point(page);
+    const closing = await page.evaluate(() => { const witness = (window as DropClosingWindow).guestDropClosing!; cancelAnimationFrame(witness.raf); return witness.frames; });
+    // Preserve the raw witness before assertions on success and failure. Only
+    // hide aging above is controlled; this close/landing uses real frame time.
+    await writeFile(`.scratch-pw/companion-069-guest-close-${mobile ? "390" : "1920"}.json`, JSON.stringify({ agingClockControlled: true, closeFramesRealTime: true, released, still, landed, frames: closing }, null, 2));
+    expect(Math.abs(landed.x - released.x)).toBeLessThan(3);
+    expect(closing.length).toBeGreaterThan(5); expect(closing.every(frame => frame.same && !frame.hidden)).toBe(true);
+    expect(Math.max(...closing.map(frame => Math.abs(frame.x - released.x)))).toBeLessThan(3);
     const found = await finishFoundProbe(page, mobile ? "390" : "1920"); expect(found.captures).toBeGreaterThan(0);
     console.log(JSON.stringify({ check: "found-guest-real-input", mobile, first, finalPerch, released, still, landed, captures: found.captures }));
     const result = await evidence(page, mobile ? "found-390" : "found-1920"); expect(result.phases).toEqual(expect.arrayContaining(["entering", "hidden", "found", "settled", null]));

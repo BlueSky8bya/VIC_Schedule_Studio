@@ -239,7 +239,7 @@ const companionTabs = [
   { key: "personality", label: "성격" }
 ] as const;
 type CompanionTab = typeof companionTabs[number]["key"];
-type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "ambientPrank" | "drag" | "petting" | "feeding";
+type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "ambientPrank" | "panelPrank" | "drag" | "petting" | "feeding";
 
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
 function CompanionSettings({ preferences, onChange }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void }) {
@@ -289,8 +289,9 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
       <div className="rhh-group-card">
         {row("heartPrank", "하트 콩", <Heart size={15} />)}
         {row("ambientPrank", "숨바꼭질", <Leaf size={15} />)}
+        {row("panelPrank", "패널 자리 장난", <ArrowDownToLine size={15} />)}
       </div>
-      <p className="rhh-group-foot">하트 콩은 실제 하트 수를 바꾸지 않는 장난이에요. 일정 속에 숨으면 그 일정의 상세창에서 찾을 수 있어요.</p>
+      <p className="rhh-group-foot">하트 콩은 실제 하트 수를 바꾸지 않는 장난이에요. 일정 속에 숨으면 그 일정의 상세창에서 찾을 수 있어요. 패널 자리 장난은 잠깐 옮겼다가 돌려놓아요.</p>
     </div>
     <div aria-labelledby={`${id}-affection`} hidden={tab !== "affection"} id={`${id}-affection-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">

@@ -12,6 +12,8 @@
 
 ## 행동과 아트 근거
 
+2026-10-16 후속 소유자 지적: 전달36키포즈의1-based5행2열·5행4열·2행5열·4행2열에 두 귀가 분명하지 않다. 당시 패킹/단위/렌더 통과는 귀 형상 검수나 사용자 미술 승인이 아니며 이 결함을 걸러내지 못했다. 원본·생성 요청·기존 판정은 보존하고 [PLAN-069](../plans/PLAN-20261016-069-companion-ears-and-window-ownership.md)에서 지정 네 포즈의 귀/연결부만 별도 교정한다. 아래 ‘정확히 두 귀’는 요청한 설계 기준이며 모든 생성 칸의 충족 판정으로 읽지 않는다.
+
 고양이의 높은 안전자리·짧은 사냥놀이·개체가 선택하는 접촉은 [AAFP/ISFM 환경 가이드](https://catvets.com/wp-content/uploads/2024/01/Environmental%20GuidelinesEViewFinal.pdf), 강아지의 냄새 탐색·사람과 놀이·개체차는 [RSPCA DogKind](https://www.rspca.org.uk/documents/1494939/0/Being%2B%23DogKind%2Breport%2B(PDF%2B1.20MB).pdf/e5bf9429-44fd-4f71-08e6-58eab6f1aabc?download=true&t=1564054690195&version=1.0)를 행동 모티브로 삼았다. [Apple의 유동적 인터페이스](https://developer.apple.com/videos/play/wwdc2018/803/)의 즉각 반응/중단·전환 원칙에 맞춰 기존 단일 clock과 pose mixer를 재사용한다. 이 근거가 가상 펫의 HCI 효과나 진짜 동물의 죄책감/눈물을 인증하지는 않는다. 후자는 소유자가 요청한 만화적 반응이다.
 
 실제 원본 REF016/017의 무사지·두 귀·직사각 폼폼 구조를 열고 builtin imagegen1회로36개 키포즈를 생성했다. 새 회차는 `art-src/빅타민/동행/작업회차/20261016-덤벙놀이/`이며 실제 원문/cycle/계약/args/preflight/claim/native/생성자 관찰/초안 등록을 보존했다. 이미지 도구 결과를 사용자에게 표시했고 사용자 시각 승인·독립 전문 PASS는 주장하지 않는다. 명목6×6 경계를 넘는 몸은 실제 alpha 연결체36개로 온전히 추출해 aspect 고정 정규화했다. 실제 새 그림36개→12 action packet/192 hold slots이며192개 새 손그림이라고 하지 않는다. 기존19 HD packet은 변경0이다. 전 동작192px 물리/80px 논리·기존 lazy decode/LRU를 공유한다.

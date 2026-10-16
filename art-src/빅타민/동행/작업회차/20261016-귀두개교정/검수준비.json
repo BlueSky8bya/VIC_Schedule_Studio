@@ -1,0 +1,17 @@
+{
+  "status": "PREPARED_TARGETED_REVIEW",
+  "review_plan": {
+    "schema_version": 1,
+    "user_directed": true,
+    "role_packets": {
+      "body_anatomy": {
+        "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-EARS-20261016\\review\\body_anatomy.json",
+        "sha256": "14DE6662B90E2E1072C3AD288647C5580895026C46A862701B839FF5CBFF8D4E"
+      }
+    },
+    "required_roles": [
+      "body_anatomy"
+    ]
+  },
+  "automatic_extra_roles": []
+}

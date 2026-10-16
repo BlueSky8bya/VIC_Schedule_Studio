@@ -52,30 +52,14 @@ export async function expectQuietCompanionTail(page: Page, focused: Locator) {
   await expect(focused).toBeFocused();
 }
 
-/** The actual opaque-body proxy clears the actual window, even after a drag.
- * A nearly fullscreen mobile sheet may leave no44px tier outside it. Only
- * that independently proved geometry permits the decorative corner fallback. */
-export async function expectCompanionPerchClear(page: Page, dialog: Locator) {
-  const viewport = page.viewportSize()!;
-  await expect.poll(async () => {
-    const body = (await page.locator(".vc-actor").boundingBox())!, pane = (await dialog.boundingBox())!, cell = (await page.locator(".vc-companion").boundingBox())!;
-    const w = Math.max(0, Math.min(body.x + body.width, pane.x + pane.width) - Math.max(body.x, pane.x));
-    const h = Math.max(0, Math.min(body.y + body.height, pane.y + pane.height) - Math.max(body.y, pane.y));
-    if (w * h < .25) return true;
-    // For a single rectangular window a body outside it must lie completely
-    // left, right, above or below. Check those four feasible extrema directly;
-    // do not reuse the product's perch selection/collision implementation.
-    const half = 44 * .76 / 2, height = 44 * .76, margin = 4, gutter = 6;
-    const clear44 = margin + 22 + half <= pane.x - gutter
-      || viewport.width - margin - 22 - half >= pane.x + pane.width + gutter
-      || margin + 44 <= pane.y - gutter
-      || viewport.height - margin - height >= pane.y + pane.height + gutter;
-    return !clear44 && cell.width <= 44.05 && cell.height <= 44.05;
-  }).toBe(true);
-  const body = (await page.locator(".vc-actor").boundingBox())!, pane = (await dialog.boundingBox())!, cell = (await page.locator(".vc-companion").boundingBox())!;
-  expect(body.x).toBeGreaterThanOrEqual(0); expect(body.y).toBeGreaterThanOrEqual(0);
-  expect(body.x + body.width).toBeLessThanOrEqual(viewport.width);
-  expect(body.y + body.height).toBeLessThanOrEqual(viewport.height);
-  const overlap = Math.max(0, Math.min(body.x + body.width, pane.x + pane.width) - Math.max(body.x, pane.x)) * Math.max(0, Math.min(body.y + body.height, pane.y + pane.height) - Math.max(body.y, pane.y));
-  console.log(JSON.stringify({ check: "overlay-perch", width: viewport.width, name: await dialog.getAttribute("aria-label"), overlap, fallback: overlap >= .25, cell: { width: cell.width, height: cell.height }, body, pane }));
+/** PLAN-069 supersedes collision avoidance. A window may overlap the actual
+ * body; its own hit target must win there, without moving/scaling the pet. */
+export async function expectCompanionBehindOverlay(page: Page, dialog: Locator) {
+  const body = (await page.locator(".vc-actor").boundingBox())!, pane = (await dialog.boundingBox())!;
+  const overlap = { left: Math.max(body.x, pane.x), right: Math.min(body.x + body.width, pane.x + pane.width), top: Math.max(body.y, pane.y), bottom: Math.min(body.y + body.height, pane.y + pane.height) };
+  if (overlap.right - overlap.left > 2 && overlap.bottom - overlap.top > 2) {
+    expect(await dialog.evaluate((node, point) => node.contains(document.elementFromPoint(point.x, point.y)), { x: (overlap.left + overlap.right) / 2, y: (overlap.top + overlap.bottom) / 2 })).toBe(true);
+  }
+  await expect(page.locator(".vc-companion")).not.toHaveAttribute("data-detail-guest", "");
+  expect(await page.locator(".vc-companion").evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).m11)).toBeCloseTo(1, 4);
 }

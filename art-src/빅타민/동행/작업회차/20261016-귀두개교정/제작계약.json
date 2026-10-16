@@ -1,0 +1,89 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "VICTAMIN-COMPANION-EARS-20261016",
+  "operation": "correction",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "codex",
+  "inputs": [
+    {
+      "id": "REQUESTED-DRAFT-068",
+      "kind": "requested_draft",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-덤벙놀이\\원본\\빅타민_덤벙놀이_36키포즈.png",
+      "sha256": "36F27E7187701047706C655C4CD8EA1DC2567FA69AFFC21593466F3350A106C5",
+      "draft_receipt_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-PLAY-20261016\\cycle_06586E2A149568028ABF\\draft_receipt.json",
+      "routing_roles": [
+        "body_anatomy"
+      ]
+    },
+    {
+      "id": "REF-016",
+      "source_id": "REF-016",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "routing_roles": [
+        "body_anatomy"
+      ]
+    },
+    {
+      "id": "REF-017",
+      "source_id": "REF-017",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5",
+      "routing_roles": [
+        "body_anatomy"
+      ]
+    }
+  ],
+  "authorities": {
+    "body": "REF-016",
+    "mascot": "REF-017"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-덤벙놀이\\원본\\빅타민_덤벙놀이_36키포즈.png",
+      "sha256": "36F27E7187701047706C655C4CD8EA1DC2567FA69AFFC21593466F3350A106C5"
+    },
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-EARS-20261016\\plan.json",
+    "sha256": "6681C49AB86D048F990B6D807E3D9F9C6613A4C25C62797F7DBB461B65342945"
+  },
+  "mascot_variation_plan": "Repair exact four whole key poses with recognizable2connected oval ears. Existing poses/emotions/rotation stay design targets; not a front-facing static redesign.",
+  "scene_exception": "UI2x2 correction contact sheet; parent36-key draft was explicitly selected for correction, not approved.",
+  "structure_plan": {
+    "connected_anatomy": "Exactly2ears visibly connected to the same limbless rectangular-paper body in each of the4poses.",
+    "occluded_continuation": "Preserve natural rotated tumble/flattened slip but silhouette must let viewer distinguish both connected ears. No hidden-ear justification for these4requested repairs.",
+    "contacts_support": "Whole body and ears inside4equal transparent cells, same visual size; generous gutters.",
+    "vr_physics_corrections": "No limbs/fur or detached pasted ears."
+  },
+  "scene_plan": {
+    "mode": "design_sheet",
+    "purpose": "Four corrected complete key poses; remaining32parent poses are not regenerated/replaced."
+  },
+  "construction_method": "One builtin image edit from actual requested draft plus original authority refs. Separate raw new4pose native; technical whole-pose crop, aspect normalization and selective replacement only. No manual ear/face painting or user approval claim.",
+  "review_plan": {
+    "schema_version": 1,
+    "user_directed": true,
+    "role_packets": {
+      "body_anatomy": {
+        "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-COMPANION-EARS-20261016\\review\\body_anatomy.json",
+        "sha256": "14DE6662B90E2E1072C3AD288647C5580895026C46A862701B839FF5CBFF8D4E"
+      }
+    },
+    "required_roles": [
+      "body_anatomy"
+    ]
+  }
+}

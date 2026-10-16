@@ -1,0 +1,19 @@
+{
+  "work_id": "VICTAMIN-COMPANION-EARS-20261016",
+  "phase": "review_repair",
+  "user_source": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-ba4c3298de4696b55b0146a0.json",
+    "sha256": "F4B72F9A63C757BA9DA50B46EF5622D24B7AD623A57C1C493646DDA5C2289E8B",
+    "excerpt": "여기에 귀가 한 짝밖에 없거나 아예 없는 이미지가 있는데 검수한 거 맞지?(5행 2열, 5행 4열, 2행 5열, 4행 2열)"
+  },
+  "role_focus": {
+    "body_anatomy": [
+      "Only two-ear count and immediate ear/body connections for original6x6 r2c5, r4c2, r5c2, r5c4; preserve rotation and emotion."
+    ]
+  },
+  "user_feedback_reopens": true,
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-덤벙놀이\\원본\\빅타민_덤벙놀이_36키포즈.png",
+    "sha256": "36F27E7187701047706C655C4CD8EA1DC2567FA69AFFC21593466F3350A106C5"
+  }
+}

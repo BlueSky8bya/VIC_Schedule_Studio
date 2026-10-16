@@ -14,11 +14,12 @@ describe("additional native play packets share the established HD pipeline", () 
     expect(companionSpriteMetadata.atlases.slice(0, base.atlases.length)).toEqual(base.atlases);
     for (let row = 20; row < 32; row++) {
       const indices = companionSpriteMetadata.rows[row]; expect(indices).toHaveLength(16);
-      expect(companionSpriteSources(row)).toEqual([`/companion/hd/victamin-play-${row}.webp`]);
+      const source = play.atlases[row - 20].src;
+      expect(companionSpriteSources(row)).toEqual([source]);
       for (const [column, index] of indices.entries()) {
         const selected = selectCompanionSprite(index, row, column);
         expect(selected).toMatchObject({ atlas: "hd", physicalIndex: base.frames.length + (row - 20) * 16 + column, index: column, grid: 8, gridRows: 2 });
-        expect(selected.src).toBe(`/companion/hd/victamin-play-${row}.webp`);
+        expect(selected.src).toBe(source);
       }
     }
   });

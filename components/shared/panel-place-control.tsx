@@ -1,8 +1,9 @@
 "use client";
 
 import { ArrowLeftToLine, ArrowRightToLine, PanelLeft, PanelRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PanelSide } from "@/lib/ui/use-side-panel";
+import { COMPANION_PANEL_SIDE_EVENT, COMPANION_PANEL_SIDE_SELECTOR } from "@/lib/ui/viewer-companion/panel-play";
 import "./panel-place-control.css";
 
 // 하단 중앙 알약 [⇤ | 패널 | ⇥] — 편집실·시청자·시청자 미리보기가 같은 부품을 쓴다(2026-09-17 소유자: 통일).
@@ -17,6 +18,7 @@ export function PanelPlaceControl({
   open,
   showSide = true,
   onSide,
+  onCompanionSide,
   onToggle,
   zoomPct = null,
   zoomAwake = false
@@ -25,6 +27,8 @@ export function PanelPlaceControl({
   open: boolean;
   showSide?: boolean;
   onSide?: (side: PanelSide) => void;
+  /** Temporary local play uses the shared side hook without saving a choice. */
+  onCompanionSide?: (side: PanelSide) => void;
   onToggle: () => void;
   /** 현재 달력 배율(%). 100이면 배율 표시 없음. */
   zoomPct?: number | null;
@@ -32,13 +36,30 @@ export function PanelPlaceControl({
   zoomAwake?: boolean;
 }) {
   const [hover, setHover] = useState(false);
+  const control = useRef<HTMLDivElement>(null);
   const ToggleIcon = side === "right" ? PanelRight : PanelLeft;
   const showZoom = zoomPct !== null && zoomPct !== 100 && zoomAwake && !hover;
   // 접혀 있으면 자리 선택은 의미가 없다 — '패널' 하나만(2026-09-17 소유자). 펼치면 ⇤ ⇥가 돌아온다.
   const sides = showSide && open;
+  useEffect(() => {
+    const root = control.current;
+    if (!root || !sides || !onCompanionSide) return;
+    const request = (event: Event) => {
+      const target = event.target;
+      const next = (event as CustomEvent<{ side?: unknown }>).detail?.side;
+      if (!(target instanceof HTMLButtonElement) || !root.contains(target) || !target.matches(COMPANION_PANEL_SIDE_SELECTOR)
+        || (next !== "left" && next !== "right") || next === side
+        || target.getAttribute("data-companion-panel-side") !== next || target.disabled) return;
+      event.preventDefault();
+      onCompanionSide(next);
+    };
+    root.addEventListener(COMPANION_PANEL_SIDE_EVENT, request);
+    return () => root.removeEventListener(COMPANION_PANEL_SIDE_EVENT, request);
+  }, [sides, side, onCompanionSide]);
   return (
     <div
       className="panel-place-ctl"
+      ref={control}
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
       role="group"
@@ -51,6 +72,7 @@ export function PanelPlaceControl({
           className={`ppc-side${side === "left" ? " on" : ""}`}
           aria-label="패널을 왼쪽에 두기"
           aria-pressed={side === "left"}
+          data-companion-panel-side={onCompanionSide ? "left" : undefined}
           onClick={() => onSide?.("left")}
           data-act="avatar-ctl-toggle"
         >
@@ -83,6 +105,7 @@ export function PanelPlaceControl({
           className={`ppc-side${side === "right" ? " on" : ""}`}
           aria-label="패널을 오른쪽에 두기"
           aria-pressed={side === "right"}
+          data-companion-panel-side={onCompanionSide ? "right" : undefined}
           onClick={() => onSide?.("right")}
           data-act="avatar-ctl-toggle"
         >

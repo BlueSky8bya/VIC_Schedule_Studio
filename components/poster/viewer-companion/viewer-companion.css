@@ -109,11 +109,16 @@ html[data-reduce-motion] .vc-dream i:nth-child(3) { transform: translate(18px, -
 html[data-reduce-motion] .vc-affection-hearts i, html[data-gfx="off"] .vc-affection-hearts i { animation: none; opacity: .7; }
 html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
 
-/* Window focus remains with the modal; the optional sleeping creature owns
-   only direct pointer lifts. Display perch and calendar support stay separate. */
+/* Ordinary windows simply cover their world. Only a found hide-seek guest
+   belongs above its own detail sheet and keeps the interactive guest perch. */
 .vc-companion { transform-origin: 50% 100%; }
-.vc-companion[data-overlay="quiet"] { z-index: 98; }
-.vc-companion[data-overlay="quiet"][data-home-window] { z-index: 75; }
+.vc-companion[data-overlay="quiet"][data-detail-guest] { z-index: 98; }
+/* Studio's editor is an in-flow calendar popover (normally12), while this
+   shared pet/sofa pair is portalled at75/76. Promote only the active window
+   above that pair; moving the pet below the room would hide its resident. */
+.studio-shell[data-companion-window] .event-editor-panel { z-index: 80; }
+.studio-shell[data-companion-window] .modal-backdrop { z-index: 90; }
 .vc-companion[data-home-window] .vc-actor { pointer-events: none; }
+.vc-companion[data-workspace-busy] .vc-actor { pointer-events: none; }
 .vc-companion[data-overlay-drag] .vc-actor { cursor: grabbing; }
 .vc-companion[data-overlay="quiet"] .vc-contact-shadow, .vc-companion[data-overlay="quiet"] .vc-effect { visibility: hidden; }

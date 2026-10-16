@@ -1,0 +1,12 @@
+{
+  "event_id": "companion-ear-correction-20261016-user-turn-ba4c3298de4696b55b0146a0",
+  "source_actor": "user",
+  "thread_id": "01a13862-7fb6-7a73-839b-079df9dbbea2",
+  "turn_id": "msg_01a1443f-1071-71e0-afad-f26097e86b8b",
+  "observed_at": "2026-10-16T10:25:46.100Z",
+  "user_quote": "여기에 귀가 한 짝밖에 없거나 아예 없는 이미지가 있는데 검수한 거 맞지?(5행 2열, 5행 4열, 2행 5열, 4행 2열)\n\n그리고 편집실에서 일정이나 업도움, 기간안내 띠 위치 이동시킬 때 빅타민 사라지는 버그도 수정해줘. 그리고 편집실에서나 시청자 화면에서나 일정 눌러서 팝오버창을 띄울 때 빅타민이 해당 팝오버창이 뜰 자리에 있으면 강제로 밀어내고 팝오버창이 뜨고 다시 그 창을 닫으면 부자연스럽게 원래 팝오버창이 뜨기 전에 있던 자리로 빅타민이 슬라이드되는데, 이거 팝오버 창 띄울 떄 빅타민 위치 신경 쓰지 말고 걍 띄워. 빅타민이 겹치면 겹치는대로 걍 팝오버창보다 레이어 뒤로 해서 그 뒤에 가만히 있게 하면 되잖아.\n\n그리고 빅타민이 패널 좌우 토글 버튼과도 상호작용 할 수 있음 좋겠어. 그걸 발판삼아 위에 올라가있는다든자, 가끔 거기 해당하는 버튼을 랜덤으로 누른다든지 등등",
+  "source_context": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-ba4c3298de4696b55b0146a0.json",
+  "decision": "rule_update",
+  "issues": [],
+  "implementation_note": "User rejects four missing/ambiguous ear poses. Targeted ear-and-connection review once, repair once; preserve all other32 complete poses and old source bytes. No prior or current visual approval inferred."
+}

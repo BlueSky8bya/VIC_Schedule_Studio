@@ -12,6 +12,7 @@ import { isBiomeKey } from "@/components/shared/ambient/world/biomes";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 import { tentativeFixtureEvents } from "../tentative-events";
 import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
+import { getTodayKst } from "@/lib/calendar/month";
 
 // 비주얼/E2E 테스트 전용 fixture — 고정 샘플 데이터로 편집실 셸을 렌더한다(인증·DB 없이).
 // 오버레이 스택(시청자 미리보기 → '이 달 기록' 시트) 회귀를 브라우저에서 실측하기 위한 페이지.
@@ -21,7 +22,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string; companionDrag?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -61,7 +62,18 @@ export default async function VisualStudioFixture({
       }}
       hasUnlockSession={false}
       schedule={
-        premiereSchedule ?? (
+        premiereSchedule ?? (sp?.companionDrag === "1" ? {
+          ...sampleStudioSchedule,
+          // A past-month start beside the existing period fixture. Up-support
+          // expires against actual KST today even in old calendar months, so
+          // this synthetic fixture alone ends today. There are no DB writes.
+          events: [...sampleStudioSchedule.events, {
+            id: "companion-drag-support", startsAt: "2026-06-15T00:00:00+09:00", endDateKey: getTodayKst(),
+            isAllDay: true, isSupport: true, supportKind: "up" as const, supportUrl: "https://example.com/companion-support",
+            publicTitle: "동행 업 도움 fixture", status: "scheduled" as const, visibilityScope: "public" as const,
+            category: "stream" as const, tagIds: [], primaryTagIds: [], sortOrder: 0
+          }]
+        } : (
         // chain=1 → 6/8·6/9·6/10에 이어진 일정 셋(linkNext) 주입 — 체인 선택 링·이음변 회귀 실측용(2026-09-27).
         sp?.chain === "1"
           ? {
@@ -107,6 +119,7 @@ export default async function VisualStudioFixture({
               ? // gift=1 → 생일 선물 미리보기 토글 켠 상태(0141) — 캡슐 뽑기 창 검증용(2026-10-06).
                 { ...sampleStudioSchedule, birthdayGiftPreview: true }
               : sampleStudioSchedule)
+        )
       }
       initialView={{ year: y, month: m }}
       initialViewerMode={viewer}

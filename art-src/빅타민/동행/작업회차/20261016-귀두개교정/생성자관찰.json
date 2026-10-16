@@ -1,0 +1,13 @@
+{
+  "final_sha256": "A155A1597DD89DBC8957CB1C9AAD20DE7CC68245BED54C077BC53C81056AB89A",
+  "whole_visual_inspection": true,
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-귀두개교정\\원본\\빅타민_네포즈_귀교정.png",
+      "sha256": "A155A1597DD89DBC8957CB1C9AAD20DE7CC68245BED54C077BC53C81056AB89A"
+    }
+  ],
+  "findings": [
+    "Builtin result full native inspected: all four complete limbless paper bodies show two distinct connected oval ears. Rotated tumble, flattened slip, teary face and drooping sulk remain separate poses. New four-pose drawing is an ear correction draft, not pixel-identical to parent body details. Other32 parent poses stay outside the new output. No independent post-repair review or owner visual approval claimed."
+  ]
+}

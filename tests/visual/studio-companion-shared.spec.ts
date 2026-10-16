@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { expectCompanionBehindOverlay } from "./helpers/companion-overlay";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const home = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
@@ -60,10 +61,7 @@ test.describe("shared companion in the studio", () => {
     await page.locator('.studio-event-pill[data-companion-event="ordinary"] .pill-main strong').first().dblclick();
     await expect(page.locator(".event-editor-panel.is-edit")).toBeVisible(); await expect(pet(page)).toBeVisible();
     await expect(pet(page)).toHaveAttribute("data-overlay", "quiet");
-    await expect.poll(() => page.evaluate(() => {
-      const body = document.querySelector(".vc-actor")!.getBoundingClientRect(), editor = document.querySelector(".event-editor-panel")!.getBoundingClientRect();
-      return Math.max(0, Math.min(body.right, editor.right) - Math.max(body.left, editor.left)) * Math.max(0, Math.min(body.bottom, editor.bottom) - Math.max(body.top, editor.top));
-    })).toBeLessThan(.25);
+    await expectCompanionBehindOverlay(page, page.locator(".event-editor-panel.is-edit"));
     // Double-click opens the editor; text focus is an explicit native input
     // action, rather than an unsupported assumption about editor autofocus.
     await page.locator(".event-editor-panel .editor-title-ce").click();
