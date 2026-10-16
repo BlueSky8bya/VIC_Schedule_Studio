@@ -1,6 +1,6 @@
 # 새 기능 이용기록 연결 점검 — 2026-10-17
 
-Status: Locally verified — 제품 수정·실제 조작 검증 완료, 운영 배포 대기.
+Status: Completed — 제품 `887f6d4b` 운영 SHA·배포 성공·실제 리소스 확인.
 Plan: [PLAN-078](../plans/PLAN-20261017-078-activity-coverage.md)
 
 ## 조사 결과와 수정
@@ -30,7 +30,7 @@ Plan: [PLAN-078](../plans/PLAN-20261017-078-activity-coverage.md)
 
 ## 검증과 원본
 
-모든 브라우저 검사는 과거2026-06 fixture, 비읽기 요청 인터셉트, 합성 읽기 응답을 사용한다. 실제 일정/투표/운영 행동 원본을 읽거나 쓰지 않았다. 수집 검사는 실제 client queue를 실행하되 전송은 로컬에서 응답한다. 기록 화면의 합성 응답 검사는 이름 표시의 증거이며 실제 저장 증명과 구분한다.
+모든 브라우저 검사는 과거2026-06 fixture, 비읽기 요청 인터셉트, 합성 읽기 응답을 사용한다. 운영 행동 원본 조회나 실제 일정·투표 쓰기는 하지 않았다. 수집 검사는 실제 client queue를 실행하되 전송은 로컬에서 응답한다. 기록 화면의 합성 응답 검사는 이름 표시의 증거이며 실제 저장 증명과 구분한다.
 
 | 검사 | 결과 |
 |---|---|
@@ -44,6 +44,7 @@ Plan: [PLAN-078](../plans/PLAN-20261017-078-activity-coverage.md)
 | 1차 실제 입력·기록 화면·입력/창 소유권 회귀 |29/29 PASS, worker1·재시도0 |
 | 추가 숨기/찾기/추출·학습 설정 |4/4 PASS |
 | 최종 activity 검사 파일 전체 |17/17 PASS, worker1·재시도0·skip0·flaky0. 수정 없는 입력/창 소유권14개는 위29개 결과 유지 |
+| 운영 배포 |`887f6d4bd897cd669ff0ded1511ccd3fe5175baa` Vercel 성공·build API SHA 일치·공개 HTTP200·검증한 JS/CSS와 새 고정 ID 확인 |
 
 모의 DB 검사는 고정 target46개가 실제 `recordActivityBatch`와 일별/사용량 reader를 통과하는지, owner/developer 개별 기록과 viewer/anonymous 집계의 분리, 개발자 외 읽기 거절, 민감 canary 제거, 잘못된 client kind 차단, DB 설정 실패 시 닫힘, KST 일 경계를 확인한다. 운영 RLS·실제 로그인 세션의 증명은 아니다.
 
@@ -56,6 +57,8 @@ Plan: [PLAN-078](../plans/PLAN-20261017-078-activity-coverage.md)
 원본은 로컬 `.scratch-pw/activity-078-*`의 버전별 log/JSON/PNG/trace에 보존하며 커밋하지 않는다. 기존070 원본은 `activity-078-original-070/`에 별도 보존했다.
 
 제품 fixture build는 `6pdn60BJGgB2-SvgsHsVn`이다. 최종 결과는 `activity-078-complete-report.json`(17개), 입력 회귀 포함 1차는 `activity-078-final-report.json`(29개), 추가4개는 `activity-078-extra-report.json`이다. 실제 수집 payload와 동일 제목의 JSON을 함께 남겼다. 타임라인/사용량 PNG에서 쓰다듬기·딱밤·집어 옮기기·기울어진 일정 복구·패널/무대 이름을 직접 열람했다. 최초공개 재개는 전환이 끝난 스크린의 opacity1까지 기다린 최종 PNG로 확인했다.
+
+운영의 실제 companion lazy JS `7863.3eb87280cde68283.js`·CSS `818f468665319dcd.css`는 검증한 manifest의 fingerprint와 일치한다. 공개 초기 JS와 함께 HTTP200·신규 기록 ID를 확인했다. `activity-078-production-deploy.json`·`activity-078-deployed-resources-887f6d4b.json`이 근거다. 이후 완료 기록 커밋은 제품 변경이 없다.
 
 ## 정책과 한계
 

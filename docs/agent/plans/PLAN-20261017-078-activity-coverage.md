@@ -1,6 +1,6 @@
 # PLAN-20261017-078 — 새 기능 이용기록 연결 점검
 
-Status: Locally verified — 운영 배포 대기
+Status: Completed — 제품 `887f6d4b` 운영 배포 확인
 Scope: L2. 수집·고정 이름·내부 타임라인/역할별 사용량의 연결 검증.
 
 ## 목표와 경계
@@ -25,3 +25,5 @@ Scope: L2. 수집·고정 이름·내부 타임라인/역할별 사용량의 연
 ## 로컬 결과
 
 누락과 배치 목적지 클릭 중복을 보완했다. 관련 unit25/25, 최종 실제 activity17/17, 별도 입력/창 소유권 회귀14/14, typecheck/lint/build PASS. 모의 writer/reader의 고정 target46개·역할 경계와 실제 수집/합성 화면 표시 증거를 구분한다. 전체 unit의 기존8건·harness 기존2건은 FAIL로 유지한다. 독립 제품/개인정보/검사 리뷰 완료. [검증과 한계](../verification/ACTIVITY_COVERAGE-20261017.md).
+
+제품 `887f6d4bd897cd669ff0ded1511ccd3fe5175baa` main push 후 운영 build SHA·Vercel 성공·공개200과 실제 lazy JS/CSS fingerprint·새 기록 ID를 확인했다. 완료 기록은 이 문서와 검증 문서에 유지한다.
