@@ -30,4 +30,10 @@ viewer·anonymous·preview·studio가 같은 renderer/brain을 쓴다. 기본OFF
 - 공유 회귀18개 PASS(2.0분): 모바일/터치 landscape 제외와 desktop 복귀8, 편집 팝오버 숨바꼭질/꺼내기1, 긴 메인스레드 지연 뒤 실제 스크롤·gfx 전환·음식 anchor4, 실제 소파 앞/뒤 접촉3, 두 화면의 팝오버 가림/닫기 위치 보존2. `.scratch-pw/companion-074-regression-report.json`.
 - 시각 검수에서 초기 `studio-inspect.png`에 그림자만 보이는 순간을 발견해 증거를 보존했다. 실제 브라우저의92px 캡처에서 귀/볼의 주황색 픽셀을 세는 검사와 캡처 전후 포즈/레이어/리소스 기록을 추가했다. 두 화면2개 및 편집실 반복3개 PASS, 실제 캐릭터 픽셀294–345개, 캡처 전후 모두 inspect/look/pose16, ancestor opacity1·유효 clip. 편집실4회에서는 초기 빈 그림을 재현하지 못했다. [Playwright routing의 HTTP cache 비활성화](https://playwright.dev/docs/api/class-page#page-route) 아래 preload/CSS의 같은 WEBP 완전 전송2회가 관측됐으나, 원 캡처의 정확한 원인을 입증한 것은 아니다. 재현되지 않은 초기 paint/resource 순간으로 남기며 모든 프레임의 무결함을 주장하지 않는다. 제품 코드를 추측으로 바꾸거나 첫 증거를 정상 이미지로 대체하지 않았다. `.scratch-pw/companion-deliberation-diagnostic-v4-report.json`, native clip PNG와 각 capture JSON.
 - 강화된 최종 native6개도 PASS(49.319초, skipped/flaky/unexpected0). 편집실 실제 캐릭터294px·캡처 전후 inspect/pose16, 시청자345px·캡처 전후 inspect이며 준비 중 기존 pose6을 유지하다 pose16으로 전환했다. 원래 빈 캡처는 `companion-deliberation-original-shadow-only.png`, v3 전체/v4 진단/v5 반복 보고서는 별도 보존했다. 실제 OBS·모든 네트워크 지연/프레임을 포괄한 증거로 확대하지 않는다.
-- 문서/세션 단위43개 PASS(`agent-memory`18, `rule-migration`25). 제품 소스는 native 최초 고정 뒤 변경0개다. 운영 배포 확인은 진행 중이다.
+- 문서/세션 단위43개 PASS(`agent-memory`18, `rule-migration`25). 제품 소스는 native 최초 고정 뒤 변경0개다.
+
+## 운영 배포
+
+제품 커밋 `b15eeb24828f7938327e9a7c9244d7e0c2f89a26`를 main에 push했다. 2026-10-17 01:34 KST에 Vercel success와 운영 `/api/soop-live`의 정확한 build SHA, 공개 화면 HTTP200을 확인했다. 운영 webpack runtime이 검사한 lazy CSS/JS fingerprint를 참조하며 두 리소스가 HTTP200으로 내려오고, JS의 `reconsider/inspect/social/attention/consider`를 확인했다. `.scratch-pw/companion-074-production-deploy.json`, `companion-074-deployed-resources.json`.
+
+생산 fixture에서 검사한 제품 소스5개가 커밋 소스와 일치한다(`companion-074-committed-source-proof.json`). 운영 로그인 계정 전수 검사·실제 OBS 장비·모든 프레임 검증으로 확대하지 않는다. 사용자 제작기록26줄과 미커밋 이미지는 보존·제외했다. 로컬 fixture 서버는 검사 후 종료했다. 완료 결과는 이 기록에 두고 현재 작업 목록에서는 제거한다.
