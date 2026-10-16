@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createCompanionOverlayReturn } from "@/lib/ui/viewer-companion/overlay-return";
+import { COMPANION_RETURN_SETTLE_MS, createCompanionOverlayReturn } from "@/lib/ui/viewer-companion/overlay-return";
+import { COMPANION_TIMING as T } from "@/lib/ui/viewer-companion/timing";
 
 const from = { x: 120, y: 700, scale: 44 / 76 }, target = { x: 800, y: 360, scale: 1 };
 describe("explicit guest-drop display return", () => {
@@ -15,13 +16,14 @@ describe("explicit guest-drop display return", () => {
   });
   it("keeps the actual perch and scale through waking, then travels and settles before decisions", () => {
     const bridge = createCompanionOverlayReturn(from, 100, true, 520);
+    const travelStart = 100 + T.presenceWake;
     expect(bridge.sample(100, target, true).point).toEqual(from);
-    expect(bridge.sample(899, target, true).point).toEqual(from);
-    const middle = bridge.sample(1160, target, true);
+    expect(bridge.sample(travelStart - 1, target, true).point).toEqual(from);
+    const middle = bridge.sample(travelStart + 260, target, true);
     expect(middle.progress).toBe(.5); expect(middle.point.x).toBe(460); expect(middle.phase).toBe("return");
-    expect(bridge.sample(1420, target, true)).toMatchObject({ point: target, phase: "settle", done: false });
-    expect(bridge.sample(1769, target, true).done).toBe(false);
-    expect(bridge.sample(1770, target, true).done).toBe(true);
+    expect(bridge.sample(travelStart + 520, target, true)).toMatchObject({ point: target, phase: "settle", done: false });
+    expect(bridge.sample(travelStart + 520 + COMPANION_RETURN_SETTLE_MS - 1, target, true).done).toBe(false);
+    expect(bridge.sample(travelStart + 520 + COMPANION_RETURN_SETTLE_MS, target, true).done).toBe(true);
   });
   it("waits for the real geometry without starting a new journey on every delivery", () => {
     const bridge = createCompanionOverlayReturn(from, 0, false, 520);

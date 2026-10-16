@@ -624,6 +624,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-jump": { name: "빅타민 깡충 뛰기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-sleep": { name: "빅타민 낮잠", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-heart-prank": { name: "빅타민 하트 콩", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-card-prank": { name: "빅타민 일정 기울이기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-hide": { name: "빅타민 숨바꼭질", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-panel-prank": { name: "빅타민 패널 자리 장난", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-drag-enabled": { name: "빅타민 집어 옮기기", area: "설정", opts: { on: "켜기", off: "끄기" } },

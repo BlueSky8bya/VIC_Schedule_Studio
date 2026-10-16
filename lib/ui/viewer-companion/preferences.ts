@@ -5,6 +5,7 @@ export type CompanionPreferences = {
   jump: boolean;
   sleep: boolean;
   heartPrank: boolean;
+  cardPrank: boolean;
   ambientPrank: boolean;
   panelPrank: boolean;
   drag: boolean;
@@ -27,6 +28,7 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   jump: true,
   sleep: true,
   heartPrank: true,
+  cardPrank: true,
   ambientPrank: true,
   panelPrank: true,
   drag: true,
@@ -38,7 +40,7 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   personality: "curious"
 });
 
-const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "ambientPrank", "panelPrank", "drag", "petting", "feeding"] as const;
+const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "drag", "petting", "feeding"] as const;
 let volatilePreferences: CompanionPreferences | undefined;
 let lastReadableRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined; owner: Window } | undefined;

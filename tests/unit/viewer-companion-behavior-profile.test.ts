@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
 import { commitAction, createBrain, getAction, type CompanionAction, type CompanionBrain, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
 
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, feeding: false, heartPrank: false, ambientPrank: false };
 const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" };
@@ -108,11 +109,22 @@ describe("bounded cartoon play after actual movement", () => {
     expect(getAction(healthy(), world, prefs, 100000, () => 0).kind).not.toBe("play");
     const action = getAction(running(), world, prefs, 100000, () => 0);
     expect(action).toMatchObject({ kind: "play", play: "tumble", target: { x: world.x, y: world.y, platformId: floor.id } });
-    expect(action.duration).toBeGreaterThanOrEqual(2800); expect(action.duration).toBeLessThanOrEqual(4300);
+    expect(action.duration).toBe(companionPlayDuration("tumble"));
     const next = commitAction(running(), action, 100000);
-    expect(next.cooldowns.play! - 100000 - action.duration).toBeGreaterThanOrEqual(15000);
+    expect(next.cooldowns.play).toBe(100000 + action.duration + 20000);
     expect(next.movementMs).toBe(0);
     expect(getAction(next, world, prefs, 100000 + action.duration + 1, () => 0).kind).not.toBe("play");
+  });
+
+  it("reserves calendar card mishaps for proved arrivals instead of a fresh random idle decision", () => {
+    const card: Platform = { ...floor, id: "ordinary-card", kind: "card" };
+    const context = { ...world, platformId: card.id, platforms: [card] };
+    for (const brain of [healthy(), running()]) {
+      const decisions = sample({}, context, brain, 800);
+      expect(decisions.some(action => ["tumble", "bump", "slip"].includes(action.play ?? ""))).toBe(false);
+    }
+    // Flat ground still allows a rare clumsy finish after the real run burst.
+    expect(getAction(running(), world, prefs, 100000, () => 0).play).toBe("tumble");
   });
 
   it("caps eligibility odds and reserves bonk reactions for explicit human input", () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_TIMING } from "@/lib/ui/viewer-companion/timing";
 import {
   advanceBrain, commitAction, createBrain, getAction, nearestPlatform,
   platformLandingX, reachablePlatforms, recordCompanionEvent,
@@ -112,7 +113,7 @@ describe("viewer companion's local platform brain", () => {
     const next = commitAction(brain, heart, 100000);
     expect(brain.recent).toEqual([]);
     expect(next.recent).toEqual(["heart"]);
-    expect(next.cooldowns.heart).toBe(147200);
+    expect(next.cooldowns.heart).toBe(100000 + COMPANION_TIMING.heart + 45000);
     expect(Array.from({ length: 300 }, () => getAction(next, world, prefs, 100001, seeded())).some(a => a.kind === "heart")).toBe(false);
   });
 

@@ -1,4 +1,5 @@
 import { sampleCompanionTravel } from "./motion";
+import { COMPANION_TIMING } from "./timing";
 
 export type CompanionReturnPoint = { x: number; y: number; scale: number };
 export const COMPANION_RETURN_SETTLE_MS = 350;
@@ -17,7 +18,7 @@ export function createCompanionOverlayReturn(from: CompanionReturnPoint, began: 
       if (ready && readyAt === undefined) readyAt = time;
       const expired = !ready && readyAt !== undefined || readyAt === undefined && elapsed >= MAX_GEOMETRY_WAIT_MS;
       if (expired) return { point: shown, progress: 0, expired: true, done: true, phase: "done" as const };
-      const hold = reduced ? 0 : wake ? 800 : 160;
+      const hold = reduced ? 0 : wake ? COMPANION_TIMING.presenceWake : 160;
       const start = Math.max(began + hold, readyAt ?? time);
       const duration = reduced ? 0 : Math.max(1, travelMs);
       const progress = readyAt === undefined ? 0 : duration ? Math.min(1, Math.max(0, (time - start) / duration)) : 1;

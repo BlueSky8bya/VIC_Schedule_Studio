@@ -5,7 +5,7 @@ import { buildGist, buildStory, type NarrativeItem } from "@/lib/activity/narrat
 
 const TOGGLES = [
   "companion-enabled", "companion-roam", "companion-jump", "companion-sleep",
-  "companion-heart-prank", "companion-hide", "companion-panel-prank",
+  "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-panel-prank",
   "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled"
 ] as const;
 const SETTINGS = [

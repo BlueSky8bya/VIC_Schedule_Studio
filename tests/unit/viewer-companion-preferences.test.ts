@@ -35,7 +35,7 @@ describe("viewer companion device preferences", () => {
     expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toMatchObject({ size: "large", enabled: false, petting: false });
   });
   it("retains every detailed choice across master OFF and ON", () => {
-    const chosen = { enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, ambientPrank: false, panelPrank: false, drag: false, petting: false, feeding: false, animalMode: "cat", speed: "relaxed", size: "large", personality: "sleepy" } as const;
+    const chosen = { enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, drag: false, petting: false, feeding: false, animalMode: "cat", speed: "relaxed", size: "large", personality: "sleepy" } as const;
     setCompanionPreferences(chosen);
     setCompanionPreferences({ enabled: false });
     expect(getCompanionPreferences()).toEqual({ ...chosen, enabled: false });
@@ -53,6 +53,18 @@ describe("viewer companion device preferences", () => {
     expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "sleepy", size: "large", animalMode: "default", feeding: true });
     setCompanionPreferences({ animalMode: "dog", feeding: false });
     expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "sleepy", size: "large", animalMode: "dog", feeding: false });
+  });
+  it("migrates the card prank to ON and keeps an explicit OFF independently of play and other pranks", () => {
+    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, enabled: true, jump: false, heartPrank: false }));
+    expect(getCompanionPreferences()).toMatchObject({ enabled: true, roam: true, jump: false, cardPrank: true, heartPrank: false });
+    const listener = vi.fn();
+    const stop = subscribeCompanionPreferences(listener);
+    setCompanionPreferences({ cardPrank: false });
+    expect(listener).toHaveBeenLastCalledWith({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, jump: false, heartPrank: false, cardPrank: false });
+    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toMatchObject({ version: 1, cardPrank: false, roam: true });
+    expect(getCompanionPreferences().cardPrank).toBe(false);
+    expect(normalizeCompanionPreferences({ cardPrank: "off" }, getCompanionPreferences()).cardPrank).toBe(false);
+    stop();
   });
   it("fails closed for corrupt or unsupported saved versions", () => {
     setCompanionPreferences({ enabled: true });

@@ -1,4 +1,5 @@
 import { companionGripProfile, type CompanionGrip } from "./contact-grip";
+import { COMPANION_CLIP_TIMING } from "./timing";
 
 /** Pose sampling only. The renderer owns world position and its rAF cadence. */
 export type CompanionMotionInput = {
@@ -33,7 +34,7 @@ const FRAME_COUNT = 16;
 // 80px stride changes drawing7.5 times/s while world travel remains per-rAF.
 const WALK_STRIDE_PX = 80;
 const ALL_FRAMES = Object.freeze(Array.from({ length: FRAME_COUNT }, (_, index) => index));
-const LOOP_FPS: Readonly<Record<number, number>> = { 0: 6, 8: 6, 9: 8, 11: 6 };
+const LOOP_FPS: Readonly<Record<number, number>> = Object.fromEntries(COMPANION_CLIP_TIMING.filter(clip => clip.frameRate && (clip.playback === "loop" || clip.playback === "hold")).map(clip => [clip.row, clip.frameRate!]));
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
 const rounded = (value: number) => Math.round(value * 1e6) / 1e6;
 

@@ -184,7 +184,7 @@ describe("companion clip and facing continuity", () => {
 
   it("ping-pongs unproven loops without a last-to-first hard cut", () => {
     const motion = createCompanionMotion({ clips: { 0: [3, 4, 5] } });
-    const columns = Array.from({ length: 7 }, (_, step) => motion.sample(input({ now: step * 1000 / 6 })).column);
+    const columns = Array.from({ length: 7 }, (_, step) => motion.sample(input({ now: step * 1000 / 8 })).column);
     expect(columns).toEqual([3, 4, 5, 4, 3, 4, 5]);
   });
 

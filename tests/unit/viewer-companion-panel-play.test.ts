@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { commitAction, createBrain, getAction, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_PANEL_SIDE_EVENT, COMPANION_PANEL_SIDE_SELECTOR, requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
+import { COMPANION_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 const arrow: Platform = { id: "panel-side-right", x: 500, y: 737, width: 36, kind: "control", panelSide: "right" };
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, feeding: false };
@@ -11,11 +12,12 @@ const brain = () => ({ ...createBrain(0, () => .5), activeMs: 90000 });
 describe("companion's bounded panel arrow play", () => {
   it("uses an actual occupied arrow and enforces an active-time warmup and 90s cooldown", () => {
     const action = getAction(brain(), world, prefs, 100000, () => 0);
-    expect(action).toEqual({ kind: "panel", panelSide: "right", duration: 1550, target: { x: 518, y: 737, platformId: arrow.id } });
+    expect(action).toEqual({ kind: "panel", panelSide: "right", duration: COMPANION_TIMING.panelPress, target: { x: 518, y: 737, platformId: arrow.id } });
     const next = commitAction(brain(), action, 100000);
-    expect(next.cooldowns.panel).toBe(191550);
-    expect(getAction(next, world, prefs, 191549, () => 0).kind).not.toBe("panel");
-    expect(getAction(next, world, prefs, 191550, () => 0).kind).toBe("panel");
+    const allowedAt = 100000 + COMPANION_TIMING.panelPress + 90000;
+    expect(next.cooldowns.panel).toBe(allowedAt);
+    expect(getAction(next, world, prefs, allowedAt - 1, () => 0).kind).not.toBe("panel");
+    expect(getAction(next, world, prefs, allowedAt, () => 0).kind).toBe("panel");
     expect(getAction({ ...brain(), activeMs: 89999 }, world, prefs, 100000, () => 0).kind).not.toBe("panel");
     expect(getAction(brain(), world, prefs, 100000, () => .06).kind).not.toBe("panel");
   });

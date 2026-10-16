@@ -4,6 +4,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } f
 import { createPortal } from "react-dom";
 import { Home } from "lucide-react";
 import { logActivity } from "@/lib/activity/client";
+import { COMPANION_CLIP_TIMING, COMPANION_TIMING, companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
+import { getCompanionArrivalPlay } from "@/lib/ui/viewer-companion/arrival-play";
 import { advanceBrain, commitAction, createBrain, getAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, type CompanionGeometrySubscription } from "@/lib/ui/viewer-companion/geometry";
@@ -173,6 +175,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const hearts = createCompanionHearts(page);
     const cardPlay = createCompanionCardPlay();
     let playImpact = false, playFalling = false, panelImpact = false, mishapUntil = 0;
+    let moodPose = "", moodStarted = 0;
     const presence = createCompanionPresence(document.hasFocus(), performance.now());
     const saved = lastPose.current;
     if (!saved && !pendingPosition.current && positionMemory?.current) pendingPosition.current = positionMemory.current;
@@ -548,7 +551,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       let px = 0, py = 0;
       if (action) {
         const age = now - began, p = clamp(age / Math.max(1, total), 0, 1);
-        if (action.kind === "jump") { px = sofaPassage(p)?.horizontal ?? (travel > 0 ? clamp((age - 180) / travel, 0, 1) : travel === -2 || travel === -4 ? sampleCompanionTravel(p) : travel === -3 ? sampleCompanionTravel(clamp(p / .78, 0, 1)) : p); py = travel === -1 ? p * p : px; }
+        if (action.kind === "jump") { px = sofaPassage(p)?.horizontal ?? (travel > 0 ? clamp((age - COMPANION_TIMING.jumpAnticipation) / travel, 0, 1) : travel === -2 || travel === -4 ? sampleCompanionTravel(p) : travel === -3 ? sampleCompanionTravel(clamp(p / .78, 0, 1)) : p); py = travel === -1 ? p * p : px; }
         else if (playFalling) py = clamp(age / Math.min(650, total), 0, 1) ** 2;
         else if (action.kind === "walk") px = py = sampleCompanionTravel(p);
         else if (action.kind === "heart" || action.kind === "hide") px = py = sampleCompanionTravel(clamp(age / Math.max(1, travel), 0, 1));
@@ -631,7 +634,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const guest = isDetailGuest();
       petStarted = performance.now();
       if (!guest) { pendingMonth = false; awaitingAtX = false; afterPetLanding = !supportedNow(); restAfterLanding = false; clearAction(); }
-      petUntil = performance.now() + (reduced ? 650 : 1500);
+      petUntil = performance.now() + (reduced ? 650 : COMPANION_TIMING.petReward);
       brain.current = recordCompanionEvent(brain.current, "petted");
       // One acknowledged gesture/reward, never a pose or pointer sample.
       logActivity("ui.click", { target: "companion-pet" });
@@ -690,7 +693,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (result.reward) affection();
       hoverPetting = true; petUntil = now + 650; if (isDetailGuest()) wakeGuest(); else nextDecision = petUntil + 500;
       data("petting", "hover");
-      paint(9, reduced ? 0 : ((now - hoverStarted) % 950) / 950 * 15, "petted");
+      paint(9, reduced ? 0 : ((now - hoverStarted) % COMPANION_TIMING.petLoop) / COMPANION_TIMING.petLoop * 15, "petted");
     };
     const leave = (event: PointerEvent) => {
       // pointerleave precedes the next document move. Yield to its real
@@ -735,6 +738,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const launch = (next: CompanionAction, now: number) => {
       clearAction(); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
+      if (next.kind === "play" && next.play) {
+        // Decode just the contact and expression packets ahead of their beat.
+        // Keep the existing bounded cache; never warm the entire pose library.
+        for (const row of new Set([sampleCompanionPlay(next.play, 0).row, sampleCompanionPlay(next.play, .5).row])) spriteSources[row].forEach(src => requestSprite.current(src));
+      }
       if (next.kind === "play" && next.play?.startsWith("bonk-") && !supportedNow()) {
         // A tap during landing still has the requested immediate expression.
         // Its feet finish falling onto the first real lower support, rather
@@ -759,7 +767,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (next.kind === "jump") {
         const g = 1100, impulse = Math.sqrt(2 * g * (next.jumpHeight ?? 140)), dy = next.target.y - y;
         travel = (impulse + Math.sqrt(Math.max(0, impulse * impulse + 2 * g * dy))) / g * 1000;
-        total = 180 + travel + 260;
+        total = COMPANION_TIMING.jumpAnticipation + travel + COMPANION_TIMING.jumpLanding;
       }
     };
     const tick = (now: number) => {
@@ -803,7 +811,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const hide = hideSeek.sample(presentationNow), held = Boolean(overlayDrag?.guest?.dragged || guestKeyboardHeld);
         if (now >= petUntil && hoverPetting) { hoverPetting = false; petting.reset(); if (hoverPoint) data("petting", "ready"); }
         const happy = now < petUntil;
-        paint(held ? 8 : happy ? 9 : hide.phase === "found" ? 15 : 9, held ? 0 : happy ? reduced ? 0 : ((now - petStarted) % 950) / 950 * 15 : hide.phase === "found" ? hide.progress * 15 : 0, held ? "held" : happy ? "petted" : hide.phase === "found" ? "found" : "watch");
+        paint(held ? 8 : happy ? 9 : hide.phase === "found" ? 15 : 9, held ? 0 : happy ? reduced ? 0 : ((now - petStarted) % COMPANION_TIMING.petLoop) / COMPANION_TIMING.petLoop * 15 : hide.phase === "found" ? hide.progress * 15 : 0, held ? "held" : happy ? "petted" : hide.phase === "found" ? "found" : "watch");
         lastNeeds = lastCare = now;
         if (guestBusy(now)) schedule();
         return;
@@ -843,7 +851,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         data("returning", sample.phase);
         el.removeAttribute("data-dreaming");
         if (!sample.done) {
-          paint(sample.phase === "wake" ? 12 : sample.phase === "settle" ? 6 : 0, sample.phase === "wake" ? clamp(presence.elapsed(now) / 800, 0, 1) * 15 : sample.phase === "settle" ? 15 : 0, sample.phase === "wake" ? "wake" : sample.phase === "settle" ? "land" : "return");
+          paint(sample.phase === "wake" ? 12 : sample.phase === "settle" ? 6 : 0, sample.phase === "wake" ? clamp(presence.elapsed(now) / COMPANION_TIMING.presenceWake, 0, 1) * 15 : sample.phase === "settle" ? 15 : 0, sample.phase === "wake" ? "wake" : sample.phase === "settle" ? "land" : "return");
           schedule(); return;
         }
         if (sample.expired) awaitingAtX = true;
@@ -861,7 +869,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       if (!action && !pressed && !keyboardHeld && !placing && ["resting", "yawning", "parked", "waking"].includes(phase)) {
         const elapsed = presence.elapsed(now);
-        if (overlayActive || supportedNow()) paint(phase === "yawning" ? 10 : phase === "parked" ? 11 : phase === "waking" ? 12 : 0, (elapsed / (phase === "waking" ? 800 : 900)) * 15, phase === "parked" ? "sleep" : phase === "waking" ? "wake" : phase === "yawning" ? "yawn" : "idle");
+        if (overlayActive || supportedNow()) paint(phase === "yawning" ? 10 : phase === "parked" ? 11 : phase === "waking" ? 12 : 0, (elapsed / (phase === "waking" ? COMPANION_TIMING.presenceWake : COMPANION_TIMING.presenceYawn)) * 15, phase === "parked" ? "sleep" : phase === "waking" ? "wake" : phase === "yawning" ? "yawn" : "idle");
         else { stopHover(); el.hidden = true; }
         if (phase === "parked") {
           resetInertia();
@@ -887,7 +895,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (effect.current) effect.current.textContent = "";
         // Authored happy poses and a small contact lean, independent of world
         // coordinates. A hover gesture never moves the support or captures it.
-        paint(9, reduced ? 0 : ((now - petStarted) % 950) / 950 * 15, "petted"); schedule(); return;
+        paint(9, reduced ? 0 : ((now - petStarted) % COMPANION_TIMING.petLoop) / COMPANION_TIMING.petLoop * 15, "petted"); schedule(); return;
       }
       if (hoverPetting) { hoverPetting = false; if (hoverPoint) data("petting", "ready"); else el.removeAttribute("data-petting"); petting.reset(); }
       if (el.dataset.state === "petted" && effect.current) effect.current.textContent = "";
@@ -924,23 +932,24 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           else if (travel === -3) { const progress = clamp(p / .78, 0, 1), eased = sampleCompanionTravel(progress), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 10, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(progress * Math.PI) * lift; row = p < .78 ? 5 : 6; frame = (p < .78 ? progress : (p - .78) / .22) * 15; }
           else if (travel === -4) { const eased = sampleCompanionTravel(p); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased); row = p < .8 ? 5 : 6; frame = p * 15; }
           else if (travel === -1) { x = lerp(origin.x, action.target.x, p); y = lerp(origin.y, action.target.y, p * p); row = p < .8 ? 5 : 6; frame = (p < .8 ? p / .8 : (p - .8) / .2) * 15; }
-          else if (age < 180) { row = 3; frame = age / 180 * 15; }
-          else if (age < 180 + travel) {
-            const t = (age - 180) / 1000, progress = clamp((age - 180) / travel, 0, 1);
+          else if (age < COMPANION_TIMING.jumpAnticipation) { row = 3; frame = age / COMPANION_TIMING.jumpAnticipation * 15; }
+          else if (age < COMPANION_TIMING.jumpAnticipation + travel) {
+            const t = (age - COMPANION_TIMING.jumpAnticipation) / 1000, progress = clamp((age - COMPANION_TIMING.jumpAnticipation) / travel, 0, 1);
             const arc = boundCompanionBallisticArc(origin.y, action.target.y, .5 * 1100 * (travel / 1000) ** 2, size + 8);
             x = lerp(origin.x, action.target.x, progress); y = lerp(origin.y, action.target.y, progress) - arc.coefficient * progress * (1 - progress);
             const apex = arc.apexProgress * travel / 1000;
             row = t < apex ? 4 : 5; frame = (t < apex ? t / Math.max(.001, apex) : (t - apex) / Math.max(.001, travel / 1000 - apex)) * 15;
-          } else { x = action.target.x; y = action.target.y; row = 6; frame = (age - 180 - travel) / 260 * 15; }
+          } else { x = action.target.x; y = action.target.y; row = 6; frame = (age - COMPANION_TIMING.jumpAnticipation - travel) / COMPANION_TIMING.jumpLanding * 15; }
         } else if (action.kind === "sleep") {
-          sleeping = true; row = age < 1000 ? 10 : total - age < 1100 ? 12 : 11;
-          frame = row === 10 ? age / 1000 * 15 : row === 12 ? (age - total + 1100) / 1100 * 15 : 0;
+          sleeping = true; row = age < COMPANION_TIMING.sleepYawn ? 10 : total - age < COMPANION_TIMING.sleepWake ? 12 : 11;
+          frame = row === 10 ? age / COMPANION_TIMING.sleepYawn * 15 : row === 12 ? (age - total + COMPANION_TIMING.sleepWake) / COMPANION_TIMING.sleepWake * 15 : 0;
           el.toggleAttribute("data-dreaming", row === 11);
         } else if (action.kind === "heart") {
           if (age < travel) { x = lerp(origin.x, action.target.x, sampleCompanionTravel(age / Math.max(1, travel))); row = 2; }
           else {
             const t = (age - travel) / action.duration; row = 13; frame = t * 15;
-            y = origin.y + Math.max(0, Math.sin(t * Math.PI * 2)) * (reduced ? 0 : 18);
+            const heartLift = boundCompanionSineArc(origin.y, origin.y, reduced ? 0 : 18, size + 8);
+            y = origin.y - Math.sin(clamp(t / .42, 0, 1) * Math.PI) * heartLift;
             if (t >= .25 && heartResult === null) {
               heartResult = !overlayActive && !workspaceBusyRef.current && action.effectPoint ? hearts.attemptAt(action.effectPoint) : "missing";
               if (heartResult === "blocked") brain.current = recordCompanionEvent(brain.current, "heart-blocked");
@@ -977,11 +986,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             if (fall >= 1) { playFalling = false; support = action.target.platformId ?? support; }
           }
           data("play", action.play); data("playBeat", play.beat);
-          if (!playImpact && p >= .12 && ["tumble", "bump", "slip"].includes(action.play)) {
+          if (!playImpact && age >= Math.min(90, total * .05) && ["tumble", "bump", "slip"].includes(action.play)) {
             playImpact = true; mishapUntil = now + 6500;
             if (!workspaceBusyRef.current && !reduced && gfxMode() !== "off" && !isHomeSupport(support)) {
               const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
-              if (node && collectCompanionHideTargets(page).some(target => target.element === node)) cardPlay.bump(node, paintedFacing);
+              if (preferences.cardPrank && node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node)) cardPlay.bump(node, paintedFacing);
               food.current?.jostle({ x, y }, 100);
             }
           }
@@ -989,6 +998,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         else if (action.kind === "stretch") { row = 16; frame = p * 15; }
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
         if (p >= 1) {
+          const completed = action, completedTravel = travel, completedOrigin = origin;
           const rested = sleeping, ejected = Boolean(homeDeparture?.flying);
           const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump"));
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
@@ -996,17 +1006,44 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             petUntil = now + (reduced ? 400 : 1100);
           }
           if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
+          let arrivalPlay: CompanionAction["play"] = undefined;
+          if ((completed.kind === "walk" || completed.kind === "jump") && !completed.foodId && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
+            const landing = supportById(support);
+            const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
+            const ordinary = Boolean(node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node));
+            const cardBounds = ordinary ? node!.getBoundingClientRect() : undefined;
+            arrivalPlay = getCompanionArrivalPlay({
+              kind: completed.kind, pace: completed.pace,
+              distanceCSS: Math.hypot(x - completedOrigin.x, y - completedOrigin.y),
+              natural: completed.kind === "walk" || completedTravel > 0,
+              ordinaryCard: ordinary && landing?.kind === "card", width: landing?.width ?? 0,
+              // Safe centre spans are not the card's physical edge. Contact
+              // uses its actual ink box; the span still bounds all movement.
+              edgeClearance: cardBounds ? Math.max(0, Math.min(x - cardBounds.left, cardBounds.right - x)) : 0,
+              energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.play ?? -Infinity) <= now,
+              stable: Boolean(landing && Math.abs(y - landing.y) <= 2 && !isHomeSupport(support))
+            }, preferences) ?? undefined;
+          }
           clearAction();
           if (ejected && presence.phase === "parked") { row = 11; frame = 0; status = "sleep"; el.dataset.dreaming = ""; offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
           if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (continueRoute ? 0 : 220);
           if (restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
+          if (arrivalPlay) {
+            // The actual completed run/landing owns this one contact. Start
+            // its reaction now rather than pausing for another random choice.
+            launch({ kind: "play", play: arrivalPlay, target: { x, y, platformId: support }, duration: companionPlayDuration(arrivalPlay), direction: completed.direction }, now);
+            const contact = sampleCompanionPlay(arrivalPlay, 0);
+            row = contact.row; frame = 0; status = "play";
+            data("play", arrivalPlay); data("playBeat", contact.beat);
+          }
         }
       }
       const mood = getCompanionMood(brain.current);
+      if (mood !== moodPose) { moodPose = mood; moodStarted = presentationNow; }
       if (mood === "disappointed" || mood === "sulky") {
         const moodRow = mood === "sulky" ? 19 : 18;
         spriteSources[moodRow].forEach(src => requestSprite.current(src));
-        if (["idle", "look"].includes(status)) { row = moodRow; frame = reduced ? 0 : presentationNow % 1800 / 1800 * 15; }
+        if (["idle", "look"].includes(status)) { row = moodRow; frame = reduced ? 0 : clamp((presentationNow - moodStarted) / (COMPANION_CLIP_TIMING[moodRow].duration ?? 1400), 0, 1) * 15; }
       }
       data("mood", mood);
       paint(row, frame, status); schedule();
@@ -1496,7 +1533,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const reaction = preferences.petting ? companionTapReaction({ elapsed: performance.now() - held.at, moved: Math.hypot(event.clientX - held.x, event.clientY - held.y), cancelled: held.cancelled, recentMishap: performance.now() < mishapUntil }) : null;
         if (reaction) {
           petUntil = 0; const now = performance.now();
-          launch({ kind: "play", play: reaction, target: { x, y, platformId: support }, duration: reduced ? 900 : 3200 }, now);
+          launch({ kind: "play", play: reaction, target: { x, y, platformId: support }, duration: companionPlayDuration(reaction, reduced) }, now);
           data("play", reaction); paint(25, 0, "play");
           logActivity("ui.click", { target: "companion-bonk" });
           setAnnouncement(reaction === "bonk-sad" ? "빅타민이 눈치를 보며 잠깐 시무룩해져요." : "깜짝 놀란 빅타민의 눈가가 잠깐 촉촉해져요. 쓰다듬어 달래 줄 수 있어요.");

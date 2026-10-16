@@ -143,7 +143,7 @@ for (const surface of ["viewer", "studio"] as const) {
     const panel = dialog.locator("#rhh-tab-companion-panel");
     const master = panel.locator('[data-act="companion-enabled"]');
     await master.click(); await expect(master).not.toBeChecked(); await master.click(); await expect(master).toBeChecked();
-    for (const [tab, id] of [["움직임", "companion-roam"], ["장난", "companion-panel-prank"], ["교감", "companion-petting-enabled"]]) {
+    for (const [tab, id] of [["움직임", "companion-roam"], ["장난", "companion-panel-prank"], ["장난", "companion-card-prank"], ["교감", "companion-petting-enabled"]]) {
       await panel.getByRole("tab", { name: tab, exact: true }).click();
       const toggle = panel.locator(`[data-act="${id}"]`); const checked = await toggle.isChecked();
       await toggle.click(); await expect(toggle).toBeChecked({ checked: !checked }); await toggle.click(); await expect(toggle).toBeChecked({ checked });
@@ -154,7 +154,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await panel.getByRole("tab", { name: "움직임", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
     await flush(page, [{ target: "companion-speed#lively" }]);
-    for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-petting-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
+    for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-petting-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
     for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", "companion-speed#lively"]) expect(count(page, target), target).toBe(1);
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual([]);
   });
