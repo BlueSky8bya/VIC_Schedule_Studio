@@ -8,6 +8,7 @@ import { MAX_COMPANION_FOOD } from "./food-capacity";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionAttention } from "./deliberation";
 import { advanceCompanionHabits, DEFAULT_COMPANION_HABITS, type CompanionHabits } from "./habits";
+import { createCompanionContext, planCompanionEpisode, type CompanionEpisode } from "./episodes";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -32,7 +33,7 @@ export type CompanionBehaviorPreferences = CompanionPreferences;
 export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: CompanionFoodKind };
 export type Food = CompanionFood;
 export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake" | "play" | "panel";
-export type CompanionPlay = "tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow" | "dizzy";
+export type CompanionPlay = "tumble" | "slip-tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow" | "dizzy";
 export type CompanionAction = {
   kind: CompanionActionKind;
   target: { x: number; y: number; platformId?: string };
@@ -48,6 +49,11 @@ export type CompanionAction = {
   jumpHeight?: number;
   /** CSS pixels/second carried only from a completed run into its proved jump. */
   runUp?: number;
+  /** Actual support-bounded drift during a contextual rolling beat. */
+  rolling?: boolean;
+  episode?: CompanionEpisode;
+  /** A scene owner revoked future beats while this finite movement finishes. */
+  episodeCancelled?: boolean;
   /** Retained wander heading, not an instruction to mirror the renderer. */
   direction?: -1 | 1;
   intention?: CompanionIntention;
@@ -62,6 +68,8 @@ export type CompanionWorld = {
   width: number;
   height: number;
   paused?: boolean;
+  /** Supplied only by an active animated renderer; pure route callers stay pure. */
+  animated?: boolean;
   /** Renderer proved an ordinary public card at the occupied support. */
   hideAvailable?: boolean;
   foods?: readonly CompanionFood[];
@@ -72,7 +80,8 @@ export type CompanionBrain = CompanionCare & {
   createdAt: number;
   recent: CompanionActionKind[];
   visited: string[];
-  cooldowns: Partial<Record<CompanionActionKind, number>> & { mishap?: number };
+  cooldowns: Partial<Record<CompanionActionKind, number>> & { mishap?: number; episode?: number };
+  episode?: CompanionEpisode;
   heading: -1 | 1;
   activeMs: number;
   affect: CompanionAffect;
@@ -223,14 +232,14 @@ export type CompanionEvent = "petted" | "dragged" | "landed" | "rested" | "woke"
 export function getCompanionMood(brain: CompanionBrain) { return companionMood(brain.affect ?? createCompanionAffect()); }
 export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEvent): CompanionBrain {
   if (event === "ate" && brain.hunger < COMPANION_FULL_THRESHOLD) return { ...brain };
-  if (event === "woke") return { ...brain, curiosity: unit(brain.curiosity + .05) };
+  if (event === "woke") return { ...brain, curiosity: unit(brain.curiosity + .05), episode: createCompanionContext("wake") };
   if (event === "landed") return { ...brain, energy: unit(brain.energy - .008) };
   const state = { ...brain, affect: appraiseCompanionEvent(brain.affect ?? createCompanionAffect(), event === "dragged" ? "handled" : event) };
-  if (event === "ate") return { ...state, hunger: unit(brain.hunger - .36), affection: unit(brain.affection + .1), energy: unit(brain.energy + .07), curiosity: unit(brain.curiosity - .04), intention: undefined, foodGoal: undefined, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "completed" }], brain.activeMs) : brain.places };
-  if (event === "petted") return { ...state, affection: unit(brain.affection + .08), energy: unit(brain.energy + .015), curiosity: unit(brain.curiosity - .025) };
-  if (event === "dragged" || event === "handled") return { ...state, curiosity: unit(brain.curiosity + .08), intention: undefined };
-  if (event === "rested") return { ...state, energy: unit(brain.energy + .24), curiosity: unit(brain.curiosity + .08), intention: undefined };
-  if (event === "food-lost") return { ...state, intention: brain.intention?.kind === "feed" ? undefined : brain.intention, foodGoal: undefined, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "lost" }], brain.activeMs) : brain.places };
+  if (event === "ate") return { ...state, hunger: unit(brain.hunger - .36), affection: unit(brain.affection + .1), energy: unit(brain.energy + .07), curiosity: unit(brain.curiosity - .04), intention: undefined, foodGoal: undefined, episode: brain.episode?.kind === "meal" && brain.episode.phase === "meal" ? { ...brain.episode, phase: "ate" } : { kind: "meal", phase: "ate", variant: "careful", remaining: 1, foodId: brain.foodGoal?.foodId ?? brain.intention?.foodId, mishapUsed: true, legs: 0 }, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "completed" }], brain.activeMs) : brain.places };
+  if (event === "petted") return { ...state, affection: unit(brain.affection + .08), energy: unit(brain.energy + .015), curiosity: unit(brain.curiosity - .025), episode: createCompanionContext("social") };
+  if (event === "dragged" || event === "handled") return { ...state, curiosity: unit(brain.curiosity + .08), intention: undefined, episode: undefined };
+  if (event === "rested") return { ...state, energy: unit(brain.energy + .24), curiosity: unit(brain.curiosity + .08), intention: undefined, episode: createCompanionContext("wake") };
+  if (event === "food-lost") return { ...state, intention: brain.intention?.kind === "feed" ? undefined : brain.intention, foodGoal: undefined, episode: brain.episode?.kind === "meal" ? undefined : brain.episode, places: brain.intention?.kind === "feed" ? rememberCompanionOutcomes(brain.places, [{ targetId: brain.intention.targetId, result: "lost" }], brain.activeMs) : brain.places };
   if (event === "heart-blocked") return state;
   return state;
 }
@@ -242,7 +251,7 @@ const cooldownMs: Record<CompanionActionKind, number> = {
 /** Commit once when an action begins, not every animation frame. */
 export function commitAction(brain: CompanionBrain, action: CompanionAction, now: number): CompanionBrain {
   const moving = action.kind === "jump" || action.kind === "walk";
-  const mishap = action.kind === "play" && (action.play === "tumble" || action.play === "bump" || action.play === "slip");
+  const mishap = action.kind === "play" && (action.play === "tumble" || action.play === "slip-tumble" || action.play === "bump" || action.play === "slip");
   const novel = Boolean(action.target.platformId && !brain.visited.includes(action.target.platformId));
   const remaining = action.foodId && action.intention?.kind === "feed" ? Math.max(0, Math.min(COMPANION_FEED_ACTION_BUDGET, action.intention.remaining) - 1) : undefined;
   return {
@@ -254,9 +263,10 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
     heading: action.direction ?? brain.heading,
     movementMs: moving ? Math.min(12000, (brain.movementMs ?? 0) + Math.max(0, action.duration)) : 0,
     lastPace: moving ? action.pace ?? brain.lastPace : undefined,
+    episode: action.episode ? { ...action.episode, remaining: Math.max(0, Math.min(24, action.episode.remaining) - 1) } : undefined,
     recent: [...brain.recent, action.kind].slice(-8),
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
-    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]), ...(mishap ? { mishap: now + action.duration + cooldownMs.play } : {}) },
+    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]), ...(mishap ? { mishap: now + action.duration + cooldownMs.play } : {}), ...(action.episode?.phase === "notice" ? { episode: now + 45000 } : {}) },
     intention: action.intention ? { ...action.intention, remaining: Math.max(0, action.intention.remaining - 1) } : undefined,
     foodGoal: action.foodId && remaining !== undefined ? { foodId: action.foodId, remaining, retryAfter: remaining === 0 ? (brain.activeMs ?? 0) + COMPANION_FEED_RETRY_MS : 0 } : brain.foodGoal,
     places: rememberCompanionOutcomes(brain.places ?? [], action.outcomes ?? [], brain.activeMs ?? 0),
@@ -304,6 +314,8 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const idle: CompanionAction = { kind: "idle", target: stationary, duration: 900 };
   if (!prefs.enabled || world.paused || !Number.isFinite(world.x) || !Number.isFinite(world.y) || !Number.isFinite(now)) return idle;
   const foodAction = getFoodAction(brain, world, prefs, now);
+  const episode = planCompanionEpisode(brain, world, prefs, now, foodAction, rng, reachablePlatforms);
+  if (episode) return episode;
   if (foodAction) return foodAction;
   const profile = getCompanionBehaviorProfile(prefs, brain.habits);
   const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);

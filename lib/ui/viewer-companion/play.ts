@@ -18,17 +18,20 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
     const elapsed = Math.max(0, age - entered), local = clamp(elapsed / stage.duration);
     const phase = stage.cycles ? local * stage.cycles % 1 : local;
     if (stage.beat === "recover") {
-      if (kind === "dizzy") {
+      if (kind === "dizzy" || kind === "tumble" || kind === "slip-tumble") {
         // Three brisk head shakes fit inside the first520ms. A smooth envelope
         // starts and ends at rest; the eyes open afterward on the same support.
-        const shake = clamp(local / .65), envelope = Math.sin(shake * Math.PI) ** 2;
+        const shake = clamp(elapsed / 520), envelope = Math.sin(shake * Math.PI) ** 2;
         const lean = Math.sin(shake * Math.PI * 6) * 8 * envelope;
         const compression = .026 * envelope;
-        return result(stage.row, local < .7 ? 0 : 1, stage.beat, 0, lean, 0, compression);
+        return result(stage.row, elapsed < 560 ? 0 : 1, stage.beat, 0, lean, 0, compression);
       }
       return result(stage.row, phase, stage.beat);
     }
-    if (stage.beat === "impact") return result(stage.row, phase, stage.beat, -Math.sin(local * Math.PI) * (kind === "tumble" ? 5 : 3), 0, kind === "tumble" ? Math.sin(local * Math.PI) ** 2 * 22 : 0);
+    if (stage.beat === "impact") {
+      const rolling = stage.row === rows.tumble;
+      return result(stage.row, phase, stage.beat, -Math.sin(local * Math.PI) * (rolling ? 5 : 3), 0, rolling ? Math.sin(local * Math.PI) ** 2 * 22 : 0);
+    }
     if (stage.beat === "dizzy") return result(stage.row, phase, stage.beat, 0, Math.sin(local * Math.PI * 2) * 3 * (kind === "dizzy" ? (1 - local) ** 2 : 1));
     if (stage.row === rows.tears || stage.row === rows.sulk) {
       // Reach the readable expression in180ms; keep its terminal key while a

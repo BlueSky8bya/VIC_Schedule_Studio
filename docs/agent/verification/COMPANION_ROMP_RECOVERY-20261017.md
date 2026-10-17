@@ -59,4 +59,8 @@
 
 ## 배포와 한계
 
-관련 소스와 검증 기록만 commit/push한 뒤 원격 quality·Vercel·실제 운영 전체 SHA와 경계를 확인할 예정이다. 아직 배포 완료로 기록하지 않는다. 실제 OBS/OS·모든 장치/기하/난수 순열·실제 역할/RLS·상시 확률 보장을 증명하는 검사는 아니다. 기존 Vercel Hobby 초과와 별도 운영 검증은 미결로 둔다.
+관련15파일만86c6489ab671039fb9d89552d4600b098121e1d9로 commit/main push했다. 사용자 아트/.vscode/기존 미추적 작업은 제외했고 staged secret6종0·whitespace PASS였다. [Remote quality39030130301](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39030130301)은 해당 전체 SHA로 모든 단계(잠금 의존성·unit·격리 SQL 계약·harness·production build·생성 경로 typecheck·lint·post 포함) success, Vercel6NeqV9pGsNqdDNo7Y42Pffs1Re6x success였다.
+
+2026-10-17 20:51:45 KST 운영 canary에서 전체 SHA exact·clock200 no-store·warm204·anonymous developer401 no-store/error-only·fixture HTTP200의 streaming404 비노출을 확인했다. 실제 로그인된 developer studio에서는 버전86c6489와 한 개체 visible/decoded·hidden/placement false를 읽기 확인했다. 실제 반복 흔들기/달리기/구르기/음식·도약은 production-build fixture/원본 감사 증거이며 운영에서 스케줄이나 설정을 변경하지 않았다. 자체 fixture server/runner는 종료했다. 로컬 `.scratch-pw/companion-092/`에 remote-run-final/remote-jobs/remote-status/deployed-canaries/deployed-ui/staged-files/source-equivalence와 감사 metrics를 보존한다. 배포 후 결과 메타데이터는 로컬만 갱신해 문서만을 위한 추가 배포를 만들지 않는다.
+
+실제 OBS/OS·모든 장치/기하/난수 순열·실제 역할/RLS·상시 확률 보장을 증명하는 검사는 아니다. 기존 Vercel Hobby 초과와 별도 운영 검증은 미결로 둔다.

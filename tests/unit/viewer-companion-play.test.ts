@@ -4,22 +4,47 @@ import type { CompanionPlay } from "@/lib/ui/viewer-companion/brain";
 import { companionPlayDuration, COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 describe("finite authored companion play", () => {
-  const kinds: CompanionPlay[] = ["tumble", "bump", "slip", "bonk-sad", "bonk-tears", "celebrate", "groom", "pounce", "bow", "dizzy"];
+  const kinds: CompanionPlay[] = ["tumble", "slip-tumble", "bump", "slip", "bonk-sad", "bonk-tears", "celebrate", "groom", "pounce", "bow", "dizzy"];
+  const shakeRecoveries: { kind: CompanionPlay; start: number; duration: number }[] = [
+    { kind: "dizzy", start: 520, duration: 1320 },
+    { kind: "tumble", start: 1360, duration: 2160 },
+    { kind: "slip-tumble", start: 1420, duration: 2220 },
+  ];
+  const shakesHead = (kind: CompanionPlay) => shakeRecoveries.some(recovery => recovery.kind === kind);
+  it("checks every authored play kind instead of silently skipping a new finite clip", () => {
+    expect(new Set(kinds)).toEqual(new Set(Object.keys(COMPANION_PLAY_TIMING)));
+  });
   it.each(kinds)("%s terminates, preserves its support and returns upright", kind => {
     for (let i = 0; i <= 100; i++) {
       const pose = sampleCompanionPlay(kind, i / 100);
       expect(pose.row).toBeGreaterThanOrEqual(20); expect(pose.row).toBeLessThanOrEqual(31);
       expect(pose.phase).toBeGreaterThanOrEqual(0); expect(pose.phase).toBeLessThanOrEqual(1);
-      const maxLean = kind === "dizzy" && pose.beat === "recover" ? 8 : 3;
+      const maxLean = shakesHead(kind) && pose.beat === "recover" ? 8 : 3;
       expect(Math.abs(pose.lift)).toBeLessThanOrEqual(9); expect(Math.abs(pose.lean)).toBeLessThanOrEqual(maxLean);
     }
-    expect(sampleCompanionPlay(kind, 1)).toMatchObject({ row: 23, phase: 1, lift: 0, lean: 0 });
+    expect(sampleCompanionPlay(kind, 1)).toEqual({ row: 23, phase: 1, beat: "recover", lift: 0, lean: 0, shift: 0, compression: 0 });
   });
   it("tumbles through genuine back poses, dizzy, glances, then recovery", () => {
     const duration = companionPlayDuration("tumble");
     expect([100, 700, 1000, 1600].map(ms => sampleCompanionPlay("tumble", ms / duration).row)).toEqual([21, 22, 26, 23]);
     expect(sampleCompanionPlay("bonk-sad", .5).row).toBe(28);
     expect(sampleCompanionPlay("bonk-tears", .5).row).toBe(27);
+  });
+  it("slips before two actual roll cycles, then gets dizzy, checks and recovers", () => {
+    const duration = companionPlayDuration("slip-tumble");
+    expect(duration).toBe(2220);
+    const samples = [0, 179.99, 180, 799.99, 800, 1099.99, 1100, 1419.99, 1420, 2219.99];
+    expect(samples.map(ms => sampleCompanionPlay("slip-tumble", ms / duration).row)).toEqual([24, 24, 21, 21, 22, 22, 26, 26, 23, 23]);
+    for (const ms of [335, 645]) expect(sampleCompanionPlay("slip-tumble", ms / duration).phase).toBeCloseTo(.5);
+    expect(sampleCompanionPlay("slip-tumble", 489.9 / duration).phase).toBeGreaterThan(.99);
+    expect(sampleCompanionPlay("slip-tumble", 490.1 / duration).phase).toBeLessThan(.01);
+  });
+  it("shifts only the rolling body while the preceding slip stays on its support", () => {
+    expect(sampleCompanionPlay("slip-tumble", 90 / 2220)).toMatchObject({ row: 24, beat: "impact", lift: -3, lean: 0, shift: 0 });
+    expect(sampleCompanionPlay("slip-tumble", 490 / 2220)).toMatchObject({ row: 21, beat: "impact", lift: -5, lean: 0, shift: 22 });
+    expect(sampleCompanionPlay("tumble", 310 / 2160).shift).toBe(22);
+    expect(sampleCompanionPlay("slip", 110 / companionPlayDuration("slip")).shift).toBe(0);
+    expect(sampleCompanionPlay("bump", 60 / companionPlayDuration("bump")).shift).toBe(0);
   });
   it("acknowledges a bonk within110ms, settles the teary face within280ms and recovers by1.28s", () => {
     const duration = companionPlayDuration("bonk-tears");
@@ -45,9 +70,9 @@ describe("finite authored companion play", () => {
     expect(sampleCompanionPlay("dizzy", 519 / duration)).toMatchObject({ row: 22, beat: "dizzy", lift: 0, shift: 0 });
     expect(sampleCompanionPlay("dizzy", 520 / duration)).toMatchObject({ row: 23, beat: "recover", lift: 0, lean: 0, shift: 0, compression: 0 });
   });
-  it("shakes its head briskly three times before opening its eyes on the same support", () => {
-    const duration = companionPlayDuration("dizzy");
-    const poses = Array.from({ length: 161 }, (_, i) => sampleCompanionPlay("dizzy", (520 + i * 5) / duration));
+  it.each(shakeRecoveries)("$kind shakes its head briskly three times before opening its eyes on the same support", ({ kind, start, duration }) => {
+    expect(companionPlayDuration(kind)).toBe(duration);
+    const poses = Array.from({ length: 161 }, (_, i) => sampleCompanionPlay(kind, (start + i * 5) / duration));
     expect(new Set(poses.map(pose => pose.lean.toFixed(3))).size).toBeGreaterThan(80);
     expect(new Set(poses.map(pose => pose.phase))).toEqual(new Set([0, 1]));
     for (let i = 0; i < poses.length; i++) {
@@ -72,10 +97,14 @@ describe("finite authored companion play", () => {
       expect(Math.sign(peak.lean)).toBe(i % 2 ? -1 : 1);
       if (i) expect(peak.elapsed - extrema[i - 1].elapsed).toBeLessThan(105);
     });
-    for (const ms of [519.99, 520, 520.01, 1039.99, 1040, 1040.01, 1319.99, 1320]) {
-      const pose = sampleCompanionPlay("dizzy", ms / duration);
+    expect(Math.abs(extrema[0].lean)).toBeLessThan(Math.abs(extrema[2].lean));
+    expect(Math.abs(extrema[5].lean)).toBeLessThan(Math.abs(extrema[3].lean));
+    for (const elapsed of [0, .01, 519.99, 520, 520.01, 559.99, 560, 560.01, 799.99, 800]) {
+      const pose = sampleCompanionPlay(kind, (start + elapsed) / duration);
       expect(Math.abs(pose.lean)).toBeLessThan(.001); expect(pose.compression).toBeLessThan(.001);
     }
+    expect(sampleCompanionPlay(kind, (start + 559.99) / duration).phase).toBe(0);
+    expect(sampleCompanionPlay(kind, (start + 560) / duration).phase).toBe(1);
     expect(poses.slice(0, 112).every(pose => pose.phase === 0)).toBe(true);
     expect(poses.slice(112).every(pose => pose.phase === 1)).toBe(true);
     expect(poses.slice(104).every(pose => Math.abs(pose.lean) < 1e-12 && pose.compression < 1e-12)).toBe(true);
@@ -83,7 +112,8 @@ describe("finite authored companion play", () => {
   it("adds no compression to other reactions or reduced motion", () => {
     for (const kind of kinds) for (const progress of [0, .2, .5, .8, 1]) {
       expect(sampleCompanionPlay(kind, progress, true).compression).toBe(0);
-      if (kind !== "dizzy") expect(sampleCompanionPlay(kind, progress).compression).toBe(0);
+      const pose = sampleCompanionPlay(kind, progress);
+      if (!shakesHead(kind) || pose.beat !== "recover") expect(pose.compression).toBe(0);
     }
   });
   it("preserves quick contact, readable expression and finite recovery independently for every gesture", () => {
@@ -94,11 +124,11 @@ describe("finite authored companion play", () => {
       expect(timing.beats.reduce((sum, beat) => sum + beat.duration, 0)).toBe(timing.duration);
       expect(timing.beats.at(-1)).toMatchObject({ row: 23, beat: "recover" });
       expect(companionPlayDuration(kind, true)).toBe(650);
-      expect(timing.duration).toBeLessThan(2000);
+      expect(timing.duration).toBeLessThan(kind === "tumble" || kind === "slip-tumble" ? 2300 : 2000);
     }
   });
   it("reduced motion has no lift/rotation or rolling", () => {
-    for (const kind of kinds) expect(sampleCompanionPlay(kind, .3, true)).toMatchObject({ lift: 0, lean: 0, beat: "recover" });
+    for (const kind of kinds) expect(sampleCompanionPlay(kind, .3, true)).toMatchObject({ lift: 0, lean: 0, shift: 0, compression: 0, beat: "recover" });
   });
   it("a deliberate short click has context; dragging/cancel/holds never bonk", () => {
     expect(companionTapReaction({ elapsed: 100, moved: 2, cancelled: false, recentMishap: false })).toBe("bonk-tears");

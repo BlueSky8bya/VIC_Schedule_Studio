@@ -38,7 +38,7 @@ export function companionAttentionPoint(attention: CompanionAttention | undefine
  * Existing goal/route code remains the authority on the following decision;
  * no candidate action or old absolute destination is queued for later. */
 export function deliberateCompanionAction(brain: CompanionBrain, world: CompanionWorld, prefs: CompanionBehaviorPreferences, candidate: CompanionAction, animated = true): CompanionAction {
-  if (!animated || !prefs.enabled || !prefs.roam || world.paused || !finitePoint(world) || candidate.attention || candidate.kind === "eat" || brain.hunger >= .85) return candidate;
+  if (!animated || !prefs.enabled || !prefs.roam || world.paused || !finitePoint(world) || candidate.episode || candidate.attention || candidate.kind === "eat" || brain.hunger >= .85) return candidate;
 
   const previous = brain.intention;
   const failedGoal = previous && (previous.stage === "consider" || previous.stage === "travel") && candidate.outcomes?.some(outcome => outcome.targetId === previous.targetId && (outcome.result === "lost" || outcome.result === "blocked"));

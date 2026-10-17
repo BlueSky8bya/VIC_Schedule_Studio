@@ -1,6 +1,6 @@
 # 빅타민 빠른 정신 차리기와 달리기·넘어짐 다양화
 
-Status: Local verification complete; release pending.
+Status: Complete; deployed86c6489a verified.
 
 소유자 후속: 회복할 때 고개를 힘차게 좌우로 빠르게 털고, 짧게만 달리는 패턴을 다양화하며 구르기/음식 걸림이 실제 행동으로 나오는지 확인한다.091의 낙하 나선눈·감도·실제 지지점은 유지하고 약한 회복만 대체한다. 그림 존재와 실제 행동 연결/발동률을 구분한다.
 
@@ -12,3 +12,5 @@ Status: Local verification complete; release pending.
 시청자·편집실·미리보기·비로그인 공유 구현, 모바일 제외, 공개 DTO/역할/언락/KST/1840 기하·직렬 쓰기를 유지한다. 운영 DB 변경·새 의존성·모델/서버 요청·사용자 아트 변경은 없다. 실제 OBS 장비나 모든 장치/RLS 검증으로 확대하지 않는다.
 
 검증 방식 정정: 임의90초 안에 모든 확률적 행동이 나와야 한다는 탐색 조건은 제품 계약이 아니므로 정식 회귀에 추가하지 않는다. 같은 B3의 실제 viewer/studio 행동 원본·최근 viewer 미관찰/실패·중단된 matcher 병목·독립 원본 감사를 [검증 기록](../verification/COMPANION_ROMP_RECOVERY-20261017.md)에 구분한다. 탐색 harness/원본/실패 trace는 ignored 위치에 보존하며 seed 선정이나 성공할 때까지 반복하지 않는다. 정식 전체 unit1,966·native41·build/typecheck/lint·harness244 PASS, 최종 소스31파일 exact 일치와 교차 검토 blocking0 뒤 배포를 진행한다.
+
+Release:86c6489ab671039fb9d89552d4600b098121e1d9(main push). [Remote quality39030130301](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39030130301)의 모든 단계 success, Vercel6NeqV9pGsNqdDNo7Y42Pffs1Re6x success와 운영 전체 SHA/clock200 no-store/warm204/anonymous developer401 error-only/fixture 비노출을 확인했다. 실제 로그인된 developer studio의 버전86c6489·한 개체 visible/decoded·placement OFF도 읽기 확인했다. 실제 흔들기/음식/달리기 증거는 production-build fixture와 원본 감사이며 운영에서 행동을 재주입하지 않았다. 배포 결과 메타데이터만 로컬에 갱신해 추가 배포를 만들지 않는다. 운영 한도·실제 OBS/RLS 검증은 별도 미결이다.
