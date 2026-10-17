@@ -39,7 +39,9 @@ jobs:
         run: npm ci
 
       - name: Unit tests
-        run: npm test
+        # Several contract tests spawn real compiler/CLI child processes.
+        # Bound CPU contention without weakening their assertions or 5s limit.
+        run: npm test -- --maxWorkers=1
 
       - name: Isolated SQL contracts
         # PGlite is in-memory PostgreSQL/WASM; these scripts never read .env.
@@ -53,6 +55,10 @@ jobs:
         run: npm run harness:verify
 
       - name: Production build
+        # Fetch the real Google CSS/fonts with bounded Node connections. No
+        # font mocks, credentials, TLS bypass or production font changes.
+        env:
+          NODE_OPTIONS: --import=./scripts/ci-network-budget.mjs
         run: npm run build
 
       # Next.js owns .next/types during the build. Run tsc afterwards in this

@@ -61,3 +61,9 @@ Production audit0은 모든 개발 도구 취약점0이나 과거 침해 없음�
 커밋 대상105파일에서 사용자 art/preview/.vscode/표정 문서 포함0·제한 백업/키 포함0·비밀키 패턴0을 확인했다. 원문 snapshot의 CRLF는 해당 archive attribute로만 보존하며 일반 코드 whitespace 검사를 끄지 않았다. 권한·오류 응답·RPC 실제 계약·archive 복구와 최종 추가 공개 경로까지 독립 리뷰했고 차단 사항0. 이 정적 검사는 모든 비밀/PII 부재나 과거 보안사고 없음의 증명이 아니다.
 
 Vercel 감사 사용량 CPU6시간47분/4시간·Fluid Memory460.1/360GB-hours는 과거30일 관측이다. 배포 직후 요청 몇 개로 한도 해소/절감률을 주장하지 않는다. 새 warm은 bounded readiness이며 수집/RPC 비용은 동일 기간·분모로 후속 비교해야 한다.
+
+### 원격 CI 후속
+
+첫 원격 quality `38991999277`은 unit/SQL/harness PASS 뒤 실제 Google font fetch의 `ECONNREFUSED`로 build FAIL했다. 같은 제품의 Vercel build는 Ready였다. 다음 `38992101389`는 기존 art CLI 통합 테스트1개가5초를 넘어1893PASS/1FAIL이었다. 두 실패는 원본 로그로 보존한다. Google 동시 연결이 원인이라는 것은 아직 가설이다. Next15.5.28의 font loader는 한글 subset을 Promise.all로 받고 Node globalAgent를 사용한다.
+
+CI만 worker1개로 CPU 경쟁을 제한하고 build에 Node agent origin4/프로토콜8 연결 상한을 적용한다. assertion/5초 timeout·실제 Google CSS/woff2·TLS·운영 글꼴/앱은 그대로다. font mock·오류 무시로 gate를 통과시키지 않는다. preloader runtime 상한 검사와 scoped lint PASS; 수정한 원격 CI 결과는 이어서 기록한다.
