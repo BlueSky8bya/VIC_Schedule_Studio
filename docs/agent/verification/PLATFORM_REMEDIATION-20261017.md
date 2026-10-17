@@ -66,4 +66,6 @@ Vercel 감사 사용량 CPU6시간47분/4시간·Fluid Memory460.1/360GB-hours�
 
 첫 원격 quality `38991999277`은 unit/SQL/harness PASS 뒤 실제 Google font fetch의 `ECONNREFUSED`로 build FAIL했다. 같은 제품의 Vercel build는 Ready였다. 다음 `38992101389`는 기존 art CLI 통합 테스트1개가5초를 넘어1893PASS/1FAIL이었다. 두 실패는 원본 로그로 보존한다. Google 동시 연결이 원인이라는 것은 아직 가설이다. Next15.5.28의 font loader는 한글 subset을 Promise.all로 받고 Node globalAgent를 사용한다.
 
-CI만 worker1개로 CPU 경쟁을 제한하고 build에 Node agent origin4/프로토콜8 연결 상한을 적용한다. assertion/5초 timeout·실제 Google CSS/woff2·TLS·운영 글꼴/앱은 그대로다. font mock·오류 무시로 gate를 통과시키지 않는다. preloader runtime 상한 검사와 scoped lint PASS; 수정한 원격 CI 결과는 이어서 기록한다.
+CI만 worker1개로 CPU 경쟁을 제한하고 build에 Node agent origin4/프로토콜8 연결 상한을 적용했다. 실제 Next 자식 worker/폰트 fetch 함수로 합성32요청→동시 최대4·모두 완료·cwd/agent 상속을 독립 확인했다. 실제 Google CSS/woff2·TLS·운영 글꼴/앱은 그대로다. font mock·오류 무시로 gate를 통과시키지 않는다. 명시 proxy가 있으면 별도 ProxyAgent라 이 제한이 적용되지 않으며 실제 CI의 proxy boolean과 결과를 확인한다.
+
+worker1인 `38992566341`도 같은 이미지 검사만5.010초로 실패해 CPU 경쟁만으로 설명할 수 없었다. 첫 원격 성공은 같은 검사4.166초였다. 이 검사는6장1024px 실제 정규화·원문 byte 보존·미승인 게시 거절·tamper 검출의 통합 검사이며5초 성능 요구가 없다. 초기 “5초 유지” 시도 대신 **해당 테스트 하나만30초**로 정정했다. 전체 timeout·단언·full-size 입력·성공/실패 기준은 보존했고 split/skip/mock/이미지 축소는 하지 않았다. 독립 리뷰에서 동일 수명주기 보존과 단일 제한 조정을 확인했고 로컬 해당 suite25/25 PASS. 수정한 원격 CI 결과는 이어서 기록한다.

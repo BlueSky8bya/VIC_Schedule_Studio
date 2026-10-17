@@ -167,6 +167,9 @@ describe("art pipeline boundaries", () => {
     expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "준비", refreshPrepared: true })).toThrow(/empty, unreviewed/);
   });
 
+  // Real six-image normalization and byte/tamper checks, not a 5s performance
+  // contract. A serial Linux CI run still exceeded 5s; preserve every assertion
+  // and full-size input with a bounded image-pipeline deadline.
   it("reads migrated legacy frozen paths without rewriting request, review or reference bytes", async () => {
     const workspaceRoot = workspace();
     for (const file of ["tree-pine-1.png", "tree-pine-autumn-1.png", "tree-pine-winter-1.png"]) {
@@ -214,7 +217,7 @@ describe("art pipeline boundaries", () => {
     expect(fs.existsSync(path.join(runDir, "inputs"))).toBe(false);
     fs.appendFileSync(path.join(runDir, paths.inputPath("inputs/baseline/tree-pine-1.png")), "tampered");
     expect(() => pipeline.promoteRun({ workspaceRoot, runDir })).toThrow(/Input snapshot changed: inputs\/baseline\/tree-pine-1.png/);
-  });
+  }, 30_000);
 
   it("measures singleton candidate against same-name baseline without hiding failure", async () => {
     const workspaceRoot = workspace();
