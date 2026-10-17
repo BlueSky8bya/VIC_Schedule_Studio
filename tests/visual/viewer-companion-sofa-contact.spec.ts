@@ -214,7 +214,7 @@ test("a floor-origin held body crosses the side wall, clears the complete crest,
 });
 
 test("the studio resident exits sideways without dragging the foreground through its held body and lands on the first actual card", async ({ page }) => {
-  await ready(page, true); await recall(page); await keyboardCue(page); await startProbe(page);
+  await ready(page, true); await floorPlacement(page); await recall(page); await keyboardCue(page); await startProbe(page);
   const room = await furniture(page), drag = await capture(page);
   await drag.move({ x: room.bed.right - room.bed.width * .12, y: room.seatY - 10 }, "home-side-exit");
   await page.screenshot({ path: `.scratch-pw/${artifactPrefix}-studio-side-exit.png` });

@@ -8,7 +8,7 @@ import { MAX_COMPANION_FOOD } from "./food-capacity";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionAttention } from "./deliberation";
 import { advanceCompanionHabits, DEFAULT_COMPANION_HABITS, type CompanionHabits } from "./habits";
-import { createCompanionContext, planCompanionEpisode, type CompanionEpisode } from "./episodes";
+import { createCompanionContext, pendingCompanionMealId, planCompanionEpisode, type CompanionEpisode } from "./episodes";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -281,7 +281,9 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
     || !prefs.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return undefined;
   const supported = { x: world.x, y: world.y, platformId: world.platformId };
   const remembered = brain.foodGoal, activeMs = brain.activeMs ?? 0;
+  const mealId = world.animated && prefs.roam ? pendingCompanionMealId(brain) : undefined;
   const foods = world.foods.slice(0, MAX_COMPANION_FOOD).filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && isCompanionFoodKind(food.kind))
+    .filter(food => !mealId || food.id === mealId)
     .sort((a, b) => Number(b.id === (remembered?.foodId ?? brain.intention?.foodId)) - Number(a.id === (remembered?.foodId ?? brain.intention?.foodId)) || Math.hypot(a.x - world.x, a.y - world.y) - Math.hypot(b.x - world.x, b.y - world.y));
   for (const food of foods) {
     if (remembered?.foodId === food.id && remembered.remaining <= 0 && remembered.retryAfter > activeMs) continue;

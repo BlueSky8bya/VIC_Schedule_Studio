@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Utensils, X } from "lucide-react";
+import { Utensils, X } from "lucide-react";
 import { useId, useLayoutEffect, useRef } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
@@ -37,7 +37,7 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
   const instance = useId().replace(/:/g, ""), id = `${idPrefix}-${instance}`;
   return <svg className="vc-bed-front-art" width="180" height="100" viewBox="0 0 180 100" fill="none" aria-hidden="true" focusable="false">
     <defs><linearGradient id={`${id}-rim`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="27" y2="100"><stop stopColor="var(--vc-bed-light)" /><stop offset=".55" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></linearGradient></defs>
-    <BedFront gradientId={`${id}-rim`} clipId={`${id}-clip`} />
+    <g className="vc-sofa-feedback"><BedFront gradientId={`${id}-rim`} clipId={`${id}-clip`} /></g>
   </svg>;
 }
 
@@ -99,6 +99,7 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
             <mask id={`${bedId}-back-surface`} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="100"><path d={BED_OUTER} fill="white" /><path d={BED_SEAT} fill="black" /><path d={BED_FRONT} fill="black" /></mask>
             <mask id={`${bedId}-seat-surface`} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="100"><path d={BED_SEAT} fill="white" /><path d={BED_FRONT} fill="black" /></mask>
           </defs>
+          <g className="vc-sofa-feedback">
           <ellipse className="vc-bed-ground" cx="90" cy="89" rx="77" ry="8" />
           <path fill={`url(#${bedId}-rim)`} d={BED_OUTER} mask={`url(#${bedId}-body-surface)`} />
           <g mask={`url(#${bedId}-seat-surface)`}><ellipse fill={`url(#${bedId}-nest)`} cx="90" cy="48" rx="59" ry="27" /><ellipse className="vc-bed-centre" cx="90" cy="58" rx="51" ry="18" /></g>
@@ -108,8 +109,8 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
           {/* The full local sofa owns this cloth except while the one runtime
               portal must place it over an interior resident. */}
           <g className="vc-bed-local-front"><BedFront gradientId={`${bedId}-rim`} clipId={`${bedId}-front-clip`} /></g>
+          </g>
         </svg>
-        <span className="vc-cushion-cue" aria-hidden="true"><Home size={15} strokeWidth={1.8} /></span>
         <span className="vc-home-cushion" aria-hidden="true" />
       </button>
       {preferences.feeding ? <>

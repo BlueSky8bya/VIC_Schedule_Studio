@@ -1,5 +1,7 @@
 type Point = { x: number; y: number; at: number };
 type Stroke = { began: number };
+type Axis = { x: number; y: number };
+type Run = { fixed?: Axis; from?: Point; peak?: Point; axis?: Axis; extent: number; credited: boolean; strokes: Stroke[]; began?: number };
 export type CompanionHeldShakeSample = { active: boolean; phase: number };
 
 const GRID_MS = 16, MAX_GAP_MS = 160, WINDOW_MS = 1200, LATCH_MS = 1000;
@@ -13,54 +15,63 @@ const valid = (x: number, y: number, at: number) => [x, y, at].every(Number.isFi
  * No clock owner, DOM, persistent data or unbounded input history lives here. */
 export function createCompanionHeldShake() {
   let previous: Point | undefined, grid: Point | undefined, nextGridAt = 0;
-  let from: Point | undefined, peak: Point | undefined, axis: { x: number; y: number } | undefined;
-  let extent = 0, credited = false, strokes: Stroke[] = [], runBegan: number | undefined;
+  // The original free axis still handles straight/diagonal shakes. Fixed
+  // projections retain real reversals through circular or changing headings;
+  // perpendicular travel contributes neither distance nor speed to that axis.
+  const runs: Run[] = [undefined, { x: 1, y: 0 }, { x: 0, y: 1 }].map(fixed => ({ fixed, extent: 0, credited: false, strokes: [] }));
   let latchedAt: number | undefined, expiresAt = 0, consumed = false;
   const clearRun = () => {
-    from = peak = axis = undefined; extent = 0; credited = false; strokes = []; runBegan = undefined;
+    for (const run of runs) { run.from = run.peak = run.axis = undefined; run.extent = 0; run.credited = false; run.strokes = []; run.began = undefined; }
   };
   const clearEvidence = () => { clearRun(); latchedAt = undefined; expiresAt = 0; };
   const seed = (point: Point) => {
-    previous = grid = from = peak = point; nextGridAt = point.at + GRID_MS;
+    previous = grid = point; nextGridAt = point.at + GRID_MS;
+    for (const run of runs) run.from = run.peak = point;
   };
-  const qualifies = () => Boolean(from && peak && extent >= MIN_STROKE
-    && peak.at > from.at && extent / (peak.at - from.at) >= MIN_SPEED);
-  const observe = (point: Point) => {
+  const qualifies = (run: Run) => Boolean(run.from && run.peak && run.extent >= MIN_STROKE
+    && run.peak.at > run.from.at && run.extent / (run.peak.at - run.from.at) >= MIN_SPEED);
+  const observe = (run: Run, point: Point) => {
+    const { from, peak, axis, fixed } = run;
     if (!from || !peak || !grid) return;
-    strokes = strokes.filter(stroke => point.at - stroke.began <= WINDOW_MS);
-    if (!strokes.length) runBegan = undefined;
+    run.strokes = run.strokes.filter(stroke => point.at - stroke.began <= WINDOW_MS);
+    if (!run.strokes.length) run.began = undefined;
     // Keep the duration of the continuous valid run separately from its last
     // two reversals. Fast strokes can all fit inside280ms; their short ring
     // must not erase the real time already spent shaking. History stays bounded.
-    if (runBegan !== undefined) runBegan = Math.max(runBegan, point.at - WINDOW_MS);
+    if (run.began !== undefined) run.began = Math.max(run.began, point.at - WINDOW_MS);
     if (!axis) {
-      const dx = point.x - from.x, dy = point.y - from.y, length = Math.hypot(dx, dy);
+      const dx = point.x - from.x, dy = point.y - from.y;
+      const projection = fixed ? dx * fixed.x + dy * fixed.y : 0, length = fixed ? Math.abs(projection) : Math.hypot(dx, dy);
       if (length < TURN_DISTANCE) return;
-      axis = { x: dx / length, y: dy / length }; peak = point; extent = length;
+      run.axis = fixed ? { x: fixed.x * Math.sign(projection), y: fixed.y * Math.sign(projection) } : { x: dx / length, y: dy / length };
+      run.peak = point; run.extent = length;
     } else {
       const dx = point.x - grid.x, dy = point.y - grid.y, length = Math.hypot(dx, dy);
       const backX = point.x - peak.x, backY = point.y - peak.y, back = Math.hypot(backX, backY);
       // Hysteresis collects a real turn instead of crediting pixel jitter.
-      // A perpendicular detour starts a new axis but breaks the reversal chain.
-      if (length > 0 && (dx * axis.x + dy * axis.y) / length < .5 && back >= TURN_DISTANCE) {
-        const reversing = (backX * axis.x + backY * axis.y) / back <= -.5;
-        if (reversing && qualifies()) {
-          runBegan ??= from.at;
-          strokes.push({ began: from.at });
-          if (strokes.length > REQUIRED_REVERSALS) strokes.shift();
-        } else { strokes = []; runBegan = undefined; }
-        from = peak; axis = { x: backX / back, y: backY / back };
-        peak = point; extent = back; credited = false;
+      // The free axis still rejects a perpendicular detour. A fixed channel
+      // instead waits for12px of actual opposite projected travel, including
+      // any sideways/still time when checking the next stroke's speed.
+      const retreat = backX * axis.x + backY * axis.y;
+      if (fixed ? retreat <= -TURN_DISTANCE : length > 0 && (dx * axis.x + dy * axis.y) / length < .5 && back >= TURN_DISTANCE) {
+        const reversing = fixed || retreat / back <= -.5;
+        if (reversing && qualifies(run)) {
+          run.began ??= from.at;
+          run.strokes.push({ began: from.at });
+          if (run.strokes.length > REQUIRED_REVERSALS) run.strokes.shift();
+        } else { run.strokes = []; run.began = undefined; }
+        run.from = peak; run.axis = fixed ? { x: -axis.x, y: -axis.y } : { x: backX / back, y: backY / back };
+        run.peak = point; run.extent = fixed ? -retreat : back; run.credited = false;
       } else {
         const projection = (point.x - from.x) * axis.x + (point.y - from.y) * axis.y;
-        if (projection > extent) { extent = projection; peak = point; }
+        if (projection > run.extent) { run.extent = projection; run.peak = point; }
       }
     }
-    if (!credited && strokes.length === REQUIRED_REVERSALS && qualifies()
-      && runBegan !== undefined && point.at - runBegan >= MIN_SPAN_MS) {
+    if (!run.credited && run.strokes.length === REQUIRED_REVERSALS && qualifies(run)
+      && run.began !== undefined && run.peak!.at - run.began >= MIN_SPAN_MS) {
       // Only a newly qualified third/opposite stroke can refresh the latch.
       // Holding still or merely reading a pose never prolongs the reaction.
-      latchedAt ??= point.at; expiresAt = point.at + LATCH_MS; credited = true;
+      latchedAt ??= point.at; expiresAt = point.at + LATCH_MS; run.credited = true;
     }
   };
   const sample = (now: number): CompanionHeldShakeSample => {
@@ -87,7 +98,8 @@ export function createCompanionHeldShake() {
       for (let cells = 0; cells < 10 && nextGridAt <= now; cells++, nextGridAt += GRID_MS) {
         const progress = (nextGridAt - previous.at) / elapsed;
         const point = { x: previous.x + (x - previous.x) * progress, y: previous.y + (y - previous.y) * progress, at: nextGridAt };
-        observe(point); grid = point;
+        for (const run of runs) observe(run, point);
+        grid = point;
       }
       previous = incoming;
     },

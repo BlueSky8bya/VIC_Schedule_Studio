@@ -1,0 +1,9 @@
+{
+  "tool": "builtin image_gen",
+  "generation_calls": 1,
+  "native_sha256": "A72DDAB7269B76FFE6597E8A3F5DCD2CC1BE327B0FE0413527BFCB9131BFE99A",
+  "source": "tool exec-5767fa96-890e-48e0-93a4-422745dfe838.png",
+  "request": "생성요청.json",
+  "claim": "표식.json",
+  "second_call": false
+}

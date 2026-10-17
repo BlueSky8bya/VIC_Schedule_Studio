@@ -10,7 +10,7 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
   const p = clamp(progress), rows = COMPANION_PLAY_ROWS;
   const result = (row: number, phase: number, beat: CompanionPlayPose["beat"], lift = 0, lean = 0, shift = 0, compression = 0): CompanionPlayPose => ({ row, phase: clamp(phase), beat, lift: reduced ? 0 : lift, lean: reduced ? 0 : lean, shift: reduced ? 0 : shift, compression: reduced ? 0 : compression });
   if (p >= 1) return result(rows.recover, 1, "recover");
-  if (reduced) return result(kind === "bonk-tears" ? rows.tears : kind === "bonk-sad" ? rows.sulk : rows.recover, .6, "recover");
+  if (reduced) return result(kind === "bonk-tears" ? rows.tears : kind === "bonk-sad" ? rows.sulk : rows.recover, kind === "bonk-tears" || kind === "bonk-sad" ? .6 : 1, "recover");
   const timing = COMPANION_PLAY_TIMING[kind], age = p * timing.duration;
   let entered = 0;
   for (const stage of timing.beats) {
@@ -24,9 +24,14 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
         const shake = clamp(elapsed / 520), envelope = Math.sin(shake * Math.PI) ** 2;
         const lean = Math.sin(shake * Math.PI * 6) * 8 * envelope;
         const compression = .026 * envelope;
-        return result(stage.row, elapsed < 560 ? 0 : 1, stage.beat, 0, lean, 0, compression);
+        // Closed strained eyes and a wavy mouth follow each authored left/right
+        // key. Only after the final shake does the calm neutral face return.
+        const expression = elapsed >= 560 ? 1 : lean < -.6 ? .35 : lean > .6 ? .65 : 0;
+        return result(stage.row, expression, stage.beat, 0, lean, 0, compression);
       }
-      return result(stage.row, phase, stage.beat);
+      // Other gestures already own their emotion in the checking/play beat.
+      // Their finite outro rests in the calm key rather than playing distress.
+      return result(stage.row, 1, stage.beat);
     }
     if (stage.beat === "impact") {
       const rolling = stage.row === rows.tumble;

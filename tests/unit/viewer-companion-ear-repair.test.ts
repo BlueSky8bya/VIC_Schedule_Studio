@@ -25,6 +25,12 @@ const sourceRun = "art-src/빅타민/동행/작업회차/20261016-덤벙놀이";
 const repairRun = "art-src/빅타민/동행/작업회차/20261016-귀두개교정";
 const original = JSON.parse(readFileSync(`${sourceRun}/패킹파생기록.json`, "utf8")) as Original;
 const repair = JSON.parse(readFileSync(`${repairRun}/패킹파생기록.json`, "utf8")) as Repair;
+// PLAN-095 subsequently replaces recovery row23 only. Preserve the earlier
+// ear-repair boundary and all original bytes instead of rewriting its receipt.
+const recovery = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261017-어지럼회복/패킹파생기록.json", "utf8")) as {
+  source: string; sourceSha256: string; newlyGeneratedKeys: number; derivedFrameSlots: number;
+  columns: number[]; keys: Array<{ frame: Omit<Frame, "atlas" | "index"> }>; atlas: Atlas;
+};
 const hash = (bytes: Buffer | string) => createHash("sha256").update(bytes).digest("hex");
 const baseline = {
   version: 1, cell: 192, logicalCell: 80, grid: 8, gridRows: 2, rowOffset: 20,
@@ -49,11 +55,16 @@ describe("four requested ear corrections preserve all other native poses", () =>
     expect(repair.automaticPostRepairArtReviews).toBe(0);
   });
 
-  it("keeps all twelve original packet files and eight unaffected runtime atlases byte-exact", () => {
+  it("keeps all twelve original packets and binds the separately recorded recovery replacement", () => {
     expect(repair.protectedOriginalPacketCount).toBe(12);
+    expect(hash(readFileSync(recovery.source))).toBe(recovery.sourceSha256);
+    expect(recovery.newlyGeneratedKeys).toBe(4); expect(recovery.derivedFrameSlots).toBe(16);
+    expect(recovery.atlas.src).toBe("/companion/hd/victamin-play-23-recover-v2.webp");
+    expect(hash(readFileSync(`public${recovery.atlas.src}`))).toBe(recovery.atlas.sha256);
     for (const [index, atlas] of original.output.atlases.entries()) {
       expect(hash(readFileSync(`public${atlas.src}`))).toBe(atlas.sha256);
-      if (!repair.affectedRows.includes(index + 20)) expect(current.atlases[index]).toEqual(atlas);
+      if (index === 3) expect(current.atlases[index]).toEqual(recovery.atlas);
+      else if (!repair.affectedRows.includes(index + 20)) expect(current.atlases[index]).toEqual(atlas);
     }
     for (const packet of repair.packets) {
       expect(packet.replacement.src).toBe(`/companion/hd/victamin-play-${packet.row}-ear-v2.webp`);
@@ -62,12 +73,13 @@ describe("four requested ear corrections preserve all other native poses", () =>
     }
   });
 
-  it("changes registration only for the four requested source indices, without changing row/column indexing", () => {
+  it("binds only the ear corrections and later recovery keys without changing row/column indexing", () => {
     expect(current.rows).toEqual(baseline.rows);
     for (const [packet, definition] of original.packets.entries()) {
       for (const [column, sourceIndex] of definition.nativeIndicesByColumn.entries()) {
         const frameIndex = packet * 16 + column;
-        if (!repair.replacementIndices.includes(sourceIndex)) expect(current.frames[frameIndex]).toEqual(baseline.frames[frameIndex]);
+        if (packet === 3) expect(current.frames[frameIndex]).toEqual({ atlas: packet, index: column, ...recovery.keys[recovery.columns[column]].frame });
+        else if (!repair.replacementIndices.includes(sourceIndex)) expect(current.frames[frameIndex]).toEqual(baseline.frames[frameIndex]);
         else expect(current.frames[frameIndex]).toEqual({ atlas: packet, index: column, ...repair.derived.find(item => item.sourceIndex === sourceIndex)!.frame });
       }
     }

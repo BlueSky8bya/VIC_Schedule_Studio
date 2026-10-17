@@ -1,8 +1,73 @@
 import { describe, expect, it } from "vitest";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel, type CompanionMotionInput, type CompanionMotionPose } from "@/lib/ui/viewer-companion/motion";
 import { boundCompanionHeldPose } from "@/lib/ui/viewer-companion/held-inertia";
+import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 
 const input = (patch: Partial<CompanionMotionInput> = {}): CompanionMotionInput => ({ row: 0, phase: 0, status: "idle", x: 100, y: 500, now: 0, ...patch });
+
+describe("authored recovery expression selection", () => {
+  // Match the renderer: all16 held slots remain selectable, not four deduped keys.
+  const createRuntime = () => createCompanionMotion({
+    clips: Object.fromEntries(companionSpriteMetadata.rows.map((row, index) => [index, row.map((_, column) => column)])),
+    rowCount: companionSpriteMetadata.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14,
+  });
+  const selected = (pose: CompanionMotionPose) => selectCompanionSprite(companionSpriteMetadata.rows[pose.row][pose.column], pose.row, pose.column);
+  const expressions = [[0, 0], [.35, 5], [.65, 10], [1, 15]] as const;
+
+  it.each(expressions)("enters from dizzy at phase%s on actual recovery column%s without an opening-key flash", (phase, column) => {
+    const motion = createRuntime();
+    motion.sample(input({ row: 22, status: "play", phase: .5, now: 100 }));
+    const pose = motion.sample(input({ row: 23, status: "play", phase, now: 100 }));
+    expect(pose).toMatchObject({ row: 23, column, bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+    expect(selected(pose)).toMatchObject({ index: column, physicalIndex: companionSpriteMetadata.rows[23][column] });
+  });
+
+  it("selects the calm terminal drawing on a fresh phase1 first sample", () => {
+    const pose = createRuntime().sample(input({ row: 23, status: "play", phase: 1 }));
+    expect(pose.column).toBe(15);
+    expect(selected(pose).physicalIndex).toBe(companionSpriteMetadata.rows[23][15]);
+  });
+
+  it("honors changed authored expressions with no elapsed time on the same row", () => {
+    const motion = createRuntime();
+    for (const [phase, column] of [...expressions, expressions[1]]) {
+      const pose = motion.sample(input({ row: 23, status: "play", phase, now: 100 }));
+      expect(pose.column).toBe(column); expect(selected(pose).index).toBe(column);
+    }
+  });
+
+  it.each(["fresh", "from-dizzy"] as const)("uses only the calm key for reduced/OFF %s sampling", entry => {
+    const motion = createRuntime();
+    if (entry === "from-dizzy") motion.sample(input({ row: 22, status: "play", phase: .5, now: 100 }));
+    // Both graphics OFF and reduced motion reach the sampler through reduced.
+    for (const [phase] of expressions) {
+      const pose = motion.sample(input({ row: 23, status: "play", phase, now: 100, reduced: true }));
+      expect(pose).toMatchObject({ row: 23, column: 15, bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+      expect(selected(pose).physicalIndex).toBe(companionSpriteMetadata.rows[23][15]);
+    }
+  });
+
+  it("keeps curated expression slots authoritative instead of indexing a hard-coded16-frame list", () => {
+    const clips = { 23: [0, 4, 8, 15] }, motion = createCompanionMotion({ clips, rowCount: 32 });
+    for (const [phase, column] of [[0, 0], [.35, 4], [.65, 8], [1, 15]] as const) {
+      expect(motion.sample(input({ row: 23, status: "play", phase })).column).toBe(column);
+    }
+    expect(motion.sample(input({ row: 23, status: "play", phase: 0, reduced: true })).column).toBe(15);
+    expect(clips).toEqual({ 23: [0, 4, 8, 15] });
+  });
+
+  it("preserves facing and the existing100ms scalar mixer while the first recovery drawing is calm", () => {
+    const motion = createRuntime();
+    motion.sample(input({ row: 2, status: "walk", x: 100 }));
+    motion.sample(input({ row: 2, status: "walk", x: 96, now: 40 }));
+    const walking = motion.sample(input({ row: 2, status: "walk", x: 92, now: 80 }));
+    expect(walking.facing).toBe(-1); expect(Math.abs(walking.bob)).toBeGreaterThan(.5);
+    const recovery = motion.sample(input({ row: 23, status: "play", phase: 1, x: 92, now: 96 }));
+    expect(recovery).toMatchObject({ row: 23, column: 15, facing: -1 });
+    for (const key of ["bob", "scaleX", "scaleY", "tilt"] as const) expect(recovery[key]).toBe(walking[key]);
+    expect(motion.sample(input({ row: 23, status: "play", phase: 1, x: 92, now: 196 }))).toMatchObject({ column: 15, facing: -1, bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
+  });
+});
 
 describe("targeted companion observation", () => {
   it("turns a stationary look or sniff toward its actual target without scaling the body", () => {

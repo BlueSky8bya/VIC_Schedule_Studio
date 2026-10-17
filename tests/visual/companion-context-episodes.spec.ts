@@ -22,7 +22,7 @@ type Observation = { frames: Frame[]; inputs: Input[]; focusEvents: FocusEventSa
 type Probe = Observation & { node: HTMLElement; foodNodes: Map<string, HTMLElement>; marker: string; began: number; raf: number; timer: number; stopped: boolean; previousState: string; previousPhase: string; previousCare: string; observer: MutationObserver; input: (event: Event) => void; focusInput: (event: Event) => void };
 type ProbeWindow = Window & { contextEpisodeProbe: Probe };
 type Memory = CompanionCare & { habits?: Record<string, number> };
-const output = ".scratch-pw/093-context-episodes";
+const output = ".scratch-pw/095-context-episodes";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const foodPoint = (item: Locator) => item.evaluate(node => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: m.m41, y: m.m42 }; });
@@ -258,6 +258,10 @@ function verify(observation: Observation, floor: Floor, id: string, mode: Mode, 
     const mishap = initial.filter(frame => frame.phase === "mishap"), journeys = new Set(mishap.map(frame => frame.journey).filter(Boolean));
     expect(journeys.size, "at most one actual accident occurs in the encounter").toBeLessThanOrEqual(1);
     if (mishap.length) {
+      const returning = frames.filter(frame => frame.at >= mishap[0].at && frame.at < firstMeal.at);
+      expect(returning.every(frame => frame.foodGoal === id), "recovery must remember the same actual snack until eating").toBe(true);
+      expect(returning.every(frame => !["sleep", "heart", "hide", "panel"].includes(frame.state)), "recovery cannot turn into unrelated sleep or play before the meal").toBe(true);
+      expect(returning.filter(frame => ["walk", "jump"].includes(frame.state)).every(frame => frame.episodeFood === id), "all return travel must belong to that same food encounter").toBe(true);
       const rolling = mishap.some(frame => ["tumble", "slip-tumble"].includes(frame.play));
       for (const row of rolling ? [21, 22, 23, 26] : [22, 23, 25, 26]) expect(mishap.some(frame => rows[row].includes(frame.pose)), `observed accident must actually display HD row${row}`).toBe(true);
       if (mishap.some(frame => frame.play === "slip-tumble")) expect(mishap.some(frame => rows[24].includes(frame.pose))).toBe(true);

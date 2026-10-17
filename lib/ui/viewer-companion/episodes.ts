@@ -3,6 +3,8 @@ import type { CompanionPreferences } from "./preferences";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import { companionPlayDuration, COMPANION_TIMING } from "./timing";
 import { companionRunTripContact, validCompanionRunHop, type CompanionRunTrip } from "./romp";
+import { COMPANION_FULL_THRESHOLD } from "./care";
+import { COMPANION_FEED_ACTION_BUDGET } from "./planner";
 
 export type CompanionEpisode = {
   kind: "meal" | "social" | "wake";
@@ -19,6 +21,15 @@ const stationary = (world: CompanionWorld) => ({ x: world.x, y: world.y, platfor
 const ordinary = (p: Platform | undefined) => Boolean(p && !p.manualOnly && !p.id.startsWith("companion-home") && p.kind !== "control" && p.kind !== "hide");
 const supported = (world: CompanionWorld, p: Platform | undefined) => Boolean(p && [world.x, world.y, p.x, p.y, p.width].every(Number.isFinite) && Math.abs(world.y - p.y) <= 2 && world.x >= p.x && world.x <= p.x + p.width);
 export const createCompanionContext = (kind: "social" | "wake"): CompanionEpisode => ({ kind, phase: "start", variant: "careful", remaining: 2, mishapUsed: false, legs: 0 });
+
+/** A live encounter owns one snack until consume, cancellation or its budget. */
+export function pendingCompanionMealId(brain: CompanionBrain): string | undefined {
+  const episode = brain.episode;
+  if (!episode || episode.kind !== "meal" || !episode.foodId || episode.remaining <= 0 || episode.phase === "ate" || episode.phase === "finish"
+    || brain.foodGoal?.foodId === episode.foodId && brain.foodGoal.remaining <= 0
+    || brain.intention?.kind === "feed" && brain.intention.foodId === episode.foodId && brain.intention.remaining <= 0) return;
+  return episode.foodId;
+}
 
 /** Revoke future beats without changing the current real landing/flight. */
 export function cancelCompanionEpisode(brain: CompanionBrain, action: CompanionAction | null): { brain: CompanionBrain; action: CompanionAction | null } {
@@ -46,8 +57,8 @@ function chooseVariant(prefs: CompanionPreferences, brain: CompanionBrain, now: 
  * The episode remembers identity/intent only, never an array of old actions. */
 export function planCompanionEpisode(brain: CompanionBrain, world: CompanionWorld, prefs: CompanionPreferences, now: number, foodAction: CompanionAction | undefined, rng: () => number, reachable: Reachable): CompanionAction | undefined {
   const p = world.platforms.find(item => item.id === world.platformId);
-  if (!world.animated || !prefs.enabled || !prefs.roam || world.paused || !supported(world, p) || brain.hunger >= .85) return;
   let episode = brain.episode;
+  if (!world.animated || !prefs.enabled || !prefs.roam || world.paused || !supported(world, p) || brain.hunger >= .85 && episode?.kind !== "meal") return;
   const here = stationary(world);
   const step = (action: CompanionAction, phase: CompanionEpisode["phase"], state = episode!): CompanionAction => ({ ...action, episode: { ...state, phase } });
   if (episode && (episode.remaining <= 0 || episode.phase === "finish")) return;
@@ -71,16 +82,28 @@ export function planCompanionEpisode(brain: CompanionBrain, world: CompanionWorl
     return step({ kind: "shake", target: here, duration: 550 }, "finish");
   }
   if (!ordinary(p) || !prefs.feeding || brain.energy < .28) return;
+  if (episode?.kind === "meal" && (brain.hunger < COMPANION_FULL_THRESHOLD || !pendingCompanionMealId(brain))) return;
   if (!episode) {
     const food = world.foods?.find(item => item.id === foodAction?.foodId);
-    if (!food || !foodAction || !["walk", "jump"].includes(foodAction.kind) || Math.hypot(food.x - world.x, food.y - world.y) < 96
+    if (brain.hunger >= .85 || !food || !foodAction || !["walk", "jump"].includes(foodAction.kind) || Math.hypot(food.x - world.x, food.y - world.y) < 96
       || (brain.cooldowns.episode ?? -Infinity) > now || (brain.foodGoal?.remaining ?? 32) < 6) return;
     episode = { kind: "meal", phase: "start", variant: chooseVariant(prefs, brain, now, rng), remaining: 24, foodId: food.id, mishapUsed: false, legs: 0 };
   }
   const food = world.foods?.find(item => item.id === episode!.foodId);
-  if (!food || !foodAction || foodAction.foodId !== episode.foodId || !foodAction.intention) {
-    // A changed/held/hidden target cannot silently become another meal.
+  if (!food || ![food.x, food.y].every(Number.isFinite)) {
+    // Missing/held/hidden targets still cancel instead of becoming another meal.
     return { kind: "look", target: here, duration: 300 };
+  }
+  if (!foodAction || foodAction.foodId !== episode.foodId || !foodAction.intention) {
+    // A real snack can briefly lack a route or wait for the eating cooldown.
+    // Commit this finite recheck normally so neither action budget is renewed.
+    const target = world.platforms.find(item => item.id === food.platformId);
+    const previous = brain.intention?.kind === "feed" && brain.intention.foodId === food.id ? brain.intention : undefined;
+    const remaining = Math.min(COMPANION_FEED_ACTION_BUDGET, brain.foodGoal?.foodId === food.id ? brain.foodGoal.remaining : COMPANION_FEED_ACTION_BUDGET, previous?.remaining ?? COMPANION_FEED_ACTION_BUDGET);
+    const fraction = target && Number.isFinite(target.x) && Number.isFinite(target.width) && target.width > 0 ? (food.x - target.x) / target.width : previous?.offset;
+    const offset = fraction !== undefined && Number.isFinite(fraction) ? clamp(fraction, 0, 1) : .5;
+    return step({ kind: "look", target: here, duration: 300, foodId: food.id, direction: food.x < world.x ? -1 : 1,
+      intention: { kind: "feed", targetId: food.platformId ?? "", offset, remaining, stage: "consider", foodId: food.id } }, episode.phase);
   }
   const identity = { foodId: food.id, intention: { ...foodAction.intention } };
   if (episode.phase === "start") return step({ kind: "look", target: here, duration: prefs.animalMode === "cat" ? 320 : 220,

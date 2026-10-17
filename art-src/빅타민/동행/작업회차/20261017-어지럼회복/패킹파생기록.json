@@ -1,0 +1,231 @@
+{
+  "source": "art-src/빅타민/동행/작업회차/20261017-어지럼회복/원본/빅타민_어지럼회복_4키포즈.png",
+  "sourceSha256": "a72ddab7269b76ffe6597e8a3f5dcd2cc1be327b0fe0413527bfcb9131bfe99a",
+  "nativeWidth": 1254,
+  "nativeHeight": 1254,
+  "newlyGeneratedKeys": 4,
+  "derivedFrameSlots": 16,
+  "generationCallsByThisScript": 0,
+  "method": "2x2 whole-body RGBA crops, uniform downscale with integer rounding, centre/foot registration; no facial painting or new intermediate drawings",
+  "encoding": {
+    "quality": 95,
+    "alphaQuality": 100,
+    "smartSubsample": true,
+    "effort": 6
+  },
+  "keys": [
+    {
+      "frame": {
+        "x": 0,
+        "y": 5,
+        "clip": [
+          13.833333,
+          8.833333,
+          3,
+          8.833333
+        ]
+      },
+      "index": 0,
+      "nominal": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "bounds": {
+        "left": 63,
+        "top": 52,
+        "right": 586,
+        "bottom": 584,
+        "width": 523,
+        "height": 532,
+        "pixels": 174019
+      },
+      "crop": {
+        "left": 60,
+        "top": 49,
+        "width": 529,
+        "height": 538
+      },
+      "scale": 0.2695984703632887,
+      "width": 142,
+      "height": 144,
+      "body": {
+        "left": 26,
+        "top": 38,
+        "right": 166,
+        "bottom": 180,
+        "width": 140,
+        "height": 142,
+        "pixels": 12467
+      },
+      "rgbaSha256": "989748de8cfe37e3dd1f8f97aab85596b645ee46ced16cdb27ecd200671b10eb"
+    },
+    {
+      "frame": {
+        "x": 0,
+        "y": 5,
+        "clip": [
+          13.833333,
+          8.833333,
+          3,
+          8.833333
+        ]
+      },
+      "index": 1,
+      "nominal": {
+        "left": 627,
+        "top": 0,
+        "width": 627,
+        "height": 627
+      },
+      "bounds": {
+        "left": 45,
+        "top": 73,
+        "right": 555,
+        "bottom": 592,
+        "width": 510,
+        "height": 519,
+        "pixels": 171504
+      },
+      "crop": {
+        "left": 42,
+        "top": 70,
+        "width": 516,
+        "height": 525
+      },
+      "scale": 0.27647058823529413,
+      "width": 142,
+      "height": 144,
+      "body": {
+        "left": 26,
+        "top": 38,
+        "right": 166,
+        "bottom": 180,
+        "width": 140,
+        "height": 142,
+        "pixels": 12940
+      },
+      "rgbaSha256": "fad54fd7c661e03f099b46025892c2932986dfa460335c1e640e54a99e5c448c"
+    },
+    {
+      "frame": {
+        "x": 0,
+        "y": 5,
+        "clip": [
+          13.833333,
+          8.833333,
+          3,
+          8.833333
+        ]
+      },
+      "index": 2,
+      "nominal": {
+        "left": 0,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "bounds": {
+        "left": 68,
+        "top": 46,
+        "right": 591,
+        "bottom": 578,
+        "width": 523,
+        "height": 532,
+        "pixels": 175550
+      },
+      "crop": {
+        "left": 65,
+        "top": 43,
+        "width": 529,
+        "height": 538
+      },
+      "scale": 0.2695984703632887,
+      "width": 142,
+      "height": 144,
+      "body": {
+        "left": 26,
+        "top": 38,
+        "right": 166,
+        "bottom": 180,
+        "width": 140,
+        "height": 142,
+        "pixels": 12599
+      },
+      "rgbaSha256": "67a943baee1cd70a006f93e5741446bcdd29850ae0c8c1a08a6234e5072383a8"
+    },
+    {
+      "frame": {
+        "x": 0,
+        "y": 5,
+        "clip": [
+          12.166667,
+          8.833333,
+          3,
+          8.833333
+        ]
+      },
+      "index": 3,
+      "nominal": {
+        "left": 627,
+        "top": 627,
+        "width": 627,
+        "height": 627
+      },
+      "bounds": {
+        "left": 43,
+        "top": 31,
+        "right": 564,
+        "bottom": 574,
+        "width": 521,
+        "height": 543,
+        "pixels": 178023
+      },
+      "crop": {
+        "left": 40,
+        "top": 28,
+        "width": 527,
+        "height": 549
+      },
+      "scale": 0.2706333973128599,
+      "width": 142,
+      "height": 148,
+      "body": {
+        "left": 26,
+        "top": 34,
+        "right": 166,
+        "bottom": 180,
+        "width": 140,
+        "height": 146,
+        "pixels": 12863
+      },
+      "rgbaSha256": "bb132068ceae26e316b67dc9998e2e04daaac06180a0d53ab0bc3018063ed2b8"
+    }
+  ],
+  "columns": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3
+  ],
+  "atlas": {
+    "src": "/companion/hd/victamin-play-23-recover-v2.webp",
+    "sha256": "c1e9c5f2ff08389777a86ff3fc798e807edec56a45b747554a78da23bcc73b46",
+    "bytes": 147436,
+    "width": 1536,
+    "height": 384
+  }
+}

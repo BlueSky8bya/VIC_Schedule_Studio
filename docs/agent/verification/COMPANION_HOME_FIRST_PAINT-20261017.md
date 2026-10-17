@@ -25,6 +25,14 @@ before native1건은 의도한 첫 가시 스타일 검사에서 FAIL했고, 원
 
 기존 회귀 첫 실행은 모바일 제외8/8 PASS, plush-home2건은6초 귀가 가정에서 timeout이었다. 실제 pet은 home journey를 유지한 채 여러 날짜 발판을 순차 이동하고 있었으며, 레이어 검사 전에서 멈췄다. 현재 `home-route.ts`의 거리/속도에 따른 걷기와 hop950ms, `viewer-companion.tsx`의 이동 뒤320ms glance에는 전역6초 도착 보장이 없다. 해당 소파/식사 검사는 기존 sofa-contact 검사와 같은 native P→실측 집 바닥 클릭→실제 home-floor·발 오차<2px·동일 DOM 착지를 선행하고 native Enter로 소파를 호출하도록 정합화했다. 제품 state/RNG/clock을 주입하지 않았고 기존6초/5초·전경·들기·식사 단언도 유지했다. 장거리 귀가 자체는 별도 committed-home 검사의 범위이며 이번 단거리 확인으로 재검증했다고 주장하지 않는다. helper/두 spec 독립 소스 검토 차단0.
 
-최종 plush-home2/2 PASS: 소파 실측 전경 일치0.1px 이내·z/로컬 앞면·실제 들기 후 전경 해제·좌석 불변·native 음식 꺼내기/버리기를 light/dark에서 확인했다. 정상 식사1/1 PASS: 실제 배치 음식의 중력 착지 오차0.0005px, 집 바닥 접근/eat/음식 소멸·hunger0.8→0.45128을 확인했다. 기존 mobile8과 새6을 포함해 서로 다른 native17건 PASS, 최종 실행 skipped/flaky0. 이전 실패2건은 별도 report에 보존한다. 빌드 검증 소스와 main의 관련41파일 SHA 일치·불일치0, 전체 lint/타입 검사 PASS. 문서 harness248 PASS. 커밋·푸시·원격 quality·실제 배포 확인은 아직 완료 전이다.
+최종 plush-home2/2 PASS: 소파 실측 전경 일치0.1px 이내·z/로컬 앞면·실제 들기 후 전경 해제·좌석 불변·native 음식 꺼내기/버리기를 light/dark에서 확인했다. 정상 식사1/1 PASS: 실제 배치 음식의 중력 착지 오차0.0005px, 집 바닥 접근/eat/음식 소멸·hunger0.8→0.45128을 확인했다. 기존 mobile8과 새6을 포함해 서로 다른 native17건 PASS, 최종 실행 skipped/flaky0. 이전 실패2건은 별도 report에 보존한다. 빌드 검증 소스와 main의 관련41파일 SHA 일치·불일치0, 전체 lint/타입 검사 PASS. 문서 harness248 PASS.
 
 공개 DTO/역할/언락/KST/1840 기하·모바일 제외·사용자 아트·설정·실제 식사 보상은 유지한다. 실제 OBS/모든 장치/실제 역할 RLS를 이 검사로 보증하지 않는다.
+
+## 릴리스
+
+관련15파일만 `cb6a140f792789899d80fead81ac7a4b4e5e6313`로 commit/main push했다. staged exact scope·비밀 패턴6종0·whitespace PASS. 이전093의 배포 메타데이터를 함께 보존하며 사용자 아트/.vscode/기존 미추적 작업은 제외했다. [Remote quality39035142922](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39035142922)의 전체 SHA 일치·모든13단계 success, Vercel4A1gsrkGUxsfFPkEHpfyKc32HKi4 success를 확인했다.
+
+2026-10-17 22:08:28 KST 운영 canary: 전체 SHA exact·clock200/no-store·warm204·anonymous developer401/error-only/no-store·fixture streaming404 비노출 PASS. 실제 로그인 developer studio에서도 배포 버전cb6a140·정상 채색된 집·새 cue1개·pet1개 visible/decoded를 읽기 확인했고 집 스크린샷을 직접 검수했다. 현재 화면의 공통 zoom에 따라 room118.785px/window57.587×50.399px/shelf49.497px로 비례 축소되어 있었으며 relative/absolute 배치와 sky의 비검정 채색을 확인했다. 운영 일정/설정 변경 없이 검증했다.
+
+main ignored `.scratch-pw/companion-094/`에 remote-run/jobs/status·운영 canary/UI·source-equivalence·staged-files·unit/native report와 독립 원본 감사를 보존한다. 자체 fixture 서버/runner는 종료했다. 배포 후 결과 메타데이터는 로컬만 갱신해 문서만의 추가 Vercel 배포를 만들지 않는다. 기존 Hobby 초과/복구/실제 OBS/RLS 과제는 별도로 남는다.

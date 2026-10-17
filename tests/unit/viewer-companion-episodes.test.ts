@@ -66,6 +66,18 @@ function landedBound() {
   return { s, jump };
 }
 
+function recoveredMishap(variant: "rush-trip" | "bound-slip" = "rush-trip") {
+  if (variant === "bound-slip") {
+    const { s, jump } = landedBound();
+    const reaction = companionEpisodeMishap(jump, s.world, floor, s.brain, s.now, s.prefs, true)!;
+    expect(reaction.play).toBe("slip-tumble"); complete(s, reaction); return s;
+  }
+  const { s, action, trip } = runningContact();
+  complete(s, action, { x: trip.x, y: floor.y, platformId: floor.id });
+  const reaction = companionEpisodeMishap(action, s.world, floor, s.brain, s.now, s.prefs)!;
+  expect(reaction.play).toBe("tumble"); complete(s, reaction); return s;
+}
+
 describe("finite contextual companion encounters", () => {
   it("keeps plain route callers and inactive renderers free of episode decisions", () => {
     for (const animated of [undefined, false]) {
@@ -144,6 +156,107 @@ describe("finite contextual companion encounters", () => {
     expect(action.target.x).toBeGreaterThan(s.world.x + 100);
     complete(s, action);
     expect(s.brain.foodGoal?.foodId).toBe(snack.id); expect(s.draws).toBe(1);
+  });
+
+  it.each(["rush-trip", "bound-slip"] as const)("%s resumes its same meal after recovery, a missing route and an eating cooldown", variant => {
+    const s = recoveredMishap(variant), episode = s.brain.episode!;
+    const closer = { ...snack, id: "closer-snack", x: s.world.x + 5 };
+    const raised = { ...floor, id: "temporarily-unreachable-plane", y: floor.y - 400 };
+    const moved = { ...snack, x: s.world.x + 100, y: raised.y, platformId: raised.id };
+    s.brain = { ...s.brain, hunger: .9 };
+    s.world = { ...s.world, platforms: [floor, raised], foods: [closer, moved] };
+    expect(getFoodAction(s.brain, s.world, s.prefs, s.now)).toBeUndefined();
+    for (let retry = 0; retry < 3; retry++) {
+      const remaining = s.brain.foodGoal!.remaining, episodeRemaining = s.brain.episode!.remaining;
+      const wait = decide(s);
+      expect(wait).toMatchObject({ kind: "look", duration: 300, foodId: snack.id, target: { x: s.world.x, y: s.world.y },
+        intention: { kind: "feed", foodId: snack.id, targetId: moved.platformId, remaining },
+        episode: { variant, phase: "mishap", mishapUsed: true, remaining: episodeRemaining } });
+      complete(s, wait);
+      expect(s.brain.foodGoal?.remaining).toBe(remaining - 1);
+      expect(s.brain.episode?.remaining).toBe(episodeRemaining - 1);
+    }
+    s.world = { ...s.world, foods: [closer, { ...snack, x: s.world.x + 18 }] };
+    const readyAt = s.now + 650; s.brain = { ...s.brain, cooldowns: { ...s.brain.cooldowns, eat: readyAt } };
+    while (s.now < readyAt) {
+      const wait = decide(s);
+      expect(wait).toMatchObject({ kind: "look", duration: 300, foodId: snack.id, episode: { variant, phase: "mishap", mishapUsed: true } });
+      complete(s, wait);
+    }
+    const meal = decide(s);
+    expect(meal).toMatchObject({ kind: "eat", foodId: snack.id, episode: { variant, phase: "meal", mishapUsed: true, legs: episode.legs } });
+    complete(s, meal);
+    const beforeMeal = s.brain.hunger, affection = s.brain.affection;
+    s.brain = recordCompanionEvent(s.brain, "ate"); s.world = { ...s.world, foods: [closer] };
+    expect(s.brain.hunger).toBeCloseTo(beforeMeal - .36);
+    expect(s.brain.affection).toBeCloseTo(Math.min(1, affection + .1));
+    const finish = decide(s);
+    expect(finish.episode?.phase).toBe("finish"); expect(finish.foodId).toBeUndefined(); complete(s, finish);
+    expect(s.actions.filter(action => action.episode?.phase === "notice")).toHaveLength(1);
+    expect(s.actions.filter(action => action.episode?.phase === "mishap" && action.kind === "play")).toHaveLength(1);
+    expect(s.actions.filter(action => action.kind === "eat")).toHaveLength(1); expect(s.draws).toBe(1);
+  });
+
+  it.each([{ width: 0 }, { width: NaN }, { width: -20 }, { x: NaN }])("keeps a recovery wait finite when a target support is temporarily invalid: %j", invalid => {
+    const s = recoveredMishap(), expected = s.brain.intention!.offset;
+    const target = { ...floor, id: "unmeasured-target", y: floor.y - 400, ...invalid };
+    s.world = { ...s.world, platforms: [floor, target], foods: [{ ...snack, x: s.world.x + 100, y: target.y, platformId: target.id }] };
+    const action = decide(s);
+    expect(action).toMatchObject({ kind: "look", foodId: snack.id, intention: { offset: expected }, episode: { phase: "mishap" } });
+    expect(Number.isFinite(action.intention!.offset)).toBe(true);
+  });
+
+  it("bounds unavailable-route rechecks by the original episode and feed action budgets", () => {
+    const s = recoveredMishap(), episodeBudget = s.brain.episode!.remaining, feedBudget = s.brain.foodGoal!.remaining;
+    const raised = { ...floor, id: "temporarily-unreachable-plane", y: floor.y - 400 };
+    s.world = { ...s.world, platforms: [floor, raised], foods: [{ ...snack, y: raised.y, platformId: raised.id }] };
+    let retries = 0;
+    for (; retries <= 24; retries++) {
+      const action = decide(s);
+      if (!action.episode) { expect(action.foodId).toBeUndefined(); complete(s, action); break; }
+      expect(action).toMatchObject({ kind: "look", duration: 300, foodId: snack.id }); complete(s, action);
+      expect(s.brain.foodGoal?.remaining).toBe(feedBudget - retries - 1);
+    }
+    expect(retries).toBe(episodeBudget); expect(retries).toBeLessThanOrEqual(24);
+    expect(s.brain.episode).toBeUndefined();
+  });
+
+  it.each(["food", "intention"] as const)("does not renew an exhausted %s budget through a recovery wait", budget => {
+    const s = recoveredMishap();
+    if (budget === "food") s.brain = { ...s.brain, foodGoal: { ...s.brain.foodGoal!, remaining: 1 } };
+    else s.brain = { ...s.brain, intention: { ...s.brain.intention!, remaining: 1 } };
+    const raised = { ...floor, id: "temporarily-unreachable-plane", y: floor.y - 400 };
+    s.world = { ...s.world, platforms: [floor, raised], foods: [{ ...snack, y: raised.y, platformId: raised.id }] };
+    const lastWait = decide(s); expect(lastWait.intention?.remaining).toBe(1); complete(s, lastWait);
+    expect(s.brain.foodGoal?.remaining).toBe(0);
+    const expired = decide(s); expect(expired.episode).toBeUndefined(); expect(expired.foodId).toBeUndefined(); complete(s, expired);
+    expect(s.brain.episode).toBeUndefined();
+  });
+
+  it("cancels a withdrawn recovered meal without substituting a closer snack or reviving its accident", () => {
+    const s = recoveredMishap(), remembered = s.brain.foodGoal;
+    const closer = { ...snack, id: "closer-snack", x: s.world.x + 5 };
+    s.world = { ...s.world, foods: [closer] };
+    const cancelled = decide(s);
+    expect(cancelled).toMatchObject({ kind: "look", duration: 300 });
+    expect(cancelled.foodId).toBeUndefined(); expect(cancelled.episode).toBeUndefined(); complete(s, cancelled);
+    expect(s.brain.episode).toBeUndefined(); expect(s.brain.foodGoal).toEqual(remembered);
+    s.world = { ...s.world, foods: [closer, { ...snack, x: s.world.x + 20 }] };
+    const resumed = decide(s); expect(resumed).toMatchObject({ kind: "eat", foodId: snack.id }); expect(resumed.episode).toBeUndefined();
+    const removed = recordCompanionEvent(s.brain, "food-lost");
+    expect(removed.episode).toBeUndefined(); expect(removed.foodGoal).toBeUndefined(); expect(removed.hunger).toBe(s.brain.hunger);
+  });
+
+  it.each([{ enabled: false }, { feeding: false }, { roam: false }])("revokes a recovered encounter when authority changes to %j", changes => {
+    const s = recoveredMishap(); s.prefs = { ...s.prefs, ...changes };
+    const action = decide(s); expect(action.episode).toBeUndefined(); complete(s, action);
+    expect(s.brain.episode).toBeUndefined();
+  });
+
+  it("does not preserve a recovered food encounter after the companion becomes full", () => {
+    const s = recoveredMishap(); s.brain = { ...s.brain, hunger: .1 };
+    const action = decide(s); expect(action.foodId).toBeUndefined(); expect(action.episode).toBeUndefined(); complete(s, action);
+    expect(s.brain.episode).toBeUndefined();
   });
 
   it("varies eligible scenes by species, personality and gait without inventing cat dashes", () => {

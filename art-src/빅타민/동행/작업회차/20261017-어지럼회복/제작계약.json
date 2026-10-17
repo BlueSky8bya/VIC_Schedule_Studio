@@ -1,0 +1,55 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "VICTAMIN-RECOVERY-20261017",
+  "operation": "new",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "codex",
+  "inputs": [
+    {
+      "id": "REF-016",
+      "source_id": "REF-016",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "id": "REF-017",
+      "source_id": "REF-017",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "authorities": {
+    "mascot": "REF-017"
+  },
+  "opened_files": [
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "mascot_variation_plan": "The same two-eared limbless paper-pompom rabbit, four contiguous recovery key poses; strained closed eyes and small wavy mouth, then calm neutral open eyes. No smile during shaking.",
+  "scene_exception": "UI animation contact sheet: intentionally identical framing, body size and ground line across four temporal frames.",
+  "structure_plan": {
+    "vr_physics_corrections": "Do not reproduce VR clipping or invent hidden anatomy.",
+    "connected_anatomy": "Exactly two full long ears attached to the same layered rectangular paper body. No arms, legs or fur.",
+    "occluded_continuation": "All four bodies and ears fit wholly inside their cells. No fragments, labels, stars or afterimages.",
+    "contacts_support": "One transparent sheet, consistent baseline and scale for runtime registration."
+  },
+  "scene_plan": {
+    "mode": "design_sheet",
+    "purpose": "Four high-resolution recovery expression keys for one existing finite clip."
+  },
+  "construction_method": "One builtin transparent image generation from unchanged originals; separate deterministic crop/registration/packing. No manual facial painting or fake generated-frame claim.",
+  "user_cycle": {
+    "sha256": "AED817A1498A5529BEF668F200926F2B4343B817DEAFF8AD060A9CCFB09D2E2D",
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-RECOVERY-20261017\\plan.json"
+  }
+}

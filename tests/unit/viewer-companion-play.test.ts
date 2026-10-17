@@ -74,7 +74,7 @@ describe("finite authored companion play", () => {
     expect(companionPlayDuration(kind)).toBe(duration);
     const poses = Array.from({ length: 161 }, (_, i) => sampleCompanionPlay(kind, (start + i * 5) / duration));
     expect(new Set(poses.map(pose => pose.lean.toFixed(3))).size).toBeGreaterThan(80);
-    expect(new Set(poses.map(pose => pose.phase))).toEqual(new Set([0, 1]));
+    expect(new Set(poses.map(pose => pose.phase))).toEqual(new Set([0, .35, .65, 1]));
     for (let i = 0; i < poses.length; i++) {
       const pose = poses[i];
       expect(pose).toMatchObject({ row: 23, beat: "recover", lift: 0, shift: 0 });
@@ -105,7 +105,7 @@ describe("finite authored companion play", () => {
     }
     expect(sampleCompanionPlay(kind, (start + 559.99) / duration).phase).toBe(0);
     expect(sampleCompanionPlay(kind, (start + 560) / duration).phase).toBe(1);
-    expect(poses.slice(0, 112).every(pose => pose.phase === 0)).toBe(true);
+    expect(poses.slice(0, 112).every(pose => pose.phase < 1)).toBe(true);
     expect(poses.slice(112).every(pose => pose.phase === 1)).toBe(true);
     expect(poses.slice(104).every(pose => Math.abs(pose.lean) < 1e-12 && pose.compression < 1e-12)).toBe(true);
   });

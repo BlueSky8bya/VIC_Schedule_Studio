@@ -10,7 +10,7 @@ type Mode = "full" | "lite" | "reduced" | "off";
 type Surface = "viewer" | "studio";
 type Frame = {
   at: number; actionAge: number; phase: string; comparable: boolean; freshTransform: boolean; stableInput: boolean; state: string; platform: string;
-  dizzy: boolean; play: string; beat: string; row: number; pose: string; adoptedRow: number; decoded: boolean;
+  dizzy: boolean; play: string; beat: string; row: number; pose: string; adoptedRow: number; decoded: boolean; textureSrc: string;
   hidden: boolean; same: boolean; captured: boolean; x: number; y: number;
   facing: string; gripError: number; pivotError: number; posePivotError: number; poseTransform: string; tilt: number; scaleX: number; scaleY: number;
 };
@@ -23,7 +23,7 @@ type Probe = {
 type ProbeWindow = Window & { heldShakeProbe: Probe };
 type Evidence = { posts: string[]; errors: string[] };
 const evidence = new WeakMap<Page, Evidence>();
-const output = ".scratch-pw/092-held-shake";
+const output = ".scratch-pw/095-held-shake";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 
@@ -104,7 +104,7 @@ async function startProbe(page: Page) {
         const now = performance.now();
         probe.frames.push({ at: now - began, actionAge: el.dataset.journey ? now - Number(el.dataset.journey) : 0, phase: probe.phase, comparable: freshTransform && stableInput, freshTransform, stableInput,
           state: el.dataset.state ?? "", platform: el.dataset.platform ?? "", dizzy: el.hasAttribute("data-held-dizzy"), play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "",
-          row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * 31 / 100), pose: el.dataset.pose ?? "", adoptedRow: spriteRows.findIndex(row => row.includes(Number(el.dataset.pose))), decoded: Boolean(texture?.complete && texture.naturalWidth > 0), hidden: el.hidden || getComputedStyle(el).display === "none", same: node.isConnected && node === document.querySelector(".vc-companion"), captured: button.hasPointerCapture(probe.pointerId), x: p.x, y: p.y, facing,
+          row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * 31 / 100), pose: el.dataset.pose ?? "", adoptedRow: spriteRows.findIndex(row => row.includes(Number(el.dataset.pose))), decoded: Boolean(texture?.complete && texture.naturalWidth > 0), textureSrc: texture?.getAttribute("src") ?? "", hidden: el.hidden || getComputedStyle(el).display === "none", same: node.isConnected && node === document.querySelector(".vc-companion"), captured: button.hasPointerCapture(probe.pointerId), x: p.x, y: p.y, facing,
           gripError: held && probe.grip ? Math.hypot(p.x + probe.grip.x - probe.pointer.x, p.y + probe.grip.y - probe.pointer.y) : 0,
           pivotError: held ? Math.hypot(pivot.x - probe.pointer.x, pivot.y - probe.pointer.y) : 0,
           posePivotError: held ? Math.hypot(px - (facing === "left" ? p.size - ox : ox), py - oy) : 0,
@@ -159,13 +159,19 @@ async function hold(page: Page, touch = false) {
     async dispose() { await client?.detach(); }
   };
 }
-async function shake(page: Page, drag: Awaited<ReturnType<typeof hold>>) {
+async function shake(page: Page, drag: Awaited<ReturnType<typeof hold>>, pattern = "horizontal") {
   await mark(page, "shake");
   const began = await page.evaluate(() => performance.now());
   // Three half-strokes replace the old ten. Keep actual native travel above
   // the speed threshold even when touch dispatch costs another browser frame.
   // First-to-last input spans at least300ms; the trailing pause is not input.
-  for (let i = 0; i < 3; i++) {
+  if (pattern !== "horizontal") {
+    const direction = pattern === "counterclockwise" ? -1 : 1;
+    for (let step = 0; step <= 48; step++) {
+      const angle = step / 16 * Math.PI * 2 * direction;
+      await drag.move({ x: drag.centre.x + Math.cos(angle) * 90, y: drag.centre.y + Math.sin(angle) * (pattern === "ellipse" ? 55 : 90) }, 1, 10);
+    }
+  } else for (let i = 0; i < 3; i++) {
     await drag.move({ x: drag.centre.x + (i % 2 ? -90 : 90), y: drag.centre.y }, 3, 30);
     await page.waitForTimeout(30);
   }
@@ -214,15 +220,15 @@ async function releaseSupport(page: Page, surface: Surface) {
   }, surface);
 }
 
-for (const [surface, mode] of [["viewer", "full"], ["studio", "full"], ["viewer", "lite"]] as const) {
-  test(`${surface} ${mode}: repeated native shaking keeps the grip and recovers only after real landing`, async ({ page }) => {
+for (const [surface, mode, pattern] of [["viewer", "full", "horizontal"], ["studio", "full", "horizontal"], ["viewer", "lite", "horizontal"], ["viewer", "full", "clockwise"], ["studio", "full", "counterclockwise"], ["viewer", "full", "ellipse"]] as const) {
+  test(`${surface} ${mode} ${pattern}: repeated native shaking keeps the grip and recovers only after real landing`, async ({ page }) => {
     test.setTimeout(25000); await setup(page, surface, mode); await startProbe(page);
-    const label = `${surface}-${mode}-positive`, saved = await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"));
+    const label = `${surface}-${mode}-${pattern}-positive`, saved = await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"));
     let proof: Awaited<ReturnType<typeof finishProbe>> | undefined;
     let support: Awaited<ReturnType<typeof releaseSupport>> | undefined;
     const drag = await hold(page);
     try {
-      await shake(page, drag); await expect(pet(page)).toHaveAttribute("data-held-dizzy", ""); await expect(pet(page)).toHaveAttribute("data-state", "held");
+      await shake(page, drag, pattern); await expect(pet(page)).toHaveAttribute("data-held-dizzy", ""); await expect(pet(page)).toHaveAttribute("data-state", "held");
       mkdirSync(output, { recursive: true }); await page.screenshot({ path: `${output}/${label}-held.png` });
       support = await releaseSupport(page, surface);
       await drag.release(); await expect(pet(page)).toHaveAttribute("data-play", "dizzy", { timeout: 5000 });
@@ -252,13 +258,16 @@ for (const [surface, mode] of [["viewer", "full"], ["studio", "full"], ["viewer"
     expect(spiral.every(frame => frame.row === 22 && frame.adoptedRow === 22 && companionSpriteMetadata.rows[22].includes(Number(frame.pose)) && frame.pose === retainedPose), "every actual fall and first grounded drawing must retain the last spiral eyes without a normal-eye flash").toBe(true);
     expect(dizzy.every(frame => frame.row === 22 && frame.adoptedRow === 22)).toBe(true);
     expect(recover.every(frame => frame.row === 23 && frame.adoptedRow === 23)).toBe(true);
-    const squint = String(companionSpriteMetadata.rows[23][0]), normal = String(companionSpriteMetadata.rows[23].at(-1)!);
-    expect(recover[0].pose).toBe(squint); expect(recover.at(-1)!.pose).toBe(normal);
-    expect(recover.every(frame => frame.pose === squint || frame.pose === normal)).toBe(true);
+    const closed = new Set(companionSpriteMetadata.rows[23].slice(0, 12).map(String)), normal = String(companionSpriteMetadata.rows[23].at(-1)!);
+    expect(closed.has(recover[0].pose)).toBe(true); expect(recover.at(-1)!.pose).toBe(normal);
+    expect(recover.every(frame => closed.has(frame.pose) || frame.pose === normal)).toBe(true);
+    expect(recover.every(frame => frame.textureSrc.endsWith("/companion/hd/victamin-play-23-recover-v2.webp"))).toBe(true);
+    const actualKeys = new Set(recover.filter(frame => closed.has(frame.pose)).map(frame => Math.floor(companionSpriteMetadata.rows[23].indexOf(Number(frame.pose)) / 4)));
+    expect(actualKeys).toEqual(new Set([0, 1, 2]));
     const normalEyes = recover.find(frame => frame.pose === normal)!;
     expect(normalEyes.actionAge - 520, "normal eyes follow the560ms shake-and-settle stage, independently of the first sampled recovery frame").toBeGreaterThanOrEqual(559);
     expect(recover.filter(frame => frame.at >= normalEyes.at).every(frame => frame.pose === normal)).toBe(true);
-    expect(new Set(recover.map(frame => frame.poseTransform)).size, "ground recovery must keep moving continuously between its two authored drawings").toBeGreaterThan(8);
+    expect(new Set(recover.map(frame => frame.poseTransform)).size, "ground recovery must move continuously through the strained keys before its calm final drawing").toBeGreaterThan(8);
     const brisk = recover.filter(frame => frame.actionAge - 520 <= 560), extrema = recoveryExtrema(brisk);
     expect(extrema.length, `${mode} actual display must resolve at least five alternating extrema from three quick round trips`).toBeGreaterThanOrEqual(5);
     expect(extrema.every((frame, i) => !i || Math.sign(frame.tilt) !== Math.sign(extrema[i - 1].tilt))).toBe(true);

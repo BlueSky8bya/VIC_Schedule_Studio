@@ -1,0 +1,13 @@
+{
+  "final_sha256": "A72DDAB7269B76FFE6597E8A3F5DCD2CC1BE327B0FE0413527BFCB9131BFE99A",
+  "whole_visual_inspection": true,
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC-086\\art-src\\빅타민\\동행\\작업회차\\20261017-어지럼회복\\원본\\빅타민_어지럼회복_4키포즈.png",
+      "sha256": "A72DDAB7269B76FFE6597E8A3F5DCD2CC1BE327B0FE0413527BFCB9131BFE99A"
+    }
+  ],
+  "findings": [
+    "Builtin result was viewed as a whole: four complete two-ear limbless paper-pompom keys. First three have strained closed eyes and a wavy closed mouth, last has round eyes and a neutral short closed mouth. No smiling/open mouth observed. This author observation is not independent art PASS or user approval. Runtime small-size/registration is separately tested."
+  ]
+}

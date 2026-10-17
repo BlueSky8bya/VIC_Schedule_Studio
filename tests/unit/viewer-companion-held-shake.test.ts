@@ -16,6 +16,10 @@ function path(detector: Detector, point: (now: number) => Point, duration = 800,
   return detector.sample(began + duration);
 }
 const horizontal = (now: number) => ({ x: 500 + wave(now), y: 400 });
+function ellipse(now: number, radiusX = 70, radiusY = 70, period = 480, direction = 1, rotation = 0): Point {
+  const angle = direction * now / period * Math.PI * 2, x = radiusX * Math.cos(angle), y = radiusY * Math.sin(angle);
+  return { x: 500 + x * Math.cos(rotation) - y * Math.sin(rotation), y: 400 + x * Math.sin(rotation) + y * Math.cos(rotation) };
+}
 
 describe("captured deliberate shaking", () => {
   it("recognizes the same timed path at30/60/120/240Hz without counting events", () => {
@@ -49,6 +53,67 @@ describe("captured deliberate shaking", () => {
     for (const point of [(now: number) => ({ x: 500, y: 400 + wave(now) }), (now: number) => ({ x: 500 + wave(now) * .8, y: 400 + wave(now) * .6 })]) {
       expect(path(createCompanionHeldShake(), point).active).toBe(true);
     }
+  });
+  it.each([30, 60, 120, 240])("recognizes vigorous clockwise and counterclockwise circles at%dHz", rate => {
+    for (const direction of [-1, 1]) for (const period of [320, 480, 640]) {
+      const detector = createCompanionHeldShake();
+      expect(path(detector, now => ellipse(now, 70, 70, period, direction), 1800, rate).active).toBe(true);
+      expect(detector.consume(1800)).toBe(true); expect(detector.consume(1801)).toBe(false);
+    }
+  });
+  it.each([30, 60, 120, 240])("accepts thin and rotated ellipses without requiring a repeated heading at%dHz", rate => {
+    for (const [radiusX, radiusY, period, rotation] of [[100, 18, 600, 0], [90, 22, 600, Math.PI / 4], [35, 80, 400, Math.PI / 5]]) {
+      expect(path(createCompanionHeldShake(), now => ellipse(now, radiusX, radiusY, period, -1, rotation), 1800, rate).active).toBe(true);
+    }
+  });
+  it.each([30, 60, 120, 240])("accepts vigorous smooth vertical, diagonal and irregular paths at%dHz", rate => {
+    const paths = [
+      (now: number) => ({ x: 500, y: 400 + 55 * Math.sin(now / 400 * Math.PI * 2) }),
+      (now: number) => { const d = 65 * Math.sin(now / 400 * Math.PI * 2); return { x: 500 + d * .6, y: 400 + d * .8 }; },
+      (now: number) => { const angle = now / 520 * Math.PI * 2; return { x: 500 + 70 * Math.sin(angle) + 10 * Math.sin(3 * angle), y: 400 + 50 * Math.sin(2 * angle + .3) }; },
+    ];
+    for (const point of paths) expect(path(createCompanionHeldShake(), point, 1800, rate).active).toBe(true);
+  });
+  it("rejects tiny circles, slow broad loops, an open arc and ordinary winding transport", () => {
+    const paths = [
+      { duration: 1800, point: (now: number) => ellipse(now, 5, 5, 80) },
+      { duration: 1800, point: (now: number) => ellipse(now, 14, 14, 320) },
+      { duration: 8000, point: (now: number) => ellipse(now, 80, 60, 4000) },
+      { duration: 800, point: (now: number) => ellipse(now, 240, 160, 2600) },
+      { duration: 1800, point: (now: number) => ({ x: 250 + now * .4, y: 400 + 12 * Math.sin(now / 180) }) },
+      { duration: 1800, point: () => ({ x: 500, y: 400 }) },
+    ];
+    for (const { point, duration } of paths) {
+      const detector = createCompanionHeldShake();
+      expect(path(detector, point, duration, 120).active).toBe(false);
+      expect(detector.consume(duration)).toBe(false);
+    }
+  });
+  it("cannot turn a sub280ms circular burst into a shake by holding still afterward", () => {
+    const detector = createCompanionHeldShake(), point = (now: number) => ellipse(now, 70, 60, 80);
+    expect(path(detector, point, 240, 240).active).toBe(false);
+    const stopped = point(240);
+    for (let now = 256; now <= 2000; now += 16) {
+      detector.push(stopped.x, stopped.y, now); expect(detector.sample(now).active).toBe(false);
+    }
+    expect(detector.consume(2000)).toBe(false);
+  });
+  it("keeps circular evidence finite across gaps, expiry, consume, reset and a fresh pickup", () => {
+    const detector = createCompanionHeldShake(), circle = (now: number) => ellipse(now);
+    expect(path(detector, circle, 1800).active).toBe(true);
+    const stopped = circle(1800); detector.push(stopped.x, stopped.y, 2100);
+    expect(detector.sample(2100).active).toBe(true);
+    expect(detector.sample(3000).active).toBe(false); expect(detector.consume(3000)).toBe(false);
+    expect(path(detector, circle, 1800, 60, 4000).active).toBe(true);
+    expect(detector.consume(5800)).toBe(true); expect(detector.consume(5801)).toBe(false);
+    for (let now = 5816; now <= 7000; now += 16) { const p = circle(now); detector.push(p.x, p.y, now); }
+    expect(detector.sample(7000).active).toBe(false);
+    expect(path(detector, circle, 1800, 60, 8000).active).toBe(true); detector.reset();
+    expect(detector.sample(9800).active).toBe(false);
+    expect(path(detector, circle, 240, 120, 10000).active).toBe(false);
+    detector.push(500, 400, 11000);
+    for (let now = 11016; now <= 11192; now += 16) { const p = circle(now - 11000); detector.push(p.x, p.y, now); }
+    expect(detector.sample(11200).active).toBe(false);
   });
   it("can acquire a new shake axis after an ordinary pickup movement", () => {
     const detector = createCompanionHeldShake(); detector.begin(300, 400, 0);

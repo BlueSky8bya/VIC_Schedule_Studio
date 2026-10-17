@@ -1,0 +1,13 @@
+{
+  "work_id": "VICTAMIN-RECOVERY-20261017",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\VICTAMIN-RECOVERY-20261017\\검토용\\B8D1FFD2E77A751C0D23.png",
+  "sha256": "A72DDAB7269B76FFE6597E8A3F5DCD2CC1BE327B0FE0413527BFCB9131BFE99A",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Builtin result was viewed as a whole: four complete two-ear limbless paper-pompom keys. First three have strained closed eyes and a wavy closed mouth, last has round eyes and a neutral short closed mouth. No smiling/open mouth observed. This author observation is not independent art PASS or user approval. Runtime small-size/registration is separately tested."
+  ],
+  "cycle_id": "B8D1FFD2E77A751C0D23",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

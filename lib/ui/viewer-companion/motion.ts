@@ -155,7 +155,12 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const end = frames.length - 1;
       const cyclicIndex = (step: number) => loops.has(row) ? Math.floor(Math.max(0, step) + 1e-8) % frames.length : pingPong(step, frames.length);
       let index = 0;
-      if (!entered) {
+      if (row === 23 && input.status === "play") {
+        // Recovery owns an explicit expression even on its first/zero-delta
+        // sample. Quiet rendering must not flash the strained opening key.
+        const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
+        index = input.reduced ? end : Math.min(end, Math.floor(phase * frames.length + 1e-8));
+      } else if (!entered) {
         if (row === 2 || row === 20) {
           const steps = Math.abs(dx) / (row === 20 ? 54 : WALK_STRIDE_PX) * (loops.has(row) ? frames.length : 2 * end);
           // Distance owns stride phase, with an authored-frame rate ceiling.

@@ -1,0 +1,33 @@
+{
+  "status": "PLANNED_USER_DIRECTED_CYCLE",
+  "plan_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-RECOVERY-20261017\\plan.json",
+  "plan_sha256": "AED817A1498A5529BEF668F200926F2B4343B817DEAFF8AD060A9CCFB09D2E2D",
+  "plan": {
+    "schema_version": 1,
+    "workflow_mode": "user_directed_cycle",
+    "cycle_id": "B8D1FFD2E77A751C0D23",
+    "run_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-RECOVERY-20261017\\cycle_B8D1FFD2E77A751C0D23",
+    "action_budget_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-RECOVERY-20261017\\user_actions_20472092458D50628F28",
+    "work_id": "VICTAMIN-RECOVERY-20261017",
+    "phase": "generate",
+    "user_source": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-6b11b2b3fde229107500b72a.json",
+      "sha256": "B3CB4F13A865E98DA02DF4C73F0FD8520DC29E884DCA8B7EAEBB74D328CCF8C3",
+      "excerpt": "지금은 기쁜 표정으로 그냥 고개 흔드는 것처럼 보여."
+    },
+    "role_focus": {},
+    "force_review": false,
+    "candidate": null,
+    "policy_sha256": "2153332C2BC33B0FECA8D689FEFADEF131A26B1F518FDFBE666ACEBD07766F91",
+    "request_turn_id": "msg_01a149fd-0871-7b60-ae4d-8b4329603aeb",
+    "limits": {
+      "imagegen_calls": 1,
+      "review_rounds": 0,
+      "repair_calls": 0,
+      "post_repair_agent_rounds": 0
+    },
+    "next_action": "one_generation_then_show",
+    "automatic_full_review": false,
+    "user_approval_is_visual_not_numeric_certification": true
+  }
+}

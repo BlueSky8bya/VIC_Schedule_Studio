@@ -1,0 +1,15 @@
+{
+  "event_id": "recovery-expression-095-20261017",
+  "decision": "rule_update",
+  "work_id": "VICTAMIN-RECOVERY-20261017",
+  "user_quote": "그리고 빅타민 잡고 흔들 때 좌우로 흔드는 건 제대로 헤롱헤롱 표정 나오는데, 원형으로 흔들 때는 헤롱헤롱이 안 뜨거든? 이것도 격렬하게 흔들면 다 헤롱헤롱 뜨게 해주고, 어떤 행동 이후에서든지 헤롱헤롱 된 이후거나 발 헛디뎌서 정신 차릴 때라든가 등등 고개 흔들면서 땅에서 정신차릴 때 눈이 행복해하는 눈? 아님 입이 웃고있나? 그래서 뭔가 어색해. 헤롱거린 후 정신 차릴 때는 제대로 입이 ~ 이렇게 되있다든가 이런 식으로 해서 확실히 정신차리는 느낌을 주게 해줘. 지금은 기쁜 표정으로 그냥 고개 흔드는 것처럼 보여.\n\n그리고 음식 먹으려다가 발 헷디뎌서 굴렀으면 정신 차리고 계속 음식 먹어야지 왜 다시 초기화돼서 다른 곳 가는 행동이 있는거야\n\n그리고 첨부사진처럼 소파 호버 하이라이팅 하지 말고 걍 소파 호버링 했을 때 소파가 살짝 커진다든가 하는 식으로 내가 이 소파를 누를 수 있구나를 알 수 있게 해줘. 그리고 누르면 클릭감을 맛있게 느낄 수 있게 해주고",
+  "source_context": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-6b11b2b3fde229107500b72a.json",
+  "source_actor": "user",
+  "thread_id": "01a13862-7fb6-7a73-839b-079df9dbbea2",
+  "turn_id": "msg_01a149fd-0871-7b60-ae4d-8b4329603aeb",
+  "observed_at": "2026-10-17T13:11:21.969Z",
+  "scopes": [
+    "mascot recovery expression"
+  ],
+  "interpretation": "Recovery must read as disorientation being shaken off, with strained eyes and a small wavy mouth, then a calm neutral face. Preserve the existing limbless two-ear paper-pompom identity. This is a requested change, not artwork approval."
+}
