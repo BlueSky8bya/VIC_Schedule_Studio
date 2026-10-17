@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
+import { guardedFetch } from "@/lib/net/guarded-fetch";
 
 export async function middleware(request: NextRequest) {
   if (!isSupabaseConfigured()) {
@@ -18,6 +19,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: { fetch: guardedFetch },
       cookies: {
         getAll() {
           return request.cookies.getAll();
