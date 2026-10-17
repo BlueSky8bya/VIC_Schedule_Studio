@@ -1,6 +1,6 @@
 # 부른 빅타민의 귀가 완료와 종별 동작
 
-Status: Complete — locally integrated and verified; included in the later owner-authorized089 release, deployment verification pending.
+Status: Complete — deployed and verified in the later owner-authorized089 releaseb21afb8e. [Release evidence](../verification/COMPANION_SHAKE_RELEASE-20261017.md).
 
 소유자 요청: 소파로 부르면 중간에 일반 행동/수면으로 이탈하지 않고 도착한다. 강아지는 뛰고 고양이는 걸으며, 빅타민의 짧은 장난·눈치 동작도 귀가를 끝내는 범위에서만 허용한다.
 

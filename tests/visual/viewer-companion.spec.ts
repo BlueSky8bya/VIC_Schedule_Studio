@@ -124,7 +124,7 @@ for (const width of [1440]) {
   });
 }
 
-test("keyboard and direct double-click offer non-dragging placement, plus a finite nap", async ({ page }) => {
+test("keyboard alternatives offer non-dragging placement, plus a finite nap", async ({ page }) => {
   await stationaryFixture(page);
   await actor(page).focus();
   await page.keyboard.press("Enter");

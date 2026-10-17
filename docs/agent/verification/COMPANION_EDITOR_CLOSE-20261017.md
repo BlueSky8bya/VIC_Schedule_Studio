@@ -1,6 +1,6 @@
 # 편집창 닫힘 뒤 빅타민 지속 소실
 
-Status: Complete — locally integrated and verified; later owner-authorized089 combined release pending. [PLAN-087](../plans/PLAN-20261017-087-companion-editor-close.md), [release record](COMPANION_SHAKE_RELEASE-20261017.md). Original local evidence below predates that authorization.
+Status: Complete — deployed in later owner-authorized089 combined releaseb21afb8e. [PLAN-087](../plans/PLAN-20261017-087-companion-editor-close.md), [release record](COMPANION_SHAKE_RELEASE-20261017.md). Original local evidence below predates that authorization.
 
 ## 원인과 변경
 

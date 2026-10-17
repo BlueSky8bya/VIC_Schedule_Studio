@@ -8,7 +8,7 @@ import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 type Surface = "viewer" | "studio";
 type Mode = "full" | "lite" | "reduced" | "off";
-type Input = "drag" | "two-tap";
+type Input = "drag" | "double-click-then-drag";
 type Point = { x: number; y: number };
 type Target = Point & { plane: number; eventId: string; hitChain: { tag: string; className: string; role: string | null; act: string | null }[] };
 type Frame = Point & { at: number; same: boolean; hidden: boolean; visible: boolean; decoded: boolean; state: string; presence: string; dreaming: boolean; platform: string; returning: string | null };
@@ -205,7 +205,7 @@ async function expectSleepOnTarget(page: Page, surface: Surface, target: Target)
   await expect.poll(async () => { const p = await point(page), plane = await card.evaluate(node => node.getBoundingClientRect().top - 3); return Math.hypot(p.x - target.x, p.y - plane); }).toBeLessThan(2);
 }
 
-for (const surface of ["viewer", "studio"] as const) for (const mode of ["full", "lite", "reduced", "off"] as const) test(`${surface} ${mode}: quiet parked drop restores sleep after native two-tap placement and drag`, async ({ page }) => {
+for (const surface of ["viewer", "studio"] as const) for (const mode of ["full", "lite", "reduced", "off"] as const) test(`${surface} ${mode}: double-click keeps the sleeper in place and native drag restores quiet sleep`, async ({ page }) => {
   test.setTimeout(45000); await setup(page, surface, mode);
   await installGeometryAttribution(page);
   const original = await pet(page).elementHandle(), dialog = await openExposedWindow(page, surface);
@@ -214,20 +214,25 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
   expect(attributionOpening.companionRectReads, "real native window opening must positively identify this build's companion geometry calls").toBeGreaterThan(0);
   const focus = await page.evaluateHandle(() => document.activeElement);
   let previous: string | undefined;
-  for (const input of ["two-tap", "drag"] as const satisfies readonly Input[]) {
+  for (const input of ["double-click-then-drag", "drag"] as const satisfies readonly Input[]) {
     const target = await landingTarget(page, surface, dialog, previous), grip = await exposedGrip(page); previous = target.eventId;
     proof.get(page)!.inputs.push({ input, target, grip });
     await beginWitness(page);
-    if (input === "drag") {
-      const before = await point(page), offset = { x: grip.x - before.x, y: grip.y - before.y };
-      await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await expect(pet(page)).toHaveAttribute("data-overlay-drag", "");
-      await page.mouse.move(target.x + offset.x, target.y + offset.y, { steps: 12 });
-      await expect.poll(async () => { const p = await point(page); return Math.hypot(p.x - target.x, p.y - target.y); }).toBeLessThan(2);
-      await page.mouse.up();
-    } else {
-      await page.mouse.dblclick(grip.x, grip.y); await expect(pet(page)).toHaveAttribute("data-placing", "");
-      await page.mouse.click(target.x, target.y); await expect(pet(page)).not.toHaveAttribute("data-placing");
+    const before = await point(page), offset = { x: grip.x - before.x, y: grip.y - before.y };
+    if (input === "double-click-then-drag") {
+      // Double-click no longer arms a destination click or borrows modal focus.
+      // The same exposed body must still accept the following native drag.
+      await page.mouse.dblclick(grip.x, grip.y);
+      await expect(pet(page)).not.toHaveAttribute("data-placing"); await expect(pet(page)).not.toHaveAttribute("data-overlay-drag");
+      expect(await actor(page).evaluate(node => getComputedStyle(node).cursor)).not.toBe("crosshair");
+      expect(await page.evaluate(focus => document.activeElement === focus, focus)).toBe(true);
+      await expect.poll(async () => { const p = await point(page); return Math.hypot(p.x - before.x, p.y - before.y); }).toBeLessThan(2);
     }
+    await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await expect(pet(page)).toHaveAttribute("data-overlay-drag", "");
+    await page.mouse.move(target.x + offset.x, target.y + offset.y, { steps: 12 });
+    await expect.poll(async () => { const p = await point(page); return Math.hypot(p.x - target.x, p.y - target.y); }).toBeLessThan(2);
+    await page.mouse.up();
+    await expect(pet(page)).not.toHaveAttribute("data-placing");
     await page.mouse.move(4, 4); await expectSleepOnTarget(page, surface, target); await expect(dialog).toBeVisible();
     expect(await page.evaluate(focus => document.activeElement === focus, focus)).toBe(true);
     await page.screenshot({ path: `${prefix}-${surface}-${mode}-${input}.png`, animations: "allow" });
@@ -242,7 +247,10 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
   }
   const beforeClose = await point(page);
   const preferencesBeforeClose = await page.evaluate(() => localStorage.getItem("vic.viewerCompanion")), grip = await exposedGrip(page);
-  await beginWitness(page); await page.mouse.dblclick(grip.x, grip.y); await expect(pet(page)).toHaveAttribute("data-placing", "");
+  await beginWitness(page); await page.mouse.dblclick(grip.x, grip.y); await expect(pet(page)).not.toHaveAttribute("data-placing");
+  expect(await actor(page).evaluate(node => getComputedStyle(node).cursor)).not.toBe("crosshair");
+  expect(await page.evaluate(focus => document.activeElement === focus, focus)).toBe(true);
+  await expect.poll(async () => { const p = await point(page); return Math.hypot(p.x - beforeClose.x, p.y - beforeClose.y); }).toBeLessThan(2);
   const close = dialog.locator(surface === "studio" ? ".editor-close" : ".agenda-detail-close");
   const nativeClose = await close.evaluate(button => {
     const r = button.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
@@ -250,8 +258,8 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
   });
   proof.get(page)!.inputs.push({ input: "protected-close", beforeClose, nativeClose });
   expect(nativeClose.hit).toBe(true); expect(nativeClose.tag).toBe("BUTTON");
-  // A real close control retains its native input even while ordinary-window
-  // two-tap placement is armed. It must never become a new drop destination.
+  // A double-click leaves no pending destination gesture. The real close
+  // control keeps its native input and must never become a drop destination.
   await close.click(); await expect(dialog).toBeHidden(); await expect(pet(page)).not.toHaveAttribute("data-placing");
   await expect(pet(page)).not.toHaveAttribute("data-returning");
   await expect(pet(page)).toHaveAttribute("data-presence", "active", { timeout: 5000 });

@@ -1,6 +1,6 @@
 # 부른 빅타민의 귀가 완료 검증
 
-Status: Complete — locally integrated and verified; later owner-authorized089 combined release pending. [PLAN-088](../plans/PLAN-20261017-088-companion-committed-home.md), [release record](COMPANION_SHAKE_RELEASE-20261017.md). Original local evidence below predates that authorization.
+Status: Complete — deployed in later owner-authorized089 combined releaseb21afb8e. [PLAN-088](../plans/PLAN-20261017-088-companion-committed-home.md), [release record](COMPANION_SHAKE_RELEASE-20261017.md). Original local evidence below predates that authorization.
 
 ## 원인
 

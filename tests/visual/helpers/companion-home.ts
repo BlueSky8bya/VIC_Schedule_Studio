@@ -31,11 +31,8 @@ export async function chooseCompanionCare(page: Page, action: CareAction, input:
     if (input === "keyboard") { await actor.focus(); await actor.press("Enter"); }
     else if (input === "touch") await actor.tap();
     else await actor.click();
-  } else if (action === "옮길 곳 고르기" && input !== "keyboard") {
-    if (input === "touch") { await actor.tap(); await actor.tap(); }
-    else await actor.dblclick();
-    await expect(page.locator(".vc-companion")).toHaveAttribute("data-placing", "");
   } else {
+    // Placement is an explicit keyboard alternative; pointer input uses drag.
     await actor.focus(); await actor.press(action === "옮길 곳 고르기" ? "p" : "n");
   }
   await expect(page.getByRole("menu", { name: "빅타민 돌보기", exact: true })).toHaveCount(0);

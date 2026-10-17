@@ -166,12 +166,17 @@ test("leaving the drag button for another control cannot award affection or cons
   await expect(neighbour).toHaveAttribute("data-clicked", "true");
 });
 
-test("sleeping two-tap placement commits its first lower real card without closing the detail or returning to an old world point", async ({ page }) => {
+test("a sleeping double-click keeps position before native drag lands on the first lower real card without closing the detail", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page); await placeExposedSleeper(page);
   await page.locator(".public-event:visible").first().click();
   const dialog = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 10000 }); await page.waitForTimeout(600);
-  const grip = await exposedGrip(page); await page.mouse.dblclick(grip.x, grip.y); await expect(pet(page)).toHaveAttribute("data-placing", "");
+  const before = await point(page), focus = await page.evaluateHandle(() => document.activeElement), grip = await exposedGrip(page);
+  await page.mouse.dblclick(grip.x, grip.y); await expect(pet(page)).not.toHaveAttribute("data-placing");
+  await expect(pet(page)).not.toHaveAttribute("data-overlay-drag");
+  expect(await actor(page).evaluate(node => getComputedStyle(node).cursor)).not.toBe("crosshair");
+  expect(await page.evaluate(focus => document.activeElement === focus, focus)).toBe(true);
+  await expect.poll(async () => { const p = await point(page); return Math.hypot(p.x - before.x, p.y - before.y); }).toBeLessThan(2);
   const target = await dialog.evaluate(sheet => {
     const pane = sheet.getBoundingClientRect();
     const cards = [...document.querySelectorAll<HTMLElement>(".public-event:not(.teaser):not(.dimmed):not(.is-support)")].map(node => ({ node, r: node.getBoundingClientRect() })).filter(({ r }) => r.width > 100 && r.height > 0);
@@ -190,18 +195,24 @@ test("sleeping two-tap placement commits its first lower real card without closi
     const sample = () => { const r = node.getBoundingClientRect(); witness.frames.push({ x: r.left + r.width / 2, y: r.bottom, hidden: (node as HTMLElement).hidden }); witness.raf = requestAnimationFrame(sample); };
     (window as PlacementWindow).hdPlacement = witness; witness.raf = requestAnimationFrame(sample);
   });
-  await page.mouse.click(target!.x, target!.y); await expect(dialog).toBeVisible(); await expect(pet(page)).not.toHaveAttribute("data-placing");
+  const offset = { x: grip.x - before.x, y: grip.y - before.y };
+  await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await expect(pet(page)).toHaveAttribute("data-overlay-drag", "");
+  await page.mouse.move(target!.x + offset.x, target!.y + offset.y, { steps: 12 });
+  await expect.poll(async () => { const p = await point(page); return Math.hypot(p.x - target!.x, p.y - target!.y); }).toBeLessThan(2);
+  await page.mouse.up(); await page.mouse.move(4, 4);
+  await expect(dialog).toBeVisible(); await expect(pet(page)).not.toHaveAttribute("data-placing");
   await expect(pet(page)).toHaveAttribute("data-state", "jump");
   await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 6000 });
   const frames = await page.evaluate(() => { const witness = (window as PlacementWindow).hdPlacement!; cancelAnimationFrame(witness.raf); return witness.frames; });
   await writeFile(".scratch-pw/companion-077-sleeping-placement.json", JSON.stringify({ target, frames }, null, 2));
   // Hidden frames have a zero BCR and must not disappear from the x-filtered flight.
-  expect(frames.every(frame => !frame.hidden), "the entire native placement stays unhidden, including its first and last frames").toBe(true);
+  expect(frames.every(frame => !frame.hidden), "the entire native drag and fall stay unhidden, including their first and last frames").toBe(true);
   const flight = frames.filter(frame => Math.abs(frame.x - target!.x) < 1 && frame.y < target!.plane - 4);
   expect(flight.length).toBeGreaterThan(2); expect(Math.max(...flight.map(frame => frame.y)) - Math.min(...flight.map(frame => frame.y))).toBeGreaterThan(10);
   expect(flight.every(frame => !frame.hidden && frame.y >= target!.y - 3)).toBe(true);
   const placed = await point(page); expect(Math.abs(placed.x - target!.x)).toBeLessThan(1); expect(Math.abs(placed.y - target!.plane)).toBeLessThan(3);
   await expect(pet(page)).toHaveAttribute("data-presence", "parked");
+  expect(await page.evaluate(focus => document.activeElement === focus, focus)).toBe(true);
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(pet(page)).not.toHaveAttribute("data-returning", { timeout: 6000 });
   const actualCard = page.locator(`.public-event[data-eventid="${target!.id}"]`);

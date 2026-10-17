@@ -1,6 +1,6 @@
 # 빅타민 흔들기 반응과087/088 통합 배포
 
-Status: In Progress.
+Status: Complete — combined087/088/089 releaseb21afb8e deployed and verified; remote quality all PASS.
 
 소유자가087 편집창 닫힘·088 귀가 수정의 커밋/푸시/운영 배포와, 잡고 빠르게 흔들 때 어지러워하는 반응을 함께 요청했다. 현재 main의 두 수정과 사용자 아트/미리보기 작업을 보존한다.
 
@@ -11,3 +11,5 @@ Status: In Progress.
 - 사용자 아트·개인 설정·임시 PNG는 staging에서 제외한다. 관련 코드/검사/계획/검증 문서를 명시적으로 stage하고 main으로 정상 push한다. 이전085/086의 사후 배포 문서는 이번 관련 기록으로 함께 보존한다. 성공은 Vercel 배포와 실제 운영 버전 확인 뒤 보고한다.
 
 결과는 [089 검증 기록](../verification/COMPANION_SHAKE_RELEASE-20261017.md)에 둔다. 최종 fixture build `RRU_Pl-nH1oGk9yqe00cz`, 전체 unit1,950/1,950·실제 조작40/40·build/typecheck/lint PASS, 독립 검토 blocking0·23파일 소스 일치를 확인했다. 최초 검출/놓기 경계와 lite 관측 실패는 기록에 보존했다. 이제 명시 staging과 원격 CI/Vercel/실제 배포 확인을 수행한다. 별도 DB/플랜 변경이나 파괴적 작업은 포함하지 않는다.
+
+완료: 명시25파일 commit/push, Vercel success와 전체 운영 SHA·실제 개발자 편집실 버전/귀가 도착·원격 quality39024679191 전 단계 success 확인. 사후 기록만을 위해 추가 배포하지 않았다.

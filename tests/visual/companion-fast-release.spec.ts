@@ -47,9 +47,13 @@ async function frames(page: Page, duration = 1000) {
 }
 
 for (const surface of ["viewer", "studio"] as const) for (const mode of ["full", "lite", "reduced", "off"] as const) {
-  test(`${surface} ${mode} fast bottom release recovers and remains grounded while scrolling`, async ({ page }) => {
+  test(`${surface} ${mode} double-click avoids placement and fast release remains grounded while scrolling`, async ({ page }) => {
     await setup(page, surface, mode);
     const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    await page.locator(".vc-actor").dblclick();
+    await expect(page.locator(".vc-companion")).not.toHaveAttribute("data-placing");
+    await expect(page.locator(".vc-actor")).not.toHaveCSS("cursor", "crosshair");
+    await expect(page.locator("#vc-help")).not.toContainText("두 번");
     const rect = (await page.locator(".vc-actor").boundingBox())!;
     const home = await page.locator(".vc-home-launcher").count() ? page.locator(".vc-home-launcher") : page.locator(".vc-home");
     const control = (await home.boundingBox())!;

@@ -1,6 +1,6 @@
 # 일정 편집창을 닫은 뒤 빅타민 표시 복구
 
-Status: Complete — locally integrated and verified; included in the later owner-authorized089 release, deployment verification pending.
+Status: Complete — deployed and verified in the later owner-authorized089 releaseb21afb8e. [Release evidence](../verification/COMPANION_SHAKE_RELEASE-20261017.md).
 
 소유자 보고: 편집창이 열리면10일 오른쪽 아래에 잠든 빅타민이 보이지만 창을 닫으면 사라진다. 실제 원인을 재현하고 수정한다. 현재 운영ecaa940f와 사용자 아트/사후 문서 작업을 보존한다.
 
