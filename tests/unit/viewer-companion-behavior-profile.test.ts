@@ -9,8 +9,8 @@ const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" 
 const world: CompanionWorld = { x: 500, y: 700, platformId: floor.id, platforms: [floor], width: 1000, height: 900 };
 const healthy = (): CompanionBrain => ({ ...createBrain(0, () => .5), energy: .8, curiosity: .8, hunger: .1 });
 function seeded(seed = 121) { let n = seed; return () => { n = Math.imul(n, 1664525) + 1013904223 | 0; return (n >>> 0) / 4294967296; }; }
-function sample(changes: Partial<CompanionPreferences> = {}, context = world, brain = healthy(), count = 1600) {
-  const rng = seeded();
+function sample(changes: Partial<CompanionPreferences> = {}, context = world, brain = healthy(), count = 1600, seed = 121) {
+  const rng = seeded(seed);
   return Array.from({ length: count }, () => getAction(brain, context, { ...prefs, ...changes }, 100000, rng));
 }
 const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -19,6 +19,19 @@ function running() {
   let brain = healthy();
   for (let step = 0; step < 2; step++) brain = commitAction(brain, { kind: "walk", pace: "scoot", target: { x: 500, y: 700, platformId: floor.id }, duration: 2000 }, step * 3000);
   return brain;
+}
+function timeline(changes: Partial<CompanionPreferences>, seed: number, context = world) {
+  const rng = seeded(seed), options = { ...prefs, ...changes }, actions: { action: CompanionAction; from: number }[] = [];
+  let brain = healthy(), point = { ...context }, now = 100000;
+  while (now < 130000) {
+    const action = getAction(brain, point, options, now, rng);
+    actions.push({ action, from: point.x });
+    brain = commitAction(brain, action, now);
+    point = { ...point, x: action.target.x, y: action.target.y, platformId: action.target.platformId };
+    brain.activeMs += action.duration;
+    now += action.duration + 220;
+  }
+  return actions;
 }
 
 describe("independent companion species, motivation and gait", () => {
@@ -50,7 +63,8 @@ describe("independent companion species, motivation and gait", () => {
     const high: Platform = { id: "high", x: 360, y: 580, width: 240, kind: "card" };
     const low: Platform = { id: "low", x: 360, y: 820, width: 240, kind: "card" };
     const context = { ...world, platforms: [floor, high, low] };
-    const cat = sample({ animalMode: "cat" }, context), dog = sample({ animalMode: "dog" }, context);
+    const species = (animalMode: CompanionPreferences["animalMode"]) => Array.from({ length: 8 }, (_, index) => sample({ animalMode }, context, healthy(), 800, 121 + index * 31)).flat();
+    const cat = species("cat"), dog = species("dog");
     const jumps = cat.filter(a => a.kind === "jump" && a.target.platformId !== floor.id);
     expect(jumps.length).toBeGreaterThan(100);
     expect(jumps.filter(a => a.target.platformId === high.id).length / jumps.length).toBeGreaterThan(.8);
@@ -65,7 +79,7 @@ describe("independent companion species, motivation and gait", () => {
   it("changes stride, pause rhythm, scoot frequency and hop impulse along with gait speed", () => {
     const relaxed = sample({ speed: "relaxed" }), lively = sample({ speed: "lively" });
     const slowWalks = walk(relaxed), quickWalks = walk(lively);
-    expect(Math.max(...slowWalks.map(a => a.target.x - world.x))).toBeLessThan(81);
+    expect(Math.max(...slowWalks.filter(a => a.pace === "amble").map(a => a.target.x - world.x))).toBeLessThan(81);
     expect(Math.max(...quickWalks.map(a => a.target.x - world.x))).toBeGreaterThan(150);
     expect(quickWalks.filter(a => a.pace === "scoot").length / quickWalks.length).toBeGreaterThan(.7);
     expect(slowWalks.filter(a => a.pace === "scoot").length / slowWalks.length).toBeLessThan(.2);
@@ -102,37 +116,72 @@ describe("independent companion species, motivation and gait", () => {
     expect(after.some(a => a.play === "groom")).toBe(true);
     expect(after.every(a => a.intention?.kind !== "explore")).toBe(true);
   });
+
+  it("mixes short and sustained runs through real stateful thirty-second histories", () => {
+    const space: Platform = { ...floor, width: 1800 }, context = { ...world, x: 450, width: 1800, platforms: [space] };
+    const histories = Array.from({ length: 16 }, (_, index) => timeline({ jump: false, sleep: false }, 121 + index * 31, context));
+    expect(histories).toEqual(Array.from({ length: 16 }, (_, index) => timeline({ jump: false, sleep: false }, 121 + index * 31, context)));
+    const runs = histories.flat().filter(({ action }) => action.kind === "walk" && action.pace === "scoot");
+    expect(runs.filter(({ action }) => action.duration >= 2000).length).toBeGreaterThan(15);
+    expect(runs.filter(({ action }) => action.duration < 1500).length).toBeGreaterThan(15);
+    expect(new Set(runs.map(({ action }) => Math.floor(action.duration / 500))).size).toBeGreaterThanOrEqual(6);
+    for (const { action, from } of histories.flat()) {
+      expect(action.target.platformId).toBe(space.id);
+      expect(action.target.x).toBeGreaterThanOrEqual(space.x + 12);
+      expect(action.target.x).toBeLessThanOrEqual(space.x + space.width - 12);
+      expect(action.target.y).toBe(space.y);
+      if (action.kind === "walk") {
+        expect(Math.abs(action.target.x - from)).toBeLessThanOrEqual(520);
+        expect(action.duration).toBeGreaterThanOrEqual(500);
+        expect(action.duration).toBeLessThanOrEqual(5000);
+      }
+    }
+  });
+
+  it("retains species, fatigue, gait and small-support reach across stateful run choices", () => {
+    const collect = (changes: Partial<CompanionPreferences>, brain = healthy(), context = world) => Array.from({ length: 8 }, (_, seed) => {
+      if (brain.energy >= .28) return timeline({ ...changes, jump: false, sleep: false }, seed + 91, context);
+      return sample({ ...changes, jump: false, sleep: false }, context, brain, 200).map(action => ({ action, from: context.x }));
+    }).flat().filter(({ action }) => action.kind === "walk");
+    const cat = collect({ animalMode: "cat" }), tired = collect({}, { ...healthy(), energy: .27 });
+    expect(cat.length).toBeGreaterThan(10); expect(tired.length).toBeGreaterThan(10);
+    expect([...cat, ...tired].every(({ action, from }) => action.pace === "amble" && Math.abs(action.target.x - from) <= 180)).toBe(true);
+    const relaxed = collect({ speed: "relaxed" }), lively = collect({ speed: "lively" });
+    const ratio = (items: typeof relaxed) => items.filter(({ action }) => action.pace === "scoot").length / items.length;
+    expect(ratio(lively)).toBeGreaterThan(ratio(relaxed) + .35);
+    const perPixel = (items: typeof relaxed) => mean(items.map(({ action, from }) => action.duration / Math.abs(action.target.x - from)));
+    expect(perPixel(relaxed)).toBeGreaterThan(perPixel(lively));
+    for (const support of [{ ...floor, id: "arrow", kind: "control" as const }, { ...floor, id: "companion-home", kind: "date" as const }, { ...floor, id: "companion-home-floor-1" }]) {
+      const actions = collect({ speed: "lively" }, healthy(), { ...world, platformId: support.id, platforms: [support] });
+      expect(actions.length).toBeGreaterThan(10);
+      expect(actions.every(({ action, from }) => Math.abs(action.target.x - from) <= 180)).toBe(true);
+      for (const { action, from } of actions.filter(({ action }) => action.pace === "scoot")) expect(action.duration).toBeCloseTo(Math.max(500, Math.abs(action.target.x - from) / 100 * 850));
+    }
+  });
 });
 
 describe("bounded cartoon play after actual movement", () => {
-  it("requires a committed burst and keeps finite mishaps on the same real support", () => {
-    expect(getAction(healthy(), world, prefs, 100000, () => 0).kind).not.toBe("play");
-    const action = getAction(running(), world, prefs, 100000, () => 0);
-    expect(action).toMatchObject({ kind: "play", play: "tumble", target: { x: world.x, y: world.y, platformId: floor.id } });
-    expect(action.duration).toBe(companionPlayDuration("tumble"));
-    const next = commitAction(running(), action, 100000);
-    expect(next.cooldowns.play).toBe(100000 + action.duration + 20000);
-    expect(next.movementMs).toBe(0);
-    expect(getAction(next, world, prefs, 100000 + action.duration + 1, () => 0).kind).not.toBe("play");
-  });
-
-  it("reserves calendar card mishaps for proved arrivals instead of a fresh random idle decision", () => {
-    const card: Platform = { ...floor, id: "ordinary-card", kind: "card" };
-    const context = { ...world, platformId: card.id, platforms: [card] };
-    for (const brain of [healthy(), running()]) {
-      const decisions = sample({}, context, brain, 800);
-      expect(decisions.some(action => ["tumble", "bump", "slip"].includes(action.play ?? ""))).toBe(false);
+  it("reserves floor and card mishaps for proved locomotion contact, not a stationary choice", () => {
+    for (const support of [floor, { ...floor, id: "ordinary-card", kind: "card" as const }]) for (const brain of [healthy(), running()]) {
+      const context = { ...world, platformId: support.id, platforms: [support] };
+      expect(sample({}, context, brain, 1200).every(action => !["tumble", "bump", "slip", "bonk-sad", "bonk-tears"].includes(action.play ?? ""))).toBe(true);
     }
-    // Flat ground still allows a rare clumsy finish after the real run burst.
-    expect(getAction(running(), world, prefs, 100000, () => 0).play).toBe("tumble");
   });
 
-  it("caps eligibility odds and reserves bonk reactions for explicit human input", () => {
-    const actions = sample({}, world, running(), 4000);
-    const accidents = actions.filter(a => ["tumble", "slip", "bump"].includes(a.play ?? ""));
-    expect(accidents.length).toBeGreaterThan(100); expect(accidents.length).toBeLessThan(1000);
-    expect(actions.every(a => a.play !== "bonk-sad" && a.play !== "bonk-tears")).toBe(true);
-    expect(sample({ animalMode: "cat" }, world, running(), 4000).filter(a => ["tumble", "slip", "bump"].includes(a.play ?? "")).length).toBeLessThan(accidents.length / 4);
+  it("records an independent mishap cooldown without letting emotion or grooming extend it", () => {
+    for (const play of ["tumble", "bump", "slip"] as const) {
+      const action: CompanionAction = { kind: "play", play, target: { x: world.x, y: world.y, platformId: floor.id }, duration: companionPlayDuration(play) };
+      const next = commitAction(running(), action, 100000), deadline = 100000 + action.duration + 20000;
+      expect(next.cooldowns).toMatchObject({ play: deadline, mishap: deadline });
+      expect(next.movementMs).toBe(0);
+      for (const expression of ["dizzy", "groom", "bonk-tears", "celebrate"] as const) {
+        const emotional: CompanionAction = { ...action, play: expression, duration: companionPlayDuration(expression) };
+        expect(commitAction(healthy(), emotional, 100100).cooldowns.mishap).toBeUndefined();
+        const continued = commitAction(next, emotional, 100100);
+        expect(continued.cooldowns.mishap).toBe(deadline);
+        expect(continued.cooldowns.play).toBe(100100 + emotional.duration + 20000);
+      }
+    }
   });
 
   it("keeps food, paused/disabled state, manual supports and navigation switches authoritative", () => {

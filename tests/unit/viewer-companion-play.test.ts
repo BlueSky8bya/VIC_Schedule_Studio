@@ -10,7 +10,8 @@ describe("finite authored companion play", () => {
       const pose = sampleCompanionPlay(kind, i / 100);
       expect(pose.row).toBeGreaterThanOrEqual(20); expect(pose.row).toBeLessThanOrEqual(31);
       expect(pose.phase).toBeGreaterThanOrEqual(0); expect(pose.phase).toBeLessThanOrEqual(1);
-      expect(Math.abs(pose.lift)).toBeLessThanOrEqual(9); expect(Math.abs(pose.lean)).toBeLessThanOrEqual(3);
+      const maxLean = kind === "dizzy" && pose.beat === "recover" ? 8 : 3;
+      expect(Math.abs(pose.lift)).toBeLessThanOrEqual(9); expect(Math.abs(pose.lean)).toBeLessThanOrEqual(maxLean);
     }
     expect(sampleCompanionPlay(kind, 1)).toMatchObject({ row: 23, phase: 1, lift: 0, lean: 0 });
   });
@@ -44,7 +45,7 @@ describe("finite authored companion play", () => {
     expect(sampleCompanionPlay("dizzy", 519 / duration)).toMatchObject({ row: 22, beat: "dizzy", lift: 0, shift: 0 });
     expect(sampleCompanionPlay("dizzy", 520 / duration)).toMatchObject({ row: 23, beat: "recover", lift: 0, lean: 0, shift: 0, compression: 0 });
   });
-  it("connects sparse recovery art with continuous damped motion on the same support", () => {
+  it("shakes its head briskly three times before opening its eyes on the same support", () => {
     const duration = companionPlayDuration("dizzy");
     const poses = Array.from({ length: 161 }, (_, i) => sampleCompanionPlay("dizzy", (520 + i * 5) / duration));
     expect(new Set(poses.map(pose => pose.lean.toFixed(3))).size).toBeGreaterThan(80);
@@ -52,19 +53,32 @@ describe("finite authored companion play", () => {
     for (let i = 0; i < poses.length; i++) {
       const pose = poses[i];
       expect(pose).toMatchObject({ row: 23, beat: "recover", lift: 0, shift: 0 });
-      expect(Math.abs(pose.lean)).toBeLessThanOrEqual(3);
+      expect(Math.abs(pose.lean)).toBeLessThanOrEqual(8);
       expect(pose.compression).toBeGreaterThanOrEqual(0); expect(pose.compression).toBeLessThanOrEqual(.026);
       if (i) {
-        expect(Math.abs(pose.lean - poses[i - 1].lean)).toBeLessThan(.25);
+        expect(Math.abs(pose.lean - poses[i - 1].lean)).toBeLessThan(1.5);
         expect(Math.abs(pose.compression - poses[i - 1].compression)).toBeLessThan(.003);
       }
     }
-    for (const ms of [519.99, 520, 520.01, 1319.99, 1320]) {
+    const extrema = poses.flatMap((pose, i) => i > 0 && i < poses.length - 1
+      && (pose.lean > poses[i - 1].lean && pose.lean > poses[i + 1].lean
+        || pose.lean < poses[i - 1].lean && pose.lean < poses[i + 1].lean)
+      ? [{ lean: pose.lean, elapsed: i * 5 }] : []);
+    expect(extrema).toHaveLength(6);
+    expect(Math.max(...poses.map(pose => pose.lean))).toBeGreaterThan(6);
+    expect(Math.min(...poses.map(pose => pose.lean))).toBeLessThan(-6);
+    extrema.forEach((peak, i) => {
+      expect(peak.elapsed).toBeLessThan(520);
+      expect(Math.sign(peak.lean)).toBe(i % 2 ? -1 : 1);
+      if (i) expect(peak.elapsed - extrema[i - 1].elapsed).toBeLessThan(105);
+    });
+    for (const ms of [519.99, 520, 520.01, 1039.99, 1040, 1040.01, 1319.99, 1320]) {
       const pose = sampleCompanionPlay("dizzy", ms / duration);
       expect(Math.abs(pose.lean)).toBeLessThan(.001); expect(pose.compression).toBeLessThan(.001);
     }
-    expect(poses[79].phase).toBe(0); expect(poses[80].phase).toBe(1);
-    expect(Math.max(...poses.slice(-20).map(pose => Math.abs(pose.lean)))).toBeLessThan(.05);
+    expect(poses.slice(0, 112).every(pose => pose.phase === 0)).toBe(true);
+    expect(poses.slice(112).every(pose => pose.phase === 1)).toBe(true);
+    expect(poses.slice(104).every(pose => Math.abs(pose.lean) < 1e-12 && pose.compression < 1e-12)).toBe(true);
   });
   it("adds no compression to other reactions or reduced motion", () => {
     for (const kind of kinds) for (const progress of [0, .2, .5, .8, 1]) {

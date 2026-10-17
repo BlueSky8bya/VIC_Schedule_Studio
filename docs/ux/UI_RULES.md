@@ -4,6 +4,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
+활동·회복 정정(2026-10-17 소유자 후속): [PLAN-092](../agent/plans/PLAN-20261017-092-companion-romp-and-recovery.md)가091의 약한 회복과068의 정지 후 연속 이동 사고 추첨만 대체한다. 회복 앞520ms에3왕복의 힘찬 좌우 털기 뒤 눈을 뜨며 실제 지지점과 전체 몸체 경계를 유지한다. 일반 scoot은 현재 안전 발판 안에서 짧은/긴 구간을 섞고 검증된 run-up만 속도를 유지한 높은 도약으로 잇는다. 실제 같은 평면 진행 경로의 settled 음식 접촉과 유한 헛디딤을 구분하고, 넓은 곳에서만 구른다. 별도 mishap 제한·카드 기울임 토글·음식 좌표/소비 불변을 유지한다. 자율 explore는 허용하되 feed/rest/명령 귀가·수동 입력·창/편집/공연/비활성·감소/OFF·모바일 제외가 우선한다. 새 상시 loop·timer·서버/모델 요청·아트는 없다. [검증](../agent/verification/COMPANION_ROMP_RECOVERY-20261017.md).
+
 마우스 이동 조작 정정(2026-10-17 소유자 요청): 빅타민 더블클릭으로 위치 선택 모드/십자선에 들어가는 동작을 제거한다.052의 `double-tap-then-place`와 이전 두 번 누르기 안내만 대체한다. 시청자/편집실/미리보기는 같은 직접 드래그를 쓰며, 일반 창 뒤 잠든 펫도 focus를 빼앗지 않고 드래그한다. 키보드의 P 위치 선택·Space/방향키 이동·Escape와 모달/게스트의 입력 소유권은 유지한다. [검증](../agent/verification/COMPANION_DOUBLE_CLICK-20261017.md).
 
 흔들기 반응(2026-10-17 소유자 후속): [PLAN-091](../agent/plans/PLAN-20261017-091-companion-dizzy-continuity.md)이 [089](../agent/plans/PLAN-20261017-089-companion-shake-release.md)의 강한 감도·낙하 중 일반 얼굴·짧은 회복을 대체한다. 실제30px·300px/s·유효 반전2회와 세 번째 stroke·280ms로 판정하며 단발 이동·한 번 왕복·작은 떨림·느린 이동은 제외한다. 잡힌 귀/몸통의 pivot·중력 늘어짐·방향·관성과 실제 첫 지지면 낙하는 유지하고 마지막 빙글빙글 그림을 낙하→착지까지 잇는다. 착지 뒤520ms 어지러움과800ms 회복은 연속 감쇠 동작과 눈 감음→정상 눈으로 잇는다. 현재 exact decoder의2 in-flight/3 retained 안에서 필요한22·23만 미리 읽으며 취소/새 입력/blur/pause·감소/OFF·모바일 제외·일반 창/게스트 소유권은 유지한다. 새 상시 루프·타이머·서버 요청·아트는 만들지 않는다.

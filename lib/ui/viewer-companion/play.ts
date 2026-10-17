@@ -19,13 +19,12 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
     const phase = stage.cycles ? local * stage.cycles % 1 : local;
     if (stage.beat === "recover") {
       if (kind === "dizzy") {
-        // Hold one squint, then open the eyes. Four sparse tilted drawings
-        // used to pop between silhouettes; the existing pose plane supplies
-        // continuous, diminishing motion without moving the actual support.
-        const ramp = clamp(local / .15), ease = ramp * ramp * (3 - 2 * ramp);
-        const lean = Math.sin(local * Math.PI * 4) * 3 * (1 - local) ** 2 * ease;
-        const compression = .026 * Math.sin(local * Math.PI * 2) ** 2 * Math.sin(local * Math.PI);
-        return result(stage.row, local < .5 ? 0 : 1, stage.beat, 0, lean, 0, compression);
+        // Three brisk head shakes fit inside the first520ms. A smooth envelope
+        // starts and ends at rest; the eyes open afterward on the same support.
+        const shake = clamp(local / .65), envelope = Math.sin(shake * Math.PI) ** 2;
+        const lean = Math.sin(shake * Math.PI * 6) * 8 * envelope;
+        const compression = .026 * envelope;
+        return result(stage.row, local < .7 ? 0 : 1, stage.beat, 0, lean, 0, compression);
       }
       return result(stage.row, phase, stage.beat);
     }

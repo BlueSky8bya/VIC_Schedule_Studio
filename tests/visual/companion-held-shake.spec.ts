@@ -9,7 +9,7 @@ type Point = { x: number; y: number };
 type Mode = "full" | "lite" | "reduced" | "off";
 type Surface = "viewer" | "studio";
 type Frame = {
-  at: number; phase: string; comparable: boolean; freshTransform: boolean; stableInput: boolean; state: string; platform: string;
+  at: number; actionAge: number; phase: string; comparable: boolean; freshTransform: boolean; stableInput: boolean; state: string; platform: string;
   dizzy: boolean; play: string; beat: string; row: number; pose: string; adoptedRow: number; decoded: boolean;
   hidden: boolean; same: boolean; captured: boolean; x: number; y: number;
   facing: string; gripError: number; pivotError: number; posePivotError: number; poseTransform: string; tilt: number; scaleX: number; scaleY: number;
@@ -23,7 +23,7 @@ type Probe = {
 type ProbeWindow = Window & { heldShakeProbe: Probe };
 type Evidence = { posts: string[]; errors: string[] };
 const evidence = new WeakMap<Page, Evidence>();
-const output = ".scratch-pw/091-held-shake";
+const output = ".scratch-pw/092-held-shake";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 
@@ -101,7 +101,8 @@ async function startProbe(page: Page) {
         const pivot = { x: rect.left - Math.min(...corners.map(c => c.x)) + ox + matrix.e, y: rect.top - Math.min(...corners.map(c => c.y)) + oy + matrix.f };
         const poseCss = getComputedStyle(node.querySelector(".vc-pose")!), poseMatrix = new DOMMatrixReadOnly(poseCss.transform), [px, py] = poseCss.transformOrigin.split(" ").map(parseFloat);
         const held = el.dataset.state === "held", facing = el.dataset.facing ?? "", texture = node.querySelector<HTMLImageElement>(".vc-texture");
-        probe.frames.push({ at: performance.now() - began, phase: probe.phase, comparable: freshTransform && stableInput, freshTransform, stableInput,
+        const now = performance.now();
+        probe.frames.push({ at: now - began, actionAge: el.dataset.journey ? now - Number(el.dataset.journey) : 0, phase: probe.phase, comparable: freshTransform && stableInput, freshTransform, stableInput,
           state: el.dataset.state ?? "", platform: el.dataset.platform ?? "", dizzy: el.hasAttribute("data-held-dizzy"), play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "",
           row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * 31 / 100), pose: el.dataset.pose ?? "", adoptedRow: spriteRows.findIndex(row => row.includes(Number(el.dataset.pose))), decoded: Boolean(texture?.complete && texture.naturalWidth > 0), hidden: el.hidden || getComputedStyle(el).display === "none", same: node.isConnected && node === document.querySelector(".vc-companion"), captured: button.hasPointerCapture(probe.pointerId), x: p.x, y: p.y, facing,
           gripError: held && probe.grip ? Math.hypot(p.x + probe.grip.x - probe.pointer.x, p.y + probe.grip.y - probe.pointer.y) : 0,
@@ -175,6 +176,21 @@ function assertVisibleIdentity(frames: Frame[]) {
   expect(frames.every(frame => frame.same && !frame.hidden && frame.decoded && Number.isFinite(frame.x) && Number.isFinite(frame.y))).toBe(true);
 }
 
+function recoveryExtrema(frames: Frame[]) {
+  // Lite holds alternate display frames. Ignore identical values before finding
+  // actual direction changes; tiny matrix rounding must not count as a shake.
+  const changing = frames.filter((frame, i) => !i || Math.abs(frame.tilt - frames[i - 1].tilt) > .02);
+  const extrema: Frame[] = [];
+  for (let i = 1; i < changing.length - 1; i++) {
+    const before = changing[i - 1], current = changing[i], after = changing[i + 1];
+    if ((current.tilt - before.tilt) * (after.tilt - current.tilt) >= 0 || Math.abs(current.tilt) < .3) continue;
+    const previous = extrema.at(-1);
+    if (!previous || Math.sign(previous.tilt) !== Math.sign(current.tilt)) extrema.push(current);
+    else if (Math.abs(current.tilt) > Math.abs(previous.tilt)) extrema[extrema.length - 1] = current;
+  }
+  return extrema;
+}
+
 async function releaseSupport(page: Page, surface: Surface) {
   // Independently measure the fixture's actual downward ray. These are visible
   // card edges and the protected viewport floor, never runtime platform state.
@@ -240,9 +256,15 @@ for (const [surface, mode] of [["viewer", "full"], ["studio", "full"], ["viewer"
     expect(recover[0].pose).toBe(squint); expect(recover.at(-1)!.pose).toBe(normal);
     expect(recover.every(frame => frame.pose === squint || frame.pose === normal)).toBe(true);
     const normalEyes = recover.find(frame => frame.pose === normal)!;
-    expect(normalEyes.at - recover[0].at).toBeGreaterThan(280);
+    expect(normalEyes.actionAge - 520, "normal eyes follow the560ms shake-and-settle stage, independently of the first sampled recovery frame").toBeGreaterThanOrEqual(559);
     expect(recover.filter(frame => frame.at >= normalEyes.at).every(frame => frame.pose === normal)).toBe(true);
     expect(new Set(recover.map(frame => frame.poseTransform)).size, "ground recovery must keep moving continuously between its two authored drawings").toBeGreaterThan(8);
+    const brisk = recover.filter(frame => frame.actionAge - 520 <= 560), extrema = recoveryExtrema(brisk);
+    expect(extrema.length, `${mode} actual display must resolve at least five alternating extrema from three quick round trips`).toBeGreaterThanOrEqual(5);
+    expect(extrema.every((frame, i) => !i || Math.sign(frame.tilt) !== Math.sign(extrema[i - 1].tilt))).toBe(true);
+    expect(extrema.at(-1)!.actionAge - 520).toBeLessThanOrEqual(560);
+    const amplitude = Math.max(...brisk.map(frame => Math.abs(frame.tilt)));
+    expect(amplitude, "the head shake must reach its authored seven-to-eight-degree range").toBeGreaterThan(6.5); expect(amplitude).toBeLessThanOrEqual(8.5);
     const terminal = recover.at(-1)!;
     expect(Math.abs(terminal.tilt)).toBeLessThan(.5); expect(Math.abs(terminal.scaleX - 1)).toBeLessThan(.01); expect(Math.abs(terminal.scaleY - 1)).toBeLessThan(.01);
     expect(support).toBeDefined();

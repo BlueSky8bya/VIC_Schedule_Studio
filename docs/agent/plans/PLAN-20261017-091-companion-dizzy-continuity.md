@@ -1,8 +1,8 @@
 # 빅타민 흔들기 감도·낙하 표정·회복 연결
 
-Status: In Progress.
+Status: Complete.
 
-Local verification complete: fixture `COhDP-yWtcC2J1ll649l3`, unit1,954·rendered39·build/typecheck/lint·harness242 PASS, independent final blocker0,28-file source equivalence. Remote quality/Vercel/deployed-result verification pending. [검증](../verification/COMPANION_DIZZY_CONTINUITY-20261017.md).
+Verification complete: fixture `COhDP-yWtcC2J1ll649l3`, unit1,954·rendered39·build/typecheck/lint·harness242 PASS, independent final blocker0,28-file source equivalence. Main `5b756148317f919ef43d315fbff5834a41b6f466` pushed; remote quality39027147682 all steps success·Vercel success·deployed full SHA/canaries and actual developer studio version/pet visible verified. Native shake uses production-build fixture evidence. [검증](../verification/COMPANION_DIZZY_CONTINUITY-20261017.md).
 
 소유자 후속 요청: 덜 흔들어도 빙글빙글 눈이 나오고, 놓은 뒤 실제 낙하 중에도 유지하며, 착지 후 정신 차리는 동작의 끊김을 줄인다.089의 강한 판정/낙하 중 일반 얼굴/짧은 회복만 대체하고090의 더블클릭 제거와 이전 귀가·편집창 닫힘 수정을 보존한다.
 

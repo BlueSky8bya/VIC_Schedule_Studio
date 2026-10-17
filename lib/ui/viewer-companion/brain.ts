@@ -46,6 +46,8 @@ export type CompanionAction = {
   panelSide?: "left" | "right";
   /** Small same-support hops use a lower impulse than a platform transfer. */
   jumpHeight?: number;
+  /** CSS pixels/second carried only from a completed run into its proved jump. */
+  runUp?: number;
   /** Retained wander heading, not an instruction to mirror the renderer. */
   direction?: -1 | 1;
   intention?: CompanionIntention;
@@ -70,7 +72,7 @@ export type CompanionBrain = CompanionCare & {
   createdAt: number;
   recent: CompanionActionKind[];
   visited: string[];
-  cooldowns: Partial<Record<CompanionActionKind, number>>;
+  cooldowns: Partial<Record<CompanionActionKind, number>> & { mishap?: number };
   heading: -1 | 1;
   activeMs: number;
   affect: CompanionAffect;
@@ -240,6 +242,7 @@ const cooldownMs: Record<CompanionActionKind, number> = {
 /** Commit once when an action begins, not every animation frame. */
 export function commitAction(brain: CompanionBrain, action: CompanionAction, now: number): CompanionBrain {
   const moving = action.kind === "jump" || action.kind === "walk";
+  const mishap = action.kind === "play" && (action.play === "tumble" || action.play === "bump" || action.play === "slip");
   const novel = Boolean(action.target.platformId && !brain.visited.includes(action.target.platformId));
   const remaining = action.foodId && action.intention?.kind === "feed" ? Math.max(0, Math.min(COMPANION_FEED_ACTION_BUDGET, action.intention.remaining) - 1) : undefined;
   return {
@@ -253,7 +256,7 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
     lastPace: moving ? action.pace ?? brain.lastPace : undefined,
     recent: [...brain.recent, action.kind].slice(-8),
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
-    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]) },
+    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]), ...(mishap ? { mishap: now + action.duration + cooldownMs.play } : {}) },
     intention: action.intention ? { ...action.intention, remaining: Math.max(0, action.intention.remaining - 1) } : undefined,
     foodGoal: action.foodId && remaining !== undefined ? { foodId: action.foodId, remaining, retryAfter: remaining === 0 ? (brain.activeMs ?? 0) + COMPANION_FEED_RETRY_MS : 0 } : brain.foodGoal,
     places: rememberCompanionOutcomes(brain.places ?? [], action.outcomes ?? [], brain.activeMs ?? 0),
@@ -314,16 +317,6 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   }
   let movingStreak = 0;
   for (let i = brain.recent.length - 1; i >= 0 && ["walk", "jump"].includes(brain.recent[i]); i--) movingStreak++;
-  // A cartoon mishap follows a genuine committed run, not time spent waiting.
-  // It never introduces a fake support, moves the world, or preempts a meal.
-  if (prefs.roam && current && current.kind !== "card" && !current.manualOnly && current.id === world.platformId && current.width >= 64
-    && Math.abs(current.y - world.y) <= 18 && brain.energy >= .28
-    && movingStreak >= 2 && (brain.movementMs ?? 0) >= 1800 && (brain.lastPace === "scoot" || movingStreak >= 3)
-    && (brain.cooldowns.play ?? -Infinity) <= now && random(rng) < profile.accidentChance) {
-    const choice = random(rng);
-    const play: CompanionPlay = choice < .5 && prefs.jump ? "tumble" : choice < .78 ? "slip" : "bump";
-    return { kind: "play", play, target: stationary, duration: companionPlayDuration(play) };
-  }
   const planned = planCompanionGoal(brain, world, prefs, { route: findPlatformRoute, landingX: platformLandingX, reachable: reachablePlatforms });
   if (planned.action) return { ...planned.action, ...(planned.outcomes.length ? { outcomes: planned.outcomes } : {}) };
   const candidates: { action: CompanionAction; utility: number }[] = [];
@@ -358,17 +351,22 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   }
   if (prefs.roam && current && Math.abs(current.y - world.y) <= 18) {
     const speed = profile.walkSpeed;
-    // Coherent short excursions, rather than picking an unrelated location on
-    // a long floor every time. Reverse only at an edge or after an occasional
-    // observation; the recent movement streak supplies natural rest beats.
+    // Coherent excursions follow one actual safe span. Reverse only at an edge
+    // or after an occasional observation; the movement streak supplies rests.
     let direction = brain.heading ?? 1;
     if (world.x < current.x + 35) direction = 1;
     else if (world.x > current.x + current.width - 35) direction = -1;
     else if (brain.recent.at(-1) === "look" && random(rng) < .22) direction = direction === 1 ? -1 : 1;
-    const desiredX = follows ? clamp(pointer.x + (world.x < pointer.x ? -1 : 1) * profile.pointerGap, world.x - profile.pointerStep, world.x + profile.pointerStep) : world.x + direction * Math.min(180, profile.stepMin + random(rng) * profile.stepRange);
-    const walkX = platformLandingX(current, desiredX);
     const pace = !tired && random(rng) < profile.scootChance ? "scoot" : "amble";
-    if (!current.manualOnly && Math.abs(walkX - world.x) > 20) add("walk", (1 + brain.curiosity * .7 + (follows ? profile.socialPull : 0)) * mobility, Math.max(500, Math.abs(walkX - world.x) / speed * (pace === "scoot" ? 850 : profile.walkScale * 1000)), { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1 });
+    // A finite run may cross more of this already-safe span. Social approaches,
+    // controls and the cushion retain their short reach; walking keeps its gait.
+    const variableRun = pace === "scoot" && !follows && !current.manualOnly && current.kind !== "control" && !current.id.startsWith("companion-home");
+    const scootSpeed = variableRun ? speed * (1 + random(rng) * .5) : speed;
+    const longRun = variableRun && random(rng) < .45;
+    const distance = follows ? 0 : longRun ? Math.min(520, scootSpeed / .85 * (2 + random(rng) * 3)) : Math.min(180, profile.stepMin + random(rng) * profile.stepRange);
+    const desiredX = follows ? clamp(pointer.x + (world.x < pointer.x ? -1 : 1) * profile.pointerGap, world.x - profile.pointerStep, world.x + profile.pointerStep) : world.x + direction * distance;
+    const walkX = platformLandingX(current, desiredX);
+    if (!current.manualOnly && Math.abs(walkX - world.x) > 20) add("walk", (1 + brain.curiosity * .7 + (follows ? profile.socialPull : 0)) * mobility, Math.max(500, Math.abs(walkX - world.x) / (pace === "scoot" ? scootSpeed : speed) * (pace === "scoot" ? 850 : profile.walkScale * 1000)), { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1 });
     if (prefs.jump) {
       const reachable = reachablePlatforms(world, world.platforms).filter(p => p.id !== current.id && p.kind !== "hide" && !p.manualOnly
         && !brain.places?.some(place => place.id === p.id && place.retryAfter > (brain.activeMs ?? 0)));

@@ -36,4 +36,8 @@
 
 ## 배포
 
-관련 코드/검증 문서만 정상 commit/push하고 원격 quality·Vercel·실제 운영 전체 SHA/노출 경계를 확인할 예정이다. 실제 운영 결과 확인 전 배포 완료로 기록하지 않는다. 사용자 아트·별도 표정 기록·임시 PNG/.vscode는 보존하고 stage하지 않는다. 기존 Vercel Hobby 초과 및 실제 OBS 검증은 별도 미결이다.
+관련13파일만 stage해 main `5b756148317f919ef43d315fbff5834a41b6f466`를 정상 commit/push했다. 비밀 형식6종0·cached diff 검사 PASS였으며 사용자 아트·별도 표정 기록·임시 PNG/.vscode는 보존하고 제외했다. [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/81zUxqoJbP42JusBNnx11zMCupLj) success, [원격 quality39027147682](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39027147682)의 unit·격리 SQL·harness·실제 production build·typecheck·lint 및 마무리까지 모든 단계 success다.
+
+실제 운영 API의 전체 SHA가 커밋과 일치하며 public clock200/no-store·warm204·익명 developer presence401/no-store/고정 unauthorized와 error 외 필드0·fixture streamed404 비노출을 확인했다. 새 확인용 Chrome 탭의 실제 개발자 편집실에서는 `배포 버전5b75614`·빅타민1개/visible/decoded·placing=false·정상 walk를 읽기 전용으로 확인했다. 기존 사용자 편집 탭/일정은 바꾸지 않았다. 이번 실제 운영 UI에서 반복 흔들기까지 재현했다는 뜻은 아니며 그 증거는 위 production-build fixture39개다. UI 활동 전송을 별도로 계측하지 않았으므로 실제 운영 POST0까지 확대하지 않는다.
+
+원격 JSON/배포 canary/UI 관측을 ignored 전달 폴더에 보존했다. 사후 결과는 로컬 문서에 기록했으며 이 기록만을 위한 추가 운영 빌드는 만들지 않았다. 기존 Vercel Hobby 초과 및 실제 OBS 검증은 별도 미결이다.
