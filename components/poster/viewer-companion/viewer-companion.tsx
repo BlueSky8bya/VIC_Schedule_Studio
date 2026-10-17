@@ -17,7 +17,7 @@ import { COMPANION_DETAIL_EVENT, collectCompanionHideTargets, type CompanionDeta
 import { createCompanionHideSeek } from "@/lib/ui/viewer-companion/hide-seek";
 import { findCompanionDetailPerch } from "@/lib/ui/viewer-companion/detail-perch";
 import { companionGuestExtractionScale, type CompanionGuestBounds } from "@/lib/ui/viewer-companion/guest-extraction";
-import { planCompanionHomeReturn } from "@/lib/ui/viewer-companion/home-route";
+import { canParkCompanionHomeWait, companionHomeBlockedResponse, planCompanionHomeReturn } from "@/lib/ui/viewer-companion/home-route";
 import { companionPremiereMoment, companionPremiereReturn, COMPANION_PREMIERE_ENTER_MS, type CompanionPremiereCue } from "@/lib/ui/viewer-companion/premiere";
 import { sampleCompanionPremiereTravel } from "@/lib/ui/viewer-companion/premiere-travel";
 import { syncedNow } from "@/lib/ui/synced-clock";
@@ -199,7 +199,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let homeWakeUntil = 0, strandedSince = 0, homeRetryAt = 0;
     let homeWaitingGeometry = false, homeValidationRequested = false, homeLookUsed = false, homeLegs = 0;
     let pendingHomeRecall: HTMLElement | undefined;
-    const cancelHomeJourney = () => { pendingHomeRecall = undefined; homeJourney = false; homeWakeUntil = 0; strandedSince = 0; homeWaitingGeometry = homeValidationRequested = homeLookUsed = false; homeLegs = 0; el.removeAttribute("data-home-journey"); };
+    const cancelHomeJourney = () => { pendingHomeRecall = undefined; homeJourney = false; homeWakeUntil = 0; strandedSince = 0; homeWaitingGeometry = homeValidationRequested = homeLookUsed = false; homeLegs = 0; el.removeAttribute("data-home-journey"); el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); };
     const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
     let worldSeeded = saved?.seeded ?? false;
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
@@ -865,6 +865,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       inputPaintQueued = false; hideClock(performance.now()); cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); schedule();
     };
     const affection = () => {
+      el.removeAttribute("data-home-wait-pose");
       // A passing hover may offer a short reaction, not erase an accepted
       // recall. A pickup or another explicit destination still cancels it.
       if (homeJourney !== "called") cancelHomeJourney();
@@ -900,7 +901,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       el.removeAttribute("data-petting"); style(contactLayer, "transform", "translate3d(0,0,0) rotate(0deg) scale(1,1)");
     };
     const inputPaint = (row: number, frame: number, status: string) => {
-      if (reduced || gfxMode() === "off" || gfxMode() === "soft" || overlayActive && !isDetailGuest()) { paint(row, frame, status); return; }
+      el.removeAttribute("data-home-wait-pose");
+      const quietInput = reduced || gfxMode() === "off" || gfxMode() === "soft" || overlayActive && !isDetailGuest();
+      if (quietInput) {
+        paint(row, frame, status);
+        // Ordinary idle already has a clock; a blocked recall deliberately
+        // does not. Give only this acknowledged contact its finite tail.
+        if (!homeWaitingGeometry || overlayActive || presence.phase !== "active") return;
+      }
       // Keep every gesture/inertia sample, but commit contact/hand/body once
       // on the existing display clock. A short input tail promotes idle14Hz
       // to the normal full60/lite30 cadence; it never starts a second loop.
@@ -988,7 +996,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // including a visible blur. Ordinary windows still finish only its leg.
       presence.focus(true, now, true); data("presence", presence.phase);
       data("homeJourney", "");
-      if (!home) { homeWaitingGeometry = homeValidationRequested = true; }
+      if (!home) { homeWaitingGeometry = homeValidationRequested = true; el.dataset.homeWaiting = ""; }
       else if (reduced) { x = platformLandingX(home, home.x + home.width / 2); y = home.y; support = home.id; cancelHomeJourney(); if (!document.hasFocus()) presence.focus(false, now); if (preferences.sleep && document.hasFocus()) startRest(); else nextDecision = now + 1200; }
       else if (!supportedNow()) settle({ x, y });
       cancelAnimationFrame(raf); clearTimeout(timer); schedule();
@@ -1072,10 +1080,21 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (next.runUp) data("runUp", "positive");
     };
     const waitForHomeGeometry = () => {
+      if (!homeJourney) return;
+      const response = companionHomeBlockedResponse(homeJourney, homeValidationRequested || !geometryTracker);
+      if (response === "resume") {
+        // An unsolicited rescue is not a user command. A disconnected room
+        // must not park the awake renderer forever on its last expression.
+        cancelHomeJourney(); homeRetryAt = brain.current.activeMs + 30000;
+        nextDecision = performance.now() + 220;
+        return;
+      }
       homeWaitingGeometry = true;
+      el.dataset.homeWaiting = "";
       // One explicit completion, then real geometry events own further tries.
-      // A blocked command never falls back to random wandering or sleep.
-      if (!homeValidationRequested && geometryTracker) { homeValidationRequested = true; geometryTracker.revalidate(true); }
+      // A blocked command never falls back to random wandering or autonomous
+      // sleep. Real blur can still finish its normal quiet-presence handoff.
+      if (response === "revalidate" && geometryTracker) { homeValidationRequested = true; geometryTracker.revalidate(true); }
     };
     const advanceHomeJourney = (now: number) => {
       if (!homeJourney || homeWaitingGeometry || action || overlayActive || workspaceBusyRef.current || pause) return;
@@ -1477,7 +1496,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (moment.mode === "joined" || moment.mode === "join") return;
         if (moment.mode === "prelude" && cue) { timer = setTimeout(() => tick(performance.now()), Math.max(1, cue.target - syncedNow() - COMPANION_PREMIERE_ENTER_MS)); return; }
       }
-      if (stopped || pause || waitingForSupport && !overlayActive && !action && !pressed && !keyboardHeld && !placing && !returning || homeJourney && homeWaitingGeometry && !action && !overlayActive && (homeJourney === "called" || presence.phase === "active") || hiding && overlayActive && !hiding.ready || !premiereActive && !premiereBounce && !homeDeparture && (isDetailGuest() ? !guestBusy(performance.now()) : hiding ? !hideSeek.sample(presentationNow).active : presence.phase === "parked" && !returning && !action)) return;
+      // An unreachable explicit command keeps one calm compositor-only wait
+      // pose. Blur must still run the finite rest/yawn/parked handoff, instead
+      // of stranding presence in `finishing` with the awake drawing forever.
+      const quietHomeWait = Boolean(homeJourney && homeWaitingGeometry && !overlayActive && presence.phase === "active" && !stopped && !pause
+        && canParkCompanionHomeWait(performance.now(), petUntil, interactionUntil, Boolean(action || continuousMotion() || touch.sample(performance.now()).pressure > 0 || pressed || keyboardHeld || placing || overlayDrag || overlayPlacing || returning || afterPetLanding || pendingMonth || hiding || waitingForSupport || awaitingAtX || pendingPosition.current || workspaceBusyRef.current)));
+      el.toggleAttribute("data-home-wait-pose", quietHomeWait);
+      if (quietHomeWait) { paint(1, 15, "look"); return; }
+      if (stopped || pause || waitingForSupport && !overlayActive && !action && !pressed && !keyboardHeld && !placing && !returning || hiding && overlayActive && !hiding.ready || !premiereActive && !premiereBounce && !homeDeparture && (isDetailGuest() ? !guestBusy(performance.now()) : hiding ? !hideSeek.sample(presentationNow).active : presence.phase === "parked" && !returning && !action)) return;
       if (reduced) timer = setTimeout(() => tick(performance.now()), 400);
       else {
         const moving = continuousMotion();
@@ -1859,7 +1885,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         connectGeometry(); offGeometry?.revalidate(true);
       }
       if (document.hasFocus()) lastNeeds = now;
-      else if (homeJourney === "automatic" && homeWaitingGeometry && !action && !overlayActive) schedule();
+      else if (homeWaitingGeometry && !action && !overlayActive) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastCare = lastPaint = now; schedule(); }
     };
     const down = (event: PointerEvent) => {
       if (workspaceBusyRef.current || premiereActive || premiereBounce) return;
@@ -2396,7 +2422,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const onGeometry = (next: Platform[], validationOnly = false) => {
       const wasWaiting = waitingForSupport;
       const resumeHome = Boolean(homeJourney && homeWaitingGeometry && !premiereActive && !overlayActive && !hiding && !workspaceBusyRef.current);
-      if (resumeHome) homeWaitingGeometry = false;
+      if (resumeHome) { homeWaitingGeometry = false; el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); }
       applyGeometry(next, validationOnly);
       if (!stopped && !pause && !overlayActive && !hiding && !premiereActive && !pendingPosition.current && !pendingMonth && !pressed && !keyboardHeld && !placing && !isHomeSupport(support)) {
         if (awaitingAtX || !platforms.length && !supportById(support) && !action) waitForSupport();
@@ -2568,7 +2594,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     <span className="sr-only" role="status">{announcement}</span>
   </div><div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
     {!suspended && !blocked && homeVisible && homeHost ? createPortal(house, homeHost) : null}
-    {compactActive && launcherHost ? createPortal(<button ref={homeLauncher} data-act={homeExpanded ? "companion-home-close" : "companion-home-open"} data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label={homeExpanded ? "빅타민 집 닫기" : "빅타민 집 열기"} aria-expanded={homeExpanded} aria-controls={`${actorId}-home`} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} onClick={() => homeExpanded ? closeHome() : homeShelf.open()} onKeyDown={event => { if (event.key === "Escape" && homeExpanded) { event.preventDefault(); event.stopPropagation(); logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}><Home size={16} aria-hidden="true" />빅타민 집</button>, launcherHost) : null}
+    {compactActive && launcherHost ? createPortal(<button ref={homeLauncher} data-act={homeExpanded ? "companion-home-close" : "companion-home-open"} data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label={homeExpanded ? "빅타민 집 닫기" : "빅타민 집 열기"} aria-expanded={homeExpanded} aria-controls={`${actorId}-home`} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} onClick={() => homeExpanded ? closeHome() : homeShelf.open()} onKeyDown={event => { if (event.key === "Escape" && homeExpanded) { event.preventDefault(); event.stopPropagation(); logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}><Home size={16} aria-hidden="true" /><span className="lbl vc-home-launcher-label">빅타민 집</span></button>, launcherHost) : null}
     {compactActive && compactHost ? createPortal(<div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>
       {homeExpanded ? house : null}
     </div>, document.body) : null}

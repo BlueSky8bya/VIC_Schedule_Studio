@@ -227,7 +227,9 @@ test("a floor snack belongs to its document point rather than the fixed viewport
 });
 
 // PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
-for (const width of [1440]) {
+// Native home disclosure belongs to the real rail; compact visits stay open
+// inside and close only through their X/Escape entry contract.
+for (const width of [1920]) {
   test(`three real dispenser clicks vary fruit; dragging one to trash preserves the others at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await setup(page);
     const kinds: string[] = [];
@@ -241,7 +243,9 @@ for (const width of [1440]) {
     }
     await expect(page.locator(".vc-food-hint")).toHaveCount(0);
     await expect(page.locator("[data-export-surface] .vc-food")).toHaveCount(0);
-    const disclosure = page.getByRole("region", { name: "빅타민 집", exact: true }).getByRole("button", { name: "빅타민 집", exact: true });
+    const home = page.getByRole("region", { name: "빅타민 집", exact: true });
+    await expect(home).toHaveAttribute("data-home-presentation", "panel");
+    const disclosure = home.getByRole("button", { name: "빅타민 집", exact: true });
     await disclosure.click({ position: { x: 12, y: 16 } }); await expect(disclosure).toHaveAttribute("aria-expanded", "false");
     await expect(foods(page).last()).not.toHaveAttribute("data-selected");
     // Dispensing creates stationary food rather than a global placement mode.

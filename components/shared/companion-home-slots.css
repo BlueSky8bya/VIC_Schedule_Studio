@@ -5,6 +5,56 @@
 .vc-home-launcher-slot:has(> *) { display: inline-flex; align-items: center; flex: 0 0 auto; }
 .public-calendar-header .header-left:has(> .vc-home-launcher-slot) { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .vc-home-launcher-slot > .vc-home-launcher { float: none; }
+.button.vc-home-launcher {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-hit);
+  height: var(--control-hit);
+  min-height: var(--control-hit);
+  gap: 6px;
+  padding: 0 var(--space-4);
+  border: var(--stroke-hairline) solid var(--header-control-line);
+  border-radius: var(--r-pill);
+  background: var(--header-control-bg);
+  color: var(--header-control-ink);
+  box-shadow: var(--header-control-shadow);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: var(--lh-body);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.button.vc-home-launcher:hover:not(:disabled) { border-color: var(--header-control-line); background: var(--header-control-hover); color: var(--header-control-ink); box-shadow: var(--shadow-3); }
+.button.vc-home-launcher:focus:not(:focus-visible) { outline: none; }
+html[data-pchrome] .vc-home-launcher .vc-home-launcher-label,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .vc-home-launcher .vc-home-launcher-label { display: none; }
+html[data-pchrome] .vc-home-launcher,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .vc-home-launcher { width: var(--control-hit); padding-inline: 0; }
+/* Both left and right header groups share the same baseline and edge gutter.
+   An icon-only gear stays circular; the labelled house uses the same pill as
+   search, history and login rather than inheriting the metal utility skin. */
+.public-calendar-header .header-left { gap: var(--space-2); }
+.studio-topbar .studio-left { gap: calc(var(--space-2) / var(--shell-zoom, 1)); }
+/* The poster header is desktop-only. Give its independent controls the same
+   material in public and preview modes; agenda and account-card cells retain
+   their existing rules. No size, month navigation or motion is changed. */
+.poster-page:not(.poster-agenda) .public-calendar-header :where(.viewer-settings-open, .insights-open, .vc-home-launcher) {
+  border-color: var(--header-control-line);
+  border-radius: var(--r-pill);
+  background: var(--header-control-bg);
+  color: var(--header-control-ink);
+  box-shadow: var(--header-control-shadow);
+}
+.poster-page:not(.poster-agenda) .public-calendar-header :where(.viewer-settings-open, .insights-open, .vc-home-launcher):hover:not(:disabled) {
+  border-color: var(--header-control-line);
+  background: var(--header-control-hover);
+  color: var(--header-control-ink);
+  box-shadow: var(--shadow-3);
+}
 
 /* The agenda's existing right control rail owns this same launcher. Its
    ordinary flex budget protects the filter and other real controls. */

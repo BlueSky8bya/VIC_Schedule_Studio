@@ -90,7 +90,9 @@ test("compact desktop home stays reachable and transfers keyboard focus", async 
   const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
   await launcher.focus(); await launcher.press("Enter"); await expect(house(page)).toBeVisible();
   const close = house(page).getByRole("button", { name: "빅타민 집 닫기", exact: true });
-  await expect(house(page).getByRole("button", { name: "빅타민 집", exact: true })).toBeFocused();
+  await expect(house(page)).toHaveAttribute("data-home-presentation", "compact");
+  await expect(house(page).locator("[data-panel-section-toggle]")).toHaveCount(0);
+  await expect(close).toBeFocused();
   const box = (await house(page).boundingBox())!; expect(box.y).toBeGreaterThanOrEqual(10); expect(box.y + box.height).toBeLessThan(900);
   await expectSmallHome(page);
   await chooseCompanionCare(page, "옮길 곳 고르기", "keyboard");

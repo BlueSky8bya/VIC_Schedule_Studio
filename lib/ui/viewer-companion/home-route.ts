@@ -73,6 +73,19 @@ export function shortestCompanionHomeRoute(origin: Point, target: Point, platfor
 
 export type CompanionHomePlan = { state: "travel"; action: CompanionAction } | { state: "arrived" | "blocked" | "missing" };
 
+/** One coalesced geometry confirmation is enough for an unsolicited recovery.
+ * A direct command keeps its destination; an automatic idea must yield to
+ * ordinary life if the real route remains disconnected. No timer retries. */
+export function companionHomeBlockedResponse(journey: "called" | "automatic", revalidated: boolean): "revalidate" | "wait" | "resume" {
+  return !revalidated ? "revalidate" : journey === "called" ? "wait" : "resume";
+}
+
+/** A blocked command may sleep its scheduler only after acknowledged input
+ * and finite motion have finished. The command itself remains accepted. */
+export function canParkCompanionHomeWait(now: number, petUntil: number, inputUntil: number, busy: boolean): boolean {
+  return !busy && [now, petUntil, inputUntil].every(Number.isFinite) && now >= petUntil && now >= inputUntil;
+}
+
 /** Replan at action boundaries; walk segments stay finite for live reflow.
  * Only an otherwise stranded creature gets a stronger crouch/spring, landing
  * on a real measured room support. No extra timer, DOM read or fake support. */

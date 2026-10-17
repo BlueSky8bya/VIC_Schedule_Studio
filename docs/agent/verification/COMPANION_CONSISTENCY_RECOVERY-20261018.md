@@ -1,6 +1,6 @@
 # 빅타민 큰 눈 통일·작은 집·지지면 회복
 
-Status: Verification in progress. [PLAN-098](../plans/PLAN-20261018-098-companion-consistency-and-recovery.md).
+Status: Deployed and verified. [PLAN-098](../plans/PLAN-20261018-098-companion-consistency-and-recovery.md).
 
 ## 범위와 교체
 
@@ -57,3 +57,11 @@ bounded 수정 fixture `LcJREgDD33Z4msKplBA3t`에서 새 native14/14 PASS. 낮�
 별도 controlled-clock 자연 숨바꼭질 자동 복귀1/1 PASS. 이 항목은 실제 OS focus/실시간 검사로 표현하지 않는다. 신규14개와 throw/run12·mobile8·frame pipeline4의 실제 native 총38개 경로가 확인됐다. fixture 외부 쓰기/페이지 오류0, 실제 저장/DB/RLS 시험은 하지 않았다. 운영 배포 SHA/UI 확인은 다음 단계다.
 
 배포 준비 중 git blob/working bytes 비교에서 신규 생성 영수증 등의 CRLF가 기본 LF 규칙으로 정규화되는 문제를 발견했다. 원화의 native SHA를 재작성하는 대신098회차 JSON에만 기존 snapshot과 같은 `-text whitespace=cr-at-eol` 예외를 둔다. 신규100파일의 index blob/raw byte가 전부 일치하는지 확인했다. 원화/512슬롯/제품 JS·CSS와 로컬 단위2,120·native38/controlled1에 사용한 파일 바이트는 바뀌지 않았다. 생성 영수증 원본과 실제 source pin을 플랫폼에 관계없이 보존한다. 후속 배포의 원격 단위/SQL/빌드 결과를 다시 확인한다.
+
+## 배포 확인
+
+Release `2588a882129409b83c042a61a3825b5cdb493435`, Vercel success. [원격 quality39050928440](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39050928440)의13단계가 전부 success이며 Linux 단위2,120·격리 SQL·harness·build·typecheck·lint를 통과했다. 앞선f6281fd0은 Linux 생성영수증 byte assertion1개 실패/2,119개 PASS였고, scoped 원본 바이트 보존으로 정정했다. 이전 skipped 단계는 PASS로 세지 않았다.
+
+2026-10-18 01:50 KST 운영 API에서 full SHA 일치, clock200/no-store·warm204·anonymous developer401/error-only/no-store·fixture404 fallback marker 비노출 확인. 대표 기본/비행/응원 WebP3개 CDN SHA가 로컬 공개 자산과 일치한다. 실제 로그인된 개발자 편집실과 공개 DTO 시청자 미리보기에서 새 big-eyes-v1 디코드, 단일 펫/집,380px 작은 창과 달력 문서 높이/위치 비예약 확인. 시청자 열기 전후 calendar BCR·scrollY·문서높이 완전 동일. 편집실은 calendar 문서좌표/높이는 동일하지만 CUA DOM 버튼의 focus/scroll 과정에서 기존11.11px 스크롤이0으로 이동해, 운영 CUA 결과를 native scroll 불변 증거와 혼동하지 않는다. 쓰기 차단 native14개가 별도로 위치/스크롤 불변을 검증했다.
+
+운영 일정 저장/관심 버튼/권한/DB 변경 없이 확인하고 편집실의 원래 왼쪽 패널 열림·집 제목 접힘 선택으로 복원했다. 집을 잃은 무기한 숨김과 일반 창의 stale 재표시 수정 범위가 완료됐다. genuine OS blur096 및 실제 방송 PC 장시간 OBS/RLS/공급자 한도는 이번 검증의 범위가 아니다. 배포 후 이 메타데이터는 documentation-only 재배포를 만들지 않도록 로컬에 유지한다.

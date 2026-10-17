@@ -211,7 +211,7 @@ test("viewer1280 anonymous opening preserves every calendar bound and scroll pos
 });
 test("viewer1480 signed-in keyboard Enter and Escape preserve the calendar and focus", async ({ page }) => {
   await page.setViewportSize({ width: 1480, height: 938 }); await setup(page, "viewer", { signedIn: true }); await open(page, true);
-  await expect(home(page).getByRole("button", { name: "빅타민 집", exact: true })).toBeFocused(); await close(page, true);
+  await expect(home(page).getByRole("button", { name: "빅타민 집 닫기", exact: true })).toBeFocused(); await close(page, true);
 });
 test("studio1280 native calendar zoom remains independent of the floating home", async ({ page }) => {
   await setup(page, "studio"); const grid = await sample(page, "before-zoom"); await page.mouse.move(grid.calendar.left + grid.calendar.width / 2, grid.calendar.top + 65);
@@ -243,14 +243,16 @@ test("studio2560 shell zoom0.8 leaves the body-portal room and its targets unsca
 test("the1680 boundary and rail sides retain one creature and the saved disclosure", async ({ page }) => {
   await page.setViewportSize({ width: 1679, height: 900 }); await setup(page, "viewer"); await open(page);
   const identity = (await pet(page).elementHandle())!, preferences = await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"));
+  await expect(home(page).locator("[data-panel-section-toggle]")).toHaveCount(0);
+  await page.setViewportSize({ width: 1680, height: 900 }); await settle(page); await expect(page.locator(".avatar-left .vc-home")).toBeVisible();
   await home(page).getByRole("button", { name: "빅타민 집", exact: true }).click(); await expect(home(page)).toHaveAttribute("data-panel-collapsed", "");
   const folded = await page.evaluate(() => localStorage.getItem("vic.panelSections"));
-  await page.setViewportSize({ width: 1680, height: 900 }); await settle(page); await expect(page.locator(".avatar-left .vc-home")).toBeVisible();
   await expect(home(page)).toHaveAttribute("data-panel-collapsed", "");
   await page.getByRole("button", { name: "패널을 오른쪽에 두기", exact: true }).click(); await settle(page); await expect(page.locator(".avatar-right .vc-home")).toBeVisible();
   await page.setViewportSize({ width: 1679, height: 900 }); await settle(page); await expect(launcher(page)).toBeVisible();
   if (!await home(page).isVisible()) await launcher(page).click();
-  await expect(home(page)).toBeVisible(); await expect(home(page)).toHaveAttribute("data-panel-collapsed", "");
+  await expect(home(page)).toBeVisible(); await expect(home(page)).not.toHaveAttribute("data-panel-collapsed");
+  await expect(home(page).locator("[data-panel-section-toggle]")).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem("vic.panelSections"))).toBe(folded);
   expect(await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"))).toBe(preferences);
   expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);

@@ -4524,11 +4524,11 @@ html[data-panel-sections~="tag-filter"] .studio-shell .avatar-rail-filter:has([d
   min-height: 132px;
   overflow-y: auto;
   box-sizing: border-box;
-  background: #fff;
-  border: 1px solid var(--studio-line);
+  background: transparent;
+  border: 0;
   border-radius: var(--r-lg);
-  box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
-  padding: 12px 14px;
+  box-shadow: none;
+  padding: 0;
   /* 등장 애니 없음 — 부모 rail(미닫이 도크)이 통째로 슬라이드하므로 함께 들어온다. */
 }
 .avatar-rail-filter h2 {
@@ -13583,19 +13583,18 @@ html[data-studio-calm] .month-nav-btn:hover {
   border-color: var(--studio-action);
   background: rgb(var(--studio-action-rgb) / 7%);
 }
-/* ③ 서쪽(좌측) 태그 필터 패널 = 은백 카드. 눈 편한 테마가 냉·온 차를 누르므로 헤어라인으로 세운다. */
+/* Tag, season and home cards share the current theme-aware rail material. */
 html[data-studio-calm] .studio-left-panel > section:first-of-type {
-  border: 1px solid var(--studio-silver-line);
+  border: 1px solid var(--panel-card-line);
   border-radius: var(--r-card);
-  background: var(--studio-silver);
-  box-shadow: 0 1px 2px rgb(20 25 60 / 4%);
+  background: var(--panel-card-bg);
+  box-shadow: var(--panel-card-shadow);
 }
-/* 아바타 자리(기본 켜짐)에선 필터가 좌측 도크(.avatar-rail-filter)에 산다 — 같은 은백 카드.
-   흰 카드+보랏빛 헤어라인 → 은백+은회 헤어라인, 라운드·그림자는 도크 문법 그대로. */
+/* The wrapper owns scrolling only; PanelSection paints its single card. */
 html[data-studio-calm] .avatar-rail-filter {
-  background: var(--studio-silver);
-  border-color: var(--studio-silver-line);
-  box-shadow: var(--elev-3);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 /* ④ 중앙 달력 칸 = 반 단계 냉각(카드는 크림 그대로라 따뜻하게 떠 보인다). 오늘·바깥달·편집중·
    드롭 대상·휴식 칸은 제 색을 지킨다. */

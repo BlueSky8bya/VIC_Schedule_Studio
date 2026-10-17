@@ -16,7 +16,7 @@ export function useHomeShelf({ active, expanded, monthKey, host, launcher, room,
   const close = useCallback(() => { intent.current = "close"; setExpanded(false); }, [setExpanded]);
   useLayoutEffect(() => {
     if (!active) { intent.current = null; return; }
-    if (expanded && intent.current === "open") room.current?.querySelector<HTMLButtonElement>('[data-home-action="fold"]')?.focus({ preventScroll: true });
+    if (expanded && intent.current === "open") room.current?.querySelector<HTMLButtonElement>('[data-home-action="close"]')?.focus({ preventScroll: true });
     else if (!expanded && intent.current === "close") launcher.current?.focus({ preventScroll: true });
     intent.current = null;
   }, [active, expanded, launcher, room]);

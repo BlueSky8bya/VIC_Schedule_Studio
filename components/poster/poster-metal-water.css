@@ -43,27 +43,23 @@
   html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-legend-vertical,
   html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.rail-showcase,
   html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.slot-showcase {
-    background: rgb(var(--glass-panel) / 80%);
+    background: var(--panel-card-bg);
   }
 }
 
 /* 버튼(.button 계열)·'이 달 기록' 칩 — 아주 은은한 은 광택 + 헤어라인. 1차(.primary)·위험(.danger)은 제 색.
    **모바일(아젠다) 제외**(2026-09-05 소유자: "이 달 기록·편집실 버튼만 혼자 딱딱하다"): 금(金) 스킨은 웹의
    '홀로 서는 버튼' 문법이고, 모바일에는 이미 제 재질(크림 면·둥근 12px·틴트 칩)이 있다. 금속을 덮어씌우면
-   주변 카드·알약과 재질이 갈려 그 버튼만 회색 상자로 튄다. */
-.poster-page:not(.poster-agenda) .button:not(.primary):not(.danger),
-.poster-page:not(.poster-agenda) .insights-open {
+   주변 카드·알약과 재질이 갈려 그 버튼만 회색 상자로 튄다. 헤더 제어군은 공유 크림 알약 재질을 쓰므로
+   독립 유틸리티 스킨에서 제외한다. :where는 예외에 불필요한 특이도를 더하지 않는다. */
+.poster-page:not(.poster-agenda) .button:not(.primary):not(.danger):not(.vc-home-launcher):where(:not(.public-calendar-header *)) {
   border-color: var(--gs-metal-line);
   border-radius: var(--gs-metal-radius);
   background: var(--gs-metal-sheen);
   color: var(--gs-metal-ink);
   box-shadow: var(--gs-metal-edge);
 }
-.poster-page:not(.poster-agenda) .insights-open {
-  border-radius: var(--r-pill);
-}
-.poster-page:not(.poster-agenda) .button:not(.primary):not(.danger):hover:not(:disabled),
-.poster-page:not(.poster-agenda) .insights-open:hover {
+.poster-page:not(.poster-agenda) .button:not(.primary):not(.danger):not(.vc-home-launcher):where(:not(.public-calendar-header *)):hover:not(:disabled) {
   border-color: var(--gs-metal-line-strong);
   background: var(--gs-metal-sheen-hover);
   color: var(--gs-metal-ink);

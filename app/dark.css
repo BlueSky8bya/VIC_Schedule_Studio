@@ -26,7 +26,7 @@ html[data-theme="dark"] .public-day strong.saturday {
 /* 태그 필터 패널 — 제목·항목 글자가 크림 위 짙은 갈색이었다. */
 html[data-theme="dark"] .legend-title,
 html[data-theme="dark"] .public-legend-vertical .panel-section-title {
-  color: var(--accent-strong);
+  color: var(--ink);
 }
 html[data-theme="dark"] .legend-item,
 html[data-theme="dark"] .legend-item.mod,
@@ -81,7 +81,7 @@ html[data-theme="dark"] .insights-open:hover,
 html[data-theme="dark"] .search-open:hover,
 html[data-theme="dark"] .viewer-settings-open:hover,
 html[data-theme="dark"] .account-form .button:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--header-control-hover);
 }
 html[data-theme="dark"] .poster-chrome-title {
   color: var(--ink);
@@ -224,8 +224,8 @@ html[data-theme="dark"] .vch-nowbar .vch-now-label { color: var(--ink); }
 /* 계절 배경 조작 카드(app/ambient.css의 크림 카드). */
 html[data-theme="dark"] .viewer-ambient-ctl.slot-showcase,
 html[data-theme="dark"] .viewer-ambient-ctl.rail-showcase {
-  border-color: rgb(255 255 255 / 9%);
-  background: #232019;
+  border-color: var(--panel-card-line);
+  background: var(--panel-card-bg);
   color: var(--ink);
 }
 
@@ -475,8 +475,8 @@ html[data-theme="dark"] .bp-tool.danger.armed { color: white; }
 
 /* Local ambient card aliases override the inherited light card vocabulary. */
 html[data-theme="dark"] .viewer-ambient-ctl {
-  --amb-title-ink: var(--ink-soft);
-  --amb-card-line: var(--night-line);
+  --amb-title-ink: var(--ink);
+  --amb-card-line: var(--panel-card-line);
   --amb-tile-hover: var(--night-hover);
   --amb-tile-hover-line: var(--night-line);
 }

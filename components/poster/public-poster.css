@@ -3443,13 +3443,12 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   grid-template-columns: 1fr 1fr;
   align-content: start;
   gap: 4px 2px;
-  border: 1px solid var(--line, #ece2cd);
-  border-radius: var(--r-lg);
-  background: var(--surface, #fffdf6);
-  /* 사이드바 패널 공통 안쪽 여백 12px 대칭 — support-card와 같은 세로선 공유(정렬 조화).
-     표면 안이라 PNG·스티커 좌표가 살짝 바뀜(소유자가 스티커 재배치). */
-  padding: var(--space-3); /* 12 — 10/14 비대칭 정리 */
-  box-shadow: var(--shadow-2);
+  border: 1px solid var(--panel-card-line);
+  border-radius: var(--r-card);
+  background: var(--panel-card-bg);
+  /* The shared three-card chrome owns the same inset, including when folded. */
+  padding: var(--space-2);
+  box-shadow: var(--panel-card-shadow);
 }
 /* 제목·방식 블록·하트 안내·기타 전폭 요소는 2열 그리드를 가로지른다. */
 .public-legend-vertical .legend-title,
@@ -7177,9 +7176,9 @@ html[data-reduce-motion] .pi-skeleton {
   min-height: var(--control-hit);
   border: var(--stroke-hairline) solid var(--line);
   border-radius: var(--r-pill);
-  background: var(--surface);
+  background: var(--header-control-bg);
   color: var(--ink);
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--header-control-shadow);
 }
 
 .poster-readonly .interest-toggle {
@@ -7190,9 +7189,9 @@ html[data-reduce-motion] .pi-skeleton {
 .poster-readonly .interest-toggle:hover,
 .poster-readonly .insights-open:hover,
 .poster-readonly .viewer-actions .button:hover {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-  box-shadow: var(--shadow-2);
+  border-color: var(--header-control-line);
+  background: var(--header-control-hover);
+  box-shadow: var(--shadow-3);
   transform: translateY(calc(-1 * var(--stroke-hairline)));
 }
 
@@ -7243,9 +7242,9 @@ html[data-reduce-motion] .pi-skeleton {
   .poster-readonly .interest-toggle,
   .poster-readonly .insights-open,
   .poster-readonly .viewer-actions .button {
-    background: var(--material-bg-strong);
-    -webkit-backdrop-filter: var(--material-blur);
-    backdrop-filter: var(--material-blur);
+    background: var(--header-control-bg);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
   }
 
   .poster-readonly .interest-toggle.active {
@@ -8188,7 +8187,7 @@ html[data-pchrome] .account-form .button[data-tip]:focus-visible::after {
   font-size: var(--text-body);
   font-weight: 600;
   letter-spacing: normal;
-  color: #5b5674;
+  color: var(--header-control-ink);
 }
 /* 폭 보정 — 글자를 줄인 만큼 가로 여백을 돌려준다(칸 폭 유지). */
 .poster-page .insights-open {
@@ -8210,15 +8209,15 @@ html[data-pchrome="3"] .poster-chrome-title {
    · 아바타 자리(아바타 켬): 점선 박스 안 절대 배치를 걷어내고 자리의 첫 줄로(편집실과 같은 이유 — 박스 윗변이 삐져나온다). */
 .poster-page .viewer-ambient-ctl.rail-showcase,
 .poster-page .viewer-ambient-ctl.slot-showcase {
-  --amb-card-bg: #fffdf6;
-  --amb-card-line: #ece2cd;
-  --amb-card-r: var(--r-lg);
+  --amb-card-bg: var(--panel-card-bg);
+  --amb-card-line: var(--panel-card-line);
+  --amb-card-r: var(--r-card);
   --amb-tile-hover: #f7f1e4;
   --amb-tile-hover-line: #e8dcc2;
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--panel-card-shadow);
 }
 .poster-page .viewer-ambient-ctl {
-  --amb-title-ink: #6b5b34;
+  --amb-title-ink: var(--ink);
 }
 .public-right .rail-showcase {
   align-self: stretch;
@@ -8287,21 +8286,27 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
 .poster-readonly .public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button {
   height: 44px;
   min-height: 44px;
-  border: 1px solid var(--line, #ece9f5);
+  border: 1px solid var(--header-control-line);
   border-radius: var(--r-pill, 999px);
-  background: var(--glass, rgb(255 255 255 / 72%));
+  background: var(--header-control-bg);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 0 15px;
-  color: var(--ink, #23303f);
+  color: var(--header-control-ink);
   font-size: var(--text-ui, 15px);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--header-control-shadow);
 }
 .public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button:hover,
 .poster-readonly .public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button:hover {
-  border-color: var(--line, #ece9f5);
-  background: #fff;
+  border-color: var(--header-control-line);
+  background: var(--header-control-hover);
+  color: var(--header-control-ink);
   box-shadow: var(--shadow-3);
+}
+/* Standalone desktop pills share actual label ink too. The old dark label
+   rule uses ink-soft; the email/account card keeps that quieter treatment. */
+.poster-page:not(.poster-agenda) .public-calendar-header :is(.insights-open, .account-form:not(:has(.account-email)) .button) .lbl {
+  color: var(--header-control-ink);
 }
 .public-calendar-header .viewer-actions .account-form .account-email {
   flex: 1 1 auto;

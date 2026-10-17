@@ -1,6 +1,6 @@
 # 빅타민 큰 눈 통일·가시성 회복·작은 집
 
-Status: Local verification complete; authorized commit/push and deployed verification next.
+Status: Complete. Release2588a882 deployed and verified; see [verification](../verification/COMPANION_CONSISTENCY_RECOVERY-20261018.md).
 
 최신 소유자 요청은097의 달력 앞 공간 예약을 대체한다. 일부 가림을 허용해 header 진입과 실내132px/공유폭을 유지하는 작은 floating 집으로 바꾼다. 열기/닫기로 달력이나 문서 스크롤을 움직이지 않는다. viewer/studio/preview 한 구현·모바일 제외·모달/최초공개·소파/음식 anchor를 유지한다.
 

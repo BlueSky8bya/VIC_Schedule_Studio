@@ -1,0 +1,51 @@
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CompanionHome } from "@/components/poster/viewer-companion/companion-home";
+import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
+import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
+
+// The Node unit harness uses the classic JSX transform; the application build
+// supplies the automatic runtime. Keep that harness detail out of the product.
+beforeEach(() => vi.stubGlobal("React", React));
+afterEach(() => vi.unstubAllGlobals());
+
+function room(compact: boolean, inactive = false) {
+  return renderToStaticMarkup(React.createElement(CompanionHome, {
+    care: DEFAULT_COMPANION_CARE,
+    preferences: DEFAULT_COMPANION_PREFERENCES,
+    onAction: () => undefined,
+    onClose: compact ? () => undefined : undefined,
+    inactive
+  }));
+}
+
+describe("shared companion room presentation", () => {
+  it("has one close control and no disclosure in a launcher-opened room", () => {
+    const html = room(true);
+    expect(html).toContain('data-home-presentation="compact"');
+    expect(html).toContain('aria-label="빅타민 집 닫기"');
+    expect(html).not.toContain("data-panel-collapsible");
+    expect(html).not.toContain("data-panel-section-toggle");
+    expect(html).not.toContain('data-home-action="fold"');
+    expect(html).toContain('class="vc-home-room"');
+    expect(html).not.toContain('class="panel-section-body" hidden');
+  });
+
+  it("retains the shared saved-disclosure mechanism only in the rail", () => {
+    const html = room(false);
+    expect(html).toContain('data-home-presentation="panel"');
+    expect(html).toContain("data-panel-collapsible");
+    expect(html).toContain('data-panel-section-toggle="companion-home"');
+    expect(html).toContain('data-home-action="fold"');
+    expect(html).not.toContain('data-home-action="close"');
+  });
+
+  it("keeps overlay input ownership without folding or removing the room", () => {
+    const html = room(true, true);
+    expect(html).toContain('inert=""');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('class="vc-home-room"');
+    expect(html).not.toContain("data-panel-collapsible");
+  });
+});

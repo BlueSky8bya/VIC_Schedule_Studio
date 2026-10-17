@@ -167,11 +167,15 @@ test("a real clipped card recovers vertically onto its next actual card top inst
 });
 
 test("an intentionally folded home stays hidden across a real settings modal and restores its own resident", async ({ page }) => {
+  //099 keeps disclosure only on the actual rail. The compact room now has
+  // title/X and intentionally cannot be folded.
+  await page.setViewportSize({ width: 1920, height: 900 });
   await setup(page);
   if (!await home(page).isVisible()) await page.locator(".vc-home-launcher").click();
   await expect(home(page)).toBeVisible(); await settle(page);
+  await expect(home(page)).toHaveAttribute("data-home-presentation", "panel");
   const point = await home(page).evaluate(node => { const bed = node.querySelector(".vc-plush-bed")!.getBoundingClientRect(), floor = node.querySelector(".vc-home-floor")!.getBoundingClientRect(); return { x: bed.left + bed.width / 2, y: floor.bottom - 14 }; });
-  await actor(page).focus(); await actor(page).press("p"); await page.mouse.click(point.x, point.y);
+  await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", ""); await page.mouse.click(point.x, point.y);
   await expect(pet(page)).toHaveAttribute("data-platform", /^companion-home-floor/);
   const sofa = home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }); await sofa.focus(); await sofa.press("Enter");
   await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 8000 }); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");

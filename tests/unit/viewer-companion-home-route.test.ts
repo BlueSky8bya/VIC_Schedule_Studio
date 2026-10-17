@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBrain, reachablePlatforms, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
-import { planCompanionHomeReturn, shortestCompanionHomeRoute } from "@/lib/ui/viewer-companion/home-route";
+import { canParkCompanionHomeWait, companionHomeBlockedResponse, planCompanionHomeReturn, shortestCompanionHomeRoute } from "@/lib/ui/viewer-companion/home-route";
 import { DEFAULT_COMPANION_PREFERENCES as prefs } from "@/lib/ui/viewer-companion/preferences";
 import { companionHabitDescriptions, companionHabitSummary } from "@/lib/ui/viewer-companion/habit-summary";
 
@@ -10,6 +10,27 @@ const roomFloor: Platform = { id: "companion-home-floor", kind: "floor", manualO
 const world: CompanionWorld = { x: 850, y: floor.y, platformId: floor.id, platforms: [floor, seat, roomFloor], width: 1100, height: 1100 };
 
 describe("shared direct home return", () => {
+  it("confirms a disconnected route once, then yields only an automatic idea", () => {
+    const isolated: Platform = { id: "isolated", kind: "card", x: 800, width: 60, y: 240 };
+    const disconnected = { ...world, x: 830, y: 240, platformId: isolated.id, platforms: [isolated, seat, roomFloor] };
+    expect(planCompanionHomeReturn(createBrain(), disconnected, prefs).state).toBe("blocked");
+    for (const journey of ["automatic", "called"] as const) {
+      expect(companionHomeBlockedResponse(journey, false)).toBe("revalidate");
+      expect(planCompanionHomeReturn(createBrain(), disconnected, prefs).state).toBe("blocked");
+      expect(companionHomeBlockedResponse(journey, true)).toBe(journey === "automatic" ? "resume" : "wait");
+    }
+  });
+  it("lets a kept command yield to each finite affection, contact and motion lease", () => {
+    expect(canParkCompanionHomeWait(1000, 1650, 1120, false)).toBe(false);
+    expect(canParkCompanionHomeWait(1120, 1650, 1120, false)).toBe(false);
+    expect(canParkCompanionHomeWait(1649.99, 1650, 1120, false)).toBe(false);
+    expect(canParkCompanionHomeWait(1650, 1650, 1120, false)).toBe(true);
+    expect(canParkCompanionHomeWait(2000, 1650, 2120, false)).toBe(false);
+    expect(canParkCompanionHomeWait(2120, 1650, 2120, true)).toBe(false);
+    expect(canParkCompanionHomeWait(2120, 1650, 2120, false)).toBe(true);
+    expect(companionHomeBlockedResponse("called", true)).toBe("wait");
+    for (const values of [[NaN, 0, 0], [0, Infinity, 0], [0, 0, Infinity]]) expect(canParkCompanionHomeWait(values[0], values[1], values[2], false)).toBe(false);
+  });
   it("walks near the real house, then springs to its floor without any invented supports", () => {
     let point = { ...world }, jumps = 0, springs = 0, walks = 0, arrived = false;
     for (let i = 0; i < 30; i++) {

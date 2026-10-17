@@ -650,13 +650,13 @@ html[data-showcase] {
      · .slot-showcase  = 편집실 아바타 자리 / 시청자 아바타 자리(위쪽, 자리 폭 전체)
      · .rail-showcase  = 시청자 오른쪽 레일(태그 필터 카드 바로 아래, 레일 폭 전체)
    구조(전폭 카드 · 등분 타일 · 아이콘 위/글자 아래 · 아래 줄에 감상하기)는 여기서 한 번만 정하고, **색만** 호스트가
-   토큰으로 바꾼다(편집실 = 흰 카드·연보라 선, 시청자 = 크림 카드·베이지 선). 폭은 바로 위 카드(도구 카드·태그 필터)에
+   공유 panel-card 토큰을 쓴다. 폭은 바로 위 카드(도구 카드·태그 필터)에
    맞춰 늘어난다 — 가운데로 몰린 좁은 알약이 "짜친다"는 지적의 원인이었다. */
 .viewer-ambient-ctl.slot-showcase,
 .viewer-ambient-ctl.rail-showcase {
-  --amb-card-bg: #fff;
-  --amb-card-line: #ece9f5;
-  --amb-card-r: 18px;
+  --amb-card-bg: var(--panel-card-bg);
+  --amb-card-line: var(--panel-card-line);
+  --amb-card-r: var(--r-card);
   --amb-tile-hover: #f4f2fb;
   --amb-tile-hover-line: #e6e1f4;
   display: grid;
@@ -674,10 +674,8 @@ html[data-showcase] {
   background: var(--amb-card-bg);
   /* 세로는 이웃 카드(도구 64px)와 어울리게 조인다 — 글자 크기는 그대로 두고 여백만(2026-09-05 소유자:
      "다른 박스에 비해 높이면으로 뚱뚱하다"). 171 → ≈140px. */
-  padding: 9px 11px 9px;
-  box-shadow:
-    0 1px 2px rgb(70 50 110 / 5%),
-    0 10px 26px rgb(70 50 110 / 10%);
+  padding: var(--space-2);
+  box-shadow: var(--panel-card-shadow);
   /* 아바타 자리는 pointer-events:none인 빈 자리 — 카드만 되살린다. */
   pointer-events: auto;
   /* ⚠ transform에는 transition을 걸지 않는다(2026-09-05). 이 카드에만 걸려 있던 탓에, 좌↔우 전환에서

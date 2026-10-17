@@ -11,6 +11,12 @@
 .panel-section-heading:has(.panel-section-actions) .panel-section-toggle { padding-inline: var(--control-hit); }
 .panel-section-body { display: contents; }
 .panel-section-body[hidden] { display: none !important; }
+/* One material and title row for the three desktop cards. Their content grids
+   and real selection colours remain owned by the existing controls. */
+.panel-section[data-panel-section]:not(.agenda-legend) { box-sizing: border-box; padding: var(--space-2); border: var(--stroke-hairline) solid var(--panel-card-line); border-radius: var(--r-card); background: var(--panel-card-bg); color: var(--ink); box-shadow: var(--panel-card-shadow); }
+.panel-section[data-panel-section]:not(.agenda-legend) .panel-section-heading { color: var(--ink); }
+.panel-section[data-panel-section]:not(.agenda-legend) .panel-section-toggle { min-height: 36px; }
+.panel-section-toggle:focus:not(:focus-visible) { outline: none; }
 /* The root's prepaint marker prevents remembered closed cards flashing open
    while React hydrates, including the studio's shared disclosure cards. */
 html[data-panel-sections~="tag-filter"] [data-panel-section="tag-filter"][data-panel-collapsible] > .panel-section-body,
@@ -19,16 +25,24 @@ html[data-panel-sections~="companion-home"] [data-panel-section="companion-home"
 html[data-panel-sections~="tag-filter"] [data-panel-section="tag-filter"][data-panel-collapsible] .panel-section-chevron,
 html[data-panel-sections~="season"] [data-panel-section="season"][data-panel-collapsible] .panel-section-chevron,
 html[data-panel-sections~="companion-home"] [data-panel-section="companion-home"][data-panel-collapsible] .panel-section-chevron { transform: rotate(-90deg); }
-.viewer-ambient-ctl .panel-section-heading { border-bottom: 1px solid var(--amb-card-line, var(--line)); color: var(--amb-title-ink, var(--ink)); }
+.viewer-ambient-ctl .panel-section-heading { border-bottom: 0; color: var(--ink); }
 /* The studio workspace itself is scaled; panel type retains the same visible
    token size as the unscaled public viewer (UI-18). */
 .studio-shell .panel-section .panel-section-title { margin: 0; font-size: calc(var(--text-title) / var(--shell-zoom, 1)); font-weight: 600; line-height: 1.1; }
+.studio-shell .panel-section[data-panel-section]:not(.agenda-legend) { padding: calc(var(--space-2) / var(--shell-zoom, 1)); border-width: calc(var(--stroke-hairline) / var(--shell-zoom, 1)); border-radius: calc(var(--r-card) / var(--shell-zoom, 1)); }
+.studio-shell .panel-section[data-panel-section]:not(.agenda-legend) .panel-section-toggle { min-height: calc(36px / var(--shell-zoom, 1)); }
 /* A folded agenda card gives its empty height back to the rail. The disclosure
    retains the same type token; only its narrow structural padding is smaller. */
 .agenda-legend[data-panel-collapsed],
 html[data-panel-sections~="tag-filter"] .agenda-legend[data-panel-collapsible] { flex: 0 0 auto; }
 .agenda-legend .panel-section-toggle { padding-inline: 8px; }
 .agenda-legend .panel-section-chevron { left: -5px; }
-@media (pointer: coarse) { .panel-section-toggle { min-height: var(--control-hit); } }
+@media (pointer: coarse) {
+  .panel-section-toggle,
+  .panel-section[data-panel-section]:not(.agenda-legend) .panel-section-toggle { min-height: var(--control-hit); }
+  /* Match the desktop material selectors above, including workspace zoom,
+     so a real touch target remains 44 physical pixels instead of 36. */
+  .studio-shell .panel-section[data-panel-section]:not(.agenda-legend) .panel-section-toggle { min-height: calc(var(--control-hit) / var(--shell-zoom, 1)); }
+}
 html[data-reduce-motion] .panel-section-chevron { transition: none; }
 html[data-reduce-motion] .panel-section-toggle:active { transform: none; }

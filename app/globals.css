@@ -59,6 +59,16 @@
   --glass-cell: 255 254 251;
   --glass-head: 251 247 238;
   --glass-panel: 255 253 246;
+  /* Shared rail cards and header controls: theme-aware material, independent
+     of which route or collapsed section currently hosts the control. */
+  --panel-card-bg: rgb(var(--glass-panel));
+  --panel-card-line: var(--line);
+  --panel-card-shadow: var(--shadow-1);
+  --header-control-bg: var(--glass);
+  --header-control-hover: rgb(var(--glass-cell));
+  --header-control-line: var(--line);
+  --header-control-ink: var(--ink);
+  --header-control-shadow: var(--shadow-2);
   --surface-2: #fdf6e8;
   --studio-workbench: #eae6e0;
   /* 빅토리×빅타민 시그니처 — 선명한 비타민 팔레트(노랑=승리/주목, 초록=빅타민/참여,
@@ -308,6 +318,12 @@
   --dur-3: 240ms;
   --dur-4: 300ms; /* 시트·모달 들어옴 */
   --dur-5: 500ms; /* 가장 큰 전환(달 넘김) — 이 위로는 굼뜨다 */
+}
+
+@media (min-width: 641px) {
+  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) {
+    --panel-card-bg: rgb(var(--glass-panel) / 84%);
+  }
 }
 
 /* ── 스크롤바는 그리지 않는다(2026-09-05 소유자) — 스크롤 기능만 남긴다 ──────────────────
