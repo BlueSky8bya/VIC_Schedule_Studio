@@ -4,6 +4,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
+집 첫 표시·소파 피드백 정정(2026-10-17 소유자 후속): [PLAN-094](../agent/plans/PLAN-20261017-094-companion-home-first-paint.md)은 home CSS를 dynamic child 아래서만 싣던 경계를 public/studio 초기 CSS import로 옮긴다. 같은 CSS 한 구현을 쓰고 JS/아틀라스 지연 로딩·모바일 제외·저장 선택은 유지한다. SVG 기본 치수/fill도 명시한다. 소파의 hover/focus/pressed는 작은 집 아이콘·배경/명암으로 알리고, 실제 버튼/좌석/그림/전경은 이동·확대하지 않는다. 내부 아이콘의 눌림만 기존 press 토큰을 쓰며 reduced/off/soft에서는 정지한다. 정상 식사와093의 조건부 사고는 그대로다.
+
 맥락 연결 정정(2026-10-17 소유자 후속): [PLAN-093](../agent/plans/PLAN-20261017-093-companion-context-episodes.md)은092의 급식 중 사고 제외를 **현재 음식ID를 기억하는 유한 식사 장면에 한해** 대체한다. 발견/종별 반응→현재 실제 경로의 조심스러운 보행·달리기·증명한 도약→선택적 한 번의 실제 접촉/착지 실수→관성으로 구름/회복→같은 먹이 재접근→실제 소비→종별 마무리를 연결한다. 변형은 장면당 한 번 고르고24단계/기존32급식 예산·독립 mishap 제한을 유지한다. 실제 끝 속도와 다음 flight가 맞을 때만 run-up을 쓰며, 구르기는 안전한 지지면의 끝 위치에 단조롭게 정착한다. 기상 뒤 기지개/몸털기와 실제 쓰다듬기 뒤 종별 반응도 유한 문맥이다. 기쁨 표현은 가짜 쓰다듬기·식사 보상을 만들지 않는다. 창/편집/blur/숨김/OFF/공연/직접 입력은 후속 문맥을 취소하고 현재 안전 이동만 마치며, 빠른 복귀로 취소 단계가 부활하지 않는다. 일반 탐색·직접 귀가/먹기 권한·모바일 제외·공개 경계·단일 tick/exact decode2·retained3은 유지한다. 활성31행과 의도된 legacy/대체 프레임을 구분하고 아트 전수 preload나 새 상시 loop를 만들지 않는다.
 
 활동·회복 정정(2026-10-17 소유자 후속): [PLAN-092](../agent/plans/PLAN-20261017-092-companion-romp-and-recovery.md)가091의 약한 회복과068의 정지 후 연속 이동 사고 추첨만 대체한다. 회복 앞520ms에3왕복의 힘찬 좌우 털기 뒤 눈을 뜨며 실제 지지점과 전체 몸체 경계를 유지한다. 일반 scoot은 현재 안전 발판 안에서 짧은/긴 구간을 섞고 검증된 run-up만 속도를 유지한 높은 도약으로 잇는다. 실제 같은 평면 진행 경로의 settled 음식 접촉과 유한 헛디딤을 구분하고, 넓은 곳에서만 구른다. 별도 mishap 제한·카드 기울임 토글·음식 좌표/소비 불변을 유지한다. 자율 explore는 허용하되 feed/rest/명령 귀가·수동 입력·창/편집/공연/비활성·감소/OFF·모바일 제외가 우선한다. 새 상시 loop·timer·서버/모델 요청·아트는 없다. [검증](../agent/verification/COMPANION_ROMP_RECOVERY-20261017.md).

@@ -1,12 +1,11 @@
 "use client";
 
-import { Utensils, X } from "lucide-react";
+import { Home, Utensils, X } from "lucide-react";
 import { useId, useLayoutEffect, useRef } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import "./companion-home.css";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
@@ -36,7 +35,7 @@ function BedFront({ gradientId, clipId }: { gradientId: string; clipId: string }
  * tokens; neither this art nor the portal invents a second landing anchor. */
 export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPrefix?: string }) {
   const instance = useId().replace(/:/g, ""), id = `${idPrefix}-${instance}`;
-  return <svg className="vc-bed-front-art" viewBox="0 0 180 100" aria-hidden="true" focusable="false">
+  return <svg className="vc-bed-front-art" width="180" height="100" viewBox="0 0 180 100" fill="none" aria-hidden="true" focusable="false">
     <defs><linearGradient id={`${id}-rim`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="27" y2="100"><stop stopColor="var(--vc-bed-light)" /><stop offset=".55" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></linearGradient></defs>
     <BedFront gradientId={`${id}-rim`} clipId={`${id}-clip`} />
   </svg>;
@@ -52,7 +51,7 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
   return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
     <div className="vc-home-room">
-      <svg className="vc-home-window" viewBox="0 0 76 66" aria-hidden="true" focusable="false">
+      <svg className="vc-home-window" width="64" height="56" viewBox="0 0 76 66" fill="none" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id={`${bedId}-window`} x1=".15" x2=".85" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".5" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient>
           <linearGradient id={`${bedId}-curtain`} x2="1" y2=".5"><stop stopColor="var(--vc-linen-edge)" /><stop offset=".45" stopColor="var(--vc-linen)" /><stop offset="1" stopColor="var(--vc-linen-edge)" /></linearGradient>
@@ -69,7 +68,7 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
         <rect className="vc-window-sill" x="1" y="57" width="74" height="5" rx="2" fill={`url(#${bedId}-window)`} />
         <rect className="vc-window-edge" x="4.5" y="4.5" width="67" height="54" rx="10.5" />
       </svg>
-      <svg className="vc-home-shelf" viewBox="0 0 108 55" aria-hidden="true" focusable="false">
+      <svg className="vc-home-shelf" width="108" height="55" viewBox="0 0 108 55" fill="none" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id={`${bedId}-shelf`} x2=".15" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".5" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient>
           <linearGradient id={`${bedId}-pot`} x2=".8" y2="1"><stop stopColor="var(--vc-ceramic-light)" /><stop offset=".65" stopColor="var(--vc-ceramic)" /><stop offset="1" stopColor="var(--vc-ceramic-edge)" /></linearGradient>
@@ -92,7 +91,7 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
       <span className="vc-home-light" aria-hidden="true" />
       <span className="vc-home-floor" aria-hidden="true" />
       <button type="button" data-home-action="home" data-activity-manual="" data-tip="집으로 부르기" className="vc-cushion-button" onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기">
-        <svg className="vc-plush-bed" viewBox="0 0 180 100" aria-hidden="true" focusable="false">
+        <svg className="vc-plush-bed" width="180" height="100" viewBox="0 0 180 100" fill="none" aria-hidden="true" focusable="false">
           <defs>
             <linearGradient id={`${bedId}-rim`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="27" y2="100"><stop stopColor="var(--vc-bed-light)" /><stop offset=".55" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></linearGradient>
             <radialGradient id={`${bedId}-nest`} cx=".48" cy=".6" r=".65"><stop stopColor="var(--vc-bed-cloth)" /><stop offset=".65" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></radialGradient>
@@ -110,11 +109,12 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
               portal must place it over an interior resident. */}
           <g className="vc-bed-local-front"><BedFront gradientId={`${bedId}-rim`} clipId={`${bedId}-front-clip`} /></g>
         </svg>
+        <span className="vc-cushion-cue" aria-hidden="true"><Home size={15} strokeWidth={1.8} /></span>
         <span className="vc-home-cushion" aria-hidden="true" />
       </button>
       {preferences.feeding ? <>
-        <button type="button" data-home-action="feed" data-activity-manual="" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기"><svg className="vc-dispenser-container" viewBox="0 0 48 62" aria-hidden="true" focusable="false"><defs><linearGradient id={`${bedId}-dispenser`} x2=".8" y2="1"><stop stopColor="var(--vc-container-light)" /><stop offset=".5" stopColor="var(--vc-container)" /><stop offset="1" stopColor="var(--vc-container-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="24" cy="58" rx="21" ry="3" /><rect className="vc-dispenser-body" fill={`url(#${bedId}-dispenser)`} x="2" y="2" width="44" height="58" rx="11" /><path className="vc-dispenser-top" d="M10 6h28" /><rect className="vc-dispenser-panel" x="9" y="11" width="30" height="29" rx="7" /><path className="vc-dispenser-base" d="M8 56h32" /></svg><span className="vc-dispenser-face" aria-hidden="true"><Utensils size={19} strokeWidth={1.5} /><span className="vc-dispenser-dot" /></span><span className="vc-dispenser-slot" aria-hidden="true" /></button>
-        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><svg viewBox="0 0 28 32" aria-hidden="true" focusable="false"><defs><linearGradient id={`${bedId}-basket`} x2=".8" y2="1"><stop stopColor="var(--vc-bin-light)" /><stop offset=".5" stopColor="var(--vc-bin)" /><stop offset="1" stopColor="var(--vc-bin-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="14" cy="29" rx="11" ry="2" /><path className="vc-trash-body" fill={`url(#${bedId}-basket)`} d="M4 11h20l-1 14c0 3-3 4-9 4s-9-1-9-4Z" /><path className="vc-trash-rim" d="M5 12h18" /><g className="vc-trash-lid"><path className="vc-trash-handle" d="M10 7c0-5 8-5 8 0" /><path className="vc-trash-lid-surface" fill={`url(#${bedId}-basket)`} d="M4 6h20a2 2 0 0 1 2 2v2H2V8a2 2 0 0 1 2-2Z" /><path className="vc-trash-lid-edge" d="M5 7.5h18" /></g></svg><span className="vc-trash-progress" aria-hidden="true" /></button>
+        <button type="button" data-home-action="feed" data-activity-manual="" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기"><svg className="vc-dispenser-container" width="48" height="62" fill="none" viewBox="0 0 48 62" aria-hidden="true" focusable="false"><defs><linearGradient id={`${bedId}-dispenser`} x2=".8" y2="1"><stop stopColor="var(--vc-container-light)" /><stop offset=".5" stopColor="var(--vc-container)" /><stop offset="1" stopColor="var(--vc-container-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="24" cy="58" rx="21" ry="3" /><rect className="vc-dispenser-body" fill={`url(#${bedId}-dispenser)`} x="2" y="2" width="44" height="58" rx="11" /><path className="vc-dispenser-top" d="M10 6h28" /><rect className="vc-dispenser-panel" x="9" y="11" width="30" height="29" rx="7" /><path className="vc-dispenser-base" d="M8 56h32" /></svg><span className="vc-dispenser-face" aria-hidden="true"><Utensils size={19} strokeWidth={1.5} /><span className="vc-dispenser-dot" /></span><span className="vc-dispenser-slot" aria-hidden="true" /></button>
+        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><svg width="36" height="44" fill="none" viewBox="0 0 28 32" aria-hidden="true" focusable="false"><defs><linearGradient id={`${bedId}-basket`} x2=".8" y2="1"><stop stopColor="var(--vc-bin-light)" /><stop offset=".5" stopColor="var(--vc-bin)" /><stop offset="1" stopColor="var(--vc-bin-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="14" cy="29" rx="11" ry="2" /><path className="vc-trash-body" fill={`url(#${bedId}-basket)`} d="M4 11h20l-1 14c0 3-3 4-9 4s-9-1-9-4Z" /><path className="vc-trash-rim" d="M5 12h18" /><g className="vc-trash-lid"><path className="vc-trash-handle" d="M10 7c0-5 8-5 8 0" /><path className="vc-trash-lid-surface" fill={`url(#${bedId}-basket)`} d="M4 6h20a2 2 0 0 1 2 2v2H2V8a2 2 0 0 1 2-2Z" /><path className="vc-trash-lid-edge" d="M5 7.5h18" /></g></svg><span className="vc-trash-progress" aria-hidden="true" /></button>
       </> : null}
     </div>
     <div className="sr-only"><meter min="0" max="1" value={care.affection} aria-label="빅타민 친밀도" /><meter min="0" max="1" value={1 - care.hunger} aria-label="빅타민 포만감" /><meter min="0" max="1" value={care.energy} aria-label="빅타민 기력" /></div>

@@ -1,6 +1,6 @@
 # 빅타민의 상황별 연속 행동
 
-Status: In Progress.
+Status: Complete.
 
 소유자: 만들어 둔 동작을 적절한 상황에서 쓰고, 음식 발견→반가운 접근→관성/착지 실수→구름→회복처럼 인과가 이어지는 하나의 행동으로 다양화한다.092의 일반 탐색 사고는 유지하되, 먹이 경로의 사고 제외만 명시적인 유한 식사 장면에 한해 대체한다. 실제 음식/일정 데이터나 사용자 설정은 연출이 바꾸지 않는다.
 
@@ -13,4 +13,6 @@ Status: In Progress.
 
 공개 DTO/역할/언락/KST·포스터1840 기하·직렬 쓰기·운영 DB·의존성·사용자 아트는 변경하지 않는다. 실제 OBS 장비/모든 장치/RLS 검증과 구분한다.
 
-로컬 검증 완료: [동작 재고·구현·실패 시도/최종 증거](../verification/COMPANION_CONTEXT_EPISODES-20261017.md). 최종 build `mvTnvekoF00gUfxEqdp2y`, unit2,001·native47·typecheck/lint/build/harness246 PASS, 독립 차단0·검증 소스36파일 exact 일치. 승인된 후속 commit/main push와 원격 CI·Vercel·운영 SHA/표시 확인은 아직 남아 있다.
+로컬 검증 완료: [동작 재고·구현·실패 시도/최종 증거](../verification/COMPANION_CONTEXT_EPISODES-20261017.md). 최종 build `mvTnvekoF00gUfxEqdp2y`, unit2,001·native47·typecheck/lint/build/harness246 PASS, 독립 차단0·검증 소스36파일 exact 일치. 승인된 후속 commit/main push와 원격 CI·Vercel·운영 SHA/표시 확인까지 완료했다.
+
+릴리스: 66268c6cc50f01e27d1f47b1373cf6ceb6ee7ce4/main. [Remote quality39033426820](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39033426820) 모든13단계 success, Vercel8MpYiGAAGrY9E3voum3t2b8NUT8x success. 2026-10-17 21:42:45 KST 운영 전체 SHA exact 및 경계 canary, 실제 developer studio 버전/한 개체 visible·decoded HD를 확인했다. 배포 후 결과 메타데이터는 로컬에 갱신해 문서만을 위한 추가 배포를 피한다.

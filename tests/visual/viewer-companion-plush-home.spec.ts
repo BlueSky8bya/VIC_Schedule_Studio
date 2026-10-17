@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const cases = [
   { name: "pc-light", width: 1920, height: 1100, touch: false, dark: false },
@@ -136,7 +136,10 @@ for (const view of cases) test.describe(view.name, () => {
     // Actual feed/clear interactions cannot move the physical room surfaces.
     const after = await home(page).locator(".vc-home-cushion").boundingBox(); expect(after!.y).toBeCloseTo(metrics.cushion.top, 2); expect(after!.height).toBeCloseTo(2, 3);
     const cushion = home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }), pet = page.locator(".vc-companion");
-    await press(cushion, view.touch); await expect(pet).toHaveAttribute("data-platform", "companion-home", { timeout: 6000 });
+    await placeCompanionOnHomeFloor(page);
+    // The floor resident overlaps the sofa's centre. Recall through its native
+    // keyboard control, then retain the original finite arrival/rest checks.
+    await cushion.focus(); await cushion.press("Enter"); await expect(pet).toHaveAttribute("data-platform", "companion-home", { timeout: 6000 });
     await expect(pet).toHaveAttribute("data-state", "sleep", { timeout: 6000 });
     const foreground = page.locator(".vc-bed-foreground"); await expect(foreground).toBeVisible();
     await expect(pet).toHaveAttribute("data-sofa-depth", /^(seat|back)$/);

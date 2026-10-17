@@ -1,5 +1,8 @@
 "use client";
 
+// The room must be styled before its lazy companion runtime can mount.
+import "./viewer-companion/companion-home.css";
+
 import {
   CalendarCheck,
   ChartColumn,

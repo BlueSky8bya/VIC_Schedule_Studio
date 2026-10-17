@@ -41,7 +41,7 @@
 
 ## 검증 현황
 
-최종 제품 소스의 전체 unit2,001/2,001(204파일), 전체 lint, typecheck 및 production fixture build `mvTnvekoF00gUfxEqdp2y`와 빌드 후 typecheck는 PASS였다. 새 unit26건은 다섯 식사 변형/실제 run-up/예산/동일ID/사고1회/실제 consume/취소를 검사한다. 독립 소스·native spec 검토에서 추가 차단0. 최종 native 식사/음식 이동/실제 탭 전환6/6, 기존 귀가·편집창 닫기·빠른 놓기·게스트·흔들기·먹이 추적·관성·창 소유권41/41 PASS, 합계47/47(skip/flaky0)다. main과 검증한 격리 소스36파일 SHA256 exact 일치, harness246문서 PASS. 배포는 아직 확인 전이다.
+최종 제품 소스의 전체 unit2,001/2,001(204파일), 전체 lint, typecheck 및 production fixture build `mvTnvekoF00gUfxEqdp2y`와 빌드 후 typecheck는 PASS였다. 새 unit26건은 다섯 식사 변형/실제 run-up/예산/동일ID/사고1회/실제 consume/취소를 검사한다. 독립 소스·native spec 검토에서 추가 차단0. 최종 native 식사/음식 이동/실제 탭 전환6/6, 기존 귀가·편집창 닫기·빠른 놓기·게스트·흔들기·먹이 추적·관성·창 소유권41/41 PASS, 합계47/47(skip/flaky0)다. main과 검증한 격리 소스36파일 SHA256 exact 일치, harness246문서 PASS. 배포 확인은 아래 릴리스 기록과 같다.
 
 최종 원본6개4,992프레임에 대한 별도 작성자 정적 감사168조건 PASS(exit0), 각 최대 표본 간격29.6~96.6ms/100ms 초과0, 원본 SHA256/mtime 불변을 확인했다. 모든 프레임의 동일 개체/visible/decoded HD, 음식 동일성/기록된 floor 좌표, 설정/학습 불변, 쓰기/오류0, 식사 진입·음식 제거·실제 보상 각1회 및 음식ID 없는 식후 완료를 확인했다. 원본/PNG는 격리 `.scratch-pw/093-context-episodes/`, 정식 report와 감사/시각 검토는 main `.scratch-pw/companion-093/`에 보존한다. unit 결과는 실행 도구92027(exit0)의 전체2,001 로그와 요약에 기록하며 npm 인자 전달로 생성되지 않은 full JSON report가 있다고 주장하지 않는다.
 
@@ -58,3 +58,11 @@
 추가 occlusion 시도1PASS/5FAIL 원본은 `.scratch-pw/093-context-occlusion-attempt/`에, 창 격리 뒤4PASS/2FAIL은 `.scratch-pw/093-context-focus-emulation-attempt/`에 보존했다. 창을 화면 밖으로 격리해 명령하지 않은 실제 desktop pointer 입력 혼입을 막았고, 포커스 실패의 최종 원인은 headless 여부가 아닌 Playwright의 기본 `Emulation.setFocusEmulationEnabled(true)`임을 설치된 `coreBundle.js`에서 확인했다. 최종 refocus2건만 CDP로 그 강제 설정을 해제하고 실제 다른 탭의 `bringToFront`를 사용한다. 제품 callback/`hasFocus`/시계/난수/상태를 덮어쓰거나 가짜 이벤트를 보내지 않는다. 원본은 실제 trusted blur(false)→100ms 이상→focus(true) 및 이동 중 좌표/문맥 폐기를 직접 검증한다. 기본 식사/음식 이동4건은 이 CDP 설정을 사용하지 않는다.
 
 임의90초 내 모든 확률적 변형을 보장하는 검사를 만들지 않고, 재현 단위 상태 전이와 실제 식사/취소의 native 관찰을 구분한다. 무작위 refocus가 매번 예정 hop 취소까지 목격한다는 뜻은 아니다. 실제 OBS 장비·전 장치/모든 난수·실제 로그인 RLS의 완료를 주장하지 않는다.
+
+## 릴리스
+
+관련17파일만 `66268c6cc50f01e27d1f47b1373cf6ceb6ee7ce4`로 commit/main push했다. staged scope exact·비밀 패턴6종0·whitespace PASS, 사용자 아트/.vscode/기존 미추적 작업은 제외했다. [Remote quality39033426820](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39033426820)의 해당 전체 SHA와 모든13단계 success, Vercel8MpYiGAAGrY9E3voum3t2b8NUT8x success를 확인했다. 원격 locked 의존성/unit/격리 SQL/harness/production build/생성 경로 typecheck/lint/post를 모두 포함한다.
+
+2026-10-17 21:42:45 KST 운영 canary는 전체 SHA exact·clock200/no-store·warm204·anonymous developer401/error-only/no-store·fixture streaming404 비노출을 확인했다. 실제 로그인된 developer studio도 버전66268c6, 한 개체 visible/decoded HD·hidden/placing false를 읽기 확인했다. 운영 스케줄/설정은 수정하지 않았고 실제 연속 동작의 증거는 위 production fixture와 구분한다. 자체 fixture server/runner는 종료했으며 기존 다른 서버/사용자 탭은 유지했다.
+
+main ignored `.scratch-pw/companion-093/`에 최종 remote-run/jobs/status, deployed-canaries/UI, source-equivalence, staged-files와 단위 실행 요약/native report/원본 감사/PNG 검토를 보존한다. 배포 후 결과 메타데이터는 로컬만 갱신해 문서만을 위한 추가 Vercel 배포를 만들지 않는다. 기존 Hobby 초과 및 별도 운영/실제 OBS/RLS 과제는 미결로 둔다.

@@ -1,5 +1,8 @@
 "use client";
 
+// Share the viewer's first-paint room styles; keep the runtime and art lazy.
+import "@/components/poster/viewer-companion/companion-home.css";
+
 // 인사이트 차트·타일 스타일(편집실·시청자 공용) — studio-shell.css에서 분리된 파일.
 import "@/components/studio/insights-charts.css";
 // 2026-09-03 배치 대개편 레이어(서쪽 도구 카드 · 물결 배경 · 차분 상단바) — studio-shell.css에서 분리.

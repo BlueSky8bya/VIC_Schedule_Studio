@@ -4,7 +4,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const foods = (page: Page) => page.locator(".vc-food");
 const house = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
@@ -267,7 +267,8 @@ test("a hungry sofa resident approaches the real house floor before eating a dro
   test.setTimeout(25000); await page.setViewportSize({ width: 1920, height: 1100 });
   await seed(page, .8, true, true);
   await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready); await waitForHomeMount(page); await openCompanionHome(page);
-  await expect(bed(page)).toBeEnabled(); await bed(page).click();
+  await expect(bed(page)).toBeEnabled(); await placeCompanionOnHomeFloor(page);
+  await bed(page).focus(); await bed(page).press("Enter");
   const creature = page.locator(".vc-companion"), actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
   await expect(creature).toHaveAttribute("data-platform", "companion-home"); await expect(creature).not.toHaveAttribute("data-state", "jump");
   // A native affectionate tap finishes the requested nap before offering food.
