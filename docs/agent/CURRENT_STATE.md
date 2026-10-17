@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current: operations follow-up is the Free-plan full-recovery path, same-period cost comparison and genuine-role/broadcaster evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). General cleanup/bulk UPDATE/paid-plan or permission changes remain unauthorized. Preserve user art/preview work.
+Current: companion work listed below continues independently. Operations follow-up is the Free-plan full-recovery path, same-period cost comparison and genuine-role/broadcaster evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). General cleanup/bulk UPDATE/paid-plan or permission changes remain unauthorized. Preserve user art/preview work.
 
 Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, owner-only private content, Google+passcode/session binding, KST and serial writes remain mandatory. Companion defaults ON only for PC without saved choice; explicit choices persist. Mobile companion stays excluded. Actual OBS hardware/real-session/provider evidence stays distinct from fixtures.
 
@@ -15,6 +15,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
+| PLAN-084 | Deployment approved | Owner authorized release; unit1925/rendered9/build verified, production SHA/UI verification next | [Record](verification/COMPANION_HOME_ROUTE-20261017.md) |
+| PLAN-083 | Deployment approved | Include verified extraction/hide cue; quota remains exceeded on Hobby and is separate from release success | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
 | ART-PINE-PILOT | Awaiting Owner | Owner selects reference PNGs to remove; freeze replacement run only afterward | [Pine handoff](../ambient/HANDOFF-20260908-pine.md) |
@@ -41,6 +43,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md): isolated build `RG5zhm6oK09zKo0-1ZaCq`, unit1,913/1,913·SQL5·HTTP6·lifecycle20·typecheck/lint/build PASS. Compound first4 PASS/1 FAIL; unchanged viewer repeat1 PASS. Actual local1080p60/NVENC recording30min completed, render/encoding lag2frames each. Provider Free/Nano quota within bounds;0152 applied preserving permissions, warnings36→35. Existing real developer aggregate allowed/anonymous401; full genuine-role/broadcaster scope remains open. Deployment identity is verified separately from these local results. Prior [080](verification/PLATFORM_REMEDIATION-20261017.md)/[081](verification/DIAGNOSTIC_RETENTION-20261017.md) evidence stays in topic records.
+Current [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md): isolated build `RG5zhm6oK09zKo0-1ZaCq`, unit1,913/1,913·SQL5·HTTP6·lifecycle20·typecheck/lint/build PASS. Compound first4 PASS/1 FAIL; unchanged viewer repeat1 PASS. Actual local1080p60/NVENC recording30min completed, render/encoding lag2frames each. Provider Free/Nano quota within bounds;0152 applied preserving permissions, warnings36→35. Release23d3a0a9 Vercel success and actual API SHA/warm204/anonymous401 verified; [remote quality39000651651](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39000651651) all PASS. Existing real developer aggregate allowed; full genuine-role/broadcaster scope remains open. Prior [080](verification/PLATFORM_REMEDIATION-20261017.md)/[081](verification/DIAGNOSTIC_RETENTION-20261017.md) evidence stays in topic records.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

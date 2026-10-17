@@ -13,6 +13,8 @@ import { createCompanionGeometryIdentity, observeCompanionPlatforms, type Compan
 import { COMPANION_DETAIL_EVENT, collectCompanionHideTargets, type CompanionDetailNotice, type CompanionHideTarget } from "@/lib/ui/viewer-companion/hide-targets";
 import { createCompanionHideSeek } from "@/lib/ui/viewer-companion/hide-seek";
 import { findCompanionDetailPerch } from "@/lib/ui/viewer-companion/detail-perch";
+import { companionGuestExtractionScale, type CompanionGuestBounds } from "@/lib/ui/viewer-companion/guest-extraction";
+import { isCompanionHomeStep, planCompanionHomeReturn } from "@/lib/ui/viewer-companion/home-route";
 import { companionPremiereMoment, companionPremiereReturn, COMPANION_PREMIERE_ENTER_MS, type CompanionPremiereCue } from "@/lib/ui/viewer-companion/premiere";
 import { sampleCompanionPremiereTravel } from "@/lib/ui/viewer-companion/premiere-travel";
 import { syncedNow } from "@/lib/ui/synced-clock";
@@ -70,6 +72,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const contact = useRef<HTMLSpanElement>(null);
   const inertia = useRef<HTMLSpanElement>(null);
   const bedForeground = useRef<HTMLDivElement>(null);
+  const homeRoute = useRef<HTMLDivElement>(null);
   const control = useRef<Control | null>(null), brain = useRef(createBrain(performance.now()));
   const food = useRef<CompanionFoodControl>(null), careLoaded = useRef(false);
   const homeLauncher = useRef<HTMLButtonElement>(null);
@@ -216,7 +219,20 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const incomingHome = incoming?.monthKey === monthKey && (incoming.anchor?.kind === "home" || incoming.anchor?.kind === "home-floor") ? incoming.anchor.kind : undefined;
     let platforms: Platform[] = [], landingPlatforms: Platform[] = [], x = saved?.x ?? transferredPoint?.x ?? innerWidth * .68, y = saved?.y ?? transferredPoint?.y ?? innerHeight - 18, support = saved?.atHome ? saved.homeSupportId ?? "companion-home" : incomingHome === "home" ? "companion-home" : incomingHome === "home-floor" ? "companion-home-floor" : "";
     let positionEntryWait = false;
-    const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
+    let homeSteps: Platform[] = [], homeJourney = false, homeWakeUntil = 0, strandedSince = 0, homeRetryAt = 0;
+    let stepSignature = "";
+    const showHomeSteps = (steps: readonly Platform[]) => {
+      const signature = steps.map(p => `${p.id}:${p.x}:${p.y}:${p.width}`).join("|");
+      if (signature === stepSignature) return;
+      stepSignature = signature;
+      homeRoute.current?.replaceChildren(...steps.map(p => {
+        const node = document.createElement("span"); node.dataset.homeStep = p.id;
+        node.style.transform = `translate3d(${p.x}px,${p.y}px,0)`; node.style.width = `${p.width}px`;
+        return node;
+      }));
+    };
+    const cancelHomeJourney = () => { homeJourney = false; homeWakeUntil = 0; strandedSince = 0; showHomeSteps([]); el.removeAttribute("data-home-journey"); };
+    const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id) ?? (homeJourney ? homeSteps.find(p => p.id === id) : undefined);
     let worldSeeded = saved?.seeded ?? false;
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
     let inputPaintQueued = false, interactionUntil = 0;
@@ -233,6 +249,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let premiereBounds: ReturnType<typeof premiereViewportBounds> | undefined;
     const readPremiereBounds = () => premiereBounds = premiereViewportBounds({ clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight, visualViewport: window.visualViewport });
     const boundedPremierePlatforms = (items: readonly Platform[], bounds: ReturnType<typeof premiereViewportBounds>) => items.flatMap(platform => {
+      if (isCompanionHomeStep(platform.id)) return [];
       const left = Math.max(platform.x, bounds.left + size / 2 + 4), right = Math.min(platform.x + platform.width, bounds.right - size / 2 - 4);
       return right > left && platform.y >= bounds.top + size + 8 && platform.y <= bounds.bottom - 12 ? [{ ...platform, x: left, width: right - left }] : [];
     });
@@ -353,11 +370,23 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (sheet) { const ids = new Set(sheet.getAttribute("aria-owns")?.split(/\s+/).filter(Boolean)); ids.add(button.id); sheet.setAttribute("aria-owns", [...ids].join(" ")); }
     };
     let guestUntil = 0, guestKeyboardHeld = false, guestKeyboardOrigin: CompanionOverlayPerch | undefined;
+    let guestKeyboardBounds: CompanionGuestBounds | undefined;
     let overlayHomeResident = false;
     let hideCandidate: CompanionHideTarget | undefined;
     let hideWakeTimer: ReturnType<typeof setTimeout> | undefined;
     const hideValid = () => Boolean(hiding && hiding.target.element.isConnected && page.contains(hiding.target.element) && hiding.target.element.dataset.eventid === hiding.target.eventId && (!studio || hiding.target.element.dataset.companionEvent === "ordinary") && !hiding.target.element.closest(".teaser,.teaser-revealing,.dimmed,[hidden],[inert],[aria-hidden='true']"));
-    const hideHint = (show: boolean) => { hiding?.target.element.toggleAttribute("data-companion-hide-hint", show); };
+    const hideHint = (show: boolean) => {
+      const card = hiding?.target.element;
+      if (!card || card.hasAttribute("data-companion-hide-hint") === show) return;
+      if (show) {
+        card.style.setProperty("--vc-hide-hint-duration", `${9000 + Math.random() * 5000}ms`);
+        card.style.setProperty("--vc-hide-hint-delay", `${-Math.random() * 4000}ms`);
+        card.style.setProperty("--vc-hide-hint-direction", Math.random() < .5 ? "-1" : "1");
+      } else {
+        for (const key of ["--vc-hide-hint-duration", "--vc-hide-hint-delay", "--vc-hide-hint-direction"]) card.style.removeProperty(key);
+      }
+      card.toggleAttribute("data-companion-hide-hint", show);
+    };
     const resetHide = () => { if (hiding?.sheet) cancelGuestInput(); hideHint(false); ownGuest(null); clearTimeout(hideWakeTimer); hideSeek.reset(); hiding = undefined; hideCandidate = undefined; hideObserver.disconnect(); el.removeAttribute("data-hide-phase"); el.removeAttribute("data-hide-event"); el.removeAttribute("data-hide-perch"); el.removeAttribute("data-detail-guest"); style(el, "opacity", "1"); button.tabIndex = overlayRef.current ? -1 : 0; };
     const hideClock = (now: number) => { if (!hiding) return; if (!pause && !(overlayActive && (!hiding.sheet || !hiding.ready))) presentationNow += Math.max(0, now - lastTick); lastTick = now; };
     const armHideWake = () => {
@@ -387,7 +416,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
     let geometryReady = false, homeOccluded = false;
     let overlayActive = false, overlayPerch: CompanionOverlayPerch | undefined;
-    let overlayDrag: { id: number; dx: number; dy: number; moved?: boolean; worldOrigin?: { x: number; y: number }; guest?: { x: number; y: number; origin: CompanionOverlayPerch; dragged: boolean } } | undefined, overlayPlacing = false;
+    let overlayDrag: { id: number; dx: number; dy: number; moved?: boolean; worldOrigin?: { x: number; y: number }; guest?: { x: number; y: number; origin: CompanionOverlayPerch; bounds?: CompanionGuestBounds; dragged: boolean } } | undefined, overlayPlacing = false;
     const isDetailGuest = () => overlayActive && Boolean(hiding?.sheet && hiding.ready || extractedFrom?.isConnected && extractedFrom === detailSheet && extractedFrom.dataset.companionDetailEvent === extractedEvent);
     const guestBusy = (now: number) => Boolean(overlayDrag?.guest || guestKeyboardHeld || now < petUntil || now < guestUntil || hiding?.ready && hideSeek.sample(presentationNow).active);
     let returning: ReturnType<typeof createCompanionOverlayReturn> | undefined;
@@ -757,6 +786,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       inputPaintQueued = false; hideClock(performance.now()); cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); schedule();
     };
     const affection = () => {
+      cancelHomeJourney();
       if (!preferences.petting) return;
       const guest = isDetailGuest();
       petStarted = performance.now();
@@ -846,26 +876,31 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const outsideDocument = (event: PointerEvent) => { if (!event.relatedTarget) stopHover(); };
     control.current = {
       place: () => { if (!hiding && !isDetailGuest() && preferences.drag) {
+        cancelHomeJourney();
         if (overlayActive) { overlayPlacing = true; el.dataset.placing = ""; setAnnouncement("빅타민을 놓을 곳을 한 번 눌러 주세요."); return; }
         interruptReturn(); stopHover(); awaitingAtX = false; pendingMonth = false; clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = false; placing = true; el.dataset.placing = "";
       } },
-      rest: () => { if (!hiding && preferences.sleep) { interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
+      rest: () => { if (!hiding && preferences.sleep) { cancelHomeJourney(); interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
         if (!supportedNow()) { settle({ x, y }); if (reduced) startRest(); else restAfterLanding = true; }
         else startRest();
       } },
       home: () => {
-        if (hiding || !preferences.sleep) return;
+        if (hiding || pause || overlayActive || premiereActive || !preferences.sleep) return;
         pendingMonth = false;
         const home = platforms.find(p => p.id === "companion-home");
         if (!home) { setAnnouncement("쿠션이 보이도록 집을 펼쳐 주세요."); return; }
         logActivity("ui.click", { target: "companion-home-call" });
         interruptReturn();
         stopHover(); awaitingAtX = false; verticalLanding = false;
-        clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = true;
-        const target = { x: platformLandingX(home, home.x + home.width / 2), y: home.y, platformId: home.id };
-        origin = { x, y }; began = performance.now(); total = clamp(Math.hypot(target.x - x, target.y - y) * 2, 650, 1600); travel = -2;
-        action = { kind: "jump", target, duration: total };
-        if (reduced) { x = target.x; y = target.y; support = target.platformId; restAfterLanding = false; startRest(); }
+        const waking = sleeping;
+        cancelHomeJourney();
+        clearAction(); releaseHold(); petUntil = 0; afterPetLanding = restAfterLanding = false;
+        brain.current = { ...brain.current, intention: undefined, foodGoal: undefined };
+        const now = performance.now(); homeJourney = true; homeWakeUntil = now + (waking ? 500 : 0); nextDecision = now;
+        data("homeJourney", "");
+        if (reduced) { x = platformLandingX(home, home.x + home.width / 2); y = home.y; support = home.id; cancelHomeJourney(); startRest(); }
+        else if (!supportedNow()) settle({ x, y });
+        cancelAnimationFrame(raf); clearTimeout(timer); schedule();
         setAnnouncement("빅타민이 포근한 자리로 돌아가요.");
       },
       feed: () => {
@@ -1044,6 +1079,35 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (hoverPetting) { hoverPetting = false; if (hoverPoint) data("petting", "ready"); else el.removeAttribute("data-petting"); petting.reset(); }
       if (el.dataset.state === "petted" && effect.current) effect.current.textContent = "";
       if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
+      // Count only the brain's active time. Tab absence/modal sleep neither
+      // advances this recovery delay nor creates another background timer.
+      const perch = supportById(support);
+      const lowPerch = perch && !isHomeSupport(support) && (perch.kind === "floor" || perch.kind === "control" && y >= innerHeight - 200);
+      if (!action && !homeJourney && !overlayActive && presence.phase === "active" && effective.roam && effective.jump && preferences.sleep && brain.current.activeMs >= homeRetryAt && lowPerch) {
+        strandedSince ||= brain.current.activeMs;
+        // Repeated same-floor hops are not upward progress. A visible date
+        // nearby must not suppress recovery forever while utility ignores it.
+        if (brain.current.activeMs - strandedSince >= 8000) {
+          homeJourney = true; data("homeJourney", ""); nextDecision = now;
+        }
+      } else if (!homeJourney && !lowPerch) strandedSince = 0;
+      if (homeJourney && !overlayActive && presence.phase === "active" && !workspaceBusyRef.current) {
+        if (!action && now < homeWakeUntil) { paint(12, (1 - (homeWakeUntil - now) / 500) * 15, "wake"); schedule(); return; }
+        if (!action && now >= nextDecision) {
+          const roomFloors = landingPlatforms.filter(p => isHomeFloor(p.id));
+          // Like manual placement, an explicit home command remains available
+          // with autonomous roaming/hops OFF. Reduced motion returned quietly
+          // above; the automatic recovery itself still requires both switches.
+          const plan = planCompanionHomeReturn(brain.current, { x, y, platformId: support, platforms: [...platforms, ...roomFloors, ...homeSteps], width: innerWidth, height: innerHeight }, { ...effective, jump: !reduced });
+          showHomeSteps(plan.steps);
+          if (plan.state === "travel") launch(plan.action, now);
+          else {
+            cancelHomeJourney(); homeRetryAt = brain.current.activeMs + 30000;
+            if (plan.state === "arrived") { startRest(); setAnnouncement("빅타민이 포근한 자리에 도착했어요."); }
+            else { setAnnouncement(plan.state === "missing" ? "쿠션이 보이도록 집을 펼쳐 주세요." : "지금은 집까지 이어진 길이 없어요. 집을 펼치거나 가까운 발판에 놓아 주세요."); nextDecision = now + 1000; if (isCompanionHomeStep(support)) settle({ x, y }); }
+          }
+        }
+      }
       const foodGoalId = brain.current.foodGoal?.foodId;
       const liveFoods = food.current?.foods() ?? [];
       const seenFood = liveFoods.find(item => item.id === (action?.foodId ?? foodGoalId));
@@ -1062,7 +1126,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (lostGoalId && !action && supportedNow() && !workspaceBusyRef.current && presence.phase === "active" && !reduced && gfxMode() !== "off") {
         launch({ kind: "look", target: { x, y, platformId: support }, duration: 480, attention: { kind: "reconsider", ...(lastFoodPoint?.id === lostGoalId ? { point: { x: lastFoodPoint.x, y: lastFoodPoint.y } } : {}) } }, now);
       }
-      if (!action && !workspaceBusyRef.current && presence.phase === "active" && geometryReady && now >= nextDecision && (!isHomeSupport(support) || supportById(support))) {
+      if (!action && !homeJourney && !workspaceBusyRef.current && presence.phase === "active" && geometryReady && now >= nextDecision && (!isHomeSupport(support) || supportById(support))) {
         const occupied = supportById(support);
         const availableFood = accessibleCompanionFoods(liveFoods, [...platforms, ...landingPlatforms]);
         const explicitSupports = landingPlatforms.filter(p => p.manualOnly && (p.id === occupied?.id || availableFood.some(item => item.platformId === p.id)));
@@ -1164,7 +1228,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           }
           if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
           let arrivalPlay: CompanionAction["play"] = undefined;
-          if ((completed.kind === "walk" || completed.kind === "jump") && !completed.foodId && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
+          if ((completed.kind === "walk" || completed.kind === "jump") && !completed.foodId && !homeJourney && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
             const landing = supportById(support);
             const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
             const ordinary = Boolean(node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node));
@@ -1183,7 +1247,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           }
           clearAction();
           if (ejected && presence.phase === "parked") { row = 11; frame = 0; status = "sleep"; el.dataset.dreaming = ""; offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
-          if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (continueRoute ? 0 : completed.attention && completed.attention.kind !== "social" ? 60 : 220);
+          if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (homeJourney ? 100 : continueRoute ? 0 : completed.attention && completed.attention.kind !== "social" ? 60 : 220);
           if (restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
           if (arrivalPlay) {
             // The actual completed run/landing owns this one contact. Start
@@ -1290,13 +1354,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const cancelGuestInput = (animate = false) => {
       const original = overlayDrag?.guest?.origin ?? guestKeyboardOrigin;
       if (original) overlayPerch = { ...original };
-      releaseOverlayDrag(); guestKeyboardHeld = false; guestKeyboardOrigin = undefined; guestUntil = animate ? performance.now() + 160 : 0; petUntil = 0; forceNeutralPose = !animate; stopHover();
+      releaseOverlayDrag(); guestKeyboardHeld = false; guestKeyboardOrigin = undefined; guestKeyboardBounds = undefined; guestUntil = animate ? performance.now() + 160 : 0; petUntil = 0; forceNeutralPose = !animate; stopHover();
       if (animate) wakeGuest();
     };
     const dropGuest = (point: { x: number; y: number }, moved = true) => {
       if (!isDetailGuest() || !overlayPerch) return;
       const extracting = Boolean(hiding?.ready);
-      guestKeyboardHeld = false; guestKeyboardOrigin = undefined; guestUntil = performance.now() + 160; petUntil = 0; stopHover();
+      guestKeyboardHeld = false; guestKeyboardOrigin = undefined; guestKeyboardBounds = undefined; guestUntil = performance.now() + 160; petUntil = 0; stopHover();
       const sheet = hiding?.sheet ?? extractedFrom;
       const rect = sheet?.isConnected ? sheet.getBoundingClientRect() : null;
       const inside = rect && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
@@ -1305,17 +1369,23 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // closes. Only the next real world geometry delivery consumes its one
       // pending drop; no planner, vote or food action runs in the dialog.
       const shown = { ...overlayPerch };
+      const from = el.style.transform;
       const eventId = hiding?.target.eventId ?? extractedEvent;
       resetHide(); extractedFrom = sheet ?? null; extractedEvent = eventId; ownGuest(extractedFrom);
       forceNeutralPose = false; guestUntil = performance.now() + 160;
       data("detailGuest", ""); data("hidePerch", "outside"); button.tabIndex = 0;
-      overlayPerch = placeCompanionOverlayPerch(shown, size, { width: innerWidth, height: innerHeight }, overlayWindows().map(node => node.getBoundingClientRect()));
+      overlayPerch = placeCompanionOverlayPerch({ ...shown, scale: 1 }, size, { width: innerWidth, height: innerHeight }, overlayWindows().map(node => node.getBoundingClientRect()));
       pendingDetailDrop = { x: overlayPerch.x, y: overlayPerch.y };
       if (moved) {
         if (extracting) { experience("played"); logActivity("ui.click", { target: "companion-extract" }); }
         else transferred();
       }
-      paint(9, 0, "watch"); wakeGuest();
+      paint(9, 0, "watch");
+      if (!reduced && gfxMode() !== "off" && from !== el.style.transform) {
+        perchAnimation?.cancel();
+        perchAnimation = el.animate([{ transform: from }, { transform: el.style.transform }], { duration: FLIP_MS, easing: getComputedStyle(document.documentElement).getPropertyValue("--ease").trim() || "ease-out" });
+      }
+      wakeGuest();
     };
     const overlayResize = new ResizeObserver(queueOverlayPerch);
     const overlayMutation = new MutationObserver(queueOverlayPerch);
@@ -1433,7 +1503,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const perch = known ? placeCompanionOverlayPerch({ ...safe, x: safe.x - viewport.left, y: safe.y - viewport.top }, size, viewport, localRects) : undefined;
         const visibleWorld = !el.hidden && shown.x >= viewport.left + size / 2 + 4 && shown.x <= viewport.right - size / 2 - 4 && shown.y >= viewport.top + size + 8 && shown.y <= viewport.bottom - 12;
         premierePerch = visibleWorld ? { ...shown, overlap: false } : perch ? { ...perch, x: perch.x + viewport.left, y: perch.y + viewport.top } : undefined;
-        premiereActive = true; overlayActive = false; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0;
+        cancelHomeJourney(); premiereActive = true; overlayActive = false; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0;
       }
       cancelAnimationFrame(raf); clearTimeout(timer); cancelAnimationFrame(followRaf); followRaf = 0; clearTimeout(parkedLayoutTimer);
       offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); food.current?.pause(true);
@@ -1591,7 +1661,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         stopHover(); guestUntil = petUntil = 0;
         grip = { x: clamp((event.clientX - shown.x) / shown.scale + size / 2, 0, size), y: clamp((event.clientY - shown.y) / shown.scale + size, 0, size) };
         style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`);
-        overlayDrag = { id: event.pointerId, dx: event.clientX - shown.x, dy: event.clientY - shown.y, guest: { x: event.clientX, y: event.clientY, origin: { ...overlayPerch }, dragged: false } };
+        const sheet = hiding?.sheet ?? extractedFrom;
+        overlayDrag = { id: event.pointerId, dx: event.clientX - shown.x, dy: event.clientY - shown.y, guest: { x: event.clientX, y: event.clientY, origin: { ...overlayPerch }, bounds: sheet?.getBoundingClientRect(), dragged: false } };
         el.dataset.pointerFocus = "";
         event.preventDefault(); event.stopPropagation(); button.setPointerCapture(event.pointerId);
         paint(1, 0, "touch"); return;
@@ -1610,7 +1681,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         data("overlayDrag", ""); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
         return;
       }
-      interruptReturn(); homeDeparture = undefined;
+      interruptReturn(); homeDeparture = undefined; cancelHomeJourney();
       stopHover(); awaitingAtX = false;
       const now = performance.now();
       // Direct handling supersedes the800ms passive wake. Otherwise that
@@ -1638,8 +1709,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           if (!preferences.drag || Math.hypot(event.clientX - overlayDrag.guest.x, event.clientY - overlayDrag.guest.y) <= 6) return;
           overlayDrag.guest.dragged = true; data("overlayDrag", "");
         }
-        const previous = overlayPerch, scaled = size * overlayPerch.scale;
-        overlayPerch = { ...overlayPerch, x: clamp(event.clientX - overlayDrag.dx, scaled / 2 + 4, innerWidth - scaled / 2 - 4), y: clamp(event.clientY - overlayDrag.dy, scaled + 4, innerHeight - 4) };
+        const previous = overlayPerch;
+        const scale = overlayDrag.guest ? companionGuestExtractionScale(overlayDrag.guest.origin.scale, { x: event.clientX, y: event.clientY }, overlayDrag.guest.bounds, size, reduced || gfxMode() === "off") : overlayPerch.scale;
+        const scaled = size * scale;
+        const dx = overlayDrag.guest ? (grip.x - size / 2) * scale : overlayDrag.dx;
+        const dy = overlayDrag.guest ? (grip.y - size) * scale : overlayDrag.dy;
+        overlayPerch = { ...overlayPerch, scale, x: clamp(event.clientX - dx, scaled / 2 + 4, innerWidth - scaled / 2 - 4), y: clamp(event.clientY - dy, scaled + 4, innerHeight - 4) };
         if (overlayPerch.x !== previous.x || overlayPerch.y !== previous.y) overlayDrag.moved = true;
         if (overlayDrag.guest && !reduced && gfxMode() !== "off") heldInertia.push((overlayPerch.x - previous.x) / previous.scale, (overlayPerch.y - previous.y) / previous.scale, performance.now(), { x: grip.x / size, y: grip.y / size });
         if (overlayDrag.guest) inputPaint(8, 0, "held"); else paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); return;
@@ -1718,10 +1793,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         else if (event.key === "Escape") { cancelGuestInput(true); paint(9, 0, "watch"); }
         else if (event.key === " ") {
           if (guestKeyboardHeld && overlayPerch) dropGuest({ x: overlayPerch.x, y: overlayPerch.y - size * overlayPerch.scale / 2 }, Boolean(guestKeyboardOrigin && Math.hypot(overlayPerch.x - guestKeyboardOrigin.x, overlayPerch.y - guestKeyboardOrigin.y) > 6));
-          else if (overlayPerch) { const shown = displayedPoint(); perchAnimation?.cancel(); overlayPerch = { ...shown, overlap: overlayPerch.overlap }; guestKeyboardOrigin = { ...overlayPerch }; guestKeyboardHeld = true; grip = { x: size / 2, y: size / 2 }; style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`); paint(8, 0, "held"); }
+          else if (overlayPerch) { const shown = displayedPoint(); perchAnimation?.cancel(); overlayPerch = { ...shown, overlap: overlayPerch.overlap }; guestKeyboardOrigin = { ...overlayPerch }; guestKeyboardBounds = (hiding?.sheet ?? extractedFrom)?.getBoundingClientRect(); guestKeyboardHeld = true; grip = { x: size / 2, y: size / 2 }; style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`); paint(8, 0, "held"); }
         } else if (guestKeyboardHeld && overlayPerch) {
-          const scaled = size * overlayPerch.scale;
-          overlayPerch = { ...overlayPerch, x: clamp(overlayPerch.x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), scaled / 2 + 4, innerWidth - scaled / 2 - 4), y: clamp(overlayPerch.y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), scaled + 4, innerHeight - 4) };
+          const point = { x: overlayPerch.x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), y: overlayPerch.y - size * overlayPerch.scale / 2 + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0) };
+          const scale = companionGuestExtractionScale(guestKeyboardOrigin?.scale ?? overlayPerch.scale, point, guestKeyboardBounds, size, reduced || gfxMode() === "off"), scaled = size * scale;
+          overlayPerch = { ...overlayPerch, scale, x: clamp(point.x, scaled / 2 + 4, innerWidth - scaled / 2 - 4), y: clamp(point.y + scaled / 2, scaled + 4, innerHeight - 4) };
           paint(8, 0, "held");
         }
         wakeGuest(); return;
@@ -1738,7 +1814,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
-      else if (event.key === " " && preferences.drag) { event.preventDefault(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
+      else if (event.key === " " && preferences.drag) { event.preventDefault(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
       else if (event.key === "Escape") { event.preventDefault(); const moved = keyboardHeld && keyboardMoved; pendingMonth = false; keyboardHeld = false; keyboardMoved = false; placing = false; delete el.dataset.placing; settle({ x, y }); if (moved) transferred(); }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
@@ -1840,10 +1916,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       refreshAnchors(geometryAt, false, true);
       // A full scan revalidates safe spans; scrolling itself was already
       // carried per-frame by its actual anchor, including nested/fixed panels.
-      platforms = next.filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
+      homeSteps = next.filter(p => isCompanionHomeStep(p.id));
+      platforms = next.filter(p => !isCompanionHomeStep(p.id) && p.y >= size + 8 && p.y <= innerHeight - 12);
       landingPlatforms = [...(geometryTracker?.landings() ?? [])].filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
       measureBed();
       food.current?.sync(platforms, id => geometryTracker?.anchor(id), geometryTracker?.landings(32));
+      if (homeJourney && !platforms.some(p => p.id === "companion-home")) {
+        cancelHomeJourney(); clearAction();
+        // A folded/moved room is no longer a destination. Recover on a real
+        // nearby ledge with the existing finite landing, never an unseen step.
+        if (!supportedNow()) settle({ x, y }, true);
+        nextDecision = geometryAt + 1000;
+      }
       if (premiereExit && premiereMemory.current.consumedExit === premiereExit.token) {
         const exit = premiereExit, cue = premiereRef.current.cue, now = performance.now();
         premiereExit = undefined;
@@ -2162,7 +2246,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       persistCare(true);
-      stopped = true; clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      stopped = true; cancelHomeJourney(); clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       cardPlay.clear();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
       window.removeEventListener("vic:companion-overlay", sync); window.removeEventListener("vic:companion-workspace", workspaceChanged); window.removeEventListener("resize", viewportResized); document.removeEventListener("animationend", queueOverlayPerch, true);
@@ -2194,7 +2278,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const act = (kind: CompanionHomeAction) => { control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
   const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
-  return createPortal(<><div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
+  return createPortal(<><div className="vc-home-route" ref={homeRoute} aria-hidden="true" /><div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
     <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" data-activity-manual="" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); control.current?.place(); }}><span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span></span></span></span><span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span></button>
     <span className="vc-effect" ref={effect} aria-hidden="true" />

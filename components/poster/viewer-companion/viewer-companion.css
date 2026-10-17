@@ -1,5 +1,8 @@
 .vc-companion { position: fixed; left: 0; top: 0; z-index: 75; width: var(--vc-size, 92px); height: var(--vc-size, 92px); pointer-events: none; will-change: transform; --vc-column: 0%; --vc-row: 0%; }
 .vc-companion[hidden] { display: none; }
+.vc-home-route { position: fixed; inset: 0; z-index: 74; pointer-events: none; }
+.vc-home-route > span { position: absolute; left: 0; top: 0; height: 6px; border-radius: 50%; background: #eadcb6; box-shadow: 0 2px 0 #c8b48a55, inset 0 2px 0 #fff7df; opacity: .85; }
+html[data-theme="dark"] .vc-home-route > span { background: #948069; box-shadow: 0 2px 0 #201c2655, inset 0 2px 0 #d1b894; }
 /* The room remains behind the pet. Only its matching static U-shaped rim
    sits above the body, so lifting naturally clears the fabric without hiding
    the sofa or changing the native cushion/food hit targets. */
@@ -31,8 +34,16 @@ html .vc-companion .vc-actor { outline: none; box-shadow: none; }
 .vc-companion[data-premiere-companion]:not([data-premiere-companion="prelude"]) .vc-contact-shadow { visibility: hidden; }
 /* A hint composes the individual rotate property with the card's existing
    transform/FLIP. It changes neither its layout nor its pointer target. */
-[data-companion-hide-hint] { animation: vc-hide-hint 4.8s ease-in-out infinite; }
-@keyframes vc-hide-hint { 0%, 82%, 100% { rotate: 0deg; } 87% { rotate: -.32deg; } 92% { rotate: .32deg; } 97% { rotate: -.12deg; } }
+[data-companion-hide-hint] { animation: vc-hide-hint var(--vc-hide-hint-duration, 11s) ease-in-out var(--vc-hide-hint-delay, 0ms) infinite; }
+@keyframes vc-hide-hint {
+  0%, 9%, 31%, 42%, 69%, 80%, 100% { rotate: 0deg; translate: 0 0; }
+  2%, 35% { rotate: calc(-1.1deg * var(--vc-hide-hint-direction, 1)); translate: 0 -1px; }
+  4%, 38% { rotate: calc(1.25deg * var(--vc-hide-hint-direction, 1)); translate: 0 -2.5px; }
+  7%, 40% { rotate: calc(-.45deg * var(--vc-hide-hint-direction, 1)); translate: 0 -.4px; }
+  72% { rotate: calc(.8deg * var(--vc-hide-hint-direction, 1)); translate: 0 -.5px; }
+  75% { rotate: calc(-.9deg * var(--vc-hide-hint-direction, 1)); translate: 0 -1.8px; }
+  78% { rotate: calc(.3deg * var(--vc-hide-hint-direction, 1)); translate: 0 0; }
+}
 html[data-reduce-motion] [data-companion-hide-hint], html[data-gfx="off"] [data-companion-hide-hint], html[data-gfx="soft"] [data-companion-hide-hint] { animation: none; box-shadow: 0 0 0 1px #d7ae6852, 0 0 9px #d7ae6818; }
 .vc-companion[data-placing] .vc-actor { cursor: crosshair; }
 /* Human red and pressed semantics stay with the existing vote. This is only a

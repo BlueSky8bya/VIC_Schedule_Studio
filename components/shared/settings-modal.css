@@ -307,6 +307,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   font-size: var(--text-label, 12.5px);
   line-height: 1.45;
 }
+.rhh-habit-summary { padding-bottom: 12px; }
 .rhh-ico {
   display: inline-grid;
   flex: none;

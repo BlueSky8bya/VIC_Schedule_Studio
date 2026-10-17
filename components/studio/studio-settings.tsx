@@ -26,7 +26,9 @@ import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
 import { Clock3 } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
+import { loadCompanionCare, resetCompanionHabits, subscribeCompanionHabits } from "@/lib/ui/viewer-companion/care";
+import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
+import { companionHabitSummary } from "@/lib/ui/viewer-companion/habit-summary";
 import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
 
@@ -253,6 +255,11 @@ const companionToggleActions: Record<CompanionToggle, string> = {
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
 function CompanionSettings({ preferences, onChange }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void }) {
   const [tab, setTab] = useState<CompanionTab>("motion");
+  const [habits, setHabits] = useState({ ...DEFAULT_COMPANION_HABITS });
+  useEffect(() => {
+    setHabits(loadCompanionCare().habits);
+    return subscribeCompanionHabits(setHabits);
+  }, []);
   const id = useId();
   const nav = useRef<HTMLDivElement>(null);
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
@@ -324,10 +331,13 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
           <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
-        <div className="role-help-haptics">
+        <div className="role-help-haptics" aria-describedby={`${id}-habits`}>
           <RowLabel icon={<Undo2 size={15} />} tone="leaf">배운 습관</RowLabel>
           <button aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); hapticTick(); playSfx("tab"); }} type="button">초기화</button>
         </div>
+        <p className="rhh-group-foot rhh-habit-summary" id={`${id}-habits`}>
+          {companionHabitSummary(habits)}{!preferences.learnFromYou ? " 지금은 배움을 쉬고, 이 습관은 기억해 두고 있어요." : ""}
+        </p>
       </div>
       <p className="rhh-group-foot">고른 성격을 바탕으로 함께 지낸 경험이 조금씩 쌓여요. 꺼 두면 배운 습관을 보존하고 고른 성격으로 행동해요.</p>
     </div>

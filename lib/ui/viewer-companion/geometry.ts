@@ -2,6 +2,7 @@ import type { Platform } from "./brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET } from "./food";
 import { companionSofaSeat } from "./sofa";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "./panel-play";
+import { createCompanionHomeSteps } from "./home-route";
 
 const STUDIO_CARD_SELECTOR = "[data-companion-event='ordinary'][data-eventid]";
 const STUDIO_BAND_SELECTOR = "[data-companion-band='public'][data-supportid]";
@@ -335,6 +336,13 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         // The food's smaller footprint remains independent of the pet tier.
         if (rect.height > 0 && y >= clip.top && y < clip.bottom) rememberFood(COMPANION_HOME_FLOOR_FOOD,
           safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor", homeFloor, rect);
+      }
+      const seat = platforms.find(p => p.id === "companion-home");
+      if (seat && houseBounds) {
+        for (const step of createCompanionHomeSteps(houseBounds, seat.x + seat.width / 2, floorY, size,
+          source => safeCompanionSurfaces(source, ordinaryObstacles, size, viewport, footprint))) {
+          if (platforms.length < MAX_PLATFORMS - 24) remember(step);
+        }
       }
       // A dense calendar cannot spend the whole bounded food snapshot before
       // its real house floor is published. First-contact selection still sorts
