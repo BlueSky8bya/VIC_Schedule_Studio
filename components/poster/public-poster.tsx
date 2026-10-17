@@ -45,6 +45,7 @@ import { pickAmbient } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
+import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
@@ -1709,8 +1710,12 @@ export function PublicPoster({
   const sceneOn = panel.ready; // 패널이 표면 밖에 선 레이아웃(접혀 있어도 표면 안 레일은 접힌 채)
   const avatarSide = panel.side;
   const [companionHomeHost, setCompanionHomeHost] = useState<HTMLElement | null>(null);
+  const [companionLauncherHost, setCompanionLauncherHost] = useState<HTMLElement | null>(null);
+  const [companionCompactHost, setCompanionCompactHost] = useState<HTMLElement | null>(null);
   // The side-keyed slot remounts; publish its live node without remounting the companion runtime.
   const companionHomeHostRef = useCallback((node: HTMLDivElement | null) => setCompanionHomeHost(node), []);
+  const companionLauncherHostRef = useCallback((node: HTMLDivElement | null) => setCompanionLauncherHost(node), []);
+  const companionCompactHostRef = useCallback((node: HTMLDivElement | null) => setCompanionCompactHost(node), []);
   // 흐름 안 sticky 패널이 창보다 길면(라이브 카드 + 긴 태그 목록) top을 음수로 낮춰 **아래쪽이 붙게** — 페이지를 내리면
   // 끝까지 보이고, 창보다 짧으면 평소처럼 76px에 붙는다. 독립 스크롤러였을 때 D+ 카드가 잘린 채 굳던 문제의 대체.
   useEffect(() => {
@@ -1835,7 +1840,7 @@ export function PublicPoster({
       root.removeAttribute("data-pchrome");
       return;
     }
-    let cancelled = false;
+    let cancelled = false, raf = 0;
     const overflows = () => {
       const header = document.querySelector<HTMLElement>(".public-calendar-header");
       if (!header) return false;
@@ -1843,9 +1848,9 @@ export function PublicPoster({
       const mid = header.querySelector(".poster-interest")?.getBoundingClientRect();
       if (!mid) return false;
       const gap = 10;
-      for (const sel of [".public-calendar-header .viewer-actions", ".viewer-preview-actions"]) {
+      for (const sel of [".public-calendar-header .header-left", ".public-calendar-header .viewer-actions", ".viewer-preview-actions"]) {
         const r = document.querySelector(sel)?.getBoundingClientRect();
-        if (r && r.width > 0 && r.left < mid.right + gap && r.right > mid.left) return true;
+        if (r && r.width > 0 && r.left < mid.right + gap && r.right > mid.left - gap) return true;
       }
       return false;
     };
@@ -1865,11 +1870,24 @@ export function PublicPoster({
       if (it && io) root.style.setProperty("--mid-pill-w", `${Math.max(it.offsetWidth, io.offsetWidth)}px`);
     };
     measure();
-    window.addEventListener("resize", measure);
-    document.fonts?.ready.then(measure);
+    const schedule = () => {
+      if (cancelled || raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; measure(); });
+    };
+    // A lazy launcher can join the left group without resizing the viewport
+    // or the grid column. Observe its real content width, not only the bar.
+    const ro = new ResizeObserver(schedule);
+    const header = document.querySelector<HTMLElement>(".public-calendar-header");
+    const left = header?.querySelector<HTMLElement>(".header-left");
+    if (header) ro.observe(header);
+    if (left) ro.observe(left);
+    window.addEventListener("resize", schedule);
+    document.fonts?.ready.then(schedule);
     return () => {
       cancelled = true;
-      window.removeEventListener("resize", measure);
+      if (raf) cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener("resize", schedule);
       root.removeAttribute("data-pchrome");
       root.style.removeProperty("--mid-pill-w");
     };
@@ -3541,6 +3559,7 @@ export function PublicPoster({
           {/* 미리보기 '편집실로 가기'는 색상 필터 박스 '아래'에 — 박스가 vh 고정이라 스크롤해도
               안 들썩이고(인사이트 버튼과 동일), 우상단 대신 엄지 닿는 아래쪽이라 누르기 쉽다. */}
           {previewNav ? <div className="agenda-legend-nav">{previewNav}</div> : null}
+          {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
           </div>
         ) : null}
 
@@ -4122,6 +4141,7 @@ export function PublicPoster({
               overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
         premiereCue={companionPremiere.cue} onPremiereJoin={companionPremiere.onJoin}
         homeHost={companionHomeHost} homeVisible={Boolean(sceneOn && panel.open && !showAgenda)}
+        launcherHost={companionLauncherHost} compactHost={companionCompactHost}
         agenda={showAgenda} monthKey={`${view.year}-${view.month}`} reduced={settingsPrefs.reduceMotion} /> : null}
       <PremiereStage frame={premiere.frame} bang={premiere.bang} reduced={premiere.reduced} hint={premiere.hint}
         canResume={premiere.canResume} onResume={premiere.resume}
@@ -4837,6 +4857,7 @@ export function PublicPoster({
                   흔들려 버튼이 따라 움직였다(fixed면 안 흔들림). */}
               {/* 설정(2026-09-19 소유자) — 검색·기록·로그인과 같은 줄의 왼쪽 끝. 내용은 편집실 설정 창과 같다. */}
               {settingsButton}
+              {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
             </div>
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
@@ -4924,6 +4945,7 @@ export function PublicPoster({
           </header>
         )}
 
+        {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <CompanionHomeShelfSlot onHost={companionCompactHostRef} side={avatarSide} /> : null}
         {showAgenda ? renderAgenda() : null}
 
         {showAgenda ? null : (

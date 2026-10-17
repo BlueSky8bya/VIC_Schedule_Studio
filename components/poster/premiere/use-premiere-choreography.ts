@@ -73,14 +73,15 @@ export function usePremiereChoreography(frame: PremiereFrame, reduced: boolean, 
       // score again to its nested home would double displacement and opacity.
       for (const el of candidates.keys()) {
         const shell = el.matches(".vc-home") ? el.closest<HTMLElement>(".vc-compact-home") : null;
-        if (shell && candidates.has(shell)) candidates.delete(el);
+        const header = el.matches(".vc-home-launcher") ? el.parentElement?.closest<HTMLElement>("[data-pm-exit]") : null;
+        if ((shell && candidates.has(shell)) || (header && candidates.has(header))) candidates.delete(el);
       }
       let changed = false;
       for (const item of regions.values()) if (!candidates.has(item.el) || candidates.get(item.el) !== item.code) { unregister(item); changed = true; }
       for (const [el, code] of candidates) {
         if (regions.has(el) || !REGION_WINDOWS[code]) continue;
         const index = nextIndex.get(code) ?? 0; nextIndex.set(code, index + 1);
-        const reactInert = Boolean(companionOwner && el.matches(".vc-home,.vc-compact-home") && el.dataset.companionHomeOwner === companionOwner);
+        const reactInert = Boolean(companionOwner && el.matches(".vc-home,.vc-compact-home,.vc-home-launcher") && el.dataset.companionHomeOwner === companionOwner);
         regions.set(el, { el, code, index, reactInert, inert: el.inert, hidden: el.getAttribute("aria-hidden"), styles: readStyle(el, regionVars), attributes: ["data-pm-exit", "data-pm-region-active", "data-pm-region-return"].map(key => ({ key, value: el.getAttribute(key) })) });
         el.dataset.pmExit = code; el.setAttribute("data-pm-region-active", "");
         el.style.setProperty("--pm-spring", FLIP_SPRING); resize?.observe(el); changed = true;

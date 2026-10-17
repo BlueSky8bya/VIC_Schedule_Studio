@@ -1,6 +1,6 @@
 # 빅타민 목표까지 이어 달리기·관성 던지기
 
-Status: Ready for authorized release. Unit2,087/typecheck/lint/build/harness252 and33 distinct native cases verified; actual viewer-focus1case remains a documented preparation/OS-focus evidence gap. [Verification](../verification/COMPANION_CONTINUOUS_RUN_THROW-20261017.md).
+Status: Complete — released `e65b7c086dac9752a20de4652fcc33fee6a868a8`. Unit2,087/typecheck/lint/build/harness252·33 distinct native cases, remote quality all13/Vercel/API/new packet/actual developer UI verified. Actual viewer-focus1case remains a documented preparation/OS-focus evidence gap in OPEN_CHECKS. Post-release status is local to avoid a documentation-only redeployment. [Verification](../verification/COMPANION_CONTINUOUS_RUN_THROW-20261017.md).
 
 소유자 후속: 달리기가 약1초마다 멈추는 문제를 고치고 대부분 목표까지 이어 달리게 한다. 직접 잡아 던지면 실제 놓는 속도로 포물선을 그리며 날고, 새 공중 표정/포즈와 자연스러운 착지·회복으로 연결한다. 이전092/093의 짧고 긴 구간 혼합만으로 목표까지의 연속성을 충족했다고 보지 않는다.
 

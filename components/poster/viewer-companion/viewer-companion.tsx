@@ -54,9 +54,10 @@ import { hapticSuccess } from "@/lib/ui/haptics";
 import { playSfx } from "@/lib/ui/sfx";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import { CompanionBedForeground, CompanionHome, type CompanionHomeAction } from "./companion-home";
+import { useHomeShelf } from "./use-home-shelf";
 import "./viewer-companion.css";
 
-type Props = { root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; agenda: boolean; monthKey: string; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
+type Props = { root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; agenda: boolean; monthKey: string; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<CompanionHomeAction | "place" | "rest", () => void>;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -68,7 +69,7 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
 /** One optional local creature. It senses geometry, heart occupancy and local
  * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
-export default function ViewerCompanion({ root, preferences, blocked, overlayOpen, workspaceBusy = false, agenda, monthKey, reduced, homeHost, homeVisible, premiereCue = null, onPremiereJoin, positionMemory }: Props) {
+export default function ViewerCompanion({ root, preferences, blocked, overlayOpen, workspaceBusy = false, agenda, monthKey, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory }: Props) {
   const actorId = useId();
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
@@ -100,6 +101,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const [homeExpanded, setHomeExpanded] = useState(false), [suspended, setSuspended] = useState(true);
   const [care, setCare] = useState({ ...DEFAULT_COMPANION_CARE }), [announcement, setAnnouncement] = useState("");
   const [ready, setReady] = useState(false);
+  const compactActive = ready && !suspended && !blocked && !(homeVisible && homeHost) && !!launcherHost && !!compactHost;
+  const homeShelf = useHomeShelf({ active: compactActive, expanded: homeExpanded, monthKey, host: compactHost, launcher: homeLauncher, room: compactHome, setExpanded: setHomeExpanded });
   const [geometryIdentity] = useState(createCompanionGeometryIdentity);
   useEffect(() => { setReady(true); }, []);
   useEffect(() => {
@@ -150,36 +153,6 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-workspace")); }, [workspaceBusy]);
   const premiereItemsKey = premiereCue?.items.map(item => `${item.id}:${item.state}:${item.revealAt}`).join("|");
   useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-premiere")); }, [premiereCue?.generation, premiereCue?.phase, premiereCue?.target, premiereCue?.exit?.token, premiereItemsKey]);
-  useLayoutEffect(() => {
-    const holder = compactHome.current, launcher = homeLauncher.current, page = root.current;
-    if (!agenda || !holder || !page || suspended) return;
-    const rail = page.querySelector<HTMLElement>(".agenda-legend-rail,.agenda-rail");
-    if (!rail) return;
-    // Reserve one ordinary44px rail control plus its existing8px flex gap.
-    // The shared house stays fixed/portalled without covering records below it.
-    rail.setAttribute("data-companion-launcher-space", "");
-    const controls = [...rail.querySelectorAll<HTMLElement>(".button,.actor-badge-wrap,.m-rail-insights,.agenda-legend-nav button,.agenda-legend-nav a")].filter(node => !node.closest(".panel-section,.agenda-legend,.vc-home") && node.getClientRects().length).slice(0, 24);
-    let frame = 0, disposed = false;
-    const measure = () => {
-      frame = 0;
-      if (!launcher || !controls.length) return;
-      const bounds = controls.map(node => node.getBoundingClientRect()), own = launcher.getBoundingClientRect();
-      const viewport = premiereViewportBounds({ clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight, visualViewport: window.visualViewport });
-      const right = Math.max(...bounds.map(rect => rect.right)), bottom = Math.max(...bounds.map(rect => rect.bottom));
-      holder.style.setProperty("--vc-launcher-right", `${Math.max(4, viewport.right - right)}px`);
-      holder.style.setProperty("--vc-launcher-top", `${clamp(bottom + 8, viewport.top + 4, Math.max(viewport.top + 4, viewport.bottom - own.height - 8))}px`);
-    };
-    const queue = () => { if (!disposed && !frame) frame = requestAnimationFrame(measure); };
-    const layoutAnimation = (event: AnimationEvent) => { if (event.target instanceof Element && (rail.contains(event.target) || event.target.contains(rail))) queue(); };
-    const observer = new ResizeObserver(queue);
-    observer.observe(rail); controls.forEach(node => observer.observe(node));
-    measure();
-    window.addEventListener("resize", queue, { passive: true }); window.addEventListener("scroll", queue, { passive: true, capture: true }); window.addEventListener("vic:panel-section", queue); window.addEventListener("vic:side-panel", queue);
-    document.addEventListener("animationend", layoutAnimation, true);
-    window.visualViewport?.addEventListener("resize", queue, { passive: true });
-    void document.fonts.ready.then(() => { if (!disposed) queue(); });
-    return () => { disposed = true; rail.removeAttribute("data-companion-launcher-space"); observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener("resize", queue); window.removeEventListener("scroll", queue, true); window.removeEventListener("vic:panel-section", queue); window.removeEventListener("vic:side-panel", queue); document.removeEventListener("animationend", layoutAnimation, true); window.visualViewport?.removeEventListener("resize", queue); };
-  }, [ready, root, agenda, homeExpanded, homeVisible, homeHost, suspended]);
 
   useEffect(() => {
     const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current, inertiaLayer = inertia.current;
@@ -2523,7 +2496,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   }, [ready, root, preferences, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory]);
 
   if (!ready) return null;
-  const closeHome = () => { setHomeExpanded(false); };
+  const closeHome = homeShelf.close;
   const act = (kind: CompanionHomeAction) => { control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
   const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
@@ -2536,8 +2509,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     <span className="sr-only" id="vc-help">빅타민의 몸 위에서 마우스를 좌우로 움직여 쓰다듬기. 짧게 누르면 톡 치기. 끌어서 옮기기. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
     <span className="sr-only" role="status">{announcement}</span>
   </div><div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
-    {!suspended && !blocked ? homeVisible && homeHost ? createPortal(house, homeHost) : <div className="vc-compact-home" ref={compactHome} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" data-agenda={agenda ? "" : undefined} inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>
-      {homeExpanded ? house : <button ref={homeLauncher} data-act="companion-home-open" data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label="빅타민 집 열기" aria-expanded={false} onClick={() => setHomeExpanded(true)}><Home size={16} aria-hidden="true" />빅타민 집</button>}
-    </div> : null}
+    {!suspended && !blocked && homeVisible && homeHost ? createPortal(house, homeHost) : null}
+    {compactActive && launcherHost ? createPortal(<button ref={homeLauncher} data-act={homeExpanded ? "companion-home-close" : "companion-home-open"} data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label={homeExpanded ? "빅타민 집 닫기" : "빅타민 집 열기"} aria-expanded={homeExpanded} aria-controls={`${actorId}-home`} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} onClick={() => homeExpanded ? closeHome() : homeShelf.open()} onKeyDown={event => { if (event.key === "Escape" && homeExpanded) { event.preventDefault(); event.stopPropagation(); logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}><Home size={16} aria-hidden="true" />빅타민 집</button>, launcherHost) : null}
+    {compactActive && compactHost ? createPortal(<div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>
+      {homeExpanded ? house : null}
+    </div>, compactHost) : null}
   </>, document.body);
 }

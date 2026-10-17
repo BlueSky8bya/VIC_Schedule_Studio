@@ -47,6 +47,7 @@ import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registr
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
+import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
 import { CompanionDetailBridge } from "@/components/poster/viewer-companion/companion-detail-bridge";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
@@ -2616,7 +2617,11 @@ export function StudioShell({
   const editorPanelRef = useRef<HTMLElement | null>(null);
   const shellRef = useRef<HTMLElement | null>(null);
   const [companionHomeHost, setCompanionHomeHost] = useState<HTMLElement | null>(null);
+  const [companionLauncherHost, setCompanionLauncherHost] = useState<HTMLElement | null>(null);
+  const [companionCompactHost, setCompanionCompactHost] = useState<HTMLElement | null>(null);
   const companionHomeHostRef = useCallback((node: HTMLDivElement | null) => setCompanionHomeHost(node), []);
+  const companionLauncherHostRef = useCallback((node: HTMLDivElement | null) => setCompanionLauncherHost(node), []);
+  const companionCompactHostRef = useCallback((node: HTMLDivElement | null) => setCompanionCompactHost(node), []);
   // 셸 요소를 **상태**로도 쥔다(콜백 ref) — 시청자 미리보기는 셸을 통째로 언마운트했다 다시 그리므로, 단계 측정 effect가
   // 새 요소에 다시 붙어야 한다(2026-09-04 사용자: "미리보기 갔다 오면 창이 넓은데도 아이콘만 남는다").
   const [shellEl, setShellEl] = useState<HTMLElement | null>(null);
@@ -2695,6 +2700,8 @@ export function StudioShell({
     if (bar) ro.observe(bar);
     const card = shell.querySelector<HTMLElement>(".studio-role-tools");
     if (card) ro.observe(card);
+    const left = shell.querySelector<HTMLElement>(".studio-left");
+    if (left) ro.observe(left); // Lazy launcher/preference changes leave the bar's own width unchanged.
     // 탭이 다시 보이거나(숨겨진 동안의 리사이즈는 RO가 못 본다) 창 포커스가 돌아오면 한 번 더.
     document.addEventListener("visibilitychange", schedule);
     window.addEventListener("pageshow", schedule);
@@ -6185,6 +6192,7 @@ export function StudioShell({
             </div>
           </div>
 
+          {companionDesktop && companionPrefs.enabled ? <CompanionHomeShelfSlot onHost={companionCompactHostRef} side={avatarSide} /> : null}
           {/* 인사이트 진입(개발자·관리자·매니저·작업자)은 아래 색상 필터 레일 맨 위로 옮겼다. */}
 
           <section
@@ -6263,6 +6271,7 @@ export function StudioShell({
                   {isDevInsights ? "🛠 인사이트" : "📊 인사이트"}
                 </button>
               ) : null}
+              {companionDesktop && companionPrefs.enabled ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
             </div>
 
             <div
@@ -7275,6 +7284,7 @@ export function StudioShell({
         workspaceBusy={Boolean(dragEventId || spanDrag)}
         overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
+        launcherHost={companionLauncherHost} compactHost={companionCompactHost}
         agenda={isNarrow} monthKey={`${view.year}-${view.month}`} reduced={reduceMotion} /> : null}
       {/* PC rail order: tools → tag filter → season → companion home.
           Keep the existing flex budget and home host; mobile renders separately. */}
@@ -7396,6 +7406,7 @@ export function StudioShell({
            data-act="배포 버전 복사">
             {buildCopied ? "복사됨 ✓" : buildSha}
           </button>
+          {companionDesktop && companionPrefs.enabled ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
         </div>
 
         {/* 가운데: ‹ 현재 월 › — 월 이동을 헤더로(사용자 요청, 하단 플로팅 < > 폐지).
@@ -7481,6 +7492,8 @@ export function StudioShell({
           )}
         </div>
       </header>
+
+      {companionDesktop && companionPrefs.enabled ? <CompanionHomeShelfSlot onHost={companionCompactHostRef} side={avatarSide} /> : null}
 
       {/* 하단 중앙 플로팅 행 — 아바타 좌/우 세그먼트(항상, 관리자·개발자) + 확대 배율 컨트롤(필요할 때만).
           아바타 세그먼트가 여기 사는 이유(2026-09-03 사용자): rail 안에 두면 rail이 반대편으로 옮겨갈 때

@@ -1,0 +1,24 @@
+/* Shared page-flow hosts. An empty host contributes no layout space; the
+   one room lives in the existing side panel whenever that panel is open. */
+.vc-home-launcher-slot,
+.vc-home-shelf-slot { display: none; min-width: 0; box-sizing: border-box; }
+.vc-home-launcher-slot:has(> *) { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.public-calendar-header .header-left:has(> .vc-home-launcher-slot) { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.vc-home-launcher-slot > .vc-home-launcher { float: none; }
+
+/* The agenda's existing right control rail owns this same launcher. Its
+   ordinary flex budget protects the filter and other real controls. */
+:is(.agenda-legend-rail, .agenda-rail) > .vc-home-launcher-slot { flex: 0 0 auto; width: 100%; }
+:is(.agenda-legend-rail, .agenda-rail) > .vc-home-launcher-slot > .vc-home-launcher { width: 100%; min-width: 0; gap: 4px; padding-inline: 6px; }
+
+/* Reserve real page space above the calendar instead of masking its dates.
+   Keep the same panel width and unscaled interior on every surface. */
+.vc-home-shelf-slot:has(> *) { display: flex; justify-content: flex-end; padding: 0 var(--space-4) var(--space-3); }
+.vc-home-shelf-slot:not(:has(> .vc-compact-home:not([hidden]))) { display: none; }
+.vc-home-shelf-slot[data-side="left"] { justify-content: flex-start; }
+.vc-home-shelf-slot > .vc-compact-home { flex: 0 1 var(--side-panel-w); width: min(var(--side-panel-w), 100%); max-width: 100%; }
+
+/* Studio shrinks its whole shell on large monitors. These chrome hosts
+   counter that inherited zoom so the room and its hit targets keep the
+   viewer's physical dimensions; the calendar's own scale stays untouched. */
+.studio-shell :is(.vc-home-launcher-slot, .vc-home-shelf-slot) { zoom: calc(1 / var(--shell-zoom, 1)); }

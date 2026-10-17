@@ -1,6 +1,6 @@
 # 빅타민 목표 주행·관성 투척
 
-[PLAN-096](../plans/PLAN-20261017-096-companion-continuous-run-and-throw.md). 로컬 범위 검증 완료·운영 확인 대기. 실제 viewer 포커스 회귀1건은 [미검증](OPEN_CHECKS.md#companion-096-focus--실제-viewer-창-전환)으로 남긴다. 이전 실패와 미실행은 PASS로 합산하지 않는다.
+[PLAN-096](../plans/PLAN-20261017-096-companion-continuous-run-and-throw.md). 구현·배포 범위 검증 완료. 실제 viewer 포커스 회귀1건은 [미검증](OPEN_CHECKS.md#companion-096-focus--실제-viewer-창-전환)으로 남긴다. 이전 실패와 미실행은 PASS로 합산하지 않는다.
 
 ## 원인과 변경
 
@@ -37,4 +37,10 @@
 | main 검증 | 전체 unit2,087/2,087·production build·생성 경로 typecheck·full lint·최종 native spec lint·packer2종 `--check`·harness252 PASS. 미실행 검사나 실패 시도를 이 수치에 합산하지 않는다. |
 | 통합·보안 범위 | 정확40개 소유 파일의 main/fixture SHA 불일치0. 별도857개 추적 코드/설정은94개 CRLF/LF 차이 외 내용 불일치0. 독립 text38/binary2/art15 검토에서 비밀·private identity/content 노출과 이미지 text/EXIF/XMP0, 차단0. 전체 저장소/과거 노출을 보증하는 검사가 아니다. |
 
-최신 개별 native 결과는 서로 다른33case PASS/실제 viewer-focus1case 미검증이다. 공개 DTO·역할·언락·KST·DB·의존성·모바일 제외·저장 선택은 변경하지 않는다. 실제 OBS 장비/모든 난수·기기/RLS/과금 절감은 별도다. 배포는 원격 검사와 실제 운영 결과를 확인한 뒤 확정한다.
+최신 개별 native 결과는 서로 다른33case PASS/실제 viewer-focus1case 미검증이다. 공개 DTO·역할·언락·KST·DB·의존성·모바일 제외·저장 선택은 변경하지 않는다. 실제 OBS 장비/모든 난수·기기/RLS/과금 절감은 별도다.
+
+## 배포 확인
+
+`e65b7c086dac9752a20de4652fcc33fee6a868a8` main push 완료. [원격 quality39042467183](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39042467183)의13단계 전부와 Vercel success를 확인했다. 운영 `/api/soop-live` 전체 SHA 일치, clock200/no-store·warm204·익명 developer401/error-only/no-store·fixture 비노출(스트리밍404)을 확인했다. 새 throw packet은 HTTP200·144392B·SHA256 `53A28EDDE66F22BF8E18226EDECFDA019A32087088839A1C31125768FB18232E`로 로컬과 바이트 일치한다.
+
+새 agent 전용 Chrome 탭의 실제 개발자 편집실에서 버전 `e65b7c0`, 집1개·visible supported HD/sharp92px 펫1개·완전히 로드된1536×384 texture를 읽기 전용 AX/DOM으로 확인했다. 운영 일정/설정을 수정하거나 실제 운영에서 던지기·난수 분기를 강제로 재현하지 않았다. 해당 입력 증거는 위 production fixture다. 사용자 원래 탭·미관련 아트는 보존했고 자체 loopback 서버는 종료했다. 배포 후 상태 메타데이터는 로컬만 갱신해 문서 전용 재배포를 만들지 않는다.

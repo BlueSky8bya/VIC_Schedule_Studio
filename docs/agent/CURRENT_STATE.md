@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-17 (KST)
+Last Updated: 2026-10-18 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
@@ -15,7 +15,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-096 | Release ready | Unit2,087/build/typecheck/lint/harness252·native33 distinct cases verified; commit/push/deployed canaries next. Actual viewer-focus1case remains in OPEN_CHECKS | [Verification](verification/COMPANION_CONTINUOUS_RUN_THROW-20261017.md) |
+| COMPANION-097 | Local verified; release pending | Shared chrome entry/in-flow shelf; native20, unit2,087/typecheck/lint/build/harness254 verified. Commit/push then deployed SHA/UI | [Record](verification/COMPANION_HOME_SHELF-20261018.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -44,6 +44,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current releasedbf153bb: [095](verification/COMPANION_SHAKE_RECOVERY_SOFA-20261017.md) connects circular shake evidence, strained recovery keys, same-food retry and shared sofa paint feedback. Main unit2,040/typecheck/lint/harness250, fixture build/native29 distinct cases after documented reruns PASS; independent source/raw/security blocking0,64-file exact source equivalence. [Remote quality39038690988](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39038690988) all13 steps/Vercel success, deployed full SHA/API canaries/new packet byte equality and actual developer studio new sofa groups/no old cue/one visible decoded HD pet verified. Post-release metadata is local to avoid a documentation-only redeployment. Actual OBS hardware/all devices/RLS and Hobby excess remain separate. Prior records: [094](verification/COMPANION_HOME_FIRST_PAINT-20261017.md), [093](verification/COMPANION_CONTEXT_EPISODES-20261017.md); provider/lifecycle/local OBS: [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md).
+Current release `e65b7c08`: [096](verification/COMPANION_CONTINUOUS_RUN_THROW-20261017.md) preserves finite travel goals and actual release inertia with4 new airborne keys. Main unit2,087/typecheck/lint/build/harness252 and33 distinct native cases verified; actual viewer-focus1case remains open after preparation failures. Independent source/raw/security blocking0,40-file exact source equivalence. [Remote quality39042467183](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39042467183) all13 steps/Vercel success, deployed full SHA/API canaries/new packet byte equality and actual developer studio one visible supported HD/sharp92px pet verified. Post-release metadata is local to avoid a documentation-only redeployment. Actual OBS hardware/all devices/RLS and Hobby excess remain separate. Prior companion: [095](verification/COMPANION_SHAKE_RECOVERY_SOFA-20261017.md); provider/lifecycle/local OBS: [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md).
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.
