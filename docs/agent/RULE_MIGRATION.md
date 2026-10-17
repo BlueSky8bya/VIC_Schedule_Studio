@@ -463,7 +463,7 @@ UI·AMB·ART의 모든 규칙 줄에 한국어 검색어를 병기했다. 금생
 
 ID 추가·삭제·중복 또는 소유 파일 변경 시 이 표와 해시를 갱신하고 영향을 받는 원문 대응을 다시 판단한다. 존재하지 않는 코드 목적지·원문 누락/중복도 실패한다. 검사: `node scripts/agent-harness/rule-migration.mjs`, `npm run harness:verify`, `npm run test -- tests/unit/rule-migration.test.ts`.
 
-Rule inventory SHA-256: 1456ddf24b89639867a9d28f6e30059f42208c69b62c22eb5d8d84319c9ab9ef
+Rule inventory SHA-256: 3c4cc863883a8efe9fd39bd19363a0d2b710e4c188042e2821467ea1bc84a1ce
 
 <!-- rule-migration:inventory:start -->
 | 규칙 ID | 현행 문서 |
@@ -569,4 +569,11 @@ Rule inventory SHA-256: 1456ddf24b89639867a9d28f6e30059f42208c69b62c22eb5d8d8431
 | UI-35 | docs/ux/UI_RULES.md |
 | UI-36 | docs/ux/UI_RULES.md |
 | UI-37 | docs/ux/UI_RULES.md |
+| UI-38 | docs/ux/UI_RULES.md |
+| UI-39 | docs/ux/UI_RULES.md |
+| UI-40 | docs/ux/UI_RULES.md |
+| UI-41 | docs/ux/UI_RULES.md |
+| UI-42 | docs/ux/UI_RULES.md |
+| UI-43 | docs/ux/UI_RULES.md |
+| UI-44 | docs/ux/UI_RULES.md |
 <!-- rule-migration:inventory:end -->

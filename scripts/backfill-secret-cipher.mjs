@@ -12,6 +12,7 @@
 import { readFileSync } from "node:fs";
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
 import { Client } from "pg";
+import { verifiedDatabaseTls } from "./db-tls.mjs";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 
@@ -99,7 +100,7 @@ async function tryConnect(cfg) {
     user: cfg.user,
     password,
     database: "postgres",
-    ssl: { rejectUnauthorized: false },
+    ssl: verifiedDatabaseTls(),
     connectionTimeoutMillis: 8000,
     statement_timeout: 60000
   });

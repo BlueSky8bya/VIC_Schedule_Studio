@@ -1,3 +1,4 @@
+import { createWorkBudget } from "@/lib/broadcast/work-budget";
 import { NextResponse } from "next/server";
 import { recordLiveTick } from "@/lib/broadcast/session";
 import { fetchSoopLive } from "@/lib/broadcast/soop";
@@ -18,21 +19,22 @@ export async function GET(req: Request) {
   if (req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
-  const state = await fetchSoopLive();
+  const budget = createWorkBudget(50_000);
+  const state = await fetchSoopLive(budget.signal(8000));
   await recordLiveTick({
     isLive: state.isLive,
     title: state.title,
     bno: state.bno,
     startedAt: state.startedAt
-  });
+  }, budget);
   // 다시보기·팬 타임라인 증분 — 단일 진입점(maybeSyncVodPipeline)이 DB 스로틀로 주기를 지킨다
   // (뱅종 30분 안 = 1분 / 60분 안 = 5분 / 평시 = 30분). 방송 중엔 안 돌린다(VOD 확정 전).
   // 결과를 응답에 실어 cron-job.org 실행 기록에서 육안 확인 가능하게 한다.
   const [, sync] = await Promise.all([
-    maybeSyncTimelines(),
+    maybeSyncTimelines(budget),
     state.isLive
       ? Promise.resolve({ ran: false, tier: "live", sinceEndMin: null as number | null })
-      : maybeSyncVodPipeline()
+      : maybeSyncVodPipeline(budget)
   ]);
   return NextResponse.json({ ok: true, isLive: state.isLive, sync });
 }

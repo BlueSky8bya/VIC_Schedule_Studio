@@ -4,7 +4,7 @@ vi.mock("@/lib/schedules/public-loader", () => ({ loadPublicTeaserState: load })
 const { GET } = await import("@/app/api/public/[calendarSlug]/teaser-state/route");
 const { GET: confirm } = await import("@/app/api/public/[calendarSlug]/teaser-state/[eventId]/route");
 const now = Date.now();
-beforeEach(() => load.mockReset());
+beforeEach(() => { load.mockReset(); });
 it("caches anonymous discovery for 15 seconds without setting identity cookies", async () => {
   load.mockResolvedValue({ ok: true, schemaVersion: 1, sampledAtDbMs: now, entries: [] });
   const response = await GET(new Request("https://fixture/api/public/vic/teaser-state"), { params: Promise.resolve({ calendarSlug: "vic" }) });

@@ -4,6 +4,19 @@ Updated: 2026-10-17
 
 This file keeps unresolved evidence gaps out of startup history. A prior PASS applies to its tested revision and scope only. Recheck before closing; do not infer current production state from old notes.
 
+## PLATFORM-080 — 배포 후 운영·비용·외부 증거
+
+[079 감사](PLATFORM_AUDIT-20261017.md)는 읽기 전용 기준 기록이다. 이후 소유자 승인으로 코드·의존성·0151을 수정했다. 현재 구현과 검증 범위는 [080 적용 기록](PLATFORM_REMEDIATION-20261017.md), [backend](BROADCAST_WORK_BOUNDS-20261017.md), [client](PLATFORM_CLIENT-20261017.md)를 따른다.
+
+- 운영 효과: 새 readiness stage·실패율/CPU/Fluid 점유·수집/RPC 호출·DB 임시 파일 증가량을 같은 기간/분모로 비교. warm204는 공개 readiness만 뜻하며 모든 인스턴스/Data Cache가 warm하다는 증거가 아니다. 프로세스 밖 중복은 가능하고 Redis/분산 compute lease는 미도입이다.
+- 외부 미확인: 실제 Supabase 플랜·egress/storage/auth/realtime/pool·전체 disk/WAL·backup/PITR/복구 가능성, 보존 flag boolean. PC dashboard 로그인 필요; 휴대폰 별도 로그인은 PC 세션에 이어지지 않는다. 079의42703 조회는 보존했고 080에서 카탈로그 확인 뒤 read-only 재조회했다.
+- 권한: net 익명DataAPI406, activity401, publicview limit0=200은 그 경로만 확인했다. 실제 로그인 역할·RPC/storage·grant 만료/철회/다른 기기와 과거 유출 전체 검증을 대신하지 않는다. 민감 원문은 보고서/로그에 복사하지 않는다.
+- 유지보수: production npm audit0. 개발 ESLint 경로 braces3.0.3 advisory는 공식 patch가 없어 영향5 high가 남는다. 불신 glob/config 입력을 lint에 주지 않으며 upstream patch 때 재검토한다. CI 실제 원격 결과는 적용 기록과 대조한다.
+- 경계: 새 activity64KiB byte 제한·검색 진행 키128개 cap은 분산 rate limit이 아니다. provider WAF/전역 rate 정책은 실제 트래픽·정상 입력 보존을 검토해 별도로 정한다. 공개 DTO/import·격리 canary가 실계정 RLS 전체를 증명하지 않는다.
+- 실제 장비: OBS/SOOP 캡처·인코딩 동시 frame cadence, 장시간 memory plateau, 모바일·coarse landscape·focus/screen reader·formal flash·멀티리전 nano capacity는 별도. 기존 fixture 결과로 완료 처리하지 않는다.
+
+최초 관측 Vercel CPU6시간47분/4시간·Fluid Memory460.1/360GB-hours, DB272.26MB. 측정 기간/계량은 감사 본문 참조. 수정 뒤 같은 기준의 route·RPC·사용량 변화로 효과를 확인하며 절감률을 미리 단정하지 않는다.
+
 ## COMPANION-BROADCAST — 실제 OBS/SOOP 장비
 
 [PLAN-076 검증](COMPANION_BROADCAST_PIPELINE-20261017.md)은 실제 decoded 이미지의 단일 표시 경로, 중복 표시 쓰기/저장소 조회 제거와 native fixture를 확인한다. 실제 토리님 방송 PC의 GPU·OBS 합성/인코딩·SOOP 송출을 함께 측정하지 않았다. 장면/캡처 방식·브라우저 하드웨어 가속·GPU 여유에 따라 결과가 달라지므로 무끊김을 보장하지 않는다.
@@ -41,6 +54,8 @@ Use existing [broadcast tools checklist](../../ux/broadcast-tools-qa-checklist.m
 The 2026-09-04 history identified local/automated traffic in production analytics and described prepared backup/SQL under `.scratch-pw/`. It explicitly said cleanup had not run before owner approval.
 Before a cleanup: inspect current source data, confirm the exclusion predicate, create/verify a recoverable backup, identify user authorization and preview exactly what would be deleted. Old file paths and row counts are not current evidence.
 New analytics paths must use `lib/analytics/guard.ts`; UI checks should use route stubs. Actual DB integration tests use past months, the established test marker, cleanup and zero-residue verification.
+
+080 현재 선택: `diag=true AND day<'2026-10-14'` 진단14,209행. 일반 activity90일 밖0행; visit TTL 미정. 10:31KST Windows current-user/SYSTEM 제한·DPAPI 키·AES-GCM 백업의 복호화/원문 round-trip 검증 완료, 삭제0. 이 선택만 소유자에게 별도 승인 요청했다. 승인 전 삭제/상시 cleanup ON은 하지 않는다. 자세한 해시·집계는080 기록에 있고 원문·키는 커밋하지 않는다.
 
 ## VOD-SYNC-20260918 — late fan timeline and missing replay chat
 

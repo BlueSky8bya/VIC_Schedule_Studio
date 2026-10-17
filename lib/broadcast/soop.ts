@@ -43,12 +43,12 @@ const SEARCH_API =
   `https://sch.sooplive.co.kr/api.php?m=liveSearch&v=1.0&szOrder=&szKeyword=${BJ_ID}` +
   `&nPageNo=1&nListCnt=10&szPlatform=pc`;
 
-export async function fetchSoopBroadStart(bno: string | null): Promise<string | null> {
+export async function fetchSoopBroadStart(bno: string | null, signal?: AbortSignal): Promise<string | null> {
   try {
     const res = await fetch(SEARCH_API, {
       headers: { "User-Agent": "Mozilla/5.0" },
       cache: "no-store",
-      signal: AbortSignal.timeout(8000)
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000)
     });
     if (!res.ok) return null;
     const json = (await res.json()) as {
@@ -81,12 +81,12 @@ const VOD_API = `https://chapi.sooplive.co.kr/api/${BJ_ID}/vods/review?page=1&pe
 
 export type VodTimes = { startedAt: string; endedAt: string };
 
-export async function fetchSoopVodTimes(bno: string): Promise<VodTimes | null> {
+export async function fetchSoopVodTimes(bno: string, signal?: AbortSignal): Promise<VodTimes | null> {
   try {
     const res = await fetch(VOD_API, {
       headers: { "User-Agent": "Mozilla/5.0" },
       cache: "no-store",
-      signal: AbortSignal.timeout(8000)
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000)
     });
     if (!res.ok) return null;
     const json = (await res.json()) as {
@@ -111,7 +111,7 @@ export async function fetchSoopVodTimes(bno: string): Promise<VodTimes | null> {
   }
 }
 
-export async function fetchSoopLive(): Promise<LiveState> {
+export async function fetchSoopLive(signal?: AbortSignal): Promise<LiveState> {
   try {
     const res = await fetch(LIVE_API, {
       method: "POST",
@@ -121,7 +121,7 @@ export async function fetchSoopLive(): Promise<LiveState> {
       },
       body: new URLSearchParams({ bid: BJ_ID, type: "live", player_type: "html5" }),
       cache: "no-store",
-      signal: AbortSignal.timeout(8000)
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000)
     });
     if (!res.ok) return offlineState();
     const json = (await res.json()) as { CHANNEL?: Record<string, unknown> };

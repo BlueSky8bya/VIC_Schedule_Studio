@@ -9,6 +9,7 @@
 //       node scripts/backfill-broadcast-times.mjs --apply    (실제 반영)
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
+import { verifiedDatabaseTls } from "./db-tls.mjs";
 
 const APPLY = process.argv.includes("--apply");
 const BJ_ID = process.env.SOOP_BJ_ID ?? "toryvac";
@@ -41,7 +42,7 @@ async function connect(e) {
       user: c.user,
       password: e.SUPABASE_DB_PASSWORD,
       database: "postgres",
-      ssl: { rejectUnauthorized: false }
+      ssl: verifiedDatabaseTls()
     });
     try {
       await client.connect();

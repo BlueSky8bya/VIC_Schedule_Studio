@@ -25,6 +25,7 @@ import { EVENT_HEART_COUNTS_CACHE_TAG, PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/s
 import type { TeaserRevealResult } from "@/lib/schedules/teaser-reconcile";
 import { emptyTeaserState, type TeaserStateSnapshot } from "@/lib/schedules/teaser-state";
 import { singleFlightCache } from "@/lib/schedules/teaser-state-cache";
+import { readScheduleEventPages } from "@/lib/schedules/read-event-pages";
 
 const coalesceTeaserState = singleFlightCache<TeaserStateSnapshot>();
 const coalesceTeaserOrigin = singleFlightCache<TeaserStateSnapshot>();
@@ -117,6 +118,30 @@ function createPublicReadClient() {
     // 매달리던 사고(2026-09-28, perf_samples 실측).
     { auth: { persistSession: false }, global: { fetch: guardedFetch } }
   );
+}
+
+export type PublicScheduleReadiness = { ok: true } | {
+  ok: false;
+  reason: "unconfigured" | "unavailable" | "missing" | "timeout";
+};
+
+/** Bounded anonymous readiness only. This intentionally does NOT warm the
+ * full schedule/heart Data Cache or claim to keep every Fluid instance alive.
+ * The route owns the deadline; its signal reaches the actual HTTP query.
+ */
+export async function probePublicScheduleRead(signal: AbortSignal): Promise<PublicScheduleReadiness> {
+  if (signal.aborted) return { ok: false, reason: "timeout" };
+  try {
+    const client = createPublicReadClient();
+    if (!client) return { ok: false, reason: "unconfigured" };
+    const { data, error } = await client.from("calendars").select("id")
+      .eq("slug", "vic").eq("is_public", true).abortSignal(signal).maybeSingle();
+    if (signal.aborted) return { ok: false, reason: "timeout" };
+    if (error) return { ok: false, reason: "unavailable" };
+    return data ? { ok: true } : { ok: false, reason: "missing" };
+  } catch {
+    return { ok: false, reason: signal.aborted ? "timeout" : "unavailable" };
+  }
 }
 
 export async function getPublicSchedule(
@@ -262,13 +287,9 @@ const loadPublicScheduleData = unstable_cache(
     // 캘린더 id는 1시간 캐시(loadPublicCalendarId, 같은 태그로 편집 시 무효화)에서 먼저 받고, 캘린더 행은
     // 아래 병렬 묶음에 함께 넣는다(2026-10-03). 예전엔 캘린더 행 조회가 끝나야 7개 조회가 출발해
     // 캐시 미스마다 왕복이 하나 더 줄을 섰다.
-    let calendarId: string | null = null;
-    let calendarLookupFailed = false;
-    try {
-      calendarId = await loadPublicCalendarId(calendarSlug);
-    } catch {
-      calendarLookupFailed = true;
-    }
+    // A failed lookup is not an absent calendar. Reject so Data Cache keeps
+    // its last successful value instead of accepting an empty five-minute one.
+    const calendarId = await loadPublicCalendarId(calendarSlug);
 
     // 공개 캘린더가 없을 때의 빈 포스터(예전과 같은 모양).
     const emptySchedule = (): PublicSchedule => {
@@ -290,7 +311,7 @@ const loadPublicScheduleData = unstable_cache(
       };
     };
 
-    if (!calendarId || calendarLookupFailed) {
+    if (!calendarId) {
       return emptySchedule();
     }
 
@@ -330,7 +351,7 @@ const loadPublicScheduleData = unstable_cache(
           .select("key, name, bg_color, text_color, border_color, dark_palette:dark_palette_v3, sort_order")
           .eq("calendar_id", calendarId)
           .order("sort_order"),
-        supabase
+        readScheduleEventPages<EventRow>((from, to) => supabase
           .from("public_schedule_events")
           .select(
             "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags"
@@ -338,7 +359,9 @@ const loadPublicScheduleData = unstable_cache(
           .eq("calendar_id", calendarId)
           .neq("status", "draft")
           .order("date_key")
-          .order("created_at"),
+          .order("created_at")
+          .order("id")
+          .range(from, to)),
         // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
         supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
         // 최초공개 '기대돼요' 집계(0060) — 토큰 비노출, 공개 후에도 남아 배지가 된다.
@@ -362,9 +385,18 @@ const loadPublicScheduleData = unstable_cache(
       ])
     );
 
+    // Partial failures must not replace the cached schedule with lost tags,
+    // palette, counts or VODs. Messages/codes from DB responses stay internal.
+    if ([calendarRes, tagsRes, paletteRes, eventHeartsRes, hopeRes, vodsRes, timelinesRes].some(result => result.error)) {
+      throw new Error("Public schedule unavailable");
+    }
+    if (![tagsRes.data, paletteRes.data, eventHeartsRes.data, hopeRes.data, vodsRes.data, timelinesRes.data].every(Array.isArray)) {
+      throw new Error("Public schedule unavailable");
+    }
     const calendar = calendarRes.data;
     if (!calendar) {
-      // 캐시된 id가 비공개로 바뀐 직후·조회 실패 — 예전처럼 빈 포스터(다음 재검증에서 바로잡힌다).
+      // A known public id may have become absent/private. Unlike a DB error,
+      // this verified nonexistence still returns the normal empty schedule.
       return emptySchedule();
     }
 
@@ -437,7 +469,7 @@ const loadPublicScheduleData = unstable_cache(
           })
           .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0);
       })(),
-      events: (eventsRes.data ?? []).map((row) => ({
+      events: eventsRes.map((row) => ({
         ...mapEvent(row, Date.now()),
         heartCount: heartCountByEvent.get(row.id) ?? 0,
         // 기대 수는 떡밥 스텁에도, 공개 뒤 원본 카드에도 붙는다("n명이 기다렸어요" 배지).
@@ -637,9 +669,7 @@ const loadPublicBroadcastStats = async (fromDay: string): Promise<PublicBroadcas
     const { data, error } = await supabase.rpc("get_public_broadcast_stats", {
       p_from_day: fromDay
     });
-    if (error || !data) {
-      return [];
-    }
+    if (error || !Array.isArray(data)) throw new Error("Public broadcast stats unavailable");
     // 명시적 DTO 구성(스프레드 금지 — 공개 경계를 넘는 값은 하나하나 고른다).
     return (data as { ym: string; hours: number; days: number; sessions: number }[]).map((row) => ({
       ym: String(row.ym),
@@ -681,9 +711,7 @@ const loadPublicBroadcastDaily = async (
       p_from_day: fromDay,
       p_to_day: toDay
     });
-    if (error || !data) {
-      return [];
-    }
+    if (error || !Array.isArray(data)) throw new Error("Public broadcast daily unavailable");
     return (data as { day: string; hours: number }[]).map((row) => ({
       day: String(row.day),
       hours: Number(row.hours ?? 0)
@@ -740,7 +768,7 @@ export async function searchPublic(
   }
   // RPC 오류는 '결과 없음'과 다르다 — failed로 올려 라우트가 캐시하지 않게(빈 200이 CDN에 15분 굳었던 사고).
   if (error || !Array.isArray(data)) {
-    console.warn("[search] rpc failed:", error?.message ?? "no rows", "q=", q);
+    console.warn("[search] unavailable", { code: error ? "rpc-error" : "invalid-response" });
     return { ...empty, failed: true };
   }
   type Row = {
@@ -813,7 +841,7 @@ export async function getPublicSearchRelated(
   const supabase = createPublicReadClient();
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("search_related", { p_q: q, p_limit: limit });
-  if (error || !Array.isArray(data)) return [];
+  if (error || !Array.isArray(data)) throw new Error("Public search related people unavailable");
   return (data as { name: string; display: string; co_docs: number; hapbang: number; visits?: number }[]).map((r) => ({
     name: String(r.name),
     display: String(r.display),
@@ -833,7 +861,7 @@ export async function getPublicSearchSuggest(
   const supabase = createPublicReadClient();
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("search_suggest", { p_q: q, p_limit: limit });
-  if (error || !Array.isArray(data)) return [];
+  if (error || !Array.isArray(data)) throw new Error("Public search suggestions unavailable");
   return (data as { term: string; kind: string; weight: number }[]).map((r) => ({
     term: String(r.term),
     kind: (["term", "person", "game", "genre", "related"].includes(r.kind) ? r.kind : "term") as "term" | "person" | "game" | "genre" | "related",
@@ -851,7 +879,7 @@ export async function getPublicSearchRelatedTerms(
   const supabase = createPublicReadClient();
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("search_related_terms", { p_q: q, p_limit: limit });
-  if (error || !Array.isArray(data)) return [];
+  if (error || !Array.isArray(data)) throw new Error("Public search related terms unavailable");
   return (data as { term: string; co_docs: number; kind: string }[]).map((r) => ({
     term: String(r.term),
     coDocs: Number(r.co_docs) || 0,
@@ -868,7 +896,7 @@ export async function getPublicSearchTrending(
   const supabase = createPublicReadClient();
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("search_trending", { p_days: days, p_limit: limit });
-  if (error || !Array.isArray(data)) return [];
+  if (error || !Array.isArray(data)) throw new Error("Public search trends unavailable");
   return (data as { term: string; recent: number; ratio: number | string }[]).map((r) => ({
     term: String(r.term),
     recent: Number(r.recent) || 0,
@@ -886,9 +914,20 @@ export async function getPublicVodChatProfile(
   const supabase = createPublicReadClient();
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("vod_chat_profile", { p_title_no: titleNo });
-  if (error || !data || typeof data !== "object") return null;
+  if (error) throw new Error("Public VOD chat profile unavailable");
+  if (data === null) return null;
+  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Public VOD chat profile unavailable");
   const raw = data as { binSec?: number; laughTier?: string | null; bins?: unknown[] };
-  const bins = (Array.isArray(raw.bins) ? raw.bins : [])
+  if (typeof raw.binSec !== "number" || !Number.isFinite(raw.binSec) || raw.binSec <= 0
+    || raw.laughTier !== null && raw.laughTier !== "high"
+    || !Array.isArray(raw.bins) || raw.bins.some(bin => {
+    if (!bin || typeof bin !== "object" || Array.isArray(bin)) return true;
+    const row = bin as Record<string, unknown>;
+    return typeof row.i !== "number" || !Number.isSafeInteger(row.i) || row.i < 0
+      || [row.h, row.d, row.l].some(value => typeof value !== "number" || !Number.isFinite(value))
+      || !Array.isArray(row.t) || row.t.some(term => typeof term !== "string");
+  })) throw new Error("Public VOD chat profile unavailable");
+  const bins = raw.bins
     .filter((b): b is Record<string, unknown> => Boolean(b) && typeof b === "object")
     .map((b) => ({
       i: Number(b.i),
@@ -908,12 +947,13 @@ export async function getPublicVodTimeline(
   if (!isSupabaseConfigured() || !Number.isFinite(titleNo) || titleNo <= 0) return null;
   const supabase = createPublicReadClient();
   if (!supabase) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("vod_timeline")
     .select("author_nick, entries, variants")
     .eq("title_no", titleNo)
     .gt("entry_count", 0)
     .maybeSingle();
+  if (error) throw new Error("Public VOD timeline unavailable");
   if (!data) return null;
   return publicTimelineProjection(data);
 }

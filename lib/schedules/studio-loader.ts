@@ -16,6 +16,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getUnlockState } from "@/lib/private-layer/unlock";
 import { canReadOwnerPrivate, canReadPrivateLayer } from "@/lib/permissions/roles";
 import { decryptSecret, isCiphertext } from "@/lib/private-layer/secret-crypto";
+import { readScheduleEventPages } from "@/lib/schedules/read-event-pages";
 
 // 서버에서 비공개 이벤트를 역할/잠금해제에 따라 응답에서 제거한다(클라이언트 필터와 동일 규칙).
 // RLS와 별개의 2차 방어 — "엠바고"(owner_private, 옛 embargo 통합)는 소유자 전용, "작업자"(work)는
@@ -76,6 +77,7 @@ export async function getStudioSchedule(
     context?.actor ?? resolveCurrentActor(calendarSlug),
     context?.unlock ?? getUnlockState(calendarSlug)
   ]);
+  if (calendarRes.error) throw new Error("Studio schedule unavailable");
   const calendar = calendarRes.data;
 
   if (!calendar) {
@@ -112,7 +114,7 @@ export async function getStudioSchedule(
       .select("key, name, bg_color, text_color, border_color, dark_palette:dark_palette_v3, sort_order")
       .eq("calendar_id", calendar.id)
       .order("sort_order"),
-    supabase
+    readScheduleEventPages<StudioEventRow>((from, to) => supabase
       .from("events")
       .select(
         "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, secret_cipher, status, sort_order, category, visibility_scope, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
@@ -121,7 +123,12 @@ export async function getStudioSchedule(
       .eq("calendar_id", calendar.id)
       .order("date_key")
       .order("created_at")
+      .order("id")
+      .range(from, to))
   ]);
+  if (tagsRes.error || paletteRes.error || !Array.isArray(tagsRes.data) || !Array.isArray(paletteRes.data)) {
+    throw new Error("Studio schedule unavailable");
+  }
 
   return {
     calendar: {
@@ -138,7 +145,7 @@ export async function getStudioSchedule(
     tags: (tagsRes.data ?? []).map(mapTag),
     palette: (paletteRes.data ?? []).map(mapPalette),
     events: filterEventsForViewer(
-      (eventsRes.data ?? []).map((r) => mapStudioEvent(r, calendar.id)),
+      eventsRes.map((r) => mapStudioEvent(r, calendar.id)),
       actor.role,
       unlock.hasUnlockSession
     ),

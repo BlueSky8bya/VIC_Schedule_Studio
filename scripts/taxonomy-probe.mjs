@@ -2,6 +2,7 @@
 // 사용: node scripts/taxonomy-probe.mjs
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
+import { verifiedDatabaseTls } from "./db-tls.mjs";
 
 function parseEnvLocal() {
   const text = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
@@ -21,7 +22,7 @@ const candidates = [
   { host: `db.${ref}.supabase.co`, port: 5432, user: "postgres" }
 ];
 async function tryConnect(cfg) {
-  const c = new Client({ host: cfg.host, port: cfg.port, user: cfg.user, password, database: "postgres", ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000, statement_timeout: 60000 });
+  const c = new Client({ host: cfg.host, port: cfg.port, user: cfg.user, password, database: "postgres", ssl: verifiedDatabaseTls(), connectionTimeoutMillis: 8000, statement_timeout: 60000 });
   await c.connect(); await c.query("select 1"); return c;
 }
 let client = null;

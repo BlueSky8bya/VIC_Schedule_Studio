@@ -27,6 +27,11 @@ describe("읽는 위치 표시기 배선", () => {
   it("표시기는 넘치지 않는 목록에서는 아무것도 그리지 않는다", () => {
     const src = read("components/developer/scroll-position.tsx");
     expect(src).toMatch(/max <= 4/);
-    expect(src).toContain("if (!pos) return null;");
+    // The zero-height anchor must survive a non-overflowing list so a later
+    // resize can measure its position. Only the visible rail is conditional.
+    expect(src).toContain('className="scrollpos"');
+    expect(src).toContain("ref={anchorRef}");
+    expect(src).toMatch(/\{pos \? \(\s*<div className="scrollpos-rail">/);
+    expect(src).not.toContain("if (!pos) return null;");
   });
 });

@@ -166,6 +166,9 @@ describe("공개 캐시 무효화 — 쓰기마다 반드시", () => {
     // 하트·기대돼요는 의도적 제외 — 초 단위로 눌리는 값이라 무효화하면 캐시가 무의미해진다
     // (집계는 다음 TTL에 따라붙는다). 제외를 늘릴 땐 이유를 여기 적는다.
     const EXCEPT = new Set(["heart-actions.ts", "hope-actions.ts"]);
+    // Developer-only studio preview changes no public data. Keep this exception
+    // at function granularity; poster-theme writes in the same file still count.
+    const STUDIO_ONLY = new Set(["calendar-actions.ts:setBirthdayGiftPreviewAction"]);
     const missing: string[] = [];
     for (const file of fs.readdirSync(dir).filter((f) => f.endsWith("-actions.ts"))) {
       if (EXCEPT.has(file)) continue;
@@ -173,6 +176,7 @@ describe("공개 캐시 무효화 — 쓰기마다 반드시", () => {
       const parts = src.split(/export async function /).slice(1);
       for (const part of parts) {
         const name = part.slice(0, part.indexOf("(")).trim();
+        if (STUDIO_ONLY.has(`${file}:${name}`)) continue;
         const body = part.split("\nexport ")[0];
         const writes = /\.(insert|update|upsert|delete)\(|\.rpc\(/.test(body);
         if (writes && !body.includes("revalidatePublicSchedule()")) {
@@ -181,6 +185,18 @@ describe("공개 캐시 무효화 — 쓰기마다 반드시", () => {
       }
     }
     expect(missing).toEqual([]);
+  });
+
+  it("developer birthday preview invalidates studio only, never the public snapshot", async () => {
+    const actor = await import("@/lib/auth/actor");
+    const spy = vi.spyOn(actor, "resolveCurrentActor").mockResolvedValue({ role: "developer", isAuthenticated: true, userId: "synthetic-developer" } as never);
+    try {
+      const { setBirthdayGiftPreviewAction } = await import("@/lib/schedules/calendar-actions");
+      expect((await setBirthdayGiftPreviewAction(true)).ok).toBe(true);
+      expect(revalidatePath).toHaveBeenCalledWith("/studio");
+      expect(revalidatePath).not.toHaveBeenCalledWith("/");
+      expect(revalidateTag).not.toHaveBeenCalledWith(PUBLIC_SCHEDULE_CACHE_TAG);
+    } finally { spy.mockRestore(); }
   });
 
   it("실패한 쓰기는 캐시를 건드리지 않는다(권한 없음)", async () => {

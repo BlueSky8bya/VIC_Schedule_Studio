@@ -1,3 +1,4 @@
+import { createWorkBudget, type WorkBudget } from "./work-budget";
 import { createHash } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { kstDayKey } from "@/lib/calendar/month";
@@ -156,11 +157,11 @@ export function topBinTerms(terms: Map<string, number>, n = 3): string[] {
 
 type KnownPeople = { names: ReadonlySet<string>; greetings: ReadonlyMap<string, string> };
 
-async function loadKnownPeople(supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>, deadline: number): Promise<KnownPeople> {
+async function loadKnownPeople(supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>, work: WorkBudget): Promise<KnownPeople> {
   const names = new Set<string>();
   const greetings = new Map<string, string>();
   const { data, error } = await supabase.rpc("search_known_people")
-    .abortSignal(AbortSignal.timeout(Math.max(1, deadline - Date.now())));
+    .abortSignal(work.signal(5000));
   if (error) throw new Error("chat dictionary unavailable");
   for (const r of (data ?? []) as { name: string; greeting: string | null }[]) {
     names.add(r.name);
@@ -230,35 +231,35 @@ export function chatSnapshot(state: ChatJobState) {
 }
 
 /** Checkpoint aggregate-only state atomically. Missing chunks never block later files. */
-export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudgetMs = 35_000): Promise<{
+export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudgetMs = 35_000, parent?: WorkBudget): Promise<{
   ok: boolean; vods: number; chunks: number; messages: number;
 }> {
   const db = createSupabaseAdminClient();
   if (!db || !titleNos.length) return { ok: false, vods: 0, chunks: 0, messages: 0 };
-  const deadline = Date.now() + Math.max(0, timeBudgetMs);
+  const work = createWorkBudget(Math.min(Math.max(0, timeBudgetMs), parent?.remaining() ?? Infinity));
   let budget = Number.isFinite(chunkBudget) ? Math.max(0, Math.floor(chunkBudget)) : 0;
   let vods = 0, chunks = 0, messages = 0, ok = true;
   let known: KnownPeople;
-  try { known = await loadKnownPeople(db, deadline); }
+  try { known = await loadKnownPeople(db, work); }
   catch { return { ok: false, vods, chunks, messages }; }
   const list = [...new Set(titleNos)];
   for (const [i, titleNo] of list.entries()) {
-    if (budget <= 0 || Date.now() >= deadline - 1000) break;
+    if (budget <= 0 || work.remaining(1000) <= 0) break;
     // 시간 예산을 남은 대상 수로 나눈다(2026-09-27) — 안 나누면 첫 VOD(옛 백필)가 35초를 다 먹어
     // 뒤의 대상(방금 올라온 방송)은 매 실행 손도 못 댔다(실측: 한 실행에 1~2개만 갱신).
-    const targetDeadline = Math.min(deadline, Date.now() + Math.floor((deadline - Date.now()) / (list.length - i)));
+    const target = createWorkBudget(Math.floor(work.remaining() / (list.length - i)));
     const [archive, previous, labels] = await Promise.all([
       db.from("vod_archive").select("title,auth_no,broadcast_day").eq("title_no", titleNo)
-        .abortSignal(AbortSignal.timeout(Math.max(1, deadline - Date.now()))).maybeSingle(),
+        .abortSignal(work.signal(5000)).maybeSingle(),
       db.from("vod_chat_job").select("revision,state,complete").eq("title_no", titleNo)
-        .abortSignal(AbortSignal.timeout(Math.max(1, deadline - Date.now()))).maybeSingle(),
+        .abortSignal(work.signal(5000)).maybeSingle(),
       db.from("vod_chapter_index").select("label").eq("title_no", titleNo).order("sec")
-        .abortSignal(AbortSignal.timeout(Math.max(1, deadline - Date.now()))).limit(400)
+        .abortSignal(work.signal(5000)).limit(400)
     ]);
     if (archive.error || previous.error || labels.error) { ok = false; continue; }
     if (archive.data?.auth_no !== 101) continue;
     const prev = previous.data as ChatJob | null;
-    const remaining = targetDeadline - Date.now() - 5000;
+    const remaining = target.remaining(5000);
     if (remaining <= 0) continue;
     const files = await fetchChatFiles(titleNo, Math.min(8000, remaining));
     const words = docWordSet([String(archive.data.title ?? ""),
@@ -287,7 +288,7 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
         ? Array.from({ length: plan.length - state.cursor }, (_, i) => state.cursor + i)
         : [...state.missing];
       for (const index of pending) {
-        const timeLeft = targetDeadline - Date.now() - 5000;
+        const timeLeft = target.remaining(5000);
         if (budget <= 0 || timeLeft <= 0) break;
         budget--; // failures consume budget as well
         const chunk = plan[index];
@@ -311,7 +312,7 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
         state.cursor = Math.max(state.cursor, index + 1);
         state.missing = state.missing.filter(n => n !== index);
         if (!fetched) state.missing.push(index);
-        if (Date.now() < targetDeadline - 1200) await new Promise(r => setTimeout(r, 150));
+        await target.wait(150, 5000);
       }
     }
     const traversed = !!files?.length && plan.length > 0 && state.cursor >= plan.length;
@@ -330,7 +331,7 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
         nextRetryAt: new Date(Date.now() + retryMs).toISOString() },
       // Preserve previous profile until a full source traversal; publish valid portions despite gaps.
       p_snapshot: traversed && state.chunks > 0 && (gainedChunks > 0 || previousCursor < plan.length) ? chatSnapshot(state) : null
-    }).abortSignal(AbortSignal.timeout(Math.max(1, deadline - Date.now())));
+    }).abortSignal(work.signal(5000));
     if (error) { ok = false; continue; }
     if (applied) { vods++; chunks += gainedChunks; messages += gainedMessages; }
   }
@@ -338,10 +339,10 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
 }
 
 /** All public archives remain eligible; DB queue has no age or PostgREST row cap. */
-export async function pickChatSyncTargets(limit: number): Promise<number[]> {
+export async function pickChatSyncTargets(limit: number, budget?: WorkBudget): Promise<number[]> {
   const db = createSupabaseAdminClient();
   if (!db) return [];
-  const { data, error } = await db.rpc("vod_chat_pick_jobs", { p_limit: limit }).abortSignal(AbortSignal.timeout(5000));
+  const { data, error } = await db.rpc("vod_chat_pick_jobs", { p_limit: limit }).abortSignal(budget?.signal(5000) ?? AbortSignal.timeout(5000));
   if (error) return [];
   return ((data ?? []) as { title_no: number }[]).map(r => Number(r.title_no));
 }

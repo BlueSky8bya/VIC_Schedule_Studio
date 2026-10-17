@@ -1,5 +1,7 @@
 "use client";
 
+import { foregroundOnline } from "./foreground-poll";
+
 const listeners = new Set<() => void>();
 let epoch = 0;
 let mono = 0;
@@ -7,6 +9,11 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let observer: MutationObserver | undefined;
 let syncing: Promise<void> | null = null;
 let calibrated = false;
+let calibratedAt = -Infinity;
+let failedAt = -Infinity;
+// Cache the valid calibration locally, never an HTTP clock response. Monotonic
+// age survives OS clock changes; resume discovery need not wait for three RTTs.
+const CALIBRATION_TTL_MS = 60_000;
 let dbOffset = 0;
 let slew = 0;
 let slewBegan = 0;
@@ -63,23 +70,39 @@ export function subscribeClock(listener: () => void): () => void {
   };
 }
 export function synchronizeClock(): Promise<void> {
+  if (!foregroundOnline() || (calibrated && performance.now() - calibratedAt < CALIBRATION_TTL_MS)) return Promise.resolve();
+  if (performance.now() - failedAt < 5000) return Promise.resolve();
   if (syncing) return syncing;
+  const controller = new AbortController();
+  const pause = () => { if (!foregroundOnline()) controller.abort(); };
+  if (typeof document !== "undefined") document.addEventListener("visibilitychange", pause);
+  if (typeof window !== "undefined") window.addEventListener?.("offline", pause);
   syncing = (async () => {
     const samples: { rtt: number; server: number; middle: number }[] = [];
     for (let i = 0; i < 3; i++) {
+      if (!foregroundOnline() || controller.signal.aborted) return;
       const start = performance.now();
-      const response = await fetch("/api/public/clock", { cache: "no-store", credentials: "omit", signal: AbortSignal.timeout(4000) });
+      const response = await fetch("/api/public/clock", { cache: "no-store", credentials: "omit", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(4000)]) });
       if (!response.ok) throw new Error("Clock unavailable");
       const body = await response.json() as { serverMs?: number };
       const end = performance.now();
       if (!Number.isFinite(body.serverMs)) throw new Error("Invalid clock");
       samples.push({ rtt: end - start, server: body.serverMs!, middle: (start + end) / 2 });
     }
+    if (!foregroundOnline() || controller.signal.aborted) return;
     const best = samples.sort((a, b) => a.rtt - b.rtt)[0];
     const next = best.server + dbOffset + performance.now() - best.middle;
     correctClock(next);
     calibrated = true;
+    calibratedAt = performance.now();
     emit();
-  })().catch(() => { /* Keep the last sample; never grant release from a clock. */ }).finally(() => { syncing = null; });
+  })().catch(() => {
+    if (!controller.signal.aborted && foregroundOnline()) failedAt = performance.now();
+    /* Keep the last sample; never grant release from a clock. */
+  }).finally(() => {
+    syncing = null;
+    if (typeof document !== "undefined") document.removeEventListener("visibilitychange", pause);
+    if (typeof window !== "undefined") window.removeEventListener?.("offline", pause);
+  });
   return syncing;
 }

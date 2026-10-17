@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { latinToHangul, romajiToHangul } from "@/lib/search/xlit";
 
 const first = (s: string) => latinToHangul(s)[0];
@@ -49,5 +49,21 @@ describe("자동 동의어 행(xlitRows)", () => {
     ]);
     expect(rows[0]).toEqual({ term: "오키도키", alt: "okeydokey", source: "auto-xlit", kind: "syn" });
     expect(rows.some((r) => r.alt === "ado")).toBe(false);
+  });
+});
+
+describe("checked xlit retry contract", () => {
+  it.each(["pending", "upsert"])("distinguishes %s database failure from a successful empty dictionary", async (failure) => {
+    const { syncXlitSynonymsChecked, syncXlitSynonyms } = await import("@/lib/search/xlit-sync");
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const database = (empty = false) => ({
+      rpc: () => ({ abortSignal: async () => ({ data: empty ? [] : [{ latin: "Golden", norm: "golden" }],
+        error: !empty && failure === "pending" ? { message: "synthetic failure" } : null }) }),
+      from: () => ({ upsert: () => ({ abortSignal: async () => ({ error: { message: "synthetic failure" } }) }) })
+    }) as unknown as Parameters<typeof syncXlitSynonymsChecked>[0];
+    expect(await syncXlitSynonymsChecked(database())).toEqual({ ok: false, count: 0 });
+    expect(await syncXlitSynonyms(database())).toBe(0); // numeric legacy contract preserved
+    expect(await syncXlitSynonymsChecked(database(true))).toEqual({ ok: true, count: 0 });
+    warning.mockRestore();
   });
 });

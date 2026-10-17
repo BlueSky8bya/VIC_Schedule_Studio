@@ -29,27 +29,46 @@ export function ServiceWorkerRegister({ identity }: { identity: string }) {
       return;
     }
 
+    let alive = true;
+    const refresh = () => {
+      void navigator.serviceWorker.ready.then((reg) => {
+        if (alive) reg.active?.postMessage({ type: document.hidden || !navigator.onLine ? "vic-pause-snapshot" : "vic-refresh-snapshot" });
+      }).catch(() => {});
+    };
     const register = () => {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
+      let changed = false;
       try {
         const KEY = "vic:swIdentity";
         const last = window.localStorage.getItem(KEY);
         if (last !== null && last !== identity) {
+          changed = true;
           navigator.serviceWorker.ready
-            .then((reg) => reg.active?.postMessage({ type: "vic-clear-cache" }))
+            .then((reg) => { if (alive) reg.active?.postMessage({ type: "vic-clear-cache", refresh: true }); })
             .catch(() => {});
         }
         window.localStorage.setItem(KEY, identity);
       } catch {
         /* localStorage 불가 환경 무시 */
       }
+      // The worker owns clear→refill ordering, including pending snapshot writes.
+      if (!changed) refresh();
     };
 
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("online", refresh);
+    window.addEventListener("offline", refresh);
+    window.addEventListener("pageshow", refresh);
     if (document.readyState === "complete") register();
-    else {
-      window.addEventListener("load", register, { once: true });
-      return () => window.removeEventListener("load", register);
-    }
+    else window.addEventListener("load", register, { once: true });
+    return () => {
+      alive = false;
+      window.removeEventListener("load", register);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("offline", refresh);
+      window.removeEventListener("pageshow", refresh);
+    };
   }, [identity]);
   return null;
 }

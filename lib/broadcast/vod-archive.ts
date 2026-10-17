@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { BJ_ID } from "@/lib/broadcast/soop";
+import { createWorkBudget, singleFlight, type WorkBudget } from "./work-budget";
 
 // 숲 다시보기(VOD) 아카이브 수집기(0068) — PLAN-20260831-001 Phase 1.
 // chapi의 다시보기 목록을 읽어 vod_archive에 upsert한다. 비공식 API라 실패는 조용히
@@ -164,21 +165,22 @@ function applyDayOverrides(rows: VodArchiveRow[]): void {
 }
 
 export async function fetchVodListPage(
-  page: number
+  page: number, budget?: WorkBudget
 ): Promise<{ rows: VodArchiveRow[]; lastPage: number } | null> {
   try {
     const res = await fetch(VOD_LIST_API(page), {
       headers: { "User-Agent": "Mozilla/5.0" },
       cache: "no-store",
-      signal: AbortSignal.timeout(8000)
+      signal: budget?.signal(8000, 5000) ?? AbortSignal.timeout(8000)
     });
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: ApiItem[]; meta?: { last_page?: number } };
-    if (!Array.isArray(json.data)) return null;
-    return {
-      rows: json.data.map(mapApiItem).filter((r): r is VodArchiveRow => r !== null),
-      lastPage: Number(json.meta?.last_page) || page
-    };
+    const lastPage = Number(json.meta?.last_page);
+    if (!Array.isArray(json.data) || !Number.isSafeInteger(lastPage) || lastPage < page || lastPage > 500) return null;
+    const rows = json.data.map(mapApiItem);
+    // A dropped malformed item cannot become evidence that an archive was deleted.
+    if (rows.some(r => r === null)) return null;
+    return { rows: rows as VodArchiveRow[], lastPage };
   } catch {
     return null;
   }
@@ -186,12 +188,12 @@ export async function fetchVodListPage(
 
 // 목록 1페이지(최신 20개)를 upsert — 뱅종 후 새로 올라온 VOD와 조회수 변화를 함께 흡수한다.
 // 새 행이 실제로 생겼을 때만 공개 캐시를 무효화한다(조회수 갱신만으로 캐시를 흔들지 않는다).
-export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted: number }> {
+export async function syncVodArchive(pages = 1, budget = createWorkBudget(30_000)): Promise<{ ok: boolean; upserted: number }> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ok: false, upserted: 0 };
   let rows: VodArchiveRow[] = [];
   for (let p = 1; p <= pages; p += 1) {
-    const page = await fetchVodListPage(p);
+    const page = await fetchVodListPage(p, budget);
     if (!page) break; // 실패 페이지부터 중단 — 부분 성공분은 그대로 반영
     rows = rows.concat(page.rows);
     if (page.rows.length === 0) break;
@@ -201,7 +203,8 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
     const known = await supabase
       .from("vod_archive")
       .select("title_no")
-      .in("title_no", rows.map((r) => r.titleNo));
+      .in("title_no", rows.map((r) => r.titleNo)).abortSignal(budget.signal(5000));
+    if (known.error) return { ok: false, upserted: 0 };
     const knownSet = new Set(((known.data as { title_no: number }[] | null) ?? []).map((r) => Number(r.title_no)));
     // 30분 체인은 '직전 방송'을 알아야 한다. 새로 받은 묶음에 직전 방송이 없을 수 있으므로
     // (증분 1페이지 경계), 저장돼 있는 최근 행을 합쳐서 함께 체인한다. 저장 행도 다시 upsert
@@ -212,7 +215,8 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
       .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt, auth_no, thumb")
       .eq("guest", false)
       .order("reg_date", { ascending: false, nullsFirst: false })
-      .limit(40);
+      .limit(40).abortSignal(budget.signal(5000));
+    if (recent.error) return { ok: false, upserted: 0 };
     const fetchedIds = new Set(rows.map((r) => r.titleNo));
     type StoredRow = {
       title_no: number; bno: string | null; broadcast_day: string; title: string;
@@ -253,7 +257,7 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
         synced_at: new Date().toISOString()
       })),
       { onConflict: "title_no" }
-    );
+    ).abortSignal(budget.signal(5000));
     if (error) return { ok: false, upserted: 0 };
     const fresh = rows.filter((r) => !knownSet.has(r.titleNo)).length;
     if (fresh > 0) revalidatePublicSchedule();
@@ -270,67 +274,51 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
  * **전량 수집이 완전할 때만 + 소량일 때만**(비공식 API 이변으로 목록이 텅 비면 오인 삭제 —
  * fail-safe). 요청 ~20회/12시간이라 부담 없음.
  */
-export async function syncVodArchiveDeep(): Promise<{ ok: boolean; total: number; deleted: number }> {
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return { ok: false, total: 0, deleted: 0 };
-  const all: VodArchiveRow[] = [];
-  let page = 1;
-  let lastPage = 1;
-  let complete = true;
-  for (;;) {
-    const res = await fetchVodListPage(page);
-    if (!res) {
-      complete = false;
-      break;
-    }
-    all.push(...res.rows);
-    lastPage = Math.max(lastPage, res.lastPage);
-    if (page >= lastPage || res.rows.length === 0) break;
-    page += 1;
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  if (all.length === 0) return { ok: false, total: 0, deleted: 0 };
-  chainBroadcastDays(all);
-  applyDayOverrides(all);
+type SweepState = { startedAt: string; nextPage: number; lastPage: number; rows: VodArchiveRow[] };
+const freshSweep = (): SweepState => ({ startedAt: new Date().toISOString(), nextPage: 1, lastPage: 1, rows: [] });
+
+/** A process coalesces requests; the durable revision rejects cross-instance stale work.
+ * At most eight source pages per invocation. Complete publication is one DB transaction.
+ * A failed/incomplete scan can only save its checkpoint, never delete source rows. */
+async function runArchiveSweep(budget = createWorkBudget(35_000)): Promise<{ ok: boolean; total: number; deleted: number }> {
+  const db = createSupabaseAdminClient();
+  const failed = (total = 0) => ({ ok: false, total, deleted: 0 });
+  if (!db || budget.remaining(6000) <= 0) return failed();
   try {
-    for (let i = 0; i < all.length; i += 200) {
-      const { error } = await supabase.from("vod_archive").upsert(
-        all.slice(i, i + 200).map((r) => ({
-          title_no: r.titleNo,
-          bno: r.bno,
-          broadcast_day: r.broadcastDay,
-          title: r.title,
-          duration_ms: r.durationMs,
-          reg_date: r.regDate,
-          comment_cnt: r.commentCnt,
-          like_cnt: r.likeCnt,
-          read_cnt: r.readCnt,
-          auth_no: r.authNo,
-          thumb: r.thumb,
-          synced_at: new Date().toISOString()
-        })),
-        { onConflict: "title_no" }
-      );
-      if (error) return { ok: false, total: all.length, deleted: 0 };
+    const previous = await db.from("broadcast_work_state").select("revision,state")
+      .eq("key", "vod-archive-sweep").abortSignal(budget.signal(5000)).maybeSingle();
+    if (previous.error) return failed();
+    const revision = Number(previous.data?.revision ?? 0);
+    const stored = previous.data?.state as SweepState | null;
+    let state = stored && Array.isArray(stored.rows) && Number.isSafeInteger(stored.nextPage) &&
+      stored.nextPage > 0 && stored.nextPage <= 501 && Number.isSafeInteger(stored.lastPage) &&
+      Date.now() - Date.parse(stored.startedAt) < 24 * 3600_000 ? stored : freshSweep();
+    let fetched = 0;
+    while (fetched < 8 && budget.remaining(6000) > 0 && state.nextPage <= state.lastPage) {
+      const page = await fetchVodListPage(state.nextPage, budget);
+      if (!page || !page.rows.length) break;
+      // A changing pagination envelope is not a complete snapshot. Restart safely.
+      if (state.nextPage > 1 && page.lastPage !== state.lastPage) { state = freshSweep(); break; }
+      state.lastPage = page.lastPage;
+      const rows = new Map(state.rows.map(r => [r.titleNo, r]));
+      for (const row of page.rows) rows.set(row.titleNo, row);
+      state.rows = [...rows.values()];
+      state.nextPage++;
+      fetched++;
+      if (state.rows.length > 10000) return failed();
+      if (state.nextPage <= state.lastPage && !(await budget.wait(200, 6000))) break;
     }
-    let deleted = 0;
-    if (complete) {
-      const ids = new Set(all.map((r) => r.titleNo));
-      // 게스트 출연분(0075)은 토리님 목록에 없는 게 당연 — 삭제 동기화에서 뺀다.
-      const dbRows = await supabase.from("vod_archive").select("title_no").eq("guest", false);
-      const gone = (((dbRows.data as { title_no: number }[] | null) ?? []))
-        .map((r) => Number(r.title_no))
-        .filter((no) => !ids.has(no));
-      if (gone.length > 0 && gone.length <= 20) {
-        await supabase.from("vod_archive").delete().in("title_no", gone);
-        await supabase.from("vod_timeline").delete().in("title_no", gone);
-        deleted = gone.length;
-      }
-    }
-    // 제목·썸네일·범위·삭제가 공개 화면에 바로 반영되게 캐시 무효화.
-    revalidatePublicSchedule();
-    return { ok: true, total: all.length, deleted };
-  } catch {
-    return { ok: false, total: all.length, deleted: 0 };
-  }
+    const complete = state.rows.length > 0 && state.nextPage > state.lastPage;
+    if (complete) { chainBroadcastDays(state.rows); applyDayOverrides(state.rows); }
+    const dbRows = state.rows.map(r => ({ title_no: r.titleNo, bno: r.bno, broadcast_day: r.broadcastDay,
+      title: r.title, duration_ms: r.durationMs, reg_date: r.regDate, comment_cnt: r.commentCnt,
+      like_cnt: r.likeCnt, read_cnt: r.readCnt, auth_no: r.authNo, thumb: r.thumb }));
+    const { data, error } = await db.rpc("vod_archive_sweep_commit", {
+      p_revision: revision, p_state: complete ? { ...state, dbRows } : state, p_complete: complete
+    }).abortSignal(budget.signal(5000));
+    if (error || data?.accepted !== true) return failed(state.rows.length);
+    if (complete) revalidatePublicSchedule();
+    return { ok: complete, total: state.rows.length, deleted: Number(data.deleted) || 0 };
+  } catch { return failed(); }
 }
+export const syncVodArchiveDeep = singleFlight(runArchiveSweep);

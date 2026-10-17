@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ admin: vi.fn() }));
 vi.mock("@/lib/auth/admin", () => ({ createSupabaseAdminClient: mocks.admin }));
+import { createWorkBudget } from "@/lib/broadcast/work-budget";
 import { pickChatSyncTargets, syncVodChat } from "@/lib/broadcast/vod-chat";
 
 const chat = (key: string) => `https://videoimg.sooplive.co.kr/php/ChatLoadSplit.php?rowKey=${key}`;
@@ -75,6 +76,16 @@ describe("resumable chat analysis", () => {
     expect(commits[1].p_job).toMatchObject({ complete: true, messages: 3, state: null });
     expect(published).toMatchObject({ terms: [{ term: "재미있다", cnt: 3 }] });
   });
+  it("does not reset an exhausted parent's deadline to a fresh per-collector allowance", async () => {
+    let elapsed = 0;
+    const parent = createWorkBudget(50_000, () => elapsed);
+    elapsed = 49_500;
+    const pending = syncVodChat([42], 60, 35_000, parent);
+    await vi.runAllTimersAsync();
+    expect((await pending).chunks).toBe(0);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(commits).toHaveLength(0);
+  });
   it("checkpoints at the budget, uses 300-second windows, and preserves old publication until traversal finishes", async () => {
     await run(1);
     expect(published).toBe("old-profile");
@@ -129,7 +140,7 @@ describe("resumable chat analysis", () => {
     expect(await pickChatSyncTargets(4)).toEqual([42]);
     expect(rpc).toHaveBeenCalledWith("vod_chat_pick_jobs", { p_limit: 4 });
   });
-  it.each([["2026-09-09", 1], ["2026-09-08", 30]])("rechecks completed %s sources after %s days using KST", async (day, days) => {
+  it.each([["2026-09-09", 3], ["2026-09-08", 365]])("rechecks completed %s sources after %s days using KST", async (day, days) => {
     broadcastDay = String(day);
     await run();
     expect(Date.parse(commits[0].p_job.nextRetryAt) - Date.now()).toBe(Number(days) * 86400_000);

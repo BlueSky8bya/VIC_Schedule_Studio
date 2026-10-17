@@ -10,9 +10,15 @@
 
 const CACHE = "vic-offline-v7"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
 const SNAPSHOT_KEY = "/__offline_snapshot"; // 비로그인 공개 포스터 스냅샷의 캐시 키(실제 "/"와 분리).
+const SNAPSHOT_TIME_KEY = "/__offline_snapshot_time"; // Local successful-fetch time; no identity or HTTP clock.
 const SNAPSHOT_MIN_INTERVAL = 60_000; // 스냅샷 갱신 최소 간격(ms) — 잦은 재요청 방지.
 
 let lastSnapshotAt = 0;
+let snapshotPending = null;
+let snapshotAbort = null;
+let resumeAfterSnapshot = false;
+let cacheGeneration = 0;
+let clearing = null;
 
 self.addEventListener("install", () => {
   self.skipWaiting(); // 새 버전 즉시 활성화
@@ -31,48 +37,95 @@ self.addEventListener("activate", (event) => {
 
 // 비로그인(credentials 생략) 공개 포스터 "/"를 받아 스냅샷으로 저장. 로그인 쿠키를 안 보내므로 서버가
 // 공개 포스터(200)를 돌려준다 — 이메일/비공개/리다이렉트 없음. 200 + 리다이렉트 아님일 때만 저장.
-async function refreshSnapshot() {
+function refreshSnapshot() {
+  if (clearing) return clearing;
+  if (snapshotPending) {
+    if (snapshotAbort?.signal.aborted) resumeAfterSnapshot = true;
+    return snapshotPending;
+  }
+  snapshotAbort = new AbortController();
+  const signal = snapshotAbort.signal;
+  const generation = cacheGeneration;
+  snapshotPending = refreshSnapshotOnce(signal, generation).catch(() => {}).finally(() => {
+    const resume = resumeAfterSnapshot;
+    resumeAfterSnapshot = false;
+    snapshotPending = null;
+    snapshotAbort = null;
+    if (resume && !clearing) return refreshSnapshot();
+  });
+  return snapshotPending;
+}
+
+async function refreshSnapshotOnce(signal, generation) {
+  // Activation/navigation can also happen for hidden tabs. Never start an extra
+  // anonymous SSR unless at least one window can use the resulting snapshot.
+  if (!await snapshotAllowed() || signal.aborted) return;
   const t = Date.now();
   const cache = await caches.open(CACHE);
   // 스냅샷이 '있을 때만' throttle한다. 아직 없으면(오너가 공개 "/"를 못 봐 비어있는 경우 등) 매 온라인
   // 네비게이션마다 즉시 채우기를 시도해 빠르게 확보한다 — 오프라인 전환 직후 '오프라인이에요' 회피.
   const has = await cache.match(SNAPSHOT_KEY);
-  if (has && t - lastSnapshotAt < SNAPSHOT_MIN_INTERVAL) return;
+  if (has && !lastSnapshotAt) {
+    const stored = await cache.match(SNAPSHOT_TIME_KEY);
+    const at = stored ? Number(await stored.text()) : 0;
+    if (Number.isFinite(at) && at > 0 && at <= t) lastSnapshotAt = at;
+  }
+  const age = t - lastSnapshotAt;
+  if (has && age >= 0 && age < SNAPSHOT_MIN_INTERVAL) {
+    // A hide/offline interruption may have saved HTML before its chunks. Reuse
+    // the fresh anonymous response and fill only missing assets on resume.
+    await precacheAssets(has, cache, signal, generation);
+    return;
+  }
   try {
-    const res = await fetch("/", { credentials: "omit", redirect: "manual", cache: "no-store" });
-    if (res && res.status === 200 && !res.redirected) {
+    if (!await snapshotAllowed() || signal.aborted) return;
+    const res = await fetch("/", { credentials: "omit", redirect: "manual", cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]) });
+    if (res && res.status === 200 && !res.redirected && !signal.aborted && generation === cacheGeneration) {
       const forAssets = res.clone();
       await cache.put(SNAPSHOT_KEY, res.clone());
+      if (signal.aborted || generation !== cacheGeneration) return;
+      await cache.put(SNAPSHOT_TIME_KEY, new Response(String(t)));
       lastSnapshotAt = t; // 성공했을 때만 throttle 시작 — 실패(오프라인) 시 다음 네비에서 즉시 재시도.
       await notifyClients(t); // "마지막 동기화 시각"을 인앱 오프라인 배지에 전달.
-      await precacheAssets(forAssets, cache); // HTML이 참조하는 js/css도 함께 캐시(오프라인 청크 로드 실패 방지).
+      if (!await snapshotAllowed() || signal.aborted) return;
+      await precacheAssets(forAssets, cache, signal, generation); // HTML이 참조하는 js/css도 함께 캐시(오프라인 청크 로드 실패 방지).
     }
   } catch {
     /* 오프라인 등 — throttle 안 잠그고 다음 기회에 즉시 재시도 */
   }
 }
 
+async function snapshotAllowed() {
+  if (self.navigator?.onLine === false) return false;
+  const windows = await self.clients.matchAll({ includeUncontrolled: true, type: "window" });
+  return windows.some((client) => client.visibilityState === "visible");
+}
+
 // 스냅샷 HTML이 참조하는 정적자산(/_next/static의 js·css)을 미리 캐시한다. 오너는 스튜디오 청크만
 // 받았을 뿐 공개 포스터 청크는 안 받았을 수 있어, 오프라인에서 "Loading chunk failed"가 나던 문제 방지.
 // HTML 전문에서 경로를 정규식으로 뽑으므로 RSC 페이로드 안의 동적 청크 경로까지 잡힌다. 실패는 무시.
-async function precacheAssets(res, cache) {
+async function precacheAssets(res, cache, signal, generation) {
   try {
     const html = await res.text();
     const urls = new Set();
     const re = /\/_next\/static\/[^"'()\s\\]+\.(?:js|css)/g;
     let m;
     while ((m = re.exec(html))) urls.add(m[0]);
-    await Promise.all(
-      [...urls].map(async (u) => {
+    const pending = [...urls];
+    await Promise.all(Array.from({ length: Math.min(4, pending.length) }, async () => {
+      while (pending.length) {
+        const u = pending.shift();
         try {
-          if (await cache.match(u)) return;
-          const r = await fetch(u, { credentials: "omit" });
-          if (r && r.ok) await cache.put(u, r.clone());
+          if (signal.aborted || generation !== cacheGeneration) return;
+          if (await cache.match(u)) continue;
+          if (signal.aborted || generation !== cacheGeneration) return;
+          const r = await fetch(u, { credentials: "omit", signal });
+          if (r && r.ok && !signal.aborted && generation === cacheGeneration) await cache.put(u, r.clone());
         } catch {
           /* 개별 자산 실패 무시 */
         }
-      })
-    );
+      }
+    }));
   } catch {
     /* 무시 */
   }
@@ -116,6 +169,7 @@ self.addEventListener("fetch", (event) => {
   // 페이지 이동(네비게이션) — 온라인은 네트워크 그대로(스튜디오 등 정상), 오프라인이면 공개 스냅샷.
   if (req.mode === "navigate") {
     event.respondWith(navHandler(req));
+    event.waitUntil(refreshSnapshot());
     return;
   }
   // 그 외(이미지·fetch 등)는 손대지 않음.
@@ -123,12 +177,15 @@ self.addEventListener("fetch", (event) => {
 
 // 정적 자산(해시 불변 앱 코드) — 있으면 캐시, 없으면 받아서 캐시.
 async function cacheFirst(req) {
+  const generation = cacheGeneration;
   const cache = await caches.open(CACHE);
   const hit = await cache.match(req);
   if (hit) return hit;
   try {
     const res = await fetch(req);
-    if (res && res.ok) cache.put(req, res.clone());
+    if (res && res.ok && generation === cacheGeneration && !clearing) {
+      try { await cache.put(req, res.clone()); } catch { /* Quota failure must not discard the live asset. */ }
+    }
     return res;
   } catch {
     return new Response("", { status: 504 });
@@ -140,7 +197,6 @@ async function cacheFirst(req) {
 async function navHandler(req) {
   try {
     const res = await fetch(req);
-    void refreshSnapshot(); // 응답은 캐시하지 않고, 공개 스냅샷만 최신으로(throttle).
     return res;
   } catch {
     const cache = await caches.open(CACHE);
@@ -159,6 +215,20 @@ async function navHandler(req) {
 // 로그아웃/계정변경 시 클라이언트가 보내는 캐시 비우기 신호(공개만 캐시하지만 위생상 비운다).
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "vic-clear-cache") {
-    event.waitUntil(caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))));
+    cacheGeneration++;
+    lastSnapshotAt = 0;
+    resumeAfterSnapshot = false;
+    snapshotAbort?.abort();
+    // Drain the previous writer before deleting, so an in-flight response cannot
+    // recreate the cleared snapshot after logout/account change.
+    const cleanup = Promise.all([snapshotPending, clearing]).catch(() => {}).then(() => caches.keys())
+      .then((ks) => Promise.all(ks.map((k) => caches.delete(k))))
+      .finally(() => { if (clearing === cleanup) clearing = null; });
+    clearing = cleanup;
+    event.waitUntil(cleanup.then(() => event.data.refresh === true ? refreshSnapshot() : undefined));
+  } else if (event.data && event.data.type === "vic-refresh-snapshot") {
+    event.waitUntil(refreshSnapshot());
+  } else if (event.data && event.data.type === "vic-pause-snapshot") {
+    event.waitUntil(snapshotAllowed().then((allowed) => { if (!allowed) snapshotAbort?.abort(); }));
   }
 });

@@ -8,6 +8,7 @@ import { applyDatabaseClock, clockIsSynced, subscribeClock, synchronizeClock, sy
 import { reconcileTeaserReveal } from "@/lib/schedules/teaser-reconcile";
 import { planPremiere, premiereKey, presentationTime, PREMIERE_TIMING, idleFrame, type PremiereCandidate, type PremiereFrame } from "./plan";
 import { createFlashBudget } from "./flash-budget";
+import { foregroundOnline, startForegroundPoll } from "@/lib/ui/foreground-poll";
 
 export type PremiereFixture = { startedAt: number; offsets: number[]; scenario?: string; rehearsal?: boolean };
 type Options = {
@@ -95,8 +96,6 @@ export function useTeaserPremiere(options: Options) {
 
   useEffect(() => {
     let alive = true;
-    let timer: ReturnType<typeof setTimeout>;
-    let busy = false;
     let failures = 0;
     const abort = new AbortController();
     const fixture = latest.current.fixture;
@@ -112,7 +111,8 @@ export function useTeaserPremiere(options: Options) {
         records.current.set(event.id, entry);
       }
     }
-    const read = async (id?: string): Promise<TeaserStateSnapshot> => {
+    const read = async (signal: AbortSignal, id?: string): Promise<TeaserStateSnapshot> => {
+      if (signal.aborted || !foregroundOnline()) throw new DOMException("Paused", "AbortError");
       if (fixture?.rehearsal) {
         const now = syncedNow();
         return { ok: true, schemaVersion: 1, sampledAtDbMs: now, entries: fixture.offsets.map((offset, i) => {
@@ -124,7 +124,7 @@ export function useTeaserPremiere(options: Options) {
       }
       const url = fixture ? `/api/visual-fixture/premiere?startedAt=${fixture.startedAt}&offsets=${fixture.offsets.join(",")}&scenario=${fixture.scenario ?? "normal"}${id ? `&eventId=${id}` : ""}` :
         `/api/public/${encodeURIComponent(latest.current.slug)}/teaser-state${id ? `/${encodeURIComponent(id)}` : ""}`;
-      const response = await fetch(url, { credentials: "omit", signal: AbortSignal.any([abort.signal, AbortSignal.timeout(8000)]) });
+      const response = await fetch(url, { credentials: "omit", signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
       if (!response.ok) throw new Error("State unavailable");
       return response.json();
     };
@@ -173,40 +173,41 @@ export function useTeaserPremiere(options: Options) {
       // caused duplicate flashes and mobile document overflow during publication.
       if (newReveals.length && !frameRef.current.focused && frameRef.current.phase !== "return") setJustRevealed(previous => new Set([...previous, ...newReveals]));
     };
-    const poll = async () => {
-      clearTimeout(timer);
-      if (busy || !alive || document.hidden || !navigator.onLine) return;
-      busy = true;
-      try {
-        const snapshot = await read();
-        if (!snapshot.ok) throw new Error("State unavailable");
-        // An instant release leaves discovery; a released card can also be deleted
-        // during the reading beat. Confirm both through the canonical shared key.
-        const missing = [...records.current.values()].filter(entry => !snapshot.entries.some(item => item.id === entry.id)).map(entry => entry.id);
-        apply(snapshot);
-        for (const id of missing.slice(0, 32)) apply(await read(id), id);
-        failures = 0;
-      } catch { failures++; } finally {
-        busy = false;
-        if (alive) {
-          const near = [...records.current.values()].some(entry => entry.state === "masked" && Date.parse(entry.revealAt ?? "") - syncedNow() < 300_000);
-          timer = setTimeout(poll, failures ? Math.min(15_000, 1000 * 2 ** Math.min(failures, 4)) : near || fixture ? 1000 : 15_000);
-        }
-      }
-    };
+    const polling = startForegroundPoll({
+      delay: () => {
+        const near = [...records.current.values()].some(entry => entry.state === "masked" && Date.parse(entry.revealAt ?? "") - syncedNow() < 300_000);
+        return failures ? Math.min(15_000, 1000 * 2 ** Math.min(failures, 4)) : near || fixture ? 1000 : 15_000;
+      },
+      run: async (signal) => {
+        try {
+          if (!clockIsSynced()) await synchronizeClock();
+          else void synchronizeClock(); // Refresh calibration without delaying discovery.
+          const snapshot = await read(signal);
+          if (signal.aborted || !foregroundOnline()) return;
+          if (!snapshot.ok) throw new Error("State unavailable");
+          // An instant release leaves discovery; a released card can also be deleted
+          // during the reading beat. Confirm both through the canonical shared key.
+          const missing = [...records.current.values()].filter(entry => !snapshot.entries.some(item => item.id === entry.id)).map(entry => entry.id);
+          apply(snapshot);
+          for (const id of missing.slice(0, 32)) {
+            const item = await read(signal, id);
+            if (signal.aborted || !foregroundOnline()) return;
+            apply(item, id);
+          }
+          failures = 0;
+        } catch { if (!signal.aborted) failures++; }
+      },
+    });
     const resume = () => {
       watched.current.clear(); lastNow.current = null;
-      if (document.hidden || !navigator.onLine) { clearTimeout(timer); return; }
-      void synchronizeClock().then(poll);
     };
-    wake.current = () => { if (!busy) void poll(); };
+    wake.current = polling.wake;
     document.addEventListener("visibilitychange", resume);
     window.addEventListener("online", resume);
     window.addEventListener("offline", resume);
     window.addEventListener("pageshow", resume);
     window.addEventListener("vic:clock-correction", () => { watched.current.clear(); lastNow.current = null; }, { signal: abort.signal });
-    void synchronizeClock().then(poll);
-    return () => { alive = false; abort.abort(); clearTimeout(timer); document.removeEventListener("visibilitychange", resume); window.removeEventListener("online", resume); window.removeEventListener("offline", resume); window.removeEventListener("pageshow", resume); wake.current = () => {}; };
+    return () => { alive = false; abort.abort(); polling.stop(); document.removeEventListener("visibilitychange", resume); window.removeEventListener("online", resume); window.removeEventListener("offline", resume); window.removeEventListener("pageshow", resume); wake.current = () => {}; };
   }, [options.slug, options.fixture]);
 
   useEffect(() => subscribeClock(() => {

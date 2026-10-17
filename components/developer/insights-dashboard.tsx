@@ -1,5 +1,7 @@
 "use client";
 
+import { startForegroundPoll } from "@/lib/ui/foreground-poll";
+
 import { tagColor, themeColor } from "@/lib/tags/dark-palette";
 
 import {
@@ -424,16 +426,16 @@ export function InsightsDashboard({
   useEffect(() => {
     if (PANELS[index]?.key !== "visits") return;
     let alive = true;
-    const refresh = () => {
-      getVisitTrendsAction(year, month).then((r) => {
-        if (alive && r.ok) setVisits(r.data);
-      });
-    };
-    refresh(); // 진입 즉시 한 번
-    const id = window.setInterval(refresh, 20000);
+    const poll = startForegroundPoll({
+      run: async (signal) => {
+        const r = await getVisitTrendsAction(year, month);
+        if (alive && !signal.aborted && r.ok) setVisits(r.data);
+      },
+      delay: () => 20_000
+    });
     return () => {
       alive = false;
-      window.clearInterval(id);
+      poll.stop();
     };
   }, [index, year, month]);
 
@@ -1575,7 +1577,7 @@ export function InsightsDashboard({
                   <div className={`perf-table${perfLoading ? " is-loading" : ""}`}>
                     <div className="perf-row perf-thead">
                       <span>구간</span>
-                      <span>n</span>
+                      <span title="전체 요청 중 균등 추출한 표본 수">표본</span>
                       <span>평균</span>
                       <span>p95</span>
                       <span>최대</span>

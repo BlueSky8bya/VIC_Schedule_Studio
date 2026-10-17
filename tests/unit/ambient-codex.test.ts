@@ -8,6 +8,12 @@ import { CODEX, CODEX_KINDS, codexAvailable, codexById, codexOf, MONTHS_ALL } fr
 import { previewOf } from "@/components/shared/ambient/art/preview";
 import { DAY_BANDS } from "@/components/shared/ambient/world/time";
 import { weatherOptionsForMonth } from "@/components/shared/ambient/world/weather";
+import { BIOME_LOADERS } from "@/components/shared/ambient/scenes/biome-loaders";
+import { existsSync } from "node:fs";
+
+// R80 accepted static compositions own these cells; the old procedural fauna
+// is intentionally not rendered. Keep coverage for every ecological biome.
+const CONCEPT_CELLS = new Set(["shallow", "sea", "deep"]);
 
 describe("world/codex — 도감 세 권", () => {
   it("id는 유일하고 종류 접두사를 지킨다", () => {
@@ -88,6 +94,7 @@ describe("world/codex — 도감 세 권", () => {
 
   it("바이옴마다 만날 것이 있다 — 열한 화면 어디에도 빈 화면은 없다", () => {
     for (const key of Object.keys(BIOMES)) {
+      if (CONCEPT_CELLS.has(key)) continue;
       const here = CODEX.filter((e) => e.biomes.includes(key as keyof typeof BIOMES));
       expect(here.length, `${key}에 사는 종이 없다`).toBeGreaterThanOrEqual(4);
     }
@@ -121,8 +128,35 @@ describe("world/codex — 도감 세 권", () => {
   it("생성 차수는 1~3이고, 1차에는 바이옴마다 적어도 하나가 있다", () => {
     for (const e of CODEX) expect([1, 2, 3]).toContain(e.wave);
     for (const key of Object.keys(BIOMES)) {
+      if (CONCEPT_CELLS.has(key)) continue;
       const first = CODEX.filter((e) => e.wave === 1 && e.biomes.includes(key as keyof typeof BIOMES));
       expect(first.length, `${key}에 1차 종이 없다 — 그 화면은 마지막까지 비어 보인다`).toBeGreaterThan(0);
+    }
+  });
+
+  it("static marine exceptions actually load their sealed concept renderer and existing art", async () => {
+    const oldImage = globalThis.Image;
+    const oldWindow = globalThis.window;
+    const images: { src: string; decode: () => Promise<void>; removeAttribute: () => void }[] = [];
+    globalThis.Image = class {
+      src = "";
+      constructor() { images.push(this); }
+      decode() { return Promise.resolve(); }
+      removeAttribute() {}
+    } as unknown as typeof Image;
+    globalThis.window = { dispatchEvent: () => true } as unknown as Window & typeof globalThis;
+    try {
+      for (const key of ["shallow", "sea", "deep"] as const) {
+        const make = await BIOME_LOADERS[key]("spring");
+        const scene = make(1);
+        expect(scene.sealed?.()).toBe(true);
+        expect(scene.debug?.()).toMatchObject({ biome: key, concept: true });
+        expect(existsSync(`public${images.at(-1)!.src}`)).toBe(true);
+        await Promise.resolve(); await Promise.resolve();
+        scene.dispose?.();
+      }
+    } finally {
+      globalThis.Image = oldImage; globalThis.window = oldWindow;
     }
   });
 });

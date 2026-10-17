@@ -1,6 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { admin } = vi.hoisted(() => ({ admin: vi.fn() }));
-vi.mock("@/lib/auth/admin", () => ({ createSupabaseAdminClient: admin }));
+// Preserve existing assertions while modelling the Supabase fluent abort API.
+function withSignals<T>(value: T): T {
+  if (!value || typeof value !== "object") return value;
+  return new Proxy(value as object, { get(target, key, receiver) {
+    if (key === "abortSignal") return () => receiver;
+    const member = Reflect.get(target, key);
+    if (key === "then") return typeof member === "function" ? member.bind(target) : undefined;
+    return typeof member === "function" ? (...args: unknown[]) => withSignals(member.apply(target, args)) : member;
+  } }) as T;
+}
+vi.mock("@/lib/auth/admin", () => ({ createSupabaseAdminClient: () => {
+  const db = admin();
+  if (!db) return db;
+  return { ...db, from: (table: string) => table === "broadcast_work_state"
+    ? { select: () => ({ eq: () => ({ abortSignal: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }
+    : withSignals(db.from(table)), rpc: (...args: unknown[]) => withSignals(db.rpc(...args)) };
+} }));
 vi.mock("@/lib/broadcast/vod-archive", () => ({ syncVodArchive: vi.fn(), syncVodArchiveDeep: vi.fn() }));
 import { fetchComments, selectTimelineTargets, pickTimelineSyncTargets, syncVodTimelines, maybeSyncTimelines } from "@/lib/broadcast/vod-timeline";
 
@@ -43,8 +59,8 @@ describe("complete upstream reads", () => {
     admin.mockReturnValue({
       from: () => ({ select: () => ({ in: async () => ({ data: [{ title_no: 42, duration_ms: 5000 }] }) }) }),
       rpc: vi.fn().mockImplementation(async (fn, args) => {
-        if (fn === "vod_timeline_ingest") stored = args.p_candidates;
-        return { error: null, data: true };
+        if (fn === "vod_timeline_ingest_changes") stored = args.p_candidates;
+        return { error: null, data: { accepted: true, changed: true } };
       })
     });
     const fetcher = vi.fn();
@@ -143,7 +159,7 @@ describe("complete upstream reads", () => {
   });
   it("still attempts a recent upload when archive requests consume the budget", async () => {
     let clock = now;
-    vi.spyOn(Date, "now").mockImplementation(() => clock);
+    vi.spyOn(performance, "now").mockImplementation(() => clock);
     const upsert = vi.fn().mockResolvedValue({ error: null });
     admin.mockReturnValue({ from: () => ({
       select: () => ({ in: async () => ({ data: Array.from({ length: 10 }, (_, i) => ({ title_no: i + 1, duration_ms: 600000 })) }) }), upsert,

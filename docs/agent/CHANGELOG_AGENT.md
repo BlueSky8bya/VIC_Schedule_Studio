@@ -4,6 +4,14 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-10-17
+
+### CHG-20261017-001 — Bound public failures and background work
+
+Public loader failures no longer become cached empty schedules; stable pagination and public request allowlists preserve explicit DTOs and the DB-time teaser gate. Search telemetry uses fixed codes. Readiness has an abortable five-second public query and truthful status. Live collection coalesces in-flight work; changed projections/dirty revisions, successful graph markers, shared deadlines and resumable archive CAS suppress redundant work and preserve partial recovery. Developer presence uses one service-only aggregate. Shared foreground polling, anonymous worker cache ordering and finite popover tracking reduce work around the existing companion engine. Performance counts are uniformly sampled observations, not total requests.
+
+0151 applied with verified TLS before new readers, preserving existing function backups, service-only grants and cron configuration. Migration application did not delete source rows or run collectors/cleanup. Rollback deploys the previous app first, then the isolated function rollback; retain additive state until in-flight work drains. Dependencies patched; production audit0, unpatched dev-only braces chain remains tracked. No paid-plan change or production analytics deletion. Evidence, exact limits and deployment follow-up: [080 record](verification/PLATFORM_REMEDIATION-20261017.md), [backend/rollback](verification/BROADCAST_WORK_BOUNDS-20261017.md), [client QA](verification/PLATFORM_CLIENT-20261017.md).
+
 ## v0.1.0 — 2026-10-14
 
 ### CHG-20261014-001 — Shared public premiere stage and DB-authoritative state

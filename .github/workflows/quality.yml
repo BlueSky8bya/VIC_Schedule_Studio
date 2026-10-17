@@ -1,0 +1,64 @@
+# Credential-free gates. Windows visual baselines/real-session and OBS checks
+# remain separate; this Linux job never runs production DB integration tests.
+name: quality
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Isolated SQL contracts
+        # PGlite is in-memory PostgreSQL/WASM; these scripts never read .env.
+        run: |
+          node tests/sql/privacy-boundary.mjs node_modules/@electric-sql/pglite/dist/index.js
+          node tests/sql/vod-timeline-variants.mjs node_modules/@electric-sql/pglite/dist/index.js
+          node tests/sql/vod-chat-recovery.mjs node_modules/@electric-sql/pglite/dist/index.js
+          node tests/sql/broadcast-work-bounds.mjs
+
+      - name: Agent harness
+        run: npm run harness:verify
+
+      - name: Production build
+        run: npm run build
+
+      # Next.js owns .next/types during the build. Run tsc afterwards in this
+      # same sequential job; concurrent build/tsc causes partial generated types.
+      - name: Typecheck generated routes and source
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint

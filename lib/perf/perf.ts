@@ -37,7 +37,7 @@ function suspendedDuring(t0: number): boolean {
   return lastFreezeAt >= t0 || now() - lastTick > FREEZE_GAP_MS;
 }
 
-// 비동기 작업 한 구간을 재서 [perf] 로그(LOG_ENABLED일 때) + 표본 기록(패널용, 항상). 투명 래퍼.
+// 비동기 구간 로그와 독립적인 균등 표본(기본10%, PERF_SAMPLE_RATE). 투명 래퍼.
 export async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const t0 = now();
   let ok = true;

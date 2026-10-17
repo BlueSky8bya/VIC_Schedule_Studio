@@ -8,6 +8,7 @@ import { PanelPlaceControl } from "@/components/shared/panel-place-control";
 import { TeaserCountdown } from "@/components/shared/teaser-countdown";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { flipSpring } from "@/lib/ui/flip-motion";
+import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { normalizeEditableText, readEditableText, writeEditableText } from "@/lib/ui/editable-text";
 import { ringPath, ringSpring } from "@/lib/ui/ring-path";
 
@@ -3153,14 +3154,11 @@ export function StudioShell({
     avatarSceneOn,
     avatarSide
   ]);
-  // 열려 있는 동안 매 프레임 실측 동기화(rAF) — 리사이즈·아바타 margin 슬라이드·체인 등높이
-  // JS·업도움 띠·폰트 로드 등 '배치 이후의 레이아웃 시프트'를 이벤트별로 쫓아다니지 않고
-  // 한 루프로 수렴시킨다(실서비스에서 행이 늦게 밀리며 앵커 도트가 칸 위로 떠 보이던 원인).
-  // 읽기 2회 + 값이 같으면 setState가 같은 객체를 반환해 리렌더 0 — 유휴 비용은 측정뿐이다.
+  // Viewer/studio share finite tracking: resize/scroll/input and the existing
+  // FLIP spring keep the anchor aligned; an idle open editor measures nothing.
   useEffect(() => {
     if (!editorVisible || isNarrow) return;
     const wsEl = workspaceRef.current;
-    let raf = 0;
     let rowSeen: HTMLDivElement | null = null; // 정리 때 원위치시킬 알약 행(틱에서 마지막으로 본 노드)
     const tick = () => {
       placeEditorPopover();
@@ -3213,18 +3211,22 @@ export function StudioShell({
           else delete row.dataset.dodge;
         }
       }
-      raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    const stop = trackPopoverLayout({ update: tick, elements: () => {
+      const calendar = calPanelRef.current;
+      const cell = calendar?.querySelector<HTMLElement>(`.studio-day[data-isodate="${selectedDate}"]`);
+      const selector = selectedEventId ? `.studio-event-pill[data-eventid="${selectedEventId}"], .support-bar[data-supportid="${selectedEventId}"]` : null;
+      return [wsEl, calendar, cell, selector ? cell?.querySelector<HTMLElement>(selector) ?? calendar?.querySelector<HTMLElement>(selector) : null, editorPanelRef.current, bottomRowRef.current];
+    } });
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
       if (wsEl) wsEl.style.minHeight = "";
       if (rowSeen) {
         rowSeen.style.removeProperty("--bfr-shift");
         delete rowSeen.dataset.dodge;
       }
     };
-  }, [editorVisible, isNarrow, placeEditorPopover]);
+  }, [editorVisible, isNarrow, placeEditorPopover, selectedDate, selectedEventId]);
 
   useLayoutEffect(() => {
     const viewKey = `${view.year}-${view.month}`;

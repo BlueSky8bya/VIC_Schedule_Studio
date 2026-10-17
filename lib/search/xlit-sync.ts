@@ -1,6 +1,7 @@
 // 영문 가수·곡 제목 → 한글 읽기 동의어를 자동으로 채운다(0145 · lib/search/xlit.ts). 새 다시보기 챕터가 저장된 뒤
 // (lib/broadcast/vod-timeline) 돈다 — 새 가수·래퍼·곡이 처음 나온 날 바로 한글로도 검색된다.
 // 사람이 고른 시드(seed-artist·seed-title·seed-xlit)가 이미 짝지은 것은 search_xlit_pending이 빼고 준다.
+import type { WorkBudget } from "@/lib/broadcast/work-budget";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { latinToHangul } from "@/lib/search/xlit";
 
@@ -29,20 +30,25 @@ export function xlitRows(pending: { latin: string; norm: string }[]) {
 }
 
 /** 한 번에 최대 limit 구절. 실패해도 조용히(검색은 옛 사전으로 계속 돈다). 넣은 행 수를 돌려준다. */
-export async function syncXlitSynonyms(supabase: SupabaseClient, limit = 300): Promise<number> {
-  const { data, error } = await supabase.rpc("search_xlit_pending", { p_limit: limit });
+export async function syncXlitSynonymsChecked(supabase: SupabaseClient, limit = 300, budget?: WorkBudget): Promise<{ ok: boolean; count: number }> {
+  const { data, error } = await supabase.rpc("search_xlit_pending", { p_limit: limit }).abortSignal(budget?.signal(5000) ?? AbortSignal.timeout(5000));
   if (error || !Array.isArray(data) || data.length === 0) {
     if (error) console.warn("[search] search_xlit_pending failed:", error.message);
-    return 0;
+    return { ok: !error && Array.isArray(data), count: 0 };
   }
   const rows = xlitRows(data as { latin: string; norm: string }[]);
-  if (!rows.length) return 0;
+  if (!rows.length) return { ok: true, count: 0 };
   const { error: upErr } = await supabase
     .from("search_synonyms")
-    .upsert(rows, { onConflict: "term,alt", ignoreDuplicates: true });
+    .upsert(rows, { onConflict: "term,alt", ignoreDuplicates: true }).abortSignal(budget?.signal(5000) ?? AbortSignal.timeout(5000));
   if (upErr) {
     console.warn("[search] auto-xlit upsert failed:", upErr.message);
-    return 0;
+    return { ok: false, count: 0 };
   }
-  return rows.length;
+  return { ok: true, count: rows.length };
+}
+
+/** Backfill callers retain the existing numeric contract. Retry owners use checked. */
+export async function syncXlitSynonyms(supabase: SupabaseClient, limit = 300, budget?: WorkBudget): Promise<number> {
+  return (await syncXlitSynonymsChecked(supabase, limit, budget)).count;
 }

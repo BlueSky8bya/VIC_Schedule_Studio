@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { ServerTiming } from "@/lib/perf/perf";
+import { publicRequestError, validatePublicRequest } from "@/app/api/public/request";
 
 type PublicEventsRouteProps = {
   params: Promise<{
@@ -8,17 +9,24 @@ type PublicEventsRouteProps = {
   }>;
 };
 
-export async function GET(_request: Request, { params }: PublicEventsRouteProps) {
-  const st = new ServerTiming();
+export async function GET(request: Request, { params }: PublicEventsRouteProps) {
   const { calendarSlug } = await params;
+  const validated = validatePublicRequest(request, calendarSlug, []);
+  if (!validated.ok) return validated.response;
+  const st = new ServerTiming();
   // 구간 계측 → Server-Timing 헤더로 내보내 브라우저 개발자도구 Network에 막대로 보인다(+[perf] 로그).
   // includeMyHeartIds:false — 공개 API에 개인 필드(내 하트 목록)를 싣지 않는다. 포스터 SSR은
   // 이 라우트가 아니라 로더를 직접 쓰므로 영향 없고, 응답이 익명 동일해져 아래 CDN 캐시가 안전해진다.
-  const schedule = await st.measure(
-    "publicSchedule",
-    () => getPublicSchedule(calendarSlug, { includeMyHeartIds: false }),
-    "공개 스케줄 로드"
-  );
+  let schedule: Awaited<ReturnType<typeof getPublicSchedule>>;
+  try {
+    schedule = await st.measure(
+      "publicSchedule",
+      () => getPublicSchedule(calendarSlug, { includeMyHeartIds: false }),
+      "공개 스케줄 로드"
+    );
+  } catch {
+    return publicRequestError(503, "Schedule unavailable");
+  }
 
   return NextResponse.json(schedule, {
     headers: {

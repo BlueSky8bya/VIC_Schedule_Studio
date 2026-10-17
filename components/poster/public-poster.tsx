@@ -90,6 +90,7 @@ import {
 import { PanelPlaceControl } from "@/components/shared/panel-place-control";
 import { sidePanelClasses, useSidePanel } from "@/lib/ui/use-side-panel";
 import { flipSpring } from "@/lib/ui/flip-motion";
+import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
@@ -1300,13 +1301,7 @@ export function PublicPoster({
       setDetailManual(next);
     }
     placeDetailPopover();
-    let raf = 0;
-    const tick = () => {
-      placeDetailPopover();
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return trackPopoverLayout({ update: placeDetailPopover, elements: () => [detailAnchorElRef.current, detailSheetRef.current] });
   }, [hasDetailPop, agendaDetail, placeDetailPopover, detailKey]);
   // 헤더/그립 드래그 — 이동 중엔 DOM(style·선 좌표) 직접 갱신, 손 뗄 때만 상태 확정(부드러움).
   function onDetailDragStart(e: ReactPointerEvent<HTMLDivElement>) {

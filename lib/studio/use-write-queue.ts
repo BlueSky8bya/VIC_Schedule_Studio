@@ -24,6 +24,9 @@ export function useStudioWriteQueue(
   const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
   const savingCountRef = useRef(0); // 동시 진행 쓰기 수 — 0이 될 때 최종 상태 확정
   const savingSinceRef = useRef(0); // 저장 묶음 시작 시각('저장 중' 최소 노출)
+  // 같은 묶음의 뒤 작업이 성공해도 앞 작업의 실패를 덮지 않는다.
+  // 개별 호출부가 rollback/재시도를 소유한다. 다음 실제 쓰기가 새 묶음을 시작한다.
+  const batchFailedRef = useRef(false);
   const savedTimerRef = useRef<number | null>(null);
   const editedSinceSyncRef = useRef(false); // 마지막 서버 새로고침 이후 편집이 있었나
   // 진행 중인 모든 중대한 쓰기(save/delete/tags/reorder/support/link)의 약속 집합.
@@ -53,6 +56,7 @@ export function useStudioWriteQueue(
   ): Promise<StudioWriteResult> {
     if (savingCountRef.current === 0) {
       savingSinceRef.current = Date.now();
+      batchFailedRef.current = false;
     }
     if (savedTimerRef.current) {
       window.clearTimeout(savedTimerRef.current);
@@ -77,12 +81,16 @@ export function useStudioWriteQueue(
     // 낙관적 저장은 너무 빨라 '저장 중'이 안 보일 수 있다 → 최소 ~700ms 노출.
     const settleSaved = () => {
       if (savingCountRef.current !== 0) return;
+      if (batchFailedRef.current) {
+        setSaveState("failed");
+        return;
+      }
       const elapsed = Date.now() - savingSinceRef.current;
       if (elapsed >= 700) {
         setSaveState("saved");
       } else {
         savedTimerRef.current = window.setTimeout(() => {
-          if (savingCountRef.current === 0) setSaveState("saved");
+          if (savingCountRef.current === 0) setSaveState(batchFailedRef.current ? "failed" : "saved");
         }, 700 - elapsed);
       }
     };
@@ -91,6 +99,7 @@ export function useStudioWriteQueue(
         (r) => {
           savingCountRef.current = Math.max(0, savingCountRef.current - 1);
           if (!r.ok) {
+            batchFailedRef.current = true;
             setSaveState("failed");
           } else {
             setLastSavedKst(nowKstHm());
@@ -99,6 +108,7 @@ export function useStudioWriteQueue(
         },
         () => {
           savingCountRef.current = Math.max(0, savingCountRef.current - 1);
+          batchFailedRef.current = true;
           setSaveState("failed");
         }
       )
@@ -130,6 +140,11 @@ export function useStudioWriteQueue(
   // Ctrl+S로 저장할 카드가 없을 때(이미 다 저장됨) — 저장중→저장됨을 잠깐 보여 확인시킨다.
   function flashSavedChip(): void {
     if (savingCountRef.current > 0) return;
+    // 저장할 것이 없는 Ctrl+S는 실패한 쓰기를 재전송한 것이 아니다.
+    if (batchFailedRef.current) {
+      setSaveState("failed");
+      return;
+    }
     if (savedTimerRef.current) {
       window.clearTimeout(savedTimerRef.current);
       savedTimerRef.current = null;

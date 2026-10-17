@@ -1,7 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { BJ_ID } from "@/lib/broadcast/soop";
 import { syncVodArchive, syncVodArchiveDeep } from "@/lib/broadcast/vod-archive";
-import { syncXlitSynonyms } from "@/lib/search/xlit-sync";
+import { syncXlitSynonymsChecked } from "@/lib/search/xlit-sync";
+import { createWorkBudget, singleFlight, type WorkBudget } from "./work-budget";
 
 // 팬 타임라인(다시보기 챕터) 수집·파싱(0071) — PLAN-20260831-001 Phase 2 A안.
 // 숲 다시보기 댓글에서 타임라인 댓글(타임스탬프 3개 이상)을 골라 {sec, label, section}[]로
@@ -34,10 +35,10 @@ export function pickTimelineComment(
 }
 
 // hostId = 댓글이 달린 채널 — 토리님 본방은 BJ_ID, 합방 게스트 출연분(0075)은 호스트 스트리머 id.
-export async function fetchComments(titleNo: number, hostId: string = BJ_ID): Promise<CommentItem[] | null> {
+export async function fetchComments(titleNo: number, hostId: string = BJ_ID, budget?: WorkBudget): Promise<CommentItem[] | null> {
   const out: CommentItem[] = [];
   // Read all pages within one VOD budget. Incomplete responses preserve saved content.
-  const signal = AbortSignal.timeout(8000);
+  const signal = budget?.signal(8000, 5000) ?? AbortSignal.timeout(8000);
   for (let page = 1; ; page += 1) {
     try {
       const res = await fetch(
@@ -80,12 +81,12 @@ export async function fetchComments(titleNo: number, hostId: string = BJ_ID): Pr
  * 주어진 VOD들의 타임라인을 다시 수집해 vod_timeline에 upsert한다(없으면 빈 행 — "확인했음" 표시).
  * 증분 크론(broadcast-poll)과 백필이 같이 쓴다. 요청 사이 간격을 둔다(비공식 API 예의).
  */
-export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolean; saved: number }> {
+export async function syncVodTimelines(titleNos: number[], budget = createWorkBudget(45_000)): Promise<{ ok: boolean; saved: number }> {
   const supabase = createSupabaseAdminClient();
   if (!supabase || titleNos.length === 0) return { ok: false, saved: 0 };
   let saved = 0;
   // 게스트 출연분(0075)은 호스트 채널 경로로 — host_id를 한 번에 읽는다.
-  const hostRes = await supabase.from("vod_archive").select("title_no, host_id, duration_ms").in("title_no", titleNos);
+  const hostRes = await supabase.from("vod_archive").select("title_no, host_id, duration_ms").in("title_no", titleNos).abortSignal(budget.signal(5000));
   const hostOf = new Map<number, string>();
   const durationOf = new Map<number, number>();
   if (hostRes.error) return { ok: false, saved: 0 };
@@ -93,42 +94,49 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
     durationOf.set(Number(r.title_no), Number(r.duration_ms) / 1000);
     if (typeof r.host_id === "string" && r.host_id) hostOf.set(Number(r.title_no), r.host_id);
   }
-  const deadline = Date.now() + 20_000;
+  const collection = createWorkBudget(Math.min(20_000, budget.remaining(10_000)));
   for (const titleNo of titleNos) {
-    if (Date.now() >= deadline) break;
+    if (collection.remaining(1000) <= 0 || budget.remaining(6000) <= 0) break;
     const startedAt = new Date().toISOString();
     const duration = durationOf.get(titleNo);
-    const comments = duration && duration > 0 ? await fetchComments(titleNo, hostOf.get(titleNo) ?? BJ_ID) : null;
+    const comments = duration && duration > 0 ? await fetchComments(titleNo, hostOf.get(titleNo) ?? BJ_ID, collection) : null;
     if (comments === null) {
       // Record failed attempts without changing entries. Unavailable VODs must not starve the queue.
       const synced_at = new Date().toISOString();
-      await supabase.from("vod_timeline").upsert({ title_no: titleNo, synced_at }, { onConflict: "title_no", ignoreDuplicates: true });
-      await supabase.from("vod_timeline").update({ synced_at }).eq("title_no", titleNo);
+      await supabase.from("vod_timeline").upsert({ title_no: titleNo, synced_at }, { onConflict: "title_no", ignoreDuplicates: true }).abortSignal(budget.signal(3000));
+      await supabase.from("vod_timeline").update({ synced_at }).eq("title_no", titleNo).abortSignal(budget.signal(3000));
       continue;
     }
     if (!(duration && duration > 0)) continue; // unknown duration must not clear a known timeline
     const candidates = buildTimelineCandidates(comments, duration);
-    const { data: ingested, error } = await supabase.rpc("vod_timeline_ingest", {
+    const { data: ingested, error } = await supabase.rpc("vod_timeline_ingest_changes", {
       p_title_no: titleNo, p_candidates: candidates, p_started_at: startedAt
-    });
-    if (!error && ingested) saved += 1;
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  // 검색 동의어 자동 채굴(0078) — 새 챕터가 들어왔으니 제목↔챕터 줄임말 관계를 다시 센다.
-  // 실패해도 타임라인 저장 결과와 무관(검색은 옛 사전으로 계속 돈다).
-  if (saved > 0) {
-    // 순서: 인물 관계 그래프(0079, 이름 변형 동의어 포함) → 줄임말 채굴(0078). 서로 독립이지만
-    // 둘 다 챕터 색인을 읽으므로 upsert 뒤에 돈다.
-    // ⚠ search_term_graph_rebuild는 빠져 있다(2026-09-19) — 63초짜리라 요청 수명 안에서 못 끝낸다.
-    // 밤에 pg_cron이 돌린다(db/migrations/0120). 나머지는 합쳐도 20초 남짓이라 여기서 돈다.
-    for (const fn of ["search_song_refresh", "search_game_refresh", "search_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
-      const { error } = await supabase.rpc(fn);
-      if (error) console.warn(`[search] ${fn} failed:`, error.message);
+    }).abortSignal(budget.signal(5000));
+    if (!error && ingested?.accepted === true) {
+      saved += 1;
     }
-    // 새로 분류된 노래의 영문 가수·곡 제목에 한글 읽기 짝을 붙인다(0145) — 새 래퍼·곡도 그날부터 한글로 검색된다.
-    await syncXlitSynonyms(supabase);
+    await collection.wait(200);
   }
+  await refreshTimelineSearch(supabase, budget);
   return { ok: true, saved };
+}
+
+/** Durable dirty revision survives a deadline/error. Only content changes advance it;
+ * unchanged comments do not rebuild all search tables. A concurrent edit cannot be acked away. */
+async function refreshTimelineSearch(db: NonNullable<ReturnType<typeof createSupabaseAdminClient>>, budget: WorkBudget) {
+  if (budget.remaining(1000) <= 0) return;
+  const pending = await db.from("broadcast_work_state").select("revision,state")
+    .eq("key", "timeline-search").abortSignal(budget.signal(3000)).maybeSingle();
+  if (pending.error || pending.data?.state?.dirty !== true) return;
+  for (const fn of ["search_song_refresh", "search_game_refresh", "search_graph_rebuild", "search_synonyms_rebuild", "search_trending_rebuild"] as const) {
+    if (budget.remaining(1500) <= 0) return;
+    const { error } = await db.rpc(fn).abortSignal(budget.signal(6000, 1000));
+    if (error) { console.warn(`[search] ${fn} failed`); return; }
+  }
+  if (budget.remaining(1500) <= 0) return;
+  if (!(await syncXlitSynonymsChecked(db, 300, budget)).ok) return;
+  await db.from("broadcast_work_state").update({ state: { dirty: false } })
+    .eq("key", "timeline-search").eq("revision", pending.data.revision).abortSignal(budget.signal(3000));
 }
 
 /**
@@ -136,14 +144,14 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
  * 1 minute within 30 minutes of broadcast end, 5 within 60, otherwise 30.
  * Fan timelines have an independent clock and remain eligible while live.
  */
-export async function maybeSyncVodPipeline(): Promise<{
+async function runVodPipeline(budget = createWorkBudget(50_000)): Promise<{
   ran: boolean;
   tier: string;
   sinceEndMin: number | null;
 }> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ran: false, tier: "no-admin", sinceEndMin: null };
-  const sinceEnd = await minutesSinceLastBroadcastEnd();
+  const sinceEnd = await minutesSinceLastBroadcastEnd(budget);
   const tier =
     sinceEnd !== null && sinceEnd <= 30 ? "burst" : sinceEnd !== null && sinceEnd <= 60 ? "hot" : "calm";
   const intervalMin = tier === "burst" ? 1 : tier === "hot" ? 5 : 30;
@@ -151,7 +159,7 @@ export async function maybeSyncVodPipeline(): Promise<{
     .from("vod_archive")
     .select("synced_at")
     .order("synced_at", { ascending: false })
-    .limit(1);
+    .limit(1).abortSignal(budget.signal(5000));
   const lastIso = (data as { synced_at: string }[] | null)?.[0]?.synced_at;
   const lastMs = lastIso ? Date.parse(lastIso) : 0;
   if (Number.isFinite(lastMs) && Date.now() - lastMs < intervalMin * 60_000) {
@@ -165,19 +173,19 @@ export async function maybeSyncVodPipeline(): Promise<{
       .from("vod_archive")
       .select("synced_at")
       .order("synced_at", { ascending: true })
-      .limit(1);
+      .limit(1).abortSignal(budget.signal(5000));
     const oldestIso = (oldest as { synced_at: string }[] | null)?.[0]?.synced_at;
     deep = !oldestIso || Date.now() - Date.parse(oldestIso) > 12 * 3600_000;
   }
-  if (deep) await syncVodArchiveDeep();
-  else await syncVodArchive(1);
+  if (deep) await syncVodArchiveDeep(budget);
+  else await syncVodArchive(1, budget);
   // Chat has its own scheduled route/queue. Do not tie it to archive timestamps,
   // broadcast state or share this request's time budget with timeline rebuilds.
   return { ran: true, tier, sinceEndMin: sinceEnd };
 }
 
 /** 마지막 뱅종 후 지난 분(分). 세션 기록이 없으면 null. 뱅종 직후 고속 수집 창 판정용. */
-export async function minutesSinceLastBroadcastEnd(): Promise<number | null> {
+export async function minutesSinceLastBroadcastEnd(budget = createWorkBudget(5000)): Promise<number | null> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return null;
   const { data } = await supabase
@@ -185,7 +193,7 @@ export async function minutesSinceLastBroadcastEnd(): Promise<number | null> {
     .select("ended_at")
     .not("ended_at", "is", null)
     .order("ended_at", { ascending: false })
-    .limit(1);
+    .limit(1).abortSignal(budget.signal(5000));
   const iso = (data as { ended_at: string }[] | null)?.[0]?.ended_at;
   if (!iso) return null;
   const diff = (Date.now() - Date.parse(iso)) / 60_000;
@@ -193,15 +201,18 @@ export async function minutesSinceLastBroadcastEnd(): Promise<number | null> {
 }
 
 /** Timeline polling is independent of archive refresh and live state. */
-export async function maybeSyncTimelines(): Promise<void> {
+async function runTimelines(budget = createWorkBudget(50_000)): Promise<void> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return;
   const { data, error } = await supabase.from("vod_timeline").select("synced_at")
-    .order("synced_at", { ascending: false }).limit(1);
+    .order("synced_at", { ascending: false }).limit(1).abortSignal(budget.signal(5000));
   if (error) return;
   const last = data?.[0]?.synced_at;
-  if (last && Date.now() - Date.parse(last) < 10 * 60_000) return;
-  await syncVodTimelines(await pickTimelineSyncTargets());
+  if (last && Date.now() - Date.parse(last) < 10 * 60_000) {
+    await refreshTimelineSearch(supabase, budget);
+    return;
+  }
+  await syncVodTimelines(await pickTimelineSyncTargets(8, budget), budget);
 }
 
 type TimelineCandidate = { title_no: number; reg_date: string };
@@ -239,24 +250,28 @@ export function selectTimelineTargets(vods: TimelineCandidate[], attempts: Timel
 }
 
 /** No age or row-count cutoff: even years-old uploads remain eligible. */
-export async function pickTimelineSyncTargets(limit = 8): Promise<number[]> {
+export async function pickTimelineSyncTargets(limit = 8, budget = createWorkBudget(10_000)): Promise<number[]> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return [];
   const vods: TimelineCandidate[] = [];
   const attempts: TimelineAttempt[] = [];
   for (let offset = 0; ; offset += 500) {
     const { data, error } = await supabase.from("vod_archive").select("title_no, reg_date")
-      .order("title_no").range(offset, offset + 499);
+      .order("title_no").range(offset, offset + 499).abortSignal(budget.signal(5000));
     if (error) return [];
     vods.push(...(data ?? []));
     if (!data || data.length < 500) break;
   }
   for (let offset = 0; ; offset += 500) {
     const { data, error } = await supabase.from("vod_timeline").select("title_no, synced_at")
-      .order("title_no").range(offset, offset + 499);
+      .order("title_no").range(offset, offset + 499).abortSignal(budget.signal(5000));
     if (error) return [];
     attempts.push(...(data ?? []));
     if (!data || data.length < 500) break;
   }
   return selectTimelineTargets(vods, attempts, limit);
 }
+
+// Coalesce process-local cache misses; SQL locks/CAS still guard cross-instance writes.
+export const maybeSyncTimelines = singleFlight(runTimelines);
+export const maybeSyncVodPipeline = singleFlight(runVodPipeline);

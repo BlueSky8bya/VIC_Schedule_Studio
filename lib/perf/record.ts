@@ -1,8 +1,18 @@
 import { after } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 
-// 서버 구간 표본 1행을 '응답 이후'(after)에 fire-and-forget로 남긴다 → 응답 지연 0(측정이 앱을
-// 느리게 만들면 안 된다). after 컨텍스트가 아니면(빌드·일부 런타임) 조용히 스킵. 기록 실패도 무시.
+// Uniform sampling before scheduling after() cuts observation writes without
+// favoring slow/failed spans and biasing the latency distribution. Logs remain
+// independent. Sample counts are observations, not total requests.
+function sampleRate(): number {
+  const configured = process.env.PERF_SAMPLE_RATE;
+  if (configured === undefined || configured.trim() === "") return 0.1;
+  const value = Number(configured);
+  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : 0.1;
+}
+
+// after() removes the DB write from the response path, but still uses runtime
+// resources. Build/non-request contexts and recording failures are skipped.
 export function recordPerfSample(label: string, durMs: number): void {
   // dev에서는 기록하지 않는다. 두 가지 이유: ① 로컬 표본이 운영 지표를 오염 ② dev에서
   // 렌더 중 after() 예약이 이후 cookies() 호출을 "inside after"로 오검출시켜
@@ -10,6 +20,7 @@ export function recordPerfSample(label: string, durMs: number): void {
   if (process.env.NODE_ENV !== "production") {
     return;
   }
+  if (!Number.isFinite(durMs) || durMs < 0 || Math.random() >= sampleRate()) return;
   try {
     after(async () => {
       try {

@@ -1,6 +1,7 @@
 // 시드 결과 확인용 일회성 스크립트.
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
+import { verifiedDatabaseTls } from "./db-tls.mjs";
 
 const text = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const env = Object.fromEntries(
@@ -14,7 +15,7 @@ const client = new Client({
   user: `postgres.${ref}`,
   password: env.SUPABASE_DB_PASSWORD,
   database: "postgres",
-  ssl: { rejectUnauthorized: false },
+  ssl: verifiedDatabaseTls(),
   connectionTimeoutMillis: 8000
 });
 await client.connect();

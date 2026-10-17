@@ -25,7 +25,11 @@ export function skipAnalyticsClient(): boolean {
 const BOT_UA = /HeadlessChrome|Playwright|puppeteer|Lighthouse/i;
 
 export function skipAnalyticsRequest(headers: Headers): boolean {
-  const host = (headers.get("x-forwarded-host") ?? headers.get("host") ?? "").split(":")[0].trim().toLowerCase();
+  const authority = (headers.get("x-forwarded-host") ?? headers.get("host") ?? "").split(",")[0].trim().toLowerCase();
+  // Bracketed IPv6 contains colons in the host itself. Strip only an actual port.
+  const host = authority.startsWith("[")
+    ? authority.match(/^\[[^\]]+\]/)?.[0] ?? authority
+    : authority === "::1" ? authority : authority.replace(/:\d+$/, "");
   if (host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1") return true;
   const ua = headers.get("user-agent") ?? "";
   return BOT_UA.test(ua);

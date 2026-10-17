@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPublicBroadcastDaily, getPublicBroadcastStats } from "@/lib/schedules/public-loader";
+import { publicRequestError, validatePublicRequest } from "@/app/api/public/request";
 
 // 공개 방송 기록(집계) — 시청자 '이 달 기록' 시트가 열릴 때만 부른다(첫 페인트 비용 0).
 //
@@ -10,26 +11,31 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ calendarSlug: string }> }
 ) {
-  await params; // 단일 캘린더 앱 — slug는 라우트 형태 유지용.
-  const url = new URL(request.url);
-  const year = Number(url.searchParams.get("year"));
-  const month = Number(url.searchParams.get("month"));
+  const { calendarSlug } = await params;
+  const validated = validatePublicRequest(request, calendarSlug, ["year", "month"]);
+  if (!validated.ok) return validated.response;
+  const year = Number(validated.query.get("year"));
+  const month = Number(validated.query.get("month"));
   const valid =
-    Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12 && year > 2000;
+    // Preserve the existing >2000 contract; date DTOs/RPC arguments use four-digit years.
+    Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12 && year > 2000 && year <= 9999;
   if (!valid) {
-    return NextResponse.json({ error: "year/month가 필요합니다." }, { status: 400 });
+    return publicRequestError(400, "year/month가 필요합니다.");
   }
 
-  const [months, daily] = await Promise.all([
+  const [months, daily] = await Promise.allSettled([
     // 보는 달로 끝나는 6개월 — 과거 달(다시보기 시대)을 보고 있으면 그 시대의 트렌드가 나온다.
     getPublicBroadcastStats(6, { year, month }),
     getPublicBroadcastDaily(year, month)
   ]);
+  if (months.status !== "fulfilled" || daily.status !== "fulfilled") {
+    return publicRequestError(503, "Broadcast unavailable");
+  }
 
   return NextResponse.json(
     {
-      months: months.map((m) => ({ ym: m.ym, hours: m.hours, days: m.days, sessions: m.sessions })),
-      daily
+      months: months.value.map((m) => ({ ym: m.ym, hours: m.hours, days: m.days, sessions: m.sessions })),
+      daily: daily.value
     },
     {
       // 이 응답엔 개인 정보가 없다(집계만) → CDN에서 합쳐 람다 왕복을 줄인다. 단 방송시간은

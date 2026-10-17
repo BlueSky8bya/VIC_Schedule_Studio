@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { startForegroundPoll } from "@/lib/ui/foreground-poll";
 
 // 토리님 SOOP 라이브 상태 폴링 훅 — /api/soop-live(서버가 20초 캐시 폴링)만 호출.
 // 한 페이지에서 한 번만 호출해 데스크탑 비콘·모바일 '오늘' 버튼이 같은 상태를 공유한다.
@@ -17,30 +18,38 @@ export type SoopLive = {
 
 // 60s(2026-08-27, 25s에서 완화 — 서버가 20s 캐시라 체감 지연은 최대 ~80s, 방송 시작 알림은 분 단위면 충분).
 const POLL_MS = 60_000;
+let current: SoopLive | null = null;
+let sampledAt = -Infinity;
+let attemptedAt = -Infinity;
+const listeners = new Set<(live: SoopLive) => void>();
+let polling: ReturnType<typeof startForegroundPoll> | null = null;
 
 export function useSoopLive(enabled = true): SoopLive | null {
-  const [live, setLive] = useState<SoopLive | null>(null);
+  const [live, setLive] = useState<SoopLive | null>(current);
 
   useEffect(() => {
     if (!enabled) return;
-    let alive = true;
-    const tick = async () => {
-      try {
-        const res = await fetch("/api/soop-live", { cache: "no-store" });
+    listeners.add(setLive);
+    if (current) setLive(current);
+    if (!polling) polling = startForegroundPoll({
+      initialDelay: Math.max(0, POLL_MS - (performance.now() - sampledAt)),
+      delay: () => Math.max(1000, POLL_MS - (performance.now() - Math.max(sampledAt, attemptedAt))),
+      run: async (signal) => {
+        if (current && performance.now() - sampledAt < POLL_MS) return;
+        attemptedAt = performance.now();
+        const res = await fetch("/api/soop-live", { cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
         if (!res.ok) return;
         const data = (await res.json()) as SoopLive;
-        if (alive) setLive(data);
-      } catch {
-        /* 네트워크 실패 시 직전 상태 유지 */
-      }
-    };
-    void tick();
-    const id = setInterval(tick, POLL_MS);
+        if (signal.aborted) return;
+        current = data; sampledAt = performance.now();
+        for (const listener of listeners) listener(data);
+      },
+    });
     return () => {
-      alive = false;
-      clearInterval(id);
+      listeners.delete(setLive);
+      if (!listeners.size) { polling?.stop(); polling = null; }
     };
   }, [enabled]);
 
-  return live;
+  return enabled ? live : null;
 }

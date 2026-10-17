@@ -29,5 +29,5 @@ it("authorized chat cron still processes targets", async () => {
   const { GET } = await import("@/app/api/cron/vod-chat/route");
   const response = await GET(new Request("https://fixture/api/cron/vod-chat", { headers: { authorization: "Bearer fixture-secret" } }));
   expect(response.status).toBe(200);
-  expect(mocks.chat).toHaveBeenCalledWith([42], 60);
+  expect(mocks.chat).toHaveBeenCalledWith([42], 60, 35000, expect.objectContaining({ remaining: expect.any(Function), signal: expect.any(Function) }));
 });

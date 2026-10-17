@@ -3,6 +3,7 @@
 // 사용: node scripts/darken-tag-text.mjs
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
+import { verifiedDatabaseTls } from "./db-tls.mjs";
 
 // bg → {hue, sat} (sat 0~1). 회색(채도 ~0)이면 글씨도 무채색으로 둬야 한다(회색이 빨강 안 되게).
 function hexToHs(hex) {
@@ -39,7 +40,7 @@ function hslToHex(h, s, l) {
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const e = {}; for (const l of t.split(/\r?\n/)) { const m = l.match(/^([A-Z0-9_]+)=(.*)$/); if (m) e[m[1]] = m[2]; }
 const ref = (e.NEXT_PUBLIC_SUPABASE_URL || "").match(/https:\/\/([a-z0-9]+)\.supabase\.co/)[1];
-const c = new Client({ host: "aws-1-ap-northeast-2.pooler.supabase.com", port: 5432, user: "postgres." + ref, password: e.SUPABASE_DB_PASSWORD, database: "postgres", ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 });
+const c = new Client({ host: "aws-1-ap-northeast-2.pooler.supabase.com", port: 5432, user: "postgres." + ref, password: e.SUPABASE_DB_PASSWORD, database: "postgres", ssl: verifiedDatabaseTls(), connectionTimeoutMillis: 8000 });
 await c.connect();
 const rows = (await c.query("select id, key, bg_color, text_color from color_palette")).rows;
 let n = 0;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPublicVodTimeline } from "@/lib/schedules/public-loader";
+import { publicRequestError, validatePublicRequest } from "@/app/api/public/request";
 
 // 팬 타임라인(다시보기 챕터) 본문 — 시청자가 '챕터'를 펼칠 때만 부른다(0071, Phase 2 A안).
 //
@@ -9,13 +10,20 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ calendarSlug: string }> }
 ) {
-  await params; // 단일 캘린더 앱 — slug는 라우트 형태 유지용.
-  const url = new URL(request.url);
-  const titleNo = Number(url.searchParams.get("titleNo"));
-  if (!Number.isFinite(titleNo) || titleNo <= 0) {
-    return NextResponse.json({ error: "titleNo가 필요합니다." }, { status: 400 });
+  const { calendarSlug } = await params;
+  const validated = validatePublicRequest(request, calendarSlug, ["titleNo"]);
+  if (!validated.ok) return validated.response;
+  const titleNo = Number(validated.query.get("titleNo"));
+  if (!Number.isSafeInteger(titleNo) || titleNo <= 0) {
+    return publicRequestError(400, "titleNo가 필요합니다.");
   }
-  const timeline = await getPublicVodTimeline(titleNo);
+  let timeline;
+  try {
+    timeline = await getPublicVodTimeline(titleNo);
+  } catch {
+    // A failed read is not an empty timeline: never retain failure at the CDN.
+    return publicRequestError(503, "타임라인을 불러오지 못했습니다.");
+  }
   return NextResponse.json(
     timeline ?? { authorNick: "", entries: [] },
     {

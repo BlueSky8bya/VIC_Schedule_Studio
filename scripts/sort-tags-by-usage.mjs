@@ -5,12 +5,13 @@
 // dry-run: `node scripts/sort-tags-by-usage.mjs --dry`
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
+import { verifiedDatabaseTls } from "./db-tls.mjs";
 
 const DRY = process.argv.includes("--dry");
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const e = {}; for (const l of t.split(/\r?\n/)) { const m = l.match(/^([A-Z0-9_]+)=(.*)$/); if (m) e[m[1]] = m[2]; }
 const ref = e.NEXT_PUBLIC_SUPABASE_URL.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)[1];
-const c = new Client({ host: "aws-1-ap-northeast-2.pooler.supabase.com", port: 5432, user: "postgres." + ref, password: e.SUPABASE_DB_PASSWORD, database: "postgres", ssl: { rejectUnauthorized: false } });
+const c = new Client({ host: "aws-1-ap-northeast-2.pooler.supabase.com", port: 5432, user: "postgres." + ref, password: e.SUPABASE_DB_PASSWORD, database: "postgres", ssl: verifiedDatabaseTls() });
 await c.connect();
 const cal = (await c.query("select id from calendars where slug='vic'")).rows[0].id;
 

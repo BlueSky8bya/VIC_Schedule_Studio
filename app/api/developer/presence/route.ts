@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { kstDayKey } from "@/lib/calendar/month";
-import { LIVE_DEVICES, LIVE_ROLES, LIVE_WINDOW_SECONDS, type LivePresence } from "@/lib/presence/live-types";
+import { LIVE_WINDOW_SECONDS, type LivePresence } from "@/lib/presence/live-types";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store, max-age=0", Vary: "Cookie" };
@@ -18,26 +17,21 @@ export async function GET() {
     const db = createSupabaseAdminClient();
     if (!db) throw new Error("unavailable");
     const observedAt = new Date().toISOString();
-    const since = new Date(Date.parse(observedAt) - LIVE_WINDOW_SECONDS * 1000).toISOString();
-    const count = async (column: "role" | "device", value: string) => {
-      const { count: n, error } = await db.from("visit_session")
-        .select("id", { count: "exact", head: true })
-        // Beacon splits at KST midnight; retain the window's previous day too.
-        .gte("day", kstDayKey(new Date(since)))
-        .is("ended_at", null).gte("last_seen_at", since).lte("last_seen_at", observedAt)
-        .in("role", [...LIVE_ROLES]).eq(column, value);
-      if (error || n === null || n === undefined) throw new Error("unavailable");
-      return n;
+    const result = await db.rpc("developer_live_presence_counts", { p_observed_at: observedAt })
+      .abortSignal(AbortSignal.timeout(5000));
+    if (result.error || !result.data) throw new Error("unavailable");
+    const counts = result.data as { total?: unknown; roles?: Record<string, unknown>; devices?: Record<string, unknown> };
+    const number = (value: unknown): number => {
+      if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error("unavailable");
+      return value;
     };
-    const [roles, devices] = await Promise.all([
-      Promise.all(LIVE_ROLES.map((role) => count("role", role))),
-      Promise.all(LIVE_DEVICES.map((device) => count("device", device)))
-    ]);
+    // Explicit DTO: neither an unexpected RPC field nor a diagnostic can reach this route.
     const data: LivePresence = {
-      observedAt, windowSeconds: LIVE_WINDOW_SECONDS,
-      total: roles.reduce((sum, n) => sum + n, 0),
-      roles: { owner: roles[0], viewer: roles[1], anon: roles[2], developer: roles[3] },
-      devices: { desktop: devices[0], android: devices[1], ios: devices[2], mobile: devices[3] }
+      observedAt, windowSeconds: LIVE_WINDOW_SECONDS, total: number(counts.total),
+      roles: { owner: number(counts.roles?.owner), viewer: number(counts.roles?.viewer),
+        anon: number(counts.roles?.anon), developer: number(counts.roles?.developer) },
+      devices: { desktop: number(counts.devices?.desktop), android: number(counts.devices?.android),
+        ios: number(counts.devices?.ios), mobile: number(counts.devices?.mobile) }
     };
     return NextResponse.json(data, { headers });
   } catch {

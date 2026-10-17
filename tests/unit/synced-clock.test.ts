@@ -1,13 +1,66 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/public/clock/route";
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+beforeEach(() => { vi.resetModules(); });
 it("the clock endpoint is DB-free and never cache-aged", async () => {
   const response = GET();
   expect(response.headers.get("cache-control")).toBe("no-store");
   const body = await response.json();
   expect(Object.keys(body)).toEqual(["serverMs"]);
   expect(Math.abs(body.serverMs - Date.now())).toBeLessThan(100);
+});
+it("coalesces calibration, reuses only fresh monotonic samples, and never caches the response", async () => {
+  vi.useFakeTimers({ toFake: ["Date", "performance", "setTimeout", "clearTimeout"] });
+  const doc = Object.assign(new EventTarget(), { hidden: false });
+  vi.stubGlobal("document", doc); vi.stubGlobal("window", new EventTarget());
+  vi.stubGlobal("navigator", { onLine: true });
+  const fetch = vi.fn(async () => ({ ok: true, json: async () => ({ serverMs: 1_800_000_000_000 + performance.now() }) }));
+  vi.stubGlobal("fetch", fetch);
+  const clock = await import("@/lib/ui/synced-clock");
+  await Promise.all([clock.synchronizeClock(), clock.synchronizeClock()]);
+  expect(fetch).toHaveBeenCalledTimes(3);
+  vi.setSystemTime(new Date("2040-01-01"));
+  await clock.synchronizeClock();
+  expect(fetch).toHaveBeenCalledTimes(3);
+  await vi.advanceTimersByTimeAsync(60_001);
+  doc.hidden = true; await clock.synchronizeClock();
+  expect(fetch).toHaveBeenCalledTimes(3);
+  doc.hidden = false; await clock.synchronizeClock();
+  expect(fetch).toHaveBeenCalledTimes(6);
+  for (const call of fetch.mock.calls as unknown as [string, RequestInit][]) expect(call[1].cache).toBe("no-store");
+});
+it("aborts an active calibration and starts no more samples after the tab hides", async () => {
+  const doc = Object.assign(new EventTarget(), { hidden: false });
+  vi.stubGlobal("document", doc); vi.stubGlobal("window", new EventTarget());
+  vi.stubGlobal("navigator", { onLine: true });
+  let complete!: () => void;
+  let signal!: AbortSignal;
+  const fetch = vi.fn(async (_url: string, init: RequestInit) => {
+    signal = init.signal as AbortSignal;
+    await new Promise<void>(resolve => { complete = resolve; });
+    return { ok: true, json: async () => ({ serverMs: Date.now() }) };
+  });
+  vi.stubGlobal("fetch", fetch);
+  const clock = await import("@/lib/ui/synced-clock");
+  const sync = clock.synchronizeClock();
+  doc.hidden = true; doc.dispatchEvent(new Event("visibilitychange"));
+  expect(signal.aborted).toBe(true);
+  complete(); await sync;
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(clock.clockIsSynced()).toBe(false);
+});
+it("bounds calibration failure retries without treating a failed response as a valid sample", async () => {
+  vi.useFakeTimers({ toFake: ["Date", "performance", "setTimeout", "clearTimeout"] });
+  const doc = Object.assign(new EventTarget(), { hidden: false });
+  vi.stubGlobal("document", doc); vi.stubGlobal("window", new EventTarget()); vi.stubGlobal("navigator", { onLine: true });
+  const fetch = vi.fn(async () => ({ ok: true, json: async () => ({ serverMs: Date.now() }) }));
+  fetch.mockRejectedValueOnce(new Error("unavailable")); vi.stubGlobal("fetch", fetch);
+  const clock = await import("@/lib/ui/synced-clock");
+  await clock.synchronizeClock(); expect(clock.clockIsSynced()).toBe(false);
+  await clock.synchronizeClock(); expect(fetch).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(5000); await clock.synchronizeClock();
+  expect(fetch).toHaveBeenCalledTimes(4); expect(clock.clockIsSynced()).toBe(true);
 });
 it("calibration fixes five minutes of wall-clock skew and later OS jumps do not move it", async () => {
   vi.useFakeTimers({ toFake: ["Date", "performance", "setTimeout", "clearTimeout"] });

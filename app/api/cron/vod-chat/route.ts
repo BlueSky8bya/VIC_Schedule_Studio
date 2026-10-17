@@ -1,3 +1,4 @@
+import { createWorkBudget } from "@/lib/broadcast/work-budget";
 import { NextResponse } from "next/server";
 import { pickChatSyncTargets, syncVodChat } from "@/lib/broadcast/vod-chat";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
+  const budget = createWorkBudget(50_000);
   // 운영 수집은 비밀 설정(CRON_SECRET)이 있어야만 돈다 — broadcast-poll과 같은 규약(없으면 503).
   if (!process.env.CRON_SECRET?.trim()) return NextResponse.json({ ok: false }, { status: 503 });
   // 트리거는 둘: GitHub Actions(CRON_SECRET, 백업)와 pg_cron+pg_net(DB Vault 토큰, 5분마다 — 0128, 정본).
@@ -27,8 +29,8 @@ export async function GET(req: Request) {
   // title=<title_no> — 특정 방송만(운영: 방금 올라온 다시보기를 바로 밀어 넣을 때). 없으면 큐가 고른다.
   const forced = Number(url.searchParams.get("title") ?? "");
   const targets =
-    Number.isFinite(forced) && forced > 0 ? [Math.floor(forced)] : await pickChatSyncTargets(limit);
-  const result = await syncVodChat(targets, chunks);
+    Number.isFinite(forced) && forced > 0 ? [Math.floor(forced)] : await pickChatSyncTargets(limit, budget);
+  const result = await syncVodChat(targets, chunks, Math.min(35_000, budget.remaining(8000)), budget);
   // 새 단어가 들어왔으면 **가벼운 것만** 다시 배운다(조각을 실제로 받았을 때만).
   // ⚠ search_term_graph_rebuild는 여기서 부르지 않는다(2026-09-19): 최적화 뒤에도 63초라
   // 이 라우트의 maxDuration 60초를 넘겨, 채팅이 들어오는 날마다 크론이 통째로 타임아웃했다
@@ -39,8 +41,9 @@ export async function GET(req: Request) {
     if (supabase) {
       for (const fn of ["search_synonyms_rebuild", "search_trending_rebuild"] as const) {
         // 화제 재계산은 실측 2초(0134) — 붐빌 때 5초에 잘리면 칩이 밤까지 굳으므로 여유를 준다.
+        if (budget.remaining(1000) <= 0) break;
         const ms = fn === "search_trending_rebuild" ? 15000 : 5000;
-        const { error } = await supabase.rpc(fn).abortSignal(AbortSignal.timeout(ms));
+        const { error } = await supabase.rpc(fn).abortSignal(budget.signal(ms, 500));
         if (error) console.warn(`[vod-chat] ${fn} failed:`, error.message);
       }
     }

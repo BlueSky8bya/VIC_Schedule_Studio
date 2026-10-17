@@ -17,6 +17,8 @@ export function flipSpring(
 ): void {
   if (reduceMotionEnabled()) return; // 동작 줄이기 = 즉시
   const { origin, easing = FLIP_SPRING, ms = FLIP_MS } = opts;
+  // Bounded geometry followers share this transition's lifetime; no idle RAF.
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("vic:layout-motion", { detail: { element: el, ms } }));
   el.style.transition = "none";
   if (origin) el.style.transformOrigin = origin;
   el.style.transform = from;

@@ -9,6 +9,12 @@
 
 ## 절대 규칙
 
+### Privacy release contract
+
+G-20의 상세 요구(2026-10-17, 규칙 의미 변경 없음): Personal information protection is a release requirement. Collect and retain only fields needed for a stated purpose. Never connect public nicknames to real names, email addresses, OAuth profiles, addresses, phone numbers, IPs or account/session identifiers in public API, HTML/RSC, caches, search, logs or committed artifacts. Public display names must come from explicitly public sources, never a fallback to authentication identity. Use explicit DTO allowlists and least-privilege DB/RPC/storage grants; hidden UI is not protection. Verify anonymous and unauthorized access with synthetic sensitive canaries before releases touching identity or data boundaries. Fail closed when authorization/security configuration fails. Record retention/deletion rules and unverified external settings; never claim an audit proves no past breach. Suspected exposure requires containment and preservation of restricted evidence, not copying personal data into reports.
+
+### Server boundary
+
 1. **공개 경로는 `public-loader`만 import한다.** studio-loader, 비공개 DTO 타입, service-role 헬퍼 금지.
 2. **공개 DTO는 명시적으로 조립한다.** 객체 스프레드로 DB 행을 흘리지 않는다.
 3. 다음 성격의 필드는 공개 응답에 **절대** 넣지 않는다: private, internal, embargo, codename,
