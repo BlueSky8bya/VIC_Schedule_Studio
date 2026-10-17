@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "cell": 192,
+  "evidence": "art-src/빅타민/동행/작업회차/20261018-체형선굵기검수/식사입계측.json",
+  "atlases": [
+    {
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1.webp",
+      "sha256": "0d390be16b3e2a74521cc213faef487b07acdbc738dc074bd2fd7d632c5b736f"
+    },
+    {
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1.webp",
+      "sha256": "a158224f322ff21558a11ff2a3580d9e1cb874abd60acf93819250e53c0fd2fc"
+    }
+  ],
+  "frames": [
+    {
+      "index": 16,
+      "atlas": 0,
+      "cell": 0,
+      "x": 106,
+      "y": 131.5
+    },
+    {
+      "index": 17,
+      "atlas": 0,
+      "cell": 1,
+      "x": 106,
+      "y": 131.5
+    },
+    {
+      "index": 18,
+      "atlas": 0,
+      "cell": 2,
+      "x": 106.5,
+      "y": 131.5
+    },
+    {
+      "index": 19,
+      "atlas": 0,
+      "cell": 3,
+      "x": 106.5,
+      "y": 131.5
+    },
+    {
+      "index": 20,
+      "atlas": 0,
+      "cell": 4,
+      "x": 106.5,
+      "y": 131.5
+    },
+    {
+      "index": 21,
+      "atlas": 0,
+      "cell": 5,
+      "x": 106.5,
+      "y": 131.5
+    },
+    {
+      "index": 22,
+      "atlas": 0,
+      "cell": 6,
+      "x": 106.5,
+      "y": 131.5
+    },
+    {
+      "index": 23,
+      "atlas": 0,
+      "cell": 7,
+      "x": 106,
+      "y": 131.5
+    },
+    {
+      "index": 24,
+      "atlas": 0,
+      "cell": 8,
+      "x": 106,
+      "y": 131.5
+    },
+    {
+      "index": 25,
+      "atlas": 0,
+      "cell": 9,
+      "x": 105.5,
+      "y": 131.5
+    },
+    {
+      "index": 26,
+      "atlas": 0,
+      "cell": 10,
+      "x": 105,
+      "y": 131.5
+    },
+    {
+      "index": 27,
+      "atlas": 0,
+      "cell": 11,
+      "x": 105,
+      "y": 131.5
+    },
+    {
+      "index": 28,
+      "atlas": 0,
+      "cell": 12,
+      "x": 105,
+      "y": 131.5
+    },
+    {
+      "index": 29,
+      "atlas": 0,
+      "cell": 13,
+      "x": 105,
+      "y": 131.5
+    },
+    {
+      "index": 30,
+      "atlas": 0,
+      "cell": 14,
+      "x": 105,
+      "y": 131.5
+    },
+    {
+      "index": 31,
+      "atlas": 0,
+      "cell": 15,
+      "x": 105.5,
+      "y": 131.5
+    },
+    {
+      "index": 144,
+      "atlas": 1,
+      "cell": 0,
+      "x": 109,
+      "y": 131
+    },
+    {
+      "index": 145,
+      "atlas": 1,
+      "cell": 1,
+      "x": 110,
+      "y": 131
+    },
+    {
+      "index": 146,
+      "atlas": 1,
+      "cell": 2,
+      "x": 110,
+      "y": 131
+    },
+    {
+      "index": 147,
+      "atlas": 1,
+      "cell": 3,
+      "x": 110,
+      "y": 131
+    },
+    {
+      "index": 148,
+      "atlas": 1,
+      "cell": 4,
+      "x": 110,
+      "y": 131
+    },
+    {
+      "index": 149,
+      "atlas": 1,
+      "cell": 5,
+      "x": 110,
+      "y": 131
+    },
+    {
+      "index": 150,
+      "atlas": 1,
+      "cell": 6,
+      "x": 110,
+      "y": 131
+    },
+    {
+      "index": 151,
+      "atlas": 1,
+      "cell": 7,
+      "x": 110,
+      "y": 131
+    },
+    {
+      "index": 152,
+      "atlas": 1,
+      "cell": 8,
+      "x": 109,
+      "y": 131
+    },
+    {
+      "index": 153,
+      "atlas": 1,
+      "cell": 9,
+      "x": 109,
+      "y": 131
+    },
+    {
+      "index": 154,
+      "atlas": 1,
+      "cell": 10,
+      "x": 109,
+      "y": 131
+    },
+    {
+      "index": 155,
+      "atlas": 1,
+      "cell": 11,
+      "x": 108.5,
+      "y": 131
+    },
+    {
+      "index": 156,
+      "atlas": 1,
+      "cell": 12,
+      "x": 108,
+      "y": 131
+    },
+    {
+      "index": 157,
+      "atlas": 1,
+      "cell": 13,
+      "x": 108.5,
+      "y": 131
+    },
+    {
+      "index": 158,
+      "atlas": 1,
+      "cell": 14,
+      "x": 109,
+      "y": 131
+    },
+    {
+      "index": 159,
+      "atlas": 1,
+      "cell": 15,
+      "x": 109,
+      "y": 131
+    }
+  ]
+}

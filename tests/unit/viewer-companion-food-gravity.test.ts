@@ -5,6 +5,17 @@ import { attachCompanionFood, followCompanionFood, placeCompanionFood } from "@/
 const start = { x: 200, y: 100 }, end = { x: 200, y: 700 };
 
 describe("finite companion food gravity", () => {
+  it("falls vertically onto the first physical card before sliding finitely to that card's safe centre", () => {
+    const from = { x: 600, y: 300 }, target = { x: 555, y: 427 }, drop = createCompanionFoodGravity(from, target, 0, { contactX: from.x });
+    const fall = drop.duration - 240;
+    for (let at = 0; at < fall; at += 8) expect(drop.sample(at).x).toBe(from.x);
+    expect(drop.sample(fall)).toMatchObject({ x: 600, y: 427, active: true });
+    const contact = drop.sample(fall), slide = drop.sample(fall + 80), settled = drop.sample(fall + 160);
+    expect(slide.x).toBeGreaterThan(target.x); expect(slide.x).toBeLessThan(contact.x); expect(settled.x).toBe(target.x);
+    expect(drop.sample(drop.duration)).toMatchObject({ ...target, active: false });
+    const carried = drop.sample(fall + 80, { x: target.x + 12, y: target.y - 60 });
+    expect(carried.x).toBeCloseTo(slide.x + 12); expect(carried.y).toBeCloseTo(slide.y - 60);
+  });
   it("starts at the actual released point and accelerates between equal time intervals", () => {
     const drop = createCompanionFoodGravity(start, end, 1000), fall = drop.duration - 240;
     expect(drop.sample(1000)).toMatchObject({ ...start, scaleX: 1, scaleY: 1, active: true });

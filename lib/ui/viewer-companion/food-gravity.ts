@@ -6,7 +6,7 @@ const clamp = (value: number, low: number, high: number) => Math.max(low, Math.m
 /** One finite analytic fall, followed by a small impact and one bounce. Target
  * translation carries the entire flight without restarting its clock, so a
  * real DOM/document anchor can scroll underneath the same authored motion. */
-export function createCompanionFoodGravity(from: Point, to: Point, started: number) {
+export function createCompanionFoodGravity(from: Point, to: Point, started: number, options?: Readonly<{ contactX: number }>) {
   const origin = finite(from) ? { ...from } : { x: 0, y: 0 };
   const target = finite(to) && to.y >= origin.y && Number.isFinite(to.y - origin.y) && Number.isFinite(to.x - origin.x) ? { ...to } : { ...origin };
   const distance = target.y - origin.y;
@@ -14,6 +14,7 @@ export function createCompanionFoodGravity(from: Point, to: Point, started: numb
   const fall = moving ? clamp(Math.sqrt(2 * distance / 1800) * 1000, 90, 1200) : 0;
   const duration = moving ? fall + 240 : 0;
   const began = Number.isFinite(started) ? started : 0;
+  const contactX = Number.isFinite(options?.contactX) ? clamp(options!.contactX, Math.min(origin.x, target.x), Math.max(origin.x, target.x)) : target.x;
   return {
     duration,
     sample(now: number, currentTarget: Point = target): CompanionFoodGravitySample {
@@ -24,10 +25,12 @@ export function createCompanionFoodGravity(from: Point, to: Point, started: numb
       if (!result.active) return result;
       if (age < fall) {
         const p = (age / fall) ** 2;
-        result.x = origin.x + (end.x - target.x) + (target.x - origin.x) * p;
+        result.x = origin.x + (end.x - target.x) + (contactX - origin.x) * p;
         result.y = origin.y + (end.y - target.y) + distance * p;
       } else {
         const impact = age - fall;
+        const slide = Math.min(1, impact / 160), eased = slide * slide * (3 - 2 * slide);
+        result.x = contactX + (end.x - target.x) + (target.x - contactX) * eased;
         if (impact < 80) {
           const squash = Math.sin(impact / 80 * Math.PI);
           result.scaleX += squash * .10; result.scaleY -= squash * .13;

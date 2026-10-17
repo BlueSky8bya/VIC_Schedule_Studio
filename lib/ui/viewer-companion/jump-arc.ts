@@ -26,6 +26,20 @@ export function boundCompanionBallisticArc(fromY: number, toY: number, coefficie
   return { coefficient: bounded, apexProgress: Number.isFinite(apex) ? clamp(apex) : toY < fromY ? 1 : 0 };
 }
 
+/** A launch owns its coefficient for the complete flight. Moving anchors may
+ * translate its baseline, never increase/re-bound its lift halfway through.
+ * Inspect only the unconsumed interval: an old takeoff moving offscreen after
+ * its apex is not evidence that the remaining descent has become unsafe.
+ * False asks the renderer to adopt its actual carried point into the existing
+ * finite landing/collider recovery, rather than snapping onto another curve. */
+export function companionBallisticArcIsSafe(fromY: number, toY: number, coefficient: number, ceiling: number, progress = 0): boolean {
+  if (![fromY, toY, coefficient, ceiling, progress].every(Number.isFinite) || coefficient < 0) return false;
+  const p = clamp(progress);
+  const apex = coefficient > 0 ? Math.max(p, Math.min(1, .5 - (toY - fromY) / (2 * coefficient))) : p;
+  const y = (at: number) => fromY + (toY - fromY) * at - coefficient * at * (1 - at);
+  return Math.min(y(p), y(apex), toY) >= ceiling - 1e-7;
+}
+
 /** The home/settle paths ease their baseline separately from sin(pπ).
  * The smaller endpoint clearance safely bounds that sine at every progress,
  * including any monotone baseline easing. Offscreen anchors are not moved. */

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompanionSurfaces, unoccludedCompanionRects, type CompanionSurface, type CompanionTextRect, type CompanionGeometrySubscription, type CompanionFollowSample } from "@/lib/ui/viewer-companion/geometry";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_HOME_FLOOR_FOOD, placeCompanionFood } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, placeCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "@/lib/ui/viewer-companion/panel-play";
 
 const viewport = { width: 1000, height: 800 };
@@ -400,6 +400,27 @@ describe("companion geometry anchor subscription", () => {
     fixture.win.emit("resize"); fixture.advance(120);
     expect(subscription.landings().some(p => p.id.includes("-top") && covers(p, 600))).toBe(false);
     expect(subscription.landings().some(p => p.id.includes("-top"))).toBe(true);
+    subscription();
+  });
+  it("catches food on the first actual card even when an earlier control cuts a gap in its safe landing centres", () => {
+    const fixture = geometryFixture(); fixture.card.rect = box(470, 430, 260, 60);
+    const control = new FixtureElement(); control.parentElement = fixture.sourceRoot; control.rect = box(580, 400, 40, 40); fixture.controls.push(control);
+    const subscription = observeCompanionPlatforms(fixture.root, () => {}, { size: 92 }); fixture.flush();
+    const food = subscription.landings(32), point = { x: 600, y: 370 };
+    const safeTop = food.filter(p => p.id.includes("-food-top"));
+    expect(safeTop.length).toBe(2);
+    expect(safeTop.some(p => point.x >= p.x && point.x <= p.x + p.width)).toBe(false);
+    const placed = placeCompanionFood({ id: "falling", kind: "apple", ...point }, point, food, viewport);
+    expect(placed.platformId).toMatch(/-food-top(?:-\d+)?$/);
+    expect(placed.y).toBe(427);
+    expect(placed.x).toBe(555);
+    expect(placed.x + 22).toBeLessThan(control.rect.left);
+    expect(placeCompanionFood({ id: "outside", kind: "apple", x: 800, y: 370 }, { x: 800, y: 370 }, food, viewport).platformId).toMatch(/^viewport-floor-food/);
+    const first = safeTop[0] as CompanionFoodDropSupport;
+    expect(first.dropSurface).toEqual({ x: 470, width: 260 });
+    first.dropSurface = { x: -1000, width: 9000 };
+    expect((subscription.landings(32).find(p => p.id === first.id) as CompanionFoodDropSupport).dropSurface).toEqual({ x: 470, width: 260 });
+    expect(subscription.landings().every(p => !(p as CompanionFoodDropSupport).dropSurface)).toBe(true);
     subscription();
   });
   it("publishes a changed card-top baseline even when glyph geometry is unchanged", () => {

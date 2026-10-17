@@ -1,5 +1,5 @@
 import type { Platform } from "./brain";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET } from "./food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, type CompanionFoodDropSupport } from "./food";
 import { companionSofaSeat } from "./sofa";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "./panel-play";
 
@@ -40,6 +40,7 @@ export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
 
 type AnchorSnapshot = { platform: Platform; anchor?: Element; rect?: { left: number; top: number } };
 const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}), ...(platform.panelSide ? { panelSide: platform.panelSide } : {}) });
+const copyFoodSupport = (platform: CompanionFoodDropSupport): CompanionFoodDropSupport => ({ ...copyPlatform(platform), ...(platform.dropSurface ? { dropSurface: { ...platform.dropSurface } } : {}) });
 
 /** Text behind the opaque house is not visible ink. Keep any part outside its
  * bounds, so a character overhanging the house still avoids exposed labels. */
@@ -121,7 +122,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   let measuredAt = -Infinity;
   let previous = "";
   let landingSnapshot: Platform[] = [];
-  let foodLandingSnapshot: Platform[] = [];
+  let foodLandingSnapshot: CompanionFoodDropSupport[] = [];
   const observed = new Set<Element>();
   let observedHome: HTMLElement | null = null;
   const resizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(schedule);
@@ -142,16 +143,17 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const height = win!.innerHeight;
     const platforms: Platform[] = [];
     const landings: Platform[] = [];
-    const foodLandings: Platform[] = [];
+    const foodLandings: CompanionFoodDropSupport[] = [];
     const nextAnchors = new Map<string, AnchorSnapshot>();
     const remember = (platform: Platform, anchor?: Element, rect?: DOMRect) => {
       platforms.push(platform);
       if ((platform.kind === "floor" || platform.kind === "control" || platform.id === "companion-home") && landings.length < MAX_PLATFORMS) landings.push(copyPlatform(platform));
       nextAnchors.set(platform.id, { platform, anchor, rect: rect ? { left: rect.left, top: rect.top } : undefined });
     };
-    const rememberFood = (id: string, spans: readonly CompanionSurface[], kind: Platform["kind"], anchor?: Element, rect?: DOMRect) => {
+    const rememberFood = (id: string, spans: readonly CompanionSurface[], kind: Platform["kind"], anchor?: Element, rect?: DOMRect, dropSurfaces?: readonly NonNullable<CompanionFoodDropSupport["dropSurface"]>[]) => {
       for (let i = 0; i < spans.length && foodLandings.length < MAX_PLATFORMS; i++) {
-        const platform: Platform = { id: i ? `${id}-${i}` : id, ...spans[i], kind, manualOnly: true };
+        const dropSurface = dropSurfaces?.find(surface => spans[i].x >= surface.x - .5 && spans[i].x + spans[i].width <= surface.x + surface.width + .5);
+        const platform: CompanionFoodDropSupport = { id: i ? `${id}-${i}` : id, ...spans[i], kind, manualOnly: true, ...(dropSurface ? { dropSurface: { ...dropSurface } } : {}) };
         foodLandings.push(platform); nextAnchors.set(platform.id, { platform, anchor, rect: rect ? { left: rect.left, top: rect.top } : undefined });
       }
     };
@@ -402,7 +404,11 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
               const platform: Platform = { id: i ? `${id}-${i}` : id, ...spans[i], kind: "card", manualOnly: true };
               landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: element, rect: { left: rect.left, top: rect.top } });
             }
-            rememberFood(`${baseId}-food-top`, foodSpans, "card", element, rect);
+            // Opaque house ink can hide the physical edge itself. Unlike a
+            // nearby control's input-safe gap, that covered edge must not
+            // intercept a snack falling in front of the room.
+            const foodContactSpans = unoccludedCompanionRects({ left, right, top: rect.top, bottom: rect.top + .5 }, houseBounds).map(part => ({ x: part.left, width: part.right - part.left }));
+            rememberFood(`${baseId}-food-top`, foodSpans, "card", element, rect, foodContactSpans);
           }
         }
         const candidates = cardPlatforms.get(element);
@@ -446,7 +452,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // Keep private copies so imperative carry cannot mutate the next baseline.
     anchors = new Map([...nextAnchors].map(([id, snapshot]) => [id, { ...snapshot, platform: copyPlatform(snapshot.platform) }]));
     landingSnapshot = landings.map(copyPlatform);
-    foodLandingSnapshot = foodLandings.map(copyPlatform);
+    foodLandingSnapshot = foodLandings.map(copyFoodSupport);
     // Suppress equal layout deliveries, including a countdown's text mutation.
     const signature = JSON.stringify([platforms, landings, foodLandings]);
     if (signature !== previous || notifyUnchanged || homeChanged) { previous = signature; onChange(platforms, validationOnly); }
@@ -530,7 +536,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // Fresh baseline copies, paired with anchor(). Only the cached food32 tier
     // differs from the configured pet size; no caller triggers a new scan.
     // Callers own deliberate release rebasing; this performs no layout work.
-    landings: (requestedSize?: number) => (requestedSize === FOOD_SIZE ? foodLandingSnapshot : landingSnapshot).map(copyPlatform),
+    landings: (requestedSize?: number) => requestedSize === FOOD_SIZE ? foodLandingSnapshot.map(copyFoodSupport) : landingSnapshot.map(copyPlatform),
     // Food captures its own small set of anchor offsets at placement. Expose
     // the already measured baseline, without enlarging the pet's follow pair
     // or doing an additional selector/Range/rect read.

@@ -20,9 +20,29 @@ export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
 export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
 export type CompanionFoodAttachment = { documentX: number; documentY: number; offsetX: number; offsetY: number };
+/** Food-only manual collision bounds. The safe centre span can be split around
+ * nearby controls while its actual card still occupies the intervening gap.
+ * Pet routing and anonymous shared Platform objects do not use this metadata. */
+export type CompanionFoodDropSupport = Platform & { dropSurface?: Readonly<{ x: number; width: number }> };
 type Point = { x: number; y: number };
 type AnchorRect = { left: number; top: number; width?: number; height?: number };
 type HomeFoodRect = { left: number; top: number; width: number; height: number };
+
+/** Pair a cached food span and its card bounds with one current DOM origin at
+ * deliberate release. Scrolling applies the same delta once to both, including
+ * before the coalesced full geometry scan has delivered its next snapshot. */
+export function rebaseCompanionFoodSupport(support: CompanionFoodDropSupport, source: { left: number; top: number }, rect: { left: number; top: number; width: number }): CompanionFoodDropSupport | undefined {
+  if (![support.x, support.y, support.width, source.left, source.top, rect.left, rect.top, rect.width].every(Number.isFinite) || support.width <= 0 || rect.width <= 0) return;
+  const dx = rect.left - source.left, dy = rect.top - source.top;
+  const x = Math.max(rect.left, support.x + dx), right = Math.min(rect.left + rect.width, support.x + support.width + dx);
+  if (right <= x) return;
+  const result = { ...support, x, y: support.y + dy, width: right - x };
+  if (support.dropSurface) {
+    const left = Math.max(rect.left, support.dropSurface.x + dx), end = Math.min(rect.left + rect.width, support.dropSurface.x + support.dropSurface.width + dx);
+    result.dropSurface = { x: left, width: end - left };
+  }
+  return result;
+}
 
 /** Validate a real floor recipient and a bounded native grab offset. This is
  * intentionally private: a generic rectangle must not re-enable sofa drops. */
@@ -91,7 +111,9 @@ export function presentCompanionFood(food: { x: number; y: number }, progress: n
   const chewing = Math.max(0, (p - .24) / .76), nibble = Math.sin(chewing * Math.PI * 14);
   const remaining = 1 - chewing;
   return {
-    x: food.x + (target.x - food.x) * eased,
+    // Arrive from the facing side, then take the last bite into the actual
+    // mouth centre as the remaining fruit disappears.
+    x: food.x + (target.x - food.x) * eased - direction * 4 * chewing * eased,
     y: food.y + (target.y - food.y) * eased - Math.sin(lift * Math.PI) * 12 + (chewing > 0 ? nibble * .8 : 0),
     scale: remaining * (1 + (chewing > 0 ? nibble * .018 : 0)),
     rotation: -direction * Math.sin(lift * Math.PI) * 16 + (chewing > 0 ? nibble * 4 * direction : 0),
@@ -102,12 +124,33 @@ export function companionTrashProgress(elapsedMs: number): number {
   return Number.isFinite(elapsedMs) ? Math.max(0, Math.min(1, elapsedMs / COMPANION_TRASH_DWELL_MS)) : 0;
 }
 
-/** Deliberate placement first falls onto a real lower ledge at the same x or
- * a nearby edge. Only the optional final screen-floor fallback may attract
- * farther to an already protected floor span; it never picks a distant card. */
-export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly Platform[], fallbackViewport?: Readonly<{ width: number; height: number }>): CompanionFood {
+/** A physical card catches the vertical ray even where a nearby control cut
+ * its safe centre span. Select the first crossed card, then its nearest safe
+ * centre on that same card. This never attracts a ray outside its real bounds
+ * to another column, and a completely covered card still has no safe recipient. */
+function firstFoodSupportBelow(point: Point, platforms: readonly CompanionFoodDropSupport[]): CompanionFoodDropSupport | undefined {
+  let first: CompanionFoodDropSupport | undefined, distance = Infinity;
+  for (const support of platforms) {
+    const end = support.x + support.width, surface = support.kind === "card" ? support.dropSurface : undefined;
+    const bounds = surface && [surface.x, surface.width, surface.x + surface.width].every(Number.isFinite)
+      && surface.width > 0 && support.x >= surface.x - .5 && end <= surface.x + surface.width + .5 ? surface : support;
+    if (!support.id || ![support.x, support.y, support.width, end, bounds.x, bounds.width, bounds.x + bounds.width].every(Number.isFinite)
+      || support.width <= 0 || bounds.width <= 0 || support.y < point.y - .5 || point.x < bounds.x || point.x > bounds.x + bounds.width) continue;
+    const delta = Math.max(support.x - point.x, point.x - end, 0);
+    if (!first || support.y < first.y || support.y === first.y && (support.kind !== "floor" && first.kind === "floor"
+      || (support.kind === "floor") === (first.kind === "floor") && (delta < distance || delta === distance && support.id < first.id))) {
+      first = support; distance = delta;
+    }
+  }
+  return first ?? firstCompanionSupportBelow(point, platforms, 22);
+}
+
+/** Deliberate placement first falls onto a real lower ledge. Only the optional
+ * final screen-floor fallback may attract farther to an already protected
+ * floor span; it never picks a distant card outside the vertical ray. */
+export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly CompanionFoodDropSupport[], fallbackViewport?: Readonly<{ width: number; height: number }>): CompanionFood {
   if (![point.x, point.y].every(Number.isFinite)) return { id: food.id, kind: food.kind, x: food.x, y: food.y };
-  const support = firstCompanionSupportBelow(point, platforms.filter(platform => !isCompanionFoodBedSupport(platform.id)), 22);
+  const support = firstFoodSupportBelow(point, platforms.filter(platform => !isCompanionFoodBedSupport(platform.id)));
   if (support) return { id: food.id, kind: food.kind, x: Math.max(support.x, Math.min(support.x + support.width, point.x)), y: support.y, platformId: support.id };
   if (fallbackViewport && [fallbackViewport.width, fallbackViewport.height].every(Number.isFinite) && fallbackViewport.width >= 48 && fallbackViewport.height > 0) {
     // The geometry's food32 tier already protects the whole44px native input

@@ -17,7 +17,8 @@ export function shortestCompanionHomeRoute(origin: Point, target: Point, platfor
   const start = platforms.find(p => p.id === origin.platformId && geometryValid(p));
   const goal = platforms.find(p => p.id === target.platformId && valid(p));
   if (!start || !goal || ![origin.x, origin.y, target.x, target.y].every(Number.isFinite)
-    || Math.abs(start.y - origin.y) > 18 || Math.abs(goal.y - target.y) > 18) return null;
+    || Math.abs(start.y - origin.y) > 18 || origin.x < start.x || origin.x > start.x + start.width
+    || Math.abs(goal.y - target.y) > 18) return null;
   const available = [...new Map([start, goal, ...platforms.filter(valid)].map(p => [p.id, p])).values()].slice(0, COMPANION_ROUTE_LIMITS.maxNodes);
   const springTargets = new Set(available.filter(homeFloor).map(p => p.id));
   if (!springTargets.size) springTargets.add(goal.id);
@@ -89,9 +90,10 @@ export function canParkCompanionHomeWait(now: number, petUntil: number, inputUnt
 /** Replan at action boundaries; walk segments stay finite for live reflow.
  * Only an otherwise stranded creature gets a stronger crouch/spring, landing
  * on a real measured room support. No extra timer, DOM read or fake support. */
-export function planCompanionHomeReturn(brain: CompanionBrain, world: CompanionWorld, prefs: CompanionPreferences): CompanionHomePlan {
+export function planCompanionHomeReturn(brain: CompanionBrain, world: CompanionWorld, prefs: CompanionPreferences, viaFloor?: Readonly<{ id: string; x: number }>): CompanionHomePlan {
   if (!prefs.enabled || world.paused) return { state: "blocked" };
-  const home = world.platforms.find(p => p.id === "companion-home" && valid(p));
+  if (viaFloor && (!/^companion-home-floor(?:-\d+)?$/.test(viaFloor.id) || !Number.isFinite(viaFloor.x))) return { state: "blocked" };
+  const home = world.platforms.find(p => p.id === (viaFloor?.id ?? "companion-home") && valid(p));
   if (!home) return { state: "missing" };
   const profile = getCompanionBehaviorProfile(prefs, brain.habits);
   const dog = prefs.animalMode === "dog", cat = prefs.animalMode === "cat";
@@ -103,7 +105,7 @@ export function planCompanionHomeReturn(brain: CompanionBrain, world: CompanionW
     duration: step.kind === "walk" ? Math.max(280, Math.abs(step.target.x - world.x) / speed * 1000) : 950,
     ...(step.kind === "walk" ? { pace: dog ? "scoot" as const : "amble" as const } : step.jumpHeight ? { jumpHeight: step.jumpHeight } : {}), direction: step.target.x < world.x ? -1 : 1,
   } });
-  const target = { x: platformLandingX(home, home.x + home.width / 2), y: home.y, platformId: home.id };
+  const target = { x: platformLandingX(home, viaFloor?.x ?? home.x + home.width / 2), y: home.y, platformId: home.id };
   const route = shortestCompanionHomeRoute(world, target, world.platforms, prefs.jump);
   if (route) return route.length ? move(route[0]) : { state: "arrived" };
   // Retry the same real graph with one stronger house-entry edge. This also

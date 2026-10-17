@@ -35,7 +35,7 @@ function transform(point: Point, layer: Transform): Point {
  * sprite registration → pose → contact → reaction → facing → inertia → body.
  * No DOM, clock, mutable cache or frame scheduling. TL/TR/BR/BL winding may
  * reverse with facing, but all four complete posed corners remain available. */
-export function projectCompanionSofaBody(input: CompanionSofaPoseInput): Point[] {
+function projectSpritePoints(input: CompanionSofaPoseInput, points: readonly Point[]): Point[] {
   const { size, display, cell, shape, pressure, response, facing, sway } = input;
   const bottom = { x: size / 2, y: size }, centre = { x: size / 2, y: size / 2 };
   const poseOrigin = input.poseOrigin ?? bottom, inertiaOrigin = input.inertiaOrigin ?? bottom, chew = input.chew ?? 0;
@@ -54,10 +54,23 @@ export function projectCompanionSofaBody(input: CompanionSofaPoseInput): Point[]
     { origin: centre, x: rounded(display.x - size / 2, 3), y: rounded(display.y - size, 3), scaleX: display.scale, scaleY: display.scale },
   ];
   if (layers.some((layer, index) => index !== 3 && (layer.scaleX ?? 1) <= 0 || (layer.scaleY ?? 1) <= 0)) return [];
-  const points = [[left, top], [80 - right, top], [80 - right, 80 - lower], [left, 80 - lower]].map(([x, y]) => {
+  const projected = points.map(({ x, y }) => {
     let point: Point = { x: (x + cell.x) / 80 * size, y: (y + cell.y) / 80 * size };
     for (const layer of layers) point = transform(point, layer);
     return point;
   });
-  return points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)) ? points : [];
+  return projected.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)) ? projected : [];
+}
+
+export function projectCompanionSofaBody(input: CompanionSofaPoseInput): Point[] {
+  const [top, right, lower, left] = input.cell.clip;
+  return projectSpritePoints(input, [{ x: left, y: top }, { x: 80 - right, y: top }, { x: 80 - right, y: 80 - lower }, { x: left, y: 80 - lower }]);
+}
+
+/** The same actual painted transform stack also places authored interaction
+ * landmarks. Coordinates are within the80px texture cell, before registration.
+ * Reusing this projection keeps a bite attached during mirroring, chew,
+ * contact, support feedback and finite pose transitions without DOM reads. */
+export function projectCompanionSpritePoint(input: CompanionSofaPoseInput, point: Readonly<Point>): Point | null {
+  return projectSpritePoints(input, [point])[0] ?? null;
 }

@@ -3,7 +3,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { logActivity } from "@/lib/activity/client";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { createCompanionFoodGravity } from "@/lib/ui/viewer-companion/food-gravity";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
@@ -51,7 +51,7 @@ const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point
 export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, returnFocus }, ref) {
   const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(blocked);
   const [message, setMessage] = useState("");
-  const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly Platform[]>([]), layer = useRef<HTMLDivElement>(null);
+  const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly CompanionFoodDropSupport[]>([]), layer = useRef<HTMLDivElement>(null);
   const keyboardMoved = useRef(false);
   const nodes = useRef(new Map<string, HTMLButtonElement>()), presentations = useRef(new Map<string, CompanionFoodPresentation>());
   const attachments = useRef(new Map<string, FoodAttachment>()), visibility = useRef(new Map<string, boolean>());
@@ -182,7 +182,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (!rect) { rect = source.element.getBoundingClientRect(); measured.set(source.element, rect); }
       if (rect.width <= 0 || rect.height <= 0) return [];
       sources.set(support.id, { element: source.element, origin: { x: rect.left, y: rect.top } });
-      return [{ ...support, x: support.x + rect.left - source.left, y: support.y + rect.top - source.top }];
+      const rebased = rebaseCompanionFoodSupport(support, source, rect);
+      return rebased ? [rebased] : [];
     });
     const placed = placeCompanionFood(food, point, available, { width: innerWidth, height: innerHeight });
     const source = placed.platformId ? sources.get(placed.platformId) : undefined, origin = source?.origin;
@@ -193,7 +194,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const position = attachCompanionFood(placed, scroll, origin);
     attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}) }); visibility.current.set(food.id, true);
     drops.current.delete(food.id); presentations.current.delete(food.id);
-    const gravity = createCompanionFoodGravity(point, placed, performance.now());
+    const landing = available.find(support => support.id === placed.platformId);
+    const gravity = createCompanionFoodGravity(point, placed, performance.now(), landing?.dropSurface ? { contactX: point.x } : undefined);
     if (gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
       drops.current.set(food.id, gravity);
       const presentation = gravity.sample(performance.now()); presentations.current.set(food.id, presentation); paint(placed, presentation);

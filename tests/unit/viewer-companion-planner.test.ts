@@ -13,6 +13,40 @@ const fresh = (): CompanionBrain => ({ ...createBrain(0, () => .5), energy: .85,
 const ports = { route: findPlatformRoute, landingX: platformLandingX, reachable: reachablePlatforms };
 
 describe("environment-driven finite companion intentions", () => {
+  it("waits for physical support recovery instead of inventing a start after deletion or lateral reflow", () => {
+    const support = { ...floor, id: "occupied", x: 100, width: 200 }, other = { ...floor, id: "nearby", x: 350, width: 200 };
+    const target = { x: 450, y: other.y, platformId: other.id };
+    const origin = { x: 200, y: support.y, platformId: support.id };
+    expect(findPlatformRoute(origin, target, [support, other])).not.toBeNull();
+    // Same-height geometry is insufficient evidence that a foot has landed.
+    expect(findPlatformRoute(origin, target, [other])).toBeNull();
+    expect(findPlatformRoute(origin, target, [{ ...support, x: 550 }, other])).toBeNull();
+    expect(findPlatformRoute({ ...origin, platformId: undefined }, target, [other])).toBeNull();
+    // Creature art may overhang at the exact edge; only its feet are bounded.
+    expect(findPlatformRoute({ ...origin, x: support.x }, target, [support, other])).not.toBeNull();
+    expect(findPlatformRoute({ ...origin, x: support.x + support.width }, target, [support, other])).not.toBeNull();
+    expect(findPlatformRoute({ ...origin, x: support.x - .01 }, target, [support, other])).toBeNull();
+    expect(findPlatformRoute({ ...origin, x: support.x + support.width + .01 }, target, [support, other])).toBeNull();
+    for (const platforms of [[other], [{ ...support, x: 550 }, other]]) for (const draw of [0, .3, .7, .99999]) {
+      const action = getAction(fresh(), { ...world, ...origin, platforms }, { ...prefs, heartPrank: true, ambientPrank: true }, 100000, () => draw);
+      expect(action).toMatchObject({ kind: "idle", target: origin });
+      expect(action.foodId).toBeUndefined(); expect(action.intention).toBeUndefined();
+    }
+  });
+
+  it("replans one remembered food identity against its moved support and never walks from an obsolete start", () => {
+    const snack = { id: "offered", x: 800, y: floor.y, platformId: floor.id, kind: "apple" as const };
+    const hungry = { ...fresh(), hunger: .8 }, context = { ...world, x: 100, platforms: [floor], foods: [snack] };
+    const first = getFoodAction(hungry, context, prefs, 0)!;
+    const brain = commitAction(hungry, first, 0);
+    const shiftedSnack = { ...snack, x: 650 };
+    expect(getFoodAction(brain, { ...context, x: 200, foods: [shiftedSnack] }, prefs, 6000)).toMatchObject({ kind: "walk", foodId: snack.id, target: { x: 650, y: floor.y } });
+    const movedFloor = { ...floor, x: 300 };
+    expect(getFoodAction(brain, { ...context, x: 200, platforms: [movedFloor], foods: [shiftedSnack] }, prefs, 6000)).toBeUndefined();
+    expect(getFoodAction(brain, { ...context, x: 350, platforms: [movedFloor], foods: [shiftedSnack] }, prefs, 6000)).toMatchObject({ kind: "walk", foodId: snack.id, target: { x: 650, y: floor.y } });
+    expect(brain.foodGoal?.foodId).toBe(snack.id);
+  });
+
   it("retains a selected finite travel gait through consider, real intermediate support and final observation", () => {
     const intention = { kind: "explore" as const, targetId: floor.id, offset: .85, remaining: 8, stage: "consider" as const, pace: "scoot" as const, travelSpeed: 100 };
     const brain = { ...fresh(), intention }, context = { ...world, x: 100, platforms: [floor] };

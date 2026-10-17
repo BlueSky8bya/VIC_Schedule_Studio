@@ -1,6 +1,6 @@
 # 빅타민 정지 방지·공유 크롬·눈 비율 조정
 
-Status: In Progress.
+Status: Awaiting visual feedback. UI/liveness release cf00f2b4 is deployed and verified; eye scope remains pending. See [verification](../verification/COMPANION_LIVENESS_CHROME-20261018.md).
 
 최신 소유자는 방송 중 표정까지 약1분 정지한 사례를 제보했다. OBS 원인으로 단정하지 않고 active/visible blur/parked/hidden/geometry/decode/long-frame의 실제 소유권과 재개 경로를 조사한다. 정상 숨기·현재 행동 완료 후 수면·실제 숨김 탭 정지·reduced/OFF·모바일 제외를 보존한다. active 무기한 정지는 회복하고, 조용한 수면도 컴포지터의 작은 생동감으로 보이게 한다. 새 상시 layout watchdog·모델/서버 요청은 추가하지 않는다.
 

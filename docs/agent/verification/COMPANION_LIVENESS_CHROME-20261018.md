@@ -1,6 +1,6 @@
 # 빅타민 자동 귀가 정지·패널 크롬·눈 비율
 
-Status: In progress. [PLAN-099](../plans/PLAN-20261018-099-companion-liveness-and-chrome.md).
+Status: UI/liveness deployed and verified; eye scope awaiting visual feedback. [PLAN-099](../plans/PLAN-20261018-099-companion-liveness-and-chrome.md).
 
 ## 정지 재현과 변경
 
@@ -43,3 +43,11 @@ UI-only build `qdkdXh1FMiq__mERbbfSI`에서 전체 단위2,125·typecheck·lint�
 이전098 PASS를 현재 제품 검증으로 대체하지 않는다. 실제 방송 PC 장시간 OBS·096 음식 창 전환 focus·진짜 권한/RLS·공급자 한도는 별도 미해결 범위다.
 
 최종 소스 재실행 단위208파일/2,125개 전부 통과(`unit-ui-final.json`), build 이후 typecheck·lint 및 harness258도 통과했다. 제품 변경은 UI/동행 런타임에 한정하고 공개 API·권한·서버 DTO·KST·DB·의존성과 원본098 아트 경로를 변경하지 않았다. 새 기준선12개를 포함한 승인 범위만 커밋하며 사용자 기존 아트·로컬 설정·새 눈 초안은 제외한다. 실제 배포 검증은 다음 운영 확인 결과로 구분한다.
+
+## 운영 확인
+
+`cf00f2b4924813d39ee2b4b60c44a1e837e002e2`를 main에 일반 push했다. [Remote quality39056897644](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39056897644) job117466603340의13단계가 전부 success, Vercel deployment `D9wnSf5uHcg7Ucsja5c4k2tmqRdN` success다. 운영 `/api/soop-live`가 같은 full SHA를 반환했고 clock200/no-store·warm204·익명 developer401/error-only/no-store·fixture 미노출이 통과했다. fixture는 streamed HTTP200 안의404 fallback으로 거절되므로 HTTP404였다고 표현하지 않는다. 로컬 `remote-release.json`, `deployed-canaries.json` 및 HTTP 원본은 `.scratch-pw/companion-099`에 보존했다.
+
+열려 있던 실제 개발자 편집실을 reload해 cf00f2b badge·저장됨·한 pet/home을 확인했다. 로딩 직후 아직 hydration 전인0pet/1panel 표본을 완료 상태로 판정하지 않고 실제 집 mount를 기다린 뒤 검증했다. 실제 세 패널 배경rgb(253,246,228)·선rgb(231,220,198)·동일 그림자·중앙 제목을 확인했다. 실제 시청자 미리보기에서도 같은 material·접힘 저장·한 pet/home을 확인했다. 양쪽에서 패널을 접어 header 집을 열고 compact marker·접기/chevron0·X1·실내132px·버튼44px를 확인했다. 미리보기에서는 X 닫기/키보드 Enter 열기/X focus도 직접 확인했다. normal header의 설정/집/검색/기록이 같은 rgba(255,255,255,.72)·ink·pill44px를 사용했다. 직전 click의 hover 배경 표본은 normal 비교와 구별했다.
+
+실제 UI 스냅샷을 열람했으며 일정 편집/저장/하트 변경은 하지 않았다. 끝나고 실제 개발자 편집실·오른쪽 패널·태그/계절 접힘·집 펼침의 원래 상태로 복귀했고 pet/home1을 확인했다. 새 탭은 만들지 않았고 fixture 서버는 종료했다. 운영 장시간 OBS 하드웨어 성능까지 검증한 것은 아니다. 새 눈 초안은 배포되지 않았으며 pending 시각 선택 뒤에만 후속 범위를 진행한다. 이 배포 후 문서 결과는 문서만을 위한 재배포를 피하려고 로컬에 남긴다.

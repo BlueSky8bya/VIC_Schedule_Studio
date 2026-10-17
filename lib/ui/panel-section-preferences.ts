@@ -1,3 +1,6 @@
+import { POSTER_AGENDA_QUERY } from "./breakpoints";
+import { COMPANION_PREFERENCES_KEY, getCompanionPreferences, subscribeCompanionPreferences } from "./viewer-companion/preferences";
+
 /** Device-local disclosure state only. No account or calendar content. */
 export const PANEL_SECTION_KEYS = ["tag-filter", "season", "companion-home"] as const;
 export type PanelSectionKey = (typeof PANEL_SECTION_KEYS)[number];
@@ -5,34 +8,49 @@ export type PanelSectionPreferences = Record<PanelSectionKey, boolean>;
 export const PANEL_SECTION_PREFERENCES_KEY = "vic.panelSections";
 export const PANEL_SECTION_PREFERENCES_EVENT = "vic:panel-sections";
 export const DEFAULT_PANEL_SECTION_PREFERENCES: Readonly<PanelSectionPreferences> = Object.freeze({ "tag-filter": true, season: true, "companion-home": true });
+export const COMPANION_PANEL_SECTION_PREFERENCES: Readonly<PanelSectionPreferences> = Object.freeze({ "tag-filter": false, season: false, "companion-home": true });
 
 let owner: Window | undefined;
-let current: PanelSectionPreferences = { ...DEFAULT_PANEL_SECTION_PREFERENCES };
+let current: Partial<PanelSectionPreferences> = {};
 let lastRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined } | undefined;
+let media: MediaQueryList | undefined;
 
-export function normalizePanelSectionPreferences(value: unknown): PanelSectionPreferences {
-  const next = { ...DEFAULT_PANEL_SECTION_PREFERENCES };
+export function normalizePanelSectionPreferences(value: unknown, defaults: Readonly<PanelSectionPreferences> = DEFAULT_PANEL_SECTION_PREFERENCES): PanelSectionPreferences {
+  const next = { ...defaults };
   if (!value || typeof value !== "object" || Array.isArray(value)) return next;
   const source = value as Record<string, unknown>;
   for (const key of PANEL_SECTION_KEYS) if (typeof source[key] === "boolean") next[key] = source[key];
   return next;
 }
 
-function parse(raw: string | null): PanelSectionPreferences {
+function parse(raw: string | null): Partial<PanelSectionPreferences> {
   try {
     const value: unknown = raw ? JSON.parse(raw) : null;
-    return value && typeof value === "object" && !Array.isArray(value) && "version" in value && value.version === 1
-      ? normalizePanelSectionPreferences(value) : { ...DEFAULT_PANEL_SECTION_PREFERENCES };
-  } catch { return { ...DEFAULT_PANEL_SECTION_PREFERENCES }; }
+    if (!value || typeof value !== "object" || Array.isArray(value) || !("version" in value) || value.version !== 1) return {};
+    const source = value as Record<string, unknown>, next: Partial<PanelSectionPreferences> = {};
+    for (const key of PANEL_SECTION_KEYS) if (typeof source[key] === "boolean") next[key] = source[key];
+    return next;
+  } catch { return {}; }
 }
 
 function browser(): Window | undefined {
   if (typeof window === "undefined") return undefined;
   if (owner !== window) {
-    owner = window; current = { ...DEFAULT_PANEL_SECTION_PREFERENCES }; lastRaw = undefined; unwritten = undefined;
+    owner = window; current = {}; lastRaw = undefined; unwritten = undefined; media = undefined;
   }
   return window;
+}
+
+function capability(target: Window): MediaQueryList | undefined {
+  try { return media ?? (media = target.matchMedia?.(POSTER_AGENDA_QUERY)); } catch { return undefined; }
+}
+
+function defaults(target: Window): Readonly<PanelSectionPreferences> {
+  // Match the companion's shared capability. Mobile/unknown devices keep the
+  // ordinary open filter; an explicit OFF never collapses it on first visit.
+  return capability(target)?.matches === false && getCompanionPreferences().enabled
+    ? COMPANION_PANEL_SECTION_PREFERENCES : DEFAULT_PANEL_SECTION_PREFERENCES;
 }
 
 export function getPanelSectionPreferences(): PanelSectionPreferences {
@@ -40,12 +58,12 @@ export function getPanelSectionPreferences(): PanelSectionPreferences {
   if (!target) return { ...DEFAULT_PANEL_SECTION_PREFERENCES };
   let raw: string | null;
   try { raw = target.localStorage.getItem(PANEL_SECTION_PREFERENCES_KEY); }
-  catch { return { ...current }; }
+  catch { return normalizePanelSectionPreferences(current, defaults(target)); }
   lastRaw = raw;
   // Readable stale bytes must not undo this tab's choice after a quota failure.
-  if (unwritten && (unwritten.raw === undefined || unwritten.raw === raw)) return { ...current };
+  if (unwritten && (unwritten.raw === undefined || unwritten.raw === raw)) return normalizePanelSectionPreferences(current, defaults(target));
   unwritten = undefined; current = parse(raw);
-  return { ...current };
+  return normalizePanelSectionPreferences(current, defaults(target));
 }
 
 /** The same marker is set before paint and after hydration. It affects only
@@ -63,7 +81,11 @@ export function setPanelSectionExpanded(key: PanelSectionKey, expanded: boolean)
   if (!PANEL_SECTION_KEYS.includes(key) || typeof expanded !== "boolean") return;
   const target = browser();
   if (!target) return;
-  current = { ...getPanelSectionPreferences(), [key]: expanded };
+  getPanelSectionPreferences();
+  // Persist actual choices only. Copying defaults into storage would turn an
+  // untouched section into a false override after changing the master switch.
+  // Existing full v1 records remain valid and are preserved as user choices.
+  current = { ...current, [key]: expanded };
   try {
     const raw = JSON.stringify({ version: 1, ...current });
     target.localStorage.setItem(PANEL_SECTION_PREFERENCES_KEY, raw);
@@ -89,12 +111,23 @@ export function subscribePanelSectionPreferences(listener: () => void): () => vo
   };
   target.addEventListener(PANEL_SECTION_PREFERENCES_EVENT, changed);
   target.addEventListener("storage", stored);
+  let enabled = getCompanionPreferences().enabled;
+  // The companion store consumes storage/reset and failed-write fallbacks
+  // before notifying us. Raw-event listener order must not revive stale ON.
+  const stopCompanion = subscribeCompanionPreferences(next => {
+    if (next.enabled === enabled) return;
+    enabled = next.enabled; changed();
+  });
+  const query = capability(target);
+  query?.addEventListener?.("change", changed);
   return () => {
     target.removeEventListener(PANEL_SECTION_PREFERENCES_EVENT, changed);
     target.removeEventListener("storage", stored);
+    stopCompanion();
+    query?.removeEventListener?.("change", changed);
   };
 }
 
 /** Root-layout prepaint bootstrap. Fixed keys + strict booleans mirror parse();
  * the untrusted stored object is never copied into markup or script text. */
-export const PANEL_SECTION_BOOTSTRAP = `(function(){try{var p=JSON.parse(localStorage.getItem(${JSON.stringify(PANEL_SECTION_PREFERENCES_KEY)})||"null"),k=${JSON.stringify(PANEL_SECTION_KEYS)},c=[];if(p&&typeof p==="object"&&!Array.isArray(p)&&p.version===1){for(var i=0;i<k.length;i++)if(p[k[i]]===false)c.push(k[i])}if(c.length)document.documentElement.setAttribute("data-panel-sections",c.join(" "));else document.documentElement.removeAttribute("data-panel-sections")}catch(e){}})();`;
+export const PANEL_SECTION_BOOTSTRAP = `(function(){var d=${JSON.stringify(DEFAULT_PANEL_SECTION_PREFERENCES)},k=${JSON.stringify(PANEL_SECTION_KEYS)},c=[],r,p,m,on=false;try{if(typeof matchMedia==="function"&&!matchMedia(${JSON.stringify(POSTER_AGENDA_QUERY)}).matches){try{r=localStorage.getItem(${JSON.stringify(COMPANION_PREFERENCES_KEY)})}catch(e){r=null}if(r===null)on=true;else{m=JSON.parse(r);on=!!(m&&typeof m==="object"&&!Array.isArray(m)&&m.version===1&&(!("enabled" in m)||m.enabled===true))}}}catch(e){}if(on)d=${JSON.stringify(COMPANION_PANEL_SECTION_PREFERENCES)};try{p=JSON.parse(localStorage.getItem(${JSON.stringify(PANEL_SECTION_PREFERENCES_KEY)})||"null");if(p&&typeof p==="object"&&!Array.isArray(p)&&p.version===1){for(var i=0;i<k.length;i++)if(typeof p[k[i]]==="boolean")d[k[i]]=p[k[i]]}}catch(e){}for(var j=0;j<k.length;j++)if(d[k[j]]===false)c.push(k[j]);if(c.length)document.documentElement.setAttribute("data-panel-sections",c.join(" "));else document.documentElement.removeAttribute("data-panel-sections")}());`;

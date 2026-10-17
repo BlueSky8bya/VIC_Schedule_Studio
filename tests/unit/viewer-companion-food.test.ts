@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, receiveCompanionHomeFloorFood, reconcileCompanionFood } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, reconcileCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
 
 const floor: Platform = { id: "floor", x: 12, y: 782, width: 976, kind: "floor" };
@@ -7,6 +7,38 @@ const card: Platform = { id: "card", x: 100, y: 350, width: 200, kind: "card" };
 const apple: CompanionFood = { id: "apple", x: 200, y: 340, kind: "apple" };
 
 describe("companion food support", () => {
+  it("catches the first real crossed card across a safe-span gap before any lower exact-x card or floor", () => {
+    const left = Object.freeze({ ...card, id: "card-3-food-top", x: 100, width: 70, dropSurface: Object.freeze({ x: 100, width: 200 }) });
+    const right = Object.freeze({ ...left, id: "card-3-food-top-1", x: 230 });
+    const lower = Object.freeze({ ...card, id: "card-4-food-top", y: 500 });
+    for (const order of [[floor, lower, right, left], [left, right, lower, floor]]) {
+      expect(placeCompanionFood(apple, { x: 190, y: 300 }, order)).toEqual({ ...apple, x: 170, y: 350, platformId: left.id });
+      expect(placeCompanionFood(apple, { x: 210, y: 300 }, order)).toEqual({ ...apple, x: 230, y: 350, platformId: right.id });
+      expect(placeCompanionFood(apple, { x: 200, y: 360 }, order)).toEqual({ ...apple, x: 200, y: 500, platformId: lower.id });
+      expect(placeCompanionFood(apple, { x: 320, y: 300 }, order).platformId).toBe(floor.id);
+    }
+  });
+  it("never expands a card collision from malformed bounds or a safe span outside its own source", () => {
+    for (const dropSurface of [{ x: NaN, width: 500 }, { x: 100, width: Infinity }, { x: 100, width: -1 }, { x: 400, width: 200 }, { x: -Number.MAX_VALUE, width: Number.MAX_VALUE * 2 }]) {
+      const support = { ...card, dropSurface };
+      expect(placeCompanionFood(apple, { x: 500, y: 300 }, [support, floor]).platformId).toBe(floor.id);
+    }
+    const covered: CompanionFoodDropSupport = { ...card, id: "companion-home", dropSurface: { x: 100, width: 800 } };
+    expect(placeCompanionFood(apple, apple, [covered, floor]).platformId).toBe(floor.id);
+  });
+  it("rebases safe centres and real collision bounds once before a delayed scroll scan and clips a shrinking source", () => {
+    const original = Object.freeze({ ...card, x: 140, width: 80, dropSurface: Object.freeze({ x: 100, width: 200 }) });
+    const source = Object.freeze({ left: 100, top: 353 });
+    const moved = rebaseCompanionFoodSupport(original, source, { left: 120, top: 293, width: 200 })!;
+    expect(moved).toEqual({ ...original, x: 160, y: 290, dropSurface: { x: 120, width: 200 } });
+    expect(original).toEqual({ ...card, x: 140, width: 80, dropSurface: { x: 100, width: 200 } });
+    expect(rebaseCompanionFoodSupport(original, source, { left: 120, top: 293, width: 80 })).toEqual({ ...moved, width: 40, dropSurface: { x: 120, width: 80 } });
+    expect(rebaseCompanionFoodSupport(original, source, { left: 120, top: 293, width: 30 })).toBeUndefined();
+    expect(rebaseCompanionFoodSupport(original, source, { left: NaN, top: 293, width: 200 })).toBeUndefined();
+    const placed = placeCompanionFood(apple, { x: 280, y: 270 }, [moved, floor]);
+    expect(placed).toEqual({ ...apple, x: 240, y: 290, platformId: moved.id });
+    expect(placeCompanionFood(apple, { x: 110, y: 270 }, [moved, floor]).platformId).toBe(floor.id);
+  });
   it("passes through the creature's sofa and every retired food seat, retaining the real first floor below", () => {
     const houseFloor: Platform = Object.freeze({ id: COMPANION_HOME_FLOOR_FOOD, x: 100, y: 600, width: 200, kind: "floor", manualOnly: true });
     for (const id of ["companion-home", "companion-home-1", "companion-home-food", "companion-home-food-2", "companion-home-bed-food", "companion-home-bed-food-3"]) {
@@ -234,7 +266,9 @@ describe("companion food presentation", () => {
   it("chews and shrinks after arrival while keeping the fruit inside the mouth area", () => {
     const poses = Array.from({ length: 77 }, (_, i) => presentCompanionFood(apple, .24 + i / 100, mouth));
     expect(new Set(poses.map(pose => pose.rotation.toFixed(2))).size).toBeGreaterThan(20);
-    expect(poses.every(pose => Math.abs(pose.x - 424) < .001 && Math.abs(pose.y - 276) <= .801)).toBe(true);
+    expect(poses.every(pose => pose.x >= mouth.x && pose.x <= mouth.x + 4 && Math.abs(pose.y - 276) <= .801)).toBe(true);
+    expect(poses.at(-1)!.x).toBe(mouth.x);
+    for (let i = 1; i < poses.length; i++) expect(poses[i].x).toBeLessThanOrEqual(poses[i - 1].x);
     expect(poses.at(-1)!.scale).toBe(0);
     expect(poses.every(pose => pose.scale >= 0 && pose.scale <= 1.02)).toBe(true);
     expect(presentCompanionFood(apple, .95, mouth).scale).toBeLessThan(.1);

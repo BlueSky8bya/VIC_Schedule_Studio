@@ -10,6 +10,33 @@ const roomFloor: Platform = { id: "companion-home-floor", kind: "floor", manualO
 const world: CompanionWorld = { x: 850, y: floor.y, platformId: floor.id, platforms: [floor, seat, roomFloor], width: 1100, height: 1100 };
 
 describe("shared direct home return", () => {
+  it("rejects a retained support ID whose real span moved away from the occupied foot", () => {
+    const shifted = { ...floor, x: world.x + 30, width: 150 };
+    const stale = { ...world, platforms: [shifted, seat, roomFloor] };
+    expect(planCompanionHomeReturn(createBrain(), stale, prefs).state).toBe("blocked");
+    expect(planCompanionHomeReturn(createBrain(), stale, prefs, { id: roomFloor.id, x: 120 }).state).toBe("blocked");
+    const lowerEdge = { ...world, x: floor.x }, upperEdge = { ...world, x: floor.x + floor.width };
+    expect(planCompanionHomeReturn(createBrain(), lowerEdge, prefs).state).not.toBe("blocked");
+    expect(planCompanionHomeReturn(createBrain(), upperEdge, prefs).state).not.toBe("blocked");
+  });
+  it("can route through a real floor under the seat opening before the final contained lift", () => {
+    let point = { ...world }, arrived = false;
+    const centre = 120;
+    for (let leg = 0; leg < 20; leg++) {
+      const plan = planCompanionHomeReturn(createBrain(), point, prefs, { id: roomFloor.id, x: centre });
+      if (plan.state === "arrived") { arrived = true; break; }
+      expect(plan.state).toBe("travel");
+      if (plan.state !== "travel") break;
+      expect(world.platforms.some(platform => platform.id === plan.action.target.platformId)).toBe(true);
+      point = { ...point, ...plan.action.target };
+    }
+    expect(arrived).toBe(true); expect(point.platformId).toBe(roomFloor.id); expect(point.x).toBe(centre);
+    const seatEntry = planCompanionHomeReturn(createBrain(), point, prefs);
+    expect(seatEntry).toMatchObject({ state: "travel", action: { kind: "jump", target: { x: centre, y: seat.y, platformId: seat.id } } });
+    for (const id of ["card", "viewport-floor", "companion-home", "companion-home-floor-fake"]) expect(planCompanionHomeReturn(createBrain(), point, prefs, { id, x: centre }).state).toBe("blocked");
+    expect(planCompanionHomeReturn(createBrain(), point, prefs, { id: roomFloor.id, x: NaN }).state).toBe("blocked");
+  });
+
   it("confirms a disconnected route once, then yields only an automatic idea", () => {
     const isolated: Platform = { id: "isolated", kind: "card", x: 800, width: 60, y: 240 };
     const disconnected = { ...world, x: 830, y: 240, platformId: isolated.id, platforms: [isolated, seat, roomFloor] };

@@ -5,6 +5,7 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
+import { settlePanelLayout } from "./helpers/panel-layout";
 
 type Surface = "anonymous" | "signed-in" | "studio" | "preview";
 type Theme = "light" | "dark";
@@ -58,10 +59,7 @@ async function seed(page: Page, theme: Theme) {
   }, { theme, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE });
 }
 async function settled(page: Page) {
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-    await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished));
-  });
+  await settlePanelLayout(page);
 }
 async function enter(page: Page, surface: Surface) {
   await page.goto(surface === "studio" || surface === "preview" ? "/visual-fixture/studio?role=owner" : `/visual-fixture/poster?avatar=1&signedIn=${surface === "signed-in" ? "1" : "0"}`);

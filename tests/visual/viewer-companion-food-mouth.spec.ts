@@ -7,15 +7,16 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
+import mouthCalibration from "@/lib/ui/viewer-companion/mouth-anchors.json";
 
 type Surface = "viewer" | "studio";
-type Sample = { at: number; scale: number; x: number; y: number; mouthX: number; mouthY: number; error: number; row: number; facing: string; eating: boolean; hunger: number };
+type Sample = { at: number; scale: number; x: number; y: number; mouthX: number; mouthY: number; error: number; row: number; facing: string; eating: boolean; visible: boolean; decoded: boolean; hunger: number };
 type Witness = { frames: Sample[]; removed: number; mealEntries: number; node: HTMLElement; observer: MutationObserver; stopped: boolean; raf: number };
 type MealWindow = Window & { companionMouthWitness?: Witness };
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const foods = (page: Page) => page.locator(".vc-food");
-const prefix = ".scratch-pw/companion-072-mouth";
+const prefix = ".scratch-pw/companion-100-mouth";
 const proof = new WeakMap<Page, { writes: string[]; errors: string[] }>();
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
@@ -47,11 +48,8 @@ async function setup(page: Page, surface: Surface) {
   await page.addInitScript(({ epoch, key, preferences, care }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic.ambient": "off", "vic.sound": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
-    localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
+    localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care }));
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
-    // Keep idle choices deterministic; native input, real geometry, the meal
-    // decision and the monotonic animation clock remain untouched.
-    Math.random = () => 0;
   }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY,
     preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: true, heartPrank: false, ambientPrank: false, panelPrank: false },
     care: { ...DEFAULT_COMPANION_CARE, hunger: .8, energy: 1 } });
@@ -90,8 +88,11 @@ async function offerFood(page: Page, item: Locator) {
 }
 
 async function observe(page: Page, item: Locator) {
-  await item.evaluate(node => {
+  await item.evaluate((node, landmarks) => {
     const pet = document.querySelector<HTMLElement>(".vc-companion")!, art = node.firstElementChild as HTMLElement;
+    const marker = document.createElement("i");
+    marker.setAttribute("data-test-mouth-landmark", "");
+    marker.style.cssText = "position:absolute;display:block;width:0;height:0;pointer-events:none;";
     const witness: Witness = { node: node as HTMLElement, frames: [], removed: 0, mealEntries: 0, stopped: false, raf: 0, observer: new MutationObserver(() => {}) };
     let previousMeal = false;
     witness.observer = new MutationObserver(records => { for (const record of records) for (const removed of record.removedNodes) if (removed === node) witness.removed++; });
@@ -102,19 +103,26 @@ async function observe(page: Page, item: Locator) {
       if (meal && !previousMeal) witness.mealEntries++;
       previousMeal = meal;
       if (node.isConnected) {
-        const rect = art.getBoundingClientRect(), sprite = pet.querySelector<HTMLElement>(".vc-sprite")!, spriteRect = sprite.getBoundingClientRect(), facing = pet.dataset.facing ?? "";
-        // Independently inspected approved row09 native192px cell: mouth ink
-        // centre(111,131), ±2nativepx. Project the actually painted sprite,
-        // including registration, facing and the live chew deformation. The
-        // finite eat row has no rotation; transformed BCR is exact here.
-        const mouthX = spriteRect.left + spriteRect.width * (facing === "left" ? 1 - 111 / 192 : 111 / 192), mouthY = spriteRect.top + spriteRect.height * 131 / 192;
+        const rect = art.getBoundingClientRect(), sprite = pet.querySelector<HTMLElement>(".vc-sprite")!, facing = pet.dataset.facing ?? "";
+        const physicalIndex = Number(pet.dataset.pose), landmark = landmarks.frames.find(frame => frame.index === physicalIndex);
+        // A zero-size, out-of-flow witness lets the browser independently
+        // project the measured native mouth through the actual CSS hierarchy.
+        // It does not call the product's matrix helper or alter world geometry.
+        if (!landmark) { witness.raf = requestAnimationFrame(sample); return; }
+        if (marker.parentElement !== sprite) sprite.append(marker);
+        marker.style.left = `${landmark.x / landmarks.cell * 100}%`; marker.style.top = `${landmark.y / landmarks.cell * 100}%`;
+        const mouth = marker.getBoundingClientRect(), mouthX = mouth.left, mouthY = mouth.top;
         const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
-        witness.frames.push({ at: performance.now(), scale: Math.hypot(new DOMMatrixReadOnly(getComputedStyle(art).transform).a, new DOMMatrixReadOnly(getComputedStyle(art).transform).b), x, y, mouthX, mouthY, error: Math.hypot(x - mouthX, y - mouthY), row: parseFloat(pet.style.getPropertyValue("--vc-row")) * 31 / 100, facing, eating: node.hasAttribute("data-eating"), hunger: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!).hunger });
+        const shown = (element: Element) => { for (let current: Element | null = element; current; current = current.parentElement) { const style = getComputedStyle(current); if (current.hasAttribute("hidden") || style.display === "none" || style.visibility !== "visible" || Number(style.opacity) <= .01) return false; } return true; };
+        const texture = sprite.querySelector<HTMLImageElement>(".vc-texture");
+        const visible = pet.isConnected && node.isConnected && rect.width > 0 && rect.height > 0 && pet.getBoundingClientRect().width > 0 && shown(pet) && shown(art);
+        const decoded = Boolean(texture?.complete && texture.naturalWidth > 0);
+        witness.frames.push({ at: performance.now(), scale: Math.hypot(new DOMMatrixReadOnly(getComputedStyle(art).transform).a, new DOMMatrixReadOnly(getComputedStyle(art).transform).b), x, y, mouthX, mouthY, error: Math.hypot(x - mouthX, y - mouthY), row: Math.floor(physicalIndex / 16), facing, eating: node.hasAttribute("data-eating"), visible, decoded, hunger: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!).hunger });
       }
       witness.raf = requestAnimationFrame(sample);
     };
     (window as MealWindow).companionMouthWitness = witness; witness.raf = requestAnimationFrame(sample);
-  });
+  }, mouthCalibration);
 }
 
 async function captureMeal(page: Page, path: string) {
@@ -143,8 +151,12 @@ for (const surface of ["viewer", "studio"] as const) for (const facing of ["left
     const result = await page.evaluate(() => { const witness = (window as MealWindow).companionMouthWitness!; return { frames: witness.frames, removed: witness.removed, mealEntries: witness.mealEntries, care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!) as { hunger: number; affection: number } }; });
     const shrinking = result.frames.filter(frame => frame.eating && frame.scale <= .8 && frame.scale >= .1);
     expect(shrinking.length).toBeGreaterThan(25);
+    expect(shrinking.every(frame => frame.visible && frame.decoded), "a hidden body or missing image must not produce a zero-error false pass").toBe(true);
     for (const frame of shrinking) expect(frame.row).toBeCloseTo(9, 5);
     expect(Math.max(...shrinking.map(frame => frame.error)), "art centre must stay at the actual mouth, not sink16px while shrinking").toBeLessThan(5);
+    const lastBites = shrinking.filter(frame => frame.scale <= .28);
+    expect(lastBites.length).toBeGreaterThan(5);
+    expect(Math.max(...lastBites.map(frame => frame.error)), "the final bite converges into the actual painted mouth centre").toBeLessThan(1.5);
     const relativeY = shrinking.map(frame => frame.y - frame.mouthY);
     expect(Math.max(...relativeY) - Math.min(...relativeY)).toBeLessThan(3);
     expect(Math.min(...result.frames.filter(frame => frame.eating).map(frame => frame.scale))).toBeLessThan(.1);
@@ -155,3 +167,24 @@ for (const surface of ["viewer", "studio"] as const) for (const facing of ["left
     if (surface === "viewer") expect(await page.locator("[data-export-surface]").evaluate(node => getComputedStyle(node).width)).toBe("1840px");
   });
 }
+
+test("failed mouth packets keep the offered food and never credit an invisible meal", async ({ page }) => {
+  const requests: string[] = [];
+  await page.route(/\/companion\/hd\/victamin-action-(01|09)-[^/]+\.webp$/, route => {
+    requests.push(new URL(route.request().url()).pathname);
+    return route.fulfill({ status: 503, body: "fixture mouth packet failure" });
+  });
+  await setup(page, "viewer"); await placePet(page, 180); await placePet(page, 220);
+  await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
+  const item = foods(page).first(); await expect(item).toBeVisible();
+  await observe(page, item); await offerFood(page, item);
+  await expect.poll(() => page.evaluate(() => (window as MealWindow).companionMouthWitness!.mealEntries)).toBeGreaterThan(0);
+  await page.waitForTimeout(4200); // Observe the real bounded decode wait and retry interval.
+  await expect(pet(page)).not.toHaveAttribute("data-state", "eat");
+  await expect(foods(page)).toHaveCount(1); await expect(pet(page)).toBeVisible();
+  const result = await page.evaluate(() => ({ removed: (window as MealWindow).companionMouthWitness!.removed, care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!) as { hunger: number; affection: number } }));
+  expect(result.removed).toBe(0); expect(result.care.hunger).toBeGreaterThan(.79); expect(result.care.affection).toBeLessThan(.39);
+  expect(requests.some(path => path.includes("action-01"))).toBe(true); expect(requests.some(path => path.includes("action-09"))).toBe(true);
+  expect(requests.length, "existing finite decode retry budget remains bounded").toBeLessThanOrEqual(4);
+  await page.screenshot({ path: `${prefix}-failed-packets.png` });
+});

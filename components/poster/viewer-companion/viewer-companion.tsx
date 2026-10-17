@@ -24,7 +24,9 @@ import { syncedNow } from "@/lib/ui/synced-clock";
 import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
 import { companionSofaDepth, companionSofaRelease, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
 import { projectCompanionSofaBody } from "@/lib/ui/viewer-companion/sofa-pose";
-import { sampleCompanionSofaTravel } from "@/lib/ui/viewer-companion/sofa-travel";
+import { advanceCompanionMealWait, projectCompanionMouth } from "@/lib/ui/viewer-companion/mouth";
+import { COMPANION_FEED_RETRY_MS } from "@/lib/ui/viewer-companion/planner";
+import { sampleCompanionSofaTravel, type CompanionSofaTravelShape } from "@/lib/ui/viewer-companion/sofa-travel";
 import { companionPositionPoint, resolveCompanionPosition, type CompanionPositionMemory, type CompanionPositionSnapshot } from "@/lib/ui/viewer-companion/position-memory";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits } from "@/lib/ui/viewer-companion/care";
@@ -40,7 +42,7 @@ import { createCompanionSupportMotion } from "@/lib/ui/viewer-companion/support-
 import { boundCompanionHeldPose, createCompanionHeldInertia } from "@/lib/ui/viewer-companion/held-inertia";
 import { createCompanionHeldShake } from "@/lib/ui/viewer-companion/held-shake";
 import { companionViewportFloorAbove, companionWorldHiddenReason, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor, recoverCompanionPassiveFloor, recoverCompanionVerticalSupport } from "@/lib/ui/viewer-companion/support-landing";
-import { boundCompanionBallisticArc, boundCompanionSineArc } from "@/lib/ui/viewer-companion/jump-arc";
+import { boundCompanionBallisticArc, boundCompanionSineArc, companionBallisticArcIsSafe } from "@/lib/ui/viewer-companion/jump-arc";
 import { createCompanionPettingContact, createCompanionPettingGesture, createCompanionPettingWindow } from "@/lib/ui/viewer-companion/petting";
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
@@ -198,14 +200,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let homeJourney: false | "called" | "automatic" = false;
     let homeWakeUntil = 0, strandedSince = 0, homeRetryAt = 0;
     let homeWaitingGeometry = false, homeValidationRequested = false, homeLookUsed = false, homeLegs = 0;
+    let homeEntryFloor: string | undefined;
     let pendingHomeRecall: HTMLElement | undefined;
-    const cancelHomeJourney = () => { pendingHomeRecall = undefined; homeJourney = false; homeWakeUntil = 0; strandedSince = 0; homeWaitingGeometry = homeValidationRequested = homeLookUsed = false; homeLegs = 0; el.removeAttribute("data-home-journey"); el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); };
+    const cancelHomeJourney = () => { pendingHomeRecall = undefined; homeJourney = false; homeWakeUntil = 0; strandedSince = 0; homeWaitingGeometry = homeValidationRequested = homeLookUsed = false; homeLegs = 0; homeEntryFloor = undefined; el.removeAttribute("data-home-journey"); el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); };
     const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
     let worldSeeded = saved?.seeded ?? false;
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
     let inputPaintQueued = false, interactionUntil = 0;
     let pause = true, started = false, nextDecision = 0, needsLanding = false, afterPetLanding = false, restAfterLanding = false;
     let action: CompanionAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, keyboardMoved = false, consumePlacementClick = false;
+    let sofaTravelActive = false;
+    let sofaFlightShape: CompanionSofaTravelShape | undefined, ballisticCoefficient: number | null = null;
+    let jumpRecoveryContext: Pick<CompanionAction, "foodId" | "intention" | "episode"> | undefined;
     const jumpAnticipation = () => action?.runUp ? 0 : (action?.jumpHeight ?? 140) > 140 ? 320 : COMPANION_TIMING.jumpAnticipation;
     let placementPointer: number | null = null;
     let pointer: { x: number; y: number } | undefined, heartResult: "added" | "removed" | "blocked" | "missing" | null = null;
@@ -252,8 +258,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     // Ownership outlives a scene snapshot so invalidation/portal replacement
     // can always restore the old room, even after bedScene was cleared.
     let localBedFront: SVGGElement | null = null, localBedFrontHidden = false;
-    const sofaPassage = (progress: number) => bedScene?.anchor.isConnected && action?.kind === "jump" && (action.jumpHeight ?? 140) <= 140 && (travel === -2 || travel > 0) && (support === "companion-home" || action.target.platformId === "companion-home")
-      ? sampleCompanionSofaTravel(origin, action.target, progress, Math.max(size + 8, bedScene.top + bedScene.height * .19 - size * .24 - 8)) : undefined;
+    const sampleSofaRoute = (candidate: CompanionAction, from: { x: number; y: number }, progress: number, occupied = support, fixed?: CompanionSofaTravelShape) => bedScene?.anchor.isConnected && candidate.kind === "jump" && (occupied === "companion-home" || candidate.target.platformId === "companion-home")
+      ? sampleCompanionSofaTravel(from, candidate.target, progress, Math.max(size + 8, bedScene.top + bedScene.height * .19 - size * .24 - 8), { left: bedScene.left, right: bedScene.left + bedScene.width, bodyHalfWidth: size * .38 + 3, ceiling: size + 8 }, fixed) : undefined;
+    const sofaFlightProgress = (now: number) => travel > 0 ? clamp((now - began - jumpAnticipation()) / travel, 0, 1) : clamp((now - began) / Math.max(1, total - COMPANION_TIMING.jumpLanding), 0, 1);
+    const sofaPassage = (progress: number) => action && (travel === -2 || travel > 0) ? sampleSofaRoute(action, origin, progress, support, sofaFlightShape) : undefined;
     const hideBed = () => {
       if (localBedFrontHidden && localBedFront) { localBedFront.removeAttribute("visibility"); localBedFrontHidden = false; }
       if (front && !front.hidden) front.hidden = true;
@@ -410,6 +418,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let paintedRow = -1, paintedColumn = -1, paintedCell = "", paintedFacing = 0, forceNeutralPose = false;
     let paintedTexture = image.querySelector<HTMLImageElement>(".vc-texture");
     let paintedRegistration: { x: number; y: number; clip: readonly number[] } | undefined;
+    let paintedSelection: ReturnType<typeof selectCompanionSprite> | undefined;
+    let mealAnchored = false, mealWaited = 0;
     // A controller restart does not discard its live drawing or registration
     // while the next action warms. Only the presentation lifetime releases it.
     const priorPose = Number(el.dataset.pose);
@@ -418,6 +428,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (paintedTexture.getAttribute("src") === prior.src) {
         paintedCell = `${prior.src}:${prior.index}`;
         paintedRegistration = prior.frame;
+        paintedSelection = prior;
       }
     }
     let sofaDepth: CompanionSofaDepth = "clear";
@@ -581,6 +592,15 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         data("pose", String(selected.physicalIndex)); data("atlas", "hd"); data("quality", "sharp");
         paintedCell = cellKey;
         paintedRegistration = cell;
+        paintedSelection = selected;
+      }
+      const projection = { size, display, shape, pressure, response, facing: sample.facing, sway, chew,
+        poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
+        inertiaOrigin: grip };
+      if (status === "eat" && action?.kind === "eat") {
+        const mouth = paintedSelection ? projectCompanionMouth(paintedSelection, projection) : null;
+        if (mouth) { mealAnchored = true; food.current?.nibble(action.foodId, clamp((performance.now() - began) / total, 0, 1), mouth, sample.facing); }
+        else food.current?.nibble();
       }
       data("state", status);
       data("platform", support);
@@ -600,9 +620,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       sofaContact = undefined;
       if (front && bedScene?.anchor.isConnected && paintedRegistration && !el.hidden && !pause && !premiereActive && !premiereBounce && !isDetailGuest() && !hiding && !homeOccluded) {
         const b = bedScene, right = b.left + b.width, bottom = b.top + b.height;
-        const body = projectCompanionSofaBody({ size, display, cell: paintedRegistration, shape, pressure, response, facing: sample.facing, sway, chew,
-          poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
-          inertiaOrigin: grip });
+        const body = projectCompanionSofaBody({ ...projection, cell: paintedRegistration });
         sofaDepth = companionSofaDepth({ point: display, body, bed: { left: b.left, right, top: b.top, bottom }, seatY: b.anchorY, previous: sofaDepth });
         sofaContact = { point: { x, y }, body, depth: sofaDepth };
         data("sofaDepth", sofaDepth);
@@ -664,7 +682,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!force && !anchorsDirty && (now > followUntil && now > scrollUntil || now === followedAt && keys === followedKeys)) return false;
       anchorsDirty = false;
       followedAt = now; followedKeys = keys;
-      const progress = action ? clamp((now - began) / Math.max(1, total), 0, 1) : 0;
+      const progress = action ? sofaFlightProgress(now) : 0;
       const previousPassage = sofaPassage(progress);
       const samples = geometryTracker?.follow(followedIds) ?? [];
       const seatSample = samples.find(sample => sample.platform.id === "companion-home");
@@ -696,7 +714,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       let px = 0, py = 0;
       if (action) {
         const age = now - began, p = clamp(age / Math.max(1, total), 0, 1);
-        if (action.kind === "jump") { px = sofaPassage(p)?.horizontal ?? (travel > 0 ? clamp((age - jumpAnticipation()) / travel, 0, 1) : travel === -2 || travel === -4 ? sampleCompanionTravel(p) : travel === -3 ? sampleCompanionTravel(clamp(p / .78, 0, 1)) : p); py = travel === -1 ? p * p : px; }
+        if (action.kind === "jump") { const passage = sofaPassage(progress); px = passage?.horizontal ?? (travel > 0 ? clamp((age - jumpAnticipation()) / travel, 0, 1) : travel === -2 || travel === -4 ? sampleCompanionTravel(p) : travel === -3 ? sampleCompanionTravel(clamp(p / .78, 0, 1)) : p); py = passage ? progress : travel === -1 ? p * p : px; }
         else if (playFalling) py = clamp(age / Math.min(650, total), 0, 1) ** 2;
         else if (action.kind === "walk") px = py = runUpCurve ? sampleCompanionRunUp(p) : sampleCompanionTravel(p);
         else if (action.kind === "heart" || action.kind === "hide") px = py = sampleCompanionTravel(clamp(age / Math.max(1, travel), 0, 1));
@@ -710,7 +728,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // Compare the same clock sample before/after moving its real anchors;
       // using horizontal progress for y would snap on the next world tick.
       const movedPassage = previousPassage && sofaPassage(progress);
-      const dx = movedPassage ? movedPassage.x - previousPassage!.x : lerp(from.x, to.x, px), dy = movedPassage ? movedPassage.y - previousPassage!.y : lerp(from.y, to.y, py);
+      const validPassage = previousPassage?.safe && movedPassage?.safe;
+      const dx = validPassage ? movedPassage!.x - previousPassage!.x : lerp(from.x, to.x, px);
+      const dy = validPassage ? movedPassage!.y - previousPassage!.y : lerp(from.y, to.y, py);
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
       if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump" && !playFalling) supportMotion.push(dy, now);
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
@@ -783,7 +803,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       runTrip = runHop = undefined;
       for (const key of ["data-episode", "data-episode-phase", "data-episode-variant", "data-episode-food"]) el.removeAttribute(key);
     };
-    const clearAction = (preserveEpisode = false) => { clearThrow(); if (!preserveEpisode) { brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = (preserveEpisode = false) => { clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
       // One lost-support episode owns one body-width escape budget. Fresh
       // scans cannot repeatedly move this origin to ratchet across columns.
@@ -792,6 +812,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // Explicit placement/cancellation owns the next descent. An old ballistic
       // sidecar must never override this newly chosen vertical landing.
       clearThrow();
+      sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight");
       // User releases hit the first real card top on this vertical ray. The
       // separate text ledges remain the only autonomous destinations.
       const bed = bedScene?.anchor.isConnected ? bedScene : undefined;
@@ -807,14 +828,27 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // until safe geometry returns. Passive recovery keeps its own bounded escape;
       // late decoding or initial seeding must not revive it on another date.
       awaitingAtX = p ? false : !nearby && !atX ? "drop" : "vertical"; verticalLanding = atX || !nearby;
-      if (!p) { support = ""; data("platform", ""); clearAction(); stopHover(); hideBed(); el.hidden = true; return; }
+      if (!p) { support = ""; data("platform", ""); clearAction(Boolean(jumpRecoveryContext)); stopHover(); hideBed(); el.hidden = true; return; }
       clearSupportWait();
       supportMotion.reset();
       const target = { x: sofa?.x ?? recovery?.x ?? (atX || !nearby ? point.x : platformLandingX(p, point.x)), y: p.y, platformId: p.id };
       const raisedFloor = !sofa && !nearby && !atX && p.y < point.y - .5;
       origin = { x, y }; action = { kind: "jump", target, duration: sofa ? 400 : 650 }; began = performance.now(); total = action.duration; travel = sofa ? -4 : nearby || raisedFloor || atX && target.y < point.y ? -3 : -1;
+      if (jumpRecoveryContext) { action = { ...action, ...jumpRecoveryContext }; jumpRecoveryContext = undefined; }
       if (reduced) { x = target.x; y = target.y; support = target.platformId ?? ""; verticalRecoveryX = undefined; clearAction(); }
       brain.current = recordCompanionEvent(brain.current, "landed");
+    };
+    const recoverJumpGeometry = (now: number) => {
+      const interrupted = action;
+      // x/y already include this geometry delivery's real anchor carry. They
+      // are the recovery origin: never substitute a newly bounded parabola.
+      clearAction(true);
+      jumpRecoveryContext = interrupted && (interrupted.foodId || interrupted.intention || interrupted.episode) ? {
+        ...(interrupted.foodId ? { foodId: interrupted.foodId } : {}),
+        ...(interrupted.intention ? { intention: { ...interrupted.intention } } : {}),
+        ...(interrupted.episode ? { episode: { ...interrupted.episode } } : {}) } : undefined;
+      settle({ x, y });
+      nextDecision = now + 300;
     };
     const waitForSupport = () => {
       waitingForSupport = true;
@@ -1025,14 +1059,57 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       clearFood: () => { pendingHomeRecall = undefined; food.current?.clear(); },
     };
     let preparedPlayRow = -1;
+    const homeRouteWorld = () => {
+      const occupied = supportById(support), roomFloors = landingPlatforms.filter(p => isHomeFloor(p.id));
+      return { x, y, platformId: support, platforms: [...platforms, ...roomFloors, ...(occupied && !platforms.some(p => p.id === support) ? [occupied] : [])], width: innerWidth, height: innerHeight };
+    };
+    const planHomeFloorEntry = () => {
+      const home = supportById("companion-home");
+      if (!home) return;
+      const centre = platformLandingX(home, home.x + home.width / 2), world = homeRouteWorld();
+      const floors = world.platforms.filter(p => isHomeFloor(p.id) && Math.abs(platformLandingX(p, centre) - centre) < 1)
+        .sort((a, b) => Math.hypot(centre - x, a.y - y) - Math.hypot(centre - x, b.y - y)).slice(0, 2);
+      for (const floor of floors) {
+        const vertical = sampleSofaRoute({ kind: "jump", target: { x: centre, y: home.y, platformId: home.id }, duration: 950 }, { x: centre, y: floor.y }, .5, floor.id);
+        if (!vertical?.safe) continue;
+        const plan = planCompanionHomeReturn(brain.current, world, { ...effective, jump: !reduced }, { id: floor.id, x: centre });
+        if (plan.state === "travel") return { id: floor.id, action: plan.action };
+      }
+    };
     const launch = (next: CompanionAction, now: number) => {
       verticalRecoveryX = undefined;
+      let passage = sampleSofaRoute(next, { x, y }, .5);
+      const sofaTransfer = next.kind === "jump" && (support === "companion-home" || next.target.platformId === "companion-home");
+      if (sofaTransfer && (!passage || !passage.safe)) {
+        if (homeJourney) {
+          // A cramped direct seat edge need not strand a valid command. Reach
+          // a real floor beneath its opening, then replan the contained lift.
+          // Same planner/species speed and actual support identities are used.
+          const detour = planHomeFloorEntry();
+          if (detour) { homeEntryFloor = detour.id; next = detour.action; passage = sampleSofaRoute(next, { x, y }, .5); }
+          if (!detour || passage && !passage.safe) { clearAction(true); waitForHomeGeometry(); return; }
+        } else {
+          // Keep an offered meal identity/finite budget through a blocked
+          // transfer; explore failures instead gain the existing active-time
+          // retry memory. Never paint an unsafe normal-arc fallback.
+          const goal = next.intention;
+          next = { kind: "look", target: { x, y, platformId: support }, duration: next.foodId ? 4000 : 480,
+            ...(next.foodId ? { foodId: next.foodId } : {}), ...(next.foodId && goal ? { intention: { ...goal, stage: "consider" as const } } : {}),
+            ...(next.episode ? { episode: { ...next.episode } } : {}),
+            attention: { kind: "reconsider", ...(goal ? { goal: { ...goal } } : { point: { ...next.target } }) },
+            outcomes: [...(next.outcomes ?? []).slice(0, 2), { targetId: goal?.targetId ?? next.target.platformId ?? "", result: "blocked" }] };
+          passage = undefined;
+        }
+      }
       const playful = !homeJourney && !overlayActive && !workspaceBusyRef.current && !premiereActive && presence.phase === "active" && !reduced && gfxMode() !== "off";
       const romp = playful && !next.episode ? planCompanionRomp({ action: next, from: { x, y }, platform: supportById(support), foods: food.current?.foods() ?? [], energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.mishap ?? -Infinity) <= now }, preferences) : undefined;
       // A verified run-up shortens only this leg. Preserve the ultimate goal
       // and commit its actual duration/budget after selecting the takeoff.
       next = romp?.walk ?? next;
       clearAction(); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
+      mealAnchored = false; mealWaited = 0;
+      if (next.kind === "eat") for (const row of [1, 9]) spriteSources[row].forEach(src => requestSprite.current(src));
+      sofaTravelActive = Boolean(passage?.safe); sofaFlightShape = passage?.safe ? { coefficient: passage.coefficient, curve: passage.curve } : undefined; if (sofaTravelActive) data("sofaFlight", "");
       preparedPlayRow = -1;
       if (next.foodId) data("foodGoal", next.foodId);
       if (next.episode) { data("episode", next.episode.kind); data("episodePhase", next.episode.phase); data("episodeVariant", next.episode.variant); if (next.episode.foodId) data("episodeFood", next.episode.foodId); }
@@ -1068,6 +1145,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         const g = 1100, impulse = Math.sqrt(2 * g * (next.jumpHeight ?? 140)), dy = next.target.y - y;
         travel = (impulse + Math.sqrt(Math.max(0, impulse * impulse + 2 * g * dy))) / g * 1000;
         total = jumpAnticipation() + travel + COMPANION_TIMING.jumpLanding;
+        // One launch owns this lift. More headroom after scrolling must not
+        // increase it; less headroom is a finite recovery, never a new curve.
+        if (!sofaTravelActive) ballisticCoefficient = boundCompanionBallisticArc(y, next.target.y, .5 * g * (travel / 1000) ** 2, size + 8).coefficient;
       }
       // Account for the actual finite flight, not the proposal's placeholder.
       brain.current = commitAction(brain.current, next.kind === "jump" ? { ...(action ?? next), duration: total } : action ?? next, now);
@@ -1098,15 +1178,22 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const advanceHomeJourney = (now: number) => {
       if (!homeJourney || homeWaitingGeometry || action || overlayActive || workspaceBusyRef.current || pause) return;
-      const occupied = supportById(support), roomFloors = landingPlatforms.filter(p => isHomeFloor(p.id));
-      const plan = planCompanionHomeReturn(brain.current, { x, y, platformId: support, platforms: [...platforms, ...roomFloors, ...(occupied && !platforms.some(p => p.id === support) ? [occupied] : [])], width: innerWidth, height: innerHeight }, { ...effective, jump: !reduced });
+      const world = homeRouteWorld(), home = supportById("companion-home");
+      const viaFloor = homeEntryFloor && home ? { id: homeEntryFloor, x: platformLandingX(home, home.x + home.width / 2) } : undefined;
+      let plan = planCompanionHomeReturn(brain.current, world, { ...effective, jump: !reduced }, viaFloor);
+      if (viaFloor && plan.state !== "travel") {
+        homeEntryFloor = undefined;
+        plan = planCompanionHomeReturn(brain.current, world, { ...effective, jump: !reduced });
+      }
       if (plan.state === "travel") {
-        homeValidationRequested = false;
         // One short glance belongs to the mascot's return, never an unbounded
         // random diversion. Dogs run and cats walk in the shared route planner.
         if (homeJourney === "called" && preferences.animalMode === "default" && !homeLookUsed && homeLegs > 0 && !reduced && gfxMode() !== "off") {
           homeLookUsed = true; launch({ kind: "look", target: { x, y, platformId: support }, duration: 320 }, now);
         } else launch(plan.action, now);
+        // A geometrically rejected seat transfer did not start a leg. Keep
+        // its single validation lease so called/automatic waits cannot poll.
+        if (action) homeValidationRequested = false;
       } else if (plan.state === "arrived") {
         cancelHomeJourney();
         if (!document.hasFocus()) presence.focus(false, now);
@@ -1143,14 +1230,19 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // before region5 retires. Reduced motion keeps the same real support.
         const age = now - homeDeparture.began;
         if (!geometryReady || age < (reduced || gfxMode() === "off" ? 0 : 550)) { paint(12, age / 550 * 15, "wake"); schedule(); return; }
-        const destinations = platforms.filter(p => !isHomeSupport(p.id) && !p.manualOnly);
-        const target = nearestPlatform({ x, y }, destinations.filter(p => p.kind !== "floor")) ?? nearestPlatform({ x, y }, destinations);
-        if (target) {
+        const destinations = platforms.filter(p => !isHomeSupport(p.id) && !p.manualOnly)
+          .sort((a, b) => Number(a.kind === "floor") - Number(b.kind === "floor") || Math.hypot(platformLandingX(a, x) - x, a.y - y) - Math.hypot(platformLandingX(b, x) - x, b.y - y));
+        const departure = destinations.slice(0, 12).map(target => {
+          const next: CompanionAction = { kind: "jump", target: { x: platformLandingX(target, x), y: target.y, platformId: target.id }, duration: 850 };
+          return { next, passage: sampleSofaRoute(next, { x, y }, .5) };
+        }).find(candidate => reduced || gfxMode() === "off" || support !== "companion-home" || candidate.passage?.safe);
+        if (departure) {
           homeDeparture.flying = true;
-          origin = { x, y }; action = { kind: "jump", target: { x: platformLandingX(target, x), y: target.y, platformId: target.id }, duration: 850 }; began = now; total = 850; travel = -2;
-          if (reduced || gfxMode() === "off") { x = action.target.x; y = target.y; support = target.id; clearAction(); }
+          origin = { x, y }; action = departure.next; began = now; total = 850; travel = -2;
+          sofaTravelActive = Boolean(departure.passage?.safe); sofaFlightShape = departure.passage?.safe ? { coefficient: departure.passage.coefficient, curve: departure.passage.curve } : undefined; if (sofaTravelActive) data("sofaFlight", "");
+          if (reduced || gfxMode() === "off") { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; clearAction(); }
           nextDecision = now + 1100;
-        } else homeDeparture = undefined;
+        } else { homeDeparture = undefined; clearAction(true); settle({ x, y }); }
       }
       if (premiereBounce) {
         const progress = reduced || gfxMode() === "off" || gfxMode() === "soft" ? 1 : clamp((now - premiereBounce.began) / premiereBounce.duration, 0, 1);
@@ -1322,7 +1414,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           }
         }
         else if (action.kind === "jump") {
-          const passage = sofaPassage(p);
+          const passage = sofaPassage(sofaFlightProgress(now));
+          if (sofaTravelActive && (!passage || !passage.safe)) {
+            // A resize/fold can revoke a once-safe rim/ceiling while airborne.
+            // Adopt the actual shown point into the existing sofa collider or
+            // first lower support; do not revert to a wall-crossing old arc.
+            recoverJumpGeometry(now);
+            paint(5, 0, "jump"); schedule(); return;
+          }
+          if (!flight && travel > 0 && !sofaTravelActive && (ballisticCoefficient === null || !companionBallisticArcIsSafe(origin.y, action.target.y, ballisticCoefficient, size + 8, sofaFlightProgress(now)))) {
+            recoverJumpGeometry(now);
+            paint(5, 0, "jump"); schedule(); return;
+          }
           if (flight) {
             const result = stepCompanionThrow(flight, now - flightAt, landingPlatforms, throwBounds());
             flight = result.state; flightAt = now; x = flight.x; y = flight.y;
@@ -1346,7 +1449,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             }
           }
           else if (travel === -6) { x = action.target.x; y = action.target.y; row = 6; frame = p * 15; }
-          else if (passage) { x = passage.x; y = passage.y; row = p < .28 ? 4 : p < .84 ? 5 : 6; frame = (p < .28 ? p / .28 : p < .84 ? (p - .28) / .56 : (p - .84) / .16) * 15; }
+          else if (passage) {
+            x = passage.x; y = passage.y;
+            const anticipation = travel > 0 ? jumpAnticipation() : 0, flightMs = travel > 0 ? travel : Math.max(1, total - COMPANION_TIMING.jumpLanding);
+            const progress = sofaFlightProgress(now), apex = passage.coefficient > 0 ? clamp(.5 - (action.target.y - origin.y) / (2 * passage.coefficient), 0, 1) : action.target.y < origin.y ? 1 : 0;
+            if (age < anticipation) { row = 3; frame = age / anticipation * 15; }
+            else if (age >= anticipation + flightMs) { row = 6; frame = (age - anticipation - flightMs) / COMPANION_TIMING.jumpLanding * 15; }
+            else { row = progress < apex ? 4 : 5; frame = (progress < apex ? progress / Math.max(.001, apex) : (progress - apex) / Math.max(.001, 1 - apex)) * 15; }
+          }
           else if (travel === -2) { const eased = sampleCompanionTravel(p), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 60, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * lift; row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
           else if (travel === -3) { const progress = clamp(p / .78, 0, 1), eased = sampleCompanionTravel(progress), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 10, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(progress * Math.PI) * lift; row = p < .78 ? 5 : 6; frame = (p < .78 ? progress : (p - .78) / .22) * 15; }
           else if (travel === -4) { const eased = sampleCompanionTravel(p); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased); row = p < .8 ? 5 : 6; frame = p * 15; }
@@ -1354,9 +1464,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           else if (age < jumpAnticipation()) { row = 3; frame = age / jumpAnticipation() * 15; }
           else if (age < jumpAnticipation() + travel) {
             const t = (age - jumpAnticipation()) / 1000, progress = clamp((age - jumpAnticipation()) / travel, 0, 1);
-            const arc = boundCompanionBallisticArc(origin.y, action.target.y, .5 * 1100 * (travel / 1000) ** 2, size + 8);
-            x = lerp(origin.x, action.target.x, progress); y = lerp(origin.y, action.target.y, progress) - arc.coefficient * progress * (1 - progress);
-            const apex = arc.apexProgress * travel / 1000;
+            const coefficient = ballisticCoefficient ?? 0;
+            x = lerp(origin.x, action.target.x, progress); y = lerp(origin.y, action.target.y, progress) - coefficient * progress * (1 - progress);
+            const apexProgress = coefficient > 0 ? clamp(.5 - (action.target.y - origin.y) / (2 * coefficient), 0, 1) : action.target.y < origin.y ? 1 : 0;
+            const apex = apexProgress * travel / 1000;
             row = t < apex ? 4 : 5; frame = (t < apex ? t / Math.max(.001, apex) : (t - apex) / Math.max(.001, travel / 1000 - apex)) * 15;
           } else { x = action.target.x; y = action.target.y; row = 6; frame = (age - jumpAnticipation() - travel) / COMPANION_TIMING.jumpLanding * 15; }
         } else if (action.kind === "sleep") {
@@ -1390,9 +1501,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           }
         } else if (action.kind === "sniff") { row = 1; frame = p * 15; }
         else if (action.kind === "eat") {
+          // A missing packet may retain another visible pose. Wait finitely
+          // for an actual calibrated mouth instead of consuming an unseen bite.
+          if (!mealAnchored) {
+            const wait = advanceCompanionMealWait(now, began, delta, mealWaited);
+            mealWaited = wait.waited; began = wait.began; age = p = 0;
+            if (wait.expired) {
+              const foodId = action.foodId; clearAction();
+              if (foodId) brain.current = { ...brain.current, foodGoal: { foodId, remaining: 0, retryAfter: brain.current.activeMs + COMPANION_FEED_RETRY_MS } };
+              nextDecision = now + 480; paint(1, 0, "look"); schedule(); return;
+            }
+          }
           row = p < .18 ? 1 : 9; frame = p < .18 ? p / .18 * 15 : 0;
-          const direction = paintedFacing < 0 ? -1 : 1;
-          food.current?.nibble(action.foodId, p, { x: x + direction * size * .045, y: y - size * .24 }, direction);
         } else if (action.kind === "play" && action.play) {
           const play = sampleCompanionPlay(action.play, p, reduced || gfxMode() === "off");
           row = play.row; frame = play.phase * 15;
@@ -2412,7 +2532,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // Genuine deletion/occlusion/resize needs one safe landing. A source
         // leaving the viewport during a valid flight does not cancel it.
         if (action && destination && !target || !action && !p) {
-          clearAction(); settle({ x, y }, viewportChanged, !viewportChanged);
+          clearAction(Boolean(jumpRecoveryContext)); settle({ x, y }, viewportChanged, !viewportChanged);
         } else if (!action && p) { verticalRecoveryX = undefined; y = p.y; }
       }
       // Seed current baselines after span identity remapping, not with span.x:

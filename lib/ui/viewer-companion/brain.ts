@@ -158,7 +158,11 @@ type SupportedPoint = Point & { platformId?: string };
  * Each returned jump is checked with the same ballistic test as wandering. */
 export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint, platforms: readonly Platform[], allowJump = true, foodTargetId?: string): CompanionRouteStep[] | null {
   const available = platforms.filter(p => valid(p) && p.kind !== "hide" && !p.manualOnly).slice(0, COMPANION_ROUTE_LIMITS.maxNodes);
-  const start = platforms.find(p => p.id === origin.platformId && valid(p)) ?? nearestPlatform(origin, available);
+  // A retained support is an identity, not a hint for nearest-platform search.
+  // Reflow/deletion can leave the old feet at another ledge's height; treating
+  // that ledge as already occupied would plan a walk through the empty gap.
+  // The renderer owns actual falling/recovery before another decision.
+  const start = origin.platformId ? platforms.find(p => p.id === origin.platformId && valid(p)) : nearestPlatform(origin, available);
   const namedGoal = target.platformId ? platforms.find(p => p.id === target.platformId) : undefined;
   if (namedGoal?.manualOnly && foodTargetId !== namedGoal.id) return null;
   const manualFoodGoal = namedGoal?.manualOnly && foodTargetId === namedGoal.id && valid(namedGoal) && namedGoal.kind !== "hide" ? namedGoal : undefined;
@@ -166,6 +170,7 @@ export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint
   // including one excluded by the bounded graph or a fresh visibility scan.
   const goal = manualFoodGoal ?? (target.platformId ? available.find(p => p.id === target.platformId) : nearestPlatform(target, available));
   if (!start || !goal || ![origin.x, origin.y, target.x, target.y].every(Number.isFinite)
+    || origin.x < start.x - 1e-7 || origin.x > start.x + start.width + 1e-7
     || Math.abs(start.y - origin.y) > 18 || Math.abs(goal.y - target.y) > 18) return null;
   const finalX = platformLandingX(goal, target.x);
   const finish = (x: number, steps: CompanionRouteStep[]): CompanionRouteStep[] | null => goal.manualOnly ? Math.abs(finalX - x) <= 36 ? steps : null : Math.abs(finalX - x) > 1
@@ -338,12 +343,17 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const stationary = { x: world.x, y: world.y, platformId: world.platformId };
   const idle: CompanionAction = { kind: "idle", target: stationary, duration: 900 };
   if (!prefs.enabled || world.paused || !Number.isFinite(world.x) || !Number.isFinite(world.y) || !Number.isFinite(now)) return idle;
+  const current = world.platformId ? world.platforms.find(p => p.id === world.platformId && valid(p)) : nearestPlatform(world, world.platforms);
+  // A disappearing/moving support is a physics question. Do not replace it
+  // with a nearby card and start walking, sleeping or pressing its heart while
+  // the renderer is still recovering the actual unsupported foot position.
+  if (!current || current.kind === "hide" || Math.abs(current.y - world.y) > 18
+    || world.x < current.x - 1e-7 || world.x > current.x + current.width + 1e-7) return idle;
   const foodAction = getFoodAction(brain, world, prefs, now);
   const episode = planCompanionEpisode(brain, world, prefs, now, foodAction, rng, reachablePlatforms);
   if (episode) return episode;
   if (foodAction) return foodAction;
   const profile = getCompanionBehaviorProfile(prefs, brain.habits);
-  const current = world.platforms.find(p => p.id === world.platformId && valid(p)) ?? nearestPlatform(world, world.platforms);
   // A rare toe-tap starts only on the actual occupied arrow. The renderer
   // rechecks its exact live control at impact; no remote button targeting.
   if (prefs.roam && prefs.panelPrank && current?.kind === "control" && current.panelSide
@@ -397,7 +407,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
     const pace = !tired && random(rng) < profile.scootChance ? "scoot" : "amble";
     // A finite run may cross more of this already-safe span. Social approaches,
     // controls and the cushion retain their short reach; walking keeps its gait.
-    const variableRun = pace === "scoot" && !follows && !current.manualOnly && current.kind !== "control" && current.kind !== "hide" && !current.id.startsWith("companion-home");
+    const variableRun = pace === "scoot" && !follows && !current.manualOnly && current.kind !== "control" && !current.id.startsWith("companion-home");
     const scootSpeed = variableRun ? speed * (1 + random(rng) * .5) : speed;
     const forwardEdge = platformLandingX(current, direction > 0 ? current.x + current.width : current.x);
     const available = Math.max(0, (forwardEdge - world.x) * direction);
