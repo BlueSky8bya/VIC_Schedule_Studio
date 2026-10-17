@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Owner authorized [PLAN-080](plans/PLAN-20261017-080-platform-remediation.md): privacy/error recovery first, bounded duplicate work/DB cost next, shared companion/popover/OBS pipeline and verification after. Existing commit/push/deploy authorization continues. Preserve user art/preview changes; no production deletion, bulk UPDATE, paid-plan change or permission expansion.
+Current: observe operating costs and close provider/real-device evidence after the authorized platform release. Implementation/release results are in [080](verification/PLATFORM_REMEDIATION-20261017.md). Preserve user art/preview changes; no production deletion, bulk UPDATE, paid-plan change or permission expansion. Diagnostic cleanup awaits its exact separate approval.
 
 Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, owner-only private content, Google+passcode/session binding, KST and serial writes remain mandatory. Companion defaults ON only for PC without saved choice; explicit choices persist. Mobile companion stays excluded. Actual OBS hardware/real-session/provider evidence stays distinct from fixtures.
 
@@ -15,7 +15,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| PLATFORM-080 | In Progress | Final lint, commit/push and deployed SHA/API verification; implementation/independent review complete | [Plan](plans/PLAN-20261017-080-platform-remediation.md), [record](verification/PLATFORM_REMEDIATION-20261017.md) |
 | OPS-DB-QUOTA | Watch | DB272.26MB/259.64MiB on10/17; reduce duplicate rebuilds before capacity changes. Actual plan/disk/WAL/backup unverified | [DB audit](verification/PLATFORM_AUDIT_DB-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
 | ART-PINE-PILOT | Awaiting Owner | Owner selects reference PNGs to remove; freeze replacement run only afterward | [Pine handoff](../ambient/HANDOFF-20260908-pine.md) |
@@ -35,7 +34,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
-1. PLATFORM-080: finish release gates and authorized deploy verification. Unit1894/1894, build/typecheck, SQL4, fixture28+popup2/SW3 and harness passed; keep actual OBS/provider gaps separate.
+1. OPS-DB-QUOTA: compare post-release route/RPC/cost metrics with the same period/denominator; verify actual account quotas/backups when dashboard access is available. No automatic future run was created.
 2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
 4. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
@@ -43,6 +42,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Deployed activity product887f6d4b, docs HEAD965cc950. [078 verification](verification/ACTIVITY_COVERAGE-20261017.md): historical unit1701PASS/8FAIL, not current PASS. [079 audit](verification/PLATFORM_AUDIT-20261017.md): read-only provider/DB, offline9 defect demonstrations, harness unit43PASS; inventory2FAIL preceded discovery of oversized startup memory. PLAN-080 owns fresh verification and preserves original failures.
+Current [080 verification](verification/PLATFORM_REMEDIATION-20261017.md): product9aefbd29 deployed/API18; finalaac6b78d Vercel Ready and remotequality38992818125 all PASS(unit1894, SQL4, harness, real-font build, typecheck/lint). Fixture28+popup2/SW3 PASS. 0151 applied with restrictive grants/cron unchanged. Original failures retained; actual OBS/provider and diagnostic-deletion approval remain separate. [079](verification/PLATFORM_AUDIT-20261017.md) is the read-only baseline.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

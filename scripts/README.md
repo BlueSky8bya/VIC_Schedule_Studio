@@ -12,7 +12,7 @@
 
 성능 관측 `PERF_SAMPLE_RATE`는 서버 전용 `0..1` 값이다. 기본값/잘못된 값은 `0.1`이며 `0`은 DB 표본 기록을 끈다. 균등 표본을 `after()` 예약 전에 고른다. 인사이트의 표본 수는 총 요청 수가 아니며 과거 전수 기록과 건수를 직접 비교하지 않는다. 방문·행동 기록의 보존/동의 정책과 별개다.
 
-`ci-network-budget.mjs`는 quality workflow의 build step에서만 Node `--import`로 사용한다. 실제 Google font CSS/파일을 그대로 받되 연결을 origin당4개·프로토콜당8개로 제한한다. TLS·운영 fetch·선택 글꼴을 바꾸거나 폰트를 mock하지 않는다. CI 단위 검사는 실제 CLI 자식 프로세스의 CPU 경쟁을 줄이기 위해 worker1개로 실행하며 assertion/timeout은 유지한다.
+`ci-network-budget.mjs`는 quality workflow의 build step에서만 Node `--import`로 사용한다. 실제 Google font CSS/파일을 그대로 받되 연결을 origin당4개·프로토콜당8개로 제한한다. TLS·운영 fetch·선택 글꼴을 바꾸거나 폰트를 mock하지 않는다. CI 단위 검사는 worker1개이며 단언/일반 timeout은 유지한다. 실제6장 정규화 통합 검사1개만30초 제한이다([080 근거](../docs/agent/verification/PLATFORM_REMEDIATION-20261017.md)).
 
 | 파일 | 역할 | 분류 |
 |---|---|---|

@@ -1,6 +1,6 @@
 # PLAN-080 — 플랫폼·빅타민 안정화 적용 기록
 
-Date: 2026-10-17 KST. Baseline: HEAD965cc950 / 제품887f6d4b. [079 감사](PLATFORM_AUDIT-20261017.md)의 코드로 해결할 항목을 구현했다. 최종 품질 검사·배포 증거는 아래에서 갱신한다. 실제 방송 장비/계정 설정과 합성 검사를 구분한다.
+Date: 2026-10-17 KST. Status: 구현·배포·검증 완료. Baseline: HEAD965cc950 / 제품887f6d4b. [079 감사](PLATFORM_AUDIT-20261017.md)의 코드로 해결할 항목을 구현했다. 실제 방송 장비/계정 설정과 합성 검사를 구분하며, 별도 승인 대기 중인 과거 데이터 삭제는 완료 범위에 포함하지 않는다.
 
 ## 변경과 감사 연결
 
@@ -69,3 +69,13 @@ Vercel 감사 사용량 CPU6시간47분/4시간·Fluid Memory460.1/360GB-hours�
 CI만 worker1개로 CPU 경쟁을 제한하고 build에 Node agent origin4/프로토콜8 연결 상한을 적용했다. 실제 Next 자식 worker/폰트 fetch 함수로 합성32요청→동시 최대4·모두 완료·cwd/agent 상속을 독립 확인했다. 실제 Google CSS/woff2·TLS·운영 글꼴/앱은 그대로다. font mock·오류 무시로 gate를 통과시키지 않는다. 명시 proxy가 있으면 별도 ProxyAgent라 이 제한이 적용되지 않으며 실제 CI의 proxy boolean과 결과를 확인한다.
 
 worker1인 `38992566341`도 같은 이미지 검사만5.010초로 실패해 CPU 경쟁만으로 설명할 수 없었다. 첫 원격 성공은 같은 검사4.166초였다. 이 검사는6장1024px 실제 정규화·원문 byte 보존·미승인 게시 거절·tamper 검출의 통합 검사이며5초 성능 요구가 없다. 초기 “5초 유지” 시도 대신 **해당 테스트 하나만30초**로 정정했다. 전체 timeout·단언·full-size 입력·성공/실패 기준은 보존했고 split/skip/mock/이미지 축소는 하지 않았다. 독립 리뷰에서 동일 수명주기 보존과 단일 제한 조정을 확인했고 로컬 해당 suite25/25 PASS. 수정한 원격 CI 결과는 이어서 기록한다.
+
+최종 `aac6b78d53c8a7834fbbb92f2790025b8aec7ab7` [quality38992818125](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/38992818125) **전체 PASS**. 새 Linux/Node22/npm ci에서197파일·1894테스트, 격리SQL4, harness, 실제 Google font를 받은 production build, 이후typecheck/lint가 모두 성공했다. 실제 build 로그의 parent/worker `proxyConfigured:false`와 cap4/8도 확인했다. font-fetch 거절의 단독 원인을 확정한 것은 아니며 이 구성의 실제 성공 증거다. 최종 Vercel도 [Ready](https://vercel.com/bluesky-s-project3/vic-schedule-studio/8aJ7iRX7ewy5rnoUNgJFKfLd6qgt). CI용 cap은 배포 앱에 적용되지 않는다.
+
+### 운영 배포와 공개 smoke
+
+제품 `0c4e427a`와 첫 staging에서 누락된 인증 middleware 보완 `9aefbd29272caa1eb126fe93cdc23fc939aa3607`을 main에 push했다. 보완 파일은 최종 로컬 build/unit/typecheck/lint에 이미 포함됐던 내용이며 별도 제품 동작 추가가 아니다. Vercel 두 배포 Ready, 운영 `/api/soop-live` build 필드가9aefbd29를 반환한 것을 확인했다. 이후 CI/test 변경은 운영 앱 내용을 바꾸지 않는다.
+
+10:51–10:52KST 익명 smoke **18/18 PASS**: 새 warm204/ready·첫miss170ms/다음hit0ms, clock200/no-store, 공개events200(640개·미공개teaser0·금지키0·개인 하트없음), 잘못된slug404/query400/소수titleNo400, 개발자집계401/no-store, 제안/화제/실제 과거VOD chat200, 공개SSR200·실제JS2/CSS1 immutable200, 현재SW 소스 hash일치. 원문 일정·query/계정·채팅을 로그에 저장하지 않고 shape/count/status만 기록했다. 부하 시험/시험 일정 삽입/cleanup은 하지 않았다. 정상 live read가 기존 background 수집을 예약할 수 있다는 앱 동작은 유지한다.
+
+fixture 차단은 첫 probe의 “HTTP404” 기대에서 실패했다. 실제 응답은200이지만 streamed `NEXT_HTTP_ERROR_FALLBACK;404`/noindex/찾을 수 없음 화면이며 studio fixture markup·샘플 이름은 없다. 같은 상태를 재조회해 **fixture 비노출** 기준으로 확인했다. 최초 실패 JSON도 남겼고 실제 HTTP404라고 보고하지 않는다. 이 검사는 실제 로그인·전체 RLS·과거노출 증거가 아니다. 원본 `.scratch-pw/platform-080-production-smoke{,-first}.json`.
