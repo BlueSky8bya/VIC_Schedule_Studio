@@ -1,0 +1,231 @@
+{
+  "source": "art-src/빅타민/동행/작업회차/20261017-관성비행/원본/빅타민_관성비행_4키포즈.png",
+  "sourceSha256": "728098be7cd6731628b18f7bc0331b620768c7a5db4765b56dd8337468de4498",
+  "nativeWidth": 1288,
+  "nativeHeight": 1221,
+  "newlyGeneratedKeys": 4,
+  "derivedFrameSlots": 16,
+  "generationCallsByThisScript": 0,
+  "method": "2x2 whole-body RGBA crops, uniform downscale with integer rounding, centre/foot registration; no facial painting or new intermediate drawings",
+  "encoding": {
+    "quality": 95,
+    "alphaQuality": 100,
+    "smartSubsample": true,
+    "effort": 6
+  },
+  "keys": [
+    {
+      "frame": {
+        "x": 0,
+        "y": 5,
+        "clip": [
+          14.25,
+          8.833333,
+          3,
+          8.833333
+        ]
+      },
+      "index": 0,
+      "nominal": {
+        "left": 0,
+        "top": 0,
+        "width": 644,
+        "height": 580
+      },
+      "bounds": {
+        "left": 95,
+        "top": 57,
+        "right": 585,
+        "bottom": 551,
+        "width": 490,
+        "height": 494,
+        "pixels": 156760
+      },
+      "crop": {
+        "left": 92,
+        "top": 54,
+        "width": 496,
+        "height": 500
+      },
+      "scale": 0.28775510204081634,
+      "width": 142,
+      "height": 143,
+      "body": {
+        "left": 26,
+        "top": 39,
+        "right": 166,
+        "bottom": 180,
+        "width": 140,
+        "height": 141,
+        "pixels": 12782
+      },
+      "rgbaSha256": "7e2457a54f9796c204b3a5b4f6d0fe2611e17946ff6b7a972bd866ec13a9759c"
+    },
+    {
+      "frame": {
+        "x": 0,
+        "y": 5,
+        "clip": [
+          23.416667,
+          8.833333,
+          3,
+          8.833333
+        ]
+      },
+      "index": 1,
+      "nominal": {
+        "left": 644,
+        "top": 0,
+        "width": 644,
+        "height": 580
+      },
+      "bounds": {
+        "left": 81,
+        "top": 91,
+        "right": 633,
+        "bottom": 562,
+        "width": 552,
+        "height": 471,
+        "pixels": 169613
+      },
+      "crop": {
+        "left": 78,
+        "top": 88,
+        "width": 558,
+        "height": 477
+      },
+      "scale": 0.2554347826086957,
+      "width": 142,
+      "height": 121,
+      "body": {
+        "left": 26,
+        "top": 61,
+        "right": 166,
+        "bottom": 180,
+        "width": 140,
+        "height": 119,
+        "pixels": 10935
+      },
+      "rgbaSha256": "2ab31c2d02d78e811db3f384f938aa9a551c68fe02406355cdf4dc8f0e95d289"
+    },
+    {
+      "frame": {
+        "x": -0.208333,
+        "y": 5,
+        "clip": [
+          10.5,
+          8.833333,
+          3,
+          9.25
+        ]
+      },
+      "index": 2,
+      "nominal": {
+        "left": 0,
+        "top": 580,
+        "width": 644,
+        "height": 641
+      },
+      "bounds": {
+        "left": 85,
+        "top": 22,
+        "right": 586,
+        "bottom": 564,
+        "width": 501,
+        "height": 542,
+        "pixels": 163935
+      },
+      "crop": {
+        "left": 82,
+        "top": 19,
+        "width": 507,
+        "height": 548
+      },
+      "scale": 0.2785977859778598,
+      "width": 141,
+      "height": 152,
+      "body": {
+        "left": 27,
+        "top": 30,
+        "right": 166,
+        "bottom": 180,
+        "width": 139,
+        "height": 150,
+        "pixels": 12615
+      },
+      "rgbaSha256": "29c98c48bfebe3b3e1d8bfb453dc093ce05b28a8b633758affd028df064d4f2f"
+    },
+    {
+      "frame": {
+        "x": -0.208333,
+        "y": 5,
+        "clip": [
+          10.5,
+          15.083333,
+          3,
+          15.5
+        ]
+      },
+      "index": 3,
+      "nominal": {
+        "left": 644,
+        "top": 580,
+        "width": 644,
+        "height": 641
+      },
+      "bounds": {
+        "left": 155,
+        "top": 21,
+        "right": 576,
+        "bottom": 601,
+        "width": 421,
+        "height": 580,
+        "pixels": 162443
+      },
+      "crop": {
+        "left": 152,
+        "top": 18,
+        "width": 427,
+        "height": 586
+      },
+      "scale": 0.2603448275862069,
+      "width": 111,
+      "height": 152,
+      "body": {
+        "left": 42,
+        "top": 30,
+        "right": 151,
+        "bottom": 180,
+        "width": 109,
+        "height": 150,
+        "pixels": 10914
+      },
+      "rgbaSha256": "de8186f9c609b508f2af59c77d2090099f913979379a272c473ab46828165cbc"
+    }
+  ],
+  "columns": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3
+  ],
+  "atlas": {
+    "src": "/companion/hd/victamin-play-32-throw.webp",
+    "sha256": "53a28edde66f22bf8e18226edecfda019a32087088839a1c31125768fb18232e",
+    "bytes": 144392,
+    "width": 1536,
+    "height": 384
+  }
+}

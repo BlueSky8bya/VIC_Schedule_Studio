@@ -4,12 +4,13 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } f
 import { createPortal } from "react-dom";
 import { Home } from "lucide-react";
 import { logActivity } from "@/lib/activity/client";
-import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING, COMPANION_TIMING, companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
+import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING, COMPANION_TIMING, COMPANION_THROW_ROW, companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
 import { getCompanionArrivalPlay } from "@/lib/ui/viewer-companion/arrival-play";
 import { companionRunTripContact, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop, type CompanionRunTrip } from "@/lib/ui/viewer-companion/romp";
 import { cancelCompanionEpisode, companionEpisodeHopAvailable, companionEpisodeMishap, companionEpisodeRunHop, companionEpisodeRunTrip, companionRollProgress } from "@/lib/ui/viewer-companion/episodes";
 import { companionAttentionPoint, deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
-import { advanceBrain, commitAction, createBrain, getAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
+import { advanceBrain, cancelCompanionTravelGoal, commitAction, createBrain, getAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
+import { COMPANION_THROW_LIMITS, createCompanionThrow, createCompanionThrowVelocity, stepCompanionThrow, type CompanionThrowState, type CompanionThrowVelocity } from "@/lib/ui/viewer-companion/throw";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, type CompanionGeometrySubscription } from "@/lib/ui/viewer-companion/geometry";
 import { COMPANION_DETAIL_EVENT, collectCompanionHideTargets, type CompanionDetailNotice, type CompanionHideTarget } from "@/lib/ui/viewer-companion/hide-targets";
@@ -334,6 +335,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const supportMotion = createCompanionSupportMotion();
     const heldInertia = createCompanionHeldInertia();
     const heldShake = createCompanionHeldShake();
+    const throwVelocity = createCompanionThrowVelocity();
+    let flight: CompanionThrowState | undefined, flightAt = 0;
+    const throwBounds = () => ({ left: size / 2 + 4, right: innerWidth - size / 2 - 4, top: size + 8, bottom: innerHeight - 12 });
+    const clearThrow = () => {
+      flight = undefined; flightAt = 0; throwVelocity.reset();
+      for (const key of ["data-throw-phase", "data-throw-vx", "data-throw-vy"]) el.removeAttribute(key);
+    };
     let shakenReleasePending: { column: number } | undefined;
     let shakenGroundColumn: number | undefined;
     let runTrip: CompanionRunTrip | undefined, runHop: CompanionAction | undefined, runUpCurve = false;
@@ -492,6 +500,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // Resolve just the attended cached support/snack. No route search or DOM
       // measurement runs in pose sampling; the existing follower owns layout.
       const attention = ["look", "sniff"].includes(status) ? action?.attention : undefined;
+      const goal = brain.current.intention, goalSupport = goal && supportById(goal.targetId);
+      if (goal && goal.remaining > 0 && ["consider", "travel"].includes(goal.stage) && goalSupport) {
+        const snack = goal.foodId ? food.current?.foods().find(item => item.id === goal.foodId) : undefined;
+        data("travelGoal", `${goal.kind}:${goal.foodId ?? goal.targetId}:${goal.foodId ? "" : goal.offset.toFixed(4)}`);
+        data("travelTargetX", platformLandingX(goalSupport, snack?.x ?? goalSupport.x + goalSupport.width * goal.offset).toFixed(3));
+        data("travelRemaining", String(goal.remaining)); data("travelStage", goal.stage);
+      } else for (const key of ["data-travel-goal", "data-travel-target-x", "data-travel-remaining", "data-travel-stage"]) el.removeAttribute(key);
       const attendedSupport = attention?.goal && supportById(attention.goal.targetId);
       const attendedPoint = companionAttentionPoint(attention, attendedSupport ? [attendedSupport] : [], attention?.goal?.foodId ? food.current?.foods() : []);
       if (attention) data("attention", attention.kind); else el.removeAttribute("data-attention");
@@ -689,7 +704,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           if (platform.heart) { platform.heart.x += delta.x; platform.heart.y += delta.y; }
         }
       }
-      if (pressed || keyboardHeld || placing) { supportMotion.reset(now); return bedMoved; }
+      if (pressed || keyboardHeld || placing || flight) { supportMotion.reset(now); return bedMoved; }
       const from = deltas.get(support) ?? { x: 0, y: 0 }, to = deltas.get(action?.target.platformId ?? support) ?? { x: 0, y: 0 };
       let px = 0, py = 0;
       if (action) {
@@ -761,7 +776,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       };
       followRaf = requestAnimationFrame(follow);
     };
+    const cancelTravelGoal = () => {
+      brain.current = cancelCompanionTravelGoal(brain.current);
+      if (action?.intention?.kind === "explore") action = { ...action, intention: undefined };
+      if (runHop?.intention?.kind === "explore") runHop = undefined;
+      for (const key of ["data-travel-goal", "data-travel-target-x", "data-travel-remaining", "data-travel-stage"]) el.removeAttribute(key);
+    };
     const cancelEpisode = () => {
+      cancelTravelGoal();
       const revoked = cancelCompanionEpisode(brain.current, action);
       brain.current = revoked.brain; action = revoked.action;
       // Retain the already-selected curve of the current finite walk while
@@ -769,8 +791,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       runTrip = runHop = undefined;
       for (const key of ["data-episode", "data-episode-phase", "data-episode-variant", "data-episode-food"]) el.removeAttribute(key);
     };
-    const clearAction = (preserveEpisode = false) => { if (!preserveEpisode) { brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = (preserveEpisode = false) => { clearThrow(); if (!preserveEpisode) { brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
+      // Explicit placement/cancellation owns the next descent. An old ballistic
+      // sidecar must never override this newly chosen vertical landing.
+      clearThrow();
       // User releases hit the first real card top on this vertical ray. The
       // separate text ledges remain the only autonomous destinations.
       const bed = bedScene?.anchor.isConnected ? bedScene : undefined;
@@ -791,6 +816,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       origin = { x, y }; action = { kind: "jump", target, duration: sofa ? 400 : 650 }; began = performance.now(); total = action.duration; travel = sofa ? -4 : nearby || atX || raisedFloor ? -3 : -1;
       if (reduced) { x = target.x; y = target.y; support = target.platformId ?? ""; clearAction(); }
       brain.current = recordCompanionEvent(brain.current, "landed");
+    };
+    const beginThrow = (velocity: CompanionThrowVelocity, now: number) => {
+      if (reduced || gfxMode() === "off" || overlayActive || premiereActive || Math.hypot(velocity.vx, velocity.vy) < COMPANION_THROW_LIMITS.minSpeed) return false;
+      const next = createCompanionThrow({ x, y }, velocity, throwBounds());
+      if (!next) return false;
+      clearAction(); stopHover(); supportMotion.reset(now);
+      flight = next; flightAt = now; origin = { x, y }; support = ""; data("platform", "");
+      action = { kind: "jump", target: { x, y }, duration: COMPANION_THROW_LIMITS.maxFlightMs };
+      began = now; total = action.duration; travel = -5; verticalLanding = false; awaitingAtX = false;
+      data("throwPhase", "launch"); data("throwVx", next.vx.toFixed(3)); data("throwVy", next.vy.toFixed(3));
+      spriteSources[COMPANION_THROW_ROW].forEach(src => requestSprite.current(src));
+      return true;
     };
     const finishParkedDrop = () => {
       if (!overlayActive || presence.phase !== "parked" || pause || premiereActive || premiereBounce || homeDeparture || hiding || isDetailGuest()
@@ -965,6 +1002,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     let preparedPlayRow = -1;
     const launch = (next: CompanionAction, now: number) => {
+      const playful = !homeJourney && !overlayActive && !workspaceBusyRef.current && !premiereActive && presence.phase === "active" && !reduced && gfxMode() !== "off";
+      const romp = playful && !next.episode ? planCompanionRomp({ action: next, from: { x, y }, platform: supportById(support), foods: food.current?.foods() ?? [], energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.mishap ?? -Infinity) <= now }, preferences) : undefined;
+      // A verified run-up shortens only this leg. Preserve the ultimate goal
+      // and commit its actual duration/budget after selecting the takeoff.
+      next = romp?.walk ?? next;
       clearAction(); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
       preparedPlayRow = -1;
       if (next.foodId) data("foodGoal", next.foodId);
@@ -1004,9 +1046,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       // Account for the actual finite flight, not the proposal's placeholder.
       brain.current = commitAction(brain.current, next.kind === "jump" ? { ...(action ?? next), duration: total } : action ?? next, now);
-      if (!homeJourney && !overlayActive && !workspaceBusyRef.current && !premiereActive && presence.phase === "active" && !reduced && gfxMode() !== "off") {
-        const romp = next.episode ? {} : planCompanionRomp({ action: next, from: { x, y }, platform: supportById(support), foods: food.current?.foods() ?? [], energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.mishap ?? -Infinity) <= now }, preferences);
-        runTrip = next.episode ? companionEpisodeRunTrip(next, { x, y }, supportById(support), food.current?.foods() ?? [], brain.current, now, preferences) : romp.trip; runHop = next.episode ? companionEpisodeRunHop(next, { x, y }, supportById(support), food.current?.foods() ?? [], brain.current, preferences) : romp.hop;
+      if (playful) {
+        runTrip = next.episode ? companionEpisodeRunTrip(next, { x, y }, supportById(support), food.current?.foods() ?? [], brain.current, now, preferences) : romp?.trip; runHop = next.episode ? companionEpisodeRunHop(next, { x, y }, supportById(support), food.current?.foods() ?? [], brain.current, preferences) : romp?.hop;
         runUpCurve = Boolean(runHop);
         if (runTrip) for (const row of new Set([sampleCompanionPlay(runTrip.play, 0).row, sampleCompanionPlay(runTrip.play, .5).row])) spriteSources[row].forEach(src => requestSprite.current(src));
         if (runHop) for (const row of [4, 5]) spriteSources[row].forEach(src => requestSprite.current(src));
@@ -1048,6 +1089,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (stopped || pause) return;
       if (premiereActive) { tickPremiere(now); return; }
       if (pendingPosition.current) { lastTick = lastNeeds = lastCare = now; return; }
+      if (flight && (reduced || gfxMode() === "off")) { clearAction(); settle({ x, y }); }
       const cue = preludeCue();
       if (!cue && premiereRef.current.cue?.generation && !["idle", "return"].includes(premiereRef.current.cue.phase) && !premiereMemory.current.joined) { sync(); return; }
       if (hiding && overlayActive && (!hiding.sheet || !hiding.ready)) { lastTick = now; return; }
@@ -1226,7 +1268,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       let row = 0, frame = 0, status = "idle";
       if (action) {
-        const age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
+        let age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
         if (action.kind === "walk") {
           x = lerp(origin.x, action.target.x, runUpCurve ? sampleCompanionRunUp(p) : sampleCompanionTravel(p)); row = action.pace === "scoot" ? 20 : 2;
           if (runTrip) {
@@ -1235,7 +1277,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             else if ((x - point) * (action.target.x < origin.x ? -1 : 1) >= 0) {
               const contact = runTrip; x = point;
               const reaction = action.episode ? companionEpisodeMishap(action, { x, y }, supportById(support), brain.current, now, preferences) : undefined;
-              launch(reaction ?? { kind: "play", play: contact.play, target: { x, y, platformId: support }, duration: companionPlayDuration(contact.play), direction: action.direction }, now);
+              launch(reaction ?? { kind: "play", play: contact.play, target: { x, y, platformId: support }, duration: companionPlayDuration(contact.play), direction: action.direction, intention: brain.current.intention }, now);
               const contactPlay = reaction?.play ?? contact.play;
               data("trip", contact.cause); data("play", contactPlay); data("playBeat", "impact");
               paint(sampleCompanionPlay(contactPlay, 0).row, 0, "play"); schedule(); return;
@@ -1244,7 +1286,30 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         }
         else if (action.kind === "jump") {
           const passage = sofaPassage(p);
-          if (passage) { x = passage.x; y = passage.y; row = p < .28 ? 4 : p < .84 ? 5 : 6; frame = (p < .28 ? p / .28 : p < .84 ? (p - .28) / .56 : (p - .84) / .16) * 15; }
+          if (flight) {
+            const result = stepCompanionThrow(flight, now - flightAt, landingPlatforms, throwBounds());
+            flight = result.state; flightAt = now; x = flight.x; y = flight.y;
+            const phase = flight.elapsedMs < 90 ? "launch" : flight.vy < -80 ? "rise" : flight.vy <= 80 ? "apex" : "fall";
+            data("throwPhase", phase); data("throwVx", flight.vx.toFixed(3)); data("throwVy", flight.vy.toFixed(3));
+            row = COMPANION_THROW_ROW;
+            frame = phase === "launch" ? 0 : phase === "rise" ? 4 : phase === "apex" ? 8 : 12 + clamp(flight.vy / 950, 0, 1) * 3;
+            if (phase === "fall") spriteSources[6].forEach(src => requestSprite.current(src));
+            if (result.contact) {
+              // The actual swept contact owns this one landing. No planned
+              // target, endpoint clamp or geometry reflow can pre-land it.
+              x = result.contact.x; y = result.contact.y; support = result.contact.platformId;
+              action = { kind: "jump", target: { ...result.contact }, duration: COMPANION_TIMING.jumpLanding };
+              flight = undefined; travel = -6; origin = { x, y }; began = now; total = action.duration; age = p = 0;
+              brain.current = recordCompanionEvent(brain.current, "landed");
+              data("throwPhase", "landing"); row = 6; frame = 0;
+            } else if (flight.expired) {
+              // Resize/deletion may leave no real support. Discard momentum
+              // and reuse the existing finite vertical geometry recovery.
+              clearAction(); settle({ x, y }); paint(5, 0, "jump"); schedule(); return;
+            }
+          }
+          else if (travel === -6) { x = action.target.x; y = action.target.y; row = 6; frame = p * 15; }
+          else if (passage) { x = passage.x; y = passage.y; row = p < .28 ? 4 : p < .84 ? 5 : 6; frame = (p < .28 ? p / .28 : p < .84 ? (p - .28) / .56 : (p - .84) / .16) * 15; }
           else if (travel === -2) { const eased = sampleCompanionTravel(p), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 60, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(p * Math.PI) * lift; row = p < .5 ? 4 : p < .85 ? 5 : 6; frame = (p < .5 ? p * 2 : p < .85 ? (p - .5) / .35 : (p - .85) / .15) * 15; }
           else if (travel === -3) { const progress = clamp(p / .78, 0, 1), eased = sampleCompanionTravel(progress), lift = boundCompanionSineArc(origin.y, action.target.y, reduced ? 0 : 10, size + 8); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased) - Math.sin(progress * Math.PI) * lift; row = p < .78 ? 5 : 6; frame = (p < .78 ? progress : (p - .78) / .22) * 15; }
           else if (travel === -4) { const eased = sampleCompanionTravel(p); x = lerp(origin.x, action.target.x, eased); y = lerp(origin.y, action.target.y, eased); row = p < .8 ? 5 : 6; frame = p * 15; }
@@ -1323,7 +1388,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           const completed = action, completedTravel = travel, completedOrigin = origin;
           if (homeJourney && (completed.kind === "walk" || completed.kind === "jump")) homeLegs++;
           const rested = sleeping, ejected = Boolean(homeDeparture?.flying);
-          const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump"));
+          const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump") || brain.current.intention?.kind === "explore" && ["consider", "travel"].includes(brain.current.intention.stage) && brain.current.intention.remaining > 0);
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
             brain.current = recordCompanionEvent(brain.current, "ate"); if (!experience("fed")) persistCare(true);
             petUntil = now + (reduced ? 400 : 1100);
@@ -1365,7 +1430,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           if (arrivalPlay) {
             // The actual completed run/landing owns this one contact. Start
             // its reaction now rather than pausing for another random choice.
-            launch({ kind: "play", play: arrivalPlay, target: { x, y, platformId: support }, duration: companionPlayDuration(arrivalPlay), direction: completed.direction }, now);
+            launch({ kind: "play", play: arrivalPlay, target: { x, y, platformId: support }, duration: companionPlayDuration(arrivalPlay), direction: completed.direction, intention: brain.current.intention?.kind === "explore" ? brain.current.intention : undefined }, now);
             shakenGroundColumn = shakenArrivalColumn;
             const contact = sampleCompanionPlay(arrivalPlay, 0);
             row = contact.row; frame = 0; status = "play";
@@ -1794,13 +1859,15 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // An exposed sleeper remains directly movable, without stealing
         // modal focus. Release commits its actual new world point.
         const shown = displayedPoint(); perchAnimation?.cancel();
+        clearAction(); cancelTravelGoal();
+        x = shown.x; y = shown.y;
         overlayPerch = { ...shown, overlap: overlayPerch?.overlap ?? false };
         overlayDrag = { id: event.pointerId, dx: event.clientX - shown.x, dy: event.clientY - shown.y, worldOrigin: { x, y } };
         event.preventDefault(); event.stopPropagation(); button.setPointerCapture(event.pointerId);
         data("overlayDrag", ""); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
         return;
       }
-      interruptReturn(); homeDeparture = undefined; cancelHomeJourney();
+      interruptReturn(); homeDeparture = undefined; cancelHomeJourney(); cancelTravelGoal();
       stopHover(); awaitingAtX = false;
       const now = performance.now();
       // Direct handling supersedes the800ms passive wake. Otherwise that
@@ -1818,6 +1885,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       grip = { x: clamp(event.clientX - x + size / 2, 0, size), y: clamp(event.clientY - y + size, 0, size) };
       style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`);
       clearAction(); pressed = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), dx: event.clientX - x, dy: event.clientY - y, dragged: false, grabbed: false, cancelled: false };
+      throwVelocity.begin(x, y, now);
+      if (!reduced && gfxMode() !== "off") spriteSources[COMPANION_THROW_ROW].forEach(src => requestSprite.current(src));
       if (!reduced && gfxMode() !== "off") heldShake.begin(x, y, performance.now());
       connectGeometry();
       paint(1, 0, "touch");
@@ -1846,8 +1915,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (preferences.drag && (pressed.grabbed || distance > 6)) {
         const previousX = x, previousY = y;
         if (!pressed.grabbed && !reduced && gfxMode() !== "off") spriteSources[22].forEach(src => requestSprite.current(src));
+        // The first grip also warms its shake packet, which can evict an
+        // earlier unowned flight image from the three-node cache. Keep the
+        // imminent release requested during real dragging, using that same
+        // bounded decoder rather than displaying a held key after takeoff.
+        if (!reduced && gfxMode() !== "off") spriteSources[COMPANION_THROW_ROW].forEach(src => requestSprite.current(src));
         pressed.grabbed = true;
         pressed.dragged = true; x = clamp(event.clientX - pressed.dx, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY - pressed.dy, size + 8, innerHeight - 12);
+        throwVelocity.push(x, y, performance.now());
         if (reduced || gfxMode() === "off") resetInertia();
         else { heldInertia.push(x - previousX, y - previousY, performance.now(), { x: grip.x / size, y: grip.y / size }); heldShake.push(x, y, performance.now()); }
         // Keep every physical input sample; share the full60/lite30 display
@@ -1890,7 +1965,15 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.type === "pointercancel" || held.cancelled) { resetInertia(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); }
       el.removeAttribute("data-grab-ready");
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
-      if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); shakenReleasePending = shaken && action?.kind === "jump" ? { column: releasedColumn } : undefined; if (!held.cancelled && event.type !== "pointercancel") transferred(); }
+      if (held.dragged) {
+        const now = performance.now(), velocity = throwVelocity.release(now);
+        brain.current = recordCompanionEvent(brain.current, "dragged");
+        const thrown = !held.cancelled && event.type === "pointerup" && beginThrow(velocity, now);
+        if (!thrown) settle({ x, y });
+        shakenReleasePending = shaken && action?.kind === "jump" ? { column: releasedColumn } : undefined;
+        if (thrown) paint(COMPANION_THROW_ROW, 0, "jump");
+        if (!held.cancelled && event.type !== "pointercancel") transferred();
+      }
       else if (!held.cancelled && !held.grabbed && event.type !== "pointercancel") {
         const reaction = preferences.petting ? companionTapReaction({ elapsed: performance.now() - held.at, moved: Math.hypot(event.clientX - held.x, event.clientY - held.y), cancelled: held.cancelled, recentMishap: performance.now() < mishapUntil }) : null;
         if (reaction) {
@@ -1912,6 +1995,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const key = (event: KeyboardEvent) => {
       if (premiereActive || premiereBounce) return;
+      if (["Enter", " ", "p", "P", "n", "N", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) cancelTravelGoal();
       if (isDetailGuest() && !pause && !overlayDrag) {
         const owns = event.key === "Enter" && preferences.petting || event.key === " " && preferences.drag || guestKeyboardHeld && (event.key.startsWith("Arrow") || event.key === "Escape");
         if (!owns) return;
@@ -2266,7 +2350,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!support && !action && !pressed && !keyboardHeld && !placing && !afterPetLanding) {
         const p = nearestPlatform({ x, y: saved?.y ?? innerHeight * .65 }, saved ? platforms : platforms.filter(p => p.kind !== "floor")) ?? platforms[0];
         if (p) { x = platformLandingX(p, x); y = p.y; support = p.id; }
-      } else if (!pressed && !keyboardHeld && !placing && !afterPetLanding) {
+      } else if (!pressed && !keyboardHeld && !placing && !afterPetLanding && !flight) {
         const p = resolve(support, { x, y });
         if (p) support = p.id;
         const destination = action?.target.platformId;
@@ -2411,7 +2495,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       persistCare(true);
-      stopped = true; cancelHomeJourney(); clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      stopped = true; cancelTravelGoal(); cancelHomeJourney(); clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       cardPlay.clear();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
       window.removeEventListener("vic:companion-overlay", sync); window.removeEventListener("vic:companion-workspace", workspaceChanged); window.removeEventListener("resize", viewportResized); document.removeEventListener("animationend", queueOverlayPerch, true);

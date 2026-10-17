@@ -1,6 +1,6 @@
 # 원형 흔들기·회복 표정·식사 재개·소파 피드백
 
-[PLAN-095](../plans/PLAN-20261017-095-companion-shake-recovery-and-sofa.md). 현재 검증 진행 중이며 미실행/이전 실패는 PASS로 합산하지 않는다.
+[PLAN-095](../plans/PLAN-20261017-095-companion-shake-recovery-and-sofa.md). 배포 검증 완료. 미실행/이전 실패는 PASS로 합산하지 않는다.
 
 ## 원인과 변경
 
@@ -29,6 +29,12 @@
 
 추가 소파 접촉 회귀는 초회4PASS/1FAIL이었다. 실패1은 임의 date-42 시작점에서 소파 도착을 기다리던 준비 단계로, 접촉 probe 시작 전이었다. 정확한 해당 경로 원인은 미관측이며 CSS 회귀로 단정하지 않는다. 다른 두 접촉 사례와 같은 실제 집바닥 배치→귀가 준비로 정합화하고 기존5초·몸체/경계/첫 착지 단언은 유지한다. 보고서/현존15자료는 해시 보존했지만 원래 error-context는 후속 runner가 출력 디렉터리를 재사용하면서 남지 않아 full report의 오류/call log와 구분한다. 임의 date-42 전체 귀가 경로가 이 검사로 검증됐다고 주장하지 않는다. 기존 plush 검사의 focus 고정 helper와 이번 실제 focus/입력 검사는 범위를 구분한다.
 
-최종 통합은 main/격리 fixture의 관련64파일 SHA256 불일치0이다. 별도893개 추적 코드/설정 비교에서95개의 CRLF/LF 차이를 제외하면 내용 불일치0이며, 추가34개 통합 파일은 위 정확 해시에 포함한다. native 흔들기/음식의 `iRfm…` 뒤 제품 변경은 소파 CSS의 숨긴 전경 transition 정지뿐이며, 그 이후 CSS는 `D-Zzc…`에서 별도로 검증했다. 식사 추가 단언/소파 준비·표시 검사는 테스트 변경이다. 최종 main 전체 unit2,040·typecheck/lint·packet `--check`·harness250 PASS. native는 재검증을 포함해 서로 다른29종을 확인했고 실패 이력과 준비 단계 한계는 위에 남긴다. 운영 배포 확인은 남아 있다.
+최종 통합은 main/격리 fixture의 관련64파일 SHA256 불일치0이다. 별도893개 추적 코드/설정 비교에서95개의 CRLF/LF 차이를 제외하면 내용 불일치0이며, 추가34개 통합 파일은 위 정확 해시에 포함한다. native 흔들기/음식의 `iRfm…` 뒤 제품 변경은 소파 CSS의 숨긴 전경 transition 정지뿐이며, 그 이후 CSS는 `D-Zzc…`에서 별도로 검증했다. 식사 추가 단언/소파 준비·표시 검사는 테스트 변경이다. 최종 main 전체 unit2,040·typecheck/lint·packet `--check`·harness250 PASS. native는 재검증을 포함해 서로 다른29종을 확인했고 실패 이력과 준비 단계 한계는 위에 남긴다. 독립 보안/범위 검토는41개 소유 파일(text39·아트15)에서 차단0, PNG/WebP EXIF/XMP/text metadata0이며 과거 노출/전체 저장소 무결성을 보증하지 않는다.
+
+## 배포 확인
+
+`dbf153bba949569518f55ca595f8febb18c20eab` main push 완료. [원격 quality39038690988](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39038690988)의 전체13단계(단위·격리 SQL·harness·production build·생성 경로 typecheck·lint 포함)와 Vercel success를 확인했다. 운영 `/api/soop-live`의 전체 SHA 일치, clock200/no-store·warm204·익명 developer401/error-only/no-store·fixture 비노출(스트리밍404)을 확인했다. 새 recovery packet은 운영 HTTP200·147436B·SHA256 `C1E9C5F2FF08389777A86FF3FC798E807EDEC56A45B747554A78DA23BCC73B46`로 로컬과 바이트 일치한다.
+
+새 agent 전용 Chrome 탭의 실제 개발자 편집실에서 배포 버전 `dbf153b`, 채색된 집·소파 paint group2/옛 cue0·투명 버튼 배경·한 visible HD/sharp pet·완전히 로드된1536×384 texture를 읽기 전용 AX/DOM와 집 화면으로 확인했다. 운영 설정/일정 조작은 하지 않았다. 실제 운영에서 원형/사고를 강제로 재현한 것은 아니며 해당 입력 검증은 위 production fixture다. 사용자 원래 탭·미관련 아트는 보존했고 자체 loopback server만 종료했다. 배포 후 상태 메타데이터는 로컬만 갱신하여 문서 전용 재배포를 만들지 않는다.
 
 공개 DTO/권한/언락/KST/1840 기하·모바일 제외·저장 선택·운영 DB/의존성은 변경하지 않는다. 실제 OBS 장비/모든 난수/모든 장치/RLS/쿼터 개선을 이 검사로 보증하지 않는다.

@@ -9,6 +9,7 @@ import { COMPANION_FULL_THRESHOLD } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 import { COMPANION_FEED_ACTION_BUDGET, COMPANION_FEED_RETRY_MS } from "@/lib/ui/viewer-companion/planner";
+import { companionEpisodeRunHop } from "@/lib/ui/viewer-companion/episodes";
 
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, feeding: true };
 const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" };
@@ -95,18 +96,32 @@ describe("local companion feeding and animal habits", () => {
     expect(findPlatformRoute({ x: 150, y: ground.y, platformId: ground.id }, { x: 150, y: thirteenth.y, platformId: thirteenth.id }, [ground, ...ledges, thirteenth])).toBeNull();
   });
 
-  it("splits a long supported walk into180px decisions without renewing the same food goal", () => {
+  it("finishes one clear supported food span without artificial180px stops or a renewed meal budget", () => {
     const snack = { ...food, x: 800, y: floor.y, platformId: floor.id };
-    let state = hungry(), context: CompanionWorld = { ...world, foods: [snack] };
-    for (let step = 0; step < 4; step++) {
-      const action = getFoodAction(state, context, prefs, 100000 + step * 5000)!;
-      expect(action.kind).toBe("walk"); expect(action.target.x - context.x).toBe(180);
-      state = commitAction(state, action, 100000 + step * 5000);
-      expect(state.foodGoal?.remaining).toBe(COMPANION_FEED_ACTION_BUDGET - step - 1);
-      context = { ...context, ...action.target };
-    }
-    expect(getFoodAction(state, context, prefs, 130000)?.kind).toBe("walk");
+    const context: CompanionWorld = { ...world, foods: [snack] }, action = getFoodAction(hungry(), context, prefs, 100000)!;
+    expect(action.kind).toBe("walk"); expect(action.target).toEqual({ x: snack.x, y: floor.y, platformId: floor.id });
+    expect(action.duration).toBeCloseTo((snack.x - world.x) / 70 * 1000);
+    const state = commitAction(hungry(), action, 100000);
+    expect(state.foodGoal?.remaining).toBe(COMPANION_FEED_ACTION_BUDGET - 1);
+    expect(getFoodAction(state, { ...context, ...action.target }, prefs, 130000)).toMatchObject({ kind: "eat", foodId: snack.id });
     expect(getFoodAction(state, { ...context, x: 790 }, prefs, 130000)).toMatchObject({ kind: "eat", target: { x: 790, y: floor.y } });
+  });
+
+  it.each(["bound", "bound-slip"] as const)("%s reserves only a proved running takeoff while retaining the same final snack", variant => {
+    const snack = { ...food, x: 800, y: floor.y, platformId: floor.id }, options = { ...prefs, speed: "lively" as const };
+    const context = { ...world, foods: [snack], animated: true };
+    const brain: CompanionBrain = { ...hungry(), energy: .9, episode: { kind: "meal", phase: "greet", variant, remaining: 22, foodId: snack.id, mishapUsed: false, legs: 0 } };
+    const action = getAction(brain, context, options, 100000, () => 0);
+    expect(action).toMatchObject({ kind: "walk", pace: "scoot", foodId: snack.id, intention: { kind: "feed", foodId: snack.id, targetId: floor.id } });
+    expect(action.target.x - context.x).toBeGreaterThan(180); expect(action.target.x).toBeLessThan(snack.x - 112);
+    const state = commitAction(brain, action, 100000), hop = companionEpisodeRunHop(action, context, floor, [snack], state, options)!;
+    expect(hop).toMatchObject({ kind: "jump", foodId: snack.id });
+    expect(hop.target.x).toBeCloseTo(snack.x - 112); expect(hop.runUp).toBeCloseTo((action.target.x - context.x) / action.duration * 1000);
+    const landed = commitAction(state, hop, 100000 + action.duration);
+    const last = getFoodAction(landed, { ...context, ...hop.target }, options, 130000)!;
+    expect(last).toMatchObject({ kind: "walk", foodId: snack.id, target: { x: snack.x, y: floor.y, platformId: floor.id } });
+    expect(last.intention?.remaining).toBe(COMPANION_FEED_ACTION_BUDGET - 2);
+    expect(getFoodAction(brain, context, { ...options, jump: false }, 100000)?.target.x).toBe(snack.x);
   });
 
   it("keeps only the food identity and budget while unavailable, then replans fresh geometry before a closer new snack", () => {

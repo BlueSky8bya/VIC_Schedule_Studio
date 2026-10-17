@@ -1,5 +1,5 @@
 import { companionGripProfile, type CompanionGrip } from "./contact-grip";
-import { COMPANION_CLIP_TIMING } from "./timing";
+import { COMPANION_CLIP_TIMING, COMPANION_THROW_ROW } from "./timing";
 
 /** Pose sampling only. The renderer owns world position and its rAF cadence. */
 export type CompanionMotionInput = {
@@ -155,7 +155,7 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const end = frames.length - 1;
       const cyclicIndex = (step: number) => loops.has(row) ? Math.floor(Math.max(0, step) + 1e-8) % frames.length : pingPong(step, frames.length);
       let index = 0;
-      if (row === 23 && input.status === "play") {
+      if (row === 23 && input.status === "play" || row === COMPANION_THROW_ROW && input.status === "jump") {
         // Recovery owns an explicit expression even on its first/zero-delta
         // sample. Quiet rendering must not flash the strained opening key.
         const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;

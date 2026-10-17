@@ -1,0 +1,13 @@
+{
+  "work_id": "VICTAMIN-THROW-20261017",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\VICTAMIN-THROW-20261017\\검토용\\82FCE8BFAD6B67867794.png",
+  "sha256": "728098BE7CD6731628B18F7BC0331B620768C7A5DB4765B56DD8337468DE4498",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Builtin whole result shows four complete two-ear limbless paper-pompom keys: startled launch, strained rising flutter, alert apex and braced descent. Actual native is1288x1221, not the requested equal square grid; its lower ears cross the arithmetic midline. Mechanical registration therefore uses the observed transparent gutter at y580 and keeps all connected bodies. Packed atlas was viewed as a whole. Author observation is not independent art PASS or user approval; runtime selection/render checks are separate."
+  ],
+  "cycle_id": "82FCE8BFAD6B67867794",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

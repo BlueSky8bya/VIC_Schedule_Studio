@@ -9,6 +9,10 @@ export type CompanionIntention = {
   remaining: number;
   stage: "consider" | "travel" | "observe";
   foodId?: string;
+  /** One selected travel gait survives inspection and intermediate landings.
+   * Speed is the finite mean CSS px/second, not an animation-clock override. */
+  pace?: "amble" | "scoot";
+  travelSpeed?: number;
 };
 /** One offered-food identity survives a temporary occlusion or another need.
  * The live food source owns coordinates/existence; this is not a second map. */
@@ -52,7 +56,9 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
   const profile = getCompanionBehaviorProfile(prefs, brain.habits), speed = profile.walkSpeed;
   const pursue = (intention: CompanionIntention, proven?: CompanionRouteStep[]): CompanionAction | undefined => {
     const target = platforms.find(p => p.id === intention.targetId && safe(p));
-    if (!target || intention.remaining <= 0) { outcomes.push({ targetId: intention.targetId, result: target ? "blocked" : "lost" }); return; }
+    const hasGait = intention.pace !== undefined || intention.travelSpeed !== undefined;
+    const validGait = (intention.pace === "amble" || intention.pace === "scoot") && Number.isFinite(intention.travelSpeed) && intention.travelSpeed! > 0 && intention.travelSpeed! <= 260;
+    if (!target || !Number.isFinite(intention.remaining) || intention.remaining <= 0 || !Number.isFinite(intention.offset) || hasGait && !validGait) { outcomes.push({ targetId: intention.targetId, result: target ? "blocked" : "lost" }); return; }
     const x = ports.landingX(target, target.x + target.width * clamp(intention.offset, 0, 1));
     const route = proven ?? ports.route(world, { x, y: target.y, platformId: target.id }, platforms, prefs.jump);
     if (!route || route.length > 10) { outcomes.push({ targetId: target.id, result: "blocked" }); return; }
@@ -61,8 +67,12 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
       return { kind: intention.kind === "rest" ? "sleep" : "look", target: { x: world.x, y: world.y, platformId: current.id }, duration: intention.kind === "rest" ? 9000 * profile.pauseScale : 1050 * profile.lookScale, intention: { ...intention, stage: "observe" } };
     }
     const step = route[0];
-    const pace = brain.energy >= .5 && profile.scootChance >= .5 ? "scoot" as const : "amble" as const;
-    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * (pace === "scoot" ? 850 : profile.walkScale * 1000)) : 950, direction: step.target.x < world.x ? -1 : 1, ...(step.kind === "walk" ? { pace } : {}), intention: { ...intention, stage: "travel" } };
+    const pace = hasGait ? intention.pace! : brain.energy >= .5 && profile.scootChance >= .5 ? "scoot" as const : "amble" as const;
+    const walkDuration = Math.max(500, Math.abs(step.target.x - world.x) / (hasGait ? intention.travelSpeed! : speed) * (hasGait ? 1000 : pace === "scoot" ? 850 : profile.walkScale * 1000));
+    // Reflow can change a normalized goal. A bounded gait cannot silently
+    // become a longer action or accelerate to catch up to a moved endpoint.
+    if (step.kind === "walk" && (!Number.isFinite(walkDuration) || hasGait && walkDuration > 12000.001)) { outcomes.push({ targetId: target.id, result: "blocked" }); return; }
+    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? hasGait ? Math.min(12000, walkDuration) : walkDuration : 950, direction: step.target.x < world.x ? -1 : 1, ...(step.kind === "walk" ? { pace } : {}), intention: { ...intention, stage: "travel" } };
   };
   const previous = brain.intention;
   const rested = previous?.kind === "rest" && (!prefs.sleep || brain.energy >= profile.restedEnergy);

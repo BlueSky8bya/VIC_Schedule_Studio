@@ -6,9 +6,9 @@ import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 
 describe("additional native play packets share the established HD pipeline", () => {
-  it("preserves every original HD index and appends twelve complete packets", () => {
+  it("preserves every original HD/play index and appends the complete throw packet", () => {
     expect(play).toMatchObject({ cell: 192, logicalCell: 80, grid: 8, gridRows: 2, rowOffset: base.rows.length });
-    expect(play.rows).toHaveLength(12); expect(play.frames).toHaveLength(192); expect(play.atlases).toHaveLength(12);
+    expect(play.rows).toHaveLength(13); expect(play.frames).toHaveLength(208); expect(play.atlases).toHaveLength(13);
     expect(companionSpriteMetadata.rows.slice(0, base.rows.length)).toEqual(base.rows);
     expect(companionSpriteMetadata.frames.slice(0, base.frames.length)).toEqual(base.frames);
     expect(companionSpriteMetadata.atlases.slice(0, base.atlases.length)).toEqual(base.atlases);
@@ -22,6 +22,10 @@ describe("additional native play packets share the established HD pipeline", () 
         expect(selected.src).toBe(source);
       }
     }
+    const throwRow = companionSpriteMetadata.rows[32];
+    expect(throwRow).toEqual(Array.from({ length: 16 }, (_, column) => base.frames.length + 192 + column));
+    expect(companionSpriteSources(32)).toEqual(["/companion/hd/victamin-play-32-throw.webp"]);
+    for (const [column, index] of throwRow.entries()) expect(selectCompanionSprite(index, 32, column)).toMatchObject({ atlas: "hd", physicalIndex: index, index: column, grid: 8, gridRows: 2, src: "/companion/hd/victamin-play-32-throw.webp" });
   });
   it("keeps whole bodies inside the existing footprint with a common centre and foot", () => {
     for (const frame of play.frames) {

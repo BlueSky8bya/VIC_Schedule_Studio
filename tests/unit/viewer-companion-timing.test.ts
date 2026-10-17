@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING, COMPANION_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { createCompanionMotion } from "@/lib/ui/viewer-companion/motion";
+import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 
 describe("reviewed companion motion catalogue", () => {
   it("covers every logical row exactly once and keeps ballistic/distance clocks renderer-owned", () => {
-    expect(COMPANION_CLIP_TIMING.map(clip => clip.row)).toEqual(Array.from({ length: 32 }, (_, index) => index));
-    expect(new Set(COMPANION_CLIP_TIMING.map(clip => clip.name)).size).toBe(32);
+    expect(companionSpriteMetadata.rows).toHaveLength(33);
+    expect(COMPANION_CLIP_TIMING.map(clip => clip.row)).toEqual(Array.from({ length: companionSpriteMetadata.rows.length }, (_, index) => index));
+    expect(new Set(COMPANION_CLIP_TIMING.map(clip => clip.name)).size).toBe(companionSpriteMetadata.rows.length);
     for (const row of [2, 4, 5, 20]) expect(COMPANION_CLIP_TIMING[row].duration).toBeNull();
     expect(COMPANION_CLIP_TIMING[7].playback).toBe("unused");
+    expect(COMPANION_CLIP_TIMING[32]).toMatchObject({ row: 32, name: "throw", playback: "phase", duration: null });
     for (const clip of COMPANION_CLIP_TIMING) {
       if (clip.duration !== null) expect(clip.duration).toBeGreaterThan(0);
       if (clip.frameRate) expect(clip.frameRate).toBeLessThanOrEqual(14);

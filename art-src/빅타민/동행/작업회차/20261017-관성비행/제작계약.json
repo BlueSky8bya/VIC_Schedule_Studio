@@ -1,0 +1,55 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "VICTAMIN-THROW-20261017",
+  "operation": "new",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "codex",
+  "inputs": [
+    {
+      "id": "REF-016",
+      "source_id": "REF-016",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "id": "REF-017",
+      "source_id": "REF-017",
+      "kind": "original",
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "authorities": {
+    "mascot": "REF-017"
+  },
+  "opened_files": [
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/02_표정/스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "mascot_variation_plan": "Four newly drawn complete airborne keys of the same two-eared limbless paper-pompom: launch surprise, rising flutter, apex float and braced descent. Surprised/strained expressions, never a happy recovery grin.",
+  "scene_exception": "UI animation contact sheet intentionally uses identical framing and size across four temporal keys, with no scenery.",
+  "structure_plan": {
+    "vr_physics_corrections": "Do not reproduce VR clipping or invent hidden anatomy.",
+    "connected_anatomy": "Exactly two complete long ears remain visibly attached to one layered rectangular paper body. No limbs/fur.",
+    "occluded_continuation": "Complete ears and whole body fit inside every cell. Paper flares are attached layers, no detached shapes.",
+    "contacts_support": "Airborne body with stable root registration, generous transparent gutters and consistent body size."
+  },
+  "scene_plan": {
+    "purpose": "Four high-resolution airborne key poses for a finite user-thrown ballistic flight.",
+    "mode": "design_sheet"
+  },
+  "construction_method": "One builtin transparent generation from unchanged original design references; deterministic whole-body crop, aspect-preserving registration and packing afterward. No manual facial painting or inflated new-frame claim.",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-THROW-20261017\\plan.json",
+    "sha256": "6652985555FAB0142E7762EE709AB975586BC5C213DB820F042A3CA4B42EF7F4"
+  }
+}

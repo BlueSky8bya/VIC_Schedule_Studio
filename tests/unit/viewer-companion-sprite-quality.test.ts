@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import sprites from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
 
@@ -46,6 +46,12 @@ describe("one high-resolution pipeline for every companion action", () => {
     expect(selectCompanionSprite(-1, 19, 7)).toEqual(selectCompanionSprite(295));
     expect(selectCompanionSprite(999, 999, Number.NaN)).toEqual(selectCompanionSprite(0));
     expect(companionSpriteSources(Number.POSITIVE_INFINITY)).toEqual(companionSpriteSources(0));
+  });
+  it("appends the throw without changing the original twenty HD or twelve play row IDs", () => {
+    expect(companionSpriteMetadata.rows.slice(0, 20)).toEqual(sprites.rows);
+    for (let row = 20; row < 32; row++) expect(companionSpriteMetadata.rows[row]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + (row - 20) * 16 + column));
+    expect(companionSpriteMetadata.rows[32]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + 192 + column));
+    expect(companionSpriteSources(32)).toEqual(["/companion/hd/victamin-play-32-throw.webp"]);
   });
 });
 

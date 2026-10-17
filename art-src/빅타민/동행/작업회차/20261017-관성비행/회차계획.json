@@ -1,0 +1,33 @@
+{
+  "status": "PLANNED_USER_DIRECTED_CYCLE",
+  "plan_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-THROW-20261017\\plan.json",
+  "plan_sha256": "6652985555FAB0142E7762EE709AB975586BC5C213DB820F042A3CA4B42EF7F4",
+  "plan": {
+    "schema_version": 1,
+    "workflow_mode": "user_directed_cycle",
+    "cycle_id": "82FCE8BFAD6B67867794",
+    "run_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-THROW-20261017\\cycle_82FCE8BFAD6B67867794",
+    "action_budget_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-THROW-20261017\\user_actions_5FCA715957EB9D7FDF66",
+    "work_id": "VICTAMIN-THROW-20261017",
+    "phase": "generate",
+    "user_source": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-7e3ee06c81c61a8c6e05ca45.json",
+      "sha256": "DD7272517C83D9BD19B333593A0DA7BADFBD1431DA646FA0EF9EF6C31378AA01",
+      "excerpt": "이 때 공중에서 던져지는 표정이나 포즈 등도 새롭게 애니메이션 만들어서 적용해주고"
+    },
+    "role_focus": {},
+    "force_review": false,
+    "candidate": null,
+    "policy_sha256": "2153332C2BC33B0FECA8D689FEFADEF131A26B1F518FDFBE666ACEBD07766F91",
+    "request_turn_id": "msg_01a14a2d-108f-7390-93ea-6465007cea7d",
+    "limits": {
+      "imagegen_calls": 1,
+      "review_rounds": 0,
+      "repair_calls": 0,
+      "post_repair_agent_rounds": 0
+    },
+    "next_action": "one_generation_then_show",
+    "automatic_full_review": false,
+    "user_approval_is_visual_not_numeric_certification": true
+  }
+}

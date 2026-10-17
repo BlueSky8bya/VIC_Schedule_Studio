@@ -69,7 +69,7 @@ async function liftFromBed(page: Page, touch: boolean, label: string) {
     if (cdp) {
       for (let sample = 0; sample < 4; sample++) { await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve()))); await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...end, id: 41 }] }); }
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    } else await page.mouse.up();
+    } else { await page.waitForTimeout(120); await page.mouse.up(); }
   } finally { await cdp?.detach(); }
   await expect(pet).not.toHaveAttribute("data-state", "held");
 }

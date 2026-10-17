@@ -25,6 +25,12 @@ This file keeps unresolved evidence gaps out of startup history. A prior PASS ap
 
 이전 COMPANION-TEXTURE 간격은076 후보 빌드 `-S59OcmbVUz2SMdS-qZsY`에서 수정·검증했다. cold 지연 packet 중 기존 몸체 유지/동일 decoded DOM/요청1회, 원래20 warm-pixel 기준을 유지한 음식 관찰에서 시청자395·편집실331픽셀을 확인했다. [075 원 실패](COMPANION_HABITS-20261017.md)와 `.scratch-pw/companion-075-inspect-failure.{json,png}`는 보존한다. 이 fixture 결과는 실제 방송 장비와 운영 빈도의 증거가 아니다.
 
+## COMPANION-096-FOCUS — 실제 viewer 창 전환
+
+[096 검증](COMPANION_CONTINUOUS_RUN_THROW-20261017.md)의 새 주행/투척12case와 기존 회귀21case는 PASS했다. 기존 `viewer-refocus`1case는 실제 headed 브라우저에서 의도한 창 전환 전부터 반복 trusted blur가 발생해3회 모두 준비에 실패했다. 외부 입력 주체/정확한 OS 원인은 미확인이고 다른 명령을 중지한 실행도 실패했다. 원본/report/context는 각각 SHA 봉인했으며 같은 공유 구현의 studio PASS로 대체하지 않는다.
+
+다음: 실제 포커스를 안정적으로 소유할 수 있는 환경에서 현재 fixture의 음식 배치→실제 approach 시작→native blur/focus→같은 음식 소비/한 번 보상·마무리를 기존 단언으로 재검한다. RNG/시계/강제 focus emulation으로 이 actual-focus 증거를 대신하지 않는다. 운영 기능 결함으로 확정된 사항은 아니며 새 코드의 기본 주행/투척 검증과 구분한다.
+
 ## TEASER-PREMIERE — authorized rollout and remaining QA
 
 Latest visual/motion rework and exact verification scope: [premiere moment](TEASER_KAIROS-20261014.md), following [countdown focus/preview continuity](TEASER_FOCUS-20261014.md), [individual card choreography](TEASER_CARDS-20261014.md) and [fluid redesign](TEASER_FLUID-20261014.md). These do not close genuine-login preview, hardware, formal luminance, fan-experience observation or deployed fanout gaps below.

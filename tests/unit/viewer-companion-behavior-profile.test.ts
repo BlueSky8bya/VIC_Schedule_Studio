@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
-import { commitAction, createBrain, getAction, type CompanionAction, type CompanionBrain, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
+import { cancelCompanionTravelGoal, commitAction, createBrain, getAction, type CompanionAction, type CompanionBrain, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
+import { deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
 
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, feeding: false, heartPrank: false, ambientPrank: false };
 const floor: Platform = { id: "floor", x: 0, y: 700, width: 1000, kind: "floor" };
@@ -35,6 +36,57 @@ function timeline(changes: Partial<CompanionPreferences>, seed: number, context 
 }
 
 describe("independent companion species, motivation and gait", () => {
+  it("chooses a substantive same-span run once and retains its destination through a live intermediate replan", () => {
+    const space: Platform = { ...floor, width: 1800 }, context = { ...world, x: 100, width: 1800, platforms: [space] };
+    const options = { ...prefs, speed: "lively" as const, jump: false, sleep: false };
+    const runs = walk(sample(options, context, healthy(), 500, 947)).filter(action => action.pace === "scoot");
+    expect(runs.length).toBeGreaterThan(50);
+    for (const action of runs) {
+      expect(action.target.x - context.x).toBeGreaterThan(520);
+      expect(action.duration).toBeGreaterThan(2000); expect(action.duration).toBeLessThanOrEqual(12000);
+      expect(action.intention).toMatchObject({ kind: "explore", targetId: space.id, stage: "travel", remaining: 12 });
+      expect(action.intention!.offset).toBeCloseTo((action.target.x - space.x) / space.width);
+    }
+    const chosen = runs[0], committed = commitAction(healthy(), chosen, 100000);
+    const intermediate = { ...context, x: context.x + 180 };
+    const continued = getAction(committed, intermediate, options, 100000 + chosen.duration + 220, () => 0);
+    expect(continued).toMatchObject({ kind: "walk", target: chosen.target, intention: { ...chosen.intention, remaining: 11 } });
+    expect(continued.target.x - intermediate.x).toBeGreaterThan(300);
+    expect(getAction(committed, { ...context, ...chosen.target }, options, 100000 + chosen.duration + 220, () => 0)).toMatchObject({ kind: "look", intention: { stage: "observe", targetId: space.id } });
+  });
+
+  it("revokes only exploration on a new scene owner and respects real interruption, food and budget boundaries", () => {
+    const intention = { kind: "explore" as const, targetId: floor.id, offset: .85, remaining: 5, stage: "travel" as const };
+    const brain = { ...healthy(), intention, foodGoal: { foodId: "retained-snack", remaining: 17, retryAfter: 0 } }, before = JSON.stringify(brain), cancelled = cancelCompanionTravelGoal(brain);
+    expect(cancelled.intention).toBeUndefined(); expect(cancelled.foodGoal).toBe(brain.foodGoal); expect(JSON.stringify(brain)).toBe(before);
+    for (const kind of ["feed", "rest"] as const) {
+      const retained = { ...brain, intention: { ...intention, kind } };
+      expect(cancelCompanionTravelGoal(retained)).toBe(retained);
+    }
+    for (const changes of [{ roam: false }, { enabled: false }]) expect(getAction(brain, world, { ...prefs, ...changes }, 100000, () => 0).intention).toBeUndefined();
+    expect(getAction(brain, { ...world, paused: true }, prefs, 100000, () => 0).intention).toBeUndefined();
+    const expired = getAction({ ...brain, intention: { ...intention, remaining: 0 } }, world, prefs, 100000, () => 0);
+    expect(expired.intention).toBeUndefined(); expect(expired.outcomes).toContainEqual({ targetId: floor.id, result: "blocked" });
+    const food = { id: "native-snack", x: world.x + 10, y: world.y, platformId: floor.id, kind: "apple" as const };
+    expect(getAction({ ...brain, hunger: .8 }, { ...world, foods: [food] }, { ...prefs, feeding: true }, 100000, () => 0)).toMatchObject({ kind: "eat", foodId: food.id, intention: { kind: "feed" } });
+    const shifted = { ...floor, x: 100, width: 600 }, redirected = getAction(brain, { ...world, platforms: [shifted] }, prefs, 100000, () => 0);
+    expect(redirected).toMatchObject({ kind: "walk", intention }); expect(redirected.target.x).toBeCloseTo(610);
+    expect(redirected.target.x).toBeLessThanOrEqual(shifted.x + shifted.width - 12);
+  });
+
+  it.each(["relaxed", "normal", "lively"] as const)("retains the chosen %s run through the actual inspect-commit-planner handoff", speed => {
+    const space: Platform = { ...floor, width: 1800 }, context = { ...world, x: 100, width: 1800, platforms: [space] };
+    const options = { ...prefs, speed, jump: false, sleep: false }, brain = healthy();
+    const chosen = walk(sample(options, context, brain, 700, 673)).find(action => action.pace === "scoot" && action.duration > 2000)!;
+    expect(chosen).toBeDefined();
+    const inspected = deliberateCompanionAction(brain, context, options, chosen, true);
+    expect(inspected).toMatchObject({ kind: "look", intention: { kind: "explore", stage: "consider" } });
+    const committed = commitAction(brain, inspected, 100000);
+    const moving = getAction(committed, context, options, 100000 + inspected.duration + 60, () => 0);
+    expect(moving).toMatchObject({ kind: "walk", pace: "scoot", target: chosen.target });
+    expect(moving.duration).toBeCloseTo(chosen.duration); expect(moving.duration).toBeLessThanOrEqual(12000);
+  });
+
   it("composes orthogonal habits without replacing other choices or mutating preferences", () => {
     const base = getCompanionBehaviorProfile(prefs), before = JSON.stringify(prefs);
     const cat = getCompanionBehaviorProfile({ ...prefs, animalMode: "cat" });
@@ -117,13 +169,13 @@ describe("independent companion species, motivation and gait", () => {
     expect(after.every(a => a.intention?.kind !== "explore")).toBe(true);
   });
 
-  it("mixes short and sustained runs through real stateful thirty-second histories", () => {
+  it("finishes substantive bounded destinations through stateful thirty-second histories", () => {
     const space: Platform = { ...floor, width: 1800 }, context = { ...world, x: 450, width: 1800, platforms: [space] };
     const histories = Array.from({ length: 16 }, (_, index) => timeline({ jump: false, sleep: false }, 121 + index * 31, context));
     expect(histories).toEqual(Array.from({ length: 16 }, (_, index) => timeline({ jump: false, sleep: false }, 121 + index * 31, context)));
     const runs = histories.flat().filter(({ action }) => action.kind === "walk" && action.pace === "scoot");
     expect(runs.filter(({ action }) => action.duration >= 2000).length).toBeGreaterThan(15);
-    expect(runs.filter(({ action }) => action.duration < 1500).length).toBeGreaterThan(15);
+    expect(runs.filter(({ action, from }) => Math.abs(action.target.x - from) > 180).length / runs.length).toBeGreaterThan(.7);
     expect(new Set(runs.map(({ action }) => Math.floor(action.duration / 500))).size).toBeGreaterThanOrEqual(6);
     for (const { action, from } of histories.flat()) {
       expect(action.target.platformId).toBe(space.id);
@@ -131,9 +183,9 @@ describe("independent companion species, motivation and gait", () => {
       expect(action.target.x).toBeLessThanOrEqual(space.x + space.width - 12);
       expect(action.target.y).toBe(space.y);
       if (action.kind === "walk") {
-        expect(Math.abs(action.target.x - from)).toBeLessThanOrEqual(520);
+        expect(Math.abs(action.target.x - from)).toBeLessThanOrEqual(space.width - 24);
         expect(action.duration).toBeGreaterThanOrEqual(500);
-        expect(action.duration).toBeLessThanOrEqual(5000);
+        expect(action.duration).toBeLessThanOrEqual(12000);
       }
     }
   });

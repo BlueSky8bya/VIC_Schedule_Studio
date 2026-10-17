@@ -59,6 +59,7 @@ type ClipTiming = Readonly<{ row: number; name: string; playback: "loop" | "dist
 /** All logical rows, including the intentionally unused legacy row7. Duration
  * is a semantic beat/cycle reference; ballistic travel and support geometry
  * remain renderer-owned. Native frame counts and atlas bytes are unchanged. */
+export const COMPANION_THROW_ROW = 32;
 export const COMPANION_CLIP_TIMING: readonly ClipTiming[] = Object.freeze([
   { row: 0, name: "idle", playback: "loop", duration: 2000, frameRate: 8 },
   { row: 1, name: "look", playback: "phase", duration: 750 },
@@ -92,4 +93,5 @@ export const COMPANION_CLIP_TIMING: readonly ClipTiming[] = Object.freeze([
   { row: 29, name: "bow", playback: "phase", duration: 1060 },
   { row: 30, name: "groom", playback: "phase", duration: 520 },
   { row: 31, name: "pounce", playback: "phase", duration: 820 },
+  { row: COMPANION_THROW_ROW, name: "throw", playback: "phase", duration: null },
 ].map(clip => Object.freeze(clip)) as ClipTiming[]);

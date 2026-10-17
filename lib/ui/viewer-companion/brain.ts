@@ -230,6 +230,11 @@ export function advanceBrain(brain: CompanionBrain, elapsedMs: number, learning 
 
 export type CompanionEvent = "petted" | "dragged" | "landed" | "rested" | "woke" | "ate" | "heart-blocked" | "food-lost" | "handled";
 export function getCompanionMood(brain: CompanionBrain) { return companionMood(brain.affect ?? createCompanionAffect()); }
+/** A new user/scene owner revokes exploration without discarding an offered
+ * meal, rest need or care. The renderer may still finish its safe finite leg. */
+export function cancelCompanionTravelGoal(brain: CompanionBrain): CompanionBrain {
+  return brain.intention?.kind === "explore" ? { ...brain, intention: undefined } : brain;
+}
 export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEvent): CompanionBrain {
   if (event === "ate" && brain.hunger < COMPANION_FULL_THRESHOLD) return { ...brain };
   if (event === "woke") return { ...brain, curiosity: unit(brain.curiosity + .05), episode: createCompanionContext("wake") };
@@ -299,11 +304,29 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
     }
     if (!prefs.roam || !route.length) continue;
     const first = route[0];
-    // Long safe floors remain useful routes, with short finite walks that
-    // revalidate the current graph instead of owning the pet for half a minute.
-    const step = first.kind === "walk" ? { ...first, target: { ...first.target, x: world.x + clamp(first.target.x - world.x, -180, 180) } } : first;
-    const speed = getCompanionBehaviorProfile(prefs, brain.habits).walkSpeed;
-    return { kind: step.kind, target: step.target, duration: step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950, foodId: food.id, intention, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), direction: step.target.x < world.x ? -1 : 1 };
+    // A measured clear interval is one walk, not a chain of180px restarts.
+    // Only a selected, physically proved meal hop needs a takeoff endpoint.
+    let step = first;
+    const profile = getCompanionBehaviorProfile(prefs, brain.habits), speed = profile.walkSpeed;
+    const episode = brain.episode, current = world.platforms.find(p => p.id === world.platformId);
+    if (first.kind === "walk" && sameSupport && current && !current.manualOnly && current.kind !== "control" && current.kind !== "hide" && !current.id.startsWith("companion-home")
+      && food.platformId === current.id && Math.abs(food.y - current.y) <= 4 && world.animated && prefs.jump && prefs.animalMode !== "cat" && brain.energy >= .35
+      && episode?.kind === "meal" && episode.foodId === food.id && !episode.mishapUsed && episode.legs === 0 && ["bound", "bound-slip"].includes(episode.variant)) {
+      const direction = food.x < world.x ? -1 : 1, runSpeed = speed * 1.3, height = Math.min(105, profile.hopHeight + 40);
+      const flight = 2 * Math.sqrt(2 * COMPANION_JUMP_LIMITS.gravity * height) / COMPANION_JUMP_LIMITS.gravity;
+      // Leave a real approach after the possible56px landing roll; recovery
+      // must not stand inside the36px mouth radius and skip that continuation.
+      const landingX = food.x - direction * 112, takeoffX = landingX - direction * runSpeed * flight;
+      const runDistance = (takeoffX - world.x) * direction;
+      if (runDistance >= Math.max(48, runSpeed * .5) && takeoffX >= current.x + 12 && takeoffX <= current.x + current.width - 12
+        && landingX >= current.x + 12 && landingX <= current.x + current.width - 12
+        && reachablePlatforms({ x: takeoffX, y: current.y }, [{ ...current, x: landingX - 1, width: 2 }], { maxRise: height, landingInset: 0 }).length) {
+        step = { ...first, target: { ...first.target, x: takeoffX } };
+      }
+    }
+    const duration = step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950;
+    if (!Number.isFinite(duration)) continue;
+    return { kind: step.kind, target: step.target, duration, foodId: food.id, intention, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), direction: step.target.x < world.x ? -1 : 1 };
   }
   return undefined;
 }
@@ -334,7 +357,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const planned = planCompanionGoal(brain, world, prefs, { route: findPlatformRoute, landingX: platformLandingX, reachable: reachablePlatforms });
   if (planned.action) return { ...planned.action, ...(planned.outcomes.length ? { outcomes: planned.outcomes } : {}) };
   const candidates: { action: CompanionAction; utility: number }[] = [];
-  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point, movement: Pick<CompanionAction, "pace" | "jumpHeight" | "direction" | "play"> = {}) => {
+  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point, movement: Pick<CompanionAction, "pace" | "jumpHeight" | "direction" | "play" | "intention"> = {}) => {
     if ((brain.cooldowns[kind] ?? -Infinity) > now) return;
     const repeats = brain.recent.slice(-4).filter(item => item === kind).length;
     const lastPenalty = brain.recent.at(-1) === kind ? .35 : 1;
@@ -374,13 +397,22 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
     const pace = !tired && random(rng) < profile.scootChance ? "scoot" : "amble";
     // A finite run may cross more of this already-safe span. Social approaches,
     // controls and the cushion retain their short reach; walking keeps its gait.
-    const variableRun = pace === "scoot" && !follows && !current.manualOnly && current.kind !== "control" && !current.id.startsWith("companion-home");
+    const variableRun = pace === "scoot" && !follows && !current.manualOnly && current.kind !== "control" && current.kind !== "hide" && !current.id.startsWith("companion-home");
     const scootSpeed = variableRun ? speed * (1 + random(rng) * .5) : speed;
-    const longRun = variableRun && random(rng) < .45;
-    const distance = follows ? 0 : longRun ? Math.min(520, scootSpeed / .85 * (2 + random(rng) * 3)) : Math.min(180, profile.stepMin + random(rng) * profile.stepRange);
+    const forwardEdge = platformLandingX(current, direction > 0 ? current.x + current.width : current.x);
+    const available = Math.max(0, (forwardEdge - world.x) * direction);
+    // Pick one real destination across this clear span. A twelve-second
+    // distance budget bounds the action without manufacturing intermediate
+    // stops at180/520px; other species/social/small-support choices stay local.
+    const destinationFraction = variableRun ? random(rng) < .85 ? 1 : .45 + random(rng) * .3 : 1;
+    const distance = follows ? 0 : variableRun ? Math.min(available * destinationFraction, scootSpeed / .85 * 12) : Math.min(180, profile.stepMin + random(rng) * profile.stepRange);
     const desiredX = follows ? clamp(pointer.x + (world.x < pointer.x ? -1 : 1) * profile.pointerGap, world.x - profile.pointerStep, world.x + profile.pointerStep) : world.x + direction * distance;
     const walkX = platformLandingX(current, desiredX);
-    if (!current.manualOnly && Math.abs(walkX - world.x) > 20) add("walk", (1 + brain.curiosity * .7 + (follows ? profile.socialPull : 0)) * mobility, Math.max(500, Math.abs(walkX - world.x) / (pace === "scoot" ? scootSpeed : speed) * (pace === "scoot" ? 850 : profile.walkScale * 1000)), { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1 });
+    if (!current.manualOnly && Math.abs(walkX - world.x) > 20) {
+      const duration = Math.max(500, Math.abs(walkX - world.x) / (pace === "scoot" ? scootSpeed : speed) * (pace === "scoot" ? 850 : profile.walkScale * 1000));
+      add("walk", (1 + brain.curiosity * .7 + (follows ? profile.socialPull : 0)) * mobility, variableRun ? Math.min(12000, duration) : duration, { x: walkX, y: current.y, platformId: current.id }, undefined, { pace, direction: walkX < world.x ? -1 : 1,
+        ...(variableRun ? { intention: { kind: "explore", targetId: current.id, offset: unit((walkX - current.x) / current.width), remaining: 12, stage: "travel", pace, travelSpeed: Math.abs(walkX - world.x) / Math.min(12000, duration) * 1000 } } : {}) });
+    }
     if (prefs.jump) {
       const reachable = reachablePlatforms(world, world.platforms).filter(p => p.id !== current.id && p.kind !== "hide" && !p.manualOnly
         && !brain.places?.some(place => place.id === p.id && place.retryAfter > (brain.activeMs ?? 0)));

@@ -1,6 +1,6 @@
 # 빅타민 원형 흔들기·회복 표정·식사 재개·소파 반응
 
-Status: Local verification complete; authorized release pending.
+Status: Complete.
 
 소유자 후속: 격렬한 원형/다방향 흔들기도 헤롱 상태로 이어지고, 회복은 웃는 얼굴이 아닌 어지러움을 털어내는 표정이어야 한다. 음식 접근 중 넘어져도 같은 음식을 다시 먹는다. 소파의094 박스/배지를 제거하고 그림 자체의 작은 확대·눌림으로 조작을 알린다.
 
@@ -12,4 +12,4 @@ Status: Local verification complete; authorized release pending.
 
 검증: 관련 단위 검사와 전체 unit/typecheck/lint/build, 실제 production fixture native 원형 흔들기→낙하→회복, 동일 음식 사고→재접근→실제 소비·1회 보상, 소파 hover/down/up/거주 전경/quiet·양쪽 UI를 검증한다. 독립 소스·렌더 검토 후 승인된 commit/push/운영 확인을 진행한다. 실패와 미실행은 별도로 기록한다.
 
-로컬 결과: 최종 main 전체 unit2,040·typecheck/lint·harness250·packet 재생성 check PASS. production fixture build/typecheck와 native29종을 재검증까지 확인했다. 관련64파일 exact SHA 및893개 추적 코드의 EOL 제외 내용 일치를 확인했고 독립 source/raw 검토 차단0이다. 원형/음식 fixture와 최종 소파 CSS fixture, 실패 시도·준비 전제 교정·별도 재보행/실제 OBS 장비 등 검증 한계는 [검증 기록](../verification/COMPANION_SHAKE_RECOVERY_SOFA-20261017.md)에 분리한다. 승인된 main commit/push·remote quality/Vercel·운영 확인은 다음 단계다.
+결과: 최종 main 전체 unit2,040·typecheck/lint·harness250·packet 재생성 check PASS. production fixture build/typecheck와 native29종을 재검증까지 확인했다. 관련64파일 exact SHA 및893개 추적 코드의 EOL 제외 내용 일치를 확인했고 독립 source/raw·보안/범위 검토 차단0이다. `dbf153bb` main push, [remote quality39038690988](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39038690988) 전체13단계/Vercel success·운영 전체 SHA/API canary·새 packet 바이트 일치·실제 개발자 편집실의 집/새 paint group/한 visible HD pet을 확인했다. 원형/음식 fixture와 최종 소파 CSS fixture, 실패 시도·준비 전제 교정·별도 재보행/실제 OBS 장비 등 검증 한계는 [검증 기록](../verification/COMPANION_SHAKE_RECOVERY_SOFA-20261017.md)에 분리한다. 배포 후 메타데이터는 로컬만 갱신한다.

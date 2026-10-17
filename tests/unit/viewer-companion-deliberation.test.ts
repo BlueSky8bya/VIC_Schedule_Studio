@@ -77,10 +77,15 @@ describe("visible local companion deliberation", () => {
 
   it("does not inspect a missing snack or bypass motion and preference authorities", () => {
     const brain = fresh(), candidate = choose(brain);
-    for (const patch of [{ enabled: false }, { roam: false }, { jump: false }]) {
+    for (const patch of [{ enabled: false }, { roam: false }]) {
       const gated = { ...prefs, ...patch }, next = getAction(brain, world, gated, 0, () => .5);
       expect(deliberateCompanionAction(brain, world, gated, next)).toBe(next);
     }
+    const grounded = { ...prefs, jump: false }, walk = getAction(brain, world, grounded, 0, () => .5);
+    expect(walk).toMatchObject({ kind: "walk", target: { platformId: floor.id }, intention: { kind: "explore" } });
+    const inspect = deliberateCompanionAction(brain, world, grounded, walk);
+    expect(inspect).toMatchObject({ kind: "look", intention: { ...walk.intention, stage: "consider" } });
+    expect(getAction(commitAction(brain, inspect, 0), world, grounded, inspect.duration + 60, () => .5)).toMatchObject({ kind: "walk", target: walk.target });
     expect(deliberateCompanionAction(brain, world, prefs, candidate, false)).toBe(candidate);
     expect(deliberateCompanionAction(brain, { ...world, paused: true }, prefs, candidate)).toBe(candidate);
     const missing: CompanionAction = { ...candidate, foodId: "missing", intention: { kind: "feed", foodId: "missing", targetId: high.id, offset: .5, remaining: 12, stage: "travel" } };

@@ -104,7 +104,7 @@ async function startProbe(page: Page) {
         const now = performance.now();
         probe.frames.push({ at: now - began, actionAge: el.dataset.journey ? now - Number(el.dataset.journey) : 0, phase: probe.phase, comparable: freshTransform && stableInput, freshTransform, stableInput,
           state: el.dataset.state ?? "", platform: el.dataset.platform ?? "", dizzy: el.hasAttribute("data-held-dizzy"), play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "",
-          row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * 31 / 100), pose: el.dataset.pose ?? "", adoptedRow: spriteRows.findIndex(row => row.includes(Number(el.dataset.pose))), decoded: Boolean(texture?.complete && texture.naturalWidth > 0), textureSrc: texture?.getAttribute("src") ?? "", hidden: el.hidden || getComputedStyle(el).display === "none", same: node.isConnected && node === document.querySelector(".vc-companion"), captured: button.hasPointerCapture(probe.pointerId), x: p.x, y: p.y, facing,
+          row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * (spriteRows.length - 1) / 100), pose: el.dataset.pose ?? "", adoptedRow: spriteRows.findIndex(row => row.includes(Number(el.dataset.pose))), decoded: Boolean(texture?.complete && texture.naturalWidth > 0), textureSrc: texture?.getAttribute("src") ?? "", hidden: el.hidden || getComputedStyle(el).display === "none", same: node.isConnected && node === document.querySelector(".vc-companion"), captured: button.hasPointerCapture(probe.pointerId), x: p.x, y: p.y, facing,
           gripError: held && probe.grip ? Math.hypot(p.x + probe.grip.x - probe.pointer.x, p.y + probe.grip.y - probe.pointer.y) : 0,
           pivotError: held ? Math.hypot(pivot.x - probe.pointer.x, pivot.y - probe.pointer.y) : 0,
           posePivotError: held ? Math.hypot(px - (facing === "left" ? p.size - ox : ox), py - oy) : 0,
@@ -231,6 +231,7 @@ for (const [surface, mode, pattern] of [["viewer", "full", "horizontal"], ["stud
       await shake(page, drag, pattern); await expect(pet(page)).toHaveAttribute("data-held-dizzy", ""); await expect(pet(page)).toHaveAttribute("data-state", "held");
       mkdirSync(output, { recursive: true }); await page.screenshot({ path: `${output}/${label}-held.png` });
       support = await releaseSupport(page, surface);
+      await page.waitForTimeout(120); // Deliberate vertical release; expire the real throw-input window.
       await drag.release(); await expect(pet(page)).toHaveAttribute("data-play", "dizzy", { timeout: 5000 });
       await page.screenshot({ path: `${output}/${label}-dizzy.png` });
       await expect(pet(page)).not.toHaveAttribute("data-play", "dizzy", { timeout: 5000 });

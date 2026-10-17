@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { companionRunTripContact, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop } from "@/lib/ui/viewer-companion/romp";
 import { DEFAULT_COMPANION_PREFERENCES as prefs } from "@/lib/ui/viewer-companion/preferences";
-import { type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
+import { commitAction, createBrain, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
 
 const floor: Platform = { id: "floor", kind: "floor", x: 40, y: 800, width: 1000 };
 const action: CompanionAction = { kind: "walk", pace: "scoot", target: { x: 550, y: 800, platformId: floor.id }, duration: 2400, direction: 1 };
@@ -58,6 +58,29 @@ describe("one bounded romp on an actual run", () => {
     expect((hop.target.x - action.target.x) / flight).toBeCloseTo(hop.runUp!, 7);
     expect(validCompanionRunHop(hop, action.target, { ...floor, width: 500 })).toBe(false);
     expect(validCompanionRunHop({ ...hop, target: { ...hop.target, x: 1000 } }, action.target, floor)).toBe(false);
+  });
+  it("keeps a same-span hop inside its retained final goal and spends both finite action slots", () => {
+    const intention = { kind: "explore" as const, targetId: floor.id, offset: .86, remaining: 8, stage: "travel" as const };
+    const chosen = { ...action, target: { ...action.target, x: 900 }, duration: 5200, intention }, before = JSON.stringify(chosen);
+    const plan = planCompanionRomp({ ...input, action: chosen, cooldownReady: false }, prefs, sequence(0, .8));
+    expect(plan.walk).toBeDefined(); expect(plan.hop).toBeDefined();
+    expect(plan.walk!.intention).toEqual(intention); expect(plan.walk!.target.x).toBeGreaterThan(input.from.x + 48);
+    expect(plan.walk!.target.x).toBeLessThan(plan.hop!.target.x); expect(plan.hop!.target.x).toBeCloseTo(836);
+    expect(plan.hop!.intention).toEqual({ ...intention, remaining: 7 });
+    expect(plan.hop!.runUp).toBeCloseTo((plan.walk!.target.x - input.from.x) / plan.walk!.duration * 1000);
+    expect(validCompanionRunHop(plan.hop!, plan.walk!.target, floor)).toBe(true);
+    const walked = commitAction(createBrain(), plan.walk!, 100000), landed = commitAction(walked, plan.hop!, 100000 + plan.walk!.duration);
+    expect(walked.intention?.remaining).toBe(7); expect(landed.intention?.remaining).toBe(6); expect(landed.intention?.targetId).toBe(floor.id);
+    expect(JSON.stringify(chosen)).toBe(before);
+    for (const patch of [{ remaining: 1 }, { offset: NaN }]) expect(planCompanionRomp({ ...input, action: { ...chosen, intention: { ...intention, ...patch } }, cooldownReady: false }, prefs, sequence(0, .8))).toEqual({});
+    const short = { ...chosen, target: { ...chosen.target, x: 310 }, duration: 480, intention: { ...intention, offset: .27 } };
+    expect(planCompanionRomp({ ...input, action: short, cooldownReady: false }, prefs, sequence(0, .8))).toEqual({});
+  });
+  it("carries a different-platform expedition through a proved intermediate hop without renewing its budget", () => {
+    const intention = { kind: "explore" as const, targetId: "next-ledge", offset: .6, remaining: 6, stage: "travel" as const };
+    const plan = planCompanionRomp({ ...input, action: { ...action, intention }, cooldownReady: false }, prefs, sequence(0, .8));
+    expect(plan.walk).toBeUndefined(); expect(plan.hop?.intention).toEqual({ ...intention, remaining: 5 });
+    expect(validCompanionRunHop(plan.hop!, action.target, floor)).toBe(true);
   });
   it("does not invent a run-up at the edge or exceed ballistic bounds", () => {
     const edgeAction = { ...action, target: { ...action.target, x: 1020 } };

@@ -2,8 +2,21 @@ import { describe, expect, it } from "vitest";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel, type CompanionMotionInput, type CompanionMotionPose } from "@/lib/ui/viewer-companion/motion";
 import { boundCompanionHeldPose } from "@/lib/ui/viewer-companion/held-inertia";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { COMPANION_THROW_ROW } from "@/lib/ui/viewer-companion/timing";
 
 const input = (patch: Partial<CompanionMotionInput> = {}): CompanionMotionInput => ({ row: 0, phase: 0, status: "idle", x: 100, y: 500, now: 0, ...patch });
+
+describe("actual airborne phase selection", () => {
+  it("enters at the current flight phase and follows changed phases even without elapsed sampling time", () => {
+    const motion = createCompanionMotion({ rowCount: companionSpriteMetadata.rows.length });
+    motion.sample(input({ row: 8, status: "held", now: 100 }));
+    for (const [phase, column] of [[8 / 15, 8], [4 / 15, 4], [12 / 15, 12], [1, 15]] as const) {
+      const pose = motion.sample(input({ row: COMPANION_THROW_ROW, status: "jump", now: 100, phase }));
+      expect(pose).toMatchObject({ row: COMPANION_THROW_ROW, column });
+      expect(selectCompanionSprite(companionSpriteMetadata.rows[pose.row][pose.column], pose.row, pose.column).physicalIndex).toBe(companionSpriteMetadata.rows[COMPANION_THROW_ROW][column]);
+    }
+  });
+});
 
 describe("authored recovery expression selection", () => {
   // Match the renderer: all16 held slots remain selectable, not four deduped keys.

@@ -3,7 +3,7 @@ import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionPreferences } from "./preferences";
 
 export type CompanionRunTrip = { x: number; play: "tumble" | "bump"; cause: "food" | "stumble"; foodId?: string };
-export type CompanionRomp = { trip?: CompanionRunTrip; hop?: CompanionAction };
+export type CompanionRomp = { trip?: CompanionRunTrip; walk?: CompanionAction; hop?: CompanionAction };
 type Point = { x: number; y: number };
 type Input = { action: CompanionAction; from: Point; platform?: Platform; foods: readonly CompanionFood[]; energy: number; cooldownReady: boolean };
 const unit = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 1));
@@ -37,10 +37,25 @@ export function planCompanionRomp(input: Input, prefs: CompanionPreferences, rng
   if (!prefs.jump || energy < .4 || unit(rng()) >= .35 + profile.scootChance * .25) return {};
   const height = Math.min(110, (profile.hopHeight + 24) * (1 + unit(rng()) * .5));
   const flight = 2 * Math.sqrt(2 * COMPANION_JUMP_LIMITS.gravity * height) / COMPANION_JUMP_LIMITS.gravity;
-  const speed = distance / action.duration * 1000;
-  const targetX = platformLandingX(p, action.target.x + direction * speed * flight);
-  const hop: CompanionAction = { kind: "jump", target: { x: targetX, y: p.y, platformId: p.id }, direction, jumpHeight: height, runUp: speed, duration: flight * 1000 + 180 };
-  return validCompanionRunHop(hop, action.target, p) ? { hop } : {};
+  const speed = distance / action.duration * 1000, goal = action.intention;
+  if (goal && (!Number.isFinite(goal.remaining) || goal.remaining <= 1)) return {};
+  let takeoff = action.target, walk: CompanionAction | undefined;
+  let targetX = platformLandingX(p, action.target.x + direction * speed * flight);
+  if (goal?.targetId === p.id) {
+    if (!Number.isFinite(goal.offset) || goal.stage !== "travel") return {};
+    const goalX = platformLandingX(p, p.x + p.width * Math.max(0, Math.min(1, goal.offset)));
+    // A hop belongs inside the retained journey, never beyond its destination.
+    // Keep a small final approach after the landing rather than reversing.
+    targetX = goalX - direction * 64;
+    takeoff = { ...action.target, x: targetX - direction * speed * flight };
+    const runDistance = (takeoff.x - from.x) * direction, duration = runDistance / speed * 1000;
+    if (Math.abs(goalX - action.target.x) > 1 || runDistance < 48 || duration < 350
+      || takeoff.x < p.x + 12 || takeoff.x > p.x + p.width - 12) return {};
+    walk = { ...action, target: takeoff, duration, intention: { ...goal } };
+  }
+  const hop: CompanionAction = { kind: "jump", target: { x: targetX, y: p.y, platformId: p.id }, direction, jumpHeight: height, runUp: speed, duration: flight * 1000 + 180,
+    ...(goal ? { intention: { ...goal, remaining: goal.remaining - 1 } } : {}) };
+  return validCompanionRunHop(hop, takeoff, p) ? { ...(walk ? { walk } : {}), hop } : {};
 }
 
 /** Reprove after scrolling/reflow, against the actual current support. */

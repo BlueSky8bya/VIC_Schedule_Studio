@@ -13,6 +13,27 @@ const fresh = (): CompanionBrain => ({ ...createBrain(0, () => .5), energy: .85,
 const ports = { route: findPlatformRoute, landingX: platformLandingX, reachable: reachablePlatforms };
 
 describe("environment-driven finite companion intentions", () => {
+  it("retains a selected finite travel gait through consider, real intermediate support and final observation", () => {
+    const intention = { kind: "explore" as const, targetId: floor.id, offset: .85, remaining: 8, stage: "consider" as const, pace: "scoot" as const, travelSpeed: 100 };
+    const brain = { ...fresh(), intention }, context = { ...world, x: 100, platforms: [floor] };
+    const first = planCompanionGoal(brain, context, prefs, ports).action!;
+    expect(first).toMatchObject({ kind: "walk", pace: "scoot", target: { x: 850, y: floor.y, platformId: floor.id }, duration: 7500, intention: { ...intention, stage: "travel" } });
+    const state = commitAction(brain, first, 100000), next = planCompanionGoal(state, { ...context, x: 400 }, prefs, ports).action!;
+    expect(next).toMatchObject({ kind: "walk", pace: "scoot", target: first.target, duration: 4500, intention: { ...intention, stage: "travel", remaining: 7 } });
+    expect(planCompanionGoal(state, { ...context, x: 850 }, prefs, ports).action).toMatchObject({ kind: "look", intention: { ...intention, remaining: 7, stage: "observe" } });
+    expect(brain.intention).toEqual(intention);
+  });
+  it("rejects invalid travel gaits and a reflow that exceeds the finite walk budget without changing speed or endpoint", () => {
+    const intention = { kind: "explore" as const, targetId: floor.id, offset: .85, remaining: 8, stage: "travel" as const, pace: "scoot" as const, travelSpeed: 100 };
+    for (const changes of [{ travelSpeed: NaN }, { travelSpeed: Infinity }, { travelSpeed: 0 }, { travelSpeed: -1 }, { travelSpeed: 261 }, { pace: undefined }, { remaining: NaN }, { offset: Infinity }]) {
+      const result = planCompanionGoal({ ...fresh(), intention: { ...intention, ...changes } }, { ...world, x: 100, platforms: [floor] }, { ...prefs, jump: false }, ports);
+      expect(result.action).toBeUndefined(); expect(result.outcomes).toEqual([{ targetId: floor.id, result: "blocked" }]);
+    }
+    const expanded = { ...floor, width: 2400 }, brain = { ...fresh(), intention }, before = JSON.stringify(brain);
+    const result = planCompanionGoal(brain, { ...world, x: 100, platforms: [expanded] }, { ...prefs, jump: false }, ports);
+    expect(result.action).toBeUndefined(); expect(result.outcomes).toEqual([{ targetId: floor.id, result: "blocked" }]);
+    expect(JSON.stringify(brain)).toBe(before);
+  });
   it("keeps a multi-ledge exploration goal through real intermediate steps, then observes its destination", () => {
     let brain = fresh(), context = { ...world }, goal = "", jumps = 0, completed = false;
     for (let step = 0; step < 12; step++) {

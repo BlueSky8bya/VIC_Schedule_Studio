@@ -97,7 +97,7 @@ async function readFloor(page: Page, surface: Surface): Promise<Floor> {
 }
 
 async function startProbe(page: Page) {
-  await pet(page).evaluate(node => {
+  await pet(page).evaluate((node, rowCount) => {
     const el = node as HTMLElement;
     const probe: Probe = { node: el, foodNodes: new Map(), marker: "setup", began: performance.now(), frames: [], inputs: [], focusEvents: [], careChanges: [], removed: [], mealEntries: 0, finishAt: 0, finishCompletedAt: 0, mouthSeen: false, raf: 0, timer: 0, stopped: false, previousState: "", previousPhase: "", previousCare: "", observer: new MutationObserver(() => {}), input: () => {}, focusInput: () => {} };
     probe.input = event => {
@@ -128,7 +128,7 @@ async function startProbe(page: Page) {
           if (!probe.foodNodes.has(id)) probe.foodNodes.set(id, food);
           return { id, same: probe.foodNodes.get(id) === food, x: matrix.m41, y: matrix.m42, falling: food.hasAttribute("data-falling"), eating: food.hasAttribute("data-eating"), selected: food.hasAttribute("data-selected"), jostling: food.hasAttribute("data-jostling"), scale: Math.hypot(artMatrix.a, artMatrix.b), mouthError: Math.hypot(box.left + box.width / 2 - mouthX, box.top + box.height / 2 - mouthY) };
         });
-        const style = getComputedStyle(el), frame: Frame = { at, marker: probe.marker, episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", intent: el.dataset.intent ?? "", attention: el.dataset.attention ?? "", state: el.dataset.state ?? "", play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "", trip: el.dataset.trip ?? "", runUp: el.dataset.runUp ?? "", journey: el.dataset.journey ?? "", platform: el.dataset.platform ?? "", pose: Number(el.dataset.pose), row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * 31 / 100), same: el.isConnected && el === document.querySelector(".vc-companion"), visible: !el.hidden && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > .05, decoded: Boolean(texture?.complete && texture.naturalWidth > 0), atlas: el.dataset.atlas ?? "", x: m.m41 + size / 2, y: m.m42 + size, foods };
+        const style = getComputedStyle(el), frame: Frame = { at, marker: probe.marker, episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", intent: el.dataset.intent ?? "", attention: el.dataset.attention ?? "", state: el.dataset.state ?? "", play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "", trip: el.dataset.trip ?? "", runUp: el.dataset.runUp ?? "", journey: el.dataset.journey ?? "", platform: el.dataset.platform ?? "", pose: Number(el.dataset.pose), row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * (rowCount - 1) / 100), same: el.isConnected && el === document.querySelector(".vc-companion"), visible: !el.hidden && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > .05, decoded: Boolean(texture?.complete && texture.naturalWidth > 0), atlas: el.dataset.atlas ?? "", x: m.m41 + size / 2, y: m.m42 + size, foods };
         probe.frames.push(frame);
         if (frame.state === "eat" && probe.previousState !== "eat") probe.mealEntries++;
         if (frame.episode === "meal" && frame.phase === "finish" && !probe.finishAt) probe.finishAt = at;
@@ -141,7 +141,7 @@ async function startProbe(page: Page) {
       probe.raf = requestAnimationFrame(sample);
     };
     (window as unknown as ProbeWindow).contextEpisodeProbe = probe; probe.raf = requestAnimationFrame(sample);
-  });
+  }, companionSpriteMetadata.rows.length);
 }
 
 async function prepareFood(page: Page, floor: Floor) {

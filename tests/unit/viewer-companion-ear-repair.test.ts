@@ -73,8 +73,9 @@ describe("four requested ear corrections preserve all other native poses", () =>
     }
   });
 
-  it("binds only the ear corrections and later recovery keys without changing row/column indexing", () => {
-    expect(current.rows).toEqual(baseline.rows);
+  it("preserves the original row/column prefix while later throw keys append separately", () => {
+    expect(current.rows.slice(0, baseline.rows.length)).toEqual(baseline.rows);
+    expect(current.rows.slice(baseline.rows.length)).toEqual([Array.from({ length: 16 }, (_, i) => 192 + i)]);
     for (const [packet, definition] of original.packets.entries()) {
       for (const [column, sourceIndex] of definition.nativeIndicesByColumn.entries()) {
         const frameIndex = packet * 16 + column;
