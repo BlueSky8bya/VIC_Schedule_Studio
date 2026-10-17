@@ -38,7 +38,7 @@ const timing = (...beats: Beat[]): PlayTiming => Object.freeze({
  * Authored clips with only two/three keys must not spend half a second merely
  * approaching their first reaction. Finite clips always advance forward. */
 export const COMPANION_PLAY_TIMING: Readonly<Record<CompanionPlay, PlayTiming>> = Object.freeze({
-  dizzy: timing({ row: 22, duration: 600, beat: "dizzy" }, { row: 23, duration: 320, beat: "recover" }),
+  dizzy: timing({ row: 22, duration: 520, beat: "dizzy" }, { row: 23, duration: 800, beat: "recover" }),
   "bonk-tears": timing({ row: 25, duration: 100, beat: "impact" }, { row: 27, duration: 900, beat: "checking" }, { row: 23, duration: 280, beat: "recover" }),
   "bonk-sad": timing({ row: 25, duration: 110, beat: "impact" }, { row: 28, duration: 1030, beat: "checking" }, { row: 23, duration: 280, beat: "recover" }),
   tumble: timing({ row: 21, duration: 620, beat: "impact", cycles: 2 }, { row: 22, duration: 300, beat: "dizzy" }, { row: 26, duration: 440, beat: "checking" }, { row: 23, duration: 400, beat: "recover" }),

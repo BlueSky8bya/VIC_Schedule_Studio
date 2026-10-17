@@ -4,11 +4,11 @@ import { COMPANION_PLAY_TIMING, type CompanionPlayBeat } from "./timing";
 /** Authored finite beats, sampled by the existing display clock. Native art
  * supplies the changed silhouette; these small scalars only connect contact. */
 export const COMPANION_PLAY_ROWS = Object.freeze({ sprint: 20, tumble: 21, dizzy: 22, recover: 23, slip: 24, bump: 25, glance: 26, tears: 27, sulk: 28, bow: 29, groom: 30, pounce: 31 });
-export type CompanionPlayPose = { row: number; phase: number; beat: CompanionPlayBeat; lift: number; lean: number; shift: number };
+export type CompanionPlayPose = { row: number; phase: number; beat: CompanionPlayBeat; lift: number; lean: number; shift: number; compression: number };
 const clamp = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
 export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduced = false): CompanionPlayPose {
   const p = clamp(progress), rows = COMPANION_PLAY_ROWS;
-  const result = (row: number, phase: number, beat: CompanionPlayPose["beat"], lift = 0, lean = 0, shift = 0): CompanionPlayPose => ({ row, phase: clamp(phase), beat, lift: reduced ? 0 : lift, lean: reduced ? 0 : lean, shift: reduced ? 0 : shift });
+  const result = (row: number, phase: number, beat: CompanionPlayPose["beat"], lift = 0, lean = 0, shift = 0, compression = 0): CompanionPlayPose => ({ row, phase: clamp(phase), beat, lift: reduced ? 0 : lift, lean: reduced ? 0 : lean, shift: reduced ? 0 : shift, compression: reduced ? 0 : compression });
   if (p >= 1) return result(rows.recover, 1, "recover");
   if (reduced) return result(kind === "bonk-tears" ? rows.tears : kind === "bonk-sad" ? rows.sulk : rows.recover, .6, "recover");
   const timing = COMPANION_PLAY_TIMING[kind], age = p * timing.duration;
@@ -17,9 +17,20 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
     if (age + 1e-7 >= entered + stage.duration) { entered += stage.duration; continue; }
     const elapsed = Math.max(0, age - entered), local = clamp(elapsed / stage.duration);
     const phase = stage.cycles ? local * stage.cycles % 1 : local;
-    if (stage.beat === "recover") return result(stage.row, phase, stage.beat);
+    if (stage.beat === "recover") {
+      if (kind === "dizzy") {
+        // Hold one squint, then open the eyes. Four sparse tilted drawings
+        // used to pop between silhouettes; the existing pose plane supplies
+        // continuous, diminishing motion without moving the actual support.
+        const ramp = clamp(local / .15), ease = ramp * ramp * (3 - 2 * ramp);
+        const lean = Math.sin(local * Math.PI * 4) * 3 * (1 - local) ** 2 * ease;
+        const compression = .026 * Math.sin(local * Math.PI * 2) ** 2 * Math.sin(local * Math.PI);
+        return result(stage.row, local < .5 ? 0 : 1, stage.beat, 0, lean, 0, compression);
+      }
+      return result(stage.row, phase, stage.beat);
+    }
     if (stage.beat === "impact") return result(stage.row, phase, stage.beat, -Math.sin(local * Math.PI) * (kind === "tumble" ? 5 : 3), 0, kind === "tumble" ? Math.sin(local * Math.PI) ** 2 * 22 : 0);
-    if (stage.beat === "dizzy") return result(stage.row, phase, stage.beat, 0, Math.sin(local * Math.PI * 2) * 3);
+    if (stage.beat === "dizzy") return result(stage.row, phase, stage.beat, 0, Math.sin(local * Math.PI * 2) * 3 * (kind === "dizzy" ? (1 - local) ** 2 : 1));
     if (stage.row === rows.tears || stage.row === rows.sulk) {
       // Reach the readable expression in180ms; keep its terminal key while a
       // tiny finite sniffle supplies life. Do not slowly morph through a cry.

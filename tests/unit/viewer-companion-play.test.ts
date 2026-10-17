@@ -39,10 +39,38 @@ describe("finite authored companion play", () => {
   });
   it("recovers from shaking without a new bump, roll or displacement", () => {
     const duration = companionPlayDuration("dizzy");
-    expect(duration).toBe(920);
+    expect(duration).toBe(1320);
     expect(sampleCompanionPlay("dizzy", 0)).toMatchObject({ row: 22, beat: "dizzy", lift: 0, shift: 0 });
-    expect(sampleCompanionPlay("dizzy", 599 / duration)).toMatchObject({ row: 22, beat: "dizzy", lift: 0, shift: 0 });
-    expect(sampleCompanionPlay("dizzy", 600 / duration)).toMatchObject({ row: 23, beat: "recover", lift: 0, lean: 0, shift: 0 });
+    expect(sampleCompanionPlay("dizzy", 519 / duration)).toMatchObject({ row: 22, beat: "dizzy", lift: 0, shift: 0 });
+    expect(sampleCompanionPlay("dizzy", 520 / duration)).toMatchObject({ row: 23, beat: "recover", lift: 0, lean: 0, shift: 0, compression: 0 });
+  });
+  it("connects sparse recovery art with continuous damped motion on the same support", () => {
+    const duration = companionPlayDuration("dizzy");
+    const poses = Array.from({ length: 161 }, (_, i) => sampleCompanionPlay("dizzy", (520 + i * 5) / duration));
+    expect(new Set(poses.map(pose => pose.lean.toFixed(3))).size).toBeGreaterThan(80);
+    expect(new Set(poses.map(pose => pose.phase))).toEqual(new Set([0, 1]));
+    for (let i = 0; i < poses.length; i++) {
+      const pose = poses[i];
+      expect(pose).toMatchObject({ row: 23, beat: "recover", lift: 0, shift: 0 });
+      expect(Math.abs(pose.lean)).toBeLessThanOrEqual(3);
+      expect(pose.compression).toBeGreaterThanOrEqual(0); expect(pose.compression).toBeLessThanOrEqual(.026);
+      if (i) {
+        expect(Math.abs(pose.lean - poses[i - 1].lean)).toBeLessThan(.25);
+        expect(Math.abs(pose.compression - poses[i - 1].compression)).toBeLessThan(.003);
+      }
+    }
+    for (const ms of [519.99, 520, 520.01, 1319.99, 1320]) {
+      const pose = sampleCompanionPlay("dizzy", ms / duration);
+      expect(Math.abs(pose.lean)).toBeLessThan(.001); expect(pose.compression).toBeLessThan(.001);
+    }
+    expect(poses[79].phase).toBe(0); expect(poses[80].phase).toBe(1);
+    expect(Math.max(...poses.slice(-20).map(pose => Math.abs(pose.lean)))).toBeLessThan(.05);
+  });
+  it("adds no compression to other reactions or reduced motion", () => {
+    for (const kind of kinds) for (const progress of [0, .2, .5, .8, 1]) {
+      expect(sampleCompanionPlay(kind, progress, true).compression).toBe(0);
+      if (kind !== "dizzy") expect(sampleCompanionPlay(kind, progress).compression).toBe(0);
+    }
   });
   it("preserves quick contact, readable expression and finite recovery independently for every gesture", () => {
     const durations = kinds.map(kind => companionPlayDuration(kind));

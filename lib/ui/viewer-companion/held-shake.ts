@@ -3,7 +3,7 @@ type Stroke = { began: number };
 export type CompanionHeldShakeSample = { active: boolean; phase: number };
 
 const GRID_MS = 16, MAX_GAP_MS = 160, WINDOW_MS = 1200, LATCH_MS = 1000;
-const MIN_STROKE = 40, MIN_SPEED = .4, TURN_DISTANCE = 12, MIN_SPAN_MS = 450;
+const MIN_STROKE = 30, MIN_SPEED = .3, TURN_DISTANCE = 12, MIN_SPAN_MS = 280, REQUIRED_REVERSALS = 2;
 const quiet = (): CompanionHeldShakeSample => ({ active: false, phase: 0 });
 const valid = (x: number, y: number, at: number) => [x, y, at].every(Number.isFinite) && at >= 0;
 
@@ -30,7 +30,7 @@ export function createCompanionHeldShake() {
     strokes = strokes.filter(stroke => point.at - stroke.began <= WINDOW_MS);
     if (!strokes.length) runBegan = undefined;
     // Keep the duration of the continuous valid run separately from its last
-    // three reversals. Fast strokes can all fit inside450ms; their short ring
+    // two reversals. Fast strokes can all fit inside280ms; their short ring
     // must not erase the real time already spent shaking. History stays bounded.
     if (runBegan !== undefined) runBegan = Math.max(runBegan, point.at - WINDOW_MS);
     if (!axis) {
@@ -47,7 +47,7 @@ export function createCompanionHeldShake() {
         if (reversing && qualifies()) {
           runBegan ??= from.at;
           strokes.push({ began: from.at });
-          if (strokes.length > 3) strokes.shift();
+          if (strokes.length > REQUIRED_REVERSALS) strokes.shift();
         } else { strokes = []; runBegan = undefined; }
         from = peak; axis = { x: backX / back, y: backY / back };
         peak = point; extent = back; credited = false;
@@ -56,9 +56,9 @@ export function createCompanionHeldShake() {
         if (projection > extent) { extent = projection; peak = point; }
       }
     }
-    if (!credited && strokes.length === 3 && qualifies()
+    if (!credited && strokes.length === REQUIRED_REVERSALS && qualifies()
       && runBegan !== undefined && point.at - runBegan >= MIN_SPAN_MS) {
-      // Only a newly qualified fourth/opposite stroke can refresh the latch.
+      // Only a newly qualified third/opposite stroke can refresh the latch.
       // Holding still or merely reading a pose never prolongs the reaction.
       latchedAt ??= point.at; expiresAt = point.at + LATCH_MS; credited = true;
     }

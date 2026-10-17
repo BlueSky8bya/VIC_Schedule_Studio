@@ -332,7 +332,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const supportMotion = createCompanionSupportMotion();
     const heldInertia = createCompanionHeldInertia();
     const heldShake = createCompanionHeldShake();
-    let shakenReleasePending = false;
+    let shakenReleasePending: { column: number } | undefined;
+    let shakenGroundColumn: number | undefined;
     let grip = { x: size / 2, y: size / 2 };
     let heldPivot = false, releasedPivotAt = -Infinity;
     const petting = createCompanionPettingGesture();
@@ -446,7 +447,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (values.get(name) !== value) { node.style.setProperty(name, value); values.set(name, value); }
     };
     const data = (name: string, value: string) => { if (el.dataset[name] !== value) el.dataset[name] = value; };
-    const resetInertia = () => { heldInertia.reset(); heldShake.reset(); shakenReleasePending = false; el.removeAttribute("data-held-dizzy"); sofaContact = undefined; style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
+    const resetInertia = () => { heldInertia.reset(); heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; el.removeAttribute("data-held-dizzy"); sofaContact = undefined; style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       bedNeedsPaint = false;
@@ -484,6 +485,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const normalizedGrip = { x: grip.x / size, y: grip.y / size };
       const heldReaction = status === "held" && pressed?.grabbed && !overlayActive && !reduced && gfxMode() !== "off" ? heldShake.sample(performance.now()) : { active: false, phase: 0 };
       el.toggleAttribute("data-held-dizzy", heldReaction.active);
+      if (heldReaction.active) spriteSources[23].forEach(src => requestSprite.current(src));
       // Resolve just the attended cached support/snack. No route search or DOM
       // measurement runs in pose sampling; the existing follower owns layout.
       const attention = ["look", "sniff"].includes(status) ? action?.attention : undefined;
@@ -505,10 +507,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const physicalOrigin = { x: displayFrame.x - displayFrame.size / 2, y: displayFrame.y - displayFrame.size }, physicalGrip = { x: grip.x * displayFrame.scale, y: grip.y * displayFrame.scale };
       const sway = boundCompanionHeldPose(heldInertia.sample(performance.now()), physicalOrigin, physicalGrip, displayFrame.size, { width: innerWidth, height: innerHeight });
       const shape = heldPivot || presentationNow - releasedPivotAt < 100 ? boundCompanionHangingPose(sample, physicalOrigin, physicalGrip, displayFrame.size, { width: innerWidth, height: innerHeight }, sway) : { ...sample };
-      if (action?.kind === "play" && action.play && status === "play") {
-        const play = sampleCompanionPlay(action.play, (performance.now() - began) / total, reduced || gfxMode() === "off");
+      const play = action?.kind === "play" && action.play && status === "play" ? sampleCompanionPlay(action.play, (performance.now() - began) / total, reduced || gfxMode() === "off") : undefined;
+      if (play) {
         // The current actual support owns world position throughout the gag.
         shape.bob += play.lift; shape.tilt += play.lean;
+        shape.scaleX *= 1 + play.compression * .5; shape.scaleY *= 1 - play.compression;
       }
       style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${(1 - sway.stretch * .35).toFixed(4)},${(1 + sway.stretch).toFixed(4)})`);
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off");
@@ -535,8 +538,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // Expression alone changes art. The row8 held sampler above still owns
       // gravity, the ear/body grip, facing and the full-pose viewport bounds.
       // Six drawing steps per520ms keep this held cycle below14Hz.
-      const drawingRow = heldReaction.active ? 22 : sample.row;
-      const column = heldReaction.active ? Math.min(registration.rows[22].length - 1, Math.floor(Math.floor(heldReaction.phase * 6) / 6 * registration.rows[22].length)) : sample.column;
+      // Retain the final spiral drawing through real ballistic travel and the
+      // first ground beat. Physical fall/landing sampling stays independent.
+      const carriedColumn = !reduced && gfxMode() !== "off" && !overlayActive ? action?.kind === "jump" ? shakenReleasePending?.column : action?.play === "dizzy" && sample.row === 22 ? shakenGroundColumn : undefined : undefined;
+      const drawingRow = heldReaction.active || carriedColumn !== undefined ? 22 : sample.row;
+      const column = heldReaction.active ? Math.min(registration.rows[22].length - 1, Math.floor(Math.floor(heldReaction.phase * 6) / 6 * registration.rows[22].length)) : carriedColumn ?? sample.column;
       const index = registration.rows[drawingRow][column];
       const selected = selectCompanionSprite(index, drawingRow, column);
       spriteSources[drawingRow].forEach(src => requestSprite.current(src));
@@ -746,7 +752,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       };
       followRaf = requestAnimationFrame(follow);
     };
-    const clearAction = () => { if (homeDeparture?.flying) homeDeparture = undefined; action = null; heldShake.reset(); shakenReleasePending = false; el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = () => { if (homeDeparture?.flying) homeDeparture = undefined; action = null; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
       // User releases hit the first real card top on this vertical ray. The
       // separate text ledges remain the only autonomous destinations.
@@ -946,7 +952,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (next.kind === "play" && next.play) {
         // Decode just the contact and expression packets ahead of their beat.
         // Keep the existing bounded cache; never warm the entire pose library.
-        for (const row of new Set([sampleCompanionPlay(next.play, 0).row, sampleCompanionPlay(next.play, .5).row])) spriteSources[row].forEach(src => requestSprite.current(src));
+        for (const row of new Set(next.play === "dizzy" ? [22, 23] : [sampleCompanionPlay(next.play, 0).row, sampleCompanionPlay(next.play, .5).row])) spriteSources[row].forEach(src => requestSprite.current(src));
       }
       if (next.kind === "play" && next.play?.startsWith("bonk-") && !supportedNow()) {
         // A tap during landing still has the requested immediate expression.
@@ -1291,6 +1297,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
               stable: Boolean(landing && Math.abs(y - landing.y) <= 2 && !isHomeSupport(support))
             }, preferences) ?? undefined;
           }
+          const shakenArrivalColumn = arrivalPlay === "dizzy" ? shakenReleasePending?.column : undefined;
           clearAction();
           if (ejected && presence.phase === "parked") { row = 11; frame = 0; status = "sleep"; el.dataset.dreaming = ""; offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
           if (rested) brain.current = recordCompanionEvent(brain.current, "rested"); nextDecision = now + (homeJourney || continueRoute ? 0 : completed.attention && completed.attention.kind !== "social" ? 60 : 220);
@@ -1303,6 +1310,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             // The actual completed run/landing owns this one contact. Start
             // its reaction now rather than pausing for another random choice.
             launch({ kind: "play", play: arrivalPlay, target: { x, y, platformId: support }, duration: companionPlayDuration(arrivalPlay), direction: completed.direction }, now);
+            shakenGroundColumn = shakenArrivalColumn;
             const contact = sampleCompanionPlay(arrivalPlay, 0);
             row = contact.row; frame = 0; status = "play";
             data("play", arrivalPlay); data("playBeat", contact.beat);
@@ -1779,6 +1787,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (!preferences.drag && distance > 6) pressed.cancelled = true;
       if (preferences.drag && (pressed.grabbed || distance > 6)) {
         const previousX = x, previousY = y;
+        if (!pressed.grabbed && !reduced && gfxMode() !== "off") spriteSources[22].forEach(src => requestSprite.current(src));
         pressed.grabbed = true;
         pressed.dragged = true; x = clamp(event.clientX - pressed.dx, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY - pressed.dy, size + 8, innerHeight - 12);
         if (reduced || gfxMode() === "off") resetInertia();
@@ -1816,13 +1825,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // held body now so sofa release tests the current full pose, never the
       // previous pointer sample. Capture and cancellation remain synchronous.
       if (pressed.grabbed && event.type !== "pointercancel" && !pressed.cancelled) paint(8, 0, "held");
+      const releasedColumn = paintedColumn;
       const held = pressed; pressed = null;
       const shaken = event.type === "pointerup" && !held.cancelled && held.grabbed && !reduced && gfxMode() !== "off" && heldShake.consume(performance.now());
       el.removeAttribute("data-held-dizzy");
       if (event.type === "pointercancel" || held.cancelled) { resetInertia(); paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); }
       el.removeAttribute("data-grab-ready");
       if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
-      if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); shakenReleasePending = Boolean(shaken && action?.kind === "jump"); if (!held.cancelled && event.type !== "pointercancel") transferred(); }
+      if (held.dragged) { brain.current = recordCompanionEvent(brain.current, "dragged"); settle({ x, y }); shakenReleasePending = shaken && action?.kind === "jump" ? { column: releasedColumn } : undefined; if (!held.cancelled && event.type !== "pointercancel") transferred(); }
       else if (!held.cancelled && !held.grabbed && event.type !== "pointercancel") {
         const reaction = preferences.petting ? companionTapReaction({ elapsed: performance.now() - held.at, moved: Math.hypot(event.clientX - held.x, event.clientY - held.y), cancelled: held.cancelled, recentMishap: performance.now() < mishapUntil }) : null;
         if (reaction) {

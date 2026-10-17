@@ -1,6 +1,6 @@
 # 빅타민 더블클릭 위치 선택 제거
 
-Status: Final local verification complete — authorized companion follow-up release pending.
+Status: Deployed and verified — release8dc9d18a; local and remote gates PASS.
 
 소유자 요청: 빅타민 더블클릭의 십자선이 이동 기능이면 직접 드래그와 겹치므로 없앤다. 이 변경은 직전 빅타민 수정/운영 배포의 후속이다. 사용자 아트와089 사후 기록은 보존한다.
 
@@ -17,3 +17,11 @@ Status: Final local verification complete — authorized companion follow-up rel
 독립 소스 검토 blocking0, 원래 데이터/기하/모달 소유권 단언을 보존했다. 제품 변경은 renderer의 두 줄뿐이며 회귀 검사5파일과 renderer, 총6파일을 메인에 선택 통합했다. 이전089부터 필요한27개 build input의 바이트 일치를 확인했다. 대표 studio 창/수면 drag PNG도 검수했다. 문서 harness240개 PASS. 원본과 report/unit/manifest는 ignored 작업트리 및 메인 `.scratch-pw/companion-090/`에 보존한다.
 
 테스트는 쓰기를 차단한 합성 일정 fixture를 사용했고 실제 운영 일정/권한/저장 설정을 바꾸지 않았다. fixture/독립 검토는 실제 OS/OBS/RLS 전수 증거가 아니다. 원격/실제 운영 결과는 배포 뒤 구분해 기록한다.
+
+## 운영 배포
+
+관련16파일만 명시 stage해 main `8dc9d18a1cb0f489488c943c3f5bf8913d9a002f`로 commit/push했다. 이번 검사/규칙과089 사후 배포 기록을 보존했고 사용자 아트/임시 PNG/.vscode는 제외했다. source27파일 안정·cached diff·비밀 형식6종0 PASS. [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/thGnqurSayb94XMKqMUsqWP9yxm9) success, [원격 quality39025507084](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39025507084) unit·격리 SQL5·harness·production build·typecheck·lint·마무리 전 단계 success다.
+
+실제 운영 API 전체 SHA 일치·public clock200/no-store·warm204·익명 developer presence401/no-store/고정 unauthorized/error 이외 필드0·fixture streamed404 비노출을 확인했다. 새 확인용 Chrome 탭의 실제 개발자 편집실에서 `배포 버전 8dc9d18 복사`와 빅타민을 확인하고 실제 actor를 double-click했다. 결과는 `placing=false`, `hidden=false`, `cursor=grab`, `state=play`, 은퇴 안내 없음이었다. 일반 짧은 클릭 반응은 유지되며 위치 선택으로 전환하지 않았다. 기존 사용자 편집 탭을 변경하지 않았고 UI 활동 전송은 계측하지 않아 production POST0/활동 저장 검증으로 확대하지 않는다.
+
+API/CI/UI 결과는 ignored 전달 폴더의 JSON으로 보존했다. 사후 결과는 로컬 문서에 기록했으며 기록만을 위해 추가 배포하지 않았다. 기존 Hobby 한도/실제 OBS/RLS의 열린 범위는 별개다.

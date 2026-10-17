@@ -2,6 +2,7 @@ import { expect, test, type CDPSession, type Page } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
+import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 
 type Point = { x: number; y: number };
@@ -9,9 +10,9 @@ type Mode = "full" | "lite" | "reduced" | "off";
 type Surface = "viewer" | "studio";
 type Frame = {
   at: number; phase: string; comparable: boolean; freshTransform: boolean; stableInput: boolean; state: string; platform: string;
-  dizzy: boolean; play: string; beat: string; row: number; pose: string;
+  dizzy: boolean; play: string; beat: string; row: number; pose: string; adoptedRow: number; decoded: boolean;
   hidden: boolean; same: boolean; captured: boolean; x: number; y: number;
-  facing: string; gripError: number; pivotError: number; posePivotError: number; scaleY: number;
+  facing: string; gripError: number; pivotError: number; posePivotError: number; poseTransform: string; tilt: number; scaleX: number; scaleY: number;
 };
 type NativeEvent = { at: number; type: string; id: number; x: number; y: number };
 type Probe = {
@@ -22,7 +23,7 @@ type Probe = {
 type ProbeWindow = Window & { heldShakeProbe: Probe };
 type Evidence = { posts: string[]; errors: string[] };
 const evidence = new WeakMap<Page, Evidence>();
-const output = ".scratch-pw/089-held-shake";
+const output = ".scratch-pw/091-held-shake";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 
@@ -67,7 +68,7 @@ async function setup(page: Page, surface: Surface, mode: Mode) {
 }
 
 async function startProbe(page: Page) {
-  await pet(page).evaluate(node => {
+  await pet(page).evaluate((node, spriteRows) => {
     const el = node as HTMLElement, button = node.querySelector<HTMLButtonElement>(".vc-actor")!;
     const began = performance.now(), probe: Probe = { frames: [], events: [], phase: "pickup", pointer: { x: 0, y: 0 }, pointerId: -1, version: 0, raf: 0, timers: new Set(), stopped: false, input: () => {} };
     const world = () => { const m = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")); return { x: m.m41 + size / 2, y: m.m42 + size, size }; };
@@ -77,7 +78,7 @@ async function startProbe(page: Page) {
         const p = world(); probe.pointerId = event.pointerId; probe.grip = { x: event.clientX - p.x, y: event.clientY - p.y };
       } else if (event.pointerId !== probe.pointerId) return;
       probe.version++; probe.pointer = { x: event.clientX, y: event.clientY };
-      if (event.type !== "pointermove") probe.events.push({ at: performance.now() - began, type: event.type, id: event.pointerId, x: event.clientX, y: event.clientY });
+      probe.events.push({ at: performance.now() - began, type: event.type, id: event.pointerId, x: event.clientX, y: event.clientY });
       if (event.type === "pointerup") probe.phase = "released";
       if (event.type === "pointercancel" || event.type === "lostpointercapture") probe.phase = "cancelled";
     };
@@ -99,22 +100,23 @@ async function startProbe(page: Page) {
         const corners = [0, width].flatMap(x => [0, height].map(y => ({ x: ox + matrix.a * (x - ox) + matrix.c * (y - oy) + matrix.e, y: oy + matrix.b * (x - ox) + matrix.d * (y - oy) + matrix.f })));
         const pivot = { x: rect.left - Math.min(...corners.map(c => c.x)) + ox + matrix.e, y: rect.top - Math.min(...corners.map(c => c.y)) + oy + matrix.f };
         const poseCss = getComputedStyle(node.querySelector(".vc-pose")!), poseMatrix = new DOMMatrixReadOnly(poseCss.transform), [px, py] = poseCss.transformOrigin.split(" ").map(parseFloat);
-        const held = el.dataset.state === "held", facing = el.dataset.facing ?? "";
+        const held = el.dataset.state === "held", facing = el.dataset.facing ?? "", texture = node.querySelector<HTMLImageElement>(".vc-texture");
         probe.frames.push({ at: performance.now() - began, phase: probe.phase, comparable: freshTransform && stableInput, freshTransform, stableInput,
           state: el.dataset.state ?? "", platform: el.dataset.platform ?? "", dizzy: el.hasAttribute("data-held-dizzy"), play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "",
-          row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * 31 / 100), pose: el.dataset.pose ?? "", hidden: el.hidden || getComputedStyle(el).display === "none", same: node.isConnected && node === document.querySelector(".vc-companion"), captured: button.hasPointerCapture(probe.pointerId), x: p.x, y: p.y, facing,
+          row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * 31 / 100), pose: el.dataset.pose ?? "", adoptedRow: spriteRows.findIndex(row => row.includes(Number(el.dataset.pose))), decoded: Boolean(texture?.complete && texture.naturalWidth > 0), hidden: el.hidden || getComputedStyle(el).display === "none", same: node.isConnected && node === document.querySelector(".vc-companion"), captured: button.hasPointerCapture(probe.pointerId), x: p.x, y: p.y, facing,
           gripError: held && probe.grip ? Math.hypot(p.x + probe.grip.x - probe.pointer.x, p.y + probe.grip.y - probe.pointer.y) : 0,
           pivotError: held ? Math.hypot(pivot.x - probe.pointer.x, pivot.y - probe.pointer.y) : 0,
           posePivotError: held ? Math.hypot(px - (facing === "left" ? p.size - ox : ox), py - oy) : 0,
-          scaleY: Math.hypot(poseMatrix.c, poseMatrix.d) });
+          poseTransform: poseCss.transform, tilt: Math.atan2(poseMatrix.b, poseMatrix.a) * 180 / Math.PI,
+          scaleX: Math.hypot(poseMatrix.a, poseMatrix.b), scaleY: Math.hypot(poseMatrix.c, poseMatrix.d) });
       }, 0);
       probe.timers.add(timer); probe.raf = requestAnimationFrame(sample);
     };
     (window as unknown as ProbeWindow).heldShakeProbe = probe; probe.raf = requestAnimationFrame(sample);
-  });
+  }, companionSpriteMetadata.rows);
 }
 
-async function finishProbe(page: Page, label: string) {
+async function finishProbe(page: Page, label: string, details: Record<string, unknown> = {}) {
   const proof = await page.evaluate(() => {
     const p = (window as unknown as ProbeWindow).heldShakeProbe; p.stopped = true; cancelAnimationFrame(p.raf);
     for (const timer of p.timers) clearTimeout(timer);
@@ -122,7 +124,7 @@ async function finishProbe(page: Page, label: string) {
     return { frames: p.frames, events: p.events };
   });
   mkdirSync(output, { recursive: true });
-  writeFileSync(`${output}/${label}.json`, JSON.stringify({ ...proof, ...evidence.get(page) }, null, 2));
+  writeFileSync(`${output}/${label}.json`, JSON.stringify({ ...proof, ...evidence.get(page), ...details }, null, 2));
   await page.screenshot({ path: `${output}/${label}.png` });
   return proof;
 }
@@ -146,7 +148,9 @@ async function hold(page: Page, touch = false) {
   };
   // Lift slowly, then let its input window expire. The actual test gesture
   // below must supply its own rapid reversals rather than the initial lift.
-  await move({ x: 850, y: 600 }, 24, 20); await expect(pet(page)).toHaveAttribute("data-state", "held"); await page.waitForTimeout(200);
+  // Keep the release ray clear of the real bottom-centre panel controls.
+  // Their protected floor spans may legitimately shift a drop sideways.
+  await move({ x: 740, y: 600 }, 24, 20); await expect(pet(page)).toHaveAttribute("data-state", "held"); await page.waitForTimeout(200);
   return {
     centre: { ...point }, move,
     async release() { if (client) await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); else await page.mouse.up(); },
@@ -156,16 +160,42 @@ async function hold(page: Page, touch = false) {
 }
 async function shake(page: Page, drag: Awaited<ReturnType<typeof hold>>) {
   await mark(page, "shake");
-  // Ten half-strokes take at least620ms (40*8+10*30), with every native
-  // inter-sample gap below160ms. A single fling is a separate negative case.
-  for (let i = 0; i < 10; i++) {
-    await drag.move({ x: drag.centre.x + (i % 2 ? -100 : 100), y: drag.centre.y }, 4, 8);
+  const began = await page.evaluate(() => performance.now());
+  // Three half-strokes replace the old ten. Keep actual native travel above
+  // the speed threshold even when touch dispatch costs another browser frame.
+  // First-to-last input spans at least300ms; the trailing pause is not input.
+  for (let i = 0; i < 3; i++) {
+    await drag.move({ x: drag.centre.x + (i % 2 ? -90 : 90), y: drag.centre.y }, 3, 30);
     await page.waitForTimeout(30);
   }
+  expect(await page.evaluate(began => performance.now() - began, began)).toBeGreaterThanOrEqual(360);
 }
 function assertVisibleIdentity(frames: Frame[]) {
   expect(frames.length).toBeGreaterThan(20);
-  expect(frames.every(frame => frame.same && !frame.hidden && Number.isFinite(frame.x) && Number.isFinite(frame.y))).toBe(true);
+  expect(frames.every(frame => frame.same && !frame.hidden && frame.decoded && Number.isFinite(frame.x) && Number.isFinite(frame.y))).toBe(true);
+}
+
+async function releaseSupport(page: Page, surface: Surface) {
+  // Independently measure the fixture's actual downward ray. These are visible
+  // card edges and the protected viewport floor, never runtime platform state.
+  return pet(page).evaluate((node, surface) => {
+    const el = node as HTMLElement, matrix = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size"));
+    const release = { x: matrix.m41 + size / 2, y: matrix.m42 + size };
+    const selector = surface === "studio" ? '[data-companion-event="ordinary"][data-eventid]' : '.public-event[data-eventid]:not(.teaser):not(.is-support)';
+    const cards = [...document.querySelectorAll<HTMLElement>(selector)].flatMap(card => {
+      const r = card.getBoundingClientRect(), css = getComputedStyle(card), plane = r.top - 3;
+      return r.width > 0 && r.height > 0 && css.display !== "none" && css.visibility !== "hidden" && release.x >= r.left && release.x <= r.right && plane >= release.y - .5 && plane <= innerHeight - 12
+        ? [{ kind: "card", plane, eventId: card.dataset.eventid ?? "" }] : [];
+    });
+    let floor = innerHeight - 18;
+    for (const bar of document.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
+      const r = bar.getBoundingClientRect(), css = getComputedStyle(bar);
+      if (css.position === "fixed" && css.display !== "none" && css.visibility !== "hidden" && r.width > 0 && r.height > 0 && r.top >= innerHeight * .65 && r.bottom <= innerHeight + 1) floor = Math.min(floor, r.top - 8);
+    }
+    const candidates = [...cards, { kind: "floor", plane: floor, eventId: "" }].filter(candidate => candidate.plane >= release.y - .5).sort((a, b) => a.plane - b.plane);
+    if (!candidates.length) throw new Error("native shake fixture has no actual lower support");
+    return { release, first: candidates[0], candidates };
+  }, surface);
 }
 
 for (const [surface, mode] of [["viewer", "full"], ["studio", "full"], ["viewer", "lite"]] as const) {
@@ -173,19 +203,25 @@ for (const [surface, mode] of [["viewer", "full"], ["studio", "full"], ["viewer"
     test.setTimeout(25000); await setup(page, surface, mode); await startProbe(page);
     const label = `${surface}-${mode}-positive`, saved = await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"));
     let proof: Awaited<ReturnType<typeof finishProbe>> | undefined;
+    let support: Awaited<ReturnType<typeof releaseSupport>> | undefined;
     const drag = await hold(page);
     try {
       await shake(page, drag); await expect(pet(page)).toHaveAttribute("data-held-dizzy", ""); await expect(pet(page)).toHaveAttribute("data-state", "held");
       mkdirSync(output, { recursive: true }); await page.screenshot({ path: `${output}/${label}-held.png` });
+      support = await releaseSupport(page, surface);
       await drag.release(); await expect(pet(page)).toHaveAttribute("data-play", "dizzy", { timeout: 5000 });
       await page.screenshot({ path: `${output}/${label}-dizzy.png` });
       await expect(pet(page)).not.toHaveAttribute("data-play", "dizzy", { timeout: 5000 });
       await expect(pet(page)).not.toHaveAttribute("data-held-dizzy"); await page.waitForTimeout(200);
-    } finally { await drag.dispose(); proof = await finishProbe(page, label); }
-    const frames = proof.frames, displayedHeld = frames.filter(frame => frame.dizzy && frame.state === "held" && frame.captured), held = displayedHeld.filter(frame => frame.comparable);
+    } finally { await drag.dispose(); proof = await finishProbe(page, label, { support }); }
+    const frames = proof.frames, displayedHeld = frames.filter(frame => frame.dizzy && frame.state === "held" && frame.captured);
+    // The short gesture earns dizziness near its end. Keep the strict fresh
+    // frame grip checks across all three moving strokes, including that onset.
+    const held = frames.filter(frame => frame.phase === "shake" && frame.state === "held" && frame.captured && frame.comparable);
     assertVisibleIdentity(frames); expect(held.length, "the moving creature must supply more than five fresh aligned display frames").toBeGreaterThan(5);
     expect(held.every(frame => frame.gripError < .2 && frame.pivotError < .25)).toBe(true);
-    expect(displayedHeld.every(frame => frame.row === 22 && frame.posePivotError < .1 && frame.scaleY > 1.15)).toBe(true);
+    expect(displayedHeld.length).toBeGreaterThan(0);
+    expect(displayedHeld.every(frame => frame.row === 22 && frame.adoptedRow === 22 && companionSpriteMetadata.rows[22].includes(Number(frame.pose)) && frame.posePivotError < .1 && frame.scaleY > 1.15)).toBe(true);
     expect(new Set(displayedHeld.map(frame => frame.facing)).size).toBe(1);
     const released = proof.events.find(event => event.type === "pointerup")!;
     expect(released).toBeDefined();
@@ -194,7 +230,24 @@ for (const [surface, mode] of [["viewer", "full"], ["studio", "full"], ["viewer"
     expect(falling[0].at).toBeLessThan(dizzy[0].at); expect(falling.at(-1)!.at).toBeLessThan(dizzy[0].at); expect(dizzy.at(-1)!.at).toBeLessThan(recover[0].at);
     expect(Math.max(...falling.map(frame => frame.y)) - Math.min(...falling.map(frame => frame.y))).toBeGreaterThan(8);
     const landed = [...dizzy, ...recover]; expect(landed.every(frame => frame.state === "play" && frame.platform !== "" && !frame.captured)).toBe(true);
-    expect(dizzy.every(frame => frame.row === 22)).toBe(true); expect(recover.every(frame => frame.row === 23)).toBe(true);
+    // Native pointerup may commit a last held drawing between observer frames.
+    // Require one stable adopted spiral drawing from actual fall through ground.
+    const spiral = after.filter(frame => frame.at < recover[0].at), retainedPose = falling[0].pose;
+    expect(spiral.every(frame => frame.row === 22 && frame.adoptedRow === 22 && companionSpriteMetadata.rows[22].includes(Number(frame.pose)) && frame.pose === retainedPose), "every actual fall and first grounded drawing must retain the last spiral eyes without a normal-eye flash").toBe(true);
+    expect(dizzy.every(frame => frame.row === 22 && frame.adoptedRow === 22)).toBe(true);
+    expect(recover.every(frame => frame.row === 23 && frame.adoptedRow === 23)).toBe(true);
+    const squint = String(companionSpriteMetadata.rows[23][0]), normal = String(companionSpriteMetadata.rows[23].at(-1)!);
+    expect(recover[0].pose).toBe(squint); expect(recover.at(-1)!.pose).toBe(normal);
+    expect(recover.every(frame => frame.pose === squint || frame.pose === normal)).toBe(true);
+    const normalEyes = recover.find(frame => frame.pose === normal)!;
+    expect(normalEyes.at - recover[0].at).toBeGreaterThan(280);
+    expect(recover.filter(frame => frame.at >= normalEyes.at).every(frame => frame.pose === normal)).toBe(true);
+    expect(new Set(recover.map(frame => frame.poseTransform)).size, "ground recovery must keep moving continuously between its two authored drawings").toBeGreaterThan(8);
+    const terminal = recover.at(-1)!;
+    expect(Math.abs(terminal.tilt)).toBeLessThan(.5); expect(Math.abs(terminal.scaleX - 1)).toBeLessThan(.01); expect(Math.abs(terminal.scaleY - 1)).toBeLessThan(.01);
+    expect(support).toBeDefined();
+    expect(landed.every(frame => Math.abs(frame.y - support!.first.plane) < 1 && Math.abs(frame.x - support!.release.x) < 1), "dizziness and recovery must stay on the first actual lower support at the native release x").toBe(true);
+    expect(dizzy[0].platform).toMatch(support!.first.kind === "floor" ? /^viewport-floor/ : /^card-\d+-top/);
     expect(Math.max(...landed.map(frame => frame.y)) - Math.min(...landed.map(frame => frame.y))).toBeLessThan(1);
     expect(Math.max(...landed.map(frame => frame.x)) - Math.min(...landed.map(frame => frame.x))).toBeLessThan(1);
     expect(await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"))).toBe(saved);

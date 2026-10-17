@@ -29,6 +29,22 @@ describe("captured deliberate shaking", () => {
     });
     samples.forEach(sample => expect(sample.phase).toBeCloseTo(samples[0].phase, 9));
   });
+  it("recognizes three gentler70px half-strokes at30/60/120/240Hz", () => {
+    const samples = [30, 60, 120, 240].map(rate => {
+      const detector = createCompanionHeldShake();
+      const result = path(detector, now => ({ x: 500 + wave(now, 70, 200), y: 400 }), 600, rate);
+      expect(result.active).toBe(true); expect(detector.consume(600)).toBe(true);
+      expect(detector.consume(601)).toBe(false);
+      return result;
+    });
+    samples.forEach(sample => expect(sample.phase).toBeCloseTo(samples[0].phase, 9));
+  });
+  it("needs only three short strokes but still waits for280ms of real movement", () => {
+    for (const rate of [30, 60, 120, 240]) {
+      const detector = createCompanionHeldShake();
+      expect(path(detector, now => ({ x: 500 + wave(now, 60, 100), y: 400 }), 300, rate).active).toBe(true);
+    }
+  });
   it("accepts vertical and diagonal reversals, not just horizontal gestures", () => {
     for (const point of [(now: number) => ({ x: 500, y: 400 + wave(now) }), (now: number) => ({ x: 500 + wave(now) * .8, y: 400 + wave(now) * .6 })]) {
       expect(path(createCompanionHeldShake(), point).active).toBe(true);
@@ -60,19 +76,19 @@ describe("captured deliberate shaking", () => {
   });
   it("requires real duration even for extremely fast repeated strokes", () => {
     const detector = createCompanionHeldShake();
-    expect(path(detector, now => ({ x: 500 + wave(now, 100, 40), y: 400 }), 320, 240).active).toBe(false);
-    expect(detector.consume(320)).toBe(false);
+    expect(path(detector, now => ({ x: 500 + wave(now, 100, 40), y: 400 }), 240, 240).active).toBe(false);
+    expect(detector.consume(240)).toBe(false);
   });
-  it("recognizes sustained fast reversals after450ms even when the latest three strokes are shorter", () => {
+  it("recognizes sustained fast reversals after280ms even when the latest two strokes are shorter", () => {
     const detector = createCompanionHeldShake(); detector.begin(500, 400, 0);
     let firstActive = Infinity;
     for (let tick = 1; tick <= 480; tick++) {
       const time = tick * 1000 / 240;
       detector.push(500 + wave(time, 100, 100), 400, time);
       if (detector.sample(time).active) firstActive = Math.min(firstActive, time);
-      if (time < 450) expect(detector.sample(time).active).toBe(false);
+      if (time < 280) expect(detector.sample(time).active).toBe(false);
     }
-    expect(firstActive).toBeGreaterThanOrEqual(450); expect(firstActive).toBeLessThan(650);
+    expect(firstActive).toBeGreaterThanOrEqual(280); expect(firstActive).toBeLessThan(450);
     expect(detector.sample(2000).active).toBe(true); expect(detector.consume(2000)).toBe(true);
   });
   it("ignores duplicate/backward/invalid timestamps and cannot create a shake from an event burst", () => {
@@ -97,7 +113,8 @@ describe("captured deliberate shaking", () => {
     expect(detector.sample(800)).toEqual(reference);
   });
   it("breaks partial reversal history across missing-input gaps instead of catching up", () => {
-    const detector = createCompanionHeldShake(); path(detector, horizontal, 600);
+    const detector = createCompanionHeldShake();
+    expect(path(detector, horizontal, 300).active).toBe(false);
     detector.push(800, 300, 10000);
     for (let tick = 1; tick <= 12; tick++) detector.push(800 + wave(tick * 1000 / 60), 300, 10000 + tick * 1000 / 60);
     expect(detector.sample(10200).active).toBe(false); expect(detector.consume(10200)).toBe(false);
