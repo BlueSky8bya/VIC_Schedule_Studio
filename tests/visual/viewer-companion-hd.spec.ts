@@ -239,7 +239,7 @@ test("repeated distinct pickups show the sulky HD action briefly, then friendly 
   await expect.poll(async () => Number(await pet(page).getAttribute("data-pose"))).toBeGreaterThanOrEqual(288);
   // More than three actual action packets evict idle. Returning to it must
   // perform a fresh real decode, not trust an immortal ready boolean.
-  expect(await page.evaluate(() => (window as unknown as Window & { companionDecodes: string[] }).companionDecodes.filter(src => src.endsWith("victamin-action-00.webp")).length)).toBeGreaterThanOrEqual(2);
+  expect(await page.evaluate(() => (window as unknown as Window & { companionDecodes: string[] }).companionDecodes.filter(src => src.endsWith("victamin-action-00-big-eyes-v1.webp")).length)).toBeGreaterThanOrEqual(2);
   await page.screenshot({ path: ".scratch-pw/companion-052-sulky.png" });
   // PLAN-068 assigns short clicks to bonking. Native keyboard affection is
   // still friendly input and must supersede the sulky pose immediately.

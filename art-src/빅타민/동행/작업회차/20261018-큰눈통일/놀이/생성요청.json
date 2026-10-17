@@ -1,0 +1,13 @@
+{
+  "tool": "image_gen",
+  "args": {
+    "prompt": "Edit image1, the existing 6 by 6 transparent sprite sheet. Keep EXACTLY 36 separate whole mascots in the same cells, same order, same body poses, rotations, expression meanings, orange cheeks, paper-layer palette and ear colors. Preserve generous transparent gutters. No captions, grid lines, checkerboard, scene or extra particles.\nThe user wants every sprite family to share ONE cute LARGE-EYE style. On every open-eyed face, make the dark chocolate eyes noticeably larger and rounder, approximately 1.5 times the original small-dot eye diameter, about 10 percent of the paper body's width, with one bold clean white highlight. Match both eyes' proportions across every cell. Keep each face's eye centres, gaze and mouth logically aligned to its tilted head. No human anime irises, eyelashes or new features. Supporting big-eye sheet is eye-style reference only; do not copy its poses. Original mascot references define the two-eared limbless paper-pompom identity; the latest larger-eye request overrides their small dot-eye scale.\nCrucially retain the intended expressions and actions: sleepy or closed eyes stay closed; squint, wink, half-lidded disappointment, tears and spiral dizzy eyes keep those meanings with equally readable bolder forms. Recovery's wavy strained mouth must never become a happy smile. Do not give eyes to a back view. Preserve the audience's glow sticks if present; do not add props elsewhere.\nUse consistent warm clean matte cel illustration: broad overlapping cream-white rectangular paper strips, sparse butter-yellow and apricot pieces, crisp warm-brown contours, orange square cheeks. Exactly TWO complete attached long oval bunny ears in EVERY cell, including rolling or flattened poses. No arms, hands, legs, feet, fur, detached scraps or hat. Do not enlarge body or change silhouette just to enlarge eyes. Keep each complete body inside its cell, with transparent margins. High-resolution, sharp, smooth contours, no blur or ghosting. Genuinely transparent background. Outer transparent canvas border must remain empty.",
+    "referenced_image_paths": [
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-덤벙놀이\\원본\\빅타민_덤벙놀이_36키포즈.png",
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-귀두개교정\\원본\\빅타민_네포즈_귀교정.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\02_표정\\스크린샷 2026-10-06 025426.png"
+    ],
+    "transparent_background": true
+  }
+}

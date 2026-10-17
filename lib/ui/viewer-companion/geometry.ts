@@ -240,10 +240,14 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       range.detach();
     }
     const home = options.getHome?.() ?? options.home ?? null;
+    // Equal rectangles do not establish source identity. A compact/rail
+    // portal may replace the sofa DOM while leaving every safe span equal;
+    // residents still need its new anchor and foreground materials delivered.
+    const homeChanged = home !== observedHome;
     const house = home?.closest<HTMLElement>(".vc-home") ?? null;
     const houseRect = house?.isConnected && visible(house) ? house.getBoundingClientRect() : undefined;
     const houseBounds = houseRect && houseRect.width > 0 && houseRect.height > 0 ? { left: houseRect.left, right: houseRect.right, top: houseRect.top, bottom: houseRect.bottom } : undefined;
-    if (home !== observedHome) {
+    if (homeChanged) {
       homeObserver?.disconnect();
       observedHome = home;
       const house = home?.closest<HTMLElement>(".vc-home") ?? home?.parentElement;
@@ -445,7 +449,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     foodLandingSnapshot = foodLandings.map(copyPlatform);
     // Suppress equal layout deliveries, including a countdown's text mutation.
     const signature = JSON.stringify([platforms, landings, foodLandings]);
-    if (signature !== previous || notifyUnchanged) { previous = signature; onChange(platforms, validationOnly); }
+    if (signature !== previous || notifyUnchanged || homeChanged) { previous = signature; onChange(platforms, validationOnly); }
   }
 
   function schedule() {

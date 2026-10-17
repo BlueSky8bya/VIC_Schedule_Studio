@@ -1,0 +1,13 @@
+{
+  "tool": "image_gen.imagegen",
+  "builtin": true,
+  "generation_count": 1,
+  "original_output": "C:\\Users\\im917\\.codex\\generated_images\\01a13862-7fb6-7a73-839b-079df9dbbea2\\exec-e1d945b4-14ad-450b-98d8-22c6ed9a4f34.png",
+  "saved_native": "art-src\\빅타민\\동행\\작업회차\\20261018-큰눈통일\\감정\\원본\\큰눈_키포즈.png",
+  "native_sha256": "350c96fa951b77e530334bad09bbc360fc0b2560b5fa2c81490bae5cbdefc13e",
+  "output_copy_byte_identical": true,
+  "arguments": "생성요청.json",
+  "known_findings": [
+    "Producer opened the builtin tool whole result. Large highlighted open eyes are readable; expression-specific closed/squint/spiral forms remain distinct. No automatic specialist review or human visual approval claimed. Final whole-key runtime registration is verified separately."
+  ]
+}

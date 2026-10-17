@@ -1,0 +1,13 @@
+{
+  "work_id": "VICTAMIN-EYES-FLIGHT-20261018",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\작품\\VICTAMIN-EYES-FLIGHT-20261018\\검토용\\FDBC43C1AE1F917BB6CC.png",
+  "sha256": "AFBE2EECA466A9F97E26D9B16E45949DA1C31BAB7998A02D438C9A2845A9A35C",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Producer opened the builtin tool whole result. Large highlighted open eyes are readable; expression-specific closed/squint/spiral forms remain distinct. No automatic specialist review or human visual approval claimed. Final whole-key runtime registration is verified separately."
+  ],
+  "cycle_id": "FDBC43C1AE1F917BB6CC",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

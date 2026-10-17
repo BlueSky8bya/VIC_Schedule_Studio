@@ -262,7 +262,7 @@ for (const [surface, mode, pattern] of [["viewer", "full", "horizontal"], ["stud
     const closed = new Set(companionSpriteMetadata.rows[23].slice(0, 12).map(String)), normal = String(companionSpriteMetadata.rows[23].at(-1)!);
     expect(closed.has(recover[0].pose)).toBe(true); expect(recover.at(-1)!.pose).toBe(normal);
     expect(recover.every(frame => closed.has(frame.pose) || frame.pose === normal)).toBe(true);
-    expect(recover.every(frame => frame.textureSrc.endsWith("/companion/hd/victamin-play-23-recover-v2.webp"))).toBe(true);
+    expect(recover.every(frame => frame.textureSrc.endsWith("/companion/hd/victamin-play-23-recover-v2-big-eyes-v1.webp"))).toBe(true);
     const actualKeys = new Set(recover.filter(frame => closed.has(frame.pose)).map(frame => Math.floor(companionSpriteMetadata.rows[23].indexOf(Number(frame.pose)) / 4)));
     expect(actualKeys).toEqual(new Set([0, 1, 2]));
     const normalEyes = recover.find(frame => frame.pose === normal)!;

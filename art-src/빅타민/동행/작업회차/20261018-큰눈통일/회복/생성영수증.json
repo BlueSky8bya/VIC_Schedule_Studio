@@ -1,0 +1,14 @@
+{
+  "work_id": "VICTAMIN-EYES-RECOVER-20261018",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\작품\\VICTAMIN-EYES-RECOVER-20261018\\검토용\\BFEE8E5E93F69CCF797C.png",
+  "sha256": "E1BBA861675024495E42C78CFFC888BDAAF85E9AB8CCF34832AF9708D4BEB485",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Producer opened the builtin tool whole result. Large highlighted open eyes are readable; expression-specific closed/squint/spiral forms remain distinct. No automatic specialist review or human visual approval claimed. Final whole-key runtime registration is verified separately.",
+    "Recovery retains strained/wavy mouth and dazed expression; it is not used as a happy headshake."
+  ],
+  "cycle_id": "BFEE8E5E93F69CCF797C",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

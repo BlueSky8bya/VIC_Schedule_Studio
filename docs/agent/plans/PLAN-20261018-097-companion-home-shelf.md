@@ -1,6 +1,8 @@
 # 빅타민 집 비가림 배치
 
-Status: In Progress.
+Superseded in part by the latest owner request: [098](PLAN-20261018-098-companion-consistency-and-recovery.md) replaces this plan's reserved calendar row and scroll restoration with a compact floating room. The results below describe097 only.
+
+Status: Completed — `ae3cfdddcc7f849d91c9c710b65abb3f5da8fa05` production verified. [Evidence](../verification/COMPANION_HOME_SHELF-20261018.md): native20, main unit2,087/typecheck/lint/build/harness254, independent source/raw/security blocking0, remote quality13/Vercel success, full SHA/API canaries and actual developer studio/viewer preview overlap0. OBS hardware/all devices/RLS and096 focus gap remain separate. Post-release status stays local to avoid a docs-only redeployment.
 
 소유자: 접힌 패널의 우하단 집 버튼/펼친 박스가 일정을 가린다. 위치·크기·여러 화면/상태를 함께 개선한다. 기존044의 compact fixed 위치만 대체하며 단일 집/펫·설정·소파/음식 기하를 유지한다.
 

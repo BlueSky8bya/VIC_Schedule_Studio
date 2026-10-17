@@ -1,94 +1,64 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
+import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
 
-type Visit = { month: string; host: HTMLElement; x: number; y: number; arrivedX: number; arrivedY: number; interrupted: boolean };
-
-/** An explicit visit to the in-flow room owns only its own scroll/focus.
- * Geometry notifications are event-driven; no idle animation loop is added. */
+/** One compact room below its real chrome entry. It reserves no calendar row
+ * and never changes the reader's scroll position. Layout work is event-driven. */
 export function useHomeShelf({ active, expanded, monthKey, host, launcher, room, setExpanded }: {
   active: boolean; expanded: boolean; monthKey: string; host: HTMLElement | null;
   launcher: RefObject<HTMLButtonElement | null>; room: RefObject<HTMLDivElement | null>;
   setExpanded: (expanded: boolean) => void;
 }) {
   const intent = useRef<"open" | "close" | null>(null);
-  const visit = useRef<Visit | null>(null);
-  const departure = useRef<{ x: number; y: number } | null>(null);
-  const restore = useRef<{ x: number; y: number } | null>(null);
-  const open = useCallback(() => {
-    departure.current = { x: window.scrollX, y: window.scrollY };
-    intent.current = "open"; setExpanded(true);
-  }, [setExpanded]);
-  const close = useCallback(() => {
-    const previous = visit.current;
-    // Decide before removing layout space: native scroll anchoring and the
-    // shorter document's scroll clamp are not evidence of user navigation.
-    restore.current = previous && !previous.interrupted && previous.month === monthKey && previous.host === host &&
-      Math.abs(window.scrollX - previous.arrivedX) < 2 && Math.abs(window.scrollY - previous.arrivedY) < 2 ? { x: previous.x, y: previous.y } : null;
-    intent.current = "close"; setExpanded(false);
-  }, [setExpanded, host, monthKey]);
-
+  const previous = useRef<{ x: number; y: number } | null>(null);
+  const open = useCallback(() => { intent.current = "open"; setExpanded(true); }, [setExpanded]);
+  const close = useCallback(() => { intent.current = "close"; setExpanded(false); }, [setExpanded]);
   useLayoutEffect(() => {
-    if (!active || !host) { visit.current = null; intent.current = null; departure.current = null; restore.current = null; return; }
-    if (expanded && intent.current === "open") {
-      const before = departure.current ?? { x: window.scrollX, y: window.scrollY };
-      const page = host.closest(".studio-shell,.poster-page");
-      const inset = Math.max(0, ...[...(page?.querySelectorAll<HTMLElement>(".studio-topbar,.m-topstick,.agenda-header") ?? [])].map(header => {
-        const style = getComputedStyle(header), rect = header.getBoundingClientRect();
-        return (style.position === "sticky" || style.position === "fixed") && rect.top <= 1 && rect.bottom > 0 ? rect.bottom : 0;
-      }));
-      const bounds = room.current?.getBoundingClientRect();
-      if (bounds && (bounds.top < inset + 12 || bounds.bottom > window.innerHeight - 12)) {
-        room.current?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
-        const arrived = room.current?.getBoundingClientRect();
-        if (arrived && arrived.top < inset + 12) window.scrollBy({ top: arrived.top - inset - 12, behavior: "instant" });
-      }
-      visit.current = { month: monthKey, host, ...before, arrivedX: window.scrollX, arrivedY: window.scrollY, interrupted: false };
-      room.current?.querySelector<HTMLButtonElement>('[data-home-action="fold"]')?.focus({ preventScroll: true });
-    } else if (!expanded && intent.current === "close") {
-      // React has already removed the shelf's reserved height here. Never
-      // pull a reader back after wheel/key/touch or a different document.
-      if (restore.current) window.scrollTo({ left: restore.current.x, top: restore.current.y, behavior: "instant" });
-      launcher.current?.focus({ preventScroll: true });
-      visit.current = null;
-    }
-    intent.current = null; departure.current = null; restore.current = null;
-  }, [active, expanded, host, monthKey, launcher, room]);
-
-  useLayoutEffect(() => {
-    if (!active || !expanded) return;
-    const interrupt = () => { if (visit.current) visit.current.interrupted = true; };
-    const key = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('button,input,textarea,select,[contenteditable="true"],[role="button"]'))) return;
-      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) interrupt();
-    };
-    const pointer = (event: PointerEvent) => {
-      if (event.target instanceof Node && !room.current?.contains(event.target) && !launcher.current?.contains(event.target)) interrupt();
-    };
-    window.addEventListener("wheel", interrupt, { passive: true });
-    window.addEventListener("touchmove", interrupt, { passive: true });
-    document.addEventListener("keydown", key); document.addEventListener("pointerdown", pointer);
-    return () => { window.removeEventListener("wheel", interrupt); window.removeEventListener("touchmove", interrupt); document.removeEventListener("keydown", key); document.removeEventListener("pointerdown", pointer); };
+    if (!active) { intent.current = null; return; }
+    if (expanded && intent.current === "open") room.current?.querySelector<HTMLButtonElement>('[data-home-action="fold"]')?.focus({ preventScroll: true });
+    else if (!expanded && intent.current === "close") launcher.current?.focus({ preventScroll: true });
+    intent.current = null;
   }, [active, expanded, launcher, room]);
-
   useLayoutEffect(() => {
-    if (!active || !expanded || !host) return;
+    const holder = room.current, entry = launcher.current;
+    if (!active || !expanded || !host || !holder || !entry) return;
     let frame = 0, last = "";
     const measure = () => {
       frame = 0;
-      const rect = room.current?.getBoundingClientRect();
-      if (!rect) return;
-      const next = [rect.left, rect.top, rect.width, rect.height].map(value => Math.round(value * 10)).join(":");
+      const viewport = premiereViewportBounds({ clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight, visualViewport: window.visualViewport });
+      const left = viewport.left + 12, top = viewport.top + 12, right = viewport.right - 12, bottom = viewport.bottom - 12;
+      holder.style.setProperty("--vc-home-max-width", `${Math.max(1, right - left)}px`);
+      holder.style.setProperty("--vc-home-max-height", `${Math.max(1, bottom - top)}px`);
+      const box = holder.getBoundingClientRect(), anchor = entry.getBoundingClientRect();
+      const visible = anchor.bottom > viewport.top && anchor.top < viewport.bottom && anchor.right > viewport.left && anchor.left < viewport.right;
+      const target = visible ? { x: anchor.left, y: anchor.bottom + 8 } : previous.current ?? { x: left, y: top };
+      if (visible && target.y + box.height > bottom && anchor.top - box.height - 8 >= top) target.y = anchor.top - box.height - 8;
+      const x = Math.max(left, Math.min(target.x, right - box.width)), y = Math.max(top, Math.min(target.y, bottom - box.height));
+      previous.current = { x, y };
+      holder.style.setProperty("--vc-home-left", `${x.toFixed(2)}px`);
+      holder.style.setProperty("--vc-home-top", `${y.toFixed(2)}px`);
+      const next = [x, y, box.width, box.height].map(value => Math.round(value * 10)).join(":");
       if (last === next) return;
-      last = next;
-      window.dispatchEvent(new Event("vic:companion-home"));
+      last = next; window.dispatchEvent(new Event("vic:companion-home"));
     };
     const queue = () => { if (!frame) frame = requestAnimationFrame(measure); };
-    const observer = new ResizeObserver(queue); observer.observe(host);
-    window.addEventListener("resize", queue, { passive: true });
+    const observer = new ResizeObserver(queue); observer.observe(holder); observer.observe(entry);
+    // A sibling label can move this entry without resizing it (for example
+    // the studio build-copy confirmation). Observe only its small chrome
+    // group, rather than polling positions or watching the whole document.
+    const group = entry.closest(".studio-left,.header-left") ?? entry.parentElement?.parentElement;
+    const mutations = new MutationObserver(queue);
+    if (group) { observer.observe(group); mutations.observe(group, { childList: true, characterData: true, subtree: true }); }
+    // Hover/press transforms move the anchor without changing its layout box.
+    // A finite transition end delivers its final position without idle polls.
+    const entryEvents = ["pointerenter", "pointerleave", "pointerdown", "pointerup", "focus", "blur", "transitionend"] as const;
+    for (const type of entryEvents) entry.addEventListener(type, queue);
+    window.addEventListener("resize", queue, { passive: true }); window.addEventListener("scroll", queue, { passive: true, capture: true });
     window.addEventListener("vic:side-panel", queue); window.addEventListener("vic:panel-section", queue);
+    window.visualViewport?.addEventListener("resize", queue, { passive: true }); window.visualViewport?.addEventListener("scroll", queue, { passive: true });
     measure();
-    return () => { observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener("resize", queue); window.removeEventListener("vic:side-panel", queue); window.removeEventListener("vic:panel-section", queue); };
-  }, [active, expanded, host, room]);
+    return () => { observer.disconnect(); mutations.disconnect(); for (const type of entryEvents) entry.removeEventListener(type, queue); cancelAnimationFrame(frame); window.removeEventListener("resize", queue); window.removeEventListener("scroll", queue, true); window.removeEventListener("vic:side-panel", queue); window.removeEventListener("vic:panel-section", queue); window.visualViewport?.removeEventListener("resize", queue); window.visualViewport?.removeEventListener("scroll", queue); };
+  }, [active, expanded, host, monthKey, launcher, room]);
   return { open, close };
 }

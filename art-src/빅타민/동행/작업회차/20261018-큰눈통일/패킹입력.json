@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "run": "art-src/빅타민/동행/작업회차/20261018-큰눈통일",
+  "suffix": "big-eyes-v1",
+  "baseline": {
+    "hd": {
+      "path": "lib/ui/viewer-companion/hd-motion-sprite.json",
+      "sha256": "a13f6f106cc67e82e8fc1e7f29f5452e4612cd5775fa1b0c921c93fb901259e7"
+    },
+    "play": {
+      "path": "lib/ui/viewer-companion/play-motion-sprite.json",
+      "sha256": "574ce9f00ca3ca450ab6a852fd9ef6b68a48f50cb702020fbd22f727dd65061d"
+    },
+    "audience": {
+      "path": "public/premiere/victamin-audience.webp",
+      "sha256": "47e7d666446792bd53f26241f2f082e9a16e8a0bb4f500bd257035d6c97df1d2"
+    }
+  },
+  "sources": {
+    "clean": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/기본/원본/큰눈_키포즈.png",
+      "sha256": "5ded9471c065087dcbd8ed9117a6d0f20d97fd3bdf6ef124397cac0c9adad60a",
+      "grid": 4,
+      "count": 16,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/기본/생성영수증.json"
+    },
+    "mood": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/감정/원본/큰눈_키포즈.png",
+      "sha256": "350c96fa951b77e530334bad09bbc360fc0b2560b5fa2c81490bae5cbdefc13e",
+      "grid": 4,
+      "count": 16,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/감정/생성영수증.json"
+    },
+    "play": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/놀이/원본/큰눈_키포즈.png",
+      "sha256": "a6641a6687f2bbaf141e71c29f526ba68264f5159ba8eb1c4e465178875dff77",
+      "grid": 6,
+      "count": 36,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/놀이/생성영수증.json"
+    },
+    "ear": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/귀교정/원본/큰눈_키포즈.png",
+      "sha256": "b2004627614eca8b9382ff0e70bb4a8276ecebd540f34540d9aab1dc36cb6a2e",
+      "grid": 2,
+      "count": 4,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/귀교정/생성영수증.json"
+    },
+    "recovery": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/회복/원본/큰눈_키포즈.png",
+      "sha256": "e1bba861675024495e42c78cffc888bdaaf85e9ab8ccf34832af9708d4beb485",
+      "grid": 2,
+      "count": 4,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/회복/생성영수증.json"
+    },
+    "throw": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/비행/원본/큰눈_키포즈.png",
+      "sha256": "afbe2eeca466a9f97e26d9b16e45949da1c31bab7998a02d438c9a2845a9a35c",
+      "grid": 2,
+      "count": 4,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/비행/생성영수증.json"
+    },
+    "audience": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/응원/원본/큰눈_키포즈.png",
+      "sha256": "2c7285cd9d0317b237d53ed13c802dc3917a85beb865db51f649e67ba637e9b6",
+      "grid": 4,
+      "count": 16,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-큰눈통일/응원/생성영수증.json"
+    }
+  }
+}

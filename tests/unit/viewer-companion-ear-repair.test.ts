@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import sharp from "sharp";
-import current from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 
 type Frame = { atlas: number; index: number; x: number; y: number; clip: number[] };
 type Atlas = { src: string; sha256: string; bytes: number; width: number; height: number };
@@ -23,6 +22,9 @@ type Repair = {
 };
 const sourceRun = "art-src/빅타민/동행/작업회차/20261016-덤벙놀이";
 const repairRun = "art-src/빅타민/동행/작업회차/20261016-귀두개교정";
+// Historical before098: the new whole-source style owns separate runtime
+// packets. Keep this earlier exact-pixel repair proof against its frozen input.
+const current = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261018-큰눈통일/고정입력/기존등록/play-motion-sprite.json", "utf8")) as { frames: Frame[]; atlases: Atlas[]; rows: number[][] };
 const original = JSON.parse(readFileSync(`${sourceRun}/패킹파생기록.json`, "utf8")) as Original;
 const repair = JSON.parse(readFileSync(`${repairRun}/패킹파생기록.json`, "utf8")) as Repair;
 // PLAN-095 subsequently replaces recovery row23 only. Preserve the earlier
@@ -39,7 +41,7 @@ const baseline = {
   rows: original.packets.map((_, packet) => Array.from({ length: 16 }, (_, index) => packet * 16 + index)),
 };
 
-describe("four requested ear corrections preserve all other native poses", () => {
+describe("historical before098: four ear corrections preserve all other native poses", () => {
   it("binds the actual correction while preserving the historical source and exact baseline", () => {
     expect(repair.replacementIndices).toEqual([10, 19, 25, 27]);
     expect(repair.affectedRows).toEqual([21, 24, 27, 28]);

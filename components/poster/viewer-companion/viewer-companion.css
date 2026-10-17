@@ -101,11 +101,12 @@ html[data-reduce-motion] .vc-companion:is([data-presence="parked"], [data-dreami
 @keyframes vc-snack { from { opacity: 0; scale: .65; } to { opacity: 1; scale: 1; } }
 
 .vc-home-host { flex: 0 0 auto; min-width: 0; width: 100%; }
-.vc-compact-home { position: relative; min-width: 0; pointer-events: none; }
+.vc-compact-home { position: fixed; left: var(--vc-home-left, max(12px, env(safe-area-inset-left))); top: var(--vc-home-top, max(12px, env(safe-area-inset-top))); z-index: 73; width: min(var(--side-panel-w), var(--vc-home-max-width, calc(100vw - 24px))); min-width: 0; pointer-events: none; }
 .vc-compact-home[hidden] { display: none; }
-/* The shelf reserves its full height before the room enters. Calendar content
-   never animates underneath it, and the132px interior keeps its real anchors. */
-.vc-compact-home > .vc-home { box-sizing: border-box; box-shadow: var(--elev-1); }
+/*098 restores a compact floating room beside the actual header launcher.
+   Only its viewport position/available space change; the132px interior and
+   native control geometry stay intact above the unchanged calendar. */
+.vc-compact-home > .vc-home { max-height: var(--vc-home-max-height, calc(100dvh - 24px)); overflow: auto; overscroll-behavior: contain; box-sizing: border-box; box-shadow: var(--elev-3); }
 .button.vc-home-launcher { min-height: 44px; min-width: 44px; border-radius: var(--r-pill); pointer-events: auto; font-size: var(--text-body); white-space: nowrap; }
 html[data-reduce-motion] .vc-contact, html[data-gfx="off"] .vc-contact { transition: none; }
 html[data-reduce-motion] .vc-food, html[data-reduce-motion] .vc-food > span, html[data-reduce-motion] .vc-dream i, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-effect, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-actor::after { animation: none; }

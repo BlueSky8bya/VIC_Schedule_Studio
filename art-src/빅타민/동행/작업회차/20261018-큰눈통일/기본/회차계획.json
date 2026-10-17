@@ -1,0 +1,33 @@
+{
+  "status": "PLANNED_USER_DIRECTED_CYCLE",
+  "plan_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\runs\\VICTAMIN-EYES-CLEAN-20261018\\plan.json",
+  "plan_sha256": "B44A72B8E897105ADAD0C5AD3B0CD95EF5FC6DEE305CB6B8FC836ACF9CE1EAC9",
+  "plan": {
+    "schema_version": 1,
+    "workflow_mode": "user_directed_cycle",
+    "cycle_id": "7978837EAEC495AC1FB5",
+    "run_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\runs\\VICTAMIN-EYES-CLEAN-20261018\\cycle_7978837EAEC495AC1FB5",
+    "action_budget_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\runs\\VICTAMIN-EYES-CLEAN-20261018\\user_actions_A4633631F317F292ACD0",
+    "work_id": "VICTAMIN-EYES-CLEAN-20261018",
+    "phase": "generate",
+    "user_source": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\feedback_sources\\user_turns\\user-turn-371543cce31ae24f178c0ec4.json",
+      "sha256": "D6D76457D0333BEAE1004C8BD1829AD95CAD078F9AFA6ADA7CC12A39DECD96B6",
+      "excerpt": "눈 큰 버전으로 그림체 다 통일시켜줄 수 있어?"
+    },
+    "role_focus": {},
+    "force_review": false,
+    "candidate": null,
+    "policy_sha256": "B567838C8E5478AC89F6450D362D54411B455FD0F96EED15018676ECD4AAC54E",
+    "request_turn_id": "msg_01a14a7b-a7b8-7351-9221-f695552d0c23",
+    "limits": {
+      "imagegen_calls": 1,
+      "review_rounds": 0,
+      "repair_calls": 0,
+      "post_repair_agent_rounds": 0
+    },
+    "next_action": "one_generation_then_show",
+    "automatic_full_review": false,
+    "user_approval_is_visual_not_numeric_certification": true
+  }
+}

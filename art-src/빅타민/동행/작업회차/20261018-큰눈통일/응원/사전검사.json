@@ -1,0 +1,5 @@
+{
+  "status": "PASS_USER_DIRECTED_PREFLIGHT",
+  "errors": [],
+  "not_certified": "Direct requested edit; outside-mask parent pixels must be preserved. No visual PASS."
+}

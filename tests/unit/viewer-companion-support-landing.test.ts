@@ -1,8 +1,122 @@
 import { describe, expect, it } from "vitest";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
-import { companionViewportFloorAbove, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor } from "@/lib/ui/viewer-companion/support-landing";
+import { companionViewportFloorAbove, companionWorldHiddenReason, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor, recoverCompanionPassiveFloor, recoverCompanionVerticalSupport } from "@/lib/ui/viewer-companion/support-landing";
 
 const span = (id: string, x: number, y: number, width: number, kind: Platform["kind"] = "card"): Platform => ({ id, x, y, width, kind });
+
+describe("lost calendar support at a preserved horizontal point", () => {
+  const top = (id: string, y: number, x = 80, width = 100): Platform => ({ ...span(id, x, y, width), manualOnly: true });
+  it("keeps a genuine text ledge before considering a closer card top", () => {
+    const text = span("card-4", 80, 580, 100), card = top("card-8-top", 502);
+    expect(recoverCompanionVerticalSupport({ x: 100, y: 500 }, [text], [card])).toBe(text);
+  });
+  it("falls onto the first real lower card top instead of an upper edge or floor", () => {
+    const upper = top("card-2-top", 480), lower = top("card-3-top-1", 550), floor = span("viewport-floor", 0, 780, 900, "floor");
+    expect(recoverCompanionVerticalSupport({ x: 100, y: 500 }, [], [floor, upper, lower])).toBe(lower);
+  });
+  it("does not change x to cross a protected gap or pull upward onto an old card", () => {
+    const upper = top("card-2-top", 480), left = top("card-3-top", 550, 0, 80), right = top("card-4-top", 550, 120, 80);
+    expect(recoverCompanionVerticalSupport({ x: 100, y: 500 }, [], [upper, left, right])).toBeUndefined();
+  });
+  it("accepts an actual viewport floor above the point without fabricating one", () => {
+    const floor = span("viewport-floor-2", 80, 740, 100, "floor");
+    expect(recoverCompanionVerticalSupport({ x: 100, y: 780 }, [], [floor])).toBe(floor);
+    expect(recoverCompanionVerticalSupport({ x: 100, y: 780 }, [], [])).toBeUndefined();
+  });
+  it("excludes home, control, food and lookalike surfaces from emergency recovery", () => {
+    const excluded = [top("companion-home", 550), top("card-2-food-top", 550), { ...top("card-2-top", 550), manualOnly: false }, span("companion-home-floor", 80, 550, 100, "floor"), span("viewport-floor-lookalike", 80, 550, 100, "floor"), span("card-4-top", 80, 550, 100, "control")];
+    expect(recoverCompanionVerticalSupport({ x: 100, y: 500 }, [], excluded)).toBeUndefined();
+  });
+  it("retains exact safe edges and immutable records, and rejects corrupt points", () => {
+    const card = Object.freeze(top("card-3-top", 550)), candidates = Object.freeze([card]);
+    for (const x of [80, 100, 180]) expect(recoverCompanionVerticalSupport(Object.freeze({ x, y: 500 }), [], candidates)).toBe(card);
+    expect(recoverCompanionVerticalSupport({ x: 79.99, y: 500 }, [], candidates)).toBeUndefined();
+    expect(recoverCompanionVerticalSupport({ x: NaN, y: 500 }, [], candidates)).toBeUndefined();
+    expect(candidates).toEqual([card]);
+  });
+});
+
+describe("bounded passive recovery onto an existing lower viewport-floor edge", () => {
+  it("recovers the measured short-calendar rejection without changing exact-ray intent", () => {
+    const point = { x: 918.587, y: 289.923 }, floor = span("viewport-floor-2", 963.601, 410, 120, "floor");
+    expect(nearestVerticalCompanionSupport(point, [floor])).toBeUndefined();
+    expect(firstCompanionSupportBelow(point, [floor])).toBeUndefined();
+    expect(recoverCompanionVerticalSupport(point, [], [floor])).toBeUndefined();
+    expect(recoverCompanionPassiveFloor(point, [floor], 92)).toEqual({ platform: floor, x: 963.601 });
+  });
+  it("accepts the inclusive body-width edge and rejects a farther safe fragment", () => {
+    const point = { x: 100, y: 200 }, budget = 92 * .76;
+    const right = span("viewport-floor-1", point.x + budget, 400, 20, "floor"), left = span("viewport-floor", point.x - budget - 20, 400, 20, "floor");
+    expect(recoverCompanionPassiveFloor(point, [right], 92)).toEqual({ platform: right, x: right.x });
+    expect(recoverCompanionPassiveFloor(point, [left], 92)).toEqual({ platform: left, x: left.x + left.width });
+    expect(recoverCompanionPassiveFloor(point, [{ ...right, x: right.x + .001 }], 92)).toBeUndefined();
+    expect(recoverCompanionPassiveFloor(point, [{ ...left, x: left.x - .001 }], 92)).toBeUndefined();
+  });
+  it("keeps the first lost-x budget through repeated real revalidation", () => {
+    const originX = 100, first = span("viewport-floor", 150, 400, 10, "floor");
+    const start = recoverCompanionPassiveFloor({ x: originX, y: 200 }, [first], 92, originX)!;
+    expect(start).toEqual({ platform: first, x: 150 });
+    const stillInside = span("viewport-floor-1", 169, 420, 10, "floor"), beyondOrigin = span("viewport-floor-2", 180, 420, 10, "floor");
+    expect(recoverCompanionPassiveFloor({ x: start.x, y: 300 }, [stillInside], 92, originX)).toEqual({ platform: stillInside, x: 169 });
+    expect(recoverCompanionPassiveFloor({ x: start.x, y: 300 }, [beyondOrigin], 92, originX)).toBeUndefined();
+    // Resetting origin to the moving point would incorrectly authorize another
+    // short slide; the runtime must retain originX for this complete episode.
+    expect(recoverCompanionPassiveFloor({ x: start.x, y: 300 }, [beyondOrigin], 92)).toEqual({ platform: beyondOrigin, x: 180 });
+  });
+  it("chooses the nearest actual contact deterministically without moving an in-span point", () => {
+    const point = Object.freeze({ x: 140, y: 200 }), left = Object.freeze(span("viewport-floor", 100, 400, 20, "floor")), right = Object.freeze(span("viewport-floor-1", 160, 400, 20, "floor"));
+    for (const candidates of [Object.freeze([left, right]), Object.freeze([right, left])]) expect(recoverCompanionPassiveFloor(point, candidates, 92)).toEqual({ platform: left, x: 120 });
+    expect(recoverCompanionPassiveFloor({ x: 110, y: 200 }, [left], 92)).toEqual({ platform: left, x: 110 });
+    expect(point).toEqual({ x: 140, y: 200 }); expect(left).toEqual(span("viewport-floor", 100, 400, 20, "floor"));
+  });
+  it("never invents a floor or pulls upward, and excludes home, card and lookalike planes", () => {
+    const point = { x: 140, y: 300 };
+    const excluded = [span("viewport-floor", 100, 299.49, 100, "floor"), span("companion-home-floor", 100, 400, 100, "floor"), span("viewport-floor-food", 100, 400, 100, "floor"), span("viewport-floor-lookalike", 100, 400, 100, "floor"), span("viewport-floor-1", 100, 400, 100, "card"), span("card-2-top", 100, 400, 100, "floor")];
+    expect(recoverCompanionPassiveFloor(point, excluded, 92)).toBeUndefined();
+    expect(recoverCompanionPassiveFloor(point, [], 92)).toBeUndefined();
+    const contact = span("viewport-floor-2", 100, 299.5, 100, "floor");
+    expect(recoverCompanionPassiveFloor(point, [contact], 92)).toEqual({ platform: contact, x: 140 });
+  });
+  it("rejects corrupt inputs, nonpositive size and invalid floor endpoints", () => {
+    const point = { x: 140, y: 200 }, floor = span("viewport-floor", 160, 400, 20, "floor");
+    for (const size of [0, -1, NaN, Infinity]) expect(recoverCompanionPassiveFloor(point, [floor], size)).toBeUndefined();
+    for (const origin of [NaN, Infinity, -Infinity]) expect(recoverCompanionPassiveFloor(point, [floor], 92, origin)).toBeUndefined();
+    for (const badPoint of [{ x: NaN, y: 200 }, { x: 140, y: Infinity }]) expect(recoverCompanionPassiveFloor(badPoint, [floor], 92)).toBeUndefined();
+    const corrupt = [{ ...floor, width: 0 }, { ...floor, width: -1 }, { ...floor, x: NaN }, { ...floor, y: Infinity }, { ...floor, x: Number.MAX_VALUE, width: Number.MAX_VALUE }];
+    expect(recoverCompanionPassiveFloor(point, corrupt, 92)).toBeUndefined();
+  });
+});
+
+describe("world visibility does not depend on ordinary window presentation", () => {
+  const valid = { point: { x: 200, y: 500 }, viewport: { width: 1000, height: 800 }, size: 92, awaiting: false as const, hasSupport: true, pendingMonth: false, homeOccluded: false, atHome: false };
+  it("keeps every invalid world reason explicit, including a closed resident", () => {
+    expect(companionWorldHiddenReason(valid)).toBeNull();
+    expect(companionWorldHiddenReason({ ...valid, awaiting: "vertical" })).toBe("vertical");
+    expect(companionWorldHiddenReason({ ...valid, awaiting: "drop" })).toBe("drop");
+    expect(companionWorldHiddenReason({ ...valid, hasSupport: false })).toBe("support");
+    expect(companionWorldHiddenReason({ ...valid, atHome: true, homeOccluded: true })).toBe("home");
+    expect(companionWorldHiddenReason({ ...valid, homeOccluded: true })).toBeNull();
+  });
+  it("permits only the existing pending-month support exception", () => {
+    expect(companionWorldHiddenReason({ ...valid, pendingMonth: true, hasSupport: false })).toBeNull();
+    expect(companionWorldHiddenReason({ ...valid, pendingMonth: true, awaiting: "vertical" })).toBe("vertical");
+  });
+  it.each([{ x: 49.99, y: 500 }, { x: 950.01, y: 500 }, { x: 200, y: 99.99 }, { x: 200, y: 788.01 }, { x: NaN, y: 500 }, { x: 200, y: Infinity }])("rejects the whole-cell unsafe point %j", point => {
+    expect(companionWorldHiddenReason({ ...valid, point })).toBe("bounds");
+  });
+  it("keeps exact safe viewport edges and valid resident positions", () => {
+    for (const point of [{ x: 50, y: 100 }, { x: 950, y: 788 }]) expect(companionWorldHiddenReason({ ...valid, point })).toBeNull();
+  });
+  it("keeps only a neutral supported vertical recovery visible above transparent cell padding", () => {
+    const point = { x: 200, y: 87 };
+    expect(companionWorldHiddenReason({ ...valid, point })).toBe("bounds");
+    expect(companionWorldHiddenReason({ ...valid, point, neutralVerticalRecovery: true })).toBeNull();
+    expect(companionWorldHiddenReason({ ...valid, point: { x: 200, y: 92 * .82 + 7.99 }, neutralVerticalRecovery: true })).toBe("bounds");
+    expect(companionWorldHiddenReason({ ...valid, point, neutralVerticalRecovery: true, hasSupport: false })).toBe("support");
+    expect(companionWorldHiddenReason({ ...valid, point, neutralVerticalRecovery: true, awaiting: "vertical" })).toBe("vertical");
+    expect(companionWorldHiddenReason({ ...valid, point, neutralVerticalRecovery: true, atHome: true, homeOccluded: true })).toBe("home");
+  });
+});
 
 describe("explicit drop recovery from an occluded floor gap", () => {
   it("slides onto the nearest real floor edge without changing vertical ray helpers", () => {

@@ -1,0 +1,13 @@
+{
+  "work_id": "VICTAMIN-EYES-AUDIENCE-20261018",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\작품\\VICTAMIN-EYES-AUDIENCE-20261018\\검토용\\679E76165536AE1CCFF8.png",
+  "sha256": "2C7285CD9D0317B237D53ED13C802DC3917A85BEB865DB51F649E67BA637E9B6",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    "Producer opened the builtin tool whole result. Large highlighted open eyes are readable; expression-specific closed/squint/spiral forms remain distinct. No automatic specialist review or human visual approval claimed. Final whole-key runtime registration is verified separately."
+  ],
+  "cycle_id": "679E76165536AE1CCFF8",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

@@ -1,5 +1,5 @@
-/* Shared page-flow hosts. An empty host contributes no layout space; the
-   one room lives in the existing side panel whenever that panel is open. */
+/* Shared header hosts.098 keeps097's launcher placement but replaces its
+   page-flow shelf with one floating room owned by the companion runtime. */
 .vc-home-launcher-slot,
 .vc-home-shelf-slot { display: none; min-width: 0; box-sizing: border-box; }
 .vc-home-launcher-slot:has(> *) { display: inline-flex; align-items: center; flex: 0 0 auto; }
@@ -11,14 +11,11 @@
 :is(.agenda-legend-rail, .agenda-rail) > .vc-home-launcher-slot { flex: 0 0 auto; width: 100%; }
 :is(.agenda-legend-rail, .agenda-rail) > .vc-home-launcher-slot > .vc-home-launcher { width: 100%; min-width: 0; gap: 4px; padding-inline: 6px; }
 
-/* Reserve real page space above the calendar instead of masking its dates.
-   Keep the same panel width and unscaled interior on every surface. */
-.vc-home-shelf-slot:has(> *) { display: flex; justify-content: flex-end; padding: 0 var(--space-4) var(--space-3); }
-.vc-home-shelf-slot:not(:has(> .vc-compact-home:not([hidden]))) { display: none; }
-.vc-home-shelf-slot[data-side="left"] { justify-content: flex-start; }
-.vc-home-shelf-slot > .vc-compact-home { flex: 0 1 var(--side-panel-w); width: min(var(--side-panel-w), 100%); max-width: 100%; }
+/* A stable surface-lifetime marker only. The room is portalled to body, so
+   opening it never inserts a row or changes calendar/document geometry. */
+.vc-home-shelf-slot { display: none; }
 
 /* Studio shrinks its whole shell on large monitors. These chrome hosts
-   counter that inherited zoom so the room and its hit targets keep the
-   viewer's physical dimensions; the calendar's own scale stays untouched. */
-.studio-shell :is(.vc-home-launcher-slot, .vc-home-shelf-slot) { zoom: calc(1 / var(--shell-zoom, 1)); }
+   counter that inherited zoom for the header launcher. The floating room
+   lives outside the shell and already uses the viewer's physical pixels. */
+.studio-shell .vc-home-launcher-slot { zoom: calc(1 / var(--shell-zoom, 1)); }

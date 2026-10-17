@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import sprites from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
+import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
 
 describe("one high-resolution pipeline for every companion action", () => {
@@ -14,7 +15,7 @@ describe("one high-resolution pipeline for every companion action", () => {
       const selected = selectCompanionSprite(index);
       expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
       expect(selected.src).toBe(sprites.atlases[Math.floor(index / 16)].src);
-      expect(selected.src).toMatch(/^\/companion\/hd\/victamin-action-[0-9]{2}\.webp$/);
+      expect(selected.src).toMatch(/^\/companion\/hd\/victamin-action-[0-9]{2}-big-eyes-v1\.webp$/);
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
   });
@@ -51,7 +52,8 @@ describe("one high-resolution pipeline for every companion action", () => {
     expect(companionSpriteMetadata.rows.slice(0, 20)).toEqual(sprites.rows);
     for (let row = 20; row < 32; row++) expect(companionSpriteMetadata.rows[row]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + (row - 20) * 16 + column));
     expect(companionSpriteMetadata.rows[32]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + 192 + column));
-    expect(companionSpriteSources(32)).toEqual(["/companion/hd/victamin-play-32-throw.webp"]);
+    expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
+    expect(play.atlases[12].src).toBe("/companion/hd/victamin-play-32-throw-big-eyes-v1.webp");
   });
 });
 

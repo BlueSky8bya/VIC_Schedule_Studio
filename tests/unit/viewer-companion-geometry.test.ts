@@ -103,6 +103,30 @@ function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, band
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("companion geometry anchor subscription", () => {
+  it("delivers a replacement home source even when every numeric safe span is unchanged", () => {
+    const f = geometryFixture(), changed = vi.fn();
+    let liveHome = f.home;
+    const sub = observeCompanionPlatforms(f.root, changed, { size: 92, getHome: () => liveHome as unknown as HTMLElement }); f.flush();
+    const original = changed.mock.calls.at(-1)![0] as Platform[];
+    expect(sub.anchor("companion-home")?.element).toBe(f.home);
+    changed.mockClear();
+    const replacement = new FixtureElement(); replacement.rect = f.home.rect; replacement.parentElement = f.home.parentElement;
+    f.home.isConnected = false; liveHome = replacement;
+    f.win.emit("vic:companion-home"); f.advance(120);
+    expect(changed).toHaveBeenCalledTimes(1); expect(changed.mock.calls[0][0]).toEqual(original);
+    expect(sub.anchor("companion-home")?.element).toBe(replacement);
+    changed.mockClear(); f.win.emit("vic:companion-home"); f.advance(120);
+    expect(changed).not.toHaveBeenCalled(); sub();
+  });
+  it("delivers removal and remount of an equally positioned home without adding retries", () => {
+    const f = geometryFixture(), changed = vi.fn(); let liveHome: FixtureElement | null = f.home;
+    const sub = observeCompanionPlatforms(f.root, changed, { getHome: () => liveHome as unknown as HTMLElement | null }); f.flush(); changed.mockClear();
+    liveHome = null; f.win.emit("vic:companion-home"); f.advance(120);
+    expect(changed).toHaveBeenCalledTimes(1); expect(sub.anchor("companion-home")).toBeUndefined();
+    liveHome = f.home; f.win.emit("vic:companion-home"); f.advance(120);
+    expect(changed).toHaveBeenCalledTimes(2); expect(sub.anchor("companion-home")?.element).toBe(f.home);
+    expect(f.frames.size + f.timers.size).toBe(0); sub();
+  });
   it("measures real shared panel arrows as top ledges without covering their pointer targets", () => {
     const f = geometryFixture(), changed = vi.fn(), left = new FixtureElement(), right = new FixtureElement();
     left.parentElement = f.sourceRoot; right.parentElement = f.sourceRoot;

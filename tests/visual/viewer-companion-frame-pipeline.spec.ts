@@ -192,11 +192,26 @@ async function pickupAndReturn(page: Page) {
   expect(await actor(page).evaluate(node => node.hasPointerCapture(Number((node as HTMLElement).dataset.framePipelinePointer)))).toBe(true);
   await expect(pet(page)).toBeVisible(); await page.mouse.up(); await expect(pet(page)).not.toHaveAttribute("data-state", "held");
   await openCompanionHome(page); const cushion = home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
-  await cushion.focus(); await cushion.press("Enter"); await expect(pet(page)).toHaveAttribute("data-platform", "companion-home"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+  await cushion.focus(); await cushion.press("Enter");
+  // The real start and species determine the route length. Use the same 25s
+  // bound as committed-home, and preserve its path rather than assuming a
+  // remote recall must finish inside the generic locator's 5s timeout.
+  const frames: unknown[] = [], mode = await page.evaluate(() => localStorage.getItem("vic.gfxPref"));
+  try {
+    await expect.poll(async () => {
+      const snapshot = await pet(page).evaluate(node => {
+        const el = node as HTMLElement, rect = el.getBoundingClientRect(), bed = document.querySelector(".vc-home-cushion")?.getBoundingClientRect();
+        return { at: performance.now(), platform: el.dataset.platform ?? "", state: el.dataset.state ?? "", journey: el.hasAttribute("data-home-journey"), hidden: el.hidden,
+          x: rect.left + rect.width / 2, y: rect.bottom, bed: bed ? { x: bed.left, y: bed.top, width: bed.width } : null, focused: document.hasFocus() };
+      });
+      frames.push(snapshot); return snapshot.platform;
+    }, { timeout: 25000, intervals: [100] }).toBe("companion-home");
+  } finally { await writeFile(`${artifactPrefix}-recall-${mode}.json`, JSON.stringify(frames, null, 2)); }
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   await expect(page.locator(".vc-bed-foreground")).toBeVisible(); await expect(pet(page)).toBeVisible();
 }
 test("native background full/lite/full choices retain pickup, sofa return and real scroll support", async ({ page }) => {
-  test.setTimeout(45000); await setup(page); await extendViewerFlow(page);
+  test.setTimeout(80000); await setup(page); await extendViewerFlow(page);
   // The shared native picker exposes auto/max/lite. Ambient OFF only locks its
   // displayed label, so it cannot truthfully stand in for a live gfx-off test.
   for (const mode of ["lite", "max"] as const) {

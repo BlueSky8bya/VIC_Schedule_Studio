@@ -1,0 +1,79 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "VICTAMIN-EYES-AUDIENCE-20261018",
+  "operation": "targeted_parent_edit",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "codex",
+  "inputs": [
+    {
+      "id": "UI-AUDIENCE",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\최초공개\\응원단\\작업회차\\20261014-움직이는응원단\\원본\\빅타민_응원과관람_16프레임.png",
+      "sha256": "F36C8060B0CE35582B54256B5AB403D5734E2D452B44386CE28F04ED9B1459B6"
+    },
+    {
+      "id": "BIG-EYE-STYLE",
+      "kind": "style_reference",
+      "role": "eye-style-only; not pose or anatomy authority",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-귀두개교정\\원본\\빅타민_네포즈_귀교정.png",
+      "sha256": "A155A1597DD89DBC8957CB1C9AAD20DE7CC68245BED54C077BC53C81056AB89A"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "id": "REF-017",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\02_표정\\스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "authorities": {
+    "mascot": "REF-017",
+    "body": "REF-016"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\최초공개\\응원단\\작업회차\\20261014-움직이는응원단\\원본\\빅타민_응원과관람_16프레임.png",
+      "sha256": "F36C8060B0CE35582B54256B5AB403D5734E2D452B44386CE28F04ED9B1459B6"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261016-귀두개교정\\원본\\빅타민_네포즈_귀교정.png",
+      "sha256": "A155A1597DD89DBC8957CB1C9AAD20DE7CC68245BED54C077BC53C81056AB89A"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\02_표정\\스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\runs\\VICTAMIN-EYES-AUDIENCE-20261018\\plan.json",
+    "sha256": "226331854B34A3495229B46EAADEDEED4488A8A61D560E704A4D2DCEF7E45DFD"
+  },
+  "edit_authorization": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\feedback_sources\\user_turns\\user-turn-371543cce31ae24f178c0ec4.json",
+    "sha256": "D6D76457D0333BEAE1004C8BD1829AD95CAD078F9AFA6ADA7CC12A39DECD96B6",
+    "excerpt": "눈 큰 버전으로 그림체 다 통일시켜줄 수 있어?"
+  },
+  "protected_parent": {
+    "artwork_id": "UI-AUDIENCE",
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\최초공개\\응원단\\작업회차\\20261014-움직이는응원단\\원본\\빅타민_응원과관람_16프레임.png",
+    "sha256": "F36C8060B0CE35582B54256B5AB403D5734E2D452B44386CE28F04ED9B1459B6"
+  },
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-큰눈통일\\응원\\편집영역.png",
+    "sha256": "6F4702F22F41808F24CEA08D7250023982751188AABB5826E3F7F8A566F30734"
+  },
+  "edit_scope": "All mascot drawings in the current UI sprite sheet; unify large-eye face proportions while preserving their action/pose meanings. Both ears must remain complete.",
+  "protected_scope": "The outer transparent canvas border; no scenery, grid or new figures. This is a current UI source snapshot, not a user-approved artwork registration.",
+  "construction_method": "One builtin edit for each distinct current sheet, followed only by whole-key crop/registration/rig packing. No manual eye painting or pasted facial features."
+}

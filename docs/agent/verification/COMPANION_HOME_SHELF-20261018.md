@@ -23,4 +23,10 @@
 
 ## 독립 검토와 남은 단계
 
-독립 소스·개인정보 검토에서 원래 스크롤 캡처 단계, 최초공개 inert 소유, 열린 launcher의 기록/이름3건을 지적해 수정했다. 버튼 Space/편집실 sticky 방문 경계도 보완했다. 최종 제품8파일 main/WT SHA256 동일·차단 결함0 확인. 독립 raw 검토에서도 주민 연속 표본·원래 단언 유지·요청0을 확인했다. 최종 main 검사·운영 SHA/UI 확인은 진행 중이다.
+독립 소스·개인정보 검토에서 원래 스크롤 캡처 단계, 최초공개 inert 소유, 열린 launcher의 기록/이름3건을 지적해 수정했다. 버튼 Space/편집실 sticky 방문 경계도 보완했다. 최종 제품8파일/새 하네스3파일 main/WT SHA256 동일·차단 결함0 확인. 독립 raw 검토에서도 주민 연속 표본·원래 단언 유지·요청0을 확인했다.
+
+## 운영 확인
+
+`ae3cfdddcc7f849d91c9c710b65abb3f5da8fa05` commit/push 완료. [quality39044817066](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39044817066)13단계·Vercel 모두 success. `/api/soop-live` full SHA 일치200, public clock200/no-store, warm204, 비로그인 developer presence401/error-only/no-store, 운영 fixture는 streaming HTTP200 안의404 fallback으로 미노출 확인했다. main `.scratch-pw/companion-097/{remote-run,remote-jobs,remote-status,deployed-canaries}.json`에 증거를 저장했다.
+
+실제 로그인된 개발자 Chrome1643×1048에서 새 버전 배지 `ae3cfdd` 확인 후 편집실 집을 native 클릭했다. 집1·펫1, 실내131.997px, 집과 실제 월 grid 교차0 확인. 실제 메뉴의 시청자 화면으로 전환하고 같은 집을 열어 집1·펫1·expanded=true·실내131.997px·교차0을 다시 확인하고 화면을 육안 검수했다. 일정·설정·음식·하트 데이터는 변경하지 않았다. 과거096 actual focus gap/실방송 OBS/GPU/모든기기/실제RLS·provider한도는 이 배치 검증으로 닫지 않는다. 이 운영 후 메타데이터는 docs-only 재배포를 피하려고 로컬에 남긴다.

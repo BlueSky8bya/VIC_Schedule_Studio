@@ -1,0 +1,27 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "limits": {
+    "default_imagegen_calls_per_work_per_user_request": 1,
+    "automatic_review_roles": [],
+    "targeted_review_rounds": 1,
+    "repair_calls_per_requested_cycle": 1,
+    "automatic_post_repair_review_rounds": 0
+  },
+  "guide": "C:\\Users\\im917\\.codex\\skills\\vic-illustration-constitution\\references\\user-directed-cycles.md",
+  "selected": {
+    "id": "UI-MOOD",
+    "number": null,
+    "image_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261015-전동작고해상도\\원본\\빅타민_실망삐짐_16키포즈.png",
+    "image_sha256": "5C4D081BAEFCF66C2EC8255D214C447B345AAFA098EEAC4C78A6DABFEA0FDDC7",
+    "user_approval": null
+  },
+  "source_paths": {
+    "reference_catalog.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\reference_catalog.json",
+    "design_library/index.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\design_library\\index.json",
+    "character_profile.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\character_profile.json",
+    "feedback_memory.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\VICTAMIN-EYES-20261018\\ui_source_scope\\feedback_memory.json"
+  },
+  "conditional_paths": {},
+  "diversity_rows": [],
+  "read_only_relevant_sources": "Open chosen originals and their short design cards; expand details only where visible, ambiguous, or requested. History and full numeric profiles are not the default prompt."
+}

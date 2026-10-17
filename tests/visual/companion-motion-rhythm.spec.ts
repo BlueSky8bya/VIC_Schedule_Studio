@@ -159,7 +159,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} short tap 
   // Pointer release paints contact synchronously; the next renderer frame
   // publishes its semantic beat. A pre-tick empty label is not a missing pose.
   expect(new Set(reaction.map(frame => frame.beat).filter(Boolean))).toEqual(new Set(["impact", "checking", "recover"]));
-  expect(reaction.some(frame => frame.beat === "checking" && frame.image.includes("victamin-play-27-ear-v2.webp"))).toBe(true);
+  expect(reaction.some(frame => frame.beat === "checking" && frame.image.includes("victamin-play-27-ear-v2-big-eyes-v1.webp"))).toBe(true);
   await actor(page).click({ delay: 55 }); await page.mouse.move(5, 5);
   await expect(companion(page)).toHaveAttribute("data-play", "bonk-tears");
   const box = (await actor(page).boundingBox())!, start = { x: box.x + box.width / 2, y: box.y + box.height * .45 };

@@ -8,7 +8,7 @@ import { openCompanionHome } from "./helpers/companion-home";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 
 const companionNodes = ".vc-companion,.vc-home,.vc-food,.vc-food-layer,.vc-compact-home,.vc-bed-foreground,.pm-fan,.pm-cast-row";
-const companionAssets = /\/(?:companion\/|premiere\/vitamin-audience\.webp)/;
+const companionAssets = /\/(?:companion\/|premiere\/victamin-audience(?:-[a-z0-9-]+)?\.webp)/;
 const attempted = new WeakMap<Page, string[]>(), failures = new WeakMap<Page, string[]>();
 const pets = new WeakMap<Page, string[]>();
 const previewReads = new WeakMap<Page, string[]>();
