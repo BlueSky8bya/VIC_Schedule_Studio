@@ -1,6 +1,6 @@
 # PLAN-080 — 플랫폼·빅타민 안정화 적용 기록
 
-Date: 2026-10-17 KST. Status: 구현·배포·검증 완료. Baseline: HEAD965cc950 / 제품887f6d4b. [079 감사](PLATFORM_AUDIT-20261017.md)의 코드로 해결할 항목을 구현했다. 실제 방송 장비/계정 설정과 합성 검사를 구분하며, 별도 승인 대기 중인 과거 데이터 삭제는 완료 범위에 포함하지 않는다.
+Date: 2026-10-17 KST. Status: 구현·배포·검증 완료. Baseline: HEAD965cc950 / 제품887f6d4b. [079 감사](PLATFORM_AUDIT-20261017.md)의 코드로 해결할 항목을 구현했다. 실제 방송 장비/계정 설정과 합성 검사를 구분한다. 당시 보류했던 과거 진단 삭제는 이후 별도 승인·[081](DIAGNOSTIC_RETENTION-20261017.md)로 완료했으며080 제품 변경과 구분한다.
 
 ## 변경과 감사 연결
 
@@ -18,7 +18,7 @@ Date: 2026-10-17 KST. Status: 구현·배포·검증 완료. Baseline: HEAD965cc
 |10|perf 기본10% 균등 표본, 개발자8 HEAD→1 집계 RPC|표본 수≠총 요청. developer-only/no-store 유지. 방문 heartbeat의 의미·주기는 유지|
 |11|공통 monotonic deadline·archive 8페이지/호출·CAS 재개|미완료 scan을 완료/삭제로 처리하지 않음. 실제 DB가 abort를 받은 즉시 SQL까지 중단됨을 보장하지 않음|
 |12|단일 vic slug·쿼리 allowlist·범위/중복 검증·검색 진행 키128개 제한|실제 클라이언트 계약 대조. 동일 검색100개→각 로더1회. 진행 promise만 보관하며 완료·부분 실패 후 제거. 분산 rate limit 아님|
-|13|현재 보존 범위 재조회·복원 백업 준비|진단14,209행 삭제 승인 대기. 일반 이용기록90일 밖0행. 방문 TTL 미정·production flag 미확인. 삭제/상시 cleanup ON 안 함|
+|13|현재 보존 범위 재조회·복원 백업 준비|080 당시 진단14,209행 승인 대기→이후081 별도 승인·정리. 일반 이용기록90일 밖0행. 방문 TTL 미정·production flag 미확인. 상시 cleanup ON 안 함|
 |14|legacy9 DB 도구 공통 검증 TLS·auth guardedFetch|CA 오류 fail closed. 운영 일회성 도구 재실행 없음. 기존 auth 권한·쿠키 유지|
 |16|IPv6 loopback/forwarded host guard·activity64KiB stream 상한|허위/누락 content-length도 제한, oversize413. 기존 이벤트 allowlist 유지. 새 전역/분산 rate limiter 도입 없음|
 |17|월 toast 중앙 정렬과 animation transform 분리|모바일 폭 제한·기존 회귀 유지|
@@ -40,7 +40,7 @@ Date: 2026-10-17 KST. Status: 구현·배포·검증 완료. Baseline: HEAD965cc
 
 10:30KST read-only 집계: 일반 activity44,412행 중90일 밖0, 진단14,209행이 모두 `diag=true AND day<'2026-10-14'`에 해당했다. 방문 최초6월2일은 TTL 미정이라 삭제 후보로 정하지 않았다. perf 정확30일 밖358행은 야간 prune 이후 경과 시간일 수 있어 실패로 단정하지 않는다. 원42703 조회 실패도079 증거에 남겼다.
 
-진단 후보만 repeatable-read로 암호화·압축 백업했다. Windows 현재 사용자/SYSTEM 전용 ACL, 키는 사용자 DPAPI, AES-256-GCM 복호화→압축해제→원문/14,209행 round-trip 일치. 암호문299,439bytes, SHA256 `e21b7683f85c76dfcb88503ba75a5ec34edeb7083e380710ff4fd75f73a1d441`. 원문/키/식별자는 ignored 제한 디렉터리에만 있고 커밋·보고서에 없음. **삭제0, 별도 승인 대기**. 상시 pruning flag를 켜는 승인과 혼동하지 않는다.
+진단 후보만 repeatable-read로 암호화·압축 백업했다. Windows 현재 사용자/SYSTEM 전용 ACL, 키는 사용자 DPAPI, AES-256-GCM 복호화→압축해제→원문/14,209행 round-trip 일치. 암호문299,439bytes, SHA256 `e21b7683f85c76dfcb88503ba75a5ec34edeb7083e380710ff4fd75f73a1d441`. 원문/키/식별자는 ignored 제한 디렉터리에만 있고 커밋·보고서에 없음. **080 마무리 당시 삭제0·승인 대기**였다. 이후 소유자 승인으로081에서 날짜/시각/숫자 정밀도를 보존하는 추가 PG JSON 백업·실제 DB타입 왕복을 검증하고 정확14,209행만 정리했다. [081 증거/복구](DIAGNOSTIC_RETENTION-20261017.md). 상시 pruning flag를 켜는 승인과 혼동하지 않는다.
 
 ## 의존성·개인정보·검사 해석
 

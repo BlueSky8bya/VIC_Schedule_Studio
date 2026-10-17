@@ -156,11 +156,13 @@ function wireClicks(): void {
       // 값은 코드의 고정 값(on/dim/off…)만 쓴다 — 사용자 글이 id가 되면 안 된다(위 ⚠).
       const opt = el.getAttribute("data-act-opt");
       const id = explicit ? (opt ? `${explicit}#${foldDigits(opt).slice(0, 24)}` : explicit) : autoId(el);
-      logActivity("ui.click", { target: id });
       // 로그아웃은 **누르는 즉시** 내보낸다. 안 그러면 버퍼에 남아 있던 이벤트가 세션이 끊긴
       // 뒤에 올라가고, 서버는 그때의 신원(=비로그인)으로 역할을 매긴다 → "편집실을 비로그인이
       // 눌렀다"는 거짓 기록이 남는다(실측). 쿠키가 아직 살아 있는 이 시점에 보내야 맞게 붙는다.
-      if (explicit === "logout") flush(true);
+      // Enqueue urgently: if logout is event20, normal threshold flushing must
+      // not consume its batch without keepalive before this handler can flush.
+      const preLogout = explicit === "logout" || explicit === "io-logout";
+      logActivity("ui.click", { target: id, flush: preLogout ? "keepalive" : undefined });
     },
     true
   );
@@ -169,7 +171,7 @@ function wireClicks(): void {
 /** 행동 1건 기록. 부수효과만 있고 아무것도 기다리지 않는다. */
 export function logActivity(
   kind: ClientKind,
-  opts: { target?: string | null; meta?: Record<string, unknown> | null; durMs?: number } = {}
+  opts: { target?: string | null; meta?: Record<string, unknown> | null; durMs?: number; flush?: "keepalive" } = {}
 ): void {
   if (typeof window === "undefined") return;
   if (!isClientKind(kind)) return; // 서버 kind 사칭 차단(진실 로그 오염 방지)
@@ -183,6 +185,12 @@ export function logActivity(
     visitKey: currentVisitKey()
   });
   if (firstAt === 0) firstAt = Date.now();
+  // Transport control stays out of Pending/the payload and takes priority over
+  // size/age batching. Leaving a page must keep the entire ordered batch alive.
+  if (opts.flush === "keepalive") {
+    flush(true);
+    return;
+  }
   if (buffer.length >= FLUSH_AT || Date.now() - firstAt >= MAX_AGE_MS) {
     flush();
     return;

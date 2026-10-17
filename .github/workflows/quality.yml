@@ -47,6 +47,7 @@ jobs:
         # PGlite is in-memory PostgreSQL/WASM; these scripts never read .env.
         run: |
           node tests/sql/privacy-boundary.mjs node_modules/@electric-sql/pglite/dist/index.js
+          node tests/sql/event-heart-initplan.mjs node_modules/@electric-sql/pglite/dist/index.js
           node tests/sql/vod-timeline-variants.mjs node_modules/@electric-sql/pglite/dist/index.js
           node tests/sql/vod-chat-recovery.mjs node_modules/@electric-sql/pglite/dist/index.js
           node tests/sql/broadcast-work-bounds.mjs

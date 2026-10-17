@@ -29,4 +29,4 @@ Scope: L3 공개 경계·실패 복구, L2 비용·공유 UI/빅타민 파이프
 
 ## 통합 현황
 
-구현·독립 리뷰·최종 unit1894/1894·build/typecheck/lint·격리 SQL4·harness PASS. 화면28+최종popup2·실제SW3 PASS. 0151은10:25KST 검증 TLS로 먼저 적용했으며 cron 불변·service-only 권한 확인. 제품9aefbd29 운영18 smoke와 Vercel Ready, 최종aac6b78d 원격quality38992818125 전 단계 PASS/Ready 확인. CI의 실제 이미지 통합 검사1개만30초 제한이며 입력/단언 보존. [통합 기록](../verification/PLATFORM_REMEDIATION-20261017.md)에 원 실패·의존성 잔존·복구/외부 한계를 보존한다. 진단14,209행의 제한 암호화 백업은 검증했지만 삭제는 별도 승인 대기이며 이 구현 완료와 구분한다. 외부 실제 장비/계정/사용량 검증은 [Open checks](../verification/OPEN_CHECKS.md)에서 이어간다.
+구현·독립 리뷰·최종 unit1894/1894·build/typecheck/lint·격리 SQL4·harness PASS. 화면28+최종popup2·실제SW3 PASS. 0151은10:25KST 검증 TLS로 먼저 적용했으며 cron 불변·service-only 권한 확인. 제품9aefbd29 운영18 smoke와 Vercel Ready, 최종aac6b78d 원격quality38992818125 전 단계 PASS/Ready 확인. CI의 실제 이미지 통합 검사1개만30초 제한이며 입력/단언 보존. [통합 기록](../verification/PLATFORM_REMEDIATION-20261017.md)에 원 실패·의존성 잔존·복구/외부 한계를 보존한다. 진단14,209행 정리는 당시 별도 승인 대기였고, 이후 [081](PLAN-20261017-081-diagnostic-retention.md)로 승인·검증·정리했다. 외부 실제 장비/계정/사용량 검증은 [Open checks](../verification/OPEN_CHECKS.md)에서 이어간다.

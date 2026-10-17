@@ -9,7 +9,7 @@ This file keeps unresolved evidence gaps out of startup history. A prior PASS ap
 [079 감사](PLATFORM_AUDIT-20261017.md)는 읽기 전용 기준 기록이다. 이후 소유자 승인으로 코드·의존성·0151을 수정했다. 현재 구현과 검증 범위는 [080 적용 기록](PLATFORM_REMEDIATION-20261017.md), [backend](BROADCAST_WORK_BOUNDS-20261017.md), [client](PLATFORM_CLIENT-20261017.md)를 따른다.
 
 - 운영 효과: 새 readiness stage·실패율/CPU/Fluid 점유·수집/RPC 호출·DB 임시 파일 증가량을 같은 기간/분모로 비교. warm204는 공개 readiness만 뜻하며 모든 인스턴스/Data Cache가 warm하다는 증거가 아니다. 프로세스 밖 중복은 가능하고 Redis/분산 compute lease는 미도입이다.
-- 외부 미확인: 실제 Supabase 플랜·egress/storage/auth/realtime/pool·전체 disk/WAL·backup/PITR/복구 가능성, 보존 flag boolean. PC dashboard 로그인 필요; 휴대폰 별도 로그인은 PC 세션에 이어지지 않는다. 079의42703 조회는 보존했고 080에서 카탈로그 확인 뒤 read-only 재조회했다.
+- 외부 후속: [082 실제 dashboard](SUPABASE_PROVIDER-20261017.md)에서 Free/Nano·현재 주기 조직 quota 이내·VIC DB/disk·관리형 일일 백업/PITR 없음 확인. CPU/메모리/IO 일부 graph는 로딩 실패했다. Free 전체 복구 경로·보존 flag·모든 Auth/storage/pool 제약은 여전히 별도다. 079의42703과082의 잘못된 함수 signature42883은 각각 보존 후 실제 카탈로그로 재조회했다.
 - 권한: net 익명DataAPI406, activity401, publicview limit0=200은 그 경로만 확인했다. 실제 로그인 역할·RPC/storage·grant 만료/철회/다른 기기와 과거 유출 전체 검증을 대신하지 않는다. 민감 원문은 보고서/로그에 복사하지 않는다.
 - 유지보수: production npm audit0. 개발 ESLint 경로 braces3.0.3 advisory는 공식 patch가 없어 영향5 high가 남는다. 불신 glob/config 입력을 lint에 주지 않으며 upstream patch 때 재검토한다. 원격quality38992818125 전 단계 PASS; 원 실패와 실제 이미지 통합 검사1개30초 조정은080 기록 참조.
 - 경계: 새 activity64KiB byte 제한·검색 진행 키128개 cap은 분산 rate limit이 아니다. provider WAF/전역 rate 정책은 실제 트래픽·정상 입력 보존을 검토해 별도로 정한다. 공개 DTO/import·격리 canary가 실계정 RLS 전체를 증명하지 않는다.
@@ -18,6 +18,8 @@ This file keeps unresolved evidence gaps out of startup history. A prior PASS ap
 최초 관측 Vercel CPU6시간47분/4시간·Fluid Memory460.1/360GB-hours, DB272.26MB. 측정 기간/계량은 감사 본문 참조. 수정 뒤 같은 기준의 route·RPC·사용량 변화로 효과를 확인하며 절감률을 미리 단정하지 않는다.
 
 ## COMPANION-BROADCAST — 실제 OBS/SOOP 장비
+
+[082 로컬 OBS](OBS_LOCAL_RECORDING-20261017.md)는 이 PC의 공식 OBS/실제 GPU·NVENC·BrowserSource/MKV30분 완료, render/encoding lag 각2프레임이다. 실제 방송 PC/SOOP/Window Capture와 다르다. [종료20개](ACTIVITY_LIFECYCLE-20261017.md), [복합/실제 클릭](COMPANION_COMPOSED_INPUT-20261017.md)(최종 첫4 PASS/1 FAIL·독립 재관측1 PASS), [합성 권한/HTTP/SQL](SECURITY_SESSION_BOUNDARY-20261017.md)도 각 증거 층을 구분한다.
 
 [PLAN-076 검증](COMPANION_BROADCAST_PIPELINE-20261017.md)은 실제 decoded 이미지의 단일 표시 경로, 중복 표시 쓰기/저장소 조회 제거와 native fixture를 확인한다. 실제 토리님 방송 PC의 GPU·OBS 합성/인코딩·SOOP 송출을 함께 측정하지 않았다. 장면/캡처 방식·브라우저 하드웨어 가속·GPU 여유에 따라 결과가 달라지므로 무끊김을 보장하지 않는다.
 
@@ -35,7 +37,7 @@ Current findings, applied0124/0125, anon live probes and scoped SQL tests are re
 [privacy audit](PRIVACY-20260921.md). Current code containment does not erase publicly accessible
 Git history or stop already-open old realtime clients. Those, restricted retention backups/deletion,
 visit-session TTL, genuine-login/provider security and developer-tool major upgrades remain open.
-No production cleanup, key rotation or history rewrite has been performed.
+Outside the separately approved 14,209 diagnostic rows documented in [081](DIAGNOSTIC_RETENTION-20261017.md), no broader production cleanup, key rotation or history rewrite has been performed.
 
 ## VERIFY-PUBLIC-002-003 — reconcile historical issue labels
 
@@ -55,7 +57,9 @@ The 2026-09-04 history identified local/automated traffic in production analytic
 Before a cleanup: inspect current source data, confirm the exclusion predicate, create/verify a recoverable backup, identify user authorization and preview exactly what would be deleted. Old file paths and row counts are not current evidence.
 New analytics paths must use `lib/analytics/guard.ts`; UI checks should use route stubs. Actual DB integration tests use past months, the established test marker, cleanup and zero-residue verification.
 
-080 현재 선택: `diag=true AND day<'2026-10-14'` 진단14,209행. 일반 activity90일 밖0행; visit TTL 미정. 10:31KST Windows current-user/SYSTEM 제한·DPAPI 키·AES-GCM 백업의 복호화/원문 round-trip 검증 완료, 삭제0. 이 선택만 소유자에게 별도 승인 요청했다. 승인 전 삭제/상시 cleanup ON은 하지 않는다. 자세한 해시·집계는080 기록에 있고 원문·키는 커밋하지 않는다.
+080에서 준비한 `diag=true AND day<'2026-10-14'`의 기존14,209개 id만 소유자가 별도 승인했다. [081 결과](DIAGNOSTIC_RETENTION-20261017.md):12:03KST 정확14,209행 삭제·COMMIT, 새 연결 재조회 잔여0·일반/visit 불변. 원/정밀 PG JSON 암호화 백업·복원형식 검증 완료. 다른 정리나 상시 cleanup ON은 하지 않았다. 일반 activity90일 밖0행은 준비 시점 관측이며 visit TTL·운영 flag는 별도 미확인이다.
+
+복구용 로컬 암호문/DPAPI 키는2026-10-24KST 복구 기간 뒤 제거 대상으로 기록한다. 자동 삭제/알림은 예약하지 않았다. 제한 파일/키/원문은 커밋하지 않는다. 초기9월4일의 더 넓은 테스트/로컬 트래픽 청소는 이번 승인에 포함되지 않는다.
 
 ## VOD-SYNC-20260918 — late fan timeline and missing replay chat
 

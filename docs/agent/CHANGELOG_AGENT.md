@@ -6,6 +6,16 @@
 
 ## v0.1.0 — 2026-10-17
 
+### CHG-20261017-003 — Preserve final-action order and cache RLS identity
+
+Desktop studio logout now flushes the pending activity batch before its form removes session cookies, matching the existing viewer/mobile control. Auth sign-out failures return fixed503/no-store instead of reporting success; successful local-scope303 behavior and other-device sessions remain unchanged. Revert these two application changes together if needed. [Lifecycle20](verification/ACTIVITY_LIFECYCLE-20261017.md), [security boundaries](verification/SECURITY_SESSION_BOUNDARY-20261017.md).
+
+0152 applied with verified TLS and guarded transaction after isolated two-user/NULL/anon/write/grant/idempotence/rollback checks and independent review. It caches stable auth.uid per statement for own-heart SELECT without changing rows, grants, roles or RLS ownership. Rollback restores the same original `user_id=auth.uid()` predicate. Actual provider Free/Nano quota/backups and scoped results: [record](verification/SUPABASE_PROVIDER-20261017.md). This is not a broader cleanup or new permission grant.
+
+### CHG-20261017-002 — Approved diagnostic retention cleanup
+
+Owner explicitly approved the original14,209 diagnostic rows before2026-10-14. Verified TLS, live schema/side-effect checks, exact backup/current IDs and contents, PG-precision encrypted backup and typed restoration round-trip, independent review and dry-run preceded the transaction. Deleted exactly14,209; approved IDs absent after commit and a fresh connection confirmed no expired diagnostics. Ordinary activity/visits stayed unchanged. No application/schema/grant/cron or recurring-cleanup flag change. Recovery uses the restricted PG JSON backup with identity override and exact post-insert validation; no restore ran. [Selection, evidence and recovery](verification/DIAGNOSTIC_RETENTION-20261017.md). Broader cleanup remains unauthorized.
+
 ### CHG-20261017-001 — Bound public failures and background work
 
 Public loader failures no longer become cached empty schedules; stable pagination and public request allowlists preserve explicit DTOs and the DB-time teaser gate. Search telemetry uses fixed codes. Readiness has an abortable five-second public query and truthful status. Live collection coalesces in-flight work; changed projections/dirty revisions, successful graph markers, shared deadlines and resumable archive CAS suppress redundant work and preserve partial recovery. Developer presence uses one service-only aggregate. Shared foreground polling, anonymous worker cache ordering and finite popover tracking reduce work around the existing companion engine. Performance counts are uniformly sampled observations, not total requests.
