@@ -32,7 +32,7 @@ export type CompanionBehaviorPreferences = CompanionPreferences;
 export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: CompanionFoodKind };
 export type Food = CompanionFood;
 export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake" | "play" | "panel";
-export type CompanionPlay = "tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow";
+export type CompanionPlay = "tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow" | "dizzy";
 export type CompanionAction = {
   kind: CompanionActionKind;
   target: { x: number; y: number; platformId?: string };

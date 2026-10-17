@@ -1,6 +1,6 @@
 # 빅타민 습관 설명·빠른 놓기 복구
 
-Status: Local implementation/independent review complete; owner-authorized combined085/086 deployment verification pending.
+Status: Completed — owner-authorized combined085/086 releaseecaa940f deployed and verified; remote quality all PASS.
 
 소유자 요청: 설정의 배운 습관 설명을 잘 보이게 정리하고 ‘손길’을 쓰다듬기 등 구체적인 말로 바꾼다. 매우 빠른 drag/release 뒤 착지하지 못하고 스크롤 중 깜빡이는 현상을 재현·수정한다.
 
@@ -18,3 +18,5 @@ Status: Local implementation/independent review complete; owner-authorized combi
 결과: [검증 기록](../verification/COMPANION_HABITS_RELEASE-20261017.md). baseline native67frame 숨김·최종up650px오차를 확인하고 수정했다. 동시085를 보존한 통합 build `8FdhRmZTfwAuGpAy-fTvY`, unit1,932/1,932·rendered22/22·build/typecheck/lint PASS. 최초 하네스 실패/격리 결과와 통합 결과를 구분한다. 실제 안전 바닥이 전혀 없는 geometry의 기존 숨김 게이트는 유지한다.
 
 최종 후속: build `FjBCgLBfH0mm62aMkRKPn`, 전체 unit1,933/1,933·rendered33/33·문제 native 조작 별도5/5·build/typecheck/lint PASS. 재시도/skip/flaky0. crop4장/전체설정창2장 독립 렌더 검수와 통합 코드 리뷰 차단0. 최초32/33·별도재현2/3 실패 증거를 보존하고 실제 경쟁 상태를 수정했다. 운영 결과는 배포 후 별도로 확인한다.
+
+운영 결과: main `ecaa940f37ecb40e33716ca9452b50791e5e535c` push, Vercel success·운영 API 전체 SHA·실제 편집실 설정·원격 quality39006074013 전체 PASS. [배포 기록](../verification/COMPANION_HABITS_RELEASE-20261017.md#운영-배포). 사후 결과만을 위한 추가 운영 빌드는 만들지 않았다.

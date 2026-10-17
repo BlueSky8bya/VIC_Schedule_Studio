@@ -4,7 +4,7 @@ import type { CompanionPlay } from "@/lib/ui/viewer-companion/brain";
 import { companionPlayDuration, COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 describe("finite authored companion play", () => {
-  const kinds: CompanionPlay[] = ["tumble", "bump", "slip", "bonk-sad", "bonk-tears", "celebrate", "groom", "pounce", "bow"];
+  const kinds: CompanionPlay[] = ["tumble", "bump", "slip", "bonk-sad", "bonk-tears", "celebrate", "groom", "pounce", "bow", "dizzy"];
   it.each(kinds)("%s terminates, preserves its support and returns upright", kind => {
     for (let i = 0; i <= 100; i++) {
       const pose = sampleCompanionPlay(kind, i / 100);
@@ -36,6 +36,13 @@ describe("finite authored companion play", () => {
       expect(phases.every((phase, index) => index === 0 || phase >= phases[index - 1])).toBe(true);
       expect(phases.at(-1)).toBeGreaterThan(.98);
     }
+  });
+  it("recovers from shaking without a new bump, roll or displacement", () => {
+    const duration = companionPlayDuration("dizzy");
+    expect(duration).toBe(920);
+    expect(sampleCompanionPlay("dizzy", 0)).toMatchObject({ row: 22, beat: "dizzy", lift: 0, shift: 0 });
+    expect(sampleCompanionPlay("dizzy", 599 / duration)).toMatchObject({ row: 22, beat: "dizzy", lift: 0, shift: 0 });
+    expect(sampleCompanionPlay("dizzy", 600 / duration)).toMatchObject({ row: 23, beat: "recover", lift: 0, lean: 0, shift: 0 });
   });
   it("preserves quick contact, readable expression and finite recovery independently for every gesture", () => {
     const durations = kinds.map(kind => companionPlayDuration(kind));

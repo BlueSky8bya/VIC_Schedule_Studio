@@ -28,10 +28,10 @@ describe("shared direct home return", () => {
           expect(Math.abs(action.target.x - point.x)).toBeLessThanOrEqual(120);
           expect(point.y - height).toBeGreaterThanOrEqual(100);
         }
-      } else { walks++; expect(Math.abs(action.target.x - point.x)).toBeLessThanOrEqual(180); }
+      } else { walks++; expect(action.target.platformId).toBe(point.platformId); }
       point = { ...point, ...action.target };
     }
-    expect(arrived).toBe(true); expect(springs).toBe(1); expect(jumps).toBeLessThanOrEqual(3); expect(walks).toBeGreaterThan(0);
+    expect(arrived).toBe(true); expect(springs).toBe(1); expect(jumps).toBeLessThanOrEqual(3); expect(walks).toBe(1);
     expect(point.platformId).toBe(seat.id); expect(roomFloor.manualOnly).toBe(true);
   });
   it("uses ordinary nearby ledges without a high spring when a real route exists", () => {
@@ -44,6 +44,21 @@ describe("shared direct home return", () => {
       point = { ...point, ...result.action.target };
     }
     expect(arrived).toBe(true);
+  });
+  it("crosses an uninterrupted real span in one action with a distinct species gait", () => {
+    const plans = (["dog", "default", "cat"] as const).map(animalMode => {
+      const result = planCompanionHomeReturn({ ...createBrain(), energy: .08 }, world, { ...prefs, animalMode, personality: "sleepy" });
+      expect(result.state).toBe("travel");
+      if (result.state !== "travel") throw new Error("Measured home route must be available");
+      expect(result.action.kind).toBe("walk");
+      expect(result.action.target.platformId).toBe(floor.id);
+      expect(Math.abs(result.action.target.x - world.x)).toBeGreaterThan(180);
+      expect(result.action.pace).toBe(animalMode === "dog" ? "scoot" : "amble");
+      return result.action;
+    });
+    expect(plans[0].duration).toBeLessThan(plans[1].duration);
+    expect(plans[1].duration).toBeLessThan(plans[2].duration);
+    expect(plans.every(plan => plan.target.x === plans[0].target.x && Number.isFinite(plan.duration) && plan.duration > 0)).toBe(true);
   });
   it("crosses real floor fragments before the house spring instead of failing on the far fragment", () => {
     const left: Platform = { id: "viewport-floor", kind: "floor", x: 50, width: 800, y: 1020 };

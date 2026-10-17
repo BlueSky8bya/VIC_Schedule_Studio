@@ -1,6 +1,6 @@
 # 빅타민 습관 설명·빠른 놓기 검증
 
-Status: Final local implementation/independent review complete; owner-authorized combined085/086 deployment verification pending. [PLAN-086](../plans/PLAN-20261017-086-companion-habits-and-release.md).
+Status: Deployedecaa940f and verified; final local/independent checks and remote quality all PASS. [PLAN-086](../plans/PLAN-20261017-086-companion-habits-and-release.md).
 
 ## 변경
 
@@ -63,6 +63,14 @@ Status: Final local implementation/independent review complete; owner-authorized
 - 설정·습관/reset6, 실제 귀가/resize/취소11, 빠른 놓기10, 편집 게스트1, 관성/overlay5를 포함해 총33개다. 실제 브라우저 report를 기준으로 집계한다.
 - 최종 crop4장과 전체 설정창 viewer-light/studio-dark2장은 독립 검수에서 잘림/겹침/정렬 결함0. root도 전체 창과 light/dark 카드를 확인했다. 기존 화면과 새로운 화면의 PNG를 구분해 보존한다.
 - source/test14파일 동일 및 두 실제 fixture HTML의 최종 build ID 일치. 명시25파일만 release index에 넣고 사용자 art/preview/.vscode/환경 파일을 제외했다. 비밀 형식5종 매치0·diff whitespace·문서 harness233개 PASS. 운영 플랜/데이터/권한 변경은 없다.
+
+## 운영 배포
+
+소유자 승인에 따라 main `ecaa940f37ecb40e33716ca9452b50791e5e535c`를 push했다. [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/FsoVAf8LrcPuFyhPtS68gu3c4Sgx) success, 실제 운영 `/api/soop-live` 전체 SHA 일치를 확인했다. public clock200/no-store·warm204/public-readiness·익명 developer presence401/no-store/고정 unauthorized/운영 필드0, production fixture의 streamed404 비노출도 확인했다. [원격 quality39006074013](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39006074013)는 unit·격리 SQL5·harness·실제 production build·typecheck·lint·마무리까지 모든 단계 success다.
+
+실제 로그인된 개발자 편집실에서 배포 표기ecaa940을 확인하고 설정→빅타민→성격을 열었다. 새 제목/intro/빈 습관 문구/하단 초기화가 실제 운영에 표시됐다. read-only DOM 측정에서 제목/버튼 중심 오차0.009px 미만, 좌우 padding14px씩, overflow=false이며 실제 스크린샷도 검수했다. 첫 측정 스크립트의 CUA `parseFloat` 미지원 오류는 CSS 문자열값 비교로 교정했다. 일정 편집·취향 변경·습관 초기화는 누르지 않았다. 이 실제 UI의 활동 전송은 계측하지 않았으므로 production POST0 또는 활동 저장 검증으로 확대하지 않는다. 실제 계정/RLS의 전수 검사도 아니다.
+
+원본은 ignored `.scratch-pw/companion-086-{release-check,ci-jobs,production-ui}.json`. 커밋은 사용자 art/preview/.vscode를 포함하지 않았다. 사후 배포 결과는 로컬 문서에 기록했으며, 제품 변경 없는 기록만을 위해 추가 운영 배포를 만들지 않았다. Hobby 무료 포함량 초과와 실제 방송 PC 검증은 별도 열린 항목으로 유지한다.
 
 ## 한계
 

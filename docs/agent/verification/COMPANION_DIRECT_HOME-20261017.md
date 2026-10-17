@@ -1,6 +1,6 @@
 # 빅타민 실제 경로 귀가 검증 — 2026-10-17
 
-Status: Local verification complete. [PLAN-085](../plans/PLAN-20261017-085-companion-direct-home.md). The original085 follow-up made no commit/push; later combined086 release is owner-authorized and tracked in [086](COMPANION_HABITS_RELEASE-20261017.md).
+Status: Deployed in owner-authorized combined086 releaseecaa940f. [PLAN-085](../plans/PLAN-20261017-085-companion-direct-home.md). The original085 local follow-up made no commit/push; later release evidence is in [086](COMPANION_HABITS_RELEASE-20261017.md#운영-배포).
 
 ## 변경
 

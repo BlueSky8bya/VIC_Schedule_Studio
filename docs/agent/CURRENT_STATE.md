@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Companion086 refinement/release is authorized: shorten habit copy, balance the shared settings layout and deploy with the locally verified085 direct-home/086 fast-release fixes. Production remains99ee2a76 until the deployed revision is checked. Preserve user art. [085](verification/COMPANION_DIRECT_HOME-20261017.md), [086](verification/COMPANION_HABITS_RELEASE-20261017.md).
+Companion089: add a bounded held-shake dizzy reaction, then commit/push/deploy it with the locally verified087/088 fixes. Owner explicitly authorized production release. Preserve user art/preview files. [Plan](plans/PLAN-20261017-089-companion-shake-release.md).
 
 Current: operations follow-up is the Vercel Hobby quota excess, Free-plan full-recovery path, same-period cost comparison and genuine-role/broadcaster evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). General cleanup/bulk UPDATE/paid-plan or permission changes remain unauthorized. Preserve user art/preview work.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-086 | In progress | Refine habit copy/balance, verify combined085/086, deploy and check actual SHA | [Evidence](verification/COMPANION_HABITS_RELEASE-20261017.md) |
+| COMPANION-089 | Deployment approved | Local unit1950/rendered40 verified; explicit staging, CI and deployed SHA next | [Record](verification/COMPANION_SHAKE_RELEASE-20261017.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -45,8 +45,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Local [086](verification/COMPANION_HABITS_RELEASE-20261017.md) preserves085: final build `FjBCgLBfH0mm62aMkRKPn`, unit1,933/1,933·rendered33/33+native race repeat5/5·build/typecheck/lint PASS. Shared habit copy/balance and fast release/scroll/compact-home request recovery verified; independent review blocking0. Owner-authorized commit/push/deployed-SHA check is next. Genuine-role/OBS-device scope remains separate.
+Local [089](verification/COMPANION_SHAKE_RELEASE-20261017.md), including087/088: held shaking→real landing→finite recovery, committed direct recall/species gait and editor-close display recovery integrated; fixture build `RRU_Pl-nH1oGk9yqe00cz`, unit1,950/1,950·rendered40/40·build/typecheck/lint PASS. Independent review blocking0 and23-file source equivalence. Owner authorized combined commit/push/deployment; production verification pending and current production remains `ecaa940f`. Fixtures do not establish actual OS/OBS, every blocked-geometry permutation or RLS coverage.
 
-Current release99ee2a76: [083](verification/FLUID_HIDE_EXTRACTION-20261017.md)/[084](verification/COMPANION_HOME_ROUTE-20261017.md), unit1,925/1,925·isolated rendered9·build/typecheck/lint PASS; [remote quality39001831268](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39001831268) all PASS. Vercel Ready and actual API SHA/public clock/warm204/developer401/fixture nonexposure plus anonymous production settings verified. No production POST was sent by the UI probe. Release success does not resolve the Hobby quota excess. Prior provider/lifecycle/local OBS evidence stays in [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md); genuine-role/broadcaster scope remains open. [080](verification/PLATFORM_REMEDIATION-20261017.md)/[081](verification/DIAGNOSTIC_RETENTION-20261017.md) remain historical topic evidence.
+Current releaseecaa940f: [085](verification/COMPANION_DIRECT_HOME-20261017.md)/[086](verification/COMPANION_HABITS_RELEASE-20261017.md), final fixture build `FjBCgLBfH0mm62aMkRKPn`, unit1,933/1,933·rendered33/33+native race repeat5/5·build/typecheck/lint PASS; independent source/render review blocking0. [Remote quality39006074013](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39006074013) all PASS. Vercel success and actual API full SHA/public clock/warm204/anonymous developer401/fixture nonexposure verified. Actual production studio settings shows the new copy and centered card; no schedule/preferences/reset mutation. UI activity transport was not instrumented. Release success does not resolve the Hobby quota excess. Prior provider/lifecycle/local OBS evidence stays in [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md); genuine-role/RLS/broadcaster scope remains separate. [080](verification/PLATFORM_REMEDIATION-20261017.md)/[081](verification/DIAGNOSTIC_RETENTION-20261017.md) remain historical topic evidence.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

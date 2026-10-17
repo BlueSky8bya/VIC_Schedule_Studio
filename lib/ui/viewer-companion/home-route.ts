@@ -81,10 +81,14 @@ export function planCompanionHomeReturn(brain: CompanionBrain, world: CompanionW
   const home = world.platforms.find(p => p.id === "companion-home" && valid(p));
   if (!home) return { state: "missing" };
   const profile = getCompanionBehaviorProfile(prefs, brain.habits);
+  const dog = prefs.animalMode === "dog", cat = prefs.animalMode === "cat";
+  const speed = profile.walkSpeed * (dog ? 1.8 : cat ? 1 : 1.2);
   const move = (step: HomeRouteStep): CompanionHomePlan => ({ state: "travel", action: {
-    kind: step.kind, target: step.kind === "walk" ? { ...step.target, x: world.x + Math.max(-180, Math.min(180, step.target.x - world.x)) } : step.target,
-    duration: step.kind === "walk" ? Math.max(400, Math.min(180, Math.abs(step.target.x - world.x)) / profile.walkSpeed * 850) : 950,
-    ...(step.kind === "walk" ? { pace: "amble" as const } : step.jumpHeight ? { jumpHeight: step.jumpHeight } : {}), direction: step.target.x < world.x ? -1 : 1,
+    // Each measured interval is already clear for the complete body. Finish
+    // that one span continuously; layout delivery still revalidates its ends.
+    kind: step.kind, target: step.target,
+    duration: step.kind === "walk" ? Math.max(280, Math.abs(step.target.x - world.x) / speed * 1000) : 950,
+    ...(step.kind === "walk" ? { pace: dog ? "scoot" as const : "amble" as const } : step.jumpHeight ? { jumpHeight: step.jumpHeight } : {}), direction: step.target.x < world.x ? -1 : 1,
   } });
   const target = { x: platformLandingX(home, home.x + home.width / 2), y: home.y, platformId: home.id };
   const route = shortestCompanionHomeRoute(world, target, world.platforms, prefs.jump);

@@ -1,6 +1,6 @@
 # 빅타민 실제 경로 귀가·빈 바닥 도약
 
-Status: Locally verified; included in the later owner-authorized086 release, production verification pending.
+Status: Completed — included in owner-authorized086 releaseecaa940f, deployed and verified. [Release evidence](../verification/COMPANION_HABITS_RELEASE-20261017.md#운영-배포).
 
 소유자 정정: 084의 임시 발판을 제거하고 가까운 실제 경로로 귀가한다. 084의 보조 발판 생성·표시/BFS 우선 조항만 이 계획으로 대체한다. 습관 설명·공유 구현·명시 호출/자동 회복·사용자 방해 우선권은 유지한다.
 
