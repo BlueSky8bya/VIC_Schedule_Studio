@@ -1,6 +1,6 @@
 # Fluid·숨바꼭질 꺼내기 — 2026-10-17
 
-Status: Local implementation verified; independent integration review and production deployment remain. [PLAN-083](../plans/PLAN-20261017-083-fluid-and-hide-extraction.md).
+Status: Deployed99ee2a76 and verified on2026-10-17. Quota follow-up remains; no independent reviewer was used. [PLAN-083](../plans/PLAN-20261017-083-fluid-and-hide-extraction.md).
 
 ## Vercel 실제 관측
 
@@ -28,3 +28,5 @@ Status: Local implementation verified; independent integration review and produc
 2026-10-17 소유자가 이 별도 대화에서 배포를 승인했다. 배포 전 현재 main23d3a0a9와 변경 범위를 대조하고 전체 unit1,925/1,925 PASS(201파일), 최종084 build/typecheck/lint/rendered9의 동일 소스를 확인했다. 새 서버/DB·요금 설정 변경과 사용자 art/preview/.vscode는 제외한다. 별도 리뷰어는 이 side 대화의 subagent 금지로 사용하지 않았으며, 자체 코드 대조와 자동/원격 검증을 독립 리뷰어의 PASS로 표시하지 않는다.
 
 실제 Vercel UI의 Hobby 플랜·Last30Days 표시에서 CPU6h46m, Memory461.3GB-Hrs를 확인했다. 표시 구간은 `Sep16 오후10:00–Oct16 오후10:00`이며 이를 다른 기간의118회/오류0%와 같은 지표로 계산하지 않는다. 공식 [계량 규칙](https://vercel.com/docs/functions/usage-and-pricing)은 CPU를 실제 계산 시간, memory를 할당GB×요청을 처리하는 인스턴스 시간으로 정의한다. CPU는 외부 I/O 대기 중 계량을 멈추지만 memory는 계속된다. 4h/360GB-Hrs는 Hobby 포함량이며 초과는 아직 해소되지 않았다. [Hobby 정책](https://vercel.com/docs/plans/hobby)에 따르면 초과 시 기능 사용이 제한될 수 있다. 기존 누적은 최적화·재배포로 초기화되지 않는다. 유료 전환/한도 변경은 하지 않았다.
+
+운영 커밋 `99ee2a762ecf0ccf51e6c7383f220b9e4b8c7f4f` main push. [Vercel](https://vercel.com/bluesky-s-project3/vic-schedule-studio/p5Vww2JBguwBDfvRTrMMR96ZVCNf) success, [원격 quality39001831268](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39001831268) 모든 단계 PASS(unit/SQL5/harness/실제 font build/typecheck/lint). 운영 API가 동일 전체 SHA를 반환했다. 익명 public clock200/warm204/developer presence401, POST-only activity의 GET405와 fixture streamed404 비노출을 확인했다. 실제 설정창의 새 습관 설명·단일 빅타민/귀가 DOM도 확인했고 UI 검사 POST는 모두 intercept했다. 원본은 ignored `.scratch-pw/companion-083084-production.json`/`companion-083084-production-settings.png`. 이 배포는 서버 비용 정책을 추가 변경하지 않았으며 무료 포함량 초과 해소를 뜻하지 않는다.

@@ -1,8 +1,30 @@
 import { describe, expect, it } from "vitest";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
-import { companionViewportFloorAbove, firstCompanionSupportBelow, nearestVerticalCompanionSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { companionViewportFloorAbove, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor } from "@/lib/ui/viewer-companion/support-landing";
 
 const span = (id: string, x: number, y: number, width: number, kind: Platform["kind"] = "card"): Platform => ({ id, x, y, width, kind });
+
+describe("explicit drop recovery from an occluded floor gap", () => {
+  it("slides onto the nearest real floor edge without changing vertical ray helpers", () => {
+    const left = span("viewport-floor", 100, 940, 20, "floor"), right = span("viewport-floor-1", 160, 940, 20, "floor");
+    const point = { x: 148, y: 980 };
+    expect(firstCompanionSupportBelow(point, [left, right])).toBeUndefined();
+    expect(companionViewportFloorAbove(point, [left, right])).toBeUndefined();
+    expect(recoverCompanionDropAtViewportFloor(point, [left, right])).toEqual({ platform: right, x: 160 });
+  });
+  it("rejects home/card/lookalike floors and corrupt or empty geometry", () => {
+    const candidates = [span("companion-home-floor", 0, 900, 1000, "floor"), span("viewport-floor-lookalike", 0, 900, 1000, "floor"), span("viewport-floor", 0, 900, 1000, "card"), span("viewport-floor-1", NaN, 900, 100, "floor"), span("viewport-floor-2", 0, 900, -1, "floor")];
+    expect(recoverCompanionDropAtViewportFloor({ x: 500, y: 980 }, candidates)).toBeUndefined();
+    expect(recoverCompanionDropAtViewportFloor({ x: NaN, y: 980 }, [])).toBeUndefined();
+    expect(recoverCompanionDropAtViewportFloor({ x: 500, y: 980 }, [])).toBeUndefined();
+  });
+  it("is deterministic and never mutates the actual safe fragments", () => {
+    const left = Object.freeze(span("viewport-floor", 100, 940, 20, "floor")), right = Object.freeze(span("viewport-floor-1", 160, 940, 20, "floor"));
+    const point = Object.freeze({ x: 140, y: 980 });
+    for (const candidates of [Object.freeze([left, right]), Object.freeze([right, left])]) expect(recoverCompanionDropAtViewportFloor(point, candidates)).toEqual({ platform: left, x: 120 });
+    expect(recoverCompanionDropAtViewportFloor({ x: 110, y: 400 }, [left])).toEqual({ platform: left, x: 110 });
+  });
+});
 
 describe("deliberate first-contact landing", () => {
   it("hits the first lower card instead of the closest upper line or an early floor entry", () => {

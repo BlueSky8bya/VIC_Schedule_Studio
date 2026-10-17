@@ -1,13 +1,26 @@
 import { normalizeCompanionHabits } from "./habits";
 
+export type CompanionHabitDescription = {
+  key: "sociability" | "playfulness" | "confidence";
+  label: string;
+  description: string;
+};
+
+export const COMPANION_HABITS_EMPTY = "아직 뚜렷한 습관은 없어요.";
+
 /** Describe the same three bounded motivations used by the behavior profile.
  * No inferred human history, care debt, identity or new persisted fields. */
-export function companionHabitSummary(value: unknown): string {
+export function companionHabitDescriptions(value: unknown): CompanionHabitDescription[] {
   const habits = normalizeCompanionHabits(value), threshold = .12;
-  const descriptions = [
-    habits.sociability >= threshold ? "손길과 가까이 다가가는 걸 좋아해요" : habits.sociability <= -threshold ? "혼자 노는 시간을 조금 더 좋아해요" : "",
-    habits.playfulness >= threshold ? "장난과 탐험을 자주 하고 싶어 해요" : habits.playfulness <= -threshold ? "천천히 둘러보며 쉬는 쪽을 좋아해요" : "",
-    habits.confidence >= threshold ? "새로운 곳에도 조금 더 씩씩하게 다가가요" : habits.confidence <= -threshold ? "낯선 곳에서는 잠깐 살펴보고 움직여요" : "",
-  ].filter(Boolean);
-  return descriptions.length ? `${descriptions.join(". ")}.` : "아직 뚜렷하게 배운 습관은 없어요. 함께 지내며 조금씩 달라져요.";
+  const descriptions: CompanionHabitDescription[] = [
+    { key: "sociability", label: "교감", description: habits.sociability >= threshold ? "쓰다듬기와 곁에 있기" : habits.sociability <= -threshold ? "혼자 노는 시간" : "" },
+    { key: "playfulness", label: "놀이", description: habits.playfulness >= threshold ? "장난치고 탐험하기" : habits.playfulness <= -threshold ? "느긋하게 쉬엄쉬엄" : "" },
+    { key: "confidence", label: "새로운 곳", description: habits.confidence >= threshold ? "낯선 곳도 씩씩하게" : habits.confidence <= -threshold ? "먼저 살피고 천천히" : "" },
+  ];
+  return descriptions.filter(item => item.description);
+}
+
+export function companionHabitSummary(value: unknown): string {
+  const descriptions = companionHabitDescriptions(value);
+  return descriptions.length ? descriptions.map(item => item.description).join(" · ") : COMPANION_HABITS_EMPTY;
 }

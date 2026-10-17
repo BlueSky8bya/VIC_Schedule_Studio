@@ -307,7 +307,62 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   font-size: var(--text-label, 12.5px);
   line-height: 1.45;
 }
-.rhh-habit-summary { padding-bottom: 12px; }
+/* The learned description is actual settings content, not a muted footnote.
+   The same tokens and markup serve viewer, studio and preview. */
+.rhh-habit-card {
+  container: rhh-habits / inline-size;
+  margin-top: 12px;
+  border: 1px solid var(--line, #ece0c9);
+  border-radius: var(--r-md);
+  background: rgb(var(--glass-panel, 255 253 246) / 92%);
+  padding: 14px;
+  color: var(--ink, #23262e);
+  font-size: var(--text-body, 13.5px);
+  line-height: 1.6;
+}
+.rhh-habit-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rhh-habit-head h3 { margin: 0; font: inherit; }
+.rhh-habit-intro { margin: 10px 0 16px; color: var(--ink-soft, #3b4255); text-align: center; text-wrap: balance; }
+.rhh-habit-list {
+  display: grid;
+  grid-template-columns: repeat(var(--habit-count), minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--line, #ece0c9);
+}
+.rhh-habit-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px 4px;
+  text-align: center;
+}
+.rhh-habit-item + .rhh-habit-item { border-left: 1px solid var(--line, #ece0c9); }
+.rhh-habit-item dt { color: var(--ink-soft, #3b4255); font-weight: 600; }
+.rhh-habit-item dd { margin: 0; word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; font-weight: 500; }
+.rhh-habit-empty { margin: 0; border-top: 1px solid var(--line, #ece0c9); padding-top: 16px; text-align: center; }
+.rhh-habit-paused {
+  margin: 14px 0 0;
+  border-top: 1px solid var(--line, #ece0c9);
+  padding-top: 12px;
+  color: var(--ink-soft, #3b4255);
+  text-align: center;
+  text-wrap: balance;
+}
+.rhh-habit-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+@container rhh-habits (max-width: 360px) {
+  .rhh-habit-list { grid-template-columns: minmax(0, 1fr); }
+  .rhh-habit-item { gap: 4px; padding: 12px 0; }
+  .rhh-habit-item + .rhh-habit-item { border-left: 0; border-top: 1px solid var(--line, #ece0c9); }
+}
 .rhh-ico {
   display: inline-grid;
   flex: none;

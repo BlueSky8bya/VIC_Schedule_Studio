@@ -7,7 +7,9 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current: companion work listed below continues independently. Operations follow-up is the Free-plan full-recovery path, same-period cost comparison and genuine-role/broadcaster evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). General cleanup/bulk UPDATE/paid-plan or permission changes remain unauthorized. Preserve user art/preview work.
+Companion086 refinement/release is authorized: shorten habit copy, balance the shared settings layout and deploy with the locally verified085 direct-home/086 fast-release fixes. Production remains99ee2a76 until the deployed revision is checked. Preserve user art. [085](verification/COMPANION_DIRECT_HOME-20261017.md), [086](verification/COMPANION_HABITS_RELEASE-20261017.md).
+
+Current: operations follow-up is the Vercel Hobby quota excess, Free-plan full-recovery path, same-period cost comparison and genuine-role/broadcaster evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). General cleanup/bulk UPDATE/paid-plan or permission changes remain unauthorized. Preserve user art/preview work.
 
 Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, owner-only private content, Google+passcode/session binding, KST and serial writes remain mandatory. Companion defaults ON only for PC without saved choice; explicit choices persist. Mobile companion stays excluded. Actual OBS hardware/real-session/provider evidence stays distinct from fixtures.
 
@@ -15,8 +17,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| PLAN-084 | Deployment approved | Owner authorized release; unit1925/rendered9/build verified, production SHA/UI verification next | [Record](verification/COMPANION_HOME_ROUTE-20261017.md) |
-| PLAN-083 | Deployment approved | Include verified extraction/hide cue; quota remains exceeded on Hobby and is separate from release success | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md) |
+| COMPANION-086 | In progress | Refine habit copy/balance, verify combined085/086, deploy and check actual SHA | [Evidence](verification/COMPANION_HABITS_RELEASE-20261017.md) |
+| OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
 | ART-PINE-PILOT | Awaiting Owner | Owner selects reference PNGs to remove; freeze replacement run only afterward | [Pine handoff](../ambient/HANDOFF-20260908-pine.md) |
@@ -35,7 +37,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
-1. OPS-DB-QUOTA: compare post-release route/RPC/cost with the same period/denominator; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
+1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
 2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
 4. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
@@ -43,6 +45,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md): isolated build `RG5zhm6oK09zKo0-1ZaCq`, unit1,913/1,913·SQL5·HTTP6·lifecycle20·typecheck/lint/build PASS. Compound first4 PASS/1 FAIL; unchanged viewer repeat1 PASS. Actual local1080p60/NVENC recording30min completed, render/encoding lag2frames each. Provider Free/Nano quota within bounds;0152 applied preserving permissions, warnings36→35. Release23d3a0a9 Vercel success and actual API SHA/warm204/anonymous401 verified; [remote quality39000651651](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39000651651) all PASS. Existing real developer aggregate allowed; full genuine-role/broadcaster scope remains open. Prior [080](verification/PLATFORM_REMEDIATION-20261017.md)/[081](verification/DIAGNOSTIC_RETENTION-20261017.md) evidence stays in topic records.
+Local [086](verification/COMPANION_HABITS_RELEASE-20261017.md) preserves085: final build `FjBCgLBfH0mm62aMkRKPn`, unit1,933/1,933·rendered33/33+native race repeat5/5·build/typecheck/lint PASS. Shared habit copy/balance and fast release/scroll/compact-home request recovery verified; independent review blocking0. Owner-authorized commit/push/deployed-SHA check is next. Genuine-role/OBS-device scope remains separate.
+
+Current release99ee2a76: [083](verification/FLUID_HIDE_EXTRACTION-20261017.md)/[084](verification/COMPANION_HOME_ROUTE-20261017.md), unit1,925/1,925·isolated rendered9·build/typecheck/lint PASS; [remote quality39001831268](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39001831268) all PASS. Vercel Ready and actual API SHA/public clock/warm204/developer401/fixture nonexposure plus anonymous production settings verified. No production POST was sent by the UI probe. Release success does not resolve the Hobby quota excess. Prior provider/lifecycle/local OBS evidence stays in [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md); genuine-role/broadcaster scope remains open. [080](verification/PLATFORM_REMEDIATION-20261017.md)/[081](verification/DIAGNOSTIC_RETENTION-20261017.md) remain historical topic evidence.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

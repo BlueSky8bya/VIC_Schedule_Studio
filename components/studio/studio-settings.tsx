@@ -28,7 +28,7 @@ import { Clock3 } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { loadCompanionCare, resetCompanionHabits, subscribeCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
-import { companionHabitSummary } from "@/lib/ui/viewer-companion/habit-summary";
+import { companionHabitDescriptions, COMPANION_HABITS_EMPTY } from "@/lib/ui/viewer-companion/habit-summary";
 import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
 
@@ -261,6 +261,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
     return subscribeCompanionHabits(setHabits);
   }, []);
   const id = useId();
+  const habitDescriptions = companionHabitDescriptions(habits);
   const nav = useRef<HTMLDivElement>(null);
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
     <div className="role-help-haptics" key={key}>
@@ -331,15 +332,20 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
           <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
-        <div className="role-help-haptics" aria-describedby={`${id}-habits`}>
-          <RowLabel icon={<Undo2 size={15} />} tone="leaf">배운 습관</RowLabel>
+      </div>
+      <section aria-labelledby={`${id}-habits-title`} className="rhh-habit-card">
+        <div className="rhh-habit-head">
+          <h3 id={`${id}-habits-title`}><RowLabel icon={<BookA size={15} />} tone="leaf">배운 습관</RowLabel></h3>
+        </div>
+        <p className="rhh-habit-intro">쓰다듬기·밥주기·놀이로 달라지는 취향</p>
+        {habitDescriptions.length ? <dl className="rhh-habit-list" style={{ "--habit-count": habitDescriptions.length } as CSSProperties}>
+          {habitDescriptions.map(item => <div className="rhh-habit-item" key={item.key}><dt>{item.label}</dt><dd>{item.description}</dd></div>)}
+        </dl> : <p className="rhh-habit-empty">{COMPANION_HABITS_EMPTY}</p>}
+        {!preferences.learnFromYou && <p className="rhh-habit-paused">배우기 끔 · 습관은 보관, 행동은 고른 성격대로</p>}
+        <div className="rhh-habit-actions">
           <button aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); hapticTick(); playSfx("tab"); }} type="button">초기화</button>
         </div>
-        <p className="rhh-group-foot rhh-habit-summary" id={`${id}-habits`}>
-          {companionHabitSummary(habits)}{!preferences.learnFromYou ? " 지금은 배움을 쉬고, 이 습관은 기억해 두고 있어요." : ""}
-        </p>
-      </div>
-      <p className="rhh-group-foot">고른 성격을 바탕으로 함께 지낸 경험이 조금씩 쌓여요. 꺼 두면 배운 습관을 보존하고 고른 성격으로 행동해요.</p>
+      </section>
     </div>
   </>;
 }

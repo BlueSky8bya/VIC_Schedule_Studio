@@ -1,8 +1,5 @@
 .vc-companion { position: fixed; left: 0; top: 0; z-index: 75; width: var(--vc-size, 92px); height: var(--vc-size, 92px); pointer-events: none; will-change: transform; --vc-column: 0%; --vc-row: 0%; }
 .vc-companion[hidden] { display: none; }
-.vc-home-route { position: fixed; inset: 0; z-index: 74; pointer-events: none; }
-.vc-home-route > span { position: absolute; left: 0; top: 0; height: 6px; border-radius: 50%; background: #eadcb6; box-shadow: 0 2px 0 #c8b48a55, inset 0 2px 0 #fff7df; opacity: .85; }
-html[data-theme="dark"] .vc-home-route > span { background: #948069; box-shadow: 0 2px 0 #201c2655, inset 0 2px 0 #d1b894; }
 /* The room remains behind the pet. Only its matching static U-shaped rim
    sits above the body, so lifting naturally clears the fabric without hiding
    the sofa or changing the native cushion/food hit targets. */

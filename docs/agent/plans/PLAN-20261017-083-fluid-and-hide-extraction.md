@@ -1,6 +1,6 @@
 # Fluid 비용 확인·숨바꼭질 꺼내기 연속성
 
-Status: Deployment approved — local checks complete; release result pending.
+Status: Completed — owner-approved release99ee2a76 deployed and verified; quota follow-up remains separate.
 
 소유자 요청: Fluid Active CPU6h37m/4h와 Provisioned Memory460.2/360GB-Hrs를 확인해 최적화하고, 편집 일정 속 축소 빅타민을 꺼낼 때 원래 크기로 연속 복원하며 숨은 일정에 알아볼 수 있는 불규칙 움직임을 준다.
 

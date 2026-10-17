@@ -582,6 +582,23 @@ describe("companion geometry anchor subscription", () => {
     expect(onChange).toHaveBeenCalledTimes(2);
   });
 
+  it("acknowledges one explicit validation even when geometry is unchanged, then resumes suppression", () => {
+    const fixture = geometryFixture(), changed = vi.fn();
+    const subscription = observeCompanionPlatforms(fixture.root, changed); fixture.flush();
+    changed.mockClear();
+    subscription.revalidate(); fixture.advance(120);
+    expect(changed).not.toHaveBeenCalled();
+    subscription.revalidate(true); subscription.revalidate(true);
+    expect(changed).not.toHaveBeenCalled();
+    expect(fixture.timers.size).toBe(1);
+    fixture.advance(120);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed.mock.calls[0][1]).toBe(true);
+    subscription.revalidate(); fixture.advance(120);
+    expect(changed).toHaveBeenCalledTimes(1);
+    subscription();
+  });
+
   it("offers an inert callable follow handle when a capture has no browsing window", () => {
     const subscription = observeCompanionPlatforms({ ownerDocument: { defaultView: null } } as unknown as HTMLElement, vi.fn());
     expect(subscription.follow(["anything"])).toEqual([]); expect(() => subscription.revalidate()).not.toThrow(); expect(() => subscription()).not.toThrow();

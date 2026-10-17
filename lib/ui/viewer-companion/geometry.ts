@@ -2,7 +2,6 @@ import type { Platform } from "./brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET } from "./food";
 import { companionSofaSeat } from "./sofa";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "./panel-play";
-import { createCompanionHomeSteps } from "./home-route";
 
 const STUDIO_CARD_SELECTOR = "[data-companion-event='ordinary'][data-eventid]";
 const STUDIO_BAND_SELECTOR = "[data-companion-band='public'][data-supportid]";
@@ -32,7 +31,7 @@ export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; serial:
 export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity; onInvalidate?: () => void };
 export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number };
 export type CompanionGeometryAnchor = { element?: Element; left: number; top: number };
-export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined; landings: (size?: number) => readonly Platform[]; revalidate: () => void };
+export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined; landings: (size?: number) => readonly Platform[]; revalidate: (notifyUnchanged?: boolean) => void };
 
 /** A renderer can retain anonymous anchor identity while its observers sleep. */
 export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
@@ -115,7 +114,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   let anchors = new Map<string, AnchorSnapshot>();
   let followedIds: string[] = [];
   const retainedIds = new Set<string>();
-  let disposed = false;
+  let disposed = false, notifyNextMeasurement = false;
   let frame = 0;
   let timer = 0;
   let pendingValidationOnly = false;
@@ -132,9 +131,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     frame = 0;
     if (disposed) return;
     const validationOnly = pendingValidationOnly; pendingValidationOnly = false;
+    const notifyUnchanged = notifyNextMeasurement; notifyNextMeasurement = false;
     if (!root.isConnected) {
       anchors.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = [];
-      if (previous !== "[]") { previous = "[]"; onChange([], validationOnly); }
+      if (previous !== "[]" || notifyUnchanged) { previous = "[]"; onChange([], validationOnly); }
       return;
     }
     measuredAt = win!.performance.now();
@@ -337,13 +337,6 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (rect.height > 0 && y >= clip.top && y < clip.bottom) rememberFood(COMPANION_HOME_FLOOR_FOOD,
           safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor", homeFloor, rect);
       }
-      const seat = platforms.find(p => p.id === "companion-home");
-      if (seat && houseBounds) {
-        for (const step of createCompanionHomeSteps(houseBounds, seat.x + seat.width / 2, floorY, size,
-          source => safeCompanionSurfaces(source, ordinaryObstacles, size, viewport, footprint))) {
-          if (platforms.length < MAX_PLATFORMS - 24) remember(step);
-        }
-      }
       // A dense calendar cannot spend the whole bounded food snapshot before
       // its real house floor is published. First-contact selection still sorts
       // by physical height rather than this list order.
@@ -452,7 +445,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     foodLandingSnapshot = foodLandings.map(copyPlatform);
     // Suppress equal layout deliveries, including a countdown's text mutation.
     const signature = JSON.stringify([platforms, landings, foodLandings]);
-    if (signature !== previous) { previous = signature; onChange(platforms, validationOnly); }
+    if (signature !== previous || notifyUnchanged) { previous = signature; onChange(platforms, validationOnly); }
   }
 
   function schedule() {
@@ -527,7 +520,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   return Object.assign(dispose, {
     // Reuse the existing120ms queue. The finite renderer owns its lifetime;
     // this method performs no immediate reads, invalidation or autonomous loop.
-    revalidate: () => enqueue(true),
+    // An explicit command may need one completion even when no safe support
+    // appeared. Ordinary finite follow validation still suppresses equal data.
+    revalidate: (notifyUnchanged = false) => { notifyNextMeasurement ||= notifyUnchanged; enqueue(true); },
     // Fresh baseline copies, paired with anchor(). Only the cached food32 tier
     // differs from the configured pet size; no caller triggers a new scan.
     // Callers own deliberate release rebasing; this performs no layout work.

@@ -35,6 +35,25 @@ export function companionViewportFloorAbove(point: Readonly<{ x: number; y: numb
   return nearest;
 }
 
+/** After an explicit drop misses every vertical contact, slide out of a
+ * protected control's gap onto the closest real viewport-floor fragment.
+ * Passive scroll recovery keeps its same-column rule; no floor is invented. */
+export function recoverCompanionDropAtViewportFloor(point: Readonly<{ x: number; y: number }>, platforms: readonly Platform[]): { platform: Platform; x: number } | undefined {
+  if (![point.x, point.y].every(Number.isFinite)) return undefined;
+  let best: { platform: Platform; x: number } | undefined, distance = Infinity;
+  for (const platform of platforms) {
+    const end = platform.x + platform.width;
+    if (platform.kind !== "floor" || !/^viewport-floor(?:-\d+)?$/.test(platform.id)
+      || ![platform.x, platform.y, platform.width, end].every(Number.isFinite) || platform.width <= 0) continue;
+    const x = Math.max(platform.x, Math.min(end, point.x));
+    const next = Math.hypot(x - point.x, platform.y - point.y);
+    if (Number.isFinite(next) && (next < distance || next === distance && (!best || platform.id < best.platform.id))) {
+      best = { platform, x }; distance = next;
+    }
+  }
+  return best;
+}
+
 /** Geometry already supplies safe character-centre intervals. Passive landing
  * preserves the current x, including at a safe edge, rather than applying the
  * brain's walking inset or choosing a horizontally distant floor. The caller

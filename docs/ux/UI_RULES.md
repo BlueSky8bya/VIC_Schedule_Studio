@@ -4,6 +4,8 @@ Updated: 2026-09-09. Read only sections affected by the task. Shared security, K
 
 ## Shared companion follow-up (2026-10-16)
 
+귀가 경로 정정(2026-10-17 소유자 요청): [PLAN-085](../agent/plans/PLAN-20261017-085-companion-direct-home.md)는084의 임시 보조 발판 생성/표시만 대체한다. 공중의 숨은 발판도 사용하지 않는다. 실제 구간의 이동 거리로 가까운 경로를 구하고, 보통 점프로 연결되지 않는 바닥은 집 가까운 실제 이륙점에서 웅크린 뒤 강하게 도약한다. 카드 상단에 직접 놓인 경우 현재 출발점만 허용하며 그 상단을 가로질러 걷지 않는다. 공유 구현·직접 입력 우선·감소 동작·모바일 제외는 유지한다. [검증](../agent/verification/COMPANION_DIRECT_HOME-20261017.md).
+
 방송 병행/기본값 정정(2026-10-17 소유자 요청): [PLAN-076](../agent/plans/PLAN-20261017-076-companion-broadcast-pipeline.md)의 기본ON이 아래 이전 계획들의 defaultOFF만 대체한다. 저장된 선택이 없는 PC에서는 ON, 유효한 명시 ON/OFF는 이후 그대로 유지한다. 사용자 설정 epoch/세부 취향은 초기화하지 않는다. 저장값을 읽기 전 hydration seed는 닫아 OFF 사용자에게 일시 mount/이미지 요청이 생기지 않게 한다. 모바일 제외·감소 동작/gfx·표시 크기/아트·창/최초공개/직접 입력 권한은 유지한다. 방송 최적화는 같은 실제 decoded 이미지 표시/중복 프레임 작업 제거로 검증하며 실제 OBS 장비 측정과 구분한다.
 
 [PLAN-068](../agent/plans/PLAN-20261016-068-companion-character-and-play.md): 종·성향·걸음은 공유 로컬 profile에서 독립 합성하고 일반 행동/먹이/다단계 이동에 같이 반영한다. 기본 빅타민은 무사지 폼폼 토끼의 활발하고 덤벙거리는 성격이다. 소유자의 이번 짧은 클릭=톡 치기 요청이 기존 클릭 쓰다듬기만 대체한다. hover 왕복/Enter 쓰다듬기·즉시 drag·pause/최초공개 우선순위는 유지한다. 새 달리기/구르기/미끄러짐/눈치/감정은 유한 clip이며 공개 일반 카드 비틀림·음식 튀기는 연출은 실제 일정/식사/하트 데이터를 바꾸지 않는다. 음식은 아래 일정이 없어도 보호된 바닥까지 연속 낙하하며 소파에는 오르지 않는다. [검증](../agent/verification/COMPANION_CHARACTER_PLAY-20261016.md).

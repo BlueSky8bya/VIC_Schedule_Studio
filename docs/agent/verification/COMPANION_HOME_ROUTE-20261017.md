@@ -1,6 +1,6 @@
 # 빅타민 귀가·습관 요약 검증 — 2026-10-17
 
-Status: Local implementation verified. [PLAN-084](../plans/PLAN-20261017-084-companion-home-route.md). Commit/push/production deployment and independent integration review remain.
+Status: Deployed99ee2a76 and verified on2026-10-17. [PLAN-084](../plans/PLAN-20261017-084-companion-home-route.md). No independent reviewer was used.
 
 ## 동작
 
@@ -25,3 +25,7 @@ Status: Local implementation verified. [PLAN-084](../plans/PLAN-20261017-084-com
 ## 배포 후속
 
 2026-10-17 소유자가 배포를 승인했다. 현재 main23d3a0a9 기준 전체 unit1,925/1,925 PASS(201파일). 최종 제품7파일의 SHA256이 검증한 격리 build 입력과 일치하며084 실제 상호작용9/9와 build/typecheck/lint 증거를 유지한다.083의 숨기/추출 변경도 함께 배포한다. 별도 리뷰어는 사용하지 않았으며 자체 소스 대조/자동 검사를 독립 리뷰어의 승인이라고 보고하지 않는다. 운영 결과는 실제 배포 후 확인한다.
+
+배포 커밋99ee2a76 main push와 [Vercel success](https://vercel.com/bluesky-s-project3/vic-schedule-studio/p5Vww2JBguwBDfvRTrMMR96ZVCNf), [원격 quality39001831268 전체 PASS](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39001831268)를 확인했다. 실제 운영 API 전체 SHA가 일치했고 HTTP6개와 익명 설정창의 습관 설명/단일 빅타민·귀가 DOM을 검사했다. 개인 브라우저 설정/일정 데이터는 바꾸지 않았다. UI probe의 root POST1건은 익명 하트 복원용 server action이며 전송 전에 intercept했다. pageerror0, 전송된 POST0. 초기 probe는 POST-only `/api/activity`의 GET405를401로 잘못 기대했으며 실제 개발자 API `/api/developer/presence`의401과 구별해 수정했다. 첫 UI 검사도 실제 production의 root 복원 POST를 fixture처럼0건으로 기대해 실패했으며, 전부 차단됨과 허용된 경로/header를 단언하는 transport 검사로 정정했다. 원 실패 JSON을 보존했다.
+
+최종 배포 확인 기록은 로컬 문서에 남겼다. 제품 변경 없는 사후 기록만을 위해 추가 운영 빌드는 만들지 않았다. 공급자 계량/한도 상태는 [083 기록](FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정)에 분리했다.

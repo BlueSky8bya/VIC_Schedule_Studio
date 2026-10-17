@@ -1,6 +1,8 @@
 # 빅타민 귀가 경로·배운 습관 설명
 
-Status: Deployment approved — local checks complete; release result pending.
+Status: Completed — owner-approved release99ee2a76 deployed and verified.
+
+후속 정정: 임시 보조 발판/BFS 우선 조항은 소유자의 최신 요청에 따른 [085](PLAN-20261017-085-companion-direct-home.md)로 대체한다. 이 문서의 배포 결과는99ee2a76 당시 동작에 한정한다.
 
 소유자 요청: 소파 호출은 걷기와 짧은 점프로 연결하고, 일정이 적은 달의 바닥에서도 귀가하며, 설정에 현재 배운 습관을 짧게 설명한다.
 
