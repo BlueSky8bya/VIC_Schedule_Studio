@@ -1,3 +1,5 @@
 * text=auto eol=lf
 # Preserve the exact pre-compaction rule/state evidence across operating systems.
 docs/agent/archive/20261017-*-before-platform-remediation.snapshot.txt -text whitespace=cr-at-eol
+# Art receipts are byte-pinned evidence, including their native line endings.
+art-src/빅타민/동행/작업회차/20261018-큰눈통일/**/*.json -text whitespace=cr-at-eol

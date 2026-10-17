@@ -55,3 +55,5 @@ bounded 수정 fixture `LcJREgDD33Z4msKplBA3t`에서 새 native14/14 PASS. 낮�
 최종 native 회귀38개 중 첫 실행37 PASS/1 FAIL. 실패는 full/lite/full 품질 전환 뒤 먼 위치에서 소파 귀가를5초 locator 제한으로 검사한 항목이다. `data-home-journey`는 빈값 속성으로 유지됐으며 취소가 아니었다. 기존 committed-home의 거리 의존25초 계약으로 경로를 기록해 같은 빌드에서 재검사1/1 PASS: lite10,740.1ms/max8,491.5ms, 명령 누락0·hidden frame0, 실제 소파 발판 도착과 전경/스크롤 추종 확인. 제품 속도/경로·성격을 바꾸거나 시계를 조작하지 않았다. 첫 실패 원본은 release-native-attempt1, 재검사는 recall-native-sealed에 보존했다. 최신 harness는 해당 한 항목의 시간 예산과 read-only 경로 증거만 바꿨다. 다른37개 PASS는 같은 제품 빌드의 별도 범위로 유지한다.
 
 별도 controlled-clock 자연 숨바꼭질 자동 복귀1/1 PASS. 이 항목은 실제 OS focus/실시간 검사로 표현하지 않는다. 신규14개와 throw/run12·mobile8·frame pipeline4의 실제 native 총38개 경로가 확인됐다. fixture 외부 쓰기/페이지 오류0, 실제 저장/DB/RLS 시험은 하지 않았다. 운영 배포 SHA/UI 확인은 다음 단계다.
+
+배포 준비 중 git blob/working bytes 비교에서 신규 생성 영수증 등의 CRLF가 기본 LF 규칙으로 정규화되는 문제를 발견했다. 원화의 native SHA를 재작성하는 대신098회차 JSON에만 기존 snapshot과 같은 `-text whitespace=cr-at-eol` 예외를 둔다. 신규100파일의 index blob/raw byte가 전부 일치하는지 확인했다. 원화/512슬롯/제품 JS·CSS와 로컬 단위2,120·native38/controlled1에 사용한 파일 바이트는 바뀌지 않았다. 생성 영수증 원본과 실제 source pin을 플랫폼에 관계없이 보존한다. 후속 배포의 원격 단위/SQL/빌드 결과를 다시 확인한다.
