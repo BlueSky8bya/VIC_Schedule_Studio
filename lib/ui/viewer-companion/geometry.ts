@@ -395,13 +395,23 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       for (const surface of [{ selector: BAND_SELECTOR, kind: "card" as const, edge: "top" }, { selector: HEADER_SELECTOR, kind: "date" as const, edge: "bottom" }]) {
         for (const element of root.querySelectorAll<HTMLElement>(surface.selector)) {
           nextObserved.add(element);
-          if (platforms.length >= MAX_PLATFORMS || !visible(element) || !supportVisible(element) || studio && !element.matches(`${STUDIO_HEADER_SELECTOR},${STUDIO_BAND_SELECTOR}`)) continue;
+          if (platforms.length >= MAX_PLATFORMS && (surface.edge !== "top" || foodLandings.length >= MAX_PLATFORMS)
+            || !visible(element) || !supportVisible(element) || studio && !element.matches(`${STUDIO_HEADER_SELECTOR},${STUDIO_BAND_SELECTOR}`)) continue;
           const rect = measuredControls.get(element) ?? rectFor(element), clip = clipping(element.parentElement);
           const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
           const edge = surface.edge === "top" ? rect.top : rect.bottom;
           if (rect.width <= 0 || rect.height <= 0 || edge < clip.top || edge > clip.bottom || right <= x) continue;
           const id = `${idFor(element, surface.kind)}-${surface.edge === "top" ? "band" : "header"}`;
           addSurface(id, surface.kind, { x, y: edge - CLEARANCE, width: right - x }, element, rect);
+          if (surface.edge === "top" && foodLandings.length < MAX_PLATFORMS) {
+            // Public support/period ribbons have the same physical first edge
+            // as cards. Their own labels sit below this plane; nearby complete
+            // controls and opaque house ink still protect the native snack.
+            const dropObstacles = houseBounds ? [...controls, houseBounds] : controls;
+            const foodSpans = safeCompanionSurfaces({ x, y: edge - CLEARANCE, width: right - x }, dropObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT);
+            const contacts = unoccludedCompanionRects({ left: x, right, top: edge, bottom: edge + .5 }, houseBounds).map(part => ({ x: part.left, width: part.right - part.left }));
+            rememberFood(`${id}-food-top`, foodSpans, "card", element, rect, contacts);
+          }
         }
       }
       const cardPlatforms = new Map<HTMLElement, Platform[]>();

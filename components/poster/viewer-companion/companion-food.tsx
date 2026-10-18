@@ -3,7 +3,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { logActivity } from "@/lib/activity/client";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { createCompanionFoodGravity } from "@/lib/ui/viewer-companion/food-gravity";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
@@ -23,7 +23,7 @@ export type CompanionFoodControl = {
   nibble: (id?: string, progress?: number, mouth?: Point, facing?: -1 | 1) => void;
   sync: (platforms: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined, landings?: readonly Platform[]) => void;
   pause: (paused: boolean) => void;
-  jostle: (point: Point, radius: number) => void;
+  jostle: (point: Point, radius: number, strength?: number) => void;
   clear: () => void;
 };
 type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void; onLanded?: () => void };
@@ -32,7 +32,7 @@ type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
 type Jostle = { node: HTMLElement; animation: Animation };
 type HomeAnchor = "tray" | "floor";
-type FoodAttachment = { element?: Element; position: CompanionFoodAttachment; home?: HomeAnchor };
+type FoodAttachment = { element?: Element; position: CompanionFoodAttachment; home?: HomeAnchor; viewportFloor?: { x: number } };
 type AttachmentRead = { food: Food; bound?: FoodAttachment; rect?: DOMRect; controls?: readonly DOMRect[]; unavailable?: boolean };
 const homeSelector = (kind: HomeAnchor) => kind === "floor" ? ".vc-home .vc-home-floor" : ".vc-home .vc-dispenser-slot";
 const homeFoodId = (kind?: HomeAnchor) => kind === "floor" ? COMPANION_HOME_FLOOR_FOOD : undefined;
@@ -194,10 +194,10 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // Bind to the current origin once. A subsequent scroll reads only this
     // retained source, never applies a second baseline delta or picks a day.
     const position = attachCompanionFood(placed, scroll, origin);
-    attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}) }); visibility.current.set(food.id, true);
+    attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}), ...(isCompanionViewportFloorFoodSupport(placed.platformId) ? { viewportFloor: { x: point.x } } : {}) }); visibility.current.set(food.id, true);
     drops.current.delete(food.id); presentations.current.delete(food.id);
     const landing = available.find(support => support.id === placed.platformId);
-    const recoverAboveFloor = placed.y < point.y && /^viewport-floor-food(?:-\d+)?$/.test(placed.platformId ?? "");
+    const recoverAboveFloor = placed.y < point.y && isCompanionViewportFloorFoodSupport(placed.platformId);
     const gravity = createCompanionFoodGravity(point, placed, performance.now(), { ...(landing?.dropSurface ? { contactX: point.x } : {}), ...(recoverAboveFloor ? { recoverAboveFloor: true } : {}) });
     if (gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
       drops.current.set(food.id, gravity);
@@ -229,6 +229,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       let bound = attachments.current.get(food.id);
       if (food.id === selection.current && !bound?.home) return { food };
       if (!bound) { bound = { position: attachCompanionFood(food, scroll) }; attachments.current.set(food.id, bound); }
+      if (bound.viewportFloor) return { food, bound };
       if (bound.home && !bound.element?.isConnected) bound.element = document.querySelector<HTMLElement>(homeSelector(bound.home)) ?? undefined;
       if (bound.home && !bound.element) return { food, bound, unavailable: true };
       if (bound.element && !bound.element.isConnected) { bound.element = undefined; food = { ...food, platformId: undefined }; }
@@ -246,6 +247,16 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (!bound) return food;
       paintIds.add(food.id);
       if (unavailable) { unavailableIds.add(food.id); visibility.current.set(food.id, false); return food; }
+      if (bound.viewportFloor) {
+        const followed = followCompanionViewportFloorFood(food, bound.viewportFloor.x, platforms.current, viewport);
+        // A fully covered floor must not fabricate an unsafe span. Keep its
+        // last point/intended x for the next real geometry delivery instead.
+        if (!followed) { unavailableIds.add(food.id); visibility.current.set(food.id, false); return food; }
+        bound.position = attachCompanionFood(followed, scroll);
+        const shown = drops.current.has(food.id) ? presentations.current.get(food.id) ?? followed : followed;
+        visibility.current.set(food.id, shown.x >= -22 && shown.x <= viewport.width + 22 && shown.y >= -6 && shown.y <= viewport.height + 38);
+        return followed;
+      }
       let followed = followCompanionFood(bound.position, scroll, rect, bound.home === "tray" ? false : bound.home === "floor" ? "floor" : true);
       if (bound.home === "floor" && rect && bound.element) {
         const safe = receiveCompanionHomeFloorFood(followed.point, { x: followed.point.x, y: rect.top + rect.height - 2 }, rect, obstacles ?? [], true);
@@ -437,7 +448,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       followAttachments();
     },
     pause(next) { operating.current = enabled && !blocked && !next; setPaused(next); if (next) interrupt(); else followAttachments(); },
-    jostle(point, radius) {
+    jostle(point, radius, strength = 1) {
       if (!operating.current || document.hidden || reduced() || graphics.current === "off" || ![point.x, point.y, radius].every(Number.isFinite) || radius <= 0) return;
       // Cosmetic art only: the native food target, logical support, gravity
       // and eating eligibility keep their exact coordinates and ownership.
@@ -448,12 +459,12 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       for (const { food, distance } of nearby) {
         const node = nodes.current.get(food.id), art = node?.firstElementChild as HTMLElement | null;
         if (!node || !art?.animate) continue;
-        const height = 12 + 12 * (1 - distance / radius), rotation = food.x < point.x ? -6 : 6;
+        const { height, rotation, duration } = companionFoodJostle(distance, radius, food.x < point.x ? -1 : 1, strength)!;
         const animation = art.animate([
           { transform: "translate3d(0,0,0) rotate(0deg)" },
           { transform: `translate3d(0,${-height}px,0) rotate(${rotation}deg)`, offset: .45 },
           { transform: "translate3d(0,0,0) rotate(0deg)" },
-        ], { duration: 420, easing: "cubic-bezier(.2,.65,.35,1)" });
+        ], { duration, easing: "cubic-bezier(.2,.65,.35,1)" });
         jostles.current.set(food.id, { node, animation }); node.setAttribute("data-jostling", "");
         const done = () => { if (jostles.current.get(food.id)?.animation === animation) { jostles.current.delete(food.id); node.removeAttribute("data-jostling"); } };
         animation.onfinish = done; animation.oncancel = done;

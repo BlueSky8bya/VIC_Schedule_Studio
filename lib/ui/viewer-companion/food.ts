@@ -11,6 +11,9 @@ export const COMPANION_HOME_FLOOR_INSET = 6;
 export function isCompanionHomeFloorFoodSupport(id?: string): boolean {
   return /^companion-home-floor-food(?:-\d+)?$/.test(id ?? "");
 }
+export function isCompanionViewportFloorFoodSupport(id?: string): boolean {
+  return /^viewport-floor-food(?:-\d+)?$/.test(id ?? "");
+}
 /** The creature keeps its sofa support; every food path excludes that seat,
  * including old food-only snapshots and their anonymous split segments. */
 export function isCompanionFoodBedSupport(id?: string): boolean {
@@ -162,7 +165,7 @@ export function placeCompanionFood(food: CompanionFood, point: { x: number; y: n
     const nativeGrip = point.x >= -44 && point.x <= fallbackViewport.width + 44 && point.y >= -44 && point.y <= fallbackViewport.height + 44;
     let floor: Platform | undefined, floorX = point.x, distance = Infinity;
     for (const candidate of platforms) {
-      if (candidate.kind !== "floor" || !/^viewport-floor-food(?:-\d+)?$/.test(candidate.id)
+      if (candidate.kind !== "floor" || !isCompanionViewportFloorFoodSupport(candidate.id)
         || ![candidate.x, candidate.y, candidate.width, candidate.x + candidate.width].every(Number.isFinite)
         || candidate.width <= 0 || candidate.x < 0 || candidate.x + candidate.width > fallbackViewport.width
         || candidate.y < 0 || candidate.y > fallbackViewport.height) continue;
@@ -187,6 +190,28 @@ export function placeCompanionFood(food: CompanionFood, point: { x: number; y: n
     return { id: food.id, kind: food.kind, x: Math.max(24, Math.min(fallbackViewport.width - 24, point.x)), y: Math.max(point.y, fallbackViewport.height + 44) };
   }
   return { id: food.id, kind: food.kind, x: point.x, y: point.y };
+}
+
+/** A screen floor is fixed viewport geometry, unlike a card or room's DOM
+ * attachment. Reuse only its measured safe intervals after scrolling/reflow;
+ * retain the intended x separately so a temporary narrow width can regrow. */
+export function followCompanionViewportFloorFood(food: CompanionFood, intendedX: number, platforms: readonly CompanionFoodDropSupport[], viewport: Readonly<{ width: number; height: number }>): CompanionFood | undefined {
+  if (![intendedX, viewport.width, viewport.height].every(Number.isFinite) || viewport.width < 48 || viewport.height <= 0) return;
+  const point = { x: Math.max(24, Math.min(viewport.width - 24, intendedX)), y: viewport.height };
+  const current = platforms.filter(platform => isCompanionViewportFloorFoodSupport(platform.id) && platform.kind === "floor"
+    && [platform.x, platform.y, platform.width, platform.x + platform.width].every(Number.isFinite) && platform.width > 0
+    && platform.x >= 0 && platform.x + platform.width <= viewport.width
+    && platform.y >= viewport.height * .65 - 8 && platform.y <= viewport.height - 12);
+  const placed = placeCompanionFood(food, point, current, viewport);
+  return isCompanionViewportFloorFoodSupport(placed.platformId) ? placed : undefined;
+}
+
+/** Cosmetic arc only. It never changes the snack's support, held state or
+ * planner coordinates; stronger authored play reuses the same finite effect. */
+export function companionFoodJostle(distance: number, radius: number, direction: -1 | 1, strength = 1): { height: number; duration: number; rotation: number } | undefined {
+  if (![distance, radius].every(Number.isFinite) || radius <= 0 || distance < 0 || distance > radius) return;
+  const force = Number.isFinite(strength) ? Math.max(1, Math.min(3, strength)) : 1;
+  return { height: (12 + 12 * (1 - distance / radius)) * force, duration: force > 1 ? 650 : 420, rotation: direction * 6 };
 }
 
 export function reconcileCompanionFood(food: CompanionFood, platforms: readonly Platform[]): CompanionFood {

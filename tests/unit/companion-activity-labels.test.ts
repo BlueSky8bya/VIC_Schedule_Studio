@@ -15,7 +15,7 @@ const SETTINGS = [
 const ACTIONS = [
   "companion-home-open", "companion-home-close", "companion-home-fold", "companion-home-call",
   "companion-food-spawn", "companion-food-move", "companion-food-discard", "companion-food-clear",
-  "companion-pet", "companion-drag", "companion-throw", "companion-bonk", "companion-rest",
+  "companion-pet", "companion-drag", "companion-throw", "companion-shake", "companion-bonk", "companion-rest",
   "companion-find", "companion-extract", "companion-heart-clear", "companion-card-restore"
 ] as const;
 const COLLECTION = [
@@ -28,8 +28,8 @@ const COLLECTION = [
   ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 냠냠 도감"],
   ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 재롱"],
   ["companion-collection-inspect#moment", "빅타민 도감 항목 살펴보기 · 특별한 순간"],
-  ["companion-collection-page#prev", "빅타민 도감 넘기기 · 이전"],
-  ["companion-collection-page#next", "빅타민 도감 넘기기 · 다음"],
+  ["companion-collection-page#prev", "빅타민 도감·옷장 넘기기 · 이전"],
+  ["companion-collection-page#next", "빅타민 도감·옷장 넘기기 · 다음"],
   ["companion-sound-enabled#on", "빅타민 효과음 · 켜기"],
   ["companion-sound-volume", "빅타민 음량"],
   ["companion-sound-care#off", "빅타민 돌보기 소리 · 끄기"],

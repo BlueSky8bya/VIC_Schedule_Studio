@@ -112,7 +112,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
     { name: "포근한 휴식", icon: <Moon size={20} />, effect: !preferences.sleep ? "낮잠을 켜 주세요." : effectiveLife.comfort >= .6 ? "덜 피곤해도 집에서 쉬기도 해요." : "피곤하면 집에서 몸을 모아 쉬어요.", try: "집 쿠션으로 불러 보세요." },
     { name: "으쌰으쌰 응원", icon: <PartyPopper size={20} />, effect: !preferences.roam ? "돌아다니기를 켜 주세요." : effectiveLife.play >= .45 && effectiveLife.curiosity >= .4 ? "기운이 있으면 응원을 연습하기도 해요." : "응원 연습은 아직 뜸해요.", try: "넓고 안전한 자리에서 기다려 보세요." }
   ];
-  return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" {...spotlight}>
+  return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} {...spotlight}>
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>
       <span aria-hidden="true" className="rhh-seg-thumb" />
       {pages.map(item => <button aria-controls={`${id}-${item.key}-panel`} aria-selected={page === item.key} className={page === item.key ? "on" : ""} data-act="companion-profile-page" data-act-opt={item.key} data-profile-page={item.key} id={`${id}-${item.key}-tab`} key={item.key} onClick={() => changePage(item.key)} onKeyDown={onTabKey} role="tab" tabIndex={page === item.key ? 0 : -1} type="button"><item.icon aria-hidden="true" size={17} />{item.label}</button>)}

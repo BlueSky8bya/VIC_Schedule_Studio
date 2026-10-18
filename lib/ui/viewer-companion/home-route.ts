@@ -19,8 +19,8 @@ export function shortestCompanionHomeRoute(origin: Point, target: Point, platfor
   if (!start || !goal || ![origin.x, origin.y, target.x, target.y].every(Number.isFinite)
     || Math.abs(start.y - origin.y) > 18 || origin.x < start.x || origin.x > start.x + start.width
     || Math.abs(goal.y - target.y) > 18) return null;
-  const available = [...new Map([start, goal, ...platforms.filter(valid)].map(p => [p.id, p])).values()].slice(0, COMPANION_ROUTE_LIMITS.maxNodes);
-  const springTargets = new Set(available.filter(homeFloor).map(p => p.id));
+  const available = [...new Map([start, goal, ...platforms.filter(p => valid(p) && homeFloor(p)), ...platforms.filter(valid)].map(p => [p.id, p])).values()].slice(0, COMPANION_ROUTE_LIMITS.maxNodes);
+  const roomFloorIds = new Set(available.filter(homeFloor).map(p => p.id)), springTargets = new Set(roomFloorIds);
   if (!springTargets.size) springTargets.add(goal.id);
   const nodes = available.flatMap(platform => [...new Set(platform.manualOnly && !homeFloor(platform) ? [origin.x] : [
     platformLandingX(platform, origin.x), platformLandingX(platform, target.x),
@@ -56,9 +56,14 @@ export function shortestCompanionHomeRoute(origin: Point, target: Point, platfor
       if (walk && Math.abs(dx) < 1) continue;
       if (!walk) {
         if (to.platformId === start.id && start.manualOnly && !homeFloor(start)) continue;
-        if (!allowJump || hops[current] >= COMPANION_ROUTE_LIMITS.maxHops || Math.abs(dx) > COMPANION_JUMP_LIMITS.maxDistance || dy > COMPANION_JUMP_LIMITS.maxDrop) continue;
+        // A real room can move down while a command is already in flight.
+        // Its measured floor is a safe finite descent, not a requirement to
+        // find another calendar text line every240px. This narrow recovery
+        // never adds an upper ledge, extends a horizontal hop or changes roam.
+        const roomDescent = allowSpring && roomFloorIds.has(to.platformId) && dy > 0 && dy <= 420;
+        if (!allowJump || hops[current] >= COMPANION_ROUTE_LIMITS.maxHops || Math.abs(dx) > COMPANION_JUMP_LIMITS.maxDistance || dy > COMPANION_JUMP_LIMITS.maxDrop && !roomDescent) continue;
         const landing: Platform = { id: to.platformId, x: to.x - 12, y: to.y, width: 24, kind: "date" };
-        if (!reachablePlatforms(from, [landing]).length) {
+        if (!reachablePlatforms(from, [landing], roomDescent ? { maxDrop: 420 } : undefined).length) {
           height = Math.max(140, -dy + 24);
           if (!allowSpring || !springTargets.has(to.platformId) || dy >= 0 || Math.abs(dx) > 120 || height > from.y - 100
             || !reachablePlatforms(from, [landing], { maxRise: height }).length) continue;

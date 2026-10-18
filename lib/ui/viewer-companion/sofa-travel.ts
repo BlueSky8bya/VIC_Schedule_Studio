@@ -13,6 +13,17 @@ export type CompanionSofaTravelShape = Readonly<{ coefficient: number; curve: "l
 const finitePoint = (point: Point) => [point.x, point.y].every(Number.isFinite);
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 
+/** Clearance changes the actual curve, so a generic jump-height placeholder
+ * cannot time it. Match gravity and cap the peak horizontal/vertical speed of
+ * this exact curve (enter/leave have twice the linear horizontal derivative). */
+export function companionSofaFlightMs(from: Point, to: Point, shape: CompanionSofaTravelShape): number {
+  if (!finitePoint(from) || !finitePoint(to) || !Number.isFinite(shape.coefficient) || shape.coefficient < 0) return 700;
+  const dx = Math.abs(to.x - from.x), dy = to.y - from.y, c = shape.coefficient;
+  return Math.max(560, Math.sqrt(2 * c / 1100) * 1000,
+    dx * (shape.curve === "plain" ? 1 : 2) / 330 * 1000,
+    Math.max(Math.abs(dy - c), Math.abs(dy + c)) / 650 * 1000);
+}
+
 /** One simultaneous x/y quadratic curve clears only the real side rims. The old
  * lift→level passage→landing route froze x during28% of either end and y
  * throughout the middle, making every house hop look rectangular.

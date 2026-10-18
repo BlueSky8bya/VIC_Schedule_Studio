@@ -758,9 +758,11 @@ let lastPlayed = { name: "tick" as SfxName, at: 0 };
 let songUntil = 0;
 let pendingNotes: number[] = [0];
 let calendarInstrumentPulse: CompanionInstrumentPulse | undefined;
-function playCalendarInstrument(name: SfxName, title: string, durationMs = 500) {
-  calendarInstrumentPulse = companionInstrumentPulse(title, performance.now(), durationMs);
+function playCalendarInstrument(name: SfxName, title: string, durationMs = 500, performed?: { sequence: number; index: number }) {
+  const pulse = companionInstrumentPulse(title, performance.now(), durationMs, performed);
+  calendarInstrumentPulse = pulse;
   try { playSfx(name); } finally { calendarInstrumentPulse = undefined; }
+  return pulse;
 }
 
 // ── 노래·연속 탭 멜로디(2026-10-06 소유자: "빵빠레를 여러 번 연속 클릭하면 한 번에 한 음씩 — 비행기 멜로디처럼") ──
@@ -860,6 +862,7 @@ const THEME_SONG: Record<string, string> = {
 const ALL_MELODIES = [...MELODIES, ...THEME_MELODIES];
 const RANDOM_POOL = MELODIES.map((m, i) => i).filter((i) => !Object.values(THEME_SONG).includes(MELODIES[i].title));
 const STREAK_GAP_MS = 2500;
+let instrumentSequence = 0, lastInstrumentGapMs = 0;
 let tapStreak = { key: "", at: 0, i: 0, mel: 0, moved: false }; // moved = 첫 곡을 끝내고 무작위 곡으로 넘어감
 let lastRandomMel = -1;
 /** 곡 전체 음 — 절 수만큼 되풀이(2절·3절까지 이어 친다). */
@@ -871,7 +874,8 @@ function melodySteps(m: Melody): Step[] {
 /**
  * 기념일 탭 — 한 번 누르면 한 음(2026-10-06 소유자). 그 날의 노래가 있으면 그 노래, 없으면 돌아가며 다른 곡.
  * 한 번에 쭉 울리는 건 특별한 날뿐: 생일(빵빠레 + 생일 노래)·데뷔 주년/D+N00(의식 빵빠레) — 첫 탭에 통째로,
- * 이어 누르면 한 음씩. 2.5초 쉬면 곡 처음부터. 생일 노래가 흐르는 동안의 탭은 소리 없이 넘긴다.
+ * 이어 누르면 한 음씩. 악보의 긴 음·쉼표를 기다릴 여유 뒤 연타를 끊는다(미확인 곡은2.5초).
+ * 생일 노래가 흐르는 동안의 탭은 소리 없이 넘긴다.
  * 반환: kind "first"(연타의 첫 탭 — 특별한 날이면 노래/빵빠레, 아니면 첫 음 semi·title 포함) · "note"(이어지는 한 음) · "busy".
  */
 export function playCelebrationTap(
@@ -879,7 +883,7 @@ export function playCelebrationTap(
   sound: CelebrationSound
 ): { kind: "first" | "note" | "busy"; semi?: number; title?: string } {
   const now = typeof performance !== "undefined" ? performance.now() : 0;
-  const cont = tapStreak.key === key && now - tapStreak.at < STREAK_GAP_MS;
+  const cont = tapStreak.key === key && now - tapStreak.at < Math.max(STREAK_GAP_MS, Math.min(15000, lastInstrumentGapMs * 1.8 + 500));
   const grand = sound === "birthday" || sound === "grand";
   if (!cont) {
     // 새 연타 — 곡을 고른다: 그 날의 노래가 있으면 그 곡, 없으면 직전과 다른 곡을 차례로(처음은 무작위에서 출발).
@@ -892,6 +896,7 @@ export function playCelebrationTap(
       lastRandomMel = mel;
     }
     tapStreak = { key, at: now, i: 0, mel, moved: false };
+    instrumentSequence++; lastInstrumentGapMs = 0;
     if (grand) {
       playCalendarInstrument(sound, sound === "birthday" ? "생일 축하합니다" : "캐논", sound === "birthday" ? (SONG_DELAY + BIRTHDAY_SONG[BIRTHDAY_SONG.length - 1].at + .6) * 1000 : 1200);
       return { kind: "first" };
@@ -909,6 +914,7 @@ export function playCelebrationTap(
     const next = choices.length > 0 ? choices[Math.floor(Math.random() * choices.length)] : RANDOM_POOL[0];
     lastRandomMel = next;
     tapStreak.mel = next;
+    instrumentSequence++;
     tapStreak.i = 0;
     tapStreak.moved = true; // 생일 노래 다음부터도 일반 곡
     birthday = false;
@@ -918,7 +924,8 @@ export function playCelebrationTap(
   const title = tapStreak.i === 0 ? (birthday ? "생일 축하합니다" : ALL_MELODIES[tapStreak.mel].title) : undefined;
   tapStreak.i += 1;
   pendingNotes = Array.isArray(step) ? step : [step];
-  playCalendarInstrument("note", birthday ? "생일 축하합니다" : ALL_MELODIES[tapStreak.mel].title, Math.max(500, pendingNotes.length * 90 + 400));
+  const instrument = playCalendarInstrument("note", birthday ? "생일 축하합니다" : ALL_MELODIES[tapStreak.mel].title, Math.max(500, pendingNotes.length * 90 + 400), { sequence: instrumentSequence, index: tapStreak.i - 1 });
+  lastInstrumentGapMs = instrument.rhythm ? instrument.expectedGapMs : 0;
   return { kind: cont ? "note" : "first", semi: pendingNotes[pendingNotes.length - 1], title };
 }
 function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
@@ -957,7 +964,13 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   // Publish only an admitted, audible calendar render. A muted category,
   // failed gesture, suspended cold context or a settings sound-board sample
   // never produces a creature reaction or rhythm score.
-  if (calendarInstrumentPulse && ac.state === "running") window.dispatchEvent(new CustomEvent<CompanionInstrumentPulse>(COMPANION_INSTRUMENT_EVENT, { detail: { ...calendarInstrumentPulse, at: performance.now() } }));
+  if (calendarInstrumentPulse && ac.state === "running") {
+    const at = performance.now(), stamp = typeof ac.getOutputTimestamp === "function" ? ac.getOutputTimestamp() : undefined;
+    const mapped = typeof stamp?.performanceTime === "number" && typeof stamp.contextTime === "number" ? stamp.performanceTime + (ac.currentTime - stamp.contextTime) * 1000 : NaN;
+    const driverDelay = [ac.baseLatency, ac.outputLatency].reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0) * 1000;
+    const audibleAt = Number.isFinite(mapped) && mapped >= at - 10 && mapped <= at + 500 ? Math.max(at, mapped) : at + Math.max(0, Math.min(500, driverDelay));
+    window.dispatchEvent(new CustomEvent<CompanionInstrumentPulse>(COMPANION_INSTRUMENT_EVENT, { detail: { ...calendarInstrumentPulse, at, ...(calendarInstrumentPulse.rhythm ? { rhythm: { ...calendarInstrumentPulse.rhythm, audibleAt } } : {}) } }));
+  }
 }
 
 export type CompanionSoundNote = Readonly<{ f: number; at?: number; vol?: number; tau?: number; glideTo?: number }>;

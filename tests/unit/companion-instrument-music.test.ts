@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { companionInstrumentPulse } from "@/lib/ui/viewer-companion/instrument-music";
+import type { CompanionInstrumentPulse } from "@/lib/ui/viewer-companion/instrument-music";
 
 const parameter = () => ({ value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {} });
 const node = () => ({ gain: parameter(), frequency: parameter(), Q: parameter(), threshold: parameter(), knee: parameter(), ratio: parameter(), attack: parameter(), release: parameter(), type: "sine", connect(destination: unknown) { return destination; }, start() {}, stop() {} });
@@ -22,9 +23,18 @@ it("sends only one actually admitted calendar onset with finite pacing and no da
   const pulses: unknown[] = []; window.addEventListener(sfx.COMPANION_INSTRUMENT_EVENT, event => pulses.push((event as CustomEvent).detail));
   sfx.playCelebrationTap("christmas", "bells");
   expect(pulses).toHaveLength(1);
-  expect(Object.keys(pulses[0] as object).sort()).toEqual(["at", "bpm", "durationMs", "expectedGapMs", "mood"]);
-  expect(pulses[0]).toMatchObject({ mood: "lively", bpm: 112, durationMs: 500, expectedGapMs: 60000 / 112 });
+  expect(Object.keys(pulses[0] as object).sort()).toEqual(["at", "bpm", "durationMs", "expectedGapMs", "mood", "rhythm"]);
+  const heard = pulses[0] as CompanionInstrumentPulse;
+  expect(heard).toMatchObject({ mood: "lively", durationMs: 500, rhythm: { sequence: 1, index: 0, onsetMs: 0 } });
+  expect(heard.bpm).toBeCloseTo(104, 3); expect(heard.expectedGapMs).toBeCloseTo(60000 / 104 / 2, 3);
+  expect(heard.rhythm!.audibleAt).toBeGreaterThanOrEqual(heard.at);
   sfx.playSfx("note", { force: true }); expect(pulses).toHaveLength(1);
+});
+it("lets an actually rendered automatic birthday song offer a mood but no player rhythm grade", () => {
+  const pulses: CompanionInstrumentPulse[] = []; window.addEventListener(sfx.COMPANION_INSTRUMENT_EVENT, event => pulses.push((event as CustomEvent).detail));
+  sfx.playCelebrationTap("birthday", "birthday");
+  expect(pulses).toHaveLength(1); expect(pulses[0].rhythm).toBeUndefined();
+  expect(sfx.playCelebrationTap("birthday", "birthday").kind).toBe("busy"); expect(pulses).toHaveLength(1);
 });
 it.each(["muted", "zero", "category", "suspended"])("does not publish %s audio as a heard calendar performance", reason => {
   if (reason === "muted") settings.set("vic.sound", "off");

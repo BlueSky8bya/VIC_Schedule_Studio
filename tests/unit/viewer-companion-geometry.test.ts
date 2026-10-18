@@ -353,6 +353,22 @@ describe("companion geometry anchor subscription", () => {
     fixture.win.emit("resize"); fixture.advance(120); expect(bands().every(p => p.y !== 547)).toBe(true);
     subscription();
   });
+  it("catches food on the first public support/period edge and retains its own DOM anchor across scroll", () => {
+    const f = geometryFixture(), support = new FixtureElement(), period = new FixtureElement(), control = new FixtureElement();
+    support.rect = box(100, 420, 300, 22); period.rect = box(100, 550, 300, 52); control.rect = box(180, 390, 40, 40);
+    f.controls.push(support, period, control); control.parentElement = f.sourceRoot; addStructuralSurfaces(f, [support, period]);
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
+    const food = sub.landings(32) as CompanionFoodDropSupport[], bands = food.filter(p => p.id.includes("-band-food-top"));
+    expect(bands.length).toBeGreaterThanOrEqual(3); expect(bands.every(p => p.kind === "card" && p.manualOnly)).toBe(true);
+    const point = { x: 200, y: 350 }, dropped = placeCompanionFood({ id: "snack", kind: "apple", ...point }, point, food, viewport);
+    expect(dropped.y).toBe(417); expect(dropped.x).toBe(155); expect(sub.anchor(dropped.platformId!)?.element).toBe(support);
+    const first = bands.find(p => p.id === dropped.platformId)!; expect(first.dropSurface).toEqual({ x: 100, width: 300 });
+    expect(placeCompanionFood({ id: "snack", kind: "apple", ...point }, { x: 250, y: 430 }, food, viewport).y).toBe(547);
+    support.rect = box(110, 320, 300, 22);
+    expect(sub.follow([first.id])[0]).toMatchObject({ platform: { x: first.x + 10, y: 317 }, anchorX: 110, anchorY: 320 });
+    period.closest = selector => selector.includes("[inert]") ? period : null; f.win.emit("scroll"); f.advance(120);
+    expect(sub.landings(32).filter(p => p.id.includes("-band-food-top")).every(p => p.y !== 547)).toBe(true); sub();
+  });
   it("uses only real header-bottom gaps clear of weekday glyphs, controls and viewport bounds", () => {
     const fixture = geometryFixture(), header = new FixtureElement(), control = new FixtureElement();
     header.rect = box(100, 70, 800, 60); header.hasAttribute = name => name === "aria-hidden";

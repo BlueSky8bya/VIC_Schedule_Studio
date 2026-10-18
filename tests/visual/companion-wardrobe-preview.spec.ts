@@ -6,6 +6,10 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
+import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
+
+const regressionOutput = process.env.COMPANION112_COLLECTION_REGRESSION_OUTPUT ?? ".scratch-pw/companion-112/collection/regression";
 
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block", headless: Boolean(process.env.CI) });
 type Surface = "viewer" | "studio" | "preview";
@@ -82,16 +86,16 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   expect(await saved(page)).toEqual(before); expect(before.gifts.equipped).toBe("sunglasses");
   await profile.getByRole("button", { name: "다시 보기", exact: true }).click();
   await expect.poll(() => preview.getAttribute("data-preview-row")).toBe("30");
-  await profile.locator('[data-accessory="leaf-umbrella"]').click();
+  await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf("leaf-umbrella"));
   await expect(profile.locator(".rhh-wardrobe-detail-copy strong")).toHaveText("???");
   await expect(preview.locator(".vc-wearable-front")).toBeHidden(); await expect(preview.locator(".vc-wearable-back")).toBeHidden();
   await expect(profile.locator(".rhh-wardrobe-detail")).toBeInViewport({ ratio: 1 });
   const tile = profile.locator('[data-accessory="leaf-umbrella"]');
   expect(await tile.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
-  await profile.locator('[data-accessory="beret"]').click();
+  await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf("beret"));
   await settlePanelLayout(page);
-  mkdirSync(".scratch-pw/companion-111/wardrobe", { recursive: true });
-  await page.screenshot({ path: `.scratch-pw/companion-111/wardrobe/wardrobe-${surface}-${theme}.png` });
+  mkdirSync(`${regressionOutput}/wardrobe`, { recursive: true });
+  await page.screenshot({ path: `${regressionOutput}/wardrobe/wardrobe-${surface}-${theme}.png` });
   await profile.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await expect(preview).toHaveCount(0); expect(await saved(page)).toEqual(before);
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
@@ -109,8 +113,8 @@ for (const mode of ["empty", "reduced", "graphics-off", "graphics-soft", "disabl
     await expect(paused).toBeVisible();
     const imageRect = await preview.boundingBox(), pausedRect = await paused.boundingBox();
     expect(pausedRect!.y).toBeGreaterThanOrEqual(imageRect!.y + imageRect!.height);
-    mkdirSync(".scratch-pw/companion-111/wardrobe", { recursive: true });
-    await dialog.screenshot({ path: ".scratch-pw/companion-111/wardrobe/off-badge.png" });
+    mkdirSync(`${regressionOutput}/wardrobe`, { recursive: true });
+    await dialog.screenshot({ path: `${regressionOutput}/wardrobe/off-badge.png` });
     await profile.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
     await profile.getByRole("tab", { name: "옷장", exact: true }).click();
@@ -133,8 +137,8 @@ test("narrow desktop keeps the real preview and deep selection visible, and oute
   await expect(profile.locator(".rhh-wardrobe-detail")).toBeInViewport({ ratio: 1 });
   expect(await profile.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   expect(await last.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
-  mkdirSync(".scratch-pw/companion-111/wardrobe", { recursive: true });
-  await page.screenshot({ path: ".scratch-pw/companion-111/wardrobe/wardrobe-narrow.png" });
+  mkdirSync(`${regressionOutput}/wardrobe`, { recursive: true });
+  await page.screenshot({ path: `${regressionOutput}/wardrobe/wardrobe-narrow.png` });
   await dialog.locator('[data-tab="sound"]').click();
   await expect(preview).toHaveCount(0);
   await dialog.locator('[data-tab="companion"]').click();

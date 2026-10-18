@@ -50,6 +50,8 @@ export type CompanionAction = {
   /** An equipped prop's finite gesture on this same stable support. */
   accessory?: import("./gifts").CompanionAccessoryId;
   cozySettled?: boolean;
+  /** A real, still-unknown snack owns this finite inspect/play beat. */
+  foodCuriosity?: "inspect" | "toss" | "tease";
   /** Remaining transient place-memory window; never a persisted timestamp. */
   placeCheckMs?: number;
   panelSide?: "left" | "right";
@@ -398,7 +400,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const tired = brain.energy < .28;
   const mobility = (recovery ? .16 : 1) * (tired ? .38 : 1) * profile.movementWeight;
   const pointer = world.pointer && [world.pointer.x, world.pointer.y].every(Number.isFinite) ? world.pointer : undefined;
-  const follows = pointer && profile.socialPull > 0 && Math.abs(pointer.y - world.y) < 160;
+  const follows = pointer && profile.socialPull > 0 && Math.abs(pointer.y - world.y) < 160 && !(prefs.learnFromYou !== false && (brain.habits?.confidence ?? 0) <= -.12);
   add("idle", .14 + (1 - brain.energy) * .25 + sleepy + (recovery ? 1.15 : 0), ((recovery ? 1000 : 550) + random(rng) * (recovery ? 700 : 650)) * profile.pauseScale);
   add("look", (.2 + brain.curiosity * .25 + curious * .45 + (recovery ? .45 : 0)) * profile.lookWeight, (COMPANION_TIMING.lookMin + random(rng) * COMPANION_TIMING.lookRange) * profile.lookScale);
   add("stretch", .12 + (1 - brain.energy) * .2 + (recovery ? .3 : 0), COMPANION_TIMING.stretchMin + random(rng) * COMPANION_TIMING.stretchRange);

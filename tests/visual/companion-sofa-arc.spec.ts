@@ -40,7 +40,7 @@ test.afterEach(async ({ page }, info) => {
   const frames = await page.evaluate(() => { const probe = (window as ProbedWindow).sofaArcWitness; if (!probe) return []; cancelAnimationFrame(probe.raf); return probe.frames; }).catch(() => [] as Frame[]);
   record.get(page)!.frames = frames;
   const build = readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim();
-  const directory = `.scratch-pw/100-sofa-arc/${build}`, label = info.title.replace(/[^a-z0-9]+/gi, "-");
+  const directory = `${process.env.VIC_SOFA_ARC_OUTPUT ?? ".scratch-pw/100-sofa-arc"}/${build}`, label = info.title.replace(/[^a-z0-9]+/gi, "-");
   mkdirSync(directory, { recursive: true });
   writeFileSync(`${directory}/${label}.json`, JSON.stringify({ title: info.title, status: info.status, build, ...record.get(page) }, null, 2));
   await page.screenshot({ path: `${directory}/${label}.png`, fullPage: true }).catch(() => {});
@@ -128,6 +128,13 @@ function assertMeasuredSofaEntry(samples: readonly Frame[]) {
     else longestPlateau = Math.max(longestPlateau, frame.at - unchangedSince);
   }
   expect(longestPlateau, "sofa ascent/descent must not pause on a level passage plateau").toBeLessThan(110);
+  const speeds = entry.slice(1).flatMap((frame, index) => {
+    const previous = entry[index], seconds = (frame.at - previous.at) / 1000;
+    return seconds > .006 && seconds < .1 && frame.phase === previous.phase ? [Math.hypot(frame.x - previous.x, frame.y - previous.y) / seconds] : [];
+  });
+  // Allow ordinary browser sampling/registration quantization. The launch
+  // function constrains the exact analytical curve to330x/650y px/sec.
+  expect(Math.max(...speeds), "actual entry must not squeeze a large clearance arc into a generic short jump").toBeLessThan(900);
 }
 async function assertSeated(page: Page) {
   await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 25000 });

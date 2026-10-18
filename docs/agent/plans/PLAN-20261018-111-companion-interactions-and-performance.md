@@ -1,6 +1,6 @@
 # PLAN-111 — Companion interactions and measured optimization
 
-Status: Verification complete; authorized release pending. Owner request2026-10-18 KST supersedes110 proposal-only restriction for the five explicitly selected behavior ideas and five optimization groups.
+Status: Complete; release `58f200015adc503e9e6757e1c372bc4de69d33b1` verified2026-10-18 KST. Owner request2026-10-18 KST supersedes110 proposal-only restriction for the five explicitly selected behavior ideas and five optimization groups.
 
 ## Authorized scope
 
@@ -24,4 +24,4 @@ Capture cold first-click audio and immediate unequip. Verify viewer/studio/book 
 
 ## Next
 
-Verify the authorized deployment against the exact full commit. Source/independent reviews,2,584units/type/lint/build/harness, shared UI/activity/audio/world scopes, baseline/final profiles and35-cycle memory trial are recorded in [111 evidence](../verification/COMPANION_INTERACTIONS_PERFORMANCE-20261018.md). Preserve failures, stochastic/real-device limits and protected work; update release bookkeeping only after deployed verification.
+No implementation follow-up remains within this scope. Source/independent reviews,2,584units/type/lint/build/harness, shared UI/activity/audio/world scopes, baseline/final profiles,35-cycle memory trial and exact deployed public-SHA/UI verification are recorded in [111 evidence](../verification/COMPANION_INTERACTIONS_PERFORMANCE-20261018.md). Preserve failures, stochastic/real-device limits and protected work. Actual broadcaster-PC remains user-deferred; post-release bookkeeping is local for the next product commit.

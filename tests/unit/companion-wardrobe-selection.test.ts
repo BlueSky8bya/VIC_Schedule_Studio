@@ -28,7 +28,7 @@ function nodes(node: ReactNode): Element[] {
 }
 const find = (predicate: (element: Element) => boolean) => nodes(tree).find(predicate)!;
 const preview = () => find(element => "behaviors" in element.props && "accessory" in element.props).props;
-const click = (element: Element) => (element.props.onClick as () => void)();
+const click = (element: Element) => (element.props.onClick as (event: { detail: number }) => void)({ detail: 1 });
 async function render(active = true) {
   vi.stubGlobal("React", await import("react")); harness.state = 0; harness.ref = 0;
   const { CompanionWardrobe } = await import("@/components/shared/companion-wardrobe");
@@ -59,11 +59,20 @@ describe("actual wardrobe selection and equipment callbacks", () => {
   it("starts bare when nothing is worn and never leaks undiscovered gestures or retired catalogue entries", async () => {
     collection.gifts = { ...collection.gifts, unlocked: ["scarf", "bell-pendant", "sunglasses"], equipped: null };
     await render(); expect(preview().accessory).toBeNull(); expect(preview().behaviors).toEqual(collection.behaviors);
-    const tiles = nodes(tree).filter(element => element.props["data-accessory"]);
-    expect(tiles.map(element => element.props["data-accessory"])).toEqual([...COMPANION_WEARABLE_IDS]);
-    expect(tiles.filter(element => element.props.tabIndex === 0)).toHaveLength(1);
+    const ids: unknown[] = [];
+    for (;;) {
+      const tiles = nodes(tree).filter(element => element.props["data-accessory"]);
+      expect(tiles.length).toBeLessThanOrEqual(24); expect(tiles.filter(element => element.props.tabIndex === 0)).toHaveLength(1);
+      expect(tiles.filter(element => !element.props["data-found"]).every(element => /^\?\?\? · \d+$/.test(String(element.props["aria-label"])))).toBe(true);
+      ids.push(...tiles.map(element => element.props["data-accessory"]));
+      expect(ids.length).toBeLessThanOrEqual(COMPANION_WEARABLE_IDS.length);
+      const next = find(element => element.props["data-act"] === "companion-collection-page" && element.props["data-act-opt"] === "next");
+      if (next.props.disabled) break;
+      click(next); await render(); expect(harness.equip).not.toHaveBeenCalled();
+    }
+    expect(ids).toEqual([...COMPANION_WEARABLE_IDS]);
     expect(find(element => element.props.className === "rhh-collection-heading").props.children).toEqual(expect.arrayContaining([expect.objectContaining({ props: expect.objectContaining({ children: [1, "/", COMPANION_WEARABLE_IDS.length] }) })]));
-    const locked = tiles.find(element => !element.props["data-found"])!;
+    const locked = nodes(tree).find(element => element.props["data-accessory"] && !element.props["data-found"])!;
     click(locked); await render(); expect(preview().accessory).toBeNull(); expect(harness.equip).not.toHaveBeenCalled();
     await render(false); expect(tree).toBeNull();
   });

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionTrashProgress, followCompanionFood, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, reconcileCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, reconcileCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
 
 const floor: Platform = { id: "floor", x: 12, y: 782, width: 976, kind: "floor" };
 const card: Platform = { id: "card", x: 100, y: 350, width: 200, kind: "card" };
 const apple: CompanionFood = { id: "apple", x: 200, y: 340, kind: "apple" };
+const viewport = { width: 1000, height: 800 };
 
 describe("companion food support", () => {
   it("catches the first real crossed card across a safe-span gap before any lower exact-x card or floor", () => {
@@ -177,6 +178,34 @@ describe("companion food support", () => {
 });
 
 describe("companion food attachments", () => {
+  it("keeps a viewport-floor resident on the current safe input plane instead of applying a document scroll delta", () => {
+    const ground = Object.freeze({ ...floor, id: "viewport-floor-food" }), food = Object.freeze({ ...apple, x: 800, y: 782, platformId: ground.id });
+    const next = followCompanionViewportFloorFood(food, 800, [ground], viewport)!;
+    expect(next).toEqual(food);
+    // Document attachments deliberately move with scroll; a floor-bound item
+    // uses the current viewport support instead of inheriting this delta.
+    expect(followCompanionFood(attachCompanionFood(food, { x: 0, y: 0 }), { x: 0, y: 360 }).point.y).toBe(422);
+    expect(followCompanionViewportFloorFood(next, 800, [ground], viewport)).toEqual(food);
+    expect(food.y).toBe(782); expect(ground.y).toBe(782);
+  });
+  it("reflows a floor snack around controls while retaining intended x for viewport regrowth", () => {
+    const left: Platform = { id: "viewport-floor-food", x: 24, y: 430, width: 136, kind: "floor" };
+    const right: Platform = { ...left, id: "viewport-floor-food-1", x: 240, width: 136 };
+    const small = { width: 400, height: 500 }, food = Object.freeze({ ...apple, x: 900, y: 782 });
+    expect(followCompanionViewportFloorFood(food, 900, [left, right], small)).toEqual({ ...food, x: 376, y: 430, platformId: right.id });
+    const inGap = followCompanionViewportFloorFood(food, 200, [right, left], small)!;
+    expect(inGap.x).toBe(160); expect(inGap.y).toBe(430);
+    const grown = followCompanionViewportFloorFood(inGap, 900, [{ ...floor, id: left.id }], viewport)!;
+    expect(grown.x).toBe(900); expect(grown.y).toBe(782); expect(food.x).toBe(900);
+  });
+  it("does not manufacture a viewport attachment from another floor family, malformed geometry or a stale short viewport", () => {
+    for (const id of [undefined, "floor", "viewport-floor", "viewport-floor-food-old", "viewport-floor-food-1-extra", COMPANION_HOME_FLOOR_FOOD]) expect(isCompanionViewportFloorFoodSupport(id)).toBe(false);
+    for (const id of ["viewport-floor-food", "viewport-floor-food-12"]) expect(isCompanionViewportFloorFoodSupport(id)).toBe(true);
+    const ground: Platform = { ...floor, id: "viewport-floor-food" };
+    for (const candidates of [[], [card], [{ ...ground, id: COMPANION_HOME_FLOOR_FOOD }], [{ ...ground, y: 130 }], [{ ...ground, y: 1182 }], [{ ...ground, x: 980 }], [{ ...ground, kind: "card" as const }], [{ ...ground, width: -1 }], [{ ...ground, x: NaN }]]) expect(followCompanionViewportFloorFood(apple, 500, candidates, viewport)).toBeUndefined();
+    expect(followCompanionViewportFloorFood(apple, NaN, [ground], viewport)).toBeUndefined();
+    expect(followCompanionViewportFloorFood(apple, 500, [ground], { width: 20, height: 800 })).toBeUndefined();
+  });
   const roomFloor = { left: 100, top: 600, width: 300, height: 36 };
   it("settles a real floor release on the room's physical plane independently of its bed", () => {
     expect(receiveCompanionHomeFloorFood({ x: 220, y: 624 }, { x: 220, y: 608 }, roomFloor, [])).toEqual({ x: 220, y: 630 });
@@ -284,6 +313,14 @@ describe("companion food attachments", () => {
 });
 
 describe("companion food presentation", () => {
+  it("keeps food play as a bounded cosmetic arc with a stronger finite toss option", () => {
+    expect(companionFoodJostle(0, 38, -1)).toEqual({ height: 24, duration: 420, rotation: -6 });
+    expect(companionFoodJostle(0, 38, 1, 2.5)).toEqual({ height: 60, duration: 650, rotation: 6 });
+    expect(companionFoodJostle(38, 38, 1)).toEqual({ height: 12, duration: 420, rotation: 6 });
+    expect(companionFoodJostle(0, 38, 1, 99)?.height).toBe(72);
+    for (const strength of [-1, NaN, Infinity]) expect(companionFoodJostle(0, 38, 1, strength)?.height).toBe(24);
+    for (const [distance, radius] of [[NaN, 38], [0, 0], [39, 38], [-1, 38]]) expect(companionFoodJostle(distance, radius, 1)).toBeUndefined();
+  });
   const mouth = { x: 420, y: 260 };
   it("lifts the presentation to the mouth without moving its logical support", () => {
     const food = Object.freeze({ ...apple, platformId: "card" });

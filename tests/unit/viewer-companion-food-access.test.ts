@@ -21,7 +21,7 @@ describe("snack collision and creature access remain separate", () => {
     const snack = { ...food, platformId: COMPANION_HOME_FLOOR_FOOD }, floor: Platform = { ...top, id: "companion-home-floor", kind: "floor" };
     expect(accessibleCompanionFoods([snack], [])).toEqual([]);
     expect(accessibleCompanionFoods([snack], [{ ...floor, id: "companion-home" }, { ...floor, id: "viewport-floor" }])).toEqual([]);
-    expect(accessibleCompanionFoods([snack], [{ ...floor, x: 151 }, { ...floor, y: 300.6 }, { ...floor, manualOnly: false }])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...floor, x: 187 }, { ...floor, y: 300.6 }, { ...floor, manualOnly: false }])).toEqual([]);
     expect(accessibleCompanionFoods([snack], [{ ...floor, id: "companion-home-floor-extra" }])).toEqual([]);
     expect(accessibleCompanionFoods([snack], [{ ...floor, y: 300.4 }])).toEqual([{ ...snack, platformId: floor.id }]);
   });
@@ -39,15 +39,33 @@ describe("snack collision and creature access remain separate", () => {
     expect(food.platformId).toBe("card-3-food-top-1"); expect(result[0]).not.toBe(food);
     expect(accessibleCompanionFoods([food], [{ ...top, id: "card-30-top-2" }])).toEqual([]);
     expect(accessibleCompanionFoods([food], [{ ...top, id: "card-3-top-extra" }])).toEqual([]);
-    expect(accessibleCompanionFoods([food], [{ ...top, x: 170 }])).toEqual([]);
+    expect(accessibleCompanionFoods([food], [{ ...top, x: 187 }])).toEqual([]);
     expect(accessibleCompanionFoods([food], [{ ...top, y: 302 }])).toEqual([]);
   });
 
   it("keeps food physically placeable while withholding a target that only the smaller food can fit", () => {
     const snapshot = { ...food };
-    expect(accessibleCompanionFoods([food], [{ ...top, width: 10 }])).toEqual([]);
+    expect(accessibleCompanionFoods([food], [{ ...top, x: 200, width: 10 }])).toEqual([]);
     expect(food).toEqual(snapshot);
     expect(accessibleCompanionFoods([food], [{ ...top, y: 300.4 }])).toHaveLength(1);
+  });
+
+  it("eats from an actually safe same-source stance within mouth range without moving the snack", () => {
+    const snack = Object.freeze({ ...food, x: 150 }), near = Object.freeze({ ...top, x: 174, width: 100 });
+    const available = accessibleCompanionFoods([snack], [near]);
+    // Its real landing inset is12px:174+12-150=36, the existing mouth limit.
+    expect(available).toEqual([{ ...snack, platformId: near.id }]); expect(snack.x).toBe(150);
+    expect(getFoodAction({ ...createBrain(0), hunger: .8 }, { x: 186, y: 300, platformId: near.id, platforms: [near], foods: available, width: 1000, height: 800 }, { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: true }, 1000)).toMatchObject({ kind: "eat", foodId: snack.id, target: { x: 186, y: 300, platformId: near.id } });
+    expect(accessibleCompanionFoods([snack], [{ ...near, x: 174.01 }])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...near, id: "card-4-top" }])).toEqual([]);
+  });
+  it("maps a support or period ribbon food only to its own safe band family, including split spans", () => {
+    const snack = Object.freeze({ ...food, platformId: "card-8-band-food-top-2" }), band: Platform = { ...top, id: "card-8-band-1", manualOnly: false };
+    expect(accessibleCompanionFoods([snack], [band])).toEqual([{ ...snack, platformId: band.id }]);
+    expect(accessibleCompanionFoods([snack], [{ ...band, id: "card-8-band" }])).toHaveLength(1);
+    for (const id of ["card-8-top", "card-80-band", "card-8-band-extra", "card-8-band-1-extra"]) expect(accessibleCompanionFoods([snack], [{ ...band, id }])).toEqual([]);
+    expect(accessibleCompanionFoods([snack], [{ ...band, y: 301 }, { ...band, x: 200 }])).toEqual([]);
+    expect(snack.platformId).toBe("card-8-band-food-top-2");
   });
 
   it("maps viewport food only onto its actual floor and keeps sofa candidates unavailable", () => {

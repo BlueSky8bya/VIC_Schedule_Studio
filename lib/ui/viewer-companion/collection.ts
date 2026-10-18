@@ -5,6 +5,8 @@ export { COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES, COMPANION_SITUATION
 
 export const COMPANION_COLLECTION_KEY = "vic.viewerCompanionCollection";
 export const COMPANION_COLLECTION_EVENT = "vic:companion-collection";
+export const COMPANION_CONSUMED_FOOD_EVENT = "vic:companion-consumed-food";
+export type CompanionConsumedFood = Readonly<{ kind: CompanionFoodKind; serial: number; newDiscovery: boolean }>;
 export const COMPANION_BEHAVIOR_IDS = Object.freeze(["ask-petting", "lean-nuzzle", "paper-knead", "paper-nest", "cheer-rehearsal", "doze-curl", "groom", "bow", "pounce", "tumble", "dizzy", "stretch"] as const);
 export type CompanionBehaviorId = typeof COMPANION_BEHAVIOR_IDS[number];
 export const COMPANION_BEHAVIOR_NAMES: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "쓰담해 줘", "lean-nuzzle": "부비부비", "paper-knead": "꾹꾹이", "paper-nest": "자리 만들기", "cheer-rehearsal": "으쌰으쌰", "doze-curl": "꾸벅꾸벅", groom: "몸단장", bow: "꾸벅 인사", pounce: "폴짝!", tumble: "데굴데굴", dizzy: "빙글빙글", stretch: "쭉쭉" });
@@ -29,13 +31,15 @@ const copy = (value: CompanionCollection): CompanionCollection => ({ version: 1,
 
 /** One cached local store. Active ticks never read storage or notify React;
  * only first discoveries, gift arrival/opening and explicit equipment do. */
-export function createCompanionCollectionStore(storage?: CollectionStorage, clock: () => number = () => performance.now(), onChange?: (value: CompanionCollection) => void) {
+export function createCompanionCollectionStore(storage?: CollectionStorage, clock: () => number = () => performance.now(), onChange?: (value: CompanionCollection) => void, onConsumed?: (value: CompanionConsumedFood) => void) {
   let memory = normalizeCompanionCollection(undefined), initialized = false, rawSeen: string | null | undefined, dirty = false, lastWrite = -Infinity;
+  let recentFood: CompanionConsumedFood | null = null, consumptionSerial = 0;
   const synchronize = (raw: string | null, notify = true) => {
     const previous = semanticSignature(memory);
     let parsed: unknown;
     try { parsed = raw ? JSON.parse(raw) : undefined; } catch { parsed = undefined; }
     memory = normalizeCompanionCollection(parsed); initialized = true; rawSeen = raw; dirty = false;
+    if (recentFood && !memory.foods.includes(recentFood.kind)) recentFood = null;
     if (notify && semanticSignature(memory) !== previous) onChange?.(copy(memory));
     return copy(memory);
   };
@@ -63,13 +67,21 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
   };
   return {
     load() { refresh(); return copy(memory); },
+    recentFood() { ensure(); return recentFood ? { ...recentFood } : null; },
     synchronize: (raw: string | null) => synchronize(raw),
     flush: (force = false) => flush(force),
     /** Called only after the real food entity was successfully consumed. */
     recordFood(kind: CompanionFoodKind, consumed: boolean) {
       ensure(); if (!consumed || !isCompanionFoodKind(kind)) return false;
-      refresh(); if (memory.foods.includes(kind)) return false;
-      return commit({ ...memory, foods: COMPANION_FOOD_KINDS.filter(id => id === kind || memory.foods.includes(id)) }, true);
+      refresh();
+      const discovered = !memory.foods.includes(kind) && commit({ ...memory, foods: COMPANION_FOOD_KINDS.filter(id => id === kind || memory.foods.includes(id)) }, true);
+      // This local transient witness follows a completed meal, including a
+      // familiar taste. It is not inferred from a spawn, save or remote tab.
+      if (memory.foods.includes(kind)) {
+        recentFood = { kind, serial: ++consumptionSerial, newDiscovery: discovered };
+        onConsumed?.({ ...recentFood });
+      }
+      return discovered;
     },
     recordBehavior(observation: CompanionBehaviorObservation) {
       ensure(); const id = observedCompanionBehavior(observation); if (!id || memory.behaviors.includes(id)) return false;
@@ -112,7 +124,7 @@ function store() {
   if (owner !== window || !deviceStore) {
     owner = window; let storage: Storage | undefined;
     try { storage = window.localStorage; } catch { /* Volatile local collection. */ }
-    deviceStore = createCompanionCollectionStore(storage, undefined, value => window.dispatchEvent(new CustomEvent<CompanionCollection>(COMPANION_COLLECTION_EVENT, { detail: value })));
+    deviceStore = createCompanionCollectionStore(storage, undefined, value => window.dispatchEvent(new CustomEvent<CompanionCollection>(COMPANION_COLLECTION_EVENT, { detail: value })), value => window.dispatchEvent(new CustomEvent<CompanionConsumedFood>(COMPANION_CONSUMED_FOOD_EVENT, { detail: value })));
   }
   return deviceStore;
 }
@@ -120,6 +132,17 @@ export const loadCompanionCollection = (): CompanionCollection => store()?.load(
 export const openCompanionGift = (): CompanionAccessoryId | null => store()?.openGift() ?? null;
 export const equipCompanionAccessory = (id: CompanionAccessoryId | null): boolean => store()?.equip(id) ?? false;
 export const recordCompanionConsumedFood = (kind: CompanionFoodKind, consumed: boolean) => store()?.recordFood(kind, consumed) ?? false;
+export const getCompanionRecentFood = (): CompanionConsumedFood | null => store()?.recentFood() ?? null;
+export function subscribeCompanionConsumedFood(listener: (value: CompanionConsumedFood) => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const consumed = (event: Event) => {
+    const value = (event as CustomEvent<CompanionConsumedFood>).detail;
+    const actual = getCompanionRecentFood();
+    if (actual && value?.serial === actual.serial && value.kind === actual.kind) listener(actual);
+  };
+  window.addEventListener(COMPANION_CONSUMED_FOOD_EVENT, consumed);
+  return () => window.removeEventListener(COMPANION_CONSUMED_FOOD_EVENT, consumed);
+}
 export const recordCompanionObservedBehavior = (observation: CompanionBehaviorObservation) => store()?.recordBehavior(observation) ?? false;
 export const recordCompanionObservedSituation = (observation: CompanionSituationObservation) => store()?.recordSituation(observation) ?? false;
 export const recordCompanionGiftInteraction = () => store()?.interaction();

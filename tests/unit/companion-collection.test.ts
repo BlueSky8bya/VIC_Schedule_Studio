@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY, createCompanionCollectionStore, equipCompanionAccessory, loadCompanionCollection, normalizeCompanionCollection, observedCompanionBehavior, openCompanionGift, recordCompanionConsumedFood, subscribeCompanionCollection, type CompanionBehaviorObservation } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY, createCompanionCollectionStore, equipCompanionAccessory, getCompanionRecentFood, loadCompanionCollection, normalizeCompanionCollection, observedCompanionBehavior, openCompanionGift, recordCompanionConsumedFood, subscribeCompanionCollection, subscribeCompanionConsumedFood, type CompanionBehaviorObservation } from "@/lib/ui/viewer-companion/collection";
 import { advanceCompanionGifts, companionGiftChance, COMPANION_ACCESSORY_IDS, COMPANION_WEARABLE_IDS, COMPANION_GIFT_ACTIVE_MS, normalizeCompanionGifts } from "@/lib/ui/viewer-companion/gifts";
 import { COMPANION_ACCESSORIES } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
@@ -32,6 +32,24 @@ describe("bounded local discoveries", () => {
     expect(store.load().foods).toEqual(["carrot"]); expect(storage.setItem).toHaveBeenCalledTimes(1); expect(listener).toHaveBeenCalledTimes(1);
     const reopened = createCompanionCollectionStore(storage).load(); expect(reopened.foods).toEqual(["carrot"]);
     const copy = store.load(); copy.foods.push("apple"); copy.gifts.unlocked.push("beret"); expect(store.load()).toEqual(reopened);
+  });
+
+  it("publishes a transient recent meal only after actual consumption is registered, including familiar meals without another write", () => {
+    const storage = storageFixture(), order: string[] = [], consumed = vi.fn(() => order.push("consumed"));
+    const store = createCompanionCollectionStore(storage, () => 0, () => order.push("collection"), consumed);
+    expect(store.recentFood()).toBeNull();
+    store.recordFood("peach", false); store.recordFood("identity-canary" as "apple", true);
+    expect(consumed).not.toHaveBeenCalled(); expect(store.recentFood()).toBeNull();
+    expect(store.recordFood("peach", true)).toBe(true);
+    expect(order).toEqual(["collection", "consumed"]);
+    expect(store.recentFood()).toEqual({ kind: "peach", serial: 1, newDiscovery: true });
+    expect(store.recordFood("peach", true)).toBe(false);
+    expect(store.recentFood()).toEqual({ kind: "peach", serial: 2, newDiscovery: false });
+    expect(consumed).toHaveBeenCalledTimes(2); expect(storage.setItem).toHaveBeenCalledTimes(1);
+    expect(createCompanionCollectionStore(storage).recentFood()).toBeNull();
+    store.synchronize(JSON.stringify({ ...store.load(), foods: ["apple"] }));
+    expect(store.recentFood()).toBeNull(); expect(consumed).toHaveBeenCalledTimes(2);
+    expect(storage.read()).not.toContain("serial"); expect(storage.read()).not.toContain("newDiscovery");
   });
 
   it("requires a visible decoded adoption of the requested frame and exact packet", () => {
@@ -213,6 +231,22 @@ describe("earned gifts and explicit equipment", () => {
     entries.clear(); target.dispatchEvent(Object.assign(new Event("storage"), { key: null, newValue: null }));
     expect(one).toHaveBeenCalledTimes(5); expect(two).toHaveBeenCalledTimes(5); expect(loadCompanionCollection().foods).toEqual([]);
     stopOne(); stopTwo(); recordCompanionConsumedFood("apple", true); expect(one).toHaveBeenCalledTimes(5); expect(two).toHaveBeenCalledTimes(5);
+  });
+
+  it("keeps recent-meal notifications local and separate from semantic collection updates", () => {
+    const entries = new Map<string, string>();
+    const target = Object.assign(new EventTarget(), { localStorage: { getItem: (key: string) => entries.get(key) ?? null, setItem: (key: string, value: string) => { entries.set(key, value); } } });
+    vi.stubGlobal("window", target);
+    const changed = vi.fn(), consumed = vi.fn(), stopChanged = subscribeCompanionCollection(changed), stopConsumed = subscribeCompanionConsumedFood(consumed);
+    expect(getCompanionRecentFood()).toBeNull(); recordCompanionConsumedFood("peach", false);
+    expect(consumed).not.toHaveBeenCalled();
+    recordCompanionConsumedFood("peach", true); recordCompanionConsumedFood("peach", true);
+    expect(changed).toHaveBeenCalledTimes(1); expect(consumed).toHaveBeenCalledTimes(2);
+    expect(consumed.mock.calls[1][0]).toEqual({ kind: "peach", serial: 2, newDiscovery: false });
+    const external = JSON.stringify({ ...loadCompanionCollection(), foods: ["apple", "peach"] });
+    entries.set(COMPANION_COLLECTION_KEY, external); target.dispatchEvent(Object.assign(new Event("storage"), { key: COMPANION_COLLECTION_KEY, newValue: external }));
+    expect(consumed).toHaveBeenCalledTimes(2); expect(getCompanionRecentFood()?.kind).toBe("peach");
+    stopChanged(); stopConsumed(); recordCompanionConsumedFood("apple", true); expect(consumed).toHaveBeenCalledTimes(2);
   });
 });
 

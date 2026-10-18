@@ -50,13 +50,13 @@ describe("111 existing-asset stories and exact runtime food metadata", () => {
 });
 
 describe("actual instrument onsets stay bounded and personality-specific", () => {
-  it("accepts a steady alternate tempo and distinguishes irregular playing", () => {
+  it("grades the supplied score clock instead of accepting any regular click tempo", () => {
     const inbox = createCompanionInstrumentInbox();
-    for (const at of [100, 400, 700, 1000]) inbox.offer({ mood: "lively", at, bpm: 120, durationMs: 200, expectedGapMs: 500 }, at, true);
-    expect(inbox.take(1000)?.quality).toBe("steady");
+    for (const [index, at] of [100, 600, 1100, 1600].entries()) inbox.offer({ mood: "lively", at, bpm: 120, durationMs: 200, expectedGapMs: 500, rhythm: { sequence: 1, segment: 0, index, onsetMs: index * 500, gapMs: 500, tapAt: at, audibleAt: at + 25 } }, at, true);
+    expect(inbox.take(1600)?.quality).toBe("steady");
     inbox.clear();
-    for (const at of [100, 250, 1450, 1650]) inbox.offer({ mood: "lively", at, bpm: 120, durationMs: 200, expectedGapMs: 500 }, at, true);
-    expect(inbox.take(1650)?.quality).toBe("uneven");
+    for (const [index, at] of [100, 250, 400, 550].entries()) inbox.offer({ mood: "lively", at, bpm: 120, durationMs: 200, expectedGapMs: 500, rhythm: { sequence: 2, segment: 0, index, onsetMs: index * 500, gapMs: 500, tapAt: at, audibleAt: at + 25 } }, at, true);
+    expect(inbox.take(550)?.quality).toBe("uneven");
     inbox.offer({ mood: "calm", at: 2000, bpm: 80, durationMs: 200, expectedGapMs: 750 }, 2000, false);
     expect(inbox.take(2001)).toBeUndefined();
   });

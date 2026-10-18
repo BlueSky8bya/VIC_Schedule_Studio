@@ -1,4 +1,6 @@
 .vc-companion { position: fixed; left: 0; top: 0; z-index: 75; width: var(--vc-size, 92px); height: var(--vc-size, 92px); pointer-events: none; will-change: transform; --vc-column: 0%; --vc-row: 0%; }
+.vc-first-taste { position: fixed; top: 0; left: 0; z-index: 77; width: 48px; height: 48px; pointer-events: none; opacity: 0; }
+.vc-first-taste > .vc-collection-art { width: 48px; height: 48px; }
 .vc-companion[hidden] { display: none; }
 /* The room remains behind the pet. Only its matching static U-shaped rim
    sits above the body, so lifting naturally clears the fabric without hiding

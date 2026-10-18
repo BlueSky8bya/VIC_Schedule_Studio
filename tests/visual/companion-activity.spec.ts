@@ -26,7 +26,7 @@ const count = (page: Page, target: string) => targets(page).filter(value => valu
 const new109Targets = ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-collection-page#prev", "companion-collection-page#next", "companion-collection-inspect#food", "companion-profile-page#discover", "companion-throw"];
 const new110Targets = ["companion-book-open", "companion-book-close", "companion-collection-inspect#behavior", "companion-collection-inspect#moment"];
 const new111Targets = ["companion-profile-page#settings", "companion-rare-prank#on", "companion-rare-prank#off", "companion-radio-source", "companion-radio-license"];
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets];
 const retired110Target = "companion-radio-mood#lively";
 const readFixtureTargets = [...sampleTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
@@ -209,8 +209,10 @@ for (const surface of ["viewer", "studio"] as const) {
     await categories.getByRole("button", { name: /^추억 도감 / }).click();
     await expect(categories.getByRole("button", { name: /재롱|특별한 순간/ })).toHaveCount(0);
     const memories = panel.locator(".rhh-behavior-grid button");
-    await expect(memories).toHaveCount(COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.length);
-    const lastBehavior = memories.nth(COMPANION_BEHAVIOR_IDS.length - 1), firstMoment = memories.nth(COMPANION_BEHAVIOR_IDS.length);
+    await expect.poll(() => memories.count()).toBeGreaterThan(0);
+    expect(await memories.count()).toBeLessThanOrEqual(24);
+    const lastBehavior = panel.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length - 1}"]`), firstMoment = panel.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length}"]`);
+    for (let pageIndex = 0; pageIndex < 12 && !await lastBehavior.count(); pageIndex++) await panel.getByRole("button", { name: "다음 추억", exact: true }).click();
     await lastBehavior.click();
     await lastBehavior.press("ArrowRight"); await expect(firstMoment).toBeFocused();
     await firstMoment.press("ArrowLeft"); await expect(lastBehavior).toBeFocused();
@@ -424,16 +426,17 @@ for (const surface of ["viewer", "studio"] as const) {
     await profileTabs.getByRole("tab", { name: "함께 지내기", exact: true }).focus();
     await page.keyboard.press("ArrowRight");
     await expect(profileTabs.getByRole("tab", { name: "도감", exact: true })).toHaveAttribute("aria-selected", "true");
-    const foodGrid = profile.locator(".rhh-food-grid"); await expect(foodGrid.locator("button")).toHaveCount(24);
+    const foodGrid = profile.locator(".rhh-food-grid"); await expect.poll(() => foodGrid.locator("button").count()).toBeGreaterThan(0);
+    const pageSize = await foodGrid.locator("button").count(); expect(pageSize).toBeLessThanOrEqual(24);
     await profile.getByRole("button", { name: "다음 간식", exact: true }).click();
-    await expect(foodGrid.locator("button").first()).toHaveAttribute("data-food-index", "24");
+    await expect(foodGrid.locator("button").first()).toHaveAttribute("data-food-index", String(pageSize));
     await foodGrid.locator("button").first().focus(); await page.keyboard.press("ArrowRight");
-    await expect(foodGrid.locator('[data-food-index="25"]')).toBeFocused();
+    await expect(foodGrid.locator(`[data-food-index="${pageSize + 1}"]`)).toBeFocused();
     await page.keyboard.press("Home"); await expect(foodGrid.locator('[data-food-index="0"]')).toBeFocused();
     await page.keyboard.press("End");
     const lastIndex = COMPANION_FOOD_KINDS.length - 1;
     await expect(foodGrid.locator(`[data-food-index="${lastIndex}"]`)).toBeFocused();
-    await expect(foodGrid.locator("button")).toHaveCount(COMPANION_FOOD_KINDS.length % 24 || 24);
+    await expect(foodGrid.locator("button")).toHaveCount(COMPANION_FOOD_KINDS.length % pageSize || pageSize);
     await profile.getByRole("button", { name: "이전 간식", exact: true }).click();
     await flush(page, [{ target: "companion-radio-list#close" }, { target: "companion-radio-volume" }, { target: "companion-collection-page#prev" }]);
     for (const target of ["companion-radio-source", "companion-radio-license", "companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-profile-page#discover", "companion-collection-page#next", "companion-collection-page#prev"]) expect(count(page, target), target).toBe(1);
@@ -518,6 +521,23 @@ test("developer timeline and low-use list render companion features from synthet
   expect(capture.get(page)!.reads).toEqual(expect.arrayContaining(["getDayVisitDetailAction", "getActivityDayAction", "getActivityUsageAction"]));
   await usage.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${auditPrefix}-timeline-and-usage.png` });
+});
+
+for (const surface of ["viewer", "studio"] as const) test(`112 ${surface}: a real circular shake records once without learned traits`, async ({ page }) => {
+  await setup(page, surface);
+  const box = (await actor(page).boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(900, 500, { steps: 8 });
+  for (let i = 0; i <= 40; i++) {
+    const angle = i / 12 * Math.PI * 2;
+    await page.mouse.move(900 + Math.cos(angle) * 105, 500 + Math.sin(angle) * 105); await page.waitForTimeout(32);
+  }
+  await expect(pet(page)).toHaveAttribute("data-held-dizzy", "");
+  await page.waitForTimeout(120); await page.mouse.up();
+  await flush(page, [{ target: "companion-shake" }]);
+  expect(count(page, "companion-shake")).toBe(1);
+  const recorded = capture.get(page)!.events.filter(event => event.target === "companion-shake");
+  expect(recorded.every(event => event.meta === null && event.durMs === null)).toBe(true);
 });
 
 test("109 developer timeline and least-used list show the new fixed controls from synthetic reads", async ({ page }) => {

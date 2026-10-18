@@ -1,7 +1,7 @@
 /** Small earned, device-local tendencies. Credit advances only through supplied
  * active time; no identity, input history, dates or absence clock belongs here. */
 export type CompanionHabits = { sociability: number; playfulness: number; confidence: number; credit: number; generation: number };
-export type CompanionExperience = "petted" | "fed" | "played" | "bonked";
+export type CompanionExperience = "petted" | "fed" | "played" | "bonked" | "reassured" | "betrayed" | "rough-play";
 export const DEFAULT_COMPANION_HABITS: Readonly<CompanionHabits> = Object.freeze({ sociability: 0, playfulness: 0, confidence: 0, credit: 1, generation: 0 });
 const traits = ["sociability", "playfulness", "confidence"] as const;
 const fields = [...traits, "credit", "generation"] as const;
@@ -12,6 +12,9 @@ const signals: Readonly<Record<CompanionExperience, Readonly<Pick<CompanionHabit
   fed: Object.freeze({ sociability: .65, playfulness: .1, confidence: .9 }),
   played: Object.freeze({ sociability: .4, playfulness: 1, confidence: .8 }),
   bonked: Object.freeze({ sociability: -.4, playfulness: -.25, confidence: -1 }),
+  reassured: Object.freeze({ sociability: 1, playfulness: .2, confidence: 1 }),
+  betrayed: Object.freeze({ sociability: -1, playfulness: -.35, confidence: -1 }),
+  "rough-play": Object.freeze({ sociability: -.85, playfulness: -.3, confidence: -1 }),
 });
 
 /** Explicit allowlist also keeps serialized care snapshots free of unrelated
@@ -57,6 +60,7 @@ export function learnCompanionHabits(value: CompanionHabits | undefined, experie
   if (!enabled || current.credit < 1 - 1e-9 || !Object.prototype.hasOwnProperty.call(signals, experience)) return current;
   const signal = signals[experience];
   const next = { ...current, credit: 0 };
-  for (const trait of traits) next[trait] = clamp(current[trait] + learningRate * (signal[trait] - current[trait]), -1, 1);
+  const rate = experience === "betrayed" ? .24 : experience === "rough-play" ? .18 : experience === "reassured" ? .12 : learningRate;
+  for (const trait of traits) next[trait] = clamp(current[trait] + rate * (signal[trait] - current[trait]), -1, 1);
   return next;
 }

@@ -28,9 +28,18 @@ export function getLivingAction(brain: CompanionBrain, world: CompanionWorld, pr
   const pointer = world.pointer && [world.pointer.x, world.pointer.y, world.pointer.stableMs].every(Number.isFinite) && world.pointer.stableMs! >= 900 ? world.pointer : undefined;
   const play = (kind: CompanionPlay, living: CompanionLivingKind): CompanionAction => ({ kind: "play", play: kind, living, target: here, duration: companionPlayDuration(kind), ...(living === "social" && pointer ? { attention: { kind: "social", point: { x: pointer.x, y: pointer.y } } } : {}) });
   const social = Boolean(prefs.petting && prefs.roam && brain.energy >= .28 && pointer && !home && Math.abs(pointer.y - world.y) < 150 && Math.abs(pointer.x - world.x) <= 220);
+  const wary = prefs.learnFromYou !== false && (brain.habits?.confidence ?? 0) <= -.12;
+  // Learned caution changes the next voluntary encounter, never captures the
+  // cursor, dodges a held grip or abandons a meal/accepted house command.
+  if (wary && social && pointer && Math.abs(pointer.x - world.x) < 145 && (brain.cooldowns.walk ?? -Infinity) <= now) {
+    const direction = pointer.x < world.x ? 1 : -1;
+    const x = clamp(world.x + direction * (65 + Math.abs(brain.habits!.confidence) * 85), support.x + 12, support.x + support.width - 12);
+    if (support.width >= 60 && Math.abs(x - world.x) >= 24 && (x - world.x) * direction > 0)
+      return { kind: "walk", pace: prefs.animalMode === "dog" ? "scoot" : "amble", direction, target: { ...here, x }, duration: Math.max(650, Math.abs(x - world.x) / (prefs.animalMode === "cat" ? 65 : 100) * 1000) };
+  }
   const pending = brain.pendingLiving;
   if (pending?.supportId === support.id) {
-    if (pending.kind === "social" && social) return play(brain.affection >= .6 ? "lean-nuzzle" : "ask-petting", "social");
+    if (pending.kind === "social" && social && !wary) return play(brain.affection >= .6 ? "lean-nuzzle" : "ask-petting", "social");
     if (pending.kind === "cozy" && home && prefs.sleep && brain.energy < .28) return { kind: "sleep", living: "cozy", cozySettled: true, target: here, duration: 9000 };
   }
   // Reuse the existing short-lived failed-place memory to visibly inspect an
@@ -41,7 +50,7 @@ export function getLivingAction(brain: CompanionBrain, world: CompanionWorld, pr
   if ((brain.cooldowns.living ?? -Infinity) > now) return;
   if (home && prefs.sleep && brain.activeMs >= 30000 && (brain.energy < .42 || life.comfort >= .6)) return play(brain.energy < .28 ? "doze-curl" : "cozy-nest", "cozy");
   if (brain.activeMs < 45000 || !prefs.roam) return;
-  if (social && life.social >= .4 && brain.affection < .8) {
+  if (social && !wary && life.social >= .4 && brain.affection < .8) {
     const distance = Math.abs(pointer!.x - world.x);
     if (distance > 84 && support.width >= 100) {
       const desired = pointer!.x + (world.x < pointer!.x ? -52 : 52);

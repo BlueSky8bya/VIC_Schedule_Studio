@@ -82,8 +82,12 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
           <path d="M7 3h23a3 3 0 0 1 3 3v31H8a5 5 0 0 1-5-5V7a4 4 0 0 1 4-4Z" className="vc-book-cover" />
           <path d="M9 3v29M8 32h25v5H8a2.5 2.5 0 0 1 0-5Z" className="vc-book-pages" />
           <path d="M25 3v11l-3-2-3 2V3" className="vc-book-ribbon" />
-          <path d="M17 18c-5-8-7-1-4 2m8-2c5-8 7-1 4 2m-13 3c0-7 15-7 15 0 0 7-15 7-15 0Z" className="vc-book-bunny" />
-          <path d="M17 23h.01m5 0h.01" className="vc-book-eyes" />
+          {/* Reuse the exact approved neutral picture, rather than inventing
+              a second rabbit design for this small cover. The atlas is already
+              shared with the active resident; crop only its first192px cell. */}
+          <svg x="10" y="11" width="21" height="22" viewBox="0 0 192 192" overflow="hidden">
+            <image href="/companion/hd/victamin-action-00-big-eyes-v1-body-outline-v1.webp" width="1536" height="384" />
+          </svg>
           <path d="M15 35h15" className="vc-book-line" />
         </svg>
       </button>
