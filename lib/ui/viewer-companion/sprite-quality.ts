@@ -12,6 +12,15 @@ export const companionSpriteMetadata = {
 };
 const metadata = companionSpriteMetadata;
 
+/** Reuse whole authored poses in one shared playback order. A front-facing
+ * upright key is not a running stride, and the smiling dizzy key interrupts
+ * the unsettled expression. Keep their source pixels/rig anchors intact. */
+export const companionMotionClips: Readonly<Record<number, readonly number[]>> = Object.freeze({
+  ...Object.fromEntries(metadata.rows.map((row, index) => [index, Object.freeze(row.map((_, column) => column))])),
+  20: Object.freeze([0, 1, 2, 3, 4, 4, 3, 2, 1, 0]),
+  22: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0]),
+});
+
 export type CompanionSpriteSelection = {
   atlas: "hd";
   /** Cell within this action's eight-by-two packet. */

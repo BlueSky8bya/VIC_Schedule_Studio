@@ -64,7 +64,7 @@ import { createCompanionPettingContact, createCompanionPettingGesture, createCom
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
-import { acquireDecodedCompanionSprite, canDecodeCompanionSprite, companionSpriteMetadata as registration, companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { acquireDecodedCompanionSprite, canDecodeCompanionSprite, companionMotionClips, companionSpriteMetadata as registration, companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
 import { COMPANION_CARD_PLAY_EVENT, createCompanionCardPlay } from "@/lib/ui/viewer-companion/card-play";
 import { requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
@@ -423,7 +423,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       bed.opacity = opacity;
       return Boolean(dx || dy || opacityChanged);
     };
-    const visual = createCompanionMotion({ clips: Object.fromEntries(registration.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
+    const visual = createCompanionMotion({ clips: companionMotionClips, rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
     const supportMotion = createCompanionSupportMotion();
     const heldInertia = createCompanionHeldInertia();
     const heldShake = createCompanionHeldShake();

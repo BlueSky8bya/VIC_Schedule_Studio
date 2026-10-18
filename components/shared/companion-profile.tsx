@@ -1,14 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { BookOpen, Heart, Leaf, Moon, PartyPopper, Settings2, Shirt, Sparkles } from "lucide-react";
+import { BookOpen, Heart, Leaf, Settings2, Shirt } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { getCompanionLearnedEffectDirections } from "@/lib/ui/viewer-companion/behavior-profile";
 import { loadCompanionCare, subscribeCompanionHabits, subscribeCompanionLife, type CompanionMemory } from "@/lib/ui/viewer-companion/care";
 import { getCompanionUnreadCounts, loadCompanionCollection, subscribeCompanionCollection, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_ACCESSORY_NAMES } from "@/lib/ui/viewer-companion/gifts";
 import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
-import { getCompanionInterest } from "@/lib/ui/viewer-companion/interest";
 import { getCompanionFoodArtFrame } from "@/lib/ui/viewer-companion/food-art";
 import { DEFAULT_COMPANION_LIFE, type CompanionLifeReason } from "@/lib/ui/viewer-companion/life";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
@@ -99,10 +98,9 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
     nav.current?.querySelector<HTMLButtonElement>(`[data-profile-page="${pages[next].key}"]`)?.focus();
   };
   const life = care?.life ?? DEFAULT_COMPANION_LIFE;
-  const interest = care ? getCompanionInterest(care, preferences, life) : null;
-  const interestLabel = interest ? { food: "지금은 간식 생각", rest: "지금은 졸려요", social: "지금은 쓰다듬기", play: "지금은 놀고 싶어요", explore: "지금은 둘러보는 중" }[interest] : "";
-  const interestFood = interest === "food" ? getCompanionFoodArtFrame(life.favoriteFood) : undefined;
-  const interestFoodStyle = interestFood ? { backgroundImage: `url("${interestFood.src}")`, backgroundSize: `${interestFood.atlasWidth / interestFood.width * 100}% ${interestFood.atlasHeight / interestFood.height * 100}%`, backgroundPosition: `${interestFood.atlasWidth === interestFood.width ? 0 : interestFood.x / (interestFood.atlasWidth - interestFood.width) * 100}% ${interestFood.atlasHeight === interestFood.height ? 0 : interestFood.y / (interestFood.atlasHeight - interestFood.height) * 100}%` } : undefined;
+  const favoriteFood = care ? getCompanionFoodArtFrame(life.favoriteFood) : undefined;
+  const favoriteFoodLabel = `좋아하는 간식 · ${COMPANION_FOOD_NAMES[life.favoriteFood]}`;
+  const favoriteFoodStyle = favoriteFood ? { backgroundImage: `url("${favoriteFood.src}")`, backgroundSize: `${favoriteFood.atlasWidth / favoriteFood.width * 100}% ${favoriteFood.atlasHeight / favoriteFood.height * 100}%`, backgroundPosition: `${favoriteFood.atlasWidth === favoriteFood.width ? 0 : favoriteFood.x / (favoriteFood.atlasWidth - favoriteFood.width) * 100}% ${favoriteFood.atlasHeight === favoriteFood.height ? 0 : favoriteFood.y / (favoriteFood.atlasHeight - favoriteFood.height) * 100}%` } : undefined;
   const effects = learnedEffects(preferences, care), unread = getCompanionUnreadCounts(collection);
   const pageUnread = (key: ProfilePage) => key === "discover" ? unread.foods + unread.memories > 0 : key === "dress" && unread.accessories > 0;
   const mode = { default: "빅타민", cat: "고양이", dog: "강아지" }[preferences.animalMode];
@@ -117,7 +115,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
       <section aria-labelledby={`${id}-traits-title`} className="rhh-trait-card rhh-companion-summary">
         <button aria-label="옷장 열기" className="rhh-companion-portrait" data-act="companion-profile-page" data-act-opt="dress" data-sfx="off" onClick={() => changePage("dress")} type="button">
           {active && page === "together" && <CompanionWardrobePreview accessory={collection?.gifts.equipped ?? null} behaviors={collection?.behaviors ?? []} enabled={preferences.enabled} interactive={false} />}
-          {interest && <span aria-label={interestLabel} className="rhh-companion-interest" role="img" title={interestLabel}>{interest === "food" ? <span aria-hidden="true" className="vc-collection-art" style={interestFoodStyle} /> : interest === "rest" ? <Moon aria-hidden="true" /> : interest === "social" ? <Heart aria-hidden="true" /> : interest === "play" ? <PartyPopper aria-hidden="true" /> : <Sparkles aria-hidden="true" />}</span>}
+          {favoriteFood && <span aria-label={favoriteFoodLabel} className="rhh-companion-interest" role="img" title={favoriteFoodLabel}><span aria-hidden="true" className="vc-collection-art" style={favoriteFoodStyle} /></span>}
           <span className="rhh-companion-portrait-link"><Shirt aria-hidden="true" size={16} />옷장</span>
         </button>
         <div className="rhh-companion-summary-copy"><span className="rhh-companion-presence" data-awake={preferences.enabled || undefined}>{preferences.enabled ? "함께 지내는 중" : "쉬는 중"}</span><h3 id={`${id}-traits-title`}>빅타민 특성</h3><p className="rhh-profile-meta">{mode} 모드 · {personality}</p>

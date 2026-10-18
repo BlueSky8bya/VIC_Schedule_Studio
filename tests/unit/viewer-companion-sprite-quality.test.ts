@@ -1,10 +1,37 @@
 import { describe, expect, it, vi } from "vitest";
-import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { companionMotionClips, companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { createCompanionMotion } from "@/lib/ui/viewer-companion/motion";
 import sprites from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
 import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
+
+describe("116 whole-pose continuity", () => {
+  // Review sheet labels are one-based; the frozen packing receipt is zero-based.
+  const nativeKeys = new Map(bodyRegistration.slots.map(slot => [slot.index, slot.nativeCell + 1]));
+  it("keeps a sustained moving sprint side-facing without upright, closed-eye or large-eye inserts", () => {
+    const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length, loopRows: [20] });
+    const seen = new Set<number>();
+    for (let step = 0; step <= 600; step++) {
+      const pose = motion.sample({ row: 20, phase: 0, status: "sprint", x: 100 + step * 220 / 60, y: 300, now: step * 1000 / 60 });
+      const key = nativeKeys.get(companionSpriteMetadata.rows[pose.row][pose.column])!;
+      expect([33, 34, 35]).toContain(key); seen.add(key);
+    }
+    expect([...seen].sort()).toEqual([33, 34, 35]);
+  });
+  it("preserves the unsettled spiral expression across all dizzy phases without smiling key45", () => {
+    const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length });
+    const seen = new Set<number>();
+    for (let step = 0; step <= 120; step++) {
+      const pose = motion.sample({ row: 22, phase: step / 120, status: "play", x: 100, y: 300, now: step * 1000 / 60 });
+      expect(nativeKeys.get(companionSpriteMetadata.rows[pose.row][pose.column])).toBe(44);
+      seen.add(pose.column);
+    }
+    expect(seen.size).toBe(8);
+    expect(companionMotionClips[23]).toEqual(companionSpriteMetadata.rows[23].map((_, column) => column));
+  });
+});
 
 describe("one high-resolution pipeline for every companion action", () => {
   it("preserves every old phase and adds complete disappointed/sulky actions", () => {

@@ -103,6 +103,25 @@ describe("actual shared profile navigation callbacks", () => {
     await render(); expect(nodes(tree).filter(node => node.props.className === "rhh-habit-paused")).toHaveLength(0);
     expect(nodes(find(node => node.props.className === "rhh-profile-learned")).filter(node => node.type === "li")).toHaveLength(3);
   });
+  it("keeps the actual favorite snack portrait badge across hunger and social needs", async () => {
+    const favorites = [
+      { kind: "peach", name: "복숭아", file: "foods-106-v1.webp", position: "100% 0%" },
+      { kind: "strawberry", name: "딸기", file: "foods-106-v1.webp", position: `${2 / 7 * 100}% 0%` },
+      { kind: "rice-ball", name: "삼각김밥", file: "rice-ball-108-v1.webp", position: "0% 0%" },
+      { kind: "chocolate", name: "초콜릿", file: "foods-109-6-v1.webp", position: "100% 100%" },
+    ] as const;
+    for (const hunger of [0, 1]) for (const favorite of favorites) {
+      const favoriteFood = favorite.kind;
+      harness.states[1] = { ...DEFAULT_COMPANION_MEMORY, hunger, life: { ...DEFAULT_COMPANION_MEMORY.life, favoriteFood, social: 0, play: 1, comfort: 1 } };
+      await render();
+      const badge = find(node => node.props.className === "rhh-companion-interest");
+      const art = nodes(badge).find(node => node.props.className === "vc-collection-art")!;
+      expect(badge.props.role).toBe("img");
+      expect(badge.props["aria-label"]).toBe(`좋아하는 간식 · ${favorite.name}`);
+      expect(art.props.style).toMatchObject({ backgroundImage: `url("/companion/collection/${favorite.file}")`, backgroundSize: expect.any(String), backgroundPosition: favorite.position });
+      expect(nodes(badge).filter(node => typeof node.type !== "string")).toHaveLength(0);
+    }
+  });
   it("acknowledges only deliberate unread tile inspection, not mounting, category changes or paging", async () => {
     harness.acknowledge.mockReturnValue(true);
     discoveryCollection = { version: 1, foods: [...COMPANION_FOOD_KINDS.slice(0, 10)], behaviors: ["ask-petting"], situations: ["meal-finished"], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [], behaviors: [], situations: [], accessories: [] } };

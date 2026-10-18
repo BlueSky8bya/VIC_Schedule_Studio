@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261018-115 | In progress | [Food, personality and continuity](PLAN-20261018-115-companion-food-personality-and-continuity.md) |
+| PLAN-20261018-116 | In progress | [Shared tabs, video and proposal-only play](PLAN-20261018-116-companion-tabs-video-and-ideas.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

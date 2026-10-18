@@ -1803,7 +1803,8 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings .rhh-switch::before { transition: none; }
 
 /*111: the pet and its keepsakes lead; operational controls are a back page. */
-.rhh-companion-experience { container-name: companion-settings rhh-habits; padding: 0; border: 0; background: transparent; }
+/* The borderless shared profile must not clip its smaller tab corners or focus rings. */
+.rhh-companion-experience { container-name: companion-settings rhh-habits; overflow: visible; padding: 0; border: 0; background: transparent; }
 .rhh-companion-experience > .rhh-profile-nav { margin-block: 0 var(--space-4); min-height: 54px; }
 .rhh-companion-experience > .rhh-profile-nav button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; font-weight: 650; }
 .rhh-companion-experience .rhh-companion-summary { display: grid; grid-template-columns: minmax(164px, .85fr) minmax(0, 1.15fr); align-items: stretch; gap: var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--companion-line); border-radius: var(--r-xl); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-2); }

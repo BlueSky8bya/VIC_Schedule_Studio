@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
-import { companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, createCompanionPreviewPreparation, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
 import "@/components/poster/viewer-companion/viewer-companion.css";
 
@@ -27,7 +27,7 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
       // Keep the bare portrait usable if the optional attachment chunk fails.
       // A subsequent visit can retry without a background retry/RAF loop.
     }) : Promise.resolve();
-    const motion = createCompanionMotion({ clips: Object.fromEntries(companionSpriteMetadata.rows.map((row, index) => [index, row.map((_, column) => column)])), rowCount: companionSpriteMetadata.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
+    const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
     const preparation = createCompanionPreviewPreparation();
     let raf: number | null = null, rest: ReturnType<typeof setTimeout> | null = null, generation = 0;
     let previous: ReturnType<typeof chooseCompanionPreviewBehavior> = null;
