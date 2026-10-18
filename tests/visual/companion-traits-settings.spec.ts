@@ -29,7 +29,7 @@ async function openTraits(page: Page) {
 }
 
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
-  test(`${surface} ${theme}: current local traits, native reset and reload share one readable card`, async ({ page, context }) => {
+  test(`${surface} ${theme}: actionable local traits preserve storage, OFF, native reset and reload`, async ({ page, context }) => {
     const writes: string[] = [], errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
@@ -45,8 +45,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     const initialLife = createCompanionLife(() => 0);
     const life = { ...initialLife, foodScores: { ...initialLife.foodScores, peach: .9 }, favoriteFood: "peach" as const, social: .8, play: .8, curiosity: .8, comfort: .8, recent: ["variety" as const] };
     await page.addInitScript(({ prefs, care, life, key, epoch, theme }) => {
-      if (localStorage.getItem("fixture.traits104")) return;
-      localStorage.setItem("fixture.traits104", "seeded");
+      if (localStorage.getItem("fixture.traits106")) return;
+      localStorage.setItem("fixture.traits106", "seeded");
       for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": theme === "dark" ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "on", "vic.gfxPref": "max" })) localStorage.setItem(name, value);
       localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: false }));
       localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, hunger: .23, affection: .64, habits: { sociability: .6, playfulness: .3, confidence: .5, credit: 0, generation: 0 }, life }));
@@ -56,17 +56,26 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
     const { dialog, traits } = await openTraits(page);
     await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("복숭아");
-    await expect(traits.locator(".rhh-trait-list dt")).toHaveText(["교감", "놀이", "호기심", "편안함"]);
-    await expect(traits.locator(".rhh-trait-state")).toHaveText(["친근해요", "놀기 좋아요", "새로움 선호", "편안해요"]);
-    await expect(traits.locator(".rhh-trait-description")).toHaveText(["곁에서 지내는 게 좋아요", "장난칠 거리를 찾아요", "새로운 곳이 궁금해요", "편안한 리듬으로 지내요"]);
-    await expect(dialog.locator(".rhh-trait-reason")).toContainText("다른 맛도 골고루");
+    const actions = traits.locator(".rhh-profile-action");
+    await expect(actions.locator("h4")).toHaveText(["마우스 곁에서 교감", "좋아하는 맛 고르기", "집에서 포근하게", "응원과 작은 장난"]);
+    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대는 장면");
+    await expect(actions.nth(1)).toContainText("거리와 좋아하는 맛을 함께");
+    await expect(actions.nth(2)).toContainText("피곤하지 않아도");
+    await expect(actions.nth(3)).toContainText("응원 동작을 연습");
+    await expect(actions.locator(".rhh-profile-try")).toHaveCount(4);
+    for (const hint of await actions.locator(".rhh-profile-try").allTextContents()) expect(hint.replace("해보기", "").trim().length).toBeGreaterThan(10);
+    await expect(dialog.locator(".rhh-trait-reason")).toContainText("여러 맛을 골고루 알아가고 있어요");
     await expect(traits.locator("button,input,[role=switch]")).toHaveCount(0);
-    const layout = await traits.evaluate(region => ({ overflow: region.scrollWidth - region.clientWidth, rows: [...region.querySelectorAll("dt,dd,.rhh-trait-intro,.rhh-trait-note")].map(node => ({ font: parseFloat(getComputedStyle(node).fontSize), overflow: node.scrollWidth - node.clientWidth })) }));
+    const layout = await traits.evaluate(region => ({ overflow: region.scrollWidth - region.clientWidth, rows: [...region.querySelectorAll("h4,p,.rhh-trait-favorite-copy > span,.rhh-trait-favorite-copy > strong")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ font: parseFloat(getComputedStyle(node).fontSize), overflow: node.scrollWidth - node.clientWidth })), tiles: [...region.querySelectorAll(".rhh-profile-action")].map(node => { const box = node.getBoundingClientRect(); return { x: Math.round(box.x), y: Math.round(box.y) }; }), fruit: region.querySelector(".rhh-profile-food-art")?.getBoundingClientRect().width }));
     expect(layout.overflow).toBeLessThanOrEqual(1);
+    expect(layout.rows.length).toBeGreaterThan(8);
     for (const row of layout.rows) { expect(row.font).toBeGreaterThanOrEqual(13.5); expect(row.overflow).toBeLessThanOrEqual(1); }
-    mkdirSync(".scratch-pw/companion-105-settings", { recursive: true });
+    expect(new Set(layout.tiles.map(tile => tile.x)).size).toBe(2);
+    expect(new Set(layout.tiles.map(tile => tile.y)).size).toBe(2);
+    expect(layout.fruit).toBe(40);
+    mkdirSync(".scratch-pw/companion-106-settings", { recursive: true });
     const profile = dialog.locator(".rhh-companion-profile");
-    await profile.screenshot({ path: `.scratch-pw/companion-105-settings/${surface}-${theme}.png` });
+    await profile.screenshot({ path: `.scratch-pw/companion-106-settings/${surface}-${theme}.png` });
     if (surface === "viewer" && theme === "light") {
       // A second real same-origin tab exercises the browser's storage event;
       // no model callback, event dispatch, state or geometry is substituted.
@@ -81,28 +90,35 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       });
       await sibling.close(); await page.bringToFront();
       await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("딸기");
-      await expect(traits.locator(".rhh-trait-state")).toHaveText(["천천히 교감", "느긋해요", "익숙함 선호", "조심스러워요"]);
-      await expect(traits.locator(".rhh-trait-description")).toHaveText(["조금 떨어져 지켜봐요", "느긋하게 쉬어 가요", "익숙한 곳을 살펴요", "조심스럽게 살피는 중"]);
-      await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("dd")).toHaveText(["혼자 노는 시간", "느긋하게 쉬엄쉬엄", "먼저 살피고 천천히"]);
+      await expect(actions.nth(0)).toContainText("먼저 다가오는 교감은 아직 뜸해요");
+      await expect(actions.nth(2)).toContainText("피곤할 때 집에서 몸을 모아 쉬어요");
+      await expect(actions.nth(3)).toContainText("응원 연습을 고를 바탕이 자라요");
+      await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveText(["마우스와 거리를 조금 더 두려 해요.", "놀이보다 쉬어 가는 쪽으로 기울었어요.", "새로운 자리를 조금 더 오래 살펴요."]);
       // Real desktop resize exercises the shared responsive layout, keeping
       // the mobile capability gate intact rather than forcing hidden UI on.
       await page.setViewportSize({ width: 1050, height: 900 });
       await settlePanelLayout(page);
       await expect(dialog.getByRole("tab", { name: "프로필", exact: true })).toBeVisible();
-      const narrow = await profile.evaluate(element => ({ overflow: element.scrollWidth - element.clientWidth, rows: [...element.querySelectorAll("h3,dt,dd,strong,span,p")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ overflow: node.scrollWidth - node.clientWidth, font: parseFloat(getComputedStyle(node).fontSize) })) }));
+      const narrow = await profile.evaluate(element => ({ overflow: element.scrollWidth - element.clientWidth, rows: [...element.querySelectorAll("h3,h4,li,strong,p")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ overflow: node.scrollWidth - node.clientWidth, font: parseFloat(getComputedStyle(node).fontSize) })) }));
       expect(narrow.overflow).toBeLessThanOrEqual(1);
+      expect(narrow.rows.length).toBeGreaterThan(8);
       for (const row of narrow.rows) { expect(row.overflow).toBeLessThanOrEqual(1); expect(row.font).toBeGreaterThanOrEqual(13.5); }
-      await profile.screenshot({ path: ".scratch-pw/companion-105-settings/narrow-desktop.png" });
+      await profile.screenshot({ path: ".scratch-pw/companion-106-settings/narrow-desktop.png" });
       await page.setViewportSize({ width: 1440, height: 1100 });
       await settlePanelLayout(page);
     }
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
-    await expect(dialog.locator(".rhh-habit-paused")).toContainText("배우기 끔 · 습관은 보관");
+    await expect(dialog.locator(".rhh-habit-paused")).toContainText("배우기 끔 · 기억은 보관");
+    // OFF preserves stored memories while effects use the neutral defaults.
+    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대는 장면");
+    await expect(actions.nth(1)).toContainText("가까운 쪽을 먼저");
+    await expect(actions.nth(2)).toContainText("피곤할 때 집에서 몸을 모아 쉬어요");
+    await expect(actions.nth(3)).toContainText("응원 동작을 연습");
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("사과");
-    await expect(traits.locator(".rhh-trait-state")).toHaveText(["알아가요", "고르게 지내요", "둘러봐요", "적응 중"]);
-    await expect(traits.locator(".rhh-trait-description")).toHaveText(["조금씩 가까워지는 중", "놀고 쉬며 균형을 잡아요", "주변을 천천히 살펴요", "편한 리듬을 찾아가는 중"]);
+    await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveCount(0);
+    await expect(dialog.getByRole("region", { name: "배운 습관", exact: true })).toContainText("아직 뚜렷한 변화는 없어요");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
     expect(saved.hunger).toBe(.23); expect(saved.affection).toBe(.64);
     await page.reload(); await page.bringToFront();

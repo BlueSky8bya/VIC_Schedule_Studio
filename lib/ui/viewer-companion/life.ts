@@ -38,9 +38,15 @@ export function normalizeCompanionLife(value: unknown, base: Readonly<CompanionL
   const scores = source.foodScores && typeof source.foodScores === "object" && !Array.isArray(source.foodScores) ? source.foodScores as Record<string, unknown> : {};
   const foodScores = scoresFor(seedFood);
   const familiarity = familiarityFor(), known = source.familiarity && typeof source.familiarity === "object" && !Array.isArray(source.familiarity) ? source.familiarity as Record<string, unknown> : {};
-  for (const kind of COMPANION_FOOD_KINDS) foodScores[kind] = finite(scores[kind], base.seedFood === seedFood ? base.foodScores[kind] : foodScores[kind]);
-  for (const kind of COMPANION_FOOD_KINDS) familiarity[kind] = finite(known[kind], base.familiarity[kind]);
   let favoriteFood = isCompanionFoodKind(source.favoriteFood) ? source.favoriteFood : seedFood;
+  const favoriteScore = finite(scores[favoriteFood], foodScores[favoriteFood]), hasScores = Object.keys(scores).length > 0;
+  // Expanded catalogues fill missing entries without a new default food
+  // overtaking a valid saved preference. Existing13 scores/seed stay intact.
+  for (const kind of COMPANION_FOOD_KINDS) {
+    const fallback = base.seedFood === seedFood ? base.foodScores[kind] : foodScores[kind];
+    foodScores[kind] = finite(scores[kind], hasScores ? Math.min(fallback, favoriteScore) : fallback);
+  }
+  for (const kind of COMPANION_FOOD_KINDS) familiarity[kind] = finite(known[kind], base.familiarity[kind]);
   for (const kind of COMPANION_FOOD_KINDS) if (foodScores[kind] > foodScores[favoriteFood]) favoriteFood = kind;
   const recent = Array.isArray(source.recent) ? source.recent.slice(-16).filter((reason): reason is CompanionLifeReason => reasons.includes(reason as CompanionLifeReason)).slice(-4) : [...base.recent];
   return { seedFood, favoriteFood, foodScores, familiarity, play: finite(source.play, base.play), comfort: finite(source.comfort, base.comfort), social: finite(source.social, base.social), curiosity: finite(source.curiosity, base.curiosity), credit: finite(source.credit, base.credit), noveltyCredit: finite(source.noveltyCredit, base.noveltyCredit), generation: generationOf(source.generation ?? base.generation), recent };
@@ -58,7 +64,7 @@ export function advanceCompanionLife(value: CompanionLife | undefined, elapsedMs
   if (!enabled || !Number.isFinite(elapsedMs) || elapsedMs <= 0) return current;
   const elapsed = Math.min(30000, elapsedMs), accumulated = current.noveltyCredit + elapsed / 5000;
   const steps = Math.floor(accumulated), credit = Math.min(1, current.credit + elapsed / 18000), noveltyCredit = accumulated - steps;
-  // Most250ms needs samples only advance two scalar budgets. Clone the13-food
+  // Most250ms needs samples only advance two scalar budgets. Clone food
   // records once per five active seconds, not on every active/render sample.
   if (!steps) return { ...current, credit, noveltyCredit };
   const next = { ...current, credit, noveltyCredit, foodScores: { ...current.foodScores }, familiarity: { ...current.familiarity } }, noveltyMs = steps * 5000;

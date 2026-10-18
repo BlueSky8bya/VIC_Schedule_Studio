@@ -1,21 +1,45 @@
 /** Device-local visual snacks. No food choice is sent to a server or account. */
-export const COMPANION_FOOD_KINDS = Object.freeze([
+export const LEGACY_COMPANION_FOOD_KINDS = Object.freeze([
   "apple", "lemon", "strawberry", "raspberry", "watermelon", "tomato",
   "grapefruit", "peach", "plum", "orange", "persimmon", "apricot", "pear",
 ] as const);
+export const COMPANION_FOOD_KINDS = Object.freeze([
+  ...LEGACY_COMPANION_FOOD_KINDS,
+  "banana", "grape", "cherry", "blueberry", "mango", "kiwi", "pineapple", "coconut", "fig", "dragon-fruit", "melon",
+  "carrot", "cucumber", "broccoli", "pumpkin", "corn", "sweet-potato", "potato", "cabbage", "eggplant", "bell-pepper", "radish", "peas",
+] as const);
 export type CompanionFoodKind = typeof COMPANION_FOOD_KINDS[number];
+export type CompanionFoodRarity = "common" | "uncommon" | "rare";
 export const COMPANION_FOOD_NAMES: Readonly<Record<CompanionFoodKind, string>> = Object.freeze({
   apple: "사과", lemon: "레몬", strawberry: "딸기", raspberry: "라즈베리",
   watermelon: "수박", tomato: "토마토", grapefruit: "자몽", peach: "복숭아",
   plum: "자두", orange: "오렌지", persimmon: "감", apricot: "살구", pear: "배",
+  banana: "바나나", grape: "포도", cherry: "체리", blueberry: "블루베리", mango: "망고", kiwi: "키위", pineapple: "파인애플", coconut: "코코넛", fig: "무화과", "dragon-fruit": "용과", melon: "멜론",
+  carrot: "당근", cucumber: "오이", broccoli: "브로콜리", pumpkin: "단호박", corn: "옥수수", "sweet-potato": "고구마", potato: "감자", cabbage: "양배추", eggplant: "가지", "bell-pepper": "파프리카", radish: "무", peas: "완두콩",
 });
+export const COMPANION_FOOD_RARITY_NAMES = Object.freeze({ common: "흔한", uncommon: "가끔", rare: "귀한" });
+export const COMPANION_FOOD_RARITY: Readonly<Record<CompanionFoodKind, CompanionFoodRarity>> = Object.freeze({
+  apple: "common", lemon: "uncommon", strawberry: "common", raspberry: "uncommon", watermelon: "common", tomato: "common", grapefruit: "uncommon", peach: "common", plum: "uncommon", orange: "common", persimmon: "uncommon", apricot: "uncommon", pear: "common",
+  banana: "common", grape: "common", cherry: "uncommon", blueberry: "rare", mango: "rare", kiwi: "uncommon", pineapple: "rare", coconut: "rare", fig: "rare", "dragon-fruit": "rare", melon: "common",
+  carrot: "common", cucumber: "common", broccoli: "uncommon", pumpkin: "uncommon", corn: "common", "sweet-potato": "common", potato: "common", cabbage: "common", eggplant: "uncommon", "bell-pepper": "uncommon", radish: "common", peas: "common",
+});
+const vegetables: readonly CompanionFoodKind[] = ["tomato", "carrot", "cucumber", "broccoli", "pumpkin", "corn", "sweet-potato", "potato", "cabbage", "eggplant", "bell-pepper", "radish", "peas"];
+export const COMPANION_FOOD_CATEGORY = Object.freeze(Object.fromEntries(COMPANION_FOOD_KINDS.map(kind => [kind, vegetables.includes(kind) ? "vegetable" : "fruit"])) as Record<CompanionFoodKind, "fruit" | "vegetable">);
+export const COMPANION_FOOD_WEIGHTS = Object.freeze(Object.fromEntries(COMPANION_FOOD_KINDS.map(kind => [kind, { common: 8, uncommon: 3, rare: 1 }[COMPANION_FOOD_RARITY[kind]]])) as Record<CompanionFoodKind, number>);
+/** Per-item probability. Excluding the previous snack renormalizes the draw. */
+export function companionFoodChance(kind: CompanionFoodKind, previous?: CompanionFoodKind): number {
+  if (!isCompanionFoodKind(kind) || kind === previous) return 0;
+  return COMPANION_FOOD_WEIGHTS[kind] / COMPANION_FOOD_KINDS.reduce((sum, item) => sum + (item === previous ? 0 : COMPANION_FOOD_WEIGHTS[item]), 0);
+}
 export function isCompanionFoodKind(value: unknown): value is CompanionFoodKind {
   return typeof value === "string" && COMPANION_FOOD_KINDS.some(kind => kind === value);
 }
-/** A bounded deterministic draw; the immediately previous fruit is excluded. */
+/** One bounded weighted draw; the immediately previous snack is excluded. */
 export function randomCompanionFood(previous?: CompanionFoodKind, rng: () => number = Math.random): CompanionFoodKind {
   const candidates = COMPANION_FOOD_KINDS.filter(kind => kind !== previous);
   const sample = rng();
   const fraction = Number.isFinite(sample) ? Math.max(0, Math.min(.999999999, sample)) : 0;
-  return candidates[Math.floor(fraction * candidates.length)];
+  let draw = fraction * candidates.reduce((sum, kind) => sum + COMPANION_FOOD_WEIGHTS[kind], 0);
+  for (const kind of candidates) { draw -= COMPANION_FOOD_WEIGHTS[kind]; if (draw < 0) return kind; }
+  return candidates[candidates.length - 1];
 }

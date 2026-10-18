@@ -4,7 +4,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 
-test.use({ viewport: { width: 1440, height: 1100 } });
+test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 
 async function openHabits(page: Page) {
   const settings = page.getByRole("button", { name: "설정", exact: true });
@@ -19,24 +19,24 @@ async function openHabits(page: Page) {
 }
 
 for (const surface of ["viewer", "studio"] as const) for (const theme of ["light", "dark"] as const) {
-  test(`${surface} ${theme}: readable habit rows preserve learning and reset choices`, async ({ page }) => {
-    const posts: string[] = [], errors: string[] = [];
+  test(`${surface} ${theme}: readable learned effects preserve learning and reset choices`, async ({ page }) => {
+    const writes: string[] = [], errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.route("**/*", route => {
       const request = route.request(), pathname = new URL(request.url()).pathname;
       // Unvisited navigation links may prefetch real public loaders. Keep the
       // fixture's native settings interactions while isolating those reads.
       if (request.method() === "GET" && (pathname === "/" || pathname === "/studio")) return route.fulfill({ status: 200, contentType: "text/plain", body: "" });
-      if (request.method() === "POST") {
-        posts.push(pathname);
+      if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
+        writes.push(pathname);
         return route.fulfill({ status: 503, body: "fixture forbids writes" });
       }
+      if (pathname.startsWith("/api/")) return route.fulfill({ status: 503, body: "fixture forbids live API reads" });
       return route.continue();
     });
-    await page.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
     await page.addInitScript(({ prefs, care, key, epoch, theme }) => {
-      if (localStorage.getItem("fixture.habits086")) return;
-      localStorage.setItem("fixture.habits086", "seeded");
+      if (localStorage.getItem("fixture.habits106")) return;
+      localStorage.setItem("fixture.habits106", "seeded");
       localStorage.setItem(key, epoch);
       localStorage.setItem("vic.dark", theme === "dark" ? "on" : "off");
       localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
@@ -47,11 +47,10 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     await page.goto(surface === "studio" ? "/visual-fixture/studio?role=owner&y=2025&m=11" : "/visual-fixture/poster");
     await page.evaluate(() => document.fonts.ready);
     const { dialog, habits } = await openHabits(page);
-    await expect(habits.locator("dt")).toHaveText(["교감", "놀이", "새로운 곳"]);
-    await expect(habits.locator("dd")).toHaveText([
-      "쓰다듬기와 곁에 있기",
-      "장난치고 탐험하기",
-      "낯선 곳도 씩씩하게",
+    await expect(habits.locator("li")).toHaveText([
+      "마우스와 조금 더 가까이 지내려 해요.",
+      "놀이를 고르는 쪽으로 기울었어요.",
+      "새로운 자리를 살피는 시간이 조금 짧아졌어요.",
     ]);
     await expect(habits).not.toContainText("손길");
     const reading = await habits.evaluate(region => {
@@ -71,43 +70,43 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
         return normalized <= .04045 ? normalized / 12.92 : ((normalized + .055) / 1.055) ** 2.4;
       }).reduce((sum, channel, i) => sum + channel * [.2126, .7152, .0722][i], 0);
       const bgLuminance = luminance(background);
-      return Array.from(region.querySelectorAll("dt, dd")).map(element => {
+      return Array.from(region.querySelectorAll("li, p")).map(element => {
         const style = getComputedStyle(element), color = rgb(style.color), foreground = color.channels.map((channel, i) => channel * color.alpha + background[i] * (1 - color.alpha));
         const fgLuminance = luminance(foreground);
         return { fontSize: parseFloat(style.fontSize), contrast: (Math.max(bgLuminance, fgLuminance) + .05) / (Math.min(bgLuminance, fgLuminance) + .05), fits: element.scrollWidth <= element.clientWidth + 1 };
       });
     });
-    expect(reading).toHaveLength(6);
+    expect(reading).toHaveLength(4);
     for (const item of reading) { expect(item.fontSize).toBeGreaterThanOrEqual(13.5); expect(item.contrast).toBeGreaterThanOrEqual(4.5); expect(item.fits).toBe(true); }
     const balance = await habits.evaluate(region => {
       const style = getComputedStyle(region);
-      const tiles = Array.from(region.querySelectorAll(".rhh-habit-item")).map(element => element.getBoundingClientRect());
+      const tiles = Array.from(region.querySelectorAll("li")).map(element => element.getBoundingClientRect());
       const widths = tiles.map(tile => tile.width);
-      const labels = Array.from(region.querySelectorAll("dt")).map(element => element.getBoundingClientRect().left);
-      const descriptions = Array.from(region.querySelectorAll("dd")).map(element => element.getBoundingClientRect().left);
-      return { widthSpread: Math.max(...widths) - Math.min(...widths), labelSpread: Math.max(...labels) - Math.min(...labels), descriptionSpread: Math.max(...descriptions) - Math.min(...descriptions), paddingDifference: Math.abs(parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)) };
+      const positions = tiles.map(tile => tile.left);
+      return { widthSpread: Math.max(...widths) - Math.min(...widths), positionSpread: Math.max(...positions) - Math.min(...positions), alignment: style.textAlign, paddingDifference: Math.abs(parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)) };
     });
     expect(balance.widthSpread).toBeLessThanOrEqual(1);
-    expect(balance.labelSpread).toBeLessThanOrEqual(1);
-    expect(balance.descriptionSpread).toBeLessThanOrEqual(1);
+    expect(balance.positionSpread).toBeLessThanOrEqual(1);
+    expect(["start", "left"]).toContain(balance.alignment);
     expect(balance.paddingDifference).toBeLessThanOrEqual(1);
-    mkdirSync(".scratch-pw/companion-105-settings", { recursive: true });
-    await habits.screenshot({ path: `.scratch-pw/companion-105-settings/habits-${surface}-${theme}.png` });
-    await dialog.screenshot({ path: `.scratch-pw/companion-105-settings/dialog-${surface}-${theme}.png` });
+    mkdirSync(".scratch-pw/companion-106-settings", { recursive: true });
+    await habits.screenshot({ path: `.scratch-pw/companion-106-settings/habits-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-106-settings/dialog-${surface}-${theme}.png` });
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
-    await expect(dialog.getByText(/배우기 끔 · 습관은 보관, 행동은 고른 성격대로/)).toBeVisible();
-    await expect(habits.locator("dd")).toHaveCount(3);
+    await expect(dialog.locator(".rhh-habit-paused")).toHaveText("배우기 끔 · 기억은 보관하고, 지금은 기본 성격으로 지내요.");
+    await expect(habits).toContainText("아래 기억은 배우기를 다시 켜면 행동에 반영돼요");
+    await expect(habits.locator("li")).toHaveCount(3);
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
-    await expect(habits.getByText(/아직 뚜렷한 습관은 없어요/)).toBeVisible();
-    await expect(habits.locator("dd")).toHaveCount(0);
+    await expect(habits.getByText(/아직 뚜렷한 변화는 없어요/)).toBeVisible();
+    await expect(habits.locator("li")).toHaveCount(0);
     const saved = await page.evaluate(() => ({ care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!), prefs: JSON.parse(localStorage.getItem("vic.viewerCompanion")!) }));
     expect(saved.care.hunger).toBe(.23); expect(saved.care.affection).toBe(.64);
     expect(saved.prefs.learnFromYou).toBe(false); expect(saved.prefs.enabled).toBe(false);
     await page.reload();
     const reopened = await openHabits(page);
-    await expect(reopened.habits.getByText(/아직 뚜렷한 습관은 없어요/)).toBeVisible();
+    await expect(reopened.habits.getByText(/아직 뚜렷한 변화는 없어요/)).toBeVisible();
     await expect(reopened.dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
-    expect(posts).toEqual([]); expect(errors).toEqual([]);
+    expect(writes).toEqual([]); expect(errors).toEqual([]);
   });
 }

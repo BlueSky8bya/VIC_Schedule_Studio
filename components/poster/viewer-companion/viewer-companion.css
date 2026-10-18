@@ -24,6 +24,26 @@ html .vc-companion .vc-actor { outline: none; box-shadow: none; }
 /* The prepared atlas Image itself owns pixels. The existing registered span
    keeps its92px cell and clip; the translated child exposes exactly one cell. */
 .vc-sprite > .vc-texture { position: absolute; left: 0; top: 0; display: block; max-width: none; max-height: none; image-rendering: inherit; pointer-events: none; user-select: none; }
+.vc-wearable { position: absolute; display: block; background-repeat: no-repeat; pointer-events: none; }
+.vc-wearable[hidden] { display: none; }
+.vc-wearable-back { z-index: 0; }
+.vc-pose > .vc-sprite { z-index: 1; }
+.vc-wearable-front { z-index: 2; }
+.vc-gift-prop { z-index: 3; filter: drop-shadow(0 1px 1px #5c443526); }
+.vc-gift-open { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border: 0; background: transparent; border-radius: var(--r-md); pointer-events: auto; cursor: pointer; touch-action: manipulation; }
+.vc-gift-open[hidden] { display: none; }
+.vc-gift-open:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
+.vc-gift-open:not(:disabled):hover::after { content: ""; position: absolute; width: 6px; height: 6px; right: 5px; top: 7px; border-radius: 50%; background: #fff2ae; box-shadow: 0 0 7px #fff2ae; }
+.vc-keepsake-notice { position: fixed; z-index: 78; bottom: 28px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; width: min(350px, calc(100vw - 32px)); box-sizing: border-box; padding: 18px; border: 1px solid var(--line); border-radius: var(--r-xl); background: rgb(var(--glass-panel) / 97%); color: var(--ink); box-shadow: var(--elev-2); font: inherit; font-size: var(--text-body, 13.5px); line-height: 1.5; animation: vc-keepsake-enter .35s var(--ease); }
+.vc-keepsake-notice strong { display: block; padding-right: 28px; font-size: var(--text-ui, 15px); }
+.vc-keepsake-notice p { margin: 4px 0 10px; color: var(--ink-soft); }
+.vc-keepsake-notice .button { min-height: 44px; padding: 5px 14px; }
+.vc-keepsake-art { position: relative; flex: none; width: 90px; height: 100px; }
+.vc-keepsake-art > .vc-collection-art { position: absolute; display: block; width: 90px; height: 90px; bottom: 0; }
+.vc-keepsake-art > .vc-collection-art + .vc-collection-art { width: 58px; height: 58px; left: 16px; top: -3px; bottom: auto; }
+.vc-keepsake-close { position: absolute; top: 2px; right: 2px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-soft); cursor: pointer; }
+@keyframes vc-keepsake-enter { from { opacity: 0; translate: 0 10px; scale: .96; } to { opacity: 1; translate: 0 0; scale: 1; } }
+html[data-reduce-motion] .vc-keepsake-notice, html[data-gfx="off"] .vc-keepsake-notice, html[data-gfx="soft"] .vc-keepsake-notice { animation: none; }
 .vc-companion[data-state="held"] .vc-actor { cursor: grabbing; }
 .vc-effect { position: absolute; left: 65%; top: 0; color: var(--teaser); font-size: 18px; font-weight: 600; transform: translateY(var(--vc-effect, 0px)); pointer-events: none; white-space: nowrap; }
 .vc-companion[data-hide-phase]:not([data-detail-guest]) .vc-actor { pointer-events: none; }

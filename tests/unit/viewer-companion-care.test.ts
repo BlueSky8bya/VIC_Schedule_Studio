@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPANION_CARE_KEY, COMPANION_HABITS_EVENT, DEFAULT_COMPANION_CARE, DEFAULT_COMPANION_MEMORY, createCompanionCareStore, loadCompanionCare, normalizeCompanionCare, resetCompanionHabits, saveCompanionCare, subscribeCompanionHabits } from "@/lib/ui/viewer-companion/care";
-import { DEFAULT_COMPANION_HABITS, learnCompanionHabits } from "@/lib/ui/viewer-companion/habits";
+import { DEFAULT_COMPANION_HABITS, learnCompanionHabits, type CompanionHabits } from "@/lib/ui/viewer-companion/habits";
+import { getCompanionLearnedEffectDirections } from "@/lib/ui/viewer-companion/behavior-profile";
+import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_LIFE } from "@/lib/ui/viewer-companion/life";
 
 beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0));
@@ -285,6 +287,38 @@ describe("local learned-habit subscriptions", () => {
   }
   const stored = (target: EventTarget, key: string | null, newValue: string | null) => target.dispatchEvent(Object.assign(new Event("storage"), { key, newValue }));
 
+  it("publishes a real habit-only bonk's displayed effect and ignores credit-only movement", () => {
+    browser(); const listener = vi.fn(), stop = subscribeCompanionHabits(listener), initial = loadCompanionCare();
+    const habits = learnCompanionHabits(initial.habits, "bonked");
+    expect(getCompanionLearnedEffectDirections(DEFAULT_COMPANION_PREFERENCES, initial.habits)).toEqual({ pointerGap: 0, playWeight: 0, lookScale: 0 });
+    expect(getCompanionLearnedEffectDirections(DEFAULT_COMPANION_PREFERENCES, habits)).toEqual({ pointerGap: 1, playWeight: -1, lookScale: 1 });
+    const memory = saveCompanionCare({ ...initial, habits }, true);
+    expect(listener).toHaveBeenCalledTimes(1); expect(listener).toHaveBeenLastCalledWith(habits);
+    for (const credit of [.1, .25, .7, 1]) saveCompanionCare({ ...memory, habits: { ...habits, credit } }, true);
+    expect(listener).toHaveBeenCalledTimes(1); stop();
+  });
+
+  it.each(["sociability", "playfulness", "confidence"] as const)("notifies both qualitative %s summary boundaries while keeping interior changes quiet", trait => {
+    const listener = vi.fn(), store = createCompanionCareStore(undefined, () => 0, () => 0, undefined, listener);
+    let memory = store.load();
+    const save = (value: number) => { memory = store.save({ ...memory, habits: { ...memory.habits, [trait]: value } }, true); };
+    save(.1198); listener.mockClear(); save(.1199); expect(listener).not.toHaveBeenCalled();
+    save(.12); expect(listener).toHaveBeenCalledTimes(1); save(.1201); expect(listener).toHaveBeenCalledTimes(1);
+    save(-.1199); listener.mockClear(); save(-.1198); expect(listener).not.toHaveBeenCalled();
+    save(-.12); expect(listener).toHaveBeenCalledTimes(1); save(-.1201); expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("notifies when a configured profile's tiny effect crosses its actual display threshold", () => {
+    const listener = vi.fn(), store = createCompanionCareStore(undefined, () => 0, () => 0, undefined, listener);
+    let memory = store.load();
+    const save = (patch: Partial<CompanionHabits>) => { memory = store.save({ ...memory, habits: { ...memory.habits, ...patch } }, true); };
+    const prefs = { ...DEFAULT_COMPANION_PREFERENCES, animalMode: "cat" as const };
+    save({ confidence: .00001 }); listener.mockClear();
+    expect(getCompanionLearnedEffectDirections(prefs, memory.habits).pointerGap).toBe(0);
+    save({ confidence: .002 }); expect(getCompanionLearnedEffectDirections(prefs, memory.habits).pointerGap).toBe(-1); expect(listener).toHaveBeenCalledTimes(1);
+    save({ confidence: .00201 }); expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it("notifies same-tab reset once with only sanitized habits and preserves care and preferences", () => {
     const { entries } = browser(), listener = vi.fn();
     entries.set("vic.viewerCompanion", "manual-preferences-canary");
@@ -300,6 +334,7 @@ describe("local learned-habit subscriptions", () => {
   it("adopts external sanitized numbers and clear events while ignoring unrelated keys", () => {
     const { target, entries } = browser(), listener = vi.fn(), stop = subscribeCompanionHabits(listener);
     saveCompanionCare({ ...DEFAULT_COMPANION_CARE, habits: learned }, true);
+    listener.mockClear();
     stored(target, "other", null); expect(listener).not.toHaveBeenCalled();
     const external = JSON.stringify({ version: 2, ...DEFAULT_COMPANION_CARE, habits: { ...learned, sociability: -.4, eventId: "sensitive-canary" }, email: "sensitive-canary" });
     entries.set(COMPANION_CARE_KEY, external); stored(target, COMPANION_CARE_KEY, external);

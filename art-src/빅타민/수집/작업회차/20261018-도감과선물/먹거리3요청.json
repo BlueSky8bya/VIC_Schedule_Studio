@@ -1,0 +1,21 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Use case: stylized-concept. Make ONE production-ready transparent sprite atlas for a cozy pet discovery game: EXACTLY six equal columns and four equal rows, 24 separate tiles. No labels, text, visible grid, checkerboard or background. Read row-major: each consecutive PAIR has (left) a standalone edible item and (right) its MATCHING collectible stamp. Each row contains three pairs. Twelve pairs in this exact order: 1: orange carrot with short leafy greens; 2: green cucumber and round slice; 3: small green broccoli crown; 4: orange pumpkin wedge; 5: golden corn cob with short green husk; 6: reddish sweet potato with golden cut side; 7: light brown potato; 8: round pale green cabbage; 9: purple elongated aubergine with green cap; 10: red bell pepper; 11: white daikon radish with green leaves; 12: green pea pod showing three peas.\nThe standalone food is a cute recognizable generous-volume miniature, clean warm taupe outline, clear juicy color, restrained cream highlight, gentle matte cel shading, rounded forms, no face or limbs. Slight three-quarter view, whole item fully visible, 65% of tile footprint, no cast ground shadow. Not emoji-font imitation, blurry watercolor, photographic or pixel art. All foods share the same line weight and camera.\nThe paired stamp contains that SAME food, color and identifying silhouette, inside a small cream embossed round paper seal with a delicate scalloped warm-beige edge and tiny botanical flecks. Food occupies most of the seal; no text, numerals, stars, rarity badges or detached decorative confetti. Give standalone and stamp equal clear tile spacing, each fully inside its own cell with 15% transparent safe gutters. Genuinely transparent alpha around every item and seal. High-resolution crisp game icon rendering for small 40px food and 64px stamps.",
+    "transparent_background": true
+  },
+  "orderedFoodIds": [
+    "carrot",
+    "cucumber",
+    "broccoli",
+    "pumpkin",
+    "corn",
+    "sweet-potato",
+    "potato",
+    "cabbage",
+    "eggplant",
+    "bell-pepper",
+    "radish",
+    "peas"
+  ]
+}

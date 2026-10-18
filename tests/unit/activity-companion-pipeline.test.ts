@@ -37,6 +37,12 @@ const ADJACENT_ACTIONS = [
   "premiere-exit#calendar", "premiere-exit#dismiss", "premiere-read", "premiere-cheer",
   "premiere-rehearsal", "dt-hope"
 ] as const;
+const COLLECTION_ACTIONS = [
+  "companion-profile-page#together", "companion-profile-page#discover", "companion-profile-page#dress",
+  "companion-collection-category#food", "companion-collection-category#behavior",
+  "companion-collection-inspect#food", "companion-collection-inspect#behavior", "companion-accessory-select",
+  "companion-gift-open", "companion-accessory-equip#on", "companion-accessory-equip#off", "companion-gift-dismiss"
+] as const;
 type DataRow = Record<string, unknown>;
 type Read = { table: string; columns: string; filters: { method: string; args: unknown[] }[] };
 
@@ -84,7 +90,7 @@ afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs();
 
 describe("companion activity writer boundary", () => {
   it("preserves all fixed gestures and current settings through the real batch writer", async () => {
-    const targets = [...ACTIONS, ...SETTINGS, ...ADJACENT_ACTIONS];
+    const targets = [...ACTIONS, ...SETTINGS, ...ADJACENT_ACTIONS, ...COLLECTION_ACTIONS];
     expect(await recordActivityBatch(targets.map(click), { device: "desktop" })).toBe(targets.length);
     expect(mocks.actor).toHaveBeenCalledOnce();
     expect(mocks.actor).toHaveBeenCalledWith("vic");
@@ -140,6 +146,28 @@ describe("companion activity writer boundary", () => {
     expect(db.rpc).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("stores collection buttons as fixed counts even if a client submits personal contents in allowed metadata fields", async () => {
+    const targets = ["companion-collection-inspect#apple", "companion-accessory-select#sunglasses", "companion-gift-open#beret", "companion-accessory-equip#on"];
+    const events = targets.map(target => ({ ...click(target), meta: { foodId: "apple", behaviorId: "ask-petting", accessoryId: "sunglasses", giftContents: "beret", nickname: CANARY, count: 36, on: true, date: DAY, scope: "public" }, durMs: 11234 }));
+    expect(await recordActivityBatch(events)).toBe(4);
+    expect(db.writes[0].rows.map(row => ({ target: row.target, meta: row.meta, dur_ms: row.dur_ms }))).toEqual([
+      { target: "companion-collection-inspect", meta: null, dur_ms: null },
+      { target: "companion-accessory-select", meta: null, dur_ms: null },
+      { target: "companion-gift-open", meta: null, dur_ms: null },
+      { target: "companion-accessory-equip#on", meta: null, dur_ms: null }
+    ]);
+    const stored = JSON.stringify(db.writes);
+    for (const value of [CANARY, "apple", "ask-petting", "sunglasses", "beret", "giftContents", "11234"]) expect(stored).not.toContain(value);
+  });
+
+  it.each(["viewer", "anon"] as const)("counts %s collection clicks without a collection/account/session payload", async role => {
+    mocks.actor.mockResolvedValue(actor("viewer", role !== "anon"));
+    expect(await recordActivityBatch(COLLECTION_ACTIONS.map(click))).toBe(COLLECTION_ACTIONS.length);
+    expect(db.writes).toEqual([]);
+    expect(db.rpc).toHaveBeenCalledExactlyOnceWith("bump_activity_counts", { p_rows: COLLECTION_ACTIONS.map(target => ({ day: DAY, role, kind: "ui.click", target, n: 1 })) });
+    for (const value of ["account_hash", VISIT, "synthetic-actor", "foods", "behaviors", "unlocked", "equipped"]) expect(JSON.stringify(db.rpc.mock.calls)).not.toContain(value);
+  });
 });
 
 describe("companion activity query boundary", () => {
@@ -185,6 +213,26 @@ describe("companion activity query boundary", () => {
   it("honors an explicit past-day anchor instead of using today's date", async () => {
     expect(await getActivityUsageAction(7, "2026-05-31")).toEqual({ ok: true, rows: [], days: 7, since: "2026-05-25", until: "2026-05-31" });
     for (const read of db.reads) expect(read.filters).toContainEqual({ method: "lte", args: ["day", "2026-05-31"] });
+  });
+
+  it("returns the new fixed controls in actual usage and timeline reads with their values preserved", async () => {
+    db = database({ activity_event: COLLECTION_ACTIONS.map((target, index) => ({
+      occurred_at: `2026-06-10T15:00:${String(index).padStart(2, "0")}.000Z`, visit_key: VISIT,
+      account_hash: "synthetic-opaque-hash", role: "developer", device: "desktop", source: "client",
+      kind: "ui.click", target, meta: null, dur_ms: null
+    })) });
+    mocks.admin.mockReturnValue(db);
+    const usage = await getActivityUsageAction(7, DAY);
+    expect(usage.ok).toBe(true);
+    if (!usage.ok) throw new Error(usage.error);
+    expect(usage.rows.map(row => row.target).sort()).toEqual([...COLLECTION_ACTIONS].sort());
+    expect(usage.rows.every(row => row.total === 1 && row.roles.developer === 1 && !row.auto)).toBe(true);
+    const timeline = await getActivityDayAction(DAY);
+    expect(timeline.ok).toBe(true);
+    if (!timeline.ok) throw new Error(timeline.error);
+    expect(timeline.total).toBe(COLLECTION_ACTIONS.length);
+    expect(timeline.visits[0].items.map(item => item.target)).toEqual([...COLLECTION_ACTIONS]);
+    expect(timeline.visits[0].items.every(item => item.meta === null && item.durMs === null)).toBe(true);
   });
 
   it("returns pet/bonk/move timeline items in order with their fixed IDs and no schedule-title join", async () => {

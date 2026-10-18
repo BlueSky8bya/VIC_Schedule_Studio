@@ -40,7 +40,7 @@ jobs:
 
       - name: Unit tests
         # Several contract tests spawn real compiler/CLI child processes.
-        # Bound CPU contention without weakening their assertions or 5s limit.
+        # Bound CPU contention while retaining each test's explicit timeout.
         run: npm test -- --maxWorkers=1
 
       - name: Isolated SQL contracts

@@ -1,11 +1,14 @@
 import type { CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
+import { getCompanionCollectionArtFrame } from "@/lib/ui/viewer-companion/collection-art";
 
-/** One local vector family, independent of OS emoji fonts. Eight Noto Emoji
- * originals and five explicitly labelled derivatives; Apache-2.0 source,
- * upstream notice and exact hashes live in public/companion/food/SOURCES.md.
- * SVG image isolation also prevents upstream gradient IDs from colliding. */
+/** Shared native106 food art. Existing thirteen licensed vectors and their
+ * provenance stay preserved; new foods use the same compact food-only atlas. */
 export function CompanionFruit({ kind }: { kind: CompanionFoodKind }) {
-  return <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false" className="vc-fruit">
-    <image href={`/companion/food/${kind}.svg`} width="40" height="40" />
+  const frame = getCompanionCollectionArtFrame("food", kind);
+  if (!frame) return null;
+  // Keep the existing SVG leaf: the food's one outer span owns nibbling and
+  // its measured box. A nested span would inherit that transform a second time.
+  return <svg viewBox={`${frame.x} ${frame.y} ${frame.width} ${frame.height}`} aria-hidden="true" focusable="false" className="vc-fruit" data-collection-art="food" data-collection-art-id={kind}>
+    <image href={frame.src} width={frame.atlasWidth} height={frame.atlasHeight} />
   </svg>;
 }

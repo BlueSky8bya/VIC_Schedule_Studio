@@ -48,6 +48,15 @@ describe("completed companion input owns its activity event", () => {
     f.logger.logActivity("ui.click", { target: "companion-heart-clear" });
     expect((await f.events()).map((e: { target: string }) => e.target)).toEqual(["companion-heart-clear"]);
   });
+  it("the physical gift's successful manual opening counts once while an ordinary settings gift uses delegation", async () => {
+    const f = await fixture();
+    f.click(true, false, false, "companion-gift-open");
+    expect(await f.events()).toEqual([]);
+    f.logger.logActivity("ui.click", { target: "companion-gift-open" });
+    f.click(true, false, false, "companion-gift-open");
+    f.click(false, false, false, "companion-gift-open");
+    expect((await f.events()).map((event: { target: string }) => event.target)).toEqual(["companion-gift-open", "companion-gift-open"]);
+  });
   it("ordinary controls and an already selected human heart still count normally", async () => {
     const f = await fixture();
     f.click(false, false);

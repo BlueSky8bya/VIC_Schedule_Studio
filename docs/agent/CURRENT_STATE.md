@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current product work: [105 readable companion profile](plans/PLAN-20261018-105-companion-profile-layout.md), based on official game references. Shared traits/habits UI and independent reviews are complete;2,236 unit/typecheck/lint/build/harness269 and20 rendered cases pass. Authorized commit/push and deployed/UI verification remain. Extra gameplay ideas remain proposals.
+Current product work: [106](plans/PLAN-20261018-106-companion-discovery-and-gifts.md) adds actionable soft interactive cards, local discovery stamps,36 weighted foods, earned gifts and six equippable accessories mapped across520 poses. Full2,301 unit/build/type/lint and34 native cases passed. Authorized release/exact deployed UI verification remain; no server/account collection is introduced.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user. General cleanup/bulk UPDATE/paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-PROFILE-105 | Release verification | Commit/push locally verified shared profile, then check deployed SHA/actual UI | [Plan](plans/PLAN-20261018-105-companion-profile-layout.md), [record](verification/COMPANION_PROFILE_LAYOUT-20261018.md) |
+| COMPANION-DISCOVERY-106 | Release | Authorized scoped commit/push, quality/deployment and exact deployed UI/boundary checks | [Plan](plans/PLAN-20261018-106-companion-discovery-and-gifts.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -38,7 +38,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
-0. COMPANION-PROFILE-105: scoped authorized commit/push and exact remote/deployed/UI verification. Preserve user artwork, ordinary care/preferences and the original production month/panel state.
 1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
 2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
@@ -47,6 +46,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current release `4b4dc01fa21fb55acee9707c536ffe435b0909af`: [companion lived experience](verification/COMPANION_LIVED_EXPERIENCE-20261018.md) adds evolving local taste/traits, shared settings and five connected behaviors with eight mapped matching pose keys. Independent reviews, local2,236 unit/typecheck/lint/build/harness267 and43 rendered cases PASS; [remote quality39097811041](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39097811041) all13 steps and Vercel success. Exact full deployed SHA/public boundaries/asset SHA and actual authenticated developer-studio traits UI verified; original November/right-folded panel restored without schedule or preference edits. Post-release metadata stays local. Prior [103](verification/BUILD_COMMIT_BADGE-20261018.md), [102](verification/HEADER_BUTTON_CONSISTENCY-20261018.md), [101](verification/COMPANION_STYLE_DELIVERY-20261018.md), [100](verification/COMPANION_PHYSICS_CONSISTENCY-20261018.md), [099](verification/COMPANION_LIVENESS_CHROME-20261018.md), [098](verification/COMPANION_CONSISTENCY_RECOVERY-20261018.md) and [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md) retain scoped evidence. Actual OBS hardware/RLS/Hobby excess/096 food focus remain separate.
+Current release `edcf2a93a5d1f6a45ec037d1d261a3be325663cd`: [readable companion profile](verification/COMPANION_PROFILE_LAYOUT-20261018.md) groups actual favorite/traits/earned habits/experience before manual controls, using official game references. Independent source/rendered reviews, local2,236 unit/typecheck/lint/build/harness269 and20 native cases PASS; [remote quality39100282369](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39100282369) all13 steps and Vercel success. Exact full deployed SHA/public boundaries and actual authenticated developer-studio UI verified; enabled companion/profile selection persisted for52 seconds without input. Original November/right-folded panel restored without care or schedule edits. Post-release metadata stays local. Prior [104](verification/COMPANION_LIVED_EXPERIENCE-20261018.md), [103](verification/BUILD_COMMIT_BADGE-20261018.md), [102](verification/HEADER_BUTTON_CONSISTENCY-20261018.md), [101](verification/COMPANION_STYLE_DELIVERY-20261018.md), [100](verification/COMPANION_PHYSICS_CONSISTENCY-20261018.md), [099](verification/COMPANION_LIVENESS_CHROME-20261018.md), [098](verification/COMPANION_CONSISTENCY_RECOVERY-20261018.md) and [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md) retain scoped evidence. Actual OBS hardware/RLS/Hobby excess/096 food focus remain separate.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

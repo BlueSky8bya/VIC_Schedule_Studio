@@ -1,0 +1,4571 @@
+{
+  "version": 1,
+  "method": "Complete alpha-gap source crops, or complete alpha>0 connected components where rectangular bounds overlap; trim only alpha0; preserve all nontransparent RGBA exactly once before isotropic Lanczos resize; center in transparent cells; lossless WebP. Alpha>16 is segmentation/measurement only, never a pixel deletion rule.",
+  "sources": [
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sha256": "254df9f1b8c0f01ef9293a2330a3990855b005b0a0fdb47f4d662ebbed002b71",
+      "width": 1536,
+      "height": 1024,
+      "columns": 6,
+      "rows": 4,
+      "transparentPixels": 686453,
+      "visiblePixels": 814325,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sha256": "995a3af8e9e43fbc04f5f487114cc7ffbb7424a4f4ef752e95ad95ef087675cb",
+      "width": 1536,
+      "height": 1024,
+      "columns": 6,
+      "rows": 4,
+      "transparentPixels": 700001,
+      "visiblePixels": 780769,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sha256": "4c80880ae6d1209f651dd1b6925453953c9cf5e6df837b09b8e1aca1f982eab2",
+      "width": 1536,
+      "height": 1024,
+      "columns": 6,
+      "rows": 4,
+      "transparentPixels": 664965,
+      "visiblePixels": 816209,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sha256": "a687df6937578417e8b0960fdfd255182fc7122d2aeef3c049a94f512e21ff96",
+      "width": 1448,
+      "height": 1086,
+      "columns": 4,
+      "rows": 3,
+      "transparentPixels": 416132,
+      "visiblePixels": 1103092,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sha256": "28fdb6af160e62988bf47c7ab3e680770ddeb6f8528c726adcfec87d9924a145",
+      "width": 1536,
+      "height": 1024,
+      "columns": 6,
+      "rows": 4,
+      "transparentPixels": 1080256,
+      "visiblePixels": 387345,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/수집책과선물_여섯그림.png",
+      "sha256": "1a8380c8b7957b66b139c66fc1c0be583abbb1193b4f8947884ba1ba82d130de",
+      "width": 1536,
+      "height": 1024,
+      "columns": 3,
+      "rows": 2,
+      "transparentPixels": 626648,
+      "visiblePixels": 906260,
+      "sourceBytesUnchanged": true,
+      "cutoutMethod": "Complete alpha>0 connected components; all nontransparent pixels attributed exactly once, unchanged RGBA.",
+      "sourceNontransparentPixels": 946216,
+      "copiedNontransparentPixels": 946216,
+      "components": 199
+    }
+  ],
+  "atlases": {
+    "food": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 768,
+      "height": 480,
+      "cell": 96,
+      "columns": 8,
+      "rows": 5,
+      "sha256": "54f622943f5f5c933fcdc7b31446afb977bc9587de4a7c6428db9e3e4101a18b"
+    },
+    "food-stamp": {
+      "src": "/companion/collection/food-stamps-106-v1.webp",
+      "width": 1024,
+      "height": 640,
+      "cell": 128,
+      "columns": 8,
+      "rows": 5,
+      "sha256": "e6597dcc8588389681647cf824c220f04c7c53a4c7df035a06a8e7d0d084b057"
+    },
+    "behavior-stamp": {
+      "src": "/companion/collection/behavior-stamps-106-v1.webp",
+      "width": 512,
+      "height": 384,
+      "cell": 128,
+      "columns": 4,
+      "rows": 3,
+      "sha256": "3c2315baff24ac9c09025b521ded973db60066aa7195224ee61f71368a3d9d13"
+    },
+    "accessory": {
+      "src": "/companion/collection/accessories-106-v1.webp",
+      "width": 768,
+      "height": 512,
+      "cell": 128,
+      "columns": 6,
+      "rows": 4,
+      "sha256": "4148e96d219f134172cea78dbd31b561bb029d4880b53b71024deb0f4a147b9c"
+    },
+    "book-gift": {
+      "src": "/companion/collection/book-gifts-106-v1.webp",
+      "width": 384,
+      "height": 256,
+      "cell": 128,
+      "columns": 3,
+      "rows": 2,
+      "sha256": "8049e4c502a208f85947fcaa56a8258b51151b820f4632daf630d715fd04c924"
+    }
+  },
+  "cells": [
+    {
+      "id": "apple",
+      "atlas": "food",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 76,
+        "height": 78
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 261,
+        "height": 267
+      },
+      "alphaTrim": {
+        "x": 34,
+        "y": 40,
+        "width": 206,
+        "height": 212
+      },
+      "resized": {
+        "width": 78,
+        "height": 80
+      },
+      "scale": 0.377358,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "4191ddf2efef6cb1c941e4d9eebe95ecf20fcb630956f16a89f9efa39c479369"
+    },
+    {
+      "id": "apple",
+      "atlas": "food-stamp",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 17,
+        "width": 100,
+        "height": 100
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 261,
+        "top": 0,
+        "width": 272,
+        "height": 269
+      },
+      "alphaTrim": {
+        "x": 20,
+        "y": 15,
+        "width": 252,
+        "height": 250
+      },
+      "resized": {
+        "width": 112,
+        "height": 111
+      },
+      "scale": 0.444444,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "c41a94089b89c433324ed8ec149b8b8ee7dfcab70f73e3cd34a3c111bc211a1f"
+    },
+    {
+      "id": "lemon",
+      "atlas": "food",
+      "index": 1,
+      "x": 96,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 17,
+        "y": 18,
+        "width": 68,
+        "height": 66
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 533,
+        "top": 0,
+        "width": 228,
+        "height": 268
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 31,
+        "width": 220,
+        "height": 225
+      },
+      "resized": {
+        "width": 78,
+        "height": 80
+      },
+      "scale": 0.355556,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "ab6e2e407386fc77fb0e55436f75d33e1055f67f3abfc46b0cbf6391f3accb4b"
+    },
+    {
+      "id": "lemon",
+      "atlas": "food-stamp",
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 13,
+        "y": 16,
+        "width": 103,
+        "height": 103
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 761,
+        "top": 0,
+        "width": 272,
+        "height": 269
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 17,
+        "width": 237,
+        "height": 245
+      },
+      "resized": {
+        "width": 108,
+        "height": 112
+      },
+      "scale": 0.457143,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "6253327a21d84481c637121338538c3fd66341a3b9d0f169d6b98e38875ce297"
+    },
+    {
+      "id": "strawberry",
+      "atlas": "food",
+      "index": 2,
+      "x": 192,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 19,
+        "y": 12,
+        "width": 68,
+        "height": 73
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1033,
+        "top": 0,
+        "width": 232,
+        "height": 271
+      },
+      "alphaTrim": {
+        "x": 2,
+        "y": 49,
+        "width": 214,
+        "height": 198
+      },
+      "resized": {
+        "width": 80,
+        "height": 74
+      },
+      "scale": 0.373832,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "fa412ba7be9221676cc482243977e6ffcd6a78e90c15ae6f40fded83e906c32e"
+    },
+    {
+      "id": "strawberry",
+      "atlas": "food-stamp",
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 9,
+        "y": 11,
+        "width": 109,
+        "height": 107
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 1265,
+        "top": 0,
+        "width": 271,
+        "height": 270
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 30,
+        "width": 233,
+        "height": 232
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.480687,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "ed9736469ffa1c6b5964c33907701a7d654571e086f4f5c37565d9704db5f336"
+    },
+    {
+      "id": "raspberry",
+      "atlas": "food",
+      "index": 3,
+      "x": 288,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 11,
+        "y": 11,
+        "width": 70,
+        "height": 72
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 0,
+        "top": 267,
+        "width": 259,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 33,
+        "y": 10,
+        "width": 223,
+        "height": 237
+      },
+      "resized": {
+        "width": 75,
+        "height": 80
+      },
+      "scale": 0.337553,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "139e375415053fc57db6641e27107011c46d561aed168e430af235c022f80da1"
+    },
+    {
+      "id": "raspberry",
+      "atlas": "food-stamp",
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 15,
+        "y": 13,
+        "width": 102,
+        "height": 101
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 259,
+        "top": 269,
+        "width": 258,
+        "height": 241
+      },
+      "alphaTrim": {
+        "x": 2,
+        "y": 4,
+        "width": 249,
+        "height": 237
+      },
+      "resized": {
+        "width": 112,
+        "height": 107
+      },
+      "scale": 0.449799,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "7e5213f73b0c81f99c0ac3bc6b995ee443c0975b66d75f7f2e59299994f054b5"
+    },
+    {
+      "id": "watermelon",
+      "atlas": "food",
+      "index": 4,
+      "x": 384,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 11,
+        "y": 14,
+        "width": 77,
+        "height": 69
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 517,
+        "top": 268,
+        "width": 245,
+        "height": 246
+      },
+      "alphaTrim": {
+        "x": 6,
+        "y": 11,
+        "width": 229,
+        "height": 223
+      },
+      "resized": {
+        "width": 80,
+        "height": 78
+      },
+      "scale": 0.349345,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "f685dfbdbfc1ce4578c09b10f897d9915e06579467a3fd4417b2de16cc63abc6"
+    },
+    {
+      "id": "watermelon",
+      "atlas": "food-stamp",
+      "index": 4,
+      "x": 512,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 11,
+        "width": 107,
+        "height": 106
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 762,
+        "top": 269,
+        "width": 262,
+        "height": 241
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 4,
+        "width": 237,
+        "height": 237
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.472574,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "8bb1f816cc4270799415945c1ce1d4ccb2a3f1adb34d2a2c2289223e61eae351"
+    },
+    {
+      "id": "tomato",
+      "atlas": "food",
+      "index": 5,
+      "x": 480,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 76,
+        "height": 74
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 1024,
+        "top": 271,
+        "width": 246,
+        "height": 243
+      },
+      "alphaTrim": {
+        "x": 18,
+        "y": 24,
+        "width": 220,
+        "height": 215
+      },
+      "resized": {
+        "width": 80,
+        "height": 78
+      },
+      "scale": 0.363636,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "df58905063d0d8677d98e733309264fd7134a813ea70dfb5fdd1afa620181b24"
+    },
+    {
+      "id": "tomato",
+      "atlas": "food-stamp",
+      "index": 5,
+      "x": 640,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 108,
+        "height": 106
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 1270,
+        "top": 270,
+        "width": 266,
+        "height": 242
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 8,
+        "width": 239,
+        "height": 234
+      },
+      "resized": {
+        "width": 112,
+        "height": 110
+      },
+      "scale": 0.468619,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "9fea6bfc87e01214ea853cdef03706b0fd350312f29ed79e1813a1896b6beb2a"
+    },
+    {
+      "id": "grapefruit",
+      "atlas": "food",
+      "index": 6,
+      "x": 576,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 11,
+        "y": 15,
+        "width": 74,
+        "height": 67
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 0,
+        "top": 515,
+        "width": 265,
+        "height": 233
+      },
+      "alphaTrim": {
+        "x": 17,
+        "y": 6,
+        "width": 243,
+        "height": 219
+      },
+      "resized": {
+        "width": 80,
+        "height": 72
+      },
+      "scale": 0.329218,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "0b7947965e2eed04437fa988210e4688e74a902ec5cf2a26f526e5e408a79da4"
+    },
+    {
+      "id": "grapefruit",
+      "atlas": "food-stamp",
+      "index": 6,
+      "x": 768,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 11,
+        "width": 107,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 265,
+        "top": 510,
+        "width": 259,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 0,
+        "width": 237,
+        "height": 240
+      },
+      "resized": {
+        "width": 111,
+        "height": 112
+      },
+      "scale": 0.466667,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "4868cbdedc81804e57cb871554a1aa6be2b62d7fa5573d0fba7cc6441511008a"
+    },
+    {
+      "id": "peach",
+      "atlas": "food",
+      "index": 7,
+      "x": 672,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 18,
+        "width": 76,
+        "height": 66
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 524,
+        "top": 514,
+        "width": 248,
+        "height": 233
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 3,
+        "width": 237,
+        "height": 219
+      },
+      "resized": {
+        "width": 80,
+        "height": 74
+      },
+      "scale": 0.337553,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "dbc502fa3d79ce09facfb7d0f260791cc485061f699eb0a3aa51a0d64ca9cce2"
+    },
+    {
+      "id": "peach",
+      "atlas": "food-stamp",
+      "index": 7,
+      "x": 896,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 12,
+        "width": 108,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 772,
+        "top": 510,
+        "width": 263,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 6,
+        "y": 0,
+        "width": 236,
+        "height": 240
+      },
+      "resized": {
+        "width": 110,
+        "height": 112
+      },
+      "scale": 0.466667,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "a1ee4487447a285e0550404905d0df9fa16bb97aaab597f8024d43ee34a1391e"
+    },
+    {
+      "id": "plum",
+      "atlas": "food",
+      "index": 8,
+      "x": 0,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 9,
+        "width": 74,
+        "height": 75
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 1035,
+        "top": 514,
+        "width": 235,
+        "height": 234
+      },
+      "alphaTrim": {
+        "x": 22,
+        "y": 14,
+        "width": 213,
+        "height": 210
+      },
+      "resized": {
+        "width": 80,
+        "height": 79
+      },
+      "scale": 0.375587,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "9b7ee86e1cd9c112e1a3b7533773935538df4cb33e0cabd4c669923236e9fad5"
+    },
+    {
+      "id": "plum",
+      "atlas": "food-stamp",
+      "index": 8,
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 14,
+        "y": 13,
+        "width": 103,
+        "height": 101
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 1270,
+        "top": 512,
+        "width": 266,
+        "height": 239
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 0,
+        "width": 248,
+        "height": 239
+      },
+      "resized": {
+        "width": 112,
+        "height": 108
+      },
+      "scale": 0.451613,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "dacabaec17179ebd74f48fc485790cfef05ec6f1b54f5efa05659b2f9740cc25"
+    },
+    {
+      "id": "orange",
+      "atlas": "food",
+      "index": 9,
+      "x": 96,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 10,
+        "width": 78,
+        "height": 75
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 0,
+        "top": 748,
+        "width": 262,
+        "height": 276
+      },
+      "alphaTrim": {
+        "x": 28,
+        "y": 12,
+        "width": 225,
+        "height": 217
+      },
+      "resized": {
+        "width": 80,
+        "height": 77
+      },
+      "scale": 0.355556,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "d0d80b0b8f83aaeef54e501ef08763d960a78d875bb6e538d4a60ccd0f9294f7"
+    },
+    {
+      "id": "orange",
+      "atlas": "food-stamp",
+      "index": 9,
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 12,
+        "width": 106,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 262,
+        "top": 750,
+        "width": 255,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 0,
+        "width": 241,
+        "height": 242
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.46281,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "e445202ba8bd926a0c9ea3d4397cf6730f445263c0dace9ffe48e6023bfd8ba0"
+    },
+    {
+      "id": "persimmon",
+      "atlas": "food",
+      "index": 10,
+      "x": 192,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 77,
+        "height": 70
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 20,
+      "sourceBox": {
+        "left": 517,
+        "top": 747,
+        "width": 250,
+        "height": 277
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 12,
+        "width": 236,
+        "height": 217
+      },
+      "resized": {
+        "width": 80,
+        "height": 74
+      },
+      "scale": 0.338983,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "148ce2da2b961d8bf42abd7385eadcc5bbbcfaffd1875b6e29c20f072847aed1"
+    },
+    {
+      "id": "persimmon",
+      "atlas": "food-stamp",
+      "index": 10,
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 12,
+        "width": 100,
+        "height": 99
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 21,
+      "sourceBox": {
+        "left": 767,
+        "top": 750,
+        "width": 261,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 0,
+        "width": 253,
+        "height": 254
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.440945,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "1be6b853f2dbb02cfc61b838127ba90ffa695817c76893542bdca42c8171e7ce"
+    },
+    {
+      "id": "apricot",
+      "atlas": "food",
+      "index": 11,
+      "x": 288,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 15,
+        "y": 10,
+        "width": 70,
+        "height": 70
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 22,
+      "sourceBox": {
+        "left": 1028,
+        "top": 748,
+        "width": 239,
+        "height": 276
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 15,
+        "width": 235,
+        "height": 225
+      },
+      "resized": {
+        "width": 80,
+        "height": 77
+      },
+      "scale": 0.340426,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "f1c5ad811a539738a06394c864da86651af6700fb5e73fdb4c9d499e00e5780c"
+    },
+    {
+      "id": "apricot",
+      "atlas": "food-stamp",
+      "index": 11,
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 12,
+        "width": 106,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sourceIndex": 23,
+      "sourceBox": {
+        "left": 1267,
+        "top": 751,
+        "width": 269,
+        "height": 273
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 0,
+        "width": 233,
+        "height": 240
+      },
+      "resized": {
+        "width": 109,
+        "height": 112
+      },
+      "scale": 0.466667,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "c9f106a2e4360bbe5e72f8e27b99940ca4c7d0c7cb8ce011ec6415f48679a8fa"
+    },
+    {
+      "id": "pear",
+      "atlas": "food",
+      "index": 12,
+      "x": 384,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 73,
+        "height": 76
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 234,
+        "height": 269
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 46,
+        "width": 203,
+        "height": 211
+      },
+      "resized": {
+        "width": 77,
+        "height": 80
+      },
+      "scale": 0.379147,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "6e6111610a29b9a9c6357305f5af20ba1b44fc138a0d954147cddd8c5ee557dd"
+    },
+    {
+      "id": "pear",
+      "atlas": "food-stamp",
+      "index": 12,
+      "x": 512,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 13,
+        "y": 11,
+        "width": 104,
+        "height": 103
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 234,
+        "top": 0,
+        "width": 264,
+        "height": 270
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 36,
+        "width": 241,
+        "height": 234
+      },
+      "resized": {
+        "width": 112,
+        "height": 109
+      },
+      "scale": 0.46473,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "578d6c4174b597bfdf557af0ddefdc498c5dadbbdd1460b1a23e9862a01b4897"
+    },
+    {
+      "id": "banana",
+      "atlas": "food",
+      "index": 13,
+      "x": 480,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 11,
+        "y": 14,
+        "width": 76,
+        "height": 68
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 498,
+        "top": 0,
+        "width": 252,
+        "height": 273
+      },
+      "alphaTrim": {
+        "x": 15,
+        "y": 45,
+        "width": 228,
+        "height": 198
+      },
+      "resized": {
+        "width": 80,
+        "height": 69
+      },
+      "scale": 0.350877,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "0e59cf7e9212a7218366a06a211d97040ba000e02985e86d2562e0cda0b0c510"
+    },
+    {
+      "id": "banana",
+      "atlas": "food-stamp",
+      "index": 13,
+      "x": 640,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 13,
+        "y": 12,
+        "width": 104,
+        "height": 104
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 750,
+        "top": 0,
+        "width": 260,
+        "height": 271
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 31,
+        "width": 241,
+        "height": 236
+      },
+      "resized": {
+        "width": 112,
+        "height": 110
+      },
+      "scale": 0.46473,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "610e9e3cb23b46b50ca4c484178be765456a615ed4940e9750f915fa4ffd480f"
+    },
+    {
+      "id": "grape",
+      "atlas": "food",
+      "index": 14,
+      "x": 576,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 73,
+        "height": 78
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1010,
+        "top": 0,
+        "width": 250,
+        "height": 271
+      },
+      "alphaTrim": {
+        "x": 24,
+        "y": 37,
+        "width": 212,
+        "height": 219
+      },
+      "resized": {
+        "width": 77,
+        "height": 80
+      },
+      "scale": 0.365297,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "0342afac321c762621909eb30af542a6d66b632d56b679a3df0852b26e336f85"
+    },
+    {
+      "id": "grape",
+      "atlas": "food-stamp",
+      "index": 14,
+      "x": 768,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 15,
+        "y": 16,
+        "width": 99,
+        "height": 100
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 1260,
+        "top": 0,
+        "width": 276,
+        "height": 271
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 20,
+        "width": 226,
+        "height": 248
+      },
+      "resized": {
+        "width": 102,
+        "height": 112
+      },
+      "scale": 0.451613,
+      "padding": {
+        "left": 13,
+        "top": 8
+      },
+      "rgbaSha256": "f2db5bafefa16d00f19af1ad02cfc4a5fc1a6a631f6f412b7084b9589b540db7"
+    },
+    {
+      "id": "cherry",
+      "atlas": "food",
+      "index": 15,
+      "x": 672,
+      "y": 96,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 12,
+        "y": 8,
+        "width": 71,
+        "height": 76
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 0,
+        "top": 269,
+        "width": 238,
+        "height": 236
+      },
+      "alphaTrim": {
+        "x": 34,
+        "y": 19,
+        "width": 191,
+        "height": 208
+      },
+      "resized": {
+        "width": 73,
+        "height": 80
+      },
+      "scale": 0.384615,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "ee29a6f3d29258d12d70addfb248abb22b9211a93000b2ab4d59aaddf58bd67d"
+    },
+    {
+      "id": "cherry",
+      "atlas": "food-stamp",
+      "index": 15,
+      "x": 896,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 14,
+        "width": 101,
+        "height": 102
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 238,
+        "top": 270,
+        "width": 261,
+        "height": 239
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 0,
+        "width": 242,
+        "height": 233
+      },
+      "resized": {
+        "width": 112,
+        "height": 108
+      },
+      "scale": 0.46281,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "5992da9469217141419ec8d1cff53c36a9b3584917444ae710ec7a9b01f39e03"
+    },
+    {
+      "id": "blueberry",
+      "atlas": "food",
+      "index": 16,
+      "x": 0,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 16,
+        "width": 78,
+        "height": 62
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 499,
+        "top": 273,
+        "width": 251,
+        "height": 207
+      },
+      "alphaTrim": {
+        "x": 23,
+        "y": 30,
+        "width": 217,
+        "height": 177
+      },
+      "resized": {
+        "width": 80,
+        "height": 65
+      },
+      "scale": 0.368664,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "5047605eed8c62f1738c9eba9b74e16f18123add08a0f3efc6fde924c1fe9c06"
+    },
+    {
+      "id": "blueberry",
+      "atlas": "food-stamp",
+      "index": 16,
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 12,
+        "y": 10,
+        "width": 105,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 750,
+        "top": 271,
+        "width": 252,
+        "height": 239
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 8,
+        "width": 235,
+        "height": 231
+      },
+      "resized": {
+        "width": 112,
+        "height": 110
+      },
+      "scale": 0.476596,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "0682e7d72ca1dc6e5fe7ec69d9fbde31152bc16ef35e0e9e93c8bc08d76354bf"
+    },
+    {
+      "id": "mango",
+      "atlas": "food",
+      "index": 17,
+      "x": 96,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 12,
+        "width": 76,
+        "height": 68
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 1002,
+        "top": 271,
+        "width": 261,
+        "height": 235
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 15,
+        "width": 235,
+        "height": 210
+      },
+      "resized": {
+        "width": 80,
+        "height": 71
+      },
+      "scale": 0.340426,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "eb9c5fdb3ad221a50e8b39ba6fd2b2abc32ea61cd13d1a5210ef185545c9f123"
+    },
+    {
+      "id": "mango",
+      "atlas": "food-stamp",
+      "index": 17,
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 106,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 1263,
+        "top": 271,
+        "width": 273,
+        "height": 238
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 8,
+        "width": 228,
+        "height": 230
+      },
+      "resized": {
+        "width": 111,
+        "height": 112
+      },
+      "scale": 0.486957,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "6709c7c69ffd22eec101d045a73f2093501f7ac3e492a62b1920e8e4884de158"
+    },
+    {
+      "id": "kiwi",
+      "atlas": "food",
+      "index": 18,
+      "x": 192,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 75,
+        "height": 74
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 0,
+        "top": 505,
+        "width": 243,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 16,
+        "width": 224,
+        "height": 217
+      },
+      "resized": {
+        "width": 80,
+        "height": 78
+      },
+      "scale": 0.357143,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "94d939865a7652955e67d8ec6268f561ddf45edc2ae89fc27c0f9096631b9185"
+    },
+    {
+      "id": "kiwi",
+      "atlas": "food-stamp",
+      "index": 18,
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 13,
+        "y": 14,
+        "width": 98,
+        "height": 98
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 243,
+        "top": 509,
+        "width": 271,
+        "height": 241
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 5,
+        "width": 253,
+        "height": 236
+      },
+      "resized": {
+        "width": 112,
+        "height": 104
+      },
+      "scale": 0.442688,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "6074e10b100b16d15a5bd0ee6e5cb6859f568825146e93f23dbdae0531ed0c16"
+    },
+    {
+      "id": "pineapple",
+      "atlas": "food",
+      "index": 19,
+      "x": 288,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 24,
+        "y": 9,
+        "width": 49,
+        "height": 77
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 514,
+        "top": 480,
+        "width": 222,
+        "height": 266
+      },
+      "alphaTrim": {
+        "x": 29,
+        "y": 6,
+        "width": 175,
+        "height": 260
+      },
+      "resized": {
+        "width": 54,
+        "height": 80
+      },
+      "scale": 0.307692,
+      "padding": {
+        "left": 21,
+        "top": 8
+      },
+      "rgbaSha256": "7e6266f65783c98c8c76c7bc170fb23fe4ce4598db0d2c4eeddb447559a0363b"
+    },
+    {
+      "id": "pineapple",
+      "atlas": "food-stamp",
+      "index": 19,
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 12,
+        "width": 103,
+        "height": 103
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 736,
+        "top": 510,
+        "width": 269,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 23,
+        "y": 0,
+        "width": 233,
+        "height": 240
+      },
+      "resized": {
+        "width": 109,
+        "height": 112
+      },
+      "scale": 0.466667,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "d3f2bace989190b963ea5f66c7bad4de7ddc615639f32b20942283c1f45cbcf9"
+    },
+    {
+      "id": "coconut",
+      "atlas": "food",
+      "index": 20,
+      "x": 384,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 11,
+        "width": 78,
+        "height": 72
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 1005,
+        "top": 506,
+        "width": 261,
+        "height": 239
+      },
+      "alphaTrim": {
+        "x": 18,
+        "y": 16,
+        "width": 228,
+        "height": 216
+      },
+      "resized": {
+        "width": 80,
+        "height": 76
+      },
+      "scale": 0.350877,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "1398d9c21774c197a4bc1b56c6433196bb6da1c46b7b5e8c2fc7dbd81cbcf936"
+    },
+    {
+      "id": "coconut",
+      "atlas": "food-stamp",
+      "index": 20,
+      "x": 512,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 16,
+        "y": 16,
+        "width": 94,
+        "height": 96
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 1266,
+        "top": 509,
+        "width": 270,
+        "height": 241
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 260,
+        "height": 241
+      },
+      "resized": {
+        "width": 112,
+        "height": 104
+      },
+      "scale": 0.430769,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "93ca6324cef15313f59328e9539cf8e0fa91a017963dda14b6eddee510f935e0"
+    },
+    {
+      "id": "fig",
+      "atlas": "food",
+      "index": 21,
+      "x": 480,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 12,
+        "y": 9,
+        "width": 69,
+        "height": 74
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 0,
+        "top": 745,
+        "width": 244,
+        "height": 279
+      },
+      "alphaTrim": {
+        "x": 30,
+        "y": 11,
+        "width": 211,
+        "height": 234
+      },
+      "resized": {
+        "width": 72,
+        "height": 80
+      },
+      "scale": 0.34188,
+      "padding": {
+        "left": 12,
+        "top": 8
+      },
+      "rgbaSha256": "e905cbdde34a0234ea40d87006c6069bc1d2949508746e1c8ddc001e33301acb"
+    },
+    {
+      "id": "fig",
+      "atlas": "food-stamp",
+      "index": 21,
+      "x": 640,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 13,
+        "y": 13,
+        "width": 100,
+        "height": 100
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 244,
+        "top": 750,
+        "width": 246,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 0,
+        "width": 229,
+        "height": 246
+      },
+      "resized": {
+        "width": 104,
+        "height": 112
+      },
+      "scale": 0.455285,
+      "padding": {
+        "left": 12,
+        "top": 8
+      },
+      "rgbaSha256": "21231dc7285c9fbba1476b30a94605b7d8d1c760fe940ad4ce33ebb27ae9d49a"
+    },
+    {
+      "id": "dragon-fruit",
+      "atlas": "food",
+      "index": 22,
+      "x": 576,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 11,
+        "width": 74,
+        "height": 72
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 20,
+      "sourceBox": {
+        "left": 490,
+        "top": 746,
+        "width": 264,
+        "height": 278
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 0,
+        "width": 255,
+        "height": 248
+      },
+      "resized": {
+        "width": 80,
+        "height": 78
+      },
+      "scale": 0.313725,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "fa5019f3b8fb075589f3017882d6207487ab20b64d56cbffc929dd88754a08db"
+    },
+    {
+      "id": "dragon-fruit",
+      "atlas": "food-stamp",
+      "index": 22,
+      "x": 768,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 14,
+        "y": 13,
+        "width": 99,
+        "height": 100
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 21,
+      "sourceBox": {
+        "left": 754,
+        "top": 750,
+        "width": 246,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 0,
+        "width": 239,
+        "height": 246
+      },
+      "resized": {
+        "width": 109,
+        "height": 112
+      },
+      "scale": 0.455285,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "5fd83b98afdcbaf53d80ca944480a8fcbbfb3679f08211fd6b039a1c497aeedf"
+    },
+    {
+      "id": "melon",
+      "atlas": "food",
+      "index": 23,
+      "x": 672,
+      "y": 192,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 12,
+        "y": 16,
+        "width": 70,
+        "height": 67
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 22,
+      "sourceBox": {
+        "left": 1000,
+        "top": 745,
+        "width": 264,
+        "height": 279
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 0,
+        "width": 257,
+        "height": 232
+      },
+      "resized": {
+        "width": 80,
+        "height": 72
+      },
+      "scale": 0.311284,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "70f55d43b826e0957d81e4551709c39befec27c7358a1a644224c9a14f118387"
+    },
+    {
+      "id": "melon",
+      "atlas": "food-stamp",
+      "index": 23,
+      "x": 896,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 14,
+        "width": 98,
+        "height": 101
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리02_생성과도장.png",
+      "sourceIndex": 23,
+      "sourceBox": {
+        "left": 1264,
+        "top": 750,
+        "width": 272,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 0,
+        "width": 245,
+        "height": 240
+      },
+      "resized": {
+        "width": 112,
+        "height": 110
+      },
+      "scale": 0.457143,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "2ea4ae471df15d9883ece22cdb9fe23461c5e609ad3ef01cece0e5fdd3b34b11"
+    },
+    {
+      "id": "carrot",
+      "atlas": "food",
+      "index": 24,
+      "x": 0,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 12,
+        "y": 9,
+        "width": 72,
+        "height": 77
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 249,
+        "height": 268
+      },
+      "alphaTrim": {
+        "x": 30,
+        "y": 24,
+        "width": 212,
+        "height": 232
+      },
+      "resized": {
+        "width": 73,
+        "height": 80
+      },
+      "scale": 0.344828,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "11df1cc04c29f952da0ffc40b9780b641afe9ca5d919b16367fd561c03702d90"
+    },
+    {
+      "id": "carrot",
+      "atlas": "food-stamp",
+      "index": 24,
+      "x": 0,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 109,
+        "height": 108
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 249,
+        "top": 0,
+        "width": 263,
+        "height": 262
+      },
+      "alphaTrim": {
+        "x": 6,
+        "y": 20,
+        "width": 244,
+        "height": 242
+      },
+      "resized": {
+        "width": 112,
+        "height": 111
+      },
+      "scale": 0.459016,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "661074eb89adaccf0c572e331029c074974cb7aa35614c1970def0c66b3cabe5"
+    },
+    {
+      "id": "cucumber",
+      "atlas": "food",
+      "index": 25,
+      "x": 96,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 8,
+        "y": 14,
+        "width": 77,
+        "height": 66
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 512,
+        "top": 0,
+        "width": 245,
+        "height": 260
+      },
+      "alphaTrim": {
+        "x": 14,
+        "y": 48,
+        "width": 226,
+        "height": 194
+      },
+      "resized": {
+        "width": 80,
+        "height": 69
+      },
+      "scale": 0.353982,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "0ca113ec3b016fd16dcecc16135eb367524c9ca303498ff8b7ba6d36206447f2"
+    },
+    {
+      "id": "cucumber",
+      "atlas": "food-stamp",
+      "index": 25,
+      "x": 128,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 13,
+        "width": 102,
+        "height": 101
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 757,
+        "top": 0,
+        "width": 273,
+        "height": 262
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 18,
+        "width": 262,
+        "height": 244
+      },
+      "resized": {
+        "width": 112,
+        "height": 104
+      },
+      "scale": 0.427481,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "2cb5da6fbfe1b6d3286759fc9e1d365f2e146fdf2201112d4b1d2f57ae788c33"
+    },
+    {
+      "id": "broccoli",
+      "atlas": "food",
+      "index": 26,
+      "x": 192,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 11,
+        "y": 12,
+        "width": 74,
+        "height": 74
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1030,
+        "top": 0,
+        "width": 240,
+        "height": 268
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 31,
+        "width": 223,
+        "height": 219
+      },
+      "resized": {
+        "width": 80,
+        "height": 79
+      },
+      "scale": 0.358744,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "eafa133f91f84988a9609a6052deafa92c9eedd98f7bf5256553f7909de85755"
+    },
+    {
+      "id": "broccoli",
+      "atlas": "food-stamp",
+      "index": 26,
+      "x": 256,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 12,
+        "width": 104,
+        "height": 103
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 1270,
+        "top": 0,
+        "width": 266,
+        "height": 262
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 18,
+        "width": 257,
+        "height": 244
+      },
+      "resized": {
+        "width": 112,
+        "height": 106
+      },
+      "scale": 0.435798,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "36557058ba48d4116ae95c777e027b67788d30f2f616bddbbdfdfac8ed8a46da"
+    },
+    {
+      "id": "pumpkin",
+      "atlas": "food",
+      "index": 27,
+      "x": 288,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 77,
+        "height": 70
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 0,
+        "top": 268,
+        "width": 250,
+        "height": 254
+      },
+      "alphaTrim": {
+        "x": 22,
+        "y": 19,
+        "width": 228,
+        "height": 210
+      },
+      "resized": {
+        "width": 80,
+        "height": 74
+      },
+      "scale": 0.350877,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "1960cfaa2aeb31308cfac983533007016d0dc03177f71a4fa686a1bbe09300e4"
+    },
+    {
+      "id": "pumpkin",
+      "atlas": "food-stamp",
+      "index": 27,
+      "x": 384,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 12,
+        "y": 11,
+        "width": 107,
+        "height": 106
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 250,
+        "top": 262,
+        "width": 266,
+        "height": 246
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 249,
+        "height": 246
+      },
+      "resized": {
+        "width": 112,
+        "height": 111
+      },
+      "scale": 0.449799,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "55f1eb04ac16da75b3da2beab3659d7969762388b8b8528112fbfcb72210abdc"
+    },
+    {
+      "id": "corn",
+      "atlas": "food",
+      "index": 28,
+      "x": 384,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 11,
+        "y": 10,
+        "width": 74,
+        "height": 76
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 516,
+        "top": 260,
+        "width": 243,
+        "height": 256
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 19,
+        "width": 224,
+        "height": 229
+      },
+      "resized": {
+        "width": 78,
+        "height": 80
+      },
+      "scale": 0.349345,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "ea4bcd7a62df0737516e7994631682f663b81cc56a86a6d261302cd19b782916"
+    },
+    {
+      "id": "corn",
+      "atlas": "food-stamp",
+      "index": 28,
+      "x": 512,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 11,
+        "width": 109,
+        "height": 107
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 759,
+        "top": 262,
+        "width": 265,
+        "height": 246
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 0,
+        "width": 245,
+        "height": 246
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.455285,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "fef51bdd6eece048cb4b412f17d07af8b81866aceec231fb21be046f9776112d"
+    },
+    {
+      "id": "sweet-potato",
+      "atlas": "food",
+      "index": 29,
+      "x": 480,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 76,
+        "height": 71
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 1024,
+        "top": 268,
+        "width": 244,
+        "height": 235
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 20,
+        "width": 225,
+        "height": 208
+      },
+      "resized": {
+        "width": 80,
+        "height": 74
+      },
+      "scale": 0.355556,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "8d947d77eb67c51296bdb32b614c03a458672634a4f9a0d0ad3e31f218432b30"
+    },
+    {
+      "id": "sweet-potato",
+      "atlas": "food-stamp",
+      "index": 29,
+      "x": 640,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 11,
+        "width": 109,
+        "height": 107
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 1268,
+        "top": 262,
+        "width": 268,
+        "height": 246
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 0,
+        "width": 245,
+        "height": 246
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.455285,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "99234018373984a4435bb4200f615996bc057952eb4d61509f1b46c7d2bc1af5"
+    },
+    {
+      "id": "potato",
+      "atlas": "food",
+      "index": 30,
+      "x": 576,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 10,
+        "y": 22,
+        "width": 75,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 0,
+        "top": 522,
+        "width": 249,
+        "height": 217
+      },
+      "alphaTrim": {
+        "x": 23,
+        "y": 9,
+        "width": 226,
+        "height": 197
+      },
+      "resized": {
+        "width": 80,
+        "height": 70
+      },
+      "scale": 0.353982,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "38851ac5d040a07f0544c98e0efe9b27d45a01ff70b54168fedba0fa3883bd26"
+    },
+    {
+      "id": "potato",
+      "atlas": "food-stamp",
+      "index": 30,
+      "x": 768,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 12,
+        "y": 14,
+        "width": 101,
+        "height": 100
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 249,
+        "top": 508,
+        "width": 265,
+        "height": 245
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 265,
+        "height": 245
+      },
+      "resized": {
+        "width": 112,
+        "height": 104
+      },
+      "scale": 0.422642,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "1e4502ca98ff52fec6108320595a3ba08ff55d3a6607bfd3cb7cce457ce10f87"
+    },
+    {
+      "id": "cabbage",
+      "atlas": "food",
+      "index": 31,
+      "x": 672,
+      "y": 288,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 8,
+        "y": 11,
+        "width": 78,
+        "height": 73
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 514,
+        "top": 516,
+        "width": 246,
+        "height": 223
+      },
+      "alphaTrim": {
+        "x": 15,
+        "y": 12,
+        "width": 225,
+        "height": 211
+      },
+      "resized": {
+        "width": 80,
+        "height": 75
+      },
+      "scale": 0.355556,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "e9ab146d35c24e5700e94e77a9fe24b2682921e9dbe6e521c7f94b0553c2db1b"
+    },
+    {
+      "id": "cabbage",
+      "atlas": "food-stamp",
+      "index": 31,
+      "x": 896,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 10,
+        "width": 109,
+        "height": 107
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 760,
+        "top": 508,
+        "width": 263,
+        "height": 246
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 0,
+        "width": 246,
+        "height": 246
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.455285,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "4fd42125a1213c81ac667ab9518cef92b6e7a09698998f48d5db49c057b3c42e"
+    },
+    {
+      "id": "eggplant",
+      "atlas": "food",
+      "index": 32,
+      "x": 0,
+      "y": 384,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 12,
+        "y": 10,
+        "width": 74,
+        "height": 75
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 1023,
+        "top": 503,
+        "width": 246,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 10,
+        "width": 239,
+        "height": 232
+      },
+      "resized": {
+        "width": 80,
+        "height": 78
+      },
+      "scale": 0.334728,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "f0ecb1c57f5d425760bdb72a2e92cee39ae601bbf4322ba8e5f39b5e3b0fde62"
+    },
+    {
+      "id": "eggplant",
+      "atlas": "food-stamp",
+      "index": 32,
+      "x": 0,
+      "y": 512,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 109,
+        "height": 108
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 1269,
+        "top": 508,
+        "width": 267,
+        "height": 245
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 0,
+        "width": 245,
+        "height": 245
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.457143,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "0decee4cd9a1818f1e36d8cea300db7762b85bc611d5c8772f01514c947c532c"
+    },
+    {
+      "id": "bell-pepper",
+      "atlas": "food",
+      "index": 33,
+      "x": 96,
+      "y": 384,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 13,
+        "y": 9,
+        "width": 69,
+        "height": 78
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 0,
+        "top": 739,
+        "width": 242,
+        "height": 285
+      },
+      "alphaTrim": {
+        "x": 29,
+        "y": 13,
+        "width": 200,
+        "height": 225
+      },
+      "resized": {
+        "width": 71,
+        "height": 80
+      },
+      "scale": 0.355556,
+      "padding": {
+        "left": 12,
+        "top": 8
+      },
+      "rgbaSha256": "4b7001a84f20c0119a49099effa76e814b3a154d097c75aec952d93d14c1653f"
+    },
+    {
+      "id": "bell-pepper",
+      "atlas": "food-stamp",
+      "index": 33,
+      "x": 128,
+      "y": 512,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 13,
+        "width": 104,
+        "height": 102
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 242,
+        "top": 753,
+        "width": 269,
+        "height": 271
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 0,
+        "width": 255,
+        "height": 241
+      },
+      "resized": {
+        "width": 112,
+        "height": 106
+      },
+      "scale": 0.439216,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "26e6cecbe3e71ee2bab3d2b596900234860861aeccbcd5f2cf18649906cbc2b3"
+    },
+    {
+      "id": "radish",
+      "atlas": "food",
+      "index": 34,
+      "x": 192,
+      "y": 384,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 15,
+        "y": 9,
+        "width": 68,
+        "height": 67
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 20,
+      "sourceBox": {
+        "left": 511,
+        "top": 739,
+        "width": 259,
+        "height": 285
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 259,
+        "height": 285
+      },
+      "resized": {
+        "width": 73,
+        "height": 80
+      },
+      "scale": 0.280702,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "a5b24620a0b55d2b88985923b60735ddd669ae783fcd04ac5dd2c9133e4d3762"
+    },
+    {
+      "id": "radish",
+      "atlas": "food-stamp",
+      "index": 34,
+      "x": 256,
+      "y": 512,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 10,
+        "width": 105,
+        "height": 103
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 21,
+      "sourceBox": {
+        "left": 770,
+        "top": 754,
+        "width": 253,
+        "height": 270
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 242,
+        "height": 254
+      },
+      "resized": {
+        "width": 107,
+        "height": 112
+      },
+      "scale": 0.440945,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "43ee3b6bf292a843fed9f179451e165fc1e1f72074b0494b15e69003d0c5fc23"
+    },
+    {
+      "id": "peas",
+      "atlas": "food",
+      "index": 35,
+      "x": 288,
+      "y": 384,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 9,
+        "y": 11,
+        "width": 76,
+        "height": 69
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 22,
+      "sourceBox": {
+        "left": 1023,
+        "top": 751,
+        "width": 249,
+        "height": 273
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 9,
+        "width": 237,
+        "height": 222
+      },
+      "resized": {
+        "width": 80,
+        "height": 75
+      },
+      "scale": 0.337553,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "1f5e7b87dea9fb4273d9d617e96786ffdb18da7f701cf5e3ab12e7a985788077"
+    },
+    {
+      "id": "peas",
+      "atlas": "food-stamp",
+      "index": 35,
+      "x": 384,
+      "y": 512,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 12,
+        "y": 12,
+        "width": 107,
+        "height": 104
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리03_생성과도장.png",
+      "sourceIndex": 23,
+      "sourceBox": {
+        "left": 1272,
+        "top": 753,
+        "width": 264,
+        "height": 271
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 0,
+        "width": 251,
+        "height": 243
+      },
+      "resized": {
+        "width": 112,
+        "height": 108
+      },
+      "scale": 0.446215,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "32ab85039367cbfbfaabe66a0e5f8575df5775e0d5a9b67db02e784cd7870e51"
+    },
+    {
+      "id": "ask-petting",
+      "atlas": "behavior-stamp",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 12,
+        "y": 10,
+        "width": 106,
+        "height": 109
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 366,
+        "height": 363
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 366,
+        "height": 363
+      },
+      "resized": {
+        "width": 112,
+        "height": 111
+      },
+      "scale": 0.306011,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "6839d57dcf509e115e8eb4c7fabe605417072205b507ed10ee1dc6b0372fb5d1"
+    },
+    {
+      "id": "lean-nuzzle",
+      "atlas": "behavior-stamp",
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 108,
+        "height": 109
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 366,
+        "top": 0,
+        "width": 357,
+        "height": 363
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 357,
+        "height": 363
+      },
+      "resized": {
+        "width": 110,
+        "height": 112
+      },
+      "scale": 0.30854,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "6d7fc591b7b4e94dd0647b61e27d392dac4d8180a8734998e86690bdc3c8c623"
+    },
+    {
+      "id": "paper-knead",
+      "atlas": "behavior-stamp",
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 107,
+        "height": 110
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 723,
+        "top": 0,
+        "width": 360,
+        "height": 363
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 363
+      },
+      "resized": {
+        "width": 111,
+        "height": 112
+      },
+      "scale": 0.30854,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "f94f013af3e6cdab5d22be42e27b3573b5947c7ecae798076961fccdf48b6829"
+    },
+    {
+      "id": "paper-nest",
+      "atlas": "behavior-stamp",
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 107,
+        "height": 110
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 1083,
+        "top": 0,
+        "width": 365,
+        "height": 363
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 365,
+        "height": 363
+      },
+      "resized": {
+        "width": 112,
+        "height": 111
+      },
+      "scale": 0.306849,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "14852d92545698f40c735f19908ba1004d9395740435b813ede755280306104e"
+    },
+    {
+      "id": "cheer-rehearsal",
+      "atlas": "behavior-stamp",
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 12,
+        "y": 10,
+        "width": 107,
+        "height": 109
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 0,
+        "top": 363,
+        "width": 365,
+        "height": 360
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 365,
+        "height": 360
+      },
+      "resized": {
+        "width": 112,
+        "height": 110
+      },
+      "scale": 0.306849,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "5d950e48403109a4a2df766a7a73b3f22befa7f2efb79cf890c56c6cdf39f96a"
+    },
+    {
+      "id": "doze-curl",
+      "atlas": "behavior-stamp",
+      "index": 5,
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 108,
+        "height": 111
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 365,
+        "top": 363,
+        "width": 358,
+        "height": 359
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 358,
+        "height": 359
+      },
+      "resized": {
+        "width": 112,
+        "height": 112
+      },
+      "scale": 0.311978,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "56376072632c7a1557f1aabea0ce2cd6bd325923a0c189ccbc0fc3e5860edbe2"
+    },
+    {
+      "id": "groom",
+      "atlas": "behavior-stamp",
+      "index": 6,
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 9,
+        "y": 9,
+        "width": 109,
+        "height": 111
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 723,
+        "top": 363,
+        "width": 359,
+        "height": 359
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 357,
+        "height": 359
+      },
+      "resized": {
+        "width": 111,
+        "height": 112
+      },
+      "scale": 0.311978,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "0ea5461b97b56d6c57e5559a0d0196be320be7da9245510192121df4ceecb1ce"
+    },
+    {
+      "id": "bow",
+      "atlas": "behavior-stamp",
+      "index": 7,
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 106,
+        "height": 110
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 1082,
+        "top": 363,
+        "width": 366,
+        "height": 359
+      },
+      "alphaTrim": {
+        "x": 2,
+        "y": 0,
+        "width": 364,
+        "height": 359
+      },
+      "resized": {
+        "width": 112,
+        "height": 110
+      },
+      "scale": 0.307692,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "dabbfc9b4db4500311474f3a6f086ca9703c835179ea79d600df79a2cd66dfdb"
+    },
+    {
+      "id": "pounce",
+      "atlas": "behavior-stamp",
+      "index": 8,
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 8,
+        "width": 108,
+        "height": 110
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 0,
+        "top": 723,
+        "width": 365,
+        "height": 363
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 365,
+        "height": 363
+      },
+      "resized": {
+        "width": 112,
+        "height": 111
+      },
+      "scale": 0.306849,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "eca148c36466c61cfb187af8339cbd37ff5178dadff7c1a5252b9b52eb295d09"
+    },
+    {
+      "id": "tumble",
+      "atlas": "behavior-stamp",
+      "index": 9,
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 9,
+        "width": 107,
+        "height": 109
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 365,
+        "top": 722,
+        "width": 357,
+        "height": 364
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 357,
+        "height": 364
+      },
+      "resized": {
+        "width": 110,
+        "height": 112
+      },
+      "scale": 0.307692,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "c5b76a3c90cab26647ecefa5a6fe1503129a897f95818804e745e0f192a1c2fb"
+    },
+    {
+      "id": "dizzy",
+      "atlas": "behavior-stamp",
+      "index": 10,
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 107,
+        "height": 109
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 722,
+        "top": 722,
+        "width": 360,
+        "height": 364
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 364
+      },
+      "resized": {
+        "width": 111,
+        "height": 112
+      },
+      "scale": 0.307692,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "62d91790a9c6ab48a9ba8329c2b8fb9cb8b1e70b31817d35ddafc2393c16a0af"
+    },
+    {
+      "id": "stretch",
+      "atlas": "behavior-stamp",
+      "index": 11,
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 10,
+        "y": 8,
+        "width": 107,
+        "height": 110
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/행동도장_열두행동.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 1082,
+        "top": 722,
+        "width": 366,
+        "height": 364
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 366,
+        "height": 364
+      },
+      "resized": {
+        "width": 112,
+        "height": 111
+      },
+      "scale": 0.306011,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "a951e5ace3ee81822698c548715084de9d64b7c0493207076deb7af481ea3521"
+    },
+    {
+      "id": "sunglasses:front",
+      "atlas": "accessory",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 11,
+        "y": 56,
+        "width": 103,
+        "height": 35
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 277,
+        "height": 290
+      },
+      "alphaTrim": {
+        "x": 14,
+        "y": 21,
+        "width": 260,
+        "height": 269
+      },
+      "resized": {
+        "width": 108,
+        "height": 112
+      },
+      "scale": 0.416357,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "a6692cc3790631a68daec58c22397adfb2cac953616b84c440f5db63aa443509"
+    },
+    {
+      "id": "beret:front",
+      "atlas": "accessory",
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 16,
+        "y": 38,
+        "width": 92,
+        "height": 59
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 277,
+        "top": 0,
+        "width": 245,
+        "height": 281
+      },
+      "alphaTrim": {
+        "x": 6,
+        "y": 19,
+        "width": 239,
+        "height": 262
+      },
+      "resized": {
+        "width": 102,
+        "height": 112
+      },
+      "scale": 0.427481,
+      "padding": {
+        "left": 13,
+        "top": 8
+      },
+      "rgbaSha256": "0259b5b4a037fe7df9b405b3927f450286a947267dd3fe4a169e8d8ac396027e"
+    },
+    {
+      "id": "bow:front",
+      "atlas": "accessory",
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 16,
+        "y": 40,
+        "width": 89,
+        "height": 65
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 522,
+        "top": 0,
+        "width": 261,
+        "height": 282
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 15,
+        "width": 260,
+        "height": 267
+      },
+      "resized": {
+        "width": 109,
+        "height": 112
+      },
+      "scale": 0.419476,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "7a853d33e9ceecbc3ef3fbcb052517b134baa5ff48620c80dde2ecb4ae442fb1"
+    },
+    {
+      "id": "star-pin:front",
+      "atlas": "accessory",
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 33,
+        "y": 42,
+        "width": 68,
+        "height": 58
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 783,
+        "top": 0,
+        "width": 217,
+        "height": 287
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 19,
+        "width": 211,
+        "height": 268
+      },
+      "resized": {
+        "width": 88,
+        "height": 112
+      },
+      "scale": 0.41791,
+      "padding": {
+        "left": 20,
+        "top": 8
+      },
+      "rgbaSha256": "a84badbe2b21b91fd0d2a3820291ca574948d64fee931030149d28af159eb5c4"
+    },
+    {
+      "id": "flower-crown:front",
+      "atlas": "accessory",
+      "index": 4,
+      "x": 512,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 15,
+        "y": 45,
+        "width": 101,
+        "height": 45
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1000,
+        "top": 0,
+        "width": 314,
+        "height": 285
+      },
+      "alphaTrim": {
+        "x": 4,
+        "y": 23,
+        "width": 304,
+        "height": 262
+      },
+      "resized": {
+        "width": 112,
+        "height": 97
+      },
+      "scale": 0.368421,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "0926447a8ecc2868549df52d0dfbde944b73c397579e3afa8216107d2299c73f"
+    },
+    {
+      "id": "satchel:front",
+      "atlas": "accessory",
+      "index": 5,
+      "x": 640,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 20,
+        "y": 12,
+        "width": 92,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 1314,
+        "top": 0,
+        "width": 222,
+        "height": 266
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 31,
+        "width": 202,
+        "height": 227
+      },
+      "resized": {
+        "width": 100,
+        "height": 112
+      },
+      "scale": 0.493392,
+      "padding": {
+        "left": 14,
+        "top": 8
+      },
+      "rgbaSha256": "7d463ee8f0e25e3367516ae62222567ce626beb3c02477ab7cda29c48ff71b13"
+    },
+    {
+      "id": "sunglasses:quarter",
+      "atlas": "accessory",
+      "index": 6,
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 9,
+        "y": 41,
+        "width": 105,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 0,
+        "top": 290,
+        "width": 290,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 0,
+        "width": 274,
+        "height": 248
+      },
+      "resized": {
+        "width": 112,
+        "height": 101
+      },
+      "scale": 0.408759,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "dd3906a91884a8852592b6f8c91d5fcebd987eae2c9d38452c340f65fab9951b"
+    },
+    {
+      "id": "beret:quarter",
+      "atlas": "accessory",
+      "index": 7,
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 16,
+        "y": 32,
+        "width": 96,
+        "height": 67
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 290,
+        "top": 281,
+        "width": 250,
+        "height": 253
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 248,
+        "height": 253
+      },
+      "resized": {
+        "width": 110,
+        "height": 112
+      },
+      "scale": 0.442688,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "79b44848e4d289d32d5d9aa1964870434e2ce168e11dba9874538887978d0273"
+    },
+    {
+      "id": "bow:quarter",
+      "atlas": "accessory",
+      "index": 8,
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 17,
+        "y": 24,
+        "width": 82,
+        "height": 84
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 540,
+        "top": 282,
+        "width": 243,
+        "height": 250
+      },
+      "alphaTrim": {
+        "x": 3,
+        "y": 0,
+        "width": 239,
+        "height": 250
+      },
+      "resized": {
+        "width": 107,
+        "height": 112
+      },
+      "scale": 0.448,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "30c2e4ba4a6f06fb8313453725ba1c14b4651d264d1f22baaf851b50d093de00"
+    },
+    {
+      "id": "star-pin:quarter",
+      "atlas": "accessory",
+      "index": 9,
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 31,
+        "y": 30,
+        "width": 71,
+        "height": 72
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 783,
+        "top": 287,
+        "width": 226,
+        "height": 241
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 226,
+        "height": 241
+      },
+      "resized": {
+        "width": 105,
+        "height": 112
+      },
+      "scale": 0.46473,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "e243ea543486c29b4e757e254e2652c49c424e7319f5a9c0b6a09a0b71475470"
+    },
+    {
+      "id": "flower-crown:quarter",
+      "atlas": "accessory",
+      "index": 10,
+      "x": 512,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 19,
+        "y": 39,
+        "width": 92,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 1009,
+        "top": 285,
+        "width": 311,
+        "height": 252
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 311,
+        "height": 252
+      },
+      "resized": {
+        "width": 112,
+        "height": 91
+      },
+      "scale": 0.360129,
+      "padding": {
+        "left": 8,
+        "top": 18
+      },
+      "rgbaSha256": "412817ff79c6db2bcb7d965dd2dd7c42f7868171a62593d582f2e76f212c1ebe"
+    },
+    {
+      "id": "satchel:quarter",
+      "atlas": "accessory",
+      "index": 11,
+      "x": 640,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 28,
+        "y": 11,
+        "width": 79,
+        "height": 104
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 1320,
+        "top": 266,
+        "width": 216,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 7,
+        "width": 199,
+        "height": 239
+      },
+      "resized": {
+        "width": 93,
+        "height": 112
+      },
+      "scale": 0.468619,
+      "padding": {
+        "left": 17,
+        "top": 8
+      },
+      "rgbaSha256": "59f0ecb7acfedd2479a2a03e464b727b4d5d47f90cecd341d30c8b74b8b677d4"
+    },
+    {
+      "id": "sunglasses:side",
+      "atlas": "accessory",
+      "index": 12,
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 25,
+        "y": 43,
+        "width": 84,
+        "height": 40
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 0,
+        "top": 538,
+        "width": 292,
+        "height": 226
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 290,
+        "height": 226
+      },
+      "resized": {
+        "width": 112,
+        "height": 87
+      },
+      "scale": 0.386207,
+      "padding": {
+        "left": 8,
+        "top": 20
+      },
+      "rgbaSha256": "75e07561e6dff0471282c307df3629a71934e0330b1bc4ea84bf10c4f71a6b12"
+    },
+    {
+      "id": "beret:side",
+      "atlas": "accessory",
+      "index": 13,
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 20,
+        "y": 35,
+        "width": 81,
+        "height": 64
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 292,
+        "top": 534,
+        "width": 262,
+        "height": 233
+      },
+      "alphaTrim": {
+        "x": 2,
+        "y": 0,
+        "width": 260,
+        "height": 231
+      },
+      "resized": {
+        "width": 112,
+        "height": 100
+      },
+      "scale": 0.430769,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "5e85ad0bae39861c7378d3be308d20ec09ac6910e091cb275e409f504ceec02e"
+    },
+    {
+      "id": "bow:side",
+      "atlas": "accessory",
+      "index": 14,
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 33,
+        "y": 21,
+        "width": 48,
+        "height": 83
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 554,
+        "top": 532,
+        "width": 224,
+        "height": 244
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 224,
+        "height": 244
+      },
+      "resized": {
+        "width": 103,
+        "height": 112
+      },
+      "scale": 0.459016,
+      "padding": {
+        "left": 12,
+        "top": 8
+      },
+      "rgbaSha256": "ba71958b7976988c46d5155d69b289f9d2b71ea0beb2b025fa268dd9972d31c0"
+    },
+    {
+      "id": "star-pin:side",
+      "atlas": "accessory",
+      "index": 15,
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 48,
+        "y": 26,
+        "width": 40,
+        "height": 76
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 778,
+        "top": 528,
+        "width": 219,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 0,
+        "width": 215,
+        "height": 240
+      },
+      "resized": {
+        "width": 100,
+        "height": 112
+      },
+      "scale": 0.466667,
+      "padding": {
+        "left": 14,
+        "top": 8
+      },
+      "rgbaSha256": "9bb3e03dd53e858a6832af006d5d195d880037f8c38d3d30599718085d37434f"
+    },
+    {
+      "id": "flower-crown:side",
+      "atlas": "accessory",
+      "index": 16,
+      "x": 512,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 27,
+        "y": 42,
+        "width": 88,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 997,
+        "top": 537,
+        "width": 321,
+        "height": 219
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 0,
+        "width": 283,
+        "height": 211
+      },
+      "resized": {
+        "width": 112,
+        "height": 84
+      },
+      "scale": 0.39576,
+      "padding": {
+        "left": 8,
+        "top": 22
+      },
+      "rgbaSha256": "ed59528206b12692e3c9960ecae7392317f277979190ea160fc05d7409942889"
+    },
+    {
+      "id": "satchel:side",
+      "atlas": "accessory",
+      "index": 17,
+      "x": 640,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 41,
+        "y": 9,
+        "width": 60,
+        "height": 109
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 1318,
+        "top": 514,
+        "width": 218,
+        "height": 232
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 11,
+        "width": 149,
+        "height": 213
+      },
+      "resized": {
+        "width": 78,
+        "height": 112
+      },
+      "scale": 0.525822,
+      "padding": {
+        "left": 25,
+        "top": 8
+      },
+      "rgbaSha256": "97b8aa16e3bd76965be69ba85966c26d44ca1338d73e1f19dfd7e0c0b4b656bf"
+    },
+    {
+      "id": "sunglasses:back",
+      "atlas": "accessory",
+      "index": 18,
+      "x": 0,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 15,
+        "y": 37,
+        "width": 99,
+        "height": 48
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 0,
+        "top": 764,
+        "width": 283,
+        "height": 260
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 282,
+        "height": 260
+      },
+      "resized": {
+        "width": 112,
+        "height": 103
+      },
+      "scale": 0.397163,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "d604689583e75c9d9f18e566623a9137097422576ffedf306ed044ecd1be583f"
+    },
+    {
+      "id": "beret:back",
+      "atlas": "accessory",
+      "index": 19,
+      "x": 128,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 17,
+        "y": 24,
+        "width": 94,
+        "height": 66
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 283,
+        "top": 767,
+        "width": 249,
+        "height": 257
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 245,
+        "height": 257
+      },
+      "resized": {
+        "width": 107,
+        "height": 112
+      },
+      "scale": 0.435798,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "3901c5375739804b4a14a8671d930aa17a8e1acc556cdd4c1e6f5d13186e1160"
+    },
+    {
+      "id": "bow:back",
+      "atlas": "accessory",
+      "index": 20,
+      "x": 256,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 14,
+        "y": 24,
+        "width": 92,
+        "height": 66
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 20,
+      "sourceBox": {
+        "left": 532,
+        "top": 776,
+        "width": 257,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 0,
+        "width": 235,
+        "height": 248
+      },
+      "resized": {
+        "width": 106,
+        "height": 112
+      },
+      "scale": 0.451613,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "3b8f05faab28dfc66f26c42f50853f7d7a20f74ad894506798db866743940c3c"
+    },
+    {
+      "id": "star-pin:back",
+      "atlas": "accessory",
+      "index": 21,
+      "x": 384,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 32,
+        "y": 26,
+        "width": 69,
+        "height": 61
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 21,
+      "sourceBox": {
+        "left": 789,
+        "top": 768,
+        "width": 222,
+        "height": 256
+      },
+      "alphaTrim": {
+        "x": 2,
+        "y": 0,
+        "width": 215,
+        "height": 256
+      },
+      "resized": {
+        "width": 94,
+        "height": 112
+      },
+      "scale": 0.4375,
+      "padding": {
+        "left": 17,
+        "top": 8
+      },
+      "rgbaSha256": "485285972de02da57256ceb995156f0d58a44fb52301bc8ff4b169391a974535"
+    },
+    {
+      "id": "flower-crown:back",
+      "atlas": "accessory",
+      "index": 22,
+      "x": 512,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 15,
+        "y": 34,
+        "width": 100,
+        "height": 55
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 22,
+      "sourceBox": {
+        "left": 1011,
+        "top": 756,
+        "width": 291,
+        "height": 268
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 1,
+        "width": 277,
+        "height": 249
+      },
+      "resized": {
+        "width": 112,
+        "height": 101
+      },
+      "scale": 0.404332,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "3cbd956cca7f0bcda96d9f9a5deb8dd958b0a8bca1baba065dd14d04c831bb77"
+    },
+    {
+      "id": "satchel:back",
+      "atlas": "accessory",
+      "index": 23,
+      "x": 640,
+      "y": 384,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 19,
+        "y": 11,
+        "width": 87,
+        "height": 97
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/장신구_여섯종네시점.png",
+      "sourceIndex": 23,
+      "sourceBox": {
+        "left": 1302,
+        "top": 746,
+        "width": 234,
+        "height": 278
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 5,
+        "width": 206,
+        "height": 243
+      },
+      "resized": {
+        "width": 95,
+        "height": 112
+      },
+      "scale": 0.460905,
+      "padding": {
+        "left": 16,
+        "top": 8
+      },
+      "rgbaSha256": "75bbd25f2baaba6f4eb766db6c61b158abbf835646f0a3a66d8df1c29a626800"
+    },
+    {
+      "id": "book-closed",
+      "atlas": "book-gift",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 12,
+        "y": 10,
+        "width": 103,
+        "height": 109
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/수집책과선물_여섯그림.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 13,
+        "top": 2,
+        "width": 467,
+        "height": 504
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 467,
+        "height": 504
+      },
+      "resized": {
+        "width": 104,
+        "height": 112
+      },
+      "scale": 0.222222,
+      "padding": {
+        "left": 12,
+        "top": 8
+      },
+      "rgbaSha256": "057776c717682549cbf626dd8bea011db38e5a8065b9f89619e46d62a42de59d"
+    },
+    {
+      "id": "book-open",
+      "atlas": "book-gift",
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 9,
+        "y": 25,
+        "width": 111,
+        "height": 81
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/수집책과선물_여섯그림.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 502,
+        "top": 40,
+        "width": 575,
+        "height": 448
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 575,
+        "height": 448
+      },
+      "resized": {
+        "width": 112,
+        "height": 87
+      },
+      "scale": 0.194783,
+      "padding": {
+        "left": 8,
+        "top": 20
+      },
+      "rgbaSha256": "e2dcd58e14520c0d42663dc46747153905ab5780cc98a9690c2c5ea15c856c6a"
+    },
+    {
+      "id": "gift-wrapped",
+      "atlas": "book-gift",
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 16,
+        "y": 11,
+        "width": 94,
+        "height": 102
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/수집책과선물_여섯그림.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 1128,
+        "top": 31,
+        "width": 407,
+        "height": 467
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 407,
+        "height": 467
+      },
+      "resized": {
+        "width": 98,
+        "height": 112
+      },
+      "scale": 0.239829,
+      "padding": {
+        "left": 15,
+        "top": 8
+      },
+      "rgbaSha256": "6deee90d1a52141f6d2fa407ce8fa13b9113b6134fe49c77065366be5247c95a"
+    },
+    {
+      "id": "gift-open",
+      "atlas": "book-gift",
+      "index": 3,
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 20,
+        "y": 9,
+        "width": 90,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/수집책과선물_여섯그림.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 0,
+        "top": 481,
+        "width": 518,
+        "height": 543
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 518,
+        "height": 543
+      },
+      "resized": {
+        "width": 107,
+        "height": 112
+      },
+      "scale": 0.206262,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "f64dcfb6ca38b557f955ea5e556a59f110649d0c29286c4273c9d689dd495240"
+    },
+    {
+      "id": "gift-bag",
+      "atlas": "book-gift",
+      "index": 4,
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 14,
+        "y": 8,
+        "width": 91,
+        "height": 105
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/수집책과선물_여섯그림.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 567,
+        "top": 511,
+        "width": 465,
+        "height": 513
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 465,
+        "height": 513
+      },
+      "resized": {
+        "width": 102,
+        "height": 112
+      },
+      "scale": 0.218324,
+      "padding": {
+        "left": 13,
+        "top": 8
+      },
+      "rgbaSha256": "79d1c894834e01dd739b4a369f025e8252c72cf309296e06205b06aad57a5f51"
+    },
+    {
+      "id": "discovery-seal",
+      "atlas": "book-gift",
+      "index": 5,
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "content": {
+        "x": 20,
+        "y": 15,
+        "width": 94,
+        "height": 94
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/수집책과선물_여섯그림.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 1029,
+        "top": 500,
+        "width": 489,
+        "height": 524
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 489,
+        "height": 524
+      },
+      "resized": {
+        "width": 105,
+        "height": 112
+      },
+      "scale": 0.21374,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "e76c52462b3a6d2b0f32279fa75ab10bcdfd136fd0db516e3d6e6865ede1f106"
+    }
+  ]
+}

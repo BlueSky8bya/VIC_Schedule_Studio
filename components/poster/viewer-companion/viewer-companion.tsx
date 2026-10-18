@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { Home } from "lucide-react";
+import { Home, X } from "lucide-react";
 import { logActivity } from "@/lib/activity/client";
 import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING, COMPANION_TIMING, COMPANION_THROW_ROW, companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
 import { getCompanionArrivalPlay } from "@/lib/ui/viewer-companion/arrival-play";
@@ -23,7 +23,9 @@ import { sampleCompanionPremiereTravel } from "@/lib/ui/viewer-companion/premier
 import { syncedNow } from "@/lib/ui/synced-clock";
 import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
 import { companionSofaDepth, companionSofaRelease, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
-import { projectCompanionSofaBody } from "@/lib/ui/viewer-companion/sofa-pose";
+import { projectCompanionSofaBody, projectCompanionSpritePoint } from "@/lib/ui/viewer-companion/sofa-pose";
+import { createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
+import { COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { advanceCompanionMealWait, projectCompanionMouth } from "@/lib/ui/viewer-companion/mouth";
 import { COMPANION_FEED_RETRY_MS, rememberCompanionOutcomes } from "@/lib/ui/viewer-companion/planner";
 import { sampleCompanionSofaTravel, type CompanionSofaTravelShape } from "@/lib/ui/viewer-companion/sofa-travel";
@@ -32,6 +34,7 @@ import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
 import { learnCompanionHabits, type CompanionExperience } from "@/lib/ui/viewer-companion/habits";
 import { experienceCompanionLife, type CompanionLifeExperience } from "@/lib/ui/viewer-companion/life";
+import { advanceCompanionCollection, equipCompanionAccessory, flushCompanionCollection, loadCompanionCollection, openCompanionGift, recordCompanionConsumedFood, recordCompanionGiftInteraction, recordCompanionObservedBehavior, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel } from "@/lib/ui/viewer-companion/motion";
 import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
@@ -56,6 +59,7 @@ import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { playSfx } from "@/lib/ui/sfx";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
+import { CompanionCollectionArt } from "./companion-collection-art";
 import { CompanionBedForeground, CompanionHome, type CompanionHomeAction } from "./companion-home";
 import { useHomeShelf } from "./use-home-shelf";
 import "./viewer-companion.css";
@@ -77,6 +81,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
   const pettingHand = useRef<HTMLSpanElement>(null);
+  const accessoryBack = useRef<HTMLSpanElement>(null), accessoryFront = useRef<HTMLSpanElement>(null), giftProp = useRef<HTMLSpanElement>(null), giftButton = useRef<HTMLButtonElement>(null);
+  const wardrobe = useRef<{ equipped: CompanionAccessoryId | null; pending: CompanionAccessoryId | null }>({ equipped: null, pending: null });
+  const refreshWardrobe = useRef<() => void>(() => {});
+  const [pendingGift, setPendingGift] = useState<CompanionAccessoryId | null>(null), [openedGift, setOpenedGift] = useState<CompanionAccessoryId | null>(null);
   const contact = useRef<HTMLSpanElement>(null);
   const inertia = useRef<HTMLSpanElement>(null);
   const bedForeground = useRef<HTMLDivElement>(null);
@@ -108,6 +116,17 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const homeShelf = useHomeShelf({ active: compactActive, expanded: homeExpanded, monthKey, host: compactHost, launcher: homeLauncher, room: compactHome, setExpanded: setHomeExpanded });
   const [geometryIdentity] = useState(createCompanionGeometryIdentity);
   useEffect(() => { setReady(true); }, []);
+  useEffect(() => {
+    if (!ready || !preferences.enabled) {
+      wardrobe.current = { equipped: null, pending: null }; setPendingGift(null); setOpenedGift(null); refreshWardrobe.current(); return;
+    }
+    const read = (value: ReturnType<typeof loadCompanionCollection>) => {
+      wardrobe.current = { equipped: value.gifts.equipped, pending: value.gifts.pending };
+      setPendingGift(value.gifts.pending); setOpenedGift(current => current && value.gifts.unlocked.includes(current) ? current : null); refreshWardrobe.current();
+    };
+    read(loadCompanionCollection());
+    return subscribeCompanionCollection(read);
+  }, [ready, preferences.enabled]);
   useEffect(() => {
     if (!ready || !preferences.enabled) return;
     let live = true;
@@ -167,8 +186,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const gfxMode = () => graphicsMode;
     if (!careLoaded.current) { brain.current = { ...brain.current, ...loadCompanionCare() }; careLoaded.current = true; }
     else { const saved = loadCompanionCare(); brain.current = { ...brain.current, habits: saved.habits, life: saved.life }; }
+    loadCompanionCollection();
     let lastMemorySave = performance.now();
-    const persistCare = (force = false) => { const saved = saveCompanionCare(brain.current, force); brain.current = { ...brain.current, habits: saved.habits, life: saved.life }; lastMemorySave = performance.now(); };
+    const persistCare = (force = false) => { const saved = saveCompanionCare(brain.current, force); brain.current = { ...brain.current, habits: saved.habits, life: saved.life }; flushCompanionCollection(force); lastMemorySave = performance.now(); };
     const offHabits = subscribeCompanionHabits(habits => { brain.current = { ...brain.current, habits }; });
     const offLife = subscribeCompanionLife(life => { brain.current = { ...brain.current, life }; });
     const rememberLife = (event: CompanionLifeExperience) => {
@@ -178,6 +198,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       brain.current = { ...brain.current, life }; persistCare(true); return true;
     };
     const experience = (kind: CompanionExperience, foodKind?: CompanionFoodKind) => {
+      // Real direct interactions can earn a keepsake even when learning is
+      // OFF. Autonomous play and merely spawned food never call this path.
+      if (preferences.enabled && ["petted", "fed", "played"].includes(kind)) recordCompanionGiftInteraction();
       if (!preferences.enabled || !preferences.learnFromYou) return false;
       const habits = learnCompanionHabits(brain.current.habits, kind);
       const event: CompanionLifeExperience | undefined = kind === "fed" ? foodKind ? { kind: "fed", food: foodKind } : undefined : kind === "petted" || kind === "played" ? { kind } : undefined;
@@ -441,6 +464,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let paintedTexture = image.querySelector<HTMLImageElement>(".vc-texture");
     let paintedRegistration: { x: number; y: number; clip: readonly number[] } | undefined;
     let paintedSelection: ReturnType<typeof selectCompanionSprite> | undefined;
+    const wardrobePainter = accessoryBack.current && accessoryFront.current && giftProp.current ? createCompanionAccessoryPainter({ back: accessoryBack.current, front: accessoryFront.current, gift: giftProp.current }) : undefined;
+    refreshWardrobe.current = () => { wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending)); };
     let mealAnchored = false, mealWaited = 0;
     // A controller restart does not discard its live drawing or registration
     // while the next action warms. Only the presentation lifetime releases it.
@@ -616,6 +641,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         paintedRegistration = cell;
         paintedSelection = selected;
       }
+      recordCompanionObservedBehavior({ requestedRow: drawingRow, requestedIndex: selected.physicalIndex, adoptedIndex: paintedSelection?.physicalIndex, requestedSrc: selected.src, adoptedSrc: paintedSelection?.src,
+        decoded: Boolean(paintedTexture?.complete && paintedTexture.naturalWidth && paintedTexture.parentElement === image && paintedTexture.getAttribute("src") === selected.src),
+        visible: !el.hidden && !document.hidden && displayOpacity > .05 });
       const projection = { size, display, shape, pressure, response, facing: sample.facing, sway, chew,
         poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
         inertiaOrigin: grip };
@@ -636,6 +664,19 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = !paintedCell;
+      const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending));
+      if (wardrobe.current.equipped && paintedSelection) { data("accessory", wardrobe.current.equipped); data("accessoryPose", String(paintedSelection.physicalIndex)); }
+      else { el.removeAttribute("data-accessory"); el.removeAttribute("data-accessory-pose"); }
+      const giftHit = giftButton.current;
+      if (giftHit) {
+        const point = giftPoint && !giftPoint.behind && paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, giftPoint) : null;
+        if (point && display.scale > 0) {
+          style(giftHit, "left", `${((point.x - display.x) / display.scale + size / 2).toFixed(3)}px`);
+          style(giftHit, "top", `${((point.y - display.y + size / 2) / display.scale + size / 2).toFixed(3)}px`);
+          style(giftHit, "pointer-events", pressed || keyboardHeld || placing || premiereActive || premiereBounce ? "none" : "auto");
+          giftHit.hidden = false;
+        } else giftHit.hidden = true;
+      }
       // Depth belongs to the complete currently painted body, including its
       // held pivot and inertia. Support/target IDs cannot describe a side-on
       // drag or the middle of a jump. Reuse this frame's numbers and cached
@@ -1315,7 +1356,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         }
         paint(hide.phase === "emerging" ? 15 : 14, hide.progress * 15, hide.phase === "emerging" ? "emerge" : "hide"); lastNeeds = lastCare = now; schedule(); return;
       }
-      if (!returning && presence.phase === "active" && now - lastNeeds >= 250) { brain.current = advanceBrain(brain.current, now - lastNeeds, preferences.learnFromYou); if (now - lastMemorySave >= 5000) persistCare(); lastNeeds = now; }
+      if (!returning && presence.phase === "active" && now - lastNeeds >= 250) {
+        const elapsed = now - lastNeeds;
+        brain.current = advanceBrain(brain.current, elapsed, preferences.learnFromYou);
+        const giftArrived = advanceCompanionCollection(elapsed, brain.current.affection, !action && !pressed && !keyboardHeld && !placing && !homeJourney && !overlayActive && !workspaceBusyRef.current && !brain.current.foodGoal && !brain.current.intention && !(brain.current.episode && brain.current.episode.remaining > 0 && brain.current.episode.phase !== "finish") && supportedNow());
+        if (giftArrived) launch({ kind: "play", play: "bow", target: { x, y, platformId: support }, duration: companionPlayDuration("bow") }, now);
+        if (now - lastMemorySave >= 5000) persistCare(); lastNeeds = now;
+      }
       if (now - lastCare >= 1000) { publishCare(); lastCare = now; }
       const phase = presence.step(now, Boolean(homeJourney === "called" && !homeWaitingGeometry && !overlayActive || returning || action || pressed || keyboardHeld || placing || now < petUntil || afterPetLanding || pendingMonth && !overlayActive));
       data("presence", phase);
@@ -1580,6 +1627,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump") || brain.current.intention?.kind === "explore" && ["consider", "travel"].includes(brain.current.intention.stage) && brain.current.intention.remaining > 0);
           const eatenFood = action.kind === "eat" && action.foodId ? liveFoods.find(item => item.id === action!.foodId) : undefined;
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
+            if (eatenFood) recordCompanionConsumedFood(eatenFood.kind, true);
             brain.current = recordCompanionEvent(brain.current, "ate"); if (!experience("fed", eatenFood?.kind)) persistCare(true);
             petUntil = now + (reduced ? 400 : 1100);
           }
@@ -2725,6 +2773,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     return () => {
       offHabits();
       offLife();
+      refreshWardrobe.current = () => {}; wardrobePainter?.clear();
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       persistCare(true);
@@ -2757,18 +2806,42 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
 
   if (!ready) return null;
   const closeHome = homeShelf.close;
+  const unwrapGift = () => {
+    if (!preferences.enabled || blocked || overlayOpen || performanceActive) return;
+    const received = openCompanionGift();
+    if (!received) return;
+    logActivity("ui.click", { target: "companion-gift-open" });
+    setOpenedGift(received); hapticSuccess(); playSfx("tab");
+    setAnnouncement(`${COMPANION_ACCESSORY_NAMES[received]} 선물을 받았어요. 프로필의 꾸미기에서 장착할 수 있어요.`);
+    actor.current?.focus({ preventScroll: true });
+  };
   const act = (kind: CompanionHomeAction) => { control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
   const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<><div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
-    <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" data-activity-manual="" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); }}><span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}><span className="vc-sprite" ref={sprite} /></span></span></span></span></span><span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span></button>
+    <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" data-activity-manual="" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); }}>
+      <span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}>
+        <span className="vc-wearable vc-wearable-back" ref={accessoryBack} hidden />
+        <span className="vc-sprite" ref={sprite} />
+        <span className="vc-wearable vc-wearable-front" ref={accessoryFront} hidden />
+        <span className="vc-wearable vc-gift-prop" ref={giftProp} hidden />
+      </span></span></span></span></span>
+      <span className="vc-dream" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span>
+    </button>
+    {pendingGift && <button className="vc-gift-open" ref={giftButton} hidden type="button" aria-label="빅타민이 가져온 선물 열기" title="선물 열기" data-activity-manual="" data-sfx="off" disabled={blocked || overlayOpen || performanceActive} tabIndex={overlayOpen || performanceActive ? -1 : 0} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); unwrapGift(); }} />}
     <span className="vc-effect" ref={effect} aria-hidden="true" />
     <span className="vc-affection-hearts" aria-hidden="true"><i>♥</i><i>♥</i><i>♥</i></span>
     <span className="vc-petting-hand" ref={pettingHand} aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M10 26c-3-3-5-6-6-9-1-2 1-4 3-2l3 3-1-9c0-3 3-4 4-1l1 6V6c0-3 4-3 4 0v8l1-6c1-3 4-2 4 1l-1 8 2-3c2-2 4 0 2 3l-4 7c-1 2-3 4-6 4h-3Z"/><path className="vc-hand-fold" d="M11 21c2-2 5-2 7 0"/><path className="vc-hand-cuff" d="M10 27h11v4H10Z"/></svg></span>
     <span className="sr-only" id="vc-help">빅타민의 몸 위에서 마우스를 좌우로 움직여 쓰다듬기. 짧게 누르면 톡 치기. 끌어서 옮기기. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
     <span className="sr-only" role="status">{announcement}</span>
-  </div><div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
+  </div>
+    {openedGift && preferences.enabled && !blocked && !overlayOpen && !performanceActive && <aside className="vc-keepsake-notice" aria-label="받은 선물">
+      <div className="vc-keepsake-art"><CompanionCollectionArt kind="gift" id="gift-open" /><CompanionCollectionArt kind="accessory" id={openedGift} /></div>
+      <div><strong>{COMPANION_ACCESSORY_NAMES[openedGift]} 선물!</strong><p>받은 선물은 꾸미기에 간직해요.</p><button className="button" type="button" data-act="companion-accessory-equip" data-act-opt="on" onClick={() => { if (equipCompanionAccessory(openedGift)) { hapticSuccess(); playSfx("tab"); setOpenedGift(null); actor.current?.focus({ preventScroll: true }); } }}>착용하기</button></div>
+      <button className="vc-keepsake-close" type="button" aria-label="받은 선물 닫기" data-act="companion-gift-dismiss" onClick={() => { setOpenedGift(null); actor.current?.focus({ preventScroll: true }); }}><X size={17} aria-hidden="true" /></button>
+    </aside>}
+    <div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
     {!suspended && !blocked && homeVisible && homeHost ? createPortal(house, homeHost) : null}
     {compactActive && launcherHost ? createPortal(<button ref={homeLauncher} data-act={homeExpanded ? "companion-home-close" : "companion-home-open"} data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label={homeExpanded ? "빅타민 집 닫기" : "빅타민 집 열기"} aria-expanded={homeExpanded} aria-controls={`${actorId}-home`} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} onClick={() => homeExpanded ? closeHome() : homeShelf.open()} onKeyDown={event => { if (event.key === "Escape" && homeExpanded) { event.preventDefault(); event.stopPropagation(); logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}><Home size={16} aria-hidden="true" /><span className="lbl vc-home-launcher-label">빅타민 집</span></button>, launcherHost) : null}
     {compactActive && compactHost ? createPortal(<div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>

@@ -626,7 +626,16 @@ export const ACT: Record<string, TargetLabel> = {
   },
   // 빅타민 — 자동 행동이 아니라 사람이 고른 설정·직접 교감만 기록한다.
   // 이 사전은 저장 allowlist도 겸하므로 옵션은 화면의 고정 값만 등록한다.
-  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "성격" } },
+  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "프로필" } },
+  // Local collection contents never enter telemetry. Only these fixed button
+  // categories are counted; the strict storage branch below rejects item IDs.
+  "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "발견 도감", dress: "꾸미기" } },
+  "companion-collection-category": { name: "빅타민 발견 도감 종류", area: "설정", opts: { food: "먹거리", behavior: "행동" } },
+  "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "먹거리", behavior: "행동" } },
+  "companion-accessory-select": { name: "빅타민 장신구 살펴보기", area: "설정" },
+  "companion-gift-open": { name: "빅타민 선물 열기", area: "빅타민" },
+  "companion-accessory-equip": { name: "빅타민 장신구", area: "설정", opts: { on: "착용하기", off: "벗기" } },
+  "companion-gift-dismiss": { name: "빅타민 선물 결과 닫기", area: "설정" },
   "companion-enabled": { name: "AI 빅타민", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-roam": { name: "빅타민 돌아다니기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-jump": { name: "빅타민 깡충 뛰기", area: "설정", opts: { on: "켜기", off: "끄기" } },
@@ -1014,6 +1023,16 @@ export function roleBreakdown(roles: Record<string, number>): string {
   return parts.join(" · ") || "기록 없음";
 }
 
+const COMPANION_COLLECTION_CONTROLS: ReadonlySet<string> = new Set([
+  "companion-profile-page", "companion-collection-category", "companion-collection-inspect",
+  "companion-accessory-select", "companion-gift-open", "companion-accessory-equip", "companion-gift-dismiss"
+]);
+
+/** These controls count a fixed UI operation, never a personal collection. */
+export function isCompanionCollectionActivityTarget(target: string | null): boolean {
+  return target !== null && COMPANION_COLLECTION_CONTROLS.has(target.split("#", 1)[0]);
+}
+
 /** Storage allowlist shares the reviewed UI dictionary. Unknown options collapse to their control. */
 export function registeredActivityTarget(target: string): string | null {
   if ([ROUTE, SECTION, ACT].some((dict) => Object.hasOwn(dict, target))) return target;
@@ -1032,6 +1051,7 @@ export function registeredActivityTarget(target: string): string | null {
   if (separator > 0) {
     const base = target.slice(0, separator), option = target.slice(separator + 1);
     if (!Object.hasOwn(ACT, base)) return null;
+    if (isCompanionCollectionActivityTarget(base)) return Object.hasOwn(ACT[base].opts ?? {}, option) ? target : base;
     return Object.hasOwn(ACT[base].opts ?? {}, option) || Object.hasOwn(OPTION_NAME, option) ? target : base;
   }
   return null;

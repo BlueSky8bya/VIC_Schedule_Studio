@@ -5,6 +5,7 @@ import { DEFAULT_COMPANION_CARE, DEFAULT_COMPANION_MEMORY, type CompanionMemory 
 import { DEFAULT_COMPANION_LIFE, normalizeCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
@@ -17,10 +18,11 @@ type Probe = { frames: Frame[]; inputs: Input[]; began: number; lastSample: numb
 type ProbeWindow = Window & { livedExperience104?: Probe };
 type Evidence = { writes: string[]; errors: string[]; care: unknown[]; probe?: unknown };
 const evidence = new WeakMap<Page, Evidence>();
-const output = ".scratch-pw/104-lived-experience";
+const output = process.env.LIVED_EXPERIENCE_OUTPUT ?? ".scratch-pw/104-lived-experience";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const memory = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!) as CompanionMemory & { version: number });
+const collection = (page: Page) => page.evaluate(key => { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) as CompanionCollection : null; }, COMPANION_COLLECTION_KEY);
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.beforeEach(async ({ page }) => {
@@ -65,7 +67,9 @@ async function seed(page: Page, mode: Mode) {
     // Established saved care/preferences only. Meal/cozy deliberately use the
     // legacy snapshot so the real first-install migration chooses its own
     // random favorite. No RNG, focus, clock, brain or geometry is replaced.
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, roam: mode !== "cozy", jump: false, sleep: mode === "cozy", feeding: mode === "meal", petting: mode !== "cheer", drag: true, personality: "affectionate", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
+    // A saved dog preference gives a genuine post-meal bow to witness. The
+    // ordinary episode chooses/performs it; no requested frame is supplied.
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: mode === "meal" ? "dog" : prefs.animalMode, roam: mode !== "cozy", jump: false, sleep: mode === "cozy", feeding: mode === "meal", petting: mode !== "cheer", drag: true, personality: "affectionate", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: life ? 3 : 2, ...care, hunger: mode === "meal" ? .65 : .1, affection: mode === "nuzzle" ? .7 : .15, energy: mode === "cozy" ? .16 : .9, curiosity: mode === "cheer" ? .1 : care.curiosity, habits, ...(life ? { life } : {}) }));
     localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": false, season: false, "companion-home": true }));
     localStorage.removeItem("vic_panel_collapsed");
@@ -169,10 +173,11 @@ async function openTraits(page: Page) {
 }
 
 for (const surface of ["viewer", "studio"] as const) {
-  test(`${surface}: a native meal changes only the consumed fruit and retains its real first seed through reload and settings`, async ({ page }) => {
+  test(`${surface}: a native meal changes only the consumed food and retains its discoveries and real first seed through reload and settings`, async ({ page }) => {
     test.setTimeout(75000);
     await setup(page, surface, "meal"); const initial = await memory(page);
     expect(initial.version).toBe(3); expect(initial.life.favoriteFood).toBe(initial.life.seedFood);
+    expect((await collection(page))?.foods ?? []).toEqual([]);
     await openCompanionHome(page, "keyboard"); const floor = await placeAndHold(page);
     // Placement is itself a real play experience. Earn the next learning
     // credit through19 seconds of genuine visible held time, never a clock jump.
@@ -180,13 +185,24 @@ for (const surface of ["viewer", "studio"] as const) {
     await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); const food = page.locator(".vc-food"); await expect(food).toHaveCount(1);
     const id = (await food.getAttribute("data-food"))!, kind = (await food.getAttribute("data-kind")) as CompanionFoodKind;
     await dragFoodToFeet(page, food, { x: floor.x + 24, y: floor.y }); const before = await memory(page); evidence.get(page)!.care.push({ phase: "before-meal", value: before, id, kind });
+    const spawned = await collection(page); expect(spawned?.foods ?? []).not.toContain(kind);
+    evidence.get(page)!.care.push({ phase: "spawned-food-is-not-consumed", collection: spawned, id, kind });
     await actor(page).focus(); await actor(page).press("Space"); await page.mouse.move(2, 2);
     await expect(food).toHaveCount(0, { timeout: 25000 });
     await expect.poll(async () => (await memory(page)).life.foodScores[kind], { timeout: 6000 }).toBeGreaterThan(before.life.foodScores[kind] + .001);
+    await expect.poll(async () => (await collection(page))?.foods ?? [], { timeout: 6000 }).toEqual([kind]);
     const after = await memory(page); evidence.get(page)!.care.push({ phase: "after-meal", value: after });
     expect(after.life.seedFood).toBe(initial.life.seedFood); expect(after.hunger).toBeLessThan(before.hunger - .25);
     for (const other of Object.keys(after.life.foodScores) as CompanionFoodKind[]) if (other !== kind) expect(Math.abs(after.life.foodScores[other] - before.life.foodScores[other])).toBeLessThan(.001);
     expect(after.life.recent).toContain(kind === before.life.favoriteFood ? "favorite-food" : "variety");
+    const mealFrames = (await frames(page)).filter(frame => frame.state === "eat" && (frame.foodGoal === id || frame.episodeFood === id));
+    expect(mealFrames.length).toBeGreaterThan(0); const lastEatingAt = Math.max(...mealFrames.map(frame => frame.at));
+    // The actual completed meal's ordinary dog afterglow performs row29.
+    // Require the adopted decoded/source-matched frame before checking its
+    // stamp, so an intention or retained fallback cannot establish discovery.
+    await expect.poll(async () => (await frames(page)).some(frame => frame.at > lastEatingAt && frame.row === 29 && frame.state === "play" && frame.same && frame.count === 1 && frame.decoded && frame.registered && frame.focused && !frame.hidden), { timeout: 10000, intervals: [50] }).toBe(true);
+    await expect.poll(async () => (await collection(page))?.behaviors ?? [], { timeout: 6000 }).toContain("bow");
+    const discovered = (await collection(page))!; evidence.get(page)!.care.push({ phase: "actual-consume-and-visible-bow-stamps", collection: discovered, id, kind });
     const observed = await frames(page); expect(observed.some(frame => frame.state === "eat" && (frame.foodGoal === id || frame.episodeFood === id))).toBe(true);
     expect(observed.filter(frame => frame.foodGoal).every(frame => frame.foodGoal === id)).toBe(true);
     evidence.get(page)!.probe = await page.evaluate(() => { const p = (window as unknown as ProbeWindow).livedExperience104!; return { beforeReloadFrames: p.frames, beforeReloadInputs: p.inputs }; });
@@ -194,8 +210,16 @@ for (const surface of ["viewer", "studio"] as const) {
     await page.reload(); await page.bringToFront(); await expect(actor(page)).toBeVisible();
     await startProbe(page);
     const reopened = await memory(page); expect(reopened.life.seedFood).toBe(initial.life.seedFood); expect(reopened.life.foodScores[kind]).toBeGreaterThan(before.life.foodScores[kind] + .001);
+    const retained = await collection(page); expect(retained?.foods).toEqual(discovered.foods); expect(retained?.behaviors).toContain("bow");
+    evidence.get(page)!.care.push({ phase: "reloaded-real-discoveries", collection: retained, id, kind });
     const traits = await openTraits(page); await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText(COMPANION_FOOD_NAMES[reopened.life.favoriteFood]);
-    await expect(page.getByRole("dialog", { name: "설정", exact: true }).locator(".rhh-trait-reason")).toContainText(/익숙한 맛을 즐겼어요|다른 맛도 골고루 맛보고 있어요|새로운 과일 맛을 알아가고 있어요|마음에 드는 과일을 찾았어요/);
+    const dialog = page.getByRole("dialog", { name: "설정", exact: true });
+    await expect(dialog.locator(".rhh-trait-reason")).toContainText(/좋아하는 맛을 다시 즐겼어요|여러 맛을 골고루 알아가고 있어요|새로운 맛을 알아가고 있어요|여러 번 맛보며 좋아하는 맛을 찾았어요/);
+    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "발견 도감", exact: true }).click();
+    await expect(dialog.getByRole("button", { name: "먹거리 1/36", exact: true })).toHaveAttribute("aria-pressed", "true");
+    const recordedFood = dialog.getByRole("button", { name: `${COMPANION_FOOD_NAMES[kind]} · 맛봤어요`, exact: true });
+    await expect(recordedFood).toHaveAttribute("data-found", "true");
+    await expect(recordedFood.locator(`[data-collection-art="food-stamp"][data-collection-art-id="${kind}"]`)).toHaveCount(1);
   });
 
   test(`${surface}: a stable native pointer invites row33 contact and only real Enter petting earns affection`, async ({ page }) => {

@@ -1,5 +1,6 @@
 import { DEFAULT_COMPANION_HABITS, normalizeCompanionHabits, type CompanionHabits } from "./habits";
 import { createCompanionLife, DEFAULT_COMPANION_LIFE, normalizeCompanionLife, resetCompanionLife, summarizeCompanionLife, type CompanionLife } from "./life";
+import { getCompanionLearnedEffectDirections } from "./behavior-profile";
 
 /** Device-local needs only. No identity, schedule text, dates or elapsed-away
  * timestamp is retained: an absent owner never incurs hunger or care debt. */
@@ -31,13 +32,14 @@ const lifeSignature = (life: CompanionLife) => {
   // Notify at the exact qualitative boundaries shown by the shared traits
   // card. A numeric bucket can otherwise miss a visible category transition.
   const category = (value: number) => value <= .35 ? "low" : value >= .65 ? "high" : "balanced";
-  return JSON.stringify([life.generation, summary.favoriteFood, ...[summary.play, summary.comfort, summary.social, summary.curiosity].map(category), life.recent]);
+  return JSON.stringify([life.generation, summary.favoriteFood, ...[summary.play, summary.comfort, summary.social, summary.curiosity].map(category), life.social >= .4, life.comfort >= .6, life.play >= .45, life.curiosity >= .4, life.recent]);
 };
+const effectPreferences = (["default", "cat", "dog"] as const).flatMap(animalMode => (["curious", "affectionate", "sleepy"] as const).flatMap(personality => (["relaxed", "normal", "lively"] as const).map(speed => ({ animalMode, personality, speed }))));
 
 /** Injectable store keeps quota failures and throttling testable without a DOM.
  * An external clear/change wins; an unchanged stale value after a failed write
  * does not erase the current tab's latest feeding or petting. */
-export function createCompanionCareStore(storage?: CareStorage, clock: () => number = () => performance.now(), rng: () => number = Math.random, onLifeChange?: (life: CompanionLife) => void) {
+export function createCompanionCareStore(storage?: CareStorage, clock: () => number = () => performance.now(), rng: () => number = Math.random, onLifeChange?: (life: CompanionLife) => void, onHabitsChange?: (habits: CompanionHabits) => void) {
   let memory = freshMemory();
   let seededLife: CompanionLife | undefined;
   let rawSeen: string | null | undefined;
@@ -45,6 +47,15 @@ export function createCompanionCareStore(storage?: CareStorage, clock: () => num
   let dirty = false;
   let seedPersistPending = false;
   let lastWrite = -Infinity;
+  let effectKey = "", effectSignature = "";
+  const habitsSignature = (habits: CompanionHabits) => {
+    const key = `${habits.sociability}:${habits.playfulness}:${habits.confidence}`;
+    // Credit-only needs saves reuse this cache. Check every supported manual
+    // profile without reading preferences/storage at ordinary sample time.
+    if (key !== effectKey) { effectKey = key; effectSignature = JSON.stringify(effectPreferences.map(prefs => getCompanionLearnedEffectDirections(prefs, habits))); }
+    const category = (value: number) => value >= .12 ? 1 : value <= -.12 ? -1 : 0;
+    return JSON.stringify([habits.generation, category(habits.sociability), category(habits.playfulness), category(habits.confidence), effectSignature]);
+  };
   const seed = () => seededLife ??= createCompanionLife(rng);
   const flush = () => {
     seedPersistPending = false;
@@ -115,6 +126,7 @@ export function createCompanionCareStore(storage?: CareStorage, clock: () => num
       }
     }
     const previousLife = lifeSignature(memory.life);
+    const previousHabits = habitsSignature(memory.habits);
     const incoming = care.habits === undefined ? memory.habits : normalizeCompanionHabits(care.habits);
     // Same-generation experiences may legitimately reproduce identical traits
     // after a reset. Only an old reset generation is stale, never its values.
@@ -124,10 +136,12 @@ export function createCompanionCareStore(storage?: CareStorage, clock: () => num
     memory = { ...normalizeCompanionCare(care), habits: { ...habits }, life: normalizeCompanionLife(life) };
     dirty = true;
     const lifeChanged = lifeSignature(memory.life) !== previousLife;
+    const habitsChanged = habitsSignature(memory.habits) !== previousHabits;
     // Failed writes also consume the ordinary 5s budget. A quota-limited
     // browser must not retry at the actor's 12–30Hz paint rate.
     if (canWrite) flush();
     if (lifeChanged) onLifeChange?.(normalizeCompanionLife(memory.life));
+    if (habitsChanged) onHabitsChange?.({ ...memory.habits });
     return copyMemory(memory);
   };
   return {
@@ -152,7 +166,7 @@ function store() {
     owner = window;
     let storage: CareStorage | undefined;
     try { storage = window.localStorage; } catch { /* Optional device memory only. */ }
-    deviceStore = createCompanionCareStore(storage, undefined, undefined, life => window.dispatchEvent(new CustomEvent<CompanionLife>(COMPANION_LIFE_EVENT, { detail: life })));
+    deviceStore = createCompanionCareStore(storage, undefined, undefined, life => window.dispatchEvent(new CustomEvent<CompanionLife>(COMPANION_LIFE_EVENT, { detail: life })), habits => window.dispatchEvent(new CustomEvent<CompanionHabits>(COMPANION_HABITS_EVENT, { detail: habits })));
   }
   return deviceStore;
 }
@@ -172,7 +186,6 @@ export function saveCompanionCare(care: CompanionCareInput, force = false): Comp
 /** Erases only learned habits. Needs and manually chosen preferences remain. */
 export function resetCompanionHabits(): CompanionHabits {
   const habits = store()?.resetHabits().habits ?? { ...DEFAULT_COMPANION_HABITS };
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent<CompanionHabits>(COMPANION_HABITS_EVENT, { detail: { ...habits } }));
   return { ...habits };
 }
 

@@ -1,0 +1,21 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Use case: stylized-concept. Make ONE production-ready transparent sprite atlas for a cozy pet discovery game: EXACTLY six equal columns and four equal rows, 24 separate tiles. No labels, text, visible grid, checkerboard or background. Read row-major: each consecutive PAIR has (left) a standalone edible item and (right) its MATCHING collectible stamp. Each row contains three pairs. Twelve pairs in this exact order: 1: red apple; 2: yellow lemon; 3: red strawberry; 4: red raspberry cluster; 5: triangular red watermelon slice with green rind; 6: red tomato with green calyx; 7: pink grapefruit half; 8: pink peach; 9: red oval plum with yellow-orange blush (never purple); 10: orange citrus fruit; 11: orange persimmon with broad green calyx; 12: small warm apricot.\nThe standalone food is a cute recognizable generous-volume miniature, clean warm taupe outline, clear juicy color, restrained cream highlight, gentle matte cel shading, rounded forms, no face or limbs. Slight three-quarter view, whole item fully visible, 65% of tile footprint, no cast ground shadow. Not emoji-font imitation, blurry watercolor, photographic or pixel art. All foods share the same line weight and camera.\nThe paired stamp contains that SAME food, color and identifying silhouette, inside a small cream embossed round paper seal with a delicate scalloped warm-beige edge and tiny botanical flecks. Food occupies most of the seal; no text, numerals, stars, rarity badges or detached decorative confetti. Give standalone and stamp equal clear tile spacing, each fully inside its own cell with 15% transparent safe gutters. Genuinely transparent alpha around every item and seal. High-resolution crisp game icon rendering for small 40px food and 64px stamps.",
+    "transparent_background": true
+  },
+  "orderedFoodIds": [
+    "apple",
+    "lemon",
+    "strawberry",
+    "raspberry",
+    "watermelon",
+    "tomato",
+    "grapefruit",
+    "peach",
+    "plum",
+    "orange",
+    "persimmon",
+    "apricot"
+  ]
+}

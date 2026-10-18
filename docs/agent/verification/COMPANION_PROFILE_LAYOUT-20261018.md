@@ -1,6 +1,6 @@
 # Companion profile layout — 105
 
-Date:2026-10-18 KST. Status:local verification complete; release verification pending.
+Date:2026-10-18 KST. Status:complete, deployed result verified.
 
 ## References and intended adaptation
 
@@ -29,4 +29,14 @@ Product source frozen before production build `1touKYZTGMYZqe-VujMrr`. Local run
 - Before/after screenshots inspected directly:104 previous centered trait card and105 full profile, light/dark, narrow desktop and whole settings dialog. Independent source/security/performance review and separate rendered/UI review found no remaining actionable product issue. One shared DOM/CSS implementation serves all PC surfaces; manual controls remain below the read-only profile.
 - No artwork, package/dependency, API, schema or permission change. Extra ideas remain proposals only. Actual broadcaster OBS/GPU/encoder and genuine-login/RLS tests are separate, not claimed here.
 
-Local logs/screenshots are under `.scratch-pw/companion-105*`; no production care reset or schedule mutation is part of fixture verification. Deployed SHA/remote quality/provider and actual authenticated UI remain to be verified after authorized push.
+Local logs/screenshots are under `.scratch-pw/companion-105*`; reporter JSON is under `.scratch-pw/.scratch-pw/companion-105-*-report.json` because the reporter resolves its configured path relative to the config. Reports confirm20 expected,0 unexpected/skipped/flaky. Some older settings/mobile helpers permit ordinary public-page prefetch reads; those are read-only and do not establish RLS coverage. No production care reset or schedule mutation is part of fixture verification. The local fixture server was stopped.
+
+## Release
+
+Released commit:`edcf2a93a5d1f6a45ec037d1d261a3be325663cd` (`feat: organize companion traits and habits`). Main push completed. [Remote quality39100282369](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39100282369) completed successfully with all13 steps, including isolated SQL/contracts/build/generated-route types/lint. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/G8jB3Sv5Pf3myHap9sRknt3tpZ4k) reports success.
+
+Production GET verification returned the exact full deployed SHA from `/api/soop-live`; public clock200/no-store, warm204 and anonymous developer presence401/error-only/no-store remain intact. Production fixture route returned its streamed404 fallback and exposed no fixture.
+
+Actual authenticated developer studio was reloaded after SHA verification and displayed the `edcf2a9` badge. Real panel/settings/companion/profile controls opened the shared640px information frame with actual saved favorite/basic personality/four tendencies/earned habits/recent experience, zero horizontal overflow and one resident. The complete profile and surrounding modal were captured in `.scratch-pw/companion-105/production-profile-full.png`. Native keyboard scrolling exposed its whole hierarchy. An intermediate clipped capture did not match the selected subtab and is not release evidence; a fresh full capture and a separate52-second no-input observation confirmed the actual profile stays selected with the companion enabled. Narrow code review found no care-notification remount path; no unsupported cause or product fix is claimed for that intermediate capture.
+
+No production preference toggle, reset, schedule/heart/auth action or account change was made. The settings window was closed and original November2026/right-side folded panel restored. The protected user-authored premiere art log retained its pre-commit SHA and stayed outside the commit, as did unrelated drafts. These post-release metadata updates remain local for the next authorized product commit rather than triggering a docs-only production deployment.

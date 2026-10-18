@@ -61,3 +61,11 @@ export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "a
     scootChance: bound(base.scootChance * (1 + playfulness * .2), 0, .98),
   };
 }
+
+/** Exact qualitative differences displayed by the shared learned-effects UI. */
+export function getCompanionLearnedEffectDirections(prefs: Parameters<typeof getCompanionBehaviorProfile>[0], habits?: CompanionHabits) {
+  const base = getCompanionBehaviorProfile({ ...prefs, learnFromYou: false });
+  const learned = getCompanionBehaviorProfile({ ...prefs, learnFromYou: true }, habits);
+  const direction = (difference: number, threshold: number): -1 | 0 | 1 => Math.abs(difference) <= threshold ? 0 : difference < 0 ? -1 : 1;
+  return { pointerGap: direction(learned.pointerGap - base.pointerGap, .01), playWeight: direction(learned.playWeight - base.playWeight, .001), lookScale: direction(learned.lookScale - base.lookScale, .001) };
+}

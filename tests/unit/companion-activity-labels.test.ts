@@ -17,6 +17,20 @@ const ACTIONS = [
   "companion-pet", "companion-drag", "companion-bonk", "companion-rest",
   "companion-find", "companion-extract", "companion-heart-clear", "companion-card-restore"
 ] as const;
+const COLLECTION = [
+  ["companion-profile-page#together", "빅타민 프로필 보기 · 함께 지내기"],
+  ["companion-profile-page#discover", "빅타민 프로필 보기 · 발견 도감"],
+  ["companion-profile-page#dress", "빅타민 프로필 보기 · 꾸미기"],
+  ["companion-collection-category#food", "빅타민 발견 도감 종류 · 먹거리"],
+  ["companion-collection-category#behavior", "빅타민 발견 도감 종류 · 행동"],
+  ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 먹거리"],
+  ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 행동"],
+  ["companion-accessory-select", "빅타민 장신구 살펴보기"],
+  ["companion-gift-open", "빅타민 선물 열기"],
+  ["companion-accessory-equip#on", "빅타민 장신구 · 착용하기"],
+  ["companion-accessory-equip#off", "빅타민 장신구 · 벗기"],
+  ["companion-gift-dismiss", "빅타민 선물 결과 닫기"]
+] as const;
 
 describe("빅타민 행동 기록 이름과 저장 경계", () => {
   it("패널과 최초공개의 새 고정 조작도 이름·선택값을 잃지 않는다", () => {
@@ -68,7 +82,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       ["settings-companion-tab#motion", "빅타민 설정 묶음 · 움직임"],
       ["settings-companion-tab#pranks", "빅타민 설정 묶음 · 장난"],
       ["settings-companion-tab#affection", "빅타민 설정 묶음 · 교감"],
-      ["settings-companion-tab#personality", "빅타민 설정 묶음 · 성격"],
+      ["settings-companion-tab#personality", "빅타민 설정 묶음 · 프로필"],
       ["companion-speed#relaxed", "빅타민 걸음 · 느긋하게"],
       ["companion-speed#normal", "빅타민 걸음 · 보통"],
       ["companion-speed#lively", "빅타민 걸음 · 발랄하게"],
@@ -92,6 +106,31 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
     expect(label.name).toBe("빅타민 보라 하트 지우기");
     expect(label.hint).toContain("실제 하트 집계를 바꾸지 않는");
     expect(label.name).not.toBe(describeTarget("ui.click", "event-heart").name);
+  });
+
+  it("발견·꾸미기 고정 버튼이 타임라인과 적게 쓰인 기능에서 같은 현재 이름으로 읽힌다", () => {
+    const items: NarrativeItem[] = COLLECTION.map(([target], index) => ({ t: Date.UTC(2026, 9, 18, 3, 0, index * 5), kind: "ui.click", target, targetLabel: null, meta: null, durMs: null, source: "client" }));
+    const story = buildStory(items).join(" ");
+    for (const [target, name] of COLLECTION) {
+      expect(sanitizeTarget(target)).toBe(target);
+      const label = describeTarget("ui.click", target);
+      expect(label.name).toBe(name); expect(label.unnamed).toBeUndefined(); expect(label.retired).toBeUndefined();
+      expect(label.area).toBe(target === "companion-gift-open" ? "빅타민" : "설정");
+      expect(story).toContain(name);
+    }
+    expect(story).not.toContain("companion-");
+    expect(buildGist(items)).toBe("빅타민 설정 11번 사용 · 빅타민과 1번 상호작용");
+  });
+
+  it("신규 버튼은 실제 음식·행동·장신구·선물 ID와 미등록/전역 옵션을 저장하지 않는다", () => {
+    const bases = [...new Set(COLLECTION.map(([target]) => target.split("#")[0]))];
+    for (const base of bases) for (const option of ["apple", "dragon-fruit", "ask-petting", "sunglasses", "gift-wrapped", "sensitive-canary@example.test", "public", "spring", "on#apple", "__proto__"]) {
+      expect(sanitizeTarget(`${base}#${option}`)).toBe(base);
+    }
+    for (const base of ["companion-accessory-select", "companion-gift-open", "companion-gift-dismiss"]) {
+      for (const option of ["on", "off", "food", "behavior"]) expect(sanitizeTarget(`${base}#${option}`)).toBe(base);
+    }
+    expect(sanitizeMeta({ foodId: "apple", behaviorId: "ask-petting", accessoryId: "sunglasses", giftContents: "beret", foods: ["apple"], behaviors: ["groom"], favorite: "pear" })).toBeNull();
   });
 
   it("위치 필터에서 빅타민을 시청자 화면 옆에 둔다", () => {

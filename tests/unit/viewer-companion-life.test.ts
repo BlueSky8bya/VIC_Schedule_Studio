@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { advanceCompanionLife, createCompanionLife, experienceCompanionLife, getCompanionFoodPreference, normalizeCompanionLife, resetCompanionLife, summarizeCompanionLife, type CompanionLifeExperience } from "@/lib/ui/viewer-companion/life";
 import { COMPANION_CARE_KEY, createCompanionCareStore, DEFAULT_COMPANION_CARE, loadCompanionCare, resetCompanionHabits, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
-import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_FOOD_KINDS, LEGACY_COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 
 afterEach(() => vi.unstubAllGlobals());
 const fresh = () => createCompanionLife(() => 0);
@@ -10,7 +10,7 @@ const earned = (life = fresh(), event: CompanionLifeExperience = { kind: "petted
 describe("bounded device-local companion life", () => {
   it("draws one initial favorite and normalizes/resets without drawing again", () => {
     const rng = vi.fn(() => .7), life = createCompanionLife(rng);
-    expect(rng).toHaveBeenCalledTimes(1); expect(life.favoriteFood).toBe("orange");
+    expect(rng).toHaveBeenCalledTimes(1); expect(life.favoriteFood).toBe("pumpkin");
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(life)))).toEqual(life);
     const reset = resetCompanionLife(earned(life), 3);
     expect(reset.seedFood).toBe(life.seedFood); expect(reset.favoriteFood).toBe(life.seedFood); expect(reset.generation).toBe(3);
@@ -28,6 +28,18 @@ describe("bounded device-local companion life", () => {
     // Another genuine preference can still emerge later; no initial/learned lock.
     for (let index = 0; index < 180; index++) life = earned(life, { kind: "fed", food: "strawberry" });
     expect(life.favoriteFood).toBe("strawberry");
+  });
+
+  it("expands a saved thirteen-food life without changing its seed, favorite or earned food values", () => {
+    const foodScores = Object.fromEntries(LEGACY_COMPANION_FOOD_KINDS.map((kind, index) => [kind, kind === "pear" ? .42 : .2 + index / 100]));
+    const familiarity = Object.fromEntries(LEGACY_COMPANION_FOOD_KINDS.map((kind, index) => [kind, index / 20]));
+    const legacy = { ...fresh(), seedFood: "lemon", favoriteFood: "pear", foodScores, familiarity };
+    const raw = JSON.stringify({ version: 3, ...DEFAULT_COMPANION_CARE, habits: { generation: 0 }, life: legacy }), storage = { getItem: () => raw, setItem: vi.fn() }, rng = vi.fn(() => 0);
+    const migrated = createCompanionCareStore(storage, () => 0, rng).load().life;
+    expect(migrated.seedFood).toBe("lemon"); expect(migrated.favoriteFood).toBe("pear"); expect(rng).not.toHaveBeenCalled();
+    for (const kind of LEGACY_COMPANION_FOOD_KINDS) { expect(migrated.foodScores[kind]).toBe(foodScores[kind]); expect(migrated.familiarity[kind]).toBe(familiarity[kind]); }
+    expect(Object.keys(migrated.foodScores)).toEqual([...COMPANION_FOOD_KINDS]); expect(migrated.foodScores.carrot).toBeLessThanOrEqual(.42);
+    expect(normalizeCompanionLife(JSON.parse(JSON.stringify(migrated)))).toEqual(migrated);
   });
 
   it("diminishes repeated-food reward and recovers a food accident through active time", () => {
@@ -80,6 +92,17 @@ describe("bounded device-local companion life", () => {
 });
 
 describe("life persistence and reset safety", () => {
+  it.each([["social", .4], ["comfort", .6], ["play", .45], ["curiosity", .4]] as const)("notifies the actual %s behavior gate without waiting for a broad display category", (trait, threshold) => {
+    const listener = vi.fn(), store = createCompanionCareStore(undefined, () => 0, () => 0, listener);
+    let memory = store.load();
+    const save = (value: number) => { memory = store.save({ ...memory, life: { ...memory.life, [trait]: value } }, true); };
+    save(threshold - .0002); listener.mockClear();
+    save(threshold - .0001); expect(listener).not.toHaveBeenCalled();
+    save(threshold); expect(listener).toHaveBeenCalledTimes(1);
+    save(threshold + .0001); expect(listener).toHaveBeenCalledTimes(1);
+    save(threshold - .0001); expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it.each(["social", "play", "comfort", "curiosity"] as const)("notifies at the displayed low/high %s boundaries without notifying inside a category", trait => {
     const listener = vi.fn(), store = createCompanionCareStore(undefined, () => 0, () => 0, listener);
     let memory = store.load();

@@ -1,0 +1,25 @@
+{
+  "tool": "image_gen.imagegen",
+  "exactLocalRequestSha256": "2a1f27738c25ea01eb05b36415c3420491293b4f2c00c2bccd951d26d43d305d",
+  "note": "Public provenance omits private absolute reference paths. Exact original arguments remain local.",
+  "prompt": "Use case: identity-preserve illustration-story. Derive ONE transparent discovery-stamp sprite sheet from the referenced BigVitamin mascot. EXACTLY four equal columns and three equal rows, twelve separate complete stamps, row-major. Each has the SAME small cream scalloped embossed paper seal and warm beige edge, matching a cozy illustrated fruit stamp collection. No text, lettering, grid lines or detached confetti. Generous transparent gutters.\nImage1 fixes the current clean warm-taupe outline, cream rectangular layered PAPER body, yellow/orange accents, square orange cheeks and body-to-ear proportions. Image2 fixes the USER-SELECTED brown open-eye diameter and spacing. Images3/4 are ORIGINAL anatomy/expression authority: exactly TWO connected long oval bunny ears; absolutely NO arms, hands, legs, feet, paws, fur or extra ears. Keep the eyes/body/outline consistent across actions. Draw the entire mascot and both ears within each seal.\nTwelve actions in order: 1 ASK-PETTING: expectant face lifted toward viewer, both ears relaxed, no person. 2 LEAN-NUZZLE: cheek and whole paper body lean affectionately sideways, pleased closed eyes. 3 PAPER-KNEAD: low settled paper layers press on the left, no limbs. 4 PAPER-NEST: matching right-side tuck, cozy concentrated face. 5 CHEER-REHEARSAL: small soft lavender/yellow paper tassels tucked into side layers, delighted cheer, no hands. 6 DOZE-CURL: low cozy paper body, closed sleeping arcs, both ears visibly folded and attached, no Z text. 7 GROOM: cheek presses gently toward attached ear, straightening paper layers, no brush or hands. 8 BOW: polite forward body bow, both ears follow. 9 POUNCE: lively airborne complete body, swept-back ears and delighted face, no legs. 10 TUMBLE: complete paper body turned sideways, two ears follow the roll, surprised face. 11 DIZZY: two spiral eyes, small WAVY uncertain mouth, two ears attached. 12 STRETCH: paper body stretches upward with a yawn, connected layers, two ears.\nClean crisp matte cel illustration, restrained soft shading, readable at64px, consistent scale and warm botanical seal family. No background scenery, shadows outside the seals, checkerboard, cropped ears, merged stamps, duplicated ghosts, anatomy changes or face transplant.",
+  "references": [
+    {
+      "id": "reference-1",
+      "sha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69"
+    },
+    {
+      "id": "reference-2",
+      "sha256": "83fd71b3bafdc72587f786bdba800ffb52d7034fc6e66aa1205ecf8b3e5eea68"
+    },
+    {
+      "id": "reference-3",
+      "sha256": "f2b29fbb9d09efb4156a7fa23eb9a43fc59f950fe372e6bd3e1d408f9cefada4"
+    },
+    {
+      "id": "reference-4",
+      "sha256": "f7680ae6be7c38498a4c08eb2746d7329c714b018c47caf2c71c2eae4a0baae5"
+    }
+  ],
+  "transparent_background": true
+}
