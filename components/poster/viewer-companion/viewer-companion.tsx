@@ -857,13 +857,23 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const projection = { size, display, shape, pressure, response, facing: sample.facing, sway, chew,
         poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
         inertiaOrigin: grip };
-      const carriedFood = food.current?.carried();
-      if (carriedFood && paintedSelection) {
+      const carriedFood = food.current?.carried(), carriedToy = toys.current?.carried();
+      if ((carriedFood || carriedToy) && paintedSelection) {
         const carryAnchor = accessoryModule?.companionCarryAnchor(paintedSelection);
         const carryPoint = carryAnchor ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, carryAnchor) : null;
         // Transport sits on the registered upper front of the body. The
         // 32px snack foot is8px below that point, leaving real floor clearance.
-        if (carryPoint) food.current?.carry(carriedFood, { x: carryPoint.x, y: carryPoint.y + 8 });
+        if (carryPoint && carriedFood) food.current?.carry(carriedFood, { x: carryPoint.x, y: carryPoint.y + 8 });
+        if (carriedToy) {
+          // The adopted current pose owns transport for both kinds of object.
+          // A cold landmark module keeps the same current body, never last tick.
+          let point = carryPoint ? { x: carryPoint.x, y: carryPoint.y + 8 } : { x: display.x, y: display.y - size * .32 };
+          if (action?.toy?.effect === "stash" && toyReturnAim) {
+            const phase = clamp((performance.now() - began) / total / .28, 0, 1), ease = phase * phase * (3 - 2 * phase);
+            point = { x: lerp(point.x, x + toyReturnAim.dx, ease), y: lerp(point.y, y + toyReturnAim.dy, ease) - Math.sin(phase * Math.PI) * 18 };
+          }
+          toys.current?.carry(carriedToy, point);
+        }
       }
       if (status === "eat" && action?.kind === "eat") {
         const mouth = paintedSelection ? projectCompanionMouth(paintedSelection, projection) : null;
@@ -1060,7 +1070,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts);
       return Boolean(dx || dy || bedMoved);
     };
-    const continuousMotion = () => Boolean(performance.now() < interactionUntil || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
+    const continuousMotion = () => Boolean(performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -1476,7 +1486,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const launch = (next: RuntimeAction, now: number) => {
       curiosityTossed = false;
-      if (next.household?.kind === "tidy") ensureWardrobe(true);
+      if (next.household?.kind === "tidy" || next.toy) ensureWardrobe(true);
       accessoryWitnessed = 0; accessoryLanded = false;
       verticalRecoveryX = undefined;
       let passage = sampleSofaRoute(next, { x, y }, .5);
@@ -1741,16 +1751,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         setHomeEnvironment(previous => previous.date.y === nextEnvironment.date.y && previous.date.m === nextEnvironment.date.m && previous.date.d === nextEnvironment.date.d && previous.season === nextEnvironment.season && previous.weather === nextEnvironment.weather && previous.band === nextEnvironment.band && previous.night === nextEnvironment.night ? previous : nextEnvironment);
       }
       if (presence.phase !== "parked") { toys.current?.resume(now); toys.current?.tick(reduced || gfxMode() === "off" ? now + 2000 : now); }
-      const carriedToy = toys.current?.carried();
-      if (carriedToy) {
-        let toyX = x, toyY = y - size * .32;
-        if (action?.toy?.effect === "stash" && toyReturnAim) {
-          const phase = clamp((now - began) / total / .28, 0, 1), ease = phase * phase * (3 - 2 * phase);
-          toyX += toyReturnAim.dx * ease;
-          toyY += (toyReturnAim.dy + size * .32) * ease - Math.sin(phase * Math.PI) * 18;
-        }
-        toys.current?.carry(carriedToy, { x: toyX, y: toyY });
-      }
       if (!returning && presence.phase === "active" && now - lastNeeds >= 250) {
         const elapsed = now - lastNeeds;
         brain.current = advanceBrain(brain.current, elapsed, preferences.learnFromYou, preferences);

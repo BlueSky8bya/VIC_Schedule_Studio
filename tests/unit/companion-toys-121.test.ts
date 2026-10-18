@@ -162,7 +162,10 @@ describe("actual toy planner effects and acknowledgements", () => {
     input = { ...input, world: { ...input.world, ...returnToBox.target }, now: input.now + returnToBox.duration };
     const stash = planner.next(input)!; expect(stash.toy).toMatchObject({ effect: "stash", toyId: id });
     expect(model.carried()).toBe(id); const stashed = model.stash(id); planner.resolve(stash.toy, stashed, input.now);
-    expect(stashed).toBe(true); expect(model.items()).toEqual([]); expect(planner.active()).toBe(false);
+    expect(stashed).toBe(true); expect(model.items()).toEqual([]); expect(planner.active()).toBe(true);
+    planner.resolve(pick.toy, true, input.now + 1); expect(planner.active()).toBe(true);
+    expect(planner.next({ ...input, toys: model.available(), existingIds: model.ids(), carriedId: model.carried(), count: model.count(), now: input.now + stash.duration })).toBeUndefined();
+    expect(planner.active()).toBe(false);
     planner.resolve(pick.toy, true, input.now + 1); expect(planner.active()).toBe(false);
   });
 
@@ -221,6 +224,41 @@ describe("shared native toy controller ownership", () => {
     return { ref, render, button, onActivity, onExperience };
   }
 
+  it("preserves an off-centre grab, coalesces to the newest native point, and flushes pointerup before the queued frame", async () => {
+    const frames = new Map<number, FrameRequestCallback>(); let serial = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; }); vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+    vi.stubGlobal("document", { querySelector: () => null });
+    const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
+    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
+    (h.button.props.ref as (node: unknown) => void)(node);
+    const start = { x: actual.x - 13, y: actual.y - 31 }, event = (point = start) => ({ button: 0, pointerId: 7, clientX: point.x, clientY: point.y, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+    (h.button.props.onPointerDown as (event: unknown) => void)(event()); const initial = node.style.transform;
+    vi.mocked(performance.now).mockReturnValue(2010); (h.button.props.onPointerMove as (event: unknown) => void)(event({ x: start.x + 15, y: start.y + 10 }));
+    vi.mocked(performance.now).mockReturnValue(2020); (h.button.props.onPointerMove as (event: unknown) => void)(event({ x: start.x + 30, y: start.y + 20 }));
+    expect(frames.size).toBe(1); expect(node.style.transform).toBe(initial);
+    const due = [...frames.values()]; frames.clear(); due.forEach(callback => callback(2033));
+    expect(node.style.transform).toContain(`translate3d(${(actual.x + 30).toFixed(3)}px,${(actual.y + 20).toFixed(3)}px,0)`);
+    vi.mocked(performance.now).mockReturnValue(2040); (h.button.props.onPointerMove as (event: unknown) => void)(event({ x: start.x + 40, y: start.y + 30 }));
+    vi.mocked(performance.now).mockReturnValue(2050); (h.button.props.onPointerUp as (event: unknown) => void)(event({ x: start.x + 50, y: start.y + 40 }));
+    expect(frames.size).toBe(0); expect(node.style.transform).toContain(`translate3d(${(actual.x + 50).toFixed(3)}px,${(actual.y + 40).toFixed(3)}px,0)`);
+    h.ref.current!.tick(2066); expect(Number(node.style.transform.match(/translate3d\(([-\d.]+)/)![1])).toBeGreaterThan(actual.x + 50);
+    expect(component.activity.mock.calls.map(call => call[1].target)).toEqual(["companion-toy-grab", "companion-toy-drop"]);
+  });
+
+  it("cancel drops from the latest held point without a fling, frame tail or fabricated drop event", async () => {
+    const frames = new Map<number, FrameRequestCallback>(); let serial = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; }); vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+    const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
+    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() }; (h.button.props.ref as (node: unknown) => void)(node);
+    const event = { button: 0, pointerId: 9, clientX: actual.x, clientY: actual.y - 22, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() };
+    (h.button.props.onPointerDown as (event: unknown) => void)(event);
+    vi.mocked(performance.now).mockReturnValue(2020); (h.button.props.onPointerMove as (event: unknown) => void)({ ...event, clientX: actual.x + 40 });
+    (h.button.props.onPointerCancel as (event: unknown) => void)({ ...event, clientX: actual.x + 40 });
+    expect(frames.size).toBe(0); expect(node.releasePointerCapture).toHaveBeenCalledOnce(); h.ref.current!.tick(2036);
+    expect(node.style.transform).toContain(`translate3d(${(actual.x + 40).toFixed(3)}px,`);
+    expect(component.activity.mock.calls).toEqual([["ui.click", { target: "companion-toy-grab" }]]);
+  });
+
   it("planner cancellation preserves a native pointer hold; blocked transition releases capture and freezes the drop", async () => {
     const h = await harness(), node = { setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
     (h.button.props.onPointerDown as (event: unknown) => void)({ button: 0, pointerId: 7, clientX: 600, clientY: 500, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() });
@@ -245,7 +283,7 @@ describe("shared native toy controller ownership", () => {
 
   it("planner cancellation preserves a keyboard hold and blocking safely releases it without a fabricated human drop", async () => {
     const h = await harness();
-    (h.button.props.onKeyDown as (event: unknown) => void)({ key: "Enter", preventDefault: vi.fn() });
+    (h.button.props.onKeyDown as (event: unknown) => void)({ key: "Enter", preventDefault: vi.fn(), stopPropagation: vi.fn() });
     h.ref.current!.cancel(100); expect(h.ref.current!.moving()).toBe(false); expect(h.ref.current!.available()).toEqual([]);
     h.render(true); h.ref.current!.tick(20000); expect(h.ref.current!.moving()).toBe(false);
     vi.mocked(performance.now).mockReturnValue(20000); h.render(false); expect(h.ref.current!.moving()).toBe(true);
@@ -254,7 +292,8 @@ describe("shared native toy controller ownership", () => {
 
   it("keyboard arrows take native priority once, repeated motion adds no fake grab and Escape records only the successful drop", async () => {
     const h = await harness(); h.onActivity.mockClear();
-    const press = (key: string) => (h.button.props.onKeyDown as (event: unknown) => void)({ key, preventDefault: vi.fn() });
+    const preventDefault = vi.fn(), stopPropagation = vi.fn();
+    const press = (key: string) => (h.button.props.onKeyDown as (event: unknown) => void)({ key, preventDefault, stopPropagation });
     press("ArrowRight"); press("ArrowDown");
     expect(h.onActivity.mock.calls).toEqual([[true], [true]]);
     expect(component.activity.mock.calls).toEqual([["ui.click", { target: "companion-toy-grab" }]]);
@@ -262,6 +301,8 @@ describe("shared native toy controller ownership", () => {
     press("Escape"); press("Escape");
     expect(component.activity.mock.calls).toEqual([["ui.click", { target: "companion-toy-grab" }], ["ui.click", { target: "companion-toy-drop" }]]);
     expect(h.onActivity.mock.calls).toEqual([[true], [true], [true]]); expect(h.ref.current!.moving()).toBe(true);
+    expect(stopPropagation).toHaveBeenCalledTimes(3); expect(preventDefault).toHaveBeenCalledTimes(3);
+    press("x"); expect(stopPropagation).toHaveBeenCalledTimes(3); expect(preventDefault).toHaveBeenCalledTimes(3);
   });
   it("records only observed completed real play/refusal acknowledgements, never generic put or cancelled playback", async () => {
     const h = await harness(), control = h.ref.current!;

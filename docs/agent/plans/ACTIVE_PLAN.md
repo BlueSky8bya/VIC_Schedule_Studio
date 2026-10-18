@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261019-122 | In progress: illustrated interior/toys, readable tastes and immediate tidy cleanup | [Illustrated home and toy tastes](PLAN-20261019-122-companion-illustrated-home-and-toy-tastes.md) |
+| PLAN-20261019-123 | In progress: immediate toy movement and wider seasonal/time window scenery | [Direct toys and window world](PLAN-20261019-123-companion-direct-toys-and-window-world.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

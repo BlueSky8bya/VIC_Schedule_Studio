@@ -9,7 +9,7 @@ import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
-const output = ".scratch-pw/companion-122/behavior";
+const output = process.env.COMPANION_BEHAVIOR_UI_OUTPUT ?? ".scratch-pw/companion-122/behavior";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 type Sample = { at: number; state: string; personality: string; play: string; pose: number; scene: string; toyAction: string; household: string; living: string; x: number; y: number; platform: string; decoded: boolean; hidden: boolean; foodIds: string[]; dispenser?: { x: number; y: number; width: number; height: number; bottom: number }; toys: { id: string; carried: boolean; held: boolean; x: number; y: number; modelX: number; modelY: number }[] };
 type Probe = { samples: Sample[]; stop: () => void };

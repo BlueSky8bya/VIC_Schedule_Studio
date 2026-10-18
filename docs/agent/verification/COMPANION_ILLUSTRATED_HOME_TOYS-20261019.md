@@ -67,4 +67,14 @@ native4는 정확27검사 중26 PASS/1 FAIL. 8성격 각각22.06–22.22초 실�
 
 `.scratch-pw/companion-122/` 아래 실행 로그와 `final-native5-freeze.json`에 근거를 보존한다. 마지막 제품/테스트/public54개 해시는 native5 종료 후 재확인하여 변경0이다. staging manifest103개는 보호 사용자 원화·과거 자산·raw 사용자 원문·로컬 절대경로·세션/계정 키·운영 분석을 포함하지 않는다. 독립 검수에서19종 original/final/runtime57해시·용량도 공개 제작 기록과 일치했다.
 
-실제 배포는 아직 미검증. 서버/DTO/역할/인증/DB/운영 데이터/의존성 변경은 범위 밖이다. G-22 고정 의미 제어 이름만 허용하며 toy/food ID·취향은 분석 전송하지 않는다. 실제 PC/OBS와 인증/RLS 범위는 이전처럼 별도다.
+## 실제 배포
+
+`592458e603b5188da7d2d982002daf220580fb03`을 main에 commit/push했고 Vercel 배포와 [원격 quality39158876937](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39158876937)이 성공했다. 원격은 전체 단위·격리 SQL 계약·harness·production build·typecheck·lint를 통과했다. stage는 검토한103경로만, 보호 사용자 제작기록 SHA는 기존값 그대로다. staged diff 검사에서 native spec 말미 빈 줄1개만 제거했으며 실행문이나 제품/런타임 변경은 없다.
+
+2026-10-19 04:32:46 KST 실제 [공개 배포](https://vic-schedule-studio.vercel.app) 익명 검증 PASS. 실제 HTML에서 연결한 JS의 full40SHA literal과 로드된 chunk 해시를 확인했고 intercepted live DTO나 짧은 badge만을 버전 근거로 쓰지 않았다. 활성62자산은 정확 commit bytes와 모두 일치하며 새19종669,058bytes를 포함한다. 초기 storage/도감/취향 seed0, 실제 버튼으로 장난감 꺼내기→직접 잡아 반납→발견/! 확인 해제, unknown 이미지0,8종 도감,4취향 카드, 유한 도감675/675, 옷장, 공유 설정,8성격 제어,13음악 목록, 실제 self-hosted media206, 집 라디오 음표와 모바일 제외를 확인했다. 실제 toy computed transition none/0s도 확인했다. 기본 quiet 환경에서는 음표 animation/transform이 none인 정적 표시였으며 full motion은 별도 native fixture 범위다.
+
+첫 공개 검사에서는 initial4-slot 배열을 읽은 뒤 ResizeObserver가8-slot으로 확장되어 `다음`이 disabled인 순간을 만나 수집 배열만4개인 FAIL이었다. 당시 실패 화면에는8타일과1–8/8이 실제 표시됐다. 같은 PC viewport의 실제8인덱스 표시를 기다린 후 기존8종/unknown 이미지0/실제 unread ACK 조건을 유지했다. 독립 source/화면 검수에서도 검사 시점 문제로 확인했다. 첫 `production/592458…`의 summary:false·failure 화면/원본 checker는 보존했고, 별도 `production-final/592458…`에서 처음부터 새 익명 환경으로 전체 재검증했다. 제품 수정이나 발견/스타일 주입으로 통과시키지 않았다.
+
+최종 proof는 `.scratch-pw/companion-122/production-final/592458e603b5188da7d2d982002daf220580fb03/`의 summary/public-release/asset/browser-chunks/initial-storage/toy/collection/media 근거에 보존한다. pageerror0·unexpected0, 모든 POST는 abort(기존 saved-heart read reference만 분류 허용), live-state GET/비공개 manifest 읽기/production mutation0이다. 외부 요청은 실제 committed font URL만 허용했다. 실제 인증/RLS나 broadcaster PC/OBS 검증으로 확대하지 않는다.
+
+native5 실제25fps 영상의 네 장난감 줍기·운반·입구·제거 구간도 프레임별 확인했다. 명백한 순간이동/단절은 이 구간에서 관찰되지 않았다. 이는 모든 몸체 포즈의 새 미술 검수나 사용자 승인 주장이 아니다. 서버/DTO/역할/인증/DB/운영 데이터/의존성 변경은 범위 밖이며, G-22 고정 의미 제어만 허용하고 toy/food ID·취향은 분석 전송하지 않는다.

@@ -1,0 +1,1068 @@
+{
+  "schema_version": 1,
+  "scope": "4 seasons x dawn/dusk/night lighting variants and cloud/fog/wind transparent overlays",
+  "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+  "asset_count": 15,
+  "generation_summary": {
+    "tool": "builtin image_gen",
+    "actual_calls": 15,
+    "calls_per_asset": 1,
+    "automatic_retry_calls": 0,
+    "independent_art_review_calls": 0
+  },
+  "user_visual_approval": false,
+  "source_policy": "Each lighting asset directly edits its corresponding122day native; no generated123asset is a reference for another asset. Weather inputs guide texture only. Existing122day/rain/snow assets, furniture, sofa and character sources remain unchanged.",
+  "prompt_policy": "Actual prompt text is preserved verbatim; absolute reference locations and operational identifiers are replaced by repo-relative public source lineage.",
+  "original_vs_derivative": "generation.original is the unaltered model-call PNG. final is a separately retained512x384 production PNG. runtime is its WebP encoding. Scene lighting is part of the generated pixels, not a recoloring derivative.",
+  "assets": [
+    {
+      "id": "window-spring-dawn",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing pale pink blossoms, tender spring leaves and fresh meadow flowers. Dawn / actual sunrise: repaint a pale lavender-blue sky graduating to a restrained peach-gold horizon; a small low rising sun partly hidden behind the existing distant ridge. Warm first light touches the cottage roof, branch edges, bridge rail and stones while foreground shade remains cool. Paint matching soft sunrise reflections in the existing water. Fresh quiet morning, clearly earlier and cooler than sunset. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "spring",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/봄풍경.png",
+            "sha256": "F729BF977D4AEF723E07984116D6404B73603C37058167E71C52E09F5F2929C1",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/봄_새벽풍경.png",
+          "sha256": "B55C346B1A54EF8336C79035465719951F6FB2ECEFE3A95EA44F0CE248743EEC",
+          "bytes": 3793586,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/봄_새벽풍경.png",
+        "sha256": "F428312F806F7116E3EA138308A7FC2157F78F71EE9514CA750AD075D062ED85",
+        "bytes": 490633,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-spring-dawn.webp",
+        "sha256": "8DD7F2FD675FADCA976388E48AEEBFEDA814B4A0727AE7D4DC8662AC0777F1DD",
+        "bytes": 122210,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-spring-dusk",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing pale pink blossoms, tender spring leaves and fresh meadow flowers. Dusk / actual sunset: repaint a rose-peach and muted amber sky over the existing ridge, a small low setting sun partly hidden behind that ridge, warm grazing light on the cottage and bridge, longer cool shadows in the foreground. Paint warm sky reflections along the same stream. Clearly a glowing late sunset rather than daytime recolored orange. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "spring",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/봄풍경.png",
+            "sha256": "F729BF977D4AEF723E07984116D6404B73603C37058167E71C52E09F5F2929C1",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/봄_노을풍경.png",
+          "sha256": "EB7D3E22898AE888216EC660BD8C38DB5FB1F99916AC56054858CAF0DA1CA1FE",
+          "bytes": 3681477,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/봄_노을풍경.png",
+        "sha256": "6A71497D86DABAA1E217D1F7B9EF8059B2D71F0B92C456128C6C03B7038F9282",
+        "bytes": 482450,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-spring-dusk.webp",
+        "sha256": "65761C39FC6F1A681721C86B9C6C335F9D188E3A4666606974CCD0296D18601E",
+        "bytes": 117552,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-spring-night",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing pale pink blossoms, tender spring leaves and fresh meadow flowers. Moonlit night: repaint a deep indigo sky with one modest natural moon in an existing open patch of sky and a few faint distant stars. Cool silver moonlight describes the existing bridge, roof, rocks and foliage or snow, with subdued reflected moonlight on the water. A little warm light may glow through the cottage existing windows. Retain readable terrain and gentle detail, not crushed black, no sun or daytime sky. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "spring",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/봄풍경.png",
+            "sha256": "F729BF977D4AEF723E07984116D6404B73603C37058167E71C52E09F5F2929C1",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/봄_밤풍경.png",
+          "sha256": "1C17A054CB8CE73C93685E7F69AE1B3D2CC1EB4F3510265F0D8C0E127A5C050A",
+          "bytes": 3622162,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/봄_밤풍경.png",
+        "sha256": "E95B78B1247A6EB5482119127ABE7E013BE81E81D9EEFE96036441563FC976F8",
+        "bytes": 474528,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-spring-night.webp",
+        "sha256": "B0AC75CA792FBD3ED077F2B625668ECE6ED60EED6F4DDD15D04438F57D7C7058",
+        "bytes": 109422,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-summer-dawn",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing rich green canopies, summer grasses and lavender meadow flowers. Dawn / actual sunrise: repaint a pale lavender-blue sky graduating to a restrained peach-gold horizon; a small low rising sun partly hidden behind the existing distant ridge. Warm first light touches the cottage roof, branch edges, bridge rail and stones while foreground shade remains cool. Paint matching soft sunrise reflections in the existing water. Fresh quiet morning, clearly earlier and cooler than sunset. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "summer",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/여름풍경.png",
+            "sha256": "0154B0083019EF8BCED45536915B43672604FA4D7D8D04796237DA970F4D14F3",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/여름_새벽풍경.png",
+          "sha256": "23CC5A44EFDBDEAF8FD8AF4ADC987B2E76C28EDE278710D63037B1C1EFC4271E",
+          "bytes": 3811395,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/여름_새벽풍경.png",
+        "sha256": "675B7DAD989358ECAA4D99EC2AAAE46F1DB25C9A2C37D415DF31BEAE5F647064",
+        "bytes": 484733,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-summer-dawn.webp",
+        "sha256": "AB9A446FC0B53239FA44F79027E4515123F099C5D472B6648660DDFE1244B192",
+        "bytes": 117864,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-summer-dusk",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing rich green canopies, summer grasses and lavender meadow flowers. Dusk / actual sunset: repaint a rose-peach and muted amber sky over the existing ridge, a small low setting sun partly hidden behind that ridge, warm grazing light on the cottage and bridge, longer cool shadows in the foreground. Paint warm sky reflections along the same stream. Clearly a glowing late sunset rather than daytime recolored orange. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "summer",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/여름풍경.png",
+            "sha256": "0154B0083019EF8BCED45536915B43672604FA4D7D8D04796237DA970F4D14F3",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/여름_노을풍경.png",
+          "sha256": "5B167E01A804AF224DE5EBAB76A46058FE54265D95EBBF74B3933536F0ED5BE3",
+          "bytes": 3598046,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/여름_노을풍경.png",
+        "sha256": "79D08F45033D3D21D0E4BAEF7DFCE44C2CEDE10100799A7C52A7954FC8128FD2",
+        "bytes": 470877,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-summer-dusk.webp",
+        "sha256": "234F2F70EFE432FFD94F5E9055EE7408FF1C20551DB9C5BAA58D9019B855EC46",
+        "bytes": 111176,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-summer-night",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing rich green canopies, summer grasses and lavender meadow flowers. Moonlit night: repaint a deep indigo sky with one modest natural moon in an existing open patch of sky and a few faint distant stars. Cool silver moonlight describes the existing bridge, roof, rocks and foliage or snow, with subdued reflected moonlight on the water. A little warm light may glow through the cottage existing windows. Retain readable terrain and gentle detail, not crushed black, no sun or daytime sky. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "summer",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/여름풍경.png",
+            "sha256": "0154B0083019EF8BCED45536915B43672604FA4D7D8D04796237DA970F4D14F3",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/여름_밤풍경.png",
+          "sha256": "308145C9219CC2BFCC6A821825416F3223546733A41323245B2DC1EF0A4BCAF4",
+          "bytes": 3494191,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/여름_밤풍경.png",
+        "sha256": "8D1B6990E464D10006B06061C4C98021D52A17391A1EF3FC792157228AFAB0E5",
+        "bytes": 455692,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-summer-night.webp",
+        "sha256": "7298FF49A97C901CE5959CDFEC59BBC90E086DC613263A6589079EF441671735",
+        "bytes": 102442,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-autumn-dawn",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing copper and amber autumn leaves, dry grasses and fallen leaves. Dawn / actual sunrise: repaint a pale lavender-blue sky graduating to a restrained peach-gold horizon; a small low rising sun partly hidden behind the existing distant ridge. Warm first light touches the cottage roof, branch edges, bridge rail and stones while foreground shade remains cool. Paint matching soft sunrise reflections in the existing water. Fresh quiet morning, clearly earlier and cooler than sunset. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "autumn",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/가을풍경.png",
+            "sha256": "15BDFAF779F50D0E1A7121AADB2473A8E57E8C022D213873106A34F7ECD5A40F",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/가을_새벽풍경.png",
+          "sha256": "4FB34C2412E7597BD433B77F70D15121E34E190AE9C3E5F776E4B97F5F122A16",
+          "bytes": 3694254,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/가을_새벽풍경.png",
+        "sha256": "63F984EEC55DA6B12A5ECF41A3764D4869CD596C63B03CE2B9550EBC8C6F64D9",
+        "bytes": 479408,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-autumn-dawn.webp",
+        "sha256": "6CFD3C4CA3526A6B2EB6BCAC4991FFFF19F8F93AB9FDAFC3B0E051A90E07982D",
+        "bytes": 118458,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-autumn-dusk",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing copper and amber autumn leaves, dry grasses and fallen leaves. Dusk / actual sunset: repaint a rose-peach and muted amber sky over the existing ridge, a small low setting sun partly hidden behind that ridge, warm grazing light on the cottage and bridge, longer cool shadows in the foreground. Paint warm sky reflections along the same stream. Clearly a glowing late sunset rather than daytime recolored orange. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "autumn",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/가을풍경.png",
+            "sha256": "15BDFAF779F50D0E1A7121AADB2473A8E57E8C022D213873106A34F7ECD5A40F",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/가을_노을풍경.png",
+          "sha256": "DF3A5C9781F3AC8445954CB0229DDA801365EBBFCAE998E40A5ECDF5EAC9BF82",
+          "bytes": 3510041,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/가을_노을풍경.png",
+        "sha256": "A3FE5D10C1DB1C9A6B77EA78CAD87B48A712FB8C73CD1FEAD1052DDF5CD95D5E",
+        "bytes": 463815,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-autumn-dusk.webp",
+        "sha256": "CF880275108E1C75FC81F33B411174D1BED3E5EDB993114B4E461FA904EDDC83",
+        "bytes": 111334,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-autumn-night",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing copper and amber autumn leaves, dry grasses and fallen leaves. Moonlit night: repaint a deep indigo sky with one modest natural moon in an existing open patch of sky and a few faint distant stars. Cool silver moonlight describes the existing bridge, roof, rocks and foliage or snow, with subdued reflected moonlight on the water. A little warm light may glow through the cottage existing windows. Retain readable terrain and gentle detail, not crushed black, no sun or daytime sky. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "autumn",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/가을풍경.png",
+            "sha256": "15BDFAF779F50D0E1A7121AADB2473A8E57E8C022D213873106A34F7ECD5A40F",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/가을_밤풍경.png",
+          "sha256": "C9334B3B69CF1B77A53726C2CE1CAB6CC409CDC6401E4D48559792213F78DCC4",
+          "bytes": 3567461,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/가을_밤풍경.png",
+        "sha256": "F4FAB1E52A29A378BF87507A816DADDFE6A069057C865B2FC1C9C28E686965A6",
+        "bytes": 459485,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-autumn-night.webp",
+        "sha256": "456475EF885CD41462A5A2FA8CFADE0E60171B9D7110FBFA8C02E7278AB756DF",
+        "bytes": 105742,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-winter-dawn",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing bare branching trees, settled snow, frosted grasses and open dark stream; no new falling snow. Dawn / actual sunrise: repaint a pale lavender-blue sky graduating to a restrained peach-gold horizon; a small low rising sun partly hidden behind the existing distant ridge. Warm first light touches the cottage roof, branch edges, bridge rail and stones while foreground shade remains cool. Paint matching soft sunrise reflections in the existing water. Fresh quiet morning, clearly earlier and cooler than sunset. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "winter",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/겨울풍경.png",
+            "sha256": "286017FC63C660A5D687DC4A368B019C9E6E9B56041435E72E0063EDBBBB93E4",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/겨울_새벽풍경.png",
+          "sha256": "B5BA5A7B2C589AD540206D25E6E3A636C4CE457EE70BC1103FDB599BEEB3836D",
+          "bytes": 3942690,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/겨울_새벽풍경.png",
+        "sha256": "AE9CB4D2239C8F0EB564F33135D0D00BEAEAE6C51948BC678A9CC9A241D1066B",
+        "bytes": 491934,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-winter-dawn.webp",
+        "sha256": "518074479C500550416F627CC574CB8322405899B918F4B8E1A8473E34B1F5D9",
+        "bytes": 117170,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-winter-dusk",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing bare branching trees, settled snow, frosted grasses and open dark stream; no new falling snow. Dusk / actual sunset: repaint a rose-peach and muted amber sky over the existing ridge, a small low setting sun partly hidden behind that ridge, warm grazing light on the cottage and bridge, longer cool shadows in the foreground. Paint warm sky reflections along the same stream. Clearly a glowing late sunset rather than daytime recolored orange. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "winter",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/겨울풍경.png",
+            "sha256": "286017FC63C660A5D687DC4A368B019C9E6E9B56041435E72E0063EDBBBB93E4",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/겨울_노을풍경.png",
+          "sha256": "D0703D4E369D216C78A5B8346A2019CF63030095461781DE14ACD159C0F8E99E",
+          "bytes": 3986687,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/겨울_노을풍경.png",
+        "sha256": "E572123CA0E12E17611FF61B018D4ADEEF50D3A2AF182E9FF4C87202F4742D00",
+        "bytes": 494194,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-winter-dusk.webp",
+        "sha256": "F60D4225235D9D0859FC36BC76490F5FF72F5AA8171C3C33FC779E8A3B9CFCBD",
+        "bytes": 117460,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-winter-night",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "lighting_weather_edit",
+        "prompt": "Use case: lighting-weather. Edit the attached daytime landscape into the requested time of day. It is the direct edit target, not merely a loose style example. Preserve exactly the same viewpoint, 4:3 framing, horizon, cottage placement, wooden bridge shape and railings, stone path, stream bend, boulders, tree trunks and branch arrangement. Preserve the existing season and natural hand-painted material realism. Repaint actual sky, directional illumination, surface shading and water reflections coherently across the scene; a flat tint or exposure filter is insufficient. Keep the existing bare branching trees, settled snow, frosted grasses and open dark stream; no new falling snow. Moonlit night: repaint a deep indigo sky with one modest natural moon in an existing open patch of sky and a few faint distant stars. Cool silver moonlight describes the existing bridge, roof, rocks and foliage or snow, with subdued reflected moonlight on the water. A little warm light may glow through the cottage existing windows. Retain readable terrain and gentle detail, not crushed black, no sun or daytime sky. Full-bleed opaque horizontal 4:3 landscape, one image only. No window frame, room, furniture, characters, pets, text, logos or UI. No moved buildings or bridge, new objects, season change, baked-in falling rain or snow, fog overlay, decorative symbols or collage.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "winter",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/겨울풍경.png",
+            "sha256": "286017FC63C660A5D687DC4A368B019C9E6E9B56041435E72E0063EDBBBB93E4",
+            "role": "direct_edit_target_and_season_camera_authority",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/겨울_밤풍경.png",
+          "sha256": "CE7ECADCBE8DCE64AD82462C034AC86783A6CE043500FC48BC7F3B8AEE32E987",
+          "bytes": 3765526,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/겨울_밤풍경.png",
+        "sha256": "DCFBF0AA88AE993DF1387DD5586C21962B6EAA9EF48C2A396B4D8324F774ECF1",
+        "bytes": 468190,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-winter-night.webp",
+        "sha256": "CD922390185E22990B17626A9F5264FD1EA84FD2AD1DDD08E5BBCFA840025F17",
+        "bytes": 106226,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "source_alpha_zero_fraction": 0.0
+      }
+    },
+    {
+      "id": "window-cloud-overlay",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "new_weather_overlay",
+        "prompt": "Use case: stylized-concept. Create one full-frame horizontal 4:3 weather overlay with genuine alpha transparency, for compositing over a realistic hand-painted countryside window view. The two reference images are ONLY examples of restrained illustrated weather texture and transparent-particle handling; do not copy their raindrops or snowflakes. Use neutral soft gray-ivory tones and carefully varied natural opacity, no opaque backdrop, rectangular tint, border, window frame, room, landscape, objects, characters, words, logos or UI. Keep the underlying view identifiable through substantial clear or translucent regions. Paint broad irregular layered cloud banks mainly across the upper half, softly modeled atmospheric volume with feathery natural edges and uneven gaps. Distinct cloud masses and clear openings must be visible, not a uniform gray wash. Lower foreground region mostly transparent. No rain, snow, lightning, star icons or cartoon scallop outlines.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "rain",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/비겹침.png",
+            "sha256": "0CB80B327A8580C97F409F6255283631068800BBFBE23341799D46CB8CBBF4D5",
+            "role": "weather_texture_style_only",
+            "user_visual_approval": false
+          },
+          {
+            "id": "snow",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/눈겹침.png",
+            "sha256": "EB445E9FF1683EAD56A1A6F01CEDEFDA3615665BE40DCC3DC3B7BBF61BBF78F2",
+            "role": "weather_texture_style_only",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/구름겹침.png",
+          "sha256": "81E8CE7B3887ABACD5AEBB9C93D90B9772E5983BB87F6A84F7FB5D5F9E9B0C0C",
+          "bytes": 1625953,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGBA"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/구름겹침.png",
+        "sha256": "A06C4C5AD5CBF1BBDB8898D788C3B9818F6EF556F2C82C6E9B9F37C6F6CD0D52",
+        "bytes": 232497,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-cloud-overlay.webp",
+        "sha256": "272D43D60B6AB7D47B0C2AF30220F9C76F68F003F7B621A7D247C1A212992570",
+        "bytes": 69554,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          0,
+          254
+        ],
+        "source_alpha_zero_fraction": 0.3921151165511838
+      }
+    },
+    {
+      "id": "window-fog-overlay",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "new_weather_overlay",
+        "prompt": "Use case: stylized-concept. Create one full-frame horizontal 4:3 weather overlay with genuine alpha transparency, for compositing over a realistic hand-painted countryside window view. The two reference images are ONLY examples of restrained illustrated weather texture and transparent-particle handling; do not copy their raindrops or snowflakes. Use neutral soft gray-ivory tones and carefully varied natural opacity, no opaque backdrop, rectangular tint, border, window frame, room, landscape, objects, characters, words, logos or UI. Keep the underlying view identifiable through substantial clear or translucent regions. Paint several gently layered low drifting mist banks across lower and middle distances, thin wisps tapering into clear gaps and a few softly denser irregular patches. Natural spatial haze with variable depth and selective occlusion, the upper sky region largely transparent. No solid full-frame wash, opaque white rectangle, raindrops, snow, smoke plumes or isolated cloud icons.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "rain",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/비겹침.png",
+            "sha256": "0CB80B327A8580C97F409F6255283631068800BBFBE23341799D46CB8CBBF4D5",
+            "role": "weather_texture_style_only",
+            "user_visual_approval": false
+          },
+          {
+            "id": "snow",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/눈겹침.png",
+            "sha256": "EB445E9FF1683EAD56A1A6F01CEDEFDA3615665BE40DCC3DC3B7BBF61BBF78F2",
+            "role": "weather_texture_style_only",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/안개겹침.png",
+          "sha256": "585A1C6713F663117560E05F9DB51F14C28BB710141929EE6373BAEABC706E3B",
+          "bytes": 1622722,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGBA"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/안개겹침.png",
+        "sha256": "D3AA10A0D3C9D0B7F83BBDD795893CEA819AEC673A6597015C9EF9AA700B985A",
+        "bytes": 202148,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-fog-overlay.webp",
+        "sha256": "90A179D505A1611510C1D9C288E825B8980D200AF4AE3E4308C6DA482913F4DC",
+        "bytes": 48088,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          0,
+          253
+        ],
+        "source_alpha_zero_fraction": 0.25068615630373514
+      }
+    },
+    {
+      "id": "window-wind-overlay",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "intent": "new_weather_overlay",
+        "prompt": "Use case: stylized-concept. Create one full-frame horizontal 4:3 weather overlay with genuine alpha transparency, for compositing over a realistic hand-painted countryside window view. The two reference images are ONLY examples of restrained illustrated weather texture and transparent-particle handling; do not copy their raindrops or snowflakes. Use neutral soft gray-ivory tones and carefully varied natural opacity, no opaque backdrop, rectangular tint, border, window frame, room, landscape, objects, characters, words, logos or UI. Keep the underlying view identifiable through substantial clear or translucent regions. Paint sparse subtle wind-blown air texture: very fine neutral dust motes and a few soft tapered, gently directional wisps with irregular spacing and broad transparent gaps. Suggest a light countryside breeze, not a storm. No season-specific leaves, petals, seeds, snow or rain; no obvious geometric swirls, spiral icons, hard vector strokes, arrows, motion-comic lines or opaque dust cloud.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "rain",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/비겹침.png",
+            "sha256": "0CB80B327A8580C97F409F6255283631068800BBFBE23341799D46CB8CBBF4D5",
+            "role": "weather_texture_style_only",
+            "user_visual_approval": false
+          },
+          {
+            "id": "snow",
+            "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/눈겹침.png",
+            "sha256": "EB445E9FF1683EAD56A1A6F01CEDEFDA3615665BE40DCC3DC3B7BBF61BBF78F2",
+            "role": "weather_texture_style_only",
+            "user_visual_approval": false
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/원본/바람겹침.png",
+          "sha256": "538FE21A4F397D626270CABC1D5B91ED9FFE9EC73948DAB268BDBCFFFF1E8E3A",
+          "bytes": 1206985,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGBA"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/바람겹침.png",
+        "sha256": "4653DAAF150D6C22FB6EDC18BF14EC03EB79ED37664F5294C68E056925909B40",
+        "bytes": 125475,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/123/window-wind-overlay.webp",
+        "sha256": "F385E68574E05590177C86CAF1F5F56F5BC2971C6B4A87D3817CA7099F9B6422",
+        "bytes": 81910,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Preserve model output bytes; center crop to exact4:3 if necessary, then uniform Lanczos downscale only. No recolor, filter, repaint or matte replacement.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        },
+        "source_alpha_range": [
+          0,
+          249
+        ],
+        "source_alpha_zero_fraction": 0.41350360693100535
+      }
+    }
+  ],
+  "contact_sheet": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-창밖시간풍경123/정리본/전체15종_접촉표.png",
+    "sha256": "6B7F9324D855858B989677D2E5130C4EEB75EE0D10A9C0DBE0B7F5F3824F90F3",
+    "bytes": 2442931,
+    "width": 960,
+    "height": 1340,
+    "mode": "RGB"
+  },
+  "runtime_total_bytes": 1556608,
+  "protected_existing_source_count": 44,
+  "protected_source_hashes_unchanged": true,
+  "character_preflight": "NOT_APPLICABLE: no character is depicted. Asset input/order/hash/word-count/budget preflight was used without inventing character subjects.",
+  "limits": {
+    "max_actual_prompt_words": 209,
+    "max_visual_inputs_per_call": 2,
+    "automatic_post_generation_art_reviews": 0
+  },
+  "limitations": [
+    "Creator observation is not user visual approval or independent professional art review.",
+    "Landmark preservation was requested and observed, not measured as pixel-identical geometry.",
+    "Cloud/fog/wind opacity and actual window appearance require product render checks.",
+    "Native weather alpha retains minor low-alpha edge color detail; no matte or repaint substitution was made."
+  ]
+}

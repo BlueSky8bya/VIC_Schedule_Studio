@@ -7,7 +7,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { COMPANION_SCENE_MEMORY_KEY, type CompanionSceneMemory } from "@/lib/ui/viewer-companion/scene-memory";
 import { openCompanionHome } from "./helpers/companion-home";
 
-const out = ".scratch-pw/companion-122/rendered";
+const out = process.env.COMPANION_HOME_UI_OUTPUT ?? ".scratch-pw/companion-122/rendered";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 async function fixture(page: Page, options: { personality?: CompanionPreferences["personality"]; roam?: boolean; sleep?: boolean; energy?: number; hunger?: number; theme?: string; surface?: string; season?: string; animal?: CompanionPreferences["animalMode"]; sceneMemory?: CompanionSceneMemory; reduce?: boolean; graphics?: "off" | "soft"; weather?: string } = {}) {
   const posts: string[] = [], foreign: string[] = [], errors: string[] = [];
@@ -120,10 +120,16 @@ for (const [season, weather] of [['spring', 'rain'], ['summer', 'clear'], ['autu
   const state = await fixture(page, { surface: 'studio', season, weather });
   const window = state.room.locator('.vc-home-window');
   await expect(window).toHaveAttribute('data-season', season); await expect(window).toHaveAttribute('data-weather', weather);
-  await expect(window.locator('.vc-window-landscape')).toHaveAttribute('src', `/companion/home/122/window-${season}.webp`);
+  const phase = await window.getAttribute('data-phase');
+  expect(['dawn', 'day', 'dusk', 'night']).toContain(phase);
+  await expect(window.locator('.vc-window-landscape')).toHaveAttribute('src', phase === 'day' ? `/companion/home/122/window-${season}.webp` : `/companion/home/123/window-${season}-${phase}.webp`);
   expect(await window.locator('svg').count()).toBe(0);
   await decodedArt(page);
   if (weather === 'rain' || weather === 'snow') await expect(window.locator('.vc-window-weather')).toHaveAttribute('src', `/companion/home/122/window-${weather}-overlay.webp`);
+  else if (weather === 'fog') {
+    await expect(window.locator('.vc-window-weather')).toHaveCount(1);
+    await expect(window.locator('.vc-window-weather')).toHaveAttribute('src', '/companion/home/123/window-fog-overlay.webp');
+  }
   else await expect(window.locator('.vc-window-weather')).toHaveCount(0);
   mkdirSync(out, { recursive: true }); await state.room.screenshot({ path: `${out}/landscape-${season}-${weather}.png` });
   await state.verify();

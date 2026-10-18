@@ -9,17 +9,17 @@ import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-environment";
+import { resolveCompanionWindowScene } from "@/lib/ui/viewer-companion/home-window-scene";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment };
 
 function HomeWindow({ environment }: { environment?: CompanionHomeEnvironment }) {
-  const weather = environment?.weather ?? "clear", night = environment?.night ?? false;
-  const season = environment?.season ?? "spring";
-  return <div className="vc-home-window" aria-hidden="true" data-season={season} data-weather={weather} data-night={night || undefined}>
+  const scene = resolveCompanionWindowScene(environment);
+  return <div className="vc-home-window" aria-hidden="true" data-season={scene.season} data-weather={scene.weather} data-band={environment?.band} data-phase={scene.phase} data-night={environment?.night || undefined}>
     <span className="vc-window-glass">
-      <img className="vc-window-landscape" src={`/companion/home/122/window-${season}.webp`} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />
-      {(weather === "rain" || weather === "snow") && <img className="vc-window-weather" src={`/companion/home/122/window-${weather}-overlay.webp`} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />}
+      <img className="vc-window-landscape" src={scene.landscapeSrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />
+      {scene.overlaySrc && <img className="vc-window-weather" src={scene.overlaySrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />}
       <span className="vc-window-atmosphere" />
     </span>
     <span className="vc-window-crossbar" /><span className="vc-window-sill" />
@@ -70,7 +70,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
   // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
   return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
-    <div className="vc-home-room" data-season={environment?.season} data-weather={environment?.weather} data-night={environment?.night || undefined}>
+    <div className="vc-home-room" data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined}>
       <HomeWindow environment={environment} />
       <div className="vc-home-shelf">
       <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" fill="none" aria-hidden="true" focusable="false">

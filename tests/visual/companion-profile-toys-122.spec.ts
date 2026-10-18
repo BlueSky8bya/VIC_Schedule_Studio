@@ -7,7 +7,7 @@ import { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES } from "@/lib/ui/viewer-compan
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 
-const out = ".scratch-pw/companion-122/profile-toys";
+const out = process.env.COMPANION_PROFILE_UI_OUTPUT ?? ".scratch-pw/companion-122/profile-toys";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 async function fixture(page: Page, info: TestInfo, surface: "viewer" | "studio", dark = false, experienced = false) {
   const errors: string[] = [], rejected: string[] = [];

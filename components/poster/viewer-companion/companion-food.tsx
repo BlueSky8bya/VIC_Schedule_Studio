@@ -9,6 +9,7 @@ import { companionLayoutMotionMs } from "@/lib/ui/viewer-companion/element-ancho
 import { createCompanionFoodGravity, createCompanionFoodToss } from "@/lib/ui/viewer-companion/food-gravity";
 import { planCompanionDispenserEjection, planCompanionFoodToss } from "@/lib/ui/viewer-companion/food-toss";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
+import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame";
 import { gfxMode as readGfxMode, type GfxMode } from "@/lib/ui/gfx";
 import { FLIP_MS } from "@/lib/ui/flip-motion";
 import { COMPANION_CARD_PLAY_EVENT } from "@/lib/ui/viewer-companion/card-play";
@@ -76,7 +77,9 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const renderedTransforms = useRef(new Map<string, string>());
   const serial = useRef(0), dragging = useRef<Drag | null>(null), hover = useRef<Hover | null>(null), discard = useRef<Discard | null>(null);
   const carried = useRef<string | undefined>(undefined);
-  const dragFrame = useRef(0), hoverFrame = useRef(0), followFrame = useRef(0), operating = useRef(false);
+  const dragFrame = useRef<ReturnType<typeof createCompanionInputFrame> | null>(null);
+  dragFrame.current ??= createCompanionInputFrame();
+  const hoverFrame = useRef(0), followFrame = useRef(0), operating = useRef(false);
   const graphics = useRef<GfxMode>("full");
   const followUntil = useRef(0), followHome = useRef<() => void>(() => {});
   const followedFrame = useRef<{ time: number; foods: Food[] } | null>(null);
@@ -381,7 +384,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const clearBin = (bin: HTMLElement) => { bin.removeAttribute("data-food-over"); bin.style.removeProperty("--vc-trash-progress"); };
   const cancelHover = useCallback(() => { cancelAnimationFrame(hoverFrame.current); hoverFrame.current = 0; if (hover.current) clearBin(hover.current.bin); hover.current = null; }, []);
   const release = useCallback((settle = false) => {
-    cancelAnimationFrame(dragFrame.current); dragFrame.current = 0;
+    dragFrame.current!.cancel();
     const drag = dragging.current;
     if (!drag) return;
     if (drag.moved) { followDragHome(drag); const latest = current.current.find(item => item.id === drag.id); if (latest) paint(latest); }
@@ -734,9 +737,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         drag.point = { x: event.clientX, y: event.clientY };
         visibility.current.set(food.id, true);
         current.current = current.current.map(item => item.id === food.id ? { ...item, ...point } : item);
-        if (dragFrame.current) return;
-        dragFrame.current = requestAnimationFrame(() => {
-          dragFrame.current = 0;
+        dragFrame.current!.queue(() => {
           if (dragging.current !== drag || !operating.current) return;
           followDragHome(drag);
           const bin = trashAt(drag.point);

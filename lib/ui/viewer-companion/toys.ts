@@ -239,15 +239,16 @@ export function createCompanionToyPlanner() {
       const routeTo = (target: Point) => routeBetween(input, here, target);
       let preparedRoute: ReturnType<typeof findPlatformRoute> | undefined;
       if (job && (now >= job.deadline || job.budget <= 0 || job.stage === "deliver" && "carriedId" in input && input.carriedId !== job.toyId)) fail(now);
-      if (!job) {
-        if (now < readyAt) return;
+      const continuation = job?.kind === "tidy" && job.stage === "seek" && !job.toyId;
+      if (!job || continuation) {
+        if (!continuation && now < readyAt) return;
         const tidy = p.personality === "tidy", motivation = companionToyMotivation(p, brain, world);
         // At most four real objects: an unreachable nearest toy cannot hide
         // another reachable one. Reuse its proved first route in this beat.
         const target = candidates(input).find(toy => { const route = routeTo(toy.stance ?? toy); if (!route || tidy && !routeBetween(input, toy.stance ?? toy, box!)) { rememberFailure(toy.id, now); return false; } preparedRoute = route; return true; });
         if (target) job = { serial: ++serial, kind: tidy ? "tidy" : "play", stage: input.tastes && shouldDeclineCompanionToy(target.kind, input.tastes, p, brain) ? "decline" : "seek", toyId: target.id, deadline: now + 30_000, budget: 18, ...motivation };
         else if (motivation.spawn && box && input.count < MAX_COMPANION_TOYS && p.ambientPrank) job = { serial: ++serial, kind: "play", stage: "box", deadline: now + 25_000, budget: 16, ...motivation };
-        else { readyAt = now + 1000; return; }
+        else { stop(now, 1000); return; }
       }
       const current = job, toy = input.toys.find(item => item.id === current.toyId);
       const target = current.stage === "seek" || current.stage === "decline" ? toy?.stance ?? toy : box;
@@ -267,6 +268,10 @@ export function createCompanionToyPlanner() {
       if (!ok) { fail(now); return; }
       if (beat.effect === "pick") { job.stage = "deliver"; return; }
       if (beat.effect === "spawn" && typeof ok === "string") { job.stage = "seek"; job.toyId = ok; return; }
+      // Preserve this actual cleanup owner until the next bounded decision
+      // proves another real toy's approach and return. No remaining/reachable
+      // candidate clears it there, before any unrelated job is considered.
+      if (beat.effect === "stash" && job.kind === "tidy") { job = { ...job, serial: ++serial, stage: "seek", toyId: undefined }; return; }
       stop(now, beat.effect === "decline" ? 20000 : job.cooldown);
     },
     active: () => Boolean(job),
