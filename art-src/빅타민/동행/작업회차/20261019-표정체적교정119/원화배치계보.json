@@ -1,0 +1,631 @@
+{
+  "sheet": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+    "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD",
+    "size": [
+      432,
+      288
+    ],
+    "grid": [
+      3,
+      2
+    ],
+    "tile_size": [
+      144,
+      144
+    ],
+    "native_resampling": "none",
+    "empty_gutters_transparent": true
+  },
+  "mapping": [
+    {
+      "native": 1,
+      "physical": 9,
+      "row": 0,
+      "kind": "face",
+      "label": "blink_glint",
+      "sheet_cell_index_zero_based": 0,
+      "sheet_cell_one_based": 1,
+      "grid_col": 0,
+      "grid_row": 0,
+      "tile_box": [
+        0,
+        0,
+        144,
+        144
+      ],
+      "crop_source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "crop_source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "native_crop_box": [
+        159,
+        23,
+        263,
+        129
+      ],
+      "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_1.png",
+      "crop_sha256": "7CA0B7D77CCA42ECCAFBAEEDDB6B610E71BD7833C3F07C0F0601FB0195D3C7A7",
+      "crop_size": [
+        104,
+        106
+      ],
+      "mode": "RGBA",
+      "resampling": "none",
+      "decoded_pixel_equality_verified": true,
+      "sheet_native_offset": [
+        20,
+        19
+      ],
+      "sheet_native_box": [
+        20,
+        19,
+        124,
+        125
+      ],
+      "provisional_face_roi_local": [
+        19,
+        41,
+        94,
+        90
+      ],
+      "orange_cheek_protection": "Actual orange-colour pixels plus1px colour AA edge only; dark/white old-eye remnants are NOT protected. This is a preparer mask requiring face reviewer attention, not a visual PASS.",
+      "actual_orange_protected_pixels": 337,
+      "all115_physical_slots": [
+        9,
+        10,
+        257
+      ],
+      "curated_reachable": [
+        {
+          "index": 9,
+          "uses": [
+            {
+              "row": 0,
+              "column": 9
+            }
+          ],
+          "atlas": 0,
+          "cell": 9,
+          "src": "/companion/hd/vitamin-action-00-motion-115-v1.webp"
+        },
+        {
+          "index": 10,
+          "uses": [
+            {
+              "row": 0,
+              "column": 10
+            }
+          ],
+          "atlas": 0,
+          "cell": 10,
+          "src": "/companion/hd/vitamin-action-00-motion-115-v1.webp"
+        }
+      ],
+      "semantic_runtime_note": "Idle columns9,10: each125ms,1125..1375ms in2s8fps loop."
+    },
+    {
+      "native": 64,
+      "physical": 356,
+      "row": 23,
+      "kind": "face",
+      "label": "recovery_glint_a",
+      "sheet_cell_index_zero_based": 1,
+      "sheet_cell_one_based": 2,
+      "grid_col": 1,
+      "grid_row": 0,
+      "tile_box": [
+        144,
+        0,
+        288,
+        144
+      ],
+      "crop_source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "crop_source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "native_crop_box": [
+        22,
+        1062,
+        127,
+        1166
+      ],
+      "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_64.png",
+      "crop_sha256": "779A59DC7F1B0F9FF925A1D98BE92C338873F1F9B312D16F9ED58380B92B1C71",
+      "crop_size": [
+        105,
+        104
+      ],
+      "mode": "RGBA",
+      "resampling": "none",
+      "decoded_pixel_equality_verified": true,
+      "sheet_native_offset": [
+        163,
+        20
+      ],
+      "sheet_native_box": [
+        163,
+        20,
+        268,
+        124
+      ],
+      "provisional_face_roi_local": [
+        19,
+        40,
+        95,
+        88
+      ],
+      "orange_cheek_protection": "Actual orange-colour pixels plus1px colour AA edge only; dark/white old-eye remnants are NOT protected. This is a preparer mask requiring face reviewer attention, not a visual PASS.",
+      "actual_orange_protected_pixels": 354,
+      "all115_physical_slots": [
+        356,
+        357,
+        358,
+        359
+      ],
+      "curated_reachable": [
+        {
+          "index": 356,
+          "uses": [
+            {
+              "row": 23,
+              "column": 4
+            }
+          ],
+          "atlas": 22,
+          "cell": 4,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 357,
+          "uses": [
+            {
+              "row": 23,
+              "column": 5
+            }
+          ],
+          "atlas": 22,
+          "cell": 5,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 358,
+          "uses": [
+            {
+              "row": 23,
+              "column": 6
+            }
+          ],
+          "atlas": 22,
+          "cell": 6,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 359,
+          "uses": [
+            {
+              "row": 23,
+              "column": 7
+            }
+          ],
+          "atlas": 22,
+          "cell": 7,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        }
+      ],
+      "semantic_runtime_note": "Current recover expression .35 selects column5 physical357;356/358/359 are same-family metadata-reachable siblings."
+    },
+    {
+      "native": 65,
+      "physical": 360,
+      "row": 23,
+      "kind": "face",
+      "label": "recovery_glint_b",
+      "sheet_cell_index_zero_based": 2,
+      "sheet_cell_one_based": 3,
+      "grid_col": 2,
+      "grid_row": 0,
+      "tile_box": [
+        288,
+        0,
+        432,
+        144
+      ],
+      "crop_source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "crop_source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "native_crop_box": [
+        157,
+        1056,
+        269,
+        1169
+      ],
+      "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_65.png",
+      "crop_sha256": "42505E0D5CD1CB1792F4086D0A4574F7CF1D624FF57F9932225A9B8C6B1430BF",
+      "crop_size": [
+        112,
+        113
+      ],
+      "mode": "RGBA",
+      "resampling": "none",
+      "decoded_pixel_equality_verified": true,
+      "sheet_native_offset": [
+        304,
+        15
+      ],
+      "sheet_native_box": [
+        304,
+        15,
+        416,
+        128
+      ],
+      "provisional_face_roi_local": [
+        21,
+        44,
+        101,
+        96
+      ],
+      "orange_cheek_protection": "Actual orange-colour pixels plus1px colour AA edge only; dark/white old-eye remnants are NOT protected. This is a preparer mask requiring face reviewer attention, not a visual PASS.",
+      "actual_orange_protected_pixels": 299,
+      "all115_physical_slots": [
+        360,
+        361,
+        362,
+        363
+      ],
+      "curated_reachable": [
+        {
+          "index": 360,
+          "uses": [
+            {
+              "row": 23,
+              "column": 8
+            }
+          ],
+          "atlas": 22,
+          "cell": 8,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 361,
+          "uses": [
+            {
+              "row": 23,
+              "column": 9
+            }
+          ],
+          "atlas": 22,
+          "cell": 9,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 362,
+          "uses": [
+            {
+              "row": 23,
+              "column": 10
+            }
+          ],
+          "atlas": 22,
+          "cell": 10,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 363,
+          "uses": [
+            {
+              "row": 23,
+              "column": 11
+            }
+          ],
+          "atlas": 22,
+          "cell": 11,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        }
+      ],
+      "semantic_runtime_note": "Current recover expression .65 selects column10 physical362;360/361/363 are same-family metadata-reachable siblings."
+    },
+    {
+      "native": 73,
+      "physical": 514,
+      "row": 35,
+      "kind": "face",
+      "label": "mismatched_curved_eyes",
+      "sheet_cell_index_zero_based": 3,
+      "sheet_cell_one_based": 4,
+      "grid_col": 0,
+      "grid_row": 1,
+      "tile_box": [
+        0,
+        144,
+        144,
+        288
+      ],
+      "crop_source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "crop_source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "native_crop_box": [
+        159,
+        1205,
+        272,
+        1312
+      ],
+      "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_73.png",
+      "crop_sha256": "A9374364CF8F35E40F76A75E37944D6FFAC0ABC57CCBD4C85C6F64EAD009465D",
+      "crop_size": [
+        113,
+        107
+      ],
+      "mode": "RGBA",
+      "resampling": "none",
+      "decoded_pixel_equality_verified": true,
+      "sheet_native_offset": [
+        15,
+        162
+      ],
+      "sheet_native_box": [
+        15,
+        162,
+        128,
+        269
+      ],
+      "provisional_face_roi_local": [
+        21,
+        41,
+        102,
+        90
+      ],
+      "orange_cheek_protection": "Actual orange-colour pixels plus1px colour AA edge only; dark/white old-eye remnants are NOT protected. This is a preparer mask requiring face reviewer attention, not a visual PASS.",
+      "actual_orange_protected_pixels": 415,
+      "all115_physical_slots": [
+        514
+      ],
+      "curated_reachable": [
+        {
+          "index": 514,
+          "uses": [
+            {
+              "row": 35,
+              "column": 0
+            }
+          ],
+          "atlas": 32,
+          "cell": 2,
+          "src": "/companion/hd/vitamin-episodes-00-motion-115-v1.webp"
+        }
+      ],
+      "semantic_runtime_note": "row35=[514],single authored drawing throughout1500ms3cycle knead beat; only small runtime transform changes."
+    },
+    {
+      "native": 67,
+      "physical": 496,
+      "row": 32,
+      "kind": "body_edit_pending_professional_recommendation",
+      "label": "volume_comparison",
+      "sheet_cell_index_zero_based": 4,
+      "sheet_cell_one_based": 5,
+      "grid_col": 1,
+      "grid_row": 1,
+      "tile_box": [
+        144,
+        144,
+        288,
+        288
+      ],
+      "crop_source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "crop_source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "native_crop_box": [
+        442,
+        1056,
+        548,
+        1165
+      ],
+      "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_67.png",
+      "crop_sha256": "809D24712814DD842747DC486C10BD42E6169560B349A9B10FCF0A39D2C5398A",
+      "crop_size": [
+        106,
+        109
+      ],
+      "mode": "RGBA",
+      "resampling": "none",
+      "decoded_pixel_equality_verified": true,
+      "sheet_native_offset": [
+        163,
+        161
+      ],
+      "sheet_native_box": [
+        163,
+        161,
+        269,
+        270
+      ],
+      "provisional_face_roi_local": [
+        20,
+        42,
+        96,
+        92
+      ],
+      "orange_cheek_protection": "Actual orange-colour pixels plus1px colour AA edge only; dark/white old-eye remnants are NOT protected. This is a preparer mask requiring face reviewer attention, not a visual PASS.",
+      "actual_orange_protected_pixels": 280,
+      "all115_physical_slots": [
+        496,
+        497,
+        498,
+        499
+      ],
+      "curated_reachable": [
+        {
+          "index": 496,
+          "uses": [
+            {
+              "row": 32,
+              "column": 0
+            }
+          ],
+          "atlas": 31,
+          "cell": 0,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        },
+        {
+          "index": 497,
+          "uses": [
+            {
+              "row": 32,
+              "column": 1
+            }
+          ],
+          "atlas": 31,
+          "cell": 1,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        },
+        {
+          "index": 498,
+          "uses": [
+            {
+              "row": 32,
+              "column": 2
+            }
+          ],
+          "atlas": 31,
+          "cell": 2,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        },
+        {
+          "index": 499,
+          "uses": [
+            {
+              "row": 32,
+              "column": 3
+            }
+          ],
+          "atlas": 31,
+          "cell": 3,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        }
+      ],
+      "semantic_runtime_note": "throw launch column0 physical496; other496..499 siblings metadata-reachable but actual flight phase selects discrete columns0/4/8 then12..15."
+    },
+    {
+      "native": 10,
+      "physical": 266,
+      "row": 10,
+      "kind": "face",
+      "label": "rejected118_yawn",
+      "use118": true,
+      "sheet_cell_index_zero_based": 5,
+      "sheet_cell_one_based": 6,
+      "grid_col": 2,
+      "grid_row": 1,
+      "tile_box": [
+        288,
+        144,
+        432,
+        288
+      ],
+      "crop_source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\정리본\\빅타민_하품눈입교정.png",
+      "crop_source_sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+      "native_crop_box": null,
+      "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_10_118현재.png",
+      "crop_sha256": "9621FA79911D6E2B884D6C71A9FB589C21FAF37C064D3BD92BF0AED6476D3C57",
+      "crop_size": [
+        108,
+        100
+      ],
+      "mode": "RGBA",
+      "resampling": "none",
+      "decoded_pixel_equality_verified": true,
+      "sheet_native_offset": [
+        306,
+        166
+      ],
+      "sheet_native_box": [
+        306,
+        166,
+        414,
+        266
+      ],
+      "provisional_face_roi_local": [
+        20,
+        39,
+        98,
+        85
+      ],
+      "orange_cheek_protection": "Actual orange-colour pixels plus1px colour AA edge only; dark/white old-eye remnants are NOT protected. This is a preparer mask requiring face reviewer attention, not a visual PASS.",
+      "actual_orange_protected_pixels": 313,
+      "all115_physical_slots": [
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        266
+      ],
+      "curated_reachable": [
+        {
+          "index": 266,
+          "uses": [
+            {
+              "row": 10,
+              "column": 0
+            }
+          ],
+          "atlas": 16,
+          "cell": 10,
+          "src": "/companion/hd/vitamin-action-16-face-118-v1.webp"
+        }
+      ],
+      "semantic_runtime_note": "row10=[266],same corrected clean key across700ms; no yawn sampler/CSS deformation in118technical capture.",
+      "generation_target_physical_only": [
+        266
+      ],
+      "explicitly_protected_other_physical_slots": [
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175
+      ]
+    }
+  ],
+  "face_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\표정5칸_명시편집영역.png",
+    "sha256": "BB051BC4CD9C81BDFEFF0AC795B34A59CCDE68A2BABCEA0F21716F27F29E32FD"
+  },
+  "actual_orange_cheek_protection": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\실제주황볼_보호영역.png",
+    "sha256": "5F61C155F63C06BBC764528AD7783FFB20196989C98E00244912D1E4B531F574",
+    "coarse118_cheek_bbox_not_reused": true,
+    "dark_stray_dots_not_protected": true
+  },
+  "body67_generation_edit_enabled": "PENDING_PROFESSIONAL_RECOMMENDATION",
+  "body67_note": "Editable candidate pending independent body findings. Launch/throw runtime scales are neutral, so runtime area normalization alone cannot repair any actual source fluff. Root chooses source edit and any shared motion response after both role reports.",
+  "optional_body_review_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\체적67_검토용잠정영역_미사용.png",
+    "sha256": "3294D89B97AC9F7778BA13E23A5732FD19E06579B4C9E5AFFA7FB85E11459D4B"
+  },
+  "source114_original_preserved": true,
+  "prior117_preserved": true,
+  "prior118_rejected_preserved_not_approved": true,
+  "combined_provisional_edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\표정체적6칸_잠정편집영역.png",
+    "sha256": "A03BCCC6733CED637EC33A147B71E159F0DB69EC6E0FF91EE4A45D890AE24CF5",
+    "body67_face_and_ears_protected": true,
+    "final_scope_after_two_role_reports": true
+  }
+}

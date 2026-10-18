@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "vitamin-face-alignment-118",
+  "operation": "targeted_parent_edit",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "/root",
+  "purpose": "하품 및 현재 실제 사용 표정의 눈·입 정렬만 한 차례 독립 전문 검수. 필요한 확인된 얼굴 교정은 root의 후속 단일 생성에 한정.",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\plan.json",
+    "sha256": "0B43DB5517F81BC1A1763CFF0A9F4DCB8DC32B97D14FFA20AC7DC02BCAACB810"
+  },
+  "inputs": [
+    {
+      "id": "current-native114",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "current_actual_native_sheet_face_review_only"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "read_only_original_mascot_face_design"
+    },
+    {
+      "id": "approved-eye-size099",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "current_user_selected_eye_size_and_spacing_preserve"
+    },
+    {
+      "id": "current-jump117",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png",
+      "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "current117_displayed_jump_face_preservation_reference"
+    }
+  ],
+  "authorities": {
+    "face": "REF-016",
+    "mascot": "REF-016"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png",
+      "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7"
+    }
+  ],
+  "edit_authorization": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-d4cb123467c3c6a8ed26bf8f.json",
+    "sha256": "BF9BF123A28AA329D35E3BC6445F451DC1CBC1C7997CCFDFCE2290B26662F502",
+    "excerpt": "또 하품하는 모습 표정이 좀 어긋나고 찌그러져있는 것 같은데 이것도 확인해줘. 하품 표정 포함해서 전반적으로 눈이나 입이 어긋나있는 부분 없는지 다시 한 번 확인해줘"
+  },
+  "protected_parent": {
+    "artwork_id": "vitamin-face-alignment-118",
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+    "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+  },
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품눈입_잠정편집영역.png",
+    "sha256": "E696D443D06071487882C5A901425A606DD43E1FB23BD7F2F2FE3EFE4B30882A",
+    "mode": "L",
+    "box": [
+      319,
+      177,
+      395,
+      242
+    ]
+  },
+  "edit_scope": [
+    "잠정: key11 하품의 눈·입 정렬만. 최종 교정 부위는 독립 검수 지적을 반영해 root가 새 실제 args/계약 버전으로 고정한 뒤 generation preflight 재확인."
+  ],
+  "protected_scope": [
+    "원본 몸체·귀·종이 구조·볼·색·화풍·승인 눈 크기",
+    "의도된 회전·표정·원근",
+    "현재117점프 노란 조각과 현재 런타임 모든 미요청 얼굴·키·새행동36"
+  ],
+  "status": "REQUESTED_FACE_REVIEW_COMPLETED_GENERATION_NOT_CLAIMED",
+  "review_scope": "Only actual currently used eyes/mouth; unused sheet keys excluded by technical mapping.",
+  "reviewer_id": "/root/art_prep_117",
+  "reviewer_independent_from_generator": true,
+  "prompt_budget_words": 450,
+  "automatic_post_repair_review_rounds": 0,
+  "review_plan": {
+    "schema_version": 1,
+    "user_directed": true,
+    "role_packets": {
+      "face_identity": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\face_identity.json",
+        "sha256": "B9F1EDC449AE7BA2AD5E9A93B6BE364DCDD1BB3D5FC56A881B2FB00C03B30E42"
+      }
+    },
+    "required_roles": [
+      "face_identity"
+    ]
+  },
+  "actual_input_opening_recorded_by": "/root/art_prep_117"
+}

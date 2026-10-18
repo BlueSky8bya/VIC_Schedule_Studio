@@ -156,14 +156,14 @@ describe("targeted companion observation", () => {
 
 describe("held gravity viewport composition", () => {
   const size = 92, viewport = { width: 400, height: 300 }, grip = { x: 24, y: 28 };
-  const pose: CompanionMotionPose = { row: 8, column: 7, facing: 1, bob: 0, scaleX: .95, scaleY: 1.315, tilt: 6.8 };
+  const pose: CompanionMotionPose = { row: 8, column: 7, facing: 1, bob: 0, scaleX: 1 / 1.315, scaleY: 1.315, tilt: 6.8 };
   // Independent CSS-order oracle: inner pose about the mirrored grip, facing
   // about the cell center, then outer inertia about the actual world grip.
   const project = (p: CompanionMotionPose, point: { x: number; y: number }, origin: { x: number; y: number }, outer: { tilt: number; stretch: number }) => {
     const gx = p.facing < 0 ? size - grip.x : grip.x, angle = p.tilt * Math.PI / 180;
     const dx = (point.x - gx) * p.scaleX, dy = (point.y - grip.y) * p.scaleY;
     const ix = gx + dx * Math.cos(angle) - dy * Math.sin(angle), iy = grip.y + dx * Math.sin(angle) + dy * Math.cos(angle) + p.bob;
-    const fx = p.facing < 0 ? size - ix : ix, ex = (fx - grip.x) * (1 - outer.stretch * .35), ey = (iy - grip.y) * (1 + outer.stretch), oa = outer.tilt * Math.PI / 180;
+    const fx = p.facing < 0 ? size - ix : ix, ex = (fx - grip.x) / (1 + outer.stretch), ey = (iy - grip.y) * (1 + outer.stretch), oa = outer.tilt * Math.PI / 180;
     return { x: origin.x + grip.x + ex * Math.cos(oa) - ey * Math.sin(oa), y: origin.y + grip.y + ex * Math.sin(oa) + ey * Math.cos(oa) };
   };
   const corners = (p: CompanionMotionPose, origin: { x: number; y: number }, outer: { tilt: number; stretch: number }) => [0, size].flatMap(x => [0, size].map(y => project(p, { x, y }, origin, outer)));
@@ -172,7 +172,8 @@ describe("held gravity viewport composition", () => {
     const origin = { x: 150, y: 100 }, outer = { tilt: 18, stretch: .06 };
     for (const facing of [-1, 1] as const) {
       const candidate = { ...pose, facing }, bounded = boundCompanionHangingPose(candidate, origin, grip, size, viewport, outer);
-      expect(bounded).toBe(candidate);
+      expect(bounded).toEqual(candidate);
+      expect(bounded.scaleX * bounded.scaleY).toBeCloseTo(1, 12);
       const fixed = project(bounded, { x: facing < 0 ? size - grip.x : grip.x, y: grip.y }, origin, outer);
       expect(fixed.x).toBeCloseTo(origin.x + grip.x, 10); expect(fixed.y).toBeCloseTo(origin.y + grip.y, 10);
     }
@@ -181,13 +182,14 @@ describe("held gravity viewport composition", () => {
   it("keeps every composed corner inside all four edges without reversing gravity or moving the grip", () => {
     const edges = [{ x: 4, y: 100 }, { x: 304, y: 100 }, { x: 150, y: 8 }, { x: 150, y: 196 }];
     let limited = 0;
-    for (const origin of edges) for (const facing of [-1, 1] as const) for (const sign of [-1, 1]) for (const material of [pose, { ...pose, scaleX: .91, scaleY: 1.45, tilt: 30 }]) {
+    for (const origin of edges) for (const facing of [-1, 1] as const) for (const sign of [-1, 1]) for (const material of [pose, { ...pose, scaleX: 1 / 1.45, scaleY: 1.45, tilt: 30 }]) {
       const outer = boundCompanionHeldPose({ tilt: sign * 17, stretch: .08, active: true }, origin, grip, size, viewport);
       const candidate = { ...material, facing, tilt: sign * material.tilt }, bounded = boundCompanionHangingPose(candidate, origin, grip, size, viewport, outer);
       if (bounded.scaleY < candidate.scaleY) limited++;
       expect(bounded).toMatchObject({ row: candidate.row, column: candidate.column, facing, bob: 0 });
       expect(bounded.scaleY).toBeGreaterThanOrEqual(1); expect(bounded.scaleY).toBeLessThanOrEqual(candidate.scaleY);
       expect(bounded.scaleX).toBeGreaterThanOrEqual(candidate.scaleX); expect(bounded.scaleX).toBeLessThanOrEqual(1);
+      expect(bounded.scaleX * bounded.scaleY).toBeCloseTo(1, 12);
       expect(Math.abs(bounded.tilt)).toBeLessThanOrEqual(Math.abs(candidate.tilt));
       for (const corner of corners(bounded, origin, outer)) { expect(corner.x).toBeGreaterThanOrEqual(2 - 1e-7); expect(corner.x).toBeLessThanOrEqual(viewport.width - 2 + 1e-7); expect(corner.y).toBeGreaterThanOrEqual(2 - 1e-7); expect(corner.y).toBeLessThanOrEqual(viewport.height - 2 + 1e-7); }
       const fixed = project(bounded, { x: facing < 0 ? size - grip.x : grip.x, y: grip.y }, origin, outer);
@@ -203,7 +205,7 @@ describe("held gravity viewport composition", () => {
     expect(bounded.scaleY).toBeLessThan(pose.scaleY); expect(bounded.scaleY).toBeGreaterThan(1);
     expect(Math.max(...corners(bounded, origin, outer).map(point => point.y))).toBeLessThanOrEqual(viewport.height - 2);
     const reduced = { ...pose, tilt: 0, scaleX: 1, scaleY: 1 };
-    expect(boundCompanionHangingPose(reduced, origin, grip, size, viewport, outer)).toBe(reduced);
+    expect(boundCompanionHangingPose(reduced, origin, grip, size, viewport, outer)).toEqual(reduced);
   });
 
   it("returns neutral deformation for invalid geometry without inventing a new world position", () => {
@@ -237,11 +239,12 @@ describe("companion clip and facing continuity", () => {
     expect(Math.max(...samples.map(p => p.tilt)) - Math.min(...samples.map(p => p.tilt))).toBeGreaterThan(7);
     expect(samples.every(p => p.bob === 0)).toBe(true);
     expect(Math.max(...samples.map(p => p.scaleY))).toBeGreaterThan(1.29);
-    expect(samples.every(p => p.facing === 1 && Math.abs(p.tilt) <= 7 && p.scaleX >= .9433 && p.scaleX <= 1 && p.scaleY >= 1 && p.scaleY <= 1.315)).toBe(true);
+    expect(samples.every(p => p.facing === 1 && Math.abs(p.tilt) <= 7 && p.scaleX >= 1 / 1.315 - 1e-6 && p.scaleX <= 1 && p.scaleY >= 1 && p.scaleY <= 1.315)).toBe(true);
+    for (const pose of samples) expect(pose.scaleX * pose.scaleY).toBeCloseTo(1, 5);
     expect(samples.filter((_, i) => i >= 24).every(p => p.scaleY >= 1.185 && p.scaleX < 1)).toBe(true);
   });
 
-  it("sustains the gravity floor across full breathing and kick cycles without pinching the body", () => {
+  it("sustains the gravity floor across full breathing and kick cycles while preserving material area", () => {
     const motion = createCompanionMotion({ loopRows: [8] });
     motion.sample(input({ row: 8, status: "held" }));
     const sustained = Array.from({ length: 1441 }, (_, frame) => motion.sample(input({ row: 8, status: "held", now: 200 + frame * 1000 / 120 })));
@@ -249,7 +252,8 @@ describe("companion clip and facing continuity", () => {
     expect(Math.max(...sustained.map(p => p.scaleY))).toBeLessThanOrEqual(1.315);
     expect(Math.min(...sustained.map(p => p.scaleY))).toBeLessThan(1.20);
     expect(Math.max(...sustained.map(p => p.scaleY))).toBeGreaterThan(1.30);
-    expect(sustained.every(p => p.scaleX >= .9433 && p.scaleX < .967 && p.bob === 0)).toBe(true);
+    expect(sustained.every(p => p.scaleX >= 1 / 1.315 - 1e-6 && p.scaleX <= 1 / 1.185 + 1e-6 && p.bob === 0)).toBe(true);
+    for (const pose of sustained) expect(pose.scaleX * pose.scaleY).toBeCloseTo(1, 5);
     // An upper grip leaves48.4px to this lower-body point. Even the outer
     // inertia's18deg tilt plus the authored kick keeps gravity pointing down.
     const downwardExtension = sustained.map(p => 48.4 * (p.scaleY - 1) * Math.cos((18 + Math.abs(p.tilt)) * Math.PI / 180));
@@ -291,7 +295,8 @@ describe("companion clip and facing continuity", () => {
     for (const key of ["bob", "tilt", "scaleX", "scaleY"] as const) expect(released[key]).toBe(held[key]);
     expect(motion.sample(input({ now: 504 }))).toEqual(released);
     const tail = Array.from({ length: 101 }, (_, ms) => motion.sample(input({ now: 504 + ms })));
-    expect(tail.every(p => p.scaleY >= 1 && p.scaleY < 1.34 && p.scaleX >= .94 && p.scaleX <= 1 && p.bob === 0)).toBe(true);
+    expect(tail.every(p => p.scaleY >= 1 && p.scaleY < 1.34 && p.scaleX >= 1 / 1.34 - 1e-6 && p.scaleX <= 1 && p.bob === 0)).toBe(true);
+    for (const pose of tail) expect(pose.scaleX * pose.scaleY).toBeCloseTo(1, 5);
     expect(Math.max(...tail.slice(1).map((p, i) => Math.abs(p.scaleY - tail[i].scaleY)))).toBeLessThan(.006);
     expect(tail.at(-1)).toMatchObject({ scaleX: 1, scaleY: 1, tilt: 0, bob: 0 });
     expect(motion.sample(input({ now: 5000 }))).toMatchObject({ scaleX: 1, scaleY: 1, tilt: 0, bob: 0 });
@@ -425,7 +430,7 @@ describe("companion clip and facing continuity", () => {
     expect(legacy.sample(input({ row: 16 })).row).toBe(15);
     const native = createCompanionMotion({ clips, rowCount: 18 });
     expect(native.sample(input({ row: 16 })).column).toBe(0);
-    expect(native.sample(input({ row: 16, phase: .5, now: 200 }))).toMatchObject({ row: 16, column: 4, scaleX: .986, scaleY: 1.026 });
+    expect(native.sample(input({ row: 16, phase: .5, now: 200 }))).toMatchObject({ row: 16, column: 4, scaleX: Number((1 / 1.026).toFixed(6)), scaleY: 1.026 });
     expect(native.sample(input({ row: 17, phase: 0, now: 400 })).row).toBe(17);
     const shaking = native.sample(input({ row: 17, phase: .25, now: 600 }));
     expect(shaking.column).toBe(2); expect(Math.abs(shaking.tilt)).toBeGreaterThan(1);

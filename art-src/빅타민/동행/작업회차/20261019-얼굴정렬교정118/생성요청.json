@@ -1,0 +1,12 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Make ONE tiny targeted correction to Image1, the exact current yawning BigVitamin sprite. Preserve its complete connected paper body, two ears, head direction, tilt, composition, proportions, cheeks, overlapping cream paper, warm yellow accents, brown contour, shading, and transparent background.\nCorrect ONLY the misaligned eyes and mouth in the central facial area. Replace the mismatched open eye and closed eye with TWO relaxed sleepy CLOSED eye arcs on a coherent face axis. Put ONE small vertically oval open yawning mouth clearly BELOW and between those eyes, centered on the existing face plane. Keep a restrained reddish inner mouth. The mouth must be distinct from both eyes and orange cheeks: remove the old raised black eye-like mouth ring and confusing overlapping orange opening. Convey a gentle sleepy yawn, without a smile, wink, extra eye, extra mouth, or broad stretched grimace.\nImage2 is read-only original mascot design authority. Image3 preserves the current selected character and NORMAL open-eye size/spacing; this yawning expression has closed eyes. Preserve all paper pieces, cheeks and body outside the eyes/mouth. Do not move or resize the head, change ear roots, repaint the body, alter the silhouette, add limbs or accessories, or create a new pose. Return ONE complete sprite in the same framing with transparent alpha, no text or extra scraps.",
+    "referenced_image_paths": [
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png"
+    ],
+    "transparent_background": true
+  }
+}

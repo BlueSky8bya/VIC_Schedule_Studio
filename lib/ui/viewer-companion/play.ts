@@ -6,6 +6,19 @@ import { COMPANION_PLAY_TIMING, COMPANION_TIMING, type CompanionPlayBeat } from 
 export const COMPANION_PLAY_ROWS = Object.freeze({ sprint: 20, tumble: 21, dizzy: 22, recover: 23, slip: 24, bump: 25, glance: 26, tears: 27, sulk: 28, bow: 29, groom: 30, pounce: 31 });
 export type CompanionPlayPose = { row: number; phase: number; beat: CompanionPlayBeat; lift: number; lean: number; shift: number; compression: number };
 const clamp = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
+/** The next authored beat, distinguished by elapsed time rather than row:
+ * living actions can return to a row that already appeared earlier. */
+export function companionNextPlayRow(kind: CompanionPlay, progress: number, reduced = false): number {
+  const p = clamp(progress);
+  if (reduced || p >= 1) return -1;
+  const timing = COMPANION_PLAY_TIMING[kind], age = p * timing.duration;
+  let end = 0;
+  for (let i = 0; i < timing.beats.length; i++) {
+    end += timing.beats[i].duration;
+    if (age + 1e-7 < end) return timing.beats[i + 1]?.row ?? -1;
+  }
+  return -1;
+}
 export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduced = false): CompanionPlayPose {
   const p = clamp(progress), rows = COMPANION_PLAY_ROWS;
   const result = (row: number, phase: number, beat: CompanionPlayPose["beat"], lift = 0, lean = 0, shift = 0, compression = 0): CompanionPlayPose => ({ row, phase: clamp(phase), beat, lift: reduced ? 0 : lift, lean: reduced ? 0 : lean, shift: reduced ? 0 : shift, compression: reduced ? 0 : compression });

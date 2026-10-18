@@ -1,0 +1,11 @@
+# PLAN-118 — Yawn and facial alignment
+
+2026-10-19 KST. User reports a misaligned/squashed yawn and asks to recheck eyes/mouth across current poses. Audit current source/native and actual shared playback separately; retain approved eye design, expressive perspective/tilt,117 jump corner and all historical bytes. New36 behavior proposals remain unimplemented.
+
+Initial technical finding: yawn row10 repeats only physical266, native114 zero-based cell10/key11, atlas16cell10. Its rig is neutral and runtime yawn does not add internal squash; the source itself requires targeted face review. This is a finding, not a whole-face art PASS.
+
+Use one requested independent face-alignment review, limited to eyes/mouth in current used drawings. If confirmed raster repair is necessary, follow the VIC user-directed cycle: actual current request capture, source-bound contract, one built-in edit, preserve raw output/parent/protected pixels, then root observation and delivery. No automatic post-generation art re-review or whole-character redesign. Technical before/after video and code/asset checks are separate from art-role review.
+
+Root owns product integration/build/server; read-only source investigation and actual-rAF video work may run in parallel. No authority/DTO/server/API/DB/dependency/KST/gameplay/learning/control change. G-22 visual-only audit; no invented human activity events. Type/lint/units/build/rendered motion/harness and independent code/boundary QA before authorized release; verify actual deployed result. Preserve unrelated user art and117 release bookkeeping.
+
+Status: locally verified but not committed/pushed/deployed. Latest user rejected thin yawn strokes/stray dot and identified other expressions/body-volume issues; reopened in [119](PLAN-20261019-119-companion-expression-volume.md). Preserve the one review/generation, source/pixel and255-file/2739-test/301-document evidence at118 scope; do not promote it to current visual approval or ship this rejected yawn as final. No new behavior implemented. Details/limits: [verification](../verification/COMPANION_FACE_ALIGNMENT-20261019.md).

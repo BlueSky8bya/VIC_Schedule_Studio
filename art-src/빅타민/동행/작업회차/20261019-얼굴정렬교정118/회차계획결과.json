@@ -1,0 +1,40 @@
+{
+  "status": "PLANNED_USER_DIRECTED_CYCLE",
+  "plan_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\plan.json",
+  "plan_sha256": "0B43DB5517F81BC1A1763CFF0A9F4DCB8DC32B97D14FFA20AC7DC02BCAACB810",
+  "plan": {
+    "schema_version": 1,
+    "workflow_mode": "user_directed_cycle",
+    "cycle_id": "5DA0CBFE646F317CAB1E",
+    "run_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\cycle_5DA0CBFE646F317CAB1E",
+    "action_budget_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\user_actions_4FFF54BEA1A4AD6CF05B",
+    "work_id": "vitamin-face-alignment-118",
+    "phase": "review_repair",
+    "user_source": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-d4cb123467c3c6a8ed26bf8f.json",
+      "sha256": "BF9BF123A28AA329D35E3BC6445F451DC1CBC1C7997CCFDFCE2290B26662F502",
+      "excerpt": "또 하품하는 모습 표정이 좀 어긋나고 찌그러져있는 것 같은데 이것도 확인해줘. 하품 표정 포함해서 전반적으로 눈이나 입이 어긋나있는 부분 없는지 다시 한 번 확인해줘"
+    },
+    "role_focus": {
+      "face_identity": [
+        "하품 포함 현재 실제 사용 동작 전반의 눈·입 정렬; 의도된 회전·표정·원근 유지"
+      ]
+    },
+    "force_review": true,
+    "candidate": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+    },
+    "policy_sha256": "2153332C2BC33B0FECA8D689FEFADEF131A26B1F518FDFBE666ACEBD07766F91",
+    "request_turn_id": "msg_01a14f88-10e6-7890-af7c-56c30a6adad8",
+    "limits": {
+      "imagegen_calls": 1,
+      "review_rounds": 1,
+      "repair_calls": 1,
+      "post_repair_agent_rounds": 0
+    },
+    "next_action": "requested_roles_once_then_one_repair_if_needed_and_show",
+    "automatic_full_review": false,
+    "user_approval_is_visual_not_numeric_certification": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "work_id": "vitamin-expression-volume-119",
+  "phase": "review_repair",
+  "user_source": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-3111adae53aa24adea5bdf45.json",
+    "sha256": "6A8C160116882FDAD764E1D8F6EC4570313859E20955B25E1E2158C867399072",
+    "excerpt": "그리고 1, 2번째 첨부 사진에 있는 표정들은 안광이 있어서 눈을 감고있는지 뜨고 있는지 잘 모르겠어. 이 3개 표정도 다시 확인해서 의도에 맞게 수정해줘. \n3번째 첨부사진에 있는 표정에서 눈 한 쪽은 웃고있는데 한 쪽은 ~ 이 형태라서 이것도 무너가 이상해. 의도에 맞게 수정해줘.\n4번째 첨부사진은 다른 포즈에 비해서 뭔가 위아래로 더 길고 풍성해보여서 혼자 튀어. \n질량 보존의 법칙대로라면 기본 포즈에서 위아래로 찌부되면 양옆으로 더 뚠뚠해보여야하고, 위아래로 늘어나면 양옆이 좀 날씬해져야지. 진짜 폼폼처럼.\n또 5번째 첨부한 방금 수정한 하품할 때의 표정에서 눈매 두께가 다른 눈웃음 때보다 너무 얇은거 아냐? 물론 웃을 때랑 하품할 때랑 눈매가 다르다고는 하지만 이건 너무 차이나잖아. 그리고 자세히 보면 왼쪽 눈 밑에 점도 있어. 이런 건 왜 에고를 부리는거야 내가 부탁하지도 않았는데"
+  },
+  "role_focus": {
+    "face_identity": [
+      "Five requested expressions: native1/64/65 unwanted glints obscure closed-eye intent; native73 paired curved eyes; rejected118 yawn thin strokes and stray dot below left eye. Compare exact originals and selected099. Inspect provisional face masks for all old contour/highlight/dot removal while protecting actual orange cheeks only."
+    ],
+    "body_anatomy": [
+      "Compare native67 and normal body volume; inspect vertical compression versus widening, elongation versus narrowing across current motion. Preserve paper construction, ears/face, legitimate tilt/perspective. Separate source-shape findings from shared motion reciprocal-area implementation; body67 is currently read-only in generation sheet."
+    ]
+  },
+  "user_feedback_reopens": true,
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+    "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD"
+  }
+}

@@ -40,6 +40,7 @@ const manualKeys = [
 // New drawings must be measured again instead of inheriting an old ear root.
 const manualSources = { 20: '52bdd0c379f3c74823944bfe64cbed59c4005072821afacd03950336c5b9748c', 27: '4abe40fa4f7214e82eec91ace885fdac174d754425d96dac1c3b33738b0ca944', 32: 'c8a66edbb01cc423ecebe0bf37b5a8ac3233fa7ae22c9a6735a8b85854771d6c' };
 const currentManualKeys = [
+  { sha256: '17c96fe6080085cc8772bedc4dcb89de37a9c60c9166722db5b38ee6fabac8c9', atlas: 16, cells: [10], minDarkPixels: 16, eyes: [[91.166667, 124.5], [123.26, 123.46]], note: '118 corrected yawn inspected on actual192px decoded cell: sleepy closed arcs contain18/25 dark pixels; explicit eye ROIs exclude the28-pixel oval mouth below/between them. Only this source key accepts smaller dark components.' },
   { sha256: 'c0c4b95b09a56be0278aecc7368eedb3644a9b367c72f43224ee1767cba01fd4', atlas: 20, cells: [3, 4, 5], roots: [[125, 120], [121, 142]], note: '114 source viewed at native192 with20px grid: both pale inner ears extend right; observe their body junctions, not yellow body papers.' },
   { sha256: 'c0c4b95b09a56be0278aecc7368eedb3644a9b367c72f43224ee1767cba01fd4', atlas: 20, cells: [6, 7], roots: [[80, 136], [87, 156]], body: [110, 124], note: '114 source rear tumble directly inspected: two ears join the left/lower body; no eyes or face supplied.' },
   { sha256: 'c0c4b95b09a56be0278aecc7368eedb3644a9b367c72f43224ee1767cba01fd4', atlas: 20, cells: [8, 9, 10], roots: [[102, 159], [125, 154]], body: [108, 125], note: '114 source inverted rear tumble directly inspected: white rear ears join below the body; no face is invented.' },
@@ -83,7 +84,7 @@ function components(mask) {
   }
   return result.sort((a, b) => b.count - a.count);
 }
-function classify(bytes) {
+function classify(bytes, minDarkPixels = 22) {
   const masks = Array.from({ length: 4 }, () => new Uint8Array(cell * cell));
   for (let at = 0; at < cell * cell; at++) {
     // Scan the same RGBA thresholds without allocating19 million temporary
@@ -97,7 +98,7 @@ function classify(bytes) {
   }
   const [body, dark, orange, yellow] = masks.map(components);
   if (!body[0] || body[0].count < 3000) throw Error('Missing primary connected body');
-  return { body: body[0], dark: dark.filter(part => part.count >= 22 && part.count <= 250 && part.bounds[2] - part.bounds[0] < 25 && part.bounds[3] - part.bounds[1] < 26), orange, yellow };
+  return { body: body[0], dark: dark.filter(part => part.count >= minDarkPixels && part.count <= 250 && part.bounds[2] - part.bounds[0] < 25 && part.bounds[3] - part.bounds[1] < 26), orange, yellow };
 }
 function nearestParts(candidates, targets, limit = 15) {
   const chosen = targets.map(target => candidates.reduce((best, part) => !best || distance(part.center, target) < distance(best.center, target) ? part : best, undefined));
@@ -159,7 +160,8 @@ function crossSection(body, origin, axis, normal, height) {
   return [left, right];
 }
 function register(bytes, frame, physicalIndex) {
-  const { atlas, index } = frame, parts = classify(bytes), manual = currentManualKeys.find(key => key.sha256 === sources[atlas].sha256 && key.atlas === atlas && key.cells.includes(index)) ?? (manualSources[atlas] === sources[atlas].sha256 ? manualKeys.find(key => key.atlas === atlas && key.cells.includes(index)) : undefined);
+  const { atlas, index } = frame, manual = currentManualKeys.find(key => key.sha256 === sources[atlas].sha256 && key.atlas === atlas && key.cells.includes(index)) ?? (manualSources[atlas] === sources[atlas].sha256 ? manualKeys.find(key => key.atlas === atlas && key.cells.includes(index)) : undefined);
+  const parts = classify(bytes, manual?.minDarkPixels ?? 22);
   const view = orientation(atlas, index), rear = view === 'back';
   if (rear && !manual?.body) throw Error(`Unregistered rear source ${atlas}:${index}: inspect actual new body/ear roots before registration`);
   const measured = rear ? { eyes: [], cheeks: [], method: 'rear-body-ear-roots' } : findFace(parts, atlas, index, manual);

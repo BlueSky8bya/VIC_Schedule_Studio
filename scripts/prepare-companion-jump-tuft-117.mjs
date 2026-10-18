@@ -2,6 +2,9 @@
 // the parent registration, face/ear geometry and every historical packet.
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import sharp from 'sharp';
 import { bakeEyeStyleKey } from './prepare-companion-eye-style.mjs';
 import { clearCompanionExportResidue115 } from './prepare-companion-motion-115.mjs';
@@ -11,9 +14,19 @@ const prior='art-src/빅타민/동행/작업회차/20261018-동작연결정리11
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const json=v=>Buffer.from(JSON.stringify(v,null,2)+'\n');
 const read=async p=>JSON.parse(await fs.readFile(p,'utf8'));
+
+/** A frozen repair owns only its exact parent or its own idempotent output. */
+export function assertCompanionMetadataOwnership(active,frozenParent,intendedOutput){
+ if(!isDeepStrictEqual(active,frozenParent)&&!isDeepStrictEqual(active,intendedOutput))throw Error('Refusing to overwrite unrelated active metadata');
+}
+
+async function main(){
 const check=process.argv.includes('--check');
+const artifactsOnly=process.argv.includes('--artifacts-only');
+if(artifactsOnly&&!check)throw Error('--artifacts-only requires --check');
 const proof=await read(`${prior}/패킹파생기록.json`), keyProof=proof.keys[5];
 const meta=await read(`${run}/고정입력/hd-motion-sprite.json`);
+const frozenParentMetadata=structuredClone(meta);
 const parentPng=await fs.readFile(`${run}/고정입력/점프키6_원본RGBA.png`);
 const parentRaw=await sharp(parentPng).ensureAlpha().raw().toBuffer();
 if(hash(parentRaw)!==keyProof.originalCropRgbaSha256)throw Error('Wrong immutable parent key');
@@ -66,6 +79,17 @@ for(let p=0;p<output.length;p+=4){
 const packet={src:'/companion/hd/vitamin-action-04-tuft-117-v1.webp',sha256:hash(bytes),bytes:bytes.length,width:1536,height:384};
 meta.atlases[4]=packet;
 const receipt={version:1,generationCalls:1,independentArtReviews:0,ownerApproval:false,parentNative:proof.native,parentPacket:original,generatedNative:{path:composite.nativeRaw,sha256:hash(rawBytes)},correctedKey:{path:`${run}/정리본/빅타민_점프조각교정.png`,sha256:hash(correctedPng)},scope:composite.effectiveContext,sourceChangedChannels:sourceChanged,packet,frames,unchangedVisibleDecodedPixelsAndAlphaPreserved:true,invisibleRgbChannelsNormalized,allRuntimeRegistrationPreserved:true,unusedPhysical261Preserved:true};
+// Validate before the packet or any other output can be written. A later
+// repair's active atlas must never be rolled back by this historical run.
+if(!check)assertCompanionMetadataOwnership(await read('lib/ui/viewer-companion/hd-motion-sprite.json'),frozenParentMetadata,meta);
 const outputs=[[`public${packet.src}`,bytes],['lib/ui/viewer-companion/hd-motion-sprite.json',json(meta)],[`${run}/정리본/hd-motion-sprite.json`,json(meta)],[`${run}/패킹파생기록.json`,json(receipt)]];
-for(const[p,b]of outputs)if(check){if(!(await fs.readFile(p)).equals(b))throw Error(`Derived output differs: ${p}`);}else await fs.writeFile(p,b);
-console.log(JSON.stringify({check,frames:frames.length,sourceChangedChannels:sourceChanged,oldBytes:oldBytes.length,newBytes:bytes.length,registrationPreserved:true,packet:packet.src}));
+for(const[p,b]of outputs){
+ // Later runs may update other active atlases; frozen117 artifacts still
+ // reproduce in full without claiming ownership of global runtime metadata.
+ if(artifactsOnly&&p==='lib/ui/viewer-companion/hd-motion-sprite.json')continue;
+ if(check){if(!(await fs.readFile(p)).equals(b))throw Error(`Derived output differs: ${p}`);}else await fs.writeFile(p,b);
+}
+console.log(JSON.stringify({check,...(artifactsOnly?{artifactsOnly:true}:{}),frames:frames.length,sourceChangedChannels:sourceChanged,oldBytes:oldBytes.length,newBytes:bytes.length,registrationPreserved:true,packet:packet.src}));
+}
+
+if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)await main();

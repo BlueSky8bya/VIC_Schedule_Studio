@@ -123,9 +123,9 @@ html[data-reduce-motion] .vc-petting-hand, html[data-gfx="off"] .vc-petting-hand
 .vc-dream i:nth-child(3) { animation-delay: 2.4s; font-size: 18px; }
 .vc-companion[data-presence="parked"] { will-change: auto; }
 .vc-companion:is([data-presence="parked"], [data-dreaming]) .vc-pose { animation: vc-sleep-breath 4.8s ease-in-out infinite; }
-@keyframes vc-sleep-breath { 0%, 100% { transform: scale(1, 1); } 44% { transform: scale(1.024, .965); } 68% { transform: rotate(-.6deg) scale(1.008, .99); } 74% { transform: rotate(.45deg) scale(1.006, .992); } }
+@keyframes vc-sleep-breath { 0%, 100% { transform: scale(1, 1); } 44% { transform: scale(1.036269, .965); } 68% { transform: rotate(-.6deg) scale(1.010101, .99); } 74% { transform: rotate(.45deg) scale(1.008065, .992); } }
 .vc-companion[data-home-wait-pose][data-presence="active"] .vc-pose { animation: vc-home-wait 3.8s ease-in-out infinite; }
-@keyframes vc-home-wait { 0%, 24%, 100% { transform: scale(1, 1); } 44% { transform: rotate(-1.2deg) scale(1.012, .985); } 68% { transform: rotate(.8deg) scale(.995, 1); } }
+@keyframes vc-home-wait { 0%, 24%, 100% { transform: scale(1, 1); } 44% { transform: rotate(-1.2deg) scale(1.015228, .985); } 68% { transform: rotate(.8deg) scale(.995, 1.005025); } }
 html[data-reduce-motion] .vc-companion[data-home-wait-pose] .vc-pose, html[data-gfx="off"] .vc-companion[data-home-wait-pose] .vc-pose { animation: none; }
 html[data-reduce-motion] .vc-companion:is([data-presence="parked"], [data-dreaming]) .vc-pose, html[data-gfx="off"] .vc-companion:is([data-presence="parked"], [data-dreaming]) .vc-pose { animation: none; }
 @keyframes vc-dream { from { opacity: 0; transform: translate3d(0, 8px, 0) scale(.7); } 20% { opacity: .8; } to { opacity: 0; transform: translate3d(14px, -24px, 0) scale(1.1); } }

@@ -1,0 +1,20 @@
+{
+  "work_id": "vitamin-face-alignment-118",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\vitamin-face-alignment-118\\검토용\\5DA0CBFE646F317CAB1E.png",
+  "sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    {
+      "id": "FACE-118-01",
+      "status": "PRIOR_FINDING_PRESERVED_AFTER_CREATOR_REPAIR_OBSERVATION",
+      "prior_status": "FAIL",
+      "prior_report": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+      "scope_clarification": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\검수범위정정.json",
+      "not_reclassified_as_independent_pass": true
+    }
+  ],
+  "cycle_id": "5DA0CBFE646F317CAB1E",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

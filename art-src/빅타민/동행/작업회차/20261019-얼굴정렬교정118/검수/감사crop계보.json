@@ -1,0 +1,858 @@
+{
+  "source": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+  "source_sha256": "8cfa1fd98c63eff8b06dba9d0950391509e60d194c878b5881a16176be245ba4",
+  "source_crop_records": [
+    {
+      "native_cell": 0,
+      "key": 1,
+      "crop_box": [
+        23,
+        23,
+        127,
+        127
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키1_무보간원화.png",
+      "sha256": "6354010180BE9E3672A11BFDAF24C6BFCDE7B203E121AC7A59790C3F1C16A55D",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 1,
+      "key": 2,
+      "crop_box": [
+        159,
+        23,
+        263,
+        129
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키2_무보간원화.png",
+      "sha256": "7CA0B7D77CCA42ECCAFBAEEDDB6B610E71BD7833C3F07C0F0601FB0195D3C7A7",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 2,
+      "key": 3,
+      "crop_box": [
+        301,
+        23,
+        406,
+        130
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키3_무보간원화.png",
+      "sha256": "62F1DFEC7450567782220051D30AFE9FAC2205E9A89CE3CBB059C7A9126AF162",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 4,
+      "key": 5,
+      "crop_box": [
+        575,
+        33,
+        680,
+        130
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키5_무보간원화.png",
+      "sha256": "E2C5132362B8311C4F687E4D3021CE9F49B8CEDBD63AB3F67437D6225D0B1FA7",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 5,
+      "key": 6,
+      "crop_box": [
+        719,
+        22,
+        823,
+        127
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키6_무보간원화.png",
+      "sha256": "CF7145E92C5F655FE4538BC181B5462EE9E3CCEFF14110D62E68CF2AC3CD4B98",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 6,
+      "key": 7,
+      "crop_box": [
+        859,
+        23,
+        964,
+        130
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키7_무보간원화.png",
+      "sha256": "B436AE7F0DD1D3CAB1B6938811D95A3CE099BE6670DDC079BFF2F77F22EC7C59",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 7,
+      "key": 8,
+      "crop_box": [
+        997,
+        36,
+        1100,
+        129
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키8_무보간원화.png",
+      "sha256": "DD05698E496ECB8CE23503096C312F62E0FE22ADAB41C25DBF4A2FE51827480A",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 8,
+      "key": 9,
+      "crop_box": [
+        24,
+        143,
+        130,
+        257
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키9_무보간원화.png",
+      "sha256": "94B944A91B2EE99C44DB66C3F76EFA1DD8CB669F741F0B35C0352159B68573A9",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 9,
+      "key": 10,
+      "crop_box": [
+        160,
+        149,
+        269,
+        256
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키10_무보간원화.png",
+      "sha256": "38C9CD15D3394E11EB2905E5CEF72CD6235818F9B06543F23C05E879A4DAFAFC",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 10,
+      "key": 11,
+      "crop_box": [
+        301,
+        153,
+        409,
+        253
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키11_무보간원화.png",
+      "sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 11,
+      "key": 12,
+      "crop_box": [
+        440,
+        158,
+        549,
+        254
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키12_무보간원화.png",
+      "sha256": "8268727E8C9DD021F9C60CF2E02B7379965E3DBF02DCBA9E183244FA264BB368",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 12,
+      "key": 13,
+      "crop_box": [
+        574,
+        145,
+        682,
+        257
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키13_무보간원화.png",
+      "sha256": "C22DF6981798C15936A51B495C95B90C7961B376ABF6584700CCEA07BA6D0C7F",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 13,
+      "key": 14,
+      "crop_box": [
+        717,
+        148,
+        824,
+        256
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키14_무보간원화.png",
+      "sha256": "7ECE1EBE295FE63B5FB4C2A15FE69D2F46E167B8A55C165A080AF23766272446",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 14,
+      "key": 15,
+      "crop_box": [
+        856,
+        170,
+        967,
+        254
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키15_무보간원화.png",
+      "sha256": "4595296ECF5EE4AA3AE922EE1CC43DF6991D6A23584D229CB96E957FEC957DE5",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 15,
+      "key": 16,
+      "crop_box": [
+        995,
+        150,
+        1100,
+        256
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키16_무보간원화.png",
+      "sha256": "0AD42D759860D6ED6BDE75BB2EF779556B3664498989090279BA2D5F1BFEB0E5",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 27,
+      "key": 28,
+      "crop_box": [
+        439,
+        415,
+        550,
+        514
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키28_무보간원화.png",
+      "sha256": "B34AD3E92FCF80C74B223370CFF5606C01EC929542A358BD4E05247556D65241",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 28,
+      "key": 29,
+      "crop_box": [
+        576,
+        416,
+        689,
+        513
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키29_무보간원화.png",
+      "sha256": "08EE87456FB44855D014F50A13FA3AEC4003B802CB45835077039387BA84D320",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 32,
+      "key": 33,
+      "crop_box": [
+        26,
+        533,
+        128,
+        640
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키33_무보간원화.png",
+      "sha256": "AD4B8C03E0651D62D57F0F250D2164D05E19001F07534F002ACA8DE3D6C349AB",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 33,
+      "key": 34,
+      "crop_box": [
+        163,
+        538,
+        267,
+        640
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키34_무보간원화.png",
+      "sha256": "F81A0C7F30A1D07DA8E7CDE5907538F2AF59E203309F56508F19AF9626CB744D",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 34,
+      "key": 35,
+      "crop_box": [
+        298,
+        531,
+        406,
+        638
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키35_무보간원화.png",
+      "sha256": "F17F7FF972F23AB5BE4824CB7B6BD7E93E0471AB9DD3231C290A3E0D98AE26FA",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 35,
+      "key": 36,
+      "crop_box": [
+        443,
+        531,
+        549,
+        639
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키36_무보간원화.png",
+      "sha256": "EA79DAACC6C5E106B998F668EE986EEDC3D3044E7E2CE7989BF6C299F2A2A0A7",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 36,
+      "key": 37,
+      "crop_box": [
+        579,
+        538,
+        680,
+        639
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키37_무보간원화.png",
+      "sha256": "50FBC40A10939E5CCE6FBFE81999B8F13D34D01E4DAA690427CB59B65F232C2D",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 37,
+      "key": 38,
+      "crop_box": [
+        726,
+        530,
+        829,
+        642
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키38_무보간원화.png",
+      "sha256": "138142284DE037A56536090CD0481CF6DD362F4C60B49B537F110F274B406565",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 38,
+      "key": 39,
+      "crop_box": [
+        866,
+        529,
+        977,
+        643
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키39_무보간원화.png",
+      "sha256": "1F2D2DAFCBA2AAE4E867253E2971B8324F92BF36E08FC92DAF44879A8E008086",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 39,
+      "key": 40,
+      "crop_box": [
+        991,
+        547,
+        1099,
+        641
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키40_무보간원화.png",
+      "sha256": "500EF642213639191E6B7A976D69B1A5ABF5A35141D88EA431A1FE1E5D3B50EA",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 40,
+      "key": 41,
+      "crop_box": [
+        23,
+        673,
+        134,
+        759
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키41_무보간원화.png",
+      "sha256": "4EAE1DD3FF1ED2D7BC80DED9C868AC4804B69F521667D9A1A93161C166EE18C9",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 41,
+      "key": 42,
+      "crop_box": [
+        163,
+        663,
+        272,
+        759
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키42_무보간원화.png",
+      "sha256": "E2133050314D6F8501097EE8DD4C6848F338BC0CB9CE38FE7133918ED5EE6BF9",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 42,
+      "key": 43,
+      "crop_box": [
+        300,
+        653,
+        404,
+        765
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키43_무보간원화.png",
+      "sha256": "728340065C22B8278F0B78587496B235CAE022875F0E322ADD1FFE9CBF18CD92",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 43,
+      "key": 44,
+      "crop_box": [
+        445,
+        653,
+        546,
+        762
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키44_무보간원화.png",
+      "sha256": "DA85A12A2DB72E36DA4130CE2564DAEFD24818ECE7DFA9D224B3CCA6E906A665",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 44,
+      "key": 45,
+      "crop_box": [
+        574,
+        666,
+        683,
+        767
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키45_무보간원화.png",
+      "sha256": "F3A9ACBB89593FB69C8BAEB979027F20AE876988782137D0284F84D9AF8D6672",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 45,
+      "key": 46,
+      "crop_box": [
+        726,
+        654,
+        831,
+        763
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키46_무보간원화.png",
+      "sha256": "B8F234FA1A565514AB788F611DF614CB68578521B086373A55A417A261F08FE9",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 46,
+      "key": 47,
+      "crop_box": [
+        865,
+        659,
+        974,
+        768
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키47_무보간원화.png",
+      "sha256": "41D6422EA7B36A2135F8D9E5450F36B3A3579137225DA88C19457625DCDACE7C",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 47,
+      "key": 48,
+      "crop_box": [
+        999,
+        665,
+        1101,
+        766
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키48_무보간원화.png",
+      "sha256": "227C616E22211E320B9F0DDEA3789770DFD8F858E83F8B6AA6BF7BE0565A4D99",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 48,
+      "key": 49,
+      "crop_box": [
+        23,
+        796,
+        128,
+        895
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키49_무보간원화.png",
+      "sha256": "8870CC7BCC996DC9D476946FCCE9A7208F5C5CF52AF3CA941B59EAE333112F5C",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 49,
+      "key": 50,
+      "crop_box": [
+        159,
+        808,
+        263,
+        894
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키50_무보간원화.png",
+      "sha256": "459D06AC56C961837D6DA8E608DED20A6A05EB765B571BD5DC07449D404ED049",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 51,
+      "key": 52,
+      "crop_box": [
+        433,
+        787,
+        548,
+        894
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키52_무보간원화.png",
+      "sha256": "506B617EC0D84F73082202670DE56F6EF04D8239FE2BE90B58DE0D04C708D9FD",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 53,
+      "key": 54,
+      "crop_box": [
+        718,
+        789,
+        832,
+        896
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키54_무보간원화.png",
+      "sha256": "2823AD0066C2108B62A00902BDB32B43F7B59FD3656801AE20F970040DBD1ED8",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 54,
+      "key": 55,
+      "crop_box": [
+        863,
+        780,
+        970,
+        895
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키55_무보간원화.png",
+      "sha256": "14E4CAFC02D04C3B59AF87DF162E77609311ECC8CA84960B5ADBF0BA08630A83",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 55,
+      "key": 56,
+      "crop_box": [
+        993,
+        780,
+        1101,
+        894
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키56_무보간원화.png",
+      "sha256": "E13B016D422574B9EB208B150A7A44B440DE6DD7B160CFDF6750AD98280723C3",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 56,
+      "key": 57,
+      "crop_box": [
+        23,
+        911,
+        126,
+        1022
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키57_무보간원화.png",
+      "sha256": "F4E5851C7BEB20C1171BB257A2D218F7FEED4FEB7B5543B05D4390E7DD5C7E21",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 57,
+      "key": 58,
+      "crop_box": [
+        158,
+        921,
+        270,
+        1025
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키58_무보간원화.png",
+      "sha256": "0FCDC8690A45ABCBE37EAB4B9DE54E60DB9B7558E4B5C57A758CC88F61A7FFC2",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 58,
+      "key": 59,
+      "crop_box": [
+        305,
+        917,
+        410,
+        1024
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키59_무보간원화.png",
+      "sha256": "D34EC114E07050754F18513D4F418D2E993DF2F08859B91266E308CCB70D021A",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 59,
+      "key": 60,
+      "crop_box": [
+        444,
+        912,
+        548,
+        1023
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키60_무보간원화.png",
+      "sha256": "77D6663AE4C5C208B49723656ACF8BF66019E6F379BC5891325B9A2E948C8103",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 60,
+      "key": 61,
+      "crop_box": [
+        573,
+        948,
+        688,
+        1024
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키61_무보간원화.png",
+      "sha256": "F3BD6F9B3CBF789251D69932E20530D54F16C7D60091811CF0B03768396ACD91",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 62,
+      "key": 63,
+      "crop_box": [
+        861,
+        946,
+        974,
+        1029
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키63_무보간원화.png",
+      "sha256": "BA52CDB4DAE9F0FFA905C7144BA206AFFB2B7CF915EA40E8091A37F1E051D043",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 63,
+      "key": 64,
+      "crop_box": [
+        993,
+        914,
+        1102,
+        1025
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키64_무보간원화.png",
+      "sha256": "93D99847A4032F2BA5D362BC5AAAD28910220F1B2A7F086321AFABC83C71DF79",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 64,
+      "key": 65,
+      "crop_box": [
+        22,
+        1062,
+        127,
+        1166
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키65_무보간원화.png",
+      "sha256": "779A59DC7F1B0F9FF925A1D98BE92C338873F1F9B312D16F9ED58380B92B1C71",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 65,
+      "key": 66,
+      "crop_box": [
+        157,
+        1056,
+        269,
+        1169
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키66_무보간원화.png",
+      "sha256": "42505E0D5CD1CB1792F4086D0A4574F7CF1D624FF57F9932225A9B8C6B1430BF",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 66,
+      "key": 67,
+      "crop_box": [
+        301,
+        1061,
+        410,
+        1169
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키67_무보간원화.png",
+      "sha256": "3BD73070818BBE17723D7BEC9DE6C5D4243496C1684536B14E4A144673DCAFAD",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 67,
+      "key": 68,
+      "crop_box": [
+        442,
+        1056,
+        548,
+        1165
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키68_무보간원화.png",
+      "sha256": "809D24712814DD842747DC486C10BD42E6169560B349A9B10FCF0A39D2C5398A",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 68,
+      "key": 69,
+      "crop_box": [
+        572,
+        1057,
+        686,
+        1167
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키69_무보간원화.png",
+      "sha256": "C36F0AC94094CF2E6E9B1079BC8E5C59B9EF9131986D8120125F66A4AD5AFAB2",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 70,
+      "key": 71,
+      "crop_box": [
+        869,
+        1049,
+        962,
+        1167
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키71_무보간원화.png",
+      "sha256": "93177728143D3B7006ABE1490AE066C442D20B640199ECAB10E436A47C29EA7B",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 71,
+      "key": 72,
+      "crop_box": [
+        997,
+        1061,
+        1102,
+        1171
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키72_무보간원화.png",
+      "sha256": "D643419027E1CE5FC420C3C364EC4FD90F743F98615995F4871F9F084F1AAF8F",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 72,
+      "key": 73,
+      "crop_box": [
+        25,
+        1201,
+        142,
+        1316
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키73_무보간원화.png",
+      "sha256": "7BE0BAA87F65C78C2EE1267295982765E06D85C490EDDB0B4E7CC340C99D06ED",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 73,
+      "key": 74,
+      "crop_box": [
+        159,
+        1205,
+        272,
+        1312
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키74_무보간원화.png",
+      "sha256": "A9374364CF8F35E40F76A75E37944D6FFAC0ABC57CCBD4C85C6F64EAD009465D",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 74,
+      "key": 75,
+      "crop_box": [
+        302,
+        1200,
+        414,
+        1313
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키75_무보간원화.png",
+      "sha256": "B402921B90B39327D5D030C98A570A01FD57E1071DF8157F928FA2CF809B21B3",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 75,
+      "key": 76,
+      "crop_box": [
+        433,
+        1202,
+        552,
+        1321
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키76_무보간원화.png",
+      "sha256": "A28054F35EF58EC3DD741470E54D308FCF92F9E1AD10D191C61A5E07171AD9F7",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 76,
+      "key": 77,
+      "crop_box": [
+        573,
+        1199,
+        693,
+        1319
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키77_무보간원화.png",
+      "sha256": "49BF26A790800617170832984521D8A7AA20B1A1CC17A0F7F96A14E238E3D141",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 77,
+      "key": 78,
+      "crop_box": [
+        713,
+        1205,
+        836,
+        1316
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키78_무보간원화.png",
+      "sha256": "A863B31DCB8890046514DBD217A483E995DE0E63E8B97265AC19944AD2C47AFC",
+      "audit_only": true,
+      "resampling": "none"
+    },
+    {
+      "native_cell": 78,
+      "key": 79,
+      "crop_box": [
+        859,
+        1230,
+        978,
+        1315
+      ],
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\키79_무보간원화.png",
+      "sha256": "6502BC01FF9D1B778517B768CC988814F65A95065F264EDBC104DBC00612F5C2",
+      "audit_only": true,
+      "resampling": "none"
+    }
+  ],
+  "overview_sheets": [
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대1.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대2.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대3.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대4.png"
+  ],
+  "overview_scale": 3,
+  "overview_resampling": "nearest",
+  "runtime_binding_source": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\기술근거_얼굴미판정.json",
+  "used_native_keys": 60,
+  "unused_native_excluded": 20,
+  "art_review_claimed_once": true
+}

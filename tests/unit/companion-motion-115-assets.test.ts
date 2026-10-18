@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
+import expression119 from "../../art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
+import jump117 from "../../art-src/빅타민/동행/작업회차/20261018-점프노란조각교정117/패킹파생기록.json";
 
 const run = "art-src/빅타민/동행/작업회차/20261018-동작연결정리115";
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
@@ -38,16 +40,38 @@ describe("115 whole-pose continuity derivatives", () => {
 
   it("keeps every logical action and the bounded3-packet decoder while removing the forced half-stride wink", () => {
     expect(receipt.slots).toHaveLength(520); expect(companionSpriteMetadata.rows).toHaveLength(41); expect(receipt.coverage.distinctWholeKeysUsed).toBe(60);
-    for (const name of ["hd-motion-sprite", "play-motion-sprite", "living-motion-sprite"]) {
+    expect(expression119.packets.map(({ atlas, family, localAtlas, packet }) => ({ atlas, family, localAtlas, src: packet.src }))).toEqual([
+      { atlas: 0, family: "hd-motion-sprite", localAtlas: 0, src: "/companion/hd/vitamin-action-00-expression-119-v1.webp" },
+      { atlas: 16, family: "hd-motion-sprite", localAtlas: 16, src: "/companion/hd/vitamin-action-16-expression-119-v1.webp" },
+      { atlas: 22, family: "play-motion-sprite", localAtlas: 3, src: "/companion/hd/vitamin-play-03-expression-119-v1.webp" },
+      { atlas: 31, family: "play-motion-sprite", localAtlas: 12, src: "/companion/hd/vitamin-play-12-expression-119-v1.webp" },
+      { atlas: 32, family: "living-motion-sprite", localAtlas: 0, src: "/companion/hd/vitamin-episodes-00-expression-119-v1.webp" },
+    ]);
+    expect(expression119.registrationChanges).toEqual([496, 497, 498, 499]);
+    const names = ["hd-motion-sprite", "play-motion-sprite", "living-motion-sprite"] as const;
+    for (const [family, name] of names.entries()) {
       const before = json<{ rows: number[][] }>(`${run}/고정입력/${name}.json`), current = json<{ rows: number[][] }>(`lib/ui/viewer-companion/${name}.json`);
       expect(current.rows).toEqual(before.rows);
       const frozen = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata[name]);
-      if (name === "hd-motion-sprite") {
-        //117 replaces only the rise packet; the115 source/rig evidence stays immutable.
-        const active = json<typeof frozen>(`lib/ui/viewer-companion/${name}.json`);
-        expect({ ...active, atlases: frozen.atlases }).toEqual(frozen);
-        expect(active.atlases.filter((atlas, index) => JSON.stringify(atlas) !== JSON.stringify(frozen.atlases[index])).map(atlas => atlas.src)).toEqual(["/companion/hd/vitamin-action-04-tuft-117-v1.webp"]);
-      } else expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(receipt.stagedMetadata[name]))).toBe(true);
+      const active = json<typeof frozen>(`lib/ui/viewer-companion/${name}.json`);
+      // The immutable115 evidence below still checks every historical pixel.
+      // Current119 owns exactly five packet replacements and four body fits.
+      expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(expression119.stagedMetadata[name]))).toBe(true);
+      expect({ ...active, atlases: frozen.atlases, frames: frozen.frames }).toEqual(frozen);
+      expect(active.atlases).toHaveLength(frozen.atlases.length); expect(active.frames).toHaveLength(frozen.frames.length);
+      for (const [index, atlas] of active.atlases.entries()) {
+        const replacement = expression119.packets.find(packet => packet.family === name && packet.localAtlas === index);
+        expect(atlas).toEqual(replacement?.packet ?? (name === "hd-motion-sprite" && index === 4 ? jump117.packet : frozen.atlases[index]));
+      }
+      for (const [index, frame] of active.frames.entries()) {
+        const physical = [0, 304, 512][family] + index;
+        if (physical >= 496 && physical <= 499) {
+          const replacement = expression119.frames.find(item => item.physicalIndex === physical)!;
+          expect(replacement.registrationChanged).toBe(true);
+          expect(replacement.parentFrame).toEqual(frozen.frames[index]);
+          expect(frame).toEqual(replacement.frame);
+        } else expect(frame).toEqual(frozen.frames[index]);
+      }
     }
     for (const index of companionSpriteMetadata.rows[2]) expect(receipt.slots[index].nativeCell).toBe(2);
     expect(new Set(companionSpriteMetadata.rows[0].map(index => receipt.slots[index].nativeCell))).toEqual(new Set([0, 1]));

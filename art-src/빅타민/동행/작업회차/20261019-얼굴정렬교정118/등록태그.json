@@ -1,0 +1,11 @@
+{
+  "setting": "transparent_companion_sprite",
+  "action": "yawn key11/physical266, two sleepy closed arcs and separate central oval mouth",
+  "head_view": "preserved parent direction and tilt",
+  "outfit": null,
+  "hair": null,
+  "mascot_count": 1,
+  "tag_status": "CREATOR_SCOPED_REPAIR_OBSERVATION_AWAITING_USER",
+  "user_approval": false,
+  "independent_post_repair_pass": false
+}

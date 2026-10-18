@@ -1,0 +1,2082 @@
+{
+  "scope": "119 read-onlytechnicalmapping/mass-deformationinvestigation. No professionalartreview, no product/artmutation, no build/server/generation.",
+  "createdAt": "2026-10-18T15:23:58.275Z",
+  "sourceHashes": {
+    "lib/ui/viewer-companion/motion.ts": "42f8e268fb67c43fea98e2a609605515a609c973716b6a1fc5a1b588b2a99b93",
+    "lib/ui/viewer-companion/play.ts": "040caf5b4d168c7c6278ad637e7aac61074f4157c069081ad0f0ddb50f35537e",
+    "lib/ui/viewer-companion/timing.ts": "2e8cfe79a24f99a60f1a7d3c93fc66e793258cbb6cd7adafa22ee6435c1fac81",
+    "lib/ui/viewer-companion/sprite-quality.ts": "e29506f2189adb36fca2e965e71452f2102a49d2f671e166dbf0701af610e2ca",
+    "components/poster/viewer-companion/viewer-companion.tsx": "4f737b6f7b8696bf18a889f4eda5053e1d744743fa32d7adb0f0e53a41a860da",
+    "components/poster/viewer-companion/viewer-companion.css": "3f6be6e6491f963862b0bdc1941226ef073c96d95e055cd9bea0db774540c701"
+  },
+  "activeRows": 41,
+  "excludedLogicalRow": 7,
+  "activeUniquePhysicalSlots": 439,
+  "targets": [
+    {
+      "nativeCell": 1,
+      "label": "114 whole native key",
+      "sourceBounds": {
+        "left": 159,
+        "top": 23,
+        "width": 104,
+        "height": 106
+      },
+      "largestComponentIncludesEars": {
+        "left": 162,
+        "top": 26,
+        "right": 260,
+        "bottom": 126,
+        "width": 98,
+        "height": 100,
+        "pixels": 6406
+      },
+      "all115PhysicalSlots": [
+        9,
+        10,
+        257
+      ],
+      "curatedReachable": [
+        {
+          "index": 9,
+          "uses": [
+            {
+              "row": 0,
+              "column": 9
+            }
+          ],
+          "atlas": 0,
+          "cell": 9,
+          "src": "/companion/hd/vitamin-action-00-motion-115-v1.webp"
+        },
+        {
+          "index": 10,
+          "uses": [
+            {
+              "row": 0,
+              "column": 10
+            }
+          ],
+          "atlas": 0,
+          "cell": 10,
+          "src": "/companion/hd/vitamin-action-00-motion-115-v1.webp"
+        }
+      ],
+      "semanticRuntimeNote": "Idle columns9,10: each125ms,1125..1375ms in2s8fps loop."
+    },
+    {
+      "nativeCell": 64,
+      "label": "114 whole native key",
+      "sourceBounds": {
+        "left": 22,
+        "top": 1062,
+        "width": 105,
+        "height": 104
+      },
+      "largestComponentIncludesEars": {
+        "left": 25,
+        "top": 1065,
+        "right": 124,
+        "bottom": 1163,
+        "width": 99,
+        "height": 98,
+        "pixels": 6648
+      },
+      "all115PhysicalSlots": [
+        356,
+        357,
+        358,
+        359
+      ],
+      "curatedReachable": [
+        {
+          "index": 356,
+          "uses": [
+            {
+              "row": 23,
+              "column": 4
+            }
+          ],
+          "atlas": 22,
+          "cell": 4,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 357,
+          "uses": [
+            {
+              "row": 23,
+              "column": 5
+            }
+          ],
+          "atlas": 22,
+          "cell": 5,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 358,
+          "uses": [
+            {
+              "row": 23,
+              "column": 6
+            }
+          ],
+          "atlas": 22,
+          "cell": 6,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 359,
+          "uses": [
+            {
+              "row": 23,
+              "column": 7
+            }
+          ],
+          "atlas": 22,
+          "cell": 7,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        }
+      ],
+      "semanticRuntimeNote": "Current recover expression .35 selects column5 physical357;356/358/359 are same-family metadata-reachable siblings."
+    },
+    {
+      "nativeCell": 65,
+      "label": "114 whole native key",
+      "sourceBounds": {
+        "left": 157,
+        "top": 1056,
+        "width": 112,
+        "height": 113
+      },
+      "largestComponentIncludesEars": {
+        "left": 160,
+        "top": 1059,
+        "right": 266,
+        "bottom": 1166,
+        "width": 106,
+        "height": 107,
+        "pixels": 7423
+      },
+      "all115PhysicalSlots": [
+        360,
+        361,
+        362,
+        363
+      ],
+      "curatedReachable": [
+        {
+          "index": 360,
+          "uses": [
+            {
+              "row": 23,
+              "column": 8
+            }
+          ],
+          "atlas": 22,
+          "cell": 8,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 361,
+          "uses": [
+            {
+              "row": 23,
+              "column": 9
+            }
+          ],
+          "atlas": 22,
+          "cell": 9,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 362,
+          "uses": [
+            {
+              "row": 23,
+              "column": 10
+            }
+          ],
+          "atlas": 22,
+          "cell": 10,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        },
+        {
+          "index": 363,
+          "uses": [
+            {
+              "row": 23,
+              "column": 11
+            }
+          ],
+          "atlas": 22,
+          "cell": 11,
+          "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp"
+        }
+      ],
+      "semanticRuntimeNote": "Current recover expression .65 selects column10 physical362;360/361/363 are same-family metadata-reachable siblings."
+    },
+    {
+      "nativeCell": 73,
+      "label": "114 whole native key",
+      "sourceBounds": {
+        "left": 159,
+        "top": 1205,
+        "width": 113,
+        "height": 107
+      },
+      "largestComponentIncludesEars": {
+        "left": 162,
+        "top": 1208,
+        "right": 269,
+        "bottom": 1309,
+        "width": 107,
+        "height": 101,
+        "pixels": 6861
+      },
+      "all115PhysicalSlots": [
+        514
+      ],
+      "curatedReachable": [
+        {
+          "index": 514,
+          "uses": [
+            {
+              "row": 35,
+              "column": 0
+            }
+          ],
+          "atlas": 32,
+          "cell": 2,
+          "src": "/companion/hd/vitamin-episodes-00-motion-115-v1.webp"
+        }
+      ],
+      "semanticRuntimeNote": "row35=[514],single authored drawing throughout1500ms3cycle knead beat; only small runtime transform changes."
+    },
+    {
+      "nativeCell": 67,
+      "label": "114 whole native key",
+      "sourceBounds": {
+        "left": 442,
+        "top": 1056,
+        "width": 106,
+        "height": 109
+      },
+      "largestComponentIncludesEars": {
+        "left": 445,
+        "top": 1059,
+        "right": 545,
+        "bottom": 1162,
+        "width": 100,
+        "height": 103,
+        "pixels": 7075
+      },
+      "all115PhysicalSlots": [
+        496,
+        497,
+        498,
+        499
+      ],
+      "curatedReachable": [
+        {
+          "index": 496,
+          "uses": [
+            {
+              "row": 32,
+              "column": 0
+            }
+          ],
+          "atlas": 31,
+          "cell": 0,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        },
+        {
+          "index": 497,
+          "uses": [
+            {
+              "row": 32,
+              "column": 1
+            }
+          ],
+          "atlas": 31,
+          "cell": 1,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        },
+        {
+          "index": 498,
+          "uses": [
+            {
+              "row": 32,
+              "column": 2
+            }
+          ],
+          "atlas": 31,
+          "cell": 2,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        },
+        {
+          "index": 499,
+          "uses": [
+            {
+              "row": 32,
+              "column": 3
+            }
+          ],
+          "atlas": 31,
+          "cell": 3,
+          "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp"
+        }
+      ],
+      "semanticRuntimeNote": "throw launch column0 physical496; other496..499 siblings metadata-reachable but actual flight phase selects discrete columns0/4/8 then12..15."
+    },
+    {
+      "nativeCell": 10,
+      "label": "118 corrected face266 on114 parent body",
+      "sourceBounds": {
+        "left": 301,
+        "top": 153,
+        "width": 108,
+        "height": 100
+      },
+      "largestComponentIncludesEars": {
+        "left": 304,
+        "top": 156,
+        "right": 406,
+        "bottom": 250,
+        "width": 102,
+        "height": 94,
+        "pixels": 6625
+      },
+      "all115PhysicalSlots": [
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        266
+      ],
+      "curatedReachable": [
+        {
+          "index": 266,
+          "uses": [
+            {
+              "row": 10,
+              "column": 0
+            }
+          ],
+          "atlas": 16,
+          "cell": 10,
+          "src": "/companion/hd/vitamin-action-16-face-118-v1.webp"
+        }
+      ],
+      "semanticRuntimeNote": "row10=[266],same corrected clean key across700ms; no yawn sampler/CSS deformation in118technical capture."
+    }
+  ],
+  "rowTiming": {
+    "0": {
+      "name": "idle",
+      "mode": "loop",
+      "durationMs": 2000,
+      "fps": 8,
+      "columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "native1IntervalMs": [
+        1125,
+        1375
+      ]
+    },
+    "23": {
+      "name": "recover",
+      "mode": "phase",
+      "nominalMs": 280,
+      "columns": [
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367
+      ],
+      "ordinaryOutroMs": [
+        280,
+        300,
+        320,
+        360
+      ],
+      "ordinaryExpression": 1,
+      "shakeOutroMs": 800,
+      "shakeKinds": [
+        "dizzy",
+        "tumble",
+        "slip-tumble"
+      ],
+      "shakeEnvelopMs": 520,
+      "neutralAfterMs": 560,
+      "actualExpressions": [
+        0,
+        0.35,
+        0.65,
+        1
+      ],
+      "actualColumns": [
+        0,
+        5,
+        10,
+        15
+      ],
+      "actualPhysical": [
+        352,
+        357,
+        362,
+        367
+      ]
+    },
+    "32": {
+      "name": "throw",
+      "mode": "renderer flight phase",
+      "fixedDuration": null,
+      "maxFlightMs": 3000,
+      "columns": [
+        496,
+        497,
+        498,
+        499,
+        500,
+        501,
+        502,
+        503,
+        504,
+        505,
+        506,
+        507,
+        508,
+        509,
+        510,
+        511
+      ],
+      "rendererFrames": {
+        "launch": 0,
+        "rise": 4,
+        "apex": 8,
+        "fall": "12+clamp(vy/950,0,1)*3"
+      },
+      "samplerPhase": "clamp(frame/15,0,1)",
+      "actualColumns": {
+        "launch": 0,
+        "rise": 4,
+        "apex": 8,
+        "fall": [
+          12,
+          13,
+          14,
+          15
+        ]
+      }
+    },
+    "35": {
+      "name": "paper-knead",
+      "mode": "phase",
+      "cycleMs": 500,
+      "cozyNestFirstBeatMs": 1500,
+      "cycles": 3,
+      "columns": [
+        514
+      ],
+      "compression": "sin(phase*pi)^2*.045*sin(local*pi)",
+      "lean": "sin(phase*2pi)*2.2*sin(local*pi)"
+    }
+  },
+  "distributions": [
+    {
+      "atlas": 0,
+      "src": "/companion/hd/vitamin-action-00-motion-115-v1.webp",
+      "sha256": "7792523dc32a6228791607f6f60a60bf596f66215add3a2e862d7f4a6aa2d3ad",
+      "activeUniquePhysicalSlots": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 1,
+      "src": "/companion/hd/vitamin-action-01-motion-115-v1.webp",
+      "sha256": "a4fb475886e13f597883851aaa2990868848ccf74371c4d3c90c05f64abb1a19",
+      "activeUniquePhysicalSlots": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 2,
+      "src": "/companion/hd/vitamin-action-02-motion-115-v1.webp",
+      "sha256": "2d42987867f83ae696b06935471825addbd54fb06615302f44538a1ce6f97370",
+      "activeUniquePhysicalSlots": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 3,
+      "src": "/companion/hd/vitamin-action-03-motion-115-v1.webp",
+      "sha256": "8309dc44823ca1b19743e6862b8e8b374af25e4d53198f57690dbbe8a92f2597",
+      "activeUniquePhysicalSlots": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 4,
+      "src": "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+      "sha256": "f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d",
+      "activeUniquePhysicalSlots": [
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 5,
+      "src": "/companion/hd/vitamin-action-05-motion-115-v1.webp",
+      "sha256": "231447687ccdf4f016a52b5e73667d19764fde2429f8f2ff385b82bbfb012d12",
+      "activeUniquePhysicalSlots": [
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 6,
+      "src": "/companion/hd/vitamin-action-06-motion-115-v1.webp",
+      "sha256": "9e5fb14d82995bbf03398f3baea1e55fb537c4c163ac7690075d3e4793e8810f",
+      "activeUniquePhysicalSlots": [
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 7,
+      "src": "/companion/hd/vitamin-action-07-motion-115-v1.webp",
+      "sha256": "d4b7571deb7dfddcc8949a9f21eb0c179997b1689f4210881dbef10686955fca",
+      "activeUniquePhysicalSlots": [
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "atlas": 8,
+      "src": "/companion/hd/vitamin-action-08-motion-115-v1.webp",
+      "sha256": "3a63b44c1ed3e1ee3fd4da2ca19d27cadbbde352da4f3025c25bb6aacf4c56f2",
+      "activeUniquePhysicalSlots": [
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 9,
+      "src": "/companion/hd/vitamin-action-09-motion-115-v1.webp",
+      "sha256": "1d6e0208c5c37b2d3081a0b9635968b5130b1cf5a6292b726e24f8122ab93444",
+      "activeUniquePhysicalSlots": [
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 10,
+      "src": "/companion/hd/vitamin-action-10-motion-115-v1.webp",
+      "sha256": "f34c90faf915f3bd1ad918ee5578947a635070af0a49ed3cd7ed0478e97c63bc",
+      "activeUniquePhysicalSlots": [],
+      "activePacketCells": []
+    },
+    {
+      "atlas": 11,
+      "src": "/companion/hd/vitamin-action-11-motion-115-v1.webp",
+      "sha256": "423d11cd938bb22c1bd57c7b57aaf00b2578b8709e49a3b00297c5ec8ff84189",
+      "activeUniquePhysicalSlots": [],
+      "activePacketCells": []
+    },
+    {
+      "atlas": 12,
+      "src": "/companion/hd/vitamin-action-12-motion-115-v1.webp",
+      "sha256": "89342020b0f59b1942e1300193158d828fdbfcc43ec7123e602911fd13a2f79b",
+      "activeUniquePhysicalSlots": [
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207
+      ],
+      "activePacketCells": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 13,
+      "src": "/companion/hd/vitamin-action-13-motion-115-v1.webp",
+      "sha256": "d07c8f4d6e1c22f7a434687921b506cf33f61d08a29f8b033bd1dd0ad5ad55ba",
+      "activeUniquePhysicalSlots": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 14,
+      "src": "/companion/hd/vitamin-action-14-motion-115-v1.webp",
+      "sha256": "69efbfb85a0e7fb157d059ef23848f8bd1c96171f75597c033ecc9dafb1f18ed",
+      "activeUniquePhysicalSlots": [
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 15,
+      "src": "/companion/hd/vitamin-action-15-motion-115-v1.webp",
+      "sha256": "9ef892aab49024b09c32416ac0ad48236802d0c9cba111577b0225622d186a40",
+      "activeUniquePhysicalSlots": [],
+      "activePacketCells": []
+    },
+    {
+      "atlas": 16,
+      "src": "/companion/hd/vitamin-action-16-face-118-v1.webp",
+      "sha256": "17c96fe6080085cc8772bedc4dcb89de37a9c60c9166722db5b38ee6fabac8c9",
+      "activeUniquePhysicalSlots": [
+        266,
+        267,
+        268,
+        271
+      ],
+      "activePacketCells": [
+        10,
+        11,
+        12,
+        15
+      ]
+    },
+    {
+      "atlas": 17,
+      "src": "/companion/hd/vitamin-action-17-motion-115-v1.webp",
+      "sha256": "a8f367189abdd6427cd229139d00a81200666eac57ef1c01fcb150b6ef5b0a6b",
+      "activeUniquePhysicalSlots": [
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 18,
+      "src": "/companion/hd/vitamin-action-18-motion-115-v1.webp",
+      "sha256": "ee4d9f844b183fbe43040d35c69eef90d327cc9469b74a628ed5aaff7e4e353d",
+      "activeUniquePhysicalSlots": [
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 19,
+      "src": "/companion/hd/vitamin-play-00-motion-115-v1.webp",
+      "sha256": "977e0a047d92c6a3ba3426058805d000f6ee6c1d1ab86bfca28f50a32f42fa6e",
+      "activeUniquePhysicalSlots": [
+        304,
+        305,
+        306,
+        307,
+        308
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "atlas": 20,
+      "src": "/companion/hd/vitamin-play-01-motion-115-v1.webp",
+      "sha256": "098e64532c469fcb54ffbaff48bb9bc55fcd1cd6de899d3fffe82e863323858d",
+      "activeUniquePhysicalSlots": [
+        320,
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 21,
+      "src": "/companion/hd/vitamin-play-02-motion-115-v1.webp",
+      "sha256": "0de81d9b157d46ef8a5b402a4e3807141b5c1024379d47b35590588f709cfa80",
+      "activeUniquePhysicalSlots": [
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "atlas": 22,
+      "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp",
+      "sha256": "f1f501c02392c11b0f6f3e1cc2b97b34a00193b3eb1eef3b7dd8f7ca50fd152d",
+      "activeUniquePhysicalSlots": [
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 23,
+      "src": "/companion/hd/vitamin-play-04-motion-115-v1.webp",
+      "sha256": "b2e701cd2e403c402f61126404a6435cdde40e3810584262693605765cac6cda",
+      "activeUniquePhysicalSlots": [
+        368,
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 24,
+      "src": "/companion/hd/vitamin-play-05-motion-115-v1.webp",
+      "sha256": "e92d09cae67082d1839b88d5edbd8985f9935121b440dc2cdba5082388ca4621",
+      "activeUniquePhysicalSlots": [
+        384,
+        385,
+        386,
+        387,
+        388,
+        389,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        399
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 25,
+      "src": "/companion/hd/vitamin-play-06-motion-115-v1.webp",
+      "sha256": "a5fc6045daee6d0629c2152b509ffd4862a2fbdd6f83437f0710ab5eef2f24d9",
+      "activeUniquePhysicalSlots": [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 26,
+      "src": "/companion/hd/vitamin-play-07-motion-115-v1.webp",
+      "sha256": "a9c6fde71d01a7950e2526e98402152c830cc376d41b0fc112af09bf31605d6c",
+      "activeUniquePhysicalSlots": [
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 27,
+      "src": "/companion/hd/vitamin-play-08-motion-115-v1.webp",
+      "sha256": "bf6a95fe60d6ae7e107b8314c2ce372721f18780fdc5815a725cedd032bba5fe",
+      "activeUniquePhysicalSlots": [
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 28,
+      "src": "/companion/hd/vitamin-play-09-motion-115-v1.webp",
+      "sha256": "4cd30d750518e755eab9fec005aec6c03ff7a2dbfb2d4733539ae212eef5446e",
+      "activeUniquePhysicalSlots": [
+        448,
+        449,
+        450,
+        451,
+        452,
+        453,
+        454,
+        455,
+        456,
+        457,
+        458,
+        459,
+        460,
+        461,
+        462,
+        463
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 29,
+      "src": "/companion/hd/vitamin-play-10-motion-115-v1.webp",
+      "sha256": "470a91d49a60b7cf5b0b14a55d168bc67664fe425185ad15e02b168aab9120d6",
+      "activeUniquePhysicalSlots": [
+        464,
+        465,
+        466,
+        467,
+        468,
+        469,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 30,
+      "src": "/companion/hd/vitamin-play-11-motion-115-v1.webp",
+      "sha256": "ea49bcfdba18d05d963c18cf8303631ce3874f68b8ff31101307041d8be7d5a5",
+      "activeUniquePhysicalSlots": [
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        494,
+        495
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 31,
+      "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp",
+      "sha256": "14d9d65c5044f3db9771a07b4672bcdfa6cdb932b8e561c228798aa6607bd68b",
+      "activeUniquePhysicalSlots": [
+        496,
+        497,
+        498,
+        499,
+        500,
+        501,
+        502,
+        503,
+        504,
+        505,
+        506,
+        507,
+        508,
+        509,
+        510,
+        511
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "atlas": 32,
+      "src": "/companion/hd/vitamin-episodes-00-motion-115-v1.webp",
+      "sha256": "504243213ed58faced07def94e24041e29d68efb59eff451ec128e2d0297ec67",
+      "activeUniquePhysicalSlots": [
+        512,
+        513,
+        514,
+        515,
+        516,
+        517,
+        518,
+        519
+      ],
+      "activePacketCells": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ],
+  "bodyBcr": {
+    "requestedEarExcludedBodyBcr": "NOT ESTABLISHED: no anatomicalear-exclusionmask exists in examinedreceipt; largestopaqueconnectedcomponent includesears. Avoid presenting followingfigures asear-excluded bodymeasurements.",
+    "largestComponentIncludesEars": {
+      "native0": {
+        "width": 98,
+        "height": 98,
+        "bcr": 1,
+        "alphaPixels": 6266
+      },
+      "native67": {
+        "width": 100,
+        "height": 103,
+        "bcr": 0.970873786407767,
+        "alphaPixels": 7075
+      },
+      "native67RelativePixelArea": 1.1291094797318864
+    },
+    "visualInspectionScope": "Inspected originalnative andmemory-only native0/67crops; posed67earorientation/bodyrotation makecomponent BCR aninsufficientbody-onlycomparison. Bodyexpert mustestablishear-excludedanatomicalmask."
+  },
+  "deformation": {
+    "areaDefinition": "Local2Dscale determinant sx*sy; rotations/translations do not change area. This is rendering geometry, not biological volume or art-quality judgement.",
+    "motionTarget": {
+      "walking": {
+        "x": "1+.012*s",
+        "y": "1-.018*s",
+        "determinant": "1-.006*s-.000216*s*s",
+        "atSMinus1": 1.005784,
+        "atSPlus1": 0.993784
+      },
+      "stretch": {
+        "x": "1-.014*e",
+        "y": "1+.026*e",
+        "atEMax": 1.011636
+      },
+      "held": {
+        "x": "1-width*h",
+        "y": "1+h",
+        "determinant": "1+(1-width)*h-width*h*h",
+        "defaultWidth": 0.18,
+        "atHPoint25": 1.19375
+      },
+      "mixer": "100ms Hermite correction carries sx/sy independently; determinant is unconstrained. Existing118 all41 capture observed0 bothaxes-grow samples; area can grow despiteopposingaxes."
+    },
+    "rendererNestedPlanes": {
+      "playAccessoryRadio": {
+        "x": "1+.5*c",
+        "y": "1-c",
+        "determinant": "1-.5*c-.5*c*c",
+        "atKneadMaxCPoint045": 0.9764875
+      },
+      "heldInertia": {
+        "x": "1-.35*s",
+        "y": "1+s",
+        "determinant": "1+.65*s-.35*s*s"
+      },
+      "contact": {
+        "x": "1+.65*q",
+        "y": "1-q",
+        "determinant": "1-.35*q-.65*q*q"
+      },
+      "supportReaction": {
+        "x": "1+.35*q",
+        "y": "1-q",
+        "determinant": "1-.65*q-.35*q*q"
+      },
+      "chew": {
+        "x": "baseX+c",
+        "y": "baseY-.8*c",
+        "neutralDeterminant": "1+.2*c-.8*c*c"
+      },
+      "cssSleepBreath": {
+        "peakScale": [
+          1.024,
+          0.965
+        ],
+        "determinant": 0.98816
+      },
+      "worldDisplayScale": "Intentionalworld/overlay/return/hide coordinate scale; exclude from local mass-preservation correction."
+    },
+    "smallestSharedFix": "Sharedpositivefinite deformationpair helper: g=1/sqrt(sx*sy); return[sx*g,sy*g]. Apply aftermotionmixer AND eachlocalnestedinertia/contact/reaction/finalplay/accessory/radio/chew pair; usematchingconstant-area CSSkeyframes. Onefinalpose-onlynormalization missesnestedplanes. Preserve pivots and worlddisplay.scale; re-boundviewport using actual normalizedpair beforepaint.",
+    "authoredRigNote": "115 baked rigs may have sx>1 andsy>1; runtimearea normalization cannot restorealreadybakednative silhouette. Treat authoredsource geometry separately.",
+    "authoredBothAxesPositiveRigParameters": {
+      "count": 17,
+      "slots": [
+        {
+          "index": 3,
+          "sx": 1.0022222222222221,
+          "sy": 1.0022961005941906
+        },
+        {
+          "index": 32,
+          "sx": 1.0043636363636363,
+          "sy": 1.0228275862068965
+        },
+        {
+          "index": 33,
+          "sx": 1.002181818181818,
+          "sy": 1.0151417151648061
+        },
+        {
+          "index": 39,
+          "sx": 1.002181818181818,
+          "sy": 1.0127279220613579
+        },
+        {
+          "index": 68,
+          "sx": 1.0022641509433963,
+          "sy": 1.0046666666666666
+        },
+        {
+          "index": 77,
+          "sx": 1.0022641509433963,
+          "sy": 1.0022961005941906
+        },
+        {
+          "index": 79,
+          "sx": 1.0022641509433963,
+          "sy": 1.0055432771950676
+        },
+        {
+          "index": 83,
+          "sx": 1.0022641509433963,
+          "sy": 1.0022961005941906
+        },
+        {
+          "index": 93,
+          "sx": 1.0022641509433963,
+          "sy": 1.0001086005941906
+        },
+        {
+          "index": 95,
+          "sx": 1.0045283018867925,
+          "sy": 1.0055432771950676
+        },
+        {
+          "index": 99,
+          "sx": 1.0022222222222221,
+          "sy": 1.0000738783719683
+        },
+        {
+          "index": 111,
+          "sx": 1.0022222222222221,
+          "sy": 1.0077654994172898
+        },
+        {
+          "index": 128,
+          "sx": 1.0115384615384615,
+          "sy": 1.006
+        },
+        {
+          "index": 142,
+          "sx": 1.0023076923076923,
+          "sy": 1.0065007052032482
+        },
+        {
+          "index": 143,
+          "sx": 1.0023076923076923,
+          "sy": 1.0078013417111966
+        },
+        {
+          "index": 194,
+          "sx": 1.0022222222222221,
+          "sy": 1.0042426406871192
+        },
+        {
+          "index": 195,
+          "sx": 1.0022222222222221,
+          "sy": 1.0022961005941906
+        }
+      ],
+      "note": "Offlinebake parameters,not runtimeareaorprofessionalartverdict; protectedfaceweights alteractualfield."
+    }
+  },
+  "existing118MovieSamplerEvidence": {
+    "scope": "Previouslycaptured118 finite real-rAF scripted selector harness; pose sampler scalars only,not fullgameplay nested renderer transforms",
+    "bothAxesGrowFrames": 0,
+    "examples": [],
+    "grouped": {
+      "0": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "1": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "2": {
+        "minArea": 0.993784,
+        "maxArea": 1.005784,
+        "bothAxesGrowFrames": 0
+      },
+      "3": {
+        "minArea": 0.999873904744,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "4": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "5": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "6": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "7": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "8": {
+        "minArea": 1,
+        "maxArea": 1.236552111234,
+        "bothAxesGrowFrames": 0
+      },
+      "9": {
+        "minArea": 1,
+        "maxArea": 1.152895378206,
+        "bothAxesGrowFrames": 0
+      },
+      "10": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "11": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "12": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "13": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "14": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "15": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "16": {
+        "minArea": 1,
+        "maxArea": 1.011636,
+        "bothAxesGrowFrames": 0
+      },
+      "17": {
+        "minArea": 0.9994542488840001,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "18": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "19": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "20": {
+        "minArea": 0.993786113985,
+        "maxArea": 1.0057830719940002,
+        "bothAxesGrowFrames": 0
+      },
+      "21": {
+        "minArea": 1,
+        "maxArea": 1.0061292773600001,
+        "bothAxesGrowFrames": 0
+      },
+      "22": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "23": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "24": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "25": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "26": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "27": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "28": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "29": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "30": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "31": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "32": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "33": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "34": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "35": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "36": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "37": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "38": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "39": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      },
+      "40": {
+        "minArea": 1,
+        "maxArea": 1,
+        "bothAxesGrowFrames": 0
+      }
+    }
+  }
+}

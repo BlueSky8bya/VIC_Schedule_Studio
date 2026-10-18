@@ -30,8 +30,9 @@ describe("complete CSS sofa body projection", () => {
     const input = neutral(); input.pressure = { ...input.pressure, squash: .2 };
     input.response = { lift: -4, squash: .1 }; input.sway = { ...input.sway, stretch: .1 };
     const first = projectCompanionSofaBody(input)[0];
-    // TL: contact(-5.2,16), reaction(-6.782,18.4), inertia(-5.14463,12.24).
-    expect(first.x).toBeCloseTo(-5.14463, 8); expect(first.y).toBeCloseTo(12.24, 8);
+    // Reciprocal CSS X scales1.25/1.1111/.9091 keep the same stage order:
+    // TL contact(-10,16), reaction(-15.555,18.4), inertia(-10.5050505,12.24).
+    expect(first.x).toBeCloseTo(-10.5050505, 8); expect(first.y).toBeCloseTo(12.24, 8);
   });
   it("keeps the actual ear grip fixed through left-facing held stretch and outer inertia", () => {
     const input = neutral(); input.size = 100; input.display = { x: 300, y: 400, scale: 1 };
@@ -49,9 +50,11 @@ describe("complete CSS sofa body projection", () => {
   });
   it("matches the renderer's literal CSS precision and eating deformation", () => {
     const input = neutral(); input.shape = { bob: .0006, tilt: .0004, scaleX: 1.00006, scaleY: 1.00006 };
-    let first = projectCompanionSofaBody(input)[0]; expect(first.x).toBeCloseTo(-.004, 8); expect(first.y).toBeCloseTo(-.007, 8);
+    // Four-decimal reciprocal X/Y are.9999/1.0001; bob rounds to.001.
+    let first = projectCompanionSofaBody(input)[0]; expect(first.x).toBeCloseTo(.004, 8); expect(first.y).toBeCloseTo(-.007, 8);
     input.shape = neutral().shape; input.chew = .01;
-    first = projectCompanionSofaBody(input)[0]; expect(first.x).toBeCloseTo(-.4, 8); expect(first.y).toBeCloseTo(.64, 8);
+    // Chew's.992Y pairs with1.0081X around the same bottom-centre origin.
+    first = projectCompanionSofaBody(input)[0]; expect(first.x).toBeCloseTo(-.324, 8); expect(first.y).toBeCloseTo(.64, 8);
   });
   it("scales logical registration exactly once and never mutates a retained painted cell", () => {
     const input = neutral(); input.size = 92; input.cell = Object.freeze({ x: -2, y: 15, clip: Object.freeze([14, 13, 13, 18]) });

@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "vitamin-expression-volume-119",
+  "operation": "targeted_parent_edit",
+  "subjects": [
+    "vitamin"
+  ],
+  "generator_id": "/root",
+  "purpose": "이번 원문 지정 다섯 표정과 폼폼 체적 문제를 두 전문 역할로 한 번 검수한 뒤 필요한 단일 이미지 교정 준비",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-expression-volume-119\\plan_v2.json",
+    "sha256": "FB5320A668B0669D2D3CC3AC744500EC4A9895673B4A54D90284406A1EACF2AE"
+  },
+  "inputs": [
+    {
+      "id": "current-requested-six-cell-parent",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+      "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD",
+      "routing_roles": [
+        "face_identity",
+        "body_anatomy"
+      ],
+      "role": "native_six_pose_sheet_current_requested_parent_not_approved"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "routing_roles": [
+        "face_identity",
+        "body_anatomy"
+      ],
+      "role": "original_mascot_paper_body_ears_face_design"
+    },
+    {
+      "id": "selected-normal099",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "routing_roles": [
+        "face_identity",
+        "body_anatomy"
+      ],
+      "role": "user_selected_normal_eye_size_and_base_pompom_volume_render_reference"
+    }
+  ],
+  "authorities": {
+    "face": "REF-016",
+    "body": "REF-016",
+    "mascot": "REF-016"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+      "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68"
+    }
+  ],
+  "edit_authorization": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-3111adae53aa24adea5bdf45.json",
+    "sha256": "6A8C160116882FDAD764E1D8F6EC4570313859E20955B25E1E2158C867399072",
+    "excerpt": "그리고 1, 2번째 첨부 사진에 있는 표정들은 안광이 있어서 눈을 감고있는지 뜨고 있는지 잘 모르겠어. 이 3개 표정도 다시 확인해서 의도에 맞게 수정해줘. \n3번째 첨부사진에 있는 표정에서 눈 한 쪽은 웃고있는데 한 쪽은 ~ 이 형태라서 이것도 무너가 이상해. 의도에 맞게 수정해줘.\n4번째 첨부사진은 다른 포즈에 비해서 뭔가 위아래로 더 길고 풍성해보여서 혼자 튀어. \n질량 보존의 법칙대로라면 기본 포즈에서 위아래로 찌부되면 양옆으로 더 뚠뚠해보여야하고, 위아래로 늘어나면 양옆이 좀 날씬해져야지. 진짜 폼폼처럼.\n또 5번째 첨부한 방금 수정한 하품할 때의 표정에서 눈매 두께가 다른 눈웃음 때보다 너무 얇은거 아냐? 물론 웃을 때랑 하품할 때랑 눈매가 다르다고는 하지만 이건 너무 차이나잖아. 그리고 자세히 보면 왼쪽 눈 밑에 점도 있어. 이런 건 왜 에고를 부리는거야 내가 부탁하지도 않았는데"
+  },
+  "protected_parent": {
+    "artwork_id": "vitamin-expression-volume-119",
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+    "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD"
+  },
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\검수반영_최종편집영역.png",
+    "sha256": "3939C1B9DC3C6F796205200CE1226566DFCDF6D1D0192A2E93B89252DA1E4EE8",
+    "mode": "L"
+  },
+  "edit_scope": [
+    "native1 양눈 편안한 닫힌 blink, 원형동공/안광/흰구멍 제거",
+    "native64/65 힘준 양쪽 > < 닫힌 회복 눈, 실제 기울기 유지",
+    "native73 양쪽 만족한 웃는 호 문법 일치",
+    "118하품 내려앉는 닫힌 호 두께 일관화+지적 점상/눈볼잔흔 및 old dark/light contour 제거, 하품 입 보존",
+    "native67 lowercentral 종이 늘어짐 단축·하단몸체올림·적은 하부옆면재분배; 귀·얼굴·상단기울기 고정, 전체비균등축소금지"
+  ],
+  "protected_scope": [
+    "실제 주황 네모 볼 픽셀과 작은 색 AAedge, coarse118cheekbbox는보호권한아님",
+    "다섯 표정의 나머지 귀·종이몸·색·외곽·회전·프레임·위치",
+    "114원본/117점프/118반려증거 및 모든 미요청 키",
+    "새 행동36개 미구현",
+    "native67의 귀/얼굴/기본 포즈와 다른 미요청 키, 하품의 비대상 physical160..175"
+  ],
+  "source_mapping": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\원화배치계보.json",
+    "sha256": "B5F79532BE1428A2B67CC319EC08E29FEBED73DF30A911553EAD8E6E3791DF1D"
+  },
+  "requested_roles_only": [
+    "face_identity",
+    "body_anatomy"
+  ],
+  "reviewers_must_be_distinct_and_independent_of_root": true,
+  "review_claims_by_preparer": 0,
+  "imagegen_claims_by_preparer": 0,
+  "post_generation_art_review_calls": 0,
+  "generation_budget": {
+    "per_work_per_actual_user_turn": 1,
+    "planned_visual_inputs": 3,
+    "no_automatic_retry": true
+  },
+  "actual_prompt_words": 302,
+  "prompt_budget_words": 450,
+  "status": "TWO_REQUESTED_ROLE_FINDINGS_RECORDED_ONE_GENERATION_READY",
+  "body67_generation_edit_enabled": true,
+  "review_plan": {
+    "schema_version": 1,
+    "user_directed": true,
+    "role_packets": {
+      "face_identity": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\face_identity.json",
+        "sha256": "D2E39C2D1E3F5D826B7B1617B25C59CFC0751EC4D5393BD9DDD1903C5F9C27BB"
+      },
+      "body_anatomy": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\body_anatomy.json",
+        "sha256": "7A5B0E93923E55089F71C9969FA8D7D37C9DCF5EB4B35741524ABD9097751B74"
+      }
+    },
+    "required_roles": [
+      "face_identity",
+      "body_anatomy"
+    ]
+  },
+  "opened_by_preparer": "/root/art_prep_117",
+  "no_professional_judgment_by_preparer": true,
+  "mask_scope_revision": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수반영_보호범주정정.json",
+    "sha256": "4F63FB1A23E89DE190894323BCB48D36BC00E27FDE6E343DE4E1879AB44C6EA8"
+  },
+  "requested_specialist_reports": {
+    "face_identity": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\얼굴담당보고서119.json",
+      "sha256": "1AE523A2B30CFC922B5F171DAA6E46244CF0E8766F7A267E4246D18EA21F4B9D",
+      "status": "FAIL",
+      "reviewer_id": "/root/face_review_119"
+    },
+    "body_anatomy": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\몸담당보고서119.json",
+      "sha256": "DAE0C3B3336B011D3DBFDE61A3537EC2061BEFAC4466BF539CC06517F498E207",
+      "status": "FAIL",
+      "reviewer_id": "/root/body_review_119"
+    }
+  },
+  "specialist_review_record": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\전문검수등록결과119.json",
+    "sha256": "C16C12B3E0D6B2DD47C196163B54F4F0022C2ED0540E0C217BFEE7BABD5727B9"
+  },
+  "root_generator_must_open_actual_args_inputs_and_mask_before_claim": true,
+  "no_automatic_post_generation_review": true
+}

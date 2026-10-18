@@ -1,4 +1,5 @@
 import { companionGripProfile, type CompanionGrip } from "./contact-grip";
+import { companionMaterialScale } from "./material-scale";
 import { COMPANION_CLIP_TIMING, COMPANION_THROW_ROW } from "./timing";
 
 /** Pose sampling only. The renderer owns world position and its rAF cadence. */
@@ -77,11 +78,12 @@ export function boundCompanionHangingPose(
   if (![pose.scaleX, pose.scaleY, pose.tilt, origin.x, origin.y, grip.x, grip.y, size, viewport.width, viewport.height, outer.tilt, outer.stretch].every(Number.isFinite)
     || size <= 0 || viewport.width <= 0 || viewport.height <= 0 || ![1, -1].includes(pose.facing)) return neutral();
   const outerAngle = outer.tilt * Math.PI / 180, outerCos = Math.cos(outerAngle), outerSin = Math.sin(outerAngle);
-  const outerX = 1 - outer.stretch * .35, outerY = 1 + outer.stretch;
+  if (pose.scaleX <= 0 || pose.scaleY <= 0 || 1 + outer.stretch <= 0) return neutral();
+  const { scaleX: outerX, scaleY: outerY } = companionMaterialScale(1 + outer.stretch);
   if (outerX <= 0 || outerY <= 0) return neutral();
   const fits = (gain: number) => {
     const angle = pose.tilt * pose.facing * gain * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
-    const sx = 1 + (pose.scaleX - 1) * gain, sy = 1 + (pose.scaleY - 1) * gain;
+    const { scaleX: sx, scaleY: sy } = companionMaterialScale(1 + (pose.scaleY - 1) * gain);
     for (const cx of [0, size]) for (const cy of [0, size]) {
       const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
       const ix = (dx * cos - dy * sin) * outerX, iy = (dx * sin + dy * cos) * outerY;
@@ -91,11 +93,11 @@ export function boundCompanionHangingPose(
     }
     return true;
   };
-  if (fits(1)) return pose.bob === 0 ? pose : { ...pose, bob: 0 };
+  if (fits(1)) return pose.bob === 0 && Math.abs(pose.scaleX * pose.scaleY - 1) < .000001 ? pose : { ...pose, bob: 0, ...companionMaterialScale(pose.scaleY) };
   if (!fits(0)) return neutral();
   let low = 0, high = 1;
   for (let step = 0; step < 9; step++) { const mid = (low + high) / 2; if (fits(mid)) low = mid; else high = mid; }
-  return { ...pose, bob: 0, scaleX: 1 + (pose.scaleX - 1) * low, scaleY: 1 + (pose.scaleY - 1) * low, tilt: pose.tilt * low };
+  return { ...pose, bob: 0, ...companionMaterialScale(1 + (pose.scaleY - 1) * low), tilt: pose.tilt * low };
 }
 function pingPong(step: number, length: number): number {
   if (length <= 1) return 0;
@@ -217,8 +219,7 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
         // A hanging grip must not translate with the rest of the body. Its
         // pivoted extension supplies the downward travel below the hand.
         bob: movingPose ? -Math.abs(Math.sin(stride)) * (row === 20 ? 3.5 : 1.2) : attending ? attending * clamp(attention?.elevation ?? 0, -1, 1) : 0,
-        scaleX: 1 + stretch * .012 - extension * .014 - hanging * heldGrip.width,
-        scaleY: 1 - stretch * .018 + extension * .026 + hanging,
+        ...companionMaterialScale(1 - stretch * .018 + extension * .026 + hanging),
         // The existing facing plane mirrors this local lean toward the target;
         // multiplying by direction here would reverse a leftward observation.
         tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1 + attending * 1.6) + held * (Math.sin(heldTime * Math.PI * 3.6 + heldGrip.phase) * 5.2 + kick * 1.6 + heldGrip.lean * facing),
@@ -236,8 +237,11 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       for (const key of Object.keys(target) as (keyof Scalars)[]) {
         if (mixing && t < 1) next[key] += offset[key] * hold + momentum[key] * .1 * carry;
         if (input.reduced) next[key] = key === "scaleX" || key === "scaleY" ? 1 : 0;
-        if (seconds > 0) velocity[key] = clamp((next[key] - shown[key]) / seconds, key === "scaleX" || key === "scaleY" ? -2 : -60, key === "scaleX" || key === "scaleY" ? 2 : 60);
       }
+      // Interpolate vertical material response, then derive its reciprocal.
+      // Independently mixing both axes could inflate the body on release.
+      Object.assign(next, companionMaterialScale(next.scaleY));
+      if (seconds > 0) for (const key of Object.keys(target) as (keyof Scalars)[]) velocity[key] = clamp((next[key] - shown[key]) / seconds, key === "scaleX" || key === "scaleY" ? -2 : -60, key === "scaleX" || key === "scaleY" ? 2 : 60);
       if (t >= 1 || input.reduced) mixing = false;
       shown = next;
       return {

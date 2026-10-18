@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "vitamin-face-alignment-118",
+  "operation": "targeted_parent_edit",
+  "subjects": [
+    "vitamin"
+  ],
+  "generator_id": "/root",
+  "purpose": "전문 얼굴검수로 확인한 현재 하품 key11의 눈·입만 한 번 교정",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\plan.json",
+    "sha256": "0B43DB5517F81BC1A1763CFF0A9F4DCB8DC32B97D14FFA20AC7DC02BCAACB810"
+  },
+  "inputs": [
+    {
+      "id": "requested-yawn-key11-parent",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+      "sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E",
+      "role": "exact_current_yawn_native_crop_only"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "role": "read_only_original_mascot_face_design"
+    },
+    {
+      "id": "selected-normal-eyes099",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "role": "preserve_user_selected_character_and_normal_open_eye_size_not_yawn_pose"
+    }
+  ],
+  "authorities": {
+    "mascot": "REF-016"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+      "sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68"
+    }
+  ],
+  "edit_authorization": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-d4cb123467c3c6a8ed26bf8f.json",
+    "sha256": "BF9BF123A28AA329D35E3BC6445F451DC1CBC1C7997CCFDFCE2290B26662F502",
+    "excerpt": "또 하품하는 모습 표정이 좀 어긋나고 찌그러져있는 것 같은데 이것도 확인해줘. 하품 표정 포함해서 전반적으로 눈이나 입이 어긋나있는 부분 없는지 다시 한 번 확인해줘"
+  },
+  "protected_parent": {
+    "artwork_id": "vitamin-face-alignment-118-yawn-parent",
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+    "sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E"
+  },
+  "parent_lineage": {
+    "source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+    "source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+    "native_cell_zero_based": 10,
+    "key_one_based": 11,
+    "runtime_row": 10,
+    "runtime_physical": 266,
+    "runtime_atlas": 16,
+    "runtime_cell": 10,
+    "native_crop_box": [
+      301,
+      153,
+      409,
+      253
+    ],
+    "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+    "crop_sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E",
+    "size": [
+      108,
+      100
+    ],
+    "mode": "RGBA",
+    "resampling": "none",
+    "decoded_pixels_equal": true,
+    "mask_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품눈입_명시편집영역.png",
+    "mask_sha256": "629D4319919AE6006857538955F7E05E8819E4DE63ED81FF559DD7F97D4D1CD2",
+    "mask_context_local": [
+      43,
+      46,
+      86,
+      81
+    ],
+    "protected_cheek_boxes_local": [
+      [
+        31,
+        56,
+        46,
+        79
+      ],
+      [
+        82,
+        55,
+        99,
+        79
+      ]
+    ],
+    "previous_117_preserved": true,
+    "original_114_preserved": true,
+    "visual_approval": false
+  },
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품눈입_명시편집영역.png",
+    "sha256": "629D4319919AE6006857538955F7E05E8819E4DE63ED81FF559DD7F97D4D1CD2",
+    "mode": "L",
+    "box": [
+      43,
+      46,
+      86,
+      81
+    ]
+  },
+  "edit_scope": [
+    "key11 하품의 두 눈을 졸린 닫힌 호로 정리, 그 아래 중앙에 분리된 작은 세로 타원 입과 약한 붉은 안쪽을 배치"
+  ],
+  "protected_scope": [
+    "오렌지 네모 볼의 기존 위치·색·형태",
+    "양쪽 귀·이마와 모든 종이·몸·색감·기울기·외곽·프레임",
+    "원본114와 기존117 산출물 및 하품 외 모든 런타임 키",
+    "normal099 열린 눈 크기/캐릭터 권한"
+  ],
+  "requested_face_review": {
+    "report_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+    "report_sha256": "5EC8297D9DF801F9E0D4D063857AEB773457461A4DEB66CF27999B0B98E3FE5E",
+    "scope_clarification_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\검수범위정정.json",
+    "scope_clarification_sha256": "EBD4F6F6C48E38B13A418FFBAB2B1DEAE55669E18E39FC2935E964E7B8648F62",
+    "confirmed_finding_id": "FACE-118-01",
+    "review_calls": 1,
+    "additional_roles": []
+  },
+  "generation_budget": {
+    "imagegen_calls_remaining": 1,
+    "imagegen_claimed": false,
+    "automatic_retry_calls": 0,
+    "post_generation_art_review_calls": 0
+  },
+  "prompt_budget_words": 450,
+  "actual_prompt_words": 212,
+  "actual_visual_inputs": 3,
+  "candidate_status": "REQUESTED_DRAFT_NOT_APPROVED",
+  "source_and_candidate_not_numeric_certification": true,
+  "input_opened_by_preparer": "/root/art_prep_117",
+  "root_generator_must_open_actual_inputs_before_claim": true
+}

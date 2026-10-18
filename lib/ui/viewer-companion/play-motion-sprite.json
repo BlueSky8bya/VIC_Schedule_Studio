@@ -28,9 +28,9 @@
       "height": 384
     },
     {
-      "src": "/companion/hd/vitamin-play-03-motion-115-v1.webp",
-      "sha256": "f1f501c02392c11b0f6f3e1cc2b97b34a00193b3eb1eef3b7dd8f7ca50fd152d",
-      "bytes": 160766,
+      "src": "/companion/hd/vitamin-play-03-expression-119-v1.webp",
+      "sha256": "da09c0c607da35f5f7802568040fc654a868d06356013258074d3b9a01766450",
+      "bytes": 172514,
       "width": 1536,
       "height": 384
     },
@@ -91,9 +91,9 @@
       "height": 384
     },
     {
-      "src": "/companion/hd/vitamin-play-12-motion-115-v1.webp",
-      "sha256": "14d9d65c5044f3db9771a07b4672bcdfa6cdb932b8e561c228798aa6607bd68b",
-      "bytes": 157640,
+      "src": "/companion/hd/vitamin-play-12-expression-119-v1.webp",
+      "sha256": "67d24e1a51c3f3b0b65a33be063aea3a333ca0e1b45b8c9d3a24c7e70866fec4",
+      "bytes": 162878,
       "width": 1536,
       "height": 384
     }
@@ -2406,48 +2406,48 @@
     {
       "atlas": 12,
       "index": 0,
-      "x": -0.416667,
-      "y": 5.416667,
+      "x": -1.041667,
+      "y": 7.083333,
       "clip": [
         14.25,
         8.833333,
-        1.75,
+        4.25,
         8.833333
       ]
     },
     {
       "atlas": 12,
       "index": 1,
-      "x": -0.416667,
-      "y": 5.416667,
+      "x": -1.041667,
+      "y": 7.083333,
       "clip": [
         14.25,
         8.833333,
-        1.75,
+        4.25,
         8.833333
       ]
     },
     {
       "atlas": 12,
       "index": 2,
-      "x": -0.416667,
-      "y": 5.416667,
+      "x": -1.041667,
+      "y": 7.083333,
       "clip": [
         14.25,
         8.833333,
-        1.75,
+        4.25,
         8.833333
       ]
     },
     {
       "atlas": 12,
       "index": 3,
-      "x": -0.416667,
-      "y": 5.416667,
+      "x": -1.041667,
+      "y": 7.083333,
       "clip": [
         14.25,
         8.833333,
-        1.75,
+        4.25,
         8.833333
       ]
     },

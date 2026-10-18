@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "generationCalls": 1,
+  "independentArtReviews": 1,
+  "postGenerationArtReviews": 0,
+  "ownerApproval": false,
+  "parentNative": {
+    "path": "art-src/빅타민/동행/작업회차/20261018-포즈통일114/원본/빅타민_통일80키.png",
+    "sha256": "8cfa1fd98c63eff8b06dba9d0950391509e60d194c878b5881a16176be245ba4",
+    "width": 1122,
+    "height": 1402,
+    "originalPreserved": true
+  },
+  "parentPacket": {
+    "src": "/companion/hd/vitamin-action-16-motion-115-v1.webp",
+    "sha256": "7ccd9be9d284d81c0b0b9c73f7ddd64c3dc23d23a334fe0f740d7d386831a088",
+    "bytes": 181466,
+    "width": 1536,
+    "height": 384
+  },
+  "generatedNative": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-얼굴정렬교정118/원본/하품눈입_생성원본.png",
+    "sha256": "4825eba7a600a22ae35a55ac1b29e13b94e0d9a0eec62ecf58cb7e7f82d48321"
+  },
+  "correctedKey": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-얼굴정렬교정118/정리본/빅타민_하품눈입교정.png",
+    "sha256": "e7b4f76af93097c9c7dcea8b7d77243207a8efa9e883dfdab2ade180c5283e86"
+  },
+  "scope": [
+    43,
+    49,
+    86,
+    74
+  ],
+  "sourceChangedPixels": 896,
+  "sourceChangedChannels": 2513,
+  "packet": {
+    "src": "/companion/hd/vitamin-action-16-face-118-v1.webp",
+    "sha256": "17c96fe6080085cc8772bedc4dcb89de37a9c60c9166722db5b38ee6fabac8c9",
+    "bytes": 410758,
+    "width": 1536,
+    "height": 384
+  },
+  "physicalIndex": 266,
+  "parentFrame": {
+    "atlas": 16,
+    "index": 10,
+    "x": -0.208333,
+    "y": 6.666667,
+    "clip": [
+      18.833333,
+      8.833333,
+      3.416667,
+      8.833333
+    ]
+  },
+  "changedPixels": 1604,
+  "changedBounds": {
+    "left": 82,
+    "top": 114,
+    "right": 138,
+    "bottom": 147
+  },
+  "unchangedVisibleDecodedPixelsAndAlphaPreserved": true,
+  "invisibleRgbChannelsNormalized": 673304,
+  "allRuntimeRegistrationPreserved": true,
+  "allOther519FramesPreserved": true,
+  "prior117PacketPreserved": {
+    "src": "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+    "sha256": "f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d",
+    "bytes": 426660,
+    "width": 1536,
+    "height": 384
+  }
+}

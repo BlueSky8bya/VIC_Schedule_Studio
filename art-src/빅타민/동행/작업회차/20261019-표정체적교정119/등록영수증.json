@@ -1,0 +1,32 @@
+{
+  "work_id": "vitamin-expression-volume-119",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\vitamin-expression-volume-119\\검토용\\FCF0D342B85A976D9BC5.png",
+  "sha256": "61B23B6EAA96532E80A6F74ACC0D3758429B196194F9F4E071E3B0942DEE0C63",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    {
+      "role": "face_identity",
+      "status": "PRIOR_FAIL_PRESERVED_NOT_RECLASSIFIED",
+      "report": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\얼굴담당보고서119.json",
+        "sha256": "1AE523A2B30CFC922B5F171DAA6E46244CF0E8766F7A267E4246D18EA21F4B9D",
+        "status": "FAIL",
+        "reviewer_id": "/root/face_review_119"
+      }
+    },
+    {
+      "role": "body_anatomy",
+      "status": "PRIOR_FAIL_PRESERVED_NOT_RECLASSIFIED",
+      "report": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\몸담당보고서119.json",
+        "sha256": "DAE0C3B3336B011D3DBFDE61A3537EC2061BEFAC4466BF539CC06517F498E207",
+        "status": "FAIL",
+        "reviewer_id": "/root/body_review_119"
+      }
+    }
+  ],
+  "cycle_id": "FCF0D342B85A976D9BC5",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

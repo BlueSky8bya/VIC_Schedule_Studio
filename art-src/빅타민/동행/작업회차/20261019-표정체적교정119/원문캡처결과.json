@@ -1,0 +1,20 @@
+{
+  "status": "ARCHIVED_ACTUAL_USER_TURNS",
+  "thread_id": "01a13862-7fb6-7a73-839b-079df9dbbea2",
+  "source_count": 107,
+  "new_raw_events": 1,
+  "manifest_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\01a13862-7fb6-7a73-839b-079df9dbbea2.manifest.json",
+  "feedback_memory": {
+    "status": "SYNCHRONIZED_USER_FEEDBACK",
+    "errors": [],
+    "archived_events": 390,
+    "normalized_rule_count": 195,
+    "active_rule_count": 41,
+    "conflict_count": 1,
+    "changed_files": 2,
+    "memory_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_memory.json",
+    "projection_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\recurring-feedback.md",
+    "limitations": "Explicit normalizer declarations; not semantic verification, historical full coverage, or automatic visual measurement."
+  },
+  "selection_mutation": false
+}

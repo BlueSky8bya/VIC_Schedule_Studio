@@ -1,0 +1,12 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Correct ONLY the FIVE requested facial expressions in Image1, a THREE-COLUMN by TWO-ROW sheet with144px cells. Preserve every sprite's current location, native framing, scale, pose, paper body, ears, cheeks, colour, contour and transparent gutters. Cell order: top-left native1; top-middle native64; top-right native65; bottom-left native73; bottom-middle native67; bottom-right current118 yawn.\nIn cells1-3, make the intended closed/squeezed eyes unambiguously CLOSED: remove white glints and stray open-eye dots, retaining each expression. In cell4, give both eyes coherent matching smiling arcs following its existing head direction; remove the mismatched wavy eye. In cell6, use clean relaxed closed arcs with contour thickness consistent with this mascot's other closed-eye expressions, clearly separate from the existing low central yawning mouth. Remove the stray dark dot below the left eye and ALL residual old eye contours/highlights. Preserve actual orange square cheeks and their small antialiased edges; do not preserve coarse cheek rectangles that trap old wrong-eye pixels.\nCell5/native67 is an editable body candidate pending the independent body recommendation: correct excessive source height/fluff using reciprocal width/height and coherent pompom volume, preserving its ears, face and pose. Final source versus shared-motion changes must be fixed after BOTH role reports; this is a provisional request. Image2 is original mascot design authority; Image3 preserves selected normal eye size and base pompom proportions. No new glints, dots, eyelashes, tears, limbs, extra markings or accessories. Return the same complete six-cell transparent sheet, no labels or text.",
+    "referenced_image_paths": [
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png"
+    ],
+    "transparent_background": true
+  }
+}

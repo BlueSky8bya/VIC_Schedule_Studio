@@ -44,6 +44,7 @@ import { createCompanionHousehold, type CompanionHouseholdBeat, type CompanionHo
 import { createCompanionViewportRecovery } from "@/lib/ui/viewer-companion/viewport-recovery";
 import { companionPositionPoint, resolveCompanionPosition, type CompanionPositionMemory, type CompanionPositionSnapshot } from "@/lib/ui/viewer-companion/position-memory";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
+import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
 import { learnCompanionHabits, type CompanionExperience } from "@/lib/ui/viewer-companion/habits";
 import { experienceCompanionLife, type CompanionLifeExperience } from "@/lib/ui/viewer-companion/life";
@@ -65,7 +66,7 @@ import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-com
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { acquireDecodedCompanionSprite, canDecodeCompanionSprite, companionMotionClips, companionSpriteMetadata as registration, companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
-import { companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
+import { companionNextPlayRow, companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
 import { COMPANION_CARD_PLAY_EVENT, createCompanionCardPlay } from "@/lib/ui/viewer-companion/card-play";
 import { requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
 import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
@@ -674,26 +675,29 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (play) {
         // The current actual support owns world position throughout the gag.
         shape.bob += play.lift; shape.tilt += play.lean;
-        shape.scaleX *= 1 + play.compression * .5; shape.scaleY *= 1 - play.compression;
+        shape.scaleY *= 1 - play.compression; shape.scaleX = 1 / shape.scaleY;
         if ((action?.play === "dizzy" || action?.play === "tumble" || action?.play === "slip-tumble") && play.beat === "recover") Object.assign(shape, boundCompanionHangingPose(shape, physicalOrigin, { x: displayFrame.size / 2, y: displayFrame.size }, displayFrame.size, { width: innerWidth, height: innerHeight }, { tilt: 0, stretch: 0 }));
       }
       const accessoryMotion = action?.accessory && status === "look" && action.accessory === wardrobe.current.equipped ? sampleCompanionAccessoryMotion(action.accessory, performance.now() - began) : undefined;
       if (accessoryMotion) {
         shape.bob -= accessoryMotion.bodyLift; shape.tilt += accessoryMotion.bodyLean;
-        shape.scaleX *= 1 + accessoryMotion.squash * .5; shape.scaleY *= 1 - accessoryMotion.squash;
+        shape.scaleY *= 1 - accessoryMotion.squash; shape.scaleX = 1 / shape.scaleY;
       }
       const radioMotion = action?.radio && status === "look" ? sampleWorldMusic(action.radio, performance.now() - began) : undefined;
       if (radioMotion) {
         shape.bob += radioMotion.bob; shape.tilt += radioMotion.tilt;
-        shape.scaleX *= 1 + radioMotion.squash * .5; shape.scaleY *= 1 - radioMotion.squash;
+        shape.scaleY *= 1 - radioMotion.squash; shape.scaleX = 1 / shape.scaleY;
       }
       if (neutralVerticalRecovery) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
-      style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${(1 - sway.stretch * .35).toFixed(4)},${(1 + sway.stretch).toFixed(4)})`);
+      const inertiaScale = companionMaterialScale(1 + sway.stretch);
+      style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${inertiaScale.scaleX.toFixed(4)},${inertiaScale.scaleY.toFixed(4)})`);
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off" || neutralVerticalRecovery);
       if (!pressure.pressure && !hoverPetting && el.dataset.petting === "touch") data("petting", "ready");
-      style(contactLayer, "transform", `translate3d(${(pressure.x * sample.facing).toFixed(3)}px,${pressure.y.toFixed(3)}px,0) rotate(${(pressure.tilt * sample.facing).toFixed(3)}deg) scale(${(1 + pressure.squash * .65).toFixed(4)},${(1 - pressure.squash).toFixed(4)})`);
+      const contactScale = companionMaterialScale(1 - pressure.squash);
+      style(contactLayer, "transform", `translate3d(${(pressure.x * sample.facing).toFixed(3)}px,${pressure.y.toFixed(3)}px,0) rotate(${(pressure.tilt * sample.facing).toFixed(3)}deg) scale(${contactScale.scaleX.toFixed(4)},${contactScale.scaleY.toFixed(4)})`);
       const response = neutralVerticalRecovery ? { lift: 0, squash: 0 } : supportMotion.sample(performance.now());
-      style(reactionLayer, "transform", `translate3d(0,${response.lift.toFixed(3)}px,0) scale(${(1 + response.squash * .35).toFixed(4)},${(1 - response.squash).toFixed(4)})`);
+      const reactionScale = companionMaterialScale(1 - response.squash);
+      style(reactionLayer, "transform", `translate3d(0,${response.lift.toFixed(3)}px,0) scale(${reactionScale.scaleX.toFixed(4)},${reactionScale.scaleY.toFixed(4)})`);
       // World travel stays smooth even when the authored pose holds. Registration
       // is measured from the opaque body, not transparent padding/shadow specks.
       const restore = reduced || gfxMode() === "off" ? 1 : sampleCompanionTravel(clamp((performance.now() - pickupAt) / 200, 0, 1));
@@ -708,7 +712,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       } else if (hiding?.sheet) displayOpacity = hide.phase === "found" ? Math.min(1, hide.progress * 4) : 1;
       style(el, "transform", `translate3d(${(display.x - size / 2).toFixed(3)}px,${(display.y - size).toFixed(3)}px,0) scale(${display.scale})`);
       const chew = status === "eat" && !reduced ? Math.sin(presentationNow * .024) * .012 : 0;
-      style(poseLayer, "transform", `translate3d(0,${shape.bob.toFixed(3)}px,0) rotate(${shape.tilt.toFixed(3)}deg) scale(${(shape.scaleX + chew).toFixed(4)},${(shape.scaleY - chew * .8).toFixed(4)})`);
+      const poseScale = companionMaterialScale(shape.scaleY - chew * .8);
+      style(poseLayer, "transform", `translate3d(0,${shape.bob.toFixed(3)}px,0) rotate(${shape.tilt.toFixed(3)}deg) scale(${poseScale.scaleX.toFixed(4)},${poseScale.scaleY.toFixed(4)})`);
       if (sample.facing !== paintedFacing) { facingLayer.style.transform = `scaleX(${sample.facing})`; el.dataset.facing = sample.facing < 0 ? "left" : "right"; paintedFacing = sample.facing; }
       // Expression alone changes art. The row8 held sampler above still owns
       // gravity, the ear/body grip, facing and the full-pose viewport bounds.
@@ -1307,7 +1312,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       },
       clearFood: () => { pendingHomeRecall = undefined; food.current?.clear(); },
     };
-    let preparedPlayRow = -1;
+    let preparedPlayRow = -1, preparedNextPlayRow = -1;
     const homeRouteWorld = () => {
       const occupied = supportById(support), roomFloors = landingPlatforms.filter(p => isHomeFloor(p.id));
       return { x, y, platformId: support, platforms: [...platforms, ...roomFloors, ...(occupied && !platforms.some(p => p.id === support) ? [occupied] : [])], width: innerWidth, height: innerHeight };
@@ -1382,7 +1387,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       mealAnchored = false; mealWaited = 0;
       if (next.kind === "eat") for (const row of [1, 9]) spriteSources[row].forEach(src => requestSprite.current(src));
       sofaTravelActive = Boolean(passage?.safe); sofaFlightShape = passage?.safe ? { coefficient: passage.coefficient, curve: passage.curve } : undefined; if (sofaTravelActive) data("sofaFlight", "");
-      preparedPlayRow = -1;
+      preparedPlayRow = preparedNextPlayRow = -1;
       if (next.foodId) data("foodGoal", next.foodId);
       if (next.living) data("living", next.living); else el.removeAttribute("data-living");
       if (next.kind === "sleep" && next.living === "cozy") spriteSources[next.cozySettled ? 40 : 35].forEach(src => requestSprite.current(src));
@@ -1395,6 +1400,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const beats = COMPANION_PLAY_TIMING[next.play].beats;
         for (const row of new Set(beats.slice(0, 2).map(beat => beat.row))) spriteSources[row].forEach(src => requestSprite.current(src));
         preparedPlayRow = beats[0].row;
+        preparedNextPlayRow = companionNextPlayRow(next.play, 0, reduced || gfxMode() === "off");
       }
       if (next.kind === "play" && next.play?.startsWith("bonk-") && !supportedNow()) {
         // A tap during landing still has the requested immediate expression.
@@ -1865,9 +1871,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           row = play.row; frame = play.phase * 15;
           if (preparedPlayRow !== play.row) {
             preparedPlayRow = play.row;
-            const beats = COMPANION_PLAY_TIMING[action.play].beats, next = beats[beats.findIndex(beat => beat.row === play.row) + 1];
-            if (next) spriteSources[next.row].forEach(src => requestSprite.current(src));
+            preparedNextPlayRow = companionNextPlayRow(action.play, p, reduced || gfxMode() === "off");
           }
+          // The bounded decoder may evict an unowned future packet while
+          // this beat stays on the same row. Retry only its imminent row on
+          // the existing tick; decoded/pending guards keep warm ticks cheap.
+          if (preparedNextPlayRow >= 0) spriteSources[preparedNextPlayRow].forEach(src => requestSprite.current(src));
           const platform = supportById(support), direction = action.direction ?? brain.current.heading;
           const room = platform ? Math.max(0, Math.min(22, origin.x - platform.x - 8, platform.x + platform.width - origin.x - 8)) : 0;
           x = action.rolling ? lerp(origin.x, action.target.x, companionRollProgress(action.play, age)) : origin.x + direction * play.shift * room / 22;

@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "work_id": "vitamin-face-alignment-118",
+  "final_sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+  "inspector_id": "/root",
+  "inspection_kind": "CREATOR_WHOLE_AND_LOCAL_OBSERVATION_NOT_SPECIALIST_REVIEW",
+  "inspection_evidence": "Root explicitly reported original parent108x100 opened before claim, builtin full raw displayed, complete corrected crop viewed as right panel of target-comparison.png, and actual decoded runtime266 viewed at yawn-runtime-after4x.png. Registration preparer did no post-generation art review.",
+  "whole_visual_inspection": true,
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\정리본\\빅타민_하품눈입교정.png",
+      "sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+      "view_method": "whole candidate visible at right of root-opened target-comparison.png"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+      "sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\원본\\하품눈입_생성원본.png",
+      "sha256": "4825EBA7A600A22AE35A55AC1B29E13B94E0D9A0EEC62ECF58CB7E7F82D48321"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\.scratch-pw\\companion-118\\target-comparison.png",
+      "sha256": "9EB5DEF0C473608D2C8ADFC0AB30129FF5A000D66935ED6A0E3B58EE651F91FA"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\.scratch-pw\\companion-118\\yawn-runtime-after4x.png",
+      "sha256": "08B90FB812E7907D48812C355E275B27FBC5EE4C5DD6044DD2D0A3133D801E5A"
+    }
+  ],
+  "observations": "Two relaxed closed arcs now distinct; small reddish oval mouth below/between eyes, old raised eye-like mouth removed; orange square cheeks preserved without duplicate patch; body/ears/silhouette retained.",
+  "findings": [
+    {
+      "id": "FACE-118-01",
+      "status": "PRIOR_FINDING_PRESERVED_AFTER_CREATOR_REPAIR_OBSERVATION",
+      "prior_status": "FAIL",
+      "prior_report": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+      "scope_clarification": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\검수범위정정.json",
+      "not_reclassified_as_independent_pass": true
+    }
+  ],
+  "artifact_kind": "SCOPED_DERIVED_FINAL_FROM_ONE_BUILTIN_NATIVE_AND_PROTECTED_PARENT",
+  "provider_native_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\원본\\하품눈입_생성원본.png",
+  "provider_native_sha256": "4825EBA7A600A22AE35A55AC1B29E13B94E0D9A0EEC62ECF58CB7E7F82D48321",
+  "derived_candidate_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\정리본\\빅타민_하품눈입교정.png",
+  "derived_candidate_sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+  "derivation_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\합성범위.json",
+    "sha256": "6F6CB12452A6A6AC40ED3A390E30F5AA58EA019833CEA523A5C4F27FECE46520"
+  },
+  "packing_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\패킹파생기록.json",
+    "sha256": "F85DEDC926DFC4FF8CCD62369C2891C7C6DDE6C8F57925A8590D1089FCB55ACD"
+  },
+  "preservation_verification": {
+    "effective_context": [
+      43,
+      49,
+      86,
+      74
+    ],
+    "protected_cheek_boxes": [
+      [
+        31,
+        56,
+        46,
+        79
+      ],
+      [
+        82,
+        55,
+        99,
+        79
+      ]
+    ],
+    "changed_source_pixels": 896,
+    "changed_source_channels": 2513,
+    "alpha_equal": true,
+    "outside_effective_context_rgba_equal": true,
+    "outside_contract_mask_rgba_equal": true,
+    "original114_and117_sha_preserved": true,
+    "runtime_physical_only": 266,
+    "all_runtime_registration_preserved": true,
+    "all_other519_frames_preserved_as_recorded": true
+  },
+  "imagegen_calls": 1,
+  "prior_requested_independent_art_review_calls": 1,
+  "post_generation_art_review_calls": 0,
+  "specialist_reviews": {},
+  "user_visual_approval": false,
+  "full_visual_pass_claim": false,
+  "limits": [
+    "Prior independent FAIL stays preserved; root observation is not another specialist review or owner approval.",
+    "Helper native.png is a fixed filename for the registered derived candidate copy, not the provider original.",
+    "Local Drive-path copy verification does not verify cloud synchronization."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "work_id": "vitamin-face-alignment-118",
+  "phase": "review_repair",
+  "user_source": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-d4cb123467c3c6a8ed26bf8f.json",
+    "sha256": "BF9BF123A28AA329D35E3BC6445F451DC1CBC1C7997CCFDFCE2290B26662F502",
+    "excerpt": "또 하품하는 모습 표정이 좀 어긋나고 찌그러져있는 것 같은데 이것도 확인해줘. 하품 표정 포함해서 전반적으로 눈이나 입이 어긋나있는 부분 없는지 다시 한 번 확인해줘"
+  },
+  "role_focus": {
+    "face_identity": [
+      "하품 포함 현재 실제 사용 동작 전반의 눈·입 정렬; 의도된 회전·표정·원근 유지"
+    ]
+  },
+  "user_feedback_reopens": true,
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+    "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+  }
+}

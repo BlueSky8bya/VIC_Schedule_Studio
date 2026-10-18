@@ -1,9 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
+import { companionNextPlayRow, companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
 import type { CompanionPlay } from "@/lib/ui/viewer-companion/brain";
 import { companionPlayDuration, COMPANION_PLAY_TIMING, COMPANION_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 describe("finite authored companion play", () => {
+  it("prepares only the actual next beat when an action returns to an earlier drawing row", () => {
+    expect(companionNextPlayRow("cheer-rehearsal", 0)).toBe(37);
+    expect(companionNextPlayRow("cheer-rehearsal", 749 / 3800)).toBe(37);
+    expect(companionNextPlayRow("cheer-rehearsal", 750 / 3800)).toBe(38);
+    expect(companionNextPlayRow("cheer-rehearsal", 3000 / 3800)).toBe(9);
+    expect(companionNextPlayRow("cheer-rehearsal", 3200 / 3800)).toBe(-1);
+    expect(companionNextPlayRow("cheer-rehearsal", 3799 / 3800)).toBe(-1);
+    expect(companionNextPlayRow("cheer-rehearsal", 1)).toBe(-1);
+    expect(companionNextPlayRow("cheer-rehearsal", .1, true)).toBe(-1);
+    expect(companionNextPlayRow("ask-petting", .1, true)).toBe(-1);
+    expect(companionNextPlayRow("dizzy", 100 / 1320)).toBe(23);
+    expect(companionNextPlayRow("dizzy", 400 / 1320)).toBe(23);
+    expect(companionNextPlayRow("dizzy", 520 / 1320)).toBe(-1);
+  });
   const kinds: CompanionPlay[] = ["tumble", "slip-tumble", "bump", "slip", "bonk-sad", "bonk-tears", "celebrate", "groom", "pounce", "bow", "dizzy"];
   const livingGestures = [
     { kind: "ask-petting", duration: 2150, rows: [33, 33], ends: [1500, 2150], finalRow: 33, finalBeat: "checking" },

@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "work_id": "vitamin-face-alignment-118",
+  "cycle_id": "5DA0CBFE646F317CAB1E",
+  "status": "ONE_GENERATION_SCOPED_DERIVED_DRAFT_REGISTERED",
+  "tool": "image_gen.imagegen",
+  "generator_id": "/root",
+  "imagegen_calls": 1,
+  "automatic_retry_calls": 0,
+  "prior_requested_independent_art_review_calls": 1,
+  "post_generation_art_review_calls": 0,
+  "claim": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\cycle_5DA0CBFE646F317CAB1E\\imagegen.claim.json",
+    "sha256": "16A3C223B5727F8F6D5F0AA2749AB974B950ECD9FF9F82796D1D48839B90CD52",
+    "data": {
+      "action": "imagegen",
+      "role": null,
+      "cycle_id": "5DA0CBFE646F317CAB1E",
+      "claimed_at": "2026-10-18T15:08:53.616524+00:00",
+      "unknown_tool_outcome": "recover receipt; do not call again"
+    }
+  },
+  "contract": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\생성계약.json",
+    "sha256": "0DACD8FD537C5B6777F5CEC0C2BF9D88BAEBFC87B359C3794768593C8974FE4E"
+  },
+  "actual_request": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\생성요청.json",
+    "sha256": "9FC83AAD6F57E2DF4C32C4EBEEAA89DE9D10249ED2C57A0E87839EF4307E4D31"
+  },
+  "provider_native": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\원본\\하품눈입_생성원본.png",
+    "sha256": "4825EBA7A600A22AE35A55AC1B29E13B94E0D9A0EEC62ECF58CB7E7F82D48321",
+    "size": [
+      1303,
+      1207
+    ],
+    "mode": "RGBA"
+  },
+  "protected_parent": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+    "sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E"
+  },
+  "mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품눈입_명시편집영역.png",
+    "sha256": "629D4319919AE6006857538955F7E05E8819E4DE63ED81FF559DD7F97D4D1CD2"
+  },
+  "derived_candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\정리본\\빅타민_하품눈입교정.png",
+    "sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+    "size": [
+      108,
+      100
+    ],
+    "mode": "RGBA"
+  },
+  "registered_draft": {
+    "work_id": "vitamin-face-alignment-118",
+    "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\vitamin-face-alignment-118\\검토용\\5DA0CBFE646F317CAB1E.png",
+    "sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+    "approval": "NONE",
+    "full_review": "NOT_REQUESTED",
+    "known_findings": [
+      {
+        "id": "FACE-118-01",
+        "status": "PRIOR_FINDING_PRESERVED_AFTER_CREATOR_REPAIR_OBSERVATION",
+        "prior_status": "FAIL",
+        "prior_report": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+        "scope_clarification": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\검수범위정정.json",
+        "not_reclassified_as_independent_pass": true
+      }
+    ],
+    "cycle_id": "5DA0CBFE646F317CAB1E",
+    "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+  },
+  "source_scope_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\합성범위.json",
+    "sha256": "6F6CB12452A6A6AC40ED3A390E30F5AA58EA019833CEA523A5C4F27FECE46520"
+  },
+  "packing_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\패킹파생기록.json",
+    "sha256": "F85DEDC926DFC4FF8CCD62369C2891C7C6DDE6C8F57925A8590D1089FCB55ACD"
+  },
+  "creator_inspection": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\최종관찰.json",
+    "sha256": "459C0241268D282FF9B32A6186BA8EE73C22FB18A9ECDD054EB9595B83999AF4"
+  },
+  "earlier_independent_face_review": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+    "sha256": "5EC8297D9DF801F9E0D4D063857AEB773457461A4DEB66CF27999B0B98E3FE5E",
+    "status": "FAIL_PRESERVED_NOT_RECLASSIFIED",
+    "scope_clarification": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\검수범위정정.json"
+  },
+  "preservation": {
+    "changed_source_pixels": 896,
+    "changed_source_channels": 2513,
+    "outside_mask_rgba_equal": true,
+    "alpha_equal": true,
+    "original114_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+    "prior117_sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7",
+    "existing_artwork_registry_and_diversity_unchanged_during_registration": {
+      "current_artworks.json": "50B74515A160DBC92D8D7C6F1E56AE496EC9BB179AAFFC6D33BA4B664FCB09E8",
+      "diversity_index.json": "9880D06726EC1B1DF80D8D01AF015EA0272253A259067CC5AD44DA23DFAD325A"
+    }
+  },
+  "approval": "NONE",
+  "helper_native_filename_is_derived_copy": true,
+  "cloud_sync_verified": false
+}

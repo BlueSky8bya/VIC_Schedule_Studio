@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "status": "TECHNICAL_RECEIPT_SUPERSESSION_ONLY",
+  "work_id": "vitamin-face-alignment-118",
+  "reason": "After the one registration, root added only two technical packing proof fields. Preserve the exact prior receipt and observation content; rebind historical packing evidence to an immutable snapshot, and expose the current technical receipt separately.",
+  "prior_packing_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\증거기록\\패킹파생기록_등록시점.json",
+    "sha256": "F85DEDC926DFC4FF8CCD62369C2891C7C6DDE6C8F57925A8590D1089FCB55ACD"
+  },
+  "current_packing_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\패킹파생기록.json",
+    "sha256": "09C02D11F852C26D63838B34F93FFD85C34FFAB8F31AD4F937F62C7198E1C4D4"
+  },
+  "added_technical_fields": {
+    "maskedGenerationDerivativeReproduced": true,
+    "decodedChangedVisiblePixels": 1602
+  },
+  "prior_receipt_reconstruction": "Exact old SHA reproduced by removing only added fields and retaining original JSON serialization. No art bytes or prior values changed.",
+  "archives": {
+    "local_inspection": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\증거기록\\최종관찰_등록시점.json",
+      "sha256": "459C0241268D282FF9B32A6186BA8EE73C22FB18A9ECDD054EB9595B83999AF4"
+    },
+    "local_completion": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\증거기록\\생성영수증_등록시점.json",
+      "sha256": "7456F822FF4F8E70E458ECE2E8186C2E754A9BC177D10CC5E80D256D73F3F0C8"
+    },
+    "registered_inspection": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\draft_inspection.registration.snapshot.json",
+      "sha256": "459C0241268D282FF9B32A6186BA8EE73C22FB18A9ECDD054EB9595B83999AF4"
+    },
+    "project_completion": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\completion_audit.registration.snapshot.json",
+      "sha256": "7456F822FF4F8E70E458ECE2E8186C2E754A9BC177D10CC5E80D256D73F3F0C8"
+    }
+  },
+  "archive_interpretation": "Exact registration-time JSON snapshots intentionally retain their as-of-registration path strings. Resolve the historical packing path plus old SHA to prior_packing_receipt above. Current active inspection pointers now bind that immutable prior receipt.",
+  "unchanged_registration_event": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-face-alignment-118\\cycle_5DA0CBFE646F317CAB1E\\draft_receipt.json",
+    "sha256": "9477565465C9706AEC49B0BDB366EED32A524C9587AB6D75C6379E091C0FA701"
+  },
+  "unchanged_final": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\정리본\\빅타민_하품눈입교정.png",
+    "sha256": "E7B4F76AF93097C9C7DCEA8B7D77243207A8EFA9E883DFDAB2ADE180C5283E86",
+    "size": [
+      108,
+      100
+    ],
+    "mode": "RGBA"
+  },
+  "unchanged_provider_native": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\원본\\하품눈입_생성원본.png",
+    "sha256": "4825EBA7A600A22AE35A55AC1B29E13B94E0D9A0EEC62ECF58CB7E7F82D48321",
+    "size": [
+      1303,
+      1207
+    ],
+    "mode": "RGBA"
+  },
+  "observations_unchanged": true,
+  "additional_imagegen_calls": 0,
+  "additional_art_review_calls": 0,
+  "additional_registration_calls": 0,
+  "approval": "NONE",
+  "current_inspection_pointer_rebound_only": true
+}

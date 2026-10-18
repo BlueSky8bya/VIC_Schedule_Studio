@@ -1,0 +1,72 @@
+{
+  "nativeRaw": "art-src/빅타민/동행/작업회차/20261019-얼굴정렬교정118/원본/하품눈입_생성원본.png",
+  "rawSha256": "4825eba7a600a22ae35a55ac1b29e13b94e0d9a0eec62ecf58cb7e7f82d48321",
+  "parentRgbaSha256": "23dc695ac3deb2e76ed8fa1cd412403b57d829c2b88652c4f32213b902ec2ed3",
+  "generatorOpaqueBounds": {
+    "l": 59,
+    "t": 6,
+    "r": 1258,
+    "b": 1129
+  },
+  "registration": {
+    "sourceBody": [
+      3,
+      3,
+      105,
+      97
+    ],
+    "sameBodyFootAndCanvas": true,
+    "maskedFaceDerivative": {
+      "resize": [
+        130,
+        100
+      ],
+      "extract": [
+        10,
+        0,
+        108,
+        100
+      ]
+    }
+  },
+  "effectiveContext": [
+    43,
+    49,
+    86,
+    74
+  ],
+  "contractContext": [
+    43,
+    46,
+    86,
+    81
+  ],
+  "mask": "art-src/빅타민/동행/작업회차/20261019-얼굴정렬교정118/고정입력/하품눈입_명시편집영역.png",
+  "maskSha256": "629d4319919ae6006857538955f7e05e8819e4de63ed81ff559dd7f97d4d1cd2",
+  "interiorFeather": [
+    3,
+    3,
+    3,
+    4
+  ],
+  "protectedCheekBoxes": [
+    [
+      31,
+      56,
+      46,
+      79
+    ],
+    [
+      82,
+      55,
+      99,
+      79
+    ]
+  ],
+  "changedPixels": 896,
+  "outsideContextRgbaUnchanged": true,
+  "alphaUnchanged": true,
+  "correctedKey": "art-src/빅타민/동행/작업회차/20261019-얼굴정렬교정118/정리본/빅타민_하품눈입교정.png",
+  "ownerApproval": false,
+  "generationCalls": 1
+}

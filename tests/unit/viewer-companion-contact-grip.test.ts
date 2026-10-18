@@ -34,6 +34,7 @@ describe("physical grip material", () => {
     expect(mean(samples[0], "scaleY")).toBeGreaterThan(mean(samples[2], "scaleY") + .04);
     expect(mean(samples[0], "tilt")).toBeGreaterThan(4); expect(mean(samples[1], "tilt")).toBeLessThan(-4);
     for (const items of samples) expect(items.every(p => p.row === 8 && p.facing === 1 && p.bob === 0 && p.scaleY > 1)).toBe(true);
+    for (const items of samples) for (const pose of items) expect(pose.scaleX * pose.scaleY).toBeCloseTo(1, 5);
     expect(samples[0].some((p, i) => p.column !== samples[1][i].column)).toBe(true);
   });
 
@@ -45,7 +46,7 @@ describe("physical grip material", () => {
     const held = motion.sample(input(500, left));
     expect(held.facing).toBe(-1);
     const released = motion.sample(input(500, left, { row: 0, status: "idle" }));
-    expect(released.scaleY).toBe(held.scaleY); expect(released.tilt).toBe(held.tilt);
+    expect(released.scaleX).toBe(held.scaleX); expect(released.scaleY).toBe(held.scaleY); expect(released.tilt).toBe(held.tilt);
     expect(motion.sample(input(610, left, { row: 0, status: "idle" }))).toMatchObject({ bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
     expect(motion.sample(input(800, right, { reduced: true }))).toMatchObject({ bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
   });
@@ -63,10 +64,10 @@ describe("physical grip material", () => {
     for (const grip of [left, right]) for (const dy of [-36, 36]) {
       const motion = createCompanionHeldInertia(); motion.push(0, dy, 0, grip);
       const pose = motion.sample(70), angle = pose.tilt * Math.PI / 180;
-      // Independent world-space body point after CSS rotation. Compare its
-      // vertical rotation component with the same point before the hand tug.
+      // Independent world-space body point after material scale and rotation.
+      // Compare its vertical displacement with the point before the hand tug.
       const rx = (.5 - grip.x) * 92, ry = (.83 - grip.y) * 92;
-      const bodyDeltaY = rx * Math.sin(angle) + ry * Math.cos(angle) - ry;
+      const sy = 1 + pose.stretch, bodyDeltaY = rx / sy * Math.sin(angle) + ry * sy * Math.cos(angle) - ry;
       expect(Math.sign(bodyDeltaY)).toBe(-Math.sign(dy));
     }
   });

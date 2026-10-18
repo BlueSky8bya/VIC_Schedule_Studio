@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "status": "TECHNICAL_SCOPE_CLARIFICATION_NO_NEW_ART_REVIEW",
+  "original_registered_report": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+    "sha256": "5EC8297D9DF801F9E0D4D063857AEB773457461A4DEB66CF27999B0B98E3FE5E"
+  },
+  "original_review_result": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\전문검수등록결과.json",
+    "sha256": "4C0CCC3B483889093F46EA29DCB6EC5C452EE1BB26B11AA87037D14695012630"
+  },
+  "raw_metadata_referenced_native_keys_inspected": 60,
+  "raw_referenced_physical": 458,
+  "actual_curated_runtime_native_keys": 56,
+  "actual_curated_runtime_physical": 439,
+  "actual_face_bearing_native_keys": 54,
+  "back_views_without_face": 2,
+  "extra_inspected_not_currently_selected_native_zero_based": [
+    35,
+    36,
+    37,
+    44
+  ],
+  "actual_runtime_rows": 41,
+  "registered_report_current_used_wording_superseded": true,
+  "correction": "원 보고서의60개 active/used 표기는 rawmetadata 참조집합을 뜻한다. 실제116curated runtime은56개이며, 비선택4개도 추가로 넓게 검사한 것이다. key11 확정FAIL과 다른검수결론은 바뀌지 않는다.",
+  "new_art_review_calls": 0,
+  "total_requested_art_review_calls": 1,
+  "technical_basis": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\현재실제선택집계.json",
+    "sha256": "F9D6A61842410EA85E61812B3A5AB38C9F9429BC422717473D2A2F3C88835C1B"
+  }
+}

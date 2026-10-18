@@ -1,4 +1,5 @@
 import { companionGripProfile, type CompanionGrip } from "./contact-grip";
+import { companionMaterialScale } from "./material-scale";
 
 export type CompanionHeldPose = { tilt: number; stretch: number; active: boolean };
 type Spring = { position: number; velocity: number };
@@ -66,10 +67,10 @@ export function createCompanionHeldInertia() {
  * only this decorative response near edges; never move the captured body or
  * change its support. Four numeric corners need no layout read. */
 export function boundCompanionHeldPose(pose: CompanionHeldPose, origin: Point, grip: Point, size: number, viewport: { width: number; height: number }): CompanionHeldPose {
-  if (![pose.tilt, pose.stretch, origin.x, origin.y, grip.x, grip.y, size, viewport.width, viewport.height].every(Number.isFinite) || size <= 0) return quiet();
+  if (![pose.tilt, pose.stretch, origin.x, origin.y, grip.x, grip.y, size, viewport.width, viewport.height].every(Number.isFinite) || size <= 0 || 1 + pose.stretch <= 0) return quiet();
   const fits = (gain: number) => {
     const angle = pose.tilt * gain * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
-    const sx = 1 - pose.stretch * gain * .35, sy = 1 + pose.stretch * gain;
+    const { scaleX: sx, scaleY: sy } = companionMaterialScale(1 + pose.stretch * gain);
     for (const cx of [0, size]) for (const cy of [0, size]) {
       const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
       const x = origin.x + grip.x + dx * cos - dy * sin, y = origin.y + grip.y + dx * sin + dy * cos;

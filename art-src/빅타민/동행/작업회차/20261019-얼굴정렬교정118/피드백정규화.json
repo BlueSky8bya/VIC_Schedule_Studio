@@ -1,0 +1,42 @@
+{
+  "event_id": "vitamin-face-alignment-118-current-request",
+  "source_actor": "user",
+  "thread_id": "01a13862-7fb6-7a73-839b-079df9dbbea2",
+  "turn_id": "msg_01a14f88-10e6-7890-af7c-56c30a6adad8",
+  "observed_at": "2026-10-18T15:01:19.718Z",
+  "user_quote": "또 하품하는 모습 표정이 좀 어긋나고 찌그러져있는 것 같은데 이것도 확인해줘. 하품 표정 포함해서 전반적으로 눈이나 입이 어긋나있는 부분 없는지 다시 한 번 확인해줘",
+  "source_context": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-d4cb123467c3c6a8ed26bf8f.json#/user_request",
+  "decision": "rule_update",
+  "selection_mutation": false,
+  "work_id": "vitamin-face-alignment-118",
+  "image_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+  "scopes": [
+    "current_used_eyes_mouth_alignment"
+  ],
+  "rule_ids": [],
+  "issues": [
+    {
+      "issue_key": "current_mascot_eyes_mouth_alignment",
+      "statement": "하품 표정의 어긋남·찌그러짐을 확인하고 현재 동작 전반의 눈·입 정렬을 다시 한 번 검수한다. 정당한 회전·표정·원근은 유지한다.",
+      "applicability": {
+        "subjects": [
+          "victamin"
+        ],
+        "outfit_ids": [],
+        "hair_ids": [],
+        "scene_modes": [
+          "icon"
+        ],
+        "work_ids": [
+          "vitamin-face-alignment-118"
+        ]
+      },
+      "routing_roles": [
+        "face_identity"
+      ],
+      "finding_scope": "current_used_eyes_mouth_alignment",
+      "confirmation": "explicit_user_request",
+      "evidence_excerpt": "또 하품하는 모습 표정이 좀 어긋나고 찌그러져있는 것 같은데 이것도 확인해줘. 하품 표정 포함해서 전반적으로 눈이나 입이 어긋나있는 부분 없는지 다시 한 번 확인해줘"
+    }
+  ]
+}

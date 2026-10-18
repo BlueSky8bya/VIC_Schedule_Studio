@@ -1,13 +1,13 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-18 (KST)
+Last Updated: 2026-10-19 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
 
 ## Current Objective
 
-Active [117](plans/PLAN-20261018-117-companion-jump-tuft.md): scoped lower-right jump tuft correction integrated and locally verified; rise16 uses one new packet with original face/ears/runtime registration preserved.2,730units/type/lint/build/harness299, native viewer/studio2 and six-cycle before/after technical video pass. Exact release verification pending; no new behavior implementation. [Evidence](verification/COMPANION_JUMP_TUFT-20261018.md).
+Active [119](plans/PLAN-20261019-119-companion-expression-volume.md): latest user reopens native1/64/65/73 eyes,118 yawn stroke/dot and native67 body volume. Separate requested face/body review and source-bound repair, plus reciprocal stretch/compression audit.118 is locally verified but uncommitted/unreleased; do not ship the rejected yawn as final. Preserve117 corner and approved character. No new behavior implementation.
 
 Companion scene selection: [36 concrete proposals](verification/COMPANION_SCENARIO_PROPOSALS-20261018.md) await the user's implementation instruction. No return-time/rhythm learning or other new gameplay is authorized by this proposal request. Preserve that boundary on continuation.
 
@@ -47,6 +47,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current release `0c7cb3bbce6798f8e9e18ba53e489286981d5fe1`: [116 tabs/video](verification/COMPANION_TABS_VIDEO_IDEAS-20261018.md). Local lazy boundary prevents route-wide hiding; shared corners/favorite-food badge corrected; world/wardrobe sprint and dizzy use curated whole-pose sequences. Independent reviews,2,728units/type/lint/build/harness297, native UI18/held2 and scoped normal/slow video review pass. Vercel/every [quality39136682756](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39136682756) step and actual anonymous fullSHA/chunks/43static assets/profile/notebook/settings/180foods/27wardrobe/radio/mobile checks pass. No production mutations, actual live-state GET, auth session, private manifest or seeded discoveries. Original assets/user art preserved; contexts/fixture stopped. Post-release document bookkeeping remains local for next scoped commit. New36 scenes unimplemented; all-refresh particle absence, authenticated production studio/OBS/listening/Safari/RLS/Hobby excess/native hidden-window096 remain separate. Unaffected115 food/household and geometry evidence retains its [original scope](verification/COMPANION_FOOD_PERSONALITY_CONTINUITY-20261018.md).
+Current release `58e4d92bd896795d2af9b2ee80d99c670fa33b80`: [117 jump tuft](verification/COMPANION_JUMP_TUFT-20261018.md). Requested corner only reduced across16 rise rigs; original face/ears/runtime registration and historical sources preserved.2,730units/type/lint/build/harness299, native viewer/studio2, six-cycle before/after technical video and independent code/asset QA pass. Vercel/every [quality39138208116](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39138208116) step and actual anonymous fullSHA/chunks/all43 active assets including corrected packet/profile/notebook/settings/180foods/27wardrobe/radio/mobile pass; final CI confirmation2026-10-19 KST. No production mutations, actual live-state GET, auth session, private manifest or seeded discoveries. Owned contexts/fixture stopped; user art preserved. Post-release document bookkeeping remains local for next scoped commit. New36 scenes remain unimplemented; all-refresh particle absence, authenticated production studio/OBS/listening/Safari/RLS/Hobby excess/native hidden-window096 remain separate. Earlier unaffected evidence retains its [116](verification/COMPANION_TABS_VIDEO_IDEAS-20261018.md) and [115](verification/COMPANION_FOOD_PERSONALITY_CONTINUITY-20261018.md) scope.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

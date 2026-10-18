@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
+import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
 import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, createCompanionPreviewPreparation, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
 import "@/components/poster/viewer-companion/viewer-companion.css";
@@ -49,7 +50,8 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
       spritePlane.style.transform = `translate(${frame.x}%,${frame.y}%)`;
       spritePlane.style.clipPath = `inset(${frame.clip.map(value => `${value}%`).join(" ")})`;
       const bob = shape.bob + sample.lift, tilt = shape.tilt + sample.lean;
-      posePlane.style.transform = `translateY(${bob}px) rotate(${tilt}deg) scale(${shape.scaleX * (1 + sample.compression * .5)},${shape.scaleY * (1 - sample.compression)})`;
+      const material = companionMaterialScale(shape.scaleY * (1 - sample.compression));
+      posePlane.style.transform = `translateY(${bob}px) rotate(${tilt}deg) scale(${material.scaleX},${material.scaleY})`;
       painter?.paint(selection, accessory, false);
       element.dataset.previewRow = String(shape.row);
       element.dataset.previewAccessory = painter ? accessory ?? "none" : "none";

@@ -1,0 +1,720 @@
+{
+  "schema_version": 1,
+  "role": "face_identity",
+  "reviewer_id": "/root/art_prep_117",
+  "independent_from_generator": true,
+  "generator_id": "/root",
+  "final_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+  "status": "FAIL",
+  "findings": [
+    {
+      "id": "FACE-118-01",
+      "severity": "P1",
+      "status": "FAIL",
+      "native_cell_zero_based": 10,
+      "key_one_based": 11,
+      "runtime_row": 10,
+      "runtime_physical": 266,
+      "runtime_atlas": 16,
+      "runtime_cell": 10,
+      "source_crop_box": [
+        301,
+        153,
+        409,
+        253
+      ],
+      "attention_region_native_approx": [
+        341,
+        198,
+        389,
+        229
+      ],
+      "scope": "하품의 두 눈과 입의 상대 위치·개구부 판독",
+      "observation": "현재 원화와 runtime 확대에서 왼쪽 열린 원형 눈·오른쪽 감긴 눈 사이의 검은 입 개구부가 눈높이까지 올라와 오른쪽 눈에 붙어 읽힌다. 주황 입안도 인접 볼과 겹쳐 보여 입과 두 눈의 구분이 흐려지고 얼굴이 옆으로 찌그러져 보인다. 머리/몸의 기울기만으로 이 국소 배치가 설명되지 않는다.",
+      "source_design_basis": "REF-016 및 선택눈099의 두 눈은 얼굴 띠에서 분리되고 입은 두 눈 사이보다 아래에 독립해 읽힌다. 눈 크기 권한은 유지하되 하품의 감긴 눈은 표정에 맞게 허용된다.",
+      "required_correction": "하품 표정을 유지한 졸린 양쪽 감긴 눈/완만한 닫힌 호와, 그 사이보다 아래 중심에 놓인 분리된 작은 세로 타원형 열린 입으로 정리한다. 입 개구부·주황 안쪽은 눈/볼과 떨어뜨리고 여분의 눈처럼 보이는 검은 고리를 남기지 않는다.",
+      "protected_neighbors": [
+        "두 귀·이마 종이·몸체·볼 위치와 색·외곽·회전·기존 렌더",
+        "선택099의 정상 열린 눈 크기 권한",
+        "현재117점프 노란 조각과 모든 다른 활성 native"
+      ],
+      "not_a_numeric_certificate": true,
+      "technical_separation": "하품 rig가 neutral이라는 별도 코드 증거와 무관하게 원화·현재 이미지를 직접 대조한 얼굴 판정이다."
+    }
+  ],
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png",
+      "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\현재60키전체.png",
+      "sha256": "F131636D6DB10F7917C711ED6EC36F337ACC682877DA6D1A6E32C8CF2A335B36"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\하품원화4배.png",
+      "sha256": "88475AB590EF9A94BBBCE5C8FCDB8D1C21A36B4663042ABC0B51BD9D63646E46"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\하품현재3배.png",
+      "sha256": "281ED6EBFDBEE13FE5BB59376468E85221793ECBB2675411217D7DD86D6BE20A"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대1.png",
+      "sha256": "C5F23E03CD67E5FB8EEF40D6B5192F3D7874CD58435921DDE7B54A0184B87BA2"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대2.png",
+      "sha256": "18DF04B9DD7DEBDB9BF5DBE8D77C9F5BD81CE8CAE6D47C8BD2DC9B7E6980AF71"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대3.png",
+      "sha256": "962E812A16AD22515505A985B43797D2C8532BD303DF831F9D9E438D01717739"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\눈입전체확대4.png",
+      "sha256": "D9E64010C74B6FAA0B9E6CCF3CA3AE087DF57B627D0F7CC2E2FB75070DDE94EF"
+    }
+  ],
+  "current_scope": {
+    "used_native_keys": 60,
+    "face_bearing_keys": 58,
+    "back_keys_without_face": 2,
+    "runtime_rows": 41,
+    "candidate_binding": "native114 whole80 sheet, review only current60 used keys; current117jump face-preserving candidate separately opened",
+    "native_cell_numbers_zero_based": true,
+    "key_numbers_one_based": true
+  },
+  "per_key_observations": [
+    {
+      "native_cell_zero_based": 0,
+      "key_one_based": 1,
+      "rows": [
+        0,
+        1,
+        7,
+        17
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 1,
+      "key_one_based": 2,
+      "rows": [
+        0
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 2,
+      "key_one_based": 3,
+      "rows": [
+        2
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 4,
+      "key_one_based": 5,
+      "rows": [
+        3
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 5,
+      "key_one_based": 6,
+      "rows": [
+        4
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 6,
+      "key_one_based": 7,
+      "rows": [
+        5
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 7,
+      "key_one_based": 8,
+      "rows": [
+        6
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 8,
+      "key_one_based": 9,
+      "rows": [
+        8
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 9,
+      "key_one_based": 10,
+      "rows": [
+        9
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 10,
+      "key_one_based": 11,
+      "rows": [
+        10
+      ],
+      "status": "FAIL",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 11,
+      "key_one_based": 12,
+      "rows": [
+        11
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 12,
+      "key_one_based": 13,
+      "rows": [
+        7,
+        12,
+        16
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 13,
+      "key_one_based": 14,
+      "rows": [
+        13
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 14,
+      "key_one_based": 15,
+      "rows": [
+        14
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 15,
+      "key_one_based": 16,
+      "rows": [
+        15
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 27,
+      "key_one_based": 28,
+      "rows": [
+        18
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 28,
+      "key_one_based": 29,
+      "rows": [
+        18
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 32,
+      "key_one_based": 33,
+      "rows": [
+        20
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 33,
+      "key_one_based": 34,
+      "rows": [
+        20
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 34,
+      "key_one_based": 35,
+      "rows": [
+        20
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 35,
+      "key_one_based": 36,
+      "rows": [
+        20
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 36,
+      "key_one_based": 37,
+      "rows": [
+        20
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 37,
+      "key_one_based": 38,
+      "rows": [
+        20
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 38,
+      "key_one_based": 39,
+      "rows": [
+        21
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 39,
+      "key_one_based": 40,
+      "rows": [
+        21
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 40,
+      "key_one_based": 41,
+      "rows": [
+        21
+      ],
+      "status": "NOT_APPLICABLE_BACK_VIEW",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 41,
+      "key_one_based": 42,
+      "rows": [
+        21
+      ],
+      "status": "NOT_APPLICABLE_BACK_VIEW",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 42,
+      "key_one_based": 43,
+      "rows": [
+        21
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 43,
+      "key_one_based": 44,
+      "rows": [
+        22
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 44,
+      "key_one_based": 45,
+      "rows": [
+        22
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 45,
+      "key_one_based": 46,
+      "rows": [
+        24,
+        25
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 46,
+      "key_one_based": 47,
+      "rows": [
+        25
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 47,
+      "key_one_based": 48,
+      "rows": [
+        26
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 48,
+      "key_one_based": 49,
+      "rows": [
+        26
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 49,
+      "key_one_based": 50,
+      "rows": [
+        26
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 51,
+      "key_one_based": 52,
+      "rows": [
+        27
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 53,
+      "key_one_based": 54,
+      "rows": [
+        29
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 54,
+      "key_one_based": 55,
+      "rows": [
+        29
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 55,
+      "key_one_based": 56,
+      "rows": [
+        30
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 56,
+      "key_one_based": 57,
+      "rows": [
+        30
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 57,
+      "key_one_based": 58,
+      "rows": [
+        31
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 58,
+      "key_one_based": 59,
+      "rows": [
+        31
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 59,
+      "key_one_based": 60,
+      "rows": [
+        21
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 60,
+      "key_one_based": 61,
+      "rows": [
+        24
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 62,
+      "key_one_based": 63,
+      "rows": [
+        19,
+        28
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 63,
+      "key_one_based": 64,
+      "rows": [
+        23
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 64,
+      "key_one_based": 65,
+      "rows": [
+        23
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 65,
+      "key_one_based": 66,
+      "rows": [
+        23
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 66,
+      "key_one_based": 67,
+      "rows": [
+        23
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 67,
+      "key_one_based": 68,
+      "rows": [
+        32
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 68,
+      "key_one_based": 69,
+      "rows": [
+        32
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 70,
+      "key_one_based": 71,
+      "rows": [
+        32
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 71,
+      "key_one_based": 72,
+      "rows": [
+        33
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 72,
+      "key_one_based": 73,
+      "rows": [
+        34
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 73,
+      "key_one_based": 74,
+      "rows": [
+        35
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 74,
+      "key_one_based": 75,
+      "rows": [
+        36
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 75,
+      "key_one_based": 76,
+      "rows": [
+        37
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 76,
+      "key_one_based": 77,
+      "rows": [
+        38
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 77,
+      "key_one_based": 78,
+      "rows": [
+        39
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    },
+    {
+      "native_cell_zero_based": 78,
+      "key_one_based": 79,
+      "rows": [
+        40
+      ],
+      "status": "NO_ADDITIONAL_CONFIRMED_ALIGNMENT_DEFECT",
+      "basis": "Original native crop shown at nearest3x in opened audit sheets; current representative runtime sheet opened.",
+      "scope_limit": "Eye/mouth alignment only; this is not whole-character or numeric certification."
+    }
+  ],
+  "general_observation": "하품 key11 한 곳에서 교정할 눈·입 정렬 결함을 확인했다. 나머지59개 활성 native(얼굴58개 중 하품 외57개와 의도된 뒷면2개)의 이번 정렬 범위에서 추가 확정 결함은 보이지 않았다. 회전한 rolling/thrown 키의 대각선 눈선, wink/찡그림/잠든 눈과 원근에 따른 눈 크기 차이는 평준화하지 않는다.",
+  "limits": [
+    "현재 실제 사용하는60키만 범위이며 비사용20키는 검수 대상이 아니다.",
+    "native104px 안팎 원화의 시각 관찰이다. 숨은3D·수치 대칭·모든 표정의 전체 PASS를 인증하지 않는다.",
+    "기술 agent의 코드/rig/픽셀 계산은 독립 미술 판정으로 세지 않았다.",
+    "생성/후처리/추가 전문검수/사용자 시각 승인은 이 회차 검수에서 실행하지 않았다."
+  ],
+  "review_calls": 1,
+  "automatic_post_repair_review_calls": 0,
+  "imagegen_claimed_by_this_reviewer": false,
+  "recommendation": "root의 필요시 단일 imagegen은 key11 하품 눈·입만. 다른59 활성키·현재117부위는 보존."
+}

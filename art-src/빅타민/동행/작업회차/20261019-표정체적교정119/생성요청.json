@@ -1,0 +1,12 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Edit Image1 as ONE THREE-COLUMN by TWO-ROW sheet,144px cells, six complete sprites. Keep each sprite's position, scale, pose, head direction, ears, orange square cheeks, warm paper palette, contour and transparent gutters. Cells are top-left native1, top-middle64, top-right65, bottom-left73, bottom-middle67, bottom-right118 yawn.\nCell1: BOTH eyes gently CLOSED in a quiet idle blink: short low-curvature eyelid strokes, no circular pupils, white glints or holes. Keep the little smile.\nCells2-3: BOTH eyes are strained CLOSED > < for recovery, matching each other in dark stroke weight and expression while following each head's tilt. Replace the entire open round eye/pupil/glint; do not make smiling arches. Preserve the existing small mouths.\nCell4: BOTH eyes use coherent smooth satisfied smiling arches, following the existing good left-eye curve and head angle. Remove the wavy right eye and old end-strokes. Keep the small smile.\nCell6: keep the sleepy downward-curving closed arcs and the separate small oval yawning mouth below. Strengthen both eyelid dark strokes to the same rendering family as other closed eyes, without black blobs. Remove the user-reported dot-like eye/cheek remnant below the left eye and ALL old dark/light eye-contour residue. Preserve actual orange cheeks and their small colour edges, not coarse rectangles trapping wrong pixels.\nCell5: repair ONLY the paper body. Shorten excessive middle/lower hanging tiers, lift the lower-middle contour and gently redistribute fullness into lower side lobes, approaching the compact normal pompom. Preserve the laid-over ears, EXACT current face, upper lean/attachments, paper layer count and irregular cut-paper style. Do NOT shrink/stretch the whole sprite, resize ears/eyes, add paper tiers, or create fluffy fur.\nImage2 is original mascot design authority. Image3 preserves selected normal eye size and baseline pompom proportions; it does not require open eyes here. No new glints, dots, eyelashes, tears, markings, limbs or accessories. Return the same complete six-cell transparent sheet, without labels or text.",
+    "referenced_image_paths": [
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png"
+    ],
+    "transparent_background": true
+  }
+}

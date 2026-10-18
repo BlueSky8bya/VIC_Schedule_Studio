@@ -1,0 +1,433 @@
+{
+  "schema_version": 1,
+  "work_id": "vitamin-expression-volume-119",
+  "final_sha256": "61B23B6EAA96532E80A6F74ACC0D3758429B196194F9F4E071E3B0942DEE0C63",
+  "inspector_id": "/root",
+  "inspection_kind": "CREATOR_WHOLE_AND_LOCAL_OBSERVATION_NOT_ADDITIONAL_SPECIALIST_REVIEW",
+  "whole_visual_inspection": true,
+  "observations": "Root creator observed the original whole six-cell parent, returned full provider image, final whole six-cell candidate and4x native67: idle eyes closed without glints; recovery both > <; knead paired matching arches; yawn thicker paired sleepy arcs with no isolated dot and mouth retained;67 retains parent ears/face with shorter lower paper body and continuous shoulder join.",
+  "inspection_source": "Explicit root observation and final raw-copy whole-candidate opening, separately reported to registration preparer. No post-generation art judgment by preparer.",
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_표정체적119.png",
+      "sha256": "61B23B6EAA96532E80A6F74ACC0D3758429B196194F9F4E071E3B0942DEE0C63"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+      "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\원본\\표정체적6키_생성원본.png",
+      "sha256": "EC389E3364A77DDB4F6999A8B94087544B9543A731D0B4AF04947F84ED638682"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\.scratch-pw\\companion-119\\body67-final4x.png",
+      "sha256": "C0AC5A671A1A38ACEAFC92E0FC658A55DBD20519685F17FE53F35724DED3E4D8"
+    }
+  ],
+  "findings": [
+    {
+      "role": "face_identity",
+      "status": "PRIOR_FAIL_PRESERVED_NOT_RECLASSIFIED",
+      "report": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\얼굴담당보고서119.json",
+        "sha256": "1AE523A2B30CFC922B5F171DAA6E46244CF0E8766F7A267E4246D18EA21F4B9D",
+        "status": "FAIL",
+        "reviewer_id": "/root/face_review_119"
+      }
+    },
+    {
+      "role": "body_anatomy",
+      "status": "PRIOR_FAIL_PRESERVED_NOT_RECLASSIFIED",
+      "report": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\몸담당보고서119.json",
+        "sha256": "DAE0C3B3336B011D3DBFDE61A3537EC2061BEFAC4466BF539CC06517F498E207",
+        "status": "FAIL",
+        "reviewer_id": "/root/body_review_119"
+      }
+    }
+  ],
+  "artifact_kind": "SCOPED_DERIVED_SIX_CELL_CANDIDATE_FROM_ONE_PROVIDER_NATIVE",
+  "provider_native": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\원본\\표정체적6키_생성원본.png",
+    "sha256": "EC389E3364A77DDB4F6999A8B94087544B9543A731D0B4AF04947F84ED638682"
+  },
+  "derived_candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_표정체적119.png",
+    "sha256": "61B23B6EAA96532E80A6F74ACC0D3758429B196194F9F4E071E3B0942DEE0C63"
+  },
+  "packing_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\등록증거\\패킹파생기록_등록시점.json",
+    "sha256": "6E25109580595A13CA57C6F657D08C5217D7CCA8BE5FCB15B431FBEE691AB804"
+  },
+  "composite_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\등록증거\\합성파생기록_등록시점.json",
+    "sha256": "335AC6DCAA0CD8D2F5D9D5C99B9690A48B311CD0705700D508BEA185258A0AAE"
+  },
+  "original_frozen_receipt_locations": {
+    "packing": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\패킹파생기록.json",
+      "sha256": "6E25109580595A13CA57C6F657D08C5217D7CCA8BE5FCB15B431FBEE691AB804"
+    },
+    "composite": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\합성파생기록.json",
+      "sha256": "335AC6DCAA0CD8D2F5D9D5C99B9690A48B311CD0705700D508BEA185258A0AAE"
+    }
+  },
+  "source_preservation_checks": [
+    {
+      "native_cell_zero_based": 1,
+      "parent": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_1.png",
+        "sha256": "7CA0B7D77CCA42ECCAFBAEEDDB6B610E71BD7833C3F07C0F0601FB0195D3C7A7"
+      },
+      "corrected_key": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_119_키1.png",
+        "sha256": "0E678A9AC430994ED20C647065763C4943D19EA2463ADD3CBEFACB57A07BEECB"
+      },
+      "effective_mask": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\키1_실효편집영역.png",
+        "sha256": "B3111243D97448E9320D76D0606BAE9CA1F85443900504AC3F1F5876C91FD6F4"
+      },
+      "changed_source_pixels": 255,
+      "changed_source_channels": 730,
+      "alpha_changed_pixels": 0,
+      "outside_effective_mask_rgba_equal": true,
+      "registered_sheet_block_exact": true,
+      "physical_indices": [
+        9,
+        10
+      ],
+      "registration": {
+        "scale": 0.2701856975415165,
+        "angle": -0.009694068327443732,
+        "sourceCheeks": [
+          [
+            205.25094696969697,
+            321.43465909090907
+          ],
+          [
+            355.25178753830437,
+            317.3314606741573
+          ]
+        ],
+        "targetCheeks": [
+          [
+            36.53529411764706,
+            69.9
+          ],
+          [
+            77.05072463768116,
+            68.39855072463769
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      }
+    },
+    {
+      "native_cell_zero_based": 64,
+      "parent": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_64.png",
+        "sha256": "779A59DC7F1B0F9FF925A1D98BE92C338873F1F9B312D16F9ED58380B92B1C71"
+      },
+      "corrected_key": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_119_키64.png",
+        "sha256": "286CD9203845F79E50B2DB1B3292CD29208166A0D5554C33F7AFD2CAECCAE063"
+      },
+      "effective_mask": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\키64_실효편집영역.png",
+        "sha256": "8F9EF89109F4088B47C007DC26915DFDA9DDE0564E8436BA1B4A486CCB1676C3"
+      },
+      "changed_source_pixels": 311,
+      "changed_source_channels": 867,
+      "alpha_changed_pixels": 0,
+      "outside_effective_mask_rgba_equal": true,
+      "registered_sheet_block_exact": true,
+      "physical_indices": [
+        356,
+        357,
+        358,
+        359
+      ],
+      "registration": {
+        "scale": 0.2718904277477221,
+        "angle": 0.0015916366266360976,
+        "sourceCheeks": [
+          [
+            241.02448313384113,
+            288.0930359085963
+          ],
+          [
+            376.19936305732483,
+            298.75859872611466
+          ]
+        ],
+        "targetCheeks": [
+          [
+            44.806451612903224,
+            58.88709677419355
+          ],
+          [
+            81.55454545454545,
+            61.845454545454544
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      }
+    },
+    {
+      "native_cell_zero_based": 65,
+      "parent": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_65.png",
+        "sha256": "42505E0D5CD1CB1792F4086D0A4574F7CF1D624FF57F9932225A9B8C6B1430BF"
+      },
+      "corrected_key": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_119_키65.png",
+        "sha256": "3EF71ECBE3AC5A696B274D90E017D6761A6B12EC8CACEFC6FEA3F0ADBDA52BC9"
+      },
+      "effective_mask": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\키65_실효편집영역.png",
+        "sha256": "CB6E84E8E3D8F560B4FB302575AF69382ABA42BA74E979C61BCCD69FA19244FE"
+      },
+      "changed_source_pixels": 338,
+      "changed_source_channels": 964,
+      "alpha_changed_pixels": 0,
+      "outside_effective_mask_rgba_equal": true,
+      "registered_sheet_block_exact": true,
+      "physical_indices": [
+        360,
+        361,
+        362,
+        363
+      ],
+      "registration": {
+        "scale": 0.2661489427437187,
+        "angle": 0.010606004953067974,
+        "sourceCheeks": [
+          [
+            185.77141268075638,
+            287.23971078976643
+          ],
+          [
+            323.41,
+            302.838
+          ]
+        ],
+        "targetCheeks": [
+          [
+            29.666666666666668,
+            63.34848484848485
+          ],
+          [
+            66.25294117647059,
+            67.88823529411765
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      }
+    },
+    {
+      "native_cell_zero_based": 73,
+      "parent": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_73.png",
+        "sha256": "A9374364CF8F35E40F76A75E37944D6FFAC0ABC57CCBD4C85C6F64EAD009465D"
+      },
+      "corrected_key": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_119_키73.png",
+        "sha256": "D07B1DDBC20A73B245772F4697FF8B2E97C30088C29E08423CE9CA31DD3FE068"
+      },
+      "effective_mask": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\키73_실효편집영역.png",
+        "sha256": "7C4EBF48D076846CA9F8557EDC0BBF87E713F349C8AEA93E9A68532D403BBED4"
+      },
+      "changed_source_pixels": 259,
+      "changed_source_channels": 727,
+      "alpha_changed_pixels": 0,
+      "outside_effective_mask_rgba_equal": true,
+      "registered_sheet_block_exact": true,
+      "physical_indices": [
+        514
+      ],
+      "registration": {
+        "scale": 0.2702701420219558,
+        "angle": 0.006783179396785785,
+        "sourceCheeks": [
+          [
+            216.78031634446398,
+            323.82425307557116
+          ],
+          [
+            371.5897177419355,
+            305.32862903225805
+          ]
+        ],
+        "targetCheeks": [
+          [
+            45.23863636363637,
+            73.64772727272727
+          ],
+          [
+            87.11194029850746,
+            68.93283582089552
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      }
+    },
+    {
+      "native_cell_zero_based": 67,
+      "parent": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_67.png",
+        "sha256": "809D24712814DD842747DC486C10BD42E6169560B349A9B10FCF0A39D2C5398A"
+      },
+      "corrected_key": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_119_키67.png",
+        "sha256": "65DFEF8E5076AA550DEFA61E3F91767DC2931F7C92BC5822A79DE3456223BCCC"
+      },
+      "effective_mask": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\키67_실효편집영역.png",
+        "sha256": "1927CBB33F2C2DB38A85BC65B20A524D9E4EADB31F03028790E1A96897A61F86"
+      },
+      "changed_source_pixels": 3864,
+      "changed_source_channels": 10250,
+      "alpha_changed_pixels": 2356,
+      "outside_effective_mask_rgba_equal": true,
+      "registered_sheet_block_exact": true,
+      "physical_indices": [
+        496,
+        497,
+        498,
+        499
+      ],
+      "registration": {
+        "scale": 0.2674494922133646,
+        "angle": -0.10086529865451029,
+        "sourceCheeks": [
+          [
+            257.7664129400571,
+            274.8082778306375
+          ],
+          [
+            388.1412395709178,
+            265.56197854588794
+          ]
+        ],
+        "targetCheeks": [
+          [
+            50.18,
+            61.9
+          ],
+          [
+            84.62244897959184,
+            55.92857142857143
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp",
+        "bodyOnlyUniformFit": {
+          "scale": 1.1,
+          "origin": [
+            67.40122448979592,
+            58.91428571428571
+          ],
+          "faceAndEarsRemainParentPixels": true
+        }
+      }
+    },
+    {
+      "native_cell_zero_based": 10,
+      "parent": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_10_118현재.png",
+        "sha256": "9621FA79911D6E2B884D6C71A9FB589C21FAF37C064D3BD92BF0AED6476D3C57"
+      },
+      "corrected_key": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\빅타민_119_키10.png",
+        "sha256": "7661015EDB0D67F298C469B1509EE51FAF87090A961654F301E7C890ADB1ABB2"
+      },
+      "effective_mask": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\정리본\\키10_실효편집영역.png",
+        "sha256": "5BC84BE4C5246903BF720118828A81B7E703A67F368E3492084986D697896780"
+      },
+      "changed_source_pixels": 209,
+      "changed_source_channels": 589,
+      "alpha_changed_pixels": 0,
+      "outside_effective_mask_rgba_equal": true,
+      "registered_sheet_block_exact": true,
+      "physical_indices": [
+        266
+      ],
+      "registration": {
+        "scale": 0.26306090649299474,
+        "angle": 0.028888780249185286,
+        "sourceCheeks": [
+          [
+            235.0968448729185,
+            304.1099912357581
+          ],
+          [
+            395.7891036906854,
+            291.280316344464
+          ]
+        ],
+        "targetCheeks": [
+          [
+            42.28313253012048,
+            62.596385542168676
+          ],
+          [
+            84.63483146067416,
+            60.443820224719104
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      }
+    }
+  ],
+  "registered_sheet_changed_pixels": 5236,
+  "outside_contract_mask_rgba_equal": true,
+  "packet_summary": {
+    "packets": 5,
+    "changed_physical_frames": 16,
+    "physical_indices": [
+      9,
+      10,
+      266,
+      356,
+      357,
+      358,
+      359,
+      360,
+      361,
+      362,
+      363,
+      496,
+      497,
+      498,
+      499,
+      514
+    ],
+    "other504_visible_frames_unchanged_as_packing_evidence": true,
+    "registration_changes_body67_only": [
+      496,
+      497,
+      498,
+      499
+    ],
+    "transparent_rgb_encoding_normalization_separate": "Only alpha0 RGB may normalize under lossless encoding; counted per packet."
+  },
+  "imagegen_calls": 1,
+  "prior_requested_independent_art_review_calls": 2,
+  "post_generation_art_review_calls": 0,
+  "specialist_reviews": {},
+  "prior118_user_rejection": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\이전118반려보존.json",
+    "sha256": "9E7C2CFE6E5EE562464BFDE3EFFF0388A8E11E2851CC26AE8DCB37D38F2A8B74"
+  },
+  "user_visual_approval": false,
+  "full_visual_pass_claim": false,
+  "limits": [
+    "Creator observation is not specialist re-review or user approval. Prior independent FAIL records are unchanged.",
+    "Physical3D mass/volume and ear-excluded numeric body ratio remain unverified; this registration records source/raster transport evidence only.",
+    "Helper native.png is the derived candidate copy, not the provider original.",
+    "Local Drive-path copy equality does not verify cloud synchronization."
+  ]
+}

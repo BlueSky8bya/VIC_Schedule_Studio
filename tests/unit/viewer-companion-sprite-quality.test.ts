@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { companionMotionClips, companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { createCompanionMotion } from "@/lib/ui/viewer-companion/motion";
+import { sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
+import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import sprites from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
 import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
+import expression119 from "../../art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
 
 describe("116 whole-pose continuity", () => {
   // Review sheet labels are one-based; the frozen packing receipt is zero-based.
@@ -40,11 +43,19 @@ describe("one high-resolution pipeline for every companion action", () => {
     expect(sprites.rows.slice(0, 18)).toEqual(legacy.rows);
     expect(sprites.rows[18]).toEqual(Array.from({ length: 16 }, (_, index) => 272 + index));
     expect(sprites.rows[19]).toEqual(Array.from({ length: 16 }, (_, index) => 288 + index));
+    // Keep117 rise and only the exact119 expression replacements active.
+    const replacements: Partial<Record<number, string>> = {
+      0: "/companion/hd/vitamin-action-00-expression-119-v1.webp",
+      4: "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+      16: "/companion/hd/vitamin-action-16-expression-119-v1.webp",
+    };
+    for (const replacement of expression119.packets) expect(companionSpriteMetadata.atlases[replacement.atlas]).toEqual(replacement.packet);
     for (let index = 0; index < sprites.frames.length; index++) {
       const selected = selectCompanionSprite(index);
       expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
-      expect(selected.src).toBe(sprites.atlases[Math.floor(index / 16)].src);
-      expect(selected.src).toMatch(/^\/companion\/hd\/vitamin-action-(?:[0-9]{2}-motion-115|04-tuft-117)-v1\.webp$/);
+      const atlas = Math.floor(index / 16);
+      expect(selected.src).toBe(sprites.atlases[atlas].src);
+      expect(selected.src).toBe(replacements[atlas] ?? `/companion/hd/vitamin-action-${String(atlas).padStart(2, "0")}-motion-115-v1.webp`);
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
   });
@@ -85,7 +96,8 @@ describe("one high-resolution pipeline for every companion action", () => {
     for (let row = 20; row < 32; row++) expect(companionSpriteMetadata.rows[row]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + (row - 20) * 16 + column));
     expect(companionSpriteMetadata.rows[32]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + 192 + column));
     expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
-    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-motion-115-v1.webp");
+    for (const [index, atlas] of play.atlases.entries()) expect(atlas.src).toBe(`/companion/hd/vitamin-play-${String(index).padStart(2, "0")}-${[3, 12].includes(index) ? "expression-119" : "motion-115"}-v1.webp`);
+    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-expression-119-v1.webp");
   });
 });
 
@@ -93,6 +105,7 @@ describe("registered living keys", () => {
   it("maps all eight poses to one packet without altering prior actions", () => {
     expect(companionSpriteMetadata.rows).toHaveLength(41);
     expect(living.rows).toHaveLength(8);
+    expect(living.atlases[0].src).toBe("/companion/hd/vitamin-episodes-00-expression-119-v1.webp");
     for (let row = 33; row < 41; row++) {
       const index = companionSpriteMetadata.rows[row][0], selected = selectCompanionSprite(index, row, 0);
       expect(companionSpriteSources(row)).toEqual([living.atlases[0].src]);
@@ -177,6 +190,41 @@ describe("bounded decoded reference lifetime", () => {
       expect(retained("display")).toBe(true); expect(acquire("display", owner)).toBe(fixture.images[0]);
       expect(retained("old")).toBe(false);
       expect(["display", "old", "next", "fourth"].filter(retained)).toHaveLength(3);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it("reprepares an evicted recovery during the same dizzy row without discarding its live spiral", async () => {
+    vi.resetModules();
+    const fixture = imageFixture(), owner = {} as HTMLElement;
+    try {
+      const { acquireDecodedCompanionSprite: acquire, decodeCompanionSprite: decode, isCompanionSpriteDecoded: retained, companionSpriteSources: sources } = await import("@/lib/ui/viewer-companion/sprite-quality");
+      const timing = COMPANION_PLAY_TIMING.dizzy;
+      const current = sampleCompanionPlay("dizzy", 100 / timing.duration), later = sampleCompanionPlay("dizzy", 400 / timing.duration);
+      expect(current.row).toBe(22); expect(later.row).toBe(current.row);
+      const spiral = sources(current.row)[0], recovery = sources(timing.beats[1].row)[0];
+      await decode(spiral); const live = acquire(spiral, owner)!; fixture.connect(live, owner);
+      await decode(recovery);
+      await decode(sources(32)[0]); await decode(sources(6)[0]);
+      // Real release/landing work can replace a warm, unowned next packet.
+      expect(retained(recovery)).toBe(false); expect(retained(spiral)).toBe(true);
+      expect(acquire(recovery, owner)).toBeUndefined();
+
+      fixture.held.add(recovery);
+      // A subsequent existing tick still samples row22, but its future hint
+      // must be allowed to reprepare row23 before the520ms beat boundary.
+      const ready = decode(recovery);
+      expect(decode(recovery)).toBe(ready);
+      expect(fixture.images.filter(image => image.src === recovery)).toHaveLength(2);
+      expect(acquire(spiral, owner)).toBe(live); expect(live.parentElement).toBe(owner);
+      expect(acquire(recovery, owner)).toBeUndefined();
+      fixture.release.get(recovery)!(); expect(await ready).toBe(true);
+      const next = acquire(recovery, owner)!;
+      expect(next).toBe(fixture.images.at(-1)); expect(next).not.toBe(live);
+      expect(fixture.images.every(image => image.srcWrites === 1)).toBe(true);
+      expect([spiral, recovery, sources(32)[0], sources(6)[0]].filter(retained)).toHaveLength(3);
+      const requestedRecovery = sampleCompanionPlay("dizzy", 549 / timing.duration);
+      expect(requestedRecovery.row).toBe(23); expect(sources(requestedRecovery.row)[0]).toBe(recovery);
+      expect(retained(recovery)).toBe(true);
     } finally { vi.unstubAllGlobals(); }
   });
 

@@ -20,6 +20,12 @@ Source-bound accessory registration recomputed on the final packet. Face/head an
 - Actual-rAF shared sampler/selector/CSS jump3→4→5→6 repeated6times: before474/after475samples, errors/blank0, every rise64–79 actually adopted. Normal and4×slow films preserved under `.scratch-pw/companion-117/motion/review-movies-{before,after}`. This is labelled technical playback, not native world interaction.
 - Native production-build fixture viewer/studio2/2 PASS (16.7s): actual placement→cushion recall→lateral jump→measured sofa entry. Original actual controls/RNG/clock/geometry retained; wrapper blocks all mutation/API/external requests. Native videos and source probes under `.scratch-pw/companion-117/native-*`.
 - No authority/public DTO/DB/KST/API/dependency/behavior/learning/control changes. G-22 audit: visual-only packet correction creates no human action, fixed target, timeline/least-used catalogue or metadata. Existing guard behavior preserved. Existing UI rules remain applicable; this restores pose consistency rather than introducing a design rule.
-- Harness299 documents PASS. Exact deployed release result pending at this checkpoint. Actual OBS, every display refresh, all accessories and genuine authenticated production studio are outside this finite verification.
+- Harness299 documents PASS. Actual OBS, every display refresh, all accessories and genuine authenticated production studio are outside this finite verification.
 
-Root-owned fixture and browser cleanup plus deployment outcome will be recorded after release. Unrelated user art and prior116 release-bookkeeping changes remain preserved.
+## Release verification
+
+Main commit/push `58e4d92bd896795d2af9b2ee80d99c670fa33b80`, Vercel success. All [quality39138208116](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39138208116) steps PASS; final CI confirmation2026-10-19 KST after the2026-10-18 request/public deployment check.
+
+Actual anonymous public production PASS: exact fullSHA in actual public client chunks, browser chunks, all43 active assets/6,110,025bytes including the corrected packet equal committed bytes. New packet SHA256 `f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d`. Notebook/shared settings, actual favorite badge,180foods/27wardrobe, finite collection/radio/mobile exclusion pass. Errors/unexpected requests0. No production mutations, actual live-state GET, private-manifest reads, auth session or seeded discoveries. Evidence `.scratch-pw/companion-117/production/58e4d92bd896795d2af9b2ee80d99c670fa33b80/`.
+
+Owned fixture3117 and browser contexts stopped. Unrelated user art SHA `E980005102457E2A02AE318FF7665596E7170D0BFB34A328F64A6EC292C5990B` preserved. New36 scenes remain proposals. Post-release document bookkeeping remains local for the next scoped commit; no second product push solely for release notes.

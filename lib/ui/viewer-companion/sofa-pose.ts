@@ -1,4 +1,5 @@
 import type { CompanionSofaPoint } from "./sofa";
+import { companionMaterialScale } from "./material-scale";
 
 type Point = CompanionSofaPoint;
 export type CompanionSofaPoseInput = {
@@ -43,12 +44,15 @@ function projectSpritePoints(input: CompanionSofaPoseInput, points: readonly Poi
     || ![size, display.x, display.y, display.scale, cell.x, cell.y, ...cell.clip, shape.bob, shape.tilt, shape.scaleX, shape.scaleY, pressure.x, pressure.y, pressure.tilt, pressure.squash, response.lift, response.squash, sway.tilt, sway.stretch, poseOrigin.x, poseOrigin.y, inertiaOrigin.x, inertiaOrigin.y, chew].every(Number.isFinite)) return [];
   const [top, right, lower, left] = cell.clip;
   if (cell.clip.some(value => value < 0) || left + right >= 80 || top + lower >= 80) return [];
+  const verticals = [shape.scaleY - chew * .8, 1 - pressure.squash, 1 - response.squash, 1 + sway.stretch];
+  if (shape.scaleX <= 0 || shape.scaleY <= 0 || verticals.some(value => value <= 0)) return [];
+  const [poseScale, contactScale, reactionScale, inertiaScale] = verticals.map(companionMaterialScale).map(pair => ({ scaleX: rounded(pair.scaleX, 4), scaleY: rounded(pair.scaleY, 4) }));
   const layers: Transform[] = [
-    { origin: poseOrigin, y: rounded(shape.bob, 3), tilt: rounded(shape.tilt, 3), scaleX: rounded(shape.scaleX + chew, 4), scaleY: rounded(shape.scaleY - chew * .8, 4) },
-    { origin: bottom, x: rounded(pressure.x * facing, 3), y: rounded(pressure.y, 3), tilt: rounded(pressure.tilt * facing, 3), scaleX: rounded(1 + pressure.squash * .65, 4), scaleY: rounded(1 - pressure.squash, 4) },
-    { origin: bottom, y: rounded(response.lift, 3), scaleX: rounded(1 + response.squash * .35, 4), scaleY: rounded(1 - response.squash, 4) },
+    { origin: poseOrigin, y: rounded(shape.bob, 3), tilt: rounded(shape.tilt, 3), ...poseScale },
+    { origin: bottom, x: rounded(pressure.x * facing, 3), y: rounded(pressure.y, 3), tilt: rounded(pressure.tilt * facing, 3), ...contactScale },
+    { origin: bottom, y: rounded(response.lift, 3), ...reactionScale },
     { origin: bottom, scaleX: facing },
-    { origin: inertiaOrigin, tilt: rounded(sway.tilt, 3), scaleX: rounded(1 - sway.stretch * .35, 4), scaleY: rounded(1 + sway.stretch, 4) },
+    { origin: inertiaOrigin, tilt: rounded(sway.tilt, 3), ...inertiaScale },
     // The fixed outer body retains CSS's default centre-centre origin. At a
     // nonunit scale its visible bottom is not simply display.y.
     { origin: centre, x: rounded(display.x - size / 2, 3), y: rounded(display.y - size, 3), scaleX: display.scale, scaleY: display.scale },

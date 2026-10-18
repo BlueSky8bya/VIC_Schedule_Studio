@@ -62,7 +62,8 @@ describe("captured companion inertia", () => {
     for (const x of [4, 294]) for (const y of [8, 740]) for (const gx of [8, 78]) for (const tilt of [-18, 18]) {
       const grip = { x: gx, y: 20 }, origin = { x, y };
       const bound = boundCompanionHeldPose({ ...pose, tilt }, origin, grip, size, viewport);
-      const a = bound.tilt * Math.PI / 180, sx = 1 - bound.stretch * .35, sy = 1 + bound.stretch;
+      const a = bound.tilt * Math.PI / 180, sy = 1 + bound.stretch, sx = 1 / sy;
+      expect(sx * sy).toBeCloseTo(1, 12);
       for (const cx of [0, size]) for (const cy of [0, size]) {
         const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
         const px = x + grip.x + dx * Math.cos(a) - dy * Math.sin(a), py = y + grip.y + dx * Math.sin(a) + dy * Math.cos(a);

@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "final_sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD",
+  "candidate_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+  "role": "body_anatomy",
+  "reviewer_id": "/root/body_review_119",
+  "generator_id": "/root",
+  "independent_of_generator": true,
+  "cycle_id": "FCF0D342B85A976D9BC5",
+  "status": "FAIL",
+  "status_scope": "Requested native67 apparent body length/fluff only; no full artwork, face, physical 3D mass or owner-approval certification.",
+  "requested_scope": {
+    "native": 67,
+    "physical": [
+      496,
+      497,
+      498,
+      499
+    ],
+    "row": 32,
+    "sheet_cell_one_based": 5,
+    "body": "Ear-excluded paper pompom silhouette, apparent body mass and immediate ear/body and face/body connections; source correction versus reciprocal runtime deformation."
+  },
+  "protected_faces": {
+    "native67": "Current eye/mouth/cheek shapes, size, spacing and head direction are protected. This reviewer did not judge facial correctness.",
+    "other_requested_face_targets": [
+      1,
+      64,
+      65,
+      73,
+      10
+    ],
+    "other_faces": "No independent face judgment, correction prescription or PASS issued for these five targets."
+  },
+  "findings": [
+    {
+      "id": "BODY119-01",
+      "status": "FAIL",
+      "severity": "required_correction",
+      "confidence": "visual; moderate-to-high for apparent excess, no numerical 3D claim",
+      "observation": "Native67 already reads as a taller, fuller paper mound in the source crop and in current row32 launch packing. The paper body below its ear roots has a high rounded upper-right shoulder and long lower-central hanging paper tiers; together they retain broad sides while adding vertical fullness. The normal099/normal114 reference and the neighboring throw keys read as a more compact coherent pompom. This is not created solely by runtime scaling.",
+      "pose_distinction": "The laid-over ears, upward diagonal face line and launch lean legitimately alter total bounds. Preserve those directional cues and the raised shoulder belonging to the lean. Do not straighten the pose, shorten the ears or resize the face to make total bounding boxes equal.",
+      "correction": "Edit native67 paper body only: shorten the excess downward hang of the middle/lower paper tiers and bring the lower body contour upward into a shallower rounded mound. Reflow the displaced fullness gently into the lower side lobes, rather than increasing every contour or adding paper tiers. Bring overall apparent mass back toward the selected normal pompom before applying the compressed/wider pose impression; the current already overfull source is not the mass baseline to preserve."
+    },
+    {
+      "id": "BODY119-02",
+      "status": "REVIEW_UNCERTAIN",
+      "severity": "measurement_limit",
+      "observation": "The available 100x103 versus normal98x98 connected-component bounds and alpha-pixel ratio1.129109 include ears. They cannot establish ear-excluded body elongation, exact body area or a required percentage edit. Ear roots overlap paper edges and the body rotates, so this review does not invent an exact anatomical mask or hidden depth.",
+      "correction": "Do not advertise those existing values as body-only conservation evidence. If root adds a technical outline check, define and preserve an explicit visible ear-exclusion path and use the same threshold, pose/registration context and uncertainty for both references. Visual correction remains necessary."
+    },
+    {
+      "id": "BODY119-03",
+      "status": "RECOMMENDATION",
+      "severity": "shared_motion_followup",
+      "observation": "A shared positive finite scale-pair helper can enforce reciprocal width/height after intended deformation. For an input pair(sx,sy), division by sqrt(sx*sy) retains its aspect-ratio change while making the local 2D determinant1. Stacked independent deformation planes also need coherent treatment; a final pose-only normalization does not describe the complete renderer.",
+      "correction": "Use the shared helper consistently for the authored deformation terms and corresponding CSS motion while preserving intentional uniform display zoom, pivots, face/ear design, travel and contacts. Check recovery to the same neutral pose. This supplies an area-preserving screen approximation, not proof of the same physical 3D mass: depth, view rotation, paper overlap and air spaces remain unmeasured. It cannot repair native67 source geometry by itself."
+    }
+  ],
+  "required_corrections": [
+    {
+      "order": 1,
+      "target": "native67 source paper body",
+      "action": "Shorten lower-central tier hang and reduce excess vertical body dome, with a modest lower-side redistribution for the compressed/wider pompom reading. Preserve paper layer count/style and irregular cut-paper perimeter; no fluffy fur texture or new outline lobes."
+    },
+    {
+      "order": 2,
+      "target": "native67 protected connections",
+      "action": "Keep the exact face and ears at their current native size/direction; preserve ear orange/yellow interiors, facial marks, cheek colours, leaning pose, upper attachment relationships and outline character. Blend changed paper tiers to their preserved neighbors; no cut-and-paste face or global anisotropic sprite shrink."
+    },
+    {
+      "order": 3,
+      "target": "runtime correction boundary",
+      "action": "Treat reciprocal runtime deformation as separate from source repair. Preserve neutral identity and current world registration/contact behavior, and keep the same implementation across viewer/studio/preview/wardrobe."
+    }
+  ],
+  "generator_prompt_recommendation": "Cell5/native67 only: retain its laid-over ears, face, ear-to-face proportions, diagonal launch direction and native placement. Make the paper pompom body less vertically swollen: shorten the long hanging middle/lower strips, lift the lower-middle contour and softly redistribute fullness into the lower sides so it reads as the same compact normal pompom compressed wider. Preserve the existing upper attachment/lean, cut-paper layering, colours and outline. Do not uniformly enlarge width, resize eyes/ears, straighten the pose, add layers or turn it into furry plush.",
+  "metrics": {
+    "ear_excluded_body_measurement": "UNVERIFIED; not established in this review",
+    "existing_ear_inclusive_bcr": "Context only, not body proportion certification",
+    "actual_3d_volume_or_mass": "UNVERIFIED; unavailable from these 2D sprites",
+    "numeric_edit_percentage": "Not prescribed; no comparable anatomical numeric basis"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+      "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD",
+      "inspected_for": "current candidate whole; native67 only detailed body judgment"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "inspected_for": "original mascot body/ears/paper construction authority"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "inspected_for": "selected normal render reference; body mass impression only"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_67.png",
+      "sha256": "809D24712814DD842747DC486C10BD42E6169560B349A9B10FCF0A39D2C5398A",
+      "inspected_for": "native67 source body and immediate ear/face connections"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\사용자첨부4.png",
+      "sha256": "BB19BDC4FF5ED5CE4870621593A700D19AA24EE15666EEBC3182D12272549093",
+      "inspected_for": "user rejected native67 physical496 screenshot"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "inspected_for": "original114 whole; normal and immediate throw family body comparison only"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\정리본\\검토\\전체79키_184.png",
+      "sha256": "8F51BF7F9AC127AB48A2E16C64E4F8EE2FC3E2B7C640903732515FB646F46F67",
+      "inspected_for": "existing labeled contact sheet; throw0/1/2/3 and normal body comparison"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\public\\companion\\hd\\vitamin-play-12-motion-115-v1.webp",
+      "sha256": "14D9D65C5044F3DB9771A07B4672BCDFA6CDB932B8E561C228798AA6607BD68B",
+      "inspected_for": "current packed row32; physical496..511 direct pose comparison"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\body_anatomy.json",
+      "sha256": "7A5B0E93923E55089F71C9969FA8D7D37C9DCF5EB4B35741524ABD9097751B74",
+      "inspected_for": "requested role and boundaries"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\원화배치계보.json",
+      "sha256": "B5F79532BE1428A2B67CC319EC08E29FEBED73DF30A911553EAD8E6E3791DF1D",
+      "inspected_for": "candidate/source/native/runtime mapping"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\119기술매핑_전문판정아님.json",
+      "sha256": "C9400C89DF73BF4A4A634FA99CEC27B2D4468394832B9AC6F380819D0313140B",
+      "inspected_for": "technical context only; neutral runtime and ear-inclusive BCR caveat"
+    }
+  ],
+  "workflow": {
+    "review_passes_this_role": 1,
+    "new_review_claims_by_this_agent": 0,
+    "imagegen_calls": 0,
+    "product_or_raster_edits": 0,
+    "report_only_write": true,
+    "automatic_post_generation_review": 0,
+    "owner_acceptance": "Not inferred; separate from this finding"
+  },
+  "limitations": [
+    "Different pose roll/perspective legitimately changes projected silhouette; no arbitrary cos correction or hidden 3D reconstruction used.",
+    "Only requested body and immediate connected region inspected in detail. Other cells were seen as part of the required whole, not independently rated.",
+    "This single report recommends a correction; it does not certify an unseen generated replacement."
+  ]
+}

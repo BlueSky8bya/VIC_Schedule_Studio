@@ -1,0 +1,17 @@
+{
+  "status": "PREPARED_TARGETED_REVIEW",
+  "review_plan": {
+    "schema_version": 1,
+    "user_directed": true,
+    "role_packets": {
+      "face_identity": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\face_identity.json",
+        "sha256": "B9F1EDC449AE7BA2AD5E9A93B6BE364DCDD1BB3D5FC56A881B2FB00C03B30E42"
+      }
+    },
+    "required_roles": [
+      "face_identity"
+    ]
+  },
+  "automatic_extra_roles": []
+}

@@ -1,0 +1,358 @@
+{
+  "version": 1,
+  "generationCalls": 1,
+  "nativeRaw": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/원본/표정체적6키_생성원본.png",
+  "rawSha256": "ec389e3364a77ddb4f6999a8b94087544b9543a731d0b4af04947f84ed638682",
+  "independentArtReviews": 2,
+  "postGenerationArtReviews": 0,
+  "ownerApproval": false,
+  "keys": [
+    {
+      "nativeCell": 1,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/고정입력/원화_1.png",
+      "parentSha256": "7ca0b7d77cca42eccafbaeeddb6b610e71bd7833c3f07c0f0601fb0195d3c7a7",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키1.png",
+      "correctedSha256": "0e678a9ac430994ed20c647065763c4943d19ea2463add3cbefacb57a07beecb",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/키1_실효편집영역.png",
+      "maskSha256": "b3111243d97448e9320d76d0606bae9ca1f85443900504ac3f1f5876c91fd6f4",
+      "width": 104,
+      "height": 106,
+      "physicalIndices": [
+        9,
+        10
+      ],
+      "sourceChangedPixels": 255,
+      "faceBoxes": [
+        [
+          36,
+          58,
+          53,
+          71
+        ],
+        [
+          62,
+          58,
+          78,
+          70
+        ]
+      ],
+      "protectedMouthPixels": 17,
+      "registration": {
+        "scale": 0.2701856975415165,
+        "angle": -0.009694068327443732,
+        "sourceCheeks": [
+          [
+            205.25094696969697,
+            321.43465909090907
+          ],
+          [
+            355.25178753830437,
+            317.3314606741573
+          ]
+        ],
+        "targetCheeks": [
+          [
+            36.53529411764706,
+            69.9
+          ],
+          [
+            77.05072463768116,
+            68.39855072463769
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      },
+      "alphaPreserved": true,
+      "providerGlowNotAdopted": true
+    },
+    {
+      "nativeCell": 64,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/고정입력/원화_64.png",
+      "parentSha256": "779a59dc7f1b0f9ff925a1d98be92c338873f1f9b312d16f9ed58380b92b1c71",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키64.png",
+      "correctedSha256": "286cd9203845f79e50b2db1b3292cd29208166a0d5554c33f7afd2caeccae063",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/키64_실효편집영역.png",
+      "maskSha256": "8f9ef89109f4088b47c007dc26915dfda9dde0564e8436ba1b4a486ccb1676c3",
+      "width": 105,
+      "height": 104,
+      "physicalIndices": [
+        356,
+        357,
+        358,
+        359
+      ],
+      "sourceChangedPixels": 311,
+      "faceBoxes": [
+        [
+          46,
+          47,
+          61,
+          62
+        ],
+        [
+          67,
+          49,
+          82,
+          65
+        ]
+      ],
+      "protectedMouthPixels": 39,
+      "registration": {
+        "scale": 0.2718904277477221,
+        "angle": 0.0015916366266360976,
+        "sourceCheeks": [
+          [
+            241.02448313384113,
+            288.0930359085963
+          ],
+          [
+            376.19936305732483,
+            298.75859872611466
+          ]
+        ],
+        "targetCheeks": [
+          [
+            44.806451612903224,
+            58.88709677419355
+          ],
+          [
+            81.55454545454545,
+            61.845454545454544
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      },
+      "alphaPreserved": true,
+      "providerGlowNotAdopted": true
+    },
+    {
+      "nativeCell": 65,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/고정입력/원화_65.png",
+      "parentSha256": "42505e0d5cd1cb1792f4086d0a4574f7cf1d624ff57f9932225a9b8c6b1430bf",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키65.png",
+      "correctedSha256": "3ef71ecbe3ac5a696b274d90e017d6761a6b12ec8cacefc6fea3f0adbda52bc9",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/키65_실효편집영역.png",
+      "maskSha256": "cb6e84e8e3d8f560b4fb302575af69382aba42ba74e979c61bccd69fa19244fe",
+      "width": 112,
+      "height": 113,
+      "physicalIndices": [
+        360,
+        361,
+        362,
+        363
+      ],
+      "sourceChangedPixels": 338,
+      "faceBoxes": [
+        [
+          30,
+          52,
+          45,
+          67
+        ],
+        [
+          51,
+          56,
+          67,
+          72
+        ]
+      ],
+      "protectedMouthPixels": 39,
+      "registration": {
+        "scale": 0.2661489427437187,
+        "angle": 0.010606004953067974,
+        "sourceCheeks": [
+          [
+            185.77141268075638,
+            287.23971078976643
+          ],
+          [
+            323.41,
+            302.838
+          ]
+        ],
+        "targetCheeks": [
+          [
+            29.666666666666668,
+            63.34848484848485
+          ],
+          [
+            66.25294117647059,
+            67.88823529411765
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      },
+      "alphaPreserved": true,
+      "providerGlowNotAdopted": true
+    },
+    {
+      "nativeCell": 73,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/고정입력/원화_73.png",
+      "parentSha256": "a9374364cf8f35e40f76a75e37944d6ffac0abc57ccbd4c85c6f64ead009465d",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키73.png",
+      "correctedSha256": "d07b1ddbc20a73b245772f4697ff8b2e97c30088c29e08423ce9ca31dd3fe068",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/키73_실효편집영역.png",
+      "maskSha256": "7c4ebf48d076846ca9f8557edc0bbf87e713f349c8aea93e9a68532d403bbed4",
+      "width": 113,
+      "height": 107,
+      "physicalIndices": [
+        514
+      ],
+      "sourceChangedPixels": 259,
+      "faceBoxes": [
+        [
+          46,
+          62,
+          63,
+          75
+        ],
+        [
+          71,
+          60,
+          86,
+          72
+        ]
+      ],
+      "protectedMouthPixels": 12,
+      "registration": {
+        "scale": 0.2702701420219558,
+        "angle": 0.006783179396785785,
+        "sourceCheeks": [
+          [
+            216.78031634446398,
+            323.82425307557116
+          ],
+          [
+            371.5897177419355,
+            305.32862903225805
+          ]
+        ],
+        "targetCheeks": [
+          [
+            45.23863636363637,
+            73.64772727272727
+          ],
+          [
+            87.11194029850746,
+            68.93283582089552
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      },
+      "alphaPreserved": true,
+      "providerGlowNotAdopted": true
+    },
+    {
+      "nativeCell": 67,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/고정입력/원화_67.png",
+      "parentSha256": "809d24712814dd842747dc486c10bd42e6169560b349a9b10fcf0a39d2c5398a",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키67.png",
+      "correctedSha256": "65dfef8e5076aa550defa61e3f91767dc2931f7c92bc5822a79de3456223bccc",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/키67_실효편집영역.png",
+      "maskSha256": "1927cbb33f2c2db38a85bc65b20a524d9e4eadb31f03028790e1a96897a61f86",
+      "width": 106,
+      "height": 109,
+      "physicalIndices": [
+        496,
+        497,
+        498,
+        499
+      ],
+      "sourceChangedPixels": 3864,
+      "faceBoxes": [],
+      "protectedMouthPixels": 0,
+      "registration": {
+        "scale": 0.2674494922133646,
+        "angle": -0.10086529865451029,
+        "sourceCheeks": [
+          [
+            257.7664129400571,
+            274.8082778306375
+          ],
+          [
+            388.1412395709178,
+            265.56197854588794
+          ]
+        ],
+        "targetCheeks": [
+          [
+            50.18,
+            61.9
+          ],
+          [
+            84.62244897959184,
+            55.92857142857143
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp",
+        "bodyOnlyUniformFit": {
+          "scale": 1.1,
+          "origin": [
+            67.40122448979592,
+            58.91428571428571
+          ],
+          "faceAndEarsRemainParentPixels": true
+        }
+      },
+      "alphaPreserved": false,
+      "providerGlowNotAdopted": true
+    },
+    {
+      "nativeCell": 10,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/고정입력/원화_10_118현재.png",
+      "parentSha256": "9621fa79911d6e2b884d6c71a9fb589c21faf37c064d3bd92bf0aed6476d3c57",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키10.png",
+      "correctedSha256": "7661015edb0d67f298c469b1509ee51faf87090a961654f301e7c890adb1abb2",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/키10_실효편집영역.png",
+      "maskSha256": "5bc84be4c5246903bf720118828a81b7e703a67f368e3492084986d697896780",
+      "width": 108,
+      "height": 100,
+      "physicalIndices": [
+        266
+      ],
+      "sourceChangedPixels": 209,
+      "faceBoxes": [
+        [
+          42,
+          52,
+          58,
+          63
+        ],
+        [
+          67,
+          52,
+          84,
+          62
+        ]
+      ],
+      "protectedMouthPixels": 80,
+      "registration": {
+        "scale": 0.26306090649299474,
+        "angle": 0.028888780249185286,
+        "sourceCheeks": [
+          [
+            235.0968448729185,
+            304.1099912357581
+          ],
+          [
+            395.7891036906854,
+            291.280316344464
+          ]
+        ],
+        "targetCheeks": [
+          [
+            42.28313253012048,
+            62.596385542168676
+          ],
+          [
+            84.63483146067416,
+            60.443820224719104
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp"
+      },
+      "alphaPreserved": true,
+      "providerGlowNotAdopted": true
+    }
+  ]
+}

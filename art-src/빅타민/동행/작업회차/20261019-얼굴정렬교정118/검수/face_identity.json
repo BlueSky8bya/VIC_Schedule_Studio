@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "role": "face_identity",
+  "read_only_reviewer": true,
+  "focus": [
+    "하품 포함 현재 실제 사용 동작 전반의 눈·입 정렬; 의도된 회전·표정·원근 유지"
+  ],
+  "sources": [
+    {
+      "id": "current-native114",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "current_actual_native_sheet_face_review_only"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "read_only_original_mascot_face_design"
+    },
+    {
+      "id": "approved-eye-size099",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "current_user_selected_eye_size_and_spacing_preserve"
+    },
+    {
+      "id": "current-jump117",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png",
+      "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7",
+      "routing_roles": [
+        "face_identity"
+      ],
+      "role": "current117_displayed_jump_face_preservation_reference"
+    }
+  ],
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+    "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+  },
+  "cache_key": "60D23B11E6FA7F7ED08B274C6C06C1A6949744CFA51B6BF7045E0AD3DEB567A7",
+  "cached_report": null,
+  "design_library_on_demand": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\design_library\\index.json",
+  "source_profiles_on_demand": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\character_profile.json",
+  "instructions": "Only inspect requested focus and immediate connected neighbors. Open current whole once and relevant original/detail. Do not regenerate or broaden the checklist. Findings stay findings; human acceptance is separate. Return current SHA,role,reviewer_id,status,findings,opened_files. Coordinate uncertainty stays unverified."
+}

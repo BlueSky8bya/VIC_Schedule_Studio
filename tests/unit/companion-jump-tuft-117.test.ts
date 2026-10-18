@@ -40,11 +40,23 @@ describe("117 single jump corner conservation",()=>{
         expect(x).toBeLessThan(82);expect(y).toBeGreaterThanOrEqual(125);changed++;
       }
       expect(changed).toBeGreaterThan(0);
+      expect(metadata.frames[frame.physicalIndex]).toEqual(frame.parentFrame);
       expect(anchors.frames[frame.physicalIndex].head).toEqual(parentAnchors.frames[frame.physicalIndex].head);
       expect(anchors.frames[frame.physicalIndex].face).toEqual(parentAnchors.frames[frame.physicalIndex].face);
     }
-    for(let i=0;i<anchors.frames.length;i++)if(i<64||i>79)expect(anchors.frames[i]).toEqual(parentAnchors.frames[i]);
-    const report=JSON.parse(execFileSync(process.execPath,["scripts/prepare-companion-jump-tuft-117.mjs","--check"],{encoding:"utf8"}));
-    expect(report).toMatchObject({check:true,frames:16,registrationPreserved:true});
+    //117 owns its rise packet and16 anchors; later runs verify their own
+    // changes against the immediately preceding frozen anchor snapshot.
+    const report=JSON.parse(execFileSync(process.execPath,["scripts/prepare-companion-jump-tuft-117.mjs","--check","--artifacts-only"],{encoding:"utf8"}));
+    expect(report).toMatchObject({check:true,artifactsOnly:true,frames:16,registrationPreserved:true});
+  },15_000);
+  it("rejects artifact-only mode without the read-only check flag",()=>{
+    expect(()=>execFileSync(process.execPath,["scripts/prepare-companion-jump-tuft-117.mjs","--artifacts-only"],{encoding:"utf8",stdio:"pipe"})).toThrow("--artifacts-only requires --check");
+  });
+  it("rejects a default rerun over later active metadata before writing any117 output",()=>{
+    const targets=["lib/ui/viewer-companion/hd-motion-sprite.json",`public${receipt.packet.src}`,`${run}/정리본/hd-motion-sprite.json`,`${run}/패킹파생기록.json`];
+    const before=targets.map(path=>hash(readFileSync(path)));
+    expect(readFileSync(targets[0]).equals(readFileSync(targets[2]))).toBe(false);
+    expect(()=>execFileSync(process.execPath,["scripts/prepare-companion-jump-tuft-117.mjs"],{encoding:"utf8",stdio:"pipe"})).toThrow("unrelated active metadata");
+    expect(targets.map(path=>hash(readFileSync(path)))).toEqual(before);
   },15_000);
 });

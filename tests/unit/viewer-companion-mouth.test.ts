@@ -75,7 +75,8 @@ describe("current authored eating mouth registration", () => {
   it("shares chew, body rotation, contact and landing response with the actually painted creature", () => {
     const selected = selectCompanionSprite(144), first = projectCompanionMouth(selected, neutral())!;
     const chew = projectCompanionMouth(selected, { ...neutral(), chew: .01 })!;
-    expect(chew.x).toBeCloseTo(40 + (first.x - 40) * 1.01, 8);
+    // Match the renderer's four-decimal reciprocal pair for vertical scale.992.
+    expect(chew.x).toBeCloseTo(40 + (first.x - 40) * Number((1 / .992).toFixed(4)), 8);
     expect(chew.y).toBeCloseTo(80 + (first.y - 80) * .992, 8);
     const landed = projectCompanionMouth(selected, { ...neutral(), shape: { bob: 2, tilt: 90, scaleX: 1, scaleY: 1 },
       pressure: { x: 3, y: 4, tilt: 0, squash: 0 }, response: { lift: -5, squash: 0 } })!;

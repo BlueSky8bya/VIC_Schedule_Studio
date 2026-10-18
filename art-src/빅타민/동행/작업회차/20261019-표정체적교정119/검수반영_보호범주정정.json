@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "basis": "Requested independent face/body reports; preparer applied their explicit scopes without new art judgment.",
+  "prior_review_mask_files_preserved": true,
+  "face_report": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\얼굴담당보고서119.json",
+    "sha256": "1AE523A2B30CFC922B5F171DAA6E46244CF0E8766F7A267E4246D18EA21F4B9D"
+  },
+  "body_report": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\몸담당보고서119.json",
+    "sha256": "DAE0C3B3336B011D3DBFDE61A3537EC2061BEFAC4466BF539CC06517F498E207"
+  },
+  "prior_cheek_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\실제주황볼_보호영역.png",
+    "sha256": "5F61C155F63C06BBC764528AD7783FFB20196989C98E00244912D1E4B531F574"
+  },
+  "current_masks": {
+    "cheek": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\검수반영_주황볼보호영역.png",
+      "sha256": "F4703B43A1CB0C8080B63F5B692F5FE1971C0DE525806A25796C5E4A84591D44"
+    },
+    "face": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\검수반영_표정5칸영역.png",
+      "sha256": "9BE9008449F37CA7CD622265146D03442D8AD0025D9F83374323D2144064B8A8"
+    },
+    "body": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\검수반영_체적67영역.png",
+      "sha256": "1A88AB5DDCB08CC073BD21DC9700EF4E00E3BCD8733E2DC99DBDC35FEBB44AA0"
+    },
+    "combined": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\검수반영_최종편집영역.png",
+      "sha256": "3939C1B9DC3C6F796205200CE1226566DFCDF6D1D0192A2E93B89252DA1E4EE8"
+    }
+  },
+  "native65_mouth_local_box_removed_from_cheek_authority": [
+    40,
+    60,
+    53,
+    70
+  ],
+  "native65_mouth_semantically_preserved_separately": true,
+  "yawn_user_reported_point": {
+    "native_xy": [
+      46,
+      58
+    ],
+    "sheet_xy": [
+      352,
+      224
+    ],
+    "prior_protection": 255,
+    "new_protection": 0,
+    "new_edit_mask": 255,
+    "isolated_black_component_not_claimed": true
+  },
+  "yawn_local_old_eye_remnant_colour_edge_reconsideration_box": [
+    40,
+    51,
+    52,
+    65
+  ],
+  "actual_orange_base_preserved_in_remnant_neighborhood": true,
+  "body67_allowed_local_context": [
+    0,
+    54,
+    106,
+    109
+  ],
+  "body67_protected_face_box": [
+    42,
+    40,
+    96,
+    73
+  ],
+  "body67_ears_and_upper_lean_protected_above_y": 54,
+  "body67_no_whole_nonuniform_shrink": true,
+  "final_scope": "5face corrections plus lower paper-body correction67; native placement/ears/face on67 retained.",
+  "additional_expert_reviews": 0,
+  "imagegen_claims_by_preparer": 0
+}

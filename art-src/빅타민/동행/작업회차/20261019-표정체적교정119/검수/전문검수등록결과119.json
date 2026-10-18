@@ -1,0 +1,7 @@
+{
+  "status": "TARGETED_FINDINGS_RECORDED_AWAITING_USER",
+  "errors": [],
+  "final_sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD",
+  "no_full_pass_claim": true,
+  "automatic_retry": false
+}

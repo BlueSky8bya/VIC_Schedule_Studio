@@ -6,9 +6,9 @@
   "gridRows": 2,
   "atlases": [
     {
-      "src": "/companion/hd/vitamin-action-00-motion-115-v1.webp",
-      "sha256": "7792523dc32a6228791607f6f60a60bf596f66215add3a2e862d7f4a6aa2d3ad",
-      "bytes": 177446,
+      "src": "/companion/hd/vitamin-action-00-expression-119-v1.webp",
+      "sha256": "77a33184dc3e8fd70e8a4169585f61214d8bfbb652e107b5ab056c1eee18969b",
+      "bytes": 416936,
       "width": 1536,
       "height": 384
     },
@@ -118,9 +118,9 @@
       "height": 384
     },
     {
-      "src": "/companion/hd/vitamin-action-16-motion-115-v1.webp",
-      "sha256": "7ccd9be9d284d81c0b0b9c73f7ddd64c3dc23d23a334fe0f740d7d386831a088",
-      "bytes": 181466,
+      "src": "/companion/hd/vitamin-action-16-expression-119-v1.webp",
+      "sha256": "cd843900c6ffad194c336c0a5a07293230434c5d012d5f54c546bd7bb1fb6003",
+      "bytes": 410430,
       "width": 1536,
       "height": 384
     },

@@ -1,0 +1,13 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Correct only the confirmed eye and mouth alignment defect of the yawning BigVitamin in Image1, zero-based native cell10 / one-based key11. Preserve the existing approved eye size, expression intent, character proportions, ears, paper layers, cheeks, palette, line weight, pose, and all other cells. Use Image2 as read-only mascot design authority; Image3 fixes the current selected normal eye size and spacing. Image4 is the current jump key, which remains entirely protected. Align the yawning face with its existing head direction without making every pose front-facing or removing legitimate perspective. No new expression, body redesign, limbs, text or background. Return the same complete transparent sheet. This is a provisional post-review request; root must preserve this version and freeze the final confirmed regions and actual arguments before the one permitted generation.",
+    "referenced_image_paths": [
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png"
+    ],
+    "transparent_background": true
+  }
+}

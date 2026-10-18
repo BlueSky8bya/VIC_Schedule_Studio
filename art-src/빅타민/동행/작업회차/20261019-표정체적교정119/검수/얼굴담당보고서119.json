@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "work_id": "vitamin-expression-volume-119",
+  "role": "face_identity",
+  "reviewer_id": "/root/face_review_119",
+  "generator_id": "/root",
+  "independent_from_generator": true,
+  "review_claim_already_executed_by_root": "cycleFCF0D342B85A976D9BC5",
+  "reviewer_claim_calls": 0,
+  "created_at_kst": "2026-10-19T00:28:32.797308+09:00",
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+    "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD"
+  },
+  "final_sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD",
+  "status": "FAIL",
+  "scope": "최신 사용자 지정 다섯 얼굴(native1/64/65/73 및 rejected118 native10)의 눈과 직접 연결되는 입/볼만. native67 몸체 판정은 별도 담당이다.",
+  "findings": [
+    {
+      "id": "FACE-119-01",
+      "status": "FAIL",
+      "native_cell_zero_based": 1,
+      "runtime_row": 0,
+      "runtime_physical": [
+        9,
+        10
+      ],
+      "scope": "대기 깜빡임 양눈",
+      "observation": "양쪽이 검은 덩어리를 가진 높은 아치이며 화면 왼눈 내부에 밝은 안광이 남는다. 오른눈은 감긴 아치에 가깝고 왼눈은 작은 열린 눈처럼 읽혀 같은 깜빡임 순간으로 묶이지 않는다.",
+      "intended_expression": "편안한 대기 중 양눈이 함께 닫힌 짧은 깜빡임. 과장된 기쁨이나 윙크로 바꾸지 않는다.",
+      "required_correction": "양눈을 같은 계열의 단일 닫힌 눈꺼풀 선으로 정리한다. 원형 동공 덩어리·흰 안광·눈 안의 흰 구멍을 모두 없앤다. 눈의 간격/기울기는 현재 얼굴 배치를 따르고 낮은 곡률의 짧고 명확한 두 닫힌 선으로 읽히게 한다. 현재 작은 미소와 실제 두 주황 네모 볼은 유지한다."
+    },
+    {
+      "id": "FACE-119-02",
+      "status": "FAIL",
+      "native_cell_zero_based": 64,
+      "runtime_row": 23,
+      "runtime_physical": [
+        356,
+        357,
+        358,
+        359
+      ],
+      "scope": "회복 반응 양눈",
+      "observation": "화면 왼눈은 밝은 원형 안광을 가진 거의 원형 열린 눈이고 오른눈은 굵은 < 모양으로 찡그린 닫힌 눈이다. 이는 안광 한 점만 삭제할 문제가 아니라 열린 원형 눈과 감긴 각형 눈이 섞인 형태다. 작은 평평한 입은 힘주는 회복 반응과 충돌하지 않는다.",
+      "intended_expression": "충격 뒤 회복하는 힘준 양쪽 감긴 눈. 웃는 두 아치로 바꾸면 긴장/회복 의미가 희석된다.",
+      "required_correction": "REF017의 닫힌 각형 눈 문법을 참고해 양쪽을 서로 대응하는 > < 계열로 정리한다. 현재 열린 눈의 원형 테두리·검은 동공 면적·흰 안광을 전부 교체하고, 두 눈의 선 무게·꼭짓점 높이·면적감을 맞춘다. 머리 기울기는 따르되 얼굴을 정면으로 되돌리지 않는다. 기존 입과 실제 두 볼은 보존한다."
+    },
+    {
+      "id": "FACE-119-03",
+      "status": "FAIL",
+      "native_cell_zero_based": 65,
+      "runtime_row": 23,
+      "runtime_physical": [
+        360,
+        361,
+        362,
+        363
+      ],
+      "scope": "회복 반응 반대 기울기 양눈",
+      "observation": "64와 같은 열린 원형 왼눈/감긴 < 오른눈 조합이며 밝은 안광이 분명하다. 몸의 반대 기울기와 별개로 눈의 개폐 상태가 짝을 이루지 못한다.",
+      "intended_expression": "64와 연속되는 힘준 양쪽 감긴 회복 표정. 기울기 차이는 유지한다.",
+      "required_correction": "64와 동일한 > < 닫힌 눈 문법을 이 얼굴의 기울기와 원근에 맞게 그린다. 흰 반점만 칠해 지우고 검은 원형 동공을 남기지 않는다. 두 눈이 모두 닫혔다고 즉시 읽히게 한다. 현재 작은 입의 방향/위치와 주황 볼은 보존한다."
+    },
+    {
+      "id": "FACE-119-04",
+      "status": "FAIL",
+      "native_cell_zero_based": 73,
+      "runtime_row": 35,
+      "runtime_physical": [
+        514
+      ],
+      "scope": "포근한 꾹꾹이 양눈",
+      "observation": "화면 왼눈은 위로 둥글게 솟은 단일 웃는 아치이고 오른눈은 시작과 끝의 곡률이 바뀌는 물결이다. 동일 순간의 편안한 눈웃음에서 한쪽만 물결로 꺾이는 구조가 시선/깜빡임으로 설명되지 않는다. 입은 두 눈 아래 작은 미소로 자연스럽다.",
+      "intended_expression": "포근하게 꾹꾹이하는 만족한 양쪽 닫힌 눈웃음.",
+      "required_correction": "현재 화면 왼눈의 부드러운 웃는 아치 문법을 양쪽에 일관되게 적용한다. 오른눈의 물결 굴곡과 옛 끝선을 제거하고 두 아치의 선 무게·곡률·높이를 얼굴 기울기에 맞춰 대응시킨다. 완전 복사로 정면 대칭화하지 않으며 미소·볼·귀·포즈는 유지한다."
+    },
+    {
+      "id": "FACE-119-05",
+      "status": "FAIL",
+      "native_cell_zero_based": 10,
+      "current_parent_revision": "118 rejected by latest user",
+      "runtime_row": 10,
+      "runtime_physical": [
+        266
+      ],
+      "scope": "하품 닫힌 눈선 두께와 눈 아래 잔흔",
+      "observation": "양눈은 아래로 처진 닫힌 호, 입은 그 사이보다 아래의 독립된 세로 타원으로 이미 읽힌다. 이 배치와 졸림 방향은 유지할 가치가 있다. 다만 현재 눈꺼풀의 어두운 중심선은 73의 웃는 눈보다 현저히 가늘고 밝은 가장자리에 묻혀 렌더 선 무게가 달라 보인다. 화면 왼눈 아래 볼 접점 native crop(46,58)에 어두운 갈색 픽셀이 남아 점상 끝으로 읽힌다. 눈선과 완전히 떨어진 검정 점은 이번 원크기/무보간 확대에서 별도 분리 확증되지 않았다.",
+      "dot_evidence": {
+        "isolated_black_dot_status": "NOT_SEPARATELY_CONFIRMED",
+        "confirmed_dark_point_at_lower_eye_cheek_junction": true,
+        "native_crop_xy": [
+          46,
+          58
+        ],
+        "sheet_xy": [
+          352,
+          224
+        ],
+        "current_rgba": [
+          168,
+          129,
+          92,
+          253
+        ],
+        "provisional_face_mask_value": 0,
+        "actual_orange_protection_mask_value": 255,
+        "interpretation_limit": "눈/볼의 AA 접점이다. 옛 원본과 동일한 미변경 잔여라고 단정하지 않으며, 최신 사용자 지적의 시각적 제거 대상에 포함한다."
+      },
+      "intended_expression": "하품하는 졸린 양쪽 닫힌 눈. 웃는 위쪽 아치나 열린 눈으로 바꾸지 않는다.",
+      "required_correction": "아래로 처진 두 호의 곡률은 유지하고 어두운 중심 획을 다른 닫힌 눈과 같은 렌더 계열로 보강한다. 얇은 선을 단순 확대해 검은 덩어리로 만들지 않고 양쪽 무게/끝 처리를 일관화한다. 사용자 지적의 왼눈 아래 점상 잔흔과 옛 눈 윤곽/안광의 어두운·밝은 잔여를 정리하되 실제 주황 볼 및 작은 색 AA 경계는 지킨다. 현재 독립된 세로 하품 입의 위치와 크기를 보존한다. physical160..175는 이 요청의 교정 대상이 아니다."
+    }
+  ],
+  "mask_attention": [
+    {
+      "id": "MASK-119-FACE-01",
+      "status": "REQUIRES_SOURCE_AWARE_BOUNDARY",
+      "observation": "현재 색 기반 볼 보호 마스크는 실제 볼 외에도 native65의 주황갈색 입 일부와 하품 native(46,58)의 어두운 눈-볼 접점 픽셀을 보호한다. 시각 확인용 overlay에서 직접 확인했다.",
+      "required_action": "보호 마스크를 주황색 전체를 보존하라는 의미로 쓰지 않는다. 입은 이번 눈 교정에서 그대로 유지해도 되지만 볼 설계 권한과 분리한다. 하품의 눈 아래 점상/눈 윤곽 잔흔은 편집 범위에서 빠지지 않게 경계를 수정하고 실제 볼 본색과 색 AA만 보호한다. coarse bbox를 복원하면 눈 잔흔이 재유입될 수 있다.",
+      "boundary_limit": "색만 보고 모든 어두운 픽셀을 삭제하라는 지시는 아니다. 실제 눈선과 볼의 접점에서 해당 잔흔만 정리한다."
+    }
+  ],
+  "source_design_basis": {
+    "REF016": "두 개의 독립된 눈·그 아래 작은 입·주황 네모 볼의 기본 얼굴 문법. 열린 기본눈의 안광을 닫힌 눈에도 복제할 근거는 아니다.",
+    "selected099": "사용자가 고른 정상 열린 눈의 크기/렌더 참고다. 닫힌 눈을 원형 눈으로 유지할 근거는 아니다.",
+    "REF017": "실제 원본의 힘준 닫힌 > < 눈이 회복 표현의 가능한 디자인 문법임을 직접 확인했다. 이 각형 표정을 대기/꾹꾹이/하품 모두에 강제하지 않는다."
+  },
+  "preserved_history": {
+    "previous118_report": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+      "sha256": "5EC8297D9DF801F9E0D4D063857AEB773457461A4DEB66CF27999B0B98E3FE5E",
+      "status": "FAIL",
+      "finding_id": "FACE-118-01",
+      "note": "이전114 하품의 눈/입 배치 FAIL은 원래 candidate SHA에 묶인 역사 근거로 보존한다. 이번119 부모의 입 분리 관찰로 그 판정을 PASS로 재작성하지 않는다."
+    },
+    "latest_user_rejection": "118 하품 눈선이 지나치게 얇고 왼눈 밑 점이 있다는 최신 사용자 반려를 현행 요청으로 유지한다. 이전 독립검수 미지적을 승인 근거로 사용하지 않는다."
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\현재요청6칸_원크기.png",
+      "sha256": "CDC5A109B91452348658A0525FA69E3149ACAB20FC87E93E5232997183A81BBD",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\원본표정_REF017.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_1.png",
+      "sha256": "7CA0B7D77CCA42ECCAFBAEEDDB6B610E71BD7833C3F07C0F0601FB0195D3C7A7",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_64.png",
+      "sha256": "779A59DC7F1B0F9FF925A1D98BE92C338873F1F9B312D16F9ED58380B92B1C71",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_65.png",
+      "sha256": "42505E0D5CD1CB1792F4086D0A4574F7CF1D624FF57F9932225A9B8C6B1430BF",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_73.png",
+      "sha256": "A9374364CF8F35E40F76A75E37944D6FFAC0ABC57CCBD4C85C6F64EAD009465D",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\원화_10_118현재.png",
+      "sha256": "9621FA79911D6E2B884D6C71A9FB589C21FAF37C064D3BD92BF0AED6476D3C57",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\사용자첨부1.png",
+      "sha256": "FD2372E1DF1841703725ED2836D72E3DFF57861BCBD5AA9A63AD59D9F4B4EE33",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\사용자첨부2.png",
+      "sha256": "74A6A59CEE377FC5CDBE2E21FFFAE10D9D2691359A2137BF92427B61AB6DAA80",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\사용자첨부3.png",
+      "sha256": "F5375432CCEF57C978F6E32A49727C6E37B9EEFF7E1F8ABF7BDC71B487EC5CA5",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\사용자첨부5.png",
+      "sha256": "80E75287E48D1CFBD13106B8304B244A1FD393D9A55E656A84E3643C8B945393",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\표정5칸_명시편집영역.png",
+      "sha256": "BB051BC4CD9C81BDFEFF0AC795B34A59CCDE68A2BABCEA0F21716F27F29E32FD",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\고정입력\\실제주황볼_보호영역.png",
+      "sha256": "5F61C155F63C06BBC764528AD7783FFB20196989C98E00244912D1E4B531F574",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\고정입력\\하품키11_원본RGBA.png",
+      "sha256": "10EAE4C5D8608498F7124468796187900222C8A079268B1BD33FFA91335A9E5E",
+      "kind": "image_actually_opened"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face1_nearest6.png",
+      "sha256": "37DB4831A45CCC345A73631AC7D96E9E5D5B0DE7E30E7ED3B27DDF48FF7F94B4",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face1_roi_and_masks_nearest6.png",
+      "sha256": "84994D4CAF09A1BB0E82CA0F125901F21EF2AC5317995ACC1846A045F1B8BA08",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face64_nearest6.png",
+      "sha256": "72C5BBFD099F98DFC85E4B8B8EC969D1AE7CE3AC926A119631F9A8E8E0FA516B",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face64_roi_and_masks_nearest6.png",
+      "sha256": "55CF4B824C4FBB6FA0312C5CD3F865D485E6745C22D89D12532333696AE70F37",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face65_nearest6.png",
+      "sha256": "2142D46AFDE838F664DA5C5FBBD5C6D97BFF78CCF5ABF654F39222CD4A33BD9D",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face65_roi_and_masks_nearest6.png",
+      "sha256": "E9DF34B17D1C6BA0C2AFB87B789E67A8FBD7E81EAC0DB4B0C929E62686643496",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face73_nearest6.png",
+      "sha256": "466170E561ED05782493929A49C0AD8CA08BC788B4633D85B3F0479DEFDE1BDF",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face73_roi_and_masks_nearest6.png",
+      "sha256": "A7687869F5B6AC46530F06E411B228C5CD1AFFF3CD5E69FB610610C8978E2C74",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face10_nearest6.png",
+      "sha256": "45B0601306BBAAD733EE57C06667632B2FD19E8A7B8EFBAC176838B4DB9A57C8",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\face10_roi_and_masks_nearest6.png",
+      "sha256": "105CBABD5A2FC3D485B8075D60BC8EC1E87FD8E6ECA79ADBE3F95C1564AF0F35",
+      "kind": "qa_view_only"
+    },
+    {
+      "path": "C:\\Users\\im917\\AppData\\Local\\Temp\\vic-face-review119\\yawn_left_eye_native_grid.png",
+      "sha256": "BB20D1A296A7859ACF92E819DCFEB137F78B0D2C2A0914CE2F8E64661741BC2D",
+      "kind": "qa_view_only"
+    }
+  ],
+  "opened_documents": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수계약.json",
+      "sha256": "CEC74675D7A87102A6CE6AEFF4E478E8726B8AE3CD9E7B02E85D9DDADD207B93"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\face_identity.json",
+      "sha256": "D2E39C2D1E3F5D826B7B1617B25C59CFC0751EC4D5393BD9DDD1903C5F9C27BB"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\원화배치계보.json",
+      "sha256": "B5F79532BE1428A2B67CC319EC08E29FEBED73DF30A911553EAD8E6E3791DF1D"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\119기술매핑_전문판정아님.json",
+      "sha256": "C9400C89DF73BF4A4A634FA99CEC27B2D4468394832B9AC6F380819D0313140B"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-얼굴정렬교정118\\검수\\얼굴담당보고서.json",
+      "sha256": "5EC8297D9DF801F9E0D4D063857AEB773457461A4DEB66CF27999B0B98E3FE5E"
+    }
+  ],
+  "qa_derivation": {
+    "purpose": "원본 열람 뒤 픽셀과 편집/보호 경계 확인을 위한 임시 무보간 확대만 만들었다. 미술 생성/수정 결과가 아니며 원본 파일은 쓰지 않았다.",
+    "native_sources_resampled": false,
+    "zoom_method": "PIL nearest-neighbor 6x; yawn coordinate grid 24x; temporary QA files only",
+    "mask_overlay_legend": "left=source ROI; middle=magenta editable, green protected; right=actual edit mask"
+  },
+  "limits": {
+    "numeric_identity_or_whole_character_pass": false,
+    "body67_reviewed": false,
+    "imagegen_calls": 0,
+    "product_mutations": 0,
+    "post_generation_art_review": "새 생성 뒤 자동 검수하지 않는다. 이 보고서는 현재 부모의 요청 부위에 대한 1회 사전 전문 검수다.",
+    "human_approval": "NONE; 이 보고서는 사용자 승인이나 전체 PASS가 아니다."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "status": "PREPARED_TARGETED_REVIEW",
+  "review_plan": {
+    "schema_version": 1,
+    "user_directed": true,
+    "role_packets": {
+      "face_identity": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\face_identity.json",
+        "sha256": "15A128B70CEC8A6907520E8099F19C97C75ADA779ACD104CBFCAC48CFA9E83BC"
+      },
+      "body_anatomy": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\검수\\body_anatomy.json",
+        "sha256": "CA36B09EFE60D7C2BD894069DE5B6D8E362536B4E858B64B711DBF59C5BCC4EF"
+      }
+    },
+    "required_roles": [
+      "face_identity",
+      "body_anatomy"
+    ]
+  },
+  "automatic_extra_roles": []
+}
