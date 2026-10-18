@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
+import { resolveBuildCommit } from "./scripts/build-commit";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
   // 빌드(=배포) 시각/커밋을 클라이언트에서도 쓰게 빌드 때 박는다(인사이트 배포 시각, 액션바 버전 표시).
   env: {
     BUILD_TIME: new Date().toISOString(),
-    APP_COMMIT: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev"
+    APP_COMMIT: resolveBuildCommit()
   },
   experimental: {
     // Server Action 본문 한도(기본 1MB) 상향. 원래 근거였던 커스텀 이모지 업로드는 2026-08-27 스티커

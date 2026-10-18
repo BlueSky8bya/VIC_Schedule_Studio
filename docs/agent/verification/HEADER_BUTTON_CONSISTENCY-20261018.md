@@ -1,6 +1,6 @@
 #102 header button consistency
 
-Date:2026-10-18 KST. Status:local verification complete; deployment pending.
+Date:2026-10-18 KST. Status:deployed correction verified.
 
 ## Scope
 
@@ -47,4 +47,14 @@ Shipping build `zntlRDOg6wtGcrUiMONBd`:211 unit files/2,168 tests, typecheck, fu
 
 Four intentional studio compact screenshots were updated during preparation and visually compared: light/dark header entries now contain only the leftmost home launcher; heading clips change283→282px because of its new pixel-aligned anchor, with typography/36px heading unchanged. Public baselines did not change. Root also opened final full light/dark fixture screenshots and verified the requested placement. Final independent review found no P1/P2 and confirmed no provisional scroll code, new loop, runtime inference, server/API/permission/KST or dependency changes.
 
-Before release, actual developer Chrome at1590×1131/November2026 confirmed the old build `deac458`: header badge x24, home x101.35 and preview/logout10px metallic gradient/shadow. This is comparison evidence only. New deployed full SHA/CI/provider and actual UI checks remain pending. No actual schedule/heart/role edits were made.
+Before release, actual developer Chrome at1590×1131/November2026 confirmed the old build `deac458`: header badge x24, home x101.35 and preview/logout10px metallic gradient/shadow. This is comparison evidence only. No actual schedule/heart/role edits were made.
+
+## Deployed verification
+
+Commit `35dd86afcd80309dc33688f2dfe742e69cde21c8` is on main. [Remote quality39093786040](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39093786040), job117575862936, completed successfully with all13 steps. [Vercel deployment8qqEqeiRJUNh2zNzvF7Kypk9qp5M](https://vercel.com/bluesky-s-project3/vic-schedule-studio/8qqEqeiRJUNh2zNzvF7Kypk9qp5M) reports success.
+
+At2026-10-18T03:32:21Z, production `/api/soop-live` returned200 with the exact full commit above; public clock200/no-store, warm204, anonymous developer presence401/no-store/error-only and fixture streamed404 boundary all passed. HTTP200 for the streamed fixture shell is recorded separately from its actual not-found outcome. These canaries are not genuine-login/RLS coverage.
+
+After intentional reload, actual authenticated developer Chrome at1590×1068/November2026 showed badge `35dd86a` outside the header at x16, bottom gap15.56 physical pixels(rounding under existing zoom), fixed/z5. The shared home launcher is x24 and44×44 at the header-left start. Preview/logout computed transparent backgrounds, no gradient/shadow and12px radius; a full viewport screenshot was visually inspected. One companion remained visible. Right-side folded rail and saved preferences remained unchanged; no schedule/heart/role mutation or viewport override was made. Evidence: local `.scratch-pw/chrome-102/deployed-canaries.json`, `actual-ui.json` and rendered-shipping reports.
+
+Final read-only review of the committed18-path scope found no additional findings: product changes remain limited to three files, protected user art is excluded, and temporary scroll/history/debug logic is absent. Fixture server3116 was stopped. Post-release documentation remains local; actual OBS hardware, genuine roles/RLS and provider quota recovery are outside this UI correction's claims.

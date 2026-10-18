@@ -41,7 +41,7 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }, info) => {
   const build = readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim();
-  const directory = `${output}/${build}`, label = info.title.replace(/[^a-z0-9]+/gi, "-").slice(0, 140);
+  const directory = `${output}/${build}`, label = info.titlePath.slice(-2).join("-").replace(/[^a-z0-9]+/gi, "-").slice(0, 140);
   mkdirSync(directory, { recursive: true });
   writeFileSync(`${directory}/${label}.json`, JSON.stringify({ title: info.title, build, status: info.status, ...proof.get(page) }, null, 2));
   await page.screenshot({ path: `${directory}/${label}.png`, fullPage: true }).catch(() => {});
@@ -171,6 +171,10 @@ for (const view of [
   expect(badge.position).toBe("fixed"); expect(badge.inHeader).toBe(false); expect(badge.nativeHit).toBe(true); expect(badge.z).toBeLessThan(badge.popupZ);
   expect(badge.left).toBeCloseTo(16, 0); expect(initial.viewport.height - badge.bottom).toBeCloseTo(16, 0); expect(badge.top).toBeGreaterThan(home.bottom);
   const label = (await copy(page).textContent())!.trim();
+  const metadata = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "required-server-files.json"), "utf8")) as { config: { env: { APP_COMMIT: string } } };
+  expect(metadata.config.env.APP_COMMIT).toMatch(/^(?:[a-f\d]{40}|[a-f\d]{64})$/);
+  expect(label).toBe(metadata.config.env.APP_COMMIT.slice(0, 7));
+  await expect(copy(page)).toHaveAttribute("aria-label", `배포 버전 ${label} 복사`);
   await copy(page).click(); await expect(copy(page)).toHaveText("복사됨 ✓");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(label);
   await settlePanelLayout(page); const copied = await sample(page, "copied"); sameCalendar(initial, copied);

@@ -1,6 +1,6 @@
 #102 — Header buttons and build badge
 
-Date:2026-10-18 KST. Status:local verification complete; authorized correction release pending.
+Date:2026-10-18 KST. Status:complete; deployed correction verified.
 
 ## Current request
 
@@ -27,4 +27,8 @@ Current implementation/check results will be recorded in the [verification](../v
 
 ## Local result
 
-Shipping product build `zntlRDOg6wtGcrUiMONBd`:211 unit files/2,168 tests, typecheck, full lint, production build and harness264 PASS. One final native run passed all38 cases without snapshot updates. Four intentional studio entry/heading baselines were inspected before/after. Independent final review confirms no remaining P1/P2 and no provisional scroll/diagnostic code. Next:exact staging, commit/push, CI/provider/full deployed SHA and actual UI verification.
+Shipping product build `zntlRDOg6wtGcrUiMONBd`:211 unit files/2,168 tests, typecheck, full lint, production build and harness264 PASS. One final native run passed all38 cases without snapshot updates. Four intentional studio entry/heading baselines were inspected before/after. Independent final review confirms no remaining P1/P2 and no provisional scroll/diagnostic code.
+
+## Deployed result
+
+Commit `35dd86afcd80309dc33688f2dfe742e69cde21c8` pushed to main. [Remote quality39093786040](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39093786040) all13 steps and [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/8qqEqeiRJUNh2zNzvF7Kypk9qp5M) succeeded. Exact full deployed SHA/API boundaries and actual authenticated developer UI verified; see [evidence](../verification/HEADER_BUTTON_CONSISTENCY-20261018.md#deployed-verification). Fixture server stopped. Post-release bookkeeping remains local to avoid a second documentation-only deployment; no required product work remains.
