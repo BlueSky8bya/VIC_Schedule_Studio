@@ -13,9 +13,9 @@ describe("shared code-native accessory art", () => {
       expect(frame.content.width).toBeGreaterThan(0); expect(frame.content.height).toBeGreaterThan(0);
       expect(frame.x + frame.width).toBeLessThanOrEqual(frame.atlasWidth); expect(frame.y + frame.height).toBeLessThanOrEqual(frame.atlasHeight);
       expect(frame.content.x).toBeGreaterThanOrEqual(0); expect(frame.content.y + frame.content.height).toBeLessThanOrEqual(frame.height);
-      if (frame.atlas === "accessory-111") atlas.add(frame.src);
+      if (frame.atlas === "accessory-111" || frame.atlas === "accessory-114") atlas.add(frame.src);
     }
-    expect(atlas.size).toBe(1); expect(getCompanionAccessoryArtFrame("not-owned-code")).toBeUndefined();
+    expect(atlas.size).toBe(2); expect(getCompanionAccessoryArtFrame("not-owned-code")).toBeUndefined();
     expect(getCompanionAccessoryArtFrame("scarf")?.id).toBe("bow:front");
     expect(getCompanionAccessoryArtFrame("bell-pendant")?.id).toBe("bell-badge:front");
   });
@@ -24,5 +24,9 @@ describe("shared code-native accessory art", () => {
     expect(svg).not.toMatch(/<(?:script|foreignObject|image)\b|(?:href|url)\s*[:=(]/i);
     expect(Buffer.byteLength(svg)).toBeLessThan(32000);
     expect(execFileSync(process.execPath, ["scripts/prepare-companion-accessory-vector.mjs", "--check"], { encoding: "utf8" })).toContain("Verified 48 original vector cells");
+    const modern = readFileSync("public/companion/collection/accessories-114-v1.svg", "utf8");
+    expect(modern).not.toMatch(/<(?:script|foreignObject|image)\b|(?:href|url)\s*[:=(]/i);
+    expect(Buffer.byteLength(modern)).toBeLessThan(50000);
+    expect(execFileSync(process.execPath, ["scripts/prepare-companion-accessory-vector.mjs", "--check"], { encoding: "utf8" })).toContain("Verified 60 task114 vector cells");
   });
 });

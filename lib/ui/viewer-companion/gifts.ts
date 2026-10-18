@@ -20,7 +20,11 @@ export function normalizeCompanionGifts(value: unknown): CompanionGiftState {
   const unlocked = COMPANION_ACCESSORY_IDS.filter(id => saved.includes(id) || replacements.includes(id));
   const wasPending = isCompanionAccessoryId(source.pending) && !saved.includes(source.pending) ? source.pending : null;
   const mappedPending = wasPending && currentCompanionAccessory(wasPending);
-  const pending = mappedPending ? !unlocked.includes(mappedPending) ? mappedPending : wasPending !== mappedPending ? COMPANION_WEARABLE_IDS.find(id => !unlocked.includes(id)) ?? null : null : null;
+  // A previously wrapped retired gift may exchange for an ordinary unowned
+  // counterpart. Never silently promote it to a legendary prop when the
+  // ordinary wardrobe is full: retain its original parcel for duplicate
+  // redemption instead. Keeping the legacy pending ID makes reloads stable.
+  const pending = mappedPending ? !unlocked.includes(mappedPending) ? mappedPending : wasPending !== mappedPending ? COMPANION_WEARABLE_IDS.find(id => COMPANION_ACCESSORIES[id].weight >= 5 && !unlocked.includes(id)) ?? wasPending : null : null;
   const equipped = isCompanionAccessoryId(source.equipped) && saved.includes(source.equipped) ? currentCompanionAccessory(source.equipped) : null;
   const activeMs = typeof source.activeMs === "number" && Number.isFinite(source.activeMs) ? Math.max(0, Math.min(COMPANION_GIFT_ACTIVE_MS, source.activeMs)) : 0;
   return { pending, unlocked, equipped, activeMs, interactionCredit: source.interactionCredit === 1 ? 1 : 0 };

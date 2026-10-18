@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "tool": "builtin imagegen",
+  "generationCalls": 1,
+  "native": {
+    "path": "원본/빅타민_통일80키.png",
+    "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+    "width": 1122,
+    "height": 1402
+  },
+  "userRequestSha256": "AAB1290E56A67448963708945C992C98D31973C35554847892E63E50D633725E",
+  "requestArgsSha256": "2693C280C9A399F6A842ECE038C657DAF0C0782EFCAA171492693D8D12BBF11F",
+  "approval": "NONE",
+  "independentArtReview": false,
+  "producerInspectionEpochs": 1,
+  "knownFindings": [
+    "단일1122×1402 RGBA에80개 원화가 생성됨. 요청3072×3840보다 작음; 파생192셀은 해상도 복원이나 새로운 세부 묘사가 아님.",
+    "외곽선·아이보리 종이층·귀와 정상 눈 처리의 세계 원화 간 일관성이 개선됨. 정상 눈 크기는 기존 선택을 참고했으나 원화 동일 눈 지름의 수치 인증은 하지 않음.",
+    "생성 mood17–32 대부분 웃는 입으로 표정 지시 미충족. 동일 native의28/29 실망,63 삐짐,52 눈물,69 비행 전체 포즈로 기계적 재매핑. 눈·입 이식/수작업 수정 없음.",
+    "79기존 고유 키에 전체 매핑하되 표정 부적합 원화를 배제하여 사용 원화는61개. 기존520물리슬롯/41논리행/33패킷 유지, 과거 RGB fallback0.",
+    "하품 clean10의 O입 강조 미충족. 잠에서 깬 마지막 recovery67은 중립/약한 완화 표정이며 과한 행복 표정은 아님.",
+    "원본 native 주변 투명 노이즈/황색·적색 프린지는 남아 있음. 원본 보존, 연결 주체와 가까운 표시를 모두 포함하는 직사각형 whole-key crop만 수행. 얼굴/선 색칠/alpha repaint 없음.",
+    "기존 최초공개 audience16은 생성 범위에서 제외해 보존. 새 세계 원화보다 얇고 평평한 그림체 차이는 남음. 양귀/몸통/일반 눈 비율에 명백한 누락은 보이지 않았으나 전체 통일로 보고하지 않음.",
+    "첨부 작은 갈색 안경 포즈는 구 recovery3 마지막 물리364–367 왼쪽facing+sunglasses와 체형 및 실제 공유 painter 착용이 맞음. 113 비교표에 마지막 회복 키가 없었음."
+  ],
+  "privateProvenance": "Exact actual-user source, timestamp, preflight and claim preserved locally; private session linkage deliberately excluded."
+}

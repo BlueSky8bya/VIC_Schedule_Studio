@@ -24,7 +24,7 @@ describe("additional native play packets share the established HD pipeline", () 
     }
     const throwRow = companionSpriteMetadata.rows[32];
     expect(throwRow).toEqual(Array.from({ length: 16 }, (_, column) => base.frames.length + 192 + column));
-    expect(play.atlases[12].src).toBe("/companion/hd/victamin-play-32-throw-big-eyes-v1-body-outline-v1.webp");
+    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-unified-114-v1.webp");
     expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
     for (const [column, index] of throwRow.entries()) expect(selectCompanionSprite(index, 32, column)).toMatchObject({ atlas: "hd", physicalIndex: index, index: column, grid: 8, gridRows: 2, src: play.atlases[12].src });
   });

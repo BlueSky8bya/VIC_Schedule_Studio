@@ -12,8 +12,8 @@ beforeAll(() => {
     import fs from 'node:fs';
     import { createEyeStyleMap, bakeEyeStyleKey } from './scripts/prepare-companion-eye-style.mjs';
     const json = name => JSON.parse(fs.readFileSync(name, 'utf8'));
-    const base = json('lib/ui/viewer-companion/hd-motion-sprite.json');
-    const play = json('lib/ui/viewer-companion/play-motion-sprite.json');
+    const base = json('art-src/빅타민/동행/작업회차/20261018-포즈통일114/고정입력/hd-motion-sprite.json');
+    const play = json('art-src/빅타민/동행/작업회차/20261018-포즈통일114/고정입력/play-motion-sprite.json');
     const receipts = {
       hd: json('art-src/빅타민/동행/작업회차/20261015-전동작고해상도/파생기록.json'),
       play: json('art-src/빅타민/동행/작업회차/20261016-덤벙놀이/패킹파생기록.json'),

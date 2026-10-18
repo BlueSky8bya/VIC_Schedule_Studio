@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isCompanionHat, sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
 import { projectCompanionSpritePoint } from "@/lib/ui/viewer-companion/sofa-pose";
-import { COMPANION_ACCESSORIES } from "@/lib/ui/viewer-companion/accessory-catalog";
+import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "@/lib/ui/viewer-companion/accessory-catalog";
 
 describe("finite equipped accessory gestures", () => {
   it("returns exactly to the registered rest transform, without a lingering or negative-time gesture", () => {
@@ -39,7 +39,7 @@ describe("finite equipped accessory gestures", () => {
       else if (id === "magic-pocket") expect(motion.row).toBe(phase > .2 && phase < .75 ? 1 : 9);
       else expect(motion.row).toBe(isCompanionHat(id) ? phase < .6 ? 4 : 6 : 9);
       expect(motion.accessory.scale).toBeGreaterThanOrEqual(1);
-      if (COMPANION_ACCESSORIES[id].family !== "head") expect(motion.bodyLift).toBe(0);
+      if (COMPANION_ACCESSORIES[currentCompanionAccessory(id)].family !== "head") expect(motion.bodyLift).toBe(0);
     }
     const safe = { id: "beret" as const, roam: true, stable: true, safe: true, headroom: 160, edgeClearance: 60, energy: .8 };
     expect(canStartCompanionAccessoryMotion(safe)).toBe(true);

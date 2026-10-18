@@ -227,8 +227,8 @@ describe("additive107 native collection assets", () => {
     }
   });
 
-  it("preserves60 native pairs among180 foods, legacy12 accessory views and12 situation stamps alongside20 active accessories", () => {
-    expect(COMPANION_FOOD_KINDS).toHaveLength(180); expect(COMPANION_ACCESSORY_IDS).toHaveLength(22); expect(COMPANION_WEARABLE_IDS).toHaveLength(20);
+  it("preserves60 native pairs among180 foods, legacy12 accessory views and12 situation stamps alongside25 active accessories", () => {
+    expect(COMPANION_FOOD_KINDS).toHaveLength(180); expect(COMPANION_ACCESSORY_IDS).toHaveLength(34); expect(COMPANION_WEARABLE_IDS).toHaveLength(25);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["situation-stamp"])).toEqual([...COMPANION_SITUATION_IDS]);

@@ -16,7 +16,7 @@ describe("one high-resolution pipeline for every companion action", () => {
       const selected = selectCompanionSprite(index);
       expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
       expect(selected.src).toBe(sprites.atlases[Math.floor(index / 16)].src);
-      expect(selected.src).toMatch(/^\/companion\/hd\/victamin-action-[0-9]{2}-big-eyes-v1-body-outline-v1\.webp$/);
+      expect(selected.src).toMatch(/^\/companion\/hd\/vitamin-action-[0-9]{2}-unified-114-v1\.webp$/);
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
   });
@@ -54,7 +54,7 @@ describe("one high-resolution pipeline for every companion action", () => {
     for (let row = 20; row < 32; row++) expect(companionSpriteMetadata.rows[row]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + (row - 20) * 16 + column));
     expect(companionSpriteMetadata.rows[32]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + 192 + column));
     expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
-    expect(play.atlases[12].src).toBe("/companion/hd/victamin-play-32-throw-big-eyes-v1-body-outline-v1.webp");
+    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-unified-114-v1.webp");
   });
 });
 
@@ -66,7 +66,7 @@ describe("registered living keys", () => {
       const index = companionSpriteMetadata.rows[row][0], selected = selectCompanionSprite(index, row, 0);
       expect(companionSpriteSources(row)).toEqual([living.atlases[0].src]);
       expect(selected.index).toBe(row - 33);
-      expect(selected.frame).toMatchObject({ x: living.frames[row - 33].x, y: 5 });
+      expect(selected.frame).toEqual({ ...living.frames[row - 33], atlas: sprites.atlases.length + play.atlases.length });
       expect(selected.grid).toBe(8); expect(selected.gridRows).toBe(2);
       expect(selected.src).toBe(living.atlases[0].src);
     }

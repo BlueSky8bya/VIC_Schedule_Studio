@@ -47,9 +47,9 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     await page.evaluate(() => document.fonts.ready);
     const { dialog, habits } = await openHabits(page);
     await expect(habits.locator("li")).toHaveText([
-      "마우스와 조금 더 가까이 지내려 해요.",
-      "놀이를 고르는 쪽으로 기울었어요.",
-      "새로운 자리를 살피는 시간이 조금 짧아졌어요.",
+      "마우스에 더 바짝 다가와요.",
+      "재롱을 더 자주 부려요.",
+      "잠깐 두리번거려요.",
     ]);
     await expect(habits).not.toContainText("손길");
     const reading = await habits.evaluate(region => {
@@ -88,26 +88,26 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     expect(balance.positionSpread).toBeLessThanOrEqual(1);
     expect(["start", "left"]).toContain(balance.alignment);
     expect(balance.paddingDifference).toBeLessThanOrEqual(1);
-    mkdirSync(".scratch-pw/companion-111/habits", { recursive: true });
-    await habits.screenshot({ path: `.scratch-pw/companion-111/habits/habits-${surface}-${theme}.png` });
-    await dialog.screenshot({ path: `.scratch-pw/companion-111/habits/dialog-${surface}-${theme}.png` });
+    mkdirSync(".scratch-pw/companion-114/copy/habits", { recursive: true });
+    await habits.screenshot({ path: `.scratch-pw/companion-114/copy/habits/habits-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-114/copy/habits/dialog-${surface}-${theme}.png` });
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
     await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
     await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
-    await expect(dialog.locator(".rhh-habit-paused")).toHaveText("배우기 끔 · 기억은 보관해요.");
+    await expect(dialog.locator(".rhh-habit-paused")).toHaveText("적용 중지");
     await expect(habits.locator("li")).toHaveCount(3);
     await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
-    await expect(habits.getByText(/아직 뚜렷한 변화는 없어요/)).toBeVisible();
+    await expect(habits.getByText(/아직 배운 습관이 없어요/)).toBeVisible();
     await expect(habits.locator("li")).toHaveCount(0);
     const saved = await page.evaluate(() => ({ care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!), prefs: JSON.parse(localStorage.getItem("vic.viewerCompanion")!) }));
     expect(saved.care.hunger).toBe(.23); expect(saved.care.affection).toBe(.64);
     expect(saved.prefs.learnFromYou).toBe(false); expect(saved.prefs.enabled).toBe(false);
     await page.reload();
     const reopened = await openHabits(page);
-    await expect(reopened.habits.getByText(/아직 뚜렷한 변화는 없어요/)).toBeVisible();
+    await expect(reopened.habits.getByText(/아직 배운 습관이 없어요/)).toBeVisible();
     await reopened.dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await expect(reopened.dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     expect(writes).toEqual([]); expect(errors).toEqual([]);

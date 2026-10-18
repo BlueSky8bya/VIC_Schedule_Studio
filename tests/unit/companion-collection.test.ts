@@ -19,7 +19,7 @@ describe("bounded local discoveries", () => {
     const source = { version: 1, foods: [...COMPANION_FOOD_KINDS, ...COMPANION_FOOD_KINDS, "identity-canary"], behaviors: [...COMPANION_BEHAVIOR_IDS, "schedule-canary"], gifts: { pending: "identity-canary", unlocked: [...COMPANION_ACCESSORY_IDS, "unknown"], equipped: "satchel", activeMs: Infinity, interactionCredit: 8, account: "identity-canary" }, email: "identity-canary" };
     const normalized = normalizeCompanionCollection(source);
     expect(normalized.foods).toEqual(COMPANION_FOOD_KINDS); expect(normalized.behaviors).toEqual(COMPANION_BEHAVIOR_IDS);
-    expect(normalized.gifts.unlocked).toEqual(COMPANION_ACCESSORY_IDS); expect(normalized.gifts.equipped).toBe("satchel"); expect(normalized.gifts.pending).toBeNull();
+    expect(normalized.gifts.unlocked).toEqual(COMPANION_ACCESSORY_IDS); expect(normalized.gifts.equipped).toBe("retro-cap"); expect(normalized.gifts.pending).toBeNull();
     expect(normalized.gifts.activeMs).toBe(0); expect(normalized.gifts.interactionCredit).toBe(0);
     expect(JSON.stringify(normalized)).not.toContain("canary"); expect(source.foods).toHaveLength(COMPANION_FOOD_KINDS.length * 2 + 1);
   });
@@ -141,7 +141,7 @@ describe("earned gifts and explicit equipment", () => {
     }
     expect(store.load().gifts.unlocked).toEqual(COMPANION_WEARABLE_IDS);
     store.interaction(); for (let step = 0; step < 20; step++) expect(store.advance(30000, .9, true)).toBe(false);
-    expect(store.load().gifts.pending).toBeNull(); expect(store.equip("satchel")).toBe(true); expect(store.equip("satchel")).toBe(false);
+    expect(store.load().gifts.pending).toBeNull(); expect(store.equip("retro-cap")).toBe(true); expect(store.equip("retro-cap")).toBe(false); expect(store.equip("satchel")).toBe(false);
     expect(store.equip("identity-canary" as "satchel")).toBe(false); expect(store.equip(null)).toBe(true); expect(store.load().gifts.equipped).toBeNull();
   });
   it("preserves retired ownership while fitting replacements, without redrawing a neck on this body", () => {
@@ -261,11 +261,11 @@ describe("separate witnessed situations and additive107 migration", () => {
   it("keeps the original food/behavior/first six ownership choices without inventing history", () => {
     const old = { version: 1, foods: ["sweet-potato", "potato", "dragon-fruit"], behaviors: ["tumble"], gifts: { pending: "satchel", unlocked: ["sunglasses", "beret", "bow", "star-pin", "flower-crown"], equipped: "beret", activeMs: 12345, interactionCredit: 1 } };
     const normalized = normalizeCompanionCollection(old);
-    expect(normalized.foods).toEqual(["dragon-fruit", "sweet-potato", "potato"]); expect(normalized.behaviors).toEqual(["tumble"]); expect(normalized.situations).toEqual([]); expect(normalized.gifts).toEqual(old.gifts);
+    expect(normalized.foods).toEqual(["dragon-fruit", "sweet-potato", "potato"]); expect(normalized.behaviors).toEqual(["tumble"]); expect(normalized.situations).toEqual([]); expect(normalized.gifts).toEqual({ ...old.gifts, pending: "retro-cap", unlocked: [...old.gifts.unlocked, "monocle"] });
     const next = normalizeCompanionCollection({ ...old, situations: [...COMPANION_SITUATION_IDS, "private-canary", ...COMPANION_SITUATION_IDS] });
     expect(next.situations).toEqual(COMPANION_SITUATION_IDS); expect(JSON.stringify(next)).not.toContain("canary");
     expect(COMPANION_ACCESSORY_IDS.slice(0, 6)).toEqual(["sunglasses", "beret", "bow", "star-pin", "flower-crown", "satchel"]);
-    expect(COMPANION_ACCESSORY_IDS).toHaveLength(22); expect(COMPANION_WEARABLE_IDS).toHaveLength(20);
+    expect(COMPANION_ACCESSORY_IDS).toHaveLength(34); expect(COMPANION_WEARABLE_IDS).toHaveLength(25);
   });
   it("records an explicit gift opening even while the world is paused, never from seeded ownership alone", () => {
     const store = createCompanionCollectionStore(storageFixture({ version: 1, foods: [], behaviors: [], gifts: { pending: "pixel-sunglasses", unlocked: ["sunglasses"], equipped: "sunglasses" } }));

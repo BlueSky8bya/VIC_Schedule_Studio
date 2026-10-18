@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261018-113 | Local checks complete; authorized release/deployed checks next | [Art inspection and unread discoveries](PLAN-20261018-113-companion-art-and-unread-collection.md) |
+| PLAN-20261018-114 | In progress | [Copy, one pose epoch and accessories](PLAN-20261018-114-companion-copy-poses-and-accessories.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

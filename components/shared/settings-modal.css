@@ -390,10 +390,11 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 .rhh-trait-state { color: var(--ink); font-size: var(--text-ui, 15px); font-weight: 600; }
 .rhh-trait-description { color: var(--ink-soft); }
 .rhh-profile-habits { border-top: 1px solid var(--line); padding-top: 14px; }
+.rhh-habits-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.rhh-habits-heading .rhh-habit-paused { margin: 0; font-size: var(--text-caption); }
 .rhh-trait-reason { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: var(--space-3); margin: 12px 0 0; border-top: 1px solid var(--line); padding-top: 12px; }
 .rhh-trait-reason > span:first-child { color: var(--ink-soft); font-weight: 600; }
 .rhh-trait-reason > span:last-child { word-break: keep-all; overflow-wrap: anywhere; }
-.rhh-trait-note { margin: 8px 0 0; color: var(--ink-soft); }
 .rhh-trait-reset-note { flex: 1; margin: 0; color: var(--ink-soft); }
 .rhh-profile-controls { margin-top: 16px; }
 @container rhh-habits (max-width: 360px) {
@@ -420,16 +421,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 .rhh-profile-playful .vc-collection-art { display: block; background-repeat: no-repeat; }
 .rhh-profile-food-art { display: block; flex: none; width: 40px; height: 40px; }
 .rhh-profile-food-art > .vc-collection-art { width: 100%; height: 100%; }
-.rhh-profile-motion-note { display: none; margin: 8px 0 0; color: var(--ink-soft); }
 .rhh-profile-notice, .rhh-profile-caption { margin: 8px 0 0; color: var(--ink-soft); }
-.rhh-profile-action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: var(--space-4) 0; }
-.rhh-profile-action { min-width: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 60%); padding: var(--space-3); transition: border-color var(--dur-2) var(--ease), background var(--dur-2) var(--ease); }
-.rhh-profile-action:hover { border-color: var(--gs-metal-line-strong); background: rgb(var(--glass-cell) / 88%); }
-.rhh-profile-action h4 { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--text-ui, 15px); font-weight: 600; }
-.rhh-profile-action h4 > span { display: inline-flex; flex: none; color: var(--ink-soft); }
-.rhh-profile-action p { margin: 8px 0 0; }
-.rhh-profile-action .rhh-profile-try { display: grid; gap: 2px; color: var(--ink-soft); }
-.rhh-profile-try > span { font-weight: 600; }
 .rhh-profile-learned { display: grid; gap: 8px; margin: 12px 0 0; padding-left: 1.2em; }
 .rhh-profile-playful .rhh-profile-habits > p { margin: 8px 0 0; }
 .rhh-collection-heading { display: flex; align-items: center; gap: var(--space-3); margin: 0 0 var(--space-4); }
@@ -506,7 +498,6 @@ html[data-theme="dark"] .rhh-collection-tile:not([data-found]) > .vc-collection-
 @container rhh-habits (max-width: 360px) {
   .rhh-profile-nav > button { gap: 2px; padding-inline: 4px; }
   .rhh-profile-nav .rhh-profile-nav-art { width: 20px; height: 20px; }
-  .rhh-profile-action-grid { grid-template-columns: minmax(0, 1fr); }
   .rhh-behavior-grid, .rhh-accessory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rhh-collection-switch > button { flex-wrap: wrap; gap: 2px 6px; }
   .rhh-wardrobe-preview { width: 112px; height: 112px; }
@@ -515,17 +506,13 @@ html[data-theme="dark"] .rhh-collection-tile:not([data-found]) > .vc-collection-
 html[data-reduce-motion] .rhh-profile-playful::before,
 html[data-gfx="off"] .rhh-profile-playful::before,
 html[data-gfx="soft"] .rhh-profile-playful::before { display: none; }
-html[data-reduce-motion] .rhh-profile-motion-note,
-html[data-gfx="off"] .rhh-profile-motion-note { display: block; }
-html[data-reduce-motion] .rhh-profile-action,
 html[data-reduce-motion] .rhh-collection-tile,
 html[data-reduce-motion] .rhh-collection-switch > button,
-html[data-gfx="off"] .rhh-profile-action,
 html[data-gfx="off"] .rhh-collection-tile,
 html[data-gfx="off"] .rhh-collection-switch > button,
-html[data-gfx="soft"] .rhh-profile-action,
 html[data-gfx="soft"] .rhh-collection-tile,
 html[data-gfx="soft"] .rhh-collection-switch > button { transform: none; transition: none; }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings :is(.rhh-link, .rhh-collection-tile, .rhh-collection-switch > button) { transform: none; transition: none; }
 .rhh-ico {
   display: inline-grid;
   flex: none;
@@ -1752,20 +1739,10 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch.on { b
 .rhh-companion-settings .rhh-profile-mark { width: 44px; height: 44px; border: 0; border-radius: var(--r-md); background: var(--companion-lilac); color: var(--companion-accent); }
 .rhh-companion-settings .rhh-profile-meta, .rhh-companion-settings .rhh-trait-favorite-copy > span { color: var(--companion-soft); }
 .rhh-companion-settings .rhh-trait-favorite { gap: 8px; border-left: 0; border-radius: var(--r-md); background: var(--companion-peach); padding: 8px 10px; }
-.rhh-companion-settings .rhh-profile-action-grid { gap: var(--space-3); margin-block: var(--space-4); }
-.rhh-companion-settings .rhh-profile-action { border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-1); transition: transform var(--dur-spring-smooth) var(--spring-smooth), box-shadow var(--dur-2) var(--ease); }
-.rhh-companion-settings .rhh-profile-action:hover { border-color: var(--companion-line); background: var(--companion-paper); transform: translateY(-2px); box-shadow: var(--elev-2); }
-.rhh-companion-settings .rhh-profile-action h4 { gap: 10px; font-weight: 700; }
-.rhh-companion-settings .rhh-profile-action h4 > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-md); background: var(--companion-peach); color: var(--companion-ink); }
-.rhh-companion-settings .rhh-profile-action[data-tone="1"] h4 > span { background: var(--companion-mint); }
-.rhh-companion-settings .rhh-profile-action[data-tone="2"] h4 > span { background: var(--companion-lilac); }
-.rhh-companion-settings .rhh-profile-action[data-tone="3"] h4 > span { background: var(--companion-blue); }
-.rhh-companion-settings .rhh-profile-action .rhh-profile-try { display: block; margin-top: 12px; color: var(--companion-soft); }
-.rhh-companion-settings .rhh-profile-try > span { display: inline; margin-right: 6px; color: var(--companion-accent); }
 .rhh-companion-settings .rhh-profile-habits { border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-paper); padding: var(--space-4); }
 .rhh-companion-settings .rhh-profile-learned { gap: 10px; padding-left: 1.2em; }
 .rhh-companion-settings .rhh-profile-learned li::marker { color: var(--companion-accent); }
-.rhh-companion-settings :is(.rhh-habit-empty, .rhh-habit-paused, .rhh-profile-caption, .rhh-trait-note, .rhh-trait-reset-note) { color: var(--companion-soft); }
+.rhh-companion-settings :is(.rhh-habit-empty, .rhh-habit-paused, .rhh-profile-caption, .rhh-trait-reset-note) { color: var(--companion-soft); }
 .rhh-companion-settings .rhh-trait-reason { grid-template-columns: minmax(0, 1fr); gap: 4px; border-top: 0; border-radius: var(--r-md); background: var(--companion-lilac); padding: var(--space-3); }
 .rhh-companion-settings .rhh-trait-reason > span:first-child { color: var(--companion-soft); }
 .rhh-companion-settings .rhh-habit-actions { border-color: var(--companion-line); }
@@ -1817,13 +1794,11 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch.on { b
 }
 @container rhh-habits (max-width: 360px) {
   .rhh-companion-settings .rhh-profile-nav button { flex-direction: column; gap: 2px; padding-inline: 3px; }
-  .rhh-companion-settings .rhh-profile-action-grid { grid-template-columns: minmax(0, 1fr); }
   .rhh-companion-settings .rhh-collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rhh-companion-settings .rhh-wardrobe-detail { grid-template-columns: 112px minmax(0, 1fr); gap: var(--space-2); }
   .rhh-companion-settings .rhh-wardrobe-preview { width: 112px; height: 112px; }
   .rhh-companion-settings .rhh-wardrobe-status { font-size: var(--text-body, 13.5px); }
 }
-html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings :is(.rhh-link, .rhh-profile-action, .rhh-collection-tile, .rhh-collection-switch > button) { transform: none; transition: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings :is(.rhh-seg-thumb, .rhh-switch, .rhh-knob),
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings .rhh-switch::before { transition: none; }
 
@@ -1876,7 +1851,6 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .vic-settings .rhh-companion-experience[data-paged] { display: flex; flex: 1; flex-direction: column; gap: 0; width: 100%; min-width: 0; min-height: 0; background: var(--companion-ground); }
 .vic-settings .rhh-companion-experience[data-paged] > .rhh-profile-nav { flex: none; margin-bottom: 10px; }
 .vic-settings .rhh-companion-experience[data-paged] > [role="tabpanel"]:not([hidden]) { display: flex; flex: 1; min-height: 0; }
-.vic-settings .rhh-companion-experience[data-paged] > .rhh-trait-note { display: none; }
 .rhh-companion-settings .rhh-collection-book { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; gap: 10px; background: var(--companion-ground); }
 .rhh-companion-settings .rhh-collection-book :is(.rhh-collection-heading, .rhh-collection-switch, .rhh-collection-detail, .rhh-collection-pages, .rhh-gift-arrival, .rhh-equipped-current) { flex: none; margin: 0; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-detail { position: static; z-index: auto; min-height: 96px; box-sizing: border-box; gap: 4px; padding: 10px 14px; box-shadow: var(--elev-1); }

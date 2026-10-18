@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
+import frozen104 from "../../art-src/빅타민/동행/작업회차/20261018-포즈통일114/고정입력/living-motion-sprite.json";
 import { sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
 import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
@@ -65,16 +66,16 @@ describe("104 additive living-pose asset integrity", () => {
   it("appends exactly eight authored keys at logical rows33–40 through the shared selector", () => {
     expect(registration).toMatchObject({ cell: 192, logicalCell: 80, grid: 8, gridRows: 2, authoredKeys: 8, unusedTransparentSlots: 8 });
     expect(living).toMatchObject({ cell: 192, logicalCell: 80, grid: 8, gridRows: 2, rowOffset: 33 });
-    expect(living.atlases).toEqual([registration.atlas]); expect(living.frames).toHaveLength(8); expect(living.rows).toEqual(keys.map((_, index) => [index]));
+    expect(frozen104.atlases).toEqual([registration.atlas]); expect(living.frames).toHaveLength(8); expect(living.rows).toEqual(keys.map((_, index) => [index]));
     expect(registration.frames.map(frame => frame.key)).toEqual(keys); expect(registration.proposedLogicalRows).toEqual(Object.fromEntries(keys.map((key, index) => [key, 33 + index])));
     const frameOffset = base.frames.length + play.frames.length, atlasOffset = base.atlases.length + play.atlases.length;
     expect(companionSpriteMetadata.rows).toHaveLength(41); expect(frameOffset).toBe(512);
     for (const [index, key] of keys.entries()) {
       const row = 33 + index, authored = registration.frames[index], { key: authoredKey, ...frame } = authored;
-      expect(authoredKey).toBe(key); expect(frame.index).toBe(index); expect(living.frames[index]).toEqual({ atlas: 0, ...frame });
-      expect(companionSpriteMetadata.rows[row]).toEqual([frameOffset + index]); expect(companionSpriteMetadata.frames[frameOffset + index]).toEqual({ atlas: atlasOffset, ...frame });
-      expect(companionSpriteSources(row)).toEqual([registration.atlas.src]);
-      for (const column of [0, 7, 15]) expect(selectCompanionSprite(-1, row, column)).toMatchObject({ atlas: "hd", physicalIndex: frameOffset + index, index, src: registration.atlas.src, grid: 8, gridRows: 2, frame });
+      expect(authoredKey).toBe(key); expect(frame.index).toBe(index); expect(frozen104.frames[index]).toEqual({ atlas: 0, ...frame });
+      expect(companionSpriteMetadata.rows[row]).toEqual([frameOffset + index]); expect(companionSpriteMetadata.frames[frameOffset + index]).toEqual({ ...living.frames[index], atlas: atlasOffset });
+      expect(companionSpriteSources(row)).toEqual([living.atlases[0].src]);
+      for (const column of [0, 7, 15]) expect(selectCompanionSprite(-1, row, column)).toMatchObject({ atlas: "hd", physicalIndex: frameOffset + index, index, src: living.atlases[0].src, grid: 8, gridRows: 2, frame: { ...living.frames[index], atlas: atlasOffset } });
     }
   });
 
@@ -84,7 +85,7 @@ describe("104 additive living-pose asset integrity", () => {
     const ratio = registration.cell / registration.logicalCell;
     expect(packing.frames).toHaveLength(8); expect(new Set(packing.frames.map(frame => frame.scale))).toEqual(new Set([130 / 367]));
     for (const [index, record] of packing.frames.entries()) {
-      const cell = cropCell(decoded.data, 1536, index), footprint = largestAlphaComponent(cell), frame = living.frames[index];
+      const cell = cropCell(decoded.data, 1536, index), footprint = largestAlphaComponent(cell), frame = frozen104.frames[index];
       expect(record.name).toBe(keys[index]); expect(record.index).toBe(index); expect(record.frame).toEqual({ index, x: frame.x, y: frame.y, clip: frame.clip });
       expect(footprint).toEqual(record.body); expect(footprint.bottom).toBe(180); expect(frame.y).toBe(5);
       expect((footprint.left + footprint.right) / 2 + frame.x * ratio).toBeCloseTo(96, 5); expect(footprint.bottom / ratio + frame.y).toBe(80);
@@ -112,11 +113,11 @@ describe("104 additive living-pose asset integrity", () => {
         if (pose.row < 33) continue;
         reached.add(pose.row);
         const selected = selectCompanionSprite(-1, pose.row, pose.phase * 15);
-        expect(selected.src).toBe(registration.atlas.src); expect(selected.index).toBe(pose.row - 33);
+        expect(selected.src).toBe(living.atlases[0].src); expect(selected.index).toBe(pose.row - 33);
       }
     }
     expect([...reached].sort((a, b) => a - b)).toEqual(keys.map((_, index) => 33 + index));
     const quiet = sampleCompanionCozySleep(6000, 12000); expect(quiet).toMatchObject({ row: 40, dreaming: true });
-    expect(selectCompanionSprite(-1, quiet.row, 0)).toMatchObject({ src: registration.atlas.src, index: 7 });
+    expect(selectCompanionSprite(-1, quiet.row, 0)).toMatchObject({ src: living.atlases[0].src, index: 7 });
   });
 });

@@ -10,7 +10,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = 'lib/ui/viewer-companion/accessory-anchors.json';
 const metadataPaths = ['hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite'].map(name => `lib/ui/viewer-companion/${name}.json`);
 const args = process.argv.slice(2), check = args.includes('--check'), sheets = args.includes('--sheet');
-if (args.some(arg => !['--check', '--sheet'].includes(arg))) throw Error('Usage: node scripts/prepare-companion-accessory-anchors.mjs [--check] [--sheet]');
+const outArg = args.find(arg => arg.startsWith('--out='));
+if (args.some(arg => !['--check', '--sheet'].includes(arg) && !arg.startsWith('--out='))) throw Error('Usage: node scripts/prepare-companion-accessory-anchors.mjs [--check] [--sheet] [--out=.scratch-pw/...]');
+const evidenceFolder = path.resolve(root, outArg?.slice(6) ?? '.scratch-pw/companion-106');
+if (!evidenceFolder.startsWith(path.join(root, '.scratch-pw') + path.sep)) throw Error('Anchor evidence must stay in workspace .scratch-pw');
 const cell = 192, logicalCell = 80, ratio = cell / logicalCell;
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const round = value => Math.round(value * 1e6) / 1e6;
@@ -32,6 +35,14 @@ const manualKeys = [
   { atlas: 20, cells: [8, 9, 10], roots: [[104, 157], [132, 146]], body: [96, 116], note: 'Rear inverted tumble, ears extend down/right; no visible eyes or cheeks.' },
   { atlas: 27, cells: [8, 9, 10, 11, 12, 13, 14, 15], eyes: [[84, 153], [113, 153]], roots: [[77, 132], [117, 132]], note: 'Sulk key with ears folded down the face: orange components are inner ears, not square cheeks.' },
   { atlas: 32, cells: [7], roots: [[90, 114], [120, 116]], note: 'Curled sleep key: the folded far ear has no isolated inner-yellow component; roots observed on the complete source key.' },
+];
+// Explicit pixel ROIs belong to these observed bytes, not an atlas number.
+// New drawings must be measured again instead of inheriting an old ear root.
+const manualSources = { 20: '52bdd0c379f3c74823944bfe64cbed59c4005072821afacd03950336c5b9748c', 27: '4abe40fa4f7214e82eec91ace885fdac174d754425d96dac1c3b33738b0ca944', 32: 'c8a66edbb01cc423ecebe0bf37b5a8ac3233fa7ae22c9a6735a8b85854771d6c' };
+const currentManualKeys = [
+  { sha256: 'c0c4b95b09a56be0278aecc7368eedb3644a9b367c72f43224ee1767cba01fd4', atlas: 20, cells: [3, 4, 5], roots: [[125, 120], [121, 142]], note: '114 source viewed at native192 with20px grid: both pale inner ears extend right; observe their body junctions, not yellow body papers.' },
+  { sha256: 'c0c4b95b09a56be0278aecc7368eedb3644a9b367c72f43224ee1767cba01fd4', atlas: 20, cells: [6, 7], roots: [[80, 136], [87, 156]], body: [110, 124], note: '114 source rear tumble directly inspected: two ears join the left/lower body; no eyes or face supplied.' },
+  { sha256: 'c0c4b95b09a56be0278aecc7368eedb3644a9b367c72f43224ee1767cba01fd4', atlas: 20, cells: [8, 9, 10], roots: [[102, 159], [125, 154]], body: [108, 125], note: '114 source inverted rear tumble directly inspected: white rear ears join below the body; no face is invented.' },
 ];
 // These yaw labels describe the authored drawing. In-plane roll is measured
 // independently; a90-degree tumble must not choose an anatomical side view.
@@ -145,8 +156,9 @@ function crossSection(body, origin, axis, normal, height) {
   return [left, right];
 }
 function register(bytes, frame, physicalIndex) {
-  const { atlas, index } = frame, parts = classify(bytes), manual = manualKeys.find(key => key.atlas === atlas && key.cells.includes(index));
+  const { atlas, index } = frame, parts = classify(bytes), manual = currentManualKeys.find(key => key.sha256 === sources[atlas].sha256 && key.atlas === atlas && key.cells.includes(index)) ?? (manualSources[atlas] === sources[atlas].sha256 ? manualKeys.find(key => key.atlas === atlas && key.cells.includes(index)) : undefined);
   const view = orientation(atlas, index), rear = view === 'back';
+  if (rear && !manual?.body) throw Error(`Unregistered rear source ${atlas}:${index}: inspect actual new body/ear roots before registration`);
   const measured = rear ? { eyes: [], cheeks: [], method: 'rear-body-ear-roots' } : findFace(parts, atlas, index, manual);
   const face = rear ? manual.body : midpoint(measured.eyes[0].center, measured.eyes[1].center);
   const normal = rear ? unit(minus(manual.body, midpoint(...manual.roots))) : (() => { const axis = unit(minus(measured.eyes[1].center, measured.eyes[0].center)); return [-axis[1], axis[0]]; })();
@@ -166,7 +178,7 @@ function register(bytes, frame, physicalIndex) {
   const anchor = (p, width, angle = roll) => ({ x: round(p[0] / ratio), y: round(p[1] / ratio), width: round(width / ratio), roll: round(angle) });
   const headWidth = Math.max(1, distance(...ears.roots) - 3);
   const headRoll = rear ? roll : Math.atan2(ears.roots[1][1] - ears.roots[0][1], ears.roots[1][0] - ears.roots[0][0]) * 180 / Math.PI;
-  return { physicalIndex, atlas, index, orientation: view, face: anchor(face, faceWidth), head: anchor(head, headWidth, headRoll), chest: anchor(chest, chestRange[1] - chestRange[0]), sideChest: anchor(sideChest, chestRange[1] - chestRange[0]), sideBody: anchor(sideBody, sideRange[1] - sideRange[0]), bodyBounds: point(parts.body.bounds), evidence: { method: measured.method, sourceKey: `${atlas}:${index}`, eyes: measured.eyes.map(evidencePart), cheeks: measured.cheeks.map(evidencePart), earRoots: ears.roots.map(point), earComponents: ears.components.map(evidencePart), earMethod: ears.method, ...(manual ? { correction: manual.note } : {}) } };
+  return { physicalIndex, atlas, index, orientation: view, face: anchor(face, faceWidth), head: anchor(head, headWidth, headRoll), chest: anchor(chest, chestRange[1] - chestRange[0]), sideChest: anchor(sideChest, chestRange[1] - chestRange[0]), sideBody: anchor(sideBody, sideRange[1] - sideRange[0]), bodyBounds: point(parts.body.bounds), eyes: measured.eyes.map(part => ({ center: point(part.center), bounds: point(part.bounds) })), evidence: { method: measured.method, sourceKey: `${atlas}:${index}`, eyes: measured.eyes.map(evidencePart), cheeks: measured.cheeks.map(evidencePart), earRoots: ears.roots.map(point), earComponents: ears.components.map(evidencePart), earMethod: ears.method, ...(manual ? { correction: manual.note } : {}) } };
 }
 
 const metadataBytes = await Promise.all(metadataPaths.map(name => fs.readFile(path.join(root, name))));
@@ -198,7 +210,7 @@ if (check) { if (await fs.readFile(path.join(root, output), 'utf8') !== serializ
 else await fs.writeFile(path.join(root, output), serialized);
 
 if (sheets) {
-  const folder = path.join(root, '.scratch-pw/companion-106'); await fs.mkdir(folder, { recursive: true });
+  const folder = evidenceFolder; await fs.mkdir(folder, { recursive: true });
   await fs.writeFile(path.join(folder, 'accessory-anchor-evidence.json'), `${JSON.stringify({ metadata: result.metadata, sources: result.sources, orientationEvidence: 'Observed source-key yaw, not in-plane roll; no pure anatomical side-only pose is invented.', note: 'Measured anchors and source-key observations are not a visual PASS or owner approval.', corrections: manualKeys, frames: registered.map(frame => ({ physicalIndex: frame.physicalIndex, ...frame.evidence })) }, null, 2)}\n`);
   for (let chunk = 0; chunk < 3; chunk++) {
     const inputs = [];

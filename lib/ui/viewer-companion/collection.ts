@@ -1,5 +1,6 @@
 import { COMPANION_FOOD_KINDS, isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 import { advanceCompanionGifts, COMPANION_WEARABLE_IDS, isCompanionAccessoryId, normalizeCompanionGifts, type CompanionAccessoryId, type CompanionGiftState } from "./gifts";
+import { currentCompanionAccessory, COMPANION_ACCESSORY_IDS } from "./accessory-catalog";
 import { COMPANION_SITUATION_IDS, observedCompanionSituation, type CompanionSituationId, type CompanionSituationObservation } from "./moments";
 export { COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES, COMPANION_SITUATION_HINTS, type CompanionSituationId } from "./moments";
 
@@ -16,7 +17,7 @@ export type CompanionCollectionKind = "food" | "behavior" | "moment" | "accessor
 export type CompanionCollection = { version: 1; foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; situations: CompanionSituationId[]; gifts: CompanionGiftState; seen?: CompanionCollectionSeen };
 /** Missing seen state acknowledges history without a migration write. The
  * first new discovery freezes that baseline before adding the new item. */
-const collectionSeen = (value: CompanionCollection): CompanionCollectionSeen => value.seen ?? { foods: value.foods, behaviors: value.behaviors, situations: value.situations, accessories: value.gifts.unlocked.filter(id => COMPANION_WEARABLE_IDS.includes(id)) };
+const collectionSeen = (value: CompanionCollection): CompanionCollectionSeen => value.seen ?? { foods: value.foods, behaviors: value.behaviors, situations: value.situations, accessories: value.gifts.unlocked };
 const seenKey = { food: "foods", behavior: "behaviors", moment: "situations", accessory: "accessories" } as const;
 const collectedIds = (value: CompanionCollection, kind: CompanionCollectionKind): readonly string[] => kind === "accessory" ? COMPANION_WEARABLE_IDS.filter(id => value.gifts.unlocked.includes(id)) : value[seenKey[kind]];
 export function isCompanionCollectionUnread(value: CompanionCollection | null | undefined, kind: CompanionCollectionKind, id: string): boolean {
@@ -49,7 +50,10 @@ export function normalizeCompanionCollection(value: unknown): CompanionCollectio
       foods: collection.foods.filter(id => !Array.isArray(seen.foods) || seen.foods.includes(id)),
       behaviors: collection.behaviors.filter(id => !Array.isArray(seen.behaviors) || seen.behaviors.includes(id)),
       situations: collection.situations.filter(id => !Array.isArray(seen.situations) || seen.situations.includes(id)),
-      accessories: COMPANION_WEARABLE_IDS.filter(id => collection.gifts.unlocked.includes(id) && (!Array.isArray(seen.accessories) || seen.accessories.includes(id))),
+      // An ordinary replacement inherits its predecessor's acknowledgment.
+      // Preserve legacy seen keys too, so this translation is idempotent and
+      // never turns retired, already-inspected history into a new discovery.
+      accessories: COMPANION_ACCESSORY_IDS.filter(id => collection.gifts.unlocked.includes(id) && (!Array.isArray(seen.accessories) || seen.accessories.includes(id) || seen.accessories.some(old => isCompanionAccessoryId(old) && currentCompanionAccessory(old) === id))),
     };
   }
   return collection;
@@ -128,7 +132,8 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
       const key = seenKey[kind], seen = collectionSeen(memory);
       // Refresh before this synchronous read/write so a stale settings tab
       // cannot replace another tab's discoveries, equipment or acknowledgments.
-      return commit({ ...memory, seen: { ...seen, [key]: collectedIds(memory, kind).filter(item => item === id || (seen[key] as readonly string[]).includes(item)) } as CompanionCollectionSeen }, true);
+      const owned = kind === "accessory" ? memory.gifts.unlocked : collectedIds(memory, kind);
+      return commit({ ...memory, seen: { ...seen, [key]: owned.filter(item => item === id || (seen[key] as readonly string[]).includes(item)) } as CompanionCollectionSeen }, true);
     },
     interaction() {
       refresh(); if (memory.gifts.interactionCredit === 1) return;
@@ -142,14 +147,15 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
       return arrived && memory.gifts.pending === gifts.pending;
     },
     openGift(): CompanionAccessoryId | null {
-      refresh(); const id = memory.gifts.pending; if (!id) return null;
+      refresh(); const parcel = memory.gifts.pending; if (!parcel) return null;
+      const id = currentCompanionAccessory(parcel);
       // Opening is itself the explicit witnessed outcome, including inside
       // settings while the world is paused. Saved ownership never infers it.
-      commit({ ...memory, seen: collectionSeen(memory), situations: COMPANION_SITUATION_IDS.filter(item => item === "gift-opened" || memory.situations.includes(item)), gifts: { ...memory.gifts, pending: null, unlocked: [...memory.gifts.unlocked, id], activeMs: 0, interactionCredit: 0 } }, true);
+      commit({ ...memory, seen: collectionSeen(memory), situations: COMPANION_SITUATION_IDS.filter(item => item === "gift-opened" || memory.situations.includes(item)), gifts: { ...memory.gifts, pending: null, unlocked: COMPANION_ACCESSORY_IDS.filter(item => item === parcel || item === id || memory.gifts.unlocked.includes(item)), activeMs: 0, interactionCredit: 0 } }, true);
       return id;
     },
     equip(id: CompanionAccessoryId | null) {
-      refresh(); if (id !== null && (!isCompanionAccessoryId(id) || !memory.gifts.unlocked.includes(id)) || memory.gifts.equipped === id) return false;
+      refresh(); if (id !== null && (!isCompanionAccessoryId(id) || !COMPANION_WEARABLE_IDS.includes(id) || !memory.gifts.unlocked.includes(id)) || memory.gifts.equipped === id) return false;
       return commit({ ...memory, gifts: { ...memory.gifts, equipped: id } }, true);
     },
   };

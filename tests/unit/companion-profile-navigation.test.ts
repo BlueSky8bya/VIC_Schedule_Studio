@@ -4,6 +4,8 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
+import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
+import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
 
 const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, activity: vi.fn(), acknowledge: vi.fn() }));
 vi.mock("react", async importOriginal => ({ ...await importOriginal<typeof import("react")>(),
@@ -27,7 +29,7 @@ type Element = ReactElement<Record<string, unknown>>;
 let tree: Element;
 let discoveryRendering = false;
 let discoveryCollection: CompanionCollection | null = null;
-async function render(active = true) {
+async function render(active = true, preferences = DEFAULT_COMPANION_PREFERENCES) {
   vi.stubGlobal("React", await import("react"));
   harness.state = 0; harness.ref = 0;
   if (discoveryRendering) {
@@ -35,7 +37,7 @@ async function render(active = true) {
     tree = CompanionDiscovery({ collection: discoveryCollection, active }) as Element;
   } else {
     const { CompanionProfile } = await import("@/components/shared/companion-profile");
-    tree = CompanionProfile({ preferences: DEFAULT_COMPANION_PREFERENCES, active });
+    tree = CompanionProfile({ preferences, active });
   }
   return tree;
 }
@@ -68,6 +70,39 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("actual shared profile navigation callbacks", () => {
+  it("removes passive cards, instructions and storage chatter while retaining the real portrait, facts and useful empty state", async () => {
+    await render();
+    expect(nodes(tree).filter(node => ["rhh-profile-action-grid", "rhh-profile-action", "rhh-profile-try", "rhh-profile-motion-note", "rhh-trait-note"].includes(String(node.props.className)))).toHaveLength(0);
+    expect(find(node => node.props["aria-label"] === "옷장 열기")).toBeDefined();
+    expect(find(node => node.props.className === "rhh-companion-facts")).toBeDefined();
+    expect(find(node => node.props.className === "rhh-habit-empty").props.children).toBe("아직 배운 습관이 없어요.");
+    expect(nodes(tree).filter(node => node.props.className === "rhh-trait-reason")).toHaveLength(0);
+  });
+  it("describes real learned distance, play frequency and look duration changes in concrete words for every species/personality/gait", async () => {
+    for (const animalMode of ["default", "cat", "dog"] as const) for (const personality of ["curious", "affectionate", "sleepy"] as const) for (const speed of ["relaxed", "normal", "lively"] as const) for (const sign of [-1, 1]) {
+      const preferences = { ...DEFAULT_COMPANION_PREFERENCES, animalMode, personality, speed };
+      const habits = { ...DEFAULT_COMPANION_MEMORY.habits, sociability: sign * .6, playfulness: sign * .3, confidence: sign * .5 };
+      const baseline = getCompanionBehaviorProfile({ ...preferences, learnFromYou: false }), actual = getCompanionBehaviorProfile(preferences, habits);
+      harness.states = []; harness.refs = []; harness.states[1] = { ...DEFAULT_COMPANION_MEMORY, habits };
+      await render(true, preferences);
+      const list = find(node => node.props.className === "rhh-profile-learned");
+      const words = nodes(list).filter(node => node.type === "li").map(node => node.props.children);
+      expect(words).toEqual([
+        actual.pointerGap < baseline.pointerGap ? "마우스에 더 바짝 다가와요." : "마우스에서 조금 떨어져 걸어요.",
+        actual.playWeight > baseline.playWeight ? "재롱을 더 자주 부려요." : "재롱을 덜 부려요.",
+        actual.lookScale < baseline.lookScale ? "잠깐 두리번거려요." : "조금 더 오래 두리번거려요.",
+      ]);
+    }
+  });
+  it("shows a concise real recent event and makes stored habits visibly inactive when learning is OFF", async () => {
+    harness.states[1] = { ...DEFAULT_COMPANION_MEMORY, habits: { ...DEFAULT_COMPANION_MEMORY.habits, sociability: .6, playfulness: .3, confidence: .5 }, life: { ...DEFAULT_COMPANION_MEMORY.life, recent: ["kind-touch"] } };
+    await render(true, { ...DEFAULT_COMPANION_PREFERENCES, learnFromYou: false });
+    expect(find(node => node.props.className === "rhh-habit-paused").props.children).toBe("적용 중지");
+    expect(nodes(find(node => node.props.className === "rhh-profile-learned")).filter(node => node.type === "li")).toHaveLength(3);
+    expect(nodes(find(node => node.props.className === "rhh-trait-reason")).filter(node => node.type === "span").map(node => node.props.children)).toEqual(["최근 경험", "쓰다듬기"]);
+    await render(); expect(nodes(tree).filter(node => node.props.className === "rhh-habit-paused")).toHaveLength(0);
+    expect(nodes(find(node => node.props.className === "rhh-profile-learned")).filter(node => node.type === "li")).toHaveLength(3);
+  });
   it("acknowledges only deliberate unread tile inspection, not mounting, category changes or paging", async () => {
     harness.acknowledge.mockReturnValue(true);
     discoveryCollection = { version: 1, foods: [...COMPANION_FOOD_KINDS.slice(0, 10)], behaviors: ["ask-petting"], situations: ["meal-finished"], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [], behaviors: [], situations: [], accessories: [] } };

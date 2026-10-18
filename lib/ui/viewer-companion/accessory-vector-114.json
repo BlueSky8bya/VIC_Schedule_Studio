@@ -1,0 +1,157 @@
+{
+  "src": "/companion/collection/accessories-114-v1.svg",
+  "cell": 128,
+  "columns": 4,
+  "frames": [
+    {
+      "id": "bell-badge",
+      "bounds": [
+        35,
+        29,
+        58,
+        70
+      ],
+      "paired": false
+    },
+    {
+      "id": "eyepatch",
+      "bounds": [
+        28,
+        28,
+        72,
+        72
+      ],
+      "paired": false
+    },
+    {
+      "id": "star-patch",
+      "bounds": [
+        28,
+        28,
+        72,
+        72
+      ],
+      "paired": false
+    },
+    {
+      "id": "round-glasses",
+      "bounds": [
+        13,
+        39,
+        102,
+        50
+      ],
+      "paired": true
+    },
+    {
+      "id": "wire-glasses",
+      "bounds": [
+        13,
+        44,
+        102,
+        40
+      ],
+      "paired": true
+    },
+    {
+      "id": "browline-glasses",
+      "bounds": [
+        13,
+        40,
+        102,
+        46
+      ],
+      "paired": true
+    },
+    {
+      "id": "heart-glasses",
+      "bounds": [
+        12,
+        38,
+        104,
+        52
+      ],
+      "paired": true
+    },
+    {
+      "id": "cat-eye-glasses",
+      "bounds": [
+        11,
+        39,
+        106,
+        47
+      ],
+      "paired": true
+    },
+    {
+      "id": "monocle",
+      "bounds": [
+        28,
+        28,
+        72,
+        72
+      ],
+      "paired": false
+    },
+    {
+      "id": "top-hat",
+      "bounds": [
+        20,
+        23,
+        88,
+        81
+      ],
+      "paired": false
+    },
+    {
+      "id": "magician-hat",
+      "bounds": [
+        18,
+        19,
+        92,
+        85
+      ],
+      "paired": false
+    },
+    {
+      "id": "retro-cap",
+      "bounds": [
+        16,
+        35,
+        96,
+        64
+      ],
+      "paired": false
+    },
+    {
+      "id": "detective-hat",
+      "bounds": [
+        16,
+        31,
+        96,
+        70
+      ],
+      "paired": false
+    },
+    {
+      "id": "wizard-hat",
+      "bounds": [
+        14,
+        15,
+        100,
+        92
+      ],
+      "paired": false
+    },
+    {
+      "id": "bucket-hat",
+      "bounds": [
+        16,
+        33,
+        96,
+        70
+      ],
+      "paired": false
+    }
+  ]
+}

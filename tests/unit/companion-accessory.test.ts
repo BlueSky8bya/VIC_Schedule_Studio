@@ -30,6 +30,26 @@ describe("adopted pose wardrobe", () => {
       expect(companionGiftAnchor(changed)).toBeNull();
     }
   });
+  it("covers the measured source-local eye on every visible pose and aligns each new lens pair to the actual eye span", () => {
+    const measured = anchors.frames as unknown as Array<typeof anchors.frames[number] & { eyes: { center: number[]; bounds: number[] }[] }>;
+    for (const pose of measured) {
+      if (pose.orientation === "back") continue;
+      expect(pose.eyes, `eyes ${pose.physicalIndex}`).toHaveLength(2);
+      const selected = selectCompanionSprite(pose.physicalIndex), eye = pose.eyes[1];
+      for (const id of ["eyepatch", "star-patch", "monocle"] as const) {
+        const placed = companionAccessoryPlacement(selected, id)!;
+        expect(placed.x, `${id}:${pose.physicalIndex}`).toBeCloseTo(eye.center[0]); expect(placed.y).toBeCloseTo(eye.center[1]);
+        const coreRadius = 22 * (placed.art.viewScale ?? 1) * placed.width / placed.art.content.width;
+        for (const x of [eye.bounds[0], eye.bounds[2]]) for (const y of [eye.bounds[1], eye.bounds[3]]) expect(Math.hypot(x - placed.x, y - placed.y), `${id}:${pose.physicalIndex} ${id === "monocle" ? "lens interior" : "opaque eye core"}`).toBeLessThan(coreRadius);
+        expect(placed.layer).toBe("front");
+      }
+      for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "cat-eye-glasses"] as const) {
+        const placed = companionAccessoryPlacement(selected, id)!, span = Math.hypot(pose.eyes[1].center[0] - pose.eyes[0].center[0], pose.eyes[1].center[1] - pose.eyes[0].center[1]);
+        expect(placed.width / placed.art.content.width * 48 * placed.art.viewScale!, `${id}:${pose.physicalIndex} lens span`).toBeCloseTo(span);
+        expect(placed.rotation).toBeCloseTo(pose.face.roll); expect(placed.pivot).toEqual({ x: 64, y: 64 });
+      }
+    }
+  });
   it("keeps headwear recognizable at the actual92px idle size", () => {
     for (const index of [0, 6, 32]) for (const id of ["beret", "flower-crown"] as const) {
       const placed = companionAccessoryPlacement(selectCompanionSprite(index), id)!;
@@ -46,7 +66,7 @@ describe("adopted pose wardrobe", () => {
     expect(companionAccessoryPlacement(rear, "scarf")?.layer).toBe("back");
     expect(companionAccessoryPlacement(rear, "bell-pendant")?.layer).toBe("back");
     expect(companionAccessoryPlacement(rear, "bow")?.layer).toBe("back");
-    expect(companionAccessoryPlacement(rear, "star-pin")?.layer).toBe("back");
+    expect(companionAccessoryPlacement(rear, "monocle")?.layer).toBe("back");
     expect(companionGiftAnchor(rear)?.behind).toBe(true);
   });
   it("aligns both authored quarter directions before the shared travel mirror, rather than flipping every atlas alike", () => {
@@ -73,11 +93,11 @@ describe("adopted pose wardrobe", () => {
       expect(moving.y - placed.y).toBeCloseTo(-Math.cos(radians) * 8);
     }
   });
-  it("puts the far open temple and satchel shoulder strap behind the adopted body with the same source pixels", () => {
+  it("puts the approved far temple behind the adopted body, while retired bags use the active head fitting", () => {
     const host = () => { const values = new Map<string, string>(); return { hidden: true, values, style: { setProperty: (key: string, value: string) => { values.set(key, value); } } }; };
     const back = host(), front = host(), gift = host(), painter = createCompanionAccessoryPainter({ back: back as unknown as HTMLElement, front: front as unknown as HTMLElement, gift: gift as unknown as HTMLElement });
     const selected = selectCompanionSprite(304);
-    for (const id of ["sunglasses", "satchel"] as const) {
+    for (const id of ["sunglasses"] as const) {
       painter.paint(selected, id, false);
       expect(back.hidden).toBe(false); expect(front.hidden).toBe(false); expect(gift.hidden).toBe(true);
       expect(back.values.get("background-image")).toBe(front.values.get("background-image"));
@@ -90,10 +110,12 @@ describe("adopted pose wardrobe", () => {
     expect(back.hidden).toBe(true); expect(front.values.get("clip-path")).toBe("none");
     painter.paint(selectCompanionSprite(0), "sunglasses", false);
     expect(back.hidden).toBe(true); expect(front.values.get("clip-path")).toBe("none");
+    expect(companionAccessoryPlacement(selected, "satchel")).toEqual(companionAccessoryPlacement(selected, "retro-cap"));
   });
-  it("keeps an umbrella above its side-body attachment and animates only the equipped item relative to its gift", () => {
+  it("keeps the retired umbrella's equivalent on the head and animates only the equipped item relative to its gift", () => {
     const selected = selectCompanionSprite(0), umbrella = companionAccessoryPlacement(selected, "leaf-umbrella")!, giftPoint = companionGiftAnchor(selected)!;
-    expect(umbrella.y).toBeLessThan(giftPoint.y); expect(umbrella.x).toBeGreaterThan(giftPoint.x);
+    expect(umbrella.y).toBeLessThan(giftPoint.y); expect(umbrella.layer).toBe("headwear");
+    expect(umbrella).toEqual(companionAccessoryPlacement(selected, "bucket-hat"));
     const host = () => { const values = new Map<string, string>(); return { hidden: true, values, style: { setProperty: (key: string, value: string) => { values.set(key, value); } } }; };
     const back = host(), front = host(), gift = host(), painter = createCompanionAccessoryPainter({ back: back as unknown as HTMLElement, front: front as unknown as HTMLElement, gift: gift as unknown as HTMLElement });
     painter.paint(selected, "baseball-cap", true);
@@ -109,7 +131,7 @@ describe("adopted pose wardrobe", () => {
       const selected = selectCompanionSprite(pose.physicalIndex), angle = pose.face.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
       const mouth = calibrated.get(pose.physicalIndex), mouthSource = mouth && mouths.atlases[mouth.atlas];
       const mouthBottom = mouth && mouthSource?.src === selected.src && mouthSource.sha256 === anchors.sources[pose.atlas].sha256 ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => depth(mouth.bounds[x] / mouths.cell * 80, mouth.bounds[y] / mouths.cell * 80)))) : undefined;
-      for (const id of COMPANION_ACCESSORY_IDS.filter(id => ["chest-badge", "front-bow", "front-pocket"].includes(COMPANION_ACCESSORIES[id].family))) for (const age of [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2600]) {
+      for (const id of COMPANION_ACCESSORY_IDS.filter(id => ["chest-badge", "front-bow", "front-pocket"].includes(COMPANION_ACCESSORIES[currentCompanionAccessory(id)].family))) for (const age of [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2600]) {
         const placed = companionAccessoryPlacement(selected, id, sampleCompanionAccessoryMotion(id, age).accessory)!, rotation = placed.rotation * Math.PI / 180, height = placed.width * placed.art.content.height / placed.art.content.width;
         const corners = [-1, 1].flatMap(sx => [-1, 1].map(sy => {
           const x = sx * placed.width / 2, y = sy * height / 2;

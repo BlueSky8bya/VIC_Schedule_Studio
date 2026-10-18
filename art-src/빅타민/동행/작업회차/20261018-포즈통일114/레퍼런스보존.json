@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "actualToolArgumentsRemainUnchanged": true,
+  "scope": "References4/5 were opened and passed at their originalG:paths. They were not copied into this workspace before generation. Identical SHA-verified bytes are preserved afterward for independent handoff.",
+  "references": [
+    {
+      "id": "REF-016",
+      "originalPath": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "preservedPath": "고정입력/원본도식_REF016.png",
+      "generationInputSha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "copySha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "preservationTiming": "POST_GENERATION_COPY_OF_UNCHANGED_ACTUAL_INPUT",
+      "copiedAtUtc": "2026-10-18T12:53:32.664832+00:00",
+      "preGenerationWorkspaceFreeze": false
+    },
+    {
+      "id": "REF-017",
+      "originalPath": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\02_표정\\스크린샷 2026-10-06 025426.png",
+      "preservedPath": "고정입력/원본표정_REF017.png",
+      "generationInputSha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5",
+      "copySha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5",
+      "preservationTiming": "POST_GENERATION_COPY_OF_UNCHANGED_ACTUAL_INPUT",
+      "copiedAtUtc": "2026-10-18T12:53:32.679332+00:00",
+      "preGenerationWorkspaceFreeze": false
+    }
+  ]
+}

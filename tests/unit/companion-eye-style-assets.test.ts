@@ -37,8 +37,8 @@ const hd = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt
 const play = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata.play);
 //098's receipt covers the immutable33-row/512-slot prefix. Later living keys
 // append their own registration and receipts; they do not alter this coverage.
-const protectedRows = companionSpriteMetadata.rows.slice(0, 33);
-const protectedFrames = companionSpriteMetadata.frames.slice(0, 512);
+const protectedRows = [...hd.rows, ...play.rows.map(row => row.map(index => index + hd.frames.length))];
+const protectedFrames = [...hd.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + hd.atlases.length }))];
 const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const alpha = (rgba: Buffer) => {
   const bytes = Buffer.alloc(rgba.length / 4);

@@ -1,0 +1,807 @@
+{
+  "version": 1,
+  "method": "Actual114 output32-cell contact visually inspected. Entire authored small central mouth ink union in separate inspected look/happy ROI, including lighter orange smile. Technical registration only; no source pixel changes, independent art review or owner approval.",
+  "cell": 192,
+  "roiByAction": {
+    "look": {
+      "left": 94,
+      "top": 127,
+      "right": 111,
+      "bottom": 136
+    },
+    "happy": {
+      "left": 101,
+      "top": 130,
+      "right": 115,
+      "bottom": 139
+    }
+  },
+  "darkPixel": {
+    "alphaGreaterThan": 200,
+    "redLessThan": 240,
+    "greenLessThan": 170,
+    "blueLessThan": 150
+  },
+  "packingReceipt": "art-src/빅타민/동행/작업회차/20261018-포즈통일114/패킹파생기록.json",
+  "contactSheet": "art-src/빅타민/동행/작업회차/20261018-포즈통일114/정리본/검토/식사32키.png",
+  "atlases": [
+    {
+      "src": "/companion/hd/vitamin-action-01-unified-114-v1.webp",
+      "sha256": "01418d058e4700dbb5c35db78cca5d35ea850ea645456c92782346f31bc6d59b"
+    },
+    {
+      "src": "/companion/hd/vitamin-action-09-unified-114-v1.webp",
+      "sha256": "3a55ffca812392b9e6547eb71ae3687dc28c46a02659bd79fd8fedb6922c709b"
+    }
+  ],
+  "frames": [
+    {
+      "index": 16,
+      "atlas": 0,
+      "cell": 0,
+      "x": 102,
+      "y": 129.5,
+      "bounds": [
+        97,
+        128,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 128,
+        "bottom": 131,
+        "pixels": 17
+      },
+      "logicalAfterRegistration": {
+        "x": 42.5,
+        "y": 59.37500033333333
+      }
+    },
+    {
+      "index": 17,
+      "atlas": 0,
+      "cell": 1,
+      "x": 103,
+      "y": 129.5,
+      "bounds": [
+        98,
+        128,
+        108,
+        131
+      ],
+      "component": {
+        "left": 98,
+        "right": 108,
+        "top": 128,
+        "bottom": 131,
+        "pixels": 19
+      },
+      "logicalAfterRegistration": {
+        "x": 42.70833366666667,
+        "y": 58.95833333333333
+      }
+    },
+    {
+      "index": 18,
+      "atlas": 0,
+      "cell": 2,
+      "x": 103,
+      "y": 129,
+      "bounds": [
+        98,
+        127,
+        108,
+        131
+      ],
+      "component": {
+        "left": 98,
+        "right": 108,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 42.70833366666667,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 19,
+      "atlas": 0,
+      "cell": 3,
+      "x": 103,
+      "y": 129,
+      "bounds": [
+        98,
+        127,
+        108,
+        131
+      ],
+      "component": {
+        "left": 98,
+        "right": 108,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 18
+      },
+      "logicalAfterRegistration": {
+        "x": 42.70833366666667,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 20,
+      "atlas": 0,
+      "cell": 4,
+      "x": 103,
+      "y": 129,
+      "bounds": [
+        98,
+        127,
+        108,
+        131
+      ],
+      "component": {
+        "left": 98,
+        "right": 108,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 18
+      },
+      "logicalAfterRegistration": {
+        "x": 42.70833366666667,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 21,
+      "atlas": 0,
+      "cell": 5,
+      "x": 103,
+      "y": 129,
+      "bounds": [
+        98,
+        127,
+        108,
+        131
+      ],
+      "component": {
+        "left": 98,
+        "right": 108,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 19
+      },
+      "logicalAfterRegistration": {
+        "x": 42.70833366666667,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 22,
+      "atlas": 0,
+      "cell": 6,
+      "x": 103,
+      "y": 129,
+      "bounds": [
+        98,
+        127,
+        108,
+        131
+      ],
+      "component": {
+        "left": 98,
+        "right": 108,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 42.70833366666667,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 23,
+      "atlas": 0,
+      "cell": 7,
+      "x": 103,
+      "y": 129,
+      "bounds": [
+        98,
+        127,
+        108,
+        131
+      ],
+      "component": {
+        "left": 98,
+        "right": 108,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 42.91666666666667,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 24,
+      "atlas": 0,
+      "cell": 8,
+      "x": 102,
+      "y": 129,
+      "bounds": [
+        97,
+        127,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 21
+      },
+      "logicalAfterRegistration": {
+        "x": 42.5,
+        "y": 59.166667000000004
+      }
+    },
+    {
+      "index": 25,
+      "atlas": 0,
+      "cell": 9,
+      "x": 102,
+      "y": 129,
+      "bounds": [
+        97,
+        127,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 42.5,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 26,
+      "atlas": 0,
+      "cell": 10,
+      "x": 102,
+      "y": 129,
+      "bounds": [
+        97,
+        127,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 42.916667,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 27,
+      "atlas": 0,
+      "cell": 11,
+      "x": 102,
+      "y": 129.5,
+      "bounds": [
+        97,
+        128,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 128,
+        "bottom": 131,
+        "pixels": 17
+      },
+      "logicalAfterRegistration": {
+        "x": 42.916667,
+        "y": 58.95833333333333
+      }
+    },
+    {
+      "index": 28,
+      "atlas": 0,
+      "cell": 12,
+      "x": 101.5,
+      "y": 129.5,
+      "bounds": [
+        97,
+        128,
+        106,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 106,
+        "top": 128,
+        "bottom": 131,
+        "pixels": 16
+      },
+      "logicalAfterRegistration": {
+        "x": 42.70833366666667,
+        "y": 58.95833333333333
+      }
+    },
+    {
+      "index": 29,
+      "atlas": 0,
+      "cell": 13,
+      "x": 102,
+      "y": 129.5,
+      "bounds": [
+        97,
+        128,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 128,
+        "bottom": 131,
+        "pixels": 17
+      },
+      "logicalAfterRegistration": {
+        "x": 42.916667,
+        "y": 58.95833333333333
+      }
+    },
+    {
+      "index": 30,
+      "atlas": 0,
+      "cell": 14,
+      "x": 102,
+      "y": 129,
+      "bounds": [
+        97,
+        127,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 19
+      },
+      "logicalAfterRegistration": {
+        "x": 42.708333,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 31,
+      "atlas": 0,
+      "cell": 15,
+      "x": 102,
+      "y": 129,
+      "bounds": [
+        97,
+        127,
+        107,
+        131
+      ],
+      "component": {
+        "left": 97,
+        "right": 107,
+        "top": 127,
+        "bottom": 131,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 42.708333,
+        "y": 58.75
+      }
+    },
+    {
+      "index": 144,
+      "atlas": 1,
+      "cell": 0,
+      "x": 108.5,
+      "y": 132,
+      "bounds": [
+        104,
+        130,
+        113,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 113,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 21
+      },
+      "logicalAfterRegistration": {
+        "x": 45.625000333333325,
+        "y": 60.416667000000004
+      }
+    },
+    {
+      "index": 145,
+      "atlas": 1,
+      "cell": 1,
+      "x": 109,
+      "y": 132,
+      "bounds": [
+        105,
+        130,
+        113,
+        134
+      ],
+      "component": {
+        "left": 105,
+        "right": 113,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 18
+      },
+      "logicalAfterRegistration": {
+        "x": 45.624999666666675,
+        "y": 60
+      }
+    },
+    {
+      "index": 146,
+      "atlas": 1,
+      "cell": 2,
+      "x": 109.5,
+      "y": 132,
+      "bounds": [
+        105,
+        130,
+        114,
+        134
+      ],
+      "component": {
+        "left": 105,
+        "right": 114,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 45.208333,
+        "y": 60
+      }
+    },
+    {
+      "index": 147,
+      "atlas": 1,
+      "cell": 3,
+      "x": 109.5,
+      "y": 132.5,
+      "bounds": [
+        105,
+        131,
+        114,
+        134
+      ],
+      "component": {
+        "left": 105,
+        "right": 114,
+        "top": 131,
+        "bottom": 134,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 45,
+        "y": 60.20833333333333
+      }
+    },
+    {
+      "index": 148,
+      "atlas": 1,
+      "cell": 4,
+      "x": 109.5,
+      "y": 132.5,
+      "bounds": [
+        105,
+        131,
+        114,
+        134
+      ],
+      "component": {
+        "left": 105,
+        "right": 114,
+        "top": 131,
+        "bottom": 134,
+        "pixels": 21
+      },
+      "logicalAfterRegistration": {
+        "x": 45,
+        "y": 60.20833333333333
+      }
+    },
+    {
+      "index": 149,
+      "atlas": 1,
+      "cell": 5,
+      "x": 109.5,
+      "y": 132.5,
+      "bounds": [
+        105,
+        131,
+        114,
+        134
+      ],
+      "component": {
+        "left": 105,
+        "right": 114,
+        "top": 131,
+        "bottom": 134,
+        "pixels": 21
+      },
+      "logicalAfterRegistration": {
+        "x": 45,
+        "y": 60.20833333333333
+      }
+    },
+    {
+      "index": 150,
+      "atlas": 1,
+      "cell": 6,
+      "x": 109.5,
+      "y": 132.5,
+      "bounds": [
+        105,
+        131,
+        114,
+        134
+      ],
+      "component": {
+        "left": 105,
+        "right": 114,
+        "top": 131,
+        "bottom": 134,
+        "pixels": 18
+      },
+      "logicalAfterRegistration": {
+        "x": 45.208333,
+        "y": 60.20833333333333
+      }
+    },
+    {
+      "index": 151,
+      "atlas": 1,
+      "cell": 7,
+      "x": 109,
+      "y": 132.5,
+      "bounds": [
+        105,
+        131,
+        113,
+        134
+      ],
+      "component": {
+        "left": 105,
+        "right": 113,
+        "top": 131,
+        "bottom": 134,
+        "pixels": 17
+      },
+      "logicalAfterRegistration": {
+        "x": 45.20833366666667,
+        "y": 60.20833333333333
+      }
+    },
+    {
+      "index": 152,
+      "atlas": 1,
+      "cell": 8,
+      "x": 108.5,
+      "y": 132,
+      "bounds": [
+        104,
+        130,
+        113,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 113,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 45.20833333333333,
+        "y": 60.416667000000004
+      }
+    },
+    {
+      "index": 153,
+      "atlas": 1,
+      "cell": 9,
+      "x": 108.5,
+      "y": 132,
+      "bounds": [
+        104,
+        130,
+        113,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 113,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 21
+      },
+      "logicalAfterRegistration": {
+        "x": 45.20833333333333,
+        "y": 60
+      }
+    },
+    {
+      "index": 154,
+      "atlas": 1,
+      "cell": 10,
+      "x": 108,
+      "y": 132.5,
+      "bounds": [
+        104,
+        131,
+        112,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 112,
+        "top": 131,
+        "bottom": 134,
+        "pixels": 16
+      },
+      "logicalAfterRegistration": {
+        "x": 45.833333,
+        "y": 60.20833333333333
+      }
+    },
+    {
+      "index": 155,
+      "atlas": 1,
+      "cell": 11,
+      "x": 108,
+      "y": 132,
+      "bounds": [
+        104,
+        130,
+        112,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 112,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 19
+      },
+      "logicalAfterRegistration": {
+        "x": 45.625,
+        "y": 60
+      }
+    },
+    {
+      "index": 156,
+      "atlas": 1,
+      "cell": 12,
+      "x": 107.5,
+      "y": 132,
+      "bounds": [
+        103,
+        130,
+        112,
+        134
+      ],
+      "component": {
+        "left": 103,
+        "right": 112,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 20
+      },
+      "logicalAfterRegistration": {
+        "x": 45.41666666666667,
+        "y": 60
+      }
+    },
+    {
+      "index": 157,
+      "atlas": 1,
+      "cell": 13,
+      "x": 108,
+      "y": 132,
+      "bounds": [
+        104,
+        130,
+        112,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 112,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 19
+      },
+      "logicalAfterRegistration": {
+        "x": 45.625,
+        "y": 60
+      }
+    },
+    {
+      "index": 158,
+      "atlas": 1,
+      "cell": 14,
+      "x": 108,
+      "y": 132,
+      "bounds": [
+        104,
+        130,
+        112,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 112,
+        "top": 130,
+        "bottom": 134,
+        "pixels": 19
+      },
+      "logicalAfterRegistration": {
+        "x": 45.208333,
+        "y": 60
+      }
+    },
+    {
+      "index": 159,
+      "atlas": 1,
+      "cell": 15,
+      "x": 108.5,
+      "y": 132.5,
+      "bounds": [
+        104,
+        131,
+        113,
+        134
+      ],
+      "component": {
+        "left": 104,
+        "right": 113,
+        "top": 131,
+        "bottom": 134,
+        "pixels": 19
+      },
+      "logicalAfterRegistration": {
+        "x": 45.000000333333325,
+        "y": 60.20833333333333
+      }
+    }
+  ]
+}

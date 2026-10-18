@@ -77,7 +77,6 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
         {row("panelPrank", "패널 자리 장난", <ArrowDownToLine size={15} />)}
         {row("rarePrank", "희귀 소품 장난", <Sparkles size={15} />)}
       </div>
-      <p className="rhh-group-foot">숨바꼭질은 일정 상세창에서 만나요.</p>
     </div>
     <div aria-labelledby={`${id}-affection`} hidden={tab !== "affection"} id={`${id}-affection-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">
@@ -85,7 +84,6 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}
       </div>
-      <p className="rhh-group-foot">몸 위에서 마우스를 살살 왕복해 보세요.</p>
     </div>
     <div aria-labelledby={`${id}-sound`} hidden={tab !== "sound"} id={`${id}-sound-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card rhh-companion-sound">

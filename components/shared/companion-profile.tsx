@@ -24,11 +24,11 @@ const pages = [{ key: "together", label: "함께 지내기", icon: Heart }, { ke
 type ProfilePage = typeof pages[number]["key"];
 
 const recentReasons: Record<CompanionLifeReason, string> = {
-  "favorite-food": "좋아하는 맛을 다시 즐겼어요.", "new-flavor": "새로운 맛을 알아가고 있어요.",
-  "kind-touch": "쓰다듬으며 더 가까워졌어요.", "play-together": "함께 놀며 장난기가 조금 자랐어요.",
-  "food-mishap": "간식 앞에서 놀란 뒤 조금 신중해졌어요.", "cozy-rest": "편히 쉬며 느긋해졌어요.",
-  "discovered-taste": "여러 번 맛보며 좋아하는 맛을 찾았어요.", "variety": "여러 맛을 골고루 알아가고 있어요.",
-  "reassured": "놀란 뒤 쓰다듬으며 다시 편안해졌어요.", "rested": "푹 쉬고 기운을 차렸어요."
+  "favorite-food": "좋아하는 간식 먹기", "new-flavor": "새 간식 맛보기",
+  "kind-touch": "쓰다듬기", "play-together": "함께 놀기",
+  "food-mishap": "간식 앞에서 깜짝", "cozy-rest": "포근한 휴식",
+  "discovered-taste": "새 최애 간식", "variety": "다른 간식 맛보기",
+  "reassured": "놀란 뒤 쓰다듬기", "rested": "푹 쉬기"
 };
 
 /** One event-coalesced paint, never a cursor or animation loop. */
@@ -68,9 +68,9 @@ function learnedEffects(preferences: CompanionPreferences, memory: CompanionMemo
   const habits = memory?.habits ?? DEFAULT_COMPANION_HABITS;
   const directions = getCompanionLearnedEffectDirections({ ...preferences, learnFromYou: true }, habits);
   const effects: string[] = [];
-  if (directions.pointerGap) effects.push(directions.pointerGap < 0 ? "마우스와 조금 더 가까이 지내려 해요." : "마우스와 거리를 조금 더 두려 해요.");
-  if (directions.playWeight) effects.push(directions.playWeight > 0 ? "놀이를 고르는 쪽으로 기울었어요." : "놀이보다 쉬어 가는 쪽으로 기울었어요.");
-  if (directions.lookScale) effects.push(directions.lookScale < 0 ? "새로운 자리를 살피는 시간이 조금 짧아졌어요." : "새로운 자리를 조금 더 오래 살펴요.");
+  if (directions.pointerGap) effects.push(directions.pointerGap < 0 ? "마우스에 더 바짝 다가와요." : "마우스에서 조금 떨어져 걸어요.");
+  if (directions.playWeight) effects.push(directions.playWeight > 0 ? "재롱을 더 자주 부려요." : "재롱을 덜 부려요.");
+  if (directions.lookScale) effects.push(directions.lookScale < 0 ? "잠깐 두리번거려요." : "조금 더 오래 두리번거려요.");
   return effects;
 }
 
@@ -98,7 +98,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
     if (pages[next].key !== page) logActivity("ui.click", { target: `companion-profile-page#${pages[next].key}` });
     nav.current?.querySelector<HTMLButtonElement>(`[data-profile-page="${pages[next].key}"]`)?.focus();
   };
-  const life = care?.life ?? DEFAULT_COMPANION_LIFE, effectiveLife = preferences.learnFromYou ? life : DEFAULT_COMPANION_LIFE;
+  const life = care?.life ?? DEFAULT_COMPANION_LIFE;
   const interest = care ? getCompanionInterest(care, preferences, life) : null;
   const interestLabel = interest ? { food: "지금은 간식 생각", rest: "지금은 졸려요", social: "지금은 쓰다듬기", play: "지금은 놀고 싶어요", explore: "지금은 둘러보는 중" }[interest] : "";
   const interestFood = interest === "food" ? getCompanionFoodArtFrame(life.favoriteFood) : undefined;
@@ -107,12 +107,6 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
   const pageUnread = (key: ProfilePage) => key === "discover" ? unread.foods + unread.memories > 0 : key === "dress" && unread.accessories > 0;
   const mode = { default: "빅타민", cat: "고양이", dog: "강아지" }[preferences.animalMode];
   const personality = { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기" }[preferences.personality];
-  const actions = [
-    { name: "다가와 교감", icon: <Heart size={20} />, effect: !preferences.roam || !preferences.petting ? "돌아다니기·쓰다듬기를 켜 주세요." : effectiveLife.social >= .4 ? "쓰다듬기를 부탁하고 몸을 기대기도 해요." : "먼저 다가오는 교감은 아직 뜸해요.", try: "가까운 빈 곳에 마우스를 멈춰 보세요." },
-    { name: "좋아하는 맛", icon: <Leaf size={20} />, effect: !preferences.feeding ? "밥주기를 켜 주세요." : preferences.learnFromYou ? "거리와 좋아하는 맛을 함께 골라요." : "배우기 끔 · 가까운 간식부터 살펴요.", try: "여러 맛의 간식을 건네 보세요." },
-    { name: "포근한 휴식", icon: <Moon size={20} />, effect: !preferences.sleep ? "낮잠을 켜 주세요." : effectiveLife.comfort >= .6 ? "덜 피곤해도 집에서 쉬기도 해요." : "피곤하면 집에서 몸을 모아 쉬어요.", try: "집 쿠션으로 불러 보세요." },
-    { name: "으쌰으쌰 응원", icon: <PartyPopper size={20} />, effect: !preferences.roam ? "돌아다니기를 켜 주세요." : effectiveLife.play >= .45 && effectiveLife.curiosity >= .4 ? "기운이 있으면 응원을 연습하기도 해요." : "응원 연습은 아직 뜸해요.", try: "넓고 안전한 자리에서 기다려 보세요." }
-  ];
   return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} {...spotlight}>
     <span className="sr-only" id={`${id}-unread`}>새로 발견한 항목</span>
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>
@@ -130,15 +124,11 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
           <dl className="rhh-companion-facts"><div><dt><Leaf aria-hidden="true" size={16} />좋아하는 간식</dt><dd>{care ? COMPANION_FOOD_NAMES[life.favoriteFood] : "알아가는 중"}</dd></div><div><dt><Shirt aria-hidden="true" size={16} />지금 모습</dt><dd>{collection?.gifts.equipped ? COMPANION_ACCESSORY_NAMES[collection.gifts.equipped] : "기본 모습"}</dd></div></dl>
         </div>
       </section>
-      <p className="rhh-profile-motion-note">동작 줄이기 · 다가오기와 응원은 쉬어요.</p>
-      {!preferences.learnFromYou && <p className="rhh-habit-paused">배우기 끔 · 기억은 보관해요.</p>}
-      <div className="rhh-profile-action-grid">{actions.map((action, index) => <article className="rhh-profile-action" data-tone={index} key={action.name}><h4><span aria-hidden="true">{action.icon}</span>{action.name}</h4><p>{action.effect}</p><p className="rhh-profile-try"><span>해보기</span>{action.try}</p></article>)}</div>
-      <section aria-labelledby={`${id}-habits-title`} className="rhh-profile-habits"><h3 id={`${id}-habits-title`}>배운 습관</h3>{effects.length ? <ul className="rhh-profile-learned">{effects.map(effect => <li key={effect}>{effect}</li>)}</ul> : <p className="rhh-habit-empty">아직 뚜렷한 변화는 없어요.</p>}</section>
-      <p className="rhh-trait-reason"><span>최근 남은 경험</span><span>{care?.life.recent.at(-1) ? recentReasons[care.life.recent.at(-1)!] : "여러 맛과 놀이를 알아가고 있어요."}</span></p>
+      <section aria-labelledby={`${id}-habits-title`} className="rhh-profile-habits"><div className="rhh-habits-heading"><h3 id={`${id}-habits-title`}>배운 습관</h3>{!preferences.learnFromYou && <span className="rhh-habit-paused">적용 중지</span>}</div>{effects.length ? <ul className="rhh-profile-learned">{effects.map(effect => <li key={effect}>{effect}</li>)}</ul> : <p className="rhh-habit-empty">아직 배운 습관이 없어요.</p>}</section>
+      {care?.life.recent.at(-1) && <p className="rhh-trait-reason"><span>최근 경험</span><span>{recentReasons[care.life.recent.at(-1)!]}</span></p>}
     </div>
     <div aria-labelledby={`${id}-discover-tab`} hidden={page !== "discover"} id={`${id}-discover-panel`} role="tabpanel" tabIndex={0}>{visited.discover && <CompanionDiscovery active={active && page === "discover"} collection={collection} />}</div>
     <div aria-labelledby={`${id}-dress-tab`} hidden={page !== "dress"} id={`${id}-dress-panel`} role="tabpanel" tabIndex={0}>{visited.dress && <CompanionWardrobe active={active && page === "dress"} collection={collection} preferences={preferences} />}</div>
     <div aria-labelledby={`${id}-settings-tab`} hidden={page !== "settings"} id={`${id}-settings-panel`} role="tabpanel" tabIndex={0}>{visited.settings && environment?.(active && page === "settings")}</div>
-    <p className="rhh-trait-note">이 브라우저에만 보관해요.</p>
   </div>;
 }

@@ -13,7 +13,7 @@ const regressionOutput = process.env.COMPANION112_COLLECTION_REGRESSION_OUTPUT ?
 
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block", headless: Boolean(process.env.CI) });
 type Surface = "viewer" | "studio" | "preview";
-async function fixture(page: Page, { found = true, reduce = false, graphics = "max", enabled = true, theme = "light" }: { found?: boolean; reduce?: boolean; graphics?: "max" | "off" | "soft"; enabled?: boolean; theme?: "light" | "dark" } = {}) {
+async function fixture(page: Page, { found = true, reduce = false, graphics = "max", enabled = true, theme = "light", allOwned = false }: { found?: boolean; reduce?: boolean; graphics?: "max" | "off" | "soft"; enabled?: boolean; theme?: "light" | "dark"; allOwned?: boolean } = {}) {
   const writes: string[] = [], errors: string[] = [], bodies: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("request", request => { if (new URL(request.url()).pathname.startsWith("/companion/hd/")) bodies.push(request.url()); });
@@ -27,7 +27,7 @@ async function fixture(page: Page, { found = true, reduce = false, graphics = "m
     if (request.method() === "GET" && (pathname === "/" || pathname === "/studio")) return route.fulfill({ status: 200, contentType: "text/plain", body: "" });
     return route.continue();
   });
-  const collection: CompanionCollection = { version: 1, foods: [], behaviors: found ? ["groom"] : [], situations: [], gifts: { pending: null, unlocked: ["sunglasses", "beret"], equipped: "sunglasses", activeMs: 0, interactionCredit: 0 } };
+  const collection: CompanionCollection = { version: 1, foods: [], behaviors: found ? ["groom"] : [], situations: [], gifts: { pending: null, unlocked: allOwned ? [...COMPANION_WEARABLE_IDS] : ["sunglasses", "beret"], equipped: "sunglasses", activeMs: 0, interactionCredit: 0 } };
   await page.addInitScript(({ prefs, collection, key, epoch, reduce, graphics, enabled, theme }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": theme === "dark" ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": reduce ? "on" : "off", "vic.gfxPref": graphics === "soft" ? "auto" : graphics })) localStorage.setItem(name, value);
     if (graphics === "soft") localStorage.setItem("vic.gfx", JSON.stringify({ mode: "soft", at: Date.now(), v: 3 }));
@@ -50,6 +50,31 @@ async function openWardrobe(page: Page, surface: Surface = "viewer") {
   return { dialog, profile, preview: profile.locator(".rhh-wardrobe-detail").getByRole("img", { name: "빅타민 미리보기", exact: true }) };
 }
 const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
+
+for (const surface of ["viewer", "studio"] as const) test(`114 ${surface}: every active fitting renders, retired tiles stay absent and native removal clears the preview`, async ({ page }) => {
+  const safety = await fixture(page, { allOwned: true, found: false, reduce: true, theme: surface === "studio" ? "dark" : "light" });
+  const { dialog, profile, preview } = await openWardrobe(page, surface);
+  await expect(preview).toHaveAttribute("data-preview-ready", "");
+  await expect(profile.locator(".rhh-collection-heading")).toContainText(`25/${COMPANION_WEARABLE_IDS.length}`);
+  for (const id of COMPANION_WEARABLE_IDS) {
+    await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf(id));
+    await expect(profile.locator(`[data-accessory="${id}"]`)).toHaveAttribute("data-found", "true");
+    await expect(profile.locator(".rhh-wardrobe-detail-copy strong")).not.toHaveText("???");
+    await expect(preview.locator(".vc-wearable-front")).toBeVisible();
+    expect((await saved(page)).gifts.equipped).toBe("sunglasses");
+  }
+  await expect(profile.locator('[data-accessory="star-pin"],[data-accessory="satchel"],[data-accessory="leaf-umbrella"],[data-accessory="heart-badge"],[data-accessory="lemon-badge"],[data-accessory="bandage"],[data-accessory="mushroom-hat"]')).toHaveCount(0);
+  await profile.getByRole("button", { name: "장착하기", exact: true }).click();
+  await expect(profile.getByRole("button", { name: "벗기기", exact: true })).toBeVisible();
+  await profile.getByRole("button", { name: "벗기기", exact: true }).click();
+  await expect(preview.locator(".vc-wearable-front")).toBeHidden();
+  await expect(preview.locator(".vc-wearable-back")).toBeHidden();
+  expect((await saved(page)).gifts.equipped).toBeNull();
+  await expect(dialog).not.toContainText("이 브라우저에만 보관해요.");
+  mkdirSync(`${regressionOutput}/wardrobe`, { recursive: true });
+  await page.screenshot({ path: `${regressionOutput}/wardrobe/inventory-${surface}.png` });
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
 
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) test(`${surface} ${theme}: selected owned accessory previews only a discovered gesture without equipping`, async ({ page }) => {
   const safety = await fixture(page, { theme });
@@ -86,11 +111,11 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   expect(await saved(page)).toEqual(before); expect(before.gifts.equipped).toBe("sunglasses");
   await profile.getByRole("button", { name: "다시 보기", exact: true }).click();
   await expect.poll(() => preview.getAttribute("data-preview-row")).toBe("30");
-  await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf("leaf-umbrella"));
+  await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf("bucket-hat"));
   await expect(profile.locator(".rhh-wardrobe-detail-copy strong")).toHaveText("???");
   await expect(preview.locator(".vc-wearable-front")).toBeHidden(); await expect(preview.locator(".vc-wearable-back")).toBeHidden();
   await expect(profile.locator(".rhh-wardrobe-detail")).toBeInViewport({ ratio: 1 });
-  const tile = profile.locator('[data-accessory="leaf-umbrella"]');
+  const tile = profile.locator('[data-accessory="bucket-hat"]');
   expect(await tile.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
   await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf("beret"));
   await settlePanelLayout(page);
@@ -132,7 +157,8 @@ test("narrow desktop keeps the real preview and deep selection visible, and oute
   const safety = await fixture(page);
   const { dialog, profile, preview } = await openWardrobe(page);
   await expect(preview).toHaveAttribute("data-preview-ready", "");
-  const last = profile.locator('[data-accessory="leaf-umbrella"]');
+  await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf("bucket-hat"));
+  const last = profile.locator('[data-accessory="bucket-hat"]');
   await last.click();
   await expect(profile.locator(".rhh-wardrobe-detail")).toBeInViewport({ ratio: 1 });
   expect(await profile.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);

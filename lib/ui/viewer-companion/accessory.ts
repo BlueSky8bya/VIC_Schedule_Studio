@@ -9,9 +9,17 @@ import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "./accessory-ca
 import { companionOpenPocketArt, companionPropellerArt, getCompanionAccessoryArtFrame, type CompanionAccessoryArtFrame } from "./accessory-art";
 
 type Landmark = Readonly<{ x: number; y: number; width: number; roll: number }>;
-type Pose = Readonly<{ physicalIndex: number; atlas: number; index: number; orientation: "front" | "quarter" | "side" | "back"; face: Landmark; head: Landmark; chest: Landmark; sideChest: Landmark; sideBody: Landmark; bodyBounds: readonly number[] }>;
+type Pose = Readonly<{ physicalIndex: number; atlas: number; index: number; orientation: "front" | "quarter" | "side" | "back"; face: Landmark; head: Landmark; chest: Landmark; sideChest: Landmark; sideBody: Landmark; bodyBounds: readonly number[]; eyes: readonly Readonly<{ center: readonly number[]; bounds: readonly number[] }>[] }>;
 type Placement = Readonly<{ art: CompanionAccessoryArtFrame; x: number; y: number; width: number; rotation: number; layer: "front" | "back" | "headwear"; mirror?: -1 | 1; pivot?: Readonly<{ x: number; y: number }>; clips?: Readonly<{ front: string; back: string }>; stretchY?: number; rotor?: number; rearArt?: CompanionAccessoryArtFrame }>;
 const poses = new Map<number, Pose>((anchors.frames as readonly Pose[]).map(frame => [frame.physicalIndex, frame]));
+// Source-bound geometry is immutable. Measure the eye fit once, not during
+// each world frame or repeated wardrobe preview paint.
+const eyeFits = new Map(Array.from(poses.values()).flatMap(pose => {
+  const eyes = pose.eyes;
+  if (!eyes || eyes.length !== 2 || !eyes.every(eye => [...eye.center, ...eye.bounds].every(Number.isFinite))) return [];
+  const eye = eyes[1], radius = Math.max(...[0, 2].flatMap(x => [1, 3].map(y => Math.hypot(eye.bounds[x] - eye.center[0], eye.bounds[y] - eye.center[1]))));
+  return [[pose.physicalIndex, { x: eye.center[0], y: eye.center[1], width: Math.max(4.5, radius * 72 / 22 * 1.08), span: Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]) }] as const];
+}));
 // The native drawings themselves can turn in either direction before their
 // common parent mirrors for travel. Measure yaw in the registered face axis,
 // not viewport x: a tumble's in-plane roll is not a change of facing.
@@ -32,11 +40,11 @@ const polygon = (points: readonly (readonly number[])[]) => `polygon(${points.ma
 const glassesClips = { front: polygon([...quarterGlassesEdge, [128, 128], [0, 128]]), back: polygon([[0, 0], [128, 0], ...[...quarterGlassesEdge].reverse()]) };
 const bagClips = { front: "inset(46% 0 0)", back: "inset(0 0 54%)" };
 const calibratedMouths = new Map(mouths.frames.map(frame => [frame.index, frame]));
-const familyPoint = { head: "head", eyes: "face", "chest-badge": "sideChest", "front-bow": "chest", "front-pocket": "chest", "side-prop": "sideBody" } as const;
+const familyPoint = { head: "head", eyes: "face", "eye-cover": "face", "chest-badge": "sideChest", "front-bow": "chest", "front-pocket": "chest", "side-prop": "sideBody" } as const;
 const frontMounted = (id: CompanionAccessoryId) => ["chest-badge", "front-bow", "front-pocket"].includes(COMPANION_ACCESSORIES[id].family);
 function withMotion(placement: Placement, pose: Pose, id: CompanionAccessoryId, motion?: CompanionAccessoryTransform): Placement {
   if (!motion) return placement;
-  const angle = (COMPANION_ACCESSORIES[id].family === "eyes" ? pose.face.roll : placement.rotation) * Math.PI / 180;
+  const angle = (["eyes", "eye-cover"].includes(COMPANION_ACCESSORIES[id].family) ? pose.face.roll : placement.rotation) * Math.PI / 180;
   let x = placement.x + Math.sin(angle) * motion.lift + Math.cos(angle) * motion.shift, y = placement.y - Math.cos(angle) * motion.lift + Math.sin(angle) * motion.shift;
   const width = placement.width * motion.scale, rotation = placement.rotation + motion.roll;
   if (frontMounted(id) && pose.orientation !== "back") {
@@ -64,6 +72,21 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   const headwear = isCompanionHat(id), quarter = pose.orientation === "quarter";
   const mirror: -1 | 1 = quarter && poseYaw.get(selected.physicalIndex) !== sourceYaw(art) ? -1 : 1;
   const decoration = { mirror, ...(id === "sunglasses" && quarter ? { pivot: { x: 49, y: 68 }, clips: glassesClips } : id === "satchel" ? { clips: bagClips } : id === "propeller-hat" ? { rearArt: companionPropellerArt(pose.orientation), rotor: 0 } : {}) };
+  if (item.family === "eye-cover" && pose.orientation !== "back") {
+    // The source-local right eye is measured from these exact adopted pixels,
+    // including rolled/closed/teary eyes. A centred opaque core covers its
+    // whole AABB diagonal, rather than fitting a badge between the two eyes.
+    const eye = eyeFits.get(selected.physicalIndex);
+    if (!eye) return null;
+    // This is the positive eye-axis endpoint, so its short outer chain stays
+    // on that same side. Camera yaw must not mirror it back across the nose.
+    return withMotion({ art, x: eye.x, y: eye.y, width: eye.width, rotation: pose.face.roll, layer: "front", ...decoration, mirror: 1, pivot: { x: 64, y: 64 } }, pose, id, motion);
+  }
+  if (art.pairedEyes && pose.orientation !== "back") {
+    const eye = eyeFits.get(selected.physicalIndex);
+    if (!eye) return null;
+    return withMotion({ art, x: pose.face.x, y: pose.face.y, width: eye.span * art.content.width / (48 * (art.viewScale ?? 1)), rotation: pose.face.roll, layer: "front", ...decoration, pivot: { x: 64, y: 64 } }, pose, id, motion);
+  }
   // The measured ear-root line receives the brim, not the cap's centre.
   // Shift along this pose's own head normal; the parent rig then deforms the
   // whole attachment together. A worn cap overlaps the lower ear roots while
@@ -90,7 +113,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   }
   const width = baseWidth * spec.scale, brim = headwear ? width * art.content.height / art.content.width * (id === "propeller-hat" ? .45 : .2) : id === "leaf-umbrella" ? pose.chest.width * .48 : 0, angle = point.roll * Math.PI / 180;
   return withMotion({ art, x: point.x + Math.sin(angle) * brim, y: point.y - Math.cos(angle) * brim, width, rotation: point.roll - (id === "sunglasses" && quarter ? 12.5 * mirror : 0),
-    layer: headwear ? "headwear" : pose.orientation === "back" && (frontMounted(id) || item.family === "eyes") ? "back" : "front", ...decoration }, pose, id, motion);
+    layer: headwear ? "headwear" : pose.orientation === "back" && (frontMounted(id) || item.family === "eyes" || item.family === "eye-cover") ? "back" : "front", ...decoration }, pose, id, motion);
 }
 
 /** Local80-space anchors for finite special actions. The root world projects

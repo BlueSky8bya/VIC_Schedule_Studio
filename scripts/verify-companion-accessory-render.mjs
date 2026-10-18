@@ -6,12 +6,12 @@ import crypto from 'node:crypto';
 import ts from 'typescript';
 import { chromium } from '@playwright/test';
 
-const root = process.cwd(), flag = process.argv.find(value => value.startsWith('--out='));
+const root = process.cwd(), flag = process.argv.find(value => value.startsWith('--out=')), compact = process.argv.includes('--compact');
 const output = path.resolve(root, flag?.slice(6) ?? '.scratch-pw/companion-110/accessories');
 if (!output.startsWith(path.join(root, '.scratch-pw') + path.sep)) throw Error('QA output must stay in workspace .scratch-pw');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const product = ['lib/ui/viewer-companion/accessory.ts', 'lib/ui/viewer-companion/accessory-catalog.ts', 'lib/ui/viewer-companion/accessory-art.ts', 'lib/ui/viewer-companion/collection-art.ts', 'lib/ui/viewer-companion/accessory-motion.ts', 'lib/ui/viewer-companion/gifts.ts', 'lib/ui/viewer-companion/collection-texture.ts'];
-const jsonNames = ['accessory-anchors', 'mouth-anchors', 'hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite'];
+const jsonNames = ['accessory-anchors', 'mouth-anchors', 'hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite', 'accessory-vector-114'];
 const sources = new Map(), compiled = {};
 for (const name of product) {
   const source = await fs.readFile(path.join(root, name), 'utf8'); sources.set(name, source);
@@ -57,6 +57,7 @@ try {
     };
     const { companionAccessoryPlacement, createCompanionAccessoryPainter } = load('lib/ui/viewer-companion/accessory.ts');
     const { COMPANION_WEARABLE_IDS: ids } = load('lib/ui/viewer-companion/gifts.ts');
+    const { COMPANION_ACCESSORIES: catalogue } = load('lib/ui/viewer-companion/accessory-catalog.ts');
     const { sampleCompanionAccessoryMotion } = load('lib/ui/viewer-companion/accessory-motion.ts');
     const selected = physicalIndex => { const frame = metadata.frames[physicalIndex]; return { atlas: 'hd', physicalIndex, index: frame.index, src: metadata.atlases[frame.atlas].src, grid: 8, gridRows: 2, frame }; };
     const host = () => document.createElement('span');
@@ -88,11 +89,11 @@ try {
     const snapshots = [];
     window.accessoryQA = {
       ids, critical, domain, checks, motionChecks, snapshots,
-      render(id, indexes, label, ages) {
+      render(id, indexes, label, ages, append = false, facings = [1, -1], humanLabels = false) {
         document.querySelector('.audit-label').textContent = label;
-        const grid = document.querySelector('.audit-grid'); grid.replaceChildren();
+        const grid = document.querySelector('.audit-grid'); if (!append) grid.replaceChildren();
         const samples = ages ? ages.map(age => { const motion = sampleCompanionAccessoryMotion(id, age), row = metadata.rows[motion.row], index = row[Math.min(row.length - 1, Math.round(motion.frame / 15 * (row.length - 1)))]; return { index, motion, age }; }) : indexes.map(index => ({ index }));
-        for (const { index, motion, age } of samples) for (const facing of [1, -1]) {
+        for (const { index, motion, age } of samples) for (const facing of facings) {
           const pick = selected(index), figure = document.createElement('figure'), stage = host(), pose = host(), back = host(), front = host(), gift = host(), body = host(), image = new Image();
           stage.className = 'audit-stage'; stage.style.transform = `scaleX(${facing})`; pose.className = 'vc-pose';
           if (motion) { figure.style.height = '190px'; pose.style.transform = `translateY(${-motion.bodyLift}px) rotate(${motion.bodyLean}deg)`; }
@@ -100,18 +101,32 @@ try {
           image.style.transform = `translate(${-pick.index % 8 / 8 * 100}%,${-Math.floor(pick.index / 8) / 2 * 100}%)`;
           body.style.transform = `translate(${pick.frame.x / 80 * 100}%,${pick.frame.y / 80 * 100}%)`; body.style.clipPath = `inset(${pick.frame.clip.map(value => `${value / 80 * 100}%`).join(' ')})`;
           body.append(image); pose.append(back, body, front, gift); stage.append(pose);
-          const caption = document.createElement('figcaption'); caption.textContent = `${index} ${anchors.frames[index].orientation}\n${facing > 0 ? 'right' : 'left'}${motion ? ` ${age}ms` : ''}`;
+          const caption = document.createElement('figcaption'); caption.textContent = humanLabels ? catalogue[id].name : `${id}\n${index} ${facing > 0 ? 'right' : 'left'}${motion ? ` ${age}ms` : ''}`;
           figure.append(stage, caption); grid.append(figure);
           const renderer = createCompanionAccessoryPainter({ back, front, gift }); renderer.paint(pick, id, false, motion?.accessory); snapshots.push({ id, physicalIndex: index, facing, ...(motion ? { age, motion } : {}), frontClip: front.style.clipPath, backClip: back.style.clipPath, frontTransform: front.style.transform });
         }
-        return Promise.all([...document.images].map(image => image.decode()));
+        const textures = [...new Set([...grid.querySelectorAll('.vc-wearable')].map(node => node.style.backgroundImage.match(/^url\(["']?(.*?)["']?\)$/)?.[1]).filter(Boolean))];
+        // A contact sheet reuses the same large body atlas hundreds of times.
+        // Decode each actual source once, then require every DOM adoption to
+        // be complete. Hundreds of concurrent decode() calls for that same
+        // atlas can exceed Chromium's pending decoder limit in QA itself.
+        const bodies = [...new Map([...document.images].map(image => [image.src, image])).values()];
+        return Promise.all(bodies.map(image => image.decode().catch(() => { throw Error(`Body texture cannot decode: ${image.src}`); })).concat(textures.map(src => { const image = new Image(); image.src = src; return image.decode().catch(() => { throw Error(`Accessory texture cannot decode: ${src}`); }); }))).then(() => new Promise((resolve, reject) => requestAnimationFrame(() => requestAnimationFrame(() => {
+          const missing = [...document.images].find(image => !image.complete || !image.naturalWidth);
+          if (missing) reject(Error(`Body adoption not complete: ${missing.src}`));
+          else resolve();
+        }))));
       },
     };
   }, { compiled, json, metadata, anchors });
   const domain = await page.evaluate(() => ({ ids: window.accessoryQA.ids, critical: window.accessoryQA.critical, checks: window.accessoryQA.checks, motionChecks: window.accessoryQA.motionChecks, domain: window.accessoryQA.domain }));
   await fs.mkdir(output, { recursive: true });
   let sheets = 0;
-  for (const id of domain.ids) for (let offset = 0; offset < domain.critical.length; offset += 128) {
+  if (compact) {
+    const indexes = [0, 304, 323, 326, 404, 440, 500, 513];
+    for (const [index, id] of domain.ids.entries()) await page.evaluate(({ id, indexes, append }) => window.accessoryQA.render(id, indexes, '114: all active fittings,8 representative adopted poses, both facings', undefined, append), { id, indexes, append: index > 0 });
+    await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-contact.png') }); sheets++;
+  } else for (const id of domain.ids) for (let offset = 0; offset < domain.critical.length; offset += 128) {
     const indexes = domain.critical.slice(offset, offset + 128), name = `wear-${id}-${offset / 128 + 1}.png`;
     await page.evaluate(({ id, indexes }) => window.accessoryQA.render(id, indexes, `${id}: exact adopted painter, native source yaw; each pair right/left`), { id, indexes });
     await page.locator('.audit-grid').screenshot({ path: path.join(output, name) }); sheets++;
@@ -120,6 +135,11 @@ try {
     await page.evaluate(id => window.accessoryQA.render(id, [], `${id}: finite shared-source special sequence,11 ages, both facings`, [0, 260, 520, 780, 1040, 1300, 1560, 1820, 2080, 2340, 2600]), id);
     await page.locator('.audit-grid').screenshot({ path: path.join(output, `special-${id}.png`) }); sheets++;
   }
+  await page.evaluate(async ids => {
+    const grid = document.querySelector('.audit-grid'); grid.style.gridTemplateColumns = 'repeat(5,104px)'; grid.style.width = '520px';
+    for (const [index, id] of ids.entries()) await window.accessoryQA.render(id, [0], '114:25 active accessories, actual92px default body', undefined, index > 0, [1], true);
+  }, domain.ids);
+  await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-neutral-92px.png') }); sheets++;
   const rendered = await page.evaluate(() => window.accessoryQA.snapshots);
   if (errors.length || unknownRequests.length) throw Error(JSON.stringify({ errors, unknownRequests }));
   for (const [name, source] of sources) if (await fs.readFile(name, 'utf8') !== source) throw Error('Source changed during audit: ' + name);

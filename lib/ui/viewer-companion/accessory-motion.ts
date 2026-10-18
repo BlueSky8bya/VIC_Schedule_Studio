@@ -27,11 +27,11 @@ export function sampleCompanionAccessoryMotion(id: CompanionAccessoryId, elapsed
     bodyLift = hop * 26; squash = pulse(p, .05, .18) * .045 + pulse(p, .6, .76) * .035;
     lift = floating * 9; roll = floating * (id === "party-hat" ? 7 : id === "flower-crown" ? -4 : id === "baseball-cap" ? -7 : 4);
     row = p < .18 ? 3 : p < .6 ? 4 : p < .76 ? 6 : 9;
-  } else if (family === "eyes") {
+  } else if (family === "eyes" || family === "eye-cover") {
     const raised = pulse(p, .3, .9), tilt = pulse(p, .12, .4);
     lift = raised * (id === "pixel-sunglasses" ? 7 : 9); roll = tilt * (id === "pixel-sunglasses" ? -16 : 12);
     bodyLean = show * (id === "pixel-sunglasses" ? -5 : 4); scale += show * .025;
-  } else if (family === "front-bow") { roll = Math.sin(p * Math.PI * 6) * show * 12; scale += show * .08; bodyLean = show * 2; }
+  } else if (family === "front-bow") { roll = Math.sin(p * Math.PI * (id === "bell-badge" ? 10 : 6)) * show * (id === "bell-badge" ? 17 : 12); scale += show * .08; bodyLean = show * 2; }
   else if (family === "chest-badge") { roll = Math.sin(p * Math.PI * (id === "bell-badge" ? 10 : 4)) * show * 17; scale += show * .12; bodyLean = -show * 3; }
   else if (family === "front-pocket" || id === "satchel") { roll = Math.sin(p * Math.PI * 4) * show * 15; shift = show * 2; bodyLean = show * 5; }
   else if (id === "leaf-umbrella") { roll = show * -15; lift = show * 3; bodyLean = show * 4; }

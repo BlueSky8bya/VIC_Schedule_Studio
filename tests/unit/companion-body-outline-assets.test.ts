@@ -2,8 +2,6 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import hd from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
-import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 
 const run = "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일";
@@ -27,10 +25,12 @@ type Receipt = {
 };
 const json = <T,>(name: string): T => JSON.parse(readFileSync(name, "utf8")) as T;
 const receipt = json<Receipt>(`${run}/패킹파생기록.json`);
+const hd = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata.hd);
+const play = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata.play);
 //101's receipt remains responsible for its exact33-row/512-slot prefix. The
 // living extension is append-only and has separate source/byte verification.
-const protectedRows = companionSpriteMetadata.rows.slice(0, 33);
-const protectedFrames = companionSpriteMetadata.frames.slice(0, 512);
+const protectedRows = [...hd.rows, ...play.rows.map(row => row.map(index => index + hd.frames.length))];
+const protectedFrames = [...hd.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + hd.atlases.length }))];
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 function alphaHash(bytes: Buffer) { const alpha = Buffer.alloc(bytes.length / 4); for (let i = 0; i < alpha.length; i++) alpha[i] = bytes[i * 4 + 3]; return hash(alpha); }
 function crop(bytes: Buffer, width: number, height: number, box: Source["keys"][number]["box"]) {
@@ -66,7 +66,9 @@ describe("101 complete body/outline style activation", () => {
   }, 30_000);
 
   it("activates the new packets on every runtime slot and the premiere consumer with unchanged logical actions", () => {
-    for (const family of ["hd", "play"] as const) expect(readFileSync(`lib/ui/viewer-companion/${family}-motion-sprite.json`).equals(readFileSync(receipt.stagedMetadata[family]))).toBe(true);
+    //114 replaces runtime pixels, while101's original release and its exact
+    //pre114 frozen handoff remain immutable, byte-for-byte evidence.
+    for (const family of ["hd", "play"] as const) expect(readFileSync(`art-src/빅타민/동행/작업회차/20261018-포즈통일114/고정입력/${family === "hd" ? "hd" : "play"}-motion-sprite.json`).equals(readFileSync(receipt.stagedMetadata[family]))).toBe(true);
     const beforeHd = json<{ rows: number[][] }>(receipt.baseline.hd.path), beforePlay = json<{ rows: number[][] }>(receipt.baseline.play.path);
     expect(hd.rows).toEqual(beforeHd.rows); expect(play.rows).toEqual(beforePlay.rows);
     expect(protectedFrames).toHaveLength(512); expect(protectedRows).toHaveLength(33);
