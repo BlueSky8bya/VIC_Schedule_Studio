@@ -75,7 +75,7 @@ body::-webkit-scrollbar {
   margin: 0;
   font-size: 24px;
 }
-/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 그 옆 배포 버전 배지 — 배지가 헤더 세로 중앙에 온다. */
+/* 왼쪽 칸: 공유 집 진입. 화면 하단 메타와 독립된 헤더 시작점을 유지한다. */
 .studio-left {
   grid-column: 1;
   justify-self: start;
@@ -84,14 +84,17 @@ body::-webkit-scrollbar {
   gap: 10px;
   min-width: 0;
 }
-/* 배포 버전 배지 — 클릭=복사 버튼. 기본 .studio-build-tag(파일 뒤쪽에 절대배치+
-   pointer-events:none으로 선언됨)를 확실히 이기도록 부모를 포함한 선택자로.
-   제목 옆의 조용한 메타 — 저장 칩과 같은 필 어휘(통일), 제목과 10px 근접. */
-.studio-left .studio-build-copy {
-  position: static;
+/* PC 좌하단의 작은 복사 배지. 흐름 밖이라 달력·문서에 여백을 예약하지 않는다.
+   셸 zoom을 상쇄해 모든 PC에서 같은 실제 크기·가장자리 여백을 유지한다.
+   편집 팝오버·패널·일반 창보다 아래이며, 배지 자체만 클릭을 받는다. */
+.studio-shell .studio-build-copy {
+  position: fixed;
   transform: none;
-  left: auto;
+  left: max(var(--space-4), env(safe-area-inset-left, 0px));
   top: auto;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 5; /* ordinary rail6, editor12 and modal chrome remain above metadata */
+  zoom: calc(1 / var(--shell-zoom, 1));
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
@@ -105,14 +108,14 @@ body::-webkit-scrollbar {
     color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.studio-left .studio-build-copy:hover {
+.studio-shell .studio-build-copy:hover {
   background: rgb(var(--studio-action-rgb) / 12%);
   color: var(--studio-action-text);
 }
-.studio-left .studio-build-copy:active {
+.studio-shell .studio-build-copy:active {
   transform: scale(var(--press-scale));
 }
-.studio-left .studio-build-copy.dev {
+.studio-shell .studio-build-copy.dev {
   border-color: rgb(var(--studio-action-rgb) / 30%);
 }
 /* 가운데: 월 이동(헤더 정중앙) */
@@ -5350,18 +5353,12 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   outline-offset: -1px;
   border-radius: var(--r-md);
 }
-/* 배포 버전(커밋) — 액션바 가운데(클릭 안 됨). 기본(비개발자)은 흐린 회색 텍스트,
-   개발자(.dev)는 모바일 배지처럼 또렷한 보라 펄로 꾸민다. */
+/* 배포 버전(커밋) — PC 하단의 조용한 메타. 개발자는 공유 동작색으로 구분한다. */
 .studio-build-tag {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
   font-size: var(--text-caption);
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--muted);
-  pointer-events: none;
   white-space: nowrap;
 }
 .studio-build-tag.dev {
@@ -5371,13 +5368,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   color: var(--studio-action-text);
   font-weight: 600;
 }
-/* 모바일 헤더(.agenda-header, grid 1fr auto 1fr) 왼쪽 1열 묶음 — 버전 펄(위) + 저장 칩(아래)을
-   세로로 쌓고, 묶음의 세로 중앙이 제목(헤더) 중앙선과 같게(align-self:center).
-   .studio-mobile에만 렌더되므로(웹은 그 레이아웃이 숨겨짐) 별도 미디어쿼리 없이 둔다. */
-/* 버전 배지 + 저장됨 칩을 '한 덩어리'(세로 세그먼트 캡슐)로 묶는다 — 하나의 둥근 테두리 안에
-   위=버전(연한 라벤더 세그먼트), 아래=저장됨(상태색 세그먼트)을 hairline으로 나눈다. 예전엔
-   테두리 없는 라벤더 채움 + 테두리 있는 저장 칩이 gap을 두고 따로 떠서 '두 개'로 읽혔다.
-   이제 한 캡슐이라 시선에 하나로 붙는다(버전은 메타라 작고 조용, 저장됨이 주). */
+/* 모바일 헤더 왼쪽1열은 저장 상태만 담는다. 별도 버전 세그먼트는 PC로 옮겼다. */
 .studio-mobile .agenda-header .m-head-left {
   grid-column: 1;
   grid-row: 1;
@@ -5393,34 +5384,14 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   overflow: hidden;
   box-shadow: var(--shadow-1, 0 1px 2px rgb(80 60 20 / 6%));
 }
-/* 위 세그먼트: 배포 버전(메타). 캡슐 안이라 자체 테두리·라운드·배경 없이 hairline으로만 구분. */
-.studio-mobile .agenda-header .studio-build-tag-m {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 11px;
-  border: 0;
-  border-bottom: 1px solid var(--line, #e8e1d6);
-  border-radius: 0;
-  background: rgb(148 140 168 / 10%);
-  color: var(--muted, var(--muted));
-  font-size: var(--text-micro);
-  font-weight: 600;
-  letter-spacing: 0.03em;
-}
-.studio-mobile .agenda-header .studio-build-tag-m.dev {
-  background: rgb(var(--studio-action-rgb) / 9%);
-  color: var(--studio-action-text);
-}
-/* 아래 세그먼트: 저장 상태(주). 캡슐 안이라 자체 테두리·라운드·그림자 제거, 상태 '색'(글자·점)만 유지. */
+/* 저장 상태는 바깥 캡슐 안에서 상태색과 점을 유지한다. */
 .studio-mobile .agenda-header .m-head-left .save-status {
   align-self: stretch;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  /* 위 버전 배지(3px 세그먼트)와 같은 두께 — 전역 min-height(36px)가 캡슐 안에서
-     저장 칩만 두껍게 만들어 배지와 조화가 깨졌다. */
+  /* 전역 min-height(36px)가 조용한 상태 칩을 키우지 않게 한다. */
   min-width: 0;
   min-height: 0;
   padding: 3px 11px;
@@ -10296,9 +10267,8 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 @media (max-width: 360px) {
   /* Keep all 44px targets apart when the two side columns become narrower. */
   .studio-mobile .m-month-switch { gap: 6px; }
-  /* Metadata gives up padding before the centered title or account target.
-     Keep the version and save state readable at320px without a new type size. */
-  .studio-mobile .agenda-header .m-head-left :is(.studio-build-tag-m, .save-status) {
+  /* Save metadata gives up padding before the centered title or account target. */
+  .studio-mobile .agenda-header .m-head-left .save-status {
     padding-inline: var(--space-1);
   }
 }

@@ -6121,15 +6121,9 @@ export function StudioShell({
         <div className="m-scroll-region">
           <div className="m-topstick">
             <header className="agenda-header">
-              {/* 좌측 1열: 배포 버전(커밋) 위 + 저장 상태 칩 아래로 세로로 쌓고, 묶음의 세로
-                  중앙이 제목(헤더) 중앙선과 같게 한다. 설정은 아래 월 이동 줄에 둔다. */}
+              {/* 모바일 왼쪽은 저장 상태만 둔다. 배포 버전은 PC 화면 하단에서 복사한다.
+                  설정은 아래 월 이동 줄에 둔다. */}
               <div className="m-head-left">
-                <span
-                  className={`studio-build-tag-m${isDevInsights ? " dev" : ""}`}
-                  aria-hidden="true"
-                >
-                  {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
-                </span>
                 {renderSaveStatus()}
               </div>
               <h1>
@@ -7393,19 +7387,8 @@ export function StudioShell({
           (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
       <AmbientLayer force={ambientForce ?? devSeason} month={view.month} slug={schedule.calendar.slug} worldForce={worldForce} year={view.year} />
       <header className="studio-topbar">
-        {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
+        {/* 왼쪽 칸: 좁은 PC에서도 집 진입은 같은 헤더 시작점에 둔다. */}
         <div className="studio-left">
-          {/* "✨ 빅토리 일정표 ✨" 제목은 시청자 화면(.poster-chrome-title)에만(2026-09-04 사용자) — 편집실 북서는 배포 버전 배지만
-              왼쪽 정렬. 문서 제목(document.title)은 그대로. */}
-          <button
-            aria-label={`배포 버전 ${buildSha} 복사`}
-            className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}
-            title="클릭해 복사"
-            type="button"
-            onClick={copyBuildSha}
-           data-act="배포 버전 복사">
-            {buildCopied ? "복사됨 ✓" : buildSha}
-          </button>
           {companionDesktop && companionPrefs.enabled ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
         </div>
 
@@ -7438,11 +7421,9 @@ export function StudioShell({
           </button>
         </nav>
 
-        {/* 오른쪽: 역할·도구. 배포 버전(위)+저장됨(아래) 캡슐을 역할 배지 왼쪽에 세로로 —
-            모바일 헤더의 캡슐 문법과 통일(메타는 작고 조용, 저장 상태가 주). */}
+        {/* 오른쪽: 저장 상태와 역할·도구. */}
         <div className="studio-role-tools">
-          {/* 배포 버전 배지는 왼쪽 데스크 라벨 아래로 이사 — 여기는 저장 상태 칩만.
-              칩의 아래 끝선은 역할 배지 버튼의 아래 끝선과 맞춘다(.studio-meta-capsule). */}
+          {/* 저장 칩의 아래 끝선은 역할 배지 버튼의 아래 끝선과 맞춘다. */}
           <div className="studio-meta-capsule">{renderSaveStatus()}</div>
           {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한 팝오버)는 미리보기 버튼 **왼쪽**
               (사용자 지정 순서: 저장 상태 · 관리자 · 시청자 화면 보여주기 · 로그아웃). 관리 도구·설정은 서쪽 rail. */}
@@ -8694,6 +8675,20 @@ export function StudioShell({
       </section>
 
       {/* (하단 플로팅 월 < > 폐지 — 사용자 요청으로 헤더 '‹ 2026년 7월 ›'에 통합.) */}
+      {/* PC 하단 메타는 흐름 밖에 두어 달력 높이·문서 높이·집 진입 위치를 바꾸지 않는다.
+          같은1040px/coarse-height capability로 모바일·좁은 agenda에는 마운트하지 않는다. */}
+      {companionDesktop ? (
+        <button
+          aria-label={`배포 버전 ${buildSha} 복사`}
+          className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}
+          title="클릭해 복사"
+          type="button"
+          onClick={copyBuildSha}
+          data-act="배포 버전 복사"
+        >
+          {buildCopied ? "복사됨 ✓" : buildSha}
+        </button>
+      ) : null}
         </>
       )}
 

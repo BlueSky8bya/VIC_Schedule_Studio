@@ -329,30 +329,34 @@ test("compact premiere group5 ownership withdraws the room and recovers its cont
   expect(await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"))).toBe(preferences);
 });
 
-test("a native studio build-copy label reflow moves its open room with the launcher and back", async ({ page }) => {
+test("a native studio footer build-copy label leaves its open room, launcher and calendar stable", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await setup(page, "studio"); await open(page);
-  const copy = page.locator(".studio-left .studio-build-copy"), originalLabel = (await copy.textContent())!.trim();
+  await page.mouse.move(2, 2); await settle(page);
+  const copy = page.locator(".studio-shell .studio-build-copy"), originalLabel = (await copy.textContent())!.trim();
   const originalWidth = (await copy.boundingBox())!.width, before = await sample(page, "before-native-build-copy");
+  await expect(copy).toHaveCSS("position", "fixed");
+  expect(await copy.evaluate(node => Boolean(node.closest(".studio-topbar")))).toBe(false);
+  await page.bringToFront();
   await copy.click();
   // Exercise the real secure-context clipboard gesture and its1.4s product
   // confirmation. A blocked clipboard is a missing native precondition;
-  // never replace writeText or set the copied flag to manufacture reflow.
+  // never replace writeText or set the copied flag to manufacture a result.
   await expect(copy).toHaveText("복사됨 ✓");
-  expect(Math.abs((await copy.boundingBox())!.width - originalWidth), "PRECONDITION: the actual sibling label must change its rendered width").toBeGreaterThan(1);
+  expect(Math.abs((await copy.boundingBox())!.width - originalWidth), "PRECONDITION: the actual footer label must change its rendered width").toBeGreaterThan(1);
   await expect.poll(async () => {
     const frame = await sample(page, "copied-label-anchor-follow");
     return frame.room && frame.launcher ? Math.abs(frame.room.left - Math.max(12, Math.min(frame.launcher.left, frame.viewport.width - 12 - frame.room.width))) : Infinity;
   }, { timeout: 900, intervals: [16] }).toBeLessThan(1);
   const copied = await sample(page, "copied-label-stable");
-  expect(Math.abs(copied.launcher!.left - before.launcher!.left), "the launcher must really move despite retaining its own dimensions").toBeGreaterThan(1);
-  expect(Math.abs(copied.launcher!.width - before.launcher!.width)).toBeLessThan(1);
+  expect(delta(copied.launcher!, before.launcher!), "the footer label cannot move the header launcher").toBeLessThan(1);
+  expect(delta(copied.room!, before.room!), "the footer label cannot move the open home").toBeLessThan(1);
   expect(delta(copied.calendar, before.calendar)).toBeLessThan(1); expect(copied.scrollY).toBe(before.scrollY);
   await expect(copy).toHaveText(originalLabel, { timeout: 2500 });
   await expect.poll(async () => {
     const frame = await sample(page, "restored-label-anchor-follow");
-    // Clicking the sibling also leaves the launcher's native hover, moving
-    // its top by1px. Its original x/size must return; current y must follow
-    // the actual current anchor, checked below rather than the old hover.
+    // The footer confirmation resets without changing the retained header
+    // anchor or the room attached to it.
     return frame.room && before.room ? Math.max(Math.abs(frame.room.left - before.room.left), Math.abs(frame.room.width - before.room.width), Math.abs(frame.room.height - before.room.height)) : Infinity;
   }, { timeout: 1000, intervals: [16] }).toBeLessThan(1);
   const restored = await sample(page, "restored-label-stable");

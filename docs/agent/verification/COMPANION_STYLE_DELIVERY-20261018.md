@@ -1,6 +1,6 @@
 #101 companion style delivery
 
-Date:2026-10-18 KST. Status:local verification complete; commit/push/deployment pending.
+Date:2026-10-18 KST. Status:production release verified; post-release bookkeeping local.
 
 ## Scope and authority
 
@@ -43,6 +43,16 @@ Final product build `edr0gH9dtosTvqc8Ww9ZR`:211 unit files/2,168 tests, typechec
 
 Headed actual-focus viewer/studio observations each ran65 seconds: hidden samples0, longest unchanged visible state278.7/556.8ms, blocked writes0 and page errors0. Actual visible blur completed its action, used CSS breathing/zzZ without parked per-frame DOM mutation, and woke without relocation. These are controlled browser observations, not an OBS encoder/GPU guarantee.
 
-Root opened final71/16-key contact sheets and actual late-bite viewer/studio screenshots. Original PNG/source SHA/alpha and privacy metadata checks passed. No production DB writes, dependency changes or auth/DTO/KST changes were performed. Remote/deployed verification remains pending.
+Root opened final71/16-key contact sheets and actual late-bite viewer/studio screenshots. Original PNG/source SHA/alpha and privacy metadata checks passed. No production schedule/DB test writes, dependency changes or auth/DTO/KST changes were performed.
 
 The101 art JSON receipts are marked byte-preserving in `.gitattributes`, matching the existing098 policy. This retains their native line endings and pinned hashes on checkout; it does not normalize or rewrite evidence. Staged byte parity is checked before commit.
+
+## Production release
+
+Commit `deac4580ec94b2e0499bd2d8033f6a5a18f3025b` was pushed to main after exact138-path staging and114 byte-pinned index comparisons. Protected user premiere notes and unrelated099 raw receipts/public drafts were excluded. [Quality run39091294419](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39091294419) completed all13 steps successfully, including unit, isolated SQL contracts, harness, build, typecheck and lint. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/2k8z1rLN2azFXSjtzqkjqtTZXWvq) reports success.
+
+At2026-10-18T02:49:06Z, production `/api/soop-live` returned the exact full SHA above. Public clock200/no-store, warm204, anonymous developer-presence401/error-only/no-store and production visual-fixture404 fallback all passed. A streamed fixture404 has HTTP200; the fallback contract, rather than that transport status, establishes nonexposure.
+
+Existing actual developer Chrome tab:1590×1068, November2026. Studio and public viewer preview each rendered one visible companion with a complete decoded `body-outline-v1` image1536×384. Native screenshots were opened. Preview returned to studio; original right-side folded rail and saved tag/season/home folds(false/false/true) were restored. No actual schedule/heart/role edits or production stress tests were performed. Ordinary production navigation may create its normal activity telemetry; it is distinct from fixture write interception.
+
+The localhost3116 fixture server was stopped after verification. Post-release status records stay local to avoid a documentation-only redeployment. Actual OBS encoder/GPU load and genuine-login RLS remain unverified by these checks.

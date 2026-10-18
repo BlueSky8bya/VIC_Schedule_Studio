@@ -318,14 +318,16 @@ html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
    "혼자 딱딱하다"). 모바일(.studio-narrow)엔 이미 제 재질이 있다 — 크림 면, 12px/알약 라운드,
    의미색 틴트 칩(태그=보라·미리보기=슬레이트·오늘=액센트). 거기에 회색 금속을 덮어씌우면 그 언어가
    통째로 지워지고 버튼만 주변과 다른 재질로 튄다. */
-html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):not(.vc-home-launcher) {
+/* Exclude the shared home launcher without raising this skin's specificity:
+   card-contained controls below must retain their soft, transparent surface. */
+html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):where(:not(.vc-home-launcher)) {
   border-color: var(--gs-metal-line);
   border-radius: var(--gs-metal-radius);
   background: var(--gs-metal-sheen);
   color: var(--gs-metal-ink);
   box-shadow: var(--gs-metal-edge);
 }
-html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):not(.vc-home-launcher):hover:not(:disabled) {
+html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):where(:not(.vc-home-launcher)):hover:not(:disabled) {
   border-color: var(--gs-metal-line-strong);
   background: var(--gs-metal-sheen-hover);
   color: var(--gs-metal-ink);

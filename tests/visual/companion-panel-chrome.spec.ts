@@ -50,11 +50,11 @@ async function seed(page: Page, theme: Theme) {
   await page.addInitScript(({ theme, key, epoch, preferences, care }) => {
     // Device preferences only. No clocks, RNG, focus, product state or DOM
     // geometry is overridden. Retain native disclosure changes on reload.
-    const firstVisit = localStorage.getItem(key) !== epoch;
+    const missingPanelChoice = localStorage.getItem("vic.panelSections") === null;
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": theme === "dark" ? "on" : "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic.ambient": "off", "vic.sound": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: false, jump: false, sleep: true, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care, hunger: .05, energy: 1 }));
-    if (firstVisit) localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": true, season: true, "companion-home": false }));
+    if (missingPanelChoice) localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": true, season: true, "companion-home": false }));
     localStorage.removeItem("vic_panel_collapsed");
   }, { theme, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE });
 }
@@ -162,9 +162,7 @@ async function compact(page: Page, surface: Surface, theme: Theme) {
   const snapshotPrefix = surface === "anonymous" || surface === "studio" ? `${surface}-${theme}` : null;
   if (snapshotPrefix) {
     const entry = scope(page, surface).locator(surface === "studio" ? ".studio-topbar .studio-left" : ".public-calendar-header .header-left");
-    await expect(entry).toHaveScreenshot(`${snapshotPrefix}-compact-entry.png`, {
-      mask: surface === "studio" ? [entry.locator(".studio-build-tag")] : []
-    });
+    await expect(entry).toHaveScreenshot(`${snapshotPrefix}-compact-entry.png`);
   }
   const before = await savedFold(page); expect(before?.["companion-home"]).toBe(false);
   await nativeActivate(launcher(page)); await expect(room(page)).toHaveAttribute("data-home-presentation", "compact");

@@ -1,6 +1,6 @@
 #101 — Companion style delivery
 
-Date:2026-10-18 KST. Status:local verification complete; authorized release pending.
+Date:2026-10-18 KST. Status:complete; authorized production release verified.
 
 ## Current authorization
 
@@ -24,4 +24,4 @@ Run typecheck/lint/unit/build/harness and rendered viewer/studio mouth, contact/
 
 ## Current state
 
-Seven native families generated/registered and all packed references replaced.32 actual mouth cells recalibrated. Final build `edr0gH9dtosTvqc8Ww9ZR`, full unit2,168/typecheck/lint/build and65 distinct rendered cases pass. Bootstrap empty-snapshot and saved-position handoff findings are repaired and independently reviewed. Fixture origin/gentle-drop/ordinary-card ownership preparation was corrected without relaxing product rules. See the [verification record](../verification/COMPANION_STYLE_DELIVERY-20261018.md). Next:explicit staging, commit/push, CI/provider/full-SHA and actual deployed UI verification.
+Seven native families generated/registered and all packed references replaced.32 actual mouth cells recalibrated. Final build `edr0gH9dtosTvqc8Ww9ZR`, full unit2,168/typecheck/lint/build and65 distinct rendered cases pass. Bootstrap empty-snapshot and saved-position handoff findings are repaired and independently reviewed. Fixture origin/gentle-drop/ordinary-card ownership preparation was corrected without relaxing product rules. Commit `deac4580ec94b2e0499bd2d8033f6a5a18f3025b` was pushed; CI all13 steps, Vercel, exact deployed SHA/API canaries and actual studio/viewer preview new decoded art passed. See the [verification record](../verification/COMPANION_STYLE_DELIVERY-20261018.md). No remaining101 implementation/release work; actual OBS hardware and genuine-login RLS remain separate evidence gaps.
