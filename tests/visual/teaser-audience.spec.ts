@@ -4,7 +4,7 @@ import { premiereAudienceTiming } from "@/lib/ui/premiere/company";
 const audienceAssets = new WeakMap<Page, string[]>();
 test.beforeEach(async ({ context, page }) => {
   const assets: string[] = []; audienceAssets.set(page, assets);
-  page.on("request", request => { const path = new URL(request.url()).pathname; if (path === "/premiere/victamin-audience.webp" || path.startsWith("/companion/")) assets.push(path); });
+  page.on("request", request => { const path = new URL(request.url()).pathname; if (/^\/premiere\/victamin-audience(?:-[a-z0-9-]+)?\.webp$/.test(path) || path.startsWith("/companion/")) assets.push(path); });
   await context.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
   await context.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
   await context.addInitScript(() => {

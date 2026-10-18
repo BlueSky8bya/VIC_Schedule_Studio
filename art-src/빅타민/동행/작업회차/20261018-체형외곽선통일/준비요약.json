@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "status": "SEVEN_FAMILIES_PREPARED_NOT_GENERATED",
+  "families": [
+    {
+      "family": "clean",
+      "folder": "기본",
+      "grid": 4,
+      "count": 16,
+      "prompt_words": 340,
+      "preflight": "PASS_USER_DIRECTED_PREFLIGHT"
+    },
+    {
+      "family": "mood",
+      "folder": "감정",
+      "grid": 4,
+      "count": 16,
+      "prompt_words": 340,
+      "preflight": "PASS_USER_DIRECTED_PREFLIGHT"
+    },
+    {
+      "family": "play",
+      "folder": "놀이",
+      "grid": 6,
+      "count": 36,
+      "prompt_words": 340,
+      "preflight": "PASS_USER_DIRECTED_PREFLIGHT"
+    },
+    {
+      "family": "ear",
+      "folder": "귀교정",
+      "grid": 2,
+      "count": 4,
+      "prompt_words": 340,
+      "preflight": "PASS_USER_DIRECTED_PREFLIGHT"
+    },
+    {
+      "family": "recovery",
+      "folder": "회복",
+      "grid": 2,
+      "count": 4,
+      "prompt_words": 340,
+      "preflight": "PASS_USER_DIRECTED_PREFLIGHT"
+    },
+    {
+      "family": "throw",
+      "folder": "비행",
+      "grid": 2,
+      "count": 4,
+      "prompt_words": 340,
+      "preflight": "PASS_USER_DIRECTED_PREFLIGHT"
+    },
+    {
+      "family": "audience",
+      "folder": "응원",
+      "grid": 4,
+      "count": 16,
+      "prompt_words": 340,
+      "preflight": "PASS_USER_DIRECTED_PREFLIGHT"
+    }
+  ],
+  "private_human_evidence": "Preserved privately; no raw user turn or identifier copied to this archive",
+  "generation_calls": 0,
+  "automatic_reviews": 0,
+  "claims": 0,
+  "owner_full_art_approval": "NOT_ESTABLISHED"
+}

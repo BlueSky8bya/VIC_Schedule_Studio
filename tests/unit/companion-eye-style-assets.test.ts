@@ -2,8 +2,6 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import sharp from "sharp";
-import hd from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
-import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 
 const run = "art-src/빅타민/동행/작업회차/20261018-큰눈통일";
@@ -34,6 +32,9 @@ type Receipt = {
 };
 const json = <T,>(name: string): T => JSON.parse(readFileSync(name, "utf8")) as T;
 const receipt = json<Receipt>(`${run}/패킹파생기록.json`);
+// 098 remains immutable release evidence after later styles are activated.
+const hd = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata.hd);
+const play = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata.play);
 const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const alpha = (rgba: Buffer) => {
   const bytes = Buffer.alloc(rgba.length / 4);
@@ -79,7 +80,7 @@ describe("098 whole-source eye-style delivery, independently bound to actual fil
     expect(keys).toBe(96);
   }, 30_000);
 
-  it("preserves historical originals and applies exactly the separately staged33-row metadata", () => {
+  it("preserves historical originals and the separately staged33-row metadata", () => {
     expect(receipt.protectedSources).toHaveLength(8); expect(receipt.protectedPackets).toHaveLength(33);
     const beforeHdSources = json<{ sources: FileProof[] }>(receipt.lineage.hd.path).sources;
     const otherSources = ["play", "ear", "recovery", "throw"].map(id => {
@@ -94,16 +95,13 @@ describe("098 whole-source eye-style delivery, independently bound to actual fil
     for (const family of ["hd", "play"] as const) {
       expect(receipt.baseline[family].path).toBe(`${run}/고정입력/기존등록/${family}-motion-sprite.json`);
       expect(receipt.stagedMetadata[family]).toBe(`${run}/정리본/${family}-motion-sprite.json`);
-      expect(readFileSync(`lib/ui/viewer-companion/${family}-motion-sprite.json`).equals(readFileSync(receipt.stagedMetadata[family]))).toBe(true);
+      expect(json<{ frames: Frame[] }>(receipt.stagedMetadata[family]).frames).toEqual(receipt.slots.slice(family === "hd" ? 0 : 304, family === "hd" ? 304 : 512).map(slot => slot.frame));
     }
     const beforeHd = json<{ rows: number[][] }>(receipt.baseline.hd.path), beforePlay = json<{ rows: number[][] }>(receipt.baseline.play.path);
     expect(hd.rows).toEqual(beforeHd.rows); expect(play.rows).toEqual(beforePlay.rows);
     expect(companionSpriteMetadata.rows).toEqual([...beforeHd.rows, ...beforePlay.rows.map(row => row.map(index => index + 304))]);
     expect(companionSpriteMetadata.rows).toHaveLength(33); expect(companionSpriteMetadata.frames).toHaveLength(512);
     expect(receipt.audience.runtimeExclusionsPreserved).toEqual([9, 10]);
-    const premiereCss = readFileSync("components/poster/premiere/premiere-stage.css", "utf8");
-    expect(premiereCss).toContain("url('/premiere/victamin-audience-big-eyes-v1.webp')");
-    expect(premiereCss).not.toContain("url('/premiere/victamin-audience.webp')");
   });
 
   it("maps every512 slot to new source bytes, preserving450 active slots and compatibility127", () => {

@@ -152,7 +152,7 @@
 .pm-fan-art { position: relative; overflow: hidden; display: block; width: 100%; aspect-ratio: 1; transform: translateY(var(--fan-hop, 0px)) scale(var(--fan-depth, 1)); transform-origin: center bottom; transition: transform .1s linear; }
 /* Slide one cached atlas beneath its cell clip; frame changes move the image
    with transform instead of repainting six animated background positions. */
-.pm-fan-art::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 400%; height: 400%; background: url('/premiere/victamin-audience-big-eyes-v1.webp') 0 0 / 100% 100% no-repeat; transform: translate(calc(var(--fan-frame-x, 0%) * -.75), calc(var(--fan-frame-y, 0%) * -.75)); }
+.pm-fan-art::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 400%; height: 400%; background: url('/premiere/victamin-audience-body-outline-v1.webp') 0 0 / 100% 100% no-repeat; transform: translate(calc(var(--fan-frame-x, 0%) * -.75), calc(var(--fan-frame-y, 0%) * -.75)); }
 .pm-fan:not([inert]):hover .pm-fan-art { opacity: .88; }
 .pm-stage .pm-fan[inert] { cursor: default; }
 .pm-stage[data-pm-seated] :is(.pm-fan, .pm-fan-art) { transition: none; }

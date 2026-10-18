@@ -1,0 +1,863 @@
+{
+  "version": 1,
+  "method": "Technical bite-landmark registration only. Actually viewed final101 native32-cell contact; isolated the authored small central smile from both eyes/cheeks in each cell. Measured dark connected smile bounding centre in an inspected ROI; no image edits, model calls or specialist art approval.",
+  "cell": 192,
+  "roi": {
+    "left": 96,
+    "top": 122,
+    "right": 122,
+    "bottom": 142
+  },
+  "darkPixel": {
+    "alphaGreaterThan": 200,
+    "redLessThan": 190,
+    "greenLessThan": 170,
+    "blueLessThan": 150
+  },
+  "packingReceipt": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/패킹파생기록.json",
+  "contactSheet": ".scratch-pw/companion-101/mouth-32-actual-cells.png",
+  "atlases": [
+    {
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    }
+  ],
+  "frames": [
+    {
+      "index": 16,
+      "atlas": 0,
+      "cell": 0,
+      "x": 104.5,
+      "y": 132,
+      "bounds": [
+        99,
+        131,
+        110,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 99,
+        "right": 110,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.54166666666667,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 17,
+      "atlas": 0,
+      "cell": 1,
+      "x": 104.5,
+      "y": 132,
+      "bounds": [
+        99,
+        131,
+        110,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 99,
+        "right": 110,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.33333366666667,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 18,
+      "atlas": 0,
+      "cell": 2,
+      "x": 104.5,
+      "y": 132,
+      "bounds": [
+        99,
+        131,
+        110,
+        133
+      ],
+      "component": {
+        "pixels": 12,
+        "left": 99,
+        "right": 110,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.33333366666667,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 19,
+      "atlas": 0,
+      "cell": 3,
+      "x": 105.5,
+      "y": 132,
+      "bounds": [
+        100,
+        131,
+        111,
+        133
+      ],
+      "component": {
+        "pixels": 12,
+        "left": 100,
+        "right": 111,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.750000333333325,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 20,
+      "atlas": 0,
+      "cell": 4,
+      "x": 105.5,
+      "y": 132,
+      "bounds": [
+        100,
+        131,
+        111,
+        133
+      ],
+      "component": {
+        "pixels": 12,
+        "left": 100,
+        "right": 111,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.54166633333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 21,
+      "atlas": 0,
+      "cell": 5,
+      "x": 105.5,
+      "y": 132,
+      "bounds": [
+        100,
+        131,
+        111,
+        133
+      ],
+      "component": {
+        "pixels": 12,
+        "left": 100,
+        "right": 111,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.54166633333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 22,
+      "atlas": 0,
+      "cell": 6,
+      "x": 104.5,
+      "y": 132,
+      "bounds": [
+        99,
+        131,
+        110,
+        133
+      ],
+      "component": {
+        "pixels": 12,
+        "left": 99,
+        "right": 110,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.124999666666675,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 23,
+      "atlas": 0,
+      "cell": 7,
+      "x": 104.5,
+      "y": 132,
+      "bounds": [
+        99,
+        131,
+        110,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 99,
+        "right": 110,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.54166666666667,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 24,
+      "atlas": 0,
+      "cell": 8,
+      "x": 104.5,
+      "y": 132,
+      "bounds": [
+        99,
+        131,
+        110,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 99,
+        "right": 110,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.54166666666667,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 25,
+      "atlas": 0,
+      "cell": 9,
+      "x": 103.5,
+      "y": 132,
+      "bounds": [
+        98,
+        131,
+        109,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 98,
+        "right": 109,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 26,
+      "atlas": 0,
+      "cell": 10,
+      "x": 103.5,
+      "y": 132,
+      "bounds": [
+        98,
+        131,
+        109,
+        133
+      ],
+      "component": {
+        "pixels": 11,
+        "left": 98,
+        "right": 109,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 27,
+      "atlas": 0,
+      "cell": 11,
+      "x": 103.5,
+      "y": 132,
+      "bounds": [
+        98,
+        131,
+        109,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 98,
+        "right": 109,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 28,
+      "atlas": 0,
+      "cell": 12,
+      "x": 103.5,
+      "y": 132,
+      "bounds": [
+        98,
+        131,
+        109,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 98,
+        "right": 109,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 29,
+      "atlas": 0,
+      "cell": 13,
+      "x": 103.5,
+      "y": 132,
+      "bounds": [
+        98,
+        131,
+        109,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 98,
+        "right": 109,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 30,
+      "atlas": 0,
+      "cell": 14,
+      "x": 103.5,
+      "y": 132,
+      "bounds": [
+        98,
+        131,
+        109,
+        133
+      ],
+      "component": {
+        "pixels": 11,
+        "left": 98,
+        "right": 109,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.333333,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 31,
+      "atlas": 0,
+      "cell": 15,
+      "x": 103.5,
+      "y": 132,
+      "bounds": [
+        98,
+        131,
+        109,
+        133
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 98,
+        "right": 109,
+        "top": 131,
+        "bottom": 133
+      },
+      "logicalAfterRegistration": {
+        "x": 43.125,
+        "y": 60
+      },
+      "src": "/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "index": 144,
+      "atlas": 1,
+      "cell": 0,
+      "x": 108.5,
+      "y": 133.5,
+      "bounds": [
+        103,
+        132,
+        114,
+        135
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 103,
+        "right": 114,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.20833333333333,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 145,
+      "atlas": 1,
+      "cell": 1,
+      "x": 109.5,
+      "y": 133.5,
+      "bounds": [
+        104,
+        132,
+        115,
+        135
+      ],
+      "component": {
+        "pixels": 16,
+        "left": 104,
+        "right": 115,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.625,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 146,
+      "atlas": 1,
+      "cell": 2,
+      "x": 109.5,
+      "y": 133.5,
+      "bounds": [
+        104,
+        132,
+        115,
+        135
+      ],
+      "component": {
+        "pixels": 17,
+        "left": 104,
+        "right": 115,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.416667,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 147,
+      "atlas": 1,
+      "cell": 3,
+      "x": 109.5,
+      "y": 133.5,
+      "bounds": [
+        104,
+        132,
+        115,
+        135
+      ],
+      "component": {
+        "pixels": 15,
+        "left": 104,
+        "right": 115,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.208333,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 148,
+      "atlas": 1,
+      "cell": 4,
+      "x": 109.5,
+      "y": 133.5,
+      "bounds": [
+        104,
+        132,
+        115,
+        135
+      ],
+      "component": {
+        "pixels": 15,
+        "left": 104,
+        "right": 115,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.416667,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 149,
+      "atlas": 1,
+      "cell": 5,
+      "x": 109.5,
+      "y": 133.5,
+      "bounds": [
+        104,
+        132,
+        115,
+        135
+      ],
+      "component": {
+        "pixels": 15,
+        "left": 104,
+        "right": 115,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.208333,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 150,
+      "atlas": 1,
+      "cell": 6,
+      "x": 109.5,
+      "y": 133.5,
+      "bounds": [
+        104,
+        132,
+        115,
+        135
+      ],
+      "component": {
+        "pixels": 17,
+        "left": 104,
+        "right": 115,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.416667,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 151,
+      "atlas": 1,
+      "cell": 7,
+      "x": 109.5,
+      "y": 133.5,
+      "bounds": [
+        104,
+        132,
+        115,
+        135
+      ],
+      "component": {
+        "pixels": 16,
+        "left": 104,
+        "right": 115,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.625,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 152,
+      "atlas": 1,
+      "cell": 8,
+      "x": 108.5,
+      "y": 133.5,
+      "bounds": [
+        103,
+        132,
+        114,
+        135
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 103,
+        "right": 114,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.20833333333333,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 153,
+      "atlas": 1,
+      "cell": 9,
+      "x": 108.5,
+      "y": 133.5,
+      "bounds": [
+        103,
+        132,
+        114,
+        135
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 103,
+        "right": 114,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.20833333333333,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 154,
+      "atlas": 1,
+      "cell": 10,
+      "x": 108.5,
+      "y": 133,
+      "bounds": [
+        103,
+        132,
+        114,
+        134
+      ],
+      "component": {
+        "pixels": 12,
+        "left": 103,
+        "right": 114,
+        "top": 132,
+        "bottom": 134
+      },
+      "logicalAfterRegistration": {
+        "x": 45.41666633333333,
+        "y": 60.41666666666667
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 155,
+      "atlas": 1,
+      "cell": 11,
+      "x": 108,
+      "y": 133,
+      "bounds": [
+        102,
+        132,
+        114,
+        134
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 102,
+        "right": 114,
+        "top": 132,
+        "bottom": 134
+      },
+      "logicalAfterRegistration": {
+        "x": 45.416667,
+        "y": 60.41666666666667
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 156,
+      "atlas": 1,
+      "cell": 12,
+      "x": 107.5,
+      "y": 133,
+      "bounds": [
+        102,
+        132,
+        113,
+        134
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 102,
+        "right": 113,
+        "top": 132,
+        "bottom": 134
+      },
+      "logicalAfterRegistration": {
+        "x": 44.999999666666675,
+        "y": 60.41666666666667
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 157,
+      "atlas": 1,
+      "cell": 13,
+      "x": 108,
+      "y": 133,
+      "bounds": [
+        102,
+        132,
+        114,
+        134
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 102,
+        "right": 114,
+        "top": 132,
+        "bottom": 134
+      },
+      "logicalAfterRegistration": {
+        "x": 45.416667,
+        "y": 60.41666666666667
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 158,
+      "atlas": 1,
+      "cell": 14,
+      "x": 108.5,
+      "y": 133,
+      "bounds": [
+        103,
+        132,
+        114,
+        134
+      ],
+      "component": {
+        "pixels": 12,
+        "left": 103,
+        "right": 114,
+        "top": 132,
+        "bottom": 134
+      },
+      "logicalAfterRegistration": {
+        "x": 45.41666633333333,
+        "y": 60.41666666666667
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "index": 159,
+      "atlas": 1,
+      "cell": 15,
+      "x": 108.5,
+      "y": 133.5,
+      "bounds": [
+        103,
+        132,
+        114,
+        135
+      ],
+      "component": {
+        "pixels": 13,
+        "left": 103,
+        "right": 114,
+        "top": 132,
+        "bottom": 135
+      },
+      "logicalAfterRegistration": {
+        "x": 45.20833333333333,
+        "y": 60.625
+      },
+      "src": "/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "atlasSha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    }
+  ]
+}

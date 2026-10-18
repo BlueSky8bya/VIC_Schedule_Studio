@@ -2,8 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261018-100 | In Progress | [Companion physics and consistency](PLAN-20261018-100-companion-physics-and-consistency.md) |
-| PLAN-20261018-099 | Awaiting visual feedback; UI/liveness deployed | [Companion liveness and chrome](PLAN-20261018-099-companion-liveness-and-chrome.md) |
+| PLAN-20261018-101 | Local verification complete; authorized release pending | [Companion style delivery](PLAN-20261018-101-companion-style-delivery.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

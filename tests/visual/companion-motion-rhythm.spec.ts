@@ -6,16 +6,18 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { COMPANION_THROW_LIMITS } from "@/lib/ui/viewer-companion/throw";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
-type Frame = { at: number; visible: boolean; same: boolean; state: string; play: string; beat: string; row: string; image: string; platform: string; x: number; foot: number; ruffled: number };
+type Frame = { at: number; visible: boolean; same: boolean; state: string; play: string; beat: string; row: string; image: string; platform: string; x: number; foot: number; ruffled: number; ordinaryEventId: string | null; ordinaryRect: { left: number; top: number; right: number; bottom: number } | null };
 type Probe = { node: HTMLElement; frames: Frame[]; ups: number[]; stopped: boolean; raf: number; listener: (event: PointerEvent) => void };
 type MotionWindow = Window & { motionRhythmProbe?: Probe; motionRhythmRandom?: number; motionRhythmAutonomy?: boolean; motionRhythmSeed?: number };
 const prefix = process.env.COMPANION_RHYTHM_PREFIX ?? ".scratch-pw/companion-071-rhythm";
 const companion = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => companion(page).locator(".vc-actor");
+const ordinaryCardSelector = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]";
 const evidence = new WeakMap<Page, { writes: string[]; errors: string[] }>();
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
@@ -78,7 +80,7 @@ async function setup(page: Page, surface: Surface, autonomous = false) {
 }
 
 async function observe(page: Page) {
-  await companion(page).evaluate(node => {
+  await companion(page).evaluate((node, cardSelector) => {
     const scope = window as MotionWindow;
     // Discard random values consumed by mounting, settings and the native
     // spatial setup. Only this observed action sequence owns the fixed seed.
@@ -89,13 +91,18 @@ async function observe(page: Page) {
     const sample = () => {
       if (probe.stopped) return;
       const css = getComputedStyle(probe.node), rect = probe.node.getBoundingClientRect(), data = probe.node.dataset;
+      const foot = { x: rect.left + rect.width / 2, y: rect.bottom };
+      const hit = document.elementsFromPoint(foot.x, foot.y + 4).find(element => !element.closest(".vc-companion,.vc-food-layer"));
+      const card = hit?.closest<HTMLElement>(cardSelector), cardRect = card?.getBoundingClientRect();
+      const owned = card && cardRect && foot.x >= cardRect.left && foot.x <= cardRect.right && foot.y >= cardRect.top - 6 && foot.y <= cardRect.bottom + 1;
       if (scope.motionRhythmAutonomy) scope.motionRhythmRandom = ["walk", "jump"].includes(data.state ?? "") ? .01 : undefined;
       probe.frames.push({ at: performance.now(), visible: probe.node.isConnected && !probe.node.hidden && css.display !== "none" && css.visibility !== "hidden" && Number(css.opacity) > .05 && rect.width > 0 && rect.height > 0,
-        same: document.querySelector(".vc-companion") === node, state: data.state ?? "", play: data.play ?? "", beat: data.playBeat ?? "", row: probe.node.style.getPropertyValue("--vc-row"), image: probe.node.querySelector<HTMLImageElement>(".vc-texture")?.currentSrc || probe.node.querySelector<HTMLImageElement>(".vc-texture")?.src || "", platform: data.platform ?? "", x: rect.left + rect.width / 2, foot: rect.bottom, ruffled: document.querySelectorAll("[data-vc-ruffled]").length });
+        same: document.querySelector(".vc-companion") === node, state: data.state ?? "", play: data.play ?? "", beat: data.playBeat ?? "", row: probe.node.style.getPropertyValue("--vc-row"), image: probe.node.querySelector<HTMLImageElement>(".vc-texture")?.currentSrc || probe.node.querySelector<HTMLImageElement>(".vc-texture")?.src || "", platform: data.platform ?? "", x: foot.x, foot: foot.y, ruffled: document.querySelectorAll("[data-vc-ruffled]").length,
+        ordinaryEventId: owned ? card.dataset.eventid ?? null : null, ordinaryRect: owned ? { left: cardRect.left, top: cardRect.top, right: cardRect.right, bottom: cardRect.bottom } : null });
       probe.raf = requestAnimationFrame(sample);
     };
     scope.motionRhythmProbe = probe; probe.raf = requestAnimationFrame(sample);
-  });
+  }, ordinaryCardSelector);
 }
 
 async function recallToSeat(page: Page) {
@@ -111,6 +118,10 @@ async function recallToSeat(page: Page) {
     previous = next;
     return next[2] > 0 && next[3] > 0 && next[6] > 0 && next[7] > 0 ? Date.now() - stableAt : 0;
   }, { intervals: [40], timeout: 5000 }).toBeGreaterThanOrEqual(160);
+  // This fixture measures the following tap reaction, not a long home trip.
+  // Native P placement supplies a nearby measured floor before the real recall;
+  // committed-home regressions retain the full distance-dependent journey.
+  await placeCompanionOnHomeFloor(page);
   const recall = home.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
   await recall.focus(); await recall.press("Enter");
   await expect(companion(page)).toHaveAttribute("data-platform", "companion-home");
@@ -139,9 +150,21 @@ async function dropNearAnOrdinaryCard(page: Page) {
   await page.mouse.move(start.x, start.y); await page.mouse.down();
   await page.mouse.move(target.x + target.width * .72, target.y - 25 - footOffset, { steps: 18 });
   await expect(companion(page)).toHaveAttribute("data-state", "held");
-  await page.mouse.up(); await page.mouse.move(5, 5);
-  await expect(companion(page)).toHaveAttribute("data-platform", /^card-.*-top(?:-\d+)?$/);
+  // This helper arranges a gentle drop, not a throw. Keep the real pointer
+  // still beyond both80ms input windows (+100ms native scheduling margin).
+  await page.waitForTimeout(Math.max(COMPANION_THROW_LIMITS.staleInputMs, COMPANION_THROW_LIMITS.velocityWindowMs) + 100);
+  await page.mouse.up(); await expect(companion(page)).not.toHaveAttribute("data-throw-phase"); await page.mouse.move(5, 5);
+  // A safe text ledge can be adopted before the assertion reads the manual
+  // top id. Verify the actual ordinary card under the foot, not an opaque id
+  // prefix also shared by unrelated period/support-band platforms.
+  await expect.poll(() => companion(page).evaluate((node, cardSelector) => {
+    const foot = node.getBoundingClientRect(), x = foot.left + foot.width / 2, y = foot.bottom;
+    const hit = document.elementsFromPoint(x, y + 4).find(element => !element.closest(".vc-companion,.vc-food-layer"));
+    const card = hit?.closest<HTMLElement>(cardSelector), rect = card?.getBoundingClientRect();
+    return card && rect && x >= rect.left && x <= rect.right && y >= rect.top - 6 && y <= rect.bottom + 1 ? card.dataset.eventid : null;
+  }, ordinaryCardSelector)).toBe("evt-005");
   await expect(companion(page)).not.toHaveAttribute("data-state", "jump");
+  await expect(companion(page)).not.toHaveAttribute("data-throw-phase");
 }
 
 for (const surface of ["viewer", "studio"] as const) test(`${surface} short tap reacts promptly, reads tears and recovers without hiding during drag interruption`, async ({ page }) => {
@@ -159,7 +182,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} short tap 
   // Pointer release paints contact synchronously; the next renderer frame
   // publishes its semantic beat. A pre-tick empty label is not a missing pose.
   expect(new Set(reaction.map(frame => frame.beat).filter(Boolean))).toEqual(new Set(["impact", "checking", "recover"]));
-  expect(reaction.some(frame => frame.beat === "checking" && frame.image.includes("victamin-play-27-ear-v2-big-eyes-v1.webp"))).toBe(true);
+  expect(reaction.some(frame => frame.beat === "checking" && frame.image.includes("victamin-play-27-ear-v2-big-eyes-v1-body-outline-v1.webp"))).toBe(true);
   await actor(page).click({ delay: 55 }); await page.mouse.move(5, 5);
   await expect(companion(page)).toHaveAttribute("data-play", "bonk-tears");
   const box = (await actor(page).boundingBox())!, start = { x: box.x + box.width / 2, y: box.y + box.height * .45 };
@@ -218,16 +241,18 @@ for (const surface of ["viewer", "studio"] as const) for (const cardPrank of [tr
   // frames and the actual card effect rather than dispatching a play command.
   await expect.poll(() => page.evaluate(() => {
     const frames = (window as MotionWindow).motionRhythmProbe!.frames;
-    return frames.some((frame, index) => ["bump", "slip", "tumble"].includes(frame.play) && ["walk", "jump"].includes(frames[index - 1]?.state));
+    return frames.some((frame, index) => frame.ordinaryEventId && ["bump", "slip", "tumble"].includes(frame.play) && ["walk", "jump"].includes(frames[index - 1]?.state));
   }), { timeout: 35000, intervals: [50] }).toBe(true);
   await expect(companion(page)).toHaveAttribute("data-play", /bump|slip|tumble/);
   const contact = await page.evaluate(() => {
     const frames = (window as MotionWindow).motionRhythmProbe!.frames;
-    const index = frames.findIndex((frame, i) => ["bump", "slip", "tumble"].includes(frame.play) && ["walk", "jump"].includes(frames[i - 1]?.state));
+    const index = frames.findIndex((frame, i) => frame.ordinaryEventId && ["bump", "slip", "tumble"].includes(frame.play) && ["walk", "jump"].includes(frames[i - 1]?.state));
     return { before: frames[index - 1], after: frames[index] };
   });
   expect(contact.after.at - contact.before.at).toBeLessThanOrEqual(100);
-  expect(contact.after.platform).toMatch(/^card-/);
+  expect(contact.after.ordinaryEventId).toBeTruthy(); expect(contact.after.ordinaryRect).not.toBeNull();
+  expect(contact.after.x).toBeGreaterThanOrEqual(contact.after.ordinaryRect!.left); expect(contact.after.x).toBeLessThanOrEqual(contact.after.ordinaryRect!.right);
+  expect(contact.after.foot).toBeGreaterThanOrEqual(contact.after.ordinaryRect!.top - 6); expect(contact.after.foot).toBeLessThanOrEqual(contact.after.ordinaryRect!.bottom + 1);
   if (cardPrank) {
     await expect(page.locator("[data-vc-ruffled]")).toHaveCount(1);
     await page.screenshot({ path: `${prefix}-${surface}-natural-contact-on.png` });

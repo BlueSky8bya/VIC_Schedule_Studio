@@ -404,10 +404,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let parkedLayoutTimer: ReturnType<typeof setTimeout> | undefined;
     let waitingForSupport = false, supportValidationRequested = false;
     let supportValidationTimer: ReturnType<typeof setTimeout> | undefined;
-    let geometryReady = false, homeOccluded = false;
+    let geometryReady = false, initialGeometryMeasured = false, homeOccluded = false;
     let overlayActive = false, overlayPerch: CompanionOverlayPerch | undefined;
     let overlayDrag: { id: number; dx: number; dy: number; moved?: boolean; worldOrigin?: { x: number; y: number }; guest?: { x: number; y: number; origin: CompanionOverlayPerch; bounds?: CompanionGuestBounds; dragged: boolean } } | undefined, overlayPlacing = false;
     const isDetailGuest = () => overlayActive && Boolean(hiding?.sheet && hiding.ready || extractedFrom?.isConnected && extractedFrom === detailSheet && extractedFrom.dataset.companionDetailEvent === extractedEvent);
+    const needsOverlayWorldSeed = () => overlayActive && !initialGeometryMeasured && !hiding;
     const guestBusy = (now: number) => Boolean(overlayDrag?.guest || guestKeyboardHeld || now < petUntil || now < guestUntil || hiding?.ready && hideSeek.sample(presentationNow).active);
     let returning: ReturnType<typeof createCompanionOverlayReturn> | undefined;
     let returnTargetValid = false, pickupScale = 1, pickupAt = 0;
@@ -1960,6 +1961,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         }
         if (overlayActive) followLayout();
       }
+      // A hard-pause release may resume the same already-open window. Seed
+      // this new controller there too; established residents never reseed.
+      if (!next && needsOverlayWorldSeed()) connectGeometry();
       food.current?.pause(next || overlayActive);
       if (next === pause && started) {
         if (overlayChanged && !pause) {
@@ -2283,7 +2287,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     capturePosition.current = captureForSurface;
     const applyGeometry = (next: Platform[], validationOnly = false) => {
-      if (premiereActive || overlayActive || hiding) return;
+      if (premiereActive || hiding || overlayActive && !needsOverlayWorldSeed()) return;
       // Drag-source text is intentionally hidden by the editor. That brief
       // presentation is not deletion of the occupied ledge. Keep the last
       // physical snapshot until the existing editor gesture has ended.
@@ -2384,7 +2388,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             positionEntryWait = true;
             void Promise.allSettled(entering.map(animation => animation.finished)).then(() => {
               positionEntryWait = false;
-              if (!stopped && !pause && pendingPosition.current && !premiereActive && !overlayActive && !hiding) {
+              if (!stopped && !pause && pendingPosition.current && !premiereActive && (!overlayActive || needsOverlayWorldSeed()) && !hiding) {
                 offGeometry?.(); offGeometry = undefined; connectGeometry();
               }
             });
@@ -2541,9 +2545,20 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const onGeometry = (next: Platform[], validationOnly = false) => {
       const wasWaiting = waitingForSupport;
+      const seedingOverlay = needsOverlayWorldSeed();
       const resumeHome = Boolean(homeJourney && homeWaitingGeometry && !premiereActive && !overlayActive && !hiding && !workspaceBusyRef.current);
       if (resumeHome) { homeWaitingGeometry = false; el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); }
       applyGeometry(next, validationOnly);
+      // A nonempty scan may still be waiting for an existing panel intro to
+      // finish before restoring staff handoff coordinates. Neither that scan
+      // nor an empty visibility snapshot completes the initial world seed.
+      initialGeometryMeasured ||= !pendingPosition.current && !pendingMonth && Boolean(supportById(support));
+      if (seedingOverlay && initialGeometryMeasured && overlayActive) {
+        // The actual ledge, including an empty calendar's real viewport floor,
+        // owns visibility. Then return to the ordinary window's quiet lifetime.
+        paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
+        offGeometry?.(); offGeometry = undefined; geometryReady = false;
+      }
       if (!stopped && !pause && !overlayActive && !hiding && !premiereActive && !pendingPosition.current && !pendingMonth && !pressed && !keyboardHeld && !placing && !isHomeSupport(support)) {
         if (awaitingAtX || !platforms.length && !supportById(support) && !action) waitForSupport();
         else if (wasWaiting) {
@@ -2558,7 +2573,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (resumeHome && !homeWaitingGeometry && !stopped && !pause && !overlayActive) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); nextDecision = lastTick; schedule(); }
     };
     const connectGeometry = () => {
-      if (!premiereActive && !hiding && !overlayActive && !offGeometry) {
+      if (!premiereActive && !hiding && (!overlayActive || needsOverlayWorldSeed()) && !offGeometry) {
         geometryReady = false;
         geometryTracker = offGeometry = observeCompanionPlatforms(page, onGeometry, { size, identity: geometryIdentity, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion"),
           // Reuse the existing observer's invalidation. Main frames follow an

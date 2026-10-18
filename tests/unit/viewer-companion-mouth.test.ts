@@ -35,14 +35,16 @@ describe("current authored eating mouth registration", () => {
         expect(registered).not.toBeNull();
         // Inspect the recorded mouth arc itself, not transparent padding, an
         // eye or cheek. All32 distinct cells retain authored mouth ink here.
-        let mouthInk = 0;
-        for (let y = Math.floor(frame.y - 2); y <= Math.ceil(frame.y + 2); y++) {
-          for (let x = Math.floor(frame.x - 6); x <= Math.ceil(frame.x + 6); x++) {
+        const [left, top, right, bottom] = frame.bounds, ink: Array<{ x: number; y: number }> = [];
+        for (let y = top - 1; y <= bottom; y++) {
+          for (let x = left - 1; x <= right; x++) {
             const p = ((Math.floor(frame.cell / 8) * 192 + y) * info.width + frame.cell % 8 * 192 + x) * 4;
-            if (data[p + 3] > 200 && data[p] < 190 && data[p + 1] < 170 && data[p + 2] < 150) mouthInk++;
+            if (data[p + 3] > 200 && data[p] < 190 && data[p + 1] < 170 && data[p + 2] < 150) ink.push({ x, y });
           }
         }
-        expect(mouthInk).toBeGreaterThanOrEqual(10);
+        expect(ink.length).toBeGreaterThanOrEqual(10);
+        expect([Math.min(...ink.map(point => point.x)), Math.min(...ink.map(point => point.y)), Math.max(...ink.map(point => point.x)) + 1, Math.max(...ink.map(point => point.y)) + 1]).toEqual(frame.bounds);
+        expect(frame.x).toBe((left + right) / 2); expect(frame.y).toBe((top + bottom) / 2);
         expect(registered!.x).toBeGreaterThan(43);
         expect(registered!.x).toBeLessThan(47);
         expect(registered!.y).toBeGreaterThan(59);
@@ -54,8 +56,8 @@ describe("current authored eating mouth registration", () => {
   it("follows the adopted happy drawing rather than keeping the observing pose's mouth", () => {
     const observe = projectCompanionMouth(selectCompanionSprite(16), neutral())!;
     const chew = projectCompanionMouth(selectCompanionSprite(144), neutral())!;
-    expect(chew.x - observe.x).toBeCloseTo(1.25, 8);
-    expect(chew.y - observe.y).toBeCloseTo(-.20833333333333334, 8);
+    expect(chew.x - observe.x).toBeCloseTo(1.6666666666666667, 8);
+    expect(chew.y - observe.y).toBeCloseTo(.625, 8);
     // The old fixed24% foot offset placed the centre at60.8, below both arcs.
     expect(chew.y).toBeLessThan(60.8);
   });
@@ -83,6 +85,7 @@ describe("current authored eating mouth registration", () => {
   it("does not apply calibration to a different drawing or malformed transform", () => {
     const selected = selectCompanionSprite(144);
     expect(projectCompanionMouth({ ...selected, src: `${selected.src}-future` }, neutral())).toBeNull();
+    expect(projectCompanionMouth({ ...selected, src: selected.src.replace("-body-outline-v1", "") }, neutral())).toBeNull();
     expect(projectCompanionMouth({ ...selected, index: 1 }, neutral())).toBeNull();
     expect(projectCompanionMouth(selectCompanionSprite(304), neutral())).toBeNull();
     expect(projectCompanionMouth(selected, { ...neutral(), size: NaN })).toBeNull();

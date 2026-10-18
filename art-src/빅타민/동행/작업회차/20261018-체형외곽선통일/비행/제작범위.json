@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "family": "throw",
+  "grid": 2,
+  "count": 4,
+  "inputs": [
+    {
+      "id": "UI-FLIGHT-099",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-선택눈크기통일\\비행\\원본\\눈비율_키포즈.png",
+      "sha256": "B5CB94E3F8BC951FD127A75BF69D9B67A581E9E3DF478354F69A0A7A6C81695E"
+    },
+    {
+      "id": "USER-SELECTED-CLEAN0",
+      "kind": "style_reference",
+      "role": "User-selected relative eye-size only; clean contour treatment and comparable frontal silhouette are requested correction guides, not whole-parent approval",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-선택눈크기통일\\고정입력\\선택기준_전체키.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "id": "REF-017",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\02_표정\\스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5"
+    }
+  ],
+  "eye_size_preserved_from": {
+    "source_key": "clean:0",
+    "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68"
+  },
+  "changed_scope": "Whole-character contour thickness/color/render and comparable body/ear proportions; maintain user-selected clean0 relative eye size and distinct pose/expression semantics. Full character silhouette may change within original cells.",
+  "protected_scope": "Original grid order, action meanings, palette, exactly two attached ears, limbless paper anatomy and original one-pixel transparent outer border. No prior full-sheet approval inferred. No normalization of deliberate pose squash/stretch, rotation, folded ears or occlusion.",
+  "generation_calls": 0,
+  "visual_approval": "NOT_ESTABLISHED",
+  "opened_by_producer": true,
+  "preflight": "PASS_USER_DIRECTED_PREFLIGHT",
+  "claim": "NOT_CLAIMED; root must claim immediately before one built-in imagegen call"
+}

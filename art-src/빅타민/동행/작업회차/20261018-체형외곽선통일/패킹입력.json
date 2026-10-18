@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "run": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일",
+  "suffix": "body-outline-v1",
+  "baseline": {
+    "hd": {
+      "path": "lib/ui/viewer-companion/hd-motion-sprite.json",
+      "sha256": "19c5fce65b3712f08540a1e317443f12d40be77cbde20fc82d3be993dbbe7c8b"
+    },
+    "play": {
+      "path": "lib/ui/viewer-companion/play-motion-sprite.json",
+      "sha256": "d454d07c70c0adf10babe98231bc9a18dcd3fdfd577f3c172621da445c26e59c"
+    },
+    "audience": {
+      "path": "public/premiere/victamin-audience-big-eyes-v1.webp",
+      "sha256": "43fb169a7dcca892062fe0e7cadcfc7f23362820b8ed29facf755c3fc38702eb"
+    }
+  },
+  "sources": {
+    "clean": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "sha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "grid": 4,
+      "count": 16,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/생성영수증.json"
+    },
+    "mood": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "sha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "grid": 4,
+      "count": 16,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/생성영수증.json"
+    },
+    "play": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "sha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "grid": 6,
+      "count": 36,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/생성영수증.json"
+    },
+    "ear": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/귀교정/원본/체형외곽선_키포즈.png",
+      "sha256": "77815d3ef33b94547cd0458dea57ee94f600de91c57775d4e70376fc6380ce35",
+      "grid": 2,
+      "count": 4,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/귀교정/생성영수증.json"
+    },
+    "recovery": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/회복/원본/체형외곽선_키포즈.png",
+      "sha256": "6ff1d010c4e6df4bd865c09a7cd72ecd7112537ee9f790611ffaeffcafad19ea",
+      "grid": 2,
+      "count": 4,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/회복/생성영수증.json"
+    },
+    "throw": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/비행/원본/체형외곽선_키포즈.png",
+      "sha256": "b28ed52bcf96242df33c9b61a662247c3da3c699f219003aae6a523c282d9579",
+      "grid": 2,
+      "count": 4,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/비행/생성영수증.json"
+    },
+    "audience": {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/응원/원본/체형외곽선_키포즈.png",
+      "sha256": "b34864f98db0a82cabc172f6e756fbb437c2728d55d962505407dd4b12f68046",
+      "grid": 4,
+      "count": 16,
+      "provenance": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/응원/생성영수증.json"
+    }
+  },
+  "protectedInputs": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-선택눈크기통일/기본/원본/눈비율_키포즈.png",
+      "sha256": "b42ba4b0b39166528391fd0d95489c360caeea3d991cd746c991d767d6377aec"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-선택눈크기통일/감정/원본/눈비율_키포즈.png",
+      "sha256": "14b5547c3136b2ba9731fee8462d09cc2422ad5e72d02bdb5e1ab3457923851e"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-선택눈크기통일/놀이/원본/눈비율_키포즈.png",
+      "sha256": "28e1db1b593bf1e5851d1b9d900945ee246930c86c95df74956ed5f6d6b58abe"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-선택눈크기통일/귀교정/원본/눈비율_키포즈.png",
+      "sha256": "860ef9258bf93ecf6fa13888997274a0cac525d37f80bd927907f7de152533a3"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-선택눈크기통일/회복/원본/눈비율_키포즈.png",
+      "sha256": "c172fc8c976b1ccbacdfd9276557b61152135940426d45537e5c03ac25094279"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-선택눈크기통일/비행/원본/눈비율_키포즈.png",
+      "sha256": "b5cb94e3f8bc951fd127a75bf69d9b67a581e9e3df478354f69a0a7a6c81695e"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-선택눈크기통일/응원/원본/눈비율_키포즈.png",
+      "sha256": "4e82f4737de39daccdb83314209167b1ee933beb79605d9abef1784029bb73d9"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/고정입력/선택기준_전체키.png",
+      "sha256": "83fd71b3bafdc72587f786bdba800ffb52d7034fc6e66aa1205ecf8b3e5eea68"
+    }
+  ],
+  "selectedEyeSizeOnly": {
+    "referenceKey": "clean:0",
+    "path": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/고정입력/선택기준_전체키.png",
+    "sha256": "83fd71b3bafdc72587f786bdba800ffb52d7034fc6e66aa1205ecf8b3e5eea68",
+    "scope": "mascot_eye_size_clean_key0_only"
+  },
+  "bodyProfile": {
+    "status": "ACTUAL_WHOLE_KEY_REGISTRATION_LANDMARKS",
+    "authority": "Original REF016 anatomy remains the design source; selected clean0 eye size remains the eye-size reference",
+    "comparableFrontalKeys": [
+      "clean:0",
+      "mood:0",
+      "play:18",
+      "ear:2",
+      "recovery:3",
+      "throw:2",
+      "audience:0"
+    ],
+    "normalization": "One isotropic source-pixel scale per family from measured native body width; only whole-pose safety caps and transparent-padding translation may differ by frame",
+    "anatomicalCertification": "NOT_ESTABLISHED_BY_REGISTRATION",
+    "landmarkReview": "Whole-key crops visually inspected; landmarks exclude ears and detached marks. Audience body landmark excludes its glowstick. No anatomical part is repainted or transplanted."
+  },
+  "registration": {
+    "version": 1,
+    "mode": "family-body-isotropic",
+    "bodyWidth": 130,
+    "audienceBodyWidth": 166,
+    "families": {
+      "clean": {
+        "key": 0,
+        "sourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+        "bodyBounds": {
+          "left": 41,
+          "top": 148,
+          "right": 300,
+          "bottom": 317
+        }
+      },
+      "mood": {
+        "key": 0,
+        "sourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+        "bodyBounds": {
+          "left": 36,
+          "top": 125,
+          "right": 309,
+          "bottom": 320
+        }
+      },
+      "play": {
+        "key": 18,
+        "sourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+        "bodyBounds": {
+          "left": 35,
+          "top": 710,
+          "right": 213,
+          "bottom": 819
+        }
+      },
+      "ear": {
+        "key": 2,
+        "sourceSha256": "77815d3ef33b94547cd0458dea57ee94f600de91c57775d4e70376fc6380ce35",
+        "bodyBounds": {
+          "left": 98,
+          "top": 795,
+          "right": 578,
+          "bottom": 1161
+        }
+      },
+      "recovery": {
+        "key": 3,
+        "sourceSha256": "6ff1d010c4e6df4bd865c09a7cd72ecd7112537ee9f790611ffaeffcafad19ea",
+        "bodyBounds": {
+          "left": 668,
+          "top": 818,
+          "right": 1195,
+          "bottom": 1200
+        }
+      },
+      "throw": {
+        "key": 2,
+        "sourceSha256": "b28ed52bcf96242df33c9b61a662247c3da3c699f219003aae6a523c282d9579",
+        "bodyBounds": {
+          "left": 82,
+          "top": 764,
+          "right": 603,
+          "bottom": 1152
+        }
+      },
+      "audience": {
+        "key": 0,
+        "sourceSha256": "b34864f98db0a82cabc172f6e756fbb437c2728d55d962505407dd4b12f68046",
+        "bodyBounds": {
+          "left": 55,
+          "top": 142,
+          "right": 275,
+          "bottom": 316
+        }
+      }
+    }
+  }
+}

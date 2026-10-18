@@ -36,4 +36,8 @@
 
 최종 build의 서로 다른 native47개 PASS: 패널 기본/저장4·첫 카드 낙하2·입5·귀가/기하 변경4·긴 프레임/집 flip/소파/집 식사7·chrome14·liveness/mobile11. 일부 보고서는 앞선 하네스 실패와 함께 저장되므로 위에서 구분한 최종 case 결과만 합산한다. `.scratch-pw/companion-100/native-settled-final.json`의 chrome14와 `native-default-stable-final.json`의 기본/저장4는 기준선 업데이트 없이 통과했다. 음식 최종 x 열 유지도 엄격하게 확인했다. 첫 설정2+기존12 기준선을 실제 대조했다. 입/패널 witness 보강은 독립 재검토에서 추가 P1/P2 없음. 실제 이미지 형상/외곽선 검수 FAIL은 이 상호작용 PASS와 별개다.
 
-아직100 commit/push/remote CI/Vercel/운영 UI 확인 전이다. 실제 방송 PC의 GPU 합성·인코딩 동시 부하 장시간 실험, 실로그인 RLS, 기기별 UI와 과거096 focus 증거는 이 fixture/unit 검사로 대체하지 않는다. 이미지 선 굵기 FAIL과 미배포099 선택은 미해결이며 현098 원화를 유지한다.
+`e4ddc503556fc1481c6096caea33f920da1a8c0c`을 main에 commit/push했다. [원격 quality39060778341](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39060778341)의13개 단계(unit/격리 SQL/harness/build/generated typecheck/lint 포함) 모두 success, [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/6FkbmY5xkx9rDSRjTwMM6ZhxmRDd) success를 확인했다. 배포 뒤5개 GET canary에서 정확한 full SHA·공개 clock200/no-store·warm204·익명 developer401/error-only/no-store·운영 fixture 비노출을 확인했다. fixture는HTTP200 안의 streamed404 fallback이며 HTTP404로 오기하지 않는다. 원본 응답은 `.scratch-pw/companion-100/canary-http/`, 요약은 `deployed-canaries.json`이다.
+
+실제 Chrome 운영 developer 편집실에서 새 배포 배지를 확인했다. 태그 제목 펼침/접힘과 실제 시청자 미리보기 왕복을 조작했고, 두 화면의 펫1/집1·펫 가시성·공유 재질·저장된 false/false/true를 확인했다. 원래 오른쪽 패널/태그 접힘/계절 접힘/집 펼침을 같은 DOM 상태로 복구했다. 일정 저장/하트 쓰기는 하지 않았다. 실제 운영 smoke와 세부 fixture 검사를 구분하며, 숨겨진 전경의 큰 BCR 오차를 가시 레이어 정렬 실패나 정렬 PASS로 사용하지 않는다. 요약은 `.scratch-pw/companion-100/production-ui.json`이다.
+
+배포 뒤 메타데이터 갱신은 로컬에 남겨 문서만 바꾸는 재배포를 만들지 않았다. 실제 방송 PC의 GPU 합성·인코딩 동시 부하 장시간 실험, 실로그인 RLS, 기기별 UI와 과거096 focus 증거는 이 fixture/unit 검사로 대체하지 않는다. 이미지 선 굵기 FAIL과 미배포099 선택은 미해결이며 현098 원화를 유지한다.

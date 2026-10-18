@@ -71,6 +71,61 @@ export function createEyeStyleMap(base, play, receipts) {
     deadSlots: slots.filter(slot => !live.has(slot.index)).map(slot => slot.index) };
 }
 
+/** Optional new-run registration only. A measured frontal body fixes one
+ * source-pixel scale for its entire family. Old frame envelopes and detached
+ * emotion marks never determine this anatomical scale. Historical manifests
+ * omit this contract and keep their original packing path byte-for-byte. */
+export function createFamilyBodyRegistration(profile, sources) {
+  if (profile === undefined) return undefined;
+  if (profile?.version !== 1 || profile.mode !== 'family-body-isotropic' || Object.keys(profile.families ?? {}).sort().join() !== Object.keys(families).sort().join()) throw Error('Explicit seven-family body registration required');
+  for (const [name, width, maximum] of [['bodyWidth', profile.bodyWidth, cell * .76], ['audienceBodyWidth', profile.audienceBodyWidth, 248]]) if (!Number.isFinite(width) || width < 40 || width > maximum) throw Error(`Invalid canonical ${name}`);
+  const result = {};
+  for (const id of Object.keys(families)) {
+    const definition = profile.families[id], source = sources[id], key = source?.keys[definition?.key], box = definition?.bodyBounds;
+    if (!Number.isInteger(definition?.key) || !key || definition.sourceSha256 !== source.record.sha256 || !box || !['left', 'top', 'right', 'bottom'].every(axis => Number.isInteger(box[axis])) || box.left >= box.right || box.top >= box.bottom) throw Error(`Pinned canonical native body required: ${id}`);
+    const silhouette = key.record.body;
+    if (box.left < silhouette.left || box.top < silhouette.top || box.right > silhouette.right || box.bottom > silhouette.bottom) throw Error(`Canonical body is outside its source silhouette: ${id}`);
+    const targetBodyWidth = id === 'audience' ? profile.audienceBodyWidth : profile.bodyWidth, scale = targetBodyWidth / (box.right - box.left);
+    if (!Number.isFinite(scale) || scale <= 0 || scale > 1) throw Error(`Canonical registration must not upscale native pixels: ${id}`);
+    result[id] = { key: definition.key, sourceSha256: definition.sourceSha256, bodyBounds: { ...box }, targetBodyWidth, requestedScale: scale };
+  }
+  return { version: 1, mode: profile.mode, bodyWidth: profile.bodyWidth, audienceBodyWidth: profile.audienceBodyWidth, families: result };
+}
+
+/** Bounds for the whole authored alpha, including ears and detached marks.
+ * Rig/rigid-face bounds are united conservatively; the safety cap never
+ * changes one body part, borrows a historical envelope or crops opaque pixels. */
+export function fitFamilyBodyScale(key, requestedScale, rig) {
+  if (!Number.isFinite(requestedScale) || requestedScale <= 0 || requestedScale > 1) throw Error('Invalid native whole-key scale');
+  const alpha = key.alpha, body = key.body;
+  if (!alpha || !body || ![alpha.left, alpha.top, alpha.right, alpha.bottom, body.left, body.right, body.bottom].every(Number.isFinite) || alpha.width <= 0 || alpha.height <= 0) throw Error('Complete alpha and primary-body bounds required');
+  const extents = scale => {
+    if (!rig) {
+      const cx = (body.left + body.right) / 2;
+      return { left: cell / 2 + (alpha.left - cx) * scale - 2, right: cell / 2 + (alpha.right - cx) * scale + 2, top: foot + (alpha.top - body.bottom) * scale - 2, bottom: foot + (alpha.bottom - body.bottom) * scale + 2 };
+    }
+    if (![rig.sx, rig.sy, rig.tilt, rig.sway, ...rig.ears.flatMap(ear => [ear.x, ear.y])].every(Number.isFinite) || rig.sx <= 0 || rig.sy <= 0) throw Error('Complete finite rig required');
+    const cosine = Math.cos(rig.tilt), sine = Math.sin(rig.tilt), xs = [], ys = [];
+    for (const rigid of [false, true]) {
+      const left = -alpha.width / 2 * scale + (rigid ? 0 : Math.min(0, ...rig.ears.map(ear => ear.x))), right = alpha.width / 2 * scale + (rigid ? 0 : Math.max(0, ...rig.ears.map(ear => ear.x)));
+      const top = -alpha.height * scale + (rigid ? 0 : Math.min(0, ...rig.ears.map(ear => ear.y))), bottom = rigid ? 0 : Math.max(0, ...rig.ears.map(ear => ear.y));
+      for (const x of [left, right]) for (const y of [top, bottom]) {
+        const dx = x * (rigid ? 1 : rig.sx), dy = y * (rigid ? 1 : rig.sy);
+        xs.push(cell / 2 + rig.sway + cosine * dx - sine * dy); ys.push(foot + sine * dx + cosine * dy);
+      }
+    }
+    return { left: Math.min(...xs) - 2, right: Math.max(...xs) + 2, top: Math.min(...ys) - 2, bottom: Math.max(...ys) + 2 };
+  };
+  const safe = scale => { const box = extents(scale); return box.right - box.left <= Math.floor(cell * .76) && box.bottom - box.top <= Math.floor(cell * .82); };
+  if (!safe(0)) throw Error('Rig offsets alone exceed the protected whole-key footprint');
+  let scale = requestedScale;
+  if (!safe(scale)) { let lower = 0, upper = scale; for (let attempt = 0; attempt < 36; attempt++) { const candidate = (lower + upper) / 2; if (safe(candidate)) lower = candidate; else upper = candidate; } scale = lower; }
+  if (scale <= 0) throw Error('Whole-key safety cap removed the source');
+  const predicted = extents(scale), offset = { x: Math.max(5 - predicted.left, Math.min(0, cell - 5 - predicted.right)), y: Math.max(5 - predicted.top, Math.min(0, cell - 5 - predicted.bottom)) };
+  const protectedBounds = { left: predicted.left + offset.x, top: predicted.top + offset.y, right: predicted.right + offset.x, bottom: predicted.bottom + offset.y };
+  return { requestedScale, scale, safetyCapped: scale < requestedScale, offset, protectedBounds };
+}
+
 function components(bytes, width, height, dark = false) {
   const seen = new Uint8Array(width * height), queue = new Int32Array(width * height), found = [];
   const matches = index => bytes[index * 4 + 3] > (dark ? 200 : 160) && (!dark || bytes[index * 4] < 150 && bytes[index * 4 + 1] < 115 && bytes[index * 4 + 2] < 105);
@@ -169,13 +224,13 @@ function register(data, atlas, index) {
 
 /** Existing bounded inverse rig. All colour samples come from the new whole
  * key. The central authored face stays rigid together while ears/paper move. */
-export function bakeEyeStyleKey(key, rig, textureScale) {
+export function bakeEyeStyleKey(key, rig, textureScale, placement = { x: 0, y: 0 }) {
   const output = Buffer.alloc(cell * cell * 4), body = key.body, face = key.face;
   const visible = key.alpha ?? key.visible ?? body;
   const cx = (visible.left + visible.right) / 2, bottom = visible.bottom, cosine = Math.cos(rig.tilt), sine = Math.sin(rig.tilt);
   let sampled = 0, minimumRigidWeight = 1, maximumFeatureDeviation = 0;
   for (let y = 0; y < cell; y++) for (let x = 0; x < cell; x++) {
-    const dx = x + .5 - cell / 2 - rig.sway, dy = y + .5 - foot;
+    const dx = x + .5 - cell / 2 - rig.sway - placement.x, dy = y + .5 - foot - placement.y;
     let ux = (cosine * dx + sine * dy) / rig.sx, uy = (-sine * dx + cosine * dy) / rig.sy;
     const upper = 1 - smooth(((uy / textureScale + bottom - body.top) / body.height - .25) / .25), leftWeight = 1 - smooth((ux + 12) / 24);
     ux -= upper * (rig.ears[0].x * leftWeight + rig.ears[1].x * (1 - leftWeight));
@@ -209,6 +264,18 @@ async function prepareKey(key, targetWidth, targetHeight) {
   return { data, uniformScale: scale };
 }
 
+export async function prepareFamilyKey(key, registration) {
+  const scale = registration.scale;
+  const resized = await sharp(key.rgba, { raw: { width: key.width, height: key.height, channels: 4 } }).resize({ width: Math.max(1, Math.floor(key.width * scale)), kernel: 'lanczos3' }).raw().toBuffer({ resolveWithObject: true });
+  const body = bounds(resized.data, resized.info.width, resized.info.height), alpha = allAlphaBounds(resized.data, resized.info.width, resized.info.height);
+  const left = Math.round(cell / 2 - (body.left + body.right) / 2 + registration.offset.x), top = Math.round(foot - body.bottom + registration.offset.y);
+  if (left + alpha.left < 5 || top + alpha.top < 5 || left + alpha.right > cell - 5 || top + alpha.bottom > cell - 5 || alpha.width > Math.floor(cell * .76) || alpha.height > Math.floor(cell * .82)) throw Error('Canonical whole-key registration exceeds its protected alpha footprint');
+  // Only transparent exterior padding may be removed to fit the output cell.
+  const trimmed = await sharp(resized.data, { raw: { width: resized.info.width, height: resized.info.height, channels: 4 } }).extract({ left: alpha.left, top: alpha.top, width: alpha.width, height: alpha.height }).raw().toBuffer();
+  const data = await sharp({ create: { width: cell, height: cell, channels: 4, background: '#0000' } }).composite([{ input: trimmed, raw: { width: alpha.width, height: alpha.height, channels: 4 }, left: left + alpha.left, top: top + alpha.top }]).raw().toBuffer();
+  return { data, uniformScale: scale, familyRegistration: registration };
+}
+
 async function encodePacket(raw, width, height) {
   const webp = await sharp(raw, { raw: { width, height, channels: 4 } }).webp(encoding).toBuffer(), decoded = await sharp(webp).ensureAlpha().raw().toBuffer();
   for (let index = 3; index < raw.length; index += 4) if (raw[index] !== decoded[index]) throw Error('Encoding changed alpha');
@@ -221,7 +288,7 @@ function allAlphaBounds(bytes, width, height) {
   if (right <= left || bottom <= top) throw Error('Empty authored alpha');
   return { left, top, right, bottom, width: right - left, height: bottom - top };
 }
-async function prepareAudience(source, previous) {
+async function prepareAudience(source, previous, canonical) {
   const side = 256, margin = 4, oldBodies = [];
   for (let index = 0; index < 16; index++) {
     const oldCell = await sharp(previous.data, { raw: { width: 1024, height: 1024, channels: 4 } }).extract({ left: index % 4 * side, top: Math.floor(index / 4) * side, width: side, height: side }).raw().toBuffer();
@@ -230,7 +297,7 @@ async function prepareAudience(source, previous) {
   // One shared scale for the cast preserves the new source's relative pose
   // sizes. Original centre/foot are targets; no authored alpha may be cut to
   // force a source-edge old anchor onto a newly complete drawing.
-  const scale = Math.min(1, ...source.keys.flatMap((key, index) => [oldBodies[index].width / key.visible.width, oldBodies[index].height / key.visible.height, (side - margin * 2) / key.width, (side - margin * 2) / key.height]));
+  const scale = canonical ? Math.min(canonical.requestedScale, ...source.keys.flatMap(key => [(side - margin * 2) / key.width, (side - margin * 2) / key.height])) : Math.min(1, ...source.keys.flatMap((key, index) => [oldBodies[index].width / key.visible.width, oldBodies[index].height / key.visible.height, (side - margin * 2) / key.width, (side - margin * 2) / key.height]));
   const keys = [], records = [];
   for (const [index, key] of source.keys.entries()) {
     const scaled = await sharp(key.rgba, { raw: { width: key.width, height: key.height, channels: 4 } }).resize(Math.floor(key.width * scale), Math.floor(key.height * scale), { kernel: 'lanczos3' }).raw().toBuffer({ resolveWithObject: true });
@@ -241,7 +308,7 @@ async function prepareAudience(source, previous) {
     const rgba = await sharp({ create: { width: side, height: side, channels: 4, background: '#0000' } }).composite([{ input: trimmed, raw: { width: alpha.width, height: alpha.height, channels: 4 }, left: left + alpha.left, top: top + alpha.top }]).raw().toBuffer();
     const finalBody = bounds(rgba, side, side), finalAlpha = allAlphaBounds(rgba, side, side);
     if (finalAlpha.width !== alpha.width || finalAlpha.height !== alpha.height || finalAlpha.left < margin || finalAlpha.top < margin || finalAlpha.right > side - margin || finalAlpha.bottom > side - margin) throw Error(`Whole audience alpha clipped: ${index}`);
-    keys.push(rgba); records.push({ key: index, oldBody, commonScale: scale, transparentPaddingOnlyTrimmed: true, visibleAlphaPixelsClipped: 0, alphaBounds: finalAlpha, body: finalBody, anchorDelta: { x: round((finalBody.left + finalBody.right - oldBody.left - oldBody.right) / 2), y: finalBody.bottom - oldBody.bottom }, boundaryTranslation: { x: left - wantedLeft, y: top - wantedTop }, rgbaSha256: hash(rgba), alphaSha256: alphaHash(rgba) });
+    keys.push(rgba); records.push({ key: index, oldBody, commonScale: scale, ...(canonical ? { familyRegistration: { requestedScale: canonical.requestedScale, scale, safetyCapped: scale < canonical.requestedScale } } : {}), transparentPaddingOnlyTrimmed: true, visibleAlphaPixelsClipped: 0, alphaBounds: finalAlpha, body: finalBody, anchorDelta: { x: round((finalBody.left + finalBody.right - oldBody.left - oldBody.right) / 2), y: finalBody.bottom - oldBody.bottom }, boundaryTranslation: { x: left - wantedLeft, y: top - wantedTop }, rgbaSha256: hash(rgba), alphaSha256: alphaHash(rgba) });
   }
   return { keys, records, scale };
 }
@@ -328,17 +395,27 @@ async function run() {
     if (oldSourceHashes.has(config.sources[id].sha256?.toLowerCase())) throw Error(`An old native cannot silently supply a new-style source: ${id}`);
     sources[id] = await extractSource(id, config.sources[id]);
   }
+  const familyBodyRegistration = createFamilyBodyRegistration(config.registration, sources);
   if (validateInputs) {
-    console.log(JSON.stringify({ validationOnly: true, filesWritten: 0, physicalSlots: map.slots.length, rawLogicalReferencedSlots: map.liveSlots, actualActionReferencedSlots: map.activeLiveSlots, compatibilityOnlySlots: map.compatibilityOnlySlots, liveKeys: map.liveKeys.length, sources: Object.fromEntries(Object.entries(sources).map(([id, source]) => [id, source.record])) }, null, 2)); return;
+    console.log(JSON.stringify({ validationOnly: true, filesWritten: 0, physicalSlots: map.slots.length, rawLogicalReferencedSlots: map.liveSlots, actualActionReferencedSlots: map.activeLiveSlots, compatibilityOnlySlots: map.compatibilityOnlySlots, liveKeys: map.liveKeys.length, ...(familyBodyRegistration ? { familyBodyRegistration } : {}), sources: Object.fromEntries(Object.entries(sources).map(([id, source]) => [id, source.record])) }, null, 2)); return;
   }
   // Validate spectator boundary placements before the expensive32 encodes.
-  const preparedAudience = await prepareAudience(sources.audience, oldAudienceRaw);
+  const preparedAudience = await prepareAudience(sources.audience, oldAudienceRaw, familyBodyRegistration?.families.audience);
   const rawFrames = [], slotRecords = [], nextBase = structuredClone(baselines.hd.metadata), nextPlay = structuredClone(baselines.play.metadata), originalFrames = [...baselines.hd.metadata.frames, ...baselines.play.metadata.frames];
   const normalizedKeys = new Map();
   for (const slot of map.slots) {
     const key = sources[slot.family].keys[slot.key];
     let prepared;
-    if (slot.rig) {
+    if (familyBodyRegistration) {
+      if (slot.rig) {
+        const registration = fitFamilyBodyScale(key, familyBodyRegistration.families[slot.family].requestedScale, slot.rig);
+        prepared = { ...bakeEyeStyleKey(key, slot.rig, registration.scale, registration.offset), textureScale: registration.scale, familyRegistration: registration };
+      } else {
+        const identity = `${slot.family}:${slot.key}`;
+        if (!normalizedKeys.has(identity)) normalizedKeys.set(identity, await prepareFamilyKey(key, fitFamilyBodyScale(key, familyBodyRegistration.families[slot.family].requestedScale)));
+        prepared = normalizedKeys.get(identity);
+      }
+    } else if (slot.rig) {
       const original = receipts.hd.cells[slot.index].texture;
       // Fit the complete authored pose/marks to the established whole-body
       // envelope before sampling, instead of clipping its newly retained marks.
@@ -357,7 +434,7 @@ async function run() {
     if (registration.anchor.centerX !== 40 || registration.anchor.footY !== 80) throw Error(`Semantic registration anchor changed: ${slot.index}`);
     const selected = slot.index < 304 ? nextBase : nextPlay, index = slot.index < 304 ? slot.index : slot.index - 304;
     selected.frames[index] = registration.frame;
-    rawFrames.push(prepared.data); slotRecords.push({ ...slot, source: sources[slot.family].record.path, sourceSha256: sources[slot.family].record.sha256, cropRgbaSha256: key.record.rgbaSha256, ...registration, alphaSha256: alphaHash(prepared.data), textureScale: prepared.textureScale, uniformScale: prepared.uniformScale, faceProtection: prepared.faceProtection });
+    rawFrames.push(prepared.data); slotRecords.push({ ...slot, source: sources[slot.family].record.path, sourceSha256: sources[slot.family].record.sha256, cropRgbaSha256: key.record.rgbaSha256, ...registration, alphaSha256: alphaHash(prepared.data), textureScale: prepared.textureScale, uniformScale: prepared.uniformScale, faceProtection: prepared.faceProtection, familyRegistration: prepared.familyRegistration });
   }
   const packetRecords = [];
   for (let packet = 0; packet < 32; packet++) {
@@ -374,7 +451,7 @@ async function run() {
   const metadataPaths = { hd: `${config.run}/정리본/hd-motion-sprite.json`, play: `${config.run}/정리본/play-motion-sprite.json` };
   outputs.push([metadataPaths.hd, jsonBytes(nextBase)], [metadataPaths.play, jsonBytes(nextPlay)]);
   if (JSON.stringify(nextBase.rows) !== JSON.stringify(baselines.hd.metadata.rows) || JSON.stringify(nextPlay.rows) !== JSON.stringify(baselines.play.metadata.rows)) throw Error('Existing logical row map changed');
-  const record = { version: 1, manifest: manifestPath, manifestSha256: hash(manifestBytes), generationCallsByThisScript: 0, automaticArtReviews: 0, ownerVisualApproval: 'NOT_ESTABLISHED_BY_PACKING', method: 'Whole newly generated RGBA key crops; aspect-preserving registration; existing bounded inverse ear/paper rigs with one rigid authored face group; no repaint/transplant/old-packet RGB sampling', cell, logicalCell: unit, physicalFoot: foot, lineage: receiptHashes, baseline: { ...Object.fromEntries(Object.entries(baselines).map(([id, item]) => [id, { path: item.path, sha256: item.sha256 }])), audience: oldAudienceDefinition }, protectedSources: oldSourceDefinitions, protectedPackets, sources: Object.fromEntries(Object.entries(sources).map(([id, item]) => [id, item.record])), coverage: { physicalSlots: map.slots.length, logicalRows: map.rows.length, packetCount: packetRecords.length, rawLogicalReferencedSlots: map.liveSlots, actualActionReferencedSlots: map.activeLiveSlots, compatibilityOnlySlots: map.compatibilityOnlySlots, liveKeyCount: map.liveKeys.length, liveKeys: map.liveKeys, deadSlots: map.deadSlots, allSlotsHaveNewSource: slotRecords.length === 512, fallbackOldRgbSlots: 0 }, slots: slotRecords, packets: packetRecords, audience: { source: sources.audience.record.path, sourceSha256: sources.audience.record.sha256, output: audienceName, sha256: hash(audience), bytes: audience.length, width: 1024, height: 1024, grid: 4, keys: 16, frames: audienceRecords, runtimeExclusionsPreserved: [9, 10] }, stagedMetadata: metadataPaths, metadataApplication: 'Staged only. Copy to runtime metadata and change the audience consumer only after explicit integration; historical output files are never overwritten.' };
+  const record = { version: 1, manifest: manifestPath, manifestSha256: hash(manifestBytes), generationCallsByThisScript: 0, automaticArtReviews: 0, ownerVisualApproval: 'NOT_ESTABLISHED_BY_PACKING', method: 'Whole newly generated RGBA key crops; aspect-preserving registration; existing bounded inverse ear/paper rigs with one rigid authored face group; no repaint/transplant/old-packet RGB sampling', ...(familyBodyRegistration ? { familyBodyRegistration } : {}), cell, logicalCell: unit, physicalFoot: foot, lineage: receiptHashes, baseline: { ...Object.fromEntries(Object.entries(baselines).map(([id, item]) => [id, { path: item.path, sha256: item.sha256 }])), audience: oldAudienceDefinition }, protectedSources: oldSourceDefinitions, protectedPackets, sources: Object.fromEntries(Object.entries(sources).map(([id, item]) => [id, item.record])), coverage: { physicalSlots: map.slots.length, logicalRows: map.rows.length, packetCount: packetRecords.length, rawLogicalReferencedSlots: map.liveSlots, actualActionReferencedSlots: map.activeLiveSlots, compatibilityOnlySlots: map.compatibilityOnlySlots, liveKeyCount: map.liveKeys.length, liveKeys: map.liveKeys, deadSlots: map.deadSlots, allSlotsHaveNewSource: slotRecords.length === 512, fallbackOldRgbSlots: 0 }, slots: slotRecords, packets: packetRecords, audience: { source: sources.audience.record.path, sourceSha256: sources.audience.record.sha256, output: audienceName, sha256: hash(audience), bytes: audience.length, width: 1024, height: 1024, grid: 4, keys: 16, frames: audienceRecords, runtimeExclusionsPreserved: [9, 10] }, stagedMetadata: metadataPaths, metadataApplication: 'Staged only. Copy to runtime metadata and change the audience consumer only after explicit integration; historical output files are never overwritten.' };
   outputs.push([`${config.run}/패킹파생기록.json`, jsonBytes(record)]);
   for (const [name, bytes] of outputs) {
     if (check) { if (!(await read(name)).equals(bytes)) throw Error(`Reproducibility mismatch: ${name}`); }

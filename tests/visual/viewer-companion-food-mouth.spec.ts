@@ -16,7 +16,7 @@ type MealWindow = Window & { companionMouthWitness?: Witness };
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const foods = (page: Page) => page.locator(".vc-food");
-const prefix = ".scratch-pw/companion-100-mouth";
+const prefix = ".scratch-pw/companion-101-mouth";
 const proof = new WeakMap<Page, { writes: string[]; errors: string[] }>();
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
@@ -167,6 +167,34 @@ for (const surface of ["viewer", "studio"] as const) for (const facing of ["left
     if (surface === "viewer") expect(await page.locator("[data-export-surface]").evaluate(node => getComputedStyle(node).width)).toBe("1840px");
   });
 }
+
+test("an unavailable happy packet eats at the actually adopted observing mouth", async ({ page }) => {
+  const requests: string[] = [];
+  await page.route(/\/companion\/hd\/victamin-action-09-[^/]+\.webp$/, route => {
+    requests.push(new URL(route.request().url()).pathname);
+    return route.fulfill({ status: 503, body: "fixture happy packet failure" });
+  });
+  await setup(page, "viewer"); await placePet(page, 180); await placePet(page, 220);
+  await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
+  const item = foods(page).first(); await expect(item).toBeVisible();
+  await observe(page, item); await offerFood(page, item);
+  await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
+  await expect.poll(() => page.evaluate(() => (window as MealWindow).companionMouthWitness!.frames.some(frame => frame.eating && frame.scale >= .16 && frame.scale <= .28)), { intervals: [20] }).toBe(true);
+  await captureMeal(page, `${prefix}-observing-fallback-late.png`);
+  await expect(foods(page)).toHaveCount(0, { timeout: 6000 });
+  const result = await page.evaluate(() => { const witness = (window as MealWindow).companionMouthWitness!; return { frames: witness.frames, removed: witness.removed, mealEntries: witness.mealEntries, care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!) as { hunger: number; affection: number } }; });
+  const shrinking = result.frames.filter(frame => frame.eating && frame.scale <= .8 && frame.scale >= .1), lastBites = shrinking.filter(frame => frame.scale <= .28);
+  expect(shrinking.length).toBeGreaterThan(25); expect(lastBites.length).toBeGreaterThan(5);
+  expect(shrinking.every(frame => frame.visible && frame.decoded)).toBe(true);
+  expect(new Set(shrinking.map(frame => frame.row)), "the failed requested pose must never supply the mouth").toEqual(new Set([1]));
+  expect(new Set(shrinking.map(frame => frame.facing))).toEqual(new Set(["right"]));
+  expect(Math.max(...shrinking.map(frame => frame.error))).toBeLessThan(5);
+  expect(Math.max(...lastBites.map(frame => frame.error))).toBeLessThan(1.5);
+  expect(result.removed).toBe(1); expect(result.mealEntries).toBe(1);
+  expect(result.care.hunger).toBeGreaterThan(.42); expect(result.care.hunger).toBeLessThan(.48);
+  expect(result.care.affection).toBeGreaterThan(.39); expect(result.care.affection).toBeLessThan(.42);
+  expect(requests.length).toBeGreaterThan(0); expect(requests.length).toBeLessThanOrEqual(2);
+});
 
 test("failed mouth packets keep the offered food and never credit an invisible meal", async ({ page }) => {
   const requests: string[] = [];

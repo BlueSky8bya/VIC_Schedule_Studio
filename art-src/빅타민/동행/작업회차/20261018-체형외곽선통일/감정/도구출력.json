@@ -1,0 +1,15 @@
+{
+  "tool": "image_gen.imagegen",
+  "builtin": true,
+  "sha256": "40C474ED606591B1DF4C2D437389B6BB6D7E5C3FA3982FC6E62F4462E327E49C",
+  "copiedSha256": "40C474ED606591B1DF4C2D437389B6BB6D7E5C3FA3982FC6E62F4462E327E49C",
+  "provider_native_preserved": true,
+  "copy_only": true,
+  "imagegenCalls": 1,
+  "automaticRetries": 0,
+  "width": 1254,
+  "height": 1254,
+  "mode": "RGBA",
+  "destination": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+  "provider_path_record": "Private provenance retained outside Git; original generated_images native unchanged"
+}

@@ -1,8 +1,8 @@
 # 빅타민 이미지 일관성·입 앵커·낙하/도약·판단 검수
 
-Status: In Progress.
+Status: Completed. Scoped runtime release and image audit; image stroke consistency FAIL remains distinct from illustration approval.
 
-Local implementation/reviews and unit2,159/native47/typecheck/lint/build/harness are verified. Authorized commit/push and deployed verification remain. Image stroke consistency FAIL is retained; no new illustration or099 draft is published. See [verification100](../verification/COMPANION_PHYSICS_CONSISTENCY-20261018.md).
+Local implementation/reviews and unit2,159/native47/typecheck/lint/build/harness are verified. Release e4ddc503, remote quality/Vercel success, deployed full SHA/boundaries and actual developer studio/viewer preview were verified. Image stroke consistency FAIL is retained; no new illustration or099 draft is published. See [verification100](../verification/COMPANION_PHYSICS_CONSISTENCY-20261018.md).
 
 소유자는 모든 포즈의 몸/귀 비율과 외곽선 굵기 차이, 최신 그림체의 먹는 입 위치, 환경에 대응하는 두뇌, 일정 통과 음식 낙하와 N자 점프를 다시 확인·수정하도록 요청했다. 다음 배포부터 빅타민 ON인 PC의 미설정 태그/계절 패널은 접고 집은 펼치되, 이후 실제 사용자 선택은 저장한다. 기존 유효 저장 선택과 모바일 제외를 보존한다.
 

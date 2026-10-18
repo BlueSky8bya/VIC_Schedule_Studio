@@ -3,3 +3,4 @@
 docs/agent/archive/20261017-*-before-platform-remediation.snapshot.txt -text whitespace=cr-at-eol
 # Art receipts are byte-pinned evidence, including their native line endings.
 art-src/빅타민/동행/작업회차/20261018-큰눈통일/**/*.json -text whitespace=cr-at-eol
+art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/**/*.json -text whitespace=cr-at-eol
