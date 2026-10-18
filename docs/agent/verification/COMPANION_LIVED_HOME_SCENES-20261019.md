@@ -1,6 +1,6 @@
 #121 — 집·성격·연결 장면
 
-2026-10-19 KST. [계획](../plans/PLAN-20261019-121-companion-lived-in-home-and-scenes.md). 최신 요청이116의36장면 제안 전용 상태를 대체한다. 원래 제안은 날짜별 증거로 보존한다. 마지막 배포423692d1과121 작업 검증을 구분한다.
+2026-10-19 KST. [계획](../plans/PLAN-20261019-121-companion-lived-in-home-and-scenes.md). 최신 요청이116의36장면 제안 전용 상태를 대체한다. 원래 제안은 날짜별 증거로 보존한다. 시작 기준423692d1, 첫121 배포1f2cb9eb, 최종 배포c627cdc3의 검증을 구분한다.
 
 ## 변경 계약
 
@@ -37,4 +37,10 @@
 
 첫 배포 `1f2cb9eb6c10a94469cdc3fd17916a1bc19ac5f9`: Vercel success,2026-10-19 03:01:32 KST 실제 anonymous 운영 UI PASS. 전체SHA public chunk1/43 active assets committed bytes일치·6home표적≥44px(실측45)·장난감 직접반납·계절창·profile/수첩/8설정 표시/도감/옷장·라디오 재생/음표·mobile제외 확인. 미발견 주입0/실제 soop-live GET0/private manifest0/비허용 통신·pageerror0. 차단된 POST1은 식별된 읽기전용 saved-heart 조회이며 전송하지 않았다. GitHub run39151991686 전체 success.
 
-운영 browser의 auto=soft에서는 허용대로 transform이 꺼져 있는 것을 직접 확인했다. 확대 없이도 클릭 가능한 물체임을 알아야 하므로 비소파5물체의 hover/focus는 정적인 brightness1.08, active는.94를 적용하는 마지막 보완을 추가했다. 새 시계·geometry·자산·권한 변경은 없다. 감소/OFF/soft의 transform:none은 유지한다. 독립 검토 확정 결함0. 세 모드의 hover/press/cancel/keyboard focus3개 native PASS(11.9초), 기존 home9도 build4 PASS. 감소 속성 값을 빈 문자열로 기대했던 fixture1건은 실제 계약값1로 정정했으며 실패를 보존했다. 총37개 고유 native/렌더 시나리오 PASS. 전체267파일2904검사·typecheck·lint·build4 PASS; 후속 릴리스는 실제 확인 뒤 갱신한다. 사용자 요청대로 실제 토리님 PC/OBS는 수행하지 않으며 실제 인증/RLS 검증으로 확대 해석하지 않는다.
+운영 browser의 auto=soft에서는 허용대로 transform이 꺼져 있는 것을 직접 확인했다. 확대 없이도 클릭 가능한 물체임을 알아야 하므로 비소파5물체의 hover/focus는 정적인 brightness1.08, active는.94를 적용하는 마지막 보완을 추가했다. 새 시계·geometry·자산·권한 변경은 없다. 감소/OFF/soft의 transform:none은 유지한다. 독립 검토 확정 결함0. 세 모드의 hover/press/cancel/keyboard focus3개 native PASS(11.9초), 기존 home9도 build4 PASS. 감소 속성 값을 빈 문자열로 기대했던 fixture1건은 실제 계약값1로 정정했으며 실패를 보존했다. 총37개 고유 native/렌더 시나리오 PASS. 전체267파일2904검사·typecheck·lint·build4 PASS; 후속 릴리스의 실제 결과는 다음 절에 기록한다. 사용자 요청대로 실제 토리님 PC/OBS는 수행하지 않으며 실제 인증/RLS 검증으로 확대 해석하지 않는다.
+
+## 최종 운영 배포
+
+`c627cdc3f2dce192d853c517643647d92db20c1f` main commit/push 완료. Vercel success,2026-10-19 03:10:02 KST 실제 anonymous 운영 UI PASS. 전체SHA public chunk1/43 active assets committed bytes일치, home6표적 최소45px 실측(계약44px), auto-soft 비소파5물체 전체 brightness1.08 확인. 실제 장난감 잡아 반납·계절창·profile/수첩/8성격 설정 표시·도감/옷장·라디오 재생/음표·mobile제외 PASS. 설정8개는 표시 검증이며 실제 선택은 로컬 native 범위다. 미발견 주입0/실제 soop-live GET0/private manifest0/비허용 통신·pageerror0. 식별된 읽기전용 saved-heart POST1은 차단하여 전송하지 않았다. 운영 screenshot 직접 열람. `.scratch-pw/companion-121/production/c627cdc3`의 summary/public-release-proof/asset-proof/home-targets와 production-final-check 로그 보존. GitHub39152620228 전체 success: 단위·격리 SQL 계약·harness·production build·typecheck·lint 및 job 결론을 직접 확인했다.
+
+보완 commit 독립 재검수: 제품 CSS2줄·관련 native검사1·기록5만 변경, 사용자 보호 아트/래스터/atlas/anchors 변경0, 확정 결함·검증 과장0. 보호 아트 SHA256은 위 값 그대로다. 배포 후 증거 문서만 로컬 갱신하여 다음 문서 커밋에 포함하며, 완료 기록을 위해 새 배포를 반복하지 않는다.

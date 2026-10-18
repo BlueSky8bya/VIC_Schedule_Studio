@@ -6,6 +6,7 @@ import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-
 import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_SOUND_CATEGORY_NAMES, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
+import { resetCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { hapticTick } from "@/lib/ui/haptics";
 import { playSfx } from "@/lib/ui/sfx";
 import { logActivity } from "@/lib/activity/client";
@@ -109,7 +110,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>
-      <div className="rhh-habit-actions"><p className="rhh-trait-reset-note" id={`${id}-reset-note`}>습관·취향·특성 초기화 · 도감·선물 유지</p><button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); hapticTick(); playSfx("tab"); }} type="button">초기화</button></div>
+      <div className="rhh-habit-actions"><p className="rhh-trait-reset-note" id={`${id}-reset-note`}>습관·취향·특성 초기화 · 도감·선물 유지</p><button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); resetCompanionTastes(); hapticTick(); playSfx("tab"); }} type="button">초기화</button></div>
     </div>
   </div>;
 }

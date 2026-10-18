@@ -632,8 +632,8 @@ export const ACT: Record<string, TargetLabel> = {
   // Local collection contents never enter telemetry. Only these fixed button
   // categories are counted; the strict storage branch below rejects item IDs.
   "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장", settings: "환경설정" } },
-  "companion-collection-category": { name: "빅타민 도감 종류", area: "설정", opts: { food: "냠냠 도감", behavior: "추억 도감", moment: "특별한 순간" } },
-  "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "냠냠 도감", behavior: "재롱", moment: "특별한 순간" } },
+  "companion-collection-category": { name: "빅타민 도감 종류", area: "설정", opts: { food: "냠냠 도감", toy: "장난감 도감", behavior: "추억 도감", moment: "특별한 순간" } },
+  "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "냠냠 도감", toy: "장난감 도감", behavior: "재롱", moment: "특별한 순간" } },
   "companion-collection-page": { name: "빅타민 도감·옷장 넘기기", area: "설정", opts: { prev: "이전", next: "다음" } },
   "companion-accessory-select": { name: "빅타민 장신구 살펴보기", area: "설정" },
   "companion-gift-open": { name: "빅타민 선물 열기", area: "빅타민" },

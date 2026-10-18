@@ -33,7 +33,7 @@ describe("real bounded companion toy objects", () => {
     const model = make([{ ...floor, id: "control", kind: "control", y: 250 }, { ...floor, id: "hidden", kind: "hide", y: 300 }, first, second, floor]);
     const ids = Array.from({ length: 5 }, () => model.spawn({ x: 600, y: 200 }, 0));
     expect(ids.slice(0, 4).every(Boolean)).toBe(true); expect(ids[4]).toBeUndefined();
-    expect(model.items()).toHaveLength(MAX_COMPANION_TOYS); expect(model.items().map(toy => toy.kind)).toEqual(COMPANION_TOY_KINDS);
+    expect(model.items()).toHaveLength(MAX_COMPANION_TOYS); expect(model.items().map(toy => toy.kind)).toEqual(COMPANION_TOY_KINDS.slice(0, MAX_COMPANION_TOYS));
     model.tick(100); expect(model.items()[0].y).toBeLessThan(200); expect(model.items()[0].x).toBeLessThan(600);
     settle(model, 100);
     expect(model.moving()).toBe(false); expect(model.available()).toHaveLength(4);
@@ -210,15 +210,15 @@ describe("shared native toy controller ownership", () => {
     component.refs = []; component.states = []; component.activity.mockReset();
     vi.stubGlobal("React", await import("react")); vi.spyOn(performance, "now").mockReturnValue(2000);
     const { CompanionToys } = await import("@/components/poster/viewer-companion/companion-toys");
-    const ref: { current: import("@/components/poster/viewer-companion/companion-toys").CompanionToyControl | null } = { current: null }, onActivity = vi.fn();
+    const ref: { current: import("@/components/poster/viewer-companion/companion-toys").CompanionToyControl | null } = { current: null }, onActivity = vi.fn(), onExperience = vi.fn();
     const render = (blocked = false) => {
       component.refIndex = component.stateIndex = 0; component.effects = [];
-      const tree = (CompanionToys as unknown as { render: (props: unknown, ref: unknown) => ReactElement }).render({ blocked, onActivity, onCount: vi.fn() }, ref);
+      const tree = (CompanionToys as unknown as { render: (props: unknown, ref: unknown) => ReactElement }).render({ blocked, onActivity, onCount: vi.fn(), onExperience }, ref);
       component.effects.forEach(effect => effect()); return tree;
     };
     render(); ref.current!.sync([floor], bounds, 0); ref.current!.spawn(point, 0);
     const tree = render(), button = (tree.props as { children: ReactElement[] }).children[0] as ReactElement<Record<string, unknown>>;
-    return { ref, render, button, onActivity };
+    return { ref, render, button, onActivity, onExperience };
   }
 
   it("planner cancellation preserves a native pointer hold; blocked transition releases capture and freezes the drop", async () => {
@@ -262,5 +262,26 @@ describe("shared native toy controller ownership", () => {
     press("Escape"); press("Escape");
     expect(component.activity.mock.calls).toEqual([["ui.click", { target: "companion-toy-grab" }], ["ui.click", { target: "companion-toy-drop" }]]);
     expect(h.onActivity.mock.calls).toEqual([[true], [true], [true]]); expect(h.ref.current!.moving()).toBe(true);
+  });
+  it("records only observed completed real play/refusal acknowledgements, never generic put or cancelled playback", async () => {
+    const h = await harness(), control = h.ref.current!;
+    control.tick(1800); let actual = control.available()[0];
+    expect(h.onExperience.mock.calls).toEqual([["ball", "taken-out"]]); h.onExperience.mockClear();
+    expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2000)).toBe(true);
+    control.completePlay(actual.id); expect(h.onExperience).not.toHaveBeenCalled();
+    expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2100, false, true)).toBe(true);
+    control.completePlay(actual.id, false); expect(h.onExperience).not.toHaveBeenCalled();
+    expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2200, false, true)).toBe(true);
+    control.cancel(2200); control.completePlay(actual.id); expect(h.onExperience).not.toHaveBeenCalled();
+    expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2300, false, true)).toBe(true);
+    control.completePlay(actual.id); control.completePlay(actual.id);
+    expect(h.onExperience.mock.calls).toEqual([["ball", "played"]]);
+    expect(control.decline(actual.id, { x: actual.x - 200, y: actual.y }, 2400)).toBe(false);
+    expect(control.decline(actual.id, actual, 2400)).toBe(true); expect(control.moving()).toBe(true);
+    control.completePlay(actual.id); control.completePlay(actual.id);
+    expect(h.onExperience.mock.calls).toEqual([["ball", "played"], ["ball", "declined"]]);
+    control.tick(4000); actual = control.available()[0]; expect(actual).toBeDefined();
+    expect(control.pick(actual.id, actual)).toBe(true); expect(control.stash(actual.id)).toBe(true);
+    expect(h.onExperience.mock.calls.at(-1)).toEqual(["ball", "tidied"]);
   });
 });

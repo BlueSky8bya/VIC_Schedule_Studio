@@ -25,9 +25,11 @@ const COLLECTION = [
   ["companion-profile-page#discover", "빅타민 프로필 보기 · 도감"],
   ["companion-profile-page#dress", "빅타민 프로필 보기 · 옷장"],
   ["companion-collection-category#food", "빅타민 도감 종류 · 냠냠 도감"],
+  ["companion-collection-category#toy", "빅타민 도감 종류 · 장난감 도감"],
   ["companion-collection-category#behavior", "빅타민 도감 종류 · 추억 도감"],
   ["companion-collection-category#moment", "빅타민 도감 종류 · 특별한 순간"],
   ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 냠냠 도감"],
+  ["companion-collection-inspect#toy", "빅타민 도감 항목 살펴보기 · 장난감 도감"],
   ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 재롱"],
   ["companion-collection-inspect#moment", "빅타민 도감 항목 살펴보기 · 특별한 순간"],
   ["companion-collection-page#prev", "빅타민 도감·옷장 넘기기 · 이전"],
@@ -170,7 +172,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       expect(story).toContain(name);
     }
     expect(story).not.toContain("companion-");
-    expect(buildGist(items)).toBe("빅타민 설정 31번 사용 · 빅타민과 2번 상호작용");
+    expect(buildGist(items)).toBe("빅타민 설정 33번 사용 · 빅타민과 2번 상호작용");
   });
 
   it("신규 버튼은 실제 음식·행동·장신구·선물 ID와 미등록/전역 옵션을 저장하지 않는다", () => {

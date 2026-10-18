@@ -40,8 +40,8 @@ const ADJACENT_ACTIONS = [
 ] as const;
 const COLLECTION_ACTIONS = [
   "companion-profile-page#together", "companion-profile-page#discover", "companion-profile-page#dress",
-  "companion-collection-category#food", "companion-collection-category#behavior", "companion-collection-category#moment",
-  "companion-collection-inspect#food", "companion-collection-inspect#behavior", "companion-collection-inspect#moment", "companion-accessory-select",
+  "companion-collection-category#food", "companion-collection-category#toy", "companion-collection-category#behavior", "companion-collection-category#moment",
+  "companion-collection-inspect#food", "companion-collection-inspect#toy", "companion-collection-inspect#behavior", "companion-collection-inspect#moment", "companion-accessory-select",
   "companion-sound-enabled#on", "companion-sound-volume", "companion-sound-care#off",
   "companion-sound-motion#on", "companion-sound-keepsakes#off", "companion-sound-preview#motion",
   "companion-gift-open", "companion-accessory-equip#on", "companion-accessory-equip#off", "companion-gift-dismiss",

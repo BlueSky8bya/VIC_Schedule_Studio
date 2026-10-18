@@ -1753,7 +1753,7 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch.on { b
 .rhh-companion-settings .rhh-collection-heading > .vc-collection-art { width: 44px; height: 44px; }
 .rhh-companion-settings .rhh-collection-heading h3 { font-size: var(--text-title, 18px); font-weight: 700; }
 .rhh-companion-settings .rhh-collection-switch { gap: var(--space-2); }
-.rhh-companion-settings .rhh-collection-switch > button { min-height: 44px; border-color: var(--companion-line); border-radius: var(--r-md); background: var(--companion-paper); color: var(--companion-ink); box-shadow: var(--elev-1); }
+.rhh-companion-settings .rhh-collection-switch > button { min-width: 0; min-height: 44px; flex-direction: column; gap: 1px; border-color: var(--companion-line); border-radius: var(--r-md); background: var(--companion-paper); color: var(--companion-ink); box-shadow: var(--elev-1); }
 .rhh-companion-settings .rhh-collection-switch > button[aria-pressed="true"] { border-color: var(--companion-accent); background: var(--companion-accent-fill); }
 .rhh-companion-settings .rhh-collection-switch > button > span { color: var(--companion-soft); }
 .rhh-companion-settings .rhh-collection-detail { gap: 6px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-paper); padding: var(--space-3) var(--space-4); box-shadow: var(--elev-2); }
@@ -1810,8 +1810,8 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-experience { container-name: companion-settings rhh-habits; overflow: visible; padding: 0; border: 0; background: transparent; }
 .rhh-companion-experience > .rhh-profile-nav { margin-block: 0 var(--space-4); min-height: 54px; }
 .rhh-companion-experience > .rhh-profile-nav button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; font-weight: 650; }
-.rhh-companion-experience .rhh-companion-summary { display: grid; grid-template-columns: minmax(calc(var(--companion-preview-size, 180px) + 18px), .85fr) minmax(0, 1.15fr); align-items: stretch; gap: var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--companion-line); border-radius: var(--r-xl); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-2); }
-.rhh-companion-experience .rhh-companion-portrait { position: relative; display: grid; place-items: center; min-width: 0; min-height: 218px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-peach); padding: 14px 8px 36px; color: var(--companion-ink); cursor: pointer; overflow: hidden; transition: transform var(--dur-spring-smooth) var(--spring-smooth), box-shadow var(--dur-2) var(--ease); }
+.rhh-companion-experience .rhh-companion-summary { display: grid; grid-template-columns: minmax(calc(var(--companion-preview-size, 180px) + 18px), .85fr) minmax(0, 1.15fr); align-items: stretch; gap: var(--space-3) var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--companion-line); border-radius: var(--r-xl); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-2); }
+.rhh-companion-experience .rhh-companion-portrait { position: relative; display: grid; place-items: center; min-width: 0; min-height: 196px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-peach); padding: 8px 8px 30px; color: var(--companion-ink); cursor: pointer; overflow: hidden; transition: transform var(--dur-spring-smooth) var(--spring-smooth), box-shadow var(--dur-2) var(--ease); }
 .rhh-companion-experience .rhh-companion-portrait:hover { transform: translateY(-3px); box-shadow: var(--elev-2); }
 .rhh-companion-experience .rhh-companion-portrait:active { transform: translateY(0) scale(.97); }
 .rhh-companion-experience .rhh-companion-portrait:focus-visible { outline: 2px solid var(--companion-accent); outline-offset: 4px; }
@@ -1830,6 +1830,21 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-facts > div { display: grid; gap: 5px; }
 .rhh-companion-facts dt { display: flex; align-items: center; gap: 6px; color: var(--companion-soft); font-size: var(--text-body); }
 .rhh-companion-facts dd { margin: 0; color: var(--companion-ink); font-size: var(--text-ui); font-weight: 700; overflow-wrap: anywhere; }
+/*122: four illustrated tastes share the same readable grid on every surface. */
+.rhh-companion-experience .rhh-profile-personality { font-size: max(23px, var(--text-title)); line-height: 1.25; }
+.rhh-profile-appearance { margin: 0; color: var(--companion-soft); font-size: var(--text-caption); }
+.rhh-companion-experience .rhh-companion-facts { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.rhh-companion-experience .rhh-companion-facts > .rhh-taste-card { display: grid; grid-template-columns: 54px minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; column-gap: 9px; row-gap: 3px; min-height: 78px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-mint); padding: 10px; }
+.rhh-companion-experience .rhh-taste-card[data-dislike] { background: var(--companion-lilac); }
+.rhh-companion-experience .rhh-taste-card dt { display: contents; }
+.rhh-taste-card dt > span:last-child { grid-column: 2; color: var(--companion-soft); font-size: max(12px, var(--text-caption)); line-height: 1.4; }
+.rhh-companion-experience .rhh-taste-card dd { grid-column: 2; font-size: max(14px, var(--text-ui)); line-height: 1.35; }
+.rhh-taste-picture { grid-column: 1; grid-row: 1 / 3; display: grid; place-items: center; align-self: center; width: 54px; height: 54px; border-radius: var(--r-md); background: var(--companion-paper); color: var(--companion-soft); }
+.rhh-taste-picture > :is(.vc-collection-art, .vc-toy-art) { width: 46px; height: 46px; object-fit: contain; }
+.rhh-companion-toy-discovery { flex: 1; min-height: 0; }
+.rhh-toy-grid .vc-toy-art { display: block; width: 64px; height: 64px; object-fit: contain; }
+.rhh-toy-detail .vc-toy-art { width: 80px; height: 80px; object-fit: contain; }
+.rhh-toy-unknown { width: 54px; height: 54px; color: var(--companion-soft); opacity: .5; }
 .rhh-companion-experience .rhh-collection-heading > span { margin-left: auto; color: var(--companion-soft); font-variant-numeric: tabular-nums; }
 .rhh-companion-experience .rhh-companion-loading { display: grid; place-items: center; min-height: 160px; padding: var(--space-4); color: var(--companion-soft); font-size: var(--text-body); }
 .rhh-companion-experience > [role="tabpanel"] > .rhh-companion-settings { padding: 0; border: 0; background: transparent; }
@@ -1846,6 +1861,15 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-companion-experience > .rhh-profile-nav button { flex-direction: column; gap: 3px; padding-inline: 4px; }
 }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-experience .rhh-companion-portrait { transform: none; transition: none; }
+@container rhh-habits (max-width: 360px) {
+  .rhh-companion-experience .rhh-companion-summary { grid-template-columns: minmax(0, .8fr) minmax(0, 1fr); gap: 10px; padding: 10px; }
+  .rhh-companion-experience .rhh-companion-portrait { min-height: 154px; padding-inline: 2px; }
+  .rhh-companion-experience .rhh-companion-portrait .rhh-wardrobe-preview { width: 124px; height: 124px; }
+  .rhh-companion-experience .rhh-companion-facts > .rhh-taste-card { grid-template-columns: 36px minmax(0, 1fr); column-gap: 6px; padding: 8px; }
+  .rhh-taste-picture { width: 36px; height: 42px; }
+  .rhh-taste-picture > :is(.vc-collection-art, .vc-toy-art) { width: 34px; height: 34px; }
+  .rhh-companion-experience .rhh-taste-card dd { font-size: max(13px, var(--text-body)); }
+}
 
 /*112: finite pages share one opaque sheet. No sticky summary can pass over
   translucent tiles, and only the measured visible page is mounted. */

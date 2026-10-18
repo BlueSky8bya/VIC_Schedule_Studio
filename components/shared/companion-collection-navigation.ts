@@ -48,7 +48,7 @@ export function onCollectionKey(event: KeyboardEvent<HTMLButtonElement>, index: 
   if (next !== index || acknowledged) {
     const action = event.currentTarget.dataset.act, category = categoryAt?.(next) ?? event.currentTarget.dataset.actOpt;
     if (action === "companion-accessory-select") logActivity("ui.click", { target: action });
-    else if (action === "companion-collection-inspect" && category && ["food", "behavior", "moment"].includes(category)) logActivity("ui.click", { target: `${action}#${category}` });
+    else if (action === "companion-collection-inspect" && category && ["food", "toy", "behavior", "moment"].includes(category)) logActivity("ui.click", { target: `${action}#${category}` });
   }
   list.querySelectorAll<HTMLButtonElement>("button")[next - offset]?.focus();
 }

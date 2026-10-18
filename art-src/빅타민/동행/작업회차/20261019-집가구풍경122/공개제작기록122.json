@@ -1,0 +1,1267 @@
+{
+  "schema_version": 1,
+  "scope": "집 가구 5종·장난감 8종·계절 창밖 4종·비/눈 겹침 2종",
+  "asset_count": 19,
+  "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+  "user_visual_approval": false,
+  "independent_art_review_calls": 0,
+  "generation_summary": {
+    "tool": "builtin image_gen",
+    "actual_calls": 19,
+    "calls_per_asset": 1,
+    "automatic_retry_calls": 0
+  },
+  "source_and_derivative_policy": "original files are unaltered model-call PNG outputs. final files are selected deterministic production derivatives. runtime files are smaller WebP encodings. The book final additionally prints an existing public neutral character raster; it is not a second model output.",
+  "prompt_policy": "Prompt text is copied verbatim from the actual generation arguments. Absolute reference path values and operational identifiers are omitted. Generic reference roles describe their purpose only.",
+  "generation_reference_roles": {
+    "room-palette-reference": {
+      "purpose": "warm room color and preserved-sofa material softness only; rejected geometric furniture was not the requested design",
+      "reference_copy_included": false
+    },
+    "character-design-reference": {
+      "purpose": "original character design guidance for the generated book cover print",
+      "reference_copy_included": false
+    }
+  },
+  "originals_preserved": {
+    "existing_sofa": true,
+    "existing_character_source_art": true
+  },
+  "assets": [
+    {
+      "id": "furniture-book",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Create ONE beautiful closed little hardback book standing upright as a transparent game furnishing. Warm ivory paper edges, muted sage cloth binding, rounded corners, honey-brown fine contour, a small lavender ribbon bookmark and restrained gold corner embossing. Three-quarter front view with front cover nearly facing the viewer and a narrow right-side page block; entire book centered with 12 percent transparent margin. Rich yet gentle hand-illustrated material volume, refined cozy miniature proportions, compatible with warm ivory/honeywood furnishings. Print one small mascot on the front cover using ONLY the attached original design: two long upright ears, layered square cream paper pompom, tiny dark eyes and orange square cheeks, no arms or legs. This is printed cover artwork, no freestanding character. No new mascot design, no letters, title, logo, face on the spine, extra book, other objects, room, floor, large shadow, glow, watermark or UI. True alpha transparency and crisp antialiased cutout.",
+        "transparent_background": true,
+        "reference_roles": [
+          "character-design-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/빅타민책.png",
+        "sha256": "3cb8de0eef49d9501b8fdf05825177d8e9a203b443cfc8668f70dc12071c59c8",
+        "bytes": 2024979,
+        "width": 1234,
+        "height": 1275,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/빅타민책_원본인쇄2.png",
+        "sha256": "09ad537b6b25d4f2a0029d3fd8ca814aa47598c27a2ebb4311e55530dd52db53",
+        "bytes": 1448018,
+        "width": 1234,
+        "height": 1275,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/furniture-book.webp",
+        "sha256": "a95baf7490ba05edeb4552fad555da25123d757ccde9ceab0f25408d08c68c1e",
+        "bytes": 18592,
+        "width": 250,
+        "height": 256,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "existing-neutral-print projection on generated book cover; then alpha-bounds crop and aspect-preserving Lanczos runtime reduction",
+        "details_key": "book_print_derivation",
+        "runtime_crop_box": [
+          0,
+          21,
+          1224,
+          1275
+        ],
+        "runtime_max_size": [
+          256,
+          256
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "furniture-dispenser",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. ONE hand-illustrated miniature game furnishing, isolated on true alpha transparency. The input is ONLY warm room/preserved-sofa palette and material-softness reference; its rejected geometric furniture must not be copied. Refined charming storybook product illustration, crisp thin warm-brown contours, convincing softly modeled material volume, warm ivory/honey-oak with muted sage and tiny lavender accents. Three-quarter frontal camera with front and right side, a shallow top plane and coherent low floor plane. Entire single object centered, comfortable 12 percent transparent padding. No scene, wall, floor, backdrop, ambient glow, vignette, large cast shadow, extra objects, mascot, person, face, letters, logo, watermark or UI. Readable at 44 pixels tall. Make a petite rounded snack dispenser: squat warm-ivory ceramic body, a honey-oak lid, a small inset sage panel with a simple embossed spoon motif and short dispensing opening near its base. Compact gentle proportions, more like a delightful tiny kitchen appliance than a tall refrigerator. The opening and one small tray belong to the same coherent body. No food outside it.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/음식통.png",
+        "sha256": "c32a1d3abe3d8b0a3609d3ff3adfa590e78889428af045e1a27364dc211d9c24",
+        "bytes": 1067337,
+        "width": 1374,
+        "height": 1145,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/음식통.png",
+        "sha256": "1e91663f901395ae8fde1923dbbc77aaf0bb748b7bc046a519cbd4f0e449a25d",
+        "bytes": 51509,
+        "width": 256,
+        "height": 217,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/furniture-dispenser.webp",
+        "sha256": "94a366b7ba23f34e96311ad6d3d0e67ef571c105e30b78158473a77a93b3acc6",
+        "bytes": 12420,
+        "width": 256,
+        "height": 217,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          89,
+          33,
+          1334,
+          1089
+        ],
+        "final_max_size": [
+          256,
+          256
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "furniture-radio",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Generate ONE polished hand-illustrated miniature tabletop radio as an isolated transparent game furnishing. The attached image is only a warm room/preserved-sofa palette reference; its rejected geometric radio is not the new design. Design a charming refined honey-oak radio with softly rounded sculpted edges, warm ivory woven speaker cloth, two modest cream tuning knobs, a fine sage frequency inset without lettering, a graceful carry handle and two tiny feet. Three-quarter frontal view with front and right side visible, shallow top plane, low eye-level floor plane. Rich but restrained illustrated material shading, crisp brown contour, clear readable silhouette, warm ivory and honeywood with muted sage accents. Match the visual softness and material warmth of the existing sofa without drawing or changing the sofa. Single cohesive object, entire handle and feet visible, centered with 12 percent transparent padding, no dramatic cast shadow. No room, ground plane, backdrop, other furniture, person, mascot, face, text, logo, symbols, watermark or UI. Real alpha transparency. Native clean antialiased outline designed to stay readable at 48 pixels tall.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/라디오.png",
+        "sha256": "4dc8ffe65f52a7f1d62e1192d4069858e487559239e6787d446f8265229cfb09",
+        "bytes": 1942413,
+        "width": 1536,
+        "height": 1024,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/라디오.png",
+        "sha256": "6b9a54060f92c57fb66862e6b1dfd3c1c4c4327b4d5a4f6c24ffb20813fe1b72",
+        "bytes": 57450,
+        "width": 256,
+        "height": 169,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/furniture-radio.webp",
+        "sha256": "9bc9e010407300ea9ed40c0402d8e64391f612af7f8ac9448a88735b75e87829",
+        "bytes": 15054,
+        "width": 256,
+        "height": 169,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          43,
+          73,
+          1484,
+          1024
+        ],
+        "final_max_size": [
+          256,
+          256
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP"
+        }
+      }
+    },
+    {
+      "id": "furniture-toy-box",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. ONE hand-illustrated miniature game furnishing, isolated on true alpha transparency. The input is ONLY warm room/preserved-sofa palette and material-softness reference; its rejected geometric furniture must not be copied. Refined charming storybook product illustration, crisp thin warm-brown contours, convincing softly modeled material volume, warm ivory/honey-oak with muted sage and tiny lavender accents. Three-quarter frontal camera with front and right side, a shallow top plane and coherent low floor plane. Entire single object centered, comfortable 12 percent transparent padding. No scene, wall, floor, backdrop, ambient glow, vignette, large cast shadow, extra objects, mascot, person, face, letters, logo, watermark or UI. Readable at 44 pixels tall. Make a low open honey-oak toy chest with softly curved edges, an ivory inset front and a muted sage curved pull. A tiny lavender fabric lining folds continuously over the inside rim. Several tiny indistinct pastel wooden toy tips peek just below the rim but do not obscure its recognisable open box silhouette. Cozy refined joinery, rounded chamfers and subtle wood grain, no lid, no lettering or star badge.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/장난감상자.png",
+        "sha256": "4f2b47712b2f46d71d2470476b6ba89efb62d58dbb29f2337cd8fc5470c45537",
+        "bytes": 1637561,
+        "width": 1536,
+        "height": 1024,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/장난감상자.png",
+        "sha256": "94ccd661c558320c7e8e3ba10eaaf6c9da40c17842e88cf91a95448caf11aa79",
+        "bytes": 36641,
+        "width": 256,
+        "height": 165,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/furniture-toy-box.webp",
+        "sha256": "62edfbae4be280e98ed66d7a876e92b8da0a1b4f16fb1af80039937fb23b3545",
+        "bytes": 9662,
+        "width": 256,
+        "height": 165,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          64,
+          1490,
+          1024
+        ],
+        "final_max_size": [
+          256,
+          256
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "furniture-trash",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. ONE hand-illustrated miniature game furnishing, isolated on true alpha transparency. The input is ONLY warm room/preserved-sofa palette and material-softness reference; its rejected geometric furniture must not be copied. Refined charming storybook product illustration, crisp thin warm-brown contours, convincing softly modeled material volume, warm ivory/honey-oak with muted sage and tiny lavender accents. Three-quarter frontal camera with front and right side, a shallow top plane and coherent low floor plane. Entire single object centered, comfortable 12 percent transparent padding. No scene, wall, floor, backdrop, ambient glow, vignette, large cast shadow, extra objects, mascot, person, face, letters, logo, watermark or UI. Readable at 44 pixels tall. Make a small elegant lidded wastebasket: warm-ivory enamel with a lightly rounded honey-oak lid, modest sage loop handle and subtly curved tapered sides. The lid sits clearly on the opening with a slight visible rim. A neat tiny pedal belongs to the base. Sophisticated cottage charm, not a cylindrical geometric icon, no waste or scraps outside it.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/쓰레기통.png",
+        "sha256": "232ced832c2101b3540c5497213c1e920f8d63fdc431838850b14963d7cb64ed",
+        "bytes": 854266,
+        "width": 1312,
+        "height": 1199,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/쓰레기통.png",
+        "sha256": "6f910d021c9c8f33cb986cf390bfe57b48627e4c15f880140f737967cc8adf11",
+        "bytes": 39472,
+        "width": 256,
+        "height": 229,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/furniture-trash.webp",
+        "sha256": "706e0a79d57eeaeb3bfde11aa22ba6d7e47d5104cf66e816a42b95040f9326f8",
+        "bytes": 10264,
+        "width": 256,
+        "height": 229,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          19,
+          1300,
+          1181
+        ],
+        "final_max_size": [
+          256,
+          256
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-ball",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. A small plush fabric play ball, gently spherical with a few broad ivory, sage and lavender stitched panels and subtle seam ridges. Soft believable stuffed-cloth volume, one ball only.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/통통공.png",
+        "sha256": "aecfac2e796286c17d17d874fdbb6899a75b51391338629f347d85806d3af813",
+        "bytes": 700417,
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/통통공.png",
+        "sha256": "2fd3cf79b02904222add28fa6503cbda814226468700108c425c985ad79c4425",
+        "bytes": 9604,
+        "width": 128,
+        "height": 127,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-ball.webp",
+        "sha256": "99bfa32036e6dba50dd9a744af8dada3af361d1166b351ffb2adf2adac81c90e",
+        "bytes": 3166,
+        "width": 128,
+        "height": 127,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          13,
+          1236,
+          1235
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-bell",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. One little round softly polished warm-gold jingle bell toy with an ivory-and-sage fabric loop, a simple lower curved sound slit and tiny attached clapper hint. Gentle metal highlight without mirror chrome, clear compact silhouette and continuous loop connection, no face.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/딸랑종.png",
+        "sha256": "5f54914180c202352ded2ef3a7a13856ef7e88df86a45db3a67532f695326bf6",
+        "bytes": 632835,
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/딸랑종.png",
+        "sha256": "2dd64cc42d89987fa607b71e2a9f343d398e7e34d064abf2a35b74ff030384ae",
+        "bytes": 12334,
+        "width": 128,
+        "height": 125,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-bell.webp",
+        "sha256": "31474653397b50865f6f41ae2bb793843f81e52f9ba0621acd84d05b95f8e301",
+        "bytes": 4564,
+        "width": 128,
+        "height": 125,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          33,
+          31,
+          1208,
+          1174
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-blocks",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. A single compact arrangement of three rounded wooden building blocks: a honey-oak cube supporting one sage arch block and one tiny lavender cube alongside. Clearly separated manufactured wooden pieces touching as one coherent toy arrangement, no alphabet or numbers.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/알록블록.png",
+        "sha256": "6b24e2c2a036806b4481c4a12bda8356016fab3f6d46872fcba9d5c2d5c1bd4b",
+        "bytes": 702689,
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/알록블록.png",
+        "sha256": "17df2f0dea4f062bcda6fad46e76d13197bc176343f88cfe572cf52f7c884aa2",
+        "bytes": 10369,
+        "width": 124,
+        "height": 128,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-blocks.webp",
+        "sha256": "87f59276834bcf1ad154aeefc5a3c9d0f3f28c9646d33e31b1a2dd6e985d4574",
+        "bytes": 3584,
+        "width": 124,
+        "height": 128,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          0,
+          1210,
+          1254
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-feather",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. One small feather teaser toy: two beautifully soft overlapping ivory and muted lavender feathers bound by a sage thread collar to a very short honey-oak grip. Delicate natural feather barbs rendered as a clear small silhouette, connected continuous construction, no long string.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/깃털장난감.png",
+        "sha256": "4367ee48a192f7f9b53c38990902f1d00b3bf66875f3c9e4dbd10e27e03eb8d3",
+        "bytes": 643033,
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/깃털장난감.png",
+        "sha256": "7f8aa66eab218c4fdf10fb245312f1e42626989d2645151e2264c021f88b88b5",
+        "bytes": 12573,
+        "width": 128,
+        "height": 127,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-feather.webp",
+        "sha256": "f28f2cf53234828cf29cddee629b2e0509613dc1a2b0fc6c1124c8637dbd592f",
+        "bytes": 4670,
+        "width": 128,
+        "height": 127,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          31,
+          25,
+          1226,
+          1215
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-hoop",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. One thick small honey-oak rolling hoop with a short sage fabric-wrapped grip and a tiny lavender binding segment. Elliptical three-quarter view, large visibly open transparent center, believable ring thickness and polished wood grain, no stand.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/둥근고리.png",
+        "sha256": "e6e38a76ee3367fbaec8c9b60ceb3878b4121c0e7fc028da77a4c811a135bb77",
+        "bytes": 835233,
+        "width": 1354,
+        "height": 1161,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/둥근고리.png",
+        "sha256": "f2685d3fbb0851128eab8cbc5dcbab5269879d754f08168da5ebfae0ee0cde3c",
+        "bytes": 16812,
+        "width": 128,
+        "height": 123,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-hoop.webp",
+        "sha256": "0e918253b66d856b4bb304cd939d2a984a8395547d0ad357d12318e52d766927",
+        "bytes": 6592,
+        "width": 128,
+        "height": 123,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          170,
+          28,
+          1327,
+          1137
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-paper-plane",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. One beautifully folded warm-ivory paper airplane with a tiny sage underside and crisp readable folded ridges. Natural paper thickness and a convincing tapered pointed nose angled toward lower-left, whole wings and tail visible, no motion trail.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/종이비행기.png",
+        "sha256": "96cf1e3218fd41ad8b0e9d6f0b8619bb2f2da346c41df4a9aa248d8641ade01c",
+        "bytes": 1168099,
+        "width": 1536,
+        "height": 1024,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/종이비행기.png",
+        "sha256": "15249797a91371b4e37a5d762b7d2afa508c2f1ba78b2ea81b36296602005136",
+        "bytes": 7334,
+        "width": 128,
+        "height": 87,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-paper-plane.webp",
+        "sha256": "81a3a13f77661e87468ba37635a75ceee95829fdbffa34517cbe06bc3ce9ac6a",
+        "bytes": 3222,
+        "width": 128,
+        "height": 87,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          41,
+          0,
+          1506,
+          1000
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-pinwheel",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. One small hand-folded four-blade paper pinwheel in warm ivory, sage and lavender attached to a short honey-oak stick with a simple rounded brass center pin. Convincing curled folded paper and a continuous stick connection, all blades and stick tip visible.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/바람개비.png",
+        "sha256": "dc6044baaf2eafa754f095716e05414e5dcd3ab0521dd575506547c36ea03294",
+        "bytes": 680538,
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/바람개비.png",
+        "sha256": "0821a07d4e31976bee22aa63f3dad039220d911cd2e5c129e43a5612c829693f",
+        "bytes": 13264,
+        "width": 127,
+        "height": 128,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-pinwheel.webp",
+        "sha256": "19bb1c551cc36219f8bebfc8c1400c7801f924bef5dc024cb4e0907eca74fc6c",
+        "bytes": 5724,
+        "width": 127,
+        "height": 128,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          41,
+          45,
+          1225,
+          1237
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "toy-spool",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Draw ONE charming refined miniature toy asset isolated on genuine alpha transparency. Cohesive cozy hand-illustrated game furnishing style, fine warm-brown contour, softly convincing rounded material volume and restrained honey-oak, warm ivory, muted sage and lavender palette. Input image is only a room/preserved-sofa warmth reference; do not copy its geometric toys. Clear three-quarter front silhouette, legible as a 28px game object. Entire object centered, 15 percent transparent padding, soft local contact shading only. No floor, scene, backdrop, shadow cloud, glow, person, mascot, eyes, face, text, watermark, logo, border or multiple views. One small honey-oak wooden spool wound with soft lavender yarn. Rounded wooden endcaps, gentle thread ridges and one short curved loose yarn end attached continuously, not a separate rope ball.",
+        "transparent_background": true,
+        "reference_roles": [
+          "room-palette-reference"
+        ],
+        "reference_path_values_omitted": true
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/실타래.png",
+        "sha256": "8bc8dbc62cf1e55407a285894bd771d036a12fe42922e3671268cf7920522fe7",
+        "bytes": 718055,
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/실타래.png",
+        "sha256": "59e8f4e544e9836df875dc53a91aac997321656859dce5b2fcd3103491be6e19",
+        "bytes": 13506,
+        "width": 128,
+        "height": 125,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/toy-spool.webp",
+        "sha256": "1be5919ba333dc0f9228464be6fb9324825e72f6215e43764f4f510a312c4b4b",
+        "bytes": 4676,
+        "width": 128,
+        "height": 125,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          43,
+          1214,
+          1230
+        ],
+        "final_max_size": [
+          128,
+          128
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "window-autumn",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: illustration-story. Create a believable detailed landscape outside a tiny cozy home's window, a full-bleed horizontal 4:3 image with no frame or room. One consistent setting: a gently curving pale-stone garden path crosses a small natural stream over a low wooden footbridge; layered grasses and wildflowers in the foreground, a flowering deciduous tree left and a broad deciduous tree right, one distant warm-roof countryside cottage nestled below soft wooded hills. Eye-level view, horizon near upper third, clear foreground/middle distance/atmospheric background. Convincing natural tree branching, foliage, terrain and water reflections; sophisticated softly painted illustrated environment with crisp readable local edges, restrained palette and gentle real material variation. Diffuse neutral daytime under a soft pale sky, no visible sun disk, stars, moon, rays, rain streaks or falling snow; time and weather overlays are applied later. No characters, pets, objects indoors, window frame, curtains, symbols, text, collage, isolated geometric shapes or UI. AUTUMN: broad tree canopies in muted amber, rusty orange and honey gold with some remaining sage leaves, fallen leaves near the stone path, dry meadow grasses, copper wooded hills. Clear gentle stream and soft diffuse autumn daylight.",
+        "transparent_background": false,
+        "reference_roles": [],
+        "reference_path_values_omitted": false
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/가을풍경.png",
+        "sha256": "15bdfaf779f50d0e1a7121aadb2473a8e57e8c022d213873106a34f7ecd5a40f",
+        "bytes": 4077861,
+        "width": 1448,
+        "height": 1086,
+        "mode": "RGB",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/가을풍경.png",
+        "sha256": "18933dacb1c93366d2a298d5c4300a641f1a4da02bc0a8d49e6e3757c6f327c5",
+        "bytes": 492734,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/window-autumn.webp",
+        "sha256": "0a897f2b8f790a13c2d93554b62810d894551f645c6588bd7c2153aaff7a91e9",
+        "bytes": 122222,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "final_max_size": [
+          512,
+          384
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "window-rain-overlay",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Create a transparent weather texture layer for compositing over a believable painted countryside landscape seen through a small 4:3 window. Full-frame 4:3 horizontal texture, actual alpha transparency between individual particles, mostly transparent so the landscape remains clearly visible. Subtle natural hand-illustrated atmospheric realism and restrained soft edges. Neutral color usable over spring/summer/autumn/winter landscapes, no opaque backdrop, no gradient rectangle, no ground, trees, buildings, person, room, window frame, lettering, symbols or UI. No dense white fog or vignette. Gentle rainfall: fine irregular translucent cool-gray water streaks and a few tiny believable refracting droplets at several depths, softly diagonal and lightly varied in length and spacing. Avoid hard vector dashes, outlined droplet icons, evenly repeated patterns or a solid gray sky. Delicate rain should occupy only a small portion of the alpha canvas.",
+        "transparent_background": true,
+        "reference_roles": [],
+        "reference_path_values_omitted": false
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/비겹침.png",
+        "sha256": "0cb80b327a8580c97f409f6255283631068800bbfbe23341799d46cb8cbbf4d5",
+        "bytes": 651416,
+        "width": 1448,
+        "height": 1086,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/비겹침.png",
+        "sha256": "5bbcde2b7850c0059b44bb86908c7be071b6e5bb7c84e48e9f89907ff113b80d",
+        "bytes": 76621,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/window-rain-overlay.webp",
+        "sha256": "822f35b99a8832d10fa78986c977d9682628a63b0fd9754511d35ab6dcbe9b37",
+        "bytes": 49236,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "final_max_size": [
+          512,
+          384
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "window-snow-overlay",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: stylized-concept. Create a transparent weather texture layer for compositing over a believable painted countryside landscape seen through a small 4:3 window. Full-frame 4:3 horizontal texture, actual alpha transparency between individual particles, mostly transparent so the landscape remains clearly visible. Subtle natural hand-illustrated atmospheric realism and restrained soft edges. Neutral color usable over spring/summer/autumn/winter landscapes, no opaque backdrop, no gradient rectangle, no ground, trees, buildings, person, room, window frame, lettering, symbols or UI. No dense white fog or vignette. Gentle snowfall: small softly painted ivory-white snow particles of varied size and focus, a few nearby soft flakes and many sparse distant tiny particles, calm drifting diagonal arrangement. No decorative snowflake icons, star shapes, hard circles or evenly repeated dot grid. Snow should occupy only a small portion of the alpha canvas.",
+        "transparent_background": true,
+        "reference_roles": [],
+        "reference_path_values_omitted": false
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/눈겹침.png",
+        "sha256": "eb445e9ff1683ead56a1a6f01cedefda3615665be40dcc3dc3b7bbf61bbf78f2",
+        "bytes": 618954,
+        "width": 1448,
+        "height": 1086,
+        "mode": "RGBA",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/눈겹침.png",
+        "sha256": "554807b653833d926aa5ca57440d7d8b8e6547c1a69d48af4ce55ee12de882f1",
+        "bytes": 66425,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/window-snow-overlay.webp",
+        "sha256": "e81ea9ed873cbe32f632c178c6130d334503234aa37bee61ccb7a416e9546eee",
+        "bytes": 42538,
+        "width": 512,
+        "height": 384,
+        "mode": "RGBA",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "final_max_size": [
+          512,
+          384
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "window-spring",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: illustration-story. Create a believable detailed landscape outside a tiny cozy home's window, a full-bleed horizontal 4:3 image with no frame or room. One consistent setting: a gently curving pale-stone garden path crosses a small natural stream over a low wooden footbridge; layered grasses and wildflowers in the foreground, a flowering deciduous tree left and a broad deciduous tree right, one distant warm-roof countryside cottage nestled below soft wooded hills. Eye-level view, horizon near upper third, clear foreground/middle distance/atmospheric background. Convincing natural tree branching, foliage, terrain and water reflections; sophisticated softly painted illustrated environment with crisp readable local edges, restrained palette and gentle real material variation. Diffuse neutral daytime under a soft pale sky, no visible sun disk, stars, moon, rays, rain streaks or falling snow; time and weather overlays are applied later. No characters, pets, objects indoors, window frame, curtains, symbols, text, collage, isolated geometric shapes or UI. SPRING: fresh light-green new leaves, delicate blush blossoms on the left tree, tender meadow grass and a few small white and pale lilac flowers. Cool clear stream, verdant distant hills, peaceful renewal.",
+        "transparent_background": false,
+        "reference_roles": [],
+        "reference_path_values_omitted": false
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/봄풍경.png",
+        "sha256": "f729bf977d4aef723e07984116d6404b73603c37058167e71c52e09f5f2929c1",
+        "bytes": 4172783,
+        "width": 1448,
+        "height": 1086,
+        "mode": "RGB",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/봄풍경.png",
+        "sha256": "e773de57374bc08e4b7264ea1545e995d0125adb651c7f3adc7d99e90990bfc9",
+        "bytes": 505834,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/window-spring.webp",
+        "sha256": "51ef94a9b7119cb40b4651edbe2929c07da30dbde8ebeb0bdf5f4a1376fa5c67",
+        "bytes": 124238,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "final_max_size": [
+          512,
+          384
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "window-summer",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: illustration-story. Create a believable detailed landscape outside a tiny cozy home's window, a full-bleed horizontal 4:3 image with no frame or room. One consistent setting: a gently curving pale-stone garden path crosses a small natural stream over a low wooden footbridge; layered grasses and wildflowers in the foreground, a flowering deciduous tree left and a broad deciduous tree right, one distant warm-roof countryside cottage nestled below soft wooded hills. Eye-level view, horizon near upper third, clear foreground/middle distance/atmospheric background. Convincing natural tree branching, foliage, terrain and water reflections; sophisticated softly painted illustrated environment with crisp readable local edges, restrained palette and gentle real material variation. Diffuse neutral daytime under a soft pale sky, no visible sun disk, stars, moon, rays, rain streaks or falling snow; time and weather overlays are applied later. No characters, pets, objects indoors, window frame, curtains, symbols, text, collage, isolated geometric shapes or UI. SUMMER: abundant rich sage and green foliage, full leafy tree canopies, lush grasses and small soft lavender wildflowers, deeper leafy hills and a fresh clear stream. Natural warm gentle daylight without a bright sun disk.",
+        "transparent_background": false,
+        "reference_roles": [],
+        "reference_path_values_omitted": false
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/여름풍경.png",
+        "sha256": "0154b0083019ef8bced45536915b43672604fa4d7d8d04796237da970f4d14f3",
+        "bytes": 4128926,
+        "width": 1448,
+        "height": 1086,
+        "mode": "RGB",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/여름풍경.png",
+        "sha256": "92ff9bf25bae899adb1bdd701b4ae899beba8d388ca8d6e4c2c59df0f5176922",
+        "bytes": 493666,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/window-summer.webp",
+        "sha256": "8e6a74456c5d65a0e62a3dd0bb8e335c52e5bee64e9c48a02b7adba2d5b07c75",
+        "bytes": 119308,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "final_max_size": [
+          512,
+          384
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    },
+    {
+      "id": "window-winter",
+      "generation": {
+        "tool": "builtin image_gen",
+        "calls": 1,
+        "automatic_retry_calls": 0,
+        "prompt": "Use case: illustration-story. Create a believable detailed landscape outside a tiny cozy home's window, a full-bleed horizontal 4:3 image with no frame or room. One consistent setting: a gently curving pale-stone garden path crosses a small natural stream over a low wooden footbridge; layered grasses and wildflowers in the foreground, a flowering deciduous tree left and a broad deciduous tree right, one distant warm-roof countryside cottage nestled below soft wooded hills. Eye-level view, horizon near upper third, clear foreground/middle distance/atmospheric background. Convincing natural tree branching, foliage, terrain and water reflections; sophisticated softly painted illustrated environment with crisp readable local edges, restrained palette and gentle real material variation. Diffuse neutral daytime under a soft pale sky, no visible sun disk, stars, moon, rays, rain streaks or falling snow; time and weather overlays are applied later. No characters, pets, objects indoors, window frame, curtains, symbols, text, collage, isolated geometric shapes or UI. WINTER: convincingly bare branching deciduous trees, quiet frosted grasses and gentle snow settled on the distant cottage roof, path edges and low hills, open dark stream with subdued reflections. Pale blue-gray sky and restrained ivory/sage winter tones. No falling snow.",
+        "transparent_background": false,
+        "reference_roles": [],
+        "reference_path_values_omitted": false
+      },
+      "original": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/겨울풍경.png",
+        "sha256": "286017fc63c660a5d687dc4a368b019c9e6e9b56041435e72e0063edbbbb93e4",
+        "bytes": 4074119,
+        "width": 1448,
+        "height": 1086,
+        "mode": "RGB",
+        "kind": "unaltered_model_output"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/겨울풍경.png",
+        "sha256": "56a22ca5f833c1c80567da875876d263792a2befd755d2541e127f1660c96b88",
+        "bytes": 487291,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "selected_production_derivative"
+      },
+      "runtime": {
+        "path": "public/companion/home/122/window-winter.webp",
+        "sha256": "58c7828791a6169567f45ad08bef4a1f124bc30b1da6dff4b0b4cd32b5a53fc5",
+        "bytes": 109326,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB",
+        "kind": "web_runtime_derivative"
+      },
+      "derivation": {
+        "method": "source crop and aspect-preserving Lanczos reduction to final PNG; final raster encoded as WebP",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "final_max_size": [
+          512,
+          384
+        ],
+        "alpha_handling": "No matte repaint; source transparency is cropped and resampled with the image. Seasonal landscapes use RGB.",
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 92,
+          "method": 6
+        }
+      }
+    }
+  ],
+  "book_print_derivation": {
+    "input_model_output": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/원본/빅타민책.png",
+    "printed_output": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/빅타민책_원본인쇄2.png",
+    "print_mask": {
+      "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/빅타민책_표지인쇄범위.png",
+      "sha256": "8a01f844131a4ebd5c3e9eb5c5b595b80448dc06040a37c9f1c127b3eae9b7b3",
+      "bytes": 4516,
+      "width": 1234,
+      "height": 1275,
+      "mode": "L",
+      "kind": "book_cover_adoption_mask"
+    },
+    "existing_public_neutral_source": {
+      "atlas_path": "public/companion/hd/vitamin-action-00-motion-115-v1.webp",
+      "atlas_sha256": "7792523dc32a6228791607f6f60a60bf596f66215add3a2e862d7f4a6aa2d3ad",
+      "physical_cell": 0,
+      "crop_box": [
+        0,
+        0,
+        192,
+        192
+      ],
+      "crop_rgba_sha256": "05ac5e6becc2ac4e9f0dcae6c8e6ff58d510b17686c25221187523991f15e085",
+      "frozen_crop_png_sha256": "cf06a97500b0e94a4b0cd0b22f03aef873d0f9b60024447b7aa38b28e1c62667",
+      "crop_matches_public_atlas_rgba": true
+    },
+    "paper_material_source": "24px cream paper patch sampled from the same unaltered generated book",
+    "paper_material_source_box": [
+      500,
+      880,
+      524,
+      904
+    ],
+    "print_tile_size": [
+      800,
+      800
+    ],
+    "whole_neutral_uniform_resize": [
+      720,
+      720
+    ],
+    "neutral_tile_offset": [
+      40,
+      40
+    ],
+    "resize_filter": "Lanczos",
+    "cover_quad": [
+      [
+        294,
+        294
+      ],
+      [
+        949,
+        400
+      ],
+      [
+        950,
+        1067
+      ],
+      [
+        294,
+        939
+      ]
+    ],
+    "perspective_coefficients": [
+      1.2828536066760863,
+      1.2838285924745088e-17,
+      -377.15896036276934,
+      -0.20423259450163211,
+      1.262003296212915,
+      -310.9845863031172,
+      5.2061066512243164e-05,
+      2.3260958648169835e-06
+    ],
+    "projection_filter": "bicubic",
+    "composition": "Alpha-composite the printed tile in the cover plane, then retain the original model output alpha channel.",
+    "original_alpha_preserved_exactly": true,
+    "rgba_changed_pixels": 429750,
+    "outside_print_mask_rgba_changed_pixels": 0,
+    "new_character_paint": false,
+    "additional_generation_calls": 0
+  },
+  "supporting_files": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/전체19종_접촉표.png",
+      "sha256": "11075db13dc1ec67b185c533c0fd598d78fe45f374a8a7161d255be7d27d4758",
+      "bytes": 1083664,
+      "width": 1500,
+      "height": 1040,
+      "mode": "RGB",
+      "kind": "all_19_asset_contact_sheet"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-집가구풍경122/정리본/빅타민책_표지인쇄범위.png",
+      "sha256": "8a01f844131a4ebd5c3e9eb5c5b595b80448dc06040a37c9f1c127b3eae9b7b3",
+      "bytes": 4516,
+      "width": 1234,
+      "height": 1275,
+      "mode": "L",
+      "kind": "book_cover_adoption_mask"
+    }
+  ],
+  "runtime_total_bytes": 669058,
+  "limitations": [
+    "Generated draft delivery is not user visual approval.",
+    "No independent professional art review was added for this delivery.",
+    "Generation reference images and operational records are retained locally and are not redistributed in this public record.",
+    "The contact sheet summarizes selected derivatives; it does not certify their final in-product appearance."
+  ]
+}

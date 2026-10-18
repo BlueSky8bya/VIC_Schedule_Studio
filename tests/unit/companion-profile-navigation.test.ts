@@ -75,7 +75,7 @@ describe("actual shared profile navigation callbacks", () => {
       await render(true, { ...DEFAULT_COMPANION_PREFERENCES, personality });
       const meta = find(node => node.props.className === "rhh-profile-meta");
       const text = nodes(meta).flatMap(node => Array.isArray(node.props.children) ? node.props.children.filter(value => typeof value === "string") : typeof node.props.children === "string" ? [node.props.children] : []).join("");
-      expect(text).toContain(COMPANION_PERSONALITY_NAMES[personality]);
+      expect(find(node => node.props.className === "rhh-profile-personality").props.children).toBe(COMPANION_PERSONALITY_NAMES[personality]);
       expect(text).toContain("요.");
       expect(text).not.toContain("undefined");
     }
@@ -123,7 +123,10 @@ describe("actual shared profile navigation callbacks", () => {
     ] as const;
     for (const hunger of [0, 1]) for (const favorite of favorites) {
       const favoriteFood = favorite.kind;
-      harness.states[1] = { ...DEFAULT_COMPANION_MEMORY, hunger, life: { ...DEFAULT_COMPANION_MEMORY.life, favoriteFood, social: 0, play: 1, comfort: 1 } };
+      harness.states[1] = { ...DEFAULT_COMPANION_MEMORY, hunger, life: { ...DEFAULT_COMPANION_MEMORY.life, favoriteFood, foodScores: { ...DEFAULT_COMPANION_MEMORY.life.foodScores, [favoriteFood]: .95 }, social: 0, play: 1, comfort: 1 } };
+      // The portrait represents a genuinely tasted food, never just a seeded
+      // preference for a still-undiscovered snack.
+      harness.states[2] = { version: 1, foods: [favoriteFood], behaviors: [], situations: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 } };
       await render();
       const badge = find(node => node.props.className === "rhh-companion-interest");
       const art = nodes(badge).find(node => node.props.className === "vc-collection-art")!;
@@ -224,11 +227,11 @@ describe("actual shared profile navigation callbacks", () => {
     expect(find(node => node.props["data-profile-page"] === "discover").props["aria-selected"]).toBe(true);
     expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-profile-page#discover" }]]);
   });
-  it("offers only two collections and keeps all behavior/situation memories together without revealing unknown names", async () => {
+  it("offers food/toy/memory collections and keeps all behavior/situation memories together without revealing unknown names", async () => {
     await render(); await discover();
     const categories = nodes(tree).filter(node => node.props["data-act"] === "companion-collection-category");
-    expect(categories.map(node => node.props["data-act-opt"])).toEqual(["food", "behavior"]);
-    click(categories[1]); await render();
+    expect(categories.map(node => node.props["data-act-opt"])).toEqual(["food", "toy", "behavior"]);
+    click(categories[2]); await render();
     const kinds: unknown[] = [], indexes: unknown[] = [];
     for (;;) {
       const memories = nodes(tree).filter(node => node.props["data-act"] === "companion-collection-inspect");
@@ -244,6 +247,15 @@ describe("actual shared profile navigation callbacks", () => {
     expect(kinds).toEqual([...COMPANION_BEHAVIOR_IDS.map(() => "behavior"), ...COMPANION_SITUATION_IDS.map(() => "moment")]);
     expect(indexes).toEqual(Array.from({ length: COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.length }, (_, index) => index));
     expect(nodes(tree).some(node => node.props["aria-label"] === "추억 종류")).toBe(false);
+  });
+  it("preserves a toy's selected identity and finite-page destination across category unmounts without acknowledging it", async () => {
+    await render(); await discover();
+    click(find(node => node.props["data-act-opt"] === "toy")); await render();
+    const child = () => find(node => typeof node.type === "function" && node.type.name === "CompanionToyDiscovery");
+    (child().props.onSelect as (kind: string) => void)("feather"); await render(); expect(child().props.selectedKind).toBe("feather");
+    click(find(node => node.props["data-act-opt"] === "food")); await render();
+    click(find(node => node.props["data-act-opt"] === "toy")); await render(); expect(child().props.selectedKind).toBe("feather");
+    expect(harness.acknowledge).not.toHaveBeenCalled(); expect(harness.activity).not.toHaveBeenCalled();
   });
   it("crosses the merged-memory boundary and records the selected destination's fixed category exactly once", async () => {
     await render(); await discover();

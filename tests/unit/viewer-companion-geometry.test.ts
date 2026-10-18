@@ -401,6 +401,20 @@ describe("companion geometry anchor subscription", () => {
     expect(platforms.some(p => sub.anchor(p.id)?.element === (f.title as unknown as Element))).toBe(false);
     sub();
   });
+  it("keeps a full44px room item clear of a control that ends42px above its floor", () => {
+    const f = geometryFixture(), house = addHouseFloor(f);
+    house.feed.rect = box(300, 570, 48, 42); // floor654; control bottom612.
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92, home: f.home as unknown as HTMLElement }); f.flush();
+    const small = sub.landings(32).filter(p => p.id.startsWith(COMPANION_HOME_FLOOR_FOOD));
+    expect(small.length).toBeGreaterThan(0);
+    expect(small.some(p => p.x <= 320 && p.x + p.width >= 320)).toBe(false);
+    for (const span of small) for (const x of [span.x, span.x + span.width / 2, span.x + span.width]) {
+      const nativeHit = { left: x - 22, right: x + 22, top: span.y - 44, bottom: span.y };
+      const control = house.feed.rect;
+      expect(nativeHit.left < control.right && nativeHit.right > control.left && nativeHit.top < control.bottom && nativeHit.bottom > control.top).toBe(false);
+    }
+    sub();
+  });
   it("offers the real house floor only as a manual feeding/drop support and keeps full controls clear", () => {
     const fixture = geometryFixture(), house = addHouseFloor(fixture); let autonomous: Platform[] = [];
     house.floor.hasAttribute = name => name === "aria-hidden"; // Decorative AT exclusion must not hide real floor ink.

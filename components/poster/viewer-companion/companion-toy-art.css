@@ -1,0 +1,2 @@
+/* Preserve the generated silhouette in every live/profile/book viewport. */
+.vc-toy-art { display: block; object-fit: contain; }

@@ -25,6 +25,9 @@ const FOOD_SIZE = 32;
 // The fruit's 32px art has a 44px native hit target, reaching 38px above its foot.
 // Reserve that hit target around controls without imposing the pet's 92px fit.
 const FOOD_FOOTPRINT = { width: 44, height: 38 };
+// Room drops also carry toys with a full44px target. Reserve both targets in
+// the existing shared home snapshot; calendar fruit keeps its own footprint.
+const HOME_ITEM_FOOTPRINT = { width: 44, height: 44 };
 
 export type CompanionTextRect = { left: number; right: number; top: number; bottom: number };
 export type CompanionSurface = { x: number; y: number; width: number };
@@ -394,7 +397,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         // A drop from above uses the same real floor as a direct room release.
         // The food's smaller footprint remains independent of the pet tier.
         if (rect.height > 0 && y >= clip.top && y < clip.bottom) rememberFood(COMPANION_HOME_FLOOR_FOOD,
-          safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, homeObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor", homeFloor, rect);
+          safeCompanionSurfaces({ x: x + HOME_ITEM_FOOTPRINT.width / 2, y, width: right - x - HOME_ITEM_FOOTPRINT.width }, homeObstacles, FOOD_SIZE, viewport, HOME_ITEM_FOOTPRINT), "floor", homeFloor, rect);
       }
       // A dense calendar cannot spend the whole bounded food snapshot before
       // its real house floor is published. First-contact selection still sorts

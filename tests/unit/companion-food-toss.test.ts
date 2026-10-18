@@ -10,6 +10,21 @@ const floor: Platform = { id: "viewport-floor-food", kind: "floor", x: 24, y: 77
 const from = { x: 190, y: 300 };
 
 describe("physical companion snack throws", () => {
+  it("aims a high dispenser at the real nearby stance without imposing a minimum horizontal throw", () => {
+    const outlet = { ...food, x: 250, y: 489 }, stance = { x: 245, y: 571 };
+    const room: CompanionFoodDropSupport = { id: "companion-home-floor-food", kind: "floor", x: 217, y: stance.y, width: 65 };
+    const view = { width: 1920, height: 1100 };
+    const plan = planCompanionDispenserEjection(outlet, stance, [room], view)!;
+    expect(plan).toBeDefined(); expect(plan.food.platformId).toBe(room.id);
+    expect(Math.abs(plan.food.x - stance.x)).toBeLessThan(.01);
+    const flight = createCompanionFoodToss(outlet, plan.food, 100, plan), contactAt = flight.duration - 240;
+    expect(flight.sample(100)).toMatchObject({ x: outlet.x, y: outlet.y });
+    expect(flight.sample(100 + contactAt / 2).y).toBeLessThan(outlet.y);
+    expect(flight.sample(100 + contactAt)).toMatchObject({ x: plan.contactX, y: stance.y });
+    const earlier: CompanionFoodDropSupport = { id: "actual-card", kind: "card", x: 220, y: 520, width: 60 };
+    expect(planCompanionDispenserEjection(outlet, stance, [room, earlier], view)).toBeUndefined();
+    expect(planCompanionDispenserEjection(outlet, stance, [{ ...room, x: 285 }], view)).toBeUndefined();
+  });
   it("ejects from the actual studio outlet onto an accessible room floor instead of the distant screen floor", () => {
     const outlet = { ...food, x: 264.515625, y: 421.46875 };
     const stance = { x: 172.25875, y: 430.65625 };

@@ -9,7 +9,7 @@ export const COMPANION_FOOD_TOSS_GRAVITY = 1800;
 /** One bounded real throw. Test the descending parabola against physical card
  * tops, then slide only within that same card's protected input span. A miss
  * never fabricates a floor across controls or pulls food onto the sofa. */
-export function planCompanionFoodToss(food: CompanionFood, awayFrom: Point, strength: number, supports: readonly CompanionFoodDropSupport[], viewport: Readonly<{ width: number; height: number }>) {
+function planFoodToss(food: CompanionFood, awayFrom: Point, strength: number, supports: readonly CompanionFoodDropSupport[], viewport: Readonly<{ width: number; height: number }>, aim?: Point) {
   if (!finite(food) || !finite(awayFrom) || ![viewport.width, viewport.height].every(Number.isFinite)
     || viewport.width < 48 || viewport.height < 48 || food.x < 24 || food.x > viewport.width - 24 || food.y < 12 || food.y > viewport.height) return;
   const force = Number.isFinite(strength) ? clamp(strength, 1, 3) : 1;
@@ -20,7 +20,14 @@ export function planCompanionFoodToss(food: CompanionFood, awayFrom: Point, stre
   // Bound the entire flight, not just its final drawing, to native food input
   // margins. A wall reduces horizontal speed instead of teleporting the fruit.
   const speed = direction * Math.min(90 + force * 45, 140 / Math.max(.1, horizon));
-  const vx = clamp(speed, (24 - food.x) / horizon, (viewport.width - 24 - food.x) / horizon);
+  let horizontalSpeed = speed;
+  if (aim) {
+    const seconds = (-vy + Math.sqrt(vy * vy + 2 * gravity * (aim.y - food.y))) / gravity;
+    if (!finite(aim) || !Number.isFinite(seconds) || seconds <= 0) return;
+    horizontalSpeed = (aim.x - food.x) / seconds;
+    if (!Number.isFinite(horizontalSpeed) || Math.abs(horizontalSpeed) > Math.abs(speed)) return;
+  }
+  const vx = clamp(horizontalSpeed, (24 - food.x) / horizon, (viewport.width - 24 - food.x) / horizon);
   let chosen: { food: CompanionFood; contactX: number; height: number; seconds: number; distance: number; floor: boolean } | undefined;
   for (const support of supports) {
     if (!support.id || isCompanionFoodBedSupport(support.id) || ![support.x, support.y, support.width, support.x + support.width].every(Number.isFinite)
@@ -46,6 +53,10 @@ export function planCompanionFoodToss(food: CompanionFood, awayFrom: Point, stre
   return chosen;
 }
 
+export function planCompanionFoodToss(food: CompanionFood, awayFrom: Point, strength: number, supports: readonly CompanionFoodDropSupport[], viewport: Readonly<{ width: number; height: number }>) {
+  return planFoodToss(food, awayFrom, strength, supports, viewport);
+}
+
 /** The real outlet can sit over a protected control gap. Eject toward the
  * creature's actual safe stance only when the first descending contact is a
  * measured room floor within mouth reach. A missing recipient is not license
@@ -54,10 +65,16 @@ export function planCompanionDispenserEjection(food: CompanionFood, recipient: P
   if (!finite(recipient) || recipient.x < 24 || recipient.x > viewport.width - 24 || recipient.y < 12 || recipient.y > viewport.height - 12) return;
   const awayFrom = { x: food.x + (food.x - recipient.x), y: food.y };
   const measured = supports.slice(0, 200);
-  for (const strength of [1, 2, 3]) {
-    const plan = planCompanionFoodToss(food, awayFrom, strength, measured, viewport);
-    if (!plan || !isCompanionHomeFloorFoodSupport(plan.food.platformId)) continue;
+  const receive = (plan: ReturnType<typeof planFoodToss>) => {
+    if (!plan || !isCompanionHomeFloorFoodSupport(plan.food.platformId)) return;
     const floor = measured.find(support => support.id === plan.food.platformId);
     if (floor?.kind === "floor" && Math.abs(plan.food.y - recipient.y) <= .5 && Math.abs(plan.food.x - recipient.x) <= 36) return plan;
+  };
+  // Preserve existing successful spills. A tall outlet over a nearby stance
+  // may otherwise overshoot even at minimum throw strength. Aim only this
+  // dispenser flight, retaining the same speed bound and first-contact proof.
+  for (const aim of [undefined, recipient]) for (const strength of [1, 2, 3]) {
+    const accepted = receive(planFoodToss(food, awayFrom, strength, measured, viewport, aim));
+    if (accepted) return accepted;
   }
 }

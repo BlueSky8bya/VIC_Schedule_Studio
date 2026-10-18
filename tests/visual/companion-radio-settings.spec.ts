@@ -136,8 +136,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
     await sibling.close(); await page.bringToFront();
     await expect(volume).toHaveValue("25"); selections.volume = 25;
   }
-  mkdirSync(".scratch-pw/companion-111/radio-settings", { recursive: true });
-  await page.screenshot({ path: `.scratch-pw/companion-111/radio-settings/radio-${surface}.png` });
+  const screenshotOutput = process.env.COMPANION_RADIO_UI_OUTPUT ?? ".scratch-pw/companion-111/radio-settings";
+  mkdirSync(screenshotOutput, { recursive: true });
+  await page.screenshot({ path: `${screenshotOutput}/radio-${surface}.png` });
   const targetAttributes = await radio.locator("[data-act]").evaluateAll(nodes => nodes.map(node => [node.getAttribute("data-act"), node.getAttribute("data-act-opt")]));
   expect(targetAttributes.every(([key, opt]) => key?.startsWith("companion-radio-") && (!opt || ["on", "off", "open", "close", "lively", "graceful", "calm"].includes(opt)))).toBe(true);
   await page.reload();
