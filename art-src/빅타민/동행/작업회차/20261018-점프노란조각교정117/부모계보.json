@@ -1,0 +1,36 @@
+{
+  "source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+  "source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+  "source_size": [
+    1122,
+    1402
+  ],
+  "native_cell_index_zero_based": 5,
+  "sheet_key_one_based": 6,
+  "pose": "clean:5 / jump rise",
+  "native_crop_box": [
+    719,
+    22,
+    823,
+    127
+  ],
+  "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+  "crop_sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80",
+  "crop_size": [
+    104,
+    105
+  ],
+  "mode": "RGBA",
+  "resampling": "none",
+  "decoded_pixels_equal": true,
+  "screenshot_mapping": "Native lower-left becomes screenshot lower-right under facing=-1 horizontal flip.",
+  "explicit_region_local_box": [
+    0,
+    69,
+    35,
+    105
+  ],
+  "semantic_edit": "Only protruding yellow rectangular paper tuft and its existing attachment, not adjacent white sheets.",
+  "source_114_immutable": true,
+  "user_approval": false
+}

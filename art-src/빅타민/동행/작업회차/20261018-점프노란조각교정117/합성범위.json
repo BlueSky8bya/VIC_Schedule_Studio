@@ -1,0 +1,37 @@
+{
+  "nativeRaw": "art-src/빅타민/동행/작업회차/20261018-점프노란조각교정117/원본/점프노란조각_생성원본.png",
+  "rawSha256": "1ade0ccf770104a3166c634bdbad5b1b4fc3504a94f794e496048a66a4bb1d81",
+  "parentRgbaSha256": "002cc34e130480448b065948ec85a7fd6f924aefb98a887030c1eea859de027b",
+  "generatorOpaqueBounds": {
+    "l": 119,
+    "t": 6,
+    "r": 1194,
+    "b": 1089
+  },
+  "registration": {
+    "sourceBody": [
+      3,
+      3,
+      101,
+      102
+    ],
+    "sameBodyFootAndCanvas": true
+  },
+  "context": [
+    0,
+    69,
+    35,
+    105
+  ],
+  "effectiveContext": [
+    0,
+    76,
+    29,
+    105
+  ],
+  "interiorFeather": 3,
+  "changedPixels": 796,
+  "outsideContextRgbaUnchanged": true,
+  "ownerApproval": false,
+  "generationCalls": 1
+}

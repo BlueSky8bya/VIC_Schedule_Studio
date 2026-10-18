@@ -1,0 +1,17 @@
+{
+  "work_id": "vitamin-jump-tuft-117",
+  "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\vitamin-jump-tuft-117\\검토용\\56F4B8D2ECFF0C495B5A.png",
+  "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "known_findings": [
+    {
+      "status": "PRESERVED_NOT_ADOPTED",
+      "scope": "provider_native_outside_requested_tuft",
+      "finding": "Generated full sprite reinterpreted eyes/body; all outside-region output was excluded in the derived final."
+    }
+  ],
+  "cycle_id": "56F4B8D2ECFF0C495B5A",
+  "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+}

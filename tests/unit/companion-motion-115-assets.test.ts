@@ -40,7 +40,14 @@ describe("115 whole-pose continuity derivatives", () => {
     expect(receipt.slots).toHaveLength(520); expect(companionSpriteMetadata.rows).toHaveLength(41); expect(receipt.coverage.distinctWholeKeysUsed).toBe(60);
     for (const name of ["hd-motion-sprite", "play-motion-sprite", "living-motion-sprite"]) {
       const before = json<{ rows: number[][] }>(`${run}/고정입력/${name}.json`), current = json<{ rows: number[][] }>(`lib/ui/viewer-companion/${name}.json`);
-      expect(current.rows).toEqual(before.rows); expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(receipt.stagedMetadata[name]))).toBe(true);
+      expect(current.rows).toEqual(before.rows);
+      const frozen = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata[name]);
+      if (name === "hd-motion-sprite") {
+        //117 replaces only the rise packet; the115 source/rig evidence stays immutable.
+        const active = json<typeof frozen>(`lib/ui/viewer-companion/${name}.json`);
+        expect({ ...active, atlases: frozen.atlases }).toEqual(frozen);
+        expect(active.atlases.filter((atlas, index) => JSON.stringify(atlas) !== JSON.stringify(frozen.atlases[index])).map(atlas => atlas.src)).toEqual(["/companion/hd/vitamin-action-04-tuft-117-v1.webp"]);
+      } else expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(receipt.stagedMetadata[name]))).toBe(true);
     }
     for (const index of companionSpriteMetadata.rows[2]) expect(receipt.slots[index].nativeCell).toBe(2);
     expect(new Set(companionSpriteMetadata.rows[0].map(index => receipt.slots[index].nativeCell))).toEqual(new Set([0, 1]));

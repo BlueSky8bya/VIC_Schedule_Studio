@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "status": "ONE_GENERATION_SCOPED_DERIVED_DRAFT_REGISTERED",
+  "initial_generation_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\생성영수증.json",
+    "sha256": "518BDB03A31E650AEBD86A5044E380EF8F27482B309AFB71EB0FD724E9F3B47E"
+  },
+  "work_id": "vitamin-jump-tuft-117",
+  "imagegen_calls": 1,
+  "automatic_retry_calls": 0,
+  "specialist_review_calls": 0,
+  "user_approval": "NONE",
+  "provider_native": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\원본\\점프노란조각_생성원본.png",
+    "sha256": "1ADE0CCF770104A3166C634BDBAD5B1B4FC3504A94F794E496048A66A4BB1D81"
+  },
+  "derived_candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png",
+    "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7"
+  },
+  "registered_draft": {
+    "work_id": "vitamin-jump-tuft-117",
+    "status": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\작품\\vitamin-jump-tuft-117\\검토용\\56F4B8D2ECFF0C495B5A.png",
+    "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7",
+    "approval": "NONE",
+    "full_review": "NOT_REQUESTED",
+    "known_findings": [
+      {
+        "status": "PRESERVED_NOT_ADOPTED",
+        "scope": "provider_native_outside_requested_tuft",
+        "finding": "Generated full sprite reinterpreted eyes/body; all outside-region output was excluded in the derived final."
+      }
+    ],
+    "cycle_id": "56F4B8D2ECFF0C495B5A",
+    "next_action": "show_result_and_wait_for_human_selection_or_targeted_review"
+  },
+  "scope_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\합성범위.json",
+    "sha256": "FCE0ECF656863D1077AB3047BC6F12A194BF6D49F28ACCC573009E8E3D9251C0"
+  },
+  "packing_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\패킹파생기록.json",
+    "sha256": "71713735FBA5236094225AA7778CF37D4F20A183539FA5C1930A0DEB69675A5F"
+  },
+  "helper_native_filename_is_derived_candidate_copy": true,
+  "source114_preserved": true,
+  "cloud_sync_verified": false
+}

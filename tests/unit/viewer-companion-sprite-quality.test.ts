@@ -44,7 +44,7 @@ describe("one high-resolution pipeline for every companion action", () => {
       const selected = selectCompanionSprite(index);
       expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
       expect(selected.src).toBe(sprites.atlases[Math.floor(index / 16)].src);
-      expect(selected.src).toMatch(/^\/companion\/hd\/vitamin-action-[0-9]{2}-motion-115-v1\.webp$/);
+      expect(selected.src).toMatch(/^\/companion\/hd\/vitamin-action-(?:[0-9]{2}-motion-115|04-tuft-117)-v1\.webp$/);
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
   });

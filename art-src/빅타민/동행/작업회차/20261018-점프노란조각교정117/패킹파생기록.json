@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "generationCalls": 1,
+  "independentArtReviews": 0,
+  "ownerApproval": false,
+  "parentNative": {
+    "path": "art-src/빅타민/동행/작업회차/20261018-포즈통일114/원본/빅타민_통일80키.png",
+    "sha256": "8cfa1fd98c63eff8b06dba9d0950391509e60d194c878b5881a16176be245ba4",
+    "width": 1122,
+    "height": 1402,
+    "originalPreserved": true
+  },
+  "parentPacket": {
+    "src": "/companion/hd/vitamin-action-04-motion-115-v1.webp",
+    "sha256": "1bd74a1f75b2a3f694f85bd68ac8691c5be01cb400408709295e8d0601246e98",
+    "bytes": 185672,
+    "width": 1536,
+    "height": 384
+  },
+  "generatedNative": {
+    "path": "art-src/빅타민/동행/작업회차/20261018-점프노란조각교정117/원본/점프노란조각_생성원본.png",
+    "sha256": "1ade0ccf770104a3166c634bdbad5b1b4fc3504a94f794e496048a66a4bb1d81"
+  },
+  "correctedKey": {
+    "path": "art-src/빅타민/동행/작업회차/20261018-점프노란조각교정117/정리본/빅타민_점프조각교정.png",
+    "sha256": "c8067da2c8997b84f8e60c712015832115062cf75c20fcc0f09028591ab4ade7"
+  },
+  "scope": [
+    0,
+    76,
+    29,
+    105
+  ],
+  "sourceChangedChannels": 2087,
+  "packet": {
+    "src": "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+    "sha256": "f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d",
+    "bytes": 426660,
+    "width": 1536,
+    "height": 384
+  },
+  "frames": [
+    {
+      "physicalIndex": 64,
+      "changedPixels": 1352,
+      "changedBounds": {
+        "left": 28,
+        "top": 142,
+        "right": 66,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 0,
+        "x": 0.208333,
+        "y": 6.666667,
+        "clip": [
+          14.666667,
+          9.666667,
+          3.416667,
+          9.666667
+        ]
+      }
+    },
+    {
+      "physicalIndex": 65,
+      "changedPixels": 1347,
+      "changedBounds": {
+        "left": 28,
+        "top": 141,
+        "right": 66,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 1,
+        "x": 0,
+        "y": 6.666667,
+        "clip": [
+          14.25,
+          9.25,
+          3.416667,
+          9.666667
+        ]
+      }
+    },
+    {
+      "physicalIndex": 66,
+      "changedPixels": 1385,
+      "changedBounds": {
+        "left": 28,
+        "top": 141,
+        "right": 67,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 2,
+        "x": 0,
+        "y": 6.666667,
+        "clip": [
+          14.666667,
+          9.25,
+          3,
+          9.666667
+        ]
+      }
+    },
+    {
+      "physicalIndex": 67,
+      "changedPixels": 1352,
+      "changedBounds": {
+        "left": 29,
+        "top": 142,
+        "right": 67,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 3,
+        "x": -0.208333,
+        "y": 6.666667,
+        "clip": [
+          15.083333,
+          9.25,
+          3,
+          10.083333
+        ]
+      }
+    },
+    {
+      "physicalIndex": 68,
+      "changedPixels": 1348,
+      "changedBounds": {
+        "left": 29,
+        "top": 142,
+        "right": 67,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 4,
+        "x": -0.208333,
+        "y": 6.666667,
+        "clip": [
+          15.5,
+          9.25,
+          3,
+          10.083333
+        ]
+      }
+    },
+    {
+      "physicalIndex": 69,
+      "changedPixels": 1352,
+      "changedBounds": {
+        "left": 29,
+        "top": 142,
+        "right": 67,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 5,
+        "x": -0.208333,
+        "y": 6.666667,
+        "clip": [
+          15.916667,
+          9.25,
+          3,
+          10.083333
+        ]
+      }
+    },
+    {
+      "physicalIndex": 70,
+      "changedPixels": 1371,
+      "changedBounds": {
+        "left": 28,
+        "top": 142,
+        "right": 67,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 6,
+        "x": 0,
+        "y": 6.666667,
+        "clip": [
+          16.333333,
+          9.25,
+          3,
+          9.666667
+        ]
+      }
+    },
+    {
+      "physicalIndex": 71,
+      "changedPixels": 1323,
+      "changedBounds": {
+        "left": 28,
+        "top": 142,
+        "right": 66,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 7,
+        "x": 0,
+        "y": 6.666667,
+        "clip": [
+          16.75,
+          9.25,
+          3.416667,
+          9.666667
+        ]
+      }
+    },
+    {
+      "physicalIndex": 72,
+      "changedPixels": 1319,
+      "changedBounds": {
+        "left": 28,
+        "top": 142,
+        "right": 66,
+        "bottom": 179
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 8,
+        "x": 0.208333,
+        "y": 6.666667,
+        "clip": [
+          17.166667,
+          9.666667,
+          3.416667,
+          9.666667
+        ]
+      }
+    },
+    {
+      "physicalIndex": 73,
+      "changedPixels": 1352,
+      "changedBounds": {
+        "left": 28,
+        "top": 142,
+        "right": 66,
+        "bottom": 180
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 9,
+        "x": 0.208333,
+        "y": 6.666667,
+        "clip": [
+          16.75,
+          9.666667,
+          3,
+          9.666667
+        ]
+      }
+    },
+    {
+      "physicalIndex": 74,
+      "changedPixels": 1370,
+      "changedBounds": {
+        "left": 27,
+        "top": 143,
+        "right": 66,
+        "bottom": 180
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 10,
+        "x": 0.625,
+        "y": 6.666667,
+        "clip": [
+          16.333333,
+          9.666667,
+          3,
+          9.25
+        ]
+      }
+    },
+    {
+      "physicalIndex": 75,
+      "changedPixels": 1366,
+      "changedBounds": {
+        "left": 27,
+        "top": 142,
+        "right": 66,
+        "bottom": 180
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 11,
+        "x": 0.416667,
+        "y": 6.666667,
+        "clip": [
+          15.5,
+          9.666667,
+          3,
+          9.25
+        ]
+      }
+    },
+    {
+      "physicalIndex": 76,
+      "changedPixels": 1365,
+      "changedBounds": {
+        "left": 27,
+        "top": 142,
+        "right": 66,
+        "bottom": 180
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 12,
+        "x": 0.625,
+        "y": 6.666667,
+        "clip": [
+          15.083333,
+          9.666667,
+          3,
+          9.25
+        ]
+      }
+    },
+    {
+      "physicalIndex": 77,
+      "changedPixels": 1378,
+      "changedBounds": {
+        "left": 27,
+        "top": 143,
+        "right": 66,
+        "bottom": 180
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 13,
+        "x": 0.625,
+        "y": 6.666667,
+        "clip": [
+          15.5,
+          10.083333,
+          3,
+          9.25
+        ]
+      }
+    },
+    {
+      "physicalIndex": 78,
+      "changedPixels": 1404,
+      "changedBounds": {
+        "left": 27,
+        "top": 142,
+        "right": 66,
+        "bottom": 180
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 14,
+        "x": 0.416667,
+        "y": 6.666667,
+        "clip": [
+          15.083333,
+          9.666667,
+          3,
+          9.25
+        ]
+      }
+    },
+    {
+      "physicalIndex": 79,
+      "changedPixels": 1389,
+      "changedBounds": {
+        "left": 27,
+        "top": 142,
+        "right": 66,
+        "bottom": 180
+      },
+      "parentFrame": {
+        "atlas": 4,
+        "index": 15,
+        "x": 0.416667,
+        "y": 6.666667,
+        "clip": [
+          15.083333,
+          9.666667,
+          3,
+          9.25
+        ]
+      }
+    }
+  ],
+  "unchangedVisibleDecodedPixelsAndAlphaPreserved": true,
+  "invisibleRgbChannelsNormalized": 580346,
+  "allRuntimeRegistrationPreserved": true,
+  "unusedPhysical261Preserved": true
+}

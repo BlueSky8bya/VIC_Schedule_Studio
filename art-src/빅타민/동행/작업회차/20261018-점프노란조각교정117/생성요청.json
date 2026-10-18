@@ -1,0 +1,11 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Make one very small targeted edit to Image1, the exact current BigVitamin jump/rise key. Preserve the same whole sprite, pose, expression, tilt, framing, body size, ear positions, paper layers, warm colors, clean dark-brown contour, and transparent background.\nOnly reduce the protruding buttery-yellow rectangular paper tuft at the LOWER LEFT of Image1. This is the tuft that appears at the lower right in the user's horizontally flipped live view. The permitted context is the lower-left 35 by 36 pixels of the 104 by 105 source, beginning at source coordinate (0,69). Reduce that yellow tuft gently, about 15% in its visible protruding width and length, around its existing upper attachment/root. Keep its angle, connected paper construction, warm yellow fill, fold shading and contour weight. It should feel like the same little overlapping paper piece with slightly less outward projection, smoothly matching neighboring jump keys.\nDo not shrink or move the body, redraw the face or ears, change the surrounding white paper sheets, add loose particles, remove the tuft, or invent limbs. Image2 is the read-only original mascot design authority: layered rectangular paper pompom with two attached bunny ears and no limbs. Retain Image1's rendering and action. Return ONE complete sprite with the same composition and transparent alpha, without text, labels, grids, shadows, or extra scraps.",
+    "referenced_image_paths": [
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png"
+    ],
+    "transparent_background": true
+  }
+}

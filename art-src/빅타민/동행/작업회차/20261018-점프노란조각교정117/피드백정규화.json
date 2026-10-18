@@ -1,0 +1,42 @@
+{
+  "event_id": "vitamin-jump-tuft-117-current-request",
+  "source_actor": "user",
+  "thread_id": "01a13862-7fb6-7a73-839b-079df9dbbea2",
+  "turn_id": "msg_01a14f76-94b1-7332-bdea-ad5965ff6775",
+  "observed_at": "2026-10-18T14:42:13.809Z",
+  "user_quote": "여기 보면 점프할 때 오른쪽 밑에 노란 파티클이 여기만 살짝 더 커지거든? 이것만 조금 줄이면 아주 부드러워질 것 같아.  새 행동들은 내가 지금 읽어볼게\n\n<image name=[Image #1] path=\"C:\\Users\\im917\\AppData\\Local\\Temp\\codex-clipboard-a897a8d9-d724-4717-981b-e5cf96b31f82.png\">\n</image>",
+  "source_context": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-55e4f89f49b84b948aa5091d.json#/user_request",
+  "decision": "rule_update",
+  "selection_mutation": false,
+  "work_id": "vitamin-jump-tuft-117",
+  "image_sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80",
+  "scopes": [
+    "jump_key6.lower_left_yellow_paper_tuft"
+  ],
+  "rule_ids": [],
+  "issues": [
+    {
+      "issue_key": "jump_yellow_tuft_local_oversize",
+      "statement": "점프 때 첨부 화면 오른쪽 아래의 유독 큰 노란 종이 조각만 조금 줄여 동작을 부드럽게 한다. 다른 동작은 이 요청에서 바꾸지 않는다.",
+      "applicability": {
+        "subjects": [
+          "victamin"
+        ],
+        "outfit_ids": [],
+        "hair_ids": [],
+        "scene_modes": [
+          "icon"
+        ],
+        "work_ids": [
+          "vitamin-jump-tuft-117"
+        ]
+      },
+      "routing_roles": [
+        "scene_render"
+      ],
+      "finding_scope": "jump_key6.lower_left_yellow_paper_tuft",
+      "confirmation": "explicit_user_request",
+      "evidence_excerpt": "여기 보면 점프할 때 오른쪽 밑에 노란 파티클이 여기만 살짝 더 커지거든? 이것만 조금 줄이면 아주 부드러워질 것 같아."
+    }
+  ]
+}

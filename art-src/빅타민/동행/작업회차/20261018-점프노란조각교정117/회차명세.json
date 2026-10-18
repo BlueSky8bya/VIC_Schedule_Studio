@@ -1,0 +1,14 @@
+{
+  "work_id": "vitamin-jump-tuft-117",
+  "phase": "generate",
+  "user_source": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-55e4f89f49b84b948aa5091d.json",
+    "sha256": "0DA22957D75E3634191256FF28FFA8822DA0C11460DF460A7819C67B6FAB8B11",
+    "excerpt": "여기 보면 점프할 때 오른쪽 밑에 노란 파티클이 여기만 살짝 더 커지거든? 이것만 조금 줄이면 아주 부드러워질 것 같아."
+  },
+  "role_focus": {},
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+    "sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80"
+  }
+}

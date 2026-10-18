@@ -1,0 +1,36 @@
+{
+  "status": "PLANNED_USER_DIRECTED_CYCLE",
+  "plan_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-jump-tuft-117\\plan.json",
+  "plan_sha256": "BB5E2664B26640F5CDCB570CB0E820D01926775F9657F55492C7672AC360B75F",
+  "plan": {
+    "schema_version": 1,
+    "workflow_mode": "user_directed_cycle",
+    "cycle_id": "56F4B8D2ECFF0C495B5A",
+    "run_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-jump-tuft-117\\cycle_56F4B8D2ECFF0C495B5A",
+    "action_budget_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-jump-tuft-117\\user_actions_AAE2CF2DCB9C68030CE7",
+    "work_id": "vitamin-jump-tuft-117",
+    "phase": "generate",
+    "user_source": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-55e4f89f49b84b948aa5091d.json",
+      "sha256": "0DA22957D75E3634191256FF28FFA8822DA0C11460DF460A7819C67B6FAB8B11",
+      "excerpt": "여기 보면 점프할 때 오른쪽 밑에 노란 파티클이 여기만 살짝 더 커지거든? 이것만 조금 줄이면 아주 부드러워질 것 같아."
+    },
+    "role_focus": {},
+    "force_review": false,
+    "candidate": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+      "sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80"
+    },
+    "policy_sha256": "2153332C2BC33B0FECA8D689FEFADEF131A26B1F518FDFBE666ACEBD07766F91",
+    "request_turn_id": "msg_01a14f76-94b1-7332-bdea-ad5965ff6775",
+    "limits": {
+      "imagegen_calls": 1,
+      "review_rounds": 0,
+      "repair_calls": 0,
+      "post_repair_agent_rounds": 0
+    },
+    "next_action": "one_generation_then_show",
+    "automatic_full_review": false,
+    "user_approval_is_visual_not_numeric_certification": true
+  }
+}

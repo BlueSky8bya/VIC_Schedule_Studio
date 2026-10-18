@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "work_id": "vitamin-jump-tuft-117",
+  "cycle_id": "56F4B8D2ECFF0C495B5A",
+  "status": "ONE_BUILTIN_IMAGEGEN_RETURNED_PENDING_SCOPED_DERIVED_FINAL",
+  "generator_id": "/root",
+  "tool": "image_gen.imagegen",
+  "imagegen_calls": 1,
+  "automatic_retry_calls": 0,
+  "specialist_review_calls": 0,
+  "claim_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-jump-tuft-117\\cycle_56F4B8D2ECFF0C495B5A\\imagegen.claim.json",
+  "claim_sha256": "3E1D246FAB88CB238F5C37B833ACC9298FD5A3F22E4EF057B0C0CE0D71398EB6",
+  "claim": {
+    "action": "imagegen",
+    "role": null,
+    "cycle_id": "56F4B8D2ECFF0C495B5A",
+    "claimed_at": "2026-10-18T14:46:56.029139+00:00",
+    "unknown_tool_outcome": "recover receipt; do not call again"
+  },
+  "request_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\생성요청.json",
+  "request_sha256": "878B5DFCF96138DCB9ACEC3C868A76ED8F014375DAE6B7EF915305A815535E71",
+  "contract_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\작업계약.json",
+  "contract_sha256": "20F26D9F945D3DAE870E139CE35A60B26F2C3757C7FE4D933B626F377CDA621B",
+  "provider_native_path": "C:\\Users\\im917\\.codex\\generated_images\\01a13862-7fb6-7a73-839b-079df9dbbea2\\exec-ca1699b2-6a42-4918-9387-a2342730df6d.png",
+  "provider_native_sha256": "1ADE0CCF770104A3166C634BDBAD5B1B4FC3504A94F794E496048A66A4BB1D81",
+  "provider_native_size": [
+    1261,
+    1247
+  ],
+  "provider_native_mode": "RGBA",
+  "preserved_native_copy_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\원본\\점프노란조각_생성원본.png",
+  "copy_verified": true,
+  "native_is_final": false,
+  "root_reported_observation": "Generated full sprite reinterprets eyes/body. Whole output replacement prohibited. Only requested tuft region may enter a separately recorded derived final, preserving parent outside explicit scope.",
+  "observation_source": "Root agent message after generation; this receipt preparer is not an independent visual reviewer.",
+  "final_candidate_path": null,
+  "registration_status": "AWAIT_ROOT_FINAL_PATH_AND_CREATOR_INSPECTION",
+  "approval": "NONE",
+  "full_review": "NOT_REQUESTED",
+  "source114_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+}

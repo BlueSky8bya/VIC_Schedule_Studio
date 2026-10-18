@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "work_id": "vitamin-jump-tuft-117",
+  "final_sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7",
+  "inspector_id": "/root",
+  "inspection_kind": "CREATOR_WHOLE_AND_LOCAL_OBSERVATION",
+  "inspection_evidence": "Root actual message: opened full104 crop and parent/generated/scoped three-column enlarged comparison. This registration preparer only records that evidence and verifies hashes/pixels; no independent art review.",
+  "whole_visual_inspection": true,
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png",
+      "sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+      "sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\원본\\점프노란조각_생성원본.png",
+      "sha256": "1ADE0CCF770104A3166C634BDBAD5B1B4FC3504A94F794E496048A66A4BB1D81"
+    }
+  ],
+  "observations": "하단 왼쪽 노란 종이 탭의 돌출이 보기에 작아졌다. 원래 눈·두 귀·몸체 등 나머지는 부모 그대로이며 노란 조각은 연결된 종이 한 개로 유지된다. 생성 raw 전체는 눈·몸 재해석으로 전체 교체에 사용하지 않았다.",
+  "findings": [
+    {
+      "status": "PRESERVED_NOT_ADOPTED",
+      "scope": "provider_native_outside_requested_tuft",
+      "finding": "Generated full sprite reinterpreted eyes/body; all outside-region output was excluded in the derived final."
+    }
+  ],
+  "artifact_kind": "SCOPED_DERIVED_FINAL_FROM_ONE_GENERATED_NATIVE_AND_PROTECTED_PARENT",
+  "provider_native_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\원본\\점프노란조각_생성원본.png",
+  "provider_native_sha256": "1ADE0CCF770104A3166C634BDBAD5B1B4FC3504A94F794E496048A66A4BB1D81",
+  "derived_final_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\정리본\\빅타민_점프조각교정.png",
+  "derived_final_sha256": "C8067DA2C8997B84F8E60C712015832115062CF75C20FCC0F09028591AB4ADE7",
+  "derivation_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\합성범위.json",
+    "sha256": "FCE0ECF656863D1077AB3047BC6F12A194BF6D49F28ACCC573009E8E3D9251C0"
+  },
+  "packing_receipt": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\패킹파생기록.json",
+    "sha256": "71713735FBA5236094225AA7778CF37D4F20A183539FA5C1930A0DEB69675A5F"
+  },
+  "preservation_verification": {
+    "effective_context": [
+      0,
+      76,
+      29,
+      105
+    ],
+    "inside_contract_context": [
+      0,
+      69,
+      35,
+      105
+    ],
+    "interior_feather": 3,
+    "changed_source_pixels": 796,
+    "changed_source_channels": 2087,
+    "outside_effective_context_rgba_equal": true,
+    "row4_rig_frames_only": 16,
+    "runtime_registration_unchanged": true
+  },
+  "imagegen_calls": 1,
+  "specialist_reviews": {},
+  "automatic_extra_review_calls": 0,
+  "user_visual_approval": false,
+  "full_visual_pass_claim": false,
+  "limitations": [
+    "생성자의 전체/국소 관찰이며 독립 전문 검수 또는 사용자 시각 승인이 아니다.",
+    "register helper의 native.png는 이번 파생 candidate의 보존명이며 provider 원출력과 구분한다."
+  ]
+}

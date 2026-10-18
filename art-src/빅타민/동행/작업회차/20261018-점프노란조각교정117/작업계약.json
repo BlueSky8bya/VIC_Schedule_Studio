@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "vitamin-jump-tuft-117",
+  "operation": "targeted_parent_edit",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "/root",
+  "purpose": "현재 점프 상승 한 키의 노란 종이 tuft 과대 돌출만 부드럽게 축소",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-jump-tuft-117\\plan.json",
+    "sha256": "BB5E2664B26640F5CDCB570CB0E820D01926775F9657F55492C7672AC360B75F"
+  },
+  "inputs": [
+    {
+      "id": "requested-jump-key6-parent",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+      "sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80",
+      "role": "explicitly_requested_exact_current_draft_edit_target"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "role": "read_only_mascot_paper_layer_design_no_pose_replacement"
+    }
+  ],
+  "authorities": {
+    "mascot": "REF-016"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+      "sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80"
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+      "sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\사용자첨부.png",
+      "sha256": "E8B1CC3343771D50CD245D5B701C26090453740815BA912746BAD030A47AE9D4"
+    }
+  ],
+  "edit_authorization": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-55e4f89f49b84b948aa5091d.json",
+    "sha256": "0DA22957D75E3634191256FF28FFA8822DA0C11460DF460A7819C67B6FAB8B11",
+    "excerpt": "여기 보면 점프할 때 오른쪽 밑에 노란 파티클이 여기만 살짝 더 커지거든? 이것만 조금 줄이면 아주 부드러워질 것 같아."
+  },
+  "protected_parent": {
+    "artwork_id": "vitamin-jump-tuft-117",
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+    "sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80"
+  },
+  "parent_lineage": {
+    "source_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\원본\\빅타민_통일80키.png",
+    "source_sha256": "8CFA1FD98C63EFF8B06DBA9D0950391509E60D194C878B5881A16176BE245BA4",
+    "source_size": [
+      1122,
+      1402
+    ],
+    "native_cell_index_zero_based": 5,
+    "sheet_key_one_based": 6,
+    "pose": "clean:5 / jump rise",
+    "native_crop_box": [
+      719,
+      22,
+      823,
+      127
+    ],
+    "crop_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\점프키6_원본RGBA.png",
+    "crop_sha256": "C2B38E0CA4C0CB90B72A4FBF3CF629B88807B196E543AE28073BCFE25BF4DC80",
+    "crop_size": [
+      104,
+      105
+    ],
+    "mode": "RGBA",
+    "resampling": "none",
+    "decoded_pixels_equal": true,
+    "screenshot_mapping": "Native lower-left becomes screenshot lower-right under facing=-1 horizontal flip.",
+    "explicit_region_local_box": [
+      0,
+      69,
+      35,
+      105
+    ],
+    "semantic_edit": "Only protruding yellow rectangular paper tuft and its existing attachment, not adjacent white sheets.",
+    "source_114_immutable": true,
+    "user_approval": false
+  },
+  "preservation_mode": "outside_explicit_parent_regions",
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-점프노란조각교정117\\고정입력\\명시편집영역.png",
+    "sha256": "36DB268A1070B465959D5D57BBC987E62C2D639C103806650D96AB0F850B3A8E",
+    "mode": "L",
+    "box": [
+      0,
+      69,
+      35,
+      105
+    ]
+  },
+  "edit_scope": [
+    "노란 하단왼쪽 종이 tuft의 돌출 크기를 살짝 축소, 기존 뿌리와 연결 유지"
+  ],
+  "protected_scope": [
+    "명시 영역 밖 부모 RGBA 전부",
+    "명시 영역 안의 이웃 흰 종이와 몸 연결 최대 보존",
+    "얼굴·눈·입·네모 볼·두 귀·몸체 크기·기울기·다른 키·새 행동"
+  ],
+  "implementation_size_choice": {
+    "scale_goal": 0.85,
+    "basis": "Producer approximation of user 조금; not user-specified numeric measurement or certification."
+  },
+  "scope_limit": "Single generation, no automatic specialist review/retry/post-repair review; show result once.",
+  "generator_observations": {
+    "source": "Opened exact114 whole sheet, fullkey crop, user attachment and REF-016. The yellow lower-left corner is attached overlapping paper, not a free effect particle.",
+    "source_original_limit": "REF-016 is low resolution front diagram; no hidden3D claim.",
+    "state": "PREFLIGHT_ONLY_NO_GENERATION_OR_VISUAL_APPROVAL"
+  },
+  "prompt_budget_words": 450,
+  "actual_prompt_words": 213,
+  "actual_visual_inputs": 2
+}
