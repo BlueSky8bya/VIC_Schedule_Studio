@@ -1,6 +1,6 @@
 # 108 — 집 라디오·옷장 미리보기·음식 형태
 
-2026-10-18 KST. Current implementation evidence; production remains pending until the exact deployed revision is checked.
+2026-10-18 KST. Deployed revision `9f97982cc67972fe6e277640d8cc5519486c15fa` verified. Post-release evidence is local bookkeeping; no extra deployment is needed for this record alone.
 
 ## Result and boundaries
 
@@ -46,7 +46,8 @@ No genuine-user preference reset, collection grant or production schedule edit i
 | Food/source checks |60same-source comparisons,16asset units,106/107/108 reproducibility checks PASS; original receipts/native bytes retained |
 | Independent review | Art/shape, UI/runtime, radio pipeline and fixed-target privacy review complete; reported P2findings corrected |
 | Final production-fixture interactions |51/51 PASS on final build `L6BToox6wi3oSekYDh0U4`: runtime9 + UI42. Known OS-window case remains separately unverified; prior candidate failures/corrected runs are separate |
-| Actual deployed revision/UI | Pending authorized scoped push and exact deployed SHA verification |
+| Remote release gates | [quality39109939385](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39109939385), all13steps PASS; Vercel successful |
+| Actual deployed revision/UI | Full `9f97982cc67972fe6e277640d8cc5519486c15fa` confirmed by production; guarded anonymous radio/wardrobe/house rendered interactions and asset bytes PASS |
 
 One OS-window visibility scenario is currently environment-unverified: native tab fronting/minimization, including removal of Playwright's default forced-focus emulation, still reported `document.hidden=false`. No visibility field, RNG or clock was patched to obtain a pass. The real preview effect is separately exercised in five unit-harness cancellation cases for RAF, rest timeout, stale callbacks, hidden late decoding, reduced mode and disposal/OFF. These are unit evidence, not a successful native minimized-window measurement.
 
@@ -55,3 +56,19 @@ Final runtime9 evidence is under `.scratch-pw/companion-108-runtime-final/`. The
 Final UI42 is `.scratch-pw/companion-108-ui-final-report.json`, all42 passed with zero retries/failures/skips on that same final build. It combines16 new cases (radio4/wardrobe12) with26 existing traits/habits/discovery/sound cases. The standalone OS-window scenario is explicitly excluded from this pass count. Initial tests exposed pre-dialog active-time persistence arriving after the old baseline, random-rest sampling and old no-button assumptions; corrected tests wait for the real existing flush, explicitly press the real replay button and check absence of equip controls. They retain exact collection equality, real wall time and existing safety guards. Whole-viewport radio/wardrobe light/dark/narrow screenshots and native92 reaction crops were directly inspected.
 
 The staged scope contains86 authorized paths. Sixty-one native/audio/receipt files, including106/107 sources and the publisher's original license, match their pinned/raw hashes with zero drift. Unrelated user art notes, raw attachments, private generation receipts and earlier drafts are excluded.
+
+## Deployed checks
+
+The exact pushed SHA is returned by `/api/soop-live`. Public clock is200/no-store, warm is204, anonymous developer presence is401/error-only/no-store. The production fixture route renders its404 fallback (HTTP streaming status may be200); fixture content is not exposed. Evidence: `.scratch-pw/companion-108/deployed-canaries.json`.
+
+A fresh anonymous production browser, protected by the existing WebDriver analytics guard and an additional abort of every POST/PUT/PATCH/DELETE, opens the actual settings, selects all32 playlist rows, requests one real recording with206 and explicitly stops. No recording is requested before playback. The actual wardrobe paints neutral preview, keeps undiscovered accessories/actions concealed and disables replay with no discoveries. House radio is present, and deployed Korean 삼각김밥 bytes match the local derived asset. Page errors and attempted unknown writes are zero. Production screenshots/results: `.scratch-pw/companion-108/production/`.
+
+Final settled-screen review caught one CSS defect after those behavioral checks: `.vic-settings .rhh-link` is more specific than the new mood/action child selectors, so six radio buttons render32px rather than intended44px, and mood pills inherit10px corners. A shared-scoped selector correction and actual physical-target assertions follow below. The wardrobe thumb itself is correct: it aligns with 옷장 after its existing.5s spring settles. Initial screenshots captured the transition and loading silhouettes; the deployed harness now waits for real finite transitions, with no clock/style patch.
+
+The first deployed harness run misclassified an initial POST read as a write: the deployed public chunk identifies it as `getAnonHeartIdsAction`, a read-only saved-heart restoration. It stayed aborted throughout. The corrected harness names only that exact deployed read and still blocks all POSTs, retains unknown-write assertions and changes no app state. This was a test classification correction, not a product mutation or a suppressed failure. No genuine user browser preferences, care, collection, schedule or permissions were changed. Current authenticated studio/preview behavior is covered by the final local production-fixture matrix; this deployed browser check is anonymous and does not establish genuine-login/RLS evidence.
+
+## Radio target follow-up
+
+Only two product selectors gain `.vic-settings`: radio mood buttons and playback buttons. Their specificity now exceeds the shared32px/radius10px rule. Declarations, shared metallic material, selected-mood colors, food, audio pipeline and world runtime are unchanged. An independent read-only review finds no remaining P1/P2.
+
+Follow-up build `0-Iz9tEa7Wd6lmWkH9hFp` passes the full229unit files/2,391tests, typecheck, lint, build and harness277. Targeted native16/16 PASS, zero failures/retries/skips,160.8s: radio4 plus wardrobe12. Each of viewer/studio/preview now checks all6actual screen targets are at least44px and mood corners are pills. Settled light/dark screenshots were directly reviewed. Evidence: `.scratch-pw/companion-108-ui-followup-report.json` (SHA256 `7A95E2B1DFFC8C344CEF81D943925F19FDF5F857C922873F121F53AA207B2B1B`) and `companion-108-ui-followup-results`. Known native hidden-window1 stays excluded/unverified. Earlier51 remain evidence for9f97982c, not16additional current-build cases. Follow-up authorized push and exact deployed checks are pending.

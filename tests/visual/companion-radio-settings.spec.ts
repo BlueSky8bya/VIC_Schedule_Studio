@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
@@ -44,11 +44,26 @@ async function openRadio(page: Page) {
 }
 const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!), COMPANION_RADIO_PREFERENCES_KEY);
 
+async function assertRadioButtonGeometry(radio: Locator) {
+  const buttons = radio.locator(".rhh-radio-moods > button, .rhh-radio-actions > button");
+  await expect(buttons).toHaveCount(6);
+  for (const button of await buttons.all()) {
+    await expect(button).toHaveCSS("min-height", "44px");
+    const geometry = await button.evaluate(element => {
+      const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+      return { label: element.textContent, width: rect.width, height: rect.height, radius: parseFloat(style.borderTopLeftRadius), mood: element.parentElement?.classList.contains("rhh-radio-moods") };
+    });
+    expect(geometry.height, `${geometry.label}: physical target height, including inherited studio zoom`).toBeGreaterThanOrEqual(44);
+    if (geometry.mood) expect(geometry.radius, `${geometry.label}: pill radius`).toBeGreaterThanOrEqual(Math.min(geometry.width, geometry.height) / 2);
+  }
+}
+
 for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}: radio list edits stay local and persist, playback is explicit`, async ({ page, context }) => {
   const safety = await fixture(page);
   await page.goto(surface === "viewer" ? "/visual-fixture/poster" : "/visual-fixture/studio?role=owner&y=2025&m=11");
   if (surface === "preview") { await settlePanelLayout(page); await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
   let { radio } = await openRadio(page);
+  await assertRadioButtonGeometry(radio);
   expect(COMPANION_RADIO_TRACKS.length).toBeGreaterThanOrEqual(32);
   expect(safety.musicRequests).toEqual([]);
   await radio.getByText("곡 고르기", { exact: false }).click();
