@@ -10,7 +10,7 @@ const earned = (life = fresh(), event: CompanionLifeExperience = { kind: "petted
 describe("bounded device-local companion life", () => {
   it("draws one initial favorite and normalizes/resets without drawing again", () => {
     const rng = vi.fn(() => .7), life = createCompanionLife(rng);
-    expect(rng).toHaveBeenCalledTimes(1); expect(life.favoriteFood).toBe("pumpkin");
+    expect(rng).toHaveBeenCalledTimes(1); expect(life.favoriteFood).toBe("sandwich");
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(life)))).toEqual(life);
     const reset = resetCompanionLife(earned(life), 3);
     expect(reset.seedFood).toBe(life.seedFood); expect(reset.favoriteFood).toBe(life.seedFood); expect(reset.generation).toBe(3);
@@ -40,6 +40,15 @@ describe("bounded device-local companion life", () => {
     for (const kind of LEGACY_COMPANION_FOOD_KINDS) { expect(migrated.foodScores[kind]).toBe(foodScores[kind]); expect(migrated.familiarity[kind]).toBe(familiarity[kind]); }
     expect(Object.keys(migrated.foodScores)).toEqual([...COMPANION_FOOD_KINDS]); expect(migrated.foodScores.carrot).toBeLessThanOrEqual(.42);
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(migrated)))).toEqual(migrated);
+  });
+
+  it("adds the new24 foods without replacing an existing36-food seed or low earned favorite", () => {
+    const oldFoods = COMPANION_FOOD_KINDS.slice(0, 36), foodScores = Object.fromEntries(oldFoods.map(food => [food, food === "sweet-potato" ? .39 : .2])), familiarity = Object.fromEntries(oldFoods.map((food, index) => [food, index / 100]));
+    const life = normalizeCompanionLife({ ...fresh(), seedFood: "dragon-fruit", favoriteFood: "sweet-potato", foodScores, familiarity });
+    expect(life.seedFood).toBe("dragon-fruit"); expect(life.favoriteFood).toBe("sweet-potato");
+    for (const food of oldFoods) { expect(life.foodScores[food]).toBe(foodScores[food]); expect(life.familiarity[food]).toBe(familiarity[food]); }
+    for (const food of COMPANION_FOOD_KINDS.slice(36)) { expect(life.foodScores[food]).toBeLessThanOrEqual(.39); expect(life.familiarity[food]).toBe(0); }
+    expect(normalizeCompanionLife(JSON.parse(JSON.stringify(life)))).toEqual(life);
   });
 
   it("diminishes repeated-food reward and recovers a food accident through active time", () => {

@@ -3,6 +3,7 @@ import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY, createCompanionCollec
 import { advanceCompanionGifts, COMPANION_ACCESSORY_IDS, COMPANION_GIFT_ACTIVE_MS, normalizeCompanionGifts } from "@/lib/ui/viewer-companion/gifts";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_SITUATION_IDS, companionRunContactSituation, observedCompanionSituation, type CompanionSituationObservation } from "@/lib/ui/viewer-companion/moments";
 
 afterEach(() => vi.unstubAllGlobals());
 const observation = (patch: Partial<CompanionBehaviorObservation> = {}): CompanionBehaviorObservation => ({ requestedRow: 34, requestedIndex: 513, adoptedIndex: 513, requestedSrc: "/companion/hd/victamin-episodes-104-v1.webp", adoptedSrc: "/companion/hd/victamin-episodes-104-v1.webp", decoded: true, visible: true, ...patch });
@@ -19,7 +20,7 @@ describe("bounded local discoveries", () => {
     expect(normalized.foods).toEqual(COMPANION_FOOD_KINDS); expect(normalized.behaviors).toEqual(COMPANION_BEHAVIOR_IDS);
     expect(normalized.gifts.unlocked).toEqual(COMPANION_ACCESSORY_IDS); expect(normalized.gifts.equipped).toBe("satchel"); expect(normalized.gifts.pending).toBeNull();
     expect(normalized.gifts.activeMs).toBe(0); expect(normalized.gifts.interactionCredit).toBe(0);
-    expect(JSON.stringify(normalized)).not.toContain("canary"); expect(source.foods).toHaveLength(73);
+    expect(JSON.stringify(normalized)).not.toContain("canary"); expect(source.foods).toHaveLength(COMPANION_FOOD_KINDS.length * 2 + 1);
   });
 
   it("records food only after actual consumption, once per known food", () => {
@@ -70,7 +71,7 @@ describe("earned gifts and explicit equipment", () => {
     expect(normalizeCompanionGifts({ activeMs: -4, equipped: "beret", pending: "sunglasses", unlocked: ["sunglasses"] })).toEqual({ activeMs: 0, interactionCredit: 0, equipped: null, pending: null, unlocked: ["sunglasses"] });
   });
 
-  it("unlocks each of six keepsakes only on opening and never auto-equips", () => {
+  it("unlocks each of twelve keepsakes only on opening and never auto-equips", () => {
     const store = createCompanionCollectionStore();
     expect(store.openGift()).toBeNull(); expect(store.equip("sunglasses")).toBe(false);
     for (const id of COMPANION_ACCESSORY_IDS) {
@@ -144,5 +145,43 @@ describe("earned gifts and explicit equipment", () => {
     entries.clear(); target.dispatchEvent(Object.assign(new Event("storage"), { key: null, newValue: null }));
     expect(one).toHaveBeenCalledTimes(5); expect(two).toHaveBeenCalledTimes(5); expect(loadCompanionCollection().foods).toEqual([]);
     stopOne(); stopTwo(); recordCompanionConsumedFood("apple", true); expect(one).toHaveBeenCalledTimes(5); expect(two).toHaveBeenCalledTimes(5);
+  });
+});
+
+describe("separate witnessed situations and additive107 migration", () => {
+  const seen = (patch: Partial<CompanionSituationObservation> = {}): CompanionSituationObservation => ({ id: "food-trip", occurred: true, visible: true, decoded: true, requestedIndex: 320, adoptedIndex: 320, requestedSrc: "/actual.webp", adoptedSrc: "/actual.webp", ...patch });
+  it("preserves the actual food contact and requires running for the running-specific stamp", () => {
+    expect(companionRunContactSituation({ cause: "food", foodPresent: true, running: true })).toBe("food-trip");
+    expect(companionRunContactSituation({ cause: "food", foodPresent: false, running: true })).toBeUndefined();
+    expect(companionRunContactSituation({ cause: "stumble", foodPresent: false, running: true })).toBe("run-tumble");
+    expect(companionRunContactSituation({ cause: "stumble", foodPresent: true, running: false })).toBeUndefined();
+  });
+  it("keeps the original food/behavior/first six ownership choices without inventing history", () => {
+    const old = { version: 1, foods: ["sweet-potato", "potato", "dragon-fruit"], behaviors: ["tumble"], gifts: { pending: "satchel", unlocked: ["sunglasses", "beret", "bow", "star-pin", "flower-crown"], equipped: "beret", activeMs: 12345, interactionCredit: 1 } };
+    const normalized = normalizeCompanionCollection(old);
+    expect(normalized.foods).toEqual(["dragon-fruit", "sweet-potato", "potato"]); expect(normalized.behaviors).toEqual(["tumble"]); expect(normalized.situations).toEqual([]); expect(normalized.gifts).toEqual(old.gifts);
+    const next = normalizeCompanionCollection({ ...old, situations: [...COMPANION_SITUATION_IDS, "private-canary", ...COMPANION_SITUATION_IDS] });
+    expect(next.situations).toEqual(COMPANION_SITUATION_IDS); expect(JSON.stringify(next)).not.toContain("canary");
+    expect(COMPANION_ACCESSORY_IDS.slice(0, 6)).toEqual(["sunglasses", "beret", "bow", "star-pin", "flower-crown", "satchel"]);
+    expect(COMPANION_ACCESSORY_IDS).toHaveLength(12);
+  });
+  it("records an explicit gift opening even while the world is paused, never from seeded ownership alone", () => {
+    const store = createCompanionCollectionStore(storageFixture({ version: 1, foods: [], behaviors: [], gifts: { pending: "pixel-sunglasses", unlocked: ["sunglasses"], equipped: "sunglasses" } }));
+    expect(store.load().situations).toEqual([]); expect(store.openGift()).toBe("pixel-sunglasses");
+    expect(store.load().situations).toEqual(["gift-opened"]); expect(store.load().gifts.equipped).toBe("sunglasses");
+    expect(store.openGift()).toBeNull(); expect(store.load().situations).toEqual(["gift-opened"]);
+  });
+  it("requires the actual occurrence and a visible exact decoded adoption, never a requested fallback", () => {
+    expect(observedCompanionSituation(seen())).toBe("food-trip");
+    for (const patch of [{ occurred: false }, { visible: false }, { decoded: false }, { adoptedIndex: 0 }, { adoptedSrc: "/idle.webp" }, { requestedSrc: "", adoptedSrc: "" }, { requestedIndex: -1, adoptedIndex: -1 }, { id: "private-canary" as "food-trip" }]) expect(observedCompanionSituation(seen(patch))).toBeUndefined();
+    const storage = storageFixture(), listener = vi.fn(), store = createCompanionCollectionStore(storage, () => 0, listener);
+    expect(store.recordSituation(seen({ occurred: false }))).toBe(false); expect(storage.setItem).not.toHaveBeenCalled();
+    expect(store.recordSituation(seen())).toBe(true); storage.getItem.mockClear();
+    for (let sample = 0; sample < 500; sample++) expect(store.recordSituation(seen())).toBe(false);
+    expect(storage.getItem).not.toHaveBeenCalled(); expect(storage.setItem).toHaveBeenCalledTimes(1); expect(listener).toHaveBeenCalledTimes(1);
+    expect(store.load().foods).toEqual([]); expect(store.load().behaviors).toEqual([]); expect(store.load().situations).toEqual(["food-trip"]);
+    expect(JSON.parse(storage.read()!).situations).toEqual(["food-trip"]);
+    for (const id of COMPANION_SITUATION_IDS) store.recordSituation(seen({ id }));
+    expect(store.load().situations).toEqual(COMPANION_SITUATION_IDS);
   });
 });

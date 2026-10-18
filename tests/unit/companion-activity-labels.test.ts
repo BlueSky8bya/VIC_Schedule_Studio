@@ -6,7 +6,8 @@ import { buildGist, buildStory, type NarrativeItem } from "@/lib/activity/narrat
 const TOGGLES = [
   "companion-enabled", "companion-roam", "companion-jump", "companion-sleep",
   "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-panel-prank",
-  "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled"
+  "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled",
+  "companion-sound-enabled", "companion-sound-care", "companion-sound-motion", "companion-sound-keepsakes"
 ] as const;
 const SETTINGS = [
   "settings-companion-tab", ...TOGGLES, "companion-speed", "companion-animal", "companion-personality", "companion-learning-reset"
@@ -19,12 +20,20 @@ const ACTIONS = [
 ] as const;
 const COLLECTION = [
   ["companion-profile-page#together", "빅타민 프로필 보기 · 함께 지내기"],
-  ["companion-profile-page#discover", "빅타민 프로필 보기 · 발견 도감"],
-  ["companion-profile-page#dress", "빅타민 프로필 보기 · 꾸미기"],
-  ["companion-collection-category#food", "빅타민 발견 도감 종류 · 먹거리"],
-  ["companion-collection-category#behavior", "빅타민 발견 도감 종류 · 행동"],
-  ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 먹거리"],
-  ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 행동"],
+  ["companion-profile-page#discover", "빅타민 프로필 보기 · 도감"],
+  ["companion-profile-page#dress", "빅타민 프로필 보기 · 옷장"],
+  ["companion-collection-category#food", "빅타민 도감 종류 · 냠냠 도감"],
+  ["companion-collection-category#behavior", "빅타민 도감 종류 · 재롱"],
+  ["companion-collection-category#moment", "빅타민 도감 종류 · 특별한 순간"],
+  ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 냠냠 도감"],
+  ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 재롱"],
+  ["companion-collection-inspect#moment", "빅타민 도감 항목 살펴보기 · 특별한 순간"],
+  ["companion-sound-enabled#on", "빅타민 효과음 · 켜기"],
+  ["companion-sound-volume", "빅타민 음량"],
+  ["companion-sound-care#off", "빅타민 돌보기 소리 · 끄기"],
+  ["companion-sound-motion#on", "빅타민 움직임 소리 · 켜기"],
+  ["companion-sound-keepsakes#off", "빅타민 발견·선물 소리 · 끄기"],
+  ["companion-sound-preview#motion", "빅타민 소리 미리 듣기 · 움직임"],
   ["companion-accessory-select", "빅타민 장신구 살펴보기"],
   ["companion-gift-open", "빅타민 선물 열기"],
   ["companion-accessory-equip#on", "빅타민 장신구 · 착용하기"],
@@ -83,6 +92,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       ["settings-companion-tab#pranks", "빅타민 설정 묶음 · 장난"],
       ["settings-companion-tab#affection", "빅타민 설정 묶음 · 교감"],
       ["settings-companion-tab#personality", "빅타민 설정 묶음 · 프로필"],
+      ["settings-companion-tab#sound", "빅타민 설정 묶음 · 소리"],
       ["companion-speed#relaxed", "빅타민 걸음 · 느긋하게"],
       ["companion-speed#normal", "빅타민 걸음 · 보통"],
       ["companion-speed#lively", "빅타민 걸음 · 발랄하게"],
@@ -119,7 +129,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       expect(story).toContain(name);
     }
     expect(story).not.toContain("companion-");
-    expect(buildGist(items)).toBe("빅타민 설정 11번 사용 · 빅타민과 1번 상호작용");
+    expect(buildGist(items)).toBe("빅타민 설정 19번 사용 · 빅타민과 1번 상호작용");
   });
 
   it("신규 버튼은 실제 음식·행동·장신구·선물 ID와 미등록/전역 옵션을 저장하지 않는다", () => {

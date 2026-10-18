@@ -47,6 +47,8 @@ export type CompanionAction = {
   /** Finite local performance; its target remains the occupied real support. */
   play?: CompanionPlay;
   living?: CompanionLivingKind;
+  /** An equipped prop's finite gesture on this same stable support. */
+  accessory?: import("./gifts").CompanionAccessoryId;
   cozySettled?: boolean;
   /** Remaining transient place-memory window; never a persisted timestamp. */
   placeCheckMs?: number;

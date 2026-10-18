@@ -12,6 +12,7 @@ import { companionAttentionPoint, deliberateCompanionAction } from "@/lib/ui/vie
 import { advanceBrain, cancelCompanionTravelGoal, commitAction, createBrain, getAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_THROW_LIMITS, createCompanionThrow, createCompanionThrowVelocity, stepCompanionThrow, type CompanionThrowState, type CompanionThrowVelocity } from "@/lib/ui/viewer-companion/throw";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { companionWorldPreferencesKey } from "@/lib/ui/viewer-companion/preferences";
 import { createCompanionGeometryIdentity, observeCompanionPlatforms, type CompanionGeometrySubscription } from "@/lib/ui/viewer-companion/geometry";
 import { COMPANION_DETAIL_EVENT, collectCompanionHideTargets, type CompanionDetailNotice, type CompanionHideTarget } from "@/lib/ui/viewer-companion/hide-targets";
 import { createCompanionHideSeek } from "@/lib/ui/viewer-companion/hide-seek";
@@ -25,6 +26,9 @@ import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
 import { companionSofaDepth, companionSofaRelease, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
 import { projectCompanionSofaBody, projectCompanionSpritePoint } from "@/lib/ui/viewer-companion/sofa-pose";
 import { createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
+import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isCompanionHat, sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
+import { playCompanionSound, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
+import { companionRunContactSituation, type CompanionSituationId } from "@/lib/ui/viewer-companion/moments";
 import { COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { advanceCompanionMealWait, projectCompanionMouth } from "@/lib/ui/viewer-companion/mouth";
 import { COMPANION_FEED_RETRY_MS, rememberCompanionOutcomes } from "@/lib/ui/viewer-companion/planner";
@@ -34,7 +38,7 @@ import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
 import { learnCompanionHabits, type CompanionExperience } from "@/lib/ui/viewer-companion/habits";
 import { experienceCompanionLife, type CompanionLifeExperience } from "@/lib/ui/viewer-companion/life";
-import { advanceCompanionCollection, equipCompanionAccessory, flushCompanionCollection, loadCompanionCollection, openCompanionGift, recordCompanionConsumedFood, recordCompanionGiftInteraction, recordCompanionObservedBehavior, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { advanceCompanionCollection, equipCompanionAccessory, flushCompanionCollection, loadCompanionCollection, openCompanionGift, recordCompanionConsumedFood, recordCompanionGiftInteraction, recordCompanionObservedBehavior, recordCompanionObservedSituation, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel } from "@/lib/ui/viewer-companion/motion";
 import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
@@ -57,7 +61,6 @@ import { COMPANION_CARD_PLAY_EVENT, createCompanionCardPlay } from "@/lib/ui/vie
 import { requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
 import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
-import { playSfx } from "@/lib/ui/sfx";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import { CompanionCollectionArt } from "./companion-collection-art";
 import { CompanionBedForeground, CompanionHome, type CompanionHomeAction } from "./companion-home";
@@ -77,6 +80,9 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
  * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
 export default function ViewerCompanion({ root, preferences, blocked, overlayOpen, workspaceBusy = false, agenda, monthKey, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory }: Props) {
+  const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
+  // Audio sliders do not restart geometry, the brain or decoded body owners.
+  const worldPreferencesKey = companionWorldPreferencesKey(preferences);
   const actorId = useId();
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
@@ -84,6 +90,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const accessoryBack = useRef<HTMLSpanElement>(null), accessoryFront = useRef<HTMLSpanElement>(null), giftProp = useRef<HTMLSpanElement>(null), giftButton = useRef<HTMLButtonElement>(null);
   const wardrobe = useRef<{ equipped: CompanionAccessoryId | null; pending: CompanionAccessoryId | null }>({ equipped: null, pending: null });
   const refreshWardrobe = useRef<() => void>(() => {});
+  const situationSink = useRef<(id: CompanionSituationId) => void>(() => {});
   const [pendingGift, setPendingGift] = useState<CompanionAccessoryId | null>(null), [openedGift, setOpenedGift] = useState<CompanionAccessoryId | null>(null);
   const contact = useRef<HTMLSpanElement>(null);
   const inertia = useRef<HTMLSpanElement>(null);
@@ -121,7 +128,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       wardrobe.current = { equipped: null, pending: null }; setPendingGift(null); setOpenedGift(null); refreshWardrobe.current(); return;
     }
     const read = (value: ReturnType<typeof loadCompanionCollection>) => {
+      const prior = wardrobe.current;
       wardrobe.current = { equipped: value.gifts.equipped, pending: value.gifts.pending };
+      if (value.gifts.pending && prior.pending !== value.gifts.pending) situationSink.current("gift-arrival");
       setPendingGift(value.gifts.pending); setOpenedGift(current => current && value.gifts.unlocked.includes(current) ? current : null); refreshWardrobe.current();
     };
     read(loadCompanionCollection());
@@ -177,6 +186,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-premiere")); }, [premiereCue?.generation, premiereCue?.phase, premiereCue?.target, premiereCue?.exit?.token, premiereItemsKey]);
 
   useEffect(() => {
+    void worldPreferencesKey;
+    const preferences = preferencesRef.current;
     const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current, inertiaLayer = inertia.current;
     if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !inertiaLayer || !preferences.enabled) return;
     if (blocked) { el.hidden = true; setSuspended(true); setHomeExpanded(false); return; }
@@ -464,8 +475,17 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let paintedTexture = image.querySelector<HTMLImageElement>(".vc-texture");
     let paintedRegistration: { x: number; y: number; clip: readonly number[] } | undefined;
     let paintedSelection: ReturnType<typeof selectCompanionSprite> | undefined;
+    const pendingSituations = new Map<CompanionSituationId, { rows?: readonly number[]; expires: number; actionAt?: number }>();
+    let pendingCue: CompanionSoundMoment | undefined;
+    const queueSituation = (id: CompanionSituationId, rows?: readonly number[], actionAt?: number) => pendingSituations.set(id, { rows, actionAt, expires: performance.now() + 12000 });
+    situationSink.current = id => { queueSituation(id); };
+    if (wardrobe.current.pending) queueSituation("gift-arrival");
+    let accessoryReadyAt = brain.current.activeMs + 6000, lastEquipped = wardrobe.current.equipped, accessoryWitnessed = 0, accessoryLanded = false;
     const wardrobePainter = accessoryBack.current && accessoryFront.current && giftProp.current ? createCompanionAccessoryPainter({ back: accessoryBack.current, front: accessoryFront.current, gift: giftProp.current }) : undefined;
-    refreshWardrobe.current = () => { wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending)); };
+    refreshWardrobe.current = () => {
+      if (lastEquipped !== wardrobe.current.equipped) { lastEquipped = wardrobe.current.equipped; accessoryReadyAt = brain.current.activeMs + 6000; }
+      wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending));
+    };
     let mealAnchored = false, mealWaited = 0;
     // A controller restart does not discard its live drawing or registration
     // while the next action warms. Only the presentation lifetime releases it.
@@ -509,6 +529,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         el.toggleAttribute("data-dreaming", dozing);
       }
       lastPoseSample = { row, frame, status };
+      if (!action?.accessory) { el.removeAttribute("data-accessory-trick"); el.removeAttribute("data-accessory-beat"); }
       // Cursor presence belongs to a valid hover, not the pressure/reward
       // envelopes. Existing paints also release it when the world moves away.
       if (hoverPoint && (!canHover(hoverPoint) || !hoverTarget?.isConnected || isOtherControl(hoverTarget))) stopHover();
@@ -578,6 +599,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         shape.scaleX *= 1 + play.compression * .5; shape.scaleY *= 1 - play.compression;
         if ((action?.play === "dizzy" || action?.play === "tumble" || action?.play === "slip-tumble") && play.beat === "recover") Object.assign(shape, boundCompanionHangingPose(shape, physicalOrigin, { x: displayFrame.size / 2, y: displayFrame.size }, displayFrame.size, { width: innerWidth, height: innerHeight }, { tilt: 0, stretch: 0 }));
       }
+      const accessoryMotion = action?.accessory && status === "look" && action.accessory === wardrobe.current.equipped ? sampleCompanionAccessoryMotion(action.accessory, performance.now() - began) : undefined;
+      if (accessoryMotion) {
+        shape.bob -= accessoryMotion.bodyLift; shape.tilt += accessoryMotion.bodyLean;
+        shape.scaleX *= 1 + accessoryMotion.squash * .5; shape.scaleY *= 1 - accessoryMotion.squash;
+      }
       if (neutralVerticalRecovery) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
       style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${(1 - sway.stretch * .35).toFixed(4)},${(1 + sway.stretch).toFixed(4)})`);
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off" || neutralVerticalRecovery);
@@ -641,9 +667,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         paintedRegistration = cell;
         paintedSelection = selected;
       }
-      recordCompanionObservedBehavior({ requestedRow: drawingRow, requestedIndex: selected.physicalIndex, adoptedIndex: paintedSelection?.physicalIndex, requestedSrc: selected.src, adoptedSrc: paintedSelection?.src,
+      const observed = { requestedRow: drawingRow, requestedIndex: selected.physicalIndex, adoptedIndex: paintedSelection?.physicalIndex, requestedSrc: selected.src, adoptedSrc: paintedSelection?.src,
         decoded: Boolean(paintedTexture?.complete && paintedTexture.naturalWidth && paintedTexture.parentElement === image && paintedTexture.getAttribute("src") === selected.src),
-        visible: !el.hidden && !document.hidden && displayOpacity > .05 });
+        visible: !el.hidden && !document.hidden && displayOpacity > .05 };
+      let discovered = recordCompanionObservedBehavior(observed), giftDiscovered = false;
       const projection = { size, display, shape, pressure, response, facing: sample.facing, sway, chew,
         poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
         inertiaOrigin: grip };
@@ -659,17 +686,28 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (shadow.current) {
         const progress = action ? clamp((performance.now() - began) / total, 0, 1) : 0;
         const ground = playFalling ? action!.target.y : action?.kind === "jump" ? lerp(origin.y, action.target.y, progress) : supportById(support)?.y ?? y;
-        const altitude = Math.max(0, ground - y - response.lift), scale = clamp(1 - altitude / 260, .35, 1);
+        const altitude = Math.max(0, ground - y - response.lift + (accessoryMotion?.bodyLift ?? 0)), scale = clamp(1 - altitude / 260, .35, 1);
         style(shadow.current, "transform", `translate3d(0,${Math.max(0, ground - y).toFixed(2)}px,0) scale(${scale.toFixed(3)})`);
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = !paintedCell;
-      const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending));
+      const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending), accessoryMotion?.accessory);
+      if (accessoryMotion && wardrobePainter?.accessoryReady() && observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && accessoryFront.current && !accessoryFront.current.hidden) accessoryWitnessed |= accessoryMotion.phase === "show" ? 2 : accessoryMotion.phase === "settle" ? 4 : 0;
+      for (const [id, pending] of pendingSituations) {
+        if (performance.now() > pending.expires || pending.actionAt !== undefined && pending.actionAt !== began) { pendingSituations.delete(id); continue; }
+        if (pending.rows && !pending.rows.includes(drawingRow) || id === "gift-arrival" && (!giftPoint || !wardrobePainter?.giftReady() || giftPoint.behind || giftProp.current?.hidden) || id === "accessory-trick" && (!wardrobe.current.equipped || !wardrobePainter?.accessoryReady() || accessoryFront.current?.hidden)) continue;
+        if (observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc) {
+          const first = recordCompanionObservedSituation({ ...observed, id, occurred: true });
+          discovered = first || discovered; giftDiscovered ||= first && id === "gift-arrival";
+          pendingSituations.delete(id);
+        }
+      }
+      if (discovered || pendingCue) { const cue = giftDiscovered ? "gift" : discovered ? "discover" : pendingCue!; pendingCue = undefined; if (observed.visible) playCompanionSound(cue, preferencesRef.current); }
       if (wardrobe.current.equipped && paintedSelection) { data("accessory", wardrobe.current.equipped); data("accessoryPose", String(paintedSelection.physicalIndex)); }
       else { el.removeAttribute("data-accessory"); el.removeAttribute("data-accessory-pose"); }
       const giftHit = giftButton.current;
       if (giftHit) {
-        const point = giftPoint && !giftPoint.behind && paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, giftPoint) : null;
+        const point = giftPoint && wardrobePainter?.giftReady() && !giftPoint.behind && paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, giftPoint) : null;
         if (point && display.scale > 0) {
           style(giftHit, "left", `${((point.x - display.x) / display.scale + size / 2).toFixed(3)}px`);
           style(giftHit, "top", `${((point.y - display.y + size / 2) / display.scale + size / 2).toFixed(3)}px`);
@@ -800,7 +838,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
       return Boolean(dx || dy || bedMoved);
     };
-    const continuousMotion = () => Boolean(performance.now() < interactionUntil || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind));
+    const continuousMotion = () => Boolean(performance.now() < interactionUntil || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -956,11 +994,17 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       return true;
     };
     const supportedNow = () => { const p = supportById(support); return Boolean(p && Math.abs(y - p.y) <= 2 && x >= p.x && x <= p.x + p.width); };
+    const accessorySpace = (id: CompanionAccessoryId) => {
+      const occupied = supportById(support);
+      const headroom = Math.min(y, ...platforms.filter(p => p.id !== support && p.y < y - 2 && x + size / 2 > p.x && x - size / 2 < p.x + p.width).map(p => y - p.y));
+      return canStartCompanionAccessoryMotion({ id, roam: effective.roam, stable: supportedNow(), safe: Boolean(occupied && !occupied.manualOnly && !isHomeSupport(support) && !["hide", "control"].includes(occupied.kind ?? "")), headroom, edgeClearance: occupied ? Math.min(x - occupied.x, occupied.x + occupied.width - x) : 0, energy: brain.current.energy });
+    };
     const releaseHold = () => { resetInertia(); const held = pressed; pressed = null; keyboardHeld = false; if (held && button.hasPointerCapture(held.id)) button.releasePointerCapture(held.id); };
     const startRest = () => {
       const cozy = isHomeSupport(support) && !reduced && gfxMode() !== "off";
       action = { kind: "sleep", target: { x, y, platformId: support }, duration: 12000, ...(cozy ? { living: "cozy" as const } : {}) }; began = performance.now(); total = 12000;
       if (cozy) { data("living", "cozy"); spriteSources[35].forEach(src => requestSprite.current(src)); }
+      pendingCue = "sleep";
     };
     const wakeGuest = () => {
       if (!isDetailGuest()) return;
@@ -983,7 +1027,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       data("mood", "happy");
       // One deliberate reward, never pointermove audio. Both feedback buses
       // retain the app's master/category/volume/hidden-tab preferences.
-      hapticSuccess(); playSfx("hope");
+      queueSituation("petting-comfort", [9]); hapticSuccess(); pendingCue = "pet";
       publishCare(); setAnnouncement("빅타민이 쓰다듬기를 좋아해요. 조금 더 친해졌어요.");
       // Direct input acknowledges immediately, even when reduced-motion's
       // ambient pose loop sleeps for 400ms. Each new tap owns a fresh pulse.
@@ -1117,12 +1161,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       home: () => recallHome(),
       feed: () => {
         pendingHomeRecall = undefined;
+        if (action?.accessory) { clearAction(); nextDecision = performance.now(); }
         const kind = randomCompanionFood(lastFood.current); lastFood.current = kind;
         const slot = document.querySelector<HTMLElement>(".vc-dispenser-slot");
         const outlet = slot?.getBoundingClientRect();
         // Spill into the open tray left of the outlet. A selected snack must
         // never cover the button needed to dispense the next one.
         food.current?.spawn(kind, outlet ? { x: outlet.left - 40, y: outlet.bottom + 4 } : { x: x + size * .7, y }, slot ?? undefined);
+        if (food.current) playCompanionSound("feed", preferencesRef.current);
       },
       clearFood: () => { pendingHomeRecall = undefined; food.current?.clear(); },
     };
@@ -1145,6 +1191,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
     };
     const launch = (next: CompanionAction, now: number) => {
+      accessoryWitnessed = 0; accessoryLanded = false;
       verticalRecoveryX = undefined;
       let passage = sampleSofaRoute(next, { x, y }, .5);
       const sofaTransfer = next.kind === "jump" && (support === "companion-home" || next.target.platformId === "companion-home");
@@ -1228,6 +1275,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (runHop) for (const row of [4, 5]) spriteSources[row].forEach(src => requestSprite.current(src));
       }
       if (next.runUp) data("runUp", "positive");
+      if (next.kind === "play" && next.play) pendingCue = next.play === "dizzy" ? "dizzy" : ["tumble", "slip-tumble", "bump", "slip"].includes(next.play) ? "tumble" : "play";
+      else if (next.kind === "sleep") pendingCue = "sleep";
     };
     const waitForHomeGeometry = () => {
       if (!homeJourney) return;
@@ -1465,10 +1514,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // and user-opened detail bridge protect studio editing and data.
         hideCandidate = effective.ambientPrank && occupied?.kind === "card" && now - brain.current.createdAt >= 45000 ? collectCompanionHideTargets(page).find(target => target.element === source) : undefined;
         const world = { x, y, platformId: support, platforms: worldPlatforms, width: innerWidth, height: innerHeight, hideAvailable: Boolean(hideCandidate), foods: availableFood, pointer: pointer ? { ...pointer, stableMs: Math.max(0, now - pointerStableSince) } : undefined, animated: !reduced && gfxMode() !== "off" };
-        const chosen = getAction(brain.current, world, effective, now);
+        const equipped = wardrobe.current.equipped;
+        const safeTrick = equipped && effective.roam && wardrobePainter?.accessoryReady() && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && brain.current.activeMs >= accessoryReadyAt && !availableFood.length && brain.current.hunger < .75 && !brain.current.foodGoal && !brain.current.intention && !brain.current.episode && !returning && !pendingMonth && !reduced && !["off", "soft"].includes(gfxMode()) && (!isCompanionHat(equipped) || effective.jump)
+          && accessorySpace(equipped);
+        const chosen: CompanionAction = safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now);
+        if (safeTrick) { accessoryReadyAt = brain.current.activeMs + 45000; pendingCue = "play"; (isCompanionHat(equipped!) ? [3, 4] : [9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
         const chosenFood = availableFood.find(item => item.id === chosen.foodId);
         if (chosenFood) lastFoodPoint = { id: chosenFood.id, x: chosenFood.x, y: chosenFood.y };
-        launch(deliberateCompanionAction(brain.current, world, effective, chosen, !reduced && gfxMode() !== "off"), now);
+        launch(safeTrick ? chosen : deliberateCompanionAction(brain.current, world, effective, chosen, !reduced && gfxMode() !== "off"), now);
         if (hiding) { paint(14, 0, "hide"); schedule(); return; }
       }
       let row = 0, frame = 0, status = "idle";
@@ -1481,12 +1534,15 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             if (point === null || overlayActive || homeJourney || workspaceBusyRef.current || presence.phase !== "active" || reduced || gfxMode() === "off") runTrip = undefined;
             else if ((x - point) * (action.target.x < origin.x ? -1 : 1) >= 0) {
               const contact = runTrip; x = point; rememberMishapPlace();
+              const wasRunning = action.pace === "scoot";
               const trippedFood = liveFoods.find(item => item.id === contact.foodId);
               if (trippedFood) rememberLife({ kind: "food-mishap", food: trippedFood.kind });
               const reaction = action.episode ? companionEpisodeMishap(action, { x, y }, supportById(support), brain.current, now, preferences) : undefined;
               launch(reaction ?? { kind: "play", play: contact.play, target: { x, y, platformId: support }, duration: companionPlayDuration(contact.play), direction: action.direction, intention: brain.current.intention }, now);
               const contactPlay = reaction?.play ?? contact.play;
               data("trip", contact.cause); data("play", contactPlay); data("playBeat", "impact");
+              const situation = companionRunContactSituation({ cause: contact.cause, running: wasRunning, foodPresent: Boolean(trippedFood) });
+              if (situation) queueSituation(situation, [21, 24, 25], began);
               paint(sampleCompanionPlay(contactPlay, 0).row, 0, "play"); schedule(); return;
             }
           }
@@ -1562,6 +1618,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             if (t >= .25 && heartResult === null) {
               heartResult = !overlayActive && !workspaceBusyRef.current && action.effectPoint ? hearts.attemptAt(action.effectPoint) : "missing";
               if (heartResult === "blocked") brain.current = recordCompanionEvent(brain.current, "heart-blocked");
+              if (heartResult === "blocked") queueSituation("heart-blocked", [18], began);
               el.dataset.heartResult = heartResult;
               if (heartResult !== "missing") setAnnouncement(heartResult === "added" ? "빅타민이 보라 하트를 남겼어요. 관심 수에는 포함되지 않아요." : heartResult === "removed" ? "빅타민이 자기 보라 하트를 거두었어요." : "이미 있는 하트에 콩! 빅타민이 아쉬워해요.");
             }
@@ -1613,10 +1670,15 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
             playImpact = true; mishapUntil = now + 6500;
             if (!workspaceBusyRef.current && !reduced && gfxMode() !== "off" && !isHomeSupport(support)) {
               const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
-              if (preferences.cardPrank && node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node)) cardPlay.bump(node, paintedFacing);
+              if (preferences.cardPrank && node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node)) { cardPlay.bump(node, paintedFacing); queueSituation("card-bump", [21, 24, 25], began); }
               food.current?.jostle({ x, y }, 100);
             }
           }
+        } else if (action.kind === "look" && action.accessory) {
+          if (!effective.roam || action.accessory !== wardrobe.current.equipped || overlayActive || workspaceBusyRef.current || brain.current.foodGoal || liveFoods.length || !accessorySpace(action.accessory) || reduced || ["off", "soft"].includes(gfxMode())) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
+          const trick = sampleCompanionAccessoryMotion(action.accessory, age); row = trick.row; frame = trick.frame;
+          data("accessoryTrick", action.accessory); data("accessoryBeat", trick.phase);
+          if (!accessoryLanded && isCompanionHat(action.accessory) && p >= .6) { accessoryLanded = true; pendingCue = "land"; }
         } else if (action.kind === "look") { row = action.attention?.kind === "reconsider" ? 26 : 1; frame = p * 15; }
         else if (action.kind === "stretch") { row = 16; frame = p * 15; }
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
@@ -1627,10 +1689,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump") || brain.current.intention?.kind === "explore" && ["consider", "travel"].includes(brain.current.intention.stage) && brain.current.intention.remaining > 0);
           const eatenFood = action.kind === "eat" && action.foodId ? liveFoods.find(item => item.id === action!.foodId) : undefined;
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
-            if (eatenFood) recordCompanionConsumedFood(eatenFood.kind, true);
+            const firstFood = eatenFood && recordCompanionConsumedFood(eatenFood.kind, true);
+            queueSituation("meal-finished", [0, 9, 29]); pendingCue = firstFood ? "discover" : "eat";
             brain.current = recordCompanionEvent(brain.current, "ate"); if (!experience("fed", eatenFood?.kind)) persistCare(true);
             petUntil = now + (reduced ? 400 : 1100);
           }
+          if (completed.kind === "jump") pendingCue = "land";
+          if (completed.accessory && (accessoryWitnessed & 6) === 6 && wardrobe.current.equipped === completed.accessory) queueSituation("accessory-trick", [9]);
+          if (rested && isHomeSupport(support)) queueSituation("home-rested", [0, 9, 11, 12, 40]);
           if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
           if (completed.kind === "jump" && verticalLanding) verticalRecoveryX = undefined;
           let arrivalPlay: CompanionAction["play"] = undefined;
@@ -1665,12 +1731,13 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
           }
           if (restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
           if (nextHop) { launch(nextHop, now); row = 4; frame = 0; status = "jump"; }
-          if (episodeMishap) { rememberMishapPlace(); const trippedFood = liveFoods.find(item => item.id === episodeMishap.foodId); if (trippedFood) rememberLife({ kind: "food-mishap", food: trippedFood.kind }); launch(episodeMishap, now); const contact = sampleCompanionPlay(episodeMishap.play!, 0); row = contact.row; frame = 0; status = "play"; data("trip", "landing"); }
+          if (episodeMishap) { rememberMishapPlace(); const trippedFood = liveFoods.find(item => item.id === episodeMishap.foodId); if (trippedFood) rememberLife({ kind: "food-mishap", food: trippedFood.kind }); launch(episodeMishap, now); const contact = sampleCompanionPlay(episodeMishap.play!, 0); row = contact.row; frame = 0; status = "play"; data("trip", "landing"); queueSituation("landing-mishap", [21, 24, 25], began); }
           if (arrivalPlay) {
             rememberMishapPlace();
             // The actual completed run/landing owns this one contact. Start
             // its reaction now rather than pausing for another random choice.
             launch({ kind: "play", play: arrivalPlay, target: { x, y, platformId: support }, duration: companionPlayDuration(arrivalPlay), direction: completed.direction, intention: brain.current.intention?.kind === "explore" ? brain.current.intention : undefined }, now);
+            if (arrivalPlay !== "dizzy") queueSituation("landing-mishap", [21, 24, 25], began);
             shakenGroundColumn = shakenArrivalColumn;
             const contact = sampleCompanionPlay(arrivalPlay, 0);
             row = contact.row; frame = 0; status = "play";
@@ -2054,7 +2121,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         }
         armPrelude(); return;
       }
-      started = true; pause = next; setSuspended(next); if (next) { hideBed(); el.hidden = true; }
+      started = true; pause = next; setSuspended(next); if (next) { pendingCue = undefined; hideBed(); el.hidden = true; }
       if (pause) { if (isDetailGuest()) cancelGuestInput(); else releaseOverlayDrag(); }
       if (pause) { overlayPlacing = false; delete el.dataset.placing; }
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
@@ -2136,6 +2203,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // This layer precedes facing, so horizontal turns never mirror inertia.
       // A new hand owns a fresh grip, not the previous release's spring tail.
       resetInertia();
+      if (action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, now - began).bodyLift;
       grip = { x: clamp(event.clientX - x + size / 2, 0, size), y: clamp(event.clientY - y + size, 0, size) };
       style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`);
       clearAction(); pressed = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), dx: event.clientX - x, dy: event.clientY - y, dragged: false, grabbed: false, cancelled: false };
@@ -2174,6 +2242,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // imminent release requested during real dragging, using that same
         // bounded decoder rather than displaying a held key after takeoff.
         if (!reduced && gfxMode() !== "off") spriteSources[COMPANION_THROW_ROW].forEach(src => requestSprite.current(src));
+        if (!pressed.grabbed) playCompanionSound("lift", preferencesRef.current);
         pressed.grabbed = true;
         pressed.dragged = true; x = clamp(event.clientX - pressed.dx, size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(event.clientY - pressed.dy, size + 8, innerHeight - 12);
         throwVelocity.push(x, y, performance.now());
@@ -2280,7 +2349,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
-      else if (event.key === " " && preferences.drag) { event.preventDefault(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (!keyboardHeld) { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
+      else if (event.key === " " && preferences.drag) { event.preventDefault(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; if (!keyboardHeld && action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, performance.now() - began).bodyLift; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (keyboardHeld) playCompanionSound("lift", preferencesRef.current); else { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
       else if (event.key === "Escape") { event.preventDefault(); const moved = keyboardHeld && keyboardMoved; pendingMonth = false; keyboardHeld = false; keyboardMoved = false; placing = false; delete el.dataset.placing; settle({ x, y }); if (moved) transferred(); }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
@@ -2729,6 +2798,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         hiding.sheet = detailSheet; hiding.ready = false; hideHint(false); clearTimeout(hideWakeTimer); stopHover(); perchAnimation?.cancel(); el.hidden = true; sync(); return;
       }
       if (hideSeek.find(hiding.target.eventId, presentationNow)) {
+        queueSituation("hide-found", [15]);
         logActivity("ui.click", { target: "companion-find" });
         hiding.sheet = detailSheet; hiding.ready = true; hideHint(false); clearAction(); stopHover();
         data("hidePhase", "found"); data("detailGuest", ""); data("presence", "active"); button.tabIndex = 0; ownGuest(detailSheet); el.removeAttribute("data-dreaming");
@@ -2773,7 +2843,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     return () => {
       offHabits();
       offLife();
-      refreshWardrobe.current = () => {}; wardrobePainter?.clear();
+      refreshWardrobe.current = () => {}; situationSink.current = () => {}; pendingSituations.clear(); wardrobePainter?.clear();
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       persistCare(true);
@@ -2802,7 +2872,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       el.hidden = true;
       hideBed();
     };
-  }, [ready, root, preferences, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory]);
+  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory]);
 
   if (!ready) return null;
   const closeHome = homeShelf.close;
@@ -2811,7 +2881,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     const received = openCompanionGift();
     if (!received) return;
     logActivity("ui.click", { target: "companion-gift-open" });
-    setOpenedGift(received); hapticSuccess(); playSfx("tab");
+    setOpenedGift(received); hapticSuccess(); playCompanionSound("gift", preferencesRef.current);
     setAnnouncement(`${COMPANION_ACCESSORY_NAMES[received]} 선물을 받았어요. 프로필의 꾸미기에서 장착할 수 있어요.`);
     actor.current?.focus({ preventScroll: true });
   };
@@ -2838,10 +2908,10 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   </div>
     {openedGift && preferences.enabled && !blocked && !overlayOpen && !performanceActive && <aside className="vc-keepsake-notice" aria-label="받은 선물">
       <div className="vc-keepsake-art"><CompanionCollectionArt kind="gift" id="gift-open" /><CompanionCollectionArt kind="accessory" id={openedGift} /></div>
-      <div><strong>{COMPANION_ACCESSORY_NAMES[openedGift]} 선물!</strong><p>받은 선물은 꾸미기에 간직해요.</p><button className="button" type="button" data-act="companion-accessory-equip" data-act-opt="on" onClick={() => { if (equipCompanionAccessory(openedGift)) { hapticSuccess(); playSfx("tab"); setOpenedGift(null); actor.current?.focus({ preventScroll: true }); } }}>착용하기</button></div>
+      <div><strong>{COMPANION_ACCESSORY_NAMES[openedGift]} 선물!</strong><button className="button" type="button" data-sfx="off" data-act="companion-accessory-equip" data-act-opt="on" onClick={() => { if (equipCompanionAccessory(openedGift)) { hapticSuccess(); playCompanionSound("equip", preferencesRef.current); setOpenedGift(null); actor.current?.focus({ preventScroll: true }); } }}>착용하기</button></div>
       <button className="vc-keepsake-close" type="button" aria-label="받은 선물 닫기" data-act="companion-gift-dismiss" onClick={() => { setOpenedGift(null); actor.current?.focus({ preventScroll: true }); }}><X size={17} aria-hidden="true" /></button>
     </aside>}
-    <div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
+    <div className="vc-bed-foreground" ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} onLanded={() => { playCompanionSound("land", preferencesRef.current); }} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
     {!suspended && !blocked && homeVisible && homeHost ? createPortal(house, homeHost) : null}
     {compactActive && launcherHost ? createPortal(<button ref={homeLauncher} data-act={homeExpanded ? "companion-home-close" : "companion-home-open"} data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label={homeExpanded ? "빅타민 집 닫기" : "빅타민 집 열기"} aria-expanded={homeExpanded} aria-controls={`${actorId}-home`} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} onClick={() => homeExpanded ? closeHome() : homeShelf.open()} onKeyDown={event => { if (event.key === "Escape" && homeExpanded) { event.preventDefault(); event.stopPropagation(); logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}><Home size={16} aria-hidden="true" /><span className="lbl vc-home-launcher-label">빅타민 집</span></button>, launcherHost) : null}
     {compactActive && compactHost ? createPortal(<div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>

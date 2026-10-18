@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64" shape-rendering="crispEdges">
+<title>빅타민 픽셀 선글라스 옆면</title>
+<desc>Original code-native vector from the user-provided front-view visual guide. New black stepped lenses and white diagonal square checks; no photo pixels, footer, backdrop, rounded bevel or shadow.</desc>
+<path fill="#000" d="M20 20H104V24H100V32H96V28H92V24H56V28H52V32H48V36H32V32H28V28H24V24H20Z"/>
+<rect fill="#fff" x="28" y="24" width="4" height="4"/>
+<rect fill="#fff" x="36" y="24" width="4" height="4"/>
+<rect fill="#fff" x="32" y="28" width="4" height="4"/>
+<rect fill="#fff" x="40" y="28" width="4" height="4"/>
+</svg>

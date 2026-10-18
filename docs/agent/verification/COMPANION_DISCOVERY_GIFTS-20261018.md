@@ -1,6 +1,6 @@
 # Companion discovery and gifts — 106
 
-Date:2026-10-18 KST. Status:local gates and34 native cases verified; authorized release verification pending.
+Date:2026-10-18 KST. Status:complete; authorized release/exact deployed UI verified.
 
 ## Scope and source of truth
 
@@ -65,4 +65,12 @@ Offline126 composites use the actual painter's hidden/clip state, not a layer-na
 
 ## Release and deployed verification — root to append
 
-Pending. Record authorized commit/full SHA, quality job/deployment result and exact deployed UI/API verification only after observing them. Production preference/care resets, schedule writes and unrelated asset changes are outside fixture verification. Actual broadcaster hardware and genuine-login/RLS evidence remain separate.
+Authorized main commit/push: `f8eab06b8559e84730a41fceb2392b4f9c204773` (`feat: add companion discoveries and gifts`). Scoped63 files; protected user art note SHA unchanged. Unrelated drafts/configuration, fixed private references and the exact private request are not committed.
+
+[Remote quality39103699982](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39103699982) completed successfully: all13 steps, including full unit, isolated SQL, harness, locked production build, typecheck and lint. Vercel reported success for this exact commit. No docs-only second deployment was made.
+
+At2026-10-18 15:24 KST the deployed `/api/soop-live` returned the exact full SHA above. Public clock200/no-store, warm204, anonymous developer presence401/error-only/no-store and production fixture nonexposure passed. The streamed fixture response has HTTP200 but the404 fallback marker; this is not reported as an HTTP404. Local proof: `.scratch-pw/companion-106/deployed-canaries.json`.
+
+Actual authenticated developer-studio tab was reloaded and showed badge `f8eab06`. Native settings→빅타민→프로필 confirmed actionable effect/try cards,36-food/12-action book with honest first-install discovery state, rarity/base probability and six locked accessory entries. Existing favorite/mode/care were not reset or edited. Profile/discovery/dress screenshots are `.scratch-pw/companion-106/deployed-{profile,discovery,dress}.png`. Dialog closed, original November2026 and right folded panel restored. No production care reset, collection grants, schedule writes or account changes were used for proof.
+
+Final deployment bookkeeping in this record/plan/current state stays local until the next authorized product commit. Actual broadcaster hardware and genuine-login/RLS evidence remain separate; generated art still has no invented owner approval.

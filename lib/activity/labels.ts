@@ -626,16 +626,22 @@ export const ACT: Record<string, TargetLabel> = {
   },
   // 빅타민 — 자동 행동이 아니라 사람이 고른 설정·직접 교감만 기록한다.
   // 이 사전은 저장 allowlist도 겸하므로 옵션은 화면의 고정 값만 등록한다.
-  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "프로필" } },
+  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "프로필", sound: "소리" } },
   // Local collection contents never enter telemetry. Only these fixed button
   // categories are counted; the strict storage branch below rejects item IDs.
-  "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "발견 도감", dress: "꾸미기" } },
-  "companion-collection-category": { name: "빅타민 발견 도감 종류", area: "설정", opts: { food: "먹거리", behavior: "행동" } },
-  "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "먹거리", behavior: "행동" } },
+  "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장" } },
+  "companion-collection-category": { name: "빅타민 도감 종류", area: "설정", opts: { food: "냠냠 도감", behavior: "재롱", moment: "특별한 순간" } },
+  "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "냠냠 도감", behavior: "재롱", moment: "특별한 순간" } },
   "companion-accessory-select": { name: "빅타민 장신구 살펴보기", area: "설정" },
   "companion-gift-open": { name: "빅타민 선물 열기", area: "빅타민" },
   "companion-accessory-equip": { name: "빅타민 장신구", area: "설정", opts: { on: "착용하기", off: "벗기" } },
   "companion-gift-dismiss": { name: "빅타민 선물 결과 닫기", area: "설정" },
+  "companion-sound-enabled": { name: "빅타민 효과음", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-sound-volume": { name: "빅타민 음량", area: "설정" },
+  "companion-sound-care": { name: "빅타민 돌보기 소리", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-sound-motion": { name: "빅타민 움직임 소리", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-sound-keepsakes": { name: "빅타민 발견·선물 소리", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-sound-preview": { name: "빅타민 소리 미리 듣기", area: "설정", opts: { care: "돌보기", motion: "움직임", keepsakes: "발견·선물" } },
   "companion-enabled": { name: "AI 빅타민", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-roam": { name: "빅타민 돌아다니기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-jump": { name: "빅타민 깡충 뛰기", area: "설정", opts: { on: "켜기", off: "끄기" } },
@@ -1025,7 +1031,9 @@ export function roleBreakdown(roles: Record<string, number>): string {
 
 const COMPANION_COLLECTION_CONTROLS: ReadonlySet<string> = new Set([
   "companion-profile-page", "companion-collection-category", "companion-collection-inspect",
-  "companion-accessory-select", "companion-gift-open", "companion-accessory-equip", "companion-gift-dismiss"
+  "companion-accessory-select", "companion-gift-open", "companion-accessory-equip", "companion-gift-dismiss",
+  "companion-sound-enabled", "companion-sound-volume", "companion-sound-care", "companion-sound-motion",
+  "companion-sound-keepsakes", "companion-sound-preview"
 ]);
 
 /** These controls count a fixed UI operation, never a personal collection. */

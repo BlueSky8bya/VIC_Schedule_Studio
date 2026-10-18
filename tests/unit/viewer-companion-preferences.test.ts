@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { COMPANION_PREFERENCES_EVENT, COMPANION_PREFERENCES_KEY, DEFAULT_COMPANION_PREFERENCES, getCompanionPreferences, normalizeCompanionPreferences, setCompanionPreferences, subscribeCompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { companionWorldPreferencesKey, COMPANION_PREFERENCES_EVENT, COMPANION_PREFERENCES_KEY, DEFAULT_COMPANION_PREFERENCES, getCompanionPreferences, normalizeCompanionPreferences, setCompanionPreferences, subscribeCompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 
 const entries = new Map<string, string>();
 let browser: EventTarget & { localStorage: { getItem: (key: string) => string | null; setItem: (key: string, value: string) => void } };
@@ -15,6 +15,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("viewer companion device preferences", () => {
+  it("keeps the live world stable for sound-only changes and invalidates it for every world choice", () => {
+    const base = companionWorldPreferencesKey(DEFAULT_COMPANION_PREFERENCES);
+    const sound = new Set(["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes"]);
+    for (const [key, value] of Object.entries(DEFAULT_COMPANION_PREFERENCES)) {
+      const changed = { ...DEFAULT_COMPANION_PREFERENCES, [key]: typeof value === "boolean" ? !value : typeof value === "number" ? 35 : value === "normal" ? "lively" : value === "large" ? "normal" : value === "default" ? "cat" : "sleepy" };
+      if (sound.has(key)) expect(companionWorldPreferencesKey(changed)).toBe(base);
+      else expect(companionWorldPreferencesKey(changed)).not.toBe(base);
+    }
+  });
   it("starts ON for a missing preference without writing or resetting choices, including the SSR default", () => {
     const write = vi.spyOn(browser.localStorage, "setItem");
     expect(getCompanionPreferences()).toEqual(DEFAULT_COMPANION_PREFERENCES);
@@ -55,7 +64,7 @@ describe("viewer companion device preferences", () => {
     expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toMatchObject({ size: "large", enabled: false, petting: false });
   });
   it("retains every detailed choice across master OFF and ON", () => {
-    const chosen = { enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, drag: false, petting: false, feeding: false, learnFromYou: false, animalMode: "cat", speed: "relaxed", size: "large", personality: "sleepy" } as const;
+    const chosen = { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, drag: false, petting: false, feeding: false, learnFromYou: false, sound: false, soundVolume: 35, soundCare: false, soundMotion: false, soundKeepsakes: false, animalMode: "cat", speed: "relaxed", size: "large", personality: "sleepy" } as const;
     setCompanionPreferences(chosen);
     setCompanionPreferences({ enabled: false });
     expect(getCompanionPreferences()).toEqual({ ...chosen, enabled: false });
@@ -67,6 +76,22 @@ describe("viewer companion device preferences", () => {
     expect(normalizeCompanionPreferences({ enabled: "true", roam: 1, sleep: false, speed: "turbo", size: "large", personality: "affectionate", feeding: "yes", animalMode: "cat-and-dog", email: "synthetic-canary@example.invalid" })).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, sleep: false, size: "large", personality: "affectionate" });
     expect(normalizeCompanionPreferences(null)).toEqual(DEFAULT_COMPANION_PREFERENCES);
     expect(normalizeCompanionPreferences([])).toEqual(DEFAULT_COMPANION_PREFERENCES);
+  });
+  it("adds sound defaults to old records without rewriting or enabling an explicit saved OFF", () => {
+    const legacy = JSON.stringify({ version: 1, enabled: false, feeding: false });
+    entries.set(COMPANION_PREFERENCES_KEY, legacy);
+    expect(getCompanionPreferences()).toMatchObject({ enabled: false, feeding: false, sound: true, soundVolume: 60, soundCare: true, soundMotion: true, soundKeepsakes: true });
+    expect(entries.get(COMPANION_PREFERENCES_KEY)).toBe(legacy);
+  });
+  it("normalizes bounded sound volume and rejects malformed patches without losing saved choices", () => {
+    const base = { ...DEFAULT_COMPANION_PREFERENCES, sound: false, soundVolume: 35, soundCare: false };
+    for (const soundVolume of [null, "80", NaN, Infinity, {}, []]) expect(normalizeCompanionPreferences({ soundVolume, sound: "yes", soundCare: 1 }, base)).toEqual(base);
+    expect(normalizeCompanionPreferences({ soundVolume: -20 }, base).soundVolume).toBe(0);
+    expect(normalizeCompanionPreferences({ soundVolume: 999 }, base).soundVolume).toBe(100);
+    expect(normalizeCompanionPreferences({ soundVolume: 42.6 }, base).soundVolume).toBe(43);
+    setCompanionPreferences(base);
+    setCompanionPreferences({ soundKeepsakes: false });
+    expect(getCompanionPreferences()).toMatchObject({ enabled: true, sound: false, soundVolume: 35, soundCare: false, soundMotion: true, soundKeepsakes: false });
   });
   it("extends version1 preferences without resetting existing choices", () => {
     entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, enabled: true, roam: false, personality: "sleepy", size: "small" }));

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "work": "107",
+  "assets": [
+    {
+      "id": "foods-04",
+      "layout": {
+        "columns": 6,
+        "rows": 4,
+        "cells": 24
+      },
+      "native": "원본/먹거리04_생성과도장.png",
+      "contains_mascot": false
+    },
+    {
+      "id": "foods-05",
+      "layout": {
+        "columns": 6,
+        "rows": 4,
+        "cells": 24
+      },
+      "native": "원본/먹거리05_생성과도장.png",
+      "contains_mascot": false
+    },
+    {
+      "id": "accessories",
+      "layout": {
+        "columns": 5,
+        "rows": 4,
+        "cells": 20
+      },
+      "native": "원본/새장신구_여섯종네시점.png",
+      "contains_mascot": false
+    },
+    {
+      "id": "situations",
+      "layout": {
+        "columns": 4,
+        "rows": 3,
+        "cells": 12
+      },
+      "native": "원본/추억도장_열두상황.png",
+      "contains_mascot": true
+    }
+  ],
+  "references": [
+    {
+      "id": "CURRENT101-CLEAN",
+      "sha256": "9222319BBA8FC59F76832F5737737AF68E65D917FD9D7C10EB0F037C67186F69",
+      "scope": "current shipped rendering, proportions and outline reference only"
+    },
+    {
+      "id": "SELECTED099-CLEAN0",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "scope": "selected relative eye size only"
+    },
+    {
+      "id": "REF-016",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "scope": "Read-only original"
+    },
+    {
+      "id": "REF-017",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5",
+      "scope": "Read-only original"
+    }
+  ],
+  "privateEvidence": "Exact user words/timestamps/identity, original private paths, contracts and generator args remain outside Git. No source pixels or historical approvals are overwritten.",
+  "state": "Preparation only; no images generated, claimed or approved."
+}

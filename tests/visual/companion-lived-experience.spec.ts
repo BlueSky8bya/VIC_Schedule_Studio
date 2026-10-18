@@ -6,16 +6,17 @@ import { DEFAULT_COMPANION_LIFE, normalizeCompanionLife } from "@/lib/ui/viewer-
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
-type Mode = "meal" | "social" | "cozy" | "cheer" | "nuzzle";
-type Frame = { at: number; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number };
+type Mode = "meal" | "social" | "cozy" | "cheer" | "nuzzle" | "accessory";
+type Frame = { at: number; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number; trick: string; beat: string; journey: string; accessoryPose: number; bodyBob: number; wearable: { hidden: boolean; top: string; left: string; transform: string; background: string } };
 type Input = { type: string; key: string; target: string; trusted: boolean };
 type Probe = { frames: Frame[]; inputs: Input[]; began: number; lastSample: number; lastActive: boolean; visibleFocusedMs: number; raf: number; previous: string; node: HTMLElement; input: (event: Event) => void };
-type ProbeWindow = Window & { livedExperience104?: Probe };
+type ProbeWindow = Window & { livedExperience104?: Probe; __companionSfxTrace?: string[] };
 type Evidence = { writes: string[]; errors: string[]; care: unknown[]; probe?: unknown };
 const evidence = new WeakMap<Page, Evidence>();
 const output = process.env.LIVED_EXPERIENCE_OUTPUT ?? ".scratch-pw/104-lived-experience";
@@ -33,6 +34,7 @@ test.beforeEach(async ({ page }) => {
     const request = route.request(), path = new URL(request.url()).pathname;
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { proof.writes.push(`${request.method()} ${path}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
     if (path === "/api/soop-live") return route.fulfill({ json: { live: false, build: config.config.env.APP_COMMIT } });
+    if (path.startsWith("/api/")) return route.fulfill({ status: 503, body: "fixture forbids live API reads" });
     if (request.method() === "GET" && (path === "/" || path === "/studio")) return route.fulfill({ status: 200, body: "unused fixture navigation" });
     return route.continue();
   });
@@ -46,10 +48,11 @@ test.afterEach(async ({ page }, info) => {
       const box = food.getBoundingClientRect(), style = getComputedStyle(food), transform = new DOMMatrixReadOnly(food.style.transform);
       return { id: food.dataset.food ?? "", kind: food.dataset.kind ?? "", platform: food.dataset.platform ?? "", falling: food.hasAttribute("data-falling"), eating: food.hasAttribute("data-eating"), selected: food.hasAttribute("data-selected"), connected: food.isConnected, visible: !food.hidden && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > .05, x: transform.m41, y: transform.m42, box: { x: box.x, y: box.y, width: box.width, height: box.height }, transform: food.style.transform };
     });
-    if (!p) return { probeMissing: true, foodDom, focused: document.hasFocus(), hidden: document.hidden };
+    const sounds = (window as unknown as ProbeWindow).__companionSfxTrace ?? [];
+    if (!p) return { probeMissing: true, foodDom, sounds, focused: document.hasFocus(), hidden: document.hidden };
     cancelAnimationFrame(p.raf);
     for (const kind of ["pointerdown", "pointerup", "keydown", "keyup"]) document.removeEventListener(kind, p.input, true);
-    return { frames: p.frames, inputs: p.inputs, visibleFocusedMs: p.visibleFocusedMs, foodDom, focused: document.hasFocus(), hidden: document.hidden };
+    return { frames: p.frames, inputs: p.inputs, visibleFocusedMs: p.visibleFocusedMs, foodDom, sounds, focused: document.hasFocus(), hidden: document.hidden };
   }).catch(error => ({ error: String(error) }));
   writeFileSync(`${directory}/${label}.json`, JSON.stringify({ build, title: info.title, status: info.status, ...evidence.get(page), finalProbe: probe }, null, 2));
   await page.screenshot({ path: `${directory}/${label}.png`, fullPage: true }).catch(() => {});
@@ -57,26 +60,30 @@ test.afterEach(async ({ page }, info) => {
   if (probe && "inputs" in probe && probe.inputs) expect(probe.inputs.every(input => input.trusted)).toBe(true);
 });
 
-async function seed(page: Page, mode: Mode) {
+async function seed(page: Page, mode: Mode, accessory?: CompanionAccessoryId) {
   const life = mode === "social" || mode === "nuzzle" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, social: .85, curiosity: .2 })
-    : mode === "cheer" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .9, curiosity: .9, social: .1, comfort: .2 }) : null;
-  await page.addInitScript(({ epoch, key, prefs, care, habits, life, mode }) => {
+    : mode === "cheer" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .9, curiosity: .9, social: .1, comfort: .2 })
+    : mode === "accessory" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .2, curiosity: .1, social: .1, comfort: .2 }) : null;
+  await page.addInitScript(({ epoch, key, prefs, care, habits, life, mode, accessory, collectionKey }) => {
+    // Passive successful-cue evidence only; no AudioContext, clock or cue is replaced.
+    (window as unknown as ProbeWindow).__companionSfxTrace = [];
     if (localStorage.getItem("fixture.lived104")) return;
     localStorage.setItem("fixture.lived104", mode);
-    for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.ambient": "off", "vic.sound": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
+    for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.ambient": "off", "vic.sound": mode === "meal" || mode === "accessory" ? "on" : "off", "vic.soundVol": "45", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     // Established saved care/preferences only. Meal/cozy deliberately use the
     // legacy snapshot so the real first-install migration chooses its own
     // random favorite. No RNG, focus, clock, brain or geometry is replaced.
     // A saved dog preference gives a genuine post-meal bow to witness. The
     // ordinary episode chooses/performs it; no requested frame is supplied.
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: mode === "meal" ? "dog" : prefs.animalMode, roam: mode !== "cozy", jump: false, sleep: mode === "cozy", feeding: mode === "meal", petting: mode !== "cheer", drag: true, personality: "affectionate", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: mode === "meal" ? "dog" : prefs.animalMode, roam: mode !== "cozy", jump: mode === "accessory", sleep: mode === "cozy", feeding: mode === "meal", petting: mode !== "cheer" && mode !== "accessory", drag: true, personality: "affectionate", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: life ? 3 : 2, ...care, hunger: mode === "meal" ? .65 : .1, affection: mode === "nuzzle" ? .7 : .15, energy: mode === "cozy" ? .16 : .9, curiosity: mode === "cheer" ? .1 : care.curiosity, habits, ...(life ? { life } : {}) }));
     localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": false, season: false, "companion-home": true }));
+    if (accessory) localStorage.setItem(collectionKey, JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: [accessory], equipped: null, activeMs: 0, interactionCredit: 0 } }));
     localStorage.removeItem("vic_panel_collapsed");
-  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_MEMORY.habits, life, mode });
+  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_MEMORY.habits, life, mode, accessory, collectionKey: COMPANION_COLLECTION_KEY });
 }
-async function setup(page: Page, surface: Surface, mode: Mode) {
-  await seed(page, mode);
+async function setup(page: Page, surface: Surface, mode: Mode, accessory?: CompanionAccessoryId) {
+  await seed(page, mode, accessory);
   await page.goto(surface === "viewer" ? "/visual-fixture/poster" : "/visual-fixture/studio?role=developer&y=2025&m=11");
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
@@ -101,13 +108,14 @@ async function startProbe(page: Page) {
       const image = el.querySelector<HTMLImageElement>(".vc-texture"), requestedRow = Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * (rows.length - 1) / 100), pose = Number(el.dataset.pose), row = rows.findIndex(group => group.includes(pose)), m = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size"));
       const adopted = Number.isInteger(pose) && pose >= 0 ? frames[pose] : undefined, atlas = adopted ? atlases[adopted.atlas] : undefined;
       const src = image?.currentSrc ?? "", expectedSrc = atlas ? new URL(atlas.src, document.baseURI).href : "", srcMatches = Boolean(src && expectedSrc && src === expectedSrc);
+      const wearable = el.querySelector<HTMLElement>(".vc-wearable-front"), body = el.querySelector<HTMLElement>(".vc-pose"), bodyBob = body ? new DOMMatrixReadOnly(body.style.transform).m42 : 0;
       // CSS tracks the requested semantic row. Until a packet decodes, the
       // renderer safely retains an already adopted frame. Observe its actual
       // registered data-pose rather than mislabelling that20ms fallback. A
       // row membership alone is insufficient: its metadata frame must point
       // to the atlas actually adopted by the live image's currentSrc.
-      const frame: Frame = { at: now - p.began, visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size };
-      const signature = JSON.stringify([frame.state, frame.living, frame.play, frame.requestedRow, frame.row, frame.pose, frame.platform, frame.foodGoal, frame.dreaming, frame.decoded, frame.registered, frame.src, focused, hidden]);
+      const frame: Frame = { at: now - p.began, visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size, trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", journey: el.dataset.journey ?? "", accessoryPose: Number(el.dataset.accessoryPose ?? -1), bodyBob, wearable: { hidden: !wearable || wearable.hidden, top: wearable?.style.top ?? "", left: wearable?.style.left ?? "", transform: wearable?.style.transform ?? "", background: wearable?.style.backgroundImage ?? "" } };
+      const signature = JSON.stringify([frame.state, frame.living, frame.play, frame.requestedRow, frame.row, frame.pose, frame.platform, frame.foodGoal, frame.dreaming, frame.decoded, frame.registered, frame.src, focused, hidden, frame.trick, frame.beat, frame.trick ? [frame.bodyBob, frame.wearable] : null]);
       if (signature !== p.previous) { p.frames.push(frame); p.previous = signature; }
       p.raf = requestAnimationFrame(sample);
     };
@@ -115,6 +123,7 @@ async function startProbe(page: Page) {
   }, { rows: companionSpriteMetadata.rows, frames: companionSpriteMetadata.frames, atlases: companionSpriteMetadata.atlases });
 }
 const frames = (page: Page) => page.evaluate(() => (window as unknown as ProbeWindow).livedExperience104!.frames);
+const sounds = (page: Page) => page.evaluate(() => (window as unknown as ProbeWindow).__companionSfxTrace ?? []);
 async function waitVisibleFocused(page: Page, elapsed: number) {
   const started = await page.evaluate(() => (window as unknown as ProbeWindow).livedExperience104!.visibleFocusedMs);
   await expect.poll(() => page.evaluate(started => (window as unknown as ProbeWindow).livedExperience104!.visibleFocusedMs - started, started), { timeout: elapsed + 15000, intervals: [500] }).toBeGreaterThanOrEqual(elapsed);
@@ -128,8 +137,8 @@ function connectedCheer(observed: Frame[]): Frame[] | undefined {
   }
 }
 
-async function clearFloorRay(page: Page, spread = 0) {
-  return page.evaluate(spread => {
+async function clearFloorRay(page: Page, spread = 0, headroom = 96) {
+  return page.evaluate(({ spread, headroom }) => {
     const y = innerHeight - 18;
     const visible = (element: Element) => { const r = element.getBoundingClientRect(), s = getComputedStyle(element); return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden" && Number(s.opacity || 1) > .05; };
     const obstacles: DOMRect[] = [];
@@ -141,13 +150,13 @@ async function clearFloorRay(page: Page, spread = 0) {
       range.selectNodeContents(text); for (const r of range.getClientRects()) if (r.width > 0 && r.height > 0) obstacles.push(r);
     }
     range.detach();
-    const safe = (x: number) => obstacles.every(r => x + 50 < r.left || x - 50 > r.right || y + 4 < r.top || y - 96 > r.bottom);
-    for (const fraction of [.62, .72, .42, .3]) { const x = Math.round(innerWidth * fraction); if (safe(x) && safe(x + 24) && safe(x - spread) && safe(x + spread)) return { x, y }; }
+    const safe = (x: number) => obstacles.every(r => x + 50 < r.left || x - 50 > r.right || y + 4 < r.top || y - headroom > r.bottom);
+    for (const fraction of [.62, .72, .42, .3, .88, .12, .82, .18]) { const x = Math.round(innerWidth * fraction); if (safe(x) && safe(x + 24) && safe(x - spread) && safe(x + spread)) return { x, y }; }
     throw new Error("No real unmodified clear floor ray for native placement");
-  }, spread);
+  }, { spread, headroom });
 }
-async function placeAndHold(page: Page, spread = 0) {
-  const floor = await clearFloorRay(page, spread);
+async function placeAndHold(page: Page, spread = 0, headroom = 96) {
+  const floor = await clearFloorRay(page, spread, headroom);
   await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(floor.x, floor.y); await page.mouse.move(2, 2);
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
@@ -182,9 +191,15 @@ for (const surface of ["viewer", "studio"] as const) {
     // Placement is itself a real play experience. Earn the next learning
     // credit through19 seconds of genuine visible held time, never a clock jump.
     await page.waitForTimeout(19000);
+    const cueOffset = (await sounds(page)).length;
     await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); const food = page.locator(".vc-food"); await expect(food).toHaveCount(1);
+    await expect.poll(async () => (await sounds(page)).slice(cueOffset)).toContain("feed");
     const id = (await food.getAttribute("data-food"))!, kind = (await food.getAttribute("data-kind")) as CompanionFoodKind;
-    await dragFoodToFeet(page, food, { x: floor.x + 24, y: floor.y }); const before = await memory(page); evidence.get(page)!.care.push({ phase: "before-meal", value: before, id, kind });
+    // A real release above the existing floor gives the food its ordinary
+    // gravity/landing boundary. No landing callback or geometry is supplied.
+    await dragFoodToFeet(page, food, { x: floor.x + 24, y: floor.y - 90 });
+    await expect.poll(async () => { const cues = (await sounds(page)).slice(cueOffset), feed = cues.indexOf("feed"); return feed >= 0 && cues.slice(feed + 1).includes("land"); }).toBe(true);
+    const before = await memory(page); evidence.get(page)!.care.push({ phase: "before-meal", value: before, id, kind, successfulCues: (await sounds(page)).slice(cueOffset) });
     const spawned = await collection(page); expect(spawned?.foods ?? []).not.toContain(kind);
     evidence.get(page)!.care.push({ phase: "spawned-food-is-not-consumed", collection: spawned, id, kind });
     await actor(page).focus(); await actor(page).press("Space"); await page.mouse.move(2, 2);
@@ -205,7 +220,7 @@ for (const surface of ["viewer", "studio"] as const) {
     const discovered = (await collection(page))!; evidence.get(page)!.care.push({ phase: "actual-consume-and-visible-bow-stamps", collection: discovered, id, kind });
     const observed = await frames(page); expect(observed.some(frame => frame.state === "eat" && (frame.foodGoal === id || frame.episodeFood === id))).toBe(true);
     expect(observed.filter(frame => frame.foodGoal).every(frame => frame.foodGoal === id)).toBe(true);
-    evidence.get(page)!.probe = await page.evaluate(() => { const p = (window as unknown as ProbeWindow).livedExperience104!; return { beforeReloadFrames: p.frames, beforeReloadInputs: p.inputs }; });
+    evidence.get(page)!.probe = await page.evaluate(() => { const p = (window as unknown as ProbeWindow).livedExperience104!; return { beforeReloadFrames: p.frames, beforeReloadInputs: p.inputs, beforeReloadSounds: (window as unknown as ProbeWindow).__companionSfxTrace ?? [] }; });
     expect((evidence.get(page)!.probe as { beforeReloadInputs: Input[] }).beforeReloadInputs.every(input => input.trusted)).toBe(true);
     await page.reload(); await page.bringToFront(); await expect(actor(page)).toBeVisible();
     await startProbe(page);
@@ -215,12 +230,61 @@ for (const surface of ["viewer", "studio"] as const) {
     const traits = await openTraits(page); await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText(COMPANION_FOOD_NAMES[reopened.life.favoriteFood]);
     const dialog = page.getByRole("dialog", { name: "설정", exact: true });
     await expect(dialog.locator(".rhh-trait-reason")).toContainText(/좋아하는 맛을 다시 즐겼어요|여러 맛을 골고루 알아가고 있어요|새로운 맛을 알아가고 있어요|여러 번 맛보며 좋아하는 맛을 찾았어요/);
-    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "발견 도감", exact: true }).click();
-    await expect(dialog.getByRole("button", { name: "먹거리 1/36", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "도감", exact: true }).click();
+    await expect(dialog.getByRole("button", { name: "냠냠 도감 1/60", exact: true })).toHaveAttribute("aria-pressed", "true");
     const recordedFood = dialog.getByRole("button", { name: `${COMPANION_FOOD_NAMES[kind]} · 맛봤어요`, exact: true });
     await expect(recordedFood).toHaveAttribute("data-found", "true");
     await expect(recordedFood.locator(`[data-collection-art="food-stamp"][data-collection-art-id="${kind}"]`)).toHaveCount(1);
   });
+
+  for (const accessory of ["pixel-sunglasses", "baseball-cap", "scarf"] as const) {
+    test(`${surface}: native ${accessory} wears, performs a finite gesture and earns only its actually visible situation`, async ({ page }) => {
+      test.setTimeout(105000);
+      const identity = await setup(page, surface, "accessory", accessory);
+      expect((await collection(page))?.situations).toEqual([]);
+      await openTraits(page); const dialog = page.getByRole("dialog", { name: "설정", exact: true });
+      await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "옷장", exact: true }).click();
+      await dialog.locator(`[data-accessory="${accessory}"]`).click();
+      await dialog.locator('[data-act="companion-accessory-equip"][data-act-opt="on"]').click();
+      await expect.poll(async () => (await collection(page))?.gifts.equipped).toBe(accessory);
+      await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+      await expect(dialog).toHaveCount(0);
+      // These gestures stay on the same x. The separate cheer test reserves
+      // horizontal travel room; this vertical hop needs its real headroom.
+      const floor = await placeAndHold(page, 0, 170);
+      // Public native held input earns actual visible active time. The real
+      // safe decision owns the action; no action/activeMs/RNG/clock is seeded.
+      await waitVisibleFocused(page, 7500);
+      expect((await collection(page))?.situations).not.toContain("accessory-trick");
+      await actor(page).focus(); await actor(page).press("Space"); await page.mouse.move(2, 2);
+      await expect(pet(page)).toHaveAttribute("data-accessory-beat", "show", { timeout: 65000 });
+      mkdirSync(output, { recursive: true });
+      await page.screenshot({ path: `${output}/${surface}-${accessory}-show-native.png`, fullPage: true });
+      await expect.poll(async () => (await collection(page))?.situations ?? [], { timeout: 65000, intervals: [100] }).toContain("accessory-trick");
+      const observed = await frames(page), settled = observed.find(frame => frame.trick === accessory && frame.beat === "settle" && frame.registered && frame.decoded && !frame.wearable.hidden);
+      expect(settled).toBeDefined();
+      const performed = observed.filter(frame => frame.trick === accessory && frame.journey === settled!.journey);
+      const phases = performed.filter((frame, index, all) => index === 0 || frame.beat !== all[index - 1].beat).map(frame => frame.beat);
+      expect(phases).toEqual(["prepare", "show", "settle"]);
+      expect(performed.at(-1)!.at - performed[0].at).toBeGreaterThan(2200);
+      expect(performed.at(-1)!.at - performed[0].at).toBeLessThan(4000);
+      const witnessed = performed.filter(frame => ["show", "settle"].includes(frame.beat) && frame.registered && frame.decoded && !frame.wearable.hidden);
+      expect(witnessed.some(frame => frame.beat === "show")).toBe(true); expect(witnessed.some(frame => frame.beat === "settle")).toBe(true);
+      expect(witnessed.every(frame => frame.same && frame.count === 1 && frame.focused && !frame.hidden && frame.srcMatches && frame.accessoryPose === frame.pose && /^viewport-floor/.test(frame.platform) && frame.wearable.background.includes("/companion/"))).toBe(true);
+      expect(new Set(witnessed.map(frame => frame.wearable.transform)).size).toBeGreaterThan(4);
+      if (accessory === "baseball-cap") {
+        expect(Math.min(...performed.map(frame => frame.bodyBob))).toBeLessThan(-20);
+        expect(performed.some(frame => frame.row === 4 && frame.registered && frame.decoded)).toBe(true);
+        expect(performed.some(frame => frame.row === 6 && frame.registered && frame.decoded)).toBe(true);
+      }
+      expect(Math.max(...performed.map(frame => frame.x)) - Math.min(...performed.map(frame => frame.x))).toBeLessThan(1);
+      expect(Math.max(...performed.map(frame => frame.y)) - Math.min(...performed.map(frame => frame.y))).toBeLessThan(1);
+      await expect(pet(page)).not.toHaveAttribute("data-accessory-trick");
+      expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
+      evidence.get(page)!.care.push({ phase: "actual-finite-accessory", accessory, floor, journey: settled!.journey, collection: await collection(page), successfulCues: await sounds(page) });
+      await page.screenshot({ path: `${output}/${surface}-${accessory}-completed-native.png`, fullPage: true });
+    });
+  }
 
   test(`${surface}: a stable native pointer invites row33 contact and only real Enter petting earns affection`, async ({ page }) => {
     test.setTimeout(100000);

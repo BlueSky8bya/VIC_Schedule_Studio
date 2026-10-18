@@ -14,7 +14,7 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 
 test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.setTimeout(90_000);
-const output = ".scratch-pw/companion-106-world";
+const output = ".scratch-pw/companion-107-world";
 const creature = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const readCollection = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
@@ -37,8 +37,8 @@ async function setup(page: Page, collection: CompanionCollection, dark = false, 
     return route.continue();
   });
   await page.addInitScript(({ key, epoch, prefs, care, life, collection, collectionKey, dark }) => {
-    if (localStorage.getItem("fixture.giftWorld106")) return;
-    localStorage.setItem("fixture.giftWorld106", "seeded");
+    if (localStorage.getItem("fixture.giftWorld107")) return;
+    localStorage.setItem("fixture.giftWorld107", "seeded");
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": dark ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
@@ -93,7 +93,7 @@ async function placeAtVisibleCentre(page: Page) {
 }
 
 test("native petting completes earned gift conditions, physical opening and explicit wearing survive reload", async ({ page }) => {
-  const safety = await setup(page, { version: 1, foods: [], behaviors: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 299000, interactionCredit: 0 } });
+  const safety = await setup(page, { version: 1, situations: [], foods: [], behaviors: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 299000, interactionCredit: 0 } });
   expect((await readCollection(page)).gifts).toMatchObject({ pending: null, unlocked: [], equipped: null, interactionCredit: 0 });
   await expect(page.getByRole("button", { name: "빅타민이 가져온 선물 열기", exact: true })).toHaveCount(0);
   // A short pointer click is only the shipped tap reaction. The native
@@ -123,7 +123,7 @@ test("native petting completes earned gift conditions, physical opening and expl
 });
 
 test("premiere blocks native pointer and keyboard gift access, then ordinary controls return", async ({ page }) => {
-  const safety = await setup(page, { version: 1, foods: [], behaviors: [], gifts: { pending: "sunglasses", unlocked: [], equipped: null, activeMs: 300000, interactionCredit: 1 } }, false, true);
+  const safety = await setup(page, { version: 1, situations: [], foods: [], behaviors: [], gifts: { pending: "sunglasses", unlocked: [], equipped: null, activeMs: 300000, interactionCredit: 1 } }, false, true);
   let gift = page.getByRole("button", { name: "빅타민이 가져온 선물 열기", exact: true });
   await expect(gift).toBeVisible(); await expect(gift).toBeEnabled();
   const before = (await readCollection(page)).gifts;
@@ -158,7 +158,7 @@ for (const [id, dark] of [["sunglasses", false], ["beret", true], ["flower-crown
   test(`${id}: native92px wearable follows scroll, sofa, held pose and ordinary dialog layers`, async ({ page }) => {
     // Explicit persisted wardrobe fixture, separate from the real earned-gift
     // case above. No grant, pose, frame, clock, RNG or geometry is injected.
-    const safety = await setup(page, { version: 1, foods: [], behaviors: [], gifts: { pending: null, unlocked: ["sunglasses", "beret", "flower-crown"], equipped: id, activeMs: 0, interactionCredit: 0 } }, dark);
+    const safety = await setup(page, { version: 1, situations: [], foods: [], behaviors: [], gifts: { pending: null, unlocked: ["sunglasses", "beret", "flower-crown"], equipped: id, activeMs: 0, interactionCredit: 0 } }, dark);
     await placeAtVisibleCentre(page); await expectWorn(page, id);
     await captureCreature(page, `${id}-native92`);
     const scrollBefore = await page.evaluate(() => scrollY);

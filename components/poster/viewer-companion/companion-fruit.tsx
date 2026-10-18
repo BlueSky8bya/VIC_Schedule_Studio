@@ -1,8 +1,8 @@
 import type { CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { getCompanionCollectionArtFrame } from "@/lib/ui/viewer-companion/collection-art";
 
-/** Shared native106 food art. Existing thirteen licensed vectors and their
- * provenance stay preserved; new foods use the same compact food-only atlas. */
+/** Shared native collection food art. Existing thirteen licensed vectors and
+ * their provenance stay preserved; additive foods use compact food-only atlases. */
 export function CompanionFruit({ kind }: { kind: CompanionFoodKind }) {
   const frame = getCompanionCollectionArtFrame("food", kind);
   if (!frame) return null;

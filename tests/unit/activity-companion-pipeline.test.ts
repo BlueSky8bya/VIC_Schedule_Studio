@@ -39,8 +39,10 @@ const ADJACENT_ACTIONS = [
 ] as const;
 const COLLECTION_ACTIONS = [
   "companion-profile-page#together", "companion-profile-page#discover", "companion-profile-page#dress",
-  "companion-collection-category#food", "companion-collection-category#behavior",
-  "companion-collection-inspect#food", "companion-collection-inspect#behavior", "companion-accessory-select",
+  "companion-collection-category#food", "companion-collection-category#behavior", "companion-collection-category#moment",
+  "companion-collection-inspect#food", "companion-collection-inspect#behavior", "companion-collection-inspect#moment", "companion-accessory-select",
+  "companion-sound-enabled#on", "companion-sound-volume", "companion-sound-care#off",
+  "companion-sound-motion#on", "companion-sound-keepsakes#off", "companion-sound-preview#motion",
   "companion-gift-open", "companion-accessory-equip#on", "companion-accessory-equip#off", "companion-gift-dismiss"
 ] as const;
 type DataRow = Record<string, unknown>;
@@ -148,14 +150,17 @@ describe("companion activity writer boundary", () => {
   });
 
   it("stores collection buttons as fixed counts even if a client submits personal contents in allowed metadata fields", async () => {
-    const targets = ["companion-collection-inspect#apple", "companion-accessory-select#sunglasses", "companion-gift-open#beret", "companion-accessory-equip#on"];
+    const targets = ["companion-collection-inspect#apple", "companion-accessory-select#sunglasses", "companion-gift-open#beret", "companion-accessory-equip#on", "companion-sound-volume#60", "companion-sound-preview#pixel-sunglasses", "companion-sound-motion#on"];
     const events = targets.map(target => ({ ...click(target), meta: { foodId: "apple", behaviorId: "ask-petting", accessoryId: "sunglasses", giftContents: "beret", nickname: CANARY, count: 36, on: true, date: DAY, scope: "public" }, durMs: 11234 }));
-    expect(await recordActivityBatch(events)).toBe(4);
+    expect(await recordActivityBatch(events)).toBe(7);
     expect(db.writes[0].rows.map(row => ({ target: row.target, meta: row.meta, dur_ms: row.dur_ms }))).toEqual([
       { target: "companion-collection-inspect", meta: null, dur_ms: null },
       { target: "companion-accessory-select", meta: null, dur_ms: null },
       { target: "companion-gift-open", meta: null, dur_ms: null },
-      { target: "companion-accessory-equip#on", meta: null, dur_ms: null }
+      { target: "companion-accessory-equip#on", meta: null, dur_ms: null },
+      { target: "companion-sound-volume", meta: null, dur_ms: null },
+      { target: "companion-sound-preview", meta: null, dur_ms: null },
+      { target: "companion-sound-motion#on", meta: null, dur_ms: null }
     ]);
     const stored = JSON.stringify(db.writes);
     for (const value of [CANARY, "apple", "ask-petting", "sunglasses", "beret", "giftContents", "11234"]) expect(stored).not.toContain(value);

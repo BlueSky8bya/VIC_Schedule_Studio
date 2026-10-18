@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "edition": 107,
+  "requestedFoodIds": [
+    "bread",
+    "croissant",
+    "baguette",
+    "bagel",
+    "pretzel",
+    "sandwich",
+    "toast",
+    "pancake",
+    "waffle",
+    "doughnut",
+    "muffin",
+    "cupcake"
+  ],
+  "observedCellFoodIds": [
+    "bread",
+    "croissant",
+    "baguette",
+    "bagel",
+    "pretzel",
+    "sandwich",
+    "toast",
+    "pancake",
+    "doughnut",
+    "muffin",
+    "cupcake",
+    "waffle"
+  ],
+  "orderedFoodIds": [
+    "bread",
+    "croissant",
+    "baguette",
+    "bagel",
+    "pretzel",
+    "sandwich",
+    "toast",
+    "pancake",
+    "doughnut",
+    "muffin",
+    "cupcake",
+    "waffle"
+  ],
+  "actualPrivateRequestSha256": "a8f03e52f89c18f910fdc767b99de6a4e017cd9725afa0cc9e78d9aa6f35c659",
+  "native": {
+    "path": "원본/먹거리04_생성과도장.png",
+    "sha256": "aa3a8dcc40b83b41074bf4ee0f7f11ea717e536b8d7887bc4b88ff0cece250fc"
+  },
+  "observation": "Actual generated row-major pairs were opened by root producer and packing agent. Waffle is the final pair; the stable domain order and the preserved private tool request are unchanged. This public descriptor contains layout/provenance only, not private generator args.",
+  "visualApproval": "NONE"
+}

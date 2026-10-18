@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "edition": 107,
+  "requestedFoodIds": [
+    "rice-ball",
+    "rice-cake",
+    "dumpling",
+    "pizza",
+    "pasta",
+    "omelet",
+    "soup",
+    "curry",
+    "sushi",
+    "pudding",
+    "cookie",
+    "macaron"
+  ],
+  "observedCellFoodIds": [
+    "rice-ball",
+    "rice-cake",
+    "dumpling",
+    "pizza",
+    "pasta",
+    "omelet",
+    "soup",
+    "curry",
+    "sushi",
+    "pudding",
+    "cookie",
+    "macaron"
+  ],
+  "orderedFoodIds": [
+    "rice-ball",
+    "rice-cake",
+    "dumpling",
+    "pizza",
+    "pasta",
+    "omelet",
+    "soup",
+    "curry",
+    "sushi",
+    "pudding",
+    "cookie",
+    "macaron"
+  ],
+  "actualPrivateRequestSha256": "9f2aa7eff77b2f8b27605d9f9db2f9468a1acb62bd0578d3d298f2ba22df495f",
+  "native": {
+    "path": "원본/먹거리05_생성과도장.png",
+    "sha256": "0335c8947c2334a8c8e1cdc511c06d28a85c4fc20c81c50c7c83cbc39dcca426"
+  },
+  "observation": "Actual generated row-major pairs were opened by root producer and packing agent. All twelve food/stamp pairs match the requested order. This public descriptor contains layout/provenance only, not private generator args.",
+  "visualApproval": "NONE"
+}

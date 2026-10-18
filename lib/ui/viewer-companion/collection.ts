@@ -1,13 +1,15 @@
 import { COMPANION_FOOD_KINDS, isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 import { advanceCompanionGifts, isCompanionAccessoryId, normalizeCompanionGifts, type CompanionAccessoryId, type CompanionGiftState } from "./gifts";
+import { COMPANION_SITUATION_IDS, observedCompanionSituation, type CompanionSituationId, type CompanionSituationObservation } from "./moments";
+export { COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES, COMPANION_SITUATION_HINTS, type CompanionSituationId } from "./moments";
 
 export const COMPANION_COLLECTION_KEY = "vic.viewerCompanionCollection";
 export const COMPANION_COLLECTION_EVENT = "vic:companion-collection";
 export const COMPANION_BEHAVIOR_IDS = Object.freeze(["ask-petting", "lean-nuzzle", "paper-knead", "paper-nest", "cheer-rehearsal", "doze-curl", "groom", "bow", "pounce", "tumble", "dizzy", "stretch"] as const);
 export type CompanionBehaviorId = typeof COMPANION_BEHAVIOR_IDS[number];
-export const COMPANION_BEHAVIOR_NAMES: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "쓰다듬어 주세요", "lean-nuzzle": "다정하게 기대기", "paper-knead": "종이 몸 꾹꾹이", "paper-nest": "포근한 자리 만들기", "cheer-rehearsal": "응원 연습", "doze-curl": "웅크려 졸기", groom: "몸단장", bow: "꾸벅 인사", pounce: "폴짝 놀이", tumble: "데굴데굴", dizzy: "빙글빙글", stretch: "쭉 기지개" });
+export const COMPANION_BEHAVIOR_NAMES: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "쓰담해 줘", "lean-nuzzle": "부비부비", "paper-knead": "꾹꾹이", "paper-nest": "자리 만들기", "cheer-rehearsal": "으쌰으쌰", "doze-curl": "꾸벅꾸벅", groom: "몸단장", bow: "꾸벅 인사", pounce: "폴짝!", tumble: "데굴데굴", dizzy: "빙글빙글", stretch: "쭉쭉" });
 export const COMPANION_BEHAVIOR_HINTS: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "안전한 곳에서 가까이 머물러 보세요.", "lean-nuzzle": "쓰다듬으며 다정해진 빅타민 곁에 머물러 보세요.", "paper-knead": "쿠션으로 돌아가 편히 쉬게 해 주세요.", "paper-nest": "쿠션에서 자리를 고르는 모습을 지켜보세요.", "cheer-rehearsal": "활기찬 빅타민과 오래 함께 지내 보세요.", "doze-curl": "피곤한 빅타민이 집에서 쉬는 모습을 지켜보세요.", groom: "고양이 모드의 편안한 모습을 지켜보세요.", bow: "강아지 모드로 함께 지내 보세요.", pounce: "고양이 모드에서 다가와 놀 때를 기다려 보세요.", tumble: "활기차게 이동하는 모습을 지켜보세요.", dizzy: "장난을 마치고 어지럼을 가라앉히는 모습을 지켜보세요.", stretch: "쉬고 일어난 빅타민을 지켜보세요." });
-export type CompanionCollection = { version: 1; foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; gifts: CompanionGiftState };
+export type CompanionCollection = { version: 1; foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; situations: CompanionSituationId[]; gifts: CompanionGiftState };
 const behaviorRows: Readonly<Record<number, CompanionBehaviorId>> = Object.freeze({ 33: "ask-petting", 34: "lean-nuzzle", 35: "paper-knead", 36: "paper-nest", 39: "cheer-rehearsal", 40: "doze-curl", 30: "groom", 29: "bow", 31: "pounce", 21: "tumble", 22: "dizzy", 16: "stretch" });
 export type CompanionBehaviorObservation = { requestedRow: number; requestedIndex: number; adoptedIndex?: number; requestedSrc: string; adoptedSrc?: string; decoded: boolean; visible: boolean };
 /** A requested semantic row cannot stamp an old retained fallback image. */
@@ -18,12 +20,12 @@ export function observedCompanionBehavior(observation: CompanionBehaviorObservat
 export function normalizeCompanionCollection(value: unknown): CompanionCollection {
   const source = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
   // First installation and old care versions do not invent past discoveries.
-  if (source.version !== 1) return { version: 1, foods: [], behaviors: [], gifts: normalizeCompanionGifts(undefined) };
-  return { version: 1, foods: COMPANION_FOOD_KINDS.filter(id => Array.isArray(source.foods) && source.foods.includes(id)), behaviors: COMPANION_BEHAVIOR_IDS.filter(id => Array.isArray(source.behaviors) && source.behaviors.includes(id)), gifts: normalizeCompanionGifts(source.gifts) };
+  if (source.version !== 1) return { version: 1, foods: [], behaviors: [], situations: [], gifts: normalizeCompanionGifts(undefined) };
+  return { version: 1, foods: COMPANION_FOOD_KINDS.filter(id => Array.isArray(source.foods) && source.foods.includes(id)), behaviors: COMPANION_BEHAVIOR_IDS.filter(id => Array.isArray(source.behaviors) && source.behaviors.includes(id)), situations: COMPANION_SITUATION_IDS.filter(id => Array.isArray(source.situations) && source.situations.includes(id)), gifts: normalizeCompanionGifts(source.gifts) };
 }
 type CollectionStorage = Pick<Storage, "getItem" | "setItem">;
-const semanticSignature = (value: CompanionCollection) => JSON.stringify([value.foods, value.behaviors, value.gifts.pending, value.gifts.unlocked, value.gifts.equipped]);
-const copy = (value: CompanionCollection): CompanionCollection => ({ version: 1, foods: [...value.foods], behaviors: [...value.behaviors], gifts: { ...value.gifts, unlocked: [...value.gifts.unlocked] } });
+const semanticSignature = (value: CompanionCollection) => JSON.stringify([value.foods, value.behaviors, value.situations, value.gifts.pending, value.gifts.unlocked, value.gifts.equipped]);
+const copy = (value: CompanionCollection): CompanionCollection => ({ version: 1, foods: [...value.foods], behaviors: [...value.behaviors], situations: [...value.situations], gifts: { ...value.gifts, unlocked: [...value.gifts.unlocked] } });
 
 /** One cached local store. Active ticks never read storage or notify React;
  * only first discoveries, gift arrival/opening and explicit equipment do. */
@@ -74,6 +76,11 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
       refresh(); if (memory.behaviors.includes(id)) return false;
       return commit({ ...memory, behaviors: COMPANION_BEHAVIOR_IDS.filter(item => item === id || memory.behaviors.includes(item)) }, true);
     },
+    recordSituation(observation: CompanionSituationObservation) {
+      ensure(); const id = observedCompanionSituation(observation); if (!id || memory.situations.includes(id)) return false;
+      refresh(); if (memory.situations.includes(id)) return false;
+      return commit({ ...memory, situations: COMPANION_SITUATION_IDS.filter(item => item === id || memory.situations.includes(item)) }, true);
+    },
     interaction() {
       refresh(); if (memory.gifts.interactionCredit === 1) return;
       commit({ ...memory, gifts: { ...memory.gifts, interactionCredit: 1 } }, true);
@@ -86,7 +93,9 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
     },
     openGift(): CompanionAccessoryId | null {
       refresh(); const id = memory.gifts.pending; if (!id) return null;
-      commit({ ...memory, gifts: { ...memory.gifts, pending: null, unlocked: [...memory.gifts.unlocked, id], activeMs: 0, interactionCredit: 0 } }, true);
+      // Opening is itself the explicit witnessed outcome, including inside
+      // settings while the world is paused. Saved ownership never infers it.
+      commit({ ...memory, situations: COMPANION_SITUATION_IDS.filter(item => item === "gift-opened" || memory.situations.includes(item)), gifts: { ...memory.gifts, pending: null, unlocked: [...memory.gifts.unlocked, id], activeMs: 0, interactionCredit: 0 } }, true);
       return id;
     },
     equip(id: CompanionAccessoryId | null) {
@@ -111,6 +120,7 @@ export const openCompanionGift = (): CompanionAccessoryId | null => store()?.ope
 export const equipCompanionAccessory = (id: CompanionAccessoryId | null): boolean => store()?.equip(id) ?? false;
 export const recordCompanionConsumedFood = (kind: CompanionFoodKind, consumed: boolean) => store()?.recordFood(kind, consumed) ?? false;
 export const recordCompanionObservedBehavior = (observation: CompanionBehaviorObservation) => store()?.recordBehavior(observation) ?? false;
+export const recordCompanionObservedSituation = (observation: CompanionSituationObservation) => store()?.recordSituation(observation) ?? false;
 export const recordCompanionGiftInteraction = () => store()?.interaction();
 export const advanceCompanionCollection = (elapsedMs: number, affection: number, safe: boolean) => store()?.advance(elapsedMs, affection, safe);
 export const flushCompanionCollection = (force = false) => store()?.flush(force);

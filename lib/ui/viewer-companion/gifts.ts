@@ -1,7 +1,7 @@
 /** Local keepsakes only. No currency, account, purchase or absence clock. */
-export const COMPANION_ACCESSORY_IDS = Object.freeze(["sunglasses", "beret", "bow", "star-pin", "flower-crown", "satchel"] as const);
+export const COMPANION_ACCESSORY_IDS = Object.freeze(["sunglasses", "beret", "bow", "star-pin", "flower-crown", "satchel", "pixel-sunglasses", "baseball-cap", "party-hat", "scarf", "bell-pendant", "leaf-umbrella"] as const);
 export type CompanionAccessoryId = typeof COMPANION_ACCESSORY_IDS[number];
-export const COMPANION_ACCESSORY_NAMES: Readonly<Record<CompanionAccessoryId, string>> = Object.freeze({ sunglasses: "선글라스", beret: "베레모", bow: "리본", "star-pin": "별 핀", "flower-crown": "꽃 화관", satchel: "작은 가방" });
+export const COMPANION_ACCESSORY_NAMES: Readonly<Record<CompanionAccessoryId, string>> = Object.freeze({ sunglasses: "선글라스", beret: "베레모", bow: "리본", "star-pin": "별 핀", "flower-crown": "꽃 화관", satchel: "작은 가방", "pixel-sunglasses": "픽셀 선글라스", "baseball-cap": "야구 모자", "party-hat": "고깔 모자", scarf: "목도리", "bell-pendant": "방울 목걸이", "leaf-umbrella": "잎사귀 우산" });
 export const COMPANION_ACCESSORY_HINTS = Object.freeze(Object.fromEntries(COMPANION_ACCESSORY_IDS.map(id => [id, "다정하게 함께 지내면 빅타민이 선물로 가져와요."])) as Record<CompanionAccessoryId, string>);
 export const COMPANION_GIFT_ACTIVE_MS = 5 * 60 * 1000;
 export type CompanionGiftState = { pending: CompanionAccessoryId | null; unlocked: CompanionAccessoryId[]; equipped: CompanionAccessoryId | null; activeMs: number; interactionCredit: number };

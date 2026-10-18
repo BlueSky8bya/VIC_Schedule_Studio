@@ -7,6 +7,10 @@ import { COMPANION_FOOD_KINDS, LEGACY_COMPANION_FOOD_KINDS } from "@/lib/ui/view
 import { COMPANION_COLLECTION_ATLASES, COMPANION_COLLECTION_FRAMES, getCompanionCollectionArtFrame } from "@/lib/ui/viewer-companion/collection-art";
 import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
+
+const V106_FOODS = ["apple", "lemon", "strawberry", "raspberry", "watermelon", "tomato", "grapefruit", "peach", "plum", "orange", "persimmon", "apricot", "pear", "banana", "grape", "cherry", "blueberry", "mango", "kiwi", "pineapple", "coconut", "fig", "dragon-fruit", "melon", "carrot", "cucumber", "broccoli", "pumpkin", "corn", "sweet-potato", "potato", "cabbage", "eggplant", "bell-pepper", "radish", "peas"] as const;
+const V106_ACCESSORIES = ["sunglasses", "beret", "bow", "star-pin", "flower-crown", "satchel"] as const;
 
 const directory = join(process.cwd(), "public/companion/food");
 const manifest = JSON.parse(readFileSync(join(directory, "sources.json"), "utf8")) as {
@@ -57,10 +61,11 @@ describe("local companion food vectors", () => {
 });
 
 describe("native106 paired food collection art", () => {
-  it("maps every actual food to a separate food-only atlas and its matching stamp", () => {
-    expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toEqual([...COMPANION_FOOD_KINDS]);
-    expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toEqual([...COMPANION_FOOD_KINDS]);
-    for (const [index, kind] of COMPANION_FOOD_KINDS.entries()) {
+  it("preserves the protected36 food entries and their separate matching stamp atlas", () => {
+    expect(COMPANION_FOOD_KINDS.slice(0, 36)).toEqual([...V106_FOODS]);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES.food).slice(0, 36)).toEqual([...V106_FOODS]);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"]).slice(0, 36)).toEqual([...V106_FOODS]);
+    for (const [index, kind] of V106_FOODS.entries()) {
       const food = getCompanionCollectionArtFrame("food", kind)!;
       const stamp = getCompanionCollectionArtFrame("food-stamp", kind)!;
       expect(food.index).toBe(index); expect(stamp.index).toBe(index);
@@ -80,7 +85,7 @@ describe("native106 paired food collection art", () => {
       const image = sharp(bytes), metadata = await image.metadata();
       expect(metadata.width).toBe(atlas.cell * 8); expect(metadata.height).toBe(atlas.cell * 5); expect(metadata.hasAlpha).toBe(true);
       const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-      for (const frame of Object.values(COMPANION_COLLECTION_FRAMES[kind])) {
+      for (const frame of Object.values(COMPANION_COLLECTION_FRAMES[kind]).filter(frame => frame.atlas === kind)) {
         expect(frame.content.width).toBeGreaterThan(20); expect(frame.content.height).toBeGreaterThan(20);
         expect(frame.content.x).toBeGreaterThanOrEqual(8); expect(frame.content.y).toBeGreaterThanOrEqual(8);
         expect(frame.content.x + frame.content.width).toBeLessThanOrEqual(frame.width - 8);
@@ -97,8 +102,9 @@ describe("native106 paired food collection art", () => {
   it("registers every observed behavior, four accessory views and six whole book/gift cells", async () => {
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual([...COMPANION_BEHAVIOR_IDS]);
     const views = ["front", "quarter", "side", "back"] as const;
-    expect(Object.keys(COMPANION_COLLECTION_FRAMES.accessory)).toEqual(views.flatMap(view => COMPANION_ACCESSORY_IDS.map(id => `${id}:${view}`)));
-    for (const [row, view] of views.entries()) for (const [column, id] of COMPANION_ACCESSORY_IDS.entries()) {
+    expect(COMPANION_ACCESSORY_IDS.slice(0, 6)).toEqual([...V106_ACCESSORIES]);
+    expect(Object.values(COMPANION_COLLECTION_FRAMES.accessory).filter(frame => frame.atlas === "accessory").map(frame => frame.id)).toEqual(views.flatMap(view => V106_ACCESSORIES.map(id => `${id}:${view}`)));
+    for (const [row, view] of views.entries()) for (const [column, id] of V106_ACCESSORIES.entries()) {
       const frame = getCompanionCollectionArtFrame("accessory", id, view)!;
       expect(frame.id).toBe(`${id}:${view}`); expect(frame.x).toBe(column * 128); expect(frame.y).toBe(row * 128);
     }
@@ -126,7 +132,9 @@ describe("native106 paired food collection art", () => {
   });
 
   it("keeps all six native source hashes and attributes overlapping book/gift cutouts without losing alpha pixels", async () => {
-    const receipt = JSON.parse(readFileSync(join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-도감과선물/정리본/패킹기록.json"), "utf8")) as {
+    const receiptBytes = readFileSync(join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-도감과선물/정리본/패킹기록.json"));
+    expect(createHash("sha256").update(receiptBytes).digest("hex")).toBe("c4788d426874b1209295ada280c02875858843307a52c3d042e28cce9865c423");
+    const receipt = JSON.parse(receiptBytes.toString("utf8")) as {
       sources: { path: string; sha256: string; sourceBytesUnchanged: boolean; sourceNontransparentPixels?: number; copiedNontransparentPixels?: number }[];
       cells: { atlas: string; index: number; source: string; sourceIndex: number }[];
     };
@@ -144,5 +152,105 @@ describe("native106 paired food collection art", () => {
       }
     }
     expect(receipt.sources.filter(source => source.copiedNontransparentPixels !== undefined)).toHaveLength(1);
+  });
+});
+
+describe("code-native107 pixel sunglasses", () => {
+  it("maps four original flat SVG views to the first column without copying the attached photograph", () => {
+    for (const [row, [view, label]] of ([['front', '정면'], ['quarter', '사선'], ['side', '옆면'], ['back', '뒷면']] as const).entries()) {
+      const svg = readFileSync(join(process.cwd(), `art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/픽셀선글라스_${label}.svg`), "utf8");
+      expect(svg).toContain('shape-rendering="crispEdges"'); expect(svg).toContain('viewBox="0 0 128 64"');
+      expect(svg).not.toMatch(/<image|<filter|<script|href\s*=|rx\s*=|ry\s*=/i);
+      const frame = getCompanionCollectionArtFrame("accessory", "pixel-sunglasses", view)!;
+      expect(frame.src).toBe("/companion/collection/accessories-107-v1.webp"); expect(frame.x).toBe(0); expect(frame.y).toBe(row * 128);
+      expect(getCompanionCollectionArtFrame("accessory", "pixel-sunglasses", view)).toBe(frame);
+    }
+  });
+
+  it("keeps pixel edges exactly black/white with transparent independent gutters", async () => {
+    const atlas = COMPANION_COLLECTION_ATLASES["accessory-107"]!;
+    const { data, info } = await sharp(readFileSync(join(process.cwd(), "public", atlas.src))).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    let black = 0, white = 0;
+    for (let row = 0; row < 4; row++) for (let y = row * 128; y < (row + 1) * 128; y++) for (let x = 0; x < 128; x++) {
+      const at = (y * info.width + x) * 4;
+      if (data[at + 3] === 0) continue;
+      expect(data[at + 3]).toBe(255); expect([0, 255]).toContain(data[at]);
+      expect(data[at + 1]).toBe(data[at]); expect(data[at + 2]).toBe(data[at]);
+      if (data[at] === 0) black++; else white++;
+      expect(x).toBeGreaterThanOrEqual(8); expect(x).toBeLessThanOrEqual(119);
+      expect(y % 128).toBeGreaterThanOrEqual(8); expect(y % 128).toBeLessThanOrEqual(119);
+    }
+    expect(black).toBeGreaterThan(1000); expect(white).toBeGreaterThan(100);
+  });
+});
+
+describe("additive107 native collection assets", () => {
+  it("preserves four native PNGs and four authored SVGs in an84-cell source receipt", async () => {
+    const receipt = JSON.parse(readFileSync(join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/정리본/패킹기록.json"), "utf8")) as {
+      sources: { path: string; sha256: string; sourceBytesUnchanged: boolean; format?: string; columns?: number; rows?: number }[];
+      cells: { atlas: string; index: number; source: string; sourceIndex: number }[];
+    };
+    expect(receipt.sources).toHaveLength(8); expect(receipt.cells).toHaveLength(84);
+    expect(new Set(receipt.cells.map(cell => `${cell.atlas}:${cell.index}`)).size).toBe(84);
+    expect(receipt.sources.filter(source => source.format === "svg")).toHaveLength(4);
+    for (const source of receipt.sources) {
+      const bytes = readFileSync(join(process.cwd(), source.path));
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(source.sha256); expect(source.sourceBytesUnchanged).toBe(true);
+      const used = receipt.cells.filter(cell => cell.source === source.path);
+      expect(used).toHaveLength(source.format === "svg" ? 1 : source.columns! * source.rows!);
+      expect(new Set(used.map(cell => cell.sourceIndex)).size).toBe(used.length);
+      const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      expect(info.channels).toBe(4);
+      let transparent = 0, opaque = 0;
+      for (let at = 3; at < data.length; at += 4) { if (data[at] === 0) transparent++; if (data[at] > 160) opaque++; }
+      expect(transparent).toBeGreaterThan(0); expect(opaque).toBeGreaterThan(200);
+    }
+  });
+
+  it("keeps requested food order while mapping the actual native waffle pair from the final source cell", () => {
+    const run = join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-먹거리와추억");
+    const request = JSON.parse(readFileSync(join(run, "먹거리4요청.json"), "utf8")) as { requestedFoodIds: string[]; observedCellFoodIds: string[]; orderedFoodIds: string[] };
+    expect(request.requestedFoodIds).toEqual(COMPANION_FOOD_KINDS.slice(36, 48));
+    expect(request.observedCellFoodIds).toEqual(["bread", "croissant", "baguette", "bagel", "pretzel", "sandwich", "toast", "pancake", "doughnut", "muffin", "cupcake", "waffle"]);
+    expect(request.orderedFoodIds).toEqual(request.observedCellFoodIds);
+    const receipt = JSON.parse(readFileSync(join(run, "정리본/패킹기록.json"), "utf8")) as { cells: { atlas: string; id: string; index: number; sourceIndex: number }[] };
+    for (const [id, target, source] of [["waffle", 8, 22], ["doughnut", 9, 16], ["muffin", 10, 18], ["cupcake", 11, 20]] as const) {
+      expect(receipt.cells.find(cell => cell.atlas === "food-107" && cell.id === id)).toMatchObject({ index: target, sourceIndex: source });
+      expect(receipt.cells.find(cell => cell.atlas === "food-stamp-107" && cell.id === id)).toMatchObject({ index: target, sourceIndex: source + 1 });
+    }
+  });
+
+  it("covers all60 pairs,12 accessories with four views and12 separate situation stamps", () => {
+    expect(COMPANION_FOOD_KINDS).toHaveLength(60); expect(COMPANION_ACCESSORY_IDS).toHaveLength(12);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toEqual([...COMPANION_FOOD_KINDS]);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toEqual([...COMPANION_FOOD_KINDS]);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES["situation-stamp"])).toEqual([...COMPANION_SITUATION_IDS]);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual([...COMPANION_BEHAVIOR_IDS]);
+    for (const [index, id] of COMPANION_FOOD_KINDS.slice(36).entries()) {
+      const food = getCompanionCollectionArtFrame("food", id)!, stamp = getCompanionCollectionArtFrame("food-stamp", id)!;
+      expect(food.index).toBe(index); expect(stamp.index).toBe(index);
+      expect(food.src).toBe("/companion/collection/foods-107-v1.webp"); expect(stamp.src).toBe("/companion/collection/food-stamps-107-v1.webp");
+    }
+    for (const [row, view] of (["front", "quarter", "side", "back"] as const).entries()) for (const [column, id] of COMPANION_ACCESSORY_IDS.slice(6).entries()) {
+      const frame = getCompanionCollectionArtFrame("accessory", id, view)!;
+      expect(frame.atlas).toBe("accessory-107"); expect(frame.x).toBe(column * 128); expect(frame.y).toBe(row * 128);
+    }
+    expect(getCompanionCollectionArtFrame("situation-stamp", "unknown-moment")).toBeUndefined();
+  });
+
+  it("ships the four independently checked107 atlases with complete transparent cell gutters", async () => {
+    for (const [id, count] of [["food-107", 24], ["food-stamp-107", 24], ["accessory-107", 24], ["situation-stamp", 12]] as const) {
+      const atlas = COMPANION_COLLECTION_ATLASES[id]!;
+      const bytes = readFileSync(join(process.cwd(), "public", atlas.src));
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(atlas.sha256); expect(bytes.includes(Buffer.from("VP8L"))).toBe(true);
+      const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      expect(info.width).toBe(atlas.cell * atlas.columns); expect(info.height).toBe(atlas.cell * atlas.rows);
+      const frames = Object.values(COMPANION_COLLECTION_FRAMES).flatMap(entries => Object.values(entries)).filter(frame => frame.atlas === id);
+      expect(frames).toHaveLength(count);
+      for (const frame of frames) {
+        expect(frame.content.width).toBeGreaterThan(10); expect(frame.content.height).toBeGreaterThan(10);
+        for (let offset = 0; offset < atlas.cell; offset++) for (const [x, y] of [[frame.x + offset, frame.y], [frame.x + offset, frame.y + atlas.cell - 1], [frame.x, frame.y + offset], [frame.x + atlas.cell - 1, frame.y + offset]]) expect(data[(y * info.width + x) * 4 + 3]).toBe(0);
+      }
+    }
   });
 });

@@ -41,7 +41,7 @@ export function normalizeCompanionLife(value: unknown, base: Readonly<CompanionL
   let favoriteFood = isCompanionFoodKind(source.favoriteFood) ? source.favoriteFood : seedFood;
   const favoriteScore = finite(scores[favoriteFood], foodScores[favoriteFood]), hasScores = Object.keys(scores).length > 0;
   // Expanded catalogues fill missing entries without a new default food
-  // overtaking a valid saved preference. Existing13 scores/seed stay intact.
+  // overtaking a valid saved preference. Existing food scores/seed stay intact.
   for (const kind of COMPANION_FOOD_KINDS) {
     const fallback = base.seedFood === seedFood ? base.foodScores[kind] : foodScores[kind];
     foodScores[kind] = finite(scores[kind], hasScores ? Math.min(fallback, favoriteScore) : fallback);

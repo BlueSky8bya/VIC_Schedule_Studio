@@ -174,6 +174,7 @@ export function setSoundQuietHidden(on: boolean): void {
 
 let ctx: AudioContext | null = null;
 let bus: { input: GainNode; ac: AudioContext } | null = null;
+let lastTrustedSoundInput = -Infinity;
 
 function audio(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -591,6 +592,7 @@ if (typeof window !== "undefined") {
   window.addEventListener(
     "pointerdown",
     (e) => {
+      if (e.isTrusted) lastTrustedSoundInput = performance.now();
       lastPointer = { el: e.target as Element | null, at: performance.now(), x: e.clientX, y: e.clientY, down: true, moved: false };
       beginInput(e.target as Element | null, false);
     },
@@ -613,6 +615,7 @@ if (typeof window !== "undefined") {
   window.addEventListener(
     "keydown",
     (e) => {
+      if (e.isTrusted) lastTrustedSoundInput = performance.now();
       lastKey = { key: e.key, el: e.target as Element | null, at: performance.now() };
       beginInput(e.target as Element | null, true);
     },
@@ -943,6 +946,27 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   jitter = CATEGORY[name] === "celebrate" || name === "unlock" ? 1 : 1 + (Math.random() * 2 - 1) * 0.03;
   render(ac, out, name);
   jitter = 1;
+}
+
+export type CompanionSoundNote = Readonly<{ f: number; at?: number; vol?: number; tau?: number; glideTo?: number }>;
+/** Finite companion cues reuse this one context/output bus. Autonomous cues
+ * never create/resume audio before a real input and never queue a replay. */
+export function playCompanionVoice(notes: readonly CompanionSoundNote[], volume: number): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined" || document.hidden || !soundEnabled() || !Number.isFinite(volume) || volume <= 0 || !notes.length || notes.length > 3) return false;
+  const globalVolume = soundVolume();
+  if (globalVolume <= 0) return false;
+  const recentInput = performance.now() - lastTrustedSoundInput < 700;
+  const activation = navigator.userActivation;
+  if (!(activation?.hasBeenActive ?? recentInput) || (!ctx || ctx.state !== "running") && !(activation?.isActive ?? recentInput)) return false;
+  const ac = audio();
+  if (!ac || ac.state !== "running") return false;
+  // Companion controls opt out of generic fallback at their DOM boundary.
+  // An autonomous world event must not cancel an unrelated UI gesture's SFX.
+  const out = ac.createGain();
+  out.gain.value = Math.pow(globalVolume / 100, 1.6) * Math.pow(Math.min(100, volume) / 100, 1.6) * .9;
+  out.connect(masterBus(ac));
+  for (const note of notes) tone(ac, out, { ...note, attack: .006, type: "sine" });
+  return true;
 }
 
 export type PremiereMusic = { readonly playing: boolean; update: (remainMs: number) => boolean; stop: () => void };

@@ -25,7 +25,7 @@ export type CompanionFoodControl = {
   jostle: (point: Point, radius: number) => void;
   clear: () => void;
 };
-type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void };
+type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void; onLanded?: () => void };
 type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; point: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
@@ -48,7 +48,8 @@ const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point
  * presentation only write transforms; React commits placement/removal. Native
  * capture owns only real drag/trash gestures. Pointer taps never arm a global
  * placement mode; keyboard grab/arrow/put-down remains an explicit alternative. */
-export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, returnFocus }, ref) {
+export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, returnFocus, onLanded }, ref) {
+  const landed = useRef(onLanded); landed.current = onLanded;
   const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(blocked);
   const [message, setMessage] = useState("");
   const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly CompanionFoodDropSupport[]>([]), layer = useRef<HTMLDivElement>(null);
@@ -273,7 +274,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
           // folded/unsafe house attachments retain their existing occlusion.
           if (!unavailableIds.has(id)) visibility.current.set(id, presentation.x >= -22 && presentation.x <= viewport.width + 22 && presentation.y >= -6 && presentation.y <= viewport.height + 38);
           if (presentation.active) presentations.current.set(id, presentation);
-          else { drops.current.delete(id); presentations.current.delete(id); }
+          else { drops.current.delete(id); presentations.current.delete(id); if (!unavailableIds.has(id) && visibility.current.get(id) !== false && operating.current && !document.hidden) landed.current?.(); }
           paintIds.add(id);
         }
       }

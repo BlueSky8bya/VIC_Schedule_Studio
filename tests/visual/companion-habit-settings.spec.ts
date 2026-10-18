@@ -35,8 +35,8 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
       return route.continue();
     });
     await page.addInitScript(({ prefs, care, key, epoch, theme }) => {
-      if (localStorage.getItem("fixture.habits106")) return;
-      localStorage.setItem("fixture.habits106", "seeded");
+      if (localStorage.getItem("fixture.habits107")) return;
+      localStorage.setItem("fixture.habits107", "seeded");
       localStorage.setItem(key, epoch);
       localStorage.setItem("vic.dark", theme === "dark" ? "on" : "off");
       localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
@@ -76,7 +76,7 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
         return { fontSize: parseFloat(style.fontSize), contrast: (Math.max(bgLuminance, fgLuminance) + .05) / (Math.min(bgLuminance, fgLuminance) + .05), fits: element.scrollWidth <= element.clientWidth + 1 };
       });
     });
-    expect(reading).toHaveLength(4);
+    expect(reading).toHaveLength(3);
     for (const item of reading) { expect(item.fontSize).toBeGreaterThanOrEqual(13.5); expect(item.contrast).toBeGreaterThanOrEqual(4.5); expect(item.fits).toBe(true); }
     const balance = await habits.evaluate(region => {
       const style = getComputedStyle(region);
@@ -89,13 +89,12 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     expect(balance.positionSpread).toBeLessThanOrEqual(1);
     expect(["start", "left"]).toContain(balance.alignment);
     expect(balance.paddingDifference).toBeLessThanOrEqual(1);
-    mkdirSync(".scratch-pw/companion-106-settings", { recursive: true });
-    await habits.screenshot({ path: `.scratch-pw/companion-106-settings/habits-${surface}-${theme}.png` });
-    await dialog.screenshot({ path: `.scratch-pw/companion-106-settings/dialog-${surface}-${theme}.png` });
+    mkdirSync(".scratch-pw/companion-107-settings", { recursive: true });
+    await habits.screenshot({ path: `.scratch-pw/companion-107-settings/habits-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-107-settings/dialog-${surface}-${theme}.png` });
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
-    await expect(dialog.locator(".rhh-habit-paused")).toHaveText("배우기 끔 · 기억은 보관하고, 지금은 기본 성격으로 지내요.");
-    await expect(habits).toContainText("아래 기억은 배우기를 다시 켜면 행동에 반영돼요");
+    await expect(dialog.locator(".rhh-habit-paused")).toHaveText("배우기 끔 · 기억은 보관해요.");
     await expect(habits.locator("li")).toHaveCount(3);
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     await expect(habits.getByText(/아직 뚜렷한 변화는 없어요/)).toBeVisible();

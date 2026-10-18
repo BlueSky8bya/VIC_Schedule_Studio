@@ -393,7 +393,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 }
 /* One local profile/collection implementation. Cursor feedback only paints
    after input; it owns no permanent animation or layout loop. */
-.rhh-profile-playful { container: rhh-habits / inline-size; position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-xl); background: rgb(var(--glass-panel) / 92%); padding: var(--space-4); color: var(--ink); font-size: var(--text-body, 13.5px); line-height: 1.6; }
+.rhh-profile-playful { container: rhh-habits / inline-size; position: relative; isolation: isolate; overflow: clip; border: 1px solid var(--line); border-radius: var(--r-xl); background: rgb(var(--glass-panel) / 92%); padding: var(--space-4); color: var(--ink); font-size: var(--text-body, 13.5px); line-height: 1.6; }
 .rhh-profile-playful::before { position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: radial-gradient(220px circle at var(--profile-spot-x, 50%) var(--profile-spot-y, 50%), rgb(var(--glass-head) / 62%), transparent 80%); opacity: 0; pointer-events: none; transition: opacity var(--dur-2) var(--ease); content: ""; }
 .rhh-profile-playful[data-spotlight]::before { opacity: 1; }
 .rhh-profile-nav { width: 100%; margin-bottom: var(--space-4); }
@@ -431,16 +431,19 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 .rhh-collection-switch > button > span { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .rhh-collection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
 .rhh-collection-grid > li { min-width: 0; }
-.rhh-collection-tile { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; width: 100%; min-height: 104px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 62%); padding: 10px 6px; color: var(--ink); font: inherit; line-height: 1.4; text-align: center; cursor: pointer; transition: transform var(--dur-2) var(--spring-smooth), border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease); }
+.rhh-collection-tile { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; width: 100%; min-height: 104px; scroll-margin-block: 140px 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 62%); padding: 10px 6px; color: var(--ink); font: inherit; line-height: 1.4; text-align: center; cursor: pointer; transition: transform var(--dur-2) var(--spring-smooth), border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease); }
 .rhh-collection-tile > .vc-collection-art { width: 56px; height: 56px; }
-.rhh-collection-tile:not([data-found]) > .vc-collection-art { filter: grayscale(.8); opacity: .56; }
+.rhh-collection-tile:not([data-found]) > .vc-collection-art { filter: brightness(0); opacity: .22; }
+html[data-theme="dark"] .rhh-collection-tile:not([data-found]) > .vc-collection-art { filter: brightness(0) invert(1); }
 .rhh-collection-tile > span:not(.vc-collection-art) { max-width: 100%; overflow-wrap: anywhere; }
 .rhh-collection-tile:hover { background: rgb(var(--glass-cell) / 92%); transform: translateY(-2px); }
 .rhh-collection-tile[aria-pressed="true"] { border-color: var(--selection-border); box-shadow: inset 0 0 0 1px var(--selection-border); }
 .rhh-collection-tile:active, .rhh-collection-switch > button:active { transform: scale(var(--press-scale)); }
 .rhh-collection-tile:focus-visible, .rhh-collection-switch > button:focus-visible { outline: 2px solid var(--selection-border); outline-offset: 3px; }
 .rhh-collection-tile > .rhh-collection-stamp { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; }
-.rhh-collection-detail { display: grid; justify-items: start; gap: 6px; margin-top: var(--space-3); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+/* Clip the card without creating a scroll owner. This summary follows the
+   existing settings pane while deep entries keep their native focus margin. */
+.rhh-collection-detail { position: sticky; top: 0; z-index: 2; display: grid; justify-items: start; gap: 6px; margin-bottom: var(--space-3); border-bottom: 1px solid var(--line); background: rgb(var(--glass-panel)); padding-block: var(--space-2) var(--space-3); }
 .rhh-collection-detail > strong { font-size: var(--text-ui, 15px); font-weight: 600; }
 .rhh-collection-detail p { margin: 0; }
 .rhh-collection-detail > span, .rhh-collection-state { color: var(--ink-soft); }
@@ -452,8 +455,11 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 .rhh-accessory-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--space-3); }
 .rhh-gift-arrival { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-3); border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 76%); padding: var(--space-3); }
 .rhh-gift-arrival > .vc-collection-art { flex: none; width: 56px; height: 56px; }
-.rhh-gift-arrival > div { flex: 1; min-width: 120px; }
+.rhh-gift-arrival > strong { flex: 1; min-width: 120px; }
 .rhh-gift-arrival p { margin: 4px 0 0; color: var(--ink-soft); }
+.rhh-memory-switch { max-width: 320px; margin-top: var(--space-3); }
+.rhh-companion-sound-actions { display: flex; flex: none; align-items: center; gap: var(--space-2); }
+.rhh-companion-sound-actions > .rhh-link { display: grid; width: 44px; height: 44px; place-items: center; }
 .rhh-equipped-current { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-3) 0 0; }
 @container rhh-habits (max-width: 360px) {
   .rhh-profile-nav > button { gap: 2px; padding-inline: 4px; }

@@ -45,8 +45,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     const initialLife = createCompanionLife(() => 0);
     const life = { ...initialLife, foodScores: { ...initialLife.foodScores, peach: .9 }, favoriteFood: "peach" as const, social: .8, play: .8, curiosity: .8, comfort: .8, recent: ["variety" as const] };
     await page.addInitScript(({ prefs, care, life, key, epoch, theme }) => {
-      if (localStorage.getItem("fixture.traits106")) return;
-      localStorage.setItem("fixture.traits106", "seeded");
+      if (localStorage.getItem("fixture.traits107")) return;
+      localStorage.setItem("fixture.traits107", "seeded");
       for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": theme === "dark" ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "on", "vic.gfxPref": "max" })) localStorage.setItem(name, value);
       localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: false }));
       localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, hunger: .23, affection: .64, habits: { sociability: .6, playfulness: .3, confidence: .5, credit: 0, generation: 0 }, life }));
@@ -58,10 +58,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("복숭아");
     const actions = traits.locator(".rhh-profile-action");
     await expect(actions.locator("h4")).toHaveText(["마우스 곁에서 교감", "좋아하는 맛 고르기", "집에서 포근하게", "응원과 작은 장난"]);
-    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대는 장면");
+    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대기도 해요");
     await expect(actions.nth(1)).toContainText("거리와 좋아하는 맛을 함께");
     await expect(actions.nth(2)).toContainText("피곤하지 않아도");
-    await expect(actions.nth(3)).toContainText("응원 동작을 연습");
+    await expect(actions.nth(3)).toContainText("응원을 연습");
     await expect(actions.locator(".rhh-profile-try")).toHaveCount(4);
     for (const hint of await actions.locator(".rhh-profile-try").allTextContents()) expect(hint.replace("해보기", "").trim().length).toBeGreaterThan(10);
     await expect(dialog.locator(".rhh-trait-reason")).toContainText("여러 맛을 골고루 알아가고 있어요");
@@ -73,9 +73,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect(new Set(layout.tiles.map(tile => tile.x)).size).toBe(2);
     expect(new Set(layout.tiles.map(tile => tile.y)).size).toBe(2);
     expect(layout.fruit).toBe(40);
-    mkdirSync(".scratch-pw/companion-106-settings", { recursive: true });
+    mkdirSync(".scratch-pw/companion-107-settings", { recursive: true });
     const profile = dialog.locator(".rhh-companion-profile");
-    await profile.screenshot({ path: `.scratch-pw/companion-106-settings/${surface}-${theme}.png` });
+    await profile.screenshot({ path: `.scratch-pw/companion-107-settings/${surface}-${theme}.png` });
     if (surface === "viewer" && theme === "light") {
       // A second real same-origin tab exercises the browser's storage event;
       // no model callback, event dispatch, state or geometry is substituted.
@@ -91,8 +91,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await sibling.close(); await page.bringToFront();
       await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("딸기");
       await expect(actions.nth(0)).toContainText("먼저 다가오는 교감은 아직 뜸해요");
-      await expect(actions.nth(2)).toContainText("피곤할 때 집에서 몸을 모아 쉬어요");
-      await expect(actions.nth(3)).toContainText("응원 연습을 고를 바탕이 자라요");
+      await expect(actions.nth(2)).toContainText("피곤하면 집에서 몸을 모아 쉬어요");
+      await expect(actions.nth(3)).toContainText("응원 연습은 아직 뜸해요");
       await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveText(["마우스와 거리를 조금 더 두려 해요.", "놀이보다 쉬어 가는 쪽으로 기울었어요.", "새로운 자리를 조금 더 오래 살펴요."]);
       // Real desktop resize exercises the shared responsive layout, keeping
       // the mobile capability gate intact rather than forcing hidden UI on.
@@ -103,7 +103,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       expect(narrow.overflow).toBeLessThanOrEqual(1);
       expect(narrow.rows.length).toBeGreaterThan(8);
       for (const row of narrow.rows) { expect(row.overflow).toBeLessThanOrEqual(1); expect(row.font).toBeGreaterThanOrEqual(13.5); }
-      await profile.screenshot({ path: ".scratch-pw/companion-106-settings/narrow-desktop.png" });
+      await profile.screenshot({ path: ".scratch-pw/companion-107-settings/narrow-desktop.png" });
       await page.setViewportSize({ width: 1440, height: 1100 });
       await settlePanelLayout(page);
     }
@@ -111,10 +111,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
     await expect(dialog.locator(".rhh-habit-paused")).toContainText("배우기 끔 · 기억은 보관");
     // OFF preserves stored memories while effects use the neutral defaults.
-    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대는 장면");
-    await expect(actions.nth(1)).toContainText("가까운 쪽을 먼저");
-    await expect(actions.nth(2)).toContainText("피곤할 때 집에서 몸을 모아 쉬어요");
-    await expect(actions.nth(3)).toContainText("응원 동작을 연습");
+    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대기도 해요");
+    await expect(actions.nth(1)).toContainText("가까운 간식부터");
+    await expect(actions.nth(2)).toContainText("피곤하면 집에서 몸을 모아 쉬어요");
+    await expect(actions.nth(3)).toContainText("응원을 연습");
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("사과");
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveCount(0);

@@ -1,6 +1,6 @@
 # 106 — Actionable companion profile, discovery and gifts
 
-Date:2026-10-18 KST. Status:local gates and34 native cases verified; authorized release verification pending.
+Date:2026-10-18 KST. Status:complete; released `f8eab06b8559e84730a41fceb2392b4f9c204773` and exact deployed UI/boundaries verified. See [verification](../verification/COMPANION_DISCOVERY_GIFTS-20261018.md). Post-release bookkeeping stays local until the next authorized product commit.
 
 ## Current owner authorization
 

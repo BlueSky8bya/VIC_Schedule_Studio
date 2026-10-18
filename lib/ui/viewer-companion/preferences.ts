@@ -13,6 +13,12 @@ export type CompanionPreferences = {
   feeding: boolean;
   /** Direct shared experiences slowly adjust motivation around these choices. */
   learnFromYou: boolean;
+  /** Local companion mix; the shared sound master remains authoritative. */
+  sound: boolean;
+  soundVolume: number;
+  soundCare: boolean;
+  soundMotion: boolean;
+  soundKeepsakes: boolean;
   /** Habits, motivation and gait are independent; no combination replaces the
    * character design, turns another switch on or changes device capability. */
   animalMode: "default" | "cat" | "dog";
@@ -37,13 +43,25 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   petting: true,
   feeding: true,
   learnFromYou: true,
+  sound: true,
+  soundVolume: 60,
+  soundCare: true,
+  soundMotion: true,
+  soundKeepsakes: true,
   animalMode: "default",
   speed: "normal",
   size: "large",
   personality: "curious"
 });
 
-const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "drag", "petting", "feeding", "learnFromYou"] as const;
+const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
+const soundKeys = ["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes"] as const;
+/** A live mix change never restarts the creature's movement/interaction world. */
+export function companionWorldPreferencesKey(preferences: Readonly<CompanionPreferences>): string {
+  const world: Partial<CompanionPreferences> = { ...preferences };
+  for (const key of soundKeys) delete world[key];
+  return JSON.stringify(world);
+}
 let volatilePreferences: CompanionPreferences | undefined;
 let lastReadableRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined; owner: Window } | undefined;
@@ -55,6 +73,7 @@ export function normalizeCompanionPreferences(value: unknown, base: Readonly<Com
   if (!value || typeof value !== "object" || Array.isArray(value)) return next;
   const source = value as Record<string, unknown>;
   for (const key of booleanKeys) if (typeof source[key] === "boolean") next[key] = source[key];
+  if (typeof source.soundVolume === "number" && Number.isFinite(source.soundVolume)) next.soundVolume = Math.min(100, Math.max(0, Math.round(source.soundVolume)));
   if (source.speed === "relaxed" || source.speed === "normal" || source.speed === "lively") next.speed = source.speed;
   if (source.personality === "curious" || source.personality === "affectionate" || source.personality === "sleepy") next.personality = source.personality;
   if (source.animalMode === "default" || source.animalMode === "cat" || source.animalMode === "dog") next.animalMode = source.animalMode;

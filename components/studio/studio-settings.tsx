@@ -27,6 +27,7 @@ import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/component
 import { Clock3 } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { CompanionProfile } from "@/components/shared/companion-profile";
+import { COMPANION_SOUND_CATEGORY_NAMES, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import { logActivity } from "@/lib/activity/client";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
@@ -239,7 +240,8 @@ const companionTabs = [
   { key: "motion", label: "움직임" },
   { key: "pranks", label: "장난" },
   { key: "affection", label: "교감" },
-  { key: "personality", label: "프로필" }
+  { key: "personality", label: "프로필" },
+  { key: "sound", label: "소리" }
 ] as const;
 type CompanionTab = typeof companionTabs[number]["key"];
 type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "drag" | "petting" | "feeding" | "learnFromYou";
@@ -250,7 +252,7 @@ const companionToggleActions: Record<CompanionToggle, string> = {
 };
 
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
-function CompanionSettings({ preferences, onChange }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void }) {
+function CompanionSettings({ preferences, onChange, globalSoundOn }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean }) {
   const [tab, setTab] = useState<CompanionTab>("motion");
   const id = useId();
   const nav = useRef<HTMLDivElement>(null);
@@ -278,7 +280,6 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         <Switch dataAct="companion-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="AI 빅타민 켜기/끄기" on={preferences.enabled} onToggle={() => onChange({ enabled: !preferences.enabled })} />
       </div>
     </div>
-    <p className="rhh-group-foot">달력에서 함께 놀아요. 꺼도 아래 취향은 기억해요.</p>
     <div aria-label="빅타민 설정" className="rhh-seg" ref={nav} role="tablist" style={{ "--n": companionTabs.length, "--i": companionTabs.findIndex(item => item.key === tab), width: "100%", marginBottom: 12 } as CSSProperties}>
       <span aria-hidden="true" className="rhh-seg-thumb" />
       {companionTabs.map(item => <button aria-controls={`${id}-${item.key}-panel`} aria-selected={tab === item.key} className={tab === item.key ? "on" : ""} data-act="settings-companion-tab" data-act-opt={item.key} data-companion-tab={item.key} id={`${id}-${item.key}`} key={item.key} onClick={() => { if (tab !== item.key) playSfx("tab"); setTab(item.key); }} onKeyDown={onKey} role="tab" tabIndex={tab === item.key ? 0 : -1} type="button">{item.label}</button>)}
@@ -301,7 +302,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         {row("ambientPrank", "숨바꼭질", <Leaf size={15} />)}
         {row("panelPrank", "패널 자리 장난", <ArrowDownToLine size={15} />)}
       </div>
-      <p className="rhh-group-foot">하트 콩은 실제 하트 수를 바꾸지 않아요. 기울어진 일정은 누르면 바로 돌아오고, 그냥 두어도 스스로 정돈돼요. 숨은 빅타민은 그 일정의 상세창에서 찾을 수 있어요. 패널 자리 장난은 잠깐 옮겼다가 돌려놓아요.</p>
+      <p className="rhh-group-foot">숨바꼭질은 일정 상세창에서 찾아 보세요.</p>
     </div>
     <div aria-labelledby={`${id}-affection`} hidden={tab !== "affection"} id={`${id}-affection-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">
@@ -309,8 +310,15 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}
       </div>
-      <p className="rhh-group-foot">잡아서 옮기거나, 누르지 않고 몸 전체에서 마우스를 살살 왕복해 주세요.</p>
-      <p className="rhh-group-foot">집 자판기에서 여러 과일을 꺼내 건넬 수 있어요.</p>
+      <p className="rhh-group-foot">누르지 않고 몸 위에서 마우스를 왕복하면 쓰다듬어요.</p>
+    </div>
+    <div aria-labelledby={`${id}-sound`} hidden={tab !== "sound"} id={`${id}-sound-panel`} role="tabpanel" tabIndex={0}>
+      <div className="rhh-group-card rhh-companion-sound">
+        <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">빅타민 효과음</RowLabel><Switch dataAct="companion-sound-enabled" dataActOpt={preferences.sound ? "off" : "on"} label="빅타민 효과음 켜기/끄기" on={preferences.sound} onToggle={() => onChange({ sound: !preferences.sound })} /></div>
+        <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">빅타민 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="빅타민 음량" aria-valuetext={`${preferences.soundVolume}%`} data-act="companion-sound-volume" data-sfx="off" max={100} min={0} onChange={event => onChange({ soundVolume: Number(event.currentTarget.value) })} onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) previewCompanionSound("care", { ...preferences, soundVolume: Number(event.currentTarget.value) }); }} onPointerUp={event => previewCompanionSound("care", { ...preferences, soundVolume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.soundVolume}%` } as CSSProperties} type="range" value={preferences.soundVolume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.soundVolume}</b></div></div>
+        {([{ category: "care", key: "soundCare", action: "companion-sound-care" }, { category: "motion", key: "soundMotion", action: "companion-sound-motion" }, { category: "keepsakes", key: "soundKeepsakes", action: "companion-sound-keepsakes" }] as const).map(({ category, key, action }) => <div className="role-help-haptics" key={category}><RowLabel icon={category === "care" ? <Heart size={15} /> : category === "motion" ? <Sparkles size={15} /> : <PartyPopper size={15} />} tone="water">{COMPANION_SOUND_CATEGORY_NAMES[category]}</RowLabel><div className="rhh-companion-sound-actions"><button aria-label={`${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 미리 듣기`} className="rhh-link" data-act="companion-sound-preview" data-act-opt={category} data-sfx="off" disabled={!globalSoundOn || !preferences.enabled || !preferences.sound || !preferences[key] || preferences.soundVolume === 0} onClick={() => previewCompanionSound(category, preferences)} type="button"><Volume1 aria-hidden="true" size={16} /></button><Switch dataAct={action} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} /></div></div>)}
+      </div>
+      {!globalSoundOn && <p className="rhh-group-foot">전체 효과음이 꺼져 있어요.</p>}
     </div>
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
       <CompanionProfile active={tab === "personality"} preferences={preferences} />
@@ -890,7 +898,7 @@ export function StudioSettingsList({
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
       {companionAvailable ? <section {...pane("companion")}>
         <h3 className="rhh-group-title" id="rhh-tab-companion-title">빅타민</h3>
-        <CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} />
+        <CompanionSettings globalSoundOn={sound.on} preferences={companionPrefs} onChange={onCompanionChange} />
       </section> : null}
 
       <section {...pane("bg", "rhh-web")}>
