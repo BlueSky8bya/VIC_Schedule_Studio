@@ -4,6 +4,7 @@ import sprites from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
+import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
 
 describe("one high-resolution pipeline for every companion action", () => {
   it("preserves every old phase and adds complete disappointed/sulky actions", () => {
@@ -16,17 +17,20 @@ describe("one high-resolution pipeline for every companion action", () => {
       const selected = selectCompanionSprite(index);
       expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
       expect(selected.src).toBe(sprites.atlases[Math.floor(index / 16)].src);
-      expect(selected.src).toMatch(/^\/companion\/hd\/vitamin-action-[0-9]{2}-unified-114-v1\.webp$/);
+      expect(selected.src).toMatch(/^\/companion\/hd\/vitamin-action-[0-9]{2}-motion-115-v1\.webp$/);
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
   });
   it("registers actual bodies in80 logical units with protected stroke margins", () => {
-    for (const frame of sprites.frames) {
+    for (const [index, frame] of sprites.frames.entries()) {
       expect([frame.x, frame.y, ...frame.clip].every(Number.isFinite)).toBe(true);
       expect(frame.clip.every(value => value >= 0)).toBe(true);
       expect(frame.clip[0] + frame.clip[2]).toBeLessThan(80); expect(frame.clip[1] + frame.clip[3]).toBeLessThan(80);
-      expect((frame.clip[3] + 2 + 80 - frame.clip[1] - 2) / 2 + frame.x).toBeCloseTo(40, 5);
-      expect(80 - frame.clip[2] - 2 + frame.y).toBeCloseTo(80, 5);
+      // Tiny nearly transparent export pixels cannot own the actual body's
+      // centre or ground contact. Clip still includes the entire authored AA.
+      const body = bodyRegistration.slots[index].body;
+      expect((body.left + body.right) / 2 / 2.4 + frame.x).toBeCloseTo(40, 5);
+      expect(body.bottom / 2.4 + frame.y).toBeCloseTo(80, 5);
       const bodyWidth = 80 - frame.clip[1] - frame.clip[3] - 4;
       expect(bodyWidth).toBeLessThanOrEqual(80 * .76); expect(bodyWidth).toBeGreaterThan(35);
     }
@@ -54,7 +58,7 @@ describe("one high-resolution pipeline for every companion action", () => {
     for (let row = 20; row < 32; row++) expect(companionSpriteMetadata.rows[row]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + (row - 20) * 16 + column));
     expect(companionSpriteMetadata.rows[32]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + 192 + column));
     expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
-    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-unified-114-v1.webp");
+    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-motion-115-v1.webp");
   });
 });
 

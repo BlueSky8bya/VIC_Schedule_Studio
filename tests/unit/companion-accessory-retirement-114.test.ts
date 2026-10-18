@@ -6,7 +6,7 @@ import { createCompanionCollectionStore, getCompanionUnreadCounts, normalizeComp
 const retired = ["star-pin", "satchel", "leaf-umbrella", "heart-badge", "lemon-badge", "bandage", "mushroom-hat"] as const;
 describe("focused wardrobe migration114", () => {
   it("keeps original earned keys, gives exactly their ordinary counterpart and preserves equipped fit", () => {
-    expect(COMPANION_WEARABLE_IDS).toHaveLength(25);
+    expect(COMPANION_WEARABLE_IDS).toHaveLength(27);
     for (const id of retired) {
       expect(COMPANION_WEARABLE_IDS).not.toContain(id); expect(COMPANION_ACCESSORIES[id]).toMatchObject({ retired: true, weight: 0 });
       const mapped = currentCompanionAccessory(id), result = normalizeCompanionGifts({ unlocked: [id], equipped: id });
@@ -14,7 +14,7 @@ describe("focused wardrobe migration114", () => {
       expect(result.unlocked).toHaveLength(2); expect(result.unlocked).toEqual(expect.arrayContaining([id, mapped])); expect(result.equipped).toBe(mapped);
       expect(normalizeCompanionGifts(result)).toEqual(result);
     }
-    expect(new Set(COMPANION_WEARABLE_IDS.map(id => COMPANION_ACCESSORIES[id].family))).toEqual(new Set(["head", "eyes", "eye-cover", "front-bow", "front-pocket"]));
+    expect(new Set(COMPANION_WEARABLE_IDS.map(id => COMPANION_ACCESSORIES[id].family))).toEqual(new Set(["head", "eyes", "eye-cover", "eye-mask", "front-bow", "front-pocket"]));
     expect(COMPANION_ACCESSORIES["bell-badge"].family).toBe("front-bow");
   });
   it("inherits seen and unseen history without a migration write or fake discovery", () => {

@@ -86,7 +86,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
               a second rabbit design for this small cover. The atlas is already
               shared with the active resident; crop only its first192px cell. */}
           <svg x="10" y="11" width="21" height="22" viewBox="0 0 192 192" overflow="hidden">
-              <image href="/companion/hd/vitamin-action-00-unified-114-v1.webp" width="1536" height="384" />
+              <image href="/companion/hd/vitamin-action-00-motion-115-v1.webp" width="1536" height="384" />
           </svg>
           <path d="M15 35h15" className="vc-book-line" />
         </svg>

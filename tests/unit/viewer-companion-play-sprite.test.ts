@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
 
 describe("additional native play packets share the established HD pipeline", () => {
   it("preserves every original HD/play index and appends the complete throw packet", () => {
@@ -24,18 +25,19 @@ describe("additional native play packets share the established HD pipeline", () 
     }
     const throwRow = companionSpriteMetadata.rows[32];
     expect(throwRow).toEqual(Array.from({ length: 16 }, (_, column) => base.frames.length + 192 + column));
-    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-unified-114-v1.webp");
+    expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-motion-115-v1.webp");
     expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
     for (const [column, index] of throwRow.entries()) expect(selectCompanionSprite(index, 32, column)).toMatchObject({ atlas: "hd", physicalIndex: index, index: column, grid: 8, gridRows: 2, src: play.atlases[12].src });
   });
   it("keeps whole bodies inside the existing footprint with a common centre and foot", () => {
-    for (const frame of play.frames) {
+    for (const [index, frame] of play.frames.entries()) {
       expect([frame.x, frame.y, ...frame.clip].every(Number.isFinite)).toBe(true);
       expect(Math.min(...frame.clip)).toBeGreaterThanOrEqual(0);
       const left = frame.clip[3] + 2, right = 80 - frame.clip[1] - 2;
       const top = frame.clip[0] + 2, bottom = 80 - frame.clip[2] - 2;
-      expect((left + right) / 2 + frame.x).toBeCloseTo(40, 5);
-      expect(bottom + frame.y).toBeCloseTo(80, 5);
+      const body = bodyRegistration.slots[base.frames.length + index].body;
+      expect((body.left + body.right) / 2 / 2.4 + frame.x).toBeCloseTo(40, 5);
+      expect(body.bottom / 2.4 + frame.y).toBeCloseTo(80, 5);
       expect(right - left).toBeLessThanOrEqual(80 * .76);
       expect(bottom - top).toBeLessThanOrEqual(80 * .82);
       expect(right - left).toBeGreaterThan(35); expect(bottom - top).toBeGreaterThan(20);

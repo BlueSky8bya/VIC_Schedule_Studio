@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "purpose": "Literal eye print on an opaque sleep-mask accessory; never editing the companion body eyes",
+  "user": "빅토리 레퍼런스 정면 사진에서 그대로 따오면 될듯",
+  "source": {
+    "id": "REF-001",
+    "path": "art-src/빅타민/동행/작업회차/20261018-수면안대115/고정입력/토리님정면_REF001.png",
+    "sha256": "4ef27d4b570013701f34d7db0e55628b29defc1b8cd548ecbfb6bb9d76f3f87e",
+    "original": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/02_헤어스타일/01_만두머리/01_정면·작은번/11511791191662240.png",
+    "readOnly": true
+  },
+  "crop": {
+    "left": 284,
+    "top": 410,
+    "width": 416,
+    "height": 126
+  },
+  "alphaPolygons": [
+    [
+      [
+        7,
+        60
+      ],
+      [
+        17,
+        45
+      ],
+      [
+        32,
+        35
+      ],
+      [
+        55,
+        28
+      ],
+      [
+        83,
+        27
+      ],
+      [
+        109,
+        31
+      ],
+      [
+        132,
+        37
+      ],
+      [
+        150,
+        48
+      ],
+      [
+        161,
+        69
+      ],
+      [
+        145,
+        73
+      ],
+      [
+        142,
+        97
+      ],
+      [
+        120,
+        108
+      ],
+      [
+        86,
+        117
+      ],
+      [
+        52,
+        119
+      ],
+      [
+        25,
+        108
+      ],
+      [
+        11,
+        88
+      ]
+    ],
+    [
+      [
+        250,
+        43
+      ],
+      [
+        266,
+        27
+      ],
+      [
+        286,
+        17
+      ],
+      [
+        314,
+        11
+      ],
+      [
+        340,
+        10
+      ],
+      [
+        366,
+        15
+      ],
+      [
+        386,
+        22
+      ],
+      [
+        403,
+        39
+      ],
+      [
+        407,
+        63
+      ],
+      [
+        394,
+        85
+      ],
+      [
+        372,
+        96
+      ],
+      [
+        345,
+        101
+      ],
+      [
+        316,
+        99
+      ],
+      [
+        291,
+        92
+      ],
+      [
+        272,
+        80
+      ],
+      [
+        264,
+        59
+      ]
+    ]
+  ],
+  "projection": {
+    "irisCentersNative": [
+      [
+        383,
+        492
+      ],
+      [
+        596,
+        478
+      ]
+    ],
+    "commonRotationDegrees": 3.760057,
+    "targetIrisSpan": 48,
+    "scale": 0.22486690895286685,
+    "sourceMidpointInCrop": [
+      205.5,
+      75
+    ],
+    "targetMidpoint": [
+      64,
+      64
+    ],
+    "uniformScale": true
+  },
+  "nativeCrop": {
+    "path": "art-src/빅타민/동행/작업회차/20261018-수면안대115/원본/REF001_양눈_기계크롭.png",
+    "sha256": "24fa6549e9fe37bb096d56142f57b9c9128c83ac8ecf59dfe5e73e7b538f2d97"
+  },
+  "print": {
+    "path": "art-src/빅타민/동행/작업회차/20261018-수면안대115/정리본/토리님_눈프린트_RGBA.png",
+    "sha256": "2f7a8bb50c597aba556bdcb3205b54043db587f55f413241f1f6c94d51e8ff11",
+    "width": 416,
+    "height": 126,
+    "sourceRgbPreserved": true
+  },
+  "imagegenCalls": 0,
+  "bodyArtworkChanged": false,
+  "ownerVisualApproval": "NOT_ESTABLISHED"
+}

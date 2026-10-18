@@ -55,7 +55,7 @@ for (const surface of ["viewer", "studio"] as const) test(`114 ${surface}: every
   const safety = await fixture(page, { allOwned: true, found: false, reduce: true, theme: surface === "studio" ? "dark" : "light" });
   const { dialog, profile, preview } = await openWardrobe(page, surface);
   await expect(preview).toHaveAttribute("data-preview-ready", "");
-  await expect(profile.locator(".rhh-collection-heading")).toContainText(`25/${COMPANION_WEARABLE_IDS.length}`);
+  await expect(profile.locator(".rhh-collection-heading")).toContainText(`${COMPANION_WEARABLE_IDS.length}/${COMPANION_WEARABLE_IDS.length}`);
   for (const id of COMPANION_WEARABLE_IDS) {
     await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf(id));
     await expect(profile.locator(`[data-accessory="${id}"]`)).toHaveAttribute("data-found", "true");

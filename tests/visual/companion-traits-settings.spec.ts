@@ -8,6 +8,7 @@ import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
+const copyOutput = process.env.COMPANION_COPY_REGRESSION_OUTPUT ?? ".scratch-pw/companion-114/copy";
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 
 async function assertCompanionAppearance(dialog: Locator) {
@@ -103,8 +104,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect(layout.fruit).toBeGreaterThanOrEqual(132);
     mkdirSync(".scratch-pw/companion-114/copy/traits", { recursive: true });
     const profile = dialog.locator(".rhh-companion-profile");
-    await page.screenshot({ path: `.scratch-pw/companion-114/copy/traits/viewport-profile-${surface}-${theme}.png` });
-    await profile.screenshot({ path: `.scratch-pw/companion-114/copy/traits/${surface}-${theme}.png` });
+    await page.screenshot({ path: `${copyOutput}/traits/viewport-profile-${surface}-${theme}.png` });
+    await profile.screenshot({ path: `${copyOutput}/traits/${surface}-${theme}.png` });
     if (surface === "viewer" && theme === "light") {
       // A second real same-origin tab exercises the browser's storage event;
       // no model callback, event dispatch, state or geometry is substituted.
@@ -130,7 +131,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       expect(narrow.overflow).toBeLessThanOrEqual(1);
       expect(narrow.rows.length).toBeGreaterThan(8);
       for (const row of narrow.rows) { expect(row.overflow).toBeLessThanOrEqual(1); expect(row.font).toBeGreaterThanOrEqual(13.5); }
-      await profile.screenshot({ path: ".scratch-pw/companion-114/copy/traits/narrow-desktop.png" });
+      await profile.screenshot({ path: `${copyOutput}/traits/narrow-desktop.png` });
       await page.setViewportSize({ width: 1440, height: 1100 });
       await settlePanelLayout(page);
     }

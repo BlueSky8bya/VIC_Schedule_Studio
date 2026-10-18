@@ -361,13 +361,13 @@ describe("companion clip and facing continuity", () => {
 
   it("clamps a one-shot phase and holds its terminal cell", () => {
     const motion = createCompanionMotion({ clips: { 3: [2, 8, 12] } });
-    expect(motion.sample(input({ row: 3, phase: .8 })).column).toBe(2);
+    expect(motion.sample(input({ row: 3, phase: .8 })).column).toBe(12);
     expect(motion.sample(input({ row: 3, phase: -4, now: 1 })).column).toBe(2);
     expect(motion.sample(input({ row: 3, phase: .5, now: 2 })).column).toBe(8);
     expect(motion.sample(input({ row: 3, phase: .99, now: 2.5 })).column).toBe(12);
     expect(motion.sample(input({ row: 3, phase: 4, now: 3 })).column).toBe(12);
     expect(motion.sample(input({ row: 3, phase: 1, now: 1000 })).column).toBe(12);
-    expect(motion.sample(input({ row: 6, phase: 1, now: 1100 })).column).toBe(0);
+    expect(motion.sample(input({ row: 6, phase: 1, now: 1100 })).column).toBe(15);
   });
 
   it("shows every selected preparation and landing cell before the next stage", () => {

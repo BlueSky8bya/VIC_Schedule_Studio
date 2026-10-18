@@ -10,8 +10,8 @@ const root = process.cwd(), flag = process.argv.find(value => value.startsWith('
 const output = path.resolve(root, flag?.slice(6) ?? '.scratch-pw/companion-110/accessories');
 if (!output.startsWith(path.join(root, '.scratch-pw') + path.sep)) throw Error('QA output must stay in workspace .scratch-pw');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const product = ['lib/ui/viewer-companion/accessory.ts', 'lib/ui/viewer-companion/accessory-catalog.ts', 'lib/ui/viewer-companion/accessory-art.ts', 'lib/ui/viewer-companion/collection-art.ts', 'lib/ui/viewer-companion/accessory-motion.ts', 'lib/ui/viewer-companion/gifts.ts', 'lib/ui/viewer-companion/collection-texture.ts'];
-const jsonNames = ['accessory-anchors', 'mouth-anchors', 'hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite', 'accessory-vector-114'];
+const product = ['lib/ui/viewer-companion/accessory.ts', 'lib/ui/viewer-companion/accessory-catalog.ts', 'lib/ui/viewer-companion/accessory-art.ts', 'lib/ui/viewer-companion/collection-art.ts', 'lib/ui/viewer-companion/accessory-motion.ts', 'lib/ui/viewer-companion/gifts.ts', 'lib/ui/viewer-companion/collection-texture.ts', 'lib/ui/viewer-companion/sprite-quality.ts'];
+const jsonNames = ['accessory-anchors', 'mouth-anchors', 'hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite', 'accessory-vector-114', 'accessory-vector-115'];
 const sources = new Map(), compiled = {};
 for (const name of product) {
   const source = await fs.readFile(path.join(root, name), 'utf8'); sources.set(name, source);
@@ -52,14 +52,14 @@ try {
       if (json[name]) return json[name];
       if (!compiled[name]) throw Error('Unknown QA module ' + name);
       const qaModule = { exports: {} }; cache.set(name, qaModule);
-      new Function('require', 'exports', 'module', compiled[name])(request => load(normalize(name.slice(0, name.lastIndexOf('/') + 1) + request + (request.endsWith('.json') ? '' : '.ts'))), qaModule.exports, qaModule);
+      new Function('require', 'exports', 'module', compiled[name])(request => load(normalize((request.startsWith('@/') ? request.slice(2) : name.slice(0, name.lastIndexOf('/') + 1) + request) + (request.endsWith('.json') ? '' : '.ts'))), qaModule.exports, qaModule);
       return qaModule.exports;
     };
     const { companionAccessoryPlacement, createCompanionAccessoryPainter } = load('lib/ui/viewer-companion/accessory.ts');
     const { COMPANION_WEARABLE_IDS: ids } = load('lib/ui/viewer-companion/gifts.ts');
     const { COMPANION_ACCESSORIES: catalogue } = load('lib/ui/viewer-companion/accessory-catalog.ts');
     const { sampleCompanionAccessoryMotion } = load('lib/ui/viewer-companion/accessory-motion.ts');
-    const selected = physicalIndex => { const frame = metadata.frames[physicalIndex]; return { atlas: 'hd', physicalIndex, index: frame.index, src: metadata.atlases[frame.atlas].src, grid: 8, gridRows: 2, frame }; };
+    const { selectCompanionSprite: selected } = load('lib/ui/viewer-companion/sprite-quality.ts');
     const host = () => document.createElement('span');
     let cssWrites = 0, checks = 0, motionChecks = 0;
     const detached = { back: host(), front: host(), gift: host() }, painter = createCompanionAccessoryPainter(detached);
@@ -124,7 +124,7 @@ try {
   let sheets = 0;
   if (compact) {
     const indexes = [0, 304, 323, 326, 404, 440, 500, 513];
-    for (const [index, id] of domain.ids.entries()) await page.evaluate(({ id, indexes, append }) => window.accessoryQA.render(id, indexes, '114: all active fittings,8 representative adopted poses, both facings', undefined, append), { id, indexes, append: index > 0 });
+    for (const [index, id] of domain.ids.entries()) await page.evaluate(({ id, indexes, append }) => window.accessoryQA.render(id, indexes, '115: all active fittings,8 representative adopted poses, both facings', undefined, append), { id, indexes, append: index > 0 });
     await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-contact.png') }); sheets++;
   } else for (const id of domain.ids) for (let offset = 0; offset < domain.critical.length; offset += 128) {
     const indexes = domain.critical.slice(offset, offset + 128), name = `wear-${id}-${offset / 128 + 1}.png`;
@@ -137,7 +137,7 @@ try {
   }
   await page.evaluate(async ids => {
     const grid = document.querySelector('.audit-grid'); grid.style.gridTemplateColumns = 'repeat(5,104px)'; grid.style.width = '520px';
-    for (const [index, id] of ids.entries()) await window.accessoryQA.render(id, [0], '114:25 active accessories, actual92px default body', undefined, index > 0, [1], true);
+    for (const [index, id] of ids.entries()) await window.accessoryQA.render(id, [0], `115:${ids.length} active accessories, actual92px default body`, undefined, index > 0, [1], true);
   }, domain.ids);
   await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-neutral-92px.png') }); sheets++;
   const rendered = await page.evaluate(() => window.accessoryQA.snapshots);

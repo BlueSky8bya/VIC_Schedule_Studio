@@ -3,10 +3,9 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import hd from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
-import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
-import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
-import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
+import hd from "../../art-src/빅타민/동행/작업회차/20261018-포즈통일114/정리본/hd-motion-sprite.json";
+import play from "../../art-src/빅타민/동행/작업회차/20261018-포즈통일114/정리본/play-motion-sprite.json";
+import living from "../../art-src/빅타민/동행/작업회차/20261018-포즈통일114/정리본/living-motion-sprite.json";
 
 const run = "art-src/빅타민/동행/작업회차/20261018-포즈통일114";
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
@@ -16,6 +15,8 @@ type Atlas = { src: string; sha256: string; bytes: number; width: number; height
 type Key = { cell: number; box: { left: number; top: number; width: number; height: number }; cropRgbaSha256: string; completeHighAlphaBodyPreserved: boolean; rgbaPixelsRepainted: number };
 type Receipt = { native: { path: string; sha256: string }; generationCallsForRun: number; generationCallsByThisScript: number; ownerVisualApproval: string; coverage: { physicalSlots: number; logicalRows: number; distinctWholeKeysUsed: number; fallbackOldRgbSlots: number; audiencePreserved: boolean }; keys: Key[]; slots: Array<{ index: number; family: string; key: number; nativeCell: number; frame: Frame; sourceSha256: string; cropRgbaSha256: string; alphaSha256: string; faceProtection?: { minimumRigidWeight: number; maximumFeatureDeviation: number } }>; packets: Array<Atlas & { index: number; alphaSha256: string }>; stagedMetadata: Record<string, string> };
 const receipt = json<Receipt>(`${run}/패킹파생기록.json`);
+//114 is immutable history after115's mechanical continuity corrections.
+const companionSpriteMetadata = { rows: [...hd.rows, ...play.rows, ...living.rows], atlases: [...hd.atlases, ...play.atlases, ...living.atlases], frames: [...hd.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + hd.atlases.length })), ...living.frames.map(frame => ({ ...frame, atlas: frame.atlas + hd.atlases.length + play.atlases.length }))] };
 const names = ["hd-motion-sprite", "play-motion-sprite", "living-motion-sprite"];
 const alphaHash = (rgba: Buffer) => { const alpha = Buffer.alloc(rgba.length / 4); for (let n = 0; n < alpha.length; n++) alpha[n] = rgba[n * 4 + 3]; return hash(alpha); };
 function crop(rgba: Buffer, width: number, box: Key["box"]) { const bytes = Buffer.alloc(box.width * box.height * 4); for (let y = 0; y < box.height; y++) rgba.copy(bytes, y * box.width * 4, ((box.top + y) * width + box.left) * 4, ((box.top + y) * width + box.left + box.width) * 4); return bytes; }
@@ -34,7 +35,7 @@ describe("114 single-native whole-pose replacement", () => {
     expect(companionSpriteMetadata.rows).toHaveLength(41); expect(companionSpriteMetadata.frames).toHaveLength(520); expect(companionSpriteMetadata.atlases).toHaveLength(33);
     for (const [index, name] of names.entries()) {
       const pack = [hd, play, living][index], frozen = json<{ rows: number[][] }>(`${run}/고정입력/${name}.json`);
-      expect(pack.rows).toEqual(frozen.rows); expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(receipt.stagedMetadata[name]))).toBe(true);
+      expect(pack.rows).toEqual(frozen.rows); expect(readFileSync(`art-src/빅타민/동행/작업회차/20261018-동작연결정리115/고정입력/${name}.json`).equals(readFileSync(receipt.stagedMetadata[name]))).toBe(true);
     }
     for (const slot of receipt.slots) {
       expect(slot.sourceSha256).toBe(receipt.native.sha256); expect(slot.cropRgbaSha256).toBe(receipt.keys[slot.nativeCell].cropRgbaSha256);

@@ -11,19 +11,19 @@ const meal: CompanionAction = { kind: "eat", foodId: food.id, effectPoint: { x: 
 describe("unknown snack encounters and contextual trust", () => {
   it("inspects, tosses and teases a real unknown snack before eventually tasting the same food", () => {
     let draws = 0;
-    const curiosity = createCompanionFoodCuriosity(() => [0, .1, .6][draws++ % 3]);
-    const settings = { ...prefs, enabled: true };
-    const steps = Array.from({ length: 8 }, () => curiosity.consider(meal, food, false, .6, settings));
+    const curiosity = createCompanionFoodCuriosity(() => [.9, .4, .72, .99][draws++ % 4]);
+    const settings = { ...prefs, enabled: true, animalMode: "cat" as const };
+    const steps = Array.from({ length: 8 }, () => curiosity.consider(meal, food, false, .1, settings));
     expect(steps.slice(0, 3).map(step => step.foodCuriosity)).toEqual(["inspect", "toss", "tease"]);
-    expect(steps.slice(0, 6).every(step => step.kind !== "eat" && step.foodId === food.id)).toBe(true);
-    expect(steps[6]).toBe(meal);
+    expect(steps.slice(0, 4).every(step => step.kind !== "eat" && step.foodId === food.id)).toBe(true);
+    expect(steps[4]).toBe(meal);
     expect(curiosity.consider(meal, food, true, .6, settings)).toBe(meal);
     expect(curiosity.consider({ ...meal, kind: "walk" }, food, false, .6, settings).kind).toBe("walk");
     expect(curiosity.consider(meal, undefined, false, .6, settings)).toBe(meal);
   });
   it("shortens suspicion when very hungry, while cats take more encounters than dogs", () => {
     const count = (animalMode: typeof prefs.animalMode, hunger: number) => {
-      const curiosity = createCompanionFoodCuriosity(() => 0);
+      const curiosity = createCompanionFoodCuriosity(() => .999);
       return Array.from({ length: 10 }, () => curiosity.consider(meal, food, false, hunger, { ...prefs, animalMode })).filter(step => step.kind !== "eat").length;
     };
     expect(count("cat", .6)).toBeGreaterThan(count("dog", .6));

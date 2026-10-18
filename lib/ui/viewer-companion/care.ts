@@ -34,7 +34,7 @@ const lifeSignature = (life: CompanionLife) => {
   const category = (value: number) => value <= .35 ? "low" : value >= .65 ? "high" : "balanced";
   return JSON.stringify([life.generation, summary.favoriteFood, ...[summary.play, summary.comfort, summary.social, summary.curiosity].map(category), life.social >= .4, life.comfort >= .6, life.play >= .45, life.curiosity >= .4, life.recent]);
 };
-const effectPreferences = (["default", "cat", "dog"] as const).flatMap(animalMode => (["curious", "affectionate", "sleepy"] as const).flatMap(personality => (["relaxed", "normal", "lively"] as const).map(speed => ({ animalMode, personality, speed }))));
+const effectPreferences = (["default", "cat", "dog"] as const).flatMap(animalMode => (["curious", "affectionate", "sleepy", "tidy", "mischievous"] as const).flatMap(personality => (["relaxed", "normal", "lively"] as const).map(speed => ({ animalMode, personality, speed }))));
 
 /** Injectable store keeps quota failures and throttling testable without a DOM.
  * An external clear/change wins; an unchanged stale value after a failed write

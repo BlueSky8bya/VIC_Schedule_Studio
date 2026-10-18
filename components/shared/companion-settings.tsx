@@ -103,7 +103,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
         </div>
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">기본 성격</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
+          <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }, { value: "tidy", label: "깔끔이" }, { value: "mischievous", label: "사고뭉치" }]} value={preferences.personality} />
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>

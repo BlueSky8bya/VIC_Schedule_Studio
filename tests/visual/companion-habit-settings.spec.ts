@@ -4,6 +4,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 
+const copyOutput = process.env.COMPANION_COPY_REGRESSION_OUTPUT ?? ".scratch-pw/companion-114/copy";
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 
 async function openHabits(page: Page) {
@@ -89,8 +90,8 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     expect(["start", "left"]).toContain(balance.alignment);
     expect(balance.paddingDifference).toBeLessThanOrEqual(1);
     mkdirSync(".scratch-pw/companion-114/copy/habits", { recursive: true });
-    await habits.screenshot({ path: `.scratch-pw/companion-114/copy/habits/habits-${surface}-${theme}.png` });
-    await dialog.screenshot({ path: `.scratch-pw/companion-114/copy/habits/dialog-${surface}-${theme}.png` });
+    await habits.screenshot({ path: `${copyOutput}/habits/habits-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `${copyOutput}/habits/dialog-${surface}-${theme}.png` });
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
     await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");

@@ -26,7 +26,8 @@ const count = (page: Page, target: string) => targets(page).filter(value => valu
 const new109Targets = ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-collection-page#prev", "companion-collection-page#next", "companion-collection-inspect#food", "companion-profile-page#discover", "companion-throw"];
 const new110Targets = ["companion-book-open", "companion-book-close", "companion-collection-inspect#behavior", "companion-collection-inspect#moment"];
 const new111Targets = ["companion-profile-page#settings", "companion-rare-prank#on", "companion-rare-prank#off", "companion-radio-source", "companion-radio-license"];
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets];
+const new115Targets = ["companion-personality#tidy", "companion-personality#mischievous"];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets];
 const retired110Target = "companion-radio-mood#lively";
 const readFixtureTargets = [...sampleTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
@@ -383,6 +384,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await panel.getByRole("tab", { name: "기본", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
+    for (const name of ["깔끔이", "사고뭉치"]) await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name, exact: true }).click();
     const learning = panel.locator('[data-act="companion-learning-enabled"]');
     const learningBefore = await learning.isChecked();
     await learning.click(); await expect(learning).toBeChecked({ checked: !learningBefore });
@@ -392,7 +394,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await panel.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
     await flush(page, [{ target: "companion-speed#lively" }]);
     for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
-    for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
+    for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", ...new115Targets, "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual(["companion-learning-reset"]);
   });
 
@@ -574,7 +576,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of new110Targets) {
+  for (const target of [...new110Targets, ...new115Targets]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();

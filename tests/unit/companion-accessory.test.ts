@@ -36,14 +36,14 @@ describe("adopted pose wardrobe", () => {
       if (pose.orientation === "back") continue;
       expect(pose.eyes, `eyes ${pose.physicalIndex}`).toHaveLength(2);
       const selected = selectCompanionSprite(pose.physicalIndex), eye = pose.eyes[1];
-      for (const id of ["eyepatch", "star-patch", "monocle"] as const) {
+      for (const id of ["monocle"] as const) {
         const placed = companionAccessoryPlacement(selected, id)!;
         expect(placed.x, `${id}:${pose.physicalIndex}`).toBeCloseTo(eye.center[0]); expect(placed.y).toBeCloseTo(eye.center[1]);
         const coreRadius = 22 * (placed.art.viewScale ?? 1) * placed.width / placed.art.content.width;
-        for (const x of [eye.bounds[0], eye.bounds[2]]) for (const y of [eye.bounds[1], eye.bounds[3]]) expect(Math.hypot(x - placed.x, y - placed.y), `${id}:${pose.physicalIndex} ${id === "monocle" ? "lens interior" : "opaque eye core"}`).toBeLessThan(coreRadius);
+        for (const x of [eye.bounds[0], eye.bounds[2]]) for (const y of [eye.bounds[1], eye.bounds[3]]) expect(Math.hypot(x - placed.x, y - placed.y), `${id}:${pose.physicalIndex} lens interior`).toBeLessThan(coreRadius);
         expect(placed.layer).toBe("front");
       }
-      for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "cat-eye-glasses"] as const) {
+      for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "square-glasses"] as const) {
         const placed = companionAccessoryPlacement(selected, id)!, span = Math.hypot(pose.eyes[1].center[0] - pose.eyes[0].center[0], pose.eyes[1].center[1] - pose.eyes[0].center[1]);
         expect(placed.width / placed.art.content.width * 48 * placed.art.viewScale!, `${id}:${pose.physicalIndex} lens span`).toBeCloseTo(span);
         expect(placed.rotation).toBeCloseTo(pose.face.roll); expect(placed.pivot).toEqual({ x: 64, y: 64 });

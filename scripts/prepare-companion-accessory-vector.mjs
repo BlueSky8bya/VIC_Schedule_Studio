@@ -1,5 +1,6 @@
 // Original code-native ornaments. No body raster is edited or regenerated.
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 const ids = ['bell-badge', 'heart-badge', 'lemon-badge', 'eyepatch', 'propeller-hat', 'magic-pocket', 'bandage', 'tiny-crown', 'mushroom-hat', 'star-patch', 'propeller-rotor', 'magic-pocket-open'];
 const shapes = {
   'bell-badge': '<circle cx="64" cy="40" r="7" fill="#e5bd62"/><path d="M43 62Q43 43 64 43Q85 43 85 62L92 83Q64 98 36 83Z" fill="#ffdb83"/><path d="M39 79Q64 86 89 79M64 83V91" fill="none"/><circle cx="64" cy="91" r="5" fill="#96713f"/><path d="M51 54Q47 60 47 67" fill="none" stroke="#fff3bb" stroke-width="5"/>',
@@ -58,3 +59,37 @@ for (const [target, contents] of [['public/companion/collection/accessories-114-
   else await fs.writeFile(target, contents);
 }
 console.log(`${process.argv.includes('--check') ? 'Verified' : 'Prepared'} ${modernIds.length * 4} task114 vector cells`);
+
+//115: printed sleep masks and the explicitly requested canonical gadget
+// silhouettes. The only raster is the user's literal original eye print;
+// it is embedded once in defs and reused by the four small view cells.
+const printFolder = 'art-src/빅타민/동행/작업회차/20261018-수면안대115';
+const printReceipt = JSON.parse(await fs.readFile(`${printFolder}/원본프린트_출처기록.json`, 'utf8'));
+const literalPrint = await fs.readFile(printReceipt.print.path);
+if (crypto.createHash('sha256').update(literalPrint).digest('hex') !== printReceipt.print.sha256) throw Error('Literal original eye print SHA differs from its source receipt');
+const printScale = printReceipt.projection.scale, printMid = printReceipt.projection.sourceMidpointInCrop;
+const printDefinition = `<image id="tori-eye-print" x="${-printMid[0] * printScale}" y="${-printMid[1] * printScale}" width="${416 * printScale}" height="${126 * printScale}" href="data:image/png;base64,${literalPrint.toString('base64')}"/>`;
+const maskBase = color => `<path d="M12 57L22 60M106 60L116 57" fill="none" stroke="#9f8770" stroke-width="4"/><path d="M15 55Q15 41 30 41H98Q113 41 113 55V72Q113 87 97 87H80Q72 87 67 81Q64 78 61 81Q56 87 48 87H31Q15 87 15 72Z" fill="${color}"/><path d="M24 51Q26 46 33 46H95" fill="none" stroke="#fff8ec" stroke-width="2"/>`;
+const latest = {
+  'square-glasses': { bounds: [13, 40, 102, 48], paired: true, shape: '<rect x="19" y="45" width="42" height="38" rx="7" fill="#fff4d9" fill-opacity=".1" stroke="#816c5d" stroke-width="4"/><rect x="67" y="45" width="42" height="38" rx="7" fill="#fff4d9" fill-opacity=".1" stroke="#816c5d" stroke-width="4"/><path d="M61 56Q64 52 67 56M15 48L19 50M109 50L113 48" fill="none" stroke="#816c5d" stroke-width="4"/><path d="M27 52H34M75 52H82" stroke="#e8d0ab" stroke-width="2"/>' },
+  'sleep-mask-smile': { bounds: [12, 38, 104, 52], shape: maskBase('#edc5bc') + '<path d="M28 68Q40 48 52 68M76 68Q88 48 100 68" fill="none" stroke="#77574b" stroke-width="4"/>' },
+  'sleep-mask-drowsy': { bounds: [12, 38, 104, 52], shape: maskBase('#c2cbb3') + '<path d="M27 60Q40 72 53 60M75 60Q88 72 101 60M33 66L30 71M47 66L50 71M81 66L78 71M95 66L98 71" fill="none" stroke="#6d6d54" stroke-width="3.5"/>' },
+  'sleep-mask-wide': { bounds: [12, 38, 104, 52], shape: maskBase('#cbbdd9') + '<ellipse cx="40" cy="64" rx="12" ry="15" fill="#fff9eb" stroke="#85708d" stroke-width="2"/><ellipse cx="88" cy="64" rx="12" ry="15" fill="#fff9eb" stroke="#85708d" stroke-width="2"/><ellipse cx="40" cy="65" rx="6" ry="9" fill="#6b5c69" stroke="none"/><ellipse cx="88" cy="65" rx="6" ry="9" fill="#6b5c69" stroke="none"/><circle cx="38" cy="61" r="2.5" fill="white" stroke="none"/><circle cx="86" cy="61" r="2.5" fill="white" stroke="none"/>' },
+  'sleep-mask-tori': { bounds: [12, 38, 104, 52], shape: maskBase('#ffece1') + `<g transform="translate(64 64) rotate(${printReceipt.projection.commonRotationDegrees})"><use href="#tori-eye-print"/></g>` },
+  'propeller-hat': { bounds: [16, 16, 96, 88], shape: '<path d="M64 27V84" fill="none" stroke="#a27b3b" stroke-width="8"/><path d="M64 28V82" fill="none" stroke="#e7c56b" stroke-width="4"/><path d="M56 83Q64 79 72 83L79 96Q64 103 49 96Z" fill="#e8cb73" stroke="#997a3f"/><ellipse cx="64" cy="96" rx="15" ry="4" fill="#efdb8b" stroke="#997a3f"/><path d="M57 86L54 93" stroke="#fff0ac" stroke-width="2"/>' },
+  'propeller-rotor': { bounds: [16, 16, 96, 88], shape: '<path d="M62 20Q52 13 24 17Q12 18 19 25Q28 30 61 25ZM66 20Q76 13 104 17Q116 18 109 25Q100 30 67 25Z" fill="#ead077" stroke="#997a3f"/><circle cx="64" cy="22" r="6" fill="#f4df90" stroke="#997a3f"/>' },
+  'magic-pocket': { bounds: [22, 42, 84, 46], shape: '<path d="M24 46H104A40 40 0 0 1 24 46Z" fill="#fffdf8" stroke="#77716b" stroke-width="2.5"/><path d="M26 48H102" stroke="#e4e1d9" stroke-width="2"/>' },
+  'magic-pocket-open': { bounds: [22, 42, 84, 46], shape: '<path d="M24 46H104A40 40 0 0 1 24 46Z" fill="#fffdf8" stroke="#77716b" stroke-width="2.5"/><ellipse cx="64" cy="47" rx="39" ry="8" fill="#70665f" stroke="#d5cfc2" stroke-width="2"/>' },
+};
+const latestIds = Object.keys(latest);
+const latestCells = latestIds.flatMap((id, row) => ['front', 'quarter', 'side', 'back'].map((view, column) => {
+  const scale = view === 'quarter' ? .83 : view === 'side' ? .56 : 1;
+  return `<g transform="translate(${column * 128} ${row * 128})"><g transform="translate(${64 - 64 * scale} 0) scale(${scale} 1)" stroke="#ad8c67" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${latest[id].shape}</g></g>`;
+}));
+const latestSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="${latestIds.length * 128}" viewBox="0 0 512 ${latestIds.length * 128}"><defs>${printDefinition}</defs>${latestCells.join('')}</svg>\n`;
+const latestMetadata = JSON.stringify({ src: '/companion/collection/accessories-115-v1.svg', cell: 128, columns: 4, frames: latestIds.map(id => ({ id, bounds: latest[id].bounds, paired: Boolean(latest[id].paired) })) }, null, 2) + '\n';
+for (const [target, contents] of [['public/companion/collection/accessories-115-v1.svg', latestSvg], ['lib/ui/viewer-companion/accessory-vector-115.json', latestMetadata]]) {
+  if (process.argv.includes('--check')) { if (await fs.readFile(target, 'utf8') !== contents) throw Error(`Requested accessory source differs: ${target}`); }
+  else await fs.writeFile(target, contents);
+}
+console.log(`${process.argv.includes('--check') ? 'Verified' : 'Prepared'} ${latestIds.length * 4} task115 ornament cells; literal eye print reused once`);

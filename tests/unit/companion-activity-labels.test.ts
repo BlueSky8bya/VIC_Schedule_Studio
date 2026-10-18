@@ -119,6 +119,8 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       ["companion-personality#curious", "빅타민 성격 · 호기심"],
       ["companion-personality#affectionate", "빅타민 성격 · 애교쟁이"],
       ["companion-personality#sleepy", "빅타민 성격 · 잠꾸러기"],
+      ["companion-personality#tidy", "빅타민 성격 · 깔끔이"],
+      ["companion-personality#mischievous", "빅타민 성격 · 사고뭉치"],
       ["companion-home-fold#open", "빅타민 집 · 펴기"],
       ["companion-home-fold#close", "빅타민 집 · 접기"]
     ];

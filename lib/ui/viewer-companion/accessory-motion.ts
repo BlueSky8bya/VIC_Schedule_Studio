@@ -27,7 +27,7 @@ export function sampleCompanionAccessoryMotion(id: CompanionAccessoryId, elapsed
     bodyLift = hop * 26; squash = pulse(p, .05, .18) * .045 + pulse(p, .6, .76) * .035;
     lift = floating * 9; roll = floating * (id === "party-hat" ? 7 : id === "flower-crown" ? -4 : id === "baseball-cap" ? -7 : 4);
     row = p < .18 ? 3 : p < .6 ? 4 : p < .76 ? 6 : 9;
-  } else if (family === "eyes" || family === "eye-cover") {
+  } else if (family === "eyes" || family === "eye-cover" || family === "eye-mask") {
     const raised = pulse(p, .3, .9), tilt = pulse(p, .12, .4);
     lift = raised * (id === "pixel-sunglasses" ? 7 : 9); roll = tilt * (id === "pixel-sunglasses" ? -16 : 12);
     bodyLean = show * (id === "pixel-sunglasses" ? -5 : 4); scale += show * .025;

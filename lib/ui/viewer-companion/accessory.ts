@@ -2,7 +2,7 @@ import anchors from "./accessory-anchors.json";
 import mouths from "./mouth-anchors.json";
 import { getCompanionCollectionArtFrame, type CompanionCollectionArtFrame } from "./collection-art";
 import type { CompanionAccessoryId } from "./gifts";
-import type { CompanionSpriteSelection } from "./sprite-quality";
+import { companionSpriteMetadata, type CompanionSpriteSelection } from "./sprite-quality";
 import { isCompanionHat, type CompanionAccessoryTransform } from "./accessory-motion";
 import { createCompanionCollectionTextureReadiness } from "./collection-texture";
 import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "./accessory-catalog";
@@ -18,7 +18,9 @@ const eyeFits = new Map(Array.from(poses.values()).flatMap(pose => {
   const eyes = pose.eyes;
   if (!eyes || eyes.length !== 2 || !eyes.every(eye => [...eye.center, ...eye.bounds].every(Number.isFinite))) return [];
   const eye = eyes[1], radius = Math.max(...[0, 2].flatMap(x => [1, 3].map(y => Math.hypot(eye.bounds[x] - eye.center[0], eye.bounds[y] - eye.center[1]))));
-  return [[pose.physicalIndex, { x: eye.center[0], y: eye.center[1], width: Math.max(4.5, radius * 72 / 22 * 1.08), span: Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]) }] as const];
+  const angle = pose.face.roll * Math.PI / 180, c = Math.cos(angle), s = Math.sin(angle);
+  const corners = eyes.flatMap(eye => [0, 2].flatMap(x => [1, 3].map(y => ({ x: eye.bounds[x] - pose.face.x, y: eye.bounds[y] - pose.face.y }))));
+  return [[pose.physicalIndex, { x: eye.center[0], y: eye.center[1], width: Math.max(4.5, radius * 72 / 22 * 1.08), span: Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]), pairU: Math.max(...corners.map(point => Math.abs(point.x * c + point.y * s))), pairV: Math.max(...corners.map(point => Math.abs(-point.x * s + point.y * c))) }] as const];
 }));
 // The native drawings themselves can turn in either direction before their
 // common parent mirrors for travel. Measure yaw in the registered face axis,
@@ -40,11 +42,11 @@ const polygon = (points: readonly (readonly number[])[]) => `polygon(${points.ma
 const glassesClips = { front: polygon([...quarterGlassesEdge, [128, 128], [0, 128]]), back: polygon([[0, 0], [128, 0], ...[...quarterGlassesEdge].reverse()]) };
 const bagClips = { front: "inset(46% 0 0)", back: "inset(0 0 54%)" };
 const calibratedMouths = new Map(mouths.frames.map(frame => [frame.index, frame]));
-const familyPoint = { head: "head", eyes: "face", "eye-cover": "face", "chest-badge": "sideChest", "front-bow": "chest", "front-pocket": "chest", "side-prop": "sideBody" } as const;
+const familyPoint = { head: "head", eyes: "face", "eye-cover": "face", "eye-mask": "face", "chest-badge": "sideChest", "front-bow": "chest", "front-pocket": "chest", "side-prop": "sideBody" } as const;
 const frontMounted = (id: CompanionAccessoryId) => ["chest-badge", "front-bow", "front-pocket"].includes(COMPANION_ACCESSORIES[id].family);
 function withMotion(placement: Placement, pose: Pose, id: CompanionAccessoryId, motion?: CompanionAccessoryTransform): Placement {
   if (!motion) return placement;
-  const angle = (["eyes", "eye-cover"].includes(COMPANION_ACCESSORIES[id].family) ? pose.face.roll : placement.rotation) * Math.PI / 180;
+  const angle = (["eyes", "eye-cover", "eye-mask"].includes(COMPANION_ACCESSORIES[id].family) ? pose.face.roll : placement.rotation) * Math.PI / 180;
   let x = placement.x + Math.sin(angle) * motion.lift + Math.cos(angle) * motion.shift, y = placement.y - Math.cos(angle) * motion.lift + Math.sin(angle) * motion.shift;
   const width = placement.width * motion.scale, rotation = placement.rotation + motion.roll;
   if (frontMounted(id) && pose.orientation !== "back") {
@@ -72,6 +74,14 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   const headwear = isCompanionHat(id), quarter = pose.orientation === "quarter";
   const mirror: -1 | 1 = quarter && poseYaw.get(selected.physicalIndex) !== sourceYaw(art) ? -1 : 1;
   const decoration = { mirror, ...(id === "sunglasses" && quarter ? { pivot: { x: 49, y: 68 }, clips: glassesClips } : id === "satchel" ? { clips: bagClips } : id === "propeller-hat" ? { rearArt: companionPropellerArt(pose.orientation), rotor: 0 } : {}) };
+  if (item.family === "eye-mask" && pose.orientation !== "back") {
+    const eye = eyeFits.get(selected.physicalIndex);
+    if (!eye) return null;
+    // A common opaque panel contains both actual eye boxes in the measured
+    // face axis. The printed artwork moves with that same single mask plane.
+    const width = Math.max(eye.span * 104 / 48, eye.pairU * 104 / 40 * 1.08, eye.pairV * 104 * (art.viewScale ?? 1) / 12 * 1.08);
+    return withMotion({ art, x: pose.face.x, y: pose.face.y, width, rotation: pose.face.roll, layer: "front", ...decoration, pivot: { x: 64, y: 64 } }, pose, id, motion);
+  }
   if (item.family === "eye-cover" && pose.orientation !== "back") {
     // The source-local right eye is measured from these exact adopted pixels,
     // including rolled/closed/teary eyes. A centred opaque core covers its
@@ -113,7 +123,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   }
   const width = baseWidth * spec.scale, brim = headwear ? width * art.content.height / art.content.width * (id === "propeller-hat" ? .45 : .2) : id === "leaf-umbrella" ? pose.chest.width * .48 : 0, angle = point.roll * Math.PI / 180;
   return withMotion({ art, x: point.x + Math.sin(angle) * brim, y: point.y - Math.cos(angle) * brim, width, rotation: point.roll - (id === "sunglasses" && quarter ? 12.5 * mirror : 0),
-    layer: headwear ? "headwear" : pose.orientation === "back" && (frontMounted(id) || item.family === "eyes" || item.family === "eye-cover") ? "back" : "front", ...decoration }, pose, id, motion);
+    layer: headwear ? "headwear" : pose.orientation === "back" && (frontMounted(id) || item.family === "eyes" || item.family === "eye-cover" || item.family === "eye-mask") ? "back" : "front", ...decoration }, pose, id, motion);
 }
 
 /** Local80-space anchors for finite special actions. The root world projects
@@ -133,6 +143,17 @@ export function companionGiftAnchor(selected: CompanionSpriteSelection): { x: nu
   const pose = poses.get(selected.physicalIndex), source = pose && anchors.sources[pose.atlas];
   if (!pose || !source || source.src !== selected.src || pose.index !== selected.index) return null;
   return { ...pose.chest, y: pose.chest.y + pose.chest.width * .1, width: pose.chest.width * .43, behind: pose.orientation === "back" };
+}
+
+/** A carried snack follows the adopted body's registered transport point,
+ * including walking/jumping frames that intentionally have no eating mouth.
+ * This never relaxes the separate source-calibrated eating-mouth contract. */
+export function companionCarryAnchor(selected: CompanionSpriteSelection): Landmark | null {
+  const pose = poses.get(selected.physicalIndex), source = pose && anchors.sources[pose.atlas];
+  const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = frame && companionSpriteMetadata.atlases[frame.atlas];
+  if (!pose || !source || !frame || !actual || source.src !== selected.src || pose.index !== selected.index || frame.index !== selected.index
+    || actual.src !== source.src || actual.sha256 !== source.sha256 || actual.bytes !== source.bytes) return null;
+  return { ...pose.chest };
 }
 
 type Hosts = { back: HTMLElement; front: HTMLElement; gift: HTMLElement };

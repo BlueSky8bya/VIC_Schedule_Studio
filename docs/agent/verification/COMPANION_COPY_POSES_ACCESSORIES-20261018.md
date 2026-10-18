@@ -1,6 +1,6 @@
 # Companion copy, one pose epoch and accessories — 114
 
-2026-10-18 KST. Work in progress; this record does not establish validation or deployment until the results below are completed.
+2026-10-18 KST. Completed and deployed within the requested one-generation epoch; exact validation, production proof and remaining art limitations are separated below.
 
 ## Current scope and authority
 
@@ -58,4 +58,10 @@ Final local production build `53qSBhwpDpGj3NOT1OLgN`, fixture3117. Full ESLint, 
 - Actual first-meal/decoded-body continuity2/2 on viewer/studio: native random food consumed, finite matching food stamp, matching recent discovered tile without reload. Read-only30Hz probe208+203frames, zero missing decoded texture during actual visible-body frames, zero attempted fixture writes/page errors. First-taste screenshots directly inspected. Evidence `food-b1-report.json` and `food/*render-probe.json`.
 - Harness exit0:292documents, link/ADR/active lifecycle/budget checks. `git diff --check` passes. Protected unrelated audience production-note SHA remains unchanged.
 
-Exact-SHA production checks pending. Real OBS/Safari/genuine-login RLS remain separate.
+## Deployed operating proof
+
+Commit `cd7651054af3be957de514bb82d51bd5edee0b11` pushed to main. Vercel reports success. Guarded anonymous actual production browser also passes: full40-character SHA occurs in the actual public client chunk, the served chunk bytes match that proof, all42 checked static assets match exact committed bytes(including all33 new world packets, both accessory SVGs, six food atlases and radio provenance). Browser reports `VIC build cd76510`. New profile/cards removed, wardrobe25, notebook/settings/collection screen fit675/675, radio streaming/notes and mobile companion exclusion verified; production screenshot directly inspected.
+
+All mutations were blocked, including the recognized saved-heart read POST. No authenticated session, production discovery seed, actual live-state GET or private manifest read; no page errors/unclassified requests. Evidence `.scratch-pw/companion-114/production/cd7651054af3be957de514bb82d51bd5edee0b11/`. Every step of [remote quality39129763020](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39129763020) passes: units, isolated SQL contracts, harness, production build, generated-route/source typecheck and lint. Local sanitized receipt `remote-quality.json` contains no author identity or authenticated-session data. Owned browsers and fixture3117 stopped; protected user-note SHA unchanged. Real OBS/Safari/genuine-login RLS remain separate.
+
+Post-release bookkeeping stays local for the next authorized product commit, avoiding a new deployment just to record its own SHA. Unrelated user audience notes/untracked drafts remain untouched.

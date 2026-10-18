@@ -7,6 +7,7 @@ import { normalizeCompanionHabits, type CompanionHabits } from "./habits";
 export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "animalMode" | "personality" | "speed"> & Partial<Pick<CompanionPreferences, "learnFromYou">>, habits?: CompanionHabits) {
   const cat = prefs.animalMode === "cat", dog = prefs.animalMode === "dog";
   const affectionate = prefs.personality === "affectionate", sleepy = prefs.personality === "sleepy";
+  const tidy = prefs.personality === "tidy", mischievous = prefs.personality === "mischievous";
   const gait = prefs.speed === "relaxed"
     ? { speed: 45, step: 28, range: 52, pause: 1.4, scoot: .12, hop: 22, activity: .8 }
     : prefs.speed === "lively"
@@ -21,22 +22,24 @@ export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "a
     walkScale: cat ? 1.25 : dog ? 1 : 1.1,
     scootChance: cat ? 0 : gait.scoot * (sleepy ? .35 : 1),
     hopHeight: gait.hop,
-    movementWeight: (cat ? .82 : dog ? 1.12 : 1.25) * (sleepy ? .42 : affectionate ? .85 : 1) * gait.activity,
+    movementWeight: (cat ? .82 : dog ? 1.12 : 1.25) * (sleepy ? .42 : affectionate ? .85 : mischievous ? 1.35 : 1) * gait.activity,
     lookWeight: cat ? 1.85 : dog ? .85 : 1,
     socialPull: (dog ? 1.25 : cat ? .2 : 0) + (affectionate ? 1.1 : 0),
     pointerGap: (cat ? 75 : dog ? 28 : 44) * (affectionate ? .65 : 1),
     pointerStep: Math.min(180, (cat ? 100 : dog ? 140 : 110) * (prefs.speed === "relaxed" ? .8 : 1)),
     highPlaceWeight: cat ? .85 : .05,
-    noveltyWeight: prefs.personality === "curious" ? 2.4 : affectionate ? 1.15 : .85,
+    noveltyWeight: prefs.personality === "curious" ? 2.4 : mischievous ? 2 : affectionate ? 1.15 : tidy ? .7 : .85,
     exploreEnergy: sleepy ? .62 : .4,
     exploreCuriosity: sleepy ? .65 : affectionate ? .5 : .35,
     restEnergy: sleepy ? .7 : .4,
     restedEnergy: sleepy ? .86 : .62,
     sleepEnergy: sleepy ? .86 : .62,
-    playWeight: (cat ? .5 : dog ? .7 : .32) * (sleepy ? .45 : affectionate ? 1.5 : 1),
+    playWeight: (cat ? .5 : dog ? .7 : .32) * (sleepy ? .45 : affectionate ? 1.5 : mischievous ? 2.4 : tidy ? .65 : 1),
+    tidyWeight: tidy ? 1 : sleepy ? .18 : .08,
+    mischiefWeight: mischievous ? 1 : prefs.animalMode === "default" && prefs.personality === "curious" ? .24 : .06,
     // Cartoon clumsiness belongs mostly to the fictional pompom mascot.
     // These are per-eligible-burst chances, never per-frame probabilities.
-    accidentChance: Math.min(.24, (cat ? .015 : dog ? .055 : .18) * (prefs.speed === "lively" ? 1.3 : prefs.speed === "relaxed" ? .5 : 1)),
+    accidentChance: Math.min(.24, (cat ? .015 : dog ? .055 : .18) * (tidy ? .4 : mischievous ? 1.3 : 1) * (prefs.speed === "lively" ? 1.3 : prefs.speed === "relaxed" ? .5 : 1)),
   };
   if (prefs.learnFromYou === false || !habits) return base;
   const { sociability, playfulness, confidence } = normalizeCompanionHabits(habits);
@@ -59,6 +62,8 @@ export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "a
     lookScale: base.lookScale * (1 - confidence * .15),
     pauseScale: base.pauseScale * bound(1 - playfulness * .15 - confidence * .05, .8, 1.2),
     scootChance: bound(base.scootChance * (1 + playfulness * .2), 0, .98),
+    tidyWeight: bound(base.tidyWeight * (1 - playfulness * .2 + confidence * .08), 0, 1.2),
+    mischiefWeight: bound(base.mischiefWeight * (1 + playfulness * .35 + confidence * .15), 0, 1.5),
   };
 }
 

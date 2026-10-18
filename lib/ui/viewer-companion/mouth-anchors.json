@@ -1,15 +1,15 @@
 {
   "version": 1,
   "cell": 192,
-  "evidence": "art-src/빅타민/동행/작업회차/20261018-포즈통일114/식사입계측.json",
+  "evidence": "art-src/빅타민/동행/작업회차/20261018-동작연결정리115/식사입계측.json",
   "atlases": [
     {
-      "src": "/companion/hd/vitamin-action-01-unified-114-v1.webp",
-      "sha256": "01418d058e4700dbb5c35db78cca5d35ea850ea645456c92782346f31bc6d59b"
+      "src": "/companion/hd/vitamin-action-01-motion-115-v1.webp",
+      "sha256": "a4fb475886e13f597883851aaa2990868848ccf74371c4d3c90c05f64abb1a19"
     },
     {
-      "src": "/companion/hd/vitamin-action-09-unified-114-v1.webp",
-      "sha256": "3a55ffca812392b9e6547eb71ae3687dc28c46a02659bd79fd8fedb6922c709b"
+      "src": "/companion/hd/vitamin-action-09-motion-115-v1.webp",
+      "sha256": "1d6e0208c5c37b2d3081a0b9635968b5130b1cf5a6292b726e24f8122ab93444"
     }
   ],
   "frames": [
@@ -239,10 +239,10 @@
       "atlas": 1,
       "cell": 1,
       "x": 109,
-      "y": 132,
+      "y": 132.5,
       "bounds": [
         105,
-        130,
+        131,
         113,
         134
       ]
@@ -368,10 +368,10 @@
       "index": 155,
       "atlas": 1,
       "cell": 11,
-      "x": 108,
+      "x": 107.5,
       "y": 132,
       "bounds": [
-        104,
+        103,
         130,
         112,
         134
@@ -421,10 +421,10 @@
       "atlas": 1,
       "cell": 15,
       "x": 108.5,
-      "y": 132.5,
+      "y": 132,
       "bounds": [
         104,
-        131,
+        130,
         113,
         134
       ]

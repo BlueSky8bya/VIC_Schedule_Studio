@@ -48,7 +48,7 @@ describe("current authored eating mouth registration", () => {
         expect(registered!.x).toBeGreaterThan(42);
         expect(registered!.x).toBeLessThan(47);
         expect(registered!.y).toBeGreaterThan(58);
-        expect(registered!.y).toBeLessThan(61);
+        expect(registered!.y).toBeLessThan(62.5);
       }
     }
   });
@@ -56,11 +56,11 @@ describe("current authored eating mouth registration", () => {
   it("follows the adopted happy drawing rather than keeping the observing pose's mouth", () => {
     const observe = projectCompanionMouth(selectCompanionSprite(16), neutral())!;
     const chew = projectCompanionMouth(selectCompanionSprite(144), neutral())!;
-    //114's actual authored observing/chewing mouth centres differ. Their
-    //source ink, rather than the superseded101 proportions, fixes the bite.
-    expect(observe.x).toBeCloseTo(42.5, 5); expect(observe.y).toBeCloseTo(59.375, 5);
-    expect(chew.x).toBeCloseTo(45.625, 5); expect(chew.y).toBeCloseTo(60.416667, 5);
-    expect(chew.y).toBeLessThan(60.8);
+    //115 registers the same authored mouths against the opaque body's foot,
+    //rather than tiny export residue. The measured ink still owns the bite.
+    expect(observe.x).toBeCloseTo(42.5, 5); expect(observe.y).toBeCloseTo(60.625, 5);
+    expect(chew.x).toBeCloseTo(45.208333, 5); expect(chew.y).toBeCloseTo(61.666667, 5);
+    expect(chew.x).not.toBe(observe.x); expect(chew.y).not.toBe(observe.y);
   });
 
   it("mirrors the mouth about the real body centre and follows viewport size and travel once", () => {
@@ -86,7 +86,7 @@ describe("current authored eating mouth registration", () => {
   it("does not apply calibration to a different drawing or malformed transform", () => {
     const selected = selectCompanionSprite(144);
     expect(projectCompanionMouth({ ...selected, src: `${selected.src}-future` }, neutral())).toBeNull();
-    expect(projectCompanionMouth({ ...selected, src: selected.src.replace("-unified-114-v1", "-body-outline-v1") }, neutral())).toBeNull();
+    expect(projectCompanionMouth({ ...selected, src: selected.src.replace("-motion-115-v1", "-unified-114-v1") }, neutral())).toBeNull();
     expect(projectCompanionMouth({ ...selected, index: 1 }, neutral())).toBeNull();
     expect(projectCompanionMouth(selectCompanionSprite(304), neutral())).toBeNull();
     expect(projectCompanionMouth(selected, { ...neutral(), size: NaN })).toBeNull();

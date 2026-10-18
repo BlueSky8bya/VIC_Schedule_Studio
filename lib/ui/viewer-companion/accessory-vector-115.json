@@ -1,0 +1,97 @@
+{
+  "src": "/companion/collection/accessories-115-v1.svg",
+  "cell": 128,
+  "columns": 4,
+  "frames": [
+    {
+      "id": "square-glasses",
+      "bounds": [
+        13,
+        40,
+        102,
+        48
+      ],
+      "paired": true
+    },
+    {
+      "id": "sleep-mask-smile",
+      "bounds": [
+        12,
+        38,
+        104,
+        52
+      ],
+      "paired": false
+    },
+    {
+      "id": "sleep-mask-drowsy",
+      "bounds": [
+        12,
+        38,
+        104,
+        52
+      ],
+      "paired": false
+    },
+    {
+      "id": "sleep-mask-wide",
+      "bounds": [
+        12,
+        38,
+        104,
+        52
+      ],
+      "paired": false
+    },
+    {
+      "id": "sleep-mask-tori",
+      "bounds": [
+        12,
+        38,
+        104,
+        52
+      ],
+      "paired": false
+    },
+    {
+      "id": "propeller-hat",
+      "bounds": [
+        16,
+        16,
+        96,
+        88
+      ],
+      "paired": false
+    },
+    {
+      "id": "propeller-rotor",
+      "bounds": [
+        16,
+        16,
+        96,
+        88
+      ],
+      "paired": false
+    },
+    {
+      "id": "magic-pocket",
+      "bounds": [
+        22,
+        42,
+        84,
+        46
+      ],
+      "paired": false
+    },
+    {
+      "id": "magic-pocket-open",
+      "bounds": [
+        22,
+        42,
+        84,
+        46
+      ],
+      "paired": false
+    }
+  ]
+}

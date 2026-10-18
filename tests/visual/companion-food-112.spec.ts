@@ -32,6 +32,7 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }, info) => {
   const proof = proofs.get(page)!; mkdirSync(output, { recursive: true }); const label = info.title.replace(/[^a-z0-9]+/gi, "-");
+  proof.samples.push({ exitCompanion: await page.locator(".vc-companion").evaluateAll(nodes => nodes.map(node => { const el = node as HTMLElement, r = el.getBoundingClientRect(); return { attributes: Object.fromEntries([...el.attributes].map(a => [a.name, a.value])), rect: { x: r.x, y: r.y, width: r.width, height: r.height }, viewport: { width: innerWidth, height: innerHeight }, focused: document.hasFocus(), hidden: document.hidden }; })) });
   const steps = await page.evaluate(() => { const receipt = (window as ReceiptWindow).food112Receipt; receipt?.observer.disconnect(); return receipt?.steps ?? []; }); if (steps.length) proof.samples.push({ curiosity: steps });
   if (renderProbe) { const captured = await page.evaluate(() => { const probe = (window as RenderProbeWindow).food112RenderProbe; probe?.stop(); return probe && { frames: probe.frames, mutations: probe.mutations, done: probe.done }; }); if (captured) writeFileSync(`${output}/${label}-render-probe.json`, JSON.stringify(captured, null, 2)); }
   writeFileSync(`${output}/${label}.json`, JSON.stringify({ ...proof, url: page.url(), status: info.status, afterBuild: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim() }, null, 2));

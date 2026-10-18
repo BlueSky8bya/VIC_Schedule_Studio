@@ -26,7 +26,7 @@ export type CompanionPreferences = {
   speed: "relaxed" | "normal" | "lively";
   /** Legacy values remain readable; normalization always selects the 92px size. */
   size: "small" | "normal" | "large";
-  personality: "curious" | "affectionate" | "sleepy";
+  personality: "curious" | "affectionate" | "sleepy" | "tidy" | "mischievous";
 };
 
 export const COMPANION_PREFERENCES_KEY = "vic.viewerCompanion";
@@ -77,7 +77,7 @@ export function normalizeCompanionPreferences(value: unknown, base: Readonly<Com
   for (const key of booleanKeys) if (typeof source[key] === "boolean") next[key] = source[key];
   if (typeof source.soundVolume === "number" && Number.isFinite(source.soundVolume)) next.soundVolume = Math.min(100, Math.max(0, Math.round(source.soundVolume)));
   if (source.speed === "relaxed" || source.speed === "normal" || source.speed === "lively") next.speed = source.speed;
-  if (source.personality === "curious" || source.personality === "affectionate" || source.personality === "sleepy") next.personality = source.personality;
+  if (source.personality === "curious" || source.personality === "affectionate" || source.personality === "sleepy" || source.personality === "tidy" || source.personality === "mischievous") next.personality = source.personality;
   if (source.animalMode === "default" || source.animalMode === "cat" || source.animalMode === "dog") next.animalMode = source.animalMode;
   return next;
 }

@@ -106,7 +106,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
   const effects = learnedEffects(preferences, care), unread = getCompanionUnreadCounts(collection);
   const pageUnread = (key: ProfilePage) => key === "discover" ? unread.foods + unread.memories > 0 : key === "dress" && unread.accessories > 0;
   const mode = { default: "빅타민", cat: "고양이", dog: "강아지" }[preferences.animalMode];
-  const personality = { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기" }[preferences.personality];
+  const personality = { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기", tidy: "깔끔이", mischievous: "사고뭉치" }[preferences.personality];
   return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} {...spotlight}>
     <span className="sr-only" id={`${id}-unread`}>새로 발견한 항목</span>
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>

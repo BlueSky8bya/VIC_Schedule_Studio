@@ -38,6 +38,7 @@ const FRAME_COUNT = 16;
 const WALK_STRIDE_PX = 80;
 const ALL_FRAMES = Object.freeze(Array.from({ length: FRAME_COUNT }, (_, index) => index));
 const LOOP_FPS: Readonly<Record<number, number>> = Object.fromEntries(COMPANION_CLIP_TIMING.filter(clip => clip.frameRate && (clip.playback === "loop" || clip.playback === "hold")).map(clip => [clip.row, clip.frameRate!]));
+const PHASE_ROWS: ReadonlySet<number> = new Set(COMPANION_CLIP_TIMING.filter(clip => clip.playback === "phase" || clip.playback === "hold" && !clip.frameRate).map(clip => clip.row));
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
 const rounded = (value: number) => Math.round(value * 1e6) / 1e6;
 
@@ -160,6 +161,13 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
         // sample. Quiet rendering must not flash the strained opening key.
         const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
         index = input.reduced ? end : Math.min(end, Math.floor(phase * frames.length + 1e-8));
+      } else if (PHASE_ROWS.has(row)) {
+        // A renderer may enter a short beat after its opening interval (a
+        // delayed frame, already-complete landing or resumed wake). The
+        // supplied phase owns the very first drawing too; flashing column0
+        // for one paint rewinds the expression before the next sample.
+        const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
+        index = input.reduced ? 0 : Math.min(end, Math.floor(phase * frames.length + 1e-8));
       } else if (!entered) {
         if (row === 2 || row === 20) {
           const steps = Math.abs(dx) / (row === 20 ? 54 : WALK_STRIDE_PX) * (loops.has(row) ? frames.length : 2 * end);

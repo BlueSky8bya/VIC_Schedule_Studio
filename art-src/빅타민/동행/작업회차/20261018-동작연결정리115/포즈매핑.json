@@ -1,0 +1,1347 @@
+{
+  "version": 1,
+  "grid": {
+    "columns": 8,
+    "rows": 10,
+    "count": 80
+  },
+  "actualUsedWorldKeys": 79,
+  "physicalSlots": 520,
+  "logicalRows": 41,
+  "audienceScope": "preserved existing16, not regenerated",
+  "keys": [
+    {
+      "family": "clean",
+      "key": 0,
+      "representative": 0,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        0,
+        1,
+        17
+      ],
+      "cell": 0,
+      "column": 0,
+      "row": 0,
+      "label": "01 clean:0",
+      "meaning": "idle/look/shake"
+    },
+    {
+      "family": "clean",
+      "key": 1,
+      "representative": 9,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        0
+      ],
+      "cell": 1,
+      "column": 1,
+      "row": 0,
+      "label": "02 clean:1",
+      "meaning": "idle"
+    },
+    {
+      "family": "clean",
+      "key": 2,
+      "representative": 32,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        2
+      ],
+      "cell": 2,
+      "column": 2,
+      "row": 0,
+      "label": "03 clean:2",
+      "meaning": "walk"
+    },
+    {
+      "family": "clean",
+      "key": 3,
+      "representative": 40,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        2
+      ],
+      "cell": 3,
+      "column": 3,
+      "row": 0,
+      "label": "04 clean:3",
+      "meaning": "walk"
+    },
+    {
+      "family": "clean",
+      "key": 4,
+      "representative": 48,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        3
+      ],
+      "cell": 4,
+      "column": 4,
+      "row": 0,
+      "label": "05 clean:4",
+      "meaning": "crouch"
+    },
+    {
+      "family": "clean",
+      "key": 5,
+      "representative": 64,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        4
+      ],
+      "cell": 5,
+      "column": 5,
+      "row": 0,
+      "label": "06 clean:5",
+      "meaning": "rise"
+    },
+    {
+      "family": "clean",
+      "key": 6,
+      "representative": 80,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        5
+      ],
+      "cell": 6,
+      "column": 6,
+      "row": 0,
+      "label": "07 clean:6",
+      "meaning": "fall"
+    },
+    {
+      "family": "clean",
+      "key": 7,
+      "representative": 96,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        6
+      ],
+      "cell": 7,
+      "column": 7,
+      "row": 0,
+      "label": "08 clean:7",
+      "meaning": "land"
+    },
+    {
+      "family": "clean",
+      "key": 8,
+      "representative": 128,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        8
+      ],
+      "cell": 8,
+      "column": 0,
+      "row": 1,
+      "label": "09 clean:8",
+      "meaning": "held"
+    },
+    {
+      "family": "clean",
+      "key": 9,
+      "representative": 144,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        9
+      ],
+      "cell": 9,
+      "column": 1,
+      "row": 1,
+      "label": "10 clean:9",
+      "meaning": "happy/eat"
+    },
+    {
+      "family": "clean",
+      "key": 10,
+      "representative": 266,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        10
+      ],
+      "cell": 10,
+      "column": 2,
+      "row": 1,
+      "label": "11 clean:10",
+      "meaning": "yawn"
+    },
+    {
+      "family": "clean",
+      "key": 11,
+      "representative": 267,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        11
+      ],
+      "cell": 11,
+      "column": 3,
+      "row": 1,
+      "label": "12 clean:11",
+      "meaning": "sleep"
+    },
+    {
+      "family": "clean",
+      "key": 12,
+      "representative": 112,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        12,
+        16
+      ],
+      "cell": 12,
+      "column": 4,
+      "row": 1,
+      "label": "13 clean:12",
+      "meaning": "wake/stretch"
+    },
+    {
+      "family": "clean",
+      "key": 13,
+      "representative": 208,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        13
+      ],
+      "cell": 13,
+      "column": 5,
+      "row": 1,
+      "label": "14 clean:13",
+      "meaning": "heart"
+    },
+    {
+      "family": "clean",
+      "key": 14,
+      "representative": 224,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        14
+      ],
+      "cell": 14,
+      "column": 6,
+      "row": 1,
+      "label": "15 clean:14",
+      "meaning": "hide"
+    },
+    {
+      "family": "clean",
+      "key": 15,
+      "representative": 271,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        15
+      ],
+      "cell": 15,
+      "column": 7,
+      "row": 1,
+      "label": "16 clean:15",
+      "meaning": "emerge"
+    },
+    {
+      "family": "mood",
+      "key": 0,
+      "representative": 272,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 16,
+      "column": 0,
+      "row": 2,
+      "label": "17 mood:0",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 1,
+      "representative": 274,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 17,
+      "column": 1,
+      "row": 2,
+      "label": "18 mood:1",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 2,
+      "representative": 276,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 18,
+      "column": 2,
+      "row": 2,
+      "label": "19 mood:2",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 3,
+      "representative": 278,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 19,
+      "column": 3,
+      "row": 2,
+      "label": "20 mood:3",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 4,
+      "representative": 280,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 20,
+      "column": 4,
+      "row": 2,
+      "label": "21 mood:4",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 5,
+      "representative": 282,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 21,
+      "column": 5,
+      "row": 2,
+      "label": "22 mood:5",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 6,
+      "representative": 284,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 22,
+      "column": 6,
+      "row": 2,
+      "label": "23 mood:6",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 7,
+      "representative": 286,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        18
+      ],
+      "cell": 23,
+      "column": 7,
+      "row": 2,
+      "label": "24 mood:7",
+      "meaning": "sad"
+    },
+    {
+      "family": "mood",
+      "key": 8,
+      "representative": 288,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 24,
+      "column": 0,
+      "row": 3,
+      "label": "25 mood:8",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "mood",
+      "key": 9,
+      "representative": 290,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 25,
+      "column": 1,
+      "row": 3,
+      "label": "26 mood:9",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "mood",
+      "key": 10,
+      "representative": 292,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 26,
+      "column": 2,
+      "row": 3,
+      "label": "27 mood:10",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "mood",
+      "key": 11,
+      "representative": 294,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 27,
+      "column": 3,
+      "row": 3,
+      "label": "28 mood:11",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "mood",
+      "key": 12,
+      "representative": 296,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 28,
+      "column": 4,
+      "row": 3,
+      "label": "29 mood:12",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "mood",
+      "key": 13,
+      "representative": 298,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 29,
+      "column": 5,
+      "row": 3,
+      "label": "30 mood:13",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "mood",
+      "key": 14,
+      "representative": 300,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 30,
+      "column": 6,
+      "row": 3,
+      "label": "31 mood:14",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "mood",
+      "key": 15,
+      "representative": 302,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/감정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "40c474ed606591b1df4c2d437389b6bb6d7e5c3fa3982fc6e62f4462e327e49c",
+      "rows": [
+        19
+      ],
+      "cell": 31,
+      "column": 7,
+      "row": 3,
+      "label": "32 mood:15",
+      "meaning": "sulky POUT-NO-SMILE"
+    },
+    {
+      "family": "play",
+      "key": 0,
+      "representative": 304,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        20
+      ],
+      "cell": 32,
+      "column": 0,
+      "row": 4,
+      "label": "33 play:0",
+      "meaning": "sprint"
+    },
+    {
+      "family": "play",
+      "key": 1,
+      "representative": 306,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        20
+      ],
+      "cell": 33,
+      "column": 1,
+      "row": 4,
+      "label": "34 play:1",
+      "meaning": "sprint"
+    },
+    {
+      "family": "play",
+      "key": 2,
+      "representative": 308,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        20
+      ],
+      "cell": 34,
+      "column": 2,
+      "row": 4,
+      "label": "35 play:2",
+      "meaning": "sprint"
+    },
+    {
+      "family": "play",
+      "key": 3,
+      "representative": 309,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        20
+      ],
+      "cell": 35,
+      "column": 3,
+      "row": 4,
+      "label": "36 play:3",
+      "meaning": "sprint"
+    },
+    {
+      "family": "play",
+      "key": 4,
+      "representative": 311,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        20
+      ],
+      "cell": 36,
+      "column": 4,
+      "row": 4,
+      "label": "37 play:4",
+      "meaning": "sprint"
+    },
+    {
+      "family": "play",
+      "key": 5,
+      "representative": 312,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        20
+      ],
+      "cell": 37,
+      "column": 5,
+      "row": 4,
+      "label": "38 play:5",
+      "meaning": "sprint"
+    },
+    {
+      "family": "play",
+      "key": 6,
+      "representative": 320,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        21
+      ],
+      "cell": 38,
+      "column": 6,
+      "row": 4,
+      "label": "39 play:6",
+      "meaning": "tumble"
+    },
+    {
+      "family": "play",
+      "key": 7,
+      "representative": 323,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        21
+      ],
+      "cell": 39,
+      "column": 7,
+      "row": 4,
+      "label": "40 play:7",
+      "meaning": "tumble"
+    },
+    {
+      "family": "play",
+      "key": 8,
+      "representative": 326,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        21
+      ],
+      "cell": 40,
+      "column": 0,
+      "row": 5,
+      "label": "41 play:8",
+      "meaning": "tumble"
+    },
+    {
+      "family": "play",
+      "key": 9,
+      "representative": 328,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        21
+      ],
+      "cell": 41,
+      "column": 1,
+      "row": 5,
+      "label": "42 play:9",
+      "meaning": "tumble"
+    },
+    {
+      "family": "play",
+      "key": 11,
+      "representative": 334,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        21
+      ],
+      "cell": 42,
+      "column": 2,
+      "row": 5,
+      "label": "43 play:11",
+      "meaning": "tumble"
+    },
+    {
+      "family": "play",
+      "key": 12,
+      "representative": 336,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        22
+      ],
+      "cell": 43,
+      "column": 3,
+      "row": 5,
+      "label": "44 play:12",
+      "meaning": "dizzy"
+    },
+    {
+      "family": "play",
+      "key": 13,
+      "representative": 344,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        22
+      ],
+      "cell": 44,
+      "column": 4,
+      "row": 5,
+      "label": "45 play:13",
+      "meaning": "dizzy"
+    },
+    {
+      "family": "play",
+      "key": 18,
+      "representative": 368,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        24,
+        25
+      ],
+      "cell": 45,
+      "column": 5,
+      "row": 5,
+      "label": "46 play:18",
+      "meaning": "slip/bump"
+    },
+    {
+      "family": "play",
+      "key": 20,
+      "representative": 392,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        25
+      ],
+      "cell": 46,
+      "column": 6,
+      "row": 5,
+      "label": "47 play:20",
+      "meaning": "bump"
+    },
+    {
+      "family": "play",
+      "key": 21,
+      "representative": 400,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        26
+      ],
+      "cell": 47,
+      "column": 7,
+      "row": 5,
+      "label": "48 play:21",
+      "meaning": "glance"
+    },
+    {
+      "family": "play",
+      "key": 22,
+      "representative": 404,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        26
+      ],
+      "cell": 48,
+      "column": 0,
+      "row": 6,
+      "label": "49 play:22",
+      "meaning": "glance"
+    },
+    {
+      "family": "play",
+      "key": 23,
+      "representative": 408,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        26
+      ],
+      "cell": 49,
+      "column": 1,
+      "row": 6,
+      "label": "50 play:23",
+      "meaning": "glance"
+    },
+    {
+      "family": "play",
+      "key": 24,
+      "representative": 416,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        27
+      ],
+      "cell": 50,
+      "column": 2,
+      "row": 6,
+      "label": "51 play:24",
+      "meaning": "tears VISIBLE-TEARS"
+    },
+    {
+      "family": "play",
+      "key": 26,
+      "representative": 427,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        27
+      ],
+      "cell": 51,
+      "column": 3,
+      "row": 6,
+      "label": "52 play:26",
+      "meaning": "tears VISIBLE-TEARS"
+    },
+    {
+      "family": "play",
+      "key": 28,
+      "representative": 440,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        28
+      ],
+      "cell": 52,
+      "column": 4,
+      "row": 6,
+      "label": "53 play:28",
+      "meaning": "sulk POUT-NO-SMILE"
+    },
+    {
+      "family": "play",
+      "key": 30,
+      "representative": 448,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        29
+      ],
+      "cell": 53,
+      "column": 5,
+      "row": 6,
+      "label": "54 play:30",
+      "meaning": "bow"
+    },
+    {
+      "family": "play",
+      "key": 31,
+      "representative": 456,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        29
+      ],
+      "cell": 54,
+      "column": 6,
+      "row": 6,
+      "label": "55 play:31",
+      "meaning": "bow"
+    },
+    {
+      "family": "play",
+      "key": 32,
+      "representative": 464,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        30
+      ],
+      "cell": 55,
+      "column": 7,
+      "row": 6,
+      "label": "56 play:32",
+      "meaning": "groom"
+    },
+    {
+      "family": "play",
+      "key": 33,
+      "representative": 472,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        30
+      ],
+      "cell": 56,
+      "column": 0,
+      "row": 7,
+      "label": "57 play:33",
+      "meaning": "groom"
+    },
+    {
+      "family": "play",
+      "key": 34,
+      "representative": 480,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        31
+      ],
+      "cell": 57,
+      "column": 1,
+      "row": 7,
+      "label": "58 play:34",
+      "meaning": "pounce"
+    },
+    {
+      "family": "play",
+      "key": 35,
+      "representative": 488,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/놀이/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "203a869b4601fd6b69b2282866eb67efb6a9b6f322f06c980f74056f3983f465",
+      "rows": [
+        31
+      ],
+      "cell": 58,
+      "column": 2,
+      "row": 7,
+      "label": "59 play:35",
+      "meaning": "pounce"
+    },
+    {
+      "family": "ear",
+      "key": 0,
+      "representative": 331,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/귀교정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "77815d3ef33b94547cd0458dea57ee94f600de91c57775d4e70376fc6380ce35",
+      "rows": [
+        21
+      ],
+      "cell": 59,
+      "column": 3,
+      "row": 7,
+      "label": "60 ear:0",
+      "meaning": "tumble"
+    },
+    {
+      "family": "ear",
+      "key": 1,
+      "representative": 376,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/귀교정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "77815d3ef33b94547cd0458dea57ee94f600de91c57775d4e70376fc6380ce35",
+      "rows": [
+        24
+      ],
+      "cell": 60,
+      "column": 4,
+      "row": 7,
+      "label": "61 ear:1",
+      "meaning": "slip"
+    },
+    {
+      "family": "ear",
+      "key": 2,
+      "representative": 422,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/귀교정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "77815d3ef33b94547cd0458dea57ee94f600de91c57775d4e70376fc6380ce35",
+      "rows": [
+        27
+      ],
+      "cell": 61,
+      "column": 5,
+      "row": 7,
+      "label": "62 ear:2",
+      "meaning": "tears VISIBLE-TEARS"
+    },
+    {
+      "family": "ear",
+      "key": 3,
+      "representative": 432,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/귀교정/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "77815d3ef33b94547cd0458dea57ee94f600de91c57775d4e70376fc6380ce35",
+      "rows": [
+        28
+      ],
+      "cell": 62,
+      "column": 6,
+      "row": 7,
+      "label": "63 ear:3",
+      "meaning": "sulk POUT-NO-SMILE"
+    },
+    {
+      "family": "recovery",
+      "key": 0,
+      "representative": 352,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/회복/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "6ff1d010c4e6df4bd865c09a7cd72ecd7112537ee9f790611ffaeffcafad19ea",
+      "rows": [
+        23
+      ],
+      "cell": 63,
+      "column": 7,
+      "row": 7,
+      "label": "64 recovery:0",
+      "meaning": "recover WAVY-MOUTH"
+    },
+    {
+      "family": "recovery",
+      "key": 1,
+      "representative": 356,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/회복/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "6ff1d010c4e6df4bd865c09a7cd72ecd7112537ee9f790611ffaeffcafad19ea",
+      "rows": [
+        23
+      ],
+      "cell": 64,
+      "column": 0,
+      "row": 8,
+      "label": "65 recovery:1",
+      "meaning": "recover WAVY-MOUTH"
+    },
+    {
+      "family": "recovery",
+      "key": 2,
+      "representative": 360,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/회복/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "6ff1d010c4e6df4bd865c09a7cd72ecd7112537ee9f790611ffaeffcafad19ea",
+      "rows": [
+        23
+      ],
+      "cell": 65,
+      "column": 1,
+      "row": 8,
+      "label": "66 recovery:2",
+      "meaning": "recover WAVY-MOUTH"
+    },
+    {
+      "family": "recovery",
+      "key": 3,
+      "representative": 364,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/회복/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "6ff1d010c4e6df4bd865c09a7cd72ecd7112537ee9f790611ffaeffcafad19ea",
+      "rows": [
+        23
+      ],
+      "cell": 66,
+      "column": 2,
+      "row": 8,
+      "label": "67 recovery:3",
+      "meaning": "recover WAVY-MOUTH"
+    },
+    {
+      "family": "throw",
+      "key": 0,
+      "representative": 496,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/비행/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "b28ed52bcf96242df33c9b61a662247c3da3c699f219003aae6a523c282d9579",
+      "rows": [
+        32
+      ],
+      "cell": 67,
+      "column": 3,
+      "row": 8,
+      "label": "68 throw:0",
+      "meaning": "throw NORMAL-EYE-SIZE"
+    },
+    {
+      "family": "throw",
+      "key": 1,
+      "representative": 500,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/비행/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "b28ed52bcf96242df33c9b61a662247c3da3c699f219003aae6a523c282d9579",
+      "rows": [
+        32
+      ],
+      "cell": 68,
+      "column": 4,
+      "row": 8,
+      "label": "69 throw:1",
+      "meaning": "throw NORMAL-EYE-SIZE"
+    },
+    {
+      "family": "throw",
+      "key": 2,
+      "representative": 504,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/비행/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "b28ed52bcf96242df33c9b61a662247c3da3c699f219003aae6a523c282d9579",
+      "rows": [
+        32
+      ],
+      "cell": 69,
+      "column": 5,
+      "row": 8,
+      "label": "70 throw:2",
+      "meaning": "throw NORMAL-EYE-SIZE"
+    },
+    {
+      "family": "throw",
+      "key": 3,
+      "representative": 508,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/비행/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "b28ed52bcf96242df33c9b61a662247c3da3c699f219003aae6a523c282d9579",
+      "rows": [
+        32
+      ],
+      "cell": 70,
+      "column": 6,
+      "row": 8,
+      "label": "71 throw:3",
+      "meaning": "throw NORMAL-EYE-SIZE"
+    },
+    {
+      "family": "living",
+      "key": 0,
+      "representative": 512,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        33
+      ],
+      "cell": 71,
+      "column": 7,
+      "row": 8,
+      "label": "72 living:0",
+      "meaning": "ask-petting"
+    },
+    {
+      "family": "living",
+      "key": 1,
+      "representative": 513,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        34
+      ],
+      "cell": 72,
+      "column": 0,
+      "row": 9,
+      "label": "73 living:1",
+      "meaning": "nuzzle"
+    },
+    {
+      "family": "living",
+      "key": 2,
+      "representative": 514,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        35
+      ],
+      "cell": 73,
+      "column": 1,
+      "row": 9,
+      "label": "74 living:2",
+      "meaning": "knead"
+    },
+    {
+      "family": "living",
+      "key": 3,
+      "representative": 515,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        36
+      ],
+      "cell": 74,
+      "column": 2,
+      "row": 9,
+      "label": "75 living:3",
+      "meaning": "nest"
+    },
+    {
+      "family": "living",
+      "key": 4,
+      "representative": 516,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        37
+      ],
+      "cell": 75,
+      "column": 3,
+      "row": 9,
+      "label": "76 living:4",
+      "meaning": "cheer-tangle"
+    },
+    {
+      "family": "living",
+      "key": 5,
+      "representative": 517,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        38
+      ],
+      "cell": 76,
+      "column": 4,
+      "row": 9,
+      "label": "77 living:5",
+      "meaning": "cheer-peek"
+    },
+    {
+      "family": "living",
+      "key": 6,
+      "representative": 518,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        39
+      ],
+      "cell": 77,
+      "column": 5,
+      "row": 9,
+      "label": "78 living:6",
+      "meaning": "cheer-tidy"
+    },
+    {
+      "family": "living",
+      "key": 7,
+      "representative": 519,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+      "rows": [
+        40
+      ],
+      "cell": 78,
+      "column": 6,
+      "row": 9,
+      "label": "79 living:7",
+      "meaning": "doze"
+    },
+    {
+      "family": "reference-neutral",
+      "key": 0,
+      "representative": 0,
+      "oldSource": "art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/기본/원본/체형외곽선_키포즈.png",
+      "oldSourceSha256": "9222319bba8fc59f76832f5737737af68e65d917fd9d7c10eb0f037c67186f69",
+      "rows": [
+        0,
+        1,
+        17
+      ],
+      "cell": 79,
+      "column": 7,
+      "row": 9,
+      "label": "80 reference-neutral:0",
+      "meaning": "idle/look/shake"
+    }
+  ],
+  "protectedAssets": [
+    {
+      "path": "public/companion/hd/victamin-action-00-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "2a092682a39da0b0236d285be4470e7cb1d1881dc67e1a7ced22275c1446d72f"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-02-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "136a9016e7d1004ade49a523403df5d22131170fea7e466f5b481a0403f9c6ca"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-03-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "87abfe9bc6fa7ea6cb2119ffd8551ce0f64ce070d436b2de4dfce0666a79777e"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-04-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "9a9b7672fbaf499da4cf099d432b7c2e91651ff6acc9ea7686c26f2290c8e549"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-05-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "87454559ac52af0c9e9223a48b453c20159ca900e770d23e1f5ee35077e7470e"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-06-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "5e65c4df1c2c61effb909c1cfa801c8946bc01bc1d5ccf729779f859dff85ca5"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-07-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "ba7d3454271f6ccaebf6388a8decac22e392143f9dc64dba8fdccc97f490e744"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-08-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "ed435a22da5b601fb2513a793556bee67f91904f15bba768ceca609c3c905904"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-10-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "e5b6839d05949bc128e48e5204663d9c80b692aa9453c5716e922ce8acc6bc0f"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-11-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "793b8882c3be864e4eae3e05b633af7ab2fd87ae3b40da0fdaed5daa89e82f81"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-12-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "94c44e49a265340a324d56d436b6e446362f15b02b5e9b2a638c5c353f634b01"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-13-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "efcda71cd7a8f22eac7fdf822f78d432c0faf91d364c0ca3ba7e95f635401e3b"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-14-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "a1c27e5d5ae0ec27e8a55936e77b8d368410a1c30bc4a40bc67afea05d38dc31"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-15-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "11da2dfa4eb22b6440af877e56f447ba7a5421e797837e419d40f40fcfc07083"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-16-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "724c6d16390dd48eee565700762f812c6b46df66c0a3346801fab2362f2739fd"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-17-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "6ddf3c5be3c62e6778028e6f35c1e679b1a3c179f8e09b96d482447c325e0ce7"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-18-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "f47f11ba7e8e01bb97cb94dccb99fc53bcd5daa1fc2878606a528c155031c0f8"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-20-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "f7a46b631d0755f9af0079501cc8890e2f614a3661e7812650659e1aa3c3f813"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-21-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "52bdd0c379f3c74823944bfe64cbed59c4005072821afacd03950336c5b9748c"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-22-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "17f09125496eca21669a70a10859edf6d35479082b2c00c72cdd98785343dc7a"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-23-recover-v2-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "531184428f6a56e46bd1ef8b60c954c9c0c7fddb56f25a70b6411768b0e401b4"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-24-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "998dd54026d9e6bff5abf69ecea1b9547129f4d87d84a32c83391d4a8e6d2a4d"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-25-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "aa5452a2d0bb21a0455ed852876277eccec41ccb7f52e75fbaaa8dba9c9607bb"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-26-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "a03772c2f3fcf4c7ebbeaa76a19261640b079d38a41c56f12b013a4f192ca8cc"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-27-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "800794261c544bd1bd0b038125680c1ac022c5c45e449c587c604d5887aac1fa"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-28-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "4abe40fa4f7214e82eec91ace885fdac174d754425d96dac1c3b33738b0ca944"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-29-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "74b44e72c8a223e3c6466491c62c2a039169d7d2253a3aa4942802f8a57a9dd9"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-30-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "3b8e942d6c07a794ba6f8cde0978935b9ba159a9077e8d4b5e423bbb3b05f0db"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-31-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "08e73a5a333ec1c6d2323e2be3def92eb8729008ce5117d637c56ca94ca21f5a"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-32-throw-big-eyes-v1-body-outline-v1.webp",
+      "sha256": "9e8a8223d86974e5b9477e9cba907361b8d42033779642361354784ce6642268"
+    },
+    {
+      "path": "public/companion/hd/victamin-episodes-104-v1.webp",
+      "sha256": "c8a66edbb01cc423ecebe0bf37b5a8ac3233fa7ae22c9a6735a8b85854771d6c"
+    }
+  ],
+  "guideSha256": "c29f9e5e22e3b7353fd0e2f053fb5cf597c731892dc51e2ad7e44a369cc22596"
+}

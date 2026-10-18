@@ -162,7 +162,16 @@ describe("earned gifts and explicit equipment", () => {
       let call = 0; const result = advanceCompanionGifts(ready, 1, 1, true, () => call++ === 0 ? 0 : index / 10000);
       expect(result.pending).not.toBeNull(); counts.set(result.pending!, (counts.get(result.pending!) ?? 0) + 1);
     }
-    expect([...counts.keys()].sort()).toEqual([...COMPANION_WEARABLE_IDS].sort());
+    const totalWeight = COMPANION_WEARABLE_IDS.reduce((sum, id) => sum + COMPANION_ACCESSORIES[id].weight, 0);
+    expect([...counts.keys()].sort()).toEqual([...COMPANION_WEARABLE_IDS.filter(id => COMPANION_ACCESSORIES[id].weight >= totalWeight / 10000)].sort());
+    // The rare literal eye print's interval is narrower than this coarse
+    // grid. Its actual interval midpoint still has to select that item.
+    let edge = 0;
+    for (const id of COMPANION_WEARABLE_IDS) {
+      const draw = (edge + COMPANION_ACCESSORIES[id].weight / 2) / totalWeight; let call = 0;
+      expect(advanceCompanionGifts(ready, 1, 1, true, () => call++ === 0 ? 0 : draw).pending).toBe(id);
+      edge += COMPANION_ACCESSORIES[id].weight;
+    }
     expect(counts.get("propeller-hat")!).toBeLessThan(10); expect(counts.get("magic-pocket")!).toBeLessThan(10);
     expect(counts.get("beret")!).toBeGreaterThan(500);
     for (const id of COMPANION_WEARABLE_IDS) {
@@ -265,7 +274,7 @@ describe("separate witnessed situations and additive107 migration", () => {
     const next = normalizeCompanionCollection({ ...old, situations: [...COMPANION_SITUATION_IDS, "private-canary", ...COMPANION_SITUATION_IDS] });
     expect(next.situations).toEqual(COMPANION_SITUATION_IDS); expect(JSON.stringify(next)).not.toContain("canary");
     expect(COMPANION_ACCESSORY_IDS.slice(0, 6)).toEqual(["sunglasses", "beret", "bow", "star-pin", "flower-crown", "satchel"]);
-    expect(COMPANION_ACCESSORY_IDS).toHaveLength(34); expect(COMPANION_WEARABLE_IDS).toHaveLength(25);
+    expect(COMPANION_ACCESSORY_IDS).toHaveLength(39); expect(COMPANION_WEARABLE_IDS).toHaveLength(27);
   });
   it("records an explicit gift opening even while the world is paused, never from seeded ownership alone", () => {
     const store = createCompanionCollectionStore(storageFixture({ version: 1, foods: [], behaviors: [], gifts: { pending: "pixel-sunglasses", unlocked: ["sunglasses"], equipped: "sunglasses" } }));
