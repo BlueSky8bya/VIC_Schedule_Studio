@@ -2,11 +2,14 @@
 
 import { useEffect, useRef } from "react";
 
-/** A direct settings opener (the companion's book) may unmount when the pet
- * is disabled. Restore its visible native settings entry in that case. */
+/** World preference changes can replace the book's DOM node. Prefer that
+ * replacement, or the native settings entry when the pet was disabled. */
 export function restoreDialogOpener(opener: HTMLElement | null, root: ParentNode = document) {
   const available = (element: HTMLElement) => element.isConnected && element.getClientRects().length > 0 && !element.closest("[inert],[hidden]");
-  const target = opener && available(opener) ? opener : Array.from(root.querySelectorAll<HTMLElement>('[data-act="open-settings"],[data-act="studio-settings"],.stool-settings')).find(available)
+  const replacementBook = opener?.getAttribute("data-act") === "companion-book-open"
+    ? Array.from(root.querySelectorAll<HTMLElement>('[data-act="companion-book-open"]')).find(available)
+    : undefined;
+  const target = opener && available(opener) ? opener : replacementBook ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="open-settings"],[data-act="studio-settings"],.stool-settings')).find(available)
     ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="panel-toggle"]')).find(available);
   target?.focus({ preventScroll: true });
 }

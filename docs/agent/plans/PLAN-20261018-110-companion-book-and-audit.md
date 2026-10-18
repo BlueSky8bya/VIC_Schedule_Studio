@@ -1,6 +1,6 @@
 # PLAN-110 — Companion book and reuse audit
 
-Status: Local validation complete; release verification pending. Owner request 2026-10-18 KST.
+Status: Complete. Release `42ba40503730cf7bf154491544b39b2e3bec5386` verified 2026-10-18 KST. Owner request 2026-10-18 KST.
 
 ## Scope
 
@@ -16,6 +16,6 @@ Root: book/shared modal wiring, activity contract, report/integration. Parallel 
 
 Probability/serialization, radio gain/preferences, all-food facts, unified discovery and accessory transforms; timeline/least-used audit; typecheck/lint/full units/build/harness; production-build guarded viewer/studio/preview interactions and screenshots. Actual broadcaster hardware/OBS and human speaker listening remain separately unverified.
 
-## Next
+## Result
 
-Concrete changes, independent reviews, [report](../verification/COMPANION_REUSE_OPTIMIZATION-20261018.md) and [scoped verification](../verification/COMPANION_BOOK_FIXES-20261018.md) complete locally. Final build passes233files/2546units/type/lint/build/harness283 and book10/activity3/nativewearables3; unchanged-source earlier collection7/radio-gifts7/baselines2 retain their exact scopes. Next: one authorized release, public full-SHA/static proof and guarded anonymous UI, preserving previous evidence and user assets. Broad ideas/optimization remain proposal-only.
+Concrete changes, independent reviews, [report](../verification/COMPANION_REUSE_OPTIMIZATION-20261018.md) and [scoped verification](../verification/COMPANION_BOOK_FIXES-20261018.md) complete. Final build passes233files/2546units/type/lint/build/harness283 and book10/activity3/nativewearables3; unchanged-source earlier collection7/radio-gifts7/baselines2 retain their exact scopes. Authorized commit/push, Vercel and remote quality39118263205 pass. Actual guarded anonymous production public full-SHA/browser-byte proof, book/shared-settings navigation, collections, loaded unknown silhouettes and radio/notes pass without production mutations or actual live-state GET. Earlier evidence and user assets preserved. Broad ideas/optimization remain proposal-only; actual broadcaster hardware remains deferred. Post-release bookkeeping is local to avoid a documentation-only production deployment.

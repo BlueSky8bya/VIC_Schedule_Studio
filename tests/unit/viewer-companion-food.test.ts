@@ -116,10 +116,43 @@ describe("companion food support", () => {
     expect(placeCompanionFood(apple, apple, [screenFloor, houseFloor, card, sofa], viewport)).toEqual({ ...apple, y: 350, platformId: card.id });
     expect(placeCompanionFood(apple, { x: 200, y: 450 }, [screenFloor, houseFloor, card, sofa], viewport)).toEqual({ ...apple, y: 600, platformId: houseFloor.id });
   });
-  it("retains an unsupported document floor below the viewport when safe floor spans are absent or above the release", () => {
+  it("recovers a native grip below the protected screen floor onto that existing safe span", () => {
+    const viewport = Object.freeze({ width: 1920, height: 1100 });
+    const left = Object.freeze({ id: "viewport-floor-food", x: 24, y: 1030, width: 840, kind: "floor" as const });
+    const right = Object.freeze({ ...left, id: "viewport-floor-food-1", x: 1048, width: 848 });
+    const point = Object.freeze({ x: 1050, y: 1076 });
+    expect(placeCompanionFood(apple, point, Object.freeze([left, right]), viewport)).toEqual({ ...apple, ...point, y: 1030, platformId: right.id });
+    // A grip in the actual control gap goes to a measured safe centre, never
+    // a newly manufactured full-width floor across its human hit target.
+    expect(placeCompanionFood(apple, { x: 1000, y: 1076 }, [right, left], viewport)).toEqual({ ...apple, x: 1048, y: 1030, platformId: right.id });
+    const lower = { ...left, id: "viewport-floor-food-2", x: 24, y: 1090, width: 100 };
+    expect(placeCompanionFood(apple, point, [right, lower], viewport).platformId).toBe(lower.id);
+    expect(point).toEqual({ x: 1050, y: 1076 }); expect(right.y).toBe(1030);
+  });
+  it("allows only a bounded visible floor recovery, never an upper card, house seat or stale offscreen span", () => {
+    const viewport = { width: 1000, height: 800 }, point = { x: 500, y: 790 };
+    const valid: Platform = { id: "viewport-floor-food", x: 450, y: 740, width: 100, kind: "floor" };
+    for (const supported of [point, { ...point, y: 844 }, { x: -44, y: 790 }, { x: 1044, y: 790 }]) {
+      expect(placeCompanionFood(apple, supported, [valid], viewport).platformId).toBe(valid.id);
+    }
+    for (const invalid of [{ ...point, y: 844.01 }, { x: -44.01, y: 790 }, { x: 1044.01, y: 790 }]) {
+      expect(placeCompanionFood(apple, invalid, [valid], viewport).platformId).toBeUndefined();
+    }
+    const candidates: Platform[] = [card, { ...valid, kind: "card" }, { ...valid, id: "companion-home-floor-food" },
+      { ...valid, x: -1 }, { ...valid, x: 950 }, { ...valid, y: 801 }, { ...valid, y: -1 }, { ...valid, y: 130 }, { ...valid, id: "viewport-floor-food-old" }];
+    for (const candidate of candidates) expect(placeCompanionFood(apple, { ...point, y: 840 }, [candidate], viewport).platformId).toBeUndefined();
+    // The exact lower bound comes from the existing fixed-bottom-bar rule;
+    // a stale short-viewport floor may still be used for an ordinary fall,
+    // but never as a large upward recovery after viewport growth.
+    expect(placeCompanionFood(apple, { ...point, y: 840 }, [{ ...valid, y: 512 }], viewport).platformId).toBe(valid.id);
+    expect(placeCompanionFood(apple, { ...point, y: 840 }, [{ ...valid, y: 511.99 }], viewport).platformId).toBeUndefined();
+    expect(placeCompanionFood(apple, { x: 700, y: 100 }, [{ ...valid, y: 130 }], viewport).platformId).toBe(valid.id);
+    expect(placeCompanionFood(apple, point, [valid])).toEqual({ ...apple, ...point });
+  });
+  it("retains an unsupported document floor below the viewport when valid safe floor spans are absent", () => {
     const point = { x: 500, y: 700 }, viewport = { width: 1000, height: 800 };
     const candidates: Platform[] = [
-      { id: "viewport-floor-food", x: 50, y: 600, width: 100, kind: "floor" },
+      { id: "viewport-floor-food", x: 50, y: -1, width: 100, kind: "floor" },
       { id: "viewport-floor-food-old", x: 800, y: 780, width: 100, kind: "floor" },
       { id: "companion-home-food", x: 450, y: 750, width: 100, kind: "floor" },
       { id: "viewport-floor-food-2", x: NaN, y: 780, width: 100, kind: "floor" },

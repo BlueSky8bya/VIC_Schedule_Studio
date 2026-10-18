@@ -6,7 +6,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
-test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block", trace: "off" });
 async function fixture(page: Page, reduce = false, genericSounds = false) {
   const writes: string[] = [], errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -38,6 +38,7 @@ async function openSound(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
   const nav = dialog.getByRole("tablist", { name: "빅타민 설정", exact: true });
   await nav.getByRole("tab", { name: "소리", exact: true }).click();
   return { dialog, nav, sound: dialog.locator(".rhh-companion-sound") };
@@ -64,7 +65,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     await page.bringToFront(); await settlePanelLayout(page);
     if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
     let { dialog, nav, sound } = await openSound(page);
-    await expect(nav.getByRole("tab")).toHaveText(["프로필", "움직임", "장난", "교감", "소리"]);
+    await expect(nav.getByRole("tab")).toHaveText(["기본", "움직임", "장난", "교감", "소리"]);
     await beginAuditions(page);
     const preview = sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true });
     await preview.click(); await expect.poll(() => trace(page)).toEqual(["pet"]);
@@ -81,9 +82,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     expect(await trace(page)).toEqual(["pet", "discover"]);
     await sound.getByRole("switch", { name: "빅타민 움직임 소리 켜기/끄기", exact: true }).click();
     expect(await saved(page)).toMatchObject({ enabled: true, sound: false, soundVolume: 5, soundCare: true, soundMotion: false, soundKeepsakes: true });
-    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
-    await sound.screenshot({ path: `.scratch-pw/companion-109-settings/audio-${surface}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-audio-${surface}.png` });
+    mkdirSync(".scratch-pw/companion-111/sound-settings", { recursive: true });
+    await sound.screenshot({ path: `.scratch-pw/companion-111/sound-settings/audio-${surface}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-111/sound-settings/viewport-audio-${surface}.png` });
     // Native sibling storage event exercises shared controls without forging
     // a browser event or invoking the model's setters from the test.
     if (surface === "viewer") {
@@ -105,6 +106,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     await dialog.getByRole("tab", { name: "소리", exact: true }).first().click();
     await dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true }).click();
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
+    await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
     await expect(dialog).toContainText("전체 효과음이 꺼져 있어요.");
     await expect(sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true })).toBeDisabled();
     expect(await trace(page)).toEqual([]);
@@ -138,9 +141,8 @@ test("native gift opening and wearing produce one companion cue without a generi
   });
   await page.goto("/visual-fixture/poster");
   const { dialog } = await openSound(page);
-  await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
+  await dialog.getByRole("tab", { name: "옷장", exact: true }).click();
   const profile = dialog.locator(".rhh-companion-profile");
-  await profile.getByRole("tab", { name: "옷장", exact: true }).click();
   await page.evaluate(() => { const target = window as Window & { __sfxTrace?: string[]; __companionSfxTrace?: string[] }; target.__sfxTrace = []; target.__companionSfxTrace = []; });
   await profile.getByRole("button", { name: "선물 열기", exact: true }).click();
   await expect.poll(() => trace(page)).toEqual(["gift"]);

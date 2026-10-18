@@ -41,10 +41,9 @@ async function openWardrobe(page: Page, surface: Surface = "viewer") {
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
   const profile = dialog.locator(".rhh-companion-profile");
   await profile.getByRole("tab", { name: "옷장", exact: true }).click();
-  return { dialog, profile, preview: profile.getByRole("img", { name: "빅타민 미리보기", exact: true }) };
+  return { dialog, profile, preview: profile.locator(".rhh-wardrobe-detail").getByRole("img", { name: "빅타민 미리보기", exact: true }) };
 }
 const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
 
@@ -91,8 +90,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   expect(await tile.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
   await profile.locator('[data-accessory="beret"]').click();
   await settlePanelLayout(page);
-  mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
-  await page.screenshot({ path: `.scratch-pw/companion-109-settings/wardrobe-${surface}-${theme}.png` });
+  mkdirSync(".scratch-pw/companion-111/wardrobe", { recursive: true });
+  await page.screenshot({ path: `.scratch-pw/companion-111/wardrobe/wardrobe-${surface}-${theme}.png` });
   await profile.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await expect(preview).toHaveCount(0); expect(await saved(page)).toEqual(before);
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
@@ -104,13 +103,22 @@ for (const mode of ["empty", "reduced", "graphics-off", "graphics-soft", "disabl
   await page.waitForTimeout(5500);
   const before = await saved(page);
   await expect(profile.getByRole("button", { name: "다시 보기", exact: true })).toBeDisabled();
-  if (mode === "disabled") { await expect(preview).not.toHaveAttribute("data-preview-ready", ""); expect(safety.bodies).toEqual([]); }
-  else { await expect(preview).toHaveAttribute("data-preview-row", "0"); const pixels = await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL()); await page.waitForTimeout(1500); expect(await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())).toBe(pixels); }
+  await expect(preview).toHaveAttribute("data-preview-row", "0"); const pixels = await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL()); await page.waitForTimeout(1500); expect(await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())).toBe(pixels);
   if (mode === "disabled") {
+    const paused = profile.locator(".rhh-wardrobe-preview-wrap > .rhh-wardrobe-preview-paused");
+    await expect(paused).toBeVisible();
+    const imageRect = await preview.boundingBox(), pausedRect = await paused.boundingBox();
+    expect(pausedRect!.y).toBeGreaterThanOrEqual(imageRect!.y + imageRect!.height);
+    mkdirSync(".scratch-pw/companion-111/wardrobe", { recursive: true });
+    await dialog.screenshot({ path: ".scratch-pw/companion-111/wardrobe/off-badge.png" });
+    await profile.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
+    await profile.getByRole("tab", { name: "옷장", exact: true }).click();
     await expect.poll(() => preview.getAttribute("data-preview-row")).toBe("30");
+    await profile.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
-    await expect(preview).not.toHaveAttribute("data-preview-ready", "");
+    await profile.getByRole("tab", { name: "옷장", exact: true }).click();
+    await expect(preview).toHaveAttribute("data-preview-row", "0");
   }
   expect(await saved(page)).toEqual(before); expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });
@@ -125,8 +133,8 @@ test("narrow desktop keeps the real preview and deep selection visible, and oute
   await expect(profile.locator(".rhh-wardrobe-detail")).toBeInViewport({ ratio: 1 });
   expect(await profile.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   expect(await last.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
-  mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
-  await page.screenshot({ path: ".scratch-pw/companion-109-settings/wardrobe-narrow.png" });
+  mkdirSync(".scratch-pw/companion-111/wardrobe", { recursive: true });
+  await page.screenshot({ path: ".scratch-pw/companion-111/wardrobe/wardrobe-narrow.png" });
   await dialog.locator('[data-tab="sound"]').click();
   await expect(preview).toHaveCount(0);
   await dialog.locator('[data-tab="companion"]').click();
@@ -136,7 +144,6 @@ test("narrow desktop keeps the real preview and deep selection visible, and oute
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const reopenedDialog = page.getByRole("dialog", { name: "설정", exact: true });
   await reopenedDialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await reopenedDialog.getByRole("tab", { name: "프로필", exact: true }).click();
   await reopenedDialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "옷장", exact: true }).click();
   await expect(reopenedDialog.getByRole("img", { name: "빅타민 미리보기", exact: true })).toHaveAttribute("data-preview-ready", "");
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);

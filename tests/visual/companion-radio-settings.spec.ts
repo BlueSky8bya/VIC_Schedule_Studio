@@ -8,11 +8,11 @@ import { COMPANION_RADIO_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/radio
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
-test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block", trace: "off" });
 async function fixture(page: Page, sound = true) {
   const writes: string[] = [], errors: string[] = [], musicRequests: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  page.on("request", request => { if (COMPANION_RADIO_TRACKS.some(track => new URL(request.url()).pathname === track.src)) musicRequests.push(new URL(request.url()).pathname); });
+  page.on("request", request => { if (/^\/companion\/audio\/radio\/[^/]+\.ogg$/.test(new URL(request.url()).pathname)) musicRequests.push(new URL(request.url()).pathname); });
   const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previewReads = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
   await page.route("**/*", route => {
@@ -54,6 +54,7 @@ async function openRadio(page: Page) {
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
   await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
   return { dialog, radio: dialog.locator(".rhh-companion-radio") };
 }
@@ -95,7 +96,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
   if (surface === "preview") { await settlePanelLayout(page); await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
   let { radio } = await openRadio(page);
   await assertRadioButtonGeometry(radio);
-  expect(COMPANION_RADIO_TRACKS.length).toBeGreaterThanOrEqual(32);
+  expect(COMPANION_RADIO_TRACKS.length).toBeGreaterThanOrEqual(12);
   expect(safety.musicRequests).toEqual([]);
   await radio.getByText("곡 고르기", { exact: false }).click();
   await expect(radio.getByRole("checkbox")).toHaveCount(COMPANION_RADIO_TRACKS.length);
@@ -110,6 +111,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
   const eligible = COMPANION_RADIO_TRACKS.find(track => track.mood !== "lively" && track.id !== COMPANION_RADIO_TRACKS[0].id)!;
   await radio.getByRole("button", { name: `${eligible.title} 재생`, exact: true }).click();
   await expect(radio.locator(".rhh-radio-now > p")).toHaveText(eligible.title);
+  await expect(radio.locator('[data-act="companion-radio-source"]')).toHaveAttribute("href", eligible.sourceUrl);
+  await expect(radio.locator('[data-act="companion-radio-license"]')).toHaveAttribute("href", eligible.licenseUrl);
+  await expect(radio.locator(".rhh-radio-attribution")).toContainText("Kevin MacLeod (incompetech.com)");
+  await expect(radio.locator(".rhh-radio-attribution")).toContainText("음량보정");
   await expect(radio.getByRole("button", { name: "정지", exact: true })).toBeEnabled();
   expect(new Set(safety.musicRequests)).toEqual(new Set([eligible.src]));
   const expectedGain = Math.pow(.45, 1.6) * .05;
@@ -131,8 +136,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
     await sibling.close(); await page.bringToFront();
     await expect(volume).toHaveValue("25"); selections.volume = 25;
   }
-  mkdirSync(".scratch-pw/companion-110/radio-settings", { recursive: true });
-  await page.screenshot({ path: `.scratch-pw/companion-110/radio-settings/radio-${surface}.png` });
+  mkdirSync(".scratch-pw/companion-111/radio-settings", { recursive: true });
+  await page.screenshot({ path: `.scratch-pw/companion-111/radio-settings/radio-${surface}.png` });
   const targetAttributes = await radio.locator("[data-act]").evaluateAll(nodes => nodes.map(node => [node.getAttribute("data-act"), node.getAttribute("data-act-opt")]));
   expect(targetAttributes.every(([key, opt]) => key?.startsWith("companion-radio-") && (!opt || ["on", "off", "open", "close", "lively", "graceful", "calm"].includes(opt)))).toBe(true);
   await page.reload();
@@ -154,6 +159,8 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   await dialog.locator('[data-tab="sound"]').click();
   await dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true }).click();
   await dialog.locator('[data-tab="companion"]').click();
+  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
   await radio.getByText("곡 고르기", { exact: false }).click();
   await radio.getByRole("checkbox").first().check();
@@ -175,6 +182,92 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   const globalVolume = dialog.getByRole("slider", { name: "효과음 음량", exact: true });
   await globalVolume.focus(); await globalVolume.press("Home");
   await dialog.locator('[data-tab="companion"]').click();
+  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
   expect(safety.musicRequests).toEqual([]); expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
+
+
+for (const surface of ["viewer", "studio"] as const) test(`${surface}: first home radio gesture plays audible samples in a cold audio context`, async ({ page }) => {
+  const safety = await fixture(page);
+  await page.setViewportSize({ width: 1920, height: 1100 });
+  await page.addInitScript(() => {
+    localStorage.setItem("vic.ambient", "on");
+    const target = window as Window & { __coldRadio?: { elements: HTMLMediaElement[]; analysers: AnalyserNode[]; states: string[]; resumes: number } };
+    const observed: NonNullable<typeof target.__coldRadio> = target.__coldRadio = { elements: [], analysers: [], states: [], resumes: 0 };
+    const resume = AudioContext.prototype.resume;
+    AudioContext.prototype.resume = function () { observed.resumes++; return resume.call(this); };
+    const create = AudioContext.prototype.createMediaElementSource;
+    AudioContext.prototype.createMediaElementSource = function (element) {
+      observed.elements.push(element); observed.states.push(this.state);
+      this.addEventListener("statechange", () => observed.states.push(this.state));
+      const source = create.call(this, element), analyser = this.createAnalyser();
+      source.connect(analyser); observed.analysers.push(analyser);
+      return source;
+    };
+  });
+  await page.goto(surface === "viewer" ? "/visual-fixture/poster" : "/visual-fixture/studio?role=owner&y=2025&m=11");
+  // Playwright locator readiness helpers can evaluate with userGesture.
+  // Before the first real click, observe readiness exclusively through CDP
+  // with userGesture:false, just like the autoplay boundary sound suite.
+  const room = page.locator(".vc-home:visible"), radio = room.locator('[data-home-action="radio"]');
+  const inspector = await page.context().newCDPSession(page);
+  await expect.poll(async () => {
+    const result = await inspector.send("Runtime.evaluate", { expression: "(()=>{const b=document.querySelector('[data-home-action=radio]');return Boolean(b&&b.getClientRects().length&&getComputedStyle(b).visibility!=='hidden'&&!b.closest('[inert]'));})()", returnByValue: true, userGesture: false });
+    return result.result.value;
+  }).toBe(true);
+  const coldResult = await inspector.send("Runtime.evaluate", { expression: "JSON.stringify({activation:navigator.userActivation.hasBeenActive,elements:window.__coldRadio?.elements.length??0,resumes:window.__coldRadio?.resumes??0,sfx:document.documentElement.dataset.sfxLast??null})", returnByValue: true, userGesture: false });
+  await inspector.detach();
+  const cold = JSON.parse(coldResult.result.value as string);
+  expect(cold).toEqual({ activation: false, elements: 0, resumes: 0, sfx: null });
+  await radio.click();
+  await expect(radio).toHaveAttribute("aria-pressed", "true");
+  const read = () => page.evaluate(() => {
+    const value = (window as Window & { __coldRadio?: { elements: HTMLMediaElement[]; analysers: AnalyserNode[]; states: string[]; resumes: number } }).__coldRadio!;
+    const element = value.elements[0], analyser = value.analysers[0], samples = new Float32Array(analyser?.fftSize ?? 32);
+    analyser?.getFloatTimeDomainData(samples);
+    return { currentTime: element?.currentTime ?? 0, paused: element?.paused ?? true, ready: element?.readyState ?? 0, context: analyser?.context.state, peak: Math.max(...samples.map(Math.abs)), states: value.states, elements: value.elements.length, sfx: document.documentElement.dataset.sfxLast ?? null };
+  });
+  await expect.poll(read).toMatchObject({ paused: false, context: "running", elements: 1 });
+  await expect.poll(async () => (await read()).currentTime).toBeGreaterThan(.15);
+  await expect.poll(async () => (await read()).peak).toBeGreaterThan(.00001);
+  const playing = await read();
+  await test.info().attach("native-cold-radio", { body: JSON.stringify({ cold, playing, actualFirstHomeClick: true, settingsOpened: false }, null, 2), contentType: "application/json" });
+  expect(playing.sfx).toBeNull();
+  await radio.click(); await expect(radio).toHaveAttribute("aria-pressed", "false");
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
+
+test("every active licensed recording decodes and produces real browser samples without fetching the retired playlist", async ({ page }) => {
+  const safety = await fixture(page);
+  await page.addInitScript(() => {
+    const target = window as Window & { __allRadio?: { media: HTMLMediaElement; analyser: AnalyserNode } };
+    const create = AudioContext.prototype.createMediaElementSource;
+    AudioContext.prototype.createMediaElementSource = function (media) {
+      const source = create.call(this, media), analyser = this.createAnalyser();
+      source.connect(analyser); target.__allRadio = { media, analyser }; return source;
+    };
+  });
+  await page.goto("/visual-fixture/poster");
+  const { radio } = await openRadio(page);
+  await radio.getByText("곡 고르기", { exact: false }).click();
+  const recordings: Array<{ id: string; src: string; time: number; peak: number; context: string }> = [];
+  const read = () => page.evaluate(() => {
+    const { media, analyser } = (window as Window & { __allRadio?: { media: HTMLMediaElement; analyser: AnalyserNode } }).__allRadio!;
+    const samples = new Float32Array(analyser.fftSize); analyser.getFloatTimeDomainData(samples);
+    return { src: new URL(media.currentSrc || media.src).pathname, time: media.currentTime, peak: Math.max(...samples.map(Math.abs)), context: analyser.context.state };
+  });
+  for (const track of COMPANION_RADIO_TRACKS) {
+    await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
+    await expect(radio.locator(".rhh-radio-now > p")).toHaveText(track.title);
+    await expect.poll(read).toMatchObject({ src: track.src, context: "running" });
+    await expect.poll(async () => (await read()).time).toBeGreaterThan(.15);
+    await expect.poll(async () => (await read()).peak).toBeGreaterThan(.00001);
+    recordings.push({ id: track.id, ...await read() });
+  }
+  expect(new Set(safety.musicRequests)).toEqual(new Set(COMPANION_RADIO_TRACKS.map(track => track.src)));
+  await radio.getByRole("button", { name: "정지", exact: true }).click();
+  await test.info().attach("all-active-recordings-native-pcm", { body: JSON.stringify({ recordings, writes: safety.writes, errors: safety.errors }, null, 2), contentType: "application/json" });
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { getCompanionCollectionArtFrame, type CompanionCollectionArtKind } from "@/lib/ui/viewer-companion/collection-art";
+import { getCompanionAccessoryArtFrame } from "@/lib/ui/viewer-companion/accessory-art";
 
 const sealPath = Array.from({ length: 24 }, (_, index) => {
   const angle = index * Math.PI / 12, next = angle + Math.PI / 12, middle = angle + Math.PI / 24;
@@ -12,7 +13,7 @@ export function CompanionCollectionArt({ kind, id, className }: { kind: Companio
   // A food stamp is a paper seal behind the exact live food pixels. Keeping
   // the whole square food cell and a square viewport preserves its silhouette,
   // including future explicitly registered food replacements.
-  const frame = getCompanionCollectionArtFrame(kind === "food-stamp" ? "food" : kind, id);
+  const frame = kind === "accessory" ? getCompanionAccessoryArtFrame(id) : getCompanionCollectionArtFrame(kind === "food-stamp" ? "food" : kind, id);
   if (!frame) return null;
   const classes = ["vc-collection-art", className].filter(Boolean).join(" ");
   if (kind === "food-stamp") return <svg aria-hidden="true" focusable="false" className={classes} data-collection-art={kind} data-collection-art-id={frame.id} viewBox="0 0 128 128">

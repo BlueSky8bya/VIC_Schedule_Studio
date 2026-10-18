@@ -408,7 +408,9 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect(recordedFood.locator(`[data-collection-art="food-stamp"][data-collection-art-id="${kind}"]`)).toHaveCount(1);
   });
 
-  for (const accessory of ["pixel-sunglasses", "baseball-cap", "scarf"] as const) {
+  // Retired neckwear remains covered by the saved-alias world fixtures;
+  // current wardrobe gestures exercise the strapless body-fit badge instead.
+  for (const accessory of ["pixel-sunglasses", "baseball-cap", "bell-badge"] as const) {
     test(`${surface}: native ${accessory} wears, performs a finite gesture and earns only its actually visible situation`, async ({ page }) => {
       test.setTimeout(105000);
       const identity = await setup(page, surface, "accessory", accessory);

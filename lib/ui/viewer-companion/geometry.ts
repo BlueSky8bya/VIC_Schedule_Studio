@@ -125,8 +125,22 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   let foodLandingSnapshot: CompanionFoodDropSupport[] = [];
   const observed = new Set<Element>();
   let observedHome: HTMLElement | null = null;
-  const resizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(schedule);
-  const homeObserver = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(schedule);
+  // Retain anonymous line geometry relative to its actual text parent. A
+  // scroll changes the origin, not wrapping; changed subtrees alone rerange.
+  // Weak keys release replaced months and never retain schedule text.
+  type TextSnapshot = { parent: HTMLElement; width: number; height: number; epoch: number; transform: string; rects: CompanionTextRect[] };
+  let textEpoch = 0;
+  const textSnapshots = new WeakMap<Node, TextSnapshot>();
+  const dirtyTextScopes = new Set<Element>();
+  const dirtyText = (records: readonly MutationRecord[]) => {
+    for (const record of records) {
+      const target = "getBoundingClientRect" in record.target ? record.target as Element : record.target.parentElement;
+      if (target) dirtyTextScopes.add(target);
+    }
+  };
+  const resizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(entries => { for (const entry of entries) dirtyTextScopes.add(entry.target); schedule(); });
+  const homeObserver = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(records => { dirtyText(records); schedule(); });
+  const invalidateText = () => { textEpoch++; schedule(); };
 
   function measure() {
     frame = 0;
@@ -160,7 +174,15 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const nextObserved = new Set<Element>([root]);
     const visibleCache = new Map<Element, boolean>();
     const styles = new Map<Element, CSSStyleDeclaration>();
+    const rects = new Map<Element, DOMRect>();
+    const rectFor = (element: Element) => {
+      let rect = rects.get(element);
+      if (!rect) { rect = element.getBoundingClientRect(); rects.set(element, rect); }
+      return rect;
+    };
     const clippedCache = new Map<Element, CompanionTextRect>();
+    const textTransforms = new Map<Element, string>();
+    const dirtyScopes = [...dirtyTextScopes];
     const viewport = { width, height };
     const viewportRect = { left: 0, right: width, top: 0, bottom: height };
     const studio = root.getAttribute("data-companion-surface") === "studio";
@@ -190,6 +212,15 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       visibleCache.set(element, result);
       return result;
     }
+    function textTransform(element: Element | null): string {
+      if (!element) return "";
+      const cached = textTransforms.get(element);
+      if (cached !== undefined) return cached;
+      const style = styleFor(element), own = `${style.transform}/${style.rotate}/${style.scale}`;
+      const value = textTransform(element.parentElement) + (own === "none/none/none" ? "" : `|${own}`);
+      textTransforms.set(element, value);
+      return value;
+    }
     function clipping(element: Element | null): CompanionTextRect {
       if (!element) return viewportRect;
       const cached = clippedCache.get(element);
@@ -199,7 +230,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       const clipX = /^(hidden|clip|scroll|auto)$/.test(style.overflowX);
       const clipY = /^(hidden|clip|scroll|auto)$/.test(style.overflowY);
       if (clipX || clipY) {
-        const rect = element.getBoundingClientRect();
+        const rect = rectFor(element);
         if (clipX) { bounds.left = Math.max(bounds.left, rect.left); bounds.right = Math.min(bounds.right, rect.right); }
         if (clipY) { bounds.top = Math.max(bounds.top, rect.top); bounds.bottom = Math.min(bounds.bottom, rect.bottom); }
       }
@@ -216,12 +247,23 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const parent = node.parentElement;
         if (!parent || !visible(parent) || parent.closest("script,style,svg,.sr-only,[data-companion-actor]")) continue;
         const clip = clipping(parent);
-        range.selectNodeContents(node);
         // Do not read or retain nodeValue/textContent. The local brain receives
         // only anonymous geometry, including for server-masked teaser content.
         const target = supports ? parent.closest<HTMLElement>(TEXT_SURFACE_SELECTOR) : null;
         const candidate = target && root.contains(target) && supportVisible(target) && (!studio || target.matches(DATE_TEXT_SELECTOR) || Boolean(target.closest(STUDIO_CARD_SELECTOR))) ? target : null;
-        for (const rect of range.getClientRects()) {
+        const origin = rectFor(parent), transform = textTransform(parent), previousText = textSnapshots.get(node);
+        const changed = !previousText || previousText.parent !== parent || previousText.epoch !== textEpoch
+          || previousText.transform !== transform
+          || Math.abs(previousText.width - origin.width) > .01 || Math.abs(previousText.height - origin.height) > .01
+          || dirtyScopes.some(scope => scope.contains(parent) || parent.contains(scope));
+        let fragments = previousText?.rects;
+        if (changed) {
+          range.selectNodeContents(node);
+          fragments = [...range.getClientRects()].map(rect => ({ left: rect.left - origin.left, right: rect.right - origin.left, top: rect.top - origin.top, bottom: rect.bottom - origin.top }));
+          textSnapshots.set(node, { parent, width: origin.width, height: origin.height, epoch: textEpoch, transform, rects: fragments });
+        }
+        for (const local of fragments ?? []) {
+          const rect = { left: local.left + origin.left, right: local.right + origin.left, top: local.top + origin.top, bottom: local.bottom + origin.top };
           const clipped = { left: Math.max(rect.left, clip.left), right: Math.min(rect.right, clip.right), top: Math.max(rect.top, clip.top), bottom: Math.min(rect.bottom, clip.bottom) };
           if (clipped.right - clipped.left < .5 || clipped.bottom - clipped.top < .5) continue;
           const fragments = unoccludedCompanionRects(clipped, house?.contains(parent) ? undefined : houseBounds);
@@ -247,7 +289,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // residents still need its new anchor and foreground materials delivered.
     const homeChanged = home !== observedHome;
     const house = home?.closest<HTMLElement>(".vc-home") ?? null;
-    const houseRect = house?.isConnected && visible(house) ? house.getBoundingClientRect() : undefined;
+    const houseRect = house?.isConnected && visible(house) ? rectFor(house) : undefined;
     const houseBounds = houseRect && houseRect.width > 0 && houseRect.height > 0 ? { left: houseRect.left, right: houseRect.right, top: houseRect.top, bottom: houseRect.bottom } : undefined;
     if (homeChanged) {
       homeObserver?.disconnect();
@@ -276,7 +318,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       for (const element of root.ownerDocument.querySelectorAll<HTMLElement>(".vc-home-launcher,.vc-home button")) controlElements.add(element);
       for (const element of controlElements) {
         if (!visible(element) || element.matches(`${CARD_SELECTOR},${DAY_SELECTOR}`) || element.closest(".vc-companion,.vc-cushion-button")) continue;
-        const rect = element.getBoundingClientRect(), clip = clipping(element.parentElement);
+        const rect = rectFor(element), clip = clipping(element.parentElement);
         measuredControls.set(element, rect);
         const bounds = { left: Math.max(rect.left, clip.left), right: Math.min(rect.right, clip.right), top: Math.max(rect.top, clip.top), bottom: Math.min(rect.bottom, clip.bottom) };
         if (bounds.right > bounds.left && bounds.bottom > bounds.top) controls.push(...unoccludedCompanionRects(bounds, house?.contains(element) ? undefined : houseBounds));
@@ -292,7 +334,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       // A floor above them can be safe; no safe interval means no fake floor.
       for (const bar of root.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
         if (!visible(bar) || styleFor(bar).position !== "fixed") continue;
-        const rect = bar.getBoundingClientRect();
+        const rect = rectFor(bar);
         if (rect.width > 0 && rect.height > 0 && rect.top >= height * .65 && rect.bottom <= height + 1) floorY = Math.min(floorY, rect.top - 8);
       }
       addSurface("viewport-floor", "floor", { x: 12, y: floorY, width: width - 24 });
@@ -304,7 +346,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (!visible(element) || !supportVisible(element) || element.hasAttribute("disabled")) continue;
         const side = element.getAttribute("data-companion-panel-side");
         if (side !== "left" && side !== "right") continue;
-        const rect = measuredControls.get(element) ?? element.getBoundingClientRect(), clip = clipping(element.parentElement);
+        const rect = measuredControls.get(element) ?? rectFor(element), clip = clipping(element.parentElement);
         const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
         if (rect.width <= 0 || rect.height <= 0 || rect.top < clip.top || rect.top > clip.bottom || right <= x) continue;
         const safe = safeCompanionSurfaces({ x, y: rect.top - CLEARANCE, width: right - x }, ordinaryObstacles, size, viewport, footprint);
@@ -313,7 +355,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         }
       }
       if (home?.isConnected && visible(home)) {
-        const rect = home.getBoundingClientRect();
+        const rect = rectFor(home);
         const clip = clipping(home.parentElement);
         const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
         const opening = companionSofaSeat({ left: x, right, top: rect.top }, size);
@@ -325,7 +367,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       const homeFloor = house?.querySelector<HTMLElement>(".vc-home-floor");
       if (homeFloor?.isConnected && visible(homeFloor)) {
         nextObserved.add(homeFloor);
-        const rect = homeFloor.getBoundingClientRect(), clip = clipping(homeFloor.parentElement);
+        const rect = rectFor(homeFloor), clip = clipping(homeFloor.parentElement);
         const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right), y = rect.bottom - COMPANION_HOME_FLOOR_INSET;
         // The room's floor is a real, separate plane. Only a deliberate food
         // target or the occupied manual support exposes it to the brain;
@@ -354,7 +396,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         for (const element of root.querySelectorAll<HTMLElement>(surface.selector)) {
           nextObserved.add(element);
           if (platforms.length >= MAX_PLATFORMS || !visible(element) || !supportVisible(element) || studio && !element.matches(`${STUDIO_HEADER_SELECTOR},${STUDIO_BAND_SELECTOR}`)) continue;
-          const rect = measuredControls.get(element) ?? element.getBoundingClientRect(), clip = clipping(element.parentElement);
+          const rect = measuredControls.get(element) ?? rectFor(element), clip = clipping(element.parentElement);
           const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
           const edge = surface.edge === "top" ? rect.top : rect.bottom;
           if (rect.width <= 0 || rect.height <= 0 || edge < clip.top || edge > clip.bottom || right <= x) continue;
@@ -370,7 +412,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (!owner) continue;
         const kind = date ? "date" : "card";
         const id = idFor(element, kind);
-        const anchorRect = element.getBoundingClientRect();
+        const anchorRect = rectFor(element);
         for (let line = 0; line < rects.length && platforms.length < MAX_PLATFORMS; line++) {
           const rect = rects[line];
           const before = platforms.length;
@@ -388,7 +430,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (studio && !element.matches(STUDIO_CARD_SELECTOR)) continue;
         nextObserved.add(element);
         if ((landings.length < MAX_PLATFORMS || foodLandings.length < MAX_PLATFORMS) && visible(element)) {
-          const rect = element.getBoundingClientRect(), clip = clipping(element.parentElement);
+          const rect = rectFor(element), clip = clipping(element.parentElement);
           const left = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right);
           if (rect.width > 0 && rect.height > 0 && rect.top >= clip.top && rect.top < clip.bottom && right > left) {
             // A user-directed drop hits the rendered card edge, including on
@@ -415,7 +457,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         if (!candidates?.length) continue;
         const heart = element.querySelector<HTMLElement>(".event-heart");
         if (heart && visible(heart)) {
-          const heartRect = heart.getBoundingClientRect();
+          const heartRect = rectFor(heart);
           const x = heartRect.left + heartRect.width / 2;
           const y = heartRect.top + heartRect.height / 2;
           if (heartRect.width > 0 && heartRect.height > 0 && x >= 0 && x <= width && y >= 0 && y <= height) {
@@ -455,6 +497,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     foodLandingSnapshot = foodLandings.map(copyFoodSupport);
     // Suppress equal layout deliveries, including a countdown's text mutation.
     const signature = JSON.stringify([platforms, landings, foodLandings]);
+    dirtyTextScopes.clear();
     if (signature !== previous || notifyUnchanged || homeChanged) { previous = signature; onChange(platforms, validationOnly); }
   }
 
@@ -483,7 +526,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   const panelChanged = () => { previous = ""; schedule(); };
 
   const mutationObserver = new MutationObserver(records => {
-    if (records.some(record => record.type === "childList" || record.type === "attributes" || record.type === "characterData")) schedule();
+    if (records.some(record => record.type === "childList" || record.type === "attributes" || record.type === "characterData")) { dirtyText(records); schedule(); }
   });
   mutationObserver.observe(root, {
     subtree: true, childList: true, characterData: true, attributes: true,
@@ -494,7 +537,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   for (let parent = root.parentElement; parent; parent = parent.parentElement) {
     mutationObserver.observe(parent, { attributes: true, attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden"] });
   }
-  win.addEventListener("resize", schedule, { passive: true });
+  win.addEventListener("resize", invalidateText, { passive: true });
   win.addEventListener("scroll", schedule, { passive: true, capture: true });
   win.addEventListener("scrollend", schedule, { passive: true, capture: true });
   win.visualViewport?.addEventListener("resize", schedule, { passive: true });
@@ -503,8 +546,8 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   win.addEventListener("vic:panel-section", panelChanged);
   root.addEventListener("transitionend", schedule);
   root.addEventListener("animationend", schedule);
-  root.ownerDocument.fonts?.addEventListener("loadingdone", schedule);
-  void root.ownerDocument.fonts?.ready?.then(() => schedule());
+  root.ownerDocument.fonts?.addEventListener("loadingdone", invalidateText);
+  void root.ownerDocument.fonts?.ready?.then(() => invalidateText());
   schedule();
 
   const dispose = () => {
@@ -515,7 +558,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     mutationObserver.disconnect();
     homeObserver?.disconnect();
     resizeObserver?.disconnect();
-    win.removeEventListener("resize", schedule);
+    win.removeEventListener("resize", invalidateText);
     win.removeEventListener("scroll", schedule, true);
     win.removeEventListener("scrollend", schedule, true);
     win.visualViewport?.removeEventListener("resize", schedule);
@@ -524,8 +567,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     win.removeEventListener("vic:panel-section", panelChanged);
     root.removeEventListener("transitionend", schedule);
     root.removeEventListener("animationend", schedule);
-    root.ownerDocument.fonts?.removeEventListener("loadingdone", schedule);
+    root.ownerDocument.fonts?.removeEventListener("loadingdone", invalidateText);
     observed.clear();
+    dirtyTextScopes.clear();
   };
   return Object.assign(dispose, {
     // Reuse the existing120ms queue. The finite renderer owns its lifetime;

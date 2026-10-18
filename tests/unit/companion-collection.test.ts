@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY, createCompanionCollectionStore, equipCompanionAccessory, loadCompanionCollection, normalizeCompanionCollection, observedCompanionBehavior, openCompanionGift, recordCompanionConsumedFood, subscribeCompanionCollection, type CompanionBehaviorObservation } from "@/lib/ui/viewer-companion/collection";
-import { advanceCompanionGifts, companionGiftChance, COMPANION_ACCESSORY_IDS, COMPANION_GIFT_ACTIVE_MS, normalizeCompanionGifts } from "@/lib/ui/viewer-companion/gifts";
+import { advanceCompanionGifts, companionGiftChance, COMPANION_ACCESSORY_IDS, COMPANION_WEARABLE_IDS, COMPANION_GIFT_ACTIVE_MS, normalizeCompanionGifts } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_ACCESSORIES } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_SITUATION_IDS, companionRunContactSituation, observedCompanionSituation, type CompanionSituationObservation } from "@/lib/ui/viewer-companion/moments";
@@ -71,19 +72,19 @@ describe("earned gifts and explicit equipment", () => {
     expect(normalizeCompanionGifts({ activeMs: -4, equipped: "beret", pending: "sunglasses", unlocked: ["sunglasses"] })).toEqual({ activeMs: 0, interactionCredit: 0, equipped: null, pending: null, unlocked: ["sunglasses"] });
   });
 
-  it("offers exactly 0.05%–0.1% per consumed opportunity, never a tick or reload lottery", () => {
-    expect(companionGiftChance(0)).toBe(.0005); expect(companionGiftChance(1)).toBe(.001);
-    expect(companionGiftChance(-10)).toBe(.0005); expect(companionGiftChance(10)).toBe(.001);
+  it("offers exactly 0.05%–0.7% per consumed opportunity, never a tick or reload lottery", () => {
+    expect(companionGiftChance(0)).toBe(.0005); expect(companionGiftChance(1)).toBeCloseTo(.007, 12);
+    expect(companionGiftChance(-10)).toBe(.0005); expect(companionGiftChance(10)).toBeCloseTo(.007, 12);
     expect(companionGiftChance(NaN)).toBe(0);
     const ready = { ...normalizeCompanionGifts(undefined), activeMs: COMPANION_GIFT_ACTIVE_MS, interactionCredit: 1 };
     // An exhaustive uniform 2000-point grid tests exact boundary density,
     // without statistical flakes or weakening a runtime RNG.
-    for (const [affection, expected] of [[0, 1], [1, 2]]) {
+    for (const [affection, expected] of [[0, 1], [1, 14]]) {
       let delivered = 0;
       for (let sample = 0; sample < 2000; sample++) if (advanceCompanionGifts(ready, 1, affection, true, () => sample / 2000).pending) delivered++;
       expect(delivered).toBe(expected);
     }
-    const random = vi.fn(() => .001), missed = advanceCompanionGifts(ready, 1, 1, true, random);
+    const random = vi.fn(() => .007), missed = advanceCompanionGifts(ready, 1, 1, true, random);
     expect(missed).toMatchObject({ pending: null, activeMs: 0, interactionCredit: 0 });
     let next = normalizeCompanionGifts(missed);
     for (let tick = 0; tick < 5000; tick++) next = advanceCompanionGifts(next, 250, 1, true, random);
@@ -107,11 +108,11 @@ describe("earned gifts and explicit equipment", () => {
     expect(random).toHaveBeenCalledTimes(1); expect(reopened.load().gifts.pending).toBeNull();
   });
 
-  it("unlocks each of twelve keepsakes only on opening and never auto-equips", () => {
+  it("unlocks every active keepsake only on opening and never auto-equips", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const store = createCompanionCollectionStore();
     expect(store.openGift()).toBeNull(); expect(store.equip("sunglasses")).toBe(false);
-    for (const id of COMPANION_ACCESSORY_IDS) {
+    for (const id of COMPANION_WEARABLE_IDS) {
       store.interaction();
       for (let step = 0; step < 9; step++) expect(store.advance(30000, .9, true)).toBe(false);
       expect(store.advance(30000, .9, false)).toBe(false); expect(store.load().gifts.pending).toBeNull();
@@ -120,10 +121,39 @@ describe("earned gifts and explicit equipment", () => {
       expect(store.openGift()).toBe(id); expect(store.openGift()).toBeNull(); expect(store.load().gifts.equipped).toBeNull();
       expect(store.load().gifts.interactionCredit).toBe(0); expect(store.load().gifts.activeMs).toBe(0);
     }
-    expect(store.load().gifts.unlocked).toEqual(COMPANION_ACCESSORY_IDS);
+    expect(store.load().gifts.unlocked).toEqual(COMPANION_WEARABLE_IDS);
     store.interaction(); for (let step = 0; step < 20; step++) expect(store.advance(30000, .9, true)).toBe(false);
     expect(store.load().gifts.pending).toBeNull(); expect(store.equip("satchel")).toBe(true); expect(store.equip("satchel")).toBe(false);
     expect(store.equip("identity-canary" as "satchel")).toBe(false); expect(store.equip(null)).toBe(true); expect(store.load().gifts.equipped).toBeNull();
+  });
+  it("preserves retired ownership while fitting replacements, without redrawing a neck on this body", () => {
+    const old = { unlocked: ["scarf", "bell-pendant"], equipped: "bell-pendant", pending: "beret", activeMs: 450, interactionCredit: 1 };
+    const migrated = normalizeCompanionGifts(old);
+    expect(migrated.unlocked).toEqual(["bow", "scarf", "bell-pendant", "bell-badge"]);
+    expect(migrated.equipped).toBe("bell-badge"); expect(migrated.pending).toBe("beret");
+    expect(migrated.activeMs).toBe(450); expect(migrated.interactionCredit).toBe(1);
+    expect(normalizeCompanionGifts(migrated)).toEqual(migrated);
+    expect(normalizeCompanionGifts({ unlocked: [], pending: "scarf" }).pending).toBe("bow");
+    expect(normalizeCompanionGifts({ unlocked: ["bow"], pending: "scarf" }).pending).toBe("sunglasses");
+    expect(COMPANION_WEARABLE_IDS).not.toContain("scarf"); expect(COMPANION_WEARABLE_IDS).not.toContain("bell-pendant");
+  });
+  it("draws weighted unowned rewards independently of the box chance and never reoffers retired or owned props", () => {
+    const ready = { ...normalizeCompanionGifts(undefined), activeMs: COMPANION_GIFT_ACTIVE_MS, interactionCredit: 1 };
+    const counts = new Map<string, number>();
+    for (let index = 0; index < 10000; index++) {
+      let call = 0; const result = advanceCompanionGifts(ready, 1, 1, true, () => call++ === 0 ? 0 : index / 10000);
+      expect(result.pending).not.toBeNull(); counts.set(result.pending!, (counts.get(result.pending!) ?? 0) + 1);
+    }
+    expect([...counts.keys()].sort()).toEqual([...COMPANION_WEARABLE_IDS].sort());
+    expect(counts.get("propeller-hat")!).toBeLessThan(10); expect(counts.get("magic-pocket")!).toBeLessThan(10);
+    expect(counts.get("beret")!).toBeGreaterThan(500);
+    for (const id of COMPANION_WEARABLE_IDS) {
+      const onlyOne = { ...ready, unlocked: COMPANION_WEARABLE_IDS.filter(other => other !== id) };
+      let call = 0; expect(advanceCompanionGifts(onlyOne, 1, 1, true, () => call++ === 0 ? 0 : .9).pending).toBe(id);
+    }
+    expect(COMPANION_ACCESSORIES.scarf.weight).toBe(0); expect(COMPANION_ACCESSORIES["bell-pendant"].weight).toBe(0);
+    const allOwned = { ...ready, unlocked: [...COMPANION_WEARABLE_IDS] }, untouched = vi.fn(() => 0);
+    expect(advanceCompanionGifts(allOwned, 1, 1, true, untouched)).toBe(allOwned); expect(untouched).not.toHaveBeenCalled();
   });
 
   it("uses the existing five-second flush boundary without per-tick storage or semantic updates", () => {
@@ -201,7 +231,7 @@ describe("separate witnessed situations and additive107 migration", () => {
     const next = normalizeCompanionCollection({ ...old, situations: [...COMPANION_SITUATION_IDS, "private-canary", ...COMPANION_SITUATION_IDS] });
     expect(next.situations).toEqual(COMPANION_SITUATION_IDS); expect(JSON.stringify(next)).not.toContain("canary");
     expect(COMPANION_ACCESSORY_IDS.slice(0, 6)).toEqual(["sunglasses", "beret", "bow", "star-pin", "flower-crown", "satchel"]);
-    expect(COMPANION_ACCESSORY_IDS).toHaveLength(12);
+    expect(COMPANION_ACCESSORY_IDS).toHaveLength(22); expect(COMPANION_WEARABLE_IDS).toHaveLength(20);
   });
   it("records an explicit gift opening even while the world is paused, never from seeded ownership alone", () => {
     const store = createCompanionCollectionStore(storageFixture({ version: 1, foods: [], behaviors: [], gifts: { pending: "pixel-sunglasses", unlocked: ["sunglasses"], equipped: "sunglasses" } }));

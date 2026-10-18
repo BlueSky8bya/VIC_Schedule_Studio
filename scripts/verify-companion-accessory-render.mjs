@@ -10,7 +10,7 @@ const root = process.cwd(), flag = process.argv.find(value => value.startsWith('
 const output = path.resolve(root, flag?.slice(6) ?? '.scratch-pw/companion-110/accessories');
 if (!output.startsWith(path.join(root, '.scratch-pw') + path.sep)) throw Error('QA output must stay in workspace .scratch-pw');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const product = ['lib/ui/viewer-companion/accessory.ts', 'lib/ui/viewer-companion/collection-art.ts', 'lib/ui/viewer-companion/accessory-motion.ts', 'lib/ui/viewer-companion/gifts.ts', 'lib/ui/viewer-companion/collection-texture.ts'];
+const product = ['lib/ui/viewer-companion/accessory.ts', 'lib/ui/viewer-companion/accessory-catalog.ts', 'lib/ui/viewer-companion/accessory-art.ts', 'lib/ui/viewer-companion/collection-art.ts', 'lib/ui/viewer-companion/accessory-motion.ts', 'lib/ui/viewer-companion/gifts.ts', 'lib/ui/viewer-companion/collection-texture.ts'];
 const jsonNames = ['accessory-anchors', 'mouth-anchors', 'hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite'];
 const sources = new Map(), compiled = {};
 for (const name of product) {
@@ -41,7 +41,7 @@ try {
     const file = path.resolve(root, 'public', '.' + decodeURIComponent(url.pathname));
     if (!file.startsWith(path.join(root, 'public', 'companion') + path.sep)) throw Error('Asset escaped companion directory');
     const bytes = await fs.readFile(file); publicHashes.set(file, hash(bytes));
-    await route.fulfill({ status: 200, contentType: 'image/webp', body: bytes });
+    await route.fulfill({ status: 200, contentType: file.endsWith('.svg') ? 'image/svg+xml' : 'image/webp', body: bytes });
   });
   await page.setContent(`<base href="http://companion.test/"><style>${css}\nhtml,body{margin:0;background:#f4eddd;color:#302b26;font:12px sans-serif}.audit-grid{display:grid;grid-template-columns:repeat(16,104px)}figure{margin:0;width:104px;height:130px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}figure:nth-child(4n+3),figure:nth-child(4n+4){background:#e8dfcd}.audit-stage{position:relative;width:92px;height:92px}.vc-pose{position:relative}.vc-texture{width:800%;height:200%}figcaption{height:30px;text-align:center;padding:4px 0}.audit-label{padding:10px;background:#e5d9c0;font-size:16px}.audit-grid .vc-wearable{filter:none}</style><div class="audit-label"></div><div class="audit-grid"></div>`);
   await page.evaluate(({ compiled, json, metadata, anchors }) => {
@@ -56,10 +56,11 @@ try {
       return qaModule.exports;
     };
     const { companionAccessoryPlacement, createCompanionAccessoryPainter } = load('lib/ui/viewer-companion/accessory.ts');
-    const { COMPANION_ACCESSORY_IDS: ids } = load('lib/ui/viewer-companion/gifts.ts');
+    const { COMPANION_WEARABLE_IDS: ids } = load('lib/ui/viewer-companion/gifts.ts');
+    const { sampleCompanionAccessoryMotion } = load('lib/ui/viewer-companion/accessory-motion.ts');
     const selected = physicalIndex => { const frame = metadata.frames[physicalIndex]; return { atlas: 'hd', physicalIndex, index: frame.index, src: metadata.atlases[frame.atlas].src, grid: 8, gridRows: 2, frame }; };
     const host = () => document.createElement('span');
-    let cssWrites = 0, checks = 0;
+    let cssWrites = 0, checks = 0, motionChecks = 0;
     const detached = { back: host(), front: host(), gift: host() }, painter = createCompanionAccessoryPainter(detached);
     for (const node of Object.values(detached)) { node.hidden = true; const set = node.style.setProperty.bind(node.style); node.style.setProperty = (...args) => { cssWrites++; return set(...args); }; }
     const domain = [];
@@ -73,31 +74,41 @@ try {
       if (before !== cssWrites) throw Error('Unchanged pose rewrites styles');
       domain.push({ id, physicalIndex: index, orientation: anchors.frames[index].orientation, mirror: placement.mirror, layers: { back: !detached.back.hidden, front: !detached.front.hidden }, clips: placement.clips ?? null }); checks++;
     }
+    for (const id of ['propeller-hat', 'magic-pocket']) for (let index = 0; index < metadata.frames.length; index++) for (const age of [0, 450, 900, 1300, 1600, 2000, 2400, 2600]) {
+      const pick = selected(index), motion = sampleCompanionAccessoryMotion(id, age).accessory, placement = companionAccessoryPlacement(pick, id, motion);
+      if (!placement || ![placement.x, placement.y, placement.width, placement.rotation].every(Number.isFinite)) throw Error(`Bad special attachment ${id}:${index}:${age}`);
+      painter.paint(pick, id, false, motion);
+      for (const node of [detached.front, detached.back]) if (!node.hidden && (!CSS.supports('transform', node.style.transform) || !CSS.supports('clip-path', node.style.clipPath))) throw Error('Invalid special browser style');
+      const before = cssWrites; painter.paint(pick, id, false, motion); if (before !== cssWrites) throw Error('Unchanged special pose rewrites styles');
+      motionChecks++;
+    }
     painter.clear();
     const allYaw = anchors.frames.filter(frame => frame.orientation !== 'front').map(frame => frame.physicalIndex);
     const critical = [...new Set([...metadata.rows.flatMap(row => [row[0], row[Math.floor(row.length / 2)], row.at(-1)]), ...allYaw])].sort((a, b) => a - b);
     const snapshots = [];
     window.accessoryQA = {
-      ids, critical, domain, checks, snapshots,
-      render(id, indexes, label) {
+      ids, critical, domain, checks, motionChecks, snapshots,
+      render(id, indexes, label, ages) {
         document.querySelector('.audit-label').textContent = label;
         const grid = document.querySelector('.audit-grid'); grid.replaceChildren();
-        for (const index of indexes) for (const facing of [1, -1]) {
+        const samples = ages ? ages.map(age => { const motion = sampleCompanionAccessoryMotion(id, age), row = metadata.rows[motion.row], index = row[Math.min(row.length - 1, Math.round(motion.frame / 15 * (row.length - 1)))]; return { index, motion, age }; }) : indexes.map(index => ({ index }));
+        for (const { index, motion, age } of samples) for (const facing of [1, -1]) {
           const pick = selected(index), figure = document.createElement('figure'), stage = host(), pose = host(), back = host(), front = host(), gift = host(), body = host(), image = new Image();
           stage.className = 'audit-stage'; stage.style.transform = `scaleX(${facing})`; pose.className = 'vc-pose';
+          if (motion) { figure.style.height = '190px'; pose.style.transform = `translateY(${-motion.bodyLift}px) rotate(${motion.bodyLean}deg)`; }
           back.className = 'vc-wearable vc-wearable-back'; front.className = 'vc-wearable vc-wearable-front'; gift.className = 'vc-wearable vc-gift-prop'; body.className = 'vc-sprite'; image.className = 'vc-texture'; image.src = pick.src;
           image.style.transform = `translate(${-pick.index % 8 / 8 * 100}%,${-Math.floor(pick.index / 8) / 2 * 100}%)`;
           body.style.transform = `translate(${pick.frame.x / 80 * 100}%,${pick.frame.y / 80 * 100}%)`; body.style.clipPath = `inset(${pick.frame.clip.map(value => `${value / 80 * 100}%`).join(' ')})`;
           body.append(image); pose.append(back, body, front, gift); stage.append(pose);
-          const caption = document.createElement('figcaption'); caption.textContent = `${index} ${anchors.frames[index].orientation}\n${facing > 0 ? 'right' : 'left'}`;
+          const caption = document.createElement('figcaption'); caption.textContent = `${index} ${anchors.frames[index].orientation}\n${facing > 0 ? 'right' : 'left'}${motion ? ` ${age}ms` : ''}`;
           figure.append(stage, caption); grid.append(figure);
-          const renderer = createCompanionAccessoryPainter({ back, front, gift }); renderer.paint(pick, id, false); snapshots.push({ id, physicalIndex: index, facing, frontClip: front.style.clipPath, backClip: back.style.clipPath, frontTransform: front.style.transform });
+          const renderer = createCompanionAccessoryPainter({ back, front, gift }); renderer.paint(pick, id, false, motion?.accessory); snapshots.push({ id, physicalIndex: index, facing, ...(motion ? { age, motion } : {}), frontClip: front.style.clipPath, backClip: back.style.clipPath, frontTransform: front.style.transform });
         }
         return Promise.all([...document.images].map(image => image.decode()));
       },
     };
   }, { compiled, json, metadata, anchors });
-  const domain = await page.evaluate(() => ({ ids: window.accessoryQA.ids, critical: window.accessoryQA.critical, checks: window.accessoryQA.checks, domain: window.accessoryQA.domain }));
+  const domain = await page.evaluate(() => ({ ids: window.accessoryQA.ids, critical: window.accessoryQA.critical, checks: window.accessoryQA.checks, motionChecks: window.accessoryQA.motionChecks, domain: window.accessoryQA.domain }));
   await fs.mkdir(output, { recursive: true });
   let sheets = 0;
   for (const id of domain.ids) for (let offset = 0; offset < domain.critical.length; offset += 128) {
@@ -105,11 +116,15 @@ try {
     await page.evaluate(({ id, indexes }) => window.accessoryQA.render(id, indexes, `${id}: exact adopted painter, native source yaw; each pair right/left`), { id, indexes });
     await page.locator('.audit-grid').screenshot({ path: path.join(output, name) }); sheets++;
   }
+  for (const id of ['propeller-hat', 'magic-pocket']) {
+    await page.evaluate(id => window.accessoryQA.render(id, [], `${id}: finite shared-source special sequence,11 ages, both facings`, [0, 260, 520, 780, 1040, 1300, 1560, 1820, 2080, 2340, 2600]), id);
+    await page.locator('.audit-grid').screenshot({ path: path.join(output, `special-${id}.png`) }); sheets++;
+  }
   const rendered = await page.evaluate(() => window.accessoryQA.snapshots);
   if (errors.length || unknownRequests.length) throw Error(JSON.stringify({ errors, unknownRequests }));
   for (const [name, source] of sources) if (await fs.readFile(name, 'utf8') !== source) throw Error('Source changed during audit: ' + name);
   for (const [file, before] of publicHashes) if (hash(await fs.readFile(file)) !== before) throw Error('Public image changed during audit');
-  const evidence = { method: 'Actual headless Chromium CSS painter and unchanged source pixels, static parent facing both directions', limitation: 'Static attachment/occlusion audit; no runtime planner, dynamic parent deformation, broadcaster hardware or owner art approval is claimed', checks: domain.checks, frames: 520, accessories: domain.ids.length, criticalFrames: domain.critical.length, renderedStates: rendered.length, sheets, repeatedPainterCssWrites: 0, unknownRequests, pageErrors: errors, sourcesUnchanged: true, modules: Object.fromEntries([...sources].map(([name, source]) => [name, hash(Buffer.from(source))])), publicAssets: Object.fromEntries([...publicHashes].map(([file, sha]) => [path.relative(root, file), sha])), domain: domain.domain, rendered };
+  const evidence = { method: 'Actual headless Chromium CSS painter and unchanged source pixels, static parent facing both directions', limitation: 'Static attachment/occlusion and sampled finite-sequence audit; no live runtime planner, broadcaster hardware or owner art approval is claimed', checks: domain.checks, motionChecks: domain.motionChecks, frames: 520, accessories: domain.ids.length, criticalFrames: domain.critical.length, renderedStates: rendered.length, sheets, repeatedPainterCssWrites: 0, unknownRequests, pageErrors: errors, sourcesUnchanged: true, modules: Object.fromEntries([...sources].map(([name, source]) => [name, hash(Buffer.from(source))])), publicAssets: Object.fromEntries([...publicHashes].map(([file, sha]) => [path.relative(root, file), sha])), domain: domain.domain, rendered };
   await fs.writeFile(path.join(output, 'wearable-qa.json'), JSON.stringify(evidence, null, 2) + '\n');
-  console.log(JSON.stringify({ checks: evidence.checks, frames: evidence.frames, accessories: evidence.accessories, criticalFrames: evidence.criticalFrames, renderedStates: evidence.renderedStates, sheets, repeatedPainterCssWrites: 0, pageErrors: 0, sourcesUnchanged: true }));
+  console.log(JSON.stringify({ checks: evidence.checks, motionChecks: evidence.motionChecks, frames: evidence.frames, accessories: evidence.accessories, criticalFrames: evidence.criticalFrames, renderedStates: evidence.renderedStates, sheets, repeatedPainterCssWrites: 0, pageErrors: 0, sourcesUnchanged: true }));
 } finally { await browser.close(); }

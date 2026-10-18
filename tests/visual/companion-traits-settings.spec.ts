@@ -11,41 +11,33 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 
 async function assertCompanionAppearance(dialog: Locator) {
-  const companion = dialog.locator(".rhh-companion-settings");
-  const profile = companion.locator(".rhh-companion-profile");
-  const nav = companion.getByRole("tablist", { name: "빅타민 설정", exact: true });
-  await expect(nav.getByRole("tab")).toHaveText(["프로필", "움직임", "장난", "교감", "소리"]);
-  await expect(nav.getByRole("tab", { name: "프로필", exact: true })).toHaveAttribute("aria-selected", "true");
+  const profile = dialog.locator(".rhh-companion-profile");
+  const nav = profile.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "환경설정"]);
+  await expect(nav.getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(profile.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
+  await expect(profile.getByRole("switch")).toHaveCount(0);
   await expect.poll(() => nav.locator(".rhh-seg-thumb").evaluate(node => node.getAnimations().filter(animation => animation.playState === "running").length)).toBe(0);
-  const appearance = await companion.evaluate(root => {
+  const appearance = await profile.evaluate(root => {
     const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
     const context = canvas.getContext("2d")!;
     const rgba = (value: string) => { context.clearRect(0, 0, 1, 1); context.fillStyle = value; context.fillRect(0, 0, 1, 1); return [...context.getImageData(0, 0, 1, 1).data]; };
     const luminance = (rgb: number[]) => rgb.slice(0, 3).map(channel => { const value = channel / 255; return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4; }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
     const contrast = (first: number[], second: number[]) => { const a = luminance(first), b = luminance(second); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); };
-    const reading = [...root.querySelectorAll(".rhh-companion-profile h3,.rhh-companion-profile h4,.rhh-companion-profile p,.rhh-companion-profile li,.rhh-trait-favorite-copy strong")].filter(element => element.getBoundingClientRect().width > 0).map(element => {
+    const reading = [...root.querySelectorAll("h3,h4,p,li,dt,dd")].filter(element => element.getBoundingClientRect().width > 0).map(element => {
       let background = [255, 255, 255]; const ancestors: Element[] = [];
       for (let current: Element | null = element; current; current = current.parentElement) ancestors.unshift(current);
       for (const current of ancestors) { const color = rgba(getComputedStyle(current).backgroundColor), alpha = color[3] / 255; background = background.map((channel, index) => color[index] * alpha + channel * (1 - alpha)); }
       const foreground = rgba(getComputedStyle(element).color), alpha = foreground[3] / 255;
       return { text: element.textContent, contrast: contrast(foreground.slice(0, 3).map((channel, index) => channel * alpha + background[index] * (1 - alpha)), background) };
     });
-    const action = root.querySelector(".rhh-profile-action")!, panel = root.querySelector(".rhh-companion-profile")!, controls = root.querySelector(".rhh-profile-controls")!;
-    const selected = root.querySelector('.rhh-companion-nav [aria-selected="true"]')!.getBoundingClientRect(), thumb = root.querySelector(".rhh-companion-nav .rhh-seg-thumb")!.getBoundingClientRect();
-    const switches = [...root.querySelectorAll(".rhh-switch")].filter(element => element.getBoundingClientRect().width > 0).map(element => { const style = getComputedStyle(element), track = getComputedStyle(element, "::before"); return { name: element.getAttribute("aria-label"), on: element.classList.contains("on"), backgroundAlpha: rgba(style.backgroundColor)[3], shadow: style.boxShadow, trackHeight: parseFloat(track.height) }; });
-    return { reading, switches, surfaceContrast: contrast(rgba(getComputedStyle(action).backgroundColor), rgba(getComputedStyle(panel).backgroundColor)), basicBeforeProfile: controls.getBoundingClientRect().top < panel.getBoundingClientRect().top, basicPaper: rgba(getComputedStyle(controls).backgroundColor), expectedPaper: rgba(getComputedStyle(root).getPropertyValue("--companion-paper")), masterTint: rgba(getComputedStyle(root.querySelector(".rhh-companion-master")!).backgroundColor), thumbAlpha: rgba(getComputedStyle(root.querySelector(".rhh-companion-nav .rhh-seg-thumb")!).backgroundColor)[3], thumbAlignment: Math.abs(selected.x + selected.width / 2 - thumb.x - thumb.width / 2), controls: [...root.querySelectorAll("button")].filter(element => element.getBoundingClientRect().width > 0).map(element => { const rect = element.getBoundingClientRect(); return { name: element.getAttribute("aria-label") || element.textContent, width: rect.width, height: rect.height }; }) };
+    const selected = root.querySelector('.rhh-profile-nav [aria-selected="true"]')!.getBoundingClientRect(), thumb = root.querySelector(".rhh-profile-nav .rhh-seg-thumb")!.getBoundingClientRect();
+    return { reading, thumbAlpha: rgba(getComputedStyle(root.querySelector(".rhh-profile-nav .rhh-seg-thumb")!).backgroundColor)[3], thumbAlignment: Math.abs(selected.x + selected.width / 2 - thumb.x - thumb.width / 2), controls: [...root.querySelectorAll("button")].filter(element => element.getBoundingClientRect().width > 0).map(element => { const rect = element.getBoundingClientRect(); return { name: element.getAttribute("aria-label") || element.textContent, width: rect.width, height: rect.height }; }) };
   });
-  expect(appearance.basicBeforeProfile).toBe(true);
-  expect(appearance.basicPaper).toEqual(appearance.expectedPaper); expect(appearance.masterTint).not.toEqual(appearance.basicPaper);
-  expect(appearance.thumbAlpha).toBe(255);
-  expect(appearance.thumbAlignment).toBeLessThanOrEqual(2);
-  expect(appearance.surfaceContrast).toBeGreaterThanOrEqual(1.08);
+  expect(appearance.thumbAlpha).toBe(255); expect(appearance.thumbAlignment).toBeLessThanOrEqual(2);
   expect(appearance.reading.length).toBeGreaterThan(12);
   for (const row of appearance.reading) expect(row.contrast, row.text ?? "visible companion text").toBeGreaterThanOrEqual(4.5);
   for (const control of appearance.controls) { expect(control.height, control.name ?? "control height").toBeGreaterThanOrEqual(44); expect(control.width, control.name ?? "control width").toBeGreaterThanOrEqual(44); }
-  expect(appearance.switches.map(control => control.on)).toEqual([false, true]);
-  for (const control of appearance.switches) { expect(control.backgroundAlpha, control.name ?? "transparent switch hit plane").toBe(0); expect(control.shadow, control.name ?? "switch hit plane shadow").toBe("none"); expect(control.trackHeight, control.name ?? "switch visual track").toBe(24); }
-  await expect(profile).toBeVisible();
 }
 
 async function openTraits(page: Page) {
@@ -61,9 +53,8 @@ async function openTraits(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
   await settlePanelLayout(page);
-  return { dialog, traits: dialog.getByRole("region", { name: "빅타민 특성", exact: true }) };
+  return { dialog, traits: dialog.locator(".rhh-companion-profile") };
 }
 
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
@@ -94,7 +85,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
     const { dialog, traits } = await openTraits(page);
     await assertCompanionAppearance(dialog);
-    await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("복숭아");
+    await expect(traits.locator(".rhh-companion-portrait .rhh-wardrobe-preview-paused")).toHaveCount(0);
+    await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText("복숭아");
     const actions = traits.locator(".rhh-profile-action");
     await expect(actions.locator("h4")).toHaveText(["다가와 교감", "좋아하는 맛", "포근한 휴식", "으쌰으쌰 응원"]);
     await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하고 몸을 기대기도 해요");
@@ -104,18 +96,19 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(actions.locator(".rhh-profile-try")).toHaveCount(4);
     for (const hint of await actions.locator(".rhh-profile-try").allTextContents()) expect(hint.replace("해보기", "").trim().length).toBeGreaterThan(10);
     await expect(dialog.locator(".rhh-trait-reason")).toContainText("여러 맛을 골고루 알아가고 있어요");
-    await expect(traits.locator("button,input,[role=switch]")).toHaveCount(0);
-    const layout = await traits.evaluate(region => ({ overflow: region.scrollWidth - region.clientWidth, rows: [...region.querySelectorAll("h4,p,.rhh-trait-favorite-copy > span,.rhh-trait-favorite-copy > strong")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ font: parseFloat(getComputedStyle(node).fontSize), overflow: node.scrollWidth - node.clientWidth })), tiles: [...region.querySelectorAll(".rhh-profile-action")].map(node => { const box = node.getBoundingClientRect(); return { x: Math.round(box.x), y: Math.round(box.y) }; }), fruit: region.querySelector(".rhh-profile-food-art")?.getBoundingClientRect().width }));
+    await expect(traits.locator(".rhh-companion-summary button")).toHaveCount(1);
+    await expect(traits.locator("input,[role=switch]")).toHaveCount(0);
+    const layout = await traits.evaluate(region => ({ overflow: region.scrollWidth - region.clientWidth, rows: [...region.querySelectorAll("h4,p,dt,dd")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ font: parseFloat(getComputedStyle(node).fontSize), overflow: node.scrollWidth - node.clientWidth })), tiles: [...region.querySelectorAll(".rhh-profile-action")].map(node => { const box = node.getBoundingClientRect(); return { x: Math.round(box.x), y: Math.round(box.y) }; }), fruit: region.querySelector(".rhh-companion-portrait .rhh-wardrobe-preview")?.getBoundingClientRect().width }));
     expect(layout.overflow).toBeLessThanOrEqual(1);
     expect(layout.rows.length).toBeGreaterThan(8);
     for (const row of layout.rows) { expect(row.font).toBeGreaterThanOrEqual(13.5); expect(row.overflow).toBeLessThanOrEqual(1); }
     expect(new Set(layout.tiles.map(tile => tile.x)).size).toBe(2);
     expect(new Set(layout.tiles.map(tile => tile.y)).size).toBe(2);
-    expect(layout.fruit).toBe(40);
-    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+    expect(layout.fruit).toBeGreaterThanOrEqual(132);
+    mkdirSync(".scratch-pw/companion-111/traits", { recursive: true });
     const profile = dialog.locator(".rhh-companion-profile");
-    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-profile-${surface}-${theme}.png` });
-    await profile.screenshot({ path: `.scratch-pw/companion-109-settings/${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-111/traits/viewport-profile-${surface}-${theme}.png` });
+    await profile.screenshot({ path: `.scratch-pw/companion-111/traits/${surface}-${theme}.png` });
     if (surface === "viewer" && theme === "light") {
       // A second real same-origin tab exercises the browser's storage event;
       // no model callback, event dispatch, state or geometry is substituted.
@@ -129,7 +122,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
         localStorage.setItem("vic.viewerCompanionCare", JSON.stringify(memory));
       });
       await sibling.close(); await page.bringToFront();
-      await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("딸기");
+      await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText("딸기");
       await expect(actions.nth(0)).toContainText("먼저 다가오는 교감은 아직 뜸해요");
       await expect(actions.nth(2)).toContainText("피곤하면 집에서 몸을 모아 쉬어요");
       await expect(actions.nth(3)).toContainText("응원 연습은 아직 뜸해요");
@@ -138,25 +131,29 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       // the mobile capability gate intact rather than forcing hidden UI on.
       await page.setViewportSize({ width: 1050, height: 900 });
       await settlePanelLayout(page);
-      await expect(dialog.getByRole("tab", { name: "프로필", exact: true })).toBeVisible();
+      await expect(dialog.getByRole("tab", { name: "함께 지내기", exact: true })).toBeVisible();
       const narrow = await profile.evaluate(element => ({ overflow: element.scrollWidth - element.clientWidth, rows: [...element.querySelectorAll("h3,h4,li,strong,p")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ overflow: node.scrollWidth - node.clientWidth, font: parseFloat(getComputedStyle(node).fontSize) })) }));
       expect(narrow.overflow).toBeLessThanOrEqual(1);
       expect(narrow.rows.length).toBeGreaterThan(8);
       for (const row of narrow.rows) { expect(row.overflow).toBeLessThanOrEqual(1); expect(row.font).toBeGreaterThanOrEqual(13.5); }
-      await profile.screenshot({ path: ".scratch-pw/companion-109-settings/narrow-desktop.png" });
+      await profile.screenshot({ path: ".scratch-pw/companion-111/traits/narrow-desktop.png" });
       await page.setViewportSize({ width: 1440, height: 1100 });
       await settlePanelLayout(page);
     }
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
+    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
+    await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await expect(dialog.locator(".rhh-habit-paused")).toContainText("배우기 끔 · 기억은 보관");
     // OFF preserves stored memories while effects use the neutral defaults.
     await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하고 몸을 기대기도 해요");
     await expect(actions.nth(1)).toContainText("가까운 간식부터");
     await expect(actions.nth(2)).toContainText("피곤하면 집에서 몸을 모아 쉬어요");
     await expect(actions.nth(3)).toContainText("응원을 연습");
+    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
-    await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("사과");
+    await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
+    await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText("사과");
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveCount(0);
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true })).toContainText("아직 뚜렷한 변화는 없어요");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
@@ -167,7 +164,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible();
     }
     const reopened = await openTraits(page);
-    await expect(reopened.traits.locator(".rhh-trait-favorite strong")).toHaveText("사과");
+    await expect(reopened.traits.locator(".rhh-companion-facts dd").first()).toHaveText("사과");
+    await reopened.dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await expect(reopened.dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     expect(writes).toEqual([]); expect(errors).toEqual([]);
   });

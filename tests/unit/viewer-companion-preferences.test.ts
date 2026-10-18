@@ -111,6 +111,20 @@ describe("viewer companion device preferences", () => {
     expect(normalizeCompanionPreferences({ cardPrank: "off" }, getCompanionPreferences()).cardPrank).toBe(false);
     stop();
   });
+  it("adds rare ornament play for legacy records and persists an explicit OFF independently", () => {
+    const legacy = JSON.stringify({ version: 1, enabled: false, cardPrank: false });
+    entries.set(COMPANION_PREFERENCES_KEY, legacy);
+    expect(getCompanionPreferences()).toMatchObject({ enabled: false, cardPrank: false, rarePrank: true });
+    expect(entries.get(COMPANION_PREFERENCES_KEY)).toBe(legacy);
+    const listener = vi.fn(), stop = subscribeCompanionPreferences(listener);
+    setCompanionPreferences({ rarePrank: false });
+    expect(listener).toHaveBeenLastCalledWith(expect.objectContaining({ rarePrank: false, enabled: false }));
+    setCompanionPreferences({ enabled: true });
+    expect(getCompanionPreferences()).toMatchObject({ enabled: true, cardPrank: false, rarePrank: false });
+    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toMatchObject({ version: 1, rarePrank: false });
+    expect(normalizeCompanionPreferences({ rarePrank: "yes" }, getCompanionPreferences()).rarePrank).toBe(false);
+    stop();
+  });
   it("fails closed for corrupt or unsupported saved versions", () => {
     for (const raw of ["{", "", "null", "[]", "5", JSON.stringify({ version: 2, enabled: true }), JSON.stringify({ enabled: true })]) {
       entries.set(COMPANION_PREFERENCES_KEY, raw);

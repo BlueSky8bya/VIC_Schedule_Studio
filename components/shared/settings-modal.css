@@ -1727,6 +1727,9 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .role-help-haptics
 .vic-settings .rhh-companion-settings .rhh-link:disabled { opacity: .48; cursor: default; box-shadow: none; }
 .vic-settings .rhh-companion-settings .rhh-companion-primary { border-color: var(--companion-accent); background: var(--companion-accent); color: var(--companion-paper); }
 .vic-settings .rhh-companion-settings .rhh-companion-primary:hover:not(:disabled) { background: var(--companion-accent); }
+/* The shared night metal rule is more specific than a plain link. Keep this
+   solid accent action's matching dark ink, including its hovered state. */
+html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-companion-primary { border-color: var(--companion-accent); background: var(--companion-accent); color: var(--companion-paper); }
 .vic-settings .rhh-companion-settings :is(button, summary, input):focus-visible { outline: 2px solid var(--companion-accent); outline-offset: 3px; }
 /* The switch keeps its familiar24px track inside a real44px button. */
 .vic-settings .rhh-companion-settings .rhh-switch { height: 44px; min-height: 44px; background: transparent; }
@@ -1823,3 +1826,44 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch.on { b
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings :is(.rhh-link, .rhh-profile-action, .rhh-collection-tile, .rhh-collection-switch > button) { transform: none; transition: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings :is(.rhh-seg-thumb, .rhh-switch, .rhh-knob),
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings .rhh-switch::before { transition: none; }
+
+/*111: the pet and its keepsakes lead; operational controls are a back page. */
+.rhh-companion-experience { container-name: companion-settings rhh-habits; padding: 0; border: 0; background: transparent; }
+.rhh-companion-experience > .rhh-profile-nav { margin-block: 0 var(--space-4); min-height: 54px; }
+.rhh-companion-experience > .rhh-profile-nav button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; font-weight: 650; }
+.rhh-companion-experience .rhh-companion-summary { display: grid; grid-template-columns: minmax(164px, .85fr) minmax(0, 1.15fr); align-items: stretch; gap: var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--companion-line); border-radius: var(--r-xl); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-2); }
+.rhh-companion-experience .rhh-companion-portrait { position: relative; display: grid; place-items: center; min-width: 0; min-height: 218px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-peach); padding: 14px 8px 36px; color: var(--companion-ink); cursor: pointer; overflow: hidden; transition: transform var(--dur-spring-smooth) var(--spring-smooth), box-shadow var(--dur-2) var(--ease); }
+.rhh-companion-experience .rhh-companion-portrait:hover { transform: translateY(-3px); box-shadow: var(--elev-2); }
+.rhh-companion-experience .rhh-companion-portrait:active { transform: translateY(0) scale(.97); }
+.rhh-companion-experience .rhh-companion-portrait:focus-visible { outline: 2px solid var(--companion-accent); outline-offset: 4px; }
+.rhh-companion-portrait .rhh-wardrobe-preview-wrap { width: 100%; }
+.rhh-companion-experience .rhh-companion-portrait .rhh-wardrobe-preview { width: 164px; height: 164px; margin-inline: auto; }
+.rhh-companion-portrait-link { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 5px; border-radius: var(--r-pill); background: var(--companion-paper); padding: 5px 10px; font-size: var(--text-body); font-weight: 650; }
+.rhh-companion-interest { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--companion-line); border-radius: 16px; background: var(--companion-paper); color: var(--companion-accent); box-shadow: var(--elev-1); }
+.rhh-companion-interest > .vc-collection-art { width: 34px; height: 34px; }
+.rhh-companion-summary-copy { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; min-width: 0; gap: var(--space-2); padding-block: var(--space-2); }
+.rhh-companion-summary-copy > h3 { margin: 0; font-size: var(--text-title, 18px); font-weight: 750; }
+.rhh-companion-summary-copy > .rhh-profile-meta { margin: 0; color: var(--companion-soft); }
+.rhh-companion-presence { display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-pill); background: var(--companion-ground); padding: 4px 9px; color: var(--companion-soft); font-size: var(--text-caption); }
+.rhh-companion-presence::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+.rhh-companion-presence[data-awake] { background: var(--companion-mint); color: var(--companion-ink); }
+.rhh-companion-facts { display: grid; gap: var(--space-3); width: 100%; margin: var(--space-2) 0 0; }
+.rhh-companion-facts > div { display: grid; gap: 5px; }
+.rhh-companion-facts dt { display: flex; align-items: center; gap: 6px; color: var(--companion-soft); font-size: var(--text-body); }
+.rhh-companion-facts dd { margin: 0; color: var(--companion-ink); font-size: var(--text-ui); font-weight: 700; overflow-wrap: anywhere; }
+.rhh-companion-experience .rhh-collection-heading > span { margin-left: auto; color: var(--companion-soft); font-variant-numeric: tabular-nums; }
+.rhh-companion-experience .rhh-companion-loading { display: grid; place-items: center; min-height: 160px; padding: var(--space-4); color: var(--companion-soft); font-size: var(--text-body); }
+.rhh-companion-experience > [role="tabpanel"] > .rhh-companion-settings { padding: 0; border: 0; background: transparent; }
+.rhh-companion-experience .rhh-companion-settings .rhh-companion-master { margin-top: 0; }
+.rhh-companion-experience .rhh-companion-settings .rhh-companion-nav { margin-block: var(--space-4); }
+.rhh-companion-experience .rhh-wardrobe-preview-wrap > .rhh-wardrobe-preview-paused { position: static; inset: auto; display: inline-flex; align-items: center; border-radius: var(--r-pill); background: var(--companion-ground); padding: 3px 9px; color: var(--companion-soft); font-size: var(--text-caption); }
+.rhh-companion-settings .rhh-radio-attribution { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); margin: 0; color: var(--companion-soft); font-size: max(12px, var(--text-caption)); line-height: 1.5; }
+.rhh-companion-settings .rhh-radio-attribution a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding-inline: 4px; color: var(--companion-ink); text-underline-offset: 3px; }
+.rhh-companion-settings .rhh-radio-attribution small { font: inherit; }
+@container rhh-habits (max-width: 440px) {
+  .rhh-companion-experience .rhh-companion-summary { grid-template-columns: 136px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); }
+  .rhh-companion-experience .rhh-companion-portrait { min-height: 202px; }
+  .rhh-companion-experience .rhh-companion-portrait .rhh-wardrobe-preview { width: 132px; height: 132px; }
+  .rhh-companion-experience > .rhh-profile-nav button { flex-direction: column; gap: 3px; padding-inline: 4px; }
+}
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-experience .rhh-companion-portrait { transform: none; transition: none; }

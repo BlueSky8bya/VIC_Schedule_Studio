@@ -8,6 +8,7 @@ export type CompanionPreferences = {
   cardPrank: boolean;
   ambientPrank: boolean;
   panelPrank: boolean;
+  rarePrank: boolean;
   drag: boolean;
   petting: boolean;
   feeding: boolean;
@@ -39,6 +40,7 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   cardPrank: true,
   ambientPrank: true,
   panelPrank: true,
+  rarePrank: true,
   drag: true,
   petting: true,
   feeding: true,
@@ -54,7 +56,7 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   personality: "curious"
 });
 
-const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
+const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
 const soundKeys = ["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes"] as const;
 /** A live mix change never restarts the creature's movement/interaction world. */
 export function companionWorldPreferencesKey(preferences: Readonly<CompanionPreferences>): string {

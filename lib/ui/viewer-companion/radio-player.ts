@@ -58,7 +58,10 @@ function monitor() {
   window.addEventListener("vic:sound", changed); window.addEventListener("storage", changed);
   document.addEventListener("visibilitychange", changed); window.addEventListener("resize", changed); window.addEventListener("pagehide", stopCompanionRadio);
   const context = output?.context;
-  const stateChanged = () => { if (context?.state !== "running") stopCompanionRadio(); };
+  // A cold context can report its initial suspended state while resume is
+  // pending. Only interrupt an established stream; pending resume/play has
+  // its own rejection and cancellation path.
+  const stateChanged = () => { if (pendingTrackId === null && context?.state !== "running") stopCompanionRadio(); };
   context?.addEventListener("statechange", stateChanged);
   teardown = () => { unradio(); unpet(); mutation.disconnect(); window.removeEventListener("vic:sound", changed); window.removeEventListener("storage", changed); document.removeEventListener("visibilitychange", changed); window.removeEventListener("resize", changed); window.removeEventListener("pagehide", stopCompanionRadio); context?.removeEventListener("statechange", stateChanged); };
 }
@@ -75,13 +78,14 @@ async function play(track: CompanionRadioTrack): Promise<boolean> {
   media.onerror = () => { if (token === request) stopCompanionRadio(); };
   monitor();
   try {
-    await output.context.resume();
-    if (token !== request) return false;
-    if (!allowed()) { stopCompanionRadio(); return false; }
+    // Both browser gates must start inside this same trusted input task. A
+    // cold resume may complete in a later task; awaiting it before play()
+    // loses the transient activation on browsers with strict media policy.
     media.src = track.src; mix();
-    await media.play();
+    const resumed = output.context.resume(), played = media.play();
+    await Promise.all([resumed, played]);
     if (token !== request) return false;
-    if (!allowed()) { stopCompanionRadio(); return false; }
+    if (!allowed() || output.context.state !== "running") { stopCompanionRadio(); return false; }
     pendingTrackId = null;
     emit({ generation: snapshot.generation + 1, playing: true, trackId: track.id, mood: track.mood, bpm: track.bpm, startedAt: performance.now() });
     return true;

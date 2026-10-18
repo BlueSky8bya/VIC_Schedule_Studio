@@ -25,7 +25,8 @@ const targets = (page: Page) => capture.get(page)!.events.filter(event => event.
 const count = (page: Page, target: string) => targets(page).filter(value => value === target).length;
 const new109Targets = ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-collection-page#prev", "companion-collection-page#next", "companion-collection-inspect#food", "companion-profile-page#discover", "companion-throw"];
 const new110Targets = ["companion-book-open", "companion-book-close", "companion-collection-inspect#behavior", "companion-collection-inspect#moment"];
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets];
+const new111Targets = ["companion-profile-page#settings", "companion-rare-prank#on", "companion-rare-prank#off", "companion-radio-source", "companion-radio-license"];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets];
 const retired110Target = "companion-radio-mood#lively";
 const readFixtureTargets = [...sampleTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
@@ -215,6 +216,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await firstMoment.press("ArrowLeft"); await expect(lastBehavior).toBeFocused();
     await lastBehavior.press("End"); await expect(memories.last()).toBeFocused();
     await memories.last().press("Home"); await expect(memories.first()).toBeFocused();
+    await panel.getByRole("tab", { name: "환경설정", exact: true }).click();
     await panel.getByRole("tab", { name: "소리", exact: true }).click();
     await expect(panel.locator('[data-act="companion-radio-mood"]')).toHaveCount(0);
     const close = dialog.getByRole("button", { name: "닫기", exact: true });
@@ -330,7 +332,10 @@ for (const surface of ["viewer", "studio"] as const) {
     const home = await openCompanionHome(page, "keyboard");
     await home.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).focus();
     await home.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).press("Enter");
-    await expect(pet(page)).toHaveAttribute("data-platform", "companion-home");
+    // This contract records the accepted recall request, not an instant
+    // arrival across a potentially disconnected fixture route. Physical sofa
+    // travel/occlusion belongs to the world suite; direct input can interrupt.
+    await expect(pet(page)).toHaveAttribute("data-home-journey", "");
     await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
     await actor(page).click({ delay: 70 }); await page.mouse.move(4, 4);
     await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
@@ -339,6 +344,9 @@ for (const surface of ["viewer", "studio"] as const) {
     await page.mouse.move(start.x, start.y); await page.mouse.down();
     await page.mouse.move(start.x + 120, Math.max(140, start.y - 100), { steps: 12 });
     await expect(pet(page)).toHaveAttribute("data-state", "held");
+    // Put down deliberately, rather than exercise109's separately audited
+    // velocity throw. The actual stationary release spends the drag once.
+    await page.waitForTimeout(200);
     await page.mouse.up(); await page.mouse.move(4, 4);
     await home.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
     const food = page.locator(".vc-food"); await expect(food).toHaveCount(1);
@@ -362,14 +370,15 @@ for (const surface of ["viewer", "studio"] as const) {
     const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     const panel = dialog.locator("#rhh-tab-companion-panel");
+    await panel.getByRole("tab", { name: "환경설정", exact: true }).click();
     const master = panel.locator('[data-act="companion-enabled"]');
     await master.click(); await expect(master).not.toBeChecked(); await master.click(); await expect(master).toBeChecked();
-    for (const [tab, id] of [["움직임", "companion-roam"], ["장난", "companion-panel-prank"], ["장난", "companion-card-prank"], ["교감", "companion-petting-enabled"]]) {
+    for (const [tab, id] of [["움직임", "companion-roam"], ["장난", "companion-panel-prank"], ["장난", "companion-card-prank"], ["장난", "companion-rare-prank"], ["교감", "companion-petting-enabled"]]) {
       await panel.getByRole("tab", { name: tab, exact: true }).click();
       const toggle = panel.locator(`[data-act="${id}"]`); const checked = await toggle.isChecked();
       await toggle.click(); await expect(toggle).toBeChecked({ checked: !checked }); await toggle.click(); await expect(toggle).toBeChecked({ checked });
     }
-    await panel.getByRole("tab", { name: "프로필", exact: true }).click();
+    await panel.getByRole("tab", { name: "기본", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
     const learning = panel.locator('[data-act="companion-learning-enabled"]');
@@ -380,7 +389,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await panel.getByRole("tab", { name: "움직임", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
     await flush(page, [{ target: "companion-speed#lively" }]);
-    for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
+    for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
     for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual(["companion-learning-reset"]);
   });
@@ -396,6 +405,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await waitForOverlayEntrance(dialog);
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     const panel = dialog.locator("#rhh-tab-companion-panel");
+    await panel.getByRole("tab", { name: "환경설정", exact: true }).click();
     await panel.getByRole("tab", { name: "소리", exact: true }).click();
     const radio = panel.locator(".rhh-companion-radio"), details = radio.locator("details"), summary = details.locator("summary");
     await summary.focus(); await summary.press("Enter"); await expect(details).toHaveAttribute("open", "");
@@ -405,7 +415,11 @@ for (const surface of ["viewer", "studio"] as const) {
     await volume.focus(); await volume.press("ArrowRight"); await volume.press("Tab");
     await expect(volume).toHaveValue(String(beforeVolume + 5));
 
-    await panel.getByRole("tab", { name: "프로필", exact: true }).click();
+    for (const action of ["companion-radio-source", "companion-radio-license"]) {
+      const popup = page.waitForEvent("popup"); await radio.locator(`[data-act="${action}"]`).click();
+      await (await popup).close(); await page.bringToFront();
+    }
+    await panel.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     const profile = panel.locator(".rhh-companion-profile"), profileTabs = profile.getByRole("tablist", { name: "빅타민 프로필", exact: true });
     await profileTabs.getByRole("tab", { name: "함께 지내기", exact: true }).focus();
     await page.keyboard.press("ArrowRight");
@@ -422,7 +436,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect(foodGrid.locator("button")).toHaveCount(COMPANION_FOOD_KINDS.length % 24 || 24);
     await profile.getByRole("button", { name: "이전 간식", exact: true }).click();
     await flush(page, [{ target: "companion-radio-list#close" }, { target: "companion-radio-volume" }, { target: "companion-collection-page#prev" }]);
-    for (const target of ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-profile-page#discover", "companion-collection-page#next", "companion-collection-page#prev"]) expect(count(page, target), target).toBe(1);
+    for (const target of ["companion-radio-source", "companion-radio-license", "companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-profile-page#discover", "companion-collection-page#next", "companion-collection-page#prev"]) expect(count(page, target), target).toBe(1);
     expect(count(page, "companion-collection-inspect#food")).toBe(3);
 
     await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0);

@@ -7,6 +7,8 @@ import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/vie
 import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import type { CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
+import { currentCompanionAccessory } from "@/lib/ui/viewer-companion/accessory-catalog";
+import { getCompanionAccessoryArtFrame } from "@/lib/ui/viewer-companion/accessory-art";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { expectCompanionBehindOverlay, waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome } from "./helpers/companion-home";
@@ -64,11 +66,13 @@ async function nativeClick(page: Page, target: Locator) {
 }
 
 async function expectWorn(page: Page, id: CompanionAccessoryId) {
+  id = currentCompanionAccessory(id);
+  const src = getCompanionAccessoryArtFrame(id)!.src;
   await expect(creature(page)).toHaveAttribute("data-accessory", id);
-  await expect.poll(() => creature(page).evaluate(node => {
+  await expect.poll(() => creature(page).evaluate((node, src) => {
     const element = node as HTMLElement, wearables = [...node.querySelectorAll<HTMLElement>(".vc-wearable-back,.vc-wearable-front")].filter(item => !item.hidden);
-    return element.dataset.pose === element.dataset.accessoryPose && wearables.length > 0 && wearables.every(item => item.parentElement === node.querySelector(".vc-pose") && getComputedStyle(item).pointerEvents === "none" && getComputedStyle(item).backgroundImage.includes("accessories-106-v1.webp"));
-  })).toBe(true);
+    return element.dataset.pose === element.dataset.accessoryPose && wearables.length > 0 && wearables.every(item => item.parentElement === node.querySelector(".vc-pose") && getComputedStyle(item).pointerEvents === "none" && getComputedStyle(item).backgroundImage.includes(src));
+  }, src)).toBe(true);
   await expect(creature(page)).toHaveCSS("width", "92px");
 }
 

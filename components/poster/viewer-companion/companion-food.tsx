@@ -15,10 +15,11 @@ import { CompanionFruit } from "./companion-fruit";
 
 type Point = { x: number; y: number };
 export type CompanionFoodControl = {
-  spawn: (kind: Food["kind"], point: Point, source?: HTMLElement) => void;
+  spawn: (kind: Food["kind"], point: Point, source?: HTMLElement, autonomous?: boolean) => void;
   foods: () => readonly Food[];
   contains: (id: string) => boolean;
   consume: (id: string) => boolean;
+  stash: (id: string) => boolean;
   nibble: (id?: string, progress?: number, mouth?: Point, facing?: -1 | 1) => void;
   sync: (platforms: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined, landings?: readonly Platform[]) => void;
   pause: (paused: boolean) => void;
@@ -196,7 +197,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}) }); visibility.current.set(food.id, true);
     drops.current.delete(food.id); presentations.current.delete(food.id);
     const landing = available.find(support => support.id === placed.platformId);
-    const gravity = createCompanionFoodGravity(point, placed, performance.now(), landing?.dropSurface ? { contactX: point.x } : undefined);
+    const recoverAboveFloor = placed.y < point.y && /^viewport-floor-food(?:-\d+)?$/.test(placed.platformId ?? "");
+    const gravity = createCompanionFoodGravity(point, placed, performance.now(), { ...(landing?.dropSurface ? { contactX: point.x } : {}), ...(recoverAboveFloor ? { recoverAboveFloor: true } : {}) });
     if (gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
       drops.current.set(food.id, gravity);
       const presentation = gravity.sample(performance.now()); presentations.current.set(food.id, presentation); paint(placed, presentation);
@@ -392,7 +394,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   }, [cancelDiscard, cancelHover, cancelJostle, choose, finishDrops, release, resetNibble, settleFood, update]);
 
   useImperativeHandle(ref, () => ({
-    spawn(kind, point, source) {
+    spawn(kind, point, source, autonomous = false) {
       if (!operating.current || !isCompanionFoodKind(kind) || ![point.x, point.y].every(Number.isFinite)) return;
       if (current.current.length >= MAX_COMPANION_FOOD) { setMessage(`밥은 ${MAX_COMPANION_FOOD}개까지 놓을 수 있어요. 남은 밥을 기다리거나 휴지통에 치워 주세요.`); return; }
       const food: Food = { id: `snack-${++serial.current}`, kind, x: clamp(point.x, 24, innerWidth - 24), y: clamp(point.y, 48, innerHeight - 24) };
@@ -400,8 +402,9 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         const rect = source.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) attachments.current.set(food.id, { home: "tray", element: source, position: attachCompanionFood(food, { x: scrollX, y: scrollY }, { x: rect.left, y: rect.top }) });
       }
-      cancelHover(); update([...current.current, food]); setMessage(`${names[kind]} 꺼냈어요. 잡아 끌어 옮겨 주세요.`);
-      logActivity("ui.click", { target: "companion-food-spawn" });
+      const placed = autonomous ? settleFood(food, food) : food;
+      cancelHover(); update([...current.current, placed]); setMessage(autonomous ? "주머니에서 간식이 나왔어요." : `${names[kind]} 꺼냈어요. 잡아 끌어 옮겨 주세요.`);
+      if (!autonomous) logActivity("ui.click", { target: "companion-food-spawn" });
       if (attachments.current.get(food.id)?.home) followHome.current();
     },
     foods: () => current.current.filter(food => !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id),
@@ -410,6 +413,12 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (drops.current.has(id) || visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || !current.current.some(food => food.id === id)) return false;
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
       presentations.current.delete(id); update(current.current.filter(food => food.id !== id)); setMessage("빅타민이 밥을 맛있게 먹었어요."); return true;
+    },
+    stash(id) {
+      if (drops.current.has(id) || visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || !current.current.some(food => food.id === id)) return false;
+      if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
+      cancelJostle(id); presentations.current.delete(id); attachments.current.delete(id);
+      update(current.current.filter(food => food.id !== id)); setMessage("주머니 속으로 쏙!"); return true;
     },
     nibble(id, progress = 0, mouth, facing = 1) {
       if (id) cancelJostle(id);

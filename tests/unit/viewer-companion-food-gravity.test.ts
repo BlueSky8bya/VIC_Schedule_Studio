@@ -69,6 +69,31 @@ describe("finite companion food gravity", () => {
     expect(still.duration).toBe(0); expect(above.duration).toBe(0);
     expect(still.sample(0)).toMatchObject({ ...end, active: false }); expect(above.sample(0)).toMatchObject({ ...end, active: false });
   });
+  it("explicitly recovers a below-floor grip continuously and monotonically to its real safe target", () => {
+    const from = Object.freeze({ x: 1000, y: 1076 }), target = Object.freeze({ x: 1048, y: 1030 });
+    const recovery = createCompanionFoodGravity(from, target, 1000, { recoverAboveFloor: true });
+    expect(recovery.duration).toBeGreaterThanOrEqual(140); expect(recovery.duration).toBeLessThanOrEqual(420);
+    expect(recovery.sample(1000)).toEqual({ ...from, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, active: true });
+    let previous = recovery.sample(1000);
+    for (let age = 1; age < recovery.duration; age += 4) {
+      const next = recovery.sample(1000 + age);
+      expect(next.y).toBeLessThan(previous.y); expect(next.y).toBeGreaterThan(target.y);
+      expect(next.x).toBeGreaterThan(previous.x); expect(next.x).toBeLessThan(target.x);
+      expect(next).toMatchObject({ scale: 1, scaleX: 1, scaleY: 1, rotation: 0, active: true }); previous = next;
+    }
+    expect(recovery.sample(1000 + recovery.duration)).toEqual({ ...target, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, active: false });
+    expect(from).toEqual({ x: 1000, y: 1076 }); expect(target).toEqual({ x: 1048, y: 1030 });
+  });
+  it("carries the same recovery clock through source movement without relaxing invalid upward input", () => {
+    const from = { x: 1000, y: 1076 }, target = { x: 1048, y: 1030 };
+    const recovery = createCompanionFoodGravity(from, target, 0, { recoverAboveFloor: true }), at = recovery.duration / 2;
+    const original = recovery.sample(at), carried = recovery.sample(at, { x: target.x - 12, y: target.y - 90 });
+    expect(carried.x).toBeCloseTo(original.x - 12); expect(carried.y).toBeCloseTo(original.y - 90); expect(carried.active).toBe(original.active);
+    expect(recovery.sample(at)).toEqual(original); expect(recovery.sample(NaN)).toMatchObject({ ...target, active: false });
+    for (const options of [undefined, { contactX: 1048 }, { recoverAboveFloor: false }]) expect(createCompanionFoodGravity(from, target, 0, options).duration).toBe(0);
+    const bad = createCompanionFoodGravity(from, { x: Infinity, y: 1030 }, 0, { recoverAboveFloor: true }); expect(bad.duration).toBe(0);
+    const settled = createCompanionFoodGravity(target, target, 0, { recoverAboveFloor: true }); expect(settled.duration).toBe(0);
+  });
   it("caps a very long fall and safely handles invalid clocks and overflowing inputs", () => {
     const drop = createCompanionFoodGravity(start, { x: 200, y: 100000 }, 0);
     expect(drop.duration).toBeLessThanOrEqual(1440); expect(drop.sample(1440).active).toBe(false);

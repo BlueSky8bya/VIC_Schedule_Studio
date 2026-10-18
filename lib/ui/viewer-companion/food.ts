@@ -147,7 +147,9 @@ function firstFoodSupportBelow(point: Point, platforms: readonly CompanionFoodDr
 
 /** Deliberate placement first falls onto a real lower ledge. Only the optional
  * final screen-floor fallback may attract farther to an already protected
- * floor span; it never picks a distant card outside the vertical ray. */
+ * floor span. A native grip below that plane recovers onto the same safe
+ * floor; it never pulls food upward to a card or invents a control-crossing
+ * floor. The presentation owns the finite return from that released point. */
 export function placeCompanionFood(food: CompanionFood, point: { x: number; y: number }, platforms: readonly CompanionFoodDropSupport[], fallbackViewport?: Readonly<{ width: number; height: number }>): CompanionFood {
   if (![point.x, point.y].every(Number.isFinite)) return { id: food.id, kind: food.kind, x: food.x, y: food.y };
   const support = firstFoodSupportBelow(point, platforms.filter(platform => !isCompanionFoodBedSupport(platform.id)));
@@ -157,18 +159,29 @@ export function placeCompanionFood(food: CompanionFood, point: { x: number; y: n
     // against visible controls and text. Reuse those exact floor spans rather
     // than manufacturing a full-width ledge across a bottom toolbar. This
     // wider attraction is only a final floor fallback, never a distant card.
+    const nativeGrip = point.x >= -44 && point.x <= fallbackViewport.width + 44 && point.y >= -44 && point.y <= fallbackViewport.height + 44;
     let floor: Platform | undefined, floorX = point.x, distance = Infinity;
     for (const candidate of platforms) {
       if (candidate.kind !== "floor" || !/^viewport-floor-food(?:-\d+)?$/.test(candidate.id)
         || ![candidate.x, candidate.y, candidate.width, candidate.x + candidate.width].every(Number.isFinite)
-        || candidate.width <= 0 || candidate.y < point.y - .5) continue;
+        || candidate.width <= 0 || candidate.x < 0 || candidate.x + candidate.width > fallbackViewport.width
+        || candidate.y < 0 || candidate.y > fallbackViewport.height) continue;
+      const above = candidate.y < point.y - .5;
+      // Shared geometry may raise the floor above a fixed bottom bar only
+      // when that bar starts in the bottom35% of this viewport. A stale floor
+      // cached before viewport growth cannot pull a snack up to an old edge.
+      if (above && (!nativeGrip || candidate.y < fallbackViewport.height * .65 - 8)) continue;
       const x = Math.max(candidate.x, Math.min(candidate.x + candidate.width, point.x)), delta = Math.abs(x - point.x);
-      if (delta < distance || delta === distance && (!floor || candidate.y < floor.y || candidate.y === floor.y && candidate.id < floor.id)) {
+      const previousAbove = floor ? floor.y < point.y - .5 : false;
+      // Preserve every ordinary downward fallback before considering a return
+      // from below the screen's protected input plane.
+      if (!floor || !above && previousAbove || above === previousAbove && (delta < distance
+        || delta === distance && (candidate.y < floor.y || candidate.y === floor.y && candidate.id < floor.id))) {
         floor = candidate; floorX = x; distance = delta;
       }
     }
     if (floor) return { id: food.id, kind: food.kind, x: floorX, y: floor.y, platformId: floor.id };
-    // No safe screen-floor span exists. Fall completely below the visible
+    // No valid safe screen-floor span exists. Fall completely below the visible
     // input plane, retaining a document/world attachment for later scrolling
     // and retrieval. It remains unsupported and cannot be offered as food.
     return { id: food.id, kind: food.kind, x: Math.max(24, Math.min(fallbackViewport.width - 24, point.x)), y: Math.max(point.y, fallbackViewport.height + 44) };

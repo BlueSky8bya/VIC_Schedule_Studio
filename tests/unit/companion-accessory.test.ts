@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { companionAccessoryPlacement, companionGiftAnchor, createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
+import { companionAccessoryAnchor, companionAccessoryPlacement, companionGiftAnchor, createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
+import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import anchors from "@/lib/ui/viewer-companion/accessory-anchors.json";
@@ -15,7 +16,7 @@ describe("adopted pose wardrobe", () => {
       for (const id of COMPANION_ACCESSORY_IDS) {
         const placed = companionAccessoryPlacement(selected, id);
         expect(placed, `${index}:${id}`).not.toBeNull();
-        expect(placed!.art.id).toMatch(new RegExp(`^${id}:`));
+        expect(placed!.art.id).toMatch(new RegExp(`^${currentCompanionAccessory(id)}:`));
         expect([placed!.x, placed!.y, placed!.width, placed!.rotation].every(Number.isFinite)).toBe(true);
         expect(placed!.width).toBeGreaterThan(0);
         expect(placed!.width).toBeLessThan(80);
@@ -108,7 +109,7 @@ describe("adopted pose wardrobe", () => {
       const selected = selectCompanionSprite(pose.physicalIndex), angle = pose.face.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
       const mouth = calibrated.get(pose.physicalIndex), mouthSource = mouth && mouths.atlases[mouth.atlas];
       const mouthBottom = mouth && mouthSource?.src === selected.src && mouthSource.sha256 === anchors.sources[pose.atlas].sha256 ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => depth(mouth.bounds[x] / mouths.cell * 80, mouth.bounds[y] / mouths.cell * 80)))) : undefined;
-      for (const id of ["bow", "scarf", "bell-pendant"] as const) for (const age of [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2600]) {
+      for (const id of COMPANION_ACCESSORY_IDS.filter(id => ["chest-badge", "front-bow", "front-pocket"].includes(COMPANION_ACCESSORIES[id].family))) for (const age of [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2600]) {
         const placed = companionAccessoryPlacement(selected, id, sampleCompanionAccessoryMotion(id, age).accessory)!, rotation = placed.rotation * Math.PI / 180, height = placed.width * placed.art.content.height / placed.art.content.width;
         const corners = [-1, 1].flatMap(sx => [-1, 1].map(sy => {
           const x = sx * placed.width / 2, y = sy * height / 2;
@@ -119,6 +120,27 @@ describe("adopted pose wardrobe", () => {
         if (mouthBottom !== undefined) expect(top, `${pose.physicalIndex}:${id}:${age} calibrated mouth`).toBeGreaterThanOrEqual(mouthBottom + 1 - 1e-5);
       }
     }
+  });
+  it("projects rare prop endpoints from every adopted frame and spins only the rotor plane", () => {
+    const calls = new Map<string, string>(), rearCalls = new Map<string, string>();
+    const host = (values: Map<string, string>) => ({ hidden: true, style: { setProperty: (key: string, value: string) => values.set(key, value) } }) as unknown as HTMLElement;
+    const front = host(calls), back = host(rearCalls), gift = host(new Map()), painter = createCompanionAccessoryPainter({ front, back, gift });
+    for (let index = 0; index < 520; index++) {
+      const selected = selectCompanionSprite(index);
+      for (const [id, part] of [["magic-pocket", "opening"], ["propeller-hat", "rotor"]] as const) {
+        const endpoint = companionAccessoryAnchor(selected, id, part);
+        expect(endpoint, `${index}:${part}`).not.toBeNull(); expect(Object.values(endpoint!).every(Number.isFinite)).toBe(true);
+        expect(companionAccessoryAnchor({ ...selected, src: "/unadopted.webp" }, id, part)).toBeNull();
+      }
+    }
+    expect(companionAccessoryAnchor(selectCompanionSprite(0), "bow", "opening")).toBeNull();
+    const selected = selectCompanionSprite(304);
+    painter.paint(selected, "propeller-hat", false);
+    const cap = calls.get("transform"), rotor = rearCalls.get("transform");
+    painter.paint(selected, "propeller-hat", false, { lift: 0, shift: 0, roll: 0, scale: 1, rotor: 90 });
+    expect(calls.get("transform")).toBe(cap); expect(rearCalls.get("transform")).not.toBe(rotor);
+    expect(back.hidden).toBe(false); expect(front.hidden).toBe(false);
+    painter.paint(selected, "bow", false); expect(back.hidden).toBe(true);
   });
   it("permanent ownership does not imply an image request; unchanged held poses do no repeated CSS writes", () => {
     const calls: Array<[string, string]> = [];

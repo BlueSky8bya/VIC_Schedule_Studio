@@ -15,6 +15,8 @@ export type CompanionEpisode = {
   foodId?: string;
   mishapUsed: boolean;
   legs: number;
+  /** A local encounter with an already learned favorite, not a discovery. */
+  reunion?: boolean;
 };
 type Reachable = (from: { x: number; y: number }, platforms: readonly Platform[], overrides?: { maxRise?: number; landingInset?: number }) => Platform[];
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
@@ -86,9 +88,10 @@ export function planCompanionEpisode(brain: CompanionBrain, world: CompanionWorl
   if (episode?.kind === "meal" && (brain.hunger < COMPANION_FULL_THRESHOLD || !pendingCompanionMealId(brain))) return;
   if (!episode) {
     const food = world.foods?.find(item => item.id === foodAction?.foodId);
-    if (brain.hunger >= .85 || !food || !foodAction || !["walk", "jump"].includes(foodAction.kind) || Math.hypot(food.x - world.x, food.y - world.y) < 96
+    const reunion = prefs.learnFromYou !== false && food?.kind === brain.life?.favoriteFood;
+    if (brain.hunger >= .85 || !food || !foodAction || !["walk", "jump", ...(reunion ? ["eat"] : [])].includes(foodAction.kind) || !reunion && Math.hypot(food.x - world.x, food.y - world.y) < 96
       || (brain.cooldowns.episode ?? -Infinity) > now || (brain.foodGoal?.remaining ?? 32) < 6) return;
-    episode = { kind: "meal", phase: "start", variant: chooseVariant(prefs, brain, now, rng), remaining: 24, foodId: food.id, mishapUsed: false, legs: 0 };
+    episode = { kind: "meal", phase: "start", variant: chooseVariant(prefs, brain, now, rng), remaining: 24, foodId: food.id, mishapUsed: false, legs: 0, ...(reunion ? { reunion: true } : {}) };
   }
   const food = world.foods?.find(item => item.id === episode!.foodId);
   if (!food || ![food.x, food.y].every(Number.isFinite)) {
@@ -110,6 +113,10 @@ export function planCompanionEpisode(brain: CompanionBrain, world: CompanionWorl
   if (episode.phase === "start") return step({ kind: "look", target: here, duration: prefs.animalMode === "cat" ? 320 : 220,
     ...identity, attention: { kind: "inspect", goal: { ...foodAction.intention, stage: "consider" } }, direction: food.x < world.x ? -1 : 1 }, "notice");
   if (episode.phase === "notice") {
+    if (episode.reunion) {
+      const play = prefs.animalMode === "cat" ? "groom" : prefs.animalMode === "dog" || !prefs.jump ? "bow" : "celebrate";
+      return step({ kind: "play", play, target: here, duration: companionPlayDuration(play), ...identity, direction: food.x < world.x ? -1 : 1 }, "greet");
+    }
     if (episode.variant === "careful") return step({ kind: "sniff", target: here, duration: prefs.animalMode === "cat" ? 500 : 340, ...identity, direction: food.x < world.x ? -1 : 1 }, "greet");
     const play = prefs.animalMode === "cat" ? "pounce" : prefs.animalMode === "dog" || !prefs.jump ? "bow" : "celebrate";
     return step({ kind: "play", play, target: here, duration: companionPlayDuration(play), ...identity, direction: food.x < world.x ? -1 : 1 }, "greet");

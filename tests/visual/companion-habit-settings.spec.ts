@@ -14,7 +14,6 @@ async function openHabits(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
   return { dialog, habits: dialog.getByRole("region", { name: "배운 습관", exact: true }) };
 }
 
@@ -89,14 +88,18 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     expect(balance.positionSpread).toBeLessThanOrEqual(1);
     expect(["start", "left"]).toContain(balance.alignment);
     expect(balance.paddingDifference).toBeLessThanOrEqual(1);
-    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
-    await habits.screenshot({ path: `.scratch-pw/companion-109-settings/habits-${surface}-${theme}.png` });
-    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/dialog-${surface}-${theme}.png` });
+    mkdirSync(".scratch-pw/companion-111/habits", { recursive: true });
+    await habits.screenshot({ path: `.scratch-pw/companion-111/habits/habits-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-111/habits/dialog-${surface}-${theme}.png` });
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
+    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
+    await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await expect(dialog.locator(".rhh-habit-paused")).toHaveText("배우기 끔 · 기억은 보관해요.");
     await expect(habits.locator("li")).toHaveCount(3);
+    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+    await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await expect(habits.getByText(/아직 뚜렷한 변화는 없어요/)).toBeVisible();
     await expect(habits.locator("li")).toHaveCount(0);
     const saved = await page.evaluate(() => ({ care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!), prefs: JSON.parse(localStorage.getItem("vic.viewerCompanion")!) }));
@@ -105,6 +108,7 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     await page.reload();
     const reopened = await openHabits(page);
     await expect(reopened.habits.getByText(/아직 뚜렷한 변화는 없어요/)).toBeVisible();
+    await reopened.dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await expect(reopened.dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     expect(writes).toEqual([]); expect(errors).toEqual([]);
   });

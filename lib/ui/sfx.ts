@@ -13,6 +13,8 @@ import type { CelebrationSound } from "@/lib/ui/celebration";
 
 import { premiereMusicWindow, MUSIC_OPEN, MUSIC_QUIET, type PremiereTrack } from "./premiere/music";
 import { renderPremiereNote } from "./premiere/music-voice";
+import { COMPANION_INSTRUMENT_EVENT, companionInstrumentPulse, type CompanionInstrumentPulse } from "./viewer-companion/instrument-music";
+export { COMPANION_INSTRUMENT_EVENT, type CompanionInstrumentPulse } from "./viewer-companion/instrument-music";
 
 export type SoundCategory = "celebrate" | "tap" | "ui" | "edit" | "alert";
 export type SfxName =
@@ -755,6 +757,11 @@ export function playSfx(name: SfxName, opts: { force?: boolean } = {}): void {
 let lastPlayed = { name: "tick" as SfxName, at: 0 };
 let songUntil = 0;
 let pendingNotes: number[] = [0];
+let calendarInstrumentPulse: CompanionInstrumentPulse | undefined;
+function playCalendarInstrument(name: SfxName, title: string, durationMs = 500) {
+  calendarInstrumentPulse = companionInstrumentPulse(title, performance.now(), durationMs);
+  try { playSfx(name); } finally { calendarInstrumentPulse = undefined; }
+}
 
 // ── 노래·연속 탭 멜로디(2026-10-06 소유자: "빵빠레를 여러 번 연속 클릭하면 한 번에 한 음씩 — 비행기 멜로디처럼") ──
 /** 생일 축하 노래 박 길이(초)와 빵빠레 뒤 노래 시작까지(초). 화면의 춤추는 음표도 이 시간표를 그대로 쓴다. */
@@ -886,7 +893,7 @@ export function playCelebrationTap(
     }
     tapStreak = { key, at: now, i: 0, mel, moved: false };
     if (grand) {
-      playCelebration(sound);
+      playCalendarInstrument(sound, sound === "birthday" ? "생일 축하합니다" : "캐논", sound === "birthday" ? (SONG_DELAY + BIRTHDAY_SONG[BIRTHDAY_SONG.length - 1].at + .6) * 1000 : 1200);
       return { kind: "first" };
     }
   } else {
@@ -911,7 +918,7 @@ export function playCelebrationTap(
   const title = tapStreak.i === 0 ? (birthday ? "생일 축하합니다" : ALL_MELODIES[tapStreak.mel].title) : undefined;
   tapStreak.i += 1;
   pendingNotes = Array.isArray(step) ? step : [step];
-  playSfx("note");
+  playCalendarInstrument("note", birthday ? "생일 축하합니다" : ALL_MELODIES[tapStreak.mel].title, Math.max(500, pendingNotes.length * 90 + 400));
   return { kind: cont ? "note" : "first", semi: pendingNotes[pendingNotes.length - 1], title };
 }
 function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
@@ -947,6 +954,10 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
   jitter = CATEGORY[name] === "celebrate" || name === "unlock" ? 1 : 1 + (Math.random() * 2 - 1) * 0.03;
   render(ac, out, name);
   jitter = 1;
+  // Publish only an admitted, audible calendar render. A muted category,
+  // failed gesture, suspended cold context or a settings sound-board sample
+  // never produces a creature reaction or rhythm score.
+  if (calendarInstrumentPulse && ac.state === "running") window.dispatchEvent(new CustomEvent<CompanionInstrumentPulse>(COMPANION_INSTRUMENT_EVENT, { detail: { ...calendarInstrumentPulse, at: performance.now() } }));
 }
 
 export type CompanionSoundNote = Readonly<{ f: number; at?: number; vol?: number; tau?: number; glideTo?: number }>;

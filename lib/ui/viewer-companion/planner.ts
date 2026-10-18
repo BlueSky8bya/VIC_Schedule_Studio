@@ -86,6 +86,18 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
   // (grooming/play invitations) and personality recovery behind this planner.
   if (previous?.stage === "observe") return { outcomes };
   const home = platforms.find(p => p.id === "companion-home" && safe(p));
+  // Familiar anonymous ledges become optional resting spots. Never retain a
+  // removed event's coordinates or select an unsafe/manual surface by memory.
+  if (prefs.sleep && prefs.learnFromYou !== false && brain.energy < profile.restEnergy && brain.energy >= .18) {
+    const familiar = platforms.filter(p => safe(p) && p.kind !== "floor" && p.kind !== "control" && p.id !== home?.id)
+      .map(platform => ({ platform, memory: memories.find(place => place.id === platform.id) }))
+      .filter(item => item.memory && item.memory.visits >= 3 && item.memory.failures === 0 && item.memory.retryAfter <= activeMs)
+      .sort((a, b) => b.memory!.visits - a.memory!.visits || Math.hypot(a.platform.x - world.x, a.platform.y - world.y) - Math.hypot(b.platform.x - world.x, b.platform.y - world.y)).slice(0, 2);
+    for (const { platform } of familiar) {
+      const action = pursue({ kind: "rest", targetId: platform.id, offset: .5, remaining: 12, stage: "travel" });
+      if (action) return { action, outcomes };
+    }
+  }
   if (prefs.sleep && brain.energy < profile.restEnergy && home) {
     const action = pursue({ kind: "rest", targetId: home.id, offset: .5, remaining: 12, stage: "travel" });
     if (action) return { action, outcomes };

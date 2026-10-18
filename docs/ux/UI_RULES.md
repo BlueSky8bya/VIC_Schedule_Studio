@@ -1,8 +1,10 @@
 # Current UI rules
 
-Updated: 2026-09-09. Read only sections affected by the task. Shared security, KST and authorization rules live in [AGENTS](../../AGENTS.md). This file preserves standing UI constraints formerly mixed with history in CLAUDE; historical explanations remain in git and dated reports.
+Updated: 2026-10-18. Read only sections affected by the task. Shared security, KST and authorization rules live in [AGENTS](../../AGENTS.md). This file preserves standing UI constraints formerly mixed with history in CLAUDE; historical explanations remain in git and dated reports.
 
 ## Shared companion follow-up (2026-10-16)
+
+정보 우선·소품 정정(2026-10-18 최신 소유자): [PLAN-111](../agent/plans/PLAN-20261018-111-companion-interactions-and-performance.md)은109의 상단 모드/성격/배우기 제어 순서와110의 선택된 다섯 행동·다섯 최적화 제안 전용 제한을 대체한다. 공유 설정과 수첩은 함께 지내기/도감/옷장/환경설정 순서이며 첫 화면에서 현재 착용 모습을 보고 옷장으로 바로 간다. 환경설정 안에 기존 기본/움직임/장난/교감/소리를 공유한다. 벗기기는 즉시 미리보기에 반영하며 미발견 행동은 옷장에 노출하지 않는다. 목끈·목도리는 신규 소지품에서 제외하고 기존 소유 내역은 동등한 몸통 장식으로 호환한다. 일반 소품은 여섯 착용 부류의 포즈 앵커를 공유하며 전용 몸통 그림을 복제하지 않는다. 희귀 비행/주머니만 기존 유한 행동 안에서 별도 효과를 쓰며 장난 설정으로 끈다. 선물 기회는 기존 활성 교감 조건에서 친밀도에 따라0.05–0.7%; 상자 등장률과 상자 안 개별 소품 확률은 다르다. 실제 달력 연주만 로컬 유한 리듬 반응에 쓰고 평가/개인 성향을 분석 기록으로 전송하지 않는다. 라디오는 출처·변형·CC BY 표시 조건을 확인한 녹음만 활성 목록에 넣는다. 초기 도감/옷장/장식 코드는 필요할 때 불러오고, 텍스트 측정은 변경된 영역만 다시 하며 기존 디코드/플랫폼 상한과 단일 시계를 지킨다.
 
 설정·간식 정정(2026-10-18 최신 소유자): [PLAN-109](../agent/plans/PLAN-20261018-109-companion-design-and-food-expansion.md)은 빅타민 설정의 저대비 동색 면과 긴 세로 읽기 순서를 대체한다. 공유 PC 설정은 프로필을 먼저 보여 주고, 모드/성격/배우기를 상단 기본 설정으로, 취향·습관·도감·옷장을 명확한 카드와 짧은 효과 이름으로 나눈다. 밝고 어두운 테마 모두 배경과 구별되는 불투명 면·선명한 글자·선택 경계와44px 조작 영역을 쓴다. 도감은180간식 중 현재24개만 표시/마운트하며 전체 수·기존 순서·키보드 페이지 이동·미발견???를 보존한다. 새120간식의 실제 그림과 도장은 같은80px 원본 셀을 사용하고 기존106/107/108원본은 그대로 둔다. 라디오 음표3개는 실제 재생/가시 상태에만 CSS transform/opacity로 움직이고 정지·숨김·감소/OFF에서 끝난다. 새 상시RAF·전체 그림 preload·모델/서버 호출 없이 기존 디코더/소유권/모바일 제외를 유지한다. 기능·버튼 변경은 G-22에 따라 행동 타임라인과 적게 쓰인 기능을 함께 점검하며 개인 취향/음식/곡 ID를 기록하지 않는다.
 

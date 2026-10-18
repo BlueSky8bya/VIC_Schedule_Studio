@@ -11,6 +11,7 @@ import { COMPANION_FOOD_KINDS, LEGACY_COMPANION_FOOD_KINDS } from "@/lib/ui/view
 import { COMPANION_COLLECTION_ATLASES, COMPANION_COLLECTION_FRAMES, getCompanionCollectionArtFrame } from "@/lib/ui/viewer-companion/collection-art";
 import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 
 const V106_FOODS = ["apple", "lemon", "strawberry", "raspberry", "watermelon", "tomato", "grapefruit", "peach", "plum", "orange", "persimmon", "apricot", "pear", "banana", "grape", "cherry", "blueberry", "mango", "kiwi", "pineapple", "coconut", "fig", "dragon-fruit", "melon", "carrot", "cucumber", "broccoli", "pumpkin", "corn", "sweet-potato", "potato", "cabbage", "eggplant", "bell-pepper", "radish", "peas"] as const;
@@ -226,8 +227,8 @@ describe("additive107 native collection assets", () => {
     }
   });
 
-  it("preserves all60 native pairs among180 foods,12 accessories with four views and12 separate situation stamps", () => {
-    expect(COMPANION_FOOD_KINDS).toHaveLength(180); expect(COMPANION_ACCESSORY_IDS).toHaveLength(12);
+  it("preserves60 native pairs among180 foods, legacy12 accessory views and12 situation stamps alongside20 active accessories", () => {
+    expect(COMPANION_FOOD_KINDS).toHaveLength(180); expect(COMPANION_ACCESSORY_IDS).toHaveLength(22); expect(COMPANION_WEARABLE_IDS).toHaveLength(20);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["situation-stamp"])).toEqual([...COMPANION_SITUATION_IDS]);
@@ -240,7 +241,7 @@ describe("additive107 native collection assets", () => {
       expect(food.index).toBe(id === "rice-ball" ? 0 : index);
       expect(food.src).toBe(id === "rice-ball" ? "/companion/collection/rice-ball-108-v1.webp" : "/companion/collection/foods-107-v1.webp");
     }
-    for (const [row, view] of (["front", "quarter", "side", "back"] as const).entries()) for (const [column, id] of COMPANION_ACCESSORY_IDS.slice(6).entries()) {
+    for (const [row, view] of (["front", "quarter", "side", "back"] as const).entries()) for (const [column, id] of COMPANION_ACCESSORY_IDS.slice(6, 12).entries()) {
       const frame = getCompanionCollectionArtFrame("accessory", id, view)!;
       expect(frame.atlas).toBe("accessory-107"); expect(frame.x).toBe(column * 128); expect(frame.y).toBe(row * 128);
     }

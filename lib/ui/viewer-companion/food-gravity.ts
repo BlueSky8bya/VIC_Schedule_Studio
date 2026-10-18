@@ -6,15 +6,17 @@ const clamp = (value: number, low: number, high: number) => Math.max(low, Math.m
 /** One finite analytic fall, followed by a small impact and one bounce. Target
  * translation carries the entire flight without restarting its clock, so a
  * real DOM/document anchor can scroll underneath the same authored motion. */
-export function createCompanionFoodGravity(from: Point, to: Point, started: number, options?: Readonly<{ contactX: number }>) {
+export function createCompanionFoodGravity(from: Point, to: Point, started: number, options?: Readonly<{ contactX?: number; recoverAboveFloor?: boolean }>) {
   const origin = finite(from) ? { ...from } : { x: 0, y: 0 };
-  const target = finite(to) && to.y >= origin.y && Number.isFinite(to.y - origin.y) && Number.isFinite(to.x - origin.x) ? { ...to } : { ...origin };
+  const validEnd = finite(to) && Number.isFinite(to.y - origin.y) && Number.isFinite(to.x - origin.x);
+  const recovering = validEnd && to.y < origin.y && options?.recoverAboveFloor === true;
+  const target = validEnd && (to.y >= origin.y || recovering) ? { ...to } : { ...origin };
   const distance = target.y - origin.y;
   const moving = Math.hypot(target.x - origin.x, distance) >= .5;
-  const fall = moving ? clamp(Math.sqrt(2 * distance / 1800) * 1000, 90, 1200) : 0;
-  const duration = moving ? fall + 240 : 0;
+  const fall = moving && !recovering ? clamp(Math.sqrt(2 * distance / 1800) * 1000, 90, 1200) : 0;
+  const duration = moving ? recovering ? clamp(Math.sqrt(2 * -distance / 1800) * 1000, 140, 420) : fall + 240 : 0;
   const began = Number.isFinite(started) ? started : 0;
-  const contactX = Number.isFinite(options?.contactX) ? clamp(options!.contactX, Math.min(origin.x, target.x), Math.max(origin.x, target.x)) : target.x;
+  const contactX = typeof options?.contactX === "number" && Number.isFinite(options.contactX) ? clamp(options.contactX, Math.min(origin.x, target.x), Math.max(origin.x, target.x)) : target.x;
   return {
     duration,
     sample(now: number, currentTarget: Point = target): CompanionFoodGravitySample {
@@ -23,6 +25,16 @@ export function createCompanionFoodGravity(from: Point, to: Point, started: numb
       const age = Number.isFinite(now) ? Math.max(0, now - began) : duration;
       const result = { x: end.x, y: end.y, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, active: moving && age < duration };
       if (!result.active) return result;
+      if (recovering) {
+        // A real pointer can pass below the protected floor beside a fixed
+        // toolbar. Return monotonically onto that already measured safe span
+        // rather than teleporting, bouncing through a control or manufacturing
+        // an upward card fall. Scrolling carries this same finite clock.
+        const p = age / duration, eased = p * p * (3 - 2 * p);
+        result.x = origin.x + (end.x - target.x) + (target.x - origin.x) * eased;
+        result.y = origin.y + (end.y - target.y) + distance * eased;
+        return result;
+      }
       if (age < fall) {
         const p = (age / fall) ** 2;
         result.x = origin.x + (end.x - target.x) + (contactX - origin.x) * p;

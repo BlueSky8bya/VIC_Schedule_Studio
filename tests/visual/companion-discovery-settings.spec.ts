@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
@@ -8,6 +8,7 @@ import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { companionFoodChance, COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_FOOD_FACTS } from "@/lib/ui/viewer-companion/food-facts";
+import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
@@ -53,7 +54,6 @@ async function openProfile(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
   const profile = dialog.locator(".rhh-companion-profile");
   await expect(profile.getByRole("region", { name: "빅타민 특성", exact: true })).toBeVisible();
   return { dialog, profile, nav: profile.getByRole("tablist", { name: "빅타민 프로필", exact: true }) };
@@ -84,16 +84,24 @@ async function openCompanionBook(page: Page) {
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveClass(/companion-book/);
   await expect(dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toHaveCount(0);
-  await expect(dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab")).toHaveText(["프로필", "움직임", "장난", "교감", "소리"]);
+  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "환경설정"]);
+  await expect(dialog.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("switch")).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: "닫기", exact: true })).toHaveAttribute("data-act", "companion-book-close");
   return { dialog, entry };
 }
 
+async function openEnvironment(dialog: ReturnType<Page["getByRole"]>) {
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  await expect(dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab")).toHaveText(["기본", "움직임", "장난", "교감", "소리"]);
+}
+
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
-  test(`110 book ${surface} ${theme}: native direct settings share preferences and return focus after both close paths`, async ({ page }) => {
+  test(`111 book ${surface} ${theme}: native direct settings share preferences and return focus after both close paths`, async ({ page }) => {
     const safety = await installFixture(page, { theme, collection: seededCollection, enabled: true });
     await visitSurface(page, surface);
     const { dialog, entry } = await openCompanionBook(page);
+    await openEnvironment(dialog);
     const controls = dialog.getByRole("tablist", { name: "빅타민 설정", exact: true });
     await dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
@@ -106,30 +114,34 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       const prefs = JSON.parse(localStorage.getItem("vic.viewerCompanion")!);
       return [prefs.animalMode, prefs.personality, prefs.speed, prefs.feeding];
     })).toEqual(["cat", "sleepy", "lively", true]);
-    await controls.getByRole("tab", { name: "프로필", exact: true }).click();
+    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await settlePanelLayout(page);
-    mkdirSync(".scratch-pw/companion-110/book", { recursive: true });
-    await page.screenshot({ path: `.scratch-pw/companion-110/book/${surface}-${theme}-book.png` });
+    mkdirSync(".scratch-pw/companion-111/book", { recursive: true });
+    await page.screenshot({ path: `.scratch-pw/companion-111/book/${surface}-${theme}-book.png` });
     // Wheel the real book page, rather than accepting a masked/clipped body
     // just because Playwright can programmatically scroll a control into view.
     const body = dialog.locator(".rhh-companion-book-pages");
     const beforeWheel = await body.evaluate(element => element.scrollTop);
     await body.hover(); await page.mouse.wheel(0, 540);
     await expect.poll(() => body.evaluate(element => element.scrollTop)).toBeGreaterThan(beforeWheel);
+    await openEnvironment(dialog);
     await controls.getByRole("tab", { name: "소리", exact: true }).click();
     await dialog.locator(".rhh-radio-playlist summary").click();
     const playlist = dialog.locator(".rhh-radio-playlist ul"), lastTrack = playlist.getByRole("checkbox").last();
     await playlist.hover(); await page.mouse.wheel(0, 2800);
     await expect(lastTrack).toBeInViewport({ ratio: 1 });
     await lastTrack.focus(); await expect(lastTrack).toBeFocused();
-    await page.screenshot({ path: `.scratch-pw/companion-110/book/${surface}-${theme}-playlist-end.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-111/book/${surface}-${theme}-playlist-end.png` });
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+    await test.info().attach("book-close-focus", { body: JSON.stringify(await page.evaluate(() => ({ active: document.activeElement?.outerHTML.slice(0, 600), book: [...document.querySelectorAll<HTMLElement>('[data-act="companion-book-open"]')].map(node => ({ connected: node.isConnected, inert: Boolean(node.closest("[inert],[hidden]")), rect: node.getBoundingClientRect().toJSON() })) }))), contentType: "application/json" });
     await expect(dialog).toHaveCount(0); await expect(entry).toBeFocused();
     const reopened = await openCompanionBook(page);
+    await openEnvironment(reopened.dialog);
     await expect(reopened.dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toHaveAttribute("aria-checked", "true");
     await page.keyboard.press("Escape");
     await expect(reopened.dialog).toHaveCount(0); await expect(entry).toBeFocused();
     const normal = await openProfile(page);
+    await openEnvironment(normal.dialog);
     await expect(normal.dialog).not.toHaveClass(/companion-book/);
     await expect(normal.dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toBeVisible();
     await expect(normal.dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toHaveAttribute("aria-checked", "true");
@@ -143,11 +155,12 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
 }
 
 for (const surface of ["viewer", "studio"] as const) {
-  test(`110 book ${surface} OFF: closing after the house unmounts restores the visible standard settings entry`, async ({ page }) => {
+  test(`111 book ${surface} OFF: closing after the house unmounts restores the visible standard settings entry`, async ({ page }) => {
     const safety = await installFixture(page, { collection: seededCollection, enabled: true });
     await visitSurface(page, surface);
     const gearWasVisible = await page.getByRole("button", { name: "설정", exact: true }).isVisible();
     const { dialog } = await openCompanionBook(page);
+    await openEnvironment(dialog);
     await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
     await expect(dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     await expect(page.locator(".vc-home,.vc-book-button")).toHaveCount(0);
@@ -166,6 +179,7 @@ for (const surface of ["viewer", "studio"] as const) {
       await expect(gear).toBeVisible();
     }
     const normal = await openProfile(page);
+    await openEnvironment(normal.dialog);
     await expect(normal.dialog).not.toHaveClass(/companion-book/);
     await expect(normal.dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     await normal.dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
@@ -176,7 +190,7 @@ for (const surface of ["viewer", "studio"] as const) {
   });
 }
 
-test("110 book compact1050: book and radio have separate44px targets and a contained readable page", async ({ page }) => {
+test("111 book compact1050: book and radio have separate44px targets and a contained readable page", async ({ page }) => {
   await page.setViewportSize({ width: 1050, height: 1000 });
   const safety = await installFixture(page, { theme: "dark", collection: seededCollection, enabled: true });
   await visitSurface(page, "studio");
@@ -190,18 +204,18 @@ test("110 book compact1050: book and radio have separate44px targets and a conta
   expect(bookRect!.width).toBeGreaterThanOrEqual(44); expect(bookRect!.height).toBeGreaterThanOrEqual(44);
   expect(radioRect!.width).toBeGreaterThanOrEqual(44); expect(radioRect!.height).toBeGreaterThanOrEqual(44);
   expect(Math.min(bookRect!.x + bookRect!.width, radioRect!.x + radioRect!.width) - Math.max(bookRect!.x, radioRect!.x)).toBeLessThanOrEqual(0);
-  mkdirSync(".scratch-pw/companion-110/book", { recursive: true });
-  await page.screenshot({ path: ".scratch-pw/companion-110/book/compact1050-home.png" });
+  mkdirSync(".scratch-pw/companion-111/book", { recursive: true });
+  await page.screenshot({ path: ".scratch-pw/companion-111/book/compact1050-home.png" });
   const opened = await openCompanionBook(page); await settlePanelLayout(page);
   await expect(opened.dialog).toBeInViewport({ ratio: 1 });
   expect(await opened.dialog.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
-  await page.screenshot({ path: ".scratch-pw/companion-110/book/compact1050-book.png" });
+  await page.screenshot({ path: ".scratch-pw/companion-111/book/compact1050-book.png" });
   await opened.dialog.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(entry).toBeFocused();
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });
 
-test("110 book PC to mobile: responsive fallback clears book mode and keeps standard settings on return", async ({ page }) => {
+test("111 book PC to mobile: responsive fallback clears book mode and keeps standard settings on return", async ({ page }) => {
   const safety = await installFixture(page, { collection: seededCollection, enabled: true });
   await visitSurface(page, "viewer");
   await openCompanionBook(page);
@@ -215,8 +229,8 @@ test("110 book PC to mobile: responsive fallback clears book mode and keeps stan
   await expect(settings.getByRole("tab", { name: "빅타민", exact: true })).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "빅타민 수첩", exact: true })).toHaveCount(0);
   await expect(page.locator(".vc-home,.vc-companion,.vc-book-button")).toHaveCount(0);
-  mkdirSync(".scratch-pw/companion-110/book", { recursive: true });
-  await page.screenshot({ path: ".scratch-pw/companion-110/book/mobile-standard-fallback.png" });
+  mkdirSync(".scratch-pw/companion-111/book", { recursive: true });
+  await page.screenshot({ path: ".scratch-pw/companion-111/book/mobile-standard-fallback.png" });
   await page.setViewportSize({ width: 1440, height: 1100 }); await settlePanelLayout(page);
   await expect(settings).toBeVisible(); await expect(settings).not.toHaveClass(/companion-book/);
   await expect(settings.getByRole("tablist", { name: "설정 묶음", exact: true })).toBeVisible();
@@ -229,17 +243,17 @@ test("110 book PC to mobile: responsive fallback clears book mode and keeps stan
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
   test(`${surface} ${theme}: real mini-nav discovers, opens, equips and retains local keepsakes`, async ({ page, context }) => {
     const safety = await installFixture(page, { theme, collection: seededCollection });
-    mkdirSync(".scratch-pw/companion-110/collection", { recursive: true });
+    mkdirSync(".scratch-pw/companion-111/collection", { recursive: true });
     await visitSurface(page, surface);
     let { dialog, profile, nav } = await openProfile(page);
-    await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장"]);
-    await expect(nav.locator('[data-collection-art-id="book-closed"]')).toHaveCount(1);
+    await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "환경설정"]);
+    await expect(profile.locator(".rhh-companion-portrait [data-preview-ready]")).toHaveCount(1);
+    await expect(profile.locator(".rhh-companion-portrait [data-preview-accessory=\"sunglasses\"]")).toHaveCount(1);
     await expect(nav.locator('[tabindex="0"]')).toHaveCount(1);
-    await expect(dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true })).toBeVisible();
+    await expect(dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true })).toHaveCount(0);
     await expect(profile.locator('[data-collection-art="behavior-stamp"],[data-collection-art="accessory"]')).toHaveCount(0);
 
     await nav.getByRole("tab", { name: "도감", exact: true }).click();
-    await expect(nav.locator('[data-collection-art-id="book-open"]')).toHaveCount(1);
     const foods = profile.locator(".rhh-collection-grid:not(.rhh-behavior-grid):not(.rhh-accessory-grid)");
     await expect(foods.getByRole("button")).toHaveCount(Math.min(24, COMPANION_FOOD_KINDS.length));
     await expect(profile.getByRole("button", { name: `냠냠 도감 2/${COMPANION_FOOD_KINDS.length}`, exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -260,8 +274,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveText("흔한");
     await expect(profile.locator(".rhh-collection-chance")).toHaveText(`기본 등장 ${(companionFoodChance("apple") * 100).toFixed(1)}%`);
     await expect(profile.locator(".rhh-collection-fact")).toHaveText(COMPANION_FOOD_FACTS.apple);
-    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/food-detail-${surface}-${theme}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-food-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-111/collection/food-detail-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-111/collection/viewport-food-${surface}-${theme}.png` });
     await foods.getByRole("button", { name: "??? · 17", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveCount(0);
     await expect(profile.locator(".rhh-collection-chance")).toHaveCount(0);
@@ -278,7 +292,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(lastFood).toHaveAttribute("aria-label", `??? · ${COMPANION_FOOD_KINDS.length}`);
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
-    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-food-deep-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-111/collection/viewport-food-deep-${surface}-${theme}.png` });
     await page.keyboard.press("Home");
     await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
     await profile.getByRole("button", { name: "다음 간식", exact: true }).click();
@@ -315,8 +329,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     expect(await behaviors.getByRole("button", { name: "??? · 24", exact: true }).evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
     await expect(behaviors.locator('[tabindex="0"]')).toHaveCount(1);
-    mkdirSync(".scratch-pw/companion-110/collection", { recursive: true });
-    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/discovery-${surface}-${theme}.png` });
+    mkdirSync(".scratch-pw/companion-111/collection", { recursive: true });
+    await dialog.screenshot({ path: `.scratch-pw/companion-111/collection/discovery-${surface}-${theme}.png` });
     await behaviors.getByRole("button", { name: "??? · 13", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toHaveText("???아직 발견하지 못했어요.");
     await behaviors.getByRole("button", { name: "싹싹 냠냠 · 만났어요", exact: true }).click();
@@ -324,21 +338,25 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail")).not.toContainText("아직 발견");
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     expect(new Set(await profile.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt"))))).toEqual(new Set(["behavior", "moment"]));
-    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/moments-${surface}-${theme}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-moments-deep-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-111/collection/moments-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-111/collection/viewport-moments-deep-${surface}-${theme}.png` });
 
-    await nav.getByRole("tab", { name: "옷장", exact: true }).click();
+    await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
+    await profile.getByRole("button", { name: "옷장 열기", exact: true }).click();
+    await expect(nav.getByRole("tab", { name: "옷장", exact: true })).toHaveAttribute("aria-selected", "true");
     const accessories = profile.locator(".rhh-accessory-grid");
-    await expect(accessories.getByRole("button")).toHaveCount(12);
+    await expect(accessories.getByRole("button")).toHaveCount(COMPANION_WEARABLE_IDS.length);
+    const wearablePreview = profile.locator(".rhh-wardrobe-detail .rhh-wardrobe-preview");
+    await expect(wearablePreview).toHaveAttribute("data-preview-accessory", "sunglasses");
     await expect(accessories.locator("button[data-found]")).toHaveCount(1);
     await expect(profile.getByRole("button", { name: "선물 열기", exact: true })).toBeVisible();
     expect(await readCollection(page)).toEqual(seededCollection);
     await accessories.getByRole("button", { name: "??? · 3", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail").getByRole("button", { name: /^(장착하기|벗기기)$/ })).toHaveCount(0);
-    await accessories.getByRole("button", { name: "??? · 12", exact: true }).click();
+    await accessories.getByRole("button", { name: `??? · ${COMPANION_WEARABLE_IDS.length}`, exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
-    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-wardrobe-deep-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-111/collection/viewport-wardrobe-deep-${surface}-${theme}.png` });
     await profile.getByRole("button", { name: "선물 열기", exact: true }).click();
     await expect(profile.getByRole("button", { name: "선물 열기", exact: true })).toHaveCount(0);
     await expect(accessories.locator('[data-accessory="beret"]')).toBeFocused();
@@ -350,21 +368,44 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await profile.locator(".rhh-equipped-current").getByRole("button", { name: "벗기기", exact: true }).click();
     await expect(accessories.locator('[data-accessory="sunglasses"]')).toBeFocused();
     expect((await readCollection(page)).gifts.equipped).toBeNull();
+    await expect(wearablePreview).toHaveAttribute("data-preview-accessory", "none");
+    await expect(wearablePreview.locator(".vc-wearable-back,.vc-wearable-front")).toHaveCount(2);
+    expect(await wearablePreview.locator(".vc-wearable-back,.vc-wearable-front").evaluateAll(nodes => nodes.every(node => (node as HTMLElement).hidden))).toBe(true);
     await accessories.locator('[data-accessory="beret"]').click();
     await profile.locator(".rhh-collection-detail").getByRole("button", { name: "장착하기", exact: true }).click();
-    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/gifts-${surface}-${theme}.png` });
+    const wornButton = profile.locator(".rhh-collection-detail").getByRole("button", { name: "벗기기", exact: true });
+    const primaryContrast = await wornButton.evaluate(node => {
+      const style = getComputedStyle(node), canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d")!;
+      const luminance = (value: string) => { context.clearRect(0, 0, 1, 1); context.fillStyle = value; context.fillRect(0, 0, 1, 1); return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3).map(channel => { const x = channel / 255; return x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4; }).reduce((sum, x, index) => sum + x * [.2126, .7152, .0722][index], 0); };
+      const foreground = luminance(style.color), background = luminance(style.backgroundColor);
+      return { color: style.color, background: style.backgroundColor, ratio: (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05) };
+    });
+    await test.info().attach("wardrobe-primary-contrast", { body: JSON.stringify(primaryContrast), contentType: "application/json" });
+    expect(primaryContrast.ratio).toBeGreaterThanOrEqual(4.5);
+    // Cover the selected item's primary action as well as the current-outfit
+    // footer above: both must clear actual pixels, not merely a stored label.
+    await wornButton.click();
+    expect((await readCollection(page)).gifts.equipped).toBeNull();
+    await expect(wearablePreview).toHaveAttribute("data-preview-accessory", "none");
+    expect(await wearablePreview.locator(".vc-wearable-back,.vc-wearable-front").evaluateAll(nodes => nodes.every(node => (node as HTMLElement).hidden))).toBe(true);
+    await accessories.locator('[data-accessory="beret"]').click();
+    await profile.locator(".rhh-collection-detail").getByRole("button", { name: "장착하기", exact: true }).click();
+    await expect(wearablePreview).toHaveAttribute("data-preview-accessory", "beret");
+    await dialog.screenshot({ path: `.scratch-pw/companion-111/collection/gifts-${surface}-${theme}.png` });
 
     const keepsakes = await readCollection(page);
-    await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
+    await openEnvironment(dialog);
     await dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true }).click();
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     expect(await readCollection(page)).toEqual(keepsakes);
     await expect(profile).toContainText("도감·선물 유지");
+    await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await nav.getByRole("tab", { name: "함께 지내기", exact: true }).focus();
     await page.keyboard.press("ArrowRight");
     await expect(nav.getByRole("tab", { name: "도감", exact: true })).toBeFocused();
     await page.keyboard.press("End");
-    await expect(nav.getByRole("tab", { name: "옷장", exact: true })).toBeFocused();
+    await expect(nav.getByRole("tab", { name: "환경설정", exact: true })).toBeFocused();
     await expect(nav.locator('[tabindex="0"]')).toHaveCount(1);
 
     // A real same-origin sibling produces native storage events. No event,
@@ -380,7 +421,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
         localStorage.setItem(key, JSON.stringify(value));
       }, COMPANION_COLLECTION_KEY);
       await sibling.close(); await page.bringToFront();
-      await expect(accessories.getByRole("button", { name: "리본 · 장착 중", exact: true })).toBeVisible();
+      await nav.getByRole("tab", { name: "옷장", exact: true }).click();
+      await expect(accessories.getByRole("button", { name: "나비 리본 · 장착 중", exact: true })).toBeVisible();
       await nav.getByRole("tab", { name: "도감", exact: true }).click();
       await expect(profile.getByRole("button", { name: `냠냠 도감 3/${COMPANION_FOOD_KINDS.length}`, exact: true })).toBeVisible();
       await expect(profile.getByRole("button", { name: "추억 도감 6/24", exact: true })).toBeVisible();
@@ -392,6 +434,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible();
     }
     ({ dialog, profile, nav } = await openProfile(page));
+    await openEnvironment(dialog);
     await expect(dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     await nav.getByRole("tab", { name: "옷장", exact: true }).click();
     await expect(profile.locator(`.rhh-accessory-grid [data-accessory="${persisted.gifts.equipped}"]`)).toContainText("장착 중");
@@ -412,11 +455,43 @@ test("fresh local discovery starts empty and never manufactures a pending gift",
   await expect(profile.locator('[data-collection-art-id="discovery-seal"]')).toHaveCount(1);
   await nav.getByRole("tab", { name: "옷장", exact: true }).click();
   await expect(profile.getByRole("button", { name: "선물 열기", exact: true })).toHaveCount(0);
-  await expect(profile.locator(".rhh-accessory-grid button")).toHaveCount(12);
+  await expect(profile.locator(".rhh-accessory-grid button")).toHaveCount(COMPANION_WEARABLE_IDS.length);
+  await expect(profile.locator(".rhh-wardrobe-preview")).toHaveAttribute("data-preview-ready", "");
+  await expect(profile.locator(".rhh-wardrobe-preview")).toHaveAttribute("data-preview-accessory", "none");
   await expect(profile.locator(".rhh-accessory-grid button[data-found]")).toHaveCount(0);
   await expect(profile.locator(".rhh-collection-detail").getByRole("button", { name: /^(장착하기|벗기기)$/ })).toHaveCount(0);
   await expect(profile.getByRole("button", { name: "다시 보기", exact: true })).toBeDisabled();
   expect(await page.evaluate(key => localStorage.getItem(key), COMPANION_COLLECTION_KEY)).toBeNull();
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
+
+test("111 lazy profile: optional collections, wardrobe and controls load only on their first real visit", async ({ page }) => {
+  const build = process.env.VISUAL_TEST_BUILD_DIR ?? ".next";
+  const manifest = JSON.parse(readFileSync(resolve(build, "react-loadable-manifest.json"), "utf8")) as Record<string, { id: number; files: string[] }>;
+  const moduleChunk = (suffix: string) => {
+    const entry = Object.entries(manifest).find(([key]) => key.endsWith(suffix))?.[1];
+    expect(entry, `production dynamic boundary ${suffix}`).toBeDefined();
+    const file = entry!.files.find(file => file.endsWith(".js") && new RegExp(`\\b${entry!.id}\\s*:`).test(readFileSync(resolve(build, file), "utf8")));
+    expect(file, `own compiled module ${suffix}`).toBeDefined();
+    return `/_next/${file!}`;
+  };
+  const deferred = { discover: moduleChunk(" -> ./companion-discovery"), dress: moduleChunk(" -> ./companion-wardrobe"), settings: moduleChunk(" -> @/components/shared/companion-settings") };
+  const requests = new Set<string>();
+  page.on("request", request => requests.add(new URL(request.url()).pathname));
+  const safety = await installFixture(page);
+  await visitSurface(page, "viewer");
+  const { profile, nav } = await openProfile(page);
+  await expect(profile.locator(".rhh-companion-portrait [data-preview-ready]")).toHaveCount(1);
+  for (const chunk of Object.values(deferred)) expect(requests.has(chunk), chunk).toBe(false);
+  const checkpoints: Record<string, string[]> = { together: [...requests].filter(path => path.endsWith(".js")) };
+  for (const [key, label] of [["discover", "도감"], ["dress", "옷장"], ["settings", "환경설정"]] as const) {
+    await nav.getByRole("tab", { name: label, exact: true }).click();
+    await expect.poll(() => requests.has(deferred[key])).toBe(true);
+    checkpoints[key] = [...requests].filter(path => path.endsWith(".js"));
+  }
+  await expect(profile.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toBeVisible();
+  mkdirSync(".scratch-pw/companion-111/collection", { recursive: true });
+  writeFileSync(".scratch-pw/companion-111/collection/lazy-boundaries.json", JSON.stringify({ build: readFileSync(resolve(build, "BUILD_ID"), "utf8").trim(), deferred, checkpoints }, null, 2));
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });
 

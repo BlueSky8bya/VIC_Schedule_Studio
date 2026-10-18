@@ -24,11 +24,17 @@ vi.mock("@/lib/ui/sfx", async importOriginal => ({ ...await importOriginal<typeo
 
 type Element = ReactElement<Record<string, unknown>>;
 let tree: Element;
+let discoveryRendering = false;
 async function render(active = true) {
   vi.stubGlobal("React", await import("react"));
   harness.state = 0; harness.ref = 0;
-  const { CompanionProfile } = await import("@/components/shared/companion-profile");
-  tree = CompanionProfile({ preferences: DEFAULT_COMPANION_PREFERENCES, active });
+  if (discoveryRendering) {
+    const { CompanionDiscovery } = await import("@/components/shared/companion-discovery");
+    tree = CompanionDiscovery({ collection: null, active }) as Element;
+  } else {
+    const { CompanionProfile } = await import("@/components/shared/companion-profile");
+    tree = CompanionProfile({ preferences: DEFAULT_COMPANION_PREFERENCES, active });
+  }
   return tree;
 }
 function nodes(node: ReactNode): Element[] {
@@ -40,19 +46,43 @@ function nodes(node: ReactNode): Element[] {
 const find = (predicate: (node: Element) => boolean) => nodes(tree).find(predicate)!;
 const foods = () => nodes(tree).filter(node => node.props["data-food-index"] !== undefined);
 const click = (element: Element) => (element.props.onClick as (event: { detail: number }) => void)({ detail: 1 });
-async function discover() { click(find(node => node.props["data-profile-page"] === "discover")); await render(); }
+async function discover() {
+  click(find(node => node.props["data-profile-page"] === "discover"));
+  await render();
+  expect(find(node => node.props["data-profile-page"] === "discover").props["aria-selected"]).toBe(true);
+  // The discovery chunk owns its own persistent state after the first visit.
+  discoveryRendering = true; harness.states = []; harness.refs = [];
+  await render();
+}
 function key(element: Element, value: string) {
   const buttons = foods().map(() => ({ focus: vi.fn() }));
   const event = { key: value, preventDefault: vi.fn(), stopPropagation: vi.fn(), currentTarget: { dataset: { act: element.props["data-act"], actOpt: element.props["data-act-opt"] }, closest: () => ({ querySelectorAll: () => buttons }) } };
   (element.props.onKeyDown as (event: KeyboardEvent<HTMLButtonElement>) => void)(event as unknown as KeyboardEvent<HTMLButtonElement>);
 }
 beforeEach(() => {
-  harness.states = []; harness.refs = []; harness.activity.mockReset();
+  harness.states = []; harness.refs = []; harness.activity.mockReset(); discoveryRendering = false;
   vi.stubGlobal("getComputedStyle", () => ({ gridTemplateColumns: "1fr 1fr 1fr 1fr" }));
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("actual shared profile navigation callbacks", () => {
+  it("leads with a live portrait and keeps all operational controls on the last page", async () => {
+    await render();
+    const pages = nodes(tree).filter(node => node.props["data-profile-page"]);
+    expect(pages.map(node => node.props["data-profile-page"])).toEqual(["together", "discover", "dress", "settings"]);
+    expect(pages[0].props["aria-selected"]).toBe(true);
+    expect(find(node => node.props["aria-label"] === "옷장 열기")).toBeDefined();
+    expect(nodes(tree).some(node => node.props["data-act"] === "companion-enabled")).toBe(false);
+    expect(nodes(tree).some(node => node.props.collection !== undefined)).toBe(false);
+    click(find(node => node.props["aria-label"] === "옷장 열기")); await render();
+    expect(find(node => node.props["data-profile-page"] === "dress").props["aria-selected"]).toBe(true);
+  });
+  it("reaches the final environment page by keyboard with a fixed activity target", async () => {
+    await render();
+    key(find(node => node.props["data-profile-page"] === "together"), "End"); await render();
+    expect(find(node => node.props["data-profile-page"] === "settings").props["aria-selected"]).toBe(true);
+    expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-profile-page#settings" }]]);
+  });
   it("mounts at most24 food tiles only in the active discovery page and keeps unknown names concealed", async () => {
     await render(); expect(foods()).toHaveLength(0);
     await discover();

@@ -1,3 +1,4 @@
+import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ enabled: true, volume: 60, companion: { enabled: true, sound: true, soundVolume: 60 }, radio: { enabled: true, volume: 35, react: true, moods: { lively: true, graceful: true, calm: true }, excludedIds: [] as string[] }, gain: { gain: { value: 0, setTargetAtTime: vi.fn(), cancelScheduledValues: vi.fn() } }, resume: vi.fn(), ended: null as null | (() => void), observers: [] as Array<() => void>, prefs: [] as Array<() => void> }));
 vi.mock("@/lib/ui/sfx", () => ({ soundEnabled: () => state.enabled, soundVolume: () => state.volume, connectCompanionMedia: vi.fn(() => ({ context: Object.assign(new EventTarget(), { currentTime: 0, state: "running", resume: state.resume }), gain: state.gain })) }));
@@ -75,6 +76,47 @@ it("uses the music and master faders once, keeping old levels and every mute gat
   expect(radio.companionRadioOutputGain(0, 100)).toBe(0);
 });
 it("rejects unknown/excluded track auditions without disturbing current playback", async () => {
-  await radio.nextCompanionRadio(); const before = radio.getCompanionRadioSnapshot(); state.radio.excludedIds = ["radio-01"];
-  expect(await radio.playCompanionRadioTrack("private-title")).toBe(false); expect(await radio.playCompanionRadioTrack("radio-01")).toBe(false); expect(radio.getCompanionRadioSnapshot()).toBe(before);
+  await radio.nextCompanionRadio(); const before = radio.getCompanionRadioSnapshot(); state.radio.excludedIds = [COMPANION_RADIO_TRACKS[0].id];
+  expect(await radio.playCompanionRadioTrack("private-title")).toBe(false); expect(await radio.playCompanionRadioTrack(COMPANION_RADIO_TRACKS[0].id)).toBe(false); expect(radio.getCompanionRadioSnapshot()).toBe(before);
+});
+
+it("starts media play in the original gesture before a cold resume resolves", async () => {
+  let resumed: (() => void) | undefined;
+  state.resume.mockImplementationOnce(() => new Promise<void>(resolve => { resumed = resolve; }));
+  const pending = radio.nextCompanionRadio();
+  // No await/microtask is allowed before media.play: this is the original
+  // trusted input task even when WebAudio's first resume crosses a task.
+  expect(created).toHaveLength(1); expect(created[0].play).toHaveBeenCalledTimes(1);
+  expect(created[0].src).not.toBe(""); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
+  resumed!(); expect(await pending).toBe(true);
+  expect(radio.getCompanionRadioSnapshot().generation).toBe(1);
+});
+
+it("keeps the initial suspended notification pending but stops an established interrupted stream", async () => {
+  let resumed: (() => void) | undefined;
+  state.resume.mockImplementationOnce(() => new Promise<void>(resolve => { resumed = resolve; }));
+  const pending = radio.nextCompanionRadio();
+  const { connectCompanionMedia } = await import("@/lib/ui/sfx");
+  const output = vi.mocked(connectCompanionMedia).mock.results.at(-1)!.value as { context: AudioContext };
+  Object.defineProperty(output.context, "state", { value: "suspended", writable: true });
+  output.context.dispatchEvent(new Event("statechange"));
+  expect(radio.getCompanionRadioToggleIntent()).toBe("stop");
+  Object.defineProperty(output.context, "state", { value: "running", writable: true });
+  resumed!(); expect(await pending).toBe(true);
+  Object.defineProperty(output.context, "state", { value: "interrupted", writable: true });
+  output.context.dispatchEvent(new Event("statechange"));
+  expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
+  expect(created[0].src).toBe("");
+});
+
+it("never publishes a cold stream if the context is interrupted before both gates settle", async () => {
+  let resumed: (() => void) | undefined;
+  state.resume.mockImplementationOnce(() => new Promise<void>(resolve => { resumed = resolve; }));
+  const pending = radio.nextCompanionRadio();
+  const { connectCompanionMedia } = await import("@/lib/ui/sfx");
+  const output = vi.mocked(connectCompanionMedia).mock.results.at(-1)!.value as { context: AudioContext };
+  Object.defineProperty(output.context, "state", { value: "interrupted", writable: true });
+  output.context.dispatchEvent(new Event("statechange"));
+  resumed!(); expect(await pending).toBe(false);
+  expect(radio.getCompanionRadioSnapshot()).toMatchObject({ generation: 0, playing: false });
 });

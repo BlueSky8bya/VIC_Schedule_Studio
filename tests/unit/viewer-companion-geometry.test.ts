@@ -54,9 +54,10 @@ function geometryFixture() {
     clearTimeout: vi.fn((id: number) => { timers.delete(id); }),
   });
   const observers: { disconnect: ReturnType<typeof vi.fn>; observe: ReturnType<typeof vi.fn> }[] = [];
+  const callbacks: ((records: readonly MutationRecord[]) => void)[] = [];
   class FixtureObserver {
     disconnect = vi.fn(); observe = vi.fn(); unobserve = vi.fn();
-    constructor() { observers.push(this); }
+    constructor(callback: (records: readonly MutationRecord[]) => void) { observers.push(this); callbacks.push(callback); }
   }
   vi.stubGlobal("MutationObserver", FixtureObserver); vi.stubGlobal("ResizeObserver", FixtureObserver); vi.stubGlobal("NodeFilter", { SHOW_TEXT: 4 });
   const root = new FixtureElement(), day = new FixtureElement(), date = new FixtureElement(), card = new FixtureElement(), title = new FixtureElement(), heart = new FixtureElement(), home = new FixtureElement();
@@ -77,8 +78,27 @@ function geometryFixture() {
   } });
   const flush = () => { const pending = [...frames.values()]; frames.clear(); for (const callback of pending) callback(now); };
   const advance = (elapsed: number) => { now += elapsed; for (const [id, timer] of [...timers]) if (timer.at <= now) { timers.delete(id); timer.callback(); } flush(); };
-  return { root: root as unknown as HTMLElement, sourceRoot: root, day, card, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, range, frames, timers, flush, advance };
+  return { root: root as unknown as HTMLElement, sourceRoot: root, day, card, date, title, home, heart, controls, win, viewportEvents, fontEvents, observers, callbacks, range, frames, timers, flush, advance };
 }
+
+describe("111 text geometry reuse", () => {
+  it("translates cached lines on scroll, reranges only changed text and invalidates fonts", () => {
+    const f = geometryFixture();
+    const deliveries: Platform[][] = [];
+    const dispose = observeCompanionPlatforms(f.root, platforms => deliveries.push(platforms));
+    f.flush(); const calls = f.range.getClientRects.mock.calls.length;
+    const oldDate = deliveries.at(-1)!.find(p => p.kind === "date")!;
+    f.date.rect = box(200, 280, 100, 20); f.title.rect = box(500, 430, 200, 20);
+    f.win.emit("scroll"); f.advance(120);
+    expect(f.range.getClientRects).toHaveBeenCalledTimes(calls);
+    expect(deliveries.at(-1)!.find(p => p.id === oldDate.id)?.y).toBe(oldDate.y - 20);
+    f.callbacks[2]([{ type: "characterData", target: { parentElement: f.title } } as unknown as MutationRecord]); f.advance(120);
+    expect(f.range.getClientRects).toHaveBeenCalledTimes(calls + 1);
+    f.fontEvents.emit("loadingdone"); f.advance(120);
+    expect(f.range.getClientRects).toHaveBeenCalledTimes(calls + 3);
+    dispose();
+  });
+});
 
 function addHouseFloor(fixture: ReturnType<typeof geometryFixture>) {
   const house = new FixtureElement(), room = new FixtureElement(), floor = new FixtureElement();

@@ -22,7 +22,7 @@ type Host = { isConnected: boolean; dataset: Record<string, string>; style: Reco
 let doc: EventTarget & { hidden: boolean }, host: Host, draws: ReturnType<typeof vi.fn>, cleanup: (() => void) | undefined;
 let rafs: Map<number, FrameRequestCallback>, nextRaf: number;
 const settle = async () => { for (let turn = 0; turn < 12; turn++) await Promise.resolve(); };
-async function mount(enabled = true, warm = true) {
+async function mount(enabled = true, warm = true, accessory: "beret" | null = "beret") {
   // Vitest's JSX transform uses the classic factory; Next supplies its own
   // automatic JSX runtime in production. This changes only the unit harness.
   vi.stubGlobal("React", await import("react"));
@@ -30,8 +30,9 @@ async function mount(enabled = true, warm = true) {
   if (warm) for (const row of [0, 30]) for (const src of sprites.companionSpriteSources(row)) harness.ready.add(src);
   harness.ref = 0; harness.effects = [];
   const { CompanionWardrobePreview } = await import("@/components/shared/companion-wardrobe-preview");
-  CompanionWardrobePreview({ accessory: "beret", behaviors: ["groom"], enabled });
+  CompanionWardrobePreview({ accessory, behaviors: ["groom"], enabled });
   cleanup = harness.effects[0]() || undefined;
+  await vi.dynamicImportSettled();
   await settle();
 }
 function frame(now: number) {
@@ -81,9 +82,13 @@ describe("actual preview effect cancellation in a unit DOM harness", () => {
     expect(draws).toHaveBeenCalledTimes(count); expect(rafs.size).toBe(0); expect(vi.getTimerCount()).toBe(0);
     expect(host.dataset.previewReady).toBeUndefined();
   });
-  it("does not request or paint body pixels while the creature is OFF", async () => {
-    await mount(false, false);
-    expect(harness.requests).toEqual([]); expect(draws).not.toHaveBeenCalled(); expect(rafs.size).toBe(0); expect(vi.getTimerCount()).toBe(0);
+  it("shows a static base portrait while OFF without a frame or rest loop", async () => {
+    await mount(false);
+    expect(harness.requests).toEqual([]); expect(draws).toHaveBeenCalledTimes(1); expect(host.dataset.previewRow).toBe("0"); expect(rafs.size).toBe(0); expect(vi.getTimerCount()).toBe(0);
+  });
+  it("paints an undecorated portrait without allocating an attachment painter", async () => {
+    await mount(false, true, null);
+    expect(draws).toHaveBeenCalledTimes(1); expect(harness.paint).not.toHaveBeenCalled(); expect(host.dataset.previewAccessory).toBe("none");
   });
   it("rejects late shared decode completion after becoming hidden", async () => {
     await mount(true, false); expect(harness.requests).toHaveLength(1);

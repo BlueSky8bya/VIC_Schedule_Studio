@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
+import { soundEnabled, soundVolume } from "@/lib/ui/sfx";
 import { Home, X } from "lucide-react";
 import { logActivity } from "@/lib/activity/client";
 import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING, COMPANION_TIMING, COMPANION_THROW_ROW, companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
@@ -25,12 +27,13 @@ import { syncedNow } from "@/lib/ui/synced-clock";
 import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
 import { companionSofaDepth, companionSofaRelease, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
 import { projectCompanionSofaBody, projectCompanionSpritePoint } from "@/lib/ui/viewer-companion/sofa-pose";
-import { createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
 import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isCompanionHat, sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
 import { playCompanionSound, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
 import { getCompanionRadioSnapshot, getCompanionRadioToggleIntent, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
 import { getCompanionRadioPreferences, subscribeCompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
 import { canStartCompanionRadioReaction, companionRadioFoodPriority, COMPANION_RADIO_REACTION_MS, createCompanionRadioReactionInbox, getCompanionRadioReaction, sampleCompanionRadioReaction, type CompanionRadioReaction } from "@/lib/ui/viewer-companion/radio-reaction";
+import { COMPANION_INSTRUMENT_EVENT, type CompanionInstrumentPulse } from "@/lib/ui/viewer-companion/instrument-music";
+import { createCompanionInstrumentInbox, getCompanionInstrumentReaction, sampleCompanionInstrumentReaction, type CompanionInstrumentReaction } from "@/lib/ui/viewer-companion/instrument-reaction";
 import { companionRunContactSituation, type CompanionSituationId } from "@/lib/ui/viewer-companion/moments";
 import { COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { advanceCompanionMealWait, projectCompanionMouth } from "@/lib/ui/viewer-companion/mouth";
@@ -65,14 +68,15 @@ import { requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play"
 import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
-import { CompanionCollectionArt } from "./companion-collection-art";
+const CompanionCollectionArt = dynamic(() => import("./companion-collection-art").then(module => module.CompanionCollectionArt));
 import { CompanionBedForeground, CompanionHome, type CompanionHomeAction } from "./companion-home";
 import { useHomeShelf } from "./use-home-shelf";
 import "./viewer-companion.css";
 
 type Props = { onOpenBook: () => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; agenda: boolean; monthKey: string; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest", () => void>;
-type RuntimeAction = CompanionAction & { radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number } };
+type RuntimeAction = CompanionAction & { radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
+const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const COMPANION_SIZE = 92;
@@ -489,13 +493,31 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let pendingCue: CompanionSoundMoment | undefined;
     let radioState = getCompanionRadioSnapshot(), radioPreferences = getCompanionRadioPreferences();
     const radioInbox = createCompanionRadioReactionInbox(radioState.generation);
+    const instrumentInbox = createCompanionInstrumentInbox();
+    let instrumentAudible = soundEnabled() && soundVolume() > 0;
+    let pocketCapture: { id: string; kind: CompanionFoodKind } | undefined;
+    let pocketDrawn = false, pocketStashed = false, pocketEjected = false, accessoryHabitAt = 0;
     const queueSituation = (id: CompanionSituationId, rows?: readonly number[], actionAt?: number) => pendingSituations.set(id, { rows, actionAt, expires: performance.now() + 12000 });
     situationSink.current = id => { queueSituation(id); };
     if (wardrobe.current.pending) queueSituation("gift-arrival");
     let accessoryReadyAt = brain.current.activeMs + 6000, lastEquipped = wardrobe.current.equipped, accessoryWitnessed = 0, accessoryLanded = false;
-    const wardrobePainter = accessoryBack.current && accessoryFront.current && giftProp.current ? createCompanionAccessoryPainter({ back: accessoryBack.current, front: accessoryFront.current, gift: giftProp.current }) : undefined;
+    let accessoryModule: typeof import("@/lib/ui/viewer-companion/accessory") | undefined;
+    let wardrobePainter: ReturnType<typeof import("@/lib/ui/viewer-companion/accessory").createCompanionAccessoryPainter> | undefined;
+    let wardrobeLoading: Promise<void> | undefined, wardrobeFailures = 0;
+    const ensureWardrobe = () => {
+      if (wardrobePainter || wardrobeLoading || wardrobeFailures >= 2 || !wardrobe.current.equipped && !wardrobe.current.pending) return;
+      wardrobeLoading = import("@/lib/ui/viewer-companion/accessory").then(module => {
+        if (stopped || !accessoryBack.current || !accessoryFront.current || !giftProp.current) return;
+        accessoryModule = module;
+        wardrobePainter = module.createCompanionAccessoryPainter({ back: accessoryBack.current, front: accessoryFront.current, gift: giftProp.current });
+        wardrobePainter.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending));
+        window.dispatchEvent(new Event("vic:companion-sprite"));
+      }).catch(() => { wardrobeFailures++; }).finally(() => { wardrobeLoading = undefined; });
+    };
+    ensureWardrobe();
     refreshWardrobe.current = () => {
       if (lastEquipped !== wardrobe.current.equipped) { lastEquipped = wardrobe.current.equipped; accessoryReadyAt = brain.current.activeMs + 6000; }
+      ensureWardrobe();
       wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending));
     };
     let mealAnchored = false, mealWaited = 0;
@@ -617,7 +639,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         shape.bob -= accessoryMotion.bodyLift; shape.tilt += accessoryMotion.bodyLean;
         shape.scaleX *= 1 + accessoryMotion.squash * .5; shape.scaleY *= 1 - accessoryMotion.squash;
       }
-      const radioMotion = action?.radio && status === "look" ? sampleCompanionRadioReaction(action.radio.reaction, performance.now() - began, action.radio.bpm) : undefined;
+      const radioMotion = action?.radio && status === "look" ? sampleWorldMusic(action.radio, performance.now() - began) : undefined;
       if (radioMotion) {
         shape.bob += radioMotion.bob; shape.tilt += radioMotion.tilt;
         shape.scaleX *= 1 + radioMotion.squash * .5; shape.scaleY *= 1 - radioMotion.squash;
@@ -655,7 +677,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const column = heldReaction.active ? Math.min(registration.rows[22].length - 1, Math.floor(Math.floor(heldReaction.phase * 6) / 6 * registration.rows[22].length)) : carriedColumn ?? sample.column;
       const index = registration.rows[drawingRow][column];
       const selected = selectCompanionSprite(index, drawingRow, column);
-      spriteSources[drawingRow].forEach(src => requestSprite.current(src));
+      requestSprite.current(selected.src);
+      // Prepare only the imminent jump stage, within the shared3-image/
+      //2-decode budget. Never fan out all four stages on every pose sample.
+      if (action?.kind === "jump" && drawingRow >= 3 && drawingRow <= 5) spriteSources[drawingRow + 1].forEach(src => requestSprite.current(src));
       if (drawingRow !== paintedRow || column !== paintedColumn) {
         el.style.setProperty("--vc-column", `${column / 15 * 100}%`);
         el.style.setProperty("--vc-row", `${drawingRow / (registration.rows.length - 1) * 100}%`);
@@ -699,7 +724,25 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (mouth) { mealAnchored = true; food.current?.nibble(action.foodId, clamp((performance.now() - began) / total, 0, 1), mouth, sample.facing); }
         else food.current?.nibble();
       }
+      if (action?.accessory === "magic-pocket" && accessoryMotion && preferences.rarePrank && paintedSelection && observed.decoded && wardrobePainter?.accessoryReady()) {
+        const opening = accessoryModule?.companionAccessoryAnchor(paintedSelection, "magic-pocket", "opening", accessoryMotion.accessory);
+        const point = opening && projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, opening);
+        const progress = clamp((performance.now() - began) / total, 0, 1);
+        if (point && pocketCapture && !pocketStashed && progress >= .2 && progress < .78) {
+          pocketDrawn = true; food.current?.nibble(pocketCapture.id, clamp((progress - .2) / .35, 0, 1), point, sample.facing);
+        }
+        if (point && !pocketEjected && progress >= .78 && (!pocketCapture || pocketStashed)) {
+          pocketEjected = true; food.current?.spawn(randomCompanionFood(pocketCapture?.kind), { x: point.x + sample.facing * 22, y: point.y - 8 }, undefined, true);
+        }
+        if (point && pocketCapture && pocketDrawn && !pocketStashed && progress >= .78) {
+          // Keep the original entity until this atomic swap. Interrupting the
+          // earlier shrink only restores its presentation through clearAction.
+          pocketStashed = food.current?.stash(pocketCapture.id) ?? false;
+          if (pocketStashed) { pocketEjected = true; food.current?.spawn(randomCompanionFood(pocketCapture.kind), { x: point.x + sample.facing * 22, y: point.y - 8 }, undefined, true); }
+        }
+      }
       data("state", status);
+      if (!action?.radio?.instrument) el.removeAttribute("data-instrument-reaction");
       if (action?.living && ["play", "sleep", "walk"].includes(status)) data("living", action.living); else el.removeAttribute("data-living");
       data("platform", support);
       data("journey", action ? String(began) : "");
@@ -711,6 +754,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = !paintedCell;
+      ensureWardrobe();
       const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending), accessoryMotion?.accessory);
       if (accessoryMotion && wardrobePainter?.accessoryReady() && observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && accessoryFront.current && !accessoryFront.current.hidden) accessoryWitnessed |= accessoryMotion.phase === "show" ? 2 : accessoryMotion.phase === "settle" ? 4 : 0;
       for (const [id, pending] of pendingSituations) {
@@ -1019,13 +1063,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const headroom = Math.min(y, ...platforms.filter(p => p.id !== support && p.y < y - 2 && x + size / 2 > p.x && x - size / 2 < p.x + p.width).map(p => y - p.y));
       return canStartCompanionAccessoryMotion({ id, roam: effective.roam, stable: supportedNow(), safe: Boolean(occupied && !occupied.manualOnly && !isHomeSupport(support) && !["hide", "control"].includes(occupied.kind ?? "")), headroom, edgeClearance: occupied ? Math.min(x - occupied.x, occupied.x + occupied.width - x) : 0, energy: brain.current.energy });
     };
-    const radioAllowed = () => preferences.enabled && radioPreferences.enabled && radioPreferences.volume > 0 && radioPreferences.react && effective.roam && document.hasFocus() && !document.hidden && !pause && !overlayActive && !overlayRef.current && !workspaceBusyRef.current && !blocked && !reduced && !["off", "soft"].includes(gfxMode()) && !premiereActive && !premiereBounce && !(premiereRef.current.cue?.generation && premiereRef.current.cue.phase !== "idle") && presence.phase === "active";
-    const radioSpace = (foodCount: number) => {
+    const musicAllowed = () => instrumentAudible && preferences.enabled && radioPreferences.react && effective.roam && document.hasFocus() && !document.hidden && !pause && !overlayActive && !overlayRef.current && !workspaceBusyRef.current && !blocked && !reduced && !["off", "soft"].includes(gfxMode()) && !premiereActive && !premiereBounce && !(premiereRef.current.cue?.generation && premiereRef.current.cue.phase !== "idle") && presence.phase === "active";
+    const radioAllowed = () => musicAllowed() && radioPreferences.enabled && radioPreferences.volume > 0;
+    const radioSpace = (foodCount: number, instrument = false) => {
       const occupied = supportById(support);
       const headroom = Math.min(y, ...platforms.filter(p => p.id !== support && p.y < y - 2 && x + size / 2 > p.x && x - size / 2 < p.x + p.width).map(p => y - p.y));
       const mealPriority = companionRadioFoodPriority({ feeding: effective.feeding, hunger: brain.current.hunger, availableFoods: foodCount });
       const busy = Boolean(action && !action.radio || pressed || keyboardHeld || placing || overlayDrag || overlayPlacing || hoverPetting || performance.now() < petUntil || homeJourney || pendingHomeRecall || returning || pendingMonth || waitingForSupport || afterPetLanding || restAfterLanding || mealPriority || brain.current.hunger >= .75 || brain.current.foodGoal || brain.current.intention || brain.current.episode);
-      return radioAllowed() && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && canStartCompanionRadioReaction({ enabled: preferences.enabled, react: radioPreferences.react, roam: effective.roam, focused: document.hasFocus(), hidden: document.hidden, reduced, graphics: gfxMode(), stable: supportedNow(), safe: Boolean(occupied && (!occupied.manualOnly || support === "companion-home") && !["hide", "control"].includes(occupied.kind ?? "")), busy, headroom, edgeClearance: occupied ? Math.min(x - occupied.x, occupied.x + occupied.width - x) : 0, energy: brain.current.energy });
+      return (instrument ? musicAllowed() : radioAllowed()) && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && canStartCompanionRadioReaction({ enabled: preferences.enabled, react: radioPreferences.react, roam: effective.roam, focused: document.hasFocus(), hidden: document.hidden, reduced, graphics: gfxMode(), stable: supportedNow(), safe: Boolean(occupied && (!occupied.manualOnly || support === "companion-home") && !["hide", "control"].includes(occupied.kind ?? "")), busy, headroom, edgeClearance: occupied ? Math.min(x - occupied.x, occupied.x + occupied.width - x) : 0, energy: brain.current.energy });
     };
     const releaseHold = () => { resetInertia(); const held = pressed; pressed = null; keyboardHeld = false; if (held && button.hasPointerCapture(held.id)) button.releasePointerCapture(held.id); };
     const startRest = () => {
@@ -1144,6 +1189,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const recallHome = (allowRevalidation = true) => {
       radioInbox.clear();
+      instrumentInbox.clear();
       pendingHomeRecall = undefined;
       if (hiding || pause || overlayActive || premiereActive) return;
       // Parked sleep disposes its subscription. Reconnect before using cached
@@ -1180,11 +1226,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     control.current = {
       place: () => { if (!hiding && !isDetailGuest() && preferences.drag) {
         radioInbox.clear();
+        instrumentInbox.clear();
         cancelHomeJourney();
         if (overlayActive) { overlayPlacing = true; el.dataset.placing = ""; setAnnouncement("빅타민을 놓을 곳을 한 번 눌러 주세요."); return; }
         interruptReturn(); stopHover(); awaitingAtX = false; pendingMonth = false; clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = false; placing = true; el.dataset.placing = "";
       } },
-      rest: () => { if (!hiding && preferences.sleep) { radioInbox.clear(); cancelHomeJourney(); interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
+      rest: () => { if (!hiding && preferences.sleep) { radioInbox.clear(); instrumentInbox.clear(); cancelHomeJourney(); interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
         if (!supportedNow()) { settle({ x, y }); if (reduced) startRest(); else restAfterLanding = true; }
         else startRest();
       } },
@@ -1192,6 +1239,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       radio: () => { if (!pause && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: getCompanionRadioToggleIntent() === "stop" ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
       feed: () => {
         radioInbox.clear();
+        instrumentInbox.clear();
         pendingHomeRecall = undefined;
         if (action?.accessory || action?.radio) { clearAction(); nextDecision = performance.now(); }
         const kind = randomCompanionFood(lastFood.current); lastFood.current = kind;
@@ -1254,6 +1302,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // and commit its actual duration/budget after selecting the takeoff.
       next = romp?.walk ?? next;
       clearAction(); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
+      pocketCapture = undefined; pocketDrawn = pocketStashed = pocketEjected = false;
+      if (next.accessory === "magic-pocket" && effective.rarePrank) {
+        const candidate = food.current?.foods().filter(item => Math.abs(item.y - y) < 75 && Math.abs(item.x - x) < 140).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
+        if (candidate) pocketCapture = { id: candidate.id, kind: candidate.kind };
+      }
       mealAnchored = false; mealWaited = 0;
       if (next.kind === "eat") for (const row of [1, 9]) spriteSources[row].forEach(src => requestSprite.current(src));
       sofaTravelActive = Boolean(passage?.safe); sofaFlightShape = passage?.safe ? { coefficient: passage.coefficient, curve: passage.curve } : undefined; if (sofaTravelActive) data("sofaFlight", "");
@@ -1262,6 +1315,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (next.living) data("living", next.living); else el.removeAttribute("data-living");
       if (next.kind === "sleep" && next.living === "cozy") spriteSources[next.cozySettled ? 40 : 35].forEach(src => requestSprite.current(src));
       if (next.episode) { data("episode", next.episode.kind); data("episodePhase", next.episode.phase); data("episodeVariant", next.episode.variant); if (next.episode.foodId) data("episodeFood", next.episode.foodId); }
+      if (next.episode?.reunion && next.episode.phase === "notice") { petUntil = now + 950; pendingCue = "play"; }
       if (next.attention) spriteSources[next.attention.kind === "reconsider" ? 26 : 1].forEach(src => requestSprite.current(src));
       if (next.kind === "play" && next.play) {
         // Decode just the contact and expression packets ahead of their beat.
@@ -1525,10 +1579,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const lostGoalId = food.current && [foodGoalId, action?.foodId].find(id => id && !food.current!.contains(id));
       if (lostGoalId) brain.current = recordCompanionEvent(brain.current, "food-lost");
       const interruptedFood = action?.foodId && !liveFoods.some(item => item.id === action!.foodId);
-      if (interruptedFood) {
+      if (interruptedFood && action && !["walk", "jump", "play"].includes(action.kind)) {
         // A folded/clipped/held snack still exists. Suspend its visual action
         // without treating a temporary unavailable support as a deleted meal.
-        clearAction(); if (!supportedNow() && !(homeOccluded && isHomeSupport(support))) settle({ x, y }); nextDecision = now + 300;
+        clearAction(Boolean(!lostGoalId && brain.current.episode?.kind === "meal")); if (!supportedNow() && !(homeOccluded && isHomeSupport(support))) settle({ x, y }); nextDecision = now + 300;
       }
       // A genuinely removed meal earns one finite recheck at the last seen
       // point. A held/occluded snack merely suspends, and midair feet finish
@@ -1549,14 +1603,20 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const offeredRadio = radioInbox.peek(radioState, now);
         const reaction = offeredRadio?.mood && radioSpace(availableFood.length) ? getCompanionRadioReaction({ mood: offeredRadio.mood, preferences: effective, habits: brain.current.habits, life: brain.current.life, energy: brain.current.energy }) : undefined;
         if (reaction) radioInbox.take(radioState, now);
-        const musical: RuntimeAction | undefined = reaction && reaction !== "ignore" && offeredRadio ? { kind: "look", radio: { generation: offeredRadio.generation, reaction, bpm: offeredRadio.bpm }, target: { x, y, platformId: support }, duration: COMPANION_RADIO_REACTION_MS } : undefined;
+        const played = !radioState.playing && radioSpace(availableFood.length, true) ? instrumentInbox.take(now) : undefined;
+        const instrumentReaction = played && getCompanionInstrumentReaction({ mood: played.pulse.mood, quality: played.quality, preferences: effective, life: brain.current.life, energy: brain.current.energy });
+        const musical: RuntimeAction | undefined = reaction && reaction !== "ignore" && offeredRadio ? { kind: "look", radio: { generation: offeredRadio.generation, reaction, bpm: offeredRadio.bpm }, target: { x, y, platformId: support }, duration: COMPANION_RADIO_REACTION_MS }
+          : instrumentReaction && instrumentReaction !== "ignore" && played ? { kind: "look", radio: { generation: 0, reaction: "sway", instrument: instrumentReaction, bpm: played.pulse.bpm }, target: { x, y, platformId: support }, duration: COMPANION_RADIO_REACTION_MS } : undefined;
         const equipped = wardrobe.current.equipped;
-        const safeTrick = !musical && equipped && effective.roam && wardrobePainter?.accessoryReady() && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && brain.current.activeMs >= accessoryReadyAt && !availableFood.length && brain.current.hunger < .75 && !brain.current.foodGoal && !brain.current.intention && !brain.current.episode && !returning && !pendingMonth && !reduced && !["off", "soft"].includes(gfxMode()) && (!isCompanionHat(equipped) || effective.jump)
+        const pocketAllowed = equipped === "magic-pocket" && effective.rarePrank && !companionRadioFoodPriority({ feeding: effective.feeding, hunger: brain.current.hunger, availableFoods: availableFood.length });
+        const specialAllowed = !["magic-pocket", "propeller-hat"].includes(equipped ?? "") || effective.rarePrank;
+        const safeTrick = !musical && equipped && specialAllowed && effective.roam && wardrobePainter?.accessoryReady() && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && brain.current.activeMs >= accessoryReadyAt && (!availableFood.length || pocketAllowed) && brain.current.hunger < .75 && !brain.current.foodGoal && !brain.current.intention && !brain.current.episode && !returning && !pendingMonth && !reduced && !["off", "soft"].includes(gfxMode()) && (!isCompanionHat(equipped) || effective.jump)
           && accessorySpace(equipped);
         const chosen: RuntimeAction = musical ?? (safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now));
         if (musical?.radio) {
           const rows = musical.radio.reaction === "bored" ? [10, 1] : musical.radio.reaction === "sway" ? [1, 9] : musical.radio.reaction === "bounce" ? [9] : [1];
-          rows.forEach(row => spriteSources[row].forEach(src => requestSprite.current(src)));
+          const instrumentRow = musical.radio.instrument === "tease" ? 28 : musical.radio.instrument === "encourage" ? 29 : undefined;
+          (instrumentRow === undefined ? rows : [instrumentRow]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src)));
         }
         if (safeTrick) { accessoryReadyAt = brain.current.activeMs + 45000; pendingCue = "play"; (isCompanionHat(equipped!) ? [3, 4] : [9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
         const chosenFood = availableFood.find(item => item.id === chosen.foodId);
@@ -1716,11 +1776,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           }
         } else if (action.kind === "look" && action.radio) {
           const mealFoods = companionRadioFoodPriority({ feeding: effective.feeding, hunger: brain.current.hunger, availableFoods: liveFoods.length }) ? accessibleCompanionFoods(liveFoods, [...platforms, ...landingPlatforms]).length : 0;
-          if (!radioState.playing || radioState.generation !== action.radio.generation || !radioSpace(mealFoods)) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
-          const musical = sampleCompanionRadioReaction(action.radio.reaction, age, action.radio.bpm); row = musical.row; frame = musical.frame;
+          if ((action.radio.instrument ? radioState.playing || !radioSpace(mealFoods, true) : !radioState.playing || radioState.generation !== action.radio.generation || !radioSpace(mealFoods))) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
+          const musical = sampleWorldMusic(action.radio, age); row = musical.row; frame = musical.frame;
+          if (action.radio.instrument) data("instrumentReaction", action.radio.instrument); else el.removeAttribute("data-instrument-reaction");
           data("radioReaction", action.radio.reaction); data("radioGeneration", String(action.radio.generation));
         } else if (action.kind === "look" && action.accessory) {
-          if (!effective.roam || action.accessory !== wardrobe.current.equipped || overlayActive || workspaceBusyRef.current || brain.current.foodGoal || liveFoods.length || !accessorySpace(action.accessory) || reduced || ["off", "soft"].includes(gfxMode())) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
+          if (!effective.roam || action.accessory !== wardrobe.current.equipped || overlayActive || workspaceBusyRef.current || brain.current.foodGoal || liveFoods.length && action.accessory !== "magic-pocket" || ["magic-pocket", "propeller-hat"].includes(action.accessory) && !effective.rarePrank || !accessorySpace(action.accessory) || reduced || ["off", "soft"].includes(gfxMode())) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
           const trick = sampleCompanionAccessoryMotion(action.accessory, age); row = trick.row; frame = trick.frame;
           data("accessoryTrick", action.accessory); data("accessoryBeat", trick.phase);
           if (!accessoryLanded && isCompanionHat(action.accessory) && p >= .6) { accessoryLanded = true; pendingCue = "land"; }
@@ -1740,6 +1801,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             petUntil = now + (reduced ? 400 : 1100);
           }
           if (completed.kind === "jump") pendingCue = "land";
+          if ((completed.kind === "jump" || completed.kind === "walk" && completed.pace === "scoot") && wardrobe.current.equipped && !["magic-pocket", "propeller-hat"].includes(wardrobe.current.equipped)
+            && brain.current.activeMs >= accessoryHabitAt && Math.random() < .25) {
+            accessoryHabitAt = brain.current.activeMs + 45000; accessoryReadyAt = Math.min(accessoryReadyAt, brain.current.activeMs + 1000);
+          }
           if (completed.accessory && (accessoryWitnessed & 6) === 6 && wardrobe.current.equipped === completed.accessory) queueSituation("accessory-trick", [9]);
           if (rested && isHomeSupport(support)) queueSituation("home-rested", [0, 9, 11, 12, 40]);
           if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
@@ -2079,7 +2144,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const sync = () => {
       graphicsMode = readGfxMode();
-      if (!radioAllowed()) { radioInbox.clear(); if (action?.radio) clearAction(); }
+      if (!radioAllowed()) { radioInbox.clear(); if (action?.radio && !(action.radio.instrument ? musicAllowed() : radioAllowed())) clearAction(); }
+      if (!musicAllowed()) instrumentInbox.clear();
       if (graphicsMode === "off" || blocked || document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cancelEpisode();
       if (blocked || document.hidden || overlayRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cardPlay.clear();
       if (syncPremiere()) return;
@@ -2175,7 +2241,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       else { presence.focus(!overlayActive && (homeJourney === "called" || document.hasFocus()), lastTick, !overlayActive && homeJourney === "called"); if (overlayActive) updateOverlayPerch(); else connectGeometry(); hearts.pause(overlayActive || presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); armPrelude(); }
     };
     const focusChanged = () => {
-      if (!document.hasFocus()) { radioInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); pointer = pointerAnchor = undefined; pointerStableSince = 0; }
+      if (!document.hasFocus()) { radioInbox.clear(); instrumentInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); pointer = pointerAnchor = undefined; pointerStableSince = 0; }
       if (premiereActive) return;
       if (pause) return;
       if (isDetailGuest()) { if (!document.hasFocus()) { cancelGuestInput(); paint(9, 0, "watch"); } lastTick = lastNeeds = lastCare = performance.now(); return; }
@@ -2250,8 +2316,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // A new hand owns a fresh grip, not the previous release's spring tail.
       resetInertia();
       if (action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, now - began).bodyLift;
-      if (action?.radio) y += sampleCompanionRadioReaction(action.radio.reaction, now - began, action.radio.bpm).bob;
+      if (action?.radio) y += sampleWorldMusic(action.radio, now - began).bob;
       radioInbox.clear();
+      instrumentInbox.clear();
       grip = { x: clamp(event.clientX - x + size / 2, 0, size), y: clamp(event.clientY - y + size, 0, size) };
       style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`);
       clearAction(); pressed = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), dx: event.clientX - x, dy: event.clientY - y, dragged: false, grabbed: false, cancelled: false };
@@ -2389,7 +2456,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       el.removeAttribute("data-pointer-focus");
       if (pause || overlayActive) return;
       const owns = event.key === "Escape" || event.key === "Enter" && preferences.petting || (event.key === " " || event.key.toLowerCase() === "p") && preferences.drag || event.key.toLowerCase() === "n" && preferences.sleep || keyboardHeld && event.key.startsWith("Arrow");
-      if (owns) radioInbox.clear();
+      if (owns) { radioInbox.clear(); instrumentInbox.clear(); }
       if (owns) { event.preventDefault(); event.stopPropagation(); }
       if (owns) { interruptReturn(); homeDeparture = undefined; }
       if (owns) stopHover();
@@ -2398,7 +2465,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
-      else if (event.key === " " && preferences.drag) { event.preventDefault(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; if (!keyboardHeld && action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, performance.now() - began).bodyLift; if (!keyboardHeld && action?.radio) y += sampleCompanionRadioReaction(action.radio.reaction, performance.now() - began, action.radio.bpm).bob; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (keyboardHeld) playCompanionSound("lift", preferencesRef.current); else { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
+      else if (event.key === " " && preferences.drag) { event.preventDefault(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; if (!keyboardHeld && action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, performance.now() - began).bodyLift; if (!keyboardHeld && action?.radio) y += sampleWorldMusic(action.radio, performance.now() - began).bob; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (keyboardHeld) playCompanionSound("lift", preferencesRef.current); else { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
       else if (event.key === "Escape") { event.preventDefault(); const moved = keyboardHeld && keyboardMoved; pendingMonth = false; keyboardHeld = false; keyboardMoved = false; placing = false; delete el.dataset.placing; settle({ x, y }); if (moved) transferred(); }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
@@ -2803,7 +2870,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const spriteDecoded = () => { if (!pause) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); };
     const workspaceChanged = () => {
-      if (workspaceBusyRef.current) { radioInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); stopHover(); cardPlay.clear(); return; }
+      if (workspaceBusyRef.current) { radioInbox.clear(); instrumentInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); stopHover(); cardPlay.clear(); return; }
       if (pause || overlayActive || hiding || premiereActive) return;
       offGeometry?.(); offGeometry = undefined; connectGeometry();
       cancelAnimationFrame(raf); clearTimeout(timer);
@@ -2865,16 +2932,37 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); window.addEventListener("click", click, true);
     const radioChanged = () => {
       radioState = getCompanionRadioSnapshot();
-      if (action?.radio && (!radioState.playing || action.radio.generation !== radioState.generation || !radioAllowed())) { clearAction(); nextDecision = performance.now() + 60; }
+      if (action?.radio && (action.radio.instrument ? radioState.playing || !musicAllowed() : !radioState.playing || action.radio.generation !== radioState.generation || !radioAllowed())) { clearAction(); nextDecision = performance.now() + 60; }
       radioInbox.offer(radioState, performance.now(), radioAllowed());
       if (!stopped && radioAllowed()) { cancelAnimationFrame(raf); clearTimeout(timer); schedule(); }
     };
     const radioPreferencesChanged = () => {
       radioPreferences = getCompanionRadioPreferences();
-      if (!radioAllowed()) { radioInbox.clear(); if (action?.radio) { clearAction(); nextDecision = performance.now() + 60; } }
+      if (!radioAllowed()) { radioInbox.clear(); if (action?.radio && !(action.radio.instrument ? musicAllowed() : radioAllowed())) { clearAction(); nextDecision = performance.now() + 60; } }
+      if (!musicAllowed()) instrumentInbox.clear();
       if (!stopped && !pause && presence.phase === "active") { cancelAnimationFrame(raf); clearTimeout(timer); schedule(); }
     };
     const offRadio = subscribeCompanionRadio(radioChanged), offRadioPreferences = subscribeCompanionRadioPreferences(radioPreferencesChanged);
+    const instrumentPlayed = (event: Event) => {
+      const now = performance.now();
+      instrumentInbox.offer((event as CustomEvent<CompanionInstrumentPulse>).detail, now, musicAllowed() && !radioState.playing);
+      if (action?.radio?.instrument) {
+        const played = instrumentInbox.take(now);
+        if (played) {
+          const reaction = getCompanionInstrumentReaction({ mood: played.pulse.mood, quality: played.quality, preferences: effective, life: brain.current.life, energy: brain.current.energy });
+          if (reaction === "ignore") { clearAction(); nextDecision = now + 100; }
+          else { action.radio.instrument = reaction; (reaction === "tease" ? [28] : reaction === "encourage" ? [29] : [1, 9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
+        }
+      }
+      if (!stopped && musicAllowed() && !radioState.playing) { cancelAnimationFrame(raf); clearTimeout(timer); schedule(); }
+    };
+    window.addEventListener(COMPANION_INSTRUMENT_EVENT, instrumentPlayed);
+    const instrumentSoundChanged = () => {
+      instrumentAudible = soundEnabled() && soundVolume() > 0;
+      if (!instrumentAudible) { instrumentInbox.clear(); if (action?.radio?.instrument) { clearAction(); nextDecision = performance.now() + 60; if (!stopped && !pause) schedule(); } }
+    };
+    const instrumentSoundStored = (event: StorageEvent) => { if (event.key === null || event.key === "vic.sound" || event.key === "vic.soundVol") instrumentSoundChanged(); };
+    window.addEventListener("vic:sound", instrumentSoundChanged); window.addEventListener("storage", instrumentSoundStored);
     window.addEventListener("blur", focusChanged); window.addEventListener("focus", focusChanged);
     window.addEventListener("vic:companion-overlay", sync);
     window.addEventListener("vic:companion-workspace", workspaceChanged);
@@ -2904,7 +2992,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     return () => {
       offHabits();
       offLife();
-      offRadio(); offRadioPreferences(); radioInbox.clear();
+      offRadio(); offRadioPreferences(); radioInbox.clear(); instrumentInbox.clear(); window.removeEventListener(COMPANION_INSTRUMENT_EVENT, instrumentPlayed);
+      window.removeEventListener("vic:sound", instrumentSoundChanged); window.removeEventListener("storage", instrumentSoundStored);
       refreshWardrobe.current = () => {}; situationSink.current = () => {}; pendingSituations.clear(); wardrobePainter?.clear();
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;

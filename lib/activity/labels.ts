@@ -627,10 +627,10 @@ export const ACT: Record<string, TargetLabel> = {
   },
   // 빅타민 — 자동 행동이 아니라 사람이 고른 설정·직접 교감만 기록한다.
   // 이 사전은 저장 allowlist도 겸하므로 옵션은 화면의 고정 값만 등록한다.
-  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "프로필", sound: "소리" } },
+  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "기본", sound: "소리" } },
   // Local collection contents never enter telemetry. Only these fixed button
   // categories are counted; the strict storage branch below rejects item IDs.
-  "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장" } },
+  "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장", settings: "환경설정" } },
   "companion-collection-category": { name: "빅타민 도감 종류", area: "설정", opts: { food: "냠냠 도감", behavior: "재롱", moment: "특별한 순간" } },
   "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "냠냠 도감", behavior: "재롱", moment: "특별한 순간" } },
   "companion-collection-page": { name: "빅타민 도감 넘기기", area: "설정", opts: { prev: "이전", next: "다음" } },
@@ -653,6 +653,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-radio-play": { name: "빅타민 라디오 재생", area: "빅타민" },
   "companion-radio-next": { name: "빅타민 라디오 다음 곡", area: "설정" },
   "companion-radio-stop": { name: "빅타민 라디오 정지", area: "설정" },
+  "companion-radio-source": { name: "빅타민 라디오 음악 출처", area: "설정" },
+  "companion-radio-license": { name: "빅타민 라디오 음악 이용 조건", area: "설정" },
   "companion-wardrobe-preview": { name: "빅타민 장신구 미리보기", area: "설정" },
   "companion-enabled": { name: "AI 빅타민", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-roam": { name: "빅타민 돌아다니기", area: "설정", opts: { on: "켜기", off: "끄기" } },
@@ -662,6 +664,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-card-prank": { name: "빅타민 일정 기울이기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-hide": { name: "빅타민 숨바꼭질", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-panel-prank": { name: "빅타민 패널 자리 장난", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-rare-prank": { name: "빅타민 희귀 소품 장난", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-drag-enabled": { name: "빅타민 집어 옮기기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-petting-enabled": { name: "빅타민 쓰다듬기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-feeding-enabled": { name: "빅타민 밥주기", area: "설정", opts: { on: "켜기", off: "끄기" } },
