@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "work": "104",
+  "grid": {
+    "columns": 4,
+    "rows": 2,
+    "count": 8
+  },
+  "keys": [
+    "ask-petting",
+    "lean-nuzzle",
+    "paper-knead-left",
+    "paper-nest-right",
+    "cheer-tangled",
+    "cheer-peek",
+    "cheer-tidy",
+    "doze-curl"
+  ],
+  "sources": [
+    {
+      "id": "CURRENT101-CLEAN",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-교감살림응원\\고정입력\\기본101.png",
+      "sha256": "9222319BBA8FC59F76832F5737737AF68E65D917FD9D7C10EB0F037C67186F69",
+      "kind": "approved_parent"
+    },
+    {
+      "id": "SELECTED099-CLEAN0",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-교감살림응원\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "kind": "approved_parent"
+    },
+    {
+      "id": "CURRENT101-CHEER",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-교감살림응원\\고정입력\\응원101.png",
+      "sha256": "B34864F98DB0A82CABC172F6E756FBB437C2728D55D962505407DD4B12F68046",
+      "kind": "approved_parent"
+    },
+    {
+      "id": "REF-016",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "kind": "original"
+    },
+    {
+      "id": "REF-017",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\02_표정\\스크린샷 2026-10-06 025426.png",
+      "sha256": "F7680AE6BE7C38498A4C08EB2746D7329C714B018C47CAF2C71C2EAE4A0BAAE5",
+      "kind": "original"
+    }
+  ],
+  "registration": {
+    "physicalCell": 192,
+    "logicalCell": 80,
+    "physicalFoot": 180,
+    "logicalFoot": 75,
+    "referenceBodyWidth": 130,
+    "wholePoseIsotropicOnly": true
+  },
+  "newGenerationApproval": "User authorized additional poses in existing style; no new result visual approval exists before delivery.",
+  "privateEvidence": "Exact raw human turn, timestamps, full contract/plan and scope-local capture remain outside Git. Existing conflicting global historical capture remains untouched."
+}

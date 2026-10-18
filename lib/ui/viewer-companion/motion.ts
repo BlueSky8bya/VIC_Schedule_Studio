@@ -140,7 +140,7 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const dx = first ? 0 : x - previousX;
       const dy = first ? 0 : y - previousY;
       const seconds = first ? 0 : Math.max(0, now - previousNow) / 1000;
-      const attention = (row === 1 || row === 26) && (input.status === "look" || input.status === "sniff")
+      const attention = ((row === 1 || row === 26) && (input.status === "look" || input.status === "sniff") || [33, 34, 38].includes(row) && input.status === "play")
         && Math.abs(dx) < .05 && Math.abs(dy) < .05
         && input.attention && (input.attention.direction === -1 || input.attention.direction === 1) && Number.isFinite(input.attention.elevation)
         ? input.attention : undefined;

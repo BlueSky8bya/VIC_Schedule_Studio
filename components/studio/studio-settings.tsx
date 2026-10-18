@@ -26,9 +26,11 @@ import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
 import { Clock3 } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import { loadCompanionCare, resetCompanionHabits, subscribeCompanionHabits } from "@/lib/ui/viewer-companion/care";
+import { loadCompanionCare, resetCompanionHabits, subscribeCompanionHabits, subscribeCompanionLife, type CompanionMemory } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
 import { companionHabitDescriptions, COMPANION_HABITS_EMPTY } from "@/lib/ui/viewer-companion/habit-summary";
+import { summarizeCompanionLife, type CompanionLifeReason } from "@/lib/ui/viewer-companion/life";
+import { CompanionFruit } from "@/components/poster/viewer-companion/companion-fruit";
 import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
 
@@ -252,16 +254,45 @@ const companionToggleActions: Record<CompanionToggle, string> = {
   drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled", learnFromYou: "companion-learning-enabled"
 };
 
+const companionLifeReasons: Record<CompanionLifeReason, string> = {
+  "favorite-food": "좋아하는 과일을 먹으며 익숙한 맛을 즐겼어요.",
+  "new-flavor": "새로운 과일 맛을 알아가고 있어요.",
+  "kind-touch": "부드럽게 쓰다듬어 준 느낌이 남아 있어요.",
+  "play-together": "함께 놀며 장난기가 조금 자랐어요.",
+  "food-mishap": "밥 먹다 놀란 뒤 조금 신중해졌어요.",
+  "cozy-rest": "편히 쉬며 마음이 느긋해졌어요.",
+  "discovered-taste": "여러 번 맛보며 마음에 드는 과일을 찾았어요.",
+  "variety": "다른 맛도 골고루 맛보고 있어요.",
+  "reassured": "놀란 뒤 다정한 교감으로 다시 편안해졌어요.",
+  "rested": "푹 쉬고 나니 기운이 돌아왔어요."
+};
+
+/** Qualitative glimpses of this local pet, never personality scores or a
+ * reconstruction of a person's behavior or its instantaneous needs. */
+function companionTraitDescriptions(life: ReturnType<typeof summarizeCompanionLife>) {
+  return [
+    { label: "교감", description: life.social >= .65 ? "곁에서 지내는 게 좋아요" : life.social <= .35 ? "조금 떨어져 지켜봐요" : "조금씩 가까워지는 중" },
+    { label: "놀이", description: life.play >= .65 ? "장난칠 거리를 찾아요" : life.play <= .35 ? "느긋하게 쉬어 가요" : "놀고 쉬며 균형을 잡아요" },
+    { label: "호기심", description: life.curiosity >= .65 ? "새로운 곳이 궁금해요" : life.curiosity <= .35 ? "익숙한 곳을 살펴요" : "주변을 천천히 살펴요" },
+    { label: "편안함", description: life.comfort >= .65 ? "편안한 리듬으로 지내요" : life.comfort <= .35 ? "조심스럽게 살피는 중" : "편한 리듬을 찾아가는 중" }
+  ];
+}
+
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
 function CompanionSettings({ preferences, onChange }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void }) {
   const [tab, setTab] = useState<CompanionTab>("motion");
-  const [habits, setHabits] = useState({ ...DEFAULT_COMPANION_HABITS });
+  const [care, setCare] = useState<CompanionMemory | null>(null);
   useEffect(() => {
-    setHabits(loadCompanionCare().habits);
-    return subscribeCompanionHabits(setHabits);
+    setCare(loadCompanionCare());
+    // Semantic local changes only: no timer, frame subscription or server read.
+    const stopHabits = subscribeCompanionHabits(habits => setCare({ ...loadCompanionCare(), habits }));
+    const stopLife = subscribeCompanionLife(life => setCare({ ...loadCompanionCare(), life }));
+    return () => { stopHabits(); stopLife(); };
   }, []);
   const id = useId();
-  const habitDescriptions = companionHabitDescriptions(habits);
+  const habitDescriptions = companionHabitDescriptions(care?.habits ?? DEFAULT_COMPANION_HABITS);
+  const life = care ? summarizeCompanionLife(care.life) : null;
+  const traits = life ? companionTraitDescriptions(life) : [];
   const nav = useRef<HTMLDivElement>(null);
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
     <div className="role-help-haptics" key={key}>
@@ -333,6 +364,23 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>
+      <section aria-labelledby={`${id}-traits-title`} className="rhh-habit-card rhh-trait-card">
+        <div className="rhh-habit-head">
+          <h3 id={`${id}-traits-title`}><RowLabel icon={<Sparkles size={15} />} tone="leaf">빅타민 특성</RowLabel></h3>
+        </div>
+        <p className="rhh-trait-intro">경험과 함께 지낸 시간에 따라 조금씩 달라져요.</p>
+        <div className="rhh-trait-favorite">
+          <span>요즘 좋아하는 과일</span>
+          {life && <CompanionFruit kind={life.favoriteFood} />}
+          <strong>{life?.favoriteLabel ?? "취향을 알아가는 중"}</strong>
+        </div>
+        <p className="rhh-trait-reason"><span>최근 남은 경험</span>{life?.recentReason ? companionLifeReasons[life.recentReason] : "아직은 여러 맛과 놀이를 알아가는 중이에요."}</p>
+        {traits.length > 0 && <dl className="rhh-trait-list">
+          {traits.map(trait => <div className="rhh-trait-item" key={trait.label}><dt>{trait.label}</dt><dd>{trait.description}</dd></div>)}
+        </dl>}
+        <p className="rhh-trait-note">함께한 경험을 짧게 풀어 쓴 모습이에요. 이 브라우저 안에서 기억하고, 앞으로의 경험에 따라 다시 달라져요.</p>
+        {!preferences.learnFromYou && <p className="rhh-habit-paused">배우기를 다시 켜면 취향과 특성이 이어서 자라요.</p>}
+      </section>
       <section aria-labelledby={`${id}-habits-title`} className="rhh-habit-card">
         <div className="rhh-habit-head">
           <h3 id={`${id}-habits-title`}><RowLabel icon={<BookA size={15} />} tone="leaf">배운 습관</RowLabel></h3>
@@ -345,6 +393,7 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
         <div className="rhh-habit-actions">
           <button aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); hapticTick(); playSfx("tab"); }} type="button">초기화</button>
         </div>
+        <p className="rhh-trait-reset-note">초기화하면 배운 습관과 경험으로 달라진 특성을 함께 되돌려요.</p>
       </section>
     </div>
   </>;

@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { companionTapReaction, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
+import { companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
 import type { CompanionPlay } from "@/lib/ui/viewer-companion/brain";
-import { companionPlayDuration, COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
+import { companionPlayDuration, COMPANION_PLAY_TIMING, COMPANION_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 describe("finite authored companion play", () => {
   const kinds: CompanionPlay[] = ["tumble", "slip-tumble", "bump", "slip", "bonk-sad", "bonk-tears", "celebrate", "groom", "pounce", "bow", "dizzy"];
+  const livingGestures = [
+    { kind: "ask-petting", duration: 2150, rows: [33, 33], ends: [1500, 2150], finalRow: 33, finalBeat: "checking" },
+    { kind: "lean-nuzzle", duration: 1950, rows: [34, 9], ends: [1400, 1950], finalRow: 9, finalBeat: "checking" },
+    { kind: "cozy-nest", duration: 3200, rows: [35, 36, 40], ends: [1500, 2350, 3200], finalRow: 40, finalBeat: "checking" },
+    { kind: "cheer-rehearsal", duration: 3800, rows: [9, 37, 38, 39, 9], ends: [750, 1600, 2250, 3200, 3800], finalRow: 9, finalBeat: "checking" },
+    { kind: "doze-curl", duration: 2800, rows: [40], ends: [2800], finalRow: 40, finalBeat: "play" },
+  ] as const;
+  const allKinds = [...kinds, ...livingGestures.map(gesture => gesture.kind)];
   const shakeRecoveries: { kind: CompanionPlay; start: number; duration: number }[] = [
     { kind: "dizzy", start: 520, duration: 1320 },
     { kind: "tumble", start: 1360, duration: 2160 },
@@ -12,7 +20,7 @@ describe("finite authored companion play", () => {
   ];
   const shakesHead = (kind: CompanionPlay) => shakeRecoveries.some(recovery => recovery.kind === kind);
   it("checks every authored play kind instead of silently skipping a new finite clip", () => {
-    expect(new Set(kinds)).toEqual(new Set(Object.keys(COMPANION_PLAY_TIMING)));
+    expect(new Set(allKinds)).toEqual(new Set(Object.keys(COMPANION_PLAY_TIMING)));
   });
   it.each(kinds)("%s terminates, preserves its support and returns upright", kind => {
     for (let i = 0; i <= 100; i++) {
@@ -128,7 +136,42 @@ describe("finite authored companion play", () => {
     }
   });
   it("reduced motion has no lift/rotation or rolling", () => {
-    for (const kind of kinds) expect(sampleCompanionPlay(kind, .3, true)).toMatchObject({ lift: 0, lean: 0, shift: 0, compression: 0, beat: "recover" });
+    for (const kind of allKinds) expect(sampleCompanionPlay(kind, .3, true)).toMatchObject({ lift: 0, lean: 0, shift: 0, compression: 0, beat: "recover" });
+  });
+  it.each(livingGestures)("$kind presents its complete finite sequence on the same support", ({ kind, duration, rows, ends, finalRow, finalBeat }) => {
+    expect(companionPlayDuration(kind)).toBe(duration);
+    expect(companionPlayDuration(kind, true)).toBe(650);
+    let start = 0;
+    for (let index = 0; index < rows.length; index++) {
+      expect(sampleCompanionPlay(kind, start / duration).row).toBe(rows[index]);
+      expect(sampleCompanionPlay(kind, (ends[index] - .001) / duration).row).toBe(rows[index]);
+      start = ends[index];
+    }
+    const samples = Array.from({ length: 201 }, (_, index) => sampleCompanionPlay(kind, index / 200));
+    for (const pose of samples) {
+      expect(rows).toContain(pose.row);
+      expect(pose.phase).toBeGreaterThanOrEqual(0); expect(pose.phase).toBeLessThanOrEqual(1);
+      expect(Math.abs(pose.lift)).toBeLessThanOrEqual(3); expect(Math.abs(pose.lean)).toBeLessThanOrEqual(7);
+      expect(pose.shift).toBe(0);
+      expect(pose.compression).toBeGreaterThanOrEqual(0); expect(pose.compression).toBeLessThanOrEqual(.045);
+    }
+    expect(samples.at(-1)).toEqual({ row: finalRow, phase: 1, beat: finalBeat, lift: 0, lean: 0, shift: 0, compression: 0 });
+    expect(sampleCompanionPlay(kind, 2)).toEqual(samples.at(-1));
+    for (const progress of [0, .2, .5, .8, 1]) expect(sampleCompanionPlay(kind, progress, true)).toMatchObject({ lift: 0, lean: 0, shift: 0, compression: 0 });
+  });
+  it("kneads three finite cycles before nesting, quiet sleep and the existing wake beat", () => {
+    for (const age of [250, 750, 1250]) expect(sampleCompanionPlay("cozy-nest", age / 3200)).toMatchObject({ row: 35, phase: .5 });
+    expect(sampleCompanionPlay("cozy-nest", 499.99 / 3200).phase).toBeGreaterThan(.99);
+    expect(sampleCompanionPlay("cozy-nest", 500.01 / 3200).phase).toBeLessThan(.01);
+    const duration = 12000, wakeAt = duration - COMPANION_TIMING.sleepWake;
+    expect(sampleCompanionCozySleep(0, duration)).toMatchObject({ row: 35, dreaming: false });
+    expect(sampleCompanionCozySleep(1500, duration)).toMatchObject({ row: 36, dreaming: false });
+    expect(sampleCompanionCozySleep(3200, duration)).toMatchObject({ row: 40, phase: 0, dreaming: true });
+    expect(sampleCompanionCozySleep(wakeAt - .001, duration)).toMatchObject({ row: 40, dreaming: true });
+    expect(sampleCompanionCozySleep(wakeAt, duration)).toMatchObject({ row: 12, phase: 0, dreaming: false });
+    expect(sampleCompanionCozySleep(duration, duration)).toMatchObject({ row: 12, phase: 1, dreaming: false, lift: 0, lean: 0, shift: 0, compression: 0 });
+    expect(sampleCompanionCozySleep(0, duration, true)).toMatchObject({ row: 40, dreaming: true });
+    expect(sampleCompanionCozySleep(0, duration, false, true)).toMatchObject({ row: 11, dreaming: true, lift: 0, lean: 0, shift: 0, compression: 0 });
   });
   it("a deliberate short click has context; dragging/cancel/holds never bonk", () => {
     expect(companionTapReaction({ elapsed: 100, moved: 2, cancelled: false, recentMishap: false })).toBe("bonk-tears");

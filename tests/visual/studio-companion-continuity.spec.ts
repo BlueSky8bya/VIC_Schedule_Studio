@@ -10,7 +10,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 type Role = "owner" | "developer";
 type Surface = "studio" | "viewer";
 type Point = { x: number; y: number };
-type Frame = { at: number; count: number; visible: boolean; surface: Surface; point: Point | null; platform: string; bounds: { left: number; top: number; right: number; bottom: number } | null; viewport: { width: number; height: number } };
+type Frame = { at: number; count: number; visible: boolean; surface: Surface; point: Point | null; platform: string; state: string; homeJourney: boolean; bounds: { left: number; top: number; right: number; bottom: number } | null; viewport: { width: number; height: number } };
 type ProbeWindow = Window & { companionContinuity: { frames: Frame[]; raf: number } };
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -90,7 +90,7 @@ async function startProbe(page: Page) {
     const began = performance.now(), probe: ProbeWindow["companionContinuity"] = { frames: [], raf: 0 };
     const frame = () => {
       const nodes = document.querySelectorAll<HTMLElement>(".vc-companion"), node = nodes[0], r = node?.getBoundingClientRect();
-      probe.frames.push({ at: performance.now() - began, count: nodes.length, visible: Boolean(node && !node.hidden && getComputedStyle(node).display !== "none"), surface: document.querySelector(".viewer-fullscreen") ? "viewer" : "studio", point: r ? { x: r.left + r.width / 2, y: r.bottom } : null, platform: node?.dataset.platform ?? "", bounds: r ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : null, viewport: { width: innerWidth, height: innerHeight } });
+      probe.frames.push({ at: performance.now() - began, count: nodes.length, visible: Boolean(node && !node.hidden && getComputedStyle(node).display !== "none"), surface: document.querySelector(".viewer-fullscreen") ? "viewer" : "studio", point: r ? { x: r.left + r.width / 2, y: r.bottom } : null, platform: node?.dataset.platform ?? "", state: node?.dataset.state ?? "", homeJourney: Boolean(node?.hasAttribute("data-home-journey")), bounds: r ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : null, viewport: { width: innerWidth, height: innerHeight } });
       probe.raf = requestAnimationFrame(frame);
     };
     (window as unknown as ProbeWindow).companionContinuity = probe; probe.raf = requestAnimationFrame(frame);
@@ -137,7 +137,9 @@ async function assertCard(page: Page, surface: Surface, id: string, u: number) {
 }
 async function assertHome(page: Page, kind: "seat" | "floor") {
   await expect(home(page)).toBeVisible(); await expect(home(page)).toHaveCount(1);
-  await expect(pet(page)).toHaveAttribute("data-platform", kind === "seat" ? "companion-home" : /^companion-home-floor(?:-\d+)?$/);
+  // A distant native recall follows its finite real floor/ledge route. Its
+  // arrival budget is 20s; ordinary local assertions retain the default 5s.
+  await expect(pet(page)).toHaveAttribute("data-platform", kind === "seat" ? "companion-home" : /^companion-home-floor(?:-\d+)?$/, { timeout: 20000 });
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   await expect.poll(async () => {
     const y = await home(page).evaluate((node, kind) => kind === "seat" ? node.querySelector(".vc-home-cushion")!.getBoundingClientRect().top : node.querySelector(".vc-home-floor")!.getBoundingClientRect().bottom, kind);
@@ -172,8 +174,10 @@ for (const role of ["owner", "developer"] as const) test(`${role} native viewer 
 });
 
 test("the actual cushion and room floor stay at home across owner viewer transitions", async ({ page }) => {
+  test.setTimeout(60000);
   await setup(page, "owner"); await home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).focus();
-  await home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).press("Enter"); await assertHome(page, "seat"); await startProbe(page);
+  await startProbe(page);
+  await home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).press("Enter"); await assertHome(page, "seat");
   for (const kind of ["seat", "floor"] as const) {
     if (kind === "floor") {
       const at = await home(page).evaluate(node => { const r = node.querySelector(".vc-home-floor")!.getBoundingClientRect(); return { x: r.left + r.width * .3, y: r.bottom }; });
@@ -186,9 +190,10 @@ test("the actual cushion and room floor stay at home across owner viewer transit
 });
 
 test("a folded home resident waits invisibly through owner preview and recovers only when the actual panel reopens", async ({ page }) => {
+  test.setTimeout(60000);
   await setup(page, "owner");
   const cushion = home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
-  await cushion.focus(); await cushion.press("Enter"); await assertHome(page, "seat"); await startProbe(page);
+  await cushion.focus(); await startProbe(page); await cushion.press("Enter"); await assertHome(page, "seat");
   await page.getByRole("button", { name: "패널 접기", exact: true }).click(); await settle(page);
   await expect(home(page)).toHaveCount(0); await expect(pet(page)).toHaveCount(1); await expect(pet(page)).toBeHidden();
   await enterViewer(page, "owner");

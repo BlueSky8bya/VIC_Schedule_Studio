@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import sprites from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
+import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
 
 describe("one high-resolution pipeline for every companion action", () => {
@@ -54,6 +55,21 @@ describe("one high-resolution pipeline for every companion action", () => {
     expect(companionSpriteMetadata.rows[32]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + 192 + column));
     expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
     expect(play.atlases[12].src).toBe("/companion/hd/victamin-play-32-throw-big-eyes-v1-body-outline-v1.webp");
+  });
+});
+
+describe("registered living keys", () => {
+  it("maps all eight poses to one packet without altering prior actions", () => {
+    expect(companionSpriteMetadata.rows).toHaveLength(41);
+    expect(living.rows).toHaveLength(8);
+    for (let row = 33; row < 41; row++) {
+      const index = companionSpriteMetadata.rows[row][0], selected = selectCompanionSprite(index, row, 0);
+      expect(companionSpriteSources(row)).toEqual([living.atlases[0].src]);
+      expect(selected.index).toBe(row - 33);
+      expect(selected.frame).toMatchObject({ x: living.frames[row - 33].x, y: 5 });
+      expect(selected.grid).toBe(8); expect(selected.gridRows).toBe(2);
+      expect(selected.src).toBe(living.atlases[0].src);
+    }
   });
 });
 

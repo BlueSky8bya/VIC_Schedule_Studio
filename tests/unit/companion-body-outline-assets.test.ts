@@ -27,6 +27,10 @@ type Receipt = {
 };
 const json = <T,>(name: string): T => JSON.parse(readFileSync(name, "utf8")) as T;
 const receipt = json<Receipt>(`${run}/패킹파생기록.json`);
+//101's receipt remains responsible for its exact33-row/512-slot prefix. The
+// living extension is append-only and has separate source/byte verification.
+const protectedRows = companionSpriteMetadata.rows.slice(0, 33);
+const protectedFrames = companionSpriteMetadata.frames.slice(0, 512);
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 function alphaHash(bytes: Buffer) { const alpha = Buffer.alloc(bytes.length / 4); for (let i = 0; i < alpha.length; i++) alpha[i] = bytes[i * 4 + 3]; return hash(alpha); }
 function crop(bytes: Buffer, width: number, height: number, box: Source["keys"][number]["box"]) {
@@ -65,7 +69,13 @@ describe("101 complete body/outline style activation", () => {
     for (const family of ["hd", "play"] as const) expect(readFileSync(`lib/ui/viewer-companion/${family}-motion-sprite.json`).equals(readFileSync(receipt.stagedMetadata[family]))).toBe(true);
     const beforeHd = json<{ rows: number[][] }>(receipt.baseline.hd.path), beforePlay = json<{ rows: number[][] }>(receipt.baseline.play.path);
     expect(hd.rows).toEqual(beforeHd.rows); expect(play.rows).toEqual(beforePlay.rows);
-    expect(companionSpriteMetadata.frames).toHaveLength(512); expect(companionSpriteMetadata.rows).toHaveLength(33);
+    expect(protectedFrames).toHaveLength(512); expect(protectedRows).toHaveLength(33);
+    expect(protectedRows).toEqual([...hd.rows, ...play.rows.map(row => row.map(index => index + hd.frames.length))]);
+    expect(protectedFrames).toEqual([...hd.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + hd.atlases.length }))]);
+    for (const row of companionSpriteMetadata.rows.slice(33)) {
+      expect(row.length).toBeGreaterThan(0);
+      expect(row.every(index => Number.isInteger(index) && index >= 512 && index < companionSpriteMetadata.frames.length)).toBe(true);
+    }
     expect(receipt.coverage).toMatchObject({ physicalSlots: 512, actualActionReferencedSlots: 450, liveKeyCount: 71, allSlotsHaveNewSource: true, fallbackOldRgbSlots: 0 });
     expect(receipt.slots).toHaveLength(512); expect(receipt.slots.filter(slot => slot.activeLive)).toHaveLength(450);
     for (const slot of receipt.slots) {

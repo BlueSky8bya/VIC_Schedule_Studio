@@ -1,14 +1,16 @@
 import { DEFAULT_COMPANION_HABITS, normalizeCompanionHabits, type CompanionHabits } from "./habits";
+import { createCompanionLife, DEFAULT_COMPANION_LIFE, normalizeCompanionLife, resetCompanionLife, summarizeCompanionLife, type CompanionLife } from "./life";
 
 /** Device-local needs only. No identity, schedule text, dates or elapsed-away
  * timestamp is retained: an absent owner never incurs hunger or care debt. */
 export type CompanionCare = { hunger: number; affection: number; energy: number; curiosity: number };
-export type CompanionMemory = CompanionCare & { habits: CompanionHabits };
-type CompanionCareInput = CompanionCare & { habits?: CompanionHabits };
+export type CompanionMemory = CompanionCare & { habits: CompanionHabits; life: CompanionLife };
+type CompanionCareInput = CompanionCare & { habits?: CompanionHabits; life?: CompanionLife };
 export const COMPANION_CARE_KEY = "vic.viewerCompanionCare";
 export const COMPANION_HABITS_EVENT = "vic:companion-habits";
+export const COMPANION_LIFE_EVENT = "vic:companion-life";
 export const DEFAULT_COMPANION_CARE: Readonly<CompanionCare> = Object.freeze({ hunger: .58, affection: .3, energy: .8, curiosity: .7 });
-export const DEFAULT_COMPANION_MEMORY: Readonly<CompanionMemory> = Object.freeze({ ...DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_HABITS });
+export const DEFAULT_COMPANION_MEMORY: Readonly<CompanionMemory> = Object.freeze({ ...DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_HABITS, life: DEFAULT_COMPANION_LIFE });
 export const COMPANION_FULL_THRESHOLD = .35;
 const fields = ["hunger", "affection", "energy", "curiosity"] as const;
 
@@ -20,46 +22,81 @@ export function normalizeCompanionCare(value: unknown, base: Readonly<CompanionC
   return next;
 }
 type CareStorage = Pick<Storage, "getItem" | "setItem">;
-const copyMemory = (memory: CompanionMemory): CompanionMemory => ({ ...memory, habits: { ...memory.habits } });
+const copyMemory = (memory: CompanionMemory): CompanionMemory => ({ ...memory, habits: { ...memory.habits }, life: normalizeCompanionLife(memory.life) });
 const freshMemory = (): CompanionMemory => copyMemory(DEFAULT_COMPANION_MEMORY);
 const nextGeneration = (generation: number) => Math.min(Number.MAX_SAFE_INTEGER, generation + 1);
 
-function parseMemory(raw: string | null): CompanionMemory {
-  try {
-    const value: unknown = raw ? JSON.parse(raw) : null;
-    if (!value || typeof value !== "object" || Array.isArray(value) || !("version" in value) || (value.version !== 1 && value.version !== 2)) return freshMemory();
-    return { ...normalizeCompanionCare(value), habits: value.version === 2 && "habits" in value ? normalizeCompanionHabits(value.habits) : { ...DEFAULT_COMPANION_HABITS } };
-  } catch { return freshMemory(); }
-}
+const lifeSignature = (life: CompanionLife) => {
+  const summary = summarizeCompanionLife(life);
+  // Notify at the exact qualitative boundaries shown by the shared traits
+  // card. A numeric bucket can otherwise miss a visible category transition.
+  const category = (value: number) => value <= .35 ? "low" : value >= .65 ? "high" : "balanced";
+  return JSON.stringify([life.generation, summary.favoriteFood, ...[summary.play, summary.comfort, summary.social, summary.curiosity].map(category), life.recent]);
+};
 
 /** Injectable store keeps quota failures and throttling testable without a DOM.
  * An external clear/change wins; an unchanged stale value after a failed write
  * does not erase the current tab's latest feeding or petting. */
-export function createCompanionCareStore(storage?: CareStorage, clock: () => number = () => performance.now()) {
+export function createCompanionCareStore(storage?: CareStorage, clock: () => number = () => performance.now(), rng: () => number = Math.random, onLifeChange?: (life: CompanionLife) => void) {
   let memory = freshMemory();
+  let seededLife: CompanionLife | undefined;
   let rawSeen: string | null | undefined;
   let readInitialized = false;
   let dirty = false;
+  let seedPersistPending = false;
   let lastWrite = -Infinity;
+  const seed = () => seededLife ??= createCompanionLife(rng);
+  const flush = () => {
+    seedPersistPending = false;
+    lastWrite = clock();
+    try {
+      const { hunger, affection, energy, curiosity } = memory;
+      const { sociability, playfulness, confidence, credit, generation } = memory.habits;
+      const raw = JSON.stringify({ version: 3, hunger, affection, energy, curiosity, habits: { sociability, playfulness, confidence, credit, generation }, life: normalizeCompanionLife(memory.life) });
+      if (storage) { storage.setItem(COMPANION_CARE_KEY, raw); rawSeen = raw; dirty = false; }
+    } catch { /* Keep the latest device-local memory through quota failures. */ }
+  };
   const synchronize = (raw: string | null, explicitClear = false): CompanionMemory => {
-    const next = parseMemory(raw);
+    let source: Record<string, unknown> = {};
+    try {
+      const parsed: unknown = raw ? JSON.parse(raw) : null;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && "version" in parsed && [1, 2, 3].includes(parsed.version as number)) source = parsed as Record<string, unknown>;
+    } catch { /* Malformed data receives one fresh local seed. */ }
+    const habits = source.version === 2 || source.version === 3 ? normalizeCompanionHabits(source.habits) : { ...DEFAULT_COMPANION_HABITS };
+    const savedLife = source.version === 3 && source.life && typeof source.life === "object" && !Array.isArray(source.life) ? source.life as Record<string, unknown> : undefined;
+    const validSeed = savedLife && typeof savedLife.seedFood === "string" && Object.prototype.hasOwnProperty.call(DEFAULT_COMPANION_LIFE.foodScores, savedLife.seedFood);
+    const legacySameGeneration = (source.version === 1 || source.version === 2) && seededLife && rawSeen !== undefined && habits.generation === memory.habits.generation;
+    const life = validSeed ? normalizeCompanionLife(savedLife) : normalizeCompanionLife(legacySameGeneration ? memory.life : seed());
+    seededLife ??= resetCompanionLife(life, 0);
+    life.generation = habits.generation;
+    const next: CompanionMemory = { ...normalizeCompanionCare(source), habits, life };
     // A deletion in an already-live store invalidates its earlier brain too.
     // Keep this local reset dirty until its next normal write; unchanged null
     // bytes must not downgrade the reset to the fresh-install generation0.
     const cleared = raw === null && (explicitClear || rawSeen !== undefined && raw !== rawSeen);
-    if (cleared) next.habits.generation = nextGeneration(memory.habits.generation);
-    memory = next; rawSeen = raw; dirty = cleared; readInitialized = true;
+    if (cleared) {
+      next.habits.generation = nextGeneration(memory.habits.generation);
+      next.life = resetCompanionLife(memory.life, next.habits.generation);
+    }
+    seedPersistPending = rawSeen === undefined && !validSeed;
+    memory = next; rawSeen = raw; dirty = cleared || !validSeed; readInitialized = true;
     return copyMemory(memory);
   };
   const load = (): CompanionMemory => {
     readInitialized = true;
     try {
       const raw = storage?.getItem(COMPANION_CARE_KEY) ?? null;
-      if (!dirty || raw !== rawSeen) {
+      if (rawSeen === undefined || !dirty || raw !== rawSeen) {
         synchronize(raw);
       }
       rawSeen = raw;
-    } catch { /* Inaccessible storage keeps this tab's current needs/habits. */ }
+      // Persist the first random seed/migration once so a reload cannot reroll
+      // it. Failed storage consumes the same existing five-second budget.
+      if (seedPersistPending && clock() - lastWrite >= 5000) flush();
+    } catch {
+      if (rawSeen === undefined) synchronize(null);
+      /* Inaccessible storage keeps this tab's current needs/habits/life. */
+    }
     return copyMemory(memory);
   };
   const save = (care: CompanionCareInput, force = false, replacement = false): CompanionMemory => {
@@ -72,24 +109,25 @@ export function createCompanionCareStore(storage?: CareStorage, clock: () => num
         // Storage events already synchronize intervening changes; ordinary
         // active-time samples must not introduce synchronous reads at4Hz.
         if (rawSeen === undefined || raw !== rawSeen) synchronize(raw);
-      } catch { /* Reads may be blocked too; preserve the current memory. */ }
+      } catch {
+        if (rawSeen === undefined) synchronize(null);
+        /* Reads may be blocked too; preserve the current memory. */
+      }
     }
+    const previousLife = lifeSignature(memory.life);
     const incoming = care.habits === undefined ? memory.habits : normalizeCompanionHabits(care.habits);
     // Same-generation experiences may legitimately reproduce identical traits
     // after a reset. Only an old reset generation is stale, never its values.
     const habits = !replacement && incoming.generation !== memory.habits.generation ? memory.habits : incoming;
-    memory = { ...normalizeCompanionCare(care), habits: { ...habits } };
+    const incomingLife = care.life === undefined ? memory.life : normalizeCompanionLife(care.life);
+    const life = !replacement && incomingLife.generation !== memory.habits.generation ? memory.life : incomingLife;
+    memory = { ...normalizeCompanionCare(care), habits: { ...habits }, life: normalizeCompanionLife(life) };
     dirty = true;
-    if (!canWrite) return copyMemory(memory);
+    const lifeChanged = lifeSignature(memory.life) !== previousLife;
     // Failed writes also consume the ordinary 5s budget. A quota-limited
     // browser must not retry at the actor's 12–30Hz paint rate.
-    lastWrite = now;
-    try {
-      const { hunger, affection, energy, curiosity } = memory;
-      const { sociability, playfulness, confidence, credit, generation } = memory.habits;
-      const raw = JSON.stringify({ version: 2, hunger, affection, energy, curiosity, habits: { sociability, playfulness, confidence, credit, generation } });
-      if (storage) { storage.setItem(COMPANION_CARE_KEY, raw); rawSeen = raw; dirty = false; }
-    } catch { /* A later save retries without reverting to stale care/habits. */ }
+    if (canWrite) flush();
+    if (lifeChanged) onLifeChange?.(normalizeCompanionLife(memory.life));
     return copyMemory(memory);
   };
   return {
@@ -100,27 +138,36 @@ export function createCompanionCareStore(storage?: CareStorage, clock: () => num
     synchronize: (raw: string | null) => synchronize(raw, raw === null),
     resetHabits(): CompanionMemory {
       const current = load(), habits = { ...DEFAULT_COMPANION_HABITS, generation: nextGeneration(current.habits.generation) };
-      return save({ ...current, habits }, true, true);
+      return save({ ...current, habits, life: resetCompanionLife(current.life, habits.generation) }, true, true);
     },
   };
 }
 
 let owner: Window | undefined;
 let deviceStore: ReturnType<typeof createCompanionCareStore> | undefined;
+const synchronizedEvents = new WeakMap<Event, CompanionMemory>();
 function store() {
   if (typeof window === "undefined") return undefined;
   if (owner !== window || !deviceStore) {
     owner = window;
     let storage: CareStorage | undefined;
     try { storage = window.localStorage; } catch { /* Optional device memory only. */ }
-    deviceStore = createCompanionCareStore(storage);
+    deviceStore = createCompanionCareStore(storage, undefined, undefined, life => window.dispatchEvent(new CustomEvent<CompanionLife>(COMPANION_LIFE_EVENT, { detail: life })));
   }
   return deviceStore;
+}
+function memoryFromStorageEvent(event: StorageEvent): CompanionMemory | undefined {
+  if (event.key !== COMPANION_CARE_KEY && event.key !== null) return undefined;
+  const previous = synchronizedEvents.get(event);
+  if (previous) return previous;
+  const memory = store()?.synchronize(event.key === null ? null : event.newValue);
+  if (memory) synchronizedEvents.set(event, memory);
+  return memory;
 }
 export function loadCompanionCare(): CompanionMemory { return store()?.load() ?? freshMemory(); }
 /** Call while visible, and force after feeding or on cleanup. No background
  * timers or server writes; ordinary active-time saves flush at most every 5s. */
-export function saveCompanionCare(care: CompanionCareInput, force = false): CompanionMemory { return store()?.save(care, force) ?? { ...normalizeCompanionCare(care), habits: normalizeCompanionHabits(care.habits) }; }
+export function saveCompanionCare(care: CompanionCareInput, force = false): CompanionMemory { return store()?.save(care, force) ?? { ...normalizeCompanionCare(care), habits: normalizeCompanionHabits(care.habits), life: normalizeCompanionLife(care.life) }; }
 
 /** Erases only learned habits. Needs and manually chosen preferences remain. */
 export function resetCompanionHabits(): CompanionHabits {
@@ -136,7 +183,7 @@ export function subscribeCompanionHabits(listener: (habits: CompanionHabits) => 
   const changed = (event: Event) => listener(normalizeCompanionHabits((event as CustomEvent<unknown>).detail));
   const stored = (event: StorageEvent) => {
     if (event.key !== COMPANION_CARE_KEY && event.key !== null) return;
-    const memory = store()?.synchronize(event.key === null ? null : event.newValue);
+    const memory = memoryFromStorageEvent(event);
     listener({ ...(memory?.habits ?? DEFAULT_COMPANION_HABITS) });
   };
   window.addEventListener(COMPANION_HABITS_EVENT, changed);
@@ -145,4 +192,19 @@ export function subscribeCompanionHabits(listener: (habits: CompanionHabits) => 
     window.removeEventListener(COMPANION_HABITS_EVENT, changed);
     window.removeEventListener("storage", stored);
   };
+}
+
+/** Same-device sanitized traits only. Credit-only saves and tiny active-time
+ * shifts do not notify; meaningful category/experience changes do. */
+export function subscribeCompanionLife(listener: (life: CompanionLife) => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const changed = (event: Event) => listener(normalizeCompanionLife((event as CustomEvent<unknown>).detail));
+  const stored = (event: StorageEvent) => {
+    if (event.key !== COMPANION_CARE_KEY && event.key !== null) return;
+    const memory = memoryFromStorageEvent(event);
+    listener(normalizeCompanionLife(memory?.life));
+  };
+  window.addEventListener(COMPANION_LIFE_EVENT, changed);
+  window.addEventListener("storage", stored);
+  return () => { window.removeEventListener(COMPANION_LIFE_EVENT, changed); window.removeEventListener("storage", stored); };
 }

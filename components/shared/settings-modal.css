@@ -363,6 +363,21 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   .rhh-habit-item { gap: 4px; padding: 12px 0; }
   .rhh-habit-item + .rhh-habit-item { border-left: 0; border-top: 1px solid var(--line, #ece0c9); }
 }
+/* A read-only portrait of the same local pet on every desktop surface.
+   Use prose and the existing settings material instead of score meters. */
+.rhh-trait-intro { margin: 10px 0 16px; color: var(--ink-soft); text-align: center; text-wrap: balance; }
+.rhh-trait-favorite { display: grid; justify-items: center; gap: var(--space-1); padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 76%); text-align: center; }
+.rhh-trait-favorite > span { color: var(--ink-soft); }
+.rhh-trait-favorite .vc-fruit { display: block; width: 40px; height: 40px; }
+.rhh-trait-favorite > strong { font-size: var(--text-title); font-weight: 600; overflow-wrap: anywhere; }
+.rhh-trait-reason { display: grid; gap: var(--space-1); margin: var(--space-3) 0; text-align: center; text-wrap: balance; }
+.rhh-trait-reason > span { color: var(--ink-soft); font-weight: 600; }
+.rhh-trait-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin: 0; }
+.rhh-trait-item { display: grid; align-content: start; gap: var(--space-1); min-width: 0; padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--r-sm); text-align: center; }
+.rhh-trait-item dt { color: var(--ink-soft); font-weight: 600; }
+.rhh-trait-item dd { margin: 0; word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; }
+.rhh-trait-note, .rhh-trait-reset-note { margin: var(--space-3) 0 0; color: var(--ink-soft); text-align: center; text-wrap: balance; }
+@container rhh-habits (max-width: 360px) { .rhh-trait-list { grid-template-columns: minmax(0, 1fr); } }
 .rhh-ico {
   display: inline-grid;
   flex: none;

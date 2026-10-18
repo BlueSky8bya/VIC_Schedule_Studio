@@ -9,6 +9,8 @@ import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionAttention } from "./deliberation";
 import { advanceCompanionHabits, DEFAULT_COMPANION_HABITS, type CompanionHabits } from "./habits";
 import { createCompanionContext, pendingCompanionMealId, planCompanionEpisode, type CompanionEpisode } from "./episodes";
+import { advanceCompanionLife, getCompanionFoodPreference, type CompanionLife } from "./life";
+import { companionFoodApproachScale, COMPANION_LIVING_COOLDOWN, getLivingAction, type CompanionLivingKind } from "./living";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -33,7 +35,7 @@ export type CompanionBehaviorPreferences = CompanionPreferences;
 export type CompanionFood = { id: string; x: number; y: number; platformId?: string; kind: CompanionFoodKind };
 export type Food = CompanionFood;
 export type CompanionActionKind = "idle" | "look" | "walk" | "jump" | "sleep" | "heart" | "hide" | "sniff" | "eat" | "stretch" | "shake" | "play" | "panel";
-export type CompanionPlay = "tumble" | "slip-tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow" | "dizzy";
+export type CompanionPlay = "tumble" | "slip-tumble" | "bump" | "slip" | "bonk-sad" | "bonk-tears" | "celebrate" | "groom" | "pounce" | "bow" | "dizzy" | "ask-petting" | "lean-nuzzle" | "cozy-nest" | "cheer-rehearsal" | "doze-curl";
 export type CompanionAction = {
   kind: CompanionActionKind;
   target: { x: number; y: number; platformId?: string };
@@ -44,6 +46,10 @@ export type CompanionAction = {
   pace?: "amble" | "scoot";
   /** Finite local performance; its target remains the occupied real support. */
   play?: CompanionPlay;
+  living?: CompanionLivingKind;
+  cozySettled?: boolean;
+  /** Remaining transient place-memory window; never a persisted timestamp. */
+  placeCheckMs?: number;
   panelSide?: "left" | "right";
   /** Small same-support hops use a lower impulse than a platform transfer. */
   jumpHeight?: number;
@@ -73,14 +79,17 @@ export type CompanionWorld = {
   /** Renderer proved an ordinary public card at the occupied support. */
   hideAvailable?: boolean;
   foods?: readonly CompanionFood[];
-  pointer?: { x: number; y: number };
+  pointer?: { x: number; y: number; stableMs?: number };
 };
 export type CompanionBrain = CompanionCare & {
   habits?: CompanionHabits;
+  life?: CompanionLife;
+  recentLiving?: CompanionLivingKind[];
+  pendingLiving?: { kind: "social" | "cozy"; supportId: string };
   createdAt: number;
   recent: CompanionActionKind[];
   visited: string[];
-  cooldowns: Partial<Record<CompanionActionKind, number>> & { mishap?: number; episode?: number };
+  cooldowns: Partial<Record<CompanionActionKind, number>> & { mishap?: number; episode?: number; living?: number };
   episode?: CompanionEpisode;
   heading: -1 | 1;
   activeMs: number;
@@ -230,6 +239,7 @@ export function advanceBrain(brain: CompanionBrain, elapsedMs: number, learning 
     activeMs: (brain.activeMs ?? 0) + seconds * 1000,
     affect: advanceCompanionAffect(brain.affect ?? createCompanionAffect(), seconds * 1000),
     habits: advanceCompanionHabits(brain.habits, seconds * 1000, learning),
+    ...(brain.life ? { life: advanceCompanionLife(brain.life, seconds * 1000, learning) } : {}),
   };
 }
 
@@ -238,7 +248,7 @@ export function getCompanionMood(brain: CompanionBrain) { return companionMood(b
 /** A new user/scene owner revokes exploration without discarding an offered
  * meal, rest need or care. The renderer may still finish its safe finite leg. */
 export function cancelCompanionTravelGoal(brain: CompanionBrain): CompanionBrain {
-  return brain.intention?.kind === "explore" ? { ...brain, intention: undefined } : brain;
+  return brain.intention?.kind === "explore" || brain.pendingLiving ? { ...brain, intention: brain.intention?.kind === "explore" ? undefined : brain.intention, pendingLiving: undefined } : brain;
 }
 export function recordCompanionEvent(brain: CompanionBrain, event: CompanionEvent): CompanionBrain {
   if (event === "ate" && brain.hunger < COMPANION_FULL_THRESHOLD) return { ...brain };
@@ -266,6 +276,8 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
   const remaining = action.foodId && action.intention?.kind === "feed" ? Math.max(0, Math.min(COMPANION_FEED_ACTION_BUDGET, action.intention.remaining) - 1) : undefined;
   return {
     ...brain,
+    pendingLiving: action.living === "social" && action.kind === "walk" ? { kind: "social", supportId: action.target.platformId ?? "" } : action.living === "cozy" && action.play === "doze-curl" ? { kind: "cozy", supportId: action.target.platformId ?? "" } : undefined,
+    recentLiving: action.living && action.kind === "play" ? [...(brain.recentLiving ?? []), action.living].slice(-3) : brain.recentLiving,
     // A few curious steps should not exhaust an initially healthy creature.
     // Rest remains useful over minutes, while exploration has a short rhythm.
     energy: unit(brain.energy - (action.kind === "jump" ? action.jumpHeight ? .005 : .009 : action.kind === "walk" ? .004 : 0)),
@@ -276,7 +288,7 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
     episode: action.episode ? { ...action.episode, remaining: Math.max(0, Math.min(24, action.episode.remaining) - 1) } : undefined,
     recent: [...brain.recent, action.kind].slice(-8),
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
-    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]), ...(mishap ? { mishap: now + action.duration + cooldownMs.play } : {}), ...(action.episode?.phase === "notice" ? { episode: now + 45000 } : {}) },
+    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]), ...(action.kind === "look" && Number.isFinite(action.placeCheckMs) ? { look: now + Math.max(action.duration + cooldownMs.look, clamp(action.placeCheckMs!, 0, 8000)) } : {}), ...(mishap ? { mishap: now + action.duration + cooldownMs.play } : {}), ...(action.episode?.phase === "notice" ? { episode: now + 45000 } : {}), ...(action.living && action.kind !== "walk" ? { living: now + action.duration + COMPANION_LIVING_COOLDOWN } : {}) },
     intention: action.intention ? { ...action.intention, remaining: Math.max(0, action.intention.remaining - 1) } : undefined,
     foodGoal: action.foodId && remaining !== undefined ? { foodId: action.foodId, remaining, retryAfter: remaining === 0 ? (brain.activeMs ?? 0) + COMPANION_FEED_RETRY_MS : 0 } : brain.foodGoal,
     places: rememberCompanionOutcomes(brain.places ?? [], action.outcomes ?? [], brain.activeMs ?? 0),
@@ -294,7 +306,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
   const mealId = world.animated && prefs.roam ? pendingCompanionMealId(brain) : undefined;
   const foods = world.foods.slice(0, MAX_COMPANION_FOOD).filter(food => Boolean(food.id) && [food.x, food.y].every(Number.isFinite) && isCompanionFoodKind(food.kind))
     .filter(food => !mealId || food.id === mealId)
-    .sort((a, b) => Number(b.id === (remembered?.foodId ?? brain.intention?.foodId)) - Number(a.id === (remembered?.foodId ?? brain.intention?.foodId)) || Math.hypot(a.x - world.x, a.y - world.y) - Math.hypot(b.x - world.x, b.y - world.y));
+    .sort((a, b) => Number(b.id === (remembered?.foodId ?? brain.intention?.foodId)) - Number(a.id === (remembered?.foodId ?? brain.intention?.foodId)) || Math.hypot(a.x - world.x, a.y - world.y) / (world.animated && prefs.learnFromYou !== false ? .5 + getCompanionFoodPreference(brain.life, a.kind) : 1) - Math.hypot(b.x - world.x, b.y - world.y) / (world.animated && prefs.learnFromYou !== false ? .5 + getCompanionFoodPreference(brain.life, b.kind) : 1));
   for (const food of foods) {
     if (remembered?.foodId === food.id && remembered.remaining <= 0 && remembered.retryAfter > activeMs) continue;
     const platform = world.platforms.find(p => p.id === food.platformId);
@@ -329,7 +341,8 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
         step = { ...first, target: { ...first.target, x: takeoffX } };
       }
     }
-    const duration = step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / speed * 1000) : 950;
+    const approachScale = companionFoodApproachScale(brain, world, prefs, food.id, food.platformId);
+    const duration = step.kind === "walk" ? Math.max(500, Math.abs(step.target.x - world.x) / (speed * approachScale) * 1000) : 950;
     if (!Number.isFinite(duration)) continue;
     return { kind: step.kind, target: step.target, duration, foodId: food.id, intention, ...(step.kind === "walk" ? { pace: "amble" as const } : {}), direction: step.target.x < world.x ? -1 : 1 };
   }
@@ -353,6 +366,8 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const episode = planCompanionEpisode(brain, world, prefs, now, foodAction, rng, reachablePlatforms);
   if (episode) return episode;
   if (foodAction) return foodAction;
+  const living = getLivingAction(brain, world, prefs, now, rng);
+  if (living) return living;
   const profile = getCompanionBehaviorProfile(prefs, brain.habits);
   // A rare toe-tap starts only on the actual occupied arrow. The renderer
   // rechecks its exact live control at impact; no remote button targeting.
@@ -367,7 +382,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const planned = planCompanionGoal(brain, world, prefs, { route: findPlatformRoute, landingX: platformLandingX, reachable: reachablePlatforms });
   if (planned.action) return { ...planned.action, ...(planned.outcomes.length ? { outcomes: planned.outcomes } : {}) };
   const candidates: { action: CompanionAction; utility: number }[] = [];
-  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point, movement: Pick<CompanionAction, "pace" | "jumpHeight" | "direction" | "play" | "intention"> = {}) => {
+  const add = (kind: CompanionActionKind, utility: number, duration: number, target = stationary, effectPoint?: Point, movement: Pick<CompanionAction, "pace" | "jumpHeight" | "direction" | "play" | "intention" | "living"> = {}) => {
     if ((brain.cooldowns[kind] ?? -Infinity) > now) return;
     const repeats = brain.recent.slice(-4).filter(item => item === kind).length;
     const lastPenalty = brain.recent.at(-1) === kind ? .35 : 1;
@@ -387,7 +402,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   add("stretch", .12 + (1 - brain.energy) * .2 + (recovery ? .3 : 0), COMPANION_TIMING.stretchMin + random(rng) * COMPANION_TIMING.stretchRange);
   add("shake", .13 + brain.energy * .1 + (dog ? .18 : 0), COMPANION_TIMING.shakeMin + random(rng) * COMPANION_TIMING.shakeRange);
   if (cat || dog) add("sniff", .25 + brain.curiosity * .25 + (dog ? .15 : 0), cat ? COMPANION_TIMING.sniffCat : COMPANION_TIMING.sniffDog);
-  if (prefs.sleep && brain.energy < profile.sleepEnergy) add("sleep", (1 - brain.energy) ** 2 * 1.7 + sleepy, (8000 + random(rng) * 7000) * (sleepy ? 1.25 : 1));
+  if (prefs.sleep && brain.energy < profile.sleepEnergy) add("sleep", (1 - brain.energy) ** 2 * 1.7 + sleepy, (8000 + random(rng) * 7000) * (sleepy ? 1.25 : 1), stationary, undefined, world.animated && (current.id === "companion-home" || /^companion-home-floor(?:-\d+)?$/.test(current.id)) ? { living: "cozy" } : {});
   // Social contact remains visible with heart jokes disabled. Cats groom,
   // dogs invite play, and an affectionate mascot responds near the pointer.
   if (current && current.id === world.platformId && Math.abs(current.y - world.y) <= 18) {

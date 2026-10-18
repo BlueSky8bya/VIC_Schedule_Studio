@@ -5,6 +5,7 @@ import { companionPlayDuration, COMPANION_TIMING } from "./timing";
 import { companionRunTripContact, validCompanionRunHop, type CompanionRunTrip } from "./romp";
 import { COMPANION_FULL_THRESHOLD } from "./care";
 import { COMPANION_FEED_ACTION_BUDGET } from "./planner";
+import { companionFoodApproachScale } from "./living";
 
 export type CompanionEpisode = {
   kind: "meal" | "social" | "wake";
@@ -120,7 +121,7 @@ export function planCompanionEpisode(brain: CompanionBrain, world: CompanionWorl
   const profile = getCompanionBehaviorProfile(prefs, brain.habits), distance = Math.abs(foodAction.target.x - world.x);
   const lively = !episode.mishapUsed && episode.variant !== "careful" && prefs.animalMode !== "cat" && brain.energy >= .35;
   const action: CompanionAction = { ...foodAction, pace: lively ? "scoot" : "amble",
-    duration: Math.max(500, distance / (profile.walkSpeed * (lively ? 1.3 : 1)) * 1000) };
+    duration: Math.max(500, distance / (profile.walkSpeed * (lively ? 1.3 : 1) * companionFoodApproachScale(brain, world, prefs, food.id, food.platformId)) * 1000) };
   if (prefs.jump && !episode.mishapUsed && episode.legs > 0 && ["bound", "bound-slip"].includes(episode.variant) && p && !p.manualOnly && p.width >= 100
     && foodAction.target.platformId === p.id && distance >= 48 && distance <= 200) {
     const height = Math.min(105, profile.hopHeight + 40);

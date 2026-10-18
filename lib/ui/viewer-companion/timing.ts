@@ -49,6 +49,11 @@ export const COMPANION_PLAY_TIMING: Readonly<Record<CompanionPlay, PlayTiming>> 
   bow: timing({ row: 29, duration: 1060, beat: "play" }, { row: 23, duration: 280, beat: "recover" }),
   pounce: timing({ row: 31, duration: 820, beat: "play" }, { row: 23, duration: 300, beat: "recover" }),
   celebrate: timing({ row: 31, duration: 1100, beat: "play", cycles: 2 }, { row: 23, duration: 280, beat: "recover" }),
+  "ask-petting": timing({ row: 33, duration: 1500, beat: "play" }, { row: 33, duration: 650, beat: "checking" }),
+  "lean-nuzzle": timing({ row: 34, duration: 1400, beat: "play" }, { row: 9, duration: 550, beat: "checking" }),
+  "cozy-nest": timing({ row: 35, duration: 1500, beat: "play", cycles: 3 }, { row: 36, duration: 850, beat: "play" }, { row: 40, duration: 850, beat: "checking" }),
+  "cheer-rehearsal": timing({ row: 9, duration: 750, beat: "play" }, { row: 37, duration: 850, beat: "play" }, { row: 38, duration: 650, beat: "checking" }, { row: 39, duration: 950, beat: "play" }, { row: 9, duration: 600, beat: "checking" }),
+  "doze-curl": timing({ row: 40, duration: 2800, beat: "play" }),
 });
 
 export function companionPlayDuration(kind: CompanionPlay, reduced = false): number {
@@ -94,4 +99,12 @@ export const COMPANION_CLIP_TIMING: readonly ClipTiming[] = Object.freeze([
   { row: 30, name: "groom", playback: "phase", duration: 520 },
   { row: 31, name: "pounce", playback: "phase", duration: 820 },
   { row: COMPANION_THROW_ROW, name: "throw", playback: "phase", duration: null },
+  { row: 33, name: "ask-petting", playback: "phase", duration: 1500 },
+  { row: 34, name: "lean-nuzzle", playback: "phase", duration: 1400 },
+  { row: 35, name: "paper-knead", playback: "phase", duration: 500 },
+  { row: 36, name: "paper-nest", playback: "phase", duration: 850 },
+  { row: 37, name: "cheer-tangled", playback: "phase", duration: 850 },
+  { row: 38, name: "cheer-peek", playback: "phase", duration: 650 },
+  { row: 39, name: "cheer-tidy", playback: "phase", duration: 950 },
+  { row: 40, name: "doze-curl", playback: "hold", duration: null, frameRate: 6 },
 ].map(clip => Object.freeze(clip)) as ClipTiming[]);

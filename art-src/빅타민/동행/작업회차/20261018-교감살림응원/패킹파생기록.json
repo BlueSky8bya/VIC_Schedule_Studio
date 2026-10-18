@@ -1,0 +1,591 @@
+{
+  "version": 1,
+  "source": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+  "sourceSha256": "3153807b4b72b56c158d434eaf538d3e3c18ceacb10dab333401776656826a70",
+  "native": {
+    "width": 1774,
+    "height": 887,
+    "transparentPixels": 789699,
+    "visiblePixels": 696755,
+    "rowSplit": 462
+  },
+  "method": "Eight actual connected native bodies; complete4x2 cells split in clear inter-body gaps; one common isotropic130/367 scale; complete primary alpha component centered at96 and bottom180;8authored keys in first8x1 row, second row transparent. No new drawing or feature-specific scaling.",
+  "encoding": {
+    "quality": 95,
+    "alphaQuality": 100,
+    "smartSubsample": true,
+    "effort": 6
+  },
+  "generationCallsByThisScript": 0,
+  "newGeneratedKeys": 8,
+  "frames": [
+    {
+      "name": "ask-petting",
+      "index": 0,
+      "nominal": {
+        "left": 0,
+        "top": 0,
+        "width": 440,
+        "height": 462
+      },
+      "crop": {
+        "left": 29,
+        "top": 70,
+        "width": 375,
+        "height": 378
+      },
+      "nativeBody": {
+        "left": 33,
+        "top": 74,
+        "right": 400,
+        "bottom": 444,
+        "width": 367,
+        "height": 370,
+        "pixels": 87491
+      },
+      "sourceBody": {
+        "left": 33,
+        "top": 74,
+        "right": 400,
+        "bottom": 444,
+        "width": 367,
+        "height": 370,
+        "pixels": 87491
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 132,
+        "height": 133
+      },
+      "padding": {
+        "left": 30,
+        "top": 48
+      },
+      "body": {
+        "left": 31,
+        "top": 49,
+        "right": 161,
+        "bottom": 180,
+        "width": 130,
+        "height": 131,
+        "pixels": 10800
+      },
+      "visibleBounds": {
+        "left": 31,
+        "top": 49,
+        "right": 161,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 0,
+        "x": 0,
+        "y": 5,
+        "clip": [
+          18.416667,
+          10.916667,
+          3,
+          10.916667
+        ]
+      },
+      "rgbaSha256": "dfa58db6c2bc02446f9c4e837c6ece660dfd1ac98f8f26afba313707f70e07f6"
+    },
+    {
+      "name": "lean-nuzzle",
+      "index": 1,
+      "nominal": {
+        "left": 440,
+        "top": 0,
+        "width": 469,
+        "height": 462
+      },
+      "crop": {
+        "left": 37,
+        "top": 86,
+        "width": 411,
+        "height": 367
+      },
+      "nativeBody": {
+        "left": 481,
+        "top": 90,
+        "right": 884,
+        "bottom": 449,
+        "width": 403,
+        "height": 359,
+        "pixels": 92319
+      },
+      "sourceBody": {
+        "left": 41,
+        "top": 90,
+        "right": 444,
+        "bottom": 449,
+        "width": 403,
+        "height": 359,
+        "pixels": 92319
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 145,
+        "height": 129
+      },
+      "padding": {
+        "left": 24,
+        "top": 52
+      },
+      "body": {
+        "left": 25,
+        "top": 53,
+        "right": 167,
+        "bottom": 180,
+        "width": 142,
+        "height": 127,
+        "pixels": 11445
+      },
+      "visibleBounds": {
+        "left": 25,
+        "top": 53,
+        "right": 167,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 1,
+        "x": 0,
+        "y": 5,
+        "clip": [
+          20.083333,
+          8.416667,
+          3,
+          8.416667
+        ]
+      },
+      "rgbaSha256": "d8efdc86870310fa88e87f5f0a2fed7c2e4e105ce5ac1f8cd99a5c93157349fa"
+    },
+    {
+      "name": "paper-knead-left",
+      "index": 2,
+      "nominal": {
+        "left": 909,
+        "top": 0,
+        "width": 429,
+        "height": 462
+      },
+      "crop": {
+        "left": 15,
+        "top": 100,
+        "width": 406,
+        "height": 352
+      },
+      "nativeBody": {
+        "left": 934,
+        "top": 104,
+        "right": 1326,
+        "bottom": 448,
+        "width": 392,
+        "height": 344,
+        "pixels": 85633
+      },
+      "sourceBody": {
+        "left": 25,
+        "top": 104,
+        "right": 417,
+        "bottom": 448,
+        "width": 392,
+        "height": 344,
+        "pixels": 85633
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 143,
+        "height": 124
+      },
+      "padding": {
+        "left": 23,
+        "top": 58
+      },
+      "body": {
+        "left": 27,
+        "top": 60,
+        "right": 165,
+        "bottom": 180,
+        "width": 138,
+        "height": 120,
+        "pixels": 10565
+      },
+      "visibleBounds": {
+        "left": 24,
+        "top": 60,
+        "right": 165,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 2,
+        "x": 0,
+        "y": 5,
+        "clip": [
+          23,
+          9.25,
+          3,
+          8
+        ]
+      },
+      "rgbaSha256": "a56a2fc99d9e11ff9435cfece2f4295e8dba6cc10982f955104af922bef8cc7d"
+    },
+    {
+      "name": "paper-nest-right",
+      "index": 3,
+      "nominal": {
+        "left": 1338,
+        "top": 0,
+        "width": 436,
+        "height": 462
+      },
+      "crop": {
+        "left": 9,
+        "top": 104,
+        "width": 405,
+        "height": 355
+      },
+      "nativeBody": {
+        "left": 1351,
+        "top": 108,
+        "right": 1719,
+        "bottom": 455,
+        "width": 368,
+        "height": 347,
+        "pixels": 84683
+      },
+      "sourceBody": {
+        "left": 13,
+        "top": 108,
+        "right": 381,
+        "bottom": 455,
+        "width": 368,
+        "height": 347,
+        "pixels": 84683
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 143,
+        "height": 125
+      },
+      "padding": {
+        "left": 30,
+        "top": 56
+      },
+      "body": {
+        "left": 31,
+        "top": 57,
+        "right": 161,
+        "bottom": 180,
+        "width": 130,
+        "height": 123,
+        "pixels": 10503
+      },
+      "visibleBounds": {
+        "left": 31,
+        "top": 57,
+        "right": 172,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 3,
+        "x": 0,
+        "y": 5,
+        "clip": [
+          21.75,
+          6.333333,
+          3,
+          10.916667
+        ]
+      },
+      "rgbaSha256": "bb3fca5faf210f179b8502c1ba728ba071de171ee0434a65fab94e016eadefb9"
+    },
+    {
+      "name": "cheer-tangled",
+      "index": 4,
+      "nominal": {
+        "left": 0,
+        "top": 462,
+        "width": 451,
+        "height": 425
+      },
+      "crop": {
+        "left": 41,
+        "top": 12,
+        "width": 375,
+        "height": 371
+      },
+      "nativeBody": {
+        "left": 45,
+        "top": 478,
+        "right": 412,
+        "bottom": 841,
+        "width": 367,
+        "height": 363,
+        "pixels": 91714
+      },
+      "sourceBody": {
+        "left": 45,
+        "top": 16,
+        "right": 412,
+        "bottom": 379,
+        "width": 367,
+        "height": 363,
+        "pixels": 91714
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 132,
+        "height": 131
+      },
+      "padding": {
+        "left": 30,
+        "top": 51
+      },
+      "body": {
+        "left": 32,
+        "top": 53,
+        "right": 161,
+        "bottom": 180,
+        "width": 129,
+        "height": 127,
+        "pixels": 11318
+      },
+      "visibleBounds": {
+        "left": 32,
+        "top": 53,
+        "right": 161,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 4,
+        "x": -0.208333,
+        "y": 5,
+        "clip": [
+          20.083333,
+          10.916667,
+          3,
+          11.333333
+        ]
+      },
+      "rgbaSha256": "80fc97a4fce9adaca86a80a98b9365d0993715b09ba0b525fe85ac9a329b5d65"
+    },
+    {
+      "name": "cheer-peek",
+      "index": 5,
+      "nominal": {
+        "left": 451,
+        "top": 462,
+        "width": 444,
+        "height": 425
+      },
+      "crop": {
+        "left": 35,
+        "top": 3,
+        "width": 393,
+        "height": 374
+      },
+      "nativeBody": {
+        "left": 490,
+        "top": 469,
+        "right": 875,
+        "bottom": 835,
+        "width": 385,
+        "height": 366,
+        "pixels": 87234
+      },
+      "sourceBody": {
+        "left": 39,
+        "top": 7,
+        "right": 424,
+        "bottom": 373,
+        "width": 385,
+        "height": 366,
+        "pixels": 87234
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 139,
+        "height": 132
+      },
+      "padding": {
+        "left": 27,
+        "top": 49
+      },
+      "body": {
+        "left": 28,
+        "top": 50,
+        "right": 164,
+        "bottom": 180,
+        "width": 136,
+        "height": 130,
+        "pixels": 10875
+      },
+      "visibleBounds": {
+        "left": 28,
+        "top": 50,
+        "right": 164,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 5,
+        "x": 0,
+        "y": 5,
+        "clip": [
+          18.833333,
+          9.666667,
+          3,
+          9.666667
+        ]
+      },
+      "rgbaSha256": "888aab8c4be6543eb5c8df28503395323c041d9573dccb19492b608f14129071"
+    },
+    {
+      "name": "cheer-tidy",
+      "index": 6,
+      "nominal": {
+        "left": 895,
+        "top": 462,
+        "width": 436,
+        "height": 425
+      },
+      "crop": {
+        "left": 16,
+        "top": 24,
+        "width": 406,
+        "height": 357
+      },
+      "nativeBody": {
+        "left": 915,
+        "top": 490,
+        "right": 1313,
+        "bottom": 839,
+        "width": 398,
+        "height": 349,
+        "pixels": 89658
+      },
+      "sourceBody": {
+        "left": 20,
+        "top": 28,
+        "right": 418,
+        "bottom": 377,
+        "width": 398,
+        "height": 349,
+        "pixels": 89658
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 143,
+        "height": 126
+      },
+      "padding": {
+        "left": 25,
+        "top": 56
+      },
+      "body": {
+        "left": 26,
+        "top": 58,
+        "right": 167,
+        "bottom": 180,
+        "width": 141,
+        "height": 122,
+        "pixels": 11074
+      },
+      "visibleBounds": {
+        "left": 26,
+        "top": 58,
+        "right": 167,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 6,
+        "x": -0.208333,
+        "y": 5,
+        "clip": [
+          22.166667,
+          8.416667,
+          3,
+          8.833333
+        ]
+      },
+      "rgbaSha256": "2bc4be789848485eabb358482b4bf0d992c09ab1dba95638a276f2ed96349f95"
+    },
+    {
+      "name": "doze-curl",
+      "index": 7,
+      "nominal": {
+        "left": 1331,
+        "top": 462,
+        "width": 443,
+        "height": 425
+      },
+      "crop": {
+        "left": 15,
+        "top": 107,
+        "width": 403,
+        "height": 268
+      },
+      "nativeBody": {
+        "left": 1350,
+        "top": 573,
+        "right": 1745,
+        "bottom": 833,
+        "width": 395,
+        "height": 260,
+        "pixels": 76432
+      },
+      "sourceBody": {
+        "left": 19,
+        "top": 111,
+        "right": 414,
+        "bottom": 371,
+        "width": 395,
+        "height": 260,
+        "pixels": 76432
+      },
+      "scale": 0.3542234332425068,
+      "resized": {
+        "width": 142,
+        "height": 94
+      },
+      "padding": {
+        "left": 26,
+        "top": 87
+      },
+      "body": {
+        "left": 27,
+        "top": 88,
+        "right": 166,
+        "bottom": 180,
+        "width": 139,
+        "height": 92,
+        "pixels": 9457
+      },
+      "visibleBounds": {
+        "left": 27,
+        "top": 88,
+        "right": 166,
+        "bottom": 180
+      },
+      "frame": {
+        "index": 7,
+        "x": -0.208333,
+        "y": 5,
+        "clip": [
+          34.666667,
+          8.833333,
+          3,
+          9.25
+        ]
+      },
+      "rgbaSha256": "60e3c0270bba9fb846545537e5fa876e42956e7c301d50b1a790ec4a17bf4b6b"
+    }
+  ],
+  "atlas": {
+    "src": "/companion/hd/victamin-episodes-104-v1.webp",
+    "sha256": "c8a66edbb01cc423ecebe0bf37b5a8ac3233fa7ae22c9a6735a8b85854771d6c",
+    "bytes": 89414,
+    "width": 1536,
+    "height": 384
+  },
+  "approval": "GENERATOR_OBSERVED_NOT_NEW_OWNER_VISUAL_APPROVAL_OR_SPECIALIST_PASS"
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "tool": "image_gen.imagegen",
+  "builtinCalls": 1,
+  "nativePath": "art-src/빅타민/동행/작업회차/20261018-교감살림응원/원본/빅타민_교감살림응원_8키포즈.png",
+  "nativeSha256": "3153807b4b72b56c158d434eaf538d3e3c18ceacb10dab333401776656826a70",
+  "nativeGeometry": {
+    "width": 1774,
+    "height": 887,
+    "channels": 4,
+    "hasAlpha": true
+  },
+  "nativeBytesPreserved": true,
+  "preflight": "PASS_USER_DIRECTED_PREFLIGHT",
+  "cycleClaim": "CLAIMED_ONCE",
+  "registration": "DRAFT_DELIVERED_FOR_USER_REVIEW",
+  "ownerVisualApproval": "NOT_ESTABLISHED_FOR_THIS_NEW_SHEET",
+  "specialistReview": "NOT_REQUESTED",
+  "privateEvidence": "Actual received human source and timestamp, scoped cycle/contract/claim, provider path and registration receipt preserved privately outside Git. Global historical capture conflict untouched."
+}

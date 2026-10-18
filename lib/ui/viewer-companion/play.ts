@@ -1,5 +1,5 @@
 import type { CompanionPlay } from "./brain";
-import { COMPANION_PLAY_TIMING, type CompanionPlayBeat } from "./timing";
+import { COMPANION_PLAY_TIMING, COMPANION_TIMING, type CompanionPlayBeat } from "./timing";
 
 /** Authored finite beats, sampled by the existing display clock. Native art
  * supplies the changed silhouette; these small scalars only connect contact. */
@@ -9,7 +9,11 @@ const clamp = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0)
 export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduced = false): CompanionPlayPose {
   const p = clamp(progress), rows = COMPANION_PLAY_ROWS;
   const result = (row: number, phase: number, beat: CompanionPlayPose["beat"], lift = 0, lean = 0, shift = 0, compression = 0): CompanionPlayPose => ({ row, phase: clamp(phase), beat, lift: reduced ? 0 : lift, lean: reduced ? 0 : lean, shift: reduced ? 0 : shift, compression: reduced ? 0 : compression });
-  if (p >= 1) return result(rows.recover, 1, "recover");
+  const living = ["ask-petting", "lean-nuzzle", "cozy-nest", "cheer-rehearsal", "doze-curl"].includes(kind);
+  if (p >= 1) {
+    const last = living ? COMPANION_PLAY_TIMING[kind].beats.at(-1) : undefined;
+    return result(last?.row ?? rows.recover, 1, last?.beat ?? "recover");
+  }
   if (reduced) return result(kind === "bonk-tears" ? rows.tears : kind === "bonk-sad" ? rows.sulk : rows.recover, kind === "bonk-tears" || kind === "bonk-sad" ? .6 : 1, "recover");
   const timing = COMPANION_PLAY_TIMING[kind], age = p * timing.duration;
   let entered = 0;
@@ -17,6 +21,18 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
     if (age + 1e-7 >= entered + stage.duration) { entered += stage.duration; continue; }
     const elapsed = Math.max(0, age - entered), local = clamp(elapsed / stage.duration);
     const phase = stage.cycles ? local * stage.cycles % 1 : local;
+    if (living) {
+      const envelope = Math.sin(local * Math.PI), pulse = Math.sin(phase * Math.PI * 2);
+      if (stage.row === 33) return result(stage.row, phase, stage.beat, -envelope * 1.2, envelope * 3);
+      if (stage.row === 34) return result(stage.row, phase, stage.beat, -envelope, envelope * 7, 0, envelope * .018);
+      if (stage.row === 35) return result(stage.row, phase, stage.beat, 0, pulse * 2.2 * envelope, 0, Math.sin(phase * Math.PI) ** 2 * .045 * envelope);
+      if (stage.row === 36) return result(stage.row, phase, stage.beat, envelope * .8, -envelope * 2.8, 0, envelope * .035);
+      if (stage.row === 37) return result(stage.row, phase, stage.beat, -envelope * 1.5, Math.sin(local * Math.PI * 4) * 3 * envelope);
+      if (stage.row === 38) return result(stage.row, phase, stage.beat, 0, -envelope * 3.5);
+      if (stage.row === 39) return result(stage.row, phase, stage.beat, -envelope, pulse * 2.8 * envelope, 0, Math.sin(phase * Math.PI) ** 2 * .018);
+      if (stage.row === 40) return result(stage.row, phase, stage.beat, 0, 0, 0, Math.sin(local * Math.PI) ** 2 * .016);
+      return result(stage.row, phase, stage.beat, stage.beat === "play" ? -envelope * 3 : 0);
+    }
     if (stage.beat === "recover") {
       if (kind === "dizzy" || kind === "tumble" || kind === "slip-tumble") {
         // Three brisk head shakes fit inside the first520ms. A smooth envelope
@@ -55,6 +71,18 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
     return result(stage.row, phase, stage.beat);
   }
   return result(rows.recover, 1, "recover");
+}
+
+/** A called home rest settles once before the existing quiet sleep. Position,
+ * sofa depth and wake ownership stay in the renderer; this adds no timer. */
+export function sampleCompanionCozySleep(ageMs: number, durationMs: number, settled = false, reduced = false): CompanionPlayPose & { dreaming: boolean } {
+  const duration = Number.isFinite(durationMs) ? Math.max(1000, durationMs) : 12000;
+  const age = Math.max(0, Math.min(duration, Number.isFinite(ageMs) ? ageMs : 0));
+  const wakeAt = duration - COMPANION_TIMING.sleepWake;
+  if (age >= wakeAt) return { row: 12, phase: clamp((age - wakeAt) / COMPANION_TIMING.sleepWake), beat: "recover", lift: 0, lean: 0, shift: 0, compression: 0, dreaming: false };
+  const settleMs = Math.min(COMPANION_PLAY_TIMING["cozy-nest"].duration, Math.max(0, wakeAt - 1000));
+  if (!reduced && !settled && age < settleMs) return { ...sampleCompanionPlay("cozy-nest", age / settleMs), dreaming: false };
+  return { row: reduced ? 11 : 40, phase: 0, beat: "checking", lift: 0, lean: 0, shift: 0, compression: 0, dreaming: true };
 }
 
 /** A short actual pointer click is different from hover stroking and capture

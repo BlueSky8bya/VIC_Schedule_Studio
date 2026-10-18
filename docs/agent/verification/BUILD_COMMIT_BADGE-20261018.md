@@ -1,6 +1,6 @@
 # Build commit badge
 
-Date:2026-10-18 KST. Status:locally verified; correction release pending.
+Date:2026-10-18 KST. Status:deployed correction verified.
 
 ## Request and observed cause
 
@@ -20,4 +20,12 @@ Initial unit/lint checks passed, but the first production build caught the helpe
 
 Final product build `I-s7FeZi_v7c2b-x0Gbf4` without provider metadata compiled the actual local HEAD `35dd86afcd80309dc33688f2dfe742e69cde21c8`. Full unit212 files/2,183 tests, full lint, production build and post-build typecheck PASS. Independent review found no remaining issues; child-process-only SHA-256 focused tests15/15 PASS. Harness265 PASS.
 
-All8 native production-build header cases passed in55.1s: owner/developer wide/light, compact/dark, zoom, native copy/readback and preview/button/Back return, plus mobile/coarse agenda metadata exclusion. The five desktop cases require a real seven-character hash matching compiled full metadata. Root visually inspected the actual final fixture screenshot with `35dd86a` at bottom-left; there are no intentional layout or baseline changes. The evidence filename originally omitted describe context, causing two owner agenda artifacts to share a name; adding that context and rerunning preserved8/8 PASS in54.4s with8 distinct proof files. Typecheck and changed-source ESLint passed again. Results are `.scratch-pw/chrome-103/` and `.scratch-pw/102-studio-header/I-s7FeZi_v7c2b-x0Gbf4/`. Exact shipping commit/CI/provider/API/UI remain pending; these local cases do not replace actual OBS/RLS tests.
+All8 native production-build header cases passed in55.1s: owner/developer wide/light, compact/dark, zoom, native copy/readback and preview/button/Back return, plus mobile/coarse agenda metadata exclusion. The five desktop cases require a real seven-character hash matching compiled full metadata. Root visually inspected the actual final fixture screenshot with `35dd86a` at bottom-left; there are no intentional layout or baseline changes. The evidence filename originally omitted describe context, causing two owner agenda artifacts to share a name; adding that context and rerunning preserved8/8 PASS in54.4s with8 distinct proof files, page errors0 and intercepted mutations0. Typecheck and changed-source ESLint passed again. Results are `.scratch-pw/chrome-103/` and `.scratch-pw/102-studio-header/I-s7FeZi_v7c2b-x0Gbf4/`. These local cases do not replace actual OBS/RLS tests.
+
+## Deployed verification
+
+Commit `3c6dfff381f8617fa2f1306e4cf836a92f3bce9b` pushed to main. [Remote quality39094977750](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39094977750), job117579429154, completed all13 steps successfully. [Vercel deploymentCK5AaxyxwKW7upwNz1FH3zkiTPmT](https://vercel.com/bluesky-s-project3/vic-schedule-studio/CK5AaxyxwKW7upwNz1FH3zkiTPmT) succeeded.
+
+At2026-10-18T03:52:11Z, production `/api/soop-live` returned200 and the exact full SHA above. Public clock200/no-store, warm204, anonymous developer401/error-only/no-store and fixture nonexposure all passed. The fixture uses a streamed404 fallback in an HTTP200 shell; do not misreport it as transport404. Actual authenticated developer Chrome after reload showed `3c6dfff`, matching its accessible copy label, fixed outside the header at x16/bottom gap15.56 under existing zoom. After ordinary hydration, one visible home launcher and companion remained. A settled full viewport screenshot was inspected. Original November/right-side folded rail/preferences retained; no schedule, heart or role mutation and no viewport override. Local evidence: `deployed-canaries.json`, `actual-ui.json`, `remote-release.json` under `.scratch-pw/chrome-103/`.
+
+The scoped fixture server3116 was stopped. Post-release bookkeeping remains local to avoid a second documentation-only deployment; user art/unrelated drafts are untouched. No new companion behavior was implemented by the research/advice portion. Actual broadcaster OBS/SOOP hardware, genuine-login/RLS and quota-effect evidence remain separate.

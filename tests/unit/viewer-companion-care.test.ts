@@ -1,8 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPANION_CARE_KEY, COMPANION_HABITS_EVENT, DEFAULT_COMPANION_CARE, DEFAULT_COMPANION_MEMORY, createCompanionCareStore, loadCompanionCare, normalizeCompanionCare, resetCompanionHabits, saveCompanionCare, subscribeCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_HABITS, learnCompanionHabits } from "@/lib/ui/viewer-companion/habits";
+import { DEFAULT_COMPANION_LIFE } from "@/lib/ui/viewer-companion/life";
 
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0));
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const learned = { sociability: .3, playfulness: .1, confidence: -.2, credit: .4, generation: 0 };
 const neutral = (generation = 1) => ({ ...DEFAULT_COMPANION_HABITS, generation });
 
@@ -17,14 +19,14 @@ describe("private device-only companion care storage", () => {
     let raw: string | null = null;
     const storage = { getItem: vi.fn(() => raw), setItem: vi.fn((_key: string, value: string) => { raw = value; }) };
     const store = createCompanionCareStore(storage, () => 0);
-    store.save({ ...DEFAULT_COMPANION_CARE, title: "sensitive-schedule-canary", email: "identity-canary", habits: { ...learned, account: "nested-identity-canary", title: "nested-schedule-canary", eventId: "nested-event-canary", input: ["gesture-canary"], lastAt: 1234 } } as typeof DEFAULT_COMPANION_MEMORY);
+    store.save({ ...DEFAULT_COMPANION_MEMORY, title: "sensitive-schedule-canary", email: "identity-canary", habits: { ...learned, account: "nested-identity-canary", title: "nested-schedule-canary", eventId: "nested-event-canary", input: ["gesture-canary"], lastAt: 1234 }, life: { ...DEFAULT_COMPANION_LIFE, account: "life-identity-canary", foodScores: { ...DEFAULT_COMPANION_LIFE.foodScores, title: "life-schedule-canary" } } } as typeof DEFAULT_COMPANION_MEMORY);
     expect(storage.setItem.mock.calls[0][0]).toBe(COMPANION_CARE_KEY);
-    expect(Object.keys(JSON.parse(raw!)).sort()).toEqual(["affection", "curiosity", "energy", "habits", "hunger", "version"]);
+    expect(Object.keys(JSON.parse(raw!)).sort()).toEqual(["affection", "curiosity", "energy", "habits", "hunger", "life", "version"]);
     expect(Object.keys(JSON.parse(raw!).habits).sort()).toEqual(["confidence", "credit", "generation", "playfulness", "sociability"]);
-    expect(JSON.parse(raw!).version).toBe(2);
+    expect(JSON.parse(raw!).version).toBe(3);
     expect(raw).not.toContain("canary");
     const reopened = createCompanionCareStore(storage, () => 86400000);
-    expect(reopened.load()).toEqual({ ...DEFAULT_COMPANION_CARE, habits: learned });
+    expect(reopened.load()).toEqual({ ...DEFAULT_COMPANION_MEMORY, habits: learned });
   });
 
   it("throttles active saves and can force an immediate feeding flush", () => {
@@ -52,7 +54,7 @@ describe("private device-only companion care storage", () => {
     fail = false; now = 1000; store.save(store.load(), true);
     expect(JSON.parse(raw!).hunger).toBe(.2);
     raw = null;
-    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_CARE, habits: neutral() });
+    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_MEMORY, habits: neutral(), life: { ...DEFAULT_COMPANION_LIFE, generation: 1 } });
   });
 
   it("throttles failed ordinary write attempts while preserving force and memory", () => {
@@ -86,19 +88,19 @@ describe("private device-only companion care storage", () => {
     let raw = JSON.stringify({ version: 1, ...DEFAULT_COMPANION_CARE, hunger: .2, habits: learned });
     const storage = { getItem: () => raw, setItem: (_key: string, value: string) => { raw = value; } };
     const old = createCompanionCareStore(storage, () => 0);
-    expect(old.load()).toEqual({ ...DEFAULT_COMPANION_CARE, hunger: .2, habits: DEFAULT_COMPANION_HABITS });
+    expect(old.load()).toEqual({ ...DEFAULT_COMPANION_MEMORY, hunger: .2, habits: DEFAULT_COMPANION_HABITS });
     old.save({ ...DEFAULT_COMPANION_CARE, hunger: .3 }, true);
-    expect(JSON.parse(raw)).toEqual({ version: 2, ...DEFAULT_COMPANION_CARE, hunger: .3, habits: DEFAULT_COMPANION_HABITS });
+    expect(JSON.parse(raw)).toEqual({ version: 3, ...DEFAULT_COMPANION_MEMORY, hunger: .3, habits: DEFAULT_COMPANION_HABITS });
     raw = JSON.stringify({ version: 2, ...DEFAULT_COMPANION_CARE, habits: learned });
     const current = createCompanionCareStore(storage, () => 0);
     // No load is required before an old caller saves four needs.
-    expect(current.save({ ...DEFAULT_COMPANION_CARE, hunger: .1 }, true)).toEqual({ ...DEFAULT_COMPANION_CARE, hunger: .1, habits: learned });
+    expect(current.save({ ...DEFAULT_COMPANION_CARE, hunger: .1 }, true)).toEqual({ ...DEFAULT_COMPANION_MEMORY, hunger: .1, habits: learned });
     expect(current.save({ ...DEFAULT_COMPANION_CARE, habits: undefined }, true).habits).toEqual(learned);
     expect(JSON.parse(raw).habits).toEqual(learned);
   });
 
   it("rejects malformed versions and sanitizes bounded version2 habits without mutating inputs", () => {
-    for (const raw of ["{", "[]", "null", JSON.stringify({ ...DEFAULT_COMPANION_CARE, habits: learned }), JSON.stringify({ version: 3, ...DEFAULT_COMPANION_CARE, habits: learned })]) {
+    for (const raw of ["{", "[]", "null", JSON.stringify({ ...DEFAULT_COMPANION_CARE, habits: learned }), JSON.stringify({ version: 99, ...DEFAULT_COMPANION_CARE, habits: learned })]) {
       expect(createCompanionCareStore({ getItem: () => raw, setItem: () => {} }).load()).toEqual(DEFAULT_COMPANION_MEMORY);
     }
     for (const habits of [null, [], "learned"]) {
@@ -110,7 +112,7 @@ describe("private device-only companion care storage", () => {
     expect(store.save(source).habits).toEqual({ sociability: 1, playfulness: -1, confidence: 0, credit: 1, generation: 0 });
     expect(source.habits.confidence).toBeNaN(); expect(source.habits.sociability).toBe(5);
     const returned = store.load(); returned.habits.sociability = -.8; returned.hunger = 0;
-    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_CARE, habits: { sociability: 1, playfulness: -1, confidence: 0, credit: 1, generation: 0 } });
+    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_MEMORY, habits: { sociability: 1, playfulness: -1, confidence: 0, credit: 1, generation: 0 } });
   });
 
   it("preserves learned values in memory through quota failures within the same five-second budget", () => {
@@ -120,7 +122,7 @@ describe("private device-only companion care storage", () => {
     store.load(); store.save({ ...DEFAULT_COMPANION_CARE, hunger: .2, habits: learned });
     for (now = 250; now < 5000; now += 250) store.save({ ...DEFAULT_COMPANION_CARE, hunger: .21 });
     expect(storage.setItem).toHaveBeenCalledTimes(1);
-    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_CARE, hunger: .21, habits: learned });
+    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_MEMORY, hunger: .21, habits: learned });
     fail = false; now = 5000; store.save(store.load());
     expect(storage.setItem).toHaveBeenCalledTimes(2); expect(JSON.parse(raw).habits).toEqual(learned);
   });
@@ -161,7 +163,7 @@ describe("private device-only companion care storage", () => {
     const storage = { getItem: () => raw, setItem: (_key: string, value: string) => { raw = value; } };
     const store = createCompanionCareStore(storage, () => now);
     const stale = store.save({ ...DEFAULT_COMPANION_CARE, hunger: .13, affection: .8, habits: learned }, true);
-    expect(store.resetHabits()).toEqual({ ...DEFAULT_COMPANION_CARE, hunger: .13, affection: .8, habits: neutral() });
+    expect(store.resetHabits()).toEqual({ ...DEFAULT_COMPANION_MEMORY, hunger: .13, affection: .8, habits: neutral(), life: { ...DEFAULT_COMPANION_LIFE, generation: 1 } });
     now = 250; expect(store.save(stale).habits).toEqual(neutral());
     expect(store.save(stale, true).habits).toEqual(neutral());
     expect(JSON.parse(raw!).habits).toEqual(neutral());
@@ -229,7 +231,7 @@ describe("private device-only companion care storage", () => {
     expect(store.save(stale, true).habits).toEqual(neutral());
     expect(JSON.parse(raw).habits).toEqual(neutral());
     raw = null;
-    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_CARE, habits: neutral(2) });
+    expect(store.load()).toEqual({ ...DEFAULT_COMPANION_MEMORY, habits: neutral(2), life: { ...DEFAULT_COMPANION_LIFE, generation: 2 } });
   });
 
   it("blocks old learned traits even when the stale brain has replenished its credit", () => {
@@ -262,7 +264,7 @@ describe("private device-only companion care storage", () => {
     let raw = JSON.stringify({ version: 2, ...DEFAULT_COMPANION_CARE, hunger: .14, habits: learned }), fail = true;
     const storage = { getItem: () => raw, setItem: (_key: string, value: string) => { if (fail) throw new Error("quota"); raw = value; } };
     const store = createCompanionCareStore(storage, () => 0), stale = store.load();
-    expect(store.resetHabits()).toEqual({ ...DEFAULT_COMPANION_CARE, hunger: .14, habits: neutral() });
+    expect(store.resetHabits()).toEqual({ ...DEFAULT_COMPANION_MEMORY, hunger: .14, habits: neutral(), life: { ...DEFAULT_COMPANION_LIFE, generation: 1 } });
     expect(store.load().habits).toEqual(neutral());
     expect(store.save(stale, true).habits).toEqual(neutral());
     fail = false; store.save(store.load(), true);
@@ -290,7 +292,7 @@ describe("local learned-habit subscriptions", () => {
     const stop = subscribeCompanionHabits(listener);
     expect(resetCompanionHabits()).toEqual(neutral());
     expect(listener).toHaveBeenCalledTimes(1); expect(listener).toHaveBeenCalledWith(neutral());
-    expect(loadCompanionCare()).toEqual({ ...DEFAULT_COMPANION_CARE, hunger: .17, affection: .75, habits: neutral() });
+    expect(loadCompanionCare()).toEqual({ ...DEFAULT_COMPANION_MEMORY, hunger: .17, affection: .75, habits: neutral(), life: { ...DEFAULT_COMPANION_LIFE, generation: 1 } });
     expect(entries.get("vic.viewerCompanion")).toBe("manual-preferences-canary");
     stop(); resetCompanionHabits(); expect(listener).toHaveBeenCalledTimes(1);
   });
@@ -306,7 +308,7 @@ describe("local learned-habit subscriptions", () => {
     expect(loadCompanionCare().habits).toEqual({ ...learned, sociability: -.4 });
     entries.clear(); stored(target, null, null);
     expect(listener).toHaveBeenLastCalledWith(neutral());
-    expect(loadCompanionCare()).toEqual({ ...DEFAULT_COMPANION_CARE, habits: neutral() });
+    expect(loadCompanionCare()).toEqual({ ...DEFAULT_COMPANION_MEMORY, habits: neutral(), life: { ...DEFAULT_COMPANION_LIFE, generation: 1 } });
     stop();
   });
 
@@ -332,7 +334,7 @@ describe("local learned-habit subscriptions", () => {
     stop(); vi.stubGlobal("window", undefined);
     expect(loadCompanionCare()).toEqual(DEFAULT_COMPANION_MEMORY);
     expect(resetCompanionHabits()).toEqual(DEFAULT_COMPANION_HABITS);
-    expect(saveCompanionCare({ ...DEFAULT_COMPANION_CARE, habits: learned })).toEqual({ ...DEFAULT_COMPANION_CARE, habits: learned });
+    expect(saveCompanionCare({ ...DEFAULT_COMPANION_CARE, habits: learned })).toEqual({ ...DEFAULT_COMPANION_MEMORY, habits: learned });
     expect(subscribeCompanionHabits(listener)).toBeTypeOf("function");
   });
 });

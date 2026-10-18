@@ -35,6 +35,10 @@ const receipt = json<Receipt>(`${run}/패킹파생기록.json`);
 // 098 remains immutable release evidence after later styles are activated.
 const hd = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata.hd);
 const play = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata.play);
+//098's receipt covers the immutable33-row/512-slot prefix. Later living keys
+// append their own registration and receipts; they do not alter this coverage.
+const protectedRows = companionSpriteMetadata.rows.slice(0, 33);
+const protectedFrames = companionSpriteMetadata.frames.slice(0, 512);
 const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const alpha = (rgba: Buffer) => {
   const bytes = Buffer.alloc(rgba.length / 4);
@@ -99,15 +103,19 @@ describe("098 whole-source eye-style delivery, independently bound to actual fil
     }
     const beforeHd = json<{ rows: number[][] }>(receipt.baseline.hd.path), beforePlay = json<{ rows: number[][] }>(receipt.baseline.play.path);
     expect(hd.rows).toEqual(beforeHd.rows); expect(play.rows).toEqual(beforePlay.rows);
-    expect(companionSpriteMetadata.rows).toEqual([...beforeHd.rows, ...beforePlay.rows.map(row => row.map(index => index + 304))]);
-    expect(companionSpriteMetadata.rows).toHaveLength(33); expect(companionSpriteMetadata.frames).toHaveLength(512);
+    expect(protectedRows).toEqual([...beforeHd.rows, ...beforePlay.rows.map(row => row.map(index => index + 304))]);
+    expect(protectedRows).toHaveLength(33); expect(protectedFrames).toHaveLength(512);
+    for (const row of companionSpriteMetadata.rows.slice(33)) {
+      expect(row.length).toBeGreaterThan(0);
+      expect(row.every(index => Number.isInteger(index) && index >= 512 && index < companionSpriteMetadata.frames.length)).toBe(true);
+    }
     expect(receipt.audience.runtimeExclusionsPreserved).toEqual([9, 10]);
   });
 
   it("maps every512 slot to new source bytes, preserving450 active slots and compatibility127", () => {
     expect(receipt.coverage).toMatchObject({ physicalSlots: 512, logicalRows: 33, packetCount: 32, rawLogicalReferencedSlots: 451, actualActionReferencedSlots: 450, compatibilityOnlySlots: [127], liveKeyCount: 71, allSlotsHaveNewSource: true, fallbackOldRgbSlots: 0 });
     expect(receipt.slots).toHaveLength(512); expect(receipt.slots.map(slot => slot.index)).toEqual(Array.from({ length: 512 }, (_, i) => i));
-    const logical = new Set(companionSpriteMetadata.rows.flat()), active = new Set(companionSpriteMetadata.rows.flatMap((row, index) => index === 7 ? [] : row));
+    const logical = new Set(protectedRows.flat()), active = new Set(protectedRows.flatMap((row, index) => index === 7 ? [] : row));
     expect(logical.size).toBe(451); expect(active.size).toBe(450);
     expect([...logical].filter(index => !active.has(index))).toEqual([127]);
     expect(receipt.coverage.deadSlots).toEqual(Array.from({ length: 512 }, (_, i) => i).filter(index => !logical.has(index)));
