@@ -137,7 +137,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
     for (const [target, name] of COLLECTION) {
       expect(sanitizeTarget(target)).toBe(target);
       const label = describeTarget("ui.click", target);
-      expect(label.name).toBe(name); expect(label.unnamed).toBeUndefined(); expect(label.retired).toBeUndefined();
+      expect(label.name).toBe(name); expect(label.unnamed).toBeUndefined(); expect(label.retired).toBe(target.startsWith("companion-radio-mood#") ? true : undefined);
       expect(label.area).toBe(["companion-gift-open", "companion-radio-play"].includes(target) ? "빅타민" : "설정");
       expect(story).toContain(name);
     }

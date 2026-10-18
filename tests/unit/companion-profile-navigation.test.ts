@@ -2,6 +2,8 @@ import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 
 const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, activity: vi.fn() }));
 vi.mock("react", async importOriginal => ({ ...await importOriginal<typeof import("react")>(),
@@ -96,5 +98,34 @@ describe("actual shared profile navigation callbacks", () => {
     key(first, "ArrowRight"); await render();
     expect(find(node => node.props["data-profile-page"] === "discover").props["aria-selected"]).toBe(true);
     expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-profile-page#discover" }]]);
+  });
+  it("offers only two collections and keeps all behavior/situation memories together without revealing unknown names", async () => {
+    await render(); await discover();
+    const categories = nodes(tree).filter(node => node.props["data-act"] === "companion-collection-category");
+    expect(categories.map(node => node.props["data-act-opt"])).toEqual(["food", "behavior"]);
+    click(categories[1]); await render();
+    const memories = nodes(tree).filter(node => node.props["data-act"] === "companion-collection-inspect");
+    expect(memories).toHaveLength(COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.length);
+    expect(memories.map(node => node.props["data-act-opt"])).toEqual([...COMPANION_BEHAVIOR_IDS.map(() => "behavior"), ...COMPANION_SITUATION_IDS.map(() => "moment")]);
+    expect(memories.every(node => /^\?\?\? · \d+$/.test(String(node.props["aria-label"])))).toBe(true);
+    expect(nodes(tree).some(node => node.props["aria-label"] === "추억 종류")).toBe(false);
+    expect(memories.filter(node => node.props.tabIndex === 0)).toHaveLength(1);
+  });
+  it("crosses the merged-memory boundary and records the selected destination's fixed category exactly once", async () => {
+    await render(); await discover();
+    click(find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "behavior")); await render();
+    const memoryTiles = () => nodes(tree).filter(node => node.props["data-act"] === "companion-collection-inspect");
+    harness.activity.mockClear();
+    key(memoryTiles()[COMPANION_BEHAVIOR_IDS.length - 1], "ArrowRight"); await render();
+    expect(memoryTiles()[COMPANION_BEHAVIOR_IDS.length].props["aria-pressed"]).toBe(true);
+    key(memoryTiles()[COMPANION_BEHAVIOR_IDS.length], "ArrowLeft"); await render();
+    expect(memoryTiles()[COMPANION_BEHAVIOR_IDS.length - 1].props["aria-pressed"]).toBe(true);
+    key(memoryTiles()[0], "End"); await render();
+    expect(memoryTiles().at(-1)?.props["aria-pressed"]).toBe(true);
+    expect(harness.activity.mock.calls).toEqual([
+      ["ui.click", { target: "companion-collection-inspect#moment" }],
+      ["ui.click", { target: "companion-collection-inspect#behavior" }],
+      ["ui.click", { target: "companion-collection-inspect#moment" }],
+    ]);
   });
 });

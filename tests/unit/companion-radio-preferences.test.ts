@@ -8,8 +8,8 @@ beforeEach(async () => {
 });
 afterEach(() => vi.unstubAllGlobals());
 it("defaults available with no playback state and validates every saved field", () => {
-  expect(prefs.getCompanionRadioPreferences()).toEqual({ enabled: true, volume: 35, react: true, moods: { lively: true, graceful: true, calm: true }, excludedIds: [] });
-  expect(prefs.normalizeCompanionRadioPreferences({ volume: 999, react: false, moods: { calm: false }, excludedIds: ["radio-01", "radio-01", "private title"] })).toEqual({ enabled: true, volume: 100, react: false, moods: { lively: true, graceful: true, calm: false }, excludedIds: ["radio-01"] });
+  expect(prefs.getCompanionRadioPreferences()).toEqual({ enabled: true, volume: 35, react: true, excludedIds: [] });
+  expect(prefs.normalizeCompanionRadioPreferences({ volume: 999, react: false, moods: { calm: false }, excludedIds: ["radio-01", "radio-01", "private title"] })).toEqual({ enabled: true, volume: 100, react: false, excludedIds: ["radio-01"] });
   expect(prefs.normalizeCompanionRadioPreferences({ enabled: "false", volume: NaN }).enabled).toBe(true);
 });
 it("preserves consecutive changes when writes fail over an existing readable value", () => {
@@ -17,8 +17,13 @@ it("preserves consecutive changes when writes fail over an existing readable val
   expect(prefs.getCompanionRadioPreferences().volume).toBe(45); prefs.setCompanionRadioPreferences({ react: false }); expect(prefs.getCompanionRadioPreferences().volume).toBe(45); expect(prefs.getCompanionRadioPreferences().react).toBe(false);
   fail = false; prefs.setCompanionRadioPreferences({ enabled: false }); expect(JSON.parse(data.get(prefs.COMPANION_RADIO_PREFERENCES_KEY)!).volume).toBe(45);
 });
-it("returns fresh mutable data and excludes disabled moods/individual tracks", () => {
-  const before = prefs.getCompanionRadioPreferences(); before.moods.calm = false; expect(prefs.getCompanionRadioPreferences().moods.calm).toBe(true);
-  prefs.setCompanionRadioPreferences({ moods: { lively: true, graceful: false, calm: false }, excludedIds: ["radio-01"] });
-  expect(prefs.companionRadioPool().every(track => track.mood === "lively" && track.id !== "radio-01")).toBe(true);
+it("retires old mood filters while preserving saved exclusions, mute and volume", () => {
+  data.set(prefs.COMPANION_RADIO_PREFERENCES_KEY, JSON.stringify({ enabled: false, volume: 15, react: false, moods: { lively: false, graceful: false, calm: false }, excludedIds: ["radio-01"] }));
+  expect(prefs.getCompanionRadioPreferences()).toEqual({ enabled: false, volume: 15, react: false, excludedIds: ["radio-01"] });
+  expect(new Set(prefs.companionRadioPool().map(track => track.mood))).toEqual(new Set(["lively", "graceful", "calm"]));
+  expect(prefs.companionRadioPool().some(track => track.id === "radio-01")).toBe(false);
+  const before = prefs.getCompanionRadioPreferences(); before.excludedIds.push("radio-02");
+  expect(prefs.getCompanionRadioPreferences().excludedIds).toEqual(["radio-01"]);
+  prefs.setCompanionRadioPreferences({ react: true });
+  expect(JSON.parse(data.get(prefs.COMPANION_RADIO_PREFERENCES_KEY)!)).toEqual({ enabled: false, volume: 15, react: true, excludedIds: ["radio-01"] });
 });

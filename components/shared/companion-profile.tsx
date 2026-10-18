@@ -9,6 +9,7 @@ import { playCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import { loadCompanionCare, resetCompanionHabits, subscribeCompanionHabits, subscribeCompanionLife, type CompanionMemory } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_BEHAVIOR_HINTS, COMPANION_BEHAVIOR_IDS, COMPANION_BEHAVIOR_NAMES, equipCompanionAccessory, loadCompanionCollection, openCompanionGift, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_ACCESSORY_IDS, COMPANION_ACCESSORY_NAMES } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_FOOD_FACTS } from "@/lib/ui/viewer-companion/food-facts";
 import { COMPANION_SITUATION_HINTS, COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES } from "@/lib/ui/viewer-companion/moments";
 import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
 import { DEFAULT_COMPANION_LIFE, type CompanionLifeReason } from "@/lib/ui/viewer-companion/life";
@@ -23,9 +24,11 @@ const FOOD_PAGE_SIZE = 24;
 type ProfilePage = typeof pages[number]["key"];
 type Collection = ReturnType<typeof loadCompanionCollection>;
 type FoodId = typeof COMPANION_FOOD_KINDS[number];
-type BehaviorId = typeof COMPANION_BEHAVIOR_IDS[number];
 type AccessoryId = typeof COMPANION_ACCESSORY_IDS[number];
-type SituationId = typeof COMPANION_SITUATION_IDS[number];
+const memories = [
+  ...COMPANION_BEHAVIOR_IDS.map(id => ({ id, kind: "behavior" as const, name: COMPANION_BEHAVIOR_NAMES[id], hint: COMPANION_BEHAVIOR_HINTS[id] })),
+  ...COMPANION_SITUATION_IDS.map(id => ({ id, kind: "moment" as const, name: COMPANION_SITUATION_NAMES[id], hint: COMPANION_SITUATION_HINTS[id] })),
+];
 
 const recentReasons: Record<CompanionLifeReason, string> = {
   "favorite-food": "좋아하는 맛을 다시 즐겼어요.", "new-flavor": "새로운 맛을 알아가고 있어요.",
@@ -68,7 +71,7 @@ function useProfileSpotlight(active: boolean, page: ProfilePage) {
   return { ref: host, onPointerMove: move, onPointerEnter: move, onPointerLeave: clear };
 }
 
-function onCollectionKey(event: KeyboardEvent<HTMLButtonElement>, index: number, length: number, select: (index: number) => void, offset = 0) {
+function onCollectionKey(event: KeyboardEvent<HTMLButtonElement>, index: number, length: number, select: (index: number) => void, offset = 0, categoryAt?: (index: number) => string) {
   if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
   const list = event.currentTarget.closest("ul");
   if (!list) return;
@@ -77,7 +80,7 @@ function onCollectionKey(event: KeyboardEvent<HTMLButtonElement>, index: number,
   event.preventDefault(); event.stopPropagation();
   if (next !== index) {
     select(next);
-    const action = event.currentTarget.dataset.act, category = event.currentTarget.dataset.actOpt;
+    const action = event.currentTarget.dataset.act, category = categoryAt?.(next) ?? event.currentTarget.dataset.actOpt;
     if (action === "companion-accessory-select") logActivity("ui.click", { target: action });
     else if (action === "companion-collection-inspect" && category && ["food", "behavior", "moment"].includes(category)) logActivity("ui.click", { target: `${action}#${category}` });
   }
@@ -96,9 +99,8 @@ function learnedEffects(preferences: CompanionPreferences, memory: CompanionMemo
 
 export function CompanionProfile({ preferences, active }: { preferences: CompanionPreferences; active: boolean }) {
   const [page, setPage] = useState<ProfilePage>("together"), [care, setCare] = useState<CompanionMemory | null>(null);
-  const [collection, setCollection] = useState<Collection | null>(null), [category, setCategory] = useState<"food" | "behavior" | "moment">("food");
-  const [selectedFood, setSelectedFood] = useState<FoodId>(COMPANION_FOOD_KINDS[0]), [selectedBehavior, setSelectedBehavior] = useState<BehaviorId>(COMPANION_BEHAVIOR_IDS[0]);
-  const [selectedSituation, setSelectedSituation] = useState<SituationId>(COMPANION_SITUATION_IDS[0]);
+  const [collection, setCollection] = useState<Collection | null>(null), [category, setCategory] = useState<"food" | "behavior">("food");
+  const [selectedFood, setSelectedFood] = useState<FoodId>(COMPANION_FOOD_KINDS[0]), [selectedMemoryIndex, setSelectedMemoryIndex] = useState(0);
   const [foodPage, setFoodPage] = useState(0);
   const [selectedAccessory, setSelectedAccessory] = useState<AccessoryId>(COMPANION_ACCESSORY_IDS[0]), [announcement, setAnnouncement] = useState("");
   const id = useId(), nav = useRef<HTMLDivElement>(null), spotlight = useProfileSpotlight(active && preferences.enabled, page);
@@ -138,12 +140,8 @@ export function CompanionProfile({ preferences, active }: { preferences: Compani
   const effects = learnedEffects(preferences, care), gifts = collection?.gifts;
   const mode = { default: "빅타민", cat: "고양이", dog: "강아지" }[preferences.animalMode];
   const personality = { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기" }[preferences.personality];
-  const memoryIds: readonly string[] = category === "moment" ? COMPANION_SITUATION_IDS : COMPANION_BEHAVIOR_IDS;
-  const memoryNames: Readonly<Record<string, string>> = category === "moment" ? COMPANION_SITUATION_NAMES : COMPANION_BEHAVIOR_NAMES;
-  const memoryHints: Readonly<Record<string, string>> = category === "moment" ? COMPANION_SITUATION_HINTS : COMPANION_BEHAVIOR_HINTS;
-  const memoryFound: readonly string[] = category === "moment" ? collection?.situations ?? [] : collection?.behaviors ?? [];
-  const selectedMemory = category === "moment" ? selectedSituation : selectedBehavior;
-  const selectMemory = (index: number) => category === "moment" ? setSelectedSituation(COMPANION_SITUATION_IDS[index]) : setSelectedBehavior(COMPANION_BEHAVIOR_IDS[index]);
+  const selectedMemory = memories[selectedMemoryIndex];
+  const memoryFound = (memory: typeof memories[number]) => ((memory.kind === "moment" ? collection?.situations : collection?.behaviors) as readonly string[] | undefined)?.includes(memory.id) ?? false;
   const foodPageCount = Math.ceil(COMPANION_FOOD_KINDS.length / FOOD_PAGE_SIZE), foodOffset = foodPage * FOOD_PAGE_SIZE;
   const visibleFoods = COMPANION_FOOD_KINDS.slice(foodOffset, foodOffset + FOOD_PAGE_SIZE);
   const selectFoodIndex = (index: number, focus = false) => {
@@ -193,7 +191,7 @@ export function CompanionProfile({ preferences, active }: { preferences: Compani
         {!collection?.foods.length && !collection?.behaviors.length && !collection?.situations.length && <div className="rhh-collection-empty"><CompanionCollectionArt id="discovery-seal" kind="gift" /><p>첫 발견을 기다려요.</p></div>}
         <div aria-label="도감 종류" className="rhh-collection-switch" role="group"><button aria-pressed={category === "food"} data-act="companion-collection-category" data-act-opt="food" onClick={() => setCategory("food")} type="button">냠냠 도감 <span>{collection?.foods.length ?? 0}/{COMPANION_FOOD_KINDS.length}</span></button><button aria-pressed={category !== "food"} data-act="companion-collection-category" data-act-opt="behavior" onClick={() => setCategory("behavior")} type="button">추억 도감 <span>{(collection?.behaviors.length ?? 0) + (collection?.situations.length ?? 0)}/{COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.length}</span></button></div>
         {category === "food" ? <>
-          <div aria-live="polite" className="rhh-collection-detail">{collection?.foods.includes(selectedFood) ? <><strong>{COMPANION_FOOD_NAMES[selectedFood]}</strong><span className="rhh-collection-rarity">{COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[selectedFood]]}</span><p className="rhh-collection-chance">기본 등장 {(companionFoodChance(selectedFood) * 100).toFixed(1)}% · 직전 간식 제외 시 달라져요.</p></> : <><strong>???</strong><p>아직 발견하지 못했어요.</p></>}</div>
+          <div aria-live="polite" className="rhh-collection-detail">{collection?.foods.includes(selectedFood) ? <><strong>{COMPANION_FOOD_NAMES[selectedFood]}</strong><span className="rhh-collection-rarity">{COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[selectedFood]]}</span><p className="rhh-collection-chance">기본 등장 {(companionFoodChance(selectedFood) * 100).toFixed(1)}%</p><p className="rhh-collection-fact">{COMPANION_FOOD_FACTS[selectedFood]}</p></> : <><strong>???</strong><p>아직 발견하지 못했어요.</p></>}</div>
           <nav aria-label="냠냠 도감 페이지" className="rhh-collection-pages"><button aria-label="이전 간식" className="rhh-link" data-act="companion-collection-page" data-act-opt="prev" disabled={foodPage === 0} onClick={event => selectFoodIndex((foodPage - 1) * FOOD_PAGE_SIZE, event.detail === 0)} type="button"><ChevronLeft aria-hidden="true" size={17} />이전</button><span aria-live="polite">{foodOffset + 1}–{Math.min(foodOffset + FOOD_PAGE_SIZE, COMPANION_FOOD_KINDS.length)} <span>/ {COMPANION_FOOD_KINDS.length}</span></span><button aria-label="다음 간식" className="rhh-link" data-act="companion-collection-page" data-act-opt="next" disabled={foodPage + 1 >= foodPageCount} onClick={event => selectFoodIndex((foodPage + 1) * FOOD_PAGE_SIZE, event.detail === 0)} type="button">다음<ChevronRight aria-hidden="true" size={17} /></button></nav>
           <ul className="rhh-collection-grid rhh-food-grid">{visibleFoods.map((food, localIndex) => {
             const index = foodOffset + localIndex;
@@ -201,9 +199,8 @@ export function CompanionProfile({ preferences, active }: { preferences: Compani
             return <li key={food}><button aria-label={found ? `${COMPANION_FOOD_NAMES[food]} · 맛봤어요` : `??? · ${index + 1}`} aria-pressed={selectedFood === food} className="rhh-collection-tile" data-act="companion-collection-inspect" data-act-opt="food" data-food-index={index} data-found={found || undefined} onClick={() => setSelectedFood(food)} onKeyDown={event => onCollectionKey(event, index, COMPANION_FOOD_KINDS.length, next => selectFoodIndex(next, true), foodOffset)} tabIndex={selectedFood === food ? 0 : -1} type="button"><CompanionCollectionArt kind="food" id={food} /><span>{found ? COMPANION_FOOD_NAMES[food] : "???"}</span>{found && <><span className="rhh-collection-rarity">{COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[food]]}</span><CompanionCollectionArt className="rhh-collection-stamp" kind="food-stamp" id={food} /></>}</button></li>;
           })}</ul>
         </> : <>
-          <div aria-label="추억 종류" className="rhh-collection-switch rhh-memory-switch" role="group">{([{ key: "behavior", label: "재롱" }, { key: "moment", label: "특별한 순간" }] as const).map(item => <button aria-pressed={category === item.key} data-act="companion-collection-category" data-act-opt={item.key} key={item.key} onClick={() => setCategory(item.key)} type="button">{item.label}</button>)}</div>
-          <div aria-live="polite" className="rhh-collection-detail"><strong>{memoryFound.includes(selectedMemory) ? memoryNames[selectedMemory] : "???"}</strong><p>{memoryFound.includes(selectedMemory) ? memoryHints[selectedMemory] : "아직 발견하지 못했어요."}</p></div>
-          <ul className="rhh-collection-grid rhh-behavior-grid">{memoryIds.map((memory, index) => { const found = memoryFound.includes(memory); return <li key={memory}><button aria-label={found ? `${memoryNames[memory]} · 만났어요` : `??? · ${index + 1}`} aria-pressed={selectedMemory === memory} className="rhh-collection-tile" data-act="companion-collection-inspect" data-act-opt={category} data-found={found || undefined} onClick={() => selectMemory(index)} onKeyDown={event => onCollectionKey(event, index, memoryIds.length, selectMemory)} tabIndex={selectedMemory === memory ? 0 : -1} type="button"><CompanionCollectionArt kind={category === "moment" ? "situation-stamp" : "behavior-stamp"} id={memory} /><span>{found ? memoryNames[memory] : "???"}</span></button></li>; })}</ul>
+          <div aria-live="polite" className="rhh-collection-detail"><strong>{memoryFound(selectedMemory) ? selectedMemory.name : "???"}</strong><p>{memoryFound(selectedMemory) ? selectedMemory.hint : "아직 발견하지 못했어요."}</p></div>
+          <ul className="rhh-collection-grid rhh-behavior-grid">{memories.map((memory, index) => { const found = memoryFound(memory); return <li key={`${memory.kind}:${memory.id}`}><button aria-label={found ? `${memory.name} · 만났어요` : `??? · ${index + 1}`} aria-pressed={selectedMemoryIndex === index} className="rhh-collection-tile" data-act="companion-collection-inspect" data-act-opt={memory.kind} data-found={found || undefined} onClick={() => setSelectedMemoryIndex(index)} onKeyDown={event => onCollectionKey(event, index, memories.length, setSelectedMemoryIndex, 0, next => memories[next].kind)} tabIndex={selectedMemoryIndex === index ? 0 : -1} type="button"><CompanionCollectionArt kind={memory.kind === "moment" ? "situation-stamp" : "behavior-stamp"} id={memory.id} /><span>{found ? memory.name : "???"}</span></button></li>; })}</ul>
         </>}
       </>}
     </div>

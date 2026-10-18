@@ -33,6 +33,7 @@ export type TargetLabel = {
 // 기록 보존이 90일이라 당분간 집계에 계속 나타난다. 사전 항목 자체는 지우지 않는다 —
 // 지우면 옛 기록이 '이름 미등록'으로 떨어져 더 못 읽게 된다.
 const RETIRED_TARGETS = new Set([
+  "companion-radio-mood", // All moods now play; personality decides reaction.
   // 2026-09-19 점검 — 코드 어디서도 더는 기록되지 않는 값들(스캐너로 대조). 남겨 두면 '한 번도 안 쓴
   // 기능'처럼 후보 목록에 끼어 목록이 거짓말을 한다. 이름은 옛 기록을 읽기 위해 그대로 둔다.
   "agenda-legend-insights",
@@ -670,6 +671,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-learning-enabled": { name: "빅타민 함께 지내며 배우기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-learning-reset": { name: "빅타민 배운 습관 초기화", area: "설정" },
   "companion-home-open": { name: "빅타민 집 열기", area: "빅타민" },
+  "companion-book-open": { name: "빅타민 수첩 열기", area: "빅타민" },
+  "companion-book-close": { name: "빅타민 수첩 닫기", area: "빅타민" },
   "companion-home-close": { name: "빅타민 집 닫기", area: "빅타민" },
   "companion-home-fold": { name: "빅타민 집", area: "빅타민", opts: { open: "펴기", close: "접기" } },
   "companion-home-call": { name: "빅타민 집으로 부르기", area: "빅타민" },

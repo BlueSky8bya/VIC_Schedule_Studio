@@ -184,7 +184,7 @@ import {
   type UndoAction
 } from "@/lib/studio/editor-model";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
-import { useFocusTrap } from "@/lib/ui/use-focus-trap";
+import { restoreDialogOpener, useFocusTrap } from "@/lib/ui/use-focus-trap";
 import {
   type CalZoom,
   createWheelStepper,
@@ -411,6 +411,7 @@ export function StudioShell({
   // 월 피커(제목 클릭)·돌아가기 토스트 — 시청자 화면과 같은 부품(components/shared/month-picker).
   const [monthPick, setMonthPick] = useState<{ anchor: DOMRect | null } | null>(null);
   const [jumpToast, setJumpToast] = useState<{ to: YM; from: YM } | null>(null);
+  const [companionBook, setCompanionBook] = useState(false);
   const jumpToastTimerRef = useRef<number | null>(null);
   const jumpTodayRef = useRef<() => void>(() => {});
   const flashTimerRef = useRef<number | null>(null);
@@ -500,6 +501,7 @@ export function StudioShell({
   // 아이패드 세로(768)·스플릿뷰도 압축 데스크톱 대신 터치 네이티브 아젠다를 받는다(L4).
   const [isNarrow, setIsNarrow] = useState(initialNarrow);
   const companionDesktop = useCompanionDesktop();
+  useEffect(() => { if (!companionDesktop) setCompanionBook(false); }, [companionDesktop]);
   useEffect(() => {
     const mq = window.matchMedia(STUDIO_AGENDA_QUERY);
     const apply = () => setIsNarrow(mq.matches);
@@ -1213,6 +1215,7 @@ export function StudioShell({
   function renderSettingsList() {
     return (
       <StudioSettingsList
+        companionBook={companionBook}
         textPx={textPx}
         onChangeTextPx={changeTextPx}
         font={{ id: fontId, change: changeFont, weight: textWeight, changeWeight: changeTextWeight }}
@@ -1893,7 +1896,7 @@ export function StudioShell({
     if (prev === null && modal !== null) {
       modalOpenerRef.current = document.activeElement as HTMLElement | null;
     } else if (prev !== null && modal === null) {
-      modalOpenerRef.current?.focus?.();
+      restoreDialogOpener(modalOpenerRef.current);
       modalOpenerRef.current = null;
     }
   }, [modal]);
@@ -6182,7 +6185,7 @@ export function StudioShell({
               {/* 2026-10-16 owner placement exception to UI-18: studio settings
                   sit beside month navigation; viewer keeps its header gear.
                   The 44px control, settings modal and focus/history stay shared. */}
-              <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setModal("settings"); }} />
+              <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setCompanionBook(false); setModal("settings"); }} />
             </div>
           </div>
 
@@ -7247,7 +7250,7 @@ export function StudioShell({
           data-tip="설정"
           onClick={() => {
             hapticTick();
-            setModal("settings");
+            setCompanionBook(false); setModal("settings");
           }}
           type="button"
         >
@@ -7272,7 +7275,7 @@ export function StudioShell({
       data-companion-window={companionDesktop && companionPrefs.enabled && (editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop) ? "" : undefined}
       ref={setShellRef}
     >
-      {companionDesktop && companionPrefs.enabled ? <ViewerCompanion root={shellRef} preferences={companionPrefs}
+      {companionDesktop && companionPrefs.enabled ? <ViewerCompanion onOpenBook={() => { setCompanionBook(true); setModal("settings"); }} root={shellRef} preferences={companionPrefs}
         positionMemory={staffCompanionPositionMemory}
         blocked={Boolean(monthPick || passcodeModal || navMsg)}
         workspaceBusy={Boolean(dragEventId || spanDrag)}
@@ -8780,9 +8783,9 @@ export function StudioShell({
           role="presentation"
         >
           <div
-            className={`modal-card modal-card-${modal} ${modal === "tags" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
+            className={`modal-card modal-card-${modal}${modal === "settings" && companionBook ? " companion-book" : ""} ${modal === "tags" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
             aria-modal="true"
-            aria-label={modal === "settings" ? "설정" : undefined}
+            aria-label={modal === "settings" ? companionBook ? "빅타민 수첩" : "설정" : undefined}
             role="dialog"
             ref={mainModalTrapRef}
           >
@@ -8796,12 +8799,12 @@ export function StudioShell({
                         ? isDevInsights
                           ? "🛠 월별 인사이트"
                           : "📊 월별 인사이트"
-                        : "설정"}
+                        : companionBook ? "빅타민 수첩" : "설정"}
               </h2>
               <button
                 aria-label="닫기"
                 className="modal-close"
-                data-act="close-modal"
+                data-act={modal === "settings" && companionBook ? "companion-book-close" : "close-modal"}
                 onClick={requestCloseModal}
                 type="button"
               >

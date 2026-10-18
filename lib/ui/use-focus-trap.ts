@@ -2,6 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
+/** A direct settings opener (the companion's book) may unmount when the pet
+ * is disabled. Restore its visible native settings entry in that case. */
+export function restoreDialogOpener(opener: HTMLElement | null, root: ParentNode = document) {
+  const available = (element: HTMLElement) => element.isConnected && element.getClientRects().length > 0 && !element.closest("[inert],[hidden]");
+  const target = opener && available(opener) ? opener : Array.from(root.querySelectorAll<HTMLElement>('[data-act="open-settings"],[data-act="studio-settings"],.stool-settings')).find(available)
+    ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="panel-toggle"]')).find(available);
+  target?.focus({ preventScroll: true });
+}
+
 // P1-DIALOG-1: 모달 카드 안에 Tab 포커스를 가둔다(순환) + 열릴 때 첫 포커서블로 진입.
 // Esc 닫기와 '열기 전 포커스 복원'은 호출부의 기존 효과(B2)가 담당 — 이 훅은 가두기만 한다.
 // 반환된 ref를 role="dialog" 카드 요소에 단다. active가 true인 동안만 동작.

@@ -1,6 +1,6 @@
 # 109 — 빅타민 설정 개편·간식 확장·이용기록 계약
 
-2026-10-18 KST. Status: in_progress. Latest user request governs.
+2026-10-18 KST. Status: complete. Latest user request governs.
 
 ## Scope
 
@@ -18,4 +18,4 @@ Use typecheck/lint/unit/build/harness plus production-build native viewer/studio
 
 ## Current evidence
 
-Implementation and independent reviews complete. Six new source sheets/120food pairs independently reviewed; preserved sources and zero-loss RGBA attribution verified, new atlas total278,460bytes;106–109reproducibility PASS. Radio9 passes on7rH; settings43 passes onNtR8 after the dark switch/transition corrections. Subsequent native capture found and fixed a real deferred-summary open/close race. Current product build `cGYn81NE0Z_RsRui4v-Xm` passes232files/2,536unit tests, typecheck/lint/build and targeted current radio4/activity3. Native counts, preserved failures and exact revision limits: [109 record](../verification/COMPANION_DESIGN_FOODS-20261018.md). Guarded deployment verification remains. Exact deployed identity uses public static chunks; the live GET's potential background writes are avoided. Base253453e6 evidence remains scoped to108. Actual broadcaster-PC validation stays user-deferred.
+Implementation and independent reviews complete. Six new source sheets/120food pairs independently reviewed; preserved sources and zero-loss RGBA attribution verified, new atlas total278,460bytes;106–109reproducibility PASS. Radio9 passes on7rH; settings43 passes onNtR8 after the dark switch/transition corrections. Subsequent native capture found and fixed a real deferred-summary open/close race. Current product build `cGYn81NE0Z_RsRui4v-Xm` passes232files/2,536unit tests, typecheck/lint/build and targeted current radio4/activity3. Commit `ed11dd12e9bdf1b45200001012ef831197456569` is deployed: Vercel/all13remote quality steps, actual public-chunk full-SHA/browser-byte proof, guarded anonymous profile/180food/wardrobe/radio/music-note UI,6atlas byte comparison and public canaries pass. Actual soft-mode suppression and explicit UI maximum-effects animation are both verified. Native counts, preserved failures and revision/environment limits: [109 record](../verification/COMPANION_DESIGN_FOODS-20261018.md). The live GET's potential background writes are avoided. Base253453e6 evidence remains scoped to108. Actual broadcaster-PC validation stays user-deferred. Post-release bookkeeping remains local to avoid a documentation-only redeployment.

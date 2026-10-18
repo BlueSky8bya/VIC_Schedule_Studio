@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY, createCompanionCollectionStore, equipCompanionAccessory, loadCompanionCollection, normalizeCompanionCollection, observedCompanionBehavior, openCompanionGift, recordCompanionConsumedFood, subscribeCompanionCollection, type CompanionBehaviorObservation } from "@/lib/ui/viewer-companion/collection";
-import { advanceCompanionGifts, COMPANION_ACCESSORY_IDS, COMPANION_GIFT_ACTIVE_MS, normalizeCompanionGifts } from "@/lib/ui/viewer-companion/gifts";
+import { advanceCompanionGifts, companionGiftChance, COMPANION_ACCESSORY_IDS, COMPANION_GIFT_ACTIVE_MS, normalizeCompanionGifts } from "@/lib/ui/viewer-companion/gifts";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_SITUATION_IDS, companionRunContactSituation, observedCompanionSituation, type CompanionSituationObservation } from "@/lib/ui/viewer-companion/moments";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const observation = (patch: Partial<CompanionBehaviorObservation> = {}): CompanionBehaviorObservation => ({ requestedRow: 34, requestedIndex: 513, adoptedIndex: 513, requestedSrc: "/companion/hd/victamin-episodes-104-v1.webp", adoptedSrc: "/companion/hd/victamin-episodes-104-v1.webp", decoded: true, visible: true, ...patch });
 function storageFixture(initial: unknown = null) {
   let raw: string | null = initial === null ? null : JSON.stringify(initial);
@@ -54,24 +54,61 @@ describe("bounded local discoveries", () => {
 });
 
 describe("earned gifts and explicit equipment", () => {
-  it("needs five active minutes, actual interaction, affection and a safe delivery beat", () => {
+  it("draws only after five active minutes, actual interaction and a safe delivery beat", () => {
     const initial = normalizeCompanionGifts(undefined);
     let state = initial;
     for (let step = 0; step < 10; step++) state = advanceCompanionGifts(state, 30000, .9, true);
     expect(state.activeMs).toBe(COMPANION_GIFT_ACTIVE_MS); expect(state.pending).toBeNull();
     state = { ...state, interactionCredit: 1 };
-    expect(advanceCompanionGifts(state, 250, .64, true)).toBe(state);
     expect(advanceCompanionGifts(state, 250, .9, false)).toBe(state);
     expect(advanceCompanionGifts(state, 250, NaN, true)).toBe(state);
-    const arrived = advanceCompanionGifts(state, 250, .65, true);
+    const arrived = advanceCompanionGifts(state, 250, .65, true, () => 0);
     expect(arrived.pending).toBe("sunglasses"); expect(arrived.unlocked).toEqual([]); expect(arrived.equipped).toBeNull();
+    expect(arrived.activeMs).toBe(0); expect(arrived.interactionCredit).toBe(0);
     expect(advanceCompanionGifts(arrived, 30000, .9, true)).toBe(arrived);
     expect(advanceCompanionGifts(initial, 99 * 86400000, .9, true).activeMs).toBe(30000);
     for (const invalid of [0, -1, NaN, Infinity]) expect(advanceCompanionGifts(initial, invalid, .9, true)).toBe(initial);
     expect(normalizeCompanionGifts({ activeMs: -4, equipped: "beret", pending: "sunglasses", unlocked: ["sunglasses"] })).toEqual({ activeMs: 0, interactionCredit: 0, equipped: null, pending: null, unlocked: ["sunglasses"] });
   });
 
+  it("offers exactly 0.05%–0.1% per consumed opportunity, never a tick or reload lottery", () => {
+    expect(companionGiftChance(0)).toBe(.0005); expect(companionGiftChance(1)).toBe(.001);
+    expect(companionGiftChance(-10)).toBe(.0005); expect(companionGiftChance(10)).toBe(.001);
+    expect(companionGiftChance(NaN)).toBe(0);
+    const ready = { ...normalizeCompanionGifts(undefined), activeMs: COMPANION_GIFT_ACTIVE_MS, interactionCredit: 1 };
+    // An exhaustive uniform 2000-point grid tests exact boundary density,
+    // without statistical flakes or weakening a runtime RNG.
+    for (const [affection, expected] of [[0, 1], [1, 2]]) {
+      let delivered = 0;
+      for (let sample = 0; sample < 2000; sample++) if (advanceCompanionGifts(ready, 1, affection, true, () => sample / 2000).pending) delivered++;
+      expect(delivered).toBe(expected);
+    }
+    const random = vi.fn(() => .001), missed = advanceCompanionGifts(ready, 1, 1, true, random);
+    expect(missed).toMatchObject({ pending: null, activeMs: 0, interactionCredit: 0 });
+    let next = normalizeCompanionGifts(missed);
+    for (let tick = 0; tick < 5000; tick++) next = advanceCompanionGifts(next, 250, 1, true, random);
+    expect(random).toHaveBeenCalledTimes(1); expect(next.pending).toBeNull();
+    for (const invalid of [-1, NaN, Infinity, 1]) expect(advanceCompanionGifts(ready, 1, 1, true, () => invalid).pending).toBeNull();
+    const untouched = vi.fn(() => 0);
+    advanceCompanionGifts(ready, 250, 1, false, untouched);
+    advanceCompanionGifts({ ...ready, interactionCredit: 0 }, 250, 1, true, untouched);
+    expect(untouched).not.toHaveBeenCalled();
+  });
+
+  it("persists a failed opportunity immediately without a semantic discovery or reload retry", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(.5), listener = vi.fn();
+    const storage = storageFixture({ version: 1, foods: [], behaviors: [], gifts: { activeMs: COMPANION_GIFT_ACTIVE_MS, interactionCredit: 1 } });
+    const store = createCompanionCollectionStore(storage, () => 100, listener);
+    store.load(); listener.mockClear(); expect(store.advance(250, 1, true)).toBe(false);
+    expect(JSON.parse(storage.read()!).gifts).toMatchObject({ activeMs: 0, interactionCredit: 0, pending: null });
+    expect(listener).not.toHaveBeenCalled();
+    const reopened = createCompanionCollectionStore(storage);
+    for (let tick = 0; tick < 20; tick++) reopened.advance(30000, 1, true);
+    expect(random).toHaveBeenCalledTimes(1); expect(reopened.load().gifts.pending).toBeNull();
+  });
+
   it("unlocks each of twelve keepsakes only on opening and never auto-equips", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
     const store = createCompanionCollectionStore();
     expect(store.openGift()).toBeNull(); expect(store.equip("sunglasses")).toBe(false);
     for (const id of COMPANION_ACCESSORY_IDS) {
@@ -122,6 +159,7 @@ describe("earned gifts and explicit equipment", () => {
   });
 
   it("does not announce a gift arrival canceled by a newer external clear at its write boundary", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
     const storage = storageFixture({ version: 1, foods: ["apple"], behaviors: [], gifts: { activeMs: COMPANION_GIFT_ACTIVE_MS, interactionCredit: 1 } }), listener = vi.fn();
     const store = createCompanionCollectionStore(storage, () => 0, listener); store.load(); listener.mockClear();
     storage.replace(null);

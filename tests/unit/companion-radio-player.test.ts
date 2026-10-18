@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ enabled: true, volume: 60, companion: { enabled: true, sound: true, soundVolume: 60 }, radio: { enabled: true, volume: 35, react: true, moods: { lively: true, graceful: true, calm: true }, excludedIds: [] as string[] }, gain: { gain: { value: 0, setTargetAtTime: vi.fn(), cancelScheduledValues: vi.fn() } }, resume: vi.fn(), ended: null as null | (() => void), observers: [] as Array<() => void>, prefs: [] as Array<() => void> }));
 vi.mock("@/lib/ui/sfx", () => ({ soundEnabled: () => state.enabled, soundVolume: () => state.volume, connectCompanionMedia: vi.fn(() => ({ context: Object.assign(new EventTarget(), { currentTime: 0, state: "running", resume: state.resume }), gain: state.gain })) }));
 vi.mock("@/lib/ui/viewer-companion/preferences", () => ({ getCompanionPreferences: () => state.companion, subscribeCompanionPreferences: (fn: () => void) => { state.prefs.push(fn); return () => { state.prefs = state.prefs.filter(item => item !== fn); }; } }));
-vi.mock("@/lib/ui/viewer-companion/radio-preferences", async () => { const { COMPANION_RADIO_TRACKS } = await import("@/lib/ui/viewer-companion/radio-catalog"); return { getCompanionRadioPreferences: () => state.radio, subscribeCompanionRadioPreferences: (fn: () => void) => { state.prefs.push(fn); return () => { state.prefs = state.prefs.filter(item => item !== fn); }; }, companionRadioPool: () => COMPANION_RADIO_TRACKS.filter(track => state.radio.moods[track.mood] && !state.radio.excludedIds.includes(track.id)) }; });
+vi.mock("@/lib/ui/viewer-companion/radio-preferences", async () => { const { COMPANION_RADIO_TRACKS } = await import("@/lib/ui/viewer-companion/radio-catalog"); return { getCompanionRadioPreferences: () => state.radio, subscribeCompanionRadioPreferences: (fn: () => void) => { state.prefs.push(fn); return () => { state.prefs = state.prefs.filter(item => item !== fn); }; }, companionRadioPool: () => COMPANION_RADIO_TRACKS.filter(track => !state.radio.excludedIds.includes(track.id)) }; });
 let created: FakeAudio[];
 let playResolve: (() => void) | null;
 let shouldWait = false;
@@ -26,8 +26,8 @@ afterEach(() => { radio.stopCompanionRadio(); vi.unstubAllGlobals(); vi.restoreA
 it("does no audio construction/preload/autoplay on import and rejects disabled/empty/mobile pools", async () => {
   expect(created).toHaveLength(0); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
   state.enabled = false; expect(await radio.nextCompanionRadio()).toBe(false); expect(created).toHaveLength(0);
-  state.enabled = true; state.radio.moods = { lively: false, graceful: false, calm: false }; expect(await radio.nextCompanionRadio()).toBe(false); expect(created).toHaveLength(0);
-  state.radio.moods.lively = true; vi.stubGlobal("matchMedia", () => ({ matches: true })); expect(await radio.nextCompanionRadio()).toBe(false); expect(created).toHaveLength(0);
+  state.enabled = true; const { COMPANION_RADIO_TRACKS } = await import("@/lib/ui/viewer-companion/radio-catalog"); state.radio.excludedIds = COMPANION_RADIO_TRACKS.map(track => track.id); expect(await radio.nextCompanionRadio()).toBe(false); expect(created).toHaveLength(0);
+  state.radio.excludedIds = []; vi.stubGlobal("matchMedia", () => ({ matches: true })); expect(await radio.nextCompanionRadio()).toBe(false); expect(created).toHaveLength(0);
 });
 it("uses one streamed element, actual success generations and no immediate repeat", async () => {
   expect(await radio.nextCompanionRadio()).toBe(true); const first = radio.getCompanionRadioSnapshot(); expect(first.generation).toBe(1); expect(created[0].preload).toBe("none");
@@ -49,11 +49,30 @@ it("a second radio click cancels pending playback even before a playing snapshot
   expect(radio.getCompanionRadioSnapshot().generation).toBe(0); expect(state.prefs).toHaveLength(0); expect(created[0].src).toBe("");
   expect(radio.getCompanionRadioToggleIntent()).toBe("play");
 });
-it("stops immediately on master/creature/radio/mood changes and premiere entry", async () => {
+it("stops immediately on master/creature/radio changes and premiere entry", async () => {
   await radio.nextCompanionRadio(); state.volume = 0; window.dispatchEvent(new Event("vic:sound")); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
   state.volume = 60; await radio.nextCompanionRadio(); state.companion.enabled = false; [...state.prefs].forEach(fn => fn()); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
   state.companion.enabled = true; await radio.nextCompanionRadio(); const id = radio.getCompanionRadioSnapshot().trackId!; state.radio.excludedIds = [id]; [...state.prefs].forEach(fn => fn()); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
   await radio.nextCompanionRadio(); doc.querySelector = () => ({}); state.observers.forEach(fn => fn()); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
+});
+it("uses the music and master faders once, keeping old levels and every mute gate", async () => {
+  const oldDefaultGain = Math.pow(.6, 1.6) * Math.pow(.6, 1.3) * .35 * .65;
+  const gain = radio.companionRadioOutputGain(60, 35);
+  expect(gain).toBeCloseTo(.15456460379174497, 10);
+  expect(20 * Math.log10(gain / oldDefaultGain)).toBeCloseTo(9.509800357168155, 8);
+  await radio.nextCompanionRadio();
+  expect(state.gain.gain.setTargetAtTime).toHaveBeenLastCalledWith(gain, 0, .04);
+  state.companion.soundVolume = 15; [...state.prefs].forEach(fn => fn());
+  expect(state.gain.gain.setTargetAtTime).toHaveBeenLastCalledWith(gain, 0, .04);
+  expect(state.radio.volume).toBe(35); expect(state.volume).toBe(60);
+  state.companion.soundVolume = 0; [...state.prefs].forEach(fn => fn());
+  expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
+  state.companion.soundVolume = 60; state.radio.volume = 0; expect(await radio.nextCompanionRadio()).toBe(false);
+  state.radio.volume = 35; state.companion.sound = false; expect(await radio.nextCompanionRadio()).toBe(false);
+  for (const invalid of [NaN, Infinity, -1]) expect(radio.companionRadioOutputGain(invalid, 35)).toBe(0);
+  expect(radio.companionRadioOutputGain(100, 100)).toBe(1);
+  expect(radio.companionRadioOutputGain(999, 999)).toBe(1);
+  expect(radio.companionRadioOutputGain(0, 100)).toBe(0);
 });
 it("rejects unknown/excluded track auditions without disturbing current playback", async () => {
   await radio.nextCompanionRadio(); const before = radio.getCompanionRadioSnapshot(); state.radio.excludedIds = ["radio-01"];

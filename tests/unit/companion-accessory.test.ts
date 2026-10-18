@@ -48,6 +48,48 @@ describe("adopted pose wardrobe", () => {
     expect(companionAccessoryPlacement(rear, "star-pin")?.layer).toBe("back");
     expect(companionGiftAnchor(rear)?.behind).toBe(true);
   });
+  it("aligns both authored quarter directions before the shared travel mirror, rather than flipping every atlas alike", () => {
+    // Actual native running faces right; the recovery/look-left sources face
+    // left. Source106 eyewear/headwear and source107 cap art have opposite yaw.
+    for (const index of [304, 320, 323, 331, 336, 500]) {
+      expect(companionAccessoryPlacement(selectCompanionSprite(index), "sunglasses")?.mirror, `run ${index}`).toBe(-1);
+      expect(companionAccessoryPlacement(selectCompanionSprite(index), "baseball-cap")?.mirror, `cap ${index}`).toBe(1);
+    }
+    for (const index of [404, 412, 464]) {
+      expect(companionAccessoryPlacement(selectCompanionSprite(index), "sunglasses")?.mirror, `left ${index}`).toBe(1);
+      expect(companionAccessoryPlacement(selectCompanionSprite(index), "baseball-cap")?.mirror, `cap left ${index}`).toBe(-1);
+    }
+    for (const id of COMPANION_ACCESSORY_IDS) expect(companionAccessoryPlacement(selectCompanionSprite(0), id)?.mirror).toBe(1);
+  });
+  it("registers quarter lenses to the eyes instead of the open temple bounds, and shares the native pose roll", () => {
+    for (const index of [304, 323, 404, 464, 500]) {
+      const placed = companionAccessoryPlacement(selectCompanionSprite(index), "sunglasses")!;
+      expect(placed.pivot).toEqual({ x: 49, y: 68 });
+      expect(placed.rotation + 12.5 * placed.mirror!).toBeCloseTo(anchors.frames[index].face.roll);
+      const moving = companionAccessoryPlacement(selectCompanionSprite(index), "sunglasses", { lift: 8, shift: 0, roll: 0, scale: 1 })!;
+      const radians = anchors.frames[index].face.roll * Math.PI / 180;
+      expect(moving.x - placed.x).toBeCloseTo(Math.sin(radians) * 8);
+      expect(moving.y - placed.y).toBeCloseTo(-Math.cos(radians) * 8);
+    }
+  });
+  it("puts the far open temple and satchel shoulder strap behind the adopted body with the same source pixels", () => {
+    const host = () => { const values = new Map<string, string>(); return { hidden: true, values, style: { setProperty: (key: string, value: string) => { values.set(key, value); } } }; };
+    const back = host(), front = host(), gift = host(), painter = createCompanionAccessoryPainter({ back: back as unknown as HTMLElement, front: front as unknown as HTMLElement, gift: gift as unknown as HTMLElement });
+    const selected = selectCompanionSprite(304);
+    for (const id of ["sunglasses", "satchel"] as const) {
+      painter.paint(selected, id, false);
+      expect(back.hidden).toBe(false); expect(front.hidden).toBe(false); expect(gift.hidden).toBe(true);
+      expect(back.values.get("background-image")).toBe(front.values.get("background-image"));
+      expect(back.values.get("transform")).toBe(front.values.get("transform"));
+      expect(back.values.get("clip-path")).not.toBe("none");
+      expect(front.values.get("clip-path")).not.toBe("none");
+      expect(back.values.get("clip-path")).not.toBe(front.values.get("clip-path"));
+    }
+    painter.paint(selected, "pixel-sunglasses", false);
+    expect(back.hidden).toBe(true); expect(front.values.get("clip-path")).toBe("none");
+    painter.paint(selectCompanionSprite(0), "sunglasses", false);
+    expect(back.hidden).toBe(true); expect(front.values.get("clip-path")).toBe("none");
+  });
   it("keeps an umbrella above its side-body attachment and animates only the equipped item relative to its gift", () => {
     const selected = selectCompanionSprite(0), umbrella = companionAccessoryPlacement(selected, "leaf-umbrella")!, giftPoint = companionGiftAnchor(selected)!;
     expect(umbrella.y).toBeLessThan(giftPoint.y); expect(umbrella.x).toBeGreaterThan(giftPoint.x);

@@ -1,11 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
+import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { describeTarget } from "@/lib/activity/labels";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
@@ -13,14 +16,18 @@ import { openCompanionHome } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
 type Event = { kind: string; target?: string | null; meta?: unknown; durMs?: number | null };
-type Capture = { events: Event[]; mutations: string[]; unexpected: string[]; errors: string[]; reads: string[]; projectile?: { phase: string; vx: number; vy: number; state: string } };
+type Capture = { events: Event[]; mutations: string[]; unexpected: string[]; errors: string[]; reads: string[]; documentUrl?: string; buildId: string; requestOrigins: string[]; servedChunks: Array<{ url: string; sha256: string; localSha256: string }>; projectile?: { phase: string; vx: number; vy: number; state: string } };
 const capture = new WeakMap<Page, Capture>();
+const proofTasks = new WeakMap<Page, Promise<void>[]>();
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const targets = (page: Page) => capture.get(page)!.events.filter(event => event.kind === "ui.click").map(event => event.target);
 const count = (page: Page, target: string) => targets(page).filter(value => value === target).length;
 const new109Targets = ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-collection-page#prev", "companion-collection-page#next", "companion-collection-inspect#food", "companion-profile-page#discover", "companion-throw"];
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets];
+const new110Targets = ["companion-book-open", "companion-book-close", "companion-collection-inspect#behavior", "companion-collection-inspect#moment"];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets];
+const retired110Target = "companion-radio-mood#lively";
+const readFixtureTargets = [...sampleTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
 const auditPrefix = process.env.VIC_ACTIVITY_AUDIT_PREFIX ?? ".scratch-pw/companion-activity";
 
@@ -30,12 +37,26 @@ const auditPrefix = process.env.VIC_ACTIVITY_AUDIT_PREFIX ?? ".scratch-pw/compan
 test.use({ baseURL: process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100", viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.beforeEach(async ({ page }) => {
   mkdirSync(".scratch-pw", { recursive: true });
-  const result: Capture = { events: [], mutations: [], unexpected: [], errors: [], reads: [] }; capture.set(page, result);
-  const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  const buildDir = process.env.VISUAL_TEST_BUILD_DIR ?? ".next";
+  const result: Capture = { events: [], mutations: [], unexpected: [], errors: [], reads: [], buildId: readFileSync(resolve(buildDir, "BUILD_ID"), "utf8").trim(), requestOrigins: [], servedChunks: [] }; capture.set(page, result);
+  const pendingProof: Promise<void>[] = []; proofTasks.set(page, pendingProof);
+  const manifest = JSON.parse(readFileSync(resolve(buildDir, "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const names = new Map(Object.entries(manifest).map(([id, value]) => [id, value.exportedName]));
   page.on("pageerror", error => result.errors.push(error.message));
+  page.on("response", response => {
+    const url = new URL(response.url());
+    if (response.status() !== 200 || !/^\/_next\/static\/chunks\/app\/visual-fixture\/(poster|studio)\/page-[\w-]+\.js$/.test(url.pathname)) return;
+    const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
+    pendingProof.push((async () => {
+      try {
+        const bytes = await response.body(), local = readFileSync(resolve(buildDir, "static", url.pathname.slice("/_next/static/".length)));
+        result.servedChunks.push({ url: response.url(), sha256: sha(bytes), localSha256: sha(local) });
+      } catch (error) { result.errors.push(`fixture chunk proof: ${String(error)}`); }
+    })());
+  });
   await page.route("**/*", route => {
-    const request = route.request(), pathname = new URL(request.url()).pathname;
+    const request = route.request(), requestUrl = new URL(request.url()), pathname = requestUrl.pathname;
+    if (!result.requestOrigins.includes(requestUrl.origin)) result.requestOrigins.push(requestUrl.origin);
     if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
       if (pathname === "/api/soop-live") return route.fulfill({ json: { live: false } });
       // Preserve the browser alias for the client guard, but also work with
@@ -63,14 +84,24 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }, info) => {
   const result = capture.get(page)!;
+  await Promise.all(proofTasks.get(page) ?? []);
+  result.documentUrl = page.url();
+  expect(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim()).toBe(result.buildId);
+  expect(result.servedChunks.length).toBeGreaterThan(0);
+  expect(result.servedChunks.every(chunk => chunk.sha256 === chunk.localSha256)).toBe(true);
+  if (info.title.startsWith("110 ")) {
+    const expectedOrigin = new URL(process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100").origin;
+    expect(new URL(page.url()).origin).toBe(expectedOrigin);
+    expect(result.requestOrigins.every(origin => origin === expectedOrigin || origin === expectedOrigin.replace("127.0.0.2", "127.0.0.1"))).toBe(true);
+  }
   writeFileSync(`${auditPrefix}-${info.title.replace(/[^a-z0-9]+/gi, "-").slice(0, 110)}.json`, JSON.stringify(result, null, 2));
   expect(result.unexpected).toEqual([]); expect(result.errors).toEqual([]);
 });
 
 function mockedRead(name?: string): unknown {
   if (name === "getPublicPreviewAction") return samplePublicScheduleData;
-  if (name === "getActivityDayAction") return { ok: true, total: sampleTargets.length, visits: [{ key: "synthetic-companion-visit", account: "계정 #1", role: "developer", device: "desktop", startMs: at, endMs: at + sampleTargets.length * 5000, items: sampleTargets.map((target, index) => ({ t: at + index * 5000, kind: "ui.click", label: "누름", source: "client", target, targetLabel: null, meta: null, durMs: null })) }] };
-  if (name === "getActivityUsageAction") return { ok: true, days: 30, since: "2026-05-12", until: "2026-06-10", rows: sampleTargets.map((target, index) => ({ kind: "ui.click", label: "누름", target, roles: index ? { viewer: 1, anon: 1 } : { developer: 1 }, total: index ? 2 : 1, auto: false })) };
+  if (name === "getActivityDayAction") return { ok: true, total: readFixtureTargets.length, visits: [{ key: "synthetic-companion-visit", account: "계정 #1", role: "developer", device: "desktop", startMs: at, endMs: at + readFixtureTargets.length * 5000, items: readFixtureTargets.map((target, index) => ({ t: at + index * 5000, kind: "ui.click", label: "누름", source: "client", target, targetLabel: null, meta: null, durMs: null })) }] };
+  if (name === "getActivityUsageAction") return { ok: true, days: 30, since: "2026-05-12", until: "2026-06-10", rows: readFixtureTargets.map((target, index) => ({ kind: "ui.click", label: "누름", target, roles: index ? { viewer: 1, anon: 1 } : { developer: 1 }, total: index ? 2 : 1, auto: false })) };
   if (name === "getDayVisitDetailAction") {
     const summary = { visitors: 0, sessions: 0, glances: 0, avgSeconds: 0, totalSeconds: 0, peakConcurrent: 0 };
     const graph = { visits: { roles: {}, devices: {}, total: 0 }, occupancy: Array.from({ length: 24 }, () => ({ roles: {}, devices: {}, avg: 0, peak: 0 })), hasOccupancy: false };
@@ -154,6 +185,53 @@ async function hideInRealCard(page: Page, surface: Surface) {
 }
 
 for (const surface of ["viewer", "studio"] as const) {
+  test(`110 ${surface}: book controls and unified memories record pointer and keyboard uses without private IDs`, async ({ page }) => {
+    test.setTimeout(60_000);
+    // Native UI only: no fake clock, RNG, action/state hook or discovery seed.
+    // All mutations still end in this file's intercepted local queue.
+    await setup(page, surface);
+    const home = await openCompanionHome(page);
+    const book = home.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
+    await book.click();
+    const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+    await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
+    await expect(dialog.locator(".rhh-companion-book-pages")).toBeVisible();
+    await expect(dialog.locator(".rhh-nav")).toHaveCount(0);
+    await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await book.focus(); await book.press("Enter");
+    await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
+    const panel = dialog.locator(".rhh-companion-book-pages");
+    await panel.getByRole("tab", { name: "도감", exact: true }).click();
+    const categories = panel.getByRole("group", { name: "도감 종류", exact: true });
+    await expect(categories.getByRole("button")).toHaveCount(2);
+    await categories.getByRole("button", { name: /^추억 도감 / }).click();
+    await expect(categories.getByRole("button", { name: /재롱|특별한 순간/ })).toHaveCount(0);
+    const memories = panel.locator(".rhh-behavior-grid button");
+    await expect(memories).toHaveCount(COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.length);
+    const lastBehavior = memories.nth(COMPANION_BEHAVIOR_IDS.length - 1), firstMoment = memories.nth(COMPANION_BEHAVIOR_IDS.length);
+    await lastBehavior.click();
+    await lastBehavior.press("ArrowRight"); await expect(firstMoment).toBeFocused();
+    await firstMoment.press("ArrowLeft"); await expect(lastBehavior).toBeFocused();
+    await lastBehavior.press("End"); await expect(memories.last()).toBeFocused();
+    await memories.last().press("Home"); await expect(memories.first()).toBeFocused();
+    await panel.getByRole("tab", { name: "소리", exact: true }).click();
+    await expect(panel.locator('[data-act="companion-radio-mood"]')).toHaveCount(0);
+    const close = dialog.getByRole("button", { name: "닫기", exact: true });
+    await close.focus(); await close.press("Enter"); await expect(dialog).toHaveCount(0);
+    await flush(page, [{ target: "companion-book-open", n: 2 }, { target: "companion-book-close", n: 2 }, { target: "companion-collection-inspect#moment", n: 2 }]);
+    for (const target of ["companion-book-open", "companion-book-close"]) expect(count(page, target), target).toBe(2);
+    expect(count(page, "companion-collection-inspect#behavior")).toBe(3);
+    expect(count(page, "companion-collection-inspect#moment")).toBe(2);
+    expect(targets(page).some(target => target?.startsWith("companion-radio-mood"))).toBe(false);
+    const companionEvents = capture.get(page)!.events.filter(event => event.kind === "ui.click" && (event.target?.startsWith("companion-") || event.target?.startsWith("settings-companion-tab")));
+    expect(companionEvents.every(event => event.meta === null && event.durMs === null)).toBe(true);
+    const options = companionEvents.map(event => event.target?.split("#")[1]);
+    for (const id of [...COMPANION_FOOD_KINDS, ...COMPANION_BEHAVIOR_IDS, ...COMPANION_SITUATION_IDS, ...COMPANION_RADIO_TRACKS.map(track => track.id)]) expect(options).not.toContain(id);
+    expect(targets(page).filter(target => target?.startsWith("auto:.vc-") || target?.startsWith("auto:.rhh-"))).toEqual([]);
+    await page.screenshot({ path: `${auditPrefix}-110-${surface}-book-activity.png` });
+  });
+
   test(`${surface} finding and extracting a truly hidden companion report one completed use each`, async ({ page }) => {
     test.setTimeout(90_000);
     const target = await hideInRealCard(page, surface);
@@ -449,4 +527,36 @@ test("109 developer timeline and least-used list show the new fixed controls fro
   await expect(timeline.locator(".act-gist-open")).not.toContainText("둘러보기만");
   expect(capture.get(page)!.reads).toEqual(expect.arrayContaining(["getActivityDayAction", "getActivityUsageAction"]));
   await page.screenshot({ path: `${auditPrefix}-109-timeline-and-usage.png` });
+});
+
+test("110 developer views show book and unified memory uses while old radio mood stays historical", async ({ page }) => {
+  await setup(page, "studio");
+  await page.locator('[data-act="calendar-cell"][aria-label^="2026-06-10 "]').dblclick({ position: { x: 14, y: 20 } });
+  await page.locator('[data-act="open-day-visit"]').click();
+  const usage = page.locator(".vcard").filter({ has: page.locator('[data-act="usage-open"]') });
+  const timeline = page.locator(".vcard").filter({ has: page.locator('[data-act="activity-open"]') });
+  await expect(usage.getByRole("button", { name: /적게 쓰인 기능/ })).toBeVisible();
+  await expect(timeline.getByRole("button", { name: /행동 타임라인/ })).toBeVisible();
+  await usage.locator('[data-act="usage-show-all"]').click();
+  await page.locator('[data-act="activity-expand-all"]').click();
+  await timeline.locator(".act-lines > summary").click();
+  for (const target of new110Targets) {
+    const name = describeTarget("ui.click", target).name;
+    const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
+    await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();
+    await timelineRow.scrollIntoViewIfNeeded(); await expect(timelineRow).toBeInViewport();
+  }
+  const retired = describeTarget("ui.click", retired110Target);
+  expect(retired.retired).toBe(true);
+  await expect(usage.locator('.usage-list:not([data-retired])')).not.toContainText(retired.name);
+  await usage.locator('[data-act="usage-retired-open"]').click();
+  await expect(usage.locator('.usage-list[data-retired="1"]')).toContainText(retired.name);
+  await expect(timeline.getByText(retired.name, { exact: true })).toBeVisible();
+  await expect(usage.locator('.usage-list:not([data-retired])')).not.toContainText("companion-");
+  expect(capture.get(page)!.reads).toEqual(expect.arrayContaining(["getActivityDayAction", "getActivityUsageAction"]));
+  const bookCloseName = describeTarget("ui.click", "companion-book-close").name;
+  await usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: bookCloseName }).scrollIntoViewIfNeeded();
+  await timeline.getByText(bookCloseName, { exact: true }).scrollIntoViewIfNeeded();
+  await usage.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${auditPrefix}-110-timeline-and-usage.png` });
 });

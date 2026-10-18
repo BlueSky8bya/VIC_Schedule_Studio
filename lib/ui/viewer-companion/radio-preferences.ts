@@ -1,8 +1,8 @@
-import { COMPANION_RADIO_TRACKS, type CompanionRadioMood } from "./radio-catalog";
-export type CompanionRadioPreferences = { enabled: boolean; volume: number; react: boolean; moods: Record<CompanionRadioMood, boolean>; excludedIds: string[] };
+import { COMPANION_RADIO_TRACKS } from "./radio-catalog";
+export type CompanionRadioPreferences = { enabled: boolean; volume: number; react: boolean; excludedIds: string[] };
 export const COMPANION_RADIO_PREFERENCES_KEY = "vic.companionRadio.v1";
 const EVENT = "vic:companion-radio-preferences";
-const defaults = (): CompanionRadioPreferences => ({ enabled: true, volume: 35, react: true, moods: { lively: true, graceful: true, calm: true }, excludedIds: [] });
+const defaults = (): CompanionRadioPreferences => ({ enabled: true, volume: 35, react: true, excludedIds: [] });
 let fallback: CompanionRadioPreferences | undefined;
 let unsavedRaw: string | null | undefined;
 export function normalizeCompanionRadioPreferences(raw: unknown): CompanionRadioPreferences {
@@ -10,7 +10,8 @@ export function normalizeCompanionRadioPreferences(raw: unknown): CompanionRadio
   const base = defaults();
   for (const key of ["enabled", "react"] as const) if (typeof value[key] === "boolean") base[key] = value[key];
   if (typeof value.volume === "number" && Number.isFinite(value.volume)) base.volume = Math.round(Math.max(0, Math.min(100, value.volume)));
-  for (const key of ["lively", "graceful", "calm"] as const) if (typeof value.moods?.[key] === "boolean") base.moods[key] = value.moods[key];
+  // Retired mood filters do not silence entire kinds of music. Chosen tracks,
+  // mute and faders persist; the companion's traits decide its own response.
   if (Array.isArray(value.excludedIds)) base.excludedIds = [...new Set(value.excludedIds.filter(id => typeof id === "string" && COMPANION_RADIO_TRACKS.some(track => track.id === id)))];
   return base;
 }
@@ -20,7 +21,7 @@ export function getCompanionRadioPreferences(): CompanionRadioPreferences {
 }
 export function setCompanionRadioPreferences(patch: Partial<CompanionRadioPreferences>): CompanionRadioPreferences {
   const before = getCompanionRadioPreferences();
-  const next = normalizeCompanionRadioPreferences({ ...before, ...patch, moods: { ...before.moods, ...patch.moods } });
+  const next = normalizeCompanionRadioPreferences({ ...before, ...patch });
   fallback = next;
   if (typeof window !== "undefined") { try { unsavedRaw = window.localStorage.getItem(COMPANION_RADIO_PREFERENCES_KEY); window.localStorage.setItem(COMPANION_RADIO_PREFERENCES_KEY, JSON.stringify(next)); unsavedRaw = undefined; } catch { /* Session-only choice preserves the current mix. */ } window.dispatchEvent(new Event(EVENT)); }
   return next;
@@ -30,4 +31,4 @@ export function subscribeCompanionRadioPreferences(listener: () => void): () => 
   window.addEventListener(EVENT, listener); window.addEventListener("storage", storage);
   return () => { window.removeEventListener(EVENT, listener); window.removeEventListener("storage", storage); };
 }
-export function companionRadioPool(preferences = getCompanionRadioPreferences()) { return COMPANION_RADIO_TRACKS.filter(track => preferences.moods[track.mood] && !preferences.excludedIds.includes(track.id)); }
+export function companionRadioPool(preferences = getCompanionRadioPreferences()) { return COMPANION_RADIO_TRACKS.filter(track => !preferences.excludedIds.includes(track.id)); }

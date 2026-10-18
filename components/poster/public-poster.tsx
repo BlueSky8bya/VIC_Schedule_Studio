@@ -125,7 +125,7 @@ import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
 import type { CompanionPositionMemory } from "@/lib/ui/viewer-companion/position-memory";
-import { useFocusTrap } from "@/lib/ui/use-focus-trap";
+import { restoreDialogOpener, useFocusTrap } from "@/lib/ui/use-focus-trap";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
@@ -828,6 +828,7 @@ export function PublicPoster({
   // 뒤로가기 닫기 규약은 시트 종류와 무관하게 하나라, 아래 insightsOpen/setInsightsOpen 이름의
   // 기존 배관(1690~)을 그대로 태운다: 열림 = 어느 시트든 열림, 닫기 = 어느 시트든 닫기.
   const [sheet, setSheet] = useState<null | "insights" | "search" | "settings">(null);
+  const [companionBook, setCompanionBook] = useState(false);
   const settingsOpenerRef = useRef<HTMLElement | null>(null);
   const settingsWasOpen = useRef(false);
   // Match the studio lifecycle: capture before the shared trap takes focus,
@@ -836,7 +837,7 @@ export function PublicPoster({
     const open = sheet === "settings", wasOpen = settingsWasOpen.current;
     settingsWasOpen.current = open;
     if (open && !wasOpen) settingsOpenerRef.current = document.activeElement as HTMLElement | null;
-    else if (!open && wasOpen) { settingsOpenerRef.current?.focus({ preventScroll: true }); settingsOpenerRef.current = null; }
+    else if (!open && wasOpen) { restoreDialogOpener(settingsOpenerRef.current); settingsOpenerRef.current = null; }
   }, [sheet]);
   const settingsTrapRef = useFocusTrap<HTMLDivElement>(sheet === "settings");
   // 설정 창은 Esc로 닫힌다(UI-21 — 편집실 설정 모달과 같은 동작). 인사이트·검색 시트는 각자 처리한다.
@@ -862,6 +863,7 @@ export function PublicPoster({
   // 포스터 테마·개발자 시간여행 줄은 편집실(소유자·개발자) 몫이라 여기선 넘기지 않는다.
   const settingsPrefs = useSettingsPrefs();
   const companionDesktop = useCompanionDesktop();
+  useEffect(() => { if (!companionDesktop) setCompanionBook(false); }, [companionDesktop]);
   const insightsOpen = sheet !== null;
   const setInsightsOpen = (open: boolean) => setSheet(open ? "insights" : null);
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
@@ -1592,7 +1594,7 @@ export function PublicPoster({
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = true;
   const settingsButton = interactive ? (
-    <SettingsButton open={sheet === "settings"} onClick={() => { hapticTick(); setSheet("settings"); }} />
+    <SettingsButton open={sheet === "settings"} onClick={() => { hapticTick(); setCompanionBook(false); setSheet("settings"); }} />
   ) : null;
   // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 CSS :hover만으로는 한 조각만 밝아져
   // 마디가 다시 보인다. 같은 일정의 모든 조각을 DOM 클래스 토글로 함께 밝힌다(lib/ui/band-hover).
@@ -4135,7 +4137,7 @@ export function PublicPoster({
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
-      {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion root={posterRootRef} preferences={settingsPrefs.companionPrefs}
+      {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion onOpenBook={() => { setCompanionBook(true); setSheet("settings"); }} root={posterRootRef} preferences={settingsPrefs.companionPrefs}
         positionMemory={positionMemory}
               blocked={Boolean(monthPick || giftCard || gachaOpen)}
               overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
@@ -4625,15 +4627,16 @@ export function PublicPoster({
           onClick={(e) => { if (e.target === e.currentTarget) setSheet(null); }}
           role="presentation"
         >
-          <div aria-label="설정" aria-modal="true" className="modal-card modal-card-settings" role="dialog" ref={settingsTrapRef}>
+          <div aria-label={companionBook ? "빅타민 수첩" : "설정"} aria-modal="true" className={`modal-card modal-card-settings${companionBook ? " companion-book" : ""}`} role="dialog" ref={settingsTrapRef}>
             <div className="modal-head">
-              <h2>설정</h2>
-              <button aria-label="닫기" className="modal-close" data-act="close-settings" onClick={() => setSheet(null)} type="button">
+              <h2>{companionBook ? "빅타민 수첩" : "설정"}</h2>
+              <button aria-label="닫기" className="modal-close" data-act={companionBook ? "companion-book-close" : "close-settings"} onClick={() => setSheet(null)} type="button">
                 <X aria-hidden="true" size={18} />
               </button>
             </div>
             <div className="settings-modal-body">
               <StudioSettingsList
+                companionBook={companionBook}
                 ambientMode={settingsPrefs.ambientMode}
                 textPx={settingsPrefs.textPx}
                 onChangeTextPx={settingsPrefs.changeTextPx}

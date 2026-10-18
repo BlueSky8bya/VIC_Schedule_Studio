@@ -9,6 +9,19 @@
    같은 그림을 낸다. 설정 줄이 바뀌면 여기만 고친다. */
 
 /* ── 창 ──────────────────────────────────────────────────────────── */
+/* The book changes only the cover/pages. Both entries render the same live
+   CompanionSettings controls inside the existing modal/focus/pause owner. */
+.vic-settings .modal-card.companion-book { width: min(850px, calc(100vw - 40px)); border-left: 12px solid #b49676; border-radius: 16px 26px 26px 16px; background: #f5efdf; box-shadow: -4px 0 0 #9c7e62, 0 5px 0 -1px #e6ddc9, 0 9px 0 -2px #c9bba4, var(--elev-3); }
+.vic-settings .companion-book > .modal-head { padding-left: 28px; background: #eee4cd; border-bottom-color: #cfbea3; }
+.vic-settings .companion-book > .modal-head h2 { display: flex; align-items: center; gap: 10px; }
+.vic-settings .companion-book > .modal-head h2::before { content: ""; width: 12px; height: 24px; align-self: flex-start; margin-top: -10px; background: #c88f79; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); }
+.vic-settings .companion-book .settings-modal-body { background: linear-gradient(90deg, #b7a48724, transparent 20px), #faf7ef; }
+.vic-settings .companion-book .rhh-companion-book-pages { display: block; min-height: 0; box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; padding: 20px 24px; }
+.vic-settings .rhh-collection-fact { margin: 8px 0; color: var(--ink); font-size: var(--text-body); line-height: 1.65; text-wrap: pretty; }
+html[data-theme="dark"] .vic-settings .modal-card.companion-book { background: #31343b; border-left-color: #776451; box-shadow: -4px 0 0 #584b3e, 0 5px 0 -1px #575044, 0 9px 0 -2px #3b352e, var(--elev-3); }
+html[data-theme="dark"] .vic-settings .companion-book > .modal-head { background: #343436; border-bottom-color: #656054; }
+html[data-theme="dark"] .vic-settings .companion-book .settings-modal-body { background: linear-gradient(90deg, #0002, transparent 20px), #292d35; }
+@media (max-width: 1100px) { .vic-settings .companion-book .rhh-companion-book-pages { padding: 16px; } }
 .vic-settings.modal-backdrop {
   position: fixed;
   inset: 0;

@@ -25,8 +25,16 @@ function allowed() {
 }
 function mix() {
   if (!output) return;
-  const companion = getCompanionPreferences(), radio = getCompanionRadioPreferences();
-  output.gain.gain.setTargetAtTime(Math.pow(soundVolume() / 100, 1.6) * Math.pow(companion.soundVolume / 100, 1.3) * radio.volume / 100 * .65, output.context.currentTime, .04);
+  const radio = getCompanionRadioPreferences();
+  // Music has its own fader. Applying the creature's effects fader plus an
+  // extra .65 trim attenuated the default stream by another 9.51 dB. Shared
+  // mute/zero-volume gates still apply in allowed(), without changing saves.
+  output.gain.gain.setTargetAtTime(companionRadioOutputGain(soundVolume(), radio.volume), output.context.currentTime, .04);
+}
+/** Bounded music fader into the existing single context/master bus. */
+export function companionRadioOutputGain(masterVolume: number, radioVolume: number): number {
+  const level = (value: number) => Number.isFinite(value) ? Math.max(0, Math.min(100, value)) / 100 : 0;
+  return Math.pow(level(masterVolume), 1.6) * level(radioVolume);
 }
 /** Stop invalidates pending play/resume/decode before releasing listeners and
  * the stream. Nothing resumes automatically after focus, unmute or remount. */

@@ -14,7 +14,7 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 
 test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.setTimeout(90_000);
-const output = ".scratch-pw/companion-107-world";
+const output = process.env.VIC_GIFT_WORLD_OUTPUT ?? ".scratch-pw/companion-110/gift-world";
 const creature = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const readCollection = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
@@ -92,7 +92,7 @@ async function placeAtVisibleCentre(page: Page) {
   await expect(creature(page)).toBeVisible();
 }
 
-test("native petting completes earned gift conditions, physical opening and explicit wearing survive reload", async ({ page }) => {
+test("native petting earns a bounded rare opportunity, not a guaranteed five-minute gift", async ({ page }) => {
   const safety = await setup(page, { version: 1, situations: [], foods: [], behaviors: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 299000, interactionCredit: 0 } });
   expect((await readCollection(page)).gifts).toMatchObject({ pending: null, unlocked: [], equipped: null, interactionCredit: 0 });
   await expect(page.getByRole("button", { name: "빅타민이 가져온 선물 열기", exact: true })).toHaveCount(0);
@@ -100,10 +100,22 @@ test("native petting completes earned gift conditions, physical opening and expl
   // keyboard alternative deliberately requests a full petting reward.
   await actor(page).focus(); await actor(page).press("Enter");
   await expect(creature(page)).toHaveAttribute("data-state", "petted");
-  await expect.poll(async () => (await readCollection(page)).gifts.interactionCredit).toBe(1);
+  await expect.poll(async () => {
+    const value = (await readCollection(page)).gifts;
+    return value.interactionCredit === 1 || value.activeMs < 299000;
+  }).toBe(true);
+  // Native time and RNG stay untouched. Whether the rare roll wins or misses,
+  // it must spend its opportunity; tick-by-tick delivery is unit-tested.
+  await expect.poll(async () => (await readCollection(page)).gifts.activeMs, { timeout: 20_000 }).toBeLessThan(299000);
+  await expect.poll(async () => (await readCollection(page)).gifts.interactionCredit).toBe(0);
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
+
+test("an existing earned gift opens physically and explicit wearing survives reload", async ({ page }) => {
+  const safety = await setup(page, { version: 1, situations: [], foods: [], behaviors: [], gifts: { pending: "sunglasses", unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 } });
   const gift = page.getByRole("button", { name: "빅타민이 가져온 선물 열기", exact: true });
   await expect(gift).toBeVisible({ timeout: 20_000 });
-  expect((await readCollection(page)).gifts).toMatchObject({ pending: "sunglasses", unlocked: [], equipped: null, activeMs: 300000 });
+  expect((await readCollection(page)).gifts).toMatchObject({ pending: "sunglasses", unlocked: [], equipped: null, activeMs: 0 });
   await expect(creature(page).locator(".vc-gift-prop")).toBeVisible();
   await captureCreature(page, "earned-physical-gift");
   await nativeClick(page, gift);

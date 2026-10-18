@@ -7,6 +7,7 @@ import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/vie
 import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { companionFoodChance, COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_FOOD_FACTS } from "@/lib/ui/viewer-companion/food-facts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
@@ -66,10 +67,169 @@ async function visitSurface(page: Page, surface: Surface) {
 
 const readCollection = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
 
+async function openCompanionBook(page: Page) {
+  await page.bringToFront(); await settlePanelLayout(page);
+  const entry = page.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
+  const home = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
+  const fold = page.locator('.vc-home [data-act="companion-home-fold"]');
+  await expect.poll(async () => await entry.isVisible() || await home.isVisible() || await fold.isVisible()).toBe(true);
+  if (!await entry.isVisible()) {
+    if (await home.isVisible()) await home.click();
+    else await fold.click();
+  }
+  await expect(entry).toBeVisible(); await settlePanelLayout(page);
+  await expect(entry).toHaveAttribute("data-act", "companion-book-open");
+  await entry.click();
+  const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveClass(/companion-book/);
+  await expect(dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab")).toHaveText(["프로필", "움직임", "장난", "교감", "소리"]);
+  await expect(dialog.getByRole("button", { name: "닫기", exact: true })).toHaveAttribute("data-act", "companion-book-close");
+  return { dialog, entry };
+}
+
+for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
+  test(`110 book ${surface} ${theme}: native direct settings share preferences and return focus after both close paths`, async ({ page }) => {
+    const safety = await installFixture(page, { theme, collection: seededCollection, enabled: true });
+    await visitSurface(page, surface);
+    const { dialog, entry } = await openCompanionBook(page);
+    const controls = dialog.getByRole("tablist", { name: "빅타민 설정", exact: true });
+    await dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
+    await dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
+    await controls.getByRole("tab", { name: "움직임", exact: true }).click();
+    await dialog.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
+    await controls.getByRole("tab", { name: "교감", exact: true }).click();
+    const feed = dialog.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true });
+    await expect(feed).toHaveAttribute("aria-checked", "false"); await feed.click();
+    await expect.poll(() => page.evaluate(() => {
+      const prefs = JSON.parse(localStorage.getItem("vic.viewerCompanion")!);
+      return [prefs.animalMode, prefs.personality, prefs.speed, prefs.feeding];
+    })).toEqual(["cat", "sleepy", "lively", true]);
+    await controls.getByRole("tab", { name: "프로필", exact: true }).click();
+    await settlePanelLayout(page);
+    mkdirSync(".scratch-pw/companion-110/book", { recursive: true });
+    await page.screenshot({ path: `.scratch-pw/companion-110/book/${surface}-${theme}-book.png` });
+    // Wheel the real book page, rather than accepting a masked/clipped body
+    // just because Playwright can programmatically scroll a control into view.
+    const body = dialog.locator(".rhh-companion-book-pages");
+    const beforeWheel = await body.evaluate(element => element.scrollTop);
+    await body.hover(); await page.mouse.wheel(0, 540);
+    await expect.poll(() => body.evaluate(element => element.scrollTop)).toBeGreaterThan(beforeWheel);
+    await controls.getByRole("tab", { name: "소리", exact: true }).click();
+    await dialog.locator(".rhh-radio-playlist summary").click();
+    const playlist = dialog.locator(".rhh-radio-playlist ul"), lastTrack = playlist.getByRole("checkbox").last();
+    await playlist.hover(); await page.mouse.wheel(0, 2800);
+    await expect(lastTrack).toBeInViewport({ ratio: 1 });
+    await lastTrack.focus(); await expect(lastTrack).toBeFocused();
+    await page.screenshot({ path: `.scratch-pw/companion-110/book/${surface}-${theme}-playlist-end.png` });
+    await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+    await expect(dialog).toHaveCount(0); await expect(entry).toBeFocused();
+    const reopened = await openCompanionBook(page);
+    await expect(reopened.dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toHaveAttribute("aria-checked", "true");
+    await page.keyboard.press("Escape");
+    await expect(reopened.dialog).toHaveCount(0); await expect(entry).toBeFocused();
+    const normal = await openProfile(page);
+    await expect(normal.dialog).not.toHaveClass(/companion-book/);
+    await expect(normal.dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toBeVisible();
+    await expect(normal.dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toHaveAttribute("aria-checked", "true");
+    await expect(normal.dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true })).toHaveAttribute("aria-checked", "true");
+    await normal.dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "움직임", exact: true }).click();
+    await expect(normal.dialog.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true })).toHaveAttribute("aria-checked", "true");
+    await normal.dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "교감", exact: true }).click();
+    await expect(normal.dialog.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "true");
+    expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+  });
+}
+
+for (const surface of ["viewer", "studio"] as const) {
+  test(`110 book ${surface} OFF: closing after the house unmounts restores the visible standard settings entry`, async ({ page }) => {
+    const safety = await installFixture(page, { collection: seededCollection, enabled: true });
+    await visitSurface(page, surface);
+    const gearWasVisible = await page.getByRole("button", { name: "설정", exact: true }).isVisible();
+    const { dialog } = await openCompanionBook(page);
+    await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
+    await expect(dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
+    await expect(page.locator(".vc-home,.vc-book-button")).toHaveCount(0);
+    if (surface === "viewer") await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+    else await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    const gear = page.getByRole("button", { name: "설정", exact: true });
+    expect(await gear.isVisible()).toBe(gearWasVisible);
+    // Compact studio keeps its settings button inside the collapsed panel.
+    // The visible panel opener is the usable recovery target in that layout.
+    const recovery = await gear.isVisible() ? gear : page.getByRole("button", { name: "패널 펼치기", exact: true });
+    await expect(recovery).toBeVisible(); await expect(recovery).toBeFocused();
+    if (!gearWasVisible) {
+      await expect(recovery).toHaveAttribute("aria-pressed", "false");
+      await recovery.press("Enter"); await settlePanelLayout(page);
+      await expect(gear).toBeVisible();
+    }
+    const normal = await openProfile(page);
+    await expect(normal.dialog).not.toHaveClass(/companion-book/);
+    await expect(normal.dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
+    await normal.dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).enabled)).toBe(true);
+    await normal.dialog.getByRole("button", { name: "닫기", exact: true }).click();
+    await expect(gear).toBeFocused();
+    expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+  });
+}
+
+test("110 book compact1050: book and radio have separate44px targets and a contained readable page", async ({ page }) => {
+  await page.setViewportSize({ width: 1050, height: 1000 });
+  const safety = await installFixture(page, { theme: "dark", collection: seededCollection, enabled: true });
+  await visitSurface(page, "studio");
+  const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
+  await expect(launcher).toBeVisible(); await launcher.click(); await settlePanelLayout(page);
+  const entry = page.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
+  const radio = page.locator(".vc-radio-button:visible");
+  await expect(entry).toBeVisible(); await expect(radio).toBeVisible();
+  const bookRect = await entry.boundingBox(), radioRect = await radio.boundingBox();
+  expect(bookRect).not.toBeNull(); expect(radioRect).not.toBeNull();
+  expect(bookRect!.width).toBeGreaterThanOrEqual(44); expect(bookRect!.height).toBeGreaterThanOrEqual(44);
+  expect(radioRect!.width).toBeGreaterThanOrEqual(44); expect(radioRect!.height).toBeGreaterThanOrEqual(44);
+  expect(Math.min(bookRect!.x + bookRect!.width, radioRect!.x + radioRect!.width) - Math.max(bookRect!.x, radioRect!.x)).toBeLessThanOrEqual(0);
+  mkdirSync(".scratch-pw/companion-110/book", { recursive: true });
+  await page.screenshot({ path: ".scratch-pw/companion-110/book/compact1050-home.png" });
+  const opened = await openCompanionBook(page); await settlePanelLayout(page);
+  await expect(opened.dialog).toBeInViewport({ ratio: 1 });
+  expect(await opened.dialog.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+  await page.screenshot({ path: ".scratch-pw/companion-110/book/compact1050-book.png" });
+  await opened.dialog.getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(entry).toBeFocused();
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
+
+test("110 book PC to mobile: responsive fallback clears book mode and keeps standard settings on return", async ({ page }) => {
+  const safety = await installFixture(page, { collection: seededCollection, enabled: true });
+  await visitSurface(page, "viewer");
+  await openCompanionBook(page);
+  await page.setViewportSize({ width: 390, height: 844 }); await settlePanelLayout(page);
+  const settings = page.getByRole("dialog", { name: "설정", exact: true });
+  await expect(settings).toBeVisible(); await expect(settings).not.toHaveClass(/companion-book/);
+  // Existing phone settings intentionally show a scrolling list of sections,
+  // with the desktop-only category rail hidden.
+  await expect(settings.getByRole("heading", { name: "글자", exact: true })).toBeVisible();
+  await expect(settings.getByRole("slider", { name: "달력 글씨 크기(px)", exact: true })).toBeVisible();
+  await expect(settings.getByRole("tab", { name: "빅타민", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "빅타민 수첩", exact: true })).toHaveCount(0);
+  await expect(page.locator(".vc-home,.vc-companion,.vc-book-button")).toHaveCount(0);
+  mkdirSync(".scratch-pw/companion-110/book", { recursive: true });
+  await page.screenshot({ path: ".scratch-pw/companion-110/book/mobile-standard-fallback.png" });
+  await page.setViewportSize({ width: 1440, height: 1100 }); await settlePanelLayout(page);
+  await expect(settings).toBeVisible(); await expect(settings).not.toHaveClass(/companion-book/);
+  await expect(settings.getByRole("tablist", { name: "설정 묶음", exact: true })).toBeVisible();
+  await expect(settings.getByRole("tab", { name: "빅타민", exact: true })).toBeVisible();
+  await expect(settings.locator(".rhh-companion-book-pages")).toHaveCount(0);
+  await settings.getByRole("button", { name: "닫기", exact: true }).click();
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
+
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
   test(`${surface} ${theme}: real mini-nav discovers, opens, equips and retains local keepsakes`, async ({ page, context }) => {
     const safety = await installFixture(page, { theme, collection: seededCollection });
-    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+    mkdirSync(".scratch-pw/companion-110/collection", { recursive: true });
     await visitSurface(page, surface);
     let { dialog, profile, nav } = await openProfile(page);
     await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장"]);
@@ -98,12 +258,14 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail")).toContainText("사과");
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport();
     await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveText("흔한");
-    await expect(profile.locator(".rhh-collection-chance")).toHaveText(`기본 등장 ${(companionFoodChance("apple") * 100).toFixed(1)}% · 직전 간식 제외 시 달라져요.`);
-    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/food-detail-${surface}-${theme}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-food-${surface}-${theme}.png` });
+    await expect(profile.locator(".rhh-collection-chance")).toHaveText(`기본 등장 ${(companionFoodChance("apple") * 100).toFixed(1)}%`);
+    await expect(profile.locator(".rhh-collection-fact")).toHaveText(COMPANION_FOOD_FACTS.apple);
+    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/food-detail-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-food-${surface}-${theme}.png` });
     await foods.getByRole("button", { name: "??? · 17", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveCount(0);
     await expect(profile.locator(".rhh-collection-chance")).toHaveCount(0);
+    await expect(profile.locator(".rhh-collection-fact")).toHaveCount(0);
     await expect(profile.locator(".rhh-collection-detail")).not.toContainText("블루베리");
     expect(companionFoodChance("blueberry")).toBeLessThan(companionFoodChance("apple"));
     const fixedTargets = await profile.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt")));
@@ -116,7 +278,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(lastFood).toHaveAttribute("aria-label", `??? · ${COMPANION_FOOD_KINDS.length}`);
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
-    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-food-deep-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-food-deep-${surface}-${theme}.png` });
     await page.keyboard.press("Home");
     await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
     await profile.getByRole("button", { name: "다음 간식", exact: true }).click();
@@ -134,8 +296,12 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
 
     await profile.getByRole("button", { name: "추억 도감 3/24", exact: true }).click();
     const behaviors = profile.locator(".rhh-behavior-grid");
-    await expect(behaviors.getByRole("button")).toHaveCount(12);
-    await expect(behaviors.locator("button[data-found]")).toHaveCount(2);
+    await expect(behaviors.getByRole("button")).toHaveCount(24);
+    await expect(behaviors.locator("button[data-found]")).toHaveCount(3);
+    await expect(profile.getByRole("button", { name: "특별한 순간", exact: true })).toHaveCount(0);
+    await expect(profile.getByRole("group", { name: "도감 종류", exact: true }).getByRole("button")).toHaveCount(2);
+    await expect(behaviors.locator('[data-collection-art="behavior-stamp"]')).toHaveCount(12);
+    await expect(behaviors.locator('[data-collection-art="situation-stamp"]')).toHaveCount(12);
     await expect(profile.locator('[data-collection-art="food"]')).toHaveCount(0);
     await behaviors.getByRole("button", { name: "??? · 9", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).not.toContainText("고양이 모드");
@@ -145,25 +311,21 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await page.keyboard.press("ArrowRight");
     await expect(behaviors.getByRole("button", { name: "??? · 2", exact: true })).toBeFocused();
     await page.keyboard.press("End");
-    await expect(behaviors.getByRole("button", { name: "??? · 12", exact: true })).toBeFocused();
+    await expect(behaviors.getByRole("button", { name: "??? · 24", exact: true })).toBeFocused();
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
-    expect(await behaviors.getByRole("button", { name: "??? · 12", exact: true }).evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
+    expect(await behaviors.getByRole("button", { name: "??? · 24", exact: true }).evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
     await expect(behaviors.locator('[tabindex="0"]')).toHaveCount(1);
-    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
-    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/discovery-${surface}-${theme}.png` });
-    await profile.getByRole("button", { name: "특별한 순간", exact: true }).click();
-    await expect(behaviors.getByRole("button")).toHaveCount(12);
-    await expect(behaviors.locator("button[data-found]")).toHaveCount(1);
-    await expect(behaviors.locator('[data-collection-art="situation-stamp"]')).toHaveCount(12);
-    await behaviors.getByRole("button", { name: "??? · 1", exact: true }).click();
+    mkdirSync(".scratch-pw/companion-110/collection", { recursive: true });
+    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/discovery-${surface}-${theme}.png` });
+    await behaviors.getByRole("button", { name: "??? · 13", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toHaveText("???아직 발견하지 못했어요.");
     await behaviors.getByRole("button", { name: "싹싹 냠냠 · 만났어요", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toContainText("싹싹 냠냠");
     await expect(profile.locator(".rhh-collection-detail")).not.toContainText("아직 발견");
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
-    expect(new Set(await profile.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt"))))).toEqual(new Set(["moment"]));
-    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/moments-${surface}-${theme}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-moments-deep-${surface}-${theme}.png` });
+    expect(new Set(await profile.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt"))))).toEqual(new Set(["behavior", "moment"]));
+    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/moments-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-moments-deep-${surface}-${theme}.png` });
 
     await nav.getByRole("tab", { name: "옷장", exact: true }).click();
     const accessories = profile.locator(".rhh-accessory-grid");
@@ -176,7 +338,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await accessories.getByRole("button", { name: "??? · 12", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
-    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-wardrobe-deep-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-110/collection/viewport-wardrobe-deep-${surface}-${theme}.png` });
     await profile.getByRole("button", { name: "선물 열기", exact: true }).click();
     await expect(profile.getByRole("button", { name: "선물 열기", exact: true })).toHaveCount(0);
     await expect(accessories.locator('[data-accessory="beret"]')).toBeFocused();
@@ -190,7 +352,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect((await readCollection(page)).gifts.equipped).toBeNull();
     await accessories.locator('[data-accessory="beret"]').click();
     await profile.locator(".rhh-collection-detail").getByRole("button", { name: "장착하기", exact: true }).click();
-    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/gifts-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-110/collection/gifts-${surface}-${theme}.png` });
 
     const keepsakes = await readCollection(page);
     await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();

@@ -23,6 +23,21 @@ async function fixture(page: Page, sound = true) {
     if (request.method() === "GET" && (pathname === "/" || pathname === "/studio")) return route.fulfill({ status: 200, contentType: "text/plain", body: "" });
     return route.continue();
   });
+  await page.addInitScript(() => {
+    // Observe the real media→gain connection without adding nodes, replacing
+    // audio samples, patching clocks/RNG or changing any automation parameter.
+    const target = window as Window & { __companionRadioGainNodes?: GainNode[] };
+    target.__companionRadioGainNodes = [];
+    const create = AudioContext.prototype.createMediaElementSource;
+    AudioContext.prototype.createMediaElementSource = function (element) {
+      const source = create.call(this, element), connect = source.connect;
+      Object.defineProperty(source, "connect", { value: (...args: unknown[]) => {
+        if (args[0] instanceof GainNode) target.__companionRadioGainNodes!.push(args[0]);
+        return Reflect.apply(connect, source, args);
+      } });
+      return source;
+    };
+  });
   await page.addInitScript(({ prefs, epochKey, epoch, radioKey, sound }) => {
     if (localStorage.getItem("fixture.radio108")) return;
     localStorage.setItem("fixture.radio108", "seeded");
@@ -45,8 +60,9 @@ async function openRadio(page: Page) {
 const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!), COMPANION_RADIO_PREFERENCES_KEY);
 
 async function assertRadioButtonGeometry(radio: Locator) {
-  const buttons = radio.locator(".rhh-radio-moods > button, .rhh-radio-actions > button");
-  await expect(buttons).toHaveCount(6);
+  const buttons = radio.locator(".rhh-radio-actions > button");
+  await expect(buttons).toHaveCount(3);
+  await expect(radio.getByRole("group", { name: "라디오 분위기", exact: true })).toHaveCount(0);
   const readLifecycle = () => buttons.first().evaluate(element => {
     const rect = element.getBoundingClientRect(), style = getComputedStyle(element), ancestors = [];
     for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
@@ -85,17 +101,25 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
   await expect(radio.getByRole("checkbox")).toHaveCount(COMPANION_RADIO_TRACKS.length);
   await radio.getByRole("checkbox").first().uncheck();
   expect((await saved(page)).excludedIds).toEqual([COMPANION_RADIO_TRACKS[0].id]);
-  await radio.getByRole("button", { name: "신나게", exact: true }).click();
   await radio.getByRole("switch", { name: "빅타민 음악 반응 켜기/끄기", exact: true }).click();
   const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true });
   await volume.focus(); await volume.press("Home"); await volume.press("ArrowRight");
-  expect(await saved(page)).toMatchObject({ volume: 5, react: false, moods: { lively: false, graceful: true, calm: true } });
+  expect(await saved(page)).toMatchObject({ volume: 5, react: false });
+  expect(await saved(page)).not.toHaveProperty("moods");
   expect(safety.musicRequests).toEqual([]);
   const eligible = COMPANION_RADIO_TRACKS.find(track => track.mood !== "lively" && track.id !== COMPANION_RADIO_TRACKS[0].id)!;
   await radio.getByRole("button", { name: `${eligible.title} 재생`, exact: true }).click();
   await expect(radio.locator(".rhh-radio-now > p")).toHaveText(eligible.title);
   await expect(radio.getByRole("button", { name: "정지", exact: true })).toBeEnabled();
   expect(new Set(safety.musicRequests)).toEqual(new Set([eligible.src]));
+  const expectedGain = Math.pow(.45, 1.6) * .05;
+  await expect.poll(() => page.evaluate(() => (window as Window & { __companionRadioGainNodes?: GainNode[] }).__companionRadioGainNodes?.[0]?.gain.value ?? -1)).toBeCloseTo(expectedGain, 5);
+  const nativeGain = await page.evaluate(() => {
+    const nodes = (window as Window & { __companionRadioGainNodes?: GainNode[] }).__companionRadioGainNodes ?? [];
+    return nodes.map(node => ({ gain: node.gain.value, contextState: node.context.state, sampleRate: node.context.sampleRate }));
+  });
+  expect(nativeGain).toHaveLength(1); expect(nativeGain[0].contextState).toBe("running");
+  await test.info().attach("actual-radio-input-gain", { body: JSON.stringify({ expectedGain, masterVolume: 45, radioVolume: 5, creatureEffectsVolume: 60, nativeGain }, null, 2), contentType: "application/json" });
   await radio.getByRole("button", { name: "정지", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeVisible();
   const selections = await saved(page);
@@ -107,8 +131,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
     await sibling.close(); await page.bringToFront();
     await expect(volume).toHaveValue("25"); selections.volume = 25;
   }
-  mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
-  await page.screenshot({ path: `.scratch-pw/companion-109-settings/radio-${surface}.png` });
+  mkdirSync(".scratch-pw/companion-110/radio-settings", { recursive: true });
+  await page.screenshot({ path: `.scratch-pw/companion-110/radio-settings/radio-${surface}.png` });
   const targetAttributes = await radio.locator("[data-act]").evaluateAll(nodes => nodes.map(node => [node.getAttribute("data-act"), node.getAttribute("data-act-opt")]));
   expect(targetAttributes.every(([key, opt]) => key?.startsWith("companion-radio-") && (!opt || ["on", "off", "open", "close", "lively", "graceful", "calm"].includes(opt)))).toBe(true);
   await page.reload();
@@ -124,13 +148,15 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   await page.goto("/visual-fixture/poster");
   const { dialog, radio } = await openRadio(page);
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
-  for (const mood of ["신나게", "우아하게", "잔잔하게"]) await radio.getByRole("button", { name: mood, exact: true }).click();
+  await radio.getByText("곡 고르기", { exact: false }).click();
+  for (const checkbox of await radio.getByRole("checkbox").all()) await checkbox.uncheck();
   await expect(radio).toContainText("선택한 곡이 없어요.");
   await dialog.locator('[data-tab="sound"]').click();
   await dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true }).click();
   await dialog.locator('[data-tab="companion"]').click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
-  await radio.getByRole("button", { name: "잔잔하게", exact: true }).click();
+  await radio.getByText("곡 고르기", { exact: false }).click();
+  await radio.getByRole("checkbox").first().check();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeEnabled();
   const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true });
   await volume.focus(); await volume.press("Home");

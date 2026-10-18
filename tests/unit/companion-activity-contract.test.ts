@@ -100,7 +100,7 @@ describe("companion explicit-control dictionary drift", () => {
     const actual = paths.map(path => audit(readFileSync(path, "utf8"), relative(process.cwd(), path)));
     expect(actual.flatMap(result => result.errors)).toEqual([]);
     const observed = new Set(actual.flatMap(result => [...result.targets]));
-    const registered = Object.keys(ACT).filter(isCompanionActivityTarget);
+    const registered = Object.keys(ACT).filter(key => isCompanionActivityTarget(key) && !describeTarget("ui.click", key).retired);
     expect(registered.filter(key => !observed.has(key)), "orphan dictionary entries need an actual explicit control or emitter").toEqual([]);
     for (const key of observed) {
       expect(Object.hasOwn(ACT, key), key).toBe(true);

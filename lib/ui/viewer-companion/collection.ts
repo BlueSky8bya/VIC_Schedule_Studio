@@ -88,7 +88,8 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
     advance(elapsedMs: number, affection: number, safe: boolean) {
       ensure(); const gifts = advanceCompanionGifts(memory.gifts, elapsedMs, affection, safe);
       const arrived = Boolean(gifts.pending && gifts.pending !== memory.gifts.pending);
-      if (gifts !== memory.gifts) commit({ ...memory, gifts }, arrived);
+      const opportunityConsumed = gifts.interactionCredit === 0 && memory.gifts.interactionCredit === 1;
+      if (gifts !== memory.gifts) commit({ ...memory, gifts }, arrived || opportunityConsumed);
       return arrived && memory.gifts.pending === gifts.pending;
     },
     openGift(): CompanionAccessoryId | null {
