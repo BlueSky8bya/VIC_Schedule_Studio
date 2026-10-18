@@ -147,7 +147,9 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
 .vc-home :is(.vc-cushion-button, .vc-radio-button, .vc-book-button, .vc-dispenser, .vc-home-trash, .vc-toy-box):active { transform: none; }
 .vc-object-paint { display: block; pointer-events: none; transform-origin: 50% 85%; transform: translateY(var(--vc-object-feedback-y, 0px)) scale(var(--vc-object-feedback-scale, 1)); transition: transform var(--vc-object-feedback-duration, var(--dur-spring-smooth)) var(--spring-smooth, var(--ease-spring)); }
 .vc-home button:not(:disabled):is(:hover, :focus-visible) > .vc-object-paint { --vc-object-feedback-y: -2px; --vc-object-feedback-scale: 1.03; }
+.vc-home button:not(:disabled):is(:hover, :focus-visible) > .vc-object-paint { filter: brightness(1.08); }
 .vc-home button:not(:disabled):active > .vc-object-paint { --vc-object-feedback-y: 1px; --vc-object-feedback-scale: var(--press-scale); --vc-object-feedback-duration: .07s; }
+.vc-home button:not(:disabled):active > .vc-object-paint { filter: brightness(.94); }
 .vc-toy-box { position: absolute; right: 18px; bottom: 80px; z-index: 2; width: max(58px, var(--vc-object-min-hit)); height: max(52px, var(--vc-object-min-hit)); display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
 .vc-toy-box-inside { fill: var(--vc-wood-edge); stroke: var(--vc-wood-edge); stroke-width: .8; }
 .vc-toy-box-front { stroke: var(--vc-wood-edge); stroke-width: .9; stroke-linejoin: round; }

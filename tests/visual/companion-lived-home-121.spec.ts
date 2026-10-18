@@ -9,7 +9,7 @@ import { openCompanionHome } from "./helpers/companion-home";
 
 const out = ".scratch-pw/companion-121/rendered";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
-async function fixture(page: Page, options: { personality?: CompanionPreferences["personality"]; roam?: boolean; sleep?: boolean; energy?: number; hunger?: number; theme?: string; surface?: string; season?: string; animal?: CompanionPreferences["animalMode"]; sceneMemory?: CompanionSceneMemory } = {}) {
+async function fixture(page: Page, options: { personality?: CompanionPreferences["personality"]; roam?: boolean; sleep?: boolean; energy?: number; hunger?: number; theme?: string; surface?: string; season?: string; animal?: CompanionPreferences["animalMode"]; sceneMemory?: CompanionSceneMemory; reduce?: boolean; graphics?: "off" | "soft" } = {}) {
   const posts: string[] = [], foreign: string[] = [], errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.context().route("**/*", route => {
@@ -25,7 +25,7 @@ async function fixture(page: Page, options: { personality?: CompanionPreferences
   await page.addInitScript(({ prefs, memory, epoch, epochKey, options, sceneKey }) => {
     if (options.sceneMemory) localStorage.setItem(sceneKey, JSON.stringify(options.sceneMemory));
     const saved = { version: 1, ...prefs, enabled: true, activeWhileVisible: true, sleep: options.sleep ?? false, roam: options.roam ?? false, personality: options.personality ?? "curious", animalMode: options.animal ?? "default", sound: false, ambientPrank: true };
-    for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.viewerCompanion": JSON.stringify(saved), "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...memory, energy: options.energy ?? .8, hunger: options.hunger ?? .1 }), "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }), "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": options.theme === "dark" ? "on" : "off", "vic_avatar_side": "left" })) localStorage.setItem(key, value);
+    for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.viewerCompanion": JSON.stringify(saved), "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...memory, energy: options.energy ?? .8, hunger: options.hunger ?? .1 }), "vic.gfx": JSON.stringify({ mode: options.graphics ?? "full", at: Date.now(), v: 3 }), "vic.gfxPref": options.graphics === "off" ? "off" : options.graphics === "soft" ? "auto" : "max", "vic.reduceMotion": options.reduce ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": options.theme === "dark" ? "on" : "off", "vic_avatar_side": "left" })) localStorage.setItem(key, value);
   }, { prefs: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, options, sceneKey: COMPANION_SCENE_MEMORY_KEY });
   await page.goto(options.surface === "studio" ? "/visual-fixture/studio?role=owner&y=2025&m=11" : "/visual-fixture/poster?avatar=1&ambient=" + (options.season ?? "autumn"));
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
@@ -149,5 +149,27 @@ test("121 a learned invitation accepts a real pet and reaches its happy ending w
   await expect(pet).toHaveAttribute("data-state", "petted");
   await expect(pet).toHaveAttribute("data-scene-beat", "2", { timeout: 12000 });
   await expect(pet).toHaveAttribute("data-play", "ask-petting");
+  await state.verify();
+});
+
+
+for (const mode of ["reduced", "off", "soft"] as const) test("121 whole-object hover and press stay readable without motion: " + mode, async ({ page }) => {
+  const state = await fixture(page, mode === "reduced" ? { reduce: true } : { graphics: mode });
+  if (mode === "reduced") await expect(page.locator("html")).toHaveAttribute("data-reduce-motion", "1");
+  else await expect(page.locator("html")).toHaveAttribute("data-gfx", mode);
+  for (const action of ["book", "radio", "toys", "feed", "clearFood"]) {
+    const button = state.room.locator("[data-home-action='" + action + "']"), paint = button.locator(".vc-object-paint").first();
+    await page.mouse.move(2, 2); await page.locator(".vc-actor").focus();
+    expect(await paint.evaluate(node => getComputedStyle(node).filter)).toBe("none");
+    await button.hover(); await expect(paint).toHaveCSS("filter", "brightness(1.08)");
+    await expect(paint).toHaveCSS("transform", "none");
+    await page.mouse.down(); await expect(paint).toHaveCSS("filter", "brightness(0.94)");
+    // Cancel the press outside the object so this affordance test does not
+    // open settings, dispense food, or start audio as an incidental action.
+    await page.mouse.move(2, 2); await page.mouse.up();
+    await page.locator(".vc-actor").focus(); await expect(paint).toHaveCSS("filter", "none");
+    await button.focus(); await page.keyboard.press("Shift+Tab"); await page.keyboard.press("Tab");
+    await expect(button).toBeFocused(); await expect(paint).toHaveCSS("filter", "brightness(1.08)");
+  }
   await state.verify();
 });
